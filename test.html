@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>canvas绘图</title>  
+    <link rel="stylesheet" href="tools.css" />
+</head>  
+<body> 
+    <div class="tools">
+        <div class="item"><input class="txt" /></div>
+    </div>
+    
+    <canvas id="drawing" width="800" height="500" tabindex="0">K线</canvas>  
+    <canvas id="drawing2" width="800" height="500" tabindex="1">走势图</canvas>  
+    
+<script type="text/javascript" src="umychart.js"></script>
+<script type="text/javascript" src="tools.js"></script>
+<script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script>
+
+var drawing=document.getElementById("drawing"); 
+
+//确定浏览器支持<canvas>元素  
+if(drawing.getContext)
+{  
+//取得绘图上下文对象的引用，“2d”是取得2D上下文对象  
+var context=drawing.getContext("2d"); 
+
+var chart=new KLineChartContainer(drawing);
+chart.KLineApiUrl="http://web4.umydata.com/API/KLine2";                      //历史K线api地址
+chart.RealtimeApiUrl="http://web4.umydata.com/API/Stock";                    //实时行情api地址
+
+chart.Create(3);                            //创建3个子窗口
+
+//chart.WindowIndex[0]=new CloseMAIndex();    //创建子窗口1的指标
+chart.WindowIndex[0]=new CloseMAIndex();
+chart.CreateWindowIndex(0);
+
+chart.WindowIndex[1]=new PSYIndex();     //创建子窗口2的指标
+chart.CreateWindowIndex(1);
+
+chart.WindowIndex[2]=new RSIIndex();       //创建子窗口3的指标
+chart.CreateWindowIndex(2);
+
+//chart.DragMode=2;
+
+chart.Draw();
+chart.ChangeSymbol("000001.sz");
+drawing.focus();
+
+}  
+
+var drawing2=document.getElementById("drawing2"); 
+
+//确定浏览器支持<canvas>元素  
+if(drawing2.getContext)
+{  
+//取得绘图上下文对象的引用，“2d”是取得2D上下文对象  
+var context=drawing2.getContext("2d"); 
+
+var chart2=new MinuteChartContainer(drawing2);
+chart2.MinuteApiUrl="http://web4.umydata.com/API/Stock";
+
+chart2.Create(2);                            //创建3个子窗口
+chart2.IsAutoUpate=true;
+
+chart2.Draw();
+
+chart2.ChangeSymbol("000001.sz");
+
+
+}
+
+$(window).resize(resizeCanvas);
+
+function resizeCanvas() 
+{  
+    if (!drawing) return;
+    if (!drawing2) return;
+    var height=$(window).height() - $(".tools").outerHeight() - parseInt($(".tools").css("marginBottom"));
+    drawing.width = $(window).width()-50;
+    drawing.height = height/2;
+    if (drawing.height<800) drawing.height = 800;
+    chart.Frame.SetSizeChage(true);
+    chart.Draw();
+
+    //drawing2.width = $(window).width()-50;
+    drawing2.height = 800;
+    drawing2.width = $(window).width()-50;
+    chart2.Frame.SetSizeChage(true);
+    chart2.Draw();
+};  
+
+function doKeyDown(e) 
+{ 
+    var keyID = e.keyCode ? e.keyCode :e.which; 
+    if(keyID === 38 || keyID === 87) 
+    { // up arrow and W 
+
+    } 
+}
+
+$(function () {
+    Global.init();
+    Tools.init();
+    ContextMenu.init();
+    resizeCanvas();
+});
+
+</script>  
+</body>  
+</html>  

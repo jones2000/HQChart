@@ -1,0 +1,144 @@
+﻿body {
+    font-size:14px;
+    margin:0px;
+}
+
+input,canvas{outline:0px;}
+
+.context-menu-wrapper {
+    position: absolute;
+    z-index: 500;
+    overflow: auto;
+    border: 1px solid;
+    border-color: #b5b7b9;
+    background-color: #fff;
+    white-space: nowrap;
+}
+
+html.theme-dark .context-menu-wrapper {
+    background-color: #1c2030;
+    border-color: #363c4e;
+}
+
+.context-menu-wrapper .backlight {
+    background-color: #f2f3f5;
+}
+
+html.theme-dark .context-menu-wrapper .backlight {
+    background-color: #2f3241;
+}
+
+tr.context-menu.disabled {
+    color: #9d9d9d;
+}
+
+tr.context-menu.spinner > td {
+    background: url("/static/images/loading-small.0c15c93a2cb0.gif") 50% no-repeat;
+    cursor: default;
+}
+
+.submenu.center {
+    background-color: #fff;
+}
+
+.context-menu {
+    font-family: Tahoma,Arial,sans-serif;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+tr.context-menu {
+    cursor: pointer;
+    height: 29px;
+}
+
+    tr.context-menu:hover {
+        background: #f2f3f5;
+    }
+
+html.theme-dark tr.context-menu-hover {
+    background: #2f3241;
+}
+
+td.context-menu {
+    opacity: 1;
+    cursor: pointer;
+    padding-left: 4px;
+}
+
+.context-menu-item-separated {
+    border-bottom: 1px solid #cecece;
+}
+
+.context-menu .text {
+    min-width: 100px;
+}
+
+.context-menu .spacer {
+    width: 18px;
+}
+
+.context-menu .icon {
+    height: 27px;
+    width: 18px;
+}
+
+.context-menu .shortcut {
+    text-align: right;
+    color: #aaa;
+    padding: 0 2px 0 10px;
+}
+
+.submenu-arrow {
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAKElEQVR4AWOgExgFo6Cvr+8/1Q0EYaoaCMNUNBCBB68LqRvLIxiMAgAKDyqRblYs2AAAAABJRU5ErkJggg==);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    width: 20px;
+}
+
+.tools {
+    margin-bottom: 8px;
+    height: 38px;
+}
+
+.tools .txt {
+    height: 28px;
+    width: 80px;
+    border: none;
+    margin-top: 3px;
+    padding-left:5px;
+}
+
+.tools .item {
+    float: left;
+    margin-right: 1px;
+    padding: 0 5px;
+    cursor: pointer;
+    border: 1px solid #ECEFF2;
+    height: 36px;
+    line-height: 36px;
+}
+
+.list{
+    width:200px;
+    border:1px solid #ECEFF2;
+    position: absolute;
+    z-index: 500;
+    overflow: auto;
+    padding:5px 0;
+    background-color: rgba(255, 255, 255, 1);
+    box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.07);
+    border-radius:3px;
+    display:none;
+}
+
+.list .item{
+    padding:2px 8px;
+    height:28px;
+    line-height:28px;
+}
+
+.list .item:hover {
+    background-color:#EBF7FC;
+    cursor:pointer;
+}
