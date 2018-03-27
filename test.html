@@ -9,7 +9,73 @@
     <div class="tools">
         <div class="item"><input class="txt" /></div>
     </div>
-    
+
+    <div class="interval">
+        <div class="top">区间统计<span class="closeBtn">X</span></div>
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="name">起始时间：</td>
+                <td>
+                    <span class="startDate"></span>
+                    <span class="dateChange" data-op="1"><</span>
+                    <span class="dateChange" data-op="2">></span>
+                </td>
+                <td class="name">终止时间：</td>
+                <td>
+                    <span class="endDate"></span>
+                    <span class="dateChange" data-op="3"><</span>
+                    <span class="dateChange" data-op="4">></span>
+                </td>
+                <td class="name">统计个数：</td>
+                <td class="totalCount"></td>
+            </tr>
+            <tr>
+                <td class="name">前收盘价：</td>
+                <td class="yclose"></td>
+                <td class="name">最&nbsp;&nbsp;高&nbsp;&nbsp;价：</td>
+                <td class="high redColor"></td>
+                <td class="name">最&nbsp;&nbsp;低&nbsp;&nbsp;价：</td>
+                <td class="low greenColor"></td>
+            </tr>
+            <tr>
+                <td class="name">收&nbsp;&nbsp;盘&nbsp;&nbsp;价：</td>
+                <td class="close"></td>
+                <td class="name">均&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;价：</td>
+                <td class="avg"></td>
+                <td class="name">涨&nbsp;&nbsp;跌&nbsp;&nbsp;幅：</td>
+                <td class="increase"></td>
+            </tr>
+            <tr>
+                <td class="name">成&nbsp;&nbsp;交&nbsp;&nbsp;量：</td>
+                <td class="vol"></td>
+                <td class="name">成&nbsp;&nbsp;交&nbsp;&nbsp;额：</td>
+                <td class="amount"></td>
+                <td class="name">振&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;幅：</td>
+                <td class="amplitude"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="kLineMatch">
+        <div class="top">选股结果-共<span class="totalCount">0</span>只<span class="closeBtn">X</span></div>
+        <div class="title">
+            <div class="name">股票名称</div>
+            <div class="time">时间段</div>
+            <div class="similar">匹配</div>
+        </div>
+        <div class="list">
+        </div>
+    </div>
+
+    <div class="spinnerBg"></div>
+    <div class="spinner">
+        <div class="rect1"></div>
+        <div class="rect2"></div>
+        <div class="rect3"></div>
+        <div class="rect4"></div>
+        <div class="rect5"></div>
+    </div>
+
     <canvas id="drawing" width="800" height="500" tabindex="0">K线</canvas>  
     <canvas id="drawing2" width="800" height="500" tabindex="1">走势图</canvas>  
     
@@ -27,26 +93,29 @@ if(drawing.getContext)
 var context=drawing.getContext("2d"); 
 
 var chart=new KLineChartContainer(drawing);
-chart.KLineApiUrl="http://web4.umydata.com/API/KLine2";                      //历史K线api地址
-chart.RealtimeApiUrl="http://web4.umydata.com/API/Stock";                    //实时行情api地址
+chart.KLineApiUrl="http://opensource.zealink.com/API/KLine2";                         //历史K线api地址
+chart.RealtimeApiUrl="http://opensource.zealink.com/API/Stock";                       //实时行情api地址
+chart.KLineMatchUrl="http://web4.umydata.com/API/KLineMatch";                   //形态匹配
 
 chart.Create(3);                            //创建3个子窗口
 
-//chart.WindowIndex[0]=new CloseMAIndex();    //创建子窗口1的指标
 chart.WindowIndex[0]=new CloseMAIndex();
 chart.CreateWindowIndex(0);
 
-chart.WindowIndex[1]=new PSYIndex();     //创建子窗口2的指标
+chart.WindowIndex[1]=new VolumeIndex();     //创建子窗口2的指标
 chart.CreateWindowIndex(1);
 
-chart.WindowIndex[2]=new RSIIndex();       //创建子窗口3的指标
+chart.WindowIndex[2]=new MACDIndex();       //创建子窗口3的指标
 chart.CreateWindowIndex(2);
 
-//chart.DragMode=2;
+//chart.DragMode=2;   //区间选择模式
 
 chart.Draw();
 chart.ChangeSymbol("000001.sz");
 drawing.focus();
+
+//chart.CreateChartDrawPicture("矩形");
+//chart.CreateChartDrawPicture("线段");
 
 }  
 
@@ -61,7 +130,11 @@ var context=drawing2.getContext("2d");
 var chart2=new MinuteChartContainer(drawing2);
 chart2.MinuteApiUrl="http://web4.umydata.com/API/Stock";
 
-chart2.Create(2);                            //创建3个子窗口
+chart2.Create(3);                            //创建3个子窗口
+
+chart2.WindowIndex[2]=new MACDIndex();       //创建子窗口3的指标
+chart2.CreateWindowIndex(2);
+
 chart2.IsAutoUpate=true;
 
 chart2.Draw();
@@ -103,8 +176,15 @@ function doKeyDown(e)
 $(function () {
     Global.init();
     Tools.init();
-    ContextMenu.init();
+    Interval.init();
+    KLineMatch.init();
     resizeCanvas();
+    
+    //创建区间统计右键数据
+    window.rectContextMenu = new ContextMenu({
+        id: "rect"
+    });
+
 });
 
 </script>  
