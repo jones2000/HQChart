@@ -6,6 +6,7 @@ function JSChartContainer(uielement)
 {
     this.Frame;                                     //框架画法
     this.ChartPaint=new Array();                    //图形画法
+    this.ChartInfo=new Array();                     //K线上信息地雷
     this.ExtendChartPaint=new Array();              //扩展画法
     this.TitlePaint=new Array();                    //标题画法
     this.OverlayChartPaint=new Array();             //叠加信息画法
@@ -46,17 +47,17 @@ function JSChartContainer(uielement)
             this.JSChartContainer.OnMouseMove(x,y,e);
     }
 
-    //uielement.oncontextmenu=function(e)
-    //{
+    // uielement.oncontextmenu=function(e)
+    // {
     //    var x=e.clientX-this.getBoundingClientRect().left;
     //    var y=e.clientY-this.getBoundingClientRect().top;
-    //
+    
     //    var windowIndex=0;
     //    if (this.JSChartContainer)
     //    {   //获取数据当天在哪个子窗口上
     //        windowIndex= this.JSChartContainer.GetSubFrameIndex(x,y);
     //    }
-    //
+       
     //    var contextMenu = new ContextMenu({
     //        id:"kLinde",
     //        windowIndex :windowIndex,
@@ -66,13 +67,13 @@ function JSChartContainer(uielement)
     //        windowHeight:this.clientHeight,
     //        data:Event.getKLineContextMenu(windowIndex)
     //    });
-    //
+    
     //    contextMenu.show();
-    //
+    
     //    //ContextMenu.data();
     //    //ContextMenu.show();
     //    return false;
-    //}
+    // }
 
     uielement.onmousedown=function(e)
     {
@@ -985,11 +986,12 @@ function IChartFramePainting()
     this.VerticalInfo=new Array();      //X轴
 
     this.Canvas;                        //画布
+
     this.ChartBorder;
     this.PenBorder=g_JSChartResource.FrameBorderPen;    //边框颜色
     this.IsShow=true;                   //是否显示
     this.SizeChange=true;               //大小是否改变
-    this.XYSplit=true;            //XY轴坐标信息改变
+    this.XYSplit=true;                  //XY轴坐标信息改变
 
     this.HorizontalMax;                 //Y轴最大值
     this.HorizontalMin;                 //Y轴最小值
@@ -1571,6 +1573,29 @@ function SingleData()
 {
     this.Date;  //日期
     this.Value; //数据
+}
+
+var KLINE_INFO_TYPE=
+{
+    INVESTOR:1,         //互动易
+    ANNOUNCEMENT:2,     //公告
+    PFORECAST:3,        //业绩预告
+
+    ANNOUNCEMENT_QUARTER_1:4,   //一季度报
+    ANNOUNCEMENT_QUARTER_2:5,   //半年报
+    ANNOUNCEMENT_QUARTER_3:6,   //2季度报
+    ANNOUNCEMENT_QUARTER_4:7,   //年报
+
+    RESEARCH:8,                 //调研
+    
+}
+
+function KLineInfoData()
+{
+    this.Date;
+    this.Title;
+    this.InfoType;
+    this.ExtendData;    //扩展数据
 }
 
 function ChartData()
@@ -2185,13 +2210,25 @@ function ChartKLine()
     this.ZoomIndex=0;                       //缩放因子
     this.TooltipRect=new Array();           //2位数组 0 数据序号 1 区域
 
+    this.IsShowMaxMinPrice=true;                 //是否显示最大最小值
+    this.TextFont=g_JSChartResource.KLine.MaxMin.Font;
+    this.TextColor=g_JSChartResource.KLine.MaxMin.Color;
+
+    this.InfoData;    //信息地雷 key=日期  value=信息数据
+    this.InfoDiv=new Array();
+
     this.Draw=function()
     {
+        this.ClearInfoDiv();
+
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
         var chartright=this.ChartBorder.GetRight();
         var xPointCount=this.ChartFrame.XPointCount;
+
+        var ptMax={X:null,Y:null,Value:null,Align:'left'};
+        var ptMin={X:null,Y:null,Value:null,Align:'left'};
 
         this.TooltipRect=[];
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
@@ -2208,6 +2245,22 @@ function ChartKLine()
             var yOpen=this.ChartFrame.GetYFromData(data.Open);
             var yClose=this.ChartFrame.GetYFromData(data.Close);
             var y=yHigh;
+
+            if (ptMax.Value==null || ptMax.Value<data.High)     //求最大值
+            {
+                ptMax.X=x;
+                ptMax.Y=yHigh;
+                ptMax.Value=data.High;
+                ptMax.Align=j<xPointCount/2?'left':'right';
+            }
+
+            if (ptMin.Value==null || ptMin.Value>data.Low)      //求最小值
+            {
+                ptMin.X=x;
+                ptMin.Y=yLow;
+                ptMin.Value=data.Low;
+                ptMin.Align=j<xPointCount/2?'left':'right';
+            }
 
             if (data.Open<data.Close)       //阳线
             {
@@ -2301,8 +2354,107 @@ function ChartKLine()
                 //this.Canvas.fillStyle="rgb(0,0,100)";
                 //this.Canvas.fillRect(rect.X,rect.Y,rect.Width,rect.Height);
                 this.TooltipRect.push([i,rect]);    //[0]数据索引 [1]数据区域
-             }
+            }
+
+            var infoItem={Xleft:left,XRight:right, YMax:yHigh, YMin:yLow, DayData:data, Index:j};
+            this.DrawInfoDiv(infoItem);
         }
+
+        if (this.IsShowMaxMinPrice) this.DrawMaxMinPrice(ptMax,ptMin);
+    }
+
+    this.DrawMaxMinPrice=function(ptMax,ptMin)
+    {
+        if (ptMax.X==null || ptMax.Y==null || ptMax.Value==null) return;
+        if (ptMin.X==null || ptMin.Y==null || ptMin.Value==null) return;
+
+        this.Canvas.font=this.TextFont;
+        this.Canvas.fillStyle=this.TextColor;
+        this.Canvas.textAlign=ptMax.Align;
+        this.Canvas.textBaseline='top';
+        var left=ptMax.Align=='left'?ptMax.X+10:ptMax.X-10;
+        this.Canvas.fillText(ptMax.Value.toFixed(2),left,ptMax.Y);
+
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptMax.X,ptMax.Y);
+        this.Canvas.lineTo(left,ptMax.Y+8);
+        this.Canvas.strokeStyle=this.TextColor;
+        this.Canvas.stroke();
+        this.Canvas.closePath();
+
+        this.Canvas.textAlign=ptMin.Align;
+        this.Canvas.textBaseline='bottom';
+        var left=ptMin.Align=='left'?ptMin.X+10:ptMin.X-10;
+        this.Canvas.fillText(ptMin.Value.toFixed(2),left,ptMin.Y);
+
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptMin.X,ptMin.Y);
+        this.Canvas.lineTo(left,ptMin.Y-8);
+        this.Canvas.strokeStyle=this.TextColor;
+        this.Canvas.stroke();
+        this.Canvas.closePath();
+        
+    }
+
+    this.ClearInfoDiv=function()
+    {
+        if (this.InfoDiv.length<=0) return;
+
+        for(var i in this.InfoDiv)
+        {
+            var item=this.InfoDiv[i];
+            var div=document.getElementById(item.id);
+            this.ChartBorder.UIElement.parentNode.removeChild(div);
+        }
+
+        this.InfoDiv=[];
+    }
+
+    //画某一天的信息地雷
+    this.DrawInfoDiv=function(item)
+    {
+        if (!this.InfoData || this.InfoData.length<=0) return;
+
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+
+        var infoData=this.InfoData.get(item.DayData.Date.toString());
+        if (!infoData || infoData.Data.length<=0) return;
+        
+        var divInfo=document.createElement("div");
+        divInfo.className='kline-info';
+        divInfo.id=Guid();
+        var iconWidth=Math.abs(item.Xleft-item.XRight);
+        if (iconWidth>16) 
+        {
+            iconWidth=16;
+            item.Xleft=item.Xleft+(Math.abs(item.Xleft-item.XRight)-iconWidth)/2;
+        }
+
+        var text='', title='';
+        var setImage=new Set();
+        for(var i in infoData.Data)
+        {
+            infoItem=infoData.Data[i];
+            var iconSrc=JSKLineInfoMap.GetIconUrl(infoItem.InfoType);
+            if (!setImage.has(iconSrc))
+            {
+                divInfo.innerHTML+="<img src='"+iconSrc+"'/>";
+                setImage.add(iconSrc);
+            }
+            title+='\n'+infoItem.Title;
+        }
+
+        //divInfo.innerHTML=text;
+        var scrollPos=GetScrollPosition();
+        var left = item.Xleft+ this.ChartBorder.UIElement.getBoundingClientRect().left+scrollPos.Left;
+        var top = item.YMax+this.ChartBorder.UIElement.getBoundingClientRect().top+scrollPos.Top-5;
+        
+        divInfo.style.left = left + "px";
+        divInfo.style.top = top-(setImage.size*16) + "px";
+        divInfo.title=title;
+        this.ChartBorder.UIElement.parentNode.appendChild(divInfo);
+        this.InfoDiv.push(divInfo);
     }
 
     this.GetTooltipData=function(x,y,tooltip)
@@ -3014,6 +3166,33 @@ function IFrameSplitOperator()
     }
 }
 
+//字符串格式化 千分位分割
+IFrameSplitOperator.FormatValueThousandsString=function(value,floatPrecision)
+{
+    if (value==null || isNaN(value)) 
+    {
+        if (floatPrecision>0)
+        {
+            var nullText='-.';
+            for(var i=0;i<floatPrecision;++i)
+                nullText+='-';
+            return nullText;
+        }
+
+        return '--';
+    }
+
+    var result='';
+    var num=value.toFixed(floatPrecision);
+    while (num.length > 3) 
+    {
+        result = ',' + num.slice(-3) + result;
+        num = num.slice(0, num.length - 3);
+    }
+    if (num) { result = num + result; }
+    return result;
+}
+
 //数据输出格式化 floatPrecision=小数位数
 IFrameSplitOperator.FormatValueString=function(value, floatPrecision)
 {
@@ -3063,6 +3242,31 @@ IFrameSplitOperator.FormatDateString=function(value)
     var day=value%100;
 
     return year.toString()+'-'+month.toString()+'-'+day.toString();
+}
+
+//报告格式化
+IFrameSplitOperator.FormatReportDateString=function(value)
+{
+    var year=parseInt(value/10000);
+    var month=parseInt(value/100)%100;
+    var monthText;
+    switch(month)
+    {
+        case 3:
+            monthText="一季度报";
+            break;
+        case 6:
+            monthText="半年报";
+            break;
+        case 9:
+            monthText="三季度报";
+            break;
+        case 12:
+            monthText="年报";
+            break;
+    }
+
+    return year.toString()+ monthText;
 }
 
 IFrameSplitOperator.FormatDateTimeString=function(value)
@@ -3772,12 +3976,21 @@ function DynamicMinuteTitlePainting()
     }
 }
 
+//字符串输出格式
+var STRING_FORMAT_TYPE = 
+{
+    DEFAULT: 1,     //默认 2位小数 单位自动转化 (万 亿)
+    THOUSANDS:21,   //千分位分割
+};
+
 function DynamicTitleData(data,name,color)
 {
     this.Data=data;
     this.Name=name;
     this.Color=color;   //字体颜色
     this.DataType;      //数据类型
+    this.StringFormat=STRING_FORMAT_TYPE.DEFAULT;   //字符串格式
+    this.FloatPrecision=2;                          //小数位数
 }
 
 function DynamicChartTitlePainting()
@@ -3835,7 +4048,14 @@ function DynamicChartTitlePainting()
             }
     
             this.Canvas.fillStyle=item.Color;
-            var text=item.Name+":"+IFrameSplitOperator.FormatValueString(value,2);
+
+            var valueText="";
+            if (item.StringFormat==STRING_FORMAT_TYPE.DEFAULT) 
+                valueText=IFrameSplitOperator.FormatValueString(value,item.FloatPrecision);
+            else if (item.StringFormat=STRING_FORMAT_TYPE.THOUSANDS) 
+                valueText=IFrameSplitOperator.FormatValueThousandsString(value,item.FloatPrecision);
+
+            var text=item.Name+":"+valueText;
             var textWidth=this.Canvas.measureText(text).width+2;    //后空2个像素
             this.Canvas.fillText(text,left,bottom,textWidth);
             left+=textWidth;
@@ -4399,10 +4619,83 @@ function ChartDrawPictureArc()
         }
 
         //是否在弧线上
-        
+        var ArcPoint=[ {X:aryPoint[0].X,Y:aryPoint[0].Y},{X:aryPoint[1].X,Y:aryPoint[1].Y}];
+        if (this.IsPointInArc(ArcPoint, x, y))
+            return 100;
 
         return -1;
     }
+    this.IsPointInArc=function(aryPoint,x,y)
+    {
+        if (aryPoint.length != 2)
+         return false;
+        if (aryPoint[0].X < aryPoint[1].X && aryPoint[0].Y > aryPoint[1].Y) // 第一象限
+        {
+             var a = aryPoint[1].X - aryPoint[0].X;
+             var b = aryPoint[0].Y - aryPoint[1].Y;
+             var step = (a > b) ? 1/a : 1 / b;
+             var xcenter = aryPoint[0].X;
+             var ycenter = aryPoint[1].Y;
+             this.Canvas.beginPath();
+             this.Canvas.moveTo(aryPoint[0].X, aryPoint[0].Y);
+             for (var i = 1.5*Math.PI; i < 2*Math.PI; i+=step)
+             {
+                 this.Canvas.lineTo(xcenter+a*Math.cos(i), ycenter+b*Math.sin(i)*-1);
+             }
+             for (var j = 0; j <= 0.5*Math.PI; j += step)
+             {
+                 this.Canvas.lineTo(xcenter+a*Math.cos(j), ycenter+b*Math.sin(j)*-1);
+             }
+        }
+         else if (aryPoint[0].X > aryPoint[1].X && aryPoint[0].Y > aryPoint[1].Y) // 第二象限
+         {
+             var a = aryPoint[0].X - aryPoint[1].X;
+             var b = aryPoint[0].Y - aryPoint[1].Y;
+             var step = (a > b) ? 1/a:1/b;
+             var xcenter = aryPoint[1].X;
+             var ycenter = aryPoint[0].Y;
+             this.Canvas.beginPath();
+             this.Canvas.moveTo(aryPoint[0].X, aryPoint[0].Y);
+             for (var i = 0; i <= Math.PI; i += step)
+             {
+                 this.Canvas.lineTo(xcenter + a*Math.cos(i), ycenter + b*Math.sin(i)*-1);
+             }
+         }
+         else if (aryPoint[0].X > aryPoint[1].X && aryPoint[0].Y < aryPoint[1].Y) // 第三象限
+         {
+             var a = aryPoint[0].X - aryPoint[1].X;
+             var b = aryPoint[1].Y - aryPoint[0].Y;
+             var step = (a > b) ? 1/a:1/b;
+             var xcenter = aryPoint[0].X;
+             var ycenter = aryPoint[1].Y;
+             this.Canvas.beginPath();
+             this.Canvas.moveTo(aryPoint[0].X, aryPoint[0].Y);
+             for (var i = 0.5*Math.PI; i <= 1.5*Math.PI; i += step)   
+             {
+                 this.Canvas.lineTo(xcenter + a*Math.cos(i), ycenter + b*Math.sin(i)*-1);
+             }  
+         }
+         else if (aryPoint[0].X < aryPoint[1].X && aryPoint[0].Y < aryPoint[1].Y) // 第四象限
+         {
+             var a = aryPoint[1].X - aryPoint[0].X;
+             var b = aryPoint[1].Y - aryPoint[0].Y;
+             var step = (a > b) ? 1/a : 1/b;
+             var xcenter = aryPoint[1].X;
+             var ycenter = aryPoint[0].Y;
+             this.Canvas.beginPath();
+             this.Canvas.moveTo(aryPoint[0].X, aryPoint[0].Y);
+             for (var i = Math.PI; i <= 2*Math.PI; i += step)
+             {
+                 this.Canvas.lineTo(xcenter+a*Math.cos(i), ycenter + b*Math.sin(i)*-1);
+             }
+         }
+         if (this.Canvas.isPointInPath(x,y))
+            return true;
+         else
+            return false;
+         
+    }
+    
 }
 
 
@@ -4544,7 +4837,11 @@ function PriceSplitData()
         [0.04,		0.05,		0.04,	0.001],
         [0.05,		0.1,		0.05,	0.005],
     
-        [0.1,		1,			0.5,	0.05],
+        [0.1,		0.2,		0.1,	0.01],
+        [0.2,		0.4,		0.2,	0.02],
+        [0.4,		0.5,		0.2,	0.01],
+        [0.5,		0.8,		0.2,	0.05],
+        [0.8,		1,			0.5,	0.05],
     
         [1,		2,		1,	0.05],
         [2,		4,		2,	0.05],
@@ -4625,6 +4922,8 @@ function JSChartResource()
     this.Minute.AvPriceColor="rgb(238,127,9)";
 
     this.DefaultTextColor="rgb(120,120,120)";
+    this.DefaultTextFont='14px 微软雅黑';
+
     
     this.UpTextColor="rgb(236,95,76)";
     this.DownTextColor="rgb(107,165,131)";   
@@ -4640,6 +4939,36 @@ function JSChartResource()
     this.CorssCursorTextFont="14px 微软雅黑";
     this.CorssCursorPenColor="rgb(130,130,130)";           //十字光标线段颜色
 
+    
+    this.KLine={ 
+            MaxMin: {Font:'12px 微软雅黑',Color:'rgb(120,120,120)'},   //K线最大最小值显示
+            Info:  //信息地雷
+            {
+                Investor: 
+                {
+                    ApiUrl:'http:///web4.umydata.com/API/NewsInteract', //互动易
+                    Icon:'http://beigo.oss-cn-beijing.aliyuncs.com/cache/test/investor.png',
+                },
+                Announcement:                                           //公告
+                {
+                    ApiUrl:'http:///web4.umydata.com/API/ReportList',
+                    Icon:'http://beigo.oss-cn-beijing.aliyuncs.com/cache/test/announcement.png',
+                    IconQuarter:'http://beigo.oss-cn-beijing.aliyuncs.com/cache/test/announcement2.png',  //季报
+                },
+                Pforecast:  //业绩预告
+                {
+                    ApiUrl:'http://web7.umydata.com/API/StockHistoryDay',
+                    Icon:'http://beigo.oss-cn-beijing.aliyuncs.com/cache/test/pforecast.png',
+                },
+                Research:   //调研
+                {
+                    ApiUrl:'http://web7.umydata.com/API/InvestorRelationsList',
+                    Icon:'http://beigo.oss-cn-beijing.aliyuncs.com/cache/test/research.png',
+                }
+
+            }
+        };
+    
     this.Index={};
     //指标线段颜色
     this.Index.LineColor=
@@ -4654,6 +4983,8 @@ function JSChartResource()
 
     //历史数据api
     this.Index.StockHistoryDayApiUrl="http://web4.umydata.com/API/StockHistoryDay";
+    //市场多空
+    this.Index.MarketLongShortApiUrl="http://web4.umydata.com/API/FactorTiming";
 
     //指标不支持信息
     this.Index.NotSupport={Font:"14px 微软雅黑", TextColor:"rgb(52,52,52)"};
@@ -4669,6 +5000,8 @@ function JSChartResource()
     [
         "rgb(105,105,105)",
     ];
+
+    
    
 }
 
@@ -4710,10 +5043,12 @@ function JSIndexMap()
         ["MASS",    {IsMainIndex:false,  Create:function(){ return new MASSIndex()}  }],
         ["WAD",     {IsMainIndex:false,  Create:function(){ return new WADIndex()}  }],
         ["CHO",     {IsMainIndex:false,  Create:function(){ return new CHOIndex()}  }],
+        ["ADTM",    {IsMainIndex:false,  Create:function(){ return new ADTMIndex()}  }],
 
 
         //公司自己的指标
-        //["市场多空",     {IsMainIndex:false,  Create:function(){ return new MarketLongShortIndex()}  }],
+        ["市场多空",    {IsMainIndex:false,  Create:function(){ return new MarketLongShortIndex()}  }],
+        ["市场择时",    {IsMainIndex:false,  Create:function(){ return new MarketTimingIndex()}  }],
 
     ]
     );
@@ -4976,6 +5311,34 @@ HQIndexFormula.ARRAY_GT=function(data,data2)
     return result;
 }
 
+//数组 data>=data2比较 返回 0/1 数组
+HQIndexFormula.ARRAY_GTE=function(data,data2)
+{
+    var result=[];
+    var IsNumber=typeof(data2)=="number";
+    if (IsNumber)
+    {
+        for(var i in data)
+        {
+            result[i]=(data[i]>=data2 ? 1:0);
+        }
+    }
+    else
+    {
+        var count=Math.max(data.length,data2.length)
+        
+        for(var i=0;i<count;++i)
+        {
+            if (i<data.length && i<data2.length)
+                result[i]=data[i]>=data2[i] ? 1:0;
+            else
+                result[i]=null;
+        }
+    }
+
+    return result;
+}
+
 //数组 data<data2比较 返回 0/1 数组
 HQIndexFormula.ARRAY_LT=function(data,data2)
 {
@@ -4996,6 +5359,34 @@ HQIndexFormula.ARRAY_LT=function(data,data2)
         {
             if (i<data.length && i<data2.length)
                 result[i]=data[i]<data2[i] ? 1:0;
+            else
+                result[i]=null;
+        }
+    }
+
+    return result;
+}
+
+//数组 data<=data2比较 返回 0/1 数组
+HQIndexFormula.ARRAY_LTE=function(data,data2)
+{
+    var result=[];
+    var IsNumber=typeof(data2)=="number";
+    if (IsNumber)
+    {
+        for(var i in data)
+        {
+            result[i]=(data[i]<=data2 ? 1:0);
+        }
+    }
+    else
+    {
+        var count=Math.max(data.length,data2.length)
+        
+        for(var i=0;i<count;++i)
+        {
+            if (i<data.length && i<data2.length)
+                result[i]=data[i]<=data2[i] ? 1:0;
             else
                 result[i]=null;
         }
@@ -5388,6 +5779,7 @@ HQIndexFormula.COUNT=function(data,n)
 //
 function KLineChartContainer(uielement)
 {
+    var _self =this;
     this.newMethod=JSChartContainer;   //派生
     this.newMethod(uielement);
     delete this.newMethod;
@@ -5606,8 +5998,7 @@ function KLineChartContainer(uielement)
             {
                 self.RecvHistroyData(data);
             }
-        });
-        
+        });  
     }
 
     this.RecvHistroyData=function(data)
@@ -5842,8 +6233,40 @@ function KLineChartContainer(uielement)
     this.ChangeSymbol=function(symbol)
     {
         this.Symbol=symbol;
-        if (IsIndexSymbol(symbol)) this.Right=0;  //指数没有复权
-        this.RequestHistoryData();            //请求数据
+        if (IsIndexSymbol(symbol)) this.Right=0;    //指数没有复权
+        this.RequestHistoryData();                  //请求数据
+
+        this.ReqeustKLineInfoData();
+    }
+
+    this.ReqeustKLineInfoData=function()
+    {
+        if (this.ChartPaint.length>0)
+        {
+            var klinePaint=this.ChartPaint[0];
+            klinePaint.InfoData=new Map();
+        }
+
+        //信息地雷信息
+        for(var i in this.ChartInfo)
+        {
+            this.ChartInfo[i].RequestData(this);
+        }
+    }
+
+    //设置K线信息地雷
+    this.SetKLineInfo=function(aryInfo,bUpdate)
+    {
+        for(var i in aryInfo)
+        {
+            var infoItem=g_JSKLineInfoMap.InfoMap.get(aryInfo[i]);
+            if (!infoItem) continue;
+            var item=infoItem.Create();
+            item.MaxReqeustDataCount=this.MaxReqeustDataCount;
+            this.ChartInfo.push(item);
+        }
+
+        if (bUpdate==true) this.ReqeustKLineInfoData();
     }
 
     //叠加股票
@@ -6035,20 +6458,7 @@ function KLineChartContainer(uielement)
 
     //创建该画板右键数据
     window.kLindeContextMenu = new ContextMenu({
-        id:"kLinde",
-        data:[{
-            text: "切换周期",
-            children: Event.getPeriod()
-        }, {
-            text: "行情复权",
-            children: Event.getRight()
-        }, {
-            text: "指标",
-            children: Event.getIndex()
-        }, {
-            text: "叠加品种",
-            children: Event.getOverlay()
-        }, ]
+        id:"kLinde"
     });
     //注册鼠标右键事件
     this.UIElement.oncontextmenu=function(e){
@@ -6061,12 +6471,31 @@ function KLineChartContainer(uielement)
             windowIndex= this.JSChartContainer.GetSubFrameIndex(x,y);
         }
 
+        var dataList=[{
+            text: "切换周期",
+            children: Event.getPeriod()
+        }, {
+            text: "行情复权",
+            children: Event.getRight()
+        }, {
+            text: "指标",
+            children: Event.getIndex()
+        }, {
+            text: "叠加品种",
+            children: Event.getOverlay()
+        }, ];
+
+        if(IsIndexSymbol(_self.Symbol)){
+            dataList.splice(1,1);
+        }
+
         kLindeContextMenu.show({
             windowIndex :windowIndex,
             x:x,
             y:y+46,
             windowWidth:this.clientWidth,
             windowHeight:this.clientHeight,
+            data:dataList
         });
         return false;
     }
@@ -6147,6 +6576,32 @@ function KLineChartContainer(uielement)
                 }
             }
         });
+    }
+
+    //更新信息地雷
+    this.UpdataChartInfo=function()
+    {
+        var mapInfoData=new Map();
+        for(var i in this.ChartInfo)
+        {
+            var infoData=this.ChartInfo[i].Data;
+            for(var j in infoData)
+            {
+                var item=infoData[j];
+                if (mapInfoData.has(item.Date.toString()))
+                {
+                    mapInfoData.get(item.Date.toString()).Data.push(item);
+                }
+                else
+                {
+                    
+                    mapInfoData.set(item.Date.toString(),{Data:new Array(item)});
+                }
+            }
+        }
+
+        var klinePaint=this.ChartPaint[0];
+        klinePaint.InfoData=mapInfoData;
     }
 
     //this.RecvKLineMatchData=function(data)
@@ -8254,6 +8709,90 @@ function CHOIndex()
     } 
 }
 
+/*
+    ADTM 动态买卖气指标
+    DTM:=IF(OPEN<=REF(OPEN,1),0,MAX((HIGH-OPEN),(OPEN-REF(OPEN,1))));
+    DBM:=IF(OPEN>=REF(OPEN,1),0,MAX((OPEN-LOW),(OPEN-REF(OPEN,1))));
+    STM:=SUM(DTM,N);
+    SBM:=SUM(DBM,N);
+    ADTM:IF(STM>SBM,(STM-SBM)/STM,IF(STM=SBM,0,(STM-SBM)/SBM));
+    MAADTM:MA(ADTM,M);
+*/
+function ADTMIndex()
+{
+    this.newMethod=BaseIndex;   //派生
+    this.newMethod('ADTM');
+    delete this.newMethod; 
+
+    this.Index=new Array(
+        new IndexInfo("ADTM",23),
+        new IndexInfo("MAADTM",8),
+    );
+
+    this.Index[0].LineColor=g_JSChartResource.Index.LineColor[0];
+    this.Index[1].LineColor=g_JSChartResource.Index.LineColor[1];
+
+    this.BindData=function(hqChart,windowIndex,hisData)
+    {
+        var paint=hqChart.GetChartPaint(windowIndex);
+
+        if (paint.length!=2) return false;
+
+        var closeData=hisData.GetClose();
+        var openData=hisData.GetOpen();
+        var openRef1Data=HQIndexFormula.REF(openData,1);
+        var lowData=hisData.GetLow();
+        var highData=hisData.GetHigh();
+
+        //DTM:=IF(OPEN<=REF(OPEN,1),0,MAX((HIGH-OPEN),(OPEN-REF(OPEN,1))));
+        var DTMData=HQIndexFormula.ARRAY_IF(
+            HQIndexFormula.ARRAY_LTE(openData,openRef1Data),
+            0,
+            HQIndexFormula.MAX(HQIndexFormula.ARRAY_SUBTRACT(highData,openData),HQIndexFormula.ARRAY_SUBTRACT(openData,openRef1Data))
+        );
+
+        //DBM:=IF(OPEN>=REF(OPEN,1),0,MAX((OPEN-LOW),(OPEN-REF(OPEN,1))));
+        var DBMData=HQIndexFormula.ARRAY_IF(
+            HQIndexFormula.ARRAY_GTE(openData,openRef1Data),
+            0,
+            HQIndexFormula.MAX(HQIndexFormula.ARRAY_SUBTRACT(openData,lowData),HQIndexFormula.ARRAY_SUBTRACT(openData,openRef1Data))
+        );
+
+        //STM:=SUM(DTM,N);
+        var STMData=HQIndexFormula.SUM(DTMData,this.Index[0].Param);
+
+        //SBM:=SUM(DBM,N);
+        var SBMData=HQIndexFormula.SUM(DBMData,this.Index[0].Param);
+
+        //ADTM:IF(STM>SBM,(STM-SBM)/STM,IF(STM=SBM,0,(STM-SBM)/SBM));
+        var ADTMData=HQIndexFormula.ARRAY_IF(
+            HQIndexFormula.ARRAY_GT(STMData,SBMData),
+            HQIndexFormula.ARRAY_DIVIDE(HQIndexFormula.ARRAY_SUBTRACT(STMData,SBMData),STMData),
+            HQIndexFormula.ARRAY_IF(
+                HQIndexFormula.ARRAY_EQ(STMData,SBMData),
+                0,
+                HQIndexFormula.ARRAY_DIVIDE(HQIndexFormula.ARRAY_SUBTRACT(STMData,SBMData),SBMData)
+            )
+        );
+
+        //MAADTM:MA(ADTM,M);
+        var MAADTMData=HQIndexFormula.MA(ADTMData,this.Index[1].Param);
+
+        paint[0].Data.Data=ADTMData;
+        paint[1].Data.Data=MAADTMData;
+
+        var titleIndex=windowIndex+1;
+
+        for(var i in paint)
+        {
+            hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.Index[i].LineColor);
+        }
+
+        hqChart.TitlePaint[titleIndex].Title="ADTM("+ this.Index[0].Param +','+ this.Index[1].Param +")";
+        return true;
+    } 
+}
+
 
 //市场多空
 function MarketLongShortIndex()
@@ -8305,7 +8844,7 @@ function MarketLongShortIndex()
             HistoryData:hisData
         };
 
-        this.FlowEquity=[];
+        this.LongShortData=[];
 
         if (param.HQChart.Period>0)   //周期数据
         {
@@ -8316,11 +8855,10 @@ function MarketLongShortIndex()
 
         //请求数据
         $.ajax({
-            url: g_JSChartResource.Index.StockHistoryDayApiUrl,
+            url: g_JSChartResource.Index.MarketLongShortApiUrl,
             data: 
             {
-                "field": ["name","date","symbol","folwequity"],
-                "symbol": [param.HQChart.Symbol],
+               
             },
             type:"post",
             dataType: "json",
@@ -8336,24 +8874,22 @@ function MarketLongShortIndex()
 
     this.RecvData=function(recvData,param)
     {
-        this.FlowEquity=[];
-
-        if (recvData.stock.length<0) return;
+        if (recvData.data.length<0) return;
 
         var aryData=new Array();
-        for(var i in recvData.stock[0].stockday)
+        for(var i in recvData.data)
         {
-            var item=recvData.stock[0].stockday[i];
+            var item=recvData.data[i];
             var indexData=new SingleData();
-            indexData.Date=item.date;
-            indexData.Value=item.folwequity;
+            indexData.Date=item[0];
+            indexData.Value=item[1];
             aryData.push(indexData);
         }
 
-        var aryFlowEquity=param.HistoryData.GetFittingData(aryData);
+        var aryFittingData=param.HistoryData.GetFittingData(aryData);
 
         var bindData=new ChartData();
-        bindData.Data=aryFlowEquity;
+        bindData.Data=aryFittingData;
         bindData.Period=param.HQChart.Period;   //周期
         bindData.Right=param.HQChart.Right;     //复权
 
@@ -8373,6 +8909,7 @@ function MarketLongShortIndex()
         if (paint.length!=this.Index.length) return false;
        
         //paint[0].Data.Data=SWLData;
+        paint[0].Data.Data=this.LongShortData;
         paint[0].NotSupportMessage=null;
         paint[1].Data.Data[0]=8;
         paint[2].Data.Data[0]=1;
@@ -8391,6 +8928,443 @@ function MarketLongShortIndex()
         return true;
     } 
    
+}
+
+//市场择时
+function MarketTimingIndex()
+{
+    this.newMethod=BaseIndex;   //派生
+    this.newMethod('Market-Timing');
+    delete this.newMethod; 
+
+    this.Index=new Array(
+        new IndexInfo("因子择时",null),
+    );
+
+    this.TimingData; //择时数据
+    this.TitleColor=g_JSChartResource.FrameSplitTextColor
+
+    this.Create=function(hqChart,windowIndex)
+    {
+        for(var i in this.Index)
+        {
+            var paint=new ChartMACD();
+            paint.Canvas=hqChart.Canvas;
+            paint.Name=this.Name+"-"+i.toString();
+            paint.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+            paint.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+            
+            hqChart.ChartPaint.push(paint);
+        }
+    }
+
+    //请求数据
+    this.RequestData=function(hqChart,windowIndex,hisData)
+    {
+        var self = this;
+        var param=
+        {
+            HQChart:hqChart,
+            WindowIndex:windowIndex, 
+            HistoryData:hisData
+        };
+
+        this.LongShortData=[];
+
+        if (param.HQChart.Period>0)   //周期数据
+        {
+            this.NotSupport(param.HQChart,param.WindowIndex,"不支持周期切换");
+            param.HQChart.Draw();
+            return false;
+        }
+
+        //请求数据
+        $.ajax({
+            url: g_JSChartResource.Index.MarketLongShortApiUrl,
+            data: 
+            {
+               
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (recvData) 
+            {
+                self.RecvData(recvData,param);
+            }
+        });
+
+        return true;
+    }
+
+    this.RecvData=function(recvData,param)
+    {
+        if (recvData.data.length<0) return;
+
+        var aryData=new Array();
+        for(var i in recvData.data)
+        {
+            var item=recvData.data[i];
+            var indexData=new SingleData();
+            indexData.Date=item[0];
+            indexData.Value=item[2];
+            aryData.push(indexData);
+        }
+
+        var aryFittingData=param.HistoryData.GetFittingData(aryData);
+
+        var bindData=new ChartData();
+        bindData.Data=aryFittingData;
+        bindData.Period=param.HQChart.Period;   //周期
+        bindData.Right=param.HQChart.Right;     //复权
+
+        this.TimingData=bindData.GetValue();
+        this.BindData(param.HQChart,param.WindowIndex,param.HistoryData);
+
+        param.HQChart.UpdataDataoffset();           //更新数据偏移
+        param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        param.HQChart.Draw();
+    }
+
+
+    this.BindData=function(hqChart,windowIndex,hisData)
+    {
+        var paint=hqChart.GetChartPaint(windowIndex);
+
+        if (paint.length!=this.Index.length) return false;
+       
+        //paint[0].Data.Data=SWLData;
+        paint[0].Data.Data=this.TimingData;
+        paint[0].NotSupportMessage=null;
+       
+        var titleIndex=windowIndex+1;
+
+        for(var i in paint)
+        {
+            hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.TitleColor);
+            hqChart.TitlePaint[titleIndex].Data[i].StringFormat=STRING_FORMAT_TYPE.THOUSANDS;
+            hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision=0;
+        }
+
+        return true;
+    } 
+}
+
+
+/*
+    信息地雷
+*/
+
+/*
+    信息地雷列表
+*/
+function JSKLineInfoMap()
+{
+    this.InfoMap=new Map(
+    [
+        ["互动易",      {Create:function(){ return new InvestorInfo()}  }],
+        ["公告",        {Create:function(){ return new AnnouncementInfo()}  }],
+        ["业绩预告",    {Create:function(){ return new PforecastInfo()}  }],
+        ["调研",        {Create:function(){ return new ResearchInfo()}  }]
+    ]
+    );
+}
+
+var g_JSKLineInfoMap=new JSKLineInfoMap();
+
+JSKLineInfoMap.GetIconUrl=function(type)
+{
+    switch(type)
+    {
+        case KLINE_INFO_TYPE.INVESTOR:
+            return g_JSChartResource.KLine.Info.Investor.Icon;
+            break;
+        case KLINE_INFO_TYPE.PFORECAST:
+            return g_JSChartResource.KLine.Info.Pforecast.Icon;
+        case KLINE_INFO_TYPE.ANNOUNCEMENT:
+            return g_JSChartResource.KLine.Info.Announcement.Icon;
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_1:
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_2:
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_3:
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_4:
+            return g_JSChartResource.KLine.Info.Announcement.IconQuarter;
+        case KLINE_INFO_TYPE.RESEARCH:
+        return g_JSChartResource.KLine.Info.Research.Icon;
+        default:
+            return g_JSChartResource.KLine.Info.Announcement.Icon;
+    }
+}
+
+
+/*
+    互动易
+*/
+function InvestorInfo()
+{
+    this.Data;
+    this.MaxReqeustDataCount=1000;
+
+    this.RequestData=function(hqChart)
+    {
+        var self = this;
+        var param=
+        {
+            HQChart:hqChart,
+        };
+
+        this.Data=[];
+
+        //请求数据
+        $.ajax({
+            url: g_JSChartResource.KLine.Info.Investor.ApiUrl,
+            data: 
+            {
+                "filed": ["question","answerdate","symbol","id"],
+                "symbol": [param.HQChart.Symbol],
+                "querydate":{"StartDate":20160101,"EndDate":20180220},
+                "start":0,
+                "end":this.MaxReqeustDataCount,
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (recvData) 
+            {
+                self.RecvData(recvData,param);
+            }
+        });
+
+        return true;
+    }
+
+    this.RecvData=function(recvData,param)
+    {
+        if (recvData.list.length<=0) return;
+
+        for(var i in recvData.list)
+        {
+            var item=recvData.list[i];
+            var infoData=new KLineInfoData();
+            infoData.Date=item.answerdate;
+            infoData.Title=IFrameSplitOperator.FormatDateString(item.answerdate)+' '+item.question;
+            infoData.InfoType=KLINE_INFO_TYPE.INVESTOR;
+            this.Data.push(infoData);
+        }
+
+        param.HQChart.UpdataChartInfo();
+        param.HQChart.Draw();
+    }
+}
+
+/*
+    公告
+*/
+function AnnouncementInfo()
+{
+    this.Data;
+    this.MaxReqeustDataCount=1000;
+
+    this.RequestData=function(hqChart)
+    {
+        var self = this;
+        var param=
+        {
+            HQChart:hqChart,
+        };
+
+        this.Data=[];
+
+        //请求数据
+        $.ajax({
+            url: g_JSChartResource.KLine.Info.Announcement.ApiUrl,
+            data: 
+            {
+                "filed": ["title","releasedate","symbol","id"],
+                "symbol": [param.HQChart.Symbol],
+                "querydate":{"StartDate":20160101,"EndDate":20180520},
+                "start":0,
+                "end":this.MaxReqeustDataCount,
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (recvData) 
+            {
+                self.RecvData(recvData,param);
+            }
+        });
+
+        return true;
+    }
+
+    this.RecvData=function(recvData,param)
+    {
+        if (recvData.report.length<=0) return;
+
+        for(var i in recvData.report)
+        {
+            var item=recvData.report[i];
+            var infoData=new KLineInfoData();
+            infoData.Date=item.releasedate;
+            infoData.Title=IFrameSplitOperator.FormatDateString(item.releasedate)+' '+item.title;
+            infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT;
+            for(var j in item.type)
+            {
+                var typeItem=item.type[j];
+                switch(typeItem)
+                {
+                    case "一季度报告":
+                        infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_1;
+                        break;
+                    case "半年度报告":
+                        infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_2;
+                        break;
+                    case "三季度报告":
+                        infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_3;
+                        break;
+                    case "年度报告":
+                        infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_4;
+                        break;
+                }
+            }
+            this.Data.push(infoData);
+        }
+
+        param.HQChart.UpdataChartInfo();
+        param.HQChart.Draw();
+    }
+}
+
+
+/*
+    业绩预告
+*/
+function PforecastInfo()
+{
+    this.Data;
+    this.MaxReqeustDataCount=1000;
+
+    this.RequestData=function(hqChart)
+    {
+        var self = this;
+        var param=
+        {
+            HQChart:hqChart,
+        };
+
+        this.Data=[];
+
+        //请求数据
+        $.ajax({
+            url: g_JSChartResource.KLine.Info.Pforecast.ApiUrl,
+            data: 
+            {
+                "field": ["pforecast.type","pforecast.reportdate"],
+                "condition":
+                [
+                    {"item":["pforecast.reportdate","int32","gte","20001231"]}
+                ],
+                "symbol": [param.HQChart.Symbol],
+                "start":0,
+                "end":this.MaxReqeustDataCount,
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (recvData) 
+            {
+                self.RecvData(recvData,param);
+            }
+        });
+
+        return true;
+    }
+
+    this.RecvData=function(recvData,param)
+    {
+        if (recvData.stock.length!=1) return;
+        if (recvData.stock[0].stockday.length<=0) return;
+
+        for(var i in recvData.stock[0].stockday)
+        {
+            var item=recvData.stock[0].stockday[i];
+            if (item.pforecast.length>0)
+            {
+                dataItem=item.pforecast[0];
+                var infoData=new KLineInfoData();
+                infoData.Date= item.date;
+                infoData.Title=IFrameSplitOperator.FormatReportDateString(dataItem.reportdate) + ' ' + dataItem.type;
+                infoData.InfoType=KLINE_INFO_TYPE.PFORECAST;
+                infoData.ExtendData={ type:dataItem.type}
+                this.Data.push(infoData);
+            }
+        }
+
+        param.HQChart.UpdataChartInfo();
+        param.HQChart.Draw();
+    }
+}
+
+/*
+   投资者关系 (调研)
+*/
+function ResearchInfo()
+{
+    this.Data;
+    this.MaxReqeustDataCount=1000;
+
+    this.RequestData=function(hqChart)
+    {
+        var self = this;
+        var param=
+        {
+            HQChart:hqChart,
+        };
+
+        this.Data=[];
+
+        //请求数据
+        $.ajax({
+            url: g_JSChartResource.KLine.Info.Research.ApiUrl,
+            data: 
+            {
+                "filed": ["releasedate","researchdate","level","symbol"],
+                "querydate":{"StartDate":20160101,"EndDate":20180520},
+                "symbol": [param.HQChart.Symbol],
+                "start":0,
+                "end":this.MaxReqeustDataCount,
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (recvData) 
+            {
+                self.RecvData(recvData,param);
+            }
+        });
+
+        return true;
+    }
+
+    this.RecvData=function(recvData,param)
+    {
+        if (recvData.list.length<=0) return;
+
+        for(var i in recvData.list)
+        {
+            var item=recvData.list[i];
+            var infoData=new KLineInfoData();
+            infoData.Date= item.releasedate;
+            infoData.Title=IFrameSplitOperator.FormatDateString(item.researchdate)+"有调研";
+            infoData.InfoType=KLINE_INFO_TYPE.RESEARCH;
+            infoData.ExtendData={ Level:item.level };
+            this.Data.push(infoData);
+            
+        }
+
+        param.HQChart.UpdataChartInfo();
+        param.HQChart.Draw();
+    }
 }
 
 //是否是指数代码

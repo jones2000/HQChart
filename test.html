@@ -84,6 +84,9 @@
 <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
 <script>
 
+
+g_JSChartResource.Index.StockHistoryDayApiUrl="http://opensource.zealink.com/API/StockHistoryDay";
+
 var drawing=document.getElementById("drawing"); 
 
 //确定浏览器支持<canvas>元素  
@@ -95,23 +98,25 @@ var context=drawing.getContext("2d");
 var chart=new KLineChartContainer(drawing);
 chart.KLineApiUrl="http://opensource.zealink.com/API/KLine2";                         //历史K线api地址
 chart.RealtimeApiUrl="http://opensource.zealink.com/API/Stock";                       //实时行情api地址
-chart.KLineMatchUrl="http://web4.umydata.com/API/KLineMatch";                   //形态匹配
+chart.KLineMatchUrl="http://opensource.zealink.com/API/KLineMatch";                   //形态匹配
 
 chart.Create(3);                            //创建3个子窗口
 
 chart.WindowIndex[0]=new CloseMAIndex();
 chart.CreateWindowIndex(0);
 
-chart.WindowIndex[1]=new VolumeIndex();     //创建子窗口2的指标
+chart.WindowIndex[1]=new VolumeIndex();;     //创建子窗口2的指标
 chart.CreateWindowIndex(1);
 
-chart.WindowIndex[2]=new MACDIndex();       //创建子窗口3的指标
+chart.WindowIndex[2]=new KDJIndex();     //创建子窗口3的指标
 chart.CreateWindowIndex(2);
+
+chart.SetKLineInfo(['业绩预告','公告','互动易','调研'],false);
 
 //chart.DragMode=2;   //区间选择模式
 
 chart.Draw();
-chart.ChangeSymbol("000001.sz");
+chart.ChangeSymbol("002230.sz");
 drawing.focus();
 
 //chart.CreateChartDrawPicture("矩形");
@@ -128,7 +133,7 @@ if(drawing2.getContext)
 var context=drawing2.getContext("2d"); 
 
 var chart2=new MinuteChartContainer(drawing2);
-chart2.MinuteApiUrl="http://web4.umydata.com/API/Stock";
+chart2.MinuteApiUrl="http://opensource.zealink.com/API/Stock";
 
 chart2.Create(3);                            //创建3个子窗口
 

@@ -23,8 +23,8 @@ input,canvas{outline:0px;}
 
 
 ::-webkit-scrollbar {
-    width:10px;
-    height:10px;
+    width:8px;
+    height: 8px;
 }
 ::-webkit-scrollbar-button    {
     display:none;
@@ -459,3 +459,16 @@ td.context-menu {
   }
 }
 /*加载层结束*/
+
+.kline-info{
+    position: absolute; 
+    /*opacity: 0.8;*/
+    width: 16px;
+    height: 16px;
+    background-color: #fff;
+    /*border: 2px solid #ff3232;*/
+    color: #ff3232;
+    text-align: center;
+    cursor: pointer;
+    font: bold 12px/1.4 arial;
+}

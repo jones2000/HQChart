@@ -422,6 +422,11 @@ var Event = {
             click: function (windowIndex) {
                 chart.ChangeIndex(windowIndex, 'MIM')
             }
+        }, {
+            text: "FSL",
+            click: function (windowIndex) {
+                chart.ChangeIndex(windowIndex, 'FSL')
+            }
         }, ]
     },
     getOverlay: function () {
