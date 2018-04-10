@@ -746,12 +746,11 @@ ContextMenu.prototype = {
             var left = $topMenu.position().left + trWidth + 1;
             var top = $topMenu.position().top + (trHeight * index);
 
-            if (_self.option.windowWidth - left < trWidth) //超过了右边距
+            if (trWidth > _self.option.position.X + _self.option.position.W - left) //超过了右边距
                 left = left - trWidth - $topMenu.outerWidth() - 2;
 
-            if (_self.option.windowHeight - top < $child.outerHeight())//超过了下边距
+            if ($child.outerHeight() > _self.option.position.Y +_self.option.position.H - top)//超过了下边距
                 top = $topMenu.position().top + $topMenu.outerHeight() - $child.outerHeight();
-
 
             $childMenu.hide();
             $child.css({ left: left + "px", top: top + "px" }).show();
@@ -804,14 +803,15 @@ ContextMenu.prototype = {
             topHeight = $topMenu.outerHeight();
 
         var x = _self.option.x,
-            y = _self.option.y;        
+            y = _self.option.y;
 
-        if (_self.option.windowWidth && (_self.option.windowWidth - x < topWidth)) //超过了右边距
+        if (topWidth > _self.option.position.X + _self.option.position.W- x) //超过了右边距
             x = x - topWidth;
 
-        if (_self.option.windowHeigh && (_self.option.windowHeight - y < topHeight))//超过了下边距
+        if (topHeight > _self.option.position.Y +_self.option.position.H - y)//超过了下边距
             y = y - topHeight;
 
+        _self.hide();
         $topMenu.css({ left: x + "px", top: y + "px" }).show();
     },
     hide: function () {

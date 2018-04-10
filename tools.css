@@ -472,3 +472,9 @@ td.context-menu {
     cursor: pointer;
     font: bold 12px/1.4 arial;
 }
+
+.klineframe-toolbar
+{
+    position: absolute; 
+    text-align:right;
+}
