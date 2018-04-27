@@ -89,7 +89,7 @@ var Global = {
     },
     bindEvent: function () {
         $(document).click(function () {
-            kLindeContextMenu.hide();
+            // kLindeContextMenu.hide();
             Tools.hide();
         });
     }
@@ -136,6 +136,7 @@ var Tools = {
 
         function selected(){
 
+            //return;
             if(chart.DragMode == 0) return;
 
             var list = [{
@@ -278,8 +279,8 @@ var Tools = {
 }
 
 /*事件方法*/
-var Event = {
-    getPeriod: function () {
+/*var Event = {
+    getPeriod: function (chart) {
         return [{
             text: "日线",
             click: function () {
@@ -302,7 +303,7 @@ var Event = {
             }
         }]
     },
-    getRight:function(){
+    getRight:function(chart){
         return [{
             text: "不复权",
             click: function () {
@@ -320,7 +321,7 @@ var Event = {
             }
         }];
     },
-    getIndex: function () {
+    getIndex: function (chart) {
         return [{
             text: "均线",
             click: function (windowIndex) {
@@ -429,7 +430,7 @@ var Event = {
             }
         }, ]
     },
-    getOverlay: function () {
+    getOverlay: function (chart) {
         return [{
             text: "上证指数",
             click: function () {
@@ -462,7 +463,7 @@ var Event = {
             }
         }];
     }
-}
+}*/
 
 /*区间统计*/
 var Interval = {
@@ -484,18 +485,22 @@ var Interval = {
                 case "1":
                     if (_self.data.Start > 1)
                         _self.data.Start--;
+                        $(this).addClass("changColorR").siblings().removeClass("changColorL");
                     break;
                 case "2":
                     if (_self.data.Start < _self.data.End )
                         _self.data.Start++;
+                        $(this).addClass("changColorL").siblings().removeClass("changColorR");
                     break;
                 case "3":
                     if (_self.data.End > _self.data.Start)
                         _self.data.End--;
+                        $(this).addClass("changColorR").siblings().removeClass("changColorL");
                     break;
                 case "4":
                     if ((_self.data.End + 1) < _self.data.Data.Data.length)
                         _self.data.End++;
+                        $(this).addClass("changColorL").siblings().removeClass("changColorR");
                     break;
             }
 
@@ -652,6 +657,7 @@ var KLineMatch = {
 }
 
 /*右键菜单*/
+/*
 function ContextMenu(option) {
     this.option = option || {};
     this.isInit = false;
@@ -660,7 +666,7 @@ function ContextMenu(option) {
 ContextMenu.prototype = {
     init: function () {
         var _self = this;
-        
+
         _self.bindData();
         _self.bindEvent();
 
@@ -668,7 +674,6 @@ ContextMenu.prototype = {
     },
     bindData: function () {
         var _self = this;
-        
 
         var $body = $("body");
 
@@ -680,9 +685,8 @@ ContextMenu.prototype = {
         $topTable.attr({ id: "topTable_" + _self.option.id, cellspacing: "0", cellpadding: "0" }).addClass("context-menu");
         $topMenu.append($topTable);
 
-        
         $topTable.append(getTr(_self.option.data));
-       
+
         for (var i = 0; i < _self.option.data.length; i++) {
             var isHasChildren = typeof _self.option.data[i].children != "undefined";
 
@@ -696,7 +700,7 @@ ContextMenu.prototype = {
                 $childTable.attr({ id: "childTable_" + _self.option.id + i, cellspacing: "0", cellpadding: "0" }).addClass("context-menu");
                 $childMenu.append($childTable);
 
-                
+
                 $childTable.append(getTr(_self.option.data[i].children));
             }
         }
@@ -794,7 +798,7 @@ ContextMenu.prototype = {
     show: function (obj) {
         var _self = this;
         $.extend(_self.option, obj);
-        
+
         if (!_self.isInit)
             _self.init();
        
@@ -821,3 +825,12 @@ ContextMenu.prototype = {
         $("[id^='childMenu_" + _self.option.id + "']").hide();
     }
 }
+
+var KLineInfoEvent=
+{
+    MouseOverEvent:function(event)  //鼠标悬停
+    {
+
+    }
+}
+*/

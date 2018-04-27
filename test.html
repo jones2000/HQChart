@@ -4,13 +4,8 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
 <title>canvas绘图</title>  
     <link rel="stylesheet" href="tools.css" />
-
-    <style>
-        .container{
-          zoom:0.5;
-        }
-    </style>
-     
+    <link rel="stylesheet" href="change-color.css">
+    <link rel="stylesheet" href="panel-set.css">
 </head>  
 <body> 
     <div class="tools">
@@ -24,14 +19,14 @@
                 <td class="name">起始时间：</td>
                 <td>
                     <span class="startDate"></span>
-                    <span class="dateChange" data-op="1"><</span>
-                    <span class="dateChange" data-op="2">></span>
+                    <span class="dateChange dateChange1" data-op="1"></span>
+                    <span class="dateChange dateChange2" data-op="2"></span>
                 </td>
                 <td class="name">终止时间：</td>
                 <td>
                     <span class="endDate"></span>
-                    <span class="dateChange" data-op="3"><</span>
-                    <span class="dateChange" data-op="4">></span>
+                    <span class="dateChange dateChange1" data-op="3"></span>
+                    <span class="dateChange dateChange2" data-op="4"></span>
                 </td>
                 <td class="name">统计个数：</td>
                 <td class="totalCount"></td>
@@ -83,52 +78,82 @@
         <div class="rect5"></div>
     </div>
 
-    
-    <canvas id="drawing" width="800" height="500" tabindex="0">K线</canvas> 
-    <canvas id="drawing2" width="800" height="500" tabindex="1">走势图</canvas>
-    <canvas id="drawing3" width="800" height="500" tabindex="1">历史走势图</canvas>    
+    <!--参数设置弹出面板-->
+    <div class="model-box">
+        <div class="parameter">
+            <div class="parameter-header">
+                <span></span>
+                <strong id="close">close</strong>
+            </div>
+            <div class="parameter-content"></div>
+            <div class="parameter-footer">
+                <button class="submit">确定</button>
+                <button class="cancel">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!--指标弹出面板-->
+    <div class="target-box">
+        <div class="target-panel">
+            <div class="target-header">
+                <span>指标</span>
+                <strong class="close-tar">close</strong>
+            </div>
+            <div class="target-content">
+                <div class="target-left">
+                    <input type="text">
+                    <ul></ul>
+                </div>
+                <div class="target-right">
+                    <ul></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <canvas id="drawing" width="800" height="500" tabindex="0">K线</canvas>  
+    <canvas id="drawing2" width="800" height="500" tabindex="1">走势图</canvas>  
+    <canvas id="drawing3" width="800" height="500" tabindex="1">历史走势图</canvas>  
     
 <script type="text/javascript" src="umychart.js"></script>
 <script type="text/javascript" src="tools.js"></script>
-<script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
 <script>
-
-
 g_JSChartResource.Index.StockHistoryDayApiUrl="http://opensource.zealink.com/API/StockHistoryDay";
-
-var ddd=ToFixedRect(100.445);
 
 var drawing=document.getElementById("drawing"); 
 
-//确定浏览器支持<canvas>元素  
+//确定浏览器支持<canvas>元素
 if(drawing.getContext)
 {  
 //取得绘图上下文对象的引用，“2d”是取得2D上下文对象  
 var context=drawing.getContext("2d"); 
-context.scale(4,4);
 
 var chart=new KLineChartContainer(drawing);
 chart.KLineApiUrl="http://opensource.zealink.com/API/KLine2";                         //历史K线api地址
 chart.RealtimeApiUrl="http://opensource.zealink.com/API/Stock";                       //实时行情api地址
 chart.KLineMatchUrl="http://opensource.zealink.com/API/KLineMatch";                   //形态匹配
-chart.MaxReqeustDataCount=600;
+
 chart.Create(3);                            //创建3个子窗口
+    console.log(chart.Create(3))
 
 chart.WindowIndex[0]=new CloseMAIndex();
 chart.CreateWindowIndex(0);
 
-chart.WindowIndex[1]=new VolumeIndex();;     //创建子窗口2的指标
+chart.WindowIndex[1]=new VolumeIndex();     //创建子窗口2的指标
 chart.CreateWindowIndex(1);
 
-chart.WindowIndex[2]=new MarginRateIndex();     //创建子窗口3的指标
+chart.WindowIndex[2]=new TestIndex();     //创建子窗口3的指标
 chart.CreateWindowIndex(2);
 
-chart.SetKLineInfo(['业绩预告','公告',/*'互动易'*/,'调研'],false);
+chart.SetKLineInfo(['业绩预告','公告',/*'互动易','调研'*/],false);
 
 //chart.DragMode=2;   //区间选择模式
 
 chart.Draw();
-chart.ChangeSymbol("002008.sz");
+chart.ChangeSymbol("002230.sz");
 drawing.focus();
 
 //chart.CreateChartDrawPicture("矩形");
@@ -136,15 +161,15 @@ drawing.focus();
 
 }  
 
-//setInterval('chart.ChangeWindowIndexParam(0)',5000);
+//setInterval('chart.ChangeWindowIndexParam(0)',5000);    //定时更新数据和图形
 
 var drawing2=document.getElementById("drawing2"); 
 
-//确定浏览器支持<canvas>元素  
+//确定浏览器支持<canvas>元素
 if(drawing2.getContext)
 {  
 //取得绘图上下文对象的引用，“2d”是取得2D上下文对象  
-var context=drawing2.getContext("2d"); 
+var context=drawing2.getContext("2d");
 
 var chart2=new MinuteChartContainer(drawing2);
 chart2.MinuteApiUrl="http://opensource.zealink.com/API/Stock";
@@ -161,7 +186,6 @@ chart2.Draw();
 chart2.ChangeSymbol("000001.sz");
 
 }
-
 
 var drawing3=document.getElementById("drawing3"); 
 
@@ -181,11 +205,10 @@ chart3.CreateWindowIndex(2);
 
 chart3.Draw();
 
-chart3.TradeDate=20180409;
-chart3.ChangeSymbol("000001.sz");
+chart3.TradeDate=20180410;
+chart3.ChangeSymbol("000001.sh");
 
 }
-
 
 $(window).resize(resizeCanvas);
 
@@ -197,9 +220,6 @@ function resizeCanvas()
     drawing.width = $(window).width();
     drawing.height = height;
     if (drawing.height<800) drawing.height = 800;
-
-    //drawing.width*=2;
-    //drawing.height*=2;
     chart.Frame.SetSizeChage(true);
     chart.Draw();
 
@@ -235,7 +255,194 @@ $(function () {
         id: "rect"
     });
 
+    //请求指标API
+    function getApi(url){
+        $.ajax({
+            url: url,
+            type: 'get',
+            success: function (res) {
+                var item = res.list;
+                num(item);   //处理list列表
+                test(item);  //处理内容列表
+            }
+        });
+    }
+
+    function num(item) {
+        $.each(item,function(i,result){
+            var htmlList;
+            var contentHtml;
+            htmlList = '<li>' + result.node + '</li>';
+            $(".target-left ul").append(htmlList);
+        });
+        //默认选中第一项
+        $(".target-left ul li:first-child").addClass("active-list");
+    }
+    
+    function test(listNum) {
+        var contentHtml;
+        var conData = [];
+        $.each(listNum,function(index,result){
+            conData.push(result.list);
+        })
+        //页面初始化时显示第一个列表分类下的内容
+        $.each(conData[0],function (i, res) {
+            contentHtml = '<li id='+res.id+'>'+ res.name +'</li>';
+            $(".target-right ul").append(contentHtml);
+        })
+        //切换list
+        $(".target-left ul").delegate("li","click",function () {
+            $(this).addClass("active-list").siblings().removeClass("active-list");
+            var item = $(this).index();
+            $(".target-right ul").html("");
+            $.each(conData[item],function (i, res) {
+                contentHtml = '<li id='+res.id+'>'+ res.name +'</li>';
+                $(".target-right ul").append(contentHtml);
+            })
+        })
+    }
+
+   //切换指标
+    var itemTndex;
+    $("body").delegate("div[identify] .target","click",function () {
+        itemTndex = $(this).parent().attr("identify");  //获取点击元素所在窗口
+        if(itemTndex == 0){
+            positionM(".target-box",0);
+        }else if(itemTndex == 1){
+            positionM(".target-box",280);
+        }else if(itemTndex == 2){
+            positionM(".target-box",360);
+        }
+    })
+    $(".target-right ul").delegate("li","click",function () {
+        var idV = $(this).attr("id");
+        if(itemTndex == 0){      //根据窗口调用切换指标函数ChangeIndex();
+            chart.ChangeIndex(0,idV);
+        }else if(itemTndex == 1){
+            chart.ChangeIndex(1,idV);
+        }else if(itemTndex == 2){
+            chart.ChangeIndex(2,idV);
+        }
+        $(this).addClass("active-list").siblings().removeClass("active-list");
+    });
+
+    //调用接口获取数据
+    getApi('http://beigo.oss-cn-beijing.aliyuncs.com/cache/hqh5/index/commonindextree.json');
+
+
+    //启动参数设置弹出框
+    var paramIndex;
+    //存放原始数据
+    var initData1,initData2,initData3,initData4,initData5,initData6,initData7,initData8;
+    $("body").delegate("div[identify] .parameters","click",function () {
+        var paramIndex = $(this).parent().attr("identify");
+        $(".parameter-content").html("");
+        if(paramIndex == 0){
+            initData1 = chart.WindowIndex[0].Index[0].Param;
+            initData2 = chart.WindowIndex[0].Index[1].Param;
+            initData3 = chart.WindowIndex[0].Index[2].Param;
+            inputs(chart.WindowIndex[0].Index);    //调用循环数据渲染页面函数
+            $(".parameter-header span").html("MA参数设置");
+            positionM(".model-box",0);
+            var ids1 = $(".parameter-content input");
+            for(var i=0;i<ids1.length;i++){
+                var tt = "#"+ids1[i].id;
+                changeValue(tt,0,i);
+            }
+            cancelChange(0,0,initData1);
+            cancelChange(0,1,initData2);
+            cancelChange(0,2,initData3);
+        }else if(paramIndex == 1){
+            initData4 = chart.WindowIndex[1].Index[0].Param;
+            initData5 = chart.WindowIndex[1].Index[1].Param;
+            inputs(chart.WindowIndex[1].Index);    //调用循环数据渲染页面函数
+            $(".parameter-header span").html("VOL参数设置");
+            positionM(".model-box",280);
+            var ids2 = $(".parameter-content input");
+            for(var i=0;i<ids2.length;i++){
+                var tt = "#"+ids2[i].id;
+                console.log(tt)
+                changeValue(tt,1,i);
+            }
+            cancelChange(1,0,initData4);
+            cancelChange(1,1,initData5);
+        }else if(paramIndex == 2){
+            initData6 = chart.WindowIndex[2].Index[0].Param;
+            initData7 = chart.WindowIndex[2].Index[1].Param;
+            initData8 = chart.WindowIndex[2].Index[2].Param;
+            inputs(chart.WindowIndex[2].Index);    //调用循环数据渲染页面函数
+            $(".parameter-header span").html("KDJ参数设置");
+            positionM(".model-box",360);
+            var ids3 = $(".parameter-content input");
+            for(var i=0;i<ids3.length;i++){
+                var tt = "#"+ids3[i].id;
+                changeValue(tt,2,i);
+            }
+            cancelChange(2,0,initData6);
+            cancelChange(2,1,initData7);
+            cancelChange(2,2,initData8);
+        }
+    })
+
+    //循环param数据并渲染到页面
+    function inputs(chartNum){
+        $(chartNum).each(function(i){
+            if(chartNum[i].Param != null){
+                var inputM = '<input class="row-line" id="input'+i+'" value="'+chartNum[i].Param+'" type="number" step="1"/>'+chartNum[i].Name+'<br>';
+                $(".parameter-content").append(inputM);
+            }
+        });
+    }
+    //判断弹出框位置函数
+    function positionM(box,num) {
+        $(box).css({'display':'block','top':num+'px'});//".model-box"
+    }
+
+    //动态监测页面input框的输入值
+    function changeValue(id,index,j) {
+        $(id).mouseup(function () {
+            var valV = parseInt($(this).val());      //获取当前操作的input属性值，转化为整型
+            chart.WindowIndex[index].Index[j].Param = valV;   //为参数属性重新赋值
+            chart.UpdateWindowIndex(index);   //调用更新窗口指标函数，参数用来定位窗口
+        });
+        $(id).keyup(function () {
+            var valV = parseInt($(this).val());
+            chart.WindowIndex[index].Index[j].Param = valV;
+            chart.UpdateWindowIndex(index);    //调用更新窗口指标函数，参数用来定位窗口
+        })
+    }
+
+
+    $(".submit").click(function () {
+        $(".model-box").css('display','none');
+    });
+    function cancelChange(index,i,data) {
+        $(".cancel").click(function () {
+            reData(index,i,data);
+            $(".model-box").css('display','none');
+        })
+    }
+
+
+
+
+    function reData(index,j,initDa) {
+        //console.log(initDa);
+        chart.WindowIndex[index].Index[j].Param = initDa;   //为参数属性重新赋值
+        chart.UpdateWindowIndex(index);   //调用更新窗口指标函数，参数用来定位窗口
+    }
+
+
+    //关闭参数设置弹出框
+    $("#close").click(function () {
+        $(".model-box").css('display','none');
+    })
+    //关闭指标弹出框
+    $(".close-tar").click(function () {
+        $(".target-box").css('display','none');
+    })
 });
+
 
 </script>  
 </body>  
