@@ -510,11 +510,41 @@ function Scanner(code, ErrorHandler)
                 {
                     break;
                 }
-                
+            }
+            else if (ch == 0x7B)      //{ }  注释
+            {
+                this.Index += 1;
+                let comment = this.SkipMultiLineComment();
             }
             else 
             {
                 break;
+            }
+        }
+
+        return comments;
+    }
+
+    this.SkipMultiLineComment = function () 
+    {
+        var comments = [];
+        while (!this.IsEOF()) 
+        {
+            var ch = this.Source.charCodeAt(this.Index);
+            if (Character.IsLineTerminator(ch)) 
+            {
+                ++this.LineNumber;
+                ++this.Index;
+                this.LineStart = this.Index;
+            }
+            else if (ch == 0x7D) 
+            {
+                this.Index += 1;
+                return comments;
+            }
+            else 
+            {
+                ++this.Index;
             }
         }
 
@@ -2867,6 +2897,35 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+    过滤连续出现的信号.
+    用法:FILTER(X,N):X满足条件后,将其后N周期内的数据置为0,N为常量.
+    例如:
+    FILTER(CLOSE>OPEN,5)查找阳线,5天内再次出现的阳线不被记录在内
+    */
+    this.FILTER = function (data, n) 
+    {
+        var result = [];
+        for (let i = 0, j = 0; i < data.length; ++i) 
+        {
+            if (data[i]) 
+            {
+                result[i] = 1;
+                for (j = 0; j < n && j + i + 1 < data.length; ++j) 
+                {
+                    result[j + i + 1] = 0;
+                }
+                i += n;
+            }
+            else 
+            {
+                result[i] = 0;
+            }
+        }
+
+        return result;
+    }
+
     this.BARSLAST=function(data)
     {
         var result=[];
@@ -3555,6 +3614,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.RANGE(args[0],args[1],args[2]);
             case 'EXIST':
                 return this.EXIST(args[0],args[1]);
+            case 'FILTER':
+                return this.FILTER(args[0], args[1]);
             case 'TFILTER':
                 return this.TFILTER(args[0],args[1],args[2]);
             case 'SLOPE':
@@ -3639,9 +3700,10 @@ JSAlgorithm.prototype.IsDivideNumber=function(value)
 /*
    绘图函数 
 */
-function JSDraw(errorHandler)
+function JSDraw(errorHandler, symbolData)
 {
     this.ErrorHandler=errorHandler;
+    this.SymbolData = symbolData;
 
     this.DRAWTEXT=function(condition,price,text)
     {
@@ -3980,6 +4042,24 @@ function JSDraw(errorHandler)
         if (condition.length <= 0) return result;
 
         var IsNumber = typeof (data) == "number";
+        if (typeof (condition) == 'number') 
+        {
+            if (!condition) return result;
+
+            for (var i = 0; i < this.SymbolData.Data.Data.length; ++i) 
+            {
+                if (IsNumber) 
+                {
+                    drawData[i] = data;
+                }
+                else 
+                {
+                    if (i < data.length && this.IsNumber(data[i])) drawData[i] = data[i];
+                    else drawData[i] = null;
+                }
+            }
+            return result;
+        }
 
         for (var i in condition) 
         {
@@ -5026,7 +5106,7 @@ function JSExecute(ast,option)
 
     this.SymbolData=new JSSymbolData(this.AST,option,this);
     this.Algorithm = new JSAlgorithm(this.ErrorHandler, this.SymbolData);
-    this.Draw = new JSDraw(this.ErrorHandler);
+    this.Draw = new JSDraw(this.ErrorHandler, this.SymbolData);
     this.JobList=[];    //执行的任务队列
 
     this.UpdateUICallback=null; //回调
