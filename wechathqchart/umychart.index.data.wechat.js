@@ -768,7 +768,8 @@ JSIndexScript.prototype.TEST = function ()
 50, POINTDOT, COLORGREEN;\n\
 80, POINTDOT, COLORRED;\n\
 做多能量线: SMA((CLOSE - LLV(LOW, 9)) / (HHV(HIGH, 9) - LLV(LOW, 9)) * 100, 5, 1) - 8, COLORRED, LINETHICK3;\n\
-做空能量线: SMA((HHV(HIGH, 36) - CLOSE) / (HHV(HIGH, 36) - LLV(LOW, 36)) * 100, 2, 1), COLORGREEN, LINETHICK3;'
+做空能量线: SMA((HHV(HIGH, 36) - CLOSE) / (HHV(HIGH, 36) - LLV(LOW, 36)) * 100, 2, 1), COLORGREEN, LINETHICK3;\n\
+DRAWICON(做多能量线>做空能量线,做多能量线,11);'
         };
 
     return data;

@@ -557,6 +557,67 @@ function ChartData()
         return result;
     }
 
+    //把财报数据拟合到主图数据,返回 SingleData 数组
+    this.GetFittingFinanceData = function (financeData)
+    {
+        var result = [];
+
+        for (var i = 0, j = 0; i < this.Data.length;) 
+        {
+            var date = this.Data[i].Date;
+
+            if (j + 1 < financeData.length) 
+            {
+                if (financeData[j].Date < date && financeData[j + 1].Date <= date) 
+                {
+                    ++j;
+                    continue;
+                }
+            }
+
+            var item = new SingleData();
+            item.Date = date;
+            item.Value = financeData[j].Value;
+            item.FinanceDate = financeData[j].Date;   //财务日期 调试用
+            result[i] = item;
+
+            ++i;
+        }
+
+        return result;
+    }
+
+    //市值计算 financeData.Value 是股数
+    this.GetFittingMarketValueData = function (financeData) 
+    {
+        var result = [];
+
+        for (var i = 0, j = 0; i < this.Data.length;) 
+        {
+            var date = this.Data[i].Date;
+            var price = this.Data[i].Close;
+
+            if (j + 1 < financeData.length) 
+            {
+                if (financeData[j].Date < date && financeData[j + 1].Date <= date) 
+                {
+                    ++j;
+                    continue;
+                }
+            }
+
+            var item = new SingleData();
+            item.Date = date;
+            item.Value = financeData[j].Value * price;  //市值计算 收盘价*股数
+            item.FinanceDate = financeData[j].Date;   //财务日期 调试用
+            result[i] = item;
+
+            ++i;
+        }
+
+        return result;
+    }
+
     //月线数据拟合
     this.GetFittingMonthData = function (overlayData) {
       var result = new Array();
