@@ -2,6 +2,7 @@
     开源项目 https://github.com/jones2000/HQChart
 
     通达信编译器
+    语法分析基于开源esprima(http://esprima.org)代码改造
 */
 
 import { JSCommonData } from "umychart.data.wechat.js";     //行情数据结构体 及涉及到的行情算法(复权,周期等)  
