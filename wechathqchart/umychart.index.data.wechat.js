@@ -1,4 +1,6 @@
 /*
+    开源项目 https://github.com/jones2000/HQChart
+    
     指标数据脚本
 */
 
@@ -762,14 +764,7 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-'做多能量线: SMA((CLOSE-LLV(LOW,9))/(HHV(HIGH,9)-LLV(LOW,9))*100,5,1)-8,COLORRED,LINETHICK3;\n\
-做空能量线: SMA((HHV(HIGH, 36) - CLOSE) / (HHV(HIGH, 36) - LLV(LOW, 36)) * 100, 2, 1), COLORGREEN, LINETHICK3;\n\
-20, POINTDOT, COLORF00FF0;\n\
-50, POINTDOT, COLORGREEN;\n\
-80, POINTDOT, COLORRED;\n\
-做多能量线: SMA((CLOSE - LLV(LOW, 9)) / (HHV(HIGH, 9) - LLV(LOW, 9)) * 100, 5, 1) - 8, COLORRED, LINETHICK3;\n\
-做空能量线: SMA((HHV(HIGH, 36) - CLOSE) / (HHV(HIGH, 36) - LLV(LOW, 36)) * 100, 2, 1), COLORGREEN, LINETHICK3;\n\
-DRAWICON(做多能量线>做空能量线,做多能量线,11);'
+                'VAR2:FINANCE(43);'
         };
 
     return data;

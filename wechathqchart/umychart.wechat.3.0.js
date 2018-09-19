@@ -1,4 +1,6 @@
 /*
+    开源项目 https://github.com/jones2000/HQChart
+
     封装图形控件 (微信小程序版本)
 */
 

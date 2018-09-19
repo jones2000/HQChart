@@ -1,4 +1,6 @@
 /*
+    开源项目 https://github.com/jones2000/HQChart
+
     通达信编译器
 */
 
