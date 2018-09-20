@@ -1,0 +1,5 @@
+<view class="container">
+  <canvas class="minutechart"  canvas-id="minutechart"
+    style="height:{{Height}}px; width:{{Width}}px;"  
+    bindtouchstart='minutetouchstart' bindtouchmove='minutetouchmove' bindtouchend='minutetouchend'/>
+</view>
