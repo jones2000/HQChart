@@ -4622,7 +4622,7 @@ function JSSymbolData(ast,option,jsExecute)
                 fieldList.push('finance.nprofit');
                 break;
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_AL_RATIO_DATA:
-                fieldList.push('finance.alration');
+                fieldList.push('finance.alratio');
                 break;
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA:
                 fieldList.push('finance.profityoy');
@@ -4776,8 +4776,8 @@ function JSSymbolData(ast,option,jsExecute)
                 case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_AL_RATIO_DATA:
                     var financeData = this.JsonDataToFinance(item);
                     if (!financeData) continue;
-                    if (!this.IsNumber(financeData.Finance.alration)) continue;
-                    indexData.Value = financeData.Finance.alration;       //资产负债率
+                    if (!this.IsNumber(financeData.Finance.alratio)) continue;
+                    indexData.Value = financeData.Finance.alratio;       //资产负债率
                     bFinanceData = true;
                     break;
                 case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA:
