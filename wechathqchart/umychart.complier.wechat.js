@@ -682,6 +682,7 @@ function Node()
     this.IsNeedLatestData=false;        //是否需要最新的个股行情数据
     this.IsNeedSymbolData=false;        //是否需要下载股票数据
     this.IsNeedFinanceData=new Set();   //需要下载的财务数据
+    this.IsNeedMarginData = new Set();
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -692,6 +693,12 @@ function Node()
 
         //加载财务数据
         for(var jobID of this.IsNeedFinanceData)
+        {
+            jobs.push(jobID);
+        }
+
+        //加载融资融券
+        for (var jobID of this.IsNeedMarginData) 
         {
             jobs.push(jobID);
         }
@@ -742,12 +749,21 @@ function Node()
         {
             let jobID=JS_EXECUTE_JOB_ID.GetFinnanceJobID(args[0].Value);
             if (jobID && !this.IsNeedFinanceData.has(jobID))  this.IsNeedFinanceData.add(jobID);
+            return;
+        }
+
+        if (callee.Name === 'MARGIN') 
+        {
+            let jobID = JS_EXECUTE_JOB_ID.GetMarginJobID(args[0].Value);
+            if (jobID && !this.IsNeedMarginData.has(jobID)) this.IsNeedMarginData.add(jobID);
+            return;
         }
 
         if (callee.Name == 'COST' || callee.Name == 'WINNER')   //筹码都需要换手率
         {
             if (!this.IsNeedFinanceData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA))
                 this.IsNeedFinanceData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA);
+            return;
         }
     }
 
@@ -4168,6 +4184,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.LatestData;            //最新行情
     this.IndexData;             //大盘指数
     this.FinanceData=new Map(); //财务数据
+    this.MarginData = new Map();  //融资融券
     
    
     //使用option初始化
@@ -4824,6 +4841,194 @@ function JSSymbolData(ast,option,jsExecute)
         this.FinanceData.set(jobID, stockData);
     }
 
+    //融资融券函数
+    this.GetMarginCacheData = function (id, node) 
+    {
+        let jobID = JS_EXECUTE_JOB_ID.GetMarginJobID(id);
+        if (!jobID) this.Execute.ThrowUnexpectedNode(node, '不支持MARGIN(' + id + ')');
+        if (this.MarginData.has(jobID)) return this.MarginData.get(jobID);
+
+        return [];
+    }
+
+    //下融资融券
+    this.GetMarginData = function (jobID) 
+    {
+        if (this.MarginData.has(jobID)) return this.Execute.RunNextJob();
+
+        console.log('[JSSymbolData::GetMarginData] jobID=', jobID);
+        var self = this;
+        let fieldList = ["name", "date", "symbol"];
+
+        switch (jobID) 
+        {
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE:           //融资融券余额
+                fieldList.push("margin.balance");
+                break;
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE:              //融资占比
+                fieldList.push("margin.rate");
+                break;
+
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE:       //买入信息-融资余额
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT:        //买入信息-买入额
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY:         //买入信息-偿还额
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET:           //买入信息-融资净买入
+                fieldList.push("margin.buy");
+                break;
+
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE:      //卖出信息-融券余量
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME:       //卖出信息-卖出量
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY:        //卖出信息-偿还量
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET:          //卖出信息-融券净卖出
+                fieldList.push("margin.sell");
+                break;
+        }
+
+        //请求数据
+        wx.request({
+            url: this.StockHistoryDayApiUrl,
+            data:
+                {
+                    "field": fieldList,
+                    "symbol": [this.Symbol],
+                    "orderfield": "date"
+                },
+            method: 'POST',
+            dataType: "json",
+            async: true,
+            success: function (recvData) {
+                self.RecvMarginData(recvData, jobID);
+                self.Execute.RunNextJob();
+            }
+        });
+    }
+
+    this.RecvMarginData = function (recvData, jobID) 
+    {
+        var data = recvData.data;
+        //console.log(data);
+        if (!data.stock || data.stock.length != 1) return;
+
+        let stock = data.stock[0];
+        var aryData = new Array();
+        var aryData2 = [], aryData3 = [], aryData4 = [];  //其他3个数据
+        for (let i in stock.stockday) 
+        {
+            var item = stock.stockday[i];
+            var marginData = item.margin;
+            if (!marginData) continue;
+
+            let indexData = new JSCommonData.SingleData();
+            indexData.Date = item.date;
+
+            switch (jobID) 
+            {
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE:
+                    if (!this.IsNumber(marginData.balance)) continue;
+                    indexData.Value = marginData.balance; //融资融券余额
+                    aryData.push(indexData);
+                    break;
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE:
+                    if (!this.IsNumber(marginData.rate)) continue;
+                    indexData.Value = marginData.rate;    //融资占比
+                    aryData.push(indexData);
+                    break;
+
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE:       //买入信息-融资余额
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT:        //买入信息-买入额
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY:         //买入信息-偿还额
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET:           //买入信息-融资净买入
+                    var buyData = marginData.buy;
+                    if (!buyData) continue;
+                    if (!this.IsNumber(buyData.balance) || !this.IsNumber(buyData.amount) || !this.IsNumber(buyData.repay) || !this.IsNumber(buyData.net)) continue;
+
+                    indexData.Value = buyData.balance;
+                    var indexData2 = new JSCommonData.SingleData();
+                    indexData2.Date = item.date;
+                    indexData2.Value = buyData.amount;
+                    var indexData3 = new JSCommonData.SingleData();
+                    indexData3.Date = item.date;
+                    indexData3.Value = buyData.repay;
+                    var indexData4 = new JSCommonData.SingleData();
+                    indexData4.Date = item.date;
+                    indexData4.Value = buyData.net;
+
+                    aryData.push(indexData);
+                    aryData2.push(indexData2);
+                    aryData3.push(indexData3);
+                    aryData4.push(indexData4);
+                    break;
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE:      //卖出信息-融券余量
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME:       //卖出信息-卖出量
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY:        //卖出信息-偿还量
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET:          //卖出信息-融券净卖出
+                    var sellData = marginData.sell;
+                    if (!sellData) continue;
+                    if (!this.IsNumber(sellData.balance) || !this.IsNumber(sellData.volume) || !this.IsNumber(sellData.repay) || !this.IsNumber(sellData.net)) continue;
+
+                    indexData.Value = buyData.balance;
+                    var indexData2 = new JSCommonData.SingleData();
+                    indexData2.Date = item.date;
+                    indexData2.Value = buyData.volume;
+                    var indexData3 = new JSCommonData.SingleData();
+                    indexData3.Date = item.date;
+                    indexData3.Value = buyData.repay;
+                    var indexData4 = new JSCommonData.SingleData();
+                    indexData4.Date = item.date;
+                    indexData4.Value = buyData.net;
+
+                    aryData.push(indexData);
+                    aryData2.push(indexData2);
+                    aryData3.push(indexData3);
+                    aryData4.push(indexData4);
+                    break;
+                default:
+                    continue;
+            }
+        }
+
+        var allData = [];
+        if (jobID === JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE || jobID === JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE) 
+        {
+            allData.push({ JobID: jobID, Data: aryData });
+        }
+        else if (jobID === JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE || jobID === JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT ||
+            jobID === JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY || jobID === JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET) 
+        {
+            allData.push({ JobID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE, Data: aryData });
+            allData.push({ JobID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT, Data: aryData2 });
+            allData.push({ JobID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY, Data: aryData3 });
+            allData.push({ JobID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET, Data: aryData4 });
+        }
+        else if (jobID === JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE || jobID === JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME ||
+            jobID === JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY || jobID === JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET) 
+        {
+            allData.push({ JobID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE, Data: aryData });
+            allData.push({ JobID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME, Data: aryData2 });
+            allData.push({ JobID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY, Data: aryData3 });
+            allData.push({ JobID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET, Data: aryData4 });
+        }
+
+        for (let i in allData) 
+        {
+            let aryFixedData = this.Data.GetFittingData(allData[i].Data);
+
+            var bindData = new JSCommonData.ChartData();
+            bindData.Data = aryFixedData;
+            bindData.Period = this.Period;    //周期
+
+            if (bindData.Period > 0)          //周期数据
+            {
+                var periodData = bindData.GetPeriodSingleData(bindData.Period);
+                bindData.Data = periodData;
+            }
+
+            let data = bindData.GetValue();
+            this.MarginData.set(allData[i].JobID, data);
+        }
+    }
+
+
    
     this.JsonDataToHistoryData=function(data)
     {
@@ -5046,7 +5251,20 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_CAPITAL_DATA: 200,               //流通股本（手）
     JOB_DOWNLOAD_EXCHANGE_DATA: 201,              //换手率 成交量/流通股本*100
 
-    JOB_RUN_SCRIPT:1000, //执行脚本
+    JOB_DOWNLOAD_MARGIN_BALANCE: 1000,           //融资融券余额
+    JOB_DOWNLOAD_MARGIN_RATE: 1001,              //融资占比
+
+    JOB_DOWNLOAD_MARGIN_BUY_BALANCE: 1010,       //买入信息-融资余额
+    JOB_DOWNLOAD_MARGIN_BUY_AMOUNT: 1011,        //买入信息-买入额
+    JOB_DOWNLOAD_MARGIN_BUY_REPAY: 1012,         //买入信息-偿还额
+    JOB_DOWNLOAD_MARGIN_BUY_NET: 1013,           //买入信息-融资净买入
+
+    JOB_DOWNLOAD_MARGIN_SELL_BALANCE: 1020,      //卖出信息-融券余量
+    JOB_DOWNLOAD_MARGIN_SELL_VOLUME: 1021,       //卖出信息-卖出量
+    JOB_DOWNLOAD_MARGIN_SELL_REPAY: 1022,        //卖出信息-偿还量
+    JOB_DOWNLOAD_MARGIN_SELL_NET: 1023,          //卖出信息-融券净卖出
+
+    JOB_RUN_SCRIPT:10000, //执行脚本
 
     GetFinnanceJobID:function(value)
     {
@@ -5071,6 +5289,29 @@ var JS_EXECUTE_JOB_ID=
     
         if (dataMap.has(value)) return dataMap.get(value);
     
+        return null;
+    },
+
+    //融资融券
+    GetMarginJobID: function (value) 
+    {
+        let dataMap = new Map([
+            [1, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE],          //MARGIN(1)   融资融券余额
+            [2, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE],             //MARGIN(2)   融资占比
+
+            [3, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE],       //MARGIN(3)   买入信息-融资余额
+            [4, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT],        //MARGIN(4)   买入信息-买入额
+            [5, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY],         //MARGIN(5)   买入信息-偿还额
+            [6, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET],           //MARGIN(6)   买入信息-融资净买入
+
+            [7, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE],      //MARGIN(7)   卖出信息-融券余量
+            [8, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME],       //MARGIN(8)   卖出信息-卖出量
+            [9, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY],        //MARGIN(9)   卖出信息-偿还量
+            [10, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET],         //MARGIN(10)  卖出信息-融券净卖出
+        ]);
+
+        if (dataMap.has(value)) return dataMap.get(value);
+
         return null;
     }
 
@@ -5158,6 +5399,18 @@ function JSExecute(ast,option)
             
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_RELEASE_DATE_DATA:
                 return this.SymbolData.GetCompanyReleaseDate(jobName);
+
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE:
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE:
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE:       //买入信息-融资余额
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT:        //买入信息-买入额
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY:         //买入信息-偿还额
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET:           //买入信息-融资净买入
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE:      //卖出信息-融券余量
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME:       //卖出信息-卖出量
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY:        //卖出信息-偿还量
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET:          //卖出信息-融券净卖出
+                return this.SymbolData.GetMarginData(jobName);
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
@@ -5512,6 +5765,9 @@ function JSExecute(ast,option)
                 break;
             case 'FINANCE':
                 node.Out=this.SymbolData.GetFinanceCacheData(args[0],node);
+                break;
+            case "MARGIN":
+                node.Out = this.SymbolData.GetMarginCacheData(args[0], node);
                 break;
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args,node);
