@@ -14,11 +14,22 @@
         <div style="margin-bottom:2px;">
             <span style="padding-left:2px;">指标名称：</span>
             <input style="height:28px;padding-left:5px;" id="code_txt_index" />
+            <select style="height:32px;width:70px;" id="code_sel_ChangeScriptIndex">
+                <option value="1">副图</option>
+                <option value="0">主图</option>
+            </select>
             <button style="height:32px;padding:0 8px;" id="code_btn_execute">执行</button>
 
             <span style="padding-left:2px;">股票代码：</span>
             <input style="height:28px;padding-left:5px;" id="code_txt_symbol" />
             <button style="height:32px;padding:0 8px;" id="code_btn_change">切换股票</button>
+
+            <label id="code_lab_isDebug">
+                <input type="checkbox" />
+                <span style="margin-top:-2px;">输出调试信息</span>
+            </label>
+
+            <button style="height:32px;padding:0 8px;" id="code_btn_save">保存</button>
         </div>
         <div style="width:19.5%;float:left;" class="table">
             <table cellpadding="0" cellspacing="0">
@@ -79,7 +90,7 @@
 <script>
 
 
-JS_EXECUTE_DEBUG_LOG=true;
+JS_EXECUTE_DEBUG_LOG=false;
 
 function getURLParams(name) 
 {
@@ -106,13 +117,13 @@ function resizeCanvas()
 $(function ()
 {
     var symbol=getURLParams('symbol');
-    if (symbol==null) symbol='002168.sz';
+    if (symbol==null) symbol='600984.sh';
 
     var aryIndex=new Array();
 
     var index=getURLParams('index');        //指标1
-    if (index==null) index='均线';
-    aryIndex.push({"Index":index,"Modify":false,"Change":false});
+    if (index==null) index='MA';
+    aryIndex.push({"Index":index,"Modify":true,"Change":true});
 
 /*
     var index2=getURLParams('index2');      //指标2
@@ -131,11 +142,11 @@ ADX: EXPMEMA(ABS(MDI-PDI)/(MDI+PDI)*100,MM),COLORFFB5C5;\n\
 ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
 
     var jsIndexData=new JSIndexScript();
-    let testIndex=jsIndexData.Get('KDJ');
+    let testIndex=jsIndexData.Get('UOS');
     console.log(testIndex);
 
     //指标3
-    let scriptIndex={Name:testIndex.Name, Script:testIndex.Script, Args:testIndex.Args, "Modify":false,"Change":false};
+    let scriptIndex={Name:testIndex.Name, Script:testIndex.Script, Args:testIndex.Args, "Modify":true,"Change":true};
     aryIndex.push(scriptIndex);
 
     // 创建股票K线图
@@ -245,35 +256,57 @@ ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
     $("#code_btn_execute").click(function () {
         let code = jsEditor.doc.getValue();
         let name = $.trim($("#code_txt_index").val());
-        let args = [];
+        
+       
+        let index = { Name: name, Script: code, Args: getArgs(), "Modify": false, "Change": false };
+        jsChart.ChangeScriptIndex(parseInt($("#code_sel_ChangeScriptIndex").val()), index);    //切换第2个窗口指标
+    });
+
+    function getArgs() {
+        var args = [];
 
         $("#code .table table tr").each(function (i) {
             if (i == 0) return true;
-           
+
             $this = $(this);
 
             var name = $.trim($this.find("td").eq(0).text()),
                 value = $.trim($this.find("td").eq(3).text())
-            
+
             if (!name || !value)
                 return true;
 
-            value=parseInt(value);
+            value = parseInt(value);
 
             args.push({
                 Name: name,
                 Value: value
             });
         });
-       
-        let index = { Name: name, Script: code, Args: args, "Modify": false, "Change": false };
-        jsChart.ChangeScriptIndex(1, index);    //切换第2个窗口指标
-    });
+
+        return args;
+    }
 
     $("#code_btn_change").click(function () {
         let strSymbol = $.trim($("#code_txt_symbol").val());
         jsChart.ChangeSymbol(strSymbol); 
     });
+
+    JS_EXECUTE_DEBUG_LOG = $("#code_lab_isDebug input[type='checkbox']").is(":checked");
+    $("#code_lab_isDebug").click(function () {
+        JS_EXECUTE_DEBUG_LOG = $(this).find("input[type='checkbox']").is(":checked");
+    });
+
+    $("#code_btn_save").click(function () {
+        var data = {
+            index: $.trim($("#code_txt_index").val()),
+            code: jsEditor.doc.getValue(),
+            args: getArgs()
+        };
+
+        localStorage["data"] = JSON.stringify(data);
+    });
+    
 })
 
 function unlockIndex(indexName)
