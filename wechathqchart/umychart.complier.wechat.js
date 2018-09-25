@@ -4338,6 +4338,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.Data=null;             //个股数据
     this.Period=0;              //周期
     this.Right=0;               //复权
+    this.DataType = 0;          //默认K线数据 2=分钟走势图数据
 
     this.KLineApiUrl = g_JSComplierResource.Domain+"/API/KLine2";                   //日线
     this.MinuteKLineApiUrl = g_JSComplierResource.Domain +'/API/KLine3';             //分钟K线
@@ -4356,11 +4357,15 @@ function JSSymbolData(ast,option,jsExecute)
     //使用option初始化
     if (option)
     {
+        if (option.HQDataType) this.DataType = option.HQDataType;
         if (option.Data) 
         {
             this.Data=option.Data;
-            this.Period=option.Data.Period; //周期
-            this.Right=option.Data.Right;   //复权
+            if (this.DataType != 2)   //2=分钟走势图数据 没有周期和复权
+            {
+                this.Period=option.Data.Period; //周期
+                this.Right=option.Data.Right;   //复权
+            }
             //this.Data=null;
         }
 
@@ -4562,6 +4567,27 @@ function JSSymbolData(ast,option,jsExecute)
            
         let self=this;
 
+        if (this.DataType === 2)  //当天分钟数据
+        {
+            wx.request({
+                url: self.RealtimeApiUrl,
+                data:
+                {
+                    "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol", "amount", "date", "minute", "time", "minutecount"],
+                    "symbol": [self.Symbol],
+                    "start": -1
+                },
+                method: 'POST',
+                dataType: "json",
+                async: true,
+                success: function (recvData) {
+                    self.RecvMinuteData(recvData);
+                    self.Execute.RunNextJob();
+                }
+            });
+            return;
+        }
+
         if (this.Period<=3)     //请求日线数据
         {
             wx.request({
@@ -4656,6 +4682,20 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         this.Name = data.name;
+    }
+
+    //最新的分钟数据走势图
+    this.RecvMinuteData = function (recvData) 
+    {
+        let data = recvData.data;
+        console.log('[JSSymbolData::RecvMinuteData] recv data', data);
+
+        var aryMinuteData = this.JsonDataToMinuteData(data);
+        this.Data = new JSCommonData.ChartData();
+        this.Data.DataType = 2; /*分钟走势图数据 */
+        this.Data.Data = aryMinuteData;
+
+        this.Name = data.stock[0].name;
     }
 
     this.GetSymbolCacheData=function(dataName)
@@ -5283,6 +5323,35 @@ function JSSymbolData(ast,option,jsExecute)
             }
         }
         return aryDayData;
+    }
+
+    //API 返回数据 转化为array[]
+    this.JsonDataToMinuteData = function (data) 
+    {
+        var aryMinuteData = new Array();
+        for (var i in data.stock[0].minute) 
+        {
+            var jsData = data.stock[0].minute[i];
+            var item = new JSCommonData.MinuteData();
+
+            item.Close = jsData.price;
+            item.Open = jsData.open;
+            item.High = jsData.high;
+            item.Low = jsData.low;
+            item.Vol = jsData.vol; //股
+            item.Amount = jsData.amount;
+            if (i == 0)      //第1个数据 写死9：25
+                item.DateTime = data.stock[0].date.toString() + " 0925";
+            else
+                item.DateTime = data.stock[0].date.toString() + " " + jsData.time.toString();
+            item.Increate = jsData.increate;
+            item.Risefall = jsData.risefall;
+            item.AvPrice = jsData.avprice;
+
+            aryMinuteData[i] = item;
+        }
+
+        return aryMinuteData;
     }
 
     //CODELIKE 模糊股票代码

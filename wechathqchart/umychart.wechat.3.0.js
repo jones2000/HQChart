@@ -279,14 +279,31 @@ function JSChart(element)
             }
         }
 
-        for(var i in option.Windows)
+        
+        let scriptData = new JSCommonIndexScript.JSIndexScript();
+        for (var i in option.Windows)   //分钟数据指标从第3个指标窗口设置
         {
-            var item=option.Windows[i];
-            var indexItem=JSIndexMap.Get(item.Index);
-            if (!indexItem) return null;
+            var item = option.Windows[i];
+            if (item.Script) 
+            {
+                chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(item.Name, item.Script, item.Args);    //脚本执行
+            }
+            else 
+            {
+                var indexItem = JSIndexMap.Get(item.Index);
+                if (indexItem) 
+                {
+                    chart.WindowIndex[2 + parseInt(i)] = indexItem.Create();       //创建子窗口的指标
+                    chart.CreateWindowIndex(2 + parseInt(i));
+                }
+                else 
+                {
+                    let indexInfo = scriptData.Get(item.Index);
+                    if (!indexInfo) continue;
 
-            chart.WindowIndex[2+parseInt(i)]=indexItem.Create();       //创建子窗口3的指标
-            chart.CreateWindowIndex(2+parseInt(i));
+                    chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args);    //脚本执行
+                }
+            }
         }
 
         return chart;
@@ -578,6 +595,7 @@ JSChart.SetDomain=function(domain,cacheDomain)
 */
 function JSChartContainer(uielement)
 {
+    this.ClassName = 'JSChartContainer';
     var _self = this;
     this.Frame;                                     //框架画法
     this.ChartPaint=new Array();                    //图形画法
@@ -8634,6 +8652,7 @@ function KLineChartContainer(uielement)
     this.newMethod(uielement);
     delete this.newMethod;
 
+    this.ClassName = 'KLineChartContainer';
     this.WindowIndex=new Array();
     this.Symbol;
     this.Name;
@@ -9791,6 +9810,7 @@ function MinuteChartContainer(uielement)
     this.newMethod(uielement);
     delete this.newMethod;
 
+    this.ClassName = 'MinuteChartContainer';
     this.WindowIndex=new Array();
     this.Symbol;
     this.Name;
@@ -9900,6 +9920,30 @@ function MinuteChartContainer(uielement)
         }
     }
 
+    //删除某一个窗口的指标
+    this.DeleteIndexPaint = function (windowIndex) 
+    {
+        let paint = new Array();         
+        for (let i in this.ChartPaint)  //踢出当前窗口的指标画法
+        {
+            let item = this.ChartPaint[i];
+
+            if (i == 0 || item.ChartFrame != this.Frame.SubFrame[windowIndex].Frame)
+                paint.push(item);
+        }
+
+        //清空指定最大最小值
+        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = null;
+        this.Frame.SubFrame[windowIndex].Frame.IsLocked = false;          //解除上锁
+
+        this.ChartPaint = paint;
+
+        //清空东条标题
+        var titleIndex = windowIndex + 1;
+        this.TitlePaint[titleIndex].Data = [];
+        this.TitlePaint[titleIndex].Title = null;
+    }
+
     this.CreateStockInfo=function()
     {
         this.ExtendChartPaint[0]=new StockInfoExtendChartPaint();
@@ -9954,7 +9998,20 @@ function MinuteChartContainer(uielement)
         paint.Name="Overlay-KLine";
         this.OverlayChartPaint[0]=paint;
         */
+    }
 
+    //切换成 脚本指标
+    this.ChangeScriptIndex = function (windowIndex, indexData) 
+    {
+        this.DeleteIndexPaint(windowIndex);
+        this.WindowIndex[windowIndex] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args);    //脚本执行
+
+        var bindData = this.SourceData;
+        this.BindIndexData(windowIndex, bindData);   //执行脚本
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
     }
 
     //切换股票代码
@@ -10075,6 +10132,18 @@ function MinuteChartContainer(uielement)
     this.BindIndexData=function(windowIndex,hisData)
     {
         if (!this.WindowIndex[windowIndex]) return;
+
+        if (typeof (this.WindowIndex[windowIndex].RequestData) == "function")          //数据需要另外下载的.
+        {
+            this.WindowIndex[windowIndex].RequestData(this, windowIndex, hisData);
+            return;
+        }
+        if (typeof (this.WindowIndex[windowIndex].ExecuteScript) == 'function') 
+        {
+            this.WindowIndex[windowIndex].ExecuteScript(this, windowIndex, hisData);
+            return;
+        }
+
         this.WindowIndex[windowIndex].BindData(this,windowIndex,hisData);
     }
 
@@ -10387,6 +10456,7 @@ function CustomKLineChartContainer(uielement)
     this.newMethod(uielement);
     delete this.newMethod;
 
+    this.ClassName = 'CustomKLineChartContainer';
     this.ChangeRight=null;  //没有复权设置
     this.SplashTitle = '计算指数数据';
 
@@ -10924,8 +10994,11 @@ function ScriptIndex(name,script,args)
             Self:this
         };
 
+        let hqDataType = 0;   //默认K线
+        if (hqChart.ClassName === 'MinuteChartContainer') hqDataType = 2;   //分钟数据
         let option=
         {
+            HQDataType: hqDataType,
             Symbol:hqChart.Symbol, 
             Data:hisData,
             Callback:this.RecvResultData, CallbackParam:param,
