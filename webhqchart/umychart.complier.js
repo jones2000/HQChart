@@ -3860,6 +3860,41 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    /*
+    两条线维持一定周期后交叉.
+    用法:LONGCROSS(A,B,N)表示A在N周期内都小于B,本周期从下方向上穿过B时返回1,否则返回0
+    */
+    this.LONGCROSS=function(data,data2,n)
+    {
+        var result=[];
+        var count=Math.max(data.length,data2.length);
+        for(let i=0;i<count;++i)
+        {
+            result[i]=0;
+            if (i-1<0) continue;
+            if (i>=data.length || i>=data2.length) continue;
+            if (!this.IsNumber(data[i]) || !this.IsNumber(data2[i]) || !this.IsNumber(data[i-1]) || !this.IsNumber(data2[i-1])) continue;
+
+            if (data[i]>data2[i] && data[i-1]<data2[i-1]) result[i]=1;
+        }
+
+        for(let i=0,j=0;i<count;++i)
+        {
+            if (!result[i]) continue;
+
+            for(j=1;j<=n && i-j>=0;++j)
+            {
+                if (data[i-j]>=data2[i-j]) 
+                {
+                    result[i]=0;
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -3895,6 +3930,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.MULAR(args[0], args[1]);
             case 'CROSS':
                 return this.CROSS(args[0], args[1]);
+            case 'LONGCROSS':
+                return this.LONGCROSS(args[0], args[1], args[2]);
             case 'AVEDEV':
                 return this.AVEDEV(args[0], args[1]);
             case 'STD':
@@ -4475,6 +4512,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.Data=null;             //个股数据
     this.Period=0;              //周期
     this.Right=0;               //复权
+    this.DataType=0;            //默认K线数据 2=分钟走势图数据
 
     this.KLineApiUrl="https://opensource.zealink.com/API/KLine2";                   //日线
     this.MinuteKLineApiUrl='https://opensource.zealink.com/API/KLine3';             //分钟K线
@@ -4493,11 +4531,15 @@ function JSSymbolData(ast,option,jsExecute)
     //使用option初始化
     if (option)
     {
+        if (option.HQDataType) this.DataType=option.HQDataType;
         if (option.Data) 
         {
             this.Data=option.Data;
-            this.Period=option.Data.Period; //周期
-            this.Right=option.Data.Right;   //复权
+            if (this.DataType!=2)   //2=分钟走势图数据 没有周期和复权
+            {
+                this.Period=option.Data.Period; //周期
+                this.Right=option.Data.Right;   //复权
+            }
             //this.Data=null;
         }
 
@@ -4699,6 +4741,28 @@ function JSSymbolData(ast,option,jsExecute)
 
         let self=this;
 
+        if (this.DataType===2)  //当天分钟数据
+        {
+            $.ajax({
+                url: self.RealtimeApiUrl,
+                data:
+                {
+                    "field": ["name","symbol","yclose","open","price","high","low","vol","amount","date","minute","time","minutecount"],
+                    "symbol": [self.Symbol],
+                    "start": -1
+                },
+                type:"post",
+                dataType: "json",
+                async:true,
+                success: function (recvData)
+                {
+                    self.RecvMinuteData(recvData);
+                    self.Execute.RunNextJob();
+                }
+            });
+            return;
+        }
+
         if (this.Period<=3)     //请求日线数据
         {
             $.ajax({
@@ -4791,6 +4855,19 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         this.Name=data.name;
+    }
+
+    //最新的分钟数据走势图
+    this.RecvMinuteData=function(data)
+    {
+        console.log('[JSSymbolData::RecvMinuteData] recv data' , data);
+
+        var aryMinuteData=this.JsonDataToMinuteData(data);
+        this.Data=new ChartData();
+        this.Data.DataType=2; /*分钟走势图数据 */
+        this.Data.Data=aryMinuteData;
+
+        this.Name=data.stock[0].name;
     }
 
     this.GetSymbolCacheData=function(dataName)
@@ -5417,6 +5494,35 @@ function JSSymbolData(ast,option,jsExecute)
             }
         }
         return aryDayData;
+    }
+
+    //API 返回数据 转化为array[]
+    this.JsonDataToMinuteData=function(data)
+    {
+        var aryMinuteData=new Array();
+        for(var i in data.stock[0].minute)
+        {
+            var jsData=data.stock[0].minute[i];
+            var item=new MinuteData();
+
+            item.Close=jsData.price;
+            item.Open=jsData.open;
+            item.High=jsData.high;
+            item.Low=jsData.low;
+            item.Vol=jsData.vol; //股
+            item.Amount=jsData.amount;
+            if (i==0)      //第1个数据 写死9：25
+                item.DateTime=data.stock[0].date.toString()+" 0925";
+            else
+                item.DateTime=data.stock[0].date.toString()+" "+jsData.time.toString();
+            item.Increate=jsData.increate;
+            item.Risefall=jsData.risefall;
+            item.AvPrice=jsData.avprice;
+
+            aryMinuteData[i]=item;
+        }
+
+        return aryMinuteData;
     }
 
     //CODELIKE 模糊股票代码
@@ -6364,8 +6470,12 @@ function ScriptIndex(name,script,args)
             Self:this
         };
 
+        //数据类型
+        let hqDataType=0;   //默认K线
+        if (hqChart.ClassName==='MinuteChartContainer') hqDataType=2;   //分钟数据
         let option=
         {
+            HQDataType:hqDataType,
             Symbol:hqChart.Symbol, 
             Name:hqChart.Name,
             Data:hisData,

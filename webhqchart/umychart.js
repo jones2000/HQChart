@@ -260,14 +260,31 @@ function JSChart(divElement)
             }
         }
 
+        //分钟数据指标从第3个指标窗口设置
+        let scriptData = new JSIndexScript();
         for(var i in option.Windows)
         {
             var item=option.Windows[i];
-            var indexItem=JSIndexMap.Get(item.Index);
-            if (!indexItem) return null;
+            if (item.Script)
+            {
+                chart.WindowIndex[2+parseInt(i)]=new ScriptIndex(item.Name,item.Script,item.Args);    //脚本执行
+            }
+            else
+            {
+                var indexItem=JSIndexMap.Get(item.Index);
+                if (indexItem)
+                {
+                    chart.WindowIndex[2+parseInt(i)]=indexItem.Create();       //创建子窗口的指标
+                    chart.CreateWindowIndex(2+parseInt(i));
+                }
+                else
+                {
+                    let indexInfo = scriptData.Get(item.Index);
+                    if (!indexInfo) continue;
 
-            chart.WindowIndex[2+parseInt(i)]=indexItem.Create();       //创建子窗口3的指标
-            chart.CreateWindowIndex(2+parseInt(i));
+                    chart.WindowIndex[2+parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args);    //脚本执行
+                }
+            }
         }
 
         return chart;
@@ -515,6 +532,7 @@ export default {
 */
 function JSChartContainer(uielement)
 {
+    this.ClassName='JSChartContainer';
     var _self = this;
     this.Frame;                                     //框架画法
     this.ChartPaint=new Array();                    //图形画法
@@ -9039,6 +9057,7 @@ function KLineChartContainer(uielement)
     this.newMethod(uielement);
     delete this.newMethod;
 
+    this.ClassName='KLineChartContainer';
     this.WindowIndex=new Array();
     this.Symbol;
     this.Name;
@@ -10240,6 +10259,7 @@ function MinuteChartContainer(uielement)
     this.newMethod(uielement);
     delete this.newMethod;
 
+    this.ClassName='MinuteChartContainer';
     this.WindowIndex=new Array();
     this.Symbol;
     this.Name;
@@ -10345,6 +10365,31 @@ function MinuteChartContainer(uielement)
         }
     }
 
+    //删除某一个窗口的指标
+    this.DeleteIndexPaint=function(windowIndex)
+    {
+        let paint=new Array();          //踢出当前窗口的指标画法
+        for(let i in this.ChartPaint)
+        {
+            let item=this.ChartPaint[i];
+
+            if (i==0 || item.ChartFrame!=this.Frame.SubFrame[windowIndex].Frame)
+                paint.push(item);
+        }
+
+        //清空指定最大最小值
+        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin=null;
+        this.Frame.SubFrame[windowIndex].Frame.IsLocked=false;          //解除上锁
+
+        this.ChartPaint=paint;
+
+         //清空东条标题
+         var titleIndex=windowIndex+1;
+         this.TitlePaint[titleIndex].Data=[];
+         this.TitlePaint[titleIndex].Title=null;
+    }
+
+
     this.CreateStockInfo=function()
     {
         this.ExtendChartPaint[0]=new StockInfoExtendChartPaint();
@@ -10402,6 +10447,20 @@ function MinuteChartContainer(uielement)
 
     }
 
+     //切换成 脚本指标
+     this.ChangeScriptIndex=function(windowIndex,indexData)
+     {
+         this.DeleteIndexPaint(windowIndex);
+         this.WindowIndex[windowIndex]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args);    //脚本执行
+ 
+         var bindData=this.SourceData;
+         this.BindIndexData(windowIndex,bindData);   //执行脚本
+ 
+         this.UpdataDataoffset();           //更新数据偏移
+         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+         this.Draw();
+     }
+
     //切换股票代码
     this.ChangeSymbol=function(symbol)
     {
@@ -10417,10 +10476,10 @@ function MinuteChartContainer(uielement)
     //请求分钟数据
     this.RequestMinuteData=function()
     {
-        var _self=this;
+        var self=this;
 
         $.ajax({
-            url: _self.MinuteApiUrl,
+            url: self.MinuteApiUrl,
             data:
             {
                 "field": [
@@ -10438,7 +10497,7 @@ function MinuteChartContainer(uielement)
                     "time",
                     "minutecount",
                 ],
-                "symbol": [_self.Symbol],
+                "symbol": [self.Symbol],
                 "start": -1
             },
             type:"post",
@@ -10446,7 +10505,7 @@ function MinuteChartContainer(uielement)
             async:true,
             success: function (data)
             {
-                _self.RecvMinuteData(data);
+                self.RecvMinuteData(data);
             }
         });
     }
@@ -10514,6 +10573,18 @@ function MinuteChartContainer(uielement)
     this.BindIndexData=function(windowIndex,hisData)
     {
         if (!this.WindowIndex[windowIndex]) return;
+
+        if (typeof(this.WindowIndex[windowIndex].RequestData)=="function")          //数据需要另外下载的.
+        {
+            this.WindowIndex[windowIndex].RequestData(this,windowIndex,hisData);
+            return;
+        }
+        if (typeof(this.WindowIndex[windowIndex].ExecuteScript)=='function')
+        {
+            this.WindowIndex[windowIndex].ExecuteScript(this,windowIndex,hisData);
+            return;
+        }
+
         this.WindowIndex[windowIndex].BindData(this,windowIndex,hisData);
     }
 
@@ -10815,6 +10886,7 @@ function CustomKLineChartContainer(uielement)
     this.newMethod(uielement);
     delete this.newMethod;
 
+    this.ClassName='CustomKLineChartContainer';
     this.CustomKLineApiUrl="https://opensource.zealink.com/API/IndexCalculate";                        //自定义指数计算地址
     this.CustomStock;   //成分
     this.QueryDate={Start:20180101,End:20180627} ;     //计算时间区间
