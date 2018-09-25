@@ -3717,7 +3717,7 @@ function ChartVolStick()
 
                 var y=this.ChartFrame.GetYFromData(value);
 
-                if (kItem.Close>kItem.Open)
+                if (kItem.Close>=kItem.Open)
                     this.Canvas.fillStyle=this.UpColor;
                 else
                     this.Canvas.fillStyle=this.DownColor;

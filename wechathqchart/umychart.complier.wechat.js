@@ -3580,6 +3580,166 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+    返回是否连涨周期数.
+    用法:
+    UPNDAY(CLOSE,M)
+    表示连涨M个周期,M为常量
+    */
+    this.UPNDAY = function (data, n) 
+    {
+        var result = [];
+        if (n < 1) return result;
+        if (data == null || n > data.length) return result;
+
+        var days = 0;
+        for (let i = 0; i < data.length; ++i) 
+        {
+            result[i] = 0;
+            if (i - 1 < 0) continue;
+            if (!this.IsNumber(data[i]) || !this.IsNumber(data[i - 1])) //无效数都不算连涨
+            {
+                days = 0;
+                continue;
+            }
+
+            if (data[i] > data[i - 1])++days;
+            else days = 0;
+
+            if (days == n) 
+            {
+                result[i] = 1;
+                --days;
+            }
+        }
+
+        return result;
+    }
+
+    /*
+    返回是否连跌周期.
+    用法:
+    DOWNNDAY(CLOSE,M)
+    表示连跌M个周期,M为常量
+    */
+    this.DOWNNDAY = function (data, n) 
+    {
+        var result = [];
+        if (n < 1) return result;
+        if (data == null || n > data.length) return result;
+
+        var days = 0;
+        for (let i = 0; i < data.length; ++i) 
+        {
+            result[i] = 0;
+            if (i - 1 < 0) continue;
+            if (!this.IsNumber(data[i]) || !this.IsNumber(data[i - 1])) //无效数都不算连涨
+            {
+                days = 0;
+                continue;
+            }
+
+            if (data[i] < data[i - 1])++days;
+            else days = 0;
+
+            if (days == n) 
+            {
+                result[i] = 1;
+                --days;
+            }
+        }
+
+        return result;
+    }
+
+    /*
+    返回是否持续存在X>Y
+    用法:
+    NDAY(CLOSE,OPEN,3)
+    表示连续3日收阳线
+    */
+    this.NDAY = function (data, data2, n) 
+    {
+        var result = [];
+        if (n < 1) return result;
+        if (!Array.isArray(data) && !Array.isArray(data2)) return result;
+        if (data == null || data2 == null) return result;
+
+        if (Array.isArray(data) && Array.isArray(data2)) 
+        {
+            if (n >= data.length || n >= data2.length) return result;
+            var count = Math.max(data.length, data2.length);
+            var days = 0;
+            for (let i = 0; i < count; ++i) 
+            {
+                result[i] = 0;
+                if (i >= data.length || i >= data2.length) continue;
+                if (!this.IsNumber(data[i]) || !this.IsNumber(data2[i])) 
+                {
+                    days = 0;
+                    continue;
+                }
+
+                if (data[i] > data2[i])++days;
+                else days = 0;
+
+                if (days == n) 
+                {
+                    result[i] = 1;
+                    --days;
+                }
+            }
+        }
+        else if (Array.isArray(data) && !Array.isArray(data2)) 
+        {
+            if (n >= data.length || !this.IsNumber(data2)) return;
+            var days = 0;
+            for (let i in data) 
+            {
+                result[i] = 0;
+                if (!this.IsNumber(data[i])) 
+                {
+                    days = 0;
+                    continue;
+                }
+
+                if (data[i] > data2)++days;
+                else days = 0;
+
+                if (days == n) 
+                {
+                    result[i] = 1;
+                    --days;
+                }
+            }
+        }
+        else if (!Array.isArray(data) && Array.isArray(data2)) 
+        {
+            if (n >= data2.length || !this.IsNumber(data)) return;
+            var days = 0;
+            for (let i in data2) 
+            {
+                result[i] = 0;
+                if (!this.IsNumber(data2[i])) 
+                {
+                    days = 0;
+                    continue;
+                }
+
+                if (data > data2[i])++days;
+                else days = 0;
+
+                if (days == n) 
+                {
+                    result[i] = 1;
+                    --days;
+                }
+            }
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node)
     {
@@ -3658,6 +3818,12 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.COST(args[0]);
             case 'WINNER':
                 return this.WINNER(args[0]);
+            case 'UPNDAY':
+                return this.UPNDAY(args[0], args[1]);
+            case 'DOWNNDAY':
+                return this.DOWNNDAY(args[0], args[1]);
+            case 'NDAY':
+                return this.NDAY(args[0], args[1], args[2]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);
