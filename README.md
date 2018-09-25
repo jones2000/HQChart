@@ -19,4 +19,4 @@
   网页demo  <br>
   K线图  https://opensource.zealink.com/hqcomplier/phone7.html  <br>
   走势图 https://opensource.zealink.com/hqcomplier/phone8.html  <br>
-  小程序 请求搜索 ‘知临信息软件及数据服务介绍’
+  小程序demo 请搜索 ‘知临信息软件及数据服务介绍’
