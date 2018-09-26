@@ -2614,7 +2614,23 @@ function JSAlgorithm(errorHandler, symbolData)
     this.CROSS=function(data,data2)
     {
         var result = [];
-        if (typeof (data2) == 'number') 
+        if (Array.isArray(data) && Array.isArray(data2)) 
+        {
+            if (data.length != data2.length) return result = [];
+
+            var index = 0;
+            for (; index < data.length; ++index) 
+            {
+                if (this.IsNumber(data[index]) && this.IsNumber(data2[index]))
+                    break;
+            }
+
+            for (++index; index < data.length; ++index) 
+            {
+                result[index] = (data[index] > data2[index] && data[index - 1] < data2[index - 1]) ? 1 : 0;
+            }
+        }
+        else if (Array.isArray(data) && typeof (data2) == 'number') 
         {
             var index = 0;
             for (; index < data.length; ++index) 
@@ -2627,22 +2643,20 @@ function JSAlgorithm(errorHandler, symbolData)
                 result[index] = (data[index] > data2 && data[index - 1] < data2) ? 1 : 0;
             }
         }
-        else 
+        else if (typeof (data) == 'number' && Array.isArray(data2)) 
         {
-            if (data.length != data2.length) return result = [];
-
             var index = 0;
-            for (; index < data.length; ++index) 
+            for (; index < data2.length; ++index) 
             {
-                if (this.IsNumber(data[index]) && this.IsNumber(data2[index]))
-                    break;
+                if (this.IsNumber(data2[index])) break;
             }
 
-            for (++index; index < data.length; ++index)
-             {
-                result[index] = (data[index] > data2[index] && data[index - 1] < data2[index - 1]) ? 1 : 0;
+            for (++index; index < data2.length; ++index) 
+            {
+                result[index] = (data2[index] > data && data2[index - 1] < data) ? 1 : 0;
             }
         }
+
         return result;
     }
 
@@ -3740,6 +3754,80 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+    两条线维持一定周期后交叉.
+    用法:LONGCROSS(A,B,N)表示A在N周期内都小于B,本周期从下方向上穿过B时返回1,否则返回0
+    */
+    this.LONGCROSS = function (data, data2, n) 
+    {
+        var result = [];
+        var count = Math.max(data.length, data2.length);
+        for (let i = 0; i < count; ++i) 
+        {
+            result[i] = 0;
+            if (i - 1 < 0) continue;
+            if (i >= data.length || i >= data2.length) continue;
+            if (!this.IsNumber(data[i]) || !this.IsNumber(data2[i]) || !this.IsNumber(data[i - 1]) || !this.IsNumber(data2[i - 1])) continue;
+
+            if (data[i] > data2[i] && data[i - 1] < data2[i - 1]) result[i] = 1;
+        }
+
+        for (let i = 0, j = 0; i < count; ++i) 
+        {
+            if (!result[i]) continue;
+
+            for (j = 1; j <= n && i - j >= 0; ++j) 
+            {
+                if (data[i - j] >= data2[i - j]) 
+                {
+                    result[i] = 0;
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /*
+    EXISTR(X,A,B):是否存在(前几日到前几日间).
+    例如: EXISTR(CLOSE>OPEN,10,5) 
+    表示从前10日内到前5日内存在着阳线
+    若A为0,表示从第一天开始,B为0,表示到最后日止
+    */
+    this.EXISTR = function (data, n, n2) 
+    {
+        var result = [];
+        if (!Array.isArray(data)) return result;
+
+        n = parseInt(n);
+        n2 = parseInt(n2);
+        if (n <= 0) n = data.length;
+        if (n2 <= 0) n2 = 1;
+        if (n2 > n) return result;
+
+        var result = [];
+        var value;
+        for (let i = 0, j = 0; i < data.length; ++i) 
+        {
+            result[i] = null;
+            if (i - n < 0 || i - n2 < 0) continue;
+
+            result[i] = 0;
+            for (j = n; j >= n2; --j) 
+            {
+                var value = data[i - j];
+                if (this.IsNumber(value) && value) 
+                {
+                    result[i] = 1;
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node)
     {
@@ -3775,6 +3863,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.MULAR(args[0], args[1]);
             case 'CROSS':
                 return this.CROSS(args[0], args[1]);
+            case 'LONGCROSS':
+                return this.LONGCROSS(args[0], args[1], args[2]);
             case 'AVEDEV':
                 return this.AVEDEV(args[0], args[1]);
             case 'STD':
@@ -3790,6 +3880,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.RANGE(args[0],args[1],args[2]);
             case 'EXIST':
                 return this.EXIST(args[0],args[1]);
+            case 'EXISTR':
+                return this.EXISTR(args[0], args[1], args[2]);
             case 'FILTER':
                 return this.FILTER(args[0], args[1]);
             case 'TFILTER':
@@ -5382,9 +5474,50 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.DATE = function () 
     {
-        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return null;
+        var result = [];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
 
-        return this.Data.Data[this.Data.Data.length - 1].Date;
+        for (let i in this.Data.Data) 
+        {
+            var item = this.Data.Data[i];
+            result[i] = item.Date;
+        }
+
+        return result;
+    }
+
+    this.YEAR = function () 
+    {
+        var result = [];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for (let i in this.Data.Data) 
+        {
+            var item = this.Data.Data[i];
+            if (this.IsNumber(item.Date))
+                result[i] = parseInt(item.Date / 10000);
+            else
+                result[i] = null;
+        }
+
+        return result;
+    }
+
+    this.MONTH = function () 
+    {
+        var result = [];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for (let i in this.Data.Data) 
+        {
+            var item = this.Data.Data[i];
+            if (this.IsNumber(item.Date))
+                result[i] = parseInt(item.Date % 10000 / 100);
+            else
+                result[i] = null;
+        }
+
+        return result;
     }
 
     this.REFDATE = function (data, date) 
@@ -5568,7 +5701,7 @@ function JSExecute(ast,option)
         ['C',null],['V',null],['O',null],['H',null],['L',null],
 
         //日期类
-        ['DATE', null],
+        ['DATE', null], ['YEAR', null], ['MONTH', null],
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
