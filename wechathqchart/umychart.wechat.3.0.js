@@ -976,11 +976,12 @@ function JSChartContainer(uielement)
 
     this.OnMouseMove=function(x,y,e)
     {
+        var lastY = this.LastPoint.Y;
         this.LastPoint.X=x;
         this.LastPoint.Y=y;
         var lastCursorIndex = this.CursorIndex;
         this.CursorIndex=this.Frame.GetXData(x);
-        if (parseInt(lastCursorIndex-0.5) == parseInt(this.CursorIndex-0.5)) return;  //一个一个数据移动
+        if (parseInt(lastCursorIndex - 0.5) == parseInt(this.CursorIndex - 0.5) && Math.abs(lastY-y)<1 ) return;  //一个一个数据移动
 
         if (this.IsForceLandscape)
         {
@@ -6069,12 +6070,14 @@ function ChartCorssCursor()
 
             this.Canvas.fillStyle=this.TextBGColor;
             var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
-            this.Canvas.fillRect(right+2,y-this.TextHeight/2,textWidth,this.TextHeight);
-
-            this.Canvas.textAlign="left";
-            this.Canvas.textBaseline="middle";
-            this.Canvas.fillStyle=this.TextColor;
-            this.Canvas.fillText(text,right+4,y,textWidth);
+            if (textWidth < this.Frame.ChartBorder.Right)           //右边不够就不画
+            {
+                this.Canvas.fillRect(right+2,y-this.TextHeight/2,textWidth,this.TextHeight);
+                this.Canvas.textAlign="left";
+                this.Canvas.textBaseline="middle";
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(text,right+4,y,textWidth);
+            }
         }
 
         if (this.IsShowText && this.StringFormatX.Operator())
