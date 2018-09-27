@@ -1,5 +1,8 @@
 # HQChart 3.0
-  分网页版本 及 微信小程序版本
+  分网页版本 及 微信小程序版本 <br>
+  ![走势图](/小程序行情模块用例/image/hqchart_minute.PNG)
+  ![K线图](/小程序行情模块用例/image/hqchart_kline.PNG)
+  ![K线图2](/小程序行情模块用例/image/hqchart_kline_lock.PNG)
 # 1. K线图
   1) 支持前复权,后复权 <br>
   2) 支持日线,月线,周线,年线.<br>
