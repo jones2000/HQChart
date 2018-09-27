@@ -123,7 +123,7 @@ function JSChart(element)
             var item=option.Windows[i];
             if (item.Script) 
             {
-                chart.WindowIndex[i] = new ScriptIndex(item.Name, item.Script, item.Args);    //脚本执行
+                chart.WindowIndex[i] = new ScriptIndex(item.Name, item.Script, item.Args,item);    //脚本执行
             }
             else
             {
@@ -138,7 +138,8 @@ function JSChart(element)
                     let indexInfo = scriptData.Get(item.Index);
                     if (!indexInfo) continue;
 
-                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args);    //脚本执行
+                    if (item.Lock) indexInfo.Lock = item.Lock;
+                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
                 }
             }
 
@@ -215,7 +216,7 @@ function JSChart(element)
             var item=option.Windows[i];
             if (item.Script) 
             {
-                chart.WindowIndex[i] = new ScriptIndex(item.Name, item.Script, item.Args);    //脚本执行
+                chart.WindowIndex[i] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
             }
             else
             {
@@ -230,7 +231,8 @@ function JSChart(element)
                     let indexInfo = scriptData.Get(item.Index);
                     if (!indexInfo) continue;
 
-                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args);    //脚本执行
+                    if (item.Lock) indexInfo.Lock = item.Lock;
+                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
                 }
             }
 
@@ -286,7 +288,7 @@ function JSChart(element)
             var item = option.Windows[i];
             if (item.Script) 
             {
-                chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(item.Name, item.Script, item.Args);    //脚本执行
+                chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
             }
             else 
             {
@@ -301,7 +303,8 @@ function JSChart(element)
                     let indexInfo = scriptData.Get(item.Index);
                     if (!indexInfo) continue;
 
-                    chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args);    //脚本执行
+                    if (item.Lock) indexInfo.Lock = item.Lock;
+                    chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
                 }
             }
         }
@@ -436,6 +439,16 @@ function JSChart(element)
         {
             console.log("[JSChart::ForceLandscape] bForceLandscape="+bForceLandscape);
             this.JSChartContainer.IsForceLandscape=bForceLandscape;
+        }
+    }
+
+    //锁|解锁指标
+    this.LockIndex = function (lockData) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.LockIndex) == 'function') 
+        {
+            console.log('[JSChart:LockIndex] lockData', lockData);
+            this.JSChartContainer.LockIndex(lockData);
         }
     }
 
@@ -683,6 +696,14 @@ function JSChartContainer(uielement)
 
         if (IsPhoneDragging(e))
         {
+            if (jsChart.TryClickLock)
+            {
+                var touches = GetToucheData(e, jsChart.IsForceLandscape);
+                var x = touches[0].clientX;
+                var y = touches[0].clientY;
+                if (jsChart.TryClickLock(x, y)) return;
+            }
+
             //长按2秒,十字光标
             if (this.TouchTimer!=null) clearTimeout(this.TouchTimer);
             if (this.ChartCorssCursor.IsShow==true)
@@ -870,11 +891,14 @@ function JSChartContainer(uielement)
         //框架内部坐标
         this.Frame.DrawInsideHorizontal();
 
-        for (var i in this.TitlePaint) {
+        this.Frame.DrawLock();
+
+        for (var i in this.TitlePaint) 
+        {
           var item = this.TitlePaint[i];
           if (!item.IsDynamic) continue;
           if (typeof (item.DrawTitle) == 'function')
-            item.DrawTitle();
+                item.DrawTitle();
         }
 
         //坑!!.画图是异步, 保存当前屏图放在回调里面
@@ -1415,6 +1439,10 @@ function IChartFramePainting()
 
     this.IsShowBorder=true;            //是否显示边框
 
+    //上锁信息
+    this.IsLocked = false;               //是否上锁
+    this.LockPaint = null;
+
     this.Draw=function()
     {
         this.DrawFrame();
@@ -1457,6 +1485,40 @@ function IChartFramePainting()
         this.Canvas.fillStyle=this.TitleBGColor;
         this.Canvas.fillRect(left,top,width,height);
         */
+    }
+
+    this.DrawLock = function () 
+    {
+        if (this.IsLocked) 
+        {
+            if (this.LockPaint == null) this.LockPaint = new ChartLock();
+
+            this.LockPaint.Canvas = this.Canvas;
+            this.LockPaint.ChartBorder = this.ChartBorder;
+            this.LockPaint.ChartFrame = this;
+            this.LockPaint.Draw();
+        }
+    }
+
+    //设施上锁
+    this.SetLock = function (lockData) 
+    {
+        if (!lockData)  //空数据不上锁
+        {
+            this.IsLocked = false;
+            return;
+        }
+
+        this.IsLocked = true;
+        if (!this.LockPaint) this.LockPaint = new ChartLock();    //创建锁
+
+        if (lockData.Callback) this.LockPaint.Callback = lockData.Callback;       //回调
+        if (lockData.IndexName) this.LockPaint.IndexName = lockData.IndexName;    //指标名字
+        if (lockData.ID) this.LockPaint.LockID = lockData.ID;                     //锁ID
+        if (lockData.BG) this.LockPaint.BGColor = lockData.BG;                    //背景色 
+        if (lockData.Text) this.LockPaint.Title = lockData.Text;
+        if (lockData.TextColor) this.LockPaint.TextColor = lockData.TextColor;
+        if (lockData.Font) this.LockPaint.Font = lockData.Font;
     }
 }
 
@@ -1990,6 +2052,15 @@ function HQTradeFrame()
         }
 
         SizeChange=false;
+    }
+
+    this.DrawLock = function () 
+    {
+        for (var i in this.SubFrame) 
+        {
+            var item = this.SubFrame[i];
+            item.Frame.DrawLock();
+        }
     }
 
     this.DrawInsideHorizontal=function()
@@ -4804,6 +4875,94 @@ function ChartBand()
     }
 }
 
+function ChartLock() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    this.WidthDiv = 0.2;  // 框子宽度占比
+    this.LockCount = 20; // 锁最新的几个数据
+    this.BGColor = g_JSChartResource.LockBGColor;
+    this.TextColor = g_JSChartResource.LockTextColor;
+    this.Font = g_JSChartResource.DefaultTextFont;
+    this.Title = '🔒开通权限';
+    this.LockRect = null; //上锁区域
+    this.LockID;        //锁ID
+    this.Callback;      //回调
+    this.IndexName;     //指标名字
+
+    this.Draw = function () 
+    {
+        this.LockRect = null;
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+        var xOffset = this.ChartBorder.GetRight();
+        var lOffsetWidth = 0;
+        if (this.ChartFrame.Data != null) 
+        {
+            var dataWidth = this.ChartFrame.DataWidth;
+            var distanceWidth = this.ChartFrame.DistanceWidth;
+            xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + 2.0;
+            var chartright = this.ChartBorder.GetRight();
+            var xPointCount = this.ChartFrame.XPointCount;
+            for (var i = this.ChartFrame.Data.DataOffset, j = 0; i < this.ChartFrame.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) {
+                var data = this.ChartFrame.Data.Data[i];
+                if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
+
+                var left = xOffset;
+                var right = xOffset + dataWidth;
+                if (right > chartright) break;
+            }
+            lOffsetWidth = (dataWidth + distanceWidth) * this.LockCount;
+        }
+        if (lOffsetWidth == 0) 
+        {
+            lOffsetWidth = (xOffset - this.ChartBorder.GetLeft()) * this.WidthDiv;
+        }
+        var lLeft = xOffset - lOffsetWidth;
+        if (lLeft < this.ChartBorder.GetLeft())
+            lLeft = this.ChartBorder.GetLeft();
+        var lHeight = this.ChartBorder.GetBottom() - this.ChartBorder.GetTop();
+        var lWidth = this.ChartBorder.GetRight() - lLeft;
+        this.Canvas.fillStyle = this.BGColor;
+        this.Canvas.fillRect(lLeft, this.ChartBorder.GetTop(), lWidth, lHeight);
+        var xCenter = lLeft + lWidth / 2;
+        var yCenter = this.ChartBorder.GetTop() + lHeight / 2;
+        this.Canvas.textAlign = 'center';
+        this.Canvas.textBaseline = 'middle';
+        this.Canvas.fillStyle = this.TextColor;
+        this.Canvas.font = this.Font;
+        this.Canvas.fillText(this.Title, xCenter, yCenter);
+
+        this.LockRect = { Left: lLeft, Top: this.ChartBorder.GetTop(), Width: lWidth, Heigh: lHeight };    //保存上锁区域
+    }
+
+    //x,y是否在上锁区域
+    this.GetTooltipData = function (x, y, tooltip) 
+    {
+        if (this.LockRect == null) return false;
+
+        if (this.IsPointInRect(x, y, this.LockRect.Left, this.LockRect.Top, this.LockRect.Width, this.LockRect.Heigh)) 
+        {
+            tooltip.Data = { ID: this.LockID, Callback: this.Callback, IndexName: this.IndexName };
+            tooltip.ChartPaint = this;
+            return true;
+        }
+
+        return false;
+    }
+
+    this.IsPointInRect=function(x,y,left,top,width,heigh)
+    {
+        if (x>left && x<left+width && y>top && y<top+heigh) return true;
+
+        return false;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // 等待提示
 function ChartSplashPaint()
@@ -5722,10 +5881,11 @@ function FrameSplitMinutePriceY()
 
 }
 
+//沪深走势图时间刻度
 var SHZE_MINUTE_X_COORDINATE=
 [
-  [0,     0,"rgb(200,200,200)",   "09:30"],
-  [31,	0,"RGB(200,200,200)",	"10:00"],
+    [0,     0,"rgb(200,200,200)",   "09:30"],
+    [31,	0,"RGB(200,200,200)",	"10:00"],
 	[61,	0,"RGB(200,200,200)",	"10:30"],
 	[91,	0,"RGB(200,200,200)",	"11:00"],
 	[122,	1,"RGB(200,200,200)",	"13:00"],
@@ -5735,6 +5895,23 @@ var SHZE_MINUTE_X_COORDINATE=
 	[242,	1,"RGB(200,200,200)",	""], // 15:00
 ];
 
+//港股走势图时间刻度
+var HK_MINUTE_X_COORDINATE =
+[
+    [0, 1, "RGB(200,200,200)", "09:30"],
+    [30, 0, "RGB(200,200,200)", "10:00"],
+    [60, 1, "RGB(200,200,200)", "10:30"],
+    [90, 0, "RGB(200,200,200)", "11:00"],
+    [120, 1, "RGB(200,200,200)", "11:30"],
+    [151, 0, "RGB(200,200,200)", "13:00"],
+    [181, 1, "RGB(200,200,200)", "13:30"],
+    [211, 0, "RGB(200,200,200)", "14:00"],
+    [241, 1, "RGB(200,200,200)", "14:30"],
+    [271, 0, "RGB(200,200,200)", "15:00"],
+    [301, 1, "RGB(200,200,200)", "15:30"],
+    [331, 1, "RGB(200,200,200)", ""] //16:00
+];
+
 function FrameSplitMinuteX()
 {
     this.newMethod=IFrameSplitOperator;   //派生
@@ -5742,19 +5919,33 @@ function FrameSplitMinuteX()
     delete this.newMethod;
 
     this.ShowText=true;                 //是否显示坐标信息
+    this.Symbol = null;                   //股票代码 x轴刻度根据股票类型来调整
 
     this.Operator=function()
     {
         this.Frame.VerticalInfo=[];
         var xPointCount=this.Frame.XPointCount;
 
-        for(var i in SHZE_MINUTE_X_COORDINATE)
+        //默认沪深股票
+        var xcoordinate = SHZE_MINUTE_X_COORDINATE;
+        this.Frame.XPointCount = 243;
+
+        if (this.Symbol != null) 
+        {   
+            if (this.Symbol.indexOf('.hk') > 0) //港股用港股的刻度 及数据个数
+            {
+                xcoordinate = HK_MINUTE_X_COORDINATE;
+                this.Frame.XPointCount = 332;
+            }
+        }
+
+        for (var i in xcoordinate)
         {
             var info=new CoordinateInfo();
             //info.TextColor = "rgb(51,51,51)";
-            info.Value=SHZE_MINUTE_X_COORDINATE[i][0];
+            info.Value = xcoordinate[i][0];
             if (this.ShowText)
-                info.Message[0]=SHZE_MINUTE_X_COORDINATE[i][3];
+                info.Message[0] = xcoordinate[i][3];
             this.Frame.VerticalInfo[i]=info;
         }
     }
@@ -9102,7 +9293,7 @@ function KLineChartContainer(uielement)
         this.Period=period;
         if (isDataTypeChange==false)
         {
-            this.Updata();
+            this.Update();
             return;
         }
 
@@ -9128,7 +9319,7 @@ function KLineChartContainer(uielement)
 
         this.Right=right;
 
-        this.Updata();
+        this.Update();
     }
 
     //删除某一个窗口的指标
@@ -9159,7 +9350,7 @@ function KLineChartContainer(uielement)
     this.ChangeScriptIndex=function(windowIndex,indexData)
     {
         this.DeleteIndexPaint(windowIndex);
-        this.WindowIndex[windowIndex]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args);    //脚本执行
+        this.WindowIndex[windowIndex] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
 
         var bindData=this.ChartPaint[0].Data;
         this.BindIndexData(windowIndex,bindData);   //执行脚本
@@ -9232,7 +9423,45 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
-    this.Updata=function()
+    //锁|解锁指标 { Index:指标名字,IsLocked:是否要锁上,Callback:回调 }
+    this.LockIndex = function (lockData) 
+    {
+        if (!lockData) return;
+        if (!lockData.IndexName) return;
+
+        for (let i in this.WindowIndex) 
+        {
+            let item = this.WindowIndex[i];
+            if (!item) conintue;
+            if (item.Name == lockData.IndexName) 
+            {
+                item.SetLock(lockData);
+                this.Update();
+                break;
+            }
+        }
+    }
+
+    this.TryClickLock = function (x, y) 
+    {
+        for (let i in this.Frame.SubFrame) 
+        {
+            var item = this.Frame.SubFrame[i];
+            if (!item.Frame.IsLocked) continue;
+            if (!item.Frame.LockPaint) continue;
+
+            var tooltip = new TooltipData();
+            if (!item.Frame.LockPaint.GetTooltipData(x, y, tooltip)) continue;
+
+            tooltip.HQChart = this;
+            if (tooltip.Data.Callback) tooltip.Data.Callback(tooltip);
+            return true;
+        }
+
+        return false;
+    }
+
+    this.Update=function()
     {
         if (!this.SourceData) return;
 
@@ -10004,7 +10233,7 @@ function MinuteChartContainer(uielement)
     this.ChangeScriptIndex = function (windowIndex, indexData) 
     {
         this.DeleteIndexPaint(windowIndex);
-        this.WindowIndex[windowIndex] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args);    //脚本执行
+        this.WindowIndex[windowIndex] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
 
         var bindData = this.SourceData;
         this.BindIndexData(windowIndex, bindData);   //执行脚本
@@ -10020,6 +10249,25 @@ function MinuteChartContainer(uielement)
         this.Symbol=symbol;
         this.ChartSplashPaint.IsEnableSplash = true;
         this.RequestData();
+    }
+
+    this.TryClickLock = function (x, y) 
+    {
+        for (let i in this.Frame.SubFrame) 
+        {
+            var item = this.Frame.SubFrame[i];
+            if (!item.Frame.IsLocked) continue;
+            if (!item.Frame.LockPaint) continue;
+
+            var tooltip = new TooltipData();
+            if (!item.Frame.LockPaint.GetTooltipData(x, y, tooltip)) continue;
+
+            tooltip.HQChart = this;
+            if (tooltip.Data.Callback) tooltip.Data.Callback(tooltip);
+            return true;
+        }
+
+        return false;
     }
 
     this.RequestData=function()
@@ -10088,6 +10336,12 @@ function MinuteChartContainer(uielement)
             {
                 this.BindIndexData(i,bindData);
             }
+        }
+
+        for (let i in this.Frame.SubFrame)  //把股票代码设置到X轴刻度类里
+        {
+            var item = this.Frame.SubFrame[i];
+            item.Frame.XSplitOperator.Symbol = this.Symbol;
         }
 
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
@@ -10970,7 +11224,7 @@ function BaseIndex(name)
 
 //脚本指标
 //name=指标名字 args=参数名字 参数值
-function ScriptIndex(name,script,args)
+function ScriptIndex(name, script, args, option)
 {
     this.newMethod=BaseIndex;   //派生
     this.newMethod(name);
@@ -10980,7 +11234,51 @@ function ScriptIndex(name,script,args)
     this.Arguments=[];
     this.OutVar=[];
 
+    //指标上锁配置信息
+    this.IsLocked = false;    //是否锁住指标
+    this.LockCallback = null;
+    this.LockID = null;
+    this.LockBG = null;       //锁背景色
+    this.LockTextColor = null;
+    this.LockText = null;
+    this.LockFont = null;
+
+    if (option && option.Lock) 
+    {
+        if (option.Lock.IsLocked == true) this.IsLocked = true;  //指标上锁
+        if (option.Lock.Callback) this.LockCallback = option.Lock.Callback;    //锁回调
+        if (option.Lock.ID) this.LockID = option.Lock.ID;                      //锁ID
+        if (option.Lock.BG) this.LockBG = option.Lock.BG;
+        if (option.Lock.TextColor) this.LockTextColor = option.Lock.TextColor;
+        if (option.Lock.Text) this.LockText = option.Lock.Text;
+        if (option.Lock.Font) this.LockFont = option.Lock.Font;
+    }
+
     if (args) this.Arguments=args;
+
+    this.SetLock = function (lockData) 
+    {
+        if (lockData.IsLocked == true) 
+        {
+            this.IsLocked = true;  //指标上锁
+            if (lockData.Callback) this.LockCallback = lockData.Callback;    //锁回调
+            if (lockData.ID) this.LockID = lockData.ID;                      //锁ID
+            if (lockData.BG) this.LockBG = lockData.BG;
+            if (lockData.TextColor) this.LockTextColor = lockData.TextColor;
+            if (lockData.Text) this.LockText = lockData.Text;
+            if (lockData.Font) this.LockFont = lockData.Font;
+        }
+        else 
+        {   //清空锁配置信息
+            this.IsLocked = false;    //是否锁住指标
+            this.LockCallback = null;
+            this.LockID = null;
+            this.LockBG = null;       //锁背景色
+            this.LockTextColor = null;
+            this.LockText = null;
+            this.LockFont = null;
+        }
+    }
 
     this.ExecuteScript=function(hqChart,windowIndex,hisData)
     {
@@ -11019,6 +11317,20 @@ function ScriptIndex(name,script,args)
         let hisData=param.HistoryData;
         param.Self.OutVar=outVar;
         param.Self.BindData(hqChart,windowIndex,hisData);
+
+        if (param.Self.IsLocked == false) //不上锁
+        {
+            param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
+        }
+        else    //上锁
+        {
+            let lockData = 
+            {
+                IsLocked: true, Callback: param.Self.LockCallback, IndexName: param.Self.Name, ID: param.Self.LockID,
+                BG: param.Self.LockBG, Text: param.Self.LockText, TextColor: param.Self.LockTextColor, Font: param.Self.LockFont
+            };
+            param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
+        }
 
         param.HQChart.UpdataDataoffset();           //更新数据偏移
         param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值

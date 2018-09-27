@@ -2743,7 +2743,35 @@ function JSAlgorithm(errorHandler, symbolData)
     //DEVSQ(X，N) 　返回数据偏差平方和。
     this.DEVSQ=function(data,n)
     {
-
+        var result=[];
+        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
+        var num = n;
+        var datanum = data.length;
+        var i = 0, j = 0, k = 0;
+        var E = 0, DEV = 0;
+        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        {
+            result[i] = null;
+        }
+        if (num < 1 || i+num>datanum) return result;
+        for(E=0; i < datanum && j < num; ++i,++j)
+            E += data[i]/num;
+        if (j == num)
+        {
+            DEV = 0;
+            for(i--; k < num; k++)
+                DEV += (data[i-k]-E) * (data[i-k]-E);
+            result[i] = DEV;
+            i++;
+        }
+        for(; i < datanum; ++i)
+        {
+            E += (data[i] - data[i-num]) / num;
+            for(DEV=0, k = 0; k < num; ++k)
+                DEV += (data[i-k]-E) * (data[i-k]-E);
+            result[i] = DEV;
+        }
+        return result;
     }
 
     //NOT 取反
@@ -2769,7 +2797,37 @@ function JSAlgorithm(errorHandler, symbolData)
     //FORCAST(X，N)　 返回线性回归预测值。
     this.FORCAST=function(data,n)
     {
-
+        var result=[];
+        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
+        var num = n;
+        var datanum = data.length;
+        if (num < 1 || num >= datanum)
+            return result;
+        var Ex = 0, Ey = 0, Sxy = 0, Sxx = 0, Const, Slope;
+        var i, j;
+        for(j = 0; j < datanum && !this.isNumber(data[j]); ++j)
+        {
+            result[j] = null;
+        }
+        for(i = j+num-1; i < datanum; ++i)
+        {
+           Ex = Ey = Sxy = Sxx = 0;
+           for(j = 0; j < num && j <= i; ++j)
+           {
+               Ex += (i - j);
+               Ey += data[i - j];
+           }
+           Ex /= num;
+           Ey /= num;
+           for(j = 0; j < num && j <= i; ++j)
+           {
+               Sxy += (i-j-Ex)*(data[i-j]-Ey);
+               Sxx += (i-j-Ex)*(i-j-Ex);
+           }
+           Slope = Sxy / Sxx;
+           Const = (Ey - Ex*Slope) / num;
+           result[i] = Slope * num + Const;
+        }
     }
 
     //SLOPE 线性回归斜率
@@ -2817,21 +2875,94 @@ function JSAlgorithm(errorHandler, symbolData)
     //STDP(X，N)　 返回总体标准差。
     this.STDP=function(data,n)
     {
-
+        var result=[];
+        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
+        var num = n;
+        var datanum = data.length;
+        if (num < 1 || num >= datanum)
+            return result;
+        var i = 0, j = 0;
+        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        {
+            result[i] = null;
+        }
+        var SigmaPowerX = 0, SigmaX = 0, MidResult;
+        for (; i < datanum && j < num; ++i, ++j)
+        {
+            SigmaPowerX += data[i] * data[i];
+            SigmaX += data[i];
+        }
+        if (j == num)
+        {
+            MidResult = num*SigmaPowerX - SigmaX*SigmaX;
+            result[i-1] = Math.sqrt(MidResult) / num;
+        }
+        for(; i < datanum; ++i)
+        {
+            SigmaPowerX += data[i]*data[i] - data[i-num]*data[i-num];
+            SigmaX += data[i] - data[i-num];
+            MidResult = num*SigmaPowerX - SigmaX*SigmaX;
+            result[i] = Math.sqrt(MidResult) / num;
+        }
     }
 
     //VAR 估算样本方差
     //VAR(X，N)　 返回估算样本方差。
     this.VAR=function(data,n)
     {
-
+        var result=[];
+        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
+        var num = n;
+        var datanum = data.length;
+        if (num <= 1 || num >= datanum)
+            return result;
+        var i, j;
+        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        {
+            result[i] = null;
+        }
+        var SigmaPowerX, SigmaX;
+        for (j = 0, i = i+num-1; i < datanum; ++i)
+        {
+            SigmaPowerX = SigmaX = 0;
+            for(j=0; j < num && j <= i; ++j)
+            {
+                SigmaPowerX += data[i-j] * data[i-j];
+                SigmaX += data[i-j];
+            }
+            result[i] = (num*SigmaPowerX - SigmaX*SigmaX) / num * (num -1);
+        }
     }
 
     //VARP 总体样本方差
     //VARP(X，N)　 返回总体样本方差 。
     this.VARP=function(data,n)
     {
-
+        var result=[];
+        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
+        var num = n;
+        var datanum = data.length;
+        if (num < 1 || num >= datanum)
+            return result;
+        var i = 0, j = 0;
+        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        {
+            result[i] = null;
+        }
+        var SigmaPowerX = 0, SigmaX = 0;
+        for (; i < datanum && j < num; ++i, ++j)
+        {
+            SigmaPowerX += data[i] * data[i];
+            SigmaX += data[i];
+        }
+        if (j == num)
+            result[i-1] = (num*SigmaPowerX - SigmaX*SigmaX) / (num*num);
+        for(; i < datanum; ++i)
+        {
+            SigmaPowerX += data[i]*data[i] - data[i-num]*data[i-num];
+            SigmaX += data[i] - data[i-num];
+            result[i] = (num*SigmaPowerX - SigmaX*SigmaX) / (num*num);
+        }
     }
 
     //RANGE(A,B,C)表示A>B AND A<C;
@@ -3916,6 +4047,16 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.DOWNNDAY(args[0], args[1]);
             case 'NDAY':
                 return this.NDAY(args[0], args[1], args[2]);
+            case 'DEVSQ':
+                return this.DEVSQ(args[0], args[1]);
+            case 'FORCAST':
+                return this.FORCAST(args[0], args[1]);
+            case 'STDP':
+                return this.STDP(args[0], args[1]);
+            case 'VAR':
+                return this.VAR(args[0], args[1]);
+            case 'VARP':
+                return this.VARP(args[0], args[1]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);
