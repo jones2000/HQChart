@@ -260,14 +260,31 @@ function JSChart(divElement)
             }
         }
 
+        //分钟数据指标从第3个指标窗口设置
+        let scriptData = new JSIndexScript();
         for(var i in option.Windows)
         {
             var item=option.Windows[i];
-            var indexItem=JSIndexMap.Get(item.Index);
-            if (!indexItem) return null;
+            if (item.Script)
+            {
+                chart.WindowIndex[2+parseInt(i)]=new ScriptIndex(item.Name,item.Script,item.Args);    //脚本执行
+            }
+            else
+            {
+                var indexItem=JSIndexMap.Get(item.Index);
+                if (indexItem)
+                {
+                    chart.WindowIndex[2+parseInt(i)]=indexItem.Create();       //创建子窗口的指标
+                    chart.CreateWindowIndex(2+parseInt(i));
+                }
+                else
+                {
+                    let indexInfo = scriptData.Get(item.Index);
+                    if (!indexInfo) continue;
 
-            chart.WindowIndex[2+parseInt(i)]=indexItem.Create();       //创建子窗口3的指标
-            chart.CreateWindowIndex(2+parseInt(i));
+                    chart.WindowIndex[2+parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args);    //脚本执行
+                }
+            }
         }
 
         return chart;
@@ -515,6 +532,7 @@ export default {
 */
 function JSChartContainer(uielement)
 {
+    this.ClassName='JSChartContainer';
     var _self = this;
     this.Frame;                                     //框架画法
     this.ChartPaint=new Array();                    //图形画法
@@ -8096,8 +8114,6 @@ JSIndexMap.Get=function(id)
         ["能图-趋势",       {IsMainIndex:false,  Create:function(){ return new LighterIndex1()},   Name:'大盘/个股趋势'  }],
         ["能图-位置研判",   {IsMainIndex:false,  Create:function(){ return new LighterIndex2()},   Name:'位置研判'  }],
         ["能图-点位研判",   {IsMainIndex:false,  Create:function(){ return new LighterIndex3()},   Name:'点位研判'  }],
-        ["能图-资金分析",   {IsMainIndex:false,  Create:function(){ return new LighterIndex4()},   Name:'资金分析'  }]
-
     ]
     );
 
@@ -9039,6 +9055,7 @@ function KLineChartContainer(uielement)
     this.newMethod(uielement);
     delete this.newMethod;
 
+    this.ClassName='KLineChartContainer';
     this.WindowIndex=new Array();
     this.Symbol;
     this.Name;
@@ -10240,6 +10257,7 @@ function MinuteChartContainer(uielement)
     this.newMethod(uielement);
     delete this.newMethod;
 
+    this.ClassName='MinuteChartContainer';
     this.WindowIndex=new Array();
     this.Symbol;
     this.Name;
@@ -10345,6 +10363,31 @@ function MinuteChartContainer(uielement)
         }
     }
 
+    //删除某一个窗口的指标
+    this.DeleteIndexPaint=function(windowIndex)
+    {
+        let paint=new Array();          //踢出当前窗口的指标画法
+        for(let i in this.ChartPaint)
+        {
+            let item=this.ChartPaint[i];
+
+            if (i==0 || item.ChartFrame!=this.Frame.SubFrame[windowIndex].Frame)
+                paint.push(item);
+        }
+
+        //清空指定最大最小值
+        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin=null;
+        this.Frame.SubFrame[windowIndex].Frame.IsLocked=false;          //解除上锁
+
+        this.ChartPaint=paint;
+
+         //清空东条标题
+         var titleIndex=windowIndex+1;
+         this.TitlePaint[titleIndex].Data=[];
+         this.TitlePaint[titleIndex].Title=null;
+    }
+
+
     this.CreateStockInfo=function()
     {
         this.ExtendChartPaint[0]=new StockInfoExtendChartPaint();
@@ -10402,6 +10445,20 @@ function MinuteChartContainer(uielement)
 
     }
 
+     //切换成 脚本指标
+     this.ChangeScriptIndex=function(windowIndex,indexData)
+     {
+         this.DeleteIndexPaint(windowIndex);
+         this.WindowIndex[windowIndex]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args);    //脚本执行
+ 
+         var bindData=this.SourceData;
+         this.BindIndexData(windowIndex,bindData);   //执行脚本
+ 
+         this.UpdataDataoffset();           //更新数据偏移
+         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+         this.Draw();
+     }
+
     //切换股票代码
     this.ChangeSymbol=function(symbol)
     {
@@ -10417,10 +10474,10 @@ function MinuteChartContainer(uielement)
     //请求分钟数据
     this.RequestMinuteData=function()
     {
-        var _self=this;
+        var self=this;
 
         $.ajax({
-            url: _self.MinuteApiUrl,
+            url: self.MinuteApiUrl,
             data:
             {
                 "field": [
@@ -10438,7 +10495,7 @@ function MinuteChartContainer(uielement)
                     "time",
                     "minutecount",
                 ],
-                "symbol": [_self.Symbol],
+                "symbol": [self.Symbol],
                 "start": -1
             },
             type:"post",
@@ -10446,7 +10503,7 @@ function MinuteChartContainer(uielement)
             async:true,
             success: function (data)
             {
-                _self.RecvMinuteData(data);
+                self.RecvMinuteData(data);
             }
         });
     }
@@ -10514,6 +10571,18 @@ function MinuteChartContainer(uielement)
     this.BindIndexData=function(windowIndex,hisData)
     {
         if (!this.WindowIndex[windowIndex]) return;
+
+        if (typeof(this.WindowIndex[windowIndex].RequestData)=="function")          //数据需要另外下载的.
+        {
+            this.WindowIndex[windowIndex].RequestData(this,windowIndex,hisData);
+            return;
+        }
+        if (typeof(this.WindowIndex[windowIndex].ExecuteScript)=='function')
+        {
+            this.WindowIndex[windowIndex].ExecuteScript(this,windowIndex,hisData);
+            return;
+        }
+
         this.WindowIndex[windowIndex].BindData(this,windowIndex,hisData);
     }
 
@@ -10815,6 +10884,7 @@ function CustomKLineChartContainer(uielement)
     this.newMethod(uielement);
     delete this.newMethod;
 
+    this.ClassName='CustomKLineChartContainer';
     this.CustomKLineApiUrl="https://opensource.zealink.com/API/IndexCalculate";                        //自定义指数计算地址
     this.CustomStock;   //成分
     this.QueryDate={Start:20180101,End:20180627} ;     //计算时间区间
@@ -12633,191 +12703,6 @@ function LighterIndex3()
 
         hqChart.TitlePaint[titleIndex].Title=this.FormatIndexTitle();
 
-        return true;
-    }
-}
-
-/*
-能图-资金分析
-M:=55;
-N:=34;
-LC:=REF(CLOSE,1);
-RSI:=((SMA(MAX((CLOSE - LC),0),3,1) / SMA(ABS((CLOSE - LC)),3,1)) * 100);
-FF:=EMA(CLOSE,3);
-MA15:=EMA(CLOSE,21); DRAWTEXT(CROSS(85,RSI),75,'▼'),COLORGREEN;
-VAR1:=IF(YEAR>=2038 AND MONTH>=1,0,1);
-VAR2:=REF(LOW,1)*VAR1;
-VAR3:=SMA(ABS(LOW-VAR2),3,1)/SMA(MAX(LOW-VAR2,0),3,1)*100*VAR1;
-VAR4:=EMA(IF(CLOSE*1.3,VAR3*10,VAR3/10),3)*VAR1;
-VAR5:=LLV(LOW,30)*VAR1;
-VAR6:=HHV(VAR4,30)*VAR1;
-VAR7:=IF(MA(CLOSE,58),1,0)*VAR1;
-VAR8:=EMA(IF(LOW<=VAR5,(VAR4+VAR6*2)/2,0),3)/618*VAR7*VAR1;
-吸筹A:IF(VAR8>100,100,VAR8)*VAR1,COLORRED;
-吸筹B:STICKLINE(吸筹A>-150,0,吸筹A,8,0),COLORRED;
-
-散户线: 100*(HHV(HIGH,M)-CLOSE)/(HHV(HIGH,M)-LLV(LOW,M)),COLORFFFF00,LINETHICK2;
-RSV:=(CLOSE-LLV(LOW,N))/(HHV(HIGH,N)-LLV(LOW,N))*100;
-K:=SMA(RSV,3,1);
-D:=SMA(K,3,1);
-J:=3*K-2*D;
-主力线:EMA(J,5),COLORFF00FF,LINETHICK2;
-DRAWICON(CROSS(主力线,散户线),主力线,1);
-DRAWICON(CROSS(散户线,主力线),主力线,2);
-*/
-
-function LighterIndex4()
-{
-    this.newMethod=BaseIndex;   //派生
-    this.newMethod('资金分析');
-    delete this.newMethod;
-
-    this.Index=new Array(
-        new IndexInfo("吸筹",55),
-        new IndexInfo("散户线",34),
-        new IndexInfo("主力线",null),
-        new IndexInfo("吸筹B", null),
-    );
-
-    this.Index[0].LineColor='rgb(251,47,59)';
-    this.Index[1].LineColor='rgb(170,137,189)';
-    this.Index[2].LineColor='rgb(243,152,0)';
-    this.Index[3].LineColor='rgb(251,47,59)';
-
-    this.Create=function(hqChart,windowIndex)
-    {
-        for(var i in this.Index)
-        {
-            var paint=null;
-            switch(this.Index[i].Name)
-            {
-            case '吸筹':
-            case '散户线':
-            case '主力线':
-                paint=new ChartLine();
-                paint.Color=this.Index[i].LineColor;
-                break;
-            case '吸筹B':
-                paint=new ChartStickLine();
-                paint.Color=this.Index[i].LineColor;
-                paint.LineWidth=8;
-                break;
-            }
-
-            paint.Canvas=hqChart.Canvas;
-            paint.Name=this.Name;
-            paint.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-            paint.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
-            hqChart.ChartPaint.push(paint);
-        }
-    }
-
-    this.BindData=function(hqChart,windowIndex,hisData)
-    {
-        let paint=hqChart.GetChartPaint(windowIndex);
-
-        if (paint.length!=this.Index.length) return false;
-
-        let closeData=hisData.GetClose();
-        let highData=hisData.GetHigh();
-        let lowData = hisData.GetLow();
-        let yearData=hisData.GetYear();
-        let monthData=hisData.GetMonth();
-
-        //LC:=REF(CLOSE,1);
-        let LC=HQIndexFormula.REF(closeData,1);
-
-        //RSI:=((SMA(MAX((CLOSE - LC),0),3,1) / SMA(ABS((CLOSE - LC)),3,1)) * 100);
-        let RSI=HQIndexFormula.ARRAY_MULTIPLY(
-            HQIndexFormula.ARRAY_DIVIDE(HQIndexFormula.SMA(HQIndexFormula.MAX(HQIndexFormula.ARRAY_SUBTRACT(closeData,LC),0),3,1),
-                                        HQIndexFormula.SMA(HQIndexFormula.ABS(HQIndexFormula.ARRAY_SUBTRACT(closeData,LC)),3,1)),
-            100);
-
-        //FF:=EMA(CLOSE,3);
-        let FF=HQIndexFormula.EMA(closeData,3);
-        //MA15:=EMA(CLOSE,21);
-        let MA15=HQIndexFormula.EMA(closeData,21);
-        //VAR1:=IF(YEAR>=2038 AND MONTH>=1,0,1);
-        let VAR1=HQIndexFormula.ARRAY_IF(HQIndexFormula.ARRAY_ADD(
-            HQIndexFormula.ARRAY_GTE(yearData,2038),HQIndexFormula.ARRAY_LTE(monthData,1)),
-            0,1);
-        //VAR2:=REF(LOW,1)*VAR1;
-        let VAR2=HQIndexFormula.ARRAY_MULTIPLY(HQIndexFormula.REF(lowData,1),VAR1);
-        //VAR3:=SMA(ABS(LOW-VAR2),3,1)/SMA(MAX(LOW-VAR2,0),3,1)*100*VAR1;
-        let VAR3=HQIndexFormula.ARRAY_MULTIPLY(
-            HQIndexFormula.ARRAY_DIVIDE(
-                HQIndexFormula.SMA(HQIndexFormula.ABS(HQIndexFormula.ARRAY_SUBTRACT(lowData,VAR2)),3,1),
-                HQIndexFormula.SMA(HQIndexFormula.MAX(HQIndexFormula.ARRAY_SUBTRACT(lowData,VAR2),0),3,1)),
-            100,VAR1);
-        //VAR4:=EMA(IF(CLOSE*1.3,VAR3*10,VAR3/10),3)*VAR1;
-        let VAR4=HQIndexFormula.ARRAY_MULTIPLY(
-            HQIndexFormula.EMA(HQIndexFormula.ARRAY_IF(
-                HQIndexFormula.ARRAY_MULTIPLY(closeData,1.3),
-                HQIndexFormula.ARRAY_MULTIPLY(VAR3,10),
-                HQIndexFormula.ARRAY_DIVIDE(VAR3,10)),3),
-            VAR1);
-        //VAR5:=LLV(LOW,30)*VAR1;
-        let VAR5=HQIndexFormula.ARRAY_MULTIPLY(HQIndexFormula.LLV(lowData,30),VAR1);
-        //VAR6:=HHV(VAR4,30)*VAR1;
-        let VAR6=HQIndexFormula.ARRAY_MULTIPLY(HQIndexFormula.HHV(VAR4,30),VAR1);
-        //VAR7:=IF(MA(CLOSE,58),1,0)*VAR1;
-        let VAR7=HQIndexFormula.ARRAY_MULTIPLY(
-            HQIndexFormula.ARRAY_IF(HQIndexFormula.MA(closeData,58),1,0),
-            VAR1);
-        //VAR8:=EMA(IF(LOW<=VAR5,(VAR4+VAR6*2)/2,0),3)/618*VAR7*VAR1;
-        let VAR8=HQIndexFormula.ARRAY_MULTIPLY(
-            HQIndexFormula.ARRAY_DIVIDE(
-                HQIndexFormula.EMA(
-                    HQIndexFormula.ARRAY_IF(
-                        HQIndexFormula.ARRAY_LTE(lowData,VAR5),
-                        HQIndexFormula.ARRAY_DIVIDE(HQIndexFormula.ARRAY_ADD(HQIndexFormula.ARRAY_MULTIPLY(VAR6,2),VAR4),2),
-                        0),
-                    3),
-                618),
-            VAR7,VAR1);
-
-        //吸筹A:IF(VAR8>100,100,VAR8)*VAR1,COLORRED;
-        let XiChouA=HQIndexFormula.ARRAY_MULTIPLY(HQIndexFormula.ARRAY_IF(HQIndexFormula.ARRAY_GT(VAR8,100),100,VAR8),VAR1);
-        //吸筹B:STICKLINE(吸筹A>-150,0,吸筹A,8,0),COLORRED;
-        let XiChouB=HQIndexFormula.STICKLINE(HQIndexFormula.ARRAY_GT(XiChouA,-150),0,XiChouA,0);
-
-        //散户线: 100*(HHV(HIGH,M)-CLOSE)/(HHV(HIGH,M)-LLV(LOW,M)),COLORFFFF00,LINETHICK2;
-        let SanHuXian=HQIndexFormula.ARRAY_MULTIPLY(
-            HQIndexFormula.ARRAY_DIVIDE(
-                HQIndexFormula.ARRAY_SUBTRACT(HQIndexFormula.HHV(highData,this.Index[0].Param),closeData),
-                HQIndexFormula.ARRAY_SUBTRACT(HQIndexFormula.HHV(highData,this.Index[0].Param),HQIndexFormula.LLV(lowData,this.Index[0].Param)))
-            ,100);
-
-        
-        //RSV:=(CLOSE-LLV(LOW,N))/(HHV(HIGH,N)-LLV(LOW,N))*100;
-        var RSV=HQIndexFormula.ARRAY_MULTIPLY(
-            HQIndexFormula.ARRAY_DIVIDE(
-                HQIndexFormula.ARRAY_SUBTRACT(closeData,HQIndexFormula.LLV(lowData,this.Index[1].Param)),
-                HQIndexFormula.ARRAY_SUBTRACT(HQIndexFormula.HHV(highData,this.Index[1].Param),HQIndexFormula.LLV(lowData,this.Index[1].Param)))
-            ,100);
-        //K:=SMA(RSV,3,1);
-        var K=HQIndexFormula.SMA(RSV,3,1);
-        //D:=SMA(K,3,1);
-        var D=HQIndexFormula.SMA(K,3,1);
-        //J:=3*K-2*D;
-        var J=HQIndexFormula.ARRAY_SUBTRACT(HQIndexFormula.ARRAY_MULTIPLY(K,3),HQIndexFormula.ARRAY_MULTIPLY(D,2));
-        //主力线:EMA(J,5),COLORFF00FF,LINETHICK2;
-        var ZhuLiXian=HQIndexFormula.EMA(J,5);
-
-        paint[0].Data.Data=XiChouA;
-        paint[1].Data.Data=SanHuXian;
-        paint[2].Data.Data=ZhuLiXian;
-        paint[3].Data.Data=XiChouB;
-
-        var titleIndex=windowIndex+1;
-
-        for(var i in paint)
-        {
-            if (i>=3) break;
-            hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.Index[i].LineColor);
-        }
-
-        hqChart.TitlePaint[titleIndex].Title=this.Name;
         return true;
     }
 }

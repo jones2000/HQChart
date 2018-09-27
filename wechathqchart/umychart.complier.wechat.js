@@ -2614,7 +2614,23 @@ function JSAlgorithm(errorHandler, symbolData)
     this.CROSS=function(data,data2)
     {
         var result = [];
-        if (typeof (data2) == 'number') 
+        if (Array.isArray(data) && Array.isArray(data2)) 
+        {
+            if (data.length != data2.length) return result = [];
+
+            var index = 0;
+            for (; index < data.length; ++index) 
+            {
+                if (this.IsNumber(data[index]) && this.IsNumber(data2[index]))
+                    break;
+            }
+
+            for (++index; index < data.length; ++index) 
+            {
+                result[index] = (data[index] > data2[index] && data[index - 1] < data2[index - 1]) ? 1 : 0;
+            }
+        }
+        else if (Array.isArray(data) && typeof (data2) == 'number') 
         {
             var index = 0;
             for (; index < data.length; ++index) 
@@ -2627,22 +2643,20 @@ function JSAlgorithm(errorHandler, symbolData)
                 result[index] = (data[index] > data2 && data[index - 1] < data2) ? 1 : 0;
             }
         }
-        else 
+        else if (typeof (data) == 'number' && Array.isArray(data2)) 
         {
-            if (data.length != data2.length) return result = [];
-
             var index = 0;
-            for (; index < data.length; ++index) 
+            for (; index < data2.length; ++index) 
             {
-                if (this.IsNumber(data[index]) && this.IsNumber(data2[index]))
-                    break;
+                if (this.IsNumber(data2[index])) break;
             }
 
-            for (++index; index < data.length; ++index)
-             {
-                result[index] = (data[index] > data2[index] && data[index - 1] < data2[index - 1]) ? 1 : 0;
+            for (++index; index < data2.length; ++index) 
+            {
+                result[index] = (data2[index] > data && data2[index - 1] < data) ? 1 : 0;
             }
         }
+
         return result;
     }
 
@@ -2729,7 +2743,35 @@ function JSAlgorithm(errorHandler, symbolData)
     //DEVSQ(X，N) 　返回数据偏差平方和。
     this.DEVSQ=function(data,n)
     {
-
+        var result=[];
+        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
+        var num = n;
+        var datanum = data.length;
+        var i = 0, j = 0, k = 0;
+        var E = 0, DEV = 0;
+        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        {
+            result[i] = null;
+        }
+        if (num < 1 || i+num>datanum) return result;
+        for(E=0; i < datanum && j < num; ++i,++j)
+            E += data[i]/num;
+        if (j == num)
+        {
+            DEV = 0;
+            for(i--; k < num; k++)
+                DEV += (data[i-k]-E) * (data[i-k]-E);
+            result[i] = DEV;
+            i++;
+        }
+        for(; i < datanum; ++i)
+        {
+            E += (data[i] - data[i-num]) / num;
+            for(DEV=0, k = 0; k < num; ++k)
+                DEV += (data[i-k]-E) * (data[i-k]-E);
+            result[i] = DEV;
+        }
+        return result;
     }
 
     //NOT 取反
@@ -2755,7 +2797,37 @@ function JSAlgorithm(errorHandler, symbolData)
     //FORCAST(X，N)　 返回线性回归预测值。
     this.FORCAST=function(data,n)
     {
-
+        var result=[];
+        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
+        var num = n;
+        var datanum = data.length;
+        if (num < 1 || num >= datanum)
+            return result;
+        var Ex = 0, Ey = 0, Sxy = 0, Sxx = 0, Const, Slope;
+        var i, j;
+        for(j = 0; j < datanum && !this.isNumber(data[j]); ++j)
+        {
+            result[j] = null;
+        }
+        for(i = j+num-1; i < datanum; ++i)
+        {
+           Ex = Ey = Sxy = Sxx = 0;
+           for(j = 0; j < num && j <= i; ++j)
+           {
+               Ex += (i - j);
+               Ey += data[i - j];
+           }
+           Ex /= num;
+           Ey /= num;
+           for(j = 0; j < num && j <= i; ++j)
+           {
+               Sxy += (i-j-Ex)*(data[i-j]-Ey);
+               Sxx += (i-j-Ex)*(i-j-Ex);
+           }
+           Slope = Sxy / Sxx;
+           Const = (Ey - Ex*Slope) / num;
+           result[i] = Slope * num + Const;
+        }
     }
 
     //SLOPE 线性回归斜率
@@ -2803,21 +2875,94 @@ function JSAlgorithm(errorHandler, symbolData)
     //STDP(X，N)　 返回总体标准差。
     this.STDP=function(data,n)
     {
-
+        var result=[];
+        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
+        var num = n;
+        var datanum = data.length;
+        if (num < 1 || num >= datanum)
+            return result;
+        var i = 0, j = 0;
+        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        {
+            result[i] = null;
+        }
+        var SigmaPowerX = 0, SigmaX = 0, MidResult;
+        for (; i < datanum && j < num; ++i, ++j)
+        {
+            SigmaPowerX += data[i] * data[i];
+            SigmaX += data[i];
+        }
+        if (j == num)
+        {
+            MidResult = num*SigmaPowerX - SigmaX*SigmaX;
+            result[i-1] = Math.sqrt(MidResult) / num;
+        }
+        for(; i < datanum; ++i)
+        {
+            SigmaPowerX += data[i]*data[i] - data[i-num]*data[i-num];
+            SigmaX += data[i] - data[i-num];
+            MidResult = num*SigmaPowerX - SigmaX*SigmaX;
+            result[i] = Math.sqrt(MidResult) / num;
+        }
     }
 
     //VAR 估算样本方差
     //VAR(X，N)　 返回估算样本方差。
     this.VAR=function(data,n)
     {
-
+        var result=[];
+        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
+        var num = n;
+        var datanum = data.length;
+        if (num <= 1 || num >= datanum)
+            return result;
+        var i, j;
+        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        {
+            result[i] = null;
+        }
+        var SigmaPowerX, SigmaX;
+        for (j = 0, i = i+num-1; i < datanum; ++i)
+        {
+            SigmaPowerX = SigmaX = 0;
+            for(j=0; j < num && j <= i; ++j)
+            {
+                SigmaPowerX += data[i-j] * data[i-j];
+                SigmaX += data[i-j];
+            }
+            result[i] = (num*SigmaPowerX - SigmaX*SigmaX) / num * (num -1);
+        }
     }
 
     //VARP 总体样本方差
     //VARP(X，N)　 返回总体样本方差 。
     this.VARP=function(data,n)
     {
-
+        var result=[];
+        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
+        var num = n;
+        var datanum = data.length;
+        if (num < 1 || num >= datanum)
+            return result;
+        var i = 0, j = 0;
+        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        {
+            result[i] = null;
+        }
+        var SigmaPowerX = 0, SigmaX = 0;
+        for (; i < datanum && j < num; ++i, ++j)
+        {
+            SigmaPowerX += data[i] * data[i];
+            SigmaX += data[i];
+        }
+        if (j == num)
+            result[i-1] = (num*SigmaPowerX - SigmaX*SigmaX) / (num*num);
+        for(; i < datanum; ++i)
+        {
+            SigmaPowerX += data[i]*data[i] - data[i-num]*data[i-num];
+            SigmaX += data[i] - data[i-num];
+            result[i] = (num*SigmaPowerX - SigmaX*SigmaX) / (num*num);
+        }
     }
 
     //RANGE(A,B,C)表示A>B AND A<C;
@@ -3740,6 +3885,80 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+    两条线维持一定周期后交叉.
+    用法:LONGCROSS(A,B,N)表示A在N周期内都小于B,本周期从下方向上穿过B时返回1,否则返回0
+    */
+    this.LONGCROSS = function (data, data2, n) 
+    {
+        var result = [];
+        var count = Math.max(data.length, data2.length);
+        for (let i = 0; i < count; ++i) 
+        {
+            result[i] = 0;
+            if (i - 1 < 0) continue;
+            if (i >= data.length || i >= data2.length) continue;
+            if (!this.IsNumber(data[i]) || !this.IsNumber(data2[i]) || !this.IsNumber(data[i - 1]) || !this.IsNumber(data2[i - 1])) continue;
+
+            if (data[i] > data2[i] && data[i - 1] < data2[i - 1]) result[i] = 1;
+        }
+
+        for (let i = 0, j = 0; i < count; ++i) 
+        {
+            if (!result[i]) continue;
+
+            for (j = 1; j <= n && i - j >= 0; ++j) 
+            {
+                if (data[i - j] >= data2[i - j]) 
+                {
+                    result[i] = 0;
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /*
+    EXISTR(X,A,B):是否存在(前几日到前几日间).
+    例如: EXISTR(CLOSE>OPEN,10,5) 
+    表示从前10日内到前5日内存在着阳线
+    若A为0,表示从第一天开始,B为0,表示到最后日止
+    */
+    this.EXISTR = function (data, n, n2) 
+    {
+        var result = [];
+        if (!Array.isArray(data)) return result;
+
+        n = parseInt(n);
+        n2 = parseInt(n2);
+        if (n <= 0) n = data.length;
+        if (n2 <= 0) n2 = 1;
+        if (n2 > n) return result;
+
+        var result = [];
+        var value;
+        for (let i = 0, j = 0; i < data.length; ++i) 
+        {
+            result[i] = null;
+            if (i - n < 0 || i - n2 < 0) continue;
+
+            result[i] = 0;
+            for (j = n; j >= n2; --j) 
+            {
+                var value = data[i - j];
+                if (this.IsNumber(value) && value) 
+                {
+                    result[i] = 1;
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node)
     {
@@ -3775,6 +3994,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.MULAR(args[0], args[1]);
             case 'CROSS':
                 return this.CROSS(args[0], args[1]);
+            case 'LONGCROSS':
+                return this.LONGCROSS(args[0], args[1], args[2]);
             case 'AVEDEV':
                 return this.AVEDEV(args[0], args[1]);
             case 'STD':
@@ -3790,6 +4011,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.RANGE(args[0],args[1],args[2]);
             case 'EXIST':
                 return this.EXIST(args[0],args[1]);
+            case 'EXISTR':
+                return this.EXISTR(args[0], args[1], args[2]);
             case 'FILTER':
                 return this.FILTER(args[0], args[1]);
             case 'TFILTER':
@@ -3824,6 +4047,16 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.DOWNNDAY(args[0], args[1]);
             case 'NDAY':
                 return this.NDAY(args[0], args[1], args[2]);
+            case 'DEVSQ':
+                return this.DEVSQ(args[0], args[1]);
+            case 'FORCAST':
+                return this.FORCAST(args[0], args[1]);
+            case 'STDP':
+                return this.STDP(args[0], args[1]);
+            case 'VAR':
+                return this.VAR(args[0], args[1]);
+            case 'VARP':
+                return this.VARP(args[0], args[1]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);
@@ -4338,6 +4571,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.Data=null;             //个股数据
     this.Period=0;              //周期
     this.Right=0;               //复权
+    this.DataType = 0;          //默认K线数据 2=分钟走势图数据
 
     this.KLineApiUrl = g_JSComplierResource.Domain+"/API/KLine2";                   //日线
     this.MinuteKLineApiUrl = g_JSComplierResource.Domain +'/API/KLine3';             //分钟K线
@@ -4356,11 +4590,15 @@ function JSSymbolData(ast,option,jsExecute)
     //使用option初始化
     if (option)
     {
+        if (option.HQDataType) this.DataType = option.HQDataType;
         if (option.Data) 
         {
             this.Data=option.Data;
-            this.Period=option.Data.Period; //周期
-            this.Right=option.Data.Right;   //复权
+            if (this.DataType != 2)   //2=分钟走势图数据 没有周期和复权
+            {
+                this.Period=option.Data.Period; //周期
+                this.Right=option.Data.Right;   //复权
+            }
             //this.Data=null;
         }
 
@@ -4562,6 +4800,27 @@ function JSSymbolData(ast,option,jsExecute)
            
         let self=this;
 
+        if (this.DataType === 2)  //当天分钟数据
+        {
+            wx.request({
+                url: self.RealtimeApiUrl,
+                data:
+                {
+                    "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol", "amount", "date", "minute", "time", "minutecount"],
+                    "symbol": [self.Symbol],
+                    "start": -1
+                },
+                method: 'POST',
+                dataType: "json",
+                async: true,
+                success: function (recvData) {
+                    self.RecvMinuteData(recvData);
+                    self.Execute.RunNextJob();
+                }
+            });
+            return;
+        }
+
         if (this.Period<=3)     //请求日线数据
         {
             wx.request({
@@ -4656,6 +4915,20 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         this.Name = data.name;
+    }
+
+    //最新的分钟数据走势图
+    this.RecvMinuteData = function (recvData) 
+    {
+        let data = recvData.data;
+        console.log('[JSSymbolData::RecvMinuteData] recv data', data);
+
+        var aryMinuteData = this.JsonDataToMinuteData(data);
+        this.Data = new JSCommonData.ChartData();
+        this.Data.DataType = 2; /*分钟走势图数据 */
+        this.Data.Data = aryMinuteData;
+
+        this.Name = data.stock[0].name;
     }
 
     this.GetSymbolCacheData=function(dataName)
@@ -5285,6 +5558,35 @@ function JSSymbolData(ast,option,jsExecute)
         return aryDayData;
     }
 
+    //API 返回数据 转化为array[]
+    this.JsonDataToMinuteData = function (data) 
+    {
+        var aryMinuteData = new Array();
+        for (var i in data.stock[0].minute) 
+        {
+            var jsData = data.stock[0].minute[i];
+            var item = new JSCommonData.MinuteData();
+
+            item.Close = jsData.price;
+            item.Open = jsData.open;
+            item.High = jsData.high;
+            item.Low = jsData.low;
+            item.Vol = jsData.vol; //股
+            item.Amount = jsData.amount;
+            if (i == 0)      //第1个数据 写死9：25
+                item.DateTime = data.stock[0].date.toString() + " 0925";
+            else
+                item.DateTime = data.stock[0].date.toString() + " " + jsData.time.toString();
+            item.Increate = jsData.increate;
+            item.Risefall = jsData.risefall;
+            item.AvPrice = jsData.avprice;
+
+            aryMinuteData[i] = item;
+        }
+
+        return aryMinuteData;
+    }
+
     //CODELIKE 模糊股票代码
     this.CODELIKE=function(value)
     {
@@ -5313,9 +5615,50 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.DATE = function () 
     {
-        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return null;
+        var result = [];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
 
-        return this.Data.Data[this.Data.Data.length - 1].Date;
+        for (let i in this.Data.Data) 
+        {
+            var item = this.Data.Data[i];
+            result[i] = item.Date;
+        }
+
+        return result;
+    }
+
+    this.YEAR = function () 
+    {
+        var result = [];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for (let i in this.Data.Data) 
+        {
+            var item = this.Data.Data[i];
+            if (this.IsNumber(item.Date))
+                result[i] = parseInt(item.Date / 10000);
+            else
+                result[i] = null;
+        }
+
+        return result;
+    }
+
+    this.MONTH = function () 
+    {
+        var result = [];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for (let i in this.Data.Data) 
+        {
+            var item = this.Data.Data[i];
+            if (this.IsNumber(item.Date))
+                result[i] = parseInt(item.Date % 10000 / 100);
+            else
+                result[i] = null;
+        }
+
+        return result;
     }
 
     this.REFDATE = function (data, date) 
@@ -5499,7 +5842,7 @@ function JSExecute(ast,option)
         ['C',null],['V',null],['O',null],['H',null],['L',null],
 
         //日期类
-        ['DATE', null],
+        ['DATE', null], ['YEAR', null], ['MONTH', null],
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],

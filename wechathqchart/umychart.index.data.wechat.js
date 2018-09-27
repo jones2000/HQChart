@@ -1,6 +1,6 @@
 /*
     开源项目 https://github.com/jones2000/HQChart
-    
+
     指标数据脚本
 */
 
@@ -29,6 +29,8 @@ JSIndexScript.prototype.Get=function(id)
             ['UOS', this.UOS],['CYW', this.CYW],['LON', this.LON],
             ['NDB', this.NDB],
 
+            ['飞龙四式', this.Dragon4_Main], ['飞龙四式-附图', this.Dragon4_Fig],
+            ['资金分析', this.FundsAnalysis], ['融资占比', this.MarginProportion],
 
             ['TEST', this.TEST] //测试用
         ]
@@ -757,6 +759,135 @@ MDK10: MA(DK, P2);'
     return data;
 }
 
+/*
+    飞龙四式-主图
+*/
+JSIndexScript.prototype.Dragon4_Main = function () 
+{
+    let data =
+        {
+            Name: '飞龙四式', Description: '飞龙四式', IsMainIndex: true,
+            Args: [{ Name: 'N1', Value: 5 }, { Name: 'N2', Value: 10 }, { Name: 'N3', Value: 50 }, { Name: 'N4', Value: 60 }],
+            Script: //脚本
+                '蜻蜓点水:=EMA(CLOSE,N1),COLORGRAY;\n\
+魔界:=EMA(CLOSE,N2),COLORGREEN;\n\
+水:=EMA(CLOSE,N3),COLORRED;\n\
+DRAWKLINE(HIGH,OPEN,LOW,CLOSE);\n\
+生命线:MA(CLOSE,N4),COLORBLUE,LINETHICK2;\n\
+DRAWBAND(魔界,\'rgb(186,225,250)\',水,\'rgb(253,194,124)\');\n\
+DRAWBAND(蜻蜓点水,\'rgb(128,138,135)\',魔界,\'rgb(0,0,255)\');'
+
+        };
+
+    return data;
+}
+
+JSIndexScript.prototype.Dragon4_Fig = function () {
+    let data =
+    {
+            Name: '飞龙四式', Description: '飞龙四式', IsMainIndex: false,
+            Args: [],
+            Script: //脚本
+                '倍:VOL>=REF(V,1)*1.90 AND C>REF(C,1),COLORYELLOW;\n\
+低:VOL<REF(LLV(VOL,13),1),COLORGREEN;\n\
+地:VOL<REF(LLV(VOL,100),1),COLORMAGENTA; \n\
+平:=ABS(VOL-HHV(REF(VOL,1),5))/HHV(REF(VOL,1),5)<=0.03 OR ABS(VOL-REF(VOL,1))/REF(VOL,1)<=0.03,NODRAW,COLORWHITE;\n\
+倍缩:VOL<=REF(V,1)*0.5,COLORFF8000;\n\
+梯量:COUNT(V>REF(V,1),3)==3 AND COUNT(C>O,3)==3,COLORBROWN;\n\
+缩量涨:COUNT(C>REF(C,1),2)==2 AND COUNT(V<REF(V,1),2)==2,COLORBLUE;\n\
+STICKLINE(C>=REF(C,1),V,0,2,0),COLORRED;\n\
+STICKLINE(C<REF(C,1),V,0,2,0),COLORGREEN;\n\
+STICKLINE(倍,0,V,2,0),COLORYELLOW;\n\
+STICKLINE(低,0,V,2,0),COLORGREEN;\n\
+STICKLINE(地,0,V,2,0),COLORLIMAGENTA;\n\
+STICKLINE(平,0,V,2,0),COLORGRAY;\n\
+STICKLINE(倍缩,0,V,2,0),COLORFF8000;\n\
+STICKLINE(梯量,0,V,2,0),COLORBROWN;\n\
+STICKLINE(缩量涨,0,V,2,0),COLORBLUE;'
+
+    };
+
+    return data;
+}
+
+
+/*
+能图-资金分析
+M:=55;
+N:=34;
+LC:=REF(CLOSE,1);
+RSI:=((SMA(MAX((CLOSE - LC),0),3,1) / SMA(ABS((CLOSE - LC)),3,1)) * 100);
+FF:=EMA(CLOSE,3);
+MA15:=EMA(CLOSE,21); DRAWTEXT(CROSS(85,RSI),75,'▼'),COLORGREEN;
+VAR1:=IF(YEAR>=2038 AND MONTH>=1,0,1);
+VAR2:=REF(LOW,1)*VAR1;
+VAR3:=SMA(ABS(LOW-VAR2),3,1)/SMA(MAX(LOW-VAR2,0),3,1)*100*VAR1;
+VAR4:=EMA(IF(CLOSE*1.3,VAR3*10,VAR3/10),3)*VAR1;
+VAR5:=LLV(LOW,30)*VAR1;
+VAR6:=HHV(VAR4,30)*VAR1;
+VAR7:=IF(MA(CLOSE,58),1,0)*VAR1;
+VAR8:=EMA(IF(LOW<=VAR5,(VAR4+VAR6*2)/2,0),3)/618*VAR7*VAR1;
+吸筹A:IF(VAR8>100,100,VAR8)*VAR1,COLORRED;
+吸筹B:STICKLINE(吸筹A>-150,0,吸筹A,8,0),COLORRED;
+
+散户线: 100*(HHV(HIGH,M)-CLOSE)/(HHV(HIGH,M)-LLV(LOW,M)),COLORFFFF00,LINETHICK2;
+RSV:=(CLOSE-LLV(LOW,N))/(HHV(HIGH,N)-LLV(LOW,N))*100;
+K:=SMA(RSV,3,1);
+D:=SMA(K,3,1);
+J:=3*K-2*D;
+主力线:EMA(J,5),COLORFF00FF,LINETHICK2;
+DRAWICON(CROSS(主力线,散户线),主力线,1);
+DRAWICON(CROSS(散户线,主力线),主力线,2);
+*/
+
+JSIndexScript.prototype.FundsAnalysis = function () 
+{
+    let data =
+    {
+            Name: '资金分析', Description: '资金分析', IsMainIndex: false,
+            Args: [{ Name: 'M', Value: 55 }, { Name: 'N', Value: 34 }],
+            Script: //脚本
+                'LC:=REF(CLOSE,1);\n\
+RSI:=((SMA(MAX((CLOSE - LC),0),3,1) / SMA(ABS((CLOSE - LC)),3,1)) * 100);\n\
+FF:=EMA(CLOSE,3);\n\
+MA15:=EMA(CLOSE,21); DRAWTEXT(CROSS(85,RSI),75,\'▼\'),COLORGREEN;\n\
+VAR1:=IF(YEAR>=2038 AND MONTH>=1,0,1);\n\
+VAR2:=REF(LOW,1)*VAR1;\n\
+VAR3:=SMA(ABS(LOW-VAR2),3,1)/SMA(MAX(LOW-VAR2,0),3,1)*100*VAR1;\n\
+VAR4:=EMA(IF(CLOSE*1.3,VAR3*10,VAR3/10),3)*VAR1;\n\
+VAR5:=LLV(LOW,30)*VAR1;\n\
+VAR6:=HHV(VAR4,30)*VAR1;\n\
+VAR7:=IF(MA(CLOSE,58),1,0)*VAR1;\n\
+VAR8:=EMA(IF(LOW<=VAR5,(VAR4+VAR6*2)/2,0),3)/618*VAR7*VAR1;\n\
+吸筹A:IF(VAR8>100,100,VAR8)*VAR1,COLORFB2F3B;\n\
+{吸筹B}STICKLINE(吸筹A>-150,0,吸筹A,8,0),COLORFB2F3B;\n\
+\n\
+散户线: 100*(HHV(HIGH,M)-CLOSE)/(HHV(HIGH,M)-LLV(LOW,M)),COLORAA89BD,LINETHICK2;\n\
+RSV:=(CLOSE-LLV(LOW,N))/(HHV(HIGH,N)-LLV(LOW,N))*100;\n\
+K:=SMA(RSV,3,1);\n\
+D:=SMA(K,3,1);\n\
+J:=3*K-2*D;\n\
+主力线:EMA(J,5),COLORF39800,LINETHICK2;\n\
+DRAWICON(CROSS(主力线,散户线),主力线,1);\n\
+DRAWICON(CROSS(散户线,主力线),主力线,2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MarginProportion = function () 
+{
+    let data =
+    {
+        Name: '融资占比(%)', Description: '融资占比', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            '占比:MARGIN(1);'
+    };
+
+    return data;
+}
+
 JSIndexScript.prototype.TEST = function () 
 {
     let data =
@@ -764,7 +895,7 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                'VAR2:FINANCE(43);'
+                'VAR2:MARGIN(3);'
         };
 
     return data;

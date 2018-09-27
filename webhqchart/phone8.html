@@ -1,0 +1,300 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>通达信脚本网页版</title>  
+    <link rel="stylesheet" href="tools.css" />
+    <link rel="stylesheet" href="font/iconfont.css">
+    <link rel="stylesheet" href="code_color/codemirror.css" />
+</head>  
+<body>
+
+    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+    <div id="code">
+        <div style="margin-bottom:2px;">
+            <span style="padding-left:2px;">指标名称：</span>
+            <input style="height:28px;padding-left:5px;" id="code_txt_index" />
+            <select style="height:32px;width:70px;" id="code_sel_ChangeScriptIndex">
+                <option value="2">副图2</option>
+                <option value="3">副图3</option>
+            </select>
+            <button style="height:32px;padding:0 8px;" id="code_btn_execute">执行</button>
+
+            <span style="padding-left:2px;">股票代码：</span>
+            <input style="height:28px;padding-left:5px;" id="code_txt_symbol" />
+            <button style="height:32px;padding:0 8px;" id="code_btn_change">切换股票</button>
+
+            <label id="code_lab_isDebug">
+                <input type="checkbox" />
+                <span style="margin-top:-2px;">输出调试信息</span>
+            </label>
+
+            <button style="height:32px;padding:0 8px;" id="code_btn_save">保存</button>
+        </div>
+        <div style="width:19.5%;float:left;" class="table">
+            <table cellpadding="0" cellspacing="0">
+                <tr>
+                    <th align="left">参数</th>
+                    <th align="left">最小</th>
+                    <th align="left">最大</th>
+                    <th align="left">缺省</th>
+                </tr>
+                <tr>
+                    <td>N</td>
+                    <td>1</td>
+                    <td>100</td>
+                    <td>12</td>
+                </tr>
+                <tr>
+                    <td>M</td>
+                    <td>1</td>
+                    <td>100</td>
+                    <td>26</td>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+            </table>
+        </div>
+        <div style="float:left;width:80.5%;">
+            <textarea id="txt_code">DIF:MA(CLOSE,N1)-MA(CLOSE,N2); DIFMA:MA(DIF,M);</textarea>
+        </div>
+        
+    </div>
+    
+
+<script type="text/javascript" src="umychart.js"></script>
+<script type="text/javascript" src="umychart.complier.js"></script>
+<script type="text/javascript" src="umychart.index.data.js"></script>
+
+
+<script type="text/javascript" src="code_color/codemirror.js"></script>
+<script type="text/javascript" src="code_color/javascript.js"></script>
+
+<script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script>
+
+
+JS_EXECUTE_DEBUG_LOG=false;
+
+function getURLParams(name) 
+{
+	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+	var r = window.location.search.substr(1).match(reg);
+	if (r != null) return decodeURI(r[2]);
+	return null;
+}
+
+
+$(window).resize(resizeCanvas);
+
+function resizeCanvas()
+{
+    var height= $(window).height()-300; //300高度给指标编辑器
+    var width = $(window).width();
+    var divKline=document.getElementById('kline');
+    divKline.style.width=width+'px';
+    divKline.style.height=height+'px';
+    divKline.JSChart.OnSize();
+}
+
+
+$(function ()
+{
+    var symbol=getURLParams('symbol');
+    if (symbol==null) symbol='600984.sh';
+
+    var aryIndex=new Array();
+
+    var index=getURLParams('index');        //指标1
+    if (index==null) index='MA';
+    aryIndex.push({"Index":index,"Modify":true,"Change":true});
+    aryIndex.push({"Index":"MACD","Modify":true,"Change":true});
+
+/*
+    var index2=getURLParams('index2');      //指标2
+    //if (index2==null) index2='指数热度';
+    if (index2==null) index2='能图-资金分析';
+*/
+    let code='VAR1:MA(CLOSE,25),COLORYELLOW;VAR2:MA(CLOSE,40);'
+    let code2='MTR:=EXPMEMA(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(REF(CLOSE,1)-LOW)),N);\n\
+HD :=HIGH-REF(HIGH,1);\n\
+LD :=REF(LOW,1)-LOW;\n\
+DMP:=EXPMEMA(IF(HD>0&&HD>LD,HD,0),N);\n\
+DMM:=EXPMEMA(IF(LD>0&&LD>HD,LD,0),N);\n\
+PDI: DMP*100/MTR;\n\
+MDI: DMM*100/MTR,COLORCYAN;\n\
+ADX: EXPMEMA(ABS(MDI-PDI)/(MDI+PDI)*100,MM),COLORFFB5C5;\n\
+ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
+
+    var jsIndexData=new JSIndexScript();
+    let testIndex=jsIndexData.Get('UOS');
+    console.log(testIndex);
+
+    //指标3
+    let scriptIndex={Name:testIndex.Name, Script:testIndex.Script, Args:testIndex.Args, "Modify":true,"Change":true};
+    //aryIndex.push(scriptIndex);
+
+    // 创建股票K线图
+    var jsChart=JSChart.Init(document.getElementById('kline'));
+
+    var option=
+    {
+        Type:'分钟走势图',
+        Windows:  aryIndex,     //窗口指标
+        Symbol:symbol,          //股票代码
+        IsAutoUpate:true,       //是自动更新数据
+
+        IsShowRightMenu:true,   //右键菜单
+        IsShowCorssCursorInfo:false,    //是否显示十字光标的刻度信息
+
+        Border: //边框
+            {
+                Left:45,    //左边间距
+                Right:50,     //右边间距
+                Top:20
+            },
+        Frame:  //子框架设置
+            [
+                {SplitCount:5,StringFormat:1},
+                {SplitCount:3,StringFormat:1}
+            ]
+    }
+
+    jsChart.SetOption(option);
+    //jsChart.LockIndex('飞龙四式',unlockIndex);
+
+    resizeCanvas();
+
+   
+    $("#txt_code").html(scriptIndex.Script);
+    $('#code_txt_index').val(scriptIndex.Name);
+
+    for(let i in scriptIndex.Args)
+    {
+        let item =scriptIndex.Args[i];
+        let id=parseInt(i)+1;
+        let trItem=$("#code .table table tr").eq(id);
+        trItem.find('td').eq(0).html(item.Name);
+        trItem.find('td').eq(3).html(item.Value);
+    }
+    
+
+    $("#code_txt_symbol").val(option.Symbol);
+
+    var jsEditor;
+
+    function setupEditor() {
+        jsEditor = CodeMirror.fromTextArea($('#txt_code').get(0), {
+            mode: "javascript",
+            gutter: true,
+            lineNumbers: true
+        })
+
+        jsEditor.setSize('99.8%',257);
+        jsEditor.gutter = true;
+    }
+    setupEditor();
+
+    $("#code .table table td").click(function () {
+        var $this = $(this);
+        var $input = $("<input>").val($this.text());
+        
+        if ($this.find("input").length == 0) {
+            $this.html($input);
+            $input.focus();
+        }
+    });
+
+    $("#code .table table td").on("blur", "input", function () {
+        var $this = $(this);
+        $this.closest("td").html($this.val());
+    });
+
+    $("#code_btn_execute").click(function () {
+        let code = jsEditor.doc.getValue();
+        let name = $.trim($("#code_txt_index").val());
+        
+       
+        let index = { Name: name, Script: code, Args: getArgs(), "Modify": false, "Change": false };
+        jsChart.ChangeScriptIndex(parseInt($("#code_sel_ChangeScriptIndex").val()), index);    //切换第2个窗口指标
+    });
+
+    function getArgs() {
+        var args = [];
+
+        $("#code .table table tr").each(function (i) {
+            if (i == 0) return true;
+
+            $this = $(this);
+
+            var name = $.trim($this.find("td").eq(0).text()),
+                value = $.trim($this.find("td").eq(3).text())
+
+            if (!name || !value)
+                return true;
+
+            value = parseInt(value);
+
+            args.push({
+                Name: name,
+                Value: value
+            });
+        });
+
+        return args;
+    }
+
+    $("#code_btn_change").click(function () {
+        let strSymbol = $.trim($("#code_txt_symbol").val());
+        jsChart.ChangeSymbol(strSymbol); 
+    });
+
+    JS_EXECUTE_DEBUG_LOG = $("#code_lab_isDebug input[type='checkbox']").is(":checked");
+    $("#code_lab_isDebug").click(function () {
+        JS_EXECUTE_DEBUG_LOG = $(this).find("input[type='checkbox']").is(":checked");
+    });
+
+    $("#code_btn_save").click(function () {
+        var data = {
+            index: $.trim($("#code_txt_index").val()),
+            code: jsEditor.doc.getValue(),
+            args: getArgs()
+        };
+
+        localStorage["data"] = JSON.stringify(data);
+    });
+    
+})
+
+function unlockIndex(indexName)
+{
+    console.log(indexName);
+}
+
+function ComplierError(error)
+{
+    alert(error);
+    console.log('[ComplierError]', error);
+}
+
+
+
+</script>  
+</body>  
+</html>
