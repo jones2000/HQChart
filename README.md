@@ -18,8 +18,7 @@
 # 2. 走势图
 * 支持指标 <br>
 * 分钟数据显示 <br>
-  
-  网页demo  <br>
-  K线图  https://opensource.zealink.com/hqcomplier/phone7.html  <br>
-  走势图 https://opensource.zealink.com/hqcomplier/phone8.html  <br>
-  小程序demo 请搜索 ‘知临信息软件及数据服务介绍’
+# 3. 网页demo  <br>
+* K线图  https://opensource.zealink.com/hqcomplier/phone7.html  <br>
+* 走势图 https://opensource.zealink.com/hqcomplier/phone8.html  <br>
+* 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’
