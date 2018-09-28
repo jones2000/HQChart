@@ -3959,6 +3959,82 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+    RELATE(X,Y,N) 返回X和Y的N周期的相关系数
+    RELATE(X,Y,N)=(∑[(Xi-Avg(X))(Yi-Avg(y))])/N ÷ √((∑(Xi-Avg(X))^2)/N * (∑(Yi-Avg(Y))^2)/N)
+    其中 avg(x)表示x的N周期均值：  avg(X) = (∑Xi)/N  
+    √(...)表示开平方
+    */
+    this.RELATE = function (data, data2, n) 
+    {
+        var result = [];
+        if (n < 1) n = 1;
+
+        if (!Array.isArray(data) || !Array.isArray(data2)) return result;
+
+        var dataAverage = this.CalculateAverage(data, n);
+        var data2Average = this.CalculateAverage(data2, n);
+
+        var count = Math.max(data.length, data2.length);
+        for (let i = 0, j = 0; i < count; ++i) 
+        {
+            result[i] = null;
+
+            if (i >= data.length || i >= data2.length || i >= dataAverage.length || i >= data2Average.length) continue;
+
+            var average = dataAverage[i];
+            var average2 = data2Average[i];
+
+            var total = 0, total2 = 0, total3 = 0;
+            for (j = i - n + 1; j <= i; ++j) 
+            {
+                total += (data[j] - average) * (data2[j] - average2);   //∑[(Xi-Avg(X))(Yi-Avg(y))])
+                total2 += Math.pow(data[j] - average, 2);            //∑(Xi-Avg(X))^2
+                total3 += Math.pow(data2[j] - average2, 2);          //∑(Yi-Avg(Y))^2)
+            }
+
+            result[i] = (total / n) / (Math.sqrt(total2 / n) * Math.sqrt(total3 / n));
+        }
+
+        return result;
+    }
+
+    //计算数组n周期内的均值
+    this.CalculateAverage = function (data, n) 
+    {
+        var result = [];
+        if (n < 1) return result;
+
+        var total = 0;
+
+        for (var i = 0; i < data.length; ++i)  //去掉开始的无效数
+        {
+            if (this.IsNumber(data[i])) break;
+        }
+
+        for (; i < data.length && i < n; ++i)  //计算第1个周期的数据
+        {
+            result[i] = null;
+            var value = data[i];
+            if (!this.IsNumber(value)) continue;
+            total += value;
+        }
+        result[i - 1] = total / n;
+
+        for (; i < data.length; ++i)         //计算后面的周期数据
+        {
+            var value = data[i];
+            var preValue = data[i - n];     //上一个周期的第1个数据
+            if (!this.IsNumber(value)) value = 0;
+            if (!this.IsNumber(preValue)) preValue = 0;
+
+            total = total - preValue + value; //当前周期的数据 等于上一个周期数据 去掉上一个周期的第1个数据 加上这个周期的最后1个数据
+            result[i] = total / n;
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node)
     {
@@ -4057,6 +4133,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.VAR(args[0], args[1]);
             case 'VARP':
                 return this.VARP(args[0], args[1]);
+            case 'RELATE':
+                return this.RELATE(args[0], args[1], args[2]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);

@@ -28,7 +28,7 @@ JSIndexScript.prototype.Get=function(id)
             ['NDB', this.NDB],
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
-            ['资金分析', this.FundsAnalysis]
+            ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion]
         ]
     );
 
@@ -871,5 +871,20 @@ DRAWICON(CROSS(散户线,主力线),主力线,2);'
 
     return data; 
 }
+
+JSIndexScript.prototype.MarginProportion=function()
+{
+    let data =
+    {
+        Name: '融资占比(%)', Description: '融资占比', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+        '占比:MARGIN(1);'
+    };
+
+    return data; 
+}
+
+
 
 

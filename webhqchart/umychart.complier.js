@@ -3949,6 +3949,121 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    /*
+    RELATE(X,Y,N) 返回X和Y的N周期的相关系数
+    RELATE(X,Y,N)=(∑[(Xi-Avg(X))(Yi-Avg(y))])/N ÷ √((∑(Xi-Avg(X))^2)/N * (∑(Yi-Avg(Y))^2)/N)
+    其中 avg(x)表示x的N周期均值：  avg(X) = (∑Xi)/N  
+    √(...)表示开平方
+    */
+    this.RELATE=function(data,data2,n)
+    {
+        var result=[];
+        if (n<1) n=1;
+
+        if (!Array.isArray(data)|| !Array.isArray(data2)) return result;
+
+        var dataAverage=this.CalculateAverage(data,n);
+        var data2Average=this.CalculateAverage(data2,n);
+
+        var count=Math.max(data.length,data2.length);
+        for(let i=0,j=0;i<count;++i)
+        {
+            result[i]=null;
+
+            if (i>=data.length || i>=data2.length || i>=dataAverage.length || i>=data2Average.length) continue;
+
+            var average=dataAverage[i];
+            var average2=data2Average[i];
+
+            var total=0,total2=0,total3=0;
+            for(j=i-n+1;j<=i;++j)
+            {
+                total+=(data[j]-average)*(data2[j]-average2);   //∑[(Xi-Avg(X))(Yi-Avg(y))])
+                total2+=Math.pow(data[j]-average,2);            //∑(Xi-Avg(X))^2
+                total3+=Math.pow(data2[j]-average2,2);          //∑(Yi-Avg(Y))^2)
+            }
+
+            result[i]=(total/n)/(Math.sqrt(total2/n)*Math.sqrt(total3/n));
+        }
+
+        return result;
+    }
+
+    //计算数组n周期内的均值
+    this.CalculateAverage=function(data,n)
+    {
+        var result=[];
+        if (n<1) return result;
+
+        var total=0;
+
+        for(var i=0;i<data.length;++i)  //去掉开始的无效数
+        {
+            if (this.IsNumber(data[i])) break;
+        }
+
+        for(;i<data.length && i<n;++i)  //计算第1个周期的数据
+        {
+            result[i]=null;
+            var value=data[i];
+            if (!this.IsNumber(value)) continue;
+            total+=value;
+        }
+        result[i-1]=total/n;
+
+        for(;i<data.length;++i)         //计算后面的周期数据
+        {
+            var value=data[i];
+            var preValue=data[i-n];     //上一个周期的第1个数据
+            if (!this.IsNumber(value)) value=0;
+            if (!this.IsNumber(preValue)) preValue=0;
+
+            total=total-preValue+value; //当前周期的数据 等于上一个周期数据 去掉上一个周期的第1个数据 加上这个周期的最后1个数据
+            result[i]=total/n;
+        }
+
+        return result;
+    }
+
+    /*
+    COVAR(X,Y,N) 返回X和Y的N周期的协方差
+    */
+
+    this.COVAR=function(data,data2,n)
+    {
+        var result=[];
+        if (n<1) n=1;
+
+        if (!Array.isArray(data)|| !Array.isArray(data2)) return result;
+
+        var dataAverage=this.CalculateAverage(data,n);
+        var data2Average=this.CalculateAverage(data2,n);
+
+        var count=Math.max(data.length,data2.length);
+
+        var count=Math.max(data.length,data2.length);
+        for(let i=0,j=0;i<count;++i)
+        {
+            result[i]=null;
+
+            if (i>=data.length || i>=data2.length || i>=dataAverage.length || i>=data2Average.length) continue;
+
+            var average=dataAverage[i];
+            var average2=data2Average[i];
+
+            var total=0;
+            for(j=i-n+1;j<=i;++j)
+            {
+                total+=(data[j]-average)*(data2[j]-average2);   
+            }
+
+            result[i]=(total/n);
+        }
+
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -4047,6 +4162,10 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.DOWNNDAY(args[0],args[1]);
             case 'NDAY':
                 return this.NDAY(args[0],args[1],args[2]);
+            case 'RELATE':
+                return this.RELATE(args[0],args[1],args[2]);
+            case 'COVAR':
+                return this.COVAR(args[0],args[1],args[2]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
@@ -6549,7 +6668,7 @@ JSComplier.Execute=function(code,option,errorCallback)
 
 //脚本指标
 //name=指标名字 args=参数名字 参数值
-function ScriptIndex(name,script,args)
+function ScriptIndex(name,script,args,option)
 {
     this.newMethod=BaseIndex;   //派生
     this.newMethod(name);
@@ -6559,7 +6678,51 @@ function ScriptIndex(name,script,args)
     this.Arguments=[];
     this.OutVar=[];
 
+    //指标上锁配置信息
+    this.IsLocked=false;    //是否锁住指标
+    this.LockCallback=null;
+    this.LockID=null;
+    this.LockBG=null;       //锁背景色
+    this.LockTextColor=null;
+    this.LockText=null;
+    this.LockFont=null;
+
+    if (option && option.Lock) 
+    {
+        if (option.Lock.IsLocked==true) this.IsLocked=true;  //指标上锁
+        if (option.Lock.Callback) this.LockCallback=option.Lock.Callback;    //锁回调
+        if (option.Lock.ID) this.LockID=option.Lock.ID;                      //锁ID
+        if (option.Lock.BG) this.LockBG=option.Lock.BG;
+        if (option.Lock.TextColor) this.LockTextColor=option.Lock.TextColor;
+        if (option.Lock.Text) this.LockText=option.Lock.Text;
+        if (option.Lock.Font) this.LockFont=option.Lock.Font;
+    }
+
     if (args) this.Arguments=args;
+
+    this.SetLock=function(lockData)
+    {
+        if (lockData.IsLocked==true) 
+        {
+            this.IsLocked=true;  //指标上锁
+            if (lockData.Callback) this.LockCallback=lockData.Callback;    //锁回调
+            if (lockData.ID) this.LockID=lockData.ID;                      //锁ID
+            if (lockData.BG) this.LockBG=lockData.BG;
+            if (lockData.TextColor) this.LockTextColor=lockData.TextColor;
+            if (lockData.Text) this.LockText=lockData.Text;
+            if (lockData.Font) this.LockFont=lockData.Font;
+        }
+        else
+        {   //清空锁配置信息
+            this.IsLocked=false;    //是否锁住指标
+            this.LockCallback=null;
+            this.LockID=null;
+            this.LockBG=null;       //锁背景色
+            this.LockTextColor=null;
+            this.LockText=null;
+            this.LockFont=null;
+        }
+    }
 
     this.ExecuteScript=function(hqChart,windowIndex,hisData)
     {
@@ -6600,6 +6763,17 @@ function ScriptIndex(name,script,args)
         let hisData=param.HistoryData;
         param.Self.OutVar=outVar;
         param.Self.BindData(hqChart,windowIndex,hisData);
+
+        if (param.Self.IsLocked==false) //不上锁
+        {
+            param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
+        }
+        else    //上锁
+        {
+            let lockData={ IsLocked:true,Callback:param.Self.LockCallback,IndexName:param.Self.Name ,ID:param.Self.LockID,
+                BG:param.Self.LockBG,Text:param.Self.LockText,TextColor:param.Self.LockTextColor, Font:param.Self.LockFont};
+            param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
+        }
 
         param.HQChart.UpdataDataoffset();           //更新数据偏移
         param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值

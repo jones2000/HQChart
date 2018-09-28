@@ -116,6 +116,12 @@ function JSChart(element)
             if (option.KLineTitle.UpdateUICallback) chart.TitlePaint[0].UpdateUICallback = option.KLineTitle.UpdateUICallback
         }
 
+        //叠加股票
+        if (option.Overlay && option.Overlay.length) 
+        {
+            chart.OverlayChartPaint[0].Symbol = option.Overlay[0].Symbol;
+        }
+
         //创建子窗口的指标
         let scriptData = new JSCommonIndexScript.JSIndexScript();
         for(var i in option.Windows)
@@ -4825,6 +4831,8 @@ function ChartBand()
                 this.Canvas.lineTo(secondlinePoints[j].x, secondlinePoints[j].y);
             }  
             this.Canvas.closePath();
+            this.Canvas.strokeStyle = "rgba(255,255,255,0)";
+            this.Canvas.stroke();
             this.Canvas.clip();
             this.Canvas.beginPath();
             this.Canvas.moveTo(firstlinePoints[0].x, this.ChartBorder.GetBottom());
@@ -9128,9 +9136,9 @@ function KLineChartContainer(uielement)
         {
             this.BindIndexData(i,bindData);
         }
-        //this.BindIndexData(0,hisData);
-        //this.BindIndexData(1,hisData);
-        //this.BindIndexData(2,hisData);
+
+        //请求叠加数据 (主数据下载完再下载))
+        this.RequestOverlayHistoryData();
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
@@ -9206,9 +9214,8 @@ function KLineChartContainer(uielement)
         {
             this.BindIndexData(i,bindData);
         }
-        //this.BindIndexData(0,hisData);
-        //this.BindIndexData(1,hisData);
-        //this.BindIndexData(2,hisData);
+
+        this.OverlayChartPaint[0].Data = null; //分钟数据不支持叠加 清空
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
@@ -9496,27 +9503,34 @@ function KLineChartContainer(uielement)
         //叠加数据周期调整
         if (this.OverlayChartPaint[0].SourceData)
         {
-            var bindData=new ChartData();
-            bindData.Data=this.OverlayChartPaint[0].SourceData.Data;
-            bindData.Period=this.Period;
-            bindData.Right=this.Right;
-
-            if (bindData.Right>0 && !IsIndexSymbol(this.OverlayChartPaint[0].Symbol))       //复权数据
+            if (this.Period >= 4)  //分钟不支持 清空掉
             {
-                var rightData=bindData.GetRightDate(bindData.Right);
-                bindData.Data=rightData;
+                this.OverlayChartPaint[0].Data = null;
             }
-
-            var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data);      //和主图数据拟合以后的数据
-            bindData.Data=aryOverlayData;
-
-            if (bindData.Period>0)   //周期数据
+            else
             {
-                var periodData=bindData.GetPeriodData(bindData.Period);
-                bindData.Data=periodData;
-            }
+                var bindData=new ChartData();
+                bindData.Data=this.OverlayChartPaint[0].SourceData.Data;
+                bindData.Period=this.Period;
+                bindData.Right=this.Right;
 
-            this.OverlayChartPaint[0].Data=bindData;
+                if (bindData.Right>0 && !IsIndexSymbol(this.OverlayChartPaint[0].Symbol))       //复权数据
+                {
+                    var rightData=bindData.GetRightDate(bindData.Right);
+                    bindData.Data=rightData;
+                }
+
+                var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data);      //和主图数据拟合以后的数据
+                bindData.Data=aryOverlayData;
+
+                if (bindData.Period>0)   //周期数据
+                {
+                    var periodData=bindData.GetPeriodData(bindData.Period);
+                    bindData.Data=periodData;
+                }
+
+                this.OverlayChartPaint[0].Data=bindData;
+            }
         }
 
         //刷新画图
@@ -9577,38 +9591,50 @@ function KLineChartContainer(uielement)
     //叠加股票
     this.OverlaySymbol=function(symbol)
     {
-        var self = this;
         if (!this.OverlayChartPaint[0].MainData) return false;
 
-        this.OverlayChartPaint[0].Symbol=symbol;
+        this.OverlayChartPaint[0].Symbol = symbol;
+        if (this.Period <= 3) this.RequestOverlayHistoryData();                  //请求日线数据
+
+        return true;
+    }
+
+    this.RequestOverlayHistoryData = function ()
+     {
+        if (!this.OverlayChartPaint.length) return;
+
+        var symbol = this.OverlayChartPaint[0].Symbol;
+        if (!symbol) return;
+
+        var self = this;
 
         //请求数据
         wx.request({
             url: this.KLineApiUrl,
             data:
-            {
-                "field": [
-                    "name",
-                    "symbol",
-                    "yclose",
-                    "open",
-                    "price",
-                    "high"
-                ],
-                "symbol": symbol,
-                "start": -1,
-                "count": this.MaxReqeustDataCount
-            },
+                {
+                    "field": 
+                    [
+                        "name",
+                        "symbol",
+                        "yclose",
+                        "open",
+                        "price",
+                        "high"
+                    ],
+                    "symbol": symbol,
+                    "start": -1,
+                    "count": this.MaxReqeustDataCount
+                },
             method: 'POST',
             dataType: "json",
-            async:true,
-            success: function (data)
+            async: true,
+            success: function (data) 
             {
-              self.RecvOverlayHistoryData(data);
+                self.RecvOverlayHistoryData(data);
             }
         });
 
-        return true;
     }
 
     this.RecvOverlayHistoryData=function(recvData)
@@ -9649,7 +9675,6 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
-
     }
 
     //取消叠加股票

@@ -870,22 +870,3 @@ td.context-menu {
     margin-left: 70px;
 }
 
-/*代码*/
-#code .table table {
-    width:100%;
-    border-left: 1px solid #ccc;
-    border-top: 1px solid #ccc;
-    margin-left:1px;
-}
-
-#code .table table td,#code .table table th {
-    border-right: 1px solid #ccc;
-    border-bottom: 1px solid #ccc;
-    height:32px;
-    padding:5px;
-    width:95px;
-}
-#code .table table td input{
-    width:50px;
-}
-

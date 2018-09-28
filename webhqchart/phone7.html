@@ -6,75 +6,75 @@
     <link rel="stylesheet" href="tools.css" />
     <link rel="stylesheet" href="font/iconfont.css">
     <link rel="stylesheet" href="code_color/codemirror.css" />
+    <link rel="stylesheet" href="phone7.tools.css" />
 </head>  
 <body>
 
     <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
-    <div id="code">
-        <div style="margin-bottom:2px;">
-            <span style="padding-left:2px;">指标名称：</span>
-            <input style="height:28px;padding-left:5px;" id="code_txt_index" />
-            <select style="height:32px;width:70px;" id="code_sel_ChangeScriptIndex">
+    <div class="tools">
+        <div id="tools_top" class="top">
+            <span>指标名称：</span>
+            <input class="input" v-model="indexName" />
+            <select class="changeIndex" v-model="changeIndex">
                 <option value="1">副图</option>
                 <option value="0">主图</option>
             </select>
-            <button style="height:32px;padding:0 8px;" id="code_btn_execute">执行</button>
+            <button class="toolsButton" v-on:click="execute()">执行</button>
 
-            <span style="padding-left:2px;">股票代码：</span>
-            <input style="height:28px;padding-left:5px;" id="code_txt_symbol" />
-            <button style="height:32px;padding:0 8px;" id="code_btn_change">切换股票</button>
+            <span >股票代码：</span>
+            <input class="input" v-model="symbol" />
+            <button class="toolsButton" v-on:click="change()">切换股票</button>
 
-            <label id="code_lab_isDebug">
-                <input type="checkbox" />
+            <label v-on:click="changeDebug()">
+                <input type="checkbox" v-model="isDebug" />
                 <span style="margin-top:-2px;">输出调试信息</span>
             </label>
 
-            <button style="height:32px;padding:0 8px;" id="code_btn_save">保存</button>
+            <button class="toolsButton" v-on:click="save()">保存</button>
         </div>
-        <div style="width:19.5%;float:left;" class="table">
+        <div class="table" id="tools_table">
             <table cellpadding="0" cellspacing="0">
-                <tr>
-                    <th align="left">参数</th>
-                    <th align="left">最小</th>
-                    <th align="left">最大</th>
-                    <th align="left">缺省</th>
-                </tr>
-                <tr>
-                    <td>N</td>
-                    <td>1</td>
-                    <td>100</td>
-                    <td>12</td>
-                </tr>
-                <tr>
-                    <td>M</td>
-                    <td>1</td>
-                    <td>100</td>
-                    <td>26</td>
-                </tr>
-                <tr>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                </tr>
-                <tr>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                </tr>
-                <tr>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                </tr>
+                <thead>
+                    <tr>
+                        <th align="left">参数</th>
+                        <th align="left">最小</th>
+                        <th align="left">最大</th>
+                        <th align="left">缺省</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item, index) in list">
+                        <td v-on:click="closeEdit(index,'name')">
+                            <input v-if="item.name.isEdit" v-model="item.name.value" v-on:click.stop="" />
+                            <span v-else=v-else v-on:click.stop="openEdit(index,'name')">{{item.name.value}}</span>
+                        </td>
+                        <td v-on:click="closeEdit(index,'min')">
+                            <input v-if="item.min.isEdit" v-model="item.min.value" v-on:click.stop="" />
+                            <span v-else=v-else v-on:click.stop="openEdit(index,'min')">{{item.min.value}}</span>
+                        </td>
+                        <td v-on:click="closeEdit(index,'max')">
+                            <input v-if="item.max.isEdit" v-model="item.max.value" v-on:click.stop="" />
+                            <span v-else=v-else v-on:click.stop="openEdit(index,'max')">{{item.max.value}}</span>
+                        </td>
+                        <td v-on:click="closeEdit(index,'value')">
+                            <input v-if="item.value.isEdit" v-model="item.value.value" v-on:click.stop="" />
+                            <span v-else=v-else v-on:click.stop="openEdit(index,'value')">{{item.value.value}}</span>
+                        </td>
+                    </tr>
+                </tbody>
             </table>
         </div>
-        <div style="float:left;width:80.5%;">
-            <textarea id="txt_code">DIF:MA(CLOSE,N1)-MA(CLOSE,N2); DIFMA:MA(DIF,M);</textarea>
+        <div class="code">
+            <textarea id="tools_code"></textarea>
         </div>
-        
+        <div class="cache" id="tools_cache">
+            <ul>
+                <li v-bind:class="{ active: index == activeIndex }" v-for="(item, index) in list" v-on:click="select(index)">
+                    {{item.name}} 
+                    <span v-on:click.stop="_delete(index)">删除</span>
+                </li>
+            </ul>
+        </div>
     </div>
     
 
@@ -86,242 +86,176 @@
 <script type="text/javascript" src="code_color/codemirror.js"></script>
 <script type="text/javascript" src="code_color/javascript.js"></script>
 
+<script type="text/javascript" src="vue.js"></script>
+<script type="text/javascript" src="phone7.tools.js"></script>
+
 <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
 <script>
+    var jsChart;
+    JS_EXECUTE_DEBUG_LOG=false;
 
-
-JS_EXECUTE_DEBUG_LOG=false;
-
-function getURLParams(name) 
-{
-	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
-	var r = window.location.search.substr(1).match(reg);
-	if (r != null) return decodeURI(r[2]);
-	return null;
-}
-
-
-$(window).resize(resizeCanvas);
-
-function resizeCanvas()
-{
-    var height= $(window).height()-300; //300高度给指标编辑器
-    var width = $(window).width();
-    var divKline=document.getElementById('kline');
-    divKline.style.width=width+'px';
-    divKline.style.height=height+'px';
-    divKline.JSChart.OnSize();
-}
-
-
-$(function ()
-{
-    var symbol=getURLParams('symbol');
-    if (symbol==null) symbol='600984.sh';
-
-    var aryIndex=new Array();
-
-    var index=getURLParams('index');        //指标1
-    if (index==null) index='MA';
-    aryIndex.push({"Index":index,"Modify":true,"Change":true});
-
-/*
-    var index2=getURLParams('index2');      //指标2
-    //if (index2==null) index2='指数热度';
-    if (index2==null) index2='能图-资金分析';
-*/
-    let code='VAR1:MA(CLOSE,25),COLORYELLOW;VAR2:MA(CLOSE,40);'
-    let code2='MTR:=EXPMEMA(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(REF(CLOSE,1)-LOW)),N);\n\
-HD :=HIGH-REF(HIGH,1);\n\
-LD :=REF(LOW,1)-LOW;\n\
-DMP:=EXPMEMA(IF(HD>0&&HD>LD,HD,0),N);\n\
-DMM:=EXPMEMA(IF(LD>0&&LD>HD,LD,0),N);\n\
-PDI: DMP*100/MTR;\n\
-MDI: DMM*100/MTR,COLORCYAN;\n\
-ADX: EXPMEMA(ABS(MDI-PDI)/(MDI+PDI)*100,MM),COLORFFB5C5;\n\
-ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
-
-    var jsIndexData=new JSIndexScript();
-    let testIndex=jsIndexData.Get('UOS');
-    console.log(testIndex);
-
-    //指标3
-    let scriptIndex={Name:testIndex.Name, Script:testIndex.Script, Args:testIndex.Args, "Modify":true,"Change":true};
-    aryIndex.push(scriptIndex);
-
-    // 创建股票K线图
-    var jsChart=JSChart.Init(document.getElementById('kline'));
-
-    var option=
-        {
-            Type:'历史K线图',
-            Windows:aryIndex, //窗口指标
-            Symbol:symbol,
-            IsAutoUpate:true,       //是自动更新数据
-
-            Tool:                   //工具条
-                [
-                    {Name:"周期"},
-                    {Name:"复权"}
-                ],
-
-            IsShowRightMenu:true,           //右键菜单
-            IsShowCorssCursorInfo:false,    //是否显示十字光标的刻度信息
-
-            ScriptError:ComplierError,
-
-            KLine:
-                {
-                    DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
-                    Right:1,                    //复权 0 不复权 1 前复权 2 后复权
-                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
-                    MaxReqeustDataCount:1000,   //数据个数
-                    PageSize:50,               //一屏显示多少数据
-                    IndexTreeApiUrl:"https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
-                    //Info:["业绩预告","公告","互动易","调研","大宗交易"],       //信息地雷
-                    //Info:["业绩预告","公告"],          //信息地雷
-                    KLineDoubleClick:true,              //双击分钟走势图
-                    IsShowTooltip:true                 //是否显示K线提示信息
-                },
-
-            KLineTitle: //标题设置
-                {
-                    IsShowName:true,       //不显示股票名称
-                    IsShowSettingInfo:false //不显示周期/复权
-                },
-
-            Border: //边框
-                {
-                    Left:50,    //左边间距
-                    Right:1     //右边间距
-                },
-            
-            Frame:  //子框架设置
-            [
-                {SplitCount:3,StringFormat:1},
-                {SplitCount:3,StringFormat:1}
-            ]
-        }
-
-    jsChart.SetOption(option);
-    //jsChart.LockIndex('飞龙四式',unlockIndex);
-
-    resizeCanvas();
-
-   
-    $("#txt_code").html(scriptIndex.Script);
-    $('#code_txt_index').val(scriptIndex.Name);
-
-    for(let i in scriptIndex.Args)
+    function getURLParams(name) 
     {
-        let item =scriptIndex.Args[i];
-        let id=parseInt(i)+1;
-        let trItem=$("#code .table table tr").eq(id);
-        trItem.find('td').eq(0).html(item.Name);
-        trItem.find('td').eq(3).html(item.Value);
+    	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+    	var r = window.location.search.substr(1).match(reg);
+    	if (r != null) return decodeURI(r[2]);
+    	return null;
+    }
+
+    $(window).resize(resizeCanvas);
+
+    function resizeCanvas()
+    {
+        var height= $(window).height()-300; //300高度给指标编辑器
+        var width = $(window).width();
+        var divKline=document.getElementById('kline');
+        divKline.style.width=width+'px';
+        divKline.style.height=height+'px';
+        divKline.JSChart.OnSize();
     }
     
+    $(function () {
+        var symbol = getURLParams('symbol');
+        if (symbol == null) symbol = '600984.sh';
 
-    $("#code_txt_symbol").val(option.Symbol);
+        var aryIndex = new Array();
 
-    var jsEditor;
+        var index = getURLParams('index');        //指标1
+        if (index == null) index = '飞龙四式';
+        aryIndex.push({ "Index": index, "Modify": true, "Change": true });
 
-    function setupEditor() {
-        jsEditor = CodeMirror.fromTextArea($('#txt_code').get(0), {
-            mode: "javascript",
-            gutter: true,
-            lineNumbers: true
-        })
+        /*
+            var index2=getURLParams('index2');      //指标2
+            //if (index2==null) index2='指数热度';
+            if (index2==null) index2='能图-资金分析';
+        */
+        let code = 'VAR1:MA(CLOSE,25),COLORYELLOW;VAR2:MA(CLOSE,40);'
+        let code2 = 'MTR:=EXPMEMA(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(REF(CLOSE,1)-LOW)),N);\n\
+    HD :=HIGH-REF(HIGH,1);\n\
+    LD :=REF(LOW,1)-LOW;\n\
+    DMP:=EXPMEMA(IF(HD>0&&HD>LD,HD,0),N);\n\
+    DMM:=EXPMEMA(IF(LD>0&&LD>HD,LD,0),N);\n\
+    PDI: DMP*100/MTR;\n\
+    MDI: DMM*100/MTR,COLORCYAN;\n\
+    ADX: EXPMEMA(ABS(MDI-PDI)/(MDI+PDI)*100,MM),COLORFFB5C5;\n\
+    ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
 
-        jsEditor.setSize('99.8%',257);
-        jsEditor.gutter = true;
-    }
-    setupEditor();
+        var jsIndexData = new JSIndexScript();
+        let testIndex = jsIndexData.Get('UOS');
+        console.log(testIndex);
 
-    $("#code .table table td").click(function () {
-        var $this = $(this);
-        var $input = $("<input>").val($this.text());
-        
-        if ($this.find("input").length == 0) {
-            $this.html($input);
-            $input.focus();
-        }
-    });
+        //指标3
+        let scriptIndex = { Name: testIndex.Name, Script: testIndex.Script, Args: testIndex.Args, 
+            Lock: 
+            { 
+                IsLocked:true, 
+                Callback:clickLock,
+                BG:'rgb(200,0,40)',
+                TextColor:'rgb(255,255,255)',
+                Text:'上锁了',
+                Font:'20px 微软雅黑'
+            }, 
+            "Modify": true, "Change": true };
+        aryIndex.push(scriptIndex);
 
-    $("#code .table table td").on("blur", "input", function () {
-        var $this = $(this);
-        $this.closest("td").html($this.val());
-    });
+        // 创建股票K线图
+        jsChart = JSChart.Init(document.getElementById('kline'));
 
-    $("#code_btn_execute").click(function () {
-        let code = jsEditor.doc.getValue();
-        let name = $.trim($("#code_txt_index").val());
-        
-       
-        let index = { Name: name, Script: code, Args: getArgs(), "Modify": false, "Change": false };
-        jsChart.ChangeScriptIndex(parseInt($("#code_sel_ChangeScriptIndex").val()), index);    //切换第2个窗口指标
-    });
+        var option =
+            {
+                Type: '历史K线图',
+                Windows: aryIndex, //窗口指标
+                Symbol: symbol,
+                IsAutoUpate: true,       //是自动更新数据
 
-    function getArgs() {
-        var args = [];
+                Tool:                   //工具条
+                    [
+                        { Name: "周期" },
+                        { Name: "复权" }
+                    ],
 
-        $("#code .table table tr").each(function (i) {
-            if (i == 0) return true;
+                IsShowRightMenu: true,           //右键菜单
+                IsShowCorssCursorInfo: false,    //是否显示十字光标的刻度信息
 
-            $this = $(this);
+                ScriptError: ComplierError,
 
-            var name = $.trim($this.find("td").eq(0).text()),
-                value = $.trim($this.find("td").eq(3).text())
+                KLine:
+                    {
+                        DragMode: 1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                        Right: 1,                    //复权 0 不复权 1 前复权 2 后复权
+                        Period: 0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                        MaxReqeustDataCount: 1000,   //数据个数
+                        PageSize: 50,               //一屏显示多少数据
+                        IndexTreeApiUrl: "https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
+                        //Info:["业绩预告","公告","互动易","调研","大宗交易"],       //信息地雷
+                        //Info:["业绩预告","公告"],          //信息地雷
+                        KLineDoubleClick: true,              //双击分钟走势图
+                        IsShowTooltip: true                 //是否显示K线提示信息
+                    },
 
-            if (!name || !value)
-                return true;
+                //叠加股票
+                Overlay:
+                [
+                   // {Symbol:'000001.sh'}
+                ],
+                
+                KLineTitle: //标题设置
+                    {
+                        IsShowName: true,       //不显示股票名称
+                        IsShowSettingInfo: false //不显示周期/复权
+                    },
 
-            value = parseInt(value);
+                Border: //边框
+                    {
+                        Left: 50,    //左边间距
+                        Right: 1     //右边间距
+                    },
 
-            args.push({
-                Name: name,
-                Value: value
-            });
+                Frame:  //子框架设置
+                [
+                    { SplitCount: 3, StringFormat: 1 },
+                    { SplitCount: 3, StringFormat: 1 }
+                ]
+            }
+
+        jsChart.SetOption(option);
+
+        var lockData=
+        { 
+            Index:'UOS',
+            IsLocked:true, 
+            Callback:clickLock,
+            BG:'rgb(200,0,40)',
+            TextColor:'rgb(255,255,255)',
+            Text:'上锁了',
+            Font:'20px 微软雅黑'
+        }; 
+        jsChart.LockIndex(lockData);
+
+        resizeCanvas();
+
+        Tools.init({
+            script: scriptIndex.Script,
+            indexName: scriptIndex.Name,
+            args: scriptIndex.Args,
+            symbol: option.Symbol
         });
-
-        return args;
-    }
-
-    $("#code_btn_change").click(function () {
-        let strSymbol = $.trim($("#code_txt_symbol").val());
-        jsChart.ChangeSymbol(strSymbol); 
-    });
-
-    JS_EXECUTE_DEBUG_LOG = $("#code_lab_isDebug input[type='checkbox']").is(":checked");
-    $("#code_lab_isDebug").click(function () {
-        JS_EXECUTE_DEBUG_LOG = $(this).find("input[type='checkbox']").is(":checked");
-    });
-
-    $("#code_btn_save").click(function () {
-        var data = {
-            index: $.trim($("#code_txt_index").val()),
-            code: jsEditor.doc.getValue(),
-            args: getArgs()
-        };
-
-        localStorage["data"] = JSON.stringify(data);
     });
     
-})
+    function clickLock(info)
+    {
+        console.log(info);
+        alert('已解锁指标'+info.Data.IndexName);
 
-function unlockIndex(indexName)
-{
-    console.log(indexName);
-}
-
-function ComplierError(error)
-{
-    alert(error);
-    console.log('[ComplierError]', error);
-}
-
-
-
+        var lockData={ IndexName:info.Data.IndexName, IsLocked:false };
+        info.HQChart.LockIndex(lockData);
+    }
+    
+    function ComplierError(error)
+    {
+        alert(error);
+        console.log('[ComplierError]', error);
+    }
 </script>  
 </body>  
 </html>
