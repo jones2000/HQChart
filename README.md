@@ -18,6 +18,7 @@
 * 支持通达信语法指标
 # 2. 走势图
 * 支持指标 <br>
+* 支持沪深和港股
 * 分钟数据显示 <br>
 # 3. 网页demo  <br>
 * K线图  https://opensource.zealink.com/hqcomplier/phone7.html  <br>
