@@ -2206,19 +2206,41 @@ function JSAlgorithm(errorHandler,symbolData)
 
     this.MA=function(data,dayCount)
     {
+        if (dayCount<=0) dayCount=1;
+        
         let result=[];
-        for(let i=0;i<data.length;++i)
+        if (!data || !data.length) return result;
+        
+        for(var i=0;i<data.length;++i)
         {
-            if (i<dayCount)
+            result[i]=null;
+            if (this.IsNumber(data[i])) break;
+        }
+
+        var data=data.slice(0); //复制一份数据出来
+        for(var days=0;i<data.length;++i,++days)
+        {
+            if (days<dayCount-1)
             {
                 result[i]=null;
                 continue;
             }
 
+            let preValue=data[i-(dayCount-1)];
             let sum=0;
-            for(let j=0;j<dayCount;++j)
+            for(let j=dayCount-1;j>=0;--j)
             {
-                sum+=data[i-j];
+                var value=data[i-j];
+                if (!this.IsNumber(value)) 
+                {
+                    value=preValue;  //空数据就取上一个数据
+                    data[i-j]=value; 
+                }
+                else 
+                {
+                    preValue=value;
+                }
+                sum+=value;
             }
 
             result[i]=sum/dayCount;

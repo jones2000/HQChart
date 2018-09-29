@@ -48,7 +48,7 @@ var Tools = {
                 execute: function () {
                     var _this = this;
 
-                    jsChart.ChangeScriptIndex(_this.changeIndex, { Name: _this.indexName, Script: jsEditor.doc.getValue(), Args: Root.table.getArgs(), "Modify": false, "Change": false });
+                    jsChart.ChangeScriptIndex(parseInt(_this.changeIndex), { Name: _this.indexName, Script: jsEditor.doc.getValue(), Args: Root.table.getArgs(), "Modify": false, "Change": false });
                 },
                 change: function () {
                     jsChart.ChangeSymbol(this.symbol);
