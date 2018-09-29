@@ -4402,6 +4402,8 @@ function ChartMinutePriceLine()
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
+            if (!value) continue;
+
             if (range.Max==null) range.Max=value;
             if (range.Min==null) range.Min=value;
 
@@ -5832,6 +5834,7 @@ function FrameSplitMinutePriceY()
 
         for(var i in this.Data.Data)
         {
+            if (!this.Data.Data[i]) continue;   //价格必须大于0
             if (max<this.Data.Data[i]) max=this.Data.Data[i];
             if (min>this.Data.Data[i]) min=this.Data.Data[i];
         }
@@ -5840,6 +5843,7 @@ function FrameSplitMinutePriceY()
         {
             for(var i in this.AverageData.Data)
             {
+                if (!this.AverageData.Data[i]) continue;    //价格必须大于0
                 if (max<this.AverageData.Data[i]) max=this.AverageData.Data[i];
                 if (min>this.AverageData.Data[i]) min=this.AverageData.Data[i];
             }
@@ -6574,19 +6578,25 @@ function DynamicMinuteTitlePainting()
         this.Canvas.fillText(text,left,bottom,textWidth);
         left+=textWidth;
 
-        this.Canvas.fillStyle=this.GetColor(item.Close,this.YClose);
-        var text="价格:"+item.Close.toFixed(2);
-        var textWidth=this.Canvas.measureText(text).width+2;    //后空2个像素
-        if (left+textWidth>right) return;
-        this.Canvas.fillText(text,left,bottom,textWidth);
-        left+=textWidth;
+        if (item.Close != null) 
+        {
+            this.Canvas.fillStyle=this.GetColor(item.Close,this.YClose);
+            var text="价格:"+item.Close.toFixed(2);
+            var textWidth=this.Canvas.measureText(text).width+2;    //后空2个像素
+            if (left+textWidth>right) return;
+            this.Canvas.fillText(text,left,bottom,textWidth);
+            left+=textWidth;
+        }
 
-        this.Canvas.fillStyle=this.GetColor(item.AvPrice,this.YClose);
-        var text="均价:"+item.AvPrice.toFixed(2);
-        var textWidth=this.Canvas.measureText(text).width+2;    //后空2个像素
-        if (left+textWidth>right) return;
-        this.Canvas.fillText(text,left,bottom,textWidth);
-        left+=textWidth;
+        if (item.AvPrice != null)
+        {
+            this.Canvas.fillStyle=this.GetColor(item.AvPrice,this.YClose);
+            var text="均价:"+item.AvPrice.toFixed(2);
+            var textWidth=this.Canvas.measureText(text).width+2;    //后空2个像素
+            if (left+textWidth>right) return;
+            this.Canvas.fillText(text,left,bottom,textWidth);
+            left+=textWidth;
+        }
 
         this.Canvas.fillStyle=this.VolColor;
         var text="量:"+IFrameSplitOperator.FormatValueString(item.Vol,2);
@@ -10535,7 +10545,13 @@ MinuteChartContainer.JsonDataToMinuteData=function(data)
         }
         else
             item.DateTime=data.stock[0].date.toString()+" "+jsData.time.toString();
-        
+
+        //价格是0的 都用空
+        if (item.Open <= 0) item.Open = null;
+        if (item.Close <= 0) item.Close = null;
+        if (item.AvPrice <= 0) item.AvPrice = null;
+        if (item.High <= 0) item.High = null;
+        if (item.Low <= 0) item.Low = null;
 
         aryMinuteData[i]=item;
     }

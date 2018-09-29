@@ -774,8 +774,8 @@ JSIndexScript.prototype.Dragon4_Main = function ()
 水:=EMA(CLOSE,N3),COLORRED;\n\
 DRAWKLINE(HIGH,OPEN,LOW,CLOSE);\n\
 生命线:MA(CLOSE,N4),COLORBLUE,LINETHICK2;\n\
-DRAWBAND(魔界,\'rgb(186,225,250)\',水,\'rgb(253,194,124)\');\n\
-DRAWBAND(蜻蜓点水,\'rgb(128,138,135)\',魔界,\'rgb(0,0,255)\');'
+DRAWBAND(魔界,\'RGB(186,225,250)\',水,\'RGB(253,194,124)\');\n\
+DRAWBAND(蜻蜓点水,\'RGB(128,138,135)\',魔界,\'RGB(0,0,255)\');'
 
         };
 
@@ -895,7 +895,7 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                'VAR2:MARGIN(3);'
+                'VAR2:RELATE(C,O,5);'
         };
 
     return data;
