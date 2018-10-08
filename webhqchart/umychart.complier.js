@@ -2206,19 +2206,41 @@ function JSAlgorithm(errorHandler,symbolData)
 
     this.MA=function(data,dayCount)
     {
+        if (dayCount<=0) dayCount=1;
+        
         let result=[];
-        for(let i=0;i<data.length;++i)
+        if (!data || !data.length) return result;
+        
+        for(var i=0;i<data.length;++i)
         {
-            if (i<dayCount)
+            result[i]=null;
+            if (this.IsNumber(data[i])) break;
+        }
+
+        var data=data.slice(0); //复制一份数据出来
+        for(var days=0;i<data.length;++i,++days)
+        {
+            if (days<dayCount-1)
             {
                 result[i]=null;
                 continue;
             }
 
+            let preValue=data[i-(dayCount-1)];
             let sum=0;
-            for(let j=0;j<dayCount;++j)
+            for(let j=dayCount-1;j>=0;--j)
             {
-                sum+=data[i-j];
+                var value=data[i-j];
+                if (!this.IsNumber(value)) 
+                {
+                    value=preValue;  //空数据就取上一个数据
+                    data[i-j]=value; 
+                }
+                else 
+                {
+                    preValue=value;
+                }
+                sum+=value;
             }
 
             result[i]=sum/dayCount;
@@ -4028,7 +4050,6 @@ function JSAlgorithm(errorHandler,symbolData)
     /*
     COVAR(X,Y,N) 返回X和Y的N周期的协方差
     */
-
     this.COVAR=function(data,data2,n)
     {
         var result=[];
@@ -4064,6 +4085,108 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    /*
+    求上一高点到当前的周期数.
+    用法:
+    HHVBARS(X,N):求N周期内X最高值到当前周期数,N=0表示从第一个有效值开始统计
+    例如:
+    HHVBARS(HIGH,0)求得历史新高到到当前的周期数
+    */
+    this.HHVBARS=function(data,n)
+    {
+        var result=[];
+        if (!Array.isArray(data)) return result;
+        if (n<1) n=data.length;
+
+        var nMax=null;  //最大值索引
+        for(var i=0;i<data.length;++i)
+        {
+            result[i]=null;
+            if (this.IsNumber(data[i])) 
+            {
+                nMax=i;
+                break;
+            }
+        }
+
+        var j=0;
+        for(i=nMax+1;i<data.length && j<n ;++i,++j) //求第1个最大值
+        {
+            if (data[i]>=data[nMax]) nMax=i;
+            if(n==data.length) result[i]=(i-nMax);
+        }
+
+        for(;i<data.length;++i)
+        {
+            if (i-nMax<n)
+            {
+                if (data[i]>=data[nMax]) nMax=i;
+            }
+            else
+            {
+                nMax=i-n+1;
+                for(j=nMax;j<=i;++j)    //计算区间最大值
+                {
+                    if (data[j]>=data[nMax]) nMax=j;
+                }
+            }
+
+            result[i]=i-nMax;
+        }
+
+        return result;
+    }
+
+    /*
+    求上一低点到当前的周期数.
+    用法: LLVBARS(X,N):求N周期内X最低值到当前周期数,N=0表示从第一个有效值开始统计
+    例如: LLVBARS(HIGH,20)求得20日最低点到当前的周期数
+    */
+    this.LLVBARS=function(data,n)
+    {
+        var result=[];
+        if (!Array.isArray(data)) return result;
+        if (n<1) n=data.length;
+
+        var nMin=null;  //最小值索引
+        for(var i=0;i<data.length;++i)
+        {
+            result[i]=null;
+            if (this.IsNumber(data[i])) 
+            {
+                nMin=i;
+                break;
+            }
+        }
+
+        var j=0;
+        for(i=nMin+1;i<data.length && j<n ;++i,++j) //求第1个最大值
+        {
+            if (data[i]<=data[nMin]) nMin=i;
+            if(n==data.length) result[i]=(i-nMin);
+        }
+
+        for(;i<data.length;++i)
+        {
+            if (i-nMin<n)
+            {
+                if (data[i]<=data[nMin]) nMin=i;
+            }
+            else
+            {
+                nMin=i-n+1;
+                for(j=nMin;j<=i;++j)    //计算区间最小值
+                {
+                    if (data[j]<=data[nMin]) nMin=j;
+                }
+            }
+
+            result[i]=i-nMin;
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -4093,8 +4216,12 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.COUNT(args[0], args[1]);
             case 'LLV':
                 return this.LLV(args[0], args[1]);
+            case 'LLVBARS':
+                return this.LLVBARS(args[0], args[1]);
             case 'HHV':
                 return this.HHV(args[0], args[1]);
+            case 'HHVBARS':
+                return this.HHVBARS(args[0], args[1]);
             case 'MULAR':
                 return this.MULAR(args[0], args[1]);
             case 'CROSS':
@@ -4397,7 +4524,7 @@ function JSDraw(errorHandler,symbolData)
     this.DRAWBAND=function(data,color,data2,color2)
     {
         let drawData=[];
-        let result={DrawData:drawData, DrawType:'DRAWBAND', Color:[color,color2]};
+        let result={DrawData:drawData, DrawType:'DRAWBAND', Color:[color.toLowerCase(),color2.toLowerCase()]};  //颜色使用小写字符串
         let count=Math.max(data.length, data2.length);
 
         for(let i=0;i<count;++i)
@@ -6219,6 +6346,7 @@ function JSExecute(ast,option)
                         if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
                         let value={Name:varName, Data:outVar, Radius:2, Type:3};
                         if (color) value.Color=color;
+                        if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
                     }
                     else if (circleDot && varName)  //圆点
@@ -6227,6 +6355,7 @@ function JSExecute(ast,option)
                         if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
                         let value={Name:varName, Data:outVar, Radius:1.3, Type:3};
                         if (color) value.Color=color;
+                        if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
                     }
                     else if (lineStick && varName)  //LINESTICK  同时画出柱状线和指标线
@@ -6686,6 +6815,7 @@ function ScriptIndex(name,script,args,option)
     this.LockTextColor=null;
     this.LockText=null;
     this.LockFont=null;
+    this.LockCount=20;
 
     if (option && option.Lock) 
     {
@@ -6696,6 +6826,7 @@ function ScriptIndex(name,script,args,option)
         if (option.Lock.TextColor) this.LockTextColor=option.Lock.TextColor;
         if (option.Lock.Text) this.LockText=option.Lock.Text;
         if (option.Lock.Font) this.LockFont=option.Lock.Font;
+        if (option.Lock.Count) this.LockCount=option.Lock.Count;
     }
 
     if (args) this.Arguments=args;
@@ -6711,6 +6842,7 @@ function ScriptIndex(name,script,args,option)
             if (lockData.TextColor) this.LockTextColor=lockData.TextColor;
             if (lockData.Text) this.LockText=lockData.Text;
             if (lockData.Font) this.LockFont=lockData.Font;
+            if (lockData.Count) this.LockCount=lockData.Count;
         }
         else
         {   //清空锁配置信息
@@ -6721,6 +6853,7 @@ function ScriptIndex(name,script,args,option)
             this.LockTextColor=null;
             this.LockText=null;
             this.LockFont=null;
+            this.LockCount=20;
         }
     }
 
@@ -6771,7 +6904,7 @@ function ScriptIndex(name,script,args,option)
         else    //上锁
         {
             let lockData={ IsLocked:true,Callback:param.Self.LockCallback,IndexName:param.Self.Name ,ID:param.Self.LockID,
-                BG:param.Self.LockBG,Text:param.Self.LockText,TextColor:param.Self.LockTextColor, Font:param.Self.LockFont};
+                BG:param.Self.LockBG,Text:param.Self.LockText,TextColor:param.Self.LockTextColor, Font:param.Self.LockFont, Count:param.Self.LockCount };
             param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
         }
 
@@ -6874,6 +7007,12 @@ function ScriptIndex(name,script,args,option)
         else pointDot.Color=this.GetDefaultColor(id);
 
         if (varItem.Radius) pointDot.Radius=varItem.Radius;
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) pointDot.Radius=width;
+        }
 
         let titleIndex=windowIndex+1;
         pointDot.Data.Data=varItem.Data;

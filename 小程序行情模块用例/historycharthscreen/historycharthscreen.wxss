@@ -1,0 +1,34 @@
+/*  横板设置, 但小程序不支持
+.historychart {
+  position:absolute;
+  top:    0px;
+  left:   0px;
+  width:  100%; 
+  height: 100%;
+  transform:rotateZ(90deg) translateY(-100%);
+  transform-origin: 0 0;
+}
+
+page
+{
+  height: 100%;
+  width:100%;
+}
+*/
+
+
+.historychart 
+{
+    position:absolute;
+    top:    0px;
+    left:   0px;
+}
+
+.container
+{
+    position:absolute;
+    top:    0px;
+    left:   0px;
+    height: 100%;
+    width:100%;
+}

@@ -21,7 +21,7 @@
             </select>
             <button class="toolsButton" v-on:click="execute()">执行</button>
 
-            <span>股票代码：</span>
+            <span >股票代码：</span>
             <input class="input" v-model="symbol" />
             <button class="toolsButton" v-on:click="change()">切换股票</button>
 
@@ -70,7 +70,7 @@
         <div class="cache" id="tools_cache">
             <ul>
                 <li v-bind:class="{ active: index == activeIndex }" v-for="(item, index) in list" v-on:click="select(index)">
-                    {{item.name}}
+                    {{item.name}} 
                     <span v-on:click.stop="_delete(index)">删除</span>
                 </li>
             </ul>
@@ -91,7 +91,6 @@
 
 <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
 <script>
-
     var jsChart;
     JS_EXECUTE_DEBUG_LOG=false;
 
@@ -102,38 +101,36 @@
     	if (r != null) return decodeURI(r[2]);
     	return null;
     }
-    
+
     $(window).resize(resizeCanvas);
-    
+
     function resizeCanvas()
     {
         var height= $(window).height()-300; //300高度给指标编辑器
         var width = $(window).width();
         var divKline=document.getElementById('kline');
-        divKline.style.width=width+'px';
+        divKline.style.width=600+'px';
         divKline.style.height=height+'px';
         divKline.JSChart.OnSize();
     }
     
-    $(function ()
-    {
-        var symbol=getURLParams('symbol');
-        if (symbol==null) symbol='600984.sh';
-    
-        var aryIndex=new Array();
-    
-        var index=getURLParams('index');        //指标1
-        if (index==null) index='MA';
-        aryIndex.push({"Index":index,"Modify":true,"Change":true});
-        aryIndex.push({"Index":"MACD","Modify":true,"Change":true});
-    
-    /*
-        var index2=getURLParams('index2');      //指标2
-        //if (index2==null) index2='指数热度';
-        if (index2==null) index2='能图-资金分析';
-    */
-        let code='VAR1:MA(CLOSE,25),COLORYELLOW;VAR2:MA(CLOSE,40);'
-        let code2='MTR:=EXPMEMA(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(REF(CLOSE,1)-LOW)),N);\n\
+    $(function () {
+        var symbol = getURLParams('symbol');
+        if (symbol == null) symbol = '600984.sh';
+
+        var aryIndex = new Array();
+
+        var index = getURLParams('index');        //指标1
+        if (index == null) index = 'MA';
+        aryIndex.push({ "Index": index, "Modify": true, "Change": true });
+
+        /*
+            var index2=getURLParams('index2');      //指标2
+            //if (index2==null) index2='指数热度';
+            if (index2==null) index2='能图-资金分析';
+        */
+        let code = 'VAR1:MA(CLOSE,25),COLORYELLOW;VAR2:MA(CLOSE,40);'
+        let code2 = 'MTR:=EXPMEMA(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(REF(CLOSE,1)-LOW)),N);\n\
     HD :=HIGH-REF(HIGH,1);\n\
     LD :=REF(LOW,1)-LOW;\n\
     DMP:=EXPMEMA(IF(HD>0&&HD>LD,HD,0),N);\n\
@@ -142,58 +139,121 @@
     MDI: DMM*100/MTR,COLORCYAN;\n\
     ADX: EXPMEMA(ABS(MDI-PDI)/(MDI+PDI)*100,MM),COLORFFB5C5;\n\
     ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
-    
-        var jsIndexData=new JSIndexScript();
-        let testIndex=jsIndexData.Get('UOS');
+
+        var jsIndexData = new JSIndexScript();
+        let testIndex = jsIndexData.Get('VOL');
         console.log(testIndex);
-    
+
         //指标3
-        let scriptIndex={Name:testIndex.Name, Script:testIndex.Script, Args:testIndex.Args, "Modify":true,"Change":true};
-        //aryIndex.push(scriptIndex);
-    
+        let scriptIndex = { Name: testIndex.Name, Script: testIndex.Script, Args: testIndex.Args, 
+           
+           /* Lock: 
+            { 
+                IsLocked:true, 
+                Callback:clickLock,
+                BG:'rgb(200,0,40)',
+                TextColor:'rgb(255,255,255)',
+                Text:'上锁了',
+                Font:'20px 微软雅黑'
+            }, 
+            */
+            "Modify": true, "Change": true };
+        aryIndex.push(scriptIndex);
+
         // 创建股票K线图
         jsChart = JSChart.Init(document.getElementById('kline'));
-    
-        var option=
-        {
-            Type:'分钟走势图',
-            Windows:  aryIndex,     //窗口指标
-            Symbol:symbol,          //股票代码
-            IsAutoUpate:true,       //是自动更新数据
-    
-            IsShowRightMenu:true,   //右键菜单
-            IsShowCorssCursorInfo:false,    //是否显示十字光标的刻度信息
-    
-            Border: //边框
-                {
-                    Left:45,    //左边间距
-                    Right:50,     //右边间距
-                    Top:20
-                },
-            Frame:  //子框架设置
+
+        var option =
+            {
+                //Type: '历史K线图',
+                Type:'历史K线图横屏',
+                Windows: aryIndex, //窗口指标
+                Symbol: symbol,
+                IsAutoUpate: true,       //是自动更新数据
+
+                Tool:                   //工具条
+                    [
+                        { Name: "周期" },
+                        { Name: "复权" }
+                    ],
+
+                IsShowRightMenu: true,           //右键菜单
+                IsShowCorssCursorInfo: true,    //是否显示十字光标的刻度信息
+
+                ScriptError: ComplierError,
+
+                KLine:
+                    {
+                        DragMode: 1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                        Right: 1,                    //复权 0 不复权 1 前复权 2 后复权
+                        Period: 0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                        MaxReqeustDataCount: 1000,   //数据个数
+                        PageSize: 20,               //一屏显示多少数据
+                        IndexTreeApiUrl: "https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
+                        //Info:["业绩预告","公告","互动易","调研","大宗交易"],       //信息地雷
+                        //Info:["业绩预告","公告"],          //信息地雷
+                        KLineDoubleClick: true,              //双击分钟走势图
+                        IsShowTooltip: true                 //是否显示K线提示信息
+                    },
+
+                //叠加股票
+                Overlay:
                 [
-                    {SplitCount:5,StringFormat:1},
-                    {SplitCount:3,StringFormat:1}
+                   // {Symbol:'000001.sh'}
+                ],
+                
+                KLineTitle: //标题设置
+                    {
+                        IsShowName: true,       //不显示股票名称
+                        IsShowSettingInfo: true //不显示周期/复权
+                    },
+
+                Border: //边框
+                    {
+                        Top:50,
+                        Bottom:100,
+                        Left: 50,    //左边间距
+                        Right: 100     //右边间距
+                    },
+
+                Frame:  //子框架设置
+                [
+                    { SplitCount: 3, StringFormat: 1 },
+                    { SplitCount: 3, StringFormat: 1 }
                 ]
-        }
-    
+            }
+
         jsChart.SetOption(option);
-        //jsChart.LockIndex('飞龙四式',unlockIndex);
-    
+
+        var lockData=
+        { 
+            Index:'UOS',
+            IsLocked:true, 
+            Callback:clickLock,
+            BG:'rgb(200,0,40)',
+            TextColor:'rgb(255,255,255)',
+            Text:'上锁了',
+            Font:'20px 微软雅黑'
+        }; 
+        jsChart.LockIndex(lockData);
+
         resizeCanvas();
-    
-       
+
         Tools.init({
             script: scriptIndex.Script,
             indexName: scriptIndex.Name,
             args: scriptIndex.Args,
             symbol: option.Symbol
         });
-    })
+    });
     
-    function unlockIndex(indexName)
+    function clickLock(info)
     {
-        console.log(indexName);
+        console.log(info);
+        alert('已解锁指标'+info.Data.IndexName);
+
+        var lockData={ IndexName:info.Data.IndexName, IsLocked:false };
+        info.HQChart.LockIndex(lockData);
     }
     
     function ComplierError(error)

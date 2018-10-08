@@ -4,6 +4,8 @@
   ![走势图](/小程序行情模块用例/image/hqchart_minute2.PNG)
   ![K线图](/小程序行情模块用例/image/hqchart_kline.PNG)
   ![K线图2](/小程序行情模块用例/image/hqchart_kline_lock.PNG)
+  ![K线图3](/小程序行情模块用例/image/hqchart_kline_hscreen.PNG)
+  
 # 1. K线图
 * 支持前复权,后复权 <br>
 * 支持日线,月线,周线,年线.<br>
@@ -18,6 +20,7 @@
 * 支持通达信语法指标
 # 2. 走势图
 * 支持指标 <br>
+* 支持沪深和港股
 * 分钟数据显示 <br>
 # 3. 网页demo  <br>
 * K线图  https://opensource.zealink.com/hqcomplier/phone7.html  <br>
