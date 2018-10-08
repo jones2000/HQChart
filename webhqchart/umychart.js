@@ -1910,6 +1910,7 @@ function IChartFramePainting()
         if (lockData.Text) this.LockPaint.Title= lockData.Text;   
         if (lockData.TextColor) this.LockPaint.TextColor=lockData.TextColor;  
         if (lockData.Font) this.LockPaint.Font=lockData.Font;
+        if (lockData.Count) this.LockPaint.LockCount=lockData.Count;
     }
 }
 
@@ -6231,6 +6232,8 @@ function ChartBand()
         return range;
     }
 }
+
+//锁  支持横屏
 function ChartLock()
 {
     this.newMethod=IChartPainting;   //派生
@@ -6255,6 +6258,13 @@ function ChartLock()
             this.DrawNotSupportmessage();
             return;
         }
+
+        if (this.ChartFrame.IsHScreen===true)
+        {
+            this.HScreenDraw();
+            return;
+        }
+
         var xOffset = this.ChartBorder.GetRight();
         var lOffsetWidth = 0;
         if (this.ChartFrame.Data != null)
@@ -6295,6 +6305,57 @@ function ChartLock()
         this.Canvas.fillText(this.Title, xCenter, yCenter);
 
         this.LockRect={Left:lLeft,Top:this.ChartBorder.GetTop(),Width:lWidth,Heigh:lHeight};    //保存上锁区域
+    }
+
+    this.HScreenDraw=function()
+    {
+        var xOffset = this.ChartBorder.GetBottom();
+
+        var lOffsetWidth = 0;
+        if (this.ChartFrame.Data != null)
+        {
+            var dataWidth=this.ChartFrame.DataWidth;
+            var distanceWidth=this.ChartFrame.DistanceWidth;
+            xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+2.0;
+            var chartright=this.ChartBorder.GetBottom();
+            var xPointCount=this.ChartFrame.XPointCount;
+            //求最后1个数据的位置
+            for(var i=this.ChartFrame.Data.DataOffset,j=0;i<this.ChartFrame.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+            {
+                var data=this.ChartFrame.Data.Data[i];
+                if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+            }
+            lOffsetWidth = (dataWidth + distanceWidth) * this.LockCount;    
+        }
+        if (lOffsetWidth == 0)
+        {
+            lOffsetWidth = (xOffset - this.ChartBorder.GetTop()) * this.WidthDiv;
+        }
+
+        var lLeft = xOffset - lOffsetWidth;
+        if (lLeft < this.ChartBorder.GetTop()) lLeft = this.ChartBorder.GetTop();
+        var lHeight =  this.ChartBorder.GetRight()-this.ChartBorder.GetLeft();
+        var lWidth = this.ChartBorder.GetBottom() - lLeft;
+        this.Canvas.fillStyle = this.BGColor;
+        this.Canvas.fillRect(this.ChartBorder.GetLeft(), lLeft,lHeight,lWidth);
+
+        var xCenter = this.ChartBorder.GetLeft() + lHeight / 2;
+        var yCenter = lLeft + lWidth / 2;
+        this.Canvas.save(); 
+        this.Canvas.translate(xCenter, yCenter);
+        this.Canvas.rotate(90 * Math.PI / 180);
+        this.Canvas.textAlign = 'center';
+        this.Canvas.textBaseline = 'middle';
+        this.Canvas.fillStyle = this.TextColor;
+        this.Canvas.font = this.Font;
+        this.Canvas.fillText(this.Title, 0, 0);
+        this.Canvas.restore();
+
+        this.LockRect={Left:this.ChartBorder.GetLeft(),Top:lLeft,Width:lHeight,Heigh:lWidth};    //保存上锁区域
     }
 
     //x,y是否在上锁区域

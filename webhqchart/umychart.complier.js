@@ -6815,6 +6815,7 @@ function ScriptIndex(name,script,args,option)
     this.LockTextColor=null;
     this.LockText=null;
     this.LockFont=null;
+    this.LockCount=20;
 
     if (option && option.Lock) 
     {
@@ -6825,6 +6826,7 @@ function ScriptIndex(name,script,args,option)
         if (option.Lock.TextColor) this.LockTextColor=option.Lock.TextColor;
         if (option.Lock.Text) this.LockText=option.Lock.Text;
         if (option.Lock.Font) this.LockFont=option.Lock.Font;
+        if (option.Lock.Count) this.LockCount=option.Lock.Count;
     }
 
     if (args) this.Arguments=args;
@@ -6840,6 +6842,7 @@ function ScriptIndex(name,script,args,option)
             if (lockData.TextColor) this.LockTextColor=lockData.TextColor;
             if (lockData.Text) this.LockText=lockData.Text;
             if (lockData.Font) this.LockFont=lockData.Font;
+            if (lockData.Count) this.LockCount=lockData.Count;
         }
         else
         {   //清空锁配置信息
@@ -6850,6 +6853,7 @@ function ScriptIndex(name,script,args,option)
             this.LockTextColor=null;
             this.LockText=null;
             this.LockFont=null;
+            this.LockCount=20;
         }
     }
 
@@ -6900,7 +6904,7 @@ function ScriptIndex(name,script,args,option)
         else    //上锁
         {
             let lockData={ IsLocked:true,Callback:param.Self.LockCallback,IndexName:param.Self.Name ,ID:param.Self.LockID,
-                BG:param.Self.LockBG,Text:param.Self.LockText,TextColor:param.Self.LockTextColor, Font:param.Self.LockFont};
+                BG:param.Self.LockBG,Text:param.Self.LockText,TextColor:param.Self.LockTextColor, Font:param.Self.LockFont, Count:param.Self.LockCount };
             param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
         }
 

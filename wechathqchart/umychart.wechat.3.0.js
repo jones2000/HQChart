@@ -1540,6 +1540,7 @@ function IChartFramePainting()
         if (lockData.Text) this.LockPaint.Title = lockData.Text;
         if (lockData.TextColor) this.LockPaint.TextColor = lockData.TextColor;
         if (lockData.Font) this.LockPaint.Font = lockData.Font;
+        if (lockData.Count) this.LockPaint.LockCount = lockData.Count;
     }
 }
 
@@ -5566,13 +5567,14 @@ function ChartBand()
     }
 }
 
+//锁  支持横屏
 function ChartLock() 
 {
     this.newMethod = IChartPainting;   //派生
     this.newMethod();
     delete this.newMethod;
     this.WidthDiv = 0.2;  // 框子宽度占比
-    this.LockCount = 20; // 锁最新的几个数据
+    this.LockCount = 10; // 锁最新的几个数据
     this.BGColor = g_JSChartResource.LockBGColor;
     this.TextColor = g_JSChartResource.LockTextColor;
     this.Font = g_JSChartResource.DefaultTextFont;
@@ -5585,11 +5587,19 @@ function ChartLock()
     this.Draw = function () 
     {
         this.LockRect = null;
+
         if (this.NotSupportMessage) 
         {
             this.DrawNotSupportmessage();
             return;
         }
+
+        if (this.ChartFrame.IsHScreen === true) 
+        {
+            this.HScreenDraw();
+            return;
+        }
+
         var xOffset = this.ChartBorder.GetRight();
         var lOffsetWidth = 0;
         if (this.ChartFrame.Data != null) 
@@ -5629,6 +5639,57 @@ function ChartLock()
         this.Canvas.fillText(this.Title, xCenter, yCenter);
 
         this.LockRect = { Left: lLeft, Top: this.ChartBorder.GetTop(), Width: lWidth, Heigh: lHeight };    //保存上锁区域
+    }
+
+    this.HScreenDraw = function () 
+    {
+        var xOffset = this.ChartBorder.GetBottom();
+
+        var lOffsetWidth = 0;
+        if (this.ChartFrame.Data != null) 
+        {
+            var dataWidth = this.ChartFrame.DataWidth;
+            var distanceWidth = this.ChartFrame.DistanceWidth;
+            xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
+            var chartright = this.ChartBorder.GetBottom();
+            var xPointCount = this.ChartFrame.XPointCount;
+            //求最后1个数据的位置
+            for (var i = this.ChartFrame.Data.DataOffset, j = 0; i < this.ChartFrame.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+            {
+                var data = this.ChartFrame.Data.Data[i];
+                if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
+
+                var left = xOffset;
+                var right = xOffset + dataWidth;
+                if (right > chartright) break;
+            }
+            lOffsetWidth = (dataWidth + distanceWidth) * this.LockCount;
+        }
+        if (lOffsetWidth == 0) 
+        {
+            lOffsetWidth = (xOffset - this.ChartBorder.GetTop()) * this.WidthDiv;
+        }
+
+        var lLeft = xOffset - lOffsetWidth;
+        if (lLeft < this.ChartBorder.GetTop()) lLeft = this.ChartBorder.GetTop();
+        var lHeight = this.ChartBorder.GetRight() - this.ChartBorder.GetLeft();
+        var lWidth = this.ChartBorder.GetBottom() - lLeft;
+        this.Canvas.fillStyle = this.BGColor;
+        this.Canvas.fillRect(this.ChartBorder.GetLeft(), lLeft, lHeight, lWidth);
+
+        var xCenter = this.ChartBorder.GetLeft() + lHeight / 2;
+        var yCenter = lLeft + lWidth / 2;
+        this.Canvas.save();
+        this.Canvas.translate(xCenter, yCenter);
+        this.Canvas.rotate(90 * Math.PI / 180);
+        this.Canvas.textAlign = 'center';
+        this.Canvas.textBaseline = 'middle';
+        this.Canvas.fillStyle = this.TextColor;
+        this.Canvas.font = this.Font;
+        this.Canvas.fillText(this.Title, 0, 0);
+        this.Canvas.restore();
+
+        this.LockRect = { Left: this.ChartBorder.GetLeft(), Top: lLeft, Width: lHeight, Heigh: lWidth };    //保存上锁区域
     }
 
     //x,y是否在上锁区域
@@ -12817,6 +12878,7 @@ function ScriptIndex(name, script, args, option)
     this.LockTextColor = null;
     this.LockText = null;
     this.LockFont = null;
+    this.LockCount = 10;
 
     if (option && option.Lock) 
     {
@@ -12827,6 +12889,7 @@ function ScriptIndex(name, script, args, option)
         if (option.Lock.TextColor) this.LockTextColor = option.Lock.TextColor;
         if (option.Lock.Text) this.LockText = option.Lock.Text;
         if (option.Lock.Font) this.LockFont = option.Lock.Font;
+        if (option.Lock.Count) this.LockCount = option.Lock.Count;
     }
 
     if (args) this.Arguments=args;
@@ -12842,6 +12905,7 @@ function ScriptIndex(name, script, args, option)
             if (lockData.TextColor) this.LockTextColor = lockData.TextColor;
             if (lockData.Text) this.LockText = lockData.Text;
             if (lockData.Font) this.LockFont = lockData.Font;
+            if (lockData.Count) this.LockCount = lockData.Count;
         }
         else 
         {   //清空锁配置信息
@@ -12852,6 +12916,7 @@ function ScriptIndex(name, script, args, option)
             this.LockTextColor = null;
             this.LockText = null;
             this.LockFont = null;
+            this.LockCount = 10;
         }
     }
 
@@ -12902,7 +12967,8 @@ function ScriptIndex(name, script, args, option)
             let lockData = 
             {
                 IsLocked: true, Callback: param.Self.LockCallback, IndexName: param.Self.Name, ID: param.Self.LockID,
-                BG: param.Self.LockBG, Text: param.Self.LockText, TextColor: param.Self.LockTextColor, Font: param.Self.LockFont
+                BG: param.Self.LockBG, Text: param.Self.LockText, TextColor: param.Self.LockTextColor, Font: param.Self.LockFont,
+                Count: param.Self.LockCount
             };
             param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
         }
