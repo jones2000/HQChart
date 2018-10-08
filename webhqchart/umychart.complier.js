@@ -6346,6 +6346,7 @@ function JSExecute(ast,option)
                         if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
                         let value={Name:varName, Data:outVar, Radius:2, Type:3};
                         if (color) value.Color=color;
+                        if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
                     }
                     else if (circleDot && varName)  //圆点
@@ -6354,6 +6355,7 @@ function JSExecute(ast,option)
                         if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
                         let value={Name:varName, Data:outVar, Radius:1.3, Type:3};
                         if (color) value.Color=color;
+                        if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
                     }
                     else if (lineStick && varName)  //LINESTICK  同时画出柱状线和指标线
@@ -7001,6 +7003,12 @@ function ScriptIndex(name,script,args,option)
         else pointDot.Color=this.GetDefaultColor(id);
 
         if (varItem.Radius) pointDot.Radius=varItem.Radius;
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) pointDot.Radius=width;
+        }
 
         let titleIndex=windowIndex+1;
         pointDot.Data.Data=varItem.Data;

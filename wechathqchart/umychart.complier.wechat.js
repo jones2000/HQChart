@@ -6340,6 +6340,7 @@ function JSExecute(ast,option)
                         let outVar=this.VarTable.get(varName);
                         let value={Name:varName, Data:outVar, Radius:2, Type:3};
                         if (color) value.Color=color;
+                        if (lineWidth) value.LineWidth = lineWidth;
                         this.OutVarTable.push(value);
                     }
                     else if (circleDot && varName)  //圆点
@@ -6347,6 +6348,7 @@ function JSExecute(ast,option)
                         let outVar=this.VarTable.get(varName);
                         let value={Name:varName, Data:outVar, Radius:1.3, Type:3};
                         if (color) value.Color=color;
+                        if (lineWidth) value.LineWidth = lineWidth;
                         this.OutVarTable.push(value);
                     }
                     else if (lineStick && varName)  //LINESTICK  同时画出柱状线和指标线
