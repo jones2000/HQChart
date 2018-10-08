@@ -5107,7 +5107,7 @@ function ChartMinutePriceLine()
     }
 }
 
-//MACD森林线
+//MACD森林线 支持横屏
 function ChartMACD()
 {
     this.newMethod=IChartPainting;   //派生
@@ -5122,6 +5122,12 @@ function ChartMACD()
         if (this.NotSupportMessage)
         {
             this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (this.ChartFrame.IsHScreen === true) 
+        {
+            this.HScreenDraw();
             return;
         }
 
@@ -5150,6 +5156,34 @@ function ChartMACD()
 
             if (value>=0) this.Canvas.strokeStyle=this.UpColor;
             else this.Canvas.strokeStyle=this.DownColor;
+            this.Canvas.stroke();
+            this.Canvas.closePath();
+        }
+    }
+
+    this.HScreenDraw = function () 
+    {
+        var chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+
+        var yBottom = this.ChartFrame.GetYFromData(0);
+
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(value);
+
+            if (x > chartright) break;
+
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(yBottom, ToFixedPoint(x));
+            this.Canvas.lineTo(y, ToFixedPoint(x));
+
+            if (value >= 0) this.Canvas.strokeStyle = this.UpColor;
+            else this.Canvas.strokeStyle = this.DownColor;
             this.Canvas.stroke();
             this.Canvas.closePath();
         }
