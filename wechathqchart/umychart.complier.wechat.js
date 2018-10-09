@@ -765,6 +765,12 @@ function Node()
                 this.IsNeedFinanceData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA);
             return;
         }
+
+        if (callee.Name === 'BETA')    //beta需要下载上证指数
+        {
+            this.IsNeedIndexData = true;
+            return;
+        }
     }
 
     this.ExpressionStatement=function(expression)
@@ -2939,7 +2945,7 @@ function JSAlgorithm(errorHandler, symbolData)
         if (num <= 1 || num >= datanum)
             return result;
         var i, j;
-        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        for (i = 0; i < datanum && !this.IsNumber(data[i]); ++i)
         {
             result[i] = null;
         }
@@ -2954,6 +2960,8 @@ function JSAlgorithm(errorHandler, symbolData)
             }
             result[i] = (num*SigmaPowerX - SigmaX*SigmaX) / num * (num -1);
         }
+
+        return result;
     }
 
     //VARP 总体样本方差
@@ -2967,7 +2975,7 @@ function JSAlgorithm(errorHandler, symbolData)
         if (num < 1 || num >= datanum)
             return result;
         var i = 0, j = 0;
-        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        for (i = 0; i < datanum && !this.IsNumber(data[i]); ++i)
         {
             result[i] = null;
         }
@@ -2985,6 +2993,8 @@ function JSAlgorithm(errorHandler, symbolData)
             SigmaX += data[i] - data[i-num];
             result[i] = (num*SigmaPowerX - SigmaX*SigmaX) / (num*num);
         }
+
+        return result;
     }
 
     //RANGE(A,B,C)表示A>B AND A<C;
@@ -4195,6 +4205,48 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+    β(Beta)系数
+    BETA(N) 返回当前证券N周期收益与对应大盘指数收益相比的贝塔系数
+    需要下载上证指数历史数据
+    涨幅(X)=(现价-上一个交易日收盘价）/上一个交易日收盘价
+    公式=股票和指数协方差/股票方差
+    */
+    this.BETA = function (n) 
+    {
+        var result = [];
+        var stockData = this.SymbolData.Data;
+        var indexData = this.SymbolData.IndexData;
+        if (n <= 0) n = 1;
+
+        var stockProfit = []; //股票涨幅
+        var indexProfit = []; //指数涨幅
+
+        for (let i = 0; i < stockData.Data.length; ++i) 
+        {
+            stockProfit[i] = 0;
+            indexProfit[i] = 0;
+
+            var stockItem = stockData.Data[i];
+            var indexItem = indexData.Data[i];
+
+            if (stockItem.Close > 0 && stockItem.YClose > 0) stockProfit[i] = (stockItem.Close - stockItem.YClose) / stockItem.YClose;
+            if (indexItem.Close > 0 && indexItem.YClose > 0) indexProfit[i] = (indexItem.Close - indexItem.YClose) / indexItem.YClose;
+        }
+
+        var covariance = this.COVAR(stockProfit, indexProfit, n);  //股票和指数的协方差
+        var variance = this.VAR(indexProfit, n);    //指数方差
+
+        for (let i in variance) 
+        {
+            result[i] = null;
+            if (!this.IsDivideNumber(variance[i]) || !this.IsNumber(covariance[i])) continue;
+            result[i] = covariance[i] / variance[i];
+        }
+
+        return result;
+    }
+
 
     //函数调用
     this.CallFunction=function(name,args,node)
@@ -4302,6 +4354,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.RELATE(args[0], args[1], args[2]);
             case 'COVAR':
                 return this.COVAR(args[0], args[1], args[2]);
+            case 'BETA':
+                return this.BETA(args[0]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);
