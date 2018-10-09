@@ -1888,6 +1888,11 @@ function MinuteHScreenFrame()
         */
     }
 
+    this.DrawInsideHorizontal = function ()
+    {
+
+    }
+
     //Y坐标转y轴数值
     this.GetYData = function (x) 
     {
@@ -2215,6 +2220,11 @@ function KLineHScreenFrame()
     delete this.newMethod;
 
     this.IsHScreen = true;        //是否是横屏
+
+    this.DrawInsideHorizontal = function ()
+    {
+        
+    }
 
     //画标题背景色
     this.DrawTitleBG = function () 
@@ -7610,6 +7620,14 @@ function DynamicKLineTitlePainting()
         if (!this.IsShow) return;
         if (!this.IsShowName && !this.IsShowSettingInfo) return;
 
+        if (this.Frame.IsHScreen === true) 
+        {
+            this.Canvas.save();
+            this.HScreenDrawTitle();
+            this.Canvas.restore();
+            return;
+        }
+
         var left = this.Frame.ChartBorder.GetLeft();
         var bottom = this.Frame.ChartBorder.GetTop();
         var right = this.Frame.ChartBorder.GetRight();
@@ -7635,6 +7653,45 @@ function DynamicKLineTitlePainting()
             var rightName = RIGHT_NAME[this.Data.Right];
             var text = "(" + periodName + " " + rightName + ")";
             if (this.Data.Period>=4) text = "(" + periodName + ")"; 
+            var textWidth = this.Canvas.measureText(text).width + 2;
+            if (left + textWidth > right) return;
+            this.Canvas.fillText(text, left, bottom, textWidth);
+            left += textWidth;
+        }
+    }
+
+    this.HScreenDrawTitle=function()
+    {
+        var xText = this.Frame.ChartBorder.GetRight();
+        var yText = this.Frame.ChartBorder.GetTop();
+        var right = this.Frame.ChartBorder.GetHeight();
+        if (this.Frame.ChartBorder.Right<10) return;
+
+        this.Canvas.translate(xText, yText);
+        this.Canvas.rotate(90 * Math.PI / 180);
+
+        this.Canvas.textAlign = "left";
+        this.Canvas.textBaseline = "bottom";
+        this.Canvas.font = this.Font;
+
+        var left = 2;
+        var bottom = -2;
+        if (this.IsShowName && this.Name) 
+        {
+            this.Canvas.fillStyle = this.UnchagneColor;
+            var textWidth = this.Canvas.measureText(this.Name).width + 2;    //后空2个像素
+            if (left + textWidth > right) return;
+            this.Canvas.fillText(this.Name, left, bottom, textWidth);
+            left += textWidth;
+        }
+
+        if (this.IsShowSettingInfo && this.Data.Period != null && this.Data.Right != null) 
+        {
+            this.Canvas.fillStyle = this.UnchagneColor;
+            var periodName = PERIOD_NAME[this.Data.Period];
+            var rightName = RIGHT_NAME[this.Data.Right];
+            var text = "(" + periodName + " " + rightName + ")";
+            if (this.Data.Period >= 4) text = "(" + periodName + ")";
             var textWidth = this.Canvas.measureText(text).width + 2;
             if (left + textWidth > right) return;
             this.Canvas.fillText(text, left, bottom, textWidth);
@@ -7776,7 +7833,7 @@ function DynamicKLineTitlePainting()
         this.Canvas.rotate(90 * Math.PI / 180);
 
         this.Canvas.textAlign = "left";
-        this.Canvas.textBaseline = "ideographic";
+        this.Canvas.textBaseline = "bottom";
         this.Canvas.font = this.Font;
 
         var left = 2;
@@ -7786,7 +7843,7 @@ function DynamicKLineTitlePainting()
             this.Canvas.fillStyle = this.UnchagneColor;
             var textWidth = this.Canvas.measureText(this.Name).width + 2;    //后空2个像素
             if (left + textWidth > right) return;
-            this.Canvas.fillText(this.Name, left, bottom, textWidth);
+            //this.Canvas.fillText(this.Name, left, bottom, textWidth);
             left += textWidth;
         }
 
@@ -7799,7 +7856,7 @@ function DynamicKLineTitlePainting()
             if (item.Time != null) text = "(" + periodName + ")";           //分钟K线没有复权
             var textWidth = this.Canvas.measureText(text).width + 2;
             if (left + textWidth > right) return;
-            this.Canvas.fillText(text, left, bottom, textWidth);
+            //this.Canvas.fillText(text, left, bottom, textWidth);
             left += textWidth;
         }
 
