@@ -11,6 +11,7 @@ import {
 
 import { JSCommonComplier } from "umychart.complier.wechat.js";     //通达信编译器
 import { JSCommonIndexScript } from "umychart.index.data.wechat.js"; //系统指标定义
+import { JSCommon_HQIndexFormula as HQIndexFormula } from "umychart.hqIndexformula.wechat.js";     //通达信编译器
 
 function JSCanvasElement()
 {
@@ -259,7 +260,9 @@ function JSChart(element)
     //分钟走势图
     this.CreateMinuteChartContainer=function(option)
     {
-        var chart=new MinuteChartContainer(this.CanvasElement);
+        var chart = null;
+        if (option.Type === "分钟走势图横屏") chart = new MinuteChartHScreenContainer(this.CanvasElement);
+        else chart=new MinuteChartContainer(this.CanvasElement);
 
         var windowsCount=2;
         if (option.Windows && option.Windows.length>0) windowsCount+=option.Windows.length; //指标窗口从第3个窗口开始
@@ -365,6 +368,7 @@ function JSChart(element)
                 chart=this.CreateCustomKLineChartContainer(option);
                 break;
             case "分钟走势图":
+            case "分钟走势图横屏":
                 chart=this.CreateMinuteChartContainer(option);
                 break;
             case "历史分钟走势图":
@@ -1855,6 +1859,192 @@ function MinuteFrame()
         {
             var offset=this.ChartBorder.GetLeft()+this.ChartBorder.GetWidth()*index/count;
             return offset;
+        }
+    }
+}
+
+function MinuteHScreenFrame() 
+{
+    this.newMethod = MinuteFrame;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.IsHScreen = true;        //是否是横屏
+
+    //画标题背景色
+    this.DrawTitleBG = function () 
+    {
+        /*
+        if (this.ChartBorder.TitleHeight <= 0) return;
+
+        var left = ToFixedPoint(this.ChartBorder.GetRightEx());
+        var top = ToFixedPoint(this.ChartBorder.GetTop());
+        var bottom = ToFixedPoint(this.ChartBorder.GetBottom());
+        var width = this.ChartBorder.TitleHeight;
+        var height = bottom - top;
+
+        this.Canvas.fillStyle = this.TitleBGColor;
+        this.Canvas.fillRect(left, top, width, height);
+        */
+    }
+
+    //Y坐标转y轴数值
+    this.GetYData = function (x) 
+    {
+        if (x < this.ChartBorder.GetLeft()) return this.HorizontalMin;
+        if (x > this.ChartBorder.GetRightEx()) return this.HorizontalMax;
+
+        return (x - this.ChartBorder.GetLeft()) / this.ChartBorder.GetWidthEx() * (this.HorizontalMax - this.HorizontalMin) + this.HorizontalMin;
+    }
+
+    //X坐标转x轴数值
+    this.GetXData = function (y) 
+    {
+        if (y <= this.ChartBorder.GetTop()) return 0;
+        if (y >= this.ChartBorder.GetBottom()) return this.XPointCount;
+
+        return (y - this.ChartBorder.GetTop()) * (this.XPointCount * 1.0 / this.ChartBorder.GetHeight());
+    }
+
+    this.GetXFromIndex = function (index) 
+    {
+        var count = this.XPointCount - 1;
+
+        if (count == 1) 
+        {
+            if (index == 0) return this.ChartBorder.GetTop();
+            else return this.ChartBorder.GetBottom();
+        }
+        else if (count <= 0) 
+        {
+            return this.ChartBorder.GetTop();
+        }
+        else if (index >= count) 
+        {
+            return this.ChartBorder.GetBottom();
+        }
+        else 
+        {
+            var offset = this.ChartBorder.GetTop() + this.ChartBorder.GetHeight() * index / count;
+            return offset;
+        }
+    }
+
+
+    this.GetYFromData = function (value) 
+    {
+        if (value <= this.HorizontalMin) return this.ChartBorder.GetLeft();
+        if (value >= this.HorizontalMax) return this.ChartBorder.GetRightEx();
+
+        var width = this.ChartBorder.GetWidthEx() * (value - this.HorizontalMin) / (this.HorizontalMax - this.HorizontalMin);
+        return this.ChartBorder.GetLeft() + width;
+    }
+
+    //画Y轴
+    this.DrawHorizontal = function () 
+    {
+        var top = this.ChartBorder.GetTop();
+        var bottom = this.ChartBorder.GetBottom();
+        var borderTop = this.ChartBorder.Top;
+        var borderBottom = this.ChartBorder.Bottom;
+
+        var yPrev = null; //上一个坐标y的值
+        for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从左往右画分割线
+        {
+            var item = this.HorizontalInfo[i];
+            var y = this.GetYFromData(item.Value);
+            if (y != null && Math.abs(y - yPrev) < 15) continue;  //两个坐标在近了 就不画了
+
+            this.Canvas.strokeStyle = item.LineColor;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(ToFixedPoint(y), top);
+            this.Canvas.lineTo(ToFixedPoint(y), bottom);
+            this.Canvas.stroke();
+
+            //坐标信息 左边 间距小于10 不画坐标
+            if (item.Message[0] != null && borderTop > 10) 
+            {
+                if (item.Font != null) this.Canvas.font = item.Font;
+
+                this.Canvas.fillStyle = item.TextColor;
+                this.Canvas.textAlign = "right";
+                this.Canvas.textBaseline = "middle";
+
+                var xText = y, yText = top;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(item.Message[0], -2, 0);
+                this.Canvas.restore();
+            }
+
+            //坐标信息 右边 间距小于10 不画坐标
+            if (item.Message[1] != null && borderBottom > 10)
+             {
+                if (item.Font != null) this.Canvas.font = item.Font;
+
+                this.Canvas.fillStyle = item.TextColor;
+                this.Canvas.textAlign = "left";
+                this.Canvas.textBaseline = "middle";
+                var xText = y, yText = bottom;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(item.Message[1], 2, 0);
+                this.Canvas.restore();
+            }
+
+            yPrev = y;
+        }
+    }
+
+    //画X轴
+    this.DrawVertical = function () 
+    {
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRightEx();
+        var bottom = this.ChartBorder.GetBottom();
+
+        var xPrev = null; //上一个坐标x的值
+        for (var i in this.VerticalInfo) 
+        {
+            var x = this.GetXFromIndex(this.VerticalInfo[i].Value);
+            if (x >= bottom) break;
+            if (xPrev != null && Math.abs(x - xPrev) < 80) continue;
+
+            this.Canvas.strokeStyle = this.VerticalInfo[i].LineColor;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(left, ToFixedPoint(x));
+            this.Canvas.lineTo(right, ToFixedPoint(x));
+            this.Canvas.stroke();
+
+            if (this.VerticalInfo[i].Message[0] != null) 
+            {
+                if (this.VerticalInfo[i].Font != null)
+                    this.Canvas.font = this.VerticalInfo[i].Font;
+
+                this.Canvas.fillStyle = this.VerticalInfo[i].TextColor;
+                var testWidth = this.Canvas.measureText(this.VerticalInfo[i].Message[0]).width;
+                if (x < testWidth / 2) 
+                {
+                    this.Canvas.textAlign = "left";
+                    this.Canvas.textBaseline = "top";
+                }
+                else 
+                {
+                    this.Canvas.textAlign = "center";
+                    this.Canvas.textBaseline = "top";
+                }
+
+                var xText = left, yText = x;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(this.VerticalInfo[i].Message[0], 0, 0);
+                this.Canvas.restore();
+            }
+
+            xPrev = x;
         }
     }
 }
@@ -4007,6 +4197,12 @@ function ChartMinuteVolumBar()
 
     this.Draw=function()
     {
+        if (this.ChartFrame.IsHScreen === true) 
+        {
+            this.HScreenDraw();
+            return;
+        }
+
         var chartright=this.ChartBorder.GetRight();
         var xPointCount=this.ChartFrame.XPointCount;
 
@@ -4033,6 +4229,38 @@ function ChartMinuteVolumBar()
         if (drawCount>0)
         {
             this.Canvas.strokeStyle=this.Color;
+            this.Canvas.stroke();
+        }
+    }
+
+    this.HScreenDraw = function () 
+    {
+        var chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+
+        var yBottom = this.ChartFrame.GetYFromData(0);
+
+        var drawCount = 0;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var vol = this.Data.Data[i];
+            if (!vol) continue;
+
+            var y = this.ChartFrame.GetYFromData(vol);
+            var x = this.ChartFrame.GetXFromIndex(i);
+            if (x > chartright) break;
+
+            if (drawCount == 0) this.Canvas.beginPath();
+
+            this.Canvas.moveTo(y, ToFixedPoint(x));
+            this.Canvas.lineTo(yBottom, ToFixedPoint(x));
+
+            ++drawCount;
+        }
+
+        if (drawCount > 0) 
+        {
+            this.Canvas.strokeStyle = this.Color;
             this.Canvas.stroke();
         }
     }
@@ -4552,58 +4780,66 @@ function ChartVolStick()
     }
 }
 
-//线段 多数据(一个X点有多条Y数据)
-function ChartLineMultiData() {
-  this.newMethod = IChartPainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
+//线段 多数据(一个X点有多条Y数据) 支持横屏
+function ChartLineMultiData() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.Color = "rgb(255,193,37)"; //线段颜色
+    this.Color = "rgb(255,193,37)"; //线段颜色
 
-  this.Draw = function () {
-    if (this.NotSupportMessage) {
-      this.DrawNotSupportmessage();
-      return;
-    }
-
-    if (!this.Data || !this.Data.Data) return;
-
-    var dataWidth = this.ChartFrame.DataWidth;
-    var distanceWidth = this.ChartFrame.DistanceWidth;
-    var chartright = this.ChartBorder.GetRight();
-    var xPointCount = this.ChartFrame.XPointCount;
-
-    var bFirstPoint = true;
-    var drawCount = 0;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var aryValue = this.Data.Data[i];
-      if (aryValue == null) continue;
-
-      var x = this.ChartFrame.GetXFromIndex(j);
-      if (x > chartright) break;
-
-      for (var index in aryValue) {
-        var value = aryValue[index].Value;
-
-        var y = this.ChartFrame.GetYFromData(value);
-
-        if (bFirstPoint) {
-          this.Canvas.strokeStyle = this.Color;
-          this.Canvas.beginPath();
-          this.Canvas.moveTo(x, y);
-          bFirstPoint = false;
-        }
-        else {
-          this.Canvas.lineTo(x, y);
+    this.Draw = function () 
+    {
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
         }
 
-        ++drawCount;
-      }
+        if (!this.Data || !this.Data.Data) return;
+
+        var isHScreen = (this.ChartFrame.IsHScreen === true);
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+
+        var bFirstPoint = true;
+        var drawCount = 0;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
+        var aryValue = this.Data.Data[i];
+        if (aryValue == null) continue;
+
+        var x = this.ChartFrame.GetXFromIndex(j);
+        if (x > chartright) break;
+
+        for (var index in aryValue) 
+        {
+            var value = aryValue[index].Value;
+            var y = this.ChartFrame.GetYFromData(value);
+
+            if (bFirstPoint) 
+            {
+                this.Canvas.strokeStyle = this.Color;
+                this.Canvas.beginPath();
+                if (isHScreen) this.Canvas.moveTo(y, x);
+                else this.Canvas.moveTo(x, y);
+                bFirstPoint = false;
+            }
+            else 
+            {
+                if (isHScreen) this.Canvas.lineTo(y, x);
+                else this.Canvas.lineTo(x, y);
+            }
+
+            ++drawCount;
+        }
     }
 
-    if (drawCount > 0)
-      this.Canvas.stroke();
-  }
+    if (drawCount > 0) this.Canvas.stroke();
+}
 
   this.GetMaxMin = function () {
     var xPointCount = this.ChartFrame.XPointCount;
@@ -4631,7 +4867,7 @@ function ChartLineMultiData() {
   }
 }
 
-
+//支持 横屏
 function ChartStickLine()
 {
     this.newMethod=IChartPainting;   //派生
@@ -4639,7 +4875,7 @@ function ChartStickLine()
     delete this.newMethod;
 
     this.Color="rgb(255,193,37)";   //线段颜色
-    this.LineWidth=2;                   //线段宽度
+    this.LineWidth=2;               //线段宽度
 
     this.Draw=function()
     {
@@ -4651,9 +4887,11 @@ function ChartStickLine()
 
         if (!this.Data || !this.Data.Data) return;
 
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetRight();
+        if (isHScreen) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
 
         this.Canvas.save();
@@ -4678,11 +4916,21 @@ function ChartStickLine()
 
             if (x>chartright) break;
 
-            var xFix=parseInt(x.toString())+0.5;
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(xFix,y);  
-            this.Canvas.lineTo(xFix,y2);
-            this.Canvas.stroke();
+            if (isHScreen)
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(y,ToFixedPoint(x));
+                this.Canvas.lineTo(y2,ToFixedPoint(x));
+                this.Canvas.stroke();
+            }
+            else
+            {
+                var xFix=parseInt(x.toString())+0.5;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(xFix,y);  
+                this.Canvas.lineTo(xFix,y2);
+                this.Canvas.stroke();
+            }
         }
 
         this.Canvas.restore();
@@ -4912,6 +5160,7 @@ function ChartStraightLine()
     Value, Value2  区间最大最小值
     Color=面积的颜色
     Title=标题 TitleColor=标题颜色
+    支持横屏
 */
 function ChartStraightArea() 
 {
@@ -4931,6 +5180,12 @@ function ChartStraightArea()
         }
 
         if (!this.Data || !this.Data.Data) return;
+
+        if (this.ChartFrame.IsHScreen === true) 
+        {
+            this.HScreenDraw();
+            return;
+        }
 
         var dataWidth = this.ChartFrame.DataWidth;
         var distanceWidth = this.ChartFrame.DistanceWidth;
@@ -4993,6 +5248,46 @@ function ChartStraightArea()
         }
     }
 
+    this.HScreenDraw = function () 
+    {
+        var bottom = this.ChartBorder.GetBottom();
+        var top = this.ChartBorder.GetTop();
+        var height = this.ChartBorder.GetHeight();
+
+        for (let i in this.Data.Data) 
+        {
+            let item = this.Data.Data[i];
+            if (item == null || isNaN(item.Value) || isNaN(item.Value2)) continue;
+            if (item.Color == null) continue;
+
+            let valueMax = Math.max(item.Value, item.Value2);
+            let valueMin = Math.min(item.Value, item.Value2);
+
+            var yTop = this.ChartFrame.GetYFromData(valueMax);
+            var yBottom = this.ChartFrame.GetYFromData(valueMin);
+
+            this.Canvas.fillStyle = item.Color;
+            this.Canvas.fillRect(ToFixedRect(yBottom), ToFixedRect(top), ToFixedRect(yTop - yBottom), ToFixedRect(height));
+
+            if (item.Title && item.TitleColor) 
+            {
+                var xText = yTop + (yBottom - yTop) / 2;
+                var yText = bottom;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+
+                this.Canvas.textAlign = 'right';
+                this.Canvas.textBaseline = 'middle';
+                this.Canvas.fillStyle = item.TitleColor;
+                this.Canvas.font = this.Font;
+                this.Canvas.fillText(item.Title, 0, -2);
+
+                this.Canvas.restore();
+            }
+        }
+    }
+
     this.GetMaxMin=function()
     {
         var xPointCount=this.ChartFrame.XPointCount;
@@ -5038,9 +5333,11 @@ function ChartMinutePriceLine()
             return;
         }
 
+        var isHScreen = (this.ChartFrame.IsHScreen === true);
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetRight();
+        if (isHScreen === true) chartright = this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
 
         var bFirstPoint=true;
@@ -5057,12 +5354,14 @@ function ChartMinutePriceLine()
             {
                 this.Canvas.strokeStyle=this.Color;
                 this.Canvas.beginPath();
-                this.Canvas.moveTo(x,y);
+                if (isHScreen) this.Canvas.moveTo(y, x);
+                else this.Canvas.moveTo(x, y);
                 bFirstPoint=false;
             }
             else
             {
-                this.Canvas.lineTo(x,y);
+                if (isHScreen) this.Canvas.lineTo(y, x);
+                else this.Canvas.lineTo(x, y);
             }
 
             ++drawCount;
@@ -5385,7 +5684,7 @@ function ChartSubBar()
     }
 }
 
-//柱子
+//柱子 支持横屏
 function ChartBar()
 {
     this.newMethod=IChartPainting;   //派生
@@ -5403,11 +5702,14 @@ function ChartBar()
             return;
         }
 
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetRight();
+        if (isHScreen) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
         var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
+        if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
 
         var bFirstPoint=true;
         var drawCount=0;
@@ -5427,27 +5729,32 @@ function ChartBar()
                 var x=this.ChartFrame.GetXFromIndex(j);
                 var y=this.ChartFrame.GetYFromData(value);
 
-
                 if (value>0) 
                 {
-                  this.Canvas.fillStyle=this.UpBarColor;
-                  //高度调整为整数
-                  let height = ToFixedRect(Math.abs(yBottom - y));
-                  if (yBottom - y > 0) y = yBottom - height;
-                  else y = yBottom + height;
-                  this.Canvas.fillRect(ToFixedRect(left), y, ToFixedRect(dataWidth), height);
+                    this.Canvas.fillStyle=this.UpBarColor;
+                    if (isHScreen)
+                    {
+                        let height = ToFixedRect(Math.abs(yBottom - y));  //高度调整为整数
+                        y=Math.min(yBottom,y);
+                        this.Canvas.fillRect(y, ToFixedRect(left), height, ToFixedRect(dataWidth));
+                    }
+                    else
+                    {
+                        let height = ToFixedRect(Math.abs(yBottom - y));  //高度调整为整数
+                        if (yBottom - y > 0) y = yBottom - height;
+                        else y = yBottom + height;
+                        this.Canvas.fillRect(ToFixedRect(left), y, ToFixedRect(dataWidth), height);
+                    }
                 }
                 else 
                 {
-                  this.Canvas.fillStyle=this.DownBarColor;
-                  //高度调整为整数
-                  let height = ToFixedRect(Math.abs(yBottom - y));
-                  if (yBottom - y > 0) y = yBottom - height;
-                  else y = yBottom + height;
-                  this.Canvas.fillRect(ToFixedRect(left), y, ToFixedRect(dataWidth), -height);
+                    this.Canvas.fillStyle=this.DownBarColor;
+                    //高度调整为整数
+                    let height = ToFixedRect(Math.abs(yBottom - y));
+                    if (yBottom - y > 0) y = yBottom - height;
+                    else y = yBottom + height;
+                    this.Canvas.fillRect(ToFixedRect(left), y, ToFixedRect(dataWidth), -height);
                 }
-
-               
             }
         }
         else    //太细了 直接画柱子
@@ -5468,8 +5775,16 @@ function ChartBar()
                 else this.Canvas.strokeStyle=this.DownBarColor;
 
                 this.Canvas.beginPath();
-                this.Canvas.moveTo(ToFixedPoint(x),y);
-                this.Canvas.lineTo(ToFixedPoint(x),yBottom);
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(y, ToFixedPoint(x),);
+                    this.Canvas.lineTo(yBottom, ToFixedPoint(x));
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),y);
+                    this.Canvas.lineTo(ToFixedPoint(x),yBottom);
+                }
                 this.Canvas.stroke();
             }
         }
@@ -7577,6 +7892,14 @@ function DynamicMinuteTitlePainting()
         if (this.CursorIndex==null || !this.Data || !this.Data.Data) return;
         if (this.Data.Data.length<=0) return;
 
+        if (this.Frame.IsHScreen === true) 
+        {
+            this.Canvas.save();
+            this.HScreenDraw();
+            this.Canvas.restore();
+            return;
+        }
+
         //var index=Math.abs(this.CursorIndex-0.5);
         var index=this.CursorIndex;
         index=parseInt(index.toFixed(0));
@@ -7644,6 +7967,79 @@ function DynamicMinuteTitlePainting()
         if (left+textWidth>right) return;
         this.Canvas.fillText(text,left,bottom,textWidth);
         left+=textWidth;
+    }
+
+    this.HScreenDraw = function ()
+     {
+        var xText = this.Frame.ChartBorder.GetRight();
+        var yText = this.Frame.ChartBorder.GetTop();
+        this.Canvas.translate(xText, yText);
+        this.Canvas.rotate(90 * Math.PI / 180);
+
+        var index = this.CursorIndex;
+        index = parseInt(index.toFixed(0));
+        var dataIndex = index + this.Data.DataOffset;
+        if (dataIndex >= this.Data.Data.length) dataIndex = this.Data.Data.length - 1;
+
+        var item = this.Data.Data[dataIndex];
+
+        var left = 2;
+        var bottom = -2;    //上下居中显示
+        var right = this.Frame.ChartBorder.GetHeight();
+
+        this.Canvas.textAlign = "left";
+        this.Canvas.textBaseline = "bottom";
+        this.Canvas.font = this.Font;
+
+        if (this.IsShowName) 
+        {
+            this.Canvas.fillStyle = this.UnchagneColor;
+            var textWidth = this.Canvas.measureText(this.Name).width + 2;    //后空2个像素
+            if (left + textWidth > right) return;
+            this.Canvas.fillText(this.Name, left, bottom, textWidth);
+            left += textWidth;
+        }
+
+        this.Canvas.fillStyle = this.UnchagneColor;
+        var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate);
+        var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
+        if (left + textWidth > right) return;
+        this.Canvas.fillText(text, left, bottom, textWidth);
+        left += textWidth;
+
+        if (item.Close != null) 
+        {
+            this.Canvas.fillStyle = this.GetColor(item.Close, this.YClose);
+            var text = "价格:" + item.Close.toFixed(2);
+            var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
+            if (left + textWidth > right) return;
+            this.Canvas.fillText(text, left, bottom, textWidth);
+            left += textWidth;
+        }
+
+        if (item.AvPrice != null) 
+        {
+            this.Canvas.fillStyle = this.GetColor(item.AvPrice, this.YClose);
+            var text = "均价:" + item.AvPrice.toFixed(2);
+            var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
+            if (left + textWidth > right) return;
+            this.Canvas.fillText(text, left, bottom, textWidth);
+            left += textWidth;
+        }
+
+        this.Canvas.fillStyle = this.VolColor;
+        var text = "量:" + IFrameSplitOperator.FormatValueString(item.Vol, 2);
+        var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
+        if (left + textWidth > right) return;
+        this.Canvas.fillText(text, left, bottom, textWidth);
+        left += textWidth;
+
+        this.Canvas.fillStyle = this.AmountColor;
+        var text = "额:" + IFrameSplitOperator.FormatValueString(item.Amount, 2);
+        var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
+        if (left + textWidth > right) return;
+        this.Canvas.fillText(text, left, bottom, textWidth);
+        left += textWidth;
     }
 }
 
@@ -9135,928 +9531,6 @@ JSIndexMap.Get=function(id)
     return indexMap.get(id);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-//      指标计算方法
-//
-//
-//
-
-function HQIndexFormula()
-{
-
-}
-
-//指数平均数指标 EMA(close,10)
-HQIndexFormula.EMA=function(data,dayCount)
-{
-    var result = [];
-
-    var offset=0;
-    if (offset>=data.length) return result;
-
-    //取首个有效数据
-    for(;offset<data.length;++offset)
-    {
-        if (data[offset]!=null && !isNaN(data[offset]))
-            break;
-    }
-
-    var p1Index=offset;
-    var p2Index=offset+1;
-
-    result[p1Index]=data[p1Index];
-    for(var i=offset+1;i<data.length;++i,++p1Index,++p2Index)
-    {
-        result[p2Index]=((2*data[p2Index]+(dayCount-1)*result[p1Index]))/(dayCount+1);
-    }
-
-    return result;
-}
-
-HQIndexFormula.SMA=function(data,n,m)
-{
-    var result = [];
-
-    var i=0;
-    var lastData=null;
-    for(;i<data.length; ++i)
-    {
-        if (data[i]==null || isNaN(data[i])) continue;
-        lastData=data[i];
-        result[i]=lastData; //第一天的数据
-        break;
-    }
-
-    for(++i;i<data.length;++i)
-    {
-        result[i]=(m*data[i]+(n-m)*lastData)/n;
-        lastData=result[i];
-    }
-
-    return result;
-}
-
-
-/*
-    求动态移动平均.
-    用法: DMA(X,A),求X的动态移动平均.
-    算法: 若Y=DMA(X,A)则 Y=A*X+(1-A)*Y',其中Y'表示上一周期Y值,A必须小于1.
-    例如:DMA(CLOSE,VOL/CAPITAL)表示求以换手率作平滑因子的平均价
-*/
-HQIndexFormula.DMA=function(data,data2)
-{
-    var result = [];
-    if (data.length<0 || data.length!=data2.length) return result;
-
-    var index=0;
-    for(;index<data.length;++index)
-    {
-        if (data[index]!=null && !isNaN(data[index]) && data2[index]!=null && !isNaN(data2[index]))
-        {
-            result[index]=data[index];
-            break;
-        }
-    }
-
-    for(index=index+1;index<data.length;++index)
-    {
-        if (data[index]==null || data2[index]==null)
-            result[index]=null;
-        else
-        {
-            if (data[index]<1)
-                result[index]=(data2[index]*data[index])+(1-data2[index])*result[index-1];
-            else
-                result[index]= data[index];
-        }
-    }
-
-    return result;
-}
-
-
-HQIndexFormula.HHV=function(data,n)
-{
-    var result = [];
-    if (n>data.length) return result;
-
-    var max=-10000;
-    for(var i=n,j=0;i<data.length;++i,++j)
-    {
-        if(i<n+max)
-        {
-            max=data[i]<data[max]?max:i;
-        }
-        else
-        {
-            for(j=(max=i-n+1)+1;j<=i;++j)
-            {
-                if(data[j]>data[max])
-                    max = j;
-            }
-        }
-
-        result[i] = data[max];
-    }
-
-    return result;
-}
-
-HQIndexFormula.LLV=function(data,n)
-{
-    var result = [];
-    if (n>data.length) return result;
-
-    var min=-10000;
-
-    for(var i=n;i<data.length;++i,++j)
-    {
-        if(i<n+min)
-        {
-            min=data[i]>data[min]?min:i;
-        }
-        else
-        {
-            for(var j=(min=i-n+1)+1;j<=i;++j)
-            {
-                if(data[j]<data[min])
-                    min = j;
-            }
-        }
-        result[i] = data[min];
-    }
-
-    return result;
-}
-
-HQIndexFormula.REF=function(data,n)
-{
-    var result=[];
-
-    if (data.length<=0) return result;
-    if (n>=data.length) return result;
-
-    result=data.slice(0,data.length-n);
-
-    for(var i=0;i<n;++i)
-        result.unshift(null);
-
-    return result;
-}
-
-HQIndexFormula.REFDATE=function(data,n)
-{
-    var result=[];
-
-    if (data.length<=0) return result;
-
-    //暂时写死取最后一个
-    n=data.length-1;
-    for(var i in data)
-    {
-        result[i]=data[n];
-    }
-
-    return result;
-}
-
-
-
-HQIndexFormula.SUM=function(data,n)
-{
-    var result=[];
-
-    if (n==0)
-    {
-        result[0]=data[0];
-
-        for (var i=1; i<data.length; ++i)
-        {
-            result[i] = result[i-1]+data[i];
-        }
-    }
-    else
-    {
-
-        for(var i=n-1,j=0;i<data.length;++i,++j)
-        {
-            for(var k=0;k<n;++k)
-            {
-                if (k==0) result[i]=data[k+j];
-                else result[i]+=data[k+j];
-            }
-        }
-    }
-
-    return result;
-}
-
-//两个数组相减
-HQIndexFormula.ARRAY_SUBTRACT=function(data,data2)
-{
-    var result=[];
-    var IsNumber=typeof(data2)=="number";
-    if (IsNumber)
-    {
-        for(var i in data)
-        {
-            if (data[i]==null || isNaN(data[i]))
-                result[i]=null;
-            else
-                result[i]=data[i]-data2;
-        }
-    }
-    else
-    {
-        var count=Math.max(data.length,data2.length)
-
-        for(var i=0;i<count;++i)
-        {
-            if (i<data.length && i<data2.length)
-            {
-                if (data[i]==null || data2[i]==null) result[i]=null;
-                else result[i]=data[i]-data2[i];
-            }
-            else
-                result[i]=null;
-        }
-    }
-
-    return result;
-}
-
-//数组 data>data2比较 返回 0/1 数组
-HQIndexFormula.ARRAY_GT=function(data,data2)
-{
-    var result=[];
-    var IsNumber=typeof(data2)=="number";
-    if (IsNumber)
-    {
-        for(var i in data)
-        {
-            result[i]=(data[i]>data2 ? 1:0);
-        }
-    }
-    else
-    {
-        var count=Math.max(data.length,data2.length)
-
-        for(var i=0;i<count;++i)
-        {
-            if (i<data.length && i<data2.length)
-                result[i]=data[i]>data2[i] ? 1:0;
-            else
-                result[i]=null;
-        }
-    }
-
-    return result;
-}
-
-//数组 data>=data2比较 返回 0/1 数组
-HQIndexFormula.ARRAY_GTE=function(data,data2)
-{
-    var result=[];
-    var IsNumber=typeof(data2)=="number";
-    if (IsNumber)
-    {
-        for(var i in data)
-        {
-            result[i]=(data[i]>=data2 ? 1:0);
-        }
-    }
-    else
-    {
-        var count=Math.max(data.length,data2.length)
-
-        for(var i=0;i<count;++i)
-        {
-            if (i<data.length && i<data2.length)
-                result[i]=data[i]>=data2[i] ? 1:0;
-            else
-                result[i]=null;
-        }
-    }
-
-    return result;
-}
-
-//数组 data<data2比较 返回 0/1 数组
-HQIndexFormula.ARRAY_LT=function(data,data2)
-{
-    var result=[];
-    var IsNumber=typeof(data2)=="number";
-    if (IsNumber)
-    {
-        for(var i in data)
-        {
-            result[i]=(data[i]<data2 ? 1:0);
-        }
-    }
-    else
-    {
-        var count=Math.max(data.length,data2.length)
-
-        for(var i=0;i<count;++i)
-        {
-            if (i<data.length && i<data2.length)
-                result[i]=data[i]<data2[i] ? 1:0;
-            else
-                result[i]=null;
-        }
-    }
-
-    return result;
-}
-
-//数组 data<=data2比较 返回 0/1 数组
-HQIndexFormula.ARRAY_LTE=function(data,data2)
-{
-    var result=[];
-    var IsNumber=typeof(data2)=="number";
-    if (IsNumber)
-    {
-        for(var i in data)
-        {
-            result[i]=(data[i]<=data2 ? 1:0);
-        }
-    }
-    else
-    {
-        var count=Math.max(data.length,data2.length)
-
-        for(var i=0;i<count;++i)
-        {
-            if (i<data.length && i<data2.length)
-                result[i]=data[i]<=data2[i] ? 1:0;
-            else
-                result[i]=null;
-        }
-    }
-
-    return result;
-}
-
-//数组 data==data2比较 返回 0/1 数组
-HQIndexFormula.ARRAY_EQ=function(data,data2)
-{
-    var result=[];
-    var IsNumber=typeof(data2)=="number";
-    if (IsNumber)
-    {
-        for(var i in data)
-        {
-            result[i]=(data[i]==data2 ? 1:0);
-        }
-    }
-    else
-    {
-        var count=Math.max(data.length,data2.length)
-
-        for(var i=0;i<count;++i)
-        {
-            if (i<data.length && i<data2.length)
-                result[i]=(data[i]==data2[i] ? 1:0);
-            else
-                result[i]=null;
-        }
-    }
-
-    return result;
-}
-
-HQIndexFormula.ARRAY_IF=function(data,trueData,falseData)
-{
-    var result=[];
-    var IsNumber=[typeof(trueData)=="number",typeof(falseData)=="number"];
-    for(var i in data)
-    {
-        if (data[i])
-        {
-            if (IsNumber[0]) result[i]=trueData;
-            else result[i]=trueData[i];
-        }
-        else
-        {
-            if (IsNumber[1]) result[i]=falseData;
-            else result[i]=falseData[i];
-        }
-    }
-
-    return result;
-}
-
-HQIndexFormula.ARRAY_AND=function(data,data2)
-{
-   var result=[];
-    var IsNumber=typeof(trueData)=="number";
-    if (IsNumber)
-    {
-        for(var i in data)
-        {
-            result[i]=(data[i] && data2? 1:0);
-        }
-    }
-    else
-    {
-        var count=Math.max(data.length,data2.length)
-
-        for(var i=0;i<count;++i)
-        {
-            if (i<data.length && i<data2.length)
-                result[i]=(data[i] && data2[i] ? 1:0);
-            else
-                result[i]=0;
-        }
-    }
-
-    return result;
-}
-HQIndexFormula.ARRAY_OR=function(data, data2)
-{
-    var result=[];
-    var IsNumber=typeof(data2)=="number";
-    if (IsNumber)
-    {
-        for(var i in data)
-        {
-            result[i]=(data[i] || data2? 1:0);
-        }
-    }
-    else
-    {
-        var count=Math.max(data.length,data2.length)
-
-        for(var i=0;i<count;++i)
-        {
-            if (i < data.length && data[i])
-            {
-                result[i] = 1;
-                continue;
-            }
-            if (i < data2.length && data2[i])
-            {
-                result[i] = 1;
-                continue;
-            }
-            result[i] = 0;    
-        }
-    }
-
-    return result;
-}
-//数组相乘
-//支持多个参数累乘 如:HQIndexFormula.ARRAY_MULTIPLY(data,data2,data3,data3) =data*data2*data3*data4
-HQIndexFormula.ARRAY_MULTIPLY=function(data,data2)
-{
-    if (arguments.length==2)
-    {
-        var result=[];
-        var IsNumber=typeof(data2)=="number";
-        if (IsNumber)
-        {
-            for(var i in data)
-            {
-                if (data[i]==null || isNaN(data[i]))
-                    result[i]=null;
-                else
-                    result[i]=data[i]*data2;
-            }
-        }
-        else
-        {
-            var count=Math.max(data.length,data2.length);
-            for(var i=0;i<count;++i)
-            {
-                if (i<data.length && i<data2.length)
-                    result[i]=data[i]*data2[i];
-                else
-                    result[i]=null;
-            }
-        }
-
-        return result;
-    }
-
-    var result=HQIndexFormula.ARRAY_MULTIPLY(arguments[0],arguments[1]);
-
-    for(var i=2;i<arguments.length;++i)
-    {
-        result=HQIndexFormula.ARRAY_MULTIPLY(result,arguments[i]);
-    }
-
-    return result;
-}
-
-//数组相除
-HQIndexFormula.ARRAY_DIVIDE=function(data,data2)
-{
-    var result=[];
-    var IsNumber=typeof(data2)=="number";
-    if (IsNumber)
-    {
-        for(var i in data)
-        {
-            result[i]=data[i]/data2;
-        }
-    }
-    else
-    {
-        var count=Math.max(data.length,data2.length);
-        for(var i=0;i<count;++i)
-        {
-            if (i<data.length && i<data2.length)
-            {
-                if(data[i]==null || data2[i]==null || isNaN(data[i]) || isNaN(data2[i]))
-                    result[i]=null;
-                else if (data2[i]==0)
-                    result[i]=null;
-                else
-                    result[i]=data[i]/data2[i];
-            }
-            else
-                result[i]=null;
-        }
-    }
-
-    return result;
-}
-
-//数组相加
-//支持多个参数累加 如:HQIndexFormula.ARRAY_ADD(data,data2,data3,data3) =data+data2+data3+data4
-HQIndexFormula.ARRAY_ADD=function(data,data2)
-{
-    if (arguments.length==2)
-    {
-        var result=[];
-        var IsNumber=typeof(data2)=="number";
-        if (IsNumber)
-        {
-            for(var i in data)
-            {
-                result[i]=data[i]+data2;
-            }
-        }
-        else
-        {
-            var count=Math.max(data.length,data2.length);
-            for(var i=0;i<count;++i)
-            {
-                if (i<data.length && i<data2.length)
-                {
-                    if (data[i]==null || data2[i]==null || isNaN(data[i]) || isNaN(data2[i])) result[i]=null
-                    else result[i]=data[i]+data2[i];
-                }
-                else
-                {
-                    result[i]=null;
-                }
-            }
-        }
-
-        return result;
-    }
-
-    var result=HQIndexFormula.ARRAY_ADD(arguments[0],arguments[1]);
-
-    for(var i=2;i<arguments.length;++i)
-    {
-        result=HQIndexFormula.ARRAY_ADD(result,arguments[i]);
-    }
-
-    return result;
-}
-
-HQIndexFormula.MAX=function(data,data2)
-{
-    var result=[];
-    var IsNumber=typeof(data2)=="number";
-    if (IsNumber)
-    {
-        for(var i in data)
-        {
-            if (data[i]==null) result[i]=null;
-            else result[i]=Math.max(data[i],data2);
-        }
-    }
-    else
-    {
-        var count=Math.max(data.length,data2.length);
-        for(var i=0;i<count;++i)
-        {
-            if (i<data.length && i<data2.length)
-            {
-                if (data[i]==null || data2[i]==null) result[i]=null;
-                else result[i]=Math.max(data[i],data2[i]);
-            }
-            else
-                result[i]=null;
-        }
-    }
-
-    return result;
-}
-
-HQIndexFormula.MIN=function(data,data2)
-{
-    var result=[];
-    var IsNumber=typeof(data2)=="number";
-    if (IsNumber)
-    {
-        for(var i in data)
-        {
-            if (data[i]==null) result[i]=null;
-            else result[i]=Math.min(data[i],data2);
-        }
-    }
-    else
-    {
-        var count=Math.max(data.length,data2.length);
-        for(var i=0;i<count;++i)
-        {
-            if (i<data.length && i<data2.length)
-            {
-                if (data[i]==null || data2[i]==null) result[i]=null;
-                else result[i]=Math.min(data[i],data2[i]);
-            }
-            else
-                result[i]=null;
-        }
-    }
-
-    return result;
-}
-
-
-HQIndexFormula.ABS=function(data)
-{
-    var result=[];
-    for(var i in data)
-    {
-        if (data[i]==null) result[i]=null;
-        else result[i]=Math.abs(data[i]);
-    }
-
-    return result;
-}
-
-
-HQIndexFormula.MA=function(data,dayCount)
-{
-    var result=[];
-
-    for (var i = 0, len = data.length; i < len; i++)
-    {
-        if (i < dayCount)
-        {
-            result[i]=null;
-            continue;
-        }
-
-        var sum = 0;
-        for (var j = 0; j < dayCount; j++)
-        {
-            sum += data[i - j];
-        }
-        result[i]=sum / dayCount;
-    }
-    return result;
-}
-
-/*
-    加权移动平均
-    返回加权移动平均
-    用法:EXPMA(X,M):X的M日加权移动平均
-    EXPMA[i]=buffer[i]*para+(1-para)*EXPMA[i-1] para=2/(1+__para)
-*/
-HQIndexFormula.EXPMA=function(data,dayCount)
-{
-    var result=[];
-    if (dayCount>=data.length) return result;
-
-    var i=dayCount;
-    for(;i<data.length;++i) //获取第1个有效数据
-    {
-        if (data[i]!=null)
-        {
-            result[i]=data[i];
-            break;
-        }
-    }
-
-    for (i=i+1; i < data.length; ++i)
-    {
-        if (result[i-1]!=null && data[i]!=null)
-            result[i]=(2*data[i]+(dayCount-1)*result[i-1])/(dayCount+1);
-        else if (result[i-1]!=null)
-            result[i]=result[i-1];
-    }
-
-    return result;
-}
-
-//加权平滑平均,MEMA[i]=SMA[i]*para+(1-para)*SMA[i-1] para=2/(1+__para)
-HQIndexFormula.EXPMEMA=function(data,dayCount)
-{
-    var result=[];
-    if (dayCount>=data.length) return result;
-
-    var index=0;
-    for(;index<data.length;++index)
-    {
-        if (data[index] && !isNaN(data[index])) break;
-    }
-
-    var sum=0;
-    for(var i=0; index<data.length && i<dayCount;++i, ++index)
-    {
-        if (data[index] && !isNaN(data[index]))
-            sum+=data[index];
-        else
-            sum+=data[index-1];
-    }
-
-    result[index-1]=sum/dayCount;
-    for(;index<data.length;++index)
-	{
-        if(result[index-1]!=null && data[index]!=null)
-            result[index]=(2*data[index]+(dayCount-1)*result[index-1])/(dayCount+1);
-        else if(result[index-1]!=null)
-            result[index] = result[index-1];
-	}
-
-    return result;
-}
-
-
-HQIndexFormula.STD=function(data,n)
-{
-    var result=[];
-
-    var total=0;
-    var averageData=[]; //平均值
-    for(var i=n-1;i<data.length;++i)
-    {
-        total=0;
-        for(var j=0;j<n;++j)
-        {
-            total+=data[i-j];
-        }
-
-        averageData[i]=total/n;
-    }
-
-    for(var i=n-1;i<data.length;++i)
-    {
-        total=0;
-        for(var j=0;j<n;++j)
-        {
-            total+=Math.pow((data[i-j]-averageData[i]),2);
-        }
-
-        result[i]=Math.sqrt(total/n);
-    }
-
-
-    return result;
-}
-
-//平均绝对方差
-HQIndexFormula.AVEDEV=function(data,n)
-{
-    var result=[];
-
-    var total=0;
-    var averageData=[]; //平均值
-    for(var i=n-1;i<data.length;++i)
-    {
-        total=0;
-        for(var j=0;j<n;++j)
-        {
-            total+=data[i-j];
-        }
-
-        averageData[i]=total/n;
-    }
-
-    for(var i=n-1;i<data.length;++i)
-    {
-        total=0;
-        for(var j=0;j<n;++j)
-        {
-            total+=Math.abs(data[i-j]-averageData[i]);
-        }
-
-        result[i]=total/n;
-    }
-
-
-    return result;
-}
-
-HQIndexFormula.COUNT=function(data,n)
-{
-    var result=[];
-
-
-    for(var i=n-1;i<data.length;++i)
-    {
-        var count=0;
-        for(var j=0;j<n;++j)
-        {
-            if (data[i-j]) ++count;
-        }
-
-        result[i]=count;
-    }
-
-    return result;
-}
-
-//上穿
-HQIndexFormula.CROSS=function(data,data2)
-{
-    var result=[];
-    if (data.length!=data2.length) return result=[];
-
-    var index=0;
-    for(;index<data.length;++index)
-    {
-        if (data[index]!=null && !isNaN(data[index])  && data2[index]!=null && isNaN(data2[index]))
-            break;
-    }
-
-    for(++index;index<data.length;++index)
-    {
-        result[index]= (data[index]>data2[index]&&data[index-1]<data2[index-1])?1:0;
-    }
-
-    return result;
-}
-
-//累乘
-HQIndexFormula.MULAR=function(data,n)
-{
-    var result=[];
-    if(data.length<n) return result;
-
-    var index=n;
-    for(;index<data.length;++index)
-    {
-        if (data[index]!=null && !isNaN(data[index]))
-        {
-            result[index]=data[index];
-            break;
-        }
-    }
-
-    for(++index;index<data.length;++index)
-    {
-        result[index]=result[index-1]*data[index];
-    }
-
-    return result;
-}
-
-
-HQIndexFormula.STICKLINE=function(data,price1,price2)
-{
-    var result=[];
-    if(data.length<=0) return result;
-
-    var IsNumber=typeof(price1)=="number";
-    var IsNumber2=typeof(price2)=="number";
-
-    for(var i in data)
-    {
-        result[i]=null;
-        if (isNaN(data[i])) continue;
-        if (!data[i]) continue;
-
-        if (IsNumber && IsNumber2)
-        {
-            result[i]={Value:price1,Value2:price2};
-        }
-        else if (IsNumber && !IsNumber2)
-        {
-            if (isNaN(price2[i])) continue;
-            result[i]={Value:price1,Value2:price2[i]};
-        }
-        else if (!IsNumber && IsNumber2)
-        {
-            if (isNaN(price1[i])) continue;
-            result[i]={Value:price1[i],Value2:price2};
-        }
-        else
-        {
-            if (isNaN(price1[i]) || isNaN(price2[i])) continue;
-            result[i]={Value:price1[i],Value2:price2[i]};
-        }
-    }
-
-    return result;
-}
-
 /////////////////////////////////////////////////////////////////////////////////////////////
 //  K线图 控件
 //  this.ChartPaint[0] K线画法 这个不要修改
@@ -11296,6 +10770,98 @@ function MinuteChartContainer(uielement)
     this.SplashTitle = '下载分钟数据';
     this.MinuteApiUrl=g_JSChartResource.Domain+"/API/Stock";
 
+    //判断是单个手指
+    function IsPhoneDragging(e) 
+    {
+        var changed = e.changedTouches.length;
+        var touching = e.touches.length;
+        return changed == 1 && touching == 1;
+    }
+
+    //是否是2个手指操所
+    function IsPhonePinching(e) 
+    {
+        var changed = e.changedTouches.length;
+        var touching = e.touches.length;
+        return (changed == 1 || changed == 2) && touching == 2;
+    }
+
+    function GetToucheData(e, isForceLandscape) 
+    {
+        var touches = new Array();
+        for (var i = 0; i < e.touches.length; ++i) 
+        {
+            var item = e.touches[i];
+            if (isForceLandscape) 
+            {
+                touches.push( { clientX: item.y, clientY: item.x, pageX: item.y, pageY: item.x });
+            }
+            else 
+            {
+                touches.push( { clientX: item.x, clientY: item.y, pageX: item.x, pageY: item.y });
+            }
+        }
+        return touches;
+    }
+
+    //手机拖拽
+    this.ontouchstart = function (e) 
+    {
+        var jsChart = this;
+        if (jsChart.DragMode == 0) return;
+
+        if (IsPhoneDragging(e)) 
+        {
+            if (jsChart.TryClickLock) 
+            {
+                var touches = GetToucheData(e, jsChart.IsForceLandscape);
+                var x = touches[0].clientX;
+                var y = touches[0].clientY;
+                if (jsChart.TryClickLock(x, y)) return;
+            }
+
+            //长按2秒,十字光标
+            if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
+            
+            var drag = 
+            { 
+                "Click": {},
+                "LastMove": {},  //最后移动的位置
+            };
+
+            var touches = GetToucheData(e, jsChart.IsForceLandscape);
+
+            drag.Click.X = touches[0].clientX;
+            drag.Click.Y = touches[0].clientY;
+            drag.LastMove.X = touches[0].clientX;
+            drag.LastMove.Y = touches[0].clientY;
+
+            if (this.ChartCorssCursor.IsShow === true)    //移动十字光标
+            {
+                var x = drag.Click.X;
+                var y = drag.Click.Y;
+                if (jsChart.IsForceLandscape) y = jsChart.UIElement.Height - drag.Click.Y;    //强制横屏Y计算
+                jsChart.OnMouseMove(x, y, e);
+            }
+        }
+    }
+
+    this.ontouchmove = function (e) 
+    {
+        var jsChart = this;
+        var touches = GetToucheData(e, jsChart.IsForceLandscape);
+        if (this.ChartCorssCursor.IsShow === true && IsPhoneDragging(e)) 
+        {
+            var drag = jsChart.MouseDrag;
+            if (drag == null) 
+            {
+                var x = touches[0].clientX;
+                var y = touches[0].clientY;
+                jsChart.OnMouseMove(x, y, e);
+            }
+        }
+    }
+
     //创建
     //windowCount 窗口个数
     this.Create=function(windowCount)
@@ -12431,32 +11997,128 @@ function KLineChartHScreenContainer(uielement)
             this.Frame.SubFrame[i] = subFrame;
         }
     }
+}
 
-    //创建主图K线画法
-    this.CreateMainKLine = function () 
+////////////////////////////////////////////////////////////////////////////////
+//  走势图横屏显示
+//
+function MinuteChartHScreenContainer(uielement) 
+{
+    this.newMethod = MinuteChartContainer;   //派生
+    this.newMethod(uielement);
+    delete this.newMethod;
+
+    this.ClassName = 'MinuteChartHScreenContainer';
+
+    this.OnMouseMove = function (x, y, e) 
     {
-        var kline = new ChartKLine();
-        kline.Canvas = this.Canvas;
-        kline.ChartBorder = this.Frame.SubFrame[0].Frame.ChartBorder;
-        kline.ChartFrame = this.Frame.SubFrame[0].Frame;
-        kline.Name = "Main-KLine";
-        if (this.KLineInfoTooltip) kline.InfoTooltipEvent = [this.KLineInfoTooltip.DoModal, this.KLineInfoTooltip.Leave]; //鼠标悬停, 鼠标离开
+        this.LastPoint.X = x;
+        this.LastPoint.Y = y;
+        this.CursorIndex = this.Frame.GetXData(y);
 
-        this.ChartPaint[0] = kline;
-
-        this.TitlePaint[0] = new DynamicKLineTitlePainting();
-        this.TitlePaint[0].Frame = this.Frame.SubFrame[0].Frame;
-        this.TitlePaint[0].Canvas = this.Canvas;
-
-        //主图叠加画法
-        var paint = new ChartOverlayKLine();
-        paint.Canvas = this.Canvas;
-        paint.ChartBorder = this.Frame.SubFrame[0].Frame.ChartBorder;
-        paint.ChartFrame = this.Frame.SubFrame[0].Frame;
-        paint.Name = "Overlay-KLine";
-        this.OverlayChartPaint[0] = paint;
-
+        this.DrawDynamicInfo();
     }
+
+    //创建
+    //windowCount 窗口个数
+    this.Create = function (windowCount) 
+    {
+        this.UIElement.JSChartContainer = this;
+
+        //创建十字光标
+        this.ChartCorssCursor = new ChartCorssCursor();
+        this.ChartCorssCursor.Canvas = this.Canvas;
+        this.ChartCorssCursor.StringFormatX = new HQMinuteTimeStringFormat();
+        this.ChartCorssCursor.StringFormatY = new HQPriceStringFormat();
+
+        //创建等待提示
+        this.ChartSplashPaint = new ChartSplashPaint();
+        this.ChartSplashPaint.Canvas = this.Canvas;
+        this.ChartSplashPaint.SplashTitle = this.SplashTitle;
+
+        //创建框架容器
+        this.Frame = new HQTradeHScreenFrame();
+        this.Frame.ChartBorder = new ChartBorder();
+        this.Frame.ChartBorder.UIElement = this.UIElement;
+        this.Frame.ChartBorder.Top = 25;
+        this.Frame.ChartBorder.Left = 50;
+        this.Frame.ChartBorder.Bottom = 20;
+        this.Frame.Canvas = this.Canvas;
+        this.ChartCorssCursor.Frame = this.Frame; //十字光标绑定框架
+        this.ChartSplashPaint.Frame = this.Frame;
+
+        this.CreateChildWindow(windowCount);
+        this.CreateMainKLine();
+
+        //子窗口动态标题
+        for (var i in this.Frame.SubFrame) 
+        {
+            var titlePaint = new DynamicChartTitlePainting();
+            titlePaint.Frame = this.Frame.SubFrame[i].Frame;
+            titlePaint.Canvas = this.Canvas;
+
+            this.TitlePaint.push(titlePaint);
+        }
+    }
+
+    //创建子窗口
+    this.CreateChildWindow = function (windowCount) 
+    {
+        for (var i = 0; i < windowCount; ++i) 
+        {
+            var border = new ChartBorder();
+            border.UIElement = this.UIElement;
+
+            var frame = new MinuteHScreenFrame();
+            frame.Canvas = this.Canvas;
+            frame.ChartBorder = border;
+            if (i < 2) frame.ChartBorder.TitleHeight = 0;
+            frame.XPointCount = 243;
+
+            var DEFAULT_HORIZONTAL = [9, 8, 7, 6, 5, 4, 3, 2, 1];
+            frame.HorizontalMax = DEFAULT_HORIZONTAL[0];
+            frame.HorizontalMin = DEFAULT_HORIZONTAL[DEFAULT_HORIZONTAL.length - 1];
+
+            if (i == 0) 
+            {
+                frame.YSplitOperator = new FrameSplitMinutePriceY();
+                frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
+            }
+            else 
+            {
+                frame.YSplitOperator = new FrameSplitY();
+                frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
+            }
+
+            frame.YSplitOperator.Frame = frame;
+            frame.YSplitOperator.ChartBorder = border;
+            frame.XSplitOperator = new FrameSplitMinuteX();
+            frame.XSplitOperator.Frame = frame;
+            frame.XSplitOperator.ChartBorder = border;
+            if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
+            frame.XSplitOperator.Operator();
+
+            for (var j in DEFAULT_HORIZONTAL) 
+            {
+                frame.HorizontalInfo[j] = new CoordinateInfo();
+                frame.HorizontalInfo[j].Value = DEFAULT_HORIZONTAL[j];
+                if (i == 0 && j == frame.HorizontalMin) continue;
+
+                frame.HorizontalInfo[j].Message[1] = DEFAULT_HORIZONTAL[j].toString();
+                frame.HorizontalInfo[j].Font = "14px 微软雅黑";
+            }
+
+            var subFrame = new SubFrameItem();
+            subFrame.Frame = frame;
+            if (i == 0)
+                subFrame.Height = 20;
+            else
+                subFrame.Height = 10;
+
+            this.Frame.SubFrame[i] = subFrame;
+        }
+    }
+
 }
 
 
