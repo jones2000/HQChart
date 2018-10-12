@@ -6925,7 +6925,8 @@ function ScriptIndex(name,script,args,option)
 
         //数据类型
         let hqDataType=0;   //默认K线
-        if (hqChart.ClassName==='MinuteChartContainer') hqDataType=2;   //分钟数据
+        if (hqChart.ClassName==='MinuteChartContainer') hqDataType=2;               //分钟数据
+        else if (hqChart.ClassName==='HistoryMinuteChartContainer') hqDataType=3;   //历史分钟
         let option=
         {
             HQDataType:hqDataType,
@@ -6938,6 +6939,8 @@ function ScriptIndex(name,script,args,option)
             MaxRequestMinuteDayCount:hqChart.MaxRequestMinuteDayCount,
             Arguments:this.Arguments
         };
+
+        if (hqDataType===3) option.TrateDate=hqChart.TradeDate;
 
         let code=this.Script;
         let run=JSComplier.Execute(code,option,hqChart.ScriptErrorCallback);

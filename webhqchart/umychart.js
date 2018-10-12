@@ -298,6 +298,8 @@ function JSChart(divElement)
                     chart.WindowIndex[2+parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args);    //脚本执行
                 }
             }
+
+            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[2+parseInt(i)].Frame.ChartBorder.TitleHeight=item.TitleHeight;
         }
 
         return chart;
@@ -313,19 +315,49 @@ function JSChart(divElement)
 
         chart.Create(windowsCount);                            //创建子窗口
 
+        if (option.IsShowCorssCursorInfo==false)    //取消显示十字光标刻度信息
+        {
+            chart.ChartCorssCursor.IsShowText=option.IsShowCorssCursorInfo;
+        }
+
+        if (option.Border)
+        {
+            if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left=option.Border.Left;
+            if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right=option.Border.Right;
+            if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
+            if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
+        }
+
+        let scriptData = new JSIndexScript();
         for(var i in option.Windows)
         {
             var item=option.Windows[i];
-            var indexItem=JSIndexMap.Get(item.Index);
-            if (!indexItem) return null;
+            if (item.Script)
+            {
+                chart.WindowIndex[2+parseInt(i)]=new ScriptIndex(item.Name,item.Script,item.Args);    //脚本执行
+            }
+            else
+            {
+                var indexItem=JSIndexMap.Get(item.Index);
+                if (indexItem)
+                {
+                    chart.WindowIndex[2+parseInt(i)]=indexItem.Create();       //创建子窗口的指标
+                    chart.CreateWindowIndex(2+parseInt(i));
+                }
+                else
+                {
+                    let indexInfo = scriptData.Get(item.Index);
+                    if (!indexInfo) continue;
 
-            chart.WindowIndex[2+parseInt(i)]=indexItem.Create();       //创建子窗口3的指标
-            chart.CreateWindowIndex(2+parseInt(i));
+                    chart.WindowIndex[2+parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args);    //脚本执行
+                }
+            }
+
+            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[2+parseInt(i)].Frame.ChartBorder.TitleHeight=item.TitleHeight;
         }
 
-        if (!option.HistoryMinute.TradeDate) return null;
-
-        chart.TradeDate=option.HistoryMinute.TradeDate;
+        chart.TradeDate=20181009;
+        if (option.HistoryMinute.TradeDate) chart.TradeDate=option.HistoryMinute.TradeDate;
         if (option.HistoryMinute.IsShowName!=null) chart.TitlePaint[0].IsShowName=option.HistoryMinute.IsShowName;  //动态标题是否显示股票名称
         if (option.HistoryMinute.IsShowDate!=null) chart.TitlePaint[0].IsShowDate=option.HistoryMinute.IsShowDate;  //动态标题是否显示日期
 
@@ -521,6 +553,16 @@ function JSChart(divElement)
         {
             console.log('[JSChart:LockIndex] lockData', lockData);
             this.JSChartContainer.LockIndex(lockData);
+        }
+    }
+
+    //历史分钟数据 更改日期
+    this.ChangeTradeDate=function(tradeDate)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ChangeTradeDate)=='function')
+        {
+            console.log('[JSChart:ChangeTradeDate] date', tradeDate);
+            this.JSChartContainer.ChangeTradeDate(tradeDate);
         }
     }
 }
@@ -12361,7 +12403,7 @@ function HistoryMinuteChartContainer(uielement)
     delete this.newMethod;
 
     this.HistoryMinuteApiUrl="https://opensourcecache.zealink.com/cache/minuteday/day/";
-
+    this.ClassName='HistoryMinuteChartContainer';
 
     //创建主图K线画法
     this.CreateMainKLine=function()
@@ -12409,6 +12451,15 @@ function HistoryMinuteChartContainer(uielement)
         this.OverlayChartPaint[0]=paint;
         */
 
+    }
+
+    //设置交易日期
+    this.ChangeTradeDate=function(trdateDate)
+    {
+        if (!trdateDate) return;
+
+        this.TradeDate=trdateDate;
+        this.RequestData(); //更新数据
     }
 
     this.RequestData=function()
@@ -12510,7 +12561,7 @@ HistoryMinuteChartContainer.JsonDataToMinuteData=function(data)
             item.Open=aryMinuteData[i-1].Close;
             item.High=item.Close;
             item.Low=item.Close;
-            item.Vol=data.minute.vol[i]/100; //原始单位股
+            item.Vol=data.minute.vol[i]; //原始单位股
             item.Amount=data.minute.amount[i];
             item.DateTime=data.date.toString()+" "+data.minute.time[i].toString();
             //item.Increate=jsData.increate;
@@ -12523,13 +12574,20 @@ HistoryMinuteChartContainer.JsonDataToMinuteData=function(data)
             item.Open=data.minute.open[i];
             item.High=data.minute.high[i];
             item.Low=data.minute.low[i];
-            item.Vol=data.minute.vol[i]/100; //原始单位股
+            item.Vol=data.minute.vol[i]; //原始单位股
             item.Amount=data.minute.amount[i];
             item.DateTime=data.date.toString()+" "+data.minute.time[i].toString();
             //item.Increate=jsData.increate;
             //item.Risefall=jsData.risefall;
             item.AvPrice=data.minute.avprice[i];
         }
+
+        //价格是0的 都用空
+        if (item.Open<=0) item.Open=null;
+        if (item.Close<=0) item.Close=null;
+        if (item.AvPrice<=0) item.AvPrice=null;
+        if (item.High<=0) item.High=null;
+        if (item.Low<=0) item.Low=null;
 
         aryMinuteData[i]=item;
     }
