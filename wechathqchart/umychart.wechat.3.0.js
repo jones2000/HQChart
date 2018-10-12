@@ -5,13 +5,21 @@
 */
 
  //行情数据结构体 及涉及到的行情算法(复权,周期等) 
-import { 
+import 
+{ 
     JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData, 
-    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData } from "umychart.data.wechat.js";            
+    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData 
+} from "umychart.data.wechat.js"; 
+
+import 
+{
+    JSCommon_JSKLineInfoMap as JSKLineInfoMap, JSCommon_KLINE_INFO_TYPE as KLINE_INFO_TYPE, JSCommonKLineInfo
+} from "umychart.klineinfo.wechat.js";           
 
 import { JSCommonComplier } from "umychart.complier.wechat.js";     //通达信编译器
 import { JSCommonIndexScript } from "umychart.index.data.wechat.js"; //系统指标定义
 import { JSCommon_HQIndexFormula as HQIndexFormula } from "umychart.hqIndexformula.wechat.js";     //通达信编译器
+  
 
 function JSCanvasElement()
 {
@@ -671,7 +679,8 @@ JSChart.SetDomain=function(domain,cacheDomain)
 
     if (cacheDomain) g_JSChartResource.CacheDomain=cacheDomain;
 
-    JSCommonComplier.JSComplier.SetDomain(domain, cacheDomain);     //编译器数据api域名修改      
+    JSCommonComplier.JSComplier.SetDomain(domain, cacheDomain);     //编译器数据api域名修改  
+    JSCommonKLineInfo.SetDomain(domain, cacheDomain)    
 }
 
 /*
@@ -3120,33 +3129,6 @@ function Rotate90SimpleChartFrame()
         }
     }
     
-}
-
-var KLINE_INFO_TYPE=
-{
-    INVESTOR:1,         //互动易
-    ANNOUNCEMENT:2,     //公告
-    PFORECAST:3,        //业绩预告
-
-    ANNOUNCEMENT_QUARTER_1:4,   //一季度报
-    ANNOUNCEMENT_QUARTER_2:5,   //半年报
-    ANNOUNCEMENT_QUARTER_3:6,   //2季度报
-    ANNOUNCEMENT_QUARTER_4:7,   //年报
-
-    RESEARCH:8,                 //调研
-    BLOCKTRADING:9,             //大宗交易
-    TRADEDETAIL:10              //龙虎榜
-
-
-}
-
-function KLineInfoData()
-{
-    this.ID;
-    this.Date;
-    this.Title;
-    this.InfoType;
-    this.ExtendData;    //扩展数据
 }
 
 function TooltipData()              //提示信息
@@ -7939,7 +7921,7 @@ function DynamicKLineTitlePainting()
         var blockTradeCount=0;  //大宗交易次数
         var tradeDetailCount=0; //龙虎榜上榜次数
         var reportTitle=null, pforecastTitle=null;
-        console.log(info);
+        //console.log(info);
         for (var i in info.Data) 
         {
             var item=info.Data[i];
@@ -9587,47 +9569,15 @@ function JSChartResource()
     this.Domain="https://opensource.zealink.com";               //API域名
     this.CacheDomain="https://opensourcecache.zealink.com";     //缓存域名
 
-    this.KLine={
-            MaxMin: {Font:'12px 微软雅黑',Color:'rgb(111,111,111)'},   //K线最大最小值显示
-            Info:  //信息地雷
-            {
-                Color:'rgb(205,149,12)',
-                TextColor:'rgb(0,0,0)',
-
-                Investor:
-                {
-                    ApiUrl:'https://opensource.zealink.com/API/NewsInteract', //互动易
-                    Icon:'https://opensourcecache.zealink.com/cache/test/investor.png',
-                },
-                Announcement:                                           //公告
-                {
-                    ApiUrl:'https://opensource.zealink.com/API/ReportList',
-                    Icon:'https://opensourcecache.zealink.com/cache/test/announcement.png',
-                    IconQuarter:'https://opensourcecache.zealink.com/cache/test/announcement2.png',  //季报
-                },
-                Pforecast:  //业绩预告
-                {
-                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
-                    Icon:'https://opensourcecache.zealink.com/cache/test/pforecast.png',
-                },
-                Research:   //调研
-                {
-                    ApiUrl:'https://opensource.zealink.com/API/InvestorRelationsList',
-                    Icon:'https://opensourcecache.zealink.com/cache/test/research.png',
-                },
-                BlockTrading:   //大宗交易
-                {
-                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
-                    Icon:'https://opensourcecache.zealink.com/cache/test/blocktrading.png',
-                },
-                TradeDetail:    //龙虎榜
-                {
-                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
-                    Icon:'https://opensourcecache.zealink.com/cache/test/tradedetail.png',
-                }
-
-            }
-        };
+    this.KLine=
+    {
+        MaxMin: {Font:'12px 微软雅黑',Color:'rgb(111,111,111)'},   //K线最大最小值显示
+        Info:  //信息地雷
+        {
+            Color:'rgb(205,149,12)',
+            TextColor:'rgb(0,0,0)',
+        }
+    };
 
     this.Index={};
     //指标线段颜色
@@ -14853,466 +14803,6 @@ function LighterIndex5()
         this.InvokeUpdateUICallback(paint);
 
         return true;
-    }
-}
-
-/*
-    信息地雷
-    信息地雷列表
-*/
-function JSKLineInfoMap()
-{
-}
-
-JSKLineInfoMap.Get=function(id)
-{
-    var infoMap=new Map(
-        [
-            ["互动易",      {Create:function(){ return new InvestorInfo()}  }],
-            ["公告",        {Create:function(){ return new AnnouncementInfo()}  }],
-            ["业绩预告",    {Create:function(){ return new PforecastInfo()}  }],
-            ["调研",        {Create:function(){ return new ResearchInfo()}  }],
-            ["大宗交易",    {Create:function(){ return new BlockTrading()}  }],
-            ["龙虎榜",      {Create:function(){ return new TradeDetail()}  }]
-        ]
-        );
-
-    return infoMap.get(id);
-}
-
-function IKLineInfo()
-{
-    this.MaxReqeustDataCount=1000;
-    this.StartDate=20160101;
-    this.Data;
-
-    this.GetToday=function()
-    {
-        var date=new Date();
-        var today=date.getFullYear()*10000+(date.getMonth()+1)*100+date.getDate();
-        return today;
-    }
-}
-
-/*
-    互动易
-*/
-function InvestorInfo()
-{
-    this.newMethod=IKLineInfo;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.RequestData=function(hqChart)
-    {
-        var self = this;
-        var param={ HQChart:hqChart };
-        this.Data=[];
-
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.KLine.Info.Investor.ApiUrl,
-            data:
-            {
-                "filed": ["question","answerdate","symbol","id"],
-                "symbol": [param.HQChart.Symbol],
-                "querydate":{"StartDate":this.StartDate,"EndDate":this.GetToday()},
-                "start":0,
-                "end":this.MaxReqeustDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-
-        return true;
-    }
-
-    this.RecvData=function(recvData,param)
-    {
-        var data=recvData.data;
-        if (!data || !data.list || data.list.length<=0) return;
-
-        for (var i in data.list)
-        {
-            var item = data.list[i];
-            var infoData=new KLineInfoData();
-            infoData.Date=item.answerdate;
-            infoData.Title=item.question;
-            infoData.InfoType=KLINE_INFO_TYPE.INVESTOR;
-            this.Data.push(infoData);
-        }
-
-        param.HQChart.UpdataChartInfo();
-        param.HQChart.Draw();
-    }
-}
-
-/*
-    公告
-*/
-function AnnouncementInfo()
-{
-    this.newMethod=IKLineInfo;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.RequestData=function(hqChart)
-    {
-        var self = this;
-        var param={ HQChart:hqChart };
-        this.Data=[];
-
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.KLine.Info.Announcement.ApiUrl,
-            data:
-            {
-                "filed": ["title","releasedate","symbol","id"],
-                "symbol": [param.HQChart.Symbol],
-                "querydate":{"StartDate":this.StartDate,"EndDate":this.GetToday()},
-                "start":0,
-                "end":this.MaxReqeustDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-
-        return true;
-    }
-
-    this.RecvData=function(recvData,param)
-    {
-        var data=recvData.data;
-        if (!data) return;
-        if (!data.report || data.report.length<=0) return;
-
-        for (var i in data.report)
-        {
-            var item = data.report[i];
-            var infoData=new KLineInfoData();
-            infoData.Date=item.releasedate;
-            infoData.Title=item.title;
-            infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT;
-            for(var j in item.type)
-            {
-                var typeItem=item.type[j];
-                switch(typeItem)
-                {
-                    case "一季度报告":
-                        infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_1;
-                        break;
-                    case "半年度报告":
-                        infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_2;
-                        break;
-                    case "三季度报告":
-                        infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_3;
-                        break;
-                    case "年度报告":
-                        infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_4;
-                        break;
-                }
-            }
-            this.Data.push(infoData);
-        }
-
-        param.HQChart.UpdataChartInfo();
-        param.HQChart.Draw();
-    }
-}
-
-
-/*
-    业绩预告
-*/
-function PforecastInfo()
-{
-    this.newMethod=IKLineInfo;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.RequestData=function(hqChart)
-    {
-        var self = this;
-        this.Data = [];
-        var param={ HQChart:hqChart };
-
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.KLine.Info.Pforecast.ApiUrl,
-            data:
-            {
-                "field": ["pforecast.type","pforecast.reportdate","fweek"],
-                "condition":
-                [
-                    {"item":["pforecast.reportdate","int32","gte",this.StartDate]}
-                ],
-                "symbol": [param.HQChart.Symbol],
-                "start":0,
-                "end":this.MaxReqeustDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-        return true;
-    }
-
-    this.RecvData=function(recvData,param)
-    {
-        var data=recvData.data;
-        if (!data.stock || data.stock.length!=1) return;
-        if (!data.stock[0].stockday || data.stock[0].stockday.length<=0) return;
-
-        for (var i in data.stock[0].stockday)
-        {
-            var item = data.stock[0].stockday[i];
-            if (item.pforecast.length>0)
-            {
-                var dataItem=item.pforecast[0];
-                var infoData=new KLineInfoData();
-                infoData.Date= item.date;
-                infoData.Title=dataItem.type;
-                infoData.InfoType=KLINE_INFO_TYPE.PFORECAST;
-                infoData.ExtendData={ Type:dataItem.type, ReportDate:dataItem.reportdate}
-                if(item.fweek)  //未来周涨幅
-                {
-                    infoData.ExtendData.FWeek={};
-                    if (item.fweek.week1!=null) infoData.ExtendData.FWeek.Week1=item.fweek.week1;
-                    if (item.fweek.week4!=null) infoData.ExtendData.FWeek.Week4=item.fweek.week4;
-                }
-                this.Data.push(infoData);
-            }
-        }
-
-        param.HQChart.UpdataChartInfo();
-        param.HQChart.Draw();
-    }
-}
-
-/*
-   投资者关系 (调研)
-*/
-function ResearchInfo()
-{
-    this.newMethod=IKLineInfo;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.RequestData=function(hqChart)
-    {
-        var self = this;
-        var param= { HQChart:hqChart };
-
-        this.Data=[];
-
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.KLine.Info.Research.ApiUrl,
-            data:
-            {
-                "filed": ["releasedate","researchdate","level","symbol","id"],
-                "querydate":{"StartDate":this.StartDate,"EndDate":this.GetToday()},
-                "symbol": [param.HQChart.Symbol],
-                "start":0,
-                "end":this.MaxReqeustDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-
-        return true;
-    }
-
-    this.RecvData=function(recvData,param)
-    {
-        var data=recvData.data;
-        if (!data) return;
-        if (!data.list || data.list.length<=0) return;
-
-        for (var i in data.list)
-        {
-            var item = data.list[i];
-            var infoData=new KLineInfoData();
-            infoData.ID=item.id;
-            infoData.Date= item.researchdate;
-            infoData.InfoType=KLINE_INFO_TYPE.RESEARCH;
-            infoData.ExtendData={ Level:item.level };
-            this.Data.push(infoData);
-
-        }
-
-        param.HQChart.UpdataChartInfo();
-        param.HQChart.Draw();
-    }
-}
-
-/*
-    大宗交易
-*/
-function BlockTrading()
-{
-    this.newMethod=IKLineInfo;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.RequestData=function(hqChart)
-    {
-        var self = this;
-        var param={ HQChart:hqChart,};
-        this.Data=[];
-
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.KLine.Info.BlockTrading.ApiUrl,
-            data:
-            {
-                "field": ["blocktrading.price","blocktrading.vol","blocktrading.premium","fweek","price"],
-                "condition":
-                [
-                    {"item":["date","int32","gte",this.StartDate]},
-                    {"item":["blocktrading.vol","int32","gte","0"]}
-                ],
-                "symbol": [param.HQChart.Symbol],
-                "start":0,
-                "end":this.MaxReqeustDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-
-        return true;
-    }
-
-    this.RecvData=function(recvData,param)
-    {
-        var data=recvData.data;
-        if (!data || !data.stock || data.stock.length!=1) return;
-        if (!data.stock[0].stockday || data.stock[0].stockday.length<=0) return;
-
-        for (var i in data.stock[0].stockday)
-        {
-            var item = data.stock[0].stockday[i];
-            var infoData=new KLineInfoData();
-            infoData.Date= item.date;
-            infoData.InfoType=KLINE_INFO_TYPE.BLOCKTRADING;
-            infoData.ExtendData=
-            {
-                Price:item.blocktrading.price,          //交易价格
-                Premium:item.blocktrading.premium,      //溢价 （百分比%)
-                Vol:item.blocktrading.vol,              //交易金额单位（万元)
-                ClosePrice:item.price,                  //收盘价
-            };
-
-            if(item.fweek)  //未来周涨幅
-            {
-                infoData.ExtendData.FWeek={};
-                if (item.fweek.week1!=null) infoData.ExtendData.FWeek.Week1=item.fweek.week1;
-                if (item.fweek.week4!=null) infoData.ExtendData.FWeek.Week4=item.fweek.week4;
-            }
-
-            this.Data.push(infoData);
-        }
-
-        param.HQChart.UpdataChartInfo();
-        param.HQChart.Draw();
-    }
-}
-
-
-/*
-    龙虎榜
-*/
-function TradeDetail()
-{
-    this.newMethod=IKLineInfo;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.RequestData=function(hqChart)
-    {
-        var self = this;
-        var param={ HQChart:hqChart };
-
-        this.Data=[];
-
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.KLine.Info.TradeDetail.ApiUrl,
-            data:
-            {
-                "field": ["tradedetail.typeexplain","tradedetail.type","fweek"],
-                "condition":
-                [
-                    {"item":["date","int32","gte",this.StartDate]},
-                    {"item":["tradedetail.type","int32","gte","0"]}
-                ],
-                "symbol": [param.HQChart.Symbol],
-                "start":0,
-                "end":this.MaxReqeustDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-
-        return true;
-    }
-
-    this.RecvData=function(recvData,param)
-    {
-        var data=recvData.data;
-        if (!data || !data.stock || data.stock.length!=1) return;
-        if (!data.stock[0].stockday || data.stock[0].stockday.length<=0) return;
-
-        for (var i in data.stock[0].stockday)
-        {
-            var item = data.stock[0].stockday[i];
-
-            var infoData=new KLineInfoData();
-            infoData.Date= item.date;
-            infoData.InfoType=KLINE_INFO_TYPE.TRADEDETAIL;
-            infoData.ExtendData={Detail:new Array()};
-
-            for(var j in item.tradedetail)
-            {
-                var tradeItem=item.tradedetail[j]; 
-                infoData.ExtendData.Detail.push({"Type":tradeItem.type,"TypeExplain":tradeItem.typeexplain});
-            }
-
-            if(item.fweek)  //未来周涨幅
-            {
-                infoData.ExtendData.FWeek={};
-                if (item.fweek.week1!=null) infoData.ExtendData.FWeek.Week1=item.fweek.week1;
-                if (item.fweek.week4!=null) infoData.ExtendData.FWeek.Week4=item.fweek.week4;
-            }
-
-            this.Data.push(infoData);
-        }
-
-        param.HQChart.UpdataChartInfo();
-        param.HQChart.Draw();
     }
 }
 
