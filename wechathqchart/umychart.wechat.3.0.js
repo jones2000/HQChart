@@ -7602,6 +7602,7 @@ function DynamicKLineTitlePainting()
     this.InfoData;
     this.InfoTextHeight=15;
     this.InfoTextColor = g_JSChartResource.KLine.Info.TextColor;
+    this.InfoTextBGColor = g_JSChartResource.KLine.Info.TextBGColor;
 
     this.IsShowName=true;           //是否显示股票名称
     this.IsShowSettingInfo=true;    //是否显示设置信息(周期 复权)
@@ -8019,61 +8020,40 @@ function DynamicKLineTitlePainting()
             this.Canvas.rotate(90 * Math.PI / 180);
             right=0;top=0;
         }
-        var title = '';
 
-        this.Canvas.textAlign = "right";
-        this.Canvas.textBaseline = "top";
         this.Canvas.font = this.Font;
 
-        title = parseInt(date / 10000) + '-' + parseInt(date%10000/100)+ '-' +parseInt(date%100);
-        this.Canvas.fillText(title, right, top);
-        top += this.InfoTextHeight;
+        var aryTitle=[];
+        var position = { Top: top, Right: right, IsHScreen: isHScreen };
 
-        if (reportTitle)
+        aryTitle.push(parseInt(date / 10000) + '-' + parseInt(date % 10000 / 100) + '-' + parseInt(date % 100));
+        if (reportTitle) aryTitle.push(reportTitle);        //季报
+        if (pforecastTitle) aryTitle.push(pforecastTitle);  //业绩预告  
+        if (reportCount > 0) aryTitle.push('公告数量:' + reportCount);    
+        if (researchCouunt > 0) aryTitle.push('机构调研次数:' + researchCouunt);    
+        if (tradeDetailCount>0) aryTitle.push('龙虎榜上榜次数:' + tradeDetailCount);   
+        if (invesotrCount>0) aryTitle.push('互动易数量:' + invesotrCount);   
+        if (blockTradeCount>0) aryTitle.push('大宗交易次数:' + blockTradeCount); 
+
+        var maxWidth=0, textBGHeight=0;
+        for(let i in aryTitle)
         {
-            this.Canvas.fillText(reportTitle, right, top);
-            top += this.InfoTextHeight;
+            var item = aryTitle[i];
+            var textWidth = this.Canvas.measureText(item).width + 2;    //后空2个像素
+            if (maxWidth < textWidth) maxWidth = textWidth;
+            textBGHeight += this.InfoTextHeight;
         }
 
-        if (pforecastTitle)
-        {
-            this.Canvas.fillText(pforecastTitle, right, top);
-            top += this.InfoTextHeight;
-        }
-        
-        if (reportCount > 0) 
-        {
-            title = '公告数量:' + reportCount
-            this.Canvas.fillText(title, right, top);
-            top += this.InfoTextHeight;
-        }
+        this.Canvas.fillStyle = this.InfoTextBGColor;
+        if (isHScreen)
+            this.Canvas.fillRect(position.Right - maxWidth, position.Top, maxWidth + 2, textBGHeight + 2);
+        else
+            this.Canvas.fillRect(position.Right - maxWidth, position.Top, maxWidth+2, textBGHeight+2);
 
-        if (researchCouunt > 0) 
+        for(let i in aryTitle)
         {
-            title = '机构调研次数:' + researchCouunt;
-            this.Canvas.fillText(title, right, top);
-            top += this.InfoTextHeight;
-        }
-
-        if (tradeDetailCount>0)
-        {
-            title = '龙虎榜上榜次数:' + tradeDetailCount;
-            this.Canvas.fillText(title, right, top);
-            top += this.InfoTextHeight;
-        }
-
-        if (invesotrCount>0)
-        {
-            title = '互动易数量:' + invesotrCount;
-            this.Canvas.fillText(title, right, top);
-            top += this.InfoTextHeight;
-        }
-
-        if (blockTradeCount>0)
-        {
-            title = '大宗交易次数:' + blockTradeCount;
-            this.Canvas.fillText(title, right, top);
-            top += this.InfoTextHeight;
+            var item=aryTitle[i];
+            this.DrawInfoText(item, position);
         }
     }
 
@@ -8082,6 +8062,18 @@ function DynamicKLineTitlePainting()
         if(price>yclse) return this.UpColor;
         else if (price<yclse) return this.DownColor;
         else return this.UnchagneColor;
+    }
+
+    this.DrawInfoText = function (title, position)
+    {
+        if (!title) return true;
+
+        this.Canvas.textAlign = "right";
+        this.Canvas.textBaseline = "top";
+        this.Canvas.fillStyle = this.InfoTextColor;
+        this.Canvas.fillText(title, position.Right, position.Top);
+        position.Top += this.InfoTextHeight;
+        return true;
     }
 
 }
@@ -9629,7 +9621,8 @@ function JSChartResource()
         Info:  //信息地雷
         {
             Color:'rgb(205,149,12)',
-            TextColor:'rgb(0,0,0)',
+            TextColor:'rgb(255,255,255)',
+            TextBGColor:'rgb(105,105,105)',
         }
     };
 
