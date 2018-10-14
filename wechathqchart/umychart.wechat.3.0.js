@@ -3500,7 +3500,7 @@ function ChartKLine()
 
                     this.Canvas.fillStyle = this.UpColor;
                     if (Math.abs(yOpen - y) < 1) this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), 1, ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
-                    else this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), ToFixedRect(yOpen - y), ToFixedRect(dataWidth));
+                    else this.Canvas.fillRect(ToFixedRect(Math.min(y, yOpen)), ToFixedRect(left), ToFixedRect(Math.abs(yOpen - y)), ToFixedRect(dataWidth));
 
                     if (data.Open > data.Low) 
                     {
@@ -3540,7 +3540,7 @@ function ChartKLine()
 
                     this.Canvas.fillStyle = this.DownColor;
                     if (Math.abs(yClose - y) < 1) this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), 1, ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
-                    else this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), ToFixedRect(yClose - y), ToFixedRect(dataWidth));
+                    else this.Canvas.fillRect(ToFixedRect(Math.min(y, yClose)), ToFixedRect(left), ToFixedRect(Math.abs(yClose - y)), ToFixedRect(dataWidth));
 
                     if (data.Open > data.Low) //下影线
                     {
@@ -3869,10 +3869,13 @@ function ChartOverlayKLine()
     {
         if (!this.MainData || !this.Data) return;
 
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
+        if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
         var chartright=this.ChartBorder.GetRight();
+        if (isHScreen) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
 
         this.TooltipRect=[];
@@ -3922,8 +3925,16 @@ function ChartOverlayKLine()
                 {
                     if (data.High>data.Close)   //上影线
                     {
-                        this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                        this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yClose));
+                        if (isHScreen)
+                        {
+                            this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(x));
+                            this.Canvas.lineTo(ToFixedPoint(yClose), ToFixedPoint(x));
+                        }
+                        else
+                        {
+                            this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
+                            this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yClose));
+                        }
                         y=yClose;
                     }
                     else
@@ -3932,19 +3943,43 @@ function ChartOverlayKLine()
                     }
 
                     this.Canvas.fillStyle=this.Color;
-                    if (yOpen-y<1) this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);
-                    else this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));
-
+                    if (isHScreen)
+                    {
+                        if (Math.abs(yOpen - y) < 1) this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), 1, ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
+                        else this.Canvas.fillRect(ToFixedRect(Math.min(y, yOpen)), ToFixedRect(left), ToFixedRect(Math.abs(yOpen - y)), ToFixedRect(dataWidth));
+                    }
+                    else
+                    {
+                        if (yOpen - y < 1) this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(y), ToFixedRect(dataWidth), 1);
+                        else this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(y), ToFixedRect(dataWidth), ToFixedRect(yOpen - y));
+                    }
+                    
                     if (data.Open>data.Low)
                     {
-                        this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                        this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                        if (isHScreen)
+                        {
+                            this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(x));
+                            this.Canvas.lineTo(ToFixedPoint(yLow), ToFixedPoint(x));
+                        }
+                        else
+                        {
+                            this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
+                            this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yLow));
+                        }
                     }
                 }
                 else
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),yLow);
-                    this.Canvas.lineTo(ToFixedPoint(x),yHigh);
+                    if (isHScreen)
+                    {
+                        this.Canvas.moveTo(yLow, ToFixedPoint(x));
+                        this.Canvas.lineTo(yHigh, ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x), yLow);
+                        this.Canvas.lineTo(ToFixedPoint(x), yHigh);
+                    }
                 }
             }
             else if (data.Open>data.Close)  //阴线
@@ -3952,8 +3987,16 @@ function ChartOverlayKLine()
                 this.Canvas.strokeStyle=this.Color;
                 if (data.High>data.Close)   //上影线
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yOpen));
+                    if (isHScreen)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(x));
+                        this.Canvas.lineTo(ToFixedPoint(yOpen), ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yOpen));
+                    }
                     y=yOpen;
                 }
                 else
@@ -3962,13 +4005,29 @@ function ChartOverlayKLine()
                 }
 
                 this.Canvas.fillStyle=this.Color;
-                if (yOpen-y<1) this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);
-                else this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),ToFixedRect(yClose-y));
+                if (isHScreen)
+                {
+                    if (Math.abs(yClose - y) < 1) this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), 1, ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
+                    else this.Canvas.fillRect(ToFixedRect(Math.min(y, yClose)), ToFixedRect(left), ToFixedRect(Math.abs(yClose - y)), ToFixedRect(dataWidth));
+                }
+                else
+                {
+                    if (yOpen-y<1) this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);
+                    else this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),ToFixedRect(yClose-y));
+                }
 
                 if (data.Open>data.Low) //下影线
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                    if (isHScreen)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(x));
+                        this.Canvas.lineTo(ToFixedPoint(yLow), ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yLow));
+                    }
                 }
             }
             else // 平线
@@ -3977,9 +4036,16 @@ function ChartOverlayKLine()
                 this.Canvas.beginPath();
                 if (data.High>data.Close)   //上影线
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yOpen));
-
+                    if (isHScreen)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(x));
+                        this.Canvas.lineTo(ToFixedPoint(yOpen), ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yOpen));
+                    }
                     y=yOpen;
                 }
                 else
@@ -3987,24 +4053,30 @@ function ChartOverlayKLine()
                     y=yOpen;
                 }
 
-                this.Canvas.moveTo(ToFixedPoint(left),ToFixedPoint(y));
-                this.Canvas.lineTo(ToFixedPoint(right),ToFixedPoint(y));
-
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(left));
+                    this.Canvas.lineTo(ToFixedPoint(y), ToFixedPoint(right));
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(left), ToFixedPoint(y));
+                    this.Canvas.lineTo(ToFixedPoint(right), ToFixedPoint(y));
+                }
+                
                 if (data.Open>data.Low) //下影线
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                    if (isHScreen)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(x));
+                        this.Canvas.lineTo(ToFixedPoint(yLow), ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yLow));
+                    }
                 }
-            }
-
-            //添加tooltip区域
-            {
-                var yTop=Math.min(yLow,yHigh,yOpen,yClose);
-                var yBottom=Math.max(yLow,yHigh,yOpen,yClose);
-                var rect=new Rect(left,yTop,dataWidth,yBottom-yTop);
-                //this.Canvas.fillStyle="rgb(0,0,100)";
-                //this.Canvas.fillRect(rect.X,rect.Y,rect.Width,rect.Height);
-                this.TooltipRect.push([i,rect]);    //[0]数据索引 [1]数据区域
             }
         }
 
@@ -4049,24 +4121,6 @@ function ChartOverlayKLine()
         }
 
         return range;
-    }
-
-    this.GetTooltipData=function(x,y,tooltip)
-    {
-        for(var i in this.TooltipRect)
-        {
-            var rect=this.TooltipRect[i][1];
-            this.Canvas.beginPath();
-            this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
-            if (this.Canvas.isPointInPath(x,y))
-            {
-                var index=this.TooltipRect[i][0];
-                tooltip.Data=this.Data.Data[index];
-                tooltip.ChartPaint=this;
-                return true;
-            }
-        }
-        return false;
     }
 }
 
@@ -10304,6 +10358,7 @@ function KLineChartContainer(uielement)
         bindData.Data=this.SourceData.Data;
         bindData.Period=this.Period;
         bindData.Right=this.Right;
+        bindData.DataType=this.SourceData.DataType;
 
         if (bindData.Right>0 && bindData.Period<=3)    //复权(日线数据才复权)
         {
@@ -10358,6 +10413,8 @@ function KLineChartContainer(uielement)
             }
         }
 
+        this.ReqeustKLineInfoData();
+
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
@@ -10401,6 +10458,7 @@ function KLineChartContainer(uielement)
     //设置K线信息地雷
     this.SetKLineInfo=function(aryInfo,bUpdate)
     {
+        this.ChartInfo=[];  //清空信息地雷
         for(var i in aryInfo)
         {
             var infoItem=JSKLineInfoMap.Get(aryInfo[i]);
