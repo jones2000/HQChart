@@ -582,6 +582,12 @@ JSChart.SetDomain=function(domain,cacheDomain)
     if (cacheDomain) g_JSChartResource.CacheDomain=cacheDomain;
 }
 
+//自定义风格
+JSChart.SetStyle=function(option)
+{
+    if (option) g_JSChartResource.SetStyle(option);
+}
+
 /*//把给外界调用的方法暴露出来
 export default {
     jsChartInit: JSChart.Init
@@ -4095,7 +4101,7 @@ var ZOOM_SEED=
     //[0.3,0.06],	[0.2,0.04],	[0.1,0.02]
 ];
 
-//K线画法
+//K线画法 支持横屏
 function ChartKLine()
 {
     this.newMethod=IChartPainting;   //派生
@@ -4805,7 +4811,7 @@ function ChartKLine2()
      }
 }
 
-//K线叠加
+//K线叠加 支持横屏
 function ChartOverlayKLine()
 {
     this.newMethod=IChartPainting;   //派生
@@ -5023,7 +5029,7 @@ function ChartOverlayKLine()
     }
 }
 
-//历史成交量柱子
+//历史成交量柱子  ！！！不用了
 function ChartKVolumeBar()
 {
     this.newMethod=IChartPainting;   //派生
@@ -5114,7 +5120,7 @@ function ChartKVolumeBar()
     }
 }
 
-//分钟成交量
+//分钟成交量 支持横屏
 function ChartMinuteVolumBar()
 {
     this.newMethod=IChartPainting;   //派生
@@ -5983,6 +5989,7 @@ function ChartText()
 }
 
 /*
+    文字输出 支持横屏
     数组不为null的数据中输出 this.Text文本
 */
 function ChartSingleText()
@@ -6008,9 +6015,11 @@ function ChartSingleText()
 
         if (!this.Data || !this.Data.Data) return;
 
+        var isHScreen=(this.ChartFrame.IsHScreen===true)
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetRight();
+        if (isHScreen) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
 
         var isArrayText=Array.isArray(this.Text);
@@ -6034,12 +6043,28 @@ function ChartSingleText()
             {
                 text=this.Text[i];
                 if (!text) continue;
-                this.Canvas.fillText(text,x,y);
+                this.DrawText(text,x,y,isHScreen);
             }
             else
             {
-                this.Canvas.fillText(this.Text,x,y);
+                this.DrawText(this.Text,x,y,isHScreen);
             }
+        }
+    }
+
+    this.DrawText=function(text,x,y,isHScreen)
+    {
+        if (isHScreen)
+        {
+            this.Canvas.save(); 
+            this.Canvas.translate(y, x);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(text,0,0);
+            this.Canvas.restore();
+        }
+        else
+        {
+            this.Canvas.fillText(text,x,y);
         }
     }
 }
@@ -6230,7 +6255,7 @@ function ChartStraightArea()
     }
 }
 
-//分钟线
+//分钟线 支持横屏
 function ChartMinutePriceLine()
 {
     this.newMethod=ChartLine;   //派生
@@ -9729,8 +9754,11 @@ function JSChartResource()
         "rgb(105,105,105)",
     ];
 
-
-
+    //自定义风格
+    this.SetStyle=function(option)
+    {
+        //if (option.UpTextColor) this.UpTextColor=option.UpTextColor;
+    }
 }
 
 var g_JSChartResource=new JSChartResource();
@@ -11335,6 +11363,7 @@ function KLineChartContainer(uielement)
         bindData.Data=this.SourceData.Data;
         bindData.Period=this.Period;
         bindData.Right=this.Right;
+        bindData.DataType=this.SourceData.DataType;
 
         if (bindData.Right>0 && bindData.Period<=3)    //复权(日线数据才复权)
         {
@@ -11389,6 +11418,8 @@ function KLineChartContainer(uielement)
             }
         }
 
+        this.ReqeustKLineInfoData();
+        
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子

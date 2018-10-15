@@ -7357,7 +7357,7 @@ function ChartCorssCursor()
                 this.Canvas.translate(xText, yText);
                 this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
 
-                this.Canvas.fillRect(0, -(this.TextHeight / 2), -textWidth, this.TextHeight);
+                this.Canvas.fillRect(-textWidth, -(this.TextHeight / 2), textWidth, this.TextHeight);
                 this.Canvas.textAlign = "right";
                 this.Canvas.textBaseline = "top";
                 this.Canvas.fillStyle = this.TextColor;
@@ -7413,7 +7413,7 @@ function ChartCorssCursor()
                 this.Canvas.translate(xText, yText);
                 this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
 
-                this.Canvas.fillRect(-textWidth / 2, 0, textWidth, this.TextHeight);
+                this.Canvas.fillRect(-(textWidth/2), 0, textWidth, this.TextHeight);
                 this.Canvas.textAlign = "center";
                 this.Canvas.textBaseline = "top";
                 this.Canvas.fillStyle = this.TextColor;
@@ -9651,8 +9651,8 @@ function JSChartResource()
         Info:  //信息地雷
         {
             Color:'rgb(205,149,12)',
-            TextColor:'rgb(255,255,255)',
-            TextBGColor:'rgb(105,105,105)',
+            TextColor:'#197de9',
+            TextBGColor:'#e1e4ef',
         }
     };
 
@@ -12816,6 +12816,7 @@ function ScriptIndex(name, script, args, option)
             HQDataType: hqDataType,
             Symbol:hqChart.Symbol, 
             Data:hisData,
+            SourceData: hqChart.SourceData, //原始数据
             Callback:this.RecvResultData, CallbackParam:param,
             Async:true,
             MaxReqeustDataCount:hqChart.MaxReqeustDataCount,

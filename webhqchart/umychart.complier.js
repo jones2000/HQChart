@@ -680,6 +680,9 @@ function Node()
         //加载财务数据
         for(var jobID of this.IsNeedFinanceData)
         {
+            if (jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA)      //股息率 需要总市值
+                jobs.push(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARKETVALUE_DATA); 
+
             jobs.push(jobID);
         }
 
@@ -688,6 +691,8 @@ function Node()
         {
             jobs.push(jobID);
         }
+
+
 
         return jobs;
     }
@@ -4430,7 +4435,7 @@ function JSDraw(errorHandler,symbolData)
             }
             else 
             {
-                if (isNaN(price[i])) drawData[i]=price[i];
+                if (this.IsNumber(price[i])) drawData[i]=price[i];
             }
         }
 
@@ -4866,6 +4871,8 @@ function JSSymbolData(ast,option,jsExecute)
     this.Symbol='600000.sh';
     this.Name;
     this.Data=null;             //个股数据
+    this.SourceData=null;       //不复权的个股数据
+    this.MarketValue=null;      //总市值
     this.Period=0;              //周期
     this.Right=0;               //复权
     this.DataType=0;            //默认K线数据 2=分钟走势图数据
@@ -4899,6 +4906,7 @@ function JSSymbolData(ast,option,jsExecute)
             //this.Data=null;
         }
 
+        if (option.SourceData) this.SourceData=option.SourceData;
         if (option.Symbol) this.Symbol=option.Symbol;
         if (option.Name) this.Name=option.Name;
         if (option.MaxReqeustDataCount>0) this.MaxReqeustDataCount=option.MaxReqeustDataCount;
@@ -5179,6 +5187,8 @@ function JSSymbolData(ast,option,jsExecute)
         this.Data=new ChartData();
         this.Data.DataType=0; /*日线数据 */
         this.Data.Data=hisData;
+        this.SourceData=new ChartData;
+        this.SourceData.Data=hisData;
 
         if (this.Right>0)    //复权
         {
@@ -5203,6 +5213,8 @@ function JSSymbolData(ast,option,jsExecute)
         this.Data=new ChartData();
         this.Data.DataType=1; /*分钟线数据 */
         this.Data.Data=hisData;
+        this.SourceData=new ChartData;
+        this.SourceData.Data=hisData;
 
         if (this.Period>=5)   //周期数据
         {
@@ -5377,6 +5389,9 @@ function JSSymbolData(ast,option,jsExecute)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA:
                 fieldList.push('finance.profityoy');
                 break;
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA:    //过去4个季度现金分红总额
+                fieldList.push('execdividend.quarter4');
+                break;
         }
 
          //请求数据
@@ -5417,6 +5432,7 @@ function JSSymbolData(ast,option,jsExecute)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_AL_RATIO_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA:
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA:
                 return this.RecvStockDayData(recvData,jobID);
         }
     }
@@ -5464,14 +5480,14 @@ function JSSymbolData(ast,option,jsExecute)
                     if (!financeData) continue;
                     if (!this.IsNumber(financeData.a)) continue;
                     indexData.Value=financeData.a; //流通股本
-                    bFinanceData=true;
+                    bMarketValue=true;
                     break;
                 case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARKETVALUE_DATA:       //总市值
                     var financeData=item.capital;
                     if (!financeData) continue;
                     if (!this.IsNumber(financeData.total)) continue;
                     indexData.Value=financeData.total; //总股本
-                    bFinanceData=true;
+                    bMarketValue=true;
                     break;
                 case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA:          //换手率
                     var financeData=item.capital;
@@ -5536,6 +5552,12 @@ function JSSymbolData(ast,option,jsExecute)
                     indexData.Value=financeData.Finance.profityoy;       //净利润同比增长率
                     bFinanceData=true;
                     break;
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA:
+                    var financeData=item.execdividend;
+                    if (!financeData) continue;
+                    if (!this.IsNumber(financeData.quarter4)) continue;
+                    indexData.Value=financeData.quarter4;       //过去4个季度现金分红总额
+                    break;
                 default:
                     continue;
             }
@@ -5544,9 +5566,27 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         let aryFixedData;
-        if (bFinanceData) aryFixedData=this.Data.GetFittingFinanceData(aryData);
-        else if (bMarketValue) aryFixedData=this.Data.GetFittingMarketValueData(aryData);
-        else aryFixedData=this.Data.GetFittingData(aryData);
+        if (bFinanceData) 
+        {
+            aryFixedData=this.Data.GetFittingFinanceData(aryData);
+        }
+        else if (bMarketValue) 
+        {
+            if (this.SourceData) aryFixedData=this.SourceData.GetFittingMarketValueData(aryData);   //总市值用不复权的价格计算
+            else aryFixedData=this.Data.GetFittingMarketValueData(aryData);
+
+            if (jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARKETVALUE_DATA) this.MarketValue=aryFixedData;  //总市值保存下 算其他数据可能要用
+        }
+        if (jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA)          //股息率TTM：过去4个季度现金分红总额/总市值 * 100%
+        {
+            aryFixedData=this.CalculateDividendYield(aryData);
+        }
+        else 
+        {
+            aryFixedData=this.Data.GetFittingData(aryData);
+        }
+
+        
 
         //console.log('[JSSymbolData::RecvStockDayData] jobID=' + jobID, aryFixedData)
 
@@ -5573,6 +5613,49 @@ function JSSymbolData(ast,option,jsExecute)
 
         let data=bindData.GetValue();
         this.FinanceData.set(jobID,data);
+    }
+
+    //计算股息率 股息率TTM：过去4个季度现金分红总额/总市值 * 100%
+    this.CalculateDividendYield=function(cashData)
+    {
+        var dividendYield=[];
+        if (!this.MarketValue) return dividendYield;
+
+        for(let i=0,j=0;i<this.Data.Data.length;++i)
+        {
+            var day=this.Data.Data[i];
+            var market=this.MarketValue[i];
+            if (!day || !market) continue;
+
+            let item=new SingleData();
+            item.Date=day.Date;
+            item.Value=0;
+
+            if (j+1<cashData.length)
+            {
+                if (cashData[j].Date<day.Date && cashData[j+1].Date<=day.Date)
+                {
+                    ++j;
+                    --i;
+                    continue;
+                }
+            }
+
+            if (j<cashData.length)
+            {
+                var cash=cashData[j];
+                var endDate=cash.Date+10000;    //1年有效
+
+                if (day.Date>=cash.Date && day.Date<=endDate && this.IsDivideNumber(market.Value) && this.IsNumber(cash.Value))
+                {
+                    item.Value=cash.Value/market.Value*100;
+                }
+            }
+           
+            dividendYield.push(item);
+        }
+
+        return dividendYield;
     }
 
     //融资融券函数
@@ -5984,6 +6067,15 @@ JSSymbolData.prototype.IsNumber=function(value)
     return true;
 }
 
+JSSymbolData.prototype.IsDivideNumber=function(value)
+{
+    if (value==null) return false;
+    if (isNaN(value)) return false;
+    if (value==0) return false;
+
+    return true;
+}
+
 JSSymbolData.prototype.JsonDataToFinance=function(data)
 {
     var financeData;
@@ -6050,6 +6142,7 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_MARKETVALUE_DATA:110,           //总市值
     JOB_DOWNLOAD_PROFIT_YOY_DATA:111,            //利润同比 (Profit year on year)
     JOB_DOWNLOAD_AL_RATIO_DATA:112,              //资产负债率 (asset-liability ratio)
+    JOB_DOWNLOAD_DIVIDEND_YIELD_DATA:113,        //股息率
 
 
     JOB_DOWNLOAD_CAPITAL_DATA:200,               //流通股本（手）
@@ -6088,6 +6181,7 @@ var JS_EXECUTE_JOB_ID=
             [41,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARKETVALUE_DATA],       //FINANCE(41)  总市值
             [42,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_RELEASE_DATE_DATA],      //FINANCE(42)  上市的天数
             [43,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA],        //FINANCE(43)  利润同比 (Profit year on year)
+            [45,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA],    //FINANCE(45)  股息率
 
             [200,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA],          //流通股本（手）
             [201,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA]          //换手率 成交量/流通股本
@@ -6204,6 +6298,7 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_AL_RATIO_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA:
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA:
                 return this.SymbolData.GetFinanceData(jobName);
             
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_RELEASE_DATE_DATA:
@@ -6933,6 +7028,7 @@ function ScriptIndex(name,script,args,option)
             Symbol:hqChart.Symbol, 
             Name:hqChart.Name,
             Data:hisData,
+            SourceData:hqChart.SourceData,
             Callback:this.RecvResultData, CallbackParam:param,
             Async:true,
             MaxReqeustDataCount:hqChart.MaxReqeustDataCount,
