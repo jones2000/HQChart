@@ -5074,6 +5074,7 @@ function ChartText()
 }
 
 /*
+    文字输出 支持横屏
     数组不为null的数据中输出 this.Text文本
 */
 function ChartSingleText()
@@ -5099,9 +5100,11 @@ function ChartSingleText()
 
         if (!this.Data || !this.Data.Data) return;
 
+        var isHScreen = (this.ChartFrame.IsHScreen === true)
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetRight();
+        if (isHScreen) chartright = this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
 
         var isArrayText = Array.isArray(this.Text);
@@ -5126,12 +5129,28 @@ function ChartSingleText()
             {
                 text = this.Text[i];
                 if (!text) continue;
-                this.Canvas.fillText(text, x, y);
+                this.DrawText(text, x, y, isHScreen);
             }
             else 
             {
-                this.Canvas.fillText(this.Text, x, y);
+                this.DrawText(this.Text, x, y, isHScreen);
             }
+        }
+    }
+
+    this.DrawText = function (text, x, y, isHScreen) 
+    {
+        if (isHScreen) 
+        {
+            this.Canvas.save();
+            this.Canvas.translate(y, x);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(text, 0, 0);
+            this.Canvas.restore();
+        }
+        else 
+        {
+            this.Canvas.fillText(text, x, y);
         }
     }
 }
@@ -7748,6 +7767,7 @@ function DynamicKLineTitlePainting()
 
         if (this.Frame.IsHScreen === true) 
         {
+            this.HSCreenKLineInfoDraw();
             this.Canvas.save();
             this.HScreenDraw();
             this.Canvas.restore();
@@ -7855,6 +7875,23 @@ function DynamicKLineTitlePainting()
         left+=textWidth;
     }
 
+    this.HSCreenKLineInfoDraw=function()
+    {
+        var index = Math.abs(this.CursorIndex - 0.5);
+        index = parseInt(index.toFixed(0));
+        var dataIndex = this.Data.DataOffset + index;
+        if (dataIndex >= this.Data.Data.length) dataIndex = this.Data.Data.length - 1;
+        if (dataIndex < 0) return;
+
+        var item = this.Data.Data[dataIndex];
+        if (item && item.Date && !item.Time && this.InfoData) 
+        {
+            this.Canvas.save();
+            this.KLineInfoDraw(item.Date);
+            this.Canvas.restore();
+        }
+    }
+
     this.HScreenDraw = function () 
     {
         var index = Math.abs(this.CursorIndex - 0.5);
@@ -7864,13 +7901,6 @@ function DynamicKLineTitlePainting()
         if (dataIndex < 0) return;
 
         var item = this.Data.Data[dataIndex];
-        if (item && item.Date && !item.Time && this.InfoData)
-        {
-            this.Canvas.save();
-            this.KLineInfoDraw(item.Date);
-            this.Canvas.restore();
-        }
-
         var right = this.Frame.ChartBorder.GetHeight();
         var xText = this.Frame.ChartBorder.GetRight();
         var yText = this.Frame.ChartBorder.GetTop();

@@ -4439,7 +4439,7 @@ function JSDraw(errorHandler, symbolData)
             }
             else 
             {
-                if (isNaN(price[i])) drawData[i]=price[i];
+                if (this.IsNumber(price[i])) drawData[i]=price[i];
             }
         }
 
