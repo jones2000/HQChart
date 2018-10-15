@@ -11,7 +11,7 @@ JSIndexScript.prototype.Get=function(id)
 {
     var DataMap=new Map(
         [
-            ['MA', this.MA],['BOLL', this.BOLL],['BBI', this.BBI],
+            ['MA', this.MA],['均线', this.MA],['BOLL', this.BOLL],['BBI', this.BBI],
             ['DKX', this.DKX],['MIKE', this.MIKE],['PBX', this.PBX],
             ['ENE', this.ENE],['MACD', this.MACD],['KDJ', this.KDJ],
             ['VOL', this.VOL],['RSI', this.RSI],['BRAR', this.BRAR],
