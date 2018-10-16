@@ -5577,7 +5577,7 @@ function JSSymbolData(ast,option,jsExecute)
 
             if (jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARKETVALUE_DATA) this.MarketValue=aryFixedData;  //总市值保存下 算其他数据可能要用
         }
-        if (jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA)          //股息率TTM：过去4个季度现金分红总额/总市值 * 100%
+        else if (jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA)          //股息率TTM：过去4个季度现金分红总额/总市值 * 100%
         {
             aryFixedData=this.CalculateDividendYield(aryData);
         }

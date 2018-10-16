@@ -9,6 +9,7 @@ var JSComplier=require('./umychart.complier.node').JSCommonComplier.JSComplier;
 // 单脚本  多股票 返回数据>0的股票
 //  symbol:[] 股票列表
 //  code: 脚本
+//  args: 脚本参数 (可选)
 //  datecount: 日线数据计算多少天 (可选)
 //  daycount： 分钟数据计算多少天 (可选)
 //  period:  周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 (可选)
@@ -18,6 +19,7 @@ var JSComplier=require('./umychart.complier.node').JSCommonComplier.JSComplier;
 {
     "symbol":["600000.sh","000001.sz","000008.sz","000017.sz","000056.sz","000338.sz","000408.sz","000415.sz","000498.sz","000557.sz"],
     "code":"LC:= REF(CLOSE,1);RSI1:=SMA(MAX(CLOSE-LC,0),6,1)/SMA(ABS(CLOSE-LC),6,1)*100;OUT:CROSS(RSI1,20);"
+    "args":[{"name":"N1","value":10},{"name":"N2","value":12}],
     "datecount":200, 
 }
 */
@@ -27,7 +29,6 @@ function JSComplierController(req,res,next)
     this.Request=req;
     this.Response=res;
     this.Next=next;
-
 
     this.DateCount=300;
     this.DayCount=20;
@@ -53,7 +54,14 @@ function JSComplierController(req,res,next)
         if (!this.Code) return this.Error({Message:'code is empty'});
 
         var args=[];
-        if (postData.args) args=postData.args;
+        if (postData.args) 
+        {
+            for(let i in postData.args) //变量全部转成大写
+            {
+                var item=postData.args[i];
+                if (item.Name) args.push({Name:item.name, Value:parseFloat(item.value)});  //变量值转数值型
+            }
+        }
 
         if (postData.datecount) this.DateCount=postData.datecount;
         if (postData.daycount) this.DayCount=postData.daycount;
@@ -131,8 +139,19 @@ function JSComplierController(req,res,next)
 
             var value=outData.Data[outData.Data.length-1];  //选中最后一天数据结果>0的数据
             if (!value) continue;
+
+            var date=null;
+            for(let i in stockData)
+            {
+                var itemData=stockData[i];
+                if (itemData.Type===100 && itemData.Name==='TradeDate' && itemData.Data.length>outData.Data.length-1)
+                {
+                    date=itemData.Data[outData.Data.length-1];
+                    break;
+                }
+            }
             
-            result.push({Symbol:item[0], Value:value});
+            result.push({Symbol:item[0], Value:value, Date:date});
         }
 
         return result;
@@ -166,7 +185,6 @@ JSComplierController.Post=function(req, res, next)
 ///////////////////////////////////////////////////////////////////////
 // 多脚本 多股票  交集|并集 开发中
 //
-
 function JSCommonMultiComplier(req,res,next)
 {
     this.Request=req;
