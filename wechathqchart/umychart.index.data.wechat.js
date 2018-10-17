@@ -551,7 +551,7 @@ JSIndexScript.prototype.ADTM=function()
 DBM:=IF(OPEN>=REF(OPEN,1),0,MAX((OPEN-LOW),(OPEN-REF(OPEN,1))));\n\
 STM:=SUM(DTM,N);\n\
 SBM:=SUM(DBM,N);\n\
-ADTM:IF(STM>SBM,(STM-SBM)/STM,IF(STM=SBM,0,(STM-SBM)/SBM));\n\
+ADTM:IF(STM>SBM,(STM-SBM)/STM,IF(STM==SBM,0,(STM-SBM)/SBM));\n\
 MAADTM:MA(ADTM,M);'
 
     };
@@ -895,7 +895,7 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                'VAR2:RELATE(C,O,5);'
+                'VAR2:FINANCE(45);'
         };
 
     return data;

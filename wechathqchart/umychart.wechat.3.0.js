@@ -7471,8 +7471,14 @@ function HQDateStringFormat()
         index=parseInt(index.toFixed(0));
         if (this.Data.DataOffset+index>=this.Data.Data.length) return false;
 
-        var date=this.Data.Data[this.Data.DataOffset+index].Date;
+        var currentData = this.Data.Data[this.Data.DataOffset + index];
+        var date = currentData.Date;
         this.Text=IFrameSplitOperator.FormatDateString(date);
+        if (this.Data.Period >= 4) // 分钟周期
+        {
+            var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
+            this.Text = this.Text + " " + time;
+        }
 
         return true;
     }
@@ -13344,13 +13350,13 @@ function MarketLongShortIndex()
         }
 
         //请求数据
-        $.ajax({
+        wx.request({
             url: g_JSChartResource.Index.MarketLongShortApiUrl,
             data:
             {
 
             },
-            type:"post",
+            method: 'POST',
             dataType: "json",
             async:true,
             success: function (recvData)
@@ -13364,12 +13370,12 @@ function MarketLongShortIndex()
 
     this.RecvData=function(recvData,param)
     {
-        if (recvData.data.length<=0) return;
+      if (recvData.data.data.length<=0) return;
 
         var aryData=new Array();
-        for(var i in recvData.data)
+        for (var i in recvData.data.data)
         {
-            var item=recvData.data[i];
+          var item = recvData.data.data[i];
             var indexData=new SingleData();
             indexData.Date=item[0];
             indexData.Value=item[1];
@@ -13469,13 +13475,13 @@ function MarketTimingIndex()
         }
 
         //请求数据
-        $.ajax({
+        wx.request({
             url: g_JSChartResource.Index.MarketLongShortApiUrl,
             data:
             {
 
             },
-            type:"post",
+            method: 'POST',
             dataType: "json",
             async:true,
             success: function (recvData)
@@ -13489,12 +13495,12 @@ function MarketTimingIndex()
 
     this.RecvData=function(recvData,param)
     {
-        if (recvData.data.length<=0) return;
+      if (recvData.data.data.length<=0) return;
 
         var aryData=new Array();
-        for(var i in recvData.data)
+      for (var i in recvData.data.data)
         {
-            var item=recvData.data[i];
+        var item = recvData.data.data[i];
             var indexData=new SingleData();
             indexData.Date=item[0];
             indexData.Value=item[2];
