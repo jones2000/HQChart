@@ -7713,19 +7713,31 @@ function ChartCorssCursor()
         this.StringFormatX.Value=xValue;
         this.StringFormatY.Value=yValue;
 
-        if (this.IsShowText && this.StringFormatY.Operator())
+        if (this.IsShowText && this.StringFormatY.Operator() && (this.Frame.ChartBorder.Left>=30 || this.Frame.ChartBorder.Right>=30))
         {
             var text=this.StringFormatY.Text;
             this.Canvas.font=this.Font;
-
-            this.Canvas.fillStyle=this.TextBGColor;
             var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
-            this.Canvas.fillRect(right+2,y-this.TextHeight/2,textWidth,this.TextHeight);
 
-            this.Canvas.textAlign="left";
-            this.Canvas.textBaseline="middle";
-            this.Canvas.fillStyle=this.TextColor;
-            this.Canvas.fillText(text,right+4,y,textWidth);
+            if (this.Frame.ChartBorder.Left>=30)
+            {
+                this.Canvas.fillStyle=this.TextBGColor;
+                this.Canvas.fillRect(left-2,y-this.TextHeight/2,-textWidth,this.TextHeight);
+                this.Canvas.textAlign="right";
+                this.Canvas.textBaseline="middle";
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(text,left-4,y,textWidth);
+            }
+
+            if (this.Frame.ChartBorder.Right>=30)
+            {
+                this.Canvas.fillStyle=this.TextBGColor;
+                this.Canvas.fillRect(right+2,y-this.TextHeight/2,textWidth,this.TextHeight);
+                this.Canvas.textAlign="left";
+                this.Canvas.textBaseline="middle";
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(text,right+4,y,textWidth);
+            }
         }
 
         if (this.IsShowText && this.StringFormatX.Operator())
@@ -7803,27 +7815,47 @@ function ChartCorssCursor()
         this.StringFormatX.Value=xValue;
         this.StringFormatY.Value=yValue;
 
-        if (this.IsShowText && this.StringFormatY.Operator())
+        if (this.IsShowText && this.StringFormatY.Operator() && (this.Frame.ChartBorder.Left>=30 || this.Frame.ChartBorder.Right>=30))
         {
             var text=this.StringFormatY.Text;
             this.Canvas.font=this.Font;
-
-            this.Canvas.fillStyle=this.TextBGColor;
             var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
-            var xText=x;
-            var yText=bottom;
 
-            this.Canvas.save();
-            this.Canvas.translate(xText, yText);
-            this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
-            
-            this.Canvas.fillRect(0,-(this.TextHeight/2),textWidth,this.TextHeight);
-            this.Canvas.textAlign="left";
-            this.Canvas.textBaseline="top";
-            this.Canvas.fillStyle=this.TextColor;
-            this.Canvas.fillText(text,2,-(this.TextHeight/2),textWidth);
+            if (this.Frame.ChartBorder.Left>=30)
+            {
+                var xText=x;
+                var yText=top;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
+                
+                this.Canvas.fillStyle=this.TextBGColor;
+                this.Canvas.fillRect(0,-(this.TextHeight/2),-textWidth,this.TextHeight);
+                this.Canvas.textAlign="right";
+                this.Canvas.textBaseline="top";
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(text,-2,-(this.TextHeight/2),textWidth);
 
-            this.Canvas.restore();
+                this.Canvas.restore();
+            }
+
+            if (this.Frame.ChartBorder.Right>=30)
+            {
+                var xText=x;
+                var yText=bottom;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
+                
+                this.Canvas.fillStyle=this.TextBGColor;
+                this.Canvas.fillRect(0,-(this.TextHeight/2),textWidth,this.TextHeight);
+                this.Canvas.textAlign="left";
+                this.Canvas.textBaseline="top";
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(text,2,-(this.TextHeight/2),textWidth);
+
+                this.Canvas.restore();
+            }
         }
 
         if (this.IsShowText && this.StringFormatX.Operator())
