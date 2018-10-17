@@ -41,6 +41,7 @@ function JSComplierController(req,res,next)
 
     this.Result={};     //返回数据
     this.CacheData;
+    this.ErrorMessage=[];      //脚本执行错误
     
     this.Post=function()
     {
@@ -59,7 +60,7 @@ function JSComplierController(req,res,next)
             for(let i in postData.args) //变量全部转成大写
             {
                 var item=postData.args[i];
-                if (item.Name) args.push({Name:item.name, Value:parseFloat(item.value)});  //变量值转数值型
+                if (item.name) args.push({Name:item.name, Value:parseFloat(item.value)});  //变量值转数值型
             }
         }
 
@@ -120,6 +121,8 @@ function JSComplierController(req,res,next)
     {
         this.CacheData.set(param.Symbol,null);
 
+        this.ErrorMessage.push({Symbol:param.Symbol, Error:e});    //错误信息保存
+
         if (this.CacheData.size==this.StockList.length) //等所有股票计算完了 返回数据 result
         {
            this.SendResult();
@@ -164,7 +167,7 @@ function JSComplierController(req,res,next)
         this.Result.Ticket=nowDate.getTime() - this.StartTime.getTime();
 
         //字段全部小写
-        var result={ ticket:this.Result.Ticket, data:this.Result.Data, code:this.Code };
+        var result={ ticket:this.Result.Ticket, data:this.Result.Data, code:this.Code, error:this.ErrorMessage };
         this.Response.header("Access-Control-Allow-Origin", "*");
         this.Response.send(result);
     }
@@ -184,19 +187,224 @@ JSComplierController.Post=function(req, res, next)
 
 ///////////////////////////////////////////////////////////////////////
 // 多脚本 多股票  交集|并集 开发中
-//
+//  symbol:[] 股票列表
+//  script[{code:脚本,args:[]脚本参数 (可选)}]:   脚本列表
+//  datecount: 日线数据计算多少天 (可选)
+//  daycount： 分钟数据计算多少天 (可选)
+//  period:  周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 (可选)
+//  right:   复权 0 不复权 1 前复权 2 后复权(可选)
+//  mergetype: 0 脚本都满足  1 有1个脚本满足
+//  
+/*  post 数据:
+{
+    "symbol":["600000.sh","000001.sz","000008.sz","000017.sz","000056.sz","000338.sz","000408.sz","000415.sz","000498.sz","000557.sz"],
+    script:
+    [
+        {
+            "code":"LC:= REF(CLOSE,1);RSI1:=SMA(MAX(CLOSE-LC,0),6,1)/SMA(ABS(CLOSE-LC),6,1)*100;OUT:CROSS(RSI1,20);"
+            "args":[{"name":"N1","value":10},{"name":"N2","value":12}
+        },
+    ],
+    "datecount":200, 
+    "mergetype": 0
+}
+*/
 function JSCommonMultiComplier(req,res,next)
 {
     this.Request=req;
     this.Response=res;
     this.Next=next;
 
+    this.DateCount=300;
+    this.DayCount=20;
+    this.Period=0;
+    this.Right=0;
+
     this.StockList;
-    this.Code;
+    this.Script=[];
     this.StartTime=new Date();
+    this.MergeType=0;
 
     this.Result={};     //返回数据
     this.CacheData;
+
+    this.SetScript=function(script)
+    {
+        if (!script || !script.length) return false;
+
+        for(let i in script)
+        {
+            var item=script[i];
+            if (!item.code) continue;
+
+            var args=[];
+            if (item.args && item.args.length)
+            {
+                var argItem=item.args[i];
+                if (argItem.name) args.push({Name:argItem.name, Value:parseFloat(argItem.value)});  //变量值转数值型
+            }
+
+            this.Script.push({Code:item.code, Arguments:args});
+        }
+
+        return this.Script.length>0;
+    }
+
+
+    this.Post=function()
+    {
+        var postData=this.Request.body;
+        if (!postData) return this.Error({Message:'post data is empty'});
+
+        this.StockList=postData.symbol;
+        if (!this.StockList || !this.StockList.length) return this.Error({Message:'symbol is empty'});
+
+        if (!this.SetScript(postData.script)) return this.Error({Message:'code is empty'});
+
+        if (postData.mergetype>=0) this.MergeType=postData.mergetype;
+        if (postData.datecount) this.DateCount=postData.datecount;
+        if (postData.daycount) this.DayCount=postData.daycount;
+        if (postData.period) this.Period=postData.period;
+        if (postData.right) this.Right=postData.right;
+
+        var self=this;
+        this.CacheData=new Map();
+        var scriptID=0;
+        for(let i in this.StockList)
+        {
+            var symbol=this.StockList[i];
+            let option=
+            {
+                HQDataType:0,
+                Symbol:symbol, Name:null,Data:null,
+                MaxReqeustDataCount:this.DateCount, MaxRequestMinuteDayCount:this.DayCount,
+                Right:this.Right, Period:this.Period,
+                Arguments:this.Script[scriptID].Arguments,
+                CallbackParam: { Symbol:symbol, ScriptID:scriptID, Result:true, Value:[] },   //脚本索引
+                Callback:function(data,param)                          //数据计算完成回调
+                { 
+                    self.RecvExecuteData(data,param);
+                },
+                ErrorCallback:function(e,param)
+                {
+                    self.ErrorExecute(e,param);
+                }
+            }
+
+            var run=JSComplier.Execute(this.Script[scriptID].Code,option);
+        };
+
+        next();
+    }
+
+    this.RecvExecuteData=function(data,param)
+    {
+        var analysisData=this.AnalysisExecuteData(data);
+        var result=false;
+        if (analysisData)
+        {
+            result=true;
+            analysisData.ID=param.ScriptID;
+            param.Value.push(analysisData);
+        }
+
+        if (this.MergeType===0) param.Result=(result||param.Result);
+        else param.Result=(result&&param.Result);
+
+        if (!param.Result)
+        {
+            this.CacheData.set(param.Symbol,null);
+            if (this.CacheData.size==this.StockList.length) //等所有股票计算完了 返回数据 result
+            {
+                this.SendResult();
+            }
+            return;
+        }
+
+        if (param.ScriptID>=this.Script.length-1)   //单股票 多脚本执行完
+        {
+            this.CacheData.set(param.Symbol,param.Value);
+            if (this.CacheData.size==this.StockList.length) //等所有股票计算完了 返回数据 result
+            {
+                this.SendResult();
+            }
+            return;
+        }
+
+        var self=this;
+        param.ScriptID+=1;
+
+        let option=
+        {
+            HQDataType:0,
+            Symbol:param.Symbol, Name:null,Data:null,
+            MaxReqeustDataCount:this.DateCount, MaxRequestMinuteDayCount:this.DayCount,
+            Right:this.Right, Period:this.Period,
+            Arguments:this.Script[param.ScriptID].Arguments,
+            CallbackParam: param,   //脚本索引
+            Callback:function(data,param)                          //数据计算完成回调
+            { 
+                self.RecvExecuteData(data,param);
+            },
+            ErrorCallback:function(e,param)
+            {
+                self.ErrorExecute(e,param);
+            }
+        }
+
+        var run=JSComplier.Execute(this.Script[param.ScriptID].Code,option);
+
+        next();
+    }
+
+    //执行脚本错误
+    this.ErrorExecute=function(e,param)
+    {
+        this.RecvExecuteData(null,param)
+    }
+
+    //分析单个脚本执行结果
+    this.AnalysisExecuteData=function(data)
+    {
+        if (!data || !data.length) return null;
+        
+        var outData=data[0];
+        var value=outData.Data[outData.Data.length-1];  //选中最后一天数据结果>0的数据
+        if (!value) return null;
+
+        var date=null;
+        for(let i in data)
+        {
+            var item=data[i];
+            if (item.Type===100 && item.Name==='TradeDate' && item.Data.length>outData.Data.length-1)
+            {
+                date=item.Data[outData.Data.length-1];
+                break;
+            }
+        }
+        
+        return {Value:value, Date:date};
+    }
+
+    this.SendResult=function()
+    {
+        this.Result.Data=[];
+        for(let item of this.CacheData)
+        {
+            var stockData=item[1];
+            if (!stockData) continue;
+
+            this.Result.Data.push({Symbol:item[0],Data:stockData});
+        }
+        
+        var nowDate=new Date();
+        this.Result.Ticket=nowDate.getTime() - this.StartTime.getTime();
+
+        //字段全部小写
+        var result={ ticket:this.Result.Ticket, data:this.Result.Data };
+        this.Response.header("Access-Control-Allow-Origin", "*");
+        this.Response.send(result);
+    }
 }
 
 JSCommonMultiComplier.Post=function(req, res, next)
@@ -212,7 +420,7 @@ module.exports =
     JSCommonComplierController:
     {
         JSComplierController: JSComplierController,
-        JSCommonMultiComplier: JSComplierController,
+        JSCommonMultiComplier: JSCommonMultiComplier,
     },
 
 };
@@ -226,6 +434,7 @@ server.use(restify.plugins.fullResponse()); //跨域
 server.use(restify.plugins.gzipResponse()); //支持压缩
 
 server.post('/api/jscomplier',JSComplierController.Post);
+server.post('/api/jsmcomplier',JSCommonMultiComplier.Post);
 
 server.listen(18080, function() 
 {

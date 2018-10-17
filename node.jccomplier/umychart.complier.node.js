@@ -4879,11 +4879,11 @@ function JSSymbolData(ast,option,jsExecute)
     this.Right=0;               //复权
     this.DataType=0;            //默认K线数据 2=分钟走势图数据
 
-    this.KLineApiUrl="https://opensource.zealink.com/API/KLine2";                   //日线
-    this.MinuteKLineApiUrl='https://opensource.zealink.com/API/KLine3';             //分钟K线
-    this.RealtimeApiUrl='https://opensource.zealink.com/API/stock';                 //实时行情
-    this.StockHistoryDayApiUrl='https://opensource.zealink.com/API/StockHistoryDay';  //历史财务数据
-    this.StockHistoryDay3ApiUrl='https://opensource.zealink.com/API/StockHistoryDay3';  //历史财务数据
+    this.KLineApiUrl=g_JSComplierResource.Domain+"/API/KLine2";                     //日线
+    this.MinuteKLineApiUrl=g_JSComplierResource.Domain+'/API/KLine3';               //分钟K线
+    this.RealtimeApiUrl=g_JSComplierResource.Domain+'/API/stock';                   //实时行情
+    this.StockHistoryDayApiUrl=g_JSComplierResource.Domain+'/API/StockHistoryDay';      //历史财务数据
+    this.StockHistoryDay3ApiUrl=g_JSComplierResource.Domain+'/API/StockHistoryDay3';  //历史财务数据
     this.MaxReqeustDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
 
@@ -6308,6 +6308,7 @@ function JSExecute(ast,option)
 
     this.UpdateUICallback=null; //回调
     this.CallbackParam=null;
+    this.Option=option;
 
     if (option)
     {
@@ -6621,14 +6622,23 @@ function JSExecute(ast,option)
     }
 
     this.Run=function()
-    {                        
-        let data=this.RunAST();//执行脚本
-        console.log('[JSComplier.Run] execute finish', data);
-        
-        if (this.UpdateUICallback) 
+    {  
+        try
         {
-            console.log('[JSComplier.Run] invoke UpdateUICallback.');
-            this.UpdateUICallback(data,this.CallbackParam);
+            let data=this.RunAST();//执行脚本
+            console.log('[JSComplier.Run] execute finish', data);
+            
+            if (this.UpdateUICallback) 
+            {
+                console.log('[JSComplier.Run] invoke UpdateUICallback.');
+                this.UpdateUICallback(data,this.CallbackParam);
+            }
+        }
+        catch(error)
+        {
+            console.log(error);
+            if (this.Option && this.Option.ErrorCallback) 
+                this.Option.ErrorCallback(error,this.Option.CallbackParam);
         }
     }
 
@@ -6998,6 +7008,18 @@ JSComplier.Execute=function(code,option)
     asyncExecute();
 
     console.log('[JSComplier.Execute] async execute.');
+}
+
+JSComplier.SetDomain = function (domain, cacheDomain) 
+{
+    if (domain) g_JSComplierResource.Domain = domain;
+    if (cacheDomain) g_JSComplierResource.CacheDomain = cacheDomain;
+}
+
+var g_JSComplierResource=
+{
+    Domain : "https://opensource.zealink.com",               //API域名
+    CacheDomain : "https://opensourcecache.zealink.com"      //缓存域名
 }
 
 module.exports =
