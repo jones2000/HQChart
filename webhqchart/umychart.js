@@ -72,6 +72,7 @@ function JSChart(divElement)
             if (option.KLine.PageSize>0)  chart.PageSize=option.KLine.PageSize;
             if (option.KLine.IsShowTooltip==false) chart.IsShowTooltip=false;
             if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
+            if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
         }
 
         if (!option.Windows || option.Windows.length<=0) return null;
@@ -4108,6 +4109,8 @@ function ChartKLine()
     this.newMethod();
     delete this.newMethod;
 
+    this.DrawType=0;    // 0=K线  1=收盘价线 2=美国线
+    this.CloseLineColor=g_JSChartResource.CloseLineColor;
     this.UpColor=g_JSChartResource.UpBarColor;
     this.DownColor=g_JSChartResource.DownBarColor;
     this.UnchagneColor=g_JSChartResource.UnchagneBarColor;          //平盘
@@ -4123,9 +4126,166 @@ function ChartKLine()
 
     this.InfoTooltipEvent;  //信息地雷悬停事件
 
+    this.DrawAKLine=function()  //美国线
+    {
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
+        if (isHScreen) xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+2.0;
+        var chartright=this.ChartBorder.GetRight();
+        if (isHScreen) chartright=this.ChartBorder.GetBottom();
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        var ptMax={X:null,Y:null,Value:null,Align:'left'};
+        var ptMin={X:null,Y:null,Value:null,Align:'left'};
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var data=this.Data.Data[i];
+            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+            var x=left+(right-left)/2;
+            var yLow=this.ChartFrame.GetYFromData(data.Low);
+            var yHigh=this.ChartFrame.GetYFromData(data.High);
+            var yOpen=this.ChartFrame.GetYFromData(data.Open);
+            var yClose=this.ChartFrame.GetYFromData(data.Close);
+
+            if (ptMax.Value==null || ptMax.Value<data.High)     //求最大值
+            {
+                ptMax.X=x;
+                ptMax.Y=yHigh;
+                ptMax.Value=data.High;
+                ptMax.Align=j<xPointCount/2?'left':'right';
+            }
+
+            if (ptMin.Value==null || ptMin.Value>data.Low)      //求最小值
+            {
+                ptMin.X=x;
+                ptMin.Y=yLow;
+                ptMin.Value=data.Low;
+                ptMin.Align=j<xPointCount/2?'left':'right';
+            }
+
+            if (data.Open<data.Close) this.Canvas.strokeStyle=this.UpColor; //阳线
+            else if (data.Open>data.Close) this.Canvas.strokeStyle=this.DownColor; //阳线
+            else this.Canvas.strokeStyle=this.UnchagneColor; //平线
+
+            this.Canvas.beginPath();   //最高-最低
+            if (isHScreen)
+            {
+                this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                this.Canvas.lineTo(yLow,ToFixedPoint(x));
+            }
+            else
+            {
+                this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                this.Canvas.lineTo(ToFixedPoint(x),yLow);
+            }
+            
+            this.Canvas.stroke();
+
+            if (dataWidth>=4)
+            {
+                this.Canvas.beginPath();    //开盘
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(yOpen),left);
+                    this.Canvas.lineTo(ToFixedPoint(yOpen),x);
+                }
+                else
+                {
+                    this.Canvas.moveTo(left,ToFixedPoint(yOpen));
+                    this.Canvas.lineTo(x,ToFixedPoint(yOpen));
+                }
+                this.Canvas.stroke();
+
+                this.Canvas.beginPath();    //收盘
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(yClose),right);
+                    this.Canvas.lineTo(ToFixedPoint(yClose),x);
+                }
+                else
+                {
+                    this.Canvas.moveTo(right,ToFixedPoint(yClose));
+                    this.Canvas.lineTo(x,ToFixedPoint(yClose));
+                }
+                this.Canvas.stroke();
+            }
+
+            if(this.Data.DataType==0)
+            {
+                var infoItem={Xleft:left,XRight:right, YMax:yHigh, YMin:yLow, DayData:data, Index:j};
+                this.DrawInfoDiv(infoItem);
+            }
+        }
+
+        if (this.IsShowMaxMinPrice) 
+        {   
+            if (isHScreen) this.HScreenDrawMaxMinPrice(ptMax,ptMin);
+            else this.DrawMaxMinPrice(ptMax,ptMin);
+        }
+    }
+
+    this.DrawCloseLine=function()   //收盘价线
+    {
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
+        if (isHScreen) xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+2.0;
+        var chartright=this.ChartBorder.GetRight();
+        if (isHScreen) chartright=this.ChartBorder.GetBottom();
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        var bFirstPoint=true;
+        this.Canvas.beginPath();
+        this.Canvas.strokeStyle=this.CloseLineColor;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var data=this.Data.Data[i];
+            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+            var x=left+(right-left)/2;
+            var yClose=this.ChartFrame.GetYFromData(data.Close);
+
+            if (bFirstPoint)
+            {
+                if (isHScreen) this.Canvas.moveTo(yClose,x);
+                else this.Canvas.moveTo(x,yClose);
+                bFirstPoint=false;
+            }
+            else
+            {
+                if (isHScreen) this.Canvas.lineTo(yClose,x);
+                else this.Canvas.lineTo(x,yClose);
+            }
+        }
+
+        if (bFirstPoint==false) this.Canvas.stroke();
+    }
+
     this.Draw=function()
     {
         this.ClearInfoDiv();
+        this.TooltipRect=[];
+
+        if (this.DrawType==1) 
+        {
+            this.DrawCloseLine();
+            return;
+        }
+        else if (this.DrawType==2)
+        {
+            this.DrawAKLine();
+            return;
+        }
 
         if (this.ChartFrame.IsHScreen===true)
         {
@@ -4141,8 +4301,6 @@ function ChartKLine()
 
         var ptMax={X:null,Y:null,Value:null,Align:'left'};
         var ptMin={X:null,Y:null,Value:null,Align:'left'};
-
-        this.TooltipRect=[];
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var data=this.Data.Data[i];
@@ -4326,8 +4484,6 @@ function ChartKLine()
 
         var ptMax={X:null,Y:null,Value:null,Align:'left'};
         var ptMin={X:null,Y:null,Value:null,Align:'left'};
-
-        this.TooltipRect=[];
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var data=this.Data.Data[i];
@@ -9686,6 +9842,7 @@ function JSChartResource()
     this.UpTextColor="rgb(238,21,21)";
     this.DownTextColor="rgb(25,158,0)";
     this.UnchagneTextColor="rgb(0,0,0)";
+    this.CloseLineColor='rgb(178,34,34)';
 
     this.FrameBorderPen="rgb(225,236,242)";
     this.FrameSplitPen="rgb(225,236,242)";      //分割线
@@ -10773,6 +10930,7 @@ function KLineChartContainer(uielement)
     this.MaxReqeustDataCount=3000;      //数据个数
     this.MaxRequestMinuteDayCount=5;    //分钟数据请求的天数
     this.PageSize=200;                  //每页数据个数
+    this.KLineDrawType=0;
     this.ScriptErrorCallback;           //脚本执行错误回调
 
     //this.KLineApiUrl="http://opensource.zealink.com/API/KLine2";                      //历史K线api地址
@@ -10895,6 +11053,7 @@ function KLineChartContainer(uielement)
         kline.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
         kline.ChartFrame=this.Frame.SubFrame[0].Frame;
         kline.Name="Main-KLine";
+        kline.DrawType=this.KLineDrawType;
         if (this.KLineInfoTooltip) kline.InfoTooltipEvent=[this.KLineInfoTooltip.DoModal,this.KLineInfoTooltip.Leave]; //鼠标悬停, 鼠标离开
 
         this.ChartPaint[0]=kline;
