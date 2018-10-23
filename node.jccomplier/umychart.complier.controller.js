@@ -12,6 +12,7 @@ var JSComplier=require('./umychart.complier.node').JSCommonComplier.JSComplier;
 //  args: 脚本参数 (可选)
 //  datecount: 日线数据计算多少天 (可选)
 //  daycount： 分钟数据计算多少天 (可选)
+//  calccount: 最后统计几天的数据 (可选) 默认1天
 //  period:  周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 (可选)
 //  right:   复权 0 不复权 1 前复权 2 后复权(可选)
 //  
@@ -21,6 +22,14 @@ var JSComplier=require('./umychart.complier.node').JSCommonComplier.JSComplier;
     "code":"LC:= REF(CLOSE,1);RSI1:=SMA(MAX(CLOSE-LC,0),6,1)/SMA(ABS(CLOSE-LC),6,1)*100;OUT:CROSS(RSI1,20);"
     "args":[{"name":"N1","value":10},{"name":"N2","value":12}],
     "datecount":200, 
+    "calccount":50
+}
+
+返回数据
+{
+    "ticket":1277,
+    "data":[{"date":20181023,"symbols":["600000.sh","000001.sz"]},{"date":20181022,"symbols":["600000.sh","000001.sz"]}],
+    "code":"VAR2:C+FINANCE(1);VAR3:=O;","error":[]
 }
 */
 
@@ -34,6 +43,7 @@ function JSComplierController(req,res,next)
     this.DayCount=20;
     this.Period=0;
     this.Right=0;
+    this.CalculateCount=1;
 
     this.StockList;
     this.Code;
@@ -68,6 +78,7 @@ function JSComplierController(req,res,next)
         if (postData.daycount) this.DayCount=postData.daycount;
         if (postData.period) this.Period=postData.period;
         if (postData.right) this.Right=postData.right;
+        if (postData.calccount) this.CalculateCount=postData.calccount;
 
         var self=this;
         this.CacheData=new Map();
@@ -129,32 +140,49 @@ function JSComplierController(req,res,next)
         }
     }
 
-    this.AnalysisData=function(data)
+    //统计结果
+    this.AnalysisData=function(data) 
     {
-        var result=[];
+        var result=new Map();       //key=日期  Value={Symbol:, Value:}
         for(let item of data)
         {
             var stockData=item[1];
             if (stockData==null || !stockData.length) continue;
 
             var outData=stockData[0];
-            if (outData.Data==null || !outData.Data.length) continue;
+            if (!outData.Data || !outData.Data.length) continue;
 
-            var value=outData.Data[outData.Data.length-1];  //选中最后一天数据结果>0的数据
-            if (!value) continue;
-
-            var date=null;
+            var klineData=null;
             for(let i in stockData)
             {
                 var itemData=stockData[i];
                 if (itemData.Type===100 && itemData.Name==='TradeDate' && itemData.Data.length>outData.Data.length-1)
                 {
-                    date=itemData.Data[outData.Data.length-1];
+                    klineData=itemData;
                     break;
                 }
             }
-            
-            result.push({Symbol:item[0], Value:value, Date:date});
+            if (!klineData || !klineData.Data || !klineData.Data.length) continue;
+            if (klineData.Data.length!=outData.Data.length) continue;
+
+            for(let i=outData.Data.length-1, j=0; i>=0 && j<this.CalculateCount; --i, ++j)
+            {
+                var value=outData.Data[i];
+                if (!value) continue;
+                var date=klineData.Data[i];
+                if (!date) continue;
+
+                if (result.has(date)) 
+                {
+                    var temp=result.get(date);
+                    temp.Symbols.push(item[0]);
+                    temp.Values.push(value);
+                }
+                else 
+                {
+                    result.set(date, { Symbols:[item[0]], Values:[value] });
+                }
+            }
         }
 
         return result;
@@ -166,8 +194,14 @@ function JSComplierController(req,res,next)
         var nowDate=new Date();
         this.Result.Ticket=nowDate.getTime() - this.StartTime.getTime();
 
+        var data=[];
+        for(let item of this.Result.Data)
+        {
+            data.push({date:item[0], symbols:item[1].Symbols, values:item[1].Values});
+        }
+
         //字段全部小写
-        var result={ ticket:this.Result.Ticket, data:this.Result.Data, code:this.Code, error:this.ErrorMessage };
+        var result={ ticket:this.Result.Ticket, data:data, code:this.Code, error:this.ErrorMessage };
         this.Response.header("Access-Control-Allow-Origin", "*");
         this.Response.send(result);
     }
