@@ -608,6 +608,11 @@ JSChart.SetDomain = function (domain, cacheDomain) {
   JSCommonKLineInfo.SetDomain(domain, cacheDomain)
 }
 
+//自定义风格
+JSChart.SetStyle = function (style) {
+  if (style) g_JSChartResource.SetStyle(style);
+}
+
 /*
     图形控件
 */
@@ -8987,6 +8992,20 @@ function JSChartResource() {
 
     ];
 
+  this.ColorArray =       //自定义指标默认颜色
+  [
+    "rgb(255,174,0)",
+    "rgb(25,199,255)",
+    "rgb(175,95,162)",
+    "rgb(236,105,65)",
+    "rgb(68,114,196)",
+    "rgb(229,0,79)",
+    "rgb(0,128,255)",
+    "rgb(252,96,154)",
+    "rgb(42,230,215)",
+    "rgb(24,71,178)",
+  ];
+
   //历史数据api
   this.Index.StockHistoryDayApiUrl = "https://opensource.zealink.com/API/StockHistoryDay";
   //市场多空
@@ -9013,9 +9032,49 @@ function JSChartResource() {
       "rgb(105,105,105)",
     ];
 
-
+    // //自定义风格
+    this.SetStyle = function (style) {
+      if (style.TooltipBGColor) this.TooltipBGColor = style.TooltipBGColor;
+      if (style.TooltipAlpha) this.TooltipAlpha = style.TooltipAlpha;
+      if (style.SelectRectBGColor) this.SelectRectBGColor = style.SelectRectBGColor;
+      if (style.UpBarColor) this.UpBarColor = style.UpBarColor;
+      if (style.DownBarColor) this.DownBarColor = style.DownBarColor;
+      if (style.UnchagneBarColor) this.UnchagneBarColor = style.UnchagneBarColor;
+      if (style.Minute) {
+        if (style.Minute.VolBarColor) this.Minute.VolBarColor = style.Minute.VolBarColor;
+        if (style.Minute.PriceColor) this.Minute.PriceColor = style.Minute.PriceColor;
+        if (style.Minute.AvPriceColor) this.Minute.AvPriceColor = style.Minute.AvPriceColor;
+      }
+      if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
+      if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;
+      if (style.DynamicTitleFont) this.DynamicTitleFont = style.DynamicTitleFont;
+      if (style.UpTextColor) this.UpTextColor = style.UpTextColor;
+      if (style.DownTextColor) this.DownTextColor = style.DownTextColor;
+      if (style.UnchagneTextColor) this.UnchagneTextColor = style.UnchagneTextColor;
+      if (style.CloseLineColor) this.CloseLineColor = style.CloseLineColor;
+      if (style.FrameBorderPen) this.FrameBorderPen = style.FrameBorderPen;
+      if (style.FrameSplitPen) this.FrameSplitPen = style.FrameSplitPen;
+      if (style.FrameSplitTextColor) this.FrameSplitTextColor = style.FrameSplitTextColor;
+      if (style.FrameSplitTextFont) this.FrameSplitTextFont = style.FrameSplitTextFont;
+      if (style.FrameTitleBGColor) this.FrameTitleBGColor = style.FrameTitleBGColor;
+      if (style.CorssCursorBGColor) this.CorssCursorBGColor = style.CorssCursorBGColor;
+      if (style.CorssCursorTextColor) this.CorssCursorTextColor = style.CorssCursorTextColor;
+      if (style.CorssCursorTextFont) this.CorssCursorTextFont = style.CorssCursorTextFont;
+      if (style.CorssCursorPenColor) this.CorssCursorPenColor = style.CorssCursorPenColor;
+      if (style.KLine) this.KLine = style.KLine;
+      if (style.Index) {
+        if (style.Index.LineColor) this.Index.LineColor = style.Index.LineColor;
+        if (style.Index.NotSupport) this.Index.NotSupport = style.Index.NotSupport;
+      }
+      if (style.ColorArray) this.ColorArray = style.ColorArray;
+      if (style.DrawPicture) {
+        this.DrawPicture.LineColor = style.DrawPicture.LineColor;
+        this.DrawPicture.PointColor = style.DrawPicture.PointColor;
+      }
+    }
 
 }
+
 
 var g_JSChartResource = new JSChartResource();
 
@@ -12277,19 +12336,19 @@ function ScriptIndex(name, script, args, option) {
 
 //给一个默认的颜色
 ScriptIndex.prototype.GetDefaultColor = function (id) {
-  let COLOR_ARRAY =
-    [
-      "rgb(255,174,0)",
-      "rgb(25,199,255)",
-      "rgb(175,95,162)",
-      "rgb(236,105,65)",
-      "rgb(68,114,196)",
-      "rgb(229,0,79)",
-      "rgb(0,128,255)",
-      "rgb(252,96,154)",
-      "rgb(42,230,215)",
-      "rgb(24,71,178)",
-    ];
+  let COLOR_ARRAY = g_JSChartResource.ColorArray;
+    // [
+    //   "rgb(255,174,0)",
+    //   "rgb(25,199,255)",
+    //   "rgb(175,95,162)",
+    //   "rgb(236,105,65)",
+    //   "rgb(68,114,196)",
+    //   "rgb(229,0,79)",
+    //   "rgb(0,128,255)",
+    //   "rgb(252,96,154)",
+    //   "rgb(42,230,215)",
+    //   "rgb(24,71,178)",
+    // ];
 
   let number = parseInt(id);
   return COLOR_ARRAY[number % (COLOR_ARRAY.length - 1)];
