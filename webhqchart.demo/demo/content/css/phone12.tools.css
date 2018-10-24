@@ -99,3 +99,6 @@
     text-decoration: none;
     cursor: pointer;
 }
+.policySuccess .content .x_panel:last-child{
+    margin:0px;
+}

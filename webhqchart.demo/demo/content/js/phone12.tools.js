@@ -5,7 +5,6 @@ var Tools = {
     init: function (defalutData) {
         var _this = this;
 
-        _this.bindEvent();
         _this.bindModular();
         _this.setDefault(defalutData);
     },
@@ -46,9 +45,6 @@ var Tools = {
                 $tradeDate.datepicker("setDate", Common.formatDate(defalutData.tradeDate));
             }
         }, 200);
-    },
-    bindEvent: function () {
-        
     },
     bindModular: function () {
         var _this = this;
@@ -158,10 +154,49 @@ var Tools = {
                         getData(tempList[i], i,
                             function (list, index) {
                                 for (var i = 0; i < list.length; i++) {
-                                    Root.policySuccess.list.push({
-                                        symbol: list[i].Symbol,
-                                        value: list[i].Value
-                                    });
+
+                                    var dateIndex = getIndexByDate(Root.policySuccess.list, list[i].date)
+                                    if (dateIndex > -1) {
+
+                                        for (var j = 0; j < list[i].symbols.length; j++) {
+                                            Root.policySuccess.list[dateIndex].infoList.push({
+                                                symbol: list[i].symbols[j],
+                                                value: list[i].values[j]
+                                            });
+                                        }
+
+                                    } else {
+
+                                        var item ={
+                                            date: list[i].date,
+                                            showDate: Common.formatDate(list[i].date).Format("yyyy-MM-dd"),
+                                            isShow:true,
+                                            infoList: []
+                                        };
+
+                                        for(var j=0;j<list[i].symbols.length;j++){
+                                            item.infoList.push({
+                                                symbol: list[i].symbols[j],
+                                                value: list[i].values[j]
+                                            })
+                                        }
+                                        
+                                        Root.policySuccess.list.push(item);
+
+                                        Root.policySuccess.list.sort(function (a,b) {
+                                            return b.date - a.date;
+                                        })
+                                    }
+
+
+                                    //for (int i = 1; i < arr.length; i++) {
+                                    //    var j = i;
+                                    //    while (j > 0 && arr[j] < arr[j - 1]) {
+                                    //        swap(arr,j,j-1);
+                                    //        j--;
+                                    //    }
+                                    //}
+
                                 }
 
                                 _this.executePolicySuccessCount += tempList[index].length;
@@ -225,7 +260,18 @@ var Tools = {
                         });
                     }
 
+                    function getIndexByDate(list, date) {
+                        for (var i = 0; i < list.length; i++) {
+                            if (list[i].date == date) {
+                                return i;
+                            }
+                        }
+
+                        return -1;
+                    }
+
                 }
+
             },
             watch: {
                 executePolicyTotalCount: function (newValue, oldValue) {
@@ -647,7 +693,7 @@ var Tools = {
             data: {
                 list: [],
 
-                activeSymbol: ""
+                activeSymbol: "",
             },
             methods: {
                 clear: function () {
@@ -661,6 +707,9 @@ var Tools = {
 
                     Root.top.symbol = symbol;
                     Root.top.change();
+                },
+                showOrHide: function (index) {
+                    this.list[index].isShow = !this.list[index].isShow;
                 }
             }
         });

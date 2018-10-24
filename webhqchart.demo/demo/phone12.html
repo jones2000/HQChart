@@ -13,24 +13,37 @@
 <body>
     <div>
         <div id="kline" style="width: 900px;height:400px;position: relative;float:left;"></div>
-        <div style="float:left;margin-left:5px;" id="policySuccess" class="policySuccess">
-            <table class="table table-striped" style="margin:0px;">
-                <tr>
-                    <th width="50">#</th>
-                    <th width="130">执行成功的代码</th>
-                    <th>Value</th>
-                </tr>
-            </table>
-            <div class="content">
-                <table class="table table-striped">
-                    <tbody>
-                        <tr v-for="(item, index) in list" v-bind:class="{ active: item.symbol == activeSymbol }" v-on:click="select(item.symbol)">
-                            <td width="50">{{index+1}}</td>
-                            <td width="130">{{item.symbol}}</td>
-                            <td>{{item.value}}<td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div style="float:left;margin-left:5px;padding-top:30px;" id="policySuccess" class="policySuccess">
+            <div class="col-md-12 col-sm-12 col-xs-12 content" style="padding:0px;">
+                <div class="x_panel" v-for="(item, index) in list">
+                    <div class="x_title">
+                        <h2>{{item.showDate}}<small>共{{item.infoList.length}}只股票</small></h2>
+                        <ul class="nav navbar-right panel_toolbox">
+                            <li v-on:click="showOrHide(index)">
+                                <a class="collapse-link" style="color:#73879C;">{{item.isShow?'收起':'展开'}}</a>
+                            </li>
+                        </ul>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content" v-show="item.isShow">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>代码</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(info, index) in item.infoList" v-bind:class="{ active: info.symbol == activeSymbol }" v-on:click="select(info.symbol)">
+                                    <td scope="row">{{index+1}}</td>
+                                    <td>{{info.symbol}}</td>
+                                    <td>{{info.value}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -294,7 +307,7 @@
             divKline.JSChart.OnSize();
     
             $("#policySuccess").width(width - parseInt(divKline.style.width) - 15);
-            $("#policySuccess .content").css("height", height - 35);
+            $("#policySuccess .content").css("height", height - 35 - 15);
         }
         
         $(function () {
