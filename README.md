@@ -17,6 +17,7 @@
   ![K线图](/小程序行情模块用例/image/hqchart_kline.PNG)
   ![K线图2](/小程序行情模块用例/image/hqchart_kline_lock.PNG)
   ![K线图3](/小程序行情模块用例/image/hqchart_kline_hscreen.PNG)
+  ![K线图4](/小程序行情模块用例/image/hqchart_kline_hscreen2.PNG)
   
 # 1. K线图
 * 支持前复权,后复权 <br>
