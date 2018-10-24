@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">  
 <head>  
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
-<title>手机H5行情</title>  
+<title>页面行情(自定义指数)</title>  
     <link rel="stylesheet" href="content/css/tools.css" />
     <link rel="stylesheet" href="content/font/iconfont.css" />
 </head>  
@@ -11,6 +11,8 @@
     <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
 
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
     <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
     <script>
         function getURLParams(name) 
@@ -44,11 +46,10 @@
             if (index==null) index='均线';
         
             var index2=getURLParams('index2');      //指标2
-            //if (index2==null) index2='指数热度';
             if (index2==null) index2='VOL';
         
             var index3=getURLParams('index3');      //指标3
-            index3='自定义指数热度';
+            if (index3==null) index3='MACD';
         
             var aryIndex=new Array();
             aryIndex.push({"Index":index,"Modify":false,"Change":false});
@@ -79,7 +80,7 @@
                         {Symbol:"002368.sz",Vol:100}
                     ],
         
-                    QueryDate: {Start:20180101,End:endDate},
+                    QueryDate: {Start:20180401,End:endDate},
         
                     KLine:
                         {
