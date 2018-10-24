@@ -1,0 +1,230 @@
+html,body{
+    height:100%;
+}
+
+/*参数设置面板*/
+.jchart-changeindex-box{
+    position: absolute;
+    display: none;
+    width:100%;
+    height:100%;
+    z-index: 999;
+    background-color: rgba(0,0,0,0.01);
+}
+
+.jchart-modifyindex-box{
+    position: absolute;
+    display: none;
+    width:100%;
+    height:100%;
+    z-index: 999;
+    background-color: rgba(0,0,0,0.01);
+}
+
+.jchart-kline-minute-box{
+    position: absolute;
+    display: none;
+    width:500px;
+    height:550px!important;
+    padding: 0 5px 20px 10px;
+    background-color: rgba(255,255,255,0.95);
+    border: solid 1px rgba(200, 210, 219, 0.92);
+    box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.23);
+    z-index: 999;
+}
+
+.parameter{
+    position: absolute;
+    top:50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    padding: 3px;
+    box-sizing: border-box;
+    width: 520px;
+    height: 421px;
+    background-color: rgba(255, 255, 255, 0.96);
+    box-shadow: 0px 4px 17px 0px rgba(0, 0, 0, 0.55);
+    border-radius: 2px;
+    z-index: 999;
+}
+.parameter-header{
+    position: relative;
+    width:100%;
+    height: 42px;
+    line-height: 42px;
+    border-bottom: 1px solid #c8d2db;
+}
+.parameter-header span{
+    font-family: 微软雅黑;
+    font-size: 14px;
+    margin-left: 10px;
+}
+.parameter-header strong{
+    position: absolute;
+    right: 10px;
+    font-size: 14px;
+    font-weight: 300;
+}
+.parameter-content{
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.row-line{
+    margin-right: 20px;
+    margin-top: 10px;
+    padding-left: 3px;
+    box-sizing: border-box;
+    width:100px;
+    height:24px;
+    line-height: 24px;
+    border:1px solid #cccccc;
+}
+#close{
+    cursor: pointer;
+}
+.parameter1{
+    cursor:pointer;
+}
+
+.parameter-footer{
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.parameter-footer button{
+    margin-left: 15px;
+    width: 78px;
+    height: 28px;
+    border: none;
+    border-radius: 2px;
+    color: #ffffff;
+}
+.submit{
+    background-color: #0182d4;
+}
+.cancel{
+    background-color: #c8d2db;
+}
+
+/*指数设置面板*/
+.target-box{
+    position: absolute;
+    display: none;
+    width:100%;
+    height:100%;
+    background-color: rgba(0,0,0,0.01);
+    z-index: 999;
+}
+.target-panel{
+    position: absolute;
+    top:50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    width: 800px;
+    height: 500px;
+    background-color: rgba(255, 255, 255, 0.96);
+    box-shadow: 0px 4px 17px 0px rgba(0, 0, 0, 0.55);
+    border-radius: 3px;
+}
+.target-header{
+    position: relative;
+    width:100%;
+    height: 42px;
+    line-height: 42px;
+    border-bottom: 1px solid #c8d2db;
+}
+.target-header span{
+    font-family: 微软雅黑;
+    font-size: 14px;
+    margin-left: 10px;
+}
+.target-header strong{
+    position: absolute;
+    right: 10px;
+    font-size: 14px;
+    font-weight: 300;
+}
+#close-tar{
+    cursor:pointer;
+}
+.target-content{
+    height:100%;
+}
+.target-left{
+    float: left;
+    width:200px;
+    height:calc(100% - 43px);
+    border-right: 1px solid #c8d2db;
+}
+
+.target-left input{
+    margin-left: 10px;
+    height: 40px;
+    line-height: 40px;
+    border: none;
+    font-size: 14px;
+}
+.target-left ul{
+    border-top:1px solid #c8d2db;
+    list-style: none;
+    padding:10px;
+    box-sizing: border-box;
+}
+.target-left ul li{
+    font-size: 13px;
+    line-height: 30px;
+    color: #757d81;
+    cursor: pointer;
+}
+.active-list{
+    color: #1295d9!important;
+}
+
+.target-right{
+    float: left;
+    width: 595px;
+}
+.target-right ul{
+    width: 590px;
+    max-height: 100%;
+    overflow: auto;
+    padding-top: 10px;
+    padding-left: 20px;
+    box-sizing: border-box;
+}
+.target-right ul li{
+    display: inline-block;
+    margin-top: 5px;
+    margin-left: 10px;
+    list-style: none;
+    width: 175px;
+    line-height: 30px;
+    text-align: left;
+    float: left;
+    cursor: pointer;
+}
+
+/*分钟走势图*/
+.minute-dialog-title{
+    position: relative;
+    margin-bottom: 10px;
+    height: 36px;
+    line-height: 36px;
+    width: 100%;
+    border-bottom: 1px solid #ccc;
+}
+.minute-dialog-title span{
+    margin-left: 5px;
+}
+.minute-dialog-title strong{
+    position: absolute;
+    right: 5px;
+    top: 0;
+    font-weight: 300;
+    font-size: 12px;
+}
+.minute-dialog-title strong:hover,.parameter-header strong:hover{
+    color: #0182d4;
+}

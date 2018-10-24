@@ -1,0 +1,413 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>通达信脚本网页版(策略选股)</title>  
+    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="content/font/iconfont.css" />
+    <link rel="stylesheet" href="plugins/code_color/codemirror.css" />
+    <link rel="stylesheet" href="plugins/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="plugins/bootstrap/custom.min.css" />
+    <link rel="stylesheet" href="content/css/phone12.tools.css" />
+</head>  
+<body>
+    <div>
+        <div id="kline" style="width: 900px;height:400px;position: relative;float:left;"></div>
+        <div style="float:left;margin-left:5px;" id="policySuccess" class="policySuccess">
+            <table class="table table-striped" style="margin:0px;">
+                <tr>
+                    <th width="50">#</th>
+                    <th width="130">执行成功的代码</th>
+                    <th>Value</th>
+                </tr>
+            </table>
+            <div class="content">
+                <table class="table table-striped">
+                    <tbody>
+                        <tr v-for="(item, index) in list" v-bind:class="{ active: item.symbol == activeSymbol }" v-on:click="select(item.symbol)">
+                            <td width="50">{{index+1}}</td>
+                            <td width="130">{{item.symbol}}</td>
+                            <td>{{item.value}}<td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="tools">
+        <div id="tools_top" class="top">
+            <span>指标名称：</span>
+            <input class="input" v-model="indexName" />
+            <select class="changeIndex" v-model="changeIndex">
+                <option value="1">副图</option>
+                <option value="0">主图</option>
+            </select>
+            <button class="toolsButton" v-on:click="execute()">执行</button>
+            <button class="toolsButton" onclick="Root.table.clear()">清空参数</button>
+
+            <span >股票代码：</span>
+            <input class="input" v-model="symbol" />
+            <button class="toolsButton" v-on:click="change()">切换股票</button>
+
+            <label v-on:click="changeDebug()">
+                <input type="checkbox" v-model="isDebug" />
+                <span style="margin-top:-2px;">输出调试信息</span>
+            </label>
+
+            <button class="toolsButton" v-on:click="save()">保存</button>
+
+            <button class="toolsButton" v-on:click="showPolicyParameter()" v-bind:disabled="isInExecutePolicy">{{isInExecutePolicy?"执行中...":"执行策略"}}({{tweenedExecutePolicySuccessCount}}/{{tweenedExecutePolicyTotalCount}})</button>
+
+            <!--<span style="border:1px solid #ccc;height:34px;display:inline-block;padding:4px 8px;margin-left:10px;">
+                <button class="toolsButton" onclick="Root.plate.show()" style="height:24px;margin-right:8px;">选择范围({{selectSymbolList.length}})</button>
+            </span>-->            
+        </div>
+        <div class="toolsTable" id="tools_table">
+            <table cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th align="left">参数</th>
+                        <th align="left">最小</th>
+                        <th align="left">最大</th>
+                        <th align="left">缺省</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item, index) in list">
+                        <td v-on:click="closeEdit(index,'name')">
+                            <input v-if="item.name.isEdit" v-model="item.name.value" v-on:click.stop="" />
+                            <span v-else=v-else v-on:click.stop="openEdit(index,'name')">{{item.name.value}}</span>
+                        </td>
+                        <td v-on:click="closeEdit(index,'min')">
+                            <input v-if="item.min.isEdit" v-model="item.min.value" v-on:click.stop="" />
+                            <span v-else=v-else v-on:click.stop="openEdit(index,'min')">{{item.min.value}}</span>
+                        </td>
+                        <td v-on:click="closeEdit(index,'max')">
+                            <input v-if="item.max.isEdit" v-model="item.max.value" v-on:click.stop="" />
+                            <span v-else=v-else v-on:click.stop="openEdit(index,'max')">{{item.max.value}}</span>
+                        </td>
+                        <td v-on:click="closeEdit(index,'value')">
+                            <input v-if="item.value.isEdit" v-model="item.value.value" v-on:click.stop="" />
+                            <span v-else=v-else v-on:click.stop="openEdit(index,'value')">{{item.value.value}}</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="code">
+            <textarea id="tools_code"></textarea>
+        </div>
+        <div class="cache" id="tools_cache">
+            <ul>
+                <li v-bind:class="{ active: index == activeIndex }" v-for="(item, index) in list" v-on:click="select(index)">
+                    {{item.name}} 
+                    <span v-on:click.stop="_delete(index)">删除</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal_parameter" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" style="width: 1300px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <h4 class="modal-title" id="myModalLabel">设置参数</h4>
+                </div>
+                <div class="modal-body">
+
+                    <div class="row">
+                        <div class="col-md-12 col-sm-12 col-xs-12">
+                            <div class="x_panel" id="plate">
+                                <div class="x_title">
+                                    <h2>
+                                        板块
+                                        <small>
+                                            <button type="button" class="btn btn-success btn-xs" v-on:click="selectAll(1)">全选</button>
+                                            <button type="button" class="btn btn-success btn-xs" v-on:click="reverseSelect(1)">反选</button>
+                                            共选择{{tweenedSelectPlateCount}}个板块，{{tweenedSelectStockCount}}只股票
+                                        </small>
+                                        
+                                    </h2>
+                                    <div class="clearfix"></div>
+                                </div>
+                                <div class="x_content">
+                                    <div class="row fontawesome-icon-list" style="padding: 0px 10px; max-height: 212px; overflow-y: auto;">
+                                        <div class="fa-hover col-md-2 col-sm-2 col-xs-2" style="padding: 0px;" v-for="(item,index) in plate.list" v-on:click="selectPlate(item,1)">
+                                            <div style="margin:3px;padding:5px;" v-bind:class="{ active: item.isSelect }">
+                                                {{item.name}}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 col-sm-12 col-xs-12">
+                            <div class="x_panel" id="policyParameter">
+                                <div class="x_title">
+                                    <h2>
+                                        参数
+                                    </h2>
+                                    <div class="clearfix"></div>
+                                </div>
+                                <div class="x_content">
+                                    <div class="form-horizontal form-label-left">
+                                        <div class="form-group">
+                                            <label class="control-label col-md-1 col-sm-1 col-xs-12">复权方式</label>
+                                            <div class="col-md-11 col-sm-11 col-xs-12">
+
+                                                <div class="col-md-2 col-sm-2 col-xs-2">
+                                                    <div class="radio">
+                                                        <label>
+                                                            <input type="radio" value="0" v-model="right" /> 不复权
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2 col-sm-2 col-xs-2">
+                                                    <div class="radio">
+                                                        <label>
+                                                            <input type="radio" value="1" v-model="right" /> 前复权
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2 col-sm-2 col-xs-2">
+                                                    <div class="radio">
+                                                        <label>
+                                                            <input type="radio" value="2" v-model="right" /> 后复权
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="control-label col-md-1 col-sm-1 col-xs-12">日线计算天数</label>
+                                            <div class="col-md-11 col-sm-11 col-xs-12">
+                                                <div class="col-md-2 col-sm-2 col-xs-2">
+                                                    <div class="radio">
+                                                        <label>
+                                                            <input type="radio" value="30" v-model="dateCount_radio" /> 最近1个月
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2 col-sm-2 col-xs-2">
+                                                    <div class="radio">
+                                                        <label>
+                                                            <input type="radio" value="90" v-model="dateCount_radio" /> 最近3个月
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2 col-sm-2 col-xs-2">
+                                                    <div class="radio">
+                                                        <label>
+                                                            <input type="radio" value="180" v-model="dateCount_radio" /> 最近半年
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2 col-sm-2 col-xs-2">
+                                                    <div class="radio">
+                                                        <label>
+                                                            <input type="radio" value="365" v-model="dateCount_radio" /> 最近1年
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2 col-sm-2 col-xs-2">
+                                                    <div class="radio">
+                                                        <label>
+                                                            <input type="radio" value="1095" v-model="dateCount_radio" /> 最近3年
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2 col-sm-2 col-xs-2">
+                                                    <div class="radio">
+                                                        <label>
+                                                            <input type="radio" value="" v-model="dateCount_radio" /> 自定义
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group" v-show="dateCount_radio == ''">
+                                            <label class="control-label col-md-1 col-sm-1 col-xs-12"></label>
+                                            <div class="col-md-11 col-sm-11 col-xs-12">
+                                                <input type="text" class="form-control" placeholder="日线计算天数" v-model="dateCount_txt" v-focus />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary pull-right" onclick="Root.top.executePolicy()">执&nbsp;&nbsp;&nbsp;&nbsp;行</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="content/js/jquery.min.js"></script>
+    
+    <script type="text/javascript" src="../jscommon/umychart.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
+    
+    
+    <script type="text/javascript" src="plugins/code_color/codemirror.js"></script>
+    <script type="text/javascript" src="plugins/code_color/javascript.js"></script>
+    
+    <script type="text/javascript" src="plugins/layer3.0/layer.js"></script>
+    <script type="text/javascript" src="content/js/vue.js"></script>
+    <script type="text/javascript" src="content/js/vue-resource.js"></script>
+    <script type="text/javascript" src="content/js/Tween.js"></script>
+    <script type="text/javascript" src="content/js/phone12.tools.js"></script>
+    
+    <script src="plugins/bootstrap/bootstrap.min.js"></script>
+    <script>
+        var jsChart;
+        JS_EXECUTE_DEBUG_LOG=false;
+    
+        function getURLParams(name) 
+        {
+        	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        	var r = window.location.search.substr(1).match(reg);
+        	if (r != null) return decodeURI(r[2]);
+        	return null;
+        }
+    
+        $(window).resize(resizeCanvas);
+    
+        function resizeCanvas()
+        {
+            var height = $(window).height() - 300; //300高度给指标编辑器
+            var width = $(window).width();
+            var divKline=document.getElementById('kline');
+            //divKline.style.width=width+'px';
+            divKline.style.width = width * 0.8 + "px";
+            divKline.style.height = height + 'px';
+            divKline.JSChart.OnSize();
+    
+            $("#policySuccess").width(width - parseInt(divKline.style.width) - 15);
+            $("#policySuccess .content").css("height", height - 35);
+        }
+        
+        $(function () {
+            var symbol = getURLParams('symbol');
+            if (symbol == null) symbol = '600984.sh';
+    
+            var aryIndex = new Array();
+    
+            var index = getURLParams('index');        //指标1
+            if (index == null) index = 'MA';
+            aryIndex.push({ "Index": index, "Modify": true, "Change": true });
+    
+            /*
+                var index2=getURLParams('index2');      //指标2
+                //if (index2==null) index2='指数热度';
+                if (index2==null) index2='能图-资金分析';
+            */
+            let code = 'VAR1:MA(CLOSE,25),COLORYELLOW;VAR2:MA(CLOSE,40);'
+            let code2 = 'MTR:=EXPMEMA(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(REF(CLOSE,1)-LOW)),N);\n\
+        HD :=HIGH-REF(HIGH,1);\n\
+        LD :=REF(LOW,1)-LOW;\n\
+        DMP:=EXPMEMA(IF(HD>0&&HD>LD,HD,0),N);\n\
+        DMM:=EXPMEMA(IF(LD>0&&LD>HD,LD,0),N);\n\
+        PDI: DMP*100/MTR;\n\
+        MDI: DMM*100/MTR,COLORCYAN;\n\
+        ADX: EXPMEMA(ABS(MDI-PDI)/(MDI+PDI)*100,MM),COLORFFB5C5;\n\
+        ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
+    
+            var jsIndexData = new JSIndexScript();
+            let testIndex = jsIndexData.Get('UOS');
+            console.log(testIndex);
+    
+            //指标3
+            let scriptIndex = { Name: testIndex.Name, Script: testIndex.Script, Args: testIndex.Args, "Modify": true, "Change": true };
+            aryIndex.push(scriptIndex);
+    
+            // 创建股票K线图
+            jsChart = JSChart.Init(document.getElementById('kline'));
+    
+            var option =
+                {
+                    Type: '历史K线图',
+                    Windows: aryIndex, //窗口指标
+                    Symbol: symbol,
+                    IsAutoUpate: true,       //是自动更新数据
+    
+                    Tool:                   //工具条
+                        [
+                            { Name: "周期" },
+                            { Name: "复权" }
+                        ],
+    
+                    IsShowRightMenu: true,           //右键菜单
+                    //IsShowCorssCursorInfo: false,    //是否显示十字光标的刻度信息
+    
+                    ScriptError: ComplierError,
+    
+                    KLine:
+                        {
+                            DragMode: 1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                            Right: 1,                    //复权 0 不复权 1 前复权 2 后复权
+                            Period: 0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                            MaxReqeustDataCount: 1000,   //数据个数
+                            PageSize: 50,               //一屏显示多少数据
+                            IndexTreeApiUrl: "https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
+                            //Info:["业绩预告","公告","互动易","调研","大宗交易"],       //信息地雷
+                            //Info:["业绩预告","公告"],          //信息地雷
+                            KLineDoubleClick: true,              //双击分钟走势图
+                            IsShowTooltip: true                 //是否显示K线提示信息
+                        },
+    
+                    KLineTitle: //标题设置
+                        {
+                            IsShowName: true,       //不显示股票名称
+                            IsShowSettingInfo: true //不显示周期/复权
+                        },
+    
+                    Border: //边框
+                        {
+                            Left: 50,    //左边间距
+                            Right: 1     //右边间距
+                        },
+    
+                    Frame:  //子框架设置
+                    [
+                        { SplitCount: 3, StringFormat: 1 },
+                        { SplitCount: 3, StringFormat: 1 }
+                    ]
+                }
+    
+            jsChart.SetOption(option);
+            //jsChart.LockIndex('飞龙四式',unlockIndex);
+    
+            resizeCanvas();
+    
+            Tools.init({
+                script: scriptIndex.Script,
+                indexName: scriptIndex.Name,
+                args: scriptIndex.Args,
+                symbol: option.Symbol
+            });
+        });
+        
+        function unlockIndex(indexName)
+        {
+            console.log(indexName);
+        }
+        
+        function ComplierError(error)
+        {
+            alert(error);
+            console.log('[ComplierError]', error);
+        }
+    </script>  
+</body>  
+</html>
