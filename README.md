@@ -1,13 +1,13 @@
 # 目录结果
-*--node.jccomplier  nodejs通达信脚本选股后台api模块. 使用restify webapi框架
-*--webhqchart 行情前端js代码模块
-*--wechathqchart 微信小程序行情前端js代码模块
-*
-*--webhqchart.demo 页面行情测试用例
-*   |--jscommon 行情前端js代码 是webhqchart的一个拷贝
-*   |--demo  测试用
-*
-*--小程序行情模块用例 小程序测试用例
+--node.jccomplier  nodejs通达信脚本选股后台api模块. 使用restify webapi框架 <br>
+--webhqchart 行情前端js代码模块 <br>
+--wechathqchart 微信小程序行情前端js代码模块 <br><br>
+
+--webhqchart.demo 页面行情测试用例 <br>
+   |--jscommon 行情前端js代码 是webhqchart的一个拷贝 <br>
+   |--demo  测试用 <br><br>
+
+--小程序行情模块用例 小程序测试用例<br>
 
 # HQChart 3.0
 * 分网页版本 及 微信小程序版本 <br>
