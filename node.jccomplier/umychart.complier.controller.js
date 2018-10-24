@@ -27,10 +27,13 @@ var JSComplier=require('./umychart.complier.node').JSCommonComplier.JSComplier;
 
 返回数据
 {
-    "ticket":1277,
-    "data":[{"date":20181023,"symbols":["600000.sh","000001.sz"]},{"date":20181022,"symbols":["600000.sh","000001.sz"]}],
-    "code":"VAR2:C+FINANCE(1);VAR3:=O;","error":[]
-}
+    "ticket":131,
+    "data":
+    [
+        {"date":20181022,"symbols":["000008.sz"],"values":[1]},
+        {"date":20181019,"symbols":["000008.sz"],"values":[1]}
+    ],
+    "code":"VAR2:EVERY(VOL>MA(REF(VOL,1),20)*1.5,3);","error":[]}
 */
 
 function JSComplierController(req,res,next)
@@ -225,6 +228,7 @@ JSComplierController.Post=function(req, res, next)
 //  script[{code:脚本,args:[]脚本参数 (可选)}]:   脚本列表
 //  datecount: 日线数据计算多少天 (可选)
 //  daycount： 分钟数据计算多少天 (可选)
+//  calccount:50 最后统计几天的数据 (可选) 默认1天
 //  period:  周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 (可选)
 //  right:   复权 0 不复权 1 前复权 2 后复权(可选)
 //  mergetype: 0 脚本都满足  1 有1个脚本满足
@@ -253,11 +257,12 @@ function JSCommonMultiComplier(req,res,next)
     this.DayCount=20;
     this.Period=0;
     this.Right=0;
+    this.CalculateCount=1;
 
     this.StockList;
     this.Script=[];
     this.StartTime=new Date();
-    this.MergeType=0;
+    this.MergeType=0; //0 脚本都满足  1 有1个脚本满足
 
     this.Result={};     //返回数据
     this.CacheData;
@@ -300,6 +305,7 @@ function JSCommonMultiComplier(req,res,next)
         if (postData.daycount) this.DayCount=postData.daycount;
         if (postData.period) this.Period=postData.period;
         if (postData.right) this.Right=postData.right;
+        if (postData.calccount) this.CalculateCount=postData.calccount;
 
         var self=this;
         this.CacheData=new Map();
@@ -314,8 +320,8 @@ function JSCommonMultiComplier(req,res,next)
                 MaxReqeustDataCount:this.DateCount, MaxRequestMinuteDayCount:this.DayCount,
                 Right:this.Right, Period:this.Period,
                 Arguments:this.Script[scriptID].Arguments,
-                CallbackParam: { Symbol:symbol, ScriptID:scriptID, Result:true, Value:[] },   //脚本索引
-                Callback:function(data,param)                          //数据计算完成回调
+                CallbackParam: { Symbol:symbol, ScriptID:scriptID, Cache:null },   //脚本索引, 数据缓存
+                Callback:function(data,param)                                    //数据计算完成回调
                 { 
                     self.RecvExecuteData(data,param);
                 },
@@ -333,38 +339,34 @@ function JSCommonMultiComplier(req,res,next)
 
     this.RecvExecuteData=function(data,param)
     {
-        var analysisData=this.AnalysisExecuteData(data);
-        var result=false;
-        if (analysisData)
-        {
-            result=true;
-            analysisData.ID=param.ScriptID;
-            param.Value.push(analysisData);
-        }
+        var analysis=this.AnalysisExecuteData(data,param);
 
-        if (this.MergeType===0) param.Result=(result||param.Result);
-        else param.Result=(result&&param.Result);
-
-        if (!param.Result)
+        if (!analysis && this.MergeType===0)
         {
             this.CacheData.set(param.Symbol,null);
-            if (this.CacheData.size==this.StockList.length) //等所有股票计算完了 返回数据 result
-            {
-                this.SendResult();
-            }
-            return;
         }
-
-        if (param.ScriptID>=this.Script.length-1)   //单股票 多脚本执行完
+        else if (param.ScriptID>=this.Script.length-1)  //脚本都跑完了
         {
-            this.CacheData.set(param.Symbol,param.Value);
-            if (this.CacheData.size==this.StockList.length) //等所有股票计算完了 返回数据 result
-            {
-                this.SendResult();
-            }
+            this.CacheData.set(param.Symbol,param.Cache);
+        }
+        else
+        {
+            this.RunNextScript(param);
             return;
         }
 
+        if (this.CacheData.size==this.StockList.length) //等所有股票计算完了 返回数据 result
+        {
+            this.SendResult();
+            return;
+        }
+            
+        next();
+    }
+
+    //执行下一个脚本
+    this.RunNextScript=function(param)  
+    {
         var self=this;
         param.ScriptID+=1;
 
@@ -398,44 +400,124 @@ function JSCommonMultiComplier(req,res,next)
     }
 
     //分析单个脚本执行结果
-    this.AnalysisExecuteData=function(data)
+    this.AnalysisExecuteData=function(data, param)
     {
         if (!data || !data.length) return null;
         
         var outData=data[0];
-        var value=outData.Data[outData.Data.length-1];  //选中最后一天数据结果>0的数据
-        if (!value) return null;
+        if (!outData || !outData.Data.length) return null;
 
-        var date=null;
+        var klineData=null;
         for(let i in data)
         {
             var item=data[i];
-            if (item.Type===100 && item.Name==='TradeDate' && item.Data.length>outData.Data.length-1)
+            if (item.Type===100 && item.Name==='TradeDate')
             {
-                date=item.Data[outData.Data.length-1];
+                klineData=item;
                 break;
             }
         }
-        
-        return {Value:value, Date:date};
+        if (!klineData || !klineData.Data.length) return null;
+        if (outData.Data.length!=klineData.Data.length) return null;
+
+        var analysisData=[];
+        for(let i=outData.Data.length-1, j=0; i>0 && j<this.CalculateCount; ++j, --i)
+        {
+            var value=outData.Data[i];
+            if (!value) continue;
+            var date=klineData.Data[i];
+            if (!date) continue;
+
+            analysisData.push({Date:date,Value:value});
+        }
+
+        if (!param.Cache)
+        {
+            param.Cache=new Map();
+            for(let i in analysisData)
+            {
+                var item=analysisData[i];
+                param.Cache.set(item.Date, { Date:item.Date, ScriptID:[param.ScriptID] } );
+            }
+        }
+        else
+        {
+            if (this.mergetype==0)
+            {
+                var mergeData=new Map();    //合并数据
+                for(let i in analysisData)  //取交集
+                {
+                    var item=analysisData[i];
+                    if (param.Cache.has(item.Date))
+                    {
+                        var value=param.Cache.get(item.Date);
+                        value.Script.push(param.ScriptID);
+                        mergeData.set(item.Date, value);
+                    }
+                }
+                param.Cache=mergeData;
+            }
+            else
+            {
+                for(let i in analysisData)  //取并集
+                {
+                    var item=analysisData[i];
+                    if (param.Cache.has(item.Date))
+                    {
+                        var value=param.Cache.get(item.Date);
+                        value.ScriptID.push(param.ScriptID);
+                    }
+                    else
+                    {
+                        param.Cache.set(item.Date, { Date:item.Date, ScriptID:[param.ScriptID] });
+                    }
+                }
+            }
+
+        }
+
+        return param.Cache.size;
     }
 
     this.SendResult=function()
     {
-        this.Result.Data=[];
+        var dateMap=new Map(); // Key=日期  [Value={Symbol:, ScriptID:[], Value:[]}
         for(let item of this.CacheData)
         {
             var stockData=item[1];
             if (!stockData) continue;
 
-            this.Result.Data.push({Symbol:item[0],Data:stockData});
+            for(let dateitem of stockData)
+            {
+                if (dateMap.has(dateitem[0]))
+                {
+                    var temp=dateMap.get(dateitem[0]);
+                    temp.push({Symbol:item[0], ScriptID:dateitem[1].ScriptID});
+                }
+                else
+                {
+                    dateMap.set(dateitem[0], [{Symbol:item[0], ScriptID:dateitem[1].ScriptID}]);
+                }
+            }
+        }
+
+        var resultData=[];
+        for(let item of dateMap)
+        {
+            var symbols=[];
+            for(let i in item[1])
+            {
+                symbols.push(item[1][i].Symbol);
+            }
+
+            resultData.push({date:item[0], symbols:symbols});
         }
         
         var nowDate=new Date();
         this.Result.Ticket=nowDate.getTime() - this.StartTime.getTime();
 
         //字段全部小写
-        var result={ ticket:this.Result.Ticket, data:this.Result.Data };
+        var result={ ticket:this.Result.Ticket, data:resultData };
         this.Response.header("Access-Control-Allow-Origin", "*");
         this.Response.send(result);
     }
