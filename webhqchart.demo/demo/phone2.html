@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">  
 <head>  
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
-<title>手机H5行情</title>  
+<title>页面行情(走势图)</title>  
     <link rel="stylesheet" href="content/css/tools.css" />
     <link rel="stylesheet" href="content/font/iconfont.css" />
 </head>  
@@ -11,6 +11,8 @@
     <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
 
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
     <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
     <script>
         function getURLParams(name) 
@@ -40,9 +42,10 @@
             if (symbol==null) symbol='600000.sh';
         
             var index=getURLParams('index');        //指标3
+            if (index==null) index='MACD';
             var aryIndex=new Array();
             if (index) aryIndex.push({"Index":index});
-        
+
             // 创建股票K线图
             var jsChart=JSChart.Init(document.getElementById('kline'));
         
@@ -53,19 +56,19 @@
                     Symbol:symbol,          //股票代码
                     IsAutoUpate:true,       //是自动更新数据
         
-                    IsShowRightMenu:true,   //右键菜单
-                    IsShowCorssCursorInfo:false,    //是否显示十字光标的刻度信息
+                    IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
         
                     Border: //边框
-                        {
-                            Left:45,    //左边间距
-                            Right:50,     //右边间距
-                            Top:20
-                        },
+                    {
+                        Left:45,    //左边间距
+                        Right:50,     //右边间距
+                        Top:20
+                    },
                     Frame:  //子框架设置
                         [
                             {SplitCount:5,StringFormat:1},
-                            {SplitCount:3,StringFormat:1}
+                            {SplitCount:3,StringFormat:1},
+                            {SplitCount:3,StringFormat:0},
                         ]
                 }
         
