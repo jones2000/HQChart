@@ -365,6 +365,103 @@ function JSChart(divElement)
         return chart;
     }
 
+    this.CreateKLineTrainChartContainer=function(option)
+    {
+        var chart=new KLineTrainChartContainer(this.CanvasElement);
+
+        if (option.ScriptError) chart.ScriptErrorCallback=option.ScriptError;
+
+        if (option.KLine)   //k线图的属性设置
+        {
+            if (option.KLine.Right>=0) chart.Right=option.KLine.Right;
+            if (option.KLine.Period>=0) chart.Period=option.KLine.Period;
+            if (option.KLine.MaxReqeustDataCount>0) chart.MaxReqeustDataCount=option.KLine.MaxReqeustDataCount;
+            if (option.KLine.Info && option.KLine.Info.length>0) chart.SetKLineInfo(option.KLine.Info,false);
+            if (option.KLine.PageSize>0)  chart.PageSize=option.KLine.PageSize;
+            if (option.KLine.IsShowTooltip==false) chart.IsShowTooltip=false;
+            if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
+            if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
+            
+        }
+
+        if (option.Train)
+        {
+            if (option.Train.DataCount) chart.TrainDataCount=option.Train.DataCount;
+            if (option.Train.Callback) chart.TrainCallback=option.Train.Callback;
+        }
+
+        if (!option.Windows || option.Windows.length<=0) return null;
+
+        //创建子窗口
+        chart.Create(option.Windows.length);
+
+        if (option.Border)
+        {
+            if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left=option.Border.Left;
+            if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right=option.Border.Right;
+            if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
+            if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
+        }
+
+        if (option.IsShowCorssCursorInfo==false)    //取消显示十字光标刻度信息
+        {
+            chart.ChartCorssCursor.IsShowText=option.IsShowCorssCursorInfo;
+        }
+
+        if (option.Frame)
+        {
+            for(var i in option.Frame)
+            {
+                var item=option.Frame[i];
+                if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
+                if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
+            }
+        }
+
+        //股票名称 日期 周期都不显示
+        chart.TitlePaint[0].IsShowName=false;
+        chart.TitlePaint[0].IsShowSettingInfo=false;
+        chart.TitlePaint[0].IsShowDateTime=false;
+
+        //创建子窗口的指标
+        let scriptData = new JSIndexScript();
+        for(var i in option.Windows)
+        {
+            var item=option.Windows[i];
+            if (item.Script)
+            {
+                chart.WindowIndex[i]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
+            }
+            else
+            {
+                let indexItem=JSIndexMap.Get(item.Index);
+                if (indexItem)
+                {
+                    chart.WindowIndex[i]=indexItem.Create();
+                    chart.CreateWindowIndex(i);
+                }
+                else
+                {
+                    let indexInfo = scriptData.Get(item.Index);
+                    if (!indexInfo) continue;
+
+                    if (item.Lock) indexInfo.Lock=item.Lock;
+                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                }
+
+            }
+
+            if (item.Modify!=null)
+                chart.Frame.SubFrame[i].Frame.ModifyIndex=item.Modify;
+            if (item.Change!=null)
+                chart.Frame.SubFrame[i].Frame.ChangeIndex=item.Change;
+
+            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+        }
+
+        return chart;
+    }
+
     //根据option内容绘制图形
     this.SetOption=function(option)
     {
@@ -384,6 +481,9 @@ function JSChart(divElement)
                 break;
             case "历史分钟走势图":
                 chart=this.CreateHistoryMinuteChartContainer(option);
+                break;
+            case 'K线训练':
+                chart=this.CreateKLineTrainChartContainer(option);
                 break;
             case "简单图形":
                 return this.CreateSimpleChart(option);
@@ -603,6 +703,7 @@ function JSChartContainer(uielement)
     var _self = this;
     this.Frame;                                     //框架画法
     this.ChartPaint=new Array();                    //图形画法
+    this.ChartPaintEx=[];                           //图形扩展画法
     this.ChartInfo=new Array();                     //K线上信息地雷
     this.ExtendChartPaint=new Array();              //扩展画法
     this.TitlePaint=new Array();                    //标题画法
@@ -1089,6 +1190,11 @@ function JSChartContainer(uielement)
                 item.Draw();
         }
 
+        for(var i in this.ChartPaintEx)
+        {
+            var item=this.ChartPaintEx[i];
+            item.Draw();
+        }
 
         //叠加股票
         for(var i in this.OverlayChartPaint)
@@ -6928,6 +7034,69 @@ function ChartLock()
     }
 }
 
+//买卖盘
+function ChartBuySell()
+{
+    this.newMethod=ChartSingleText;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.LastDataIcon={Color:'rgb(0,0,205)',Text:'↓'};
+    this.BuyIcon={Color:'rgb(0,0,205)',Text:'B'};
+    this.SellIcon={Color:'rgb(0,0,205)',Text:'S'};
+    this.BuySellData=new Map();   //{Date:日期, Op:买/卖 0=buy 1=sell}
+    this.LastData={}; //当前屏最后一个数据
+
+    this.Draw=function()
+    {
+        if (!this.Data || !this.Data.Data) return;
+
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var chartright=this.ChartBorder.GetRight();
+        if (isHScreen===true) chartright=this.ChartBorder.GetBottom();
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=this.Data.Data[i];
+            if (value==null) continue;
+            if (x>chartright) break;
+
+            this.LastData={ID:j,Data:value};
+
+            if (!this.BuySellData.has(value.Date)) continue;
+            var bsItem=this.BuySellData.get(value.Date);
+            var x=this.ChartFrame.GetXFromIndex(j);
+            var yHigh=this.ChartFrame.GetYFromData(value.High);
+            var yLow=this.ChartFrame.GetYFromData(value.Low);
+            if (bsItem.Op==0)   //买 标识在最低价上
+            {
+                this.Canvas.textAlign='center';
+                this.Canvas.textBaseline='top';
+                this.Canvas.fillStyle=this.BuyIcon.Color;
+                this.DrawText(this.BuyIcon.Text,x,yLow,isHScreen);
+            }
+            else    //买 标识在最高价上
+            {
+                this.Canvas.textAlign='center';
+                this.Canvas.textBaseline='bottom';
+                this.Canvas.fillStyle=this.SellIcon.Color;
+                this.DrawText(this.SellIcon.Text,x,yHigh,isHScreen);
+            }
+        }
+
+        var x=this.ChartFrame.GetXFromIndex(this.LastData.ID);
+        var yHigh=this.ChartFrame.GetYFromData(this.LastData.Data.High);
+        this.Canvas.textAlign='center';
+        this.Canvas.textBaseline='bottom';
+        this.Canvas.fillStyle=this.LastDataIcon.Color;
+        this.Canvas.font=this.TextFont;
+        this.DrawText(this.LastDataIcon.Text,x,yHigh,isHScreen);
+    }
+}
+
 /*
     饼图
 */
@@ -8312,6 +8481,7 @@ function DynamicKLineTitlePainting()
 
     this.IsShowName=true;           //是否显示股票名称
     this.IsShowSettingInfo=true;    //是否显示设置信息(周期 复权)
+    this.IsShowDateTime=true;       //是否显示日期
 
     this.Draw=function()
     {
@@ -8366,12 +8536,15 @@ function DynamicKLineTitlePainting()
             left+=textWidth;
         }
 
-        this.Canvas.fillStyle=this.UnchagneColor;
-        var text=IFrameSplitOperator.FormatDateString(item.Date);
-        var textWidth=this.Canvas.measureText(text).width+2;    //后空2个像素
-        if (left+textWidth>right) return;
-        this.Canvas.fillText(text,left,bottom,textWidth);
-        left+=textWidth;
+        if (this.IsShowDateTime)    //是否显示日期
+        {
+            this.Canvas.fillStyle=this.UnchagneColor;
+            var text=IFrameSplitOperator.FormatDateString(item.Date);
+            var textWidth=this.Canvas.measureText(text).width+2;    //后空2个像素
+            if (left+textWidth>right) return;
+            this.Canvas.fillText(text,left,bottom,textWidth);
+            left+=textWidth;
+        }
 
         if(item.Time!=null && !isNaN(item.Time) && item.Time>0)
         {
@@ -12902,6 +13075,182 @@ function CustomKLineChartContainer(uielement)
         
     }
 
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//  K线训练
+//
+function KLineTrainChartContainer(uielement)
+{
+    this.newMethod=KLineChartContainer;   //派生
+    this.newMethod(uielement);
+    delete this.newMethod;
+
+    this.BuySellPaint;          //买卖点画法
+    this.TrainDataCount=300;    //训练数据个数
+    this.AutoRunTimer=null;     //K线自动前进定时器
+    this.BuySellData=[];        //模拟买卖数据 {Buy:{Price:价格,Date:日期} , Sell:{Price:价格,Date:日期} 
+    this.TrainDataIndex;        //当前训练的数据索引
+    this.TrainCallback;         //训练回调 (K线每前进一次就调用一次)
+    this.DragMode=0;
+
+    //TODO: 鼠标键盘消息全部要禁掉
+    this.OnKeyDown=function(e)
+    {
+        //不让滚动条滚动
+        if(e.preventDefault) e.preventDefault();    
+        else e.returnValue = false;
+    }
+
+    this.CreateBuySellPaint=function()  //在主窗口建立以后 创建买卖点
+    {
+        var chart=new ChartBuySell();
+        chart.Canvas=this.Canvas;
+        chart.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
+        chart.ChartFrame=this.Frame.SubFrame[0].Frame;
+        chart.Name="KLine-Train-BuySell";
+        this.ChartPaintEx[0]=chart;
+    }
+
+    this.BindMainData=function(hisData,showCount)   //数据到达绑定主图K线数据
+    {
+        this.ChartPaint[0].Data=hisData;
+        for(var i in this.Frame.SubFrame)
+        {
+            var item =this.Frame.SubFrame[i].Frame;
+            item.XPointCount=showCount;
+            item.Data=this.ChartPaint[0].Data;
+        }
+
+        this.TitlePaint[0].Data=this.ChartPaint[0].Data;                    //动态标题
+        this.TitlePaint[0].Symbol=this.Symbol;
+        this.TitlePaint[0].Name=this.Name;
+
+        this.ChartCorssCursor.StringFormatX.Data=this.ChartPaint[0].Data;   //十字光标
+        this.Frame.Data=this.ChartPaint[0].Data;
+
+        if (!this.ChartPaintEx[0]) this.CreateBuySellPaint();
+        this.ChartPaintEx[0].Data=this.ChartPaint[0].Data;
+
+        this.OverlayChartPaint[0].MainData=this.ChartPaint[0].Data;         //K线叠加
+
+        var dataOffset=hisData.Data.length-showCount-this.TrainDataCount-20;   //随机选一段数据进行训练
+        if (dataOffset<0) dataOffset=0;
+        this.ChartPaint[0].Data.DataOffset=dataOffset;
+
+        this.CursorIndex=showCount;
+        if (this.CursorIndex+dataOffset>=hisData.Data.length) this.CursorIndex=dataOffset;
+
+        this.TrainDataIndex=this.CursorIndex;
+    }
+
+    this.Run=function()
+    {
+        if (this.AutoRunTimer) return;
+        if (this.TrainDataCount<=0) return;
+
+        var self=this;
+        this.AutoRunTimer=setInterval(function()
+        {
+            if (!self.MoveNextKLineData()) clearInterval(self.AutoRunTimer);
+        }, 1000);
+    }
+
+    this.MoveNextKLineData=function()
+    {
+        if (this.TrainDataCount<=0) return false;
+
+        var xPointcount=0;
+        if (this.Frame.XPointCount) xPointcount=this.Frame.XPointCount; //数据个数
+        if (this.TrainDataIndex+1>=xPointcount)
+        {
+            this.CursorIndex=this.TrainDataIndex;
+            if (!this.DataMoveRight()) return false;
+            this.UpdataDataoffset();
+            this.UpdatePointByCursorIndex();
+            this.UpdateFrameMaxMin();
+            this.Draw();
+            ++this.TrainDataIndex;
+            --this.TrainDataCount;
+
+            if (this.TrainDataCount<=0) 
+            {
+                this.FinishTrainData();
+                this.UpdateTrainUICallback();
+                return false;
+            }
+
+            this.UpdateTrainUICallback();
+            return true;
+        }
+
+        return false;
+    }
+
+    this.UpdateTrainUICallback=function()
+    {
+        if (this.TrainCallback) this.TrainCallback(this);
+    }
+
+    this.FinishTrainData=function()
+    {
+        var buySellPaint=this.ChartPaintEx[0];
+        if (buySellPaint && this.BuySellData.length)    //取最后1条数据 看是否卖了
+        {
+            var lastData=buySellPaint.LastData.Data;
+            var item=this.BuySellData[this.BuySellData.length-1];
+            if (!item.Sell)
+            {
+                item.Sell={Price:lastData.Close,Date:lastData.Date};
+                buySellPaint.BuySellData.set(lastData.Date,{Op:1});
+            }
+        } 
+    }
+
+    this.GetLastBuySellData=function()   //取最后1条数据
+    {
+        var buySellPaint=this.ChartPaintEx[0];
+        if (!buySellPaint) return null;
+
+        if (this.BuySellData.length)   
+        {
+            var item=this.BuySellData[this.BuySellData.length-1];
+            return item;
+        } 
+
+        return null;
+    }
+
+    this.GetOperator=function()     //获取当前是卖/买
+    {
+        var buySellData=this.GetLastBuySellData();
+        if (buySellData && buySellData.Buy && !buySellData.Sell) return 1;
+
+        return 0;
+    }
+
+    this.Stop=function()
+    {
+        clearInterval(this.AutoRunTimer)
+    }
+
+    this.BuyOrSell=function()   //模拟买卖
+    {
+        var buySellPaint=this.ChartPaintEx[0];
+        var lastData=buySellPaint.LastData.Data;
+        var buySellData=this.GetLastBuySellData();
+        if (buySellData && buySellData.Buy && !buySellData.Sell)
+        {
+            item.Sell={Price:lastData.Close,Date:lastData.Date};
+            buySellPaint.BuySellData.set(lastData.Date,{Op:1});
+            this.MoveNextKLineData();
+            return;
+        }
+        
+        this.BuySellData.push({ Buy:{Price:lastData.Close,Date:lastData.Date}, Sell:null });
+        buySellPaint.BuySellData.set(lastData.Date,{Op:0});
+        this.MoveNextKLineData();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
