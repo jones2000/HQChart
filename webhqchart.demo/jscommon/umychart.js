@@ -219,15 +219,32 @@ function JSChart(divElement)
         }
 
         //创建子窗口的指标
+        let scriptData = new JSIndexScript();
         for(var i in option.Windows)
         {
             var item=option.Windows[i];
-            var indexItem=JSIndexMap.Get(item.Index);
-            if (!indexItem) return null;
+            if (item.Script)
+            {
+                chart.WindowIndex[i]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
+            }
+            else
+            {
+                let indexItem=JSIndexMap.Get(item.Index);
+                if (indexItem)
+                {
+                    chart.WindowIndex[i]=indexItem.Create();
+                    chart.CreateWindowIndex(i);
+                }
+                else
+                {
+                    let indexInfo = scriptData.Get(item.Index);
+                    if (!indexInfo) continue;
 
-            chart.WindowIndex[i]=indexItem.Create();
-            chart.CreateWindowIndex(i);
-
+                    if (item.Lock) indexInfo.Lock=item.Lock;
+                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                }
+            }
+           
             if (item.Modify!=null)
                 chart.Frame.SubFrame[i].Frame.ModifyIndex=item.Modify;
             if (item.Change!=null)
