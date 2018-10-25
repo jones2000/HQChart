@@ -10134,9 +10134,52 @@ function JSChartResource()
     ];
 
     //自定义风格
-    this.SetStyle=function(option)
+    this.SetStyle=function(style)
     {
-        //if (option.UpTextColor) this.UpTextColor=option.UpTextColor;
+        if (style.TooltipBGColor) this.TooltipBGColor = style.TooltipBGColor;
+        if (style.TooltipAlpha) this.TooltipAlpha = style.TooltipAlpha;
+        if (style.SelectRectBGColor) this.SelectRectBGColor = style.SelectRectBGColor;
+        if (style.UpBarColor) this.UpBarColor = style.UpBarColor;
+        if (style.DownBarColor) this.DownBarColor = style.DownBarColor;
+        if (style.UnchagneBarColor) this.UnchagneBarColor = style.UnchagneBarColor;
+        if (style.Minute) 
+        {
+            if (style.Minute.VolBarColor) this.Minute.VolBarColor = style.Minute.VolBarColor;
+            if (style.Minute.PriceColor) this.Minute.PriceColor = style.Minute.PriceColor;
+            if (style.Minute.AvPriceColor) this.Minute.AvPriceColor = style.Minute.AvPriceColor;
+        }
+
+        if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
+        if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;
+        if (style.DynamicTitleFont) this.DynamicTitleFont = style.DynamicTitleFont;
+        if (style.UpTextColor) this.UpTextColor = style.UpTextColor;
+        if (style.DownTextColor) this.DownTextColor = style.DownTextColor;
+        if (style.UnchagneTextColor) this.UnchagneTextColor = style.UnchagneTextColor;
+        if (style.CloseLineColor) this.CloseLineColor = style.CloseLineColor;
+        if (style.FrameBorderPen) this.FrameBorderPen = style.FrameBorderPen;
+        if (style.FrameSplitPen) this.FrameSplitPen = style.FrameSplitPen;
+        if (style.FrameSplitTextColor) this.FrameSplitTextColor = style.FrameSplitTextColor;
+        if (style.FrameSplitTextFont) this.FrameSplitTextFont = style.FrameSplitTextFont;
+        if (style.FrameTitleBGColor) this.FrameTitleBGColor = style.FrameTitleBGColor;
+        if (style.CorssCursorBGColor) this.CorssCursorBGColor = style.CorssCursorBGColor;
+        if (style.CorssCursorTextColor) this.CorssCursorTextColor = style.CorssCursorTextColor;
+        if (style.CorssCursorTextFont) this.CorssCursorTextFont = style.CorssCursorTextFont;
+        if (style.CorssCursorPenColor) this.CorssCursorPenColor = style.CorssCursorPenColor;
+        if (style.KLine) this.KLine = style.KLine;
+
+        if (style.Index) 
+        {
+            if (style.Index.LineColor) this.Index.LineColor = style.Index.LineColor;
+            if (style.Index.NotSupport) this.Index.NotSupport = style.Index.NotSupport;
+        }
+        
+        if (style.ColorArray) this.ColorArray = style.ColorArray;
+
+        if (style.DrawPicture)
+        {
+            this.DrawPicture.LineColor = style.DrawPicture.LineColor;
+            this.DrawPicture.PointColor = style.DrawPicture.PointColor;
+        }
     }
 }
 

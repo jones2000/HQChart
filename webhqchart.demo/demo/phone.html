@@ -13,6 +13,8 @@
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.style.js"></script>
+    
     <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
     <script>
         function getURLParams(name) 
@@ -55,6 +57,11 @@
             aryIndex.push({"Index":index,"Modify":false,"Change":false});
             aryIndex.push({"Index":index2,"Modify":false,"Change":false});
             if (index3) aryIndex.push({"Index":index3,"Modify":false,"Change":false});
+
+            //黑色风格设置, 默认是白色风格
+            var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID);
+            JSChart.SetStyle(blackStyle);
+            document.getElementById('kline').style.backgroundColor=blackStyle.BGColor;
         
             // 创建股票K线图
             var jsChart=JSChart.Init(document.getElementById('kline'));
