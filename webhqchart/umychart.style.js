@@ -13,9 +13,10 @@ var BLACK_STYLE=
   SelectRectBGColor: "rgba(1,130,212,0.06)", //背景色
   //  SelectRectAlpha: 0.06;                  //透明度
 
-  UpBarColor: "rgb(238,21,21)",
-  DownBarColor: "rgb(25,158,0)",
-  UnchagneBarColor: "rgb(0,0,0)",
+  //K线颜色
+  UpBarColor: "rgb(238,21,21)",   //上涨
+  DownBarColor: "rgb(25,158,0)",  //下跌
+  UnchagneBarColor: "rgb(228,228,228)", //平盘
 
   Minute: 
   {
