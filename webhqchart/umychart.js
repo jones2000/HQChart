@@ -13154,6 +13154,8 @@ function KLineTrainChartContainer(uielement)
     this.TrainCallback;         //训练回调 (K线每前进一次就调用一次)
     this.DragMode=0;
 
+    this.TrainStartEnd={};
+
     //TODO: 鼠标键盘消息全部要禁掉
     this.OnKeyDown=function(e)
     {
@@ -13202,6 +13204,8 @@ function KLineTrainChartContainer(uielement)
         if (this.CursorIndex+dataOffset>=hisData.Data.length) this.CursorIndex=dataOffset;
 
         this.TrainDataIndex=this.CursorIndex;
+
+        this.TrainStartEnd.Start=hisData.Data[this.TrainDataIndex+dataOffset-1];
     }
 
     this.Run=function()
@@ -13249,6 +13253,10 @@ function KLineTrainChartContainer(uielement)
 
     this.UpdateTrainUICallback=function()
     {
+        var buySellPaint=this.ChartPaintEx[0];
+        var lastData=buySellPaint.LastData.Data;
+        this.TrainStartEnd.End=lastData;
+
         if (this.TrainCallback) this.TrainCallback(this);
     }
 
@@ -13291,7 +13299,8 @@ function KLineTrainChartContainer(uielement)
 
     this.Stop=function()
     {
-        clearInterval(this.AutoRunTimer)
+        if (this.AutoRunTimer!=null) clearInterval(this.AutoRunTimer);
+        this.AutoRunTimer=null;
     }
 
     this.BuyOrSell=function()   //模拟买卖
@@ -13301,7 +13310,7 @@ function KLineTrainChartContainer(uielement)
         var buySellData=this.GetLastBuySellData();
         if (buySellData && buySellData.Buy && !buySellData.Sell)
         {
-            item.Sell={Price:lastData.Close,Date:lastData.Date};
+            buySellData.Sell={Price:lastData.Close,Date:lastData.Date};
             buySellPaint.BuySellData.set(lastData.Date,{Op:1});
             this.MoveNextKLineData();
             return;

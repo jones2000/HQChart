@@ -6938,6 +6938,7 @@ JSComplier.SetDomain = function (domain, cacheDomain)
 }
 
 
+
 /* 测试例子
 var code1='VARHIGH:IF(VAR1<=REF(HH,-1),REF(H,BARSLAST(VAR1>=REF(HH,1))),DRAWNULL),COLORYELLOW;';
 var code2='VAR1=((SMA(MAX((CLOSE - LC),0),3,1) / SMA(ABS((CLOSE - LC)),3,1)) * 100);';

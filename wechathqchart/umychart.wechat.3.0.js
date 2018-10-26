@@ -54,6 +54,7 @@ function JSChart(element) {
       if (option.KLine.Period >= 0) chart.Period = option.KLine.Period;
       if (option.KLine.MaxReqeustDataCount > 0) chart.MaxReqeustDataCount = option.KLine.MaxReqeustDataCount;
       if (option.KLine.Info && option.KLine.Info.length > 0) chart.SetKLineInfo(option.KLine.Info, false);
+      if (option.KLine.Policy && option.KLine.Policy.length > 0) chart.SetPolicyInfo(option.KLine.Policy, false);
       if (option.KLine.KLineDoubleClick == false) chart.MinuteDialog = this.MinuteDialog = null;
       if (option.KLine.MaxRequestMinuteDayCount > 0) chart.MaxRequestMinuteDayCount = option.KLine.MaxRequestMinuteDayCount;
       if (option.KLine.DrawType) chart.KLineDrawType = option.KLine.DrawType;
@@ -7442,6 +7443,7 @@ function DynamicKLineTitlePainting() {
     var reportCount = 0;
     var blockTradeCount = 0;  //大宗交易次数
     var tradeDetailCount = 0; //龙虎榜上榜次数
+    var policyData=null;
     var reportTitle = null, pforecastTitle = null;
     //console.log(info);
     for (var i in info.Data) {
@@ -7471,6 +7473,9 @@ function DynamicKLineTitlePainting() {
         case KLINE_INFO_TYPE.TRADEDETAIL:
           ++tradeDetailCount;
           break;
+        case KLINE_INFO_TYPE.POLICY:
+          policyData = item;
+          break;
       }
     }
 
@@ -7498,6 +7503,13 @@ function DynamicKLineTitlePainting() {
     if (tradeDetailCount > 0) aryTitle.push('龙虎榜上榜次数:' + tradeDetailCount);
     if (invesotrCount > 0) aryTitle.push('互动易数量:' + invesotrCount);
     if (blockTradeCount > 0) aryTitle.push('大宗交易次数:' + blockTradeCount);
+    if (policyData) //策略选股
+    {
+        for (let i in policyData.ExtendData)    //显示满足的策略
+        {
+            aryTitle.push(policyData.ExtendData[i].Name);
+        }
+    }
 
     var maxWidth = 0, textBGHeight = 0;
     for (let i in aryTitle) {
@@ -9806,6 +9818,21 @@ function KLineChartContainer(uielement) {
 
     if (bUpdate == true) this.ReqeustKLineInfoData();
   }
+
+    this.SetPolicyInfo = function (aryPolicy, bUpdate) 
+    {
+        if (!aryPolicy || !aryPolicy.length) return;
+        var infoItem = JSKLineInfoMap.Get('策略选股');
+        if (!infoItem) return;
+        var policyInfo = infoItem.Create();
+        policyInfo.SetPolicyList(aryPolicy);
+        policyInfo.MaxReqeustDataCount = this.MaxReqeustDataCount;
+        this.ChartInfo.push(policyInfo);
+
+        if (bUpdate == true) this.ReqeustKLineInfoData();
+    }
+
+
 
   //叠加股票
   this.OverlaySymbol = function (symbol) {

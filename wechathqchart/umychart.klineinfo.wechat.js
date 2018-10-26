@@ -16,7 +16,9 @@ var KLINE_INFO_TYPE=
 
     RESEARCH:8,                 //调研
     BLOCKTRADING:9,             //大宗交易
-    TRADEDETAIL:10              //龙虎榜
+    TRADEDETAIL:10,              //龙虎榜
+
+    POLICY:11                   //策略信息
 }
 
 function JSChartResource()
@@ -48,6 +50,10 @@ function JSChartResource()
                 ApiUrl: '/API/StockHistoryDay',
             },
             TradeDetail:    //龙虎榜
+            {
+                ApiUrl: '/API/StockHistoryDay',
+            },
+            Policy: //策略
             {
                 ApiUrl: '/API/StockHistoryDay',
             }
@@ -89,7 +95,8 @@ JSKLineInfoMap.Get=function(id)
             ["业绩预告",    {Create:function(){ return new PforecastInfo()}  }],
             ["调研",        {Create:function(){ return new ResearchInfo()}  }],
             ["大宗交易",    {Create:function(){ return new BlockTrading()}  }],
-            ["龙虎榜",      {Create:function(){ return new TradeDetail()}  }]
+            ["龙虎榜",      {Create:function(){ return new TradeDetail()}  }],
+            ["策略选股",    {Create: function () { return new PolicyInfo() } }]
         ]
         );
 
@@ -525,6 +532,86 @@ function TradeDetail()
             }
 
             this.Data.push(infoData);
+        }
+
+        param.HQChart.UpdataChartInfo();
+        param.HQChart.Draw();
+    }
+}
+
+//策略信息
+function PolicyInfo() 
+{
+    this.newMethod = IKLineInfo;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.PolicyList = []; //筛选的策略名字 {Name:策略名, Guid:策略的GUID}
+
+    this.SetPolicyList=function(aryPolicy)
+    {
+        for(let i in aryPolicy)
+        {
+            this.PolicyList.push({Name:aryPolicy[i]});
+        }
+    }
+
+    this.RequestData = function (hqChart) 
+    {
+        var self = this;
+        this.Data = [];
+        var param = { HQChart: hqChart };
+
+        // setTimeout(function () { self.RecvData(null, param); }, 2000); //模拟数据到达
+
+        //请求数据
+        wx.request({
+          url: g_JSChartResource.Domain + g_JSChartResource.KLine.Info.Policy.ApiUrl,
+          data: {
+            "symbol": [param.HQChart.Symbol],
+            field: ["policy"],
+            "condition": [
+              { "item": ["date", "int32", "gte", this.StartDate, "lte", this.GetToday()] }],
+            "start": 0,
+            "end": this.MaxReqeustDataCount
+          },
+          method: "post",
+          dataType: "json",
+          success: function (recvData) {
+            self.RecvData(recvData, param);
+          }
+
+        })
+
+        return true;
+    }
+
+    this.RecvData = function (recvData, param) 
+    {
+        var data = recvData.data;
+        if (!data.stock || data.stock.length != 1) return;
+        if (!data.stock[0].stockday || data.stock[0].stockday.length <= 0) return;
+
+        var setName=new Set();
+        for(var i in this.PolicyList)   //把需要过滤的策略名字放set里, 方便后面过滤
+        {
+            setName.add(this.PolicyList[i].Name);
+        }
+
+        for (var i in data.stock[0].stockday)
+        {
+          var item = data.stock[0].stockday[i];
+          var infoData = new KLineInfoData();
+          infoData.Date = item.date;
+          infoData.InfoType = KLINE_INFO_TYPE.POLICY;
+          infoData.ExtendData = [];
+          for (var j in item.policy)
+          {
+              var name = item.policy[j].name;
+              if (setName.has(name)) infoData.ExtendData.push({ Name: name });
+          }
+
+          if (infoData.ExtendData.length>0) this.Data.push(infoData);
         }
 
         param.HQChart.UpdataChartInfo();

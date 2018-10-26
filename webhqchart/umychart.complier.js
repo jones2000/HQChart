@@ -2351,7 +2351,87 @@ function JSAlgorithm(errorHandler,symbolData)
 
         return result;
     }
+    /*
+    返回加权移动平均
+    用法:WMA(X,N):X的N日加权移动平均.
+    算法:Yn=(1*X1+2*X2+...+n*Xn)/(1+2+...+n)
+     */
+    this.WMA=function(data, dayCount)
+    {
+        let result=[];
+        if (!data || !data.length) return result;
+        if (dayCount < 1) dayCount = 1;
+        var i = 0;
+        for(i = 0; i < data.length && !this.isNumber(data[i]); ++i)
+        {
+            result[i] = null;
+        }
+        var data = data.slice(0);
+        for(var days=0; i < data.length; ++i,++days)
+        {
+            if (days < dayCount-1)
+            {
+                result[i] = null;
+                continue;
+            }
+            var preValue = data[i - (dayCount-1)];
+            var sum = 0;
+            var count = 0;
+            for (var j = dayCount-1; j >= 0; ++j)
+            {
+               var value = data[i-j];
+               if (!this.isNumber(value))
+               {
+                   value = preValue;
+                   data[i-j] = value;
+               }
+               else
+                    preValue = value;
 
+                count += dayCount - j;
+                sum += value * (dayCount - j);
+            }
+            result[i] = sum / count;
+        }
+        return result;
+    }
+    /*
+    返回平滑移动平均
+    用法:MEMA(X,N):X的N日平滑移动平均,如Y=(X+Y'*(N-1))/N
+    MEMA(X,N)相当于SMA(X,N,1)
+    */
+    this.MEMA=function(data, dayCount)
+    {
+        let result=[];
+        if (!data || !data.length) return result;
+        var i = 0, j = 0;
+        for (j = 0; j < data.length && !this.isNumber(data[j]); ++j)
+        {
+            result[j] = null;
+        }
+        i = j;
+        if (dayCount < 1 || i+dayCount >= data.length) return result;
+        var sum = 0;
+        var data = data.slice(0);
+        for (; i < j+dayCount; ++i)
+        {
+            result[i] = null;
+            if (!this.isNumber(data[i]) && i-1 >= 0)
+                data[i] = data[i-1];
+            sum += data[i];
+        }
+        result[i-1] = sum / dayCount;
+        for (; i < data.length; ++i)
+        {
+            if (this.isNumber(result[i-1]) && this.isNumber(data[i]))
+                result[i] = (data[i]+result[i-1]*(dayCount-1)) / dayCount;
+            else if (i-1 > -1 && this.isNumber(result[i-1]))
+                result[i] = result[i-1];
+            else
+                result[i] = null;    
+        }
+        return result;
+    }
     /*
     加权移动平均
     返回加权移动平均
@@ -2416,7 +2496,57 @@ function JSAlgorithm(errorHandler,symbolData)
 
         return result;
     }
-
+    /*
+    向前累加到指定值到现在的周期数.
+    用法:SUMBARS(X,A):将X向前累加直到大于等于A,返回这个区间的周期数
+    例如:SUMBARS(VOL,CAPITAL)求完全换手到现在的周期数
+     */
+    this.SUMBARS=function(data, data2)
+    {
+        var result = [];
+        if (!data || !data.length || !data2 || !data2.length) return result;
+        var start = 0, i = 0, j = 0;
+        for(; start < data.length && !this.isNumber(data[start]); ++start)
+        {
+            result[start] = null;
+        }
+        var total = 0;
+        for (i = data.length-1; i >= start; --i)
+        {
+            for (j = i, total = 0; j >= start && total < data2[i]; --j)
+                total += data[j];
+            if (j < start) result[i] = null;
+            else result[i] = i - j;
+        }
+        for(i = start+1; i < data.length; ++i)
+        {
+            if (result[i]==null)
+                result[i] = result[i-1];
+        }
+        return result;
+    }
+    /*
+    求相反数.
+    用法:REVERSE(X)返回-X.
+    例如:REVERSE(CLOSE)返回-CLOSE
+     */
+    this.REVERSE=function(data)
+    {
+        var result = [];
+        var i = 0;
+        for (; i<data.length && !this.isNumber(data[i]); ++i)
+        {
+            result[i] = null;
+        }
+        for (; i < data.length; ++i)
+        {
+            if (!this.isNumber(data[i]))
+                result[i] = null;
+            else
+                result[i] = 0-data[i];
+        }
+        return result;
+    }
     this.COUNT=function(data,n)
     {
         let result=[];
@@ -4352,6 +4482,14 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.COVAR(args[0],args[1],args[2]);
             case 'BETA':
                 return this.BETA(args[0]);
+            case 'WMA':
+                return this.WMA(args[0], args[1]);
+            case 'MEMA':
+                return this.MEMA(args[0], args[1]);
+            case 'SUMBARS':
+                return this.SUMBARS(args[0], args[1]);
+            case 'REVERSE':
+                return this.REVERSE(args[0]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
