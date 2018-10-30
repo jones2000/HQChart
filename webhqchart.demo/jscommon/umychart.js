@@ -107,6 +107,7 @@ function JSChart(divElement)
         {
             if(option.KLineTitle.IsShowName==false) chart.TitlePaint[0].IsShowName=false;
             if(option.KLineTitle.IsShowSettingInfo==false) chart.TitlePaint[0].IsShowSettingInfo=false;
+            if (option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
         }
 
         //叠加股票
@@ -706,6 +707,11 @@ JSChart.SetStyle=function(option)
     if (option) g_JSChartResource.SetStyle(option);
 }
 
+JSChart.FlexibleFontSize=function()
+{
+    g_JSChartResource.FlexibleFontSize();
+}
+
 /*//把给外界调用的方法暴露出来
 export default {
     jsChartInit: JSChart.Init
@@ -981,7 +987,7 @@ function JSChartContainer(uielement)
     }
 
     //判断是单个手指
-    function IsPhoneDragging(e)
+    this.IsPhoneDragging=function(e)
     {
         // console.log(e);
         var changed=e.changedTouches.length;
@@ -991,7 +997,7 @@ function JSChartContainer(uielement)
     }
 
     //是否是2个手指操所
-    function IsPhonePinching(e)
+    this.IsPhonePinching=function(e)
     {
         var changed=e.changedTouches.length;
         var touching=e.touches.length;
@@ -999,7 +1005,7 @@ function JSChartContainer(uielement)
         return (changed==1 || changed==2) && touching==2;
     }
 
-    function GetToucheData(e, isForceLandscape)
+    this.GetToucheData=function(e, isForceLandscape)
     {
         var touches=new Array();
         for(var i=0; i<e.touches.length; ++i)
@@ -1037,7 +1043,7 @@ function JSChartContainer(uielement)
         e.preventDefault();
         var jsChart=this.JSChartContainer;
 
-        if (IsPhoneDragging(e))
+        if (jsChart.IsPhoneDragging(e))
         {
             //长按2秒,十字光标
             var timeout=setTimeout(function()
@@ -1061,7 +1067,7 @@ function JSChartContainer(uielement)
                 "LastMove":{},  //最后移动的位置
             };
 
-            var touches=GetToucheData(e,jsChart.IsForceLandscape);
+            var touches=jsChart.GetToucheData(e,jsChart.IsForceLandscape);
 
             drag.Click.X=touches[0].clientX;
             drag.Click.Y=touches[0].clientY;
@@ -1076,7 +1082,7 @@ function JSChartContainer(uielement)
                 return;
             }
         }
-        else if (IsPhonePinching(e))
+        else if (jsChart.IsPhonePinching(e))
         {
             var phonePinch=
             {
@@ -1084,7 +1090,7 @@ function JSChartContainer(uielement)
                 "Last":{}
             };
 
-            var touches=GetToucheData(e,jsChart.IsForceLandscape);
+            var touches=jsChart.GetToucheData(e,jsChart.IsForceLandscape);
 
             phonePinch.Start={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
             phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
@@ -1099,9 +1105,9 @@ function JSChartContainer(uielement)
             if(!this.JSChartContainer) return;
             e.preventDefault();
 
-            var touches=GetToucheData(e,this.JSChartContainer.IsForceLandscape);
+            var touches=jsChart.GetToucheData(e,this.JSChartContainer.IsForceLandscape);
 
-            if (IsPhoneDragging(e))
+            if (jsChart.IsPhoneDragging(e))
             {
                 var drag=this.JSChartContainer.MouseDrag;
                 if (drag==null)
@@ -1135,7 +1141,7 @@ function JSChartContainer(uielement)
                         drag.LastMove.Y=touches[0].clientY;
                     }
                 }
-            }else if (IsPhonePinching(e))
+            }else if (jsChart.IsPhonePinching(e))
             {
                 var phonePinch=this.JSChartContainer.PhonePinch;
                 if (!phonePinch) return;
@@ -7987,6 +7993,7 @@ function ChartCorssCursor()
     this.StringFormatY;
 
     this.IsShowText=true;   //是否显示十字光标刻度
+    this.IsShow=true;
 
     this.Draw=function()
     {
@@ -8469,7 +8476,7 @@ function IChartTitlePainting()
     this.IsDynamic=false;               //是否是动态标题
     this.Position=0;                    //标题显示位置 0 框架里的标题  1 框架上面
     this.CursorIndex;                   //数据索引
-    this.Font="13px 微软雅黑";
+    this.Font=g_JSChartResource.TitleFont;
     this.Title;                         //固定标题(可以为空)
     this.TitleColor=g_JSChartResource.DefaultTextColor;
 }
@@ -10027,7 +10034,7 @@ function JSChartResource()
 
     this.DefaultTextColor="rgb(43,54,69)";
     this.DefaultTextFont='14px 微软雅黑';
-
+    this.TitleFont='13px 微软雅黑';
 
     this.UpTextColor="rgb(238,21,21)";
     this.DownTextColor="rgb(25,158,0)";
@@ -10180,6 +10187,12 @@ function JSChartResource()
             this.DrawPicture.LineColor = style.DrawPicture.LineColor;
             this.DrawPicture.PointColor = style.DrawPicture.PointColor;
         }
+    }
+
+    //手机端动态调整字体大小
+    this.FlexibleFontSize=function()
+    {
+        this.TitleFont='14px 微软雅黑';
     }
 }
 
@@ -12412,6 +12425,69 @@ function MinuteChartContainer(uielement)
     this.TradeDate=0;                         //行情交易日期
 
     this.MinuteApiUrl="https://opensource.zealink.com/API/Stock";
+
+     //手机拖拽
+     uielement.ontouchstart=function(e)
+     {
+         if(!this.JSChartContainer) return;
+         if(this.JSChartContainer.DragMode==0) return;
+ 
+         this.JSChartContainer.PhonePinch=null;
+ 
+         e.preventDefault();
+         var jsChart=this.JSChartContainer;
+ 
+         if (jsChart.IsPhoneDragging(e))
+         {
+             var drag=
+             {
+                 "Click":{},
+                 "LastMove":{},  //最后移动的位置
+             };
+ 
+             var touches=jsChart.GetToucheData(e,jsChart.IsForceLandscape);
+ 
+             drag.Click.X=touches[0].clientX;
+             drag.Click.Y=touches[0].clientY;
+             drag.LastMove.X=touches[0].clientX;
+             drag.LastMove.Y=touches[0].clientY;
+ 
+             document.JSChartContainer=this.JSChartContainer;
+             this.JSChartContainer.SelectChartDrawPicture=null;
+             if (jsChart.ChartCorssCursor.IsShow === true)    //移动十字光标
+             {
+                var x = drag.Click.X;
+                var y = drag.Click.Y;
+                if (jsChart.IsForceLandscape) y = jsChart.UIElement.Height - drag.Click.Y;    //强制横屏Y计算
+                jsChart.OnMouseMove(x, y, e);
+             }
+         }
+ 
+         uielement.ontouchmove=function(e)
+         {
+             if(!this.JSChartContainer) return;
+             e.preventDefault();
+ 
+             var touches=jsChart.GetToucheData(e,this.JSChartContainer.IsForceLandscape);
+             if (jsChart.IsPhoneDragging(e))
+             {
+                 var drag=this.JSChartContainer.MouseDrag;
+                 if (drag==null)
+                 {
+                     var x = touches[0].clientX-this.getBoundingClientRect().left;
+                     var y = touches[0].clientY-this.getBoundingClientRect().top;
+                     if (this.JSChartContainer.IsForceLandscape) y=this.getBoundingClientRect().width-touches[0].clientY;    //强制横屏Y计算
+                     this.JSChartContainer.OnMouseMove(x,y,e);
+                 }
+             }
+         };
+ 
+         uielement.ontouchend=function(e)
+         {
+             clearTimeout(timeout);
+         }
+ 
+     }
 
     //创建
     //windowCount 窗口个数

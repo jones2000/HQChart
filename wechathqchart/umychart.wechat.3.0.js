@@ -4825,7 +4825,7 @@ function ChartSingleText() {
   }
 }
 
-//直线 水平直线 只有1个数据
+//直线 水平直线 只有1个数据 支持横屏
 function ChartStraightLine() {
   this.newMethod = IChartPainting;   //派生
   this.newMethod();
@@ -4837,9 +4837,11 @@ function ChartStraightLine() {
     if (!this.Data || !this.Data.Data) return;
     if (this.Data.Data.length != 1) return;
 
+    var isHScreen=this.ChartFrame.IsHScreen;
     var dataWidth = this.ChartFrame.DataWidth;
     var distanceWidth = this.ChartFrame.DistanceWidth;
     var chartright = this.ChartBorder.GetRight();
+      if (isHScreen) chartright=this.ChartBorder.GetTop();
     var xPointCount = this.ChartFrame.XPointCount;
 
     var yValue = this.Data.Data[0];
@@ -4849,8 +4851,16 @@ function ChartStraightLine() {
 
     var yFix = parseInt(y.toString()) + 0.5;
     this.Canvas.beginPath();
-    this.Canvas.moveTo(xLeft, yFix);
-    this.Canvas.lineTo(xRight, yFix);
+    if (isHScreen)
+    {
+        this.Canvas.moveTo(yFix,xLeft);
+        this.Canvas.lineTo(yFix,xRight);
+    }
+    else
+    {
+        this.Canvas.moveTo(xLeft, yFix);
+        this.Canvas.lineTo(xRight, yFix);
+    }
     this.Canvas.strokeStyle = this.Color;
     this.Canvas.stroke();
   }
