@@ -35,11 +35,40 @@ function JSChart(divElement)
 
         this.CanvasElement.height=height;
         this.CanvasElement.width=parseInt(this.DivElement.style.width.replace("px",""));
+        this.CanvasElement.style.width=this.CanvasElement.width+'px';
+        this.CanvasElement.style.height=this.CanvasElement.height+'px';
+
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+        this.CanvasElement.height*=pixelTatio;
+        this.CanvasElement.width*=pixelTatio;
 
         if (this.JSChartContainer && this.JSChartContainer.Frame)
             this.JSChartContainer.Frame.SetSizeChage(true);
 
         if (this.JSChartContainer) this.JSChartContainer.Draw();
+    }
+
+    //手机屏需要调整 间距
+    this.AdjustChartBorder=function(chart)
+    {
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+
+        chart.Frame.ChartBorder.Left*=pixelTatio;
+        chart.Frame.ChartBorder.Right*=pixelTatio;
+        chart.Frame.ChartBorder.Top*=pixelTatio;
+        chart.Frame.ChartBorder.Bottom*=pixelTatio;
+    }
+
+    this.AdjustTitleHeight=function(chart)
+    {
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+
+        for(let i in chart.Frame.SubFrame)
+        {
+            chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight*=pixelTatio;
+        }
+
+        chart.ChartCorssCursor.TextHeight*=pixelTatio;  //十字光标文本信息高度
     }
 
     //历史K线图
@@ -88,6 +117,8 @@ function JSChart(divElement)
             if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
         }
 
+        this.AdjustChartBorder(chart);
+
         if (option.IsShowCorssCursorInfo==false)    //取消显示十字光标刻度信息
         {
             chart.ChartCorssCursor.IsShowText=option.IsShowCorssCursorInfo;
@@ -107,7 +138,7 @@ function JSChart(divElement)
         {
             if(option.KLineTitle.IsShowName==false) chart.TitlePaint[0].IsShowName=false;
             if(option.KLineTitle.IsShowSettingInfo==false) chart.TitlePaint[0].IsShowSettingInfo=false;
-            if (option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
+            if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
         }
 
         //叠加股票
@@ -151,6 +182,7 @@ function JSChart(divElement)
 
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
         }
+        this.AdjustTitleHeight(chart);
 
         return chart;
     }
@@ -281,6 +313,7 @@ function JSChart(divElement)
             if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
             if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
         }
+        this.AdjustChartBorder(chart);
 
         if (option.Frame)
         {
@@ -320,6 +353,7 @@ function JSChart(divElement)
 
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[2+parseInt(i)].Frame.ChartBorder.TitleHeight=item.TitleHeight;
         }
+        this.AdjustTitleHeight(chart);
 
         return chart;
     }
@@ -707,9 +741,10 @@ JSChart.SetStyle=function(option)
     if (option) g_JSChartResource.SetStyle(option);
 }
 
-JSChart.FlexibleFontSize=function()
+//获取设备分辨率比
+JSChart.GetDevicePixelRatio=function()
 {
-    g_JSChartResource.FlexibleFontSize();
+    return GetDevicePixelRatio();
 }
 
 /*//把给外界调用的方法暴露出来
@@ -1008,6 +1043,7 @@ function JSChartContainer(uielement)
     this.GetToucheData=function(e, isForceLandscape)
     {
         var touches=new Array();
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         for(var i=0; i<e.touches.length; ++i)
         {
             var item=e.touches[i];
@@ -1015,7 +1051,7 @@ function JSChartContainer(uielement)
             {
                 touches.push(
                     {
-                        clientX:item.clientY, clientY:item.clientX, 
+                        clientX:item.clientY*pixelTatio, clientY:item.clientX*pixelTatio, 
                         pageX:item.pageY, pageY:item.pageX
                     });
             }
@@ -1023,7 +1059,7 @@ function JSChartContainer(uielement)
             {
                 touches.push(
                     {
-                        clientX:item.clientX, clientY:item.clientY, 
+                        clientX:item.clientX*pixelTatio, clientY:item.clientY*pixelTatio, 
                         pageX:item.pageX, pageY:item.pageY
                     });
             }
@@ -1206,6 +1242,7 @@ function JSChartContainer(uielement)
             if (item.IsDrawFirst)
                 item.Draw();
         }
+
         for(var i in this.ChartPaint)
         {
             var item=this.ChartPaint[i];
@@ -1233,6 +1270,7 @@ function JSChartContainer(uielement)
             item.Draw();
         }
 
+        this.Frame.DrawInsideHorizontal();
         this.Frame.DrawLock();
         this.Frame.Snapshot();
 
@@ -1800,6 +1838,11 @@ function JSChartContainer(uielement)
     }
 }
 
+function GetDevicePixelRatio()
+{
+    return window.devicePixelRatio || 1;
+}
+
 function OnKeyDown(e)
 {
     if(this.JSChartContainer)
@@ -2197,6 +2240,46 @@ function AverageWidthFrame()
             }
 
             yPrev=y;
+        }
+    }
+
+    //Y刻度画在左边内部
+    this.DrawInsideHorizontal = function () 
+    {
+        if (this.IsHScreen===true) return;  //横屏不画
+
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRight();
+        var bottom = this.ChartBorder.GetBottom();
+        var top = this.ChartBorder.GetTopEx();
+        var borderRight = this.ChartBorder.Right;
+        var borderLeft = this.ChartBorder.Left;
+        var titleHeight = this.ChartBorder.TitleHeight;
+        if (borderLeft >= 10) return;
+
+        var yPrev = null; //上一个坐标y的值
+        for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
+        {
+        var item = this.HorizontalInfo[i];
+        var y = this.GetYFromData(item.Value);
+        if (y != null && Math.abs(y - yPrev) < 15) continue;  //两个坐标在近了 就不画了
+
+        //坐标信息 左边 间距小于10 画在内部
+        if (item.Message[0] != null && borderLeft < 10) 
+        {
+            if (item.Font != null) this.Canvas.font = item.Font;
+            this.Canvas.fillStyle = item.TextColor;
+            this.Canvas.textAlign = "left";
+            if (y >= bottom - 2)
+            this.Canvas.textBaseline = 'bottom';
+            else if (y <= top + 2)
+            this.Canvas.textBaseline = 'top';
+            else
+            this.Canvas.textBaseline = "middle";
+            this.Canvas.fillText(item.Message[0], left + 1, y);
+        }
+
+        yPrev = y;
         }
     }
 
@@ -3081,6 +3164,16 @@ function HQTradeFrame()
             item.Frame.DrawLock();
         }
     }
+
+    this.DrawInsideHorizontal = function () 
+    {
+        for (var i in this.SubFrame) 
+        {
+          var item = this.SubFrame[i];
+          if (item.Frame.DrawInsideHorizontal) item.Frame.DrawInsideHorizontal();
+        }
+      }
+
     this.SetSizeChage=function(sizeChange)
     {
         this.SizeChange=sizeChange;
@@ -7064,9 +7157,10 @@ function ChartBuySell()
     this.newMethod();
     delete this.newMethod;
 
-    this.LastDataIcon={Color:'rgb(0,0,205)',Text:'↓'};
-    this.BuyIcon={Color:'rgb(0,0,205)',Text:'B'};
-    this.SellIcon={Color:'rgb(0,0,205)',Text:'S'};
+    this.TextFont=g_JSChartResource.KLineTrain.Font;                //"bold 14px arial";           //买卖信息字体
+    this.LastDataIcon=g_JSChartResource.KLineTrain.LastDataIcon; //{Color:'rgb(0,0,205)',Text:'↓'};
+    this.BuyIcon=g_JSChartResource.KLineTrain.BuyIcon; //{Color:'rgb(0,0,205)',Text:'B'};
+    this.SellIcon=g_JSChartResource.KLineTrain.SellIcon; //{Color:'rgb(0,0,205)',Text:'S'};
     this.BuySellData=new Map();   //{Date:日期, Op:买/卖 0=buy 1=sell}
     this.LastData={}; //当前屏最后一个数据
 
@@ -7081,6 +7175,7 @@ function ChartBuySell()
         if (isHScreen===true) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
 
+        this.Canvas.font=this.TextFont;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
@@ -8103,6 +8198,14 @@ function ChartCorssCursor()
                 this.Canvas.textBaseline="top";
                 this.Canvas.fillStyle=this.TextColor;
                 this.Canvas.fillText(text,x+1,bottom+2,textWidth);
+            }
+            else if (x+textWidth/2>=right)
+            {
+                this.Canvas.fillRect(right-textWidth,bottom+2,textWidth,this.TextHeight);
+                this.Canvas.textAlign="right";
+                this.Canvas.textBaseline="top";
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(text,right-2,bottom+2,textWidth);
             }
             else
             {
@@ -10033,8 +10136,8 @@ function JSChartResource()
     this.Minute.AvPriceColor="rgb(238,127,9)";
 
     this.DefaultTextColor="rgb(43,54,69)";
-    this.DefaultTextFont='14px 微软雅黑';
-    this.TitleFont='13px 微软雅黑';
+    this.DefaultTextFont=14*GetDevicePixelRatio() +'px 微软雅黑';
+    this.TitleFont=13*GetDevicePixelRatio() +'px 微软雅黑';
 
     this.UpTextColor="rgb(238,21,21)";
     this.DownTextColor="rgb(25,158,0)";
@@ -10044,12 +10147,12 @@ function JSChartResource()
     this.FrameBorderPen="rgb(225,236,242)";
     this.FrameSplitPen="rgb(225,236,242)";      //分割线
     this.FrameSplitTextColor="rgb(117,125,129)";   //刻度文字颜色
-    this.FrameSplitTextFont="14px 微软雅黑";     //坐标刻度文字字体
+    this.FrameSplitTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";     //坐标刻度文字字体
     this.FrameTitleBGColor="rgb(246,251,253)";  //标题栏背景色
 
     this.CorssCursorBGColor="rgb(43,54,69)";            //十字光标背景
     this.CorssCursorTextColor="rgb(255,255,255)";
-    this.CorssCursorTextFont="14px 微软雅黑";
+    this.CorssCursorTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";
     this.CorssCursorPenColor="rgb(130,130,130)";           //十字光标线段颜色
 
     this.LockBGColor = "rgb(220, 220, 220)";
@@ -10059,7 +10162,7 @@ function JSChartResource()
     this.CacheDomain="https://opensourcecache.zealink.com";     //缓存域名
 
     this.KLine={
-            MaxMin: {Font:'12px 微软雅黑',Color:'rgb(43,54,69)'},   //K线最大最小值显示
+            MaxMin: {Font:12*GetDevicePixelRatio() +'px 微软雅黑',Color:'rgb(43,54,69)'},   //K线最大最小值显示
             Info:  //信息地雷
             {
                 Investor:
@@ -10140,6 +10243,14 @@ function JSChartResource()
         "rgb(105,105,105)",
     ];
 
+    this.KLineTrain =
+    {
+        Font:'bold 14px arial',
+        LastDataIcon: {Color:'rgb(0,0,205)',Text:'⬇'},
+        BuyIcon: {Color:'rgb(0,205,102 )',Text:'B'},
+        SellIcon: {Color:'rgb(255,127,36 )',Text:'S'}
+    };
+
     //自定义风格
     this.SetStyle=function(style)
     {
@@ -10158,7 +10269,7 @@ function JSChartResource()
 
         if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
         if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;
-        if (style.DynamicTitleFont) this.DynamicTitleFont = style.DynamicTitleFont;
+        if (style.TitleFont) this.TitleFont = style.TitleFont;
         if (style.UpTextColor) this.UpTextColor = style.UpTextColor;
         if (style.DownTextColor) this.DownTextColor = style.DownTextColor;
         if (style.UnchagneTextColor) this.UnchagneTextColor = style.UnchagneTextColor;
@@ -10187,12 +10298,6 @@ function JSChartResource()
             this.DrawPicture.LineColor = style.DrawPicture.LineColor;
             this.DrawPicture.PointColor = style.DrawPicture.PointColor;
         }
-    }
-
-    //手机端动态调整字体大小
-    this.FlexibleFontSize=function()
-    {
-        this.TitleFont='14px 微软雅黑';
     }
 }
 

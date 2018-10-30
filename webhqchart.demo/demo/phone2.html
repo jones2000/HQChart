@@ -2,6 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">  
 <head>  
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>页面行情(走势图)</title>  
     <link rel="stylesheet" href="content/css/tools.css" />
     <link rel="stylesheet" href="content/font/iconfont.css" />
@@ -60,8 +61,8 @@
         
                     Border: //边框
                     {
-                        Left:45,    //左边间距
-                        Right:50,     //右边间距
+                        Left:100,    //左边间距
+                        Right:100,     //右边间距
                         Top:20
                     },
                     Frame:  //子框架设置
@@ -71,6 +72,14 @@
                             {SplitCount:3,StringFormat:0},
                         ]
                 }
+            
+            var windowHeight= $(window).height();
+            var windowWidth = $(window).width();
+            if (windowWidth<=420)   //手机小屏左右不显示坐标
+            {
+                option.Border.Left=1;
+                option.Border.Right=1;
+            }
         
             jsChart.SetOption(option);
         

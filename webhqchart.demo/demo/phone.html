@@ -2,6 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">  
 <head>  
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>页面行情(K线图)</title>  
     <link rel="stylesheet" href="content/css/tools.css" />
     <link rel="stylesheet" href="content/font/iconfont.css" />
@@ -59,9 +60,9 @@
             if (index3) aryIndex.push({"Index":index3,"Modify":false,"Change":false});
 
             //黑色风格设置, 默认是白色风格
-            var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID);
-            JSChart.SetStyle(blackStyle);
-            document.getElementById('kline').style.backgroundColor=blackStyle.BGColor;
+            //var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID);
+            //JSChart.SetStyle(blackStyle);
+            //document.getElementById('kline').style.backgroundColor=blackStyle.BGColor;
         
             // 创建股票K线图
             var jsChart=JSChart.Init(document.getElementById('kline'));
@@ -98,16 +99,27 @@
         
                     Border: //边框
                     {
-                        Left:1,    //左边间距
-                        Right:100     //右边间距
+                        Left:100,    //左边间距
+                        Right:100,     //右边间距
+                        Bottom:20
                     },
                     
                     Frame:  //子框架设置
                     [
                         {SplitCount:3,StringFormat:1},
+                        {SplitCount:3,StringFormat:1},
                         {SplitCount:3,StringFormat:1}
                     ]
                 }
+
+            var windowHeight= $(window).height();
+            var windowWidth = $(window).width();
+            if (windowWidth<=420)   //手机小屏左右不显示坐标
+            {
+                option.Border.Left=1;
+                option.Border.Right=1;
+                option.KLine.IsShowTooltip=false;
+            }
         
             jsChart.SetOption(option);
             //jsChart.LockIndex('飞龙四式',unlockIndex);
@@ -122,6 +134,7 @@
         {
             console.log(indexName);
         }
+
     </script>  
 </body>  
 </html>

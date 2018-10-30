@@ -5,94 +5,127 @@
 <title>K线训练网页版</title>  
     <link rel="stylesheet" href="content/css/tools.css" />
     <link rel="stylesheet" href="content/font/iconfont.css" />
-    <link rel="stylesheet" href="plugins/code_color/codemirror.css" />
-    <link rel="stylesheet" href="content/css/phone7.tools.css" />
+    <link rel="stylesheet" href="plugins/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="plugins/bootstrap/custom.min.css" />
+    <link rel="stylesheet" href="content/css/phone13.tools.css" />
 </head>  
 <body>
-
-    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
-    <div class="tools">
-        <div id="tools_top" class="top">
-            <span>指标名称：</span>
-            <input class="input" v-model="indexName" />
-            <select class="changeIndex" v-model="changeIndex">
-                <option value="1">副图</option>
-                <option value="0">主图</option>
-            </select>
-            <button class="toolsButton" v-on:click="execute()">执行</button>
-            <button class="toolsButton" onclick="Root.table.clear()">清空参数</button>
-
-            <span >股票代码：</span>
-            <input class="input" v-model="symbol" />
-            <button class="toolsButton" v-on:click="change()">切换股票</button>
-
-            <label v-on:click="changeDebug()">
-                <input type="checkbox" v-model="isDebug" />
-                <span style="margin-top:-2px;">输出调试信息</span>
-            </label>
-
-            <button class="toolsButton" v-on:click="save()">保存</button>
-
-            <a href="http://opensourcecdn.zealink.com/cache/webcache/hqfunctionhelp/index.html#/13" target="_blank">函数帮助</a>
+    <div id="kline" style="width: 900px;height:400px;position: relative;float:left;"></div>
+    <div id="tools" class="tools">
+        <div class="row">
+            <div class="col-md-3 col-sm-12 col-xs-12 ">
+                <button type="button" class="btn btn-info btn-xs" v-on:click="nextKLine()">下一K线</button>
+            </div>
+            <div class="col-md-5 col-sm-12 col-xs-12">
+                <div class="checkbox" style="margin:0px;">
+                    <label>
+                        <input type="checkbox" v-model="kLineAuto" /> K线自动前进
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-12 col-xs-12" style="padding-left:0px;">
+                还剩<span style="color:#EE1515;">{{SurplusKLineCount}}</span>根K线
+            </div>
         </div>
-        <div class="table" id="tools_table">
-            <table cellpadding="0" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th align="left">参数</th>
-                        <th align="left">最小</th>
-                        <th align="left">最大</th>
-                        <th align="left">缺省</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="(item, index) in list">
-                        <td v-on:click="closeEdit(index,'name')">
-                            <input v-if="item.name.isEdit" v-model="item.name.value" v-on:click.stop="" />
-                            <span v-else=v-else v-on:click.stop="openEdit(index,'name')">{{item.name.value}}</span>
-                        </td>
-                        <td v-on:click="closeEdit(index,'min')">
-                            <input v-if="item.min.isEdit" v-model="item.min.value" v-on:click.stop="" />
-                            <span v-else=v-else v-on:click.stop="openEdit(index,'min')">{{item.min.value}}</span>
-                        </td>
-                        <td v-on:click="closeEdit(index,'max')">
-                            <input v-if="item.max.isEdit" v-model="item.max.value" v-on:click.stop="" />
-                            <span v-else=v-else v-on:click.stop="openEdit(index,'max')">{{item.max.value}}</span>
-                        </td>
-                        <td v-on:click="closeEdit(index,'value')">
-                            <input v-if="item.value.isEdit" v-model="item.value.value" v-on:click.stop="" />
-                            <span v-else=v-else v-on:click.stop="openEdit(index,'value')">{{item.value.value}}</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="row" style="margin-top:20px;">
+            <div class="col-md-6 col-sm-12 col-xs-12">
+                <button type="button" class="btn pull-right" v-bind:class="buyOrSellState == 0?'btn-danger':'btn-dark'" v-bind:disabled="buyOrSellState != 0" v-on:click="buyOrSell()">&nbsp;&nbsp;&nbsp;&nbsp;买&nbsp;&nbsp;&nbsp;&nbsp;</button>
+            </div>
+            <div class="col-md-6 col-sm-12 col-xs-12">
+                <button type="button" class="btn" v-bind:class="buyOrSellState == 1?'btn-danger':'btn-dark'" v-bind:disabled="buyOrSellState != 1" v-on:click="buyOrSell()">&nbsp;&nbsp;&nbsp;&nbsp;卖&nbsp;&nbsp;&nbsp;&nbsp;</button>
+            </div>
         </div>
-        <div class="code">
-            <textarea id="tools_code"></textarea>
-        </div>
-        <div class="cache" id="tools_cache">
-            <ul>
-                <li v-bind:class="{ active: index == activeIndex }" v-for="(item, index) in list" v-on:click="select(index)">
-                    {{item.name}} 
-                    <span v-on:click.stop="_delete(index)">删除</span>
-                </li>
-            </ul>
+        <div class="row">
+            <div class="list">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>标志</th>
+                            <th>现价</th>
+                            <th>盈亏情况</th>
+                            <th>盈亏比例</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, index) in list" v-bind:class="item.profitAndLossClass">
+                            <td scope="row">{{index+1}}</td>
+                            <td>{{item.op}}</td>
+                            <td>{{item.price}}</td>
+                            <td>{{item.profitAndLoss}}</td>
+                            <td>{{item.profitAndLossRatio}}<i v-if="item.profitAndLossRatio != ''">%</i></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     
+    <div class="modal fade" id="modal_result" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <h4 class="modal-title" id="myModalLabel">训练结果</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-horizontal form-label-left">
+                        <div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12">训练时间：</label>
+                            <div class="col-md- col-sm-7 col-xs-12">
+                                <label class="control-label">{{date}}</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12" for="last-name">训练股票：</label>
+                            <div class="col-md-7 col-sm-7 col-xs-12">
+                                <label class="control-label">{{name}}&nbsp;&nbsp;{{symbol}}</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12">K线时间：</label>
+                            <div class="col-md-7 col-sm-7 col-xs-12">
+                                <label class="control-label">{{kLineDate.startDate}}&nbsp;&nbsp;至&nbsp;&nbsp;{{kLineDate.endDate}}</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12">区间涨幅：</label>
+                            <div class="col-md-7 col-sm-7 col-xs-12">
+                                <label class="control-label" v-bind:class="increase > 0?'profit':'loss'">{{increase}}%</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12">成功率：</label>
+                            <div class="col-md-7 col-sm-7 col-xs-12">
+                                <label class="control-label">{{profitRatio}}%</label>
+                            </div>
+                        </div>
+                        <!--<div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12">总收益率：</label>
+                            <div class="col-md-7 col-sm-7 col-xs-12">
+                                <label class="control-label"></label>
+                            </div>
+                        </div>-->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary pull-right ladda-button" data-style="expand-right" onclick="Common.hideModal('modal_result')">关&nbsp;&nbsp;&nbsp;&nbsp;闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="content/js/jquery.min.js"></script>
 
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
     
-    
-    <script type="text/javascript" src="plugins/code_color/codemirror.js"></script>
-    <script type="text/javascript" src="plugins/code_color/javascript.js"></script>
-    
     <script type="text/javascript" src="content/js/vue.js"></script>
-    <script type="text/javascript" src="content/js/phone7.tools.js"></script>
+    <script type="text/javascript" src="content/js/vue-resource.js"></script>
+    <script type="text/javascript" src="content/js/phone13.tools.js"></script>
+    <script src="plugins/bootstrap/bootstrap.min.js"></script>
     
-    <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
     <script>
         var jsChart;
         JS_EXECUTE_DEBUG_LOG=false;
@@ -109,12 +142,15 @@
     
         function resizeCanvas()
         {
-            var height= $(window).height()-300; //300高度给指标编辑器
-            var width = $(window).width()-300;
+            var height= $(window).height(); //300高度给指标编辑器
+            var width = $(window).width();
             var divKline=document.getElementById('kline');
-            divKline.style.width=width+'px';
-            divKline.style.height=height+'px';
+            divKline.style.width = (width - 300) + 'px';
+            divKline.style.height = height + 'px';
             divKline.JSChart.OnSize();
+
+            $(".tools").css({ width: width - parseInt(divKline.style.width) - 10 });
+            $(".tools .list").height(height - 150);
         }
         
         $(function () {
@@ -213,19 +249,16 @@
             jsChart.SetOption(option);
             //jsChart.LockIndex('飞龙四式',unlockIndex);
 
-            setTimeout(function(){jsChart.JSChartContainer.Run()},5000);    //启动自动前进
+            //setTimeout(function(){jsChart.JSChartContainer.Run()},5000);    //启动自动前进
             //setTimeout(function(){jsChart.JSChartContainer.Stop()},30000);  //停止自动前进
-            setTimeout(function(){jsChart.JSChartContainer.BuyOrSell()},10000);  //买卖股票
+            //setTimeout(function(){jsChart.JSChartContainer.BuyOrSell()},10000);  //买卖股票
             //jsChart.JSChartContainer.MoveNextKLineData()  //手动前进一个K线
 
 
             resizeCanvas();
     
             Tools.init({
-                script: scriptIndex.Script,
-                indexName: scriptIndex.Name,
-                args: scriptIndex.Args,
-                symbol: option.Symbol
+                trainDataCount: option.Train.DataCount
             });
         });
         
@@ -248,13 +281,18 @@
             if (trainDataCount<=0)
             {
                 console.log('[FinishCallback] finish train. ', hqchart.BuySellData);
+
+                Root.result.setData(hqchart);
             }
             else
             {
                 var op= (hqchart.GetOperator()==0 ? "买":'卖');
-                console.log('[FinishCallback] remain train data ', trainDataCount,op);
+                console.log('[FinishCallback] remain train data ', trainDataCount, op);
             }
-            
+
+            Root.tools.setBuyOrSellState(hqchart.GetOperator());
+            Root.tools.setData(hqchart.BuySellData);
+            Root.tools.setSurplusKLineCount(trainDataCount);
         }
 
     </script>  

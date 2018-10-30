@@ -1,7 +1,12 @@
 /*
     不同风格行情配置文件
+    !!手机上字体大小需要*分辨率比
 */
 
+function GetDevicePixelRatio()
+{
+    return window.devicePixelRatio || 1;
+}
 
 //黑色风格
 var BLACK_STYLE=
@@ -27,10 +32,8 @@ var BLACK_STYLE=
 
 
   DefaultTextColor: "rgb(101,104,112)",
-  DefaultTextFont: '14px 微软雅黑',
-
-  DynamicTitleFont: '12px 微软雅黑', //指标动态标题字体
-
+  DefaultTextFont: 14*GetDevicePixelRatio() +'px 微软雅黑',
+  TitleFont: 13*GetDevicePixelRatio() +'px 微软雅黑',    //标题字体
 
   UpTextColor: "rgb(238,21,21)",
   DownTextColor: "rgb(25,158,0)",
@@ -40,17 +43,17 @@ var BLACK_STYLE=
   FrameBorderPen: "rgba(236,236,236,0.13)",     //边框
   FrameSplitPen: "rgba(236,236,236,0.13)",          //分割线
   FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
-  FrameSplitTextFont: "12px 微软雅黑",        //坐标刻度文字字体
+  FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
   FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
 
   CorssCursorBGColor: "rgb(43,54,69)",            //十字光标背景
   CorssCursorTextColor: "rgb(255,255,255)",
-  CorssCursorTextFont: "12px 微软雅黑",
+  CorssCursorTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",
   CorssCursorPenColor: "rgb(130,130,130)",           //十字光标线段颜色
 
   KLine:
   {
-    MaxMin: { Font: '12px 微软雅黑', Color: 'rgb(111,111,111)' },   //K线最大最小值显示
+    MaxMin: { Font: 12*GetDevicePixelRatio() +'px 微软雅黑', Color: 'rgb(111,111,111)' },   //K线最大最小值显示
     Info:  //信息地雷
     {
       Color: 'rgb(205,149,12)',
