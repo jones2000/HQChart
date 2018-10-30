@@ -39,5 +39,5 @@
 * K线图  https://opensource.zealink.com/hqcomplier/phone7.html  <br>
 * 走势图 https://opensource.zealink.com/hqcomplier/phone8.html  <br>
 * 走势图手机页面 https://opensource.zealink.com/hqcomplier/phone2.html  <br>
-* K线图手机页面  https://opensource.zealink.com/hqcomplier/phone.html  <br
+* K线图手机页面  https://opensource.zealink.com/hqcomplier/phone.html  <br>
 * 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
