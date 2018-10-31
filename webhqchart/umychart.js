@@ -1052,7 +1052,7 @@ function JSChartContainer(uielement)
                 touches.push(
                     {
                         clientX:item.clientY*pixelTatio, clientY:item.clientX*pixelTatio, 
-                        pageX:item.pageY, pageY:item.pageX
+                        pageX:item.pageY*pixelTatio, pageY:item.pageX*pixelTatio
                     });
             }
             else
@@ -1060,7 +1060,7 @@ function JSChartContainer(uielement)
                 touches.push(
                     {
                         clientX:item.clientX*pixelTatio, clientY:item.clientY*pixelTatio, 
-                        pageX:item.pageX, pageY:item.pageY
+                        pageX:item.pageX*pixelTatio, pageY:item.pageY*pixelTatio
                     });
             }
         }
@@ -1089,9 +1089,9 @@ function JSChartContainer(uielement)
                     var mouseDrag=jsChart.MouseDrag;
                     jsChart.MouseDrag=null;
                     //移动十字光标
-                    var x = drag.Click.X-uielement.getBoundingClientRect().left;
-                    var y = drag.Click.Y-uielement.getBoundingClientRect().top;
-                    if (jsChart.IsForceLandscape) y=uielement.getBoundingClientRect().width-drag.Click.Y;    //强制横屏Y计算
+                    var pixelTatio = GetDevicePixelRatio();
+                    var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
+                    var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
                     jsChart.OnMouseMove(x,y,e);
                 }
 
@@ -1148,8 +1148,9 @@ function JSChartContainer(uielement)
                 var drag=this.JSChartContainer.MouseDrag;
                 if (drag==null)
                 {
-                    var x = touches[0].clientX-this.getBoundingClientRect().left;
-                    var y = touches[0].clientY-this.getBoundingClientRect().top;
+                    var pixelTatio = GetDevicePixelRatio();
+                    var x = touches[0].clientX-this.getBoundingClientRect().left*pixelTatio;
+                    var y = touches[0].clientY-this.getBoundingClientRect().top*pixelTatio;
                     if (this.JSChartContainer.IsForceLandscape) y=this.getBoundingClientRect().width-touches[0].clientY;    //强制横屏Y计算
                     this.JSChartContainer.OnMouseMove(x,y,e);
                 }
@@ -5640,7 +5641,7 @@ function ChartLine()
         var xPointCount=this.ChartFrame.XPointCount;
         
         this.Canvas.save();
-        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth;
+        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
         var bFirstPoint=true;
         var drawCount=0;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
@@ -5685,7 +5686,7 @@ function ChartLine()
         var xPointCount=this.ChartFrame.XPointCount;
 
         this.Canvas.save();
-        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth;
+        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
         this.Canvas.strokeStyle=this.Color;
 
         var bFirstPoint=true;
@@ -5802,7 +5803,7 @@ function ChartStick()
         var xPointCount=this.ChartFrame.XPointCount;
 
         this.Canvas.save();
-        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth;
+        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
         var bFirstPoint=true;
         var drawCount=0;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
@@ -5852,7 +5853,7 @@ function ChartStick()
 
         this.Canvas.save();
         this.Canvas.strokeStyle=this.Color;
-        if (this.LineWidth) this.Canvas.lineWidth=this.LineWidth;
+        if (this.LineWidth) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
@@ -5881,7 +5882,7 @@ function ChartStick()
 
         this.Canvas.save();
         this.Canvas.strokeStyle=this.Color;
-        if (this.LineWidth) this.Canvas.lineWidth=this.LineWidth;
+        if (this.LineWidth) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
@@ -6197,8 +6198,8 @@ function ChartStickLine()
     this.newMethod();
     delete this.newMethod;
 
-    this.Color="rgb(255,193,37)";   //线段颜色
-    this.LineWidth=2;               //线段宽度
+    this.Color="rgb(255,193,37)";               //线段颜色
+    this.LineWidth=2*GetDevicePixelRatio();     //线段宽度
 
     this.Draw=function()
     {
@@ -6220,7 +6221,7 @@ function ChartStickLine()
         this.Canvas.save();
         
         var LineWidth=this.LineWidth;
-        if (dataWidth<=4) LineWidth=1;
+        if (dataWidth<=4) LineWidth=GetDevicePixelRatio();
         else if (dataWidth<LineWidth) LineWidth=parseInt(dataWidth);
         this.Canvas.strokeStyle=this.Color;
         this.Canvas.lineWidth=LineWidth;
@@ -12563,9 +12564,9 @@ function MinuteChartContainer(uielement)
              this.JSChartContainer.SelectChartDrawPicture=null;
              if (jsChart.ChartCorssCursor.IsShow === true)    //移动十字光标
              {
-                var x = drag.Click.X;
-                var y = drag.Click.Y;
-                if (jsChart.IsForceLandscape) y = jsChart.UIElement.Height - drag.Click.Y;    //强制横屏Y计算
+                var pixelTatio = GetDevicePixelRatio();
+                var x = drag.Click.X-this.getBoundingClientRect().left*pixelTatio;
+                var y = drag.Click.Y-this.getBoundingClientRect().top*pixelTatio;
                 jsChart.OnMouseMove(x, y, e);
              }
          }
@@ -12581,9 +12582,9 @@ function MinuteChartContainer(uielement)
                  var drag=this.JSChartContainer.MouseDrag;
                  if (drag==null)
                  {
-                     var x = touches[0].clientX-this.getBoundingClientRect().left;
-                     var y = touches[0].clientY-this.getBoundingClientRect().top;
-                     if (this.JSChartContainer.IsForceLandscape) y=this.getBoundingClientRect().width-touches[0].clientY;    //强制横屏Y计算
+                     var pixelTatio = GetDevicePixelRatio();
+                     var x = touches[0].clientX-this.getBoundingClientRect().left*pixelTatio;
+                     var y = touches[0].clientY-this.getBoundingClientRect().top*pixelTatio;
                      this.JSChartContainer.OnMouseMove(x,y,e);
                  }
              }
@@ -13628,8 +13629,9 @@ function KLineChartHScreenContainer(uielement)
                       var mouseDrag=jsChart.MouseDrag;
                       jsChart.MouseDrag=null;
                       //移动十字光标
-                      var x = drag.Click.X-uielement.getBoundingClientRect().left;
-                      var y = drag.Click.Y-uielement.getBoundingClientRect().top;
+                      var pixelTatio = GetDevicePixelRatio();
+                      var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
+                      var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
                       jsChart.OnMouseMove(x,y,e);
                   }
   
@@ -13682,8 +13684,9 @@ function KLineChartHScreenContainer(uielement)
                   var drag=this.JSChartContainer.MouseDrag;
                   if (drag==null)
                   {
-                      var x = touches[0].clientX-this.getBoundingClientRect().left;
-                      var y = touches[0].clientY-this.getBoundingClientRect().top;
+                      var pixelTatio = GetDevicePixelRatio();
+                      var x = touches[0].clientX-this.getBoundingClientRect().left*pixelTatio;
+                      var y = touches[0].clientY-this.getBoundingClientRect().top*pixelTatio;
                       this.JSChartContainer.OnMouseMove(x,y,e);
                   }
                   else
