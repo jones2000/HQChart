@@ -9,6 +9,10 @@ demo/phone3.html 页面行情(自定义指数)
 
 demo/phone7.html  通达信脚本网页版(K线图)
 demo/phone8.html  通达信脚本网页版(走势图)
+
+demo/phone9.html  手机网页版(K线图横屏)
+demo/phone10.html  手机网页版(走势图横屏)
+
 demo/phone11.html 通达信脚本网页版(历史走势图)
 demo/phone12.html 通达信脚本网页版(策略选股)  选股后台api使用node.jccomplier模块
  
