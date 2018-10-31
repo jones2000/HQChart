@@ -1226,6 +1226,8 @@ function JSChartContainer(uielement)
     this.Draw=function()
     {
         this.Canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+        this.Canvas.lineWidth=pixelTatio;       //手机端需要根据分辨率比调整线段宽度
 
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)
         {
