@@ -1536,8 +1536,8 @@ function JSChartContainer(uielement)
         if (!format.Operator()) return;
 
         var scrollPos=GetScrollPosition();
-        var left = x+ this.UIElement.getBoundingClientRect().left+scrollPos.Left;
-        var top = y+this.UIElement.getBoundingClientRect().top+8+scrollPos.Top;
+        var left = x;
+        var top = y;
         var width=157;
         this.Tooltip.style.width = width+"px";
         this.Tooltip.style.height =180+"px";
