@@ -29,6 +29,8 @@ JSIndexScript.prototype.Get=function(id)
             ['UOS', this.UOS],['CYW', this.CYW],['LON', this.LON],
             ['NDB', this.NDB],
 
+            ['EMPTY', this.EMPTY],  //什么都不显示的指标
+
             ['飞龙四式', this.Dragon4_Main], ['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis], ['融资占比', this.MarginProportion],
 
@@ -883,6 +885,20 @@ JSIndexScript.prototype.MarginProportion = function ()
         Args: [],
         Script: //脚本
             '占比:MARGIN(1);'
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.EMPTY = function () 
+{
+    let data =
+    {
+        Name: '', Description: '空指标', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'VAR2:=C;'
     };
 
     return data;

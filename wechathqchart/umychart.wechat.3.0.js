@@ -89,9 +89,12 @@ function JSChart(element) {
     if (typeof (option.UpdateUICallback) == 'function') //数据到达回调
       chart.UpdateUICallback = option.UpdateUICallback;
 
-    if (option.Frame) {
-      for (var i in option.Frame) {
+    if (option.Frame) 
+    {
+      for (var i in option.Frame) 
+      {
         var item = option.Frame[i];
+        if (!chart.Frame.SubFrame[i]) continue;
         if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = item.SplitCount;
         if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
         if (!isNaN(item.Height)) chart.Frame.SubFrame[i].Height = item.Height;
@@ -100,7 +103,7 @@ function JSChart(element) {
         if (item.XMessageAlign == 'bottom') chart.Frame.SubFrame[i].Frame.XMessageAlign = item.XMessageAlign;
         if (item.IsShowTitle == false) chart.Frame.SubFrame[i].Frame.IsShowTitle = false;
         if (item.UpdateTitleUICallback && chart.Frame.SubFrame[i].Frame.TitlePaint)
-          chart.Frame.SubFrame[i].Frame.TitlePaint.UpdateUICallback = item.UpdateTitleUICallback;
+            chart.Frame.SubFrame[i].Frame.TitlePaint.UpdateUICallback = item.UpdateTitleUICallback;
       }
     }
 
@@ -6376,6 +6379,26 @@ function FrameSplitKLinePriceY() {
       //this.Frame.HorizontalInfo[i].Font="14px 微软雅黑";
       //this.Frame.HorizontalInfo[i].TextColor="rgb(100,0,200)";
       //this.Frame.HorizontalInfo[i].LineColor="rgb(220,220,220)";
+    }
+
+    if (this.SplitCount > 0 && splitData.Count > this.SplitCount) //分割线比预设的多, 过掉一些
+    {
+        var filter = parseInt(splitData.Count / this.SplitCount);
+        if (filter<=1) filter=2;
+        var data = [];
+        for (var i = 0; i < this.Frame.HorizontalInfo.length; i += filter) 
+        {
+            if (i + filter >= this.Frame.HorizontalInfo.length && i != this.Frame.HorizontalInfo.length - 1) //最后一个数据放进去
+            {
+                data.push(this.Frame.HorizontalInfo[this.Frame.HorizontalInfo.length - 1]);
+            }
+            else
+            {
+                data.push(this.Frame.HorizontalInfo[i]);
+            }
+        }
+
+        this.Frame.HorizontalInfo = data;
     }
 
     this.Frame.HorizontalMax = splitData.Max;

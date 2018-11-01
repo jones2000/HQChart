@@ -1232,6 +1232,7 @@ function JSChartContainer(uielement)
 
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)
         {
+            this.Frame.Draw();
             this.ChartSplashPaint.Draw();
             return;
         }
@@ -7773,6 +7774,27 @@ function FrameSplitKLinePriceY()
             //this.Frame.HorizontalInfo[i].Font="14px 微软雅黑";
             //this.Frame.HorizontalInfo[i].TextColor="rgb(100,0,200)";
             //this.Frame.HorizontalInfo[i].LineColor="rgb(220,220,220)";
+        }
+
+        if (this.SplitCount>0 && splitData.Count>this.SplitCount)
+        {
+            var filter=parseInt(splitData.Count/this.SplitCount);
+            if (filter<=1) filter=2;
+            var data=[];
+            for(var i=0; i<this.Frame.HorizontalInfo.length; i+=filter)
+            {
+                
+                if (i+filter>=this.Frame.HorizontalInfo.length && i!=this.Frame.HorizontalInfo.length-1) //最后一个数据放进去
+                {
+                    data.push(this.Frame.HorizontalInfo[this.Frame.HorizontalInfo.length-1]);
+                }
+                else
+                {
+                    data.push(this.Frame.HorizontalInfo[i]);
+                }
+            }
+
+            this.Frame.HorizontalInfo=data;
         }
 
         this.Frame.HorizontalMax=splitData.Max;

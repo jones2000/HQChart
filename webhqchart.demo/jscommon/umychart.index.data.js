@@ -28,7 +28,10 @@ JSIndexScript.prototype.Get=function(id)
             ['NDB', this.NDB],
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
-            ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion]
+            ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],
+
+
+            ['TEST', this.TEST] //测试用
         ]
     );
 
@@ -885,6 +888,18 @@ JSIndexScript.prototype.MarginProportion=function()
     return data; 
 }
 
+JSIndexScript.prototype.TEST = function () 
+{
+    let data =
+        {
+            Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
+            Args: [{ Name: 'N', Value: 10 }],
+            Script: //脚本
+                'VAR2:C,STICK,LINETHICK5;'
+        };
+
+    return data;
+}
 
 
 

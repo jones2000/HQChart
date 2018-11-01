@@ -616,6 +616,8 @@ function PolicyInfo()
 
         param.HQChart.UpdataChartInfo();
         param.HQChart.Draw();
+
+        if (param.HQChart.UpdateUICallback) param.HQChart.UpdateUICallback('RecvPolicyInfoData', this);
     }
 }
 
