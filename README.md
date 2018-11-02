@@ -6,6 +6,7 @@
 --webhqchart.demo 页面行情测试用例 <br>
    * |--jscommon 行情前端js代码 是webhqchart的一个拷贝 <br>
    * |--demo  测试用 <br>
+*注意！ 目前代码使用了ES6的特性， 所有会导致有些老的浏览器无法显示， 需要使用Babel转成es5
 
 --小程序行情模块用例 小程序测试用例<br>
 
