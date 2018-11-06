@@ -7257,46 +7257,25 @@ function DynamicKLineTitlePainting() {
 
   this.DrawMulitLine=function(item) //画多行
   {
-    var leftSpace=5;
-    var bottomSpace=2;
+    var leftSpace=1;
+    var bottomSpace=1;
     var left = this.Frame.ChartBorder.GetLeft() + leftSpace;;
     var right=this.Frame.ChartBorder.GetRight();
     var width = this.Frame.ChartBorder.GetWidth();
     var height = this.Frame.ChartBorder.GetTop();
     
     var itemHeight = (height - bottomSpace)/this.LineCount;
-    var itemWidth = (width - leftSpace)/3;
+    var itemWidth = (width - leftSpace)/4;
     var bottom = itemHeight;
 
     this.Canvas.textAlign = "left";
     this.Canvas.textBaseline = "bottom";
     this.Canvas.font = this.Font;
 
-    if (this.LineCount>=3)
-    {
-        var outText='';
-
-        outText += IFrameSplitOperator.FormatDateString(item.Date) + ' ';
-
-        if (item.Time != null && !isNaN(item.Time) && item.Time > 0)
-            outText += IFrameSplitOperator.FormatTimeString(item.Time) + ' ';
-
-        this.Canvas.fillStyle = this.UnchagneColor;
-        if (this.IsShowName) outText += this.Name+' ';
-
-        if (this.IsShowSettingInfo) 
-        {
-            var periodName = PERIOD_NAME[this.Data.Period];
-            var rightName = RIGHT_NAME[this.Data.Right];
-            var text = "(" + periodName + " " + rightName + ")";
-            if (item.Time != null) text = "(" + periodName + ")";
-            outText += text+' ';
-        }
-
-        this.Canvas.fillText(outText, left, bottom, width);
-        bottom += itemHeight;   //换行
-        var left = this.Frame.ChartBorder.GetLeft() + leftSpace;
-    }
+    var text= IFrameSplitOperator.FormatDateString(item.Date);
+    this.Canvas.fillStyle = this.UnchagneColor;
+    this.Canvas.fillText(text, left, bottom, itemWidth);
+    left += itemWidth;
 
     this.Canvas.textAlign = "left";
     this.Canvas.fillStyle = this.GetColor(item.Open, item.YClose);
@@ -7316,6 +7295,13 @@ function DynamicKLineTitlePainting() {
 
     bottom += itemHeight;   //换行
     var left = this.Frame.ChartBorder.GetLeft() + leftSpace;
+    if (item.Time != null && !isNaN(item.Time) && item.Time > 0)
+    {
+        this.Canvas.fillStyle = this.UnchagneColor;
+        var text = IFrameSplitOperator.FormatTimeString(item.Time);
+        this.Canvas.fillText(text, left, bottom, itemWidth);
+    }
+    left += itemWidth;
 
     this.Canvas.fillStyle = this.GetColor(item.Close, item.YClose);
     var text = "收:" + item.Close.toFixed(2);
@@ -7731,7 +7717,7 @@ function DynamicMinuteTitlePainting() {
   }
 
   this.DrawTitle = function () {
-      this.SendUpdateUIMessage('DrawTitle');
+    this.SendUpdateUIMessage('DrawTitle');
   }
 
   this.DrawMulitLine = function (item) //画多行
