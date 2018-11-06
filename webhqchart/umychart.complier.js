@@ -7047,7 +7047,8 @@ function timeout(ms) {
 JSComplier.Execute=function(code,option,errorCallback)
 {
     //异步调用
-    var asyncExecute= async function()
+    //var asyncExecute= async function() es5不能执行 去掉异步
+    var asyncExecute= function()
     {
         try
         {

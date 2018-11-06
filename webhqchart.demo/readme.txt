@@ -15,4 +15,7 @@ demo/phone10.html  手机网页版(走势图横屏)
 
 demo/phone11.html 通达信脚本网页版(历史走势图)
 demo/phone12.html 通达信脚本网页版(策略选股)  选股后台api使用node.jccomplier模块
+
+demo/phone13.html K线训练网页版
+demo/phone14.html K线训练手机版
  

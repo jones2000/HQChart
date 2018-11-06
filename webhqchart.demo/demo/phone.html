@@ -11,13 +11,17 @@
 
     <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
 
-    <script type="text/javascript" src="../jscommon/umychart.js"></script>
-    <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
-    <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
-    <script type="text/javascript" src="../jscommon/umychart.style.js"></script>
+    <script src="content/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.js"></script>
+    <script src="../jscommon/umychart.complier.js"></script>
+    <script src="../jscommon/umychart.index.data.js"></script>
+    <script src="../jscommon/umychart.style.js"></script>
+
+     <!-- 引入vConsole的JS库 -->
+     <script src="../vConsole-3.2.0/dist/vconsole.min.js"></script>
     
-    <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
     <script>
+
         function getURLParams(name) 
         {
         	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
@@ -42,6 +46,13 @@
         
         $(function ()
         {
+            var debug=getURLParams('debug');
+            if (debug==1) 
+            {
+                var vConsole = new VConsole();
+                console.log('create VConsole');
+            }
+
             var symbol=getURLParams('symbol');
             if (symbol==null) symbol='600000.sh';
         
@@ -65,7 +76,8 @@
             //document.getElementById('kline').style.backgroundColor=blackStyle.BGColor;
         
             // 创建股票K线图
-            var jsChart=JSChart.Init(document.getElementById('kline'));
+            console.log('create JSChart');
+            var chart=JSChart.Init(document.getElementById('kline'));
         
             var option=
                 {
@@ -121,7 +133,7 @@
                 option.KLine.IsShowTooltip=false;
             }
         
-            jsChart.SetOption(option);
+            chart.SetOption(option);
             //jsChart.LockIndex('飞龙四式',unlockIndex);
         
             resizeCanvas();

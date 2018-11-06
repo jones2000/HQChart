@@ -16,7 +16,7 @@ JSIndexScript.prototype.Get=function(id)
             ['MA', this.MA], ['均线', this.MA],['BOLL', this.BOLL],['BBI', this.BBI],
             ['DKX', this.DKX],['MIKE', this.MIKE],['PBX', this.PBX],
             ['ENE', this.ENE],['MACD', this.MACD],['KDJ', this.KDJ],
-            ['VOL', this.VOL],['RSI', this.RSI],['BRAR', this.BRAR],
+            ['VOL', this.VOL],['成交量', this.VOL],['RSI', this.RSI],['BRAR', this.BRAR],
             ['WR', this.WR],['BIAS', this.BIAS],['OBV', this.OBV],
             ['DMI', this.DMI],['CR', this.CR],['PSY', this.PSY],
             ['CCI', this.CCI],['DMA', this.DMA],['TRIX', this.TRIX],

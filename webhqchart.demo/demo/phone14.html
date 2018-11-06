@@ -2,36 +2,37 @@
 <html xmlns="http://www.w3.org/1999/xhtml">  
 <head>  
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
-<title>K线训练网页版</title>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>K线训练手机版(横屏)</title>  
     <link rel="stylesheet" href="content/css/tools.css" />
     <link rel="stylesheet" href="content/font/iconfont.css" />
     <link rel="stylesheet" href="plugins/bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" href="plugins/bootstrap/custom.min.css" />
-    <link rel="stylesheet" href="content/css/phone13.tools.css" />
+    <link rel="stylesheet" href="content/css/phone14.tools.css" />
 </head>  
 <body>
     <div id="kline" style="width: 900px;height:400px;position: relative;float:left;"></div>
     <div id="tools" class="tools">
         <div class="row">
-            <div class="col-md-3 col-sm-12 col-xs-12 ">
+            <div class="col-md-3 col-sm-3 col-xs-3 ">
                 <button type="button" class="btn btn-info btn-xs" v-on:click="nextKLine()">下一K线</button>
             </div>
-            <div class="col-md-5 col-sm-12 col-xs-12">
+            <div class="col-md-5 col-sm-5 col-xs-5">
                 <div class="checkbox" style="margin:0px;">
                     <label>
                         <input type="checkbox" v-model="kLineAuto" /> K线自动前进
                     </label>
                 </div>
             </div>
-            <div class="col-md-4 col-sm-12 col-xs-12" style="padding-left:0px;">
+            <div class="col-md-4 col-sm-4 col-xs-4" style="padding-left:0px;">
                 还剩<span style="color:#EE1515;">{{SurplusKLineCount}}</span>根K线
             </div>
         </div>
         <div class="row" style="margin-top:20px;">
-            <div class="col-md-6 col-sm-12 col-xs-12">
+            <div class="col-md-6 col-sm-6 col-xs-6">
                 <button type="button" class="btn pull-right" v-bind:class="buyOrSellState == 0?'btn-danger':'btn-dark'" v-bind:disabled="buyOrSellState != 0" v-on:click="buyOrSell()">&nbsp;&nbsp;&nbsp;&nbsp;买&nbsp;&nbsp;&nbsp;&nbsp;</button>
             </div>
-            <div class="col-md-6 col-sm-12 col-xs-12">
+            <div class="col-md-6 col-sm-6 col-xs-6">
                 <button type="button" class="btn" v-bind:class="buyOrSellState == 1?'btn-danger':'btn-dark'" v-bind:disabled="buyOrSellState != 1" v-on:click="buyOrSell()">&nbsp;&nbsp;&nbsp;&nbsp;卖&nbsp;&nbsp;&nbsp;&nbsp;</button>
             </div>
         </div>
@@ -145,12 +146,15 @@
             var height= $(window).height(); //300高度给指标编辑器
             var width = $(window).width();
             var divKline=document.getElementById('kline');
-            divKline.style.width = (width - 300) + 'px';
-            divKline.style.height = height + 'px';
+            divKline.style.width = width + 'px';
+            divKline.style.height = (height-260) + 'px';
             divKline.JSChart.OnSize();
 
-            $(".tools").css({ width: width - parseInt(divKline.style.width) - 10 });
-            $(".tools .list").height(height - 150);
+            $(".tools").css({
+                width: height - parseInt(divKline.style.height) - 10,
+                transform: "rotate(90deg) translate(" + (96) + "px," + (-(width - 160)) + "px)"
+            });
+            $(".tools .list").height(width - 140);
         }
         
         $(function () {
@@ -180,7 +184,7 @@
         ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
     
             var jsIndexData = new JSIndexScript();
-            let testIndex = jsIndexData.Get('VOL');
+            let testIndex = jsIndexData.Get('RSI');
             console.log(testIndex);
     
             //指标3
@@ -195,7 +199,7 @@
     
             var option =
                 {
-                    Type: 'K线训练',
+                    Type: 'K线训练横屏',
                     Windows: aryIndex, //窗口指标
                     Symbol: symbol,
                     IsAutoUpate: true,       //是自动更新数据
@@ -229,8 +233,10 @@
     
                     Border: //边框
                     {
-                        Left: 50,    //左边间距
-                        Right: 1     //右边间距
+                        Left: 20,    //左边间距
+                        Right: 20,     //右边间距
+                        Top:50,
+                        Bottom:1
                     },
     
                     Frame:  //子框架设置
