@@ -6235,6 +6235,28 @@ function IFrameSplitOperator() {
 
     return true;
   }
+
+    this.Filter=function(aryInfo)
+    {
+        if (this.SplitCount <= 0 || aryInfo.length<=0 || aryInfo.length < this.SplitCount) return aryInfo;
+
+        //分割线比预设的多, 过掉一些
+        var filter = parseInt(aryInfo.length / this.SplitCount);
+        if (filter <= 1) filter = 2;
+        var data = [];
+        for (var i = 0; i < aryInfo.length; i += filter) 
+        {
+            if (i + filter >= aryInfo.length && i != aryInfo.length - 1) //最后一个数据放进去
+            {
+                data.push(aryInfo[aryInfo.length - 1]);
+            }
+            else {
+                data.push(aryInfo[i]);
+            }
+        }
+
+        return data;
+    }
 }
 
 //字符串格式化 千分位分割
@@ -6394,26 +6416,7 @@ function FrameSplitKLinePriceY() {
       //this.Frame.HorizontalInfo[i].LineColor="rgb(220,220,220)";
     }
 
-    if (this.SplitCount > 0 && splitData.Count > this.SplitCount) //分割线比预设的多, 过掉一些
-    {
-        var filter = parseInt(splitData.Count / this.SplitCount);
-        if (filter<=1) filter=2;
-        var data = [];
-        for (var i = 0; i < this.Frame.HorizontalInfo.length; i += filter) 
-        {
-            if (i + filter >= this.Frame.HorizontalInfo.length && i != this.Frame.HorizontalInfo.length - 1) //最后一个数据放进去
-            {
-                data.push(this.Frame.HorizontalInfo[this.Frame.HorizontalInfo.length - 1]);
-            }
-            else
-            {
-                data.push(this.Frame.HorizontalInfo[i]);
-            }
-        }
-
-        this.Frame.HorizontalInfo = data;
-    }
-
+    this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
     this.Frame.HorizontalMax = splitData.Max;
     this.Frame.HorizontalMin = splitData.Min;
   }
@@ -6433,45 +6436,41 @@ function FrameSplitY() {
       splitData.Count = this.Frame.YSpecificMaxMin.Count;
       splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
     }
-    else {
-      splitData.Count = this.SplitCount;
+    else 
+    {
+      splitData.Count = this.SplitCount*2;  //夸大两倍
       splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
       this.IntegerCoordinateSplit(splitData);
     }
 
     this.Frame.HorizontalInfo = [];
+    for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) 
+    {
+        this.Frame.HorizontalInfo[i] = new CoordinateInfo();
+        this.Frame.HorizontalInfo[i].Value = value;
 
-    for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) {
-      this.Frame.HorizontalInfo[i] = new CoordinateInfo();
-      this.Frame.HorizontalInfo[i].Value = value;
-      //this.Frame.HorizontalInfo[i].TextColor="rgb(51,51,51)";
+        if (this.StringFormat == 1)   //手机端格式 如果有万,亿单位了 去掉小数
+        {
+            var floatPrecision = 2;
+            if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision = 0;
+            this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
+        }
+        else if (this.StringFormat == -1) //刻度不显示
+        {
 
-      if (this.StringFormat == 1)   //手机端格式 如果有万,亿单位了 去掉小数
-      {
-        var floatPrecision = 2;
-        if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision = 0;
-        this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
-      }
-      else if (this.StringFormat == -1) //刻度不显示
-      {
+        }
+        else 
+        {
+            this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, 2);
+        }
 
-      }
-      else {
-        this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, 2);
-      }
+        this.Frame.HorizontalInfo[i].Message[0] = this.Frame.HorizontalInfo[i].Message[1];
 
-      this.Frame.HorizontalInfo[i].Message[0] = this.Frame.HorizontalInfo[i].Message[1];
-
-      if (this.StringFormat == -2)     //刻度右边不显示
-        this.Frame.HorizontalInfo[i].Message[1] = null;
-      else if (this.StringFormat == -3)
-        this.Frame.HorizontalInfo[i].Message[0] = null;
-
-      //this.Frame.HorizontalInfo[i].Font="14px 微软雅黑";
-      //this.Frame.HorizontalInfo[i].TextColor="rgb(100,0,200)";
-      //this.Frame.HorizontalInfo[i].LineColor="rgb(220,220,220)";
+        if (this.StringFormat == -2) this.Frame.HorizontalInfo[i].Message[1] = null;    //刻度右边不显示
+        else if (this.StringFormat == -3) this.Frame.HorizontalInfo[i].Message[0] = null;   //刻度左边不显示
     }
 
+    this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
     this.Frame.HorizontalMax = splitData.Max;
     this.Frame.HorizontalMin = splitData.Min;
   }
@@ -7614,7 +7613,7 @@ function DynamicKLineTitlePainting() {
     var aryTitle = [];
     var position = { Top: top, Right: right, IsHScreen: isHScreen };
 
-    aryTitle.push(parseInt(date / 10000) + '-' + parseInt(date % 10000 / 100) + '-' + parseInt(date % 100));
+    aryTitle.push(IFrameSplitOperator.FormatDateString(date));
     if (reportTitle) aryTitle.push(reportTitle);        //季报
     if (pforecastTitle) aryTitle.push(pforecastTitle);  //业绩预告  
     if (reportCount > 0) aryTitle.push('公告数量:' + reportCount);
