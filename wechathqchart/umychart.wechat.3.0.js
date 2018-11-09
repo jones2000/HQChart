@@ -3983,90 +3983,66 @@ function ChartKVolumeBar() {
 }
 
 //分钟成交量
-function ChartMinuteVolumBar() {
-  this.newMethod = IChartPainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function ChartMinuteVolumBar() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.Color = "rgb(200,200,200)";
+    this.UpColor = g_JSChartResource.UpBarColor;
+    this.DownColor = g_JSChartResource.DownBarColor;
+    this.YClose;    //前收盘
 
-  this.Draw = function () {
-    if (this.ChartFrame.IsHScreen === true) {
-      this.HScreenDraw();
-      return;
+    this.Draw = function () 
+    {
+        var isHScreen = (this.ChartFrame.IsHScreen === true)
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+        var yBottom = this.ChartFrame.GetYFromData(0);
+        var yPrice=this.YClose; //上一分钟的价格
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var item = this.Data.Data[i];
+            if (!item || !item.Vol) continue;
+
+            var y = this.ChartFrame.GetYFromData(item.Vol);
+            var x = this.ChartFrame.GetXFromIndex(i);
+            if (x > chartright) break;
+            //价格>=上一分钟价格 红色 否则绿色
+            this.Canvas.strokeStyle = item.Close >= yPrice ? this.UpColor:this.DownColor;
+            this.Canvas.beginPath();
+            if (isHScreen)
+            {
+                this.Canvas.moveTo(y, ToFixedPoint(x));
+                this.Canvas.lineTo(yBottom, ToFixedPoint(x));
+            }
+            else
+            {
+                this.Canvas.moveTo(ToFixedPoint(x), y);
+                this.Canvas.lineTo(ToFixedPoint(x), yBottom);
+            }
+            this.Canvas.stroke();
+            yPrice=item.Close;
+        }
     }
 
-    var chartright = this.ChartBorder.GetRight();
-    var xPointCount = this.ChartFrame.XPointCount;
+    this.GetMaxMin = function () 
+    {
+        var xPointCount = this.ChartFrame.XPointCount;
+        var range = {};
+        range.Min = 0;
+        range.Max = null;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var item = this.Data.Data[i];
+            if (!item || !item.Vol) continue;
+            if (range.Max == null) range.Max = item.Vol;
+            if (range.Max < item.Vol) range.Max = item.Vol;
+        }
 
-    var yBottom = this.ChartFrame.GetYFromData(0);
-
-    var drawCount = 0;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var vol = this.Data.Data[i];
-      if (!vol) continue;
-
-      var y = this.ChartFrame.GetYFromData(vol);
-      var x = this.ChartFrame.GetXFromIndex(i);
-      if (x > chartright) break;
-
-      if (drawCount == 0) this.Canvas.beginPath();
-
-      this.Canvas.moveTo(ToFixedPoint(x), y);
-      this.Canvas.lineTo(ToFixedPoint(x), yBottom);
-
-      ++drawCount;
+        return range;
     }
-
-    if (drawCount > 0) {
-      this.Canvas.strokeStyle = this.Color;
-      this.Canvas.stroke();
-    }
-  }
-
-  this.HScreenDraw = function () {
-    var chartright = this.ChartBorder.GetBottom();
-    var xPointCount = this.ChartFrame.XPointCount;
-
-    var yBottom = this.ChartFrame.GetYFromData(0);
-
-    var drawCount = 0;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var vol = this.Data.Data[i];
-      if (!vol) continue;
-
-      var y = this.ChartFrame.GetYFromData(vol);
-      var x = this.ChartFrame.GetXFromIndex(i);
-      if (x > chartright) break;
-
-      if (drawCount == 0) this.Canvas.beginPath();
-
-      this.Canvas.moveTo(y, ToFixedPoint(x));
-      this.Canvas.lineTo(yBottom, ToFixedPoint(x));
-
-      ++drawCount;
-    }
-
-    if (drawCount > 0) {
-      this.Canvas.strokeStyle = this.Color;
-      this.Canvas.stroke();
-    }
-  }
-
-  this.GetMaxMin = function () {
-    var xPointCount = this.ChartFrame.XPointCount;
-    var range = {};
-    range.Min = 0;
-    range.Max = null;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var vol = this.Data.Data[i];
-      if (range.Max == null) range.Max = vol;
-
-      if (range.Max < vol) range.Max = vol;
-    }
-
-    return range;
-  }
 }
 
 
@@ -7287,8 +7263,9 @@ function DynamicKLineTitlePainting() {
     this.Canvas.fillText(text, left, bottom, itemWidth);
     left += itemWidth;
 
-    this.Canvas.fillStyle = this.VolColor;
-    var text = "量:" + IFrameSplitOperator.FormatValueString(item.Vol, 2);
+    var value=(item.Close-item.YClose)/item.YClose*100;
+    this.Canvas.fillStyle = this.GetColor(value, 0);
+    var text = "幅:" + value.toFixed(2)+'%';
     this.Canvas.fillText(text, left, bottom, itemWidth);
     left += itemWidth;
 
@@ -7747,15 +7724,16 @@ function DynamicMinuteTitlePainting() {
       if (item.Close != null) 
       {
           this.Canvas.fillStyle = this.GetColor(item.Close, this.YClose);
-          var text = "价格:" + item.Close.toFixed(2);
+          var text = "价:" + item.Close.toFixed(2);
           this.Canvas.fillText(text, left, bottom, itemWidth);
           left += itemWidth;
       }
 
-      if (item.AvPrice != null) 
+      if (this.YClose && item.Close) 
       {
-          this.Canvas.fillStyle = this.GetColor(item.AvPrice, this.YClose);
-          var text = "均价:" + item.AvPrice.toFixed(2);
+          var value = (item.Close - this.YClose) / this.YClose*100;
+          this.Canvas.fillStyle = this.GetColor(value, 0);
+          var text = "幅:" + value.toFixed(2)+'%';
           this.Canvas.fillText(text, left, bottom, itemWidth);
           left += itemWidth;
       }
@@ -10905,9 +10883,8 @@ function MinuteChartContainer(uielement) {
     this.Frame.SubFrame[0].Frame.YSplitOperator.AverageData = bindData;
 
     //成交量
-    bindData = new ChartData();
-    bindData.Data = minuteData.GetVol();
-    this.ChartPaint[2].Data = bindData;
+    this.ChartPaint[2].Data = minuteData;
+    this.ChartPaint[2].YClose = yClose;
 
     this.TitlePaint[0].Data = this.SourceData;                    //动态标题
     this.TitlePaint[0].Symbol = this.Symbol;

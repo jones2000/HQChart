@@ -1280,7 +1280,7 @@ function JSChartContainer(uielement)
             item.Draw();
         }
 
-        this.Frame.DrawInsideHorizontal();
+        if (this.Frame.DrawInsideHorizontal) this.Frame.DrawInsideHorizontal();
         this.Frame.DrawLock();
         this.Frame.Snapshot();
 
@@ -5515,75 +5515,42 @@ function ChartMinuteVolumBar()
     this.newMethod();
     delete this.newMethod;
 
-    this.Color="rgb(200,200,200)";
+    this.UpColor = g_JSChartResource.UpBarColor;
+    this.DownColor = g_JSChartResource.DownBarColor;
+    this.YClose;    //前收盘
 
     this.Draw=function()
     {
-        if (this.ChartFrame.IsHScreen===true)
-        {
-            this.HScreenDraw();
-            return;
-        }
-
+        var isHScreen = (this.ChartFrame.IsHScreen === true);
         var chartright=this.ChartBorder.GetRight();
+        if (isHScreen) chartright = this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
-
         var yBottom=this.ChartFrame.GetYFromData(0);
-
-        var drawCount=0;
+        var yPrice=this.YClose; //上一分钟的价格
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
-            var vol=this.Data.Data[i];
-            if (!vol) continue;
+            var item = this.Data.Data[i];
+            if (!item || !item.Vol) continue;
 
-            var y=this.ChartFrame.GetYFromData(vol);
+            var y=this.ChartFrame.GetYFromData(item.Vol);
             var x=this.ChartFrame.GetXFromIndex(i);
             if (x>chartright) break;
 
-            if (drawCount==0) this.Canvas.beginPath();
-
-            this.Canvas.moveTo(ToFixedPoint(x),y);
-            this.Canvas.lineTo(ToFixedPoint(x),yBottom);
-
-            ++drawCount;
-        }
-
-        if (drawCount>0)
-        {
-            this.Canvas.strokeStyle=this.Color;
+            //价格>=上一分钟价格 红色 否则绿色
+            this.Canvas.strokeStyle = item.Close >= yPrice ? this.UpColor:this.DownColor;
+            this.Canvas.beginPath();
+            if (isHScreen)
+            {
+                this.Canvas.moveTo(y,ToFixedPoint(x));
+                this.Canvas.lineTo(yBottom,ToFixedPoint(x));
+            }
+            else
+            {
+                this.Canvas.moveTo(ToFixedPoint(x),y);
+                this.Canvas.lineTo(ToFixedPoint(x),yBottom);
+            }
             this.Canvas.stroke();
-        }
-    }
-
-    this.HScreenDraw=function()
-    {
-        var chartright=this.ChartBorder.GetBottom();
-        var xPointCount=this.ChartFrame.XPointCount;
-
-        var yBottom=this.ChartFrame.GetYFromData(0);
-
-        var drawCount=0;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
-        {
-            var vol=this.Data.Data[i];
-            if (!vol) continue;
-
-            var y=this.ChartFrame.GetYFromData(vol);
-            var x=this.ChartFrame.GetXFromIndex(i);
-            if (x>chartright) break;
-
-            if (drawCount==0) this.Canvas.beginPath();
-
-            this.Canvas.moveTo(y,ToFixedPoint(x));
-            this.Canvas.lineTo(yBottom,ToFixedPoint(x));
-
-            ++drawCount;
-        }
-
-        if (drawCount>0)
-        {
-            this.Canvas.strokeStyle=this.Color;
-            this.Canvas.stroke();
+            yPrice=item.Close;
         }
     }
 
@@ -5595,10 +5562,10 @@ function ChartMinuteVolumBar()
         range.Max=null;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
-            var vol=this.Data.Data[i];
-            if (range.Max==null) range.Max=vol;
-
-            if (range.Max<vol) range.Max=vol;
+            var item = this.Data.Data[i];
+            if (!item || !item.Vol) continue;
+            if (range.Max == null) range.Max = item.Vol;
+            if (range.Max < item.Vol) range.Max = item.Vol;
         }
 
         return range;
@@ -12978,9 +12945,8 @@ function MinuteChartContainer(uielement)
         this.Frame.SubFrame[0].Frame.YSplitOperator.AverageData=bindData;
 
         //成交量
-        bindData=new ChartData();
-        bindData.Data=minuteData.GetVol();
-        this.ChartPaint[2].Data=bindData;
+        this.ChartPaint[2].Data=minuteData;
+        this.ChartPaint[2].YClose=yClose;
 
         this.TitlePaint[0].Data=this.SourceData;                    //动态标题
         this.TitlePaint[0].Symbol=this.Symbol;
