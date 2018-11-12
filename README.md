@@ -50,4 +50,4 @@
 * 多日走势图 https://opensource.zealink.com/hqweb/demo/phone15.html <br>
 
 * 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
-* QQ交流群(950092318) ![QQ群](/小程序行情模块用例/image/qqcode.jpg)
+* QQ交流群(950092318) ![QQ群](/小程序行情模块用例/image/qqcode.png)
