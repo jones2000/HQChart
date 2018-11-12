@@ -306,6 +306,8 @@ function JSChart(divElement)
             chart.ChartCorssCursor.IsShowText=option.IsShowCorssCursorInfo;
         }
 
+        if (option.DayCount>1) chart.DayCount=option.DayCount;
+
         if (option.Border)
         {
             if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left=option.Border.Left;
@@ -722,6 +724,16 @@ function JSChart(divElement)
         {
             console.log('[JSChart:ChangeTradeDate] date', tradeDate);
             this.JSChartContainer.ChangeTradeDate(tradeDate);
+        }
+    }
+
+    //多日走势图
+    this.ChangeDayCount=function(count)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ChangeDayCount)=='function')
+        {
+            console.log('[JSChart:ChangeDayCount] count', count);
+            this.JSChartContainer.ChangeDayCount(count);
         }
     }
 }
@@ -2385,6 +2397,8 @@ function MinuteFrame()
     this.newMethod=AverageWidthFrame;   //派生
     this.newMethod();
     delete this.newMethod;
+
+    this.MinuteCount=243;   //每天的分钟个数
 
     this.DrawFrame=function()
     {
@@ -6633,6 +6647,7 @@ function ChartMinutePriceLine()
         var chartright=this.ChartBorder.GetRight();
         if (isHScreen===true) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
+        var minuteCount=this.ChartFrame.MinuteCount;
 
         var bFirstPoint=true;
         var drawCount=0;
@@ -6659,6 +6674,13 @@ function ChartMinutePriceLine()
             }
 
             ++drawCount;
+
+            if (drawCount>=minuteCount) //上一天的数据和这天地数据线段要断开
+            {
+                bFirstPoint=true;
+                this.Canvas.stroke();
+                drawCount=0;
+            }
         }
 
         if (drawCount>0)
@@ -7652,13 +7674,19 @@ IFrameSplitOperator.NumberToString=function(value)
     return value.toString();
 }
 
-IFrameSplitOperator.FormatDateString=function(value)
+IFrameSplitOperator.FormatDateString=function(value,format)
 {
     var year=parseInt(value/10000);
     var month=parseInt(value/100)%100;
     var day=value%100;
 
-    return year.toString()+'-'+ IFrameSplitOperator.NumberToString(month) +'-'+ IFrameSplitOperator.NumberToString(day);
+    switch(format)
+    {
+        case 'MM-DD':
+            return IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
+        default:
+            return year.toString() + '-' + IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
+    }
 }
 
 IFrameSplitOperator.FormatTimeString=function(value)
@@ -8010,32 +8038,55 @@ function FrameSplitMinuteX()
 
     this.ShowText=true;                 //是否显示坐标信息
     this.Symbol=null;                   //股票代码 x轴刻度根据股票类型来调整
+    this.DayCount=1;
+    this.ShowDateFormate=1;             //0=YYYY-MM-DD  1=MM-DD
 
     this.Operator=function()
     {
         this.Frame.VerticalInfo=[];
         var xPointCount=this.Frame.XPointCount;
 
+        var minuteCount=243;
+        var minuteMiddleCount=122;
         //默认沪深股票
         var xcoordinate=SHZE_MINUTE_X_COORDINATE;
-        this.Frame.XPointCount=243;
-
         if(this.Symbol!=null)
         {   //港股用港股的刻度 及数据个数
             if (this.Symbol.indexOf('.hk')>0) 
             {
                 xcoordinate=HK_MINUTE_X_COORDINATE;
-                this.Frame.XPointCount=332;
+                minuteCount=332;
+                minuteMiddleCount=151;
             }
         }
-
-        for(var i in xcoordinate)
+        this.Frame.XPointCount=minuteCount*this.DayCount;
+        this.Frame.MinuteCount=minuteCount;
+        this.Frame.VerticalInfo=[];
+        
+        if (this.DayCount<=1)
         {
-            var info=new CoordinateInfo();
-            info.Value=xcoordinate[i][0];
-            if (this.ShowText)
-                info.Message[0]=xcoordinate[i][3];
-            this.Frame.VerticalInfo[i]=info;
+            for(var i in xcoordinate)
+            {
+                var info=new CoordinateInfo();
+                info.Value=xcoordinate[i][0];
+                if (this.ShowText)
+                    info.Message[0]=xcoordinate[i][3];
+                this.Frame.VerticalInfo[i]=info;
+            }
+        }
+        else
+        {
+            for(var i=this.DayData.length-1,j=0;i>=0;--i,++j)
+            {
+                var info=new CoordinateInfo();
+                info.Value=j*minuteCount+minuteMiddleCount;
+                this.Frame.VerticalInfo.push(info);
+                if (this.ShowText) info.Message[0]=IFrameSplitOperator.FormatDateString(this.DayData[i].Date, this.ShowFormate==0?'YYYY-MM-DD':'MM-DD');
+
+                var info=new CoordinateInfo();
+                info.Value=(j+1)*minuteCount;
+                this.Frame.VerticalInfo.push(info);
+            }
         }
     }
 }
@@ -8466,12 +8517,16 @@ function HQMinuteTimeStringFormat()
     this.newMethod();
     delete this.newMethod;
 
+    this.Frame;
+
     this.Operator=function()
     {
         if (!this.Value) return false;
 
         var index=Math.abs(this.Value);
         index=parseInt(index.toFixed(0));
+
+        if (this.Frame && this.Frame.MinuteCount) index=index%this.Frame.MinuteCount;
 
         if(index == 0)
         {
@@ -12533,8 +12588,11 @@ function MinuteChartContainer(uielement)
     this.SourceData;                          //原始的历史数据
     this.IsAutoUpate=false;                   //是否自动更新行情数据
     this.TradeDate=0;                         //行情交易日期
+    this.DayCount=1;                          //显示几天的数据
+    this.DayData;                             //多日分钟数据
 
     this.MinuteApiUrl="https://opensource.zealink.com/API/Stock";
+    this.HistoryMinuteApiUrl='https://opensource.zealink.com/API/StockMinuteData';  //历史分钟数据
 
      //手机拖拽
      uielement.ontouchstart=function(e)
@@ -12633,6 +12691,8 @@ function MinuteChartContainer(uielement)
 
             this.TitlePaint.push(titlePaint);
         }
+
+        this.ChartCorssCursor.StringFormatX.Frame=this.Frame.SubFrame[0].Frame;
 
         this.UIElement.addEventListener("keydown", OnKeyDown, true);    //键盘消息
     }
@@ -12798,9 +12858,117 @@ function MinuteChartContainer(uielement)
         this.RequestData();
     }
 
+    this.ChangeDayCount=function(count)
+    {
+        if (count<0 || count>10) return;
+        this.DayCount=count;
+
+        this.RequestData();
+    }
+
     this.RequestData=function()
     {
-        this.RequestMinuteData();               //请求数据
+        if (this.DayCount<=1) this.RequestMinuteData();               
+        else this.RequestHistoryMinuteData();
+    }
+
+    //请求历史分钟数据
+    this.RequestHistoryMinuteData=function()
+    {
+        var self=this;
+
+        $.ajax({
+            url: self.HistoryMinuteApiUrl,
+            data:
+            {
+                "symbol": self.Symbol,
+                "daycount": self.DayCount
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                self.RecvHistoryMinuteData(data);
+            }
+        });
+    }
+
+    this.RecvHistoryMinuteData=function(data)
+    {
+        this.DayData=MinuteChartContainer.JsonDataToMinuteDataArray(data);;
+        this.Symbol=data.symbol;
+        this.Name=data.name;
+
+        this.UpdateHistoryMinuteUI();
+
+        this.AutoUpdata();
+    }
+
+    this.UpdateHistoryMinuteUI=function()
+    {
+        var allMinuteData=this.HistoryMinuteDataToArray(this.DayData);
+
+        //原始数据
+        var sourceData=new ChartData();
+        sourceData.Data=allMinuteData;
+
+        this.SourceData=sourceData;
+        this.TradeDate=this.DayData[0].Date;
+
+        this.BindMainData(sourceData,this.DayData[0].YClose);
+        this.ChartPaint[1].Data=null;   //均线暂时不用
+
+        if (this.Frame.SubFrame.length>2)
+        {
+            var bindData=new ChartData();
+            bindData.Data=allMinuteData;
+            for(var i=2; i<this.Frame.SubFrame.length; ++i)
+            {
+                this.BindIndexData(i,bindData);
+            }
+        }
+
+        for(let i in this.Frame.SubFrame)
+        {
+            var item=this.Frame.SubFrame[i];
+            item.Frame.XSplitOperator.Symbol=this.Symbol;
+            item.Frame.XSplitOperator.DayCount=this.DayData.length;
+            item.Frame.XSplitOperator.DayData=this.DayData;
+            item.Frame.XSplitOperator.Operator();   //调整X轴个数
+        }
+
+        this.TitlePaint[0].IsShowDate=true;
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+    }
+
+    this.HistoryMinuteDataToArray=function(data)
+    {
+        var result=[];
+        for(var i=data.length-1; i>=0;--i)
+        {
+            var item=data[i];
+            for(var j in item.Data)
+            {
+                result.push(item.Data[j]);
+            }
+        }
+        return result;
+    }
+
+    this.UpdateLatestMinuteData=function(data,date)
+    {
+        for(var i in this.DayData)
+        {
+            var item=this.DayData[i];
+            if (item.Date===date)
+            {
+                item.Data=data;
+                break;
+            }
+        }
     }
 
     //请求分钟数据
@@ -12844,6 +13012,14 @@ function MinuteChartContainer(uielement)
     {
         var aryMinuteData=MinuteChartContainer.JsonDataToMinuteData(data);
 
+        if (this.DayCount>1)    //多日走势图
+        {
+            this.UpdateLatestMinuteData(aryMinuteData,data.stock[0].date);
+            this.UpdateHistoryMinuteUI();
+            this.AutoUpdata();
+            return;
+        }
+
         //原始数据
         var sourceData=new ChartData();
         sourceData.Data=aryMinuteData;
@@ -12870,8 +13046,11 @@ function MinuteChartContainer(uielement)
         {
             var item=this.Frame.SubFrame[i];
             item.Frame.XSplitOperator.Symbol=this.Symbol;
+            item.Frame.XSplitOperator.DayCount=1;
+            item.Frame.XSplitOperator.Operator();   //调整X轴个数
         }
 
+        this.TitlePaint[0].IsShowDate=false;
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
@@ -12882,7 +13061,7 @@ function MinuteChartContainer(uielement)
     //数据自动更新
     this.AutoUpdata=function()
     {
-        var _self = this;
+        var self = this;
 
         if (!this.IsAutoUpate) return;
 
@@ -12897,11 +13076,11 @@ function MinuteChartContainer(uielement)
 
         if(time <930){
             setTimeout(function(){
-                _self.AutoUpdata();
+                self.AutoUpdata();
             },30000);
         }else{
             setTimeout(function(){
-                _self.RequestMinuteData();
+                self.RequestMinuteData();
             },30000);
         }
     }
@@ -13013,9 +13192,14 @@ MinuteChartContainer.JsonDataToMinuteData=function(data)
         item.Vol=jsData.vol/100; //原始单位股
         item.Amount=jsData.amount;
         if (i==0)      //第1个数据 写死9：25
+        {
             item.DateTime=data.stock[0].date.toString()+" 0925";
+            item.IsFristData=true;
+        }
         else
+        {
             item.DateTime=data.stock[0].date.toString()+" "+jsData.time.toString();
+        }
         item.Increate=jsData.increate;
         item.Risefall=jsData.risefall;
         item.AvPrice=jsData.avprice;
@@ -13031,6 +13215,55 @@ MinuteChartContainer.JsonDataToMinuteData=function(data)
     }
 
     return aryMinuteData;
+}
+
+//多日日线数据API 转化成array[];
+MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
+{
+    var result=[];
+    for(var i in data.data)
+    {
+        var minuteData=[];
+        var dayData=data.data[i];
+        var date=dayData.date;
+        for(var j in dayData.minute)
+        {
+            var jsData=dayData.minute[j];
+
+            var item=new MinuteData();
+            item.Close=jsData[2];
+            item.Open=jsData[1];
+            item.High=jsData[3];
+            item.Low=jsData[4];
+            item.Vol=jsData[5]/100; //原始单位股
+            item.Amount=jsData[6];
+            item.DateTime=date.toString()+" "+jsData[0].toString();
+            if (j==0)      //第1个数据 写死9：25
+            {
+                item.DateTime=date.toString()+" 0925";
+                item.IsFristData=true;
+            }
+
+            //价格是0的 都用空
+            if (item.Open<=0) item.Open=null;
+            if (item.Close<=0) item.Close=null;
+            if (item.AvPrice<=0) item.AvPrice=null;
+            if (item.High<=0) item.High=null;
+            if (item.Low<=0) item.Low=null;
+
+            minuteData[j]=item;
+        }
+
+        var newData=new ChartData();
+        newData.Data=minuteData;
+        newData.YClose=dayData.yclose;
+        newData.Close=dayData.close;
+        newData.Date=date;
+
+        result.push(newData);
+    }
+
+    return result;
 }
 
 /*
@@ -14019,6 +14252,8 @@ function MinuteChartHScreenContainer(uielement)
 
             this.TitlePaint.push(titlePaint);
         }
+        
+        this.ChartCorssCursor.StringFormatX.Frame=this.Frame.SubFrame[0].Frame;
 
         this.UIElement.addEventListener("keydown", OnKeyDown, true);    //键盘消息
     }

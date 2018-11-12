@@ -254,6 +254,7 @@ function JSChart(element) {
     //取消显示十字光标刻度信息
     if (option.IsShowCorssCursorInfo == false) chart.ChartCorssCursor.IsShowText = option.IsShowCorssCursorInfo;
     if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
+    if (option.DayCount > 1) chart.DayCount = option.DayCount;
 
     if (option.Border) {
       if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left = option.Border.Left;
@@ -265,6 +266,7 @@ function JSChart(element) {
     if (option.Frame) {
       for (var i in option.Frame) {
         var item = option.Frame[i];
+        if (!chart.Frame.SubFrame[i]) continue;
         if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = item.SplitCount;
         if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
         if (item.XMessageAlign == 'bottom') chart.Frame.SubFrame[i].Frame.XMessageAlign = item.XMessageAlign;
@@ -480,6 +482,15 @@ function JSChart(element) {
     }
   }
 
+    //多日走势图
+    this.ChangeDayCount = function (count) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeDayCount) == 'function') {
+            console.log('[JSChart:ChangeDayCount] count', count);
+            this.JSChartContainer.ChangeDayCount(count);
+        }
+    }
+
   this.StopAutoUpdata = function () {
     if (this.JSChartContainer && typeof (this.JSChartContainer.Stop) == 'function') {
       console.log("[JSChart::StopAutoUpdata] Stop.");
@@ -657,7 +668,8 @@ function JSChartContainer(uielement) {
   this.FrameSplitData.set("double", new SplitData());
   this.FrameSplitData.set("price", new PriceSplitData());
 
-  this.UpdateUICallback;  //数据到达通知前端
+  this.UpdateUICallback;    //数据到达通知前端
+  this.IsOnTouch=false;     //当前是否正式手势操作
 
   //判断是单个手指
   this.IsPhoneDragging = function (e) {
@@ -837,14 +849,18 @@ function JSChartContainer(uielement) {
     }
   }
 
-  this.ontouchend = function (e) 
-  {
-    if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
-    if (this.CorssCursorTouchEnd) this.Draw();//手放开 隐藏十字光标
-        
-  }
+    this.ontouchend = function (e) 
+    {
+        this.IsOnTouch = false;
+        console.log('[JSChartContainer:ontouchend]', this.IsOnTouch);
+        if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
+        if (this.CorssCursorTouchEnd) this.Draw();//手放开 隐藏十字光标    
+    }
 
-  this.Draw = function () {
+  this.Draw = function () 
+  {
+    if (this.IsOnTouch==true) return;
+
     var self = this;
     this.Canvas.clearRect(0, 0, this.UIElement.Width, this.UIElement.Height);
 
@@ -6298,11 +6314,18 @@ IFrameSplitOperator.NumberToString = function (value)
     return value.toString();
 }
 
-IFrameSplitOperator.FormatDateString = function (value) {
-  var year = parseInt(value / 10000);
-  var month = parseInt(value / 100) % 100;
-  var day = value % 100;
-  return year.toString() + '-' + IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
+IFrameSplitOperator.FormatDateString = function (value,format) 
+{
+    var year = parseInt(value / 10000);
+    var month = parseInt(value / 100) % 100;
+    var day = value % 100;
+    switch(format)
+    {
+        case 'MM-DD':
+            return IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
+        default:
+            return year.toString() + '-' + IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
+    }
 }
 
 IFrameSplitOperator.FormatTimeString = function (value) {
@@ -6335,21 +6358,29 @@ IFrameSplitOperator.FormatReportDateString = function (value) {
   return year.toString() + monthText;
 }
 
-IFrameSplitOperator.FormatDateTimeString = function (value, isShowDate) {
-  var aryValue = value.split(' ');
-  if (aryValue.length < 2) return "";
-  var time = parseInt(aryValue[1]);
-  var minute = time % 100;
-  var hour = parseInt(time / 100);
-  var text = (hour < 10 ? ('0' + hour.toString()) : hour.toString()) + ':' + (minute < 10 ? ('0' + minute.toString()) : minute.toString());
+IFrameSplitOperator.FormatDateTimeString = function (value, foramt) 
+{
+    var aryValue = value.split(' ');
+    if (aryValue.length < 2) return "";
 
-  if (isShowDate == true) {
+    var time = parseInt(aryValue[1]);
+    var minute = time % 100;
+    var hour = parseInt(time / 100);
     var date = parseInt(aryValue[0]);
     var year = parseInt(date / 10000);
     var month = parseInt(date % 10000 / 100);
     var day = date % 100;
-    text = year.toString() + '-' + (month < 10 ? ('0' + month.toString()) : month.toString()) + '-' + (day < 10 ? ('0' + day.toString()) : day.toString()) + " " + text;
-  }
+
+    switch(foramt)
+    {
+        case 'YYYY-MM-DD HH-MM': 
+            return year.toString() + '-' + IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day) + ' ' + IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute);
+        case 'YYYY-MM-DD':
+            return year.toString() + '-' + IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
+        default:
+            return IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute);
+
+    }
 
   return text;
 }
@@ -6605,39 +6636,69 @@ var HK_MINUTE_X_COORDINATE =
     [331, 1, "RGB(200,200,200)", ""] //16:00
   ];
 
-function FrameSplitMinuteX() {
-  this.newMethod = IFrameSplitOperator;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function FrameSplitMinuteX() 
+{
+    this.newMethod = IFrameSplitOperator;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.ShowText = true;                 //是否显示坐标信息
-  this.Symbol = null;                   //股票代码 x轴刻度根据股票类型来调整
+    this.ShowText = true;                 //是否显示坐标信息
+    this.Symbol = null;                   //股票代码 x轴刻度根据股票类型来调整
+    this.DayCount = 1;
+    this.DayData;
 
-  this.Operator = function () {
-    this.Frame.VerticalInfo = [];
-    var xPointCount = this.Frame.XPointCount;
+    this.Operator = function () 
+    {
+        this.Frame.VerticalInfo = [];
+        var xPointCount = this.Frame.XPointCount;
+        var minuteCount = 243;
+        var minuteMiddleCount = 122;
 
-    //默认沪深股票
-    var xcoordinate = SHZE_MINUTE_X_COORDINATE;
-    this.Frame.XPointCount = 243;
+        //默认沪深股票
+        var xcoordinate = SHZE_MINUTE_X_COORDINATE;
+        this.Frame.XPointCount = 243;
 
-    if (this.Symbol != null) {
-      if (this.Symbol.indexOf('.hk') > 0) //港股用港股的刻度 及数据个数
-      {
-        xcoordinate = HK_MINUTE_X_COORDINATE;
-        this.Frame.XPointCount = 332;
-      }
+        if (this.Symbol != null) 
+        {
+            if (this.Symbol.indexOf('.hk') > 0) //港股用港股的刻度 及数据个数
+            {
+                xcoordinate = HK_MINUTE_X_COORDINATE;
+                minuteCount = 332;
+                minuteMiddleCount = 151;
+            }
+        }
+
+        this.Frame.XPointCount = minuteCount * this.DayCount;
+        this.Frame.MinuteCount = minuteCount;
+        this.Frame.VerticalInfo = [];
+
+        if (this.DayCount <= 1) 
+        {
+            for (var i in xcoordinate) 
+            {
+                var info = new CoordinateInfo();
+                //info.TextColor = "rgb(51,51,51)";
+                info.Value = xcoordinate[i][0];
+                if (this.ShowText)
+                    info.Message[0] = xcoordinate[i][3];
+                this.Frame.VerticalInfo[i] = info;
+            }
+        }
+        else
+        {
+            for (var i = this.DayData.length-1,j=0; i>=0; --i,++j) 
+            {
+                var info = new CoordinateInfo();
+                info.Value = j * minuteCount + minuteMiddleCount;
+                this.Frame.VerticalInfo.push(info);
+                if (this.ShowText) info.Message[0] = IFrameSplitOperator.FormatDateString(this.DayData[i].Date,'MM-DD');
+
+                var info = new CoordinateInfo();
+                info.Value = (j + 1) * minuteCount;
+                this.Frame.VerticalInfo.push(info);
+            }
+        }
     }
-
-    for (var i in xcoordinate) {
-      var info = new CoordinateInfo();
-      //info.TextColor = "rgb(51,51,51)";
-      info.Value = xcoordinate[i][0];
-      if (this.ShowText)
-        info.Message[0] = xcoordinate[i][3];
-      this.Frame.VerticalInfo[i] = info;
-    }
-  }
 }
 
 function FrameSplitXData() {
@@ -6970,38 +7031,47 @@ function HQDateStringFormat() {
   }
 }
 
-function HQMinuteTimeStringFormat() {
-  this.newMethod = IChangeStringFormat;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function HQMinuteTimeStringFormat() 
+{
+    this.newMethod = IChangeStringFormat;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.Operator = function () {
-    if (!this.Value) return false;
+    this.Frame;
 
-    var index = Math.abs(this.Value);
-    index = parseInt(index.toFixed(0));
+    this.Operator = function () 
+    {
+        if (!this.Value) return false;
 
-    if (index == 0) {
-      this.Text = "9:25";
-    }
-    else if (index < 122) {
-      var time = 9 * 60 + 30 + index - 1;
-      var minute = time % 60;
-      if (minute < 10) this.Text = parseInt(time / 60) + ":" + '0' + minute;
-      else this.Text = parseInt(time / 60) + ":" + minute;
-    }
-    else if (index < 243) {
-      var time = 13 * 60 + index - (122);
-      var minute = time % 60;
-      if (minute < 10) this.Text = parseInt(time / 60) + ":" + '0' + minute;
-      else this.Text = parseInt(time / 60) + ":" + minute;
-    }
-    else {
-      this.Text = "15:00";
-    }
+        var index = Math.abs(this.Value);
+        index = parseInt(index.toFixed(0));
+        if (this.Frame && this.Frame.MinuteCount) index = index % this.Frame.MinuteCount;
 
-    return true;
-  }
+        if (index == 0) 
+        {
+            this.Text = "9:25";
+        }
+        else if (index < 122)
+        {
+            var time = 9 * 60 + 30 + index - 1;
+            var minute = time % 60;
+            if (minute < 10) this.Text = parseInt(time / 60) + ":" + '0' + minute;
+            else this.Text = parseInt(time / 60) + ":" + minute;
+        }
+        else if (index < 243) 
+        {
+            var time = 13 * 60 + index - (122);
+            var minute = time % 60;
+            if (minute < 10) this.Text = parseInt(time / 60) + ":" + '0' + minute;
+            else this.Text = parseInt(time / 60) + ":" + minute;
+        }
+        else 
+        {
+            this.Text = "15:00";
+        }
+
+        return true;
+    }
 }
 
 
@@ -7714,9 +7784,15 @@ function DynamicMinuteTitlePainting() {
       this.Canvas.fillStyle = this.UnchagneColor;
 
       this.Canvas.fillStyle = this.UnchagneColor;
-      var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate);
+      var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate?'YYYY-MM-DD':'HH-MM');
       var timeWidth = this.Canvas.measureText(text).width + 5;    //后空5个像素
       this.Canvas.fillText(text, left, bottom, timeWidth);
+
+      if (this.IsShowDate)
+      {
+          var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime,'HH-MM');
+          this.Canvas.fillText(text, left, bottom + itemHeight, timeWidth);
+      }
 
       var itemWidth = (width - leftSpace - timeWidth) / 2;
       left += timeWidth;
@@ -7800,7 +7876,7 @@ function DynamicMinuteTitlePainting() {
     }
 
     this.Canvas.fillStyle = this.UnchagneColor;
-    var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate);
+      var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate ? 'YYYY-MM-DD HH-MM' : 'YYYY-MM-DD' );
     var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
     if (left + textWidth > right) return;
     this.Canvas.fillText(text, left, bottom, textWidth);
@@ -7869,7 +7945,7 @@ function DynamicMinuteTitlePainting() {
     }
 
     this.Canvas.fillStyle = this.UnchagneColor;
-    var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate);
+    var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate ? 'YYYY-MM-DD HH-MM' : 'YYYY-MM-DD');
     var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
     if (left + textWidth > right) return;
     this.Canvas.fillText(text, left, bottom, textWidth);
@@ -10481,44 +10557,53 @@ function MinuteChartContainer(uielement) {
   this.IsAutoUpate = false;                   //是否自动更新行情数据
   this.TradeDate = 0;                         //行情交易日期
   this.SplashTitle = '下载分钟数据';
+
+  this.DayCount = 1;                       //显示几天的数据
+  this.DayData;                            //多日分钟数据
+
   this.MinuteApiUrl = g_JSChartResource.Domain + "/API/Stock";
+  this.HistoryMinuteApiUrl = g_JSChartResource.Domain + "/API/StockMinuteData";   //历史分钟数据
 
   //手机拖拽
-  this.ontouchstart = function (e) {
+  this.ontouchstart = function (e) 
+  {
+    this.IsOnTouch=true;
     var jsChart = this;
     if (jsChart.DragMode == 0) return;
 
-    if (this.IsPhoneDragging(e)) {
-      if (jsChart.TryClickLock) {
-        var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
-        var x = touches[0].clientX;
-        var y = touches[0].clientY;
-        if (jsChart.TryClickLock(x, y)) return;
-      }
-
-      //长按2秒,十字光标
-      if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
-
-      var drag =
+    if (this.IsPhoneDragging(e)) 
+    {
+        if (jsChart.TryClickLock) 
         {
-          "Click": {},
-          "LastMove": {},  //最后移动的位置
+            var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
+            var x = touches[0].clientX;
+            var y = touches[0].clientY;
+            if (jsChart.TryClickLock(x, y)) return;
+        }
+
+        //长按2秒,十字光标
+        if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
+
+        var drag =
+        {
+            "Click": {},
+            "LastMove": {},  //最后移动的位置
         };
 
-      var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
+        var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
 
-      drag.Click.X = touches[0].clientX;
-      drag.Click.Y = touches[0].clientY;
-      drag.LastMove.X = touches[0].clientX;
-      drag.LastMove.Y = touches[0].clientY;
+        drag.Click.X = touches[0].clientX;
+        drag.Click.Y = touches[0].clientY;
+        drag.LastMove.X = touches[0].clientX;
+        drag.LastMove.Y = touches[0].clientY;
 
-      if (this.ChartCorssCursor.IsShow === true)    //移动十字光标
-      {
-        var x = drag.Click.X;
-        var y = drag.Click.Y;
-        if (jsChart.IsForceLandscape) y = jsChart.UIElement.Height - drag.Click.Y;    //强制横屏Y计算
-        jsChart.OnMouseMove(x, y, e);
-      }
+        if (this.ChartCorssCursor.IsShow === true)    //移动十字光标
+        {
+            var x = drag.Click.X;
+            var y = drag.Click.Y;
+            if (jsChart.IsForceLandscape) y = jsChart.UIElement.Height - drag.Click.Y;    //强制横屏Y计算
+            jsChart.OnMouseMove(x, y, e);
+        }
     }
   }
 
@@ -10573,6 +10658,8 @@ function MinuteChartContainer(uielement) {
 
       this.TitlePaint.push(titlePaint);
     }
+
+    this.ChartCorssCursor.StringFormatX.Frame = this.Frame.SubFrame[0].Frame;
   }
 
   //创建子窗口
@@ -10725,6 +10812,14 @@ function MinuteChartContainer(uielement) {
     this.RequestData();
   }
 
+  this.ChangeDayCount = function (count) 
+  {
+    if (count < 0 || count > 10) return;
+    this.DayCount = count;
+
+    this.RequestData();
+  }
+
   this.TryClickLock = function (x, y) {
     for (let i in this.Frame.SubFrame) {
       var item = this.Frame.SubFrame[i];
@@ -10742,80 +10837,185 @@ function MinuteChartContainer(uielement) {
     return false;
   }
 
-  this.RequestData = function () {
-    this.RequestMinuteData();               //请求数据
-  }
-
-  //请求分钟数据
-  this.RequestMinuteData = function () {
-    var self = this;
-
-    wx.request({
-      url: this.MinuteApiUrl,
-      data:
-        {
-          "field": [
-            "name",
-            "symbol",
-            "yclose",
-            "open",
-            "price",
-            "high",
-            "low",
-            "vol",
-            "amount",
-            "date",
-            "minute",
-            "time",
-            "minutecount",
-          ],
-          "symbol": [this.Symbol],
-          "start": -1
-        },
-      method: "post",
-      dataType: "json",
-      success: function (data) {
-        self.ChartSplashPaint.IsEnableSplash = false;
-        self.RecvMinuteData(data);
-      }
-    });
-  }
-
-  this.RecvMinuteData = function (data) {
-    var aryMinuteData = MinuteChartContainer.JsonDataToMinuteData(data.data);
-
-    //原始数据
-    var sourceData = new ChartData();
-    sourceData.Data = aryMinuteData;
-
-    this.TradeDate = data.data.stock[0].date;
-
-    this.SourceData = sourceData;
-    this.Symbol = data.data.stock[0].symbol;
-    this.Name = data.data.stock[0].name;
-
-    this.BindMainData(sourceData, data.data.stock[0].yclose);
-
-    if (this.Frame.SubFrame.length > 2) {
-      var bindData = new ChartData();
-      bindData.Data = aryMinuteData;
-      for (var i = 2; i < this.Frame.SubFrame.length; ++i) {
-        this.BindIndexData(i, bindData);
-      }
-    }
-
-    for (let i in this.Frame.SubFrame)  //把股票代码设置到X轴刻度类里
+    this.RequestData = function () 
     {
-      var item = this.Frame.SubFrame[i];
-      item.Frame.XSplitOperator.Symbol = this.Symbol;
+        if (this.DayCount <= 1) this.RequestMinuteData();
+        else this.RequestHistoryMinuteData();              //请求数据
     }
 
-    this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-    this.Frame.SetSizeChage(true);
-    this.Draw();
+    this.RequestHistoryMinuteData = function ()     //请求历史分钟数据
+    {
+        var self = this;
+        wx.request({
+            url: self.HistoryMinuteApiUrl,
+            data:
+            {
+                "symbol": self.Symbol,
+                "daycount": self.DayCount
+            },
+            method: "post",
+            dataType: "json",
+            success: function (data) 
+            {
+                self.ChartSplashPaint.IsEnableSplash = false;
+                self.RecvHistoryMinuteData(data);
+            }
+        });
+    }
 
-    this.AutoUpdata();
-  }
+    this.RecvHistoryMinuteData = function (recvdata) 
+    {
+        var data=recvdata.data;
+        this.DayData = MinuteChartContainer.JsonDataToMinuteDataArray(data);;
+        this.Symbol = data.symbol;
+        this.Name = data.name;
+
+        this.UpdateHistoryMinuteUI();
+
+        this.AutoUpdata();
+    }
+
+    this.UpdateHistoryMinuteUI = function () 
+    {
+        var allMinuteData = this.HistoryMinuteDataToArray(this.DayData);
+
+        //原始数据
+        var sourceData = new ChartData();
+        sourceData.Data = allMinuteData;
+
+        this.SourceData = sourceData;
+        this.TradeDate = this.DayData[0].Date;
+
+        this.BindMainData(sourceData, this.DayData[0].YClose);
+        this.ChartPaint[1].Data = null;   //均线暂时不用
+
+        if (this.Frame.SubFrame.length > 2) 
+        {
+            var bindData = new ChartData();
+            bindData.Data = allMinuteData;
+            for (var i = 2; i < this.Frame.SubFrame.length; ++i) 
+            {
+                this.BindIndexData(i, bindData);
+            }
+        }
+
+        for (let i in this.Frame.SubFrame) 
+        {
+            var item = this.Frame.SubFrame[i];
+            item.Frame.XSplitOperator.Symbol = this.Symbol;
+            item.Frame.XSplitOperator.DayCount = this.DayData.length;
+            item.Frame.XSplitOperator.DayData = this.DayData;
+            item.Frame.XSplitOperator.Operator();   //调整X轴个数
+        }
+
+        this.TitlePaint[0].IsShowDate = true;
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+    }
+
+    this.HistoryMinuteDataToArray = function (data) //把多日分钟数据转化为单数组
+    {
+        var result = [];
+        for (var i = data.length - 1; i >= 0; --i) 
+        {
+            var item = data[i];
+            for (var j in item.Data) 
+            {
+                result.push(item.Data[j]);
+            }
+        }
+        return result;
+    }
+
+    this.UpdateLatestMinuteData = function (data, date)     //更新最新交易日的分钟数据
+    {
+        for (var i in this.DayData) 
+        {
+            var item = this.DayData[i];
+            if (item.Date === date) 
+            {
+                item.Data = data;
+                break;
+            }
+        }
+    }
+
+    //请求分钟数据
+    this.RequestMinuteData = function () 
+    {
+        var self = this;
+
+        wx.request({
+        url: this.MinuteApiUrl,
+        data:
+        {
+            "field": 
+            [
+                "name","symbol","yclose","open","price","high","low",
+                "vol","amount","date","minute","time","minutecount",
+            ],
+            "symbol": [this.Symbol],
+            "start": -1
+        },
+        method: "post",
+        dataType: "json",
+        success: function (data) 
+        {
+            self.ChartSplashPaint.IsEnableSplash = false;
+            self.RecvMinuteData(data);
+        }
+        });
+    }
+
+    this.RecvMinuteData = function (data) 
+    {
+        var aryMinuteData = MinuteChartContainer.JsonDataToMinuteData(data.data);
+
+        if (this.DayCount > 1)    //多日走势图
+        {
+            this.UpdateLatestMinuteData(aryMinuteData, data.data.stock[0].date);
+            this.UpdateHistoryMinuteUI();
+            this.AutoUpdata();
+            return;
+        }
+
+        //原始数据
+        var sourceData = new ChartData();
+        sourceData.Data = aryMinuteData;
+
+        this.TradeDate = data.data.stock[0].date;
+
+        this.SourceData = sourceData;
+        this.Symbol = data.data.stock[0].symbol;
+        this.Name = data.data.stock[0].name;
+
+        this.BindMainData(sourceData, data.data.stock[0].yclose);
+
+        if (this.Frame.SubFrame.length > 2) 
+        {
+            var bindData = new ChartData();
+            bindData.Data = aryMinuteData;
+            for (var i = 2; i < this.Frame.SubFrame.length; ++i) 
+            {
+                this.BindIndexData(i, bindData);
+            }
+        }
+
+        for (let i in this.Frame.SubFrame)  //把股票代码设置到X轴刻度类里
+        {
+            var item = this.Frame.SubFrame[i];
+            item.Frame.XSplitOperator.Symbol = this.Symbol;
+            item.Frame.XSplitOperator.DayCount = 1;
+            item.Frame.XSplitOperator.Operator();   //调整X轴个数
+        }
+
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+
+        this.AutoUpdata();
+    }
 
   //数据自动更新
   this.AutoUpdata = function () {
@@ -10973,6 +11173,55 @@ MinuteChartContainer.JsonDataToMinuteData = function (data) {
   }
 
   return aryMinuteData;
+}
+
+//多日日线数据API 转化成array[];
+MinuteChartContainer.JsonDataToMinuteDataArray = function (data) 
+{
+    var result = [];
+    for (var i in data.data) 
+    {
+        var minuteData = [];
+        var dayData = data.data[i];
+        var date = dayData.date;
+        for (var j in dayData.minute) 
+        {
+            var jsData = dayData.minute[j];
+
+            var item = new MinuteData();
+            item.Close = jsData[2];
+            item.Open = jsData[1];
+            item.High = jsData[3];
+            item.Low = jsData[4];
+            item.Vol = jsData[5] / 100; //原始单位股
+            item.Amount = jsData[6];
+            item.DateTime = date.toString() + " " + jsData[0].toString();
+            if (j == 0)      //第1个数据 写死9：25
+            {
+                item.DateTime = date.toString() + " 0925";
+                item.IsFristData = true;
+            }
+
+            //价格是0的 都用空
+            if (item.Open <= 0) item.Open = null;
+            if (item.Close <= 0) item.Close = null;
+            if (item.AvPrice <= 0) item.AvPrice = null;
+            if (item.High <= 0) item.High = null;
+            if (item.Low <= 0) item.Low = null;
+
+            minuteData[j] = item;
+        }
+
+        var newData = new ChartData();
+        newData.Data = minuteData;
+        newData.YClose = dayData.yclose;
+        newData.Close = dayData.close;
+        newData.Date = date;
+
+        result.push(newData);
+    }
+
+    return result;
 }
 
 /*
@@ -11649,6 +11898,8 @@ function MinuteChartHScreenContainer(uielement) {
 
       this.TitlePaint.push(titlePaint);
     }
+
+    this.ChartCorssCursor.StringFormatX.Frame = this.Frame.SubFrame[0].Frame;
   }
 
   //创建子窗口

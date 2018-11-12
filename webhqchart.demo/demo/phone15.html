@@ -3,18 +3,40 @@
 <head>  
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>页面行情(走势图横屏)</title>  
+<title>页面行情(多日走势图)</title>  
     <link rel="stylesheet" href="content/css/tools.css" />
     <link rel="stylesheet" href="content/font/iconfont.css" />
+    <link rel="stylesheet" href="plugins/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="plugins/bootstrap/custom.min.css" />
+    <link rel="stylesheet" href="content/css/phone15.tools.css" />
 </head>  
 <body>
 
-    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+    <div id="kline" style="width: 900px;height:400px;position: relative;float:left;"></div>
+    <div id="tools" class="tools" style="padding:10px 0 0 10px;float:left;">
+        <div class="row">
+            <div class="col-md-12 col-sm-12 col-xs-12" style="padding-left:0px;">
+                <span style="padding-left:5px;">分时</span>
+                <ul>
+                    <li v-bind:class="{ active: index == activeIndex }" v-for="(item, index) in list" v-on:click="select(index)">
+                        {{item}}日
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="content/js/jquery.min.js"></script>
 
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
-    <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+    
+    <script type="text/javascript" src="content/js/vue.js"></script>
+    <script type="text/javascript" src="content/js/vue-resource.js"></script>
+    <script type="text/javascript" src="content/js/phone15.tools.js"></script>
+    <script src="plugins/bootstrap/bootstrap.min.js"></script>
+
     <script>
         function getURLParams(name) 
         {
@@ -31,9 +53,11 @@
             var height= $(window).height();
             var width = $(window).width();
             var divKline=document.getElementById('kline');
-            divKline.style.width=width+'px';
+            divKline.style.width = (width - 200) + 'px';
             divKline.style.height=height+'px';
             divKline.JSChart.OnSize();
+
+            $(".tools").css({ width: width - parseInt(divKline.style.width) - 10 });
         }
         
         
@@ -48,43 +72,46 @@
             if (index) aryIndex.push({"Index":index});
 
             // 创建股票K线图
-            var jsChart=JSChart.Init(document.getElementById('kline'));
+            jsChart=JSChart.Init(document.getElementById('kline'));
         
             var option=
                 {
-                    Type:'分钟走势图横屏',
+                    Type:'分钟走势图',
                     Windows:  aryIndex,     //窗口指标
                     Symbol:symbol,          //股票代码
                     IsAutoUpate:true,       //是自动更新数据
         
                     IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
-                    DayCount:5,    
+                    DayCount:5,                    
         
                     Border: //边框
                     {
-                        Left:20,    //左边间距
-                        Right:20,     //右边间距
-                        Top:50,
-                        Bottom:50
+                        Left:100,    //左边间距
+                        Right:100,     //右边间距
+                        Top:20
                     },
+
                     Frame:  //子框架设置
-                        [
-                            {SplitCount:5,StringFormat:1},
-                            {SplitCount:3,StringFormat:1},
-                            {SplitCount:3,StringFormat:0},
-                        ]
+                    [
+                        {SplitCount:5,StringFormat:1},
+                        {SplitCount:3,StringFormat:1},
+                        {SplitCount:3,StringFormat:0},
+                    ]
                 }
             
             var windowHeight= $(window).height();
             var windowWidth = $(window).width();
             if (windowWidth<=420)   //手机小屏左右不显示坐标
             {
-                
+                option.Border.Left=1;
+                option.Border.Right=1;
             }
         
             jsChart.SetOption(option);
         
             resizeCanvas();
+
+            Tools.init();
         })
     </script>  
 </body>  
