@@ -47,5 +47,6 @@
 * K线图手机页面  https://opensource.zealink.com/hqweb/demo/phone.html  <br>
 * 横版走势图手机页面 https://opensource.zealink.com/hqweb/demo/phone10.html  <br>
 * 横版K线图手机页面  https://opensource.zealink.com/hqweb/demo/phone9.html  <br>
+* 多日走势图 https://opensource.zealink.com/hqweb/demo/phone15.html <br>
 
 * 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
