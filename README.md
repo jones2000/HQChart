@@ -19,6 +19,9 @@
   ![K线图2](/小程序行情模块用例/image/hqchart_kline_lock.PNG)
   ![K线图3](/小程序行情模块用例/image/hqchart_kline_hscreen.PNG)
   ![K线图4](/小程序行情模块用例/image/hqchart_kline_hscreen2.PNG)
+  ![多日走势图1](/小程序行情模块用例/image/hqchart_minute_5day.PNG)
+  ![多日走势图2](/小程序行情模块用例/image/hqchart_minute_5day2.PNG)
+  ![多日走势图3](/小程序行情模块用例/image/hqchart_minute_5day3.PNG)
   
 # 1. K线图
 * 支持前复权,后复权 <br>
@@ -36,6 +39,7 @@
 * 支持指标 <br>
 * 支持沪深和港股
 * 分钟数据显示 <br>
+* 支持多日分钟数据显示<br>
 # 3. 网页demo  <br>
 * K线图  https://opensource.zealink.com/hqweb/demo/phone7.html  <br>
 * 走势图 https://opensource.zealink.com/hqweb/demo/phone8.html  <br>
