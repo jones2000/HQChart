@@ -1,3 +1,15 @@
+# 目录结构
+--node.jccomplier  nodejs通达信脚本选股后台api模块. 使用restify webapi框架 <br>
+--webhqchart 行情前端js代码模块 <br>
+--wechathqchart 微信小程序行情前端js代码模块 <br>
+
+--webhqchart.demo 页面行情测试用例 <br>
+   * |--jscommon 行情前端js代码 是webhqchart的一个拷贝 <br>
+   * |--demo  测试用 <br>
+*注意！ 目前代码使用了ES6的特性， 所有会导致有些老的浏览器无法显示， 需要使用Babel转成es5
+
+--小程序行情模块用例 小程序测试用例<br>
+
 # HQChart 3.0
 * 分网页版本 及 微信小程序版本 <br>
   ![走势图](/小程序行情模块用例/image/hqchart_minute.PNG)
@@ -6,6 +18,10 @@
   ![K线图](/小程序行情模块用例/image/hqchart_kline.PNG)
   ![K线图2](/小程序行情模块用例/image/hqchart_kline_lock.PNG)
   ![K线图3](/小程序行情模块用例/image/hqchart_kline_hscreen.PNG)
+  ![K线图4](/小程序行情模块用例/image/hqchart_kline_hscreen2.PNG)
+  ![多日走势图1](/小程序行情模块用例/image/hqchart_minute_5day.PNG)
+  ![多日走势图2](/小程序行情模块用例/image/hqchart_minute_5day2.PNG)
+  ![多日走势图3](/小程序行情模块用例/image/hqchart_minute_5day3.PNG)
   
 # 1. K线图
 * 支持前复权,后复权 <br>
@@ -23,7 +39,15 @@
 * 支持指标 <br>
 * 支持沪深和港股
 * 分钟数据显示 <br>
+* 支持多日分钟数据显示<br>
 # 3. 网页demo  <br>
-* K线图  https://opensource.zealink.com/hqcomplier/phone7.html  <br>
-* 走势图 https://opensource.zealink.com/hqcomplier/phone8.html  <br>
-* 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’
+* K线图  https://opensource.zealink.com/hqweb/demo/phone7.html  <br>
+* 走势图 https://opensource.zealink.com/hqweb/demo/phone8.html  <br>
+* 走势图手机页面 https://opensource.zealink.com/hqweb/demo/phone2.html  <br>
+* K线图手机页面  https://opensource.zealink.com/hqweb/demo/phone.html  <br>
+* 横版走势图手机页面 https://opensource.zealink.com/hqweb/demo/phone10.html  <br>
+* 横版K线图手机页面  https://opensource.zealink.com/hqweb/demo/phone9.html  <br>
+* 多日走势图 https://opensource.zealink.com/hqweb/demo/phone15.html <br>
+
+* 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
+* QQ交流群(950092318) ![QQ群](/小程序行情模块用例/image/qqcode.png)

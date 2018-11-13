@@ -27,6 +27,25 @@ var Tools = {
             Root.table.list[i].max.value = 100;
             Root.table.list[i].value.value = defalutData.args[i].Value;
         }
+
+        setTimeout(function () {
+            var $tradeDate = $("#txt_tradeDate");
+            if ($tradeDate.length > 0) {
+                $tradeDate.datepicker({
+                    language: 'zh-CN',
+                    autoclose: true,
+                    todayHighlight: true,
+                    format: "yyyy-mm-dd"
+                }).on('changeDate', function (el) {
+                    if (el.date != undefined) {
+                        Root.top.date = el.date.Format("yyyyMMdd");
+                    }
+                });
+
+                Root.top.date = Common.formatDate(defalutData.tradeDate);
+                $tradeDate.datepicker("setDate", Common.formatDate(defalutData.tradeDate));
+            }
+        }, 200);
     },
     bindModular: function () {
         var _this = this;
@@ -41,6 +60,7 @@ var Tools = {
             data: {
                 indexName: "",
                 symbol: "",
+                date: "",
                 changeIndex: 1,
                 isDebug: JS_EXECUTE_DEBUG_LOG
             },
@@ -89,6 +109,18 @@ var Tools = {
                     }
 
                     Root.cache.setValue(cacheValue);
+                },
+                rawDataDown: function () {
+                    var _this = this;
+
+                    window.open("https://opensourcecache.zealink.com/cache/minuteday/day/" + _this.date + "/" + _this.symbol + ".json");
+                }
+            },
+            watch: {
+                date: function (newValue, oldValue) {
+                    if (oldValue) {
+                        jsChart.ChangeTradeDate(parseInt(newValue));
+                    }
                 }
             }
         });
@@ -162,6 +194,20 @@ var Tools = {
                     }
 
                     this.list = list;
+                },
+                clear: function () {
+                    var _this = this;
+
+                    for (var i = 0; i < _this.list.length; i++) {
+                        if (!_this.list[i].name.value && !_this.list[i].value.value)
+                            continue;
+
+                        _this.list[i].name.value = "";
+                        _this.list[i].name.isEdit = true;
+
+                        _this.list[i].value.value = "";
+                        _this.list[i].value.isEdit = true;
+                    }
                 }
             },
             created: function () {
@@ -228,4 +274,32 @@ var Tools = {
             }
         });
     }
+}
+
+var Common = {
+    formatDate: function (date) {
+        if (!date) return "";
+
+        date = date + "";
+        if (date.length != 8)
+            return date;
+
+        return new Date(date.substring(0, 4) + "-" + date.substring(4, 6) + "-" + date.substring(6, 8));
+    }
+}
+
+Date.prototype.Format = function (fmt) { //author: meizz 
+    var o = {
+        "M+": this.getMonth() + 1, //月份 
+        "d+": this.getDate(), //日 
+        "h+": this.getHours(), //小时 
+        "m+": this.getMinutes(), //分 
+        "s+": this.getSeconds(), //秒 
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+        "S": this.getMilliseconds() //毫秒 
+    };
+    if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    for (var k in o)
+        if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+    return fmt;
 }

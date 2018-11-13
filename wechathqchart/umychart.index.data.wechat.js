@@ -16,7 +16,7 @@ JSIndexScript.prototype.Get=function(id)
             ['MA', this.MA], ['均线', this.MA],['BOLL', this.BOLL],['BBI', this.BBI],
             ['DKX', this.DKX],['MIKE', this.MIKE],['PBX', this.PBX],
             ['ENE', this.ENE],['MACD', this.MACD],['KDJ', this.KDJ],
-            ['VOL', this.VOL],['RSI', this.RSI],['BRAR', this.BRAR],
+            ['VOL', this.VOL],['成交量', this.VOL],['RSI', this.RSI],['BRAR', this.BRAR],
             ['WR', this.WR],['BIAS', this.BIAS],['OBV', this.OBV],
             ['DMI', this.DMI],['CR', this.CR],['PSY', this.PSY],
             ['CCI', this.CCI],['DMA', this.DMA],['TRIX', this.TRIX],
@@ -28,6 +28,8 @@ JSIndexScript.prototype.Get=function(id)
             ['ATR', this.ATR],['NVI', this.NVI],['PVI', this.PVI],
             ['UOS', this.UOS],['CYW', this.CYW],['LON', this.LON],
             ['NDB', this.NDB],
+
+            ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
             ['飞龙四式', this.Dragon4_Main], ['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis], ['融资占比', this.MarginProportion],
@@ -551,7 +553,7 @@ JSIndexScript.prototype.ADTM=function()
 DBM:=IF(OPEN>=REF(OPEN,1),0,MAX((OPEN-LOW),(OPEN-REF(OPEN,1))));\n\
 STM:=SUM(DTM,N);\n\
 SBM:=SUM(DBM,N);\n\
-ADTM:IF(STM>SBM,(STM-SBM)/STM,IF(STM=SBM,0,(STM-SBM)/SBM));\n\
+ADTM:IF(STM>SBM,(STM-SBM)/STM,IF(STM==SBM,0,(STM-SBM)/SBM));\n\
 MAADTM:MA(ADTM,M);'
 
     };
@@ -888,6 +890,20 @@ JSIndexScript.prototype.MarginProportion = function ()
     return data;
 }
 
+
+JSIndexScript.prototype.EMPTY = function () 
+{
+    let data =
+    {
+        Name: '', Description: '空指标', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'VAR2:=C;'
+    };
+
+    return data;
+}
+
 JSIndexScript.prototype.TEST = function () 
 {
     let data =
@@ -895,7 +911,7 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                'VAR2:RELATE(C,O,5);'
+                'VAR2:FINANCE(45);'
         };
 
     return data;

@@ -1,0 +1,300 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>K线训练网页版</title>  
+    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="content/font/iconfont.css" />
+    <link rel="stylesheet" href="plugins/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="plugins/bootstrap/custom.min.css" />
+    <link rel="stylesheet" href="content/css/phone13.tools.css" />
+</head>  
+<body>
+    <div id="kline" style="width: 900px;height:400px;position: relative;float:left;"></div>
+    <div id="tools" class="tools">
+        <div class="row">
+            <div class="col-md-3 col-sm-12 col-xs-12 ">
+                <button type="button" class="btn btn-info btn-xs" v-on:click="nextKLine()">下一K线</button>
+            </div>
+            <div class="col-md-5 col-sm-12 col-xs-12">
+                <div class="checkbox" style="margin:0px;">
+                    <label>
+                        <input type="checkbox" v-model="kLineAuto" /> K线自动前进
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-12 col-xs-12" style="padding-left:0px;">
+                还剩<span style="color:#EE1515;">{{SurplusKLineCount}}</span>根K线
+            </div>
+        </div>
+        <div class="row" style="margin-top:20px;">
+            <div class="col-md-6 col-sm-12 col-xs-12">
+                <button type="button" class="btn pull-right" v-bind:class="buyOrSellState == 0?'btn-danger':'btn-dark'" v-bind:disabled="buyOrSellState != 0" v-on:click="buyOrSell()">&nbsp;&nbsp;&nbsp;&nbsp;买&nbsp;&nbsp;&nbsp;&nbsp;</button>
+            </div>
+            <div class="col-md-6 col-sm-12 col-xs-12">
+                <button type="button" class="btn" v-bind:class="buyOrSellState == 1?'btn-danger':'btn-dark'" v-bind:disabled="buyOrSellState != 1" v-on:click="buyOrSell()">&nbsp;&nbsp;&nbsp;&nbsp;卖&nbsp;&nbsp;&nbsp;&nbsp;</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="list">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>标志</th>
+                            <th>现价</th>
+                            <th>盈亏情况</th>
+                            <th>盈亏比例</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, index) in list" v-bind:class="item.profitAndLossClass">
+                            <td scope="row">{{list.length-index}}</td>
+                            <td>{{item.op}}</td>
+                            <td>{{item.price}}</td>
+                            <td>{{item.profitAndLoss}}</td>
+                            <td>{{item.profitAndLossRatio}}<i v-if="item.profitAndLossRatio != ''">%</i></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="modal_result" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <h4 class="modal-title" id="myModalLabel">训练结果</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-horizontal form-label-left">
+                        <div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12">训练时间：</label>
+                            <div class="col-md- col-sm-7 col-xs-12">
+                                <label class="control-label">{{date}}</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12" for="last-name">训练股票：</label>
+                            <div class="col-md-7 col-sm-7 col-xs-12">
+                                <label class="control-label">{{name}}&nbsp;&nbsp;{{symbol}}</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12">K线时间：</label>
+                            <div class="col-md-7 col-sm-7 col-xs-12">
+                                <label class="control-label">{{kLineDate.startDate}}&nbsp;&nbsp;至&nbsp;&nbsp;{{kLineDate.endDate}}</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12">区间涨幅：</label>
+                            <div class="col-md-7 col-sm-7 col-xs-12">
+                                <label class="control-label" v-bind:class="increase > 0?'profit':'loss'">{{increase}}%</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12">成功率：</label>
+                            <div class="col-md-7 col-sm-7 col-xs-12">
+                                <label class="control-label">{{profitRatio}}%</label>
+                            </div>
+                        </div>
+                        <!--<div class="form-group">
+                            <label class="control-label col-md-5 col-sm-5 col-xs-12">总收益率：</label>
+                            <div class="col-md-7 col-sm-7 col-xs-12">
+                                <label class="control-label"></label>
+                            </div>
+                        </div>-->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary pull-right ladda-button" data-style="expand-right" onclick="Common.hideModal('modal_result')">关&nbsp;&nbsp;&nbsp;&nbsp;闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="content/js/jquery.min.js"></script>
+
+    <script type="text/javascript" src="../jscommon/umychart.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
+    
+    <script type="text/javascript" src="content/js/vue.js"></script>
+    <script type="text/javascript" src="content/js/vue-resource.js"></script>
+    <script type="text/javascript" src="content/js/phone13.tools.js"></script>
+    <script src="plugins/bootstrap/bootstrap.min.js"></script>
+    
+    <script>
+        var jsChart;
+        JS_EXECUTE_DEBUG_LOG=false;
+    
+        function getURLParams(name) 
+        {
+        	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        	var r = window.location.search.substr(1).match(reg);
+        	if (r != null) return decodeURI(r[2]);
+        	return null;
+        }
+    
+        $(window).resize(resizeCanvas);
+    
+        function resizeCanvas()
+        {
+            var height= $(window).height(); //300高度给指标编辑器
+            var width = $(window).width();
+            var divKline=document.getElementById('kline');
+            divKline.style.width = (width - 300) + 'px';
+            divKline.style.height = height + 'px';
+            divKline.JSChart.OnSize();
+
+            $(".tools").css({ width: width - parseInt(divKline.style.width) - 10 });
+            $(".tools .list").height(height - 150);
+        }
+        
+        $(function () {
+            var symbol = getURLParams('symbol');
+            if (symbol == null) symbol = '600984.sh';
+    
+            var aryIndex = new Array();
+    
+            var index = getURLParams('index');        //指标1
+            if (index == null) index = 'MA';
+            aryIndex.push({ "Index": index, "Modify": true, "Change": true });
+    
+            /*
+                var index2=getURLParams('index2');      //指标2
+                //if (index2==null) index2='指数热度';
+                if (index2==null) index2='能图-资金分析';
+            */
+            let code = 'VAR1:MA(CLOSE,25),COLORYELLOW;VAR2:MA(CLOSE,40);'
+            let code2 = 'MTR:=EXPMEMA(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(REF(CLOSE,1)-LOW)),N);\n\
+        HD :=HIGH-REF(HIGH,1);\n\
+        LD :=REF(LOW,1)-LOW;\n\
+        DMP:=EXPMEMA(IF(HD>0&&HD>LD,HD,0),N);\n\
+        DMM:=EXPMEMA(IF(LD>0&&LD>HD,LD,0),N);\n\
+        PDI: DMP*100/MTR;\n\
+        MDI: DMM*100/MTR,COLORCYAN;\n\
+        ADX: EXPMEMA(ABS(MDI-PDI)/(MDI+PDI)*100,MM),COLORFFB5C5;\n\
+        ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
+    
+            var jsIndexData = new JSIndexScript();
+            let testIndex = jsIndexData.Get('VOL');
+            console.log(testIndex);
+    
+            //指标3
+            let scriptIndex = 
+            { 
+                Name: testIndex.Name, Script: testIndex.Script, Args: testIndex.Args, "Modify": true, "Change": true,
+            };
+            aryIndex.push(scriptIndex);
+    
+            // 创建股票K线图
+            jsChart = JSChart.Init(document.getElementById('kline'));
+    
+            var option =
+                {
+                    Type: 'K线训练',
+                    Windows: aryIndex, //窗口指标
+                    Symbol: symbol,
+                    IsAutoUpate: true,       //是自动更新数据
+    
+                    Tool:                   //工具条
+                    [
+                        { Name: "周期" },
+                        { Name: "复权" }
+                    ],
+    
+                    IsShowRightMenu: false,           //右键菜单
+                    //IsShowCorssCursorInfo: false,    //是否显示十字光标的刻度信息
+    
+                    ScriptError: ComplierError,
+    
+                    KLine:
+                    {
+                        Right: 1,                    //复权 0 不复权 1 前复权 2 后复权
+                        Period: 0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                        MaxReqeustDataCount: 1000,   //数据个数
+                        PageSize: 50,               //一屏显示多少数据
+                        IndexTreeApiUrl: "https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
+                        IsShowTooltip: true,                 //是否显示K线提示信息
+                    },
+    
+                    KLineTitle: //标题设置
+                    {
+                        IsShowName: true,       //不显示股票名称
+                        IsShowSettingInfo: false //不显示周期/复权
+                    },
+    
+                    Border: //边框
+                    {
+                        Left: 50,    //左边间距
+                        Right: 1     //右边间距
+                    },
+    
+                    Frame:  //子框架设置
+                    [
+                        { SplitCount: 3, StringFormat: 1 },
+                        { SplitCount: 3, StringFormat: 1 }
+                    ],
+
+                    Train:
+                    {
+                        DataCount:100,                   //训练数据
+                        Callback:TrainCallback,          //训练回调 (每前进一次K线就调用一次)
+                    }
+                }
+    
+            jsChart.SetOption(option);
+            //jsChart.LockIndex('飞龙四式',unlockIndex);
+
+            //setTimeout(function(){jsChart.JSChartContainer.Run()},5000);    //启动自动前进
+            //setTimeout(function(){jsChart.JSChartContainer.Stop()},30000);  //停止自动前进
+            //setTimeout(function(){jsChart.JSChartContainer.BuyOrSell()},10000);  //买卖股票
+            //jsChart.JSChartContainer.MoveNextKLineData()  //手动前进一个K线
+
+
+            resizeCanvas();
+    
+            Tools.init({
+                trainDataCount: option.Train.DataCount
+            });
+        });
+        
+        function unlockIndex(info)
+        {
+            console.log(info);
+            var lockData = { IndexName: info.Data.IndexName, IsLocked: false };
+            info.HQChart.LockIndex(lockData);
+        }
+        
+        function ComplierError(error)
+        {
+            alert(error);
+            console.log('[ComplierError]', error);
+        }
+
+        function TrainCallback(hqchart)
+        {
+            var trainDataCount=hqchart.TrainDataCount;
+            if (trainDataCount<=0)
+            {
+                console.log('[FinishCallback] finish train. ', hqchart.BuySellData);
+
+                Root.result.setData(hqchart);
+            }
+            else
+            {
+                var op= (hqchart.GetOperator()==0 ? "买":'卖');
+                console.log('[FinishCallback] remain train data ', trainDataCount, op);
+            }
+
+            Root.tools.setBuyOrSellState(hqchart.GetOperator());
+            Root.tools.setData(hqchart.BuySellData);
+            Root.tools.setSurplusKLineCount(trainDataCount);
+        }
+
+    </script>  
+</body>  
+</html>

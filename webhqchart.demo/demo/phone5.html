@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>手机H5行情</title>  
+    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="content/font/iconfont.css" />
+</head>  
+<body>
+
+    <div id="chart-demo" style="width: 900px;height:400px;position: relative;"></div>
+
+    <script type="text/javascript" src="../jscommon/umychart.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+    <script>
+        function getURLParams(name) 
+        {
+        	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        	var r = window.location.search.substr(1).match(reg);
+        	if (r != null) return decodeURI(r[2]);
+        	return null;
+        }
+        
+        
+        $(window).resize(resizeCanvas);
+        
+        function resizeCanvas()
+        {
+            var height= $(window).height();
+            var width = $(window).width();
+            var divKline=document.getElementById('chart-demo');
+            divKline.style.width=width+'px';
+            divKline.style.height=height+'px';
+            divKline.JSChart.OnSize();
+        }
+        
+        
+        $(function ()
+        {
+            // 创建股票K线图
+            var jsChart=JSChart.Init(document.getElementById('chart-demo'));
+        
+            var option=
+                {
+                    Type:'饼图',
+                    Radius: '50%', //可以为百分数和数值,短边的百分比
+                    Border: //边框
+                        {
+                            Left:50,    //左边间距
+                            Right:50     //右边间距
+                        },
+                    
+                    MainDataControl:new MainDataTestControl(),
+                }
+        
+            jsChart.SetOption(option);
+        
+            resizeCanvas();
+            
+            //切换数据类
+            //setTimeout(() => { jsChart.ChangMainDataControl(new MainDataTestControl2());}, 20000);
+        
+        })
+        
+        
+        
+        function MainDataTestControl()
+        {
+            this.DataType=[{Type:"PIE",Name:"pie-1"}];
+            this.JSChartContainer;
+            this.Data=new Array();      //{ Value:数值, Name:数据名字,Color:颜色,Text:输出文本}
+            
+            this.RequestData=function()
+            {
+                // "#983335","#77963f","#5d437c","#35859f","#d1702f","#365e96"
+                // let data1=[
+                //     {Value:15,Name:'数据1',Text:'15',Color:"#983335"},{Value:16,Name:'数据2',Text:'16',Color:"#77963f"},{Value:19,Name:'数据3',Color:"#5d437c"},{Value:30,Name:'数据4',Color:"#d1702f"},
+                //     {Value:35,Name:'数据5',Color:"#35859f"},{Value:5,Name:'数据6',Color:"#35859f"},{Value:10,Name:'数据7',Color:"#35859f"},{Value:11,Name:'数据8',Color:"#35859f"},
+                //     {Value:25,Name:'数据9',Color:"#35859f"},{Value:26,Name:'数据10',Color:"#35859f"},{Value:9,Name:'数据11',Color:"#35859f"},{Value:21,Name:'数据12',Color:"#35859f"},
+                //     {Value:22,Name:'数据13',Color:"#35859f"},{Value:25,Name:'数据14',Color:"#35859f"}
+                // ];
+                let data1=[
+                    {Value:15,Name:'数据1',Text:'15',Color:"#983335"},{Value:16,Name:'数据2',Text:'16',Color:"#77963f"},{Value:19,Name:'数据3',Text:'19',Color:"#5d437c"},{Value:30,Name:'数据4',Text:'30',Color:"#d1702f"},
+                    {Value:35,Name:'数据5',Text:'35',Color:"#35859f"},{Value:15,Name:'数据1',Text:'15',Color:"#983335"},{Value:16,Name:'数据2',Text:'16',Color:"#77963f"},{Value:19,Name:'数据3',Text:'19',Color:"#5d437c"},{Value:30,Name:'数据4',Text:'30',Color:"#d1702f"},
+                    {Value:35,Name:'数据5',Text:'35',Color:"#35859f"}
+                ];
+                
+                this.Data.push(data1);
+        
+                if (this.JSChartContainer) this.JSChartContainer.UpdateMainData(this);
+            }
+        }
+        
+        function MainDataTestControl2()
+        {
+            this.DataType=[{Type:"BAR",Name:"bar-1",Color:"rgb(132,112,55)"}, {Type:"LINE",Name:"line-1",Color:"rgb(118,38,198)"}];
+            this.JSChartContainer;
+            this.Data=new Array();      //数据
+            this.XData=new Array();     //X轴数据
+        
+            this.RequestData=function()
+            {
+                let data1=[25,6,9,10,25,15,15,11,25,16,9,29,12,15];
+                let data2=[14,25,5,30,17,10,25,22,19,17];
+                this.XData=[2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2012,2013];
+        
+                this.Data.push(data1);
+                this.Data.push(data2);
+        
+                if (this.JSChartContainer) this.JSChartContainer.UpdateMainData(this);
+            }
+        }
+    </script>  
+</body>  
+</html>

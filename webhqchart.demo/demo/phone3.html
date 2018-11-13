@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>页面行情(自定义指数)</title>  
+    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="content/font/iconfont.css" />
+</head>  
+<body>
+
+    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+
+    <script type="text/javascript" src="../jscommon/umychart.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+    <script>
+        function getURLParams(name) 
+        {
+        	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        	var r = window.location.search.substr(1).match(reg);
+        	if (r != null) return decodeURI(r[2]);
+        	return null;
+        }
+        
+        
+        $(window).resize(resizeCanvas);
+        
+        function resizeCanvas()
+        {
+            var height= $(window).height();
+            var width = $(window).width();
+            var divKline=document.getElementById('kline');
+            divKline.style.width=width+'px';
+            divKline.style.height=height+'px';
+            divKline.JSChart.OnSize();
+        }
+        
+        
+        $(function ()
+        {
+            var symbol=getURLParams('symbol');
+            if (symbol==null) symbol='0000000.cu';
+        
+            var index=getURLParams('index');        //指标1
+            if (index==null) index='均线';
+        
+            var index2=getURLParams('index2');      //指标2
+            if (index2==null) index2='VOL';
+        
+            var index3=getURLParams('index3');      //指标3
+            if (index3==null) index3='MACD';
+        
+            var aryIndex=new Array();
+            aryIndex.push({"Index":index,"Modify":false,"Change":false});
+            aryIndex.push({"Index":index2,"Modify":false,"Change":false});
+            if (index3) aryIndex.push({"Index":index3,"Modify":false,"Change":false});
+        
+            // 创建股票K线图
+            var jsChart=JSChart.Init(document.getElementById('kline'));
+            var date=new Date();
+            var endDate=date.getFullYear()*10000+(date.getMonth()+1)*100+date.getDate();
+            var option=
+                {
+                    Type:'自定义指数历史K线图',
+                    Windows:aryIndex, //窗口指标
+                    Symbol:symbol,
+                    IsAutoUpate:true,       //是自动更新数据
+        
+                    IsShowRightMenu:true,           //右键菜单
+                    IsShowCorssCursorInfo:false,    //是否显示十字光标的刻度信息
+        
+                    CustomStock: //指数成分
+                    [
+                        {Symbol:"600000.sh",Vol:100},
+                        {Symbol:"000001.sz",Vol:100},
+                        {Symbol:"603997.sh",Vol:100},
+                        {Symbol:"002230.sz",Vol:100},
+                        {Symbol:"300070.sz",Vol:100},
+                        {Symbol:"002368.sz",Vol:100}
+                    ],
+        
+                    QueryDate: {Start:20180401,End:endDate},
+        
+                    KLine:
+                        {
+                            DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                            Right:0,                    //复权 0 不复权 1 前复权 2 后复权
+                            Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                            PageSize:50,               //一屏显示多少数据
+                            IndexTreeApiUrl:"https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
+                            //Info:["业绩预告","公告","互动易","调研","大宗交易"],       //信息地雷
+                            //Info:["业绩预告","公告"],          //信息地雷
+                            KLineDoubleClick:true,              //双击分钟走势图
+                            IsShowTooltip:true                 //是否显示K线提示信息
+                        },
+        
+                    KLineTitle: //标题设置
+                        {
+                            IsShowName:false,       //不显示股票名称
+                            IsShowSettingInfo:false //不显示周期/复权
+                        },
+        
+                    Border: //边框
+                        {
+                            Left:40,    //左边间距
+                            Right:1     //右边间距
+                        },
+                    
+                    Frame:  //子框架设置
+                    [
+                        {SplitCount:3,StringFormat:1},
+                        {SplitCount:3,StringFormat:1}
+                    ]
+                }
+        
+            jsChart.SetOption(option);
+        
+            resizeCanvas();
+        
+            //setTimeout(() => { jsChart.ChangeSymbol("000001.sz");}, 20000);
+        
+        })
+        
+        function unlockIndex(indexName)
+        {
+            console.log(indexName);
+        }
+    </script>  
+</body>  
+</html>

@@ -1,0 +1,15 @@
+﻿.tools{
+    margin-top:10px;
+    font-size:12px;
+}
+.tools .list {
+    margin-top:20px;
+    padding-left:10px;
+    overflow-y:auto;
+}
+.profit {
+    color:#EE1515 !important;
+}
+.loss {
+    color:#199E00 !important;
+}

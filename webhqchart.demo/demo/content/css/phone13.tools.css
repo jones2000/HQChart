@@ -1,0 +1,16 @@
+﻿.tools{
+    float:left;
+    padding:30px 0 0 10px;
+}
+.tools .list {
+    margin-top:20px;
+    padding-left:10px;
+    overflow-y:auto;
+}
+.profit {
+    color:#EE1515 !important;
+}
+.loss {
+    color:#199E00 !important;
+}
+

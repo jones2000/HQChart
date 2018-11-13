@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>页面行情(走势图横屏)</title>  
+    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="content/font/iconfont.css" />
+</head>  
+<body>
+
+    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+
+    <script type="text/javascript" src="../jscommon/umychart.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
+    <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+    <script>
+        function getURLParams(name) 
+        {
+        	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        	var r = window.location.search.substr(1).match(reg);
+        	if (r != null) return decodeURI(r[2]);
+        	return null;
+        }
+
+        $(window).resize(resizeCanvas);
+        
+        function resizeCanvas()
+        {
+            var height= $(window).height();
+            var width = $(window).width();
+            var divKline=document.getElementById('kline');
+            divKline.style.width=width+'px';
+            divKline.style.height=height+'px';
+            divKline.JSChart.OnSize();
+        }
+        
+        
+        $(function ()
+        {
+            var symbol=getURLParams('symbol');
+            if (symbol==null) symbol='600000.sh';
+        
+            var index=getURLParams('index');        //指标3
+            if (index==null) index='MACD';
+            var aryIndex=new Array();
+            if (index) aryIndex.push({"Index":index});
+
+            // 创建股票K线图
+            var jsChart=JSChart.Init(document.getElementById('kline'));
+        
+            var option=
+                {
+                    Type:'分钟走势图横屏',
+                    Windows:  aryIndex,     //窗口指标
+                    Symbol:symbol,          //股票代码
+                    IsAutoUpate:true,       //是自动更新数据
+        
+                    IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
+                    DayCount:5,    
+        
+                    Border: //边框
+                    {
+                        Left:20,    //左边间距
+                        Right:20,     //右边间距
+                        Top:50,
+                        Bottom:50
+                    },
+                    Frame:  //子框架设置
+                        [
+                            {SplitCount:5,StringFormat:1},
+                            {SplitCount:3,StringFormat:1},
+                            {SplitCount:3,StringFormat:0},
+                        ]
+                }
+            
+            var windowHeight= $(window).height();
+            var windowWidth = $(window).width();
+            if (windowWidth<=420)   //手机小屏左右不显示坐标
+            {
+                
+            }
+        
+            jsChart.SetOption(option);
+        
+            resizeCanvas();
+        })
+    </script>  
+</body>  
+</html>

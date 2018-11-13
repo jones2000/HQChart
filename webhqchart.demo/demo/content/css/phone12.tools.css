@@ -1,0 +1,104 @@
+﻿.tools {
+    width:100%;
+}
+.tools .top {
+    margin-bottom:2px;
+}
+.tools .top .toolsButton {
+    height:32px;
+    padding:0 8px;
+    cursor:pointer;
+}
+.tools .top .toolsButton[disabled] {
+    cursor:not-allowed;
+}
+
+.tools .top span {
+    padding-left:2px;
+}
+.tools .top .input {
+    height:32px;
+    padding-left:5px;
+}
+.tools .top .changeIndex {
+    height:32px;
+    width:70px;
+}
+
+.tools .toolsTable {
+    width:19.5%;
+    float:left;
+}
+
+.tools .toolsTable table {
+    width:100%;
+    border-left: 1px solid #ccc;
+    border-top: 1px solid #ccc;
+    margin-left:1px;
+    height:257px;
+}
+
+.tools .toolsTable table tbody td,.tools .toolsTable table thead th {
+    border-right: 1px solid #ccc;
+    border-bottom: 1px solid #ccc;
+    height:32px;
+    padding:5px;
+    width:95px;
+}
+.tools .toolsTable table td input{
+    width:50px;
+}
+
+.tools .code {
+    float:left;
+    width:60.5%;
+}
+
+.tools .cache {
+    float:left;
+    width:19.8%;
+    border:1px solid #ccc;
+    height:257px;
+    margin-left:-3px;
+    overflow-y:auto;
+}
+.tools .cache li {
+    padding:5px;
+    height:32px;
+}
+.tools .cache li.active,.tools .cache li:hover{
+    background-color:#26B99A;
+    color:#fff;
+    cursor:pointer;
+}
+.tools .cache li span{
+    float:right;
+    margin-right:5px;
+}
+
+.fa-hover:hover {
+    background-color: #ccc;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+}
+.fa-hover div.active {
+    background-color: #26B99A;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.policySuccess .content{
+    overflow-y:auto;
+}
+
+.policySuccess .table tr:hover td, .policySuccess .table tr.active td{
+    background-color: #26B99A !important;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+}
+.policySuccess .content .x_panel:last-child{
+    margin:0px;
+}
