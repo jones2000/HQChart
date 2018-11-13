@@ -355,7 +355,7 @@ function Scanner(code, ErrorHandler)
                 else
                 {
                     str = this.Source.substr(this.Index, 2);
-                    if (str === '&&' || str === '||' || str === '==' || str === '!=' || str === '<=' || str === '>=' || str === '=>' || str==':=' || str=='OR')
+                    if (str === '&&' || str === '||' || str === '==' || str === '!=' || str === '<>' || str === '<=' || str === '>=' || str === '=>' || str==':=' || str=='OR')
                     {
                         this.Index += 2;
                     }
@@ -876,6 +876,7 @@ function JSParser(code)
         '&': 5,
         '==': 6,
         '!=': 6,
+        '<>': 6,
         '===': 6,
         '!==': 6,
         '<': 7,
@@ -1962,6 +1963,54 @@ function JSAlgorithm(errorHandler, symbolData)
 
         return result;
     }
+
+    //不等于
+    this.NEQ = function (data, data2) 
+    {
+        let isNumber = typeof (data) == 'number';
+        let isNumber2 = typeof (data2) == 'number';
+
+        //单数值比较
+        if (isNumber && isNumber2) return (data != data2 ? 1 : 0);
+
+        //都是数组比较
+        let result = [];
+        if (!isNumber && !isNumber2) 
+        {
+            let count = Math.max(data.length, data2.length);
+            for (let i = 0; i < count; ++i) 
+            {
+                result[i] = null; //初始化
+
+                if (i < data.length && i < data2.length) 
+                {
+                    if (!isNaN(data[i]) && !isNaN(data2[i])) result[i] = (data[i] != data2[i] ? 1 : 0);
+                }
+            }
+
+            return result;
+        }
+
+        if (isNumber)   //单数据-数组
+        {
+            for (let i in data2) 
+            {
+                result[i] = null;
+                if (!isNaN(data) && !isNaN(data2[i])) result[i] = (data != data2[i] ? 1 : 0);
+            }
+        }
+        else            //数组-单数据
+        {
+            for (let i in data) 
+            {
+                result[i] = null;
+                if (!isNaN(data[i]) && !isNaN(data2)) result[i] = (data[i] != data2 ? 1 : 0);
+            }
+        }
+
+        return result;
+    }
+
 
     //AND  &&
     this.And=function(data,data2)
@@ -6758,6 +6807,10 @@ function JSExecute(ast,option)
                             break;
                         case '==':
                             value.Out=this.Algorithm.EQ(leftValue,rightValue);
+                            break;
+                        case '!=':
+                        case '<>':
+                            value.Out = this.Algorithm.NEQ(leftValue, rightValue);
                             break;
                     }
 

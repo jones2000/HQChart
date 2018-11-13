@@ -62,7 +62,7 @@ function MinuteData()
     this.Vol;
     this.Amount;
     this.DateTime;
-    this.Increate;
+    this.Increase;
     this.Risefall;
     this.AvPrice;
 }

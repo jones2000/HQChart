@@ -27,7 +27,7 @@ JSIndexScript.prototype.Get=function(id)
             ['BIAS_QL', this.BIAS_QL],['DPO', this.DPO],['OSC', this.OSC],
             ['ATR', this.ATR],['NVI', this.NVI],['PVI', this.PVI],
             ['UOS', this.UOS],['CYW', this.CYW],['LON', this.LON],
-            ['NDB', this.NDB],
+            ['NDB', this.NDB],['BTX', this.BTX],
 
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
@@ -890,6 +890,32 @@ JSIndexScript.prototype.MarginProportion = function ()
     return data;
 }
 
+JSIndexScript.prototype.BTX = function () 
+{
+    let data =
+    {
+        Name: 'BTX', Description: '宝塔线', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'B1:=REF(C,1);\n\
+B2:= REF(C, 2);\n\
+SS:= IF(C > REF(C, 1) AND REF(C, 1) >= REF(C, 2), 1, IF(C < REF(C, 1) AND REF(C, 1) <= REF(C, 2), -1, IF(C > REF(C, 2) AND REF(C, 2) > REF(C, 1), 2, IF(C < REF(C, 2) AND REF(C, 2) < REF(C, 1), -2, 0))));\n\
+SM:= IF(REF(SS, 1) <> 0, REF(SS, 1), IF(REF(SS, 2) <> 0, REF(SS, 2), IF(REF(SS, 3) <> 0, REF(SS, 3), IF(REF(SS, 5) <> 0, REF(SS, 5), IF(REF(SS, 6) <> 0, REF(SS, 6), IF(REF(SS, 7) <> 0, REF(SS, 7), 0))))));\n\
+MC:= IF(REF(SS, 1) <> 0, B2, IF(SM > 0, MIN(B1, B2), MAX(B1, B2)));\n\
+TOW1:= IF(C > REF(C, 1), C, REF(C, 1));\n\
+TOW2:= IF((SS == -1 OR SS == -2) AND SM > 0, B2, TOW1);\n\
+TOWER:= IF(TOW1 > TOW2, TOW1, TOW2);\n\
+STICKLINE(SS == 1 OR SM >= 1 AND SS == 0, B1, C, 10, 1), COLORRED;\n\
+STICKLINE(SS == -1 OR SM <= -1 AND SS == 0, B1, C, 10, 0), COLORCYAN;\n\
+STICKLINE(SS == 2, B2, C, 10, 1), COLORRED;\n\
+STICKLINE(SS == -2, B2, C, 10, 0), COLORCYAN;\n\
+STICKLINE((SS == -1 OR SS == -2) AND SM > 0, B2, B1, 10, 1), COLORRED;\n\
+STICKLINE((SS == 1 OR SS == 2) AND SM < 0, B2, B1, 10, 0), COLORCYAN;'
+        };
+
+    return data;
+}
+
 
 JSIndexScript.prototype.EMPTY = function () 
 {
@@ -911,7 +937,20 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                'VAR2:FINANCE(45);'
+                'B1:=REF(C,1);\n\
+B2:= REF(C, 2);\n\
+SS:= IF(C > REF(C, 1) AND REF(C, 1) >= REF(C, 2), 1, IF(C < REF(C, 1) AND REF(C, 1) <= REF(C, 2), -1, IF(C > REF(C, 2) AND REF(C, 2) > REF(C, 1), 2, IF(C < REF(C, 2) AND REF(C, 2) < REF(C, 1), -2, 0))));\n\
+SM:= IF(REF(SS, 1) <> 0, REF(SS, 1), IF(REF(SS, 2) <> 0, REF(SS, 2), IF(REF(SS, 3) <> 0, REF(SS, 3), IF(REF(SS, 5) <> 0, REF(SS, 5), IF(REF(SS, 6) <> 0, REF(SS, 6), IF(REF(SS, 7) <> 0, REF(SS, 7), 0))))));\n\
+MC:= IF(REF(SS, 1) <> 0, B2, IF(SM > 0, MIN(B1, B2), MAX(B1, B2)));\n\
+TOW1:= IF(C > REF(C, 1), C, REF(C, 1));\n\
+TOW2:= IF((SS == -1 OR SS == -2) AND SM > 0, B2, TOW1);\n\
+TOWER:= IF(TOW1 > TOW2, TOW1, TOW2);\n\
+STICKLINE(SS == 1 OR SM >= 1 AND SS == 0, B1, C, 10, 1), COLORRED;\n\
+STICKLINE(SS == -1 OR SM <= -1 AND SS == 0, B1, C, 10, 0), COLORCYAN;\n\
+STICKLINE(SS == 2, B2, C, 10, 1), COLORRED;\n\
+STICKLINE(SS == -2, B2, C, 10, 0), COLORCYAN;\n\
+STICKLINE((SS == -1 OR SS == -2) AND SM > 0, B2, B1, 10, 1), COLORRED;\n\
+STICKLINE((SS == 1 OR SS == 2) AND SM < 0, B2, B1, 10, 0), COLORCYAN;'
         };
 
     return data;
