@@ -32,7 +32,12 @@ JSIndexScript.prototype.Get=function(id)
             ['MARSI', this.MARSI], ['CYD', this.CYD], ['CYF', this.CYF], ['TAPI', this.TAPI],
             ['VMACD', this.VMACD], ['QACD', this.QACD], ['VPT', this.VPT], ['WVAD', this.WVAD],
             ['DBQR', this.DBQR], ['JS', this.JS], ['CYE', this.CYE], ['QR', this.QR], ['GDX', this.GDX],
-            ['JLHB', this.JLHB], ['PCNT', this.PCNT], ['BTX', this.BTX],
+            ['JLHB', this.JLHB], ['PCNT', this.PCNT], ['BTX', this.BTX], ['AMO', this.AMO],
+            ['VRSI', this.VRSI], ['HSCOL', this.HSCOL], ['DBQRV', this.DBQRV], ['DBLB', this.DBLB],
+            ['ACD', this.ACD], ['EXPMA', this.EXPMA], ['EXPMA_S', this.EXPMA_S], ['HMA', this.HMA],
+            ['LMA', this.LMA], ['VMA', this.VMA], ['AMV', this.AMV], ['BBIBOLL', this.BBIBOLL],
+            ['ALLIGAT', this.ALLIGAT], ['ZX', this.ZX], ['XS', this.XS], ['XS2', this.XS2],
+            ['SG-XDT', this.SG_XDT], ['SG-SMX', this.SG_SMX], ['SG-LB', this.SG_LB], ['SG-PF', this.SG_PF],
 
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
@@ -1116,6 +1121,369 @@ JSIndexScript.prototype.PCNT = function ()
         Script: //脚本
             'PCNT:(CLOSE-REF(CLOSE,1))/CLOSE*100;\n\
 MAPCNT:EXPMEMA(PCNT,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.AMO = function () 
+{
+    let data =
+    {
+        Name: 'AMO', Description: '成交金额', IsMainIndex: false,
+        Args: [{ Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }],
+        Script: //脚本
+            'AMOW:AMOUNT/10000.0,VOLSTICK;\n\
+AMO1:MA(AMOW,M1);\n\
+AMO2:MA(AMOW,M2);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VRSI = function () 
+{
+    let data =
+    {
+        Name: 'VRSI', Description: '相对强弱量', IsMainIndex: false,
+        Args: [{ Name: 'N1', Value: 6 }, { Name: 'N2', Value: 12 }, { Name: 'N3', Value: 24 }],
+        Script: //脚本
+            'LC:=REF(VOL,1);\n\
+RSI1:SMA(MAX(VOL-LC,0),N1,1)/SMA(ABS(VOL-LC),N1,1)*100;\n\
+RSI2:SMA(MAX(VOL-LC,0),N2,1)/SMA(ABS(VOL-LC),N2,1)*100;\n\
+RSI3:SMA(MAX(VOL-LC,0),N3,1)/SMA(ABS(VOL-LC),N3,1)*100;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.HSCOL = function () 
+{
+    let data =
+    {
+        Name: 'HSCOL', Description: '换手柱', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+            'HSCOL:IF((SETCODE==0||SETCODE==1),100*VOL,VOL)/(FINANCE(7)/100),VOLSTICK;\n\
+MAHSL:MA(HSCOL,N);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.DBQRV = function () 
+{
+    let data =
+    {
+        Name: 'DBQRV', Description: '对比强弱量(需下载日线)', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+            'ZS:(INDEXV-REF(INDEXV,N))/REF(INDEXV,N);\n\
+GG:(VOL-REF(VOL,N))/REF(VOL,N);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.DBLB = function () 
+{
+    let data =
+    {
+        Name: 'DBLB', Description: '对比量比(需下载日线)', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 }, { Name: 'M', Value: 5 }],
+        Script: //脚本
+            'GG:=VOL/SUM(REF(VOL,1),N);\n\
+ZS:=INDEXV/SUM(REF(INDEXV,1),N);\n\
+DBLB:GG/ZS;\n\
+MADBLB:MA(DBLB,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ACD = function () 
+{
+    let data =
+    {
+        Name: 'ACD', Description: '升降线', IsMainIndex: false,
+        Args: [{ Name: 'M', Value: 20 }],
+        Script: //脚本
+            'LC:=REF(CLOSE,1);\n\
+DIF:=CLOSE-IF(CLOSE>LC,MIN(LOW,LC),MAX(HIGH,LC));\n\
+ACD:SUM(IF(CLOSE==LC,0,DIF),0);\n\
+MAACD:EXPMEMA(ACD,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.EXPMA = function ()
+ {
+    let data =
+    {
+        Name: 'EXPMA', Description: '指数平均线', IsMainIndex: true,
+        Args: [{ Name: 'M1', Value: 12 }, { Name: 'M2', Value: 50 }],
+        Script: //脚本
+            'EXP1:EMA(CLOSE,M1);\n\
+EXP2:EMA(CLOSE,M2);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.EXPMA_S = function () 
+{
+    let data =
+    {
+        Name: 'EXPMA_S', Description: '指数平均线-副图', IsMainIndex: false,
+        Args: [{ Name: 'M1', Value: 12 }, { Name: 'M2', Value: 50 }],
+        Script: //脚本
+            'EXP1:EMA(CLOSE,M1);\n\
+EXP2:EMA(CLOSE,M2);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.HMA = function () 
+{
+    let data =
+    {
+        Name: 'HMA', Description: '高价平均线', IsMainIndex: true,
+        Args: [{ Name: 'M1', Value: 6 }, { Name: 'M2', Value: 12 }, { Name: 'M3', Value: 30 }, { Name: 'M4', Value: 72 }, { Name: 'M5', Value: 144 }],
+        Script: //脚本
+            'HMA1:MA(HIGH,M1);\n\
+HMA2:MA(HIGH,M2);\n\
+HMA3:MA(HIGH,M3);\n\
+HMA4:MA(HIGH,M4);\n\
+HMA5:MA(HIGH,M5);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.LMA = function ()
+{
+    let data =
+    {
+        Name: 'LMA', Description: '低价平均线', IsMainIndex: true,
+        Args: [{ Name: 'M1', Value: 6 }, { Name: 'M2', Value: 12 }, { Name: 'M3', Value: 30 }, { Name: 'M4', Value: 72 }, { Name: 'M5', Value: 144 }],
+        Script: //脚本
+            'LMA1:MA(LOW,M1);\n\
+LMA2:MA(LOW,M2);\n\
+LMA3:MA(LOW,M3);\n\
+LMA4:MA(LOW,M4);\n\
+LMA5:MA(LOW,M5);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VMA = function () 
+{
+    let data =
+    {
+        Name: 'VMA', Description: '变异平均线', IsMainIndex: true,
+        Args: [{ Name: 'M1', Value: 6 }, { Name: 'M2', Value: 12 }, { Name: 'M3', Value: 30 }, { Name: 'M4', Value: 72 }, { Name: 'M5', Value: 144 }],
+        Script: //脚本
+            'VV:=(HIGH+OPEN+LOW+CLOSE)/4;\n\
+VMA1:MA(VV,M1);\n\
+VMA2:MA(VV,M2);\n\
+VMA3:MA(VV,M3);\n\
+VMA4:MA(VV,M4);\n\
+VMA5:MA(VV,M5);'
+
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.AMV = function () 
+{
+    let data =
+    {
+        Name: 'AMV', Description: '成本价均线', IsMainIndex: false,
+        Args: [{ Name: 'M1', Value: 6 }, { Name: 'M2', Value: 12 }, { Name: 'M3', Value: 30 }, { Name: 'M4', Value: 72 }, { Name: 'M5', Value: 144 }],
+        Script: //脚本
+            'AMOV:=VOL*(OPEN+CLOSE)/2;\n\
+AMV1:SUM(AMOV,M1)/SUM(VOL,M1);\n\
+AMV2:SUM(AMOV,M2)/SUM(VOL,M2);\n\
+AMV3:SUM(AMOV,M3)/SUM(VOL,M3);\n\
+AMV4:SUM(AMOV,M4)/SUM(VOL,M4);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.BBIBOLL = function () 
+{
+    let data =
+    {
+        Name: 'BBIBOLL', Description: '多空布林线', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 11 }, { Name: 'M', Value: 6 }],
+        Script: //脚本
+            'CV:=CLOSE;\n\
+BBIBOLL:(MA(CV,3)+MA(CV,6)+MA(CV,12)+MA(CV,24))/4;\n\
+UPR:BBIBOLL+M*STD(BBIBOLL,N);\n\
+DWN:BBIBOLL-M*STD(BBIBOLL,N);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ALLIGAT = function () 
+{
+    let data =
+    {
+        Name: 'ALLIGAT', Description: '鳄鱼线', IsMainIndex: true,
+        Args: [],
+        Script: //脚本
+            'NN:=(H+L)/2;\n\
+上唇:REF(MA(NN,5),3),COLOR40FF40;\n\
+牙齿:REF(MA(NN,8),5),COLOR0000C0;\n\
+下颚:REF(MA(NN,13),8),COLORFF4040;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ZX = function () 
+{
+    let data =
+    {
+        Name: 'ZX', Description: '重心线', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'AV:0.01*AMOUNT/VOL;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.XS = function () 
+{
+    let data =
+    {
+        Name: 'XS', Description: '薛斯通道', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 13 }],
+        Script: //脚本
+            'VAR2:=CLOSE*VOL;\n\
+VAR3:=EMA((EMA(VAR2,3)/EMA(VOL,3)+EMA(VAR2,6)/EMA(VOL,6)+EMA(VAR2,12)/EMA(VOL,12)+EMA(VAR2,24)/EMA(VOL,24))/4,N);\n\
+SUP:1.06*VAR3;\n\
+SDN:VAR3*0.94;\n\
+VAR4:=EMA(CLOSE,9);\n\
+LUP:EMA(VAR4*1.14,5);\n\
+LDN:EMA(VAR4*0.86,5);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.XS2 = function () 
+{
+    let data =
+    {
+        Name: 'XS2', Description: '薛斯通道II', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 102 }, { Name: 'M', Value: 7 }],
+        Script: //脚本
+            'AA:=MA((2*CLOSE+HIGH+LOW)/4,5); \n\
+通道1:AA*N/100; \n\
+通道2:AA*(200-N)/100; \n\
+CC:=ABS((2*CLOSE+HIGH+LOW)/4-MA(CLOSE,20))/MA(CLOSE,20); \n\
+DD:=DMA(CLOSE,CC); \n\
+通道3:(1+M/100)*DD; \n\
+通道4:(1-M/100)*DD;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SG_XDT = function () 
+{
+    let data =
+    {
+        Name: 'SG-XDT', Description: '心电图(需下载日线)', IsMainIndex: false,
+        Args: [{ Name: 'P1', Value: 5 }, { Name: 'P2', Value: 10 }],
+        Script: //脚本
+            'QR:CLOSE/INDEXC*1000;\n\
+MQR1:MA(QR,5);\n\
+MQR2:MA(QR,10);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SG_SMX = function () 
+{
+    let data =
+    {
+        Name: 'SG-SMX', Description: '生命线(需下载日线)', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 50 }],
+        Script: //脚本
+            'H1:=HHV(HIGH,N);\n\
+L1:=LLV(LOW,N);\n\
+H2:=HHV(INDEXH,N);\n\
+L2:=LLV(INDEXL,N);\n\
+ZY:=CLOSE/INDEXC*2000;\n\
+ZY1:EMA(ZY,3);\n\
+ZY2:EMA(ZY,17);\n\
+ZY3:EMA(ZY,34);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SG_LB = function () 
+{
+    let data =
+    {
+        Name: 'SG-LB', Description: '量比(需下载日线)', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'ZY2:=VOL/INDEXV*1000;\n\
+量比:ZY2;\n\
+MA5:MA(ZY2,5);\n\
+MA10:MA(ZY2,10);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SG_PF = function () 
+{
+    let data =
+    {
+        Name: 'SG-PF', Description: '强势股评分(需下载日线)', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'ZY1:=CLOSE/INDEXC*1000;\n\
+A1:=IF(ZY1>HHV(ZY1,3),10,0);\n\
+A2:=IF(ZY1>HHV(ZY1,5),15,0);\n\
+A3:=IF(ZY1>HHV(ZY1,10),20,0);\n\
+A4:=IF(ZY1>HHV(ZY1,2),10,0);\n\
+A5:=COUNT(ZY1>REF(ZY1,1) ,9)*5;\n\
+强势股评分:A1+A2+A3+A4+A5;'
 
     };
 

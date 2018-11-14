@@ -2591,7 +2591,7 @@ function JSAlgorithm(errorHandler, symbolData)
         }
         return result;
     }
-    
+
     /*
     求相反数.
     用法:REVERSE(X)返回-X.
@@ -6533,6 +6533,7 @@ function JSExecute(ast,option)
             case 'INDEXH':
             case 'INDEXO':
             case 'INDEXV':
+            case 'INDEXL':
                 return this.SymbolData.GetIndexCacheData(name);
 
             case 'CURRBARSCOUNT':

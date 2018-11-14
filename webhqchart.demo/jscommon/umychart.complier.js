@@ -6531,6 +6531,7 @@ function JSExecute(ast,option)
             case 'INDEXH':
             case 'INDEXO':
             case 'INDEXV':
+            case 'INDEXL':
                 return this.SymbolData.GetIndexCacheData(name);
 
             case 'CURRBARSCOUNT':
