@@ -2410,7 +2410,7 @@ function JSAlgorithm(errorHandler,symbolData)
         if (!data || !data.length) return result;
         if (dayCount < 1) dayCount = 1;
         var i = 0;
-        for(i = 0; i < data.length && !this.isNumber(data[i]); ++i)
+        for(i = 0; i < data.length && !this.IsNumber(data[i]); ++i)
         {
             result[i] = null;
         }
@@ -2428,7 +2428,7 @@ function JSAlgorithm(errorHandler,symbolData)
             for (var j = dayCount-1; j >= 0; ++j)
             {
                var value = data[i-j];
-               if (!this.isNumber(value))
+               if (!this.IsNumber(value))
                {
                    value = preValue;
                    data[i-j] = value;
@@ -2453,7 +2453,7 @@ function JSAlgorithm(errorHandler,symbolData)
         let result=[];
         if (!data || !data.length) return result;
         var i = 0, j = 0;
-        for (j = 0; j < data.length && !this.isNumber(data[j]); ++j)
+        for (j = 0; j < data.length && !this.IsNumber(data[j]); ++j)
         {
             result[j] = null;
         }
@@ -2464,16 +2464,16 @@ function JSAlgorithm(errorHandler,symbolData)
         for (; i < j+dayCount; ++i)
         {
             result[i] = null;
-            if (!this.isNumber(data[i]) && i-1 >= 0)
+            if (!this.IsNumber(data[i]) && i-1 >= 0)
                 data[i] = data[i-1];
             sum += data[i];
         }
         result[i-1] = sum / dayCount;
         for (; i < data.length; ++i)
         {
-            if (this.isNumber(result[i-1]) && this.isNumber(data[i]))
+            if (this.IsNumber(result[i-1]) && this.IsNumber(data[i]))
                 result[i] = (data[i]+result[i-1]*(dayCount-1)) / dayCount;
-            else if (i-1 > -1 && this.isNumber(result[i-1]))
+            else if (i-1 > -1 && this.IsNumber(result[i-1]))
                 result[i] = result[i-1];
             else
                 result[i] = null;    

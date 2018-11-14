@@ -6194,39 +6194,42 @@ function StockInfoExtendChartPaint() {
 //
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-function IFrameSplitOperator() {
-  this.ChartBorder;                   //边框信息
-  this.Frame;                         //框架信息
-  this.FrameSplitData;                //坐标轴分割方法
-  this.SplitCount = 5;                  //刻度个数
-  this.StringFormat = 0;                //刻度字符串格式 -1 刻度文字全部不显示 -2 刻度文字右边不显示
+function IFrameSplitOperator() 
+{
+    this.ChartBorder;                   //边框信息
+    this.Frame;                         //框架信息
+    this.FrameSplitData;                //坐标轴分割方法
+    this.SplitCount = 5;                  //刻度个数
+    this.StringFormat = 0;                //刻度字符串格式 -1 刻度文字全部不显示 -2 刻度文字右边不显示
 
-  //////////////////////
-  // data.Min data.Max data.Interval data.Count
-  //
-  this.IntegerCoordinateSplit = function (data) {
-    var splitItem = this.FrameSplitData.Find(data.Interval);
-    if (!splitItem) return false;
+    //////////////////////
+    // data.Min data.Max data.Interval data.Count
+    //
+    this.IntegerCoordinateSplit = function (data) 
+    {
+        var splitItem = this.FrameSplitData.Find(data.Interval);
+        if (!splitItem) return false;
 
-    if (data.Interval == splitItem.Interval) return true;
+        if (data.Interval == splitItem.Interval) return true;
 
-    //调整到整数倍数,不能整除的 +1
-    var fixMax = parseInt((data.Max / (splitItem.FixInterval) + 0.5).toFixed(0)) * splitItem.FixInterval;
-    var fixMin = parseInt((data.Min / (splitItem.FixInterval) - 0.5).toFixed(0)) * splitItem.FixInterval;
-    if (data.Min == 0) fixMin = 0;  //最小值是0 不用调整了.
+        //调整到整数倍数,不能整除的 +1
+        var fixMax = parseInt((data.Max / (splitItem.FixInterval) + 0.5).toFixed(0)) * splitItem.FixInterval;
+        var fixMin = parseInt((data.Min / (splitItem.FixInterval) - 0.5).toFixed(0)) * splitItem.FixInterval;
+        if (data.Min == 0) fixMin = 0;  //最小值是0 不用调整了.
 
-    var count = 0;
-    for (var i = fixMin; (i - fixMax) < 0.00000001; i += splitItem.FixInterval) {
-      ++count;
+        var count = 0;
+        for (var i = fixMin; (i - fixMax) < 0.00000001; i += splitItem.FixInterval) 
+        {
+            ++count;
+        }
+
+        data.Interval = splitItem.FixInterval;
+        data.Max = fixMax;
+        data.Min = fixMin;
+        data.Count = count;
+
+        return true;
     }
-
-    data.Interval = splitItem.FixInterval;
-    data.Max = fixMax;
-    data.Min = fixMin;
-    data.Count = count;
-
-    return true;
-  }
 
     this.Filter=function(aryInfo)
     {
@@ -6248,6 +6251,40 @@ function IFrameSplitOperator() {
         }
 
         return data;
+    }
+
+    this.RemoveZero=function(aryInfo)   //移除小数后面多余的0
+    {
+        //所有的数字小数点后面都0,才会去掉
+        var isAllZero=[true,true];
+        for(var i in aryInfo)
+        {
+            var item=aryInfo[i];
+            var message=item.Message[0];
+            if (!message) isAllZero[0]=false;
+            if (message!=0 && message.search(/[.][0]+/g)<=0) isAllZero[0] = false; 
+
+            var message = item.Message[1];
+            if (!message) isAllZero[1]=false;
+            if (message!=0 && message.search(/[.][0]+/g)<=0) isAllZero[1] = false;
+        }
+
+        if (isAllZero[0] == false && isAllZero[1]==false) return;
+        for(var i in aryInfo)
+        {
+            var item = aryInfo[i];
+            if (isAllZero[0])
+            {
+                var message = item.Message[0];
+                item.Message[0] = message.replace(/[.][0]+/g,'');
+            }
+
+            if (isAllZero[1])
+            {
+                var message = item.Message[1];
+                item.Message[1] = message.replace(/[.][0]+/g, '');
+            }
+        }
     }
 }
 
@@ -6430,57 +6467,61 @@ function FrameSplitKLinePriceY() {
 
 }
 
-function FrameSplitY() {
-  this.newMethod = IFrameSplitOperator;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function FrameSplitY() 
+{
+    this.newMethod = IFrameSplitOperator;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.Operator = function () {
-    var splitData = {};
-    splitData.Max = this.Frame.HorizontalMax;
-    splitData.Min = this.Frame.HorizontalMin;
-    if (this.Frame.YSpecificMaxMin) {
-      splitData.Count = this.Frame.YSpecificMaxMin.Count;
-      splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
-    }
-    else 
+    this.Operator = function () 
     {
-      splitData.Count = this.SplitCount*2;  //夸大两倍
-      splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
-      this.IntegerCoordinateSplit(splitData);
-    }
-
-    this.Frame.HorizontalInfo = [];
-    for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) 
-    {
-        this.Frame.HorizontalInfo[i] = new CoordinateInfo();
-        this.Frame.HorizontalInfo[i].Value = value;
-
-        if (this.StringFormat == 1)   //手机端格式 如果有万,亿单位了 去掉小数
+        var splitData = {};
+        splitData.Max = this.Frame.HorizontalMax;
+        splitData.Min = this.Frame.HorizontalMin;
+        if (this.Frame.YSpecificMaxMin) 
         {
-            var floatPrecision = 2;
-            if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision = 0;
-            this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
-        }
-        else if (this.StringFormat == -1) //刻度不显示
-        {
-
+        splitData.Count = this.Frame.YSpecificMaxMin.Count;
+        splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
         }
         else 
         {
-            this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, 2);
+        splitData.Count = this.SplitCount*2;  //放大两倍
+        splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
+        this.IntegerCoordinateSplit(splitData);
         }
 
-        this.Frame.HorizontalInfo[i].Message[0] = this.Frame.HorizontalInfo[i].Message[1];
+        this.Frame.HorizontalInfo = [];
+        for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) 
+        {
+            this.Frame.HorizontalInfo[i] = new CoordinateInfo();
+            this.Frame.HorizontalInfo[i].Value = value;
 
-        if (this.StringFormat == -2) this.Frame.HorizontalInfo[i].Message[1] = null;    //刻度右边不显示
-        else if (this.StringFormat == -3) this.Frame.HorizontalInfo[i].Message[0] = null;   //刻度左边不显示
+            if (this.StringFormat == 1)   //手机端格式 如果有万,亿单位了 去掉小数
+            {
+                var floatPrecision = 2;
+                if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision = 0;
+                this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
+            }
+            else if (this.StringFormat == -1) //刻度不显示
+            {
+
+            }
+            else 
+            {
+                this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, 2);
+            }
+
+            this.Frame.HorizontalInfo[i].Message[0] = this.Frame.HorizontalInfo[i].Message[1];
+
+            if (this.StringFormat == -2) this.Frame.HorizontalInfo[i].Message[1] = null;    //刻度右边不显示
+            else if (this.StringFormat == -3) this.Frame.HorizontalInfo[i].Message[0] = null;   //刻度左边不显示
+        }
+
+        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
+        this.RemoveZero(this.Frame.HorizontalInfo);
+        this.Frame.HorizontalMax = splitData.Max;
+        this.Frame.HorizontalMin = splitData.Min;
     }
-
-    this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
-    this.Frame.HorizontalMax = splitData.Max;
-    this.Frame.HorizontalMin = splitData.Min;
-  }
 }
 
 function FrameSplitKLineX() {

@@ -19,13 +19,18 @@ JSIndexScript.prototype.Get=function(id)
             ['DMI', this.DMI],['CR', this.CR],['PSY', this.PSY],
             ['CCI', this.CCI],['DMA', this.DMA],['TRIX', this.TRIX],
             ['VR', this.VR],['EMV', this.EMV],['ROC', this.ROC],
-            ['MIM', this.MIM],['FSL', this.FSL],['CYR', this.CYR],
+            ['MTM', this.MIM],['FSL', this.FSL],['CYR', this.CYR],
             ['MASS', this.MASS],['WAD', this.WAD],['CHO', this.CHO],
             ['ADTM', this.ADTM],['HSL', this.HSL],['BIAS36', this.BIAS36],
             ['BIAS_QL', this.BIAS_QL],['DPO', this.DPO],['OSC', this.OSC],
             ['ATR', this.ATR],['NVI', this.NVI],['PVI', this.PVI],
             ['UOS', this.UOS],['CYW', this.CYW],['LON', this.LON],
-            ['NDB', this.NDB],
+            ['NDB', this.NDB],['SKDJ',this.SKDJ],['KD',this.KD],['FKX',this.FKX],
+            ['DKCOL',this.DKCOL],['UDL',this.UDL],['MFI',this.MFI],['LWR',this.LWR],
+            ['MARSI',this.MARSI],['CYD',this.CYD],['CYF',this.CYF],['TAPI',this.TAPI],
+            ['VMACD',this.VMACD],['QACD',this.QACD],['VPT',this.VPT],['WVAD',this.WVAD],
+            ['DBQR',this.DBQR],['JS',this.JS],['CYE',this.CYE],['QR',this.QR],['GDX',this.GDX],
+            ['JLHB',this.JLHB],['PCNT',this.PCNT],['BTX', this.BTX],
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],
@@ -445,11 +450,11 @@ MAROC:MA(ROC,M);'
     return data;
 }
 
-JSIndexScript.prototype.MIM=function()
+JSIndexScript.prototype.MTM=function()
 {
     let data=
     {
-        Name:'MIM', Description:'动量线', IsMainIndex:false,
+        Name:'MTM', Description:'动量线', IsMainIndex:false,
         Args:[ { Name:'N', Value:12},{ Name:'M', Value:6} ],
         Script: //脚本
 'MTM:CLOSE-REF(CLOSE,N);\n\
@@ -754,6 +759,388 @@ MDK5: MA(DK, P1);\n\
 MDK10: MA(DK, P2);'
 
     };
+
+    return data;
+}
+
+JSIndexScript.prototype.SKDJ = function () 
+{
+    let data =
+    {
+        Name: 'SKDJ', Description: '慢速随机指标', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 9 }, { Name: 'M', Value: 3 }],
+        Script: //脚本
+'LOWV:=LLV(LOW,N);\n\
+HIGHV:=HHV(HIGH,N);\n\
+RSV:=EMA((CLOSE-LOWV)/(HIGHV-LOWV)*100,M);\n\
+K:EMA(RSV,M);\n\
+D:MA(K,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.KD = function () 
+{
+    let data =
+    {
+        Name: 'KD', Description: '随机指标KD', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 9 }, { Name: 'M1', Value: 3 },{ Name: 'M2', Value: 3 }],
+        Script: //脚本
+'RSV:=(CLOSE-LLV(LOW,N))/(HHV(HIGH,N)-LLV(LOW,N))*100;\n\
+K:SMA(RSV,M1,1);\n\
+D:SMA(K,M2,1);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.FKX=function()
+{
+    let data=
+    {
+        Name:'FKX', Description:'反K线', IsMainIndex:true,
+        Args:[  ],
+        Script: //脚本
+            'DRAWKLINE(-LOW, -OPEN, -HIGH, -CLOSE);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.DKCOL = function () 
+{
+    let data =
+    {
+        Name: 'DKCOL', Description: '多空能量柱(适用于分时主图)', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+'FF:=(C-REF(C,N))/REF(C,N);\n\
+STICKLINE(FF>0,DYNAINFO(3),DYNAINFO(3)*(1+FF),0.5,0),COLORRED;\n\
+STICKLINE(FF<0,DYNAINFO(3),DYNAINFO(3)*(1+FF),0.5,0),COLORGREEN;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.UDL = function () 
+{
+    let data =
+    {
+        Name: 'UDL', Description: '引力线', IsMainIndex: false,
+        Args: [{ Name: 'N1', Value: 3 },{ Name: 'N2', Value: 5 },{ Name: 'N3', Value: 10 },{ Name: 'N4', Value: 20 },{ Name: 'M', Value: 6 }],
+        Script: //脚本
+'UDL:(MA(CLOSE,N1)+MA(CLOSE,N2)+MA(CLOSE,N3)+MA(CLOSE,N4))/4;\n\
+MAUDL:MA(UDL,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MFI = function () 
+{
+    let data =
+    {
+        Name: 'MFI', Description: '资金流量指标', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 14 },{ Name: 'N2', Value: 6 }],
+        Script: //脚本
+'TYP := (HIGH + LOW + CLOSE)/3;\n\
+V1:=SUM(IF(TYP>REF(TYP,1),TYP*VOL,0),N)/SUM(IF(TYP<REF(TYP,1),TYP*VOL,0),N);\n\
+MFI:100-(100/(1+V1));'
+
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.LWR = function () 
+{
+    let data =
+    {
+        Name: 'LWR', Description: 'LWR威廉指标', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 9 },{ Name: 'M1', Value: 3 },{ Name: 'M2', Value: 3 }],
+        Script: //脚本
+'RSV:= (HHV(HIGH,N)-CLOSE)/(HHV(HIGH,N)-LLV(LOW,N))*100;\n\
+LWR1:SMA(RSV,M1,1);\n\
+LWR2:SMA(LWR1,M2,1);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MARSI = function () 
+{
+    let data =
+    {
+        Name: 'MARSI', Description: '相对强弱平均线', IsMainIndex: false,
+        Args: [{ Name: 'M1', Value: 10 },{ Name: 'M2', Value: 6 }],
+        Script: //脚本
+'DIF:=CLOSE-REF(CLOSE,1);\n\
+VU:=IF(DIF>=0,DIF,0);\n\
+VD:=IF(DIF<0,-DIF,0);\n\
+MAU1:=MEMA(VU,M1);\n\
+MAD1:=MEMA(VD,M1);\n\
+MAU2:=MEMA(VU,M2);\n\
+MAD2:=MEMA(VD,M2);\n\
+RSI10:MA(100*MAU1/(MAU1+MAD1),M1);\n\
+RSI6:MA(100*MAU2/(MAU2+MAD2),M2);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYD = function () 
+{
+    let data =
+    {
+        Name: 'CYD', Description: '承接因子', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 21 }],
+        Script: //脚本
+'CYDS:WINNER(CLOSE)/(VOL/CAPITAL);\n\
+CYDN:WINNER(CLOSE)/MA(VOL/CAPITAL,N);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYF = function () 
+{
+    let data =
+    {
+        Name: 'CYF', Description: '市场能量', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 21 }],
+        Script: //脚本
+'CYF:100-100/(1+EMA(HSL,N));'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TAPI = function () 
+{
+    let data =
+    {
+        Name: 'TAPI', Description: '加权指数成交值', IsMainIndex: false,
+        Args: [{ Name: 'M', Value: 6 }],
+        Script: //脚本
+'TAPI:AMOUNT/INDEXC;\n\
+MATAIP:MA(TAPI,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VMACD = function () 
+{
+    let data =
+    {
+        Name: 'VMACD', Description: '量平滑异同平均', IsMainIndex: false,
+        Args: [{ Name: 'SHORT', Value: 12 },{ Name: 'LONG', Value: 26 },{ Name: 'MID', Value: 9 }],
+        Script: //脚本
+'DIF:EMA(VOL,SHORT)-EMA(VOL,LONG);\n\
+DEA:EMA(DIF,MID);\n\
+MACD:DIF-DEA,COLORSTICK;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.QACD = function () 
+{
+    let data =
+    {
+        Name: 'QACD', Description: '快速异同平均', IsMainIndex: false,
+        Args: [{ Name: 'N1', Value: 12 },{ Name: 'N2', Value: 26 },{ Name: 'M', Value: 9 }],
+        Script: //脚本
+'DIF:EMA(CLOSE,N1)-EMA(CLOSE,N2);\n\
+MACD:EMA(DIF,M);\n\
+DDIF:DIF-MACD;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VPT = function () 
+{
+    let data =
+    {
+        Name: 'VPT', Description: '量价曲线', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 51 },{ Name: 'M', Value: 6 }],
+        Script: //脚本
+'VPT:SUM(VOL*(CLOSE-REF(CLOSE,1))/REF(CLOSE,1),N);\n\
+MAVPT:MA(VPT,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.WVAD = function () 
+{
+    let data =
+    {
+        Name: 'WVAD', Description: '威廉变异离散量', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 24 },{ Name: 'M', Value: 6 }],
+        Script: //脚本
+'WVAD:SUM((CLOSE-OPEN)/(HIGH-LOW)*VOL,N)/10000;\n\
+MAWVAD:MA(WVAD,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.DBQR = function () 
+{
+    let data =
+    {
+        Name: 'WVAD', Description: '对比强弱', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 },{ Name: 'M1', Value: 10 },{ Name: 'M2', Value: 20 },{ Name: 'M3', Value: 60 }],
+        Script: //脚本
+'ZS:(INDEXC-REF(INDEXC,N))/REF(INDEXC,N);\n\
+GG:(CLOSE-REF(CLOSE,N))/REF(CLOSE,N);\n\
+MADBQR1:MA(GG,M1);\n\
+MADBQR2:MA(GG,M2);\n\
+MADBQR3:MA(GG,M3);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.JS = function () 
+{
+    let data =
+    {
+        Name: 'JS', Description: '加速线', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 },{ Name: 'M1', Value: 5 },{ Name: 'M2', Value: 10 },{ Name: 'M3', Value: 20 }],
+        Script: //脚本
+'JS:100*(CLOSE-REF(CLOSE,N))/(N*REF(CLOSE,N));\n\
+MAJS1:MA(JS,M1);\n\
+MAJS2:MA(JS,M2);\n\
+MAJS3:MA(JS,M3);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYE = function () 
+{
+    let data =
+    {
+        Name: 'CYE', Description: '市场趋势', IsMainIndex: false,
+        Args: [ ],
+        Script: //脚本
+'MAL:=MA(CLOSE,5);\n\
+MAS:=MA(MA(CLOSE,20),5);\n\
+CYEL:(MAL-REF(MAL,1))/REF(MAL,1)*100;\n\
+CYES:(MAS-REF(MAS,1))/REF(MAS,1)*100;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.QR = function () 
+{
+    let data =
+    {
+        Name: 'QR', Description: '强弱指标', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 21 } ],
+        Script: //脚本
+'个股: (CLOSE-REF(CLOSE,N))/REF(CLOSE,N)*100; \n\
+大盘: (INDEXC-REF(INDEXC,N))/REF(INDEXC,N)*100; \n\
+强弱值:EMA(个股-大盘,2),COLORSTICK;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.GDX = function () 
+{
+    let data =
+    {
+        Name: 'GDX', Description: '轨道线', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 30 } ,{ Name: 'M', Value: 9 }],
+        Script: //脚本
+'AA:=ABS((2*CLOSE+HIGH+LOW)/4-MA(CLOSE,N))/MA(CLOSE,N); \n\
+轨道:DMA(CLOSE,AA);\n\
+压力线:(1+M/100)*轨道; \n\
+支撑线:(1-M/100)*轨道;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.JLHB = function () 
+{
+    let data =
+    {
+        Name: 'JLHB', Description: '绝路航标', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 7 } ,{ Name: 'M', Value: 5 }],
+        Script: //脚本
+'VAR1:=(CLOSE-LLV(LOW,60))/(HHV(HIGH,60)-LLV(LOW,60))*80; \n\
+B:SMA(VAR1,N,1); \n\
+VAR2:SMA(B,M,1); \n\
+绝路航标:IF(CROSS(B,VAR2) AND B<40,50,0);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.PCNT = function () 
+{
+    let data =
+    {
+        Name: 'PCNT', Description: '幅度比', IsMainIndex: false,
+        Args: [{ Name: 'M', Value: 5 }],
+        Script: //脚本
+'PCNT:(CLOSE-REF(CLOSE,1))/CLOSE*100;\n\
+MAPCNT:EXPMEMA(PCNT,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.BTX = function () 
+{
+    let data =
+    {
+        Name: 'BTX', Description: '宝塔线', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'B1:=REF(C,1);\n\
+B2:= REF(C, 2);\n\
+SS:= IF(C > REF(C, 1) AND REF(C, 1) >= REF(C, 2), 1, IF(C < REF(C, 1) AND REF(C, 1) <= REF(C, 2), -1, IF(C > REF(C, 2) AND REF(C, 2) > REF(C, 1), 2, IF(C < REF(C, 2) AND REF(C, 2) < REF(C, 1), -2, 0))));\n\
+SM:= IF(REF(SS, 1) <> 0, REF(SS, 1), IF(REF(SS, 2) <> 0, REF(SS, 2), IF(REF(SS, 3) <> 0, REF(SS, 3), IF(REF(SS, 5) <> 0, REF(SS, 5), IF(REF(SS, 6) <> 0, REF(SS, 6), IF(REF(SS, 7) <> 0, REF(SS, 7), 0))))));\n\
+MC:= IF(REF(SS, 1) <> 0, B2, IF(SM > 0, MIN(B1, B2), MAX(B1, B2)));\n\
+TOW1:= IF(C > REF(C, 1), C, REF(C, 1));\n\
+TOW2:= IF((SS == -1 OR SS == -2) AND SM > 0, B2, TOW1);\n\
+TOWER:= IF(TOW1 > TOW2, TOW1, TOW2);\n\
+STICKLINE(SS == 1 OR SM >= 1 AND SS == 0, B1, C, 10, 1), COLORRED;\n\
+STICKLINE(SS == -1 OR SM <= -1 AND SS == 0, B1, C, 10, 0), COLORCYAN;\n\
+STICKLINE(SS == 2, B2, C, 10, 1), COLORRED;\n\
+STICKLINE(SS == -2, B2, C, 10, 0), COLORCYAN;\n\
+STICKLINE((SS == -1 OR SS == -2) AND SM > 0, B2, B1, 10, 1), COLORRED;\n\
+STICKLINE((SS == 1 OR SS == 2) AND SM < 0, B2, B1, 10, 0), COLORCYAN;'
+        };
 
     return data;
 }
