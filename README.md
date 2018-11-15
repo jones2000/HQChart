@@ -27,9 +27,9 @@
 * 支持前复权,后复权 <br>
 * 支持日线,月线,周线,年线.<br>
 * 主图支持股票叠加 <br>
-* 支持常用指标指标 <br>
+* 支持常用指标指标(目前以录入系统指标85个) <br>
     均线，BOLL，MACD，KDJ，VOL，RSI，BRAR，WR，BIAS，OBV，DMI，CR，PSY，CCI，
-    DMA，TRIX，VR，EMV，ROC，MIM，FSL，CYR，MASS，WAD，CHO <br>
+    DMA，TRIX，VR，EMV，ROC，MIM，FSL，CYR，MASS，WAD，CHO ..... <br>
 * 支持画图工具(小程序不支持)<br>
      线段，射线，矩形，圆弧线 <br>
 * 支持区间统计， 区间形态匹配 (微信小程序版本不支持) <br>
