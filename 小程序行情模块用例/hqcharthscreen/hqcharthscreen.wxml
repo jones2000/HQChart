@@ -1,0 +1,20 @@
+<view class="container">
+  <cover-view class="hqbuttonlist" style="flex-direction:column;left:{{HQButtonList.Left}}px">
+    <cover-view class="{{HQButtonList.Button[0].ClassName}}" id="showminute" style='top:20px;display:{{HQButtonList.Display}}' bindtap='onclickhqbutton'>分时</cover-view>
+    <cover-view class="{{HQButtonList.Button[1].ClassName}}" id="show5day" style='display:{{HQButtonList.Display}}' bindtap='onclickhqbutton'>五日</cover-view>
+    <cover-view class="{{HQButtonList.Button[2].ClassName}}" id="showday"  style='left:80px;display:{{HQButtonList.Display}}' bindtap='onclickhqbutton'>日线</cover-view>
+    <cover-view class="{{HQButtonList.Button[3].ClassName}}" id="showweek"  style='display:{{HQButtonList.Display}}' bindtap='onclickhqbutton'>周线</cover-view>
+    <cover-view class="{{HQButtonList.Button[4].ClassName}}" id="showmonth"  style='display:{{HQButtonList.Display}}' bindtap='onclickhqbutton'>月线</cover-view>
+    <cover-view class="{{HQButtonList.Button[5].ClassName}}" id="showminute5"  style='display:{{HQButtonList.Display}}' bindtap='onclickhqbutton'>5分钟</cover-view>
+    <cover-view class="{{HQButtonList.Button[6].ClassName}}" id="showminute30"  style='display:{{HQButtonList.Display}}' bindtap='onclickhqbutton'>30分</cover-view>
+  </cover-view>
+  <view>
+    <canvas class="historychart"  canvas-id="historychart" 
+        style="width:{{HistoryChart.Width}}px; height:{{HistoryChart.Height}}px; top:{{HistoryChart.Top}}px; left:{{HistoryChart.Left}}px; display:{{HistoryChart.Display}}" 
+        bindtouchstart='historytouchstart' bindtouchmove='historytouchmove' bindtouchend='historytouchend'>
+    </canvas>
+    <canvas class="minutechart"  canvas-id="minutechart" 
+      style="width:{{MinuteChart.Width}}px; height:{{MinuteChart.Height}}px; top:{{MinuteChart.Top}}px; left:{{MinuteChart.Left}}px;display:{{MinuteChart.Display}}" 
+      bindtouchstart='minutetouchstart' bindtouchmove='minutetouchmove' bindtouchend='minutetouchend'/>
+  </view>
+</view>
