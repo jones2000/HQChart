@@ -1830,7 +1830,7 @@ function JSAlgorithm(errorHandler, symbolData)
         let isNumber2=typeof(data2)=='number';
 
         //单数值比较
-        if (isNumber && isNumber2) return (data>=data2 ? 1 : 0);
+        if (isNumber && isNumber2) return (data<data2 ? 1 : 0);
 
         //都是数组比较
         let result=[];
@@ -4435,6 +4435,90 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+  抛物转向.
+  用法:
+  SAR(N,S,M),N为计算周期,S为步长,M为极值
+  例如:
+  SAR(10,2,20)表示计算10日抛物转向,步长为2%,极限值为20%
+  */
+    this.SAR = function (n, step, exValue) 
+    {
+        var result = [];
+        var stockData = this.SymbolData.Data;
+        if (n >= stockData.Data.length) return result;
+
+        var high = null, low = null;
+        for (var i = 0; i < n; ++i) 
+        {
+            var item = stockData.Data[i];
+            if (high == null) high = item.High;
+            else if (high < item.High) high = item = high;
+            if (low == null) low = item.Low;
+            else if (low > item.Low) low = item.Low;
+        }
+
+        const SAR_LONG = 0, SAR_SHORT = 1;
+        var position = SAR_LONG;
+        result[n - 1] = low;
+        var nextSar = low, sip = stockData.Data[0].High, af = exValue / 100;
+        for (var i = n; i < stockData.Data.length; ++i) 
+        {
+            var ysip = sip;
+            var item = stockData.Data[i];
+            var yitem = stockData.Data[i - 1];
+
+            if (position == SAR_LONG) 
+            {
+                if (item.Low < result[i - 1]) 
+                {
+                    position = SAR_SHORT;
+                    sip = item.Low;
+                    af = step / 100;
+                    nextSar = Math.max(item.High, yitem.High);
+                    nextSar = Math.max(nextSar, ysip + af * (sip - ysip));
+                }
+                else 
+                {
+                    position = SAR_LONG;
+                    if (item.High > ysip) 
+                    {
+                        sip = item.High;
+                        af = Math.min(af + step / 100, exValue / 100);
+                    }
+                    nextSar = Math.min(item.Low, yitem.Low);
+                    nextSar = Math.min(nextSar, result[i - 1] + af * (sip - result[i - 1]));
+                }
+            }
+            else if (position == SAR_SHORT) 
+            {
+                if (item.High > result[i - 1]) 
+                {
+                    position = SAR_LONG;
+                    sip = item.High;
+                    af = step / 100;
+                    nextSar = Math.min(item.Low, yitem.Low);
+                    nextSar = Math.min(nextSar, result[i - 1] + af * (sip - ysip));
+                }
+                else 
+                {
+                    position = SAR_SHORT;
+                    if (item.Low < ysip) 
+                    {
+                        sip = item.Low;
+                        af = Math.min(af + step / 100, exValue / 100);
+                    }
+                    nextSar = Math.max(item.High, yitem.High);
+                    nextSar = Math.max(nextSar, result[i - 1] + af * (sip - result[i - 1]));
+                }
+            }
+
+            result[i] = nextSar;
+        }
+
+        return result;
+    }
+
 
     //函数调用
     this.CallFunction=function(name,args,node)
@@ -4552,6 +4636,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.SUMBARS(args[0], args[1]);
             case 'REVERSE':
                 return this.REVERSE(args[0]);
+            case 'SAR':
+                return this.SAR(args[0], args[1], args[2]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);
@@ -5049,8 +5135,9 @@ var DYNAINFO_ARGUMENT_ID=
     OPEN:4,
     HIGH:5,
     LOW:6,
-    VOL:7,
-    AMOUNT:8,
+    CLOSE: 7,
+    VOL: 8,
+    AMOUNT: 10,
     AMPLITUDE:13,   //振幅
     INCREASE:14,    //涨幅
     EXCHANGERATE:37,    //换手率
@@ -5171,6 +5258,8 @@ function JSSymbolData(ast,option,jsExecute)
                 return this.LatestData.Exchangerate;
             case DYNAINFO_ARGUMENT_ID.AMPLITUDE:
                 return this.LatestData.Amplitude;
+            case DYNAINFO_ARGUMENT_ID.CLOSE:
+                return this.LatestData.Close;
             default:
                 return null;
         }

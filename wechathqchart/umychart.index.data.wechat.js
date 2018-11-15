@@ -38,6 +38,8 @@ JSIndexScript.prototype.Get=function(id)
             ['LMA', this.LMA], ['VMA', this.VMA], ['AMV', this.AMV], ['BBIBOLL', this.BBIBOLL],
             ['ALLIGAT', this.ALLIGAT], ['ZX', this.ZX], ['XS', this.XS], ['XS2', this.XS2],
             ['SG-XDT', this.SG_XDT], ['SG-SMX', this.SG_SMX], ['SG-LB', this.SG_LB], ['SG-PF', this.SG_PF],
+            ['RAD', this.RAD], ['SHT', this.SHT], ['ZLJC', this.ZLJC], ['ZLMM', this.ZLMM], ['SLZT', this.SLZT],
+            ['ADVOL', this.ADVOL], ['CYC', this.CYC], ['CYS', this.CYS], ['CYQKL', this.CYQKL],
 
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
@@ -1490,6 +1492,172 @@ A5:=COUNT(ZY1>REF(ZY1,1) ,9)*5;\n\
     return data;
 }
 
+JSIndexScript.prototype.RAD = function () 
+{
+    let data =
+    {
+        Name: 'RAD', Description: '威力雷达(需下载日线)', IsMainIndex: false,
+        Args: [{ Name: 'D', Value: 3 }, { Name: 'S', Value: 30 }, { Name: 'M', Value: 30 }],
+        Script: //脚本
+            'SM:=(OPEN+HIGH+CLOSE+LOW)/4;\n\
+SMID:=MA(SM,D);\n\
+IM:=(INDEXO+INDEXH+INDEXL+INDEXC)/4;\n\
+IMID:=MA(IM,D);\n\
+SI1:=(SMID-REF(SMID,1))/SMID;\n\
+II:=(IMID-REF(IMID,1))/IMID;\n\
+RADER1:SUM((SI1-II)*2,S)*1000;\n\
+RADERMA:SMA(RADER1,M,1);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SHT = function () 
+{
+    let data =
+    {
+        Name: 'SHT', Description: '龙系短线', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+            'VAR1:=MA((VOL-REF(VOL,1))/REF(VOL,1),5);\n\
+VAR2:=(CLOSE-MA(CLOSE,24))/MA(CLOSE,24)*100;\n\
+MY: VAR2*(1+VAR1);\n\
+SHT: MY, COLORSTICK;\n\
+SHTMA: MA(SHT,N);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ZLJC = function () 
+{
+    let data =
+        {
+            Name: 'ZLJC', Description: '主力进出', IsMainIndex: false,
+            Args: [],
+            Script: //脚本
+                'VAR1:=(CLOSE+LOW+HIGH)/3; \n\
+VAR2:=SUM(((VAR1-REF(LOW,1))-(HIGH-VAR1))*VOL/100000/(HIGH-LOW),0); \n\
+VAR3:=EMA(VAR2,1); \n\
+JCS:VAR3; \n\
+JCM:MA(VAR3,12); \n\
+JCL:MA(VAR3,26);'
+
+        };
+
+    return data;
+}
+
+JSIndexScript.prototype.ZLMM = function () 
+{
+    let data =
+        {
+            Name: 'ZLMM', Description: '主力买卖', IsMainIndex: false,
+            Args: [],
+            Script: //脚本
+                'LC :=REF(CLOSE,1);\n\
+RSI2:=SMA(MAX(CLOSE-LC,0),12,1)/SMA(ABS(CLOSE-LC),12,1)*100;\n\
+RSI3:=SMA(MAX(CLOSE-LC,0),18,1)/SMA(ABS(CLOSE-LC),18,1)*100;\n\
+MMS:MA(3*RSI2-2*SMA(MAX(CLOSE-LC,0),16,1)/SMA(ABS(CLOSE-LC),16,1)*100,3);\n\
+MMM:EMA(MMS,8);\n\
+MML:MA(3*RSI3-2*SMA(MAX(CLOSE-LC,0),12,1)/SMA(ABS(CLOSE-LC),12,1)*100,5);'
+
+        };
+
+    return data;
+}
+
+JSIndexScript.prototype.SLZT = function () 
+{
+    let data =
+        {
+            Name: 'SLZT', Description: '神龙在天', IsMainIndex: false,
+            Args: [],
+            Script: //脚本
+                '白龙: MA(CLOSE,125);\n\
+黄龙: 白龙+2*STD(CLOSE,170);\n\
+紫龙: 白龙-2*STD(CLOSE,145);\n\
+青龙: SAR(125,1,7), LINESTICK;\n\
+VAR2:=HHV(HIGH,70);\n\
+VAR3:=HHV(HIGH,20);\n\
+红龙: VAR2*0.83;\n\
+蓝龙: VAR3*0.91;'
+
+        };
+
+    return data;
+}
+
+JSIndexScript.prototype.ADVOL = function () 
+{
+    let data =
+        {
+            Name: 'ADVOL', Description: '龙系离散量', IsMainIndex: false,
+            Args: [],
+            Script: //脚本
+                'A:=SUM(((CLOSE-LOW)-(HIGH-CLOSE))*VOL/10000/(HIGH-LOW),0);\n\
+ADVOL:A;\n\
+MA1:MA(A,30);\n\
+MA2:MA(MA1,100);'
+
+        };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYC = function () 
+{
+    let data =
+        {
+            Name: 'CYC', Description: '成本均线', IsMainIndex: true,
+            Args: [{ Name: 'P1', Value: 5 }, { Name: 'P2', Value: 13 }, { Name: 'P3', Value: 34 }],
+            Script: //脚本
+                'JJJ:=IF(DYNAINFO(8)>0.01,0.01*DYNAINFO(10)/DYNAINFO(8),DYNAINFO(3));\n\
+DDD:=(DYNAINFO(5)<0.01 || DYNAINFO(6)<0.01);\n\
+JJJT:=IF(DDD,1,(JJJ<(DYNAINFO(5)+0.01) && JJJ>(DYNAINFO(6)-0.01)));\n\
+CYC1:IF(JJJT,0.01*EMA(AMOUNT,P1)/EMA(VOL,P1),EMA((HIGH+LOW+CLOSE)/3,P1));\n\
+CYC2:IF(JJJT,0.01*EMA(AMOUNT,P2)/EMA(VOL,P2),EMA((HIGH+LOW+CLOSE)/3,P2));\n\
+CYC3:IF(JJJT,0.01*EMA(AMOUNT,P3)/EMA(VOL,P3),EMA((HIGH+LOW+CLOSE)/3,P3));\n\
+CYC4:IF(JJJT,DMA(AMOUNT/(100*VOL),100*VOL/FINANCE(7)),EMA((HIGH+LOW+CLOSE)/3,120));'
+
+        };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYS = function () 
+{
+    let data =
+        {
+            Name: 'CYS', Description: '市场盈亏', IsMainIndex: false,
+            Args: [],
+            Script: //脚本
+                'CYC13:EMA(AMOUNT,13)/EMA(VOL,13);\n\
+CYS:(CLOSE-CYC13)/CYC13*100;'
+
+        };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYQKL = function () 
+{
+    let data =
+        {
+            Name: 'CYQKL', Description: '博弈K线长度', IsMainIndex: false,
+            Args: [],
+            Script: //脚本
+                'KL:100*(WINNER(CLOSE)-WINNER(OPEN));'
+
+        };
+
+    return data;
+}
+
+
+
 /*
     飞龙四式-主图
 */
@@ -1666,20 +1834,9 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                'B1:=REF(C,1);\n\
-B2:= REF(C, 2);\n\
-SS:= IF(C > REF(C, 1) AND REF(C, 1) >= REF(C, 2), 1, IF(C < REF(C, 1) AND REF(C, 1) <= REF(C, 2), -1, IF(C > REF(C, 2) AND REF(C, 2) > REF(C, 1), 2, IF(C < REF(C, 2) AND REF(C, 2) < REF(C, 1), -2, 0))));\n\
-SM:= IF(REF(SS, 1) <> 0, REF(SS, 1), IF(REF(SS, 2) <> 0, REF(SS, 2), IF(REF(SS, 3) <> 0, REF(SS, 3), IF(REF(SS, 5) <> 0, REF(SS, 5), IF(REF(SS, 6) <> 0, REF(SS, 6), IF(REF(SS, 7) <> 0, REF(SS, 7), 0))))));\n\
-MC:= IF(REF(SS, 1) <> 0, B2, IF(SM > 0, MIN(B1, B2), MAX(B1, B2)));\n\
-TOW1:= IF(C > REF(C, 1), C, REF(C, 1));\n\
-TOW2:= IF((SS == -1 OR SS == -2) AND SM > 0, B2, TOW1);\n\
-TOWER:= IF(TOW1 > TOW2, TOW1, TOW2);\n\
-STICKLINE(SS == 1 OR SM >= 1 AND SS == 0, B1, C, 10, 1), COLORRED;\n\
-STICKLINE(SS == -1 OR SM <= -1 AND SS == 0, B1, C, 10, 0), COLORCYAN;\n\
-STICKLINE(SS == 2, B2, C, 10, 1), COLORRED;\n\
-STICKLINE(SS == -2, B2, C, 10, 0), COLORCYAN;\n\
-STICKLINE((SS == -1 OR SS == -2) AND SM > 0, B2, B1, 10, 1), COLORRED;\n\
-STICKLINE((SS == 1 OR SS == 2) AND SM < 0, B2, B1, 10, 0), COLORCYAN;'
+                'SAR1:SAR(10,5,20);\n\
+高: H;\n\
+低: L;'
         };
 
     return data;
