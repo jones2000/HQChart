@@ -4506,6 +4506,37 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    /*
+    抛物转向点.
+    用法:
+    SARTURN(N,S,M),N为计算周期,S为步长,M为极值,若发生向上转向则返回1,若发生向下转向则返回-1,否则为0
+    其用法与SAR函数相同
+    */
+   this.SARTURN=function(n,step,exValue)
+   {
+       var result=[];
+       var sar=this.SAR(n,step,exValue);
+       var stockData= this.SymbolData.Data;
+       var index=0;
+       for(index=0;index<sar.length;++index)
+       {
+            if (this.IsNumber(sar[index])) break;
+       }
+       var flag=0;
+       if (index<stockData.Data.length) flag=stockData.Data[index].Close>sar[index];
+
+       for(var i=index+1;i<stockData.Data.length;++i)
+       {
+           var item=stockData.Data[i];
+           if (item.Close<sar[i] && flag) result[i]=-1;
+           else result[i]= (item.Close>sar[i] && !flag)? 1:0;
+           
+           flag=item.Close>sar[i];
+       }
+
+       return result;
+   }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -4624,6 +4655,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.REVERSE(args[0]);
             case 'SAR':
                 return this.SAR(args[0], args[1], args[2]);
+            case 'SARTURN':
+                return this.SARTURN(args[0], args[1], args[2]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
