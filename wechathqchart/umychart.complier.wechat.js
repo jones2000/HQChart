@@ -2676,22 +2676,34 @@ function JSAlgorithm(errorHandler, symbolData)
             if (n > data.length) return result;
             if (n <= 0) n = data.length - 1;
 
-            var max = null;
-            for (var i = n, j = 0; i < data.length; ++i, ++j) 
+            var nMax = 0;
+            for (nMax = 0; nMax < data.length; ++nMax) 
             {
-                if (max == null || i < n + max) 
+                if (this.IsNumber(data[nMax])) break;
+            }
+
+            if (nMax < data.length) result[nMax] = data[nMax];
+            for (var i = nMax + 1, j = 2; i < data.length && j < n; ++i, ++j) 
+            {
+                if (data[i] >= data[nMax]) nMax = i;
+                result[i] = data[nMax];
+            }
+
+            for (; i < data.length; ++i) 
+            {
+                if (i - nMax < n) 
                 {
-                    max = data[i] < data[max] ? max : i;
+                    nMax = data[i] < data[nMax] ? nMax : i;
                 }
                 else 
                 {
-                    for (j = (max = i - n + 1) + 1; j <= i; ++j) 
+                    for (j = nMax = (i - n + 2); j <= i; ++j) 
                     {
-                        if (data[j] > data[max]) max = j;
+                        nMax = data[j] < data[nMax] ? nMax : j;
                     }
                 }
 
-                result[i] = data[max];
+                result[i] = data[nMax];
             }
         }
 

@@ -38,6 +38,7 @@ JSIndexScript.prototype.Get=function(id)
             ['SG-XDT',this.SG_XDT],['SG-SMX',this.SG_SMX],['SG-LB',this.SG_LB],['SG-PF',this.SG_PF],
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
+            ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],
@@ -1681,7 +1682,52 @@ JSIndexScript.prototype.CYQKL = function ()
     return data;
 }
 
+JSIndexScript.prototype.SCR = function () 
+{
+    let data =
+    {
+        Name: 'SCR', Description: '筹码集中度', IsMainIndex: false,
+        Args: [{ Name: 'P1', Value: 90 }],
+        Script: //脚本
+'A:=P1+(100-P1)/2;\n\
+B:=(100-P1)/2;\n\
+CC:=COST(A);\n\
+DD:=COST(B);\n\
+SCR:(CC-DD)/(CC+DD)*100/2;'
 
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.ASR = function () 
+{
+    let data =
+    {
+        Name: 'ASR', Description: '浮筹比例', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'ASR:(WINNER(C*1.1)-WINNER(C*0.9))/WINNER(HHV(H,0))*100;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SAR = function () 
+{
+    let data =
+    {
+        Name: 'SAR', Description: '抛物转向', IsMainIndex: true,
+        Args: [{ Name: 'P', Value: 10 },{ Name: 'STEP', Value: 2 },{ Name: 'MAXP', Value: 20 }],
+        Script: //脚本
+'S:SAR(P,STEP,MAXP),CIRCLEDOT;'
+
+    };
+
+    return data;
+}
 
 /*
     飞龙四式-主图

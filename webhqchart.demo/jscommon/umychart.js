@@ -3441,6 +3441,12 @@ function HistoryData()
     this.Vol;
     this.Amount;
     this.Time;
+
+    //指数才有的数据
+    this.Stop;  //停牌家数
+    this.Up;    //上涨
+    this.Down;  //下跌
+    this.Unchanged; //平盘
 }
 
 //数据复制
@@ -3670,6 +3676,28 @@ function ChartData()
         for(var i in this.Data)
         {
             result[i]=this.Data[i].Amount;
+        }
+
+        return result;
+    }
+
+    this.GetUp=function()   //上涨家数
+    {
+        var result=[];
+        for(var i in this.Data)
+        {
+            result[i]=this.Data[i].Up;
+        }
+
+        return result;
+    }
+
+    this.GetDown=function() //下跌家数
+    {
+        var result=[];
+        for(var i in this.Data)
+        {
+            result[i]=this.Data[i].Down;
         }
 
         return result;
@@ -7925,6 +7953,7 @@ function FrameSplitMinutePriceY()
     this.Data;                          //分钟数据
     this.AverageData;                   //分钟均线数据
     this.SplitCount=7;
+    this.Symbol;
 
     this.Operator=function()
     {
@@ -7968,6 +7997,16 @@ function FrameSplitMinutePriceY()
 
         var showCount=this.SplitCount;
         var distance=(max-min)/(showCount-1);
+        const minDistance=[1, 0.1, 0.01, 0.001, 0.0001];
+        var defaultfloatPrecision=2;    //默认小数位数IsFundSymbol();
+        if (IsFundSymbol(this.Symbol)) defaultfloatPrecision=3;    //基金3位小数
+        if (distance<minDistance[defaultfloatPrecision]) 
+        {
+            distance=minDistance[defaultfloatPrecision];
+            max=this.YClose+(distance*(showCount-1)/2);
+            min=this.YClose-(distance*(showCount-1)/2);
+        }
+
         for(var i=0;i<showCount;++i)
         {
             var price=min+(distance*i);
@@ -7978,13 +8017,13 @@ function FrameSplitMinutePriceY()
             {
                 if (this.StringFormat==1)   //手机端格式 如果有万,亿单位了 去掉小数
                 {
-                    var floatPrecision=2;
+                    var floatPrecision=defaultfloatPrecision;
                     if (!isNaN(price) && Math.abs(price) > 1000) floatPrecision=0;
                     this.Frame.HorizontalInfo[i].Message[0]=IFrameSplitOperator.FormatValueString(price,floatPrecision);
                 }
                 else
                 {
-                    this.Frame.HorizontalInfo[i].Message[0]=IFrameSplitOperator.FormatValueString(price,2);
+                    this.Frame.HorizontalInfo[i].Message[0]=IFrameSplitOperator.FormatValueString(price,defaultfloatPrecision);
                 }
                 var per=(price/this.YClose-1)*100;
                 if (per>0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.UpTextColor;
@@ -8476,11 +8515,17 @@ function HQPriceStringFormat()
     this.newMethod();
     delete this.newMethod;
 
+    this.Symbol;
+
     this.Operator=function()
     {
         if (!this.Value) return false;
 
-        this.Text=IFrameSplitOperator.FormatValueString(this.Value,2);
+        var isFund=IsFundSymbol(this.Symbol);
+        var defaultfloatPrecision=2;    //价格小数位数
+        if (isFund) defaultfloatPrecision=3;
+
+        this.Text=IFrameSplitOperator.FormatValueString(this.Value,defaultfloatPrecision);
         return true;
     }
 }
@@ -8711,7 +8756,8 @@ function DynamicKLineTitlePainting()
             var periodName=PERIOD_NAME[this.Data.Period];
             var rightName=RIGHT_NAME[this.Data.Right];
             var text="("+periodName+" "+rightName+")";
-            if(item.Time!=null)  text="("+periodName+")";           //分钟K线没有复权
+            var isIndex=IsIndexSymbol(this.Symbol); //是否是指数
+            if(item.Time!=null || isIndex)  text="("+periodName+")";           //分钟K线 指数 没有复权
             if (!this.DrawText(text,this.UnchagneColor,position)) return;
         }
 
@@ -8818,6 +8864,9 @@ function DynamicMinuteTitlePainting()
         var left=this.Frame.ChartBorder.GetLeft();
         var bottom=this.Frame.ChartBorder.GetTop()-this.Frame.ChartBorder.Top/2;
         var right=this.Frame.ChartBorder.GetRight();
+        var isFund=IsFundSymbol(this.Symbol);
+        var defaultfloatPrecision=2;    //价格小数位数
+        if (isFund) defaultfloatPrecision=3;
 
         if (isHScreen)
         {
@@ -8850,21 +8899,21 @@ function DynamicMinuteTitlePainting()
         if (item.Close)
         {
             var color=this.GetColor(item.Close,this.YClose);
-            var text="价:"+item.Close.toFixed(2);
+            var text="价:"+item.Close.toFixed(defaultfloatPrecision);
             if (!this.DrawText(text,color,position)) return;
         }
 
         if (item.Increase!=null)
         {
             var color=this.GetColor(item.Increase,0);
-            var text="幅:"+item.Close.toFixed(2)+'%';
+            var text="幅:"+item.Increase.toFixed(2)+'%';
             if (!this.DrawText(text,color,position)) return;
         }
 
         if (item.AvPrice)
         {
             var color=this.GetColor(item.AvPrice,this.YClose);
-            var text="均:"+item.AvPrice.toFixed(2);
+            var text="均:"+item.AvPrice.toFixed(defaultfloatPrecision);
             if (!this.DrawText(text,color,position)) return;
         }
 
@@ -12769,8 +12818,10 @@ function MinuteChartContainer(uielement)
             item.Frame.XSplitOperator.DayCount=this.DayData.length;
             item.Frame.XSplitOperator.DayData=this.DayData;
             item.Frame.XSplitOperator.Operator();   //调整X轴个数
+            item.Frame.YSplitOperator.Symbol=this.Symbol;
         }
 
+        this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
         this.TitlePaint[0].IsShowDate=true;
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
@@ -12881,8 +12932,10 @@ function MinuteChartContainer(uielement)
             item.Frame.XSplitOperator.Symbol=this.Symbol;
             item.Frame.XSplitOperator.DayCount=1;
             item.Frame.XSplitOperator.Operator();   //调整X轴个数
+            item.Frame.YSplitOperator.Symbol=this.Symbol;
         }
 
+        this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
         this.TitlePaint[0].IsShowDate=false;
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
@@ -13013,10 +13066,15 @@ function MinuteChartContainer(uielement)
 MinuteChartContainer.JsonDataToMinuteData=function(data)
 {
     var aryMinuteData=new Array();
+    var preClose=data.stock[0].yclose;      //前一个数据价格
+    var preAvPrice=data.stock[0].yclose;    //前一个均价
+    var isFund=IsFundSymbol(data.stock[0].symbol);
     for(var i in data.stock[0].minute)
     {
         var jsData=data.stock[0].minute[i];
         var item=new MinuteData();
+        if (jsData.price) preClose=jsData.price;
+        if (jsData.avprice) preAvPrice=jsData.avprice;
 
         item.Close=jsData.price;
         item.Open=jsData.open;
@@ -13036,6 +13094,9 @@ MinuteChartContainer.JsonDataToMinuteData=function(data)
         item.Increase=jsData.increase;
         item.Risefall=jsData.risefall;
         item.AvPrice=jsData.avprice;
+
+        if (!item.Close && isFund) item.Close=preClose;
+        if (!item.AvPrice && isFund) item.AvPrice=preAvPrice;
 
         //价格是0的 都用空
         if (item.Open<=0) item.Open=null;
@@ -16305,6 +16366,27 @@ function IsIndexSymbol(symbol)
     else if (upperSymbol.indexOf('.CI')>0)  //自定义指数
     {
         return true;
+    }
+
+    return false;
+}
+
+//是否是基金代码
+function IsFundSymbol(symbol)
+{
+    if (!symbol) return false;
+
+    var upperSymbol=symbol.toUpperCase();
+    if (upperSymbol.indexOf('.SH')>0)
+    {
+        upperSymbol=upperSymbol.replace('.SH','');  //51XXXX.sh
+        if (upperSymbol.charAt(0)=='5' && upperSymbol.charAt(1)=='1') return true;
+    }
+    else if (upperSymbol.indexOf('.SZ')>0)
+    {
+        upperSymbol=upperSymbol.replace('.SZ','');  //15XXXX.sz, 16XXXX.sz, 17XXXX.sz, 18XXXX.sz
+        if (upperSymbol.charAt(0)=='1' && 
+            (upperSymbol.charAt(1)=='5' || upperSymbol.charAt(1)=='6' || upperSymbol.charAt(1)=='7' || upperSymbol.charAt(1)=='8') ) return true;
     }
 
     return false;
