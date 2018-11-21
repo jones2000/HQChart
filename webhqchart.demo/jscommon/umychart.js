@@ -3463,6 +3463,11 @@ HistoryData.Copy=function(data)
     newData.Amount=data.Amount;
     newData.Time=data.Time;
 
+    newData.Stop=data.Stop;
+    newData.Up=data.Up;
+    newData.Down=data.Down;
+    newData.Unchanged=data.Unchanged;
+
     return newData;
 }
 
@@ -3973,6 +3978,13 @@ function ChartData()
                 result[i].Close=overlayData[j].Close;
                 result[i].Vol=overlayData[j].Vol;
                 result[i].Amount=overlayData[j].Amount;
+
+                //涨跌家数数据
+                result[i].Stop=overlayData[j].Stop;
+                result[i].Up=overlayData[j].Up;
+                result[i].Down=overlayData[j].Down;
+                result[i].Unchanged=overlayData[j].Unchanged;
+
                 ++j;
                 ++i;
             }
@@ -13068,7 +13080,6 @@ MinuteChartContainer.JsonDataToMinuteData=function(data)
     var aryMinuteData=new Array();
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var preAvPrice=data.stock[0].yclose;    //前一个均价
-    var isFund=IsFundSymbol(data.stock[0].symbol);
     for(var i in data.stock[0].minute)
     {
         var jsData=data.stock[0].minute[i];
@@ -13095,8 +13106,12 @@ MinuteChartContainer.JsonDataToMinuteData=function(data)
         item.Risefall=jsData.risefall;
         item.AvPrice=jsData.avprice;
 
-        if (!item.Close && isFund) item.Close=preClose;
-        if (!item.AvPrice && isFund) item.AvPrice=preAvPrice;
+        if (!item.Close) //当前没有价格 使用上一个价格填充
+        {
+            item.Close=preClose;
+            item.Open=item.High=item.Low=item.Close;
+        }
+        if (!item.AvPrice) item.AvPrice=preAvPrice;
 
         //价格是0的 都用空
         if (item.Open<=0) item.Open=null;
@@ -13121,10 +13136,12 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
         var dayData=data.data[i];
         var date=dayData.date;
         var yClose=dayData.yclose;  //前收盘 计算涨幅
+        var preClose=yClose;        //前一个数据价格
+        //var preAvPrice=data.stock[0].yclose;    //前一个均价
         for(var j in dayData.minute)
         {
             var jsData=dayData.minute[j];
-
+            if (jsData[2]) preClose=jsData[2];  //保存上一个收盘数据
             var item=new MinuteData();
             item.Close=jsData[2];
             item.Open=jsData[1];
@@ -13133,6 +13150,13 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
             item.Vol=jsData[5]/100; //原始单位股
             item.Amount=jsData[6];
             item.DateTime=date.toString()+" "+jsData[0].toString();
+
+            if (!item.Close)    //当前没有价格 使用上一个价格填充
+            {
+                item.Close=preClose;   
+                item.Open=item.High=item.Low=item.Close;
+            }
+
             if (item.Close && yClose) item.Increase = (item.Close - yClose)/yClose*100;
             else item.Increase=null;
             if (j==0)      //第1个数据 写死9：25

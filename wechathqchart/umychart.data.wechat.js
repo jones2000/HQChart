@@ -16,6 +16,12 @@ function HistoryData()
     this.Vol;
     this.Amount;
     this.Time;
+
+    //指数才有的数据
+    this.Stop;  //停牌家数
+    this.Up;    //上涨
+    this.Down;  //下跌
+    this.Unchanged; //平盘
 }
 
 //数据复制
@@ -31,6 +37,12 @@ HistoryData.Copy=function(data)
     newData.Vol=data.Vol;
     newData.Amount=data.Amount;
     newData.Time=data.Time;
+
+    //指数才有的数据
+    newData.Stop = data.Stop;
+    newData.Up = data.Up;
+    newData.Down = data.Down;
+    newData.Unchanged = data.Unchanged;
 
     return newData;
 }
@@ -222,6 +234,26 @@ function ChartData()
         for(var i in this.Data)
         {
             result[i]=this.Data[i].Amount;
+        }
+
+        return result;
+    }
+
+    this.GetUp = function ()   //上涨家数
+    {
+        var result = [];
+        for (var i in this.Data) {
+            result[i] = this.Data[i].Up;
+        }
+
+        return result;
+    }
+
+    this.GetDown = function () //下跌家数
+    {
+        var result = [];
+        for (var i in this.Data) {
+            result[i] = this.Data[i].Down;
         }
 
         return result;
@@ -495,6 +527,13 @@ function ChartData()
                 result[i].Close=overlayData[j].Close;
                 result[i].Vol=overlayData[j].Vol;
                 result[i].Amount=overlayData[j].Amount;
+
+                //涨跌家数数据
+                result[i].Stop = overlayData[j].Stop;
+                result[i].Up = overlayData[j].Up;
+                result[i].Down = overlayData[j].Down;
+                result[i].Unchanged = overlayData[j].Unchanged;
+
                 ++j;
                 ++i;
             }

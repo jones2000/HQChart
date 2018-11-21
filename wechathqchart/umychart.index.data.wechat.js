@@ -1882,7 +1882,8 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                'VAR2:SARTURN(10,2,20);'
+                'VARUP:INDEXADV;\n\
+                VARDOWN:INDEXDEC;'
         };
 
     return data;

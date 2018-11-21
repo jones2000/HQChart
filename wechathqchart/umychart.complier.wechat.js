@@ -711,7 +711,7 @@ function Node()
 
     this.VerifySymbolVariable=function(varName)
     {
-        let setIndexName=new Set(['INDEXA','INDEXC','INDEXH','INDEXL',"INDEXO","INDEXV"]);
+        let setIndexName = new Set(['INDEXA', 'INDEXC', 'INDEXH', 'INDEXL', "INDEXO", "INDEXV", 'INDEXDEC', 'INDEXADV']);
         if (setIndexName.has(varName)) 
         {
             this.IsNeedIndexData=true;
@@ -5322,7 +5322,7 @@ function JSSymbolData(ast,option,jsExecute)
                 url: self.KLineApiUrl,
                 data:
                 {
-                    "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
+                    "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol", 'up', 'down', 'stop', 'unchanged'],
                     "symbol": '000001.sh',
                     "start": -1,
                     "count": self.MaxReqeustDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
@@ -5423,6 +5423,10 @@ function JSSymbolData(ast,option,jsExecute)
             return this.IndexData.GetOpen();
         case 'INDEXV':
             return this.IndexData.GetVol();
+        case 'INDEXADV':
+            return this.IndexData.GetUp();
+        case 'INDEXDEC':
+            return this.IndexData.GetDown();
         }
     }
 
@@ -6179,6 +6183,7 @@ function JSSymbolData(ast,option,jsExecute)
         var list = data.data;
         var aryDayData=new Array();
         var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7;
+        var up = 8, down = 9, stop = 10, unchanged = 11;
         for (var i = 0; i < list.length; ++i)
         {
             var item = new JSCommonData.HistoryData();
@@ -6193,6 +6198,12 @@ function JSSymbolData(ast,option,jsExecute)
             item.Amount = list[i][amount];
 
             if (isNaN(item.Open) || item.Open<=0) continue; //停牌的数据剔除
+
+            //上涨 下跌家数
+            if (list[i].length > up) item.Up = list[i][up];
+            if (list[i].length > down) item.Down = list[i][down];
+            if (list[i].length > stop) item.Stop = list[i][stop];
+            if (list[i].length > unchanged) item.Unchanged = list[i][unchanged];
 
             aryDayData.push(item);
         }
@@ -6562,6 +6573,8 @@ function JSExecute(ast,option)
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
+        ['INDEXADV', null], ['INDEXDEC', null],
+
 
         //到最后交易日的周期数
         ['CURRBARSCOUNT',null],
@@ -6668,6 +6681,8 @@ function JSExecute(ast,option)
             case 'INDEXO':
             case 'INDEXV':
             case 'INDEXL':
+            case 'INDEXADV':
+            case 'INDEXDEC':
                 return this.SymbolData.GetIndexCacheData(name);
 
             case 'CURRBARSCOUNT':

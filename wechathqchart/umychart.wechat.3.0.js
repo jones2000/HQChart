@@ -6262,11 +6262,11 @@ function IFrameSplitOperator()
             var item=aryInfo[i];
             var message=item.Message[0];
             if (!message) isAllZero[0]=false;
-            else if (message!=0 && message.search(/[.][0]+/g)<=0) isAllZero[0] = false; 
+            else if (!this.IsDecimalZeroEnd(message)) isAllZero[0] = false; 
 
             var message = item.Message[1];
             if (!message) isAllZero[1]=false;
-            else if (message!=0 && message.search(/[.][0]+/g)<=0) isAllZero[1] = false;
+            else if (!this.IsDecimalZeroEnd(message)) isAllZero[1] = false;
         }
 
         if (isAllZero[0] == false && isAllZero[1]==false) return;
@@ -6285,6 +6285,23 @@ function IFrameSplitOperator()
                 item.Message[1] = message.replace(/[.][0]+/g, '');
             }
         }
+    }
+
+    this.IsDecimalZeroEnd=function(text)   //是否是0结尾的小数
+    {
+        if (!text) return false;
+        if (text=='0') return true;
+
+        var pos = text.search(/[.]/);
+        if (pos<0) return false;
+
+        for(var i=pos+1;i<text.length;++i)
+        {
+            var char = text.charAt(i);
+            if (char>='1' && char<='9') return false;
+        }
+
+        return true;
     }
 }
 
@@ -11166,7 +11183,6 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
 {
     var preClose = data.stock[0].yclose;      //前一个数据价格
     var preAvPrice = data.stock[0].yclose;    //前一个均价
-    var isFund = IsFundSymbol(data.stock[0].symbol);
     var aryMinuteData = new Array();
     for (var i in data.stock[0].minute) 
     {
@@ -11186,8 +11202,12 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
         item.Risefall = jsData.risefall;
         item.AvPrice = jsData.avprice;
 
-        if (!item.Close && isFund) item.Close = preClose;
-        if (!item.AvPrice && isFund) item.AvPrice = preAvPrice;
+        if (!item.Close) //当前没有价格 使用上一个价格填充
+        {
+            item.Close = preClose;
+            item.Open = item.High = item.Low = item.Close;
+        }
+        if (!item.AvPrice) item.AvPrice = preAvPrice;
         
         if (i == 0)      //第1个数据 写死9：25
         {
@@ -11227,11 +11247,13 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
         var minuteData = [];
         var dayData = data.data[i];
         var date = dayData.date;
-        var yClose=dayData.yclose;  //前收盘 计算涨幅
+        var yClose=dayData.yclose;      //前收盘 计算涨幅
+        var preClose = yClose;          //前一个数据价格
+        //var preAvPrice=data.stock[0].yclose;    //前一个均价
         for (var j in dayData.minute) 
         {
             var jsData = dayData.minute[j];
-
+            if (jsData[2]) preClose = jsData[2];  //保存上一个收盘数据
             var item = new MinuteData();
             item.Close = jsData[2];
             item.Open = jsData[1];
@@ -11239,6 +11261,13 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
             item.Low = jsData[4];
             item.Vol = jsData[5] / 100; //原始单位股
             item.Amount = jsData[6];
+
+            if (!item.Close)    //当前没有价格 使用上一个价格填充
+            {
+                item.Close = preClose;
+                item.Open = item.High = item.Low = item.Close;
+            }
+
             if (item.Close && yClose) item.Increase = (item.Close - yClose)/yClose*100;
             else item.Increase=null;
             item.DateTime = date.toString() + " " + jsData[0].toString();
@@ -12854,7 +12883,7 @@ function ScriptIndex(name, script, args, option) {
     if (indexParam.length > 0) hqChart.TitlePaint[titleIndex].Title = this.Name + '(' + indexParam + ')';
 
     if (hqChart.UpdateUICallback) hqChart.UpdateUICallback('ScriptIndex', this.OutVar, 
-        { WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments });  //通知上层回调
+        { WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData:hisData });  //通知上层回调
 
     return true;
   }
@@ -13042,7 +13071,7 @@ function MarketLongShortIndex()
         if (i > 0) hqChart.TitlePaint[titleIndex].Data[i].DataType = "StraightLine";
         }
         
-        if (hqChart.UpdateUICallback) hqChart.UpdateUICallback('MarketLongShortIndex', paint, {WindowIndex:windowIndex} );  //通知上层回调
+        if (hqChart.UpdateUICallback) hqChart.UpdateUICallback('MarketLongShortIndex', paint, { WindowIndex: windowIndex, HistoryData: hisData} );  //通知上层回调
         return true;
     }
 
@@ -13163,7 +13192,7 @@ function MarketTimingIndex()
             hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision = 0;
         }
 
-        if (hqChart.UpdateUICallback) hqChart.UpdateUICallback('MarketTimingIndex', paint, { WindowIndex: windowIndex });  //通知上层回调
+        if (hqChart.UpdateUICallback) hqChart.UpdateUICallback('MarketTimingIndex', paint, { WindowIndex: windowIndex, HistoryData: hisData });  //通知上层回调
         return true;
     }
 }
