@@ -1829,7 +1829,7 @@ JSIndexScript.prototype.MarginProportion = function ()
         Name: '融资占比(%)', Description: '融资占比', IsMainIndex: false,
         Args: [],
         Script: //脚本
-            '占比:MARGIN(1);'
+            '占比:MARGIN(2);'
     };
 
     return data;

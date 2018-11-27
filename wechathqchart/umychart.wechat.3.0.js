@@ -14,6 +14,8 @@ import {
   JSCommon_JSKLineInfoMap as JSKLineInfoMap, JSCommon_KLINE_INFO_TYPE as KLINE_INFO_TYPE, JSCommonKLineInfo
 } from "umychart.klineinfo.wechat.js";
 
+import { JSCommonCoordinateData } from "umychart.coordinatedata.wechat.js";
+
 import { JSCommonComplier } from "umychart.complier.wechat.js";     //通达信编译器
 import { JSCommonIndexScript } from "umychart.index.data.wechat.js"; //系统指标定义
 import { JSCommon_HQIndexFormula as HQIndexFormula } from "umychart.hqIndexformula.wechat.js";     //通达信编译器
@@ -1659,7 +1661,7 @@ function AverageWidthFrame() {
     for (var i in this.VerticalInfo) 
     {
         var x = this.GetXFromIndex(this.VerticalInfo[i].Value);
-        if (x >= right) break;
+        if (x > right) break;
         if (xPrev != null && Math.abs(x - xPrev) < this.MinXDistance) continue;
 
         if (this.IsShowXLine) 
@@ -1684,6 +1686,13 @@ function AverageWidthFrame() {
             if (x < testWidth / 2) 
             {
                 this.Canvas.textAlign = "left";
+                this.Canvas.textBaseline = this.XMessageAlign;
+                xTextRight = x + testWidth;
+                xTextLeft = x;
+            }
+            else if ((x + testWidth / 2) >= this.ChartBorder.GetChartWidth())
+            {
+                this.Canvas.textAlign = "right";
                 this.Canvas.textBaseline = this.XMessageAlign;
                 xTextRight = x + testWidth;
                 xTextLeft = x;
@@ -1889,50 +1898,60 @@ function MinuteHScreenFrame() {
     }
   }
 
-  //画X轴
-  this.DrawVertical = function () {
-    var left = this.ChartBorder.GetLeft();
-    var right = this.ChartBorder.GetRightEx();
-    var bottom = this.ChartBorder.GetBottom();
+    //画X轴
+    this.DrawVertical = function () 
+    {
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRightEx();
+        var bottom = this.ChartBorder.GetBottom();
 
-    var xPrev = null; //上一个坐标x的值
-    for (var i in this.VerticalInfo) {
-      var x = this.GetXFromIndex(this.VerticalInfo[i].Value);
-      if (x >= bottom) break;
-      if (xPrev != null && Math.abs(x - xPrev) < 80) continue;
+        var xPrev = null; //上一个坐标x的值
+        for (var i in this.VerticalInfo) 
+        {
+            var x = this.GetXFromIndex(this.VerticalInfo[i].Value);
+            if (x > bottom) break;
+            if (xPrev != null && Math.abs(x - xPrev) < this.MinXDistance) continue;
 
-      this.Canvas.strokeStyle = this.VerticalInfo[i].LineColor;
-      this.Canvas.beginPath();
-      this.Canvas.moveTo(left, ToFixedPoint(x));
-      this.Canvas.lineTo(right, ToFixedPoint(x));
-      this.Canvas.stroke();
+            this.Canvas.strokeStyle = this.VerticalInfo[i].LineColor;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(left, ToFixedPoint(x));
+            this.Canvas.lineTo(right, ToFixedPoint(x));
+            this.Canvas.stroke();
 
-      if (this.VerticalInfo[i].Message[0] != null) {
-        if (this.VerticalInfo[i].Font != null)
-          this.Canvas.font = this.VerticalInfo[i].Font;
+            if (this.VerticalInfo[i].Message[0] != null) 
+            {
+                if (this.VerticalInfo[i].Font != null)
+                this.Canvas.font = this.VerticalInfo[i].Font;
 
-        this.Canvas.fillStyle = this.VerticalInfo[i].TextColor;
-        var testWidth = this.Canvas.measureText(this.VerticalInfo[i].Message[0]).width;
-        if (x < testWidth / 2) {
-          this.Canvas.textAlign = "left";
-          this.Canvas.textBaseline = "top";
+                this.Canvas.fillStyle = this.VerticalInfo[i].TextColor;
+                var testWidth = this.Canvas.measureText(this.VerticalInfo[i].Message[0]).width;
+                if (x < testWidth / 2) 
+                {
+                    this.Canvas.textAlign = "left";
+                    this.Canvas.textBaseline = "top";
+                }
+                else if ((x + testWidth / 2) >= this.ChartBorder.GetChartHeight())
+                {
+                    this.Canvas.textAlign = "right";
+                    this.Canvas.textBaseline = "top";
+                }
+                else 
+                {
+                    this.Canvas.textAlign = "center";
+                    this.Canvas.textBaseline = "top";
+                }
+
+                var xText = left, yText = x;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(this.VerticalInfo[i].Message[0], 0, 0);
+                this.Canvas.restore();
+            }
+
+            xPrev = x;
         }
-        else {
-          this.Canvas.textAlign = "center";
-          this.Canvas.textBaseline = "top";
-        }
-
-        var xText = left, yText = x;
-        this.Canvas.save();
-        this.Canvas.translate(xText, yText);
-        this.Canvas.rotate(90 * Math.PI / 180);
-        this.Canvas.fillText(this.VerticalInfo[i].Message[0], 0, 0);
-        this.Canvas.restore();
-      }
-
-      xPrev = x;
     }
-  }
 }
 
 //K线框架
@@ -6685,37 +6704,6 @@ function FrameSplitMinutePriceY()
 
 }
 
-//沪深走势图时间刻度
-var SHZE_MINUTE_X_COORDINATE =
-  [
-    [0, 0, "rgb(200,200,200)", "09:30"],
-    [31, 0, "RGB(200,200,200)", "10:00"],
-    [61, 0, "RGB(200,200,200)", "10:30"],
-    [91, 0, "RGB(200,200,200)", "11:00"],
-    [122, 1, "RGB(200,200,200)", "13:00"],
-    [152, 0, "RGB(200,200,200)", "13:30"],
-    [182, 0, "RGB(200,200,200)", "14:00"],
-    [212, 0, "RGB(200,200,200)", "14:30"],
-    [242, 1, "RGB(200,200,200)", ""], // 15:00
-  ];
-
-//港股走势图时间刻度
-var HK_MINUTE_X_COORDINATE =
-  [
-    [0, 1, "RGB(200,200,200)", "09:30"],
-    [30, 0, "RGB(200,200,200)", "10:00"],
-    [60, 1, "RGB(200,200,200)", "10:30"],
-    [90, 0, "RGB(200,200,200)", "11:00"],
-    [120, 1, "RGB(200,200,200)", "11:30"],
-    [151, 0, "RGB(200,200,200)", "13:00"],
-    [181, 1, "RGB(200,200,200)", "13:30"],
-    [211, 0, "RGB(200,200,200)", "14:00"],
-    [241, 1, "RGB(200,200,200)", "14:30"],
-    [271, 0, "RGB(200,200,200)", "15:00"],
-    [301, 1, "RGB(200,200,200)", "15:30"],
-    [331, 1, "RGB(200,200,200)", ""] //16:00
-  ];
-
 function FrameSplitMinuteX() 
 {
     this.newMethod = IFrameSplitOperator;   //派生
@@ -6731,22 +6719,17 @@ function FrameSplitMinuteX()
     {
         this.Frame.VerticalInfo = [];
         var xPointCount = this.Frame.XPointCount;
-        var minuteCount = 243;
-        var minuteMiddleCount = 122;
+        var width = this.Frame.ChartBorder.GetWidth();
+        var isHScreen=(this.Frame.IsHScreen===true);
+        if (isHScreen) width = this.Frame.ChartBorder.GetHeight();
 
-        //默认沪深股票
-        var xcoordinate = SHZE_MINUTE_X_COORDINATE;
+        const minuteCoordinate = JSCommonCoordinateData.MinuteCoordinateData;
+        var xcoordinateData = minuteCoordinate.GetCoordinateData(this.Symbol,width);
+        var minuteCount = xcoordinateData.Count;
+        var minuteMiddleCount = xcoordinateData.MiddleCount;
+
+        var xcoordinate = xcoordinateData.Data;
         this.Frame.XPointCount = 243;
-
-        if (this.Symbol != null) 
-        {
-            if (this.Symbol.indexOf('.hk') > 0) //港股用港股的刻度 及数据个数
-            {
-                xcoordinate = HK_MINUTE_X_COORDINATE;
-                minuteCount = 332;
-                minuteMiddleCount = 151;
-            }
-        }
 
         this.Frame.XPointCount = minuteCount * this.DayCount;
         this.Frame.MinuteCount = minuteCount;
@@ -7124,38 +7107,28 @@ function HQMinuteTimeStringFormat()
     delete this.newMethod;
 
     this.Frame;
+    this.Symbol;
 
     this.Operator = function () 
     {
-        if (!this.Value) return false;
+        if (this.Value == null || isNaN(this.Value)) return false;
 
         var index = Math.abs(this.Value);
         index = parseInt(index.toFixed(0));
-        if (this.Frame && this.Frame.MinuteCount) index = index % this.Frame.MinuteCount;
+        var showIndex = index;
+        if (this.Frame && this.Frame.MinuteCount) showIndex = index % this.Frame.MinuteCount;
 
-        if (index == 0) 
-        {
-            this.Text = "9:25";
-        }
-        else if (index < 122)
-        {
-            var time = 9 * 60 + 30 + index - 1;
-            var minute = time % 60;
-            if (minute < 10) this.Text = parseInt(time / 60) + ":" + '0' + minute;
-            else this.Text = parseInt(time / 60) + ":" + minute;
-        }
-        else if (index < 243) 
-        {
-            var time = 13 * 60 + index - (122);
-            var minute = time % 60;
-            if (minute < 10) this.Text = parseInt(time / 60) + ":" + '0' + minute;
-            else this.Text = parseInt(time / 60) + ":" + minute;
-        }
-        else 
-        {
-            this.Text = "15:00";
-        }
+        var timeStringData = JSCommonCoordinateData.MinuteTimeStringData;
+        var timeData = timeStringData.GetTimeData(this.Symbol);
+        if (!timeData) return false;
 
+        if (showIndex < 0) showIndex = 0;
+        else if (showIndex > timeData.length) showIndex = timeData.length - 1;
+        if (this.Frame && index >= this.Frame.XPointCount)
+            showIndex = timeData.length - 1;
+
+        var time = timeData[showIndex];
+        this.Text = IFrameSplitOperator.FormatTimeString(time);
         return true;
     }
 }
@@ -7890,7 +7863,7 @@ function DynamicMinuteTitlePainting()
         }
 
         this.Canvas.fillStyle = this.UnchagneColor;
-        var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate ? 'YYYY-MM-DD HH-MM' : 'YYYY-MM-DD' );
+        var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate ? 'YYYY-MM-DD HH-MM' : 'HH-MM' );
         var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
         if (left + textWidth > right) return;
         this.Canvas.fillText(text, left, bottom, textWidth);
@@ -10953,6 +10926,7 @@ function MinuteChartContainer(uielement) {
         }
 
         this.ChartCorssCursor.StringFormatY.Symbol = this.Symbol;
+        this.ChartCorssCursor.StringFormatX.Symbol = this.Symbol;
         this.TitlePaint[0].IsShowDate = true;
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
@@ -11057,6 +11031,7 @@ function MinuteChartContainer(uielement) {
         }
 
         this.ChartCorssCursor.StringFormatY.Symbol = this.Symbol;
+        this.ChartCorssCursor.StringFormatX.Symbol = this.Symbol;
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();

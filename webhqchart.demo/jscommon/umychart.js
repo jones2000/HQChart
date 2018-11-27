@@ -8568,6 +8568,111 @@ function HQDateStringFormat()
     }
 }
 
+
+function TimeStringData()
+{
+    this.SHSZ=null;       //上海深证交易所时间
+    this.HK=null;         //香港交易所时间
+    this.Futures=null;      //期货 (9:00-15:00)
+    this.FuturesNight=null; //期货包含夜间 (9:00-15:00  21:00-24:00)
+
+    this.Initialize=function()  //初始化
+    {
+        //this.SHSZ=this.CreateSHSZData();
+        //this.HK=this.CreateHKData();
+        //this.Futures=this.CreateFuturesData();
+        //this.FuturesNight=this.CreateFuturesNightData();
+    }
+
+    this.CreateSHSZData=function()
+    {
+        const TIME_SPLIT=
+        [
+            {Start:925,End:925},
+            {Start:930,End:1130},
+            {Start:1300,End:1500}
+        ];
+       
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateHKData=function()
+    {
+        const TIME_SPLIT=
+        [
+            {Start:930,End:1200},
+            {Start:1300,End:1600}
+        ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateFuturesData=function()
+    {
+        const TIME_SPLIT=
+        [
+            {Start:900,End:1015},
+            {Start:1030,End:1130},
+            {Start:1330,End:1500}
+        ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateFuturesNightData=function()
+    {
+        const TIME_SPLIT=
+        [
+            {Start:2100,End:2400},
+            {Start:900,End:1015},
+            {Start:1030,End:1130},
+            {Start:1330,End:1500}
+        ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateTimeData=function(timeSplit)
+    {
+        var data=[];
+        for(var i in timeSplit)
+        {
+            var item =timeSplit[i];
+            for(var j=item.Start;j<=item.End;++j)
+            {
+                if (j%100>=60) continue;    //大于60分钟的数据去掉
+                data.push(j);
+            }
+        }
+        return data;
+    }
+
+    this.GetTimeData=function(symbol)
+    {
+        if (!symbol) 
+        {
+            if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
+            return this.SHSZ;
+        }
+
+        var upperSymbol=symbol.toLocaleUpperCase(); //转成大写
+        if (upperSymbol.search(/.SH/)>0 || upperSymbol.search(/.SZ/)>0) 
+        {
+            if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
+            return this.SHSZ;
+        }
+
+        if (upperSymbol.search(/.HK/)>0 ) 
+        {
+            if (!this.HK) this.HK=this.CreateHKData();
+            return this.HK;
+        }
+    }
+}
+
+var g_TimeStringData=new TimeStringData();
+g_TimeStringData.Initialize();
+
 function HQMinuteTimeStringFormat()
 {
     this.newMethod=IChangeStringFormat;   //派生
@@ -8575,39 +8680,27 @@ function HQMinuteTimeStringFormat()
     delete this.newMethod;
 
     this.Frame;
+    this.Symbol;
 
     this.Operator=function()
     {
-        if (!this.Value) return false;
-
+        if (this.Value==null || isNaN(this.Value)) return false;
+        
         var index=Math.abs(this.Value);
         index=parseInt(index.toFixed(0));
+        var showIndex=index;
+        if (this.Frame && this.Frame.MinuteCount) showIndex=index%this.Frame.MinuteCount;
 
-        if (this.Frame && this.Frame.MinuteCount) index=index%this.Frame.MinuteCount;
+        var timeData=g_TimeStringData.GetTimeData(this.Symbol);
+        if (!timeData) return false;
 
-        if(index == 0)
-        {
-            this.Text="9:25";
-        }
-        else if(index<122)
-        {
-            var time=9*60+30+index-1;
-            var minute=time%60;
-            if (minute<10) this.Text= parseInt(time/60)+":"+'0'+minute;
-            else this.Text= parseInt(time/60)+":"+minute;
-        }
-        else if(index<243)
-        {
-            var time=13*60+index-(122);
-            var minute=time%60;
-            if (minute<10) this.Text= parseInt(time/60)+":"+'0'+minute;
-            else this.Text= parseInt(time/60)+":"+minute;
-        }
-        else
-        {
-            this.Text="15:00";
-        }
+        if (showIndex<0) showIndex=0;
+        else if (showIndex>timeData.length) showIndex=timeData.length-1;
+        if (this.Frame && index>=this.Frame.XPointCount) 
+            showIndex=timeData.length-1;
 
+        var time=timeData[showIndex];
+        this.Text=IFrameSplitOperator.FormatTimeString(time);
         return true;
     }
 }
@@ -12834,6 +12927,7 @@ function MinuteChartContainer(uielement)
         }
 
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
+        this.ChartCorssCursor.StringFormatX.Symbol=this.Symbol;
         this.TitlePaint[0].IsShowDate=true;
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
@@ -12948,6 +13042,7 @@ function MinuteChartContainer(uielement)
         }
 
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
+        this.ChartCorssCursor.StringFormatX.Symbol=this.Symbol;
         this.TitlePaint[0].IsShowDate=false;
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
