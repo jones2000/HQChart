@@ -6677,7 +6677,6 @@ function JSExecute(ast,option)
             case 'INDEXA':
             case 'INDEXC':
             case 'INDEXH':
-            case 'INDEXH':
             case 'INDEXO':
             case 'INDEXV':
             case 'INDEXL':

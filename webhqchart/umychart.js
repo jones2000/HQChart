@@ -2193,8 +2193,9 @@ function AverageWidthFrame()
     this.newMethod();
     delete this.newMethod;
 
-    this.DataWidth=50;
-    this.DistanceWidth=10;
+    this.DataWidth=50*GetDevicePixelRatio();
+    this.DistanceWidth=10*GetDevicePixelRatio();
+    this.MinXDistance = 30*GetDevicePixelRatio();       //X轴刻度最小间距
 
     this.DrawFrame=function()
     {
@@ -2340,8 +2341,8 @@ function AverageWidthFrame()
         for(var i in this.VerticalInfo)
         {
             var x=this.GetXFromIndex(this.VerticalInfo[i].Value);
-            if (x>=right) break;
-            if (xPrev!=null && Math.abs(x-xPrev)<80) continue;
+            if (x>right) break;
+            if (xPrev!=null && Math.abs(x-xPrev)<this.MinXDistance) continue;
 
             this.Canvas.strokeStyle=this.VerticalInfo[i].LineColor;
             this.Canvas.beginPath();
@@ -2359,6 +2360,11 @@ function AverageWidthFrame()
                 if (x<testWidth/2)
                 {
                     this.Canvas.textAlign="left";
+                    this.Canvas.textBaseline="top";
+                }
+                else if ((x + testWidth / 2) >= this.ChartBorder.GetChartWidth())
+                {
+                    this.Canvas.textAlign = "right";
                     this.Canvas.textBaseline="top";
                 }
                 else
@@ -2587,8 +2593,8 @@ function MinuteHScreenFrame()
         for(var i in this.VerticalInfo)
         {
             var x=this.GetXFromIndex(this.VerticalInfo[i].Value);
-            if (x>=bottom) break;
-            if (xPrev!=null && Math.abs(x-xPrev)<80) continue;
+            if (x>bottom) break;
+            if (xPrev!=null && Math.abs(x-xPrev)<this.MinXDistance) continue;
 
             this.Canvas.strokeStyle=this.VerticalInfo[i].LineColor;
             this.Canvas.beginPath();
@@ -2607,6 +2613,11 @@ function MinuteHScreenFrame()
                 {
                     this.Canvas.textAlign="left";
                     this.Canvas.textBaseline="top";
+                }
+                else if ((x + testWidth / 2) >= this.ChartBorder.GetChartHeight())
+                {
+                    this.Canvas.textAlign = "right";
+                    this.Canvas.textBaseline = "top";
                 }
                 else
                 {
@@ -3228,7 +3239,7 @@ function HQTradeFrame()
         return this.SubFrame[0].Frame.GetXData(x);
     }
 
-    this.GetYData=function(y)
+    this.GetYData=function(y,outObject) //outObject 可以保存返回的额外数据
     {
         var frame;
         for(var i in this.SubFrame)
@@ -3244,6 +3255,7 @@ function HQTradeFrame()
             if (item.Frame.Canvas.isPointInPath(left,y))
             {
                 frame=item.Frame;
+                if (outObject) outObject.FrameID=i;
                 break;
             }
         }
@@ -3338,7 +3350,7 @@ function HQTradeHScreenFrame()
         }
     }
 
-    this.GetYData=function(x)
+    this.GetYData=function(x,outObject)
     {
         var frame;
         for(var i in this.SubFrame)
@@ -3354,6 +3366,7 @@ function HQTradeHScreenFrame()
             if (item.Frame.Canvas.isPointInPath(x,top))
             {
                 frame=item.Frame;
+                if (outObject) outObject.FrameID=i;
                 break;
             }
         }
@@ -8011,7 +8024,9 @@ function FrameSplitMinutePriceY()
         var distance=(max-min)/(showCount-1);
         const minDistance=[1, 0.1, 0.01, 0.001, 0.0001];
         var defaultfloatPrecision=2;    //默认小数位数IsFundSymbol();
-        if (IsFundSymbol(this.Symbol)) defaultfloatPrecision=3;    //基金3位小数
+        var upperSymbol=this.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision=3;    //基金3位小数
+        else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision=g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
         if (distance<minDistance[defaultfloatPrecision]) 
         {
             distance=minDistance[defaultfloatPrecision];
@@ -8031,16 +8046,20 @@ function FrameSplitMinutePriceY()
                 {
                     var floatPrecision=defaultfloatPrecision;
                     if (!isNaN(price) && Math.abs(price) > 1000) floatPrecision=0;
-                    this.Frame.HorizontalInfo[i].Message[0]=IFrameSplitOperator.FormatValueString(price,floatPrecision);
+                    this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(floatPrecision);
                 }
                 else
                 {
-                    this.Frame.HorizontalInfo[i].Message[0]=IFrameSplitOperator.FormatValueString(price,defaultfloatPrecision);
+                    this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(defaultfloatPrecision);
                 }
-                var per=(price/this.YClose-1)*100;
-                if (per>0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.UpTextColor;
-                else if (per<0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.DownTextColor;
-                this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
+
+                if (this.YClose)
+                {
+                    var per=(price/this.YClose-1)*100;
+                    if (per>0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.UpTextColor;
+                    else if (per<0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.DownTextColor;
+                    this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
+                }
             }
         }
 
@@ -8096,20 +8115,17 @@ function FrameSplitMinuteX()
     {
         this.Frame.VerticalInfo=[];
         var xPointCount=this.Frame.XPointCount;
+        var width = this.Frame.ChartBorder.GetWidth();
+        var isHScreen=(this.Frame.IsHScreen===true);
+        if (isHScreen) width = this.Frame.ChartBorder.GetHeight();
+        width=width/GetDevicePixelRatio();
 
-        var minuteCount=243;
-        var minuteMiddleCount=122;
-        //默认沪深股票
-        var xcoordinate=SHZE_MINUTE_X_COORDINATE;
-        if(this.Symbol!=null)
-        {   //港股用港股的刻度 及数据个数
-            if (this.Symbol.indexOf('.hk')>0) 
-            {
-                xcoordinate=HK_MINUTE_X_COORDINATE;
-                minuteCount=332;
-                minuteMiddleCount=151;
-            }
-        }
+        const minuteCoordinate = g_MinuteCoordinateData;
+        var xcoordinateData = minuteCoordinate.GetCoordinateData(this.Symbol,width);
+        var minuteCount=xcoordinateData.Count;;
+        var minuteMiddleCount=xcoordinateData.MiddleCount;
+        var xcoordinate = xcoordinateData.Data;
+
         this.Frame.XPointCount=minuteCount*this.DayCount;
         this.Frame.MinuteCount=minuteCount;
         this.Frame.VerticalInfo=[];
@@ -8256,10 +8272,12 @@ function ChartCorssCursor()
         this.Canvas.restore();
 
         var xValue=this.Frame.GetXData(x);
-        var yValue=this.Frame.GetYData(y);
+        var yValueExtend={};
+        var yValue=this.Frame.GetYData(y,yValueExtend);
 
         this.StringFormatX.Value=xValue;
         this.StringFormatY.Value=yValue;
+        this.StringFormatY.FrameID=yValueExtend.FrameID;
 
         if (this.IsShowText && this.StringFormatY.Operator() && (this.Frame.ChartBorder.Left>=30 || this.Frame.ChartBorder.Right>=30))
         {
@@ -8366,10 +8384,12 @@ function ChartCorssCursor()
         this.Canvas.restore();
 
         var xValue=this.Frame.GetXData(y);
-        var yValue=this.Frame.GetYData(x);
+        var yValueExtend={};
+        var yValue=this.Frame.GetYData(x,yValueExtend);
 
         this.StringFormatX.Value=xValue;
         this.StringFormatY.Value=yValue;
+        this.StringFormatY.FrameID=yValueExtend.FrameID;
 
         if (this.IsShowText && this.StringFormatY.Operator() && (this.Frame.ChartBorder.Left>=30 || this.Frame.ChartBorder.Right>=30))
         {
@@ -8528,16 +8548,25 @@ function HQPriceStringFormat()
     delete this.newMethod;
 
     this.Symbol;
+    this.FrameID;
 
     this.Operator=function()
     {
         if (!this.Value) return false;
 
-        var isFund=IsFundSymbol(this.Symbol);
-        var defaultfloatPrecision=2;    //价格小数位数
-        if (isFund) defaultfloatPrecision=3;
+        var defaultfloatPrecision=2;     //价格小数位数 
+        if (this.FrameID==0)    //第1个窗口显示原始价格
+        {
+            var upperSymbol=this.Symbol?this.Symbol.toUpperCase():'';
+            if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision=3;
+            else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision=g_FuturesTimeData.GetDecimal(upperSymbol);
+            this.Text=this.Value.toFixed(defaultfloatPrecision);
+        }
+        else
+        {
+            this.Text=IFrameSplitOperator.FormatValueString(this.Value,defaultfloatPrecision);
+        }
 
-        this.Text=IFrameSplitOperator.FormatValueString(this.Value,defaultfloatPrecision);
         return true;
     }
 }
@@ -8568,111 +8597,6 @@ function HQDateStringFormat()
     }
 }
 
-
-function TimeStringData()
-{
-    this.SHSZ=null;       //上海深证交易所时间
-    this.HK=null;         //香港交易所时间
-    this.Futures=null;      //期货 (9:00-15:00)
-    this.FuturesNight=null; //期货包含夜间 (9:00-15:00  21:00-24:00)
-
-    this.Initialize=function()  //初始化
-    {
-        //this.SHSZ=this.CreateSHSZData();
-        //this.HK=this.CreateHKData();
-        //this.Futures=this.CreateFuturesData();
-        //this.FuturesNight=this.CreateFuturesNightData();
-    }
-
-    this.CreateSHSZData=function()
-    {
-        const TIME_SPLIT=
-        [
-            {Start:925,End:925},
-            {Start:930,End:1130},
-            {Start:1300,End:1500}
-        ];
-       
-        return this.CreateTimeData(TIME_SPLIT);
-    }
-
-    this.CreateHKData=function()
-    {
-        const TIME_SPLIT=
-        [
-            {Start:930,End:1200},
-            {Start:1300,End:1600}
-        ];
-
-        return this.CreateTimeData(TIME_SPLIT);
-    }
-
-    this.CreateFuturesData=function()
-    {
-        const TIME_SPLIT=
-        [
-            {Start:900,End:1015},
-            {Start:1030,End:1130},
-            {Start:1330,End:1500}
-        ];
-
-        return this.CreateTimeData(TIME_SPLIT);
-    }
-
-    this.CreateFuturesNightData=function()
-    {
-        const TIME_SPLIT=
-        [
-            {Start:2100,End:2400},
-            {Start:900,End:1015},
-            {Start:1030,End:1130},
-            {Start:1330,End:1500}
-        ];
-
-        return this.CreateTimeData(TIME_SPLIT);
-    }
-
-    this.CreateTimeData=function(timeSplit)
-    {
-        var data=[];
-        for(var i in timeSplit)
-        {
-            var item =timeSplit[i];
-            for(var j=item.Start;j<=item.End;++j)
-            {
-                if (j%100>=60) continue;    //大于60分钟的数据去掉
-                data.push(j);
-            }
-        }
-        return data;
-    }
-
-    this.GetTimeData=function(symbol)
-    {
-        if (!symbol) 
-        {
-            if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
-            return this.SHSZ;
-        }
-
-        var upperSymbol=symbol.toLocaleUpperCase(); //转成大写
-        if (upperSymbol.search(/.SH/)>0 || upperSymbol.search(/.SZ/)>0) 
-        {
-            if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
-            return this.SHSZ;
-        }
-
-        if (upperSymbol.search(/.HK/)>0 ) 
-        {
-            if (!this.HK) this.HK=this.CreateHKData();
-            return this.HK;
-        }
-    }
-}
-
-var g_TimeStringData=new TimeStringData();
-g_TimeStringData.Initialize();
-
 function HQMinuteTimeStringFormat()
 {
     this.newMethod=IChangeStringFormat;   //派生
@@ -8691,7 +8615,8 @@ function HQMinuteTimeStringFormat()
         var showIndex=index;
         if (this.Frame && this.Frame.MinuteCount) showIndex=index%this.Frame.MinuteCount;
 
-        var timeData=g_TimeStringData.GetTimeData(this.Symbol);
+        var timeStringData=g_MinuteTimeStringData;
+        var timeData=timeStringData.GetTimeData(this.Symbol);
         if (!timeData) return false;
 
         if (showIndex<0) showIndex=0;
@@ -8969,9 +8894,14 @@ function DynamicMinuteTitlePainting()
         var left=this.Frame.ChartBorder.GetLeft();
         var bottom=this.Frame.ChartBorder.GetTop()-this.Frame.ChartBorder.Top/2;
         var right=this.Frame.ChartBorder.GetRight();
-        var isFund=IsFundSymbol(this.Symbol);
+       
         var defaultfloatPrecision=2;    //价格小数位数
-        if (isFund) defaultfloatPrecision=3;
+        if (this.Symbol) 
+        {
+            var upperSymbol=this.Symbol.toUpperCase();
+            if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision=3;
+            else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision=g_FuturesTimeData.GetDecimal(upperSymbol);
+        }
 
         if (isHScreen)
         {
@@ -12579,6 +12509,7 @@ function MinuteChartContainer(uielement)
     this.DayData;                             //多日分钟数据
 
     this.MinuteApiUrl="https://opensource.zealink.com/API/Stock";
+    //this.MinuteApiUrl="http://web4.umydata.com/API/Stock"; //测试域名
     this.HistoryMinuteApiUrl='https://opensource.zealink.com/API/StockMinuteData';  //历史分钟数据
 
      //手机拖拽
@@ -12966,25 +12897,27 @@ function MinuteChartContainer(uielement)
     {
         var self=this;
 
+        var fields=
+        [
+            "name","symbol",
+            "yclose","open","price","high","low",
+            "vol","amount",
+            "date","time",
+            "minute","minutecount"
+        ];
+
+        var upperSymbol=this.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+        {   //期货的需要加上结算价
+            fields.push("clearing");
+            fields.push("yclearing");
+        }
+
         $.ajax({
             url: self.MinuteApiUrl,
             data:
             {
-                "field": [
-                    "name",
-                    "symbol",
-                    "yclose",
-                    "open",
-                    "price",
-                    "high",
-                    "low",
-                    "vol",
-                    "amount",
-                    "date",
-                    "minute",
-                    "time",
-                    "minutecount",
-                ],
+                "field": fields,
                 "symbol": [self.Symbol],
                 "start": -1
             },
@@ -13020,7 +12953,10 @@ function MinuteChartContainer(uielement)
         this.Symbol=data.stock[0].symbol;
         this.Name=data.stock[0].name;
 
-        this.BindMainData(sourceData,data.stock[0].yclose);
+        var yClose=data.stock[0].yclose;
+        var upperSymbol=this.Symbol.toUpperCase();
+        if (data.stock[0].yclearing && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) yClose=data.stock[0].yclearing; //期货使用前结算价
+        this.BindMainData(sourceData,yClose);
 
         if (this.Frame.SubFrame.length>2)
         {
@@ -13172,9 +13108,16 @@ function MinuteChartContainer(uielement)
 //API 返回数据 转化为array[]
 MinuteChartContainer.JsonDataToMinuteData=function(data)
 {
+    var symbol=data.stock[0].symbol;
+    var upperSymbol=symbol.toUpperCase();
+    var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+    var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
     var aryMinuteData=new Array();
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var preAvPrice=data.stock[0].yclose;    //前一个均价
+    var yClose=data.stock[0].yclose;
+    if (isFutures && data.stock[0].yclearing) yClose=preClose=preAvPrice=data.stock[0].yclearing;  //期货使用昨结算价
+    
     for(var i in data.stock[0].minute)
     {
         var jsData=data.stock[0].minute[i];
@@ -13186,17 +13129,17 @@ MinuteChartContainer.JsonDataToMinuteData=function(data)
         item.Open=jsData.open;
         item.High=jsData.high;
         item.Low=jsData.low;
-        item.Vol=jsData.vol/100; //原始单位股
+        if (isSHSZ) item.Vol=jsData.vol/100; //沪深股票原始单位股
+        else item.Vol=jsData.vol;
         item.Amount=jsData.amount;
-        if (i==0)      //第1个数据 写死9：25
+        item.DateTime=data.stock[0].date.toString()+" "+jsData.time.toString();
+
+        if (i==0) 
         {
-            item.DateTime=data.stock[0].date.toString()+" 0925";
             item.IsFristData=true;
+            if(isSHSZ) item.DateTime=data.stock[0].date.toString() + " 0925"; //沪深股票 第1个数据 写死9：25
         }
-        else
-        {
-            item.DateTime=data.stock[0].date.toString()+" "+jsData.time.toString();
-        }
+        
         item.Increase=jsData.increase;
         item.Risefall=jsData.risefall;
         item.AvPrice=jsData.avprice;
@@ -13214,6 +13157,10 @@ MinuteChartContainer.JsonDataToMinuteData=function(data)
         if (item.AvPrice<=0) item.AvPrice=null;
         if (item.High<=0) item.High=null;
         if (item.Low<=0) item.Low=null;
+
+        if (isFutures) item.AvPrice=null;    //期货均价暂时没有
+            
+        if (yClose && item.Close) item.Increase=(item.Close-yClose)/yClose*100; //涨幅 (最新价格-昨收)/昨收*100;
 
         aryMinuteData[i]=item;
     }
@@ -17612,6 +17559,789 @@ function KLineRightMenu(divElement)
     }
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+//
+//  各个品种分钟走势图坐标信息
+//
+//////////////////////////////////////////////////////////////////////////////////////
+var MARKET_SUFFIX_NAME=
+{
+    SH:'.SH',
+    SZ:'.SZ',
+    HK:'.HK',
+    SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange)
+    CFFEX: '.CFE',       //中期所 (China Financial Futures Exchange)
+    DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
+    CZCE: '.CZC',        //郑州期货交易所
+
+    IsSH: function (upperSymbol)
+    {
+        //需要精确匹配最后3位
+        var pos = upperSymbol.length-this.SH.length;
+        var find = upperSymbol.indexOf(this.SH);
+        return find == pos;
+    },
+
+    IsSZ: function (upperSymbol)
+    {
+        var pos = upperSymbol.length - this.SZ.length;
+        var find = upperSymbol.indexOf(this.SZ);
+        return find == pos;
+    },
+
+    IsHK: function (upperSymbol)
+    {
+        var pos = upperSymbol.length - this.HK.length;
+        var find = upperSymbol.indexOf(this.HK);
+        return find == pos;
+    },
+
+    IsSHFE: function (upperSymbol)
+    {
+        return upperSymbol.indexOf(this.SHFE) > 0;
+    },
+        
+    IsCFFEX: function (upperSymbol) 
+    {
+        return upperSymbol.indexOf(this.CFFEX) > 0;
+    },
+
+    IsDCE: function (upperSymbol) 
+    {
+        return upperSymbol.indexOf(this.DCE) > 0;
+    },
+
+    IsCZCE: function (upperSymbol) 
+    {
+        return upperSymbol.indexOf(this.CZCE) > 0;
+    },
+
+    IsChinaFutures:function(upperSymbol)   //是否是国内期货
+    {
+        return this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol);
+    },
+
+    IsSHSZ:function(upperSymbol)            //是否是沪深的股票
+    {
+        return this.IsSZ(upperSymbol)|| this.IsSH(upperSymbol);
+    },
+
+    IsSHSZFund:function(upperSymbol)        //是否是交易所基金
+    {
+        if (!upperSymbol) return false;
+
+        if (this.IsSH(upperSymbol)) //51XXXX.SH
+        {
+            if (upperSymbol.charAt(0)=='5' && upperSymbol.charAt(1)=='1') return true;
+        }
+        else if (this.IsSZ(upperSymbol)) //15XXXX.sz, 16XXXX.sz, 17XXXX.sz, 18XXXX.sz
+        {
+            if (upperSymbol.charAt(0)=='1' && 
+                (upperSymbol.charAt(1)=='5' || upperSymbol.charAt(1)=='6' || upperSymbol.charAt(1)=='7' || upperSymbol.charAt(1)=='8') ) return true;
+        }
+
+        return false;
+    },
+
+    IsSHSZIndex:function(upperSymbol)     //是否是沪深指数代码
+    {
+        var upperSymbol=symbol.toUpperCase();
+        if (this.IsSH(upperSymbol))
+        {
+            var temp=upperSymbol.replace('.SH','');
+            if (upperSymbol.charAt(0)=='0' && parseInt(temp)<=3000) return true;
+
+        }
+        else if (this.IsSZ(upperSymbol))
+        {
+            if (upperSymbol.charAt(0)=='3' && upperSymbol.charAt(1)=='9') return true;
+        }
+        else if (upperSymbol.indexOf('.CI')>0)  //自定义指数
+        {
+            return true;
+        }
+
+        return false;
+    }
+}
+
+
+//走势图分钟数据对应的时间
+function MinuteTimeStringData() 
+{
+    this.SHSZ = null;       //上海深证交易所时间
+    this.HK = null;         //香港交易所时间
+    this.Futures=new Map(); //期货交易时间 key=时间名称 Value=数据
+    this.USA = null;        //美股交易时间
+
+    this.Initialize = function ()  //初始化 默认只初始化沪深的 其他市场动态生成
+    {
+        //this.SHSZ = this.CreateSHSZData();
+        //this.HK = this.CreateHKData();
+    }
+
+    this.GetSHSZ=function() //动态创建
+    {
+        if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
+        return this.SHSZ;
+    }
+
+    this.GetHK=function()
+    {
+        if (!this.HK) this.HK = this.CreateHKData();
+        return this.HK;
+    }
+
+    this.GetFutures=function(splitData)
+    {
+        if (!this.Futures.has(splitData.Name)) 
+        {
+            var data = this.CreateTimeData(splitData.Data);
+            this.Futures.set(splitData.Name,data);
+        }
+        
+        return this.Futures.get(splitData.Name);
+    }
+
+    this.GetUSA=function()
+    {
+        if (!this.USA) this.USA=this.CreateUSAData();
+        return this.USA;
+    }
+
+    this.CreateSHSZData = function () 
+    {
+        const TIME_SPLIT =
+            [
+                { Start: 925, End: 925 },
+                { Start: 930, End: 1130 },
+                { Start: 1300, End: 1500 }
+            ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateHKData = function () 
+    {
+        const TIME_SPLIT =
+            [
+                { Start: 930, End: 1200 },
+                { Start: 1300, End: 1600 }
+            ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateUSAData=function()
+    {
+        //美国夏令时
+        const TIME_SUMMER_SPLIT =
+            [
+                { Start: 2130, End: 2359 },
+                { Start: 0, End: 400 }
+            ];
+            
+        //非夏令时
+        const TIME_SPLIT =
+            [
+                { Start: 2230, End: 2359 },
+                { Start: 0, End: 500 }
+            ];
+
+        return this.CreateTimeData(TIME_SPLIT); 
+    }
+
+    this.CreateTimeData = function (timeSplit) 
+    {
+        var data = [];
+        for (var i in timeSplit) 
+        {
+            var item = timeSplit[i];
+            for (var j = item.Start; j <= item.End; ++j) 
+            {
+                if (j % 100 >= 60) continue;    //大于60分钟的数据去掉
+                data.push(j);
+            }
+        }
+        return data;
+    }
+
+    this.GetTimeData = function (symbol) 
+    {
+        if (!symbol) return this.SHSZ;
+
+        var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
+        if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) return this.GetSHSZ();
+        if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK();
+        if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
+        {
+            var splitData = g_FuturesTimeData.GetSplitData(upperSymbol);
+            if (!splitData) return null;
+            return this.GetFutures(splitData);
+        }
+    }
+}
+
+//走势图刻度分钟线
+function MinuteCoordinateData() 
+{
+    //沪深走势图时间刻度
+    const SHZE_MINUTE_X_COORDINATE =
+        {
+            Full:   //完整模式
+            [
+                [0, 0, "rgb(200,200,200)", "09:30"],
+                [31, 0, "RGB(200,200,200)", "10:00"],
+                [61, 0, "RGB(200,200,200)", "10:30"],
+                [91, 0, "RGB(200,200,200)", "11:00"],
+                [122, 1, "RGB(200,200,200)", "13:00"],
+                [152, 0, "RGB(200,200,200)", "13:30"],
+                [182, 0, "RGB(200,200,200)", "14:00"],
+                [212, 0, "RGB(200,200,200)", "14:30"],
+                [242, 1, "RGB(200,200,200)", "15:00"], // 15:00
+            ],
+            Simple: //简洁模式
+            [
+                [0, 0, "rgb(200,200,200)", "09:30"],
+                [61, 0, "RGB(200,200,200)", "10:30"],
+                [122, 1, "RGB(200,200,200)", "13:00"],
+                [182, 0, "RGB(200,200,200)", "14:00"],
+                [242, 1, "RGB(200,200,200)", "15:00"]
+            ],
+            Min:   //最小模式     
+            [
+                [0, 0, "rgb(200,200,200)", "09:30"],
+                [122, 1, "RGB(200,200,200)", "13:00"],
+                [242, 1, "RGB(200,200,200)", "15:00"]
+            ],
+
+            Count: 243,
+            MiddleCount: 122,
+
+            GetData: function (width) 
+            {
+                if (width < 200) return this.Min;
+                else if (width < 400) return this.Simple;
+
+                return this.Full;
+            }
+        };
+
+    //港股走势图时间刻度
+    const HK_MINUTE_X_COORDINATE =
+        {
+            Full:   //完整模式
+            [
+                [0, 1, "RGB(200,200,200)", "09:30"],
+                [30, 0, "RGB(200,200,200)", "10:00"],
+                [60, 1, "RGB(200,200,200)", "10:30"],
+                [90, 0, "RGB(200,200,200)", "11:00"],
+                [120, 1, "RGB(200,200,200)", "11:30"],
+                [151, 0, "RGB(200,200,200)", "13:00"],
+                [181, 1, "RGB(200,200,200)", "13:30"],
+                [211, 0, "RGB(200,200,200)", "14:00"],
+                [241, 1, "RGB(200,200,200)", "14:30"],
+                [271, 0, "RGB(200,200,200)", "15:00"],
+                [301, 1, "RGB(200,200,200)", "15:30"],
+                [331, 1, "RGB(200,200,200)", "16:00"]
+            ],
+            Simple: //简洁模式
+            [
+                [0, 1, "RGB(200,200,200)", "09:30"],
+                [60, 1, "RGB(200,200,200)", "10:30"],
+                [120, 1, "RGB(200,200,200)", "11:30"],
+                [211, 0, "RGB(200,200,200)", "14:00"],
+                [271, 0, "RGB(200,200,200)", "15:00"],
+                [331, 1, "RGB(200,200,200)", "16:00"]
+            ],
+            Min:   //最小模式     
+            [
+                [0, 1, "RGB(200,200,200)", "09:30"],
+                [151, 0, "RGB(200,200,200)", "13:00"],
+                [331, 1, "RGB(200,200,200)", "16:00"]
+            ],
+
+            Count: 332,
+            MiddleCount: 151,
+
+            GetData: function (width) 
+            {
+                if (width < 200) return this.Min;
+                else if (width < 450) return this.Simple;
+
+                return this.Full;
+            }
+        };
+
+    this.GetCoordinateData = function (symbol, width) 
+    {
+        var data = null;
+        if (!symbol) 
+        {
+            data = SHZE_MINUTE_X_COORDINATE;    //默认沪深股票
+        }
+        else 
+        {
+            var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
+            if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol))
+                data = SHZE_MINUTE_X_COORDINATE;
+            else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
+                data = HK_MINUTE_X_COORDINATE;
+            else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
+                return this.GetFuturesData(upperSymbol,width);
+        }
+
+        //console.log('[MiuteCoordinateData]', width);
+        var result = { Count: data.Count, MiddleCount: data.MiddleCount, Data: data.GetData(width) };
+        return result;
+    }
+
+    this.GetFuturesData = function (upperSymbol,width)
+    {
+        var splitData = g_FuturesTimeData.GetSplitData(upperSymbol);
+        if (!splitData) return null;
+        var stringData = g_MinuteTimeStringData.GetFutures(splitData);
+        if (!stringData) return null;
+        var result = { Count: stringData.length };
+        var coordinate=null;
+        var minWidth=200, simpleWidth=480;
+        /*
+        if (splitData.Name =='21:00-1:00,9:00-10:15,10:30-11:30,13:30-15:00')
+        {
+            minWidth=250;
+            simpleWidth=500;
+        }
+        */
+        
+        if (width < minWidth) coordinate = splitData.Coordinate.Min;
+        else if (width < simpleWidth) coordinate = splitData.Coordinate.Simple;
+        else coordinate = splitData.Coordinate.Full;
+        
+        var data=[];
+        for(var i=0;i<stringData.length;++i)
+        {
+            var value = stringData[i];
+            for(var j=0;j<coordinate.length;++j)
+            {
+                var coordinateItem = coordinate[j];
+                if (value == coordinateItem.Value)
+                {
+                    var item = [i, 0, 'RGB(200,200,200)', coordinateItem.Text];
+                    data.push(item);
+                    break;
+                }
+            }
+        }
+
+        result.Data = data;
+        return result;
+    }
+}
+
+//期货不同品种 交易时间数据 
+function FuturesTimeData()
+{
+    const TIME_SPLIT=
+    [
+        {
+            Name:'9:00-10:15,10:30-11:30,13:30-15:00',
+            Data:
+            [
+                //9:00-10:15,10:30-11:30,13:30-15:00
+                { Start: 900, End: 1015 },
+                { Start: 1030, End: 1130 },
+                { Start: 1300, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 930, Text: '9:30' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
+        {
+
+            Name:'9:15-11:30,13:00-15:15',
+            Data:
+            [
+                { Start: 915, End: 1130 },
+                { Start: 1300, End: 1515 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 930, Text: '9:30' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1515, Text: '15:15' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 930, Text: '9:30' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1515, Text: '15:15' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 930, Text: '9:30' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1515, Text: '15:15' },
+                ]
+            }
+        },
+        {
+            Name:'9:30-11:30,13:00-15:00',
+            Data:
+            [
+                { Start: 930, End: 1130 },
+                { Start: 1300, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 930, Text: '9:30' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 930, Text: '9:30' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 930, Text: '9:30' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
+        {
+            Name:'21:00-23:30,9:00-10:15,10:30-11:30,13:30-15:00',
+            Data:
+            [
+                { Start: 2100, End: 2330 },
+                { Start: 900, End: 1015 },
+                { Start: 1030, End: 1130 },
+                { Start: 1330, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
+        {
+            Name:'21:00-1:00,9:00-10:15,10:30-11:30,13:30-15:00',
+            Data:
+            [   
+                { Start: 2100, End: 2359 },
+                { Start: 0, End: 100 },
+                { Start: 900, End: 1015 },
+                { Start: 1030, End: 1130 },
+                { Start: 1300, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
+        {
+            Name:'21:00-2:30,9:00-10:15,10:30-11:30,13:30-15:00',
+            Data:
+            [
+                { Start: 2100, End: 2359 },
+                { Start: 0, End: 230 },
+                { Start: 900, End: 1015 },
+                { Start: 1030, End: 1130 },
+                { Start: 1300, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 100, Text: '1:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
+        {
+            Name:'21:00-23:00,9:00-10:15,10:30-11:30,13:30-15:00',
+            Data:
+            [
+                { Start: 2100, End: 2300 },
+                { Start: 901, End: 1015 },
+                { Start: 1030, End: 1130 },
+                { Start: 1330, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        }
+    ];
+
+    const MAP_TWOWORDS=new Map([
+        //大连商品交易所
+        [MARKET_SUFFIX_NAME.DCE + '-JD', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-FB', {Time:0,Decimal:2}],
+        [MARKET_SUFFIX_NAME.DCE + '-BB', {Time:0,Decimal:2}],
+        [MARKET_SUFFIX_NAME.DCE + '-PP', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-JM', {Time:3,Decimal:1}],
+        //上期所
+        [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-NI', {Time:4,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-SN', {Time:4,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-ZN', {Time:4,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-PB', {Time:4,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-RU', {Time:6,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-FU', {Time:6,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-RB', {Time:6,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-BU', {Time:6,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-HC', {Time:6,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-WR', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2}],
+        //郑州期货交易所
+        [MARKET_SUFFIX_NAME.CZCE + '-CF', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-SR', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-MA', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-ZC', {Time:3,Decimal:1}],
+        [MARKET_SUFFIX_NAME.CZCE + '-TA', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-RM', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-OI', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-ME', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-FG', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-WS', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-WT', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-GN', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-RO', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-RS', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-ER', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-RI', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-WH', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-AP', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-PM', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-QM', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-TC', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-JR', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-LR', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-SF', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-SM', {Time:0,Decimal:0}],
+        //中期所 
+        [MARKET_SUFFIX_NAME.CFFEX + '-TF', {Time:1,Decimal:3}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-TS', {Time:1,Decimal:3}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IH', {Time:2,Decimal:1}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IC', {Time:2,Decimal:1}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IF', {Time:2,Decimal:1}],
+    ]);
+
+    const MAP_ONEWORD=new Map([
+        //大连商品交易所
+        [MARKET_SUFFIX_NAME.DCE + '-C', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-L', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-V', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-A', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-B', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-M', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-Y', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-P', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-J', {Time:3,Decimal:1}],
+        [MARKET_SUFFIX_NAME.DCE + '-I', {Time:3,Decimal:1}],
+        //中期所 
+        [MARKET_SUFFIX_NAME.CFFEX + '-T', {Time:1,Decimal:3}],
+    ]);
+
+    this.GetData=function(upperSymbol)
+    {
+        var oneWord = upperSymbol.charAt(0);
+        var twoWords = upperSymbol.substr(0,2);
+        var oneWordName = null, twoWordsName=null;
+
+        if (MARKET_SUFFIX_NAME.IsDCE(upperSymbol))  //大连商品交易所
+        {
+            oneWordName = MARKET_SUFFIX_NAME.DCE+'-'+oneWord;
+            twoWordsName = MARKET_SUFFIX_NAME.DCE + '-' + twoWords;
+        }
+        else if (MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))  //上期所
+        {
+            oneWordName = MARKET_SUFFIX_NAME.SHFE + '-' + oneWord;
+            twoWordsName = MARKET_SUFFIX_NAME.SHFE + '-' + twoWords;
+        }
+        else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol))  //中期所 
+        {
+            oneWordName = MARKET_SUFFIX_NAME.CFFEX + '-' + oneWord;
+            twoWordsName = MARKET_SUFFIX_NAME.CFFEX + '-' + twoWords;
+        }
+        else if (MARKET_SUFFIX_NAME.IsCZCE(upperSymbol))  //郑州期货交易所
+        {
+            oneWordName = MARKET_SUFFIX_NAME.CZCE + '-' + oneWord;
+            twoWordsName = MARKET_SUFFIX_NAME.CZCE + '-' + twoWords;
+        }
+
+        if (MAP_TWOWORDS.has(twoWordsName))
+        {
+            return MAP_TWOWORDS.get(twoWordsName);
+        }
+
+        if (MAP_ONEWORD.has(oneWordName))
+        {
+            return MAP_ONEWORD.get(oneWordName);
+        }
+
+        return null;
+    }
+
+    this.GetSplitData = function (upperSymbol)
+    {
+        var data=this.GetData(upperSymbol);
+        if (!data) return null;
+
+        return TIME_SPLIT[data.Time];
+    }
+
+    this.GetDecimal=function(upperSymbol)
+    {
+        var data=this.GetData(upperSymbol);
+        if (!data) return 2;
+
+        return data.Decimal;
+    }
+}
+
+var g_MinuteTimeStringData = new MinuteTimeStringData();
+var g_MinuteCoordinateData = new MinuteCoordinateData();
+var g_FuturesTimeData = new FuturesTimeData();
 
 
 

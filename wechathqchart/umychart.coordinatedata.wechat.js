@@ -14,17 +14,24 @@ var MARKET_SUFFIX_NAME=
 
     IsSH: function (upperSymbol)
     {
-        return upperSymbol.indexOf(this.SH)>0;
+        //需要精确匹配最后3位
+        var pos = upperSymbol.length-this.SH.length;
+        var find = upperSymbol.indexOf(this.SH);
+        return find == pos;
     },
 
     IsSZ: function (upperSymbol)
     {
-        return upperSymbol.indexOf(this.SZ)>0;
+        var pos = upperSymbol.length - this.SZ.length;
+        var find = upperSymbol.indexOf(this.SZ);
+        return find == pos;
     },
 
     IsHK: function (upperSymbol)
     {
-        return upperSymbol.indexOf(this.HK) > 0;
+        var pos = upperSymbol.length - this.HK.length;
+        var find = upperSymbol.indexOf(this.HK);
+        return find == pos;
     },
 
     IsSHFE: function (upperSymbol)
@@ -45,6 +52,54 @@ var MARKET_SUFFIX_NAME=
     IsCZCE: function (upperSymbol) 
     {
         return upperSymbol.indexOf(this.CZCE) > 0;
+    },
+
+    IsChinaFutures: function (upperSymbol)   //是否是国内期货
+    {
+        return this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol);
+    },
+
+    IsSHSZ: function (upperSymbol)            //是否是沪深的股票
+    {
+        return this.IsSZ(upperSymbol) || this.IsSH(upperSymbol);
+    },
+
+    IsSHSZFund: function (upperSymbol)        //是否是交易所基金
+    {
+        if (!upperSymbol) return false;
+
+        if (this.IsSH(upperSymbol)) //51XXXX.SH
+        {
+            if (upperSymbol.charAt(0) == '5' && upperSymbol.charAt(1) == '1') return true;
+        }
+        else if (this.IsSZ(upperSymbol)) //15XXXX.sz, 16XXXX.sz, 17XXXX.sz, 18XXXX.sz
+        {
+            if (upperSymbol.charAt(0) == '1' &&
+                (upperSymbol.charAt(1) == '5' || upperSymbol.charAt(1) == '6' || upperSymbol.charAt(1) == '7' || upperSymbol.charAt(1) == '8')) return true;
+        }
+
+        return false;
+    },
+
+    IsSHSZIndex: function (upperSymbol)     //是否是沪深指数代码
+    {
+        var upperSymbol = symbol.toUpperCase();
+        if (this.IsSH(upperSymbol)) 
+        {
+            var temp = upperSymbol.replace('.SH', '');
+            if (upperSymbol.charAt(0) == '0' && parseInt(temp) <= 3000) return true;
+
+        }
+        else if (this.IsSZ(upperSymbol)) 
+        {
+            if (upperSymbol.charAt(0) == '3' && upperSymbol.charAt(1) == '9') return true;
+        }
+        else if (upperSymbol.indexOf('.CI') > 0)  //自定义指数
+        {
+            return true;
+        }
+
+        return false;
     }
 }
 
@@ -55,6 +110,7 @@ function MinuteTimeStringData()
     this.SHSZ = null;       //上海深证交易所时间
     this.HK = null;         //香港交易所时间
     this.Futures=new Map(); //期货交易时间 key=时间名称 Value=数据
+    this.USA = null;        //美股交易时间
 
     this.Initialize = function ()  //初始化 默认只初始化沪深的 其他市场动态生成
     {
@@ -85,6 +141,12 @@ function MinuteTimeStringData()
         return this.Futures.get(splitData.Name);
     }
 
+    this.GetUSA=function()
+    {
+        if (!this.USA) this.USA=this.CreateUSAData();
+        return this.USA;
+    }
+
     this.CreateSHSZData = function () 
     {
         const TIME_SPLIT =
@@ -106,6 +168,25 @@ function MinuteTimeStringData()
             ];
 
         return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateUSAData=function()
+    {
+        //美国夏令时
+        const TIME_SUMMER_SPLIT =
+            [
+                { Start: 2130, End: 2359 },
+                { Start: 0, End: 400 }
+            ];
+            
+        //非夏令时
+        const TIME_SPLIT =
+            [
+                { Start: 2230, End: 2359 },
+                { Start: 0, End: 500 }
+            ];
+
+        return this.CreateTimeData(TIME_SPLIT); 
     }
 
     this.CreateTimeData = function (timeSplit) 
@@ -261,10 +342,19 @@ function MinuteCoordinateData()
         if (!stringData) return null;
         var result = { Count: stringData.length };
         var coordinate=null;
-        if (width < 200) coordinate = splitData.Coordinate.Min;
-        else if (width < 480) coordinate = splitData.Coordinate.Simple;
+        var minWidth=200, simpleWidth=480;
+        /*
+        if (splitData.Name =='21:00-1:00,9:00-10:15,10:30-11:30,13:30-15:00')
+        {
+            minWidth=250;
+            simpleWidth=500;
+        }
+        */
+        
+        if (width < minWidth) coordinate = splitData.Coordinate.Min;
+        else if (width < simpleWidth) coordinate = splitData.Coordinate.Simple;
         else coordinate = splitData.Coordinate.Full;
-
+        
         var data=[];
         for(var i=0;i<stringData.length;++i)
         {
@@ -374,7 +464,36 @@ function FuturesTimeData()
             [
                 { Start: 930, End: 1130 },
                 { Start: 1300, End: 1500 }
-            ]
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 930, Text: '9:30' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 930, Text: '9:30' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 930, Text: '9:30' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
         },
         {
             Name:'21:00-23:30,9:00-10:15,10:30-11:30,13:30-15:00',
@@ -384,7 +503,34 @@ function FuturesTimeData()
                 { Start: 900, End: 1015 },
                 { Start: 1030, End: 1130 },
                 { Start: 1330, End: 1500 }
-            ]
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
         },
         {
             Name:'21:00-1:00,9:00-10:15,10:30-11:30,13:30-15:00',
@@ -395,7 +541,34 @@ function FuturesTimeData()
                 { Start: 900, End: 1015 },
                 { Start: 1030, End: 1130 },
                 { Start: 1300, End: 1500 }
-            ]
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
         },
         {
             Name:'21:00-2:30,9:00-10:15,10:30-11:30,13:30-15:00',
@@ -406,91 +579,154 @@ function FuturesTimeData()
                 { Start: 900, End: 1015 },
                 { Start: 1030, End: 1130 },
                 { Start: 1300, End: 1500 }
-            ]
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 100, Text: '1:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
+        {
+            Name: '21:00-23:00,9:00-10:15,10:30-11:30,13:30-15:00',
+            Data:
+            [
+                { Start: 2100, End: 2300 },
+                { Start: 901, End: 1015 },
+                { Start: 1030, End: 1130 },
+                { Start: 1330, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                    [
+                        { Value: 2100, Text: '21:00' },
+                        { Value: 2200, Text: '22:00' },
+                        { Value: 2300, Text: '23:00' },
+                        { Value: 1030, Text: '10:30' },
+                        { Value: 1330, Text: '13:30' },
+                        { Value: 1430, Text: '14:30' },
+                        { Value: 1500, Text: '15:00' },
+                    ],
+                Simple: //简洁模式
+                    [
+                        { Value: 2100, Text: '21:00' },
+                        { Value: 2300, Text: '23:00' },
+                        { Value: 1330, Text: '13:30' },
+                        { Value: 1500, Text: '15:00' },
+                    ],
+                Min:   //最小模式  
+                    [
+                        { Value: 2100, Text: '21:00' },
+                        { Value: 2300, Text: '23:00' },
+                        { Value: 1500, Text: '15:00' },
+                    ]
+            }
         }
     ];
 
-    const MAP_TWOWORDS=new Map([
+    const MAP_TWOWORDS = new Map([
         //大连商品交易所
-        [MARKET_SUFFIX_NAME.DCE + '-JD', 0],
-        [MARKET_SUFFIX_NAME.DCE + '-FB', 0],
-        [MARKET_SUFFIX_NAME.DCE + '-BB', 0],
-        [MARKET_SUFFIX_NAME.DCE + '-PP', 0],
-        [MARKET_SUFFIX_NAME.DCE + '-JM', 3],
+        [MARKET_SUFFIX_NAME.DCE + '-JD', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.DCE + '-FB', { Time: 0, Decimal: 2 }],
+        [MARKET_SUFFIX_NAME.DCE + '-BB', { Time: 0, Decimal: 2 }],
+        [MARKET_SUFFIX_NAME.DCE + '-PP', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.DCE + '-JM', { Time: 3, Decimal: 1 }],
         //上期所
-        [MARKET_SUFFIX_NAME.SHFE + '-CU', 4],
-        [MARKET_SUFFIX_NAME.SHFE + '-AL', 4],
-        [MARKET_SUFFIX_NAME.SHFE + '-NI', 4],
-        [MARKET_SUFFIX_NAME.SHFE + '-SN', 4],
-        [MARKET_SUFFIX_NAME.SHFE + '-ZN', 4],
-        [MARKET_SUFFIX_NAME.SHFE + '-PB', 4],
-        [MARKET_SUFFIX_NAME.SHFE + '-RU', 3],
-        [MARKET_SUFFIX_NAME.SHFE + '-FU', 3],
-        [MARKET_SUFFIX_NAME.SHFE + '-RB', 3],
-        [MARKET_SUFFIX_NAME.SHFE + '-BU', 3],
-        [MARKET_SUFFIX_NAME.SHFE + '-HC', 3],
-        [MARKET_SUFFIX_NAME.SHFE + '-WR', 0],
-        [MARKET_SUFFIX_NAME.SHFE + '-AG', 5],
-        [MARKET_SUFFIX_NAME.SHFE + '-AU', 5],
+        [MARKET_SUFFIX_NAME.SHFE + '-CU', { Time: 4, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-AL', { Time: 4, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-NI', { Time: 4, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-SN', { Time: 4, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-ZN', { Time: 4, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-PB', { Time: 4, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-RU', { Time: 6, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-FU', { Time: 6, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-RB', { Time: 6, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-BU', { Time: 6, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-HC', { Time: 6, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-WR', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-AG', { Time: 5, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.SHFE + '-AU', { Time: 5, Decimal: 2 }],
         //郑州期货交易所
-        [MARKET_SUFFIX_NAME.CZCE + '-CF', 3],
-        [MARKET_SUFFIX_NAME.CZCE + '-SR', 3],
-        [MARKET_SUFFIX_NAME.CZCE + '-MA', 3],
-        [MARKET_SUFFIX_NAME.CZCE + '-ZC', 3],
-        [MARKET_SUFFIX_NAME.CZCE + '-TA', 3],
-        [MARKET_SUFFIX_NAME.CZCE + '-RM', 3],
-        [MARKET_SUFFIX_NAME.CZCE + '-OI', 3],
-        [MARKET_SUFFIX_NAME.CZCE + '-ME', 3],
-        [MARKET_SUFFIX_NAME.CZCE + '-FG', 3],
-        [MARKET_SUFFIX_NAME.CZCE + '-WS', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-WT', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-GN', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-RO', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-RS', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-ER', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-RI', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-WH', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-AP', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-PM', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-QM', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-TC', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-JR', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-LR', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-SF', 0],
-        [MARKET_SUFFIX_NAME.CZCE + '-SM', 0],
+        [MARKET_SUFFIX_NAME.CZCE + '-CF', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-SR', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-MA', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-ZC', { Time: 3, Decimal: 1 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-TA', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-RM', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-OI', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-ME', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-FG', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-WS', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-WT', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-GN', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-RO', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-RS', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-ER', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-RI', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-WH', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-AP', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-PM', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-QM', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-TC', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-JR', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-LR', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-SF', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.CZCE + '-SM', { Time: 0, Decimal: 0 }],
         //中期所 
-        [MARKET_SUFFIX_NAME.CFFEX + '-TF', 1],
-        [MARKET_SUFFIX_NAME.CFFEX + '-TS', 1],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IH', 2],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IC', 2],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IF', 2],
+        [MARKET_SUFFIX_NAME.CFFEX + '-TF', { Time: 1, Decimal: 3 }],
+        [MARKET_SUFFIX_NAME.CFFEX + '-TS', { Time: 1, Decimal: 3 }],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IH', { Time: 2, Decimal: 1 }],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IC', { Time: 2, Decimal: 1 }],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IF', { Time: 2, Decimal: 1 }],
     ]);
 
-    const MAP_ONEWORD=new Map([
+    const MAP_ONEWORD = new Map([
         //大连商品交易所
-        [MARKET_SUFFIX_NAME.DCE + '-C', 0],
-        [MARKET_SUFFIX_NAME.DCE + '-L', 0],
-        [MARKET_SUFFIX_NAME.DCE + '-V', 0],
-        [MARKET_SUFFIX_NAME.DCE + '-A', 3],
-        [MARKET_SUFFIX_NAME.DCE + '-B', 3],
-        [MARKET_SUFFIX_NAME.DCE + '-M', 3],
-        [MARKET_SUFFIX_NAME.DCE + '-Y', 3],
-        [MARKET_SUFFIX_NAME.DCE + '-P', 3],
-        [MARKET_SUFFIX_NAME.DCE + '-J', 3],
-        [MARKET_SUFFIX_NAME.DCE + '-I', 3],
+        [MARKET_SUFFIX_NAME.DCE + '-C', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.DCE + '-L', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.DCE + '-V', { Time: 0, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.DCE + '-A', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.DCE + '-B', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.DCE + '-M', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.DCE + '-Y', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.DCE + '-P', { Time: 3, Decimal: 0 }],
+        [MARKET_SUFFIX_NAME.DCE + '-J', { Time: 3, Decimal: 1 }],
+        [MARKET_SUFFIX_NAME.DCE + '-I', { Time: 3, Decimal: 1 }],
         //中期所 
-        [MARKET_SUFFIX_NAME.CFFEX + '-T', 1],
+        [MARKET_SUFFIX_NAME.CFFEX + '-T', { Time: 1, Decimal: 3 }],
     ]);
 
-    this.GetSplitData = function (upperSymbol)
+    this.GetData = function (upperSymbol) 
     {
         var oneWord = upperSymbol.charAt(0);
-        var twoWords = upperSymbol.substr(0,2);
-        var oneWordName = null, twoWordsName=null;
+        var twoWords = upperSymbol.substr(0, 2);
+        var oneWordName = null, twoWordsName = null;
 
         if (MARKET_SUFFIX_NAME.IsDCE(upperSymbol))  //大连商品交易所
         {
-            oneWordName = MARKET_SUFFIX_NAME.DCE+'-'+oneWord;
+            oneWordName = MARKET_SUFFIX_NAME.DCE + '-' + oneWord;
             twoWordsName = MARKET_SUFFIX_NAME.DCE + '-' + twoWords;
         }
         else if (MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))  //上期所
@@ -509,19 +745,33 @@ function FuturesTimeData()
             twoWordsName = MARKET_SUFFIX_NAME.CZCE + '-' + twoWords;
         }
 
-        if (MAP_TWOWORDS.has(twoWordsName))
+        if (MAP_TWOWORDS.has(twoWordsName)) 
         {
-            var index=MAP_TWOWORDS.get(twoWordsName);
-            return TIME_SPLIT[index];
+            return MAP_TWOWORDS.get(twoWordsName);
         }
 
-        if (MAP_ONEWORD.has(oneWordName))
+        if (MAP_ONEWORD.has(oneWordName)) 
         {
-            var index =MAP_ONEWORD.get(oneWordName);
-            return TIME_SPLIT[index];
+            return MAP_ONEWORD.get(oneWordName);
         }
 
         return null;
+    }
+
+    this.GetSplitData = function (upperSymbol)
+    {
+        var data = this.GetData(upperSymbol);
+        if (!data) return null;
+
+        return TIME_SPLIT[data.Time];
+    }
+
+    this.GetDecimal = function (upperSymbol)    //期货价格小数位数
+    {
+        var data = this.GetData(upperSymbol);
+        if (!data) return 2;
+
+        return data.Decimal;
     }
 }
 
@@ -537,5 +787,5 @@ module.exports =
         MinuteCoordinateData: g_MinuteCoordinateData,
         MinuteTimeStringData: g_MinuteTimeStringData,
         MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
-    }
+    },
 };
