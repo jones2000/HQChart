@@ -612,11 +612,13 @@ function JSChart(element) {
 }
 
 //初始化
-JSChart.Init = function (uielement) {
-  var jsChartControl = new JSChart(uielement);
-  jsChartControl.OnSize();
+JSChart.Init = function (uielement) 
+{
+    console.log('[JSChart.Init] uielement', uielement);
+    var jsChartControl = new JSChart(uielement);
+    jsChartControl.OnSize();
 
-  return jsChartControl;
+    return jsChartControl;
 }
 
 JSChart.SetDomain = function (domain, cacheDomain) {
@@ -1306,12 +1308,14 @@ function SelectRectData() {
 }
 
 //坐标信息
-function CoordinateInfo() {
-  this.Value;                                                 //坐标数据
-  this.Message = new Array();                                   //坐标输出文字信息
-  this.TextColor = g_JSChartResource.FrameSplitTextColor        //文字颜色
-  this.Font = g_JSChartResource.FrameSplitTextFont;             //字体
-  this.LineColor = g_JSChartResource.FrameSplitPen;             //线段颜色
+function CoordinateInfo() 
+{
+    this.Value;                                                 //坐标数据
+    this.Message = new Array();                                   //坐标输出文字信息
+    this.TextColor = g_JSChartResource.FrameSplitTextColor        //文字颜色
+    this.Font = g_JSChartResource.FrameSplitTextFont;             //字体
+    this.LineColor = g_JSChartResource.FrameSplitPen;             //线段颜色
+    this.LineType = 1;                                            //线段类型 -1 不画线段
 }
 
 
@@ -1670,7 +1674,7 @@ function AverageWidthFrame() {
         if (x > right) break;
         if (xPrev != null && Math.abs(x - xPrev) < this.MinXDistance) continue;
 
-        if (this.IsShowXLine) 
+        if (this.IsShowXLine && this.VerticalInfo[i].LineType > 0) 
         {
             this.Canvas.strokeStyle = this.VerticalInfo[i].LineColor;
             this.Canvas.beginPath();
@@ -1738,44 +1742,63 @@ function AverageWidthFrame() {
   }
 }
 
-function MinuteFrame() {
-  this.newMethod = AverageWidthFrame;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function MinuteFrame() 
+{
+    this.newMethod = AverageWidthFrame;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.DrawFrame = function () {
-    this.SplitXYCoordinate();
+    this.MinXDistance=10;
 
-    this.DrawTitleBG();
-    this.DrawHorizontal();
-    this.DrawVertical();
-  }
+    this.DrawFrame = function () 
+    {
+        this.SplitXYCoordinate();
 
-  //分割x,y轴坐标信息
-  this.SplitXYCoordinate = function () {
-    if (this.XYSplit == false) return;
-    if (this.YSplitOperator != null) this.YSplitOperator.Operator();
-    if (this.XSplitOperator != null) this.XSplitOperator.Operator();
-  }
-
-  this.GetXFromIndex = function (index) {
-    var count = this.XPointCount - 1;
-
-    if (count == 1) {
-      if (index == 0) return this.ChartBorder.GetLeft();
-      else return this.ChartBorder.GetRight();
+        this.DrawTitleBG();
+        this.DrawHorizontal();
+        this.DrawVertical();
     }
-    else if (count <= 0) {
-      return this.ChartBorder.GetLeft();
+
+    //分割x,y轴坐标信息
+    this.SplitXYCoordinate = function () 
+    {
+        if (this.XYSplit == false) return;
+        if (this.YSplitOperator != null) this.YSplitOperator.Operator();
+        if (this.XSplitOperator != null) this.XSplitOperator.Operator();
     }
-    else if (index >= count) {
-      return this.ChartBorder.GetRight();
+
+    this.GetXFromIndex = function (index) 
+    {
+        var count = this.XPointCount - 1;
+
+        if (count == 1) 
+        {
+            if (index == 0) return this.ChartBorder.GetLeft();
+            else return this.ChartBorder.GetRight();
+        }
+        else if (count <= 0) 
+        {
+            return this.ChartBorder.GetLeft();
+        }
+        else if (index >= count) 
+        {
+            return this.ChartBorder.GetRight();
+        }
+        else 
+        {
+            var offset = this.ChartBorder.GetLeft() + this.ChartBorder.GetWidth() * index / count;
+            return offset;
+        }
     }
-    else {
-      var offset = this.ChartBorder.GetLeft() + this.ChartBorder.GetWidth() * index / count;
-      return offset;
+
+    //X坐标转x轴数值
+    this.GetXData = function (x) 
+    {
+        if (x <= this.ChartBorder.GetLeft()) return 0;
+        if (x >= this.ChartBorder.GetRight()) return this.XPointCount;
+
+        return (x - this.ChartBorder.GetLeft()) * (this.XPointCount * 1.0 / this.ChartBorder.GetWidth());
     }
-  }
 }
 
 function MinuteHScreenFrame() {
@@ -5107,84 +5130,101 @@ function ChartStraightArea() {
 }
 
 //分钟线
-function ChartMinutePriceLine() {
-  this.newMethod = ChartLine;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function ChartMinutePriceLine() 
+{
+    this.newMethod = ChartLine;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.YClose;
+    this.YClose;
 
-  this.Draw = function () {
-    if (this.NotSupportMessage) {
-      this.DrawNotSupportmessage();
-      return;
+    this.Draw = function () 
+    {
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        var isHScreen = (this.ChartFrame.IsHScreen === true);
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen === true) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+        var minuteCount = this.ChartFrame.MinuteCount;
+
+        var bFirstPoint = true;
+        var drawCount = 0;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(value);
+
+            if (bFirstPoint) 
+            {
+                this.Canvas.strokeStyle = this.Color;
+                this.Canvas.beginPath();
+                if (isHScreen) this.Canvas.moveTo(y, x);
+                else this.Canvas.moveTo(x, y);
+                bFirstPoint = false;
+            }
+            else 
+            {
+                if (isHScreen) this.Canvas.lineTo(y, x);
+                else this.Canvas.lineTo(x, y);
+            }
+
+            ++drawCount;
+
+            if (drawCount >= minuteCount) //上一天的数据和这天地数据线段要断开
+            {
+                bFirstPoint = true;
+                this.Canvas.stroke();
+                drawCount = 0;
+            }
+        }
+
+        if (drawCount > 0)
+        this.Canvas.stroke();
     }
 
-    var isHScreen = (this.ChartFrame.IsHScreen === true);
-    var dataWidth = this.ChartFrame.DataWidth;
-    var distanceWidth = this.ChartFrame.DistanceWidth;
-    var chartright = this.ChartBorder.GetRight();
-    if (isHScreen === true) chartright = this.ChartBorder.GetBottom();
-    var xPointCount = this.ChartFrame.XPointCount;
+    this.GetMaxMin = function ()
+    {
+        var xPointCount = this.ChartFrame.XPointCount;
+        var range = {};
+        if (this.YClose == null) return range;
 
-    var bFirstPoint = true;
-    var drawCount = 0;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (value == null) continue;
+        range.Min = this.YClose;
+        range.Max = this.YClose;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (!value) continue;
 
-      var x = this.ChartFrame.GetXFromIndex(j);
-      var y = this.ChartFrame.GetYFromData(value);
+            if (range.Max == null) range.Max = value;
+            if (range.Min == null) range.Min = value;
 
-      if (bFirstPoint) {
-        this.Canvas.strokeStyle = this.Color;
-        this.Canvas.beginPath();
-        if (isHScreen) this.Canvas.moveTo(y, x);
-        else this.Canvas.moveTo(x, y);
-        bFirstPoint = false;
-      }
-      else {
-        if (isHScreen) this.Canvas.lineTo(y, x);
-        else this.Canvas.lineTo(x, y);
-      }
+            if (range.Max < value) range.Max = value;
+            if (range.Min > value) range.Min = value;
+        }
 
-      ++drawCount;
+        if (range.Max == this.YClose && range.Min == this.YClose) 
+        {
+            range.Max = this.YClose + this.YClose * 0.1;
+            range.Min = this.YClose - this.YClose * 0.1;
+            return range;
+        }
+
+        var distance = Math.max(Math.abs(this.YClose - range.Max), Math.abs(this.YClose - range.Min));
+        range.Max = this.YClose + distance;
+        range.Min = this.YClose - distance;
+
+        return range;
     }
-
-    if (drawCount > 0)
-      this.Canvas.stroke();
-  }
-
-  this.GetMaxMin = function () {
-    var xPointCount = this.ChartFrame.XPointCount;
-    var range = {};
-    if (this.YClose == null) return range;
-
-    range.Min = this.YClose;
-    range.Max = this.YClose;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (!value) continue;
-
-      if (range.Max == null) range.Max = value;
-      if (range.Min == null) range.Min = value;
-
-      if (range.Max < value) range.Max = value;
-      if (range.Min > value) range.Min = value;
-    }
-
-    if (range.Max == this.YClose && range.Min == this.YClose) {
-      range.Max = this.YClose + this.YClose * 0.1;
-      range.Min = this.YClose - this.YClose * 0.1;
-      return range;
-    }
-
-    var distance = Math.max(Math.abs(this.YClose - range.Max), Math.abs(this.YClose - range.Min));
-    range.Max = this.YClose + distance;
-    range.Min = this.YClose - distance;
-
-    return range;
-  }
 }
 
 //MACD森林线 支持横屏
@@ -6785,7 +6825,7 @@ function FrameSplitMinuteX()
         const minuteCoordinate = JSCommonCoordinateData.MinuteCoordinateData;
         var xcoordinateData = minuteCoordinate.GetCoordinateData(this.Symbol,width);
         var minuteCount = xcoordinateData.Count;
-        var minuteMiddleCount = xcoordinateData.MiddleCount;
+        var minuteMiddleCount = xcoordinateData.MiddleCount > 0 ? xcoordinateData.MiddleCount : parseInt(minuteCount / 2);;
 
         var xcoordinate = xcoordinateData.Data;
         this.Frame.XPointCount = 243;
@@ -6812,8 +6852,9 @@ function FrameSplitMinuteX()
             {
                 var info = new CoordinateInfo();
                 info.Value = j * minuteCount + minuteMiddleCount;
-                this.Frame.VerticalInfo.push(info);
+                info.LineType=-1;
                 if (this.ShowText) info.Message[0] = IFrameSplitOperator.FormatDateString(this.DayData[i].Date,'MM-DD');
+                this.Frame.VerticalInfo.push(info);
 
                 var info = new CoordinateInfo();
                 info.Value = (j + 1) * minuteCount;

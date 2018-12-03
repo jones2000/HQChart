@@ -1974,6 +1974,7 @@ function CoordinateInfo()
     this.TextColor=g_JSChartResource.FrameSplitTextColor        //文字颜色
     this.Font=g_JSChartResource.FrameSplitTextFont;             //字体
     this.LineColor=g_JSChartResource.FrameSplitPen;             //线段颜色
+    this.LineType=1;                                            //线段类型 -1 不画线段
 }
 
 
@@ -2343,12 +2344,15 @@ function AverageWidthFrame()
             var x=this.GetXFromIndex(this.VerticalInfo[i].Value);
             if (x>right) break;
             if (xPrev!=null && Math.abs(x-xPrev)<this.MinXDistance) continue;
-
-            this.Canvas.strokeStyle=this.VerticalInfo[i].LineColor;
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(ToFixedPoint(x),top);
-            this.Canvas.lineTo(ToFixedPoint(x),bottom);
-            this.Canvas.stroke();
+            
+            if (this.VerticalInfo[i].LineType>0)
+            {
+                this.Canvas.strokeStyle=this.VerticalInfo[i].LineColor;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(ToFixedPoint(x),top);
+                this.Canvas.lineTo(ToFixedPoint(x),bottom);
+                this.Canvas.stroke();
+            }
 
             if (this.VerticalInfo[i].Message[0]!=null)
             {
@@ -2446,6 +2450,18 @@ function MinuteFrame()
             return offset;
         }
     }
+
+     //X坐标转x轴数值
+     this.GetXData=function(x)
+     {
+        var count=this.XPointCount-1;
+        if (count<0) count=0;
+
+         if (x<=this.ChartBorder.GetLeft()) return 0;
+         if (x>=this.ChartBorder.GetRight()) return count;
+ 
+         return (x-this.ChartBorder.GetLeft())*(count*1.0/this.ChartBorder.GetWidth());
+     }
 }
 
 //走势图 横屏框架
@@ -8024,7 +8040,7 @@ function FrameSplitMinutePriceY()
         var distance=(max-min)/(showCount-1);
         const minDistance=[1, 0.1, 0.01, 0.001, 0.0001];
         var defaultfloatPrecision=2;    //默认小数位数IsFundSymbol();
-        var upperSymbol=this.Symbol.toUpperCase();
+        var upperSymbol=this.Symbol?this.Symbol.toUpperCase():'';
         if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision=3;    //基金3位小数
         else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision=g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
         if (distance<minDistance[defaultfloatPrecision]) 
@@ -8069,37 +8085,6 @@ function FrameSplitMinutePriceY()
 
 }
 
-//沪深走势图时间刻度
-var SHZE_MINUTE_X_COORDINATE=
-[
-    [0,     0,"rgb(200,200,200)",   "09:30"],
-    [31,	0,"RGB(200,200,200)",	"10:00"],
-	[61,	0,"RGB(200,200,200)",	"10:30"],
-	[91,	0,"RGB(200,200,200)",	"11:00"],
-	[122,	1,"RGB(200,200,200)",	"13:00"],
-	[152,	0,"RGB(200,200,200)",	"13:30"],
-	[182,	0,"RGB(200,200,200)",	"14:00"],
-	[212,	0,"RGB(200,200,200)",	"14:30"],
-	[242,	1,"RGB(200,200,200)",	""] // 15:00
-];
-
-//港股走势图时间刻度
-var HK_MINUTE_X_COORDINATE=
-[
-    [0,		1,"RGB(200,200,200)",	"09:30"],
-	[30,	0,"RGB(200,200,200)",	"10:00"],
-	[60,	1,"RGB(200,200,200)",	"10:30"],
-	[90,	0,"RGB(200,200,200)",	"11:00"],
-	[120,	1,"RGB(200,200,200)",	"11:30"],
-	[151,	0,"RGB(200,200,200)",	"13:00"],
-	[181,	1,"RGB(200,200,200)",	"13:30"],
-	[211,	0,"RGB(200,200,200)",	"14:00"],
-	[241,	1,"RGB(200,200,200)",	"14:30"],
-	[271,	0,"RGB(200,200,200)",	"15:00"],
-	[301,	1,"RGB(200,200,200)",	"15:30"],
-	[331,	1,"RGB(200,200,200)",	""] //16:00
-];
-
 function FrameSplitMinuteX()
 {
     this.newMethod=IFrameSplitOperator;   //派生
@@ -8122,8 +8107,8 @@ function FrameSplitMinuteX()
 
         const minuteCoordinate = g_MinuteCoordinateData;
         var xcoordinateData = minuteCoordinate.GetCoordinateData(this.Symbol,width);
-        var minuteCount=xcoordinateData.Count;;
-        var minuteMiddleCount=xcoordinateData.MiddleCount;
+        var minuteCount=xcoordinateData.Count;
+        var minuteMiddleCount=xcoordinateData.MiddleCount>0? xcoordinateData.MiddleCount: parseInt(minuteCount/2);
         var xcoordinate = xcoordinateData.Data;
 
         this.Frame.XPointCount=minuteCount*this.DayCount;
@@ -8147,8 +8132,9 @@ function FrameSplitMinuteX()
             {
                 var info=new CoordinateInfo();
                 info.Value=j*minuteCount+minuteMiddleCount;
-                this.Frame.VerticalInfo.push(info);
+                info.LineType=-1;    //线段不画
                 if (this.ShowText) info.Message[0]=IFrameSplitOperator.FormatDateString(this.DayData[i].Date, this.ShowFormate==0?'YYYY-MM-DD':'MM-DD');
+                this.Frame.VerticalInfo.push(info);
 
                 var info=new CoordinateInfo();
                 info.Value=(j+1)*minuteCount;
