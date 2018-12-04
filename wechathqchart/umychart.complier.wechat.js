@@ -5070,14 +5070,15 @@ function JSDraw(errorHandler, symbolData)
         let mapIcon = new Map([
             [1, { Symbol: '↑', Color: 'rgb(238,44,44)' }], [2, { Symbol: '↓', Color: 'rgb(0,139,69)' }],
             [3, { Symbol: '😧' }], [4, { Symbol: '😨' }], [5, { Symbol: '😁' }], [6, { Symbol: '😱' }],
-            [7, { Symbol: 'B', Color: 'rgb(238,44,44)' }], [8, { Symbol: 'S', Color: 'rgb(0,139,69)' }],
+            [7, { Symbol: '◼', Color: 'rgb(238,44,44)' }], [8, { Symbol: '◆', Color: 'rgb(0,139,69)' }],
             [9, { Symbol: '💰' }], [10, { Symbol: '📪' }], [11, { Symbol: '👆' }], [12, { Symbol: '👇' }],
+            [13, { Symbol: 'B', Color: 'rgb(178,34,34)' },], [14, { Symbol: 'S', Color: 'rgb(0,139,69)' }],
             [36, { Symbol: 'Χ', Color: 'rgb(238,44,44)' }], [37, { Symbol: 'X', Color: 'rgb(0,139,69)' }],
             [38, { Symbol: '▲', Color: 'rgb(238,44,44)' }], [39, { Symbol: '▼', Color: 'rgb(0,139,69)' }],
         ]);
 
         let icon = mapIcon.get(type);
-        if (!icon) icon = { Symbol: '🚩' };
+        if (!icon) icon = { Symbol: '●', Color: 'rgb(0,139,69)'};
         let drawData = [];
         let result = { DrawData: drawData, DrawType: 'DRAWICON', Icon: icon };
         if (condition.length <= 0) return result;

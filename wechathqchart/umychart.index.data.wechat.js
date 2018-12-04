@@ -77,7 +77,7 @@ JSIndexScript.prototype.BOLL=function()
 {
     let data=
     {
-        Name:'BOLL', Description:'布林线', IsMainIndex:true,
+        Name: 'BOLL', Description: '布林线', IsMainIndex: true, KLineType: 2,
         Args:[ { Name:'M', Value:20} ],
         Script: //脚本
 'BOLL:MA(CLOSE,M);\n\

@@ -5064,6 +5064,7 @@ function JSDraw(errorHandler,symbolData)
             [3,{Symbol:'😧'} ],[4,{Symbol:'😨'} ],[5,{Symbol:'😁'} ],[6,{Symbol:'😱'} ],
             [7,{Symbol:'B',Color:'rgb(238,44,44)'} ],[8,{Symbol:'S',Color:'rgb(0,139,69)'} ],
             [9,{Symbol:'💰'} ],[10,{Symbol:'📪'} ],[11,{Symbol:'👆'} ],[12,{Symbol:'👇'} ],
+            [13,{Symbol:'B',Color:'rgb(178,34,34)'}, ],[14,{Symbol:'S',Color:'rgb(0,139,69)'} ],
             [36,{Symbol:'Χ',Color:'rgb(238,44,44)'} ],[37,{Symbol:'X',Color:'rgb(0,139,69)'} ],
             [38,{Symbol:'▲',Color:'rgb(238,44,44)'} ],[39,{Symbol:'▼',Color:'rgb(0,139,69)'} ],
         ]);
@@ -7306,6 +7307,9 @@ function ScriptIndex(name,script,args,option)
     this.LockFont=null;
     this.LockCount=20;
 
+    this.KLineType=null;
+    if (option && option.KLineType) this.KLineType=option.KLineType;
+
     if (option && option.Lock) 
     {
         if (option.Lock.IsLocked==true) this.IsLocked=true;  //指标上锁
@@ -7690,7 +7694,8 @@ function ScriptIndex(name,script,args,option)
         let titleIndex=windowIndex+1;
         chartText.Data.Data=varItem.Draw.DrawData;
         chartText.Text=varItem.Draw.Icon.Symbol;
-        if (varItem.Draw.Icon.Color) chartText.Color=varItem.Draw.Icon.Color;
+        if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
+        else if (varItem.Draw.Icon.Color) chartText.Color=varItem.Draw.Icon.Color;
         else chartText.Color='rgb(0,0,0)';
 
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
@@ -7698,6 +7703,22 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chartText);
     }
 
+    //创建K线
+    this.CreateSelfKLine=function(hqChart,windowIndex,hisData)
+    {
+        let chart=new ChartKLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name="Self Kline"
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data=hisData
+        chart.IsShowMaxMinPrice=false;
+        chart.IsShowKTooltip=false;
+        chart.DrawType=this.KLineType;
+
+        hqChart.ChartPaint.push(chart);
+    }
 
     this.BindData=function(hqChart,windowIndex,hisData)
     {
@@ -7706,6 +7727,9 @@ function ScriptIndex(name,script,args,option)
 
         if (this.OutVar==null || this.OutVar.length<0) return;
 
+        //叠加一个K线背景
+        if (this.KLineType!=null && this.KLineType>=0) this.CreateSelfKLine(hqChart,windowIndex,hisData);
+        
         for(let i in this.OutVar)
         {
             let item=this.OutVar[i];
