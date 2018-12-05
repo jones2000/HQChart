@@ -4939,6 +4939,35 @@ function JSDraw(errorHandler,symbolData)
         return result;
     }
 
+    //满足条件画一根K线
+    this.DRAWKLINE_IF=function(condition,high,open,low,close)
+    {
+        let drawData=[];
+        let result={DrawData:drawData, DrawType:'DRAWKLINE_IF'};
+        let count=Math.max(condition.length,high.length, open.length,low.length,close.length);
+
+        for(let i=0;i<count;++i)
+        {
+            let item={Open:null,High:null, Low:null, Close:null};
+
+            if (i<high.length && i<open.length && i<low.length && i<close.length && i<condition.length)
+            {
+                if (condition[i])
+                {
+                    item.Open=open[i];
+                    item.High=high[i];
+                    item.Low=low[i];
+                    item.Close=close[i];
+                }
+            }
+
+            drawData[i]=item;
+        }
+
+
+        return result;
+    }
+
     /*
     PLOYLINE 折线段
     在图形上绘制折线段。
@@ -5160,7 +5189,7 @@ JSDraw.prototype.IsNumber=function(value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'DRAWLINE','DRAWBAND','DRAWKLINE','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON']);
+    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON']);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -6994,6 +7023,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWKLINE(args[0],args[1],args[2],args[3]);
                 node.Out=[];
                 break;
+            case 'DRAWKLINE_IF':
+                node.Draw=this.Draw.DRAWKLINE_IF(args[0],args[1],args[2],args[3],args[4]);
+                node.Out=[];
+                break;
             case 'PLOYLINE':
             case 'POLYLINE':
                 node.Draw=this.Draw.POLYLINE(args[0],args[1]);
@@ -7307,7 +7340,7 @@ function ScriptIndex(name,script,args,option)
     this.LockFont=null;
     this.LockCount=20;
 
-    this.KLineType=null;
+    this.KLineType==null;
     if (option && option.KLineType) this.KLineType=option.KLineType;
 
     if (option && option.Lock) 
@@ -7634,6 +7667,9 @@ function ScriptIndex(name,script,args,option)
         chart.IsShowMaxMinPrice=false;
         chart.IsShowKTooltip=false;
 
+        if (varItem.Color)  //如果设置了颜色,使用外面设置的颜色
+            chart.UnchagneColor=chart.DownColor=chart.UpColor=this.GetColor(varItem.Color);
+
         hqChart.ChartPaint.push(chart);
     }
 
@@ -7724,11 +7760,16 @@ function ScriptIndex(name,script,args,option)
     {
         //清空指标图形
         hqChart.DeleteIndexPaint(windowIndex);
+        if (windowIndex==0) hqChart.ShowKLine(true);
 
         if (this.OutVar==null || this.OutVar.length<0) return;
 
         //叠加一个K线背景
-        if (this.KLineType!=null && this.KLineType>=0) this.CreateSelfKLine(hqChart,windowIndex,hisData);
+        if (this.KLineType!=null)
+        {
+            if (this.KLineType===0 || this.KLineType===1 || this.KLineType===2) this.CreateSelfKLine(hqChart,windowIndex,hisData);
+            else if (this.KLineType===-1 && windowIndex==0) hqChart.ShowKLine(false);
+        }
         
         for(let i in this.OutVar)
         {
@@ -7754,6 +7795,9 @@ function ScriptIndex(name,script,args,option)
                         this.CreateBand(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWKLINE':
+                        this.CreateKLine(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWKLINE_IF':
                         this.CreateKLine(hqChart,windowIndex,item,i);
                         break;
                     case 'POLYLINE':

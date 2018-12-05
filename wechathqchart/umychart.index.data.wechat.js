@@ -1,7 +1,11 @@
 /*
     开源项目 https://github.com/jones2000/HQChart
 
-    指标数据脚本
+    指标数据脚本 系统内置指标都写在这里
+    Name：指标名字
+    Description：指标描述信息
+    IsMainIndex：是否是主图指标 true=主图指标 false=副图指标
+    KLineType:K线设置 -1=主图不显示K线(只在主图有效) 0=在副图显示K线 1=在副图显示K线(收盘价线) 2=在副图显示K线(美国线)
 */
 
 function JSIndexScript()
@@ -43,6 +47,7 @@ JSIndexScript.prototype.Get=function(id)
             ['SCR', this.SCR], ['ASR', this.ASR],['SAR',this.SAR],
 
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
+            ['操盘BS点', this.FXG_BSPoint],
 
             ['飞龙四式', this.Dragon4_Main], ['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis], ['融资占比', this.MarginProportion],
@@ -1871,6 +1876,34 @@ JSIndexScript.prototype.EMPTY = function ()
         Script: //脚本
             'VAR2:=C;'
     };
+
+    return data;
+}
+
+JSIndexScript.prototype.FXG_BSPoint = function () 
+{
+    let data =
+        {
+            Name: '操盘BS点', Description: '操盘BS点', IsMainIndex: true,
+            Args: [],
+            Script: //脚本
+                'MA5:MA(CLOSE,5);\n\
+        MA13:MA(CLOSE,13);\n\
+        MA21:MA(CLOSE,21);\n\
+        MA34:MA(CLOSE,34);\n\
+        {MA55:MA(CLOSE,55),COLOR0000FF;}\n\
+        {MA120:=MA(CLOSE,120),COLORFFFF00;}\n\
+        天使:=EMA(C,2),COLOR000000;\n\
+        魔鬼:=EMA(SLOPE(C,21)*20+C,42),COLOR000000;\n\
+        买:=CROSS(天使,魔鬼);\n\
+        卖:=CROSS(魔鬼,天使);\n\
+        DRAWICON(买,L*0.99,13),COLORYELLOW;\n\
+        DRAWICON(卖,H*1.01,14),COLORGREEN;\n\
+        DRAWKLINE_IF(天使>=魔鬼,HIGH,CLOSE,LOW,OPEN),COLORRED;\n\
+        DRAWKLINE_IF(天使<魔鬼,HIGH,CLOSE,LOW,OPEN),COLORBLUE;\n\
+        DRAWKLINE_IF(CROSS(天使,魔鬼),HIGH,CLOSE,LOW,OPEN),COLORYELLOW;\n\
+        DRAWKLINE_IF(CROSS(魔鬼,天使),HIGH,CLOSE,LOW,OPEN),COLORBLACK;'
+        };
 
     return data;
 }

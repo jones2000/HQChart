@@ -8271,7 +8271,7 @@ function ChartCorssCursor()
 
         var left=this.Frame.ChartBorder.GetLeft();
         var right=this.Frame.ChartBorder.GetRight();
-        var top=this.Frame.ChartBorder.GetTopEx();
+        var top=this.Frame.ChartBorder.GetTopTitle();
         var bottom=this.Frame.ChartBorder.GetBottom();
 
         this.PointY=[[left,y],[right,y]];
@@ -8292,7 +8292,7 @@ function ChartCorssCursor()
             for(var i in this.Frame.SubFrame)
             {
                 var frame=this.Frame.SubFrame[i].Frame;
-                top=frame.ChartBorder.GetTopEx();
+                top=frame.ChartBorder.GetTopTitle();
                 bottom=frame.ChartBorder.GetBottom();
                 this.Canvas.moveTo(ToFixedPoint(x),top);
                 this.Canvas.lineTo(ToFixedPoint(x),bottom);
@@ -8407,7 +8407,7 @@ function ChartCorssCursor()
             {
                 var frame=this.Frame.SubFrame[i].Frame;
                 this.Canvas.moveTo(frame.ChartBorder.GetLeft(),ToFixedPoint(y));
-                this.Canvas.lineTo(frame.ChartBorder.GetRightEx(),ToFixedPoint(y));
+                this.Canvas.lineTo(frame.ChartBorder.GetRightTitle(),ToFixedPoint(y));
             }
         }
         else
@@ -11796,6 +11796,13 @@ function KLineChartContainer(uielement)
          var titleIndex=windowIndex+1;
          this.TitlePaint[titleIndex].Data=[];
          this.TitlePaint[titleIndex].Title=null;
+    }
+
+    //显示隐藏主图K线
+    this.ShowKLine=function(isShow)
+    {
+        if (this.ChartPaint.length<=0 || !this.ChartPaint[0]) return;
+        this.ChartPaint[0].IsShow=isShow;
     }
 
     //切换成 脚本指标

@@ -4947,6 +4947,33 @@ function JSDraw(errorHandler, symbolData)
         return result;
     }
 
+    //满足条件画一根K线
+    this.DRAWKLINE_IF = function (condition, high, open, low, close) 
+    {
+        let drawData = [];
+        let result = { DrawData: drawData, DrawType: 'DRAWKLINE_IF' };
+        let count = Math.max(condition.length, high.length, open.length, low.length, close.length);
+
+        for (let i = 0; i < count; ++i) {
+            let item = { Open: null, High: null, Low: null, Close: null };
+
+            if (i < high.length && i < open.length && i < low.length && i < close.length && i < condition.length) 
+            {
+                if (condition[i]) 
+                {
+                    item.Open = open[i];
+                    item.High = high[i];
+                    item.Low = low[i];
+                    item.Close = close[i];
+                }
+            }
+
+            drawData[i] = item;
+        }
+
+        return result;
+    }
+
     /*
     PLOYLINE 折线段
     在图形上绘制折线段。
@@ -5168,7 +5195,7 @@ JSDraw.prototype.IsNumber = function (value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER','DRAWICON']);
+    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER','DRAWICON']);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -6987,6 +7014,10 @@ function JSExecute(ast,option)
                 break;
             case 'DRAWKLINE':
                 node.Draw = this.Draw.DRAWKLINE(args[0], args[1], args[2], args[3]);
+                node.Out = [];
+                break;
+            case 'DRAWKLINE_IF':
+                node.Draw = this.Draw.DRAWKLINE_IF(args[0], args[1], args[2], args[3], args[4]);
                 node.Out = [];
                 break;
             case 'PLOYLINE':

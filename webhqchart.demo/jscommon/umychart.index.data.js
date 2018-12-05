@@ -1,5 +1,9 @@
 /*
-    指标数据脚本
+    指标数据脚本 系统内置指标都写在这里
+    Name：指标名字
+    Description：指标描述信息
+    IsMainIndex：是否是主图指标 true=主图指标 false=副图指标
+    KLineType:K线设置 -1=主图不显示K线(只在主图有效) 0=在副图显示K线 1=在副图显示K线(收盘价线) 2=在副图显示K线(美国线)
 */
 
 function JSIndexScript()
@@ -42,7 +46,11 @@ JSIndexScript.prototype.Get=function(id)
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],
-
+            
+            //外包指标
+            ['放心股-操盘BS点',this.FXG_BSPoint],
+            ['放心股-涨停多空线',this.FXG_INDEX],
+            ['放心股-涨停吸筹区',this.FXG_INDEX2],
 
             ['TEST', this.TEST] //测试用
         ]
@@ -1854,6 +1862,89 @@ JSIndexScript.prototype.MarginProportion=function()
         Args: [],
         Script: //脚本
         '占比:MARGIN(2);'
+    };
+
+    return data; 
+}
+
+JSIndexScript.prototype.FXG_BSPoint=function()
+{
+    let data =
+    {
+        Name: '操盘BS点', Description: '操盘BS点', IsMainIndex: true,
+        Args: [],
+        Script: //脚本
+        'MA5:MA(CLOSE,5);\n\
+        MA13:MA(CLOSE,13);\n\
+        MA21:MA(CLOSE,21);\n\
+        MA34:MA(CLOSE,34);\n\
+        {MA55:MA(CLOSE,55),COLOR0000FF;}\n\
+        {MA120:=MA(CLOSE,120),COLORFFFF00;}\n\
+        天使:=EMA(C,2),COLOR000000;\n\
+        魔鬼:=EMA(SLOPE(C,21)*20+C,42),COLOR000000;\n\
+        买:=CROSS(天使,魔鬼);\n\
+        卖:=CROSS(魔鬼,天使);\n\
+        DRAWICON(买,L*0.99,13),COLORYELLOW;\n\
+        DRAWICON(卖,H*1.01,14),COLORGREEN;\n\
+        DRAWKLINE_IF(天使>=魔鬼,HIGH,CLOSE,LOW,OPEN),COLORRED;\n\
+        DRAWKLINE_IF(天使<魔鬼,HIGH,CLOSE,LOW,OPEN),COLORBLUE;\n\
+        DRAWKLINE_IF(CROSS(天使,魔鬼),HIGH,CLOSE,LOW,OPEN),COLORYELLOW;\n\
+        DRAWKLINE_IF(CROSS(魔鬼,天使),HIGH,CLOSE,LOW,OPEN),COLORBLACK;'
+    };
+
+    return data; 
+}
+
+JSIndexScript.prototype.FXG_INDEX=function()
+{
+    let data =
+    {
+        Name: '涨停多空线', Description: '涨停多空线', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+        '做多能量线: SMA((CLOSE-LLV(LOW,9))/(HHV(HIGH,9)-LLV(LOW,9))*100,5,1)-8,COLORRED,LINETHICK3;\n\
+        做空能量线: SMA((HHV(HIGH,36)-CLOSE)/(HHV(HIGH,36)-LLV(LOW,36))*100,2,1),COLORGREEN,LINETHICK3;\n\
+        20,POINTDOT,COLORF00FF0;\n\
+        50,POINTDOT,COLORGREEN;\n\
+        80,POINTDOT,COLORLIBLUE;'
+    };
+
+    return data; 
+}
+
+JSIndexScript.prototype.FXG_INDEX2=function()
+{
+    let data =
+    {
+        Name: '涨停吸筹区', Description: '涨停吸筹区', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+        'VAR0:=EMA(HHV(HIGH,500),21); \n\
+        VAR1:=EMA(HHV(HIGH,250),21);\n\
+        VAR2:=EMA(HHV(HIGH,90),21); \n\
+        VAR3:=EMA(LLV(LOW,500),21); \n\
+        VAR4:=EMA(LLV(LOW,250),21); \n\
+        VAR5:=EMA(LLV(LOW,90),21);\n\
+        \n\
+        VAR6:=EMA((VAR3*0.96+VAR4*0.96+VAR5*0.96+VAR0*0.558+VAR1*0.558+VAR2*0.558)/6,21); \n\
+        VAR7:=EMA((VAR3*1.25+VAR4*1.23+VAR5*1.2+VAR0*0.55+VAR1*0.55+VAR2*0.65)/6,21); \n\
+        VAR8:=EMA((VAR3*1.3+VAR4*1.3+VAR5*1.3+VAR0*0.68+VAR1*0.68+VAR2*0.68)/6,21); \n\
+        VAR9:=EMA((VAR6*3+VAR7*2+VAR8)/6*1.738,21); \n\
+        VAR10:=REF(LOW,1); \n\
+        VAR11:=SMA(ABS(LOW-VAR10),3,1)/SMA(MAX(LOW-VAR10,0),3,1)*100; \n\
+        VAR12:=EMA(IFF(CLOSE*1.35<=VAR9,VAR11*10,VAR11/10),3); \n\
+        VAR13:=LLV(LOW,30); \n\
+        VAR14:=HHV(VAR12,30); \n\
+        VAR15:=IFF(MA(CLOSE,58),1,0); \n\
+        VAR16:=EMA(IFF(LOW<=VAR13,(VAR12+VAR14*2)/2,0),3)/618*VAR15;\n\
+        \n\
+        资金入场:IFF(VAR16>0,VAR16,0),LINETHICK,LINETHICK2, COLORFF0000; \n\
+        \n\
+        A1:IFF(资金入场>0,资金入场*1.2,0),STICK,LINETHICK5, COLORFF0000;\n\
+        A2:IFF(资金入场>0,资金入场*0.8,0),STICK,LINETHICK5, COLORFF6600;\n\
+        A3:IFF(资金入场>0,资金入场*0.6,0),STICK,LINETHICK5, COLORFF9900;\n\
+        A4:IFF(资金入场>0,资金入场*0.4,0) ,STICK,LINETHICK5,COLORFFCC00;\n\
+        A5:IFF(资金入场>0,资金入场*0.2,0) ,STICK,LINETHICK5,COLORFFFF00;'
     };
 
     return data; 
