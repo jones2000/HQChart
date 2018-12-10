@@ -1,5 +1,10 @@
 /*
-    指标数据脚本
+    指标数据脚本 系统内置指标都写在这里
+    Name：指标名字
+    Description：指标描述信息
+    IsMainIndex：是否是主图指标 true=主图指标 false=副图指标
+    KLineType:K线设置 -1=主图不显示K线(只在主图有效) 0=在副图显示K线 1=在副图显示K线(收盘价线) 2=在副图显示K线(美国线)
+    InstructionType: 1=专家指示  2=五彩K线
 */
 
 function JSIndexScript()
@@ -19,21 +24,53 @@ JSIndexScript.prototype.Get=function(id)
             ['DMI', this.DMI],['CR', this.CR],['PSY', this.PSY],
             ['CCI', this.CCI],['DMA', this.DMA],['TRIX', this.TRIX],
             ['VR', this.VR],['EMV', this.EMV],['ROC', this.ROC],
-            ['MIM', this.MIM],['FSL', this.FSL],['CYR', this.CYR],
+            ['MTM', this.MIM],['FSL', this.FSL],['CYR', this.CYR],
             ['MASS', this.MASS],['WAD', this.WAD],['CHO', this.CHO],
             ['ADTM', this.ADTM],['HSL', this.HSL],['BIAS36', this.BIAS36],
             ['BIAS_QL', this.BIAS_QL],['DPO', this.DPO],['OSC', this.OSC],
             ['ATR', this.ATR],['NVI', this.NVI],['PVI', this.PVI],
             ['UOS', this.UOS],['CYW', this.CYW],['LON', this.LON],
-            ['NDB', this.NDB],
+            ['NDB', this.NDB],['SKDJ',this.SKDJ],['KD',this.KD],['FKX',this.FKX],
+            ['DKCOL',this.DKCOL],['UDL',this.UDL],['MFI',this.MFI],['LWR',this.LWR],
+            ['MARSI',this.MARSI],['CYD',this.CYD],['CYF',this.CYF],['TAPI',this.TAPI],
+            ['VMACD',this.VMACD],['QACD',this.QACD],['VPT',this.VPT],['WVAD',this.WVAD],
+            ['DBQR',this.DBQR],['JS',this.JS],['CYE',this.CYE],['QR',this.QR],['GDX',this.GDX],
+            ['JLHB',this.JLHB],['PCNT',this.PCNT],['BTX', this.BTX],['AMO',this.AMO],
+            ['VRSI',this.VRSI],['HSCOL',this.HSCOL],['DBQRV',this.DBQRV],['DBLB',this.DBLB],
+            ['ACD',this.ACD],['EXPMA',this.EXPMA],['EXPMA_S',this.EXPMA_S],['HMA',this.HMA],
+            ['LMA',this.LMA],['VMA',this.VMA],['AMV',this.AMV],['BBIBOLL',this.BBIBOLL],
+            ['ALLIGAT',this.ALLIGAT],['ZX',this.ZX],['XS',this.XS],['XS2',this.XS2],
+            ['SG-XDT',this.SG_XDT],['SG-SMX',this.SG_SMX],['SG-LB',this.SG_LB],['SG-PF',this.SG_PF],
+            ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
+            ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
+            ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
-            ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],
+            ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
+            
+            //外包指标
+            ['放心股-操盘BS点',this.FXG_BSPoint],
+            ['放心股-涨停多空线',this.FXG_INDEX],
+            ['放心股-涨停吸筹区',this.FXG_INDEX2],
 
+            //五彩K线(函数COLOR_开头)
+            ['五彩K线-十字星',this.COLOR_KSTAR1],['五彩K线-早晨之星',this.COLOR_KSTAR2],['五彩K线-黄昏之星',this.COLOR_KSTAR3],['五彩K线-长十字',this.COLOR_SHI1],
+            ['五彩K线-身怀六甲',this.COLOR_K220],['五彩K线-三个白武士',this.COLOR_K300],['五彩K线-三只乌鸦',this.COLOR_K310],['五彩K线-光头阳线',this.COLOR_K380],
+            ['五彩K线-光脚阴线',this.COLOR_K390],['五彩K线-垂死十字',this.COLOR_K134],['五彩K线-早晨十字星',this.COLOR_K140],['五彩K线-黄昏十字星',this.COLOR_K150],
+            ['五彩K线-射击之星',this.COLOR_K160],['五彩K线-倒转锤头',this.COLOR_K165],['五彩K线-锤头',this.COLOR_K170],['五彩K线-吊颈',this.COLOR_K180],
+            ['五彩K线-穿头破脚',this.COLOR_K190],['五彩K线-出水芙蓉',this.COLOR_CSFR],['五彩K线-乌云盖顶',this.COLOR_WYGD],['五彩K线-曙光初现',this.COLOR_SGCJ],
+            ['五彩K线-十字胎',this.COLOR_SZTAI],['五彩K线-剑',this.COLOR_SWORD],['五彩K线-平顶',this.COLOR_PINGDING],['五彩K线-平底',this.COLOR_PINGDI],
+            ['五彩K线-大阳烛',this.COLOR_DAYANZHU],['五彩K线-大阴烛',this.COLOR_DAYINGZHU],
+            
+            ['五彩K线-好友反攻',this.COLOR_HYFG],['五彩K线-跳空缺口',this.COLOR_TKQK],
+            ['五彩K线-双飞乌鸦',this.COLOR_SFWY],['五彩K线-上升三部曲',this.COLOR_SSSBQ],['五彩K线-下跌三部曲',this.COLOR_XDSBQ],['五彩K线-长下影',this.COLOR_CHXY],
+            ['五彩K线-长上影',this.COLOR_CHSY],['五彩K线-分离',this.COLOR_FENLI],
 
             ['TEST', this.TEST] //测试用
         ]
     );
+
+    //console.log('[JSIndexScript] load index data. count=',DataMap.size);
 
     var func=DataMap.get(id);
     if (func) return func();
@@ -61,7 +98,7 @@ JSIndexScript.prototype.BOLL=function()
 {
     let data=
     {
-        Name:'BOLL', Description:'布林线', IsMainIndex:true,
+        Name:'BOLL', Description:'布林线', IsMainIndex:true,KLineType:2,
         Args:[ { Name:'M', Value:20} ],
         Script: //脚本
 'BOLL:MA(CLOSE,M);\n\
@@ -445,11 +482,11 @@ MAROC:MA(ROC,M);'
     return data;
 }
 
-JSIndexScript.prototype.MIM=function()
+JSIndexScript.prototype.MTM=function()
 {
     let data=
     {
-        Name:'MIM', Description:'动量线', IsMainIndex:false,
+        Name:'MTM', Description:'动量线', IsMainIndex:false,
         Args:[ { Name:'N', Value:12},{ Name:'M', Value:6} ],
         Script: //脚本
 'MTM:CLOSE-REF(CLOSE,N);\n\
@@ -758,6 +795,962 @@ MDK10: MA(DK, P2);'
     return data;
 }
 
+JSIndexScript.prototype.SKDJ = function () 
+{
+    let data =
+    {
+        Name: 'SKDJ', Description: '慢速随机指标', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 9 }, { Name: 'M', Value: 3 }],
+        Script: //脚本
+'LOWV:=LLV(LOW,N);\n\
+HIGHV:=HHV(HIGH,N);\n\
+RSV:=EMA((CLOSE-LOWV)/(HIGHV-LOWV)*100,M);\n\
+K:EMA(RSV,M);\n\
+D:MA(K,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.KD = function () 
+{
+    let data =
+    {
+        Name: 'KD', Description: '随机指标KD', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 9 }, { Name: 'M1', Value: 3 },{ Name: 'M2', Value: 3 }],
+        Script: //脚本
+'RSV:=(CLOSE-LLV(LOW,N))/(HHV(HIGH,N)-LLV(LOW,N))*100;\n\
+K:SMA(RSV,M1,1);\n\
+D:SMA(K,M2,1);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.FKX=function()
+{
+    let data=
+    {
+        Name:'FKX', Description:'反K线', IsMainIndex:true,
+        Args:[  ],
+        Script: //脚本
+            'DRAWKLINE(-LOW, -OPEN, -HIGH, -CLOSE);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.DKCOL = function () 
+{
+    let data =
+    {
+        Name: 'DKCOL', Description: '多空能量柱(适用于分时主图)', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+'FF:=(C-REF(C,N))/REF(C,N);\n\
+STICKLINE(FF>0,DYNAINFO(3),DYNAINFO(3)*(1+FF),0.5,0),COLORRED;\n\
+STICKLINE(FF<0,DYNAINFO(3),DYNAINFO(3)*(1+FF),0.5,0),COLORGREEN;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.UDL = function () 
+{
+    let data =
+    {
+        Name: 'UDL', Description: '引力线', IsMainIndex: false,
+        Args: [{ Name: 'N1', Value: 3 },{ Name: 'N2', Value: 5 },{ Name: 'N3', Value: 10 },{ Name: 'N4', Value: 20 },{ Name: 'M', Value: 6 }],
+        Script: //脚本
+'UDL:(MA(CLOSE,N1)+MA(CLOSE,N2)+MA(CLOSE,N3)+MA(CLOSE,N4))/4;\n\
+MAUDL:MA(UDL,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MFI = function () 
+{
+    let data =
+    {
+        Name: 'MFI', Description: '资金流量指标', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 14 },{ Name: 'N2', Value: 6 }],
+        Script: //脚本
+'TYP := (HIGH + LOW + CLOSE)/3;\n\
+V1:=SUM(IF(TYP>REF(TYP,1),TYP*VOL,0),N)/SUM(IF(TYP<REF(TYP,1),TYP*VOL,0),N);\n\
+MFI:100-(100/(1+V1));'
+
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.LWR = function () 
+{
+    let data =
+    {
+        Name: 'LWR', Description: 'LWR威廉指标', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 9 },{ Name: 'M1', Value: 3 },{ Name: 'M2', Value: 3 }],
+        Script: //脚本
+'RSV:= (HHV(HIGH,N)-CLOSE)/(HHV(HIGH,N)-LLV(LOW,N))*100;\n\
+LWR1:SMA(RSV,M1,1);\n\
+LWR2:SMA(LWR1,M2,1);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MARSI = function () 
+{
+    let data =
+    {
+        Name: 'MARSI', Description: '相对强弱平均线', IsMainIndex: false,
+        Args: [{ Name: 'M1', Value: 10 },{ Name: 'M2', Value: 6 }],
+        Script: //脚本
+'DIF:=CLOSE-REF(CLOSE,1);\n\
+VU:=IF(DIF>=0,DIF,0);\n\
+VD:=IF(DIF<0,-DIF,0);\n\
+MAU1:=MEMA(VU,M1);\n\
+MAD1:=MEMA(VD,M1);\n\
+MAU2:=MEMA(VU,M2);\n\
+MAD2:=MEMA(VD,M2);\n\
+RSI10:MA(100*MAU1/(MAU1+MAD1),M1);\n\
+RSI6:MA(100*MAU2/(MAU2+MAD2),M2);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYD = function () 
+{
+    let data =
+    {
+        Name: 'CYD', Description: '承接因子', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 21 }],
+        Script: //脚本
+'CYDS:WINNER(CLOSE)/(VOL/CAPITAL);\n\
+CYDN:WINNER(CLOSE)/MA(VOL/CAPITAL,N);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYF = function () 
+{
+    let data =
+    {
+        Name: 'CYF', Description: '市场能量', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 21 }],
+        Script: //脚本
+'CYF:100-100/(1+EMA(HSL,N));'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TAPI = function () 
+{
+    let data =
+    {
+        Name: 'TAPI', Description: '加权指数成交值', IsMainIndex: false,
+        Args: [{ Name: 'M', Value: 6 }],
+        Script: //脚本
+'TAPI:AMOUNT/INDEXC;\n\
+MATAIP:MA(TAPI,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VMACD = function () 
+{
+    let data =
+    {
+        Name: 'VMACD', Description: '量平滑异同平均', IsMainIndex: false,
+        Args: [{ Name: 'SHORT', Value: 12 },{ Name: 'LONG', Value: 26 },{ Name: 'MID', Value: 9 }],
+        Script: //脚本
+'DIF:EMA(VOL,SHORT)-EMA(VOL,LONG);\n\
+DEA:EMA(DIF,MID);\n\
+MACD:DIF-DEA,COLORSTICK;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.QACD = function () 
+{
+    let data =
+    {
+        Name: 'QACD', Description: '快速异同平均', IsMainIndex: false,
+        Args: [{ Name: 'N1', Value: 12 },{ Name: 'N2', Value: 26 },{ Name: 'M', Value: 9 }],
+        Script: //脚本
+'DIF:EMA(CLOSE,N1)-EMA(CLOSE,N2);\n\
+MACD:EMA(DIF,M);\n\
+DDIF:DIF-MACD;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VPT = function () 
+{
+    let data =
+    {
+        Name: 'VPT', Description: '量价曲线', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 51 },{ Name: 'M', Value: 6 }],
+        Script: //脚本
+'VPT:SUM(VOL*(CLOSE-REF(CLOSE,1))/REF(CLOSE,1),N);\n\
+MAVPT:MA(VPT,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.WVAD = function () 
+{
+    let data =
+    {
+        Name: 'WVAD', Description: '威廉变异离散量', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 24 },{ Name: 'M', Value: 6 }],
+        Script: //脚本
+'WVAD:SUM((CLOSE-OPEN)/(HIGH-LOW)*VOL,N)/10000;\n\
+MAWVAD:MA(WVAD,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.DBQR = function () 
+{
+    let data =
+    {
+        Name: 'WVAD', Description: '对比强弱', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 },{ Name: 'M1', Value: 10 },{ Name: 'M2', Value: 20 },{ Name: 'M3', Value: 60 }],
+        Script: //脚本
+'ZS:(INDEXC-REF(INDEXC,N))/REF(INDEXC,N);\n\
+GG:(CLOSE-REF(CLOSE,N))/REF(CLOSE,N);\n\
+MADBQR1:MA(GG,M1);\n\
+MADBQR2:MA(GG,M2);\n\
+MADBQR3:MA(GG,M3);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.JS = function () 
+{
+    let data =
+    {
+        Name: 'JS', Description: '加速线', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 },{ Name: 'M1', Value: 5 },{ Name: 'M2', Value: 10 },{ Name: 'M3', Value: 20 }],
+        Script: //脚本
+'JS:100*(CLOSE-REF(CLOSE,N))/(N*REF(CLOSE,N));\n\
+MAJS1:MA(JS,M1);\n\
+MAJS2:MA(JS,M2);\n\
+MAJS3:MA(JS,M3);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYE = function () 
+{
+    let data =
+    {
+        Name: 'CYE', Description: '市场趋势', IsMainIndex: false,
+        Args: [ ],
+        Script: //脚本
+'MAL:=MA(CLOSE,5);\n\
+MAS:=MA(MA(CLOSE,20),5);\n\
+CYEL:(MAL-REF(MAL,1))/REF(MAL,1)*100;\n\
+CYES:(MAS-REF(MAS,1))/REF(MAS,1)*100;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.QR = function () 
+{
+    let data =
+    {
+        Name: 'QR', Description: '强弱指标', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 21 } ],
+        Script: //脚本
+'个股: (CLOSE-REF(CLOSE,N))/REF(CLOSE,N)*100; \n\
+大盘: (INDEXC-REF(INDEXC,N))/REF(INDEXC,N)*100; \n\
+强弱值:EMA(个股-大盘,2),COLORSTICK;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.GDX = function () 
+{
+    let data =
+    {
+        Name: 'GDX', Description: '轨道线', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 30 } ,{ Name: 'M', Value: 9 }],
+        Script: //脚本
+'AA:=ABS((2*CLOSE+HIGH+LOW)/4-MA(CLOSE,N))/MA(CLOSE,N); \n\
+轨道:DMA(CLOSE,AA);\n\
+压力线:(1+M/100)*轨道; \n\
+支撑线:(1-M/100)*轨道;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.JLHB = function () 
+{
+    let data =
+    {
+        Name: 'JLHB', Description: '绝路航标', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 7 } ,{ Name: 'M', Value: 5 }],
+        Script: //脚本
+'VAR1:=(CLOSE-LLV(LOW,60))/(HHV(HIGH,60)-LLV(LOW,60))*80; \n\
+B:SMA(VAR1,N,1); \n\
+VAR2:SMA(B,M,1); \n\
+绝路航标:IF(CROSS(B,VAR2) AND B<40,50,0);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.PCNT = function () 
+{
+    let data =
+    {
+        Name: 'PCNT', Description: '幅度比', IsMainIndex: false,
+        Args: [{ Name: 'M', Value: 5 }],
+        Script: //脚本
+'PCNT:(CLOSE-REF(CLOSE,1))/CLOSE*100;\n\
+MAPCNT:EXPMEMA(PCNT,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.BTX = function () 
+{
+    let data =
+    {
+        Name: 'BTX', Description: '宝塔线', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'B1:=REF(C,1);\n\
+B2:= REF(C, 2);\n\
+SS:= IF(C > REF(C, 1) AND REF(C, 1) >= REF(C, 2), 1, IF(C < REF(C, 1) AND REF(C, 1) <= REF(C, 2), -1, IF(C > REF(C, 2) AND REF(C, 2) > REF(C, 1), 2, IF(C < REF(C, 2) AND REF(C, 2) < REF(C, 1), -2, 0))));\n\
+SM:= IF(REF(SS, 1) <> 0, REF(SS, 1), IF(REF(SS, 2) <> 0, REF(SS, 2), IF(REF(SS, 3) <> 0, REF(SS, 3), IF(REF(SS, 5) <> 0, REF(SS, 5), IF(REF(SS, 6) <> 0, REF(SS, 6), IF(REF(SS, 7) <> 0, REF(SS, 7), 0))))));\n\
+MC:= IF(REF(SS, 1) <> 0, B2, IF(SM > 0, MIN(B1, B2), MAX(B1, B2)));\n\
+TOW1:= IF(C > REF(C, 1), C, REF(C, 1));\n\
+TOW2:= IF((SS == -1 OR SS == -2) AND SM > 0, B2, TOW1);\n\
+TOWER:= IF(TOW1 > TOW2, TOW1, TOW2);\n\
+STICKLINE(SS == 1 OR SM >= 1 AND SS == 0, B1, C, 10, 1), COLORRED;\n\
+STICKLINE(SS == -1 OR SM <= -1 AND SS == 0, B1, C, 10, 0), COLORCYAN;\n\
+STICKLINE(SS == 2, B2, C, 10, 1), COLORRED;\n\
+STICKLINE(SS == -2, B2, C, 10, 0), COLORCYAN;\n\
+STICKLINE((SS == -1 OR SS == -2) AND SM > 0, B2, B1, 10, 1), COLORRED;\n\
+STICKLINE((SS == 1 OR SS == 2) AND SM < 0, B2, B1, 10, 0), COLORCYAN;'
+        };
+
+    return data;
+}
+
+JSIndexScript.prototype.AMO = function () 
+{
+    let data =
+    {
+        Name: 'AMO', Description: '成交金额', IsMainIndex: false,
+        Args: [{ Name: 'M1', Value: 5 },{ Name: 'M2', Value: 10 }],
+        Script: //脚本
+'AMOW:AMOUNT/10000.0,VOLSTICK;\n\
+AMO1:MA(AMOW,M1);\n\
+AMO2:MA(AMOW,M2);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VRSI = function () 
+{
+    let data =
+    {
+        Name: 'VRSI', Description: '相对强弱量', IsMainIndex: false,
+        Args: [{ Name: 'N1', Value: 6 },{ Name: 'N2', Value: 12 },{ Name: 'N3', Value: 24 }],
+        Script: //脚本
+'LC:=REF(VOL,1);\n\
+RSI1:SMA(MAX(VOL-LC,0),N1,1)/SMA(ABS(VOL-LC),N1,1)*100;\n\
+RSI2:SMA(MAX(VOL-LC,0),N2,1)/SMA(ABS(VOL-LC),N2,1)*100;\n\
+RSI3:SMA(MAX(VOL-LC,0),N3,1)/SMA(ABS(VOL-LC),N3,1)*100;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.HSCOL = function () 
+{
+    let data =
+    {
+        Name: 'HSCOL', Description: '换手柱', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+'HSCOL:IF((SETCODE==0||SETCODE==1),100*VOL,VOL)/(FINANCE(7)/100),VOLSTICK;\n\
+MAHSL:MA(HSCOL,N);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.DBQRV = function () 
+{
+    let data =
+    {
+        Name: 'DBQRV', Description: '对比强弱量(需下载日线)', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+'ZS:(INDEXV-REF(INDEXV,N))/REF(INDEXV,N);\n\
+GG:(VOL-REF(VOL,N))/REF(VOL,N);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.DBLB = function () 
+{
+    let data =
+    {
+        Name: 'DBLB', Description: '对比量比(需下载日线)', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 },{ Name: 'M', Value: 5 }],
+        Script: //脚本
+'GG:=VOL/SUM(REF(VOL,1),N);\n\
+ZS:=INDEXV/SUM(REF(INDEXV,1),N);\n\
+DBLB:GG/ZS;\n\
+MADBLB:MA(DBLB,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ACD = function () 
+{
+    let data =
+    {
+        Name: 'ACD', Description: '升降线', IsMainIndex: false,
+        Args: [{ Name: 'M', Value: 20 }],
+        Script: //脚本
+'LC:=REF(CLOSE,1);\n\
+DIF:=CLOSE-IF(CLOSE>LC,MIN(LOW,LC),MAX(HIGH,LC));\n\
+ACD:SUM(IF(CLOSE==LC,0,DIF),0);\n\
+MAACD:EXPMEMA(ACD,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.EXPMA = function () 
+{
+    let data =
+    {
+        Name: 'EXPMA', Description: '指数平均线', IsMainIndex: true,
+        Args: [{ Name: 'M1', Value: 12 },{ Name: 'M2', Value: 50 }],
+        Script: //脚本
+'EXP1:EMA(CLOSE,M1);\n\
+EXP2:EMA(CLOSE,M2);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.EXPMA_S = function () 
+{
+    let data =
+    {
+        Name: 'EXPMA_S', Description: '指数平均线-副图', IsMainIndex: false,
+        Args: [{ Name: 'M1', Value: 12 },{ Name: 'M2', Value: 50 }],
+        Script: //脚本
+'EXP1:EMA(CLOSE,M1);\n\
+EXP2:EMA(CLOSE,M2);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.HMA = function () 
+{
+    let data =
+    {
+        Name: 'HMA', Description: '高价平均线', IsMainIndex: true,
+        Args: [{ Name: 'M1', Value: 6 },{ Name: 'M2', Value: 12 },{ Name: 'M3', Value: 30 },{ Name: 'M4', Value: 72 },{ Name: 'M5', Value: 144 }],
+        Script: //脚本
+'HMA1:MA(HIGH,M1);\n\
+HMA2:MA(HIGH,M2);\n\
+HMA3:MA(HIGH,M3);\n\
+HMA4:MA(HIGH,M4);\n\
+HMA5:MA(HIGH,M5);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.LMA = function () 
+{
+    let data =
+    {
+        Name: 'LMA', Description: '低价平均线', IsMainIndex: true,
+        Args: [{ Name: 'M1', Value: 6 },{ Name: 'M2', Value: 12 },{ Name: 'M3', Value: 30 },{ Name: 'M4', Value: 72 },{ Name: 'M5', Value: 144 }],
+        Script: //脚本
+'LMA1:MA(LOW,M1);\n\
+LMA2:MA(LOW,M2);\n\
+LMA3:MA(LOW,M3);\n\
+LMA4:MA(LOW,M4);\n\
+LMA5:MA(LOW,M5);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VMA = function () 
+{
+    let data =
+    {
+        Name: 'VMA', Description: '变异平均线', IsMainIndex: true,
+        Args: [{ Name: 'M1', Value: 6 },{ Name: 'M2', Value: 12 },{ Name: 'M3', Value: 30 },{ Name: 'M4', Value: 72 },{ Name: 'M5', Value: 144 }],
+        Script: //脚本
+'VV:=(HIGH+OPEN+LOW+CLOSE)/4;\n\
+VMA1:MA(VV,M1);\n\
+VMA2:MA(VV,M2);\n\
+VMA3:MA(VV,M3);\n\
+VMA4:MA(VV,M4);\n\
+VMA5:MA(VV,M5);'
+
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.AMV = function () 
+{
+    let data =
+    {
+        Name: 'AMV', Description: '成本价均线', IsMainIndex: false,
+        Args: [{ Name: 'M1', Value: 6 },{ Name: 'M2', Value: 12 },{ Name: 'M3', Value: 30 },{ Name: 'M4', Value: 72 },{ Name: 'M5', Value: 144 }],
+        Script: //脚本
+'AMOV:=VOL*(OPEN+CLOSE)/2;\n\
+AMV1:SUM(AMOV,M1)/SUM(VOL,M1);\n\
+AMV2:SUM(AMOV,M2)/SUM(VOL,M2);\n\
+AMV3:SUM(AMOV,M3)/SUM(VOL,M3);\n\
+AMV4:SUM(AMOV,M4)/SUM(VOL,M4);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.BBIBOLL = function () 
+{
+    let data =
+    {
+        Name: 'BBIBOLL', Description: '多空布林线', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 11 },{ Name: 'M', Value: 6 }],
+        Script: //脚本
+'CV:=CLOSE;\n\
+BBIBOLL:(MA(CV,3)+MA(CV,6)+MA(CV,12)+MA(CV,24))/4;\n\
+UPR:BBIBOLL+M*STD(BBIBOLL,N);\n\
+DWN:BBIBOLL-M*STD(BBIBOLL,N);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ALLIGAT = function () 
+{
+    let data =
+    {
+        Name: 'ALLIGAT', Description: '鳄鱼线', IsMainIndex: true,
+        Args: [],
+        Script: //脚本
+'NN:=(H+L)/2;\n\
+上唇:REF(MA(NN,5),3),COLOR40FF40;\n\
+牙齿:REF(MA(NN,8),5),COLOR0000C0;\n\
+下颚:REF(MA(NN,13),8),COLORFF4040;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ZX = function () 
+{
+    let data =
+    {
+        Name: 'ZX', Description: '重心线', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'AV:0.01*AMOUNT/VOL;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.XS = function () 
+{
+    let data =
+    {
+        Name: 'XS', Description: '薛斯通道', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 13 }],
+        Script: //脚本
+'VAR2:=CLOSE*VOL;\n\
+VAR3:=EMA((EMA(VAR2,3)/EMA(VOL,3)+EMA(VAR2,6)/EMA(VOL,6)+EMA(VAR2,12)/EMA(VOL,12)+EMA(VAR2,24)/EMA(VOL,24))/4,N);\n\
+SUP:1.06*VAR3;\n\
+SDN:VAR3*0.94;\n\
+VAR4:=EMA(CLOSE,9);\n\
+LUP:EMA(VAR4*1.14,5);\n\
+LDN:EMA(VAR4*0.86,5);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.XS2 = function () 
+{
+    let data =
+    {
+        Name: 'XS2', Description: '薛斯通道II', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 102 },{ Name: 'M', Value: 7 }],
+        Script: //脚本
+'AA:=MA((2*CLOSE+HIGH+LOW)/4,5); \n\
+通道1:AA*N/100; \n\
+通道2:AA*(200-N)/100; \n\
+CC:=ABS((2*CLOSE+HIGH+LOW)/4-MA(CLOSE,20))/MA(CLOSE,20); \n\
+DD:=DMA(CLOSE,CC); \n\
+通道3:(1+M/100)*DD; \n\
+通道4:(1-M/100)*DD;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SG_XDT = function () 
+{
+    let data =
+    {
+        Name: 'SG-XDT', Description: '心电图(需下载日线)', IsMainIndex: false,
+        Args: [{ Name: 'P1', Value: 5 },{ Name: 'P2', Value: 10 }],
+        Script: //脚本
+'QR:CLOSE/INDEXC*1000;\n\
+MQR1:MA(QR,5);\n\
+MQR2:MA(QR,10);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SG_SMX = function () 
+{
+    let data =
+    {
+        Name: 'SG-SMX', Description: '生命线(需下载日线)', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 50 }],
+        Script: //脚本
+'H1:=HHV(HIGH,N);\n\
+L1:=LLV(LOW,N);\n\
+H2:=HHV(INDEXH,N);\n\
+L2:=LLV(INDEXL,N);\n\
+ZY:=CLOSE/INDEXC*2000;\n\
+ZY1:EMA(ZY,3);\n\
+ZY2:EMA(ZY,17);\n\
+ZY3:EMA(ZY,34);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SG_LB = function () 
+{
+    let data =
+    {
+        Name: 'SG-LB', Description: '量比(需下载日线)', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'ZY2:=VOL/INDEXV*1000;\n\
+量比:ZY2;\n\
+MA5:MA(ZY2,5);\n\
+MA10:MA(ZY2,10);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SG_PF = function () 
+{
+    let data =
+    {
+        Name: 'SG-PF', Description: '强势股评分(需下载日线)', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'ZY1:=CLOSE/INDEXC*1000;\n\
+A1:=IF(ZY1>HHV(ZY1,3),10,0);\n\
+A2:=IF(ZY1>HHV(ZY1,5),15,0);\n\
+A3:=IF(ZY1>HHV(ZY1,10),20,0);\n\
+A4:=IF(ZY1>HHV(ZY1,2),10,0);\n\
+A5:=COUNT(ZY1>REF(ZY1,1) ,9)*5;\n\
+强势股评分:A1+A2+A3+A4+A5;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.RAD = function () 
+{
+    let data =
+    {
+        Name: 'RAD', Description: '威力雷达(需下载日线)', IsMainIndex: false,
+        Args: [{ Name: 'D', Value: 3 },{ Name: 'S', Value: 30 },{ Name: 'M', Value: 30 }],
+        Script: //脚本
+'SM:=(OPEN+HIGH+CLOSE+LOW)/4;\n\
+SMID:=MA(SM,D);\n\
+IM:=(INDEXO+INDEXH+INDEXL+INDEXC)/4;\n\
+IMID:=MA(IM,D);\n\
+SI1:=(SMID-REF(SMID,1))/SMID;\n\
+II:=(IMID-REF(IMID,1))/IMID;\n\
+RADER1:SUM((SI1-II)*2,S)*1000;\n\
+RADERMA:SMA(RADER1,M,1);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SHT = function () 
+{
+    let data =
+    {
+        Name: 'SHT', Description: '龙系短线', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+'VAR1:=MA((VOL-REF(VOL,1))/REF(VOL,1),5);\n\
+VAR2:=(CLOSE-MA(CLOSE,24))/MA(CLOSE,24)*100;\n\
+MY: VAR2*(1+VAR1);\n\
+SHT: MY, COLORSTICK;\n\
+SHTMA: MA(SHT,N);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ZLJC = function () 
+{
+    let data =
+    {
+        Name: 'ZLJC', Description: '主力进出', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'VAR1:=(CLOSE+LOW+HIGH)/3; \n\
+VAR2:=SUM(((VAR1-REF(LOW,1))-(HIGH-VAR1))*VOL/100000/(HIGH-LOW),0); \n\
+VAR3:=EMA(VAR2,1); \n\
+JCS:VAR3; \n\
+JCM:MA(VAR3,12); \n\
+JCL:MA(VAR3,26);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ZLMM = function () 
+{
+    let data =
+    {
+        Name: 'ZLMM', Description: '主力买卖', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'LC :=REF(CLOSE,1);\n\
+RSI2:=SMA(MAX(CLOSE-LC,0),12,1)/SMA(ABS(CLOSE-LC),12,1)*100;\n\
+RSI3:=SMA(MAX(CLOSE-LC,0),18,1)/SMA(ABS(CLOSE-LC),18,1)*100;\n\
+MMS:MA(3*RSI2-2*SMA(MAX(CLOSE-LC,0),16,1)/SMA(ABS(CLOSE-LC),16,1)*100,3);\n\
+MMM:EMA(MMS,8);\n\
+MML:MA(3*RSI3-2*SMA(MAX(CLOSE-LC,0),12,1)/SMA(ABS(CLOSE-LC),12,1)*100,5);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SLZT = function () 
+{
+    let data =
+    {
+        Name: 'SLZT', Description: '神龙在天', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'白龙: MA(CLOSE,125);\n\
+黄龙: 白龙+2*STD(CLOSE,170);\n\
+紫龙: 白龙-2*STD(CLOSE,145);\n\
+青龙: SAR(125,1,7), LINESTICK;\n\
+VAR2:=HHV(HIGH,70);\n\
+VAR3:=HHV(HIGH,20);\n\
+红龙: VAR2*0.83;\n\
+蓝龙: VAR3*0.91;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ADVOL = function () 
+{
+    let data =
+    {
+        Name: 'ADVOL', Description: '龙系离散量', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'A:=SUM(((CLOSE-LOW)-(HIGH-CLOSE))*VOL/10000/(HIGH-LOW),0);\n\
+ADVOL:A;\n\
+MA1:MA(A,30);\n\
+MA2:MA(MA1,100);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYC = function () 
+{
+    let data =
+    {
+        Name: 'CYC', Description: '成本均线', IsMainIndex: true,
+        Args: [{ Name: 'P1', Value: 5 },{ Name: 'P2', Value: 13 },{ Name: 'P3', Value: 34 }],
+        Script: //脚本
+'JJJ:=IF(DYNAINFO(8)>0.01,0.01*DYNAINFO(10)/DYNAINFO(8),DYNAINFO(3));\n\
+DDD:=(DYNAINFO(5)<0.01 || DYNAINFO(6)<0.01);\n\
+JJJT:=IF(DDD,1,(JJJ<(DYNAINFO(5)+0.01) && JJJ>(DYNAINFO(6)-0.01)));\n\
+CYC1:IF(JJJT,0.01*EMA(AMOUNT,P1)/EMA(VOL,P1),EMA((HIGH+LOW+CLOSE)/3,P1));\n\
+CYC2:IF(JJJT,0.01*EMA(AMOUNT,P2)/EMA(VOL,P2),EMA((HIGH+LOW+CLOSE)/3,P2));\n\
+CYC3:IF(JJJT,0.01*EMA(AMOUNT,P3)/EMA(VOL,P3),EMA((HIGH+LOW+CLOSE)/3,P3));\n\
+CYC4:IF(JJJT,DMA(AMOUNT/(100*VOL),100*VOL/FINANCE(7)),EMA((HIGH+LOW+CLOSE)/3,120));'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYS = function () 
+{
+    let data =
+    {
+        Name: 'CYS', Description: '市场盈亏', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'CYC13:EMA(AMOUNT,13)/EMA(VOL,13);\n\
+CYS:(CLOSE-CYC13)/CYC13*100;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYQKL = function () 
+{
+    let data =
+    {
+        Name: 'CYQKL', Description: '博弈K线长度', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'KL:100*(WINNER(CLOSE)-WINNER(OPEN));'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SCR = function () 
+{
+    let data =
+    {
+        Name: 'SCR', Description: '筹码集中度', IsMainIndex: false,
+        Args: [{ Name: 'P1', Value: 90 }],
+        Script: //脚本
+'A:=P1+(100-P1)/2;\n\
+B:=(100-P1)/2;\n\
+CC:=COST(A);\n\
+DD:=COST(B);\n\
+SCR:(CC-DD)/(CC+DD)*100/2;'
+
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.ASR = function () 
+{
+    let data =
+    {
+        Name: 'ASR', Description: '浮筹比例', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'ASR:(WINNER(C*1.1)-WINNER(C*0.9))/WINNER(HHV(H,0))*100;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SAR = function () 
+{
+    let data =
+    {
+        Name: 'SAR', Description: '抛物转向', IsMainIndex: true,
+        Args: [{ Name: 'P', Value: 10 },{ Name: 'STEP', Value: 2 },{ Name: 'MAXP', Value: 20 }],
+        Script: //脚本
+'S:SAR(P,STEP,MAXP),CIRCLEDOT;'
+
+    };
+
+    return data;
+}
+
 /*
     飞龙四式-主图
 */
@@ -882,10 +1875,586 @@ JSIndexScript.prototype.MarginProportion=function()
         Name: '融资占比(%)', Description: '融资占比', IsMainIndex: false,
         Args: [],
         Script: //脚本
-        '占比:MARGIN(1);'
+        '占比:MARGIN(2);'
     };
 
     return data; 
+}
+
+JSIndexScript.prototype.FXG_BSPoint=function()
+{
+    let data =
+    {
+        Name: '操盘BS点', Description: '操盘BS点', IsMainIndex: true,
+        Args: [],
+        Script: //脚本
+        'MA5:MA(CLOSE,5);\n\
+        MA13:MA(CLOSE,13);\n\
+        MA21:MA(CLOSE,21);\n\
+        MA34:MA(CLOSE,34);\n\
+        {MA55:MA(CLOSE,55),COLOR0000FF;}\n\
+        {MA120:=MA(CLOSE,120),COLORFFFF00;}\n\
+        天使:=EMA(C,2),COLOR000000;\n\
+        魔鬼:=EMA(SLOPE(C,21)*20+C,42),COLOR000000;\n\
+        买:=CROSS(天使,魔鬼);\n\
+        卖:=CROSS(魔鬼,天使);\n\
+        DRAWICON(买,L*0.99,13),COLORYELLOW;\n\
+        DRAWICON(卖,H*1.01,14),COLORGREEN;\n\
+        DRAWKLINE_IF(天使>=魔鬼,HIGH,CLOSE,LOW,OPEN),COLORRED;\n\
+        DRAWKLINE_IF(天使<魔鬼,HIGH,CLOSE,LOW,OPEN),COLORBLUE;\n\
+        DRAWKLINE_IF(CROSS(天使,魔鬼),HIGH,CLOSE,LOW,OPEN),COLORYELLOW;\n\
+        DRAWKLINE_IF(CROSS(魔鬼,天使),HIGH,CLOSE,LOW,OPEN),COLORBLACK;'
+    };
+
+    return data; 
+}
+
+JSIndexScript.prototype.FXG_INDEX=function()
+{
+    let data =
+    {
+        Name: '涨停多空线', Description: '涨停多空线', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+        '做多能量线: SMA((CLOSE-LLV(LOW,9))/(HHV(HIGH,9)-LLV(LOW,9))*100,5,1)-8,COLORRED,LINETHICK3;\n\
+        做空能量线: SMA((HHV(HIGH,36)-CLOSE)/(HHV(HIGH,36)-LLV(LOW,36))*100,2,1),COLORGREEN,LINETHICK3;\n\
+        20,POINTDOT,COLORF00FF0;\n\
+        50,POINTDOT,COLORGREEN;\n\
+        80,POINTDOT,COLORLIBLUE;'
+    };
+
+    return data; 
+}
+
+JSIndexScript.prototype.FXG_INDEX2=function()
+{
+    let data =
+    {
+        Name: '涨停吸筹区', Description: '涨停吸筹区', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+        'VAR0:=EMA(HHV(HIGH,500),21); \n\
+        VAR1:=EMA(HHV(HIGH,250),21);\n\
+        VAR2:=EMA(HHV(HIGH,90),21); \n\
+        VAR3:=EMA(LLV(LOW,500),21); \n\
+        VAR4:=EMA(LLV(LOW,250),21); \n\
+        VAR5:=EMA(LLV(LOW,90),21);\n\
+        \n\
+        VAR6:=EMA((VAR3*0.96+VAR4*0.96+VAR5*0.96+VAR0*0.558+VAR1*0.558+VAR2*0.558)/6,21); \n\
+        VAR7:=EMA((VAR3*1.25+VAR4*1.23+VAR5*1.2+VAR0*0.55+VAR1*0.55+VAR2*0.65)/6,21); \n\
+        VAR8:=EMA((VAR3*1.3+VAR4*1.3+VAR5*1.3+VAR0*0.68+VAR1*0.68+VAR2*0.68)/6,21); \n\
+        VAR9:=EMA((VAR6*3+VAR7*2+VAR8)/6*1.738,21); \n\
+        VAR10:=REF(LOW,1); \n\
+        VAR11:=SMA(ABS(LOW-VAR10),3,1)/SMA(MAX(LOW-VAR10,0),3,1)*100; \n\
+        VAR12:=EMA(IFF(CLOSE*1.35<=VAR9,VAR11*10,VAR11/10),3); \n\
+        VAR13:=LLV(LOW,30); \n\
+        VAR14:=HHV(VAR12,30); \n\
+        VAR15:=IFF(MA(CLOSE,58),1,0); \n\
+        VAR16:=EMA(IFF(LOW<=VAR13,(VAR12+VAR14*2)/2,0),3)/618*VAR15;\n\
+        \n\
+        资金入场:IFF(VAR16>0,VAR16,0),LINETHICK,LINETHICK2, COLORFF0000; \n\
+        \n\
+        A1:IFF(资金入场>0,资金入场*1.2,0),STICK,LINETHICK5, COLORFF0000;\n\
+        A2:IFF(资金入场>0,资金入场*0.8,0),STICK,LINETHICK5, COLORFF6600;\n\
+        A3:IFF(资金入场>0,资金入场*0.6,0),STICK,LINETHICK5, COLORFF9900;\n\
+        A4:IFF(资金入场>0,资金入场*0.4,0) ,STICK,LINETHICK5,COLORFFCC00;\n\
+        A5:IFF(资金入场>0,资金入场*0.2,0) ,STICK,LINETHICK5,COLORFFFF00;'
+    };
+
+    return data; 
+}
+
+JSIndexScript.prototype.NewsNegative=function()
+{
+    let data=
+        {
+            Name: '负面新闻', Description: '负面新闻统计', IsMainIndex: false,
+            Args: [{ Name: 'N', Value: 5 }, { Name: 'N2', Value: 10 }],
+            Script: //脚本
+'负面:NEWS(1);\n\
+MA1:MA(负面,N);\n\
+MA2:MA(负面,N2);'
+        };
+
+    return data;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+//五彩K线
+
+JSIndexScript.prototype.COLOR_KSTAR1=function()
+{
+    let data=
+    {
+        Name: '十字星', Description: '十字星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:CLOSE==OPEN&&HIGH>LOW;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_KSTAR2=function()
+{
+    let data=
+    {
+        Name: '早晨之星', Description: '早晨之星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:(REF(CLOSE,2)/REF(OPEN,2)<0.95) && (REF(OPEN,1) < REF(CLOSE,2)) && (ABS(REF(OPEN,1)-REF(CLOSE,1))/REF(CLOSE,1)<0.03) && CLOSE/OPEN>1.05 && CLOSE>REF(CLOSE,2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_KSTAR3=function()
+{
+    let data=
+    {
+        Name: '黄昏之星', Description: '黄昏之星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:REF(CLOSE,2)/REF(OPEN,2)>1.05 && REF(OPEN,1)>REF(CLOSE,2) && ABS(REF(OPEN,1)-REF(CLOSE,1))/REF(CLOSE,1)<0.03 && CLOSE/OPEN<0.95 && CLOSE<REF(CLOSE,2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SHI1=function()
+{
+    let data=
+    {
+        Name: '长十字', Description: '长十字', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:CLOSE==OPEN&&HIGH/LOW>1.03;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K220=function()
+{
+    let data=
+    {
+        Name: '身怀六甲', Description: '身怀六甲', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:ABS(REF(CLOSE,1)-REF(OPEN,1))/REF(CLOSE,1)>0.04&&\n\
+            ABS(CLOSE-OPEN)/CLOSE<0.005&&\n\
+            MAX(CLOSE,OPEN)<MAX(REF(CLOSE,1),REF(OPEN,1))&&\n\
+            MIN(CLOSE,OPEN)>MIN(REF(CLOSE,1),REF(OPEN,1));'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K300=function()
+{
+    let data=
+    {
+        Name: '三个白武士', Description: '三个白武士', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:UPNDAY(CLOSE,3)&&NDAY(CLOSE,OPEN,3);'
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.COLOR_K310=function()
+{
+    let data=
+    {
+        Name: '三只乌鸦', Description: '三只乌鸦', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:DOWNNDAY(CLOSE,3)&&NDAY(OPEN,CLOSE,3);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K380=function()
+{
+    let data=
+    {
+        Name: '光头阳线', Description: '光头阳线', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:HIGH==CLOSE&&HIGH>LOW;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K390=function()
+{
+    let data=
+    {
+        Name: '光脚阴线', Description: '光脚阴线', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:LOW==CLOSE&&HIGH>LOW;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K134=function()
+{
+    let data=
+    {
+        Name: '垂死十字', Description: '垂死十字', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:CLOSE==OPEN&&CLOSE==LOW&&CLOSE<HIGH;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K140=function()
+{
+    let data=
+    {
+        Name: '早晨十字星', Description: '早晨十字星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'KSTAR:REF(CLOSE,2)/REF(OPEN,2)<0.95&&\n\
+REF(OPEN,1)<REF(CLOSE,2)&&\n\
+REF(OPEN,1)==REF(CLOSE,1)&&\n\
+CLOSE/OPEN>1.05&&CLOSE>REF(CLOSE,2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K150=function()
+{
+    let data=
+    {
+        Name: '黄昏十字星', Description: '黄昏十字星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'KSTAR:REF(CLOSE,2)/REF(OPEN,2)>1.05&&\n\
+REF(OPEN,1)>REF(CLOSE,2)&&\n\
+REF(OPEN,1)=REF(CLOSE,1)&&\n\
+CLOSE/OPEN<0.95&&CLOSE<REF(CLOSE,2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K160=function()
+{
+    let data=
+    {
+        Name: '射击之星', Description: '射击之星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'KSTAR:MIN(OPEN,CLOSE)==LOW&&\n\
+HIGH-LOW>3*(MAX(OPEN,CLOSE)-LOW)&&\n\
+CLOSE>MA(CLOSE,5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K165=function()
+{
+    let data=
+    {
+        Name: '倒转锤头', Description: '倒转锤头', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'KSTAR:MIN(OPEN,CLOSE)==LOW&&\n\
+HIGH-LOW>3*(MAX(OPEN,CLOSE)-LOW)&&\n\
+CLOSE<MA(CLOSE,5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K170=function()
+{
+    let data=
+    {
+        Name: '锤头', Description: '锤头', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'OUT:HIGH==MAX(OPEN,CLOSE)&&\n\
+HIGH-LOW>3*(HIGH-MIN(OPEN,CLOSE))&&\n\
+CLOSE<MA(CLOSE,5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K180=function()
+{
+    let data=
+    {
+        Name: '吊颈', Description: '吊颈', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'OUT:HIGH==MAX(OPEN,CLOSE)&&\n\
+HIGH-LOW>3*(HIGH-MIN(OPEN,CLOSE))&&\n\
+CLOSE>MA(CLOSE,5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K190=function()
+{
+    let data=
+    {
+        Name: '穿头破脚', Description: '穿头破脚', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'OUT:(REF(CLOSE,1)/REF(OPEN,1)>1.03&&\n\
+CLOSE/OPEN<0.96&&\n\
+CLOSE<REF(OPEN,1)&&OPEN>REF(CLOSE,1))||\n\
+(REF(CLOSE,1)/REF(OPEN,1)<0.97&&\n\
+CLOSE/OPEN>1.04&&\n\
+CLOSE>REF(OPEN,1)&&OPEN<REF(CLOSE,1));'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SWORD=function()
+{
+    let data=
+    {
+        Name: '剑', Description: '剑', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'AA:=VOL>REF(VOL,1)||VOL>(CAPITAL*0.1);\n\
+BB:=OPEN>=(REF(HIGH,1))&&REF(HIGH,1)>(REF(HIGH,2)*1.06);\n\
+CC:=CLOSE>(REF(CLOSE,1))-(REF(CLOSE,1)*0.01);\n\
+DD:=CLOSE<(HIGH*0.965) && HIGH>(OPEN*1.05);\n\
+EE:=LOW<OPEN && LOW<CLOSE&&HIGH>(REF(CLOSE,1)*1.06);\n\
+FF:=(HIGH-(MAX(OPEN,CLOSE)))/2>(MIN(OPEN,CLOSE))-LOW;\n\
+GG:=(ABS(OPEN-CLOSE))/2<(MIN(OPEN,CLOSE)-LOW);\n\
+SWORDO:AA&&BB&&CC&&DD&&EE&&FF&&GG;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_CSFR=function()
+{
+    let data=
+    {
+        Name: '出水芙蓉', Description: '出水芙蓉', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'A:=CLOSE>OPEN;\n\
+B:=A&&CLOSE>MA(CLOSE,S)&&CLOSE>MA(CLOSE,M)&&CLOSE>MA(CLOSE,LL);\n\
+CC:=B&&OPEN<MA(CLOSE,M)&&OPEN<MA(CLOSE,LL);\n\
+CSFRO:CC&&(CLOSE-OPEN)>0.0618*CLOSE;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_WYGD=function()
+{
+    let data=
+    {
+        Name: '乌云盖顶', Description: '乌云盖顶', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( \n\
+REF(CLOSE,1)/REF(OPEN,1)>1.03 AND \n\
+CLOSE/OPEN<0.97 AND \n\
+OPEN>REF(CLOSE,1) AND CLOSE<REF(CLOSE,1), 3);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SGCJ=function()
+{
+    let data=
+    {
+        Name: '乌云盖顶', Description: '乌云盖顶', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( \n\
+REF(CLOSE,1)/REF(OPEN,1)<0.97 AND \n\
+CLOSE/OPEN>1.03 AND \n\
+OPEN<REF(CLOSE,1) AND CLOSE>REF(CLOSE,1), 3);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SZTAI=function()
+{
+    let data=
+    {
+        Name: '十字胎', Description: '十字胎', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( ABS(REF(CLOSE,1)-REF(OPEN,1))/REF(CLOSE,1) > 0.04 AND \n\
+CLOSE==OPEN AND CLOSE < MAX(REF(CLOSE,1),REF(OPEN,1)) AND \n\
+CLOSE > MIN(REF(CLOSE,1),REF(OPEN,1)), 2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_PINGDING=function()
+{
+    let data=
+    {
+        Name: '平顶', Description: '平顶', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET(ABS(HIGH-REF(HIGH,1))/HIGH<0.001,2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_PINGDI=function()
+{
+    let data=
+    {
+        Name: '平底', Description: '平底', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET((ABS(LOW-REF(LOW,1))/LOW<0.001 AND \n\
+ABS(REF(LOW,1)-REF(LOW,2))/REF(LOW,1)<=0.001),2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_DAYANZHU=function()
+{
+    let data=
+    {
+        Name: '大阳烛', Description: '大阳烛', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:CLOSE/OPEN>1.05 AND HIGH/LOW < CLOSE/OPEN+0.018;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_DAYINGZHU=function()
+{
+    let data=
+    {
+        Name: '大阴烛', Description: '大阴烛', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:OPEN/CLOSE > 1.05 AND HIGH/LOW < OPEN/CLOSE+0.018;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_HYFG=function()
+{
+    let data=
+    {
+        Name: '好友反攻', Description: '好友反攻', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( (REF(CLOSE,1)<REF(OPEN,1) AND \n\
+CLOSE>OPEN AND ABS(CLOSE-REF(CLOSE,1))/CLOSE<0.002),2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_TKQK=function()
+{
+    let data=
+    {
+        Name: '跳空缺口', Description: '跳空缺口', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( HIGH<REF(LOW,1) OR LOW>REF(HIGH,1),2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SFWY=function()
+{
+    let data=
+    {
+        Name: '双飞乌鸦', Description: '双飞乌鸦', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( REF(CLOSE,1)<REF(OPEN,1) AND CLOSE<OPEN AND CLOSE/OPEN<0.98,1);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SSSBQ=function()
+{
+    let data=
+    {
+        Name: '上升三部曲', Description: '上升三部曲', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( \n\
+REF(CLOSE,4)/REF(OPEN,4)>1.03 AND \n\
+REF(CLOSE,3)<REF(OPEN,3) AND \n\
+REF(CLOSE,2)<REF(OPEN,2) AND \n\
+REF(CLOSE,1)<REF(OPEN,1) AND \n\
+REF(LOW,4)<REF(LOW,3) AND \n\
+REF(LOW,4)<REF(LOW,2) AND \n\
+REF(LOW,4)<REF(LOW,1) AND \n\
+REF(HIGH,4)>REF(HIGH,3) AND \n\
+REF(HIGH,4)>REF(HIGH,2) AND \n\
+REF(HIGH,4)>REF(HIGH,1) AND \n\
+CLOSE/OPEN>1.03 AND \n\
+CLOSE>REF(CLOSE,4), 5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_XDSBQ=function()
+{
+    let data=
+    {
+        Name: '下跌三部曲', Description: '下跌三部曲', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( \n\
+REF(CLOSE,4)/REF(OPEN,4)<0.97 AND \n\
+REF(CLOSE,3)>REF(OPEN,3) AND \n\
+REF(CLOSE,2)>REF(OPEN,2) AND \n\
+REF(CLOSE,1)>REF(OPEN,1) AND \n\
+REF(LOW,4)<REF(LOW,3) AND \n\
+REF(LOW,4)<REF(LOW,2) AND \n\
+REF(LOW,4)<REF(LOW,1) AND \n\
+REF(HIGH,4)>REF(HIGH,3) AND \n\
+REF(HIGH,4)>REF(HIGH,2) AND \n\
+REF(HIGH,4)>REF(HIGH,1) AND \n\
+CLOSE/OPEN<0.97 AND \n\
+CLOSE<REF(CLOSE,4), 5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_CHXY=function()
+{
+    let data=
+    {
+        Name: '长下影', Description: '长下影', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR2:(MIN(CLOSE,OPEN)-LOW)/(HIGH-LOW)>0.667;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_CHSY=function()
+{
+    let data=
+    {
+        Name: '长上影', Description: '长上影', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR2:(HIGH-MAX(CLOSE,OPEN))/(HIGH-LOW)>0.667,COLORBLUE;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_FENLI=function()
+{
+    let data=
+    {
+        Name: '分离', Description: '分离', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( OPEN==REF(OPEN,1) AND (CLOSE-OPEN)*(REF(CLOSE,1)-REF(OPEN,1))<0,2);'
+    };
+
+    return data;
 }
 
 JSIndexScript.prototype.TEST = function () 

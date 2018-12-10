@@ -355,7 +355,7 @@ function Scanner(code, ErrorHandler)
                 else
                 {
                     str = this.Source.substr(this.Index, 2);
-                    if (str === '&&' || str === '||' || str === '==' || str === '!=' || str === '<=' || str === '>=' || str === '=>' || str==':=' || str=='OR')
+                    if (str === '&&' || str === '||' || str === '==' || str === '!=' || str === '<>' || str === '<=' || str === '>=' || str === '=>' || str==':=' || str=='OR')
                     {
                         this.Index += 2;
                     }
@@ -683,6 +683,7 @@ function Node()
     this.IsNeedSymbolData=false;        //是否需要下载股票数据
     this.IsNeedFinanceData=new Set();   //需要下载的财务数据
     this.IsNeedMarginData = new Set();
+    this.IsNeedNewsAnalysisData = new Set();      //新闻统计数据
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -706,12 +707,18 @@ function Node()
             jobs.push(jobID);
         }
 
+        //加载新闻统计
+        for (var jobID of this.IsNeedNewsAnalysisData) 
+        {
+            jobs.push(jobID);
+        }
+
         return jobs;
     }
 
     this.VerifySymbolVariable=function(varName)
     {
-        let setIndexName=new Set(['INDEXA','INDEXC','INDEXH','INDEXL',"INDEXO","INDEXV"]);
+        let setIndexName = new Set(['INDEXA', 'INDEXC', 'INDEXH', 'INDEXL', "INDEXO", "INDEXV", 'INDEXDEC', 'INDEXADV']);
         if (setIndexName.has(varName)) 
         {
             this.IsNeedIndexData=true;
@@ -759,6 +766,13 @@ function Node()
         {
             let jobID = JS_EXECUTE_JOB_ID.GetMarginJobID(args[0].Value);
             if (jobID && !this.IsNeedMarginData.has(jobID)) this.IsNeedMarginData.add(jobID);
+            return;
+        }
+
+        if (callee.Name === 'NEWS') 
+        {
+            let jobID = JS_EXECUTE_JOB_ID.GetNewsAnalysisID(args[0].Value);
+            if (jobID && !this.IsNeedNewsAnalysisData.has(jobID)) this.IsNeedNewsAnalysisData.add(jobID);
             return;
         }
 
@@ -876,6 +890,7 @@ function JSParser(code)
         '&': 5,
         '==': 6,
         '!=': 6,
+        '<>': 6,
         '===': 6,
         '!==': 6,
         '<': 7,
@@ -1829,7 +1844,7 @@ function JSAlgorithm(errorHandler, symbolData)
         let isNumber2=typeof(data2)=='number';
 
         //单数值比较
-        if (isNumber && isNumber2) return (data>=data2 ? 1 : 0);
+        if (isNumber && isNumber2) return (data<data2 ? 1 : 0);
 
         //都是数组比较
         let result=[];
@@ -1962,6 +1977,54 @@ function JSAlgorithm(errorHandler, symbolData)
 
         return result;
     }
+
+    //不等于
+    this.NEQ = function (data, data2) 
+    {
+        let isNumber = typeof (data) == 'number';
+        let isNumber2 = typeof (data2) == 'number';
+
+        //单数值比较
+        if (isNumber && isNumber2) return (data != data2 ? 1 : 0);
+
+        //都是数组比较
+        let result = [];
+        if (!isNumber && !isNumber2) 
+        {
+            let count = Math.max(data.length, data2.length);
+            for (let i = 0; i < count; ++i) 
+            {
+                result[i] = null; //初始化
+
+                if (i < data.length && i < data2.length) 
+                {
+                    if (!isNaN(data[i]) && !isNaN(data2[i])) result[i] = (data[i] != data2[i] ? 1 : 0);
+                }
+            }
+
+            return result;
+        }
+
+        if (isNumber)   //单数据-数组
+        {
+            for (let i in data2) 
+            {
+                result[i] = null;
+                if (!isNaN(data) && !isNaN(data2[i])) result[i] = (data != data2[i] ? 1 : 0);
+            }
+        }
+        else            //数组-单数据
+        {
+            for (let i in data) 
+            {
+                result[i] = null;
+                if (!isNaN(data[i]) && !isNaN(data2)) result[i] = (data[i] != data2 ? 1 : 0);
+            }
+        }
+
+        return result;
+    }
+
 
     //AND  &&
     this.And=function(data,data2)
@@ -2366,6 +2429,89 @@ function JSAlgorithm(errorHandler, symbolData)
     }
 
     /*
+    返回加权移动平均
+    用法:WMA(X,N):X的N日加权移动平均.
+    算法:Yn=(1*X1+2*X2+...+n*Xn)/(1+2+...+n)
+     */
+    this.WMA = function (data, dayCount) 
+    {
+        let result = [];
+        if (!data || !data.length) return result;
+        if (dayCount < 1) dayCount = 1;
+        var i = 0;
+        for (i = 0; i < data.length && !this.IsNumber(data[i]); ++i) 
+        {
+            result[i] = null;
+        }
+        var data = data.slice(0);
+        for (var days = 0; i < data.length; ++i, ++days) 
+        {
+            if (days < dayCount - 1) 
+            {
+                result[i] = null;
+                continue;
+            }
+            var preValue = data[i - (dayCount - 1)];
+            var sum = 0;
+            var count = 0;
+            for (var j = dayCount - 1; j >= 0; ++j) 
+            {
+                var value = data[i - j];
+                if (!this.IsNumber(value)) 
+                {
+                    value = preValue;
+                    data[i - j] = value;
+                }
+                else
+                    preValue = value;
+
+                count += dayCount - j;
+                sum += value * (dayCount - j);
+            }
+            result[i] = sum / count;
+        }
+        return result;
+    }
+
+    /*
+    返回平滑移动平均
+    用法:MEMA(X,N):X的N日平滑移动平均,如Y=(X+Y'*(N-1))/N
+    MEMA(X,N)相当于SMA(X,N,1)
+    */
+    this.MEMA = function (data, dayCount) 
+    {
+        let result = [];
+        if (!data || !data.length) return result;
+        var i = 0, j = 0;
+        for (j = 0; j < data.length && !this.IsNumber(data[j]); ++j) 
+        {
+            result[j] = null;
+        }
+        i = j;
+        if (dayCount < 1 || i + dayCount >= data.length) return result;
+        var sum = 0;
+        var data = data.slice(0);
+        for (; i < j + dayCount; ++i) 
+        {
+            result[i] = null;
+            if (!this.IsNumber(data[i]) && i - 1 >= 0)
+                data[i] = data[i - 1];
+            sum += data[i];
+        }
+        result[i - 1] = sum / dayCount;
+        for (; i < data.length; ++i) 
+        {
+            if (this.IsNumber(result[i - 1]) && this.IsNumber(data[i]))
+                result[i] = (data[i] + result[i - 1] * (dayCount - 1)) / dayCount;
+            else if (i - 1 > -1 && this.IsNumber(result[i - 1]))
+                result[i] = result[i - 1];
+            else
+                result[i] = null;
+        }
+        return result;
+    }
+
+    /*
     加权移动平均
     返回加权移动平均
     用法:EXPMA(X,M):X的M日加权移动平均
@@ -2430,6 +2576,59 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+    向前累加到指定值到现在的周期数.
+    用法:SUMBARS(X,A):将X向前累加直到大于等于A,返回这个区间的周期数
+    例如:SUMBARS(VOL,CAPITAL)求完全换手到现在的周期数
+     */
+    this.SUMBARS = function (data, data2) 
+    {
+        var result = [];
+        if (!data || !data.length || !data2 || !data2.length) return result;
+        var start = 0, i = 0, j = 0;
+        for (; start < data.length && !this.isNumber(data[start]); ++start) 
+        {
+            result[start] = null;
+        }
+        var total = 0;
+        for (i = data.length - 1; i >= start; --i) 
+        {
+            for (j = i, total = 0; j >= start && total < data2[i]; --j)
+                total += data[j];
+            if (j < start) result[i] = null;
+            else result[i] = i - j;
+        }
+        for (i = start + 1; i < data.length; ++i) 
+        {
+            if (result[i] == null)
+                result[i] = result[i - 1];
+        }
+        return result;
+    }
+
+    /*
+    求相反数.
+    用法:REVERSE(X)返回-X.
+    例如:REVERSE(CLOSE)返回-CLOSE
+     */
+    this.REVERSE = function (data) 
+    {
+        var result = [];
+        var i = 0;
+        for (; i < data.length && !this.isNumber(data[i]); ++i) 
+        {
+            result[i] = null;
+        }
+        for (; i < data.length; ++i) 
+        {
+            if (!this.isNumber(data[i]))
+                result[i] = null;
+            else
+                result[i] = 0 - data[i];
+        }
+        return result;
+    }
+
     this.COUNT=function(data,n)
     {
         let result=[];
@@ -2491,22 +2690,34 @@ function JSAlgorithm(errorHandler, symbolData)
             if (n > data.length) return result;
             if (n <= 0) n = data.length - 1;
 
-            var max = null;
-            for (var i = n, j = 0; i < data.length; ++i, ++j) 
+            var nMax = 0;
+            for (nMax = 0; nMax < data.length; ++nMax) 
             {
-                if (max == null || i < n + max) 
+                if (this.IsNumber(data[nMax])) break;
+            }
+
+            if (nMax < data.length) result[nMax] = data[nMax];
+            for (var i = nMax + 1, j = 2; i < data.length && j < n; ++i, ++j) 
+            {
+                if (data[i] >= data[nMax]) nMax = i;
+                result[i] = data[nMax];
+            }
+
+            for (; i < data.length; ++i) 
+            {
+                if (i - nMax < n) 
                 {
-                    max = data[i] < data[max] ? max : i;
+                    nMax = data[i] < data[nMax] ? nMax : i;
                 }
                 else 
                 {
-                    for (j = (max = i - n + 1) + 1; j <= i; ++j) 
+                    for (j = nMax = (i - n + 2); j <= i; ++j) 
                     {
-                        if (data[j] > data[max]) max = j;
+                        nMax = data[j] < data[nMax] ? nMax : j;
                     }
                 }
 
-                result[i] = data[max];
+                result[i] = data[nMax];
             }
         }
 
@@ -4250,6 +4461,168 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+  抛物转向.
+  用法:
+  SAR(N,S,M),N为计算周期,S为步长,M为极值
+  例如:
+  SAR(10,2,20)表示计算10日抛物转向,步长为2%,极限值为20%
+  */
+    this.SAR = function (n, step, exValue) 
+    {
+        var result = [];
+        var stockData = this.SymbolData.Data;
+        if (n >= stockData.Data.length) return result;
+
+        var high = null, low = null;
+        for (var i = 0; i < n; ++i) 
+        {
+            var item = stockData.Data[i];
+            if (high == null) high = item.High;
+            else if (high < item.High) high = item = high;
+            if (low == null) low = item.Low;
+            else if (low > item.Low) low = item.Low;
+        }
+
+        const SAR_LONG = 0, SAR_SHORT = 1;
+        var position = SAR_LONG;
+        result[n - 1] = low;
+        var nextSar = low, sip = stockData.Data[0].High, af = exValue / 100;
+        for (var i = n; i < stockData.Data.length; ++i) 
+        {
+            var ysip = sip;
+            var item = stockData.Data[i];
+            var yitem = stockData.Data[i - 1];
+
+            if (position == SAR_LONG) 
+            {
+                if (item.Low < result[i - 1]) 
+                {
+                    position = SAR_SHORT;
+                    sip = item.Low;
+                    af = step / 100;
+                    nextSar = Math.max(item.High, yitem.High);
+                    nextSar = Math.max(nextSar, ysip + af * (sip - ysip));
+                }
+                else 
+                {
+                    position = SAR_LONG;
+                    if (item.High > ysip) 
+                    {
+                        sip = item.High;
+                        af = Math.min(af + step / 100, exValue / 100);
+                    }
+                    nextSar = Math.min(item.Low, yitem.Low);
+                    nextSar = Math.min(nextSar, result[i - 1] + af * (sip - result[i - 1]));
+                }
+            }
+            else if (position == SAR_SHORT) 
+            {
+                if (item.High > result[i - 1]) 
+                {
+                    position = SAR_LONG;
+                    sip = item.High;
+                    af = step / 100;
+                    nextSar = Math.min(item.Low, yitem.Low);
+                    nextSar = Math.min(nextSar, result[i - 1] + af * (sip - ysip));
+                }
+                else 
+                {
+                    position = SAR_SHORT;
+                    if (item.Low < ysip) 
+                    {
+                        sip = item.Low;
+                        af = Math.min(af + step / 100, exValue / 100);
+                    }
+                    nextSar = Math.max(item.High, yitem.High);
+                    nextSar = Math.max(nextSar, result[i - 1] + af * (sip - result[i - 1]));
+                }
+            }
+
+            result[i] = nextSar;
+        }
+
+        return result;
+    }
+
+    /*
+    抛物转向点.
+    用法:
+    SARTURN(N,S,M),N为计算周期,S为步长,M为极值,若发生向上转向则返回1,若发生向下转向则返回-1,否则为0
+    其用法与SAR函数相同
+    */
+    this.SARTURN = function (n, step, exValue) 
+    {
+        var result = [];
+        var sar = this.SAR(n, step, exValue);
+        var stockData = this.SymbolData.Data;
+        var index = 0;
+        for (index = 0; index < sar.length; ++index) 
+        {
+            if (this.IsNumber(sar[index])) break;
+        }
+        var flag = 0;
+        if (index < stockData.Data.length) flag = stockData.Data[index].Close > sar[index];
+
+        for (var i = index + 1; i < stockData.Data.length; ++i) 
+        {
+            var item = stockData.Data[i];
+            if (item.Close < sar[i] && flag) result[i] = -1;
+            else result[i] = (item.Close > sar[i] && !flag) ? 1 : 0;
+
+            flag = item.Close > sar[i];
+        }
+
+        return result;
+    }
+
+    /*
+    属于未来函数,将当前位置到若干周期前的数据设为1.
+    用法:
+    BACKSET(X,N),若X非0,则将当前位置到N周期前的数值设为1.
+    例如:
+    BACKSET(CLOSE>OPEN,2)若收阳则将该周期及前一周期数值设为1,否则为0
+    */
+    this.BACKSET = function (condition, n) 
+    {
+        var result = [];
+        if (!condition) return result;
+        var dataCount = condition.length;
+        if (!this.IsNumber(dataCount) || dataCount <= 0) return result;
+
+        for (var i = 0; i < dataCount; ++i)    //初始化0
+        {
+            result[i] = 0;
+        }
+
+        for (var pos = 0; pos < dataCount; ++pos) 
+        {
+            if (this.IsNumber(condition[pos])) break;
+        }
+        if (pos == dataCount) return result;
+
+        var num = Math.min(dataCount - pos, Math.max(n, 1));
+
+        for (var i = dataCount - 1, j = 0; i >= 0; --i) 
+        {
+            var value = condition[i];
+            if (this.IsNumber(value) && value) 
+            {
+                for (j = i; j > i - num; --j) 
+                {
+                    result[j] = 1;
+                }
+            }
+        }
+
+        if (condition[i]) 
+        {
+            for (j = i; j >= pos; --j) result[j] = 1;
+        }
+
+        return result;
+    }
+
 
     //函数调用
     this.CallFunction=function(name,args,node)
@@ -4359,6 +4732,20 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.COVAR(args[0], args[1], args[2]);
             case 'BETA':
                 return this.BETA(args[0]);
+            case 'WMA':
+                return this.WMA(args[0], args[1]);
+            case 'MEMA':
+                return this.MEMA(args[0], args[1]);
+            case 'SUMBARS':
+                return this.SUMBARS(args[0], args[1]);
+            case 'REVERSE':
+                return this.REVERSE(args[0]);
+            case 'SAR':
+                return this.SAR(args[0], args[1], args[2]);
+            case 'SARTURN':
+                return this.SARTURN(args[0], args[1], args[2]);
+            case 'BACKSET':
+                return this.BACKSET(args[0], args[1]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);
@@ -4623,6 +5010,33 @@ function JSDraw(errorHandler, symbolData)
         return result;
     }
 
+    //满足条件画一根K线
+    this.DRAWKLINE_IF = function (condition, high, open, low, close) 
+    {
+        let drawData = [];
+        let result = { DrawData: drawData, DrawType: 'DRAWKLINE_IF' };
+        let count = Math.max(condition.length, high.length, open.length, low.length, close.length);
+
+        for (let i = 0; i < count; ++i) {
+            let item = { Open: null, High: null, Low: null, Close: null };
+
+            if (i < high.length && i < open.length && i < low.length && i < close.length && i < condition.length) 
+            {
+                if (condition[i]) 
+                {
+                    item.Open = open[i];
+                    item.High = high[i];
+                    item.Low = low[i];
+                    item.Close = close[i];
+                }
+            }
+
+            drawData[i] = item;
+        }
+
+        return result;
+    }
+
     /*
     PLOYLINE 折线段
     在图形上绘制折线段。
@@ -4746,14 +5160,15 @@ function JSDraw(errorHandler, symbolData)
         let mapIcon = new Map([
             [1, { Symbol: '↑', Color: 'rgb(238,44,44)' }], [2, { Symbol: '↓', Color: 'rgb(0,139,69)' }],
             [3, { Symbol: '😧' }], [4, { Symbol: '😨' }], [5, { Symbol: '😁' }], [6, { Symbol: '😱' }],
-            [7, { Symbol: 'B', Color: 'rgb(238,44,44)' }], [8, { Symbol: 'S', Color: 'rgb(0,139,69)' }],
+            [7, { Symbol: '◼', Color: 'rgb(238,44,44)' }], [8, { Symbol: '◆', Color: 'rgb(0,139,69)' }],
             [9, { Symbol: '💰' }], [10, { Symbol: '📪' }], [11, { Symbol: '👆' }], [12, { Symbol: '👇' }],
+            [13, { Symbol: 'B', Color: 'rgb(178,34,34)' },], [14, { Symbol: 'S', Color: 'rgb(0,139,69)' }],
             [36, { Symbol: 'Χ', Color: 'rgb(238,44,44)' }], [37, { Symbol: 'X', Color: 'rgb(0,139,69)' }],
             [38, { Symbol: '▲', Color: 'rgb(238,44,44)' }], [39, { Symbol: '▼', Color: 'rgb(0,139,69)' }],
         ]);
 
         let icon = mapIcon.get(type);
-        if (!icon) icon = { Symbol: '🚩' };
+        if (!icon) icon = { Symbol: '●', Color: 'rgb(0,139,69)'};
         let drawData = [];
         let result = { DrawData: drawData, DrawType: 'DRAWICON', Icon: icon };
         if (condition.length <= 0) return result;
@@ -4843,7 +5258,7 @@ JSDraw.prototype.IsNumber = function (value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER','DRAWICON']);
+    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER','DRAWICON']);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -4856,8 +5271,9 @@ var DYNAINFO_ARGUMENT_ID=
     OPEN:4,
     HIGH:5,
     LOW:6,
-    VOL:7,
-    AMOUNT:8,
+    CLOSE: 7,
+    VOL: 8,
+    AMOUNT: 10,
     AMPLITUDE:13,   //振幅
     INCREASE:14,    //涨幅
     EXCHANGERATE:37,    //换手率
@@ -4882,6 +5298,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.RealtimeApiUrl = g_JSComplierResource.Domain +'/API/stock';                 //实时行情
     this.StockHistoryDayApiUrl = g_JSComplierResource.Domain +'/API/StockHistoryDay';  //历史财务数据
     this.StockHistoryDay3ApiUrl = g_JSComplierResource.Domain +'/API/StockHistoryDay3';  //历史财务数据
+    this.StockNewsAnalysisApiUrl = g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                 //新闻分析数据
     this.MaxReqeustDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
 
@@ -4889,6 +5306,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.IndexData;             //大盘指数
     this.FinanceData=new Map(); //财务数据
     this.MarginData = new Map();  //融资融券
+    this.NewsAnalysisData = new Map();    //新闻统计
     
    
     //使用option初始化
@@ -4978,6 +5396,8 @@ function JSSymbolData(ast,option,jsExecute)
                 return this.LatestData.Exchangerate;
             case DYNAINFO_ARGUMENT_ID.AMPLITUDE:
                 return this.LatestData.Amplitude;
+            case DYNAINFO_ARGUMENT_ID.CLOSE:
+                return this.LatestData.Close;
             default:
                 return null;
         }
@@ -4995,7 +5415,7 @@ function JSSymbolData(ast,option,jsExecute)
                 url: self.KLineApiUrl,
                 data:
                 {
-                    "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
+                    "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol", 'up', 'down', 'stop', 'unchanged'],
                     "symbol": '000001.sh',
                     "start": -1,
                     "count": self.MaxReqeustDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
@@ -5096,6 +5516,10 @@ function JSSymbolData(ast,option,jsExecute)
             return this.IndexData.GetOpen();
         case 'INDEXV':
             return this.IndexData.GetVol();
+        case 'INDEXADV':
+            return this.IndexData.GetUp();
+        case 'INDEXDEC':
+            return this.IndexData.GetDown();
         }
     }
 
@@ -5845,13 +6269,106 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
+    this.GetNewsAnalysisCacheData = function (id, node) 
+    {
 
+        let jobID = JS_EXECUTE_JOB_ID.GetNewsAnalysisID(id);
+        if (!jobID) this.Execute.ThrowUnexpectedNode(node, '不支持NEWS(' + id + ')');
+        if (this.NewsAnalysisData.has(jobID)) return this.NewsAnalysisData.get(jobID);
+
+        return [];
+    }
+
+    //下载新闻统计
+    this.GetNewsAnalysisData = function (jobID) 
+    {
+        if (this.NewsAnalysisData.has(jobID)) return this.Execute.RunNextJob();
+
+        var self = this;
+        var mapFolder = new Map([
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE, "negative"],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH, 'research'],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT, 'interact']
+        ]);
+
+        if (!mapFolder.has(jobID)) 
+        {
+            this.Execute.RunNextJob();
+            return;
+        }
+
+        var folderName = mapFolder.get(jobID);
+        var url = this.StockNewsAnalysisApiUrl + '/' + folderName + '/' + this.Symbol + '.json';
+
+        //请求数据
+        wx.request({
+            url: url,
+            method: 'GET',
+            dataType: "json",
+            async: true,
+            success: function (recvData) 
+            {
+                if (recvData.statusCode==200)
+                    self.RecvNewsAnalysisData(recvData, jobID);
+                else
+                    self.RecvNewsAnalysisDataError(recvData, jobID);
+                self.Execute.RunNextJob();
+            },
+            fail: function (request, textStatus) 
+            {
+                //self.RecvNewsAnalysisDataError(request, textStatus, jobID);
+                self.Execute.RunNextJob();
+            }
+        });
+    }
+
+    this.RecvNewsAnalysisDataError = function (recvData, jobID) 
+    {
+        console.log('[JSSymbolData::RecvNewsAnalysisDataError] request error.', recvData.statusCode);
+
+        //没有新闻使用0数据填充
+        var aryData = [];
+        for (var i = 0; i < this.Data.Data.length; ++i) {
+            var item = new JSCommonData.SingleData();
+            item.Date = this.Data.Data[i].Date;
+            item.Value = 0
+            aryData.push(item);
+        }
+
+        var bindData = new JSCommonData.ChartData();
+        bindData.Data = aryData;
+        this.NewsAnalysisData.set(jobID, bindData.GetValue());
+    }
+
+    this.RecvNewsAnalysisData = function (recvData, jobID) 
+    {
+        var data=recvData.data;
+        if (!data.data || !data.date) return;
+        if (data.data.length <= 0 || data.data.length != data.date.length) return;
+
+        console.log('[JSSymbolData::RecvNewsAnalysisData] jobID', jobID, data.update);
+        var aryData = [];
+        for (var i = 0; i < data.data.length; ++i) {
+            var item = new JSCommonData.SingleData();
+            item.Date = data.date[i];
+            item.Value = data.data[i];
+            aryData.push(item);
+        }
+
+        let aryFixedData = this.Data.GetFittingData2(aryData, 0);
+
+        var bindData = new JSCommonData.ChartData();
+        bindData.Data = aryFixedData;
+
+        this.NewsAnalysisData.set(jobID, bindData.GetValue());
+    }
    
     this.JsonDataToHistoryData=function(data)
     {
         var list = data.data;
         var aryDayData=new Array();
         var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7;
+        var up = 8, down = 9, stop = 10, unchanged = 11;
         for (var i = 0; i < list.length; ++i)
         {
             var item = new JSCommonData.HistoryData();
@@ -5866,6 +6383,12 @@ function JSSymbolData(ast,option,jsExecute)
             item.Amount = list[i][amount];
 
             if (isNaN(item.Open) || item.Open<=0) continue; //停牌的数据剔除
+
+            //上涨 下跌家数
+            if (list[i].length > up) item.Up = list[i][up];
+            if (list[i].length > down) item.Down = list[i][down];
+            if (list[i].length > stop) item.Stop = list[i][stop];
+            if (list[i].length > unchanged) item.Unchanged = list[i][unchanged];
 
             aryDayData.push(item);
         }
@@ -6161,6 +6684,10 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_MARGIN_SELL_REPAY: 1022,        //卖出信息-偿还量
     JOB_DOWNLOAD_MARGIN_SELL_NET: 1023,          //卖出信息-融券净卖出
 
+    JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE: 2000,             //负面新闻统计
+    JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH: 2001,             //机构调研
+    JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT: 2002,             //互动易
+
     JOB_RUN_SCRIPT:10000, //执行脚本
 
     GetFinnanceJobID:function(value)
@@ -6211,6 +6738,19 @@ var JS_EXECUTE_JOB_ID=
         if (dataMap.has(value)) return dataMap.get(value);
 
         return null;
+    },
+
+    GetNewsAnalysisID: function (value) 
+    {
+        let dataMap = new Map([
+            [1, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE],          //NEWS(1)   负面新闻统计
+            [2, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH],          //NEWS(2)   机构调研统计
+            [3, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT],          //NEWS(3)   互动易
+        ]);
+
+        if (dataMap.has(value)) return dataMap.get(value);
+
+        return null;
     }
 
 };
@@ -6235,6 +6775,8 @@ function JSExecute(ast,option)
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
+        ['INDEXADV', null], ['INDEXDEC', null],
+
 
         //到最后交易日的周期数
         ['CURRBARSCOUNT',null],
@@ -6311,6 +6853,11 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET:          //卖出信息-融券净卖出
                 return this.SymbolData.GetMarginData(jobName);
 
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE:      //负面新闻
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH:      //机构调研
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT:     //互动易
+                return this.SymbolData.GetNewsAnalysisData(jobName);
+
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
         }
@@ -6337,9 +6884,11 @@ function JSExecute(ast,option)
             case 'INDEXA':
             case 'INDEXC':
             case 'INDEXH':
-            case 'INDEXH':
             case 'INDEXO':
             case 'INDEXV':
+            case 'INDEXL':
+            case 'INDEXADV':
+            case 'INDEXDEC':
                 return this.SymbolData.GetIndexCacheData(name);
 
             case 'CURRBARSCOUNT':
@@ -6646,6 +7195,10 @@ function JSExecute(ast,option)
                 node.Draw = this.Draw.DRAWKLINE(args[0], args[1], args[2], args[3]);
                 node.Out = [];
                 break;
+            case 'DRAWKLINE_IF':
+                node.Draw = this.Draw.DRAWKLINE_IF(args[0], args[1], args[2], args[3], args[4]);
+                node.Out = [];
+                break;
             case 'PLOYLINE':
             case 'POLYLINE':
                 node.Draw = this.Draw.POLYLINE(args[0], args[1]);
@@ -6669,6 +7222,9 @@ function JSExecute(ast,option)
                 break;
             case "MARGIN":
                 node.Out = this.SymbolData.GetMarginCacheData(args[0], node);
+                break;
+            case "NEWS":
+                node.Out = this.SymbolData.GetNewsAnalysisCacheData(args[0], node);
                 break;
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args,node);
@@ -6758,6 +7314,10 @@ function JSExecute(ast,option)
                             break;
                         case '==':
                             value.Out=this.Algorithm.EQ(leftValue,rightValue);
+                            break;
+                        case '!=':
+                        case '<>':
+                            value.Out = this.Algorithm.NEQ(leftValue, rightValue);
                             break;
                     }
 
