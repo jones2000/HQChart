@@ -598,6 +598,51 @@ function ChartData()
         return result;
     }
 
+    // 缺省数据使用 emptyValue填充
+    this.GetFittingData2 = function (overlayData, emptyValue) 
+    {
+        var result = new Array();
+
+        for (var i = 0, j = 0; i < this.Data.length;) 
+        {
+            var date = this.Data[i].Date;
+
+            if (j >= overlayData.length) 
+            {
+                result[i] = new SingleData();
+                result[i].Date = date;
+                result[i].Value = emptyValue;
+                ++i;
+                continue;;
+            }
+
+            var overlayDate = overlayData[j].Date;
+
+            if (overlayDate == date) 
+            {
+                var item = new SingleData();
+                item.Date = overlayData[j].Date;
+                item.Value = overlayData[j].Value;
+                result[i] = item;
+                ++j;
+                ++i;
+            }
+            else if (overlayDate < date) 
+            {
+                ++j;
+            }
+            else 
+            {
+                result[i] = new SingleData();
+                result[i].Date = date;
+                result[i].Value = emptyValue;
+                ++i;
+            }
+        }
+
+        return result;
+    }
+
     //把财报数据拟合到主图数据,返回 SingleData 数组
     this.GetFittingFinanceData = function (financeData)
     {

@@ -4,6 +4,7 @@
     Description：指标描述信息
     IsMainIndex：是否是主图指标 true=主图指标 false=副图指标
     KLineType:K线设置 -1=主图不显示K线(只在主图有效) 0=在副图显示K线 1=在副图显示K线(收盘价线) 2=在副图显示K线(美国线)
+    InstructionType: 1=专家指示  2=五彩K线
 */
 
 function JSIndexScript()
@@ -45,12 +46,25 @@ JSIndexScript.prototype.Get=function(id)
             ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
-            ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],
+            ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
             
             //外包指标
             ['放心股-操盘BS点',this.FXG_BSPoint],
             ['放心股-涨停多空线',this.FXG_INDEX],
             ['放心股-涨停吸筹区',this.FXG_INDEX2],
+
+            //五彩K线(函数COLOR_开头)
+            ['五彩K线-十字星',this.COLOR_KSTAR1],['五彩K线-早晨之星',this.COLOR_KSTAR2],['五彩K线-黄昏之星',this.COLOR_KSTAR3],['五彩K线-长十字',this.COLOR_SHI1],
+            ['五彩K线-身怀六甲',this.COLOR_K220],['五彩K线-三个白武士',this.COLOR_K300],['五彩K线-三只乌鸦',this.COLOR_K310],['五彩K线-光头阳线',this.COLOR_K380],
+            ['五彩K线-光脚阴线',this.COLOR_K390],['五彩K线-垂死十字',this.COLOR_K134],['五彩K线-早晨十字星',this.COLOR_K140],['五彩K线-黄昏十字星',this.COLOR_K150],
+            ['五彩K线-射击之星',this.COLOR_K160],['五彩K线-倒转锤头',this.COLOR_K165],['五彩K线-锤头',this.COLOR_K170],['五彩K线-吊颈',this.COLOR_K180],
+            ['五彩K线-穿头破脚',this.COLOR_K190],['五彩K线-出水芙蓉',this.COLOR_CSFR],['五彩K线-乌云盖顶',this.COLOR_WYGD],['五彩K线-曙光初现',this.COLOR_SGCJ],
+            ['五彩K线-十字胎',this.COLOR_SZTAI],['五彩K线-剑',this.COLOR_SWORD],['五彩K线-平顶',this.COLOR_PINGDING],['五彩K线-平底',this.COLOR_PINGDI],
+            ['五彩K线-大阳烛',this.COLOR_DAYANZHU],['五彩K线-大阴烛',this.COLOR_DAYINGZHU],
+            
+            ['五彩K线-好友反攻',this.COLOR_HYFG],['五彩K线-跳空缺口',this.COLOR_TKQK],
+            ['五彩K线-双飞乌鸦',this.COLOR_SFWY],['五彩K线-上升三部曲',this.COLOR_SSSBQ],['五彩K线-下跌三部曲',this.COLOR_XDSBQ],['五彩K线-长下影',this.COLOR_CHXY],
+            ['五彩K线-长上影',this.COLOR_CHSY],['五彩K线-分离',this.COLOR_FENLI],
 
             ['TEST', this.TEST] //测试用
         ]
@@ -1948,6 +1962,499 @@ JSIndexScript.prototype.FXG_INDEX2=function()
     };
 
     return data; 
+}
+
+JSIndexScript.prototype.NewsNegative=function()
+{
+    let data=
+        {
+            Name: '负面新闻', Description: '负面新闻统计', IsMainIndex: false,
+            Args: [{ Name: 'N', Value: 5 }, { Name: 'N2', Value: 10 }],
+            Script: //脚本
+'负面:NEWS(1);\n\
+MA1:MA(负面,N);\n\
+MA2:MA(负面,N2);'
+        };
+
+    return data;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+//五彩K线
+
+JSIndexScript.prototype.COLOR_KSTAR1=function()
+{
+    let data=
+    {
+        Name: '十字星', Description: '十字星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:CLOSE==OPEN&&HIGH>LOW;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_KSTAR2=function()
+{
+    let data=
+    {
+        Name: '早晨之星', Description: '早晨之星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:(REF(CLOSE,2)/REF(OPEN,2)<0.95) && (REF(OPEN,1) < REF(CLOSE,2)) && (ABS(REF(OPEN,1)-REF(CLOSE,1))/REF(CLOSE,1)<0.03) && CLOSE/OPEN>1.05 && CLOSE>REF(CLOSE,2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_KSTAR3=function()
+{
+    let data=
+    {
+        Name: '黄昏之星', Description: '黄昏之星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:REF(CLOSE,2)/REF(OPEN,2)>1.05 && REF(OPEN,1)>REF(CLOSE,2) && ABS(REF(OPEN,1)-REF(CLOSE,1))/REF(CLOSE,1)<0.03 && CLOSE/OPEN<0.95 && CLOSE<REF(CLOSE,2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SHI1=function()
+{
+    let data=
+    {
+        Name: '长十字', Description: '长十字', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:CLOSE==OPEN&&HIGH/LOW>1.03;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K220=function()
+{
+    let data=
+    {
+        Name: '身怀六甲', Description: '身怀六甲', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:ABS(REF(CLOSE,1)-REF(OPEN,1))/REF(CLOSE,1)>0.04&&\n\
+            ABS(CLOSE-OPEN)/CLOSE<0.005&&\n\
+            MAX(CLOSE,OPEN)<MAX(REF(CLOSE,1),REF(OPEN,1))&&\n\
+            MIN(CLOSE,OPEN)>MIN(REF(CLOSE,1),REF(OPEN,1));'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K300=function()
+{
+    let data=
+    {
+        Name: '三个白武士', Description: '三个白武士', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:UPNDAY(CLOSE,3)&&NDAY(CLOSE,OPEN,3);'
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.COLOR_K310=function()
+{
+    let data=
+    {
+        Name: '三只乌鸦', Description: '三只乌鸦', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:DOWNNDAY(CLOSE,3)&&NDAY(OPEN,CLOSE,3);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K380=function()
+{
+    let data=
+    {
+        Name: '光头阳线', Description: '光头阳线', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:HIGH==CLOSE&&HIGH>LOW;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K390=function()
+{
+    let data=
+    {
+        Name: '光脚阴线', Description: '光脚阴线', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:LOW==CLOSE&&HIGH>LOW;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K134=function()
+{
+    let data=
+    {
+        Name: '垂死十字', Description: '垂死十字', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+            'KSTAR:CLOSE==OPEN&&CLOSE==LOW&&CLOSE<HIGH;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K140=function()
+{
+    let data=
+    {
+        Name: '早晨十字星', Description: '早晨十字星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'KSTAR:REF(CLOSE,2)/REF(OPEN,2)<0.95&&\n\
+REF(OPEN,1)<REF(CLOSE,2)&&\n\
+REF(OPEN,1)==REF(CLOSE,1)&&\n\
+CLOSE/OPEN>1.05&&CLOSE>REF(CLOSE,2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K150=function()
+{
+    let data=
+    {
+        Name: '黄昏十字星', Description: '黄昏十字星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'KSTAR:REF(CLOSE,2)/REF(OPEN,2)>1.05&&\n\
+REF(OPEN,1)>REF(CLOSE,2)&&\n\
+REF(OPEN,1)=REF(CLOSE,1)&&\n\
+CLOSE/OPEN<0.95&&CLOSE<REF(CLOSE,2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K160=function()
+{
+    let data=
+    {
+        Name: '射击之星', Description: '射击之星', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'KSTAR:MIN(OPEN,CLOSE)==LOW&&\n\
+HIGH-LOW>3*(MAX(OPEN,CLOSE)-LOW)&&\n\
+CLOSE>MA(CLOSE,5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K165=function()
+{
+    let data=
+    {
+        Name: '倒转锤头', Description: '倒转锤头', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'KSTAR:MIN(OPEN,CLOSE)==LOW&&\n\
+HIGH-LOW>3*(MAX(OPEN,CLOSE)-LOW)&&\n\
+CLOSE<MA(CLOSE,5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K170=function()
+{
+    let data=
+    {
+        Name: '锤头', Description: '锤头', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'OUT:HIGH==MAX(OPEN,CLOSE)&&\n\
+HIGH-LOW>3*(HIGH-MIN(OPEN,CLOSE))&&\n\
+CLOSE<MA(CLOSE,5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K180=function()
+{
+    let data=
+    {
+        Name: '吊颈', Description: '吊颈', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'OUT:HIGH==MAX(OPEN,CLOSE)&&\n\
+HIGH-LOW>3*(HIGH-MIN(OPEN,CLOSE))&&\n\
+CLOSE>MA(CLOSE,5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_K190=function()
+{
+    let data=
+    {
+        Name: '穿头破脚', Description: '穿头破脚', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'OUT:(REF(CLOSE,1)/REF(OPEN,1)>1.03&&\n\
+CLOSE/OPEN<0.96&&\n\
+CLOSE<REF(OPEN,1)&&OPEN>REF(CLOSE,1))||\n\
+(REF(CLOSE,1)/REF(OPEN,1)<0.97&&\n\
+CLOSE/OPEN>1.04&&\n\
+CLOSE>REF(OPEN,1)&&OPEN<REF(CLOSE,1));'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SWORD=function()
+{
+    let data=
+    {
+        Name: '剑', Description: '剑', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'AA:=VOL>REF(VOL,1)||VOL>(CAPITAL*0.1);\n\
+BB:=OPEN>=(REF(HIGH,1))&&REF(HIGH,1)>(REF(HIGH,2)*1.06);\n\
+CC:=CLOSE>(REF(CLOSE,1))-(REF(CLOSE,1)*0.01);\n\
+DD:=CLOSE<(HIGH*0.965) && HIGH>(OPEN*1.05);\n\
+EE:=LOW<OPEN && LOW<CLOSE&&HIGH>(REF(CLOSE,1)*1.06);\n\
+FF:=(HIGH-(MAX(OPEN,CLOSE)))/2>(MIN(OPEN,CLOSE))-LOW;\n\
+GG:=(ABS(OPEN-CLOSE))/2<(MIN(OPEN,CLOSE)-LOW);\n\
+SWORDO:AA&&BB&&CC&&DD&&EE&&FF&&GG;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_CSFR=function()
+{
+    let data=
+    {
+        Name: '出水芙蓉', Description: '出水芙蓉', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'A:=CLOSE>OPEN;\n\
+B:=A&&CLOSE>MA(CLOSE,S)&&CLOSE>MA(CLOSE,M)&&CLOSE>MA(CLOSE,LL);\n\
+CC:=B&&OPEN<MA(CLOSE,M)&&OPEN<MA(CLOSE,LL);\n\
+CSFRO:CC&&(CLOSE-OPEN)>0.0618*CLOSE;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_WYGD=function()
+{
+    let data=
+    {
+        Name: '乌云盖顶', Description: '乌云盖顶', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( \n\
+REF(CLOSE,1)/REF(OPEN,1)>1.03 AND \n\
+CLOSE/OPEN<0.97 AND \n\
+OPEN>REF(CLOSE,1) AND CLOSE<REF(CLOSE,1), 3);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SGCJ=function()
+{
+    let data=
+    {
+        Name: '乌云盖顶', Description: '乌云盖顶', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( \n\
+REF(CLOSE,1)/REF(OPEN,1)<0.97 AND \n\
+CLOSE/OPEN>1.03 AND \n\
+OPEN<REF(CLOSE,1) AND CLOSE>REF(CLOSE,1), 3);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SZTAI=function()
+{
+    let data=
+    {
+        Name: '十字胎', Description: '十字胎', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( ABS(REF(CLOSE,1)-REF(OPEN,1))/REF(CLOSE,1) > 0.04 AND \n\
+CLOSE==OPEN AND CLOSE < MAX(REF(CLOSE,1),REF(OPEN,1)) AND \n\
+CLOSE > MIN(REF(CLOSE,1),REF(OPEN,1)), 2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_PINGDING=function()
+{
+    let data=
+    {
+        Name: '平顶', Description: '平顶', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET(ABS(HIGH-REF(HIGH,1))/HIGH<0.001,2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_PINGDI=function()
+{
+    let data=
+    {
+        Name: '平底', Description: '平底', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET((ABS(LOW-REF(LOW,1))/LOW<0.001 AND \n\
+ABS(REF(LOW,1)-REF(LOW,2))/REF(LOW,1)<=0.001),2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_DAYANZHU=function()
+{
+    let data=
+    {
+        Name: '大阳烛', Description: '大阳烛', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:CLOSE/OPEN>1.05 AND HIGH/LOW < CLOSE/OPEN+0.018;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_DAYINGZHU=function()
+{
+    let data=
+    {
+        Name: '大阴烛', Description: '大阴烛', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:OPEN/CLOSE > 1.05 AND HIGH/LOW < OPEN/CLOSE+0.018;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_HYFG=function()
+{
+    let data=
+    {
+        Name: '好友反攻', Description: '好友反攻', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( (REF(CLOSE,1)<REF(OPEN,1) AND \n\
+CLOSE>OPEN AND ABS(CLOSE-REF(CLOSE,1))/CLOSE<0.002),2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_TKQK=function()
+{
+    let data=
+    {
+        Name: '跳空缺口', Description: '跳空缺口', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( HIGH<REF(LOW,1) OR LOW>REF(HIGH,1),2);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SFWY=function()
+{
+    let data=
+    {
+        Name: '双飞乌鸦', Description: '双飞乌鸦', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( REF(CLOSE,1)<REF(OPEN,1) AND CLOSE<OPEN AND CLOSE/OPEN<0.98,1);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_SSSBQ=function()
+{
+    let data=
+    {
+        Name: '上升三部曲', Description: '上升三部曲', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( \n\
+REF(CLOSE,4)/REF(OPEN,4)>1.03 AND \n\
+REF(CLOSE,3)<REF(OPEN,3) AND \n\
+REF(CLOSE,2)<REF(OPEN,2) AND \n\
+REF(CLOSE,1)<REF(OPEN,1) AND \n\
+REF(LOW,4)<REF(LOW,3) AND \n\
+REF(LOW,4)<REF(LOW,2) AND \n\
+REF(LOW,4)<REF(LOW,1) AND \n\
+REF(HIGH,4)>REF(HIGH,3) AND \n\
+REF(HIGH,4)>REF(HIGH,2) AND \n\
+REF(HIGH,4)>REF(HIGH,1) AND \n\
+CLOSE/OPEN>1.03 AND \n\
+CLOSE>REF(CLOSE,4), 5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_XDSBQ=function()
+{
+    let data=
+    {
+        Name: '下跌三部曲', Description: '下跌三部曲', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( \n\
+REF(CLOSE,4)/REF(OPEN,4)<0.97 AND \n\
+REF(CLOSE,3)>REF(OPEN,3) AND \n\
+REF(CLOSE,2)>REF(OPEN,2) AND \n\
+REF(CLOSE,1)>REF(OPEN,1) AND \n\
+REF(LOW,4)<REF(LOW,3) AND \n\
+REF(LOW,4)<REF(LOW,2) AND \n\
+REF(LOW,4)<REF(LOW,1) AND \n\
+REF(HIGH,4)>REF(HIGH,3) AND \n\
+REF(HIGH,4)>REF(HIGH,2) AND \n\
+REF(HIGH,4)>REF(HIGH,1) AND \n\
+CLOSE/OPEN<0.97 AND \n\
+CLOSE<REF(CLOSE,4), 5);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_CHXY=function()
+{
+    let data=
+    {
+        Name: '长下影', Description: '长下影', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR2:(MIN(CLOSE,OPEN)-LOW)/(HIGH-LOW)>0.667;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_CHSY=function()
+{
+    let data=
+    {
+        Name: '长上影', Description: '长上影', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR2:(HIGH-MAX(CLOSE,OPEN))/(HIGH-LOW)>0.667,COLORBLUE;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.COLOR_FENLI=function()
+{
+    let data=
+    {
+        Name: '分离', Description: '分离', IsMainIndex: true, InstructionType:2,
+        Script: //脚本
+'VAR1:BACKSET( OPEN==REF(OPEN,1) AND (CLOSE-OPEN)*(REF(CLOSE,1)-REF(OPEN,1))<0,2);'
+    };
+
+    return data;
 }
 
 JSIndexScript.prototype.TEST = function () 

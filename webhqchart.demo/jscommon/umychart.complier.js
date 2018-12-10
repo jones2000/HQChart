@@ -669,6 +669,7 @@ function Node()
     this.IsNeedSymbolData=false;        //是否需要下载股票数据
     this.IsNeedFinanceData=new Set();   //需要下载的财务数据
     this.IsNeedMarginData=new Set();
+    this.IsNeedNewsAnalysisData=new Set();      //新闻统计数据
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -692,7 +693,11 @@ function Node()
             jobs.push(jobID);
         }
 
-
+        //加载新闻统计
+        for(var jobID of this.IsNeedNewsAnalysisData)
+        {
+            jobs.push(jobID);
+        }
 
         return jobs;
     }
@@ -747,6 +752,13 @@ function Node()
         {
             let jobID=JS_EXECUTE_JOB_ID.GetMarginJobID(args[0].Value);
             if (jobID && !this.IsNeedMarginData.has(jobID))  this.IsNeedMarginData.add(jobID);
+            return;
+        }
+
+        if (callee.Name==='NEWS')
+        {
+            let jobID=JS_EXECUTE_JOB_ID.GetNewsAnalysisID(args[0].Value);
+            if (jobID && !this.IsNeedNewsAnalysisData.has(jobID))  this.IsNeedNewsAnalysisData.add(jobID);
             return;
         }
 
@@ -4523,30 +4535,77 @@ function JSAlgorithm(errorHandler,symbolData)
     SARTURN(N,S,M),N为计算周期,S为步长,M为极值,若发生向上转向则返回1,若发生向下转向则返回-1,否则为0
     其用法与SAR函数相同
     */
-   this.SARTURN=function(n,step,exValue)
-   {
-       var result=[];
-       var sar=this.SAR(n,step,exValue);
-       var stockData= this.SymbolData.Data;
-       var index=0;
-       for(index=0;index<sar.length;++index)
-       {
-            if (this.IsNumber(sar[index])) break;
-       }
-       var flag=0;
-       if (index<stockData.Data.length) flag=stockData.Data[index].Close>sar[index];
+    this.SARTURN=function(n,step,exValue)
+    {
+        var result=[];
+        var sar=this.SAR(n,step,exValue);
+        var stockData= this.SymbolData.Data;
+        var index=0;
+        for(index=0;index<sar.length;++index)
+        {
+                if (this.IsNumber(sar[index])) break;
+        }
+        var flag=0;
+        if (index<stockData.Data.length) flag=stockData.Data[index].Close>sar[index];
 
-       for(var i=index+1;i<stockData.Data.length;++i)
-       {
-           var item=stockData.Data[i];
-           if (item.Close<sar[i] && flag) result[i]=-1;
-           else result[i]= (item.Close>sar[i] && !flag)? 1:0;
-           
-           flag=item.Close>sar[i];
-       }
+        for(var i=index+1;i<stockData.Data.length;++i)
+        {
+            var item=stockData.Data[i];
+            if (item.Close<sar[i] && flag) result[i]=-1;
+            else result[i]= (item.Close>sar[i] && !flag)? 1:0;
+            
+            flag=item.Close>sar[i];
+        }
 
-       return result;
-   }
+        return result;
+    }
+
+    /*
+    属于未来函数,将当前位置到若干周期前的数据设为1.
+    用法:
+    BACKSET(X,N),若X非0,则将当前位置到N周期前的数值设为1.
+    例如:
+    BACKSET(CLOSE>OPEN,2)若收阳则将该周期及前一周期数值设为1,否则为0
+    */
+    this.BACKSET=function(condition,n)
+    {
+        var result=[];
+        if (!condition) return result;
+        var dataCount=condition.length;
+        if (!this.IsNumber(dataCount) || dataCount<=0) return result;
+
+        for(var i=0;i<dataCount;++i)    //初始化0
+        {
+            result[i]=0;
+        }
+
+        for(var pos=0;pos<dataCount;++pos)
+        {
+            if (this.IsNumber(condition[pos])) break;
+        }
+        if (pos==dataCount) return result;
+
+        var num=Math.min(dataCount-pos,Math.max(n,1));
+
+        for(var i=dataCount-1,j=0;i>=0;--i)
+        {
+            var value=condition[i];
+            if (this.IsNumber(value) && value)
+            {
+                for(j=i;j>i-num;--j)
+                {
+                    result[j]=1;
+                }
+            }
+        }
+
+        if (condition[i]) 
+        {
+            for(j=i;j>=pos;--j) result[j]=1;
+        }
+
+        return result;
+    }
 
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
@@ -4668,6 +4727,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.SAR(args[0], args[1], args[2]);
             case 'SARTURN':
                 return this.SARTURN(args[0], args[1], args[2]);
+            case 'BACKSET':
+                return this.BACKSET(args[0], args[1]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
@@ -5229,6 +5290,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.RealtimeApiUrl='https://opensource.zealink.com/API/stock';                 //实时行情
     this.StockHistoryDayApiUrl='https://opensource.zealink.com/API/StockHistoryDay';  //历史财务数据
     this.StockHistoryDay3ApiUrl='https://opensource.zealink.com/API/StockHistoryDay3';  //历史财务数据
+    this.StockNewsAnalysisApiUrl='https://opensourcecache.zealink.com/cache/newsanalyze';                 //新闻分析数据
     this.MaxReqeustDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
 
@@ -5236,6 +5298,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.IndexData;             //大盘指数
     this.FinanceData=new Map(); //财务数据
     this.MarginData=new Map();  //融资融券
+    this.NewsAnalysisData=new Map();    //新闻统计
     
    
     //使用option初始化
@@ -6200,6 +6263,98 @@ function JSSymbolData(ast,option,jsExecute)
         }
      }
 
+    this.GetNewsAnalysisCacheData=function(id,node)
+    {
+
+        let jobID=JS_EXECUTE_JOB_ID.GetNewsAnalysisID(id);
+        if (!jobID) this.Execute.ThrowUnexpectedNode(node,'不支持NEWS('+id+')');
+        if(this.NewsAnalysisData.has(jobID)) return this.NewsAnalysisData.get(jobID);
+
+        return [];
+    }
+
+    //下载新闻统计
+    this.GetNewsAnalysisData=function(jobID)
+    {
+        if (this.NewsAnalysisData.has(jobID)) return this.Execute.RunNextJob();
+
+        var self=this;
+        var mapFolder=new Map([
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE,"negative"],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH,'research'],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT,'interact']
+        ]);
+
+        if (!mapFolder.has(jobID))
+        {
+            this.Execute.RunNextJob();
+            return;
+        }
+        var folderName=mapFolder.get(jobID);
+        var url=this.StockNewsAnalysisApiUrl+'/'+folderName+'/'+this.Symbol+'.json';
+
+        //请求数据
+        $.ajax({
+            url: url,
+            type:"get",
+            dataType: "json",
+            async:true,
+            success: function (recvData)
+            {
+                self.RecvNewsAnalysisData(recvData,jobID);
+                self.Execute.RunNextJob();
+            },
+            error:function(request, textStatus)
+            {
+                self.RecvNewsAnalysisDataError(request, textStatus,jobID);
+                self.Execute.RunNextJob();
+            }
+        });
+    }
+
+    this.RecvNewsAnalysisDataError=function(request, textStatus,jobID)
+    {
+        console.log('[JSSymbolData::RecvNewsAnalysisDataError] ajax error.',request.status);
+
+        //没有新闻使用0数据填充
+        var aryData=[];
+        for(var i=0;i<this.Data.Data.length;++i)
+        {
+            var item=new SingleData();
+            item.Date=this.Data.Data[i].Date;
+            item.Value=0
+            aryData.push(item);
+        }
+
+        var bindData=new ChartData();
+        bindData.Data=aryData;
+        this.NewsAnalysisData.set(jobID,bindData.GetValue());
+    }
+
+    this.RecvNewsAnalysisData=function(data,jobID)
+    {
+        if (!data.data || !data.date) return;
+        if (data.data.length<=0 || data.data.length!=data.date.length) return;
+        
+        console.log('[JSSymbolData::RecvNewsAnalysisData] jobID',jobID, data.update);
+        var aryData=[];
+        for(var i=0;i<data.data.length;++i)
+        {
+            var item=new SingleData();
+            item.Date=data.date[i];
+            item.Value=data.data[i];
+            aryData.push(item);
+        }
+
+        let aryFixedData=this.Data.GetFittingData2(aryData,0);
+
+        var bindData=new ChartData();
+        bindData.Data=aryFixedData;
+        //TODO:周期计算
+
+        this.NewsAnalysisData.set(jobID,bindData.GetValue());
+    }
+
    
     this.JsonDataToHistoryData=function(data)
     {
@@ -6522,6 +6677,10 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_MARGIN_SELL_VOLUME:1021,       //卖出信息-卖出量
     JOB_DOWNLOAD_MARGIN_SELL_REPAY:1022,        //卖出信息-偿还量
     JOB_DOWNLOAD_MARGIN_SELL_NET:1023,          //卖出信息-融券净卖出
+
+    JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE:2000,             //负面新闻统计
+    JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH:2001,             //机构调研
+    JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT:2002,             //互动易
     
 
     JOB_RUN_SCRIPT:10000, //执行脚本
@@ -6572,6 +6731,19 @@ var JS_EXECUTE_JOB_ID=
             [10,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET],         //MARGIN(10)  卖出信息-融券净卖出
         ]);
     
+        if (dataMap.has(value)) return dataMap.get(value);
+    
+        return null;
+    },
+
+    GetNewsAnalysisID:function(value)
+    {
+        let dataMap=new Map([
+            [1,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE],          //NEWS(1)   负面新闻统计
+            [2,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH],          //NEWS(2)   机构调研统计
+            [3,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT],          //NEWS(3)   互动易
+        ]);
+
         if (dataMap.has(value)) return dataMap.get(value);
     
         return null;
@@ -6677,6 +6849,11 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY:        //卖出信息-偿还量
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET:          //卖出信息-融券净卖出
                 return this.SymbolData.GetMarginData(jobName);
+
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE:      //负面新闻
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH:      //机构调研
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT:     //互动易
+                return this.SymbolData.GetNewsAnalysisData(jobName);
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
@@ -7051,6 +7228,9 @@ function JSExecute(ast,option)
             case "MARGIN":
                 node.Out=this.SymbolData.GetMarginCacheData(args[0],node);
                 break;
+            case "NEWS":
+                node.Out=this.SymbolData.GetNewsAnalysisCacheData(args[0],node);
+                break;
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node);
                 break;
@@ -7342,6 +7522,9 @@ function ScriptIndex(name,script,args,option)
 
     this.KLineType==null;
     if (option && option.KLineType) this.KLineType=option.KLineType;
+
+    this.InstructionType;
+    if (option && option.InstructionType) this.InstructionType=option.InstructionType;
 
     if (option && option.Lock) 
     {
@@ -7756,8 +7939,25 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.BindInstructionData=function(hqChart,windowIndex,hisData)  //绑定指示指标
+    {
+        if (this.OutVar==null || this.OutVar.length<0) return;
+        if (this.InstructionType==2)
+        {
+            let varItem=this.OutVar[this.OutVar.length-1]; //取最后一组数据作为指示数据
+            hqChart.SetInstructionData(this.InstructionType, {Data:varItem.Data});       //设置指示数据
+            return true;
+        }
+    }
+
     this.BindData=function(hqChart,windowIndex,hisData)
     {
+        if (windowIndex==0 && this.InstructionType)
+        {
+            this.BindInstructionData(hqChart,windowIndex,hisData);
+            return;
+        }
+
         //清空指标图形
         hqChart.DeleteIndexPaint(windowIndex);
         if (windowIndex==0) hqChart.ShowKLine(true);

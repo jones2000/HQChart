@@ -683,6 +683,7 @@ function Node()
     this.IsNeedSymbolData=false;        //是否需要下载股票数据
     this.IsNeedFinanceData=new Set();   //需要下载的财务数据
     this.IsNeedMarginData = new Set();
+    this.IsNeedNewsAnalysisData = new Set();      //新闻统计数据
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -702,6 +703,12 @@ function Node()
 
         //加载融资融券
         for (var jobID of this.IsNeedMarginData) 
+        {
+            jobs.push(jobID);
+        }
+
+        //加载新闻统计
+        for (var jobID of this.IsNeedNewsAnalysisData) 
         {
             jobs.push(jobID);
         }
@@ -759,6 +766,13 @@ function Node()
         {
             let jobID = JS_EXECUTE_JOB_ID.GetMarginJobID(args[0].Value);
             if (jobID && !this.IsNeedMarginData.has(jobID)) this.IsNeedMarginData.add(jobID);
+            return;
+        }
+
+        if (callee.Name === 'NEWS') 
+        {
+            let jobID = JS_EXECUTE_JOB_ID.GetNewsAnalysisID(args[0].Value);
+            if (jobID && !this.IsNeedNewsAnalysisData.has(jobID)) this.IsNeedNewsAnalysisData.add(jobID);
             return;
         }
 
@@ -4562,6 +4576,53 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+    属于未来函数,将当前位置到若干周期前的数据设为1.
+    用法:
+    BACKSET(X,N),若X非0,则将当前位置到N周期前的数值设为1.
+    例如:
+    BACKSET(CLOSE>OPEN,2)若收阳则将该周期及前一周期数值设为1,否则为0
+    */
+    this.BACKSET = function (condition, n) 
+    {
+        var result = [];
+        if (!condition) return result;
+        var dataCount = condition.length;
+        if (!this.IsNumber(dataCount) || dataCount <= 0) return result;
+
+        for (var i = 0; i < dataCount; ++i)    //初始化0
+        {
+            result[i] = 0;
+        }
+
+        for (var pos = 0; pos < dataCount; ++pos) 
+        {
+            if (this.IsNumber(condition[pos])) break;
+        }
+        if (pos == dataCount) return result;
+
+        var num = Math.min(dataCount - pos, Math.max(n, 1));
+
+        for (var i = dataCount - 1, j = 0; i >= 0; --i) 
+        {
+            var value = condition[i];
+            if (this.IsNumber(value) && value) 
+            {
+                for (j = i; j > i - num; --j) 
+                {
+                    result[j] = 1;
+                }
+            }
+        }
+
+        if (condition[i]) 
+        {
+            for (j = i; j >= pos; --j) result[j] = 1;
+        }
+
+        return result;
+    }
+
 
     //函数调用
     this.CallFunction=function(name,args,node)
@@ -4683,6 +4744,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.SAR(args[0], args[1], args[2]);
             case 'SARTURN':
                 return this.SARTURN(args[0], args[1], args[2]);
+            case 'BACKSET':
+                return this.BACKSET(args[0], args[1]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);
@@ -5235,6 +5298,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.RealtimeApiUrl = g_JSComplierResource.Domain +'/API/stock';                 //实时行情
     this.StockHistoryDayApiUrl = g_JSComplierResource.Domain +'/API/StockHistoryDay';  //历史财务数据
     this.StockHistoryDay3ApiUrl = g_JSComplierResource.Domain +'/API/StockHistoryDay3';  //历史财务数据
+    this.StockNewsAnalysisApiUrl = g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                 //新闻分析数据
     this.MaxReqeustDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
 
@@ -5242,6 +5306,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.IndexData;             //大盘指数
     this.FinanceData=new Map(); //财务数据
     this.MarginData = new Map();  //融资融券
+    this.NewsAnalysisData = new Map();    //新闻统计
     
    
     //使用option初始化
@@ -6204,7 +6269,99 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
+    this.GetNewsAnalysisCacheData = function (id, node) 
+    {
 
+        let jobID = JS_EXECUTE_JOB_ID.GetNewsAnalysisID(id);
+        if (!jobID) this.Execute.ThrowUnexpectedNode(node, '不支持NEWS(' + id + ')');
+        if (this.NewsAnalysisData.has(jobID)) return this.NewsAnalysisData.get(jobID);
+
+        return [];
+    }
+
+    //下载新闻统计
+    this.GetNewsAnalysisData = function (jobID) 
+    {
+        if (this.NewsAnalysisData.has(jobID)) return this.Execute.RunNextJob();
+
+        var self = this;
+        var mapFolder = new Map([
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE, "negative"],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH, 'research'],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT, 'interact']
+        ]);
+
+        if (!mapFolder.has(jobID)) 
+        {
+            this.Execute.RunNextJob();
+            return;
+        }
+
+        var folderName = mapFolder.get(jobID);
+        var url = this.StockNewsAnalysisApiUrl + '/' + folderName + '/' + this.Symbol + '.json';
+
+        //请求数据
+        wx.request({
+            url: url,
+            method: 'GET',
+            dataType: "json",
+            async: true,
+            success: function (recvData) 
+            {
+                if (recvData.statusCode==200)
+                    self.RecvNewsAnalysisData(recvData, jobID);
+                else
+                    self.RecvNewsAnalysisDataError(recvData, jobID);
+                self.Execute.RunNextJob();
+            },
+            fail: function (request, textStatus) 
+            {
+                //self.RecvNewsAnalysisDataError(request, textStatus, jobID);
+                self.Execute.RunNextJob();
+            }
+        });
+    }
+
+    this.RecvNewsAnalysisDataError = function (recvData, jobID) 
+    {
+        console.log('[JSSymbolData::RecvNewsAnalysisDataError] request error.', recvData.statusCode);
+
+        //没有新闻使用0数据填充
+        var aryData = [];
+        for (var i = 0; i < this.Data.Data.length; ++i) {
+            var item = new JSCommonData.SingleData();
+            item.Date = this.Data.Data[i].Date;
+            item.Value = 0
+            aryData.push(item);
+        }
+
+        var bindData = new JSCommonData.ChartData();
+        bindData.Data = aryData;
+        this.NewsAnalysisData.set(jobID, bindData.GetValue());
+    }
+
+    this.RecvNewsAnalysisData = function (recvData, jobID) 
+    {
+        var data=recvData.data;
+        if (!data.data || !data.date) return;
+        if (data.data.length <= 0 || data.data.length != data.date.length) return;
+
+        console.log('[JSSymbolData::RecvNewsAnalysisData] jobID', jobID, data.update);
+        var aryData = [];
+        for (var i = 0; i < data.data.length; ++i) {
+            var item = new JSCommonData.SingleData();
+            item.Date = data.date[i];
+            item.Value = data.data[i];
+            aryData.push(item);
+        }
+
+        let aryFixedData = this.Data.GetFittingData2(aryData, 0);
+
+        var bindData = new JSCommonData.ChartData();
+        bindData.Data = aryFixedData;
+
+        this.NewsAnalysisData.set(jobID, bindData.GetValue());
+    }
    
     this.JsonDataToHistoryData=function(data)
     {
@@ -6527,6 +6684,10 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_MARGIN_SELL_REPAY: 1022,        //卖出信息-偿还量
     JOB_DOWNLOAD_MARGIN_SELL_NET: 1023,          //卖出信息-融券净卖出
 
+    JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE: 2000,             //负面新闻统计
+    JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH: 2001,             //机构调研
+    JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT: 2002,             //互动易
+
     JOB_RUN_SCRIPT:10000, //执行脚本
 
     GetFinnanceJobID:function(value)
@@ -6572,6 +6733,19 @@ var JS_EXECUTE_JOB_ID=
             [8, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME],       //MARGIN(8)   卖出信息-卖出量
             [9, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY],        //MARGIN(9)   卖出信息-偿还量
             [10, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET],         //MARGIN(10)  卖出信息-融券净卖出
+        ]);
+
+        if (dataMap.has(value)) return dataMap.get(value);
+
+        return null;
+    },
+
+    GetNewsAnalysisID: function (value) 
+    {
+        let dataMap = new Map([
+            [1, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE],          //NEWS(1)   负面新闻统计
+            [2, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH],          //NEWS(2)   机构调研统计
+            [3, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT],          //NEWS(3)   互动易
         ]);
 
         if (dataMap.has(value)) return dataMap.get(value);
@@ -6678,6 +6852,11 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY:        //卖出信息-偿还量
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET:          //卖出信息-融券净卖出
                 return this.SymbolData.GetMarginData(jobName);
+
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE:      //负面新闻
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH:      //机构调研
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT:     //互动易
+                return this.SymbolData.GetNewsAnalysisData(jobName);
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
@@ -7043,6 +7222,9 @@ function JSExecute(ast,option)
                 break;
             case "MARGIN":
                 node.Out = this.SymbolData.GetMarginCacheData(args[0], node);
+                break;
+            case "NEWS":
+                node.Out = this.SymbolData.GetNewsAnalysisCacheData(args[0], node);
                 break;
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args,node);
