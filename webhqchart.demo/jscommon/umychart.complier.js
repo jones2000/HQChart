@@ -1,4 +1,11 @@
 
+//API默认地址
+var g_JSComplierResource=
+{
+    Domain : "https://opensource.zealink.com",               //API域名
+    CacheDomain : "https://opensourcecache.zealink.com"      //缓存域名
+}
+
 var Messages = {
     BadGetterArity: 'Getter must not have any formal parameters',
     BadSetterArity: 'Setter must have exactly one formal parameter',
@@ -5285,12 +5292,12 @@ function JSSymbolData(ast,option,jsExecute)
     this.Right=0;               //复权
     this.DataType=0;            //默认K线数据 2=分钟走势图数据
 
-    this.KLineApiUrl="https://opensource.zealink.com/API/KLine2";                   //日线
-    this.MinuteKLineApiUrl='https://opensource.zealink.com/API/KLine3';             //分钟K线
-    this.RealtimeApiUrl='https://opensource.zealink.com/API/stock';                 //实时行情
-    this.StockHistoryDayApiUrl='https://opensource.zealink.com/API/StockHistoryDay';  //历史财务数据
-    this.StockHistoryDay3ApiUrl='https://opensource.zealink.com/API/StockHistoryDay3';  //历史财务数据
-    this.StockNewsAnalysisApiUrl='https://opensourcecache.zealink.com/cache/newsanalyze';                 //新闻分析数据
+    this.KLineApiUrl= g_JSComplierResource.Domain+"/API/KLine2";                   //日线
+    this.MinuteKLineApiUrl= g_JSComplierResource.Domain+'/API/KLine3';             //分钟K线
+    this.RealtimeApiUrl= g_JSComplierResource.Domain+'/API/stock';                 //实时行情
+    this.StockHistoryDayApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay';  //历史财务数据
+    this.StockHistoryDay3ApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay3';  //历史财务数据
+    this.StockNewsAnalysisApiUrl= g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                 //新闻分析数据
     this.MaxReqeustDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
 
@@ -7498,6 +7505,13 @@ JSComplier.Execute=function(code,option,errorCallback)
 }
 
 
+JSComplier.SetDomain = function (domain, cacheDomain)   //修改API地址
+{
+    if (domain) g_JSComplierResource.Domain = domain;
+    if (cacheDomain) g_JSComplierResource.CacheDomain = cacheDomain;
+}
+
+
 //脚本指标
 //name=指标名字 args=参数名字 参数值
 function ScriptIndex(name,script,args,option)
@@ -7509,6 +7523,8 @@ function ScriptIndex(name,script,args,option)
     this.Script=script;
     this.Arguments=[];
     this.OutVar=[];
+    this.ID;
+    if (option && option.ID) this.ID=option.ID;
 
     //指标上锁配置信息
     this.IsLocked=false;    //是否锁住指标

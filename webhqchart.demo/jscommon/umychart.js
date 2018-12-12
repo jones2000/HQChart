@@ -129,6 +129,7 @@ function JSChart(divElement)
             for(var i in option.Frame)
             {
                 var item=option.Frame[i];
+                if (!chart.Frame.SubFrame[i]) continue;
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
             }
@@ -186,6 +187,7 @@ function JSChart(divElement)
                     if (!indexInfo) continue;
 
                     if (item.Lock) indexInfo.Lock=item.Lock;
+                    indexInfo.ID=item.Index;
                     chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
                 }
 
@@ -696,25 +698,33 @@ function JSChart(divElement)
     this.ChangeScriptIndex=function(windowIndex,indexData)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeScriptIndex)=='function')
-        this.JSChartContainer.ChangeScriptIndex(windowIndex,indexData);
+            this.JSChartContainer.ChangeScriptIndex(windowIndex,indexData);
     }
 
-    this.ChangeInstructionIndex=function(indexName)
+    this.GetIndexInfo=function()
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.GetIndexInfo)=='function')
+            return this.JSChartContainer.GetIndexInfo();
+        else 
+            return [];
+    }
+
+    this.ChangeInstructionIndex=function(indexName) 
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeInstructionIndex)=='function')
-        this.JSChartContainer.ChangeInstructionIndex(indexName);
+            this.JSChartContainer.ChangeInstructionIndex(indexName);
     }
 
     this.ChangeInstructionScriptIndex=function(indexData)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeInstructionIndex)=='function')
-        this.JSChartContainer.ChangeInstructionScriptIndex(indexData);
+            this.JSChartContainer.ChangeInstructionScriptIndex(indexData);
     }
 
     this.CancelInstructionIndex=function()
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.CancelInstructionIndex)=='function')
-        this.JSChartContainer.CancelInstructionIndex();
+            this.JSChartContainer.CancelInstructionIndex();
     }
 
     //K线周期切换
@@ -6552,7 +6562,8 @@ function ChartSingleText()
 
         var isArrayText=Array.isArray(this.Text);
         var text;
-        this.TextFont=this.GetDynamicFont(dataWidth);
+        var pixelTatio = GetDevicePixelRatio();
+        this.TextFont=this.GetDynamicFont(dataWidth*pixelTatio);
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
@@ -7863,6 +7874,81 @@ function IFrameSplitOperator()
 
         return true;
     }
+
+    this.Filter = function (aryInfo) 
+    {
+        if (this.SplitCount <= 0 || aryInfo.length <= 0 || aryInfo.length < this.SplitCount) return aryInfo;
+
+        //分割线比预设的多, 过掉一些
+        var filter = parseInt(aryInfo.length / this.SplitCount);
+        if (filter <= 1) filter = 2;
+        var data = [];
+        for (var i = 0; i < aryInfo.length; i += filter) 
+        {
+            if (i + filter >= aryInfo.length && i != aryInfo.length - 1) //最后一个数据放进去
+            {
+                data.push(aryInfo[aryInfo.length - 1]);
+            }
+            else 
+            {
+                data.push(aryInfo[i]);
+            }
+        }
+    
+        return data;
+    }
+
+    this.RemoveZero = function (aryInfo)   //移除小数后面多余的0
+    {
+        //所有的数字小数点后面都0,才会去掉
+        var isAllZero = [true, true];
+        for (var i in aryInfo) 
+        {
+            var item = aryInfo[i];
+            var message = item.Message[0];
+            if (!message) isAllZero[0] = false;
+            else if (!this.IsDecimalZeroEnd(message)) isAllZero[0] = false;
+
+            var message = item.Message[1];
+            if (!message) isAllZero[1] = false;
+            else if (!this.IsDecimalZeroEnd(message)) isAllZero[1] = false;
+        }
+
+        if (isAllZero[0] == false && isAllZero[1] == false) return;
+        for (var i in aryInfo) 
+        {
+            var item = aryInfo[i];
+            if (isAllZero[0]) 
+            {
+                var message = item.Message[0];
+                item.Message[0] = message.replace(/[.][0]+/g, '');
+            }
+
+            if (isAllZero[1])
+            {
+                var message = item.Message[1];
+                item.Message[1] = message.replace(/[.][0]+/g, '');
+            }
+        }
+    }
+
+    this.IsDecimalZeroEnd = function (text)   //是否是0结尾的小数
+    {
+        if (!text) return false;
+        if (text == '0') return true;
+
+        var pos = text.search(/[.]/);
+        if (pos < 0) return false;
+
+        for (var i = pos + 1; i < text.length; ++i) 
+        {
+            var char = text.charAt(i);
+            if (char >= '1' && char <= '9') return false;
+        }
+
+        return true;
+    }
+    
 }
 
 //字符串格式化 千分位分割
@@ -8047,27 +8133,7 @@ function FrameSplitKLinePriceY()
             //this.Frame.HorizontalInfo[i].LineColor="rgb(220,220,220)";
         }
 
-        if (this.SplitCount>0 && splitData.Count>this.SplitCount)
-        {
-            var filter=parseInt(splitData.Count/this.SplitCount);
-            if (filter<=1) filter=2;
-            var data=[];
-            for(var i=0; i<this.Frame.HorizontalInfo.length; i+=filter)
-            {
-                
-                if (i+filter>=this.Frame.HorizontalInfo.length && i!=this.Frame.HorizontalInfo.length-1) //最后一个数据放进去
-                {
-                    data.push(this.Frame.HorizontalInfo[this.Frame.HorizontalInfo.length-1]);
-                }
-                else
-                {
-                    data.push(this.Frame.HorizontalInfo[i]);
-                }
-            }
-
-            this.Frame.HorizontalInfo=data;
-        }
-
+        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
         this.Frame.HorizontalMax=splitData.Max;
         this.Frame.HorizontalMin=splitData.Min;
     }
@@ -8121,6 +8187,8 @@ function FrameSplitY()
             //this.Frame.HorizontalInfo[i].LineColor="rgb(220,220,220)";
         }
 
+        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
+        this.RemoveZero(this.Frame.HorizontalInfo);
         this.Frame.HorizontalMax=splitData.Max;
         this.Frame.HorizontalMin=splitData.Min;
     }
@@ -11452,11 +11520,11 @@ function KLineChartContainer(uielement)
     this.KLineDrawType=0;
     this.ScriptErrorCallback;           //脚本执行错误回调
 
-    //this.KLineApiUrl="http://opensource.zealink.com/API/KLine2";                      //历史K线api地址
-    this.KLineApiUrl="https://opensource.zealink.com/API/KLine2";                        //历史K线api地址
-    this.MinuteKLineApiUrl='https://opensource.zealink.com/API/KLine3';                  //历史分钟数据
-    this.RealtimeApiUrl="https://opensource.zealink.com/API/Stock";                      //实时行情api地址
-    this.KLineMatchUrl="https://opensource.zealink.com/API/KLineMatch";                  //形态匹配
+    //this.KLineApiUrl="http://opensource.zealink.com/API/KLine2";                  //历史K线api地址
+    this.KLineApiUrl=g_JSChartResource.Domain+"/API/KLine2";                        //历史K线api地址
+    this.MinuteKLineApiUrl=g_JSChartResource.Domain+'/API/KLine3';                  //历史分钟数据
+    this.RealtimeApiUrl=g_JSChartResource.Domain+"/API/Stock";                      //实时行情api地址
+    this.KLineMatchUrl=g_JSChartResource.Domain+"/API/KLineMatch";                  //形态匹配
 
     this.MinuteDialog;  //双击历史K线 弹出分钟走势图
     this.RightMenu;     //右键菜单
@@ -11822,7 +11890,7 @@ function KLineChartContainer(uielement)
         this.BindMainData(bindData,this.PageSize);
 
         this.BindInstructionIndexData(bindData);    //执行指示脚本
-        
+
         for(var i=0; i<this.Frame.SubFrame.length; ++i)
         {
             this.BindIndexData(i,bindData);
@@ -12055,7 +12123,7 @@ function KLineChartContainer(uielement)
             {
                 if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
             }
-            let indexData = { Name: indexInfo.Name, Script: indexInfo.Script, Args: indexInfo.Args };
+            let indexData = { Name: indexInfo.Name, Script: indexInfo.Script, Args: indexInfo.Args, ID:indexName };
             return this.ChangeScriptIndex(windowIndex, indexData);
         }
 
@@ -12098,6 +12166,21 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Draw();
+    }
+
+    //获取当天的显示的指标
+    this.GetIndexInfo=function()
+    {
+        var aryIndex=[];
+        for(var i in this.WindowIndex)
+        {
+            var item=this.WindowIndex[i];
+            var info={Name:item.Name};
+            if (item.ID) info.ID=item.ID;
+            aryIndex.push(info);
+        }
+
+        return aryIndex;
     }
 
     //锁|解锁指标 { Index:指标名字,IsLocked:是否要锁上,Callback:回调 }
@@ -13938,7 +14021,7 @@ function CustomKLineChartContainer(uielement)
     delete this.newMethod;
 
     this.ClassName='CustomKLineChartContainer';
-    this.CustomKLineApiUrl="https://opensource.zealink.com/API/IndexCalculate";                        //自定义指数计算地址
+    this.CustomKLineApiUrl=g_JSChartResource.Domain+"/API/IndexCalculate";                        //自定义指数计算地址
     this.CustomStock;   //成分
     this.QueryDate={Start:20180101,End:20180627} ;     //计算时间区间
 

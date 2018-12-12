@@ -52,7 +52,7 @@ JSIndexScript.prototype.Get=function(id)
 
             ['飞龙四式', this.Dragon4_Main], ['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis], ['融资占比', this.MarginProportion], 
-            ['负面新闻', this.NewsNegative],['机构调研', this.NewsResearch],['互动易',this.NewsInteract],
+            ['负面新闻', this.NewsNegative], ['机构调研', this.NewsResearch], ['董秘连线',this.NewsInteract],
 
             //五彩K线(函数COLOR_开头)
             ['五彩K线-十字星', this.COLOR_KSTAR1], ['五彩K线-早晨之星', this.COLOR_KSTAR2], ['五彩K线-黄昏之星', this.COLOR_KSTAR3], ['五彩K线-长十字', this.COLOR_SHI1],
@@ -1955,7 +1955,7 @@ JSIndexScript.prototype.NewsResearch = function () {
 JSIndexScript.prototype.NewsInteract = function () {
     let data =
         {
-            Name: '互动易', Description: '互动易统计', IsMainIndex: false,
+            Name: '董秘连线', Description: '互动易统计', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 5 }, { Name: 'N2', Value: 10 }],
             Script: //脚本
                 '个数:NEWS(3);\n\

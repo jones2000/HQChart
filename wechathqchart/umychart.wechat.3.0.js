@@ -156,6 +156,7 @@ function JSChart(element) {
           if (!indexInfo) continue;
 
           if (item.Lock) indexInfo.Lock = item.Lock;
+          indexInfo.ID = item.Index;
           chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
         }
       }
@@ -540,6 +541,15 @@ function JSChart(element) {
     if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeScriptIndex) == 'function')
       this.JSChartContainer.ChangeScriptIndex(windowIndex, indexData);
   }
+
+    //获取当前显示的指标信息
+    this.GetIndexInfo = function () 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.GetIndexInfo) == 'function')
+            return this.JSChartContainer.GetIndexInfo();
+        else
+            return [];
+    }
 
   //K线周期切换
   this.ChangePeriod = function (period) {
@@ -10158,7 +10168,7 @@ function KLineChartContainer(uielement) {
       else {
         if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
       }
-      let indexData = { Name: indexInfo.Name, Script: indexInfo.Script, Args: indexInfo.Args };
+        let indexData = { Name: indexInfo.Name, Script: indexInfo.Script, Args: indexInfo.Args, ID: indexName };
       return this.ChangeScriptIndex(windowIndex, indexData);
     }
 
@@ -10198,6 +10208,21 @@ function KLineChartContainer(uielement) {
     this.UpdateFrameMaxMin();          //调整坐标最大 最小值
     this.Draw();
   }
+
+    //获取当天的显示的指标
+    this.GetIndexInfo = function () 
+    {
+        var aryIndex = [];
+        for (var i in this.WindowIndex) 
+        {
+            var item = this.WindowIndex[i];
+            var info = { Name: item.Name };
+            if (item.ID) info.ID = item.ID;
+            aryIndex.push(info);
+        }
+
+        return aryIndex;
+    }
 
   //锁|解锁指标 { Index:指标名字,IsLocked:是否要锁上,Callback:回调 }
   this.LockIndex = function (lockData) {
@@ -12957,6 +12982,8 @@ function ScriptIndex(name, script, args, option)
     this.Script = script;
     this.Arguments = [];
     this.OutVar = [];
+    this.ID;    //指标ID
+    if (option && option.ID) this.ID = option.ID;
 
     this.KLineType = null;
     if (option && option.KLineType) this.KLineType = option.KLineType;
