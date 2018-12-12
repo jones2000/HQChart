@@ -2895,7 +2895,7 @@ function JSAlgorithm(errorHandler, symbolData)
 
             for (++index; index < data2.length; ++index) 
             {
-                result[index] = (data2[index] > data && data2[index - 1] < data) ? 1 : 0;
+                result[index] = (data2[index] < data && data2[index - 1] > data) ? 1 : 0;
             }
         }
 

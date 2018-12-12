@@ -67,6 +67,12 @@ JSIndexScript.prototype.Get=function(id)
             ['五彩K线-双飞乌鸦',this.COLOR_SFWY],['五彩K线-上升三部曲',this.COLOR_SSSBQ],['五彩K线-下跌三部曲',this.COLOR_XDSBQ],['五彩K线-长下影',this.COLOR_CHXY],
             ['五彩K线-长上影',this.COLOR_CHSY],['五彩K线-分离',this.COLOR_FENLI],
 
+            //交易系统
+            ['交易系统-BIAS',this.TRADE_BIAS],['交易系统-CCI',this.TRADE_CCI],['交易系统-DMI',this.TRADE_DMI],['交易系统-KD',this.TRADE_KD],
+            ['交易系统-BOLL',this.TRADE_BOLL],['交易系统-KDJ',this.TRADE_KDJ],['交易系统-MA',this.TRADE_MA],['交易系统-MACD',this.TRADE_MACD],
+            ['交易系统-MTM',this.TRADE_MTM],['交易系统-PSY',this.TRADE_PSY],['交易系统-ROC',this.TRADE_ROC],['交易系统-RSI',this.TRADE_RSI],
+            ['交易系统-VR',this.TRADE_VR],['交易系统-DPSJ',this.TRADE_DPSJ],
+
             ['TEST', this.TEST] //测试用
         ]
     );
@@ -2488,6 +2494,241 @@ JSIndexScript.prototype.COLOR_FENLI=function()
 
     return data;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//交易系统
+
+JSIndexScript.prototype.TRADE_BIAS = function () 
+{
+    let data =
+    {
+        Name: 'BIAS', Description: '乖离率专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N', Value: 12 }, { Name: 'LL', Value: 6 },{ Name: 'LH', Value: 6 }],
+        Script: //脚本
+'BIAS:=(CLOSE-MA(CLOSE,N))/MA(CLOSE,N)*100;\n\
+ENTERLONG:CROSS(-LL,BIAS);\n\
+EXITLONG:CROSS(BIAS,LH);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_CCI = function () 
+{
+    let data =
+    {
+        Name: 'CCI', Description: 'CCI专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N', Value: 14 }],
+        Script: //脚本
+'TYP:=(HIGH+LOW+CLOSE)/3;\n\
+CCI:=(TYP-MA(TYP,N))/(0.015*AVEDEV(TYP,N));\n\
+INDEX:=CCI;\n\
+ENTERLONG:CROSS(INDEX,-100);\n\
+EXITLONG:CROSS(100,INDEX);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_DMI = function () 
+{
+    let data =
+    {
+        Name: 'DMI', Description: '趋向专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N', Value: 14 }],
+        Script: //脚本
+'MTR:=SUM(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(LOW-REF(CLOSE,1))),N);\n\
+HD :=HIGH-REF(HIGH,1);\n\
+LD :=REF(LOW,1)-LOW;\n\
+PDM:=SUM(IF(HD>0&&HD>LD,HD,0),N);\n\
+MDM:=SUM(IF(LD>0&&LD>HD,LD,0),N);\n\
+PDI:=PDM*100/MTR;\n\
+MDI:=MDM*100/MTR;\n\
+ENTERLONG:CROSS(PDI,MDI);\n\
+EXITLONG:CROSS(MDI,PDI);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_KD = function () 
+{
+    let data =
+    {
+        Name: 'KD', Description: 'KD指标专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N', Value: 9 },{ Name: 'M1', Value: 3 },{ Name: 'M2', Value: 3 }],
+        Script: //脚本
+'WRSV:=(CLOSE-LLV(LOW,N))/(HHV(HIGH,N)-LLV(LOW,N))*100;\n\
+WK:=SMA(WRSV,M1,1);\n\
+D:=SMA(WK,M2,1);\n\
+ENTERLONG:CROSS(WK,D)&&WK<20;\n\
+EXITLONG:CROSS(D,WK)&&WK>80;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_BOLL = function () 
+{
+    let data =
+    {
+        Name: 'BOLL', Description: '布林带专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N', Value: 20 }],
+        Script: //脚本
+'MID :=MA(CLOSE,N);\n\
+UPPER:=MID+2*STD(CLOSE,N);\n\
+LOWER:=MID-2*STD(CLOSE,N);\n\
+ENTERLONG:CROSS(CLOSE,LOWER);\n\
+EXITLONG:CROSS(CLOSE,UPPER);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_KDJ = function () 
+{
+    let data =
+    {
+        Name: 'KDJ', Description: 'KDJ专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N', Value: 9 },{ Name: 'M1', Value: 3 }],
+        Script: //脚本
+'RSV:=(CLOSE-LLV(LOW,N))/(HHV(HIGH,N)-LLV(LOW,N))*100;\n\
+K:=SMA(RSV,M1,1);\n\
+D:=SMA(K,M1,1);\n\
+J:=3*K-2*D;\n\
+ENTERLONG:CROSS(J,0);\n\
+EXITLONG:CROSS(100,J);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_MA = function () 
+{
+    let data =
+    {
+        Name: 'MA', Description: '均线专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'SHORT', Value: 5 },{ Name: 'LONG', Value: 20 }],
+        Script: //脚本
+'ENTERLONG:CROSS(MA(CLOSE,SHORT),MA(CLOSE,LONG));\n\
+EXITLONG:CROSS(MA(CLOSE,LONG),MA(CLOSE,SHORT));'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_MACD = function () 
+{
+    let data =
+    {
+        Name: 'MACD', Description: 'MACD专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'LONG', Value: 26 }, { Name: 'SHORT', Value: 12 }, { Name: 'M', Value: 9 }],
+        Script: //脚本
+'DIFF:=EMA(CLOSE,SHORT) - EMA(CLOSE,LONG);\n\
+DEA  := EMA(DIFF,M);\n\
+MACD := 2*(DIFF-DEA);\n\
+ENTERLONG:CROSS(MACD,0);\n\
+EXITLONG:CROSS(0,MACD);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_MTM = function () 
+{
+    let data =
+    {
+        Name: 'MTM', Description: '动力指标专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N', Value: 6 }],
+        Script: //脚本
+'WMTM:=C-REF(C,N);\n\
+ENTERLONG:CROSS(WMTM,0);\n\
+EXITLONG:CROSS(0,WMTM);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_PSY = function () 
+{
+    let data =
+    {
+        Name: 'PSY', Description: 'PSY心理线专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N', Value: 12 },{ Name: 'LL', Value: 10 },{ Name: 'LH', Value: 85 }],
+        Script: //脚本
+'MYPSY:=COUNT(CLOSE>REF(CLOSE,1),N)/N*100;\n\
+ENTERLONG:CROSS(LL,MYPSY);\n\
+EXITLONG:CROSS(MYPSY,LH);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_ROC = function () 
+{
+    let data =
+    {
+        Name: 'ROC', Description: '变动速率专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N', Value: 12 },{ Name: 'M', Value: 6 }],
+        Script: //脚本
+'WROC:=MA(100*(CLOSE-REF(CLOSE,N))/REF(CLOSE,N),M);\n\
+ENTERLONG:CROSS(WROC,0);\n\
+EXITLONG:CROSS(0,WROC);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_RSI = function () 
+{
+    let data =
+    {
+        Name: 'RSI', Description: '相对强弱专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N', Value: 6 },{ Name: 'LL', Value: 20 },{ Name: 'LH', Value: 80 }],
+        Script: //脚本
+'LC:=REF(CLOSE,1);\n\
+WRSI:=SMA(MAX(CLOSE-LC,0),N,1)/SMA(ABS(CLOSE-LC),N,1)*100;\n\
+ENTERLONG:CROSS(WRSI,LL);\n\
+EXITLONG:CROSS(LH,WRSI);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_VR = function () 
+{
+    let data =
+    {
+        Name: 'VR', Description: 'VR容量比率专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N', Value: 26 },{ Name: 'LL', Value: 70 },{ Name: 'LH', Value: 250 }],
+        Script: //脚本
+'WVR := SUM((IF(CLOSE>OPEN,VOL,0)+IF(CLOSE=OPEN,VOL/2,0)),N)/SUM((IF(CLOSE<OPEN,VOL,0)+IF(CLOSE=OPEN,VOL/2,0)),N)*100;\n\
+ENTERLONG:CROSS(LL,WVR);\n\
+EXITLONG:CROSS(WVR,LH);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TRADE_DPSJ = function () 
+{
+    let data =
+    {
+        Name: 'DPSJ', Description: '大盘随机专家系统', IsMainIndex: true, InstructionType:1,
+        Args: [{ Name: 'N1', Value: 18 },{ Name: 'N2', Value: 12 }],
+        Script: //脚本
+'RSV:=(INDEXC-LLV(INDEXL,N1))/(HHV(INDEXH,N1)-LLV(INDEXL,N1))*100;\n\
+K:=SMA(RSV,N2,1);\n\
+HSL:VOL/100/(FINANCE(7));\n\
+ENTERLONG: CROSS(K,20);\n\
+EXITLONG: (CROSS(HSL,5) OR CROSS(K,80));'
+    };
+
+    return data;
+}
+
+
 
 JSIndexScript.prototype.TEST = function () 
 {

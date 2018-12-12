@@ -156,13 +156,23 @@ function JSChart(divElement)
         //创建子窗口的指标
         let scriptData = new JSIndexScript();
 
-        if (option.Instruction)    //专家指示 或 五彩K线
+        if (option.ColorIndex)    //五彩K线
         {
-            var item=option.Instruction;
+            var item=option.ColorIndex;
             let indexInfo=scriptData.Get(item.Index);
             if (indexInfo)
             {
-                chart.InstructionIndex=new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                chart.ColorIndex=new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+            }
+        }
+
+        if (option.TradeIndex)  //交易指标
+        {
+            var item=option.TradeIndex;
+            let indexInfo=scriptData.Get(item.Index);
+            if (indexInfo)
+            {
+                chart.TradeIndex=new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
             }
         }
 
@@ -4561,6 +4571,7 @@ function ChartKLine()
     this.DownColor=g_JSChartResource.DownBarColor;
     this.UnchagneColor=g_JSChartResource.UnchagneBarColor;          //平盘
     this.ColorData;             //五彩K线颜色 >0：g_JSChartResource.UpBarColor 其他：g_JSChartResource.DownBarColor
+    this.TradeData;             //交易系统 包含买卖数据{Buy:, Sell:}
     this.TooltipRect=new Array();           //2位数组 0 数据序号 1 区域
 
     this.IsShowMaxMinPrice=true;                 //是否显示最大最小值
@@ -4718,7 +4729,7 @@ function ChartKLine()
         if (bFirstPoint==false) this.Canvas.stroke();
     }
 
-    this.DrawKBar=function()
+    this.DrawKBar=function()        //蜡烛头
     {
         var isHScreen=(this.ChartFrame.IsHScreen===true);
         var dataWidth=this.ChartFrame.DataWidth;
@@ -5017,6 +5028,93 @@ function ChartKLine()
         this.PtMin=ptMin;
     }
 
+    this.DrawTrade=function()       //交易系统
+    {
+        if (!this.TradeData) return;
+
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
+        var chartright=this.ChartBorder.GetRight();
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        if (isHScreen) 
+        {
+            xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+2.0;
+            chartright=this.ChartBorder.GetBottom();
+        }
+
+        var sellData=this.TradeData.Sell;
+        var buyData=this.TradeData.Buy;
+        var arrowWidth=dataWidth;
+        if (arrowWidth>10) arrowWidth=10;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var data=this.Data.Data[i];
+            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+            var buy=false,sell=false;
+            if (sellData && i<sellData.length) sell=sellData[i]>0;
+            if (buyData && i<buyData.length) buy=buyData[i]>0;
+            if (!sell && !buy) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+            var x=left+(right-left)/2;
+            var yLow=this.ChartFrame.GetYFromData(data.Low);
+            var yHigh=this.ChartFrame.GetYFromData(data.High);
+            var yOpen=this.ChartFrame.GetYFromData(data.Open);
+            var yClose=this.ChartFrame.GetYFromData(data.Close);
+            var y=yHigh;
+
+            if (buy)
+            {
+                this.Canvas.fillStyle=this.UpColor;
+                this.Canvas.strokeStyle=this.UnchagneColor;
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(yLow-1,x);
+                    this.Canvas.lineTo(yLow-arrowWidth-1,x-arrowWidth/2);
+                    this.Canvas.lineTo(yLow-arrowWidth-1,x+arrowWidth/2,);
+                }
+                else
+                {
+                    this.Canvas.moveTo(x,yLow+1);
+                    this.Canvas.lineTo(x-arrowWidth/2,yLow+arrowWidth+1);
+                    this.Canvas.lineTo(x+arrowWidth/2,yLow+arrowWidth+1);
+                }
+                this.Canvas.closePath();
+                this.Canvas.fill();
+                this.Canvas.stroke();
+            }
+
+            if (sell)
+            {
+                this.Canvas.fillStyle=this.DownColor;
+                this.Canvas.strokeStyle=this.UnchagneColor;
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(yHigh+1,x);
+                    this.Canvas.lineTo(yHigh+arrowWidth+1,x-arrowWidth/2);
+                    this.Canvas.lineTo(yHigh+arrowWidth+1,x+arrowWidth/2);
+                }
+                else
+                {
+                    this.Canvas.moveTo(x,yHigh-1);
+                    this.Canvas.lineTo(x-arrowWidth/2,yHigh-arrowWidth-1);
+                    this.Canvas.lineTo(x+arrowWidth/2,yHigh-arrowWidth-1);
+                }
+                this.Canvas.closePath();
+                this.Canvas.fill();
+                this.Canvas.stroke();
+            }
+        }
+    }
+
     this.Draw=function()
     {
         this.ClearInfoDiv();
@@ -5039,6 +5137,8 @@ function ChartKLine()
         {
             this.DrawKBar();
         }
+
+        this.DrawTrade();
 
         if (this.IsShowMaxMinPrice)     //标注最大值最小值
         {
@@ -11508,7 +11608,8 @@ function KLineChartContainer(uielement)
 
     this.ClassName='KLineChartContainer';
     this.WindowIndex=new Array();
-    this.InstructionIndex;              //指示 (专家指示, 五彩K线)
+    this.ColorIndex;                    //五彩K线
+    this.TradeIndex;                    //交易指标/专家系统
     this.Symbol;
     this.Name;
     this.Period=0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
@@ -11717,11 +11818,14 @@ function KLineChartContainer(uielement)
     //执行指示(专家指示 五彩K线)
     this.BindInstructionIndexData=function(hisData)
     {
-        if (!this.InstructionIndex) return;
-
-        if (typeof(this.InstructionIndex.ExecuteScript)=='function')
+        if (this.ColorIndex && typeof(this.ColorIndex.ExecuteScript)=='function')   //五彩K线
         {
-            this.InstructionIndex.ExecuteScript(this,0,hisData);
+            this.ColorIndex.ExecuteScript(this,0,hisData);
+        }
+
+        if (this.TradeIndex && typeof(this.TradeIndex.ExecuteScript)=='function')   //交易指标
+        {
+            this.TradeIndex.ExecuteScript(this,0,hisData);
         }
     }
 
@@ -12053,7 +12157,7 @@ function KLineChartContainer(uielement)
         }
         else if (type==1)   //专家指示
         {
-
+            this.ChartPaint[0].TradeData={Sell:instructionData.Sell, Buy:instructionData.Buy};
         }
     }
 
@@ -12070,7 +12174,18 @@ function KLineChartContainer(uielement)
 
     this.ChangeInstructionScriptIndex=function(indexData)
     {
-        this.InstructionIndex=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+        if (indexData.InstructionType==1)       //交易系统
+        {
+            this.ColorIndex=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+        }
+        else if (indexData.InstructionType==2)  //五彩K线
+        {
+            this.TradeIndex=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+        }
+        else
+        {
+            return;
+        }
 
         var bindData=this.ChartPaint[0].Data;
         this.BindInstructionIndexData(bindData);
@@ -12085,6 +12200,7 @@ function KLineChartContainer(uielement)
         if (this.ChartPaint.length<=0 || !this.ChartPaint[0]) return;
 
         this.ChartPaint[0].ColorData=null;  //五彩K线数据取消掉
+        this.ChartPaint[0].TradeData=null;  //交易系统数据取消
 
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值

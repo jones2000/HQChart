@@ -2882,7 +2882,7 @@ function JSAlgorithm(errorHandler,symbolData)
 
             for(++index;index<data2.length;++index)
             {
-                result[index]= (data2[index]>data && data2[index-1]<data) ? 1:0;
+                result[index]= (data2[index]<data && data2[index-1]>data) ? 1:0;
             }
         }
 
@@ -7958,10 +7958,23 @@ function ScriptIndex(name,script,args,option)
     this.BindInstructionData=function(hqChart,windowIndex,hisData)  //绑定指示指标
     {
         if (this.OutVar==null || this.OutVar.length<0) return;
-        if (this.InstructionType==2)
+        if (this.InstructionType==2)        //五彩K线
         {
             let varItem=this.OutVar[this.OutVar.length-1]; //取最后一组数据作为指示数据
             hqChart.SetInstructionData(this.InstructionType, {Data:varItem.Data});       //设置指示数据
+            return true;
+        }
+        else if (this.InstructionType==1)   //交易系统
+        {
+            var buyData, sellData;
+            for(var i in this.OutVar)
+            {
+                let item=this.OutVar[i];
+                if (item.Name=='ENTERLONG') buyData=item.Data;
+                else if (item.Name=='EXITLONG') sellData=item.Data;
+            }
+
+            hqChart.SetInstructionData(this.InstructionType, {Buy:buyData, Sell:sellData});       //设置指示数据
             return true;
         }
     }
