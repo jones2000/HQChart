@@ -4565,7 +4565,7 @@ function ChartKLine()
     this.newMethod();
     delete this.newMethod;
 
-    this.DrawType=0;    // 0=K线  1=收盘价线 2=美国线
+    this.DrawType=0;    // 0=实心K线柱子  1=收盘价线 2=美国线 3=空心K线柱子
     this.CloseLineColor=g_JSChartResource.CloseLineColor;
     this.UpColor=g_JSChartResource.UpBarColor;
     this.DownColor=g_JSChartResource.DownBarColor;
@@ -4801,12 +4801,12 @@ function ChartKLine()
                         if (isHScreen)
                         {
                             this.Canvas.moveTo(ToFixedPoint(y),ToFixedPoint(x));
-                            this.Canvas.lineTo(ToFixedPoint(yClose),ToFixedPoint(x));
+                            this.Canvas.lineTo(ToFixedPoint(this.DrawType==3?Math.max(yClose,yOpen):yClose),ToFixedPoint(x));
                         }
                         else
                         {
                             this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                            this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yClose));
+                            this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(this.DrawType==3?Math.min(yClose,yOpen):yClose));
                         }
                         this.Canvas.stroke();
                         y=yClose;
@@ -4819,26 +4819,56 @@ function ChartKLine()
                     this.Canvas.fillStyle=upColor;
                     if (isHScreen)
                     {
-                        if (Math.abs(yOpen-y)<1)  this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),1,ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
-                        else this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth),);
+                        if (Math.abs(yOpen-y)<1)  
+                        {
+                            this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),1,ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
+                        }
+                        else 
+                        {
+                            if (this.DrawType==3) //空心柱
+                            {
+                                this.Canvas.beginPath();
+                                this.Canvas.rect(ToFixedPoint(y),ToFixedPoint(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
+                                this.Canvas.stroke();
+                            }
+                            else
+                            {
+                                this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
+                            }
+                        }
                     }
                     else
                     {
-                        if (yOpen-y<1)  this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
-                        else this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));
+                        if (yOpen-y<1)  
+                        {
+                            this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
+                        }
+                        else 
+                        {
+                            if (this.DrawType==3) //空心柱
+                            {
+                                this.Canvas.beginPath();
+                                this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));
+                                this.Canvas.stroke();
+                            }
+                            else
+                            {
+                                this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));
+                            }
+                        }
                     }
 
-                    if (data.Open>data.Low)
+                    if (data.Open>data.Low) //下影线
                     {
                         this.Canvas.beginPath();
                         if (isHScreen)
                         {
-                            this.Canvas.moveTo(ToFixedPoint(y),ToFixedPoint(x));
+                            this.Canvas.moveTo(ToFixedPoint(this.DrawType==3?Math.min(yClose,yOpen):y),ToFixedPoint(x));
                             this.Canvas.lineTo(ToFixedPoint(yLow),ToFixedPoint(x));
                         }
                         else
                         {
-                            this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
+                            this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(this.DrawType==3?Math.max(yClose,yOpen):y));
                             this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
                         }
                         this.Canvas.stroke();
@@ -12199,6 +12229,8 @@ function KLineChartContainer(uielement)
     {
         if (this.ChartPaint.length<=0 || !this.ChartPaint[0]) return;
 
+        this.ColorIndex=null;
+        this.TradeIndex=null;
         this.ChartPaint[0].ColorData=null;  //五彩K线数据取消掉
         this.ChartPaint[0].TradeData=null;  //交易系统数据取消
 
