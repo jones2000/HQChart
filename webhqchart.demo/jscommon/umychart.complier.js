@@ -7827,6 +7827,7 @@ function ScriptIndex(name,script,args,option)
         chart.Name=varItem.Name;
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.KLineDrawType=hqChart.KLineDrawType;  //设置K线显示类型
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
 

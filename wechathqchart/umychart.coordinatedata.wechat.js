@@ -779,6 +779,19 @@ var g_MinuteTimeStringData = new MinuteTimeStringData();
 var g_MinuteCoordinateData = new MinuteCoordinateData();
 var g_FuturesTimeData = new FuturesTimeData();
 
+
+function GetfloatPrecision(symbol)  //获取小数位数
+{
+    var defaultfloatPrecision = 2;    //默认2位
+    if (!symbol) return defaultfloatPrecision;
+    var upperSymbol = symbol.toUpperCase();
+
+    if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision = 3;    //基金3位小数
+    else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision = g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
+
+    return defaultfloatPrecision;
+}
+
 //导出统一使用JSCommon命名空间名
 module.exports =
 {
@@ -787,5 +800,6 @@ module.exports =
         MinuteCoordinateData: g_MinuteCoordinateData,
         MinuteTimeStringData: g_MinuteTimeStringData,
         MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
+        GetfloatPrecision: GetfloatPrecision,
     },
 };
