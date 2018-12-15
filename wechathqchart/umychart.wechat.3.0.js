@@ -266,79 +266,93 @@ function JSChart(element) {
     return chart;
   }
 
-  //分钟走势图
-  this.CreateMinuteChartContainer = function (option) {
-    var chart = null;
-    if (option.Type === "分钟走势图横屏") chart = new MinuteChartHScreenContainer(this.CanvasElement);
-    else chart = new MinuteChartContainer(this.CanvasElement);
-
-    var windowsCount = 2;
-    if (option.Windows && option.Windows.length > 0) windowsCount += option.Windows.length; //指标窗口从第3个窗口开始
-
-    chart.Create(windowsCount);                            //创建子窗口
-
-    //取消显示十字光标刻度信息
-    if (option.IsShowCorssCursorInfo == false) chart.ChartCorssCursor.IsShowText = option.IsShowCorssCursorInfo;
-    if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
-    if (option.DayCount > 1) chart.DayCount = option.DayCount;
-
-    if (option.Border) {
-      if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left = option.Border.Left;
-      if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right = option.Border.Right;
-      if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top = option.Border.Top;
-      if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom = option.Border.Bottom;
-    }
-
-    if (option.Frame) {
-      for (var i in option.Frame) {
-        var item = option.Frame[i];
-        if (!chart.Frame.SubFrame[i]) continue;
-        if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = item.SplitCount;
-        if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
-        if (item.XMessageAlign == 'bottom') chart.Frame.SubFrame[i].Frame.XMessageAlign = item.XMessageAlign;
-      }
-    }
-
-    if (option.MinuteTitle) {
-      if (option.MinuteTitle.IsShowName == false) chart.TitlePaint[0].IsShowName = false;
-      if (option.MinuteTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
-      if (option.MinuteTitle.UpdateUICallback) chart.TitlePaint[0].UpdateUICallback = option.MinuteTitle.UpdateUICallback
-      if (option.MinuteTitle.LineCount > 1) chart.TitlePaint[0].LineCount = option.MinuteTitle.LineCount;
-    }
-
-    //叠加股票
-    if (option.Overlay && option.Overlay.length) {
-      chart.OverlayChartPaint[0].Symbol = option.Overlay[0].Symbol;
-    }
-
-
-    let scriptData = new JSCommonIndexScript.JSIndexScript();
-    for (var i in option.Windows)   //分钟数据指标从第3个指标窗口设置
+    //分钟走势图
+    this.CreateMinuteChartContainer = function (option) 
     {
-      var item = option.Windows[i];
-      if (item.Script) {
-        chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
-      }
-      else {
-        var indexItem = JSIndexMap.Get(item.Index);
-        if (indexItem) {
-          chart.WindowIndex[2 + parseInt(i)] = indexItem.Create();       //创建子窗口的指标
-          chart.CreateWindowIndex(2 + parseInt(i));
-        }
-        else {
-          let indexInfo = scriptData.Get(item.Index);
-          if (!indexInfo) continue;
+        var chart = null;
+        if (option.Type === "分钟走势图横屏") chart = new MinuteChartHScreenContainer(this.CanvasElement);
+        else chart = new MinuteChartContainer(this.CanvasElement);
 
-          if (item.Lock) indexInfo.Lock = item.Lock;
-          chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
-        }
-      }
+        var windowsCount = 2;
+        if (option.Windows && option.Windows.length > 0) windowsCount += option.Windows.length; //指标窗口从第3个窗口开始
 
-      if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[2 + parseInt(i)].Frame.ChartBorder.TitleHeight = item.TitleHeight;   //指标标题高度
+        chart.Create(windowsCount);                            //创建子窗口
+
+        //取消显示十字光标刻度信息
+        if (option.IsShowCorssCursorInfo == false) chart.ChartCorssCursor.IsShowText = option.IsShowCorssCursorInfo;
+        if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
+        if (option.DayCount > 1) chart.DayCount = option.DayCount;
+
+        if (option.Border) 
+        {
+            if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left = option.Border.Left;
+            if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right = option.Border.Right;
+            if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top = option.Border.Top;
+            if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom = option.Border.Bottom;
+        }
+
+        if (option.Frame) 
+        {
+            for (var i in option.Frame) 
+            {
+                var item = option.Frame[i];
+                if (!chart.Frame.SubFrame[i]) continue;
+                if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = item.SplitCount;
+                if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
+                if (item.XMessageAlign == 'bottom') chart.Frame.SubFrame[i].Frame.XMessageAlign = item.XMessageAlign;
+            }
+        }
+
+        if (option.MinuteTitle) 
+        {
+            if (option.MinuteTitle.IsShowName == false) chart.TitlePaint[0].IsShowName = false;
+            if (option.MinuteTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
+            if (option.MinuteTitle.UpdateUICallback) chart.TitlePaint[0].UpdateUICallback = option.MinuteTitle.UpdateUICallback
+            if (option.MinuteTitle.LineCount > 1) chart.TitlePaint[0].LineCount = option.MinuteTitle.LineCount;
+        }
+
+        //叠加股票
+        if (option.Overlay && option.Overlay.length) 
+        {
+            chart.OverlayChartPaint[0].Symbol = option.Overlay[0].Symbol;
+        }
+
+        if (option.MinuteLine) 
+        {
+            if (option.MinuteLine.IsDrawAreaPrice == false) chart.ChartPaint[0].IsDrawArea = false;
+        }
+
+        let scriptData = new JSCommonIndexScript.JSIndexScript();
+        for (var i in option.Windows)   //分钟数据指标从第3个指标窗口设置
+        {
+            var item = option.Windows[i];
+            if (item.Script) 
+            {
+                chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
+            }
+            else 
+            {
+                var indexItem = JSIndexMap.Get(item.Index);
+                if (indexItem) 
+                {
+                    chart.WindowIndex[2 + parseInt(i)] = indexItem.Create();       //创建子窗口的指标
+                    chart.CreateWindowIndex(2 + parseInt(i));
+                }
+                else 
+                {
+                    let indexInfo = scriptData.Get(item.Index);
+                    if (!indexInfo) continue;
+
+                    if (item.Lock) indexInfo.Lock = item.Lock;
+                    chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
+                }
+            }
+
+            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[2 + parseInt(i)].Frame.ChartBorder.TitleHeight = item.TitleHeight;   //指标标题高度
+        }
+
+        return chart;
     }
-
-    return chart;
-  }
 
   //历史分钟走势图
   this.CreateHistoryMinuteChartContainer = function (option) {
@@ -5318,92 +5332,139 @@ function ChartStraightArea() {
 }
 
 //分钟线
-function ChartMinutePriceLine() {
-  this.newMethod = ChartLine;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function ChartMinutePriceLine() 
+{
+    this.newMethod = ChartLine;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.YClose;
+    this.YClose;
+    this.IsDrawArea = true;    //是否画价格面积图
+    this.AreaColor = 'rgba(0,191,255,0.1)';
 
-  this.Draw = function () {
-    if (this.NotSupportMessage) {
-      this.DrawNotSupportmessage();
-      return;
+    this.Draw = function () 
+    {
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        var isHScreen = (this.ChartFrame.IsHScreen === true);
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen === true) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+        var minuteCount = this.ChartFrame.MinuteCount;
+        var bottom = this.ChartBorder.GetBottomEx();
+        var left = this.ChartBorder.GetLeftEx();
+
+        var bFirstPoint = true;
+        var ptFirst = {}; //第1个点
+        var drawCount = 0;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(value);
+
+            if (bFirstPoint) 
+            {
+                this.Canvas.strokeStyle = this.Color;
+                this.Canvas.beginPath();
+                if (isHScreen) this.Canvas.moveTo(y, x);
+                else this.Canvas.moveTo(x, y);
+                bFirstPoint = false;
+                ptFirst = { X: x, Y: y };
+            }
+            else 
+            {
+                if (isHScreen) this.Canvas.lineTo(y, x);
+                else this.Canvas.lineTo(x, y);
+            }
+
+            ++drawCount;
+
+            if (drawCount >= minuteCount) //上一天的数据和这天地数据线段要断开
+            {
+                bFirstPoint = true;
+                this.Canvas.stroke();
+                if (this.IsDrawArea)   //画面积
+                {
+                    if (isHScreen) 
+                    {
+                        this.Canvas.lineTo(left, x);
+                        this.Canvas.lineTo(left, ptFirst.X);
+                    }
+                    else 
+                    {
+                        this.Canvas.lineTo(x, bottom);
+                        this.Canvas.lineTo(ptFirst.X, bottom);
+                    }
+                    this.Canvas.fillStyle = this.AreaColor;
+                    this.Canvas.fill();
+                }
+                drawCount = 0;
+            }
+        }
+
+        if (drawCount > 0) 
+        {
+            this.Canvas.stroke();
+            if (this.IsDrawArea)   //画面积
+            {
+                if (isHScreen) 
+                {
+                    this.Canvas.lineTo(left, x);
+                    this.Canvas.lineTo(left, ptFirst.X);
+                }
+                else 
+                {
+                    this.Canvas.lineTo(x, bottom);
+                    this.Canvas.lineTo(ptFirst.X, bottom);
+                }
+                this.Canvas.fillStyle = this.AreaColor;
+                this.Canvas.fill();
+            }
+        }
     }
 
-    var isHScreen = (this.ChartFrame.IsHScreen === true);
-    var dataWidth = this.ChartFrame.DataWidth;
-    var distanceWidth = this.ChartFrame.DistanceWidth;
-    var chartright = this.ChartBorder.GetRight();
-    if (isHScreen === true) chartright = this.ChartBorder.GetBottom();
-    var xPointCount = this.ChartFrame.XPointCount;
-    var minuteCount = this.ChartFrame.MinuteCount;
+    this.GetMaxMin = function () 
+    {
+        var xPointCount = this.ChartFrame.XPointCount;
+        var range = {};
+        if (this.YClose == null) return range;
 
-    var bFirstPoint = true;
-    var drawCount = 0;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (value == null) continue;
+        range.Min = this.YClose;
+        range.Max = this.YClose;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (!value) continue;
 
-      var x = this.ChartFrame.GetXFromIndex(j);
-      var y = this.ChartFrame.GetYFromData(value);
+            if (range.Max == null) range.Max = value;
+            if (range.Min == null) range.Min = value;
 
-      if (bFirstPoint) {
-        this.Canvas.strokeStyle = this.Color;
-        this.Canvas.beginPath();
-        if (isHScreen) this.Canvas.moveTo(y, x);
-        else this.Canvas.moveTo(x, y);
-        bFirstPoint = false;
-      }
-      else {
-        if (isHScreen) this.Canvas.lineTo(y, x);
-        else this.Canvas.lineTo(x, y);
-      }
+            if (range.Max < value) range.Max = value;
+            if (range.Min > value) range.Min = value;
+        }
 
-      ++drawCount;
+        if (range.Max == this.YClose && range.Min == this.YClose) 
+        {
+            range.Max = this.YClose + this.YClose * 0.1;
+            range.Min = this.YClose - this.YClose * 0.1;
+            return range;
+        }
 
-      if (drawCount >= minuteCount) //上一天的数据和这天地数据线段要断开
-      {
-        bFirstPoint = true;
-        this.Canvas.stroke();
-        drawCount = 0;
-      }
+        var distance = Math.max(Math.abs(this.YClose - range.Max), Math.abs(this.YClose - range.Min));
+        range.Max = this.YClose + distance;
+        range.Min = this.YClose - distance;
+
+        return range;
     }
-
-    if (drawCount > 0)
-      this.Canvas.stroke();
-  }
-
-  this.GetMaxMin = function () {
-    var xPointCount = this.ChartFrame.XPointCount;
-    var range = {};
-    if (this.YClose == null) return range;
-
-    range.Min = this.YClose;
-    range.Max = this.YClose;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (!value) continue;
-
-      if (range.Max == null) range.Max = value;
-      if (range.Min == null) range.Min = value;
-
-      if (range.Max < value) range.Max = value;
-      if (range.Min > value) range.Min = value;
-    }
-
-    if (range.Max == this.YClose && range.Min == this.YClose) {
-      range.Max = this.YClose + this.YClose * 0.1;
-      range.Min = this.YClose - this.YClose * 0.1;
-      return range;
-    }
-
-    var distance = Math.max(Math.abs(this.YClose - range.Max), Math.abs(this.YClose - range.Min));
-    range.Max = this.YClose + distance;
-    range.Min = this.YClose - distance;
-
-    return range;
-  }
 }
 
 //分钟线叠加 支持横屏
@@ -9619,6 +9680,7 @@ function JSChartResource() {
   this.Minute = {};
   this.Minute.VolBarColor = "rgb(238,127,9)";
   this.Minute.PriceColor = "rgb(50,171,205)";
+  this.Minute.AreaPriceColor = 'rgba(50,171,205,0.1)';
   this.Minute.AvPriceColor = "rgb(238,127,9)";
 
   this.DefaultTextColor = "rgb(43,54,69)";
@@ -11260,6 +11322,7 @@ function MinuteChartContainer(uielement) {
     minuteLine.ChartFrame = this.Frame.SubFrame[0].Frame;
     minuteLine.Name = "Minute-Line";
     minuteLine.Color = g_JSChartResource.Minute.PriceColor;
+    minuteLine.AreaColor = g_JSChartResource.Minute.AreaPriceColor;
 
     this.ChartPaint[0] = minuteLine;
 

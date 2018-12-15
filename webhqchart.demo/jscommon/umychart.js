@@ -355,11 +355,16 @@ function JSChart(divElement)
             }
         }
 
-         //叠加股票
-         if (option.Overlay && option.Overlay.length)
-         {
-             chart.OverlayChartPaint[0].Symbol= option.Overlay[0].Symbol;
-         }
+        //叠加股票
+        if (option.Overlay && option.Overlay.length)
+        {
+            chart.OverlayChartPaint[0].Symbol= option.Overlay[0].Symbol;
+        }
+
+        if (option.MinuteLine)
+        {
+            if (option.MinuteLine.IsDrawAreaPrice==false) chart.ChartPaint[0].IsDrawArea=false;
+        }
 
         //分钟数据指标从第3个指标窗口设置
         let scriptData = new JSIndexScript();
@@ -6985,6 +6990,8 @@ function ChartMinutePriceLine()
     delete this.newMethod;
 
     this.YClose;
+    this.IsDrawArea=true;    //是否画价格面积图
+    this.AreaColor='rgba(0,191,255,0.1)';
 
     this.Draw=function()
     {
@@ -7001,8 +7008,11 @@ function ChartMinutePriceLine()
         if (isHScreen===true) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
         var minuteCount=this.ChartFrame.MinuteCount;
+        var bottom=this.ChartBorder.GetBottomEx();
+        var left=this.ChartBorder.GetLeftEx();
 
         var bFirstPoint=true;
+        var ptFirst={}; //第1个点
         var drawCount=0;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
@@ -7019,6 +7029,7 @@ function ChartMinutePriceLine()
                 if (isHScreen) this.Canvas.moveTo(y,x);
                 else this.Canvas.moveTo(x,y);
                 bFirstPoint=false;
+                ptFirst={X:x,Y:y};
             }
             else
             {
@@ -7032,12 +7043,44 @@ function ChartMinutePriceLine()
             {
                 bFirstPoint=true;
                 this.Canvas.stroke();
+                if (this.IsDrawArea)   //画面积
+                {
+                    if (isHScreen)
+                    {
+                        this.Canvas.lineTo(left,x);
+                        this.Canvas.lineTo(left,ptFirst.X);
+                    }
+                    else
+                    {
+                        this.Canvas.lineTo(x,bottom);
+                        this.Canvas.lineTo(ptFirst.X,bottom);
+                    }
+                    this.Canvas.fillStyle=this.AreaColor;
+                    this.Canvas.fill();
+                }
                 drawCount=0;
             }
         }
 
         if (drawCount>0)
+        {
             this.Canvas.stroke();
+            if (this.IsDrawArea)   //画面积
+            {
+                if (isHScreen)
+                {
+                    this.Canvas.lineTo(left,x);
+                    this.Canvas.lineTo(left,ptFirst.X);
+                }
+                else
+                {
+                    this.Canvas.lineTo(x,bottom);
+                    this.Canvas.lineTo(ptFirst.X,bottom);
+                }
+                this.Canvas.fillStyle=this.AreaColor;
+                this.Canvas.fill();
+            }
+        }
     }
 
     this.GetMaxMin=function()
@@ -10532,6 +10575,7 @@ function JSChartResource()
     this.Minute={};
     this.Minute.VolBarColor="rgb(238,127,9)";
     this.Minute.PriceColor="rgb(50,171,205)";
+    this.Minute.AreaPriceColor='rgba(50,171,205,0.1)';
     this.Minute.AvPriceColor="rgb(238,127,9)";
 
     this.DefaultTextColor="rgb(43,54,69)";
@@ -13328,6 +13372,7 @@ function MinuteChartContainer(uielement)
         minuteLine.ChartFrame=this.Frame.SubFrame[0].Frame;
         minuteLine.Name="Minute-Line";
         minuteLine.Color=g_JSChartResource.Minute.PriceColor;
+        minuteLine.AreaColor=g_JSChartResource.Minute.AreaPriceColor;
 
         this.ChartPaint[0]=minuteLine;
 
