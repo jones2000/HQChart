@@ -1684,121 +1684,135 @@ function NoneFrame() {
   }
 }
 
-function AverageWidthFrame() {
-  this.newMethod = IChartFramePainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function AverageWidthFrame() 
+{
+    this.newMethod = IChartFramePainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.DataWidth = 50;
-  this.DistanceWidth = 10;
-  this.MinXDistance = 30;       //X轴刻度最小间距
-  this.IsShowXLine = true;      //是否显示X轴分割线
-  this.XMessageAlign = 'top';   //X轴刻度文字上下对齐方式
-  this.IsShowTitle = true;      //是否显示动态标题
+    this.DataWidth = 50;
+    this.DistanceWidth = 10;
+    this.MinXDistance = 30;       //X轴刻度最小间距
+    this.MinYDistance=10;
+    this.IsShowXLine = true;      //是否显示X轴分割线
+    this.XMessageAlign = 'top';   //X轴刻度文字上下对齐方式
+    this.IsShowTitle = true;      //是否显示动态标题
 
-  this.DrawFrame = function () {
-    if (this.XPointCount > 0) {
-      this.DistanceWidth = this.ChartBorder.GetWidth() / (4 * this.XPointCount);
-      this.DataWidth = 2 * this.DistanceWidth;
-    }
-
-    this.DrawHorizontal();
-    this.DrawVertical();
-  }
-
-  this.GetYFromData = function (value) {
-    if (value <= this.HorizontalMin) return this.ChartBorder.GetBottomEx();
-    if (value >= this.HorizontalMax) return this.ChartBorder.GetTopEx();
-
-    var height = this.ChartBorder.GetHeightEx() * (value - this.HorizontalMin) / (this.HorizontalMax - this.HorizontalMin);
-    return this.ChartBorder.GetBottomEx() - height;
-  }
-
-  //Y刻度画在内部
-  this.DrawInsideHorizontal = function () {
-    var left = this.ChartBorder.GetLeft();
-    var right = this.ChartBorder.GetRight();
-    var bottom = this.ChartBorder.GetBottom();
-    var top = this.ChartBorder.GetTopTitle();
-    var borderRight = this.ChartBorder.Right;
-    var borderLeft = this.ChartBorder.Left;
-    var titleHeight = this.ChartBorder.TitleHeight;
-    if (borderLeft >= 10) return;
-
-    var yPrev = null; //上一个坐标y的值
-    for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
+    this.DrawFrame = function () 
     {
-      var item = this.HorizontalInfo[i];
-      var y = this.GetYFromData(item.Value);
-      if (y != null && Math.abs(y - yPrev) < 15) continue;  //两个坐标在近了 就不画了
+        if (this.XPointCount > 0) 
+        {
+            this.DistanceWidth = this.ChartBorder.GetWidth() / (4 * this.XPointCount);
+            this.DataWidth = 2 * this.DistanceWidth;
+        }
 
-      //坐标信息 左边 间距小于10 画在内部
-      if (item.Message[0] != null && borderLeft < 10) {
-        if (item.Font != null) this.Canvas.font = item.Font;
-        this.Canvas.fillStyle = item.TextColor;
-        this.Canvas.textAlign = "left";
-        if (y >= bottom - 2)
-          this.Canvas.textBaseline = 'bottom';
-        else if (y <= top + 2)
-          this.Canvas.textBaseline = 'top';
-        else
-          this.Canvas.textBaseline = "middle";
-        this.Canvas.fillText(item.Message[0], left + 1, y);
-      }
-
-      yPrev = y;
+        this.DrawHorizontal();
+        this.DrawVertical();
     }
-  }
 
-  //画Y轴
-  this.DrawHorizontal = function () {
-    var left = this.ChartBorder.GetLeft();
-    var right = this.ChartBorder.GetRight();
-    var borderRight = this.ChartBorder.Right;
-    var borderLeft = this.ChartBorder.Left;
-    var titleHeight = this.ChartBorder.TitleHeight;
-
-    this.Canvas.save();
-    this.Canvas.setLineDash([2, 2]);   //虚线
-
-    var yPrev = null; //上一个坐标y的值
-    for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
+    this.GetYFromData = function (value) 
     {
-      var item = this.HorizontalInfo[i];
-      var y = this.GetYFromData(item.Value);
-      if (y != null && yPrev != null && Math.abs(y - yPrev) < 15) continue;  //两个坐标在近了 就不画了
+        if (value <= this.HorizontalMin) return this.ChartBorder.GetBottomEx();
+        if (value >= this.HorizontalMax) return this.ChartBorder.GetTopEx();
 
-      this.Canvas.strokeStyle = item.LineColor;
-      this.Canvas.beginPath();
-      this.Canvas.moveTo(left, ToFixedPoint(y));
-      this.Canvas.lineTo(right, ToFixedPoint(y));
-      this.Canvas.stroke();
-
-      //坐标信息 左边 间距小于10 不画坐标
-      if (item.Message[0] != null && borderLeft > 10) {
-        if (item.Font != null) this.Canvas.font = item.Font;
-
-        this.Canvas.fillStyle = item.TextColor;
-        this.Canvas.textAlign = "right";
-        this.Canvas.textBaseline = "middle";
-        this.Canvas.fillText(item.Message[0], left - 2, y);
-      }
-
-      //坐标信息 右边 间距小于10 不画坐标
-      if (item.Message[1] != null && borderRight > 10) {
-        if (item.Font != null) this.Canvas.font = item.Font;
-
-        this.Canvas.fillStyle = item.TextColor;
-        this.Canvas.textAlign = "left";
-        this.Canvas.textBaseline = "middle";
-        this.Canvas.fillText(item.Message[1], right + 2, y);
-      }
-
-      yPrev = y;
+        var height = this.ChartBorder.GetHeightEx() * (value - this.HorizontalMin) / (this.HorizontalMax - this.HorizontalMin);
+        return this.ChartBorder.GetBottomEx() - height;
     }
 
-    this.Canvas.restore();
-  }
+    //Y刻度画在内部
+    this.DrawInsideHorizontal = function () 
+    {
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRight();
+        var bottom = this.ChartBorder.GetBottom();
+        var top = this.ChartBorder.GetTopTitle();
+        var borderRight = this.ChartBorder.Right;
+        var borderLeft = this.ChartBorder.Left;
+        var titleHeight = this.ChartBorder.TitleHeight;
+        if (borderLeft >= 10) return;
+
+        var yPrev = null; //上一个坐标y的值
+        for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
+        {
+            var item = this.HorizontalInfo[i];
+            var y = this.GetYFromData(item.Value);
+            if (y != null && Math.abs(y - yPrev) < this.MinYDistance) continue;  //两个坐标在近了 就不画了
+
+            //坐标信息 左边 间距小于10 画在内部
+            if (item.Message[0] != null && borderLeft < 10) 
+            {
+                if (item.Font != null) this.Canvas.font = item.Font;
+                this.Canvas.fillStyle = item.TextColor;
+                this.Canvas.textAlign = "left";
+                if (y >= bottom - 2)
+                    this.Canvas.textBaseline = 'bottom';
+                else if (y <= top + 2)
+                    this.Canvas.textBaseline = 'top';
+                else
+                    this.Canvas.textBaseline = "middle";
+                this.Canvas.fillText(item.Message[0], left + 1, y);
+            }
+
+            yPrev = y;
+        }
+    }
+
+    //画Y轴
+    this.DrawHorizontal = function () 
+    {
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRight();
+        var bottom = this.ChartBorder.GetBottom();
+        var top = this.ChartBorder.GetTopTitle();
+        var borderRight = this.ChartBorder.Right;
+        var borderLeft = this.ChartBorder.Left;
+        var titleHeight = this.ChartBorder.TitleHeight;
+
+        this.Canvas.save();
+        this.Canvas.setLineDash([2, 2]);   //虚线
+
+        var yPrev = null; //上一个坐标y的值
+        for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
+        {
+            var item = this.HorizontalInfo[i];
+            var y = this.GetYFromData(item.Value);
+            if (y != null && yPrev != null && Math.abs(y - yPrev) <this.MinYDistance) continue;  //两个坐标在近了 就不画了
+
+            this.Canvas.strokeStyle = item.LineColor;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(left, ToFixedPoint(y));
+            this.Canvas.lineTo(right, ToFixedPoint(y));
+            this.Canvas.stroke();
+
+            if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
+            else if (y <= top + 2) this.Canvas.textBaseline = 'top';
+            else this.Canvas.textBaseline = "middle";
+
+            //坐标信息 左边 间距小于10 不画坐标
+            if (item.Message[0] != null && borderLeft > 10) 
+            {
+                if (item.Font != null) this.Canvas.font = item.Font;
+
+                this.Canvas.fillStyle = item.TextColor;
+                this.Canvas.textAlign = "right";
+                this.Canvas.fillText(item.Message[0], left - 2, y);
+            }
+
+            //坐标信息 右边 间距小于10 不画坐标
+            if (item.Message[1] != null && borderRight > 10) 
+            {
+                if (item.Font != null) this.Canvas.font = item.Font;
+
+                this.Canvas.fillStyle = item.TextColor;
+                this.Canvas.textAlign = "left";
+                this.Canvas.fillText(item.Message[1], right + 2, y);
+            }
+
+            yPrev = y;
+        }
+
+        this.Canvas.restore();
+    }
 
   this.GetXFromIndex = function (index) {
     var count = this.XPointCount;
@@ -1949,131 +1963,162 @@ function MinuteFrame() {
   }
 }
 
-function MinuteHScreenFrame() {
-  this.newMethod = MinuteFrame;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function MinuteHScreenFrame() 
+{
+    this.newMethod = MinuteFrame;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.IsHScreen = true;        //是否是横屏
+    this.IsHScreen = true;        //是否是横屏
 
-  //画标题背景色
-  this.DrawTitleBG = function () {
-    /*
-    if (this.ChartBorder.TitleHeight <= 0) return;
-
-    var left = ToFixedPoint(this.ChartBorder.GetRightEx());
-    var top = ToFixedPoint(this.ChartBorder.GetTop());
-    var bottom = ToFixedPoint(this.ChartBorder.GetBottom());
-    var width = this.ChartBorder.TitleHeight;
-    var height = bottom - top;
-
-    this.Canvas.fillStyle = this.TitleBGColor;
-    this.Canvas.fillRect(left, top, width, height);
-    */
-  }
-
-  this.DrawInsideHorizontal = function () {
-
-  }
-
-  //Y坐标转y轴数值
-  this.GetYData = function (x) {
-    if (x < this.ChartBorder.GetLeftEx()) return this.HorizontalMin;
-    if (x > this.ChartBorder.GetRightEx()) return this.HorizontalMax;
-
-    return (x - this.ChartBorder.GetLeftEx()) / this.ChartBorder.GetWidthEx() * (this.HorizontalMax - this.HorizontalMin) + this.HorizontalMin;
-  }
-
-  //X坐标转x轴数值
-  this.GetXData = function (y) {
-    if (y <= this.ChartBorder.GetTop()) return 0;
-    if (y >= this.ChartBorder.GetBottom()) return this.XPointCount;
-
-    return (y - this.ChartBorder.GetTop()) * (this.XPointCount * 1.0 / this.ChartBorder.GetHeight());
-  }
-
-  this.GetXFromIndex = function (index) {
-    var count = this.XPointCount - 1;
-
-    if (count == 1) {
-      if (index == 0) return this.ChartBorder.GetTop();
-      else return this.ChartBorder.GetBottom();
-    }
-    else if (count <= 0) {
-      return this.ChartBorder.GetTop();
-    }
-    else if (index >= count) {
-      return this.ChartBorder.GetBottom();
-    }
-    else {
-      var offset = this.ChartBorder.GetTop() + this.ChartBorder.GetHeight() * index / count;
-      return offset;
-    }
-  }
-
-
-  this.GetYFromData = function (value) {
-    if (value <= this.HorizontalMin) return this.ChartBorder.GetLeft();
-    if (value >= this.HorizontalMax) return this.ChartBorder.GetRightEx();
-
-    var width = this.ChartBorder.GetWidthEx() * (value - this.HorizontalMin) / (this.HorizontalMax - this.HorizontalMin);
-    return this.ChartBorder.GetLeft() + width;
-  }
-
-  //画Y轴
-  this.DrawHorizontal = function () {
-    var top = this.ChartBorder.GetTop();
-    var bottom = this.ChartBorder.GetBottom();
-    var borderTop = this.ChartBorder.Top;
-    var borderBottom = this.ChartBorder.Bottom;
-
-    var yPrev = null; //上一个坐标y的值
-    for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从左往右画分割线
+    //画标题背景色
+    this.DrawTitleBG = function () 
     {
-      var item = this.HorizontalInfo[i];
-      var y = this.GetYFromData(item.Value);
-      if (y != null && Math.abs(y - yPrev) < 15) continue;  //两个坐标在近了 就不画了
+        /*
+        if (this.ChartBorder.TitleHeight <= 0) return;
 
-      this.Canvas.strokeStyle = item.LineColor;
-      this.Canvas.beginPath();
-      this.Canvas.moveTo(ToFixedPoint(y), top);
-      this.Canvas.lineTo(ToFixedPoint(y), bottom);
-      this.Canvas.stroke();
+        var left = ToFixedPoint(this.ChartBorder.GetRightEx());
+        var top = ToFixedPoint(this.ChartBorder.GetTop());
+        var bottom = ToFixedPoint(this.ChartBorder.GetBottom());
+        var width = this.ChartBorder.TitleHeight;
+        var height = bottom - top;
 
-      //坐标信息 左边 间距小于10 不画坐标
-      if (item.Message[0] != null && borderTop > 10) {
-        if (item.Font != null) this.Canvas.font = item.Font;
-
-        this.Canvas.fillStyle = item.TextColor;
-        this.Canvas.textAlign = "right";
-        this.Canvas.textBaseline = "middle";
-
-        var xText = y, yText = top;
-        this.Canvas.save();
-        this.Canvas.translate(xText, yText);
-        this.Canvas.rotate(90 * Math.PI / 180);
-        this.Canvas.fillText(item.Message[0], -2, 0);
-        this.Canvas.restore();
-      }
-
-      //坐标信息 右边 间距小于10 不画坐标
-      if (item.Message[1] != null && borderBottom > 10) {
-        if (item.Font != null) this.Canvas.font = item.Font;
-
-        this.Canvas.fillStyle = item.TextColor;
-        this.Canvas.textAlign = "left";
-        this.Canvas.textBaseline = "middle";
-        var xText = y, yText = bottom;
-        this.Canvas.save();
-        this.Canvas.translate(xText, yText);
-        this.Canvas.rotate(90 * Math.PI / 180);
-        this.Canvas.fillText(item.Message[1], 2, 0);
-        this.Canvas.restore();
-      }
-
-      yPrev = y;
+        this.Canvas.fillStyle = this.TitleBGColor;
+        this.Canvas.fillRect(left, top, width, height);
+        */
     }
-  }
+
+    this.DrawInsideHorizontal = function () 
+    {
+    }
+
+    //Y坐标转y轴数值
+    this.GetYData = function (x) 
+    {
+        if (x < this.ChartBorder.GetLeftEx()) return this.HorizontalMin;
+        if (x > this.ChartBorder.GetRightEx()) return this.HorizontalMax;
+
+        return (x - this.ChartBorder.GetLeftEx()) / this.ChartBorder.GetWidthEx() * (this.HorizontalMax - this.HorizontalMin) + this.HorizontalMin;
+    }
+
+    //X坐标转x轴数值
+    this.GetXData = function (y) 
+    {
+        if (y <= this.ChartBorder.GetTop()) return 0;
+        if (y >= this.ChartBorder.GetBottom()) return this.XPointCount;
+
+        return (y - this.ChartBorder.GetTop()) * (this.XPointCount * 1.0 / this.ChartBorder.GetHeight());
+    }
+
+    this.GetXFromIndex = function (index) 
+    {
+        var count = this.XPointCount - 1;
+
+        if (count == 1) 
+        {
+            if (index == 0) return this.ChartBorder.GetTop();
+            else return this.ChartBorder.GetBottom();
+        }
+        else if (count <= 0) 
+        {
+            return this.ChartBorder.GetTop();
+        }
+        else if (index >= count) 
+        {
+            return this.ChartBorder.GetBottom();
+        }
+        else 
+        {
+            var offset = this.ChartBorder.GetTop() + this.ChartBorder.GetHeight() * index / count;
+            return offset;
+        }
+    }
+
+
+    this.GetYFromData = function (value) 
+    {
+        if (value <= this.HorizontalMin) return this.ChartBorder.GetLeft();
+        if (value >= this.HorizontalMax) return this.ChartBorder.GetRightEx();
+
+        var width = this.ChartBorder.GetWidthEx() * (value - this.HorizontalMin) / (this.HorizontalMax - this.HorizontalMin);
+        return this.ChartBorder.GetLeft() + width;
+    }
+
+    //画Y轴
+    this.DrawHorizontal = function () 
+    {
+        var top = this.ChartBorder.GetTop();
+        var bottom = this.ChartBorder.GetBottom();
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var borderTop = this.ChartBorder.Top;
+        var borderBottom = this.ChartBorder.Bottom;
+
+        var yPrev = null; //上一个坐标y的值
+        for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从左往右画分割线
+        {
+            var item = this.HorizontalInfo[i];
+            var y = this.GetYFromData(item.Value);
+            if (y != null && Math.abs(y - yPrev) < this.MinYDistance) continue;  //两个坐标在近了 就不画了
+
+            this.Canvas.strokeStyle = item.LineColor;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(ToFixedPoint(y), top);
+            this.Canvas.lineTo(ToFixedPoint(y), bottom);
+            this.Canvas.stroke();
+
+            if (y >= right - 2) 
+            {
+                this.Canvas.textBaseline = 'top';
+                y = right;
+            }
+            else if (y <= left + 2) 
+            {
+                this.Canvas.textBaseline = 'bottom';
+                y=left;
+                if (y != null && Math.abs(y - yPrev) < 2*this.MinYDistance) continue;  //两个坐标在近了 就不画了
+            }
+            else 
+            {
+                this.Canvas.textBaseline = "middle";
+            }
+
+            //坐标信息 左边 间距小于10 不画坐标
+            if (item.Message[0] != null && borderTop > 10) 
+            {
+                if (item.Font != null) this.Canvas.font = item.Font;
+
+                this.Canvas.fillStyle = item.TextColor;
+                this.Canvas.textAlign = "right";
+                //this.Canvas.textBaseline = "middle";
+
+                var xText = y, yText = top;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(item.Message[0], -2, 0);
+                this.Canvas.restore();
+            }
+
+            //坐标信息 右边 间距小于10 不画坐标
+            if (item.Message[1] != null && borderBottom > 10) 
+            {
+                if (item.Font != null) this.Canvas.font = item.Font;
+
+                this.Canvas.fillStyle = item.TextColor;
+                this.Canvas.textAlign = "left";
+                //this.Canvas.textBaseline = "middle";
+                var xText = y, yText = bottom;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(item.Message[1], 2, 0);
+                this.Canvas.restore();
+            }
+
+            yPrev = y;
+        }
+    }
 
   //画X轴
   this.DrawVertical = function () {
@@ -6980,93 +7025,96 @@ function FrameSplitKLineX() {
   }
 }
 
-function FrameSplitMinutePriceY() {
-  this.newMethod = IFrameSplitOperator;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function FrameSplitMinutePriceY() 
+{
+    this.newMethod = IFrameSplitOperator;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.YClose;                        //昨收
-  this.Data;                          //分钟数据
-  this.AverageData;                   //分钟均线数据
-  this.OverlayChartPaint;
-  this.SplitCount = 7;
-  this.Symbol;
+    this.YClose;                        //昨收
+    this.Data;                          //分钟数据
+    this.AverageData;                   //分钟均线数据
+    this.OverlayChartPaint;
+    this.SplitCount = 7;
+    this.Symbol;
 
-  this.Operator = function () {
-    this.Frame.HorizontalInfo = [];
-    if (!this.Data) return;
+    this.Operator = function () 
+    {
+        this.Frame.HorizontalInfo = [];
+        if (!this.Data) return;
 
-    var max = this.YClose;
-    var min = this.YClose;
+        var max = this.YClose;
+        var min = this.YClose;
 
-    for (var i in this.Data.Data) {
-      if (!this.Data.Data[i]) continue;   //价格必须大于0
-      if (max < this.Data.Data[i]) max = this.Data.Data[i];
-      if (min > this.Data.Data[i]) min = this.Data.Data[i];
-    }
-
-    if (this.AverageData) {
-      for (var i in this.AverageData.Data) {
-        if (!this.AverageData.Data[i]) continue;    //价格必须大于0
-        if (max < this.AverageData.Data[i]) max = this.AverageData.Data[i];
-        if (min > this.AverageData.Data[i]) min = this.AverageData.Data[i];
-      }
-    }
-
-    if (this.OverlayChartPaint && this.OverlayChartPaint.length > 0 && this.OverlayChartPaint[0] && this.OverlayChartPaint[0].Symbol) {
-      var range = this.OverlayChartPaint[0].GetMaxMin();
-      if (range.Max && range.Max > max) max = range.Max;
-      if (range.Min && range.Min < min) min = range.Min;
-    }
-
-    if (this.YClose == max && this.YClose == min) {
-      max = this.YClose + this.YClose * 0.1;
-      min = this.YClose - this.YClose * 0.1;
-    }
-    else {
-      var distanceValue = Math.max(Math.abs(this.YClose - max), Math.abs(this.YClose - min));
-      max = this.YClose + distanceValue;
-      min = this.YClose - distanceValue;
-    }
-
-    var showCount = this.SplitCount;
-    var distance = (max - min) / (showCount - 1);
-    const minDistance = [1, 0.1, 0.01, 0.001, 0.0001];
-    var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);;    //默认小数位数
-    if (distance < minDistance[defaultfloatPrecision]) {
-      distance = minDistance[defaultfloatPrecision];
-      max = this.YClose + (distance * (showCount - 1) / 2);
-      min = this.YClose - (distance * (showCount - 1) / 2);
-    }
-
-    for (var i = 0; i < showCount; ++i) {
-      var price = min + (distance * i);
-      this.Frame.HorizontalInfo[i] = new CoordinateInfo();
-      this.Frame.HorizontalInfo[i].Value = price;
-
-      if (i > 0) {
-        if (this.StringFormat == 1)   //手机端格式 如果有万,亿单位了 去掉小数
+        for (var i in this.Data.Data) 
         {
-          var floatPrecision = defaultfloatPrecision;
-          if (!isNaN(price) && Math.abs(price) > 1000) floatPrecision = 0;
-          this.Frame.HorizontalInfo[i].Message[0] = price.toFixed(floatPrecision);
-        }
-        else {
-          this.Frame.HorizontalInfo[i].Message[0] = price.toFixed(defaultfloatPrecision);
+            if (!this.Data.Data[i]) continue;   //价格必须大于0
+            if (max < this.Data.Data[i]) max = this.Data.Data[i];
+            if (min > this.Data.Data[i]) min = this.Data.Data[i];
         }
 
-        if (this.YClose) {
-          var per = (price / this.YClose - 1) * 100;
-          if (per > 0) this.Frame.HorizontalInfo[i].TextColor = g_JSChartResource.UpTextColor;
-          else if (per < 0) this.Frame.HorizontalInfo[i].TextColor = g_JSChartResource.DownTextColor;
-          this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(per, 2) + '%'; //百分比
+        if (this.AverageData) 
+        {
+            for (var i in this.AverageData.Data) 
+            {
+                if (!this.AverageData.Data[i]) continue;    //价格必须大于0
+                if (max < this.AverageData.Data[i]) max = this.AverageData.Data[i];
+                if (min > this.AverageData.Data[i]) min = this.AverageData.Data[i];
+            }
         }
-      }
+
+        if (this.OverlayChartPaint && this.OverlayChartPaint.length > 0 && this.OverlayChartPaint[0] && this.OverlayChartPaint[0].Symbol) 
+        {
+            var range = this.OverlayChartPaint[0].GetMaxMin();
+            if (range.Max && range.Max > max) max = range.Max;
+            if (range.Min && range.Min < min) min = range.Min;
+        }
+
+        if (this.YClose == max && this.YClose == min) 
+        {
+            max = this.YClose + this.YClose * 0.1;
+            min = this.YClose - this.YClose * 0.1;
+        }
+        else 
+        {
+            var distanceValue = Math.max(Math.abs(this.YClose - max), Math.abs(this.YClose - min));
+            max = this.YClose + distanceValue;
+            min = this.YClose - distanceValue;
+        }
+
+        var showCount = this.SplitCount;
+        var distance = (max - min) / (showCount - 1);
+        const minDistance = [1, 0.1, 0.01, 0.001, 0.0001];
+        var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);;    //默认小数位数
+        if (JSCommonCoordinateData.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,太长了
+
+        if (distance < minDistance[defaultfloatPrecision])
+        {
+            distance = minDistance[defaultfloatPrecision];
+            max = this.YClose + (distance * (showCount - 1) / 2);
+            min = this.YClose - (distance * (showCount - 1) / 2);
+        }
+
+        for (var i = 0; i < showCount; ++i) 
+        {
+            var price = min + (distance * i);
+            this.Frame.HorizontalInfo[i] = new CoordinateInfo();
+            this.Frame.HorizontalInfo[i].Value = price;
+            
+            this.Frame.HorizontalInfo[i].Message[0] = price.toFixed(defaultfloatPrecision);
+
+            if (this.YClose) 
+            {
+                var per = (price / this.YClose - 1) * 100;
+                if (per > 0) this.Frame.HorizontalInfo[i].TextColor = g_JSChartResource.UpTextColor;
+                else if (per < 0) this.Frame.HorizontalInfo[i].TextColor = g_JSChartResource.DownTextColor;
+                this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(per, 2) + '%'; //百分比
+            }
+        }
+
+        this.Frame.HorizontalMax = max;
+        this.Frame.HorizontalMin = min;
     }
-
-    this.Frame.HorizontalMax = max;
-    this.Frame.HorizontalMin = min;
-  }
 
 }
 

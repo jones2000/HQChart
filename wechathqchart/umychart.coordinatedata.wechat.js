@@ -81,8 +81,10 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
-    IsSHSZIndex: function (upperSymbol)     //是否是沪深指数代码
+    IsSHSZIndex: function (symbol)     //是否是沪深指数代码
     {
+        if (!symbol) return false;
+        
         var upperSymbol = symbol.toUpperCase();
         if (this.IsSH(upperSymbol)) 
         {

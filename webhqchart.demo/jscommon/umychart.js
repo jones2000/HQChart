@@ -2280,6 +2280,7 @@ function AverageWidthFrame()
     this.DataWidth=50*GetDevicePixelRatio();
     this.DistanceWidth=10*GetDevicePixelRatio();
     this.MinXDistance = 30*GetDevicePixelRatio();       //X轴刻度最小间距
+    this.MinYDistance=10*GetDevicePixelRatio();         //Y轴刻度最小间距
 
     this.DrawFrame=function()
     {
@@ -2308,6 +2309,8 @@ function AverageWidthFrame()
     {
         var left=this.ChartBorder.GetLeft();
         var right=this.ChartBorder.GetRight();
+        var bottom = this.ChartBorder.GetBottom();
+        var top = this.ChartBorder.GetTopTitle();
         var borderRight=this.ChartBorder.Right;
         var borderLeft=this.ChartBorder.Left;
 
@@ -2316,13 +2319,17 @@ function AverageWidthFrame()
         {
             var item=this.HorizontalInfo[i];
             var y=this.GetYFromData(item.Value);
-            if (y!=null && Math.abs(y-yPrev)<15) continue;  //两个坐标在近了 就不画了
+            if (y!=null && Math.abs(y-yPrev)<this.MinYDistance) continue;  //两个坐标在近了 就不画了
 
             this.Canvas.strokeStyle=item.LineColor;
             this.Canvas.beginPath();
             this.Canvas.moveTo(left,ToFixedPoint(y));
             this.Canvas.lineTo(right,ToFixedPoint(y));
             this.Canvas.stroke();
+
+            if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
+            else if (y <= top + 2) this.Canvas.textBaseline = 'top';
+            else this.Canvas.textBaseline = "middle";
 
             //坐标信息 左边 间距小于10 不画坐标
             if (item.Message[0]!=null && borderLeft>10)
@@ -2331,7 +2338,6 @@ function AverageWidthFrame()
 
                 this.Canvas.fillStyle=item.TextColor;
                 this.Canvas.textAlign="right";
-                this.Canvas.textBaseline="middle";
                 this.Canvas.fillText(item.Message[0],left-2,y);
             }
 
@@ -2342,7 +2348,6 @@ function AverageWidthFrame()
 
                 this.Canvas.fillStyle=item.TextColor;
                 this.Canvas.textAlign="left";
-                this.Canvas.textBaseline="middle";
                 this.Canvas.fillText(item.Message[1],right+2,y);
             }
 
@@ -2369,7 +2374,7 @@ function AverageWidthFrame()
         {
             var item = this.HorizontalInfo[i];
             var y = this.GetYFromData(item.Value);
-            if (y != null && Math.abs(y - yPrev) < 15) continue;  //两个坐标在近了 就不画了
+            if (y != null && Math.abs(y - yPrev) < this.MinYDistance) continue;  //两个坐标在近了 就不画了
 
             //坐标信息 左边 间距小于10 画在内部
             if (item.Message[0] != null && borderLeft < 10) 
@@ -2377,12 +2382,9 @@ function AverageWidthFrame()
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.fillStyle = item.TextColor;
                 this.Canvas.textAlign = "left";
-                if (y >= bottom - 2)
-                this.Canvas.textBaseline = 'bottom';
-                else if (y <= top + 2)
-                this.Canvas.textBaseline = 'top';
-                else
-                this.Canvas.textBaseline = "middle";
+                if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
+                else if (y <= top + 2) this.Canvas.textBaseline = 'top';
+                else this.Canvas.textBaseline = "middle";
                 this.Canvas.fillText(item.Message[0], left + 1, y);
             }
 
@@ -2628,6 +2630,8 @@ function MinuteHScreenFrame()
     {
         var top=this.ChartBorder.GetTop();
         var bottom=this.ChartBorder.GetBottom();
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
         var borderTop=this.ChartBorder.Top;
         var borderBottom=this.ChartBorder.Bottom;
 
@@ -2636,13 +2640,29 @@ function MinuteHScreenFrame()
         {
             var item=this.HorizontalInfo[i];
             var y=this.GetYFromData(item.Value);
-            if (y!=null && Math.abs(y-yPrev)<15) continue;  //两个坐标在近了 就不画了
+            if (y!=null && Math.abs(y-yPrev)<this.MinYDistance) continue;  //两个坐标在近了 就不画了
 
             this.Canvas.strokeStyle=item.LineColor;
             this.Canvas.beginPath();
             this.Canvas.moveTo(ToFixedPoint(y),top);
             this.Canvas.lineTo(ToFixedPoint(y),bottom);
             this.Canvas.stroke();
+
+            if (y >= right - 2) 
+            {
+                this.Canvas.textBaseline = 'top';
+                y = right;
+            }
+            else if (y <= left + 2) 
+            {
+                this.Canvas.textBaseline = 'bottom';
+                y=left;
+                if (y != null && Math.abs(y - yPrev) < 2*this.MinYDistance) continue;  //两个坐标在近了 就不画了
+            }
+            else 
+            {
+                this.Canvas.textBaseline = "middle";
+            }
 
             //坐标信息 左边 间距小于10 不画坐标
             if (item.Message[0]!=null && borderTop>10)
@@ -2651,7 +2671,6 @@ function MinuteHScreenFrame()
 
                 this.Canvas.fillStyle=item.TextColor;
                 this.Canvas.textAlign="right";
-                this.Canvas.textBaseline="middle";
 
                 var xText=y,yText=top;
                 this.Canvas.save();
@@ -2668,7 +2687,7 @@ function MinuteHScreenFrame()
 
                 this.Canvas.fillStyle=item.TextColor;
                 this.Canvas.textAlign="left";
-                this.Canvas.textBaseline="middle";
+               
                 var xText=y,yText=bottom;
                 this.Canvas.save();
                 this.Canvas.translate(xText, yText);
@@ -8469,13 +8488,16 @@ function FrameSplitMinutePriceY()
             min=this.YClose-distanceValue;
         }
 
-        console.log('[FrameSplitMinutePriceY]', max,min);
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+        var width=this.Frame.ChartBorder.GetChartWidth();   //画布的宽度
+        var isPhoneModel=width<450*pixelTatio;
+        console.log('[FrameSplitMinutePriceY]'+ 'max='+ max + ' min='+ min +' isPhoneModel='+isPhoneModel);
 
         var showCount=this.SplitCount;
         var distance=(max-min)/(showCount-1);
         const minDistance=[1, 0.1, 0.01, 0.001, 0.0001];
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
-        var upperSymbol=this.Symbol?this.Symbol.toUpperCase():'';
+        if (isPhoneModel && MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,太长了
         if (distance<minDistance[defaultfloatPrecision]) 
         {
             distance=minDistance[defaultfloatPrecision];
@@ -8488,27 +8510,14 @@ function FrameSplitMinutePriceY()
             var price=min+(distance*i);
             this.Frame.HorizontalInfo[i]= new CoordinateInfo();
             this.Frame.HorizontalInfo[i].Value=price;
+            this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(defaultfloatPrecision);
 
-            if (i>0)
+            if (this.YClose)
             {
-                if (this.StringFormat==1)   //手机端格式 如果有万,亿单位了 去掉小数
-                {
-                    var floatPrecision=defaultfloatPrecision;
-                    if (!isNaN(price) && Math.abs(price) > 1000) floatPrecision=0;
-                    this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(floatPrecision);
-                }
-                else
-                {
-                    this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(defaultfloatPrecision);
-                }
-
-                if (this.YClose)
-                {
-                    var per=(price/this.YClose-1)*100;
-                    if (per>0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.UpTextColor;
-                    else if (per<0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.DownTextColor;
-                    this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
-                }
+                var per=(price/this.YClose-1)*100;
+                if (per>0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.UpTextColor;
+                else if (per<0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.DownTextColor;
+                this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
             }
         }
 
@@ -13065,10 +13074,10 @@ function MinuteChartContainer(uielement)
             this.JSChartContainer.SelectChartDrawPicture=null;
             if (jsChart.ChartCorssCursor.IsShow === true)    //移动十字光标
             {
-            var pixelTatio = GetDevicePixelRatio();
-            var x = drag.Click.X-this.getBoundingClientRect().left*pixelTatio;
-            var y = drag.Click.Y-this.getBoundingClientRect().top*pixelTatio;
-            jsChart.OnMouseMove(x, y, e);
+                var pixelTatio = GetDevicePixelRatio();
+                var x = drag.Click.X-this.getBoundingClientRect().left*pixelTatio;
+                var y = drag.Click.Y-this.getBoundingClientRect().top*pixelTatio;
+                jsChart.OnMouseMove(x, y, e);
             }
         }
 
@@ -18405,8 +18414,9 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
-    IsSHSZIndex:function(upperSymbol)     //是否是沪深指数代码
+    IsSHSZIndex:function(symbol)     //是否是沪深指数代码
     {
+        if (!symbol) return false;
         var upperSymbol=symbol.toUpperCase();
         if (this.IsSH(upperSymbol))
         {
