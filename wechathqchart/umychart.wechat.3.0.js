@@ -502,38 +502,40 @@ function JSChart(element) {
     return chart;
   }
 
-  //根据option内容绘制图形
-  this.SetOption = function (option) {
-    console.log(option, 'option')
-    var chart = null;
-    switch (option.Type) {
-      case "历史K线图":
-      case '历史K线图横屏':
-        chart = this.CreateKLineChartContainer(option);
-        break;
-      case "自定义指数历史K线图":
-        chart = this.CreateCustomKLineChartContainer(option);
-        break;
-      case "分钟走势图":
-      case "分钟走势图横屏":
-        chart = this.CreateMinuteChartContainer(option);
-        break;
-      case "历史分钟走势图":
-        chart = this.CreateHistoryMinuteChartContainer(option);
-        break;
-      case 'K线训练':
-      case 'K线训练横屏':
-        chart = this.CreateKLineTrainChartContainer(option);
-        break;
-      case "简单图形":
-        return this.CreateSimpleChart(option);
-      case "饼图":
-        return this.CreatePieChart(option);
-      case '地图':
-        return this.CreateMapChart(option);
-      default:
-        return false;
-    }
+    //根据option内容绘制图形
+    this.SetOption = function (option) 
+    {
+        console.log(option, 'option')
+        var chart = null;
+        switch (option.Type) {
+        case "历史K线图":
+        case '历史K线图横屏':
+            chart = this.CreateKLineChartContainer(option);
+            break;
+        case "自定义指数历史K线图":
+            chart = this.CreateCustomKLineChartContainer(option);
+            break;
+        case "分钟走势图":
+        case "分钟走势图横屏":
+            chart = this.CreateMinuteChartContainer(option);
+            break;
+        case "历史分钟走势图":
+            chart = this.CreateHistoryMinuteChartContainer(option);
+            break;
+        case 'K线训练':
+        case 'K线训练横屏':
+            chart = this.CreateKLineTrainChartContainer(option);
+            break;
+        case "简单图形":
+            return this.CreateSimpleChart(option);
+        case '雷达图':
+        case "饼图":
+            return this.CreatePieChart(option);
+        case '地图':
+            return this.CreateMapChart(option);
+        default:
+            return false;
+        }
 
     if (!chart) return false;
 
@@ -4532,30 +4534,34 @@ function ChartMinuteVolumBar() {
 
 
 //线段
-function ChartLine() {
-  this.newMethod = IChartPainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function ChartLine() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.Color = "rgb(255,193,37)"; //线段颜色
-  this.LineWidth;               //线段宽度
-  this.DrawType = 0;              //画图方式  0=无效数平滑  1=无效数不画断开
+    this.Color = "rgb(255,193,37)"; //线段颜色
+    this.LineWidth;               //线段宽度
+    this.DrawType = 0;            //画图方式  0=无效数平滑  1=无效数不画断开
 
-  this.Draw = function () {
-    if (this.NotSupportMessage) {
-      this.DrawNotSupportmessage();
-      return;
+    this.Draw = function () 
+    {
+        if (!this.IsShow) return;
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        switch (this.DrawType) {
+        case 0:
+            return this.DrawLine();
+        case 1:
+            return this.DrawStraightLine();
+        }
     }
-
-    if (!this.Data || !this.Data.Data) return;
-
-    switch (this.DrawType) {
-      case 0:
-        return this.DrawLine();
-      case 1:
-        return this.DrawStraightLine();
-    }
-  }
 
   this.DrawLine = function () {
     var bHScreen = (this.ChartFrame.IsHScreen === true);
@@ -6842,6 +6848,217 @@ function ChartChinaMap() {
       this.Canvas.putImageData(this.ImageData, left, top, 0, 0, drawImageWidth, drawImageHeight);
     }
   }
+}
+
+/*
+    雷达图
+*/
+function ChartRadar() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.BorderPoint = [];    //边框点
+    this.DataPoint = [];      //数据点
+    this.CenterPoint = {};
+    this.StartAngle = 0;
+    this.Color = 'rgb(198,198,198)';
+    this.AreaColor = 'rgba(242,154,118,0.4)';    //面积图颜色
+    this.AreaLineColor = 'rgb(242,154,118)';
+    this.TitleFont = '24px 微软雅黑';
+    this.TitleColor = 'rgb(102,102,102)';
+    this.BGColor = ['rgb(255,255,255)', 'rgb(224,224,224)']//背景色
+
+    this.DrawBorder = function ()  //画边框
+    {
+        if (this.BorderPoint.length <= 0) return;
+
+        this.Canvas.font = this.TitleFont;
+        this.Canvas.strokeStyle = this.Color;
+        
+        const aryBorder=[1,0.8,0.6,0.4,0.2];
+        for (let j in aryBorder)
+        {
+            var rate = aryBorder[j];
+            var isFirstDraw = true;
+            for (let i in this.BorderPoint) 
+            {
+                var item = this.BorderPoint[i];
+                item.X = this.CenterPoint.X + item.Radius * Math.cos(item.Angle * Math.PI / 180) * rate;
+                item.Y = this.CenterPoint.Y + item.Radius * Math.sin(item.Angle * Math.PI / 180) * rate;
+                if (isFirstDraw) 
+                {
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(item.X, item.Y);
+                    isFirstDraw = false;
+                }
+                else 
+                {
+                    this.Canvas.lineTo(item.X, item.Y);
+                }
+
+                if (j==0) this.DrawText(item);
+            }
+
+            this.Canvas.closePath();
+            this.Canvas.stroke();
+            this.Canvas.fillStyle = this.BGColor[j%2==0?0:1];
+            this.Canvas.fill();
+        }
+
+        this.Canvas.beginPath();
+        for (let i in this.BorderPoint) 
+        {
+            var item = this.BorderPoint[i];
+            item.X = this.CenterPoint.X + item.Radius * Math.cos(item.Angle * Math.PI / 180);
+            item.Y = this.CenterPoint.Y + item.Radius * Math.sin(item.Angle * Math.PI / 180);
+            this.Canvas.moveTo(this.CenterPoint.X, this.CenterPoint.Y);
+            this.Canvas.lineTo(item.X, item.Y);
+        }
+        this.Canvas.stroke();
+    }
+
+    this.DrawArea = function () 
+    {
+        if (!this.DataPoint || this.DataPoint.length <= 0) return;
+
+        this.Canvas.fillStyle = this.AreaColor;
+        this.Canvas.strokeStyle = this.AreaLineColor;
+        this.Canvas.beginPath();
+        var isFirstDraw = true;
+        for (let i in this.DataPoint) 
+        {
+            var item = this.DataPoint[i];
+            if (isFirstDraw) 
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(item.X, item.Y);
+                isFirstDraw = false;
+            }
+            else 
+            {
+                this.Canvas.lineTo(item.X, item.Y);
+            }
+        }
+
+        this.Canvas.closePath();
+        this.Canvas.fill();
+        this.Canvas.stroke();
+    }
+
+    this.DrawText=function(item)
+    {
+        if (!item.Text) return;
+          
+        //console.log(item.Text, item.Angle);
+        this.Canvas.fillStyle = this.TitleColor;
+        var xText = item.X, yText = item.Y;
+
+        //显示每个角度的位置
+        if (item.Angle > 0 && item.Angle < 45) {
+            this.Canvas.textAlign = 'left';
+            this.Canvas.textBaseline = 'middle';
+            xText += 2;
+        }
+        else if (item.Angle >= 0 && item.Angle < 90) {
+            this.Canvas.textAlign = 'left';
+            this.Canvas.textBaseline = 'top';
+            xText += 2;
+        }
+        else if (item.Angle >= 90 && item.Angle < 135) {
+            this.Canvas.textAlign = 'right';
+            this.Canvas.textBaseline = 'top';
+            xText -= 2;
+        }
+        else if (item.Angle >= 135 && item.Angle < 180) {
+            this.Canvas.textAlign = 'right';
+            this.Canvas.textBaseline = 'top';
+            xText -= 2;
+        }
+        else if (item.Angle >= 180 && item.Angle < 225) {
+            this.Canvas.textAlign = 'right';
+            this.Canvas.textBaseline = 'middle';
+            xText -= 2;
+        }
+        else if (item.Angle >= 225 && item.Angle <= 270) {
+            this.Canvas.textAlign = 'center';
+            this.Canvas.textBaseline = 'bottom';
+        }
+        else if (item.Angle > 270 && item.Angle < 315) {
+            this.Canvas.textAlign = 'left';
+            this.Canvas.textBaseline = 'bottom';
+            xText += 2;
+        }
+        else {
+            this.Canvas.textAlign = 'left';
+            this.Canvas.textBaseline = 'middle';
+            xText += 2;
+        }
+
+        this.Canvas.fillText(item.Text, xText, yText);
+    }
+
+    this.Draw = function () 
+    {
+        this.BorderPoint = [];
+        this.DataPoint = [];
+        this.InternalBorderPoint=[];
+        this.CenterPoint = {};
+        if (!this.Data || !this.Data.Data || !(this.Data.Data.length > 0))
+            this.CalculatePoints(null);
+        else
+            this.CalculatePoints(this.Data.Data);
+
+        this.DrawBorder();
+        this.DrawArea();
+    }
+
+    this.CalculatePoints = function (data) 
+    {
+        let left = this.ChartBorder.GetLeft();
+        let right = this.ChartBorder.GetRight();
+        let top = this.ChartBorder.GetTop();
+        let bottom = this.ChartBorder.GetBottom();
+        let width = this.ChartBorder.GetWidth();
+        let height = this.ChartBorder.GetHeight();
+
+        let ptCenter = { X: left + width / 2, Y: top + height / 2 };  //中心点
+        let radius = Math.min(width / 2, height / 2) - 2         //半径
+        let count = Math.max(5, data ? data.length : 0);
+        let averageAngle = 360 / count;
+        for (let i = 0; i < count; ++i) 
+        {
+            let ptBorder = { Index: i, Radius: radius, Angle: i * averageAngle + this.StartAngle };
+            let angle = ptBorder.Angle;
+
+            if (data && i < data.length) 
+            {
+                var item = data[i];
+                let ptData = { Index: i, Text: item.Text };
+                ptBorder.Text = item.Name;
+                if (!item.Value) 
+                {
+                    ptData.X = ptCenter.X;
+                    ptData.Y = ptCenter.Y;
+                }
+                else 
+                {
+                    var value = item.Value;
+                    if (value >= 1) value = 1;
+                    var dataRadius = radius * value;
+                    ptData.X = ptCenter.X + dataRadius * Math.cos(angle * Math.PI / 180);
+                    ptData.Y = ptCenter.Y + dataRadius * Math.sin(angle * Math.PI / 180);
+                }
+
+                this.DataPoint.push(ptData);
+            }
+
+            this.BorderPoint.push(ptBorder);
+        }
+
+        this.CenterPoint = ptCenter;
+    }
 }
 
 /*
@@ -13264,9 +13481,7 @@ function PieChartContainer(uielement) {
   this.MainDataControl;    //主数据类(对外的接口类)
 
   //鼠标移动
-  this.OnMouseMove = function (x, y, e) {
-
-  }
+  this.OnMouseMove = function (x, y, e) { }
 
   //创建
   this.Create = function () {
@@ -13300,31 +13515,45 @@ function PieChartContainer(uielement) {
     this.RequestData();
   }
 
-  //创建主数据画法
-  this.CreateMainChart = function () {
-    if (!this.MainDataControl) return;
+    //创建主数据画法
+    this.CreateMainChart = function () 
+    {
+        if (!this.MainDataControl) return;
 
-    for (let i in this.MainDataControl.DataType) {
-      let item = this.MainDataControl.DataType[i];
-      if (item.Type == "PIE") {
-        var chartItem = new ChartPie();
-        chartItem.Canvas = this.Canvas;
-        chartItem.ChartBorder = this.Frame.ChartBorder;
-        chartItem.ChartFrame = this.Frame;
-        chartItem.Name = item.Name;
+        for (let i in this.MainDataControl.DataType) 
+        {
+            let item = this.MainDataControl.DataType[i];
+            if (item.Type == "PIE") 
+            {
+                var chartItem = new ChartPie();
+                chartItem.Canvas = this.Canvas;
+                chartItem.ChartBorder = this.Frame.ChartBorder;
+                chartItem.ChartFrame = this.Frame;
+                chartItem.Name = item.Name;
 
-        this.ChartPaint.push(chartItem);
-      }
-      else if (item.Type == 'CIRCLE') {
-        var chartItem = new ChartCircle();
-        chartItem.Canvas = this.Canvas;
-        chartItem.ChartBorder = this.Frame.ChartBorder;
-        chartItem.ChartFrame = this.Frame;
-        chartItem.Name = item.Name;
+                this.ChartPaint.push(chartItem);
+            }
+            else if (item.Type == 'CIRCLE') 
+            {
+                var chartItem = new ChartCircle();
+                chartItem.Canvas = this.Canvas;
+                chartItem.ChartBorder = this.Frame.ChartBorder;
+                chartItem.ChartFrame = this.Frame;
+                chartItem.Name = item.Name;
 
-        this.ChartPaint.push(chartItem);
-      }
-    }
+                this.ChartPaint.push(chartItem);
+            }
+            else if (item.Type == 'RADAR') //雷达图
+            {
+                var chartItem = new ChartRadar();
+                chartItem.Canvas = this.Canvas;
+                chartItem.ChartBorder = this.Frame.ChartBorder;
+                chartItem.ChartFrame = this.Frame;
+                chartItem.Name = item.Name;
+                if (item.StartAngle) chartItem.StartAngle = item.StartAngle;
+                this.ChartPaint.push(chartItem);
+            }
+        }
 
     // this.TitlePaint[0]=new DynamicKLineTitlePainting();
     // this.TitlePaint[0].Frame=this.Frame.SubFrame[0].Frame;
@@ -13630,27 +13859,31 @@ function ScriptIndex(name, script, args, option)
     param.HQChart.Draw();
   }
 
-  this.CreateLine = function (hqChart, windowIndex, varItem, id) {
-    let line = new ChartLine();
-    line.Canvas = hqChart.Canvas;
-    line.DrawType = 1;  //无效数不画
-    line.Name = varItem.Name;
-    line.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-    line.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
-    if (varItem.Color) line.Color = this.GetColor(varItem.Color);
-    else line.Color = this.GetDefaultColor(id);
+    this.CreateLine = function (hqChart, windowIndex, varItem, id) 
+    {
+        let line = new ChartLine();
+        line.Canvas = hqChart.Canvas;
+        line.DrawType = 1;  //无效数不画
+        line.Name = varItem.Name;
+        line.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        line.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Color) line.Color = this.GetColor(varItem.Color);
+        else line.Color = this.GetDefaultColor(id);
 
-    if (varItem.LineWidth) {
-      let width = parseInt(varItem.LineWidth.replace("LINETHICK", ""));
-      if (!isNaN(width) && width > 0) line.LineWidth = width;
+        if (varItem.LineWidth) 
+        {
+            let width = parseInt(varItem.LineWidth.replace("LINETHICK", ""));
+            if (!isNaN(width) && width > 0) line.LineWidth = width;
+        }
+
+        if (varItem.IsShow == false) line.IsShow = false;
+
+        let titleIndex = windowIndex + 1;
+        line.Data.Data = varItem.Data;
+        hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(line.Data, varItem.Name, line.Color);
+
+        hqChart.ChartPaint.push(line);
     }
-
-    let titleIndex = windowIndex + 1;
-    line.Data.Data = varItem.Data;
-    hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(line.Data, varItem.Name, line.Color);
-
-    hqChart.ChartPaint.push(line);
-  }
 
   //创建柱子
   this.CreateBar = function (hqChart, windowIndex, varItem, id) {

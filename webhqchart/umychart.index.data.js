@@ -43,7 +43,7 @@ JSIndexScript.prototype.Get=function(id)
             ['SG-XDT',this.SG_XDT],['SG-SMX',this.SG_SMX],['SG-LB',this.SG_LB],['SG-PF',this.SG_PF],
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
-            ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],
+            ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
@@ -1752,6 +1752,32 @@ JSIndexScript.prototype.SAR = function ()
         Args: [{ Name: 'P', Value: 10 },{ Name: 'STEP', Value: 2 },{ Name: 'MAXP', Value: 20 }],
         Script: //脚本
 'S:SAR(P,STEP,MAXP),CIRCLEDOT;'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TJCJL = function () 
+{
+    let data =
+    {
+        Name: '太极成交量', Description: '太极成交量', IsMainIndex: true,
+        Args: [],
+        Script: //脚本
+'总手:VOL,NODRAW;\n\
+ZZ:=IF(REF(C,1)>REF(O,1) AND O>REF(C,1)*1.014 AND C<O*1.02,1,3);\n\
+V5:=MA(V,5);\n\
+V12:=MA(V,12);\n\
+V34:=MA(V,34);\n\
+C6:=MA(C,6);\n\
+STICKLINE(VOL,0,VOL,10,0),COLORLIGRAY;\n\
+STICKLINE(CROSS(C,C6) AND V>V5*1.2 AND V>V12*1.2 AND ZZ>2 AND C>H*0.975,0,VOL,10,0),COLORRED;\n\
+STICKLINE(CROSS(C6,C) AND V>V5*1.2 AND V>V12*1.2,0,VOL,10,0),COLORGREEN;\n\
+STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05,0,VOL,10,0),COLORYELLOW;\n\
+STICKLINE(VOL<MA(VOL,5)/2 AND V<V12/2,0,VOL,10,0),COLORBLUE;\n\
+STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05 AND CROSS(C,C6) AND V>V5*1.2 AND V>V12*1.2 AND ZZ>2 AND C>H*0.975,VOL*0.5,0,10,0),COLORRED;\n\
+STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05 AND CROSS(C6,C) AND V>V5*1.2 AND V>V12*1.2,VOL*0.5,0,10,0),COLORRED;'
 
     };
 

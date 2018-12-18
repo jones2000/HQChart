@@ -389,8 +389,8 @@ function FuturesTimeData()
             [
                 //9:00-10:15,10:30-11:30,13:30-15:00
                 { Start: 900, End: 1015 },
-                { Start: 1030, End: 1130 },
-                { Start: 1300, End: 1500 }
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
             ],
             Coordinate:
             {
@@ -428,7 +428,7 @@ function FuturesTimeData()
             Data:
             [
                 { Start: 915, End: 1130 },
-                { Start: 1300, End: 1515 }
+                { Start: 1301, End: 1515 }
             ],
             Coordinate:
             {
@@ -465,7 +465,7 @@ function FuturesTimeData()
             Data:
             [
                 { Start: 930, End: 1130 },
-                { Start: 1300, End: 1500 }
+                { Start: 1301, End: 1500 }
             ],
             Coordinate:
             {
@@ -502,9 +502,9 @@ function FuturesTimeData()
             Data:
             [
                 { Start: 2100, End: 2330 },
-                { Start: 900, End: 1015 },
-                { Start: 1030, End: 1130 },
-                { Start: 1330, End: 1500 }
+                { Start: 901, End: 1015 },
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
             ],
             Coordinate:
             {
@@ -540,9 +540,9 @@ function FuturesTimeData()
             [   
                 { Start: 2100, End: 2359 },
                 { Start: 0, End: 100 },
-                { Start: 900, End: 1015 },
-                { Start: 1030, End: 1130 },
-                { Start: 1300, End: 1500 }
+                { Start: 901, End: 1015 },
+                { Start: 1031, End: 1130 },
+                { Start: 1301, End: 1500 }
             ],
             Coordinate:
             {
@@ -578,9 +578,9 @@ function FuturesTimeData()
             [
                 { Start: 2100, End: 2359 },
                 { Start: 0, End: 230 },
-                { Start: 900, End: 1015 },
-                { Start: 1030, End: 1130 },
-                { Start: 1300, End: 1500 }
+                { Start: 901, End: 1015 },
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
             ],
             Coordinate:
             {
@@ -616,8 +616,8 @@ function FuturesTimeData()
             [
                 { Start: 2100, End: 2300 },
                 { Start: 901, End: 1015 },
-                { Start: 1030, End: 1130 },
-                { Start: 1330, End: 1500 }
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
             ],
             Coordinate:
             {

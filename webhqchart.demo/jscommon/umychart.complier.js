@@ -7000,6 +7000,7 @@ function JSExecute(ast,option)
                     let lineStick=false;
                     let stick=false;
                     let volStick=false;
+                    let isShow=true;
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -7024,6 +7025,7 @@ function JSExecute(ast,option)
                             else if (value==='VOLSTICK') volStick=true;
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
+                            else if (value.indexOf('NODRAW')==0) isShow=false;
                         }
                         else if(itemExpression.Type==Syntax.Literal)    //常量
                         {
@@ -7103,6 +7105,7 @@ function JSExecute(ast,option)
                         let value={Name:varName, Data:outVar,Type:0};
                         if (color) value.Color=color;
                         if (lineWidth) value.LineWidth=lineWidth;
+                        if (isShow==false) value.IsShow=false;
                         this.OutVarTable.push(value);
                     }
                 }
@@ -7658,6 +7661,8 @@ function ScriptIndex(name,script,args,option)
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
             if (!isNaN(width) && width>0) line.LineWidth=width;
         }
+
+        if (varItem.IsShow==false) line.IsShow=false;
         
         let titleIndex=windowIndex+1;
         line.Data.Data=varItem.Data;
