@@ -7375,48 +7375,62 @@ IFrameSplitOperator.FormatDateTimeString = function (value, foramt) {
   return text;
 }
 
-function FrameSplitKLinePriceY() {
-  this.newMethod = IFrameSplitOperator;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function FrameSplitKLinePriceY() 
+{
+    this.newMethod = IFrameSplitOperator;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.Operator = function () {
-    var splitData = {};
-    splitData.Max = this.Frame.HorizontalMax;
-    splitData.Min = this.Frame.HorizontalMin;
-    splitData.Count = this.SplitCount;
-    splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
-    this.IntegerCoordinateSplit(splitData);
+    this.CoordinateType = 0;  //坐标类型 0=普通坐标  1=百分比坐标 (右边坐标刻度)
+    this.Symbol;
+    this.Data;              //K线数据 (计算百分比坐标)
 
-    this.Frame.HorizontalInfo = [];
+    this.Operator = function () 
+    {
+        var splitData = {};
+        splitData.Max = this.Frame.HorizontalMax;
+        splitData.Min = this.Frame.HorizontalMin;
+        splitData.Count = this.SplitCount;
+        splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
+        this.IntegerCoordinateSplit(splitData);
 
-    for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) {
-      this.Frame.HorizontalInfo[i] = new CoordinateInfo();
-      this.Frame.HorizontalInfo[i].Value = value;
-      //this.Frame.HorizontalInfo[i].TextColor = "rgb(51,51,51)";
+        var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
+        if (JSCommonCoordinateData.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,
 
-      if (this.StringFormat == 1)   //手机端格式 如果有万,亿单位了 去掉小数
-      {
-        var floatPrecision = 2;
-        if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision = 0;
-        this.Frame.HorizontalInfo[i].Message[1] = value.toFixed(floatPrecision);
-      }
-      else if (this.StringFormat == -1) {
+        var firstOpenPrice;
+        if (this.CoordinateType == 1) firstOpenPrice = this.GetFirstOpenPrice();
+        this.Frame.HorizontalInfo = [];
+        for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) 
+        {
+            this.Frame.HorizontalInfo[i] = new CoordinateInfo();
+            this.Frame.HorizontalInfo[i].Value = value;
+            this.Frame.HorizontalInfo[i].Message[0] = value.toFixed(defaultfloatPrecision);
+            this.Frame.HorizontalInfo[i].Message[1] = this.Frame.HorizontalInfo[i].Message[0];
+            if (this.CoordinateType == 1 && firstOpenPrice) //百分比坐标 (TODO:需要重新切分坐标,不然显示的百分比不好看)
+            {
+                var perValue = (value - firstOpenPrice) / firstOpenPrice * 100;
+                this.Frame.HorizontalInfo[i].Message[1] = perValue.toFixed(2) + '%';
+            }
+        }
 
-      }
-      else {
-        this.Frame.HorizontalInfo[i].Message[1] = value.toFixed(2);
-      }
-      this.Frame.HorizontalInfo[i].Message[0] = this.Frame.HorizontalInfo[i].Message[1];
-      //this.Frame.HorizontalInfo[i].Font="14px 微软雅黑";
-      //this.Frame.HorizontalInfo[i].TextColor="rgb(100,0,200)";
-      //this.Frame.HorizontalInfo[i].LineColor="rgb(220,220,220)";
+        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
+        this.Frame.HorizontalMax = splitData.Max;
+        this.Frame.HorizontalMin = splitData.Min;
     }
 
-    this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
-    this.Frame.HorizontalMax = splitData.Max;
-    this.Frame.HorizontalMin = splitData.Min;
-  }
+    this.GetFirstOpenPrice = function ()   //获取显示第1个数据的开盘价
+    {
+        if (!this.Data) return null;
+        var xPointCount = this.Frame.XPointCount;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var data = this.Data.Data[i];
+            if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
+
+            return data.Open;
+        }
+        return null;
+    }
 
 }
 
@@ -10565,60 +10579,67 @@ function KLineChartContainer(uielement) {
     });
   }
 
-  this.RecvHistoryData = function (recvData) {
-    var data = recvData.data;
-    var aryDayData = KLineChartContainer.JsonDataToHistoryData(data);
-
-    //原始数据
-    var sourceData = new ChartData();
-    sourceData.Data = aryDayData;
-    sourceData.DataType = 0;      //0=日线数据 1=分钟数据
-
-    //显示的数据
-    var bindData = new ChartData();
-    bindData.Data = aryDayData;
-    bindData.Right = this.Right;
-    bindData.Period = this.Period;
-    bindData.DataType = 0;
-
-    if (bindData.Right > 0)    //复权
+    this.RecvHistoryData = function (recvData) 
     {
-      var rightData = bindData.GetRightDate(bindData.Right);
-      bindData.Data = rightData;
+        var data = recvData.data;
+        var aryDayData = KLineChartContainer.JsonDataToHistoryData(data);
+
+        //原始数据
+        var sourceData = new ChartData();
+        sourceData.Data = aryDayData;
+        sourceData.DataType = 0;      //0=日线数据 1=分钟数据
+
+        //显示的数据
+        var bindData = new ChartData();
+        bindData.Data = aryDayData;
+        bindData.Right = this.Right;
+        bindData.Period = this.Period;
+        bindData.DataType = 0;
+
+        if (bindData.Right > 0)    //复权
+        {
+        var rightData = bindData.GetRightDate(bindData.Right);
+        bindData.Data = rightData;
+        }
+
+        if (bindData.Period > 0 && bindData.Period <= 3)   //周期数据
+        {
+            var periodData = sourceData.GetPeriodData(bindData.Period);
+            bindData.Data = periodData;
+        }
+
+        //绑定数据
+        this.SourceData = sourceData;
+        this.Symbol = data.symbol;
+        this.Name = data.name;
+        this.BindMainData(bindData, this.PageSize);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+        var firstSubFrame;  //主窗口
+        for (var i = 0; i < this.Frame.SubFrame.length; ++i)    //执行指标
+        {
+            if (i == 0) firstSubFrame = this.Frame.SubFrame[i].Frame;
+            this.BindIndexData(i, bindData);
+        }
+
+        if (firstSubFrame && firstSubFrame.YSplitOperator)
+        {
+            firstSubFrame.YSplitOperator.Symbol = this.Symbol;                    //绑定代码
+            firstSubFrame.YSplitOperator.Data = this.ChartPaint[0].Data;          //K线数据
+        }
+
+        //请求叠加数据 (主数据下载完再下载))
+        this.RequestOverlayHistoryData();
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+
+        if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistroyData', this);   //单词拼写错误, 请使用下面的回调
+        if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistoryData', this);
     }
-
-    if (bindData.Period > 0 && bindData.Period <= 3)   //周期数据
-    {
-      var periodData = sourceData.GetPeriodData(bindData.Period);
-      bindData.Data = periodData;
-    }
-
-    //绑定数据
-    this.SourceData = sourceData;
-    this.Symbol = data.symbol;
-    this.Name = data.name;
-    this.BindMainData(bindData, this.PageSize);
-
-    this.BindInstructionIndexData(bindData);    //执行指示脚本
-
-    for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
-    {
-      this.BindIndexData(i, bindData);
-    }
-
-    //请求叠加数据 (主数据下载完再下载))
-    this.RequestOverlayHistoryData();
-
-    //刷新画图
-    this.UpdataDataoffset();           //更新数据偏移
-    this.UpdatePointByCursorIndex();   //更新十字光标位子
-    this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-    this.Frame.SetSizeChage(true);
-    this.Draw();
-
-    if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistroyData', this);   //单词拼写错误, 请使用下面的回调
-    if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistoryData', this);
-  }
 
   this.ReqeustHistoryMinuteData = function () {
     var self = this;
@@ -10645,58 +10666,65 @@ function KLineChartContainer(uielement) {
       dataType: "json",
       success: function (data) {
         self.ChartSplashPaint.IsEnableSplash = false;
-        self.RecvMinuteHistroyData(data);
+          self.RecvMinuteHistoryData(data);
       }
     });
   }
 
-
-  this.RecvMinuteHistroyData = function (recvData) {
-    var data = recvData.data;
-    var aryDayData = KLineChartContainer.JsonDataToMinuteHistoryData(data);
-
-    //原始数据
-    var sourceData = new ChartData();
-    sourceData.Data = aryDayData;
-    sourceData.DataType = 1;      //0=日线数据 1=分钟数据
-
-    //显示的数据
-    var bindData = new ChartData();
-    bindData.Data = aryDayData;
-    bindData.Right = this.Right;
-    bindData.Period = this.Period;
-    bindData.DataType = 1;
-
-    if (bindData.Period >= 5)   //周期数据
+    this.RecvMinuteHistoryData = function (recvData) 
     {
-      var periodData = sourceData.GetPeriodData(bindData.Period);
-      bindData.Data = periodData;
+        var data = recvData.data;
+        var aryDayData = KLineChartContainer.JsonDataToMinuteHistoryData(data);
+
+        //原始数据
+        var sourceData = new ChartData();
+        sourceData.Data = aryDayData;
+        sourceData.DataType = 1;      //0=日线数据 1=分钟数据
+
+        //显示的数据
+        var bindData = new ChartData();
+        bindData.Data = aryDayData;
+        bindData.Right = this.Right;
+        bindData.Period = this.Period;
+        bindData.DataType = 1;
+
+        if (bindData.Period >= 5)   //周期数据
+        {
+            var periodData = sourceData.GetPeriodData(bindData.Period);
+            bindData.Data = periodData;
+        }
+
+        //绑定数据
+        this.SourceData = sourceData;
+        this.Symbol = data.symbol;
+        this.Name = data.name;
+        this.BindMainData(bindData, this.PageSize);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        var firstSubFrame;  //主窗口
+        for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
+        {
+            if (i == 0) firstSubFrame = this.Frame.SubFrame[i].Frame;
+            this.BindIndexData(i, bindData);
+        }
+
+        if (firstSubFrame && firstSubFrame.YSplitOperator) 
+        {
+            firstSubFrame.YSplitOperator.Symbol = this.Symbol;                    //绑定代码
+            firstSubFrame.YSplitOperator.Data = this.ChartPaint[0].Data;          //K线数据
+        }
+
+        this.OverlayChartPaint[0].Data = null; //分钟数据不支持叠加 清空
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+
+        if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteHistoryData', this);
     }
-
-    //绑定数据
-    this.SourceData = sourceData;
-    this.Symbol = data.symbol;
-    this.Name = data.name;
-    this.BindMainData(bindData, this.PageSize);
-
-    this.BindInstructionIndexData(bindData);    //执行指示脚本
-
-    for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
-    {
-      this.BindIndexData(i, bindData);
-    }
-
-    this.OverlayChartPaint[0].Data = null; //分钟数据不支持叠加 清空
-
-    //刷新画图
-    this.UpdataDataoffset();           //更新数据偏移
-    this.UpdatePointByCursorIndex();   //更新十字光标位子
-    this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-    this.Frame.SetSizeChage(true);
-    this.Draw();
-
-    if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteHistroyData', this);
-  }
 
   //请求实时行情数据
   this.ReqeustRealtimeData = function () {
@@ -13551,6 +13579,7 @@ function PieChartContainer(uielement) {
                 chartItem.ChartFrame = this.Frame;
                 chartItem.Name = item.Name;
                 if (item.StartAngle) chartItem.StartAngle = item.StartAngle;
+                if (item.TitleFont) chartItem.TitleFont = item.TitleFont;
                 this.ChartPaint.push(chartItem);
             }
         }
