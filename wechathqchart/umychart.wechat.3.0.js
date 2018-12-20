@@ -4334,12 +4334,12 @@ function ChartOverlayKLine()
         if (!this.MainData || !this.Data) return;
 
         var xPointCount = this.ChartFrame.XPointCount;
-        var firstOpen = null; //主线数据第1个收盘价
+        var firstOpen = null; //主线数据第1个开盘价
         for (var i = this.Data.DataOffset, j = 0; i < this.MainData.Data.length && j < xPointCount; ++i, ++j)
         {
             var data = this.MainData.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
-            firstOpen = data.Close;
+            firstOpen = data.Open;
             break;
         }
 

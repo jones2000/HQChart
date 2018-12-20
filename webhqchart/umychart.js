@@ -5862,12 +5862,12 @@ function ChartOverlayKLine()
         if (!this.MainData || !this.Data) return;
 
         var xPointCount=this.ChartFrame.XPointCount;
-        var firstOpen=null; //主线数据第1个收盘价
+        var firstOpen=null; //主线数据第1个开盘价
         for(var i=this.Data.DataOffset,j=0;i<this.MainData.Data.length && j<xPointCount;++i,++j)
         {
             var data=this.MainData.Data[i];
             if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
-            firstOpen=data.Close;
+            firstOpen=data.Open;
             break;
         }
 
@@ -17120,15 +17120,29 @@ function PyScriptIndex(name,script,args,option)
             return false;
         }
 
+        /*
+        this.Script="stock = hq.stock()\n\
+data_000001sz = stock.hq_data(seccode='000001.sz')\n\
+data_000001sz['openclose'] = data_000001sz.open - data_000001sz.close\n\
+add_graph(name='openclose', tdate=data_000001sz.index, data=data_000001sz.openclose, graph_type='line', color='#FF34B3', width=2)\n\
+add_graph(name='myclose', tdate=data_000001sz.index, data=data_000001sz.close.values, graph_type='line')";
+*/
+
+        var data=JSON.stringify(
+            {
+                code:this.Script,   //脚本
+                symbol:param.HQChart.Symbol, //股票代码
+                period:param.HQChart.Period, //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+                right:param.HQChart.Right    //复权 0 不复权 1 前复权 2 后复权
+            });
+
         //请求数据
         $.ajax({
             url: this.ApiUrl,
-            data:
-            {
-               "code":this.Script,
-            },
+            data:data,
             type:"post",
             dataType: "json",
+            contentType:' application/json; charset=utf-8',
             async:true,
             success: function (recvData)
             {
@@ -17141,26 +17155,35 @@ function PyScriptIndex(name,script,args,option)
 
     this.RecvData=function(recvData,param)
     {
-        if (recvData.date.length<0) return;
-
-        var aryData=new Array();
-        for(var i in recvData.date)
+        if (recvData.code!=0) 
         {
-            var indexData=new SingleData();
-            indexData.Date=recvData.date[i];
-            indexData.Value=recvData.value[i];
-            aryData.push(indexData);
+            console.log("[PyScriptIndex::RecvData] failed.", recvData);
+            return;   //失败了
         }
 
-        var aryFittingData=param.HistoryData.GetFittingData(aryData);
+        for(var i in recvData.data)
+        {
+            var item=recvData.data[i];
+            var indexData=[];
+            for(var j=0;j<item.date.length && j<item.data.length;++j)
+            {
+                var indexItem=new SingleData(); //单列指标数据
+                indexItem.Date=item.date[j];
+                indexItem.Value=item.data[j];
+                indexData.push(indexItem);
+            }
 
-        var bindData=new ChartData();
-        bindData.Data=aryFittingData;
-        bindData.Period=param.HQChart.Period;   //周期
-        bindData.Right=param.HQChart.Right;     //复权
+            var aryFittingData=param.HistoryData.GetFittingData(indexData); //数据和主图K线拟合
+            var bindData=new ChartData();
+            bindData.Data=aryFittingData;
+            bindData.Period=param.HQChart.Period;   //周期
+            bindData.Right=param.HQChart.Right;     //复权
 
-        this.Data=bindData.GetValue();
-        this.BindData(param.HQChart,param.WindowIndex,param.HistoryData);
+            var indexInfo={Name:item.name,Type:item.graph,LineWidth:item.width,Data:bindData.GetValue(),Color:item.color};
+            this.OutVar.push(indexInfo);
+        }
+
+        this.BindData(param.HQChart,param.WindowIndex,param.HistoryData);   //把数据绑定到图形上
 
         param.HQChart.UpdataDataoffset();           //更新数据偏移
         param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
@@ -17170,9 +17193,63 @@ function PyScriptIndex(name,script,args,option)
     this.BindData=function(hqChart,windowIndex,hisData)
     {
         hqChart.DeleteIndexPaint(windowIndex); //清空指标图形
+
+        for(let i in this.OutVar)
+        {
+            let item=this.OutVar[i];
+            switch(item.Type)
+            {
+                case 'line':
+                this.CreateLine(hqChart,windowIndex,item,i);
+                break;
+            }
+        }
+
         return true;
     }
 
+    this.CreateLine=function(hqChart,windowIndex,varItem,id)
+    {
+        let line=new ChartLine();
+        line.Canvas=hqChart.Canvas;
+        line.DrawType=1;
+        line.Name=varItem.Name;
+        line.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        line.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Color) line.Color=varItem.Color;
+        else line.Color=this.GetDefaultColor(id);
+
+        if (varItem.LineWidth>0) line.LineWidth=varItem.LineWidth;
+        if (varItem.IsShow==false) line.IsShow=false;
+        
+        let titleIndex=windowIndex+1;
+        line.Data.Data=varItem.Data;
+        hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
+
+        hqChart.ChartPaint.push(line);
+    }
+
+}
+
+//给一个默认的颜色
+PyScriptIndex.prototype.GetDefaultColor=function(id)
+{
+    let COLOR_ARRAY=
+    [
+        "rgb(255,174,0)",
+        "rgb(25,199,255)",
+        "rgb(175,95,162)",
+        "rgb(236,105,65)",
+        "rgb(68,114,196)",
+        "rgb(229,0,79)",
+        "rgb(0,128,255)",
+        "rgb(252,96,154)",
+        "rgb(42,230,215)",
+        "rgb(24,71,178)",
+    ];
+
+    let number=parseInt(id);
+    return COLOR_ARRAY[number%(COLOR_ARRAY.length-1)];
 }
 
 
