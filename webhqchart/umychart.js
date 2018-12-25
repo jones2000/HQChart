@@ -17053,6 +17053,7 @@ function PyScriptIndex(name,script,args,option)
                 period:param.HQChart.Period,    //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
                 right:param.HQChart.Right,      //复权 0 不复权 1 前复权 2 后复权
                 params:indexParam,               //指标参数
+                numcount:hqChart.MaxReqeustDataCount,
             });
 
         //请求数据
@@ -17073,11 +17074,18 @@ function PyScriptIndex(name,script,args,option)
             },
             error: function(http,e)
             {
-                console.log("[PyScriptIndex::RequestData] error",e);
+                self.RecvError(http,e,param);;
+                
             }
         });
 
         return true;
+    }
+
+    this.RecvError=function(http,e,param)
+    {
+        console.log("[PyScriptIndex::RecvError] error",e);
+        if (param.HQChart.ScriptErrorCallback) param.HQChart.ScriptErrorCallback(e);
     }
 
     this.RecvData=function(recvData,param)
@@ -17085,6 +17093,7 @@ function PyScriptIndex(name,script,args,option)
         if (recvData.code!=0) 
         {
             console.log("[PyScriptIndex::RecvData] failed.", recvData);
+            if (param.HQChart.ScriptErrorCallback) param.HQChart.ScriptErrorCallback(recvData.msg);
             return;   //失败了
         }
 
@@ -17173,7 +17182,7 @@ function PyScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(line);
     }
 
-    this.CreateColorStock=function(hqChart,windowIndex,item,i)
+    this.CreateColorStock=function(hqChart,windowIndex,varItem,id)
     {
         let chart=new ChartMACD();
         chart.Canvas=hqChart.Canvas;

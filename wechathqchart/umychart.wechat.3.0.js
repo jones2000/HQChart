@@ -311,6 +311,9 @@ function JSChart(element) {
             if (option.MinuteTitle.LineCount > 1) chart.TitlePaint[0].LineCount = option.MinuteTitle.LineCount;
         }
 
+        if (typeof (option.UpdateUICallback) == 'function') //数据到达回调
+            chart.UpdateUICallback = option.UpdateUICallback;
+
         //叠加股票
         if (option.Overlay && option.Overlay.length) 
         {
@@ -11524,6 +11527,7 @@ function MinuteChartContainer(uielement) {
   this.IsAutoUpate = false;                   //是否自动更新行情数据
   this.TradeDate = 0;                         //行情交易日期
   this.SplashTitle = '下载分钟数据';
+  this.UpdateUICallback;                    //数据到达回调
 
   this.DayCount = 1;                       //显示几天的数据
   this.DayData;                            //多日分钟数据
@@ -11850,6 +11854,8 @@ function MinuteChartContainer(uielement) {
         this.UpdateHistoryMinuteUI();
         this.RequestOverlayHistoryMinuteData();
 
+        if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistoryMinuteData', this);
+
         this.AutoUpdata();
     }
 
@@ -11963,6 +11969,7 @@ function MinuteChartContainer(uielement) {
       this.UpdateLatestMinuteData(aryMinuteData, data.data.stock[0].date);
       this.UpdateHistoryMinuteUI();
       this.RequestOverlayMinuteData();    //更新最新叠加数据
+      if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
       this.AutoUpdata();
       return;
     }
@@ -12006,6 +12013,8 @@ function MinuteChartContainer(uielement) {
     this.UpdateFrameMaxMin();          //调整坐标最大 最小值
     this.Frame.SetSizeChage(true);
     this.Draw();
+
+    if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
 
     this.AutoUpdata();
   }
@@ -12074,6 +12083,8 @@ function MinuteChartContainer(uielement) {
     this.UpdateFrameMaxMin();          //调整坐标最大 最小值
     this.Frame.SetSizeChage(true);
     this.Draw();
+
+    if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvOverlayMinuteData', this);
   }
 
   this.RequestOverlayHistoryMinuteData = function () {
@@ -12144,6 +12155,8 @@ function MinuteChartContainer(uielement) {
     this.UpdateFrameMaxMin();          //调整坐标最大 最小值
     this.Frame.SetSizeChage(true);
     this.Draw();
+
+    if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvOverlayHistoryMinuteData', this);
   }
 
   //数据自动更新
