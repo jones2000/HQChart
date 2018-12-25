@@ -399,9 +399,9 @@ function FuturesTimeData()
                     { Value: 900, Text: '9:00' },
                     { Value: 930, Text: '9:30' },
                     { Value: 1000, Text: '10:00' },
-                    { Value: 1030, Text: '10:30' },
+                    { Value: 1031, Text: '10:30' },
                     { Value: 1100, Text: '11:00' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1400, Text: '14:00' },
                     { Value: 1430, Text: '14:30' },
                     { Value: 1500, Text: '15:00' },
@@ -410,14 +410,14 @@ function FuturesTimeData()
                 [
                     { Value: 900, Text: '9:00' },
                     { Value: 1000, Text: '10:00' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1430, Text: '14:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 900, Text: '9:00' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1500, Text: '15:00' },
                 ]
             }
@@ -438,7 +438,7 @@ function FuturesTimeData()
                     { Value: 1000, Text: '10:00' },
                     { Value: 1030, Text: '10:30' },
                     { Value: 1100, Text: '11:00' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1330, Text: '13:30' },
                     { Value: 1400, Text: '14:00' },
                     { Value: 1430, Text: '14:30' },
@@ -448,14 +448,14 @@ function FuturesTimeData()
                 [
                     { Value: 930, Text: '9:30' },
                     { Value: 1030, Text: '10:30' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1400, Text: '14:00' },
                     { Value: 1515, Text: '15:15' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 930, Text: '9:30' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1515, Text: '15:15' },
                 ]
             }
@@ -475,7 +475,7 @@ function FuturesTimeData()
                     { Value: 1000, Text: '10:00' },
                     { Value: 1030, Text: '10:30' },
                     { Value: 1100, Text: '11:00' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1330, Text: '13:30' },
                     { Value: 1400, Text: '14:00' },
                     { Value: 1430, Text: '14:30' },
@@ -485,14 +485,14 @@ function FuturesTimeData()
                 [
                     { Value: 930, Text: '9:30' },
                     { Value: 1030, Text: '10:30' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1400, Text: '14:00' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 930, Text: '9:30' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1500, Text: '15:00' },
                 ]
             }
@@ -513,23 +513,23 @@ function FuturesTimeData()
                     { Value: 2100, Text: '21:00' },
                     { Value: 2200, Text: '22:00' },
                     { Value: 2300, Text: '23:00' },
-                    { Value: 900, Text: '9:00' },
-                    { Value: 1030, Text: '10:30' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1031, Text: '10:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1430, Text: '14:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Simple: //简洁模式
                 [
                     { Value: 2100, Text: '21:00' },
-                    { Value: 900, Text: '9:00' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 2100, Text: '21:00' },
-                    { Value: 900, Text: '9:00' },
+                    { Value: 901, Text: '9:00' },
                     { Value: 1500, Text: '15:00' },
                 ]
             }
@@ -551,23 +551,23 @@ function FuturesTimeData()
                     { Value: 2100, Text: '21:00' },
                     { Value: 2200, Text: '22:00' },
                     { Value: 2300, Text: '23:00' },
-                    { Value: 900, Text: '9:00' },
+                    { Value: 901, Text: '9:00' },
                     { Value: 1030, Text: '10:30' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Simple: //简洁模式
                 [
                     { Value: 2100, Text: '21:00' },
                     { Value: 2300, Text: '23:00' },
-                    { Value: 900, Text: '9:00' },
-                    { Value: 1030, Text: '10:30' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1031, Text: '10:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 2100, Text: '21:00' },
-                    { Value: 900, Text: '9:00' },
+                    { Value: 901, Text: '9:00' },
                     { Value: 1500, Text: '15:00' },
                 ]
             }
@@ -589,23 +589,23 @@ function FuturesTimeData()
                     { Value: 2100, Text: '21:00' },
                     { Value: 2300, Text: '23:00' },
                     { Value: 100, Text: '1:00' },
-                    { Value: 900, Text: '9:00' },
-                    { Value: 1030, Text: '10:30' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1031, Text: '10:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Simple: //简洁模式
                 [
                     { Value: 2100, Text: '21:00' },
                     { Value: 2300, Text: '23:00' },
-                    { Value: 900, Text: '9:00' },
+                    { Value: 901, Text: '9:00' },
                     { Value: 1100, Text: '11:00' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 2100, Text: '21:00' },
-                    { Value: 900, Text: '9:00' },
+                    { Value: 901, Text: '9:00' },
                     { Value: 1500, Text: '15:00' },
                 ]
             }
@@ -626,8 +626,8 @@ function FuturesTimeData()
                         { Value: 2100, Text: '21:00' },
                         { Value: 2200, Text: '22:00' },
                         { Value: 2300, Text: '23:00' },
-                        { Value: 1030, Text: '10:30' },
-                        { Value: 1330, Text: '13:30' },
+                        { Value: 1031, Text: '10:30' },
+                        { Value: 1331, Text: '13:30' },
                         { Value: 1430, Text: '14:30' },
                         { Value: 1500, Text: '15:00' },
                     ],
@@ -635,7 +635,7 @@ function FuturesTimeData()
                     [
                         { Value: 2100, Text: '21:00' },
                         { Value: 2300, Text: '23:00' },
-                        { Value: 1330, Text: '13:30' },
+                        { Value: 1331, Text: '13:30' },
                         { Value: 1500, Text: '15:00' },
                     ],
                 Min:   //最小模式  

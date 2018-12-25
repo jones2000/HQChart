@@ -5940,97 +5940,6 @@ function ChartOverlayKLine()
     }
 }
 
-//历史成交量柱子  ！！！不用了
-function ChartKVolumeBar()
-{
-    this.newMethod=IChartPainting;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.UpColor=g_JSChartResource.UpBarColor;
-    this.DownColor=g_JSChartResource.DownBarColor;
-
-    this.Draw=function()
-    {
-        var dataWidth=this.ChartFrame.DataWidth;
-        var distanceWidth=this.ChartFrame.DistanceWidth;
-        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
-        var chartright=this.ChartBorder.GetRight();
-        var xPointCount=this.ChartFrame.XPointCount;
-
-        var yBottom=this.ChartFrame.GetYFromData(0);
-
-        if (dataWidth>=4)
-        {
-            yBottom=ToFixedRect(yBottom);
-            for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
-            {
-                var data=this.Data.Data[i];
-                if (data.Vol==null) continue;
-
-                var left=xOffset;
-                var right=xOffset+dataWidth;
-                if (right>chartright) break;
-
-                var y=this.ChartFrame.GetYFromData(data.Vol);
-
-                if (data.Close>data.Open)
-                    this.Canvas.fillStyle=this.UpColor;
-                else
-                    this.Canvas.fillStyle=this.DownColor;
-
-                //高度调整为整数
-                var height=ToFixedRect(yBottom-y);
-                y=yBottom-height;
-                this.Canvas.fillRect(ToFixedRect(left),y,ToFixedRect(dataWidth),height);
-            }
-        }
-        else    //太细了直接话线
-        {
-            for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
-            {
-                var data=this.Data.Data[i];
-                if (data.Vol==null) continue;
-
-                var left=xOffset;
-                var right=xOffset+dataWidth;
-                if (right>chartright) break;
-
-                var y=this.ChartFrame.GetYFromData(data.Vol);
-                var x=this.ChartFrame.GetXFromIndex(j);
-
-                if (data.Close>data.Open)
-                    this.Canvas.strokeStyle=this.UpColor;
-                else
-                    this.Canvas.strokeStyle=this.DownColor;
-
-                var x=this.ChartFrame.GetXFromIndex(j);
-                this.Canvas.beginPath();
-                this.Canvas.moveTo(ToFixedPoint(x),y);
-                this.Canvas.lineTo(ToFixedPoint(x),yBottom);
-                this.Canvas.stroke();
-            }
-        }
-    }
-
-    this.GetMaxMin=function()
-    {
-        var xPointCount=this.ChartFrame.XPointCount;
-        var range={};
-        range.Min=0;
-        range.Max=null;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
-        {
-            var data=this.Data.Data[i];
-            if (range.Max==null) range.Max=data.Vol;
-
-            if (range.Max<data.Vol) range.Max=data.Vol;
-        }
-
-        return range;
-    }
-}
-
 //分钟成交量 支持横屏
 function ChartMinuteVolumBar()
 {
@@ -13852,12 +13761,13 @@ function MinuteChartContainer(uielement)
         this.ChartPaint[0]=minuteLine;
 
         //分钟线均线
-        var averageLine=new ChartLine();
+        var averageLine=new ChartMinutePriceLine();
         averageLine.Canvas=this.Canvas;
         averageLine.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
         averageLine.ChartFrame=this.Frame.SubFrame[0].Frame;
         averageLine.Name="Minute-Average-Line";
         averageLine.Color=g_JSChartResource.Minute.AvPriceColor;
+        averageLine.IsDrawArea=false;
         this.ChartPaint[1]=averageLine;
 
         var averageLine=new ChartMinuteVolumBar();
@@ -13979,7 +13889,7 @@ function MinuteChartContainer(uielement)
         this.TradeDate=this.DayData[0].Date;
 
         this.BindMainData(sourceData,this.DayData[0].YClose);
-        this.ChartPaint[1].Data=null;   //均线暂时不用
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol)) this.ChartPaint[1].Data=null;   //期货均线暂时不用
 
         if (this.Frame.SubFrame.length>2)
         {
@@ -14456,6 +14366,10 @@ MinuteChartContainer.JsonDataToMinuteData=function(data)
 //多日日线数据API 转化成array[];
 MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
 {
+    var symbol=data.symbol;
+    var upperSymbol=symbol.toUpperCase();
+    var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+    var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
     var result=[];
     for(var i in data.data)
     {
@@ -14464,6 +14378,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
         var date=dayData.date;
         var yClose=dayData.yclose;  //前收盘 计算涨幅
         var preClose=yClose;        //前一个数据价格
+        var preAvPrice=null;           //上一个均价
         //var preAvPrice=data.stock[0].yclose;    //前一个均价
         for(var j in dayData.minute)
         {
@@ -14476,19 +14391,26 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
             item.Low=jsData[4];
             item.Vol=jsData[5]/100; //原始单位股
             item.Amount=jsData[6];
+            if (7<jsData.length && jsData[7]>0) 
+            {
+                item.AvPrice=jsData[7];    //均价
+                preAvPrice=jsData[7];
+            }
             item.DateTime=date.toString()+" "+jsData[0].toString();
-
+            
             if (!item.Close)    //当前没有价格 使用上一个价格填充
             {
                 item.Close=preClose;   
                 item.Open=item.High=item.Low=item.Close;
             }
 
+            if (!item.AvPrice && preAvPrice) item.AvPrice=preAvPrice;
+
             if (item.Close && yClose) item.Increase = (item.Close - yClose)/yClose*100;
             else item.Increase=null;
             if (j==0)      //第1个数据 写死9：25
             {
-                item.DateTime=date.toString()+" 0925";
+                if (isSHSZ) item.DateTime=date.toString()+" 0925";
                 item.IsFristData=true;
             }
 
@@ -14498,6 +14420,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
             if (item.AvPrice<=0) item.AvPrice=null;
             if (item.High<=0) item.High=null;
             if (item.Low<=0) item.Low=null;
+            if (item.AvPrice<=0) item.AvPrice=null;
 
             minuteData[j]=item;
         }
@@ -17103,6 +17026,7 @@ function PyScriptIndex(name,script,args,option)
 
     this.RequestData=function(hqChart,windowIndex,hisData)
     {
+        this.OutVar=[];
         var self = this;
         var param=
         {
@@ -17111,29 +17035,24 @@ function PyScriptIndex(name,script,args,option)
             HistoryData:hisData
         };
 
-        this.OutVar=[];
-
-        if (param.HQChart.Period>0)   //周期数据
+        //参数
+        var strParam='';
+        for(let i in this.Arguments)
         {
-            this.NotSupport(param.HQChart,param.WindowIndex,"不支持周期切换");
-            param.HQChart.Draw();
-            return false;
+            if (strParam.length>0) strParam+=',';
+            var item=this.Arguments[i];
+            strParam+='"'+item.Name+'"'+':'+item.Value;
         }
-
-        /*
-        this.Script="stock = hq.stock()\n\
-data_000001sz = stock.hq_data(seccode='000001.sz')\n\
-data_000001sz['openclose'] = data_000001sz.open - data_000001sz.close\n\
-add_graph(name='openclose', tdate=data_000001sz.index, data=data_000001sz.openclose, graph_type='line', color='#FF34B3', width=2)\n\
-add_graph(name='myclose', tdate=data_000001sz.index, data=data_000001sz.close.values, graph_type='line')";
-*/
+        strParam='{'+strParam+'}';
+        var indexParam=JSON.parse(strParam);
 
         var data=JSON.stringify(
             {
                 code:this.Script,   //脚本
-                symbol:param.HQChart.Symbol, //股票代码
-                period:param.HQChart.Period, //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
-                right:param.HQChart.Right    //复权 0 不复权 1 前复权 2 后复权
+                symbol:param.HQChart.Symbol,    //股票代码
+                period:param.HQChart.Period,    //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+                right:param.HQChart.Right,      //复权 0 不复权 1 前复权 2 后复权
+                params:indexParam,               //指标参数
             });
 
         //请求数据
@@ -17147,6 +17066,14 @@ add_graph(name='myclose', tdate=data_000001sz.index, data=data_000001sz.close.va
             success: function (recvData)
             {
                 self.RecvData(recvData,param);
+            },
+            complete:function(h)
+            {
+                //console.log(h);
+            },
+            error: function(http,e)
+            {
+                console.log("[PyScriptIndex::RequestData] error",e);
             }
         });
 
@@ -17161,14 +17088,16 @@ add_graph(name='myclose', tdate=data_000001sz.index, data=data_000001sz.close.va
             return;   //失败了
         }
 
+        var aryDate=recvData.date;
         for(var i in recvData.data)
         {
             var item=recvData.data[i];
             var indexData=[];
-            for(var j=0;j<item.date.length && j<item.data.length;++j)
+            for(var j=0;j<aryDate.length && j<aryDate.length;++j)
             {
+                if (j>=item.data.length) continue;
                 var indexItem=new SingleData(); //单列指标数据
-                indexItem.Date=item.date[j];
+                indexItem.Date=aryDate[j];
                 indexItem.Value=item.data[j];
                 indexData.push(indexItem);
             }
@@ -17202,8 +17131,23 @@ add_graph(name='myclose', tdate=data_000001sz.index, data=data_000001sz.close.va
                 case 'line':
                 this.CreateLine(hqChart,windowIndex,item,i);
                 break;
+                case 'colorstick':  //上下柱子
+                this.CreateColorStock(hqChart,windowIndex,item,i);
+                break;
             }
         }
+
+        var titleIndex=windowIndex+1;
+        hqChart.TitlePaint[titleIndex].Title=this.Name; //这是指标名称
+
+        let indexParam='';  //指标参数
+        for(let i in this.Arguments)
+        {
+            let item=this.Arguments[i];
+            if (indexParam.length>0) indexParam+=',';
+            indexParam+=item.Value.toString();
+        }
+        if (indexParam.length>0) hqChart.TitlePaint[titleIndex].Title=this.Name+'('+indexParam+')';
 
         return true;
     }
@@ -17227,6 +17171,22 @@ add_graph(name='myclose', tdate=data_000001sz.index, data=data_000001sz.close.va
         hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
 
         hqChart.ChartPaint.push(line);
+    }
+
+    this.CreateColorStock=function(hqChart,windowIndex,item,i)
+    {
+        let chart=new ChartMACD();
+        chart.Canvas=hqChart.Canvas;
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Data;
+        hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chart.Data,varItem.Name,this.GetDefaultColor(id));
+
+        hqChart.ChartPaint.push(chart);
     }
 
 }
