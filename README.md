@@ -38,6 +38,7 @@
 * 支持通达信语法指标
 * 支持五彩K线(目前录入系统五彩K线30多个), 支持自定义通达信语法脚本的五彩K线
 * 支持专家系统指标
+* 支持个股筹码图
 # 2. 走势图
 * 支持指标 <br>
 * 支持股票叠加<br>
@@ -52,6 +53,7 @@
 * 横版走势图手机页面 https://opensource.zealink.com/hqweb/demo/phone10.html  <br>
 * 横版K线图手机页面  https://opensource.zealink.com/hqweb/demo/phone9.html  <br>
 * 多日走势图 https://opensource.zealink.com/hqweb/demo/phone15.html <br>
+* 个股筹码图 https://opensource.zealink.com/hqweb/demo/phone18.html <br>
 
 * 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
 * QQ交流群(950092318) ![QQ群](/小程序行情模块用例/image/qqcode.png)
