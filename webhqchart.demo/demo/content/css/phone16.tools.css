@@ -1,0 +1,30 @@
+﻿.tools{
+    float:left;
+    padding:15px 0 0 10px;
+}
+.tools li {
+    padding:5px;
+    height:32px;
+    width:35px;
+}
+.tools li.active,.tools li:hover{
+    background-color:#26B99A;
+    color:#fff;
+    cursor:pointer;
+}
+
+.tools .plateList {
+    height:450px;
+    overflow-y:auto;
+}
+
+.tools .memberList {
+    overflow-y:auto;
+}
+
+.tools .table tr:hover td, .tools .table tr.active td{
+    background-color: #26B99A !important;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+}

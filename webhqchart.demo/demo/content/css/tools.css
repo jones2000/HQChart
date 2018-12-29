@@ -521,10 +521,24 @@ td.context-menu {
     padding-right: 5px;
     box-sizing: border-box;
 }
-
 .klineframe-toolbar span:hover{
     color: #0182d4;
 }
+
+.klineframe-button{
+    position: absolute;
+    text-align:right;
+    line-height: 24px;
+    padding-right: 5px;
+    box-sizing: border-box;
+}
+/*.klineframe-button span:hover{*/
+    /*color: #0182d4;*/
+/*}*/
+/*.klineframe-button span:active{*/
+    /*color: #0182d4;*/
+/*}*/
+
 .icon-active{
     color: #0182d4;
 }

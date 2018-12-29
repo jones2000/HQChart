@@ -8894,7 +8894,7 @@ function DynamicChartTitlePainting() {
   this.TitleBottomDistance = 1; //标题靠底部输出的时候 字体和底部的间距
   this.Text = new Array();  //副标题 Text:'文本', Color:'颜色'
   this.EraseRect;
-  this.EraseColor='rgb(255,255,255)';  //用来擦出的背景色
+  this.EraseColor = g_JSChartResource.BGColor;  //用来擦出的背景色
 
   this.FormatValue = function (value, item) {
     if (item.StringFormat == STRING_FORMAT_TYPE.DEFAULT)
@@ -9179,6 +9179,8 @@ function DynamicChartTitlePainting() {
     this.Canvas.translate(xText, yText);
     this.Canvas.rotate(90 * Math.PI / 180);
 
+    this.EraseTitle();
+
     var left = 1;
     var bottom = -this.Frame.ChartBorder.TitleHeight / 2;    //上下居中显示
     var right = this.Frame.ChartBorder.GetHeight();
@@ -9258,60 +9260,88 @@ function DynamicChartTitlePainting() {
     }
   }
 
-  this.HScreenDrawTitle = function () {
-    var xText = this.Frame.ChartBorder.GetRightTitle();
-    var yText = this.Frame.ChartBorder.GetTop();
+    this.HScreenDrawTitle = function () 
+    {
+        this.EraseRect=null;
+        var xText = this.Frame.ChartBorder.GetRightTitle();
+        var yText = this.Frame.ChartBorder.GetTop();
 
-    this.Canvas.translate(xText, yText);
-    this.Canvas.rotate(90 * Math.PI / 180);
+        this.Canvas.translate(xText, yText);
+        this.Canvas.rotate(90 * Math.PI / 180);
 
-    let left = 1;
-    let bottom = -(this.Frame.ChartBorder.TitleHeight / 2);    //上下居中显示
-    if (this.TitleAlign == 'bottom') bottom = -this.TitleBottomDistance;
-    let right = this.Frame.ChartBorder.GetHeight();
+        let left = 1;
+        let bottom = -(this.Frame.ChartBorder.TitleHeight / 2);    //上下居中显示
+        if (this.TitleAlign == 'bottom') bottom = -this.TitleBottomDistance;
+        let right = this.Frame.ChartBorder.GetHeight();
 
-    this.Canvas.textAlign = "left";
-    this.Canvas.textBaseline = this.TitleAlign;
-    this.Canvas.font = this.Font;
+        this.Canvas.textAlign = "left";
+        this.Canvas.textBaseline = this.TitleAlign;
+        this.Canvas.font = this.Font;
 
-    let textWidth = 10;
-    if (this.TitleBG && this.Title) {
-      textWidth = this.Canvas.measureText(this.Title).width + 2;
-      let height = this.Frame.ChartBorder.TitleHeight;
-      let top = this.Frame.ChartBorder.GetTop();
-      if (height > 20) {
-        top += (height - 20) / 2 + (height - 45) / 2;
-        height = 20;
-      }
+        let textWidth = 10;
+        if (this.TitleBG && this.Title) 
+        {
+            textWidth = this.Canvas.measureText(this.Title).width + 2;
+            let height = this.Frame.ChartBorder.TitleHeight;
+            let top = this.Frame.ChartBorder.GetTop();
+            if (height > 20) 
+            {
+                top += (height - 20) / 2 + (height - 45) / 2;
+                height = 20;
+            }
 
-      if (this.TitleAlign == 'bottom')  //底部输出文字
-      {
-        top = this.Frame.ChartBorder.GetTopEx() - 20;
-        if (top < 0) top = 0;
-      }
+            if (this.TitleAlign == 'bottom')  //底部输出文字
+            {
+                top = this.Frame.ChartBorder.GetTopEx() - 20;
+                if (top < 0) top = 0;
+            }
 
-      this.Canvas.fillStyle = this.TitleBG;
-      this.Canvas.fillRect(left, top, textWidth, height);
+            this.Canvas.fillStyle = this.TitleBG;
+            this.Canvas.fillRect(left, top, textWidth, height);
+        }
+
+        if (this.Title) 
+        {
+            this.Canvas.fillStyle = this.TitleColor;
+            const metrics = this.Canvas.measureText(this.Title);
+            textWidth = metrics.width + 2;
+            this.Canvas.fillText(this.Title, left, bottom, textWidth);
+            left += textWidth;
+        }
+
+        if (this.Text && this.Text.length > 0) 
+        {
+            for (let i in this.Text) 
+            {
+                let item = this.Text[i];
+                this.Canvas.fillStyle = item.Color;
+                textWidth = this.Canvas.measureText(item.Text).width + 2;
+                this.Canvas.fillText(item.Text, left, bottom, textWidth);
+                left += textWidth;
+            }
+        }
+
+        left += 4;
+        var eraseRight = left, eraseLeft = left;
+        for (var i in this.Data) 
+        {
+            var item = this.Data[i];
+            if (!item || !item.Data || !item.Data.Data) continue;
+            if (item.Data.Data.length <= 0) continue;
+
+            var indexName = '●' + item.Name;
+            this.Canvas.fillStyle = item.Color;
+            textWidth = this.Canvas.measureText(indexName).width + 4;
+            if (left + textWidth >= right) break;
+            this.Canvas.fillText(indexName, left, bottom, textWidth);
+            left += textWidth;
+            eraseRight = left;
+        }
+
+        if (eraseRight > eraseLeft) {
+            this.EraseRect = { Left: eraseLeft, Right: eraseRight, Top: -(this.Frame.ChartBorder.TitleHeight-1), Width: eraseRight - eraseLeft, Height: this.Frame.ChartBorder.TitleHeight - 2 };
+        }
     }
-
-    if (this.Title) {
-      this.Canvas.fillStyle = this.TitleColor;
-      const metrics = this.Canvas.measureText(this.Title);
-      textWidth = metrics.width + 2;
-      this.Canvas.fillText(this.Title, left, bottom, textWidth);
-      left += textWidth;
-    }
-
-    if (this.Text && this.Text.length > 0) {
-      for (let i in this.Text) {
-        let item = this.Text[i];
-        this.Canvas.fillStyle = item.Color;
-        textWidth = this.Canvas.measureText(item.Text).width + 2;
-        this.Canvas.fillText(item.Text, left, bottom, textWidth);
-        left += textWidth;
-      }
-    }
-  }
 }
 
 
@@ -10130,6 +10160,7 @@ function JSChartResource() {
 
   this.SelectRectBGColor = "rgba(1,130,212,0.06)"; //背景色
   //   this.SelectRectAlpha=0.06;                  //透明度
+  this.BGColor='rgb(255,255,255)';          //背景色
 
   this.UpBarColor = "rgb(238,21,21)";
   this.DownBarColor = "rgb(25,158,0)";
@@ -10248,6 +10279,7 @@ function JSChartResource() {
   this.SetStyle = function (style) {
     if (style.TooltipBGColor) this.TooltipBGColor = style.TooltipBGColor;
     if (style.TooltipAlpha) this.TooltipAlpha = style.TooltipAlpha;
+    if (style.BGColor) this.BGColor = style.BGColor;
     if (style.SelectRectBGColor) this.SelectRectBGColor = style.SelectRectBGColor;
     if (style.UpBarColor) this.UpBarColor = style.UpBarColor;
     if (style.DownBarColor) this.DownBarColor = style.DownBarColor;

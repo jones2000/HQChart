@@ -64,13 +64,18 @@ var Tools = {
                 indexName: "",
                 symbol: "",
                 changeIndex: 1,
-                isDebug: JS_EXECUTE_DEBUG_LOG
+                isDebug: JS_EXECUTE_DEBUG_LOG,
+                scriptType:1
             },
             methods: {
                 execute: function () {
                     var _this = this;
 
-                    jsChart.ChangeScriptIndex(parseInt(_this.changeIndex), { Name: _this.indexName, Script: jsEditor.doc.getValue(), Args: Root.table.getArgs(), "Modify": false, "Change": false });
+                    if (_this.scriptType == 2) {
+                        jsChart.ChangePyScriptIndex(parseInt(_this.changeIndex), { Name: _this.indexName, Script: jsEditor.doc.getValue(), Args: Root.table.getArgs(), "Modify": false, "Change": false });
+                    } else {
+                        jsChart.ChangeScriptIndex(parseInt(_this.changeIndex), { Name: _this.indexName, Script: jsEditor.doc.getValue(), Args: Root.table.getArgs(), "Modify": false, "Change": false });
+                    }
                 },
                 change: function () {
                     jsChart.ChangeSymbol(this.symbol);
@@ -112,6 +117,15 @@ var Tools = {
 
                     Root.cache.setValue(cacheValue);
                 }
+            },
+            watch: {
+                scriptType: function (newValue, oldValue) {
+                    if (newValue == 1)
+                        codemirror_is_caseSensitive = false
+                    else
+                        codemirror_is_caseSensitive = true;
+                },
+                
             }
         });
     },

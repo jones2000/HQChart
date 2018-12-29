@@ -8411,6 +8411,9 @@ function StockChip()
     this.InfoColor='rgb(0,0,0)';
     this.DayInfoColor='rgb(255,255,255)';
     this.LineHeight=16;
+    this.Left=50;   //左边间距
+
+    this.ButtonID=Guid();  //工具条Div id
 
     this.DAY_COLOR=
     [
@@ -8420,7 +8423,7 @@ function StockChip()
     
     this.Draw=function()
     {
-        var left=ToFixedPoint(this.ChartBorder.GetRight()+50);
+        var left=ToFixedPoint(this.ChartBorder.GetRight()+this.Left);
         var top=ToFixedPoint(this.ChartBorder.GetTop());
         var right=ToFixedPoint(this.ChartBorder.GetChartWidth()-1);
         var bottom=ToFixedPoint(this.ChartBorder.GetBottom());
@@ -8448,7 +8451,7 @@ function StockChip()
     this.DrawChipInfo=function()    
     {
         var bottom=ToFixedPoint(this.ChartBorder.GetBottom())-1;
-        var left=ToFixedPoint(this.ChartBorder.GetRight()+50)+2;
+        var left=ToFixedPoint(this.ChartBorder.GetRight()+this.Left)+2;
 
         this.Canvas.font=this.Font;
         this.Canvas.fillStyle=this.InfoColor;
@@ -8526,7 +8529,57 @@ function StockChip()
 
     this.DrawButton=function()  //顶部按钮
     {
+        var divButton=document.getElementById(this.ButtonID);
+        if (!divButton)
+        {
+            divButton=document.createElement("div");
+            divButton.className='klineframe-button';
+            divButton.id=this.ButtonID;
+            //为divToolbar添加属性identify
+            // divButton.setAttribute("identify",this.Identify.toString());
+            this.ChartBorder.UIElement.parentNode.appendChild(divButton);
+        }
 
+        var left=ToFixedPoint(this.ChartBorder.GetRight()+this.Left);
+        var right=ToFixedPoint(this.ChartBorder.GetChartWidth()-1);
+        var toolbarWidth=right-left;
+        var toolbarHeight=this.ChartBorder.GetTitleHeight();
+        // var left=this.ChartBorder.GetRight();
+        var top=this.ChartBorder.GetTop();
+        var spanIcon = "<span class='parameters icon' id='button1' style='cursor:pointer;display:inline-block;width:17px;text-align: center;'><image src='content/image/bar0.png'></image></span>&nbsp;&nbsp;" +
+            "<span class='target icon' id='button2' style='cursor:pointer;display:inline-block;width:17px;text-align: center;'><image src='content/image/pie0-2.png'></image></span>&nbsp;&nbsp;"  +
+            "<span class='target icon' id='button3' style='cursor:pointer;display:inline-block;width:17px;text-align: center;'><image src='content/image/pie0.png'></image></span>";
+        var scrollPos=GetScrollPosition();
+        // left = left+ this.ChartBorder.UIElement.getBoundingClientRect().left+scrollPos.Left;
+        top = top+this.ChartBorder.UIElement.getBoundingClientRect().top+scrollPos.Top + 10;
+        divButton.style.right = 0 + "px";
+        divButton.style.top = top + "px";
+        divButton.style.width=toolbarWidth+"px";
+        divButton.style.height=toolbarHeight+'px';
+        divButton.innerHTML=spanIcon;
+
+        var self = this;
+        $("#button1").click(function () {
+            self.ShowType=0;
+            if (self.HQChart) self.HQChart.Draw();
+            $("#button1")[0].innerHTML = "<image src='content/image/bar0-1.png'>";
+            $("#button2")[0].innerHTML = "<image src='content/image/pie0.png'>";
+            $("#button3")[0].innerHTML = "<image src='content/image/pie0.png'>";
+        })
+        $("#button2").click(function () {
+            self.ShowType=1;
+            if (self.HQChart) self.HQChart.Draw();
+            $("#button1")[0].innerHTML = "<image src='content/image/bar0.png'>";
+            $("#button2")[0].innerHTML = "<image src='content/image/pie0-2.png'>";
+            $("#button3")[0].innerHTML = "<image src='content/image/pie0.png'>";
+        })
+        $("#button3").click(function () {
+            self.ShowType=2;
+            if (self.HQChart) self.HQChart.Draw();
+            $("#button1")[0].innerHTML = "<image src='content/image/bar0.png'>";
+            $("#button2")[0].innerHTML = "<image src='content/image/pie0.png'>";
+            $("#button3")[0].innerHTML = "<image src='content/image/pie0-3.png'>";
+        })
     }
 
     this.DrawAllChip=function()
@@ -8654,9 +8707,10 @@ function StockChip()
         var count=bindData.DataOffset+parseInt(this.HQChart.CursorIndex);
         if (count>=bindData.Data.length) count=bindData.Data.length-1;
         var selData=bindData.Data[count];
+        var yPrice=selData.Close;
 
         var mouseY=this.HQChart.LastPoint.Y;
-        var yPrice=this.HQChart.Frame.SubFrame[0].Frame.GetYData(mouseY);
+        if (mouseY) yPrice=this.HQChart.Frame.SubFrame[0].Frame.GetYData(mouseY);
         
         console.log("[StockChip::CalculateChip]",count,this.HQChart.CursorIndex,selData);
         const rate=1;

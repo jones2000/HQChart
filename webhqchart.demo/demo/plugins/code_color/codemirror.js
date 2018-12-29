@@ -7,6 +7,9 @@
 // You can find some technical background for some of the code below
 // at http://marijnhaverbeke.nl/blog/#cm-internals .
 
+//是否大小写敏感
+var codemirror_is_caseSensitive = false;
+
 (function(mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
     module.exports = mod();
@@ -1133,7 +1136,9 @@
   }
 
   function handlePaste(e, cm) {
-      var pasted = e.clipboardData && e.clipboardData.getData("text/plain").toUpperCase();
+      var pasted = e.clipboardData && e.clipboardData.getData("text/plain");
+      if (!codemirror_is_caseSensitive)
+          pasted = pasted.toUpperCase();
     if (pasted) {
       e.preventDefault();
       if (!isReadOnly(cm) && !cm.options.disableInput)
@@ -1410,7 +1415,10 @@
         return false;
 
       
-      var text = input.value.toUpperCase();
+      //var text = input.value.toUpperCase();
+      var text = input.value;
+      if (!codemirror_is_caseSensitive)
+          text = text.toUpperCase();
       //console.log(text);
       // If nothing changed, bail.
       if (text == prevInput && !cm.somethingSelected()) return false;

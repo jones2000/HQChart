@@ -34,6 +34,11 @@
             <button class="toolsButton" v-on:click="save()">保存</button>
 
             <a href="http://opensourcecdn.zealink.com/cache/webcache/hqfunctionhelp/index.html#/13" target="_blank">函数帮助</a>
+
+            <select class="changeIndex" v-model="scriptType">
+                <option value="1">通达信脚本</option>
+                <option value="2">py脚本</option>
+            </select>
         </div>
         <div class="table" id="tools_table">
             <table cellpadding="0" cellspacing="0">
@@ -84,15 +89,17 @@
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
-    
-    
+        
     <script type="text/javascript" src="plugins/code_color/codemirror.js"></script>
     <script type="text/javascript" src="plugins/code_color/javascript.js"></script>
-    
+
     <script type="text/javascript" src="content/js/vue.js"></script>
     <script type="text/javascript" src="content/js/phone7.tools.js"></script>
     
     <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+
+    <script type="text/javascript" src="plugins/cross.js"></script>
+
     <script>
         var jsChart;
         JS_EXECUTE_DEBUG_LOG=false;
@@ -119,19 +126,15 @@
         
         $(function () {
             var symbol = getURLParams('symbol');
-            if (symbol == null) symbol = '600984.sh';
+            if (symbol == null) symbol = '600000.sh';
     
             var aryIndex = new Array();
     
             var index = getURLParams('index');        //指标1
             if (index == null) index = 'MA';
-            aryIndex.push({ "Index": index, "Modify": true, "Change": true });
+            aryIndex.push({Index: index, Modify: true, Change: true });
     
-            /*
-                var index2=getURLParams('index2');      //指标2
-                //if (index2==null) index2='指数热度';
-                if (index2==null) index2='能图-资金分析';
-            */
+           
             let code = 'VAR1:MA(CLOSE,25),COLORYELLOW;VAR2:MA(CLOSE,40);'
             let code2 = 'MTR:=EXPMEMA(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(REF(CLOSE,1)-LOW)),N);\n\
         HD :=HIGH-REF(HIGH,1);\n\
@@ -144,7 +147,7 @@
         ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
     
             var jsIndexData = new JSIndexScript();
-            let testIndex = jsIndexData.Get('UOS');
+            let testIndex = jsIndexData.Get('MACD');
             console.log(testIndex);
     
             //指标3
@@ -165,6 +168,8 @@
                 */ 
             };
             aryIndex.push(scriptIndex);
+
+            aryIndex.push({ Index: "KDJ", Modify: true, Change: true });
     
             // 创建股票K线图
             jsChart = JSChart.Init(document.getElementById('kline'));
@@ -210,13 +215,12 @@
                     Border: //边框
                         {
                             Left: 50,    //左边间距
-                            Right: 1     //右边间距
+                            Right: 50     //右边间距
                         },
     
                     Frame:  //子框架设置
                     [
-                        { SplitCount: 3, StringFormat: 1 },
-                        { SplitCount: 3, StringFormat: 1 }
+                        
                     ]
                 }
     
@@ -245,6 +249,16 @@
             alert(error);
             console.log('[ComplierError]', error);
         }
+
+        //对外公开一个接口
+        Cross.on("setCode", function (data) {
+            jsEditor.setValue(data.code);
+        });
+
+        //对外公开一个接口
+        Cross.on("api_execute", function (data) {
+            Root.top.execute();
+        });
     </script>  
 </body>  
 </html>
