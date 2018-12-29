@@ -8546,9 +8546,12 @@ function StockChip()
         var toolbarHeight=this.ChartBorder.GetTitleHeight();
         // var left=this.ChartBorder.GetRight();
         var top=this.ChartBorder.GetTop();
-        var spanIcon = "<span class='parameters icon' id='button1' style='cursor:pointer;display:inline-block;width:17px;text-align: center;'><image src='content/image/bar0.png'></image></span>&nbsp;&nbsp;" +
-            "<span class='target icon' id='button2' style='cursor:pointer;display:inline-block;width:17px;text-align: center;'><image src='content/image/pie0-2.png'></image></span>&nbsp;&nbsp;"  +
-            "<span class='target icon' id='button3' style='cursor:pointer;display:inline-block;width:17px;text-align: center;'><image src='content/image/pie0.png'></image></span>";
+        var icon1=this.ShowType==0?'content/image/bar0-1.png':'content/image/bar0.png';
+        var icon2=this.ShowType==1?'content/image/pie0-2.png':'content/image/pie0.png';
+        var icon3=this.ShowType==2?'content/image/pie0-3.png':'content/image/pie0.png';
+        var spanIcon = "<span class='parameters icon' id='button1' style='cursor:pointer;display:inline-block;width:17px;text-align: center;'><image src='"+icon1+"'></image></span>&nbsp;&nbsp;" +
+            "<span class='target icon' id='button2' style='cursor:pointer;display:inline-block;width:17px;text-align: center;'><image src='"+icon2+"'></image></span>&nbsp;&nbsp;"  +
+            "<span class='target icon' id='button3' style='cursor:pointer;display:inline-block;width:17px;text-align: center;'><image src='"+icon3+"'></image></span>";
         var scrollPos=GetScrollPosition();
         // left = left+ this.ChartBorder.UIElement.getBoundingClientRect().left+scrollPos.Left;
         top = top+this.ChartBorder.UIElement.getBoundingClientRect().top+scrollPos.Top + 10;
