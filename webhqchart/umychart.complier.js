@@ -7087,6 +7087,7 @@ function JSExecute(ast,option)
                         if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
                         let value={Name:varName, Data:outVar, Color:color, Type:0};
                         if (lineWidth) value.LineWidth=lineWidth;
+                        if (isShow == false) value.IsShow = false;
                         this.OutVarTable.push(value);
                     }
                     else if (draw && color)

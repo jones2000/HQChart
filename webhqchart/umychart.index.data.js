@@ -47,6 +47,8 @@ JSIndexScript.prototype.Get=function(id)
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
+
+            ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2],
             
             //外包指标
             ['放心股-操盘BS点',this.FXG_BSPoint],
@@ -2753,6 +2755,65 @@ EXITLONG: (CROSS(HSL,5) OR CROSS(K,80));'
 
     return data;
 }
+
+
+JSIndexScript.prototype.Zealink_Index1 = function () 
+{
+    let data =
+    {
+        Name: '资金吸筹', Description: '资金吸筹', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'VAR1:=REF((LOW+OPEN+CLOSE+HIGH)/4,1);  \n\
+VAR2:= SMA(ABS(LOW - VAR1), 13, 1) / SMA(MAX(LOW - VAR1, 0), 10, 1);\n\
+VAR3:= EMA(VAR2, 10);\n\
+VAR4:= LLV(LOW, 33);\n\
+VAR5:= EMA(IF(LOW <= VAR4, VAR3, 0), 3) * 0.2;\n\
+主力进场: IF(VAR5 > REF(VAR5, 1), VAR5,0), COLORRED, NODRAW;\n\
+洗盘: IF(VAR5 < REF(VAR5, 1),  VAR5,0), COLORYELLOW, NODRAW;\n\
+STICKLINE(VAR5> REF(VAR5, 1),0, VAR5, 20, 0), COLORRED;\n\
+STICKLINE(VAR5 < REF(VAR5, 1), 0, VAR5, 20, 0), COLORYELLOW;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.Zealink_Index2 = function () 
+{
+    let data =
+    {
+        Name: '牛熊区间', Description: '牛熊区间', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+'短高H:=(20*H+19*REF(H,1)+18*REF(H,2)+17*REF(H,3)+16*REF(H,4)+15*REF(H,5)+14*REF(H,6)\n\
++ 13 * REF(H, 7) + 12 * REF(H, 8) + 11 * REF(H, 9) + 10 * REF(H, 10) + 9 * REF(H, 11) + 8 * REF(H, 12)\n\
++ 7 * REF(H, 13) + 6 * REF(H, 14) + 5 * REF(H, 15) + 4 * REF(H, 16) + 3 * REF(H, 17) + 2 * REF(H, 18) +\n\
+REF(H, 20))/ 210, COLORBLUE, LINETHICK1;\n\
+短低L:= (20 * L + 19 * REF(L, 1) + 18 * REF(L, 2) + 17 * REF(L, 3) + 16 * REF(L, 4) + 15 * REF(L, 5) + 14 * REF(L, 6)\n\
++ 13 * REF(L, 7) + 12 * REF(L, 8) + 11 * REF(L, 9) + 10 * REF(L, 10) + 9 * REF(L, 11) + 8 * REF(L, 12)\n\
++ 7 * REF(L, 13) + 6 * REF(L, 14) + 5 * REF(L, 15) + 4 * REF(L, 16) + 3 * REF(L, 17) + 2 * REF(L, 18) +\n\
+REF(L, 20)) / 210, COLORBLUE, LINETHICK1;\n\
+D90H:= EMA(短高H, 90), COLORRED, LINETHICK1;\n\
+D90L:= EMA(短低L, 90), COLORRED, LINETHICK1;\n\
+D90差:= D90H - D90L;\n\
+D90顶:= D90H + D90差 * 2, COLORRED, LINETHICK1;\n\
+D90底:= D90L - D90差 * 2, COLORRED, LINETHICK1;\n\
+高0:= (EMA(EMA(H, 25), 25) - EMA(EMA(L, 25), 25)) * 1 + EMA(EMA(H, 25), 25), LINETHICK1, COLORWHITE;\n\
+低0:= EMA(EMA(L, 25), 25) - (EMA(EMA(H, 25), 25) - EMA(EMA(L, 25), 25)) * 1, LINETHICK1, COLORWHITE;\n\
+多头定位:= 低0 >= D90底 AND 高0 >= D90顶;\n\
+空头定位:= 高0 <= D90顶 AND 低0 <= D90底;\n\
+震荡定位:= 低0 >= D90底 AND 高0 <= D90顶;\n\
+牛市: IF(多头定位 == 1, 100, 1), COLORRED, NODRAW;\n\
+熊市: IF(空头定位 == 1, 100, 1), COLORGREEN, NODRAW;\n\
+震荡: IF(震荡定位 == 1, 100, 1), COLORGRAY, NODRAW;\n\
+STICKLINE(多头定位 == 1, 100, 1, 100, 0), COLORRED;\n\
+STICKLINE(空头定位 == 1, 100, 1, 100, 0), COLORGREEN;\n\
+STICKLINE(震荡定位 == 1, 100, 1, 100, 0), COLORGRAY;'
+    };
+
+    return data;
+}
+
 
 
 

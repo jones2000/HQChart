@@ -695,6 +695,7 @@ function JSChart(element) {
       if (option.Frame[0].MaxDistanceWidth) chart.Frame.MaxDistanceWidth = option.Frame[0].MaxDistanceWidth;
       if (option.Frame[0].IsShowBorder != null) chart.Frame.IsShowBorder = option.Frame[0].IsShowBorder;
       if (option.Frame[0].StringFormat) chart.Frame.YSplitOperator.StringFormat = option.Frame[0].StringFormat;
+      if (option.Frame[0].FloatPrecision >= 0) chart.Frame.YSplitOperator.FloatPrecision = option.Frame[0].FloatPrecision;
     }
 
     chart.Draw();
@@ -4669,67 +4670,46 @@ function ChartStick() {
     this.Canvas.restore();
   }
 
-  this.DrawStick = function () {
-    if (!this.Data || !this.Data.Data) return;
+    this.DrawStick = function () 
+    {
+        if (!this.Data || !this.Data.Data) return;
+        var bHScreen = (this.ChartFrame.IsHScreen === true);
+        var chartright = this.ChartBorder.GetRight();
+        if (bHScreen) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+        var yBottom = this.ChartBorder.GetBottom();
+        var xLeft = this.ChartBorder.GetLeft();
 
-    if (this.ChartFrame.IsHScreen === true) {
-      this.HScreenDrawStick();
-      return;
+        this.Canvas.save();
+        this.Canvas.strokeStyle = this.Color;
+        if (this.LineWidth) this.Canvas.lineWidth = this.LineWidth;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(value);
+
+            if (x > chartright) break;
+
+            this.Canvas.beginPath();
+            if (bHScreen) 
+            {
+                this.Canvas.moveTo(xLeft, x);
+                this.Canvas.lineTo(y, x);
+                this.Canvas.stroke();
+            }
+            else 
+            {
+                var xFix = parseInt(x.toString()) + 0.5;
+                this.Canvas.moveTo(xFix, y);
+                this.Canvas.lineTo(xFix, yBottom);
+            }
+            this.Canvas.stroke();
+        }
+        this.Canvas.restore();
     }
-
-    var dataWidth = this.ChartFrame.DataWidth;
-    var distanceWidth = this.ChartFrame.DistanceWidth;
-    var chartright = this.ChartBorder.GetRight();
-    var xPointCount = this.ChartFrame.XPointCount;
-    var yBottom = this.ChartBorder.GetBottom();
-
-    this.Canvas.save();
-    this.Canvas.strokeStyle = this.Color;
-    if (this.LineWidth) this.Canvas.lineWidth = this.LineWidth;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (value == null) continue;
-
-      var x = this.ChartFrame.GetXFromIndex(j);
-      var y = this.ChartFrame.GetYFromData(value);
-
-      if (x > chartright) break;
-
-      var xFix = parseInt(x.toString()) + 0.5;
-      this.Canvas.beginPath();
-      this.Canvas.moveTo(xFix, y);
-      this.Canvas.lineTo(xFix, yBottom);
-      this.Canvas.stroke();
-    }
-
-    this.Canvas.restore();
-  }
-
-  this.HScreenDrawStick = function () {
-    var chartright = this.ChartBorder.GetBottom();
-    var xPointCount = this.ChartFrame.XPointCount;
-    var xLeft = this.ChartBorder.GetLeft();
-
-    this.Canvas.save();
-    this.Canvas.strokeStyle = this.Color;
-    if (this.LineWidth) this.Canvas.lineWidth = this.LineWidth;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (value == null) continue;
-
-      var x = this.ChartFrame.GetXFromIndex(j);
-      var y = this.ChartFrame.GetYFromData(value);
-
-      if (x > chartright) break;
-
-      this.Canvas.beginPath();
-      this.Canvas.moveTo(xLeft, x);
-      this.Canvas.lineTo(y, x);
-      this.Canvas.stroke();
-    }
-
-    this.Canvas.restore();
-  }
 
   this.Draw = function () {
     if (!this.IsShow) return;
@@ -5040,67 +5020,95 @@ function ChartLineMultiData() {
 }
 
 //支持 横屏
-function ChartStickLine() {
-  this.newMethod = IChartPainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function ChartStickLine() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.Color = "rgb(255,193,37)";   //线段颜色
-  this.LineWidth = 2;               //线段宽度
+    this.Color = "rgb(255,193,37)";   //线段颜色
+    this.LineWidth = 2;               //线段宽度
 
-  this.Draw = function () {
-    if (this.NotSupportMessage) {
-      this.DrawNotSupportmessage();
-      return;
+    this.Draw = function () 
+    {
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        var isHScreen = (this.ChartFrame.IsHScreen === true);
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+        var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + 2.0;
+        if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
+
+        this.Canvas.save();
+        var LineWidth = this.LineWidth;
+        if (dataWidth <= 4) LineWidth = 1;
+        else if (dataWidth < LineWidth) LineWidth = parseInt(dataWidth);
+        this.Canvas.strokeStyle = this.Color;
+        this.Canvas.lineWidth = LineWidth;
+        var bFillBar = false;
+        if (this.LineWidth < 100) 
+        {
+            var LineWidth = this.LineWidth;
+            if (dataWidth <= 4) LineWidth = 1;
+            else if (dataWidth < LineWidth) LineWidth = parseInt(dataWidth);
+            this.Canvas.lineWidth = LineWidth;
+            this.Canvas.strokeStyle = this.Color;
+        }
+        else 
+        {
+            bFillBar = true;
+            this.Canvas.fillStyle = this.Color;
+            var fixedWidth = 2;
+        }
+
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+
+            var price = value.Value;
+            var price2 = value.Value2;
+            if (price2 == null) price2 = 0;
+
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(price);
+            var y2 = this.ChartFrame.GetYFromData(price2);
+
+            if (x > chartright) break;
+
+            if (bFillBar) {
+                var left = xOffset - fixedWidth;
+                this.Canvas.fillRect(left, ToFixedRect(Math.min(y, y2)), dataWidth + distanceWidth + fixedWidth * 2, ToFixedRect(Math.abs(y - y2)));
+            }
+            else
+            {
+                if (isHScreen) {
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(y, ToFixedPoint(x));
+                    this.Canvas.lineTo(y2, ToFixedPoint(x));
+                    this.Canvas.stroke();
+                }
+                else {
+                    var xFix = parseInt(x.toString()) + 0.5;
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(xFix, y);
+                    this.Canvas.lineTo(xFix, y2);
+                    this.Canvas.stroke();
+                }
+            }
+        }
+
+        this.Canvas.restore();
     }
-
-    if (!this.Data || !this.Data.Data) return;
-
-    var isHScreen = (this.ChartFrame.IsHScreen === true);
-    var dataWidth = this.ChartFrame.DataWidth;
-    var distanceWidth = this.ChartFrame.DistanceWidth;
-    var chartright = this.ChartBorder.GetRight();
-    if (isHScreen) chartright = this.ChartBorder.GetBottom();
-    var xPointCount = this.ChartFrame.XPointCount;
-
-    this.Canvas.save();
-    var LineWidth = this.LineWidth;
-    if (dataWidth <= 4) LineWidth = 1;
-    else if (dataWidth < LineWidth) LineWidth = parseInt(dataWidth);
-    this.Canvas.strokeStyle = this.Color;
-    this.Canvas.lineWidth = LineWidth;
-
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (value == null) continue;
-
-      var price = value.Value;
-      var price2 = value.Value2;
-      if (price2 == null) price2 = 0;
-
-      var x = this.ChartFrame.GetXFromIndex(j);
-      var y = this.ChartFrame.GetYFromData(price);
-      var y2 = this.ChartFrame.GetYFromData(price2);
-
-      if (x > chartright) break;
-
-      if (isHScreen) {
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(y, ToFixedPoint(x));
-        this.Canvas.lineTo(y2, ToFixedPoint(x));
-        this.Canvas.stroke();
-      }
-      else {
-        var xFix = parseInt(x.toString()) + 0.5;
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(xFix, y);
-        this.Canvas.lineTo(xFix, y2);
-        this.Canvas.stroke();
-      }
-    }
-
-    this.Canvas.restore();
-  }
 
   this.GetMaxMin = function () {
     var xPointCount = this.ChartFrame.XPointCount;
@@ -7352,55 +7360,99 @@ function FrameSplitKLinePriceY()
 
 }
 
-function FrameSplitY() {
-  this.newMethod = IFrameSplitOperator;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function FrameSplitY() 
+{
+    this.newMethod = IFrameSplitOperator;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    this.FloatPrecision = 2;                  //坐标小数位数(默认2)
+    this.FLOATPRECISION_RANGE=[1,0.1,0.01,0.001,0.0001];
+ 
+    this.Operator = function () 
+    {
+        var splitData = {};
+        splitData.Max = this.Frame.HorizontalMax;
+        splitData.Min = this.Frame.HorizontalMin;
+        if (this.Frame.YSpecificMaxMin) 
+        {
+            splitData.Count = this.Frame.YSpecificMaxMin.Count;
+            splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
+        }
+        else 
+        {
+            splitData.Count = this.SplitCount * 2;  //放大两倍
+            if (this.FloatPrecision == 0)       //页面配置了纵坐标小数位数FloatPrecision=0时执行
+            {//把间距和最大 最小值调整为整数
+                splitData.Interval = Math.ceil((splitData.Max - splitData.Min) / (splitData.Count - 1));
+                var splitItem = this.FrameSplitData.Find(splitData.Interval);
+                if (splitItem != null)
+                {
+                    var fixMax = parseInt((splitData.Max / (splitItem.FixInterval) + 0.5).toFixed(0)) * splitItem.FixInterval + 0.5;
+                    var fixMin = parseInt((splitData.Min / (splitItem.FixInterval) - 0.5).toFixed(0)) * splitItem.FixInterval;
+                    if (splitData.Min == 0) fixMin = 0;
+                    if (fixMin < 0 && splitData.Min > 0) fixMin = 0;
+                    var count = 0;
+                    for (var i = fixMin; (i - fixMax) < 0.00000001; i += splitItem.FixInterval) 
+                    {
+                        ++count;
+                    }
+                    splitData.Interval = splitItem.FixInterval;
+                    splitData.Max = fixMax;
+                    splitData.Min = fixMin;
+                    splitData.Count = count;
+                }
+            }
+            else
+            {
+                splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
+                this.IntegerCoordinateSplit(splitData);
+            }
+        }
 
-  this.Operator = function () {
-    var splitData = {};
-    splitData.Max = this.Frame.HorizontalMax;
-    splitData.Min = this.Frame.HorizontalMin;
-    if (this.Frame.YSpecificMaxMin) {
-      splitData.Count = this.Frame.YSpecificMaxMin.Count;
-      splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
+        this.Frame.HorizontalInfo = [];
+        for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) 
+        {
+            this.Frame.HorizontalInfo[i] = new CoordinateInfo();
+            this.Frame.HorizontalInfo[i].Value = value;
+
+            if (this.StringFormat == 1)   //手机端格式 如果有万,亿单位了 去掉小数
+            {
+                var floatPrecision = this.FloatPrecision;
+                if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision = 0;
+                this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
+            }
+            else if (this.StringFormat == -1) //刻度不显示
+            {
+
+            }
+            else 
+            {
+                var absValue=Math.abs(value);
+                var floatPrecision = this.FloatPrecision;   //数据比小数位数还小, 调整小数位数
+                if (absValue < 0.0000000001) 
+                    this.Frame.HorizontalInfo[i].Message[1]=0;
+                else if (absValue<this.FLOATPRECISION_RANGE[this.FLOATPRECISION_RANGE.length-1]) 
+                    this.Frame.HorizontalInfo[i].Message[1] = value.toExponential(2).toString();
+                else
+                {
+                    if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision]) ++floatPrecision;
+                    if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision]) ++floatPrecision;
+                    if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision]) ++floatPrecision;
+                    this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
+                }
+            }
+
+            this.Frame.HorizontalInfo[i].Message[0] = this.Frame.HorizontalInfo[i].Message[1];
+
+            if (this.StringFormat == -2) this.Frame.HorizontalInfo[i].Message[1] = null;    //刻度右边不显示
+            else if (this.StringFormat == -3) this.Frame.HorizontalInfo[i].Message[0] = null;   //刻度左边不显示
+        }
+
+        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
+        this.RemoveZero(this.Frame.HorizontalInfo);
+        this.Frame.HorizontalMax = splitData.Max;
+        this.Frame.HorizontalMin = splitData.Min;
     }
-    else {
-      splitData.Count = this.SplitCount * 2;  //放大两倍
-      splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
-      this.IntegerCoordinateSplit(splitData);
-    }
-
-    this.Frame.HorizontalInfo = [];
-    for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) {
-      this.Frame.HorizontalInfo[i] = new CoordinateInfo();
-      this.Frame.HorizontalInfo[i].Value = value;
-
-      if (this.StringFormat == 1)   //手机端格式 如果有万,亿单位了 去掉小数
-      {
-        var floatPrecision = 2;
-        if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision = 0;
-        this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
-      }
-      else if (this.StringFormat == -1) //刻度不显示
-      {
-
-      }
-      else {
-        this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, 2);
-      }
-
-      this.Frame.HorizontalInfo[i].Message[0] = this.Frame.HorizontalInfo[i].Message[1];
-
-      if (this.StringFormat == -2) this.Frame.HorizontalInfo[i].Message[1] = null;    //刻度右边不显示
-      else if (this.StringFormat == -3) this.Frame.HorizontalInfo[i].Message[0] = null;   //刻度左边不显示
-    }
-
-    this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
-    this.RemoveZero(this.Frame.HorizontalInfo);
-    this.Frame.HorizontalMax = splitData.Max;
-    this.Frame.HorizontalMin = splitData.Min;
-  }
 }
 
 function FrameSplitKLineX() {
@@ -8840,8 +8892,9 @@ function DynamicChartTitlePainting() {
   this.TitleBGHeight = 20;  //标题背景色高度
   this.TitleAlign = 'middle';//对其方式
   this.TitleBottomDistance = 1; //标题靠底部输出的时候 字体和底部的间距
-
   this.Text = new Array();  //副标题 Text:'文本', Color:'颜色'
+  this.EraseRect;
+  this.EraseColor='rgb(255,255,255)';  //用来擦出的背景色
 
   this.FormatValue = function (value, item) {
     if (item.StringFormat == STRING_FORMAT_TYPE.DEFAULT)
@@ -8927,66 +8980,101 @@ function DynamicChartTitlePainting() {
     this.UpdateUICallback(sendData);
   }
 
-  this.DrawTitle = function () {
-    this.SendUpdateUIMessage('DrawTitle');
-    if (this.Frame.ChartBorder.TitleHeight < 5) return;
-    if (this.Frame.IsShowTitle == false) return;
+    this.DrawTitle = function () 
+    {
+        this.EraseRect=null;
+        this.SendUpdateUIMessage('DrawTitle');
+        if (this.Frame.ChartBorder.TitleHeight < 5) return;
+        if (this.Frame.IsShowTitle == false) return;
 
-    if (this.Frame.IsHScreen === true) {
-      this.Canvas.save();
-      this.HScreenDrawTitle();
-      this.Canvas.restore();
-      return;
+        if (this.Frame.IsHScreen === true) 
+        {
+            this.Canvas.save();
+            this.HScreenDrawTitle();
+            this.Canvas.restore();
+            return;
+        }
+
+        let left = this.Frame.ChartBorder.GetLeft() + 1;
+        let bottom = this.Frame.ChartBorder.GetTop() + this.Frame.ChartBorder.TitleHeight / 2;    //上下居中显示
+        if (this.TitleAlign == 'bottom') bottom = this.Frame.ChartBorder.GetTopEx() - this.TitleBottomDistance;
+        let right = this.Frame.ChartBorder.GetRight();
+
+        this.Canvas.textAlign = "left";
+        this.Canvas.textBaseline = this.TitleAlign;
+        this.Canvas.font = this.Font;
+
+        let textWidth = 10;
+        if (this.TitleBG && this.Title) 
+        {
+            textWidth = this.Canvas.measureText(this.Title).width + 2;
+            let height = this.Frame.ChartBorder.TitleHeight;
+            let top = this.Frame.ChartBorder.GetTop();
+            if (height > 20) {
+                top += (height - 20) / 2 + (height - 45) / 2;
+                height = 20;
+            }
+
+            if (this.TitleAlign == 'bottom')  //底部输出文字
+            {
+                top = this.Frame.ChartBorder.GetTopEx() - 20;
+                if (top < 0) top = 0;
+            }
+
+            this.Canvas.fillStyle = this.TitleBG;
+            this.Canvas.fillRect(left, top, textWidth, height);
+        }
+
+        if (this.Title) 
+        {
+            this.Canvas.fillStyle = this.TitleColor;
+            const metrics = this.Canvas.measureText(this.Title);
+            textWidth = metrics.width + 2;
+            this.Canvas.fillText(this.Title, left, bottom, textWidth);
+            left += textWidth;
+        }
+
+        if (this.Text && this.Text.length > 0) 
+        {
+            for (let i in this.Text) 
+            {
+                let item = this.Text[i];
+                this.Canvas.fillStyle = item.Color;
+                textWidth = this.Canvas.measureText(item.Text).width + 2;
+                this.Canvas.fillText(item.Text, left, bottom, textWidth);
+                left += textWidth;
+            }
+        }
+
+        left+=4;
+        var eraseRight = left, eraseLeft=left;
+        for (var i in this.Data) 
+        {
+            var item = this.Data[i];
+            if (!item || !item.Data || !item.Data.Data) continue;
+            if (item.Data.Data.length <= 0) continue;
+
+            var indexName='●'+item.Name;
+            this.Canvas.fillStyle = item.Color;
+            textWidth = this.Canvas.measureText(indexName).width + 4;
+            if (left + textWidth>=right) break;
+            this.Canvas.fillText(indexName, left, bottom, textWidth);
+            left += textWidth;
+            eraseRight=left;
+        }
+
+        if (eraseRight > eraseLeft) 
+        {
+            this.EraseRect = { Left: eraseLeft, Right: eraseRight, Top: this.Frame.ChartBorder.GetTop() + 1, Width: eraseRight - eraseLeft, Height: this.Frame.ChartBorder.TitleHeight-2};
+        }
     }
 
-    let left = this.Frame.ChartBorder.GetLeft() + 1;
-    let bottom = this.Frame.ChartBorder.GetTop() + this.Frame.ChartBorder.TitleHeight / 2;    //上下居中显示
-    if (this.TitleAlign == 'bottom') bottom = this.Frame.ChartBorder.GetTopEx() - this.TitleBottomDistance;
-    let right = this.Frame.ChartBorder.GetRight();
-
-    this.Canvas.textAlign = "left";
-    this.Canvas.textBaseline = this.TitleAlign;
-    this.Canvas.font = this.Font;
-
-    let textWidth = 10;
-    if (this.TitleBG && this.Title) {
-      textWidth = this.Canvas.measureText(this.Title).width + 2;
-      let height = this.Frame.ChartBorder.TitleHeight;
-      let top = this.Frame.ChartBorder.GetTop();
-      if (height > 20) {
-        top += (height - 20) / 2 + (height - 45) / 2;
-        height = 20;
-      }
-
-      if (this.TitleAlign == 'bottom')  //底部输出文字
-      {
-        top = this.Frame.ChartBorder.GetTopEx() - 20;
-        if (top < 0) top = 0;
-      }
-
-      this.Canvas.fillStyle = this.TitleBG;
-      this.Canvas.fillRect(left, top, textWidth, height);
+    this.EraseTitle=function()
+    {
+        if (!this.EraseRect) return;
+        this.Canvas.fillStyle=this.EraseColor;
+        this.Canvas.fillRect(this.EraseRect.Left, this.EraseRect.Top,this.EraseRect.Width,this.EraseRect.Height);
     }
-
-    if (this.Title) {
-      this.Canvas.fillStyle = this.TitleColor;
-      const metrics = this.Canvas.measureText(this.Title);
-      textWidth = metrics.width + 2;
-      this.Canvas.fillText(this.Title, left, bottom, textWidth);
-      left += textWidth;
-    }
-
-    if (this.Text && this.Text.length > 0) {
-      for (let i in this.Text) {
-        let item = this.Text[i];
-        this.Canvas.fillStyle = item.Color;
-        textWidth = this.Canvas.measureText(item.Text).width + 2;
-        this.Canvas.fillText(item.Text, left, bottom, textWidth);
-        left += textWidth;
-      }
-    }
-
-  }
 
   this.Draw = function () {
     this.SendUpdateUIMessage('Draw');
@@ -9002,6 +9090,8 @@ function DynamicChartTitlePainting() {
       this.Canvas.restore();
       return;
     }
+
+    this.EraseTitle();
 
     var left = this.Frame.ChartBorder.GetLeft() + 1;
     var bottom = this.Frame.ChartBorder.GetTop() + this.Frame.ChartBorder.TitleHeight / 2;    //上下居中显示
@@ -10516,13 +10606,13 @@ function KLineChartContainer(uielement) {
 
         if (bindData.Right > 0)    //复权
         {
-        var rightData = bindData.GetRightDate(bindData.Right);
-        bindData.Data = rightData;
+            var rightData = bindData.GetRightDate(bindData.Right);
+            bindData.Data = rightData;
         }
 
         if (bindData.Period > 0 && bindData.Period <= 3)   //周期数据
         {
-            var periodData = sourceData.GetPeriodData(bindData.Period);
+            var periodData = bindData.GetPeriodData(bindData.Period);
             bindData.Data = periodData;
         }
 
@@ -13325,7 +13415,7 @@ function SimlpleChartContainer(uielement) {
   this.SubDataControl = new Array();
   this.FrameType = 0;       //框架类型
 
-  this.YSplitCount = 3;
+  this.YSplitCount = 4;
 
   //创建
   this.Create = function () {
@@ -13408,7 +13498,13 @@ function SimlpleChartContainer(uielement) {
       }
     }
 
+    var floatPrecision = 2;     //设置纵坐标的小数位数 默认为2
+    if (this.Frame.YSplitOperator) {     
+      floatPrecision = this.Frame.YSplitOperator.FloatPrecision;  //备份上次实例化的值
+    }
     this.Frame.YSplitOperator = new FrameSplitY();
+    this.Frame.YSplitOperator.FloatPrecision = floatPrecision;   //实例化纵坐标分割后 赋给备份的值
+
     this.Frame.YSplitOperator.SplitCount = this.YSplitCount;
     this.Frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
     this.Frame.YSplitOperator.Frame = this.Frame;
@@ -14268,54 +14364,43 @@ function ScriptIndex(name, script, args, option)
 }
 
 //给一个默认的颜色
-ScriptIndex.prototype.GetDefaultColor = function (id) {
-  let COLOR_ARRAY = g_JSChartResource.ColorArray;
-  // [
-  //   "rgb(255,174,0)",
-  //   "rgb(25,199,255)",
-  //   "rgb(175,95,162)",
-  //   "rgb(236,105,65)",
-  //   "rgb(68,114,196)",
-  //   "rgb(229,0,79)",
-  //   "rgb(0,128,255)",
-  //   "rgb(252,96,154)",
-  //   "rgb(42,230,215)",
-  //   "rgb(24,71,178)",
-  // ];
-
-  let number = parseInt(id);
-  return COLOR_ARRAY[number % (COLOR_ARRAY.length - 1)];
+ScriptIndex.prototype.GetDefaultColor = function (id) 
+{
+    let COLOR_ARRAY = g_JSChartResource.ColorArray;
+    let number = parseInt(id);
+    return COLOR_ARRAY[number % (COLOR_ARRAY.length - 1)];
 }
 
 //获取颜色
-ScriptIndex.prototype.GetColor = function (colorName) {
-  let COLOR_MAP = new Map([
-    ['COLORBLACK', 'rgb(0,0,0)'],
-    ['COLORBLUE', 'rgb(18,95,216)'],
-    ['COLORGREEN', 'rgb(25,158,0)'],
-    ['COLORCYAN', 'rgb(0,255,198)'],
-    ['COLORRED', 'rgb(238,21,21)'],
-    ['COLORMAGENTA', 'rgb(255,0,222)'],
-    ['COLORBROWN', 'rgb(149,94,15)'],
-    ['COLORLIGRAY', 'rgb(218,218,218)'],      //画淡灰色
-    ['COLORGRAY', 'rgb(133,133,133)'],        //画深灰色
-    ['COLORLIBLUE', 'rgb(94,204,255)'],       //淡蓝色
-    ['COLORLIGREEN', 'rgb(183,255,190)'],      //淡绿色
-    ['COLORLICYAN', 'rgb(154,255,242)'],      //淡青色
-    ['COLORLIRED', 'rgb(255,172,172)'],       //淡红色
-    ['COLORLIMAGENTA', 'rgb(255,145,241)'],   //淡洋红色
-    ['COLORWHITE', 'rgb(255,255,255)'],       //白色
-    ['COLORYELLOW', 'rgb(255,198,0)']
-  ]);
+ScriptIndex.prototype.GetColor = function (colorName) 
+{
+    let COLOR_MAP = new Map([
+        ['COLORBLACK', 'rgb(0,0,0)'],
+        ['COLORBLUE', 'rgb(18,95,216)'],
+        ['COLORGREEN', 'rgb(25,158,0)'],
+        ['COLORCYAN', 'rgb(0,255,198)'],
+        ['COLORRED', 'rgb(238,21,21)'],
+        ['COLORMAGENTA', 'rgb(255,0,222)'],
+        ['COLORBROWN', 'rgb(149,94,15)'],
+        ['COLORLIGRAY', 'rgb(218,218,218)'],      //画淡灰色
+        ['COLORGRAY', 'rgb(133,133,133)'],        //画深灰色
+        ['COLORLIBLUE', 'rgb(94,204,255)'],       //淡蓝色
+        ['COLORLIGREEN', 'rgb(183,255,190)'],      //淡绿色
+        ['COLORLICYAN', 'rgb(154,255,242)'],      //淡青色
+        ['COLORLIRED', 'rgb(255,172,172)'],       //淡红色
+        ['COLORLIMAGENTA', 'rgb(255,145,241)'],   //淡洋红色
+        ['COLORWHITE', 'rgb(255,255,255)'],       //白色
+        ['COLORYELLOW', 'rgb(255,198,0)']
+    ]);
 
-  if (COLOR_MAP.has(colorName)) return COLOR_MAP.get(colorName);
+    if (COLOR_MAP.has(colorName)) return COLOR_MAP.get(colorName);
 
-  //COLOR 自定义色
-  //格式为COLOR+“RRGGBB”：RR、GG、BB表示红色、绿色和蓝色的分量，每种颜色的取值范围是00-FF，采用了16进制。
-  //例如：MA5：MA(CLOSE，5)，COLOR00FFFF　表示纯红色与纯绿色的混合色：COLOR808000表示淡蓝色和淡绿色的混合色。
-  if (colorName.indexOf('COLOR') == 0) return '#' + colorName.substr(5);
+    //COLOR 自定义色
+    //格式为COLOR+“RRGGBB”：RR、GG、BB表示红色、绿色和蓝色的分量，每种颜色的取值范围是00-FF，采用了16进制。
+    //例如：MA5：MA(CLOSE，5)，COLOR00FFFF　表示纯红色与纯绿色的混合色：COLOR808000表示淡蓝色和淡绿色的混合色。
+    if (colorName.indexOf('COLOR') == 0) return '#' + colorName.substr(5);
 
-  return 'rgb(30,144,255)';
+    return 'rgb(30,144,255)';
 }
 
 //市场多空
@@ -15144,9 +15229,12 @@ function BenfordIndex() {
 
     paint[0].Data.Data =
       [
-        { Value: 0, Value2: 0.2, Color: 'rgb(50,205,50)', Title: '安全区', TitleColor: 'rgb(245,255 ,250)' },
-        { Value: 0.2, Value2: 0.4, Color: 'rgb(255,140,0)', Title: '预警区', TitleColor: 'rgb(245,255 ,250)' },
-        { Value: 0.4, Value2: 1, Color: 'rgb(255,106,106)', Title: '警示区', TitleColor: 'rgb(245,255 ,250)' }
+        // { Value: 0, Value2: 0.2, Color: 'rgb(50,205,50)', Title: '安全区', TitleColor: 'rgb(245,255 ,250)' },
+        // { Value: 0.2, Value2: 0.4, Color: 'rgb(255,140,0)', Title: '预警区', TitleColor: 'rgb(245,255 ,250)' },
+        // { Value: 0.4, Value2: 1, Color: 'rgb(255,106,106)', Title: '警示区', TitleColor: 'rgb(245,255 ,250)' }
+        { Value: 0, Value2: 0.2, Color: 'rgb(219,255,193)', Title: '安全区', TitleColor: 'rgb(66,192,99)' },
+        { Value: 0.2, Value2: 0.4, Color: 'rgb(255,228,170)', Title: '预警区', TitleColor: 'rgb(255,124,3)' },
+        { Value: 0.4, Value2: 1, Color: 'rgb(254,219,212)', Title: '警示区', TitleColor: 'rgb(255,0,0)' }
       ];
 
     paint[1].Data.Data = this.Data;
