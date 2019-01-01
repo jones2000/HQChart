@@ -3973,7 +3973,8 @@ function ChartData()
                     newData.YClose=minData.YClose;
                     newData.Close=minData.Close;
                     newData.Vol=minData.Vol;
-                    newData.Amount=minData.Amount;      
+                    newData.Amount=minData.Amount;    
+                    newData.FlowCapital=minData.FlowCapital;  
                 }
                 else
                 {
@@ -3984,6 +3985,7 @@ function ChartData()
                     newData.Close=minData.Close;
                     newData.Vol+=minData.Vol;
                     newData.Amount+=minData.Amount;
+                    newData.FlowCapital+=minData.FlowCapital;  
                 }
             }
         }
@@ -4311,8 +4313,55 @@ function ChartData()
 
             var item=new SingleData();
             item.Date=date;
-            item.Value=financeData[j].Value;
-            item.FinanceDate=financeData[j].Date;   //财务日期 调试用
+            if (j<financeData.length)
+            {
+                item.Value=financeData[j].Value;
+                item.FinanceDate=financeData[j].Date;   //财务日期 调试用
+            }
+            else
+            {
+                item.Value=null;
+                item.FinanceDate=null;
+            }
+            result[i]=item;
+
+            ++i;
+        }
+
+        return result;
+    }
+
+    //财务数据拟合到分钟数据上 返回 SingleData 数组
+    this.GetMinuteFittingFinanceData=function(financeData)
+    {
+        var result=[];
+        for(var i=0,j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+            var time=this.Data[i].Time;
+
+            if (j+1<financeData.length)
+            {
+                if (financeData[j].Date<date && financeData[j+1].Date<=date)
+                {
+                    ++j;
+                    continue;
+                }
+            }
+
+            var item=new SingleData();
+            item.Date=date;
+            item.Time=time;
+            if (j<financeData.length)
+            {
+                item.Value=financeData[j].Value;
+                item.FinanceDate=financeData[j].Date;   //财务日期 调试用
+            }
+            else
+            {
+                item.Value=null;
+                item.FinanceDate=null;
+            }
             result[i]=item;
 
             ++i;
@@ -8400,8 +8449,11 @@ function StockChip()
 
     this.HQChart;
     this.PenBorder=g_JSChartResource.FrameBorderPen;    //边框
-    this.ColorProfit='rgb(255,0,0)';
-    this.ColorNoProfit='rgb(90,141,248)';
+    this.ColorProfit='rgb(255,0,0)';            //盈利的线段
+    this.ColorNoProfit='rgb(90,141,248)';       //非盈利
+    this.ColorAveragePrice='rgb(0,139,0)';   //平均价线
+    this.ColorBG='rgb(190,190,190)';           //筹码背景线段颜色
+
     this.ClassName='StockChip';
     this.Name='筹码分布';
     this.ShowType=0;    //0=所有筹码  1=周期前  2=周期内
@@ -8452,6 +8504,7 @@ function StockChip()
     {
         var bottom=ToFixedPoint(this.ChartBorder.GetBottom())-1;
         var left=ToFixedPoint(this.ChartBorder.GetRight()+this.Left)+2;
+        var right=ToFixedPoint(this.ChartBorder.GetChartWidth()-1);
 
         this.Canvas.font=this.Font;
         this.Canvas.fillStyle=this.InfoColor;
@@ -8474,11 +8527,23 @@ function StockChip()
         this.Canvas.fillText(text,left,bottom);
         bottom-=this.LineHeight;
 
-        text='获利比例：'+this.Data.ChipInfo.ProfitRate.toFixed(2)+'%';
+        text='获利比例：';
         this.Canvas.fillText(text,left,bottom);
+        var textWidth=this.Canvas.measureText(text).width+2;
+        var barLeft=left+textWidth;
+        var barWidth=(right-5-barLeft);
+        this.Canvas.strokeStyle=this.ColorNoProfit;
+        this.Canvas.strokeRect(barLeft,bottom-this.LineHeight,barWidth,this.LineHeight);
+        this.Canvas.strokeStyle=this.ColorProfit;
+        this.Canvas.strokeRect(barLeft,bottom-this.LineHeight,barWidth*(this.Data.ChipInfo.ProfitRate/100),this.LineHeight);
+        text=this.Data.ChipInfo.ProfitRate.toFixed(2)+'%';
+        this.Canvas.textAlign='center';
+        this.Canvas.fillText(text,barLeft+barWidth/2,bottom);
         bottom-=this.LineHeight;
 
+        this.Canvas.textAlign='left';
         text='成本分布,日期：'+IFrameSplitOperator.FormatDateString(this.Data.SelectData.Date);
+        if (this.Data.SelectData.Time) text+=' '+IFrameSplitOperator.FormatTimeString(this.Data.SelectData.Time);
         this.Canvas.fillText(text,left,bottom);
         bottom-=this.LineHeight;
 
@@ -8511,6 +8576,7 @@ function StockChip()
         {
             var aryPoint=[];
             var chipData=this.Data.DayChip[i].Chip;
+            if (!chipData) continue;
             var totalVol=0;
             for(var j=0;j<chipData.length;++j)
             {
@@ -8624,8 +8690,22 @@ function StockChip()
             YProfitRate:totalVol>0?totalYProfitVol/totalVol*100:0
         };
 
-        this.DrawArea(aryProfitPoint,this.ColorProfit);
-        this.DrawArea(aryNoProfitPoint,this.ColorNoProfit);
+        if (this.ShowType==0)
+        {
+            this.DrawLines(aryProfitPoint,this.ColorProfit);
+            this.DrawLines(aryNoProfitPoint,this.ColorNoProfit);
+            var averagePrice=this.Data.ChipInfo.AveragePrice;
+            if (averagePrice>0) 
+            {
+                averagePrice=averagePrice.toFixed(2);
+                this.DrawAveragePriceLine(aryProfitPoint,aryNoProfitPoint,KLineFrame.GetYFromData(averagePrice),this.ColorAveragePrice);
+            }
+        }
+        else    //在火焰山模式下, 筹码用一个颜色
+        {
+            this.DrawLines(aryProfitPoint,this.ColorBG);
+            this.DrawLines(aryNoProfitPoint,this.ColorBG);
+        }
     }
 
     this.CalculateCast=function()   //计算 90% 70%的成本价
@@ -8694,6 +8774,51 @@ function StockChip()
         this.Canvas.fill();
     }
 
+    this.DrawLines=function(aryPoint,color)
+    {
+        if (aryPoint.length<=0) return;
+        this.Canvas.strokeStyle=color;
+        this.Canvas.beginPath();
+        for(var i in aryPoint)
+        {
+            var item=aryPoint[i];
+            this.Canvas.moveTo(this.ClientRect.Left,item.Y);
+            this.Canvas.lineTo(item.X,item.Y);
+        }
+        this.Canvas.stroke();
+    }
+
+    this.DrawAveragePriceLine=function(aryProfitPoint,aryNoProfitPoint,y,color)
+    {
+        for(var i in aryProfitPoint)
+        {
+            var item=aryProfitPoint[i];
+            if (item.Y==y)
+            {
+                this.Canvas.strokeStyle=color;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(this.ClientRect.Left,item.Y);
+                this.Canvas.lineTo(item.X,item.Y);
+                this.Canvas.stroke();
+                return;
+            }
+        }
+
+        for(var i in aryNoProfitPoint)
+        {
+            var item=aryNoProfitPoint[i];
+            if (item.Y==y)
+            {
+                this.Canvas.strokeStyle=color;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(this.ClientRect.Left,item.Y);
+                this.Canvas.lineTo(item.X,item.Y);
+                this.Canvas.stroke();
+                return;
+            }
+        }
+    }
+
     this.DrawBorder=function()
     {
         this.Canvas.strokeStyle=this.PenBorder;
@@ -8704,9 +8829,12 @@ function StockChip()
     {
         if (!this.HQChart) return false;
         if (!this.HQChart.FlowCapitalReady) return false;
+        var symbol=this.HQChart.Symbol;
+        if (!symbol) return false;
+        if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol)) return false;   //指数暂时不支持移动筹码
 
         var bindData=this.HQChart.ChartPaint[0].Data;
-        if (bindData.Period>=4) return false;   //分钟K线不支持, 没时间做,以后再做吧
+        //if (bindData.Period>=4) return false;   //分钟K线不支持, 没时间做,以后再做吧
         var count=bindData.DataOffset+parseInt(this.HQChart.CursorIndex);
         if (count>=bindData.Data.length) count=bindData.Data.length-1;
         var selData=bindData.Data[count];
@@ -12916,6 +13044,7 @@ function KLineChartContainer(uielement)
     {
         var self=this;
         this.ChartSplashPaint.IsEnableSplash = true;
+        this.FlowCapitalReady=false;
         this.Draw();
         $.ajax({
             url: this.MinuteKLineApiUrl,
@@ -12989,6 +13118,8 @@ function KLineChartContainer(uielement)
         }
 
         this.OverlayChartPaint[0].Data=null; //分钟数据不支持叠加 清空
+
+        this.RequestFlowCapitalData();      //请求流通股本数据 (主数据下载完再下载)
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
@@ -13643,40 +13774,52 @@ function KLineChartContainer(uielement)
             }
         }
 
-        var aryFixedData=this.SourceData.GetFittingFinanceData(aryData);
-        for(let i in this.SourceData.Data)
+        if (this.Period>=4) //分钟数据
         {
-            var item=this.SourceData.Data[i];
-            item.FlowCapital=aryFixedData[i].Value;
-        }
+            var aryFixedData=this.SourceData.GetMinuteFittingFinanceData(aryData);
+            for(let i in this.SourceData.Data)
+            {
+                var item=this.SourceData.Data[i];
+                item.FlowCapital=aryFixedData[i].Value;
+            }
 
-        var bindData=this.ChartPaint[0].Data;
-        if (bindData.Period>0) 
-        {
+            var bindData=this.ChartPaint[0].Data;
             var newBindData=new ChartData();
             newBindData.Data=this.SourceData.Data;
-            if (bindData.Right>0 && bindData.Period<=3)    //复权
+
+            if (bindData.Period>4) //周期数据
+            {
+                var periodData=newBindData.GetPeriodData(bindData.Period);  
+                newBindData.Data=periodData;
+            }
+            bindData.Data=newBindData.Data;
+        }
+        else
+        {
+            var aryFixedData=this.SourceData.GetFittingFinanceData(aryData);
+            for(let i in this.SourceData.Data)
+            {
+                var item=this.SourceData.Data[i];
+                item.FlowCapital=aryFixedData[i].Value;
+            }
+
+            var bindData=this.ChartPaint[0].Data;
+            var newBindData=new ChartData();
+            newBindData.Data=this.SourceData.Data;
+
+            if (bindData.Right>0)    //复权
             {
                 var rightData=newBindData.GetRightDate(bindData.Right);
                 newBindData.Data=rightData;
             }
 
-            if (bindData.Period>0)
+            if (bindData.Period>0) //周期数据
             {
-                var periodData=newBindData.GetPeriodData(bindData.Period);  //周期数据
+                var periodData=newBindData.GetPeriodData(bindData.Period);  
                 newBindData.Data=periodData;
             }
-           
+
             bindData.Data=newBindData.Data;
-        }
-        else
-        {
-            var newData=this.SourceData.Data;
-            for(let i in newData)
-            {
-                var item=bindData.Data[i];
-                item.FlowCapital=newData[i].FlowCapital;
-            }
         }
 
         this.FlowCapitalReady=true;
