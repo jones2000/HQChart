@@ -1,4 +1,4 @@
-注：
+﻿注：
 jscommon目录是拷贝webhqchart目录的js文件， 因为git 不能使用svn:externals. 暂时提交的时候手动更新jscommon的文件。
 (https://github.com/jones2000/HQChart.git/trunk/webhqchart => jscommon)
 
@@ -20,3 +20,4 @@ demo/phone13.html K线训练网页版
 demo/phone14.html K线训练手机版
 
 demo/phone15.html 多日走势图
+demo/phone18.html 移动筹码图
