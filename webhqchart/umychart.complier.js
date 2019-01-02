@@ -2573,7 +2573,7 @@ function JSAlgorithm(errorHandler,symbolData)
         var result = [];
         if (!data || !data.length || !data2 || !data2.length) return result;
         var start = 0, i = 0, j = 0;
-        for(; start < data.length && !this.isNumber(data[start]); ++start)
+        for(; start < data.length && !this.IsNumber(data[start]); ++start)
         {
             result[start] = null;
         }
@@ -4826,6 +4826,35 @@ function JSDraw(errorHandler,symbolData)
         return result;
     }
 
+    //direction 文字Y轴位置 0=middle 1=价格的顶部 2=价格的底部
+    //offset 文字Y轴偏移
+    this.SUPERDRAWTEXT=function(condition,price,text,direction,offset)
+    {
+        let drawData=[];
+        let result={DrawData:drawData, DrawType:'SUPERDRAWTEXT',Text:text,YOffset:offset,Direction:direction,TextAlign:'center'};
+        if (condition.length<=0) return result;
+
+        var IsNumber=typeof(price)=="number";
+
+        for(var i in condition)
+        {
+            drawData[i]=null;
+
+            if (isNaN(condition[i]) || !condition[i]) continue;
+
+            if (IsNumber) 
+            {
+                drawData[i]=price;
+            }
+            else 
+            {
+                if (this.IsNumber(price[i])) drawData[i]=price[i];
+            }
+        }
+
+        return result;
+    }
+
     /*
     STICKLINE 绘制柱线
     在图形上绘制柱线。
@@ -5257,7 +5286,7 @@ JSDraw.prototype.IsNumber=function(value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON']);
+    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON']);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -7248,6 +7277,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWTEXT(args[0],args[1],args[2]);
                 node.Out=[];
                 break;
+            case 'SUPERDRAWTEXT':
+                node.Draw=this.Draw.SUPERDRAWTEXT(args[0],args[1],args[2],args[3],args[4]);
+                node.Out=[];
+                break;
             case 'DRAWICON':
                 node.Draw=this.Draw.DRAWICON(args[0],args[1],args[2]);
                 node.Out=[];
@@ -7581,7 +7614,9 @@ function ScriptIndex(name,script,args,option)
     this.Arguments=[];
     this.OutVar=[];
     this.ID;
-    if (option && option.ID) this.ID=option.ID;
+    this.FloatPrecision=2;  //小数位数
+    this.KLineType==null;   //K线显示类型
+    this.InstructionType;   //五彩K线, 交易指标
 
     //指标上锁配置信息
     this.IsLocked=false;    //是否锁住指标
@@ -7593,11 +7628,13 @@ function ScriptIndex(name,script,args,option)
     this.LockFont=null;
     this.LockCount=20;
 
-    this.KLineType==null;
-    if (option && option.KLineType) this.KLineType=option.KLineType;
-
-    this.InstructionType;
-    if (option && option.InstructionType) this.InstructionType=option.InstructionType;
+    if (option)
+    {
+        if (option.FloatPrecision>=0) this.FloatPrecision=option.FloatPrecision;
+        if (option.ID) this.ID=option.ID;
+        if (option.KLineType) this.KLineType=option.KLineType;
+        if (option.InstructionType) this.InstructionType=option.InstructionType;
+    }
 
     if (option && option.Lock) 
     {
@@ -7761,6 +7798,9 @@ function ScriptIndex(name,script,args,option)
         let titleIndex=windowIndex+1;
         chartText.Data.Data=varItem.Draw.DrawData;
         chartText.Text=varItem.Draw.Text;
+        if (varItem.Draw.Direction>0) chartText.Direction=varItem.Draw.Direction;
+        if (varItem.Draw.YOffset>0) chartText.YOffset=varItem.Draw.YOffset;
+        if (varItem.Draw.TextAlign) chartText.TextAlign=varItem.Draw.TextAlign;
 
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
@@ -8059,6 +8099,11 @@ function ScriptIndex(name,script,args,option)
             if (this.KLineType===0 || this.KLineType===1 || this.KLineType===2) this.CreateSelfKLine(hqChart,windowIndex,hisData);
             else if (this.KLineType===-1 && windowIndex==0) hqChart.ShowKLine(false);
         }
+
+        if (windowIndex>=1 && hqChart.Frame)
+        {
+            hqChart.Frame.SubFrame[windowIndex].Frame.YSplitOperator.FloatPrecision=this.FloatPrecision;
+        }
         
         for(let i in this.OutVar)
         {
@@ -8075,6 +8120,7 @@ function ScriptIndex(name,script,args,option)
                         this.CreateBar(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWTEXT':
+                    case 'SUPERDRAWTEXT':
                         this.CreateText(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWLINE':

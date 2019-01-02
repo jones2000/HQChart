@@ -21,6 +21,12 @@ import { JSCommonComplier } from "umychart.complier.wechat.js";     //通达信�
 import { JSCommonIndexScript } from "umychart.index.data.wechat.js"; //系统指标定义
 import { JSCommon_HQIndexFormula as HQIndexFormula } from "umychart.hqIndexformula.wechat.js";     //通达信编译器
 
+//图形库
+import {
+    JSCommonChartPaint_ChartSingleText as ChartSingleText, JSCommonChartPaint_ChartLine as ChartLine,
+    JSCommonChartPaint_IChartPainting as IChartPainting,
+} from "umychart.chartpaint.wechat.js";
+
 
 function JSCanvasElement() {
   this.Height;
@@ -3124,88 +3130,6 @@ function Rect(x, y, width, height) {
   }
 }
 
-//图新画法接口类
-function IChartPainting() 
-{
-    this.Canvas;                        //画布
-    this.ChartBorder;                   //边框信息
-    this.ChartFrame;                    //框架画法
-    this.Name;                          //名称
-    this.ClassName = 'IChartPainting';    //类名
-    this.Data = new ChartData();          //数据区
-
-    this.NotSupportMessage = null;
-    this.MessageFont = g_JSChartResource.Index.NotSupport.Font;
-    this.MessageColor = g_JSChartResource.Index.NotSupport.TextColor;
-
-    this.IsDrawFirst = false;             //是否比K线先画
-    this.IsShow = true;                   //是否显示
-
-    this.Draw = function () { }
-
-    this.DrawNotSupportmessage = function () 
-    {
-        this.Canvas.font = this.MessageFont;
-        this.Canvas.fillStyle = this.MessageColor;
-
-        var left = this.ChartBorder.GetLeft();
-        var width = this.ChartBorder.GetWidth();
-        var top = this.ChartBorder.GetTopEx();
-        var height = this.ChartBorder.GetHeightEx();
-
-        var x = left + width / 2;
-        var y = top + height / 2;
-
-        this.Canvas.textAlign = "center";
-        this.Canvas.textBaseline = "middle";
-        this.Canvas.fillText(this.NotSupportMessage, x, y);
-    }
-
-    this.GetTooltipData = function (x, y, tooltip) 
-    {
-        return false;
-    }
-
-    this.GetMaxMin = function () 
-    {
-        var xPointCount = this.ChartFrame.XPointCount;
-        var range = {};
-        range.Min = null;
-        range.Max = null;
-
-        if (!this.Data || !this.Data.Data) return range;
-
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
-        {
-            var value = this.Data.Data[i];
-            if (value == null || isNaN(value)) continue;
-
-            if (range.Max == null) range.Max = value;
-            if (range.Min == null) range.Min = value;
-
-            if (range.Max < value) range.Max = value;
-            if (range.Min > value) range.Min = value;
-        }
-
-        return range;
-    }
-
-    this.GetDynamicFont = function (dataWidth) //根据宽度自动获取对应字体
-    {
-        var font;
-        if (dataWidth < 5) font = '4px Arial';           //字体根据数据宽度动态调整
-        else if (dataWidth < 7) font = '6px Arial';
-        else if (dataWidth < 9) font = '8px Arial';
-        else if (dataWidth < 11) font = '10px Arial';
-        else if (dataWidth < 13) font = '12px Arial';
-        else if (dataWidth < 15) font = '14px Arial';
-        else font = '16px Arial';
-
-        return font;
-    }
-}
-
-
 //缩放因子
 var ZOOM_SEED =
   [
@@ -4452,124 +4376,6 @@ function ChartMinuteVolumBar() {
 }
 
 
-//线段
-function ChartLine() 
-{
-    this.newMethod = IChartPainting;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.Color = "rgb(255,193,37)"; //线段颜色
-    this.LineWidth;               //线段宽度
-    this.DrawType = 0;            //画图方式  0=无效数平滑  1=无效数不画断开
-
-    this.Draw = function () 
-    {
-        if (!this.IsShow) return;
-        if (this.NotSupportMessage) 
-        {
-            this.DrawNotSupportmessage();
-            return;
-        }
-
-        if (!this.Data || !this.Data.Data) return;
-
-        switch (this.DrawType) {
-        case 0:
-            return this.DrawLine();
-        case 1:
-            return this.DrawStraightLine();
-        }
-    }
-
-  this.DrawLine = function () {
-    var bHScreen = (this.ChartFrame.IsHScreen === true);
-    var dataWidth = this.ChartFrame.DataWidth;
-    var distanceWidth = this.ChartFrame.DistanceWidth;
-    var chartright = this.ChartBorder.GetRight();
-    if (bHScreen) chartright = this.ChartBorder.GetBottom();
-    var xPointCount = this.ChartFrame.XPointCount;
-
-    this.Canvas.save();
-    if (this.LineWidth > 0) this.Canvas.lineWidth = this.LineWidth;
-    var bFirstPoint = true;
-    var drawCount = 0;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (value == null) continue;
-
-      var x = this.ChartFrame.GetXFromIndex(j);
-      var y = this.ChartFrame.GetYFromData(value);
-
-      if (x > chartright) break;
-
-      if (bFirstPoint) {
-        this.Canvas.strokeStyle = this.Color;
-        this.Canvas.beginPath();
-        if (bHScreen) this.Canvas.moveTo(y, x);  //横屏坐标轴对调
-        else this.Canvas.moveTo(x, y);
-        bFirstPoint = false;
-      }
-      else {
-        if (bHScreen) this.Canvas.lineTo(y, x);
-        else this.Canvas.lineTo(x, y);
-      }
-
-      ++drawCount;
-    }
-
-    if (drawCount > 0) this.Canvas.stroke();
-    this.Canvas.restore();
-  }
-
-  //无效数不画
-  this.DrawStraightLine = function () {
-    var bHScreen = (this.ChartFrame.IsHScreen === true);
-    var dataWidth = this.ChartFrame.DataWidth;
-    var distanceWidth = this.ChartFrame.DistanceWidth;
-    var chartright = this.ChartBorder.GetRight();
-    if (bHScreen) chartright = this.ChartBorder.GetBottom();
-    var xPointCount = this.ChartFrame.XPointCount;
-
-    this.Canvas.save();
-    if (this.LineWidth > 0) this.Canvas.lineWidth = this.LineWidth;
-    this.Canvas.strokeStyle = this.Color;
-
-    var bFirstPoint = true;
-    var drawCount = 0;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (value == null) {
-        if (drawCount > 0) this.Canvas.stroke();
-        bFirstPoint = true;
-        drawCount = 0;
-        continue;
-      }
-
-      var x = this.ChartFrame.GetXFromIndex(j);
-      var y = this.ChartFrame.GetYFromData(value);
-
-      if (x > chartright) break;
-
-      if (bFirstPoint) {
-        this.Canvas.beginPath();
-        if (bHScreen) this.Canvas.moveTo(y, x);  //横屏坐标轴对调
-        else this.Canvas.moveTo(x, y);
-        bFirstPoint = false;
-      }
-      else {
-        if (bHScreen) this.Canvas.lineTo(y, x);
-        else this.Canvas.lineTo(x, y);
-      }
-
-      ++drawCount;
-    }
-
-    if (drawCount > 0) this.Canvas.stroke();
-    this.Canvas.restore();
-  }
-}
-
 //POINTDOT 圆点 支持横屏
 function ChartPointDot() {
   this.newMethod = IChartPainting;   //派生
@@ -5208,78 +5014,7 @@ function ChartText() {
   }
 }
 
-/*
-    文字输出 支持横屏
-    数组不为null的数据中输出 this.Text文本
-*/
-function ChartSingleText() {
-  this.newMethod = IChartPainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
 
-  this.Color = "rgb(255,193,37)";           //线段颜色
-  this.TextFont = "14px 微软雅黑";           //线段宽度
-  this.Text;
-  this.TextAlign = 'left';
-
-  this.Draw = function () {
-    if (!this.IsShow) return;
-
-    if (this.NotSupportMessage) {
-      this.DrawNotSupportmessage();
-      return;
-    }
-
-    if (!this.Data || !this.Data.Data) return;
-
-    var isHScreen = (this.ChartFrame.IsHScreen === true)
-    var dataWidth = this.ChartFrame.DataWidth;
-    var distanceWidth = this.ChartFrame.DistanceWidth;
-    var chartright = this.ChartBorder.GetRight();
-    if (isHScreen) chartright = this.ChartBorder.GetBottom();
-    var xPointCount = this.ChartFrame.XPointCount;
-
-    var isArrayText = Array.isArray(this.Text);
-    var text;
-    this.TextFont = this.GetDynamicFont(dataWidth);
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (value == null) continue;
-
-      var x = this.ChartFrame.GetXFromIndex(j);
-      var y = this.ChartFrame.GetYFromData(value);
-
-      if (x > chartright) break;
-
-      this.Canvas.textAlign = this.TextAlign;
-      this.Canvas.textBaseline = 'middle';
-      this.Canvas.fillStyle = this.Color;
-      this.Canvas.font = this.TextFont;
-
-      if (isArrayText) {
-        text = this.Text[i];
-        if (!text) continue;
-        this.DrawText(text, x, y, isHScreen);
-      }
-      else {
-        this.DrawText(this.Text, x, y, isHScreen);
-      }
-    }
-  }
-
-  this.DrawText = function (text, x, y, isHScreen) {
-    if (isHScreen) {
-      this.Canvas.save();
-      this.Canvas.translate(y, x);
-      this.Canvas.rotate(90 * Math.PI / 180);
-      this.Canvas.fillText(text, 0, 0);
-      this.Canvas.restore();
-    }
-    else {
-      this.Canvas.fillText(text, x, y);
-    }
-  }
-}
 
 //直线 水平直线 只有1个数据 支持横屏
 function ChartStraightLine() {
@@ -13858,14 +13593,10 @@ function ScriptIndex(name, script, args, option)
     this.Arguments = [];
     this.OutVar = [];
     this.ID;    //指标ID
-    if (option && option.ID) this.ID = option.ID;
-
-    this.KLineType = null;
-    if (option && option.KLineType) this.KLineType = option.KLineType;
-
-    this.InstructionType;
-    if (option && option.InstructionType) this.InstructionType = option.InstructionType;
-
+    this.FloatPrecision = 2;    //小数位数
+    this.KLineType == null;     //K线显示类型
+    this.InstructionType;       //五彩K线, 交易指标
+   
     //指标上锁配置信息
     this.IsLocked = false;    //是否锁住指标
     this.LockCallback = null;
@@ -13875,6 +13606,14 @@ function ScriptIndex(name, script, args, option)
     this.LockText = null;
     this.LockFont = null;
     this.LockCount = 10;
+
+    if (option) 
+    {
+        if (option.FloatPrecision >= 0) this.FloatPrecision = option.FloatPrecision;
+        if (option.ID) this.ID = option.ID;
+        if (option.KLineType) this.KLineType = option.KLineType;
+        if (option.InstructionType) this.InstructionType = option.InstructionType;
+    }
 
     if (option && option.Lock) 
     {
@@ -14030,6 +13769,9 @@ function ScriptIndex(name, script, args, option)
     let titleIndex = windowIndex + 1;
     chartText.Data.Data = varItem.Draw.DrawData;
     chartText.Text = varItem.Draw.Text;
+    if (varItem.Draw.Direction > 0) chartText.Direction = varItem.Draw.Direction;
+    if (varItem.Draw.YOffset > 0) chartText.YOffset = varItem.Draw.YOffset;
+    if (varItem.Draw.TextAlign) chartText.TextAlign = varItem.Draw.TextAlign;
 
     //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
@@ -14313,6 +14055,10 @@ function ScriptIndex(name, script, args, option)
             else if (this.KLineType === -1 && windowIndex == 0) hqChart.ShowKLine(false);
         }
 
+        if (windowIndex >= 1 && hqChart.Frame) {
+            hqChart.Frame.SubFrame[windowIndex].Frame.YSplitOperator.FloatPrecision = this.FloatPrecision;
+        }
+
         for (let i in this.OutVar) 
         {
             let item = this.OutVar[i];
@@ -14328,6 +14074,7 @@ function ScriptIndex(name, script, args, option)
                     this.CreateBar(hqChart, windowIndex, item, i);
                     break;
                 case 'DRAWTEXT':
+                case 'SUPERDRAWTEXT':
                     this.CreateText(hqChart, windowIndex, item, i);
                     break;
                 case 'DRAWLINE':
@@ -15314,7 +15061,7 @@ module.exports =
       JSChart: JSChart,
       Guid: Guid,
       IFrameSplitOperator: IFrameSplitOperator,
-    }
+    },
   };
 
 

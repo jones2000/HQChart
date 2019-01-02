@@ -6719,6 +6719,7 @@ function ChartStickLine()
         {
             var LineWidth=this.LineWidth;
             if (dataWidth<=4) LineWidth=GetDevicePixelRatio();
+            else if (dataWidth==50) LineWidth=dataWidth;    //宽度==50 跟K线宽度保持一致
             else if (dataWidth<LineWidth) LineWidth=parseInt(dataWidth);
             this.Canvas.lineWidth=LineWidth;
             this.Canvas.strokeStyle=this.Color;
@@ -6894,6 +6895,8 @@ function ChartSingleText()
     this.TextFont="14px 微软雅黑";           //线段宽度
     this.Text;
     this.TextAlign='left';
+    this.Direction=0;       //0=middle 1=bottom 2=top
+    this.YOffset=0;
 
     this.Draw=function()
     {
@@ -6912,12 +6915,17 @@ function ChartSingleText()
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetRight();
         if (isHScreen) chartright=this.ChartBorder.GetBottom();
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
         var xPointCount=this.ChartFrame.XPointCount;
 
         var isArrayText=Array.isArray(this.Text);
         var text;
         var pixelTatio = GetDevicePixelRatio();
         this.TextFont=this.GetDynamicFont(dataWidth*pixelTatio);
+        if (this.Direction==1) this.Canvas.textBaseline='bottom';
+        else if (this.Direction==2) this.Canvas.textBaseline='top';
+        else this.Canvas.textBaseline='middle';
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
@@ -6929,9 +6937,31 @@ function ChartSingleText()
             if (x>chartright) break;
 
             this.Canvas.textAlign=this.TextAlign;
-            this.Canvas.textBaseline='middle';
             this.Canvas.fillStyle=this.Color;
             this.Canvas.font=this.TextFont;
+
+            if (this.YOffset>0 && this.Direction>0)
+            {
+                var yPrice=y;
+                if (this.Direction==1) 
+                {
+                    y=top+this.YOffset;
+                    yPrice+=5;
+                }
+                else 
+                {
+                    y=bottom-this.YOffset;
+                    yPrice-=5;
+                }
+                this.Canvas.save(); 
+                this.Canvas.setLineDash([5,10]);
+                this.Canvas.strokeStyle=this.Color;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(yPrice));
+                this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(y));
+                this.Canvas.stroke();
+                this.Canvas.restore();
+            }
 
             if (isArrayText)
             {

@@ -2586,7 +2586,7 @@ function JSAlgorithm(errorHandler, symbolData)
         var result = [];
         if (!data || !data.length || !data2 || !data2.length) return result;
         var start = 0, i = 0, j = 0;
-        for (; start < data.length && !this.isNumber(data[start]); ++start) 
+        for (; start < data.length && !this.IsNumber(data[start]); ++start) 
         {
             result[start] = null;
         }
@@ -4836,6 +4836,35 @@ function JSDraw(errorHandler, symbolData)
         return result;
     }
 
+    //direction 文字Y轴位置 0=middle 1=价格的顶部 2=价格的底部
+    //offset 文字Y轴偏移
+    this.SUPERDRAWTEXT = function (condition, price, text, direction, offset) 
+    {
+        let drawData = [];
+        let result = { DrawData: drawData, DrawType: 'SUPERDRAWTEXT', Text: text, YOffset: offset, Direction: direction, TextAlign: 'center' };
+        if (condition.length <= 0) return result;
+
+        var IsNumber = typeof (price) == "number";
+
+        for (var i in condition) 
+        {
+            drawData[i] = null;
+
+            if (isNaN(condition[i]) || !condition[i]) continue;
+
+            if (IsNumber) 
+            {
+                drawData[i] = price;
+            }
+            else 
+            {
+                if (this.IsNumber(price[i])) drawData[i] = price[i];
+            }
+        }
+
+        return result;
+    }
+
     this.STICKLINE=function(condition,data,data2,width,type)
     {
         let drawData=[];
@@ -5258,7 +5287,7 @@ JSDraw.prototype.IsNumber = function (value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER','DRAWICON']);
+    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT','DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER','DRAWICON']);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -7182,6 +7211,10 @@ function JSExecute(ast,option)
             case 'DRAWTEXT':
                 node.Draw=this.Draw.DRAWTEXT(args[0],args[1],args[2]);
                 node.Out=[];
+                break;
+            case 'SUPERDRAWTEXT':
+                node.Draw = this.Draw.SUPERDRAWTEXT(args[0], args[1], args[2], args[3], args[4]);
+                node.Out = [];
                 break;
             case 'DRAWICON':
                 node.Draw = this.Draw.DRAWICON(args[0], args[1], args[2]);
