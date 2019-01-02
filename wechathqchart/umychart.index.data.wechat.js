@@ -2717,7 +2717,7 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                'VARUP:INDEXADV;\n\
+                'VARUP:INDEXADV,LINESTICK;\n\
                 VARDOWN:INDEXDEC;'
         };
 

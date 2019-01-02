@@ -6748,8 +6748,16 @@ function ChartStickLine()
 
             if (bFillBar)
             {
-                var left=xOffset-fixedWidth;
-                this.Canvas.fillRect(left,Math.min(y,y2),dataWidth+distanceWidth+fixedWidth*2,Math.abs(y-y2));
+                if (isHScreen)
+                {
+                    var left=xOffset-fixedWidth;
+                    this.Canvas.fillRect(Math.min(y,y2),left,Math.abs(y-y2),dataWidth+distanceWidth+fixedWidth*2);
+                }
+                else
+                {
+                    var left=xOffset-fixedWidth;
+                    this.Canvas.fillRect(left,Math.min(y,y2),dataWidth+distanceWidth+fixedWidth*2,Math.abs(y-y2));
+                }
             }
             else
             {
@@ -6914,9 +6922,14 @@ function ChartSingleText()
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetRight();
-        if (isHScreen) chartright=this.ChartBorder.GetBottom();
         var top=this.ChartBorder.GetTopEx();
         var bottom=this.ChartBorder.GetBottomEx();
+        if (isHScreen) 
+        {
+            chartright=this.ChartBorder.GetBottom();
+            top=this.ChartBorder.GetRightEx();
+            bottom=this.ChartBorder.GetLeftEx();
+        }
         var xPointCount=this.ChartFrame.XPointCount;
 
         var isArrayText=Array.isArray(this.Text);
@@ -6943,22 +6956,42 @@ function ChartSingleText()
             if (this.YOffset>0 && this.Direction>0)
             {
                 var yPrice=y;
-                if (this.Direction==1) 
-                {
-                    y=top+this.YOffset;
-                    yPrice+=5;
-                }
-                else 
-                {
-                    y=bottom-this.YOffset;
-                    yPrice-=5;
-                }
+
                 this.Canvas.save(); 
                 this.Canvas.setLineDash([5,10]);
                 this.Canvas.strokeStyle=this.Color;
                 this.Canvas.beginPath();
-                this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(yPrice));
-                this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(y));
+                if (isHScreen)
+                {
+                    if (this.Direction==1) 
+                    {
+                        y=top-this.YOffset*pixelTatio;
+                        yPrice+=5*pixelTatio;
+                    }
+                    else 
+                    {
+                        y=bottom+this.YOffset*pixelTatio;
+                        yPrice-=5*pixelTatio;
+                    }
+                    this.Canvas.moveTo(ToFixedPoint(yPrice),ToFixedPoint(x));
+                    this.Canvas.lineTo(ToFixedPoint(y),ToFixedPoint(x));
+                }
+                else
+                {
+                    if (this.Direction==1) 
+                    {
+                        y=top+this.YOffset*pixelTatio;
+                        yPrice+=5*pixelTatio;
+                    }
+                    else 
+                    {
+                        y=bottom-this.YOffset*pixelTatio;
+                        yPrice-=5*pixelTatio;
+                    }
+
+                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(yPrice));
+                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(y));
+                }
                 this.Canvas.stroke();
                 this.Canvas.restore();
             }
