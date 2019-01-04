@@ -6387,14 +6387,14 @@ function JSSymbolData(ast,option,jsExecute)
                 var item=new SingleData();
                 item.Date=data.date[i];
                 item.Value=data.data[i];
-                if (item.Value>0) aryData.push(item);
+                if (this.IsNumber(item.Value)) aryData.push(item);
 
                 if (i<data.data2.length)
                 {
-                    item=new new SingleData();
+                    item=new SingleData();
                     item.Date=data.date[i];
                     item.Value=data.data2[i];
-                    if (item.Value>0) aryData2.push(item);
+                    if (this.IsNumber(item.Value)) aryData2.push(item);
                 }
             }
 
@@ -7615,8 +7615,10 @@ function ScriptIndex(name,script,args,option)
     this.OutVar=[];
     this.ID;
     this.FloatPrecision=2;  //小数位数
-    this.KLineType==null;   //K线显示类型
+    this.KLineType=null;   //K线显示类型
     this.InstructionType;   //五彩K线, 交易指标
+    this.YSpecificMaxMin=null;  //最大最小值
+    this.YSplitScale=null;      //固定刻度
 
     //指标上锁配置信息
     this.IsLocked=false;    //是否锁住指标
@@ -7634,6 +7636,8 @@ function ScriptIndex(name,script,args,option)
         if (option.ID) this.ID=option.ID;
         if (option.KLineType) this.KLineType=option.KLineType;
         if (option.InstructionType) this.InstructionType=option.InstructionType;
+        if (option.YSpecificMaxMin) this.YSpecificMaxMin=option.YSpecificMaxMin;
+        if (option.YSplitScale) this.YSplitScale=option.YSplitScale;
     }
 
     if (option && option.Lock) 
@@ -8103,6 +8107,8 @@ function ScriptIndex(name,script,args,option)
         if (windowIndex>=1 && hqChart.Frame)
         {
             hqChart.Frame.SubFrame[windowIndex].Frame.YSplitOperator.FloatPrecision=this.FloatPrecision;
+            if (this.YSpecificMaxMin)  hqChart.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin=this.YSpecificMaxMin;  //最大最小值
+            if (this.YSplitScale)   hqChart.Frame.SubFrame[windowIndex].Frame.YSplitScale=this.YSplitScale;             //固定刻度
         }
         
         for(let i in this.OutVar)

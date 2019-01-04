@@ -1978,10 +1978,16 @@ function GetDevicePixelRatio()
     return window.devicePixelRatio || 1;
 }
 
-function OnKeyDown(e)
+function OnKeyDown(e)   //键盘事件
 {
-    if(this.JSChartContainer)
+    if(this.JSChartContainer && this.JSChartContainer.OnKeyDown)
         this.JSChartContainer.OnKeyDown(e);
+}
+
+function OnWheel(e)    //上下滚动事件
+{
+    if(this.JSChartContainer && this.JSChartContainer.OnWheel)
+        this.JSChartContainer.OnWheel(e);
 }
 
 function ToFixed(number, precision)
@@ -4678,6 +4684,7 @@ function IChartPainting()
 
 
 //缩放因子
+/*
 var ZOOM_SEED=
 [
     [49,10],	[46,9],		[43,8],
@@ -4691,6 +4698,19 @@ var ZOOM_SEED=
     //[0.9,0.2],	[0.7,0.15],
     //[0.6,0.12],	[0.5,0.1],	[0.4,0.08],
     //[0.3,0.06],	[0.2,0.04],	[0.1,0.02]
+];
+*/
+
+var ZOOM_SEED=
+[
+    [48,10],	[44,10], 
+    [40,9],     [36,9],	
+    [32,8],     [28,8],	
+    [24,7],     [20,7], 
+    [18,6],     [16,6],
+    [14,5],     [12,5],
+    [8,4],      [4,3],
+    [4,1],      [2,1],    
 ];
 
 //K线画法 支持横屏
@@ -6756,7 +6776,9 @@ function ChartStickLine()
                 else
                 {
                     var left=xOffset-fixedWidth;
-                    this.Canvas.fillRect(left,Math.min(y,y2),dataWidth+distanceWidth+fixedWidth*2,Math.abs(y-y2));
+                    var barWidth=dataWidth+distanceWidth+fixedWidth*2;
+                    if (left+barWidth>chartright) barWidth=chartright-left; //不要超过右边框子
+                    this.Canvas.fillRect(left,Math.min(y,y2),barWidth,Math.abs(y-y2));
                 }
             }
             else
@@ -9075,7 +9097,7 @@ function IFrameSplitOperator()
         return true;
     }
 
-    this.Filter = function (aryInfo) 
+    this.Filter = function (aryInfo,keepZero) 
     {
         if (this.SplitCount <= 0 || aryInfo.length <= 0 || aryInfo.length < this.SplitCount) return aryInfo;
 
@@ -9092,6 +9114,29 @@ function IFrameSplitOperator()
             else 
             {
                 data.push(aryInfo[i]);
+            }
+        }
+
+        if (keepZero)   //如果不存在0轴,增加一个0轴,刻度信息部显示
+        {
+            var bExsitZero=false;
+            for(var i=0;i<data;++i)
+            {
+                var item=data[i];
+                if (Math.abs(item.Value) < 0.00000001) 
+                {
+                    bExsitZero=true;
+                    break;
+                }
+            }
+
+            if (bExsitZero==false)
+            {
+                var zeroCoordinate = new CoordinateInfo();
+                zeroCoordinate.Value = 0;
+                zeroCoordinate.Message[0] = null
+                zeroCoordinate.Message[1] = null;
+                data.push(zeroCoordinate);
             }
         }
     
@@ -9328,7 +9373,7 @@ function FrameSplitKLinePriceY()
                 break;
         }
 
-        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
+        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo,false);
         this.Frame.HorizontalMax=splitData.Max;
         this.Frame.HorizontalMin=splitData.Min;
     }
@@ -9426,42 +9471,72 @@ function FrameSplitY()
 
         this.Frame.HorizontalInfo=[];
 
-        for(var i=0,value=splitData.Min;i<splitData.Count;++i,value+=splitData.Interval)
+        if (this.Frame.YSplitScale)
         {
-            this.Frame.HorizontalInfo[i]= new CoordinateInfo();
-            this.Frame.HorizontalInfo[i].Value=value;
+            for(var i in this.Frame.YSplitScale)
+            {
+                var value=this.Frame.YSplitScale[i];
+                var coordinate=new CoordinateInfo();
+                coordinate.Value=value;
 
-            if (this.StringFormat==1)   //手机端格式 如果有万,亿单位了 去掉小数
-            {
-                var floatPrecision=this.FloatPrecision;
-                if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision=0;
-                this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(value,floatPrecision);
-            }
-            else
-            {
                 var absValue=Math.abs(value);
                 if (absValue<0.0000000001) 
                 {
-                    this.Frame.HorizontalInfo[i].Message[1]=0;
+                    coordinate.Message[1]=0;
                 }
                 else if (absValue<this.FLOATPRECISION_RANGE[this.FLOATPRECISION_RANGE.length-1]) 
                 {
-                    this.Frame.HorizontalInfo[i].Message[1] = value.toExponential(2).toString();
+                    coordinate.Message[1] = value.toExponential(2).toString();
                 }
                 else
                 {
                     var floatPrecision=this.GetFloatPrecision(absValue,this.FloatPrecision); //数据比小数位数还小, 调整小数位数
-                    this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
+                    coordinate.Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
                 }
+
+                coordinate.Message[0]=coordinate.Message[1];
+                this.Frame.HorizontalInfo.push(coordinate);
             }
-            
-            this.Frame.HorizontalInfo[i].Message[0]=this.Frame.HorizontalInfo[i].Message[1];
-            //this.Frame.HorizontalInfo[i].Font="14px 微软雅黑";
-            //this.Frame.HorizontalInfo[i].TextColor="rgb(100,0,200)";
-            //this.Frame.HorizontalInfo[i].LineColor="rgb(220,220,220)";
+        }
+        else
+        {
+            for(var i=0,value=splitData.Min;i<splitData.Count;++i,value+=splitData.Interval)
+            {
+                this.Frame.HorizontalInfo[i]= new CoordinateInfo();
+                this.Frame.HorizontalInfo[i].Value=value;
+
+                if (this.StringFormat==1)   //手机端格式 如果有万,亿单位了 去掉小数
+                {
+                    var floatPrecision=this.FloatPrecision;
+                    if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision=0;
+                    this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(value,floatPrecision);
+                }
+                else
+                {
+                    var absValue=Math.abs(value);
+                    if (absValue<0.0000000001) 
+                    {
+                        this.Frame.HorizontalInfo[i].Message[1]=0;
+                    }
+                    else if (absValue<this.FLOATPRECISION_RANGE[this.FLOATPRECISION_RANGE.length-1]) 
+                    {
+                        this.Frame.HorizontalInfo[i].Message[1] = value.toExponential(2).toString();
+                    }
+                    else
+                    {
+                        var floatPrecision=this.GetFloatPrecision(absValue,this.FloatPrecision); //数据比小数位数还小, 调整小数位数
+                        this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
+                    }
+                }
+                
+                this.Frame.HorizontalInfo[i].Message[0]=this.Frame.HorizontalInfo[i].Message[1];
+                //this.Frame.HorizontalInfo[i].Font="14px 微软雅黑";
+                //this.Frame.HorizontalInfo[i].TextColor="rgb(100,0,200)";
+                //this.Frame.HorizontalInfo[i].LineColor="rgb(220,220,220)";
+            }
         }
 
-        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo);
+        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo,(splitData.Max>0 && splitData.Min<0));
         this.RemoveZero(this.Frame.HorizontalInfo);
         this.Frame.HorizontalMax=splitData.Max;
         this.Frame.HorizontalMin=splitData.Min;
@@ -12790,6 +12865,48 @@ function KLineChartContainer(uielement)
     this.MinuteDialog;  //双击历史K线 弹出分钟走势图
     this.RightMenu;     //右键菜单
 
+    this.OnWheel=function(e)
+    {
+        console.log('[KLineChartContainer::OnWheel]',e);
+        var x = e.clientX-this.UIElement.getBoundingClientRect().left;
+        var y = e.clientY-this.UIElement.getBoundingClientRect().top;
+
+        var isInClient=false;
+        this.Canvas.beginPath();
+        this.Canvas.rect(this.Frame.ChartBorder.GetLeft(),this.Frame.ChartBorder.GetTop(),this.Frame.ChartBorder.GetWidth(),this.Frame.ChartBorder.GetHeight());
+        isInClient=this.Canvas.isPointInPath(x,y);
+        
+        if (isInClient && e.wheelDelta<0)       //缩小
+        {
+            var cursorIndex={};
+            cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
+            if (this.Frame.ZoomDown(cursorIndex))
+            {
+                this.CursorIndex=cursorIndex.Index;
+                this.UpdataDataoffset();
+                this.UpdatePointByCursorIndex();
+                this.UpdateFrameMaxMin();
+                this.Draw();
+            }
+        }
+        else if (isInClient && e.wheelDelta>0)  //放大
+        {
+            var cursorIndex={};
+            cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
+            if (this.Frame.ZoomUp(cursorIndex))
+            {
+                this.CursorIndex=cursorIndex.Index;
+                this.UpdatePointByCursorIndex();
+                this.UpdataDataoffset();
+                this.UpdateFrameMaxMin();
+                this.Draw();
+            }
+        }
+
+        if(e.preventDefault) e.preventDefault();
+        else e.returnValue = false;
+    }
+
     //创建
     //windowCount 窗口个数
     this.Create=function(windowCount)
@@ -12830,7 +12947,8 @@ function KLineChartContainer(uielement)
             this.TitlePaint.push(titlePaint);
         }
 
-        this.UIElement.addEventListener("keydown", OnKeyDown, true);    //键盘消息
+        this.UIElement.addEventListener("keydown", OnKeyDown, true);            //键盘消息
+        this.UIElement.addEventListener("wheel", OnWheel, true);      //上下滚动消息
     }
 
     //创建子窗口
@@ -13310,10 +13428,10 @@ function KLineChartContainer(uielement)
             if (i==0 || item.ChartFrame!=this.Frame.SubFrame[windowIndex].Frame)
                 paint.push(item);
         }
-
-        //清空指定最大最小值
-        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin=null;
+        
+        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin=null;    //清空指定最大最小值
         this.Frame.SubFrame[windowIndex].Frame.IsLocked=false;          //解除上锁
+        this.Frame.SubFrame[windowIndex].Frame.YSplitScale = null;      //清空固定刻度
 
         this.ChartPaint=paint;
 
@@ -13446,9 +13564,10 @@ function KLineChartContainer(uielement)
                 paint.push(item);
         }
 
-        //清空指定最大最小值
-        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin=null;
-        this.Frame.SubFrame[windowIndex].Frame.IsLocked=false;      //解除上锁
+        
+        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin=null;    //清空指定最大最小值
+        this.Frame.SubFrame[windowIndex].Frame.IsLocked=false;          //解除上锁
+        this.Frame.SubFrame[windowIndex].Frame.YSplitScale = null;      //清空固定刻度
 
         this.ChartPaint=paint;
 

@@ -6317,7 +6317,13 @@ function JSSymbolData(ast,option,jsExecute)
         var mapFolder = new Map([
             [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE, "negative"],
             [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH, 'research'],
-            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT, 'interact']
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT, 'interact'],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE, 'holderchange'],        //NEWS(4)   股东增持
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2, 'holderchange'],       //NEWS(5)   股东减持
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TRUSTHOLDER, 'trustholder'],          //NEWS(6)   信托持股
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_BLOCKTRADING, 'Blocktrading'],        //NEWS(7)   大宗交易
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_COMPANYNEWS, 'companynews'],          //NEWS(8)   官网新闻
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TOPMANAGERS, 'topmanagers'],          //NEWS(9)   高管要闻
         ]);
 
         if (!mapFolder.has(jobID)) 
@@ -6357,7 +6363,8 @@ function JSSymbolData(ast,option,jsExecute)
 
         //没有新闻使用0数据填充
         var aryData = [];
-        for (var i = 0; i < this.Data.Data.length; ++i) {
+        for (var i = 0; i < this.Data.Data.length; ++i) 
+        {
             var item = new JSCommonData.SingleData();
             item.Date = this.Data.Data[i].Date;
             item.Value = 0
@@ -6376,20 +6383,53 @@ function JSSymbolData(ast,option,jsExecute)
         if (data.data.length <= 0 || data.data.length != data.date.length) return;
 
         console.log('[JSSymbolData::RecvNewsAnalysisData] jobID', jobID, data.update);
-        var aryData = [];
-        for (var i = 0; i < data.data.length; ++i) {
-            var item = new JSCommonData.SingleData();
-            item.Date = data.date[i];
-            item.Value = data.data[i];
-            aryData.push(item);
+        if (jobID == JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE || jobID == JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2) 
+        {
+            var aryData = [], aryData2 = [];
+            for (var i = 0; i < data.data.length; ++i) 
+            {
+                var item = new JSCommonData.SingleData();
+                item.Date = data.date[i];
+                item.Value = data.data[i];
+                if (this.IsNumber(item.Value)) aryData.push(item);
+
+                if (i < data.data2.length) 
+                {
+                    item = new JSCommonData.SingleData();
+                    item.Date = data.date[i];
+                    item.Value = data.data2[i];
+                    if (this.IsNumber(item.Value)) aryData2.push(item);
+                }
+            }
+
+            let aryFixedData = this.Data.GetFittingData2(aryData, 0);
+            var bindData = new JSCommonData.ChartData();
+            bindData.Data = aryFixedData;
+            this.NewsAnalysisData.set(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE, bindData.GetValue());
+
+            aryFixedData = this.Data.GetFittingData2(aryData2, 0);
+            bindData = new JSCommonData.ChartData();
+            bindData.Data = aryFixedData;
+            this.NewsAnalysisData.set(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2, bindData.GetValue());
         }
+        else
+        {
+            var aryData = [];
+            for (var i = 0; i < data.data.length; ++i) 
+            {
+                var item = new JSCommonData.SingleData();
+                item.Date = data.date[i];
+                item.Value = data.data[i];
+                aryData.push(item);
+            }
 
-        let aryFixedData = this.Data.GetFittingData2(aryData, 0);
+            let aryFixedData = this.Data.GetFittingData2(aryData, 0);
 
-        var bindData = new JSCommonData.ChartData();
-        bindData.Data = aryFixedData;
+            var bindData = new JSCommonData.ChartData();
+            bindData.Data = aryFixedData;
 
-        this.NewsAnalysisData.set(jobID, bindData.GetValue());
+            this.NewsAnalysisData.set(jobID, bindData.GetValue());
+        }
     }
    
     this.JsonDataToHistoryData=function(data)
@@ -6716,6 +6756,12 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE: 2000,             //负面新闻统计
     JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH: 2001,             //机构调研
     JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT: 2002,             //互动易
+    JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE: 2003,         //股东增持
+    JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2: 2004,        //股东减持
+    JOB_DOWNLOAD_NEWS_ANALYSIS_TRUSTHOLDER: 2005,          //信托持股
+    JOB_DOWNLOAD_NEWS_ANALYSIS_BLOCKTRADING: 2006,         //大宗交易
+    JOB_DOWNLOAD_NEWS_ANALYSIS_COMPANYNEWS: 2007,          //官网新闻
+    JOB_DOWNLOAD_NEWS_ANALYSIS_TOPMANAGERS: 2008,          //高管要闻
 
     JOB_RUN_SCRIPT:10000, //执行脚本
 
@@ -6775,6 +6821,12 @@ var JS_EXECUTE_JOB_ID=
             [1, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE],          //NEWS(1)   负面新闻统计
             [2, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH],          //NEWS(2)   机构调研统计
             [3, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT],          //NEWS(3)   互动易
+            [4, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE],      //NEWS(4)   股东增持
+            [5, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2],     //NEWS(5)   股东减持
+            [6, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TRUSTHOLDER],       //NEWS(6)   信托持股
+            [7, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_BLOCKTRADING],      //NEWS(7)   大宗交易
+            [8, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_COMPANYNEWS],       //NEWS(8)   官网新闻
+            [9, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TOPMANAGERS],       //NEWS(9)   高管要闻
         ]);
 
         if (dataMap.has(value)) return dataMap.get(value);
@@ -6882,9 +6934,15 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET:          //卖出信息-融券净卖出
                 return this.SymbolData.GetMarginData(jobName);
 
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE:      //负面新闻
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH:      //机构调研
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT:     //互动易
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE:             //负面新闻
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH:             //机构调研
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT:             //互动易
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE:         //股东增持
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2:        //股东减持
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TRUSTHOLDER:          //信托持股
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_BLOCKTRADING:         //大宗交易
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_COMPANYNEWS:          //官网新闻
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TOPMANAGERS:          //高管要闻
                 return this.SymbolData.GetNewsAnalysisData(jobName);
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:

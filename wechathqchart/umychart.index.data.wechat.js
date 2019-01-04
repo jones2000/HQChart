@@ -8,6 +8,8 @@
     KLineType:K线设置 -1=主图不显示K线(只在主图有效) 0=在副图显示K线 1=在副图显示K线(收盘价线) 2=在副图显示K线(美国线)
     InstructionType: 1=专家指示  2=五彩K线
     FloatPrecision: 小数位数 缺省=2
+    YSplitScale:  Y固定刻度 [1,8,10]
+    YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
 */
 
 function JSIndexScript()
@@ -52,6 +54,8 @@ JSIndexScript.prototype.Get=function(id)
             ['操盘BS点', this.FXG_BSPoint],
 
             ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2],['Zealink-持仓信号', this.Zealink_Index3],
+            ['Zealink-增减持', this.Zealink_Index4], ['Zealink-大宗交易', this.Zealink_Index5], ['Zealink-信托持股', this.Zealink_Index6],
+            ['Zealink-官网新闻', this.Zealink_Index7], ['Zealink-高管要闻', this.Zealink_Index8],
 
             ['飞龙四式', this.Dragon4_Main], ['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis], ['融资占比', this.MarginProportion], 
@@ -2749,7 +2753,7 @@ JSIndexScript.prototype.Zealink_Index2 = function ()
 {
     let data =
     {
-        Name: '牛熊区间', Description: '牛熊区间', IsMainIndex: false,
+        Name: '牛熊区间', Description: '牛熊区间', IsMainIndex: false, YSpecificMaxMin: { Max: 100, Min: 1, Count: 4 }, YSplitScale: [1, 50, 100],
         Args: [],
         Script: //脚本
 '短高H:=(20*H+19*REF(H,1)+18*REF(H,2)+17*REF(H,3)+16*REF(H,4)+15*REF(H,5)+14*REF(H,6)\n\
@@ -2905,6 +2909,72 @@ SUPERDRAWTEXT(SELL0,H,"风险",1,10),COLORGREEN;\n\
 SUPERDRAWTEXT(BUY2,L,"机会",2,10),COLORRED;\n\
 SUPERDRAWTEXT(BUY4,L,"机会",2,10),COLORRED;\n\
 SUPERDRAWTEXT(SELL4,H,"风险",1,10),COLORGREEN;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.Zealink_Index4 = function () 
+{
+    let data =
+    {
+        Name: '股东增减持', Description: '股东增减持', IsMainIndex: false, FloatPrecision: 0,
+        Args: [],
+        Script: //脚本
+'增持:NEWS(4),NODRAW,COLORRED;\n\
+减持:NEWS(5),NODRAW,COLORGREEN;\n\
+STICKLINE(增持>0,0,增持,1,0),COLORRED;\n\
+STICKLINE(减持<0,0,减持,1,0),COLORGREEN;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.Zealink_Index5 = function () 
+{
+    let data =
+    {
+        Name: '大宗交易', Description: '大宗交易', IsMainIndex: false, FloatPrecision: 0,
+        Args: [],
+        Script: //脚本
+            '交易次数:NEWS(7);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.Zealink_Index6 = function () 
+{
+    let data =
+    {
+        Name: '信托持股', Description: '信托持股', IsMainIndex: false, FloatPrecision: 0,
+        Args: [],
+        Script: //脚本
+            '家数:NEWS(6);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.Zealink_Index7 = function () {
+    let data =
+    {
+        Name: '官网新闻', Description: '官网新闻', IsMainIndex: false, FloatPrecision: 0,
+        Args: [],
+        Script: //脚本
+            '个数:NEWS(8);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.Zealink_Index8 = function () {
+    let data =
+    {
+        Name: '高管要闻', Description: '高管要闻', IsMainIndex: false, FloatPrecision: 0,
+        Args: [],
+        Script: //脚本
+            '个数:NEWS(9);'
     };
 
     return data;
