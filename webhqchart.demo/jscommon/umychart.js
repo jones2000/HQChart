@@ -2863,8 +2863,8 @@ function KLineFrame()
         var spanIcon = "<span class='parameters icon iconfont icon-canshushezhi' id='modifyindex' style='cursor:pointer;'></span>&nbsp;&nbsp;" +
             "<span class='target icon iconfont icon-shezhi-tianchong' id='changeindex' style='cursor:pointer;'></span>";
         var scrollPos=GetScrollPosition();
-        left = left+ this.ChartBorder.UIElement.getBoundingClientRect().left+scrollPos.Left;
-        top = top+this.ChartBorder.UIElement.getBoundingClientRect().top+scrollPos.Top;
+        left = left+scrollPos.Left;
+        top = top+scrollPos.Top;
         divToolbar.style.left = left + "px";
         divToolbar.style.top = top + "px";
         divToolbar.style.width=toolbarWidth+"px";
@@ -2892,6 +2892,13 @@ function KLineFrame()
                 },this.ChangeIndexEvent);
 
         divToolbar.style.display = "block";
+    }
+
+    this.ClearToolbar=function()
+    {
+        var divToolbar=document.getElementById(this.ToolbarID);
+        if (!divToolbar) return;
+        this.ChartBorder.UIElement.parentNode.removeChild(divToolbar);
     }
 
     this.DrawFrame=function()
@@ -12948,7 +12955,7 @@ function KLineChartContainer(uielement)
         }
 
         this.UIElement.addEventListener("keydown", OnKeyDown, true);            //键盘消息
-        this.UIElement.addEventListener("wheel", OnWheel, true);      //上下滚动消息
+        this.UIElement.addEventListener("wheel", OnWheel, true);                //上下滚动消息
     }
 
     //创建子窗口
@@ -13012,6 +13019,50 @@ function KLineChartContainer(uielement)
 
             this.Frame.SubFrame[i]=subFrame;
         }
+    }
+
+    this.CreateSubFrameItem=function(id)
+    {
+        var border=new ChartBorder();
+        border.UIElement=this.UIElement;
+
+        var frame=new KLineFrame();
+        frame.Canvas=this.Canvas;
+        frame.ChartBorder=border;
+        frame.Identify=id;                   //窗口序号
+
+        if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
+        if (this.ChangeIndexDialog) frame.ChangeIndexEvent=this.ChangeIndexDialog.DoModal;
+
+        frame.HorizontalMax=20;
+        frame.HorizontalMin=10;
+        frame.YSplitOperator=new FrameSplitY();
+        frame.YSplitOperator.FrameSplitData=this.FrameSplitData.get('double');
+        frame.YSplitOperator.Frame=frame;
+        frame.YSplitOperator.ChartBorder=border;
+        frame.XSplitOperator=new FrameSplitKLineX();
+        frame.XSplitOperator.Frame=frame;
+        frame.XSplitOperator.ChartBorder=border;
+        frame.XSplitOperator.ShowText=false;
+
+        //K线数据绑定
+        var xPointCouont=this.Frame.SubFrame[0].Frame.XPointCount;
+        frame.XPointCount=xPointCouont;
+        frame.Data=this.ChartPaint[0].Data;
+
+        for(var j=frame.HorizontalMin;j<=frame.HorizontalMax;j+=1)
+        {
+            frame.HorizontalInfo[j]= new CoordinateInfo();
+            frame.HorizontalInfo[j].Value=j;
+            frame.HorizontalInfo[j].Message[1]=j.toString();
+            frame.HorizontalInfo[j].Font="14px 微软雅黑";
+        }
+
+        var subFrame=new SubFrameItem();
+        subFrame.Frame=frame;
+        subFrame.Height=10;
+
+        return subFrame;
     }
 
     //创建主图K线画法
@@ -13617,7 +13668,66 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
-    //获取当天的显示的指标
+    //设置指标窗口个数
+    this.ChangeIndexWindowCount=function(count)
+    {
+        if (count<=0) return;
+        if (this.Frame.SubFrame.length==count) return;
+
+        var currentLength=this.Frame.SubFrame.length;
+        if (currentLength>count)
+        {
+            for(var i=currentLength-1;i>=count;--i)
+            {
+                this.DeleteIndexPaint(i);
+                this.Frame.SubFrame[i].Frame.ClearToolbar();
+            }
+
+            this.Frame.SubFrame.splice(count,currentLength-count);
+            this.WindowIndex.splice(count,currentLength-count);
+        }
+        else
+        {
+            //创建新的指标窗口
+            for(var i=currentLength;i<count;++i)
+            {
+                var subFrame=this.CreateSubFrameItem(i);
+                this.Frame.SubFrame[i]=subFrame;
+                var titlePaint=new DynamicChartTitlePainting();
+                titlePaint.Frame=this.Frame.SubFrame[i].Frame;
+                titlePaint.Canvas=this.Canvas;
+                this.TitlePaint[i+1]=titlePaint;
+            }
+
+            //创建指标
+            const indexName=["RSI","MACD","VOL","UOS","CHO","BRAR"];
+            let scriptData = new JSIndexScript();
+            for(var i=currentLength;i<count;++i)
+            {
+                var name=indexName[i%indexName.length];
+                let indexInfo = scriptData.Get(name);
+                this.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                var bindData=this.ChartPaint[0].Data;
+                this.BindIndexData(i,bindData);   //执行脚本
+            }
+
+            //最后一个显示X轴坐标
+            for(var i=0;i<this.Frame.SubFrame.length;++i)
+            {
+                var item=this.Frame.SubFrame[i].Frame;
+                if (i==this.Frame.SubFrame.length-1) item.XSplitOperator.ShowText=true;
+                else item.XSplitOperator.ShowText=false;
+            }
+
+            this.UpdataDataoffset();           //更新数据偏移
+            this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        }
+
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+    }
+
+    //获取当前的显示的指标
     this.GetIndexInfo=function()
     {
         var aryIndex=[];
@@ -19773,7 +19883,9 @@ function KLineRightMenu(divElement)
         }];
     }
 
-    this.GetIndex=function (chart) {
+    //指标
+    this.GetIndex=function (chart) 
+    {
         return [{
             text: "均线",
             click: function (windowIndex) {
@@ -19882,7 +19994,110 @@ function KLineRightMenu(divElement)
             }
         } ]
     }
-    this.GetOverlay=function (chart) {
+
+    //五彩K线
+    this.GetColorIndex=function (chart) 
+    {
+        return  [
+            {
+                text: "十字星",
+                click: function (windowIndex) {
+                chart.ChangeInstructionIndex('五彩K线-十字星')
+                }
+            }, 
+            {
+                text: "早晨之星",
+                click: function (windowIndex) {
+                    chart.ChangeInstructionIndex('五彩K线-早晨之星')
+                },
+            }, 
+            {
+                text: "垂死十字",
+                click: function (windowIndex) {
+                    chart.ChangeInstructionIndex('五彩K线-垂死十字')
+                },
+            }, 
+            {
+                text: "三只乌鸦",
+                click: function (windowIndex) {
+                    chart.ChangeInstructionIndex('五彩K线-三只乌鸦')
+                },
+            }, 
+            {
+                text: "光脚阴线",
+                click: function (windowIndex) {
+                    chart.ChangeInstructionIndex('五彩K线-光脚阴线')
+                },
+            }, 
+            {
+                text: "黄昏之星",
+                click: function (windowIndex) {
+                    chart.ChangeInstructionIndex('五彩K线-黄昏之星')
+                },
+                isBorder:true
+            },
+            {
+                text: "删除五彩K线",
+                click: function (windowIndex) {
+                    chart.CancelInstructionIndex()
+                }
+            }
+        ]
+    }
+
+    //专家系统
+    this.GetTradeIndex=function(chart)
+    {
+        return  [
+            {
+                text: "BIAS",
+                click: function (windowIndex) {
+                chart.ChangeInstructionIndex('交易系统-BIAS')
+                }
+            }, 
+            {
+                text: "CCI",
+                click: function (windowIndex) {
+                    chart.ChangeInstructionIndex('交易系统-CCI')
+                },
+            }, 
+            {
+                text: "DMI",
+                click: function (windowIndex) {
+                    chart.ChangeInstructionIndex('交易系统-DMI')
+                },
+            }, 
+            {
+                text: "KD",
+                click: function (windowIndex) {
+                    chart.ChangeInstructionIndex('交易系统-KD')
+                },
+            }, 
+            {
+                text: "BOLL",
+                click: function (windowIndex) {
+                    chart.ChangeInstructionIndex('交易系统-BOLL')
+                },
+            }, 
+            {
+                text: "KDJ",
+                click: function (windowIndex) {
+                    chart.ChangeInstructionIndex('交易系统-KDJ')
+                },
+                isBorder:true
+            },
+            {
+                text: "删除专家系统",
+                click: function (windowIndex) {
+                    chart.CancelInstructionIndex()
+                }
+            }
+        ]
+    }
+
+    //叠加
+    this.GetOverlay=function (chart)  
+    {
         return [{
             text: "上证指数",
             click: function () {
@@ -19907,13 +20122,75 @@ function KLineRightMenu(divElement)
             text: "沪深300",
             click: function () {
                 chart.OverlaySymbol('000300.sh');
-            }
+            },
+            isBorder:true
         }, {
             text: "取消叠加",
             click: function () {
                 chart.ClearOverlaySymbol();
             }
         }];
+    }
+
+    //K线类型设置
+    this.GetKLineType=function(chart)
+    {
+        return [{
+            text: "K线(空心阳线)",
+            click: function () {
+                chart.ChangeKLineDrawType(3);
+            }
+        },{
+            text: "K线(实心阳线)",
+            click: function () {
+                chart.ChangeKLineDrawType(0);
+            }
+        }, {
+            text: "美国线",
+            click: function () {
+                chart.ChangeKLineDrawType(2);
+            }
+        }, {
+            text: "收盘线",
+            click: function () {
+                chart.ChangeKLineDrawType(1);
+            }
+        }
+        ];
+    }
+
+    //指标窗口个数
+    this.GetIndexWindowCount=function(chart)
+    {
+        
+        return [{
+            text: "1个窗口",
+            click: function () {
+                chart.ChangeIndexWindowCount(1);
+            }
+        },{
+            text: "2个窗口",
+            click: function () {
+                chart.ChangeIndexWindowCount(2);
+            }
+        }, {
+            text: "3个窗口",
+            click: function () {
+                chart.ChangeIndexWindowCount(3);
+            }
+        }, {
+            text: "4个窗口",
+            click: function () {
+                chart.ChangeIndexWindowCount(4);
+            }
+        },
+        {
+            text: "5个窗口",
+            click: function () {
+                chart.ChangeIndexWindowCount(5);
+            }
+        }
+        ];
     }
 
     this.DoModal=function(event)
@@ -19924,18 +20201,38 @@ function KLineRightMenu(divElement)
         var y = event.offsetY;
 
         var dataList=[{
-            text: "切换周期",
+            text: "分析周期",
             children: this.GetPeriod(chart)
-        }, {
-            text: "行情复权",
+        }, 
+        {
+            text: "复权处理",
             children: this.GetRight(chart)
-        }, {
-            text: "指标",
+        }, 
+        {
+            text: "指标切换",
             children: this.GetIndex(chart)
-        }, {
+        }, 
+        {
+            text:"五彩K线",
+            children: this.GetColorIndex(chart)
+        },
+        {
+            text:'专家系统',
+            children: this.GetTradeIndex(chart)
+        },
+        {
             text: "叠加品种",
             children: this.GetOverlay(chart)
-        }];
+        },
+        {
+            text:'主图线型',
+            children: this.GetKLineType(chart)
+        },
+        {
+            text:'指标窗口个数',
+            children: this.GetIndexWindowCount(chart)
+        }
+        ];
 
         if(IsIndexSymbol(chart.Symbol)){
             dataList.splice(1,1);

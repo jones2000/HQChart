@@ -1,5 +1,6 @@
 /*
-    图形库 继承 IChartPainting的类都需要迁移到这个文件里面
+    开源项目 https://github.com/jones2000/HQChart
+    小程序图形库 继承 IChartPainting的类都需要迁移到这个文件里面
 */
 
 //行情数据结构体 及涉及到的行情算法(复权,周期等) 
