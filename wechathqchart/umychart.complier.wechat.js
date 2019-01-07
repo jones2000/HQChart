@@ -2153,6 +2153,15 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+    根据条件求不同的值,同IF判断相反.
+    用法: IFN(X,A,B)若X不为0则返回B,否则返回A
+    例如: IFN(CLOSE>OPEN,HIGH,LOW)表示该周期收阴则返回最高值,否则返回最低值
+    */
+    this.IFN=function(data,trueData,falseData)
+    {
+        return this.IF(data,falseData,trueData);
+    }
 
     //指标函数 函数名全部大写
     this.REF=function(data,n)
@@ -4672,6 +4681,8 @@ function JSAlgorithm(errorHandler, symbolData)
             case 'IF':
             case 'IFF':
                 return this.IF(args[0], args[1], args[2]);
+            case 'IFN':
+                return this.IFN(args[0], args[1], args[2]);
             case 'NOT':
                 return this.NOT(args[0]);
             case 'SUM':
@@ -6648,6 +6659,14 @@ function JSSymbolData(ast,option,jsExecute)
 
         return data[index];
     }
+
+    //用法:结果从0到11,依次分别是1/5/15/30/60分钟,日/周/月,多分钟,多日,季,年
+    this.PERIOD=function()
+    {
+        //Period周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+        const PERIOD_MAP=[5,6,7,11, 0,1,2,3,4,5];
+        return PERIOD_MAP[this.Period];
+    } 
 }
 
 //是否有是有效的数字
@@ -6852,7 +6871,7 @@ function JSExecute(ast,option)
         ['C',null],['V',null],['O',null],['H',null],['L',null],
 
         //日期类
-        ['DATE', null], ['YEAR', null], ['MONTH', null],
+        ['DATE', null], ['YEAR', null], ['MONTH', null], ['PERIOD', null],
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
@@ -6989,6 +7008,12 @@ function JSExecute(ast,option)
             
             case 'DATE':
                 return this.SymbolData.DATE();
+            case 'YEAR':
+                return this.SymbolData.YEAR();
+            case 'MONTH':
+                return this.SymbolData.MONTH();
+            case 'PERIOD':
+                return this.SymbolData.PERIOD();
         }
     }
 

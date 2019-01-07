@@ -3435,7 +3435,7 @@ function ChartKLine()
                     }
                     else 
                     {
-                        if (yOpen - y < 1) 
+                        if (Math.abs(yOpen - y) < 1) 
                         {
                             this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(y), ToFixedRect(dataWidth), 1);    //高度小于1,统一使用高度1
                         }
@@ -3521,7 +3521,7 @@ function ChartKLine()
                     }
                     else 
                     {
-                        if (yClose - y < 1) this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(y), ToFixedRect(dataWidth), 1);    //高度小于1,统一使用高度1
+                        if (Math.abs(yClose - y) < 1) this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(y), ToFixedRect(dataWidth), 1);    //高度小于1,统一使用高度1
                         else this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(y), ToFixedRect(dataWidth), ToFixedRect(yClose - y));
                     }
 
@@ -10155,61 +10155,72 @@ function KLineChartContainer(uielement) {
   }
 
 
-  //切换指标 指定切换窗口指标
-  this.ChangeIndex = function (windowIndex, indexName) {
-    var indexItem = JSIndexMap.Get(indexName);
-    if (!indexItem) {
-      //查找系统指标
-      let scriptData = new JSCommonIndexScript.JSIndexScript();
-      let indexInfo = scriptData.Get(indexName);
-      if (!indexInfo) return;
-      if (indexInfo.IsMainIndex) {
-        windowIndex = 0;  //主图指标只能在主图显示
-      }
-      else {
-        if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
-      }
-        let indexData = { Name: indexInfo.Name, Script: indexInfo.Script, Args: indexInfo.Args, ID: indexName };
-      return this.ChangeScriptIndex(windowIndex, indexData);
+    //切换指标 指定切换窗口指标
+    this.ChangeIndex = function (windowIndex, indexName) 
+    {
+        var indexItem = JSIndexMap.Get(indexName);
+        if (!indexItem) 
+        {
+        //查找系统指标
+            let scriptData = new JSCommonIndexScript.JSIndexScript();
+            let indexInfo = scriptData.Get(indexName);
+            if (!indexInfo) return;
+            if (indexInfo.IsMainIndex) 
+            {
+                windowIndex = 0;  //主图指标只能在主图显示
+            }
+            else 
+            {
+                if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
+            }
+            let indexData = 
+            { 
+                Name: indexInfo.Name, Script: indexInfo.Script, Args: indexInfo.Args, ID: indexName,
+                //扩展属性 可以是空
+                KLineType: indexInfo.KLineType, YSpecificMaxMin: indexInfo.YSpecificMaxMin, YSplitScale: indexInfo.YSplitScale,
+                FloatPrecision: indexInfo.FloatPrecision,
+            };
+            return this.ChangeScriptIndex(windowIndex, indexData);
+        }
+
+        //主图指标
+        if (indexItem.IsMainIndex) 
+        {
+            if (windowIndex > 0) windowIndex = 0;  //主图指标只能在主图显示
+        }
+        else 
+        {
+            if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
+        }
+
+        var paint = new Array();  //踢出当前窗口的指标画法
+        for (var i in this.ChartPaint) 
+        {
+            var item = this.ChartPaint[i];
+            if (i == 0 || item.ChartFrame != this.Frame.SubFrame[windowIndex].Frame) paint.push(item);
+        }
+
+        //清空指定最大最小值
+        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = null;
+        this.Frame.SubFrame[windowIndex].Frame.YSplitScale=null;
+
+        this.ChartPaint = paint;
+
+        //清空东条标题
+        var titleIndex = windowIndex + 1;
+        this.TitlePaint[titleIndex].Data = [];
+        this.TitlePaint[titleIndex].Title = null;
+
+        this.WindowIndex[windowIndex] = indexItem.Create();
+        this.CreateWindowIndex(windowIndex);
+
+        var bindData = this.ChartPaint[0].Data;
+        this.BindIndexData(windowIndex, bindData);
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
     }
-
-    //主图指标
-    if (indexItem.IsMainIndex) {
-      if (windowIndex > 0) windowIndex = 0;  //主图指标只能在主图显示
-    }
-    else {
-      if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
-    }
-
-    var paint = new Array();  //踢出当前窗口的指标画法
-    for (var i in this.ChartPaint) {
-      var item = this.ChartPaint[i];
-
-      if (i == 0 || item.ChartFrame != this.Frame.SubFrame[windowIndex].Frame)
-        paint.push(item);
-    }
-
-    //清空指定最大最小值
-    this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = null;
-    this.Frame.SubFrame[windowIndex].Frame.YSplitScale=null;
-
-    this.ChartPaint = paint;
-
-    //清空东条标题
-    var titleIndex = windowIndex + 1;
-    this.TitlePaint[titleIndex].Data = [];
-    this.TitlePaint[titleIndex].Title = null;
-
-    this.WindowIndex[windowIndex] = indexItem.Create();
-    this.CreateWindowIndex(windowIndex);
-
-    var bindData = this.ChartPaint[0].Data;
-    this.BindIndexData(windowIndex, bindData);
-
-    this.UpdataDataoffset();           //更新数据偏移
-    this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-    this.Draw();
-  }
 
     this.ChangeKLineDrawType = function (drawType) 
     {

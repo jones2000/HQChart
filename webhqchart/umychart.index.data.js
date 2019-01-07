@@ -253,7 +253,7 @@ JSIndexScript.prototype.VOL=function()
 {
     let data=
     {
-        Name:'VOL', Description:'成交量', IsMainIndex:false,
+        Name:'VOL', Description:'成交量', IsMainIndex:false,FloatPrecision:0,
         Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10} ],
         Script: //脚本
 'VOLUME:VOL,VOLSTICK;\n\

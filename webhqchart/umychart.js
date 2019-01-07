@@ -2344,6 +2344,7 @@ function AverageWidthFrame()
     this.DistanceWidth=10*GetDevicePixelRatio();
     this.MinXDistance = 30*GetDevicePixelRatio();       //X轴刻度最小间距
     this.MinYDistance=10*GetDevicePixelRatio();         //Y轴刻度最小间距
+    this.CoordinateType=0;  //坐标类型 0=普通坐标 1=反转坐标
 
     this.DrawFrame=function()
     {
@@ -2360,11 +2361,22 @@ function AverageWidthFrame()
 
     this.GetYFromData=function(value)
     {
-        if(value<=this.HorizontalMin) return this.ChartBorder.GetBottomEx();
-        if(value>=this.HorizontalMax) return this.ChartBorder.GetTopEx();
+        if (this.CoordinateType==1)
+        {
+            if(value<=this.HorizontalMin) return this.ChartBorder.GetTopEx();
+            if(value>=this.HorizontalMax) return this.ChartBorder.GetBottomEx();
 
-        var height=this.ChartBorder.GetHeightEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
-        return this.ChartBorder.GetBottomEx()-height;
+            var height=this.ChartBorder.GetHeightEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
+            return this.ChartBorder.GetTopEx()+height;
+        }
+        else
+        {
+            if(value<=this.HorizontalMin) return this.ChartBorder.GetBottomEx();
+            if(value>=this.HorizontalMax) return this.ChartBorder.GetTopEx();
+
+            var height=this.ChartBorder.GetHeightEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
+            return this.ChartBorder.GetBottomEx()-height;
+        }
     }
 
     //画Y轴
@@ -2537,10 +2549,20 @@ function AverageWidthFrame()
     //Y坐标转y轴数值
     this.GetYData=function(y)
     {
-        if (y<this.ChartBorder.GetTopEx()) return this.HorizontalMax;
-		if (y>this.ChartBorder.GetBottomEx()) return this.HorizontalMin;
+        if (this.CoordinateType==1) //反转坐标
+        {
+            if (y<this.ChartBorder.GetTopEx()) return this.HorizontalMin;
+            if (y>this.ChartBorder.GetBottomEx()) return this.HorizontalMax;
 
-		return (this.ChartBorder.GetBottomEx()-y)/this.ChartBorder.GetHeightEx()*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+            return (y-this.ChartBorder.GetTopEx())/this.ChartBorder.GetHeightEx()*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+        }
+        else
+        {
+            if (y<this.ChartBorder.GetTopEx()) return this.HorizontalMax;
+            if (y>this.ChartBorder.GetBottomEx()) return this.HorizontalMin;
+
+            return (this.ChartBorder.GetBottomEx()-y)/this.ChartBorder.GetHeightEx()*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+        }
     }
 
     //X坐标转x轴数值
@@ -5002,7 +5024,7 @@ function ChartKLine()
                     }
                     else
                     {
-                        if (yOpen-y<1)  
+                        if (Math.abs(yOpen-y)<1)  
                         {
                             this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
                         }
@@ -5016,7 +5038,7 @@ function ChartKLine()
                             }
                             else
                             {
-                                this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));
+                                this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,yOpen)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(yOpen-y)));
                             }
                         }
                     }
@@ -5088,8 +5110,8 @@ function ChartKLine()
                     }
                     else
                     {
-                        if (yClose-y<1) this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
-                        else this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),ToFixedRect(yClose-y));
+                        if (Math.abs(yClose-y)<1) this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
+                        else this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,yClose)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(yClose-y)));
                     }
 
                     if (data.Open>data.Low) //下影线
@@ -5348,10 +5370,13 @@ function ChartKLine()
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
         this.Canvas.font=this.TextFont;
         this.Canvas.fillStyle=this.TextColor;
-        this.Canvas.textAlign=ptMax.Align;
+
+        var ptTop=ptMax;
+        if (ptMax.Y>ptMin.Y) ptTop=ptMin;
+        this.Canvas.textAlign=ptTop.Align;
         this.Canvas.textBaseline='bottom';
-        var left=ptMax.Align=='left'?ptMax.X:ptMax.X;
-        this.Canvas.fillText(ptMax.Value.toFixed(defaultfloatPrecision),left,ptMax.Y);
+        var left=ptTop.Align=='left'?ptTop.X:ptTop.X;
+        this.Canvas.fillText(ptTop.Value.toFixed(defaultfloatPrecision),left,ptTop.Y);
 
         /*
         this.Canvas.beginPath();
@@ -5362,10 +5387,12 @@ function ChartKLine()
         this.Canvas.closePath();
         */
 
-        this.Canvas.textAlign=ptMin.Align;
+        var ptBottom=ptMin;
+        if (ptMin.Y<ptMax.Y) ptBottom=ptMax;
+        this.Canvas.textAlign=ptBottom.Align;
         this.Canvas.textBaseline='top';
-        var left=ptMin.Align=='left'?ptMin.X:ptMin.X;
-        this.Canvas.fillText(ptMin.Value.toFixed(defaultfloatPrecision),left,ptMin.Y);
+        var left=ptBottom.Align=='left'?ptBottom.X:ptBottom.X;
+        this.Canvas.fillText(ptMin.Value.toFixed(defaultfloatPrecision),left,ptBottom.Y);
 
         /*
         this.Canvas.beginPath();
@@ -13592,7 +13619,14 @@ function KLineChartContainer(uielement)
             {
                 if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
             }
-            let indexData = { Name: indexInfo.Name, Script: indexInfo.Script, Args: indexInfo.Args, ID:indexName };
+            let indexData = 
+            { 
+                Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
+                //扩展属性 可以是空
+                KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
+                FloatPrecision:indexInfo.FloatPrecision
+            };
+            
             return this.ChangeScriptIndex(windowIndex, indexData);
         }
 
@@ -13665,6 +13699,35 @@ function KLineChartContainer(uielement)
 
         if (this.OverlayChartPaint[0]) this.OverlayChartPaint[0].DrawType=this.KLineDrawType;   //叠加K线修改
 
+        this.Draw();
+    }
+
+    //修改坐标类型
+    this.ChangeCoordinateType=function(type)
+    {
+        if (!this.Frame && !this.Frame.SubFrame) return;
+        if (!this.Frame.SubFrame.length) return;
+
+        if (type==2) //反转坐标
+        {
+            this.Frame.SubFrame[0].Frame.CoordinateType=1;
+        }
+        else if(type==1)
+        {
+            this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=type;
+        }
+        else if (type==0)
+        {
+            this.Frame.SubFrame[0].Frame.CoordinateType=0;
+            this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=0;
+        }
+        else
+        {
+            return;
+        }
+
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
         this.Draw();
     }
 
@@ -20193,6 +20256,27 @@ function KLineRightMenu(divElement)
         ];
     }
 
+    //坐标类型
+    this.GetCoordinateType=function(chart)
+    {
+        return [{
+            text: "普通坐标",
+            click: function () {
+                chart.ChangeCoordinateType(0);
+            }
+        },{
+            text: "百分比坐标",
+            click: function () {
+                chart.ChangeCoordinateType(1);
+            }
+        },{
+            text: "反转坐标",
+            click: function () {
+                chart.ChangeCoordinateType(2);
+            }
+        }];
+    }
+
     this.DoModal=function(event)
     {
         var chart=event.data.Chart;
@@ -20227,6 +20311,10 @@ function KLineRightMenu(divElement)
         {
             text:'主图线型',
             children: this.GetKLineType(chart)
+        },
+        {
+            text:"坐标类型",
+            children:this.GetCoordinateType(chart)
         },
         {
             text:'指标窗口个数',
