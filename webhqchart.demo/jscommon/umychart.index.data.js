@@ -12,12 +12,7 @@
 
 function JSIndexScript()
 {
-
-}
-
-JSIndexScript.prototype.Get=function(id)
-{
-    var DataMap=new Map(
+    this.DataMap=new Map(
         [
             ['MA', this.MA],['均线', this.MA],['BOLL', this.BOLL],['BBI', this.BBI],
             ['DKX', this.DKX],['MIKE', this.MIKE],['PBX', this.PBX],
@@ -53,7 +48,7 @@ JSIndexScript.prototype.Get=function(id)
 
             ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2],['Zealink-持仓信号', this.Zealink_Index3],
             ['Zealink-增减持',this.Zealink_Index4],['Zealink-大宗交易', this.Zealink_Index5], ['Zealink-信托持股', this.Zealink_Index6],
-            ['Zealink-官网新闻', this.Zealink_Index7], ['Zealink-高管要闻', this.Zealink_Index8],
+            ['Zealink-官网新闻', this.Zealink_Index7], ['Zealink-高管要闻', this.Zealink_Index8],['Zealink-股权质押', this.Zealink_Index9],
             
             //外包指标
             ['放心股-操盘BS点',this.FXG_BSPoint],
@@ -81,15 +76,29 @@ JSIndexScript.prototype.Get=function(id)
             ['交易系统-VR',this.TRADE_VR],['交易系统-DPSJ',this.TRADE_DPSJ],
 
             ['TEST', this.TEST] //测试用
-        ]
-    );
+        ]);
+}
 
+JSIndexScript.prototype.Get=function(id)
+{
     //console.log('[JSIndexScript] load index data. count=',DataMap.size);
-
-    var func=DataMap.get(id);
+    var func=this.DataMap.get(id);
     if (func) return func();
 
     return null;
+}
+
+JSIndexScript.prototype.Search=function(name)
+{
+    var result=[];
+    var reg = new RegExp(name,'i');
+    this.DataMap.forEach(function(value,key)
+    {
+        if (key.indexOf('交易系统-')!=0 && key.indexOf('五彩K线-')!=0  && key.search(reg)>=0) 
+            result.push(key);
+    });
+
+    return result;
 }
 
 JSIndexScript.prototype.MA=function()
@@ -3011,6 +3020,19 @@ JSIndexScript.prototype.Zealink_Index8 = function ()
         Args: [],
         Script: //脚本
             '个数:NEWS(9);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.Zealink_Index9 = function () 
+{
+    let data =
+    {
+        Name: '股权质押', Description: '股权质押', IsMainIndex: false, FloatPrecision: 0,
+        Args: [],
+        Script: //脚本
+            '次数:NEWS(10);'
     };
 
     return data;

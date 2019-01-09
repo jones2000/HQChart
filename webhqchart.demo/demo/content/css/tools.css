@@ -745,7 +745,7 @@ td.context-menu {
 }
 .target-right ul{
     width: 590px;
-    max-height: 100%;
+    max-height: 450px;
     overflow: auto;
     padding-top: 10px;
     padding-left: 20px;

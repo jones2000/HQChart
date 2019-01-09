@@ -55,7 +55,7 @@ JSIndexScript.prototype.Get=function(id)
 
             ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2],['Zealink-持仓信号', this.Zealink_Index3],
             ['Zealink-增减持', this.Zealink_Index4], ['Zealink-大宗交易', this.Zealink_Index5], ['Zealink-信托持股', this.Zealink_Index6],
-            ['Zealink-官网新闻', this.Zealink_Index7], ['Zealink-高管要闻', this.Zealink_Index8],
+            ['Zealink-官网新闻', this.Zealink_Index7], ['Zealink-高管要闻', this.Zealink_Index8], ['Zealink-股权质押', this.Zealink_Index9],
 
             ['飞龙四式', this.Dragon4_Main], ['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis], ['融资占比', this.MarginProportion], 
@@ -2721,8 +2721,7 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                'VARUP:INDEXADV,LINESTICK;\n\
-                VARDOWN:INDEXDEC;'
+                'VAR2:PERIOD;'
         };
 
     return data;
@@ -2977,6 +2976,19 @@ JSIndexScript.prototype.Zealink_Index8 = function () {
         Args: [],
         Script: //脚本
             '个数:NEWS(9);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.Zealink_Index9 = function () 
+{
+    let data =
+    {
+        Name: '股权质押', Description: '股权质押', IsMainIndex: false, FloatPrecision: 0,
+        Args: [],
+        Script: //脚本
+            '次数:NEWS(10);'
     };
 
     return data;

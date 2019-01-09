@@ -87,6 +87,7 @@ function JSChart(divElement)
         //右键菜单
         if (option.IsShowRightMenu==true) chart.RightMenu=new KLineRightMenu(this.DivElement);
         if (option.ScriptError) chart.ScriptErrorCallback=option.ScriptError;
+        chart.SelectRectRightMenu=new KLineSelectRightMenu(this.DivElement);
 
         if (option.KLine)   //k线图的属性设置
         {
@@ -914,6 +915,8 @@ function JSChartContainer(uielement)
     //this.SelectRect.style.opacity=g_JSChartResource.SelectRectAlpha;
     this.SelectRect.id=Guid();
     uielement.parentNode.appendChild(this.SelectRect);
+    //区间选择右键菜单
+    this.SelectRectRightMenu;   
 
     //坐标轴风格方法 double-更加数值型分割  price-更加股票价格分割
     this.FrameSplitData=new Map();
@@ -956,7 +959,7 @@ function JSChartContainer(uielement)
         }
 
         this.JSChartContainer.HideSelectRect();
-        //rectContextMenu.hide();
+        if (this.JSChartContainer.SelectRectRightMenu) this.JSChartContainer.SelectRectRightMenu.Hide();
 
         var drag=
         {
@@ -1060,7 +1063,11 @@ function JSChartContainer(uielement)
 
                 if (moveSetp<5 && yMoveSetp<5) return;
 
-                this.JSChartContainer.ShowSelectRect(drag.Click.X,drag.Click.Y,e.clientX,e.clientY);
+                var x=drag.Click.X-uielement.getBoundingClientRect().left;
+                var y=drag.Click.Y-uielement.getBoundingClientRect().top;
+                var x2=e.clientX-uielement.getBoundingClientRect().left;
+                var y2=e.clientY-uielement.getBoundingClientRect().top;
+                this.JSChartContainer.ShowSelectRect(x,y,x2,y2);
 
                 drag.LastMove.X=e.clientX;
                 drag.LastMove.Y=e.clientY;
@@ -1092,12 +1099,22 @@ function JSChartContainer(uielement)
 
                 var selectData=new SelectRectData();
                 //区间起始位置 结束位子
-                selectData.XStart=drag.Click.X;
-                selectData.XEnd=drag.LastMove.X;
+                selectData.XStart=drag.Click.X-uielement.getBoundingClientRect().left;
+                selectData.XEnd=drag.LastMove.X-uielement.getBoundingClientRect().left;
                 selectData.JSChartContainer=this.JSChartContainer;
 
                 if (this.JSChartContainer.GetSelectRectData(selectData))
                 {
+                    if (!this.JSChartContainer.SelectRectRightMenu) return;
+                    e.data=
+                    {
+                        Chart:this.JSChartContainer,
+                        X:drag.LastMove.X-uielement.getBoundingClientRect().left,
+                        Y:drag.LastMove.Y-uielement.getBoundingClientRect().top,
+                        SelectData:selectData,          //区间选择的数据
+                    };
+                    this.JSChartContainer.SelectRectRightMenu.DoModal(e);
+                    /*
                     rectContextMenu.show({
                         x:drag.LastMove.X,
                         y:drag.LastMove.Y,
@@ -1124,6 +1141,7 @@ function JSChartContainer(uielement)
 
                         returnData:selectData
                     });
+                    */
 
                     //形态选股
                     //选出相似度>.90的股票
@@ -1694,8 +1712,8 @@ function JSChartContainer(uielement)
         var top = y;
 
         var scrollPos=GetScrollPosition();
-        var borderRight=this.Frame.ChartBorder.GetRight()+this.UIElement.getBoundingClientRect().left+scrollPos.Left;
-        var borderLeft=this.Frame.ChartBorder.GetLeft()+this.UIElement.getBoundingClientRect().left+scrollPos.Left;
+        var borderRight=this.Frame.ChartBorder.GetRight()+scrollPos.Left;
+        var borderLeft=this.Frame.ChartBorder.GetLeft()+scrollPos.Left;
 
         if (x>borderRight) x=borderRight;
         if (x2>borderRight) x2=borderRight;
@@ -3467,12 +3485,33 @@ function HQTradeFrame()
             if (item.Frame.Canvas.isPointInPath(left,y))
             {
                 frame=item.Frame;
-                if (outObject) outObject.FrameID=i;
+                if (outObject) outObject.FrameID=parseInt(i);   //转成整形
                 break;
             }
         }
 
         if (frame!=null) return frame.GetYData(y);
+    }
+
+    this.PtInFrame=function(x,y)    //鼠标哪个指标窗口
+    {
+        for(var i in this.SubFrame)
+        {
+            var item=this.SubFrame[i];
+            var left=item.Frame.ChartBorder.GetLeft();
+            var top=item.Frame.ChartBorder.GetTop();
+            var width=item.Frame.ChartBorder.GetWidth();
+            var height=item.Frame.ChartBorder.GetHeight();
+
+            item.Frame.Canvas.beginPath();
+            item.Frame.Canvas.rect(left,top,width,height);
+            if (item.Frame.Canvas.isPointInPath(x,y))
+            {
+                return parseInt(i);   //转成整形
+            }
+        }
+
+        return -1;
     }
 
     this.GetXFromIndex=function(index)
@@ -12896,8 +12935,8 @@ function KLineChartContainer(uielement)
     this.KLineMatchUrl=g_JSChartResource.Domain+"/API/KLineMatch";                  //形态匹配
     this.StockHistoryDayApiUrl= g_JSChartResource.Domain+'/API/StockHistoryDay';    //股票历史数据
 
-    this.MinuteDialog;  //双击历史K线 弹出分钟走势图
-    this.RightMenu;     //右键菜单
+    this.MinuteDialog;      //双击历史K线 弹出分钟走势图
+    this.RightMenu;         //右键菜单
 
     this.OnWheel=function(e)
     {
@@ -14296,7 +14335,8 @@ function KLineChartContainer(uielement)
     {
         if (this.RightMenu)
         {
-            e.data={Chart:this};
+            var frameId=this.Frame.PtInFrame(x,y);
+            e.data={ Chart:this, FrameID:frameId };
             this.RightMenu.DoModal(e);
         }
     }
@@ -19033,7 +19073,7 @@ function IDivDialog(divElement)
 {
     this.DivElement=divElement;     //父节点
     this.ID=null;                   //div id
-    this.TimeOut=null;                   //定时器
+    this.TimeOut=null;              //定时器
 
     //隐藏窗口
     this.Hide=function()
@@ -19248,9 +19288,6 @@ function ModifyIndexDialog(divElement)
     }
 }
 
-
-
-
 //换指标
 function ChangeIndexDialog(divElement)
 {
@@ -19265,7 +19302,7 @@ function ChangeIndexDialog(divElement)
     {
         var div=document.createElement('div');
         div.className='jchart-changeindex-box';
-        div.id=this.ID;
+        div.id=this.ID=Guid();
         div.innerHTML=
         '<div class="target-panel">\n' +
             '            <div class="target-header">\n' +
@@ -19343,12 +19380,36 @@ function ChangeIndexDialog(divElement)
         //关闭按钮
         $("#"+this.ID+" .close-tar").click(
             {
-                Chart:chart
+                Chart:chart,
             },
             function(event)
             {
                 var chart=event.data.Chart;
                 chart.ChangeIndexDialog.Hide();
+            }
+        );
+    }
+
+    //搜索事件
+    this.BindSearch=function(chart)
+    {
+        $(".target-left input").on('input',
+            {
+                Chart:chart
+            },
+            function(event)
+            {
+                let scriptData = new JSIndexScript();
+                let result=scriptData.Search(event.target.value);
+
+                $(".target-right ul").html("");
+                for(var i in result)
+                {
+                    var name=result[i];
+                    contentHtml = '<li id='+name+'>'+ name +'</li>';
+                    $(".target-right ul").append(contentHtml);
+                }
+                
             }
         );
     }
@@ -19374,6 +19435,7 @@ function ChangeIndexDialog(divElement)
             });
         }
 
+        dialog.BindSearch(chart);
         //关闭弹窗
         dialog.BindClose(chart);
 
@@ -19388,7 +19450,6 @@ function ChangeIndexDialog(divElement)
 
     }
 }
-
 
 //信息地理tooltip
 function KLineInfoTooltip(divElement)
@@ -19587,7 +19648,6 @@ function KLineInfoTooltip(divElement)
     }
 }
 
-
 //历史K线上双击 弹出分钟走势图框
 function MinuteDialog(divElement)
 {
@@ -19701,10 +19761,138 @@ function MinuteDialog(divElement)
     }
 }
 
+//区间统计
+function KLineSelectRectDialog(divElement)
+{
+    this.newMethod=IDivDialog;   //派生
+    this.newMethod(divElement);
+    delete this.newMethod;
 
+    this.SelectData;
+    this.Dialog;
+    this.HQChart;
+
+    //隐藏窗口
+    this.Close=function()
+    {
+        this.DivElement.removeChild(this.Dialog);
+        this.HQChart.HideSelectRect();
+    }
+
+    //创建
+    this.Create=function()
+    {
+        this.ID=Guid();
+        var div=document.createElement('div');
+        div.className='jchart-select-statistics-box';
+        div.id=this.ID;
+        div.innerHTML=
+        "<div class='parameter'>\
+            <div class='parameter-header'>\
+                <span>区间统计</span>\
+                <strong id='close' class='icon iconfont icon-guanbi'></strong>\
+            </div>\
+            <div class='parameter-content'>XXXXXX</div>\
+        <div class='parameter-footer'>\
+            <button class='submit' >确定</button>\
+        </div>\
+        </div>";
+
+        this.DivElement.appendChild(div);
+        this.Dialog=div;
+        //确定按钮
+        $("#"+this.ID+" .submit").click(
+            {
+                divBox:this,
+            },
+            function(event)
+            {
+                event.data.divBox.Close();
+            });
+        
+        //关闭按钮
+        $("#"+this.ID+" #close").click(
+            {
+                divBox:this,
+            },
+            function(event)
+            {
+                event.data.divBox.Close();
+            });
+    }
+
+    this.BindData=function()
+    {
+        var hqData=this.SelectData.Data;
+        var start=this.SelectData.Start;
+        var end=this.SelectData.End;
+
+        var showData=
+        { 
+            Open:0,Close:0,High:0,Low:0, YClose:0,
+            Vol:0, Amount:0, Date:{Start:0,End:0}, Count:0,
+            KLine:{ Up:0,Down:0,Unchanged:0 }    //阳线|阴线|平线
+        }
+
+        for(var i=start; i<=end && i<hqData.Data.length; ++i)
+        {
+            var item=hqData.Data[i];
+            if (i==start) 
+            {
+                showData.Date.Start=item.Date;
+                showData.Open=item.Open;
+                showData.High=item.High;
+                showData.Low=item.Low;
+                showData.YClose=item.YClose;
+            }
+
+            showData.Date.End=item.Date;
+            showData.Close=item.Close;
+            showData.Vol+=item.Vol;
+            showData.Amount+=item.Amount;
+            ++showData.Count;
+            if (showData.High<item.High) showData.High=item.High;
+            if(showData.Low>item.Low) showData.Low=item.Low;
+            if (item.Close>item.Open) ++showData.KLine.Up;
+            else if (item.Close<item.Open) ++showData.KLine.Down;
+            else ++showData.KLine.Unchanged;
+        }
+
+        if (showData.Vol>0) showData.AvPrice=showData.Amount/showData.Vol;  //均价
+        if (item.YClose>0) 
+        {
+            showData.Increase = (showData.Close - showData.YClose) / showData.YClose *100;   //涨幅
+            showData.Amplitude = (showData.High - showData.Low) / showData.YClose * 100;     //振幅
+        }
+
+        console.log('[KLineSelectRectDialog::BindData]', showData);
+    }
+
+    //显示
+    this.DoModal=function(event)
+    {
+        var chart=event.data.Chart;
+        if (this.ID==null) this.Create();   //第1次 需要创建div
+        this.SelectData=event.data.SelectData;
+        this.HQChart=chart;
+
+        this.BindData();
+
+        //居中显示
+        var border=chart.Frame.ChartBorder;
+        var scrollPos=GetScrollPosition();
+        var left=border.GetLeft()+border.GetWidth()/2;
+        var top=border.GetTop()+border.GetHeight()/2;
+        left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
+        top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
+
+        this.Show(left,top,200,200);      //显示
+
+    }
+}
 
 //K线右键菜单类
-// id:"kLinde"
+//id:"kline"
 function KLineRightMenu(divElement)
 {
     this.newMethod=IDivDialog;   //派生
@@ -19785,12 +19973,17 @@ function KLineRightMenu(divElement)
         }
     }
 
+    this.Update=function()
+    {
+
+    }
+
     this.Show=function (obj) {
         var _self = this;
         $.extend(_self.option, obj);
 
-        //判断是否重复创建
-        if (!_self.ID) _self.Create();
+        if (!_self.ID) _self.Create();  //判断是否重复创建
+        else _self.Update();            //更新菜单状态
 
         var $topMenu = $("#topMenu_"+_self.ID),
             topWidth = $topMenu.outerWidth(),
@@ -19878,72 +20071,74 @@ function KLineRightMenu(divElement)
         });
     }
 
-    this.GetPeriod=function (chart) {
-        return [{
-            text: "日线",
-            click: function () {
-                chart.ChangePeriod(0);
+    this.GetPeriod=function (chart) 
+    {
+        var data=
+        [
+            {
+                text: "日线",
+                click: function () { chart.ChangePeriod(0); }
+            }, 
+            {
+                text: "周线",
+                click: function () { chart.ChangePeriod(1); }
+            }, 
+            {
+                text: "月线",
+                click: function () { chart.ChangePeriod(2); }
+            }, 
+            {
+                text: "年线",
+                click: function () { chart.ChangePeriod(3); }
+            },
+            {
+                text: "1分",
+                click: function () { chart.ChangePeriod(4); }
+            },
+            {
+                text: "5分",
+                click: function () { chart.ChangePeriod(5); }
+            },
+            {
+                text: "15分",
+                click: function () { chart.ChangePeriod(6); }
+            },
+            {
+                text: "30分",
+                click: function () { chart.ChangePeriod(7); }
+            },
+            {
+                text: "60分",
+                click: function () { chart.ChangePeriod(8); }
             }
-        }, {
-            text: "周线",
-            click: function () {
-                chart.ChangePeriod(1);
-            }
-        }, {
-            text: "月线",
-            click: function () {
-                chart.ChangePeriod(2);
-            }
-        }, {
-            text: "年线",
-            click: function () {
-                chart.ChangePeriod(3);
-            }
-        },{
-            text: "1分",
-            click: function () {
-                chart.ChangePeriod(4);
-            }
-        },{
-            text: "5分",
-            click: function () {
-                chart.ChangePeriod(5);
-            }
-        },{
-            text: "15分",
-            click: function () {
-                chart.ChangePeriod(6);
-            }
-        },{
-            text: "30分",
-            click: function () {
-                chart.ChangePeriod(7);
-            }
-        },{
-            text: "60分",
-            click: function () {
-                chart.ChangePeriod(8);
-            }
-        }]
+        ];
+
+        if (chart.Period>=0 && chart.Period<data.length) data[chart.Period].selected=true;  //选中
+
+        return data; 
     }
 
-    this.GetRight=function(chart){
-        return [{
-            text: "不复权",
-            click: function () {
-                chart.ChangeRight(0);
+    this.GetRight=function(chart)
+    {
+        var data=
+        [
+            {
+                text: "不复权",
+                click: function () { chart.ChangeRight(0); }
+            }, 
+            {
+                text: "前复权",
+                click: function () { chart.ChangeRight(1); }
+            }, 
+            {
+                text: "后复权",
+                click: function () { chart.ChangeRight(2); }
             }
-        }, {
-            text: "前复权",
-            click: function () {
-                chart.ChangeRight(1);
-            }
-        }, {
-            text: "后复权",
-            click: function () {
-                chart.ChangeRight(2);
-            }
-        }];
+        ];
+
+        if (chart.Right>=0 && chart.Right<data.length) data[chart.Right].selected=true;
+
+        return data;
     }
 
     //指标
@@ -20277,6 +20472,26 @@ function KLineRightMenu(divElement)
         }];
     }
 
+    this.GetDragModeType=function(chart)
+    {
+        return [{
+            text: "禁止拖拽",
+            click: function () {
+                chart.DragMode=0;
+            }
+        },{
+            text: "启动拖拽",
+            click: function () {
+                chart.DragMode=1;
+            }
+        },{
+            text: "区间选择",
+            click: function () {
+                chart.DragMode=2;
+            }
+        }];
+    }
+
     this.DoModal=function(event)
     {
         var chart=event.data.Chart;
@@ -20319,6 +20534,10 @@ function KLineRightMenu(divElement)
         {
             text:'指标窗口个数',
             children: this.GetIndexWindowCount(chart)
+        },
+        {
+            text:'鼠标拖拽',
+            children: this.GetDragModeType(chart)
         }
         ];
 
@@ -20326,7 +20545,8 @@ function KLineRightMenu(divElement)
             dataList.splice(1,1);
         }
 
-        var identify=event.data.Identify;
+        var identify=event.data.FrameID;
+        console.log('[KLineRightMenu::DoModal]',identify);
         rightMenu.Show({
             windowIndex :identify,
             x:x+chart.UIElement.offsetLeft,
@@ -20338,6 +20558,71 @@ function KLineRightMenu(divElement)
         $(document).click(function () {
             rightMenu.Hide();
         });
+    }
+}
+
+//K线区间选择右键菜单
+function KLineSelectRightMenu(divElement)
+{
+    this.newMethod=KLineRightMenu;   //派生
+    this.newMethod(divElement);
+    delete this.newMethod;
+
+    this.DoModal=function(event)
+    {
+        var chart=event.data.Chart;
+        var rightMenu=this;
+        var x = event.data.X;
+        var y = event.data.Y;
+
+        var dataList=
+        [
+            {
+                text: "区间统计",
+                click: function () 
+                {
+                    console.log('[KLineSelectRightMenu::click] 区间统计');
+                    var dialog=new KLineSelectRectDialog(divElement);
+                    dialog.DoModal(event);
+                }
+            } 
+        ];
+
+        rightMenu.Show({
+            x:x,
+            y:y,
+            position:chart.Frame.Position,
+            data:dataList
+        });
+    }
+
+    this.Show=function (obj) 
+    {
+        var _self = this;
+        $.extend(_self.option, obj);
+
+        //判断是否重复创建
+        if (!_self.ID) _self.Create();
+
+        var $topMenu = $("#topMenu_"+_self.ID),
+            topWidth = $topMenu.outerWidth(),
+            topHeight = $topMenu.outerHeight();
+
+        var x = _self.option.x,
+            y = _self.option.y;
+
+        if (topWidth > _self.option.position.X + _self.option.position.W- x) //超过了右边距
+            x = x - topWidth;
+
+        if (topHeight > _self.option.position.Y +_self.option.position.H - y)//超过了下边距
+            y = y - topHeight;
+
+        $topMenu.hide();
+        $topMenu.css({ position:"absolute",left: x + "px", top: y + "px" }).show();
+
+        $("#topMenu_" + _self.ID).find("tr").show();    //把菜单列表显示
+
+        this.isInit = true;
     }
 }
 
