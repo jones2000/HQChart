@@ -10117,8 +10117,19 @@ function KLineChartContainer(uielement) {
 
     this.ChangeInstructionScriptIndex = function (indexData) 
     {
-        this.InstructionIndex = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
-
+        if (indexData.InstructionType == 1)       //交易系统
+        {
+            this.TradeIndex = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
+        }
+        else if (indexData.InstructionType == 2)  //五彩K线
+        {
+            this.ColorIndex = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
+        }
+        else 
+        {
+            return;
+        }
+        
         var bindData = this.ChartPaint[0].Data;
         this.BindInstructionIndexData(bindData);
 

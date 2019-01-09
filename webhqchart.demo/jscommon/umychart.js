@@ -13593,11 +13593,11 @@ function KLineChartContainer(uielement)
     {
         if (indexData.InstructionType==1)       //交易系统
         {
-            this.ColorIndex=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+            this.TradeIndex=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
         }
         else if (indexData.InstructionType==2)  //五彩K线
         {
-            this.TradeIndex=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+            this.ColorIndex=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
         }
         else
         {
@@ -19923,7 +19923,7 @@ function KLineRightMenu(divElement)
         $topTable.attr({ id: "topTable_" + _self.ID, cellspacing: "0", cellpadding: "0" }).addClass("context-menu");
         $topMenu.append($topTable);
 
-        $topTable.append(childrenList(_self.option.data));
+        $topTable.append(_self.childrenList(_self.option.data));
 
         for (var i = 0; i < _self.option.data.length; i++) {
             var isHasChildren = typeof _self.option.data[i].children != "undefined";
@@ -19938,44 +19938,65 @@ function KLineRightMenu(divElement)
                 $childTable.attr({ id: "childTable_" + _self.ID + i, cellspacing: "0", cellpadding: "0" }).addClass("context-menu");
                 $childMenu.append($childTable);
 
-                $childTable.append(childrenList(_self.option.data[i].children));
+                $childTable.append(_self.childrenList(_self.option.data[i].children));
             }
-        }
-
-        function childrenList(list) {
-            var result = [];
-
-            for (var i = 0; i < list.length; i++) {
-                var isBorder = typeof list[i].isBorder != "undefined" && list[i].isBorder;
-
-                var $tr = $("<tr />");
-                $tr.addClass("font_Arial context-menu");
-                if (isBorder)
-                    $tr.addClass("border");
-
-                var $td1 = $("<td />");
-                $td1.addClass("spacer context-menu");
-
-                var $td2 = $("<td />");
-                $td2.addClass("text").html(list[i].text)
-
-                var $td3 = $("<td />");
-                $td3.addClass("right shortcut");
-
-                var $td4 = $("<td />");
-                $td4.addClass(typeof list[i].children != "undefined" ? "submenu-arrow" : "context-menu spacer");
-
-                $tr.append($td1).append($td2).append($td3).append($td4);
-
-                result.push($tr);
-            }
-            return result;
         }
     }
 
     this.Update=function()
     {
+        var _self = this;
+        var id=this.DivElement.id;
+        var $body=$("#"+id);
 
+        var $topTable = $("#topTable_" + _self.ID);
+        $topTable.empty();
+        $topTable.append(_self.childrenList(_self.option.data));
+
+        for (var i = 0; i < _self.option.data.length; i++) {
+            var isHasChildren = typeof _self.option.data[i].children != "undefined";
+
+            if (isHasChildren) {
+                var $childTable = $("#childTable_" + _self.ID + i);
+                $childTable.empty();
+                $childTable.append(_self.childrenList(_self.option.data[i].children));
+            }
+        }
+        _self.BindEvent();
+    }
+
+    this.childrenList = function(list) {
+        var result = [];
+
+        for (var i = 0; i < list.length; i++) {
+            var isBorder = typeof list[i].isBorder != "undefined" && list[i].isBorder;
+
+            var $tr = $("<tr />");
+            $tr.addClass("font_Arial context-menu");
+            if (isBorder)
+                $tr.addClass("border");
+
+            var $td1 = $("<td />");
+            if(list[i].selected){
+                $td1.addClass("spacer context-menu").html("√");
+            }else{
+                $td1.addClass("spacer context-menu");
+            }
+
+            var $td2 = $("<td />");
+            $td2.addClass("text").html(list[i].text);
+
+            var $td3 = $("<td />");
+            $td3.addClass("right shortcut");
+
+            var $td4 = $("<td />");
+            $td4.addClass(typeof list[i].children != "undefined" ? "submenu-arrow" : "context-menu spacer");
+
+            $tr.append($td1).append($td2).append($td3).append($td4);
+
+            result.push($tr);
+        }
+        return result;
     }
 
     this.Show=function (obj) {
@@ -20256,240 +20277,263 @@ function KLineRightMenu(divElement)
     //五彩K线
     this.GetColorIndex=function (chart) 
     {
-        return  [
+        var data=
+        [
             {
                 text: "十字星",
-                click: function (windowIndex) {
-                chart.ChangeInstructionIndex('五彩K线-十字星')
-                }
+                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-十字星') }
             }, 
             {
                 text: "早晨之星",
-                click: function (windowIndex) {
-                    chart.ChangeInstructionIndex('五彩K线-早晨之星')
-                },
+                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-早晨之星') },
             }, 
             {
                 text: "垂死十字",
-                click: function (windowIndex) {
-                    chart.ChangeInstructionIndex('五彩K线-垂死十字')
-                },
+                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-垂死十字') },
             }, 
             {
                 text: "三只乌鸦",
-                click: function (windowIndex) {
-                    chart.ChangeInstructionIndex('五彩K线-三只乌鸦')
-                },
+                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-三只乌鸦') }
             }, 
             {
                 text: "光脚阴线",
-                click: function (windowIndex) {
-                    chart.ChangeInstructionIndex('五彩K线-光脚阴线')
-                },
+                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-光脚阴线') }
             }, 
             {
                 text: "黄昏之星",
-                click: function (windowIndex) {
-                    chart.ChangeInstructionIndex('五彩K线-黄昏之星')
-                },
-                isBorder:true
-            },
-            {
-                text: "删除五彩K线",
-                click: function (windowIndex) {
-                    chart.CancelInstructionIndex()
-                }
+                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-黄昏之星') }
             }
-        ]
+        ];
+
+        if (chart.ColorIndex)
+        {
+            data[data.length-1].isBorder=true;
+            data.push(
+                {
+                    text: "删除五彩K线",
+                    click: function (windowIndex) { chart.CancelInstructionIndex() }
+                });
+        }
+
+        return data;
     }
 
     //专家系统
     this.GetTradeIndex=function(chart)
     {
-        return  [
+        var data=
+        [
             {
                 text: "BIAS",
-                click: function (windowIndex) {
-                chart.ChangeInstructionIndex('交易系统-BIAS')
-                }
+                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-BIAS') }
             }, 
             {
                 text: "CCI",
-                click: function (windowIndex) {
-                    chart.ChangeInstructionIndex('交易系统-CCI')
-                },
+                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-CCI') }
             }, 
             {
                 text: "DMI",
-                click: function (windowIndex) {
-                    chart.ChangeInstructionIndex('交易系统-DMI')
-                },
+                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-DMI') }
             }, 
             {
                 text: "KD",
-                click: function (windowIndex) {
-                    chart.ChangeInstructionIndex('交易系统-KD')
-                },
+                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-KD') }
             }, 
             {
                 text: "BOLL",
-                click: function (windowIndex) {
-                    chart.ChangeInstructionIndex('交易系统-BOLL')
-                },
+                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-BOLL') }
             }, 
             {
                 text: "KDJ",
-                click: function (windowIndex) {
-                    chart.ChangeInstructionIndex('交易系统-KDJ')
-                },
-                isBorder:true
-            },
-            {
-                text: "删除专家系统",
-                click: function (windowIndex) {
-                    chart.CancelInstructionIndex()
-                }
+                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-KDJ') }
             }
-        ]
+        ];
+
+        if (chart.TradeIndex)
+        {
+            data[data.length-1].isBorder=true;
+            data.push(
+                {
+                    text: "删除专家系统",
+                    click: function (windowIndex) { chart.CancelInstructionIndex()}
+                });
+        }
+        return data;
     }
 
     //叠加
     this.GetOverlay=function (chart)  
     {
-        return [{
-            text: "上证指数",
-            click: function () {
-                chart.OverlaySymbol('000001.sh');
-            }
-        },{
-            text: "深证成指",
-            click: function () {
-                chart.OverlaySymbol('399001.sz');
-            }
-        }, {
-            text: "中小板指",
-            click: function () {
-                chart.OverlaySymbol('399005.sz');
-            }
-        }, {
-            text: "创业板指",
-            click: function () {
-                chart.OverlaySymbol('399006.sz');
-            }
-        }, {
-            text: "沪深300",
-            click: function () {
-                chart.OverlaySymbol('000300.sh');
+        var data=
+        [
+            {
+                text: "上证指数",
+                click: function () { chart.OverlaySymbol('000001.sh'); }
             },
-            isBorder:true
-        }, {
-            text: "取消叠加",
-            click: function () {
-                chart.ClearOverlaySymbol();
+            {
+                text: "深证成指",
+                click: function () { chart.OverlaySymbol('399001.sz'); }
+            }, 
+            {
+                text: "中小板指",
+                click: function () { chart.OverlaySymbol('399005.sz'); }
+            }, 
+            {
+                text: "创业板指",
+                click: function () { chart.OverlaySymbol('399006.sz'); }
+            }, 
+            {
+                text: "沪深300",
+                click: function () { chart.OverlaySymbol('000300.sh'); },
             }
-        }];
+        ];
+
+        if (chart.OverlayChartPaint && chart.OverlayChartPaint[0] && chart.OverlayChartPaint[0].Symbol)
+        {
+            var symbol=chart.OverlayChartPaint[0].Symbol;
+            const mapSymbol=new Map(
+                [
+                    ['000001.sh',0],['399001.sz',1],['399005.sz',2],['399006.sz',3],['000300.sh',4]
+                ]);
+            if (mapSymbol.has(symbol)) data[mapSymbol.get(symbol)].selected=true;
+
+            data[data.length-1].isBorder=true;
+            data.push(
+                {
+                    text: "取消叠加",
+                    click: function () { chart.ClearOverlaySymbol();}
+                }
+            );
+        }
+
+        return data;
     }
 
     //K线类型设置
     this.GetKLineType=function(chart)
     {
-        return [{
-            text: "K线(空心阳线)",
-            click: function () {
-                chart.ChangeKLineDrawType(3);
+        var data=
+        [
+            {
+                text: "K线(空心阳线)",
+                click: function () { chart.ChangeKLineDrawType(3);}
+            },
+            {
+                text: "K线(实心阳线)",
+                click: function () { chart.ChangeKLineDrawType(0); }
+            }, 
+            {
+                text: "美国线",
+                click: function () { chart.ChangeKLineDrawType(2); }
+            }, 
+            {
+                text: "收盘线",
+                click: function () { chart.ChangeKLineDrawType(1); }
             }
-        },{
-            text: "K线(实心阳线)",
-            click: function () {
-                chart.ChangeKLineDrawType(0);
-            }
-        }, {
-            text: "美国线",
-            click: function () {
-                chart.ChangeKLineDrawType(2);
-            }
-        }, {
-            text: "收盘线",
-            click: function () {
-                chart.ChangeKLineDrawType(1);
-            }
-        }
         ];
+
+        switch(chart.KLineDrawType)
+        {
+            case 0:
+                data[1].selected=true;
+                break;
+            case 1:
+                data[3].selected=true;
+                break;
+            case 2:
+                data[2].selected=true;
+                break;
+            case 3:
+                data[0].selected=true;
+                break;
+        }
+        return data;
     }
 
     //指标窗口个数
     this.GetIndexWindowCount=function(chart)
     {
-        
-        return [{
-            text: "1个窗口",
-            click: function () {
-                chart.ChangeIndexWindowCount(1);
+        var data=
+        [
+            {
+                text: "1个窗口",
+                click: function () { chart.ChangeIndexWindowCount(1); }
+            },
+            {
+                text: "2个窗口",
+                click: function () { chart.ChangeIndexWindowCount(2); }
+            }, 
+            {
+                text: "3个窗口",
+                click: function () { chart.ChangeIndexWindowCount(3); }
+            }, 
+            {
+                text: "4个窗口",
+                click: function () { chart.ChangeIndexWindowCount(4); }
+            },
+            {
+                text: "5个窗口",
+                click: function () { chart.ChangeIndexWindowCount(5); }
             }
-        },{
-            text: "2个窗口",
-            click: function () {
-                chart.ChangeIndexWindowCount(2);
-            }
-        }, {
-            text: "3个窗口",
-            click: function () {
-                chart.ChangeIndexWindowCount(3);
-            }
-        }, {
-            text: "4个窗口",
-            click: function () {
-                chart.ChangeIndexWindowCount(4);
-            }
-        },
-        {
-            text: "5个窗口",
-            click: function () {
-                chart.ChangeIndexWindowCount(5);
-            }
-        }
         ];
+
+        var count=chart.Frame.SubFrame.length;
+        if ((count-1)>=0 && (count-1)<data.length) data[count-1].selected=true;  //选中
+
+        return data;
     }
 
     //坐标类型
     this.GetCoordinateType=function(chart)
     {
-        return [{
-            text: "普通坐标",
-            click: function () {
-                chart.ChangeCoordinateType(0);
+        var data= 
+        [
+            {
+                text: "普通坐标",
+                click: function () { chart.ChangeCoordinateType(0); }
+            },
+            {
+                text: "百分比坐标",
+                click: function () { chart.ChangeCoordinateType(1); }
+            },
+            {
+                text: "反转坐标",
+                click: function () { chart.ChangeCoordinateType(2); }
             }
-        },{
-            text: "百分比坐标",
-            click: function () {
-                chart.ChangeCoordinateType(1);
-            }
-        },{
-            text: "反转坐标",
-            click: function () {
-                chart.ChangeCoordinateType(2);
-            }
-        }];
+        ];
+
+        if (chart.Frame && chart.Frame.SubFrame && chart.Frame.SubFrame.length>0) 
+        {
+            if (chart.Frame.SubFrame[0].Frame.CoordinateType==1) data[2].selected=true;
+            else data[0].selected=true;
+
+            if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==1) data[1].selected=true;
+        }
+
+        return data;
     }
 
     this.GetDragModeType=function(chart)
     {
-        return [{
-            text: "禁止拖拽",
-            click: function () {
-                chart.DragMode=0;
+        var data=
+        [
+            {
+                text: "禁止拖拽",
+                click: function () { chart.DragMode=0; }
+            },
+            {
+                text: "启动拖拽",
+                click: function () { chart.DragMode=1; }
+            },
+            {
+                text: "区间选择",
+                click: function () { chart.DragMode=2; }
             }
-        },{
-            text: "启动拖拽",
-            click: function () {
-                chart.DragMode=1;
-            }
-        },{
-            text: "区间选择",
-            click: function () {
-                chart.DragMode=2;
-            }
-        }];
+        ];
+
+        if (chart.DragMode>=0 && chart.DragMode<data.length) data[chart.DragMode].selected=true;  //选中
+
+        return data;
     }
 
     this.DoModal=function(event)

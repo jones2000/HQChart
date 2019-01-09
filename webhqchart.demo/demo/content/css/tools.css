@@ -120,6 +120,7 @@ td.context-menu {
 
 .context-menu .spacer {
     width: 18px;
+    text-align: center;
 }
 
 .context-menu .icon {
