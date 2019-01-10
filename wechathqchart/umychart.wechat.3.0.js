@@ -849,7 +849,9 @@ function JSChartContainer(uielement) {
   this.MouseDrag;
   this.DragMode = 1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
 
-  this.TouchTimer = null;         //触屏定时器  
+  this.TouchTimer = null;         //触屏定时器
+  this.LastDrawStatus;            //最后一次画的状态
+  this.LastDrawID=1;              //最后一次画的ID
 
   this.CursorIndex = 0;             //十字光标X轴索引
   this.LastPoint = new Point();     //鼠标位置
@@ -1042,139 +1044,160 @@ function JSChartContainer(uielement) {
     }
   }
 
-  this.ontouchend = function (e) {
-    this.IsOnTouch = false;
-    console.log('[JSChartContainer:ontouchend]', this.IsOnTouch);
-    if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
-    if (this.CorssCursorTouchEnd) this.Draw();//手放开 隐藏十字光标    
-  }
-
-  this.Draw = function () {
-    if (this.IsOnTouch == true) return;
-
-    var self = this;
-    this.Canvas.clearRect(0, 0, this.UIElement.Width, this.UIElement.Height);
-
-    //框架 
-    this.Frame.Draw();
-
-    if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash) {
-      this.Frame.DrawInsideHorizontal();
-      this.ChartSplashPaint.Draw();
-      this.Canvas.draw();
-      return;
-    }
-
-    for (var i in this.ChartPaint) {
-      var item = this.ChartPaint[i];
-      if (item.IsDrawFirst)
-        item.Draw();
-    }
-
-    //框架内图形
-    for (var i in this.ChartPaint) {
-      var item = this.ChartPaint[i];
-      if (!item.IsDrawFirst)
-        item.Draw();
-    }
-
-    for (var i in this.ChartPaintEx) {
-      var item = this.ChartPaintEx[i];
-      item.Draw();
-    }
-
-
-    //叠加股票
-    for (var i in this.OverlayChartPaint) {
-      var item = this.OverlayChartPaint[i];
-      item.Draw();
-    }
-
-    //框架外图形
-    for (var i in this.ExtendChartPaint) {
-      var item = this.ExtendChartPaint[i];
-      item.Draw();
-    }
-
-    //框架内部坐标
-    this.Frame.DrawInsideHorizontal();
-
-    this.Frame.DrawLock();
-
-    for (var i in this.TitlePaint) {
-      var item = this.TitlePaint[i];
-      if (!item.IsDynamic) continue;
-      if (typeof (item.DrawTitle) == 'function')
-        item.DrawTitle();
-    }
-
-    //坑!!.画图是异步, 保存当前屏图放在回调里面
-    console.log('[JSChartContainer:Draw][ID=' + this.UIElement.ID + '] draw and save snapshot .....');
-
-    this.Canvas.draw(false, function () {
-      self.Frame.Snapshot();
-    });
-
-    //console.log('[JSChartContainer:Draw][ID=' + this.UIElement.ID + '] draw dynamic info ......');
-
-    //动态标题都不画了(Canvas.draw 异步画的,如果下面再画会被截屏进去) 只有数据移动的时候在画
-    /*
-    if (this.LastPoint.X != null || this.LastPoint.Y != null)
+    this.ontouchend = function (e) 
     {
-      if (this.ChartCorssCursor) 
-      {
-        this.ChartCorssCursor.LastPoint = this.LastPoint;
-        this.ChartCorssCursor.Draw();
-      }
+        this.IsOnTouch = false;
+        console.log('[JSChartContainer:ontouchend] IsOnTouch=' + this.IsOnTouch +' LastDrawStatus=' + this.LastDrawStatus);
+        if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
+        if (this.CorssCursorTouchEnd && this.LastDrawStatus =='DrawDynamicInfo') this.Draw();//手放开 隐藏十字光标    
     }
 
-    for (var i in self.TitlePaint) 
+    this.Draw = function () 
     {
-      var item = self.TitlePaint[i];
-      if (!item.IsDynamic) continue;
+        if (this.IsOnTouch == true) return;
 
-      item.CursorIndex = self.CursorIndex;
-      item.Draw();
+        var self = this;
+        this.Canvas.clearRect(0, 0, this.UIElement.Width, this.UIElement.Height);
+
+        //框架 
+        this.Frame.Draw();
+
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash) 
+        {
+            this.Frame.DrawInsideHorizontal();
+            this.ChartSplashPaint.Draw();
+            this.LastDrawStatus = 'Draw';
+            this.Canvas.draw();
+            return;
+        }
+
+        for (var i in this.ChartPaint) 
+        {
+            var item = this.ChartPaint[i];
+            if (item.IsDrawFirst) item.Draw();
+        }
+
+        //框架内图形
+        for (var i in this.ChartPaint) 
+        {
+            var item = this.ChartPaint[i];
+            if (!item.IsDrawFirst) item.Draw();
+        }
+
+        for (var i in this.ChartPaintEx) 
+        {
+            var item = this.ChartPaintEx[i];
+            item.Draw();
+        }
+
+
+        //叠加股票
+        for (var i in this.OverlayChartPaint) 
+        {
+            var item = this.OverlayChartPaint[i];
+            item.Draw();
+        }
+
+        //框架外图形
+        for (var i in this.ExtendChartPaint) 
+        {
+            var item = this.ExtendChartPaint[i];
+            item.Draw();
+        }
+
+        //框架内部坐标
+        this.Frame.DrawInsideHorizontal();
+
+        this.Frame.DrawLock();
+
+        for (var i in this.TitlePaint)
+        {
+            var item = this.TitlePaint[i];
+            if (!item.IsDynamic) continue;
+            if (typeof (item.DrawTitle) == 'function') item.DrawTitle();
+        }
+
+        this.LastDrawStatus='Draw';
+        ++this.LastDrawID;
+        //坑!!.画图是异步, 保存当前屏图放在回调里面
+        console.log('[JSChartContainer:Draw][ID=' + this.UIElement.ID + '] draw and save snapshot. DrawID=' + this.LastDrawID + ' .....');
+        var lastDrawID=this.LastDrawID;
+        this.Canvas.draw(false, function () 
+        {
+            //if (lastDrawID == self.LastDrawID) 
+            self.Frame.Snapshot();  //只保存最后一次的截图
+            console.log('[JSChartContainer:Draw] finish.', lastDrawID, self.LastDrawID);
+        });
+
+        //console.log('[JSChartContainer:Draw][ID=' + this.UIElement.ID + '] draw dynamic info ......');
+
+        //动态标题都不画了(Canvas.draw 异步画的,如果下面再画会被截屏进去) 只有数据移动的时候在画
+        /*
+        if (this.LastPoint.X != null || this.LastPoint.Y != null)
+        {
+        if (this.ChartCorssCursor) 
+        {
+            this.ChartCorssCursor.LastPoint = this.LastPoint;
+            this.ChartCorssCursor.Draw();
+        }
+        }
+
+        for (var i in self.TitlePaint) 
+        {
+        var item = self.TitlePaint[i];
+        if (!item.IsDynamic) continue;
+
+        item.CursorIndex = self.CursorIndex;
+        item.Draw();
+        }
+
+        self.Canvas.draw(true); 
+        */
     }
 
-    self.Canvas.draw(true); 
-    */
-  }
+    //画动态信息
+    this.DrawDynamicInfo = function () 
+    {
+        if (this.Frame.ScreenImagePath == null) return;
 
-  //画动态信息
-  this.DrawDynamicInfo = function () {
-    if (this.Frame.ScreenImagePath == null) return;
+        var self = this;
+        var isErase = false;
+        if (this.ChartCorssCursor) 
+        {
+            if (this.ChartCorssCursor.PointX != null || this.ChartCorssCursor.PointY != null)
+                isErase = true;
+        }
 
-    var self = this;
-    var isErase = false;
-    if (this.ChartCorssCursor) {
-      if (this.ChartCorssCursor.PointX != null || this.ChartCorssCursor.PointY != null)
         isErase = true;
+
+        if (isErase) 
+        {
+            var width = this.Frame.ChartBorder.GetChartWidth();
+            var height = this.Frame.ChartBorder.GetChartHeight();
+            self.Canvas.drawImage(this.Frame.ScreenImagePath, 0, 0, width, height);
+        }
+
+        if (self.ChartCorssCursor) 
+        {
+            self.ChartCorssCursor.LastPoint = self.LastPoint;
+            self.ChartCorssCursor.Draw();
+        }
+
+        for (var i in self.TitlePaint) 
+        {
+            var item = self.TitlePaint[i];
+            if (!item.IsDynamic) continue;
+
+            item.CursorIndex = self.CursorIndex;
+            item.Draw();
+        }
+
+        this.LastDrawStatus ='DrawDynamicInfo';
+        console.log('[JSChartContainer:DrawDynamicInfo][ID=' + this.UIElement.ID + '] draw .....');
+        self.Canvas.draw(false, function () {
+            console.log('[JSChartContainer:DrawDynamicInfo] finish.');
+        });
     }
-
-    isErase = true;
-
-    if (isErase) {
-      var width = this.Frame.ChartBorder.GetChartWidth();
-      var height = this.Frame.ChartBorder.GetChartHeight();
-      self.Canvas.drawImage(this.Frame.ScreenImagePath, 0, 0, width, height);
-    }
-
-    if (self.ChartCorssCursor) {
-      self.ChartCorssCursor.LastPoint = self.LastPoint;
-      self.ChartCorssCursor.Draw();
-    }
-
-    for (var i in self.TitlePaint) {
-      var item = self.TitlePaint[i];
-      if (!item.IsDynamic) continue;
-
-      item.CursorIndex = self.CursorIndex;
-      item.Draw();
-    }
-
-    self.Canvas.draw();
-  }
 
   this.OnMouseMove = function (x, y, e) {
     var lastY = this.LastPoint.Y;
@@ -13235,25 +13258,27 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(line);
     }
 
-  //创建柱子
-  this.CreateBar = function (hqChart, windowIndex, varItem, id) {
-    let bar = new ChartStickLine();
-    bar.Canvas = hqChart.Canvas;
-    bar.LineWidth = varItem.Draw.Width;
+    //创建柱子
+    this.CreateBar = function (hqChart, windowIndex, varItem, id) 
+    {
+        let bar = new ChartStickLine();
+        bar.Canvas = hqChart.Canvas;
+        if (varItem.Draw.Width > 0) bar.LineWidth = varItem.Draw.Width;
+        else bar.LineWidth=1;
 
-    bar.Name = varItem.Name;
-    bar.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-    bar.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
-    if (varItem.Color) bar.Color = this.GetColor(varItem.Color);
-    else bar.Color = this.GetDefaultColor(id);
+        bar.Name = varItem.Name;
+        bar.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        bar.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Color) bar.Color = this.GetColor(varItem.Color);
+        else bar.Color = this.GetDefaultColor(id);
 
-    let titleIndex = windowIndex + 1;
-    bar.Data.Data = varItem.Draw.DrawData;
+        let titleIndex = windowIndex + 1;
+        bar.Data.Data = varItem.Draw.DrawData;
 
-    //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
-    hqChart.ChartPaint.push(bar);
-  }
+        hqChart.ChartPaint.push(bar);
+    }
 
   //创建文本
   this.CreateText = function (hqChart, windowIndex, varItem, id) {

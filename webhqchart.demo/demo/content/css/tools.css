@@ -885,3 +885,75 @@ td.context-menu {
     margin-left: 70px;
 }
 
+/*=======区间选择弹出框=========*/
+.jchart-select-section{
+    height:340px;
+}
+.jchart-select-table-right .jchart-select-date{
+    width:100%;
+    margin-bottom: 5px;
+}
+.jchart-select-date span{
+    display: inline-block;
+    width:32%;
+    padding-left: 10px;
+    box-sizing: border-box;
+    font-size: 13px;
+}
+.jchart-select-date span i{
+    display: inline-block;
+    width:12px;
+    height:24px;
+    line-height: 24px;
+    text-align: center;
+    border:1px solid #dddddd;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+.start-date-left,.end-date-left{
+    margin: 0 2px 0 5px;
+}
+.jchart-select-table-right>table
+{
+    width:100%;
+    border-collapse:collapse;
+}
+.jchart-select-table-right>table,.jchart-select-table-right>table tr, .jchart-select-table-right>table td
+{
+    border: 1px solid #dddddd;
+}
+.jchart-select-table-right td
+{
+    padding-left:10px;
+    box-sizing: border-box;
+    width:32%;
+    height:40px;
+    vertical-align:center;
+}
+.jchart-select-table-right>table td span{
+    margin-left:20px;
+}
+.jchart-select-table-right>table td strong{
+    display: inline-block;
+    width:50px;
+    font-weight: normal;
+}
+
+/*设置涨跌颜色*/
+.PriceUp{
+    color:#ee1515!important;
+}
+
+.PriceDown{
+    color:#199e00!important;
+}
+
+.PriceNull{
+    color:black;
+}
+
+/*按钮背景色*/
+.BtnBackground{
+    background-color: #ffffff!important;
+    color: #eeeeee;
+}

@@ -586,13 +586,23 @@ function ChartStickLine()
         if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
 
         this.Canvas.save();
-        var LineWidth = this.LineWidth;
-        if (dataWidth <= 4) LineWidth = 1;
-        else if (dataWidth < LineWidth) LineWidth = parseInt(dataWidth);
-        this.Canvas.strokeStyle = this.Color;
-        this.Canvas.lineWidth = LineWidth;
         var bFillBar = false;
-        if (this.LineWidth < 100) 
+        var bFillKLine = false;
+
+        if (this.LineWidth==50)
+        {
+            if (dataWidth >= 4) 
+            {
+                bFillKLine = true;
+                this.Canvas.fillStyle = this.Color;
+            }
+            else    //太细了 画竖线
+            {
+                this.Canvas.lineWidth = 1;
+                this.Canvas.strokeStyle = this.Color;
+            }  
+        }
+        else if (this.LineWidth < 100) 
         {
             var LineWidth = this.LineWidth;
             if (dataWidth <= 4) LineWidth = 1;
@@ -635,6 +645,13 @@ function ChartStickLine()
                     if (left + barWidth > chartright) barWidth = chartright - left; //不要超过右边框子
                     this.Canvas.fillRect(left, ToFixedRect(Math.min(y, y2)), barWidth, ToFixedRect(Math.abs(y - y2)));
                 }
+            }
+            else if (bFillKLine) 
+            {
+                if (isHScreen)
+                    this.Canvas.fillRect(ToFixedRect(Math.min(y, y2)), ToFixedRect(xOffset), ToFixedRect(Math.abs(y - y2)), ToFixedRect(dataWidth));
+                else
+                    this.Canvas.fillRect(ToFixedRect(xOffset), ToFixedRect(Math.min(y, y2)), ToFixedRect(dataWidth), ToFixedRect(Math.abs(y - y2)));
             }
             else 
             {
