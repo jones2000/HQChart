@@ -2741,8 +2741,8 @@ VAR4:= LLV(LOW, 33);\n\
 VAR5:= EMA(IF(LOW <= VAR4, VAR3, 0), 3) * 0.2;\n\
 主力进场: IF(VAR5 > REF(VAR5, 1), VAR5,0), COLORRED, NODRAW;\n\
 洗盘: IF(VAR5 < REF(VAR5, 1), VAR5,0), COLORYELLOW, NODRAW;\n\
-STICKLINE(VAR5> REF(VAR5, 1),0, VAR5, 20, 0), COLORRED;\n\
-STICKLINE(VAR5 < REF(VAR5, 1), 0, VAR5, 20, 0), COLORYELLOW;'
+STICKLINE(VAR5> REF(VAR5, 1),0, VAR5, 50, 0), COLORRED;\n\
+STICKLINE(VAR5 < REF(VAR5, 1), 0, VAR5, 50, 0), COLORYELLOW;'
     };
 
     return data;
@@ -2919,7 +2919,7 @@ JSIndexScript.prototype.Zealink_Index4 = function ()
 {
     let data =
     {
-        Name: '股东增减持', Description: '股东增减持', IsMainIndex: false, FloatPrecision: 0,
+        Name: '股东实际增减持', Description: '股东实际增减持', IsMainIndex: false, FloatPrecision: 0,
         Args: [],
         Script: //脚本
 '增持:NEWS(4),NODRAW,COLORRED;\n\

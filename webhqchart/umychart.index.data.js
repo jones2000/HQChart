@@ -2961,7 +2961,7 @@ JSIndexScript.prototype.Zealink_Index4 = function ()
 {
     let data =
     {
-        Name: '股东增减持', Description: '股东增减持', IsMainIndex: false, FloatPrecision:0,
+        Name: '股东实际增减持', Description: '股东实际增减持', IsMainIndex: false, FloatPrecision:0,
         Args: [],
         Script: //脚本
 '增持:NEWS(4),NODRAW,COLORRED;\n\

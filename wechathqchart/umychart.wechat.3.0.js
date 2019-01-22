@@ -1126,7 +1126,7 @@ function JSChartContainer(uielement) {
         {
             //if (lastDrawID == self.LastDrawID) 
             self.Frame.Snapshot();  //只保存最后一次的截图
-            console.log('[JSChartContainer:Draw] finish.', lastDrawID, self.LastDrawID);
+            console.log('[JSChartContainer:Draw] finish. DrawID('+ lastDrawID +','+ self.LastDrawID +')');
         });
 
         //console.log('[JSChartContainer:Draw][ID=' + this.UIElement.ID + '] draw dynamic info ......');
@@ -2638,15 +2638,19 @@ function SubFrameItem() {
 }
 
 //行情框架
-function HQTradeFrame() {
-  this.SubFrame = new Array();              //SubFrameItem 数组
-  this.SizeChange = true;                   //大小是否改变
-  this.ChartBorder;
-  this.Canvas;                            //画布
-  this.ScreenImagePath;                   //截图路径           
-  this.Data;                              //主数据
-  this.Position;                          //画布的位置
-  this.SizeChange = true;
+function HQTradeFrame() 
+{
+    this.SubFrame = new Array();              //SubFrameItem 数组
+    this.SizeChange = true;                   //大小是否改变
+    this.ChartBorder;
+    this.Canvas;                            //画布
+    this.ScreenImagePath;                   //截图路径           
+    this.Data;                              //主数据
+    this.Position;                          //画布的位置
+    this.SizeChange = true;
+    this.SnapshotID=0;
+    this.CurrentSnapshotID=0;
+    this.SnapshotStatus=0;                  //0空闲 1工作
 
   this.CalculateChartBorder = function ()    //计算每个子框架的边框信息
   {
@@ -2715,26 +2719,33 @@ function HQTradeFrame() {
     };
   }
 
-  //图形快照
-  this.Snapshot = function () {
-    var self = this;
-    var width = this.ChartBorder.GetChartWidth();
-    var height = this.ChartBorder.GetChartHeight();
+    //图形快照
+    this.Snapshot = function () 
+    {
+        var self = this;
+        var width = this.ChartBorder.GetChartWidth();
+        var height = this.ChartBorder.GetChartHeight();
 
-    console.log('[HQTradeFrame::Snapshot][ID=' + this.ChartBorder.UIElement.ID + '] invoke canvasToTempFilePath' + '(width=' + width + ',height=' + height + ')');
+        console.log('[HQTradeFrame::Snapshot][ID=' + this.ChartBorder.UIElement.ID + '] invoke canvasToTempFilePath' + '(width=' + width + ',height=' + height + ')' + ' SnapshotStatus='+ this.SnapshotStatus);
+        //if (this.SnapshotStatus==1) return;
 
-    wx.canvasToTempFilePath({
-      x: 0,
-      y: 0,
-      width: width,
-      height: height,
-      canvasId: this.ChartBorder.UIElement.ID,
-      success: function (res) {
-        self.ScreenImagePath = res.tempFilePath;
-        console.log(res.tempFilePath)
-      }
-    })
-  }
+        ++this.SnapshotID;
+        var id = this.SnapshotID;
+        this.SnapshotStatus=1;
+        wx.canvasToTempFilePath({
+        x: 0,
+        y: 0,
+        width: width,
+        height: height,
+        canvasId: this.ChartBorder.UIElement.ID,
+        success: function (res) {
+            self.ScreenImagePath = res.tempFilePath;
+            self.SnapshotStatus = 0;
+            self.CurrentSnapshotID = id;
+            console.log('[HQTradeFrame::Snapshot] SnapshotID(' + self.SnapshotID + ',' + self.CurrentSnapshotID + ') Path ='+ res.tempFilePath);
+        }
+        })
+    }
 
   this.GetXData = function (x) {
     return this.SubFrame[0].Frame.GetXData(x);

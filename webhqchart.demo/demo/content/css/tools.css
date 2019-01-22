@@ -302,7 +302,7 @@ td.context-menu {
 /*画图工具结束*/
 
 /*区间统计*/
-.interval {
+.jchart-select-statistics-box {
     position: absolute;
     z-index: 520;
     width:551px;
@@ -956,4 +956,64 @@ td.context-menu {
 .BtnBackground{
     background-color: #ffffff!important;
     color: #eeeeee;
+}
+
+/*K线右上角图标*/
+.icon-image{
+    cursor: pointer;
+}
+.icon-image img{
+    /*margin-top: 12px;*/
+    padding: 10px 8px;
+    display: block;
+    width: 22px;
+    height: 22px;
+    border-left:1px solid #cccccc;
+    border-right:1px solid #cccccc;
+}
+.icon-image:first-child img{
+    border-top:1px solid #cccccc;
+}
+.icon-image:last-child img{
+    border-bottom:1px solid #cccccc;
+}
+
+/*K线子图标*/
+.subTolls{
+    padding:8px 5px 0px 8px;
+    border:1px solid #aaaaaa;
+}
+.subTolls>span{
+    margin: 0 3px;
+    cursor: pointer;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+}
+.change-color{
+    display: inline-block;
+    width: 24px;
+    height: 3px;
+    outline: none;
+    border: 0;
+}
+.change-image{
+    margin-left: 3px;
+    margin-bottom: 2px;
+    display: inline-block;
+    width: 16px;
+    height: 13px;
+}
+input[type="color"] {
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+}
+::-webkit-color-swatch-wrapper {
+    background-color: #ffffff;
+}
+::-webkit-color-swatch { height:4px; width: 25px;position:relative; left: 0; top:-5px; border: 0;}
+.subtool-del{
+    position: relative;
+    top:-5px;
 }
