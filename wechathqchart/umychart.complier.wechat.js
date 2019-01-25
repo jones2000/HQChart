@@ -684,33 +684,40 @@ function Node()
     this.IsNeedFinanceData=new Set();   //需要下载的财务数据
     this.IsNeedMarginData = new Set();
     this.IsNeedNewsAnalysisData = new Set();      //新闻统计数据
+    this.IsNeedBlockIncreaseData = new Set();     //是否需要市场涨跌股票数据统计
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
         let jobs=[];
-        if (this.IsNeedSymbolData) jobs.push(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA);
-        if (this.IsNeedIndexData) jobs.push(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_DATA);
-        if (this.IsNeedLatestData) jobs.push(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA);
+        if (this.IsNeedSymbolData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA});
+        if (this.IsNeedIndexData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_DATA});
+        if (this.IsNeedLatestData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA});
+
+        //涨跌停家数统计
+        for (var blockSymbol of this.IsNeedBlockIncreaseData) 
+        {
+            jobs.push({ ID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA, Symbol: blockSymbol });
+        }
 
         //加载财务数据
         for(var jobID of this.IsNeedFinanceData)
         {
             if (jobID == JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA)      //股息率 需要总市值
-                jobs.push(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARKETVALUE_DATA);
+                jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARKETVALUE_DATA});
 
-            jobs.push(jobID);
+            jobs.push({ID:jobID});
         }
 
         //加载融资融券
         for (var jobID of this.IsNeedMarginData) 
         {
-            jobs.push(jobID);
+            jobs.push({ID:jobID});
         }
 
         //加载新闻统计
         for (var jobID of this.IsNeedNewsAnalysisData) 
         {
-            jobs.push(jobID);
+            jobs.push({ID:jobID});
         }
 
         return jobs;
@@ -786,6 +793,13 @@ function Node()
         if (callee.Name === 'BETA')    //beta需要下载上证指数
         {
             this.IsNeedIndexData = true;
+            return;
+        }
+
+        if (callee.Name == 'UPCOUNT' || callee.Name == 'DOWNCOUNT')    //上涨下跌个数
+        {
+            var blockSymbol = args[0].Value;
+            if (!this.IsNeedBlockIncreaseData.has(blockSymbol)) this.IsNeedBlockIncreaseData.add(blockSymbol);
             return;
         }
     }
@@ -5347,6 +5361,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.FinanceData=new Map(); //财务数据
     this.MarginData = new Map();  //融资融券
     this.NewsAnalysisData = new Map();    //新闻统计
+    this.ExtendData = new Map();          //其他的扩展数据
     
    
     //使用option初始化
@@ -5561,6 +5576,62 @@ function JSSymbolData(ast,option,jsExecute)
         case 'INDEXDEC':
             return this.IndexData.GetDown();
         }
+    }
+
+    //分钟涨幅股票个数统计数据下载
+    this.GetIndexIncreaseData = function (job) 
+    {
+        var upKey = job.ID.toString() + '-UpCount-' + job.Symbol;
+        var downKey = job.ID.toString() + '-DownCount-' + job.Symbol;
+        if (this.ExtendData.has(upKey) && this.ExtendData.has(downKey)) return this.Execute.RunNextJob();
+
+        var symbol = job.Symbol;
+        symbol = symbol.replace('.CI', '.ci');
+        var self = this;
+        var apiUrl = g_JSComplierResource.CacheDomain + '/cache/analyze/increaseanalyze/' + symbol + '.json';
+        console.log('[JSSymbolData::GetIndexIncreaseData] Get url=', apiUrl);
+        wx.request({
+            url: apiUrl,
+            method: "GET",
+            dataType: "json",
+            success: function (data) 
+            {
+                self.RecvMinuteIncreaseData(data, { UpKey: upKey, DownKey: downKey });
+                self.Execute.RunNextJob();
+            },
+            error: function (request) 
+            {
+                self.RecvError(request);
+            }
+        });
+    }
+
+    this.RecvMinuteIncreaseData = function (recvData, key) 
+    {
+        console.log('[JSSymbolData::RecvMinuteIncreaseData] recv data', recvData);
+        var data=recvData.data;
+        if (!data.minute) return;
+        var minuteData = data.minute;
+        if (!minuteData.time || !minuteData.up || !minuteData.down) return;
+        var upData = [], downData = [];
+        for (var i = 0; i < minuteData.time.length; ++i) {
+            upData[i] = minuteData.up[i];
+            downData[i] = minuteData.down[i];
+        }
+
+        this.ExtendData.set(key.UpKey, upData);
+        this.ExtendData.set(key.DownKey, downData);
+    }
+
+    //分钟涨幅股票个数统计数据
+    this.GetIndexIncreaseCacheData = function (funcName, symbol, node) {
+        var key;
+        if (funcName == 'UPCOUNT') key = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA.toString() + '-UpCount-' + symbol;
+        else if (funcName == 'DOWNCOUNT') key = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA.toString() + '-DownCount-' + symbol;
+
+        if (!key || !this.ExtendData.has(key)) this.Execute.ThrowUnexpectedNode(node, '不支持函数' + funcName + '(' + symbol + ')');
+
+        return this.ExtendData.get(key);
     }
 
     this.GetSymbolData=function()
@@ -6739,6 +6810,7 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_SYMBOL_DATA:1, //下载股票的K线数据
     JOB_DOWNLOAD_INDEX_DATA:2,  //下载大盘的K线数据
     JOB_DOWNLOAD_SYMBOL_LATEST_DATA:3,  //最新的股票行情数据
+    JOB_DOWNLOAD_INDEX_INCREASE_DATA: 4, //涨跌股票个数统计数据
 
     //财务函数
     JOB_DOWNLOAD_TOTAL_EQUITY_DATA: 100,          //总股本（万股）
@@ -6913,14 +6985,16 @@ function JSExecute(ast,option)
     {
         if (this.JobList.length<=0) return;
 
-        var jobName=this.JobList.shift();
+        var jobItem=this.JobList.shift();
 
-        switch(jobName)
+        switch (jobItem.ID)
         {
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA:
                 return this.SymbolData.GetSymbolData();
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_DATA:
                 return this.SymbolData.GetIndexData();
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA:
+                return this.SymbolData.GetIndexIncreaseData(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA:
                 return this.SymbolData.GetLatestData();
 
@@ -6939,10 +7013,10 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_AL_RATIO_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA:
-                return this.SymbolData.GetFinanceData(jobName);
+                return this.SymbolData.GetFinanceData(jobItem.ID);
             
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_RELEASE_DATE_DATA:
-                return this.SymbolData.GetCompanyReleaseDate(jobName);
+                return this.SymbolData.GetCompanyReleaseDate(jobItem.ID);
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE:
@@ -6954,7 +7028,7 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME:       //卖出信息-卖出量
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY:        //卖出信息-偿还量
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET:          //卖出信息-融券净卖出
-                return this.SymbolData.GetMarginData(jobName);
+                return this.SymbolData.GetMarginData(jobItem.ID);
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE:             //负面新闻
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH:             //机构调研
@@ -6966,7 +7040,7 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_COMPANYNEWS:          //官网新闻
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TOPMANAGERS:          //高管要闻
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_PLEDGE:               //股权质押
-                return this.SymbolData.GetNewsAnalysisData(jobName);
+                return this.SymbolData.GetNewsAnalysisData(jobItem.ID);
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
@@ -7350,6 +7424,10 @@ function JSExecute(ast,option)
             case "NEWS":
                 node.Out = this.SymbolData.GetNewsAnalysisCacheData(args[0], node);
                 break;
+            case 'UPCOUNT':
+            case 'DOWNCOUNT':
+                node.Out = this.SymbolData.GetIndexIncreaseCacheData(funcName, args[0], node);
+                break;
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args,node);
                 break;
@@ -7598,7 +7676,7 @@ JSComplier.Execute=function(code,option,errorCallback)
             console.log('[JSComplier.Execute] execute .....');
             let execute=new JSExecute(ast,option);
             execute.JobList=parser.Node.GetDataJobList();
-            execute.JobList.push(JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT);
+            execute.JobList.push({ID:JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT});
 
             let result=execute.Execute();
 

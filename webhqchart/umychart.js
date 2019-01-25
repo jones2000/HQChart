@@ -8678,6 +8678,7 @@ function StockChip()
     this.DayInfoColor='rgb(255,255,255)';
     this.LineHeight=16;
     this.Left=50;   //左边间距
+    this.IsAutoIndent=0;
 
     this.ButtonID=Guid();  //工具条Div id
 
@@ -8691,6 +8692,7 @@ function StockChip()
     {
         if (!option) return;
         if (option.ShowType>0) this.ShowType=option.ShowType;
+        if (option.IsAutoIndent>0) this.IsAutoIndent=option.IsAutoIndent;    //是否自动缩进
     }
     
     this.Draw=function()
@@ -8811,6 +8813,12 @@ function StockChip()
             this.Data.DayChip[i].Vol=totalVol;
             this.DrawArea(aryPoint,this.Data.DayChip[i].Color);
         }
+    }
+
+    this.Clear=function()
+    {
+        var divButton=document.getElementById(this.ButtonID);
+        if (divButton) this.ChartBorder.UIElement.parentNode.removeChild(divButton);
     }
 
     this.DrawButton=function()  //顶部按钮
@@ -21196,8 +21204,42 @@ function KLineRightMenu(divElement)
                     text: "画图工具",
                     click: function () {  
                         var option={Name:'画图工具', Top:chart.Frame.ChartBorder.Top ,IsAutoIndent:1};
-                        var chartTools=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
-                        chart.Frame.ChartBorder.Right+=chartTools.ToolsWidth;
+                        var extendChart=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
+                        chart.Frame.ChartBorder.Right+=extendChart.ToolsWidth;
+                        chart.Frame.SetSizeChage(true);
+                        chart.Draw();
+                    }
+                }
+            );
+        }
+
+        var StockChip=chart.GetExtendChartByClassName('StockChip');
+        if (StockChip)
+        {
+            data.push(
+                {
+                    text: "关闭移动筹码",
+                    click: function () { 
+                        chart.DeleteExtendChart(StockChip); 
+                        if (StockChip.Chart.IsAutoIndent==1)
+                        {
+                            chart.Frame.ChartBorder.Right-=230;
+                            chart.Frame.SetSizeChage(true);
+                            chart.Draw();
+                        }
+                    }
+                }
+            );
+        }
+        else
+        {
+            data.push(
+                {
+                    text: "移动筹码",
+                    click: function () {  
+                        var option={Name:'筹码分布', IsAutoIndent:1, ShowType:1};
+                        var extendChart=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
+                        chart.Frame.ChartBorder.Right+=230;
                         chart.Frame.SetSizeChage(true);
                         chart.Draw();
                     }
