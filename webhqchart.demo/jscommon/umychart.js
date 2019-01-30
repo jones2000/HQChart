@@ -9238,6 +9238,7 @@ function DrawToolsButton()
                 { HTML:{Title:'线段', Icon:'content/image/icon-segment.png', ID:'icon-segment'} , Name:'线段'},
                 { HTML:{Title:'射线', Icon:'content/image/icon-beam.png', ID:'icon-beam'} , Name:'射线'},
                 { HTML:{Title:'平行线', Icon:'content/image/icon-parallellines.png', ID:'icon-parallellines'} , Name:'平行线'},
+                { HTML:{Title:'平行通道', Icon:'content/image/icon-parallelchannel.png', ID:'icon-parallelchannel'} , Name:'平行通道'},
                 { HTML:{Title:'圆弧', Icon:'content/image/icon-arc.png', ID:'icon-arc'} , Name:'圆弧'},
                 { HTML:{Title:'矩形', Icon:'content/image/icon-rect.png', ID:'icon-rect'} , Name:'矩形'},
                 { HTML:{Title:'全部删除', Icon:'content/image/icon-delete.png', ID:'icon-delete'} , Name:'全部删除'},
@@ -9276,6 +9277,9 @@ function DrawToolsButton()
             });
             $('#'+this.ID + " .icon-parallellines").click(function () {
                 hqChart.CreateChartDrawPicture('平行线');
+            });
+            $('#'+this.ID + " .icon-parallelchannel").click(function () {
+                hqChart.CreateChartDrawPicture('平行通道');
             });
             $('#'+this.ID + " .icon-delete").click(function () {
                 hqChart.ClearChartDrawPicture();
@@ -11299,6 +11303,7 @@ function IChartDrawPicture()
 
         return result;
     }
+
 }
 
 /*
@@ -11967,6 +11972,222 @@ function ChartDrawPictureParallelLines()
     }
 }
 
+//平行通道
+function ChartDrawPictureParallelChannel()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawPictureParallelChannel';
+    this.ChannelWidth=50;
+    this.AreaColor='rgba(25,25,25,0.4)';
+    this.LinePoint=[];
+
+    //计算需要画的点的坐标
+    this.CalculateDrawPoint=function()
+    {
+        if (this.Status<2) return null;
+        if(!this.Point.length || !this.Frame) return null;
+        var data=this.Frame.Data;
+        if (!data) return null;
+
+        var drawPoint=[];
+        if (this.Status==10)    //完成
+        {
+            for(var i=0; i<2; ++i)
+            {
+                var item=this.Value[i];
+                var pt=new Point();
+                pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset);
+                pt.Y=this.Frame.GetYFromData(item.YValue);
+                drawPoint.push(pt);
+            }
+        }
+        else
+        {
+            for(var i=0; i<this.Point.length; ++i)
+            {
+                var item=this.Point[i];
+                var pt=new Point();
+                pt.X=item.X;
+                pt.Y=item.Y;
+                drawPoint.push(pt);
+            }
+        }
+
+        if (drawPoint.length>=2)
+        {
+            var linePoint={Start:new Point(), End:new Point() };
+            linePoint.Start.X=drawPoint[0].X;
+            linePoint.Start.Y=drawPoint[0].Y;
+            linePoint.End.X=drawPoint[1].X;
+            linePoint.End.Y=drawPoint[1].Y;
+            this.LinePoint.push(linePoint);
+
+            if (drawPoint.length==3 || this.Status==10)
+            {
+                var x=linePoint.End.X-linePoint.Start.X;
+                var y=linePoint.End.Y-linePoint.Start.Y;
+                var angle=Math.atan(Math.abs(x/y));
+                var yMove=this.ChannelWidth/Math.sin(angle);
+
+                //console.log('[ChartDrawPictureParallelChannel::CalculateDrawPoint]',xMove);
+                
+                linePoint={Start:new Point(), End:new Point() };
+                linePoint.Start.X=drawPoint[0].X;
+                linePoint.Start.Y=drawPoint[0].Y-yMove;
+                linePoint.End.X=drawPoint[1].X;
+                linePoint.End.Y=drawPoint[1].Y-yMove;
+                this.LinePoint.push(linePoint);
+
+                var ptCenter=new Point();
+                ptCenter.X=linePoint.Start.X+(linePoint.End.X-linePoint.Start.X)/2;
+                ptCenter.Y=linePoint.Start.Y+(linePoint.End.Y-linePoint.Start.Y)/2;
+                drawPoint[3]=ptCenter;
+
+                this.Point[2]=ptCenter;
+                var xValue=parseInt(this.Frame.GetXData(ptCenter.X))+data.DataOffset;
+                var yValue=this.Frame.GetYData(ptCenter.Y);
+                this.Value[2]={XValue:xValue,YValue:yValue};
+                this.PointCount=this.Point.length;  //完成以后是3个点
+            }
+        }
+    
+        return drawPoint;
+    }
+
+    this.DrawLine=function(ptStart,ptEnd)
+    {
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptStart.X,ptStart.Y);
+        this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
+        this.Canvas.stroke();
+    }
+
+    this.DrawArea=function(pt,pt2,pt3,pt4)
+    {
+        this.Canvas.fillStyle=this.AreaColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(pt.X,pt.Y);
+        this.Canvas.lineTo(pt2.X,pt2.Y);
+        this.Canvas.lineTo(pt3.X,pt3.Y);
+        this.Canvas.lineTo(pt4.X,pt4.Y);
+        this.Canvas.closePath();
+        this.Canvas.fill();
+    }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        var drawPoint=this.CalculateDrawPoint();
+        if (!drawPoint) return;
+
+        this.ClipFrame();
+
+        for(var i in this.LinePoint)
+        {
+            var item=this.LinePoint[i];
+            this.DrawLine(item.Start,item.End);
+        }
+
+        if (this.LinePoint.length==2)
+        {
+            this.DrawArea(this.LinePoint[0].Start,this.LinePoint[0].End,this.LinePoint[1].End,this.LinePoint[1].Start);
+        }
+
+        this.Canvas.restore();
+       
+        this.DrawPoint(drawPoint); //画点
+    }
+
+    //xStep,yStep 移动的偏移量
+    this.Move=function(xStep,yStep)
+    {
+        if (this.Status!=20) return fasle;
+        if (!this.Frame) return false;
+        var data=this.Frame.Data;
+        if (!data) return false;
+
+        if (this.MovePointIndex==100)    //整体移动
+        {
+            for(var i in this.Point)
+            {
+                this.Point[i].X+=xStep;
+                this.Point[i].Y+=yStep;
+            }
+        }
+        else if (this.MovePointIndex==0 || this.MovePointIndex==1)
+        {
+            if (this.MovePointIndex<this.Point.length)
+            {
+                this.Point[this.MovePointIndex].X+=xStep;
+                this.Point[this.MovePointIndex].Y+=yStep;
+            }
+        }
+        else if (this.MovePointIndex==2)    //宽度的点要计算
+        {
+            this.Point[this.MovePointIndex].X+=xStep;
+            this.Point[this.MovePointIndex].Y+=yStep;
+
+            var x=this.Point[1].X-this.Point[0].X;
+            var y=this.Point[1].Y-this.Point[0].Y;
+            var angle=Math.atan(Math.abs(x/y));
+            var yMove=this.ChannelWidth/Math.sin(angle)-yStep;
+            this.ChannelWidth=Math.sin(angle)*yMove;
+        }
+    }
+
+    //0-10 鼠标对应的点索引   100=鼠标在正个图形上  -1 鼠标不在图形上
+    this.IsPointIn=function(x,y)
+    {
+        if (!this.Frame || this.Status!=10) return -1;
+
+        var data=this.Frame.Data;
+        if (!data) return -1;
+
+        //是否在点上
+        for(var i=0;i<this.Value.length; ++i)
+        {
+            var item=this.Value[i];
+            var pt=new Point();
+            if (i<2)
+            {
+                pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset);
+                pt.Y=this.Frame.GetYFromData(item.YValue);
+            }
+            else    //第3个点使用实际坐标
+            {
+                if (i>=this.Point.length) continue;
+                pt.X=this.Point[i].X;
+                pt.Y=this.Point[i].Y;
+            }
+
+            this.Canvas.beginPath();
+            this.Canvas.arc(pt.X,pt.Y,5,0,360);
+            if (this.Canvas.isPointInPath(x,y))  return i;
+        }
+
+        //是否在线段上
+        for(var i in this.LinePoint)
+        {
+            var item=this.LinePoint[i];
+            var ptStart=item.Start;
+            var ptEnd=item.End;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(ptStart.X,ptStart.Y+5);
+            this.Canvas.lineTo(ptStart.X,ptStart.Y-5);
+            this.Canvas.lineTo(ptEnd.X,ptEnd.Y-5);
+            this.Canvas.lineTo(ptEnd.X,ptEnd.Y+5);
+            this.Canvas.closePath();
+            if (this.Canvas.isPointInPath(x,y))
+                return 100;
+        }
+
+        return -1;
+    }
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //  数据分割
@@ -14701,6 +14922,9 @@ function KLineChartContainer(uielement)
                 break;
             case '平行线':
                 drawPicture=new ChartDrawPictureParallelLines();
+                break;
+            case '平行通道':
+                drawPicture=new ChartDrawPictureParallelChannel();
                 break;
             default:
                 return false;
@@ -19672,6 +19896,8 @@ function ModifyIndexDialog(divElement)
     this.Title={ ID:Guid() };      //标题
     this.ParamList={ID:Guid() };   //参数列表  class='parameter-content'
     this.ParamData=[];              //{ ID:参数ID, Value:参数值}
+    this.Identify;
+    this.HQChart;
 
     //创建
     this.Create=function()
@@ -19743,6 +19969,7 @@ function ModifyIndexDialog(divElement)
         }
 
         //绑定参数修改事件
+        var self=this;
         for(var i in this.ParamData)
         {
             var item=this.ParamData[i];
@@ -19755,8 +19982,8 @@ function ModifyIndexDialog(divElement)
                 function(event)
                 {
                     var value = parseInt($(this).val());                            //获取当前操作的input属性值，转化为整型
-                    var chart=event.data.Chart;
-                    var identify=event.data.Identify;
+                    var chart=self.HQChart;
+                    var identify=self.Identify;
                     var paramIndex=event.data.ParamIndex;
 
                     chart.WindowIndex[identify].Arguments[paramIndex].Value = value;    //为参数属性重新赋值
@@ -19773,8 +20000,8 @@ function ModifyIndexDialog(divElement)
                 function(event)
                 {
                     var value = parseInt($(this).val());                            //获取当前操作的input属性值，转化为整型
-                    var chart=event.data.Chart;
-                    var identify=event.data.Identify;
+                    var chart=self.HQChart;
+                    var identify=self.Identify;
                     var paramIndex=event.data.ParamIndex;
 
                     chart.WindowIndex[identify].Arguments[paramIndex].Value = value;    //为参数属性重新赋值
@@ -19785,39 +20012,31 @@ function ModifyIndexDialog(divElement)
     }
 
     //绑定取消事件
-    this.BindCancel=function(chart,identify)
+    this.BindCancel=function()
     {
         //取消按钮事件
+        var self=this;
         $("#"+this.ID+" .cancel").click(
+            function()
             {
-                Chart:chart,
-                Identify:identify,
-            },
-            function(event)
-            {
-                var chart=event.data.Chart;
-                var identify=event.data.Identify;
-
-                chart.ModifyIndexDialog.RestoreParam(chart.WindowIndex[identify]);
+                var chart=self.HQChart;
+                var identify=self.Identify;
+                self.RestoreParam(chart.WindowIndex[identify]);
                 chart.UpdateWindowIndex(identify);
-                chart.ModifyIndexDialog.Hide();
+                self.Hide();
             }
         );
 
         //关闭和取消是一样的
         $("#"+this.ID+" #close").click(
+            function()
             {
-                Chart:chart,
-                Identify:identify,
-            },
-            function(event)
-            {
-                var chart=event.data.Chart;
-                var identify=event.data.Identify;
+                var chart=self.HQChart;
+                var identify=self.Identify;
 
-                chart.ModifyIndexDialog.RestoreParam(chart.WindowIndex[identify]);
+                self.RestoreParam(chart.WindowIndex[identify]);
                 chart.UpdateWindowIndex(identify);
-                chart.ModifyIndexDialog.Hide();
+                self.Hide();
             }
         );
     }
@@ -19842,10 +20061,12 @@ function ModifyIndexDialog(divElement)
         if(!dialog) return;
 
         if (dialog.ID==null) dialog.Create();   //第1次 需要创建div
+        dialog.Identify=identify;
+        dialog.HQChart=chart;
         dialog.SetTitle(chart.WindowIndex[identify].Name+" 指标参数设置");      //设置标题
         dialog.ClearParamList();            //清空参数
         dialog.BindParam(chart,identify);   //绑定参数
-        dialog.BindCancel(chart,identify);  //绑定取消和关闭事件
+        dialog.BindCancel();  //绑定取消和关闭事件
 
         //居中显示
         var border=chart.Frame.ChartBorder;
