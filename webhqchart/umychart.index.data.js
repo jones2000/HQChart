@@ -1948,8 +1948,8 @@ JSIndexScript.prototype.FXG_BSPoint=function()
         魔鬼:=EMA(SLOPE(C,21)*20+C,42),COLOR000000;\n\
         买:=CROSS(天使,魔鬼);\n\
         卖:=CROSS(魔鬼,天使);\n\
-        DRAWICON(买,L*0.99,13),COLORYELLOW;\n\
-        DRAWICON(卖,H*1.01,14),COLORGREEN;\n\
+        SUPERDRAWTEXT(买,L,"B",2,5),COLORYELLOW;\n\
+        SUPERDRAWTEXT(卖,L,"S",1,5),COLORGREEN;\n\
         DRAWKLINE_IF(天使>=魔鬼,HIGH,CLOSE,LOW,OPEN),COLORRED;\n\
         DRAWKLINE_IF(天使<魔鬼,HIGH,CLOSE,LOW,OPEN),COLORBLUE;\n\
         DRAWKLINE_IF(CROSS(天使,魔鬼),HIGH,CLOSE,LOW,OPEN),COLORYELLOW;\n\
@@ -2018,7 +2018,7 @@ JSIndexScript.prototype.FXG_INDEX3=function()
 {
     let data =
     {
-        Name: '量能黄金点', Description: '量能黄金点', IsMainIndex: false,
+        Name: '量能黄金点', Description: '量能黄金点', IsMainIndex: false,FloatPrecision:0,
         Args: [],
         Script: //脚本
 'A:=IFF((CLOSE>126.32),VOL,VOL); \n\

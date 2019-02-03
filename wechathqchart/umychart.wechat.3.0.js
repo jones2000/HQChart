@@ -6203,51 +6203,63 @@ function IFrameSplitOperator()
         return data;
     }
 
-  this.RemoveZero = function (aryInfo)   //移除小数后面多余的0
-  {
-    //所有的数字小数点后面都0,才会去掉
-    var isAllZero = [true, true];
-    for (var i in aryInfo) {
-      var item = aryInfo[i];
-      var message = item.Message[0];
-      if (!message) isAllZero[0] = false;
-      else if (!this.IsDecimalZeroEnd(message)) isAllZero[0] = false;
+    this.RemoveZero = function (aryInfo)   //移除小数后面多余的0
+    {
+        //所有的数字小数点后面都0,才会去掉
+        var isAllZero = [true, true];
+        for (var i in aryInfo) 
+        {
+            var item = aryInfo[i];
+            var message = item.Message[0];
+            if (!this.IsDecimalZeroEnd(message)) isAllZero[0] = false;
 
-      var message = item.Message[1];
-      if (!message) isAllZero[1] = false;
-      else if (!this.IsDecimalZeroEnd(message)) isAllZero[1] = false;
+            var message = item.Message[1];
+            if (!this.IsDecimalZeroEnd(message)) isAllZero[1] = false;
+        }
+
+        if (isAllZero[0] == false && isAllZero[1] == false) return;
+        for (var i in aryInfo) 
+        {
+            var item = aryInfo[i];
+            if (isAllZero[0]) 
+            {
+                var message = item.Message[0];
+                if (message!=null) 
+                {
+                    if (typeof (message) == 'number') message = message.toString();
+                    item.Message[0] = message.replace(/[.][0]+/g, '');
+                }
+            }
+
+            if (isAllZero[1]) 
+            {
+                var message = item.Message[1];
+                if (message!=null)
+                {
+                    if (typeof (message) == 'number') message = message.toString();
+                    item.Message[1] = message.replace(/[.][0]+/g, '');
+                }
+            }
+        }
     }
 
-    if (isAllZero[0] == false && isAllZero[1] == false) return;
-    for (var i in aryInfo) {
-      var item = aryInfo[i];
-      if (isAllZero[0]) {
-        var message = item.Message[0];
-        item.Message[0] = message.replace(/[.][0]+/g, '');
-      }
+    this.IsDecimalZeroEnd = function (text)   //是否是0结尾的小数
+    {
+        if (text==null) return true;
+        if (text == '0') return true;
+        if (typeof(text)=='number') text=text.toString();
 
-      if (isAllZero[1]) {
-        var message = item.Message[1];
-        item.Message[1] = message.replace(/[.][0]+/g, '');
-      }
+        var pos = text.search(/[.]/);
+        if (pos < 0) return false;
+
+        for (var i = pos + 1; i < text.length; ++i) 
+        {
+            var char = text.charAt(i);
+            if (char >= '1' && char <= '9') return false;
+        }
+
+        return true;
     }
-  }
-
-  this.IsDecimalZeroEnd = function (text)   //是否是0结尾的小数
-  {
-    if (!text) return false;
-    if (text == '0') return true;
-
-    var pos = text.search(/[.]/);
-    if (pos < 0) return false;
-
-    for (var i = pos + 1; i < text.length; ++i) {
-      var char = text.charAt(i);
-      if (char >= '1' && char <= '9') return false;
-    }
-
-    return true;
-  }
 }
 
 //字符串格式化 千分位分割
@@ -9749,7 +9761,7 @@ function KLineChartContainer(uielement) {
         for (var i in this.Frame.SubFrame) 
         {
             var item = this.Frame.SubFrame[i].Frame;
-            item.XPointCount = showCount + 5;
+            item.XPointCount = showCount+1;
             item.Data = this.ChartPaint[0].Data;
         }
 

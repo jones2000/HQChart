@@ -61,6 +61,12 @@ JSIndexScript.prototype.Get=function(id)
             ['资金分析', this.FundsAnalysis], ['融资占比', this.MarginProportion], 
             ['负面新闻', this.NewsNegative], ['机构调研', this.NewsResearch], ['董秘连线', this.NewsInteract], ['涨跌趋势', this.UpDownAnalyze],
 
+            //外包指标
+            ['放心股-操盘BS点', this.FXG_BSPoint],
+            ['放心股-涨停多空线', this.FXG_INDEX],
+            ['放心股-涨停吸筹区', this.FXG_INDEX2],
+            ['放心股-量能黄金点', this.FXG_INDEX3],
+
             //五彩K线(函数COLOR_开头)
             ['五彩K线-十字星', this.COLOR_KSTAR1], ['五彩K线-早晨之星', this.COLOR_KSTAR2], ['五彩K线-黄昏之星', this.COLOR_KSTAR3], ['五彩K线-长十字', this.COLOR_SHI1],
             ['五彩K线-身怀六甲', this.COLOR_K220], ['五彩K线-三个白武士', this.COLOR_K300], ['五彩K线-三只乌鸦', this.COLOR_K310], ['五彩K线-光头阳线', this.COLOR_K380],
@@ -2012,6 +2018,120 @@ JSIndexScript.prototype.UpDownAnalyze = function ()
         Script: //脚本
             "上涨家数:UPCOUNT('CNA.CI'),COLORRED;\n\
 下跌家数:DOWNCOUNT('CNA.CI'),COLORGREEN;"
+    };
+
+    return data;
+}
+
+//外包指标
+JSIndexScript.prototype.FXG_BSPoint = function () 
+{
+    let data =
+    {
+        Name: '操盘BS点', Description: '操盘BS点', IsMainIndex: true,
+        Args: [],
+        Script: //脚本
+            'MA5:MA(CLOSE,5);\n\
+        MA13:MA(CLOSE,13);\n\
+        MA21:MA(CLOSE,21);\n\
+        MA34:MA(CLOSE,34);\n\
+        {MA55:MA(CLOSE,55),COLOR0000FF;}\n\
+        {MA120:=MA(CLOSE,120),COLORFFFF00;}\n\
+        天使:=EMA(C,2),COLOR000000;\n\
+        魔鬼:=EMA(SLOPE(C,21)*20+C,42),COLOR000000;\n\
+        买:=CROSS(天使,魔鬼);\n\
+        卖:=CROSS(魔鬼,天使);\n\
+        SUPERDRAWTEXT(买,L,"B",2,5),COLORYELLOW;\n\
+        SUPERDRAWTEXT(卖,L,"S",1,5),COLORGREEN;\n\
+        DRAWKLINE_IF(天使>=魔鬼,HIGH,CLOSE,LOW,OPEN),COLORRED;\n\
+        DRAWKLINE_IF(天使<魔鬼,HIGH,CLOSE,LOW,OPEN),COLORBLUE;\n\
+        DRAWKLINE_IF(CROSS(天使,魔鬼),HIGH,CLOSE,LOW,OPEN),COLORYELLOW;\n\
+        DRAWKLINE_IF(CROSS(魔鬼,天使),HIGH,CLOSE,LOW,OPEN),COLORBLACK;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.FXG_INDEX = function () 
+{
+    let data =
+    {
+        Name: '涨停多空线', Description: '涨停多空线', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            '做多能量线: SMA((CLOSE-LLV(LOW,9))/(HHV(HIGH,9)-LLV(LOW,9))*100,5,1)-8,COLORRED,LINETHICK3;\n\
+做空能量线: SMA((HHV(HIGH,36)-CLOSE)/(HHV(HIGH,36)-LLV(LOW,36))*100,2,1),COLORGREEN,LINETHICK3;\n\
+20,POINTDOT,COLORF00FF0;\n\
+50,POINTDOT,COLORGREEN;\n\
+80,POINTDOT,COLORLIBLUE;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.FXG_INDEX2 = function () 
+{
+    let data =
+    {
+        Name: '涨停吸筹区', Description: '涨停吸筹区', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'VAR0:=EMA(HHV(HIGH,500),21); \n\
+VAR1:=EMA(HHV(HIGH,250),21);\n\
+VAR2:=EMA(HHV(HIGH,90),21); \n\
+VAR3:=EMA(LLV(LOW,500),21); \n\
+VAR4:=EMA(LLV(LOW,250),21); \n\
+VAR5:=EMA(LLV(LOW,90),21);\n\
+\n\
+VAR6:=EMA((VAR3*0.96+VAR4*0.96+VAR5*0.96+VAR0*0.558+VAR1*0.558+VAR2*0.558)/6,21); \n\
+VAR7:=EMA((VAR3*1.25+VAR4*1.23+VAR5*1.2+VAR0*0.55+VAR1*0.55+VAR2*0.65)/6,21); \n\
+VAR8:=EMA((VAR3*1.3+VAR4*1.3+VAR5*1.3+VAR0*0.68+VAR1*0.68+VAR2*0.68)/6,21); \n\
+VAR9:=EMA((VAR6*3+VAR7*2+VAR8)/6*1.738,21); \n\
+VAR10:=REF(LOW,1); \n\
+VAR11:=SMA(ABS(LOW-VAR10),3,1)/SMA(MAX(LOW-VAR10,0),3,1)*100; \n\
+VAR12:=EMA(IFF(CLOSE*1.35<=VAR9,VAR11*10,VAR11/10),3); \n\
+VAR13:=LLV(LOW,30); \n\
+VAR14:=HHV(VAR12,30); \n\
+VAR15:=IFF(MA(CLOSE,58),1,0); \n\
+VAR16:=EMA(IFF(LOW<=VAR13,(VAR12+VAR14*2)/2,0),3)/618*VAR15;\n\
+\n\
+资金入场:IFF(VAR16>0,VAR16,0),LINETHICK,LINETHICK2, COLORFF0000; \n\
+\n\
+A1:IFF(资金入场>0,资金入场*1.2,0),STICK,LINETHICK5, COLORFF0000;\n\
+A2:IFF(资金入场>0,资金入场*0.8,0),STICK,LINETHICK5, COLORFF6600;\n\
+A3:IFF(资金入场>0,资金入场*0.6,0),STICK,LINETHICK5, COLORFF9900;\n\
+A4:IFF(资金入场>0,资金入场*0.4,0) ,STICK,LINETHICK5,COLORFFCC00;\n\
+A5:IFF(资金入场>0,资金入场*0.2,0) ,STICK,LINETHICK5,COLORFFFF00;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.FXG_INDEX3 = function () 
+{
+    let data =
+    {
+        Name: '量能黄金点', Description: '量能黄金点', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'A:=IFF((CLOSE>126.32),VOL,VOL); \n\
+主力:=MA(A,4),COLORRED;\n\
+游资:=MA(A,8),COLORYELLOW;\n\
+大户:=MA(A,16),COLORF0F000;\n\
+散户:=MA(A,32),COLOR00FF00;\n\
+主比:=ABS(((主力)/(主力 + 游资 + 大户 + 散户))*(100)),LINESTICK,COLORRED;\n\
+游比:=ABS(((游资)/(主力 + 游资 + 大户 + 散户))*(100)),LINESTICK,COLORYELLOW;\n\
+大比:=ABS(((大户)/(主力 + 游资 + 大户 + 散户))*(100)),LINESTICK,COLORF0F000;\n\
+散比:=ABS(((散户)/(主力 + 游资 + 大户 + 散户))*(100)),LINESTICK,COLOR00FF00;\n\
+警戒线:MA(A,180),COLORFF66FF;\n\
+STICKLINE((主力 > 0),0,主力,2.5,0),COLOR1020BB;\n\
+STICKLINE((主力 > 0),0,主力,0.7,0),COLORRED;\n\
+STICKLINE((游资 > 0),0,游资,2.5,0),COLOR009CFF;\n\
+STICKLINE((游资 > 0),0,游资,0.7,0),COLORYELLOW;\n\
+STICKLINE((大户 > 0),0,大户,2.5,0),COLORFF8800;\n\
+STICKLINE((大户 > 0),0,大户,0.7,0),COLORLIBLUE;\n\
+STICKLINE((散户 > 0),0,散户,2.5,0),COLOR00CA00;\n\
+STICKLINE((散户 > 0),0,散户,0.7,0),COLORGREEN;'
     };
 
     return data;
