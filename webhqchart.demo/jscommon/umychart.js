@@ -982,7 +982,11 @@ function JSChartContainer(uielement)
         this.JSChartContainer.SelectChartDrawPicture=null;
         if (this.JSChartContainer.CurrentChartDrawPicture)  //画图工具模式
         {
-            this.JSChartContainer.SetChartDrawPictureFirstPoint(drag.Click.X,drag.Click.Y);
+            var drawPicture=this.JSChartContainer.CurrentChartDrawPicture;
+            if (drawPicture.Status==2)
+                this.JSChartContainer.SetChartDrawPictureThirdPoint(drag.Click.X,drag.Click.Y);
+            else
+                this.JSChartContainer.SetChartDrawPictureFirstPoint(drag.Click.X,drag.Click.Y);
         }
         else    //是否在画图工具上
         {
@@ -1027,6 +1031,13 @@ function JSChartContainer(uielement)
                 {
                     if(Math.abs(drag.LastMove.X-e.clientX)<5 && Math.abs(drag.LastMove.Y-e.clientY)<5) return;
                     if(this.JSChartContainer.SetChartDrawPictureSecondPoint(e.clientX,e.clientY))
+                    {
+                        this.JSChartContainer.DrawDynamicInfo();
+                    }
+                }
+                else if (drawPicture.Status==3)
+                {
+                    if(this.JSChartContainer.SetChartDrawPictureThirdPoint(e.clientX,e.clientY))
                     {
                         this.JSChartContainer.DrawDynamicInfo();
                     }
@@ -1086,14 +1097,19 @@ function JSChartContainer(uielement)
             document.onmousemove=null;
             document.onmouseup=null;
 
+            var bClearDrawPicture=true;
             if (this.JSChartContainer && this.JSChartContainer.CurrentChartDrawPicture)
             {
-                if (this.JSChartContainer.CurrentChartDrawPicture.Status==2 || this.JSChartContainer.CurrentChartDrawPicture.Status==1)
+                var drawPicture=this.JSChartContainer.CurrentChartDrawPicture;
+                if (drawPicture.Status==2 || drawPicture.Status==1 || drawPicture.Status==3)
                 {
+                    drawPicture.PointStatus=drawPicture.Status;
                     if (this.JSChartContainer.FinishChartDrawPicturePoint())
                         this.JSChartContainer.DrawDynamicInfo();
+                    else
+                        bClearDrawPicture=false;
                 }
-                else if (this.JSChartContainer.CurrentChartDrawPicture.Status==20)
+                else if (drawPicture.Status==20)
                 {
                     if (this.JSChartContainer.FinishMoveChartDrawPicture())
                         this.JSChartContainer.DrawDynamicInfo();
@@ -1159,7 +1175,7 @@ function JSChartContainer(uielement)
 
             //清空数据
             this.JSChartContainer.MouseDrag=null;
-            this.JSChartContainer.CurrentChartDrawPicture=null;
+            if (bClearDrawPicture===true) this.JSChartContainer.CurrentChartDrawPicture=null;
             this.JSChartContainer=null;
         }
     }
@@ -1511,21 +1527,31 @@ function JSChartContainer(uielement)
         this.LastPoint.Y=y;
         this.CursorIndex=this.Frame.GetXData(x);
 
-        var drawPictrueData={};
-        drawPictrueData.X=x;
-        drawPictrueData.Y=y;
-        if (this.GetChartDrawPictureByPoint(drawPictrueData))
+        var bDrawPicture=false; //是否正在画图
+        if (this.CurrentChartDrawPicture)
         {
-            this.UIElement.style.cursor="pointer";
+            if (this.CurrentChartDrawPicture.SetLastPoint) this.CurrentChartDrawPicture.SetLastPoint({X:x,Y:y});
+            bDrawPicture=true;
         }
         else
         {
-            this.UIElement.style.cursor="default";
+            var drawPictrueData={};
+            drawPictrueData.X=x;
+            drawPictrueData.Y=y;
+            if (this.GetChartDrawPictureByPoint(drawPictrueData)) 
+            {
+                this.UIElement.style.cursor="pointer";
+                bDrawPicture=true;
+            }
+            else 
+            {
+                this.UIElement.style.cursor="default";
+            }
         }
 
         this.DrawDynamicInfo();
 
-        if (this.IsShowTooltip)
+        if (this.IsShowTooltip && bDrawPicture==false)
         {
             var toolTip=new TooltipData();
             for(var i in this.ChartPaint)
@@ -9282,8 +9308,11 @@ function DrawToolsButton()
                 { HTML:{Title:'水平线', Icon:'content/image/icon-hline.png', ID:'icon-hline'} , Name:'水平线'},
                 { HTML:{Title:'平行线', Icon:'content/image/icon-parallellines.png', ID:'icon-parallellines'} , Name:'平行线'},
                 { HTML:{Title:'平行通道', Icon:'content/image/icon-parallelchannel.png', ID:'icon-parallelchannel'} , Name:'平行通道'},
+                { HTML:{Title:'价格通道线', Icon:'content/image/icon-pricechannel.png', ID:'icon-pricechannel'} , Name:'价格通道线'},
                 { HTML:{Title:'圆弧', Icon:'content/image/icon-arc.png', ID:'icon-arc'} , Name:'圆弧线'},
                 { HTML:{Title:'矩形', Icon:'content/image/icon-rect.png', ID:'icon-rect'} , Name:'矩形'},
+                { HTML:{Title:'三角形', Icon:'content/image/icon-triangle.png', ID:'icon-triangle'} , Name:'三角形'},
+                { HTML:{Title:'对称角度', Icon:'content/image/icon-symangle.png', ID:'icon-symangle'} , Name:'对称角度'},
                 { HTML:{Title:'文本', Icon:'content/image/icon-text.png', ID:'icon-text'} , Name:'文本'},
                 { HTML:{Title:'江恩角度线', Icon:'content/image/icon-gannfan.png', ID:'icon-gannfan'} , Name:'江恩角度线'},
                 { HTML:{Title:'阻速线', Icon:'content/image/icon-resline.png', ID:'icon-resline'} , Name:'阻速线'},
@@ -11153,10 +11182,7 @@ function DynamicChartTitlePainting()
     }
 }
 
-
-/*
-    画图工具
-*/
+//画图工具
 function IChartDrawPicture()
 {
     this.Frame;
@@ -11165,7 +11191,8 @@ function IChartDrawPicture()
     this.Value=new Array();                     //XValue,YValue
     this.LinePoint=[];
     this.PointCount=2;                          //画点的个数
-    this.Status=0;                              //0 开始画 1 完成第1个点  2 完成第2个点    10 完成 20 移动
+    this.Status=0;                              //0=开始画 1=完成第1个点  2=完成第2个点 3=完成第3个点  10=完成 20=移动
+    this.PointStatus=0;                         //2=第2个点完成
     this.MovePointIndex=null;                   //移动哪个点 0-10 对应Point索引  100 整体移动
     this.ClassName='IChartDrawPicture';
 
@@ -11173,6 +11200,9 @@ function IChartDrawPicture()
     this.LineColor="#1e90ff";      //线段颜色，input type="color" 不支持rgb和rgba 的格式
     this.AreaColor='rgba(25,25,25,0.4)';    //面积颜色
     this.PointColor=g_JSChartResource.DrawPicture.PointColor[0];
+
+    //接口函数
+    this.SetLastPoint=null; //this.SetLastPoint=function(obj)  obj={X:,Y:}
 
     this.Draw=function()
     {
@@ -11449,6 +11479,19 @@ function IChartDrawPicture()
         if (value>=0) return 100;
 
         return -1;
+    }
+
+    this.DrawLine=function(ptStart,ptEnd,isDottedline)
+    {
+        if (isDottedline) this.Canvas.setLineDash([5,10]);
+
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptStart.X,ptStart.Y);
+        this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
+        this.Canvas.stroke();
+
+        if (isDottedline) this.Canvas.setLineDash([]);
     }
 
 }
@@ -12011,75 +12054,152 @@ function ChartDrawPictureParallelLines()
 
     this.ClassName='ChartDrawPictureParallelLines';
     this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.PointCount=3;
+    this.LastPoint;
 
     this.Draw=function()
     {
         this.LinePoint=[];
-        if (this.Status==10) this.InitializeParallelPoint();
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint) return;
-        //console.log('[ChartDrawPictureParallelLines::Draw] status=',this.Status);
+
+        this.AreaColor=IChartDrawPicture.ColorToRGBA(this.LineColor,0.3);
+        var points=drawPoint.slice(0);
+        this.CalculateLines(points);
 
         this.ClipFrame();
-        this.DrawExtendLine(drawPoint[0],drawPoint[1]);
 
-        //平行线
-        if (drawPoint.length==3)
+        for(var i in this.LinePoint)
         {
-            var x=drawPoint[2].X-drawPoint[1].X;
-            var y=drawPoint[2].Y-drawPoint[1].Y;
+            var item=this.LinePoint[i];
+            this.DrawLine(item.Start,item.End);
+        }
+
+        this.DrawArea();
+        this.DrawPoint(points);  //画点
+        this.Canvas.restore(); 
+    }
+
+    this.SetLastPoint=function(obj)
+    {
+        this.LastPoint={X:obj.X,Y:obj.Y};
+    }
+
+    this.DrawArea=function()
+    {
+        if (this.LinePoint.length!=2) return;
+
+        this.Canvas.fillStyle=this.AreaColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(this.LinePoint[0].Start.X,this.LinePoint[0].Start.Y);
+        this.Canvas.lineTo(this.LinePoint[0].End.X,this.LinePoint[0].End.Y);
+        this.Canvas.lineTo(this.LinePoint[1].End.X,this.LinePoint[1].End.Y);
+        this.Canvas.lineTo(this.LinePoint[1].Start.X,this.LinePoint[1].Start.Y);
+        this.Canvas.closePath();
+        this.Canvas.fill();
+    }
+
+    this.CalculateLines=function(points)
+    {
+        if (this.PointStatus==2 && this.LastPoint)
+        {
+            var pt=new Point();
+            pt.X=this.LastPoint.X;
+            pt.Y=this.LastPoint.Y;
+            points[2]=pt;
+        }
+
+        if (points.length==2)
+        {
+            var linePoint=this.CalculateExtendLinePoint(points[0],points[1]);
+            this.LinePoint.push(linePoint);
+        }
+        else if (points.length==3)
+        {
+            var linePoint=this.CalculateExtendLinePoint(points[0],points[1]);
+            this.LinePoint.push(linePoint);
+
+            //计算平行线
+            var xMove=points[2].X-points[1].X;
+            var yMove=points[2].Y-points[1].Y;
 
             var ptStart=new Point();
             var ptEnd=new Point();
-            ptStart.X=drawPoint[0].X+x;
-            ptStart.Y=drawPoint[0].Y+y;
-            ptEnd.X=drawPoint[1].X+x;
-            ptEnd.Y=drawPoint[1].Y+y;
+            ptStart.X=points[0].X+xMove;
+            ptStart.Y=points[0].Y+yMove;
+            ptEnd.X=points[1].X+xMove;
+            ptEnd.Y=points[1].Y+yMove;
+            linePoint=this.CalculateExtendLinePoint(ptStart,ptEnd);
+            this.LinePoint.push(linePoint);
+        }
+    }
+}
 
-            this.DrawExtendLine(ptStart,ptEnd);
+//价格通道线
+function ChartDrawPicturePriceChannel()
+{
+    this.newMethod=ChartDrawPictureParallelLines;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawPicturePriceChannel';
+
+    this.CalculateLines=function(points)
+    {
+        if (this.PointStatus==2 && this.LastPoint)
+        {
+            var pt=new Point();
+            pt.X=this.LastPoint.X;
+            pt.Y=this.LastPoint.Y;
+            points[2]=pt;
         }
 
-        this.Canvas.restore();
+        if (points.length==2)
+        {
+            var linePoint=this.CalculateExtendLinePoint(points[0],points[1]);
+            this.LinePoint.push(linePoint);
+        }
+        else if (points.length==3)
+        {
+            var linePoint=this.CalculateExtendLinePoint(points[0],points[1]);
+            this.LinePoint.push(linePoint);
 
-        //画点
-        this.DrawPoint(drawPoint);
+            //计算平行线
+            var xMove=points[2].X-points[1].X;
+            var yMove=points[2].Y-points[1].Y;
+
+            var ptStart=new Point();
+            var ptEnd=new Point();
+            ptStart.X=points[0].X+xMove;
+            ptStart.Y=points[0].Y+yMove;
+            ptEnd.X=points[1].X+xMove;
+            ptEnd.Y=points[1].Y+yMove;
+            linePoint=this.CalculateExtendLinePoint(ptStart,ptEnd);
+            this.LinePoint.push(linePoint);
+
+            var ptStart=new Point();
+            var ptEnd=new Point();
+            ptStart.X=points[0].X-xMove;
+            ptStart.Y=points[0].Y-yMove;
+            ptEnd.X=points[1].X-xMove;
+            ptEnd.Y=points[1].Y-yMove;
+            linePoint=this.CalculateExtendLinePoint(ptStart,ptEnd);
+            this.LinePoint.push(linePoint);
+        }
     }
 
-    //画单条线
-    this.DrawExtendLine=function(ptStart,ptEnd)
+    this.DrawArea=function()
     {
-        var linePoint=this.CalculateExtendLinePoint(ptStart,ptEnd);
-        if (!linePoint.Start || !linePoint.End) return;
-        
-        this.Canvas.strokeStyle=this.LineColor;
+        if (this.LinePoint.length!=3) return;
+
+        this.Canvas.fillStyle=this.AreaColor;
         this.Canvas.beginPath();
-        this.Canvas.moveTo(linePoint.Start.X,linePoint.Start.Y);
-        this.Canvas.lineTo(linePoint.End.X,linePoint.End.Y);
-        this.Canvas.stroke();
-        this.LinePoint.push(linePoint);
-    }
-
-    this.InitializeParallelPoint=function()
-    {
-        if (this.Value.length!=2) return;
-        if (!this.Frame) return;
-        var data=this.Frame.Data;
-        if (!data) return;
-
-        var item=this.Value[1];
-        var pt=new Point();
-        pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset);
-        pt.Y=this.Frame.GetYFromData(item.YValue);
-        var pt3=new Point();
-        pt3.X=pt.X+50;
-        pt3.Y=pt.Y;
-        this.Point[2]=pt3;
-
-        var xValue=parseInt(this.Frame.GetXData(pt3.X))+data.DataOffset;
-        var yValue=this.Frame.GetYData(pt3.Y);
-
-        this.Value[2]={XValue:xValue,YValue:yValue};
-        this.PointCount=this.Point.length;  //完成以后是3个点
+        this.Canvas.moveTo(this.LinePoint[1].Start.X,this.LinePoint[1].Start.Y);
+        this.Canvas.lineTo(this.LinePoint[1].End.X,this.LinePoint[1].End.Y);
+        this.Canvas.lineTo(this.LinePoint[2].End.X,this.LinePoint[2].End.Y);
+        this.Canvas.lineTo(this.LinePoint[2].Start.X,this.LinePoint[2].Start.Y);
+        this.Canvas.closePath();
+        this.Canvas.fill();
     }
 }
 
@@ -12814,6 +12934,182 @@ function ChartDrawPictureWaveBand()
     {
         const GOLDEN_SECTION_DATA= [0,0.125, 0.25, 0.375, 0.50, 0.625, 0.75, 0.875,1];
         return GOLDEN_SECTION_DATA;
+    }
+}
+
+//三角形
+function ChartDrawPictureTriangle()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawPictureTriangle';
+    this.PointCount=3;
+    this.Font=16*GetDevicePixelRatio() +"px 微软雅黑";
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.LastPoint;
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
+        if (!drawPoint) return;
+        
+        var points=drawPoint.slice(0);
+        this.AreaColor=IChartDrawPicture.ColorToRGBA(this.LineColor,0.3);
+        this.ClipFrame();
+        
+        this.CalculateLines(points);
+        for(var i in this.LinePoint)
+        {
+            var item=this.LinePoint[i];
+            this.DrawLine(item.Start,item.End);
+        }
+
+        this.DrawArea(points);
+
+        this.Canvas.restore();
+        this.DrawPoint(points); //画点
+    }
+
+    this.DrawArea=function(points)
+    {
+        if (points.length!=3) return;
+
+        this.Canvas.fillStyle=this.AreaColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(points[0].X,points[0].Y);
+        this.Canvas.lineTo(points[1].X,points[1].Y);
+        this.Canvas.lineTo(points[2].X,points[2].Y);
+        this.Canvas.lineTo(points[0].X,points[0].Y);
+        this.Canvas.closePath();
+        this.Canvas.fill();
+    }
+
+    this.SetLastPoint=function(obj)
+    {
+        this.LastPoint={X:obj.X,Y:obj.Y};
+    }
+
+    this.CalculateLines=function(points)
+    {
+        if (this.PointStatus==2 && this.LastPoint)
+        {
+            var pt=new Point();
+            pt.X=this.LastPoint.X;
+            pt.Y=this.LastPoint.Y;
+            points[2]=pt;
+        }
+
+        if (points.length===2)
+        {
+            var line={Start:new Point(), End:new Point()};
+            line.Start.Y=points[0].Y;
+            line.Start.X=points[0].X;
+            line.End.Y=points[1].Y;
+            line.End.X=points[1].X;
+            this.LinePoint.push(line);
+        }
+        else if (points.length===3)
+        {
+            var line={Start:new Point(), End:new Point()};
+            line.Start.Y=points[0].Y;
+            line.Start.X=points[0].X;
+            line.End.Y=points[1].Y;
+            line.End.X=points[1].X;
+            this.LinePoint.push(line);
+
+            line={Start:new Point(), End:new Point()};
+            line.Start.Y=points[1].Y;
+            line.Start.X=points[1].X;
+            line.End.Y=points[2].Y;
+            line.End.X=points[2].X;
+            this.LinePoint.push(line);
+
+            line={Start:new Point(), End:new Point()};
+            line.Start.Y=points[2].Y;
+            line.Start.X=points[2].X;
+            line.End.Y=points[0].Y;
+            line.End.X=points[0].X;
+            this.LinePoint.push(line);
+        }
+    }
+}
+
+//对称角度
+function ChartDrawPictureSymmetryAngle()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawPictureSymmetryAngle';
+    this.PointCount=2;
+    this.Font=16*GetDevicePixelRatio() +"px 微软雅黑";
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
+        if (!drawPoint) return;
+        
+        //var points=drawPoint.slice(0);
+        this.AreaColor=IChartDrawPicture.ColorToRGBA(this.LineColor,0.3);
+        this.ClipFrame();
+        
+        this.CalculateLines(drawPoint);
+        for(var i in this.LinePoint)
+        {
+            var item=this.LinePoint[i];
+            this.DrawLine(item.Start,item.End);
+        }
+        this.DrawArea();
+        this.DrawPoint(drawPoint); //画点
+        this.Canvas.restore();
+    }
+
+    this.CalculateLines=function(points)
+    {
+        if (points.length!=2) return;
+        if (!this.Frame) return;
+
+        var line={Start:new Point(), End:new Point()};
+        line.Start.Y=points[0].Y;
+        line.Start.X=points[0].X;
+        line.End.Y=points[1].Y;
+        line.End.X=points[1].X;
+        this.LinePoint.push(line);
+
+        line={Start:new Point(), End:new Point()};
+        line.Start.Y=points[0].Y;
+        line.Start.X=points[0].X;
+        line.End.Y=points[1].Y;
+        line.End.X=points[0].X;
+        this.LinePoint.push(line);
+
+        var xMove=points[0].X-points[1].X;
+        line={Start:new Point(), End:new Point()};
+        line.Start.Y=points[0].Y;
+        line.Start.X=points[0].X;
+        line.End.Y=points[1].Y;
+        line.End.X=points[0].X+xMove;
+        this.LinePoint.push(line);
+    }
+
+    this.DrawArea=function()
+    {
+        if (this.LinePoint.length!=3) return;
+
+        this.Canvas.fillStyle=this.AreaColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(this.LinePoint[0].Start.X,this.LinePoint[0].Start.Y);
+        this.Canvas.lineTo(this.LinePoint[0].End.X,this.LinePoint[0].End.Y);
+        this.Canvas.lineTo(this.LinePoint[2].End.X,this.LinePoint[2].End.Y);
+        this.Canvas.moveTo(this.LinePoint[0].Start.X,this.LinePoint[0].Start.Y);
+        this.Canvas.closePath();
+        this.Canvas.fill();
     }
 }
 
@@ -15589,6 +15885,9 @@ function KLineChartContainer(uielement)
             case '平行通道':
                 drawPicture=new ChartDrawPictureParallelChannel();
                 break;
+            case '价格通道线':
+                drawPicture=new ChartDrawPicturePriceChannel();
+                break;
             case '文本':
                 drawPicture=new ChartDrawPictureText();
                 break;
@@ -15606,6 +15905,12 @@ function KLineChartContainer(uielement)
                 break;
             case '波段线':
                 drawPicture=new ChartDrawPictureWaveBand();
+                break;
+            case '三角形':
+                drawPicture=new ChartDrawPictureTriangle();
+                break;
+            case '对称角度':
+                drawPicture=new ChartDrawPictureSymmetryAngle();
                 break;
             default:
                 return false;
@@ -15657,6 +15962,19 @@ function KLineChartContainer(uielement)
         drawPicture.Point[1].Y=y-this.UIElement.getBoundingClientRect().top;
 
         drawPicture.Status=2;   //设置第2个点
+    }
+
+    //设置第3个点
+    this.SetChartDrawPictureThirdPoint=function(x,y)
+    {
+        var drawPicture=this.CurrentChartDrawPicture;
+        if (!drawPicture) return false;
+
+        drawPicture.Point[2]=new Point();
+        drawPicture.Point[2].X=x-this.UIElement.getBoundingClientRect().left;
+        drawPicture.Point[2].Y=y-this.UIElement.getBoundingClientRect().top;
+
+        drawPicture.Status=3;   //设置第2个点
     }
 
     //xStep,yStep 移动的偏移量
