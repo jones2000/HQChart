@@ -1962,6 +1962,7 @@ function JSChartContainer(uielement)
             var height=frame.ChartBorder.GetHeight();
             var width=frame.ChartBorder.GetWidth();
 
+            this.Canvas.beginPath();
             this.Canvas.rect(left,top,width,height);
             if (this.Canvas.isPointInPath(x,y)) return parseInt(i);
 
@@ -2430,23 +2431,40 @@ function AverageWidthFrame()
         this.DrawVertical();
     }
 
-    this.GetYFromData=function(value)
+    //isLimit 是否限制在当前坐标下
+    this.GetYFromData=function(value, isLimit)
     {
-        if (this.CoordinateType==1)
+        if (isLimit===false)
         {
-            if(value<=this.HorizontalMin) return this.ChartBorder.GetTopEx();
-            if(value>=this.HorizontalMax) return this.ChartBorder.GetBottomEx();
-
-            var height=this.ChartBorder.GetHeightEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
-            return this.ChartBorder.GetTopEx()+height;
+            if (this.CoordinateType==1)
+            {
+                var height=this.ChartBorder.GetHeightEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
+                return this.ChartBorder.GetTopEx()+height;
+            }
+            else
+            {
+                var height=this.ChartBorder.GetHeightEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
+                return this.ChartBorder.GetBottomEx()-height;
+            }
         }
         else
         {
-            if(value<=this.HorizontalMin) return this.ChartBorder.GetBottomEx();
-            if(value>=this.HorizontalMax) return this.ChartBorder.GetTopEx();
+            if (this.CoordinateType==1)
+            {
+                if(value<=this.HorizontalMin) return this.ChartBorder.GetTopEx();
+                if(value>=this.HorizontalMax) return this.ChartBorder.GetBottomEx();
 
-            var height=this.ChartBorder.GetHeightEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
-            return this.ChartBorder.GetBottomEx()-height;
+                var height=this.ChartBorder.GetHeightEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
+                return this.ChartBorder.GetTopEx()+height;
+            }
+            else
+            {
+                if(value<=this.HorizontalMin) return this.ChartBorder.GetBottomEx();
+                if(value>=this.HorizontalMax) return this.ChartBorder.GetTopEx();
+
+                var height=this.ChartBorder.GetHeightEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
+                return this.ChartBorder.GetBottomEx()-height;
+            }
         }
     }
 
@@ -2954,12 +2972,12 @@ function KLineFrame()
         var toolbarHeight=this.ChartBorder.GetTitleHeight();
         var left=this.ChartBorder.GetRight()-toolbarWidth;
         var top=this.ChartBorder.GetTop();
-        var spanIcon = "<span class='parameters icon iconfont icon-canshushezhi' id='modifyindex' style='cursor:pointer;' title='调整指标参数'></span>&nbsp;&nbsp;" +
-            "<span class='target icon iconfont icon-shezhi-tianchong' id='changeindex' style='cursor:pointer;' title='选择指标'></span>";
+        var spanIcon = "<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;' title='调整指标参数'></span>&nbsp;&nbsp;" +
+            "<span class='index_change icon iconfont icon-setting' id='changeindex' style='cursor:pointer;' title='选择指标'></span>";
 
         if (this.Identify!==0 && this.CloseIndex)  //第1个窗口不能关闭
         {
-            const spanCloseIcon="&nbsp;&nbsp;<span class='close icon iconfont icon-close' id='closeindex' style='cursor:pointer;' title='关闭指标窗口'></span>";
+            const spanCloseIcon="&nbsp;&nbsp;<span class='index_close icon iconfont icon-close' id='closeindex' style='cursor:pointer;' title='关闭指标窗口'></span>";
             spanIcon+=spanCloseIcon;
         }
 
@@ -2975,24 +2993,24 @@ function KLineFrame()
         var chart=this.ChartBorder.UIElement.JSChartContainer;
         var identify=this.Identify;
         if (!this.ModifyIndex)  //隐藏'改参数'
-            $("#"+divToolbar.id+" .parameters").hide();
+            $("#"+divToolbar.id+" .index_param").hide();
         else if (typeof(this.ModifyIndexEvent)=='function')  //绑定点击事件
-            $("#"+divToolbar.id+" .parameters").click(
+            $("#"+divToolbar.id+" .index_param").click(
                 {
                     Chart:this.ChartBorder.UIElement.JSChartContainer,
                     Identify:this.Identify
                 },this.ModifyIndexEvent);
 
         if (!this.ChangeIndex)  //隐藏'换指标'
-            $("#"+divToolbar.id+" .target").hide();
+            $("#"+divToolbar.id+" .index_change").hide();
         else if (typeof(this.ChangeIndexEvent)=='function')
-            $("#"+divToolbar.id+" .target").click(
+            $("#"+divToolbar.id+" .index_change").click(
                 {
                     Chart:this.ChartBorder.UIElement.JSChartContainer,
                     Identify:this.Identify
                 },this.ChangeIndexEvent);
         
-        $("#"+divToolbar.id+" .close").click(
+        $("#"+divToolbar.id+" .index_close").click(
             {
                 Chart:this.ChartBorder.UIElement.JSChartContainer,
                 Identify:this.Identify
@@ -11319,16 +11337,11 @@ function IChartDrawPicture()
                     {
                         if (item.XValue-data.DataOffset<0) return null;
                     }
-
-                    if (option.IsCheckY===true)
-                    {
-                        if (item.YValue>this.Frame.HorizontalMax || item.YValue<this.Frame.HorizontalMin) return null;
-                    }
                 }
 
                 var pt=new Point();
                 pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset);
-                pt.Y=this.Frame.GetYFromData(item.YValue);
+                pt.Y=this.Frame.GetYFromData(item.YValue,false);
                 drawPoint.push(pt);
             }
         }
@@ -15397,6 +15410,7 @@ function KLineChartContainer(uielement)
         if (!this.Frame.SubFrame) return;
         if (id>=this.Frame.SubFrame.length) return;
 
+        var delFrame=this.Frame.SubFrame[id].Frame;
         this.DeleteIndexPaint(id);
         this.Frame.SubFrame[id].Frame.ClearToolbar();
         this.Frame.SubFrame.splice(id,1);
@@ -15410,6 +15424,18 @@ function KLineChartContainer(uielement)
             else item.XSplitOperator.ShowText=false;
 
             item.Identify=i;
+        }
+
+        if (this.ChartDrawPicture.length>0)
+        {
+            var aryDrawPicture=[];
+            for(var i in this.ChartDrawPicture)
+            {
+                var item=this.ChartDrawPicture[i];
+                if (item.Frame==delFrame) continue;
+                aryDrawPicture.push(item);
+            }
+            this.ChartDrawPicture=aryDrawPicture;
         }
 
         this.Frame.SetSizeChage(true);
@@ -15936,6 +15962,7 @@ function KLineChartContainer(uielement)
             var height=frame.ChartBorder.GetHeight();
             var width=frame.ChartBorder.GetWidth();
 
+            this.Canvas.beginPath();
             this.Canvas.rect(left,top,width,height);
             if (this.Canvas.isPointInPath(x,y))
             {
@@ -17183,8 +17210,11 @@ function MinuteChartContainer(uielement)
             this.ExtendChartPaint[0].Name=this.Name;
         }
 
-        this.OverlayChartPaint[0].MainData=this.ChartPaint[0].Data;         //叠加
-        this.OverlayChartPaint[0].MainYClose=yClose;
+        if (this.OverlayChartPaint.length>0)
+        {
+            this.OverlayChartPaint[0].MainData=this.ChartPaint[0].Data;         //叠加
+            this.OverlayChartPaint[0].MainYClose=yClose;
+        }
     }
 
     //获取子窗口的所有画法
@@ -20910,7 +20940,7 @@ function ModifyIndexDialog(divElement)
         "<div class='parameter'>\
             <div class='parameter-header'>\
                 <span></span>\
-                <strong id='close' class='icon iconfont icon-guanbi'></strong>\
+                <strong id='close' class='icon iconfont icon-close'></strong>\
             </div>\
             <div class='parameter-content'><input/>MA</div>\
         <div class='parameter-footer'>\
@@ -21099,7 +21129,7 @@ function ChangeIndexDialog(divElement)
         '<div class="target-panel">\n' +
             '            <div class="target-header">\n' +
             '                <span>换指标</span>\n' +
-            '                <strong class="close-tar icon iconfont icon-guanbi"></strong>\n' +
+            '                <strong class="close-tar icon iconfont icon-close"></strong>\n' +
             '            </div>\n' +
             '            <div class="target-content">\n' +
             '                <div class="target-left">\n' +
@@ -21462,7 +21492,7 @@ function MinuteDialog(divElement)
         var div=document.createElement('div');
         div.className='jchart-kline-minute-box';
         div.id=this.ID;
-        div.innerHTML="<div><div class='minute-dialog-title'><span></span><strong class='close-munite icon iconfont icon-guanbi'></strong></div></div>";
+        div.innerHTML="<div><div class='minute-dialog-title'><span></span><strong class='close-munite icon iconfont icon-close'></strong></div></div>";
         div.style.width=this.Height+'px';
         div.style.height=this.Width+'px';
 
@@ -21582,7 +21612,7 @@ function KLineSelectRectDialog(divElement)
         "<div class='parameter jchart-select-section'>\
             <div class='parameter-header'>\
                 <span>区间统计</span>\
-                <strong id='close' class='icon iconfont icon-guanbi'></strong>\
+                <strong id='close' class='icon iconfont icon-close'></strong>\
             </div>\
             <div class='parameter-content'>统计数据</div>\
         <div class='parameter-footer'>\

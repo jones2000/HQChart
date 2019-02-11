@@ -40,13 +40,19 @@
         $(function ()
         {
             var symbol=getURLParams('symbol');
-            if (symbol==null) symbol='600000.sh';
+            if (symbol==null) symbol='000001.sh';
+            //if (symbol==null) symbol='150013.sz';   //基金
+            //if (symbol==null) symbol='00001.hk';
+            //if (symbol==null) symbol='tf1903.cfe';
+            //if (symbol==null) symbol='cf1909.czc';
+            
         
             var index=getURLParams('index');        //指标3
             if (index==null) index='MACD';
             var aryIndex=new Array();
             if (index) aryIndex.push({"Index":index});
 
+            //JSChart.SetDomain("http://web4.umydata.com");
             // 创建股票K线图
             var jsChart=JSChart.Init(document.getElementById('kline'));
         
@@ -58,19 +64,31 @@
                     IsAutoUpate:true,       //是自动更新数据
         
                     IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
+                    DayCount:1,                     //1 最新交易日数据 >1 多日走势图
+
+                    MinuteLine:
+                    {
+                        //IsDrawAreaPrice:false,      //是否画价格面积图
+                    },
+
+                    IsShowRightMenu:true,
         
                     Border: //边框
                     {
-                        Left:100,    //左边间距
+                        Left:0,    //左边间距
                         Right:100,     //右边间距
                         Top:20
                     },
                     Frame:  //子框架设置
-                        [
-                            {SplitCount:5,StringFormat:1},
-                            {SplitCount:3,StringFormat:1},
-                            {SplitCount:3,StringFormat:0},
-                        ]
+                    [
+                        {SplitCount:5,StringFormat:0},
+                        {SplitCount:3,StringFormat:0},
+                        {SplitCount:3,StringFormat:0},
+                    ],
+                    Overlay:
+                    [
+                        //{Symbol:'000001.sh'}
+                    ]
                 }
             
             var windowHeight= $(window).height();
