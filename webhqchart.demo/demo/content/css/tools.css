@@ -529,9 +529,8 @@ td.context-menu {
 .klineframe-button{
     position: absolute;
     text-align:right;
-    line-height: 24px;
-    padding-right: 5px;
-    box-sizing: border-box;
+    border:1px solid #cccccc;
+    padding: 2px;
 }
 /*.klineframe-button span:hover{*/
     /*color: #0182d4;*/
