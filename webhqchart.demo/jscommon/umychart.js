@@ -9634,6 +9634,16 @@ function IFrameSplitOperator()
             }
         }
 
+        if (this.SplitCount == 2 && data.length>2) //之显示第1个和最后一个刻度
+        {
+            for(var i=1;i<data.length-1;++i)
+            {
+                var item=data[i];
+                item.Message[0]=null;
+                item.Message[1]=null;
+            }
+        }
+
         if (keepZero)   //如果不存在0轴,增加一个0轴,刻度信息部显示
         {
             var bExsitZero=false;
@@ -9656,7 +9666,7 @@ function IFrameSplitOperator()
                 data.push(zeroCoordinate);
             }
         }
-    
+
         return data;
     }
 
@@ -10339,7 +10349,7 @@ function ChartCorssCursor()
     this.Font=g_JSChartResource.CorssCursorTextFont;            //字体
     this.TextColor=g_JSChartResource.CorssCursorTextColor;      //文本颜色
     this.TextBGColor=g_JSChartResource.CorssCursorBGColor;      //文本背景色
-    this.TextHeight=20;                     //文本字体高度
+    this.TextHeight=20;                                         //文本字体高度
     this.LastPoint;
 
     this.PointX;
@@ -10455,11 +10465,12 @@ function ChartCorssCursor()
             this.Canvas.fillStyle=this.TextBGColor;
             var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
             var yCenter=bottom+2+this.TextHeight/2;
+            //console.log('[ChartCorssCursor::Draw] ',yCenter);
             if (x-textWidth/2<3)    //左边位置不够了, 顶着左边画
             {
                 this.Canvas.fillRect(x-1,bottom+2,textWidth,this.TextHeight);
                 this.Canvas.textAlign="left";
-                this.Canvas.textBaseline="center";
+                this.Canvas.textBaseline="middle";
                 this.Canvas.fillStyle=this.TextColor;
                 this.Canvas.fillText(text,x+1,yCenter,textWidth);
             }
@@ -10467,7 +10478,7 @@ function ChartCorssCursor()
             {
                 this.Canvas.fillRect(right-textWidth,bottom+2,textWidth,this.TextHeight);
                 this.Canvas.textAlign="right";
-                this.Canvas.textBaseline="center";
+                this.Canvas.textBaseline="middle";
                 this.Canvas.fillStyle=this.TextColor;
                 this.Canvas.fillText(text,right-2,yCenter,textWidth);
             }
@@ -10475,7 +10486,7 @@ function ChartCorssCursor()
             {
                 this.Canvas.fillRect(x-textWidth/2,bottom+2,textWidth,this.TextHeight);
                 this.Canvas.textAlign="center";
-                this.Canvas.textBaseline="center";
+                this.Canvas.textBaseline="middle";
                 this.Canvas.fillStyle=this.TextColor;
                 this.Canvas.fillText(text,x,yCenter,textWidth);
             }

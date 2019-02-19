@@ -6177,6 +6177,16 @@ function IFrameSplitOperator()
             }
         }
 
+        if (this.SplitCount == 2 && data.length>2) //之显示第1个和最后一个刻度
+        {
+            for(var i=1;i<data.length-1;++i)
+            {
+                var item=data[i];
+                item.Message[0]=null;
+                item.Message[1]=null;
+            }
+        }
+
         if (keepZero)   //如果不存在0轴,增加一个0轴,刻度信息部显示
         {
             var bExsitZero=false;
@@ -6197,16 +6207,6 @@ function IFrameSplitOperator()
                 zeroCoordinate.Message[0] = null
                 zeroCoordinate.Message[1] = null;
                 data.push(zeroCoordinate);
-            }
-        }
-
-        if (this.SplitCount == 2 && data.length>2) //之显示第1个和最后一个刻度
-        {
-            for(var i=1;i<data.length-1;++i)
-            {
-                var item=data[i];
-                item.Message[0]=null;
-                item.Message[1]=null;
             }
         }
 
