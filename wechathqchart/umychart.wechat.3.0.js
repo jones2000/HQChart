@@ -6200,6 +6200,16 @@ function IFrameSplitOperator()
             }
         }
 
+        if (this.SplitCount == 2 && data.length>2) //之显示第1个和最后一个刻度
+        {
+            for(var i=1;i<data.length-1;++i)
+            {
+                var item=data[i];
+                item.Message[0]=null;
+                item.Message[1]=null;
+            }
+        }
+
         return data;
     }
 
@@ -9250,10 +9260,10 @@ function PriceSplitData() {
     [0.5, 0.8, 0.2, 0.05],
     [0.8, 1, 0.5, 0.05],
 
-    [1, 2, 1, 0.05],
-    [2, 4, 2, 0.05],
-    [4, 5, 4, 0.05],
-    [5, 10, 5, 0.05],
+    [1, 2, 0.5, 0.05],
+    [2, 4, 0.5, 0.05],
+    [4, 5, 0.5, 0.05],
+    [5, 10, 0.5, 0.05],
 
     [10, 12, 10, 2],
     [20, 40, 20, 5],
