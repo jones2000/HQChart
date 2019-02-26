@@ -20,7 +20,6 @@ function JSChart(divElement)
     //改参数div
     this.ModifyIndexDialog=new ModifyIndexDialog(divElement);
     this.ChangeIndexDialog=new ChangeIndexDialog(divElement);
-    this.KLineInfoTooltip=new KLineInfoTooltip(divElement);
     this.MinuteDialog=new MinuteDialog(divElement);
 
     this.OnSize=function()
@@ -83,7 +82,6 @@ function JSChart(divElement)
         //创建改参数div
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
         chart.ChangeIndexDialog=this.ChangeIndexDialog;
-        chart.KLineInfoTooltip=this.KLineInfoTooltip;
         chart.MinuteDialog=this.MinuteDialog;
         
         //右键菜单
@@ -241,7 +239,6 @@ function JSChart(divElement)
         //创建改参数div
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
         chart.ChangeIndexDialog=this.ChangeIndexDialog;
-        chart.KLineInfoTooltip=this.KLineInfoTooltip;
         chart.MinuteDialog=this.MinuteDialog;
         
         //右键菜单
@@ -1721,27 +1718,51 @@ function JSChartContainer(uielement)
     this.ShowTooltip=function(x,y,toolTip)
     {
         if (!this.IsShowTooltip) return;
-        
-        var format=new HistoryDataStringFormat();
-        format.Value=toolTip;
-        format.Symbol=this.Symbol;
-        if (!format.Operator()) return;
 
-        var scrollPos=GetScrollPosition();
-        var left = x;
-        var top = y;
-        var width=157;
-        this.Tooltip.style.width = width+"px";
-        this.Tooltip.style.height =200+"px";
-        if (toolTip.ChartPaint.Name=="Overlay-KLine")  this.Tooltip.style.height =220+"px";
-        this.Tooltip.style.position = "absolute";
-        if (left+width>this.UIElement.getBoundingClientRect().right+scrollPos.Left)
-            this.Tooltip.style.left = (left-width) + "px";
-        else
+        if (toolTip.Type===0) //K线信息
+        {
+            var format=new HistoryDataStringFormat();
+            format.Value=toolTip;
+            format.Symbol=this.Symbol;
+            if (!format.Operator()) return;
+
+            var scrollPos=GetScrollPosition();
+            var left = x;
+            var top = y;
+            var width=157;
+            this.Tooltip.style.width = width+"px";
+            this.Tooltip.style.height =200+"px";
+            if (toolTip.ChartPaint.Name=="Overlay-KLine")  this.Tooltip.style.height =220+"px";
+            this.Tooltip.style.position = "absolute";
+            if (left+width>this.UIElement.getBoundingClientRect().right+scrollPos.Left)
+                this.Tooltip.style.left = (left-width) + "px";
+            else
+                this.Tooltip.style.left = left + "px";
+            this.Tooltip.style.top = top + "px";
+            this.Tooltip.className='jschart-tooltip';
+            this.Tooltip.innerHTML=format.Text;
+            this.Tooltip.style.display = "block";
+        }
+        else if (toolTip.Type===1)   //信息地雷提示信息
+        {
+            var scrollPos=GetScrollPosition();
+            var left = x;
+            var top = y;
+            var width=500;
+            var format=new KLineInfoDataStringFormat();
+            format.Value=toolTip;
+            format.Symbol=this.Symbol;
+            if (!format.Operator()) return;
+
+            this.Tooltip.className='jchart-klineinfo-tooltip';
+            this.Tooltip.style.position = "absolute";
             this.Tooltip.style.left = left + "px";
-        this.Tooltip.style.top = top + "px";
-        this.Tooltip.innerHTML=format.Text;
-        this.Tooltip.style.display = "block";
+            this.Tooltip.style.top = top + "px";
+            this.Tooltip.style.width = null;
+            this.Tooltip.style.height =null;
+            this.Tooltip.innerHTML=format.Text;
+            this.Tooltip.style.display = "block";
+        }
     }
 
     this.HideTooltip=function()
@@ -4783,6 +4804,7 @@ function TooltipData()              //提示信息
 {
     this.ChartPaint;
     this.Data;
+    this.Type=0;
 }
 
 function Rect(x,y,width,height)
@@ -4924,6 +4946,7 @@ function ChartKLine()
     this.ColorData;             //五彩K线颜色 >0：g_JSChartResource.UpBarColor 其他：g_JSChartResource.DownBarColor
     this.TradeData;             //交易系统 包含买卖数据{Buy:, Sell:}
     this.TooltipRect=new Array();           //2位数组 0 数据序号 1 区域
+    this.InfoTooltipRect=[];                //2维数组 0 数据,  1 区域
 
     this.IsShowMaxMinPrice=true;                 //是否显示最大最小值
     this.IsShowKTooltip=true;                    //是否显示K线tooltip
@@ -4932,8 +4955,6 @@ function ChartKLine()
 
     this.InfoData;      //信息地雷 key=日期  value=信息数据
     this.InfoDiv=new Array();
-
-    this.InfoTooltipEvent;  //信息地雷悬停事件
 
     this.PtMax;     //最大值的位置
     this.PtMin;     //最小值的位置
@@ -5030,8 +5051,8 @@ function ChartKLine()
 
             if(this.Data.DataType==0)
             {
-                var infoItem={Xleft:left,XRight:right, YMax:yHigh, YMin:yLow, DayData:data, Index:j};
-                this.DrawInfoDiv(infoItem);
+                var infoItem={Xleft:left,XRight:right, YMax:yHigh, XCenter:x, YMin:yLow, DayData:data, Index:j};
+                this.DrawInfo(infoItem);
             }
         }
 
@@ -5400,8 +5421,9 @@ function ChartKLine()
 
             if(this.Data.DataType==0 && !isHScreen)
             {
-                var infoItem={Xleft:left,XRight:right, YMax:yHigh, YMin:yLow, DayData:data, Index:j};
-                this.DrawInfoDiv(infoItem);
+                var infoItem={Xleft:left,XRight:right, XCenter:x, YMax:yHigh, YMin:yLow, DayData:data, Index:j};
+                //this.DrawInfoDiv(infoItem);
+                this.DrawInfo(infoItem);
             }
         }
 
@@ -5498,8 +5520,8 @@ function ChartKLine()
 
     this.Draw=function()
     {
-        this.ClearInfoDiv();
         this.TooltipRect=[];
+        this.InfoTooltipRect=[];
         this.PtMax={X:null,Y:null,Value:null,Align:'left'}; //清空最大
         this.PtMin={X:null,Y:null,Value:null,Align:'left'}; //清空最小
 
@@ -5637,6 +5659,67 @@ function ChartKLine()
     }
 
     //画某一天的信息地雷
+    this.DrawInfo=function(item)
+    {
+        if (!this.InfoData || this.InfoData.length<=0) return;
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+
+        var infoData=this.InfoData.get(item.DayData.Date.toString());
+        if (!infoData || infoData.Data.length<=0) return;
+
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+        var iconSize=dataWidth+distanceWidth;
+        var minIconSize=18*pixelTatio;
+        if (iconSize<minIconSize) iconSize=minIconSize;
+        
+        var text='', title='';
+        var mapImage=new Map();
+        var iconTop=item.YMax+1*pixelTatio;
+        for(var i in infoData.Data)
+        {
+            var infoItem=infoData.Data[i];
+            var imageInfo=mapImage.get(infoItem.InfoType);
+            if (!imageInfo)
+            {
+                var icon=JSKLineInfoMap.GetIconFont(infoItem.InfoType);
+                this.Canvas.fillStyle=icon.Color;
+                this.Canvas.font=iconSize+'px '+icon.Family;
+                this.Canvas.textBaseline="bottom";
+                this.Canvas.textAlign="center";
+                this.Canvas.fillText(icon.Text,item.XCenter,iconTop,iconSize);
+
+                var iconRect=new Rect(item.XCenter-iconSize/2,iconTop-iconSize,iconSize,iconSize);
+                infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:item.XCenter, Y:iconTop} };
+                mapImage.set(infoItem.InfoType,infoCache);
+
+                iconTop-=iconSize;
+            }
+            else
+            {
+                imageInfo.Data.push(infoItem);
+            }
+        }
+
+        for(var item of mapImage)
+        {
+            var value=item[1];
+            if (value.Data.length>=2 && g_JSChartResource.KLine.NumIcon.Text)
+            {
+                var iconID=value.Data.length;
+                if (iconID>=g_JSChartResource.KLine.NumIcon.Text.length) iconID=0;
+                this.Canvas.fillStyle=g_JSChartResource.KLine.NumIcon.Color;
+                var text=g_JSChartResource.KLine.NumIcon.Text[iconID];
+                this.Canvas.fillText(text,value.TextRect.X,value.TextRect.Y,iconSize);
+            }
+
+            this.InfoTooltipRect.push(value);
+        }
+    }
+
+    
+    /*
+    //画某一天的信息地雷
     this.DrawInfoDiv=function(item)
     {
         if (!this.InfoData || this.InfoData.length<=0) return;
@@ -5723,9 +5806,27 @@ function ChartKLine()
 
         this.InfoDiv.push(divInfo);
     }
+    */
 
     this.GetTooltipData=function(x,y,tooltip)
     {
+        for(var i in this.InfoTooltipRect)
+        {
+            var item=this.InfoTooltipRect[i];
+            if (!item.Rect) continue;
+            var rect=item.Rect;
+            this.Canvas.beginPath();
+            this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
+            if (this.Canvas.isPointInPath(x,y))
+            {
+                console.log('[ChartKLine::GetTooltipData]', item);
+                tooltip.Data=item;
+                tooltip.ChartPaint=this;
+                tooltip.Type=1;
+                return true;
+            }
+        }
+
         for(var i in this.TooltipRect)
         {
             var rect=this.TooltipRect[i][1];
@@ -5736,6 +5837,7 @@ function ChartKLine()
                 var index=this.TooltipRect[i][0];
                 tooltip.Data=this.Data.Data[index];
                 tooltip.ChartPaint=this;
+                tooltip.Type=0;
                 return true;
             }
         }
@@ -6154,6 +6256,7 @@ function ChartOverlayKLine()
     this.Draw=function()
     {
         this.TooltipRect=[];
+        this.InfoTooltipRect=[];
         if (!this.MainData || !this.Data) return;
 
         var xPointCount=this.ChartFrame.XPointCount;
@@ -10852,6 +10955,172 @@ function HistoryDataStringFormat()
     }
 }
 
+//K线信息地雷提示信息格式
+function KLineInfoDataStringFormat()
+{
+    this.newMethod=IChangeStringFormat;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.UpColor=g_JSChartResource.UpTextColor;
+    this.DownColor=g_JSChartResource.DownTextColor;
+    this.UnchagneColor=g_JSChartResource.UnchagneTextColor;
+
+    this.Operator=function()
+    {
+        if (!this.Value) return false;
+
+        var infoList=this.Value.Data.Data;  //数据
+        var infoType=this.Value.Data.Type;  //类型
+        var strText='';
+
+        for(var i in infoList)
+        {
+            var item=infoList[i];
+            var tempText='';
+            switch(infoType)
+            {
+                case KLINE_INFO_TYPE.BLOCKTRADING:
+                    tempText=this.BlockTradingFormat(item);
+                    break;
+                case KLINE_INFO_TYPE.TRADEDETAIL:
+                    tempText=this.TradeDetailFormat(item);
+                    break;
+                case KLINE_INFO_TYPE.RESEARCH:
+                    tempText=this.ResearchFormat(item);
+                    break;
+                case KLINE_INFO_TYPE.PFORECAST:
+                    tempText=this.PerformanceForecastFormat(item);
+                    break;
+                default:
+                    tempText=this.DefaultFormat(item);
+                    break;
+            }
+
+            strText+=tempText;
+        }
+
+        var html="<div class='title-length'>"+strText+"</div>";
+
+        if(infoList.length > 8)
+        {
+            var strBox="<div class='total-list'>共"+infoList.length+"条</div>";
+            html+=strBox;
+        }
+
+        this.Text=html;
+        return true;
+    }
+
+    this.DefaultFormat=function(item)
+    {
+        var strDate=IFrameSplitOperator.FormatDateString(item.Date);
+        var strText="<span>"+strDate+"&nbsp;&nbsp;&nbsp;"+item.Title+"</span>";
+        return strText;
+    }
+
+    //大宗交易
+    this.BlockTradingFormat=function(item)
+    {
+        var showPriceInfo = item.ExtendData;
+        var strDate=IFrameSplitOperator.FormatDateString(item.Date);
+        var strText="<span><i class='date-tipbox'>"+strDate+"</i>&nbsp;&nbsp;<i class='tipBoxTitle'>成交价:&nbsp;"+showPriceInfo.Price.toFixed(2)+"</i><i class='tipBoxTitle'>收盘价:&nbsp;"+showPriceInfo.ClosePrice.toFixed(2)+
+            "</i><br/><i class='rate-discount tipBoxTitle'>溢折价率:&nbsp;<strong style='color:"+ this.GetColor(showPriceInfo.Premium.toFixed(2))+"'>"+
+            showPriceInfo.Premium.toFixed(2)+"%</strong></i><i class='tipBoxTitle'>成交量(万股):&nbsp;"+showPriceInfo.Vol.toFixed(2)+"</i></span>";
+
+        return strText;
+    }
+
+    //龙虎榜
+    this.TradeDetailFormat=function(item)
+    {
+        /*var detail=
+            [
+                "日价格涨幅偏离值达到9.89%",
+                "日价格涨幅偏离值达格涨幅偏离值达格涨幅偏离值达到9.89%"
+            ]
+        */
+
+        var detail=item.ExtendData.Detail;
+        //格式：日期 上榜原因:  detail[0].TypeExplain
+        //                    detail[1].TypeExplain
+        //      一周后涨幅: xx 四周后涨幅: xx
+        var strDate=IFrameSplitOperator.FormatDateString(item.Date);
+        var reasons = [];
+        for(var i in detail)
+        {
+            reasons += "<i>"+detail[i].TypeExplain+"</i><br/>"
+            // reasons += detail[i] + "<br/>"
+        }
+
+        var strText= "<span><i class='trade-time'>"+strDate+"&nbsp;&nbsp;&nbsp;上榜原因:&nbsp;&nbsp;</i><i class='reason-list'>"+reasons+"</i><br/><i class='trade-detall'>一周后涨幅:&nbsp;<strong style='color:"+
+            this.GetColor(item.ExtendData.FWeek.Week1.toFixed(2))+"'>"+ item.ExtendData.FWeek.Week1.toFixed(2)+
+            "%</strong>&nbsp;&nbsp;&nbsp;四周后涨幅:&nbsp;<strong style='color:"+this.GetColor(item.ExtendData.FWeek.Week4.toFixed(2))+";'>"+
+            item.ExtendData.FWeek.Week4.toFixed(2)+"%</strong></i></span>";
+
+        return strText;
+    }
+
+    //调研
+    this.ResearchFormat=function(item)
+    {
+        var levels=item.ExtendData.Level;
+        var recPerson=[];
+        if(levels.length==0)
+        {
+            recPerson = "<i>无</i>"
+        }else
+        {
+            for(var j in levels)
+            {
+                if(levels[j]==0) recPerson+="<i style='color:#00a0e9'>证券代表&nbsp;&nbsp;&nbsp;</i>";
+                else if(levels[j]==1) recPerson+="<i>董秘&nbsp;&nbsp;&nbsp;</i>";
+                else if(levels[j]==2) recPerson+="<i style='color:#00a0e9'>总经理&nbsp;&nbsp;&nbsp;</i>";
+                else if(levels[j]==3) recPerson+="<i style='color:#00a0e9'>董事长&nbsp;&nbsp;&nbsp;</i>";
+            }
+        }
+        var strDate=IFrameSplitOperator.FormatDateString(item.Date);
+        var strText="<span>"+strDate+"&nbsp;&nbsp;&nbsp;接待:&nbsp;&nbsp;&nbsp;"+recPerson+"</span>";
+        return strText;
+    }
+
+    //业绩预测
+    this.PerformanceForecastFormat=function(item)
+    {
+        var reportDate=item.ExtendData.ReportDate;
+        var year=parseInt(reportDate/10000);  //年份
+        var day=reportDate%10000;   //比较 这个去掉年份的日期
+        var reportType;
+        if(day == 1231){
+            reportType = "年报"
+        }else if(day == 331){
+            reportType = "一季度报"
+        }else if(day == 630){
+            reportType = "半年度报"
+        }else if(day == 930){
+            reportType = "三季度报"
+        }
+
+        var weekData="";
+        if (item.ExtendData.FWeek)
+        {
+            if (item.ExtendData.FWeek.Week1!=null) weekData+="一周后涨幅:<i class='increase' style='color:"+this.GetColor(item.ExtendData.FWeek.Week1.toFixed(2))+"'>"+ item.ExtendData.FWeek.Week1.toFixed(2)+"%</i>";
+            if (item.ExtendData.FWeek.Week4!=null) weekData+="&nbsp;四周后涨幅:<i class='increase' style='color:"+this.GetColor(item.ExtendData.FWeek.Week4.toFixed(2))+"'>"+ item.ExtendData.FWeek.Week4.toFixed(2)+"%</i>";
+            if (weekData.length>0) weekData="<br/>&nbsp;&nbsp;<i class='prorecast-week'>"+weekData+"</i>";
+        }
+        var strDate=IFrameSplitOperator.FormatDateString(item.Date);
+        var strText="<span>"+strDate+"&nbsp;&nbsp;"+year+reportType+item.Title+"&nbsp;"+weekData+"</span>";
+        return strText;
+    }
+
+    this.GetColor=function(price)
+    {
+        if(price>0) return this.UpColor;
+        else if (price<0) return this.DownColor;
+        else return this.UnchagneColor;
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                      标题
@@ -11414,6 +11683,7 @@ function IChartDrawPicture()
 
     //接口函数
     this.SetLastPoint=null; //this.SetLastPoint=function(obj)  obj={X:,Y:}
+    this.Update=null;       //更新数据回调
 
     this.Draw=function()
     {
@@ -12773,7 +13043,7 @@ function ChartDrawPictureText()
     this.IsInitialized=false;   //是否初始化了
     this.SettingMenu;
 
-    this.Draw=function()
+    this.Draw=function(textFont)
     {
         this.TextRect=null;
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
@@ -12810,6 +13080,7 @@ function ChartDrawPictureText()
         if (!this.FontOption || !this.FontOption.Family || this.FontOption.Size<=0) return defaultFont;
 
         var font='';
+        if (this.FontOption.Color) font+=this.FontOption.Color+' ';
         if (this.FontOption.Style) font+=this.FontOption.Style+' ';
         if (this.FontOption.Weight) font+=this.FontOption.Weight+' ';
         if (this.FontOption.Size>=0) font+=this.FontOption.Size*GetDevicePixelRatio()+'px ';
@@ -14040,35 +14311,43 @@ function JSChartResource()
                 Investor:
                 {
                     ApiUrl:'https://opensource.zealink.com/API/NewsInteract', //互动易
-                    Icon:'https://opensourcecache.zealink.com/cache/test/investor.png',
+                    IconFont: { Family:'iconfont', Text:'\ue631' , Color:'#1c65db'} //SVG 文本
                 },
                 Announcement:                                           //公告
                 {
                     ApiUrl:'https://opensource.zealink.com/API/ReportList',
-                    Icon:'https://opensourcecache.zealink.com/cache/test/announcement.png',
-                    IconQuarter:'https://opensourcecache.zealink.com/cache/test/announcement2.png',  //季报
+                    IconFont: { Family:'iconfont', Text:'\ue633',Color:'#f5a521' }, //SVG 文本
+                    IconFont2: { Family:'iconfont', Text:'\ue634',Color:'#ed7520' } //SVG 文本 //季报
                 },
                 Pforecast:  //业绩预告
                 {
                     ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
-                    Icon:'https://opensourcecache.zealink.com/cache/test/pforecast.png',
+                    IconFont: { Family:'iconfont', Text:'\ue62e',Color:'#986cad' } //SVG 文本
                 },
                 Research:   //调研
                 {
                     ApiUrl:'https://opensource.zealink.com/API/InvestorRelationsList',
-                    Icon:'https://opensourcecache.zealink.com/cache/test/research.png',
+                    IconFont: { Family:'iconfont', Text:'\ue632',Color:'#19b1b7' } //SVG 文本
                 },
                 BlockTrading:   //大宗交易
                 {
                     ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
-                    Icon:'https://opensourcecache.zealink.com/cache/test/blocktrading.png',
+                    IconFont: { Family:'iconfont', Text:'\ue630',Color:'#f39f7c' } //SVG 文本
                 },
                 TradeDetail:    //龙虎榜
                 {
                     ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
-                    Icon:'https://opensourcecache.zealink.com/cache/test/tradedetail.png',
+                    IconFont: { Family:'iconfont', Text:'\ue62f',Color:'#b22626' } //SVG 文本
                 }
 
+            },
+            NumIcon:
+            {
+                Color:'rgb(251,80,80)',Family:'iconfont',
+                Text:[  '\ue649',
+                        '\ue63b','\ue640','\ue63d','\ue63f','\ue645','\ue641','\ue647','\ue648','\ue646','\ue636',
+                        '\ue635','\ue637','\ue638','\ue639','\ue63a','\ue63c','\ue63e','\ue642','\ue644','\ue643'
+                    ]
             }
         };
 
@@ -15372,7 +15651,6 @@ function KLineChartContainer(uielement)
         kline.ChartFrame=this.Frame.SubFrame[0].Frame;
         kline.Name="Main-KLine";
         kline.DrawType=this.KLineDrawType;
-        if (this.KLineInfoTooltip) kline.InfoTooltipEvent=[this.KLineInfoTooltip.DoModal,this.KLineInfoTooltip.Leave]; //鼠标悬停, 鼠标离开
 
         this.ChartPaint[0]=kline;
 
@@ -16646,6 +16924,11 @@ function KLineChartContainer(uielement)
 
         drawPicture.Canvas=this.Canvas;
         drawPicture.Status=0;
+        self=this;
+        drawPicture.Update=function()   //更新回调函数
+        {
+            self.DrawDynamicInfo();
+        };
         this.CurrentChartDrawPicture=drawPicture;
         return true;
     }
@@ -16926,7 +17209,7 @@ function KLineChartContainer(uielement)
 
     //选中画图工具 出现单个图形设置菜单
     this.OnSelectChartPicture=function(chart)
-    {
+    {   
         console.log('[KLineChartContainer::OnSelectChartPicture',chart);
         if (!this.ChartPictureMenu) this.ChartPictureMenu=new ChartPictureSettingMenu(this.DivElement);
 
@@ -21092,6 +21375,33 @@ JSKLineInfoMap.GetIconUrl=function(type)
     }
 }
 
+JSKLineInfoMap.GetIconFont=function(type)
+{
+    switch(type)
+    {
+        case KLINE_INFO_TYPE.INVESTOR:
+            return g_JSChartResource.KLine.Info.Investor.IconFont;
+            break;
+        case KLINE_INFO_TYPE.PFORECAST:
+            return g_JSChartResource.KLine.Info.Pforecast.IconFont;
+        case KLINE_INFO_TYPE.ANNOUNCEMENT:
+            return g_JSChartResource.KLine.Info.Announcement.IconFont;
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_1:
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_2:
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_3:
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_4:
+            return g_JSChartResource.KLine.Info.Announcement.IconFont2;
+        case KLINE_INFO_TYPE.RESEARCH:
+            return g_JSChartResource.KLine.Info.Research.IconFont;
+        case KLINE_INFO_TYPE.BLOCKTRADING:
+            return g_JSChartResource.KLine.Info.BlockTrading.IconFont;
+        case KLINE_INFO_TYPE.TRADEDETAIL:
+            return g_JSChartResource.KLine.Info.TradeDetail.IconFont;
+        default:
+            return g_JSChartResource.KLine.Info.Announcement.IconFont;
+    }
+}
+
 
 function IKLineInfo()
 {
@@ -21108,9 +21418,8 @@ function IKLineInfo()
 }
 
 
-/*
-    互动易
-*/
+
+//互动易
 function InvestorInfo()
 {
     this.newMethod=IKLineInfo;   //派生
@@ -21169,9 +21478,8 @@ function InvestorInfo()
     }
 }
 
-/*
-    公告
-*/
+
+//公告
 function AnnouncementInfo()
 {
     this.newMethod=IKLineInfo;   //派生
@@ -21250,9 +21558,8 @@ function AnnouncementInfo()
 }
 
 
-/*
-    业绩预告
-*/
+
+ //业绩预告
 function PforecastInfo()
 {
     this.newMethod=IKLineInfo;   //派生
@@ -21326,9 +21633,8 @@ function PforecastInfo()
     }
 }
 
-/*
-   投资者关系 (调研)
-*/
+
+//投资者关系 (调研)
 function ResearchInfo()
 {
     this.newMethod=IKLineInfo;   //派生
@@ -21389,9 +21695,8 @@ function ResearchInfo()
     }
 }
 
-/*
-    大宗交易
-*/
+
+//大宗交易
 function BlockTrading()
 {
     this.newMethod=IKLineInfo;   //派生
@@ -21470,9 +21775,8 @@ function BlockTrading()
 }
 
 
-/*
-    龙虎榜
-*/
+
+//龙虎榜
 function TradeDetail()
 {
     this.newMethod=IKLineInfo;   //派生
@@ -23477,15 +23781,17 @@ function ChartPictureSettingMenu(divElement)
     this.HQChart;
     this.ChartPicture;
     this.SubToolsDiv;
+    this.SettingMenu;
 
     this.DoModal=function(event)
     {
+        var $body;
         if (!this.SubToolsDiv)
         {
             var div=document.createElement("div");
             div.className='subTolls';
             div.id=this.ID;
-            var $body = $("."+event.data.HQChart.ClassName).context.body;
+            $body = $("."+event.data.HQChart.ClassName).context.body;
             $body.append(div);
             this.SubToolsDiv=div;
         }
@@ -23498,11 +23804,21 @@ function ChartPictureSettingMenu(divElement)
         // var right=frame.ChartBorder.GetRight();
         var right=frame.ChartBorder.Right;
         var left=frame.ChartBorder.GetLeft();
-
-        var toolsDiv =
+        var className = this.ChartPicture.ClassName; //='ChartDrawPictureText'时加“设置”
+        var toolsDiv = "";
+        if(className === 'ChartDrawPictureText'){
+            toolsDiv = '<span class="changes-color" title="改变图形颜色">'+
+                           '<image class="change-image" src="content/image/change-color.png"></image>' +
+                           '<input type="color" name="color" id="color" class="change-color" value="'+ this.ChartPicture.LineColor +'">'+
+                        '</span>\n' +
+                        '<span class="subtool-set" title="设置"><i class="iconfont icon-shezhi"></i></span>'+
+                        '<span class="subtool-del"><image src="content/image/del-single.png" title="单个图形删除"></image></span>';
+        }else{
+            toolsDiv =
             '<span class="changes-color" title="改变图形颜色"><image class="change-image" src="content/image/change-color.png"></image>' +
             '<input type="color" name="color" id="color" class="change-color" value="'+ this.ChartPicture.LineColor +'"></span>\n' +
             '        <span class="subtool-del"><image src="content/image/del-single.png" title="单个图形删除"></image></span>';
+        }
 
         this.SubToolsDiv.style.right = right + "px";
         this.SubToolsDiv.style.top = top + "px";
@@ -23517,6 +23833,16 @@ function ChartPictureSettingMenu(divElement)
             hqChart.ClearChartDrawPicture(picture);
             // subToolDiv.innerHTML = "";
             $(".subTolls").css("display","none");
+        });
+        var self = this;
+        $(".subtool-set").click(function(){
+            $(self.SubToolsDiv).hide();
+            //创建div设置窗口
+            if (!this.SettingMenu) self.SettingMenu=new ChartPictureTextSettingMenu(frame.ChartBorder.UIElement.parentNode);
+
+            self.SettingMenu.ChartPicture=picture;
+            self.SettingMenu.Position={Left:right + 80,Top:top + 20};
+            self.SettingMenu.DoModal();
         });
         $(".changes-color").click(function () {
             document.getElementById('color').click();
@@ -23543,8 +23869,28 @@ function ChartPictureTextSettingMenu(divElement)
     this.SettingDiv;
     this.Position;
 
+    this.BackupData;    //画图工具备份数据
+
+    this.Close=function()   
+    {
+        if (this.SettingDiv) this.DivElement.removeChild(this.SettingDiv);  //直接删除
+    }
+
     this.DoModal=function()
     {
+        var text=this.ChartPicture.Text;    //显示的文本
+        var fontOption=this.ChartPicture.FontOption;    //字体设置
+        var lineColor=this.ChartPicture.LineColor;
+        //数据备份, 点取消的时候把备份数据设置回去
+        this.BackupData=
+        {
+            Text:text, 
+            LineColor:lineColor,
+            FontOption:{Family: fontOption.Family, Size: fontOption.Size, Weight: fontOption.Weight, Style: fontOption.Style }
+        };
+        console.log('[ChartPictureTextSettingMenu::DoModal] picture info',this.BackupData);
+
+        var self=this;
         var div=this.DivElement.getElementsByClassName('chartpicture-text-setting')[0];
         if (!div)
         {
@@ -23557,25 +23903,31 @@ function ChartPictureTextSettingMenu(divElement)
         {
             this.SettingDiv=div;
         }
+        
         var titleContainerStr = '<div class="titleWrap">'+
                                     '<span class="titleName">样式设置</span>'+
                                     '<i class="closeBtn iconfont icon-close"></i>'+
                                 '</div>';
                             
         var fontSizeArray = [10,11,12,14,16,20,24,28,32,40];
+        var fontArray = ['微软雅黑','宋体','Arial','仿宋'];
         var sizeListStr = "";
-        fontSizeArray.forEach(function(item){
-            sizeListStr += '<p>'+item+'</P>';
+        var fontListStr = "";
+        fontArray.forEach(function(item,index){
+            fontListStr += index !== 0 ? '<p>'+item+'</P>' : '<p class="active">'+item+'</P>';
+        });
+        fontSizeArray.forEach(function(item,index){
+            sizeListStr += index !== 5 ? '<p>'+item+'</P>' : '<p class="active">'+item+'</P>';
         });
         var contentContainerStr = '<div class="contentWrap">'+
                                     '<div class="styleOptions">'+
-                                        '<span class="colorPicker"></span>'+
-                                        '<div class="likeSelect fontSelect">Arial<span class="triangle"></span><div class="selectList"><p>Verdana</p><p>Courier New</p><p>Times New Roman</p><p>Arial</p></div><i class="iconfont icon-xia"></i></div>'+
-                                        '<div class="likeSelect fontSizeSelect">20<div class="selectList">'+sizeListStr+'</div><i class="iconfont icon-xia"></i></div>'+
-                                        '<span class="strongFont likeBtn">B</span>'+
-                                        '<span class="italicsFont likeBtn">I</span>'+
+                                        '<span class="colorPicker"><input type="color" id="fontColor" value="#1e90ff"></span>'+
+                                        '<div class="likeSelect fontSelect"><span class="choicedText">微软雅黑</span><div class="selectList">'+fontListStr+'</div><i class="iconfont icon-xia"></i></div>'+
+                                        '<div class="likeSelect fontSizeSelect"><span class="choicedText">20</span><div class="selectList">'+sizeListStr+'</div><i class="iconfont icon-xia"></i></div>'+
+                                        '<span class="strongFont likeBtn"><i class="iconfont icon-jiacu"></i></span>'+
+                                        '<span class="italicsFont likeBtn"><i class="iconfont icon-qingxieL"></i></span>'+
                                     '</div>'+
-                                    '<textarea class="tArea" placeholder="Text"></textarea>'+
+                                    '<textarea class="tArea" id="tArea" placeholder="Text"></textarea>'+
                                   '</div>';
         var btnContainer = '<div class="btnsContainer">'+
                                 '<span class="okBtn btn">确认</span>'+
@@ -23584,10 +23936,155 @@ function ChartPictureTextSettingMenu(divElement)
         var DoModalStr = titleContainerStr+contentContainerStr+btnContainer;
         this.SettingDiv.style.left = this.Position.Left + "px";
         this.SettingDiv.style.top = this.Position.Top + "px";
-        // this.SettingDiv.innerHTML=DoModalStr;
-        this.SettingDiv.innerHTML="添加文本开发中";
+        this.SettingDiv.innerHTML=DoModalStr;
         this.SettingDiv.style.position = "absolute";
         this.SettingDiv.style.display = "block";
+        $(".chartpicture-text-setting .colorPicker").css({ //初始设置
+            "borderColor":self.ChartPicture.LineColor,
+            "background-color":self.ChartPicture.LineColor
+        });
+
+        var family = this.ChartPicture.FontOption.Family;
+        $('.chartpicture-text-setting .fontSelect .choicedText').html(family);
+        fontArray.forEach(function(item,index){
+            if(item == family){
+                $('.chartpicture-text-setting .fontSelect p').removeClass('active');
+                $('.chartpicture-text-setting .fontSelect p').eq(index).addClass('active');
+            }
+        });
+
+        var size = this.ChartPicture.FontOption.Size;
+        $('.chartpicture-text-setting .fontSizeSelect .choicedText').html(size);
+        fontSizeArray.forEach(function(item,index){
+            if(item == size){
+                $('.chartpicture-text-setting .fontSizeSelect p').removeClass('active');
+                $('.chartpicture-text-setting .fontSizeSelect p').eq(index).addClass('active');
+            }
+        });
+
+        var weight = this.ChartPicture.FontOption.Weight;
+        if( weight != null && weight == 'bold'){
+            $('.chartpicture-text-setting .strongFont').addClass('hot');
+        }
+
+        var style = this.ChartPicture.FontOption.Style;
+        if( style != null && style == 'italic'){
+            $('.chartpicture-text-setting .italicsFont').addClass('hot');
+        }
+
+        var text = this.ChartPicture.Text;
+        $('.chartpicture-text-setting .tArea').val(text);  //结束初始设置
+
+        var defaultTextOption = { Family:'微软雅黑', Size:20, Weight:null, Style:null };
+        $(".chartpicture-text-setting #fontColor").change(
+            {
+                Picture:this.ChartPicture
+            },
+            function(event)
+            {  //颜色选择
+                var value = $(this).val();
+                $(this).parent().css({
+                    "borderColor":value,
+                    "background-color":value
+                });
+                var chart=event.data.Picture;
+                chart.LineColor = value;
+                if (chart.Update) chart.Update();   //更新界面
+            }
+        );
+        $(".chartpicture-text-setting .fontSelect,.chartpicture-text-setting .fontSizeSelect").click(function(){
+            $(this).find('.selectList').toggle();
+            $(this).toggleClass('hot');
+        });
+        $(".chartpicture-text-setting .fontSelect p").click(
+            {
+                Picture:this.ChartPicture
+            },
+            function(event){ //字体选择
+                var choicedText = $(this).closest(".fontSelect").find('.choicedText').html();
+                var currentSelect = event.currentTarget.innerHTML;
+                if(choicedText !== currentSelect){
+                    $(this).closest(".fontSelect").find('.choicedText').html(currentSelect);
+                    $(this).siblings().removeClass('active');
+                    $(this).addClass('active');
+                    var chart = event.data.Picture;
+                    chart.FontOption.Family = currentSelect;
+                    if (chart.Update) chart.Update();   //更新界面
+                }
+        });
+        $(".chartpicture-text-setting .fontSizeSelect p").click(
+            {
+                Picture:this.ChartPicture
+            },
+            function(event){  //字号选择
+            var choicedText = $(this).closest(".fontSizeSelect").find('.choicedText').html();
+            var currentSelect = event.currentTarget.innerHTML;
+            if(choicedText !== currentSelect){
+                $(this).closest(".fontSizeSelect").find('.choicedText').html(currentSelect);
+                $(this).siblings().removeClass('active');
+                $(this).addClass('active');
+                var chart = event.data.Picture;
+                chart.FontOption.Size = Number(currentSelect);
+                if (chart.Update) chart.Update();   //更新界面
+            }
+        });
+        $(".chartpicture-text-setting .strongFont").click(
+            {
+                Picture:this.ChartPicture
+            },
+            function(event){
+            $(this).toggleClass('hot');
+            var classnames = $(this).attr('class');
+            if(classnames.indexOf('hot') > 0){
+                var chart = event.data.Picture;
+                chart.FontOption.Weight = 'bold';
+                if (chart.Update) chart.Update();   //更新界面
+            }
+        });
+        $(".chartpicture-text-setting .italicsFont").click(
+            {
+                Picture:this.ChartPicture
+            },
+            function(event){
+            $(this).toggleClass('hot')
+            var classnames = $(this).attr('class');
+            if(classnames.indexOf('hot') > 0){
+                var chart = event.data.Picture;
+                chart.FontOption.Style = 'italic';
+                if (chart.Update) chart.Update();   //更新界面
+            }
+        });
+        $(".chartpicture-text-setting .titleWrap .closeBtn,.chartpicture-text-setting .btnsContainer .cancelBtn").click(  //取消
+            {
+                Picture:this.ChartPicture
+            },
+            function(event){
+                var picture = event.data.Picture;
+                picture.Text = self.BackupData.Text;
+                picture.LineColor = self.BackupData.LineColor;
+                picture.FontOption = self.BackupData.FontOption;
+                if (picture.Update) picture.Update();
+                self.Close();
+        });
+        $(".chartpicture-text-setting .tArea").keyup( //文本内容
+            {
+                Picture:this.ChartPicture
+            },
+            function(event){
+                console.log("更改中。。。");
+                var content = $(this).val();
+                var chart = event.data.Picture;
+                chart.Text = content;
+                if (chart.Update) chart.Update();   //更新界面
+        });
+
+        //确定按钮
+        $(".chartpicture-text-setting .btnsContainer .okBtn").click(
+            function()
+            {  
+                self.Close(); 
+            }
+        );
     }
 }
 
