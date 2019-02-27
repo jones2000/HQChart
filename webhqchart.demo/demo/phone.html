@@ -5,22 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>页面行情(K线图)</title>  
     <link rel="stylesheet" href="content/css/tools.css" />
+    <!-- 使用阿里云图片 -->
     <link rel="stylesheet" href="content/font/iconfont.css" />
+    <!--<link rel="stylesheet" href="https://at.alicdn.com/t/font_1040563_1d1tgaoqofpi.css" />-->
+    
 </head>  
 <body>
-
     <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
 
     <script src="content/js/jquery.min.js"></script>
+    <script src="content/js/webfont.js"></script>
     <script src="../jscommon/umychart.js"></script>
     <script src="../jscommon/umychart.complier.js"></script>
     <script src="../jscommon/umychart.index.data.js"></script>
     <script src="../jscommon/umychart.style.js"></script>
+    
 
      <!-- 引入vConsole的JS库 -->
      <script src="../vConsole-3.2.0/dist/vconsole.min.js"></script>
     
     <script>
+
+        //预加载下阿里云图片
+        WebFont.load({ custom: { families: ['iconfont'] } });
 
         function getURLParams(name) 
         {
@@ -54,7 +61,7 @@
             }
 
             var symbol=getURLParams('symbol');
-            if (symbol==null) symbol='600000.sh';
+            if (symbol==null) symbol='000001.sz';
         
             var index=getURLParams('index');        //指标1
             if (index==null) index='MA';
@@ -97,8 +104,8 @@
                         MaxReqeustDataCount:1000,   //数据个数
                         PageSize:50,               //一屏显示多少数据
                         IndexTreeApiUrl:"https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
-                        //Info:["业绩预告","公告","互动易","调研","大宗交易"],       //信息地雷
-                        //Info:["业绩预告","公告"],          //信息地雷
+                        //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
+                        Info:["公告","互动易","调研"],          //信息地雷
                         KLineDoubleClick:true,              //双击分钟走势图
                         IsShowTooltip:true                 //是否显示K线提示信息
                     },
@@ -113,7 +120,7 @@
                     {
                         Left:80,           //左边间距
                         Right:80+40,       //右边间距
-                        Bottom:20,
+                        Bottom:50,
                         Top:25
                     },
 
@@ -122,11 +129,11 @@
                         {Name:'画图工具',Top:25,IsAutoIndent:1 }
                     ],
                     
-                    Frame:  //子框架设置
+                    Frame:  //子框架设置 (Height 窗口高度比例值)
                     [
-                        {SplitCount:3,StringFormat:1},
-                        {SplitCount:3,StringFormat:1},
-                        {SplitCount:3,StringFormat:1}
+                        {SplitCount:3,StringFormat:0, Height:4,IsShowLeftText:false},
+                        {SplitCount:2,StringFormat:0, Height:3,IsShowLeftText:false},
+                        {SplitCount:2,StringFormat:0, Height:3,IsShowLeftText:false}
                     ]
                 }
 
@@ -137,6 +144,7 @@
                 option.Border.Left=1;
                 option.Border.Right=1;
                 option.KLine.IsShowTooltip=false;
+                option.KLine.Info=null;
                 option.ExtendChart=[];
                 for(var i in option.Windows)
                 {

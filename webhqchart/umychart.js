@@ -1719,6 +1719,8 @@ function JSChartContainer(uielement)
     {
         if (!this.IsShowTooltip) return;
 
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+        var xMove=15*pixelTatio;    //顶部坐标偏移位置
         if (toolTip.Type===0) //K线信息
         {
             var format=new HistoryDataStringFormat();
@@ -1738,7 +1740,7 @@ function JSChartContainer(uielement)
                 this.Tooltip.style.left = (left-width) + "px";
             else
                 this.Tooltip.style.left = left + "px";
-            this.Tooltip.style.top = top + "px";
+            this.Tooltip.style.top = (top + xMove)+ "px";
             this.Tooltip.className='jschart-tooltip';
             this.Tooltip.innerHTML=format.Text;
             this.Tooltip.style.display = "block";
@@ -1757,7 +1759,7 @@ function JSChartContainer(uielement)
             this.Tooltip.className='jchart-klineinfo-tooltip';
             this.Tooltip.style.position = "absolute";
             this.Tooltip.style.left = left + "px";
-            this.Tooltip.style.top = top + "px";
+            this.Tooltip.style.top = (top +xMove)+ "px";
             this.Tooltip.style.width = null;
             this.Tooltip.style.height =null;
             this.Tooltip.innerHTML=format.Text;
@@ -4954,7 +4956,6 @@ function ChartKLine()
     this.TextColor=g_JSChartResource.KLine.MaxMin.Color;
 
     this.InfoData;      //信息地雷 key=日期  value=信息数据
-    this.InfoDiv=new Array();
 
     this.PtMax;     //最大值的位置
     this.PtMin;     //最小值的位置
@@ -5644,20 +5645,6 @@ function ChartKLine()
         */
     }
 
-    this.ClearInfoDiv=function()
-    {
-        if (this.InfoDiv.length<=0) return;
-
-        for(var i in this.InfoDiv)
-        {
-            var item=this.InfoDiv[i];
-            var div=document.getElementById(item.id);
-            this.ChartBorder.UIElement.parentNode.removeChild(div);
-        }
-
-        this.InfoDiv=[];
-    }
-
     //画某一天的信息地雷
     this.DrawInfo=function(item)
     {
@@ -5819,10 +5806,10 @@ function ChartKLine()
             this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
             if (this.Canvas.isPointInPath(x,y))
             {
-                console.log('[ChartKLine::GetTooltipData]', item);
+                //console.log('[ChartKLine::GetTooltipData]', item);
                 tooltip.Data=item;
                 tooltip.ChartPaint=this;
-                tooltip.Type=1;
+                tooltip.Type=1; //信息地雷
                 return true;
             }
         }
@@ -5837,7 +5824,7 @@ function ChartKLine()
                 var index=this.TooltipRect[i][0];
                 tooltip.Data=this.Data.Data[index];
                 tooltip.ChartPaint=this;
-                tooltip.Type=0;
+                tooltip.Type=0; //K线信息
                 return true;
             }
         }
@@ -14137,9 +14124,9 @@ function SplitData()
         [50000000,		100000000,		50000000,	5000000],
 
         [100000000,		200000000,		100000000,	10000000],
-        [200000000,		400000000,		200000000,	20000000],
-        [400000000,		500000000,		400000000,	10000000],
-        [500000000,		1000000000,		500000000,	50000000],
+        [200000000,		400000000,		100000000,	10000000],
+        [400000000,		500000000,		100000000,	10000000],
+        [500000000,		1000000000,		100000000,	10000000],
 
         [1000000000,		2000000000,		1000000000,	100000000],
         [2000000000,		4000000000,		2000000000,	200000000],
@@ -17117,26 +17104,71 @@ function KLineChartContainer(uielement)
     this.UpdataChartInfo=function()
     {
         //TODO: 根据K线数据日期来做map, 不在K线上的合并到下一个k线日期里面
-        var mapInfoData=new Map();
-
-        for(var i in this.ChartInfo)
+        var mapInfoData=null;
+        if (this.Period==0) //日线数据 根据日期
         {
-            var infoData=this.ChartInfo[i].Data;
-            for(var j in infoData)
+            mapInfoData=new Map();
+            for(var i in this.ChartInfo)
             {
-                var item=infoData[j];
-                if (mapInfoData.has(item.Date.toString()))
+                var infoData=this.ChartInfo[i].Data;
+                for(var j in infoData)
                 {
-                    mapInfoData.get(item.Date.toString()).Data.push(item);
-                }
-                else
-                {
+                    var item=infoData[j];
+                    if (mapInfoData.has(item.Date.toString()))
+                    {
+                        mapInfoData.get(item.Date.toString()).Data.push(item);
+                    }
+                    else
+                    {
 
-                    mapInfoData.set(item.Date.toString(),{Data:new Array(item)});
+                        mapInfoData.set(item.Date.toString(),{Data:new Array(item)});
+                    }
                 }
             }
         }
+        else if ( this.Period==1 || this.Period==2 || this.Period==3)
+        {
+            mapInfoData=new Map();
+            var hisData=this.ChartPaint[0].Data;
+            //增加一个临时数据索引
+            for(var i in this.ChartInfo)
+            {
+                this.ChartInfo[i].TempID=this.ChartInfo[i].Data.length-1;   
+            }
 
+            for(var i=0;i<hisData.Data.length;++i)
+            {
+                var kItem=hisData.Data[i];  //K线数据
+                for(var j in this.ChartInfo)
+                {
+                    var info=this.ChartInfo[j];
+                    var infoData=info.Data;
+                    for(; info.TempID>=0; --info.TempID)    //信息地雷是倒叙排的
+                    {
+                        var infoItem=infoData[info.TempID];
+                        if (infoItem.Date>kItem.Date) break;
+                        
+                        //信息地雷日期<K线上的日期 就是属于这个K线上的
+                        if (mapInfoData.has(kItem.Date.toString()))
+                        {
+                            mapInfoData.get(kItem.Date.toString()).Data.push(infoItem);
+                        }
+                        else
+                        {
+                            mapInfoData.set(kItem.Date.toString(),{Data:new Array(infoItem)});
+                        }
+                    }
+                }
+                //console.log('[KLineChartContainer::UpdataChartInfo]',item);
+            }
+
+            //清空临时变量
+            for(var i in this.ChartInfo)
+            {
+                delete this.ChartInfo[i].TempID;
+            }
+        }
+            
         var klinePaint=this.ChartPaint[0];
         klinePaint.InfoData=mapInfoData;
     }
