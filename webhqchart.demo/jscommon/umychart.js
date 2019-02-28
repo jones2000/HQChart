@@ -4947,6 +4947,7 @@ function ChartKLine()
     this.UnchagneColor=g_JSChartResource.UnchagneBarColor;          //平盘
     this.ColorData;             //五彩K线颜色 >0：g_JSChartResource.UpBarColor 其他：g_JSChartResource.DownBarColor
     this.TradeData;             //交易系统 包含买卖数据{Buy:, Sell:}
+    this.TradeIcon=g_JSChartResource.KLine.TradeIcon;
     this.TooltipRect=new Array();           //2位数组 0 数据序号 1 区域
     this.InfoTooltipRect=[];                //2维数组 0 数据,  1 区域
 
@@ -5420,10 +5421,9 @@ function ChartKLine()
                 this.TooltipRect.push([i,rect]);    //[0]数据索引 [1]数据区域
             }
 
-            if(this.Data.DataType==0 && !isHScreen)
+            if(this.Data.DataType==0)
             {
                 var infoItem={Xleft:left,XRight:right, XCenter:x, YMax:yHigh, YMin:yLow, DayData:data, Index:j};
-                //this.DrawInfoDiv(infoItem);
                 this.DrawInfo(infoItem);
             }
         }
@@ -5542,7 +5542,8 @@ function ChartKLine()
             this.DrawKBar();
         }
 
-        this.DrawTrade();
+        if (this.TradeIcon) this.DrawTradeIcon()
+        else this.DrawTrade();
 
         if (this.IsShowMaxMinPrice)     //标注最大值最小值
         {
@@ -5649,6 +5650,8 @@ function ChartKLine()
     this.DrawInfo=function(item)
     {
         if (!this.InfoData || this.InfoData.length<=0) return;
+
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
 
@@ -5672,15 +5675,31 @@ function ChartKLine()
                 var icon=JSKLineInfoMap.GetIconFont(infoItem.InfoType);
                 this.Canvas.fillStyle=icon.Color;
                 this.Canvas.font=iconSize+'px '+icon.Family;
-                this.Canvas.textBaseline="bottom";
-                this.Canvas.textAlign="center";
-                this.Canvas.fillText(icon.Text,item.XCenter,iconTop,iconSize);
 
-                var iconRect=new Rect(item.XCenter-iconSize/2,iconTop-iconSize,iconSize,iconSize);
-                infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:item.XCenter, Y:iconTop} };
-                mapImage.set(infoItem.InfoType,infoCache);
+                if (isHScreen)
+                {
+                    this.Canvas.textBaseline="middle";
+                    this.Canvas.textAlign="left";
+                    this.Canvas.fillText(icon.HScreenText,iconTop,item.XCenter,iconSize);
 
-                iconTop-=iconSize;
+                    var iconRect=new Rect(item.XCenter-iconSize/2,iconTop-iconSize,iconSize,iconSize);
+                    infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:iconTop, Y:item.XCenter} };
+                    mapImage.set(infoItem.InfoType,infoCache);
+
+                    iconTop+=iconSize;
+                }
+                else
+                {
+                    this.Canvas.textBaseline="bottom";
+                    this.Canvas.textAlign="center";
+                    this.Canvas.fillText(icon.Text,item.XCenter,iconTop,iconSize);
+                
+                    var iconRect=new Rect(item.XCenter-iconSize/2,iconTop-iconSize,iconSize,iconSize);
+                    infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:item.XCenter, Y:iconTop} };
+                    mapImage.set(infoItem.InfoType,infoCache);
+
+                    iconTop-=iconSize;
+                }
             }
             else
             {
@@ -5688,19 +5707,109 @@ function ChartKLine()
             }
         }
 
+        var numText;
+        if (g_JSChartResource.KLine.NumIcon) 
+        {
+            if (isHScreen) numText=g_JSChartResource.KLine.NumIcon.HScreenText;
+            else numText=g_JSChartResource.KLine.NumIcon.Text;
+        }
         for(var item of mapImage)
         {
             var value=item[1];
-            if (value.Data.length>=2 && g_JSChartResource.KLine.NumIcon.Text)
+            if (value.Data.length>=2 && numText)
             {
                 var iconID=value.Data.length;
-                if (iconID>=g_JSChartResource.KLine.NumIcon.Text.length) iconID=0;
+                if (iconID>=numText.length) iconID=0;
                 this.Canvas.fillStyle=g_JSChartResource.KLine.NumIcon.Color;
-                var text=g_JSChartResource.KLine.NumIcon.Text[iconID];
+                var text=numText[iconID];
                 this.Canvas.fillText(text,value.TextRect.X,value.TextRect.Y,iconSize);
             }
 
-            this.InfoTooltipRect.push(value);
+            if (!isHScreen) this.InfoTooltipRect.push(value);   //横屏没有tooltip
+        }
+    }
+
+    //画交易图标
+    this.DrawTradeIcon=function()
+    {
+        if (!this.TradeData) return;
+
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
+        var chartright=this.ChartBorder.GetRight();
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        if (isHScreen) 
+        {
+            xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+2.0;
+            chartright=this.ChartBorder.GetBottom();
+        }
+
+        var sellData=this.TradeData.Sell;
+        var buyData=this.TradeData.Buy;
+        var iconSize=dataWidth+distanceWidth;
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+        var iconSizeMax=24*pixelTatio,iconSizeMin=12*pixelTatio;
+        if (iconSize<iconSizeMin) iconSize=iconSizeMin;
+        else if (iconSize>iconSizeMax) iconSize=iconSizeMax;
+        this.Canvas.font=iconSize+'px '+this.TradeIcon.Family;
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var data=this.Data.Data[i];
+            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+            var buy=false,sell=false;
+            if (sellData && i<sellData.length) sell=sellData[i]>0;
+            if (buyData && i<buyData.length) buy=buyData[i]>0;
+            if (!sell && !buy) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+            var x=left+(right-left)/2;
+            var yLow=this.ChartFrame.GetYFromData(data.Low);
+            var yHigh=this.ChartFrame.GetYFromData(data.High);
+            var yOpen=this.ChartFrame.GetYFromData(data.Open);
+            var yClose=this.ChartFrame.GetYFromData(data.Close);
+            var y=yHigh;
+
+            if (buy)
+            {
+                this.Canvas.fillStyle=this.TradeIcon.Buy.Color;
+                
+                if (isHScreen)
+                {
+                    this.Canvas.textAlign='right';
+                    this.Canvas.textBaseline='middle';
+                    this.Canvas.fillText(this.TradeIcon.Buy.HScreenText,yLow,x);
+                }
+                else
+                {
+                    this.Canvas.textAlign='center';
+                    this.Canvas.textBaseline='top';
+                    this.Canvas.fillText(this.TradeIcon.Buy.Text,x,yLow);
+                }
+            }
+
+            if (sell)
+            {
+                this.Canvas.fillStyle=this.TradeIcon.Sell.Color;
+                if (isHScreen)
+                {
+                    this.Canvas.textAlign='left';
+                    this.Canvas.textBaseline='middle';
+                    this.Canvas.fillText(this.TradeIcon.Sell.HScreenText,yHigh,x);
+                }
+                else
+                {
+                    this.Canvas.textAlign='center';
+                    this.Canvas.textBaseline='bottom';
+                    this.Canvas.fillText(this.TradeIcon.Sell.Text,x,yHigh);
+                }
+            }
         }
     }
 
@@ -8246,6 +8355,7 @@ function ChartBuySell()
     this.SellIcon=g_JSChartResource.KLineTrain.SellIcon; //{Color:'rgb(0,0,205)',Text:'S'};
     this.BuySellData=new Map();   //{Date:日期, Op:买/卖 0=buy 1=sell}
     this.LastData={}; //当前屏最后一个数据
+    this.IconFont=g_JSChartResource.KLineTrain.IconFont;
 
     this.Draw=function()
     {
@@ -8258,7 +8368,19 @@ function ChartBuySell()
         if (isHScreen===true) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
 
-        this.Canvas.font=this.TextFont;
+        if (this.IconFont)
+        {
+            var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+            var iconSize=dataWidth+distanceWidth;
+            var minIconSize=18*pixelTatio;
+            if (iconSize<minIconSize) iconSize=minIconSize;
+            this.Canvas.font=iconSize+'px '+this.IconFont.Family;
+        }
+        else
+        {
+            this.Canvas.font=this.TextFont;
+        }
+        
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
@@ -8272,29 +8394,55 @@ function ChartBuySell()
             var x=this.ChartFrame.GetXFromIndex(j);
             var yHigh=this.ChartFrame.GetYFromData(value.High);
             var yLow=this.ChartFrame.GetYFromData(value.Low);
+
             if (bsItem.Op==0)   //买 标识在最低价上
             {
                 this.Canvas.textAlign='center';
                 this.Canvas.textBaseline='top';
-                this.Canvas.fillStyle=this.BuyIcon.Color;
-                this.DrawText(this.BuyIcon.Text,x,yLow,isHScreen);
+                if (this.IconFont)
+                {
+                    this.Canvas.fillStyle=this.IconFont.Buy.Color
+                    this.DrawText(this.IconFont.Buy.Text,x,yLow,isHScreen);
+                }
+                else
+                {
+                    this.Canvas.fillStyle=this.BuyIcon.Color;
+                    this.DrawText(this.BuyIcon.Text,x,yLow,isHScreen);
+                }
             }
-            else    //买 标识在最高价上
+            else    //卖 标识在最高价上
             {
                 this.Canvas.textAlign='center';
                 this.Canvas.textBaseline='bottom';
-                this.Canvas.fillStyle=this.SellIcon.Color;
-                this.DrawText(this.SellIcon.Text,x,yHigh,isHScreen);
+                if (this.IconFont)
+                {
+                    this.Canvas.fillStyle=this.IconFont.Sell.Color
+                    this.DrawText(this.IconFont.Sell.Text,x,yHigh,isHScreen);
+                }
+                else
+                {
+                    this.Canvas.fillStyle=this.SellIcon.Color;
+                    this.DrawText(this.SellIcon.Text,x,yHigh,isHScreen);
+                }
             }
         }
 
+        //最后一个位置
         var x=this.ChartFrame.GetXFromIndex(this.LastData.ID);
         var yHigh=this.ChartFrame.GetYFromData(this.LastData.Data.High);
         this.Canvas.textAlign='center';
         this.Canvas.textBaseline='bottom';
-        this.Canvas.fillStyle=this.LastDataIcon.Color;
-        this.Canvas.font=this.TextFont;
-        this.DrawText(this.LastDataIcon.Text,x,yHigh,isHScreen);
+        if (this.IconFont)
+        {
+            this.Canvas.fillStyle=this.IconFont.Last.Color
+            this.DrawText(this.IconFont.Last.Text,x,yHigh,isHScreen);
+        }
+        else
+        {
+            this.Canvas.fillStyle=this.LastDataIcon.Color;
+            this.Canvas.font=this.TextFont;
+            this.DrawText(this.LastDataIcon.Text,x,yHigh,isHScreen);
+        }
     }
 }
 
@@ -10478,6 +10626,8 @@ function ChartCorssCursor()
         var right=this.Frame.ChartBorder.GetRight();
         var top=this.Frame.ChartBorder.GetTopTitle();
         var bottom=this.Frame.ChartBorder.GetBottom();
+        var rightWidth=this.Frame.ChartBorder.Right;
+        var chartRight=this.Frame.ChartBorder.GetChartWidth();
 
         this.PointY=[[left,y],[right,y]];
         this.PointX=[[x,top],[x,bottom]];
@@ -10520,6 +10670,7 @@ function ChartCorssCursor()
         this.StringFormatY.Value=yValue;
         this.StringFormatY.FrameID=yValueExtend.FrameID;
 
+        //X轴
         if (this.IsShowText && this.StringFormatY.Operator() && (this.Frame.ChartBorder.Left>=30 || this.Frame.ChartBorder.Right>=30))
         {
             var text=this.StringFormatY.Text;
@@ -10529,21 +10680,43 @@ function ChartCorssCursor()
             if (this.Frame.ChartBorder.Left>=30)
             {
                 this.Canvas.fillStyle=this.TextBGColor;
-                this.Canvas.fillRect(left-2,y-this.TextHeight/2,-textWidth,this.TextHeight);
-                this.Canvas.textAlign="right";
-                this.Canvas.textBaseline="middle";
-                this.Canvas.fillStyle=this.TextColor;
-                this.Canvas.fillText(text,left-4,y,textWidth);
+                if (left<textWidth) //左边空白的地方太少了画布下
+                {
+                    this.Canvas.fillRect(2,y-this.TextHeight/2,textWidth,this.TextHeight);
+                    this.Canvas.textAlign="left";
+                    this.Canvas.textBaseline="middle";
+                    this.Canvas.fillStyle=this.TextColor;
+                    this.Canvas.fillText(text,2+2,y,textWidth);
+                }
+                else
+                {
+                    this.Canvas.fillRect(left-2,y-this.TextHeight/2,-textWidth,this.TextHeight);
+                    this.Canvas.textAlign="right";
+                    this.Canvas.textBaseline="middle";
+                    this.Canvas.fillStyle=this.TextColor;
+                    this.Canvas.fillText(text,left-4,y,textWidth);
+                }
             }
 
             if (this.Frame.ChartBorder.Right>=30)
             {
                 this.Canvas.fillStyle=this.TextBGColor;
-                this.Canvas.fillRect(right+2,y-this.TextHeight/2,textWidth,this.TextHeight);
-                this.Canvas.textAlign="left";
-                this.Canvas.textBaseline="middle";
-                this.Canvas.fillStyle=this.TextColor;
-                this.Canvas.fillText(text,right+4,y,textWidth);
+                if (rightWidth<textWidth)   //右边空白显示不下, 
+                {
+                    this.Canvas.fillRect(chartRight-2-textWidth,y-this.TextHeight/2,textWidth,this.TextHeight);
+                    this.Canvas.textAlign="right";
+                    this.Canvas.textBaseline="middle";
+                    this.Canvas.fillStyle=this.TextColor;
+                    this.Canvas.fillText(text,chartRight-4,y,textWidth);
+                }
+                else
+                {
+                    this.Canvas.fillRect(right+2,y-this.TextHeight/2,textWidth,this.TextHeight);
+                    this.Canvas.textAlign="left";
+                    this.Canvas.textBaseline="middle";
+                    this.Canvas.fillStyle=this.TextColor;
+                    this.Canvas.fillText(text,right+4,y,textWidth);
+                }
             }
         }
 
@@ -10651,9 +10824,9 @@ function ChartCorssCursor()
                 this.Canvas.fillStyle=this.TextBGColor;
                 this.Canvas.fillRect(0,-(this.TextHeight/2),-textWidth,this.TextHeight);
                 this.Canvas.textAlign="right";
-                this.Canvas.textBaseline="top";
+                this.Canvas.textBaseline="middle";
                 this.Canvas.fillStyle=this.TextColor;
-                this.Canvas.fillText(text,-2,-(this.TextHeight/2),textWidth);
+                this.Canvas.fillText(text,-2,0,textWidth);
 
                 this.Canvas.restore();
             }
@@ -10669,9 +10842,9 @@ function ChartCorssCursor()
                 this.Canvas.fillStyle=this.TextBGColor;
                 this.Canvas.fillRect(0,-(this.TextHeight/2),textWidth,this.TextHeight);
                 this.Canvas.textAlign="left";
-                this.Canvas.textBaseline="top";
+                this.Canvas.textBaseline="middle";
                 this.Canvas.fillStyle=this.TextColor;
-                this.Canvas.fillText(text,2,-(this.TextHeight/2),textWidth);
+                this.Canvas.fillText(text,2,0,textWidth);
 
                 this.Canvas.restore();
             }
@@ -10694,9 +10867,9 @@ function ChartCorssCursor()
 
                 this.Canvas.fillRect(0,0,textWidth,this.TextHeight);
                 this.Canvas.textAlign="left";
-                this.Canvas.textBaseline="top";
+                this.Canvas.textBaseline="middle";
                 this.Canvas.fillStyle=this.TextColor;
-                this.Canvas.fillText(text,2,0,textWidth);
+                this.Canvas.fillText(text,0,this.TextHeight/2,textWidth);
 
                 this.Canvas.restore();
             }
@@ -10711,9 +10884,9 @@ function ChartCorssCursor()
 
                 this.Canvas.fillRect(-textWidth/2,0,textWidth,this.TextHeight);
                 this.Canvas.textAlign="center";
-                this.Canvas.textBaseline="top";
+                this.Canvas.textBaseline="middle";
                 this.Canvas.fillStyle=this.TextColor;
-                this.Canvas.fillText(text,0,0,textWidth);
+                this.Canvas.fillText(text,0,this.TextHeight/2,textWidth);
 
                 this.Canvas.restore();
             }
@@ -10894,6 +11067,7 @@ function HistoryDataStringFormat()
         if (!data) return false;
 
         var date=new Date(parseInt(data.Date/10000),(data.Date/100%100-1),data.Date%100);
+        var strDate=IFrameSplitOperator.FormatDateString(data.Date);
         var title2=WEEK_NAME[date.getDay()];
         if (this.Value.ChartPaint.Data.Period >= 4) // 分钟周期
         {
@@ -10906,7 +11080,7 @@ function HistoryDataStringFormat()
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
         var increase=(data.Close-data.YClose)/data.YClose*100;
         var strText=
-            "<span class='tooltip-title'>"+data.Date+"&nbsp&nbsp"+title2+"</span>"+
+            "<span class='tooltip-title'>"+strDate+"&nbsp&nbsp"+title2+"</span>"+
             "<span class='tooltip-con'>开盘:</span>"+
             "<span class='tooltip-num' style='color:"+this.GetColor(data.Open,data.YClose)+";'>"+data.Open.toFixed(defaultfloatPrecision)+"</span><br/>"+
             "<span class='tooltip-con'>最高:</span>"+
@@ -14298,33 +14472,33 @@ function JSChartResource()
                 Investor:
                 {
                     ApiUrl:'https://opensource.zealink.com/API/NewsInteract', //互动易
-                    IconFont: { Family:'iconfont', Text:'\ue631' , Color:'#1c65db'} //SVG 文本
+                    IconFont: { Family:'iconfont', Text:'\ue631' , HScreenText:'\ue684', Color:'#1c65db'} //SVG 文本
                 },
                 Announcement:                                           //公告
                 {
                     ApiUrl:'https://opensource.zealink.com/API/ReportList',
-                    IconFont: { Family:'iconfont', Text:'\ue633',Color:'#f5a521' }, //SVG 文本
-                    IconFont2: { Family:'iconfont', Text:'\ue634',Color:'#ed7520' } //SVG 文本 //季报
+                    IconFont: { Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' }, //SVG 文本
+                    IconFont2: { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' } //SVG 文本 //季报
                 },
                 Pforecast:  //业绩预告
                 {
                     ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
-                    IconFont: { Family:'iconfont', Text:'\ue62e',Color:'#986cad' } //SVG 文本
+                    IconFont: { Family:'iconfont', Text:'\ue62e', HScreenText:'\ue687', Color:'#986cad' } //SVG 文本
                 },
                 Research:   //调研
                 {
                     ApiUrl:'https://opensource.zealink.com/API/InvestorRelationsList',
-                    IconFont: { Family:'iconfont', Text:'\ue632',Color:'#19b1b7' } //SVG 文本
+                    IconFont: { Family:'iconfont', Text:'\ue632', HScreenText:'\ue688', Color:'#19b1b7' } //SVG 文本
                 },
                 BlockTrading:   //大宗交易
                 {
                     ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
-                    IconFont: { Family:'iconfont', Text:'\ue630',Color:'#f39f7c' } //SVG 文本
+                    IconFont: { Family:'iconfont', Text:'\ue630', HScreenText:'\ue689', Color:'#f39f7c' } //SVG 文本
                 },
                 TradeDetail:    //龙虎榜
                 {
                     ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
-                    IconFont: { Family:'iconfont', Text:'\ue62f',Color:'#b22626' } //SVG 文本
+                    IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' } //SVG 文本
                 }
 
             },
@@ -14335,6 +14509,12 @@ function JSChartResource()
                         '\ue63b','\ue640','\ue63d','\ue63f','\ue645','\ue641','\ue647','\ue648','\ue646','\ue636',
                         '\ue635','\ue637','\ue638','\ue639','\ue63a','\ue63c','\ue63e','\ue642','\ue644','\ue643'
                     ]
+            },
+            TradeIcon:  //交易指标 图标
+            {
+                Family:'iconfont', 
+                Buy: { Color:'rgb(255,15,4)', Text:'\ue683', HScreenText:'\ue682'}, 
+                Sell: { Color:'rgb(64,122,22)', Text:'\ue681',HScreenText:'\ue680'},
             }
         };
 
@@ -14381,12 +14561,19 @@ function JSChartResource()
         "rgb(105,105,105)",
     ];
 
-    this.KLineTrain =
-    {
+    this.KLineTrain = {
         Font:'bold 14px arial',
         LastDataIcon: {Color:'rgb(0,0,205)',Text:'⬇'},
         BuyIcon: {Color:'rgb(0,205,102 )',Text:'B'},
-        SellIcon: {Color:'rgb(255,127,36 )',Text:'S'}
+        SellIcon: {Color:'rgb(255,127,36 )',Text:'S'},
+
+        IconFont:
+        {
+            Family:'iconfont', 
+            Buy:{ Text:'\ue64a', HScreenText:'\ue68a' ,Color:'rgb(255,140,0)' },
+            Sell:{ Text:'\ue64b', HScreenText:'\ue68a' ,Color:'rgb(6,79,18)' },
+            Last:{ Text:'\ue681', HScreenText:'\ue68a' ,Color:'rgb(55,0,255)' },
+        }
     };
 
     //自定义风格
