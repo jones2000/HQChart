@@ -786,12 +786,34 @@ function JSChart(divElement)
             this.JSChartContainer.ChangeRight(right);
     }
 
+    //叠加股票
+    this.OverlaySymbol=function(symbol)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.OverlaySymbol)=='function')
+            this.JSChartContainer.OverlaySymbol(symbol);
+    }
+
     //K线切换类型 0=实心K线 1=收盘价线 2=美国线 3=空心K线
     this.ChangeKLineDrawType=function(drawType)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeKLineDrawType)=='function')
             this.JSChartContainer.ChangeKLineDrawType(drawType);
     }
+	
+	//指标窗口个数
+    this.ChangeIndexWindowCount = function(count){
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ChangeIndexWindowCount) == 'function'){
+            this.JSChartContainer.ChangeIndexWindowCount(count);
+        }
+    }
+	
+	//取消叠加
+    this.ClearOverlaySymbol = function(){
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ClearOverlaySymbol) == 'function'){
+            this.JSChartContainer.ClearOverlaySymbol();
+        } 
+    }
+	
 
     this.ChangMainDataControl=function(dataControl)
     {
@@ -4928,8 +4950,8 @@ var ZOOM_SEED=
     [24,7],     [20,7], 
     [18,6],     [16,6],
     [14,5],     [12,5],
-    [8,4],      [4,3],
-    [4,1],      [2,1],    
+    [8,4],      [3,3],
+    [3,1],   
 ];
 
 //K线画法 支持横屏
@@ -7347,6 +7369,8 @@ function ChartSingleText()
     this.Direction=0;       //0=middle 1=bottom 2=top
     this.YOffset=0;
 
+    this.IconFont;  //Iconfont
+
     this.Draw=function()
     {
         if (!this.IsShow) return;
@@ -7374,12 +7398,30 @@ function ChartSingleText()
         var xPointCount=this.ChartFrame.XPointCount;
 
         var isArrayText=Array.isArray(this.Text);
-        var text;
         var pixelTatio = GetDevicePixelRatio();
-        this.TextFont=this.GetDynamicFont(dataWidth*2*pixelTatio);
+        
         if (this.Direction==1) this.Canvas.textBaseline='bottom';
         else if (this.Direction==2) this.Canvas.textBaseline='top';
         else this.Canvas.textBaseline='middle';
+
+        if (this.IconFont)
+        {
+            this.Color=this.IconFont.Color;
+            this.Text=this.IconFont.Text;
+
+            var iconSize=dataWidth;
+            var minIconSize=12*pixelTatio;
+            var maxIconSize=24*pixelTatio;
+            if (iconSize<minIconSize) iconSize=minIconSize;
+            else if (iconSize>maxIconSize) iconSize=maxIconSize;
+            this.Canvas.font=iconSize+'px '+this.IconFont.Family;
+        }
+        else
+        {
+            this.TextFont=this.GetDynamicFont(dataWidth*2*pixelTatio);
+            this.Canvas.font=this.TextFont;
+        }
+
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
@@ -7392,7 +7434,6 @@ function ChartSingleText()
 
             this.Canvas.textAlign=this.TextAlign;
             this.Canvas.fillStyle=this.Color;
-            this.Canvas.font=this.TextFont;
             
             if (this.YOffset>0 && this.Direction>0)
             {
@@ -7439,7 +7480,7 @@ function ChartSingleText()
 
             if (isArrayText)
             {
-                text=this.Text[i];
+                var text=this.Text[i];
                 if (!text) continue;
                 this.DrawText(text,x,y,isHScreen);
             }
@@ -10765,6 +10806,7 @@ function ChartCorssCursor()
         var right=this.Frame.ChartBorder.GetRightEx();
         var top=this.Frame.ChartBorder.GetTop();
         var bottom=this.Frame.ChartBorder.GetBottom();
+        var bottomWidth=this.Frame.ChartBorder.Bottom;
 
         this.PointY=[[left,y],[right,y]];
         this.PointX=[[x,top],[x,bottom]];
@@ -10807,7 +10849,7 @@ function ChartCorssCursor()
         this.StringFormatY.Value=yValue;
         this.StringFormatY.FrameID=yValueExtend.FrameID;
 
-        if (this.IsShowText && this.StringFormatY.Operator() && (this.Frame.ChartBorder.Left>=30 || this.Frame.ChartBorder.Right>=30))
+        if (this.IsShowText && this.StringFormatY.Operator() && (this.Frame.ChartBorder.Top>=30 || this.Frame.ChartBorder.Bottom>=30))
         {
             var text=this.StringFormatY.Text;
             this.Canvas.font=this.Font;
@@ -10822,11 +10864,22 @@ function ChartCorssCursor()
                 this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
                 
                 this.Canvas.fillStyle=this.TextBGColor;
-                this.Canvas.fillRect(0,-(this.TextHeight/2),-textWidth,this.TextHeight);
-                this.Canvas.textAlign="right";
-                this.Canvas.textBaseline="middle";
-                this.Canvas.fillStyle=this.TextColor;
-                this.Canvas.fillText(text,-2,0,textWidth);
+                if (top>=textWidth)
+                {
+                    this.Canvas.fillRect(0,-(this.TextHeight/2),-textWidth,this.TextHeight);
+                    this.Canvas.textAlign="right";
+                    this.Canvas.textBaseline="middle";
+                    this.Canvas.fillStyle=this.TextColor;
+                    this.Canvas.fillText(text,-2,0,textWidth);
+                }
+                else
+                {
+                    this.Canvas.fillRect((textWidth-top),-(this.TextHeight/2),-textWidth,this.TextHeight);
+                    this.Canvas.textAlign="right";
+                    this.Canvas.textBaseline="middle";
+                    this.Canvas.fillStyle=this.TextColor;
+                    this.Canvas.fillText(text,(textWidth-top)-2,0,textWidth);
+                }
 
                 this.Canvas.restore();
             }
@@ -10840,11 +10893,22 @@ function ChartCorssCursor()
                 this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
                 
                 this.Canvas.fillStyle=this.TextBGColor;
-                this.Canvas.fillRect(0,-(this.TextHeight/2),textWidth,this.TextHeight);
-                this.Canvas.textAlign="left";
-                this.Canvas.textBaseline="middle";
-                this.Canvas.fillStyle=this.TextColor;
-                this.Canvas.fillText(text,2,0,textWidth);
+                if (bottomWidth>textWidth)
+                {
+                    this.Canvas.fillRect(0,-(this.TextHeight/2),textWidth,this.TextHeight);
+                    this.Canvas.textAlign="left";
+                    this.Canvas.textBaseline="middle";
+                    this.Canvas.fillStyle=this.TextColor;
+                    this.Canvas.fillText(text,2,0,textWidth);
+                }
+                else
+                {
+                    this.Canvas.fillRect((bottomWidth-textWidth),-(this.TextHeight/2),textWidth,this.TextHeight);
+                    this.Canvas.textAlign="left";
+                    this.Canvas.textBaseline="middle";
+                    this.Canvas.fillStyle=this.TextColor;
+                    this.Canvas.fillText(text,(bottomWidth-textWidth)+2,0,textWidth);
+                }
 
                 this.Canvas.restore();
             }

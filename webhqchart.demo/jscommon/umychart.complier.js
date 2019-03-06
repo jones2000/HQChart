@@ -3,7 +3,24 @@
 var g_JSComplierResource=
 {
     Domain : "https://opensource.zealink.com",               //API域名
-    CacheDomain : "https://opensourcecache.zealink.com"      //缓存域名
+    CacheDomain : "https://opensourcecache.zealink.com",      //缓存域名
+
+    DrawIcon:{  Family:'iconfont', 
+        Data:new Map([
+            [1, { Text:'\ue625', Color:'rgb(255,106,106)'}], //向上箭头
+            [2, { Text:'\ue68b', Color:'rgb(46,139,87)'}],    //向下箭头
+            [11,{ Text:'\ue624', Color:'rgb(245,159,40)'}],  //点赞
+            [12,{ Text:'\ue600', Color:'rgb(245,159,40)'}],
+            [13,{Text:'\ue70f',Color:'rgb(255,106,106)'}, ],    //B
+            [14,{Text:'\ue64c',Color:'rgb(6,79,18)'} ],         //S
+            [9, {Text:'\ue626',Color:'rgb(245,159,40)'} ],      //$
+            [36,{Text:'\ue68c',Color:'rgb(255,106,106)'} ],     //关闭 红色
+            [37,{Text:'\ue68c',Color:'rgb(46,139,87)'} ],       //关闭 绿色
+            [38,{Text:'\ue68d',Color:'rgb(238,44,44)'} ],       //▲
+            [39,{Text:'\ue68e',Color:'rgb(0,139,69)'} ],        //▼
+            [46,{Text:'\ue64d',Color:'rgb(51,51,51)'} ],        //message
+        ])
+    }
 }
 
 var Messages = {
@@ -5211,18 +5228,29 @@ function JSDraw(errorHandler,symbolData)
     */
     this.DRAWICON=function(condition,data,type)
     {
-        //图标对应的字符代码
-        let mapIcon=new Map([
-            [1,{Symbol:'↑',Color:'rgb(238,44,44)'} ],[2,{Symbol:'↓',Color:'rgb(0,139,69)'} ],
-            [3,{Symbol:'😧'} ],[4,{Symbol:'😨'} ],[5,{Symbol:'😁'} ],[6,{Symbol:'😱'} ],
-            [7,{Symbol:'B',Color:'rgb(238,44,44)'} ],[8,{Symbol:'S',Color:'rgb(0,139,69)'} ],
-            [9,{Symbol:'💰'} ],[10,{Symbol:'📪'} ],[11,{Symbol:'👆'} ],[12,{Symbol:'👇'} ],
-            [13,{Symbol:'B',Color:'rgb(178,34,34)'}, ],[14,{Symbol:'S',Color:'rgb(0,139,69)'} ],
-            [36,{Symbol:'Χ',Color:'rgb(238,44,44)'} ],[37,{Symbol:'X',Color:'rgb(0,139,69)'} ],
-            [38,{Symbol:'▲',Color:'rgb(238,44,44)'} ],[39,{Symbol:'▼',Color:'rgb(0,139,69)'} ],
-        ]);
+        let icon;
+        if (g_JSComplierResource.DrawIcon && g_JSComplierResource.DrawIcon.Data && g_JSComplierResource.DrawIcon.Data.has(type))
+        {
+            const iconfont=g_JSComplierResource.DrawIcon.Data.get(type);
+            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:g_JSComplierResource.DrawIcon.Family, IconFont:true };
+        }
 
-        let icon=mapIcon.get(type);
+        if (!icon)
+        {
+            //图标对应的字符代码
+            let mapIcon=new Map([
+                [1,{Symbol:'↑',Color:'rgb(238,44,44)'} ],[2,{Symbol:'↓',Color:'rgb(0,139,69)'} ],
+                [3,{Symbol:'😧'} ],[4,{Symbol:'😨'} ],[5,{Symbol:'😁'} ],[6,{Symbol:'😱'} ],
+                [7,{Symbol:'B',Color:'rgb(238,44,44)'} ],[8,{Symbol:'S',Color:'rgb(0,139,69)'} ],
+                [9,{Symbol:'💰'} ],[10,{Symbol:'📪'} ],[11,{Symbol:'👆'} ],[12,{Symbol:'👇'} ],
+                [13,{Symbol:'B',Color:'rgb(178,34,34)'}, ],[14,{Symbol:'S',Color:'rgb(0,139,69)'} ],
+                [36,{Symbol:'Χ',Color:'rgb(238,44,44)'} ],[37,{Symbol:'X',Color:'rgb(0,139,69)'} ],
+                [38,{Symbol:'▲',Color:'rgb(238,44,44)'} ],[39,{Symbol:'▼',Color:'rgb(0,139,69)'} ],
+            ]);
+
+            icon=mapIcon.get(type);
+        }
+
         if (!icon) icon={Symbol:'🚩'};
         let drawData=[];
         let result={DrawData:drawData, DrawType:'DRAWICON',Icon:icon};
@@ -8148,11 +8176,19 @@ function ScriptIndex(name,script,args,option)
 
         let titleIndex=windowIndex+1;
         chartText.Data.Data=varItem.Draw.DrawData;
-        chartText.Text=varItem.Draw.Icon.Symbol;
-        if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
-        else if (varItem.Draw.Icon.Color) chartText.Color=varItem.Draw.Icon.Color;
-        else chartText.Color='rgb(0,0,0)';
-
+        var icon=varItem.Draw.Icon;
+        if (icon.IconFont==true)
+        {
+            chartText.IconFont={ Family:icon.Family, Text:icon.Symbol, Color:icon.Color };
+        }
+        else
+        {
+            chartText.Text=icon.Symbol;
+            if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
+            else if (icon.Color) chartText.Color=icon.Color;
+            else chartText.Color='rgb(0,0,0)';
+        }
+        
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
         hqChart.ChartPaint.push(chartText);
