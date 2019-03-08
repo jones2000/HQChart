@@ -813,7 +813,30 @@ function JSChart(divElement)
             this.JSChartContainer.ClearOverlaySymbol();
         } 
     }
-	
+
+    this.DeleteKLineInfo=function(infoName)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.DeleteKLineInfo) == 'function')
+        {
+            this.JSChartContainer.DeleteKLineInfo(infoName);
+        } 
+    }
+    
+    this.ClearKLineInfo=function()
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ClearKLineInfo) == 'function')
+        {
+            this.JSChartContainer.ClearKLineInfo();
+        } 
+    }
+
+    this.AddKLineInfo=function(infoName)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.AddKLineInfo) == 'function')
+        {
+            this.JSChartContainer.AddKLineInfo(infoName);
+        } 
+    }
 
     this.ChangMainDataControl=function(dataControl)
     {
@@ -1090,6 +1113,8 @@ function JSChartContainer(uielement)
                 var isLeft=true;
                 if (drag.LastMove.X<e.clientX) isLeft=false;//右移数据
 
+                this.JSChartContainer.UIElement.style.cursor="pointer";
+
                 if(this.JSChartContainer.DataMove(moveSetp,isLeft))
                 {
                     this.JSChartContainer.UpdataDataoffset();
@@ -1202,6 +1227,7 @@ function JSChartContainer(uielement)
             }
 
             //清空数据
+            this.JSChartContainer.UIElement.style.cursor="default";
             this.JSChartContainer.MouseDrag=null;
             if (bClearDrawPicture===true) this.JSChartContainer.CurrentChartDrawPicture=null;
             this.JSChartContainer=null;
@@ -1568,12 +1594,13 @@ function JSChartContainer(uielement)
             drawPictrueData.Y=y;
             if (this.GetChartDrawPictureByPoint(drawPictrueData)) 
             {
-                this.UIElement.style.cursor="pointer";
+                if (drawPictrueData.PointIndex===100) this.UIElement.style.cursor="move";
+                else this.UIElement.style.cursor="pointer";
                 bDrawPicture=true;
             }
             else 
             {
-                this.UIElement.style.cursor="default";
+                if (!this.MouseDrag) this.UIElement.style.cursor="default";
             }
         }
 
@@ -16841,6 +16868,7 @@ function KLineChartContainer(uielement)
     //设置K线信息地雷
     this.SetKLineInfo=function(aryInfo,bUpdate)
     {
+        this.ChartInfo=[];  //先清空
         for(var i in aryInfo)
         {
             var infoItem=JSKLineInfoMap.Get(aryInfo[i]);
@@ -16851,6 +16879,71 @@ function KLineChartContainer(uielement)
         }
 
         if (bUpdate==true) this.ReqeustKLineInfoData();
+    }
+
+    //添加信息地雷
+    this.AddKLineInfo=function(infoName,bUpdate)
+    {
+        var classInfo=JSKLineInfoMap.GetClassInfo(infoName);
+        if (!classInfo)
+        {
+            console.warn("[KLineChartContainer::AddKLineInfo] can't find infoname=", infoName);
+            return;
+        }
+
+        for(var i in this.ChartInfo)
+        {
+            var item=this.ChartInfo[i];
+            if (item.ClassName==classInfo.ClassName)    //已经存在
+                return;
+        }
+
+        var infoItem=JSKLineInfoMap.Get(infoName);
+        if (!infoItem) return;
+
+        var item=infoItem.Create();
+        item.MaxReqeustDataCount=this.MaxReqeustDataCount;
+        this.ChartInfo.push(item);
+
+        if (bUpdate==true) 
+        {
+            item.RequestData(this);  //信息地雷信息
+        }
+    }
+
+    //删除信息地理
+    this.DeleteKLineInfo=function(infoName)
+    {
+        var classInfo=JSKLineInfoMap.GetClassInfo(infoName);
+        if (!classInfo)
+        {
+            console.warn("[KLineChartContainer::DeleteKLineInfo] can't find infoname=", infoName);
+            return;
+        }
+
+        for(var i in this.ChartInfo)
+        {
+            var item=this.ChartInfo[i];
+            if (item.ClassName==classInfo.ClassName)
+            {
+                this.ChartInfo.splice(i,1);
+                this.UpdataChartInfo();
+                this.Draw();
+                break;
+            }
+        }
+    }
+
+    //清空所有的信息地理
+    this.ClearKLineInfo=function()
+    {
+        if (!this.ChartInfo || this.ChartInfo.length<=0) return;
+
+        this.ChartInfo=[];
+
+        var klinePaint=this.ChartPaint[0];
+        klinePaint.InfoData=null;
+        this.Draw();
     }
 
     //叠加股票 只支持日线数据
@@ -21631,6 +21724,22 @@ JSKLineInfoMap.Get=function(id)
     return infoMap.get(id);
 }
 
+JSKLineInfoMap.GetClassInfo=function(id)
+{
+    var infoMap=new Map(
+        [
+            ["互动易",      { ClassName:"InvestorInfo" }],
+            ["公告",        { ClassName:"AnnouncementInfo" }],
+            ["业绩预告",    { ClassName:"PforecastInfo" } ],
+            ["调研",        { ClassName:"ResearchInfo"  }],
+            ["大宗交易",    { ClassName:"BlockTrading"  }],
+            ["龙虎榜",      { ClassName:"TradeDetail"}  ]
+        ]
+        );
+
+    return infoMap.get(id);
+}
+
 JSKLineInfoMap.GetIconUrl=function(type)
 {
     switch(type)
@@ -21691,6 +21800,7 @@ function IKLineInfo()
     this.MaxReqeustDataCount=1000;
     this.StartDate=20160101;
     this.Data;
+    this.ClassName='IKLineInfo';
 
     this.GetToday=function()
     {
@@ -21708,6 +21818,8 @@ function InvestorInfo()
     this.newMethod=IKLineInfo;   //派生
     this.newMethod();
     delete this.newMethod;
+
+    this.ClassName='InvestorInfo';
 
     this.RequestData=function(hqChart)
     {
@@ -21768,6 +21880,8 @@ function AnnouncementInfo()
     this.newMethod=IKLineInfo;   //派生
     this.newMethod();
     delete this.newMethod;
+
+    this.ClassName='AnnouncementInfo';
 
     this.RequestData=function(hqChart)
     {
@@ -21849,6 +21963,8 @@ function PforecastInfo()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='PforecastInfo';
+
     this.RequestData=function(hqChart)
     {
         var self = this;
@@ -21924,6 +22040,8 @@ function ResearchInfo()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='PforecastInfo';
+
     this.RequestData=function(hqChart)
     {
         var self = this;
@@ -21985,6 +22103,8 @@ function BlockTrading()
     this.newMethod=IKLineInfo;   //派生
     this.newMethod();
     delete this.newMethod;
+
+    this.ClassName='BlockTrading';
 
     this.RequestData=function(hqChart)
     {
@@ -22065,6 +22185,8 @@ function TradeDetail()
     this.newMethod=IKLineInfo;   //派生
     this.newMethod();
     delete this.newMethod;
+
+    this.ClassName='TradeDetail';
 
     this.RequestData=function(hqChart)
     {
@@ -23789,6 +23911,53 @@ function KLineRightMenu(divElement)
         return data;
     }
 
+    this.GetKLineInfo=function(chart)
+    {
+        var setInfo=new Set();
+        for(var i in chart.ChartInfo)
+        {
+            var item=chart.ChartInfo[i];
+            setInfo.add(item.ClassName);
+        }
+
+        var aryKLineInfo=["公告","业绩预告","调研","大宗交易","龙虎榜","互动易"]
+
+        var data=[];
+        for(var i in aryKLineInfo)
+        {
+            var infoName=aryKLineInfo[i];
+            var classInfo=JSKLineInfoMap.GetClassInfo(infoName);
+            if (!classInfo) continue;
+            
+            var item=this.CreateKlineInfoItem(infoName, setInfo.has(classInfo.ClassName), chart);
+            data.push(item);
+        }
+
+        if (chart.ChartInfo.length>0)
+        {
+            data[data.length-1].isBorder=true;
+            var item={ text:'删除所有', click:function() { chart.ClearKLineInfo()} };
+            data.push(item);
+           
+        }
+
+        return data;
+    }
+
+    this.CreateKlineInfoItem=function(infoName,bExist,chart)
+    {
+        var item= 
+        {
+            text:infoName, 
+            selected:bExist
+        }
+
+        if (bExist) item.click=function() { chart.DeleteKLineInfo(infoName) };
+        else  item.click=function() { chart.AddKLineInfo(infoName,true) }
+
+        return item;
+    }
+
     this.DoModal=function(event)
     {
         var chart=event.data.Chart;
@@ -23815,6 +23984,10 @@ function KLineRightMenu(divElement)
         {
             text:'专家系统',
             children: this.GetTradeIndex(chart)
+        },
+        {
+            text:'信息地雷',
+            children: this.GetKLineInfo(chart)
         },
         {
             text: "叠加品种",
