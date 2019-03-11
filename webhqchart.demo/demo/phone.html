@@ -90,8 +90,17 @@
                 {
                     Type:'历史K线图',
                     Windows:aryIndex, //窗口指标
+                    /*
+                    Windows: [
+                                {Index:"放心股-操盘BS点"},
+                                {Index:"放心股-涨停吸筹区"},
+                                {Index:"放心股-涨停多空线"},
+                                {Index:"放心股-量能黄金点"},
+                            ], //窗口指标
+                    */
                     Symbol:symbol,
-                    IsAutoUpate:true,       //是自动更新数据
+                    IsAutoUpdate:true,       //是自动更新数据
+                    //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
         
                     IsShowRightMenu:true,          //右键菜单
                     IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
@@ -105,7 +114,7 @@
                         PageSize:50,               //一屏显示多少数据
                         IndexTreeApiUrl:"https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
                         //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
-                        Info:["公告","互动易","调研"],          //信息地雷
+                        //Info:["公告","互动易","调研"],          //信息地雷
                         KLineDoubleClick:true,              //双击分钟走势图
                         IsShowTooltip:true                 //是否显示K线提示信息
                     },
@@ -118,7 +127,7 @@
         
                     Border: //边框
                     {
-                        Left:80,           //左边间距
+                        Left:50,           //左边间距
                         Right:80+40,       //右边间距
                         Bottom:50,
                         Top:25
@@ -131,9 +140,9 @@
                     
                     Frame:  //子框架设置 (Height 窗口高度比例值)
                     [
-                        {SplitCount:3,StringFormat:0, Height:4,IsShowLeftText:false},
-                        {SplitCount:2,StringFormat:0, Height:3,IsShowLeftText:false},
-                        {SplitCount:2,StringFormat:0, Height:3,IsShowLeftText:false}
+                        {SplitCount:3,StringFormat:0, Height:4,IsShowLeftText:true},
+                        {SplitCount:2,StringFormat:0, Height:3,IsShowLeftText:true},
+                        {SplitCount:2,StringFormat:0, Height:3,IsShowLeftText:true}
                     ]
                 }
 

@@ -614,7 +614,7 @@ function JSChart(divElement)
         if (!chart) return false;
 
         //是否自动更新
-        if(option.IsAutoUpate!=null) chart.IsAutoUpate=option.IsAutoUpate;
+        if(option.IsAutoUpdate!=null) chart.IsAutoUpdate=option.IsAutoUpdate;
 
         //设置股票代码
         if (!option.Symbol) return false;
@@ -10293,6 +10293,7 @@ function FrameSplitY()
     this.newMethod();
     delete this.newMethod;
 
+    this.SplitCount=3;                        //刻度个数
     this.FloatPrecision = 2;                  //坐标小数位数(默认2)
     this.FLOATPRECISION_RANGE=[1,0.1,0.01,0.001,0.0001];
 
@@ -15703,6 +15704,10 @@ function KLineChartContainer(uielement)
     this.ScriptErrorCallback;           //脚本执行错误回调
     this.FlowCapitalReady=false;        //流通股本是否下载完成
 
+    //自动更新设置
+    this.IsAutoUpdate=false;                    //是否自动更新行情数据
+    this.AutoUpdateFrequency=30000;             //30秒更新一次数据
+
     //this.KLineApiUrl="http://opensource.zealink.com/API/KLine2";                  //历史K线api地址
     this.KLineApiUrl=g_JSChartResource.Domain+"/API/KLine2";                        //历史K线api地址
     this.MinuteKLineApiUrl=g_JSChartResource.Domain+'/API/KLine3';                  //历史分钟数据
@@ -16053,6 +16058,7 @@ function KLineChartContainer(uielement)
             {
                 self.ChartSplashPaint.IsEnableSplash = false;
                 self.RecvHistoryData(data);
+                self.AutoUpdate();
             }
         });
     }
@@ -16236,6 +16242,7 @@ function KLineChartContainer(uielement)
             success: function (data)
             {
                 self.RecvRealtimeData(data);
+                self.AutoUpdate();
             }
         });
     }
@@ -16243,18 +16250,52 @@ function KLineChartContainer(uielement)
     this.RecvRealtimeData=function(data)
     {
         var realtimeData=KLineChartContainer.JsonDataToRealtimeData(data);
-        if (this.Symbol==data.symbol)
+        if (this.Symbol!=data.symbol) return;
+
+        if (this.SourceData.Data[this.SourceData.Data.length-1].Date=!realtimeData.Date) return;
+
+        //实时行情数据更新
+        var item =this.SourceData.Data[this.SourceData.Data.length-1];
+        item.Close=realtimeData.Close;
+        item.High=realtimeData.High;
+        item.Low=realtimeData.Low;
+        item.Vol=realtimeData.Vol;
+        item.Amount=realtimeData.Amount;
+
+        var bindData=new ChartData();
+        bindData.Data=this.SourceData.Data;
+        bindData.Period=this.Period;
+        bindData.Right=this.Right;
+        bindData.DataType=this.SourceData.DataType;
+
+        if (bindData.Right>0 && bindData.Period<=3)    //复权(日线数据才复权)
         {
-            if (this.SourceData.Data[this.SourceData.Data.length-1].Date==realtimeData.Date)    //实时行情数据更新
-            {
-                var item =this.SourceData.Data[this.SourceData.Data.length-1];
-                item.Close=realtimeData.Close;
-                item.High=realtimeData.High;
-                item.Low=realtimeData.Low;
-                item.Vol=realtimeData.Vol;
-                item.Amount=realtimeData.Amount;
-            }
+            var rightData=bindData.GetRightDate(bindData.Right);
+            bindData.Data=rightData;
         }
+
+        if (bindData.Period>0 && bindData.Period!=4)   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        {
+            var periodData=bindData.GetPeriodData(bindData.Period);
+            bindData.Data=periodData;
+        }
+
+        //绑定数据
+        this.BindMainData(bindData,this.PageSize);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            this.BindIndexData(i,bindData);
+        }
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+        
     }
 
     //周期切换
@@ -17587,7 +17628,7 @@ function KLineChartContainer(uielement)
     this.OnSelectChartPicture=function(chart)
     {   
         console.log('[KLineChartContainer::OnSelectChartPicture',chart);
-        if (!this.ChartPictureMenu) this.ChartPictureMenu=new ChartPictureSettingMenu(this.DivElement);
+        if (!this.ChartPictureMenu) this.ChartPictureMenu=new ChartPictureSettingMenu(this.UIElement.parentNode);
 
         var event={ data: { ChartPicture:chart, HQChart:this}};
         this.ChartPictureMenu.DoModal(event);
@@ -17597,6 +17638,46 @@ function KLineChartContainer(uielement)
     //{
     //    console.log(data);
     //}
+
+    //数据自动更新
+    this.AutoUpdate=function()
+    {
+        if (!this.IsAutoUpdate) return;
+        var self = this;
+
+        //9:30 - 15:40 非周6，日 每隔30秒更新一次 this.RequestMinuteData();
+        var nowDate= new Date(),
+            day = nowDate.getDay(),
+            time = nowDate.getHours() * 100 + nowDate.getMinutes();
+
+        if(day == 6 || day== 0) return ;
+
+        if(time>1540) return ;
+
+        var frequency=this.AutoUpdateFrequency;
+        if(time <930)
+        {
+            setTimeout(function()
+            {
+                self.AutoUpdate();
+            },frequency);
+
+        }else
+        {
+            setTimeout(function()
+            {
+                if (self.Period<=3)
+                {
+                    self.ReqeustRealtimeData();                  //更新最新行情
+                    //self.ReqeustKLineInfoData();
+                }
+                else 
+                {
+                    self.ReqeustHistoryMinuteData();            //请求分钟数据
+                }  
+            },frequency);
+        }
+    }
 
 }
 
@@ -17719,7 +17800,8 @@ function MinuteChartContainer(uielement)
     this.Name;
     this.SourceData;                          //原始的历史数据
     this.OverlaySourceData;                   //叠加的原始数据
-    this.IsAutoUpate=false;                   //是否自动更新行情数据
+    this.IsAutoUpdate=true;                   //是否自动更新行情数据
+    this.AutoUpdateFrequency=30000;             //30秒更新一次数据
     this.TradeDate=0;                         //行情交易日期
     this.DayCount=1;                          //显示几天的数据
     this.DayData;                             //多日分钟数据
@@ -18172,7 +18254,7 @@ function MinuteChartContainer(uielement)
 
         this.RequestOverlayHistoryMinuteData();
 
-        this.AutoUpdata();
+        this.AutoUpdate();
     }
 
     this.UpdateHistoryMinuteUI=function()
@@ -18292,7 +18374,7 @@ function MinuteChartContainer(uielement)
             this.UpdateLatestMinuteData(aryMinuteData,data.stock[0].date);
             this.UpdateHistoryMinuteUI();
             this.RequestOverlayMinuteData();    //请求叠加数据 (主数据下载完再下载)
-            this.AutoUpdata();
+            this.AutoUpdate();
             return;
         }
 
@@ -18340,7 +18422,7 @@ function MinuteChartContainer(uielement)
         this.Frame.SetSizeChage(true);
         this.Draw();
 
-        this.AutoUpdata();
+        this.AutoUpdate();
     }
 
     //请求叠加数据 (主数据下载完再下载))
@@ -18490,11 +18572,11 @@ function MinuteChartContainer(uielement)
     }
 
     //数据自动更新
-    this.AutoUpdata=function()
+    this.AutoUpdate=function()
     {
         var self = this;
 
-        if (!this.IsAutoUpate) return;
+        if (!this.IsAutoUpdate) return;
 
         //9:30 - 15:40 非周6，日 每隔30秒更新一次 this.RequestMinuteData();
         var nowDate= new Date(),
@@ -18505,14 +18587,15 @@ function MinuteChartContainer(uielement)
 
         if(time>1540) return ;
 
+        var frequency=this.AutoUpdateFrequency;
         if(time <930){
             setTimeout(function(){
-                self.AutoUpdata();
-            },30000);
+                self.AutoUpdate();
+            },frequency);
         }else{
             setTimeout(function(){
                 self.RequestMinuteData();
-            },30000);
+            },frequency);
         }
     }
 
@@ -22915,7 +22998,7 @@ function MinuteDialog(divElement)
         {
             Type:'历史分钟走势图',
             Symbol:this.Symbol,     //股票代码
-            IsAutoUpate:false,       //是自动更新数据
+            IsAutoUpdate:false,       //是自动更新数据
 
             IsShowRightMenu:false,   //右键菜单
             HistoryMinute: { TradeDate:this.TradeDate, IsShowName:false, IsShowDate:false }   //显示的交易日期
@@ -24244,11 +24327,13 @@ function ChartPictureSettingMenu(divElement)
         var $body;
         if (!this.SubToolsDiv)
         {
+            this.ID=Guid();
             var div=document.createElement("div");
             div.className='subTolls';
             div.id=this.ID;
-            $body = $("."+event.data.HQChart.ClassName).context.body;
-            $body.append(div);
+            this.DivElement.appendChild(div);
+            //$body = $("."+event.data.HQChart.ClassName).context.body;
+            //$body.append(div);
             this.SubToolsDiv=div;
         }
         this.HQChart=event.data.HQChart;
@@ -24264,16 +24349,16 @@ function ChartPictureSettingMenu(divElement)
         var toolsDiv = "";
         if(className === 'ChartDrawPictureText'){
             toolsDiv = '<span class="changes-color" title="改变图形颜色">'+
-                           '<image class="change-image" src="content/image/change-color.png"></image>' +
+                           '<i class="iconfont icon-bianji"></i>'+
                            '<input type="color" name="color" id="color" class="change-color" value="'+ this.ChartPicture.LineColor +'">'+
                         '</span>\n' +
                         '<span class="subtool-set" title="设置"><i class="iconfont icon-shezhi"></i></span>'+
-                        '<span class="subtool-del"><image src="content/image/del-single.png" title="单个图形删除"></image></span>';
+                        '<span class="subtool-del"><i class="iconfont icon-recycle_bin"></i></span>';
         }else{
             toolsDiv =
-            '<span class="changes-color" title="改变图形颜色"><image class="change-image" src="content/image/change-color.png"></image>' +
+            '<span class="changes-color" title="改变图形颜色"><i class="iconfont icon-bianji"></i>' +
             '<input type="color" name="color" id="color" class="change-color" value="'+ this.ChartPicture.LineColor +'"></span>\n' +
-            '        <span class="subtool-del"><image src="content/image/del-single.png" title="单个图形删除"></image></span>';
+            '        <span class="subtool-del"><i class="iconfont icon-recycle_bin"></i></span>';
         }
 
         this.SubToolsDiv.style.right = right + "px";
