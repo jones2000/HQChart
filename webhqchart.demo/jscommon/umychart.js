@@ -1129,7 +1129,7 @@ function JSChartContainer(uielement)
             }
             else if (this.JSChartContainer.DragMode==2) //区间选择
             {
-                yMoveSetp=Math.abs(drag.LastMove.Y-e.clientY);
+                var yMoveSetp=Math.abs(drag.LastMove.Y-e.clientY);
 
                 if (moveSetp<5 && yMoveSetp<5) return;
 
@@ -1839,8 +1839,8 @@ function JSChartContainer(uielement)
         if (x>x2) left=x2;
         if (y>y2) top=y2;
 
-        width=Math.abs(x-x2);
-        height=Math.abs(y-y2);
+        var width=Math.abs(x-x2);
+        var height=Math.abs(y-y2);
 
         this.SelectRect.style.width = width+"px";
         this.SelectRect.style.height =height+"px";
@@ -24356,9 +24356,9 @@ function ChartPictureSettingMenu(divElement)
                         '<span class="subtool-del"><i class="iconfont icon-recycle_bin"></i></span>';
         }else{
             toolsDiv =
-            '<span class="changes-color" title="改变图形颜色"><i class="iconfont icon-bianji"></i>' +
-            '<input type="color" name="color" id="color" class="change-color" value="'+ this.ChartPicture.LineColor +'"></span>\n' +
-            '        <span class="subtool-del"><i class="iconfont icon-recycle_bin"></i></span>';
+            '<p class="changes-color" title="改变图形颜色"><i class="iconfont icon-bianji"></i>' +
+            '<input type="color" name="color" id="color" class="change-color" value="'+ this.ChartPicture.LineColor +'"></p>\n' +
+            '        <p class="subtool-del"><i class="iconfont icon-recycle_bin"></i></p>';
         }
 
         this.SubToolsDiv.style.right = right + "px";
