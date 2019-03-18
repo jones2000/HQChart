@@ -1,0 +1,9 @@
+node_modules
+src\jscommon\backup
+src\jscommon\phoneHorizontal
+src\jscommon\umychart.complier.node
+src\jscommon\umychart.vue.build
+src\jscommon\umychart.wechat
+src\jscommon\*.js
+src\jscommon\*.html
+src\jscommon\*.json
