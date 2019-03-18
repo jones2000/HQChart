@@ -60,4 +60,4 @@
 
 * pc网页版行情目前正在开发中,基于VUE框架开发,开发完毕以后我们会把源码开放到git中,目前有兴趣的朋友可以加qq群里索要 <br>
   ![走势图2](/小程序行情模块用例/image/pch5hq.PNG)
-   行情页面地址(开发版） https://opensource.zealink.com/vuehqweb/index.html#/
+   行情页面地址(开发版） https://opensource.zealink.com/vuehqweb/hq.demo.page.html
