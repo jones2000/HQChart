@@ -86,7 +86,7 @@ export default
             var height= $(window).height();
             var width = $(window).width();
 
-            $('.divstockfull').height(height*0.8);
+            $('.divstockfull').height(height-70);
 
             this.$refs.stockfull.OnSize();
         },

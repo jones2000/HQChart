@@ -12,7 +12,7 @@
         <div class='divstockmain' ref='divstockmain'>
             <!--  走势图|K线图 !-->
             <div ref='divstockkline' style="height:200px;position: relative">
-                <StockKLine ref='stockkline' :DefaultSymbol=this.DefaultSymbol :DefaultPeriod=this.DefaultPeriod 
+                <StockKLine ref='stockkline' :DefaultSymbol=this.DefaultSymbol :DefaultPeriod=this.DefaultPeriod :TradeInfoTabWidth=this.TradeInfo.Width 
                     :KLineOption=this.KLineOption :MinuteOption=this.MinuteOption>
                 </StockKLine> 
             </div>
@@ -21,6 +21,10 @@
             <div class='divtradeinfo' ref='divtradeinfo' style='width:200px;position: relative' v-show="TradeInfo.IsShow">
                 <StockTradeInfo ref='tradeinfo'  IsShareStock=1 :DefaultSymbol=this.DefaultSymbol ></StockTradeInfo> 
             </div>
+        </div>
+        <div class='divtradeinfotab'  v-show="TradeInfo.Tab.IsShow" ref='divtradeinfotab'>
+            <span v-for='(item,index) in TradeInfo.Tab.Menu' :key='index' :class='{active:TradeInfo.Tab.Selected==index}' v-show='item.IsShow'
+                @click="OnClickTradeInfoTab(item,index)">{{item.Name}}</span>
         </div>
     </div>
 </template>
@@ -41,7 +45,17 @@ export default
             JSStock:null,  //共享的股票数据类
             Symbol:'600000.sh',
 
-            TradeInfo:{ Width:230, IsShow:true }
+            TradeInfo:
+            { 
+                Width:230, IsShow:true,
+                Tab:
+                {
+                    Menu:[ {Name:'分笔', Value:1, IsShow:true },{Name:'筹码',Value:2, IsShow:true } ],
+                    Selected:0,
+                    IsShow:true,
+                },
+                
+            }
         }
     }, 
     
@@ -79,6 +93,9 @@ export default
         tradeInfo.SetSymbol(this.Symbol);
         tradeInfo.InitalStock();
 
+        var kline=this.$refs.stockkline;
+        kline.Event.ChangePeriodEvent=this.OnChangePeriod;    //设置周期切换回调
+
         this.JSStock.ReqeustData();
     },
 
@@ -99,10 +116,7 @@ export default
 
             this.JSStock.ReqeustData();
 
-            var isIndex=StockInfo.JSCommon.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol);
-            if (isIndex) this.TradeInfo.IsShow=false;    //指数不显示买卖盘
-            else this.TradeInfo.IsShow=true;
-            if (isIndex!=oldIsIndex) this.OnSize();
+            this.UpdateUIPosition();
         },
 
         OnSize:function()
@@ -112,10 +126,11 @@ export default
             var divStockMain=this.$refs.divstockmain;
             var divStockKLine=this.$refs.divstockkline;
             var divTradeInfo=this.$refs.divtradeinfo;
+            var divTradeInfoTab=this.$refs.divtradeinfotab;
             
-            var width=stockFull.clientWidth;
-            var height=stockFull.clientHeight;
-            var stockInfoHeight=divStockInfo.clientHeight;
+            var width=stockFull.offsetWidth;
+            var height=stockFull.offsetHeight;
+            var stockInfoHeight=divStockInfo.offsetHeight;
             var stockKLineHeight=height-stockInfoHeight;
             var stockKLineWidth=width;
             if (this.TradeInfo.IsShow) stockKLineWidth=width-this.TradeInfo.Width;;
@@ -128,7 +143,9 @@ export default
 
             divTradeInfo.style.width=this.TradeInfo.Width+'px';
             divTradeInfo.style.height=stockKLineHeight+'px';
-
+            
+            divTradeInfoTab.style.width=this.TradeInfo.Width+'px';
+            divTradeInfoTab.style.left=(width-this.TradeInfo.Width)+'px';
             console.log(`[StockFull::OnSize] width=${width} height=${height}`);
 
             this.$refs.stockinfo.OnSize();
@@ -136,13 +153,85 @@ export default
             this.$refs.stockkline.OnSize();
         },
 
-        //obj:{IsShow:'是否显示'}
-        ShowTradeInfo:function(obj)
+        UpdateUIPosition:function()
         {
-            if (!obj) return;
-            this.TradeInfo.IsShow=obj.IsShow;
+            var isIndex=StockInfo.JSCommon.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol);
+            var tabIndex=this.TradeInfo.Tab.Selected;
+            var kline=this.$refs.stockkline;
+            if (isIndex)
+            {
+                //指数 隐藏右边的报价栏
+                this.TradeInfo.IsShow=false;
+                this.TradeInfo.Tab.IsShow=false;
+                kline.ShowStockChip(false);
+            }
+            else
+            {
+                if (this.TradeInfo.Tab.Selected>=0 && this.TradeInfo.Tab.Menu[this.TradeInfo.Tab.Selected].Value===2)
+                {
+                    if (kline.KLine.IsShow)
+                    {
+                        this.TradeInfo.IsShow=false;
+                        kline.ShowStockChip(true);
+                    }
+                    else
+                    {
+                        this.TradeInfo.Tab.Selected=0;  //分时默认第1个
+                        this.TradeInfo.IsShow=true;
+                        kline.ShowStockChip(false);
+                    }
+                }
+                else
+                {
+                    this.TradeInfo.IsShow=true;
+                    kline.ShowStockChip(false);
+                }
+
+                //筹码只在K线上出现
+                if (kline.KLine.IsShow)
+                {
+                    this.TradeInfo.Tab.Menu[1].IsShow=true;
+                }
+                else
+                {
+                    this.TradeInfo.Tab.Menu[1].IsShow=false;
+                }
+                
+                this.TradeInfo.Tab.IsShow=true;
+            }
+
             this.OnSize();
-        }
+        },
+
+        OnClickTradeInfoTab:function(item,index)
+        {
+            if (item.Value===2)
+            {
+                var kline=this.$refs.stockkline;
+                kline.ShowStockChip(true);
+                this.TradeInfo.IsShow=false;
+                this.OnSize();
+            }
+            else
+            {
+                if (this.TradeInfo.Tab.Selected>=0 && this.TradeInfo.Tab.Menu[this.TradeInfo.Tab.Selected].Value===2) 
+                {
+                    var kline=this.$refs.stockkline;
+                    kline.ShowStockChip(false);
+                    this.TradeInfo.IsShow=true;
+                    this.OnSize();
+                }
+            }
+
+            this.TradeInfo.Tab.Selected=index;
+        },
+
+        //周期切换回调
+        OnChangePeriod:function(name)
+        {
+            console.log('[StockFull::OnChangePeriod] ',name);
+            this.UpdateUIPosition();
+        },
     }
 }
 
@@ -170,6 +259,31 @@ export default
 }
 
 .divstockmain>div {float: left;}
+
+.divtradeinfotab
+{
+    position: relative;
+    height: 30px;
+    top:-30px;
+    display: flex;
+    flex-direction: row;
+    background-color: #e1ecf2;
+}
+
+.divtradeinfotab span 
+{
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    cursor: pointer;
+    flex-grow: 1;
+}
+
+.divtradeinfotab span.active 
+{
+    color: #fff;
+    background-color: #125fd9;
+}
 
 
 </style>

@@ -23,7 +23,7 @@
             </div>
 
           <!-- k线设置导航条 -->
-          <div class="item" v-for='(menuOne,index) in KLine.Toolbar.Data' :key='menuOne.Text' v-show="KLine.IsShow"  @click="OnClickToolBar('kline',menuOne,index)" >
+          <div class="item" v-for='(menuOne,index) in KLine.Toolbar.Data' :key='menuOne.Text' v-show="KLine.IsShow && menuOne.IsShow"  @click="OnClickToolBar('kline',menuOne,index)" >
                 <p class="menuOne" :class='{light:KLine.Toolbar.Selected == index}' v-show='menuOne.IsShow'>
                         <span>{{menuOne.Text}}</span>
                         <i class='iconfont' :class='KLine.Toolbar.Selected == index ? "icon-shang" : "icon-xia"'></i>
@@ -225,9 +225,9 @@ var KLINE_TOOLBAR_ID=
     COLOR_INDEX_ID:2,   //五彩K线
     TRADE_INDEX_ID:3,   //专家系统
     OVERLAY_ID:4,       //叠加股票
-    KLINE_TYPE_ID:5,    //主图线型
+    MOUSE_DRAG_ID:5,    //鼠标拖拽
     WINDOW_COUNT_ID:6,  //窗口个数
-    
+    KLINE_TYPE_ID:7,    //主图线型 
 }
 
 DefaultData.GetKLineToolbar=function()
@@ -318,6 +318,17 @@ DefaultData.GetKLineToolbar=function()
         IsShow:true,
     };
 
+    let mouseDragMenu=
+    {
+        Text: '鼠标拖拽',
+        Selected: [],
+        Menu: 
+        [
+            {Name:"禁止拖拽", Value:0}, {Name:"启动拖拽", Value:1}, {Name:"区间选择",Value:2}
+        ],
+        IsShow:true,
+    };
+
     data.Data[KLINE_TOOLBAR_ID.RIGHT_ID]=rightMenu;
     data.Data[KLINE_TOOLBAR_ID.COLOR_INDEX_ID]=colorIndexMenu;
     data.Data[KLINE_TOOLBAR_ID.TRADE_INDEX_ID]=tradeIndexMenu;
@@ -325,6 +336,7 @@ DefaultData.GetKLineToolbar=function()
     data.Data[KLINE_TOOLBAR_ID.KLINE_TYPE_ID]=klineTypeMenu;
     data.Data[KLINE_TOOLBAR_ID.WINDOW_COUNT_ID]=windowCountMenu;
     data.Data[KLINE_TOOLBAR_ID.KLINE_INFO_ID]=klineInfoMenu;
+    data.Data[KLINE_TOOLBAR_ID.MOUSE_DRAG_ID]=mouseDragMenu;
     
     return data;
 }
@@ -341,6 +353,7 @@ export default
         'DefaultSymbol',   //默认股票
         'KLineOption',
         'MinuteOption',
+        'TradeInfoTabWidth',
     ],
 
     data()
@@ -377,6 +390,17 @@ export default
                 IsShow:true,
                 Selected:0, //当前选中的菜单
             },
+
+            TradeInfoTab:
+            {
+                IsShow:true,    //买卖盘是否显示
+                Width:230,      //买卖盘宽度
+            },
+            
+            Event:
+            {
+                ChangePeriodEvent:null, //周期改变事件 function(name)
+            }
         }
 
         return data;
@@ -404,6 +428,7 @@ export default
 
         if (this.KLineOption) this.SetDefaultKLineOption(this.KLineOption);
         if (this.MinuteOption) this.SetDefaultMinuteOption(this.MinuteOption);
+        if (this.TradeInfoTabWidth>0) this.TradeInfoTab.Width=this.TradeInfoTabWidth;
     },
 
     mounted:function()
@@ -456,6 +481,20 @@ export default
             divKline.style.height=chartHeight+'px';
             if (this.KLine.JSChart) this.KLine.JSChart.OnSize();
 
+            if (this.KLine.JSChart)
+            {
+                let chart=this.KLine.JSChart.JSChartContainer;
+                let StockChip=chart.GetExtendChartByClassName('StockChip');
+                if (StockChip)
+                {
+                    klineIndexBar.style.width=(width-this.TradeInfoTab.Width)+'px';
+                }
+                else
+                {
+                    klineIndexBar.style.width='100%';
+                }
+            }
+           
             console.log(`[StockKLine::OnSize] Chart:(${width},${height})`);
         },
 
@@ -766,11 +805,47 @@ export default
             }
         },
 
+        UpdateMouseDragMenu:function()
+        {
+            var menu=this.KLine.Toolbar.Data[KLINE_TOOLBAR_ID.MOUSE_DRAG_ID];
+            menu.Selected=[];
+            const aryMenu=menu.Menu.map(item=>item.Value);
+            var index=aryMenu.indexOf(this.KLine.JSChart.JSChartContainer.DragMode);
+            if (index>=0) menu.Selected.push(index);
+        },
+
         //隐藏2级工具条弹出菜单
         HideToolbarPopMenu:function()
         {
             this.KLine.Toolbar.Selected=-1;
             this.Minute.Toolbar.Selected=-1;
+        },
+
+        ShowStockChip:function(isShow)
+        {
+            var chart=this.KLine.JSChart.JSChartContainer;
+            chart.StockChipWidth=this.TradeInfoTab.Width;   //设置移动筹码宽度
+            var StockChip=chart.GetExtendChartByClassName('StockChip');
+            if (isShow)
+            {
+                if (StockChip) return;
+                var option={Name:'筹码分布', IsAutoIndent:1, ShowType:1};
+                var extendChart=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
+                chart.Frame.ChartBorder.Right+=chart.StockChipWidth;
+                chart.SetSizeChage(true);
+                chart.Draw();
+            }
+            else
+            {
+                if (!StockChip) return;
+                chart.DeleteExtendChart(StockChip); 
+                if (StockChip.Chart.IsAutoIndent==1)
+                {
+                    chart.Frame.ChartBorder.Right-=chart.StockChipWidth;
+                    chart.SetSizeChage(true);
+                    chart.Draw();
+                }
+            }
         },
 
         ///////////////////////////////////////////////////////////////////////
@@ -780,6 +855,7 @@ export default
             var name = event.currentTarget.text;
             this.PeriodBar.Selected = idx;
             this.ChangeChartPeriod(name);
+            if (this.Event.ChangePeriodEvent) this.Event.ChangePeriodEvent(name);
         },
 
         OnClickIndexBar:function(chartType,name,index)
@@ -846,6 +922,9 @@ export default
                     case '信息地雷':
                         this.UpdateKLineInfoMenu();
                         break;
+                    case '鼠标拖拽': 
+                        this.UpdateMouseDragMenu();
+                        break;
                 }
 
             }
@@ -896,6 +975,9 @@ export default
                         if (secMenu.OnClick) secMenu.OnClick();
                         else this.KLine.JSChart.AddKLineInfo(secMenu.Name,true);
                         break;
+                    case '鼠标拖拽': 
+                        this.KLine.JSChart.JSChartContainer.DragMode=secMenu.Value;
+                        break;
                 }
                 this.KLine.Toolbar.Selected=-1;
             }
@@ -919,7 +1001,7 @@ $border: 1px solid #e1ecf2;
     margin: 0;
 }
 
-//链接不显示下划线
+/*链接不显示下划线*/
 a 
 {
     text-decoration: none;

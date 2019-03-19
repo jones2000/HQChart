@@ -4905,9 +4905,8 @@ function JSChartContainer(uielement)
         var left = x;
         var top = y;
 
-        var scrollPos=GetScrollPosition();
-        var borderRight=this.Frame.ChartBorder.GetRight()+scrollPos.Left;
-        var borderLeft=this.Frame.ChartBorder.GetLeft()+scrollPos.Left;
+        var borderRight=this.Frame.ChartBorder.GetRight();
+        var borderLeft=this.Frame.ChartBorder.GetLeft();
 
         if (x>borderRight) x=borderRight;
         if (x2>borderRight) x2=borderRight;
@@ -4924,8 +4923,8 @@ function JSChartContainer(uielement)
         this.SelectRect.style.width = width+"px";
         this.SelectRect.style.height =height+"px";
         this.SelectRect.style.position = "absolute";
-        this.SelectRect.style.left = left + scrollPos.Left+"px";
-        this.SelectRect.style.top = top + scrollPos.Top+"px";
+        this.SelectRect.style.left = left +"px";
+        this.SelectRect.style.top = top +"px";
         this.SelectRect.style.display = "block";
     }
 
@@ -6142,9 +6141,9 @@ function KLineFrame()
             spanIcon+=spanCloseIcon;
         }
 
-        var scrollPos=GetScrollPosition();
-        left = left+scrollPos.Left;
-        top = top+scrollPos.Top;
+        //var scrollPos=GetScrollPosition();
+        //left = left+scrollPos.Left;
+        //top = top+scrollPos.Top;
         divToolbar.style.left = left + "px";
         divToolbar.style.top = top + "px";
         divToolbar.style.width=toolbarWidth+"px";
@@ -12384,9 +12383,6 @@ function StockChip()
             spanHtml+=spanItem;
         }
 
-        var scrollPos=GetScrollPosition();
-        // left = left+ this.ChartBorder.UIElement.getBoundingClientRect().left+scrollPos.Left;
-        top = top+this.ChartBorder.UIElement.getBoundingClientRect().top+scrollPos.Top + 5;
         divButton.style.right = 5 + "px";
         divButton.style.top = top + "px";
         //divButton.style.width=toolbarWidth+"px";
@@ -12651,17 +12647,17 @@ function StockChip()
         minPrice=parseInt(minPrice*100);
 
         var dataCount=maxPrice-minPrice;
-        aryChip=new Array()
+        var aryChip=new Array()
         for(let i=0;i<=dataCount;++i)
         {
             aryChip.push(0);
         }
 
-        maxVol=1;
+        var maxVol=1;
         var dayChip=[];
         if (this.ShowType==2)
         {
-            dayChip=
+            var dayChip=
             [
                 {Day:100, Color:this.DAY_COLOR[1][5]}, {Day:60, Color:this.DAY_COLOR[1][4]}, {Day:30, Color:this.DAY_COLOR[1][3]},
                 {Day:20, Color:this.DAY_COLOR[1][2]}, {Day:10, Color:this.DAY_COLOR[1][1]}, {Day:5, Color:this.DAY_COLOR[1][0]}
@@ -12694,7 +12690,7 @@ function StockChip()
         }
         else if (this.ShowType==1)
         {
-            dayChip=
+            var dayChip=
             [
                 {Day:5, Color:this.DAY_COLOR[0][0]},{Day:10, Color:this.DAY_COLOR[0][1]},{Day:20, Color:this.DAY_COLOR[0][2]},
                 {Day:30, Color:this.DAY_COLOR[0][3]},{Day:60, Color:this.DAY_COLOR[0][4]},{Day:100, Color:this.DAY_COLOR[0][5]}
@@ -18830,6 +18826,7 @@ function KLineChartContainer(uielement)
     this.KLineDrawType=0;
     this.ScriptErrorCallback;           //脚本执行错误回调
     this.FlowCapitalReady=false;        //流通股本是否下载完成
+    this.StockChipWidth=230;            //移动筹码宽度
 
     //自动更新设置
     this.IsAutoUpdate=false;                    //是否自动更新行情数据
@@ -25750,8 +25747,8 @@ function ModifyIndexDialog(divElement)
         var scrollPos=GetScrollPosition();
         var left=border.GetLeft()+border.GetWidth()/2;
         var top=border.GetTop()+border.GetHeight()/2;
-        left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
-        top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
+        //left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
+        //top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
 
         dialog.Show(left,top,200,200);      //显示
 
@@ -25914,8 +25911,8 @@ function ChangeIndexDialog(divElement)
         var scrollPos=GetScrollPosition();
         var left=border.GetLeft()+border.GetWidth()/2;
         var top=border.GetTop()+border.GetHeight()/2;
-        left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
-        top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
+        //left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
+        //top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
         dialog.Show(left,top,200,200);
 
     }
@@ -26418,10 +26415,10 @@ function KLineSelectRectDialog(divElement)
         //居中显示
         var border=chart.Frame.ChartBorder;
         var scrollPos=GetScrollPosition();
-        var left=border.GetLeft()+border.GetWidth()/2;
-        var top=border.GetTop()+border.GetHeight()/2;
-        left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
-        top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
+        var left=border.GetWidth()/2;
+        var top=border.GetHeight()/2;
+        //left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
+        //top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
 
         this.Show(left,top,200,200);      //显示
     }
@@ -27121,7 +27118,7 @@ function KLineRightMenu(divElement)
                         chart.DeleteExtendChart(StockChip); 
                         if (StockChip.Chart.IsAutoIndent==1)
                         {
-                            chart.Frame.ChartBorder.Right-=230;
+                            chart.Frame.ChartBorder.Right-=chart.StockChipWidth;
                             chart.SetSizeChage(true);
                             chart.Draw();
                         }
@@ -27137,7 +27134,7 @@ function KLineRightMenu(divElement)
                     click: function () {  
                         var option={Name:'筹码分布', IsAutoIndent:1, ShowType:1};
                         var extendChart=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
-                        chart.Frame.ChartBorder.Right+=230;
+                        chart.Frame.ChartBorder.Right+=chart.StockChipWidth;
                         chart.SetSizeChage(true);
                         chart.Draw();
                     }

@@ -18,27 +18,30 @@
         </div>
         <div class='otherInfo' :style='CellStyle[3]'>
             <div class="open">今开：<span :class='StockData.Open.Color'>{{StockData.Open.Text}}</span></div>
-            <div class="change">换手：<span :class='StockData.Excahngerate.Color'>{{StockData.Excahngerate.Text}}</span></div>
+            <div class="change" v-show='IsIndex==false?true:false'>换手：<span :class='StockData.Excahngerate.Color' >{{StockData.Excahngerate.Text}}</span></div>
+            <div class="change" v-show='IsIndex==true?true:false' >昨收：<span>{{StockData.YClose.Text}}</span></div>
         </div>
         <div class='otherInfo' :style='CellStyle[4]'>
             <div class="num">成交额：<span>{{StockData.Amount.Text}}</span></div>
             <div class="totalValue">成交量：<span>{{StockData.Vol.Text}}</span></div>
         </div>
         <div class='otherInfo' :style='CellStyle[5]'>
-            <div class="pe">PE：<span>{{StockData.Pe.Text}}</span></div>
-            <div class="roe">ROE：<span :class='StockData.Roe.Color'>{{StockData.Roe.Text}}</span></div>
+            <div class="pe" v-show='IsIndex==false?true:false'>PE：<span>{{StockData.Pe.Text}}</span></div>
+            <div class="roe" v-show='IsIndex==false?true:false'>ROE：<span :class='StockData.Roe.Color'>{{StockData.Roe.Text}}</span></div>
+            <div class="change" v-show='IsIndex==true?true:false' >上涨家数：<span>{{StockData.Up.Text}}</span></div>
+            <div class="change" v-show='IsIndex==true?true:false' >下跌家数：<span>{{StockData.Down.Text}}</span></div>
         </div>
         <div class='otherInfo' :style='CellStyle[6]'>
-            <div class="marketV">总市值：<span>{{StockData.MarketV.Text}}</span></div>
-            <div class="flowMarketV">流通市值：<span>{{StockData.FlowMarketV.Text}}</span></div>
+            <div class="marketV" v-show='IsIndex==false?true:false'>总市值：<span>{{StockData.MarketV.Text}}</span></div>
+            <div class="flowMarketV" v-show='IsIndex==false?true:false'>流通市值：<span>{{StockData.FlowMarketV.Text}}</span></div>
         </div>
         <div class='otherInfo' :style='CellStyle[7]'>
-            <div class="eps">EPS：<span>{{StockData.Eps.Text}}</span></div>
-            <div class="scrollEPS">EPS(动)：<span>{{StockData.ScrollEPS.Text}}</span></div>
+            <div class="eps" v-show='IsIndex==false?true:false'>EPS：<span>{{StockData.Eps.Text}}</span></div>
+            <div class="scrollEPS" v-show='IsIndex==false?true:false'>EPS(动)：<span>{{StockData.ScrollEPS.Text}}</span></div>
         </div>
         <div class='otherInfo' :style='CellStyle[8]'>
-            <div class="pb">PB：<span>{{StockData.Pb.Text}}</span></div>
-            <div class="amplitude">振幅：<span>{{StockData.Amplitude.Text}}</span></div>
+            <div class="pb" v-show='IsIndex==false?true:false'>PB：<span>{{StockData.Pb.Text}}</span></div>
+            <div class="amplitude" v-show='IsIndex==false?true:false' >振幅：<span>{{StockData.Amplitude.Text}}</span></div>
         </div>
         <!-- <div class="otherInfo">
             <ul>
@@ -69,6 +72,7 @@
             High: {Text:'', Color:'PriceNull'} ,
             Low: {Text:'', Color:'PriceNull'} ,
             Open: {Text:'', Color:'PriceNull'} ,
+            YClose:{Text:','},
             Excahngerate:  {Text:'', Color:'PriceNull'} ,
 
             Amount: {Text:''}, Vol: {Text:''},
@@ -76,6 +80,12 @@
             MarketV: {Text:''},FlowMarketV: {Text:''},
             Eps: {Text:''},ScrollEPS: {Text:''},
             Pb: {Text:''},Amplitude: {Text:''},
+
+            //指数才有
+            Down:{Text:''}, //上涨
+            Up:{Text:''},   //下跌
+            Unchanged: {Text:''},   //平盘
+            Stop: {Text:''}         //停牌
         };
 
         return data;
@@ -112,7 +122,8 @@
                 ChangeSymbolCallback: null, //股票代码修改回调事件
                 StockData: DefaultData.GetStockData(),
                 CellStyle:DefaultData.GetCellStyle(),
-                WrapWidth: 1366
+                WrapWidth: 1366,
+                IsIndex:false,              //是否是指数
             }
 
             return data;
@@ -193,7 +204,14 @@
                         JSCommonStock.STOCK_FIELD_NAME.TIME,
                         JSCommonStock.STOCK_FIELD_NAME.PRICE,
                         JSCommonStock.STOCK_FIELD_NAME.RISE_FALL_PRICE,
-                        JSCommonStock.STOCK_FIELD_NAME.YCLOSE
+                        JSCommonStock.STOCK_FIELD_NAME.INCREASE,
+                        JSCommonStock.STOCK_FIELD_NAME.HIGH,
+                        JSCommonStock.STOCK_FIELD_NAME.LOW,
+                        JSCommonStock.STOCK_FIELD_NAME.OPEN,
+                        JSCommonStock.STOCK_FIELD_NAME.YCLOSE,
+                        JSCommonStock.STOCK_FIELD_NAME.AMOUNT,
+                        JSCommonStock.STOCK_FIELD_NAME.VOL,
+                        JSCommonStock.STOCK_FIELD_NAME.INDEXTOP,
                     ];
 
                 if (this.IsSHSZIndex())
@@ -209,10 +227,13 @@
                 return $('#stockinfo').outerHeight(true) + 1;
             },
             //数据到达
-            UpdateData: function (id, arySymbol, dataType, jsStock) {
+            UpdateData: function (id, arySymbol, dataType, jsStock) 
+            {
                 console.log('[StockInfo::UpdateData] ', id, arySymbol, dataType, jsStock, this.ID);
                 if (id != this.ID) return;
                 if(arySymbol.indexOf(this.Symbol)<0) return;
+
+                let isIndex=this.IsSHSZIndex();
 
                 let read = jsStock.GetStockRead(this.ID, this.UpdateData); //获取一个读取数据类,并绑定id和更新数据方法
                 let data = {};    //数据取到的数据 数据名称：{ Value:数值(可以没有), Color:颜色, Text:显示的文本字段(先给默认显示)}
@@ -225,10 +246,12 @@
                 data.High = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.HIGH), Color: '', Text: '--' };
                 data.Low = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.LOW), Color: '', Text: '--' };
                 data.Open = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.OPEN), Color: '', Text: '--' };
-
-                data.Excahngerate = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.EXCHANGE_RATE), Color: '', Text: '--' };
                 data.Amount = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.AMOUNT), Text: '--' };
                 data.Vol = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.VOL), Text: '--' };
+                let yClose = read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.YCLOSE);
+                data.YClose={Value:yClose, Text:'--'};
+
+                data.Excahngerate = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.EXCHANGE_RATE), Color: '', Text: '--' };
                 data.Pe = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.PE), Text: '--' };
                 data.MarketV = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.MARKET_VALUE), Text: '--' };
                 data.FlowMarketV = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.FLOW_MARKET_VALUE), Text: '--' };
@@ -237,8 +260,7 @@
                 data.Roe = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.ROE), Color: '', Text: '--' };
                 data.Pb = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.PB), Text: '--' };
                 data.Amplitude = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.AMPLITUDE), Text: '--' };
-                let yClose = read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.YCLOSE);
-
+                
                 data.Price.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Price.Value, 2);
                 data.Price.Color = JSCommon.IFrameSplitOperator.FormatValueColor(data.Price.Value, yClose);
 
@@ -259,21 +281,44 @@
                 data.Open.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Open.Value, 2);
                 data.Open.Color = JSCommon.IFrameSplitOperator.FormatValueColor(data.Open.Value, yClose);
 
-                data.Roe.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Roe.Value, 2);
-                data.Roe.Color = JSCommon.IFrameSplitOperator.FormatValueColor(data.Roe.Value, yClose);
-
-                data.Excahngerate.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Excahngerate.Value, 2);
-                data.Excahngerate.Color = JSCommon.IFrameSplitOperator.FormatValueColor(data.Excahngerate.Value, yClose);
+                data.YClose.Text=JSCommon.IFrameSplitOperator.FormatValueString(data.YClose.Value, 2);
 
                 data.Amount.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Amount.Value, 2);
                 data.Vol.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Vol.Value, 2);
-                data.MarketV.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.MarketV.Value, 0);
-                data.FlowMarketV.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.FlowMarketV.Value, 0);
-                data.Pe.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Pe.Value, 2);
-                data.Eps.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Eps.Value, 2);
-                data.ScrollEPS.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.ScrollEPS.Value, 2);
-                data.Pb.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Pb.Value, 2);
-                data.Amplitude.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Amplitude.Value, 2);
+
+                //指数才有
+                data.Down={Text:''}; //上涨
+                data.Up={Text:''};   //下跌
+                data.Unchanged={Text:''}; //平盘
+                data.Stop={Text:''}; 
+
+                if (isIndex)
+                {
+                    let indexTop=read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.INDEXTOP);
+                    if (indexTop)
+                    {
+                        data.Down.Text=JSCommon.IFrameSplitOperator.FormatValueString(indexTop.Down, 0);
+                        data.Up.Text=JSCommon.IFrameSplitOperator.FormatValueString(indexTop.Up, 0);
+                        data.Unchanged.Text=JSCommon.IFrameSplitOperator.FormatValueString(indexTop.Unchanged, 0);
+                        data.Stop.Text=JSCommon.IFrameSplitOperator.FormatValueString(indexTop.Stop, 0);
+                    }
+                }
+                else
+                {
+                    data.Roe.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Roe.Value, 2);
+                    data.Roe.Color = JSCommon.IFrameSplitOperator.FormatValueColor(data.Roe.Value, yClose);
+
+                    data.Excahngerate.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Excahngerate.Value, 2);
+                    data.Excahngerate.Color = JSCommon.IFrameSplitOperator.FormatValueColor(data.Excahngerate.Value, yClose);
+
+                    data.MarketV.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.MarketV.Value, 0);
+                    data.FlowMarketV.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.FlowMarketV.Value, 0);
+                    data.Pe.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Pe.Value, 2);
+                    data.Eps.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Eps.Value, 2);
+                    data.ScrollEPS.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.ScrollEPS.Value, 2);
+                    data.Pb.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Pb.Value, 2);
+                    data.Amplitude.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Amplitude.Value, 2);
+                }
 
                 this.StockData = data;
 
@@ -300,6 +345,7 @@
                 if (this.Symbol == symbol) return;
 
                 this.Symbol=symbol;
+                this.IsIndex=this.IsSHSZIndex();
                 this.InitalStock();
                 if (!this.IsShareStock) this.JSStock.RequestData();
                 this.OnSize();

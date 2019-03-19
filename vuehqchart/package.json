@@ -17,7 +17,7 @@
     "promise-polyfill": "^6.0.2",
     "qs": "^6.5.0",
     "sass-loader": "^7.1.0",
-    "vue": "^2.1.8",
+    "vue": "^2.6.9",
     "webpack": "^3.0"
   },
   "engines": {
@@ -43,7 +43,7 @@
     "stylus-loader": "^3.0.2",
     "url-loader": "^0.5.8",
     "vue-loader": "^11.1.4",
-    "vue-template-compiler": "^2.1.8",
+    "vue-template-compiler": "^2.6.9",
     "webpack": "^3.12.0",
     "webpack-dev-server": "^2.4.2"
   }
