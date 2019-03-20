@@ -13215,10 +13215,19 @@ IFrameSplitOperator.FormatDateString=function(value,format)
 
 IFrameSplitOperator.FormatTimeString=function(value)
 {
-    var hour=parseInt(value/100);
-    var minute=value%100;
-
-    return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute);
+    if (value<10000)
+    {
+        var hour=parseInt(value/100);
+        var minute=value%100;
+        return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute);
+    }
+    else
+    {
+        var hour=parseInt(value/10000);
+        var minute=parseInt((value%1000)/100);
+        var second=value%100;
+        return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
+    }
 }
 
 //报告格式化

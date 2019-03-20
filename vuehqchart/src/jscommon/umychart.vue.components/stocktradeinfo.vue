@@ -54,7 +54,7 @@
         <span>{{item.Vol}}</span>
       </li>
         </ul>-->
-        <div class="detailList">
+        <div class="detailList" v-show="IsShowTradeData">
             <div>
                 <p v-for="(itemTrade,indexT) in TradeData" :key="indexT">{{itemTrade.Time.Text}}</p>
             </div>
@@ -69,12 +69,24 @@
                 <p v-for="(itemTrade,indexT) in TradeData" :key="indexT">{{itemTrade.Vol.Text}}</p>
             </div>
         </div>
+        <div class="shorttermlist" v-show="ShortTerm.IsShow">
+            <div>
+                <p v-for="(item,index) in ShortTerm.Data" :key="index" :class="item.Color">{{item.Time.Text}}</p>
+            </div>
+             <div>
+                <p v-for="(item,index) in ShortTerm.Data" :key="index" :class="item.Color">{{item.Name}}</p>
+            </div>
+            <div>
+                <p v-for="(item,index) in ShortTerm.Data" :key="index" :class="item.Color">{{item.Type.Text}}</p>
+            </div>
+        </div>
     </div>
 </template>
 <script>
 import $ from "jquery";
 import JSCommon from "../umychart.vue/umychart.vue.js";
 import JSCommonStock from "../umychart.vue/umychart.stock.vue.js";
+
 //默认数据输出
 class DefaultData {
     static GetBuyData() {
@@ -215,9 +227,17 @@ export default {
             SellData: DefaultData.GetSellData(), //卖盘
             IsBuySellInital: false, //第1次 需要初始化
 
-            TradeData: null, //分笔数据
-            IsTradeDataInital: false, //第1次 需要初始化
+            TradeData: null,            //分笔数据
+            IsTradeDataInital: false,   //第1次 需要初始化
+            IsShowTradeData:true,       //是否显示
 
+            ShortTerm:          //短线
+            {
+                Data:null,         //短线精灵
+                IsShow:false,      //是否显示
+                JSStock:null,      //数据请求控制器
+            },
+            
             BookData: DefaultData.GetBookData() //委比委差数据
         };
 
@@ -644,6 +664,66 @@ export default {
             return JSCommon.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol);
         },
 
+
+        //改变显示数据
+        ChangeShowData:function(name,value)
+        {
+            console.log('[StockTradeInfo::ChangeShowData', name,value);
+            switch(name)
+            {
+                case '分笔':
+                    this.IsShowTradeData=true;
+                    this.ShowShortTerm(false);
+                    break;
+                case "异动":
+                    this.IsShowTradeData=false;
+                    this.ShowShortTerm(true);
+                    break;
+            }
+        },
+
+        ShowShortTerm:function(isShow)
+        {
+            if (isShow)
+            {
+                if (!this.ShortTerm.JSStock) this.ShortTerm.JSStock=JSCommonStock.JSStock.GetShortTerm();
+                var shortTerm=this.ShortTerm.JSStock;
+                shortTerm.UpdateUICallback=this.UpdateShortTerm;
+                shortTerm.IsAutoUpdate=true;
+                shortTerm.RequestData();
+                this.ShortTerm.IsShow=true;
+            }
+            else
+            {
+                this.ShortTerm.IsShow=false;
+                if (!this.ShortTerm.JSStock) return;
+                this.ShortTerm.JSStock.IsAutoUpdate=false;
+                this.ShortTerm.JSStock.Stop();
+            }
+        },
+
+        UpdateShortTerm:function(data)
+        {
+            console.log('[StockTradeInfo::UpdateShortTerm] recv data',data);
+            var showData=[];
+            for(var i in data.Data)
+            {
+                var item=data.Data[i];
+                var showItem=
+                {
+                    Name:item.Name,Symbol:item.Symbol,
+                    Type:{Text:item.TypeInfo, Value:item.Type}, 
+                    Time:{ Value:item.Time },
+                    Color:'PriceNull'
+                };
+                showItem.Time.Text=JSCommon.IFrameSplitOperator.FormatTimeString(parseInt(showItem.Time.Value/100));
+                showItem.Color=showItem.Type.Value>=20?'PriceDown':'PriceUp';
+                showData.push(showItem);
+            }
+
+            this.ShortTerm.Data=showData;
+        },
+
         IsNumber: JSCommon.IFrameSplitOperator.IsNumber, //是否是数值型
         IsPlusNumber: JSCommon.IFrameSplitOperator.IsPlusNumber //是否是>0的数值型
     },
@@ -713,7 +793,9 @@ ul {
 
     .buyFive,
     .sellFive,
-    .detailList {
+    .detailList, 
+    .shorttermlist
+    {
         border-bottom: $border;
         padding: 0 10px;
         display: flex;
@@ -735,7 +817,9 @@ ul {
         }
     }
 
-    .detailList {
+    .detailList, 
+    .shorttermlist
+    {
         border-bottom: none;
     }
 }

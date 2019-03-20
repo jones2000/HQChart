@@ -50,7 +50,7 @@ export default
                 Width:230, IsShow:true,
                 Tab:
                 {
-                    Menu:[ {Name:'分笔', Value:1, IsShow:true },{Name:'筹码',Value:2, IsShow:true } ],
+                    Menu:[ {Name:'分笔', Value:1, IsShow:true },{Name:'筹码',Value:2, IsShow:true } ,{Name:'异动',Value:3, IsShow:true}],
                     Selected:0,
                     IsShow:true,
                 },
@@ -97,6 +97,8 @@ export default
         kline.Event.ChangePeriodEvent=this.OnChangePeriod;    //设置周期切换回调
 
         this.JSStock.ReqeustData();
+
+        this.UpdateUIPosition();
     },
 
     methods:
@@ -158,6 +160,7 @@ export default
             var isIndex=StockInfo.JSCommon.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol);
             var tabIndex=this.TradeInfo.Tab.Selected;
             var kline=this.$refs.stockkline;
+            var selTabItem=this.TradeInfo.Tab.Menu[this.TradeInfo.Tab.Selected];
             if (isIndex)
             {
                 //指数 隐藏右边的报价栏
@@ -167,7 +170,7 @@ export default
             }
             else
             {
-                if (this.TradeInfo.Tab.Selected>=0 && this.TradeInfo.Tab.Menu[this.TradeInfo.Tab.Selected].Value===2)
+                if (this.TradeInfo.Tab.Selected>=0 && selTabItem.Value===2)
                 {
                     if (kline.KLine.IsShow)
                     {
@@ -190,11 +193,15 @@ export default
                 //筹码只在K线上出现
                 if (kline.KLine.IsShow)
                 {
-                    this.TradeInfo.Tab.Menu[1].IsShow=true;
+                    this.TradeInfo.Tab.Menu[1].IsShow=true;     //筹码
+                    this.TradeInfo.Tab.Menu[2].IsShow=false;    //异动
+                    if (selTabItem.Value==3) //异动
+                        this.OnClickTradeInfoTab({Name:'分笔', Value:1}, 0);
                 }
                 else
                 {
-                    this.TradeInfo.Tab.Menu[1].IsShow=false;
+                    this.TradeInfo.Tab.Menu[1].IsShow=false;    //筹码
+                    this.TradeInfo.Tab.Menu[2].IsShow=true;     //异动
                 }
                 
                 this.TradeInfo.Tab.IsShow=true;
@@ -220,6 +227,14 @@ export default
                     kline.ShowStockChip(false);
                     this.TradeInfo.IsShow=true;
                     this.OnSize();
+                }
+
+                switch(item.Value)
+                {
+                    case 1:         //分笔
+                    case 3:         //异动
+                        this.$refs.tradeinfo.ChangeShowData(item.Name,item.Value);
+                        break;
                 }
             }
 

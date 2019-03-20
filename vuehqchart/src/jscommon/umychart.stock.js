@@ -594,6 +594,12 @@ JSStock.GetSearchStock=function(callback)
     return new SearchStock(callback);
 }
 
+//短线精灵
+JSStock.GetShortTerm = function (symbol) 
+{
+    return new ShortTerm(symbol);
+}
+
 var RECV_DATA_TYPE=
 {
     BASE_DATA:1,        //股票行情基础数据
@@ -607,7 +613,9 @@ var RECV_DATA_TYPE=
     SEARCH_STOCK_DATA:9,//股票搜索
 
     SELF_STOCK_DATA:10, //自选股数据
-    LOGON_DATA:11       //登陆信息
+    LOGON_DATA:11,      //登陆信息
+    BLOCK_MEMBER_DATA: 13,  //板块成员
+    SHORT_TERM_DATA:14      //短线精灵
 }
 
 function JSStock()
@@ -1411,56 +1419,32 @@ function SearchStock(callback)
     this.ReqeustSearchStock=function(input,type,start,end)
     {
         var self=this;
-        var flag = new JSStock;
 
-        if (flag.IsWechatApp)
-        {
-            wx.request({
-                url: this.SearchStockApiUrl,
-                data: {
-                "input": input,
-                "start": start,
-                "end": end
-                },
-                method:'POST',
-                dataType: 'json',
-                success: function (data) {
-                self.RecvSearchStockData(data, RECV_DATA_TYPE.SEARCH_STOCK_DATA);
-                },
-                fail: function (request) {
-                self.RecvError(request, RECV_DATA_TYPE.SEARCH_STOCK_DATA);
-                }
-            });
-        }
-        else
-        {
-            $.ajax({
-                url: this.SearchStockApiUrl,
-                data:
-                {
-                   "input":input,
-                   "start":start,
-                   "end":end
-                },
-                type:"post",
-                dataType: "json",
-                async:true,
-                success: function (data)
-                {
-                    self.RecvSearchStockData(data,RECV_DATA_TYPE.SEARCH_STOCK_DATA);
-                },
-                error:function(request)
-                {
-                    self.RecvError(request,RECV_DATA_TYPE.SEARCH_STOCK_DATA);
-                }
-            });
-        }
-        
+        $.ajax({
+            url: this.SearchStockApiUrl,
+            data:
+            {
+                "input":input,
+                "start":start,
+                "end":end
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                self.RecvSearchStockData(data,RECV_DATA_TYPE.SEARCH_STOCK_DATA);
+            },
+            error:function(request)
+            {
+                self.RecvError(request,RECV_DATA_TYPE.SEARCH_STOCK_DATA);
+            }
+        });
+         
     }
 
     this.RecvSearchStockData=function(data)
     {
-        console.log(data);
         for(var i in data.stock)
         {
             var item=data.stock[i];
@@ -1486,10 +1470,109 @@ function SearchStock(callback)
 
     this.RecvError=function(request,type)
     {
-        console.log("RecvError: datatype="+ type.toString());
+        console.log("[SearchStock::RecvError] datatype="+ type.toString());
         console.log(request);
 
         if (typeof(this.UpdateUICallback)=='function') this.UpdateUICallback(this,"error");
+
+    }
+}
+
+//数据基类
+function IStockData() 
+{
+    this.IsAutoUpdate = true;           //是否自动更新
+    this.AutoUpateTimeout = 5000;       //更新频率
+    this.Timeout;   //定时器
+    this.ApiUrl;
+    this.Data;      //数据
+    this.UpdateUICallback;             //回调函数
+
+    this.RequestData = function () {
+
+    }
+
+    this.Stop = function () 
+    {
+        // console.log("[IStockData::Stop] stop update.")
+        this.IsAutoUpdate = false;
+        if (this.Timeout) clearTimeout(this.Timeout);   //清空定时器
+    }
+
+    this.AutoUpate = function () 
+    {
+        if (this.Timeout) clearTimeout(this.Timeout);   //清空定时器
+
+        if (!this.IsAutoUpdate) return;
+
+        //周日 周6 不更新， [9：30-3：30]以外的时间不更新
+        var self = this;
+        let today = new Date();
+        let time = today.getHours() * 100 + today.getMinutes();
+        if (today.getDay() > 0 && today.getDay() < 6 && time >= 930 && time < 1530)
+            this.Timeout = setTimeout(function () {
+                self.RequestData();
+            }, this.AutoUpateTimeout);
+
+    }
+}
+
+//短线精灵 只获取最新数据
+function ShortTerm(symbol) 
+{
+    this.newMethod = IStockData;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Symbol = symbol; //数组
+    this.ApiUrl = g_JSStockResource.Domain + "/API/StockShortTerm";
+    this.Count = 20;  //请求数据个数
+
+    this.RequestData = function () 
+    {
+        var self = this;
+        let data={count:this.Count};
+        if (this.Symbol) data.symbol=this.Symbol;
+
+        $.ajax({
+            url: this.ApiUrl,
+            data: data,
+            type:"post",
+            dataType: 'json',
+            async:true,
+            success: function (data) 
+            {
+                self.RecvData(data, RECV_DATA_TYPE.SHORT_TERM_DATA);
+            },
+            fail: function (request) 
+            {
+                self.RecvError(request, RECV_DATA_TYPE.SHORT_TERM_DATA);
+            }
+        });
+    }
+
+    this.RecvData = function (data, dataType) {
+
+        this.Data = [];
+        for (let i in data.shortterm) {
+            let item = data.shortterm[i];
+            this.Data.push({
+                Date: item.date,
+                Name: item.name,
+                Symbol: item.symbol,
+                Time: item.time,
+                Content: item.content,
+                TypeInfo: item.typeinfo,
+                Type: item.type
+            });
+        }
+
+        if (this.UpdateUICallback) this.UpdateUICallback(this);
+
+        this.AutoUpate();
+    }
+
+    this.RecvError = function (request, dataType) {
 
     }
 }
