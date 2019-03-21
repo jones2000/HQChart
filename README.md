@@ -12,7 +12,7 @@
    * |--src 行情控件
         * |--umychart.resource 行情用到的图片资源 及 css样式
         * |--umychart.vue 行情图形及行情数据模块
-          |--umychart.vue.components  行情VUE控件模块 
+        * |--umychart.vue.components  行情VUE控件模块 
    * |--pages 测试和demo页面
 
 
