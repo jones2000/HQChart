@@ -19,5 +19,6 @@ export default {
     MARKET_SUFFIX_NAME:MARKET_SUFFIX_NAME,  // 判断股票属性
     IFrameSplitOperator:IFrameSplitOperator,//格式化字符串方法
     JSKLineInfoMap:JSKLineInfoMap,
+    JSCHART_EVENT_ID:JSCHART_EVENT_ID,      //可以订阅的事件类型
     
 }

@@ -668,7 +668,7 @@ export default {
         //改变显示数据
         ChangeShowData:function(name,value)
         {
-            console.log('[StockTradeInfo::ChangeShowData', name,value);
+            console.log('[StockTradeInfo::ChangeShowData]', name,value);
             switch(name)
             {
                 case '分笔':
@@ -717,7 +717,7 @@ export default {
                     Color:'PriceNull'
                 };
                 showItem.Time.Text=JSCommon.IFrameSplitOperator.FormatTimeString(parseInt(showItem.Time.Value/100));
-                showItem.Color=showItem.Type.Value>=20?'PriceDown':'PriceUp';
+                showItem.Color=showItem.Type.Value%10===1?'PriceUp':'PriceDown';
                 showData.push(showItem);
             }
 

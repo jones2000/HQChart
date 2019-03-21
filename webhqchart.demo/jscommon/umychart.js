@@ -885,6 +885,16 @@ function JSChart(divElement)
             this.JSChartContainer.ChangeDayCount(count);
         }
     }
+
+    //事件回调
+    this.AddEventCallback=function(obj)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.AddEventCallback)=='function')
+        {
+            console.log('[JSChart:AddEventCallback] ', obj);
+            this.JSChartContainer.AddEventCallback(obj);
+        }
+    }
 }
 
 //初始化
@@ -924,10 +934,10 @@ JSChart.CreateGuid=function()
     return Guid();
 }
 
-/*//把给外界调用的方法暴露出来
-export default {
-    jsChartInit: JSChart.Init
-}*/
+var JSCHART_EVENT_ID=
+{
+    RECV_KLINE_MATCH:1, //接收到形态匹配
+}
 
 /*
     图形控件
@@ -980,6 +990,26 @@ function JSChartContainer(uielement)
     this.FrameSplitData=new Map();
     this.FrameSplitData.set("double",new SplitData());
     this.FrameSplitData.set("price",new PriceSplitData());
+
+    //事件回调
+    this.mapEvent=new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
+
+    //设置事件回调
+    //{event:事件id, callback:回调函数}
+    this.AddEventCallback=function(object)
+    {
+        if (!object || !object.event || !object.callback) return;
+
+        var data={Callback:object.callback, Source:object};
+        this.mapEvent.set(object.event,data);
+    }
+
+    this.RemoveEventCallback=function(eventid)
+    {
+        if (!this.mapEvent.has(eventid)) return;
+
+        this.mapEvent.delete(eventid);
+    }
 
     uielement.onmousemove=function(e)
     {
@@ -17516,19 +17546,31 @@ function KLineChartContainer(uielement)
     }
 
     //形态匹配
-    // scopeData.Plate 板块范围 scopeData.Symbol 股票范围
-    this.RequestKLineMatch=function(selectRectData,scopeData,fun)
+    // scope.Plate 板块范围 scope.Symbol 股票范围
+    // sample 样本数据
+    this.RequestKLineMatch=function(sample,scope)
     {
-        var _self =this;
+        var self =this;
+        console.log('[KLineChartContainer::RequestKLineMatch',sample,scope)
 
         var aryDate=new Array();
         var aryValue=new Array();
 
-        for(var i=selectRectData.Start;i<selectRectData.End && i<selectRectData.Data.Data.length;++i)
+        for(var i=sample.Start;i<sample.End && i<sample.Data.Data.length;++i)
         {
-            aryDate.push(selectRectData.Data.Data[i].Date);
-            aryValue.push(selectRectData.Data.Data[i].Close);
+            var item=sample.Data.Data[i];
+            aryDate.push(item.Date);
+            aryValue.push(item.Close);
         }
+
+        var sampleData=
+        {
+            Stock:sample.Stock,
+            Date:{Start:sample.Start, End:sample.End},
+            Minsimilar:scope.Minsimilar,    //相似度
+            Plate:scope.Plate,
+            DayRegion:300
+        };
 
         //请求数据
         $.ajax({
@@ -17536,11 +17578,11 @@ function KLineChartContainer(uielement)
             data:
             {
                 "userid": "guest",
-                "plate": scopeData.Plate,
+                "plate": scope.Plate,
                 "period": this.Period,
                 "right": this.Right,
-                "dayregion": 365,
-                "minsimilar": scopeData.Minsimilar,
+                "dayregion": sampleData.DayRegion,
+                "minsimilar": scope.Minsimilar,
                 "sampledate":aryDate,
                 "samplevalue":aryValue
             },
@@ -17549,13 +17591,22 @@ function KLineChartContainer(uielement)
             async:true,
             success: function (data)
             {
-                if($.type(fun) == "function")
-                {
-                   // console.log(data);
-                    fun(data);
-                }
+                self.RecvKLineMatchData(data,sampleData);
             }
         });
+    }
+
+    //接收形态选股结果
+    this.RecvKLineMatchData=function(data,sample)
+    {
+        console.log('[KLineChartContainer::RecvKLineMatchData] recv',data,sample);
+
+        if (this.mapEvent.has(JSCHART_EVENT_ID.RECV_KLINE_MATCH))
+        {
+            var item=this.mapEvent.get(JSCHART_EVENT_ID.RECV_KLINE_MATCH);
+            var data={Sample:sample, Match:data.match}
+            item.Callback(item,data,this);
+        }
     }
 
     //更新信息地雷
@@ -23198,22 +23249,14 @@ function KLineSelectRectDialog(divElement)
             </div>\
             <div class='parameter-content'>统计数据</div>\
         <div class='parameter-footer'>\
-            <button class='submit' >确定</button>\
+            <button id='close' class='submit' >确定</button>\
+            <button id='match' class='submit' >形态匹配</button>\
         </div>\
         </div>";
 
         this.DivElement.appendChild(div);
         this.Dialog=div;
-        //确定按钮
-        $("#"+this.ID+" .submit").click(
-            {
-                divBox:this,
-            },
-            function(event)
-            {
-                event.data.divBox.Close();
-            });
-        
+
         //关闭按钮
         $("#"+this.ID+" #close").click(
             {
@@ -23223,6 +23266,17 @@ function KLineSelectRectDialog(divElement)
             {
                 event.data.divBox.Close();
             });
+        
+        //形态匹配
+        $("#"+this.ID+" #match").click(
+            {
+                divBox:this,
+            },
+            function(event)
+            {
+                event.data.divBox.KLineMatch();
+                event.data.divBox.Close();
+            });   
     }
 
     this.BindData=function()
@@ -23358,6 +23412,14 @@ function KLineSelectRectDialog(divElement)
         //top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
 
         this.Show(left,top,200,200);      //显示
+    }
+
+    //形态匹配
+    this.KLineMatch=function(data)
+    {
+        var hqChart=this.HQChart;
+        var scope={Plate:["CNA.ci"],Minsimilar:0.90};   //沪深A股, 相似度>=90%
+        hqChart.RequestKLineMatch(this.SelectData, scope);
     }
 }
 
