@@ -3,7 +3,7 @@
       <div class="topWrap clearfix">
           <div class="stockInfo">
               <p class="stockName">{{JSEnvironment.Name}}</p>
-              <div class="codeInfo"><span class="code">{{GlobalSymbol}}</span><i class="iconfont icon-bianji"
+              <div class="codeInfo"><span class="code">{{GlobalSymbol}}</span><i class="iconfont "
                       @click='ShowSpell'></i>
                   <div class="editSymbol" v-if='SpellStockShow.Input'><input v-focus maxlength="8" type="text"
                           v-model='inputSymbolStr'><i class="iconfont icon-close" @click='HideSpell'></i></div>

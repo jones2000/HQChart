@@ -11,28 +11,33 @@
         <!--  图形操作工具条  !-->
         <div class='chartbar' ref='divchartbar' id='chartbar'>
             <!-- 分时图设置导航条 -->
-            <div class="item" v-for='(menuOne,index) in Minute.Toolbar.Data' :key='menuOne.Text' v-show="Minute.IsShow" @click="OnClickToolBar('minute',menuOne,index)">
-                <p class="menuOne" :class='{light:Minute.Toolbar.Selected == index}'>
-                    <span>{{menuOne.Text}}</span>
-                    <i class="iconfont" :class='Minute.Toolbar.Selected == index ? "icon-shang" : "icon-xia"'></i>
-                </p>
-                <ul class="menuTwo" v-show='Minute.Toolbar.Selected == index ? true:false'>
-                    <li v-for='(menuItem,ind) in menuOne.Menu' :class='{active:menuOne.Selected.indexOf(ind)>=0}' :key='ind'
-                        @click.stop="OnClickToolBarMenu('minute',menuOne,menuItem,ind)">{{menuItem.Name}}</li>
-                </ul>
+            <div id='barForMinute' v-show="Minute.IsShow">
+                <div class="item" v-for='(menuOne,index) in Minute.Toolbar.Data' :key='menuOne.Text' @click="OnClickToolBar('minute',menuOne,index)">
+                    <p class="menuOne" :class='{light:Minute.Toolbar.Selected == index}'>
+                        <span>{{menuOne.Text}}</span>
+                        <i class="iconfont" :class='Minute.Toolbar.Selected == index ? "icon-shang" : "icon-xia"'></i>
+                    </p>
+                    <ul class="menuTwo" v-show='Minute.Toolbar.Selected == index ? true:false'>
+                        <li v-for='(menuItem,ind) in menuOne.Menu' :class='{active:menuOne.Selected.indexOf(ind)>=0}' :key='ind'
+                            @click.stop="OnClickToolBarMenu('minute',menuOne,menuItem,ind)">{{menuItem.Name}}</li>
+                    </ul>
+                </div>
             </div>
 
           <!-- k线设置导航条 -->
-          <div class="item" v-for='(menuOne,index) in KLine.Toolbar.Data' :key='menuOne.Text' v-show="KLine.IsShow && menuOne.IsShow"  @click="OnClickToolBar('kline',menuOne,index)" >
-                <p class="menuOne" :class='{light:KLine.Toolbar.Selected == index}' v-show='menuOne.IsShow'>
-                        <span>{{menuOne.Text}}</span>
-                        <i class='iconfont' :class='KLine.Toolbar.Selected == index ? "icon-shang" : "icon-xia"'></i>
-                </p>
-                <ul class="menuTwo" v-show='KLine.Toolbar.Selected == index ? true:false'>
-                    <li v-for='(menuItem,ind) in menuOne.Menu' :class='{active:menuOne.Selected.indexOf(ind)>=0}' :key='ind'
-                        @click.stop="OnClickToolBarMenu('kline',menuOne,menuItem,ind)">{{menuItem.Name}}</li>
-                </ul>
+          <div id='barForKLine' v-show="KLine.IsShow">
+                <div class="item" v-for='(menuOne,index) in KLine.Toolbar.Data' :key='menuOne.Text' v-show="KLineItemShow[index]"  @click="OnClickToolBar('kline',menuOne,index)" >
+                    <p class="menuOne" :class='{light:KLine.Toolbar.Selected == index}' v-show='menuOne.IsShow'>
+                            <span>{{menuOne.Text}}</span>
+                            <i class='iconfont' :class='KLine.Toolbar.Selected == index ? "icon-shang" : "icon-xia"'></i>
+                    </p>
+                    <ul class="menuTwo" v-show='KLine.Toolbar.Selected == index ? true:false'>
+                        <li v-for='(menuItem,ind) in menuOne.Menu' :class='{active:menuOne.Selected.indexOf(ind)>=0}' :key='ind'
+                            @click.stop="OnClickToolBarMenu('kline',menuOne,menuItem,ind)">{{menuItem.Name}}</li>
+                    </ul>
+                </div>
           </div>
+          
         </div>
 
         <!-- 走势图 和 K线图  !-->
@@ -396,6 +401,7 @@ export default
                 IsShow:true,    //买卖盘是否显示
                 Width:230,      //买卖盘宽度
             },
+            KLineItemShow:[false,false,false,false,false,false,false,false],
             
             Event:
             {
@@ -493,6 +499,29 @@ export default
                 {
                     klineIndexBar.style.width='100%';
                 }
+            }
+
+            if(this.KLine.IsShow){
+                var totalWidth = width - 20;
+                var dispalyAry = [];
+                if(this.IsSHSZIndex){ //是指数
+                    var startIndex = 2, endIndex = 7;
+                    dispalyAry = [false,false,true,true,true,true,true,true];
+                }else{
+                    var startIndex = 0, endIndex = 7;
+                    dispalyAry = [true,true,true,true,true,true,true,true];
+                }
+                var currentWdith = 0;
+                var itemHeight = $('#barForKLine>.item').outerWidth(true);
+                for(let i = startIndex; i <= endIndex; i++){
+                    currentWdith += itemHeight;
+                    if(currentWdith <= totalWidth){
+                        dispalyAry[i] = true;
+                    }else{
+                        dispalyAry[i] = false;
+                    }
+                }
+                this.KLineItemShow = dispalyAry;
             }
            
             console.log(`[StockKLine::OnSize] Chart:(${width},${height})`);
@@ -1038,6 +1067,7 @@ a
     background-color: #217cd9;
     padding-left: 36px;
     padding-right: 30px;
+    overflow: hidden;
 }
 
 .periodbar .item 
@@ -1070,8 +1100,8 @@ a
 
 .indexbar span 
 {
-    height: 32px;
-    line-height: 32px;
+    height: 30px;
+    line-height: 30px;
     text-align: center;
     cursor: pointer;
     flex-grow: 1;
@@ -1093,12 +1123,13 @@ a
     position: relative;
     z-index: 999;
 
-    >.item 
+    #barForMinute,#barForKLine>.item 
     {
         display: inline-block;
         cursor: pointer;
         height: 32px;
         line-height: 32px;
+        width:104px;
         padding-top: 6px;
         position: relative;
         margin-right: 15px;

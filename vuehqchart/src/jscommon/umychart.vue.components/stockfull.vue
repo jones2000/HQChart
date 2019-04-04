@@ -50,7 +50,7 @@ export default
                 Width:230, IsShow:true,
                 Tab:
                 {
-                    Menu:[ {Name:'分笔', Value:1, IsShow:true },{Name:'筹码',Value:2, IsShow:true } ,{Name:'异动',Value:3, IsShow:true}],
+                    Menu:[ {Name:'分笔', Value:1, IsShow:true },{Name:'资金',Value:4, IsShow:true }, {Name:'筹码',Value:2, IsShow:true } ,{Name:'异动',Value:3, IsShow:true}],
                     Selected:0,
                     IsShow:true,
                 },
@@ -67,7 +67,7 @@ export default
         'MinuteOption',
     ],
 
-    components: { StockInfo, StockTradeInfo, StockKLine },
+    components: { StockInfo, StockTradeInfo, StockKLine},
 
     created:function()
     {
@@ -84,7 +84,7 @@ export default
 
         var stockInfo=this.$refs.stockinfo;
         stockInfo.SetJSStock(this.JSStock);                         //绑定一个外部的stock ( 五档买卖盘和分笔数据可以共享这一个股票数据类)
-        //stockInfo.SetChangeSymbolCallback(this.OnChangeSymbol);   //股票切换以后通知
+        stockInfo.SetChangeSymbolCallback(this.OnChangeSymbol);   //股票切换以后通知
         stockInfo.SetSymbol(this.Symbol);
         stockInfo.InitalStock();
 
@@ -121,6 +121,12 @@ export default
             this.UpdateUIPosition();
         },
 
+        OnChangeSymbol:function(symbol)
+        {
+            console.log(`[StockFull::OnChangeSymbol] symbol=${symbol}`);
+            this.SetSymbol(symbol);
+        },
+
         OnSize:function()
         {
             var stockFull=this.$refs.stockfull;
@@ -133,6 +139,7 @@ export default
             var width=stockFull.offsetWidth;
             var height=stockFull.offsetHeight;
             var stockInfoHeight=divStockInfo.offsetHeight;
+            var tradeInfoTabHeight = divTradeInfoTab.offsetHeight;
             var stockKLineHeight=height-stockInfoHeight;
             var stockKLineWidth=width;
             if (this.TradeInfo.IsShow) stockKLineWidth=width-this.TradeInfo.Width;;
@@ -144,11 +151,10 @@ export default
             divStockKLine.style.width=stockKLineWidth+'px';
 
             divTradeInfo.style.width=this.TradeInfo.Width+'px';
-            divTradeInfo.style.height=stockKLineHeight+'px';
+            divTradeInfo.style.height=stockKLineHeight - tradeInfoTabHeight +'px'; //交易数据高度
             
             divTradeInfoTab.style.width=this.TradeInfo.Width+'px';
             divTradeInfoTab.style.left=(width-this.TradeInfo.Width)+'px';
-            console.log(`[StockFull::OnSize] width=${width} height=${height}`);
 
             this.$refs.stockinfo.OnSize();
             this.$refs.tradeinfo.OnSize();
@@ -193,15 +199,15 @@ export default
                 //筹码只在K线上出现
                 if (kline.KLine.IsShow)
                 {
-                    this.TradeInfo.Tab.Menu[1].IsShow=true;     //筹码
-                    this.TradeInfo.Tab.Menu[2].IsShow=false;    //异动
+                    this.TradeInfo.Tab.Menu[2].IsShow=true;     //筹码
+                    this.TradeInfo.Tab.Menu[3].IsShow=false;    //异动
                     if (selTabItem.Value==3) //异动
                         this.OnClickTradeInfoTab({Name:'分笔', Value:1}, 0);
                 }
                 else
                 {
-                    this.TradeInfo.Tab.Menu[1].IsShow=false;    //筹码
-                    this.TradeInfo.Tab.Menu[2].IsShow=true;     //异动
+                    this.TradeInfo.Tab.Menu[2].IsShow=false;    //筹码
+                    this.TradeInfo.Tab.Menu[3].IsShow=true;     //异动
                 }
                 
                 this.TradeInfo.Tab.IsShow=true;
@@ -212,7 +218,7 @@ export default
 
         OnClickTradeInfoTab:function(item,index)
         {
-            if (item.Value===2)
+            if (item.Value===2) //筹码显示
             {
                 var kline=this.$refs.stockkline;
                 kline.ShowStockChip(true);
@@ -232,6 +238,7 @@ export default
                 switch(item.Value)
                 {
                     case 1:         //分笔
+                    case 4:         //资金
                     case 3:         //异动
                         this.$refs.tradeinfo.ChangeShowData(item.Name,item.Value);
                         break;
@@ -287,8 +294,8 @@ export default
 
 .divtradeinfotab span 
 {
-    height: 32px;
-    line-height: 32px;
+    height: 30px;
+    line-height: 30px;
     text-align: center;
     cursor: pointer;
     flex-grow: 1;

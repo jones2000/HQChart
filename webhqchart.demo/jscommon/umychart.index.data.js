@@ -8,7 +8,28 @@
     FloatPrecision: 小数位数 缺省=2
     YSplitScale:  Y固定刻度 [1,8,10]
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
+    Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), }
 */
+
+//周期条件枚举
+var CONDITION_PERIOD=
+{
+    MINUTE_ID:101,            //分钟      走势图
+    MULTIDAY_MINUTE_ID:102,   //多日分钟  走势图
+    HISTORY_MINUTE_ID:103,    //历史分钟  走势图
+
+    //K线周期
+    KLINE_DAY_ID:0,
+    KLINE_WEEK_ID:1,
+    KLINE_MONTH_ID:2,
+    KLINE_YEAR_ID:3,
+    KLINE_MINUTE_ID:4,
+    KLINE_5_MINUTE_ID:5,
+    KLINE_15_MINUTE_ID:6,
+    KLINE_30_MINUTE_ID:7,
+    KLINE_60_MINUTE_ID:8
+
+};
 
 function JSIndexScript()
 {
@@ -1922,7 +1943,8 @@ JSIndexScript.prototype.MarginProportion=function()
 {
     let data =
     {
-        Name: '融资占比(%)', Description: '融资占比', IsMainIndex: false,
+        Name: '融资占比(%)', Description: '融资占比', IsMainIndex: false, 
+        Condition: { Period:[CONDITION_PERIOD.KLINE_DAY_ID] },
         Args: [],
         Script: //脚本
         '占比:MARGIN(2);'
@@ -2064,7 +2086,7 @@ JSIndexScript.prototype.UpDownAnalyze=function()
 {
     let data=
     {
-        Name: '涨跌趋势', Description: '涨跌趋势', IsMainIndex: false,FloatPrecision:0,
+        Name: '涨跌趋势', Description: '涨跌趋势', IsMainIndex: false,FloatPrecision:0, Condition: { Period:[CONDITION_PERIOD.MINUTE_ID] },
         Args: [],
         Script: //脚本
 "上涨家数:UPCOUNT('CNA.CI'),COLORRED;\n\

@@ -1,19 +1,19 @@
 <template>
 <div id="app2" >
-<p>全屏宽度测试用例</p>
-<StockInfo ref='stockinfo' IsShareStock=true></StockInfo>
-<p>百分比宽度+默认股票测试用例</p>
-<div id='app4' style="width:80%">
-    <StockInfo ref='stockinfo3' DefaultSymbol='601166.sh'></StockInfo> 
-</div>
+    <p>全屏宽度测试用例</p>
+    <StockInfo ref='stockinfo' IsShareStock=true></StockInfo>
+    <p>百分比宽度+默认股票测试用例</p>
+    <div id='app4' style="width:80%">
+        <StockInfo ref='stockinfo3' DefaultSymbol='399001.sz'></StockInfo> 
+    </div>
 
-<p>固定宽度测试用例</p>
-<div id="app3" style=" left:20px;width:600px; position: relative;"> 
-    <StockInfo ref='stockinfo2' IsShareStock=true></StockInfo> 
-</div>
+    <p>固定宽度测试用例</p>
+    <div id="app3" style=" left:20px;width:600px; position: relative;"> 
+        <StockInfo ref='stockinfo2' IsShareStock=true></StockInfo> 
+    </div>
 
 
-<StockTradeInfo ref='stocktradeinfo' IsShareStock=true></StockTradeInfo>
+    <StockTradeInfo ref='stocktradeinfo' IsShareStock=true></StockTradeInfo>
 
 </div>
 </template>
@@ -52,15 +52,15 @@ export default
         tradeInfo.SetSymbol("000001.sz");
         tradeInfo.InitalStock();
 
-        var stockInfo=this.$refs.stockinfo2;
-        stockInfo.SetJSStock(this.JSStock); //绑定一个外部的stock ( 五档买卖盘和分笔数据可以共享这一个股票数据类)
-        stockInfo.SetChangeSymbolCallback(this.OnChangeSymbol); //股票切换以后通知
-        stockInfo.SetSymbol("600000.sh");
-        stockInfo.InitalStock();
+        var stockInfo2=this.$refs.stockinfo2;
+        stockInfo2.SetJSStock(this.JSStock); //绑定一个外部的stock ( 五档买卖盘和分笔数据可以共享这一个股票数据类)
+        stockInfo2.SetChangeSymbolCallback(this.OnChangeSymbol); //股票切换以后通知
+        stockInfo2.SetSymbol("600000.sh");
+        stockInfo2.InitalStock();
 
         this.JSStock.ReqeustData();
 
-        var stockInfo=this.$refs.stockinfo3;
+        var stockInfo3=this.$refs.stockinfo3;
 
         var self=this;
         window.onresize = function() { self.OnSize() }

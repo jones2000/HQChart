@@ -51,11 +51,11 @@ export default
         return {
           KLineOption:CUSTOM_KLINE_OPTION,
           MinuteOption:CUSTOM_MINUTE_OPTION,
-          Symbol:'000001.sz',
+          Symbol:'000001.sz'
         }
     },   
 
-    components: { StockFull },
+    components: { StockFull},
 
     created:function()
     {
@@ -104,7 +104,6 @@ export default
 </script>
 
 <style>
-
 * 
 {
     font: 14px/normal "Microsoft Yahei";

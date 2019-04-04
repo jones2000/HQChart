@@ -12,10 +12,11 @@
   },
   "dependencies": {
     "axios": "^0.16.2",
-    "element-ui": "^1.1.2",
+    "element-ui": "^1.4.13",
     "node-sass": "^4.11.0",
     "promise-polyfill": "^6.0.2",
     "qs": "^6.5.0",
+    "sass": "^1.17.3",
     "sass-loader": "^7.1.0",
     "vue": "^2.6.9",
     "webpack": "^3.0"

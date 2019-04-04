@@ -9579,7 +9579,7 @@ function StockChip()
         var mouseY=this.HQChart.LastPoint.Y;
         if (mouseY) yPrice=this.HQChart.Frame.SubFrame[0].Frame.GetYData(mouseY);
         
-        console.log("[StockChip::CalculateChip]",count,this.HQChart.CursorIndex,selData);
+        //console.log("[StockChip::CalculateChip]",count,this.HQChart.CursorIndex,selData);
         const rate=1;
         var aryVol=[];
         var seed=1,vol,maxPrice,minPrice;
@@ -10099,12 +10099,24 @@ IFrameSplitOperator.FormatValueThousandsString=function(value,floatPrecision)
 
     var result='';
     var num=value.toFixed(floatPrecision);
-    while (num.length > 3)
-    {
-        result = ',' + num.slice(-3) + result;
-        num = num.slice(0, num.length - 3);
+    if(floatPrecision>0){
+        var numFloat = num.split('.')[1];
+        var numM = num.split('.')[0];
+        while (numM.length > 3)
+        {
+            result = ',' + numM.slice(-3) + result;
+            numM = numM.slice(0, numM.length - 3);
+        }
+        if (numM) { result = numM + result + '.' + numFloat; }
+    }else{
+        while (num.length > 3)
+        {
+            result = ',' + num.slice(-3) + result;
+            num = num.slice(0, num.length - 3);
+        }
+        if (num) { result = num + result; }
     }
-    if (num) { result = num + result; }
+    
     return result;
 }
 
@@ -16585,7 +16597,7 @@ function KLineChartContainer(uielement)
                 Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
                 //扩展属性 可以是空
                 KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                FloatPrecision:indexInfo.FloatPrecision
+                FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
             };
             
             return this.ChangeScriptIndex(windowIndex, indexData);
@@ -18295,7 +18307,7 @@ function MinuteChartContainer(uielement)
             Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
             //扩展属性 可以是空
             KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-            FloatPrecision:indexInfo.FloatPrecision
+            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
         };
         
         return this.ChangeScriptIndex(windowIndex, indexData);

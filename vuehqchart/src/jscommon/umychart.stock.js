@@ -73,6 +73,85 @@ function FinanceData()
     }
 }
 
+//资金流(当日)
+function CapitalFlowDayData()
+{
+    this.SuperIn;   //超大单流入
+    this.SuperOut;  //超大单流出
+    this.BigIn;     //大单流入
+    this.BigOut;    //大单流出
+    this.MidIn;     //中单流入
+    this.MidOut;    //中单流出
+    this.SmallIn;   //小单流入
+    this.SmallOut;  //小单流出
+    this.MainIn;    //主力流入
+    this.MainOut;   //主力流出
+    this.MainNetIn; //主力净流入
+
+    this.SetData = function (data) 
+    {
+        this.SuperIn=data.superin;
+        this.SuperOut = data.superout;
+        this.BigIn = data.bigin;     
+        this.BigOut = data.bigout;    
+        this.MidIn = data.midin;
+        this.MidOut=data.midout;
+        this.SmallIn = data.smallin;   //小单流入
+        this.SmallOut = data.smallout;  //小单流出
+        this.MainIn = data.mainin;    //主力流入
+        this.MainOut = data.mainout;   //主力流出
+        this.MainNetIn = data.mainnetin; //主力净流入
+    }
+}
+
+//资金流(多日)
+function CapitalFlowDaysData() 
+{
+    this.SuperIn;           //超大单流入
+    this.SuperOut;          //超大单流出
+    this.BigIn;             //大单流入
+    this.BigOut;            //大单流出
+    this.MidIn;             //中单流入
+    this.MidOut;            //中单流出
+    this.SmallIn;           //小单流入
+    this.SmallOut;          //小单流出
+    this.MainIn;            //主力流入
+    this.MainOut;           //主力流出
+    this.MainNetIn;         //主力净流入
+    this.MainNetInRatio;    //多日日主力净流占比
+
+    this.SetData = function (data) 
+    {
+        this.SuperIn = data.superin;
+        this.SuperOut = data.superout;
+        this.BigIn = data.bigin;
+        this.BigOut = data.bigout;
+        this.MidIn = data.midin;
+        this.MidOut = data.midout;
+        this.SmallIn = data.smallin;   //小单流入
+        this.SmallOut = data.smallout;  //小单流出
+        this.MainIn = data.mainin;    //主力流入
+        this.MainOut = data.mainout;   //主力流出
+        this.MainNetIn = data.mainnetin; //主力净流入
+        this.MainNetInRatio = data.mainnetinratio;
+    }
+}
+
+function DDEData()
+{
+    this.DDX;
+    this.DDY;
+    this.DDZ;
+
+    this.SetData=function(data)
+    {
+        this.DDX=data.ddx;
+        this.DDY=data.ddy;
+        this.DDZ=data.ddz;
+    }
+}
+
+
 //是否是指数代码(是一个单独的类，从umychart.js复制来的)
 function IsIndexSymbol(symbol)
 {
@@ -232,12 +311,81 @@ function StockData(symbol)
         }
     }
 
+    //资金流
+    this.CapitalFlowDay;
+    this.CapitalFlowDay3;
+    this.CapitalFlowDay5;
+    this.CapitalFlowDay10;
+    this.GetCapitalFlowDay = function (tagID, field) 
+    {
+        let data=null;
+        switch(field)
+        {
+            case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY:
+                if (!this.CapitalFlowDay) this.CapitalFlowDayID.add(tagID);
+                else data = this.CapitalFlowDay;
+                break;
+            case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY3:
+                if (!this.CapitalFlowDay3) this.CapitalFlowDay3ID.add(tagID);
+                else data = this.CapitalFlowDay3;
+                break;
+            case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY5:
+                if (!this.CapitalFlowDay5) this.CapitalFlowDay5ID.add(tagID);
+                else data = this.CapitalFlowDay5;
+                break;
+            case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY10:
+                if (!this.CapitalFlowDay10) this.CapitalFlowDay10ID.add(tagID);
+                else data = this.CapitalFlowDay10;
+                break;
+        }
+        return data;
+    }
+
+
+    //资金流 DDE
+    this.DDE;
+    this.DDE3;
+    this.DDE5;
+    this.DDE10;
+    this.GetDDE = function (tagID, field)
+    {
+        let data = null;
+        switch (field) {
+            case STOCK_FIELD_NAME.DDE:
+                if (!this.DDE) this.DDEID.add(tagID);
+                else data = this.DDE;
+                break;
+            case STOCK_FIELD_NAME.DDE3:
+                if (!this.DDE3) this.DDE3ID.add(tagID);
+                else data = this.DDE3;
+                break;
+            case STOCK_FIELD_NAME.DDE5:
+                if (!this.DDE5) this.DDE5ID.add(tagID);
+                else data = this.DDE5;
+                break;
+            case STOCK_FIELD_NAME.DDE10:
+                if (!this.DDE10) this.DDE10ID.add(tagID);
+                else data = this.DDE10;
+                break;
+        }
+        return data;
+    }
+
     this.TagID=new Set();       //绑定的控件id
     this.HeatTagID=new Set();   //需要热度的控件id
     this.BuySellTagID=new Set();//买卖盘的控件id
     this.DealTagID=new Set();   //分笔的控件id
     this.DerivativeTagID=new Set(); //衍生数据
     this.FinanceTagID=new Set();    //财务数据 (就请求1次)
+
+    this.CapitalFlowDayID=new Set();        //当日资金流
+    this.CapitalFlowDay3ID = new Set();     //3日资金流
+    this.CapitalFlowDay5ID = new Set();     //5日资金流
+    this.CapitalFlowDay10ID = new Set();    //10日资金流
+    this.DDEID=new Set();
+    this.DDE3ID = new Set();
+    this.DDE5ID = new Set();
+    this.DDE10ID = new Set();
 
     this.AttachTagID=function(id)
     {
@@ -381,8 +529,10 @@ function StockData(symbol)
         {
             var item=data.deal[i];
             if (isNaN(item.price) || isNaN(item.time)) continue;
-
-            this.Deal.push({"Price":item.price,"Amount":item.amount,"Vol":item.vol,"Time":item.time});
+            var bs='';
+            if (item.bs===0) bs='B';
+            else if (item.bs===1) bs='S';
+            this.Deal.push({"Price":item.price,"Amount":item.amount,"Vol":item.vol,"Time":item.time, 'BS':bs});
         }
     }
 
@@ -396,6 +546,57 @@ function StockData(symbol)
         heatData.GoodIncrease.Week4=data.quadrant.gincrease.week4;
 
         this.Heat=heatData;
+    }
+
+    this.SetCapitalFlowDayData = function (data,datatype) 
+    {
+        if (!data) return;
+
+        switch (datatype) 
+        {
+            case RECV_DATA_TYPE.CAPITAL_FLOW_DAY_DATA:
+                this.CapitalFlowDay=new CapitalFlowDayData();
+                this.CapitalFlowDay.SetData(data);
+                break;
+            case RECV_DATA_TYPE.CAPITAL_FLOW_DAY3_DATA:
+                this.CapitalFlowDay3 = new CapitalFlowDaysData();
+                this.CapitalFlowDay3.SetData(data);
+                break;
+            case RECV_DATA_TYPE.CAPITAL_FLOW_DAY5_DATA:
+                this.CapitalFlowDay5 = new CapitalFlowDaysData();
+                this.CapitalFlowDay5.SetData(data);
+                break;
+            case RECV_DATA_TYPE.CAPITAL_FLOW_DAY10_DATA:
+                this.CapitalFlowDay10 = new CapitalFlowDaysData();
+                this.CapitalFlowDay10.SetData(data);
+                break;
+        }
+    }
+
+    this.SetDDE = function (data, datatype) 
+    {
+        if (!data) return;
+
+        switch (datatype) 
+        {
+            case RECV_DATA_TYPE.DDE_DAY_DATA:
+                this.DDE = new DDEData();
+                this.DDE.SetData(data);
+                break;
+            case RECV_DATA_TYPE.DDE_DAY3_DATA:
+                this.DDE3 = new DDEData();
+                this.DDE3.SetData(data);
+                break;
+            case RECV_DATA_TYPE.DDE_DAY5_DATA:
+                this.DDE5 = new DDEData();
+                this.DDE5.SetData(data);
+                break;
+            case RECV_DATA_TYPE.DDE_DAY10_DATA:
+                this.DDE10 = new DDEData();
+                this.DDE10.SetData(data);
+                break;
+        }
+        return data;
     }
 
 }
@@ -453,6 +654,15 @@ var STOCK_FIELD_NAME=
     RISE_FALL_PRICE:36, //涨跌额
 
     FINANCE_BENFORD:37, //财务粉饰
+
+    CAPITAL_FLOW_DAY:67,     //当日资金流
+    CAPITAL_FLOW_DAY3: 68,   //3日资金流
+    CAPITAL_FLOW_DAY5: 69,   //5日资金流
+    CAPITAL_FLOW_DAY10: 70,  //10日资金流
+    DDE:71,
+    DDE3:72,
+    DDE5:73,
+    DDE10:74,
 
 
     INDEXTOP:100,
@@ -542,6 +752,20 @@ function StockRead(stock,tagID)
             case STOCK_FIELD_NAME.FINANCE_EPS:
             case STOCK_FIELD_NAME.FINANCE_BENFORD:
                 return data.GetFinance(this.TagID,field);
+            
+            //资金流 
+            case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY:
+            case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY3:
+            case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY5:
+            case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY10:
+                return data.GetCapitalFlowDay(this.TagID, field);
+
+            //资金流 DDE
+            case STOCK_FIELD_NAME.DDE:
+            case STOCK_FIELD_NAME.DDE3:
+            case STOCK_FIELD_NAME.DDE5:
+            case STOCK_FIELD_NAME.DDE10:
+                return data.GetDDE(this.TagID, field);
 
             default:
                 return null;
@@ -600,6 +824,12 @@ JSStock.GetShortTerm = function (symbol)
     return new ShortTerm(symbol);
 }
 
+//每天的分笔数据
+JSStock.GetDealDay=function(symbol)
+{
+    return new DealDay(symbol);
+}
+
 var RECV_DATA_TYPE=
 {
     BASE_DATA:1,        //股票行情基础数据
@@ -615,7 +845,21 @@ var RECV_DATA_TYPE=
     SELF_STOCK_DATA:10, //自选股数据
     LOGON_DATA:11,      //登陆信息
     BLOCK_MEMBER_DATA: 13,  //板块成员
-    SHORT_TERM_DATA:14      //短线精灵
+    SHORT_TERM_DATA:14,      //短线精灵
+
+    //资金流
+    CAPITAL_FLOW_DAY_DATA:23,
+    CAPITAL_FLOW_DAY3_DATA:24,
+    CAPITAL_FLOW_DAY5_DATA:25,
+    CAPITAL_FLOW_DAY10_DATA:26,
+
+    //DDE
+    DDE_DAY_DATA:27,
+    DDE_DAY3_DATA:28,
+    DDE_DAY5_DATA:29,
+    DDE_DAY10_DATA:30,
+
+    DEAL_DAY_DATA:105,       //分笔数据
 }
 
 function JSStock()
@@ -678,6 +922,8 @@ function JSStock()
         var aryDeal=new Array();    //分笔
         var aryDerivative=new Array();  //实时衍生数据
         var aryFinance=new Array();     //财务数据
+        var aryFlow = [], aryFlow3 = [], aryFlow5 = [], aryFlow10=[];
+        var aryDDE=[], aryDDE3=[], aryDDE5=[], aryDDE10=[];
 
         for(var item of this.MapStock)
         {
@@ -692,6 +938,16 @@ function JSStock()
                 else 
                     arySymbol.push(item[0]);
             }
+
+            if (item[1].CapitalFlowDayID.size > 0) aryFlow.push(item[0]);
+            if (item[1].CapitalFlowDay3ID.size > 0) aryFlow3.push(item[0]);
+            if (item[1].CapitalFlowDay5ID.size > 0) aryFlow5.push(item[0]);
+            if (item[1].CapitalFlowDay10ID.size > 0) aryFlow10.push(item[0]);
+
+            if (item[1].DDEID.size > 0) aryDDE.push(item[0]);
+            if (item[1].DDE3ID.size > 0) aryDDE3.push(item[0]);
+            if (item[1].DDE5ID.size > 0) aryDDE5.push(item[0]);
+            if (item[1].DDE10ID.size > 0) aryDDE10.push(item[0]);
 
             if(item[1].HeatTagID.size>0)
                 aryHeat.push(item[0])
@@ -713,6 +969,16 @@ function JSStock()
         if (aryDeal.length>0) this.RequestDealData(aryDeal);
         if (aryDerivative.length>0) this.RequestDerivativeData(aryDerivative);
         if (aryFinance.length>0) this.RequestFinanceData(aryFinance);
+
+        //资金流
+        if (aryFlow.length > 0) this.RequestSubDocumentData(aryFlow, 'flowday');
+        if (aryFlow3.length > 0) this.RequestSubDocumentData(aryFlow3, 'flowday3');
+        if (aryFlow5.length > 0) this.RequestSubDocumentData(aryFlow5, 'flowday5');
+        if (aryFlow10.length > 0) this.RequestSubDocumentData(aryFlow10, 'flowday10');
+        if (aryDDE.length > 0) this.RequestSubDocumentData(aryDDE, 'dde');
+        if (aryDDE3.length > 0) this.RequestSubDocumentData(aryDDE3, 'dde3');
+        if (aryDDE5.length > 0) this.RequestSubDocumentData(aryDDE5, 'dde5');
+        if (aryDDE10.length > 0) this.RequestSubDocumentData(aryDDE10, 'dde10');
 
         this.ReqeustAllSortData();    //成分排序
     }
@@ -1059,6 +1325,46 @@ function JSStock()
         });
     }
 
+    //资金流
+    this.RequestSubDocumentData = function (arySymbol, id)
+    {
+        var self = this;
+        const mapDay = new Map([
+            ['flowday', { Field: 'flowday', RecvID: RECV_DATA_TYPE.CAPITAL_FLOW_DAY_DATA}],
+            ['flowday3', { Field: 'flowday3', RecvID: RECV_DATA_TYPE.CAPITAL_FLOW_DAY3_DATA }],
+            ['flowday5', { Field: 'flowday5', RecvID: RECV_DATA_TYPE.CAPITAL_FLOW_DAY5_DATA }],
+            ['flowday10', { Field: 'flowday10', RecvID: RECV_DATA_TYPE.CAPITAL_FLOW_DAY10_DATA }],
+            ['dde', { Field: 'dde', RecvID: RECV_DATA_TYPE.DDE_DAY_DATA }],
+            ['dde3', { Field: 'dde3', RecvID: RECV_DATA_TYPE.DDE_DAY3_DATA }],
+            ['dde5', { Field: 'dde5', RecvID: RECV_DATA_TYPE.DDE_DAY5_DATA }],
+            ['dde10', { Field: 'dde10', RecvID: RECV_DATA_TYPE.DDE_DAY10_DATA }],
+            ]);
+
+        if (!mapDay.has(id)) return;
+        var value = mapDay.get(id);
+
+        $.ajax({
+            url: this.RealtimeApiUrl,
+            data: {
+                "field": [
+                    "symbol",
+                    value.Field,
+                ],
+                "symbol": arySymbol,
+                "start": 0,
+                "end": 50
+            },
+            type:"post",
+            dataType: "json",
+            success: function (data) {
+                self.RecvData(data, value.RecvID);
+            },
+            error: function (request) {
+                self.RecvError(request, value.RecvID);
+            }
+        });
+    }
+
     this.RecvError=function(request,datatype,requestData)
     {
         console.log("RecvError: datatype="+ datatype.toString());
@@ -1096,6 +1402,16 @@ function JSStock()
                 break;
             case RECV_DATA_TYPE.FINANCE_DATA:
                 mapTagData=this.RecvFinanceData(data,datatype);
+                break;
+            case RECV_DATA_TYPE.CAPITAL_FLOW_DAY_DATA:
+            case RECV_DATA_TYPE.CAPITAL_FLOW_DAY3_DATA:
+            case RECV_DATA_TYPE.CAPITAL_FLOW_DAY5_DATA:
+            case RECV_DATA_TYPE.CAPITAL_FLOW_DAY10_DATA:
+            case RECV_DATA_TYPE.DDE_DAY_DATA:
+            case RECV_DATA_TYPE.DDE_DAY3_DATA:
+            case RECV_DATA_TYPE.DDE_DAY5_DATA:
+            case RECV_DATA_TYPE.DDE_DAY10_DATA:
+                mapTagData = this.RecvSubDocumentData(data, datatype);
                 break;
         }
 
@@ -1362,7 +1678,70 @@ function JSStock()
         return mapTagData;
     }
 
+    this.RecvSubDocumentData = function(data, datatype)
+    {
+        var mapTagData = new Map();   //key=界面元素id, value=更新的股票列表
+        for(var i in data.stock)
+        {
+            var item = data.stock[i];
+            var stockData = this.MapStock.get(item.symbol);
+            if (!stockData) continue;
 
+            var keyData=null;
+            switch (datatype)
+            {
+                case RECV_DATA_TYPE.CAPITAL_FLOW_DAY_DATA:
+                    stockData.SetCapitalFlowDayData(item.flowday, datatype);
+                    keyData = stockData.CapitalFlowDayID;
+                    break;
+                case RECV_DATA_TYPE.CAPITAL_FLOW_DAY3_DATA:
+                    stockData.SetCapitalFlowDayData(item.flowday3, datatype);
+                    keyData = stockData.CapitalFlowDay3ID;
+                    break;
+                case RECV_DATA_TYPE.CAPITAL_FLOW_DAY5_DATA:
+                    stockData.SetCapitalFlowDayData(item.flowday5, datatype);
+                    keyData = stockData.CapitalFlowDay5ID;
+                    break;
+                case RECV_DATA_TYPE.CAPITAL_FLOW_DAY10_DATA:
+                    stockData.SetCapitalFlowDayData(item.flowday10, datatype);
+                    keyData = stockData.CapitalFlowDay10ID;
+                    break;
+                case RECV_DATA_TYPE.DDE_DAY_DATA:
+                    stockData.SetDDE(item.dde, datatype);
+                    keyData = stockData.DDEID;
+                    break;
+                case RECV_DATA_TYPE.DDE_DAY3_DATA:
+                    stockData.SetDDE(item.dde3, datatype);
+                    keyData = stockData.DDE3ID;
+                    break;
+                case RECV_DATA_TYPE.DDE_DAY5_DATA:
+                    stockData.SetDDE(item.dde5, datatype);
+                    keyData = stockData.DDE5ID;
+                    break;
+                case RECV_DATA_TYPE.DDE_DAY10_DATA:
+                    stockData.SetDDE(item.dde10, datatype);
+                    keyData = stockData.DDE10ID;
+                    break;
+            }
+
+            if (keyData && keyData.size>0) 
+            {
+                for (var id of keyData) 
+                {
+                    if (mapTagData.has(id)) 
+                    {
+                        mapTagData.get(id).push(stockData.Symbol);
+                    }
+                    else 
+                    {
+                        mapTagData.set(id, new Array(stockData.Symbol));
+                    }
+                }
+            }
+        }
+
+        return mapTagData;
+    }
 
     
 }
@@ -1486,6 +1865,7 @@ function IStockData()
     this.Timeout;   //定时器
     this.ApiUrl;
     this.Data;      //数据
+    this.Error;     //错误信息
     this.UpdateUICallback;             //回调函数
 
     this.RequestData = function () {
@@ -1514,6 +1894,11 @@ function IStockData()
                 self.RequestData();
             }, this.AutoUpateTimeout);
 
+    }
+
+    this.InvokeUpdateUICallback=function()
+    {
+        if (this.UpdateUICallback) this.UpdateUICallback(this);
     }
 }
 
@@ -1574,5 +1959,95 @@ function ShortTerm(symbol)
 
     this.RecvError = function (request, dataType) {
 
+    }
+}
+
+//每天的分笔数据 
+function DealDay(symbol)
+{
+    this.newMethod = IStockData;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Symbol = symbol;   //数组
+    this.Date;              //交易日期
+
+    this.RequestData = function () 
+    {
+        this.Data=null;
+        this.Error=null;
+
+        var self = this;
+        var apiUrl=g_JSStockResource.CacheDomain + "/cache/dealday/day/"+ this.Date + '/'+this.Symbol+'.json';
+        console.log('[DealDay::RequestData] cache url ',apiUrl)
+        $.ajax({
+            url: apiUrl,
+            type:"get",
+            dataType: 'json',
+            async:true,
+            success: function (data) 
+            {
+                self.RecvData(data, RECV_DATA_TYPE.DEAL_DAY_DATA);
+            },
+            error: function (request) 
+            {
+                self.RecvError(request, RECV_DATA_TYPE.DEAL_DAY_DATA);
+            }
+        });
+    }
+
+    this.RecvData = function (data, dataType) 
+    {
+        if (!data.day || !data.deal) 
+        {
+            this.InvokeUpdateUICallback();
+            return;
+        }
+
+        var amount=data.deal.amount;
+        var price=data.deal.price;
+        var time=data.deal.time;
+        var vol=data.deal.vol;
+        var flag=data.deal.flag;
+
+        if (!flag || !vol || !time || !price || !amount) 
+        {
+            this.InvokeUpdateUICallback();
+            return;
+        }
+
+        var dealData=
+        { 
+            Date:data.date, 
+            Open:data.day.price,
+            YClose:data.day.yclose,
+            Symbol:data.symbol,
+            Name:data.name,
+            Deal:[]
+        };
+
+        var minCount=Math.min(time.length,vol.length,flag.length, price.length, amount.length);
+        for (let i =0;i<minCount;++i) 
+        {
+            let item={ Time:time[i], Vol:vol[i], Flag:'', Price:price[i], Amount:amount[i] }
+            if (flag[i]===0) item.Flag='B';
+            else if (flag[i]===1)item.Flag='S';
+
+            if (item.Time>150000) item.Time=150000; //盘后数据都算在15:00
+
+            dealData.Deal.push(item);
+        }
+
+        this.Data=dealData;
+
+        this.InvokeUpdateUICallback();
+    }
+
+    this.RecvError = function (request, dataType) 
+    {
+        console.log(`[DealDay::RecvError] status=${request.status} statusText=${request.statusText} responseText=${request.responseText}`);
+
+        this.Error={Status:request.status, Message:request.responseText };
+        this.InvokeUpdateUICallback();
     }
 }

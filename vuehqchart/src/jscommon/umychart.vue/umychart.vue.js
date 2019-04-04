@@ -8,7 +8,28 @@
     FloatPrecision: 小数位数 缺省=2
     YSplitScale:  Y固定刻度 [1,8,10]
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
+    Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), }
 */
+
+//周期条件枚举
+var CONDITION_PERIOD=
+{
+    MINUTE_ID:101,            //分钟      走势图
+    MULTIDAY_MINUTE_ID:102,   //多日分钟  走势图
+    HISTORY_MINUTE_ID:103,    //历史分钟  走势图
+
+    //K线周期
+    KLINE_DAY_ID:0,
+    KLINE_WEEK_ID:1,
+    KLINE_MONTH_ID:2,
+    KLINE_YEAR_ID:3,
+    KLINE_MINUTE_ID:4,
+    KLINE_5_MINUTE_ID:5,
+    KLINE_15_MINUTE_ID:6,
+    KLINE_30_MINUTE_ID:7,
+    KLINE_60_MINUTE_ID:8
+
+};
 
 function JSIndexScript()
 {
@@ -1922,7 +1943,8 @@ JSIndexScript.prototype.MarginProportion=function()
 {
     let data =
     {
-        Name: '融资占比(%)', Description: '融资占比', IsMainIndex: false,
+        Name: '融资占比(%)', Description: '融资占比', IsMainIndex: false, 
+        Condition: { Period:[CONDITION_PERIOD.KLINE_DAY_ID] },
         Args: [],
         Script: //脚本
         '占比:MARGIN(2);'
@@ -2064,7 +2086,7 @@ JSIndexScript.prototype.UpDownAnalyze=function()
 {
     let data=
     {
-        Name: '涨跌趋势', Description: '涨跌趋势', IsMainIndex: false,FloatPrecision:0,
+        Name: '涨跌趋势', Description: '涨跌趋势', IsMainIndex: false,FloatPrecision:0, Condition: { Period:[CONDITION_PERIOD.MINUTE_ID] },
         Args: [],
         Script: //脚本
 "上涨家数:UPCOUNT('CNA.CI'),COLORRED;\n\
@@ -12651,7 +12673,7 @@ function StockChip()
         var mouseY=this.HQChart.LastPoint.Y;
         if (mouseY) yPrice=this.HQChart.Frame.SubFrame[0].Frame.GetYData(mouseY);
         
-        console.log("[StockChip::CalculateChip]",count,this.HQChart.CursorIndex,selData);
+        //console.log("[StockChip::CalculateChip]",count,this.HQChart.CursorIndex,selData);
         const rate=1;
         var aryVol=[];
         var seed=1,vol,maxPrice,minPrice;
@@ -13171,12 +13193,24 @@ IFrameSplitOperator.FormatValueThousandsString=function(value,floatPrecision)
 
     var result='';
     var num=value.toFixed(floatPrecision);
-    while (num.length > 3)
-    {
-        result = ',' + num.slice(-3) + result;
-        num = num.slice(0, num.length - 3);
+    if(floatPrecision>0){
+        var numFloat = num.split('.')[1];
+        var numM = num.split('.')[0];
+        while (numM.length > 3)
+        {
+            result = ',' + numM.slice(-3) + result;
+            numM = numM.slice(0, numM.length - 3);
+        }
+        if (numM) { result = numM + result + '.' + numFloat; }
+    }else{
+        while (num.length > 3)
+        {
+            result = ',' + num.slice(-3) + result;
+            num = num.slice(0, num.length - 3);
+        }
+        if (num) { result = num + result; }
     }
-    if (num) { result = num + result; }
+    
     return result;
 }
 
@@ -19657,7 +19691,7 @@ function KLineChartContainer(uielement)
                 Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
                 //扩展属性 可以是空
                 KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                FloatPrecision:indexInfo.FloatPrecision
+                FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
             };
             
             return this.ChangeScriptIndex(windowIndex, indexData);
@@ -21367,7 +21401,7 @@ function MinuteChartContainer(uielement)
             Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
             //扩展属性 可以是空
             KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-            FloatPrecision:indexInfo.FloatPrecision
+            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
         };
         
         return this.ChangeScriptIndex(windowIndex, indexData);
@@ -34026,7 +34060,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.MarketValue=null;      //总市值
     this.Period=0;              //周期
     this.Right=0;               //复权
-    this.DataType=0;            //默认K线数据 2=分钟走势图数据
+    this.DataType=0;            //默认K线数据 2=分钟走势图数据 3=多日分钟走势图
 
     this.KLineApiUrl= g_JSComplierResource.Domain+"/API/KLine2";                   //日线
     this.MinuteKLineApiUrl= g_JSComplierResource.Domain+'/API/KLine3';             //分钟K线
@@ -34052,7 +34086,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.Data) 
         {
             this.Data=option.Data;
-            if (this.DataType!=2)   //2=分钟走势图数据 没有周期和复权
+            if (this.DataType!=HQ_DATA_TYPE.MINUTE_ID && this.DataType!=HQ_DATA_TYPE.MULTIDAY_MINUTE_ID && this.DataType!=HQ_DATA_TYPE.HISTORY_MINUTE_ID)   //分钟走势图数据 没有周期和复权
             {
                 this.Period=option.Data.Period; //周期
                 this.Right=option.Data.Right;   //复权
@@ -34275,23 +34309,58 @@ function JSSymbolData(ast,option,jsExecute)
         var symbol=job.Symbol;
         symbol=symbol.replace('.CI','.ci');
         var self=this;
-        var apiUrl=g_JSComplierResource.CacheDomain+'/cache/analyze/increaseanalyze/'+symbol+'.json';
-        console.log('[JSSymbolData::GetIndexIncreaseData] Get url=' , apiUrl);
-        $.ajax({
-            url: apiUrl,
-            type:"get",
-            dataType: "json",
-            async:true,
-            success: function (data)
-            {
-                self.RecvMinuteIncreaseData(data, {UpKey:upKey,DownKey:downKey});
-                self.Execute.RunNextJob();
-            },
-            error: function(request)
-            {
-                self.RecvError(request);
-            }
-        });
+        if (this.DataType===HQ_DATA_TYPE.MINUTE_ID)  //走势图数据
+        {
+            var apiUrl=g_JSComplierResource.CacheDomain+'/cache/analyze/increaseanalyze/'+symbol+'.json';
+            console.log('[JSSymbolData::GetIndexIncreaseData] minute Get url=' , apiUrl);
+            $.ajax({
+                url: apiUrl,
+                type:"get",
+                dataType: "json",
+                async:true,
+                success: function (data)
+                {
+                    self.RecvMinuteIncreaseData(data, {UpKey:upKey,DownKey:downKey});
+                    self.Execute.RunNextJob();
+                },
+                error: function(request)
+                {
+                    self.RecvError(request);
+                }
+            });
+        }
+        else if (this.DataType===HQ_DATA_TYPE.KLINE_ID && this.Period===0) //K线图 日线
+        {
+            /*
+            console.log('[JSSymbolData::GetIndexIncreaseData] K day Get url=' , self.KLineApiUrl);
+            $.ajax({
+                url: self.KLineApiUrl,
+                data:
+                {
+                    "symbol": symbol,
+                    "start": -1,
+                    "count": self.MaxReqeustDataCount
+                },
+                type:"post",
+                dataType: "json",
+                async:true,
+                success: function (data)
+                {
+                    self.RecvHistoryIncreaseData(data, {UpKey:upKey,DownKey:downKey});
+                    self.Execute.RunNextJob();
+                },
+                error: function(request)
+                {
+                    self.RecvError(request);
+                }
+            });
+            */
+        }
+    }
+
+    this.RecvHistoryIncreaseData=function(data,key)
+    {
+        console.log('[JSSymbolData::RecvHistoryIncreaseData] recv data' , data);
     }
 
     this.RecvMinuteIncreaseData=function(data,key)
@@ -34330,7 +34399,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         let self=this;
 
-        if (this.DataType===2)  //当天分钟数据
+        if (this.DataType===HQ_DATA_TYPE.MINUTE_ID)  //当天分钟数据
         {
             $.ajax({
                 url: self.RealtimeApiUrl,
@@ -36396,6 +36465,14 @@ JSComplier.SetDomain = function (domain, cacheDomain)   //修改API地址
     if (cacheDomain) g_JSComplierResource.CacheDomain = cacheDomain;
 }
 
+var HQ_DATA_TYPE=
+{
+    KLINE_ID:0,         //K线
+    MINUTE_ID:2,        //当日走势图
+    HISTORY_MINUTE_ID:3,//历史分钟走势图
+    MULTIDAY_MINUTE_ID:4,//多日走势图
+};
+
 
 //脚本指标
 //name=指标名字 args=参数名字 参数值
@@ -36414,6 +36491,7 @@ function ScriptIndex(name,script,args,option)
     this.InstructionType;   //五彩K线, 交易指标
     this.YSpecificMaxMin=null;  //最大最小值
     this.YSplitScale=null;      //固定刻度
+    this.Condition=null;        //限制条件
 
     //指标上锁配置信息
     this.IsLocked=false;    //是否锁住指标
@@ -36433,6 +36511,7 @@ function ScriptIndex(name,script,args,option)
         if (option.InstructionType) this.InstructionType=option.InstructionType;
         if (option.YSpecificMaxMin) this.YSpecificMaxMin=option.YSpecificMaxMin;
         if (option.YSplitScale) this.YSplitScale=option.YSplitScale;
+        if (option.Condition) this.Condition=option.Condition;
     }
 
     if (option && option.Lock) 
@@ -36488,9 +36567,16 @@ function ScriptIndex(name,script,args,option)
         };
 
         //数据类型
-        let hqDataType=0;   //默认K线
-        if (hqChart.ClassName==='MinuteChartContainer') hqDataType=2;               //分钟数据
-        else if (hqChart.ClassName==='HistoryMinuteChartContainer') hqDataType=3;   //历史分钟
+        let hqDataType=HQ_DATA_TYPE.KLINE_ID;   //默认K线
+        if (hqChart.ClassName==='MinuteChartContainer') 
+        {
+            if (hqChart.DayCount>1) hqDataType=HQ_DATA_TYPE.MULTIDAY_MINUTE_ID; //多日分钟
+            else hqDataType=HQ_DATA_TYPE.MINUTE_ID;                             //分钟数据
+        }
+        else if (hqChart.ClassName==='HistoryMinuteChartContainer') 
+        {
+            hqDataType=HQ_DATA_TYPE.HISTORY_MINUTE_ID;   //历史分钟
+        }
         let option=
         {
             HQDataType:hqDataType,
@@ -36502,13 +36588,83 @@ function ScriptIndex(name,script,args,option)
             Async:true,
             MaxReqeustDataCount:hqChart.MaxReqeustDataCount,
             MaxRequestMinuteDayCount:hqChart.MaxRequestMinuteDayCount,
-            Arguments:this.Arguments
+            Arguments:this.Arguments,
+            Condition:this.Condition
         };
 
         if (hqDataType===3) option.TrateDate=hqChart.TradeDate;
 
+        if (this.Condition && !this.IsMeetCondition(param,option))
+        {
+            this.ShowConditionError(param);
+            return;
+        }
+
         let code=this.Script;
         let run=JSComplier.Execute(code,option,hqChart.ScriptErrorCallback);
+    }
+
+    //是否符合限制条件
+    this.IsMeetCondition=function(param,option)
+    {
+        console.log('[ScriptIndex::IsMeetCondition] ', this.Condition);
+        if (this.Condition.Period)      //周期是否满足
+        {
+            if (!this.IsMeetPeriodCondition(param,option)) return false;
+        }
+
+        return true;
+    }
+
+    //周期是否满足条件
+    this.IsMeetPeriodCondition=function(param,option)
+    {
+        if (!this.Condition.Period) return true;
+
+        for(var i in this.Condition.Period)
+        {
+            var item=this.Condition.Period[i];
+            switch(item)
+            {
+                case CONDITION_PERIOD.MINUTE_ID:
+                    if (option.HQDataType==HQ_DATA_TYPE.MINUTE_ID) return true;
+                    break;
+                case CONDITION_PERIOD.KLINE_DAY_ID:
+                case CONDITION_PERIOD.KLINE_WEEK_ID:
+                case CONDITION_PERIOD.KLINE_MONTH_ID:
+                case CONDITION_PERIOD.KLINE_YEAR_ID:
+
+                case CONDITION_PERIOD.KLINE_MINUTE_ID:
+                case CONDITION_PERIOD.KLINE_5_MINUTE_ID:
+                case CONDITION_PERIOD.KLINE_15_MINUTE_ID:
+                case CONDITION_PERIOD.KLINE_30_MINUTE_ID:
+                case CONDITION_PERIOD.KLINE_60_MINUTE_ID:
+                    if (param.HQChart.Period==item) return true;
+                    break;
+            }
+        }
+
+        return false;
+    }
+
+    //显示指标不符合条件
+    this.ShowConditionError=function(param)
+    {
+        var hqChart=param.HQChart;
+        var windowIndex=param.WindowIndex;
+
+        hqChart.DeleteIndexPaint(windowIndex);
+        if (windowIndex==0) hqChart.ShowKLine(true);
+
+        var message='指标不支持当前品种或周期';
+
+        let line=new ChartLine();
+        line.Canvas=hqChart.Canvas;
+        line.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        line.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        line.NotSupportMessage=message;
+        hqChart.ChartPaint.push(line);
+        hqChart.Draw();
     }
 
     this.RecvResultData=function(outVar,param)
