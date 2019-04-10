@@ -26,7 +26,7 @@
 
           <!-- k线设置导航条 -->
           <div id='barForKLine' v-show="KLine.IsShow">
-                <div class="item" v-for='(menuOne,index) in KLine.Toolbar.Data' :key='menuOne.Text' v-show="KLineItemShow[index]"  @click="OnClickToolBar('kline',menuOne,index)" >
+                <div v-bind:class="[menuOne.IsShow==true? 'item':'hide_item']" v-for='(menuOne,index) in KLine.Toolbar.Data' :key='menuOne.Text' v-show="KLineItemShow[index]" @click="OnClickToolBar('kline',menuOne,index)" >
                     <p class="menuOne" :class='{light:KLine.Toolbar.Selected == index}' v-show='menuOne.IsShow'>
                             <span>{{menuOne.Text}}</span>
                             <i class='iconfont' :class='KLine.Toolbar.Selected == index ? "icon-shang" : "icon-xia"'></i>
@@ -1123,11 +1123,23 @@ a
     position: relative;
     z-index: 999;
 
+    //隐藏菜单
+    #barForMinute,#barForKLine>.hide_item
+    {
+        display: inline-block;
+        cursor: pointer;
+        //height: 32px;
+        line-height: 32px;
+        padding-top: 6px;
+        position: relative;
+        box-sizing: border-box;
+    }
+
     #barForMinute,#barForKLine>.item 
     {
         display: inline-block;
         cursor: pointer;
-        height: 32px;
+        //height: 32px;
         line-height: 32px;
         width:104px;
         padding-top: 6px;

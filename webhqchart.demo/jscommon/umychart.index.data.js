@@ -2086,7 +2086,7 @@ JSIndexScript.prototype.UpDownAnalyze=function()
 {
     let data=
     {
-        Name: '涨跌趋势', Description: '涨跌趋势', IsMainIndex: false,FloatPrecision:0, Condition: { Period:[CONDITION_PERIOD.MINUTE_ID] },
+        Name: '涨跌趋势', Description: '涨跌趋势', IsMainIndex: false,FloatPrecision:0, Condition: { Period:[CONDITION_PERIOD.MINUTE_ID,CONDITION_PERIOD.KLINE_DAY_ID] },
         Args: [],
         Script: //脚本
 "上涨家数:UPCOUNT('CNA.CI'),COLORRED;\n\

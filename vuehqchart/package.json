@@ -33,6 +33,7 @@
     "file-loader": "^0.10.1",
     "html-webpack-plugin": "^2.24.1",
     "jquery": "^3.3.1",
+    "js-md5": "^0.7.3",
     "less": "^3.9.0",
     "less-loader": "^4.1.0",
     "node-sass": "^4.11.0",

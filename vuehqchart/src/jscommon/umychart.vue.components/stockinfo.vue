@@ -197,7 +197,13 @@
                 this.IsShow.IconStyle = false;
                 console.log(this.$refs.mySymbol);
                 this.$refs.mySymbol.deletSymbel();
+                  this.$nextTick(function () {
+                    //DOM 更新了
+                    this.$refs.mySymbol.focus()
+                })
+                
             },
+            
             CancelSearch() {
                 this.IsShow.SearchSymbol = false;
                 this.IsShow.IconStyle = true;
