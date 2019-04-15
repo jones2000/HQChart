@@ -2,7 +2,7 @@
 <div id="app2" >
     <p>全屏宽度测试用例</p>
     <StockInfo ref='stockinfo' IsShareStock=true></StockInfo>
-    <p>百分比宽度+默认股票测试用例</p>
+    <!-- <p>百分比宽度+默认股票测试用例</p>
     <div id='app4' style="width:80%">
         <StockInfo ref='stockinfo3' DefaultSymbol='399001.sz'></StockInfo> 
     </div>
@@ -13,7 +13,7 @@
     </div>
 
 
-    <StockTradeInfo ref='stocktradeinfo' IsShareStock=true></StockTradeInfo>
+    <StockTradeInfo ref='stocktradeinfo' IsShareStock=true></StockTradeInfo> -->
 
 </div>
 </template>
@@ -47,20 +47,20 @@ export default
         stockInfo.SetSymbol("000001.sz");
         stockInfo.InitalStock();
 
-        var tradeInfo=this.$refs.stocktradeinfo;
-        tradeInfo.SetJSStock(this.JSStock); //绑定一个外部的stock
-        tradeInfo.SetSymbol("000001.sz");
-        tradeInfo.InitalStock();
+        // var tradeInfo=this.$refs.stocktradeinfo;
+        // tradeInfo.SetJSStock(this.JSStock); //绑定一个外部的stock
+        // tradeInfo.SetSymbol("000001.sz");
+        // tradeInfo.InitalStock();
 
-        var stockInfo2=this.$refs.stockinfo2;
-        stockInfo2.SetJSStock(this.JSStock); //绑定一个外部的stock ( 五档买卖盘和分笔数据可以共享这一个股票数据类)
-        stockInfo2.SetChangeSymbolCallback(this.OnChangeSymbol); //股票切换以后通知
-        stockInfo2.SetSymbol("600000.sh");
-        stockInfo2.InitalStock();
+        // var stockInfo2=this.$refs.stockinfo2;
+        // stockInfo2.SetJSStock(this.JSStock); //绑定一个外部的stock ( 五档买卖盘和分笔数据可以共享这一个股票数据类)
+        // stockInfo2.SetChangeSymbolCallback(this.OnChangeSymbol); //股票切换以后通知
+        // stockInfo2.SetSymbol("600000.sh");
+        // stockInfo2.InitalStock();
 
         this.JSStock.ReqeustData();
 
-        var stockInfo3=this.$refs.stockinfo3;
+        // var stockInfo3=this.$refs.stockinfo3;
 
         var self=this;
         window.onresize = function() { self.OnSize() }
@@ -77,9 +77,9 @@ export default
         OnSize:function()
         {
             this.$refs.stockinfo.OnSize();
-            this.$refs.stockinfo2.OnSize();
-            this.$refs.stockinfo3.OnSize();
-            this.$refs.stocktradeinfo.OnSize();
+            // this.$refs.stockinfo2.OnSize();
+            // this.$refs.stockinfo3.OnSize();
+            // this.$refs.stocktradeinfo.OnSize();
         }
     }
 }

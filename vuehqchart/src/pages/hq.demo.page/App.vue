@@ -1,14 +1,17 @@
 <template>
     <div id="app2" >
-        <p style="text-align:center"> 个股行情整体测试页面</p>
-        <a v-on:click="OnChangeSymbol('002230.sz')">科大讯飞</a>
-        <a v-on:click="OnChangeSymbol('600016.sh')">民生银行</a>
-        <a v-on:click="OnChangeSymbol('000001.sh')">上证指数</a>
         <div class='divstockfull'>
             <StockFull ref='stockfull' DefaultPeriod='日线' :DefaultSymbol=this.Symbol 
                 :KLineOption=this.KLineOption :MinuteOption=this.MinuteOption>
             </StockFull>
         </div>
+
+        <p style="text-align:center">个股行情整体测试页面v1.0 代码地址: https://github.com/jones2000/HQChart</p>
+        <!--
+        <a v-on:click="OnChangeSymbol('002230.sz')">科大讯飞</a>
+        <a v-on:click="OnChangeSymbol('600016.sh')">民生银行</a>
+        <a v-on:click="OnChangeSymbol('000001.sh')">上证指数</a>
+        !-->
     </div>
 </template>
 
@@ -115,7 +118,7 @@ export default
 .divstockfull
 {
     height:800px;
-    margin: 10px;   
+    margin: 5px;   
     border:4px solid #FFA500; 
 }
   

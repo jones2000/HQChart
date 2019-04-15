@@ -693,7 +693,9 @@ export default {
       if (flowDay5) this.RecvCapticalData(flowDay5, 2);
       if (flowDay10) this.RecvCapticalData(flowDay10, 3);
 
-      this.CurrentDayCapitaData = this.CapitalFlow.Data[0];
+      this.CurrentDayCapitaData = this.CapitalFlow.Data[
+        this.CapitalFlowDayIndex
+      ];
 
       console.log(
         "[StockTradeInfo::UpdateCapitalFlow]",
@@ -716,29 +718,40 @@ export default {
 
       for (let i = 0; i < data.length; i++) {
         var rate = Number(Math.abs(data[i].Value) / maxValue).toFixed(4);
-        var rateHeight = rate * 48;
+        var contentHeight = ($(".charWrap").height() - 1) / 2;
+        var rateHeight = rate * contentHeight;
+        var contentPos = contentHeight + 1;
         var direction = data[i].Direction;
+        var labelHeight = 18;
         if (direction == "upper") {
           chartStyleData[i] = {
-            Content: { bottom: "47px", top: "auto" },
+            Content: { bottom: contentPos + "px", top: "auto" },
             Bar: {
               bottom: "0",
               top: "auto",
               height: rateHeight + "px",
               backgroundColor: "#ee1515"
             },
-            Label: { bottom: "-18px", top: "auto", color: "#ee1515" }
+            Label: {
+              bottom: "-" + labelHeight + "px",
+              top: "auto",
+              color: "#ee1515"
+            }
           };
         } else if (direction == "below") {
           chartStyleData[i] = {
-            Content: { bottom: "auto", top: "47px" },
+            Content: { bottom: "auto", top: contentPos + "px" },
             Bar: {
               bottom: "auto",
               top: "0",
               height: rateHeight + "px",
               backgroundColor: "#199e00"
             },
-            Label: { bottom: "auto", top: "-18px", color: "#199e00" }
+            Label: {
+              bottom: "auto",
+              top: "-" + labelHeight + "px",
+              color: "#199e00"
+            }
           };
         }
       }
@@ -760,7 +773,6 @@ export default {
       var bigNetValue = bigIn - bigOut;
       var midNetValue = midIn - midOut;
       var smallNetValue = smallIn - smallOut;
-
 
       var mainFlowData = this.CapitalFlow.Data[index].MainFlowData;
       mainFlowData.In.value = mainIn;
@@ -905,8 +917,7 @@ export default {
     //移动显示
     ShowShortTerm: function(isShow) {
       if (isShow) {
-        if (!this.ShortTerm.JSStock)
-          this.ShortTerm.JSStock = JSCommonStock.JSStock.GetShortTerm();
+        if (!this.ShortTerm.JSStock) this.ShortTerm.JSStock = JSCommonStock.JSStock.GetShortTerm();
         var shortTerm = this.ShortTerm.JSStock;
         shortTerm.UpdateUICallback = this.UpdateShortTerm;
         shortTerm.IsAutoUpdate = true;

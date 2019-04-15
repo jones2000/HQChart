@@ -2086,7 +2086,7 @@ JSIndexScript.prototype.UpDownAnalyze=function()
 {
     let data=
     {
-        Name: '涨跌趋势', Description: '涨跌趋势', IsMainIndex: false,FloatPrecision:0, Condition: { Period:[CONDITION_PERIOD.MINUTE_ID] },
+        Name: '涨跌趋势', Description: '涨跌趋势', IsMainIndex: false,FloatPrecision:0, Condition: { Period:[CONDITION_PERIOD.MINUTE_ID,CONDITION_PERIOD.KLINE_DAY_ID] },
         Args: [],
         Script: //脚本
 "上涨家数:UPCOUNT('CNA.CI'),COLORRED;\n\
@@ -34331,7 +34331,6 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else if (this.DataType===HQ_DATA_TYPE.KLINE_ID && this.Period===0) //K线图 日线
         {
-            /*
             console.log('[JSSymbolData::GetIndexIncreaseData] K day Get url=' , self.KLineApiUrl);
             $.ajax({
                 url: self.KLineApiUrl,
@@ -34354,13 +34353,40 @@ function JSSymbolData(ast,option,jsExecute)
                     self.RecvError(request);
                 }
             });
-            */
         }
     }
 
     this.RecvHistoryIncreaseData=function(data,key)
     {
         console.log('[JSSymbolData::RecvHistoryIncreaseData] recv data' , data);
+
+        var upData=[],downData=[];
+        for(var i in data.data)
+        {
+            var item=data.data[i];
+            let upItem=new SingleData();
+            let downItem=new SingleData();
+            upItem.Date=item[0];
+            upItem.Value=item[8];
+            upData[i]=upItem;
+            downItem.Date=item[0];
+            downItem.Value=item[9];
+            downData[i]=downItem;
+        }
+
+        var aryFixedData=this.Data.GetFittingData(upData);
+        var bindData=new ChartData();
+        bindData.Data=aryFixedData; 
+        bindData.Period=this.Period;    //只支持日线
+        var data=bindData.GetValue();
+        this.ExtendData.set(key.UpKey,data);
+
+        aryFixedData=this.Data.GetFittingData(downData);
+        bindData=new ChartData();
+        bindData.Data=aryFixedData; 
+        bindData.Period=this.Period;    //只支持日线
+        data=bindData.GetValue();
+        this.ExtendData.set(key.DownKey,data);
     }
 
     this.RecvMinuteIncreaseData=function(data,key)

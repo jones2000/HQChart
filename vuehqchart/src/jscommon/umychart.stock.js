@@ -151,6 +151,32 @@ function DDEData()
     }
 }
 
+//股票属性事件,属性
+function EventData() 
+{
+    this.IsMargin=false;        //是否是融资融券标题
+    this.IsHK=false;            //是否有港股
+    this.IsSHHK=false;          //沪港通
+    this.STType=0;              //St标识（0：正常股票，1：st股票，2：*st股票）
+    this.HK;                    //港股信息 { Symbol:代码 Name:名称 }
+
+    this.SetData = function (data) 
+    {
+        if (!data.events) return;
+
+        if (!isNaN(data.events.margin)) this.IsMargin = data.events.margin == 1;
+        if (!isNaN(data.events.hk)) this.IsHK = data.events.hk == 1;
+        if (!isNaN(data.events.shhk)) this.IsSHHK = data.events.shhk == 1;
+        if (!isNaN(data.events.st)) this.STType = data.events.st;
+
+        if (this.IsHK && data.events.hksymbol && data.events.hkname)
+        {
+            this.HK={ Symbol:data.events.hksymbol, Name:data.events.hkname };
+        }
+    }
+
+}
+
 
 //是否是指数代码(是一个单独的类，从umychart.js复制来的)
 function IsIndexSymbol(symbol)
@@ -371,6 +397,18 @@ function StockData(symbol)
         return data;
     }
 
+    this.Event; //事件 属性
+    this.GetEvent = function (tagID, field) 
+    {
+        if (!this.Event) 
+        {
+            this.EventTagID.add(tagID);
+            return null;
+        }
+
+        return this.Event;
+    }
+
     this.TagID=new Set();       //绑定的控件id
     this.HeatTagID=new Set();   //需要热度的控件id
     this.BuySellTagID=new Set();//买卖盘的控件id
@@ -386,6 +424,7 @@ function StockData(symbol)
     this.DDE3ID = new Set();
     this.DDE5ID = new Set();
     this.DDE10ID = new Set();
+    this.EventTagID = new Set();        //股票事件/属性
 
     this.AttachTagID=function(id)
     {
@@ -599,6 +638,14 @@ function StockData(symbol)
         return data;
     }
 
+    this.SetEventData = function (data) 
+    {
+        if (!data.events) return;
+
+        this.Event = new EventData();
+        this.Event.SetData(data);
+    }
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -664,6 +711,12 @@ var STOCK_FIELD_NAME=
     DDE5:73,
     DDE10:74,
 
+    //股票属性|事件 包含
+    //      融资融券标,
+    //      港股,
+    //      沪港通,
+    //      St标识 0：正常股票，1：st股票，2：*st股票
+    EVENTS: 75,   
 
     INDEXTOP:100,
     WEEK:101,
@@ -767,6 +820,9 @@ function StockRead(stock,tagID)
             case STOCK_FIELD_NAME.DDE10:
                 return data.GetDDE(this.TagID, field);
 
+            //事件/属性
+            case STOCK_FIELD_NAME.EVENTS:
+                return data.GetEvent(this.TagID, field);
             default:
                 return null;
         }
@@ -847,6 +903,8 @@ var RECV_DATA_TYPE=
     BLOCK_MEMBER_DATA: 13,  //板块成员
     SHORT_TERM_DATA:14,      //短线精灵
 
+    
+
     //资金流
     CAPITAL_FLOW_DAY_DATA:23,
     CAPITAL_FLOW_DAY3_DATA:24,
@@ -860,6 +918,7 @@ var RECV_DATA_TYPE=
     DDE_DAY10_DATA:30,
 
     DEAL_DAY_DATA:105,       //分笔数据
+    EVENT_DATA:106          //事件 属性数据
 }
 
 function JSStock()
@@ -924,6 +983,7 @@ function JSStock()
         var aryFinance=new Array();     //财务数据
         var aryFlow = [], aryFlow3 = [], aryFlow5 = [], aryFlow10=[];
         var aryDDE=[], aryDDE3=[], aryDDE5=[], aryDDE10=[];
+        var aryEvent = new Array();
 
         for(var item of this.MapStock)
         {
@@ -960,6 +1020,9 @@ function JSStock()
             
             if (item[1].FinanceTagID.size>0)
                 aryFinance.push(item[0]);
+
+            if (item[1].Event == null && item[1].EventTagID.size > 0)
+                aryEvent.push(item[0]);
         }
 
         if (aryBuySell.length>0) this.RequestBuySellData(aryBuySell);
@@ -979,6 +1042,9 @@ function JSStock()
         if (aryDDE3.length > 0) this.RequestSubDocumentData(aryDDE3, 'dde3');
         if (aryDDE5.length > 0) this.RequestSubDocumentData(aryDDE5, 'dde5');
         if (aryDDE10.length > 0) this.RequestSubDocumentData(aryDDE10, 'dde10');
+        
+        //属性|事件
+        if (aryEvent.length > 0) this.RequestEventData(aryEvent);
 
         this.ReqeustAllSortData();    //成分排序
     }
@@ -1365,6 +1431,33 @@ function JSStock()
         });
     }
 
+    this.RequestEventData = function (arySymbol) {
+        var self = this;
+
+        $.ajax({
+            url: this.RealtimeApiUrl,
+            data: 
+            {
+                "field": 
+                [
+                    "symbol",
+                    "events.margin","events.shhk","events.hk","events.st",'events.hksymbol','events.hkname'
+                ],
+                "symbol": arySymbol,
+                "start": 0,
+                "end": 50
+            },
+            type: 'POST',
+            dataType: "json",
+            success: function (data) {
+                self.RecvData(data, RECV_DATA_TYPE.EVENT_DATA);
+            },
+            error: function (request) {
+                self.RecvError(request, RECV_DATA_TYPE.EVENT_DATA);
+            }
+        });
+    }
+
     this.RecvError=function(request,datatype,requestData)
     {
         console.log("RecvError: datatype="+ datatype.toString());
@@ -1412,6 +1505,9 @@ function JSStock()
             case RECV_DATA_TYPE.DDE_DAY5_DATA:
             case RECV_DATA_TYPE.DDE_DAY10_DATA:
                 mapTagData = this.RecvSubDocumentData(data, datatype);
+                break;
+            case RECV_DATA_TYPE.EVENT_DATA:
+                mapTagData = this.RecvEventData(data, datatype);
                 break;
         }
 
@@ -1736,6 +1832,30 @@ function JSStock()
                     {
                         mapTagData.set(id, new Array(stockData.Symbol));
                     }
+                }
+            }
+        }
+
+        return mapTagData;
+    }
+
+    this.RecvEventData = function (data, datatype) 
+    {
+        var mapTagData = new Map();   //key=界面元素id, value=更新的股票列表
+
+        for (var i in data.stock) 
+        {
+            var item = data.stock[i];
+            var stockData = this.MapStock.get(item.symbol);
+            if (!stockData) continue;
+
+            stockData.SetEventData(item);
+            if (stockData.EventTagID.size > 0) 
+            {
+                for (var id of stockData.EventTagID) 
+                {
+                    if (mapTagData.has(id)) mapTagData.get(id).push(stockData.Symbol);
+                    else mapTagData.set(id, new Array(stockData.Symbol));
                 }
             }
         }

@@ -1,7 +1,25 @@
 <template>
     <div id="stockinfo" class="topWrap clearfix" ref='stockinfo'>
         <div class="stockInfo" :style='CellStyle[0]'>
-            <p class="stockName">{{StockData.Name.Text}}</p>
+            <p class="stockName">
+                <span class='nameText'>{{StockData.Name.Text}}</span>
+                <span title='融资融券标的'>
+                    <svg class="icon iconStockinfo" aria-hidden="true" v-show='StockData.IsMargin'>
+                        <use xlink:href="#icon-margin"></use>
+                    </svg>
+                </span>
+                <span title='沪港通标的'>
+                    <svg class="icon iconStockinfo" aria-hidden="true" v-show='StockData.IsSHHK'>
+                        <use xlink:href="#icon-shhk"></use>
+                    </svg>
+                </span>
+                <span title='AH股'>
+                    <svg class="icon iconStockinfo" aria-hidden="true" v-show='StockData.IsHK'>
+                        <use xlink:href="#icon-hk"></use>
+                    </svg>
+                </span>
+                <!-- <i class='iconfont icon-margin' v-show='StockData.IsMargin'></i><i class='iconfont icon-shhk' v-show='StockData.IsSHHK'></i><i class='iconfont icon-hk' v-show='StockData.IsHK'></i> -->
+            </p>
             <div class="codeInfo">
                 <span class="code">{{Symbol}}</span>
                 <button class="searchBtn" v-if="IsShow.IconStyle" @click='GoSearch'>股票查询</button>
@@ -64,6 +82,8 @@
     import JSCommon from '../umychart.vue/umychart.vue.js'
     import JSCommonStock from '../umychart.vue/umychart.stock.vue.js'
     import SearchSymbol from './searchsymbol.vue'
+    import '../umychart.resource/font/fontSymbol.js'
+    import '../umychart.resource/font/fontSymbol.css'
 
     function DefaultData() {
 
@@ -93,7 +113,11 @@
             Down: { Text: '' }, //上涨
             Up: { Text: '' },   //下跌
             Unchanged: { Text: '' },   //平盘
-            Stop: { Text: '' }         //停牌
+            Stop: { Text: '' },         //停牌
+
+            IsMargin:false,     //融资融券
+            IsSHHK:false,       //沪港通
+            IsHK:false,         //港股
         };
 
         return data;
@@ -195,13 +219,7 @@
             GoSearch() {
                 this.IsShow.SearchSymbol = true;
                 this.IsShow.IconStyle = false;
-                console.log(this.$refs.mySymbol);
                 this.$refs.mySymbol.deletSymbel();
-                  this.$nextTick(function () {
-                    //DOM 更新了
-                    this.$refs.mySymbol.focus()
-                })
-                
             },
             
             CancelSearch() {
@@ -234,7 +252,8 @@
                         JSCommonStock.STOCK_FIELD_NAME.FINANCE_EPS,
                         JSCommonStock.STOCK_FIELD_NAME.ROE,
                         JSCommonStock.STOCK_FIELD_NAME.PB,
-                        JSCommonStock.STOCK_FIELD_NAME.AMPLITUDE
+                        JSCommonStock.STOCK_FIELD_NAME.AMPLITUDE,
+                        JSCommonStock.STOCK_FIELD_NAME.EVENTS
                     ];
 
                 const indexField =
@@ -315,20 +334,24 @@
                 data.Amount.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Amount.Value, 2);
                 data.Vol.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Vol.Value, 2);
 
-                if (isIndex) {
+                if (isIndex) 
+                {
                     //指数才有
                     data.Down = { Text: '' }; //上涨
                     data.Up = { Text: '' };   //下跌
                     data.Unchanged = { Text: '' }; //平盘
                     data.Stop = { Text: '' };
                     let indexTop = read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.INDEXTOP);
-                    if (indexTop) {
+                    if (indexTop) 
+                    {
                         data.Down.Text = JSCommon.IFrameSplitOperator.FormatValueString(indexTop.Down, 0);
                         data.Up.Text = JSCommon.IFrameSplitOperator.FormatValueString(indexTop.Up, 0);
                         data.Unchanged.Text = JSCommon.IFrameSplitOperator.FormatValueString(indexTop.Unchanged, 0);
                         data.Stop.Text = JSCommon.IFrameSplitOperator.FormatValueString(indexTop.Stop, 0);
                     }
-                } else {
+                } 
+                else 
+                {
                     data.Excahngerate = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.EXCHANGE_RATE), Color: '', Text: '--' };
                     data.Pe = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.PE), Text: '--' };
                     data.MarketV = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.MARKET_VALUE), Text: '--' };
@@ -350,6 +373,17 @@
                     data.ScrollEPS.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.ScrollEPS.Value, 2);
                     data.Pb.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Pb.Value, 2);
                     data.Amplitude.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Amplitude.Value, 2);
+
+                    let events=read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.EVENTS);
+                    if (events)
+                    {
+                        console.log('[StockInfo::UpdateData] events data ', this.Symbol, events);
+                        data.IsMargin=events.IsMargin; ////是否是融资融券标题
+                        data.IsHK=events.IsHK;  //是否有港股
+                        data.IsSHHK=events.IsSHHK;  //沪港通
+                        
+
+                    }
                 }
 
                 this.StockData = data;
@@ -455,11 +489,14 @@
 
     * {
         font: 14px/normal "Microsoft Yahei";
-        color: #666;
         padding: 0;
         margin: 0;
     }
+    html,body {color: #666;}
 
+    
+
+    
     .PriceUp,
     .PriceUp>span {
         color: #ee1515 !important;
@@ -522,8 +559,8 @@
 
             .cancelBtn {
                 position: absolute;
-                width: 70px;
-                left: 120px;
+                width: 55px;
+                left: 132px;
                 top: 0px;
                 height: 25px;
                 font-size: 14px;
@@ -565,40 +602,22 @@
                 } */
             }
 
-            /* .symbolList {
-                position: absolute;
-                top: 24px;
-                left: 0;
-                width: 169px;
-                border: 1px solid #999;
-                background-color: #fff;
-
-                >li {
-                    padding: 0 8px;
-                    line-height: 24px;
-                    cursor: pointer;
-
-                    .symbol {
-                        margin-right: 10px;
-                    }
-                }
-
-                >li:hover {
-                    background-color: #217cd9;
-
-                    >span {
-                        color: #fff;
-                    }
-                }
-            } */
+           
         }
     }
 
     .stockInfo .stockName {
-        font-size: 20px;
-        line-height: 1;
+        height: 24px;
         color: #333;
-        margin-bottom: 4px;
+        .nameText{
+            display:inline-block;
+            font-size: 20px;
+            line-height:1;
+            padding-bottom: 2px;
+        }
+        .iconStockinfo {
+            font-size: 22px;
+        }
     }
 
     .priceInfo .priceCurrentNum {

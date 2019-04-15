@@ -4,7 +4,12 @@
 
   <template>
   <div class="symbolWrap">
-    <div class="inputBox" v-on:keyup.38="keyUp" v-on:keyup.40="keyDown" v-on:keyup.enter="keyEnter">
+    <div
+      class="inputBox"
+      v-on:keyup.38="keyUp"
+      v-on:keyup.40="keyDown"
+      v-on:keyup.enter="keyEnter"
+    >
       <input
         class="myInput"
         v-model="Symbol"
@@ -14,16 +19,26 @@
         ref="inputSymbol"
       >
       <span class="iconBox">
-        <i class="el-icon-close myIcon" v-show="Symbol != '' " @click="deletSymbel()"></i>
+        <i
+          class="el-icon-close myIcon"
+          v-show="Symbol != '' "
+          @click="deletSymbel()"
+        ></i>
       </span>
-      <span v-show="searchKeywords" class="searchKeywords">
+      <span
+        v-show="searchKeywords"
+        class="searchKeywords"
+      >
         搜
         <span class="keyWords">
           "<span class="widthSure">{{Symbol}}</span>"
         </span>
         相关股票
       </span>
-      <div class="stockList" v-show="SpellListEle">
+      <div
+        class="stockList"
+        v-show="SpellListEle"
+      >
         <p
           class="item"
           v-for="(item,index) in SpellStockData"
@@ -175,7 +190,7 @@ export default {
 }
 
 .myInput {
-  width: 125px;
+  width: 137px;
   height: 21px;
   line-height: 21px;
   color: #999;
@@ -215,10 +230,10 @@ export default {
 .iconBox {
   display: inline-block;
   background: #fff;
-  width: 16px;
+  width: 17px;
   height: 21px;
   position: absolute;
-  left: 120px;
+  left: 132px;
   top: 11px;
 }
 .myIcon {
