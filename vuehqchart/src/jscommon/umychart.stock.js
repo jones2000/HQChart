@@ -1925,7 +1925,8 @@ function SearchStock(callback)
             {
                 "input":input,
                 "start":start,
-                "end":end
+                "end":end,
+                'type':type
             },
             type:"post",
             dataType: "json",

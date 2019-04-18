@@ -4,12 +4,7 @@
 
   <template>
   <div class="symbolWrap">
-    <div
-      class="inputBox"
-      v-on:keyup.38="keyUp"
-      v-on:keyup.40="keyDown"
-      v-on:keyup.enter="keyEnter"
-    >
+    <div class="inputBox" v-on:keyup.38="keyUp" v-on:keyup.40="keyDown" v-on:keyup.enter="keyEnter">
       <input
         class="myInput"
         v-model="Symbol"
@@ -18,31 +13,22 @@
         @keyup="SpellSock()"
         ref="inputSymbol"
       >
-      <span class="iconBox">
-        <i
-          class="el-icon-close myIcon"
-          v-show="Symbol != '' "
-          @click="deletSymbel()"
-        ></i>
+      <span class="iconBox" v-show="Symbol != '' ">
+        <i class="el-icon-close myIcon" @click="deletSymbel()"></i>
       </span>
-      <span
-        v-show="searchKeywords"
-        class="searchKeywords"
-      >
+      <span v-show="searchKeywords" class="searchKeywords">
         搜
         <span class="keyWords">
-          "<span class="widthSure">{{Symbol}}</span>"
+          "
+          <span class="widthSure">{{Symbol}}</span>"
         </span>
         相关股票
       </span>
-      <div
-        class="stockList"
-        v-show="SpellListEle"
-      >
+      <div class="stockList" v-show="SpellListEle">
         <p
           class="item"
           v-for="(item,index) in SpellStockData"
-          @click="hideSpellList(item.Symbol)"
+          @click="hideSpellList(item)"
           @mousemove="mouseMove(index)"
           :key="index"
           :class="setSelect(index)"
@@ -146,7 +132,7 @@ export default {
             this.SpellCallback
           );
           var symbol = this.Symbol;
-          this.SearchStock.Search(symbol, 0);
+          this.SearchStock.Search(symbol, 2 | 4); //支持股票+指数
         }
         this.isQuery = true;
       }
@@ -158,11 +144,13 @@ export default {
       this.SpellListEle = true;
     },
 
-    hideSpellList(symbol) {
+    hideSpellList(stock) {
+      var symbol = stock.Symbol;
       this.SpellListEle = false;
       this.searchKeywords = false;
       this.Symbol = symbol;
       this.$emit("inputValue", this.Symbol);
+      this.$emit("inputStock", stock);
       this.isQuery = false;
     },
 
@@ -180,100 +168,104 @@ export default {
 </script>
 
 
-<style scoped>
-.select {
-  background-color: #fff3d8;
-}
-
+<style lang="scss">
 .symbolWrap {
-  padding: 10px;
+  position: relative;
+  .inputBox input {
+    padding-left: 10px;
+  }
+  .select {
+    background-color: #fff3d8;
+  }
+
+  .myInput {
+    width: 137px;
+    height: 21px;
+    line-height: 21px;
+    color: #999;
+    font-family: Microsoft YaHei;
+    border: 1px solid #999;
+  }
+
+  .iconBox {
+    display: inline-block;
+    position: absolute;
+    left: 122px;
+    top: 0;
+
+    .myIcon {
+      color: #999;
+      background: white;
+      height: 19px;
+      width: 14px;
+    }
+  }
+
+  .searchKeywords {
+    display: block;
+    border: 1px solid #999;
+    border-top: none;
+    background: #f0f0f0;
+    position: absolute;
+    width: 192px;
+    font-size: 14px;
+    height: 22px;
+    line-height: 22px;
+    padding-left: 5px;
+    z-index: 9999;
+    top: 23px;
+
+    .keyWords {
+      color: red;
+      display: inline-block;
+
+      .widthSure {
+        display: inline-block;
+        max-width: 95px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: top;
+      }
+    }
+  }
+
+  .searchKeywords:hover {
+    background: #999;
+  }
+
+  .stockList {
+    position: absolute;
+    width: 197px;
+    top: 45px;
+    left: 0;
+    max-height: 120px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #999;
+    border-top: 1px solid #ccc;
+    font-size: 14px;
+    font-family: Microsoft YaHei;
+    background-color: #fff;
+    padding-right: -17px;
+    z-index: 9999;
+
+    .item {
+      padding: 2px 0;
+      width: 100%;
+    }
+
+    .symbol {
+      padding-left: 15px;
+      padding-right: 25px;
+    }
+
+    .name {
+      padding-right: 10px;
+    }
+  }
 }
 
-.myInput {
-  width: 137px;
-  height: 21px;
-  line-height: 21px;
-  color: #999;
-  font-family: Microsoft YaHei;
-}
-
-.stockList {
-  position: absolute;
-  width: 197px;
-  top: 57px;
-  left: 10px;
-  max-height: 120px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  border: 1px solid #999;
-  border-top: 1px solid #ccc;
-  font-size: 14px;
-  font-family: Microsoft YaHei;
-  background-color: #fff;
-  padding-right: -17px;
-  z-index: 9999;
-}
-
-.symbol {
-  padding-left: 15px;
-  padding-right: 25px;
-}
-
-.name {
-  padding-right: 10px;
-}
-
-.item {
-  padding: 2px 0;
-  width: 100%;
-}
-.iconBox {
-  display: inline-block;
-  background: #fff;
-  width: 17px;
-  height: 21px;
-  position: absolute;
-  left: 132px;
-  top: 11px;
-}
-.myIcon {
-  position: absolute;
-  left: 2px;
-  top: 4px;
-  color: #999;
-}
-
-.searchKeywords {
-  display: block;
-  border: 1px solid #999;
-  border-top: none;
-  background: #f0f0f0;
-  position: absolute;
-  width: 192px;
-  font-size: 14px;
-  height: 22px;
-  line-height: 22px;
-  padding-left: 5px;
-  z-index: 9999;
-  top: 35px;
-}
-
-.searchKeywords:hover {
-  background: #999;
-}
-
-.keyWords {
-  color: red;
-  display: inline-block;
-}
-.widthSure {
-  display: inline-block;
-  max-width: 95px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: top;
-}
 .el-icon-close:before {
   font-size: 1px;
 }

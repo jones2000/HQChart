@@ -3,29 +3,26 @@
         <div class="stockInfo" :style='CellStyle[0]'>
             <p class="stockName">
                 <span class='nameText'>{{StockData.Name.Text}}</span>
-                <span title='融资融券标的'>
-                    <svg class="icon iconStockinfo" aria-hidden="true" v-show='StockData.IsMargin'>
+                <span title='融资融券标的' v-if='StockData.IsMargin'>
+                    <svg class="icon iconStockinfo" aria-hidden="true">
                         <use xlink:href="#icon-margin"></use>
                     </svg>
                 </span>
-                <span title='沪港通标的'>
-                    <svg class="icon iconStockinfo" aria-hidden="true" v-show='StockData.IsSHHK'>
+                <span title='沪港通标的' v-if='StockData.IsSHHK'>
+                    <svg class="icon iconStockinfo" aria-hidden="true">
                         <use xlink:href="#icon-shhk"></use>
                     </svg>
                 </span>
-                <span title='AH股'>
-                    <svg class="icon iconStockinfo" aria-hidden="true" v-show='StockData.IsHK'>
+                <span :title='"AH股\n港股："+StockData.HK.Symbol' v-if='StockData.IsHK'>
+                    <svg class="icon iconStockinfo" aria-hidden="true">
                         <use xlink:href="#icon-hk"></use>
                     </svg>
                 </span>
-                <!-- <i class='iconfont icon-margin' v-show='StockData.IsMargin'></i><i class='iconfont icon-shhk' v-show='StockData.IsSHHK'></i><i class='iconfont icon-hk' v-show='StockData.IsHK'></i> -->
             </p>
             <div class="codeInfo">
                 <span class="code">{{Symbol}}</span>
                 <button class="searchBtn" v-if="IsShow.IconStyle" @click='GoSearch'>股票查询</button>
                 <button class="cancelBtn" v-if="!IsShow.IconStyle" @click='CancelSearch'>取消</button>
-                <!-- <i class="iconfont icon-bianji icon-style" v-show="IsShow.IconStyle" @click='GoSearch'></i>
-                <i class="iconfont icon-bianji icon-change" v-show="!IsShow.IconStyle" @click='GoSearch'></i> -->
                 <div class="editSymbol" v-show='IsShow.SearchSymbol'>
                     <SearchSymbol ref="mySymbol" @inputValue='OnChangeSymbol'></SearchSymbol>
                 </div>
@@ -115,6 +112,7 @@
             Unchanged: { Text: '' },   //平盘
             Stop: { Text: '' },         //停牌
 
+            HK:{Symbol: "", Name: ""},
             IsMargin:false,     //融资融券
             IsSHHK:false,       //沪港通
             IsHK:false,         //港股
@@ -378,6 +376,7 @@
                     if (events)
                     {
                         console.log('[StockInfo::UpdateData] events data ', this.Symbol, events);
+                        data.HK = events.HK;
                         data.IsMargin=events.IsMargin; ////是否是融资融券标题
                         data.IsHK=events.IsHK;  //是否有港股
                         data.IsSHHK=events.IsSHHK;  //沪港通
@@ -523,6 +522,10 @@
             display: inline-block;
             position: relative;
         }
+        .stockInfo{
+            white-space: nowrap;
+            /* overflow: hidden; */
+        }
     }
 
     .topWrap .otherInfo div {
@@ -535,7 +538,7 @@
         .codeInfo {
             position: relative;
             height: 24px;
-            /* z-index: 333; */
+            z-index: 33333333;
 
             .code {
                 font-size: 18px;
@@ -559,10 +562,10 @@
 
             .cancelBtn {
                 position: absolute;
-                width: 55px;
-                left: 132px;
+                width: 59px;
+                left: 139px;
                 top: 0px;
-                height: 25px;
+                height: 23px;
                 font-size: 14px;
                 background: #2061a5;
                 border: none;
@@ -590,8 +593,9 @@
                 width: 169px;
                 box-sizing: border-box;
                 position: absolute;
-                top: -10px;
-                left: -19px;
+                top: 0px;
+                left: 0px;
+                z-index: 999999;
                 /* input {
                     border: none;
                     width: 67px;

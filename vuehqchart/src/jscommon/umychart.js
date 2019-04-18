@@ -369,6 +369,7 @@ function JSChart(divElement)
             for(var i in option.Frame)
             {
                 var item=option.Frame[i];
+                if (!chart.Frame.SubFrame[i]) continue;
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
             }

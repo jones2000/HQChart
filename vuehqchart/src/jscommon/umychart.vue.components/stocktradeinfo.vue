@@ -89,7 +89,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <td></td>
+                            <td>{{CurrentDayCapitaData.ValueUnit.Text}}</td>
                             <td>流入</td>
                             <td>流出</td>
                         </tr>
@@ -108,8 +108,11 @@
                     <div class="middleLine" ref='middleLine'></div>
                     <div class="bars">
                         <div class="realArea" v-for='(item,index) in CurrentDayCapitaData.ChartStyleData' :key='index'>
+                            <div class='label' :style='item.Label'>{{CurrentDayCapitaData.NetValueData[index].Text}}</div>
                             <div>
-                                <div class="content" :style='item.Content' :title='CurrentDayCapitaData.NetValueData[index].Text'><div class='bar' :style='item.Bar'></div></div>
+                                <div class="content" :style='item.Content'>
+                                    <div class='bar' :style='item.Bar'></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -302,7 +305,7 @@ class DefaultData {
         { TiTle: "净中单", Value: "", Text: "", Color: "", Direction: "" },
         { TiTle: "净小单", Value: "", Text: "", Color: "", Direction: "" }
       ],
-      ValueUnit: { Text: "" },
+      ValueUnit: { Text: "万元" },
       ChartStyleData: [
         {
           Content: { bottom: "", top: "" },
@@ -366,7 +369,7 @@ class DefaultData {
           { TiTle: "净中单", Value: "", Text: "", Color: "", Direction: "" },
           { TiTle: "净小单", Value: "", Text: "", Color: "", Direction: "" }
         ],
-        ValueUnit: { Text: "" },
+        ValueUnit: { Text: "万元" },
         ChartStyleData: [
           {
             Content: { bottom: "", top: "" },
@@ -717,12 +720,16 @@ export default {
       }
 
       for (let i = 0; i < data.length; i++) {
-        var rate = Number(Math.abs(data[i].Value) / maxValue).toFixed(4);
+        var absValue = Math.abs(data[i].Value);
+        var rate = Number(absValue / maxValue).toFixed(4);
         var contentHeight = ($(".charWrap").height() - 1) / 2;
-        var rateHeight = rate * contentHeight;
+        var rateHeight = Math.floor(rate * contentHeight);
+        if(rateHeight == 0 && absValue !== 0){
+            rateHeight = 2;
+        }
         var contentPos = contentHeight + 1;
         var direction = data[i].Direction;
-        var labelHeight = 18;
+        // var labelHeight = 18;
         if (direction == "upper") {
           chartStyleData[i] = {
             Content: { bottom: contentPos + "px", top: "auto" },
@@ -733,8 +740,8 @@ export default {
               backgroundColor: "#ee1515"
             },
             Label: {
-              bottom: "-" + labelHeight + "px",
-              top: "auto",
+              bottom: "auto",
+              top: contentHeight+"px",
               color: "#ee1515"
             }
           };
@@ -748,8 +755,8 @@ export default {
               backgroundColor: "#199e00"
             },
             Label: {
-              bottom: "auto",
-              top: "-" + labelHeight + "px",
+              bottom: contentHeight+"px",
+              top: "auto",
               color: "#199e00"
             }
           };
@@ -776,20 +783,11 @@ export default {
 
       var mainFlowData = this.CapitalFlow.Data[index].MainFlowData;
       mainFlowData.In.value = mainIn;
-      mainFlowData.In.Text = JSCommon.IFrameSplitOperator.FormatValueString(
-        mainIn,
-        2
-      );
+      mainFlowData.In.Text = this.FormatValueString(mainIn,true,0);
       mainFlowData.Out.value = mainOut;
-      mainFlowData.Out.Text = JSCommon.IFrameSplitOperator.FormatValueString(
-        mainOut,
-        2
-      );
+      mainFlowData.Out.Text = this.FormatValueString(mainOut,true,0);
       mainFlowData.NetFlow.value = mainNetIn;
-      mainFlowData.NetFlow.Text = JSCommon.IFrameSplitOperator.FormatValueString(
-        mainNetIn,
-        2
-      );
+      mainFlowData.NetFlow.Text = this.FormatValueString(mainNetIn,true,0);
       mainFlowData.NetFlow.Color = JSCommon.IFrameSplitOperator.FormatValueColor(
         mainNetIn,
         0
@@ -805,15 +803,9 @@ export default {
       for (let i = 0; i < orderAry.length; i++) {
         var orderItem = orderAry[i];
         OrderData[i].In.Value = orderItem.In;
-        OrderData[i].In.Text = JSCommon.IFrameSplitOperator.FormatValueString(
-          orderItem.In,
-          2
-        );
+        OrderData[i].In.Text = this.FormatValueString(orderItem.In,false,0);
         OrderData[i].Out.Value = orderItem.Out;
-        OrderData[i].Out.Text = JSCommon.IFrameSplitOperator.FormatValueString(
-          orderItem.Out,
-          2
-        );
+        OrderData[i].Out.Text = this.FormatValueString(orderItem.Out,false,0);
       }
 
       var netValue = [
@@ -826,10 +818,7 @@ export default {
       for (let j = 0; j < netValue.length; j++) {
         var netItem = netValue[j];
         netValueData[j].Value = netItem.Value;
-        netValueData[j].Text = JSCommon.IFrameSplitOperator.FormatValueString(
-          netItem.Value,
-          2
-        );
+        netValueData[j].Text = this.FormatValueString(netItem.Value,false,0);
         netValueData[j].Color = JSCommon.IFrameSplitOperator.FormatValueColor(
           netItem.Value,
           0
@@ -840,14 +829,18 @@ export default {
       var chartStyleData = this.CapitalFlow.Data[index].ChartStyleData;
       this.InitCapitalFlowChart(netValueData, chartStyleData);
 
-      this.CapitalFlow.Data[index] = {
-        MainFlowData: mainFlowData,
-        OrderData: OrderData,
-        NetValueData: netValueData,
-        ChartStyleData: chartStyleData
-      };
+      this.CapitalFlow.Data[index].MainFlowData = mainFlowData;
+      this.CapitalFlow.Data[index].OrderData = OrderData;
+      this.CapitalFlow.Data[index].NetValueData = netValueData;
+      this.CapitalFlow.Data[index].ChartStyleData = chartStyleData;
     },
-
+    FormatValueString:function(value,HasUnit,floatCount){
+        if(HasUnit){
+            return Number(value / 10000).toFixed(floatCount) + '万元';
+        }else{
+            return Number(value / 10000).toFixed(floatCount);
+        }
+    },
     //切换股票代码
     SetSymbol: function(symbol) {
       if (this.Symbol == symbol) return;
@@ -1154,6 +1147,15 @@ ul {
             flex-grow: 1;
             height: 100%;
             padding: 0 15px;
+            position: relative;
+            .label {
+                font-size: 12px;
+                height: 18px;
+                width: 100%;
+                position: absolute;
+                left:0;
+                text-align: center;
+            }
             > div {
               width: 100%;
               height: 100%;
@@ -1164,12 +1166,12 @@ ul {
                 width: 100%;
                 height: 46px;
                 bottom: 47px; /*上方*/
-                .bar,
-                .label {
+                .bar{
                   position: absolute;
                   left: 0;
                   display: inline-block;
                   width: 100%;
+                  font-size: 12px;
                 }
               }
             }
