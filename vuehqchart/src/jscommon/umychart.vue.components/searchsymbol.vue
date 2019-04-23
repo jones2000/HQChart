@@ -150,7 +150,7 @@ export default {
       this.searchKeywords = false;
       this.Symbol = symbol;
       this.$emit("inputValue", this.Symbol);
-      this.$emit("inputStock", stock);
+    //   this.$emit("inputStock", stock);
       this.isQuery = false;
     },
 
@@ -171,9 +171,6 @@ export default {
 <style lang="scss">
 .symbolWrap {
   position: relative;
-  .inputBox input {
-    padding-left: 10px;
-  }
   .select {
     background-color: #fff3d8;
   }

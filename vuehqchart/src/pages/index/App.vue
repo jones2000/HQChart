@@ -475,6 +475,7 @@
               }
           },
           showTools() {
+              console.log('[index page::画图工具]');
               if (this.JSEnvironment.HistoryChart != null) {
                   var chart = this.JSEnvironment.HistoryChart;
                   var frame = chart.JSChartContainer.Frame;

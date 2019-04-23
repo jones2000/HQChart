@@ -39,7 +39,9 @@
           </div>
           
         </div>
-
+        <div class="brushTool" v-if="DrawTool.IsShow">
+            <BrushTool @CurrentIcon = "CurrentIcon" @isShowBrushTool="isShowBrushTool"></BrushTool>
+        </div>   
         <!-- 走势图 和 K线图  !-->
         <div :id='ID' ref='divchart' style="width:100%;height:100%">
             <div class='minute' id="minute" ref="minute"  v-show="Minute.IsShow"></div>
@@ -65,6 +67,7 @@ import $ from 'jquery'
 import JSCommon from '../umychart.vue/umychart.vue.js'
 import '../../jscommon/umychart.resource/font/iconfont.css'
 import '../../jscommon/umychart.resource/css/tools.css'
+import BrushTool from './stockdrawtool.vue'
 
 function DefaultData()
 {
@@ -325,11 +328,11 @@ DefaultData.GetKLineToolbar=function()
 
     let mouseDragMenu=
     {
-        Text: '鼠标拖拽',
+        Text: '工具',
         Selected: [],
         Menu: 
         [
-            {Name:"禁止拖拽", Value:0}, {Name:"启动拖拽", Value:1}, {Name:"区间选择",Value:2}
+            {Name:"禁止拖拽", Value:0}, {Name:"启动拖拽", Value:1}, {Name:"区间选择",Value:2},{Name:"画图工具",Value:3}
         ],
         IsShow:true,
     };
@@ -360,7 +363,7 @@ export default
         'MinuteOption',
         'TradeInfoTabWidth',
     ],
-
+    components:{BrushTool},
     data()
     {
         let data=
@@ -406,6 +409,11 @@ export default
             Event:
             {
                 ChangePeriodEvent:null, //周期改变事件 function(name)
+            },
+
+            DrawTool:
+            {
+                IsShow:false,
             }
         }
 
@@ -907,7 +915,7 @@ export default
         //一级菜单
         OnClickToolBar:function(chartType,menu,index)
         {
-            console.log("[OnClickToolBarMenu] ",chartType,menu,index);
+            console.log("[OnClickToolBar] ",chartType,menu,index);
 
             if (chartType=='minute')
             {
@@ -921,7 +929,7 @@ export default
                         break;
                 }
 
-                console.log("[OnClickToolBarMenu] ",this.Minute.Toolbar.Selected);
+                console.log("[OnClickToolBar] ",this.Minute.Toolbar.Selected);
             }
             else if (chartType=='kline')
             {
@@ -951,7 +959,7 @@ export default
                     case '信息地雷':
                         this.UpdateKLineInfoMenu();
                         break;
-                    case '鼠标拖拽': 
+                    case '工具': 
                         this.UpdateMouseDragMenu();
                         break;
                 }
@@ -1004,12 +1012,34 @@ export default
                         if (secMenu.OnClick) secMenu.OnClick();
                         else this.KLine.JSChart.AddKLineInfo(secMenu.Name,true);
                         break;
-                    case '鼠标拖拽': 
-                        this.KLine.JSChart.JSChartContainer.DragMode=secMenu.Value;
+                    case '工具': 
+                        console.log('[StockKLine::OnClickToolBarMenu] click dragmode ',this.KLine.JSChart.JSChartContainer);
+                        if(secMenu.Value != 3)
+                        {
+                            this.KLine.JSChart.JSChartContainer.DragMode=secMenu.Value;
+                        }
+                        else
+                        { //画图工具
+                            console.log('[StockKLine::OnClickToolBarMenu] click draw tool');
+                            //获取到工具的名称：线段
+                            //this.KLine.JSChart.JSChartContainer.CreateChartDrawPicture('名称')
+                            this.DrawTool.IsShow = true;
+                        }
                         break;
                 }
                 this.KLine.Toolbar.Selected=-1;
             }
+        },
+
+        CurrentIcon(name){
+            this.KLine.JSChart.JSChartContainer.CreateChartDrawPicture(name);
+            if(name==='全部删除'){
+                 this.KLine.JSChart.JSChartContainer.ClearChartDrawPicture();
+            }
+        },
+
+        isShowBrushTool( brushTool){
+            this.DrawTool.IsShow = brushTool;
         }
 
     }
@@ -1040,6 +1070,12 @@ a
 {
     width:100%;
     height:100%;
+
+    .brushTool{
+        position: relative;
+        left:0;
+        bottom: 0;
+    }
 }
 
 .minute
