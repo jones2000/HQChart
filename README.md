@@ -70,4 +70,6 @@
   ![走势图2](/小程序行情模块用例/image/pch5hq.PNG)
    行情页面地址(v1.0） https://opensource.zealink.com/vuehqweb/hq.demo.page.html <br>
   ![历史高频数据查询图2](/小程序行情模块用例/image/pch5history.PNG)
-   查询页面地址 https://opensource.zealink.com/vuehqweb/queryContent.demo.page.html
+   查询页面地址 https://opensource.zealink.com/vuehqweb/queryContent.demo.page.html <br>
+   ![多周期图2](/小程序行情模块用例/image/pch5hq2.PNG)
+   多周期页面地址 https://opensource.zealink.com/vuehqweb/stockmultiperiod.demo.page.html <br>
