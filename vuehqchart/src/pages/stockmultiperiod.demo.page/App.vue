@@ -1,34 +1,27 @@
 <template>
     <div>
-        <p>多周期控件</p>
-        <div ref='divmulitperiod' style="height:800px; width:1000px;">
-            <StockMultiPeriod ref='stockMultiPeriod' :DefaultShowPeriod='ShowPeriod' DefaultSymbol='000001.sz'></StockMultiPeriod>
+        <div ref='divstockinfo'>
+            <StockInfo ref='stockinfo' IsShareStock=1 :DefaultSymbol='Symbol'></StockInfo>
+        </div>
+        <div ref='divmulitperiod'>
+            <StockMultiPeriod ref='stockMultiPeriod' :DefaultShowPeriod='ShowPeriod' :DefaultSymbol='Symbol'></StockMultiPeriod>
         </div>
     </div>
 </template>
 
 <script>
     import StockMultiPeriod from '../../jscommon/umychart.vue.components/stockmultiperiod.vue'
-    //股票周期枚举
-    var STOCK_PERIOD=
-    {
-        PERIOD_MINUTE_ID:0,         //走势图
-        PERIOD_KLINE_DAY_ID:1,      //日线
-        PERIOD_KLINE_WEEK_ID:2,     //周
-        PERIOD_KLINE_MONTH_ID:3,    //月
-        PERIOD_KLINE_YEAR_ID:4,     //年
-
-        PERIOD_KLINE_MINUTE_ID:5,   //1分钟
-        PERIOD_KLINE_5_MINUTE_ID:6,   //5分钟
-        PERIOD_KLINE_15_MINUTE_ID:7,   //15分钟
-        PERIOD_KLINE_30_MINUTE_ID:8,   //30分钟
-
-        //周期往后加
-
-    };
+    import StockInfo from '../../jscommon/umychart.vue.components/stockinfo.vue'
+    
     export default
     {
-        components:{StockMultiPeriod},
+        data(){
+            return {
+                Symbol:'000001.sz',
+                JSStock:null
+            };
+        },
+        components:{StockMultiPeriod,StockInfo},
 
         methods:
         {
@@ -38,31 +31,52 @@
                 var width = document.documentElement.clientWidth || document.body.clientWidth;
                 var height = document.documentElement.clientHeight || document.body.clientHeight;
                 var divMultiPeriod=this.$refs.divmulitperiod;
+                var divstockinfo = this.$refs.divstockinfo;
+                var stockinfoHeight = divstockinfo.offsetHeight;
                 divMultiPeriod.style.width=width+'px';
-                divMultiPeriod.style.height=(height-30)+'px';
+                divMultiPeriod.style.height=(height-stockinfoHeight)+'px';
 
                 var stockMultiPeriod = this.$refs.stockMultiPeriod;
                 stockMultiPeriod.OnSize();
+                var stockinfo = this.$refs.stockinfo;
+                stockinfo.OnSize();
+            },
+            OnChangeSymbol(symbol){
+                this.SetSymbol(symbol);
+            },
+            SetSymbol(symbol){
+                this.Symbol=symbol;
+                this.$refs.stockinfo.SetSymbol(symbol);
+                this.JSStock.ReqeustData();
+
+                this.$refs.stockMultiPeriod.ChangeSymbol(symbol);
             }
         },
 
         created()
         {
+            this.JSStock=StockInfo.JSCommonStock.JSStockInit(); //创建股票数据类
             this.ShowPeriod = [
-                                { Period:STOCK_PERIOD.PERIOD_MINUTE_ID},
+                                { Period:StockMultiPeriod.STOCK_PERIOD.PERIOD_MINUTE_ID},
 
-                                { Period:STOCK_PERIOD.PERIOD_KLINE_DAY_ID},
-                                { Period:STOCK_PERIOD.PERIOD_KLINE_WEEK_ID},
+                                { Period:StockMultiPeriod.STOCK_PERIOD.PERIOD_KLINE_DAY_ID},
+                                { Period:StockMultiPeriod.STOCK_PERIOD.PERIOD_KLINE_WEEK_ID},
                                 //{ Period:STOCK_PERIOD.PERIOD_KLINE_MONTH_ID },
                                // { Period:STOCK_PERIOD.PERIOD_KLINE_YEAR_ID },
 
                                 //{ Period:STOCK_PERIOD.PERIOD_KLINE_MINUTE_ID},
-                                { Period:STOCK_PERIOD.PERIOD_KLINE_5_MINUTE_ID},
+                                { Period:StockMultiPeriod.STOCK_PERIOD.PERIOD_KLINE_5_MINUTE_ID},
                                 //{ Period:STOCK_PERIOD.PERIOD_KLINE_15_MINUTE_ID},
                                // { Period:STOCK_PERIOD.PERIOD_KLINE_30_MINUTE_ID }
             ];
         },
         mounted(){
+            var stockInfo = this.$refs.stockinfo;
+            stockInfo.SetJSStock(this.JSStock);                         //绑定一个外部的stock ( 五档买卖盘和分笔数据可以共享这一个股票数据类)
+            stockInfo.SetChangeSymbolCallback(this.OnChangeSymbol);   //股票切换以后通知
+            stockInfo.SetSymbol(this.Symbol);
+            stockInfo.InitalStock();
+            this.JSStock.ReqeustData();
             var _this = this;
             this.OnSize();
             window.onresize = function () {

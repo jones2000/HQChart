@@ -136,7 +136,6 @@
         data() {
             return {
                 DataPicker: '',
-                // input1: "",
                 pickerOptions0: {
                     disabledDate(time) {
                         var dateValue = new Date('2018-01-01 00:00:00').getTime();
@@ -144,9 +143,6 @@
                     }
                 },
                 TableData:{Meta:[],Selected:[],SelectedReverse:[],Paginationed:[],CurrentPageData:[],CurentTables:[]}, //Meta:接口返回的数据，Selected：筛选后的数据，Paginationed：筛选后分页过的数据,CurrentPageData：当前页面所有表格的数据
-                AllPageData:[],
-                CuttingIndex: 6,
-                contentSpan: "", //span
                 loadingBody: false,
                 TabTexts:['成交明细','走势图'],
                 TabIndex:0,
@@ -159,7 +155,6 @@
                         //IsShowCorssCursorInfo:false,
                         HistoryMinute: {TradeDate:0}
                     }
-                    // DateFormat:''
                 },
                 IsShow:{
                     Search:false,
@@ -167,11 +162,8 @@
                     MinuteChart:false
                 },
                 ContentTopData:ContentTop.GetDeaultData(),
-                num: 0,
-                ulHeight: 0,
                 mainHight: 0,
                 OrderType: 1,
-                // QueryUrl:'',
                 RerverChecked: false,
                 Pagination:{
                     SingleTableCount:0,
@@ -187,7 +179,7 @@
                 return this.OptionData.DatePicker.replace(/-/g, "");
             },
             QueryUrl:function(){
-                return "http://beigo.oss-cn-beijing.aliyuncs.com/cache/dealday/day/" + this.DateFormat + "/" + this.OptionData.Symbol + '.json';
+                return "https://opensourcecache.zealink.com/cache/dealday/day/" + this.DateFormat + "/" + this.OptionData.Symbol + '.json';
             }
         },
         created() {
@@ -278,7 +270,6 @@
                 })
             },
             getQueryDataFn(data) {
-                // console.log(data,"返回数据2")
                 this.ContentTopData.Symbol = data.symbol;
                 this.ContentTopData.Name = data.name;
                 if(data.date){
@@ -438,44 +429,6 @@
                 var date = this.FormatDateString(val,false);
                 var stockChart = this.$refs.stockChart;
                 stockChart.ChangeTradeDate(Number(date));
-                // this.OptionData.MinuteOption.HistoryMinute.TradeDate = Number(date);
-            },
-            //将【接口Api】的改成可配置的
-            getApiURL(url) {
-                //将url的改成可配置的
-                let AISimilarStatementsConfig = {
-                    url: {
-                        release: "http://web4.umydata.com",
-                        deBug: "",
-                    },
-                    isRelease: true //本地测试false，生产环境true
-                }
-
-                let domain = "";
-                if (AISimilarStatementsConfig.isRelease)
-                    domain = AISimilarStatementsConfig.url.release;
-                else
-                    domain = AISimilarStatementsConfig.url.deBug;
-
-                if (url == undefined)
-                    return domain;
-                return domain + url;
-            },
-            getPrompt:function(data,fn){
-                var apiUrl = this.getApiURL("/API/StockSpell");
-                return $.ajax({
-                        url: apiUrl,
-                        type: 'POST',
-                        dataType: 'json',
-                        contentType: 'application/json;charset=UTF-8',
-                        data: JSON.stringify(data),
-                        success: function (res) {
-                            fn(res);
-                        },
-                        error: function (e) {
-                            console.log(e);
-                        }
-                    })
             },
             searchSymbol(symbol) {
                 this.OptionData.Symbol = symbol;
@@ -767,15 +720,6 @@
             }
         }
 
-        .el-table {
-            td,th{
-                height: 30px;
-            }
-            td,
-            th.is-leaf {
-                border-bottom: none !important;
-            }
-        }
 
         #paginationWrap {
             display: flex;

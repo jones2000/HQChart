@@ -227,6 +227,10 @@ function StockData(symbol)
     this.IndexTop;  //涨跌家数
     this.Week;      //周涨幅
 
+    this.MinuteAmplitude = {};  //1,3,5,10,15, 振幅
+    this.RiseFallSpeed = {};    //1,3,5,10,15 分钟涨速
+    this.MAmount={};       //1,3,5,10,15 分钟成交量
+
     this.Heat;      //热度
     //获取热度数据,不要直接使用变量获取
     this.GetHeatData=function(tagID)
@@ -646,6 +650,62 @@ function StockData(symbol)
         this.Event.SetData(data);
     }
 
+    //所有数据
+    this.SetData = function (data) 
+    {
+        if (data.name) this.Name = data.name;
+        if (!isNaN(data.yclose)) this.YClose = data.yclose;
+        if (!isNaN(data.price)) this.Price = data.price;
+        if (!isNaN(data.high)) this.High = data.high;
+        if (!isNaN(data.low)) this.Low = data.low;
+        if (!isNaN(data.vol)) this.Vol = data.vol;
+        if (!isNaN(data.amount)) this.Amount = data.amount;
+        if (!isNaN(data.date)) this.Date = data.date;
+        if (!isNaN(data.time)) this.Time = data.time;
+        if (!isNaN(data.increase)) this.Increase = data.increase;
+
+        if (!isNaN(data.marketvalue)) this.MarketValue = data.marketvalue;           //总市值
+        if (!isNaN(data.flowmarketvalue)) this.FlowMarketValue = data.flowmarketvalue;   //流通市值
+        if (!isNaN(data.bookrate)) this.Bookrate = data.bookrate;                 //委比
+        if (!isNaN(data.bookdiffer)) this.Bookdiffer = data.bookdiffer;            //委差
+        if (!isNaN(data.pe)) this.PE = data.pe;
+        if (!isNaN(data.pb)) this.PB = data.pb;
+
+        if (data.finance) this.SetFinanceData(data);
+        if (data.finance) this.SetFinanceDetailData(data);
+
+        if (data.mamplitude) 
+        {
+            if (!isNaN(data.mamplitude[1])) this.MinuteAmplitude.M1 = data.mamplitude[1];
+            if (!isNaN(data.mamplitude[3])) this.MinuteAmplitude.M3 = data.mamplitude[3];
+            if (!isNaN(data.mamplitude[5])) this.MinuteAmplitude.M5 = data.mamplitude[5];
+            if (!isNaN(data.mamplitude[10])) this.MinuteAmplitude.M10 = data.mamplitude[10];
+            if (!isNaN(data.mamplitude[15])) this.MinuteAmplitude.M15 = data.mamplitude[15];
+        }
+
+        if (data.risefallspeed) 
+        {
+            if (!isNaN(data.risefallspeed[1])) this.RiseFallSpeed.M1 = data.risefallspeed[1];
+            if (!isNaN(data.risefallspeed[3])) this.RiseFallSpeed.M5 = data.risefallspeed[3];
+            if (!isNaN(data.risefallspeed[5])) this.RiseFallSpeed.M5 = data.risefallspeed[5];
+            if (!isNaN(data.risefallspeed[10])) this.RiseFallSpeed.M10 = data.risefallspeed[10];
+            if (!isNaN(data.risefallspeed[15])) this.RiseFallSpeed.M10 = data.risefallspeed[15];
+        }
+
+        if (data.mamount) 
+        {
+            if (!isNaN(data.mamount[1])) this.MAmount.M1 = data.mamount[1];
+            if (!isNaN(data.mamount[3])) this.MAmount.M5 = data.mamount[3];
+            if (!isNaN(data.mamount[5])) this.MAmount.M5 = data.mamount[5];
+            if (!isNaN(data.mamount[10])) this.MAmount.M10 = data.mamount[10];
+            if (!isNaN(data.mamount[15])) this.MAmount.M10 = data.mamount[15];
+        }
+
+        //if (data.pledge) this.SetPledgeData(data);
+        //if (data.year) this.SetYearData(data);
+
+    }
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -702,6 +762,27 @@ var STOCK_FIELD_NAME=
 
     FINANCE_BENFORD:37, //财务粉饰
 
+    //1，3，5 ，10，15 分钟涨速
+    RISEFALLSPEED_1: 38,
+    RISEFALLSPEED_3: 39,
+    RISEFALLSPEED_5: 40,
+    RISEFALLSPEED_10: 41,
+    RISEFALLSPEED_15: 42,
+
+    //1，3，5 ，10，15 振幅
+    MINUTE_AMPLITUDE_1: 43,
+    MINUTE_AMPLITUDE_3: 44,
+    MINUTE_AMPLITUDE_5: 45,
+    MINUTE_AMPLITUDE_10: 46,
+    MINUTE_AMPLITUDE_15: 47,
+
+    //1，3，5 ，10，15 分钟 成交金额
+    MINUTE_AMOUNT_1: 48,
+    MINUTE_AMOUNT_3: 49,
+    MINUTE_AMOUNT_5: 50,
+    MINUTE_AMOUNT_10: 51,
+    MINUTE_AMOUNT_15: 52,
+
     CAPITAL_FLOW_DAY:67,     //当日资金流
     CAPITAL_FLOW_DAY3: 68,   //3日资金流
     CAPITAL_FLOW_DAY5: 69,   //5日资金流
@@ -722,6 +803,63 @@ var STOCK_FIELD_NAME=
     WEEK:101,
     HEAT:102
 };
+
+var StockDataFieldName =
+{
+    m_mapFiled: new Map(
+        [
+            [STOCK_FIELD_NAME.NAME, "name"],
+            [STOCK_FIELD_NAME.SYMBOL, 'symbol'],
+            [STOCK_FIELD_NAME.PRICE, 'price'],
+            [STOCK_FIELD_NAME.INCREASE, 'increase'],
+            [STOCK_FIELD_NAME.PE, 'pe'],
+            [STOCK_FIELD_NAME.FINANCE_BENFORD, 'finance.benford'],
+            [STOCK_FIELD_NAME.YCLOSE,'yclose'],
+
+            //1，3，5 ，10，15 分钟涨速
+            [STOCK_FIELD_NAME.RISEFALLSPEED_1, 'risefallspeed.1'],
+            [STOCK_FIELD_NAME.RISEFALLSPEED_3, 'risefallspeed.3'],
+            [STOCK_FIELD_NAME.RISEFALLSPEED_5, 'risefallspeed.5'],
+            [STOCK_FIELD_NAME.RISEFALLSPEED_10, 'risefallspeed.10'],
+            [STOCK_FIELD_NAME.RISEFALLSPEED_15, 'risefallspeed.15'],
+
+            //1，3，5 ，10，15 振幅
+            [STOCK_FIELD_NAME.MINUTE_AMPLITUDE_1, 'mamplitude.1'],
+            [STOCK_FIELD_NAME.MINUTE_AMPLITUDE_3, 'mamplitude.3'],
+            [STOCK_FIELD_NAME.MINUTE_AMPLITUDE_5, 'mamplitude.5'],
+            [STOCK_FIELD_NAME.MINUTE_AMPLITUDE_10, 'mamplitude.10'],
+            [STOCK_FIELD_NAME.MINUTE_AMPLITUDE_15, 'mamplitude.15'],
+
+            //1，3，5 ，10，15 分钟 成交金额
+            [STOCK_FIELD_NAME.MINUTE_AMOUNT_1, 'mamount.1'],
+            [STOCK_FIELD_NAME.MINUTE_AMOUNT_3, 'mamount.3'],
+            [STOCK_FIELD_NAME.MINUTE_AMOUNT_5, 'mamount.5'],
+            [STOCK_FIELD_NAME.MINUTE_AMOUNT_10, 'mamount.10'],
+            [STOCK_FIELD_NAME.MINUTE_AMOUNT_15, 'mamount.15'],
+            
+            /*
+            //股权质押
+            [STOCK_FIELD_NAME.PLEDGE_PROPORTION, 'pledge.prop'],                          //累计质押比例%
+            [STOCK_FIELD_NAME.PLEDGE_SHAREHOLDER_PROPORTION, 'pledge.shprop'],            //控股股东累计质押比%(shareholder proportion)
+            [STOCK_FIELD_NAME.PLEDGE_SHAREHOLDER_HELD_PROPORTION, 'pledge.shheldeprop'],   //控股股东累计质押数量占持股比例% (shareholder held proportion)
+            [STOCK_FIELD_NAME.PLEDGE_VOL, 'pledge.vol'],
+            [STOCK_FIELD_NAME.PLEDGE_UNSALE_VOL, 'pledge.unsalevol'],
+            [STOCK_FIELD_NAME.PLEDGE_SALE_VOL, 'pledge.salevol'],
+
+            //年涨幅
+            [STOCK_FIELD_NAME.YEAR_YEAR1, 'year.year1'],
+            */
+        ]
+    ),
+
+    GetFieldName: function (fieldID) 
+    {
+        if (!this.m_mapFiled.has(fieldID)) return null;
+
+        return this.m_mapFiled.get(fieldID);
+    }
+}
+
 
 function StockRead(stock,tagID)
 {
@@ -885,6 +1023,13 @@ JSStock.GetDealDay=function(symbol)
 {
     return new DealDay(symbol);
 }
+
+//板块成员
+JSStock.GetBlockMember = function (symbol) 
+{
+    return new BlockMember(symbol);
+}
+
 
 var RECV_DATA_TYPE=
 {
@@ -2171,4 +2316,111 @@ function DealDay(symbol)
         this.Error={Status:request.status, Message:request.responseText };
         this.InvokeUpdateUICallback();
     }
+}
+
+
+//板块成分 支持排序
+function BlockMember(symbol) 
+{
+    this.newMethod = IStockData;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ApiUrl = g_JSStockResource.Domain + "/API/StockBlockMember";
+    this.PageSize = 10;      //一页几个数据
+    this.Start = 0;         //取数据的起始位置
+    this.OrderField;        //排序字段
+    this.Order;             //排序方向 -1 /1
+    this.Symbol = symbol;
+    this.OrderNull = 0;       //排序是否提出null字段
+
+    this.Field = new Array(); //字段
+    this.Data = new Array();  //数据
+
+    this.PageInfo; //分页信息
+
+    this.SetField = function (aryFiled) 
+    {
+        this.Field = new Array();
+        for (let i in aryFiled) 
+        {
+            let item = aryFiled[i];
+            let name = StockDataFieldName.GetFieldName(item);
+            if (name == null) continue;
+
+            this.Field.push(name);
+        }
+        // this.Field = aryFiled.length > 0 ? aryFiled : [];
+
+        return this.Field.length > 0;
+    }
+
+    this.SetOrder = function (fieldID, order) 
+    {
+        this.Order = null;
+        this.OrderField = null;
+
+        let name = StockDataFieldName.GetFieldName(fieldID);
+        if (name == null) return false;
+
+        this.OrderField = name;
+        this.Order = order;
+        return true;
+    }
+
+    this.RequestData = function () 
+    {
+        this.Data = [];
+        var self = this;
+
+        $.ajax(
+            {
+                url: this.ApiUrl,
+                data: {
+                    "symbol": this.Symbol,
+                    "field": this.Field,
+                    "order": this.Order,
+                    "orderfield": this.OrderField,
+                    "start": this.Start,
+                    "end": this.Start + this.PageSize,
+                    "ordernull": this.OrderNull
+                },
+                type:"post",
+                dataType: 'json',
+                success: function (data) 
+                {
+                    self.RecvData(data, RECV_DATA_TYPE.BLOCK_MEMBER_DATA);
+                },
+                fail: function (request) 
+                {
+                    self.RecvError(request, RECV_DATA_TYPE.BLOCK_MEMBER_DATA);
+                }
+            });
+    }
+
+    this.RecvData = function (data, dataType) 
+    {
+        for (let i in data.stock) {
+            let item = data.stock[i];
+            if (item.symbol == null) continue;
+
+            var stock = new StockData(item.symbol);
+            stock.SetData(item);
+
+            this.Data.push(stock);
+        }
+
+        this.PageInfo = {Count: data.count, Start: data.start, End: data.end};
+
+        if (typeof(this.UpdateUICallback) == 'function')
+            this.UpdateUICallback(this);
+
+        this.AutoUpate(); //自动更新
+    }
+
+    this.RecvError = function (reqeust, dataType) 
+    {
+
+    }
+
 }

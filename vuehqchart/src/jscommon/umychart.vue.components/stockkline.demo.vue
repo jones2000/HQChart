@@ -40,7 +40,7 @@
           
         </div>
         <div class="brushTool" v-if="DrawTool.IsShow">
-            <BrushTool @CurrentIcon = "CurrentIcon" @isShowBrushTool="isShowBrushTool"></BrushTool>
+            <Stockdrawtool @CurrentIcon = "CurrentIcon" @isShowBrushTool="isShowBrushTool"></Stockdrawtool>
         </div>   
         <!-- 走势图 和 K线图  !-->
         <div :id='ID' ref='divchart' style="width:100%;height:100%">
@@ -67,7 +67,7 @@ import $ from 'jquery'
 import JSCommon from '../umychart.vue/umychart.vue.js'
 import '../../jscommon/umychart.resource/font/iconfont.css'
 import '../../jscommon/umychart.resource/css/tools.css'
-import BrushTool from './stockdrawtool.vue'
+import Stockdrawtool from './stockdrawtool.vue'
 
 function DefaultData()
 {
@@ -363,7 +363,7 @@ export default
         'MinuteOption',
         'TradeInfoTabWidth',
     ],
-    components:{BrushTool},
+    components:{Stockdrawtool},
     data()
     {
         let data=
@@ -1040,7 +1040,7 @@ export default
 
         isShowBrushTool( brushTool){
             this.DrawTool.IsShow = brushTool;
-        }
+        },
 
     }
 }

@@ -26,7 +26,8 @@
 
 
  - [代码地址](https://github.com/jones2000/HQChart)
- - [demo](https://opensource.zealink.com/vuehqweb/hq.demo.page.html)
+ - [行情页面](https://opensource.zealink.com/vuehqweb/hq.demo.page.html)
+ - [历史数据查询](https://opensource.zealink.com/vuehqweb/queryContent.demo.page.html)
 
 ## Environment
 

@@ -31,7 +31,6 @@ var STOCK_PERIOD=
     PERIOD_KLINE_30_MINUTE_ID:8,   //30分钟
 
     //周期往后加
-
 };
 
 function DefaultData(){}
@@ -41,7 +40,7 @@ DefaultData.GetKLineOption = function (option)
     let data = 
     {
         Type: '历史K线图', 
-        IsShowCorssCursorInfo:false,
+        IsShowCorssCursorInfo:true,
         KLine:
         {
             Right:1,                            //复权 0 不复权 1 前复权 2 后复权
@@ -81,6 +80,8 @@ export default
         'DefaultShowPeriod',    //显示的周期
         'DefaultSymbol',        //默认股票
     ],
+
+    STOCK_PERIOD:STOCK_PERIOD,  //枚举导出
     
     data() 
     {
@@ -103,7 +104,6 @@ export default
             ],
             Symbol:'600000.sh',
         }
-
         return data;
     },
 
@@ -185,7 +185,11 @@ export default
         //切换股票代码
         ChangeSymbol:function(symbol)
         {
-            stockcharts[i].ChangeSymbol(symbol);
+            var stockcharts = this.$refs.stockchart;
+            for(let i = 0; i < stockcharts.length; i++)
+            {
+                stockcharts[i].ChangeSymbol(symbol);
+            }
         }
     }
 
