@@ -4571,6 +4571,8 @@ function JSChartContainer(uielement)
 
     this.Draw=function()
     {
+        if (this.UIElement.width<=0 || this.UIElement.height<=0) return; 
+
         this.Canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         this.Canvas.lineWidth=pixelTatio;       //手机端需要根据分辨率比调整线段宽度
@@ -20666,9 +20668,11 @@ function KLineChartContainer(uielement)
     //形态匹配
     // scope.Plate 板块范围 scope.Symbol 股票范围
     // sample 样本数据
-    this.RequestKLineMatch=function(sample,scope)
+    this.RequestKLineMatch=function(sample,param)
     {
         var self =this;
+        var scope=param.Scope;
+        var waitDailog=param.WaitDialog;
         console.log('[KLineChartContainer::RequestKLineMatch',sample,scope)
 
         var aryDate=new Array();
@@ -20710,11 +20714,13 @@ function KLineChartContainer(uielement)
             async:true,
             success: function (data)
             {
+                if (waitDailog) waitDailog.Close();
                 self.RecvKLineMatchData(data,sampleData);
             },
             error:function(jqXHR, textStatus, errorThrown)
             {
                 console.warn('[KLineChartContainer::RequestKLineMatch] failed',jqXHR,textStatus, errorThrown);
+                if (waitDailog) waitDailog.Close();
             }
         });
     }
@@ -26375,7 +26381,12 @@ function KLineSelectRectDialog(divElement)
     //隐藏窗口
     this.Close=function()
     {
-        this.DivElement.removeChild(this.Dialog);
+        if (this.Dialog) 
+        {
+            this.DivElement.removeChild(this.Dialog);
+            this.Dialog=null;
+        }
+
         this.HQChart.HideSelectRect();
     }
 
@@ -26420,7 +26431,6 @@ function KLineSelectRectDialog(divElement)
             function(event)
             {
                 event.data.divBox.KLineMatch();
-                event.data.divBox.Close();
             });   
     }
 
@@ -26562,9 +26572,21 @@ function KLineSelectRectDialog(divElement)
     //形态匹配
     this.KLineMatch=function(data)
     {
+        var waitDialog=new WaitDialog(this.DivElement);
+        waitDialog.DoModal(
+            {
+                data:
+                { 
+                    Title:'计算中......', 
+                    Chart:this.HQChart
+                } 
+            });
+
+        this.Close();   //关闭窗口
+
         var hqChart=this.HQChart;
-        var scope={Plate:["CNA.ci"],Minsimilar:0.90};   //沪深A股, 相似度>=90%
-        hqChart.RequestKLineMatch(this.SelectData, scope);
+        var param= { Scope: { Plate:["CNA.ci"],Minsimilar:0.90 }, WaitDialog:waitDialog }  //沪深A股, 相似度>=90%
+        hqChart.RequestKLineMatch(this.SelectData, param);
     }
 }
 
@@ -26602,6 +26624,7 @@ function KLineMatchDialog(divElement)
                 <strong id='close' class='icon iconfont icon-close'></strong>
             </div>
             <div class='parameter-content'>
+                <p class='dataCount'></p>
                 <table class='matchTable'>
                     <thead>
                         <tr>
@@ -26640,7 +26663,10 @@ function KLineMatchDialog(divElement)
         var count = this.MatchData.length + 1;
         var pageData = {NewData:{},MetaData:[],PageCount:0,Count:count};
         var pageCount = 0;
-        var paginationHtml = ''
+        var paginationHtml = '';
+
+        $('#'+this.ID+' .dataCount').html('个数：'+count);
+        
         for(let i = 0; i < count ; i++){
             var dataObj = {};
             if(i == 0){
@@ -26790,6 +26816,67 @@ function KLineMatchDialog(divElement)
         var top=border.GetHeight()/2;
 
         this.Show(left,top,200,200);      //显示
+    }
+}
+
+//等待动画窗口
+function WaitDialog(divElement)
+{
+    this.newMethod=IDivDialog;   //派生
+    this.newMethod(divElement);
+    delete this.newMethod;
+
+    this.Title='加载中......';
+    this.Dialog;
+
+    //隐藏窗口
+    this.Close=function()
+    {
+        if (this.Dialog) 
+        {
+            this.DivElement.removeChild(this.Dialog);
+            this.Dialog=null;
+        }
+    }
+
+    this.SetTitle=function(title)
+    {
+        this.Title=title;
+        if (!this.Dialog) return;
+        //TODO: 更新标题数据
+    }
+
+    this.Create=function()
+    {
+        this.ID=Guid();
+        var div=document.createElement('div');
+        div.className='jchart-wait-box';
+        div.id=this.ID;
+        div.innerHTML=
+        `<div class='parameter jchart-kline-match-box'>
+            <div class='parameter-header'>
+                <span>${this.Title}</span>
+            </div>
+        </div>`.trim();
+
+        this.DivElement.appendChild(div);
+        this.Dialog=div;
+    }
+
+    //显示
+    this.DoModal=function(event)
+    {
+        this.Title=event.data.Title;
+        var chart=event.data.Chart;
+        if (this.ID==null) this.Create();   //第1次 需要创建div
+        
+        //居中显示
+        var border=chart.Frame.ChartBorder;
+        var scrollPos=GetScrollPosition();
+        var left=border.GetWidth()/2;
+        var top=border.GetHeight()/2;
+
+        this.Show(left,top,200,40);      //显示
     }
 }
 

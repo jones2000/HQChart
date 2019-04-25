@@ -6,32 +6,37 @@
   <div id="toolBox" v-if="isShowBrushTool">
     <ul>
       <!-- 关闭 -->
-      <li class="closeBtn" @click="closeBtn">
-        <svg class="icon icon-style" aria-hidden="true">
+      <li class="closeBtn">
+        <svg class="icon icon-close" aria-hidden="true" @click="closeBtn">
           <use xlink:href="#icon-guanbi"></use>
         </svg>
         <!-- <i class="el-icon-close" @click="closeBtn"></i> -->
       </li>
       <!-- 图标 -->
-      <li v-for="item in toolList1" :key="item.name">
+      <li v-for="item in toolList1" :key="item.name" :class="addBackgroundColor(item.name)">
         <svg class="icon icon-style" aria-hidden="true" @click="clickIcon(item.name)">
           <use :href="item.icon"></use>
         </svg>
       </li>
       <li class="line-style"></li>
-      <li v-for="item in toolList2" :key="item.name">
+      <li
+        v-for="item in toolList2"
+        :key="item.name"
+        class="icon-box"
+        :class="addBackgroundColor(item.name)"
+      >
         <svg class="icon icon-style" aria-hidden="true" @click="clickIcon(item.name)">
           <use :href="item.icon"></use>
         </svg>
       </li>
       <li class="line-style"></li>
-      <li v-for="item in toolList3" :key="item.name">
+      <li v-for="item in toolList3" :key="item.name" :class="addBackgroundColor(item.name)">
         <svg class="icon icon-style" aria-hidden="true" @click="clickIcon(item.name)">
           <use :href="item.icon"></use>
         </svg>
       </li>
       <li class="line-style"></li>
-      <li v-for="item in toolList4" :key="item.name">
+      <li v-for="item in toolList4" :key="item.name" :class="addBackgroundColor(item.name)">
         <svg class="icon icon-style" aria-hidden="true" @click="clickIcon(item.name)">
           <use :href="item.icon"></use>
         </svg>
@@ -48,6 +53,7 @@ import Vue from "vue";
 import ElementUI from "element-ui";
 import "../../../node_modules/element-ui/lib/theme-default/index.css";
 import locale from "../../../node_modules/element-ui/lib/locale/lang/en";
+import { constants } from 'zlib';
 
 Vue.use(ElementUI, { locale });
 
@@ -56,6 +62,7 @@ export default {
   data() {
     return {
       isShowBrushTool: true,
+      clickName: "",
       toolList1: [
         { name: "线段", icon: "#icon-xianduan" },
         { name: "射线", icon: "#icon-shexian" },
@@ -98,6 +105,14 @@ export default {
     this.toolBoxHandle();
   },
   methods: {
+    getPos() {
+      var scrollTop =
+        document.documentElement.scrollTop || document.body.scrollTop;
+      var scrollLeft =
+        document.documentElement.scrollLeft || document.body.scrollLeft;
+      return { x: scrollLeft, y: scrollTop };
+    },
+
     toolBoxHandle() {
       var toolBox = document.getElementById("toolBox");
       var x = 0;
@@ -121,7 +136,7 @@ export default {
         toolBox.style.cursor = "move";
       };
       //鼠标移动
-      window.onmousemove = function(e) {
+      document.onmousemove = function(e) {
         // 鼠标未按下不获取
         if (isDown == false) {
           return;
@@ -132,6 +147,12 @@ export default {
         //计算移动后的左偏移量和顶部的偏移量
         var nl = nx - (x - l);
         var nt = ny - (y - t);
+        if(nl<0){
+          nl = 0;
+        }
+        if(nt< 0){
+          nt = 0;
+        }
         toolBox.style.left = nl + "px";
         toolBox.style.top = nt + "px";
       };
@@ -149,8 +170,13 @@ export default {
     },
     // 点击图标
     clickIcon(iconName) {
-      console.log(iconName);
+      this.clickName = iconName;
       this.$emit("CurrentIcon", iconName);
+    },
+    addBackgroundColor(name) {
+      if (name === this.clickName) {
+        return "icon-color";
+      }
     }
   }
 };
@@ -159,42 +185,46 @@ export default {
 
 <style lang="scss" type="text/scss">
 #toolBox {
-  width: 135px;
+  width: 115px;
+  height: 516px;
   border: 1px solid #dadada;
   position: absolute;
   z-index: 9999999999999;
   background: #fff;
   ul {
-    padding: 10px;
-
+    padding: 5px 0;
+    .icon-color {
+      background: #d9e9f9;
+    }
     .closeBtn {
       width: 100%;
-      height: 25px;
-      margin-bottom: 15px;
+      height: 30px;
       text-align: right;
-      // font-size: 14px;
       color: #8696a4;
       margin-left: 0px;
     }
     li {
       list-style: none;
-      width: 25px;
-      height: 25px;
-      margin-left: 20px;
-      margin-bottom: 15px;
+      margin-left: 17px;
       float: left;
       .icon-style {
-        font-size: 24px;
+        font-size: 21px;
         text-align: center;
+        padding: 5px;
+      }
+      .icon-close {
+        font-size: 18px;
+        text-align: center;
+        padding-top: 5px;
+        padding-right: 10px;
       }
     }
     .line-style {
-      width: 100%;
+      width: 87px;
       height: 1px;
       display: block;
       background: #e3e7ea;
-      margin-bottom: 15px;
-      margin-left: 0px;
+      margin: 10px 14px;
     }
   }
 }

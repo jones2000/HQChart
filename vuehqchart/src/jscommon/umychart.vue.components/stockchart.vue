@@ -1,6 +1,6 @@
 <template>
     <div :id='ID' class="stockchart" ref='stockchart' style="width:100%;height:100%">
-        <div class='hqchart' id="hqchart" ref="hqchart" />
+        <div class='hqchart' id="hqchart" ref="hqchart"/>
     </div>
 </template>
 
@@ -24,10 +24,7 @@ DefaultData.GetMinuteOption=function()
         Type: '分钟走势图', //历史分钟走势图
         Symbol: null,
         IsAutoUpdate: true, //是自动更新数据
-        Windows:
-        [
-            { Index: "MACD" }
-        ],
+        Windows:[], //窗口指标 [ { Index: "MACD" } ]
 
         DayCount: 1,
 
@@ -53,7 +50,34 @@ DefaultData.GetMinuteOption=function()
 //历史分钟走势图
 DefaultData.GetHistoryMinuteOption=function()
 {
+    var option=
+    {
+        Type:'历史分钟走势图',
+        Windows:[],         //窗口指标
+        Symbol:null,        //股票代码
 
+        IsShowRightMenu:true,           //右键菜单
+        IsShowCorssCursorInfo:true,     //是否显示十字光标的刻度信息
+
+        HistoryMinute:          //显示的交易日期
+        { 
+            TradeDate:20180410 
+        },   
+
+        Border: //边框
+        {
+            Left: 60, Right: 60, Top: 25,Bottom: 20
+        },
+
+        Frame:  //子框架设置
+        [
+            { SplitCount: 5, StringFormat: 0 },
+            { SplitCount: 3, StringFormat: 0 },
+            { SplitCount: 3, StringFormat: 0 }
+        ]
+    }
+
+    return option;
 }
 
 
@@ -146,7 +170,6 @@ export default
     created:function()
     {
         //处理默认传入的参数
-
         if (this.DefaultSymbol) this.Symbol=this.DefaultSymbol; //默认股票
         if (this.DefaultOption) this.SetOption(this.DefaultOption);
     },
@@ -154,8 +177,7 @@ export default
     mounted:function()
     {
         console.log(`[StockChart::mounted]`);
-
-        this.OnSize();
+        this.OnSize();              //子组件的mounted在父组件的mounted之前执行了
         this.CreateJSChart();
     },
 
@@ -167,6 +189,7 @@ export default
             if (!option) return;
             if (option.Type=='分钟走势图') this.SetMinuteOption(option);
             else if (option.Type=='历史K线图') this.SetKLineOption(option);
+            else if (option.Type=='历史分钟走势图') this.SetHistoryMinuteOption(option);
         },
 
         SetBorderOption:function(option)    //设置属性 Border,
@@ -185,9 +208,22 @@ export default
             this.Option=DefaultData.GetMinuteOption();  //先把设置还原成默认
 
             this.SetBorderOption(option);
-            if (option.Windows && option.Windows.length>0) this.Option.Windows=option.Windows;
+            if (option.Windows) this.Option.Windows=option.Windows;
             if (ObjectHelper.IsPlusNumber(option.DayCount>0)) this.Option.DayCount=option.DayCount;
             if (ObjectHelper.IsObjectExist(option.IsShowCorssCursorInfo)) this.Option.IsShowCorssCursorInfo=option.IsShowCorssCursorInfo;   //十字光标
+        },
+
+        SetHistoryMinuteOption:function(option)
+        {
+            this.Option=DefaultData.GetHistoryMinuteOption();  //先把设置还原成默认
+            this.SetBorderOption(option);
+            if (option.Windows) this.Option.Windows=option.Windows;
+            if (ObjectHelper.IsObjectExist(option.IsShowCorssCursorInfo)) this.Option.IsShowCorssCursorInfo=option.IsShowCorssCursorInfo;   //十字光标
+
+            if (option.HistoryMinute)
+            {
+                if (ObjectHelper.IsPlusNumber(option.HistoryMinute.TradeDate)) this.Option.HistoryMinute.TradeDate=option.HistoryMinute.TradeDate;
+            }
         },
 
         SetKLineOption:function(option)
@@ -232,19 +268,17 @@ export default
 
         //大小调整
         OnSize:function()
-        {
+        { 
             var stockChart=this.$refs.stockchart;
-
             var height= stockChart.offsetHeight;
             var width = stockChart.offsetWidth;
+            console.log(`[StockChart::OnSize] width=${width} height=${height}`); 
 
             var divChart=this.$refs.hqchart;
             divChart.style.width=width+'px';
             divChart.style.height=height+'px';
 
-            if (this.JSChart) this.JSChart.OnSize();
-
-            console.log(`[StockChart::OnSize] Chart:(${width},${height})`);
+            if (this.JSChart && height>0 && width>0) this.JSChart.OnSize();
         },
 
         //切换股票代码
@@ -254,6 +288,11 @@ export default
 
             this.Symbol=symbol;
             if (this.JSChart) this.JSChart.ChangeSymbol(this.Symbol);
+        },
+
+        ChangeTradeDate(tradeDate)  //切换历史分钟走势图的交易日期
+        {
+            if (this.JSChart) this.JSChart.ChangeTradeDate(tradeDate);
         },
 
         GetDefaultMinuteOption:function()

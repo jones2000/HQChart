@@ -1342,8 +1342,10 @@ function JSChartContainer(uielement) {
   }
 
   this.DataMove = function (step, isLeft) {
-    var data = null;
+    step=parseInt(step/4);
+    if (step<=0) return false;
 
+    var data = null;
     if (!this.Frame.Data) data = this.Frame.Data;
     else data = this.Frame.SubFrame[0].Frame.Data;
     if (!data) return false;

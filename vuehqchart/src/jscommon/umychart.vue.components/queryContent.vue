@@ -17,7 +17,7 @@
                 </div>
             </div>
             <div class="top_title2">
-                <p>每笔成交明细</p>
+                <p>成交日期</p>
                 <p>{{ContentTopData.TradeDate}}</p>
             </div>
             <div class="priceWrap">
@@ -36,9 +36,9 @@
             </div>
         </div>
 
-
-        <el-row ref='selectOrderWrap' id='selectOrderWrap'>
-            <el-col :span="24" style="height:60px;line-height:60px;">
+        <div ref='selectOrderWrap' id='selectOrderWrap'>
+            <div class="tabWrap"><span v-for='(item,index) in TabTexts' :class='{active:index == TabIndex}' @click='ChangeContentShow(index)'>{{item}}</span></div>
+            <div class="selectorForDealDetail" v-show='IsShow.DealDetail'>
                 <span style="padding-left:20px;">筛选大单：</span>
                 <el-radio-group v-model="OrderType">
                     <el-radio :label="1">全部</el-radio>
@@ -52,9 +52,9 @@
                 </el-radio-group>
                 <span style="padding-left:40px;">排列顺序：</span>
                 <el-checkbox v-model="RerverChecked">倒序</el-checkbox>
-            </el-col>
-        </el-row>
-        <div class="table_content" ref='tableContent' v-loading="loadingBody">
+            </div>
+        </div>
+        <div class="table_content" ref='tableContent' v-loading="loadingBody" v-show='IsShow.DealDetail'>
             <div class="tableWrap" v-for='(curTable,index) in TableData.CurentTables' :key='index'>
                 <table class="tabHori">
                     <thead>
@@ -68,14 +68,17 @@
                         <tr v-for='(rowItem,ind) in curTable' :key='ind'>
                             <td>{{rowItem.Time}}</td>
                             <td class="alignRight" :class='rowItem.PriceColor'>{{rowItem.Price}}</td>
-                            <td class="alignRight">{{rowItem.Vol}}&nbsp;<span :class="rowItem.Flag == 'B' ? 'red' : 'green'">{{rowItem.Flag}}</span></td>
+                            <td class="alignRight">{{parseInt(rowItem.Vol)}}&nbsp;<span :class="rowItem.Flag == 'B' ? 'red' : 'green'">{{rowItem.Flag}}</span></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
+        <div class="charWrap" id='charWrap' ref='charWrap' v-show='IsShow.MinuteChart'>
+            <StockChart ref='stockChart' :DefaultSymbol='OptionData.Symbol' :DefaultOption='OptionData.MinuteOption'></StockChart>
+        </div>
 
-        <el-row id='paginationWrap'>
+        <el-row id='paginationWrap' v-show='IsShow.DealDetail'>
             <el-pagination
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange"
@@ -92,6 +95,7 @@
     import $ from "jquery";
     import JSCommonStock from '../umychart.vue/umychart.stock.vue.js'
     import SearchSymbol from './searchsymbol.vue'
+    import StockChart from './stockchart.vue'
 
     Date.prototype.Format = function (fmt) {
         var o = {
@@ -144,14 +148,23 @@
                 CuttingIndex: 6,
                 contentSpan: "", //span
                 loadingBody: false,
+                TabTexts:['成交明细','走势图'],
+                TabIndex:0,
                 OptionData:{
                     Symbol:'',
                     // Name:'',
-                    DatePicker:''
+                    DatePicker:'',
+                    MinuteOption:{
+                        Type: '历史分钟走势图', 
+                        //IsShowCorssCursorInfo:false,
+                        HistoryMinute: {TradeDate:0}
+                    }
                     // DateFormat:''
                 },
                 IsShow:{
-                    Search:false
+                    Search:false,
+                    DealDetail:true,
+                    MinuteChart:false
                 },
                 ContentTopData:ContentTop.GetDeaultData(),
                 num: 0,
@@ -168,7 +181,7 @@
                 }
             };
         },
-        components:{SearchSymbol},
+        components:{SearchSymbol,StockChart},
         computed:{
             DateFormat:function(){
                 return this.OptionData.DatePicker.replace(/-/g, "");
@@ -179,10 +192,19 @@
         },
         created() {
             document.title = "分时查询数据";
+            var bodyWidth = document.documentElement.clientWidth || document.body.clientWidth;
+            var bodyHeight = document.documentElement.clientHeight || document.body.clientHeight;
+            var width = bodyWidth;
+            var height = bodyHeight - 45 -70 - 60;
+
             this.OptionData.Symbol = this.GetURLParams('symbol') != undefined ? this.GetURLParams('symbol') : '600000.sh';
             this.OptionData.DatePicker = this.GetURLParams('date') != undefined ? this.GetURLParams('date') : this.getLastFormatDate();
+
+            var date = this.FormatDateString(this.OptionData.DatePicker,false);  //走势图日期设置
+            this.OptionData.MinuteOption.HistoryMinute.TradeDate = Number(date);
         },
-        mounted() {
+        mounted() 
+        {
             const that = this;
             
             this.OnSize();
@@ -194,6 +216,21 @@
             // // 监听
         },
         methods: {
+            ChangeContentShow(index){
+                this.TabIndex = index;
+                switch(index){
+                    case 0:
+                        this.IsShow.DealDetail = true;
+                        this.$refs.charWrap.style.display='none';
+                        break;
+                    case 1:
+                        this.IsShow.DealDetail = false;
+                        this.$refs.charWrap.style.display='block';//直接设置到dom里面 vue里面的设置是异步的
+                        this.$refs.stockChart.OnSize();
+                        break;
+                }
+
+            },
             GoSearch(){
                 this.IsShow.Search = true;
                 var mySymbol = this.$refs.mySymbol;
@@ -326,12 +363,14 @@
                     this.InitPageData(this.TableData.CurrentPageData);
                 }
             },
-            OnSize(){
+            OnSize()
+            {
                 var contentTopHeight = $('.content_top').outerHeight(true);
                 var pagepromptHeight = $('.pagePrompt').outerHeight(true)
                 var selectOrderWrapHeight = $('#selectOrderWrap').outerHeight(true);
                 var paginationWrap = $('#paginationWrap').outerHeight(true);
                 var mainHight = $(window).height() - contentTopHeight - selectOrderWrapHeight -paginationWrap - pagepromptHeight;
+                var mainWdith = $('.table_content').width();
                 var tdHeight = 20;
                 var borderHeight = 1;
                 var everyTableCount = Math.floor((mainHight - tdHeight - borderHeight) / tdHeight);
@@ -339,11 +378,18 @@
                 
                 $('.table_content').height(mainHight);
 
+                var bodyWidth = document.documentElement.clientWidth || document.body.clientWidth;
+                var bodyHeight = document.documentElement.clientHeight || document.body.clientHeight;
+                var width = bodyWidth;
+                var height = bodyHeight - 45 -70 - 60;
+                var divChart=this.$refs.charWrap;
+                divChart.style.width=width+'px';
+                divChart.style.height=height+'px';
+                var stockChart = this.$refs.stockChart;
+                stockChart.OnSize();
+
                 var minWidth = 1062;
-                var windowWidth = $(window).width();
-                if(windowWidth <= minWidth){
-                    $(window).width(minWidth);
-                }
+                
             },
             FormatValueColor(currentValue,targetValue){
                 var color = '';
@@ -388,6 +434,11 @@
             changeTime(val) {
                 this.OptionData.DatePicker = val;
                 this.getQueryData(this.QueryUrl, this.getQueryDataFn);
+
+                var date = this.FormatDateString(val,false);
+                var stockChart = this.$refs.stockChart;
+                stockChart.ChangeTradeDate(Number(date));
+                // this.OptionData.MinuteOption.HistoryMinute.TradeDate = Number(date);
             },
             //将【接口Api】的改成可配置的
             getApiURL(url) {
@@ -428,11 +479,14 @@
             },
             searchSymbol(symbol) {
                 this.OptionData.Symbol = symbol;
+                var stockChart = this.$refs.stockChart;
+                stockChart.ChangeSymbol(symbol);
                 this.loadingBody = true;
                 this.OrderType = 1;
                 this.RerverChecked = false;
                 this.getQueryData(this.QueryUrl, this.getQueryDataFn);
                 this.IsShow.Search = false;
+
             },
             //下载json
             downJson() {
@@ -636,6 +690,33 @@
 
             .input-with-button .el-input-group__prepend {
                 background-color: #fff;
+            }
+        }
+
+        #selectOrderWrap{
+            height: 60px;
+            .selectorForDealDetail {
+                display: inline-block;
+            }
+            .tabWrap{
+                display: inline-block;
+                height: 20px;
+                margin-top: 20px;
+                margin-left: 20px;
+                $tabBorder: 1px solid #2f2f2f;
+                border: $tabBorder;
+                >span {
+                    display: inline-block;
+                    line-height: 20px;
+                    padding: 0 10px;
+                    cursor: pointer;
+                }
+                >span:first-child{
+                    border-right: $tabBorder;
+                }
+                >span.active {
+                    color: blue;
+                }
             }
         }
 

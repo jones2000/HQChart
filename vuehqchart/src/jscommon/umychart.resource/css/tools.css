@@ -483,6 +483,28 @@ td.context-menu {
 }
 /*形态匹配结束*/
 
+/*形态匹配结果列表 start*/
+.jchart-kline-match-box {
+    font: 13px 'Microsoft Yahei';
+}
+.jchart-kline-match-box .matchTable {
+    border-collapse: collapse;
+    width: 100%;
+}
+.jchart-kline-match-box .matchTable td,.jchart-kline-match-box .matchTable th {
+    line-height: 20px;
+    border: 1px solid #ccc;
+    padding: 0 10px;
+}
+.jchart-kline-match-box .matchTable td.red {
+    color: red;
+}
+/*分页*/
+.pagination {height: 22px; text-align: center; margin-top: 10px;}
+.pagination span {display: inline-block; line-height: 20px; padding: 0 6px; border: 1px solid #ccc; margin-right: 6px; cursor: pointer;}
+.pagination span:hover,.pagination span.active {color: #ffb400;}
+/*形态匹配结果列表 end*/
+
 /*加载层*/
 .spinnerBg{
     background:#ccc;
