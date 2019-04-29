@@ -1041,10 +1041,16 @@ export default
         CurrentIcon(name)
         {
             console.log('[StockKLine::CurrentIcon] click', name);
-            this.KLine.JSChart.JSChartContainer.CreateChartDrawPicture(name);
+            var self=this;
+            this.KLine.JSChart.JSChartContainer.CreateChartDrawPicture(name, function(drawChart) { self.OnFinishDraw(drawChart); });
             if(name==='全部删除'){
                  this.KLine.JSChart.JSChartContainer.ClearChartDrawPicture();
             }
+        },
+
+        OnFinishDraw(drawChart)
+        {
+            console.log('[StockKLine::OnFinishDraw] finish',drawChart);
         },
 
         isShowBrushTool( brushTool){

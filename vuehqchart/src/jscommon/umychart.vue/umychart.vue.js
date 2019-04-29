@@ -15149,6 +15149,7 @@ function IChartDrawPicture()
     this.PointStatus=0;                         //2=第2个点完成
     this.MovePointIndex=null;                   //移动哪个点 0-10 对应Point索引  100 整体移动
     this.ClassName='IChartDrawPicture';
+    this.FinishedCallback;                  //画图完成回调通知
 
     // this.LineColor=g_JSChartResource.DrawPicture.LineColor[0];                            //线段颜色
     this.LineColor="#1e90ff";      //线段颜色，input type="color" 不支持rgb和rgba 的格式
@@ -20435,7 +20436,7 @@ function KLineChartContainer(uielement)
     }
 
     //创建画图工具
-    this.CreateChartDrawPicture=function(name)
+    this.CreateChartDrawPicture=function(name, callback)
     {
         var drawPicture=null;
         switch(name)
@@ -20530,12 +20531,14 @@ function KLineChartContainer(uielement)
 
         drawPicture.Canvas=this.Canvas;
         drawPicture.Status=0;
+        if (callback) drawPicture.FinishedCallback=callback;    //完成通知上层回调
         self=this;
         drawPicture.Update=function()   //更新回调函数
         {
             self.DrawDynamicInfo();
         };
         this.CurrentChartDrawPicture=drawPicture;
+        //console.log("[KLineChartContainer::CreateChartDrawPicture] ", name,this.CurrentChartDrawPicture);
         return true;
     }
 
@@ -20545,6 +20548,9 @@ function KLineChartContainer(uielement)
         if (!drawPicture) return false;
         if (!this.Frame.SubFrame || this.Frame.SubFrame.length<=0) return false;
 
+        //相对坐标
+        var xFixed=x-this.UIElement.getBoundingClientRect().left;
+        var yFixed=y-this.UIElement.getBoundingClientRect().top;
         for(var i in this.Frame.SubFrame)
         {
             var frame=this.Frame.SubFrame[i].Frame;
@@ -20555,7 +20561,7 @@ function KLineChartContainer(uielement)
 
             this.Canvas.beginPath();
             this.Canvas.rect(left,top,width,height);
-            if (this.Canvas.isPointInPath(x,y))
+            if (this.Canvas.isPointInPath(xFixed,yFixed))
             {
                 drawPicture.Frame=frame;
                 break;
@@ -20618,6 +20624,9 @@ function KLineChartContainer(uielement)
 
         this.ChartDrawPicture.push(drawPicture);
         this.CurrentChartDrawPicture=null;
+
+        //通知上层画好了
+        if (drawPicture.FinishedCallback) drawPicture.FinishedCallback(drawPicture);
 
         return true;
     }
