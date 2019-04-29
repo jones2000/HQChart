@@ -5,7 +5,7 @@
 
 <template>
     <div class="multiPeriodWrap" ref='multiPeriodWrap' style="width:100%;height:100%">
-        <div class='perioditem' ref='perioditem' v-for='(periodItem,index) in ShowPeriod' :key='index'>
+        <div class='perioditem' ref='perioditem' v-for='(periodItem,index) in ShowPeriod.CurrentPeriod' :key='index'>
             <StockChart ref='stockchart' :DefaultSymbol='Symbol' :DefaultOption='GetChartOption(periodItem)'></StockChart>
         </div>
     </div>
@@ -87,21 +87,7 @@ export default
     {
         let data =
         {
-            ShowPeriod: //UI显示的图形 Period=周期 Windows:[指标] Right=复权
-            [
-                { Period:STOCK_PERIOD.PERIOD_MINUTE_ID},
-
-                { Period:STOCK_PERIOD.PERIOD_KLINE_DAY_ID},
-                { Period:STOCK_PERIOD.PERIOD_KLINE_WEEK_ID},
-                { Period:STOCK_PERIOD.PERIOD_KLINE_MONTH_ID },
-                { Period:STOCK_PERIOD.PERIOD_KLINE_YEAR_ID },
-
-                { Period:STOCK_PERIOD.PERIOD_KLINE_MINUTE_ID}
-                // { Period:STOCK_PERIOD.PERIOD_KLINE_5_MINUTE_ID},
-                // { Period:STOCK_PERIOD.PERIOD_KLINE_15_MINUTE_ID},
-                // { Period:STOCK_PERIOD.PERIOD_KLINE_30_MINUTE_ID }
-
-            ],
+            ShowPeriod: {MetaPeriod:[],CurrentPeriod:[]},//UI显示的图形 Period=周期 Windows:[指标] Right=复权
             Symbol:'600000.sh',
         }
         return data;
@@ -109,8 +95,17 @@ export default
 
     created:function() 
     {
-        if (this.DefaultShowPeriod) this.ShowPeriod=this.DefaultShowPeriod;
+        if (this.DefaultShowPeriod) this.ShowPeriod.MetaPeriod=this.DefaultShowPeriod;
         if (this.DefaultSymbol) this.Symbol=this.DefaultSymbol;
+        var count = this.ShowPeriod.MetaPeriod.length;
+        if(count >= 4 && count < 6){
+            count = 4
+        }else if(count >=6 && count < 9){
+            count = 6
+        }else if(count >= 9){
+            count = 9;
+        }
+        this.ShowPeriod.CurrentPeriod = this.ShowPeriod.MetaPeriod.slice(0,count);
     },
 
     mounted:function()
@@ -136,7 +131,7 @@ export default
 
             var itemHeight = 0;
             var itemWidth = 0;
-            var count = this.ShowPeriod.length;
+            var count = this.ShowPeriod.CurrentPeriod.length;
             var rowCount = 0;  //一行放几个图
 
             if(count == 9)

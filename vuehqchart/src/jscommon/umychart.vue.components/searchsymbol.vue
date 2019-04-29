@@ -1,6 +1,6 @@
 <!-- 
     股票代码搜索控件
-  !-->
+-->
 
   <template>
   <div class="symbolWrap">

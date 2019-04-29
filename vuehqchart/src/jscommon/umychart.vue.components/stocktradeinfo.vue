@@ -514,43 +514,32 @@ export default {
       )
         return;
 
-      console.log(
-        "[StockTradeInfo::UpdateBuySell]",
-        this.Symbol,
-        aryBuy,
-        arySell,
-        yClose
-      );
+      console.log("[StockTradeInfo::UpdateBuySell]",this.Symbol,aryBuy,arySell,yClose);
+
       let buyData = DefaultData.GetBuyData();
-      for (var i in aryBuy) {
+      for (var i in aryBuy) 
+      {
         var item = aryBuy[i];
+        if (item.Price<=0) continue;  //没有价格的 为无效数据
+
         var buyItem = buyData[i];
         buyItem.Vol.Text = item.Vol.toString();
         buyItem.Title = BuyTitle[i];
-        buyItem.Price.Text = JSCommon.IFrameSplitOperator.FormatValueString(
-          item.Price,
-          2
-        );
-        buyItem.Price.Color = JSCommon.IFrameSplitOperator.FormatValueColor(
-          item.Price,
-          yClose
-        );
+        buyItem.Price.Text = JSCommon.IFrameSplitOperator.FormatValueString(item.Price,2);
+        buyItem.Price.Color = JSCommon.IFrameSplitOperator.FormatValueColor(item.Price,yClose);
       }
 
       let sellData = DefaultData.GetSellData();
-      for (var i in arySell) {
+      for (var i in arySell) 
+      {
         var item = arySell[i];
+        if (item.Price<=0) continue;  //没有价格的 为无效数据
+
         var selItem = sellData[i];
         selItem.Vol.Text = item.Vol.toString();
         selItem.Title = SellTitle[i];
-        selItem.Price.Text = JSCommon.IFrameSplitOperator.FormatValueString(
-          item.Price,
-          2
-        );
-        selItem.Price.Color = JSCommon.IFrameSplitOperator.FormatValueColor(
-          item.Price,
-          yClose
-        );
+        selItem.Price.Text = JSCommon.IFrameSplitOperator.FormatValueString(item.Price,2);
+        selItem.Price.Color = JSCommon.IFrameSplitOperator.FormatValueColor(item.Price,yClose);
       }
 
       this.IsBuySellInital = true; //已经初始化了
@@ -569,36 +558,23 @@ export default {
       this.JSStock.RequestData();
     },
 
-    UpdateBookRate: function(id, arySymbol, dataType, jsStock) {
-      if (arySymbol.indexOf(this.Symbol) < 0) return;
+    UpdateBookRate: function(id, arySymbol, dataType, jsStock) 
+    {
+        if (arySymbol.indexOf(this.Symbol) < 0) return;
 
-      let read = jsStock.GetStockRead(this.ID[2], this.UpdateBookRate); //获取一个读取数据类,并绑定id和更新数据方法
-      var bookRate = {
-        Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.BOOK_RATE)
-      }; //委比
-      var bookDiffer = {
-        Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.BOOK_DIFFER)
-      }; //委差
+        let read = jsStock.GetStockRead(this.ID[2], this.UpdateBookRate); //获取一个读取数据类,并绑定id和更新数据方法
+        var bookRate = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.BOOK_RATE) }; //委比
+        var bookDiffer = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.BOOK_DIFFER) }; //委差
 
-      if (
-        id != this.ID[2] ||
-        dataType != JSCommonStock.RECV_DATA_TYPE.DERIVATIVE_DATA
-      )
-        return;
-      let bookData = DefaultData.GetBookData();
-      bookData.BookRate.Text =
-        JSCommon.IFrameSplitOperator.FormatValueString(bookRate.Value, 2) + "%";
-      bookData.BookRate.Color = JSCommon.IFrameSplitOperator.FormatValueColor(
-        bookRate.Value,
-        0
-      );
-      bookData.BookDiff.Text = bookDiffer.Value;
-      bookData.BookDiff.Color = JSCommon.IFrameSplitOperator.FormatValueColor(
-        bookDiffer.Value,
-        0
-      );
-      this.BookData = bookData;
-      // console.log('[UpdateBookRate BookData]',this.BookData);
+        if ( id != this.ID[2] || dataType != JSCommonStock.RECV_DATA_TYPE.DERIVATIVE_DATA ) return;
+
+        let bookData = DefaultData.GetBookData();
+        bookData.BookRate.Text = JSCommon.IFrameSplitOperator.FormatValueString(bookRate.Value, 2) + "%";
+        bookData.BookRate.Color = JSCommon.IFrameSplitOperator.FormatValueColor(bookRate.Value,0);
+        bookData.BookDiff.Text = bookDiffer.Value;
+        bookData.BookDiff.Color = JSCommon.IFrameSplitOperator.FormatValueColor(bookDiffer.Value,0);
+        this.BookData = bookData;
+        // console.log('[UpdateBookRate BookData]',this.BookData);
     },
 
     UpdateTrade: function(id, arySymbol, dataType, jsStock) {

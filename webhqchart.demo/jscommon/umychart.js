@@ -11416,11 +11416,12 @@ function KLineInfoDataStringFormat()
     this.ResearchFormat=function(item)
     {
         var levels=item.ExtendData.Level;
-        var recPerson=[];
+        var recPerson='';
         if(levels.length==0)
         {
-            recPerson = "<i>无</i>"
-        }else
+            recPerson = "<i>一般调研</i>"
+        }
+        else
         {
             for(var j in levels)
             {
@@ -11429,9 +11430,19 @@ function KLineInfoDataStringFormat()
                 else if(levels[j]==2) recPerson+="<i style='color:#00a0e9'>总经理&nbsp;&nbsp;&nbsp;</i>";
                 else if(levels[j]==3) recPerson+="<i style='color:#00a0e9'>董事长&nbsp;&nbsp;&nbsp;</i>";
             }
+
+            recPerson='接待:&nbsp;&nbsp;&nbsp;'+recPerson;
         }
+
+        var researchType='';
+        if (item.ExtendData.Type && item.ExtendData.Type!='其他')
+        {
+            researchType='&nbsp;&nbsp;&nbsp;'+'<i>'+item.ExtendData.Type+'</i>';
+            if (levels.length==0) recPerson='';
+        }
+
         var strDate=IFrameSplitOperator.FormatDateString(item.Date);
-        var strText="<span>"+strDate+"&nbsp;&nbsp;&nbsp;接待:&nbsp;&nbsp;&nbsp;"+recPerson+"</span>";
+        var strText="<span>"+strDate+"&nbsp;&nbsp;&nbsp;"+researchType+recPerson+"</span>";
         return strText;
     }
 
@@ -22336,7 +22347,7 @@ function ResearchInfo()
             url: g_JSChartResource.KLine.Info.Research.ApiUrl,
             data:
             {
-                "filed": ["releasedate","researchdate","level","symbol","id"],
+                "filed": ["releasedate","researchdate","level","symbol","id",'type'],
                 "querydate":{"StartDate":this.StartDate,"EndDate":this.GetToday()},
                 "symbol": [param.HQChart.Symbol],
                 "start":0,
@@ -22365,7 +22376,7 @@ function ResearchInfo()
             infoData.ID=item.id;
             infoData.Date= item.researchdate;
             infoData.InfoType=KLINE_INFO_TYPE.RESEARCH;
-            infoData.ExtendData={ Level:item.level };
+            infoData.ExtendData={ Level:item.level , Type:item.type};
             this.Data.push(infoData);
 
         }

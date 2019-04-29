@@ -686,10 +686,10 @@ function StockData(symbol)
         if (data.risefallspeed) 
         {
             if (!isNaN(data.risefallspeed[1])) this.RiseFallSpeed.M1 = data.risefallspeed[1];
-            if (!isNaN(data.risefallspeed[3])) this.RiseFallSpeed.M5 = data.risefallspeed[3];
+            if (!isNaN(data.risefallspeed[3])) this.RiseFallSpeed.M3 = data.risefallspeed[3];
             if (!isNaN(data.risefallspeed[5])) this.RiseFallSpeed.M5 = data.risefallspeed[5];
             if (!isNaN(data.risefallspeed[10])) this.RiseFallSpeed.M10 = data.risefallspeed[10];
-            if (!isNaN(data.risefallspeed[15])) this.RiseFallSpeed.M10 = data.risefallspeed[15];
+            if (!isNaN(data.risefallspeed[15])) this.RiseFallSpeed.M15 = data.risefallspeed[15];
         }
 
         if (data.mamount) 
@@ -698,7 +698,7 @@ function StockData(symbol)
             if (!isNaN(data.mamount[3])) this.MAmount.M5 = data.mamount[3];
             if (!isNaN(data.mamount[5])) this.MAmount.M5 = data.mamount[5];
             if (!isNaN(data.mamount[10])) this.MAmount.M10 = data.mamount[10];
-            if (!isNaN(data.mamount[15])) this.MAmount.M10 = data.mamount[15];
+            if (!isNaN(data.mamount[15])) this.MAmount.M15 = data.mamount[15];
         }
 
         //if (data.pledge) this.SetPledgeData(data);
@@ -1030,6 +1030,12 @@ JSStock.GetBlockMember = function (symbol)
     return new BlockMember(symbol);
 }
 
+//走势图图片路径
+JSStock.GetMinuteImage=function(symbol)
+{
+    return new MinuteImage(symbol);
+}
+
 
 var RECV_DATA_TYPE=
 {
@@ -1063,7 +1069,8 @@ var RECV_DATA_TYPE=
     DDE_DAY10_DATA:30,
 
     DEAL_DAY_DATA:105,       //分笔数据
-    EVENT_DATA:106          //事件 属性数据
+    EVENT_DATA:106,          //事件 属性数据
+    IMAGE_MINUTE_DATA:107   //走势图图片
 }
 
 function JSStock()
@@ -2425,6 +2432,57 @@ function BlockMember(symbol)
 
 }
 
+
+//获取股票走势图图片路径
+function MinuteImage(symbol)
+{
+    this.newMethod = IStockData;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ApiUrl = g_JSStockResource.Domain + "/API/StockMinuteImage";
+    this.Symbol =[symbol];  //支持批量获取
+    this.Data = []  //数据 {Symbol: 股票代码, Image:图片相对路径 }
+
+    this.RequestData = function () 
+    {
+        this.Data = [];
+        var self = this;
+
+        $.ajax(
+            {
+                url: this.ApiUrl,
+                data: { "symbol": this.Symbol},
+                type:"post",
+                dataType: 'json',
+                success: function (data) 
+                {
+                    self.RecvData(data, RECV_DATA_TYPE.IMAGE_MINUTE_DATA);
+                },
+                fail: function (request) 
+                {
+                    self.RecvError(request, RECV_DATA_TYPE.IMAGE_MINUTE_DATA);
+                }
+            });
+    }
+
+    this.RecvData = function (data, dataType) 
+    {
+        for (let i in data.symbol) 
+        {
+            let item = { Symbol:data.symbol[i], Image:data.imagerelative[i] };
+            this.Data.push(item);
+        }
+
+        if (typeof(this.UpdateUICallback) == 'function')
+            this.UpdateUICallback(this);
+    }
+
+    this.RecvError = function (reqeust, dataType) 
+    {
+
+    }
+}
 /*外部导入*/ 
 import $ from 'jquery'
 

@@ -40,7 +40,7 @@
           
         </div>
         <div class="brushTool" v-if="DrawTool.IsShow">
-            <Stockdrawtool @CurrentIcon = "CurrentIcon" @isShowBrushTool="isShowBrushTool"></Stockdrawtool>
+            <Stockdrawtool @CurrentIcon = "CurrentIcon" @isShowBrushTool="isShowBrushTool" :topheight="topheight" :totalheight="totalheight"></Stockdrawtool>
         </div>   
         <!-- 走势图 和 K线图  !-->
         <div :id='ID' ref='divchart' style="width:100%;height:100%">
@@ -370,6 +370,8 @@ export default
         { 
             Symbol:'600000.sh',
             ID:JSCommon.JSChart.CreateGuid(),
+            topheight: 0,
+            totalheight: 0,
             Minute:
             {
                 JSChart:null, Option:DefaultData.GetMinuteOption(), 
@@ -481,6 +483,11 @@ export default
             var width = stockKLine.offsetWidth;
             var chartHeight=height - divPeriodBar.offsetHeight - divChartBar.offsetHeight - indexBarHeight; //图形高度=总高-周期工具条高-子工具条高-底部指标工具条高
             var chartWidth=width;
+
+            //总高度
+            this.totalheight = height;
+            // 画笔工具总高度需减去的高度
+            this.topheight = divPeriodBar.offsetHeight + divChartBar.offsetHeight;
 
             divChart.style.width=chartWidth+'px';
             divChart.style.height=chartHeight+'px';
@@ -1031,7 +1038,9 @@ export default
             }
         },
 
-        CurrentIcon(name){
+        CurrentIcon(name)
+        {
+            console.log('[StockKLine::CurrentIcon] click', name);
             this.KLine.JSChart.JSChartContainer.CreateChartDrawPicture(name);
             if(name==='全部删除'){
                  this.KLine.JSChart.JSChartContainer.ClearChartDrawPicture();
