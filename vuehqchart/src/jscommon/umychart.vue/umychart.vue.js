@@ -71,6 +71,7 @@ function JSIndexScript()
             ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2],['Zealink-持仓信号', this.Zealink_Index3],
             ['Zealink-增减持',this.Zealink_Index4],['Zealink-大宗交易', this.Zealink_Index5], ['Zealink-信托持股', this.Zealink_Index6],
             ['Zealink-官网新闻', this.Zealink_Index7], ['Zealink-高管要闻', this.Zealink_Index8],['Zealink-股权质押', this.Zealink_Index9],
+            ['Zealink-操盘BS点', this.Zealink_Index10],
             
             //外包指标
             ['放心股-操盘BS点',this.FXG_BSPoint],
@@ -3070,6 +3071,29 @@ JSIndexScript.prototype.Zealink_Index9 = function ()
         Args: [],
         Script: //脚本
             '次数:NEWS(10);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.Zealink_Index10 = function () 
+{
+    let data =
+    {
+        Name: '操盘BS点', Description: '操盘BS点', IsMainIndex: true, FloatPrecision: 0,
+        Args: [],
+        Script: //脚本
+"JJ:=(CLOSE+HIGH+LOW)/3; \n\
+A:=EMA(JJ,10); \n\
+B:=REF(A,1);\n\
+M1:=EMA(CLOSE,3);\n\
+M2:=EMA(CLOSE,8); \n\
+M3:=EMA(M2,13); \n\
+M4:=EMA(M2,55); \n\
+B1:=A>B AND REF(A,1)<REF(B,1);\n\
+S1:=A<B AND REF(A,1)>REF(B,1);\n\
+DRAWICON(REF(B1,1),H*1.03,13);\n\
+DRAWICON(REF(S1,1),L*0.97,14);"
     };
 
     return data;

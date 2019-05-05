@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>页面行情(K线图)</title>  
     <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
     <!-- 使用阿里云图片 -->
-    <link rel="stylesheet" href="content/font/iconfont.css" />
     <!--<link rel="stylesheet" href="https://at.alicdn.com/t/font_1040563_1d1tgaoqofpi.css" />-->
     
 </head>  
@@ -141,8 +141,8 @@
                     Frame:  //子框架设置 (Height 窗口高度比例值)
                     [
                         {SplitCount:3,StringFormat:0, Height:4,IsShowLeftText:true},
-                        {SplitCount:2,StringFormat:0, Height:3,IsShowLeftText:true},
-                        {SplitCount:2,StringFormat:0, Height:3,IsShowLeftText:true}
+                        {SplitCount:2,StringFormat:0, Height:2,IsShowLeftText:true},
+                        {SplitCount:2,StringFormat:0, Height:2,IsShowLeftText:true}
                     ]
                 }
 
@@ -164,6 +164,8 @@
         
             chart.SetOption(option);
             //jsChart.LockIndex('飞龙四式',unlockIndex);
+
+            //chart.AddEventCallback({event:JSCHART_EVENT_ID.RECV_KLINE_MATCH, callback:testcallback})
         
             resizeCanvas();
         
@@ -174,6 +176,11 @@
         function unlockIndex(indexName)
         {
             console.log(indexName);
+        }
+
+        function testcallback(obj,data,jschart)
+        {
+
         }
 
     </script>  

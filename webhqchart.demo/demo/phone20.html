@@ -1,13 +1,15 @@
 ﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">  
-<head>  
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
-<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>本地指标数据页面行情(K线图)</title>  
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>本地指标数据页面行情(K线图)</title>
     <link rel="stylesheet" href="content/css/tools.css" />
-    <link rel="stylesheet" href="content/font/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
     <link rel="stylesheet" href="content/css/phone20.tools.css" />
-</head>  
+</head>
+
 <body>
     <div class="tools">
         <div class="top" id="tools_top">
@@ -31,29 +33,27 @@
 
     <script type="text/javascript" src="content/js/vue.js"></script>
     <script type="text/javascript" src="content/js/phone20.tools.js"></script>
-    
+
     <script>
         var chart,
             option;
 
-        function getURLParams(name) 
-        {
-        	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
-        	var r = window.location.search.substr(1).match(reg);
-        	if (r != null) return decodeURI(r[2]);
-        	return null;
+        function getURLParams(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return decodeURI(r[2]);
+            return null;
         }
-        
-        
+
+
         $(window).resize(resizeCanvas);
-        
-        function resizeCanvas()
-        {
-            var height= $(window).height()-100;
-            var width = $(window).width()-350;
-            var divKline=document.getElementById('kline');
-            divKline.style.width=width+'px';
-            divKline.style.height=height+'px';
+
+        function resizeCanvas() {
+            var height = $(window).height() - 100;
+            var width = $(window).width() - 350;
+            var divKline = document.getElementById('kline');
+            divKline.style.width = width + 'px';
+            divKline.style.height = height + 'px';
             //divKline.style.left='300px';
             divKline.style.top = '50px';
 
@@ -61,8 +61,8 @@
 
             divKline.JSChart.OnSize();
         }
-        
-        
+
+
         $(function () {
             var debug = getURLParams('debug');
             if (debug == 1) {
@@ -101,11 +101,11 @@
                 {
                     Type: '历史K线图',
                     Windows:    //窗口指标
-                    [
-                        { Index: 'MA' },
-                        { Name: localIndexData.Name, JsonData: localIndexData }
-                       // {Index:'KDJ'}
-                    ],
+                        [
+                            { Index: 'MA' },
+                            { Name: localIndexData.Name, JsonData: localIndexData }
+                            // {Index:'KDJ'}
+                        ],
                     //ColorIndex:{Index:'五彩K线-双飞乌鸦'},  //五彩K线指标
                     //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
                     Symbol: symbol,
@@ -143,16 +143,16 @@
                     },
 
                     Frame:  //子框架设置
-                    [
-                        { SplitCount: 3 },
-                        { SplitCount: 3 },
-                        //{SplitCount:3}
-                    ],
+                        [
+                            { SplitCount: 3 },
+                            { SplitCount: 3 },
+                            //{SplitCount:3}
+                        ],
 
                     Overlay:
-                    [
-                       // {Symbol:'000001.sh'}
-                    ]
+                        [
+                            // {Symbol:'000001.sh'}
+                        ]
                 }
 
             var windowHeight = $(window).height();
@@ -178,55 +178,55 @@
             Tools.init();
 
         });
-        
-        function unlockIndex(indexName)
-        {
+
+        function unlockIndex(indexName) {
             console.log(indexName);
         }
 
 
-        var localIndexData={
-            Name:'本地指标',
+        var localIndexData = {
+            Name: '本地指标',
             data:
-            [
-                {
-                    graph:'line', name:'数据1', 
-                    data:
-                        [
-                            0.024824691382736262,
-                            0.032374480460405156,
-                            0.04458121744572169,
-                            0.04804452827422119,
-                            0.04816620068993625,
-                            0.04623678426287751,
-                            0.044134354415412094,
-                            0.03906130996159819,
-                            0.03485595712198429,
-                            0.027985036993695978
-                        ]
-                },
-                {
-                    graph:'line', name:'数据2', 
-                    data:
-                        [
-                            0.03485595712198429,
-                            0.027985036993695978,
-                            0.01926115987753625,
-                            0.005162524566799893,
-                            -0.1551760682992808,
-                            -0.1789222510884499,
-                            -0.21026489398988552,
-                            -0.20300735023312827,
-                            -0.19358702614033593,
-                            -0.18222554155884677
-                        ]
-                }
-            ],
+                [
+                    {
+                        graph: 'line', name: '数据1',
+                        data:
+                            [
+                                0.024824691382736262,
+                                0.032374480460405156,
+                                0.04458121744572169,
+                                0.04804452827422119,
+                                0.04816620068993625,
+                                0.04623678426287751,
+                                0.044134354415412094,
+                                0.03906130996159819,
+                                0.03485595712198429,
+                                0.027985036993695978
+                            ]
+                    },
+                    {
+                        graph: 'line', name: '数据2',
+                        data:
+                            [
+                                0.03485595712198429,
+                                0.027985036993695978,
+                                0.01926115987753625,
+                                0.005162524566799893,
+                                -0.1551760682992808,
+                                -0.1789222510884499,
+                                -0.21026489398988552,
+                                -0.20300735023312827,
+                                -0.19358702614033593,
+                                -0.18222554155884677
+                            ]
+                    }
+                ],
 
-            date:[20190102,20190103,20190104,20190107,20190108,20190109,20190110,20190111,20190114,20190115]
+            date: [20190102, 20190103, 20190104, 20190107, 20190108, 20190109, 20190110, 20190111, 20190114, 20190115]
         };
 
 
-    </script>  
-</body>  
+    </script>
+</body>
+
 </html>
