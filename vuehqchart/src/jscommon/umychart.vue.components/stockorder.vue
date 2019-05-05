@@ -286,8 +286,9 @@ export default
             width: 100%;
             border-collapse:collapse;
             border-spacing: 0;
-            caption {
-                border-top: 1px solid #ccc;
+            caption 
+            {
+                /*border-top: 1px solid #ccc;*/
                 border-bottom: 1px solid #ccc;
                 line-height: 24px;
                 background-color: #ebebeb;
@@ -304,9 +305,10 @@ export default
             tr>td:nth-of-type(2),tr>td:nth-of-type(3){
                 text-align: right;
             }
-            tr>td:nth-of-type(3){
+            /*tr>td:nth-of-type(3)
+            {
                 border-right: 1px solid #ccc;
-            }
+            }*/
             .PriceUp {
                 color: red;
             }

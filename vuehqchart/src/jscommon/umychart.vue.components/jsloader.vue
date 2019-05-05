@@ -77,6 +77,16 @@ export default
         GetControl:function()   //获取真正的控件实例
         {
             return this.Control.componentInstance;
+        },
+
+        ChangeSymbol:function(symbol)
+        {
+            switch(this.ClassName)
+            {
+                case 'StockChart':
+                    this.GetControl().ChangeSymbol(symbol);
+                    return;
+            }
         }
     }
 }

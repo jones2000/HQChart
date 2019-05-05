@@ -21,31 +21,26 @@
                 <div class="content">
                     <div class="choiceItem">
                         <div class="typeText">
-                            <input type="radio" id='One' value='Dialog.ChoiceData[0].ClassName' v-model='BlockType'>
-                            <label for='One'>{{Dialog.ChoiceData[0].TypeText}}</label>
+                            <input type="radio" id='One' :value='Dialog.ChoiceData.MinutChartChoice.TypeText' v-model='BlockType'>
+                            <label for='One'>{{Dialog.ChoiceData.MinutChartChoice.TypeText}}</label>
                         </div>
                     </div>
                     <div class="choiceItem">
                         <div class="typeText">
-                            <input type="radio" id='Two' value='Dialog.ChoiceData[1].ClassName' v-model='BlockType'>
-                            <label for='Two'>{{Dialog.ChoiceData[1].TypeText}}</label>
+                            <input type="radio" id='Two' :value='Dialog.ChoiceData.KLineChoice.TypeText' v-model='BlockType'>
+                            <label for='Two'>{{Dialog.ChoiceData.KLineChoice.TypeText}}</label>
                         </div>
-                        <p class='choices'><span v-for='(choice,ind) in Dialog.ChoiceData[1].Tab1' :key='ind' @click='ChoicebBlock(Dialog.ChoiceData[1].Tab1,choice,ind)' :class='{seleCur:ind == choice.ActiveIndex}'>{{choice.Text}}</span></p>
-                        <p class='choices' v-show='Dialog.ChoiceData[1].Tab2.length > 0'><span v-for='(choice,flag) in Dialog.ChoiceData[1].Tab2' :key='flag' @click='ChoicebBlock(Dialog.ChoiceData[1].Tab2,choice,flag)' :class='{seleCur:flag == choice.ActiveIndex}'>{{choice.Text}}</span></p>
+                        <p class='choices' v-show='Dialog.ChoiceData.KLineChoice.Tab1.length > 0'><span v-for='(choice,ind) in Dialog.ChoiceData.KLineChoice.Tab1' :key='ind' @click='ChoicebBlock(Dialog.ChoiceData.KLineChoice,Dialog.ChoiceData.KLineChoice.Tab1,ind)' :class='{seleCur:ind == choice.ActiveIndex}'>{{choice.Text}}</span></p>
+                        <p class='choices' v-show='Dialog.ChoiceData.KLineChoice.Tab2.length > 0'><span v-for='(choice,flag) in Dialog.ChoiceData.KLineChoice.Tab2' :key='flag' @click='ChoicebBlock(Dialog.ChoiceData.KLineChoice,Dialog.ChoiceData.KLineChoice.Tab2,flag)' :class='{seleCur:flag == choice.ActiveIndex}'>{{choice.Text}}</span></p>
                     </div>
                     <div class="choiceItem">
                         <div class="typeText">
-                            <input type="radio" id='Three' value='Dialog.ChoiceData[2].ClassName' v-model='BlockType'>
-                            <label for='Three'>{{Dialog.ChoiceData[2].TypeText}}</label>
+                            <input type="radio" id='Three' :value='Dialog.ChoiceData.HqData.TypeText' v-model='BlockType'>
+                            <label for='Three'>{{Dialog.ChoiceData.HqData.TypeText}}</label>
                         </div>
-                        <p class='choices'><span v-for='(choice,ind) in Dialog.ChoiceData[2].Tab1' :key='ind' @click='ChoicebBlock(Dialog.ChoiceData[2].Tab1,choice,ind)' :class='{seleCur:ind == choice.ActiveIndex}'>{{choice.Text}}</span></p>
-                        <p class='choices' v-show='Dialog.ChoiceData[2].Tab2.length > 0'><span v-for='(choice,flag) in Dialog.ChoiceData[2].Tab2' :key='flag' @click='ChoicebBlock(Dialog.ChoiceData[2].Tab2,choice,flag)' :class='{seleCur:flag == choice.ActiveIndex}'>{{choice.Text}}</span></p>
+                        <p class='choices'><span v-for='(choice,ind) in Dialog.ChoiceData.HqData.Tab1' :key='ind' @click='ChoicebBlock(Dialog.ChoiceData.HqData,Dialog.ChoiceData.HqData.Tab1,ind)' :class='{seleCur:ind == choice.ActiveIndex}'>{{choice.Text}}</span></p>
+                        <p class='choices' v-show='Dialog.ChoiceData.HqData.Tab2.length > 0'><span v-for='(choice,flag) in Dialog.ChoiceData.HqData.Tab2' :key='flag' @click='ChoicebBlock(Dialog.ChoiceData.HqData,Dialog.ChoiceData.HqData.Tab2,flag)' :class='{seleCur:flag == choice.ActiveIndex}'>{{choice.Text}}</span></p>
                     </div>
-                    <!-- <div class="choiceItem" v-for='(choiceItem,index) in Dialog.ChoiceData' :key='index'>
-                        <p class="typeTitle">{{choiceItem.TypeText}}</p>
-                        <p class='choices'><span v-for='(choice,ind) in choiceItem.Tab1' :key='ind' @click='ChoicebBlock(choiceItem.Tab1,choice,ind)' :class='{seleCur:ind == choice.ActiveIndex}'>{{choice.Text}}</span></p>
-                        <p class='choices' v-show='choiceItem.Tab2.length > 0'><span v-for='(choice,flag) in choiceItem.Tab2' :key='flag' @click='ChoicebBlock(choiceItem.Tab2,choice,flag)' :class='{seleCur:flag == choice.ActiveIndex}'>{{choice.Text}}</span></p>
-                    </div> -->
                 </div>
                 <div class="btns"><button type="button" @click='AddBlock'>确定</button></div>
             </div>
@@ -69,20 +64,22 @@ DefaultData.CreateID=function()
     return DefaultData.ID;
 }
 DefaultData.BlockData=function(){
-    let data = [
-                    {
+    let data = {
+                MinutChartChoice:{
                         TypeText:'走势图',                        
                         ClassName:'StockChart',
+                        RadioId:'One',
                         Tab1:[
-                            {Text:'走势图',ActiveIndex:-1}
+                            // {Text:'走势图',ActiveIndex:-1}
                         ],
                         Tab2:[],
                         IsShow:true,
                         IsGoAdding:false
                     },
-                    {
-                        TypeText:'k线图',              
+                KLineChoice:{
+                        TypeText:'K线图',              
                         ClassName:'StockChart',
+                        RadioId:'Two',
                         Tab1:[
                             {Text:'复权',ActiveIndex:-1},
                             {Text:'不复权',ActiveIndex:-1}
@@ -98,9 +95,10 @@ DefaultData.BlockData=function(){
                         IsShow:true,
                         IsGoAdding:false
                     },
-                    {
-                        TypeText:'行情数据',
+                    HqData:{
+                        TypeText:'综合排名',
                         ClassName:'StockOrder',
+                        RadioId:'Three',
                         Tab1:[
                             {Text:'沪深A股',ActiveIndex:-1},
                             {Text:'上证A股',ActiveIndex:-1},
@@ -114,7 +112,7 @@ DefaultData.BlockData=function(){
                         IsShow:true,
                         IsGoAdding:false
                     }
-                ];
+                };
     return data;
 }
 
@@ -151,6 +149,24 @@ export default
         };
     },
 
+    watch:{
+        BlockType:function(val){
+            switch(val){
+                case 'K线图':
+                    var tab1 = this.Dialog.ChoiceData.HqData.Tab1;
+                    var tab2 = this.Dialog.ChoiceData.HqData.Tab2;
+                    this.BackToNotSelect(tab1);
+                    this.BackToNotSelect(tab2);
+                    break;
+                case '综合排名':
+                    var tab1 = this.Dialog.ChoiceData.KLineChoice.Tab1;
+                    var tab2 = this.Dialog.ChoiceData.KLineChoice.Tab2;
+                    this.BackToNotSelect(tab1);
+                    this.BackToNotSelect(tab2);
+                    break;
+            }
+        }
+    },
     created:function()
     {
         //处理默认传入的参数
@@ -168,6 +184,7 @@ export default
     {
         this.OnSize();
     },
+    
 
     methods: 
     {
@@ -176,22 +193,150 @@ export default
         },
         AddBlock(){  //增加板块
             this.Dialog.IsShow = false;
-            console.log('[container::AddBlock]ChoiceData:',this.Dialog.ChoiceData);
-            var addBlocks = [];//{}
-            for(let i =0; i < this.Dialog.ChoiceData.length; i++){
-                var typeText = this.Dialog.ChoiceData[i].TypeText;
-                var tab1 = this.Dialog.ChoiceData[i].Tab1;
-                var tab2 = this.Dialog.ChoiceData[i].Tab2;
-                if(tab1.length > 0){
-                    for(let j = 0; j < tab1.length; j++){
-                        var item = tab1[j];
-                        var optionText = item.Text;
-                        if(item.ActiveIndex > -1){
-                            this.ShowSelectedBlock(typeText,optionText)
-                        }
+            if(this.BlockType == '') return;
+            console.log('[container::AddBlock]BlockType:',this.BlockType);
+            var type = this.BlockType;
+            var ID = this.CreateID();
+            var symbol = this.Symbol;
+            var controlObj = {};
+            switch(type){
+                case '走势图':
+                    controlObj = { ClassName:'StockChart', ID:ID,Symbol:symbol, 
+                                Option:
+                                    {
+                                    Type: '分钟走势图', 
+                                    IsShowCorssCursorInfo:false,
+                                    Windows:        //指定指标
+                                    [
+                                        //{ Index: "KDJ" }
+                                    ]
+                                    }, 
+                                Size:{ Width:this.MinSize.Width, Height:this.MinSize.Height }
+                            };
+                    break;
+                case 'K线图':
+                    controlObj = this.GetkLineOption(ID,symbol);
+                    break;
+                case '综合排名':
+                    controlObj = this.GetHqOption(ID);
+                    break;
+            }
+            console.log('[container::AddBlock ]controlObj:',controlObj);
+            this.Control.push(controlObj);
+
+           
+        },
+        GetHqOption(ID){
+            var controlObj = {};
+            var symbol = '';
+            var orderFiled = 0;
+            var tab1 = this.Dialog.ChoiceData.HqData.Tab1;
+            var tab2 = this.Dialog.ChoiceData.HqData.Tab2;
+            for(let i = 0; i < tab1.length; i++){
+                var symbolText = tab1[i];
+                if(symbolText.ActiveIndex > -1){
+                    var text = symbolText.Text;
+                    switch(text){
+                        case '沪深A股':
+                            symbol='CNA.ci';
+                            break;
+                        case '上证A股':
+                            symbol='SHA.ci';
+                            break;
+                        case '深证A股':
+                            symbol='SZA.ci';
+                            break;
+                        case '创业板':
+                            symbol='GEM.ci';
+                            break;
                     }
                 }
             }
+            for(let j=0; j < tab2.length; j++){
+                var riseText = tab2[j];
+                if(riseText.ActiveIndex > -1){
+                    var text = riseText.Text;
+                    switch(text){
+                        case '涨幅排名':
+                            orderFiled = 11;
+                            break;
+                        case '跌幅排名':
+                            orderFiled = 39 //3分钟跌速排名
+                            break;
+                    }
+                }
+            }
+            var that = this;
+            controlObj = { ClassName:'StockOrder', ID:ID,Symbol:symbol, Option: { OrderFiled:orderFiled, Order:-1 } , 
+                Size:{ Width:this.MinSize.Width, Height:this.MinSize.Height },
+                CreateComplete:function(jsLoader) { that.OnControlCreateCompete(jsLoader); }
+            }
+            return controlObj;
+        },
+        GetkLineOption(ID,symbol){
+            //获取复权
+            //获取周期
+            var controlObj = {};
+            var right = 0;
+            var period = 0;
+            // var kline = {Right:null,Period:null};
+            var tab1 = this.Dialog.ChoiceData.KLineChoice.Tab1;
+            var tab2 = this.Dialog.ChoiceData.KLineChoice.Tab2;
+            for(let i = 0; i < tab1.length; i++){
+                var rightText = tab1[i];
+                if(rightText.ActiveIndex > -1){
+                    var text = rightText.Text;
+                    if(text == '复权'){
+                        right = 1;
+                    }else if(text == '不复权'){
+                        right = 0;
+                    }
+                }
+                
+            }
+            for(let j = 0; j < tab2.length; j++){
+                var periodText = tab2[j];
+                if(periodText.ActiveIndex > -1){
+                    var text = periodText.Text;
+                    switch(text){
+                        case '日线':
+                            period = 0;
+                            break;
+                        case '周线':
+                            period = 1;
+                            break;
+                        case '月线':
+                            period = 2;
+                            break;
+                        case '1分钟':
+                            period = 4;
+                            break;
+                        case '5分钟':
+                            period = 5;
+                            break;
+                        case '15分钟':
+                            period = 6;
+                            break;
+                    }
+                }
+            }
+            
+            var that = this;
+            controlObj = { ClassName:'StockChart', ID:ID,Symbol:symbol, 
+                Option:
+                    {
+                    Type: '历史K线图', 
+                    IsShowCorssCursorInfo:false,
+                    KLine:
+                        {
+                            Right:right,                    //复权 0 不复权 1 前复权 2 后复权
+                            Period:period,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                        }
+                    }, 
+                Size:{ Width:this.MinSize.Width, Height:this.MinSize.Height},
+                CreateComplete:function(jsLoader) { that.OnControlCreateCompete(jsLoader); }
+            };
+            return controlObj;
         },
         ShowSelectedBlock(typeText,optionText){
             var ID = this.CreateID();
@@ -220,16 +365,32 @@ export default
             }
             this.Control.push(controlObj);
         },
-        ChoicebBlock(tabItem,choice,index){
-            for(let i = 0; i < tabItem.length; i++){
-                var tabChoice = tabItem[i];
-                if(i == index && tabChoice.ActiveIndex == -1){
-                    tabChoice.ActiveIndex = index; //选中
-                }else{
-                    tabChoice.ActiveIndex = -1;  //取消选择
+        ChoicebBlock(choicetItem,tabItem,index){
+            console.log('[container::ChoicebBlock]index:',index);
+            var type = this.BlockType;
+            if(type == choicetItem.TypeText){
+                for(let i = 0; i < tabItem.length; i++){
+                    var choice = tabItem[i];
+                    if(i == index && choice.ActiveIndex == -1){
+                        choice.ActiveIndex = index; //选中
+                    }else{
+                        choice.ActiveIndex = -1;  //取消选择
+                    }
                 }
+                
+            }else{
+                this.BackToNotSelect(tabItem);
             }
             
+            
+        },
+        BackToNotSelect(tabItem){ //设置选项为灰色
+            // console.log();
+            for(let i = 0; i < tabItem.length; i++){
+                var choice = tabItem[i];
+                choice.ActiveIndex = -1;  //取消选择
+            }
+            // console.log('回到默认',this.Dialog.ChoiceData.KLineChoice);
         },
         ShowDialog(){
             this.Dialog.IsShow = true;
