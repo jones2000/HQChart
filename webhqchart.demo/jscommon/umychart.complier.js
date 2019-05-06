@@ -11,8 +11,8 @@ var g_JSComplierResource=
             [2, { Text:'\ue68b', Color:'rgb(46,139,87)'}],    //向下箭头
             [11,{ Text:'\ue624', Color:'rgb(245,159,40)'}],  //点赞
             [12,{ Text:'\ue600', Color:'rgb(245,159,40)'}],
-            [13,{Text:'\ue70f',Color:'rgb(255,106,106)'}, ],    //B
-            [14,{Text:'\ue64c',Color:'rgb(6,79,18)'} ],         //S
+            [13,{Text:'\ue70f',Color:'rgb(209,37,35)'}, ],    //B
+            [14,{Text:'\ue64c',Color:'rgb(127,209,59)'} ],         //S
             [9, {Text:'\ue626',Color:'rgb(245,159,40)'} ],      //$
             [36,{Text:'\ue68c',Color:'rgb(255,106,106)'} ],     //关闭 红色
             [37,{Text:'\ue68c',Color:'rgb(46,139,87)'} ],       //关闭 绿色

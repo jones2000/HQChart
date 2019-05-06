@@ -1036,6 +1036,12 @@ JSStock.GetMinuteImage=function(symbol)
     return new MinuteImage(symbol);
 }
 
+//获取历史日线收盘数据
+JSStock.GetHistoryDayData=function(symbol)
+{
+    return new HistoryDayData(symbol);
+}
+
 
 var RECV_DATA_TYPE=
 {
@@ -1070,7 +1076,8 @@ var RECV_DATA_TYPE=
 
     DEAL_DAY_DATA:105,       //分笔数据
     EVENT_DATA:106,          //事件 属性数据
-    IMAGE_MINUTE_DATA:107   //走势图图片
+    IMAGE_MINUTE_DATA:107,   //走势图图片
+    HISTORY_DAY_DATA:108    //历史日线收盘数据
 }
 
 function JSStock()
@@ -2296,9 +2303,12 @@ function DealDay(symbol)
             YClose:data.day.yclose,
             Symbol:data.symbol,
             Name:data.name,
-            Deal:[]
+            Deal:[],
+            PriceList:[]    //分价表
         };
 
+        var mapPrice=new Map(); //分价表 key=价格 value={Vol:成交量, Proportion:占比, Price:价格 }
+        var totalVol=0; //一共的成交量
         var minCount=Math.min(time.length,vol.length,flag.length, price.length, amount.length);
         for (let i =0;i<minCount;++i) 
         {
@@ -2309,7 +2319,27 @@ function DealDay(symbol)
             if (item.Time>150000) item.Time=150000; //盘后数据都算在15:00
 
             dealData.Deal.push(item);
+
+            if (mapPrice.has(item.Price))
+            {
+                mapPrice.get(item.Price).Vol+=item.Vol; //成交量累加
+            }
+            else
+            {
+                mapPrice.set(item.Price, {Vol:item.Vol, Price:item.Price});
+            }
+
+            totalVol+=item.Vol;
         }
+
+        for(var item of mapPrice)
+        {
+            var itemData=item[1];
+            if (totalVol>0) itemData.Proportion=itemData.Vol/totalVol;
+            dealData.PriceList.push(itemData);
+        }
+
+        dealData.PriceList.sort(function(a,b){return b.Price-a.Price;});    //排序
 
         this.Data=dealData;
 
@@ -2398,7 +2428,7 @@ function BlockMember(symbol)
                 {
                     self.RecvData(data, RECV_DATA_TYPE.BLOCK_MEMBER_DATA);
                 },
-                fail: function (request) 
+                error: function (request) 
                 {
                     self.RecvError(request, RECV_DATA_TYPE.BLOCK_MEMBER_DATA);
                 }
@@ -2459,7 +2489,7 @@ function MinuteImage(symbol)
                 {
                     self.RecvData(data, RECV_DATA_TYPE.IMAGE_MINUTE_DATA);
                 },
-                fail: function (request) 
+                error: function (request) 
                 {
                     self.RecvError(request, RECV_DATA_TYPE.IMAGE_MINUTE_DATA);
                 }
@@ -2481,6 +2511,93 @@ function MinuteImage(symbol)
     this.RecvError = function (reqeust, dataType) 
     {
 
+    }
+}
+
+
+//获取历史K线数据(不包含最新数据)
+function HistoryDayData(symbol)
+{
+    this.newMethod = IStockData;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Symbol = symbol;   //数组
+
+    this.RequestData = function () 
+    {
+        this.Data=null;
+        this.Error=null;
+
+        var self = this;
+        
+        var apiUrl=g_JSStockResource.CacheDomain + "/cache/historyday/all/"+ this.Symbol +'.json';
+        console.log('[HistoryDayData::RequestData] cache url ',apiUrl)
+        $.ajax({
+            url: apiUrl,
+            type:"get",
+            dataType: 'json',
+            async:true,
+            success: function (data) 
+            {
+                self.RecvData(data, RECV_DATA_TYPE.HISTORY_DAY_DATA);
+            },
+            error: function (request) 
+            {
+                self.RecvError(request, RECV_DATA_TYPE.HISTORY_DAY_DATA);
+            }
+        });
+    }
+
+    this.RecvData = function (data, dataType) 
+    {
+        if (!data.symbol || !data.name) 
+        {
+            this.InvokeUpdateUICallback();
+            return;
+        }
+
+        var amount=data.amount;
+        var close=data.close;
+        var date=data.date;
+        var high=data.high;
+        var low=data.low;
+        var open=data.open;
+        var vol=data.vol;
+        var yclose=data.yclose;
+
+        if (!amount || !close || !date || !high || !low || !open || !vol || !yclose) 
+        {
+            this.InvokeUpdateUICallback();
+            return;
+        }
+
+        var historyData=
+        { 
+            UpdateDate:data.update, 
+            Symbol:data.symbol,
+            Name:data.name,
+            KLine:[]
+        };
+
+        for (let i =0;i<date.length;++i) 
+        {
+            let item={ Date:date[i], YClose:yclose[i], Open:open[i], High:high[i], Low:low[i], Close:close[i], Vol:vol[i], Amount:amount[i] }
+
+            historyData.KLine.push(item);
+        }
+
+        this.Data=historyData;
+
+        this.InvokeUpdateUICallback();
+    }
+
+    this.RecvError = function (request, dataType) 
+    {
+        console.log(`[HistoryDayData::RecvError] status=${request.status} statusText=${request.statusText} responseText=${request.responseText}`);
+
+        this.Error={Status:request.status, Message:request.responseText };
+        this.InvokeUpdateUICallback();
     }
 }
 /*外部导入*/ 

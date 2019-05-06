@@ -288,9 +288,9 @@ JSIndexScript.prototype.VOL=function()
         Name:'VOL', Description:'成交量', IsMainIndex:false,FloatPrecision:0,
         Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10} ],
         Script: //脚本
-'VOLUME:VOL,VOLSTICK;\n\
-MAVOL1:MA(VOLUME,M1);\n\
-MAVOL2:MA(VOLUME,M2);'
+'VOL:VOL,VOLSTICK;\n\
+MA1:MA(VOL,M1);\n\
+MA2:MA(VOL,M2);'
 
     };
 
@@ -1971,8 +1971,8 @@ JSIndexScript.prototype.FXG_BSPoint=function()
         魔鬼:=EMA(SLOPE(C,21)*20+C,42),COLOR000000;\n\
         买:=CROSS(天使,魔鬼);\n\
         卖:=CROSS(魔鬼,天使);\n\
-        SUPERDRAWTEXT(买,L,"B",2,5),COLORYELLOW;\n\
-        SUPERDRAWTEXT(卖,L,"S",1,5),COLORGREEN;\n\
+        DRAWICON(买,L*0.97,13);\n\
+        DRAWICON(卖,H*1.03,14);\n\
         DRAWKLINE_IF(天使>=魔鬼,HIGH,CLOSE,LOW,OPEN),COLORRED;\n\
         DRAWKLINE_IF(天使<魔鬼,HIGH,CLOSE,LOW,OPEN),COLORBLUE;\n\
         DRAWKLINE_IF(CROSS(天使,魔鬼),HIGH,CLOSE,LOW,OPEN),COLORYELLOW;\n\

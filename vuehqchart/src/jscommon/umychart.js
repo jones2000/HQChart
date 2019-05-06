@@ -99,10 +99,10 @@ function JSChart(divElement)
             if (option.KLine.IndexTreeApiUrl) chart.ChangeIndexDialog.IndexTreeApiUrl=option.KLine.IndexTreeApiUrl;
             if (option.KLine.KLineDoubleClick==false) chart.MinuteDialog=this.MinuteDialog=null;
             if (option.KLine.IndexTreeApiUrl!=null) chart.ChangeIndexDialog.IndexTreeApiUrl=option.KLine.IndexTreeApiUrl;
-            if (option.KLine.PageSize>0)  chart.PageSize=option.KLine.PageSize;
             if (option.KLine.IsShowTooltip==false) chart.IsShowTooltip=false;
             if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
             if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
+            if (option.KLine.FirstShowDate>20000101) chart.CustomShow={ Date:option.KLine.FirstShowDate };
         }
 
         if (!option.Windows || option.Windows.length<=0) return null;
@@ -119,6 +119,17 @@ function JSChart(divElement)
         }
 
         this.AdjustChartBorder(chart);
+
+        if (option.KLine)
+        {
+            if (option.KLine.PageSize > 0)  //一屏显示的数据个数
+            {
+                let pageSize = chart.GetMaxMinPageSize();
+                if (pageSize.Max < option.KLine.PageSize) chart.PageSize = pageSize.Max;
+                else if (pageSize.Min> option.KLine.PageSize) chart.PageSize=pageSize.Min;
+                else chart.PageSize = option.KLine.PageSize;
+            }
+        }
 
         if (option.IsShowCorssCursorInfo==false)    //取消显示十字光标刻度信息
         {
@@ -796,6 +807,13 @@ function JSChart(divElement)
             this.JSChartContainer.OverlaySymbol(symbol);
     }
 
+    //设置当前屏的起始日期 { Date:起始日期(必填), PageSize:一屏显示的数据个数(可选)}
+    this.SetFirstShowDate=function(obj)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.SetFirstShowDate)=='function')
+            this.JSChartContainer.SetFirstShowDate(obj);
+    }
+
     //K线切换类型 0=实心K线 1=收盘价线 2=美国线 3=空心K线
     this.ChangeKLineDrawType=function(drawType)
     {
@@ -995,6 +1013,8 @@ function JSChartContainer(uielement)
     //事件回调
     this.mapEvent=new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
 
+    this.IsOnTouch = false;     //是否再操作数据
+
     //设置事件回调
     //{event:事件id, callback:回调函数}
     this.AddEventCallback=function(object)
@@ -1039,6 +1059,8 @@ function JSChartContainer(uielement)
     {
         if(!this.JSChartContainer) return;
         if(this.JSChartContainer.DragMode==0) return;
+
+        this.JSChartContainer.IsOnTouch=true;
 
         if (this.JSChartContainer.TryClickLock)
         {
@@ -1219,54 +1241,25 @@ function JSChartContainer(uielement)
 
                 if (this.JSChartContainer.GetSelectRectData(selectData))
                 {
-                    if (!this.JSChartContainer.SelectRectRightMenu) return;
-                    e.data=
+                    if (this.JSChartContainer.SelectRectRightMenu)
                     {
-                        Chart:this.JSChartContainer,
-                        X:drag.LastMove.X-uielement.getBoundingClientRect().left,
-                        Y:drag.LastMove.Y-uielement.getBoundingClientRect().top,
-                        SelectData:selectData,          //区间选择的数据
-                    };
-                    this.JSChartContainer.SelectRectRightMenu.DoModal(e);
-                    /*
-                    rectContextMenu.show({
-                        x:drag.LastMove.X,
-                        y:drag.LastMove.Y,
-                        position:_self.Frame.Position,
-                        data: [{
-                            text: "区间统计",
-                            click: function (selectData){
-                                selectData.JSChartContainer.HideSelectRect();
-                                Interval.show(selectData);
-                            }},{
-                                text:'形态选股',
-                                click:function(selectData){
-                                    selectData.JSChartContainer.HideSelectRect();
-                                    //形态选股
-                                    //选出相似度>.90的股票
-                                    var scopeData={Plate:["CNA.ci"],Minsimilar:0.85};
-                                    Common.showLoad();
-                                    selectData.JSChartContainer.RequestKLineMatch(selectData,scopeData,function(data){
-                                        KLineMatch.show(data);
-                                    });
-                                }
-
-                            }],
-
-                        returnData:selectData
-                    });
-                    */
-
-                    //形态选股
-                    //选出相似度>.90的股票
-                    //var scopeData={Plate:["S24.ci"],Minsimilar:0.85};
-                    //this.JSChartContainer.RequestKLineMatch(this.JSChartContainer,selectData,scopeData);
+                        e.data=
+                        {
+                            Chart:this.JSChartContainer,
+                            X:drag.LastMove.X-uielement.getBoundingClientRect().left,
+                            Y:drag.LastMove.Y-uielement.getBoundingClientRect().top,
+                            SelectData:selectData,          //区间选择的数据
+                        };
+                        this.JSChartContainer.SelectRectRightMenu.DoModal(e);
+                    }
                 }
             }
 
             //清空数据
+            console.log('[KLineChartContainer::document.onmouseup]',e);
             this.JSChartContainer.UIElement.style.cursor="default";
             this.JSChartContainer.MouseDrag=null;
+            this.JSChartContainer.IsOnTouch=false;
             if (bClearDrawPicture===true) this.JSChartContainer.CurrentChartDrawPicture=null;
             this.JSChartContainer=null;
         }
@@ -1325,6 +1318,7 @@ function JSChartContainer(uielement)
         if(!this.JSChartContainer) return;
         if(this.JSChartContainer.DragMode==0) return;
 
+        this.JSChartContainer.IsOnTouch=true;
         this.JSChartContainer.PhonePinch=null;
 
         e.preventDefault();
@@ -1470,6 +1464,8 @@ function JSChartContainer(uielement)
 
         uielement.ontouchend=function(e)
         {
+            console.log('[KLineChartContainer::uielement.ontouchend]',e);
+            this.JSChartContainer.IsOnTouch = false;
             clearTimeout(timeout);
         }
 
@@ -3220,9 +3216,8 @@ function KLineFrame()
                 this.ZoomIndex=i;
                 this.DataWidth = ZOOM_SEED[i][0];
                 this.DistanceWidth = ZOOM_SEED[i][1];
-                if (i == 0) break;      // 如果是最大的缩放因子，不再调整数据宽度
-
                 this.TrimKLineDataWidth(width);
+                console.log('[KLineFrame::CalculateDataWidth] ZOOM_SEED, DataWidth, DistanceWidth, XPointCount', ZOOM_SEED[this.ZoomIndex], this.DataWidth,this.DistanceWidth,this.XPointCount);
                 return;
             }
         }
@@ -3230,14 +3225,29 @@ function KLineFrame()
 
     this.TrimKLineDataWidth=function(width)
     {
-        while(true)
+        if (this.ZoomIndex>=ZOOM_SEED.length-2) //最后2个缩放,调整间距不调整数据宽度, 数据都是画竖线的
         {
-            if((this.DistanceWidth + this.DataWidth) * this.XPointCount + this.DistanceWidth > width)
+            while(true)
             {
-                this.DataWidth -= 0.01;
-                break;
+                if((this.DistanceWidth + this.DataWidth) * this.XPointCount + this.DistanceWidth > width)
+                {
+                    this.DistanceWidth -= 0.01;
+                    break;
+                }
+                this.DistanceWidth += 0.01;
             }
-            this.DataWidth += 0.01;
+        }
+        else
+        {
+            while(true)
+            {
+                if((this.DistanceWidth + this.DataWidth) * this.XPointCount + this.DistanceWidth > width)
+                {
+                    this.DataWidth -= 0.01;
+                    break;
+                }
+                this.DataWidth += 0.01;
+            }
         }
     }
 
@@ -15833,6 +15843,8 @@ function KLineChartContainer(uielement)
     this.FlowCapitalReady=false;        //流通股本是否下载完成
     this.StockChipWidth=230;            //移动筹码宽度
 
+    this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
+
     //自动更新设置
     this.IsAutoUpdate=false;                    //是否自动更新行情数据
     this.AutoUpdateFrequency=30000;             //30秒更新一次数据
@@ -16066,9 +16078,6 @@ function KLineChartContainer(uielement)
         paint.Name="Overlay-KLine";
         paint.DrawType=this.KLineDrawType;
         this.OverlayChartPaint[0]=paint;
-
-        
-
     }
 
     //绑定主图K线数据
@@ -16100,6 +16109,81 @@ function KLineChartContainer(uielement)
 
         this.CursorIndex=showCount;
         if (this.CursorIndex+dataOffset>=hisData.Data.length) this.CursorIndex=dataOffset;
+
+        if (this.CustomShow) //定制显示 1次有效
+        {
+            this.SetCustomShow(this.CustomShow,hisData,showCount);
+            this.CustomShow=null;
+        }
+
+    }
+
+    this.UpdateMainData=function(hisData)
+    {
+        var frameHisdata=null;
+        if (!this.Frame.Data) frameHisdata=this.Frame.Data;
+        else if (this.Frame.SubFrame && this.Frame.SubFrame[0]) frameHisdata=this.Frame.SubFrame[0].Frame.Data;
+        if (!frameHisdata) return;
+
+        this.ChartPaint[0].Data=hisData;
+        this.ChartPaint[0].Symbol=this.Symbol;
+        this.ChartPaint[0].Data.DataOffset=frameHisdata.DataOffset;
+        for(var i in this.Frame.SubFrame)
+        {
+            var item =this.Frame.SubFrame[i].Frame;
+            item.Data=this.ChartPaint[0].Data;
+        }
+
+        this.TitlePaint[0].Data=this.ChartPaint[0].Data;                    //动态标题
+        this.TitlePaint[0].Symbol=this.Symbol;
+        this.TitlePaint[0].Name=this.Name;
+
+        this.ChartCorssCursor.StringFormatX.Data=this.ChartPaint[0].Data;   //十字光标
+        this.Frame.Data=this.ChartPaint[0].Data;
+
+        this.OverlayChartPaint[0].MainData=this.ChartPaint[0].Data;         //K线叠加
+
+        this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
+    }
+
+    this.SetCustomShow=function(customShow,hisData,showCount)
+    {
+        if (!customShow || !customShow.Date || customShow.Date<20000101) return;
+
+        var firstDate=customShow.Date;
+        var index=null;
+        for(var i =0;i<hisData.Data.length;++i)
+        {
+            var item=hisData.Data[i];
+            if (item.Date>=firstDate)
+            {
+                index=i;
+                break;
+            }
+        }
+        if (index===null) 
+        {
+            console.log(`[KLineChartContainer::SetCustomShow] Can't find first date=${firstDate}`);
+            return;
+        }
+
+        var count=hisData.Data.length-index;
+        if (count<showCount)
+        {
+            let customShowCount=count;
+            let pageSize=this.GetMaxMinPageSize();
+            if (count>pageSize.Max) customShowCount=pageSize.Max;
+            else if (count<pageSize.Min) customShowCount=pageSize.Min;
+            
+            for(var i in this.Frame.SubFrame)
+            {
+                var item =this.Frame.SubFrame[i].Frame;
+                item.XPointCount=customShowCount;
+            }
+        }
+
+        this.ChartPaint[0].Data.DataOffset=index;
+        this.CursorIndex=0.6;
     }
 
     //创建指定窗口指标
@@ -16245,10 +16329,10 @@ function KLineChartContainer(uielement)
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
-        this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
     }
 
     this.ReqeustHistoryMinuteData=function()
@@ -16378,10 +16462,13 @@ function KLineChartContainer(uielement)
 
     this.RecvRealtimeData=function(data)
     {
+        if (this.IsOnTouch==true) return;   //正在操作中不更新数据
+        if (!data.stock || !data.stock[0] || this.Symbol!=data.stock[0].symbol) return;
         var realtimeData=KLineChartContainer.JsonDataToRealtimeData(data);
-        if (this.Symbol!=data.symbol) return;
+        
+        if (this.SourceData.Data[this.SourceData.Data.length-1].Date!=realtimeData.Date) return;
 
-        if (this.SourceData.Data[this.SourceData.Data.length-1].Date=!realtimeData.Date) return;
+        console.log('[KLineChartContainer::RecvRealtimeData] update kline by minute data',realtimeData);
 
         //实时行情数据更新
         var item =this.SourceData.Data[this.SourceData.Data.length-1];
@@ -16410,7 +16497,7 @@ function KLineChartContainer(uielement)
         }
 
         //绑定数据
-        this.BindMainData(bindData,this.PageSize);
+        this.UpdateMainData(bindData);
         this.BindInstructionIndexData(bindData);    //执行指示脚本
 
         for(var i=0; i<this.Frame.SubFrame.length; ++i)
@@ -16480,6 +16567,63 @@ function KLineChartContainer(uielement)
         this.Right=right;
 
         this.Update();
+    }
+
+    //设置第1屏的起始日期
+    this.SetFirstShowDate=function(obj)
+    {
+        if (!obj || !obj.Date) return;
+
+        console.log('[KLineChartContainer::SetFirstShowDate] obj=', obj);
+
+        var hisData=null;
+        if (!this.Frame.Data) hisData=this.Frame.Data;
+        else hisData=this.Frame.SubFrame[0].Frame.Data;
+        if (!hisData) return;  //数据还没有到达
+
+        var index=null;
+        for(var i=0;i<hisData.Data.length;++i)
+        {
+            var item=hisData.Data[i];
+            if (item.Date>=obj.Date)
+            {
+                index=i;
+                break;
+            }
+        }
+
+        if (index===null) 
+        {
+            console.log(`[KLineChartContainer::SetFirstShowDate] an't find first date=${obj.Date}`, obj);
+            return;
+        }
+
+        var count=hisData.Data.length-index;
+        var customShowCount=count;
+        if (obj.PageSize>0) customShowCount=obj.PageSize;
+
+        var pageSize = this.GetMaxMinPageSize();
+        if (pageSize.Max < customShowCount) customShowCount = pageSize.Max;
+        else if (pageSize.Min>customShowCount) customShowCount=pageSize.Min;
+
+        for(var i in this.Frame.SubFrame)   //设置一屏显示的数据个数
+        {
+            var item =this.Frame.SubFrame[i].Frame;
+            item.XPointCount=customShowCount;
+        }
+        
+        hisData.DataOffset=index;
+        this.CursorIndex=0.6;
+        this.LastPoint.X=null;
+        this.LastPoint.Y=null;
+
+        console.log(`[KLineChartContainer::SetFirstShowDate] dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${customShowCount}`);
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
     }
 
     //删除某一个窗口的指标
@@ -17880,6 +18024,19 @@ function KLineChartContainer(uielement)
         }
     }
 
+    this.GetMaxMinPageSize = function () 
+    {
+        let pageSize={};
+        let width = this.Frame.ChartBorder.GetWidth();
+        let barWidth = (ZOOM_SEED[ZOOM_SEED.length - 1][0] + ZOOM_SEED[ZOOM_SEED.length - 1][1]);
+        pageSize.Max=parseInt(width / barWidth) - 2;
+
+        barWidth= (ZOOM_SEED[0][0] + ZOOM_SEED[0][1]);
+        pageSize.Min=parseInt(width / barWidth) - 2;
+
+        return pageSize;
+    }
+
 }
 
 //API 返回数据 转化为array[]
@@ -17919,6 +18076,8 @@ KLineChartContainer.JsonDataToRealtimeData=function(data)
     item.Low=data.stock[0].low;
     item.Vol=data.stock[0].vol/100; //原始单位股
     item.Amount=data.stock[0].amount;
+    item.Close=data.stock[0].price;
+    return item;
 }
 
 //API 返回数据 转化为array[]
