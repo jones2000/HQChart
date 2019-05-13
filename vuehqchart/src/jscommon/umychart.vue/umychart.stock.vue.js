@@ -2298,9 +2298,10 @@ function DealDay(symbol)
 
         var dealData=
         { 
-            Date:data.date, 
-            Open:data.day.price,
-            YClose:data.day.yclose,
+            Date:data.date,         //日期
+            Open:data.day.open,     //开盘
+            Close:data.day.price,   //收盘
+            YClose:data.day.yclose, //昨收
             Symbol:data.symbol,
             Name:data.name,
             Deal:[],

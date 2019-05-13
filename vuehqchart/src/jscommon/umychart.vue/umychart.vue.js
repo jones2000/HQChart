@@ -3092,8 +3092,10 @@ M3:=EMA(M2,13); \n\
 M4:=EMA(M2,55); \n\
 B1:=A>B AND REF(A,1)<REF(B,1);\n\
 S1:=A<B AND REF(A,1)>REF(B,1);\n\
-DRAWICON(REF(B1,1),H*1.03,13);\n\
-DRAWICON(REF(S1,1),L*0.97,14);"
+INDEXCLOSE:INDEXC,EXDATA;\n\
+INDEXOPEN:INDEXO,EXDATA;\n\
+DRAWICON(REF(B1,1),L*0.97,13);\n\
+DRAWICON(REF(S1,1),H*1.03,14);"
     };
 
     return data;
@@ -4074,6 +4076,7 @@ JSChart.CreateGuid=function()
 var JSCHART_EVENT_ID=
 {
     RECV_KLINE_MATCH:1, //接收到形态匹配
+    RECV_INDEX_DATA:2,  //接收指标数据
 }
 
 /*
@@ -4148,6 +4151,15 @@ function JSChartContainer(uielement)
         if (!this.mapEvent.has(eventid)) return;
 
         this.mapEvent.delete(eventid);
+    }
+
+    //接收指标数据
+    this.GetIndexEvent=function()
+    {
+        if (!this.mapEvent.has(JSCHART_EVENT_ID.RECV_INDEX_DATA)) return null;
+
+        var item=this.mapEvent.get(JSCHART_EVENT_ID.RECV_INDEX_DATA);
+        return item;
     }
 
     uielement.onmousemove=function(e)
@@ -5039,6 +5051,8 @@ function JSChartContainer(uielement)
 
         for(var i in this.ChartPaint)
         {
+            var item=this.ChartPaint[i];
+            if (item.IsShow==false) continue;   //隐藏的图形不计算
             chartPaint.push(this.ChartPaint[i]);
         }
         for(var i in this.OverlayChartPaint)
@@ -32393,7 +32407,7 @@ function JSAlgorithm(errorHandler,symbolData)
         if (num < 1 || num >= datanum)
             return result;
         var i = 0, j = 0;
-        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        for(i = 0; i < datanum && !this.IsNumber(data[i]); ++i)
         {
             result[i] = null;
         }
@@ -32415,6 +32429,8 @@ function JSAlgorithm(errorHandler,symbolData)
             MidResult = num*SigmaPowerX - SigmaX*SigmaX;
             result[i] = Math.sqrt(MidResult) / num;
         }
+
+        return result;
     }
 
     //VAR 估算样本方差
@@ -34472,7 +34488,7 @@ function JSDraw(errorHandler,symbolData)
         if (g_JSComplierResource.DrawIcon && g_JSComplierResource.DrawIcon.Data && g_JSComplierResource.DrawIcon.Data.has(type))
         {
             const iconfont=g_JSComplierResource.DrawIcon.Data.get(type);
-            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:g_JSComplierResource.DrawIcon.Family, IconFont:true };
+            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:g_JSComplierResource.DrawIcon.Family, IconFont:true, ID:type };
         }
 
         if (!icon)
@@ -36523,6 +36539,7 @@ function JSExecute(ast,option)
                     let stick=false;
                     let volStick=false;
                     let isShow=true;
+                    let isExData=false;
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -36548,6 +36565,7 @@ function JSExecute(ast,option)
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
                             else if (value.indexOf('NODRAW')==0) isShow=false;
+                            else if (value.indexOf('EXDATA')==0) isExData=true; //扩展数据, 不显示再图形里面
                         }
                         else if(itemExpression.Type==Syntax.Literal)    //常量
                         {
@@ -36610,6 +36628,7 @@ function JSExecute(ast,option)
                         let value={Name:varName, Data:outVar, Color:color, Type:0};
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (isShow == false) value.IsShow = false;
+                        if (isExData==true) value.IsExData = true;
                         this.OutVarTable.push(value);
                     }
                     else if (draw && color)
@@ -36629,6 +36648,7 @@ function JSExecute(ast,option)
                         if (color) value.Color=color;
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (isShow==false) value.IsShow=false;
+                        if (isExData==true) value.IsExData = true;
                         this.OutVarTable.push(value);
                     }
                 }
@@ -37654,6 +37674,8 @@ function ScriptIndex(name,script,args,option)
         for(let i in this.OutVar)
         {
             let item=this.OutVar[i];
+            if (item.IsExData===true) continue; //扩展数据不显示图形
+
             if (item.Type==0)  
             {
                 this.CreateLine(hqChart,windowIndex,item,i);
@@ -37726,6 +37748,13 @@ function ScriptIndex(name,script,args,option)
         }
 
         if (indexParam.length>0) hqChart.TitlePaint[titleIndex].Title=this.Name+'('+indexParam+')';
+
+        var event=hqChart.GetIndexEvent();
+        if (event)
+        {
+            var data={ OutVar:this.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData };
+            event.Callback(event,data,this);
+        }
 
         return true;
     }
@@ -37817,5 +37846,6 @@ export default {
     IFrameSplitOperator:IFrameSplitOperator,//格式化字符串方法
     JSKLineInfoMap:JSKLineInfoMap,
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,      //可以订阅的事件类型
+    JSAlgorithm:JSAlgorithm,                //算法类
     
 }

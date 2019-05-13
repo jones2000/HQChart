@@ -1,1 +1,2 @@
 copy ..\umychart.index.data.js+..\umychart.js+..\umychart.complier.js+umychart.vue.export.js ..\umychart.vue\umychart.vue.js /b
+copy ..\umychart.regressiontest.js+umychart.regressiontest.export.js ..\umychart.vue\umychart.regressiontest.vue.js /b

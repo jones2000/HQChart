@@ -3153,7 +3153,7 @@ function JSAlgorithm(errorHandler,symbolData)
         if (num < 1 || num >= datanum)
             return result;
         var i = 0, j = 0;
-        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        for(i = 0; i < datanum && !this.IsNumber(data[i]); ++i)
         {
             result[i] = null;
         }
@@ -3175,6 +3175,8 @@ function JSAlgorithm(errorHandler,symbolData)
             MidResult = num*SigmaPowerX - SigmaX*SigmaX;
             result[i] = Math.sqrt(MidResult) / num;
         }
+
+        return result;
     }
 
     //VAR 估算样本方差
@@ -5232,7 +5234,7 @@ function JSDraw(errorHandler,symbolData)
         if (g_JSComplierResource.DrawIcon && g_JSComplierResource.DrawIcon.Data && g_JSComplierResource.DrawIcon.Data.has(type))
         {
             const iconfont=g_JSComplierResource.DrawIcon.Data.get(type);
-            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:g_JSComplierResource.DrawIcon.Family, IconFont:true };
+            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:g_JSComplierResource.DrawIcon.Family, IconFont:true, ID:type };
         }
 
         if (!icon)
@@ -7283,6 +7285,7 @@ function JSExecute(ast,option)
                     let stick=false;
                     let volStick=false;
                     let isShow=true;
+                    let isExData=false;
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -7308,6 +7311,7 @@ function JSExecute(ast,option)
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
                             else if (value.indexOf('NODRAW')==0) isShow=false;
+                            else if (value.indexOf('EXDATA')==0) isExData=true; //扩展数据, 不显示再图形里面
                         }
                         else if(itemExpression.Type==Syntax.Literal)    //常量
                         {
@@ -7370,6 +7374,7 @@ function JSExecute(ast,option)
                         let value={Name:varName, Data:outVar, Color:color, Type:0};
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (isShow == false) value.IsShow = false;
+                        if (isExData==true) value.IsExData = true;
                         this.OutVarTable.push(value);
                     }
                     else if (draw && color)
@@ -7389,6 +7394,7 @@ function JSExecute(ast,option)
                         if (color) value.Color=color;
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (isShow==false) value.IsShow=false;
+                        if (isExData==true) value.IsExData = true;
                         this.OutVarTable.push(value);
                     }
                 }
@@ -8414,6 +8420,8 @@ function ScriptIndex(name,script,args,option)
         for(let i in this.OutVar)
         {
             let item=this.OutVar[i];
+            if (item.IsExData===true) continue; //扩展数据不显示图形
+
             if (item.Type==0)  
             {
                 this.CreateLine(hqChart,windowIndex,item,i);
@@ -8486,6 +8494,13 @@ function ScriptIndex(name,script,args,option)
         }
 
         if (indexParam.length>0) hqChart.TitlePaint[titleIndex].Title=this.Name+'('+indexParam+')';
+
+        var event=hqChart.GetIndexEvent();
+        if (event)
+        {
+            var data={ OutVar:this.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData };
+            event.Callback(event,data,this);
+        }
 
         return true;
     }

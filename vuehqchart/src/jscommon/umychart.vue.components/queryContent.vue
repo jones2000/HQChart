@@ -28,7 +28,7 @@
                 <p class='yclose'>昨收：{{ContentTopData.YClose}}</p>
             </div>
             <div class="datePickerWrap">
-                <el-date-picker v-model="DataPicker" format="yyyy-MM-dd" value-format="yyyyMMdd" type="date"
+                <el-date-picker v-model="DataPicker" format="yyyyMMdd" value-format="yyyyMMdd" type="date"
                     placeholder="选择日期" @change="changeTime" :picker-options="pickerOptions0"></el-date-picker>
             </div>
             <div id="searchContainer">
@@ -41,53 +41,27 @@
             <div class="selectorForDealDetail" v-show='IsShow.DealDetail'>
                 <span style="padding-left:20px;">筛选大单：</span>
                 <el-radio-group v-model="OrderType">
-                    <el-radio :label="1">全部</el-radio>
-                    <el-radio :label="2">≥100手</el-radio>
-                    <el-radio :label="3">≥200手</el-radio>
-                    <el-radio :label="4">≥500手</el-radio>
-                    <el-radio :label="5">≥1000手</el-radio>
-                    <el-radio :label="6">≥2000手</el-radio>
-                    <el-radio :label="7">≥5000手</el-radio>
-                    <el-radio :label="8">≥10000手</el-radio>
+                    <el-radio :label="''">全部</el-radio>
+                    <el-radio :label="100">≥100手</el-radio>
+                    <el-radio :label="200">≥200手</el-radio>
+                    <el-radio :label="500">≥500手</el-radio>
+                    <el-radio :label="1000">≥1000手</el-radio>
+                    <el-radio :label="2000">≥2000手</el-radio>
+                    <el-radio :label="5000">≥5000手</el-radio>
+                    <el-radio :label="10000">≥10000手</el-radio>
                 </el-radio-group>
                 <span style="padding-left:40px;">排列顺序：</span>
                 <el-checkbox v-model="RerverChecked">倒序</el-checkbox>
             </div>
         </div>
-        <div class="table_content" ref='tableContent' v-loading="loadingBody" v-show='IsShow.DealDetail'>
-            <div class="tableWrap" v-for='(curTable,index) in TableData.CurentTables' :key='index'>
-                <table class="tabHori">
-                    <thead>
-                        <tr>
-                            <td>时间</td>
-                            <td class="alignCenter">价格</td>
-                            <td class="alignCenter">成交量(手)</td>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for='(rowItem,ind) in curTable' :key='ind'>
-                            <td>{{rowItem.Time}}</td>
-                            <td class="alignRight" :class='rowItem.PriceColor'>{{rowItem.Price}}</td>
-                            <td class="alignRight">{{parseInt(rowItem.Vol)}}&nbsp;<span :class="rowItem.Flag == 'B' ? 'red' : 'green'">{{rowItem.Flag}}</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="divdealday" ref='tableContent' v-show='IsShow.DealDetail'>
+            <StockDeal ref='stockdeal' :ChoiceIndex='ChoiceIndex' :ChoiceDate='ChoiceDate' :IsReverse='IsReverse' @DealDay='GetStockInfo'></StockDeal>
         </div>
         <div class="charWrap" id='charWrap' ref='charWrap' v-show='IsShow.MinuteChart'>
             <StockChart ref='stockChart' :DefaultSymbol='OptionData.Symbol' :DefaultOption='OptionData.MinuteOption'></StockChart>
         </div>
 
-        <el-row id='paginationWrap' v-show='IsShow.DealDetail'>
-            <el-pagination
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange"
-                :current-page.sync="Pagination.CurrentPage"
-                :page-size="Pagination.PageSize"
-                layout="prev, pager, next, jumper"
-                :total="Pagination.Total">
-            </el-pagination>
-        </el-row>
+        
     </div>
 </template>
 
@@ -96,6 +70,7 @@
     import JSCommonStock from '../umychart.vue/umychart.stock.vue.js'
     import SearchSymbol from './searchsymbol.vue'
     import StockChart from './stockchart.vue'
+    import StockDeal from './stockdeal.vue'
 
     Date.prototype.Format = function (fmt) {
         var o = {
@@ -142,8 +117,7 @@
                         return (time.getTime() > Date.now()) || (time.getTime() < dateValue);
                     }
                 },
-                TableData:{Meta:[],Selected:[],SelectedReverse:[],Paginationed:[],CurrentPageData:[],CurentTables:[]}, //Meta:接口返回的数据，Selected：筛选后的数据，Paginationed：筛选后分页过的数据,CurrentPageData：当前页面所有表格的数据
-                loadingBody: false,
+                // loadingBody: false,
                 TabTexts:['成交明细','走势图'],
                 TabIndex:0,
                 OptionData:{
@@ -170,16 +144,16 @@
                     CurrentPage:1,
                     PageSize:20 * 6,
                     Total:10
-                }
+                },
+                ChoiceIndex:'',
+                ChoiceDate:'20180509',
+                IsReverse:false
             };
         },
-        components:{SearchSymbol,StockChart},
+        components:{SearchSymbol,StockChart,StockDeal},
         computed:{
             DateFormat:function(){
                 return this.OptionData.DatePicker.replace(/-/g, "");
-            },
-            QueryUrl:function(){
-                return "https://opensourcecache.zealink.com/cache/dealday/day/" + this.DateFormat + "/" + this.OptionData.Symbol + '.json';
             }
         },
         created() {
@@ -200,9 +174,9 @@
             const that = this;
             
             this.OnSize();
-            this.loadingBody = true;
+            // var data = this.$refs.stockdeal.DealDayData;
             
-            this.getQueryData(this.QueryUrl, this.getQueryDataFn);
+            // this.loadingBody = true;
             
 
             // // 监听
@@ -223,6 +197,40 @@
                 }
 
             },
+            GetStockInfo(data){
+                console.log('[queryContent::GetStockInfo]data:',data);
+                this.ContentTopData.Symbol = data.Symbol;
+                this.ContentTopData.Name = data.Name;
+                this.ContentTopData.TradeDate = this.FormatDateString(data.Date+'',true);
+
+                // this.ContentTopData.Price.Text = data.Price;
+                // this.ContentTopData.Price.Color = this.$refs.stockdeal.FormatValueColor(data.Price,data.YClose);
+                this.ContentTopData.Open.Text = data.Open;
+                this.ContentTopData.Open.Color = this.$refs.stockdeal.FormatValueColor(data.Open,data.YClose);
+                this.ContentTopData.YClose = data.YClose;
+            },
+            // getQueryDataFn(data) {
+            //     this.ContentTopData.Symbol = data.symbol;
+            //     this.ContentTopData.Name = data.name;
+            //     if(data.date){
+            //         this.ContentTopData.TradeDate = this.FormatDateString(data.date+'',true);
+            //     }
+            //     if(data.day){
+            //         this.ContentTopData.Price.Text = data.day.price;
+            //         this.ContentTopData.Price.Color = this.FormatValueColor(data.day.price,data.day.yclose);
+            //         this.ContentTopData.Open.Text = data.day.open;
+            //         this.ContentTopData.Open.Color = this.FormatValueColor(data.day.open,data.day.yclose);
+            //         this.ContentTopData.YClose = data.day.yclose;
+            //     }
+            //     if (data.deal) {
+            //         this.TableData.Meta = data.deal;
+
+            //         this.Pagination.CurrentPage = 1;
+            //         this.ChoiceData("", data.deal);
+                    
+            //         this.loadingBody = false;
+            //     }
+            // },
             GoSearch(){
                 this.IsShow.Search = true;
                 var mySymbol = this.$refs.mySymbol;
@@ -230,15 +238,6 @@
             },
             CancelSearch(){
                 this.IsShow.Search = false;
-            },
-            UpdateDataShow(count){
-                this.Pagination.SingleTableCount = count;
-                this.Pagination.PageSize = count * 6;
-                this.PaginationAllData(this.TableData.Selected);
-                this.InitPageData(this.TableData.CurrentPageData);
-            },
-            handleSizeChange(val){
-                console.log(`每页 ${val} 条`);
             },
             getLastFormatDate() { //获取前一天，并且排除周末
                 var day = new Date();
@@ -251,123 +250,27 @@
                 }
                 return day.Format("yyyy-MM-dd");
             },
-            handleCurrentChange(val){
-                console.log('[::handleCurrentChange val]',val);
-                this.TableData.CurrentPageData = this.TableData.Paginationed[val - 1];
-                this.InitPageData(this.TableData.CurrentPageData);
-            },
-            getQueryData: function (url, fn) {
-                return $.ajax({
-                    url: url,
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function (res) {
-                        fn(res);
-                    },
-                    error: function (e) {
-                        console.log(e);
-                    }
-                })
-            },
-            getQueryDataFn(data) {
-                this.ContentTopData.Symbol = data.symbol;
-                this.ContentTopData.Name = data.name;
-                if(data.date){
-                    this.ContentTopData.TradeDate = this.FormatDateString(data.date+'',true);
-                }
-                if(data.day){
-                    this.ContentTopData.Price.Text = data.day.price;
-                    this.ContentTopData.Price.Color = this.FormatValueColor(data.day.price,data.day.yclose);
-                    this.ContentTopData.Open.Text = data.day.open;
-                    this.ContentTopData.Open.Color = this.FormatValueColor(data.day.open,data.day.yclose);
-                    this.ContentTopData.YClose = data.day.yclose;
-                }
-                if (data.deal) {
-                    this.TableData.Meta = data.deal;
-
-                    this.Pagination.CurrentPage = 1;
-                    this.ChoiceData("", data.deal);
-                    
-                    this.loadingBody = false;
-                }
-            },
-            InitPageData(data){
-                var count = this.Pagination.SingleTableCount;
-                this.TableData.CurentTables = this.CutDataAry(count,6,data);
-            },
-            PaginationAllData(data){
-                var dataAry = [];
-                if(data.length > 0){
-                    var everyCount = this.Pagination.PageSize;
-                    var pageCount = 0;
-                    var val = this.Pagination.Total % everyCount;
-                    if(val > 0){
-                        pageCount = Math.floor(this.Pagination.Total / everyCount) + 1;
-                    }else{
-                        pageCount = Math.floor(this.Pagination.Total / everyCount);
-                    }
-                    console.log('[::PaginationAllData everyCount pageCount]',everyCount,pageCount);
-                    this.TableData.Paginationed = this.CutDataAry(everyCount,pageCount,data);
-                    this.TableData.CurrentPageData = this.TableData.Paginationed[this.Pagination.CurrentPage - 1];
-                }
-            },
-            CutDataAry(everyCount,cutIndex,data){
-                var paginationAry = [];
-                for(let i = 0; i < cutIndex; i++){
-                    paginationAry.push(data.slice(everyCount * i,everyCount * (i+1)));
-                }
-                return paginationAry;
-            },
             GetURLParams: function (name) {
                 var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
                 var r = window.location.search.substr(1).match(reg);
                 if (r != null) return decodeURI(r[2]);
                 return null;
             },
-            // 成交量筛选方法
-            ChoiceData(num,data){
-                
-                var dataAry = [];
-                if(data.time.length > 0){
-                    for(let i = 0; i < data.time.length; i++){
-                        var color = this.FormatValueColor(data.price[i],this.ContentTopData.Open.Text);
-                        var dataObj = {
-                            Time: this.processingTime(data.time[i]),
-                            Price: data.price[i].toFixed(2),
-                            PriceColor:color,
-                            Vol: Number(data.vol[i]).toFixed(2),
-                            Flag: this.processingNum(data.flag[i])
-                        };
-                        if (num != '') {
-                            if (data.vol[i] >= num) {
-                                dataAry.push(dataObj);
-                            }
-                        } else {
-                            dataAry.push(dataObj);
-                        }
-                    }
-                    console.log('[::ChoiceData dataAry]',dataAry);
-                    this.TableData.Selected = dataAry;
-                    this.TableData.SelectedReverse = dataAry.slice(0,dataAry.length).reverse(); //数组倒序
-                    this.Pagination.Total = this.TableData.Selected.length;
-                    this.PaginationAllData(this.TableData.Selected);
-                    this.InitPageData(this.TableData.CurrentPageData);
-                }
-            },
             OnSize()
             {
                 var contentTopHeight = $('.content_top').outerHeight(true);
                 var pagepromptHeight = $('.pagePrompt').outerHeight(true)
                 var selectOrderWrapHeight = $('#selectOrderWrap').outerHeight(true);
-                var paginationWrap = $('#paginationWrap').outerHeight(true);
-                var mainHight = $(window).height() - contentTopHeight - selectOrderWrapHeight -paginationWrap - pagepromptHeight;
-                var mainWdith = $('.table_content').width();
-                var tdHeight = 20;
-                var borderHeight = 1;
-                var everyTableCount = Math.floor((mainHight - tdHeight - borderHeight) / tdHeight);
-                this.UpdateDataShow(everyTableCount);
+                // var paginationWrap = $('#paginationWrap').outerHeight(true);
+                var mainHight = $(window).height() - contentTopHeight - selectOrderWrapHeight - pagepromptHeight;
+                var mainWdith = $('.divdealday').width();
+                // var tdHeight = 20;
+                // var borderHeight = 1;
+                // var everyTableCount = Math.floor(mainHight / tdHeight);
                 
-                $('.table_content').height(mainHight);
+                $('.divdealday').height(mainHight);
+                var stockdeal = this.$refs.stockdeal;
+                stockdeal.OnSize();
 
                 var bodyWidth = document.documentElement.clientWidth || document.body.clientWidth;
                 var bodyHeight = document.documentElement.clientHeight || document.body.clientHeight;
@@ -382,17 +285,6 @@
                 var minWidth = 1062;
                 
             },
-            FormatValueColor(currentValue,targetValue){
-                var color = '';
-                if(currentValue > targetValue){
-                    color = 'red';
-                }else if(currentValue < targetValue){
-                    color = 'green';
-                }else{
-                    color = '';
-                }
-                return color;
-            },
             FormatDateString(date,hasLine){
                 if(hasLine){
                     return date.substring(0,4) +'-'+ date.substring(4,6) +'-'+ date.substring(6,8);
@@ -400,32 +292,10 @@
                     return date.replace(/-/g, "");
                 }
             },
-            //处理时间
-            processingTime(mss) {
-                var hours = parseInt(mss / 10000);
-                var minutes = parseInt((mss / 100) % 100);
-                if (hours < 10) {
-                    hours = "0" + hours;
-                }
-                if (minutes < 10) {
-                    minutes = "0" + minutes;
-                }
-                return hours + ":" + minutes;
-            },
-            //处理SB
-            processingNum(num) {
-                if (num == 0) {
-                    return "B";
-                } else if (num == 1) {
-                    return "S";
-                } else {
-                    return "C";
-                }
-            },
             changeTime(val) {
                 this.OptionData.DatePicker = val;
-                this.getQueryData(this.QueryUrl, this.getQueryDataFn);
-
+                this.ChoiceDate = val;
+                console.log('[querycontent::changeTime]date:',val);
                 var date = this.FormatDateString(val,false);
                 var stockChart = this.$refs.stockChart;
                 stockChart.ChangeTradeDate(Number(date));
@@ -434,10 +304,9 @@
                 this.OptionData.Symbol = symbol;
                 var stockChart = this.$refs.stockChart;
                 stockChart.ChangeSymbol(symbol);
-                this.loadingBody = true;
+                // this.loadingBody = true;
                 this.OrderType = 1;
                 this.RerverChecked = false;
-                this.getQueryData(this.QueryUrl, this.getQueryDataFn);
                 this.IsShow.Search = false;
 
             },
@@ -450,34 +319,11 @@
             OrderType(val){
                 console.log('[::OrderType val]',val);
                 // 成交量筛选
-                var deal = this.TableData.Meta;
-                if (val == 1) {  //全部
-                    this.ChoiceData("",deal); 
-                } else if (val == 2) {
-                    this.ChoiceData(100,deal);
-                } else if (val == 3) {
-                    this.ChoiceData(200,deal);
-                } else if (val == 4) {
-                    this.ChoiceData(500,deal);
-                } else if (val == 5) {
-                    this.ChoiceData(1000,deal);
-                } else if (val == 6) {
-                    this.ChoiceData(2000,deal);
-                } else if (val == 7) {
-                    this.ChoiceData(5000,deal);
-                } else if (val == 8) {
-                    this.ChoiceData(10000,deal);
-                }
-                console.log('[::OrderType this.TableData.Selected]',this.TableData.Selected);
+                this.ChoiceIndex = val;
+                
             },
             RerverChecked(val) {
-                if (val) {
-                    this.PaginationAllData(this.TableData.SelectedReverse);
-                    this.InitPageData(this.TableData.CurrentPageData);
-                }else{
-                    this.PaginationAllData(this.TableData.Selected);
-                    this.InitPageData(this.TableData.CurrentPageData);
-                }
+                this.IsReverse = val;
             }
         }
     };
@@ -673,7 +519,7 @@
             }
         }
 
-        .table_content {
+        .divdealday {
             overflow-y: auto;
             height: calc(100% - 118px);
             width: 100%;
@@ -681,43 +527,6 @@
             flex-direction: row;
             overflow-x: hidden;
 
-            .tableWrap{
-                flex-grow: 1;
-                height: 100%;
-                
-                .tabHori{
-                    font: 12px 'Microsoft Yahei';
-                    width: 100%;
-                    box-sizing: border-box;
-                    border-collapse: collapse;
-                    border: none;
-                    td,th{
-                        border:none;
-                        padding: 0 10px;
-                        line-height: 20px;
-                    }
-                    .alignRight {
-                        text-align: right;
-                    }
-                    .alignCenter {
-                        text-align: center;
-                    }
-                    thead {
-                        td,th{
-                            border-bottom: 1px solid #ebeef5;
-                        }
-                    }
-                    tbody{
-                        tr>td:last-child,tr>th:last-child{
-                            border-right: 1px solid #ebeef5;
-                        }
-                    }
-                    tr>td:nth-of-type(n+2),tr>th:nth-of-type(n+2){
-                        font-size: 14px;
-                        
-                    }
-                }
-            }
         }
 
 

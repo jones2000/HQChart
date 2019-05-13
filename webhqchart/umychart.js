@@ -956,6 +956,7 @@ JSChart.CreateGuid=function()
 var JSCHART_EVENT_ID=
 {
     RECV_KLINE_MATCH:1, //接收到形态匹配
+    RECV_INDEX_DATA:2,  //接收指标数据
 }
 
 /*
@@ -1030,6 +1031,15 @@ function JSChartContainer(uielement)
         if (!this.mapEvent.has(eventid)) return;
 
         this.mapEvent.delete(eventid);
+    }
+
+    //接收指标数据
+    this.GetIndexEvent=function()
+    {
+        if (!this.mapEvent.has(JSCHART_EVENT_ID.RECV_INDEX_DATA)) return null;
+
+        var item=this.mapEvent.get(JSCHART_EVENT_ID.RECV_INDEX_DATA);
+        return item;
     }
 
     uielement.onmousemove=function(e)
@@ -1921,6 +1931,8 @@ function JSChartContainer(uielement)
 
         for(var i in this.ChartPaint)
         {
+            var item=this.ChartPaint[i];
+            if (item.IsShow==false) continue;   //隐藏的图形不计算
             chartPaint.push(this.ChartPaint[i]);
         }
         for(var i in this.OverlayChartPaint)

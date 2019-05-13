@@ -599,6 +599,7 @@ export default {
         return;
 
       let data = DefaultData.GetTradeData();
+      console.log(data)
       for (let i = 0; i < aryDeal.length && i < data.length; i++) {
         var item = aryDeal[i];
         var tradeItem = data[i];

@@ -2,7 +2,7 @@
   "name": "hqchart",
   "description": "stock chart",
   "author": "jones2000",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "private": false,
   "license": "MIT",
   "scripts": {
@@ -19,6 +19,7 @@
     "sass": "^1.17.3",
     "sass-loader": "^7.1.0",
     "vue": "^2.6.9",
+    "vue-plugin-timers": "^0.1.6",
     "webpack": "^3.0"
   },
   "engines": {

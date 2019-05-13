@@ -198,8 +198,8 @@ export default
             
             let border=option.Border;
             if (ObjectHelper.IsNumber(border.Left)) this.Option.Border.Left=border.Left;    
-            if (ObjectHelper.IsNumber(border.Right)) this.Option.Border.Left=border.Right;    
-            if (ObjectHelper.IsNumber(border.Top)) this.Option.Border.Left=border.Top;    
+            if (ObjectHelper.IsNumber(border.Right)) this.Option.Border.Right=border.Right;    
+            if (ObjectHelper.IsNumber(border.Top)) this.Option.Border.Top=border.Top;    
             if (ObjectHelper.IsNumber(border.Bottom)) this.Option.Border.Left=border.Bottom;    
         },
 
@@ -243,6 +243,7 @@ export default
                 if (ObjectHelper.IsPlusNumber(kline.MaxReqeustDataCount)) this.Option.KLine.MaxReqeustDataCount=kline.MaxReqeustDataCount;
                 if (ObjectHelper.IsPlusNumber(kline.PageSize)) this.Option.KLine.PageSize=kline.PageSize;
                 if (ObjectHelper.IsObjectExist(kline.IsShowTooltip)) this.Option.KLine.IsShowTooltip=kline.IsShowTooltip;
+                if (kline.FirstShowDate>20000101) this.Option.KLine.FirstShowDate=kline.FirstShowDate;
             }
 
             if (option.KLineTitle)
