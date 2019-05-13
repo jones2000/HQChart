@@ -47,6 +47,13 @@
 * 支持五彩K线(目前录入系统五彩K线30多个), 支持自定义通达信语法脚本的五彩K线
 * 支持专家系统指标
 * 支持个股筹码图
+* 支持单指标单股票前端回测计算 (webhqchart\umychart.regressiontest.js) (2019-5-13 增加功能)<br>
+     计算如下数据:  <br>   
+          Trade: {Count 交易次数  Days:交易天数 Success:成功交易次数 Fail:失败交易次数} <br>
+          Day: {Count:总运行  Max:最长运行 Min:最短运行 Average:平均运行} <br>
+          Profit: 总收益 StockProfit:个股收益  Excess:超额收益 MaxDropdown:最大回撤 Beta:β(Beta)系数 <br>
+          NetValue: [ {Date:日期, Net:净值, Close:股票收盘价, IndexClose:大盘的收盘价}, ] <br>
+
 # 2. 走势图
 * 支持指标 <br>
 * 支持股票叠加<br>
@@ -62,6 +69,7 @@
 * 横版K线图手机页面  https://opensource.zealink.com/hqweb/demo/phone9.html  <br>
 * 多日走势图 https://opensource.zealink.com/hqweb/demo/phone15.html <br>
 * 个股筹码图 https://opensource.zealink.com/hqweb/demo/phone18.html <br>
+* 指标回测(手机版) https://opensource.zealink.com/hqweb/operatebsh5/index.html?symbol=000001.sz <br>
 
 * 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
 * QQ交流群(950092318) ![QQ群](/小程序行情模块用例/image/qqcode.png)
