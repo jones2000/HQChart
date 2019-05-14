@@ -43,7 +43,6 @@
 
 import JSCommonStock from "../umychart.vue/umychart.stock.vue.js";
 
-var DealDayData = null;
 
 export default 
 {
@@ -52,6 +51,9 @@ export default
     {
         return {
             Symbol:'600000.sh',
+            ChoiceCountIndex:'',
+            CurrentDate:'20180508',
+            IsReverseData:false,
             DealDay:null,
             TableData:{Meta:[],Selected:[],SelectedReverse:[],Paginationed:[],CurrentPageData:[],CurentTables:[]}, //Meta:接口返回的数据，Selected：筛选后的数据，Paginationed：筛选后分页过的数据,CurrentPageData：当前页面所有表格的数据
             Pagination:{
@@ -62,8 +64,7 @@ export default
                 // IsShow:false
             },
             loadingBody:false,
-            IsTradeDay:true,
-            DealDayData:DealDayData
+            IsTradeDay:true
         };
         
     },
@@ -72,20 +73,21 @@ export default
     [
         'ChoiceIndex',
         'ChoiceDate',
-        'IsReverse'
+        'IsReverse',
+        'DealSymbol'
     ],
 
     //创建
     created:function()
     {   
         console.log('[stockdeal::created]');
-        this.ChoiceIndex = this.ChoiceIndex != null ? this.ChoiceIndex : '';
-        this.ChoiceDate = this.ChoiceDate != null ? this.ChoiceDate : '20180508';
-        this.IsReverse = this.IsReverse != null ? this.IsReverse : false;
+        this.ChoiceCountIndex = this.ChoiceIndex != null ? this.ChoiceIndex : '';
+        this.CurrentDate = this.ChoiceDate != null ? this.ChoiceDate : '20180508';
+        this.IsReverseData = this.IsReverse != null ? this.IsReverse : false;
+        this.Symbol = this.DealSymbol != null ? this.DealSymbol : '600000.sh';
 
-        var that = this;
         this.DealDay = JSCommonStock.JSStock.GetDealDay(this.Symbol);
-        this.DealDay.Date = this.ChoiceDate;
+        this.DealDay.Date = this.CurrentDate;
         this.DealDay.InvokeUpdateUICallback = this.UpdateData;
         this.DealDay.RequestData();
     },
@@ -97,6 +99,10 @@ export default
         this.OnSize();
     },
     watch:{
+        DealSymbol:function(val){
+            this.DealDay = JSCommonStock.JSStock.GetDealDay(val);
+            this.DealDay.RequestData();
+        },
         ChoiceIndex:function(val){ //val: "",100,200,500,1000,2000,5000,10000
             console.log('[stockdeal::ChoiceIndex]:',val);
             var deal = this.TableData.Meta;
@@ -119,7 +125,6 @@ export default
         UpdateData(){
             console.log('[stockdeal::UpdateData]data:',this.DealDay.Data);
             var data = this.DealDay.Data;
-            // DealDayData = this.DealDay.Data;
             this.$emit('DealDay',data);
             if(data != null){
                 this.loadingBody = false;
@@ -129,7 +134,7 @@ export default
                     this.TableData.Meta = data.Deal;
                     this.IsTradeDay = true;
                     this.Pagination.CurrentPage = 1;
-                    this.ChoiceData(this.ChoiceIndex, data.Deal,open); //接收传入的筛选条件
+                    this.ChoiceData(this.ChoiceCountIndex, data.Deal,open); //接收传入的筛选条件
                     console.log('[stockdeal::UpdateData]ChoiceIndex:',this.ChoiceIndex);
                     
                 }

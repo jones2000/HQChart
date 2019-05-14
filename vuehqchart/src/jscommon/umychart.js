@@ -16124,7 +16124,7 @@ function KLineChartContainer(uielement)
 
         if (this.CustomShow) //定制显示 1次有效
         {
-            this.SetCustomShow(this.CustomShow,hisData,showCount);
+            this.SetCustomShow(this.CustomShow,hisData);
             this.CustomShow=null;
         }
 
@@ -16158,7 +16158,7 @@ function KLineChartContainer(uielement)
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
     }
 
-    this.SetCustomShow=function(customShow,hisData,showCount)
+    this.SetCustomShow=function(customShow,hisData)
     {
         if (!customShow || !customShow.Date || customShow.Date<20000101) return;
 
@@ -16180,20 +16180,19 @@ function KLineChartContainer(uielement)
         }
 
         var count=hisData.Data.length-index;
-        if (count<showCount)
+        if (customShow.PageSize>0) count=customShow.PageSize;
+        
+        var customShowCount=count;
+        var pageSize=this.GetMaxMinPageSize();
+        if (count>pageSize.Max) customShowCount=pageSize.Max;
+        else if (count<pageSize.Min) customShowCount=pageSize.Min;
+        
+        for(var i in this.Frame.SubFrame)
         {
-            let customShowCount=count;
-            let pageSize=this.GetMaxMinPageSize();
-            if (count>pageSize.Max) customShowCount=pageSize.Max;
-            else if (count<pageSize.Min) customShowCount=pageSize.Min;
-            
-            for(var i in this.Frame.SubFrame)
-            {
-                var item =this.Frame.SubFrame[i].Frame;
-                item.XPointCount=customShowCount;
-            }
+            var item =this.Frame.SubFrame[i].Frame;
+            item.XPointCount=customShowCount;
         }
-
+        
         this.ChartPaint[0].Data.DataOffset=index;
         this.CursorIndex=0.6;
     }

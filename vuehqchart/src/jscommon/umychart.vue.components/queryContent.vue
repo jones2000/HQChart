@@ -55,7 +55,7 @@
             </div>
         </div>
         <div class="divdealday" ref='tableContent' v-show='IsShow.DealDetail'>
-            <StockDeal ref='stockdeal' :ChoiceIndex='ChoiceIndex' :ChoiceDate='ChoiceDate' :IsReverse='IsReverse' @DealDay='GetStockInfo'></StockDeal>
+            <StockDeal ref='stockdeal' :ChoiceIndex='ChoiceIndex' :ChoiceDate='ChoiceDate' :IsReverse='IsReverse' :DealSymbol='OptionData.Symbol' @DealDay='GetStockInfo'></StockDeal>
         </div>
         <div class="charWrap" id='charWrap' ref='charWrap' v-show='IsShow.MinuteChart'>
             <StockChart ref='stockChart' :DefaultSymbol='OptionData.Symbol' :DefaultOption='OptionData.MinuteOption'></StockChart>
@@ -163,7 +163,7 @@
             var width = bodyWidth;
             var height = bodyHeight - 45 -70 - 60;
 
-            this.OptionData.Symbol = this.GetURLParams('symbol') != undefined ? this.GetURLParams('symbol') : '600000.sh';
+            this.OptionData.Symbol = this.GetURLParams('symbol');
             this.OptionData.DatePicker = this.GetURLParams('date') != undefined ? this.GetURLParams('date') : this.getLastFormatDate();
 
             var date = this.FormatDateString(this.OptionData.DatePicker,false);  //走势图日期设置
@@ -203,34 +203,12 @@
                 this.ContentTopData.Name = data.Name;
                 this.ContentTopData.TradeDate = this.FormatDateString(data.Date+'',true);
 
-                // this.ContentTopData.Price.Text = data.Price;
-                // this.ContentTopData.Price.Color = this.$refs.stockdeal.FormatValueColor(data.Price,data.YClose);
+                this.ContentTopData.Price.Text = data.Close;
+                this.ContentTopData.Price.Color = this.$refs.stockdeal.FormatValueColor(data.Close,data.YClose);
                 this.ContentTopData.Open.Text = data.Open;
                 this.ContentTopData.Open.Color = this.$refs.stockdeal.FormatValueColor(data.Open,data.YClose);
                 this.ContentTopData.YClose = data.YClose;
             },
-            // getQueryDataFn(data) {
-            //     this.ContentTopData.Symbol = data.symbol;
-            //     this.ContentTopData.Name = data.name;
-            //     if(data.date){
-            //         this.ContentTopData.TradeDate = this.FormatDateString(data.date+'',true);
-            //     }
-            //     if(data.day){
-            //         this.ContentTopData.Price.Text = data.day.price;
-            //         this.ContentTopData.Price.Color = this.FormatValueColor(data.day.price,data.day.yclose);
-            //         this.ContentTopData.Open.Text = data.day.open;
-            //         this.ContentTopData.Open.Color = this.FormatValueColor(data.day.open,data.day.yclose);
-            //         this.ContentTopData.YClose = data.day.yclose;
-            //     }
-            //     if (data.deal) {
-            //         this.TableData.Meta = data.deal;
-
-            //         this.Pagination.CurrentPage = 1;
-            //         this.ChoiceData("", data.deal);
-                    
-            //         this.loadingBody = false;
-            //     }
-            // },
             GoSearch(){
                 this.IsShow.Search = true;
                 var mySymbol = this.$refs.mySymbol;

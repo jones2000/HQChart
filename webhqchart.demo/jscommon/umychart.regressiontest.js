@@ -15,6 +15,7 @@ function RegressionTest()
     this.BuyData;       //策略买数据
     this.SellData;      //策略卖数据
     this.IndexClose;    //大盘收盘价
+    this.NetCalculateModel=0;   //净值及收益计算模型 0=使用B点开盘价计算 1=使用B点下一天的开盘价计算
 
     this.InitialCapital=10000;  //初始资金1W
 
@@ -34,7 +35,7 @@ function RegressionTest()
         this.Data=new Map()
     }
 
-    this.GetBSData=function(startDate)  //BS点配对 { B:[{Data:K线数据, Count:天数}], S:{Data:K线数据}}
+    this.GetBSData=function(startDate)  //BS点配对 { B:[{Data:K线数据, Count:天数, NextOpen:下一天的开盘价 }], S:{Data:K线数据}}
     {
         var index=null;
         for(var i=0;i<this.HistoryData.length;++i)
@@ -60,7 +61,9 @@ function RegressionTest()
             {
                 if (buyItem>0)
                 {
-                    bsItem={ B:[{Data:kLineItem, Count:0 }], S:null};  //B可以多个，S一个
+                    var bItem={Data:kLineItem, Count:0 };
+                    if (i+1<this.HistoryData.length) bItem.NextOpen=this.HistoryData[i+1].Open;    //获取下一天的开盘价
+                    bsItem={ B:[bItem], S:null};  //B可以多个，S一个
                 }
             }
             else
@@ -68,7 +71,9 @@ function RegressionTest()
                 for(var j in bsItem.B) ++bsItem.B[j].Count; //天数+1
                 if (buyItem>0)
                 {
-                    bsItem.B.push({Data:kLineItem, Count:0});
+                    var bItem={Data:kLineItem, Count:0};
+                    if (i+1<this.HistoryData.length) bItem.NextOpen=this.HistoryData[i+1].Open;    //获取下一天的开盘价
+                    bsItem.B.push(bItem);
                 }
                 else if (sellItem>0)
                 {
@@ -117,11 +122,12 @@ function RegressionTest()
         }
 
         //计算收益(总收益)
-        var profit=1;
+        var profit=1,buyPrice;
         for(var i in data.BSData)
         {
             var item=data.BSData[i];
-            var buyPrice=item.B[0].Data.Open;
+            if (this.NetCalculateModel===1 && item.B[0].NextOpen>0 ) buyPrice=item.B[0].NextOpen;
+            else buyPrice=item.B[0].Data.Open;
             var sellPrice=item.S.Data.Close;
             var value=(sellPrice-buyPrice)/buyPrice+1;
             profit*=value;
@@ -146,7 +152,7 @@ function RegressionTest()
         //Profit:收益  StockProfit:标的证券收益 Excess:超额收益
         var result={ Day:day, Trade:trade, Profit:profit, StockProfit:stockProfit, Excess:profit-stockProfit, NetValue:netValue, MaxDropdown:maxDropdown, Beta:beta };
 
-        console.log('[RegressionTest::Calculate] result',result);
+        console.log('[RegressionTest::Calculate] NetCalculateModel, result ',this.NetCalculateModel, result);
         return result;
     }
 
@@ -156,7 +162,7 @@ function RegressionTest()
 
         var aryDay=[];  //{Close:收盘 , Open:开盘, Position:持仓数量, Cache:现金 , MarketValue:总市值}
         var lastDayItem={Position:0, Cache:this.InitialCapital };
-        var bsItem=null;
+        var bsItem=null, buyPrice;
         for(var i=index;i<this.HistoryData.length;++i)
         {
             var buyItem=this.BuyData[i];
@@ -170,8 +176,13 @@ function RegressionTest()
                 if (buyItem>0)  //买
                 {
                     bsItem={ B:{Data:kLineItem}, S:null};
-                    let position=parseInt(dayItem.Cache/dayItem.Open);      //开盘价买
-                    let cache=dayItem.Cache-dayItem.Open*position;          //剩余的现金
+                    if (this.NetCalculateModel===1 && i+1<this.HistoryData.length && this.HistoryData[i+1].Open>0)
+                        buyPrice=this.HistoryData[i+1].Open;    //使用B点下一天的开盘价买
+                    else 
+                        buyPrice=dayItem.Open;
+
+                    let position=parseInt(dayItem.Cache/buyPrice);      //开盘价买
+                    let cache=dayItem.Cache-buyPrice*position;          //剩余的现金
 
                     dayItem.Position=position;
                     dayItem.Cache=cache;
@@ -204,7 +215,6 @@ function RegressionTest()
         //console.log('[RegressionTest::CaclulateNetValue] aryDay',aryDay);
         if (aryDay.length<=0) return  [];
 
-        var firstDay=aryDay[0];
         var netValue=[];    //净值 {Date:日期, Net:净值, Close:股票收盘价, IndexClose:大盘的收盘价}
         for(var i=0;i<aryDay.length;++i)
         {

@@ -2036,24 +2036,24 @@ function SearchStock(callback)
     this.EndOffset;         //当前缓存数据的最后一个位移
 
     this.Data=new Array();
-    this.Search="";
+    this.SearchString="";
     this.SearchType=0;
 
     this.Search=function(input,type)
     {
-        if (this.Search==input && this.SearchType==type)
+        if (this.SearchString==input && this.SearchType==type)
         {
 
         }
         else
         {
-            this.Search=input;
+            this.SearchString=input;
             this.SearchType=type;
             this.Count=0;
             this.EndOffset=0;
             this.Data=[];
             var end=this.PageSize-1;
-            this.ReqeustSearchStock(this.Search,this.SearchType,this.EndOffset,end);
+            this.ReqeustSearchStock(this.SearchString,this.SearchType,this.EndOffset,end);
         }
     }
 
@@ -2069,7 +2069,7 @@ function SearchStock(callback)
         if (this.EndOffset+1>this.Count) return;
 
         var end=this.EndOffset+this.PageSize;
-        this.ReqeustSearchStock(this.Search,this.SearchType,this.EndOffset,end);
+        this.ReqeustSearchStock(this.SearchString,this.SearchType,this.EndOffset,end);
     }
 
     ///////////////////////////////////////////////////////////////////////

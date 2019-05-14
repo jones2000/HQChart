@@ -4459,7 +4459,7 @@ function JSAlgorithm(errorHandler,symbolData)
     BETA(N) 返回当前证券N周期收益与对应大盘指数收益相比的贝塔系数
     需要下载上证指数历史数据
     涨幅(X)=(现价-上一个交易日收盘价）/上一个交易日收盘价
-    公式=股票和指数协方差/股票方差
+    公式=股票和指数协方差/指数方差
     */
     this.BETA=function(n)
     {
@@ -4483,16 +4483,92 @@ function JSAlgorithm(errorHandler,symbolData)
             if (indexItem.Close>0 && indexItem.YClose>0) indexProfit[i]=(indexItem.Close-indexItem.YClose)/indexItem.YClose;
         }
 
-        var covariance=this.COVAR(stockProfit,indexProfit,n);  //股票和指数的协方差
-        var variance=this.VAR(indexProfit,n);    //指数方差
+        //计算均值数组
+        var averageStockProfit=this.CalculateAverage(stockProfit,n);    
+        var averageIndexProfit=this.CalculateAverage(indexProfit,n);
 
-        for(let i in variance)
+        for(var i=0,j=0;i<stockData.Data.length;++i)
         {
             result[i]=null;
-            if (!this.IsDivideNumber(variance[i]) || !this.IsNumber(covariance[i])) continue;
-            result[i]=covariance[i]/variance[i];
+
+            if (i>=stockProfit.length || i>=indexProfit.length || i>=averageStockProfit.length || i>=averageIndexProfit.length) continue;
+
+            var averageStock=averageStockProfit[i];
+            var averageIndex=averageIndexProfit[i];
+
+            var covariance=0;   //协方差
+            var variance=0;     //方差
+            for(j=i-n+1;j<=i;++j)
+            {
+                var value=(indexProfit[j]-averageIndex);
+                var value2=(stockProfit[j]-averageStock);
+                covariance+=value*value2; 
+                variance+=value*value; 
+            }
+
+            if (this.IsDivideNumber(variance) && this.IsNumber(covariance))
+                result[i]=covariance/variance;  //(covariance/n)/(variance/n)=covariance/variance;
         }
-        
+
+        return result;
+    }
+
+    /*
+    用法:BETA2(X,Y,N)为X与Y的N周期相关放大系数,表示Y变化1%,则X将变化N%
+    例如:BETA2(CLOSE,INDEXC,10)表示收盘价与大盘指数之间的10周期相关放大率
+    */
+   this.BETA2=function(x,y,n)
+    {
+        var result=[];
+        if (n<=0) n=1;
+
+        var xProfit=[null]; //x数据的涨幅
+        var yProfit=[null]; //y数据的涨幅
+
+        var count=Math.max(x.length,y.length);
+
+        var lastItem={X:x[0], Y:y[0]};
+        for(var i=1;i<count;++i)
+        {
+            xProfit[i]=0;
+            yProfit[i]=0;
+
+            var xItem=x[i];
+            var yItem=y[i];
+
+            if (lastItem.X>0) xProfit[i]=(xItem-lastItem.X)/lastItem.X;
+            if (lastItem.Y>0) yProfit[i]=(yItem-lastItem.Y)/lastItem.Y;
+
+            lastItem={X:xItem, Y:yItem};
+        }
+
+        //计算均值数组
+        var averageXProfit=this.CalculateAverage(xProfit,n);    
+        var averageYProfit=this.CalculateAverage(yProfit,n);
+
+        for(var i=0,j=0;i<count;++i)
+        {
+            result[i]=null;
+
+            if (i>=xProfit.length || i>=yProfit.length || i>=averageXProfit.length || i>=averageYProfit.length) continue;
+
+            var averageX=averageXProfit[i];
+            var averageY=averageYProfit[i];
+
+            var covariance=0;   //协方差
+            var variance=0;     //方差
+            for(j=i-n+1;j<=i;++j)
+            {
+                var value=(xProfit[j]-averageX);
+                var value2=(yProfit[j]-averageY);
+                covariance+=value*value2; 
+                variance+=value*value; 
+            }
+
+            if (this.IsDivideNumber(variance) && this.IsNumber(covariance))
+                result[i]=covariance/variance;  //(covariance/n)/(variance/n)=covariance/variance;
+        }
+
         return result;
     }
 
@@ -4768,6 +4844,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.COVAR(args[0],args[1],args[2]);
             case 'BETA':
                 return this.BETA(args[0]);
+            case 'BETA2':
+                return this.BETA2(args[0],args[1],args[2]);
             case 'WMA':
                 return this.WMA(args[0], args[1]);
             case 'MEMA':
@@ -6753,30 +6831,30 @@ function JSSymbolData(ast,option,jsExecute)
     SETCODE 市场类型
     0:深圳 1:上海,47:中金所期货 28:郑州商品 29:大连商品 30:上海商品,27:香港指数 31:香港主板,48:香港创业板... 
     */
-   this.SETCODE=function()
-   {
-       if (this.Symbol.indexOf('.sh')) return 1;
-       if (this.Symbol.indexOf('.sz')) return 0;
+    this.SETCODE=function()
+    {
+        if (this.Symbol.indexOf('.sh')) return 1;
+        if (this.Symbol.indexOf('.sz')) return 0;
 
-       return 0;
-   }
+        return 0;
+    }
    
-   this.DATE=function()
-   {
-       var result=[];
-       if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+    this.DATE=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
 
-       for(let i in this.Data.Data)
-       {
-           var item=this.Data.Data[i];
-           result[i]=item.Date;
-       }
+        for(let i in this.Data.Data)
+        {
+            var item=this.Data.Data[i];
+            result[i]=item.Date;
+        }
 
-       return result;
+        return result;
     }
 
-   this.YEAR=function()
-   {
+    this.YEAR=function()
+    {
         var result=[];
         if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
 
@@ -6790,11 +6868,10 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         return result;
+    }
 
-   }
-
-   this.MONTH=function()
-   {
+    this.MONTH=function()
+    {
         var result=[];
         if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
 
@@ -6808,11 +6885,37 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         return result;
+    }
 
-   }
+    //星期 1-7
+    this.WEEK=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
 
-   this.REFDATE=function(data,date)
-   {
+        var tempDate=new Date();
+        for(let i in this.Data.Data)
+        {
+            var item=this.Data.Data[i];
+            result[i]=null;
+            if (!this.IsNumber(item.Date)) continue;
+
+            var year=parseInt(item.Date/10000);
+            var month=parseInt(item.Date%10000/100);
+            var day=item.Date%100;
+            
+            tempDate.setFullYear(year);
+            tempDate.setMonth(month-1);
+            tempDate.setDate(day);
+
+            result[i]=tempDate.getDay();
+        }
+
+        return result;
+    }
+
+    this.REFDATE=function(data,date)
+    {
         var result=null;
         var index=null;
         for(let i in this.Data.Data)   //查找日期对应的索引
@@ -6827,15 +6930,15 @@ function JSSymbolData(ast,option,jsExecute)
         if (index==null || index>=data.length) return null;
 
         return data[index];
-   }
+    }
 
-   //用法:结果从0到11,依次分别是1/5/15/30/60分钟,日/周/月,多分钟,多日,季,年
-   this.PERIOD=function()
-   {
-       //Period周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
-       const PERIOD_MAP=[5,6,7,11, 0,1,2,3,4,5];
-       return PERIOD_MAP[this.Period];
-   } 
+    //用法:结果从0到11,依次分别是1/5/15/30/60分钟,日/周/月,多分钟,多日,季,年
+    this.PERIOD=function()
+    {
+        //Period周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+        const PERIOD_MAP=[5,6,7,11, 0,1,2,3,4,5];
+        return PERIOD_MAP[this.Period];
+    } 
 
 }
 
@@ -7047,7 +7150,7 @@ function JSExecute(ast,option)
         ['C',null],['V',null],['O',null],['H',null],['L',null],
 
         //日期类
-        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],
+        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
@@ -7193,6 +7296,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.YEAR();
             case 'MONTH':
                 return this.SymbolData.MONTH();
+            case 'WEEK':
+                return this.SymbolData.WEEK();
             case 'PERIOD':
                 return this.SymbolData.PERIOD();
         }
