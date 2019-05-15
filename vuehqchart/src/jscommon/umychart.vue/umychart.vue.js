@@ -3305,8 +3305,8 @@ function JSChart(divElement)
             if (option.KLine.PageSize > 0)  //一屏显示的数据个数
             {
                 let pageSize = chart.GetMaxMinPageSize();
-                if (pageSize.Max < option.KLine.PageSize) chart.PageSize = pageSize.Max;
-                else if (pageSize.Min> option.KLine.PageSize) chart.PageSize=pageSize.Min;
+                if (pageSize.Max>10 && pageSize.Max < option.KLine.PageSize) chart.PageSize = pageSize.Max;
+                else if (pageSize.Min>10 && pageSize.Min> option.KLine.PageSize) chart.PageSize=pageSize.Min;
                 else chart.PageSize = option.KLine.PageSize;
             }
         }
@@ -20355,6 +20355,15 @@ function KLineChartContainer(uielement)
     {
         this.Symbol=symbol;
         if (IsIndexSymbol(symbol)) this.Right=0;    //指数没有复权
+
+        //清空指标
+        if (this.Frame && this.Frame.SubFrame)
+        {
+            for(var i=0;i<this.Frame.SubFrame.length;++i)
+            {
+                this.DeleteIndexPaint(i);
+            }
+        }
 
         if (this.Period<=3)
         {
