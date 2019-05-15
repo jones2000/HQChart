@@ -152,6 +152,7 @@ export default
     [
         'DefaultSymbol',     //默认股票
         'DefaultOption',     //走势图设置
+        'DefaultAPIDomain',         //数据API域名设置
     ],
 
     data()
@@ -172,6 +173,11 @@ export default
         //处理默认传入的参数
         if (this.DefaultSymbol) this.Symbol=this.DefaultSymbol; //默认股票
         if (this.DefaultOption) this.SetOption(this.DefaultOption);
+        if (this.DefaultAPIDomain) 
+        {
+            JSCommon.JSChart.SetDomain(this.DefaultAPIDomain.Domain,this.DefaultAPIDomain.CacheDomain);
+            JSCommon.JSComplier.SetDomain(this.DefaultAPIDomain.Domain,this.DefaultAPIDomain.CacheDomain);
+        }
     },
 
     mounted:function()

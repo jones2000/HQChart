@@ -71,7 +71,7 @@ function JSIndexScript()
             ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2],['Zealink-持仓信号', this.Zealink_Index3],
             ['Zealink-增减持',this.Zealink_Index4],['Zealink-大宗交易', this.Zealink_Index5], ['Zealink-信托持股', this.Zealink_Index6],
             ['Zealink-官网新闻', this.Zealink_Index7], ['Zealink-高管要闻', this.Zealink_Index8],['Zealink-股权质押', this.Zealink_Index9],
-            ['Zealink-操盘BS点', this.Zealink_Index10],
+            ['Zealink-操盘BS点', this.Zealink_Index10],['Zealink-操盘BS点2', this.Zealink_Index11],
             
             //外包指标
             ['放心股-操盘BS点',this.FXG_BSPoint],
@@ -3100,6 +3100,66 @@ DRAWICON(REF(S1,1),H*1.03,14);"
 
     return data;
 }
+
+JSIndexScript.prototype.Zealink_Index11 = function () 
+{
+    let data =
+    {
+        Name: '操盘BS点', Description: '操盘BS点', IsMainIndex: true, FloatPrecision: 0,
+        Args: [],
+        Script: //脚本
+"JJ:=(CLOSE+HIGH+LOW)/3;\n\
+A:=EMA(JJ,10);\n\
+B:=REF(A,1);\n\
+M1:=EMA(CLOSE,3);\n\
+M2:=EMA(CLOSE,8); \n\
+M3:=EMA(M2,13);\n\
+M4:=EMA(M2,55);\n\
+持股区域:=STICKLINE(A>B,A,B,2,0),COLORYELLOW; \n\
+持币区域:=STICKLINE(A<B,A,B,2,0),COLORBLUE;\n\
+\n\
+VR1:=(C+O+REF(C,1))/3;\n\
+VR3:=HHV(VR1,21);\n\
+VR4:=LLV(VR1,21);\n\
+VR5:=(2*VR1-VR4-REF(VR4,1))/(VR3-VR4);\n\
+VR6:=(VR1-VR4)/(VR3-VR4);\n\
+VR7:=IF(VR1<=VR4,VR5*60,VR6*60);\n\
+VR8:=600*(EMA(C,3)-EMA(L,30))/EMA(L,30);\n\
+VR9:=EMA(VR8,7);\n\
+VRA:=(WINNER(120*C/100)-WINNER(100*C/100))*100;\n\
+VRB:=(-100)*(WINNER(120*C/100)-WINNER(100*C/100))+5;\n\
+VRC:=HHV(H,9)-LLV(L,9);\n\
+VRD:=HHV(H,9)-C;\n\
+VRE:=C-LLV(L,9);\n\
+VRF:=VRD/VRC*100-70;\n\
+VR10:=(C-LLV(L,60))/(HHV(H,60)-LLV(L,60))*100;\n\
+VR11:=(2*C+H+L)/4;\n\
+VR12:=SMA(VRE/VRC*100,3,1);\n\
+VR13:=LLV(L,34);\n\
+VR14:=SMA(VR12,3,1)-SMA(VRF,9,1);\n\
+VR15:=IF(VR14>100,VR14-100,0);\n\
+VR16:=HHV(H,34);\n\
+VR17:=EMA((VR11-VR13)/(VR16-VR13)*100,8);\n\
+VR18:=EMA(VR17,5);\n\
+\n\
+B1:=A>B AND REF(A,1)<REF(B,1);\n\
+S1:=A<B AND REF(A,1)>REF(B,1);\n\
+\n\
+B9:=BARSLAST(REF(B1,1) AND (REF(VR17>VR18,1) OR MIN(VR17,VR18)>REF(MAX(VR17,VR18),1)));\n\
+S9:=BARSLAST(REF(S1,1) AND (REF(VR17<VR18,1) OR MAX(VR17,VR18)<REF(MIN(VR17,VR18),1)));\n\
+\n\
+DRAWICON(REF(B1,1) AND (REF(VR17>VR18,1) OR MIN(VR17,VR18)>REF(MAX(VR17,VR18),1)) AND REF(B9,2)>=S9,L*0.97,13);\n\
+DRAWICON(REF(S1,1) AND (REF(VR17<VR18,1) OR MAX(VR17,VR18)<REF(MIN(VR17,VR18),1)) AND REF(S9,1)>=B9,H*1.03,14);\n\
+\n\
+DRAWKLINE_IF(VR17>VR18,HIGH,CLOSE,LOW,OPEN),COLORRED;\n\
+DRAWKLINE_IF(VR17<VR18,HIGH,CLOSE,LOW,OPEN),COLORBLUE;\n\
+\n\
+INDEXCLOSE:INDEXC,EXDATA;		//取指数的收盘价 回测的时候计算BATE系数用 "
+    };
+
+    return data;
+}
+
 
 
 
@@ -37856,7 +37916,8 @@ function ScriptIndex(name,script,args,option)
         var event=hqChart.GetIndexEvent();
         if (event)
         {
-            var data={ OutVar:this.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData };
+            var data={ OutVar:this.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData, 
+                    Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
             event.Callback(event,data,this);
         }
 
@@ -37951,5 +38012,6 @@ export default {
     JSKLineInfoMap:JSKLineInfoMap,
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,      //可以订阅的事件类型
     JSAlgorithm:JSAlgorithm,                //算法类
+    JSComplier:JSComplier,                  //指标编译器
     
 }

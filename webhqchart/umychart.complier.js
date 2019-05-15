@@ -8603,7 +8603,8 @@ function ScriptIndex(name,script,args,option)
         var event=hqChart.GetIndexEvent();
         if (event)
         {
-            var data={ OutVar:this.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData };
+            var data={ OutVar:this.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData, 
+                    Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
             event.Callback(event,data,this);
         }
 

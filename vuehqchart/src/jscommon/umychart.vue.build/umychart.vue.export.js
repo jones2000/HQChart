@@ -21,5 +21,6 @@ export default {
     JSKLineInfoMap:JSKLineInfoMap,
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,      //可以订阅的事件类型
     JSAlgorithm:JSAlgorithm,                //算法类
+    JSComplier:JSComplier,                  //指标编译器
     
 }

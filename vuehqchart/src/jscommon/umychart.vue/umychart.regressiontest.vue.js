@@ -3,7 +3,7 @@
     指标回测
     计算: Trade: {Count 交易次数  Days:交易天数 Success:成功交易次数 Fail:失败交易次数}
           Day: {Count:总运行  Max:最长运行 Min:最短运行 Average:平均运行}
-          Profit: 总收益 StockProfit:个股收益  Excess:超额收益 MaxDropdown:最大回撤 Beta:β(Beta)系数
+          Profit: 总收益 StockProfit:个股收益  Excess:超额收益 MaxDropdown:最大回撤 Beta:β(Beta)系数(指标里面需要又大盘数据)
           NetValue: [ {Date:日期, Net:净值, Close:股票收盘价, IndexClose:大盘的收盘价}, ]
 */
 
