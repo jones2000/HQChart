@@ -45,9 +45,19 @@ function JSCanvasElement() {
   }
 }
 
-function JSChart(element) {
-  this.JSChartContainer;              //画图控件
-  this.CanvasElement = element;
+function JSChart(element) 
+{
+    this.JSChartContainer;              //画图控件
+    this.CanvasElement = element;
+
+    this.AddEventCallback = function (obj)   //事件回调  {event:事件id, callback:回调函数}
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.AddEventCallback) == 'function') 
+        {
+            console.log('[JSChart:AddEventCallback] ', obj);
+            this.JSChartContainer.AddEventCallback(obj);
+        }
+    }
 
   this.OnSize = function () {
     if (this.JSChartContainer && this.JSChartContainer.Frame)
@@ -825,46 +835,77 @@ JSChart.SetStyle = function (style) {
   if (style) g_JSChartResource.SetStyle(style);
 }
 
+var JSCHART_EVENT_ID =
+{
+    RECV_INDEX_DATA: 2,  //接收指标数据
+    RECV_HISTROY_DATA: 3,//接收到历史数据
+}
+
 /*
     图形控件
 */
-function JSChartContainer(uielement) {
-  this.ClassName = 'JSChartContainer';
-  var _self = this;
-  this.Frame;                                     //框架画法
-  this.ChartPaint = new Array();                    //图形画法
-  this.ChartPaintEx = [];                           //图形扩展画法
-  this.ChartInfo = new Array();                     //K线上信息地雷
-  this.ExtendChartPaint = new Array();              //扩展画法
-  this.TitlePaint = new Array();                    //标题画法
-  this.OverlayChartPaint = new Array();             //叠加信息画法
-  this.ChartDrawPicture = new Array();              //画图工具
-  this.CurrentChartDrawPicture = null;              //当前的画图工具
-  this.SelectChartDrawPicture = null;               //当前选中的画图
-  this.ChartCorssCursor;                          //十字光标
-  this.ChartSplashPaint = null;                     //等待提示
-  this.SplashTitle = '数据加载中';
-  this.Canvas = uielement.GetContext("2d");         //画布
-  this.UIElement = uielement;
-  this.MouseDrag;
-  this.DragMode = 1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+function JSChartContainer(uielement) 
+{
+    this.ClassName = 'JSChartContainer';
+    var _self = this;
+    this.Frame;                                     //框架画法
+    this.ChartPaint = new Array();                    //图形画法
+    this.ChartPaintEx = [];                           //图形扩展画法
+    this.ChartInfo = new Array();                     //K线上信息地雷
+    this.ExtendChartPaint = new Array();              //扩展画法
+    this.TitlePaint = new Array();                    //标题画法
+    this.OverlayChartPaint = new Array();             //叠加信息画法
+    this.ChartDrawPicture = new Array();              //画图工具
+    this.CurrentChartDrawPicture = null;              //当前的画图工具
+    this.SelectChartDrawPicture = null;               //当前选中的画图
+    this.ChartCorssCursor;                          //十字光标
+    this.ChartSplashPaint = null;                     //等待提示
+    this.SplashTitle = '数据加载中';
+    this.Canvas = uielement.GetContext("2d");         //画布
+    this.UIElement = uielement;
+    this.MouseDrag;
+    this.DragMode = 1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
 
-  this.TouchTimer = null;         //触屏定时器
-  this.LastDrawStatus;            //最后一次画的状态
-  this.LastDrawID=1;              //最后一次画的ID
+    this.TouchTimer = null;         //触屏定时器
+    this.LastDrawStatus;            //最后一次画的状态
+    this.LastDrawID=1;              //最后一次画的ID
 
-  this.CursorIndex = 0;             //十字光标X轴索引
-  this.LastPoint = new Point();     //鼠标位置
-  this.IsForceLandscape = false;    //是否强制横屏
-  this.CorssCursorTouchEnd = false;   //手离开屏幕自动隐藏十字光标
+    this.CursorIndex = 0;             //十字光标X轴索引
+    this.LastPoint = new Point();     //鼠标位置
+    this.IsForceLandscape = false;    //是否强制横屏
+    this.CorssCursorTouchEnd = false;   //手离开屏幕自动隐藏十字光标
 
-  //坐标轴风格方法 double-更加数值型分割  price-更加股票价格分割
-  this.FrameSplitData = new Map();
-  this.FrameSplitData.set("double", new SplitData());
-  this.FrameSplitData.set("price", new PriceSplitData());
+    //坐标轴风格方法 double-更加数值型分割  price-更加股票价格分割
+    this.FrameSplitData = new Map();
+    this.FrameSplitData.set("double", new SplitData());
+    this.FrameSplitData.set("price", new PriceSplitData());
 
-  this.UpdateUICallback;    //数据到达通知前端
-  this.IsOnTouch = false;     //当前是否正式手势操作
+    this.UpdateUICallback;    //数据到达通知前端
+    this.IsOnTouch = false;     //当前是否正式手势操作
+
+    //事件回调
+    this.mapEvent = new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
+
+    this.AddEventCallback = function (object) //设置事件回调 {event:事件id, callback:回调函数}
+    {
+        if (!object || !object.event || !object.callback) return;
+
+        var data = { Callback: object.callback, Source: object };
+        this.mapEvent.set(object.event, data);
+    }
+
+    this.RemoveEventCallback = function (eventid) 
+    {
+        if (!this.mapEvent.has(eventid)) return;
+        this.mapEvent.delete(eventid);
+    }
+    
+    this.GetIndexEvent = function () //接收指标数据
+    {
+        if (!this.mapEvent.has(JSCHART_EVENT_ID.RECV_INDEX_DATA)) return null;
+        var item = this.mapEvent.get(JSCHART_EVENT_ID.RECV_INDEX_DATA);
+        return item;
+    }
 
   //判断是单个手指
   this.IsPhoneDragging = function (e) {
@@ -10018,8 +10059,17 @@ function KLineChartContainer(uielement) {
         this.Frame.SetSizeChage(true);
         this.Draw();
 
-        if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistroyData', this);   //单词拼写错误, 请使用下面的回调
-        if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistoryData', this);
+        if (this.mapEvent.has(JSCHART_EVENT_ID.RECV_HISTROY_DATA)) 
+        {
+            var event = this.mapEvent.get(JSCHART_EVENT_ID.RECV_HISTROY_DATA);
+            var data = { HistoryData: bindData, Stock: { Symbol: this.Symbol, Name: this.Name } }
+            item.Callback(event, data, this);
+        }
+        else    //老的回调暂时保留
+        {
+            if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistroyData', this);   //单词拼写错误, 请使用下面的回调
+            if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistoryData', this);
+        }
     }
 
   this.ReqeustHistoryMinuteData = function () {
@@ -10510,19 +10560,28 @@ function KLineChartContainer(uielement) {
     this.Draw();
   }
 
-  //切换股票代码
-  this.ChangeSymbol = function (symbol) {
-    this.Symbol = symbol;
-    if (IsIndexSymbol(symbol)) this.Right = 0;    //指数没有复权
+    //切换股票代码
+    this.ChangeSymbol = function (symbol) 
+    {
+        this.Symbol = symbol;
+        if (IsIndexSymbol(symbol)) this.Right = 0;    //指数没有复权
 
-    if (this.Period <= 3) {
-      this.RequestHistoryData();                  //请求日线数据
-      this.ReqeustKLineInfoData();
+        if (this.Frame && this.Frame.SubFrame) //清空指标
+        {
+            for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
+                this.DeleteIndexPaint(i);
+        }
+
+        if (this.Period <= 3) 
+        {
+            this.RequestHistoryData();                  //请求日线数据
+            this.ReqeustKLineInfoData();
+        }
+        else 
+        {
+            this.ReqeustHistoryMinuteData();            //请求分钟数据
+        }
     }
-    else {
-      this.ReqeustHistoryMinuteData();            //请求分钟数据
-    }
-  }
 
   this.ReqeustKLineInfoData = function () {
     if (this.ChartPaint.length > 0) {
@@ -13325,32 +13384,44 @@ function ScriptIndex(name, script, args, option)
     let run = JSCommonComplier.JSComplier.Execute(code, option, hqChart.ScriptErrorCallback);
   }
 
-  this.RecvResultData = function (outVar, param) {
-    let hqChart = param.HQChart;
-    let windowIndex = param.WindowIndex;
-    let hisData = param.HistoryData;
-    param.Self.OutVar = outVar;
-    param.Self.BindData(hqChart, windowIndex, hisData);
-
-    if (param.Self.IsLocked == false) //不上锁
+    this.RecvResultData = function (outVar, param) 
     {
-      param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
-    }
-    else    //上锁
-    {
-      let lockData =
-      {
-        IsLocked: true, Callback: param.Self.LockCallback, IndexName: param.Self.Name, ID: param.Self.LockID,
-        BG: param.Self.LockBG, Text: param.Self.LockText, TextColor: param.Self.LockTextColor, Font: param.Self.LockFont,
-        Count: param.Self.LockCount
-      };
-      param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
-    }
+        let hqChart = param.HQChart;
+        let windowIndex = param.WindowIndex;
+        let hisData = param.HistoryData;
+        param.Self.OutVar = outVar;
+        param.Self.BindData(hqChart, windowIndex, hisData);
 
-    param.HQChart.UpdataDataoffset();           //更新数据偏移
-    param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
-    param.HQChart.Draw();
-  }
+        if (param.Self.IsLocked == false) //不上锁
+        {
+            param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
+        }
+        else    //上锁
+        {
+            let lockData =
+            {
+                IsLocked: true, Callback: param.Self.LockCallback, IndexName: param.Self.Name, ID: param.Self.LockID,
+                BG: param.Self.LockBG, Text: param.Self.LockText, TextColor: param.Self.LockTextColor, Font: param.Self.LockFont,
+                Count: param.Self.LockCount
+            };
+            param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
+        }
+
+        param.HQChart.UpdataDataoffset();           //更新数据偏移
+        param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        param.HQChart.Draw();
+
+        var event = hqChart.GetIndexEvent();    //指标计算完成回调
+        if (event) 
+        {
+            var self = param.Self;
+            var data = {
+                OutVar: self.OutVar, WindowIndex: windowIndex, Name: self.Name, Arguments: self.Arguments, HistoryData: hisData,
+                Stock: { Symbol: hqChart.Symbol, Name: hqChart.Name }
+            };
+            event.Callback(event, data, self);
+        }
+    }
 
     this.CreateLine = function (hqChart, windowIndex, varItem, id) 
     {
@@ -13710,6 +13781,8 @@ function ScriptIndex(name, script, args, option)
         for (let i in this.OutVar) 
         {
             let item = this.OutVar[i];
+            if (item.IsExData === true) continue; //扩展数据不显示图形
+
             if (item.Type == 0) 
             {
                 this.CreateLine(hqChart, windowIndex, item, i);
@@ -14703,15 +14776,16 @@ function IsIndexSymbol(symbol) {
 
 //导出统一使用JSCommon命名空间名
 module.exports =
-  {
+{
     JSCommon:
     {
-      JSCanvasElement: JSCanvasElement,
-      JSChart: JSChart,
-      Guid: Guid,
-      IFrameSplitOperator: IFrameSplitOperator,
+        JSCanvasElement: JSCanvasElement,
+        JSChart: JSChart,
+        Guid: Guid,
+        IFrameSplitOperator: IFrameSplitOperator,
+        JSCHART_EVENT_ID:JSCHART_EVENT_ID,
     },
-  };
+};
 
 
 

@@ -4471,26 +4471,101 @@ function JSAlgorithm(errorHandler, symbolData)
             if (indexItem.Close > 0 && indexItem.YClose > 0) indexProfit[i] = (indexItem.Close - indexItem.YClose) / indexItem.YClose;
         }
 
-        var covariance = this.COVAR(stockProfit, indexProfit, n);  //股票和指数的协方差
-        var variance = this.VAR(indexProfit, n);    //指数方差
+        //计算均值数组
+        var averageStockProfit = this.CalculateAverage(stockProfit, n);
+        var averageIndexProfit = this.CalculateAverage(indexProfit, n);
 
-        for (let i in variance) 
+        for (var i = 0, j = 0; i < stockData.Data.length; ++i) 
         {
             result[i] = null;
-            if (!this.IsDivideNumber(variance[i]) || !this.IsNumber(covariance[i])) continue;
-            result[i] = covariance[i] / variance[i];
+            if (i >= stockProfit.length || i >= indexProfit.length || i >= averageStockProfit.length || i >= averageIndexProfit.length) continue;
+
+            var averageStock = averageStockProfit[i];
+            var averageIndex = averageIndexProfit[i];
+
+            var covariance = 0;   //协方差
+            var variance = 0;     //方差
+            for (j = i - n + 1; j <= i; ++j) 
+            {
+                var value = (indexProfit[j] - averageIndex);
+                var value2 = (stockProfit[j] - averageStock);
+                covariance += value * value2;
+                variance += value * value;
+            }
+
+            if (this.IsDivideNumber(variance) && this.IsNumber(covariance))
+                result[i] = covariance / variance;  //(covariance/n)/(variance/n)=covariance/variance;
         }
 
         return result;
     }
 
     /*
-  抛物转向.
-  用法:
-  SAR(N,S,M),N为计算周期,S为步长,M为极值
-  例如:
-  SAR(10,2,20)表示计算10日抛物转向,步长为2%,极限值为20%
-  */
+    用法:BETA2(X,Y,N)为X与Y的N周期相关放大系数,表示Y变化1%,则X将变化N%
+    例如:BETA2(CLOSE,INDEXC,10)表示收盘价与大盘指数之间的10周期相关放大率
+    */
+    this.BETA2 = function (x, y, n) 
+    {
+        var result = [];
+        if (n <= 0) n = 1;
+
+        var xProfit = [null]; //x数据的涨幅
+        var yProfit = [null]; //y数据的涨幅
+
+        var count = Math.max(x.length, y.length);
+
+        var lastItem = { X: x[0], Y: y[0] };
+        for (var i = 1; i < count; ++i) 
+        {
+            xProfit[i] = 0;
+            yProfit[i] = 0;
+
+            var xItem = x[i];
+            var yItem = y[i];
+
+            if (lastItem.X > 0) xProfit[i] = (xItem - lastItem.X) / lastItem.X;
+            if (lastItem.Y > 0) yProfit[i] = (yItem - lastItem.Y) / lastItem.Y;
+
+            lastItem = { X: xItem, Y: yItem };
+        }
+
+        //计算均值数组
+        var averageXProfit = this.CalculateAverage(xProfit, n);
+        var averageYProfit = this.CalculateAverage(yProfit, n);
+
+        for (var i = 0, j = 0; i < count; ++i) 
+        {
+            result[i] = null;
+
+            if (i >= xProfit.length || i >= yProfit.length || i >= averageXProfit.length || i >= averageYProfit.length) continue;
+
+            var averageX = averageXProfit[i];
+            var averageY = averageYProfit[i];
+
+            var covariance = 0;   //协方差
+            var variance = 0;     //方差
+            for (j = i - n + 1; j <= i; ++j) 
+            {
+                var value = (xProfit[j] - averageX);
+                var value2 = (yProfit[j] - averageY);
+                covariance += value * value2;
+                variance += value * value;
+            }
+
+            if (this.IsDivideNumber(variance) && this.IsNumber(covariance))
+                result[i] = covariance / variance;  //(covariance/n)/(variance/n)=covariance/variance;
+        }
+
+        return result;
+    }
+
+    /*
+    抛物转向.
+    用法:
+    SAR(N,S,M),N为计算周期,S为步长,M为极值
+    例如:
+    SAR(10,2,20)表示计算10日抛物转向,步长为2%,极限值为20%
+    */
     this.SAR = function (n, step, exValue) 
     {
         var result = [];
@@ -4757,6 +4832,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.COVAR(args[0], args[1], args[2]);
             case 'BETA':
                 return this.BETA(args[0]);
+            case 'BETA2':
+                return this.BETA2(args[0], args[1], args[2]);
             case 'WMA':
                 return this.WMA(args[0], args[1]);
             case 'MEMA':
@@ -7182,6 +7259,7 @@ function JSExecute(ast,option)
                     let stick=false;
                     let volStick=false;
                     let isShow = true;
+                    let isExData = false;
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -7207,6 +7285,7 @@ function JSExecute(ast,option)
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
                             else if (value.indexOf('NODRAW') == 0) isShow = false;
+                            else if (value.indexOf('EXDATA') == 0) isExData = true; //扩展数据, 不显示再图形里面
                         }
                         else if (itemExpression.Type == Syntax.Literal)    //常量
                         {
@@ -7266,6 +7345,7 @@ function JSExecute(ast,option)
                         let value={Name:varName, Data:outVar, Color:color, Type:0};
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (isShow == false) value.IsShow = false;
+                        if (isExData == true) value.IsExData = true;
                         this.OutVarTable.push(value);
                     }
                     else if (draw && color)
@@ -7285,6 +7365,7 @@ function JSExecute(ast,option)
                         if (color) value.Color = color;
                         if (lineWidth) value.LineWidth = lineWidth;
                         if (isShow == false) value.IsShow = false;
+                        if (isExData == true) value.IsExData = true;
                         this.OutVarTable.push(value);
                     }
                 }

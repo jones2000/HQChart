@@ -4517,7 +4517,7 @@ function JSAlgorithm(errorHandler,symbolData)
     用法:BETA2(X,Y,N)为X与Y的N周期相关放大系数,表示Y变化1%,则X将变化N%
     例如:BETA2(CLOSE,INDEXC,10)表示收盘价与大盘指数之间的10周期相关放大率
     */
-   this.BETA2=function(x,y,n)
+    this.BETA2=function(x,y,n)
     {
         var result=[];
         if (n<=0) n=1;
@@ -8140,6 +8140,15 @@ function ScriptIndex(name,script,args,option)
         param.HQChart.UpdataDataoffset();           //更新数据偏移
         param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
         param.HQChart.Draw();
+
+        var event=hqChart.GetIndexEvent();  //指标计算完成回调
+        if (event)
+        {
+            var self=param.Self;
+            var data={ OutVar:self.OutVar, WindowIndex: windowIndex, Name: self.Name, Arguments: self.Arguments, HistoryData: hisData, 
+                    Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
+            event.Callback(event,data,self);
+        }
     }
 
     this.CreateLine=function(hqChart,windowIndex,varItem,id)
@@ -8599,14 +8608,6 @@ function ScriptIndex(name,script,args,option)
         }
 
         if (indexParam.length>0) hqChart.TitlePaint[titleIndex].Title=this.Name+'('+indexParam+')';
-
-        var event=hqChart.GetIndexEvent();
-        if (event)
-        {
-            var data={ OutVar:this.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData, 
-                    Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
-            event.Callback(event,data,this);
-        }
 
         return true;
     }

@@ -3212,8 +3212,6 @@ function JSChart(divElement)
             height-=this.ToolElement.style.height.replace("px","");   //减去工具条的高度
         }
 
-        console.log('window.devicePixelRatio',window.devicePixelRatio);
-
         this.CanvasElement.height=height;
         this.CanvasElement.width=parseInt(this.DivElement.style.width.replace("px",""));
         this.CanvasElement.style.width=this.CanvasElement.width+'px';
@@ -3222,6 +3220,8 @@ function JSChart(divElement)
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         this.CanvasElement.height*=pixelTatio;
         this.CanvasElement.width*=pixelTatio;
+
+        console.log(`[JSChart::OnSize] devicePixelRatio=${window.devicePixelRatio}, height=${this.CanvasElement.height}, width=${this.CanvasElement.width}`);
 
         if (this.JSChartContainer && this.JSChartContainer.Frame)
             this.JSChartContainer.Frame.SetSizeChage(true);
@@ -4137,6 +4137,7 @@ var JSCHART_EVENT_ID=
 {
     RECV_KLINE_MATCH:1, //接收到形态匹配
     RECV_INDEX_DATA:2,  //接收指标数据
+    RECV_HISTROY_DATA:3,//接收到历史数据
 }
 
 /*
@@ -4224,8 +4225,9 @@ function JSChartContainer(uielement)
 
     uielement.onmousemove=function(e)
     {
-        var x = e.clientX-this.getBoundingClientRect().left;
-        var y = e.clientY-this.getBoundingClientRect().top;
+        var pixelTatio = GetDevicePixelRatio(); //鼠标移动坐标是原始坐标 需要乘以放大倍速
+        var x = (e.clientX-this.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.getBoundingClientRect().top)*pixelTatio;
 
         //加载数据中,禁用鼠标事件
         if (this.JSChartContainer.ChartSplashPaint && this.JSChartContainer.ChartSplashPaint.IsEnableSplash == true) return;
@@ -4858,7 +4860,9 @@ function JSChartContainer(uielement)
 
             if (toolTip.Data)
             {
-                this.ShowTooltip(x,y,toolTip);
+                var xTooltip = e.clientX-this.UIElement.getBoundingClientRect().left;
+                var yTooltip = e.clientY-this.UIElement.getBoundingClientRect().top;
+                this.ShowTooltip(xTooltip,yTooltip,toolTip);
             }
             else
             {
@@ -4987,7 +4991,9 @@ function JSChartContainer(uielement)
         toolTip.Data=data.Data[data.DataOffset+index];
         toolTip.ChartPaint=this.ChartPaint[0];
 
-        this.ShowTooltip(this.LastPoint.X,this.LastPoint.Y,toolTip);
+        var pixelTatio = GetDevicePixelRatio();
+        if (pixelTatio===0) pixelTatio=1;   //div 缩放还是使用原始坐标
+        this.ShowTooltip(this.LastPoint.X/pixelTatio,this.LastPoint.Y/pixelTatio,toolTip);
     }
 
     this.ShowTooltip=function(x,y,toolTip)
@@ -4995,7 +5001,7 @@ function JSChartContainer(uielement)
         if (!this.IsShowTooltip) return;
 
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
-        var xMove=15*pixelTatio;    //顶部坐标偏移位置
+        var xMove=15/pixelTatio;    //顶部坐标偏移位置
         if (toolTip.Type===0) //K线信息
         {
             var format=new HistoryDataStringFormat();
@@ -5009,6 +5015,7 @@ function JSChartContainer(uielement)
             var width=157;
             this.Tooltip.style.width = width+"px";
             this.Tooltip.style.height =200+"px";
+            console.log(`[JSChartContainer::ShowTooltip] left=${left} top=${top} xMove=${xMove}` );
             if (toolTip.ChartPaint.Name=="Overlay-KLine")  this.Tooltip.style.height =220+"px";
             this.Tooltip.style.position = "absolute";
             if (left+width>this.UIElement.getBoundingClientRect().right+scrollPos.Left)
@@ -5358,6 +5365,17 @@ function JSChartContainer(uielement)
 function GetDevicePixelRatio()
 {
     return window.devicePixelRatio || 1;
+}
+
+function IsPhoneWeb()
+{
+    var userAgentInfo=navigator.userAgent;   
+    const Agents =new Array("Android","iPhone","SymbianOS","Windows Phone","iPad","iPod");   
+    for(var v=0;v<Agents.length;v++) 
+    {      
+        if(userAgentInfo.indexOf(Agents[v])>0) return true;
+    }    
+    return false; 
 }
 
 function OnKeyDown(e)   //键盘事件
@@ -6278,10 +6296,15 @@ function KLineFrame()
             return;
         }
 
-        var pixelTatio=GetDevicePixelRatio();
+        //使用外城div尺寸 画图尺寸是被放大的
+        var pixelTatio = GetDevicePixelRatio();
+        var chartWidth=parseInt(this.ChartBorder.UIElement.parentElement.style.width.replace("px",""));  
+        var chartHeight=parseInt(this.ChartBorder.UIElement.parentElement.style.height.replace("px",""));
+        console.log('[KLineFrame::DrawToolbar] ',chartWidth,chartHeight,pixelTatio);
+
         var toolbarWidth=100;
         var toolbarHeight=this.ChartBorder.GetTitleHeight();
-        var left=(this.ChartBorder.GetRight()-toolbarWidth)/pixelTatio;
+        var left=chartWidth-(this.ChartBorder.Right/pixelTatio)-toolbarWidth;
         var top=this.ChartBorder.GetTop()/pixelTatio;
         var spanIcon = "<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;' title='调整指标参数'></span>&nbsp;&nbsp;" +
             "<span class='index_change icon iconfont icon-setting' id='changeindex' style='cursor:pointer;' title='选择指标'></span>";
@@ -19524,6 +19547,13 @@ function KLineChartContainer(uielement)
         this.Frame.SetSizeChage(true);
         this.Draw();
         this.UpdatePointByCursorIndex();   //更新十字光标位子
+
+        if (this.mapEvent.has(JSCHART_EVENT_ID.RECV_HISTROY_DATA))
+        {
+            var event=this.mapEvent.get(JSCHART_EVENT_ID.RECV_HISTROY_DATA);
+            var data={ HistoryData:bindData, Stock:{Symbol:this.Symbol, Name:this.Name } }
+            item.Callback(event,data,this);
+        }
     }
 
     this.ReqeustHistoryMinuteData=function()
@@ -33839,7 +33869,7 @@ function JSAlgorithm(errorHandler,symbolData)
     用法:BETA2(X,Y,N)为X与Y的N周期相关放大系数,表示Y变化1%,则X将变化N%
     例如:BETA2(CLOSE,INDEXC,10)表示收盘价与大盘指数之间的10周期相关放大率
     */
-   this.BETA2=function(x,y,n)
+    this.BETA2=function(x,y,n)
     {
         var result=[];
         if (n<=0) n=1;
@@ -37462,6 +37492,15 @@ function ScriptIndex(name,script,args,option)
         param.HQChart.UpdataDataoffset();           //更新数据偏移
         param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
         param.HQChart.Draw();
+
+        var event=hqChart.GetIndexEvent();  //指标计算完成回调
+        if (event)
+        {
+            var self=param.Self;
+            var data={ OutVar:self.OutVar, WindowIndex: windowIndex, Name: self.Name, Arguments: self.Arguments, HistoryData: hisData, 
+                    Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
+            event.Callback(event,data,self);
+        }
     }
 
     this.CreateLine=function(hqChart,windowIndex,varItem,id)
@@ -37921,14 +37960,6 @@ function ScriptIndex(name,script,args,option)
         }
 
         if (indexParam.length>0) hqChart.TitlePaint[titleIndex].Title=this.Name+'('+indexParam+')';
-
-        var event=hqChart.GetIndexEvent();
-        if (event)
-        {
-            var data={ OutVar:this.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData, 
-                    Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
-            event.Callback(event,data,this);
-        }
 
         return true;
     }

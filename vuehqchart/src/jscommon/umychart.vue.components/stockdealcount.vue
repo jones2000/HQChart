@@ -37,20 +37,25 @@ import JSCommonStock from "../umychart.vue/umychart.stock.vue.js";
 export default {
   data() {
     return {
-      // Symbol: "600000.sh", //板块代码
+      Symbol: "600000.sh", //板块代码
       DealData: null, //数据类
       PriceList: [],
       ProportionList: [], //占比数组
-      colorDeal: ""
+      colorDeal: "",
+      Date:'20190102'
     };
   },
   props: {
-    Symbol: String,
-    date: String
+    DefaultSymbol: String,
+    DefaultDate: String
+  },
+  created(){
+    this.Symbol = this.DefaultSymbol != null ? this.DefaultSymbol : "600000.sh";
+    this.Date = this.DefaultDate != null ? this.DefaultDate : '20190102';
   },
   mounted: function() {
     this.DealData = JSCommonStock.JSStock.GetDealDay(this.Symbol);
-    this.DealData.Date = this.date;
+    this.DealData.Date = this.Date;
     this.DealData.InvokeUpdateUICallback = this.GetData;
     this.DealData.RequestData();
   },
@@ -98,6 +103,9 @@ export default {
           this.PriceList.push(object);
         });
       }
+    },
+    OnSize(){
+        
     }
   }
 };

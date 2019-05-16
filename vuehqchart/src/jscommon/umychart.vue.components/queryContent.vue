@@ -54,11 +54,14 @@
                 <el-checkbox v-model="RerverChecked">倒序</el-checkbox>
             </div>
         </div>
-        <div class="divdealday" ref='tableContent' v-show='IsShow.DealDetail'>
+        <div class="divdealday" ref='tableContent'>
             <StockDeal ref='stockdeal' :ChoiceIndex='ChoiceIndex' :ChoiceDate='ChoiceDate' :IsReverse='IsReverse' :DealSymbol='OptionData.Symbol' @DealDay='GetStockInfo'></StockDeal>
         </div>
-        <div class="charWrap" id='charWrap' ref='charWrap' v-show='IsShow.MinuteChart'>
+        <div class="charWrap" id='charWrap' ref='charWrap'>
             <StockChart ref='stockChart' :DefaultSymbol='OptionData.Symbol' :DefaultOption='OptionData.MinuteOption'></StockChart>
+        </div>
+        <div class="divdealcount" ref='divdealcount'>
+            <StockDealCount ref='stockdealcount' :DefaultSymbol='OptionData.Symbol' :DefaultDate='ChoiceDate'></StockDealCount>
         </div>
 
         
@@ -71,6 +74,7 @@
     import SearchSymbol from './searchsymbol.vue'
     import StockChart from './stockchart.vue'
     import StockDeal from './stockdeal.vue'
+    import StockDealCount from './stockdealcount.vue'
 
     Date.prototype.Format = function (fmt) {
         var o = {
@@ -118,7 +122,7 @@
                     }
                 },
                 // loadingBody: false,
-                TabTexts:['成交明细','走势图'],
+                TabTexts:['成交明细','走势图','分价表'],
                 TabIndex:0,
                 OptionData:{
                     Symbol:'',
@@ -133,7 +137,8 @@
                 IsShow:{
                     Search:false,
                     DealDetail:true,
-                    MinuteChart:false
+                    MinuteChart:false,
+                    DealCount:false
                 },
                 ContentTopData:ContentTop.GetDeaultData(),
                 mainHight: 0,
@@ -150,7 +155,7 @@
                 IsReverse:false
             };
         },
-        components:{SearchSymbol,StockChart,StockDeal},
+        components:{SearchSymbol,StockChart,StockDeal,StockDealCount},
         computed:{
             DateFormat:function(){
                 return this.OptionData.DatePicker.replace(/-/g, "");
@@ -163,7 +168,7 @@
             var width = bodyWidth;
             var height = bodyHeight - 45 -70 - 60;
 
-            this.OptionData.Symbol = this.GetURLParams('symbol');
+            this.OptionData.Symbol = this.GetURLParams('symbol') != undefined ? this.GetURLParams('symbol') : '600000.sh';
             this.OptionData.DatePicker = this.GetURLParams('date') != undefined ? this.GetURLParams('date') : this.getLastFormatDate();
 
             var date = this.FormatDateString(this.OptionData.DatePicker,false);  //走势图日期设置
@@ -174,25 +179,28 @@
             const that = this;
             
             this.OnSize();
-            // var data = this.$refs.stockdeal.DealDayData;
-            
-            // this.loadingBody = true;
-            
-
-            // // 监听
         },
         methods: {
             ChangeContentShow(index){
                 this.TabIndex = index;
                 switch(index){
                     case 0:
-                        this.IsShow.DealDetail = true;
+                        this.$refs.tableContent.style.display = 'block';
+                        this.$refs.stockdeal.OnSize();
                         this.$refs.charWrap.style.display='none';
+                        this.$refs.divdealcount.style.display='none';
                         break;
                     case 1:
-                        this.IsShow.DealDetail = false;
+                        this.$refs.tableContent.style.display = 'none';
                         this.$refs.charWrap.style.display='block';//直接设置到dom里面 vue里面的设置是异步的
                         this.$refs.stockChart.OnSize();
+                        this.$refs.divdealcount.style.display='none';
+                        break;
+                    case 2:
+                        this.$refs.tableContent.style.display = 'none';
+                        this.$refs.charWrap.style.display='none';//直接设置到dom里面 vue里面的设置是异步的
+                        this.$refs.divdealcount.style.display='block';
+                        this.$refs.stockdealcount.OnSize();
                         break;
                 }
 
@@ -259,6 +267,14 @@
                 divChart.style.height=height+'px';
                 var stockChart = this.$refs.stockChart;
                 stockChart.OnSize();
+
+                var divdealcount = this.$refs.divdealcount;
+                divdealcount.style.width=width+'px';
+                divdealcount.style.height=height+'px';
+                var stockdealcount = this.$refs.stockdealcount;
+                stockdealcount.OnSize();
+
+
 
                 var minWidth = 1062;
                 
@@ -487,9 +503,10 @@
                     line-height: 20px;
                     padding: 0 10px;
                     cursor: pointer;
-                }
-                >span:first-child{
                     border-right: $tabBorder;
+                }
+                >span:last-child{
+                    border-right: none;
                 }
                 >span.active {
                     color: blue;
