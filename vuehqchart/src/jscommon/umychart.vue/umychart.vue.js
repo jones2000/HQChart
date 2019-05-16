@@ -4518,6 +4518,14 @@ function JSChartContainer(uielement)
 
         if (jsChart.IsPhoneDragging(e))
         {
+            if (jsChart.TryClickLock) //指标枷锁区域
+            {
+                var touches = jsChart.GetToucheData(e, jsChart.IsForceLandscape);
+                var x = touches[0].clientX;
+                var y = touches[0].clientY;
+                if (jsChart.TryClickLock(x, y)) return;
+            }
+
             //长按2秒,十字光标
             var timeout=setTimeout(function()
             {
@@ -6300,7 +6308,7 @@ function KLineFrame()
         var pixelTatio = GetDevicePixelRatio();
         var chartWidth=parseInt(this.ChartBorder.UIElement.parentElement.style.width.replace("px",""));  
         var chartHeight=parseInt(this.ChartBorder.UIElement.parentElement.style.height.replace("px",""));
-        console.log('[KLineFrame::DrawToolbar] ',chartWidth,chartHeight,pixelTatio);
+        //console.log('[KLineFrame::DrawToolbar] ',chartWidth,chartHeight,pixelTatio);
 
         var toolbarWidth=100;
         var toolbarHeight=this.ChartBorder.GetTitleHeight();
