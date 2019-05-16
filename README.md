@@ -72,10 +72,14 @@
 * 指标回测(手机版) https://opensource.zealink.com/hqweb/operatebsh5/index.html?symbol=000001.sz <br>
 
 # 4.使用教程
-如何快速创建一个K线图页面 https://blog.csdn.net/jones2000/article/details/90272733 <br>
+1. 如何快速创建一个K线图页面 https://blog.csdn.net/jones2000/article/details/90272733 <br>
+2. 如何把自定义指标显示在K线图页面 https://blog.csdn.net/jones2000/article/details/90273684 <br>
+3. 如何把指标上锁显示在K线图页面 https://blog.csdn.net/jones2000/article/details/90285723 <br>
 
 * 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
 * QQ交流群(950092318) ![QQ群](/小程序行情模块用例/image/qqcode.png)
+
+# 5.VUE 行情项目
 
 * pc网页版行情目前正在开发中,基于VUE框架开发 <br>
   ![走势图2](/小程序行情模块用例/image/pch5hq.PNG)
