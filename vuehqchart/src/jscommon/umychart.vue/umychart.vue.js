@@ -8588,7 +8588,7 @@ function ChartKLine()
                     this.Canvas.beginPath();
                     if (isHScreen)
                     {
-                        this.Canvas.moveTo(yHigh,ToFixedPoint(x),);
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
                         this.Canvas.lineTo(yLow,ToFixedPoint(x));
                     }
                     else
@@ -8817,7 +8817,7 @@ function ChartKLine()
                 {
                     this.Canvas.moveTo(yLow-1,x);
                     this.Canvas.lineTo(yLow-arrowWidth-1,x-arrowWidth/2);
-                    this.Canvas.lineTo(yLow-arrowWidth-1,x+arrowWidth/2,);
+                    this.Canvas.lineTo(yLow-arrowWidth-1,x+arrowWidth/2);
                 }
                 else
                 {
@@ -9417,7 +9417,7 @@ function ChartOverlayKLine()
                 {
                     if (isHScreen)
                     {
-                        this.Canvas.moveTo(yHigh,ToFixedPoint(x),);
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
                         this.Canvas.lineTo(yLow,ToFixedPoint(x));
                     }
                     else
@@ -9479,7 +9479,7 @@ function ChartOverlayKLine()
                 {
                     if (isHScreen)
                     {
-                        this.Canvas.moveTo(yHigh,ToFixedPoint(x),);
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
                         this.Canvas.lineTo(yLow,ToFixedPoint(x));
                     }
                     else
@@ -24613,7 +24613,7 @@ function BenfordIndex()
 
     this.Index = new Array(
         new IndexInfo('区域', null),
-        new IndexInfo("系数", null),
+        new IndexInfo("系数", null)
       );
 
     this.Data; //财务数据

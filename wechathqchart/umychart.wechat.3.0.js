@@ -14575,7 +14575,7 @@ function BenfordIndex() {
 
   this.Index = new Array(
     new IndexInfo('区域', null),
-    new IndexInfo("系数", null),
+    new IndexInfo("系数", null)
   );
 
   this.Data; //财务数据
