@@ -45,6 +45,8 @@
             var height= $(window).height();
             var width = $(window).width();
             var divKline=document.getElementById('kline');
+            divKline.style.top=0+'px';
+            divKline.style.left=0+'px';
             divKline.style.width=width+'px';
             divKline.style.height=height+'px';
             divKline.JSChart.OnSize();
@@ -85,19 +87,26 @@
             // 创建股票K线图
             console.log('create JSChart');
             var chart=JSChart.Init(document.getElementById('kline'));
+
+            var height= $(window).height();
+            var width = $(window).width();
+            var divKline=document.getElementById('kline');
+            divKline.style.width=width+'px';
+            divKline.style.height=height+'px';
+            chart.OnSize();
         
             var option=
                 {
                     Type:'历史K线图',
                     Windows:aryIndex, //窗口指标
-                    /*
+                    
                     Windows: [
-                                {Index:"放心股-操盘BS点"},
-                                {Index:"放心股-涨停吸筹区"},
-                                {Index:"放心股-涨停多空线"},
-                                {Index:"放心股-量能黄金点"},
+                                {Index:"MA"},
+                                {Index:"VOL"},
+                                {Index:"RSI"},
+                                
                             ], //窗口指标
-                    */
+                    
                     Symbol:symbol,
                     IsAutoUpdate:true,       //是自动更新数据
                     //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
@@ -111,12 +120,13 @@
                         Right:1,                    //复权 0 不复权 1 前复权 2 后复权
                         Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
                         MaxReqeustDataCount:1000,   //数据个数
-                        PageSize:50,               //一屏显示多少数据
+                        PageSize:150,               //一屏显示多少数据
                         IndexTreeApiUrl:"https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
                         //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
                         //Info:["公告","互动易","调研"],          //信息地雷
                         KLineDoubleClick:true,              //双击分钟走势图
-                        IsShowTooltip:true                 //是否显示K线提示信息
+                        IsShowTooltip:true,                 //是否显示K线提示信息
+                        //FirstShowDate:20180401,             //首屏显示的起始日期              
                     },
         
                     KLineTitle: //标题设置
@@ -152,9 +162,10 @@
             {
                 option.Border.Left=1;
                 option.Border.Right=1;
-                option.KLine.IsShowTooltip=false;
+                option.KLine.IsShowTooltip=false;   //关闭pc端tooltip
                 option.KLine.Info=null;
-                option.ExtendChart=[];
+                option.KLine.PageSize=50;   
+                option.ExtendChart=[{Name:'KLineTooltip' }]; //开启手机端tooltip
                 for(var i in option.Windows)
                 {
                     option.Windows[i].Modify=false;
@@ -165,11 +176,12 @@
             chart.SetOption(option);
             //jsChart.LockIndex('飞龙四式',unlockIndex);
 
-            //chart.AddEventCallback({event:JSCHART_EVENT_ID.RECV_KLINE_MATCH, callback:testcallback})
+            //注册监听事件
+            //chart.AddEventCallback({event:JSCHART_EVENT_ID.RECV_INDEX_DATA, callback:testcallback})
         
             resizeCanvas();
         
-            //setTimeout(() => { jsChart.ChangeSymbol("000001.sz");}, 20000);
+            //setTimeout(() => { chart.SetFirstShowDate({Date:20170501,PageSize:600});}, 20000);
         
         })
         
@@ -178,9 +190,9 @@
             console.log(indexName);
         }
 
-        function testcallback(obj,data,jschart)
+        function testcallback(event,data,obj)
         {
-
+            console.log('[testcallback]', data);
         }
 
     </script>  

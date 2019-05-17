@@ -1486,6 +1486,7 @@ function JSChartContainer(uielement)
         {
             console.log('[KLineChartContainer::uielement.ontouchend]',e);
             this.JSChartContainer.IsOnTouch = false;
+            this.JSChartContainer.OnTouchFinished();
             clearTimeout(timeout);
         }
 
@@ -9127,6 +9128,154 @@ function IExtendChartPainting()
 
 }
 
+//K线Tooltip, 显示在左边或右边
+function KLineTooltipPaint()
+{
+    this.newMethod=IExtendChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.IsDynamic=true;
+    this.ClassName='KLineTooltipPaint';
+    this.BorderColor=g_JSChartResource.TooltipPaint.BorderColor;    //边框颜色
+    this.BGColor=g_JSChartResource.TooltipPaint.BGColor;            //背景色
+    this.TitleColor=g_JSChartResource.TooltipPaint.TitleColor;      //标题颜色
+
+    this.Left=1*GetDevicePixelRatio();
+    this.Top=5*GetDevicePixelRatio();;
+
+    this.Width=50;
+    this.Height=100;
+    this.LineHeight=15*GetDevicePixelRatio(); //行高
+
+    this.Font=[g_JSChartResource.TooltipPaint.TitleFont];
+
+    this.HQChart;
+    this.KLineTitlePaint;
+
+    this.GetLeft=function()
+    {
+        return this.ChartBorder.GetLeft()+this.Left;
+    }
+
+    this.GetTop=function()
+    {
+        return this.ChartBorder.GetTopEx()+this.Top;
+    }
+
+    this.Draw=function()
+    {
+        if (!this.HQChart || !this.HQChart.TitlePaint || !this.HQChart.TitlePaint[0]) return;
+        if (!this.HQChart.IsOnTouch) return;
+
+        this.KLineTitlePaint=this.HQChart.TitlePaint[0];
+        var klineData=this.KLineTitlePaint.GetCurrentKLineData();
+        if (!klineData) return;
+
+        //this.TitleColor=this.KLineTitlePaint.UnchagneColor;
+        this.Canvas.font=this.Font[0];
+        this.Width=this.Canvas.measureText(' 擎: 9999.99亿 ').width;
+        this.Height=this.LineHeight*8+2*GetDevicePixelRatio()*2;
+
+        var left=this.GetLeft();
+        var top=this.GetTop();
+        this.Canvas.fillStyle=this.BGColor;
+        this.Canvas.fillRect(left,top,this.Width,this.Height);
+
+        this.DrawKLineData(klineData);
+        this.DrawBorder();
+    }
+
+    this.DrawKLineData=function(item)
+    {
+        console.log('[KLineTooltipPaint::DrawKLineData] ', item);
+
+        var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        var left=this.GetLeft()+2*GetDevicePixelRatio();
+        var top=this.GetTop()+3*GetDevicePixelRatio();
+        this.Canvas.textBaseline="top";
+        this.Canvas.textAlign="left";
+
+        this.Canvas.font=this.Font[0];
+
+        var labelWidth=this.Canvas.measureText('擎: ').width;
+
+        var text=IFrameSplitOperator.FormatDateString(item.Date);
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText(text, left,top);
+
+        top+=this.LineHeight;  
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText('开:', left,top);
+        var color=this.KLineTitlePaint.GetColor(item.Open,item.YClose);
+        text=item.Open.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        top+=this.LineHeight;   
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText('高:', left,top);
+        var color=this.KLineTitlePaint.GetColor(item.High,item.YClose);
+        var text=item.High.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        top+=this.LineHeight;
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText('低:', left,top);
+        var color=this.KLineTitlePaint.GetColor(item.Low,item.YClose);
+        var text=item.Low.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        top+=this.LineHeight;
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText('收:', left,top);
+        var color=this.KLineTitlePaint.GetColor(item.Close,item.YClose);
+        var text=item.Close.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        top+=this.LineHeight;
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText('幅:', left,top);
+        var value=(item.Close-item.YClose)/item.YClose*100;
+        var color = this.KLineTitlePaint.GetColor(value, 0);
+        var text = value.toFixed(2)+'%';
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        this.Canvas.fillStyle=this.TitleColor;
+
+        top+=this.LineHeight;
+        this.Canvas.fillText('量:', left,top);
+        var text=IFrameSplitOperator.FormatValueString(item.Vol,2);
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        top+=this.LineHeight;
+        this.Canvas.fillText('额:', left,top);
+        var text=IFrameSplitOperator.FormatValueString(item.Amount,2);
+        this.Canvas.fillText(text,left+labelWidth,top);
+    }
+
+    this.DrawBorder=function()
+    {
+        var left=this.GetLeft();
+        var top=this.GetTop();
+        
+        this.Canvas.strokeStyle=this.BorderColor;
+        this.Canvas.strokeRect(ToFixedPoint(left),ToFixedPoint(top),this.Width,this.Height);
+    }
+
+    //设置参数接口
+    this.SetOption=function(option)
+    {
+        if (option.LineHeight>0) this.LineHeight=option.LineHeight*GetDevicePixelRatio();
+        if (option.BGColor) this.BGColor=option.BGColor;
+    }
+}
+
+//股票信息
 function StockInfoExtendChartPaint()
 {
     this.newMethod=IExtendChartPainting;   //派生
@@ -11584,6 +11733,21 @@ function DynamicKLineTitlePainting()
     this.IsShowName=true;           //是否显示股票名称
     this.IsShowSettingInfo=true;    //是否显示设置信息(周期 复权)
     this.IsShowDateTime=true;       //是否显示日期
+
+    this.GetCurrentKLineData=function() //获取当天鼠标位置所在的K线数据
+    {
+        if (this.CursorIndex==null || !this.Data) return null;
+        if (this.Data.length<=0) return null;
+
+        var index=Math.abs(this.CursorIndex-0.5);
+        index=parseInt(index.toFixed(0));
+        var dataIndex=this.Data.DataOffset+index;
+        if (dataIndex>=this.Data.Data.length) dataIndex=this.Data.Data.length-1;
+        if (dataIndex<0) return null;
+
+        var item=this.Data.Data[dataIndex];
+        return item;
+    }
 
     this.DrawItem=function(item)
     {
@@ -14849,6 +15013,14 @@ function JSChartResource()
         }
     };
 
+    //手机端tooltip
+    this.TooltipPaint = {
+        BGColor:'rgba(250,250,250,0.8)',    //背景色
+        BorderColor:'rgb(120,120,120)',     //边框颜色
+        TitleColor:'rgb(120,120,120)',       //标题颜色
+        TitleFont:13*GetDevicePixelRatio() +'px 微软雅黑'   //字体
+    };
+
     //自定义风格
     this.SetStyle=function(style)
     {
@@ -14895,6 +15067,14 @@ function JSChartResource()
         {
             this.DrawPicture.LineColor = style.DrawPicture.LineColor;
             this.DrawPicture.PointColor = style.DrawPicture.PointColor;
+        }
+
+        if (style.TooltipPaint)
+        {
+            if (style.TooltipPaint.BGColor) this.TooltipPaint.BGColor=style.TooltipPaint.BGColor;
+            if (style.TooltipPaint.BorderColor) this.TooltipPaint.BorderColor=style.TooltipPaint.BorderColor;
+            if (style.TooltipPaint.TitleColor) this.TooltipPaint.TitleColor=style.TooltipPaint.TitleColor;
+            if (style.TooltipPaint.TitleFont) this.TooltipPaint.TitleFont=style.TooltipPaint.TitleFont;
         }
     }
 }
@@ -17062,8 +17242,29 @@ function KLineChartContainer(uielement)
                 chart.SetOption(option);
                 this.ExtendChartPaint.push(chart);
                 return chart;
+            case 'KLineTooltip':
+                chart=new KLineTooltipPaint();
+                chart.Canvas=this.Canvas;
+                chart.ChartBorder=this.Frame.ChartBorder;
+                chart.ChartFrame=this.Frame;
+                chart.HQChart=this;
+                chart.SetOption(option);
+                this.ExtendChartPaint.push(chart);
+                return chart;
             default:
                 return null;
+        }
+    }
+
+    this.OnTouchFinished=function()
+    {
+        for(var i in this.ExtendChartPaint)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.ClassName==='KLineTooltipPaint')
+            {
+                this.DrawDynamicInfo();
+            }
         }
     }
 
