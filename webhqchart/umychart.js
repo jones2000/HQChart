@@ -5408,7 +5408,7 @@ function ChartKLine()
                     this.Canvas.beginPath();
                     if (isHScreen)
                     {
-                        this.Canvas.moveTo(yHigh,ToFixedPoint(x),);
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
                         this.Canvas.lineTo(yLow,ToFixedPoint(x));
                     }
                     else
@@ -5637,7 +5637,7 @@ function ChartKLine()
                 {
                     this.Canvas.moveTo(yLow-1,x);
                     this.Canvas.lineTo(yLow-arrowWidth-1,x-arrowWidth/2);
-                    this.Canvas.lineTo(yLow-arrowWidth-1,x+arrowWidth/2,);
+                    this.Canvas.lineTo(yLow-arrowWidth-1,x+arrowWidth/2);
                 }
                 else
                 {
@@ -6237,7 +6237,7 @@ function ChartOverlayKLine()
                 {
                     if (isHScreen)
                     {
-                        this.Canvas.moveTo(yHigh,ToFixedPoint(x),);
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
                         this.Canvas.lineTo(yLow,ToFixedPoint(x));
                     }
                     else
@@ -6299,7 +6299,7 @@ function ChartOverlayKLine()
                 {
                     if (isHScreen)
                     {
-                        this.Canvas.moveTo(yHigh,ToFixedPoint(x),);
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
                         this.Canvas.lineTo(yLow,ToFixedPoint(x));
                     }
                     else
