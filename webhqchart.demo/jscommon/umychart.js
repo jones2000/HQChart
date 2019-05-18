@@ -1551,7 +1551,7 @@ function JSChartContainer(uielement)
         for(var i in this.ExtendChartPaint) //动态扩展图形
         {
             var item=this.ExtendChartPaint[i];
-            if (item.IsDynamic) item.Draw();
+            if (item.IsDynamic && item.DrawAfterTitle===false) item.Draw();
         }
 
         if (this.LastPoint.X!=null || this.LastPoint.Y!=null)
@@ -1570,6 +1570,12 @@ function JSChartContainer(uielement)
 
             item.CursorIndex=this.CursorIndex;
             item.Draw();
+        }
+
+        for(var i in this.ExtendChartPaint) //动态扩展图形
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.IsDynamic && item.DrawAfterTitle===true) item.Draw();
         }
 
         for(var i in this.ChartDrawPicture)
@@ -1597,12 +1603,25 @@ function JSChartContainer(uielement)
                 isErase=true;
         }
 
+        if (isErase==false)
+        {
+            for(var i in this.ExtendChartPaint)
+            {
+                var item=this.ExtendChartPaint[i];
+                if (item.IsDynamic && item.IsEraseBG) 
+                {
+                    isErase=true;
+                    break;
+                }
+            }
+        }
+
         if (isErase) this.Canvas.putImageData(this.Frame.ScreenImageData,0,0);
 
         for(var i in this.ExtendChartPaint)    //动态扩展图形
         {
             var item=this.ExtendChartPaint[i];
-            if (item.IsDynamic) item.Draw();
+            if (item.IsDynamic && item.DrawAfterTitle===false) item.Draw();
         }
 
         if (this.ChartCorssCursor)
@@ -1618,6 +1637,12 @@ function JSChartContainer(uielement)
 
             item.CursorIndex=this.CursorIndex;
             item.Draw();
+        }
+
+        for(var i in this.ExtendChartPaint)    //动态扩展图形   在动态标题以后画
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.IsDynamic && item.DrawAfterTitle===true) item.Draw();
         }
 
         for(var i in this.ChartDrawPicture)
@@ -9108,6 +9133,8 @@ function IExtendChartPainting()
     this.IsDynamic=false;
     this.ClassName='IExtendChartPainting';
     this.SizeChange=true;               //大小是否改变
+    this.IsEraseBG=false;               //是否每次画的时候需要擦除K线图背景
+    this.DrawAfterTitle=false;          //是否在动态标题画完以后再画,防止动态标题覆盖
 
     //上下左右间距
     this.Left=5;
@@ -9136,6 +9163,8 @@ function KLineTooltipPaint()
     delete this.newMethod;
 
     this.IsDynamic=true;
+    this.IsEraseBG=true;
+    this.DrawAfterTitle=true;
     this.ClassName='KLineTooltipPaint';
     this.BorderColor=g_JSChartResource.TooltipPaint.BorderColor;    //边框颜色
     this.BGColor=g_JSChartResource.TooltipPaint.BGColor;            //背景色

@@ -258,6 +258,8 @@ export default
                 if (ObjectHelper.IsObjectExist(klineTitle.IsShowName)) this.Option.KLineTitle.IsShowName=klineTitle.IsShowName;
                 if (ObjectHelper.IsObjectExist(klineTitle.IsShowSettingInfo)) this.Option.KLineTitle.IsShowSettingInfo=klineTitle.IsShowSettingInfo;
             }
+
+            if (option.ExtendChart) this.Option.ExtendChart=option.ExtendChart;
         },
 
         //创建走势图
