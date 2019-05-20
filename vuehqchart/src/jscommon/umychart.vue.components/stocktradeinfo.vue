@@ -126,6 +126,8 @@
                 </div>
             </div>
         </div>
+        <div class='dealpricelist' v-show='DealPrice.IsShow' ><!-- 分价表 -->
+        </div>
     </div>
 </template>
 <script>
@@ -462,7 +464,14 @@ export default {
         IsTenThousand: true
       },
 
-      BookData: DefaultData.GetBookData() //委比委差数据
+      BookData: DefaultData.GetBookData(), //委比委差数据
+
+      DealPrice:
+      {
+        IsShow:false,
+        Data:null,
+        JSStock: null //数据请求控制器
+      }
     };
 
     return data;
@@ -830,6 +839,13 @@ export default {
       this.InitalStock(); //订阅数据
       this.InitalCapitalFlow();
       if (!this.IsShareStock) this.JSStock.RequestData();
+
+      //分价表是显示的状态,切换股票更新
+      if (this.DealPrice.JSStock && this.DealPrice.IsShow) 
+      {
+        this.DealPrice.JSStock.Symbol=this.Symbol;
+        this.DealPrice.JSStock.RequestData();
+      }
     },
 
     //初始化
@@ -869,16 +885,25 @@ export default {
           this.IsShowTradeData = true;
           this.ShowShortTerm(false);
           this.ShowCapitalFlow(false);
+          this.ShowDealPrice(false);
           break;
         case "异动":
           this.IsShowTradeData = false;
           this.ShowCapitalFlow(false);
+          this.ShowDealPrice(false);
           this.ShowShortTerm(true);
           break;
         case "资金":
           this.IsShowTradeData = false;
           this.ShowShortTerm(false);
+          this.ShowDealPrice(false);
           this.ShowCapitalFlow(true);
+          break;
+        case "分价":
+          this.IsShowTradeData=false;
+          this.ShowShortTerm(false);
+          this.ShowCapitalFlow(false);
+          this.ShowDealPrice(true);
           break;
       }
       this.OnSize();
@@ -939,6 +964,34 @@ export default {
       this.ShortTerm.Data = showData;
       this.OnSize();
     },
+
+
+    ShowDealPrice:function(isShow)
+    {
+      if (isShow)
+      {
+        this.DealPrice.IsShow=true;
+        if (!this.DealPrice.JSStock) this.DealPrice.JSStock = JSCommonStock.JSStock.GetDealPriceListData();
+        var dealPrice = this.DealPrice.JSStock;
+        dealPrice.Symbol=this.Symbol;
+        dealPrice.UpdateUICallback = this.UpdateDealPrice;
+        dealPrice.IsAutoUpdate = true;
+        dealPrice.RequestData();
+      }
+      else
+      {
+        this.DealPrice.IsShow=false;
+        if (!this.DealPrice.JSStock) return;
+        this.DealPrice.JSStock.IsAutoUpdate = false;
+        this.DealPrice.JSStock.Stop();
+      }
+    },
+
+    UpdateDealPrice:function(dealPrice)
+    {
+      console.log('[StockTradeInfo::UpdateDealPrice]', dealPrice.Data);
+    },
+
 
     IsNumber: JSCommon.IFrameSplitOperator.IsNumber, //是否是数值型
     IsPlusNumber: JSCommon.IFrameSplitOperator.IsPlusNumber //是否是>0的数值型

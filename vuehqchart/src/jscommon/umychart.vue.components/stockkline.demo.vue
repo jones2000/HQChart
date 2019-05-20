@@ -378,7 +378,7 @@ export default
                 IsShow:true,   //是否显示
                 IndexBar: //底部指标工具
                 {
-                    Menu:["MACD", "DMI", "DMA", "BRAR", "KDJ", "RSI", "WR", "CCI", "TRIX",'涨跌趋势'], 
+                    Menu:["MACD", '量比', "DMI", "DMA", "BRAR", "KDJ", "RSI", "WR", "CCI", "TRIX",'涨跌趋势'], 
                     Selected:[]
                 },
                 Toolbar:DefaultData.GetMinuteToolbar(),    //工具菜单

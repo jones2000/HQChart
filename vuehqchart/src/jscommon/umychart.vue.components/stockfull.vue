@@ -50,7 +50,12 @@ export default
                 Width:230, IsShow:true,
                 Tab:
                 {
-                    Menu:[ {Name:'分笔', Value:1, IsShow:true },{Name:'资金',Value:4, IsShow:true }, {Name:'筹码',Value:2, IsShow:true } ,{Name:'异动',Value:3, IsShow:true}],
+                    Menu:[ 
+                        {Name:'分笔',Value:1, IsShow:true },
+                        {Name:'分价',Value:5, IsShow:true},
+                        {Name:'资金',Value:4, IsShow:true }, 
+                        {Name:'筹码',Value:2, IsShow:true } ,
+                        {Name:'异动',Value:3, IsShow:true}],
                     Selected:0,
                     IsShow:true,
                 },
@@ -199,15 +204,17 @@ export default
                 //筹码只在K线上出现
                 if (kline.KLine.IsShow)
                 {
-                    this.TradeInfo.Tab.Menu[2].IsShow=true;     //筹码
-                    this.TradeInfo.Tab.Menu[3].IsShow=false;    //异动
-                    if (selTabItem.Value==3) //异动
-                        this.OnClickTradeInfoTab({Name:'分笔', Value:1}, 0);
-                }
+                    this.TradeInfo.Tab.Menu[2].IsShow=true;
+                    this.TradeInfo.Tab.Menu[3].IsShow=true;     //筹码
+                    this.TradeInfo.Tab.Menu[4].IsShow=false;    //异动
+                    if (selTabItem.Value==4) //异动
+                        this.OnClickTradeInfoTab({Name:'分笔', Value:1}, 0);    //K线不显示移动， 切换到分笔上
+                }   
                 else
                 {
-                    this.TradeInfo.Tab.Menu[2].IsShow=false;    //筹码
-                    this.TradeInfo.Tab.Menu[3].IsShow=true;     //异动
+                    this.TradeInfo.Tab.Menu[2].IsShow=true;
+                    this.TradeInfo.Tab.Menu[3].IsShow=false;    //筹码
+                    this.TradeInfo.Tab.Menu[4].IsShow=true;     //异动
                 }
                 
                 this.TradeInfo.Tab.IsShow=true;
@@ -240,6 +247,7 @@ export default
                     case 1:         //分笔
                     case 4:         //资金
                     case 3:         //异动
+                    case 5:         //分价
                         this.$refs.tradeinfo.ChangeShowData(item.Name,item.Value);
                         break;
                 }

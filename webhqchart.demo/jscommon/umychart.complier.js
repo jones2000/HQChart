@@ -695,6 +695,7 @@ function Node()
     this.IsNeedMarginData=new Set();
     this.IsNeedNewsAnalysisData=new Set();      //新闻统计数据
     this.IsNeedBlockIncreaseData=new Set();     //是否需要市场涨跌股票数据统计
+    this.IsNeedSymbolExData=new Set();          //下载股票行情的其他数据
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -730,6 +731,12 @@ function Node()
             jobs.push({ID:jobID});
         }
 
+        //行情其他数据
+        for(var jobID of this.IsNeedSymbolExData)
+        {
+            jobs.push({ID:jobID});
+        }
+
         return jobs;
     }
 
@@ -747,6 +754,12 @@ function Node()
         {
             this.IsNeedSymbolData=true;
             return;
+        }
+
+        if (varName==='VOLR')
+        {
+            if (!this.IsNeedSymbolExData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA))
+                this.IsNeedSymbolExData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA);
         }
 
         //流通股本（手）
@@ -5573,6 +5586,65 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
+    this.GetVolRateData=function(job,node)
+    {
+        var volrKey=job.ID.toString()+'-VolRate-'+this.Symbol;
+        if (this.ExtendData.has(volrKey)) return this.Execute.RunNextJob();
+
+        var self=this;
+        $.ajax({
+            url: self.RealtimeApiUrl,
+            data:
+            {
+                "field": ["name","symbol","avgvol5"],
+                "symbol": [this.Symbol]
+            },
+            type:"post",
+            dataType: "json",
+            async:true, 
+            success: function (recvData)
+            {
+                self.RecvVolRateData(recvData,volrKey);
+                self.Execute.RunNextJob();
+            },
+            error: function(request)
+            {
+                self.RecvError(request);
+            }
+        });
+    }
+
+    this.RecvVolRateData=function(data,key)
+    {
+        if (!data.stock || data.stock.length!=1) return;
+        var avgVol5=data.stock[0].avgvol5
+        var item={AvgVol5:avgVol5};
+        this.ExtendData.set(key,item);
+
+        console.log('[JSSymbolData::RecvVolRateData]', item);
+    }
+
+    this.GetVolRateCacheData=function(node)
+    {
+        var key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA.toString()+'-VolRate-'+this.Symbol;
+        if (!key || !this.ExtendData.has(key)) this.Execute.ThrowUnexpectedNode(node,'不支持VOLR');
+
+        var result=[];
+        var value=this.ExtendData.get(key);
+        var avgVol5=value.AvgVol5/241;
+        var totalVol=0;
+        for(var i=0;i<this.Data.Data.length;++i)
+        {
+            var item=this.Data.Data[i];
+            totalVol+=item.Vol;
+            if (avgVol5>0) result[i]=totalVol/(i+1)/avgVol5*100;
+            else result[i]=null;
+        }
+
+        return result;
+    }
+
+
     //获取大盘指数数据
     this.GetIndexData=function()
     {
@@ -7012,6 +7084,7 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_INDEX_DATA:2,  //下载大盘的K线数据
     JOB_DOWNLOAD_SYMBOL_LATEST_DATA:3,  //最新的股票行情数据
     JOB_DOWNLOAD_INDEX_INCREASE_DATA:4, //涨跌股票个数统计数据
+    JOB_DOWNLOAD_VOLR_DATA:5,           //5日量比均量下载量比数据
 
     //财务函数
     JOB_DOWNLOAD_TOTAL_EQUITY_DATA:100,          //总股本（万股）
@@ -7147,7 +7220,7 @@ function JSExecute(ast,option)
     this.ConstVarTable=new Map([
         //个股数据
         ['CLOSE',null],['VOL',null],['OPEN',null],['HIGH',null],['LOW',null],['AMOUNT',null],
-        ['C',null],['V',null],['O',null],['H',null],['L',null],
+        ['C',null],['V',null],['O',null],['H',null],['L',null],['VOLR',null],
 
         //日期类
         ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],
@@ -7203,6 +7276,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetIndexIncreaseData(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA:
                 return this.SymbolData.GetLatestData();
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA:  //量比
+                return this.SymbolData.GetVolRateData(jobItem);
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_TOTAL_EQUITY_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA:
@@ -7253,7 +7328,7 @@ function JSExecute(ast,option)
         }
     }
 
-    this.ReadSymbolData=function(name)
+    this.ReadSymbolData=function(name,node)
     {
         switch(name)
         {
@@ -7269,6 +7344,8 @@ function JSExecute(ast,option)
             case 'L':
             case 'AMOUNT':
                 return this.SymbolData.GetSymbolCacheData(name);
+            case 'VOLR':
+                return this.SymbolData.GetVolRateCacheData(node);
 
             //大盘数据
             case 'INDEXA':
@@ -7312,7 +7389,7 @@ function JSExecute(ast,option)
 
             if (data==null) //动态加载,用到再加载
             {
-                data=this.ReadSymbolData(name);
+                data=this.ReadSymbolData(name,node);
                 this.ConstVarTable.set(name,data);
             }
 

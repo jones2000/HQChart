@@ -62,7 +62,7 @@ function JSIndexScript()
             ['SG-XDT',this.SG_XDT],['SG-SMX',this.SG_SMX],['SG-LB',this.SG_LB],['SG-PF',this.SG_PF],
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
-            ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],
+            ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],['量比',this.VOLRate],
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
@@ -2092,6 +2092,19 @@ JSIndexScript.prototype.UpDownAnalyze=function()
         Script: //脚本
 "上涨家数:UPCOUNT('CNA.CI'),COLORRED;\n\
 下跌家数:DOWNCOUNT('CNA.CI'),COLORGREEN;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VOLRate=function()
+{
+    let data=
+    {
+        Name: '量比', Description: '量比', IsMainIndex: false,  Condition: { Period:[CONDITION_PERIOD.MINUTE_ID] },
+        Args: [],
+        Script: //脚本
+            "LIANGBI:VOLR;"
     };
 
     return data;
@@ -4666,6 +4679,7 @@ function JSChartContainer(uielement)
         {
             console.log('[KLineChartContainer::uielement.ontouchend]',e);
             this.JSChartContainer.IsOnTouch = false;
+            this.JSChartContainer.OnTouchFinished();
             clearTimeout(timeout);
         }
 
@@ -4730,7 +4744,7 @@ function JSChartContainer(uielement)
         for(var i in this.ExtendChartPaint) //动态扩展图形
         {
             var item=this.ExtendChartPaint[i];
-            if (item.IsDynamic) item.Draw();
+            if (item.IsDynamic && item.DrawAfterTitle===false) item.Draw();
         }
 
         if (this.LastPoint.X!=null || this.LastPoint.Y!=null)
@@ -4749,6 +4763,12 @@ function JSChartContainer(uielement)
 
             item.CursorIndex=this.CursorIndex;
             item.Draw();
+        }
+
+        for(var i in this.ExtendChartPaint) //动态扩展图形
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.IsDynamic && item.DrawAfterTitle===true) item.Draw();
         }
 
         for(var i in this.ChartDrawPicture)
@@ -4776,12 +4796,25 @@ function JSChartContainer(uielement)
                 isErase=true;
         }
 
+        if (isErase==false)
+        {
+            for(var i in this.ExtendChartPaint)
+            {
+                var item=this.ExtendChartPaint[i];
+                if (item.IsDynamic && item.IsEraseBG) 
+                {
+                    isErase=true;
+                    break;
+                }
+            }
+        }
+
         if (isErase) this.Canvas.putImageData(this.Frame.ScreenImageData,0,0);
 
         for(var i in this.ExtendChartPaint)    //动态扩展图形
         {
             var item=this.ExtendChartPaint[i];
-            if (item.IsDynamic) item.Draw();
+            if (item.IsDynamic && item.DrawAfterTitle===false) item.Draw();
         }
 
         if (this.ChartCorssCursor)
@@ -4797,6 +4830,12 @@ function JSChartContainer(uielement)
 
             item.CursorIndex=this.CursorIndex;
             item.Draw();
+        }
+
+        for(var i in this.ExtendChartPaint)    //动态扩展图形   在动态标题以后画
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.IsDynamic && item.DrawAfterTitle===true) item.Draw();
         }
 
         for(var i in this.ChartDrawPicture)
@@ -8588,7 +8627,7 @@ function ChartKLine()
                     this.Canvas.beginPath();
                     if (isHScreen)
                     {
-                        this.Canvas.moveTo(yHigh,ToFixedPoint(x),);
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
                         this.Canvas.lineTo(yLow,ToFixedPoint(x));
                     }
                     else
@@ -8817,7 +8856,7 @@ function ChartKLine()
                 {
                     this.Canvas.moveTo(yLow-1,x);
                     this.Canvas.lineTo(yLow-arrowWidth-1,x-arrowWidth/2);
-                    this.Canvas.lineTo(yLow-arrowWidth-1,x+arrowWidth/2,);
+                    this.Canvas.lineTo(yLow-arrowWidth-1,x+arrowWidth/2);
                 }
                 else
                 {
@@ -9417,7 +9456,7 @@ function ChartOverlayKLine()
                 {
                     if (isHScreen)
                     {
-                        this.Canvas.moveTo(yHigh,ToFixedPoint(x),);
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
                         this.Canvas.lineTo(yLow,ToFixedPoint(x));
                     }
                     else
@@ -9479,7 +9518,7 @@ function ChartOverlayKLine()
                 {
                     if (isHScreen)
                     {
-                        this.Canvas.moveTo(yHigh,ToFixedPoint(x),);
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
                         this.Canvas.lineTo(yLow,ToFixedPoint(x));
                     }
                     else
@@ -12287,6 +12326,8 @@ function IExtendChartPainting()
     this.IsDynamic=false;
     this.ClassName='IExtendChartPainting';
     this.SizeChange=true;               //大小是否改变
+    this.IsEraseBG=false;               //是否每次画的时候需要擦除K线图背景
+    this.DrawAfterTitle=false;          //是否在动态标题画完以后再画,防止动态标题覆盖
 
     //上下左右间距
     this.Left=5;
@@ -12307,6 +12348,156 @@ function IExtendChartPainting()
 
 }
 
+//K线Tooltip, 显示在左边或右边
+function KLineTooltipPaint()
+{
+    this.newMethod=IExtendChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.IsDynamic=true;
+    this.IsEraseBG=true;
+    this.DrawAfterTitle=true;
+    this.ClassName='KLineTooltipPaint';
+    this.BorderColor=g_JSChartResource.TooltipPaint.BorderColor;    //边框颜色
+    this.BGColor=g_JSChartResource.TooltipPaint.BGColor;            //背景色
+    this.TitleColor=g_JSChartResource.TooltipPaint.TitleColor;      //标题颜色
+
+    this.Left=1*GetDevicePixelRatio();
+    this.Top=5*GetDevicePixelRatio();;
+
+    this.Width=50;
+    this.Height=100;
+    this.LineHeight=15*GetDevicePixelRatio(); //行高
+
+    this.Font=[g_JSChartResource.TooltipPaint.TitleFont];
+
+    this.HQChart;
+    this.KLineTitlePaint;
+
+    this.GetLeft=function()
+    {
+        return this.ChartBorder.GetLeft()+this.Left;
+    }
+
+    this.GetTop=function()
+    {
+        return this.ChartBorder.GetTopEx()+this.Top;
+    }
+
+    this.Draw=function()
+    {
+        if (!this.HQChart || !this.HQChart.TitlePaint || !this.HQChart.TitlePaint[0]) return;
+        if (!this.HQChart.IsOnTouch) return;
+
+        this.KLineTitlePaint=this.HQChart.TitlePaint[0];
+        var klineData=this.KLineTitlePaint.GetCurrentKLineData();
+        if (!klineData) return;
+
+        //this.TitleColor=this.KLineTitlePaint.UnchagneColor;
+        this.Canvas.font=this.Font[0];
+        this.Width=this.Canvas.measureText(' 擎: 9999.99亿 ').width;
+        this.Height=this.LineHeight*8+2*GetDevicePixelRatio()*2;
+
+        var left=this.GetLeft();
+        var top=this.GetTop();
+        this.Canvas.fillStyle=this.BGColor;
+        this.Canvas.fillRect(left,top,this.Width,this.Height);
+
+        this.DrawKLineData(klineData);
+        this.DrawBorder();
+    }
+
+    this.DrawKLineData=function(item)
+    {
+        console.log('[KLineTooltipPaint::DrawKLineData] ', item);
+
+        var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        var left=this.GetLeft()+2*GetDevicePixelRatio();
+        var top=this.GetTop()+3*GetDevicePixelRatio();
+        this.Canvas.textBaseline="top";
+        this.Canvas.textAlign="left";
+
+        this.Canvas.font=this.Font[0];
+
+        var labelWidth=this.Canvas.measureText('擎: ').width;
+
+        var text=IFrameSplitOperator.FormatDateString(item.Date);
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText(text, left,top);
+
+        top+=this.LineHeight;  
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText('开:', left,top);
+        var color=this.KLineTitlePaint.GetColor(item.Open,item.YClose);
+        text=item.Open.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        top+=this.LineHeight;   
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText('高:', left,top);
+        var color=this.KLineTitlePaint.GetColor(item.High,item.YClose);
+        var text=item.High.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        top+=this.LineHeight;
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText('低:', left,top);
+        var color=this.KLineTitlePaint.GetColor(item.Low,item.YClose);
+        var text=item.Low.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        top+=this.LineHeight;
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText('收:', left,top);
+        var color=this.KLineTitlePaint.GetColor(item.Close,item.YClose);
+        var text=item.Close.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        top+=this.LineHeight;
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.fillText('幅:', left,top);
+        var value=(item.Close-item.YClose)/item.YClose*100;
+        var color = this.KLineTitlePaint.GetColor(value, 0);
+        var text = value.toFixed(2)+'%';
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        this.Canvas.fillStyle=this.TitleColor;
+
+        top+=this.LineHeight;
+        this.Canvas.fillText('量:', left,top);
+        var text=IFrameSplitOperator.FormatValueString(item.Vol,2);
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        top+=this.LineHeight;
+        this.Canvas.fillText('额:', left,top);
+        var text=IFrameSplitOperator.FormatValueString(item.Amount,2);
+        this.Canvas.fillText(text,left+labelWidth,top);
+    }
+
+    this.DrawBorder=function()
+    {
+        var left=this.GetLeft();
+        var top=this.GetTop();
+        
+        this.Canvas.strokeStyle=this.BorderColor;
+        this.Canvas.strokeRect(ToFixedPoint(left),ToFixedPoint(top),this.Width,this.Height);
+    }
+
+    //设置参数接口
+    this.SetOption=function(option)
+    {
+        if (option.LineHeight>0) this.LineHeight=option.LineHeight*GetDevicePixelRatio();
+        if (option.BGColor) this.BGColor=option.BGColor;
+    }
+}
+
+//股票信息
 function StockInfoExtendChartPaint()
 {
     this.newMethod=IExtendChartPainting;   //派生
@@ -14764,6 +14955,21 @@ function DynamicKLineTitlePainting()
     this.IsShowName=true;           //是否显示股票名称
     this.IsShowSettingInfo=true;    //是否显示设置信息(周期 复权)
     this.IsShowDateTime=true;       //是否显示日期
+
+    this.GetCurrentKLineData=function() //获取当天鼠标位置所在的K线数据
+    {
+        if (this.CursorIndex==null || !this.Data) return null;
+        if (this.Data.length<=0) return null;
+
+        var index=Math.abs(this.CursorIndex-0.5);
+        index=parseInt(index.toFixed(0));
+        var dataIndex=this.Data.DataOffset+index;
+        if (dataIndex>=this.Data.Data.length) dataIndex=this.Data.Data.length-1;
+        if (dataIndex<0) return null;
+
+        var item=this.Data.Data[dataIndex];
+        return item;
+    }
 
     this.DrawItem=function(item)
     {
@@ -18029,6 +18235,14 @@ function JSChartResource()
         }
     };
 
+    //手机端tooltip
+    this.TooltipPaint = {
+        BGColor:'rgba(250,250,250,0.8)',    //背景色
+        BorderColor:'rgb(120,120,120)',     //边框颜色
+        TitleColor:'rgb(120,120,120)',       //标题颜色
+        TitleFont:13*GetDevicePixelRatio() +'px 微软雅黑'   //字体
+    };
+
     //自定义风格
     this.SetStyle=function(style)
     {
@@ -18075,6 +18289,14 @@ function JSChartResource()
         {
             this.DrawPicture.LineColor = style.DrawPicture.LineColor;
             this.DrawPicture.PointColor = style.DrawPicture.PointColor;
+        }
+
+        if (style.TooltipPaint)
+        {
+            if (style.TooltipPaint.BGColor) this.TooltipPaint.BGColor=style.TooltipPaint.BGColor;
+            if (style.TooltipPaint.BorderColor) this.TooltipPaint.BorderColor=style.TooltipPaint.BorderColor;
+            if (style.TooltipPaint.TitleColor) this.TooltipPaint.TitleColor=style.TooltipPaint.TitleColor;
+            if (style.TooltipPaint.TitleFont) this.TooltipPaint.TitleFont=style.TooltipPaint.TitleFont;
         }
     }
 }
@@ -20242,8 +20464,29 @@ function KLineChartContainer(uielement)
                 chart.SetOption(option);
                 this.ExtendChartPaint.push(chart);
                 return chart;
+            case 'KLineTooltip':
+                chart=new KLineTooltipPaint();
+                chart.Canvas=this.Canvas;
+                chart.ChartBorder=this.Frame.ChartBorder;
+                chart.ChartFrame=this.Frame;
+                chart.HQChart=this;
+                chart.SetOption(option);
+                this.ExtendChartPaint.push(chart);
+                return chart;
             default:
                 return null;
+        }
+    }
+
+    this.OnTouchFinished=function()
+    {
+        for(var i in this.ExtendChartPaint)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.ClassName==='KLineTooltipPaint')
+            {
+                this.DrawDynamicInfo();
+            }
         }
     }
 
@@ -24613,7 +24856,7 @@ function BenfordIndex()
 
     this.Index = new Array(
         new IndexInfo('区域', null),
-        new IndexInfo("系数", null),
+        new IndexInfo("系数", null)
       );
 
     this.Data; //财务数据
@@ -30055,6 +30298,7 @@ function Node()
     this.IsNeedMarginData=new Set();
     this.IsNeedNewsAnalysisData=new Set();      //新闻统计数据
     this.IsNeedBlockIncreaseData=new Set();     //是否需要市场涨跌股票数据统计
+    this.IsNeedSymbolExData=new Set();          //下载股票行情的其他数据
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -30090,6 +30334,12 @@ function Node()
             jobs.push({ID:jobID});
         }
 
+        //行情其他数据
+        for(var jobID of this.IsNeedSymbolExData)
+        {
+            jobs.push({ID:jobID});
+        }
+
         return jobs;
     }
 
@@ -30107,6 +30357,12 @@ function Node()
         {
             this.IsNeedSymbolData=true;
             return;
+        }
+
+        if (varName==='VOLR')
+        {
+            if (!this.IsNeedSymbolExData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA))
+                this.IsNeedSymbolExData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA);
         }
 
         //流通股本（手）
@@ -34933,6 +35189,65 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
+    this.GetVolRateData=function(job,node)
+    {
+        var volrKey=job.ID.toString()+'-VolRate-'+this.Symbol;
+        if (this.ExtendData.has(volrKey)) return this.Execute.RunNextJob();
+
+        var self=this;
+        $.ajax({
+            url: self.RealtimeApiUrl,
+            data:
+            {
+                "field": ["name","symbol","avgvol5"],
+                "symbol": [this.Symbol]
+            },
+            type:"post",
+            dataType: "json",
+            async:true, 
+            success: function (recvData)
+            {
+                self.RecvVolRateData(recvData,volrKey);
+                self.Execute.RunNextJob();
+            },
+            error: function(request)
+            {
+                self.RecvError(request);
+            }
+        });
+    }
+
+    this.RecvVolRateData=function(data,key)
+    {
+        if (!data.stock || data.stock.length!=1) return;
+        var avgVol5=data.stock[0].avgvol5
+        var item={AvgVol5:avgVol5};
+        this.ExtendData.set(key,item);
+
+        console.log('[JSSymbolData::RecvVolRateData]', item);
+    }
+
+    this.GetVolRateCacheData=function(node)
+    {
+        var key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA.toString()+'-VolRate-'+this.Symbol;
+        if (!key || !this.ExtendData.has(key)) this.Execute.ThrowUnexpectedNode(node,'不支持VOLR');
+
+        var result=[];
+        var value=this.ExtendData.get(key);
+        var avgVol5=value.AvgVol5/241;
+        var totalVol=0;
+        for(var i=0;i<this.Data.Data.length;++i)
+        {
+            var item=this.Data.Data[i];
+            totalVol+=item.Vol;
+            if (avgVol5>0) result[i]=totalVol/(i+1)/avgVol5*100;
+            else result[i]=null;
+        }
+
+        return result;
+    }
+
+
     //获取大盘指数数据
     this.GetIndexData=function()
     {
@@ -36372,6 +36687,7 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_INDEX_DATA:2,  //下载大盘的K线数据
     JOB_DOWNLOAD_SYMBOL_LATEST_DATA:3,  //最新的股票行情数据
     JOB_DOWNLOAD_INDEX_INCREASE_DATA:4, //涨跌股票个数统计数据
+    JOB_DOWNLOAD_VOLR_DATA:5,           //5日量比均量下载量比数据
 
     //财务函数
     JOB_DOWNLOAD_TOTAL_EQUITY_DATA:100,          //总股本（万股）
@@ -36507,7 +36823,7 @@ function JSExecute(ast,option)
     this.ConstVarTable=new Map([
         //个股数据
         ['CLOSE',null],['VOL',null],['OPEN',null],['HIGH',null],['LOW',null],['AMOUNT',null],
-        ['C',null],['V',null],['O',null],['H',null],['L',null],
+        ['C',null],['V',null],['O',null],['H',null],['L',null],['VOLR',null],
 
         //日期类
         ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],
@@ -36563,6 +36879,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetIndexIncreaseData(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA:
                 return this.SymbolData.GetLatestData();
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA:  //量比
+                return this.SymbolData.GetVolRateData(jobItem);
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_TOTAL_EQUITY_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA:
@@ -36613,7 +36931,7 @@ function JSExecute(ast,option)
         }
     }
 
-    this.ReadSymbolData=function(name)
+    this.ReadSymbolData=function(name,node)
     {
         switch(name)
         {
@@ -36629,6 +36947,8 @@ function JSExecute(ast,option)
             case 'L':
             case 'AMOUNT':
                 return this.SymbolData.GetSymbolCacheData(name);
+            case 'VOLR':
+                return this.SymbolData.GetVolRateCacheData(node);
 
             //大盘数据
             case 'INDEXA':
@@ -36672,7 +36992,7 @@ function JSExecute(ast,option)
 
             if (data==null) //动态加载,用到再加载
             {
-                data=this.ReadSymbolData(name);
+                data=this.ReadSymbolData(name,node);
                 this.ConstVarTable.set(name,data);
             }
 

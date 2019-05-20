@@ -62,7 +62,7 @@ function JSIndexScript()
             ['SG-XDT',this.SG_XDT],['SG-SMX',this.SG_SMX],['SG-LB',this.SG_LB],['SG-PF',this.SG_PF],
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
-            ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],
+            ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],['量比',this.VOLRate],
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
@@ -2092,6 +2092,19 @@ JSIndexScript.prototype.UpDownAnalyze=function()
         Script: //脚本
 "上涨家数:UPCOUNT('CNA.CI'),COLORRED;\n\
 下跌家数:DOWNCOUNT('CNA.CI'),COLORGREEN;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VOLRate=function()
+{
+    let data=
+    {
+        Name: '量比', Description: '量比', IsMainIndex: false,  Condition: { Period:[CONDITION_PERIOD.MINUTE_ID] },
+        Args: [],
+        Script: //脚本
+            "LIANGBI:VOLR;"
     };
 
     return data;

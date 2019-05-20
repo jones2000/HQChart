@@ -3,8 +3,8 @@
 -->
 
 <template>
-  <div class="main">
-    <div class="wrap">
+  <div class="divstockdealcount" ref="divstockdealcount">
+    <div class="tableContent" ref="tableContent">
       <table class="myTable">
         <thead>
           <tr>
@@ -21,7 +21,10 @@
             <td>{{item.Proportion}}</td>
             <th>
               <div class="chart">
-                <div class="down" :style="{width: item.widthItem + '%', background: colorDeal}"></div>
+                <div
+                  class="down"
+                  :style="{width: item.widthItem + '%', background: ColorDeal,height: item.heightItem + 'px',}"
+                ></div>
               </div>
             </th>
           </tr>
@@ -35,29 +38,39 @@
 import JSCommonStock from "../umychart.vue/umychart.stock.vue.js";
 
 export default {
+  name: "Stockdealcount",
   data() {
     return {
       Symbol: "600000.sh", //板块代码
       DealData: null, //数据类
       PriceList: [],
       ProportionList: [], //占比数组
-      colorDeal: "",
-      Date:'20190102'
+      ColorDeal: "",
+      Date: "20190102"
     };
   },
   props: {
     DefaultSymbol: String,
     DefaultDate: String
   },
-  created(){
+  watch: {
+    DefaultSymbol(newV, oldV) {
+      this.Symbol = newV;
+    },
+    DefaultSymbol(newV, oldV) {
+      this.Date = newV;
+    }
+  },
+  created() {
     this.Symbol = this.DefaultSymbol != null ? this.DefaultSymbol : "600000.sh";
-    this.Date = this.DefaultDate != null ? this.DefaultDate : '20190102';
+    this.Date = this.DefaultDate != null ? this.DefaultDate : "20190102";
   },
   mounted: function() {
     this.DealData = JSCommonStock.JSStock.GetDealDay(this.Symbol);
     this.DealData.Date = this.Date;
     this.DealData.InvokeUpdateUICallback = this.GetData;
     this.DealData.RequestData();
+    this.OnSize();
   },
 
   methods: {
@@ -75,9 +88,9 @@ export default {
         var dataList2 = this.DealData.Data.PriceList;
         // 判断占比图颜色
         if (DealData.Open - DealData.YClose > 0) {
-          this.colorDeal = "#f00";
+          this.ColorDeal = "#f00";
         } else {
-          this.colorDeal = "#008000";
+          this.ColorDeal = "#008000";
         }
         dataList1.forEach(value => {
           this.ProportionList.push(value.Proportion);
@@ -94,18 +107,41 @@ export default {
             Price: 0,
             Proportion: 0,
             Vol: 0,
-            widthItem: 0
+            widthItem: 0,
+            heightItem: 0
           };
           object.Price = value.Price;
           object.Vol = value.Vol;
           object.Proportion = this.toPercent(value.Proportion);
           object.widthItem = (value.Proportion / maxProportion) * 100; //最大占比为1，其余按比例
+          object.heightItem = 14;
           this.PriceList.push(object);
         });
       }
     },
-    OnSize(){
-        
+    OnSize() {
+      var divstockdealcount = this.$refs.divstockdealcount;
+      console.log(divstockdealcount);
+      var tableContent = this.$refs.tableContent;
+      // var paginationWrap = this.$refs.paginationWrap;
+      var width = divstockdealcount.clientWidth;
+      var height = divstockdealcount.clientHeight;
+      if (height <= 0) return;
+
+      var mainHight = height;
+      var mainWdith = width + "px";
+      var tdHeight = 20;
+      var borderHeight = 1;
+      var everyTableCount = Math.floor(
+        (mainHight - tdHeight - borderHeight) / tdHeight
+      );
+      if (everyTableCount <= 0) {
+        everyTableCount = 1;
+      }
+
+      // this.UpdateDataShow(everyTableCount);
+
+      tableContent.style.height = mainHight + "px";
     }
   }
 };
@@ -113,16 +149,23 @@ export default {
 
 
 <style lang="scss" type="text/scss">
-.main {
+.divstockdealcount {
+  width: 100%;
+  height: 100%;
   border: 1px solid #d7d7df;
   border-top: none;
-  //   margin: 0px auto 10px auto;
-  padding: 10px;
-  width: 755px;
-  .wrap {
+  // padding: 10px;
+  .tableContent {
+    overflow-y: auto;
+    height: 100%;
+    width: 100%;
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-direction: row;
+    flex-direction: row;
+    overflow-x: hidden;
     .myTable {
       font-size: 12px;
-      width: 755px;
       border-collapse: collapse;
       thead {
         td,
@@ -137,8 +180,8 @@ export default {
         border-right: none;
         font-size: 12px;
         font-weight: normal;
-        height: 22px;
-        line-height: 22px;
+        // height: 22px;
+        line-height: 20px;
         padding: 0px;
       }
       td {
@@ -151,14 +194,10 @@ export default {
       }
 
       .chart {
-        padding-top: 8px;
+        // padding-top: 8px;
         background: #fafbfd;
-        height: 14px;
-        padding: 4px auto;
+        // padding: 4px auto;
         width: 500px;
-        .down {
-          height: 14px;
-        }
       }
     }
   }

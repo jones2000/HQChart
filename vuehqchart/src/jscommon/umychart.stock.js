@@ -1042,6 +1042,11 @@ JSStock.GetHistoryDayData=function(symbol)
     return new HistoryDayData(symbol);
 }
 
+JSStock.GetDealPriceListData=function(symbol)
+{
+    return new DealPriceListData(symbol);
+}
+
 
 var RECV_DATA_TYPE=
 {
@@ -1077,7 +1082,8 @@ var RECV_DATA_TYPE=
     DEAL_DAY_DATA:105,       //分笔数据
     EVENT_DATA:106,          //事件 属性数据
     IMAGE_MINUTE_DATA:107,   //走势图图片
-    HISTORY_DAY_DATA:108    //历史日线收盘数据
+    HISTORY_DAY_DATA:108,    //历史日线收盘数据
+    DEAL_PRICE_LIST_DATA:109      //分价表数据
 }
 
 function JSStock()
@@ -2599,5 +2605,70 @@ function HistoryDayData(symbol)
 
         this.Error={Status:request.status, Message:request.responseText };
         this.InvokeUpdateUICallback();
+    }
+}
+
+//最新个股分价表
+function DealPriceListData(symbol)
+{
+    this.newMethod = IStockData;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Symbol=symbol;
+    this.ApiUrl = g_JSStockResource.Domain + "/API/StockPriceList";
+
+    this.RequestData = function () 
+    {
+        if (!this.Symbol) return;
+
+        var self = this;
+        var data={ };
+        if (Array.isArray(this.Symbol)) data.Symbol = this.Symbol; //数组
+        else data.Symbol=[this.Symbol];
+
+        $.ajax({
+            url: this.ApiUrl,
+            data: data,
+            type:"post",
+            dataType: 'json',
+            async:true,
+            success: function (data) 
+            {
+                self.RecvData(data, RECV_DATA_TYPE.DEAL_PRICE_LIST_DATA);
+            },
+            fail: function (request) 
+            {
+                self.RecvError(request, RECV_DATA_TYPE.DEAL_PRICE_LIST_DATA);
+            }
+        });
+    }
+
+    this.RecvData = function (data, dataType) 
+    {
+        this.Data = null;
+        if (data.data.length<=0) return;
+        this.Data={ Day:{}, PriceList:[] };
+        var stock=data.data[0];
+        this.Data.Day={Date:stock.date, YClose:stock.yclose, Price:stock.price, Vol:stock.vol, Time:stock.time};
+        this.Data.Stock={Symbol:stock.symbol, Name:stock.name};
+        var aryPrice=stock.pricelist;
+        var aryVol=stock.vollist;
+        
+        for (let i=0;i<aryPrice.length;++i) 
+        {
+            let item = {Price:aryPrice[i], Vol: aryVol[i]};
+            if (stock.vol>0) item.Rate=item.Vol/stock.vol;  //占比
+           
+            this.Data.PriceList.push(item);
+        }
+
+        if (this.UpdateUICallback) this.UpdateUICallback(this);
+
+        this.AutoUpate();
+    }
+
+    this.RecvError = function (request, dataType) {
+
     }
 }
