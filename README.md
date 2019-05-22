@@ -79,6 +79,10 @@
 1. 如何快速创建一个K线图页面 https://blog.csdn.net/jones2000/article/details/90272733 <br>
 2. 如何把自定义指标显示在K线图页面 https://blog.csdn.net/jones2000/article/details/90273684 <br>
 3. 如何把指标上锁显示在K线图页面 https://blog.csdn.net/jones2000/article/details/90285723 <br>
+4. 如何自定义K线图颜色风格 https://blog.csdn.net/jones2000/article/details/90286933 <br>
+5. K线图控件操作函数说明 https://blog.csdn.net/jones2000/article/details/90301000 <br>
+6. 如何获取K线图上的指标数据进行回测 https://blog.csdn.net/jones2000/article/details/90314625 <br>
+7. 如何快速创建一个分时图页面 https://blog.csdn.net/jones2000/article/details/90319619 <br>
 
 * 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
 * QQ交流群(950092318) ![QQ群](/小程序行情模块用例/image/qqcode.png)
