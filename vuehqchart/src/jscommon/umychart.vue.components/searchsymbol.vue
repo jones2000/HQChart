@@ -4,7 +4,7 @@
 
   <template>
   <div class="symbolWrap">
-    <div class="inputBox" v-on:keyup.38="keyUp" v-on:keyup.40="keyDown" v-on:keyup.enter="keyEnter">
+    <div class="inputBox" v-on:keyup.38="KeyUp" v-on:keyup.40="KeyDown" v-on:keyup.enter="KeyEnter">
       <input
         class="myInput"
         v-model="Symbol"
@@ -14,9 +14,9 @@
         ref="inputSymbol"
       >
       <span class="iconBox" v-show="Symbol != '' ">
-        <i class="el-icon-close myIcon" @click="deletSymbel()"></i>
+        <i class="el-icon-close myIcon" @click="DeletSymbel()"></i>
       </span>
-      <span v-show="searchKeywords" class="searchKeywords">
+      <span v-show="SearchKeywords" class="SearchKeywords">
         搜
         <span class="keyWords">
           "
@@ -28,10 +28,10 @@
         <p
           class="item"
           v-for="(item,index) in SpellStockData"
-          @click="hideSpellList(item)"
-          @mousemove="mouseMove(index)"
+          @click="HideSpellList(item)"
+          @mousemove="MouseMove(index)"
           :key="index"
-          :class="setSelect(index)"
+          :class="SetSelect(index)"
         >
           <span class="symbol">{{item.Symbol}}</span>
           <span class="name">{{item.Name}}</span>
@@ -59,82 +59,82 @@ export default {
       SearchStock: null,
       SpellStockData: [],
       SpellListEle: false,
-      searchKeywords: false, // 控制搜索关键字行显示隐藏
-      select: 0, // 搜索内容行
-      oldSymbol: "",
-      isQuery: true //是否查询
+      SearchKeywords: false, // 控制搜索关键字行显示隐藏
+      Select: 0, // 搜索内容行
+      OldSymbol: "",
+      IsQuery: true //是否查询
     };
   },
 
   methods: {
     // 键盘上键事件
-    keyUp() {
+    KeyUp() {
       if (this.SpellStockData.length > 0) {
-        this.select = this.select - 1;
-        if (this.select < 0) {
-          this.select = 0;
+        this.Select = this.Select - 1;
+        if (this.Select < 0) {
+          this.Select = 0;
         }
-        this.setScrollTo();
+        this.SetScrollTo();
       }
     },
     // 键盘下键事件
-    keyDown() {
+    KeyDown() {
       if (this.SpellStockData.length > 0) {
-        this.select = this.select + 1;
-        if (this.select >= this.SpellStockData.length) {
-          this.select = this.SpellStockData.length - 1;
+        this.Select = this.Select + 1;
+        if (this.Select >= this.SpellStockData.length) {
+          this.Select = this.SpellStockData.length - 1;
         }
-        this.setScrollTo();
+        this.SetScrollTo();
       }
     },
-    keyEnter() {
-      if (this.select > -1) {
-        this.Symbol = this.SpellStockData[this.select].Symbol;
-        this.searchKeywords = false;
+    KeyEnter() {
+      if (this.Select > -1) {
+        this.Symbol = this.SpellStockData[this.Select].Symbol;
+        this.SearchKeywords = false;
         this.SpellListEle = false;
-        this.isQuery = false;
+        this.IsQuery = false;
         this.$emit("inputValue", this.Symbol);
       }
     },
-    mouseMove(index) {
-      this.select = index;
+    MouseMove(index) {
+      this.Select = index;
     },
-    setScrollTo() {
-      if (this.select >= 4) {
+    SetScrollTo() {
+      if (this.Select >= 4) {
         let itemHeight = $(".item").height() + 4;
-        $(".stockList").scrollTop(itemHeight * (this.select - 4));
+        $(".stockList").scrollTop(itemHeight * (this.Select - 4));
       } else {
         $(".stockList").scrollTop(0);
       }
     },
-    setSelect(index) {
-      if (this.select === index) {
-        return "select";
+    SetSelect(index) {
+      if (this.Select === index) {
+        return "Select";
       }
     },
 
     SpellSock() {
       if (this.Symbol) {
-        this.searchKeywords = true;
+        this.SearchKeywords = true;
         this.SpellListEle = true;
       } else {
-        this.searchKeywords = false;
+        this.SearchKeywords = false;
         this.SpellListEle = false;
         return;
       }
 
-      if (this.oldSymbol !== this.Symbol) {
-        this.select = 0;
-        this.oldSymbol = this.Symbol;
+      if (this.OldSymbol !== this.Symbol) {
+        this.Select = 0;
+        this.OldSymbol = this.Symbol;
 
-        if (this.isQuery) {
+        if (this.IsQuery) {
           this.SearchStock = JSCommonStock.JSStock.GetSearchStock(
             this.SpellCallback
           );
-          var symbol = this.Symbol;
+          let symbol = this.Symbol;
           this.SearchStock.Search(symbol, 2 | 4); //支持股票+指数
         }
-        this.isQuery = true;
+        this.IsQuery = true;
       }
     },
 
@@ -144,20 +144,20 @@ export default {
       this.SpellListEle = true;
     },
 
-    hideSpellList(stock) {
+    HideSpellList(stock) {
       var symbol = stock.Symbol;
       this.SpellListEle = false;
-      this.searchKeywords = false;
+      this.SearchKeywords = false;
       this.Symbol = symbol;
       this.$emit("inputValue", this.Symbol);
     //   this.$emit("inputStock", stock);
-      this.isQuery = false;
+      this.IsQuery = false;
     },
 
-    deletSymbel() {
+    DeletSymbel() {
       this.Symbol = "";
       this.SpellListEle = false;
-      this.searchKeywords = false;
+      this.SearchKeywords = false;
       this.$nextTick(function() {
         //DOM 更新了
         this.$refs.inputSymbol.focus();
@@ -171,7 +171,7 @@ export default {
 <style lang="scss">
 .symbolWrap {
   position: relative;
-  .select {
+  .Select {
     background-color: #fff3d8;
   }
 
@@ -198,7 +198,7 @@ export default {
     }
   }
 
-  .searchKeywords {
+  .SearchKeywords {
     display: block;
     border: 1px solid #999;
     border-top: none;
@@ -227,7 +227,7 @@ export default {
     }
   }
 
-  .searchKeywords:hover {
+  .SearchKeywords:hover {
     background: #999;
   }
 

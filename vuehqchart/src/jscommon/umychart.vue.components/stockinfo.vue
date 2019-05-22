@@ -217,7 +217,7 @@
             GoSearch() {
                 this.IsShow.SearchSymbol = true;
                 this.IsShow.IconStyle = false;
-                this.$refs.mySymbol.deletSymbel();
+                this.$refs.mySymbol.DeletSymbel();
             },
             
             CancelSearch() {
@@ -565,7 +565,7 @@
                 width: 59px;
                 left: 139px;
                 top: 0px;
-                height: 23px;
+                height: 24px;
                 font-size: 14px;
                 background: #2061a5;
                 border: none;

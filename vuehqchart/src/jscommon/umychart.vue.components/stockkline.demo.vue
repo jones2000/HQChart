@@ -40,7 +40,7 @@
           
         </div>
         <div class="brushTool" v-if="DrawTool.IsShow">
-            <Stockdrawtool @CurrentIcon = "CurrentIcon" @isShowBrushTool="isShowBrushTool" :topheight="topheight" :totalheight="totalheight"></Stockdrawtool>
+            <Stockdrawtool @CurrentIcon = "CurrentIcon" @IsShowBrushTool="isShowBrushTool" :topheight="topheight" :totalheight="totalheight"></Stockdrawtool>
         </div>   
         <!-- 走势图 和 K线图  !-->
         <div :id='ID' ref='divchart' style="width:100%;height:100%">

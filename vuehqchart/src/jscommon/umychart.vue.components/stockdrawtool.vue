@@ -3,7 +3,7 @@
   !-->
 
 <template>
-  <div class="draw-box" v-if="isShowBrushTool" id="toolBox">
+  <div class="draw-box" v-if="IsShowBrushTool" id="toolBox">
     <ul>
       <!-- 关闭 -->
       <li class="closeBtn">
@@ -11,55 +11,55 @@
           class="move-area"
           id="moveArea"
           title="可拖动"
-          @mousedown.stop="toolBoxHandle"
-          @mouseover="toolBoxMove"
+          @mousedown.stop="ToolBoxHandle"
+          @mouseover="ToolBoxMove"
         ></span>
-        <svg class="icon icon-close" aria-hidden="true" @click="closeBtn">
+        <svg class="icon icon-close" aria-hidden="true" @click="CloseBtn">
           <use xlink:href="#icon-guanbi"></use>
         </svg>
       </li>
       <!-- 图标 -->
       <li
-        v-for="item in toolList1"
+        v-for="item in ToolList1"
         :key="item.name"
-        :class="addBackgroundColor(item.name)"
+        :class="AddBackgroundColor(item.name)"
         :title="item.name"
         class="title-style"
       >
-        <svg class="icon icon-style" aria-hidden="true" @click="clickIcon(item.name)">
+        <svg class="icon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
           <use :href="item.icon"></use>
         </svg>
       </li>
       <li class="line-style"></li>
       <li
-        v-for="item in toolList2"
+        v-for="item in ToolList2"
         :key="item.name"
-        :class="addBackgroundColor(item.name)"
+        :class="AddBackgroundColor(item.name)"
         :title="item.name"
       >
-        <svg class="icon icon-style" aria-hidden="true" @click="clickIcon(item.name)">
+        <svg class="icon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
           <use :href="item.icon"></use>
         </svg>
       </li>
       <li class="line-style"></li>
       <li
-        v-for="item in toolList3"
+        v-for="item in ToolList3"
         :key="item.name"
-        :class="addBackgroundColor(item.name)"
+        :class="AddBackgroundColor(item.name)"
         :title="item.name"
       >
-        <svg class="icon icon-style" aria-hidden="true" @click="clickIcon(item.name)">
+        <svg class="icon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
           <use :href="item.icon"></use>
         </svg>
       </li>
       <li class="line-style"></li>
       <li
-        v-for="item in toolList4"
+        v-for="item in ToolList4"
         :key="item.name"
-        :class="addBackgroundColor(item.name)"
+        :class="AddBackgroundColor(item.name)"
         :title="item.tip"
       >
-        <svg class="icon icon-style" aria-hidden="true" @click="clickIcon(item.name)">
+        <svg class="icon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
           <use :href="item.icon"></use>
         </svg>
       </li>
@@ -82,10 +82,10 @@ export default {
   name: "Stockdrawtool",
   data() {
     return {
-      isShowBrushTool: true,
-      clickName: "",
-      disabledTip: true,
-      toolList1: [
+      IsShowBrushTool: true,
+      ClickName: "",
+      DisabledTip: true,
+      ToolList1: [
         { name: "线段", icon: "#icon-xianduan" },
         { name: "射线", icon: "#icon-shexian" },
         { name: "趋势线", icon: "#icon-qushixian" },
@@ -95,7 +95,7 @@ export default {
         { name: "价格通道线", icon: "#icon-jiagetongdaoxian" },
         { name: "M头W底", icon: "#icon-MtouWdi" }
       ],
-      toolList2: [
+      ToolList2: [
         { name: "圆弧线", icon: "#icon-yuanhuxian" },
         { name: "矩形", icon: "#icon-juxing" },
         { name: "平行四边形", icon: "#icon-pinghangsibianxing" },
@@ -104,7 +104,7 @@ export default {
         { name: "对称角度", icon: "#icon-duichengjiaodu" }
       ],
 
-      toolList3: [
+      ToolList3: [
         { name: "江恩角度线", icon: "#icon-jiangenjiaoduxian" },
         { name: "斐波那契周期线", icon: "#icon-feibonaqizhouxian" },
         { name: "阻速线", icon: "#icon-zusuxian" },
@@ -113,7 +113,7 @@ export default {
         { name: "波段线", icon: "#icon-boduanxian" }
       ],
 
-      toolList4: [
+      ToolList4: [
         { name: "文本", icon: "#icon-wenben", tip: "文本" },
         {
           name: "icon-arrow_up",
@@ -144,11 +144,11 @@ export default {
     totalheight: Number
   },
   mounted: function() {
-    this.toolBoxHandle();
+    this.ToolBoxHandle();
   },
   methods: {
-    toolBoxHandle() {
-      this.disabledTip = true;
+    ToolBoxHandle() {
+      this.DisabledTip = true;
       ///用以获取滚动条的距离
       let getStyle = function(obj, name) {
         if (obj.currentStyle) {
@@ -220,23 +220,23 @@ export default {
         // moveArea.style.cursor = "default";
       };
     },
-    toolBoxMove() {
+    ToolBoxMove() {
       let moveArea = document.getElementById("moveArea");
       moveArea.style.cursor = "move";
     },
     // 关闭画笔工具
-    closeBtn() {
-      this.isShowBrushTool = false;
-      this.$emit("isShowBrushTool", this.isShowBrushTool);
+    CloseBtn() {
+      this.IsShowBrushTool = false;
+      this.$emit("IsShowBrushTool", this.IsShowBrushTool);
     },
     // 点击图标
-    clickIcon(iconName) {
-      this.clickName = iconName;
-      this.disabledTip = false;
+    ClickIcon(iconName) {
+      this.ClickName = iconName;
+      this.DisabledTip = false;
       this.$emit("CurrentIcon", iconName);
     },
-    addBackgroundColor(name) {
-      if (name === this.clickName) {
+    AddBackgroundColor(name) {
+      if (name === this.ClickName) {
         return "icon-color";
       }
     }

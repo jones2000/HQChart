@@ -207,7 +207,7 @@ export default
                     this.TradeInfo.Tab.Menu[2].IsShow=true;
                     this.TradeInfo.Tab.Menu[3].IsShow=true;     //筹码
                     this.TradeInfo.Tab.Menu[4].IsShow=false;    //异动
-                    if (selTabItem.Value==4) //异动
+                    if (selTabItem.Value==3) //异动
                         this.OnClickTradeInfoTab({Name:'分笔', Value:1}, 0);    //K线不显示移动， 切换到分笔上
                 }   
                 else

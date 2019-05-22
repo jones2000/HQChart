@@ -127,6 +127,16 @@
             </div>
         </div>
         <div class='dealpricelist' v-show='DealPrice.IsShow' ><!-- 分价表 -->
+            <table class='table'>
+                <tbody>
+                    <tr v-for='(item,index) in DealPriceData' :key='index+"dealprice"'>
+                        <td>{{item.Price}}</td>
+                        <td>{{item.Vol}}</td>
+                        <td><span :style='item.Bar'></span></td>
+                        <td>{{item.Rate}}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </template>
@@ -399,6 +409,17 @@ class DefaultData {
     }
     return data;
   }
+
+  static GetDealPriceData(){
+      let data = [{
+        Price:0,
+        Vol:0,
+        Bar:{width:0,backgroundColor:'#fff'},
+        Rate:'',
+        WidthRate:0
+      }];
+      return data;
+  }
 }
 
 function CapticalFlowChartStyle() {}
@@ -471,7 +492,8 @@ export default {
         IsShow:false,
         Data:null,
         JSStock: null //数据请求控制器
-      }
+      },
+      DealPriceData:DefaultData.GetDealPriceData()
     };
 
     return data;
@@ -989,7 +1011,39 @@ export default {
 
     UpdateDealPrice:function(dealPrice)
     {
-      console.log('[StockTradeInfo::UpdateDealPrice]', dealPrice.Data);
+        console.log('[StockTradeInfo::UpdateDealPrice]', dealPrice.Data);
+        var yClose = dealPrice.Data.YClose;
+        var priceList = dealPrice.Data.PriceList;
+        var maxVol = 0;
+        for(let i = 0; i < priceList.length; ++i){
+            var item = priceList[i];
+            if(item.Vol > maxVol){
+                maxVol = item.Vol;
+            }
+        }
+        var data = [];
+        for(let i = 0; i < priceList.length; ++i){
+            var item = priceList[i];
+            var dealPriceObj = {};
+            var barStyle = {
+                width:0,
+                backgroundColor:'#fff'
+            };
+            dealPriceObj.Price = item.Price;
+            dealPriceObj.Vol = parseInt(item.Vol/100);
+            dealPriceObj.Rate = JSCommon.IFrameSplitOperator.FormatValueString(item.Rate * 100, 2) + '%';
+            var color = JSCommon.IFrameSplitOperator.FormatValueColor(item.Price,yClose);
+            if(color == 'PriceUp'){
+                barStyle.backgroundColor = '#f00';
+            }else if(color == 'PriceDown'){
+                barStyle.backgroundColor = '#0f0';
+            }
+            dealPriceObj.Bar = barStyle;
+            dealPriceObj.WidthRate = item.Vol / maxVol;
+            data.push(dealPriceObj);
+        }
+        this.DealPriceData = data;
+        console.log(`[::StockTradeInfo]backgroundColor:${data[0].Bar}`);
     },
 
 
@@ -1221,6 +1275,16 @@ ul {
         }
       }
     }
+  }
+  .dealpricelist{
+    .table{
+        border-collapse: collapse;
+        border: none;
+        tr>td{
+            width: 25%;
+            line-height: 22px;
+        }
+    }  
   }
 }
 </style>

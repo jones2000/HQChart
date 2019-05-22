@@ -4,12 +4,12 @@
 
 <template>
   <div class="divstockdealcount" ref="divstockdealcount">
-    <div class="tableContent" ref="tableContent">
+    <div class="tableContent" ref="tableContent" v-show="IsShow.HiddenDealcount">
       <table class="myTable">
         <thead>
           <tr>
             <td>成交价(元)</td>
-            <td>成交量(股)</td>
+            <td>成交量(手)</td>
             <td>占比</td>
             <th>占比图</th>
           </tr>
@@ -22,14 +22,23 @@
             <th>
               <div class="chart">
                 <div
-                  class="down"
-                  :style="{width: item.widthItem + '%', background: ColorDeal,height: item.heightItem + 'px',}"
+                  :style="{width: item.widthItem + '%', background: item.ColorDeal,height: item.heightItem + 'px',}"
                 ></div>
               </div>
             </th>
           </tr>
         </tbody>
       </table>
+    </div>
+    <div v-show="!IsShow.HiddenDealcount">不是交易日</div>
+    <div id="paginationWrap" ref="paginationWrap" v-show="IsShow.HiddenDealcount">
+      <el-pagination
+        @current-change="handleCurrentChange"
+        :current-page.sync="Pagination.CurrentPage"
+        :page-size="Pagination.PageSize"
+        layout="prev, pager, next, jumper"
+        :total="Pagination.Total"
+      ></el-pagination>
     </div>
   </div>
 </template>
@@ -45,8 +54,16 @@ export default {
       DealData: null, //数据类
       PriceList: [],
       ProportionList: [], //占比数组
-      ColorDeal: "",
-      Date: "20190102"
+      Date: "20190102",
+      IsShow: {
+        HiddenDealcount: true
+      },
+      Pagination: {
+        CurrentPage: 0,
+        PageSize: 0,
+        Total: 0
+      },
+      DataList: []
     };
   },
   props: {
@@ -56,92 +73,114 @@ export default {
   watch: {
     DefaultSymbol(newV, oldV) {
       this.Symbol = newV;
+      this.GetDealCountData();
     },
-    DefaultSymbol(newV, oldV) {
+    DefaultDate(newV, oldV) {
       this.Date = newV;
+      this.GetDealCountData();
     }
   },
   created() {
     this.Symbol = this.DefaultSymbol != null ? this.DefaultSymbol : "600000.sh";
-    this.Date = this.DefaultDate != null ? this.DefaultDate : "20190102";
+    this.Date = this.DefaultDate != null ? this.DefaultDate : "20180508";
+    this.GetDealCountData();
   },
   mounted: function() {
-    this.DealData = JSCommonStock.JSStock.GetDealDay(this.Symbol);
-    this.DealData.Date = this.Date;
-    this.DealData.InvokeUpdateUICallback = this.GetData;
-    this.DealData.RequestData();
+    this.PriceList = this.DataList.slice(0, this.Pagination.PageSize);
     this.OnSize();
   },
 
   methods: {
+    GetDealCountData() {
+      this.DealData = JSCommonStock.JSStock.GetDealDay(this.Symbol);
+      this.DealData.Date = this.Date;
+      this.DealData.InvokeUpdateUICallback = this.GetData;
+      this.DealData.RequestData();
+    },
+
     // 小数转换成百分数
-    toPercent(point) {
-      var percent = Number(point * 100).toFixed(2);
+    ToPercent(point) {
+      let percent = Number(point * 100).toFixed(2);
       percent += "%";
       return percent;
     },
     // 获取数据
     GetData() {
+      console.log("[stockdealCount::created]", this.DealData);
       if (this.DealData.Data) {
-        var DealData = this.DealData.Data;
-        var dataList1 = this.DealData.Data.PriceList;
-        var dataList2 = this.DealData.Data.PriceList;
-        // 判断占比图颜色
-        if (DealData.Open - DealData.YClose > 0) {
-          this.ColorDeal = "#f00";
-        } else {
-          this.ColorDeal = "#008000";
-        }
+        this.DataList = [];
+        this.IsShow.HiddenDealcount = true;
+        let DealData = this.DealData.Data;
+        let dataList1 = this.DealData.Data.PriceList;
+        let dataList2 = this.DealData.Data.PriceList;
         dataList1.forEach(value => {
           this.ProportionList.push(value.Proportion);
         });
         // 拿占比最大值
-        var arr = this.ProportionList;
+        let arr = this.ProportionList;
         arr.sort(function(a, b) {
           return a - b;
         });
-        var maxProportion = arr[arr.length - 1]; //占比最大值
+        let maxProportion = arr[arr.length - 1]; //占比最大值
 
         dataList2.forEach(value => {
-          var object = {
+          let object = {
             Price: 0,
             Proportion: 0,
             Vol: 0,
             widthItem: 0,
-            heightItem: 0
+            heightItem: 0,
+            ColorDeal: ""
           };
-          object.Price = value.Price;
-          object.Vol = value.Vol;
-          object.Proportion = this.toPercent(value.Proportion);
+          object.Price = value.Price.toFixed(2); //保留两位小数
+          object.Vol = value.Vol / 100; // 股转换成手
+          object.Proportion = this.ToPercent(value.Proportion);
           object.widthItem = (value.Proportion / maxProportion) * 100; //最大占比为1，其余按比例
           object.heightItem = 14;
-          this.PriceList.push(object);
+          // 判断占比图颜色
+          if (object.Price - DealData.YClose > 0) {
+            object.ColorDeal = "#f00";
+          } else {
+            object.ColorDeal = "#008000";
+          }
+          this.DataList.push(object);
         });
+        this.PriceList = this.DataList.slice(0, this.Pagination.PageSize);
+        this.Pagination.Total = this.DataList.length;
+      } else {
+        this.IsShow.HiddenDealcount = false;
       }
     },
-    OnSize() {
-      var divstockdealcount = this.$refs.divstockdealcount;
-      console.log(divstockdealcount);
-      var tableContent = this.$refs.tableContent;
-      // var paginationWrap = this.$refs.paginationWrap;
-      var width = divstockdealcount.clientWidth;
-      var height = divstockdealcount.clientHeight;
-      if (height <= 0) return;
 
-      var mainHight = height;
-      var mainWdith = width + "px";
-      var tdHeight = 20;
-      var borderHeight = 1;
-      var everyTableCount = Math.floor(
+    OnSize() {
+      let divstockdealcount = this.$refs.divstockdealcount;
+      let tableContent = this.$refs.tableContent;
+      var paginationWrap = this.$refs.paginationWrap;
+      let width = divstockdealcount.clientWidth;
+      let height = divstockdealcount.clientHeight;
+      if (height <= 0) return;
+      let lineHeight = 20; //占比高度
+      let borderHeight = 1;
+      let mainHight =
+        height - lineHeight - borderHeight - paginationWrap.offsetHeight;
+      let mainWdith = width + "px";
+      let tdHeight = 23;
+      let everyTableCount = Math.floor(
         (mainHight - tdHeight - borderHeight) / tdHeight
       );
       if (everyTableCount <= 0) {
         everyTableCount = 1;
       }
-
-      // this.UpdateDataShow(everyTableCount);
-
+      this.UpdateDataShow(everyTableCount);
       tableContent.style.height = mainHight + "px";
+    },
+    UpdateDataShow(count) {
+      this.Pagination.PageSize = count;
+    },
+    handleCurrentChange(val) {
+      var start = this.Pagination.PageSize * (val - 1);
+      var end = this.Pagination.PageSize * val;
+      this.PriceList = this.DataList.slice(start, end);
     }
   }
 };
@@ -154,7 +193,7 @@ export default {
   height: 100%;
   border: 1px solid #d7d7df;
   border-top: none;
-  // padding: 10px;
+  padding: 0 10px;
   .tableContent {
     overflow-y: auto;
     height: 100%;
@@ -167,6 +206,7 @@ export default {
     .myTable {
       font-size: 12px;
       border-collapse: collapse;
+      width: 100%;
       thead {
         td,
         th {
@@ -194,7 +234,7 @@ export default {
       }
 
       .chart {
-        // padding-top: 8px;
+        padding-top: 8px;
         background: #fafbfd;
         // padding: 4px auto;
         width: 500px;
