@@ -106,9 +106,9 @@ export default {
     },
     // 获取数据
     GetData() {
-      console.log("[stockdealCount::created]", this.DealData);
       if (this.DealData.Data) {
         this.DataList = [];
+        this.ProportionList = [];
         this.IsShow.HiddenDealcount = true;
         let DealData = this.DealData.Data;
         let dataList1 = this.DealData.Data.PriceList;
@@ -189,9 +189,7 @@ export default {
 
 <style lang="scss" type="text/scss">
 .divstockdealcount {
-  width: 100%;
   height: 100%;
-  border: 1px solid #d7d7df;
   border-top: none;
   padding: 0 10px;
   .tableContent {
@@ -227,6 +225,7 @@ export default {
       td {
         padding-right: 10px;
         text-align: right;
+        width: 10%;
       }
       th {
         padding-left: 10px;
@@ -237,7 +236,6 @@ export default {
         padding-top: 8px;
         background: #fafbfd;
         // padding: 4px auto;
-        width: 500px;
       }
     }
   }

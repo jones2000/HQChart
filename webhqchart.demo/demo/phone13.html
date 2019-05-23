@@ -242,11 +242,17 @@
                     Train:
                     {
                         DataCount:100,                   //训练数据
-                        Callback:TrainCallback,          //训练回调 (每前进一次K线就调用一次)
                     }
                 }
     
             jsChart.SetOption(option);
+
+            //注册指标计算完成监听
+            jsChart.AddEventCallback({
+                    event:JSCHART_EVENT_ID.RECV_TRAIN_MOVE_STEP, 
+                    callback:function(event,data,obj) { TrainCallback2(event,data,obj); }
+                });
+
             //jsChart.LockIndex('飞龙四式',unlockIndex);
 
             //setTimeout(function(){jsChart.JSChartContainer.Run()},5000);    //启动自动前进
@@ -275,6 +281,24 @@
             console.log('[ComplierError]', error);
         }
 
+        function TrainCallback2(event,data,obj)
+        {
+            if (data.TrainDataCount<=0)
+            {
+                console.log('[TrainCallback2] finish train. ', data.BuySellData);
+                Root.result.setData(obj);
+            }
+            else
+            {
+                console.log('[TrainCallback2] remain train data ', data.TrainDataCount, data);
+            }
+
+            Root.tools.setBuyOrSellState(data.Operator);
+            Root.tools.setData(data.BuySellData);
+            Root.tools.setSurplusKLineCount(data.TrainDataCount);
+        }
+
+        //老的接口回调目前不用了
         function TrainCallback(hqchart)
         {
             var trainDataCount=hqchart.TrainDataCount;

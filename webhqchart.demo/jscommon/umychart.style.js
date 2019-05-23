@@ -56,9 +56,52 @@ var BLACK_STYLE=
         MaxMin: { Font: 12*GetDevicePixelRatio() +'px 微软雅黑', Color: 'rgb(111,111,111)' },   //K线最大最小值显示
         Info:  //信息地雷
         {
-            Color: 'rgb(205,149,12)',
-            TextColor: '#afc0da',
-            TextBGColor: '#1a283e',
+            Investor:
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/NewsInteract', //互动易
+                    IconFont: { Family:'iconfont', Text:'\ue631' , HScreenText:'\ue684', Color:'#1c65db'} //SVG 文本
+                },
+                Announcement:                                           //公告
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/ReportList',
+                    IconFont: { Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' }, //SVG 文本
+                    IconFont2: { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' } //SVG 文本 //季报
+                },
+                Pforecast:  //业绩预告
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
+                    IconFont: { Family:'iconfont', Text:'\ue62e', HScreenText:'\ue687', Color:'#986cad' } //SVG 文本
+                },
+                Research:   //调研
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/InvestorRelationsList',
+                    IconFont: { Family:'iconfont', Text:'\ue632', HScreenText:'\ue688', Color:'#19b1b7' } //SVG 文本
+                },
+                BlockTrading:   //大宗交易
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
+                    IconFont: { Family:'iconfont', Text:'\ue630', HScreenText:'\ue689', Color:'#f39f7c' } //SVG 文本
+                },
+                TradeDetail:    //龙虎榜
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
+                    IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' } //SVG 文本
+                }
+
+        },
+        NumIcon:
+        {
+            Color:'rgb(251,80,80)',Family:'iconfont',
+            Text:[  '\ue649',
+                    '\ue63b','\ue640','\ue63d','\ue63f','\ue645','\ue641','\ue647','\ue648','\ue646','\ue636',
+                    '\ue635','\ue637','\ue638','\ue639','\ue63a','\ue63c','\ue63e','\ue642','\ue644','\ue643'
+                ]
+        },
+        TradeIcon:  //交易指标 图标
+        {
+            Family:'iconfont', 
+            Buy: { Color:'rgb(255,15,4)', Text:'\ue683', HScreenText:'\ue682'}, 
+            Sell: { Color:'rgb(64,122,22)', Text:'\ue681',HScreenText:'\ue680'},
         }
     },
 

@@ -3733,8 +3733,11 @@ function JSChart(divElement)
             for(var i in option.Frame)
             {
                 var item=option.Frame[i];
+                if (!chart.Frame.SubFrame[i]) continue;
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
+                if (item.IsShowLeftText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
+                if (item.IsShowRightText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度 
             }
         }
 
@@ -4151,6 +4154,7 @@ var JSCHART_EVENT_ID=
     RECV_KLINE_MATCH:1, //接收到形态匹配
     RECV_INDEX_DATA:2,  //接收指标数据
     RECV_HISTROY_DATA:3,//接收到历史数据
+    RECV_TRAIN_MOVE_STEP:4, //接收K线训练,移动一次K线
 }
 
 /*
@@ -23186,7 +23190,17 @@ function KLineTrainChartContainer(uielement, bHScreen)
         var lastData=buySellPaint.LastData.Data;
         this.TrainStartEnd.End=lastData;
 
+        //老接口 以后会不用
         if (this.TrainCallback) this.TrainCallback(this);
+
+        //新的监听事件
+        if (!this.mapEvent.has(JSCHART_EVENT_ID.RECV_TRAIN_MOVE_STEP)) return;
+        var item=this.mapEvent.get(JSCHART_EVENT_ID.RECV_TRAIN_MOVE_STEP);
+        if (!item.Callback) return;
+
+        //Operator 0=买 1卖
+        var data={TrainDataCount:this.TrainDataCount, BuySellData:this.BuySellData, Operator:this.GetOperator() , KLine:this.TrainStartEnd};   
+        item.Callback(item,data,this);
     }
 
     this.FinishTrainData=function()
@@ -37699,7 +37713,7 @@ function ScriptIndex(name,script,args,option)
 
         //数据类型
         let hqDataType=HQ_DATA_TYPE.KLINE_ID;   //默认K线
-        if (hqChart.ClassName==='MinuteChartContainer') 
+        if (hqChart.ClassName==='MinuteChartContainer' || hqChart.ClassName==='MinuteChartHScreenContainer') 
         {
             if (hqChart.DayCount>1) hqDataType=HQ_DATA_TYPE.MULTIDAY_MINUTE_ID; //多日分钟
             else hqDataType=HQ_DATA_TYPE.MINUTE_ID;                             //分钟数据

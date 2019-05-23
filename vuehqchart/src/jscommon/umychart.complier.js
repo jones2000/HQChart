@@ -8096,7 +8096,7 @@ function ScriptIndex(name,script,args,option)
 
         //数据类型
         let hqDataType=HQ_DATA_TYPE.KLINE_ID;   //默认K线
-        if (hqChart.ClassName==='MinuteChartContainer') 
+        if (hqChart.ClassName==='MinuteChartContainer' || hqChart.ClassName==='MinuteChartHScreenContainer') 
         {
             if (hqChart.DayCount>1) hqDataType=HQ_DATA_TYPE.MULTIDAY_MINUTE_ID; //多日分钟
             else hqDataType=HQ_DATA_TYPE.MINUTE_ID;                             //分钟数据
