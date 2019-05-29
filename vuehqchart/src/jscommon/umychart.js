@@ -11042,11 +11042,6 @@ function ChartCorssCursor()
         var x=this.LastPoint.X;
         var y=this.LastPoint.Y;
 
-        if (this.IsOnlyDrawKLine)   //手机端 十字只能画在K线上
-        {
-            x=this.Frame.GetXFromIndex(this.CursorIndex);
-        }
-
         var isInClient=false;
         this.Canvas.beginPath();
         this.Canvas.rect(this.Frame.ChartBorder.GetLeft(),this.Frame.ChartBorder.GetTop(),this.Frame.ChartBorder.GetWidth(),this.Frame.ChartBorder.GetHeight());
@@ -11069,6 +11064,9 @@ function ChartCorssCursor()
         var bottom=this.Frame.ChartBorder.GetBottom();
         var rightWidth=this.Frame.ChartBorder.Right;
         var chartRight=this.Frame.ChartBorder.GetChartWidth();
+
+        if (this.IsOnlyDrawKLine)   //手机端 十字只能画在K线上
+            x=this.Frame.GetXFromIndex(this.CursorIndex);
 
         this.PointY=[[left,y],[right,y]];
         this.PointX=[[x,top],[x,bottom]];
@@ -11201,6 +11199,9 @@ function ChartCorssCursor()
     {
         var x=this.LastPoint.X;
         var y=this.LastPoint.Y;
+
+        if (this.IsOnlyDrawKLine)   //手机端 十字只能画在K线上
+            y=this.Frame.GetXFromIndex(this.CursorIndex);
 
         var left=this.Frame.ChartBorder.GetLeft();
         var right=this.Frame.ChartBorder.GetRightEx();
