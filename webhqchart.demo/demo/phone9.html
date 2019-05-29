@@ -65,7 +65,19 @@
             var aryIndex=new Array();
             aryIndex.push({"Index":index,"Modify":false,"Change":false});
             aryIndex.push({"Index":index2,"Modify":false,"Change":false});
-            if (index3) aryIndex.push({"Index":index3,"Modify":false,"Change":false});
+
+            /*
+            if (index3) aryIndex.push({Index:index3,Modify:false,Change:false, Lock:
+                {
+                    IsLocked: true,
+                    Callback: unlockIndex,
+                    BG: 'rgb(200,0,40)',
+                    TextColor: 'rgb(255,255,255)',
+                    //Text: '上锁了',
+                    Font: '12px 微软雅黑',
+                    Count: 10  //锁主右边几条数据
+                }});
+            */
 
             //黑色风格设置, 默认是白色风格
             //var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID);
@@ -96,7 +108,7 @@
                         //Info:["业绩预告","公告","互动易","调研","大宗交易"],       //信息地雷
                         Info:["公告","互动易","调研"],          //信息地雷
                         KLineDoubleClick:true,              //双击分钟走势图
-                        IsShowTooltip:true                 //是否显示K线提示信息
+                        IsShowTooltip:false                 //是否显示K线提示信息
                     },
         
                     KLineTitle: //标题设置
@@ -108,7 +120,7 @@
                     Border: //边框
                     {
                         Left:20,    //左边间距
-                        Right:20,     //右边间距
+                        Right:40,     //右边间距
                         Bottom:1,
                         Top:60
                     },
@@ -118,7 +130,12 @@
                         {SplitCount:3,StringFormat:1},
                         {SplitCount:3,StringFormat:1},
                         {SplitCount:3,StringFormat:1}
-                    ]
+                    ],
+
+                    ExtendChart:    //扩展图形
+                    [
+                        {Name:'KLineTooltip' }  //手机端tooltip
+                    ],
                 }
 
             var windowHeight= $(window).height();
@@ -126,6 +143,8 @@
             if (windowWidth<=420)   //手机小屏左右不显示坐标
             {
                 option.KLine.IsShowTooltip=false;
+                option.IsCorssOnlyDrawKLine=true;
+                option.CorssCursorTouchEnd=true;
             }
         
             jsChart.SetOption(option);

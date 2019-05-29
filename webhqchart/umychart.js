@@ -397,6 +397,8 @@ function JSChart(divElement)
             if (option.MinuteLine.IsDrawAreaPrice==false) chart.ChartPaint[0].IsDrawArea=false;
         }
 
+        if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
+
         //分钟数据指标从第3个指标窗口设置
         let scriptData = new JSIndexScript();
         for(var i in option.Windows)
@@ -18510,6 +18512,7 @@ function MinuteChartContainer(uielement)
         if(!this.JSChartContainer) return;
         if(this.JSChartContainer.DragMode==0) return;
 
+        this.JSChartContainer.IsOnTouch=true;
         this.JSChartContainer.PhonePinch=null;
 
         e.preventDefault();
@@ -18562,6 +18565,9 @@ function MinuteChartContainer(uielement)
 
         uielement.ontouchend=function(e)
         {
+            console.log('[MinuteChartContainer::uielement.ontouchend]',e);
+            this.JSChartContainer.IsOnTouch = false;
+            this.JSChartContainer.OnTouchFinished();
             clearTimeout(timeout);
         }
 
@@ -19391,6 +19397,26 @@ function MinuteChartContainer(uielement)
         }
 
         return aryIndex;
+    }
+
+    this.OnTouchFinished=function()
+    {
+        if (this.CorssCursorTouchEnd===true)    //手势离开十字光标消失
+        {
+            this.DrawDynamicInfo();
+            return;
+        }
+
+        /* 以后放日线的tooltip
+        for(var i in this.ExtendChartPaint)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.ClassName==='KLineTooltipPaint')
+            {
+                this.DrawDynamicInfo();
+            }
+        }
+        */
     }
 }
 

@@ -42,7 +42,7 @@
             var symbol=getURLParams('symbol');
             if (symbol==null) symbol='000001.sh';
             //if (symbol==null) symbol='150013.sz';   //基金
-            //if (symbol==null) symbol='00001.hk';
+            //if (symbol==null) symbol='HSI.hk';
             //if (symbol==null) symbol='tf1903.cfe';
             //if (symbol==null) symbol='cf1909.czc';
             
@@ -97,6 +97,7 @@
             {
                 option.Border.Left=1;
                 option.Border.Right=1;
+                option.CorssCursorTouchEnd=true;
             }
         
             jsChart.SetOption(option);
