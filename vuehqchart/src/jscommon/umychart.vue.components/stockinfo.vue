@@ -312,11 +312,11 @@
 
                 if (data.RiseFallPrice.Value == 0) data.RiseFallPrice.Text = '0.00';
                 else data.RiseFallPrice.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.RiseFallPrice.Value, 2);
-                data.RiseFallPrice.Color = JSCommon.IFrameSplitOperator.FormatValueColor(data.RiseFallPrice.Value, yClose);
+                data.RiseFallPrice.Color = JSCommon.IFrameSplitOperator.FormatValueColor(data.RiseFallPrice.Value, 0);
 
                 if (data.Increase.Value == 0) data.Increase.Text = '0.00%';
                 else data.Increase.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.Increase.Value, 2) + '%';
-                data.Increase.Color = JSCommon.IFrameSplitOperator.FormatValueColor(data.Increase.Value, yClose);
+                data.Increase.Color = JSCommon.IFrameSplitOperator.FormatValueColor(data.Increase.Value, 0);
 
                 data.High.Text = JSCommon.IFrameSplitOperator.FormatValueString(data.High.Value, 2);
                 data.High.Color = JSCommon.IFrameSplitOperator.FormatValueColor(data.High.Value, yClose);

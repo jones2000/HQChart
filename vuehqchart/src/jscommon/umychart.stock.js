@@ -2314,7 +2314,7 @@ function DealDay(symbol)
             PriceList:[]    //分价表
         };
 
-        var mapPrice=new Map(); //分价表 key=价格 value={Vol:成交量, Proportion:占比, Price:价格 }
+        var mapPrice=new Map(); //分价表 key=价格 value={Vol:成交量, Proportion:占比, Price:价格, BuyVol:买量, SellVol:买量, NoneVol:不明盘  }
         var totalVol=0; //一共的成交量
         var minCount=Math.min(time.length,vol.length,flag.length, price.length, amount.length);
         for (let i =0;i<minCount;++i) 
@@ -2326,15 +2326,21 @@ function DealDay(symbol)
             if (item.Time>150000) item.Time=150000; //盘后数据都算在15:00
 
             dealData.Deal.push(item);
-
+            var priceItem;
             if (mapPrice.has(item.Price))
             {
-                mapPrice.get(item.Price).Vol+=item.Vol; //成交量累加
+                priceItem=mapPrice.get(item.Price);
+                priceItem.Vol+=item.Vol; //成交量累加
             }
             else
             {
-                mapPrice.set(item.Price, {Vol:item.Vol, Price:item.Price});
+                priceItem={Vol:item.Vol, Price:item.Price, BuyVol:0, SellVol:0, NoneVol:0 };
+                mapPrice.set(item.Price, priceItem);
             }
+
+            if (flag[i]===0) priceItem.BuyVol+=item.Vol;
+            else if (flag[i]===1) priceItem.SellVol+=item.Vol;
+            else priceItem.NoneVol+=item.Vol;
 
             totalVol+=item.Vol;
         }

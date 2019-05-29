@@ -153,6 +153,7 @@ export default
         'DefaultSymbol',     //默认股票
         'DefaultOption',     //走势图设置
         'DefaultAPIDomain',         //数据API域名设置
+        'IsCreateManual'  //是否是手动创建
     ],
 
     data()
@@ -184,7 +185,11 @@ export default
     {
         console.log(`[StockChart::mounted]`);
         this.OnSize();              //子组件的mounted在父组件的mounted之前执行了
-        this.CreateJSChart();
+        console.log('[stockchart::mounted]IsCreateManual:',this.IsCreateManual);
+        if(!this.IsCreateManual){
+            this.CreateJSChart();
+        }
+        
     },
 
     methods:

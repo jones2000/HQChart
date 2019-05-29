@@ -67,6 +67,30 @@
         <span style="padding-left:40px;">排列顺序：</span>
         <el-checkbox v-model="RerverChecked">倒序</el-checkbox>
       </div>
+      <div class="historyDayLineTool" v-show='IsShow.HistoryDayLine'>
+            <div class="datePickerWrap">
+                <el-date-picker
+                    v-model="PickerStartDate"
+                    format="yyyyMMdd"
+                    value-format="yyyyMMdd"
+                    type="date"
+                    placeholder="选择开始日期"
+                    @change="ChangeStartTime"
+                    :picker-options="pickerOptions1"
+                ></el-date-picker>
+                至
+                <el-date-picker
+                    v-model="PickerEndDate"
+                    format="yyyyMMdd"
+                    value-format="yyyyMMdd"
+                    type="date"
+                    placeholder="选择结束日期"
+                    @change="ChangeEndTime"
+                    :picker-options="pickerOptions2"
+                ></el-date-picker>
+            </div>
+            <button type='button' @click='DownloadCsv'>下载csv文件</button>
+      </div>
     </div>
     <div class="divdealday" ref="tableContent">
       <StockDeal
@@ -92,6 +116,9 @@
         :DefaultDate="ChoiceDate"
       ></StockDealCount>
     </div>
+    <div class="divdayline" ref='divdayline'>
+        <HistoryDayLine ref='historydayline' :DefaultSymbol='OptionData.Symbol' :DefaultStartDate='StartDate' :DefaultEndDate='EndDate'></HistoryDayLine>
+    </div>
   </div>
 </template>
 
@@ -102,6 +129,7 @@ import SearchSymbol from "./searchsymbol.vue";
 import StockChart from "./stockchart.vue";
 import StockDeal from "./stockdeal.vue";
 import StockDealCount from "./stockdealcount.vue";
+import HistoryDayLine from './historydayline.vue'
 
 Date.prototype.Format = function(fmt) {
   var o = {
@@ -156,8 +184,18 @@ export default {
           return time.getTime() > Date.now() || time.getTime() < dateValue;
         }
       },
+      pickerOptions1:{
+        disabledDate(time){
+            return;
+        }
+      },
+      pickerOptions2:{
+        disabledDate(time){
+            return;
+        }
+      },
       // loadingBody: false,
-      TabTexts: ["成交明细", "走势图", "分价表"],
+      TabTexts: ["成交明细", "走势图", "分价表",'历史日线'],
       TabIndex: 0,
       OptionData: {
         Symbol: "",
@@ -173,7 +211,8 @@ export default {
         Search: false,
         DealDetail: true,
         MinuteChart: false,
-        DealCount: false
+        DealCount: false,
+        HistoryDayLine:false
       },
       ContentTopData: ContentTop.GetDeaultData(),
       mainHight: 0,
@@ -187,10 +226,14 @@ export default {
       },
       ChoiceIndex: "",
       ChoiceDate: "20180508",
-      IsReverse: false
+      IsReverse: false,
+      StartDate:20181222,
+      EndDate:20190502,
+      PickerStartDate:'',
+      PickerEndDate:''
     };
   },
-  components: { SearchSymbol, StockChart, StockDeal, StockDealCount },
+  components: { SearchSymbol, StockChart, StockDeal, StockDealCount, HistoryDayLine },
   computed: {
     DateFormat: function() {
       return this.OptionData.DatePicker.replace(/-/g, "");
@@ -241,23 +284,69 @@ export default {
           this.$refs.stockdeal.OnSize();
           this.$refs.charWrap.style.display = "none";
           this.$refs.divdealcount.style.display = "none";
+          this.$refs.divdayline.style.display = "none";
           this.IsShow.DealDetail = true;
+          this.IsShow.HistoryDayLine = false;
           break;
         case 1:
           this.$refs.tableContent.style.display = "none";
           this.$refs.charWrap.style.display = "block"; //直接设置到dom里面 vue里面的设置是异步的
           this.$refs.stockChart.OnSize();
           this.$refs.divdealcount.style.display = "none";
-          this.IsShow.DealDetail = true;
+          this.$refs.divdayline.style.display = "none";
+          this.IsShow.DealDetail = false;
+          this.IsShow.HistoryDayLine = false;
           break;
         case 2:
           this.$refs.tableContent.style.display = "none";
           this.$refs.charWrap.style.display = "none"; //直接设置到dom里面 vue里面的设置是异步的
           this.$refs.divdealcount.style.display = "block";
-          this.IsShow.DealDetail = false;
+          this.$refs.divdayline.style.display = "none";
           this.$refs.stockdealcount.OnSize();
+          this.IsShow.DealDetail = false;
+          this.IsShow.HistoryDayLine = false;
           break;
+        case 3:
+          this.$refs.tableContent.style.display = "none";
+          this.$refs.charWrap.style.display = "none"; //直接设置到dom里面 vue里面的设置是异步的
+          this.$refs.divdealcount.style.display = "none";
+          this.$refs.divdayline.style.display = "block";
+          this.$refs.historydayline.OnSize();
+          this.IsShow.DealDetail = false;
+          this.IsShow.HistoryDayLine = true;
+          break;  
       }
+    },
+    DownloadCsv(){
+        var _this = this;
+        $.ajax({
+            url: 'http://opensource.zealink.com/api/KLineCSV',
+            type:"post",
+            dataType: 'json',
+            data:{
+                "Symbol": _this.OptionData.Symbol,
+                "QueryDate": {
+                    "StartDate": _this.StartDate,
+                    "EndDate": _this.EndDate
+                }
+            },
+            async:true,
+            success: function (data) 
+            {
+                _this.RecvDownloadCsv(data);
+            },
+            error: function (request) 
+            {
+                console.log(request.message);
+            }
+        });
+    },
+    RecvDownloadCsv(data){
+        console.log('下载 data:',data);
+        if(data.code == 0){
+            var relativeUrl = data.relativeurl;
+            window.open('https://downloadcache.zealink.com/'+relativeUrl);
+        }
     },
     GetStockInfo(data) {
       if (data) {
@@ -345,6 +434,11 @@ export default {
       var stockdealcount = this.$refs.stockdealcount;
       stockdealcount.OnSize();
 
+      var divdayline = this.$refs.divdayline;
+      divdayline.style.width = width + "px";
+      divdayline.style.height =  height + "px";
+      this.$refs.historydayline.OnSize();
+
       var minWidth = 1062;
     },
     FormatDateString(date, hasLine) {
@@ -369,6 +463,12 @@ export default {
         var stockChart = this.$refs.stockChart;
         stockChart.ChangeTradeDate(Number(date));
       }
+    },
+    ChangeStartTime(val){
+        this.StartDate = parseInt(val);
+    },
+    ChangeEndTime(val){
+        this.EndDate = parseInt(val);
     },
     searchSymbol(symbol) {
       console.log("这是搜索的股票代码", symbol);
@@ -571,7 +671,20 @@ body {
   #selectOrderWrap {
     height: 60px;
     .selectorForDealDetail {
-      display: inline-block;
+        display: inline-block;
+    }
+    .historyDayLineTool{
+        display: inline-block;
+        margin-left: 100px;
+        .datePickerWrap{
+            display: inline-block;
+            margin-right: 80px;
+        }
+        .el-input__inner {
+            border-radius: 0;
+            height: 23px;
+            border: 1px solid #999;
+        }
     }
     .tabWrap {
       display: inline-block;

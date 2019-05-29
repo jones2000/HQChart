@@ -42,129 +42,129 @@
 </template>
 
 <script>
-import JSCommonStock from "../umychart.vue/umychart.stock.vue.js";
+    import JSCommonStock from "../umychart.vue/umychart.stock.vue.js";
 
-import Vue from "vue";
-import ElementUI from "element-ui";
-import "../../../node_modules/element-ui/lib/theme-default/index.css";
-import locale from "../../../node_modules/element-ui/lib/locale/lang/en";
+    import Vue from "vue";
+    import ElementUI from "element-ui";
+    import "../../../node_modules/element-ui/lib/theme-default/index.css";
+    import locale from "../../../node_modules/element-ui/lib/locale/lang/en";
 
-Vue.use(ElementUI, { locale });
+    Vue.use(ElementUI, { locale });
 
-export default {
-  name: "SearchSymbol",
-  data() {
-    return {
-      Symbol: "",
-      SearchStock: null,
-      SpellStockData: [],
-      SpellListEle: false,
-      SearchKeywords: false, // 控制搜索关键字行显示隐藏
-      Select: 0, // 搜索内容行
-      OldSymbol: "",
-      IsQuery: true //是否查询
+    export default {
+        name: "SearchSymbol",
+        data() {
+            return {
+            Symbol: "",
+            SearchStock: null,
+            SpellStockData: [],
+            SpellListEle: false,
+            SearchKeywords: false, // 控制搜索关键字行显示隐藏
+            Select: 0, // 搜索内容行
+            OldSymbol: "",
+            IsQuery: true //是否查询
+            };
+        },
+
+        methods: {
+            // 键盘上键事件
+            KeyUp() {
+            if (this.SpellStockData.length > 0) {
+                this.Select = this.Select - 1;
+                if (this.Select < 0) {
+                this.Select = 0;
+                }
+                this.SetScrollTo();
+            }
+            },
+            // 键盘下键事件
+            KeyDown() {
+            if (this.SpellStockData.length > 0) {
+                this.Select = this.Select + 1;
+                if (this.Select >= this.SpellStockData.length) {
+                this.Select = this.SpellStockData.length - 1;
+                }
+                this.SetScrollTo();
+            }
+            },
+            KeyEnter() {
+            if (this.Select > -1) {
+                this.Symbol = this.SpellStockData[this.Select].Symbol;
+                this.SearchKeywords = false;
+                this.SpellListEle = false;
+                this.IsQuery = false;
+                this.$emit("inputValue", this.Symbol);
+            }
+            },
+            MouseMove(index) {
+            this.Select = index;
+            },
+            SetScrollTo() {
+            if (this.Select >= 4) {
+                let itemHeight = $(".item").height() + 4;
+                $(".stockList").scrollTop(itemHeight * (this.Select - 4));
+            } else {
+                $(".stockList").scrollTop(0);
+            }
+            },
+            SetSelect(index) {
+            if (this.Select === index) {
+                return "Select";
+            }
+            },
+
+            SpellSock() {
+            if (this.Symbol) {
+                this.SearchKeywords = true;
+                this.SpellListEle = true;
+            } else {
+                this.SearchKeywords = false;
+                this.SpellListEle = false;
+                return;
+            }
+
+            if (this.OldSymbol !== this.Symbol) {
+                this.Select = 0;
+                this.OldSymbol = this.Symbol;
+
+                if (this.IsQuery) {
+                this.SearchStock = JSCommonStock.JSStock.GetSearchStock(
+                    this.SpellCallback
+                );
+                let symbol = this.Symbol;
+                this.SearchStock.Search(symbol, 2 | 4); //支持股票+指数
+                }
+                this.IsQuery = true;
+            }
+            },
+
+            SpellCallback(data) {
+            var stocks = data.Data;
+            this.SpellStockData = stocks;
+            this.SpellListEle = true;
+            },
+
+            HideSpellList(stock) {
+            var symbol = stock.Symbol;
+            this.SpellListEle = false;
+            this.SearchKeywords = false;
+            this.Symbol = symbol;
+            this.$emit("inputValue", this.Symbol);
+            //   this.$emit("inputStock", stock);
+            this.IsQuery = false;
+            },
+
+            DeletSymbel() {
+            this.Symbol = "";
+            this.SpellListEle = false;
+            this.SearchKeywords = false;
+            this.$nextTick(function() {
+                //DOM 更新了
+                this.$refs.inputSymbol.focus();
+            });
+            }
+        }
     };
-  },
-
-  methods: {
-    // 键盘上键事件
-    KeyUp() {
-      if (this.SpellStockData.length > 0) {
-        this.Select = this.Select - 1;
-        if (this.Select < 0) {
-          this.Select = 0;
-        }
-        this.SetScrollTo();
-      }
-    },
-    // 键盘下键事件
-    KeyDown() {
-      if (this.SpellStockData.length > 0) {
-        this.Select = this.Select + 1;
-        if (this.Select >= this.SpellStockData.length) {
-          this.Select = this.SpellStockData.length - 1;
-        }
-        this.SetScrollTo();
-      }
-    },
-    KeyEnter() {
-      if (this.Select > -1) {
-        this.Symbol = this.SpellStockData[this.Select].Symbol;
-        this.SearchKeywords = false;
-        this.SpellListEle = false;
-        this.IsQuery = false;
-        this.$emit("inputValue", this.Symbol);
-      }
-    },
-    MouseMove(index) {
-      this.Select = index;
-    },
-    SetScrollTo() {
-      if (this.Select >= 4) {
-        let itemHeight = $(".item").height() + 4;
-        $(".stockList").scrollTop(itemHeight * (this.Select - 4));
-      } else {
-        $(".stockList").scrollTop(0);
-      }
-    },
-    SetSelect(index) {
-      if (this.Select === index) {
-        return "Select";
-      }
-    },
-
-    SpellSock() {
-      if (this.Symbol) {
-        this.SearchKeywords = true;
-        this.SpellListEle = true;
-      } else {
-        this.SearchKeywords = false;
-        this.SpellListEle = false;
-        return;
-      }
-
-      if (this.OldSymbol !== this.Symbol) {
-        this.Select = 0;
-        this.OldSymbol = this.Symbol;
-
-        if (this.IsQuery) {
-          this.SearchStock = JSCommonStock.JSStock.GetSearchStock(
-            this.SpellCallback
-          );
-          let symbol = this.Symbol;
-          this.SearchStock.Search(symbol, 2 | 4); //支持股票+指数
-        }
-        this.IsQuery = true;
-      }
-    },
-
-    SpellCallback(data) {
-      var stocks = data.Data;
-      this.SpellStockData = stocks;
-      this.SpellListEle = true;
-    },
-
-    HideSpellList(stock) {
-      var symbol = stock.Symbol;
-      this.SpellListEle = false;
-      this.SearchKeywords = false;
-      this.Symbol = symbol;
-      this.$emit("inputValue", this.Symbol);
-    //   this.$emit("inputStock", stock);
-      this.IsQuery = false;
-    },
-
-    DeletSymbel() {
-      this.Symbol = "";
-      this.SpellListEle = false;
-      this.SearchKeywords = false;
-      this.$nextTick(function() {
-        //DOM 更新了
-        this.$refs.inputSymbol.focus();
-      });
-    }
-  }
-};
 </script>
 
 

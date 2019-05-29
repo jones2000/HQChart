@@ -126,11 +126,11 @@
                 </div>
             </div>
         </div>
-        <div class='dealpricelist' v-show='DealPrice.IsShow' ><!-- 分价表 -->
+        <div class='dealpricelist' ref='dealpricelist' v-show='DealPrice.IsShow' ><!-- 分价表 -->
             <table class='table'>
                 <tbody>
                     <tr v-for='(item,index) in DealPriceData' :key='index+"dealprice"'>
-                        <td>{{item.Price}}</td>
+                        <td :class='item.Price.Color'>{{item.Price.Text}}</td>
                         <td>{{item.Vol}}</td>
                         <td><span :style='item.Bar'></span></td>
                         <td>{{item.Rate}}</td>
@@ -412,9 +412,9 @@ class DefaultData {
 
   static GetDealPriceData(){
       let data = [{
-        Price:0,
+        Price:{Text:'',Color:''},
         Vol:0,
-        Bar:{width:0,backgroundColor:'#fff'},
+        Bar:{width:'20px',backgroundColor:'#fff'},
         Rate:'',
         WidthRate:0
       }];
@@ -1012,7 +1012,7 @@ export default {
     UpdateDealPrice:function(dealPrice)
     {
         console.log('[StockTradeInfo::UpdateDealPrice]', dealPrice.Data);
-        var yClose = dealPrice.Data.YClose;
+        var yClose = dealPrice.Data.Day.YClose;
         var priceList = dealPrice.Data.PriceList;
         var maxVol = 0;
         for(let i = 0; i < priceList.length; ++i){
@@ -1021,29 +1021,35 @@ export default {
                 maxVol = item.Vol;
             }
         }
+        var tdWPer = 0.25;
+        var paddingRight = 5;
+        var barWidth = this.$refs.dealpricelist.clientWidth * tdWPer - paddingRight;
         var data = [];
         for(let i = 0; i < priceList.length; ++i){
             var item = priceList[i];
             var dealPriceObj = {};
-            var barStyle = {
-                width:0,
-                backgroundColor:'#fff'
-            };
-            dealPriceObj.Price = item.Price;
+            
+            var barStyle = {width:'20px',backgroundColor:'#fff'};
+            dealPriceObj.Price = {Text:JSCommon.IFrameSplitOperator.FormatValueString(item.Price,2),Color:'',Value:item.Price} ;
             dealPriceObj.Vol = parseInt(item.Vol/100);
             dealPriceObj.Rate = JSCommon.IFrameSplitOperator.FormatValueString(item.Rate * 100, 2) + '%';
             var color = JSCommon.IFrameSplitOperator.FormatValueColor(item.Price,yClose);
+            dealPriceObj.Price.Color = color;
             if(color == 'PriceUp'){
                 barStyle.backgroundColor = '#f00';
             }else if(color == 'PriceDown'){
                 barStyle.backgroundColor = '#0f0';
             }
-            dealPriceObj.Bar = barStyle;
+            
             dealPriceObj.WidthRate = item.Vol / maxVol;
+            barStyle.width = barWidth * dealPriceObj.WidthRate + 'px';
+
+            dealPriceObj.Bar = barStyle;
             data.push(dealPriceObj);
         }
+        data.sort( (l,r) => r.Price.Value-l.Price.Value );
         this.DealPriceData = data;
-        console.log(`[::StockTradeInfo]backgroundColor:${data[0].Bar}`);
+        console.log(`[::StockTradeInfo]backgroundColor:`,this.DealPriceData);
     },
 
 
@@ -1279,10 +1285,23 @@ ul {
   .dealpricelist{
     .table{
         border-collapse: collapse;
+        border-spacing: 0;
         border: none;
         tr>td{
             width: 25%;
             line-height: 22px;
+            box-sizing: border-box;
+        }
+        tr>td:nth-of-type(2),tr>td:last-child{
+            text-align: right;
+        }
+        tr>td:nth-of-type(2){
+            padding-right: 5px;
+        }
+        td>span{
+            vertical-align: middle;
+            display:inline-block;
+            height: 14px;
         }
     }  
   }
