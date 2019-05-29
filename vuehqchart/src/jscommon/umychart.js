@@ -131,15 +131,10 @@ function JSChart(divElement)
             }
         }
 
-        if (option.IsShowCorssCursorInfo==false)    //取消显示十字光标刻度信息
-        {
-            chart.ChartCorssCursor.IsShowText=option.IsShowCorssCursorInfo;
-        }
-
-        if (option.IsCorssOnlyDrawKLine===true)
-        {
-            chart.ChartCorssCursor.IsOnlyDrawKLine=option.IsCorssOnlyDrawKLine;
-        }
+         //取消显示十字光标刻度信息
+        if (option.IsShowCorssCursorInfo==false) chart.ChartCorssCursor.IsShowText=option.IsShowCorssCursorInfo;
+        if (option.IsCorssOnlyDrawKLine===true) chart.ChartCorssCursor.IsOnlyDrawKLine=option.IsCorssOnlyDrawKLine;
+        if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
 
         if (option.Frame)
         {
@@ -996,6 +991,7 @@ function JSChartContainer(uielement)
     this.CursorIndex=0;             //十字光标X轴索引
     this.LastPoint=new Point();     //鼠标位置
     this.IsForceLandscape=false;    //是否强制横屏
+    this.CorssCursorTouchEnd = false;   //手离开屏幕自动隐藏十字光标
 
     //tooltip提示信息
     this.Tooltip=document.createElement("div");
@@ -1638,7 +1634,8 @@ function JSChartContainer(uielement)
         {
             this.ChartCorssCursor.LastPoint=this.LastPoint;
             this.ChartCorssCursor.CursorIndex=this.CursorIndex;
-            this.ChartCorssCursor.Draw();
+            if ( !(this.IsOnTouch===false && this.CorssCursorTouchEnd===true))
+                this.ChartCorssCursor.Draw();
         }
 
         for(var i in this.TitlePaint)
@@ -17331,6 +17328,12 @@ function KLineChartContainer(uielement)
 
     this.OnTouchFinished=function()
     {
+        if (this.CorssCursorTouchEnd===true)    //手势离开十字光标消失
+        {
+            this.DrawDynamicInfo();
+            return;
+        }
+
         for(var i in this.ExtendChartPaint)
         {
             var item=this.ExtendChartPaint[i];
