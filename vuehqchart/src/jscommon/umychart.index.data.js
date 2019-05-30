@@ -35,7 +35,7 @@ function JSIndexScript()
 {
     this.DataMap=new Map(
         [
-            ['MA', this.MA],['均线', this.MA],['BOLL', this.BOLL],['BBI', this.BBI],
+            ['MA', this.MA],['均线', this.MA],['BOLL', this.BOLL],['BOLL副图', this.BOLL2],['BBI', this.BBI],
             ['DKX', this.DKX],['MIKE', this.MIKE],['PBX', this.PBX],
             ['ENE', this.ENE],['MACD', this.MACD],['KDJ', this.KDJ],
             ['VOL', this.VOL],['RSI', this.RSI],['BRAR', this.BRAR],
@@ -156,6 +156,23 @@ LB:BOLL-2*STD(CLOSE,M);'
     return data;
 }
 
+JSIndexScript.prototype.BOLL2=function()
+{
+    let data=
+    {
+        Name:'BOLL2', Description:'布林线', IsMainIndex:false, KLineType:0,
+        Args:[ { Name:'M', Value:20} ],
+        Script: //脚本
+'BOLL:MA(CLOSE,M);\n\
+UB:BOLL+2*STD(CLOSE,M);\n\
+LB:BOLL-2*STD(CLOSE,M);'
+
+    };
+
+    return data;
+}
+
+
 JSIndexScript.prototype.BBI=function()
 {
     let data=
@@ -169,6 +186,7 @@ JSIndexScript.prototype.BBI=function()
 
     return data;
 }
+
 
 JSIndexScript.prototype.DKX=function()
 {

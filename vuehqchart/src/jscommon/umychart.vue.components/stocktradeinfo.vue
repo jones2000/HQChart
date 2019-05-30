@@ -1039,10 +1039,15 @@ export default {
                 barStyle.backgroundColor = '#f00';
             }else if(color == 'PriceDown'){
                 barStyle.backgroundColor = '#0f0';
+            }else{
+                barStyle.backgroundColor = '#ccc';
             }
             
             dealPriceObj.WidthRate = item.Vol / maxVol;
             barStyle.width = barWidth * dealPriceObj.WidthRate + 'px';
+            if(barWidth * dealPriceObj.WidthRate < 1){
+                barStyle.width = '1px';
+            }
 
             dealPriceObj.Bar = barStyle;
             data.push(dealPriceObj);

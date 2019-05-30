@@ -20,10 +20,7 @@
                         <td>{{item.Vol}}</td>
                         <td>{{item.Proportion}}</td>
                         <th>
-                            <div class="chart">
-                                <div
-                                :style="{width: item.widthItem + '%', background: item.ColorDeal,height: item.heightItem + 'px',}"
-                                ></div>
+                            <div class="chart" :style='{width:item.widthItem}'><span :style='item.BuyVol'></span><span :style='item.NoneVol'></span><span :style='item.SellVol'></span>
                             </div>
                         </th>
                     </tr>
@@ -45,25 +42,27 @@
 
 <script>
     import JSCommonStock from "../umychart.vue/umychart.stock.vue.js";
+    import StringFormat from '../umychart.vue/stockstringformat.js'
 
     export default {
     name: "Stockdealcount",
     data() {
         return {
-        Symbol: "600000.sh", //板块代码
-        DealData: null, //数据类
-        PriceList: [],
-        ProportionList: [], //占比数组
-        Date: "20180508",
-        IsShow: {
-            HiddenDealcount: true
-        },
-        Pagination: {
-            CurrentPage: 0,
-            PageSize: 0,
-            Total: 0
-        },
-        DataList: []
+            Symbol: "600000.sh", //板块代码
+            DealData: null, //数据类
+            PriceList: [],
+            ProportionList: [], //占比数组
+            Date: "20180508",
+            IsShow: {
+                HiddenDealcount: true
+            },
+            Pagination: {
+                CurrentPage: 0,
+                PageSize: 0,
+                Total: 0
+            },
+            DataList: [],
+            ProportionTotalWidth:1,
         };
     },
     props: {
@@ -92,21 +91,15 @@
 
     methods: {
         GetDealCountData() {
-        this.DealData = JSCommonStock.JSStock.GetDealDay(this.Symbol);
-        this.DealData.Date = this.Date;
-        this.DealData.InvokeUpdateUICallback = this.GetData;
-        this.DealData.RequestData();
-        },
-
-        // 小数转换成百分数
-        ToPercent(point) {
-        let percent = Number(point * 100).toFixed(2);
-        percent += "%";
-        return percent;
+            this.DealData = JSCommonStock.JSStock.GetDealDay(this.Symbol);
+            this.DealData.Date = this.Date;
+            this.DealData.InvokeUpdateUICallback = this.GetData;
+            this.DealData.RequestData();
         },
         // 获取数据
         GetData() {
             if (this.DealData.Data) {
+                console.log('[StockDealCount::GetData]Data:',this.DealData.Data);
                 this.Pagination.CurrentPage = 1;
                 this.DataList = [];
                 this.ProportionList = [];
@@ -115,36 +108,47 @@
                 let dataList1 = this.DealData.Data.PriceList;
                 let dataList2 = this.DealData.Data.PriceList;
                 dataList1.forEach(value => {
-                this.ProportionList.push(value.Proportion);
+                    this.ProportionList.push(value.Proportion);
                 });
                 // 拿占比最大值
                 let arr = this.ProportionList;
                 arr.sort(function(a, b) {
-                return a - b;
+                    return a - b;
                 });
                 let maxProportion = arr[arr.length - 1]; //占比最大值
 
                 dataList2.forEach(value => {
-                let object = {
-                    Price: 0,
-                    Proportion: 0,
-                    Vol: 0,
-                    widthItem: 0,
-                    heightItem: 0,
-                    ColorDeal: ""
-                };
-                object.Price = value.Price.toFixed(2); //保留两位小数
-                object.Vol = value.Vol / 100; // 股转换成手
-                object.Proportion = this.ToPercent(value.Proportion);
-                object.widthItem = (value.Proportion / maxProportion) * 100; //最大占比为1，其余按比例
-                object.heightItem = 14;
-                // 判断占比图颜色
-                if (object.Price - DealData.YClose > 0) {
-                    object.ColorDeal = "#f00";
-                } else {
-                    object.ColorDeal = "#008000";
-                }
-                this.DataList.push(object);
+                    let object = {
+                        Price: 0,
+                        Proportion: 0,
+                        Vol: 0,
+                        widthItem:0,
+                        BuyVol:{Width:0,height:'14px',backgroundColor:'#f00'},
+                        SellVol:{Width:0,height:'14px',backgroundColor:'#008000'},
+                        NoneVol:{Width:0,height:'14px',backgroundColor:'#ccc'},
+                        heightItem: 0,
+                        ColorDeal: ""
+                    };
+                    object.Price = StringFormat.StockStringFormat.FormatValueString(value.Price,2); //保留两位小数
+                    object.Vol = value.Vol / 100; // 股转换成手
+                    object.Proportion = StringFormat.StockStringFormat.FormatValueString(value.Proportion * 100,2)+'%';
+                    // var totalWidth = 200;
+                    object.widthItem = StringFormat.StockStringFormat.FormatValueString(value.Proportion / maxProportion * 100,2)+'%'; //最大占比为1，其余按比例
+                    object.heightItem = 14;
+                    var buyVol = value.BuyVol;
+                    var sellVol = value.SellVol;
+                    var noneVol = value.NoneVol;
+                    var totalVol = value.Vol;
+                    object.BuyVol.width = StringFormat.StockStringFormat.FormatValueString(buyVol / totalVol * 100,2)+'%';
+                    object.SellVol.width = StringFormat.StockStringFormat.FormatValueString(sellVol / totalVol * 100,2)+'%';
+                    object.NoneVol.width = StringFormat.StockStringFormat.FormatValueString(noneVol / totalVol * 100,2)+'%';
+                    // 判断占比图颜色
+                    if (object.Price - DealData.YClose > 0) {
+                        object.ColorDeal = "#f00";
+                    } else {
+                        object.ColorDeal = "#008000";
+                    }
+                    this.DataList.push(object);
                 });
                 this.PriceList = this.DataList.slice(0, this.Pagination.PageSize);
                 this.Pagination.Total = this.DataList.length;
@@ -232,11 +236,14 @@
         padding-left: 3%;
         text-align: left;
       }
-
       .chart {
         padding-top: 8px;
         background: #fafbfd;
         // padding: 4px auto;
+        white-space: nowrap;
+        span{
+            display: inline-block;
+        }
       }
     }
   }

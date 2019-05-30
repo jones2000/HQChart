@@ -35,7 +35,7 @@ function JSIndexScript()
 {
     this.DataMap=new Map(
         [
-            ['MA', this.MA],['均线', this.MA],['BOLL', this.BOLL],['BBI', this.BBI],
+            ['MA', this.MA],['均线', this.MA],['BOLL', this.BOLL],['BOLL副图', this.BOLL2],['BBI', this.BBI],
             ['DKX', this.DKX],['MIKE', this.MIKE],['PBX', this.PBX],
             ['ENE', this.ENE],['MACD', this.MACD],['KDJ', this.KDJ],
             ['VOL', this.VOL],['RSI', this.RSI],['BRAR', this.BRAR],
@@ -156,6 +156,23 @@ LB:BOLL-2*STD(CLOSE,M);'
     return data;
 }
 
+JSIndexScript.prototype.BOLL2=function()
+{
+    let data=
+    {
+        Name:'BOLL2', Description:'布林线', IsMainIndex:false, KLineType:0,
+        Args:[ { Name:'M', Value:20} ],
+        Script: //脚本
+'BOLL:MA(CLOSE,M);\n\
+UB:BOLL+2*STD(CLOSE,M);\n\
+LB:BOLL-2*STD(CLOSE,M);'
+
+    };
+
+    return data;
+}
+
+
 JSIndexScript.prototype.BBI=function()
 {
     let data=
@@ -169,6 +186,7 @@ JSIndexScript.prototype.BBI=function()
 
     return data;
 }
+
 
 JSIndexScript.prototype.DKX=function()
 {
@@ -3324,10 +3342,10 @@ function JSChart(divElement)
             }
         }
 
-        if (option.IsShowCorssCursorInfo==false)    //取消显示十字光标刻度信息
-        {
-            chart.ChartCorssCursor.IsShowText=option.IsShowCorssCursorInfo;
-        }
+         //取消显示十字光标刻度信息
+        if (option.IsShowCorssCursorInfo==false) chart.ChartCorssCursor.IsShowText=option.IsShowCorssCursorInfo;
+        if (option.IsCorssOnlyDrawKLine===true) chart.ChartCorssCursor.IsOnlyDrawKLine=option.IsCorssOnlyDrawKLine;
+        if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
 
         if (option.Frame)
         {
@@ -3589,6 +3607,8 @@ function JSChart(divElement)
         {
             if (option.MinuteLine.IsDrawAreaPrice==false) chart.ChartPaint[0].IsDrawArea=false;
         }
+
+        if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
 
         //分钟数据指标从第3个指标窗口设置
         let scriptData = new JSIndexScript();
@@ -4184,6 +4204,7 @@ function JSChartContainer(uielement)
     this.CursorIndex=0;             //十字光标X轴索引
     this.LastPoint=new Point();     //鼠标位置
     this.IsForceLandscape=false;    //是否强制横屏
+    this.CorssCursorTouchEnd = false;   //手离开屏幕自动隐藏十字光标
 
     //tooltip提示信息
     this.Tooltip=document.createElement("div");
@@ -4756,6 +4777,7 @@ function JSChartContainer(uielement)
             if (this.ChartCorssCursor)
             {
                 this.ChartCorssCursor.LastPoint=this.LastPoint;
+                this.ChartCorssCursor.CursorIndex=this.CursorIndex;
                 this.ChartCorssCursor.Draw();
             }
         }
@@ -4824,7 +4846,9 @@ function JSChartContainer(uielement)
         if (this.ChartCorssCursor)
         {
             this.ChartCorssCursor.LastPoint=this.LastPoint;
-            this.ChartCorssCursor.Draw();
+            this.ChartCorssCursor.CursorIndex=this.CursorIndex;
+            if ( !(this.IsOnTouch===false && this.CorssCursorTouchEnd===true))
+                this.ChartCorssCursor.Draw();
         }
 
         for(var i in this.TitlePaint)
@@ -14209,6 +14233,8 @@ function ChartCorssCursor()
     this.TextBGColor=g_JSChartResource.CorssCursorBGColor;      //文本背景色
     this.TextHeight=20;                                         //文本字体高度
     this.LastPoint;
+    this.CursorIndex;
+    this.IsOnlyDrawKLine=false;                                 //是否只能画在K线上 (手机端)
 
     this.PointX;
     this.PointY;
@@ -14248,6 +14274,9 @@ function ChartCorssCursor()
         var bottom=this.Frame.ChartBorder.GetBottom();
         var rightWidth=this.Frame.ChartBorder.Right;
         var chartRight=this.Frame.ChartBorder.GetChartWidth();
+
+        if (this.IsOnlyDrawKLine)   //手机端 十字只能画在K线上
+            x=this.Frame.GetXFromIndex(this.CursorIndex);
 
         this.PointY=[[left,y],[right,y]];
         this.PointX=[[x,top],[x,bottom]];
@@ -14380,6 +14409,9 @@ function ChartCorssCursor()
     {
         var x=this.LastPoint.X;
         var y=this.LastPoint.Y;
+
+        if (this.IsOnlyDrawKLine)   //手机端 十字只能画在K线上
+            y=this.Frame.GetXFromIndex(this.CursorIndex);
 
         var left=this.Frame.ChartBorder.GetLeft();
         var right=this.Frame.ChartBorder.GetRightEx();
@@ -20509,6 +20541,12 @@ function KLineChartContainer(uielement)
 
     this.OnTouchFinished=function()
     {
+        if (this.CorssCursorTouchEnd===true)    //手势离开十字光标消失
+        {
+            this.DrawDynamicInfo();
+            return;
+        }
+
         for(var i in this.ExtendChartPaint)
         {
             var item=this.ExtendChartPaint[i];
@@ -21685,6 +21723,7 @@ function MinuteChartContainer(uielement)
         if(!this.JSChartContainer) return;
         if(this.JSChartContainer.DragMode==0) return;
 
+        this.JSChartContainer.IsOnTouch=true;
         this.JSChartContainer.PhonePinch=null;
 
         e.preventDefault();
@@ -21737,6 +21776,9 @@ function MinuteChartContainer(uielement)
 
         uielement.ontouchend=function(e)
         {
+            console.log('[MinuteChartContainer::uielement.ontouchend]',e);
+            this.JSChartContainer.IsOnTouch = false;
+            this.JSChartContainer.OnTouchFinished();
             clearTimeout(timeout);
         }
 
@@ -22566,6 +22608,26 @@ function MinuteChartContainer(uielement)
         }
 
         return aryIndex;
+    }
+
+    this.OnTouchFinished=function()
+    {
+        if (this.CorssCursorTouchEnd===true)    //手势离开十字光标消失
+        {
+            this.DrawDynamicInfo();
+            return;
+        }
+
+        /* 以后放日线的tooltip
+        for(var i in this.ExtendChartPaint)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.ClassName==='KLineTooltipPaint')
+            {
+                this.DrawDynamicInfo();
+            }
+        }
+        */
     }
 }
 
@@ -28861,6 +28923,12 @@ var MARKET_SUFFIX_NAME=
     CFFEX: '.CFE',       //中期所 (China Financial Futures Exchange)
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
+    USA:'.USA',          //美股
+
+    IsUSA:function(upperSymbol) //是否是美股
+    {
+        return upperSymbol.indexOf(this.USA) > 0;
+    },
 
     IsSH: function (upperSymbol)
     {
@@ -29021,14 +29089,19 @@ function MinuteTimeStringData()
         return this.CreateTimeData(TIME_SPLIT);
     }
 
-    this.CreateUSAData=function()
+    this.CreateUSAData=function(isSummer)
     {
         //美国夏令时
-        const TIME_SUMMER_SPLIT =
-            [
-                { Start: 2130, End: 2359 },
-                { Start: 0, End: 400 }
-            ];
+        if (isSummer)
+        {
+            const TIME_SUMMER_SPLIT =
+                [
+                    { Start: 2130, End: 2359 },
+                    { Start: 0, End: 400 }
+                ];
+
+            return this.CreateTimeData(TIME_SUMMER_SPLIT); 
+        }
             
         //非夏令时
         const TIME_SPLIT =
@@ -29036,7 +29109,7 @@ function MinuteTimeStringData()
                 { Start: 2230, End: 2359 },
                 { Start: 0, End: 500 }
             ];
-
+        
         return this.CreateTimeData(TIME_SPLIT); 
     }
 
@@ -29062,6 +29135,7 @@ function MinuteTimeStringData()
         var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
         if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) return this.GetSHSZ();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK();
+        if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
         if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
         {
             var splitData = g_FuturesTimeData.GetSplitData(upperSymbol);
@@ -37681,7 +37755,7 @@ function ScriptIndex(name,script,args,option)
     {
         if (option.FloatPrecision>=0) this.FloatPrecision=option.FloatPrecision;
         if (option.ID) this.ID=option.ID;
-        if (option.KLineType) this.KLineType=option.KLineType;
+        if (option.KLineType>=0) this.KLineType=option.KLineType;
         if (option.InstructionType) this.InstructionType=option.InstructionType;
         if (option.YSpecificMaxMin) this.YSpecificMaxMin=option.YSpecificMaxMin;
         if (option.YSplitScale) this.YSplitScale=option.YSplitScale;

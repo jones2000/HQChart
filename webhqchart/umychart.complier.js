@@ -8035,7 +8035,7 @@ function ScriptIndex(name,script,args,option)
     {
         if (option.FloatPrecision>=0) this.FloatPrecision=option.FloatPrecision;
         if (option.ID) this.ID=option.ID;
-        if (option.KLineType) this.KLineType=option.KLineType;
+        if (option.KLineType>=0) this.KLineType=option.KLineType;
         if (option.InstructionType) this.InstructionType=option.InstructionType;
         if (option.YSpecificMaxMin) this.YSpecificMaxMin=option.YSpecificMaxMin;
         if (option.YSplitScale) this.YSplitScale=option.YSplitScale;

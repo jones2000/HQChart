@@ -1567,7 +1567,8 @@ function JSChartContainer(uielement)
             {
                 this.ChartCorssCursor.LastPoint=this.LastPoint;
                 this.ChartCorssCursor.CursorIndex=this.CursorIndex;
-                this.ChartCorssCursor.Draw();
+                //移动端 拖拽数据的时候 不显示十字光标
+                if (!(this.CorssCursorTouchEnd===true && this.MouseDrag)) this.ChartCorssCursor.Draw();
             }
         }
 
@@ -12289,9 +12290,11 @@ function DynamicChartTitlePainting()
             {
                 var index=Math.abs(this.CursorIndex-0.5);
                 index=parseInt(index.toFixed(0));
-                if (item.Data.DataOffset+index>=item.Data.Data.length) continue;
+                var dataIndex=item.Data.DataOffset+index;
+                if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
+                if (dataIndex<0) continue;
 
-                value=item.Data.Data[item.Data.DataOffset+index];
+                value=item.Data.Data[dataIndex];
                 if (value==null) continue;
 
                 if (item.DataType=="HistoryData-Vol")
@@ -16403,7 +16406,8 @@ function KLineChartContainer(uielement)
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
 
         this.CursorIndex=showCount;
-        if (this.CursorIndex+dataOffset>=hisData.Data.length) this.CursorIndex=dataOffset;
+        if (this.CursorIndex+dataOffset>=hisData.Data.length) this.CursorIndex=hisData.Data.length-1-dataOffset;
+        if (this.CursorIndex<0) this.CursorIndex=0; //不一定对啊
 
         if (this.CustomShow) //定制显示 1次有效
         {

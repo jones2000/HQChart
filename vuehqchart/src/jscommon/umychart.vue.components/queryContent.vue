@@ -273,6 +273,7 @@ export default {
     this.$refs.tableContent.style.display = "block";
     this.$refs.charWrap.style.display = "none";
     this.$refs.divdealcount.style.display = "none";
+    this.$refs.divdayline.style.display = "none";
     this.IsShow.DealDetail = true;
   },
   methods: {
@@ -465,13 +466,13 @@ export default {
       }
     },
     ChangeStartTime(val){
+        console.log('开始日期，model',this.PickerStartDate);
         this.StartDate = parseInt(val);
     },
     ChangeEndTime(val){
         this.EndDate = parseInt(val);
     },
     searchSymbol(symbol) {
-      console.log("这是搜索的股票代码", symbol);
       this.OptionData.Symbol = symbol;
       //   this.ContentTopData.Symbol = symbol;
       var stockChart = this.$refs.stockChart;

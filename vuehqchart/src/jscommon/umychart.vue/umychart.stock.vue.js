@@ -1047,6 +1047,11 @@ JSStock.GetDealPriceListData=function(symbol)
     return new DealPriceListData(symbol);
 }
 
+JSStock.GetLatestDetailData=function(symbol)
+{
+    return new LatestDetailData(symbol);
+}
+
 
 var RECV_DATA_TYPE=
 {
@@ -1083,7 +1088,8 @@ var RECV_DATA_TYPE=
     EVENT_DATA:106,          //事件 属性数据
     IMAGE_MINUTE_DATA:107,   //走势图图片
     HISTORY_DAY_DATA:108,    //历史日线收盘数据
-    DEAL_PRICE_LIST_DATA:109      //分价表数据
+    DEAL_PRICE_LIST_DATA:109,      //分价表数据
+    LATEST_DETAIL_DATA:110        //最新分笔数据
 }
 
 function JSStock()
@@ -2248,7 +2254,7 @@ function ShortTerm(symbol)
     }
 }
 
-//每天的分笔数据 
+//每天历史的分笔数据 
 function DealDay(symbol)
 {
     this.newMethod = IStockData;   //派生
@@ -2676,6 +2682,117 @@ function DealPriceListData(symbol)
 
     this.RecvError = function (request, dataType) {
 
+    }
+}
+
+//最新分笔数据
+function LatestDetailData(symbol)
+{
+    this.newMethod = IStockData;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.IsAutoUpdate = false;
+    this.Symbol = symbol;   //单个股票
+    this.PageSize=20;
+
+
+    this.Request=function(pageIndex, pageSize)
+    {
+        this.Error=null;
+        var self = this;
+        var start=pageIndex*pageSize;
+        var end=start+pageSize;
+        var apiUrl=g_JSStockResource.Domain + "/API/StockDetail";
+        console.log(`[LatestDetailData::RequestData] url=${apiUrl}, start=${start} , end=${end}`);
+
+        $.ajax({
+            url: apiUrl,
+            data: {
+                "symbol": this.Symbol,
+                "start": start,
+                "end": end
+            },
+            type:"post",
+            dataType: 'json',
+            async:true,
+            success: function (data) 
+            {
+                self.RecvData(data, RECV_DATA_TYPE.LATEST_DETAIL_DATA);
+            },
+            error: function (request) 
+            {
+                self.RecvError(request, RECV_DATA_TYPE.LATEST_DETAIL_DATA);
+            }
+        });
+    }
+
+    this.RequestData = function ()  //第1次请求
+    {
+        this.Data={ Deal:[], Count:0 , Reqeust: { PageIndex:0 }, Response: {} };
+        this.Request(0,this.PageSize)
+    }
+
+    this.RequestPage=function(pageIndex)
+    {
+        if (!this.Data) this.Data={ Deal:[], Count:0 };
+        this.Data.Reqeust= { PageIndex:pageIndex };
+        this.Data.Response={};
+
+        var start=pageIndex*this.PageSize;
+        var end=start+this.PageSize;
+        //检测内存里是否已经有了
+        var bCache=true;
+        for(var i=start;i<end;++i)
+        {
+            if (!this.Data.Deal[i]) 
+            {
+                bCache=false;
+                break;
+            }
+        }
+
+        if (bCache)
+        {
+            this.Data.Response={ Start:start, End:end };
+            this.InvokeUpdateUICallback();
+        }
+        else
+        {
+            this.Request(pageIndex,this.PageSize);
+        }
+    }
+
+    this.RecvData = function (data, dataType) 
+    {
+        this.Data.Count=data.count;
+        if (!data.detail) 
+        {
+            this.InvokeUpdateUICallback();
+            return;
+        }
+
+        var start=data.start;
+        for(var i=0, index=start;i<data.detail.length;++i,++index)
+        {
+            var item=data.detail[i];
+            var detailItem={ Time:item[0], Price:item[1], Vol:item[2], Amount:item[3] , Flag:''};
+            if (item[4]===0) detailItem.Flag='B';
+            else if (item[4]===1)detailItem.Flag='S';
+
+            this.Data.Deal[index]=detailItem;
+        }
+
+        this.Data.Response={ Start:data.start, End:data.end };
+        this.InvokeUpdateUICallback();
+    }
+
+    this.RecvError = function (request, dataType) 
+    {
+        console.log(`[LatestDetailData::RecvError] status=${request.status} statusText=${request.statusText} responseText=${request.responseText}`);
+
+        this.Error={Status:request.status, Message:request.responseText };
+        this.InvokeUpdateUICallback();
     }
 }
 /*外部导入*/ 
