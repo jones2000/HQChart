@@ -89,6 +89,13 @@
                     :picker-options="pickerOptions2"
                 ></el-date-picker>
             </div>
+            <span>频率：
+                <select v-model='DateType'>
+                    <option value="0">日度</option>
+                    <option value="1">周度</option>
+                    <option value="2">月度</option>
+                </select>
+            </span>
             <button type='button' @click='DownloadCsv'>下载csv文件</button>
       </div>
     </div>
@@ -117,7 +124,7 @@
       ></StockDealCount>
     </div>
     <div class="divdayline" ref='divdayline'>
-        <HistoryDayLine ref='historydayline' :DefaultSymbol='OptionData.Symbol' :DefaultStartDate='StartDate' :DefaultEndDate='EndDate'></HistoryDayLine>
+        <HistoryDayLine ref='historydayline' :DefaultSymbol='OptionData.Symbol' :DefaultStartDate='StartDate' :DefaultEndDate='EndDate' :DefaultDateType='DateType'></HistoryDayLine>
     </div>
   </div>
 </template>
@@ -230,7 +237,8 @@ export default {
       StartDate:20181222,
       EndDate:20190502,
       PickerStartDate:'',
-      PickerEndDate:''
+      PickerEndDate:'',
+      DateType:'0'
     };
   },
   components: { SearchSymbol, StockChart, StockDeal, StockDealCount, HistoryDayLine },
@@ -320,6 +328,7 @@ export default {
     },
     DownloadCsv(){
         var _this = this;
+        var period = parseInt(this.DateType);
         $.ajax({
             url: 'http://opensource.zealink.com/api/KLineCSV',
             type:"post",
@@ -329,7 +338,8 @@ export default {
                 "QueryDate": {
                     "StartDate": _this.StartDate,
                     "EndDate": _this.EndDate
-                }
+                },
+                "Period":period
             },
             async:true,
             success: function (data) 
@@ -402,16 +412,12 @@ export default {
       var contentTopHeight = $(".content_top").outerHeight(true);
       var pagepromptHeight = $(".pagePrompt").outerHeight(true);
       var selectOrderWrapHeight = $("#selectOrderWrap").outerHeight(true);
-      // var paginationWrap = $('#paginationWrap').outerHeight(true);
       var mainHight =
         $(window).height() -
         contentTopHeight -
         selectOrderWrapHeight -
         pagepromptHeight;
       var mainWdith = $(".divdealday").width();
-      // var tdHeight = 20;
-      // var borderHeight = 1;
-      // var everyTableCount = Math.floor(mainHight / tdHeight);
 
       $(".divdealday").height(mainHight);
       var stockdeal = this.$refs.stockdeal;
@@ -474,7 +480,6 @@ export default {
     },
     searchSymbol(symbol) {
       this.OptionData.Symbol = symbol;
-      //   this.ContentTopData.Symbol = symbol;
       var stockChart = this.$refs.stockChart;
       stockChart.ChangeSymbol(symbol);
       // this.loadingBody = true;

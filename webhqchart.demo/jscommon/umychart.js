@@ -25855,7 +25855,7 @@ function MinuteTimeStringData()
 
     this.GetUSA=function()
     {
-        if (!this.USA) this.USA=this.CreateUSAData();
+        if (!this.USA) this.USA=this.CreateUSAData(true);
         return this.USA;
     }
 
@@ -26029,6 +26029,45 @@ function MinuteCoordinateData()
             }
         };
 
+    //美股走势图时间刻度
+    const USA_MINUTE_X_COORDINATE =
+        {
+            Full:   //完整模式
+            [
+                [0, 0, "rgb(200,200,200)", "21:30"],
+                [60, 0, "RGB(200,200,200)", "22:30"],
+                [120, 1, "RGB(200,200,200)", "23:30"],
+                [210, 0, "RGB(200,200,200)", "01:00"],
+                [270, 0, "RGB(200,200,200)", "02:00"],
+                [330, 0, "RGB(200,200,200)", "03:00"],
+                [390, 0, "RGB(200,200,200)", "04:00"],
+            ],
+            Simple: //简洁模式
+            [
+                [0, 0, "rgb(200,200,200)", "21:30"],
+                [160, 1, "RGB(200,200,200)", "00:00"],
+                [270, 0, "RGB(200,200,200)", "02:00"],
+                [390, 0, "RGB(200,200,200)", "04:00"],
+            ],
+            Min:   //最小模式     
+            [
+                [0, 0, "rgb(200,200,200)", "21:30"],
+                [160, 1, "RGB(200,200,200)", "00:00"],
+                [390, 0, "RGB(200,200,200)", "04:00"],
+            ],
+
+            Count: 391,
+            MiddleCount: 211,
+
+            GetData: function (width) 
+            {
+                if (width < 200) return this.Min;
+                else if (width < 400) return this.Simple;
+
+                return this.Full;
+            }
+        };
+
     this.GetCoordinateData = function (symbol, width) 
     {
         var data = null;
@@ -26045,10 +26084,19 @@ function MinuteCoordinateData()
                 data = HK_MINUTE_X_COORDINATE;
             else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
                 return this.GetFuturesData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
+                data = this.GetUSAData(upperSymbol,width);
         }
 
         //console.log('[MiuteCoordinateData]', width);
         var result = { Count: data.Count, MiddleCount: data.MiddleCount, Data: data.GetData(width) };
+        return result;
+    }
+
+    this.GetUSAData=function(upperSymbol,width)
+    {
+        var result=USA_MINUTE_X_COORDINATE;
+
         return result;
     }
 

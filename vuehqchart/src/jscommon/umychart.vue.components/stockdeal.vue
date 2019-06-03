@@ -325,6 +325,9 @@ export default {
           padding: 0 10px;
           line-height: 20px;
         }
+        tr>td:last-child,tr>th:last-child{
+            padding-left: 0;
+        }
         .alignRight {
           text-align: right;
         }

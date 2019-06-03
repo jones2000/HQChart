@@ -4778,7 +4778,8 @@ function JSChartContainer(uielement)
             {
                 this.ChartCorssCursor.LastPoint=this.LastPoint;
                 this.ChartCorssCursor.CursorIndex=this.CursorIndex;
-                this.ChartCorssCursor.Draw();
+                //移动端 拖拽数据的时候 不显示十字光标
+                if (!(this.CorssCursorTouchEnd===true && this.MouseDrag)) this.ChartCorssCursor.Draw();
             }
         }
 
@@ -15500,9 +15501,11 @@ function DynamicChartTitlePainting()
             {
                 var index=Math.abs(this.CursorIndex-0.5);
                 index=parseInt(index.toFixed(0));
-                if (item.Data.DataOffset+index>=item.Data.Data.length) continue;
+                var dataIndex=item.Data.DataOffset+index;
+                if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
+                if (dataIndex<0) continue;
 
-                value=item.Data.Data[item.Data.DataOffset+index];
+                value=item.Data.Data[dataIndex];
                 if (value==null) continue;
 
                 if (item.DataType=="HistoryData-Vol")
@@ -19614,7 +19617,8 @@ function KLineChartContainer(uielement)
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
 
         this.CursorIndex=showCount;
-        if (this.CursorIndex+dataOffset>=hisData.Data.length) this.CursorIndex=dataOffset;
+        if (this.CursorIndex+dataOffset>=hisData.Data.length) this.CursorIndex=hisData.Data.length-1-dataOffset;
+        if (this.CursorIndex<0) this.CursorIndex=0; //不一定对啊
 
         if (this.CustomShow) //定制显示 1次有效
         {
@@ -29062,7 +29066,7 @@ function MinuteTimeStringData()
 
     this.GetUSA=function()
     {
-        if (!this.USA) this.USA=this.CreateUSAData();
+        if (!this.USA) this.USA=this.CreateUSAData(true);
         return this.USA;
     }
 
@@ -29236,6 +29240,45 @@ function MinuteCoordinateData()
             }
         };
 
+    //美股走势图时间刻度
+    const USA_MINUTE_X_COORDINATE =
+        {
+            Full:   //完整模式
+            [
+                [0, 0, "rgb(200,200,200)", "21:30"],
+                [60, 0, "RGB(200,200,200)", "22:30"],
+                [120, 1, "RGB(200,200,200)", "23:30"],
+                [210, 0, "RGB(200,200,200)", "01:00"],
+                [270, 0, "RGB(200,200,200)", "02:00"],
+                [330, 0, "RGB(200,200,200)", "03:00"],
+                [390, 0, "RGB(200,200,200)", "04:00"],
+            ],
+            Simple: //简洁模式
+            [
+                [0, 0, "rgb(200,200,200)", "21:30"],
+                [160, 1, "RGB(200,200,200)", "00:00"],
+                [270, 0, "RGB(200,200,200)", "02:00"],
+                [390, 0, "RGB(200,200,200)", "04:00"],
+            ],
+            Min:   //最小模式     
+            [
+                [0, 0, "rgb(200,200,200)", "21:30"],
+                [160, 1, "RGB(200,200,200)", "00:00"],
+                [390, 0, "RGB(200,200,200)", "04:00"],
+            ],
+
+            Count: 391,
+            MiddleCount: 211,
+
+            GetData: function (width) 
+            {
+                if (width < 200) return this.Min;
+                else if (width < 400) return this.Simple;
+
+                return this.Full;
+            }
+        };
+
     this.GetCoordinateData = function (symbol, width) 
     {
         var data = null;
@@ -29252,10 +29295,19 @@ function MinuteCoordinateData()
                 data = HK_MINUTE_X_COORDINATE;
             else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
                 return this.GetFuturesData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
+                data = this.GetUSAData(upperSymbol,width);
         }
 
         //console.log('[MiuteCoordinateData]', width);
         var result = { Count: data.Count, MiddleCount: data.MiddleCount, Data: data.GetData(width) };
+        return result;
+    }
+
+    this.GetUSAData=function(upperSymbol,width)
+    {
+        var result=USA_MINUTE_X_COORDINATE;
+
         return result;
     }
 
@@ -30416,6 +30468,7 @@ function Node()
     this.IsNeedNewsAnalysisData=new Set();      //新闻统计数据
     this.IsNeedBlockIncreaseData=new Set();     //是否需要市场涨跌股票数据统计
     this.IsNeedSymbolExData=new Set();          //下载股票行情的其他数据
+    this.IsNeedHK2SHSZData=new Set();           //下载北上资金数据
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -30441,6 +30494,12 @@ function Node()
 
         //加载融资融券
         for(var jobID of this.IsNeedMarginData)
+        {
+            jobs.push({ID:jobID});
+        }
+
+        //加载北上资金
+        for(var jobID of this.IsNeedHK2SHSZData)
         {
             jobs.push({ID:jobID});
         }
@@ -30523,6 +30582,13 @@ function Node()
         {
             let jobID=JS_EXECUTE_JOB_ID.GetNewsAnalysisID(args[0].Value);
             if (jobID && !this.IsNeedNewsAnalysisData.has(jobID))  this.IsNeedNewsAnalysisData.add(jobID);
+            return;
+        }
+
+        if (callee.Name==='HK2SHSZ')    //北上资金
+        {
+            let jobID=JS_EXECUTE_JOB_ID.GetHK2SHSZJobID(args[0].Value);
+            if (jobID && !this.IsNeedHK2SHSZData.has(jobID)) this.IsNeedHK2SHSZData.add(jobID);
             return;
         }
 
@@ -35194,7 +35260,8 @@ function JSSymbolData(ast,option,jsExecute)
     this.RealtimeApiUrl= g_JSComplierResource.Domain+'/API/stock';                 //实时行情
     this.StockHistoryDayApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay';  //历史财务数据
     this.StockHistoryDay3ApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay3';  //历史财务数据
-    this.StockNewsAnalysisApiUrl= g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                 //新闻分析数据
+    this.StockNewsAnalysisApiUrl= g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                //新闻分析数据
+    this.HKToSHSZApiUrl=g_JSComplierResource.CacheDomain+'/cache/historyday/all/hk2shsz.json';          //北上资金
     this.MaxReqeustDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
 
@@ -35202,6 +35269,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.IndexData;             //大盘指数
     this.FinanceData=new Map(); //财务数据
     this.MarginData=new Map();  //融资融券
+    this.HKToSHSZData=new Map();    //北上资金
     this.NewsAnalysisData=new Map();    //新闻统计
     this.ExtendData=new Map();          //其他的扩展数据
     
@@ -36176,61 +36244,61 @@ function JSSymbolData(ast,option,jsExecute)
         return [];
     }
 
-     //下融资融券
-     this.GetMarginData=function(jobID)
-     {
-         if (this.MarginData.has(jobID)) return this.Execute.RunNextJob();
- 
-         console.log('[JSSymbolData::GetMarginData] jobID=', jobID);
-         var self=this;
-         let fieldList=["name","date","symbol"];
-         
-         switch(jobID)
-         {
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE:           //融资融券余额
-                fieldList.push("margin.balance");
-                break;
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE:              //融资占比
-                fieldList.push("margin.rate");
-                break;
-        
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE:       //买入信息-融资余额
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT:        //买入信息-买入额
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY:         //买入信息-偿还额
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET:           //买入信息-融资净买入
-                fieldList.push("margin.buy");
-                break;
-        
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE:      //卖出信息-融券余量
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME:       //卖出信息-卖出量
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY:        //卖出信息-偿还量
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET:          //卖出信息-融券净卖出
-                fieldList.push("margin.sell");
-                break;
-         }
- 
-          //请求数据
-          $.ajax({
-             url: this.StockHistoryDayApiUrl,
-             data:
-             {
-                 "field": fieldList,
-                 "symbol": [this.Symbol],
-                 "orderfield":"date"
-             },
-             type:"post",
-             dataType: "json",
-             async:true,
-             success: function (recvData)
-             {
-                 self.RecvMarginData(recvData,jobID);
-                 self.Execute.RunNextJob();
-             }
-         });
-     }
+    //下融资融券
+    this.GetMarginData=function(jobID)
+    {
+        if (this.MarginData.has(jobID)) return this.Execute.RunNextJob();
 
-     this.RecvMarginData=function(data,jobID)
-     {
+        console.log('[JSSymbolData::GetMarginData] jobID=', jobID);
+        var self=this;
+        let fieldList=["name","date","symbol"];
+        
+        switch(jobID)
+        {
+        case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE:           //融资融券余额
+            fieldList.push("margin.balance");
+            break;
+        case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE:              //融资占比
+            fieldList.push("margin.rate");
+            break;
+    
+        case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE:       //买入信息-融资余额
+        case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT:        //买入信息-买入额
+        case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY:         //买入信息-偿还额
+        case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET:           //买入信息-融资净买入
+            fieldList.push("margin.buy");
+            break;
+    
+        case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE:      //卖出信息-融券余量
+        case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME:       //卖出信息-卖出量
+        case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY:        //卖出信息-偿还量
+        case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET:          //卖出信息-融券净卖出
+            fieldList.push("margin.sell");
+            break;
+        }
+
+        //请求数据
+        $.ajax({
+            url: this.StockHistoryDayApiUrl,
+            data:
+            {
+                "field": fieldList,
+                "symbol": [this.Symbol],
+                "orderfield":"date"
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (recvData)
+            {
+                self.RecvMarginData(recvData,jobID);
+                self.Execute.RunNextJob();
+            }
+        });
+    }
+
+    this.RecvMarginData=function(data,jobID)
+    {
         console.log(data);
         if (!data.stock || data.stock.length!=1) return;
 
@@ -36351,7 +36419,7 @@ function JSSymbolData(ast,option,jsExecute)
             let data=bindData.GetValue();
             this.MarginData.set(allData[i].JobID,data);
         }
-     }
+    }
 
     this.GetNewsAnalysisCacheData=function(id,node)
     {
@@ -36359,6 +36427,89 @@ function JSSymbolData(ast,option,jsExecute)
         let jobID=JS_EXECUTE_JOB_ID.GetNewsAnalysisID(id);
         if (!jobID) this.Execute.ThrowUnexpectedNode(node,'不支持NEWS('+id+')');
         if(this.NewsAnalysisData.has(jobID)) return this.NewsAnalysisData.get(jobID);
+
+        return [];
+    }
+
+    this.GetHKToSHSZData=function(jobID)
+    {
+        if (this.HKToSHSZData.has(jobID)) return this.Execute.RunNextJob();
+
+        console.log('[JSSymbolData::GetHKToSHSZData] jobID=', jobID);
+        var self=this;
+        //请求数据
+        $.ajax({
+            url: this.HKToSHSZApiUrl,
+            type:"get",
+            dataType: "json",
+            async:true,
+            success: function (recvData)
+            {
+                self.RecvHKToSHSZData(recvData,jobID);
+                self.Execute.RunNextJob();
+            }
+        });
+    }
+
+    this.RecvHKToSHSZData=function(data,jobID)
+    {
+        var arySHSZData=[], arySHData=[], arySZData=[];
+        for(var i=0;i<data.date.length;++i)
+        {
+            var date=data.date[i];
+            var SHValue=data.hk2sh[i]*1000000;  //单位是百万
+            var SZValue=data.hk2sz[i]*1000000;  //单位是百万
+            var total=SHValue+SZValue;
+
+            let itemSHSZData=new SingleData();
+            itemSHSZData.Date=date;
+            itemSHSZData.Value=total;
+
+            let itemSHData=new SingleData();
+            itemSHData.Date=date;
+            itemSHData.Value=SHValue;
+
+            let itemSZData=new SingleData();
+            itemSZData.Date=date;
+            itemSZData.Value=SZValue;
+
+            arySHSZData.push(itemSHSZData);
+            arySHData.push(itemSHData);
+            arySZData.push(itemSZData);
+        }
+
+        var allData=
+        [
+            {Data:arySHSZData, JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH_SZ}, 
+            {Data:arySHData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH}, 
+            {Data:arySZData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ}
+        ];
+
+        for(let i in allData)
+        {
+            let aryFixedData=this.Data.GetFittingData(allData[i].Data);
+
+            var bindData=new ChartData();
+            bindData.Data=aryFixedData;
+            bindData.Period=this.Period;    //周期
+
+            if (bindData.Period>0)          //周期数据
+            {
+                var periodData=bindData.GetPeriodSingleData(bindData.Period);
+                bindData.Data=periodData;
+            }
+
+            let data=bindData.GetValue();
+            this.HKToSHSZData.set(allData[i].JobID,data);
+        }
+    }
+
+    //北上资金函数
+    this.GetHKToSHSZCacheData=function(id, node)
+    {
+        let jobID=JS_EXECUTE_JOB_ID.GetHK2SHSZJobID(id);
+        if (!jobID) this.Execute.ThrowUnexpectedNode(node,'不支持HK2SHSZ('+id+')');
+        if(this.HKToSHSZData.has(jobID)) return this.HKToSHSZData.get(jobID);
 
         return [];
     }
@@ -36850,6 +37001,10 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_NEWS_ANALYSIS_COMPANYNEWS:2007,          //官网新闻
     JOB_DOWNLOAD_NEWS_ANALYSIS_TOPMANAGERS:2008,          //高管要闻
     JOB_DOWNLOAD_NEWS_ANALYSIS_PLEDGE:2009,               //股权质押
+
+    JOB_DOWNLOAD_HK_TO_SH:2050,      //北上流入上证
+    JOB_DOWNLOAD_HK_TO_SZ:2051,      //北上流入深证
+    JOB_DOWNLOAD_HK_TO_SH_SZ:2052,   //北上流总的
     
 
     JOB_RUN_SCRIPT:10000, //执行脚本
@@ -36898,6 +37053,20 @@ var JS_EXECUTE_JOB_ID=
             [8,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME],       //MARGIN(8)   卖出信息-卖出量
             [9,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY],        //MARGIN(9)   卖出信息-偿还量
             [10,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET],         //MARGIN(10)  卖出信息-融券净卖出 
+        ]);
+    
+        if (dataMap.has(value)) return dataMap.get(value);
+    
+        return null;
+    },
+
+    //北上资金
+    GetHK2SHSZJobID:function(value)
+    {
+        let dataMap=new Map([
+            [1,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH_SZ],          //HK2SHSZ(1)   北上流总的
+            [2,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH],             //HK2SHSZ(2)   北上流入上证
+            [3,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ],             //HK2SHSZ(3)   北上流入深证
         ]);
     
         if (dataMap.has(value)) return dataMap.get(value);
@@ -37042,6 +37211,11 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TOPMANAGERS:          //高管要闻
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_PLEDGE:               //股权质押
                 return this.SymbolData.GetNewsAnalysisData(jobItem.ID);
+
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH_SZ:        //北上总的
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH:           //北上上证
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ:           //北上深证
+                return this.SymbolData.GetHKToSHSZData(jobItem.ID);
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
@@ -37432,6 +37606,9 @@ function JSExecute(ast,option)
                 break;
             case "MARGIN":
                 node.Out=this.SymbolData.GetMarginCacheData(args[0],node);
+                break;
+            case "HK2SHSZ":
+                node.Out=this.SymbolData.GetHKToSHSZCacheData(args[0],node);
                 break;
             case "NEWS":
                 node.Out=this.SymbolData.GetNewsAnalysisCacheData(args[0],node);

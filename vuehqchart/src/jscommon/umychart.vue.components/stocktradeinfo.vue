@@ -14,7 +14,7 @@
                 </span>
             </p>
         </div>
-        <div class="sellFive">
+        <div class="sellFive" ref='sellFive'>
             <div>
                 <p v-for="(item,index) in SellData" :key="index">
                     <span>{{item.Title}}</span>
@@ -31,7 +31,7 @@
                 </p>
             </div>
         </div>
-        <div class="buyFive">
+        <div class="buyFive" ref='buyFive'>
             <div>
                 <p v-for="(itemBuy,ind) in BuyData" :key="ind">
                     <span>{{itemBuy.Title}}</span>
@@ -65,7 +65,7 @@
                 </p>
             </div>
         </div>
-        <div class="shorttermlist" v-show="ShortTerm.IsShow">
+        <div class="shorttermlist" ref='shorttermlist' v-show="ShortTerm.IsShow">
             <div>
                 <p v-for="(item,index) in ShortTerm.Data" :key="index" :class="item.Color">{{item.Time.Text}}</p>
             </div>
@@ -76,7 +76,7 @@
                 <p v-for="(item,index) in ShortTerm.Data" :key="index" :class="item.Color">{{item.Type.Text}}</p>
             </div>
         </div>
-        <div class="capitalList" v-show='CapitalFlow.IsShow'><!-- 资金流 -->
+        <div class="capitalList" ref='capitalList' v-show='CapitalFlow.IsShow'><!-- 资金流 -->
             <p class='tabTop'>
                 <span v-for='(item,index) in CapitalFlowDayType' :key='index' :class='{active:CapitalFlowDayIndex == index}' @click='ChangeCapitalFlowDay(index)'>{{item}}</span>
             </p>
@@ -147,61 +147,18 @@ import JSCommonStock from "../umychart.vue/umychart.stock.vue.js";
 
 //默认数据输出
 class DefaultData {
-  static GetBuyData() {
-    const data = [
-      {
-        Vol: {
-          Text: ""
-        },
-        Price: {
-          Text: "",
-          Color: ""
-        },
-        Title: ""
-      },
-      {
-        Vol: {
-          Text: ""
-        },
-        Price: {
-          Text: "",
-          Color: ""
-        },
-        Title: ""
-      },
-      {
-        Vol: {
-          Text: ""
-        },
-        Price: {
-          Text: "",
-          Color: ""
-        },
-        Title: ""
-      },
-      {
-        Vol: {
-          Text: ""
-        },
-        Price: {
-          Text: "",
-          Color: ""
-        },
-        Title: ""
-      },
-      {
-        Vol: {
-          Text: ""
-        },
-        Price: {
-          Text: "",
-          Color: ""
-        },
-        Title: ""
-      }
-    ];
+    static GetBuyData() {
+        let dataAry = [];
+        for(let i = 0; i < 5; ++i){
+            var obj = {
+                Vol: {Text: ""},
+                Price: {Text: "",Color: ""},
+                Title: ""
+            };
+            dataAry.push(obj);
+        }
 
-    return data;
+        return dataAry;
   }
 
   static GetSellData() {
@@ -551,11 +508,13 @@ export default {
       for (var i in aryBuy) 
       {
         var item = aryBuy[i];
-        if (item.Price<=0) continue;  //没有价格的 为无效数据
 
         var buyItem = buyData[i];
-        buyItem.Vol.Text = item.Vol.toString();
         buyItem.Title = BuyTitle[i];
+
+        if (item.Price<=0) continue;  //没有价格的 为无效数据
+
+        buyItem.Vol.Text = item.Vol.toString();
         buyItem.Price.Text = JSCommon.IFrameSplitOperator.FormatValueString(item.Price,2);
         buyItem.Price.Color = JSCommon.IFrameSplitOperator.FormatValueColor(item.Price,yClose);
       }
@@ -564,11 +523,13 @@ export default {
       for (var i in arySell) 
       {
         var item = arySell[i];
-        if (item.Price<=0) continue;  //没有价格的 为无效数据
 
         var selItem = sellData[i];
-        selItem.Vol.Text = item.Vol.toString();
         selItem.Title = SellTitle[i];
+
+        if (item.Price<=0) continue;  //没有价格的 为无效数据
+        
+        selItem.Vol.Text = item.Vol.toString();
         selItem.Price.Text = JSCommon.IFrameSplitOperator.FormatValueString(item.Price,2);
         selItem.Price.Color = JSCommon.IFrameSplitOperator.FormatValueColor(item.Price,yClose);
       }
@@ -583,7 +544,17 @@ export default {
     },
 
     //窗口变化UI自适应调整
-    OnSize() {},
+    OnSize() {
+        var tradeinfo = this.$refs.tradeinfo;
+        var bookWrap = this.$refs.bookWrap;
+        var sellFive = this.$refs.sellFive;
+        var buyFive = this.$refs.buyFive;
+        var dealpricelist = this.$refs.dealpricelist
+        var height = tradeinfo.clientHeight;
+
+        var dealpricelistHeight = height - bookWrap.offsetHeight - sellFive.offsetHeight - buyFive.offsetHeight;
+        dealpricelist.style.height = dealpricelistHeight + 'px';
+    },
 
     RequestData: function() {
       this.JSStock.RequestData();
@@ -1288,6 +1259,7 @@ ul {
     }
   }
   .dealpricelist{
+      overflow-y: auto;
     .table{
         border-collapse: collapse;
         border-spacing: 0;
