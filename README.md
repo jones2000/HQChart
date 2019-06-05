@@ -57,6 +57,7 @@
           Day: {Count:总运行  Max:最长运行 Min:最短运行 Average:平均运行} <br>
           Profit: 总收益 StockProfit:个股收益  Excess:超额收益 MaxDropdown:最大回撤 Beta:β(Beta)系数 <br>
           NetValue: [ {Date:日期, Net:净值, Close:股票收盘价, IndexClose:大盘的收盘价}, ] <br>
+* 支持弹幕
 
 # 2. 走势图
 * 支持指标 <br>
@@ -75,6 +76,7 @@
 * 个股筹码图 https://opensource.zealink.com/hqweb/demo/phone18.html <br>
 * 指标回测(手机版) https://opensource.zealink.com/hqweb/operatebsh5/index.html?symbol=000001.sz <br>
 * K线训练 https://opensource.zealink.com/hqweb/demo/phone13.html <br>
+* 弹幕功能 https://opensource.zealink.com/hqweb/demo/phone21.html <br>
 
 # 4.使用教程
 1. 如何快速创建一个K线图页面 https://blog.csdn.net/jones2000/article/details/90272733 <br>
