@@ -1617,6 +1617,12 @@ function JSChartContainer(uielement)
             if (item.IsDynamic && item.DrawAfterTitle===true && item.IsAnimation==false) item.Draw();
         }
 
+        for(var i in this.ExtendChartPaint)    //动画
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.IsAnimation===true) item.Draw();
+        }
+
         for(var i in this.ChartDrawPicture)
         {
             var item=this.ChartDrawPicture[i];
@@ -1692,7 +1698,13 @@ function JSChartContainer(uielement)
         for(var i in this.ExtendChartPaint)    //动态扩展图形   在动态标题以后画
         {
             var item=this.ExtendChartPaint[i];
-            if (item.IsDynamic && item.DrawAfterTitle===true && item.IsAnimation==false) item.Draw();
+            if (item.IsDynamic && item.DrawAfterTitle===true) item.Draw();
+        }
+
+        for(var i in this.ExtendChartPaint)    //动画
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.IsAnimation===true) item.Draw();
         }
 
         for(var i in this.ChartDrawPicture)
@@ -1711,15 +1723,16 @@ function JSChartContainer(uielement)
     {
         if (!this.EnableAnimation) return;
 
-        if (this.Frame.ScreenImageData)
+        if (this.Frame.ScreenImageData && !this.IsOnTouch)
         {
             this.DrawDynamicInfo();
-
+            /*
             for(var i in this.ExtendChartPaint)
             {
                 var item=this.ExtendChartPaint[i];
                 if (item.IsAnimation===true) item.Draw();
             }
+            */
         }
         
         var self=this;
@@ -10494,9 +10507,9 @@ function BarragePaint()
         if (height!=this.BarrageList.Height)
             this.BarrageList.CacluatePlayLine(height);
 
-        this.Canvas.textBaseline="center";
+        this.Canvas.textBaseline="middle";
         this.Canvas.textAlign="left";
-        
+
         var play=this.BarrageList.GetPlayList({Canves:this.Canvas, Right:right, Left:left, Font:this.Font});
         if (!play) return;
 
@@ -10511,7 +10524,7 @@ function BarragePaint()
             var fontHeight=this.FontHeight;
             if (item.Font && item.Font.Height>0) fontHeight=item.Font.Height;
             yOffset=item.Y+parseInt((item.Height-fontHeight)/2);
-            
+
             this.Canvas.fillText(item.Text, right-item.X,top+yOffset);
         }
     }
