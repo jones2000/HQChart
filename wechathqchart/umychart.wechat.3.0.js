@@ -1221,6 +1221,7 @@ function JSChartContainer(uielement)
         if (self.ChartCorssCursor) 
         {
             self.ChartCorssCursor.LastPoint = self.LastPoint;
+            self.ChartCorssCursor.CursorIndex = self.CursorIndex;
             self.ChartCorssCursor.Draw();
         }
 
@@ -6907,6 +6908,7 @@ function ChartCorssCursor()
     this.TextBGColor = g_JSChartResource.CorssCursorBGColor;      //文本背景色
     this.TextHeight = 15;                     //文本字体高度
     this.LastPoint;
+    this.CursorIndex;       //当前数据的位置
 
     this.PointX;
     this.PointY;
@@ -6944,6 +6946,7 @@ function ChartCorssCursor()
         var bottom = this.Frame.ChartBorder.GetBottom();
         var rightWidth = this.Frame.ChartBorder.Right;
         var chartRight = this.Frame.ChartBorder.GetChartWidth();
+        x = this.Frame.GetXFromIndex(this.CursorIndex); //手机端 十字只能画在K线上
 
         this.PointY = [[left, y], [right, y]];
         this.PointX = [[x, top], [x, bottom]];
@@ -9919,7 +9922,8 @@ function KLineChartContainer(uielement) {
         this.ChartCorssCursor.StringFormatY.Symbol = this.Symbol;
 
         this.CursorIndex = showCount;
-        if (this.CursorIndex + dataOffset >= hisData.Data.length) this.CursorIndex = dataOffset;
+        if (this.CursorIndex + dataOffset >= hisData.Data.length) this.CursorIndex = hisData.Data.length - 1 - dataOffset;
+        if (this.CursorIndex < 0) this.CursorIndex = 0; //不一定对啊
     }
 
   //创建指定窗口指标

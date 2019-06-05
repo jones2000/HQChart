@@ -43,7 +43,8 @@
 </template>
 
 <script>
-import JSCommonStock from "../umychart.vue/umychart.stock.vue.js";
+import JSCommonStock from "../umychart.vue/umychart.stock.vue.js"
+import StringFormat from '../umychart.vue/stockstringformat.js'
 
 export default {
   name: "StockDeal",
@@ -160,7 +161,7 @@ export default {
           var color = this.FormatValueColor(item.Price, open);
           var dataObj = {
             Time: this.processingTime(item.Time),
-            Price: item.Price,
+            Price: StringFormat.StockStringFormat.FormatValueString(item.Price,2),
             PriceColor: color,
             Vol: parseInt(item.Vol),
             Flag: item.Flag,

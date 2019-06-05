@@ -20,7 +20,11 @@ export default {
     IFrameSplitOperator:IFrameSplitOperator,//格式化字符串方法
     JSKLineInfoMap:JSKLineInfoMap,
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,      //可以订阅的事件类型
+    JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,    //图形控制类型
     JSAlgorithm:JSAlgorithm,                //算法类
     JSComplier:JSComplier,                  //指标编译器
     
+    //style.js相关
+    STYLE_TYPE_ID:STYLE_TYPE_ID,
+    HQChartStyle:HQChartStyle,              //预定义全局的配色 黑
 }

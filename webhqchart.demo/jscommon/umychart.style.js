@@ -27,6 +27,7 @@ var BLACK_STYLE=
     {
       VolBarColor: "rgb(255,236,0)",
       PriceColor: "rgb(25,180,231)",
+      AreaPriceColor:"rgba(63,158,255,.3)",
       AvPriceColor: "rgb(255,236,0)",
     },
 

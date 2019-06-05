@@ -43,9 +43,18 @@
             <Stockdrawtool @CurrentIcon = "CurrentIcon" @IsShowBrushTool="isShowBrushTool" :topheight="topheight" :totalheight="totalheight"></Stockdrawtool>
         </div>   
         <!-- 走势图 和 K线图  !-->
-        <div :id='ID' ref='divchart' style="width:100%;height:100%">
+        <div class='divchart' :id='ID' ref='divchart' style="width:100%;height:100%">
             <div class='minute' id="minute" ref="minute"  v-show="Minute.IsShow"></div>
             <div class='kline' id="kline" ref='kline'  v-show="KLine.IsShow"></div>
+            <div class="bottomToolForChart"  v-show="KLine.IsShow">
+                <span ref='smallBtn' class='iconBg' :class='{iconDisabled:StatusBtn.SmallDisabled}' title='缩小' @click="OnClickKLineToolbar({ID:3})"><i class='iconfont icon-sub'></i></span>
+                <span ref='bigBtn' class='iconBg' title='放大' :class='{iconDisabled:StatusBtn.BigDisabled}' @click="OnClickKLineToolbar({ID:4})"><i class='iconfont icon-add'></i></span>
+                <span ref='leftFiveBtn' class='iconBg' title='向左移动5个数据' :class='{iconDisabled:StatusBtn.LeftDisabled}' @mouseup="OnMouseUpKLineToolbar()" @mousedown="OnMouseDownKLineToolbar({ID:1, Step:5})" ><i class='iconfont icon-menu_arraw_left'></i></span>
+                <span ref='leftBtn' class='iconBg' title='向左移动1个数据' :class='{iconDisabled:StatusBtn.LeftDisabled}' @mouseup="ClearMoveInterval({ID:1, Step:1})" @mousedown="ContinuedMoveChart({ID:1, Step:1})" ><i class='iconfont icon-left'></i></span>
+                <span ref='rightBtn' class='iconBg' title='向右移动1个数据' :class='{iconDisabled:StatusBtn.RightDisabled}' @mouseup="ClearMoveInterval({ID:2, Step:1})" @mousedown="ContinuedMoveChart({ID:2, Step:1})"><i class='iconfont icon-right'></i></span>
+                <span ref='rightFiveBtn' class='iconBg' title='向右移动5个数据' :class='{iconDisabled:StatusBtn.RightDisabled}' @mouseup="OnMouseUpKLineToolbar()" @mousedown="OnMouseDownKLineToolbar({ID:2, Step:5})"><i class='iconfont icon-menu_arraw_right'></i></span>
+                <span class='iconBg' title='返回第一页' @click="OnClickKLineToolbar({ID:5})"><i class='iconfont icon-refresh'></i></span>
+            </div>
         </div>
 
         <!-- 底部指标工具条  !-->
@@ -109,7 +118,7 @@ DefaultData.GetMinuteOption=function()
             { SplitCount: 5, StringFormat: 0 },
             { SplitCount: 3, StringFormat: 0 },
             { SplitCount: 3, StringFormat: 0 }
-        ]
+        ],
     };
 
     return option;
@@ -416,7 +425,19 @@ export default
             DrawTool:
             {
                 IsShow:false,
-            }
+            },
+
+            StatusBtn:
+            {
+                SmallDisabled:false,
+                BigDisabled:false,
+                LeftDisabled:false,
+                RightDisabled:false,
+                ResetDisabled:false,
+                StartTime:null, 
+                Timer:null  //定时器
+            },
+            MoveInterval:null
         }
 
         return data;
@@ -455,6 +476,10 @@ export default
         if (this.Minute.IsShow) this.CreateMinuteChart();
         else if (this.KLine.IsShow) this.CreateKLineChart();
 
+        if (this.KLine.JSChart){
+            this.KLine.JSChart.AddEventCallback({event:JSCommon.JSCHART_EVENT_ID.CHART_STATUS,callback:this.ChartStausCallback});
+        } 
+
         this.UpateMenuStatus();
         
         var self=this;
@@ -468,6 +493,42 @@ export default
 
     methods:
     {
+        ChartStausCallback(event,data,jSChartContainer){
+            var smallBtn = this.$refs.smallBtn;
+            var bigBtn = this.$refs.bigBtn;
+            var leftBtn = this.$refs.leftBtn;
+            var rightBtn = this.$refs.rightBtn;
+            console.log('[StockKline::ChartStausCallback]data:',data);
+            if(data.KLine){
+                var count = data.KLine.Count;
+                var offset = data.KLine.Offset;
+                var pageSize = data.KLine.PageSize;
+                if(offset == 0){
+                    this.StatusBtn.RightDisabled = true;
+                }else{
+                    this.StatusBtn.RightDisabled = false;
+                }
+                if(offset + pageSize == count){
+                    this.StatusBtn.LeftDisabled = true;
+                }else{
+                    this.StatusBtn.LeftDisabled = false;
+                }
+            }
+            if(data.Zoom){
+                var index = data.Zoom.Index;
+                var max = data.Zoom.Max;
+                if(index == 0){
+                    this.StatusBtn.BigDisabled = true;
+                }else{
+                    this.StatusBtn.BigDisabled = false;
+                }
+                if(index == max - 1){
+                    this.StatusBtn.SmallDisabled = true;
+                }else{
+                    this.StatusBtn.SmallDisabled = false;
+                }
+            }
+        },
         OnSize:function()
         {
             var stockKLine=this.$refs.stockkline;
@@ -1053,6 +1114,55 @@ export default
             console.log('[StockKLine::OnFinishDraw] finish',drawChart);
         },
 
+        OnClickKLineToolbar(obj)
+        {   
+            if (!this.KLine.IsShow && this.KLine.JSChart && this.KLine.JSChart.JSChartContainer) return;
+
+            this.KLine.JSChart.JSChartContainer.ChartOperator(obj);
+        },
+        ContinuedMoveChart(obj){
+            var _this = this;
+            this.MoveInterval = setInterval(() => {
+                _this.OnClickKLineToolbar(obj);
+            },100);
+        },
+        ClearMoveInterval(obj){
+            clearInterval(this.MoveInterval);
+            this.MoveInterval = null;
+        },
+        OnMouseDownKLineToolbar(obj)
+        {
+            this.OnClickKLineToolbar(obj);
+
+            this.StatusBtn.StartTime=new Date();
+            var self=this;
+            this.StatusBtn.Timer= setInterval(function () 
+            {
+                if (self.StatusBtn.StartTime)
+                {
+                    var endTime=new Date();
+                    var start=self.StatusBtn.StartTime.getTime();
+                    var end=endTime.getTime();
+                    if (end - start > 250) 
+                    {
+                        self.OnClickKLineToolbar(obj);
+                        self.StatusBtn.StartTime=new Date(); //重新开始计数
+                    }
+                }
+            }, 100);
+
+        },
+
+        OnMouseUpKLineToolbar()
+        {
+            this.StatusBtn.StartTime=null;
+            if (this.StatusBtn.Timer)
+            {
+                 clearInterval(this.StatusBtn.Timer);
+                 this.StatusBtn.Timer=null;
+            }
+        },
+
         isShowBrushTool( brushTool){
             this.DrawTool.IsShow = brushTool;
         },
@@ -1091,6 +1201,48 @@ a
         left:0;
         bottom: 0;
     }
+
+    .divchart{
+        position: relative;
+        .bottomToolForChart{
+            width: 50%;
+            height: 80px;
+            position: absolute;
+            bottom: 0;
+            left: 25%;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            .iconBg{
+                width: 28px;
+                height: 28px;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background-color: #929291;
+                margin-right: 10px;
+                display: inline-flex;
+                opacity: 0;
+                transition: opacity .4s;
+                i {
+                    color: #fff;
+                }
+            }
+        }
+        .bottomToolForChart:hover .iconBg{
+            opacity: 0.7;
+        }
+        .bottomToolForChart:hover .iconBg:hover{
+            opacity: 1;
+        }
+        .bottomToolForChart:hover .iconBg.iconDisabled{
+            background-color: #929291;
+            opacity: 0;
+        }
+    }
+    
 }
 
 .minute

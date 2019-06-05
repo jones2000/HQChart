@@ -64,6 +64,7 @@
                     <span>{{itemTrade.Vol.Text}}&nbsp;<span :class="itemTrade.BS.Color">{{itemTrade.BS.Text}}</span></span>
                 </p>
             </div>
+            <a href="./stockdeallastest.demo.page.html" target='_blank' class="seeMoreDeal">点击查看更多分时成交</a>
         </div>
         <div class="shorttermlist" ref='shorttermlist' v-show="ShortTerm.IsShow">
             <div>
@@ -138,6 +139,7 @@
                 </tbody>
             </table>
         </div>
+        
     </div>
 </template>
 <script>
@@ -550,10 +552,13 @@ export default {
         var sellFive = this.$refs.sellFive;
         var buyFive = this.$refs.buyFive;
         var dealpricelist = this.$refs.dealpricelist
+        var detailList = this.$refs.detailList;
         var height = tradeinfo.clientHeight;
 
         var dealpricelistHeight = height - bookWrap.offsetHeight - sellFive.offsetHeight - buyFive.offsetHeight;
         dealpricelist.style.height = dealpricelistHeight + 'px';
+        detailList.style.height = (height - 67 - 24* 10 - 3) + 'px';
+        
     },
 
     RequestData: function() {
@@ -1079,6 +1084,7 @@ ul {
   border: $border;
   width: 100%;
   height: 100%;
+  position: relative;
 
   .firstLine {
     width: 100%;
@@ -1129,6 +1135,25 @@ ul {
   .detailList,
   .shorttermlist {
     border-bottom: none;
+  }
+  .detailList{
+      position: relative;
+      width: 100%;
+      overflow-y: hidden;
+      .seeMoreDeal{
+        text-decoration: none;
+        color: #317ef3;
+        opacity: 0.7;
+        position: absolute;
+        right: 10px;
+        bottom: 5px;
+        display: inline-block;
+        padding: 2px 3px;
+        background-color: #fff;
+      }
+      .seeMoreDeal:hover{
+        opacity: 1;
+      }
   }
   .capitalList {
     .tabTop {
@@ -1282,5 +1307,6 @@ ul {
         }
     }  
   }
+  
 }
 </style>

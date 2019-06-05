@@ -3026,6 +3026,9 @@ function LatestDetailData(symbol)
             return;
         }
 
+        this.Data.Day={ YClose:data.yclose, Open:data.open, Close:data.price, Date:data.date };
+        this.Data.Stock={ Symbol:data.symbol, Name:data.name };
+
         var start=data.start;
         for(var i=0, index=start;i<data.detail.length;++i,++index)
         {

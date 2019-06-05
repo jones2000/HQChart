@@ -4175,8 +4175,17 @@ var JSCHART_EVENT_ID=
     RECV_INDEX_DATA:2,  //接收指标数据
     RECV_HISTROY_DATA:3,//接收到历史数据
     RECV_TRAIN_MOVE_STEP:4, //接收K线训练,移动一次K线
+    CHART_STATUS:5,          //每次Draw() 以后会调用
 }
 
+var JSCHART_OPERATOR_ID=
+{
+    OP_SCROLL_LEFT:1,
+    OP_SCROLL_RIGHT:2,
+    OP_ZOOM_OUT:3,  //缩小
+    OP_ZOOM_IN:4,   //放大
+    OP_GOTO_HOME:5, //第1页数据
+}
 /*
     图形控件
 */
@@ -4205,6 +4214,7 @@ function JSChartContainer(uielement)
     this.LastPoint=new Point();     //鼠标位置
     this.IsForceLandscape=false;    //是否强制横屏
     this.CorssCursorTouchEnd = false;   //手离开屏幕自动隐藏十字光标
+    this.StepPixel=4;                //移动一个数据需要的像素
 
     //tooltip提示信息
     this.Tooltip=document.createElement("div");
@@ -4809,6 +4819,15 @@ function JSChartContainer(uielement)
             this.CurrentChartDrawPicture.Draw();
         }
 
+        //发送图形状态给外部
+        if (this.mapEvent.has(JSCHART_EVENT_ID.CHART_STATUS))
+        {
+            var event=this.mapEvent.get(JSCHART_EVENT_ID.CHART_STATUS);
+            
+            var data={  };
+            if (typeof(this.GetChartStatus)=='function') data=this.GetChartStatus();
+            event.Callback(event,data,this);
+        }
     }
 
     //画动态信息
@@ -5094,7 +5113,8 @@ function JSChartContainer(uielement)
             console.log(`[JSChartContainer::ShowTooltip] left=${left} top=${top} xMove=${xMove}` );
             if (toolTip.ChartPaint.Name=="Overlay-KLine")  this.Tooltip.style.height =220+"px";
             this.Tooltip.style.position = "absolute";
-            if (left+width>this.UIElement.getBoundingClientRect().right+scrollPos.Left)
+            //console.log('[JSChartContainer::ShowTooltip] getBoundingClientRect() ',this.UIElement.getBoundingClientRect())
+            if (left+width>this.UIElement.getBoundingClientRect().width)
                 this.Tooltip.style.left = (left-width) + "px";
             else
                 this.Tooltip.style.left = left + "px";
@@ -5116,9 +5136,14 @@ function JSChartContainer(uielement)
 
             this.Tooltip.className='jchart-klineinfo-tooltip';
             this.Tooltip.style.position = "absolute";
-            this.Tooltip.style.left = left + "px";
+            if(left+width>this.UIElement.getBoundingClientRect().width){
+                this.Tooltip.style.left = (left-width) + "px";
+            }else{
+                this.Tooltip.style.left = left + "px";
+            }
+            
             this.Tooltip.style.top = (top +xMove)+ "px";
-            this.Tooltip.style.width = null;
+            this.Tooltip.style.width = width+"px";
             this.Tooltip.style.height =null;
             this.Tooltip.innerHTML=format.Text;
             this.Tooltip.style.display = "block";
@@ -5307,7 +5332,7 @@ function JSChartContainer(uielement)
 
     this.DataMove=function(step,isLeft)
     {
-        step=parseInt(step/4);  //除以4个像素
+        step=parseInt(step/this.StepPixel);  //除以4个像素
         if (step<=0) return false;
 
         var data=null;
@@ -18158,7 +18183,7 @@ function JSChartResource()
     this.Minute={};
     this.Minute.VolBarColor="rgb(238,127,9)";
     this.Minute.PriceColor="rgb(50,171,205)";
-    this.Minute.AreaPriceColor='rgba(50,171,205,0.1)';
+    this.Minute.AreaPriceColor='rgba(50,171,205,0.1)';  //价格的面积图
     this.Minute.AvPriceColor="rgb(238,127,9)";
 
     this.DefaultTextColor="rgb(43,54,69)";
@@ -18321,6 +18346,7 @@ function JSChartResource()
             if (style.Minute.VolBarColor) this.Minute.VolBarColor = style.Minute.VolBarColor;
             if (style.Minute.PriceColor) this.Minute.PriceColor = style.Minute.PriceColor;
             if (style.Minute.AvPriceColor) this.Minute.AvPriceColor = style.Minute.AvPriceColor;
+            if (style.Minute.AreaPriceColor) this.Minute.AreaPriceColor = style.Minute.AreaPriceColor;
         }
 
         if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
@@ -19369,6 +19395,77 @@ function KLineChartContainer(uielement)
     this.RightMenu;         //右键菜单
     this.ChartPictureMenu;  //画图工具 单个图形设置菜单
 
+
+    this.ChartOperator=function(obj) //图形控制函数 {ID:JSCHART_OPERATOR_ID, ...参数 }
+    {
+        var id=obj.ID;
+        if (id===JSCHART_OPERATOR_ID.OP_SCROLL_LEFT || id===JSCHART_OPERATOR_ID.OP_SCROLL_RIGHT )    //左右移动 { Step:移动数据个数 }
+        {
+            var isLeft=(id===JSCHART_OPERATOR_ID.OP_SCROLL_LEFT ? true:false);
+            var step=1;
+            if (obj.Step>0) step=obj.Step;
+            if(this.DataMove(step*this.StepPixel,isLeft))    //每次移动一个数据
+            {
+                this.UpdataDataoffset();
+                this.UpdatePointByCursorIndex();
+                this.UpdateFrameMaxMin();
+                this.ResetFrameXYSplit();
+                this.Draw();
+            }
+        }
+        else if (id===JSCHART_OPERATOR_ID.OP_ZOOM_IN || id===JSCHART_OPERATOR_ID.OP_ZOOM_OUT)       //缩放
+        {
+            var cursorIndex={};
+            cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
+            if (id===JSCHART_OPERATOR_ID.OP_ZOOM_IN)
+            {
+                if (!this.Frame.ZoomUp(cursorIndex)) return;
+            }
+            else
+            {
+                if (!this.Frame.ZoomDown(cursorIndex)) return;
+            }
+            this.CursorIndex=cursorIndex.Index;
+            this.UpdataDataoffset();
+            this.UpdatePointByCursorIndex();
+            this.UpdateFrameMaxMin();
+            this.Draw();
+        }
+        else if (id===JSCHART_OPERATOR_ID.OP_GOTO_HOME)
+        {
+            var hisData=null;
+            if (!this.Frame.Data) hisData=this.Frame.Data;
+            else hisData=this.Frame.SubFrame[0].Frame.Data;
+            if (!hisData) return;  //数据还没有到达
+
+            var showCount=this.PageSize;
+            var pageSize = this.GetMaxMinPageSize();
+            if (pageSize.Max < showCount) showCount = pageSize.Max;
+            else if (pageSize.Min>showCount) showCount=pageSize.Min;
+
+            for(var i in this.Frame.SubFrame)   //设置一屏显示的数据个数
+            {
+                var item =this.Frame.SubFrame[i].Frame;
+                item.XPointCount=showCount;
+            }
+
+            var index=hisData.Data.length-showCount;
+            hisData.DataOffset=index;
+            this.CursorIndex=0.6;
+
+            this.LastPoint.X=null;
+            this.LastPoint.Y=null;
+
+            console.log(`[KLineChartContainer::ChartOperator] OP_GOTO_HOME, dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${showCount}`);
+
+            this.UpdataDataoffset();           //更新数据偏移
+            this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+            this.Frame.SetSizeChage(true);
+            this.Draw();
+            this.UpdatePointByCursorIndex();   //更新十字光标位子
+        }
+    }
+
     this.OnWheel=function(e)
     {
         console.log('[KLineChartContainer::OnWheel]',e);
@@ -19847,7 +19944,7 @@ function KLineChartContainer(uielement)
         {
             var event=this.mapEvent.get(JSCHART_EVENT_ID.RECV_HISTROY_DATA);
             var data={ HistoryData:bindData, Stock:{Symbol:this.Symbol, Name:this.Name } }
-            item.Callback(event,data,this);
+            event.Callback(event,data,this);
         }
     }
 
@@ -21587,6 +21684,23 @@ function KLineChartContainer(uielement)
         pageSize.Min=parseInt(width / barWidth) - 2;
 
         return pageSize;
+    }
+
+    //获取图形控件的状态
+    this.GetChartStatus=function()
+    {
+        var subFrame=this.Frame.SubFrame[0].Frame;
+        if (!subFrame) return null;
+        var hisData=subFrame.Data;
+        if (!hisData) return null;
+
+        var status={ KLine:{ }, Zoom:{} };
+        status.KLine.Count=hisData.Data.length;
+        status.KLine.Offset=hisData.DataOffset;
+        status.KLine.PageSize=subFrame.XPointCount;
+        status.Zoom.Index=subFrame.ZoomIndex;
+        status.Zoom.Max=ZOOM_SEED.length;
+        return status;
     }
 
 }
@@ -38651,7 +38765,186 @@ var tokens=JSComplier.Tokenize(code1+code2);
 var ast=JSComplier.Parse(code2+code1);
 
 console.log(ast);
-*/import $ from 'jquery'
+*//*
+    不同风格行情配置文件
+    !!手机上字体大小需要*分辨率比
+*/
+
+function GetDevicePixelRatio()
+{
+    return window.devicePixelRatio || 1;
+}
+
+//黑色风格
+var BLACK_STYLE=
+{
+    BGColor:'rgb(0,0,0)', //背景色
+    TooltipBGColor: "rgb(255, 255, 255)", //背景色
+    TooltipAlpha: 0.92,                  //透明度
+
+    SelectRectBGColor: "rgba(1,130,212,0.06)", //背景色
+    //  SelectRectAlpha: 0.06;                  //透明度
+
+    //K线颜色
+    UpBarColor: "rgb(238,21,21)",   //上涨
+    DownBarColor: "rgb(25,158,0)",  //下跌
+    UnchagneBarColor: "rgb(228,228,228)", //平盘
+
+    Minute: 
+    {
+      VolBarColor: "rgb(255,236,0)",
+      PriceColor: "rgb(25,180,231)",
+      AreaPriceColor:"rgba(63,158,255,.3)",
+      AvPriceColor: "rgb(255,236,0)",
+    },
+
+
+    DefaultTextColor: "rgb(101,104,112)",
+    DefaultTextFont: 14*GetDevicePixelRatio() +'px 微软雅黑',
+    TitleFont: 13*GetDevicePixelRatio() +'px 微软雅黑',    //标题字体(动态标题 K线及指标的动态信息字体)
+
+    UpTextColor: "rgb(238,21,21)",
+    DownTextColor: "rgb(25,158,0)",
+    UnchagneTextColor: "rgb(101,104,112)",
+    CloseLineColor: 'rgb(178,34,34)',
+
+    FrameBorderPen: "rgba(236,236,236,0.13)",     //边框
+    FrameSplitPen: "rgba(236,236,236,0.13)",          //分割线
+    FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
+    FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
+    FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
+
+    CorssCursorBGColor: "rgb(43,54,69)",            //十字光标背景
+    CorssCursorTextColor: "rgb(255,255,255)",
+    CorssCursorTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",
+    CorssCursorPenColor: "rgb(130,130,130)",           //十字光标线段颜色
+
+    KLine:
+    {
+        MaxMin: { Font: 12*GetDevicePixelRatio() +'px 微软雅黑', Color: 'rgb(111,111,111)' },   //K线最大最小值显示
+        Info:  //信息地雷
+        {
+            Investor:
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/NewsInteract', //互动易
+                    IconFont: { Family:'iconfont', Text:'\ue631' , HScreenText:'\ue684', Color:'#1c65db'} //SVG 文本
+                },
+                Announcement:                                           //公告
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/ReportList',
+                    IconFont: { Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' }, //SVG 文本
+                    IconFont2: { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' } //SVG 文本 //季报
+                },
+                Pforecast:  //业绩预告
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
+                    IconFont: { Family:'iconfont', Text:'\ue62e', HScreenText:'\ue687', Color:'#986cad' } //SVG 文本
+                },
+                Research:   //调研
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/InvestorRelationsList',
+                    IconFont: { Family:'iconfont', Text:'\ue632', HScreenText:'\ue688', Color:'#19b1b7' } //SVG 文本
+                },
+                BlockTrading:   //大宗交易
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
+                    IconFont: { Family:'iconfont', Text:'\ue630', HScreenText:'\ue689', Color:'#f39f7c' } //SVG 文本
+                },
+                TradeDetail:    //龙虎榜
+                {
+                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
+                    IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' } //SVG 文本
+                }
+
+        },
+        NumIcon:
+        {
+            Color:'rgb(251,80,80)',Family:'iconfont',
+            Text:[  '\ue649',
+                    '\ue63b','\ue640','\ue63d','\ue63f','\ue645','\ue641','\ue647','\ue648','\ue646','\ue636',
+                    '\ue635','\ue637','\ue638','\ue639','\ue63a','\ue63c','\ue63e','\ue642','\ue644','\ue643'
+                ]
+        },
+        TradeIcon:  //交易指标 图标
+        {
+            Family:'iconfont', 
+            Buy: { Color:'rgb(255,15,4)', Text:'\ue683', HScreenText:'\ue682'}, 
+            Sell: { Color:'rgb(64,122,22)', Text:'\ue681',HScreenText:'\ue680'},
+        }
+    },
+
+    Index: 
+    {      
+        LineColor:  //指标线段颜色
+        [
+            "rgb(255,189,09)",
+            "rgb(22,198,255)",
+            "rgb(174,35,161)",
+            "rgb(236,105,65)",
+            "rgb(68,114,196)",
+            "rgb(229,0,79)",
+            "rgb(0,128,255)",
+            "rgb(252,96,154)",
+            "rgb(42,230,215)",
+            "rgb(24,71,178)",
+        ],
+        NotSupport: { Font: "14px 微软雅黑", TextColor: "rgb(52,52,52)" }
+    },
+      
+    ColorArray:       //自定义指标默认颜色
+    [
+        "rgb(255,174,0)",
+        "rgb(25,199,255)",
+        "rgb(175,95,162)",
+        "rgb(236,105,65)",
+        "rgb(68,114,196)",
+        "rgb(229,0,79)",
+        "rgb(0,128,255)",
+        "rgb(252,96,154)",
+        "rgb(42,230,215)",
+        "rgb(24,71,178)",
+    ],
+
+    DrawPicture:  //画图工具
+    {
+        LineColor: "rgb(30,144,255)",
+        PointColor: "rgb(105,105,105)",
+    },
+
+    TooltipPaint : 
+    {
+        BGColor:'rgba(20,20,20,0.8)',    //背景色
+        BorderColor:'rgb(210,210,210)',     //边框颜色
+        TitleColor:'rgb(210,210,210)',       //标题颜色
+        TitleFont:13*GetDevicePixelRatio() +'px 微软雅黑'   //字体
+    }
+    
+};
+
+var STYLE_TYPE_ID=
+{
+    BLACK_ID:1, //黑色风格
+}
+
+function HQChartStyle()
+{
+
+}
+
+HQChartStyle.GetStyleConfig=function(styleid)    //获取一个风格的配置变量
+{
+  switch (styleid)
+  {
+      case STYLE_TYPE_ID.BLACK_ID:
+          return BLACK_STYLE;
+      default:
+          return null;
+  }
+}
+
+
+
+import $ from 'jquery'
 
 //把给外界调用的方法暴露出来
 export default {
@@ -38673,7 +38966,11 @@ export default {
     IFrameSplitOperator:IFrameSplitOperator,//格式化字符串方法
     JSKLineInfoMap:JSKLineInfoMap,
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,      //可以订阅的事件类型
+    JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,    //图形控制类型
     JSAlgorithm:JSAlgorithm,                //算法类
     JSComplier:JSComplier,                  //指标编译器
     
+    //style.js相关
+    STYLE_TYPE_ID:STYLE_TYPE_ID,
+    HQChartStyle:HQChartStyle,              //预定义全局的配色 黑
 }
