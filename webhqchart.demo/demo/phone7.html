@@ -94,9 +94,9 @@
     <script type="text/javascript" src="plugins/code_color/javascript.js"></script>
 
     <script type="text/javascript" src="content/js/vue.js"></script>
-    <script type="text/javascript" src="content/js/phone7.tools.js"></script>
+    <script type="text/javascript" src="content/js/phone7.tools.js?v=1.1"></script>
     
-    <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+    <script src="content/js/jquery.min.js"></script>
 
     <script type="text/javascript" src="plugins/cross.js"></script>
 
@@ -161,11 +161,12 @@
                     Callback: unlockIndex,
                     BG: 'rgb(200,0,40)',
                     TextColor: 'rgb(255,255,255)',
-                    //Text: '上锁了',
+                    Text: '上锁了',
                     Font: '12px 微软雅黑',
                     //Count: 10  //锁主右边几条数据
                 }
-                */ 
+                */
+                 
             };
             aryIndex.push(scriptIndex);
 
@@ -251,8 +252,9 @@
         }
 
         //对外公开一个接口
-        Cross.on("setCode", function (data) {
+        Cross.on("setValue", function (data) {
             jsEditor.setValue(data.code);
+            Root.top.setIndexName(data.name);
         });
 
         //对外公开一个接口

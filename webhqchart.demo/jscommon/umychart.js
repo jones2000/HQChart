@@ -429,6 +429,13 @@ function JSChart(divElement)
         }
         this.AdjustTitleHeight(chart);
 
+        if (option.Function)
+        {
+            var func=option.Function;
+            if (func.RequestMinuteData) chart.RequestMinuteData=func.RequestMinuteData;
+            if (func.RecvMinuteData) chart.RecvMinuteData=func.RecvMinuteData;
+        }
+
         return chart;
     }
 
@@ -508,7 +515,6 @@ function JSChart(divElement)
             if (option.KLine.IsShowTooltip==false) chart.IsShowTooltip=false;
             if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
             if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
-            
         }
 
         if (option.Train)
@@ -984,6 +990,7 @@ var JSCHART_EVENT_ID=
     RECV_HISTROY_DATA:3,//接收到历史数据
     RECV_TRAIN_MOVE_STEP:4, //接收K线训练,移动一次K线
     CHART_STATUS:5,          //每次Draw() 以后会调用
+    BARRAGE_PLAY_END:6,      //单挑弹幕播放完成
 }
 
 var JSCHART_OPERATOR_ID=
@@ -10474,7 +10481,7 @@ function DrawToolsButton()
 }
 
 
-//弹幕数据 { XOffset:X偏移, YOffset:Y偏移, Text:内容, Color:颜色 }
+//弹幕数据 { X:X偏移, Y:Y偏移, Text:内容, Color:颜色 }
 function BarrageList()
 {
     this.PlayList=[];   //正在播放队列
@@ -10504,7 +10511,7 @@ function BarrageList()
             for(var j=0;j<ary.Data.length;++j)
             {
                 var item=ary.Data[j];
-                var playItem={ X:item.X, Y:yOffset, Text:item.Text, Color:item.Color, Height:lineHeight, Font:item.Font };
+                var playItem={ X:item.X, Y:yOffset, Text:item.Text, Color:item.Color, Height:lineHeight, Font:item.Font, Info:item.Info };
                 list.push(playItem);
 
                 if (!isMoveStep) continue;
@@ -10541,13 +10548,14 @@ function BarrageList()
             if(isMoveStep && bAddNewItem && this.Cache.length>0)    //最后一个数据了 判断是否需要增加弹幕
             {
                 var cacheItem=this.Cache.shift();
-                var newItem={ X:0, Text:cacheItem.Text, Color:cacheItem.Color , Font:cacheItem.Font };
+                var newItem={ X:0, Text:cacheItem.Text, Color:cacheItem.Color , Font:cacheItem.Font, Info:cacheItem.Info };
                 ary.Data.push(newItem);
             }
 
-            if (isMoveStep&& bRemoveFirst && ary.Data.length>0)
+            if (isMoveStep && bRemoveFirst && ary.Data.length>0)
             {
-                ary.Data.shift();
+                var removeItem=ary.Data.shift();
+                this.OnItemPlayEnd(obj.HQChart,removeItem);
             }
 
             yOffset+=lineHeight;
@@ -10578,7 +10586,7 @@ function BarrageList()
                 for(var j=0;j<ary.Data.length;++j)
                 {
                     var item=ary.Data[j];
-                    var cacheItem={ Text:item.Text, Color:item.Color, Font:item.Font };
+                    var cacheItem={ Text:item.Text, Color:item.Color, Font:item.Font, Info:item.Info };
                     this.Cache.unshift(cacheItem);
                 }
             }
@@ -10596,6 +10604,18 @@ function BarrageList()
             this.Cache.push(item);
         }
     }
+
+    this.OnItemPlayEnd=function(hqChart, item)  //单挑弹幕播放完毕
+    {
+        //监听事件
+        if (!hqChart.mapEvent.has(JSCHART_EVENT_ID.BARRAGE_PLAY_END)) return;
+        var event=hqChart.mapEvent.get(JSCHART_EVENT_ID.BARRAGE_PLAY_END);
+        if (!event.Callback) return;
+
+        event.Callback(event,item,this);
+    }
+
+    this.Count=function() { return this.Cache.length; } //未播放的弹幕个数
 }
 
 //弹幕
@@ -10608,6 +10628,7 @@ function BarragePaint()
     this.ClassName='BarragePaint';
     this.IsAnimation=true;
     this.IsEraseBG=true;
+    this.HQChart;
 
     this.Font=g_JSChartResource.Barrage.Font;
     this.TextColor=g_JSChartResource.Barrage.Color;
@@ -10620,48 +10641,6 @@ function BarragePaint()
     //设置参数接口
     this.SetOption=function(option)
     {
-        /*
-        this.BarrageList.AddBarrage([
-            { Text:'测试弹幕1 (25px 宋体) RGB(0,0,205)', Color:'RGB(0,0,205)' , Font:{ Name:'25px 宋体', Hight: 25 }},
-            { Text:'测试弹幕2 (22px 微软雅黑) RGB(33,0,205)', Color:'RGB(33,0,205)' , Font:{ Name:'22px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕3 RGB(20,240,20)', Color:'RGB(20,240,20)'},
-            { Text:'测试弹幕4 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕5 (16px 微软雅黑) RGB(255,30,20)', Color:'RGB(255,30,20)' , Font:{ Name:'16px 微软雅黑', Hight: 16 }},
-            { Text:'测试弹幕6 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕7 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕8 RGB(20,240,20)', Color:'RGB(20,240,20)' },
-            { Text:'测试弹幕9 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕11 RGB(20,240,20)', Color:'RGB(20,240,20)' },
-            { Text:'测试弹幕12 (16px 微软雅黑) RGB(255,30,20)', Color:'RGB(255,30,20)' , Font:{ Name:'16px 微软雅黑', Hight: 16 }},
-            { Text:'测试弹幕13 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕14 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕15 (16px 微软雅黑) RGB(255,30,20)', Color:'RGB(255,30,20)' , Font:{ Name:'16px 微软雅黑', Hight: 16 }},
-            { Text:'测试弹幕16 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕17 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕18 (16px 微软雅黑) RGB(255,30,20)', Color:'RGB(255,30,20)' , Font:{ Name:'16px 微软雅黑', Hight: 16 }},
-            { Text:'测试弹幕19 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕20 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕1 (25px 宋体) RGB(0,0,205)', Color:'RGB(0,0,205)' , Font:{ Name:'25px 宋体', Hight: 25 }},
-            { Text:'测试弹幕2 (22px 微软雅黑) RGB(33,0,205)', Color:'RGB(33,0,205)' , Font:{ Name:'22px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕3 RGB(20,240,20)', Color:'RGB(20,240,20)'},
-            { Text:'测试弹幕4 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕5 (16px 微软雅黑) RGB(255,30,20)', Color:'RGB(255,30,20)' , Font:{ Name:'16px 微软雅黑', Hight: 16 }},
-            { Text:'测试弹幕6 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕7 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕8 RGB(20,240,20)', Color:'RGB(20,240,20)' },
-            { Text:'测试弹幕9 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕11 RGB(20,240,20)', Color:'RGB(20,240,20)' },
-            { Text:'测试弹幕12 (16px 微软雅黑) RGB(255,30,20)', Color:'RGB(255,30,20)' , Font:{ Name:'16px 微软雅黑', Hight: 16 }},
-            { Text:'测试弹幕13 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕14 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕15 (16px 微软雅黑) RGB(255,30,20)', Color:'RGB(255,30,20)' , Font:{ Name:'16px 微软雅黑', Hight: 16 }},
-            { Text:'测试弹幕16 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕17 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕18 (16px 微软雅黑) RGB(255,30,20)', Color:'RGB(255,30,20)' , Font:{ Name:'16px 微软雅黑', Hight: 16 }},
-            { Text:'测试弹幕19 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-            { Text:'测试弹幕20 (20px 微软雅黑) RGB(100,0,205)', Color:'RGB(100,0,205)' , Font:{ Name:'20px 微软雅黑', Hight: 25 }},
-        ])
-        */
         
     }
 
@@ -10678,7 +10657,7 @@ function BarragePaint()
         this.Canvas.textBaseline="middle";
         this.Canvas.textAlign="left";
 
-        var play=this.BarrageList.GetPlayList({Canves:this.Canvas, Right:right, Left:left, Font:this.Font, IsMoveStep:this.IsMoveStep});
+        var play=this.BarrageList.GetPlayList({Canves:this.Canvas, Right:right, Left:left, Font:this.Font, IsMoveStep:this.IsMoveStep, HQChart:this.HQChart});
         this.IsMoveStep=false;
         if (!play) return;
 

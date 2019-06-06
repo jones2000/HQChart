@@ -64,7 +64,7 @@
                     <span>{{itemTrade.Vol.Text}}&nbsp;<span :class="itemTrade.BS.Color">{{itemTrade.BS.Text}}</span></span>
                 </p>
             </div>
-            <a href="./stockdeallastest.demo.page.html" target='_blank' class="seeMoreDeal">点击查看更多分时成交</a>
+            <a :href="MoreDealLink" target='_blank' class="seeMoreDeal">点击查看更多分时成交</a>
         </div>
         <div class="shorttermlist" ref='shorttermlist' v-show="ShortTerm.IsShow">
             <div>
@@ -452,7 +452,8 @@ export default {
         Data:null,
         JSStock: null //数据请求控制器
       },
-      DealPriceData:DefaultData.GetDealPriceData()
+      DealPriceData:DefaultData.GetDealPriceData(),
+      MoreDealLink:''
     };
 
     return data;
@@ -470,6 +471,8 @@ export default {
       this.JSStock = JSCommonStock.JSStockInit();
       this.InitalStock();
       this.JSStock.RequestData();
+
+      this.MoreDealLink = './stockdeallastest.demo.page.html?symbol=' + this.Symbol;
     }
 
     this.OnSize();
@@ -477,6 +480,7 @@ export default {
 
   created() {
     if (this.DefaultSymbol) this.Symbol = this.DefaultSymbol; //默认股票
+    
   },
 
   methods: {
@@ -837,6 +841,8 @@ export default {
       this.InitalStock(); //订阅数据
       this.InitalCapitalFlow();
       if (!this.IsShareStock) this.JSStock.RequestData();
+
+      this.MoreDealLink = './stockdeallastest.demo.page.html?symbol=' + this.Symbol;
 
       //分价表是显示的状态,切换股票更新
       if (this.DealPrice.JSStock && this.DealPrice.IsShow) 
