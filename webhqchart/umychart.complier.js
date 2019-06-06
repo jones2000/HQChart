@@ -5401,6 +5401,103 @@ function JSDraw(errorHandler,symbolData)
 
         return result;
     }
+
+    /*
+    绘制通道
+    condition:条件
+    data,data2:通道顶部和底部
+    borderColor: 通道顶部和底部线段颜色RGB(24,30,40) 不填就不画
+    borderWidth: 通道顶部和底部线段宽度
+    areaColor: 通道面积颜色 RGB(200,30,44) 不填使用默认颜色
+    dotted: 通道顶部和底部虚线设置 '3,4' , 不填默认 3,3
+    */
+    this.DRAWCHANNEL=function(condition, data, data2, borderColor, borderWidth, dotted, areaColor)
+    {
+        let drawData=[];
+        let result={DrawData:drawData, DrawType:'DRAWCHANNEL', Border:{ }};
+        if (condition.length<=0) return result;
+
+        if (borderColor) result.Border.Color=borderColor;
+        if (areaColor) result.AreaColor=areaColor;
+        if (borderWidth>0) result.Border.Width=borderWidth;
+        if (dotted) 
+        {
+            let ary=dotted.split(',');
+            result.Border.Dotted=[];
+            for(var i in ary)
+            {
+                var item=ary[i];
+                if (!item) continue;
+                var value=parseInt(ary[i]);
+                if (value<=0) continue;
+                result.Border.Dotted.push(value);
+            }
+            if (result.Border.Dotted.length<=0) result.Border.Dotted=null;
+        }
+
+        var IsNumber=typeof(data)=="number";
+        var IsNumber2=typeof(data2)=="number";
+        if (typeof(condition)=='number')
+        {
+            if (!condition) return result;  //条件是否
+
+            for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+            {
+                drawData[i]=null;
+
+                if (IsNumber && IsNumber2)
+                {
+                    drawData[i]={Value:data,Value2:data2};
+                }
+                else if (IsNumber && !IsNumber2)
+                {
+                    if (isNaN(data2[i])) continue;
+                    drawData[i]={Value:data,Value2:data2[i]};
+                }
+                else if (!IsNumber && IsNumber2)
+                {
+                    if (isNaN(data[i])) continue;
+                    drawData[i]={Value:data[i],Value2:data2};
+                }
+                else
+                {
+                    if (isNaN(data[i]) || isNaN(data2[i])) continue;
+                    drawData[i]={Value:data[i],Value2:data2[i]};
+                }
+            }
+        }
+        else
+        {
+            for(var i=0;i<condition.length;++i)
+            {
+                drawData[i]=null;
+
+                if (isNaN(condition[i]) || !condition[i]) continue;
+
+                if (IsNumber && IsNumber2)
+                {
+                    drawData[i]={Value:data,Value2:data2};
+                }
+                else if (IsNumber && !IsNumber2)
+                {
+                    if (isNaN(data2[i])) continue;
+                    drawData[i]={Value:data,Value2:data2[i]};
+                }
+                else if (!IsNumber && IsNumber2)
+                {
+                    if (isNaN(data[i])) continue;
+                    drawData[i]={Value:data[i],Value2:data2};
+                }
+                else
+                {
+                    if (isNaN(data[i]) || isNaN(data2[i])) continue;
+                    drawData[i]={Value:data[i],Value2:data2[i]};
+                }
+            }
+        }
+
+        return result;
+    }
 }
 
 
@@ -5448,7 +5545,7 @@ JSDraw.prototype.IsNumber=function(value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON']);
+    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL']);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -7820,6 +7917,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWNUMBER(args[0],args[1],args[2]);
                 node.Out=node.Draw.DrawData.Value;
                 break;
+            case "DRAWCHANNEL":
+                node.Draw=this.Draw.DRAWCHANNEL(args[0],args[1],args[2],args[3],args[4],args[5],args[6]);
+                node.Out=[];
+                break;
             case 'CODELIKE':
                 node.Out=this.SymbolData.CODELIKE(args[0]);
                 break;
@@ -8664,6 +8765,30 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chartText);
     }
 
+    //创建通道
+    this.CreateChannel=function(hqChart,windowIndex,varItem,id)
+    {
+        let chart=new ChartChannel();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if(varItem.Draw.AreaColor) chart.AreaColor=varItem.Draw.AreaColor;
+        else if (varItem.Color) chart.AreaColor=this.GetColor(varItem.Color);
+        else chart.AreaColor=this.GetDefaultColor(id);
+
+        if (varItem.Draw.Border.Color) chart.LineColor=varItem.Draw.Border.Color;
+        else chart.LineColor=null;
+
+        if (varItem.Draw.Border.Dotted) chart.LineDotted=varItem.Draw.Border.Dotted;
+        if (varItem.Draw.Border.Width>0) chart.LineWidth=varItem.Draw.Border.Width;
+
+        //let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Draw.DrawData;
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建K线
     this.CreateSelfKLine=function(hqChart,windowIndex,hisData)
     {
@@ -8773,6 +8898,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWICON':
                         this.CreateIcon(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWCHANNEL':
+                        this.CreateChannel(hqChart,windowIndex,item,i);
                         break;
                 }
             }
