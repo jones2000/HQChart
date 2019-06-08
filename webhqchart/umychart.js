@@ -917,12 +917,12 @@ function JSChart(divElement)
     }
 
     //返回弹幕数据类
-    this.StartAnimation=function()
+    this.StartAnimation=function(option)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.StartAnimation)=='function')
         {
             console.log('[JSChart:StartAnimation] start.');
-            return this.JSChartContainer.StartAnimation();
+            return this.JSChartContainer.StartAnimation(option);
         }
     }
 
@@ -990,7 +990,7 @@ var JSCHART_EVENT_ID=
     RECV_HISTROY_DATA:3,//接收到历史数据
     RECV_TRAIN_MOVE_STEP:4, //接收K线训练,移动一次K线
     CHART_STATUS:5,          //每次Draw() 以后会调用
-    BARRAGE_PLAY_END:6,      //单挑弹幕播放完成
+    BARRAGE_PLAY_END:6,      //单个弹幕播放完成
 }
 
 var JSCHART_OPERATOR_ID=
@@ -8539,7 +8539,7 @@ function ChartBand()
     }
 }
 
-//
+// 通道面积图 支持横屏
 function ChartChannel()
 {
     this.newMethod=IChartPainting;   //派生
@@ -8594,18 +8594,21 @@ function ChartChannel()
 
         var drawCount=0;
         var firstItem=lineData[0];
-        this.Canvas.moveTo(firstItem.X,firstItem.Y);
+        if (this.IsHScreen) this.Canvas.moveTo(firstItem.Y,firstItem.X,);
+        else this.Canvas.moveTo(firstItem.X,firstItem.Y);
         for(var i=1;i<lineData.length;++i)
         {
             var item=lineData[i];
-            this.Canvas.lineTo(item.X,item.Y);
+            if (this.IsHScreen) this.Canvas.lineTo(item.Y,item.X);
+            else this.Canvas.lineTo(item.X,item.Y);
             ++drawCount;
         }
 
         for(var i=lineData.length-1;i>=0;--i)
         {
             var item=lineData[i];
-            this.Canvas.lineTo(item.X,item.Y2);
+            if (this.IsHScreen) this.Canvas.lineTo(item.Y2,item.X);
+            else this.Canvas.lineTo(item.X,item.Y2);
             ++drawCount;
         }
 
@@ -8628,12 +8631,14 @@ function ChartChannel()
                 if (bFirstPoint)
                 {
                     this.Canvas.beginPath();
-                    this.Canvas.moveTo(item.X, k===0?item.Y:item.Y2 );
+                    if (this.IsHScreen) this.Canvas.moveTo(k===0?item.Y:item.Y2,item.X);
+                    else this.Canvas.moveTo(item.X, k===0?item.Y:item.Y2 );
                     bFirstPoint=false;
                 }
                 else
                 {
-                    this.Canvas.lineTo(item.X,k===0?item.Y:item.Y2);
+                    if (this.IsHScreen) this.Canvas.lineTo(k===0?item.Y:item.Y2,item.X);
+                    else this.Canvas.lineTo(item.X,k===0?item.Y:item.Y2);
                 }
 
                 ++drawCount;
@@ -10488,6 +10493,7 @@ function BarrageList()
     this.Cache=[];      //没有播放的弹幕数据
     this.MinLineHeight=40*GetDevicePixelRatio();
     this.Height;        //高度
+    this.Step=1;
 
     //{Canves:画布, Right:右边坐标, Left:左边坐标, Font:默认字体 }
     this.GetPlayList=function(obj)
@@ -10542,7 +10548,7 @@ function BarrageList()
                     if (item.X>width+item.TextWidth) bRemoveFirst=true;
                 }
 
-                item.X+=1;
+                item.X+=this.Step;
             }
 
             if(isMoveStep && bAddNewItem && this.Cache.length>0)    //最后一个数据了 判断是否需要增加弹幕
@@ -10641,11 +10647,61 @@ function BarragePaint()
     //设置参数接口
     this.SetOption=function(option)
     {
-        
+        if (option)
+        {
+            if (option.Step>0) this.BarrageList.Step=option.Step;
+            if (option.MinLineHeight) this.Barrage.MinLineHeight=option.MinLineHeight;
+        }
+    }
+
+    this.DrawHScreen=function()
+    {
+        var height=this.ChartBorder.GetWidth();
+        var left=this.ChartBorder.GetTop();
+        var right=this.ChartBorder.GetBottom();
+        var top=this.ChartBorder.GetRightEx();
+        var wdith=this.ChartBorder.GetChartWidth();
+
+        if (height!=this.BarrageList.Height)
+            this.BarrageList.CacluatePlayLine(height);
+
+        this.Canvas.textBaseline="middle";
+        this.Canvas.textAlign="left";
+
+        var play=this.BarrageList.GetPlayList({Canves:this.Canvas, Right:right, Left:left, Font:this.Font, IsMoveStep:this.IsMoveStep, HQChart:this.HQChart});
+        this.IsMoveStep=false;
+        if (!play) return;
+
+        this.Canvas.save(); 
+        this.Canvas.translate(this.ChartBorder.GetChartHeight(), 0);
+        this.Canvas.rotate(90 * Math.PI / 180);
+
+        for(var i=0;i<play.length;++i)
+        {
+            var item=play[i];
+            if (item.Color) this.Canvas.fillStyle=item.Color;
+            else this.Canvas.fillStyle=this.TextColor;
+            if (item.Font) this.Canvas.font=item.Font.Name;
+            else this.Canvas.font=this.Font;
+
+            var fontHeight=this.FontHeight;
+            if (item.Font && item.Font.Height>0) fontHeight=item.Font.Height;
+            yOffset=item.Y+parseInt((item.Height-fontHeight)/2);
+
+            this.Canvas.fillText(item.Text, right-item.X,top+yOffset);
+        }
+
+        this.Canvas.restore();
     }
 
     this.Draw=function()
     {
+        if (this.ChartFrame.IsHScreen)
+        {
+            this.DrawHScreen();
+            return;
+        }
+
         var left=this.ChartBorder.GetLeft();
         var right=this.ChartBorder.GetRight();
         var top=this.ChartBorder.GetTopEx();
@@ -12408,6 +12464,8 @@ function DynamicKLineTitlePainting()
         if (!this.IsShow) return;
         if (this.CursorIndex==null || !this.Data) return;
         if (this.Data.length<=0) return;
+
+        this.Canvas.font=this.Font;
         this.SpaceWidth = this.Canvas.measureText(' ').width;
 
         var index=Math.abs(this.CursorIndex-0.5);
@@ -12539,7 +12597,8 @@ function DynamicMinuteTitlePainting()
         if (this.CursorIndex==null || !this.Data || !this.Data.Data) return;
         if (this.Data.Data.length<=0) return;
 
-        this.SpaceWidth = this.Canvas.measureText(' ').width;
+        this.Canvas.font=this.Font;
+        this.SpaceWidth = this.Canvas.measureText('擎').width;
 
         //var index=Math.abs(this.CursorIndex-0.5);
         var index=this.CursorIndex;

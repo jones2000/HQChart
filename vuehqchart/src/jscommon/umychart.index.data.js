@@ -3201,7 +3201,7 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                'VAR2:C,STICK,LINETHICK5;'
+                "DRAWCHANNEL(OPEN>C,H,L, 'RGB(255,94,102)', 2 ,'5,5','RGBA(58,20,62,0.3)' );"
         };
 
     return data;
