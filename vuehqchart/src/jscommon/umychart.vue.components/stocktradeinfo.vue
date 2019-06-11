@@ -658,11 +658,12 @@ export default {
       }
     },
 
-    UpdateCapitalFlow: function(id, arySymbol, dataType, jsStock) {
+    UpdateCapitalFlow: function(id, arySymbol, dataType, jsStock) 
+    {
+      let read = jsStock.GetStockRead(this.ID[3], this.UpdateCapitalFlow); //获取一个读取数据类,并绑定id和更新数据方法
       if (!this.CapitalFlow.IsShow) return; //不显示直接返回 不订阅了
       if (arySymbol.indexOf(this.Symbol) < 0) return;
 
-      let read = jsStock.GetStockRead(this.ID[3], this.UpdateCapitalFlow); //获取一个读取数据类,并绑定id和更新数据方法
       var flowDay = read.Get(
         this.Symbol,
         JSCommonStock.STOCK_FIELD_NAME.CAPITAL_FLOW_DAY
@@ -839,7 +840,8 @@ export default {
       this.IsBuySellInital = false;
       this.IsTradeDataInital = false;
       this.InitalStock(); //订阅数据
-      this.InitalCapitalFlow();
+      if (this.IsSHSZIndex(this.Symbol)) this.ShowCapitalFlow(false);
+      else this.InitalCapitalFlow();
       if (!this.IsShareStock) this.JSStock.RequestData();
 
       this.MoreDealLink = './stockdeallastest.demo.page.html?symbol=' + this.Symbol;
@@ -936,7 +938,9 @@ export default {
         this.CapitalFlow.IsShow = true;
         this.InitalCapitalFlow();
         this.RequestData();
-      } else {
+      } else 
+      {
+        this.JSStock.Unsubscribe(this.ID[3]);
         this.CapitalFlow.IsShow = false;
       }
     },

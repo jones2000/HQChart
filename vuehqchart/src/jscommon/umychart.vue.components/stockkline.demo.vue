@@ -226,7 +226,7 @@ DefaultData.GetMinuteToolbar=function()
         Menu: 
         [ 
             {Name:"MACD"}, {Name:"DMI"}, {Name:"DMA"}, {Name:"BRAR"}, 
-            {Name:"KDJ"}, {Name:"RSI"}, {Name:"WR"}, {Name:"CCI"}, {Name:"TRIX"}
+            {Name:"KDJ"}, {Name:"RSI"}, {Name:"WR"}, {Name:"CCI"}, {Name:"TRIX"}, {Name:'北上资金'}, {Name:'涨跌趋势'}
         ]
     }
 

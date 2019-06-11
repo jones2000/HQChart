@@ -287,11 +287,11 @@
             UpdateData: function (id, arySymbol, dataType, jsStock) {
                 console.log('[StockInfo::UpdateData] ', id, arySymbol, dataType, jsStock, this.ID);
                 if (id != this.ID) return;
+               
+                let isIndex = this.IsSHSZIndex();
+                let read = jsStock.GetStockRead(this.ID, this.UpdateData); //获取一个读取数据类,并绑定id和更新数据方法
                 if (arySymbol.indexOf(this.Symbol) < 0) return;
 
-                let isIndex = this.IsSHSZIndex();
-
-                let read = jsStock.GetStockRead(this.ID, this.UpdateData); //获取一个读取数据类,并绑定id和更新数据方法
                 let data = {};    //数据取到的数据 数据名称：{ Value:数值(可以没有), Color:颜色, Text:显示的文本字段(先给默认显示)}
                 data.Name = { Text: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.NAME) };
                 data.Date = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.DATE), Text: '--' };

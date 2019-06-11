@@ -66,7 +66,7 @@ function JSIndexScript()
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
-            ['涨跌趋势', this.UpDownAnalyze],
+            ['涨跌趋势', this.UpDownAnalyze],['北上资金', this.HK2SHSZ],
 
             ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2],['Zealink-持仓信号', this.Zealink_Index3],
             ['Zealink-增减持',this.Zealink_Index4],['Zealink-大宗交易', this.Zealink_Index5], ['Zealink-信托持股', this.Zealink_Index6],
@@ -2110,6 +2110,19 @@ JSIndexScript.prototype.UpDownAnalyze=function()
         Script: //脚本
 "上涨家数:UPCOUNT('CNA.CI'),COLORRED;\n\
 下跌家数:DOWNCOUNT('CNA.CI'),COLORGREEN;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.HK2SHSZ=function()
+{
+    let data=
+    {
+        Name: '北上资金', Description: '北上资金', IsMainIndex: false,FloatPrecision:0, Condition: { Period:[CONDITION_PERIOD.MINUTE_ID,CONDITION_PERIOD.KLINE_DAY_ID] },
+        Args: [],
+        Script: //脚本
+            "净流入:HK2SHSZ(1),COLORSTICK;"
     };
 
     return data;
@@ -35999,7 +36012,12 @@ function JSSymbolData(ast,option,jsExecute)
     this.StockHistoryDayApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay';  //历史财务数据
     this.StockHistoryDay3ApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay3';  //历史财务数据
     this.StockNewsAnalysisApiUrl= g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                //新闻分析数据
-    this.HKToSHSZApiUrl=g_JSComplierResource.CacheDomain+'/cache/historyday/all/hk2shsz.json';          //北上资金
+    this.HKToSHSZApiUrl=
+        [ 
+            g_JSComplierResource.CacheDomain+'/cache/historyday/all/hk2shsz.json',  //日线数据
+            g_JSComplierResource.CacheDomain+'/cache/analyze/hk2shsz/hk2shsz.json'  //最新分钟
+        ] ;          //北上资金
+
     this.MaxReqeustDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
 
@@ -37173,20 +37191,62 @@ function JSSymbolData(ast,option,jsExecute)
     {
         if (this.HKToSHSZData.has(jobID)) return this.Execute.RunNextJob();
 
-        console.log('[JSSymbolData::GetHKToSHSZData] jobID=', jobID);
+        var url, dataType=0;
+        if (this.DataType===HQ_DATA_TYPE.MINUTE_ID)
+        {
+            dataType=1;
+            url=this.HKToSHSZApiUrl[dataType];
+        }
+        else if (this.Period<=3)
+        {
+            dataType=0;
+            url=this.HKToSHSZApiUrl[dataType];
+        }
+
+        console.log(`[JSSymbolData::GetHKToSHSZData] jobID=${jobID}, url=${url}`);
         var self=this;
         //请求数据
         $.ajax({
-            url: this.HKToSHSZApiUrl,
+            url: url,
             type:"get",
             dataType: "json",
             async:true,
             success: function (recvData)
             {
-                self.RecvHKToSHSZData(recvData,jobID);
+                if (dataType==0) self.RecvHKToSHSZData(recvData,jobID);
+                else if (dataType==1) self.RecvMinuteHKToSHSZData(recvData,jobID);
                 self.Execute.RunNextJob();
             }
         });
+    }
+
+    this.RecvMinuteHKToSHSZData=function(data,jobID)
+    {
+        var arySHSZData=[], arySHData=[], arySZData=[];
+        for(var i=0;i<data.time.length;++i)
+        {
+            var time=data.time[i];
+            var SHValue=data.hk2sh[i];
+            var SZValue=data.hk2sz[i];
+            var total=SHValue+SZValue;
+
+            arySHSZData.push(total);
+            arySHData.push(SHValue);
+            arySZData.push(SZValue);
+        }
+
+        var allData=
+        [
+            {Data:arySHSZData, JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH_SZ}, 
+            {Data:arySHData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH}, 
+            {Data:arySZData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ}
+        ];
+
+        for(var i in allData)
+        {
+            var item=allData[i];
+            this.HKToSHSZData.set(item.JobID,item.Data);
+        }
     }
 
     this.RecvHKToSHSZData=function(data,jobID)
@@ -39353,6 +39413,24 @@ function ScriptIndex(name,script,args,option)
         if (indexParam.length>0) hqChart.TitlePaint[titleIndex].Title=this.Name+'('+indexParam+')';
 
         return true;
+    }
+}
+
+//后台执行指标
+function APIScriptIndex(name,script,args,option)
+{
+    this.newMethod=ScriptIndex;   //派生
+    this.newMethod(name,script,args,option);
+    delete this.newMethod;
+
+    this.ExecuteScript=function(hqChart,windowIndex,hisData)
+    {
+        
+    }
+
+    this.RecvAPIData=function(data)
+    {
+
     }
 }
 

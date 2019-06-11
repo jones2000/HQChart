@@ -113,11 +113,13 @@ export default
         {
             if (this.Symbol==symbol) return;
 
-            var oldIsIndex=StockInfo.JSCommon.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol);
-
+            var oldSymbol=this.Symbol;
             this.Symbol=symbol;
+
+            var oldIsIndex=StockInfo.JSCommon.MARKET_SUFFIX_NAME.IsSHSZIndex(oldSymbol);
+            this.JSStock.UnsubscribeStock(oldSymbol);
+
             this.$refs.stockinfo.SetSymbol(symbol);
-            
             this.$refs.tradeinfo.SetSymbol(symbol);
             this.$refs.stockkline.ChangeSymbol(symbol);
 

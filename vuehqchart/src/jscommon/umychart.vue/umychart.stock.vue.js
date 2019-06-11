@@ -254,6 +254,53 @@ function StockData(symbol)
     this.RiseFallSpeed = {};    //1,3,5,10,15 分钟涨速
     this.MAmount={};       //1,3,5,10,15 分钟成交量
 
+    this.GetBaseData=function(tagID,field)
+    {
+        this.BaseDataTagID.add(tagID);
+        switch(field)
+        {
+            case STOCK_FIELD_NAME.SYMBOL:
+                return this.Symbol;
+            case STOCK_FIELD_NAME.NAME:
+                return this.Name;
+            case STOCK_FIELD_NAME.OPEN:
+                return this.Open;
+            case STOCK_FIELD_NAME.PRICE:
+                return this.Price;
+            case STOCK_FIELD_NAME.YCLOSE:
+                return this.YClose;
+            case STOCK_FIELD_NAME.HIGH:
+                return this.High;
+            case STOCK_FIELD_NAME.LOW:
+                return this.Low;
+            case STOCK_FIELD_NAME.VOL:
+                return this.Vol;
+            case STOCK_FIELD_NAME.AMOUNT:
+                return this.Amount;
+            case STOCK_FIELD_NAME.DATE:
+                return this.Date;
+            case STOCK_FIELD_NAME.TIME:
+                return this.Time;
+            case STOCK_FIELD_NAME.INCREASE:
+                return this.Increase;
+            case STOCK_FIELD_NAME.EXCHANGE_RATE:
+                return this.ExchangeRate;
+            case STOCK_FIELD_NAME.AMPLITUDE:
+                return this.Amplitude;
+            case STOCK_FIELD_NAME.MAX_PRICE:
+                return this.MaxPrice;
+            case STOCK_FIELD_NAME.MIN_PRICE:
+                return this.MinPrice;
+            case STOCK_FIELD_NAME.RISE_FALL_PRICE:
+                return this.RFPrice;
+            
+            case STOCK_FIELD_NAME.INDEXTOP:
+                return this.IndexTop;
+            case STOCK_FIELD_NAME.WEEK:
+                return this.Week;
+        }
+    }
+
     this.Heat;      //热度
     //获取热度数据,不要直接使用变量获取
     this.GetHeatData=function(tagID)
@@ -375,20 +422,20 @@ function StockData(symbol)
         switch(field)
         {
             case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY:
-                if (!this.CapitalFlowDay) this.CapitalFlowDayID.add(tagID);
-                else data = this.CapitalFlowDay;
+                this.CapitalFlowDayID.add(tagID);
+                if (this.CapitalFlowDay) data = this.CapitalFlowDay;
                 break;
             case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY3:
-                if (!this.CapitalFlowDay3) this.CapitalFlowDay3ID.add(tagID);
-                else data = this.CapitalFlowDay3;
+                this.CapitalFlowDay3ID.add(tagID);
+                if (this.CapitalFlowDay3)  data = this.CapitalFlowDay3;
                 break;
             case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY5:
-                if (!this.CapitalFlowDay5) this.CapitalFlowDay5ID.add(tagID);
-                else data = this.CapitalFlowDay5;
+                this.CapitalFlowDay5ID.add(tagID);
+                if (this.CapitalFlowDay5)  data = this.CapitalFlowDay5;
                 break;
             case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY10:
-                if (!this.CapitalFlowDay10) this.CapitalFlowDay10ID.add(tagID);
-                else data = this.CapitalFlowDay10;
+                this.CapitalFlowDay10ID.add(tagID);
+                if (this.CapitalFlowDay10)  data = this.CapitalFlowDay10;
                 break;
         }
         return data;
@@ -405,20 +452,20 @@ function StockData(symbol)
         let data = null;
         switch (field) {
             case STOCK_FIELD_NAME.DDE:
-                if (!this.DDE) this.DDEID.add(tagID);
-                else data = this.DDE;
+                this.DDEID.add(tagID);
+                if (this.DDE)  data = this.DDE;
                 break;
             case STOCK_FIELD_NAME.DDE3:
-                if (!this.DDE3) this.DDE3ID.add(tagID);
-                else data = this.DDE3;
+                this.DDE3ID.add(tagID);
+                if (this.DDE3)  data = this.DDE3;
                 break;
             case STOCK_FIELD_NAME.DDE5:
-                if (!this.DDE5) this.DDE5ID.add(tagID);
-                else data = this.DDE5;
+                this.DDE5ID.add(tagID);
+                if (this.DDE5)  data = this.DDE5;
                 break;
             case STOCK_FIELD_NAME.DDE10:
-                if (!this.DDE10) this.DDE10ID.add(tagID);
-                else data = this.DDE10;
+                this.DDE10ID.add(tagID);
+                if (this.DDE10)  data = this.DDE10;
                 break;
         }
         return data;
@@ -461,6 +508,7 @@ function StockData(symbol)
         }
     }
     this.TagID=new Set();       //绑定的控件id
+    this.BaseDataTagID=new Set();   //基础数据的控件id
     this.HeatTagID=new Set();   //需要热度的控件id
     this.BuySellTagID=new Set();//买卖盘的控件id
     this.DealTagID=new Set();   //分笔的控件id
@@ -483,14 +531,57 @@ function StockData(symbol)
         this.TagID.add(id);
     }
 
+    this.ClearTagID=function()
+    {
+        this.TagID.clear();
+        this.BaseDataTagID.clear();
+        this.HeatTagID.clear();
+        this.BuySellTagID.clear();
+        this.DealTagID.clear();
+        this.DerivativeTagID.clear();
+        this.FinanceTagID.clear();
+
+        this.CapitalFlowDayID.clear();
+        this.CapitalFlowDay3ID.clear();
+        this.CapitalFlowDay5ID.clear();
+        this.CapitalFlowDay10ID.clear();
+
+        this.DDEID.clear();
+        this.DDE3ID.clear();
+        this.DDE5ID.clear();
+        this.DDE10ID.clear();
+
+        this.EventTagID.clear();
+        this.CompanyTagID.clear();
+
+        for(var item of this.Sort)
+        {
+            item[1].TagID.clear();
+        }
+    }
+
     this.RemoveTagID=function(id)
     {
         this.TagID.delete(id);
+        this.BaseDataTagID.delete(id);
         this.HeatTagID.delete(id);
         this.BuySellTagID.delete(id);
         this.DealTagID.delete(id);
         this.DerivativeTagID.delete(id);
         this.FinanceTagID.delete(id);
+
+        this.CapitalFlowDayID.delete(id);
+        this.CapitalFlowDay3ID.delete(id);
+        this.CapitalFlowDay5ID.delete(id);
+        this.CapitalFlowDay10ID.delete(id);
+
+        this.DDEID.delete(id);
+        this.DDE3ID.delete(id);
+        this.DDE5ID.delete(id);
+        this.DDE10ID.delete(id);
+
+        this.EventTagID.delete(id);
+        this.CompanyTagID.delete(id);
 
         for(var item of this.Sort)
         {
@@ -935,44 +1026,26 @@ function StockRead(stock,tagID)
         switch(field)
         {
             case STOCK_FIELD_NAME.SYMBOL:
-                return data.Symbol;
             case STOCK_FIELD_NAME.NAME:
-                return data.Name;
             case STOCK_FIELD_NAME.OPEN:
-                return data.Open;
             case STOCK_FIELD_NAME.PRICE:
-                return data.Price;
             case STOCK_FIELD_NAME.YCLOSE:
-                return data.YClose;
             case STOCK_FIELD_NAME.HIGH:
-                return data.High;
             case STOCK_FIELD_NAME.LOW:
-                return data.Low;
             case STOCK_FIELD_NAME.VOL:
-                return data.Vol;
             case STOCK_FIELD_NAME.AMOUNT:
-                return data.Amount;
             case STOCK_FIELD_NAME.DATE:
-                return data.Date;
             case STOCK_FIELD_NAME.TIME:
-                return data.Time;
             case STOCK_FIELD_NAME.INCREASE:
-                return data.Increase;
             case STOCK_FIELD_NAME.EXCHANGE_RATE:
-                return data.ExchangeRate;
             case STOCK_FIELD_NAME.AMPLITUDE:
-                return data.Amplitude;
             case STOCK_FIELD_NAME.MAX_PRICE:
-                return data.MaxPrice;
             case STOCK_FIELD_NAME.MIN_PRICE:
-                return data.MinPrice;
             case STOCK_FIELD_NAME.RISE_FALL_PRICE:
-                return data.RFPrice;
-            
             case STOCK_FIELD_NAME.INDEXTOP:
-                return data.IndexTop;
             case STOCK_FIELD_NAME.WEEK:
-                return data.Week;
+                return data.GetBaseData(this.TagID,field);
+
             case STOCK_FIELD_NAME.HEAT:
                 return data.GetHeatData(this.TagID);
             case STOCK_FIELD_NAME.BUY5:
@@ -1199,6 +1272,22 @@ function JSStock()
         }
     }
 
+    //取消单个股票上的所有控件订阅
+    this.UnsubscribeStock=function(symbol,tagID)
+    {
+        for(var item of this.MapStock)
+        {
+            if (item[0]===symbol)
+            {
+                if (tagID) item[1].RemoveTagID(tagID);
+                else item[1].ClearTagID();
+
+                console.log(`[JSStock::UnsubscribeStock] symbol=${symbol}, tagID=${tagID}`);
+                break;
+            }
+        }
+    }
+
     //获取一个股票
     this.Get=function(symbol,tagID)
     {
@@ -1229,44 +1318,35 @@ function JSStock()
 
         for(var item of this.MapStock)
         {
-            if (item[1].BuySellTagID.size>0)
+            var subscribe=item[1];  //订阅数据
+            var symbol=item[0];
+
+            //基础数据
+            if (subscribe.BaseDataTagID.size>0) 
             {
-                aryBuySell.push(item[0]);
-            }
-            else
-            {
-                if (IsIndexSymbol(item[0])) 
-                    aryIndex.push(item[0]);
-                else 
-                    arySymbol.push(item[0]);
+                if (IsIndexSymbol(symbol)) aryIndex.push(symbol);
+                else arySymbol.push(symbol);
             }
 
-            if (item[1].CapitalFlowDayID.size > 0) aryFlow.push(item[0]);
-            if (item[1].CapitalFlowDay3ID.size > 0) aryFlow3.push(item[0]);
-            if (item[1].CapitalFlowDay5ID.size > 0) aryFlow5.push(item[0]);
-            if (item[1].CapitalFlowDay10ID.size > 0) aryFlow10.push(item[0]);
+            if (subscribe.BuySellTagID.size>0) aryBuySell.push(symbol);
 
-            if (item[1].DDEID.size > 0) aryDDE.push(item[0]);
-            if (item[1].DDE3ID.size > 0) aryDDE3.push(item[0]);
-            if (item[1].DDE5ID.size > 0) aryDDE5.push(item[0]);
-            if (item[1].DDE10ID.size > 0) aryDDE10.push(item[0]);
+            if (subscribe.CapitalFlowDayID.size > 0) aryFlow.push(symbol);
+            if (subscribe.CapitalFlowDay3ID.size > 0) aryFlow3.push(symbol);
+            if (subscribe.CapitalFlowDay5ID.size > 0) aryFlow5.push(symbol);
+            if (subscribe.CapitalFlowDay10ID.size > 0) aryFlow10.push(symbol);
 
-            if(item[1].HeatTagID.size>0)
-                aryHeat.push(item[0])
+            if (subscribe.DDEID.size > 0) aryDDE.push(symbol);
+            if (subscribe.DDE3ID.size > 0) aryDDE3.push(symbol);
+            if (subscribe.DDE5ID.size > 0) aryDDE5.push(symbol);
+            if (subscribe.DDE10ID.size > 0) aryDDE10.push(symbol);
 
-            if (item[1].DealTagID.size>0)
-                aryDeal.push(item[0]);
+            if (subscribe.HeatTagID.size>0) aryHeat.push(symbol)
+            if (subscribe.DealTagID.size>0) aryDeal.push(symbol);
+            if (subscribe.DerivativeTagID.size>0) aryDerivative.push(symbol);
+            if (subscribe.FinanceTagID.size>0) aryFinance.push(symbol);
 
-            if (item[1].DerivativeTagID.size>0)
-                aryDerivative.push(item[0]);
-            
-            if (item[1].FinanceTagID.size>0)
-                aryFinance.push(item[0]);
-
-            if (item[1].Event == null && item[1].EventTagID.size > 0)
-                aryEvent.push(item[0]);
-			if (item[1].Company == null && item[1].CompanyTagID.size > 0)
-                aryCompany.push(item[0]);
+            if (subscribe.Event == null && subscribe.EventTagID.size > 0) aryEvent.push(symbol);
+			if (subscribe.Company == null && subscribe.CompanyTagID.size > 0) aryCompany.push(symbol);
         }
 
         if (aryBuySell.length>0) this.RequestBuySellData(aryBuySell);
