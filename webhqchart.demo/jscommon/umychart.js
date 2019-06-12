@@ -9508,11 +9508,15 @@ function KLineTooltipPaint()
         var klineData=this.KLineTitlePaint.GetCurrentKLineData();
         if (!klineData) return;
 
+        var lineCount=8;    //显示函数
+
+        if(klineData.Time!=null && !isNaN(klineData.Time) && klineData.Time>0) lineCount=9; //分钟K线多一列时间
+
         //this.TitleColor=this.KLineTitlePaint.UnchagneColor;
         this.IsHScreen=this.ChartFrame.IsHScreen===true;
         this.Canvas.font=this.Font[0];
         this.Width=this.Canvas.measureText(' 擎: 9999.99亿 ').width;
-        this.Height=this.LineHeight*8+2*GetDevicePixelRatio()*2;
+        this.Height=this.LineHeight*lineCount+2*GetDevicePixelRatio()*2;
 
         this.DrawBG();
         this.DrawKLineData(klineData);
@@ -9548,6 +9552,13 @@ function KLineTooltipPaint()
         var text=IFrameSplitOperator.FormatDateString(item.Date);
         this.Canvas.fillStyle=this.TitleColor;
         this.Canvas.fillText(text, left,top);
+
+        if(item.Time!=null && !isNaN(item.Time) && item.Time>0)
+        {
+            top+=this.LineHeight;  
+            text=IFrameSplitOperator.FormatTimeString(item.Time);
+            this.Canvas.fillText(text, left,top);
+        }
 
         top+=this.LineHeight;  
         this.Canvas.fillStyle=this.TitleColor;

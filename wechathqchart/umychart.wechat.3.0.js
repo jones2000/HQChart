@@ -906,6 +906,7 @@ function JSChartContainer(uielement)
     this.FormatDateString = IFrameSplitOperator.FormatDateString;
     this.FormatValueString = IFrameSplitOperator.FormatValueString;
     this.ToFixedPoint = ToFixedPoint;
+    this.FormatTimeString = IFrameSplitOperator.FormatTimeString;
 
     //事件回调
     this.mapEvent = new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
