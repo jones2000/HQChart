@@ -2872,9 +2872,11 @@ function AverageWidthFrame()
                 if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
                 else if (y <= top + 2) this.Canvas.textBaseline = 'top';
                 else this.Canvas.textBaseline = "middle";
-                this.Canvas.fillText(item.Message[0], left + 1*pixelTatio, y);
-            }
 
+                var textObj={ X:left, Y:y, Text:{ BaseLine:this.Canvas.textBaseline, Font:this.Canvas.font, Value:item.Message[0]}} ;
+                if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj))
+                    this.Canvas.fillText(item.Message[0], left + 1*pixelTatio, y);
+            }
             yPrev = y;
         }
     }
@@ -3458,6 +3460,35 @@ function KLineFrame()
                 this.DataWidth += 0.01;
             }
         }
+    }
+
+    //当前坐标信息 是否覆盖最大 最小值输出
+    this.IsOverlayMaxMin=function(obj) 
+    {
+        if (!this.ChartKLine) return false;
+        if (!this.ChartKLine.Max || !this.ChartKLine.Min) return false;
+
+        var textWidth=this.Canvas.measureText(obj.Text.Value).width+4;    //刻度文字宽度
+        var max=this.ChartKLine.Max, min=this.ChartKLine.Min;
+        var isOverlayMax=false, isOverlayMin=false;
+        const textHeight=20;    //字体高度
+        if (max.X>=obj.X && max.X<=obj.X+textWidth) //最大值X 坐标不在 刻度文字范围内
+        {
+            var y1=max.Y+textHeight, y2=max.Y-textHeight;
+            if ( (y1>=obj.Y-textHeight && y1<=obj.Y+textHeight) || (y2>=obj.Y-textHeight && y2<=obj.Y+textHeight))
+                isOverlayMax=true; 
+        }
+
+        if (isOverlayMax==true) return true;
+
+        if (min.X>=obj.X && min.X<=obj.X+textWidth)
+        {
+            var y1=min.Y+textHeight, y2=min.Y-textHeight;
+            if ( (y1>=obj.Y-textHeight && y1<=obj.Y+textHeight) || (y2>=obj.Y-textHeight && y2<=obj.Y+textHeight))
+                isOverlayMin=true; 
+        }
+
+        return isOverlayMax || isOverlayMin;
     }
 
     //分割x,y轴坐标信息
@@ -5847,6 +5878,8 @@ function ChartKLine()
         this.PtMax={X:null,Y:null,Value:null,Align:'left'}; //清空最大
         this.PtMin={X:null,Y:null,Value:null,Align:'left'}; //清空最小
 
+        this.ChartFrame.ChartKLine={Max:null, Min:null };   //保存K线上 显示最大最小值坐标
+
         if (!this.IsShow) return;
 
         if (this.DrawType==1) 
@@ -5888,6 +5921,7 @@ function ChartKLine()
         this.Canvas.textBaseline='bottom';
         var left=ptTop.Align=='left'?ptTop.X:ptTop.X;
         this.Canvas.fillText(ptTop.Value.toFixed(defaultfloatPrecision),left,ptTop.Y);
+        this.ChartFrame.ChartKLine.Max={X:left, Y:ptTop.Y, Text: { BaseLine:'bottom'}};
 
         /*
         this.Canvas.beginPath();
@@ -5904,6 +5938,8 @@ function ChartKLine()
         this.Canvas.textBaseline='top';
         var left=ptBottom.Align=='left'?ptBottom.X:ptBottom.X;
         this.Canvas.fillText(ptMin.Value.toFixed(defaultfloatPrecision),left,ptBottom.Y);
+        this.ChartFrame.ChartKLine.Min={X:left, Y:ptBottom.Y, Text:{ BaseLine:'top'}};
+
 
         /*
         this.Canvas.beginPath();
@@ -10697,7 +10733,7 @@ function BarragePaint()
 
             var fontHeight=this.FontHeight;
             if (item.Font && item.Font.Height>0) fontHeight=item.Font.Height;
-            yOffset=item.Y+parseInt((item.Height-fontHeight)/2);
+            var yOffset=item.Y+parseInt((item.Height-fontHeight)/2);
 
             this.Canvas.fillText(item.Text, right-item.X,top+yOffset);
         }
@@ -10738,7 +10774,7 @@ function BarragePaint()
 
             var fontHeight=this.FontHeight;
             if (item.Font && item.Font.Height>0) fontHeight=item.Font.Height;
-            yOffset=item.Y+parseInt((item.Height-fontHeight)/2);
+            var yOffset=item.Y+parseInt((item.Height-fontHeight)/2);
 
             this.Canvas.fillText(item.Text, right-item.X,top+yOffset);
         }
