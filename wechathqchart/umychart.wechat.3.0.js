@@ -36,19 +36,32 @@ import {
 //扩展画法图形库
 import {
     JSCommonExtendChartPaint_IExtendChartPainting as IExtendChartPainting,
-    JSCommonExtendChartPaint_KLineTooltipPaint as KLineTooltipPaint,
+    JSCommonExtendChartPaint_KLineTooltipPaint as KLineTooltipPaint, 
+    JSCommonExtendChartPaint_BarragePaint as BarragePaint,
 } from "umychart.extendchart.wechat.js";
 
 
-function JSCanvasElement() {
-  this.Height;
-  this.Width;
-  this.ID;
+function JSCanvasElement() 
+{
+    this.Height;
+    this.Width;
+    this.ID;
+    this.WebGLCanvas;
 
-  //获取画布
-  this.GetContext = function () {
-    return wx.createCanvasContext(this.ID);
-  }
+    //获取画布
+    this.GetContext = function () {
+        return wx.createCanvasContext(this.ID);
+    }
+
+    this.GetWebGLCanvas=function(id)
+    {
+        var self=this;
+        const query = wx.createSelectorQuery();
+        query.select(id).node().exec((res) => {
+            console.log('[JSCanvasElement::GetWebGLCanvas] res ', res)
+            self.WebGLCanvas = res[0].node;
+        })
+    }
 }
 
 function JSChart(element) 
@@ -858,6 +871,9 @@ var JSCHART_EVENT_ID =
 {
     RECV_INDEX_DATA: 2,  //接收指标数据
     RECV_HISTROY_DATA: 3,//接收到历史数据
+    RECV_TRAIN_MOVE_STEP: 4,    //接收K线训练,移动一次K线
+    CHART_STATUS: 5,            //每次Draw() 以后会调用
+    BARRAGE_PLAY_END: 6,        //单个弹幕播放完成
 }
 
 /*
@@ -893,6 +909,7 @@ function JSChartContainer(uielement)
     this.LastPoint = new Point();     //鼠标位置
     this.IsForceLandscape = false;    //是否强制横屏
     this.CorssCursorTouchEnd = false;   //手离开屏幕自动隐藏十字光标
+    this.EnableAnimation = false;   //是否开启动画
 
     //坐标轴风格方法 double-更加数值型分割  price-更加股票价格分割
     this.FrameSplitData = new Map();
@@ -907,6 +924,8 @@ function JSChartContainer(uielement)
     this.FormatValueString = IFrameSplitOperator.FormatValueString;
     this.ToFixedPoint = ToFixedPoint;
     this.FormatTimeString = IFrameSplitOperator.FormatTimeString;
+
+    //this.JSCHART_EVENT_ID = JSCHART_EVENT_ID;
 
     //事件回调
     this.mapEvent = new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
@@ -924,13 +943,16 @@ function JSChartContainer(uielement)
         if (!this.mapEvent.has(eventid)) return;
         this.mapEvent.delete(eventid);
     }
-    
-    this.GetIndexEvent = function () //接收指标数据
+
+    this.GetEvent=function(eventId)
     {
-        if (!this.mapEvent.has(JSCHART_EVENT_ID.RECV_INDEX_DATA)) return null;
-        var item = this.mapEvent.get(JSCHART_EVENT_ID.RECV_INDEX_DATA);
+        if (!this.mapEvent.has(eventId)) return null;
+        var item = this.mapEvent.get(eventId);
         return item;
     }
+    
+    this.GetIndexEvent = function () { return this.GetEvent(JSCHART_EVENT_ID.RECV_INDEX_DATA); } //接收指标数据
+    this.GetBarrageEvent=function() { return this.GetEvent(JSCHART_EVENT_ID.BARRAGE_PLAY_END);} //获取弹幕事件
 
   //判断是单个手指
   this.IsPhoneDragging = function (e) {
@@ -1237,11 +1259,82 @@ function JSChartContainer(uielement)
             if (item.IsDynamic && item.DrawAfterTitle) item.Draw();
         }
 
+        if (this.EnableAnimation) 
+        {
+            for (var i in this.ExtendChartPaint)    //动画
+            {
+                var item = this.ExtendChartPaint[i];
+                if (item.IsAnimation === true) item.Draw();
+            }
+        }
+
         this.LastDrawStatus ='DrawDynamicInfo';
         console.log('[JSChartContainer:DrawDynamicInfo][ID=' + this.UIElement.ID + '] draw .....');
         self.Canvas.draw(false, function () {
             console.log('[JSChartContainer:DrawDynamicInfo] finish.');
         });
+    }
+
+    this.DrawAnimation = function ()   //绘制动画 如弹幕
+    {
+        if (!this.EnableAnimation) return;
+
+        if (this.Frame.ScreenImagePath && !this.IsOnTouch) 
+        {
+            for (var i in this.ExtendChartPaint) 
+            {
+                var item = this.ExtendChartPaint[i];
+                if (item.IsAnimation === true) item.IsMoveStep = true;  //移动弹幕
+            }
+
+            this.DrawDynamicInfo();
+        }
+
+        var self = this;
+        this.UIElement.WebGLCanvas.requestAnimationFrame(() => { this.DrawAnimation(); });
+    }
+
+    this.StartAnimation = function (option) 
+    {
+        console.log('[JSChartContainer::StartAnimation] ', this.UIElement.WebGLCanvas);
+        if (!this.UIElement.WebGLCanvas) return;
+
+        var bCreated = false; //是否已经创建了弹幕画法
+        var barrageData = null;
+        for (var i in this.ExtendChartPaint) 
+        {
+            var item = this.ExtendChartPaint[i];
+            if (item.ClassName === 'BarragePaint') 
+            {
+                bCreated = true;
+                barrageData = item.BarrageList;
+                break;
+            }
+        }
+
+        if (!bCreated) 
+        {
+            var chart = new BarragePaint();
+            chart.Canvas = this.Canvas;
+            chart.ChartBorder = this.Frame.ChartBorder;
+            chart.ChartFrame = this.Frame;
+            chart.HQChart = this;
+            chart.SetOption(option);
+            this.ExtendChartPaint.push(chart);
+            barrageData = chart.BarrageList;
+        }
+
+        this.EnableAnimation = true;
+        var self = this;
+
+        this.UIElement.WebGLCanvas.requestAnimationFrame(()=> { this.DrawAnimation(); });
+        return barrageData;
+    }
+
+    this.StopAnimation = function () 
+    {
+        this.EnableAnimation = false;
+        this.DrawDynamicInfo();
     }
 
   this.OnMouseMove = function (x, y, e) {
@@ -1859,13 +1952,11 @@ function AverageWidthFrame()
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.fillStyle = item.TextColor;
                 this.Canvas.textAlign = "left";
-                if (y >= bottom - 2)
-                    this.Canvas.textBaseline = 'bottom';
-                else if (y <= top + 2)
-                    this.Canvas.textBaseline = 'top';
-                else
-                    this.Canvas.textBaseline = "middle";
-                this.Canvas.fillText(item.Message[0], left + 1, y);
+                if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
+                else if (y <= top + 2) this.Canvas.textBaseline = 'top';
+                else this.Canvas.textBaseline = "middle";
+                var textObj = { X: left, Y: y, Text: { BaseLine: this.Canvas.textBaseline, Font: this.Canvas.font, Value: item.Message[0] } };
+                if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj)) this.Canvas.fillText(item.Message[0], left + 1, y);
             }
 
             yPrev = y;
@@ -2286,66 +2377,109 @@ function MinuteHScreenFrame()
 }
 
 //K线框架
-function KLineFrame() {
-  this.newMethod = AverageWidthFrame;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function KLineFrame() 
+{
+    this.newMethod = AverageWidthFrame;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.ToolbarID = Guid();  //工具条Div id
+    this.ToolbarID = Guid();  //工具条Div id
+    this.ModifyIndex = true;  //是否显示'改参数'菜单
+    this.ChangeIndex = true;  //是否显示'换指标'菜单
 
-  this.ModifyIndex = true;  //是否显示'改参数'菜单
-  this.ChangeIndex = true;  //是否显示'换指标'菜单
+    this.DrawFrame = function () 
+    {
+        this.SplitXYCoordinate();
+        if (this.SizeChange == true) this.CalculateDataWidth();
 
-  this.DrawFrame = function () {
-    this.SplitXYCoordinate();
-
-    if (this.SizeChange == true) this.CalculateDataWidth();
-
-    this.DrawTitleBG();
-    this.DrawHorizontal();
-    this.DrawVertical();
-  }
-
-  this.GetXFromIndex = function (index) {
-    if (index < 0) index = 0;
-    if (index > this.xPointCount - 1) index = this.xPointCount - 1;
-
-    var offset = this.ChartBorder.GetLeft() + 2 + this.DistanceWidth / 2 + this.DataWidth / 2;
-    for (var i = 1; i <= index; ++i) {
-      offset += this.DistanceWidth + this.DataWidth;
+        this.DrawTitleBG();
+        this.DrawHorizontal();
+        this.DrawVertical();
     }
 
-    return offset;
-  }
+    this.GetXFromIndex = function (index) 
+    {
+        if (index < 0) index = 0;
+        if (index > this.xPointCount - 1) index = this.xPointCount - 1;
 
-  //计算数据宽度
-  this.CalculateDataWidth = function () {
-    if (this.XPointCount < 2) return;
-
-    var width = this.ChartBorder.GetWidth() - 4;    //预留4个像素 防止最后1个柱子不够画
-
-    for (var i = 0; i < ZOOM_SEED.length; ++i) {
-      if ((ZOOM_SEED[i][0] + ZOOM_SEED[i][1]) * this.XPointCount < width) {
-        this.ZoomIndex = i;
-        this.DataWidth = ZOOM_SEED[i][0];
-        this.DistanceWidth = ZOOM_SEED[i][1];
-        if (i == 0) break;      // 如果是最大的缩放因子，不再调整数据宽度
-
-        this.TrimKLineDataWidth(width);
-        return;
-      }
+        var offset = this.ChartBorder.GetLeft() + 2 + this.DistanceWidth / 2 + this.DataWidth / 2;
+        for (var i = 1; i <= index; ++i) { offset += this.DistanceWidth + this.DataWidth; }
+        return offset;
     }
-  }
 
-  this.TrimKLineDataWidth = function (width) {
-    while (true) {
-      if ((this.DistanceWidth + this.DataWidth) * this.XPointCount + this.DistanceWidth > width) {
-        this.DataWidth -= 0.01;
-        break;
-      }
-      this.DataWidth += 0.01;
+    this.CalculateDataWidth = function ()   //计算数据宽度
+    {
+        if (this.XPointCount < 2) return;
+        var width = this.ChartBorder.GetWidth() - 4;    //预留4个像素 防止最后1个柱子不够画
+
+        for (var i = 0; i < ZOOM_SEED.length; ++i) 
+        {
+            if ((ZOOM_SEED[i][0] + ZOOM_SEED[i][1]) * this.XPointCount < width) 
+            {
+                this.ZoomIndex = i;
+                this.DataWidth = ZOOM_SEED[i][0];
+                this.DistanceWidth = ZOOM_SEED[i][1];
+                this.TrimKLineDataWidth(width);
+                return;
+            }
+        }
     }
-  }
+
+    this.TrimKLineDataWidth = function (width) 
+    {
+        if (this.ZoomIndex >= ZOOM_SEED.length - 2) //最后2个缩放,调整间距不调整数据宽度, 数据都是画竖线的
+        {
+            while (true) 
+            {
+                if ((this.DistanceWidth + this.DataWidth) * this.XPointCount + this.DistanceWidth > width) 
+                {
+                    this.DistanceWidth -= 0.01;
+                    break;
+                }
+                this.DistanceWidth += 0.01;
+            }
+        }
+        else
+        {
+            while (true) 
+            {
+                if ((this.DistanceWidth + this.DataWidth) * this.XPointCount + this.DistanceWidth > width) 
+                {
+                    this.DataWidth -= 0.01;
+                    break;
+                }
+                this.DataWidth += 0.01;
+            }
+        }
+    }
+
+    this.IsOverlayMaxMin = function (obj) //当前坐标信息 是否覆盖最大 最小值输出
+    {
+        if (!this.ChartKLine) return false;
+        if (!this.ChartKLine.Max || !this.ChartKLine.Min) return false;
+
+        var textWidth = this.Canvas.measureText(obj.Text.Value).width + 4;    //刻度文字宽度
+        var max = this.ChartKLine.Max, min = this.ChartKLine.Min;
+        var isOverlayMax = false, isOverlayMin = false;
+        const textHeight = 20;    //字体高度
+        if (max.X >= obj.X && max.X <= obj.X + textWidth) 
+        {
+            var y1 = max.Y + textHeight, y2 = max.Y - textHeight;
+            if ((y1 >= obj.Y - textHeight && y1 <= obj.Y + textHeight) || (y2 >= obj.Y - textHeight && y2 <= obj.Y + textHeight))
+                isOverlayMax = true;
+        }
+
+        if (isOverlayMax == true) return true;
+
+        if (min.X >= obj.X && min.X <= obj.X + textWidth) //最小值X 坐标不在 刻度文字范围内
+        {
+            var y1 = min.Y + textHeight, y2 = min.Y - textHeight;
+            if ((y1 >= obj.Y - textHeight && y1 <= obj.Y + textHeight) || (y2 >= obj.Y - textHeight && y2 <= obj.Y + textHeight))
+                isOverlayMin = true;
+        }
+
+        return isOverlayMax || isOverlayMin;
+    }
 
   //分割x,y轴坐标信息
   this.SplitXYCoordinate = function () {
@@ -3821,6 +3955,7 @@ function ChartKLine()
     {
         this.PtMax = { X: null, Y: null, Value: null, Align: 'left' }; //清空最大
         this.PtMin = { X: null, Y: null, Value: null, Align: 'left' }; //清空最小
+        this.ChartFrame.ChartKLine = { Max: null, Min: null };   //保存K线上 显示最大最小值坐标
 
         if (this.IsShow == false) return;
 
@@ -3859,11 +3994,13 @@ function ChartKLine()
         this.Canvas.textBaseline = 'bottom';
         var left = ptMax.X;
         this.Canvas.fillText(ptMax.Value.toFixed(defaultfloatPrecision), left, ptMax.Y);
+        this.ChartFrame.ChartKLine.Max = { X: left, Y: ptMax.Y, Text: { BaseLine: 'bottom' } };
 
         this.Canvas.textAlign = ptMin.Align;
         this.Canvas.textBaseline = 'top';
         var left = ptMin.X;
         this.Canvas.fillText(ptMin.Value.toFixed(defaultfloatPrecision), left, ptMin.Y);
+        this.ChartFrame.ChartKLine.Min = { X: left, Y: ptMin.Y, Text: { BaseLine: 'top' } };
     }
 
     this.HScreenDrawMaxMinPrice = function (ptMax, ptMin)   //横屏模式下显示最大最小值

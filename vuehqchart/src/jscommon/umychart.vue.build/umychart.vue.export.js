@@ -24,6 +24,7 @@ export default {
     JSAlgorithm:JSAlgorithm,                //算法类
     JSComplier:JSComplier,                  //指标编译器
     
+    ScriptIndexConsole:ScriptIndexConsole,  //指标执行 无UI
     //style.js相关
     STYLE_TYPE_ID:STYLE_TYPE_ID,
     HQChartStyle:HQChartStyle,              //预定义全局的配色 黑

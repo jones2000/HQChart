@@ -5587,12 +5587,12 @@ function JSSymbolData(ast,option,jsExecute)
     this.StockHistoryDay3ApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay3';  //历史财务数据
     this.StockNewsAnalysisApiUrl= g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                //新闻分析数据
     this.HKToSHSZApiUrl=
-        [ 
-            g_JSComplierResource.CacheDomain+'/cache/historyday/all/hk2shsz.json',  //日线数据
-            g_JSComplierResource.CacheDomain+'/cache/analyze/hk2shsz/hk2shsz.json'  //最新分钟
-        ] ;          //北上资金
+    [ 
+        g_JSComplierResource.CacheDomain+'/cache/historyday/all/hk2shsz.json',  //日线数据
+        g_JSComplierResource.CacheDomain+'/cache/analyze/hk2shsz/hk2shsz.json'  //最新分钟
+    ] ;          //北上资金
 
-    this.MaxReqeustDataCount=1000;
+    this.MaxRequestDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
 
     this.LatestData;            //最新行情
@@ -5622,9 +5622,11 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.SourceData) this.SourceData=option.SourceData;
         if (option.Symbol) this.Symbol=option.Symbol;
         if (option.Name) this.Name=option.Name;
-        if (option.MaxReqeustDataCount>0) this.MaxReqeustDataCount=option.MaxReqeustDataCount;
+        if (option.MaxReqeustDataCount>0) this.MaxRequestDataCount=option.MaxReqeustDataCount;
         if (option.MaxRequestMinuteDayCount>0) this.MaxRequestMinuteDayCount=option.MaxRequestMinuteDayCount;
         if (option.KLineApiUrl) this.KLineApiUrl=option.KLineApiUrl;
+        if (option.Right) this.Right=option.Right;
+        if (option.Period) this.Period=option.Period;
     }
 
     this.RecvError=function(request)
@@ -5714,7 +5716,7 @@ function JSSymbolData(ast,option,jsExecute)
             url: self.RealtimeApiUrl,
             data:
             {
-                "field": ["name","symbol","avgvol5"],
+                "field": ["name","symbol","avgvol5", 'date'],
                 "symbol": [this.Symbol]
             },
             type:"post",
@@ -5735,8 +5737,9 @@ function JSSymbolData(ast,option,jsExecute)
     this.RecvVolRateData=function(data,key)
     {
         if (!data.stock || data.stock.length!=1) return;
-        var avgVol5=data.stock[0].avgvol5
-        var item={AvgVol5:avgVol5};
+        var avgVol5=data.stock[0].avgvol5;
+        var date=data.stock[0].date;
+        var item={AvgVol5:avgVol5, Date:date};
         this.ExtendData.set(key,item);
 
         console.log('[JSSymbolData::RecvVolRateData]', item);
@@ -5751,12 +5754,21 @@ function JSSymbolData(ast,option,jsExecute)
         var value=this.ExtendData.get(key);
         var avgVol5=value.AvgVol5/241;
         var totalVol=0;
-        for(var i=0;i<this.Data.Data.length;++i)
+        //5日成交总量只取了最新一天的,历史的暂时没有取,所以数据计算的时候只计算最新的一天, 其他都空
+        for(var i=0, j=0;i<this.Data.Data.length;++i)
         {
+            result[i]=null;
             var item=this.Data.Data[i];
+            var dateTime=item.DateTime; //日期加时间
+            if (!dateTime) continue;
+            var aryValue=dateTime.split(' ');
+            if (aryValue.length!=2) continue;
+            var date=parseInt(aryValue[0]);
+            if (date!=value.Date) continue;
+
             totalVol+=item.Vol;
-            if (avgVol5>0) result[i]=totalVol/(i+1)/avgVol5*100;
-            else result[i]=null;
+            if (avgVol5>0) result[i]=totalVol/(j+1)/avgVol5*100;
+            ++j;
         }
 
         return result;
@@ -5778,7 +5790,7 @@ function JSSymbolData(ast,option,jsExecute)
                     "field": [ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
                     "symbol": '000001.sh',
                     "start": -1,
-                    "count": self.MaxReqeustDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
+                    "count": self.MaxRequestDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
                 },
                 type:"post",
                 dataType: "json",
@@ -5893,7 +5905,7 @@ function JSSymbolData(ast,option,jsExecute)
         var symbol=job.Symbol;
         symbol=symbol.replace('.CI','.ci');
         var self=this;
-        if (this.DataType===HQ_DATA_TYPE.MINUTE_ID)  //走势图数据
+        if (this.DataType===HQ_DATA_TYPE.MINUTE_ID || this.DataType===HQ_DATA_TYPE.MULTIDAY_MINUTE_ID)  //走势图数据
         {
             var apiUrl=g_JSComplierResource.CacheDomain+'/cache/analyze/increaseanalyze/'+symbol+'.json';
             console.log('[JSSymbolData::GetIndexIncreaseData] minute Get url=' , apiUrl);
@@ -5922,7 +5934,7 @@ function JSSymbolData(ast,option,jsExecute)
                 {
                     "symbol": symbol,
                     "start": -1,
-                    "count": self.MaxReqeustDataCount
+                    "count": self.MaxRequestDataCount
                 },
                 type:"post",
                 dataType: "json",
@@ -5980,10 +5992,22 @@ function JSSymbolData(ast,option,jsExecute)
         var minuteData=data.minute;
         if (!minuteData.time || !minuteData.up || !minuteData.down) return;
         var upData=[],downData=[];
-        for(var i=0; i<minuteData.time.length; ++i)
+
+        for(var i=0, j=0;i<this.Data.Data.length;++i)
         {
-            upData[i]=minuteData.up[i];
-            downData[i]=minuteData.down[i];
+            upData[i]=null;
+            downData[i]=null;
+            var item=this.Data.Data[i];
+            var dateTime=item.DateTime; //日期加时间
+            if (!dateTime) continue;
+            var aryValue=dateTime.split(' ');
+            if (aryValue.length!=2) continue;
+            var date=parseInt(aryValue[0]);
+            if (date!=data.date) continue;
+
+            upData[i]=minuteData.up[j];
+            downData[i]=minuteData.down[j];
+            ++j;
         }
 
         this.ExtendData.set(key.UpKey,upData);
@@ -6040,7 +6064,7 @@ function JSSymbolData(ast,option,jsExecute)
                     "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
                     "symbol": self.Symbol,
                     "start": -1,
-                    "count": self.MaxReqeustDataCount
+                    "count": self.MaxRequestDataCount
                 },
                 type:"post",
                 dataType: "json",
@@ -6106,6 +6130,8 @@ function JSSymbolData(ast,option,jsExecute)
             this.Data.Data=periodData;
         }
 
+        this.Data.Right=this.Right;
+        this.Data.Period=this.Period;
         this.Name=data.name;
     }
 
@@ -6126,6 +6152,7 @@ function JSSymbolData(ast,option,jsExecute)
             this.Data.Data=periodData;
         }
 
+        this.Data.Period=this.Period;
         this.Name=data.name;
     }
 
@@ -7862,6 +7889,7 @@ function JSExecute(ast,option)
         if (this.UpdateUICallback) 
         {
             console.log('[JSComplier.Run] invoke UpdateUICallback.');
+            if (this.CallbackParam && this.CallbackParam.Self && this.CallbackParam.Self.ClassName==='ScriptIndexConsole') this.CallbackParam.JSExecute=this;
             this.UpdateUICallback(data,this.CallbackParam);
         }
     }
@@ -8387,7 +8415,7 @@ function ScriptIndex(name,script,args,option)
             SourceData:hqChart.SourceData,
             Callback:this.RecvResultData, CallbackParam:param,
             Async:true,
-            MaxReqeustDataCount:hqChart.MaxReqeustDataCount,
+            MaxRequestDataCount:hqChart.MaxReqeustDataCount,
             MaxRequestMinuteDayCount:hqChart.MaxRequestMinuteDayCount,
             Arguments:this.Arguments,
             Condition:this.Condition
@@ -8429,6 +8457,9 @@ function ScriptIndex(name,script,args,option)
             {
                 case CONDITION_PERIOD.MINUTE_ID:
                     if (option.HQDataType==HQ_DATA_TYPE.MINUTE_ID) return true;
+                    break;
+                case CONDITION_PERIOD.MULTIDAY_MINUTE_ID:
+                    if (option.HQDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) return true;
                     break;
                 case CONDITION_PERIOD.KLINE_DAY_ID:
                 case CONDITION_PERIOD.KLINE_WEEK_ID:
@@ -9005,6 +9036,69 @@ function APIScriptIndex(name,script,args,option)
     this.RecvAPIData=function(data)
     {
 
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+//  无UI指标执行
+// obj: { Name:指标名字 , ID:指标ID , Script:指标脚本, Args:指标参数, ErrorCallback:错误回调 }
+//
+///////////////////////////////////////////////////////////////////////
+function ScriptIndexConsole(obj)    
+{
+    this.ID;                //指标ID
+    this.Name;              //指标名字
+    this.Script;            //脚本
+    this.Arguments=[];      //参数
+    this.ClassName='ScriptIndexConsole';
+    this.ErrorCallback;     //执行错误回调
+    this.FinishCallback;    //执行完成回调
+
+    if (obj)
+    {
+        if (obj.Name) this.Name=obj.Name;
+        if (obj.Script) this.Script=obj.Script;
+        if (obj.ID) this.ID=obj.ID;
+        if (obj.Args) this.Arguments=obj.Args;
+        if (obj.ErrorCallback) this.ErrorCallback=obj.ErrorCallback;
+        if (obj.FinishCallback) this.FinishCallback=obj.FinishCallback;
+    }
+
+    //执行脚本
+    //obj:
+    //     HQDataType:(HQ_DATA_TYPE), Period:周期, Right:复权
+    //     Stock: {Name:, Symbol:}, Request: { MaxDataCount:请求K线数据个数, MaxMinuteDayCount:请求分钟数据天数, TradeDate: 历史走势图才用}, :
+    //     Data: 当前计算数据(周期|复权以后), Source:  原始股票数据 
+    this.ExecuteScript=function(obj)
+    {
+        this.OutVar=[];
+        let param= { Self:this };
+
+        let option=
+        {
+            HQDataType:obj.HQDataType,
+            Symbol:obj.Stock.Symbol, 
+            Name:obj.Stock.Name,
+            Period:obj.Period,
+            Right:obj.Right,
+            Callback:this.RecvResultData, CallbackParam:param,
+            Async:true,
+            MaxRequestDataCount:obj.Request.MaxDataCount,
+            MaxRequestMinuteDayCount:obj.Request.MaxMinuteDayCount,
+            Arguments:this.Arguments,
+        };
+
+        if (obj.HQDataType===HQ_DATA_TYPE.HISTORY_MINUTE_ID) option.TrateDate=obj.Request.TradeDate;
+
+        let code=this.Script;
+        let run=JSComplier.Execute(code,option,this.ErrorCallback);
+    }
+
+    this.RecvResultData=function(outVar,param)
+    {
+        var self=param.Self;
+        //console.log('[ScriptIndexConsole::RecvResultData] outVar ', outVar);
+        if (self.FinishCallback) self.FinishCallback(outVar, param.JSExecute);
     }
 }
 

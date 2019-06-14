@@ -2105,7 +2105,8 @@ JSIndexScript.prototype.UpDownAnalyze=function()
 {
     let data=
     {
-        Name: '涨跌趋势', Description: '涨跌趋势', IsMainIndex: false,FloatPrecision:0, Condition: { Period:[CONDITION_PERIOD.MINUTE_ID,CONDITION_PERIOD.KLINE_DAY_ID] },
+        Name: '涨跌趋势', Description: '涨跌趋势', IsMainIndex: false,FloatPrecision:0, 
+        Condition: { Period:[CONDITION_PERIOD.MINUTE_ID, CONDITION_PERIOD.MULTIDAY_MINUTE_ID, CONDITION_PERIOD.KLINE_DAY_ID] },
         Args: [],
         Script: //脚本
 "上涨家数:UPCOUNT('CNA.CI'),COLORRED;\n\
@@ -2132,7 +2133,7 @@ JSIndexScript.prototype.VOLRate=function()
 {
     let data=
     {
-        Name: '量比', Description: '量比', IsMainIndex: false,  Condition: { Period:[CONDITION_PERIOD.MINUTE_ID] },
+        Name: '量比', Description: '量比', IsMainIndex: false,  Condition: { Period:[CONDITION_PERIOD.MINUTE_ID, CONDITION_PERIOD.MULTIDAY_MINUTE_ID ] },
         Args: [],
         Script: //脚本
             "LIANGBI:VOLR;"

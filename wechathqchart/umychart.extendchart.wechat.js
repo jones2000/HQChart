@@ -43,7 +43,15 @@ function JSExtendChartPaintResource()
         BorderColor: 'rgb(120,120,120)',     //边框颜色
         TitleColor: 'rgb(120,120,120)',       //标题颜色
         TitleFont: '13px 微软雅黑'   //字体
-    };
+    },
+
+    //弹幕
+    this.Barrage = 
+    {
+        Font: '16px 微软雅黑',   //字体
+        Height: 20,
+        Color: 'RGB(109,109,109)'
+    }
 }
 
 var g_JSExtendChartPaintResource = new JSExtendChartPaintResource();
@@ -232,6 +240,254 @@ function KLineTooltipPaint()
     }
 }
 
+
+//////////////////////////////////////////////////////////////////////////////
+// 弹幕
+//弹幕数据 { X:X偏移, Y:Y偏移, Text:内容, Color:颜色 }
+function BarrageList() 
+{
+    this.PlayList = [];   //正在播放队列
+    this.Cache = [];      //没有播放的弹幕数据
+    this.MinLineHeight = 40;
+    this.Height;        //高度
+    this.Step = 1;
+
+    //{Canves:画布, Right:右边坐标, Left:左边坐标, Font:默认字体 }
+    this.GetPlayList = function (obj) 
+    {
+        var canves = obj.Canves;
+        var right = obj.Right;
+        var left = obj.Left;
+        var width = right - left;
+        var isMoveStep = obj.IsMoveStep;
+
+        var list = [];
+        var yOffset = 0;
+        for (var i = 0; i < this.PlayList.length; ++i) 
+        {
+            var ary = this.PlayList[i];
+            var lineHeight = this.MinLineHeight;
+            if (ary.Height > this.MinLineHeight) lineHeight = ary.Height;
+
+            var bAddNewItem = true;  //是否需要加入新弹幕
+            var bRemoveFirst = false; //是否删除第1个数据
+            for (var j = 0; j < ary.Data.length; ++j) 
+            {
+                var item = ary.Data[j];
+                var playItem = { X: item.X, Y: yOffset, Text: item.Text, Color: item.Color, Height: lineHeight, Font: item.Font, Info: item.Info };
+                list.push(playItem);
+
+                if (!isMoveStep) continue;
+
+                if (j == ary.Data.length - 1 && this.Cache.length > 0)    //最后一个数据了 判断是否需要增加弹幕
+                {
+                    bAddNewItem = false;
+                    if (!item.TextWidth) 
+                    {
+                        if (item.Font && item.Font.Name) canves.font = item.Font.Name;
+                        else canves.font = obj.Font;
+                        item.TextWidth = canves.measureText(playItem.Text + '擎擎').width;
+                    }
+
+                    if (item.X >= item.TextWidth)
+                        bAddNewItem = true;
+                }
+                else if (j == 0) 
+                {
+                    bRemoveFirst = false;
+                    if (!item.TextWidth) 
+                    {
+                        if (item.Font && item.Font.Name) canves.font = item.Font.Name;
+                        else canves.font = obj.Font;
+                        item.TextWidth = canves.measureText(playItem.Text + '擎擎').width;
+                    }
+
+                    if (item.X > width + item.TextWidth) bRemoveFirst = true;
+                }
+
+                item.X += this.Step;
+            }
+
+            if (isMoveStep && bAddNewItem && this.Cache.length > 0)    //最后一个数据了 判断是否需要增加弹幕
+            {
+                var cacheItem = this.Cache.shift();
+                var newItem = { X: 0, Text: cacheItem.Text, Color: cacheItem.Color, Font: cacheItem.Font, Info: cacheItem.Info };
+                ary.Data.push(newItem);
+            }
+
+            if (isMoveStep && bRemoveFirst && ary.Data.length > 0) 
+            {
+                var removeItem = ary.Data.shift();
+                this.OnItemPlayEnd(obj.HQChart, removeItem);
+            }
+
+            yOffset += lineHeight;
+        }
+
+        return list;
+    }
+
+    //根据高度计算播放队列个数
+    this.CacluatePlayLine = function (height) 
+    {
+        this.Height = height;
+        var lineCount = parseInt(height / this.MinLineHeight);
+        if (this.PlayList.length < lineCount)
+         {
+            var addCount = lineCount - this.PlayList.length;
+            for (var i = 0; i < addCount; ++i) 
+            {
+                this.PlayList.push({ Data: [] });
+            }
+        }
+        else if (this.PlayList.length > lineCount) 
+        {
+            var removeCount = this.PlayList.length - lineCount;
+            for (var i = 0; i < removeCount; ++i) 
+            {
+                var ary = this.PlayList.pop();
+                for (var j = 0; j < ary.Data.length; ++j) 
+                {
+                    var item = ary.Data[j];
+                    var cacheItem = { Text: item.Text, Color: item.Color, Font: item.Font, Info: item.Info };
+                    this.Cache.unshift(cacheItem);
+                }
+            }
+        }
+
+        console.log(`[BarrageList::CacluatePlayLine] LineCount=${this.PlayList.length} Height=${this.Height}`)
+    }
+
+    //添加弹幕
+    this.AddBarrage = function (barrageData) 
+    {
+        for (var i in barrageData) {
+            var item = barrageData[i];
+            this.Cache.push(item);
+        }
+    }
+
+    this.OnItemPlayEnd = function (hqChart, item)  //单挑弹幕播放完毕
+    {
+        //监听事件
+        var event = hqChart.GetBarrageEvent();
+        if (!event || !event.Callback) return;
+
+        event.Callback(event, item, this);
+    }
+
+    this.Count = function () { return this.Cache.length; } //未播放的弹幕个数
+}
+
+//弹幕
+function BarragePaint() 
+{
+    this.newMethod = IExtendChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName = 'BarragePaint';
+    this.IsAnimation = true;
+    this.IsEraseBG = true;
+    this.HQChart;
+
+    this.Font = g_JSExtendChartPaintResource.Barrage.Font;
+    this.TextColor = g_JSExtendChartPaintResource.Barrage.Color;
+    this.FontHeight = g_JSExtendChartPaintResource.Barrage.Height;
+
+    this.BarrageList = new BarrageList();  //字幕列表
+    this.IsMoveStep = false;
+
+    
+    this.SetOption = function (option) //设置参数接口
+    {
+        if (option) 
+        {
+            if (option.Step > 0) this.BarrageList.Step = option.Step;
+            if (option.MinLineHeight) this.Barrage.MinLineHeight = option.MinLineHeight;
+        }
+    }
+
+    this.DrawHScreen = function () 
+    {
+        var height = this.ChartBorder.GetWidth();
+        var left = this.ChartBorder.GetTop();
+        var right = this.ChartBorder.GetBottom();
+        var top = this.ChartBorder.GetRightEx();
+        var wdith = this.ChartBorder.GetChartWidth();
+
+        if (height != this.BarrageList.Height)
+            this.BarrageList.CacluatePlayLine(height);
+
+        this.Canvas.textBaseline = "middle";
+        this.Canvas.textAlign = "left";
+
+        var play = this.BarrageList.GetPlayList({ Canves: this.Canvas, Right: right, Left: left, Font: this.Font, IsMoveStep: this.IsMoveStep, HQChart: this.HQChart });
+        this.IsMoveStep = false;
+        if (!play) return;
+
+        this.Canvas.save();
+        this.Canvas.translate(this.ChartBorder.GetChartHeight(), 0);
+        this.Canvas.rotate(90 * Math.PI / 180);
+
+        for (var i = 0; i < play.length; ++i) 
+        {
+            var item = play[i];
+            if (item.Color) this.Canvas.fillStyle = item.Color;
+            else this.Canvas.fillStyle = this.TextColor;
+            if (item.Font) this.Canvas.font = item.Font.Name;
+            else this.Canvas.font = this.Font;
+
+            var fontHeight = this.FontHeight;
+            if (item.Font && item.Font.Height > 0) fontHeight = item.Font.Height;
+            var yOffset = item.Y + parseInt((item.Height - fontHeight) / 2);
+
+            this.Canvas.fillText(item.Text, right - item.X, top + yOffset);
+        }
+
+        this.Canvas.restore();
+    }
+
+    this.Draw = function () 
+    {
+        if (this.ChartFrame.IsHScreen) 
+        {
+            this.DrawHScreen();
+            return;
+        }
+
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRight();
+        var top = this.ChartBorder.GetTopEx();
+        var height = this.ChartBorder.GetHeight();
+
+        if (height != this.BarrageList.Height)
+            this.BarrageList.CacluatePlayLine(height);
+
+        this.Canvas.textBaseline = "middle";
+        this.Canvas.textAlign = "left";
+
+        var play = this.BarrageList.GetPlayList({ Canves: this.Canvas, Right: right, Left: left, Font: this.Font, IsMoveStep: this.IsMoveStep, HQChart: this.HQChart });
+        this.IsMoveStep = false;
+        if (!play) return;
+
+        for (var i = 0; i < play.length; ++i) 
+        {
+            var item = play[i];
+            if (item.Color) this.Canvas.fillStyle = item.Color;
+            else this.Canvas.fillStyle = this.TextColor;
+            if (item.Font) this.Canvas.font = item.Font.Name;
+            else this.Canvas.font = this.Font;
+
+            var fontHeight = this.FontHeight;
+            if (item.Font && item.Font.Height > 0) fontHeight = item.Font.Height;
+            var yOffset = item.Y + parseInt((item.Height - fontHeight) / 2);
+
+            this.Canvas.fillText(item.Text, right - item.X, top + yOffset);
+        }
+    }
+}
+
 //导出统一使用JSCommon命名空间名
 module.exports =
 {
@@ -239,9 +495,11 @@ module.exports =
     {
         IExtendChartPainting: IExtendChartPainting,
         KLineTooltipPaint: KLineTooltipPaint,
+        BarragePaint: BarragePaint,
     },
 
     //单个类导出
     JSCommonExtendChartPaint_IExtendChartPainting: IExtendChartPainting,
     JSCommonExtendChartPaint_KLineTooltipPaint: KLineTooltipPaint,
+    JSCommonExtendChartPaint_BarragePaint: BarragePaint,
 };
