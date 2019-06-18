@@ -2120,7 +2120,8 @@ JSIndexScript.prototype.HK2SHSZ=function()
 {
     let data=
     {
-        Name: '北上资金', Description: '北上资金', IsMainIndex: false,FloatPrecision:0, Condition: { Period:[CONDITION_PERIOD.MINUTE_ID,CONDITION_PERIOD.KLINE_DAY_ID] },
+        Name: '北上资金', Description: '北上资金', IsMainIndex: false,FloatPrecision:0, 
+        Condition: { Period:[CONDITION_PERIOD.MINUTE_ID,CONDITION_PERIOD.MULTIDAY_MINUTE_ID,CONDITION_PERIOD.KLINE_DAY_ID] },
         Args: [],
         Script: //脚本
             "净流入:HK2SHSZ(1),COLORSTICK;"

@@ -133,7 +133,10 @@
                     <tr v-for='(item,index) in DealPriceData' :key='index+"dealprice"'>
                         <td :class='item.Price.Color'>{{item.Price.Text}}</td>
                         <td>{{item.Vol}}</td>
-                        <td><span :style='item.Bar'></span></td>
+                        <td><span :style='item.Bar'>
+                            <span class="buy" :style='item.BuyRate'></span><span class="none" :style='item.NoneRate'></span><span class="sell" :style='item.SellRate'></span>
+                            </span>
+                        </td>
                         <td>{{item.Rate}}</td>
                     </tr>
                 </tbody>
@@ -373,9 +376,12 @@ class DefaultData {
       let data = [{
         Price:{Text:'',Color:''},
         Vol:0,
-        Bar:{width:'20px',backgroundColor:'#fff'},
+        Bar:{width:'20px'},
         Rate:'',
-        WidthRate:0
+        WidthRate:0,
+        BuyRate:{width:'20px'},
+        SellRate:{width:'20px'},
+        NoneRate:{width:'20px'}
       }];
       return data;
   }
@@ -995,7 +1001,7 @@ export default {
       }
     },
 
-    UpdateDealPrice:function(dealPrice)
+    UpdateDealPrice:function(dealPrice)  //分价表
     {
         console.log('[StockTradeInfo::UpdateDealPrice]', dealPrice.Data);
         var yClose = dealPrice.Data.Day.YClose;
@@ -1013,27 +1019,37 @@ export default {
         var data = [];
         for(let i = 0; i < priceList.length; ++i){
             var item = priceList[i];
+            var vol = item.Vol;
+            var buyRate = item.BuyVol / vol;
+            var sellRate = item.SellVol / vol;
+            var noneRate = item.NoneVol / vol;
+
             var dealPriceObj = {};
             
-            var barStyle = {width:'20px',backgroundColor:'#fff'};
+            var barStyle = {width:'20px'};
             dealPriceObj.Price = {Text:JSCommon.IFrameSplitOperator.FormatValueString(item.Price,2),Color:'',Value:item.Price} ;
             dealPriceObj.Vol = parseInt(item.Vol/100);
-            dealPriceObj.Rate = JSCommon.IFrameSplitOperator.FormatValueString(item.Rate * 100, 2) + '%';
+            dealPriceObj.Rate = JSCommon.IFrameSplitOperator.FormatValueString(item.Proportion * 100, 2) + '%';
             var color = JSCommon.IFrameSplitOperator.FormatValueColor(item.Price,yClose);
             dealPriceObj.Price.Color = color;
-            if(color == 'PriceUp'){
-                barStyle.backgroundColor = '#f00';
-            }else if(color == 'PriceDown'){
-                barStyle.backgroundColor = '#0f0';
-            }else{
-                barStyle.backgroundColor = '#ccc';
-            }
+            // if(color == 'PriceUp'){
+            //     barStyle.backgroundColor = '#f00';
+            // }else if(color == 'PriceDown'){
+            //     barStyle.backgroundColor = '#0f0';
+            // }else{
+            //     barStyle.backgroundColor = '#ccc';
+            // }
             
             dealPriceObj.WidthRate = item.Vol / maxVol;
-            barStyle.width = barWidth * dealPriceObj.WidthRate + 'px';
-            if(barWidth * dealPriceObj.WidthRate < 1){
-                barStyle.width = '1px';
-            }
+            var totalWidth = barWidth * dealPriceObj.WidthRate > 1 ? barWidth * dealPriceObj.WidthRate : 1;
+            barStyle.width = totalWidth + 'px';
+            
+            var buyWidth = buyRate * totalWidth + 'px';
+            var sellWidth = sellRate * totalWidth + 'px';
+            var noneWidth = noneRate * totalWidth + 'px';
+            dealPriceObj.BuyRate = {width:buyWidth};
+            dealPriceObj.SellRate = {width:sellWidth};
+            dealPriceObj.NoneRate = {width:noneWidth};
 
             dealPriceObj.Bar = barStyle;
             data.push(dealPriceObj);
@@ -1314,7 +1330,21 @@ ul {
             vertical-align: middle;
             display:inline-block;
             height: 14px;
+            .buy,.sell,.none{
+                display: inline-block;
+                height: 14px;
+            }
+            .buy{
+                background-color: red;
+            }
+            .sell{
+                background-color: green;
+            }
+            .none{
+                background-color: #ccc;
+            }
         }
+
     }  
   }
   

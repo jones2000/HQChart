@@ -5586,11 +5586,12 @@ function JSSymbolData(ast,option,jsExecute)
     this.StockHistoryDayApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay';  //历史财务数据
     this.StockHistoryDay3ApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay3';  //历史财务数据
     this.StockNewsAnalysisApiUrl= g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                //新闻分析数据
-    this.HKToSHSZApiUrl=
+    this.HKToSHSZApiUrl=    //北上资金
     [ 
-        g_JSComplierResource.CacheDomain+'/cache/historyday/all/hk2shsz.json',  //日线数据
-        g_JSComplierResource.CacheDomain+'/cache/analyze/hk2shsz/hk2shsz.json'  //最新分钟
-    ] ;          //北上资金
+        g_JSComplierResource.CacheDomain+'/cache/historyday/all/hk2shsz.json',      //日线数据
+        g_JSComplierResource.CacheDomain+'/cache/analyze/hk2shsz/hk2shsz.json',     //最新分钟
+        g_JSComplierResource.Domain+'/API/HKToSHSZMinuteData'                       //多日分时分钟
+    ] ;          
 
     this.MaxRequestDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
@@ -6793,32 +6794,50 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.HKToSHSZData.has(jobID)) return this.Execute.RunNextJob();
 
         var url, dataType=0;
-        if (this.DataType===HQ_DATA_TYPE.MINUTE_ID)
-        {
-            dataType=1;
-            url=this.HKToSHSZApiUrl[dataType];
-        }
-        else if (this.Period<=3)
-        {
-            dataType=0;
-            url=this.HKToSHSZApiUrl[dataType];
-        }
+        if (this.DataType===HQ_DATA_TYPE.MINUTE_ID) dataType=1;
+        else if (this.DataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) dataType=2;
+        else if (this.Period<=3) dataType=0;
 
-        console.log(`[JSSymbolData::GetHKToSHSZData] jobID=${jobID}, url=${url}`);
+        url=this.HKToSHSZApiUrl[dataType];
         var self=this;
-        //请求数据
-        $.ajax({
-            url: url,
-            type:"get",
-            dataType: "json",
-            async:true,
-            success: function (recvData)
-            {
-                if (dataType==0) self.RecvHKToSHSZData(recvData,jobID);
-                else if (dataType==1) self.RecvMinuteHKToSHSZData(recvData,jobID);
-                self.Execute.RunNextJob();
-            }
-        });
+        console.log(`[JSSymbolData::GetHKToSHSZData] jobID=${jobID}, url=${url}, dataType=${dataType}`);
+
+        if (dataType===2)
+        {
+            //请求数据
+            $.ajax({
+                url: url,
+                data:
+                {
+                    "symbol": this.Symbol,
+                    'daycount': this.MaxRequestMinuteDayCount
+                },
+                type:"post",
+                dataType: "json",
+                async:true,
+                success: function (recvData)
+                {
+                    self.RecvMulitMinuteHKToSHSZData(recvData,jobID);
+                    self.Execute.RunNextJob();
+                }
+            });
+        }
+        else
+        {
+            //请求数据
+            $.ajax({
+                url: url,
+                type:"get",
+                dataType: "json",
+                async:true,
+                success: function (recvData)
+                {
+                    if (dataType==0) self.RecvHKToSHSZData(recvData,jobID);
+                    else if (dataType==1) self.RecvMinuteHKToSHSZData(recvData,jobID);
+                    self.Execute.RunNextJob();
+                }
+            });
+        }
     }
 
     this.RecvMinuteHKToSHSZData=function(data,jobID)
@@ -6901,6 +6920,80 @@ function JSSymbolData(ast,option,jsExecute)
             let data=bindData.GetValue();
             this.HKToSHSZData.set(allData[i].JobID,data);
         }
+    }
+
+    this.RecvMulitMinuteHKToSHSZData=function(data,jobID)   //多日分时图北上资金
+    {
+        if (!data.data || data.data.length<=0) return;
+
+        var arySHSZData=[], arySHData=[], arySZData=[];
+        for(var i=0 ,j=0;i<this.Data.Data.length && j<data.data.length; )
+        {
+            arySHSZData[i]=null;
+            arySHData[i]=null;
+            arySZData[i]=null;
+            var item=this.Data.Data[i];
+            var dateTime=item.DateTime; //日期加时间
+            if (!dateTime) 
+            {
+                ++i;
+                continue;
+            }
+            var aryValue=dateTime.split(' ');
+            if (aryValue.length!=2) 
+            {
+                ++i;
+                continue;
+            }
+            var date=parseInt(aryValue[0]);
+            var day=data.data[j];
+            if (!day.minute || day.minute.length<=0)
+            {
+                ++j;
+                continue;
+            }
+
+            if (day.date>date)
+            {
+                ++i;
+                continue;
+            }
+            else if (day.date<date)
+            {
+                ++j;
+                continue;
+            }
+
+            for(var k in day.minute)
+            {
+                var timeItem=day.minute[k];
+
+                var SHValue=timeItem[1];
+                var SZValue=timeItem[2];
+                var total=SHValue+SZValue;
+
+                arySHSZData[i]=total;
+                arySHData[i]=SHValue;
+                arySZData[i]=SZValue;
+                ++i;
+            }
+
+            ++j;
+        }
+
+        var allData=
+        [
+            {Data:arySHSZData, JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH_SZ}, 
+            {Data:arySHData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH}, 
+            {Data:arySZData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ}
+        ];
+
+        for(var i in allData)
+        {
+            var item=allData[i];
+            this.HKToSHSZData.set(item.JobID,item.Data);
+        }
+        
     }
 
     //北上资金函数

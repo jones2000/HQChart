@@ -2993,14 +2993,15 @@ function DealPriceListData(symbol)
     this.RecvData = function (data, dataType) 
     {
         this.Data = null;
-        if (data.data.length<=0) return;
+        if (data.statistics.length<=0) return;
         this.Data={ Day:{}, PriceList:[] };
         var stock=data.data[0];
         this.Data.Day={Date:stock.date, YClose:stock.yclose, Price:stock.price, Vol:stock.vol, Time:stock.time};
         this.Data.Stock={Symbol:stock.symbol, Name:stock.name};
+
+        /*
         var aryPrice=stock.pricelist;
         var aryVol=stock.vollist;
-        
         for (let i=0;i<aryPrice.length;++i) 
         {
             let item = {Price:aryPrice[i], Vol: aryVol[i]};
@@ -3008,13 +3009,27 @@ function DealPriceListData(symbol)
            
             this.Data.PriceList.push(item);
         }
+        */
+        
+        var stockPrice=data.statistics[0];
+        for(var i in stockPrice.list)
+        {
+            var item=stockPrice.list[i];
+
+            var newItem = {Price:item[0], Vol: item[1], BuyVol:item[2], SellVol:item[3], NoneVol:item[4]};
+            if (stock.vol>0) newItem.Proportion=newItem.Vol/stock.vol;
+
+            this.Data.PriceList.push(newItem);
+        }
+        
 
         if (this.UpdateUICallback) this.UpdateUICallback(this);
 
         this.AutoUpate();
     }
 
-    this.RecvError = function (request, dataType) {
+    this.RecvError = function (request, dataType) 
+    {
 
     }
 }
