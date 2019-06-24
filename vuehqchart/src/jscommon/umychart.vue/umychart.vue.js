@@ -3331,6 +3331,11 @@ function JSChart(divElement)
             if (option.KLine.FirstShowDate>20000101) chart.CustomShow={ Date:option.KLine.FirstShowDate };
         }
 
+        if (option.DrawPicture) //画图工具
+        {
+            if (option.DrawPicture.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawPicture.StorageKey);
+        }
+
         if (!option.Windows || option.Windows.length<=0) return null;
 
         //创建子窗口
@@ -4242,6 +4247,7 @@ function JSChartContainer(uielement)
     this.TitlePaint=new Array();                    //标题画法
     this.OverlayChartPaint=new Array();             //叠加信息画法
     this.ChartDrawPicture=new Array();              //画图工具
+    this.ChartDrawStorage;                          //画图工具保存
     this.CurrentChartDrawPicture=null;              //当前的画图工具
     this.SelectChartDrawPicture=null;               //当前选中的画图
     this.ChartCorssCursor;                          //十字光标
@@ -14281,7 +14287,7 @@ IFrameSplitOperator.FormatTimeString=function(value)
     else
     {
         var hour=parseInt(value/10000);
-        var minute=parseInt((value%1000)/100);
+        var minute=parseInt((value%10000)/100);
         var second=value%100;
         return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
     }
@@ -16165,12 +16171,16 @@ function IChartDrawPicture()
     this.PointStatus=0;                         //2=第2个点完成
     this.MovePointIndex=null;                   //移动哪个点 0-10 对应Point索引  100 整体移动
     this.ClassName='IChartDrawPicture';
-    this.FinishedCallback;                  //画图完成回调通知
+    this.FinishedCallback;                      //画图完成回调通知
+    this.Guid=Guid();                            //ID标识
+    this.Symbol;        //对应的股票
+    this.Period;        //对应的周期
 
     // this.LineColor=g_JSChartResource.DrawPicture.LineColor[0];                            //线段颜色
     this.LineColor="#1e90ff";      //线段颜色，input type="color" 不支持rgb和rgba 的格式
     this.AreaColor='rgba(25,25,25,0.4)';    //面积颜色
     this.PointColor=g_JSChartResource.DrawPicture.PointColor[0];
+    
 
     //接口函数
     this.SetLastPoint=null; //this.SetLastPoint=function(obj)  obj={X:,Y:}
@@ -16484,11 +16494,77 @@ function IChartDrawPicture()
         return line;
     }
 
+    //导出成存储格式
+    this.ExportStorageData=function()
+    {
+        var storageData=
+        { 
+            ClassName:this.ClassName, 
+            Symbol:this.Symbol, Guid:this.Guid, Period:this.Period,Value:[] ,
+            FrameID:this.Frame.Identify, LineColor:this.LineColor, AreaColor:this.AreaColor
+        };
+        for(var i in this.Value)
+        {
+            var item=this.Value[i];
+            storageData.Value.push({XValue:item.XValue, YValue:item.YValue});
+        }
+
+        if (this.Text) storageData.Text=this.Text;  //如果有文本, 也导出
+        if (this.FontOption) storageData.FontOption=this.FontOption;    //字体也导出
+
+        return storageData;
+    }
+
 }
 
 IChartDrawPicture.ColorToRGBA=function(color,opacity)
 {
     return "rgba(" + parseInt("0x" + color.slice(1, 3)) + "," + parseInt("0x" + color.slice(3, 5)) + "," + parseInt("0x" + color.slice(5, 7)) + "," + opacity + ")";
+}
+
+IChartDrawPicture.CreateChartDrawPrictrue=function(obj)    //创建画图工具
+{
+    const MAP_CREATE=new Map(
+    [
+        ['ChartDrawPictureLine', { Create:function() { return new ChartDrawPictureLine(); }}],
+        ['ChartDrawPictureHaflLine', { Create:function() { return new ChartDrawPictureHaflLine(); }}],
+        ['ChartDrawPictureHorizontalLine', { Create:function() { return new ChartDrawPictureHorizontalLine(); }}],
+        ['ChartDrawPictureTrendLine', { Create:function() { return new ChartDrawPictureTrendLine(); }}],
+        ['ChartDrawPictureRect', { Create:function() { return new ChartDrawPictureRect(); }}],
+        ['ChartDrawPictureArc', { Create:function() { return new ChartDrawPictureArc(); }}],
+        ['ChartDrawPictureWaveMW', { Create:function() { return new ChartDrawPictureWaveMW(); }}],
+        ['ChartDrawPictureParallelLines', { Create:function() { return new ChartDrawPictureParallelLines(); }}],
+        ['ChartDrawPictureParallelChannel', { Create:function() { return new ChartDrawPictureParallelChannel(); }}],
+        ['ChartDrawPicturePriceChannel', { Create:function() { return new ChartDrawPicturePriceChannel(); }}],
+        ['ChartDrawPictureText', { Create:function() { return new ChartDrawPictureText(); }}],
+        ['ChartDrawPictureGannFan', { Create:function() { return new ChartDrawPictureGannFan(); }}],
+        ['ChartDrawPictureResistanceLine', { Create:function() { return new ChartDrawPictureResistanceLine(); }}],
+        ['ChartDrawPictureGoldenSection', { Create:function() { return new ChartDrawPictureGoldenSection(); }}],
+        ['ChartDrawPicturePercentage', { Create:function() { return new ChartDrawPicturePercentage(); }}],
+        ['ChartDrawPictureWaveBand', { Create:function() { return new ChartDrawPictureWaveBand(); }}],
+        ['ChartDrawPictureTriangle', { Create:function() { return new ChartDrawPictureTriangle(); }}],
+        ['ChartDrawPictureSymmetryAngle', { Create:function() { return new ChartDrawPictureSymmetryAngle(); }}],
+        ['ChartDrawPictureCircle', { Create:function() { return new ChartDrawPictureCircle(); }}],
+        ['ChartDrawPictureQuadrangle', { Create:function() { return new ChartDrawPictureQuadrangle(); }}],
+        ['ChartDrawPictureFibonacci', { Create:function() { return new ChartDrawPictureFibonacci(); }}],
+        ['ChartDrawPictureIconFont', { Create:function() { return new ChartDrawPictureIconFont(); }}]
+    ]);
+
+    if (!MAP_CREATE.has(obj.ClassName)) return null;
+
+    var item=MAP_CREATE.get(obj.ClassName);
+    var chartDraw=item.Create();
+    
+    if (obj.Period>=0) chartDraw.Period=obj.Period;
+    if (obj.Guid) chartDraw.Guid=obj.Guid;
+    if (obj.Symbol) chartDraw.Symbol=obj.Symbol;
+    if (obj.Value) chartDraw.Value=obj.Value;
+    if (obj.Text) chartDraw.Text=obj.Text;
+    if (obj.LineColor) chartDraw.LineColor=obj.LineColor;
+    if (obj.AreaColor) chartDraw.AreaColor=obj.AreaColor;
+    if (obj.FontOption) chartDraw.FontOption=obj.FontOption;
+
+    return chartDraw;
 }
 
 
@@ -18550,6 +18626,116 @@ function ChartDrawPictureFibonacci()
     }
 }
 
+function ChartDrawStorage()
+{
+    this.DrawData=new Map();    //画图工具数据 key=symbol-Period, value=Map() Key:Guid, Value:{Guid, Symbol, Period, ClassName, Value}
+    this.StorageKey;
+
+    this.Load=function(key)     //从本地读取画图工具
+    {
+        if (!key) return;
+        this.StorageKey=key;
+        var cacheValue = localStorage[this.StorageKey];
+        console.log(`[ChartDrawStorage::Save] Load to localStorage, key=${this.StorageKey}, cache=${cacheValue}`);
+
+        if (!cacheValue) return;
+        if (typeof(cacheValue) != "string") return;
+
+        var saveData=JSON.parse(cacheValue);
+        for(var i in saveData)
+        {
+            var item=saveData[i];
+            var drawMap=new Map();
+
+            for(var j in item.Value)
+            {
+                var drawItem=item.Value[j];
+                drawMap.set(drawItem.Key, drawItem.Value);    
+            }
+
+            this.DrawData.set(item.Key,drawMap);
+        }
+    }
+
+    this.Save=function()        //把数据保存到本地
+    {
+        if (!this.StorageKey) return;
+        
+        var saveData=[];
+        for(var stock of this.DrawData)
+        {
+            var key=stock[0];
+            var value=stock[1];
+            var itemData={ Key:key, Value:[]};
+
+            for(var drawItem of value)
+            {
+                itemData.Value.push({Key:drawItem[0], Value:drawItem[1]});
+            }
+
+            saveData.push(itemData)
+        }
+
+        console.log(`[ChartDrawStorage::Save] save to localStorage, key=${this.StorageKey}`);
+        var strData=JSON.stringify(saveData);
+        localStorage[this.StorageKey]=strData;
+    }
+
+    this.SaveDrawData=function(drawPicture)   //保存一个画图工具
+    {
+        var strKey=drawPicture.Symbol+'-'+drawPicture.Period;
+        var data=drawPicture.ExportStorageData();
+        if (!data) return;
+
+        if (this.DrawData.has(strKey))  //更新
+        {
+            console.log('[ChartDrawStorage::SaveDrawData] Upate: key, drawPicture, data', strKey, drawPicture,data);
+            this.DrawData.get(strKey).set(data.Guid, data);
+        }
+        else    //新增
+        {
+            console.log('[ChartDrawStorage::SaveDrawData] Insert: key, drawPicture, data', strKey, drawPicture,data);
+            var newData=new Map();
+            newData.set(data.Guid, data);
+            this.DrawData.set(strKey,newData);
+        }
+
+        console.log('[ChartDrawStorage::SaveDrawData] All draw data： ', this.DrawData);
+
+        this.Save();
+    }
+
+    this.DeleteDrawData=function(drawPictrue)   //删除一个画图工具
+    {
+        var strKey=drawPicture.Symbol+'-'+drawPicture.Period;
+        if (!this.DrawData.has(strKey))  return;
+
+        this.DrawData.delete(strKey);
+        this.Save();
+    }
+
+    this.Clear=function()
+    {
+        this.DrawData=new Map();
+        this.Save();
+    }
+
+    this.GetDrawData=function(obj) //获取已有的画图工具数据{Symbol: , Period:, }
+    {
+        var data=[];
+        var strKey=obj.Symbol+'-'+obj.Period;
+        if (!this.DrawData.has(strKey)) return data;
+
+        var stockData=this.DrawData.get(strKey);
+        for(var item of stockData)
+        {
+            data.push(item[1]);
+        }
+
+        return data;
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //  数据分割
 //  [0]=Start起始 [1]=End结束 [2]=FixInterval修正的间隔 [3]=Increase
@@ -19966,6 +20152,8 @@ function KLineChartContainer(uielement)
     this.ScriptErrorCallback;           //脚本执行错误回调
     this.FlowCapitalReady=false;        //流通股本是否下载完成
     this.StockChipWidth=230;            //移动筹码宽度
+    this.ChartDrawStorage=new ChartDrawStorage();
+    this.ChartDrawStorageCache=null;    //首次需要创建的画图工具数据
 
     this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
 
@@ -20522,6 +20710,8 @@ function KLineChartContainer(uielement)
         this.RequestFlowCapitalData();      //请求流通股本数据 (主数据下载完再下载)
         this.RequestOverlayHistoryData();   //请求叠加数据 (主数据下载完再下载)
 
+        this.CreateChartDrawPictureByStorage(); //创建画图工具
+
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
@@ -20617,6 +20807,8 @@ function KLineChartContainer(uielement)
         this.OverlayChartPaint[0].Data=null; //分钟数据不支持叠加 清空
 
         this.RequestFlowCapitalData();      //请求流通股本数据 (主数据下载完再下载)
+
+        this.CreateChartDrawPictureByStorage(); //创建画图工具
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
@@ -20738,8 +20930,10 @@ function KLineChartContainer(uielement)
                 if (this.SourceData.DataType!=1) isDataTypeChange=true;
                 break;
         }
-        
+
         this.Period=period;
+        this.ReloadChartDrawPicture();   //切换周期了 清空画图工具
+
         if (isDataTypeChange==false)
         {
             this.Update();
@@ -21380,6 +21574,8 @@ function KLineChartContainer(uielement)
 
         this.ReqeustKLineInfoData();
         
+        this.CreateChartDrawPictureByStorage(); //创建画图工具
+        
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
@@ -21402,6 +21598,8 @@ function KLineChartContainer(uielement)
                 this.DeleteIndexPaint(i);
             }
         }
+
+        this.ReloadChartDrawPicture();
 
         if (this.Period<=3)
         {
@@ -21819,6 +22017,8 @@ function KLineChartContainer(uielement)
 
         drawPicture.Canvas=this.Canvas;
         drawPicture.Status=0;
+        drawPicture.Symbol=this.Symbol;
+        drawPicture.Period=this.Period;
         if (callback) drawPicture.FinishedCallback=callback;    //完成通知上层回调
         self=this;
         drawPicture.Update=function()   //更新回调函数
@@ -21886,7 +22086,7 @@ function KLineChartContainer(uielement)
         drawPicture.Point[2].X=x-this.UIElement.getBoundingClientRect().left;
         drawPicture.Point[2].Y=y-this.UIElement.getBoundingClientRect().top;
 
-        drawPicture.Status=3;   //设置第2个点
+        drawPicture.Status=3;   //设置第3个点
     }
 
     //xStep,yStep 移动的偏移量
@@ -21915,6 +22115,7 @@ function KLineChartContainer(uielement)
 
         //通知上层画好了
         if (drawPicture.FinishedCallback) drawPicture.FinishedCallback(drawPicture);
+        if (this.ChartDrawStorage) this.ChartDrawStorage.SaveDrawData(drawPicture);
 
         return true;
     }
@@ -21942,6 +22143,8 @@ function KLineChartContainer(uielement)
         drawPicture.Status=10;  //完成
         drawPicture.PointToValue();
 
+        if (this.ChartDrawStorage) this.ChartDrawStorage.SaveDrawData(drawPicture);
+
         this.CurrentChartDrawPicture=null;
         return true;
     }
@@ -21952,6 +22155,7 @@ function KLineChartContainer(uielement)
         if (!drawPicture)
         {
             this.ChartDrawPicture=[];
+            if (this.ChartDrawStorage) this.ChartDrawStorage.Clear();
             this.Draw();
         }
         else
@@ -21960,11 +22164,48 @@ function KLineChartContainer(uielement)
             {
                 if (this.ChartDrawPicture[i]==drawPicture)
                 {
+                    if (this.ChartDrawStorage) this.ChartDrawStorage.DeleteDrawData(drawPicture);
                     this.ChartDrawPicture.splice(i,1);
                     this.Draw();
                 }
             }
         }
+    }
+
+    //重新加载画图工具(切换股票|周期)
+    this.ReloadChartDrawPicture=function()
+    {
+        this.ChartDrawPicture=[];
+        this.ChartDrawStorageCache;
+        if (this.ChartDrawStorage)
+        {
+            this.ChartDrawStorageCache=this.ChartDrawStorage.GetDrawData( {Symbol:this.Symbol, Period:this.Period} );
+        }
+    }
+
+    this.CreateChartDrawPictureByStorage=function() //把缓存(this.ChartDrawStorageCache) 画图工具创建出来
+    {
+        if (!this.ChartDrawStorageCache || this.ChartDrawStorageCache.length<=0) return;
+
+        for(var i in this.ChartDrawStorageCache)
+        {
+            var item=this.ChartDrawStorageCache[i];
+            if (item.FrameID<0 || !this.Frame.SubFrame || this.Frame.SubFrame.length<item.FrameID) continue;
+
+            var drawPicture=IChartDrawPicture.CreateChartDrawPrictrue(item);
+            if (!drawPicture) continue;
+
+            drawPicture.Canvas=this.Canvas;
+            drawPicture.Status=10;
+            drawPicture.Frame=this.Frame.SubFrame[item.FrameID].Frame;  //绑定框架坐标
+            drawPicture.ValueToPoint();
+
+            if (drawPicture.ClassName==='ChartDrawPictureText') drawPicture.IsInitialized=true;
+
+            this.ChartDrawPicture.push(drawPicture);
+        }
+
+        this.ChartDrawStorageCache=null;    //清空缓存
     }
 
     //选中画图工具事件
@@ -29367,6 +29608,7 @@ function ChartPictureSettingMenu(divElement)
             if (!this.SettingMenu) self.SettingMenu=new ChartPictureTextSettingMenu(frame.ChartBorder.UIElement.parentNode);
 
             self.SettingMenu.ChartPicture=picture;
+            self.SettingMenu.HQChart=hqChart;
             self.SettingMenu.Position={Left:right + 80,Top:top + 20};
             self.SettingMenu.DoModal();
         });
@@ -29376,6 +29618,7 @@ function ChartPictureSettingMenu(divElement)
                 var color = $(".change-color").val();
                 picture.LineColor = color;
                 picture.PointColor = color;
+                if (hqChart.ChartDrawStorage) hqChart.ChartDrawStorage.SaveDrawData(picture);   //保存下
             });
         })
 
@@ -29609,6 +29852,7 @@ function ChartPictureTextSettingMenu(divElement)
             function()
             {  
                 self.Close(); 
+                if (self.HQChart && self.HQChart.ChartDrawStorage) self.HQChart.ChartDrawStorage.SaveDrawData(self.ChartPicture);   //保存下
             }
         );
     }

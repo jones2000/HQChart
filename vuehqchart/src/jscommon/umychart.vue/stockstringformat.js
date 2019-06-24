@@ -112,7 +112,7 @@ StockStringFormat.FormatTimeString=function(value)
     else
     {
         var hour=parseInt(value/10000);
-        var minute=parseInt((value%1000)/100);
+        var minute=parseInt((value%10000)/100);
         var second=value%100;
         return StockStringFormat.NumberToString(hour)+':'+ StockStringFormat.NumberToString(minute) + ':' + StockStringFormat.NumberToString(second);
     }
