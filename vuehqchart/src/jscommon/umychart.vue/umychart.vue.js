@@ -18705,7 +18705,7 @@ function ChartDrawStorage()
         this.Save();
     }
 
-    this.DeleteDrawData=function(drawPictrue)   //删除一个画图工具
+    this.DeleteDrawData=function(drawPicture)   //删除一个画图工具
     {
         var strKey=drawPicture.Symbol+'-'+drawPicture.Period;
         if (!this.DrawData.has(strKey))  return;
