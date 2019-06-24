@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>页面行情(K线图)</title>  
-    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
     <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
     <!-- 使用阿里云图片 -->
     <!--<link rel="stylesheet" href="https://at.alicdn.com/t/font_1040563_1d1tgaoqofpi.css" />-->
@@ -150,7 +150,7 @@
                     
                     Frame:  //子框架设置 (Height 窗口高度比例值)
                     [
-                        {SplitCount:3,StringFormat:0, Height:4,IsShowLeftText:true},
+                        {SplitCount:8,StringFormat:0, Height:4,IsShowLeftText:true},
                         {SplitCount:2,StringFormat:0, Height:2,IsShowLeftText:true},
                         {SplitCount:2,StringFormat:0, Height:2,IsShowLeftText:true}
                     ]
@@ -166,6 +166,7 @@
                 option.KLine.Info=null;
                 option.KLine.PageSize=50;   
                 option.ExtendChart=[{Name:'KLineTooltip' }]; //开启手机端tooltip
+                option.ExtendChart=null;
                 option.IsCorssOnlyDrawKLine=true;
                 option.CorssCursorTouchEnd=true;
                 for(var i in option.Windows)

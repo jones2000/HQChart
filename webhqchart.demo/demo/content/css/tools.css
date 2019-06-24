@@ -299,6 +299,52 @@ td.context-menu {
     color:#fff;
     border-color:#1592e6;
 }
+.drawtools {border: 1px solid #ccc;}
+.drawtools .icon-image {text-align: center; padding: 5px 0 5px 10px; height: 24px; position: relative;}
+.drawtools .icon-image>i:nth-of-type(1) {font-size: 24px;}
+.drawtools .icon-image.active>i:nth-of-type(1) {color: #0182d4;}
+.drawtools .icon-image .menuTwo {position: absolute; top: 0; right: 46px; border: 1px solid #ccc; background-color: #fff; display: none; text-align: right;}
+.drawtools .icon-image .menuTwo .menuTwoItem {height: 24px; line-height: 24px; width: 125px; font-size: 12px; padding: 5px 0; display: block; padding-right: 10px;}
+.drawtools .icon-image .menuTwo .menuTwoItem::after {content: ""; display: block; width: 0; height: 0; clear: both; overflow: hidden;}
+.drawtools .icon-image .menuTwo .menuTwoItem>i {float:right; margin-left: 5px; font-size: 24px;}
+.drawtools .icon-image .menuTwo .menuTwoItem:hover {background-color: #ebf7fc;}
+.drawtools .icon-image .menuTwo .menuTwoItem.current {background-color: #37a6ef;}
+.drawtools .icon-image .contentArrow {font-size: 12px; position: absolute; top: 12px; left: 0; transition: transform 0.2s; display: none;}
+.drawtools .icon-image .contentArrow.trans {transform: rotate(180deg);}
+.drawtools .icon-image:last-child { border-top: 1px solid #ccc;}
+
+.chartpicture-text-setting {width: 400px; background-color: #fff; border: 1px solid; border-color: #b5b7b9; box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.15)}
+.titleWrap {height: 53px; line-height: 53px; width: 100%; border-bottom: 1px solid; border-color: #dadde0; position: relative;}
+.titleWrap .titleName {height: 53px; line-height: 53px; display: inline-block; padding: 0 2px; font-size: 14px; color: #4f5966; margin-left: 14px; position: relative;}
+.titleWrap .titleName::after { content: ' '; position: absolute; display: block; left: 0; bottom: -1px; width: 100%; height: 3px; background-color: #5cb888;}
+.titleWrap .closeBtn {font-size: 12px; color: #777; position: absolute; top: 0; right: 0; padding-right: 14px; padding-left: 14px; cursor: pointer;}
+.contentWrap { padding: 15px 27px;}
+.contentWrap .styleOptions {height: 27px; margin-bottom: 7px;}
+.contentWrap .styleOptions .colorPicker {width: 25px; height: 25px; cursor: pointer; display: inline-block; border: 1px solid; border-color: #1e90ff; background-color: #1e90ff; margin-right: 5px; position: relative;}
+.contentWrap .colorPicker #fontColor {position: absolute; top: 0; left: 0; opacity: 0; width: 100%; height: 100%; display: block;}
+.contentWrap .likeSelect {height: 25px; width: 50px; background-color: #f1f3f6; line-height: 25px; cursor: pointer; display: inline-block; vertical-align: top; font-size: 14px; padding: 0 20px 0 10px; border: 1px solid; border-color: #dadde0; margin-right: 5px; position: relative;}
+.contentWrap .fontSelect {font-size: 12px;}
+.contentWrap .likeSelect .choicedText {display: inline-block; width: 78px; height: 100%; overflow: hidden;}
+/* .contentWrap .likeSelect select {position: absolute; width: 100%; height: 100%; left: 0; top: 0; z-index: 999; opacity: 0.5;}
+.contentWrap .likeSelect option {height: 30px; line-height: 30px;} */
+.contentWrap .likeSelect i { font-size: 15px; position: absolute; top: 0; right: 6px;}
+.contentWrap .likeSelect .selectList {position: absolute; top: 27px; left: 0; background-color: #fff; border: 1px solid #dadde0; display: none;}
+.contentWrap .selectList p {padding: 0 15px; height: 30px; line-height: 30px; cursor: pointer; white-space: nowrap;}
+.contentWrap .selectList p:hover {background-color: #f1f3f6;}
+.contentWrap .selectList p.active {background-color: #f1f3f6; border-left: 3px solid #5cb888;}
+.contentWrap .likeBtn {border: 1px solid; border-color: #dadde0; text-align: center; cursor: pointer; vertical-align: top; font-size: 16px; margin-right: 5px; color: #4a4a4a; display: inline-block; width: 25px; height: 25px; line-height: 25px; background-color: #f1f3f6;}
+.contentWrap .strongFont {font-weight: bold;}
+.contentWrap .italicsFont {font-style: italic;}
+.contentWrap .tArea {border: 1px solid #b5b7b9; background-color: #fff; resize: none; color: #4a4a4a; font-size: 12px; line-height: 18px; box-sizing:border-box; padding: 8px 5px; width: 100%; height: 200px;}
+.contentWrap .likeSelect:hover,.contentWrap .likeBtn:hover {border-color: #b5b7b9;}
+.contentWrap .likeSelect.hot,.contentWrap .likeBtn.hot {background-color: #fff;}
+.btnsContainer {text-align: right; padding: 0 13px 27px 13px;}
+.btnsContainer .btn {width: 72px; height: 24px; line-height: 24px; cursor: pointer; padding-top: 4px; text-align: center; font-size: 14px; color: #fff; margin-right: 10px; display: inline-block;}
+.btnsContainer .okBtn {background-color: #3bb3e4;}
+.btnsContainer .okBtn:hover {background-color: #38acdb;}
+.btnsContainer .cancelBtn {background-color: #9ca0a6; margin-right: 0;}
+.btnsContainer .cancelBtn:hover{background-color: #898c91;}
+
 /*画图工具结束*/
 
 /*区间统计*/
@@ -436,6 +482,32 @@ td.context-menu {
     padding-bottom:5px;
 }
 /*形态匹配结束*/
+
+/*形态匹配结果列表 start*/
+.jchart-kline-match-box {
+    font: 13px 'Microsoft Yahei';
+}
+.jchart-kline-match-box .matchTable {
+    border-collapse: collapse;
+    width: 100%;
+}
+.jchart-kline-match-box .matchTable td,.jchart-kline-match-box .matchTable th {
+    line-height: 20px;
+    border: 1px solid #ccc;
+    padding: 0 10px;
+}
+.jchart-kline-match-box .matchTable td.red {
+    color: red;
+}
+.jchart-kline-match-box .dataCount{
+    line-height: 20px;
+    margin-bottom: 10px;
+}
+/*分页*/
+.pagination {height: 22px; text-align: center; margin-top: 10px;}
+.pagination span {display: inline-block; line-height: 20px; padding: 0 6px; border: 1px solid #ccc; margin-right: 6px; cursor: pointer;}
+.pagination span:hover,.pagination span.active {color: #ffb400;}
+/*形态匹配结果列表 end*/
 
 /*加载层*/
 .spinnerBg{
@@ -845,11 +917,11 @@ td.context-menu {
     color: #f39800;
 }
 .jchart-klineinfo-tooltip span{
-    display: inline-block;
-    width:100%;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    display: block;
+    /* width:100%; */
+    /* overflow: hidden; */
+    /* white-space: nowrap; */
+    /* text-overflow: ellipsis; */
     vertical-align: bottom;
 }
 
@@ -981,6 +1053,7 @@ td.context-menu {
 .subTolls{
     padding:8px 5px 0px 8px;
     border:1px solid #aaaaaa;
+    background-color: #fff;
 }
 .subTolls>span{
     margin: 0 3px;
@@ -989,6 +1062,7 @@ td.context-menu {
     width: 20px;
     height: 20px;
 }
+.subTolls>.subtool-set {vertical-align: top;}
 .change-color{
     display: inline-block;
     width: 24px;
