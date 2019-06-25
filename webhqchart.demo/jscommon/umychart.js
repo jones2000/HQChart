@@ -14383,6 +14383,7 @@ function ChartDrawPictureText()
     this.TextRect=null;   //文字区域
     this.IsInitialized=false;   //是否初始化了
     this.SettingMenu;
+    this.HQChart;
 
     this.Draw=function(textFont)
     {
@@ -14437,6 +14438,7 @@ function ChartDrawPictureText()
         if (!this.SettingMenu) this.SettingMenu=new ChartPictureTextSettingMenu(this.Frame.ChartBorder.UIElement.parentNode);
 
         this.SettingMenu.ChartPicture=this;
+        this.SettingMenu.HQChart=this.HQChart;
         this.SettingMenu.Position={Left:this.TextRect.Left+this.TextRect.Width,Top:this.TextRect.Top};
         this.SettingMenu.DoModal();
     }
@@ -18733,6 +18735,7 @@ function KLineChartContainer(uielement)
                 break;
             case '文本':
                 drawPicture=new ChartDrawPictureText();
+                drawPicture.HQChart=this;
                 break;
             case '江恩角度线':
                 drawPicture=new ChartDrawPictureGannFan();
@@ -26614,7 +26617,7 @@ function ChartPictureTextSettingMenu(divElement)
                 Picture:this.ChartPicture
             },
             function(event){
-                console.log("更改中。。。");
+                console.log('[ChartPictureTextSettingMenu::DoModal] $(".chartpicture-text-setting .tArea").keyup()');
                 var content = $(this).val();
                 var chart = event.data.Picture;
                 chart.Text = content;
