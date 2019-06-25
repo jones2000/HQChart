@@ -508,6 +508,10 @@ function JSChart(divElement)
         var bHScreen=(option.Type=='K线训练横屏'? true:false);
         var chart=new KLineTrainChartContainer(this.CanvasElement,bHScreen);
 
+        //创建改参数div
+        chart.ModifyIndexDialog=this.ModifyIndexDialog;
+        chart.ChangeIndexDialog=this.ChangeIndexDialog;
+
         if (option.ScriptError) chart.ScriptErrorCallback=option.ScriptError;
 
         if (option.KLine)   //k线图的属性设置
@@ -20813,6 +20817,34 @@ function KLineTrainChartContainer(uielement, bHScreen)
     //TODO: 鼠标键盘消息全部要禁掉
     this.OnKeyDown=function(e)
     {
+        var keyID = e.keyCode ? e.keyCode :e.which;
+        //只支持放大缩小
+        switch(keyID)
+        {
+            case 38:    //up
+                var cursorIndex={};
+                cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
+                if (!this.Frame.ZoomUp(cursorIndex)) break;
+                this.CursorIndex=cursorIndex.Index;
+                this.UpdatePointByCursorIndex();
+                this.UpdataDataoffset();
+                this.UpdateFrameMaxMin();
+                this.Draw();
+                this.ShowTooltipByKeyDown();
+                break;
+            case 40:    //down
+                var cursorIndex={};
+                cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
+                if (!this.Frame.ZoomDown(cursorIndex)) break;
+                this.CursorIndex=cursorIndex.Index;
+                this.UpdataDataoffset();
+                this.UpdatePointByCursorIndex();
+                this.UpdateFrameMaxMin();
+                this.Draw();
+                this.ShowTooltipByKeyDown();
+                break;
+        }
+
         //不让滚动条滚动
         if(e.preventDefault) e.preventDefault();    
         else e.returnValue = false;
