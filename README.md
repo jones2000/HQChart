@@ -90,6 +90,9 @@
 9. 手机端页面设置的几个特殊属性 https://blog.csdn.net/jones2000/article/details/90727468 <br>
 10. 如何把K线数据API替换成自己的API数据 https://blog.csdn.net/jones2000/article/details/90747715 <br>
 11. 如何快速创建一个横屏分时图页面 https://blog.csdn.net/jones2000/article/details/90453776 <br>
+12. 分析家语法执行器 https://blog.csdn.net/jones2000/article/details/93731637 <br>
+13. 分钟完成一个小程序K线图 https://blog.csdn.net/jones2000/article/details/91471252 <br>
+14. 如何在K线图上添加弹幕 https://blog.csdn.net/jones2000/article/details/91125408 <br>
 
 **设计文档:**
 1. 如何(c++,js)写一个传统的K线图和走势图1 https://blog.csdn.net/jones2000/article/details/84779481 <br>
