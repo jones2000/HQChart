@@ -9190,8 +9190,23 @@ function ScriptIndexConsole(obj)
     this.RecvResultData=function(outVar,param)
     {
         var self=param.Self;
+        var jsExec=param.JSExecute;
+
+        var date=[];
+        for(var i=0;i<jsExec.SymbolData.Data.Data.length;++i)
+        {
+            var item=jsExec.SymbolData.Data.Data[i];
+            date[i]=item.Date;
+        }
+        
+        var result=
+        { 
+            Out:outVar, 
+            Date:date,  //日期对应 上面的数据
+            Stock:{ Name:jsExec.SymbolData.Name, Symbol:jsExec.SymbolData.Symbol },
+        };
         //console.log('[ScriptIndexConsole::RecvResultData] outVar ', outVar);
-        if (self.FinishCallback) self.FinishCallback(outVar, param.JSExecute);
+        if (self.FinishCallback) self.FinishCallback(result, param.JSExecute);
     }
 }
 

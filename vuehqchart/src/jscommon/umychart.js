@@ -20814,13 +20814,40 @@ function KLineTrainChartContainer(uielement, bHScreen)
 
     this.TrainStartEnd={};
 
-    //TODO: 鼠标键盘消息全部要禁掉
     this.OnKeyDown=function(e)
     {
         var keyID = e.keyCode ? e.keyCode :e.which;
         //只支持放大缩小
         switch(keyID)
         {
+            case 37: //left
+                if (this.CursorIndex>1) //十字光标只能在当前屏移动
+                {
+                    --this.CursorIndex;
+                    this.UpdatePointByCursorIndex();
+                    this.DrawDynamicInfo();
+                    this.ShowTooltipByKeyDown();
+                }
+                break;
+            case 39: //right
+                var xPointcount=0;
+                if (this.Frame.XPointCount) xPointcount=this.Frame.XPointCount;
+                else xPointcount=this.Frame.SubFrame[0].Frame.XPointCount;
+                if (this.CursorIndex+1<xPointcount) //十字光标只能在当前屏移动
+                {
+                    //判断是否在最后一个数据上
+                    var data=null;
+                    if (this.Frame.Data) data=this.Frame.Data;
+                    else data=this.Frame.SubFrame[0].Frame.Data;
+                    if (!data) break;
+                    if (this.CursorIndex+data.DataOffset+1>=data.Data.length) break;
+
+                    ++this.CursorIndex;
+                    this.UpdatePointByCursorIndex();
+                    this.DrawDynamicInfo();
+                    this.ShowTooltipByKeyDown();
+                }
+                break;
             case 38:    //up
                 var cursorIndex={};
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
