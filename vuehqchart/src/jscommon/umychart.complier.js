@@ -2478,7 +2478,7 @@ function JSAlgorithm(errorHandler,symbolData)
                 result[index]=null;
             else
             {
-                if (data[index]<1)
+                if (data2[index]<1)
                     result[index]=(data2[index]*data[index])+(1-data2[index])*result[index-1];
                 else
                     result[index]= data[index];
@@ -2646,9 +2646,10 @@ function JSAlgorithm(errorHandler,symbolData)
         {
             result[start] = null;
         }
-        var total = 0;
+        
         for (i = data.length-1; i >= start; --i)
         {
+            var total = 0;
             for (j = i, total = 0; j >= start && total < data2[i]; --j)
                 total += data[j];
             if (j < start) result[i] = null;

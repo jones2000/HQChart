@@ -609,12 +609,12 @@ function StockData(symbol)
         if (this.Name.indexOf('ST')>=0)
         {
             this.MaxPrice=(1+0.05)*this.Open;
-            this.MinPrice=(1-0.05)*this.OPen;
+            this.MinPrice=(1-0.05)*this.Open;
         }
         else
         {
             this.MaxPrice=(1+0.1)*this.Open;
-            this.MinPrice=(1-0.1)*this.OPen;
+            this.MinPrice=(1-0.1)*this.Open;
         }
 
         if (this.Price && this.YClose)
