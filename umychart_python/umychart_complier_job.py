@@ -143,3 +143,31 @@ class JobItem :
     def __init__(self, id, symbol=None) :
         self.ID=id  # 任务ID
         self.Symbol=symbol  # 任务的代码 可以为空
+
+
+class HQ_DATA_TYPE :
+    KLINE_ID=0             # K线
+    MINUTE_ID=2            # 当日走势图
+    HISTORY_MINUTE_ID=3    # 历史分钟走势图
+    MULTIDAY_MINUTE_ID=4   # 多日走势图
+
+
+
+class RequestOption :
+    def __init__(self, maxDataCount=500, maxMinuteDayCount=5) :
+        self.MaxDataCount= maxDataCount
+        self.MaxMinuteDayCount=maxMinuteDayCount
+
+class SymbolOption :
+    def __init__(self, symbol='600000.sh' ,hqDataType=HQ_DATA_TYPE.KLINE_ID, right=0, period=0, reqeust=RequestOption(maxDataCount=1000,maxMinuteDayCount=5),args=[]) :
+        self.HQDataType=hqDataType  # 数据类型
+        self.Symbol=symbol  # 股票代码
+        self.Right=right    # 复权
+        self.Period=period  # 周期
+        self.MaxRequestDataCount=reqeust.MaxDataCount
+        self.MaxRequestMinuteDayCount=reqeust.MaxMinuteDayCount
+        self.Arguments=args # 指标参数
+
+
+
+

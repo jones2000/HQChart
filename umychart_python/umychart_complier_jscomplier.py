@@ -3,6 +3,8 @@ from umychart_complier_scanner import Error
 from umychart_complier_jsparser import JSParser, Tokenizer
 from umychart_complier_jssymboldata import g_JSComplierResource
 from umychart_complier_jsexecute import JSExecute
+from umychart_complier_job import SymbolOption
+from umychart_complier_job import HQ_DATA_TYPE
 #################################################################################################
 #
 #
@@ -37,7 +39,7 @@ class JSComplier:
         return ast
 
     @staticmethod   #执行器
-    def Execute(code,option=None) :
+    def Execute(code,option=SymbolOption()) :
         print('[JSComplier::Execute] ', code)
         parser=JSParser(code)
         parser.Initialize()

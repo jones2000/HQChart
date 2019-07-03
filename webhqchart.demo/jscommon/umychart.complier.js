@@ -3026,7 +3026,7 @@ function JSAlgorithm(errorHandler,symbolData)
             result[i]=0;
             if (days==null)
             {
-                if (!this.IsNumber(data[i])) contnue;
+                if (!this.IsNumber(data[i])) continue;
 
                 days=0;
             }
@@ -3127,6 +3127,8 @@ function JSAlgorithm(errorHandler,symbolData)
            Const = (Ey - Ex*Slope) / num;
            result[i] = Slope * num + Const;
         }
+
+        return result;
     }
 
     //SLOPE 线性回归斜率
@@ -3328,16 +3330,16 @@ function JSAlgorithm(errorHandler,symbolData)
 
         if (typeof(data)=='number') return 0;
 
-        var latestID; //最新满足条件的数据索引
+        var latestID=null; //最新满足条件的数据索引
         var result=[];
         var value;
         for(let i=0;i<data.length;++i)
         {
             result[i]=null;
             value=data[i];
-            if (this.IsNumber(value) && value>0) latestID==i;
+            if (this.IsNumber(value) && value>0) latestID=i;
 
-            if (i-latestID<n) result[i]=1;
+            if (latestID!=null && i-latestID<n) result[i]=1;
             else result[i]=0;
         }
 
@@ -5845,13 +5847,13 @@ function JSSymbolData(ast,option,jsExecute)
         this.IndexData.DataType=0; /*日线数据 */
         this.IndexData.Data=hisData;
 
-        var aryOverlayData=this.Data.GetOverlayData(this.IndexData.Data);      //和主图数据拟合以后的数据
+        var aryOverlayData=this.SourceData.GetOverlayData(this.IndexData.Data);      //和主图数据拟合以后的数据
         this.IndexData.Data=aryOverlayData;
 
         if (this.Period>0 && this.Period<=3)   //周期数据
         {
             let periodData=this.IndexData.GetPeriodData(this.Period);
-            this.Data.Data=periodData;
+            this.IndexData.Data=periodData;
         }
     }
 
@@ -7240,7 +7242,7 @@ function JSSymbolData(ast,option,jsExecute)
                 item.DateTime=data.stock[0].date.toString()+" 0925";
             else
                 item.DateTime=data.stock[0].date.toString()+" "+jsData.time.toString();
-            item.Increate=jsData.increate;
+            item.Increase=jsData.increase;
             item.Risefall=jsData.risefall;
             item.AvPrice=jsData.avprice;
 

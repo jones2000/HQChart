@@ -60,7 +60,7 @@ class JSExecute :
             'SETCODE':None  
         }  
 
-        self.SymbolData=JSSymbolData(ast=ast,option=option)
+        self.SymbolData=JSSymbolData(ast=ast,option=option, procThrow=self.ThrowUnexpectedNode)
         self.Algorithm=JSAlgorithm(errorHandler=self.ErrorHandler,symbolData=self.SymbolData)
         self.Draw=JSDraw(errorHandler=self.ErrorHandler,symbolData=self.SymbolData)
         
@@ -77,18 +77,15 @@ class JSExecute :
         elif name == 'VOLR' :   # 量比
             pass
             # return self.SymbolData.GetVolRateCacheData(node)
-        elif name in ('INDEXA','INDEXC','INDEXH','INDEXH','INDEXO','INDEXV','INDEXL','INDEXADV','INDEXDEC') : # 大盘数据
-            pass
-            # return self.SymbolData.GetIndexCacheData(name)
+        elif name in ('INDEXA','INDEXC','INDEXH','INDEXO','INDEXV','INDEXL','INDEXADV','INDEXDEC') : # 大盘数据
+           return self.SymbolData.GetIndexCacheData(name)
         elif name== 'CURRBARSCOUNT':
             pass
             # return self.SymbolData.GetCurrBarsCount()
         elif name== 'CAPITAL':
-            pass
-            # return self.SymbolData.GetFinanceCacheData(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA)
+            return self.SymbolData.GetFinanceCacheData(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA, node=node)
         elif name== 'EXCHANGE':
-            pass
-            # return self.SymbolData.GetFinanceCacheData(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA)
+            return self.SymbolData.GetFinanceCacheData(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA, node=node)
         elif name== 'SETCODE':
             return self.SymbolData.SETCODE()
 

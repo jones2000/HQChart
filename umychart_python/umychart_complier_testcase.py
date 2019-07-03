@@ -1,5 +1,19 @@
 import sys
-from umychart_complier_jscomplier import JSComplier
+from umychart_complier_jscomplier import JSComplier, SymbolOption, HQ_DATA_TYPE
+
+class TestCase :
+    def __init__(self, code, option=SymbolOption()) :
+        self.Code=code
+        self.Option=option
+    def Run(self):
+        testCode=''
+        for item in self.Code:
+            testCode+=item
+            testCode+='\n'
+
+        result=JSComplier.Execute(testCode,self.Option)
+        return True if result else False 
+        
 
 def Test_Tokenize():
     code1='VARHIGH:=IF(VAR1<=REF(HH,-1),REF(H,BARSLAST(VAR1>=REF(HH,1))),DRAWNULL),COLORYELLOW;'
@@ -47,6 +61,7 @@ def Test_MA() :
         'VAR3:MA(C,10);',
         'VAR4:MA(C,15);',
         'VAR4:MA(C,30);', 
+        'VAR4:MA(C,33);', 
         ]
 
     result=JSComplier.Execute(code[0]+code[1]+code[2]+code[3])
@@ -93,11 +108,137 @@ def Test_SUMBARS() :
         'VAR3:SUMBARS(C,O)',
         'VAR2:C;', 
         ]
-    result=JSComplier.Execute(code[0]+code[1])
+
+    option=SymbolOption()
+    option.Symbol='000001.sz'
+    option.HQDataType=HQ_DATA_TYPE.MINUTE_ID
+    result=JSComplier.Execute(code[0]+code[1],option)
     return True if result else False 
 
+def Test_INDEX():
+    code=[
+        'VAR3:INDEXA;',
+        'VAR2:INDEXC;', 
+        'VAR2:INDEXO;', 
+        ]
 
-Test_Add()
-Test_Multiply()
-Test_MAX_MIN()
-Test_SUMBARS()
+    option=SymbolOption()
+    option.Period=5
+
+    result=JSComplier.Execute(code[0]+code[1]+code[2],option)
+    return True if result else False 
+
+def Test_COUNT():
+    code=[
+        'VAR3:COUNT(C,5);',
+        'VAR2:COUNT(O,10);', 
+        'VAR2:COUNT(H,20);', 
+        ]
+
+    option=SymbolOption()
+
+    result=JSComplier.Execute(code[0]+code[1]+code[2],option)
+    return True if result else False 
+
+def Test_HHV_HHL() :
+    case =TestCase(
+        code=[
+        'VAR3:HHV(C,5);',
+        'VAR2:HHV(O,10);', 
+        'VAR2:HHV(H,20);', 
+        'VAR3:LLV(H,5);',
+        'VAR4:LLV(H,10);',
+        ])
+
+    result=case.Run()
+    return result
+
+def Test_STD():
+    case =TestCase(
+        code=[
+        'VAR3:STD(C,5);',
+        'VAR2:STD(O,10);', 
+        'VAR2:STD(H,20);', 
+        'VAR3:STD(H,15);',
+        'VAR4:STD(H,0);',
+        ])
+
+    result=case.Run()
+    return result
+
+def Test_AVEDEV():
+    case =TestCase(
+        code=[
+        'VAR3:AVEDEV(C,5);',
+        'VAR2:AVEDEV(O,10);', 
+        'VAR2:AVEDEV(H,20);', 
+        'VAR3:AVEDEV(H,15);',
+        'VAR4:AVEDEV(H,0);',
+        ])
+
+    result=case.Run()
+    return result
+
+def Test_CROSS() :
+    case =TestCase(
+        code=[
+        'VAR3:CROSS(C,O);',
+        'VAR2:CROSS(O,10);', 
+        'VAR2:CROSS(O,C);', 
+        ])
+
+    result=case.Run()
+    return result
+
+def Test_MULAR() :
+    case =TestCase(
+        code=[
+        'VAR3:MULAR(C,5);',
+        'VAR2:MULAR(O,10);', 
+        'VAR2:MULAR(O,30);', 
+        ])
+
+    result=case.Run()
+    return result
+
+
+def Test_SUM() :
+    case =TestCase(
+        code=[
+        'VAR3:SUM(C,5);',
+        'VAR2:SUM(O,0);', 
+        'VAR2:BARSCOUNT(O);', 
+        ])
+
+    result=case.Run()
+    return result
+
+
+def Test_DEVSQ():
+    case =TestCase(
+        code=[
+        'VAR3:DEVSQ(C,5);',
+        'VAR2:DEVSQ(O,0);', 
+        'VAR2:DEVSQ(O,5);', 
+        ])
+
+    result=case.Run()
+    return result
+
+def Test_FINANCE(): # 财务数据测试
+    case =TestCase(
+        code=[
+        'VAR4:CAPITAL;',
+        'VAR3:FINANCE(32);',
+        'VAR2:FINANCE(1);', 
+        'VAR2:FINANCE(33);', 
+        ])
+
+    result=case.Run()
+    return result
+
+
+#Test_Add()
+#Test_Multiply()
+#Test_MAX_MIN()
+Test_FINANCE()

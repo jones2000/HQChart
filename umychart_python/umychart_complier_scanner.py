@@ -309,10 +309,10 @@ class Scanner:
             type=3                       # Identifier
 
         if type!=3  and start+len(id)!=self.Index :
-            restore=self.Index
+            # restore=self.Index
             self.Index=start
             raise Messages.InvalidEscapedReservedWord
-            self.Index=restore
+            # self.Index=restore
 
         if id=='AND' or id=='OR' :
             type=7                      #Punctuator*/
@@ -372,7 +372,7 @@ class Scanner:
         quote=self.Source[self.Index]
 
         self.Index+=1
-        octal=False
+        # octal=False
         str=''
         while not self.IsEOF():
             ch=self.Source[self.Index]
@@ -478,7 +478,7 @@ class Scanner:
             elif Character.IsLineTerminator(ch):
                 self.Index+=1
                 if ch=='\r' and self.Source[self.Index]=='\n' :
-                     self.Index+=1;     #回车+换行
+                     self.Index+=1     #回车+换行
 
                 self.LineNumber+=1
                 self.LineStart=self.Index
@@ -496,7 +496,6 @@ class Scanner:
             elif ch== '{' :      #{ }  注释
                 self.Index += 1
                 comment = self.SkipMultiLineComment()
-
             else :
                 break
 

@@ -231,11 +231,11 @@ class Node:
 
         #流通股本（手）
         if varName=='CAPITAL' :
-            if JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA in self.IsNeedFinanceData :
+            if JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA not in self.IsNeedFinanceData :
                 self.IsNeedFinanceData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA)
 
         if varName == 'EXCHANGE' :
-            if JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA in self.IsNeedFinanceData :
+            if JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA not in self.IsNeedFinanceData :
                 self.IsNeedFinanceData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA)
 
 

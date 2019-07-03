@@ -1,4 +1,5 @@
 import sys
+import math
 from umychart_complier_jssymboldata import JSSymbolData
 
 
@@ -19,6 +20,10 @@ class JSAlgorithm() :
     @staticmethod
     def IsDivideNumber(value):
         return isinstance(value,(int,float)) and value!=0
+
+    @staticmethod
+    def IsArray(value) :
+        return isinstance(value,list)
     
     @staticmethod 
     def Is2Number(value,value2) :
@@ -31,6 +36,35 @@ class JSAlgorithm() :
     @staticmethod
     def IsNaN(value) :
         return value!=None
+
+    @staticmethod
+    def CreateArray(count, value=None) :
+        if count<=0 :
+            return []
+        else :
+            return [value]*count
+    
+    @staticmethod   # 是否是一个有效素组 data!=null and data.length>0
+    def IsVaildArray(data) :
+        if not data :
+            return False
+        if not isinstance(data,list):
+            return False
+        if len(data)<=0 :
+            return False
+        return True
+
+    @staticmethod   # 计算数组均值
+    def ArrayAverage(data,n) :
+        dataLen=len(data)
+        averageData=JSAlgorithm.CreateArray(dataLen) # 平均值
+        for i in range(n-1, dataLen) :
+            total=0
+            for j in range(n) :
+                if JSAlgorithm.IsNumber(data[i-j]) :
+                    total+=data[i-j]
+            averageData[i]=total/n
+        return averageData
 
 
     ######################################################################################
@@ -914,6 +948,1253 @@ class JSAlgorithm() :
         
         return result
 
+    
+    # 求相反数.
+    # 用法:REVERSE(X)返回-X.
+    # 例如:REVERSE(CLOSE)返回-CLOSE
+    def REVERSE(self,data) :
+        isNumber=JSAlgorithm.IsNumber(data)
+        if isNumber :
+            return 0-data
+
+        count=len(data)
+        result = [None]*count
+        for i in range(count) :
+            if JSAlgorithm.IsNumber(data[i]) :
+                result[i]=0-data[i]
+
+        return result
+
+    def COUNT(self, data,n):
+        dataLen=len(data)
+        result=[None]*dataLen
+
+        for i in range(dataLen) :
+            count=0
+            for j in range(n) :
+                if i-j<0 :
+                    break
+                if data[i-j] :
+                    count+=1
+            result[i]=count
+        
+        return result
+
+    # HHV 最高值
+    # 求最高值。
+    # 用法：　HHV(X，N)　求N周期内X最高值，N=0则从第一个有效值开始。
+    # 例如：　HHV(HIGH,30)　表示求30日最高价。
+    def HHV(self,data,n):
+        dataLen=len(data)
+        result = JSAlgorithm.CreateArray(dataLen)
+        isNumber=JSAlgorithm.IsNumber(n)
+        if not isNumber : # n是一个数组 周期变动
+            max=None
+            nLen=len(n)
+            for i in range(dataLen) :
+                if i>nLen :
+                    continue
+                max=None
+                count=int(n[i])
+                if count>0 and count<=i :
+                    for j in range(i-count,i+1) :
+                        if max==None or max<data[j] :
+                            max=data[j]
+                else :
+                    count=i
+                    for j in range(i+1) :
+                        if max==None or  max<data[j] :
+                            max=data[j]
+                result[i]=max
+            
+        else :
+            n=int(n)
+            if n>dataLen :
+                 return result
+
+            if n<=0: 
+                n=dataLen-1
+
+            for nMax in range(dataLen) :
+                if JSAlgorithm.IsNumber(data[nMax]) :
+                    break
+
+            if nMax<dataLen :
+                result[nMax]=data[nMax]
+
+            j=2
+            for i in range(nMax+1,dataLen):
+                if j>=n :
+                    break
+                if data[i]>=data[nMax] :
+                    nMax=i
+                result[i]=data[nMax]
+                j+=1
+
+            for i in range(i,dataLen) :
+                if i-nMax<n :
+                    nMax=nMax if data[i]<data[nMax] else i
+                else :
+                    nMax=(i-n+2)
+                    for j in range(nMax,i+1) :
+                        nMax=nMax if data[j]<data[nMax] else j
+                result[i]=data[nMax]
+
+            return result
+
+    # LLV 最低值
+    # 求最低值。
+    # 用法：　LLV(X，N)　求N周期内X最低值，N=0则从第一个有效值开始。
+    # 例如：　LLV(LOW，0)　表示求历史最低价。
+    def LLV(self,data,n) :
+        dataLen=len(data)
+        result = JSAlgorithm.CreateArray(dataLen)
+        isNumber=JSAlgorithm.IsNumber(n)
+        if not isNumber : # n是数组
+            for i in range(dataLen) :
+                if i>=dataLen :
+                    continue
+                min=None
+                count=int(n[i])
+                if count>0 and count<=i :
+                    for j in range(i-count,i+1):
+                        if min==None or min>data[j] :
+                            min=data[j]
+                else :
+                    count=i
+                    for j in range(i+1) :
+                        if min==None or min>data[j] :
+                            min=data[j]
+                result[i]=min
+        else :
+            n=int(n)
+            if n>dataLen :
+                return result
+            if n<=0 :
+                n=dataLen-1
+
+            min=n
+            for i in range(n,dataLen):
+                if i<n+min :
+                    min=min if data[i]>data[min] else i
+                else :
+                    min=i-n+1
+                    for j in range(min+1,i+1) :
+                        if data[j]<data[min] :
+                            min=j
+                result[i] = data[min]
+
+        return result
+
+    # STD(X,N) 返回估算标准差
+    def STD(self,data,n) :
+        if not data or len(data)<=0 :
+            return []
+
+        dataLen=len(data)
+        result=JSAlgorithm.CreateArray(dataLen)
+        if n<=0:
+            n=dataLen-1
+
+        averageData=JSAlgorithm.ArrayAverage(data,n) # 平均值
+        for i in range(dataLen) :
+            total=0
+            for j in range(n) :
+                if JSAlgorithm.Is2Number(data[i-j],averageData[i]) :
+                    total+=(data[i-j]-averageData[i])*(data[i-j]-averageData[i])
+            result[i]=math.sqrt(total/n)
+
+        return result
+
+    # 平均绝对方差
+    def AVEDEV(self,data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+        
+        dataLen=len(data)
+        result=JSAlgorithm.CreateArray(dataLen)
+        if n<=0:
+            n=dataLen-1
+
+        averageData=JSAlgorithm.ArrayAverage(data,n) # 平均值
+        for i in range(n-1,dataLen) :
+            total=0
+            for j in range(n) :
+                if JSAlgorithm.Is2Number(data[i-j],averageData[i]) :
+                    total+=abs(data[i-j]-averageData[i])
+            result[i]=total/n
+
+        return result
+
+    # 上穿
+    def CROSS(self, data,data2) :
+        if JSAlgorithm.IsArray(data) and JSAlgorithm.IsArray(data2) :
+            len1, len2 = len(data), len(data2)
+            if len1!=len2 :
+                return []
+
+            result=JSAlgorithm.CreateArray(len1,0)
+            for index in range(len1) :
+                if JSAlgorithm.Is2Number(data[index],data2[index]) :
+                    break
+            
+            for index in range(index+1, len1) :
+                result[index]= 1 if data[index]>data2[index] and data[index-1]<data2[index-1] else 0
+
+        elif JSAlgorithm.IsArray(data) and JSAlgorithm.IsNumber(data2):
+            data2=int(data2)
+            len1=len(data)
+            result=JSAlgorithm.CreateArray(len1,0)
+            for index in range(len1) :
+                if JSAlgorithm.IsNumber(data[index]) :
+                    break
+
+            for index in range(index+1, len1) :
+                result[index]= 1 if data[index]>data2 and data[index-1]<data2 else 0
+
+        elif JSAlgorithm.IsNumber(data) and JSAlgorithm.IsArray(data2) :
+            data=int(data)
+            len2=len(data2)
+            result=JSAlgorithm.CreateArray(len2,0)
+            for index in range(len2) :
+                if JSAlgorithm.IsNumber(data2[index]) :
+                    break
+
+            for index in range(index+1, len2) :
+                result[index]= 1 if data2[index]<data and data2[index-1]>data else 0
+
+        else :
+            return []
+
+        return result
+
+    # 累乘
+    def MULAR(self,data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen=len(data)   
+        if dataLen<n:
+            return []
+
+        result=JSAlgorithm.CreateArray(dataLen)
+
+        for index in range(dataLen) :
+            if JSAlgorithm.IsNumber(data[index]):
+                result[index]=data[index]
+                break
+        
+        for index in range(index+1, dataLen):
+            if JSAlgorithm.IsNumber(data[index]):
+                result[index]=result[index-1]*data[index]
+            else :
+                result[index]=result[index-1]
+
+        return result
+
+    def SUM(self, data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen=len(data)   
+        if dataLen<n:
+            return []
+
+        result=JSAlgorithm.CreateArray(dataLen)
+        
+        if n==0 :
+            result[0]=data[0]
+            for i in range(1,dataLen) :
+                result[i] = result[i-1]+data[i]
+
+        else :
+            j=0
+            for i in range(n-1, dataLen) :
+                for k in range(n) :
+                    if k==0:
+                        result[i]=data[k+j]
+                    else :
+                        result[i]+=data[k+j]
+                j+=1
+
+        return result
+
+    
+    # BARSCOUNT 有效数据周期数
+    # 求总的周期数。
+    # 用法：　BARSCOUNT(X)　第一个有效数据到当前的天数。
+    # 例如：　BARSCOUNT(CLOSE)　对于日线数据取得上市以来总交易日数，对于分笔成交取得当日成交笔数，对于1分钟线取得当日交易分钟数。
+    def BARSCOUNT(self,data):
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+        dataLen=len(data)  
+        result=JSAlgorithm.CreateArray(dataLen,0)
+
+        days=None
+        for i in range(dataLen) :
+            if days==None :
+                if not JSAlgorithm.IsNumber(data[i]) :
+                    continue
+                days=0
+                
+            result[i]=days
+            days+=1
+
+        return result
+
+    # DEVSQ 数据偏差平方和
+    # DEVSQ(X，N) 　返回数据偏差平方和。
+    def DEVSQ(self,data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        num = n
+        datanum = len(data)
+        i,k = 0, 0
+        DEV = 0
+        for i in range(datanum) :   # 第1个有效数
+            if JSAlgorithm.IsNumber(data[i]) :
+                break
+
+        if num < 1 or i+num>datanum:
+            return []
+
+        result=JSAlgorithm.CreateArray(datanum)
+        j, E = 0 ,0
+        for i in range(i,datanum) :
+            if j>=num :
+                break
+            E += data[i]/num
+            j+=1
+
+        if j==num:
+            DEV = 0
+            i-=1
+            for k in range(num) :
+                DEV += (data[i-k]-E) * (data[i-k]-E)
+            result[i] = DEV
+            i+=1
+
+        for i in range(i,datanum) :
+            E += (data[i] - data[i-num]) / num
+            DEV=0
+            for k in range(num) :
+                DEV += (data[i-k]-E) * (data[i-k]-E)
+            result[i] = DEV
+            
+        return result
+
+    # NOT 取反
+    # 求逻辑非。
+    # 用法：　NOT(X)　返回非X，即当X=0时返回1，否则返回0。
+    # 例如：　NOT(ISUP)　表示平盘或收阴。
+    def NOT(self,data) :
+        if JSAlgorithm.IsNumber(data) :
+            return 0 if data else 1
+        
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen=len(data)
+        result=JSAlgorithm.CreateArray(dataLen)
+
+        for i in range(dataLen) :
+            if JSAlgorithm.IsNumber(data[i]) :
+                result[i]=0 if data[i] else 1
+
+        return result
+
+    # FORCAST 线性回归预测值
+    # FORCAST(X，N)　 返回线性回归预测值。
+    def FORCAST(self,data,n):
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        num = n
+        datanum = len(data)
+        if num < 1 or num >= datanum :
+            return []
+
+        result=JSAlgorithm.CreateArray(datanum)
+
+        for j in range(datanum) :
+            if JSAlgorithm.IsNumber(data[j]) :
+                break
+
+        for i in range(j+num-1,datanum) :
+            Ex, Ey, Sxy, Sxx =0, 0, 0, 0
+            for j in range(num) :
+                if j>i :
+                    break
+                Ex += (i - j)
+                Ey += data[i - j]
+            Ex /= num
+            Ey /= num
+            for j in range(num) :
+                if j>i :
+                    break
+                Sxy += (i-j-Ex)*(data[i-j]-Ey)
+                Sxx += (i-j-Ex)*(i-j-Ex)
+
+            Slope = Sxy / Sxx
+            Const = (Ey - Ex*Slope) / num
+            result[i] = Slope * num + Const
+
+        return result
+
+    # SLOPE 线性回归斜率
+    # SLOPE(X，N)　 返回线性回归斜率。
+    def SLOPE(self,data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen=len(data)
+        if n<1 or n>=dataLen :
+            return []
+        
+        result=JSAlgorithm.CreateArray(dataLen)
+        for start in range(dataLen) :
+            if JSAlgorithm.IsNumber(data[start]) :
+                break
+
+        for i in range(start+n-1,dataLen) :
+            x, y, xy, xx = 0,0,0,0
+            for j in range(n) :
+                if j>i: 
+                    break
+                x+=(i-j)       # 数据索引相加
+                y+=data[i-j]   # 数据相加
+
+            x=x/n
+            y=y/n
+
+            for j in range(n) :
+                if j>i :
+                    break
+                xy+=(i-j-x)*(data[i-j]-y)
+                xx+=(i-j-x)*(i-j-x)
+
+            if xx :
+                result[i]= xy/xx
+            elif i :
+                result[i]=result[i-1]
+
+        return result
+
+    # STDP 总体标准差
+    # STDP(X，N)　 返回总体标准差。
+    def STDP(self,data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        num = n
+        datanum = len(data)
+        if num < 1 or num >= datanum :
+            return []
+
+        result=JSAlgorithm.CreateArray(datanum)
+        for i in range(datanum) :
+            if JSAlgorithm.IsNumber(data[i]) :
+                break
+
+        SigmaPowerX ,SigmaX, MidResult =0,0,0
+        for j in range(num) :
+            if i>=datanum :
+                break
+            SigmaPowerX += data[i] * data[i]
+            SigmaX += data[i]
+            i+=1
+
+        if j == num:
+            MidResult = num*SigmaPowerX - SigmaX*SigmaX
+            result[i-1] = math.sqrt(MidResult) / num
+        
+        for i in range(i,datanum) :
+            SigmaPowerX += data[i]*data[i] - data[i-num]*data[i-num]
+            SigmaX += data[i] - data[i-num]
+            MidResult = num*SigmaPowerX - SigmaX*SigmaX
+            result[i] = math.sqrt(MidResult) / num
+
+        return result
+
+    # VAR 估算样本方差
+    # VAR(X，N)　 返回估算样本方差。
+    def VAR(self,data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        num = n
+        datanum = len(data)
+        if num <= 1 or num >= datanum :
+            return []
+
+        result=JSAlgorithm.CreateArray(datanum)
+        for i in range(datanum) :
+            if JSAlgorithm.IsNumber(data[i]) :
+                break
+
+        for i in range(i+num-1,datanum) :
+            SigmaPowerX = SigmaX = 0
+            for j in range(num) :
+                if j>i :
+                    break
+                SigmaPowerX += data[i-j] * data[i-j]
+                SigmaX += data[i-j]
+            
+            result[i] = (num*SigmaPowerX - SigmaX*SigmaX) / num * (num -1)
+
+        return result
+
+    # VARP 总体样本方差
+    # VARP(X，N)　 返回总体样本方差 。
+    def VARP(self,data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        num = n
+        datanum = len(data)
+        if num < 1 or num >= datanum :
+            return []
+
+        result=JSAlgorithm.CreateArray(datanum)
+
+        for i in range(datanum) :
+            if JSAlgorithm.IsNumber(data[i]) :
+                break
+
+        SigmaPowerX , SigmaX = 0,0
+        for j in range(num) :
+            if i>=datanum :
+                break
+            SigmaPowerX += data[i] * data[i]
+            SigmaX += data[i]
+            i+=1
+
+        if j == num :
+            result[i-1] = (num*SigmaPowerX - SigmaX*SigmaX) / (num*num)
+
+        for i in range(i,datanum) : 
+            SigmaPowerX += data[i]*data[i] - data[i-num]*data[i-num]
+            SigmaX += data[i] - data[i-num]
+            result[i] = (num*SigmaPowerX - SigmaX*SigmaX) / (num*num)
+        
+        return result
+
+    # RANGE(A,B,C)表示A>B AND A<C;
+    def RANGE(self, data,range,range2) :
+        isNumber=JSAlgorithm.IsNumber(data)
+        isNumber2=JSAlgorithm.IsNumber(range)
+        isNumber3=JSAlgorithm.IsNumber(range2)
+
+        if isNumber and isNumber2 and isNumber3 :
+            if data>min(range,range2) and data<max(range,range2):
+                return 1
+            else :
+                return 0
+
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen=len(data)
+        result=JSAlgorithm.CreateArray(dataLen)
+
+        for i in range(dataLen) :
+            value=data[i]
+            if JSAlgorithm.IsNumber(value) :
+                continue
+
+            if not isNumber2 :
+                if i>=len(range) :
+                    continue
+                rangeValue=range[i]
+            else :
+                rangeValue=range
+            
+
+            if not JSAlgorithm.IsNumber(rangeValue) :
+                continue
+
+            if not isNumber3 :
+                if i>=len(range2) :
+                    continue
+
+                rangeValue2=range2[i]
+            else :
+                rangeValue2=range2
+            
+            if not JSAlgorithm.IsNumber(rangeValue2) :
+                continue
+
+            result[i]= 1 if value>min(rangeValue,rangeValue2) and value<max(rangeValue,rangeValue2) else 0
+
+        return result
+
+    def EXIST(self,data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen = len(data)
+        result=JSAlgorithm.CreateArray(dataLen)
+        latestID=None # 最新满足条件的数据索引
+        
+        for i in range(dataLen) :
+            value=data[i]
+            if JSAlgorithm.IsNumber(value) and value>0:
+                latestID=i  # 最新满足条件的数据索引
+
+            if latestID!=None and i-latestID<n :
+                result[i]=1
+            else :
+                result[i]=0
+
+        return result
+
+    def TFILTER(self, data,data2,n) :
+        # TODO: 待完成
+        return []
+
+    # 过滤连续出现的信号.
+    # 用法:FILTER(X,N):X满足条件后,将其后N周期内的数据置为0,N为常量.
+    # 例如: FILTER(CLOSE>OPEN,5)查找阳线,5天内再次出现的阳线不被记录在内
+    def FILTER(self,data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen = len(data)
+        result=JSAlgorithm.CreateArray(dataLen)
+        for i in range(dataLen) :
+            if data[i] :
+                result[i]=1
+                for j in range(j<n) :
+                    if j+i+1>=dataLen :
+                        break
+                    result[j+i+1]=0
+                i+=n
+            else :
+                result[i]=0
+                
+        return result
+
+    def BARSLAST(self, data) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen = len(data)
+        result=JSAlgorithm.CreateArray(dataLen)
+        day=None
+        for i in range(dataLen) :
+            if data[i]>0:
+                day=0
+            elif day!=None : 
+                day+=1
+
+            if day!=None :
+                result[i]=day
+
+        return result
+
+    
+    # N周期内第一个条件成立到当前的周期数.
+    # 用法: BARSSINCEN(X,N):N周期内第一次X不为0到现在的天数,N为常量
+    # 例如: BARSSINCEN(HIGH>10,10)表示10个周期内股价超过10元时到当前的周期数
+    def BARSSINCEN(self, data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+    
+        dataLen = len(data)
+        result=JSAlgorithm.CreateArray(dataLen)
+        
+        day=None
+        for i in range(dataLen) :
+            if day==None :
+                if data[i] :
+                    day=0
+            else :
+                if data[i] :
+                    if day+1<n :
+                        day+=1
+                else :
+                    day=None
+
+            if day: 
+                result[i]=day
+
+        return result
+
+    
+    # 第一个条件成立到当前的周期数.
+    # 用法: BARSSINCE(X):第一次X不为0到现在的天数
+    # 例如: BARSSINCE(HIGH>10)表示股价超过10元时到当前的周期数
+    def BARSSINCE(self, data) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen = len(data)
+        result=JSAlgorithm.CreateArray(dataLen)
+        day=None
+        for i in range(dataLen) :
+            if day==None :
+                if data[i] :
+                    day=0
+            else :
+                day+=1
+
+            if day :
+                result[i]=day
+
+        return result
+
+    # 三角函数调用 func 三角函数 
+    # 反正切值. 用法: ATAN(X)返回X的反正切值
+    # 反余弦值. 用法: ACOS(X)返回X的反余弦值
+    # 反正弦值. 用法: ASIN(X)返回X的反正弦值
+    # 余弦值.  用法: COS(X)返回X的余弦值
+    # 正弦值.  用法: SIN(X)返回X的正弦值
+    # 正切值.  用法: TAN(X)返回X的正切值
+    #
+    # 求自然对数. 用法: LN(X)以e为底的对数 例如: LN(CLOSE)求收盘价的对数
+    # 求10为底的对数. 用法: LOG(X)取得X的对数 例如: LOG(100)等于2
+    # 指数. 用法: EXP(X)为e的X次幂 例如: EXP(CLOSE)返回e的CLOSE次幂
+    # 开平方. 用法: SQRT(X)为X的平方根 例如: SQRT(CLOSE)收盘价的平方根
+    def Trigonometric(self, data,func) :
+        if JSAlgorithm.IsNumber(data) :
+            return func(data)
+
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+        
+        dataLen=len(data)
+        result=JSAlgorithm.CreateArray(dataLen)
+        for i in range(dataLen) :
+            item=data[i]
+            if JSAlgorithm.IsNumber(item) :
+                result[i]=func(item)
+
+        return result
+
+    # LAST(X,A,B):持续存在.
+    # 用法: LAST(CLOSE>OPEN,10,5) 
+    # 表示从前10日到前5日内一直阳线
+    # 若A为0,表示从第一天开始,B为0,表示到最后日止
+    def LAST(self, data,n,n2) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen=len(data)
+        if n2<=0: 
+            n2=dataLen-1
+        if n2>n :
+            return []
+
+        result=JSAlgorithm.CreateArray(dataLen,0)
+        for i in range(dataLen) :
+            day=0
+            start=i-n
+            end=i-n2
+            if start<0 or end<0 :
+                continue
+
+            for j in range(start, dataLen) :
+                if j>end :
+                    break
+                if not data[j] :
+                    break
+                day+=1
+
+            if day==end-start+1 :   #[start,end]
+                result[i]=1
+
+        return result
+
+    # 返回是否连涨周期数.
+    # 用法: UPNDAY(CLOSE,M)
+    # 表示连涨M个周期,M为常量
+    def UPNDAY(self, data,n) :
+        if not JSAlgorithm.IsVaildArray(data) or n<1 :
+            return []
+
+        dataLen=len(data)
+        result=JSAlgorithm.CreateArray(dataLen,0)
+        days=0
+        for i in range(dataLen) :
+            if i-1<0 :
+                continue
+
+            if not JSAlgorithm.IsNumber(data[i]) or  not JSAlgorithm.IsNumber(data[i-1]) : # 无效数都不算连涨
+                days=0
+                continue
+
+            if data[i]>data[i-1] :
+                days+=1
+            else : 
+                days=0
+
+            if days==n :
+                result[i]=1
+                days-=1
+
+        return result
+
+    
+    # 返回是否连跌周期.
+    # 用法: DOWNNDAY(CLOSE,M)
+    # 表示连跌M个周期,M为常量
+    def DOWNNDAY(self,data,n) :
+        if not JSAlgorithm.IsVaildArray(data) or n<1 :
+            return []
+
+        dataLen=len(data)
+        result=JSAlgorithm.CreateArray(dataLen,0)
+        days=0
+        for i in range(dataLen) :
+            if i-1<0 :
+                continue
+            if not JSAlgorithm.IsNumber(data[i]) or not JSAlgorithm.IsNumber(data[i-1]) : # 无效数都不算连涨
+                days=0
+                continue
+
+            if data[i]<data[i-1] :
+                days+=1
+            else :
+                days=0
+
+            if days==n :
+                result[i]=1
+                days-=1
+
+        return result
+
+    #返回是否持续存在X>Y
+    #用法:
+    #NDAY(CLOSE,OPEN,3)
+    #表示连续3日收阳线
+    def NDAY(self,data,data2,n):
+        if n<1:
+            return []
+        if not JSAlgorithm.IsArray(data) and not JSAlgorithm.IsArray(data2):
+            return []
+
+        if JSAlgorithm.IsArray(data) and JSAlgorithm.IsArray(data2) :
+            len1 , len2= len(data), len(data2)
+            if n>=len1 or n>=len2 :
+                return []
+
+            count=max(len1,len2)
+            result=JSAlgorithm.CreateArray(count,0)
+            days=0
+            for i in range(count):
+                if i>=len1 or i>=len2:
+                    continue
+                if not JSAlgorithm.IsNumber(data[i]) or not JSAlgorithm.IsNumber(data2[i]) :
+                    days=0
+                    continue
+
+                if data[i]>data2[i] :
+                    days+=1
+                else :
+                    days=0
+
+                if days==n :
+                    result[i]=1
+                    days-=1
+
+        elif JSAlgorithm.IsArray(data) and JSAlgorithm.IsNumber(data2) :
+            len1=len(data)
+            if n>=len1 :
+                return []
+
+            result=JSAlgorithm.CreateArray(len1,0)
+            days=0
+            for i in range(len1) :
+                if not JSAlgorithm.IsNumber(data[i])  :                
+                    days=0
+                    continue
+
+                if data[i]>data2 :
+                    day+=1
+                else :
+                    days=0
+
+                if days==n :
+                    result[i]=1
+                    days-=1
+
+        elif JSAlgorithm.IsNumber(data) and JSAlgorithm.IsArray(data2) :
+            len2=len(data2)
+            if n>=len2 :
+                return []
+
+            result=JSAlgorithm.CreateArray(len2,0) 
+            days=0
+            for i in range(len2) :
+                if not JSAlgorithm.IsNumber(data2[i]) :
+                    days=0
+                    continue
+
+                if data>data2[i] :
+                    days+=1
+                else :
+                    days=0
+
+                if days==n :
+                    result[i]=1
+                    days-=1
+
+        return result
+
+    # 两条线维持一定周期后交叉.
+    # 用法:LONGCROSS(A,B,N)表示A在N周期内都小于B,本周期从下方向上穿过B时返回1,否则返回0
+    def LONGCROSS(self,data,data2,n) :
+        if not JSAlgorithm.IsArray(data) and not JSAlgorithm.IsArray(data2) :
+            return []
+
+        if n<1 : 
+            return []
+
+        len1 , len2= len(data), len(data2)  
+        count=max(len1,len2)
+        result=JSAlgorithm.CreateArray(count,0)
+        for i in range(count) :
+            if i-1<0:
+                continue
+            if i>=len1 or i>=len2 :
+                continue
+
+            if not JSAlgorithm.Is2Number(data[i], data2[i]) or  not JSAlgorithm.Is2Number(data[i-1],data2[i-1]) :
+                continue
+
+            if data[i]>data2[i] and data[i-1]<data2[i-1] :
+                result[i]=1
+
+        for i in range(count) :
+            if not result[i] :
+                continue
+            for j in range(n) :
+                if i-j<0 :
+                    break
+                if data[i-j]>=data2[i-j] :
+                    result[i]=0
+                    break
+
+        return result
+
+    # EXISTR(X,A,B):是否存在(前几日到前几日间).
+    # 例如: EXISTR(CLOSE>OPEN,10,5) 
+    # 表示从前10日内到前5日内存在着阳线
+    # 若A为0,表示从第一天开始,B为0,表示到最后日止
+    def EXISTR(self,data,n,n2) :
+        if not JSAlgorithm.IsArray(data) :
+            return []
+
+        dataLen=len(data)
+        
+        if n<=0 :
+            n=dataLen
+        if n2<=0: 
+            n2=1
+        if n2>n :
+            return []
+
+        result=JSAlgorithm.CreateArray(dataLen)
+        for i in range(dataLen) :
+            if i-n<0 or i-n2<0 :
+                continue
+
+            result[i]=0
+            for j in range(n,n2-1,-1) :
+                value=data[i-j]
+                if JSAlgorithm.IsNumber(value) and value :
+                    result[i]=1
+                    break
+
+        return result
+
+    # RELATE(X,Y,N) 返回X和Y的N周期的相关系数
+    # RELATE(X,Y,N)=(∑[(Xi-Avg(X))(Yi-Avg(y))])/N ÷ √((∑(Xi-Avg(X))^2)/N * (∑(Yi-Avg(Y))^2)/N)
+    # 其中 avg(x)表示x的N周期均值：  avg(X) = (∑Xi)/N  
+    # √(...)表示开平方
+    def RELATE(self,data,data2,n) :
+        if not JSAlgorithm.IsVaildArray(data) or not JSAlgorithm.IsVaildArray(data2) :
+            return []
+
+        if n<1:
+            n=1
+
+        dataAverage=JSAlgorithm.ArrayAverage(data,n)
+        data2Average=JSAlgorithm.ArrayAverage(data2,n)
+
+        count=max(len(data),len(data2))
+        result=JSAlgorithm.CreateArray(count)
+        for i in range(count) :
+            if i>=len(data) or i>=len(data2) or i>=len(dataAverage) or i>=len(data2Average) :
+                continue
+
+            average=dataAverage[i]
+            average2=data2Average[i]
+
+            total,total2,total3 = 0,0,0
+            for j in range(i-n+1, i+1) :
+                total+=(data[j]-average)*(data2[j]-average2)   # ∑[(Xi-Avg(X))(Yi-Avg(y))])
+                total2+=math.pow(data[j]-average,2)            # ∑(Xi-Avg(X))^2
+                total3+=math.pow(data2[j]-average2,2)          # ∑(Yi-Avg(Y))^2)
+
+            result[i]=(total/n)/(math.sqrt(total2/n)*math.sqrt(total3/n))
+
+        return result
+
+    
+    # COVAR(X,Y,N) 返回X和Y的N周期的协方差
+    def COVAR(self,data,data2,n) :
+        if not JSAlgorithm.IsArray(data) or not JSAlgorithm.IsArray(data2) :
+            return []
+
+        if n<1:
+            n=1
+
+        dataAverage=JSAlgorithm.ArrayAverage(data,n)
+        data2Average=JSAlgorithm.ArrayAverage(data2,n)
+        len1, len2= len(data), len(data2)
+        count=max(len1,len2)
+        result=JSAlgorithm.CreateArray(count)
+
+        for i in range(count) :
+            if i>=len1 or i>=len2 or i>=len(dataAverage) or i>=len(data2Average) :
+                continue
+
+            average=dataAverage[i]
+            average2=data2Average[i]
+
+            total=0
+            for j in range(i-n+1, i+1) :
+                total+=(data[j]-average)*(data2[j]-average2)  
+            result[i]=(total/n)
+
+        return result
+
+
+    
+    # 求上一高点到当前的周期数.
+    # 用法: HHVBARS(X,N):求N周期内X最高值到当前周期数,N=0表示从第一个有效值开始统计
+    # 例如: HHVBARS(HIGH,0)求得历史新高到到当前的周期数
+    def HHVBARS(self,data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen=len(data)
+        if n<1:
+            n=dataLen
+
+        result=JSAlgorithm.CreateArray(dataLen)
+        nMax=None  # 最大值索引
+        for i in range(dataLen) :
+            if JSAlgorithm.IsNumber(data[i]) :
+                nMax=i
+                break
+
+        j=0
+        for i in range(nMax+1,dataLen) :   # 求第1个最大值
+            if j>=n :
+                break
+
+            if data[i]>=data[nMax]:
+                nMax=i
+            if n==dataLen :
+                result[i]=(i-nMax)
+            j+=1
+            
+        for i in range(i,dataLen) :
+            if i-nMax<n :
+                if data[i]>=data[nMax] :
+                    nMax=i
+            else :
+                nMax=i-n+1
+                for j in range(nMax, i+1) : # 计算区间最大值
+                    if data[j]>=data[nMax] :
+                        nMax=j
+
+            result[i]=i-nMax
+
+        return result
+
+
+    # 求上一低点到当前的周期数.
+    # 用法: LLVBARS(X,N):求N周期内X最低值到当前周期数,N=0表示从第一个有效值开始统计
+    # 例如: LLVBARS(HIGH,20)求得20日最低点到当前的周期数
+    def LLVBARS(self, data,n) :
+        if not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen=len(data)  
+        if n<1 : 
+            n=dataLen
+
+        result=JSAlgorithm.CreateArray(dataLen)
+        nMin=None  # 最小值索引
+        for i in range(dataLen) :
+            if JSAlgorithm.IsNumber(data[i]) :
+                nMin=i
+                break
+
+        j=0
+        for i in range(nMin+1,dataLen) :    # 求第1个最大值
+            if j>=n :
+                break
+            if data[i]<=data[nMin] :
+                nMin=i
+            if n==dataLen :
+                result[i]=i-nMin
+            j+=1
+
+        for i in range(i,dataLen) :
+            if i-nMin<n :
+                if data[i]<=data[nMin] :
+                    nMin=i
+            else :
+                nMin=i-n+1
+                for j in range(nMin, i+1):  # 计算区间最小值
+                    if data[j]<=data[nMin] :
+                        nMin=j
+
+            result[i]=i-nMin
+
+        return result
+
+
+    # β(Beta)系数
+    # BETA(N) 返回当前证券N周期收益与对应大盘指数收益相比的贝塔系数
+    # 需要下载上证指数历史数据
+    # 涨幅(X)=(现价-上一个交易日收盘价）/上一个交易日收盘价
+    # 公式=股票和指数协方差/指数方差
+    def BETA(self,n) :
+        stockData=self.SymbolData.Data
+        indexData=self.SymbolData.IndexData
+        if n<=0 :
+            n=1
+
+        dataLen=len(stockData.Data)
+        stockProfit=JSAlgorithm.CreateArray(dataLen,0)    # 股票涨幅
+        indexProfit=JSAlgorithm.CreateArray(dataLen,0)    # 指数涨幅
+        for i in range(dataLen) :
+            stockItem=stockData.Data[i]
+            indexItem=indexData.Data[i]
+
+            if stockItem.Close>0 and stockItem.YClose>0 :
+                stockProfit[i]=(stockItem.Close-stockItem.YClose)/stockItem.YClose
+            if indexItem.Close>0 and indexItem.YClose>0 :
+                indexProfit[i]=(indexItem.Close-indexItem.YClose)/indexItem.YClose
+
+
+        # 计算均值数组
+        averageStockProfit=JSAlgorithm.ArrayAverage(stockProfit,n)   
+        averageIndexProfit=JSAlgorithm.ArrayAverage(indexProfit,n)
+
+        result=JSAlgorithm.CreateArray(dataLen)
+
+        for i in range(dataLen) :
+            if i>=len(stockProfit) or i>=len(indexProfit) or i>=len(averageStockProfit) or i>=len(averageIndexProfit) :
+                continue
+
+            averageStock=averageStockProfit[i]
+            averageIndex=averageIndexProfit[i]
+
+            covariance=0   # 协方差
+            variance=0     # 方差
+            for j in range(i-n+1, i+1) :
+                value=(indexProfit[j]-averageIndex)
+                value2=(stockProfit[j]-averageStock)
+                covariance+=value*value2 
+                variance+=value*value 
+
+            if JSAlgorithm.IsDivideNumber(variance) and JSAlgorithm.IsNumber(covariance) :
+                result[i]=covariance/variance  # (covariance/n)/(variance/n)=covariance/variance;
+
+        return result
+
+
+    # 用法:BETA2(X,Y,N)为X与Y的N周期相关放大系数,表示Y变化1%,则X将变化N%
+    # 例如:BETA2(CLOSE,INDEXC,10)表示收盘价与大盘指数之间的10周期相关放大率
+    def BETA2(self,x,y,n) :
+        if not JSAlgorithm.IsVaildArray(x) or not JSAlgorithm.IsVaildArray(y) :
+            return []
+
+        xLen, yLen = len(x), len(y)
+        if n<=0 : 
+            n=1
+
+        xProfit=JSAlgorithm.CreateArray(xLen,0) # x数据的涨幅
+        yProfit=JSAlgorithm.CreateArray(yLen,0) # y数据的涨幅
+
+        count=max(xLen,yLen)
+
+        lastX, lastY = x[0], y[0]
+        for i in range(count) :
+            xItem=x[i]
+            yItem=y[i]
+
+            if lastX>0 :
+                xProfit[i]=(xItem-lastX)/lastX
+            if lastY>0 : 
+                yProfit[i]=(yItem-lastY)/lastY
+
+            lastX=xItem
+            lastY=yItem
+
+        # 计算均值数组
+        averageXProfit=JSAlgorithm.ArrayAverage(xProfit,n)    
+        averageYProfit=JSAlgorithm.ArrayAverage(yProfit,n)
+
+        result=JSAlgorithm.CreateArray(count)
+
+        for i in range(count) :
+            if i>=len(xProfit) or i>=len(yProfit) or i>=len(averageXProfit) or i>=len(averageYProfit) :
+                continue
+
+            averageX=averageXProfit[i]
+            averageY=averageYProfit[i]
+
+            covariance=0   # 协方差
+            variance=0     # 方差
+            for j in range(i-n+1, i+1) :
+                value=(xProfit[j]-averageX)
+                value2=(yProfit[j]-averageY)
+                covariance+=value*value2 
+                variance+=value*value
+
+            if JSAlgorithm.IsDivideNumber(variance) and JSAlgorithm.IsNumber(covariance) :
+                result[i]=covariance/variance  # (covariance/n)/(variance/n)=covariance/variance;
+
+        return result
+
+    # 一直存在.
+    # 例如: EVERY(CLOSE>OPEN,N) 
+    # 表示N日内一直阳线(N应大于0,小于总周期数,N支持变量)
+    def EVERY(self,data,n):
+        if n<1 or  not JSAlgorithm.IsVaildArray(data) :
+            return []
+
+        dataLen=len(data)
+        result=JSAlgorithm.CreateArray(dataLen)
+        for i in range(dataLen) :
+            if JSAlgorithm.IsNumber(data[i]) :
+                break
+        
+        flag=0
+        for i in range(i,dataLen) :
+            if data[i]: 
+                flag+=1
+            else :
+                flag=0
+            
+            if flag==n :
+                result[i]=1
+                flag-=1
+            else :
+                result[i]=0
+
+        return result
+
+
+
     # 函数调用
     def CallFunction(self,name,args,node,symbolData=None) :
         if name=='MAX':
@@ -937,25 +2218,25 @@ class JSAlgorithm() :
         elif name=='EXPMEMA':
             return self.EXPMEMA(args[0], int(args[1]))
         elif name=='COUNT':
-            return self.COUNT(args[0], args[1])
+            return self.COUNT(args[0], int(args[1]))
         elif name=='LLV':
             return self.LLV(args[0], args[1])
         elif name=='LLVBARS':
-            return self.LLVBARS(args[0], args[1])
+            return self.LLVBARS(args[0], int(args[1]))
         elif name=='HHV':
             return self.HHV(args[0], args[1])
         elif name=='HHVBARS':
-            return self.HHVBARS(args[0], args[1])
+            return self.HHVBARS(args[0], int(args[1]))
         elif name=='MULAR':
-            return self.MULAR(args[0], args[1])
+            return self.MULAR(args[0], int(args[1]))
         elif name=='CROSS':
             return self.CROSS(args[0], args[1])
         elif name=='LONGCROSS':
-            return self.LONGCROSS(args[0], args[1], args[2])
+            return self.LONGCROSS(args[0], args[1], int(args[2]))
         elif name=='AVEDEV':
-            return self.AVEDEV(args[0], args[1])
+            return self.AVEDEV(args[0], int(args[1]))
         elif name=='STD':
-            return self.STD(args[0], args[1])
+            return self.STD(args[0], int(args[1]))
         elif name in ('IF','IFF'):
             return self.IF(args[0], args[1], args[2])
         elif name=='IFN':
@@ -963,33 +2244,33 @@ class JSAlgorithm() :
         elif name=='NOT':
             return self.NOT(args[0])
         elif name=='SUM':
-            return self.SUM(args[0], args[1])
+            return self.SUM(args[0], int(args[1]))
         elif name=='RANGE':
             return self.RANGE(args[0],args[1],args[2])
         elif name=='EXIST':
-            return self.EXIST(args[0],args[1])
+            return self.EXIST(args[0],int(args[1]))
         elif name=='EXISTR':
-            return self.EXISTR(args[0],args[1],args[2])
+            return self.EXISTR(args[0],int(args[1]),int(args[2]))
         elif name=='FILTER':
             return self.FILTER(args[0],args[1])
         elif name=='TFILTER':
-            return self.TFILTER(args[0],args[1],args[2])
+            return self.TFILTER(args[0],args[1],int(args[2]))
         elif name=='SLOPE':
-            return self.SLOPE(args[0],args[1])
-        if name=='BARSLAST':
+            return self.SLOPE(args[0],int(args[1]))
+        elif name=='BARSLAST':
             return self.BARSLAST(args[0])
         elif name=='BARSCOUNT':
             return self.BARSCOUNT(args[0])
         elif name=='BARSSINCEN':
-            return self.BARSSINCEN(args[0],args[1])
+            return self.BARSSINCEN(args[0],int(args[1]))
         elif name=='BARSSINCE':
             return self.BARSSINCE(args[0])
         elif name=='LAST':
-            return self.LAST(args[0],args[1],args[2])
+            return self.LAST(args[0],int(args[1]),int(args[2]))
         elif name=='EVERY':
-            return self.EVERY(args[0],args[1])
+            return self.EVERY(args[0],int(args[1]))
         elif name=='DEVSQ':
-            return self.DEVSQ(args[0], args[1])
+            return self.DEVSQ(args[0], int(args[1]))
         elif name=='ZIG':
             return self.ZIG(args[0],args[1])
         elif name=='TROUGHBARS':
@@ -1001,27 +2282,27 @@ class JSAlgorithm() :
         elif name=='WINNER':
             return self.WINNER(args[0])
         elif name=='FORCAST':
-            return self.FORCAST(args[0], args[1])
+            return self.FORCAST(args[0], int(args[1]))
         elif name=='STDP':
-            return self.STDP(args[0], args[1])
+            return self.STDP(args[0], int(args[1]))
         elif name=='VAR':
-            return self.VAR(args[0], args[1])
+            return self.VAR(args[0], int(args[1]))
         elif name=='VARP':
-            return self.VARP(args[0], args[1])
+            return self.VARP(args[0], int(args[1]))
         elif name=='UPNDAY':
-            return self.UPNDAY(args[0],args[1])
+            return self.UPNDAY(args[0],int(args[1]))
         elif name=='DOWNNDAY':
-            return self.DOWNNDAY(args[0],args[1])
+            return self.DOWNNDAY(args[0],int(args[1]))
         elif name=='NDAY':
-            return self.NDAY(args[0],args[1],args[2])
+            return self.NDAY(args[0],args[1],int(args[2]))
         elif name=='RELATE':
-            return self.RELATE(args[0],args[1],args[2])
+            return self.RELATE(args[0],args[1],int(args[2]))
         elif name=='COVAR':
-            return self.COVAR(args[0],args[1],args[2])
+            return self.COVAR(args[0],args[1],int(args[2]))
         elif name=='BETA':
-            return self.BETA(args[0])
+            return self.BETA(int(args[0]))
         elif name=='BETA2':
-            return self.BETA2(args[0],args[1],args[2])
+            return self.BETA2(args[0],args[1],int(args[2]))
         elif name=='WMA':
             return self.WMA(args[0], int(args[1]))
         elif name=='MEMA':
@@ -1038,25 +2319,25 @@ class JSAlgorithm() :
             return self.BACKSET(args[0], args[1])
             # 三角函数
         elif name=='ATAN':
-            return self.Trigonometric(args[0],Math.atan)
+            return self.Trigonometric(args[0],math.atan)
         elif name=='ACOS':
-            return self.Trigonometric(args[0],Math.acos)
+            return self.Trigonometric(args[0],math.acos)
         elif name=='ASIN':
-            return self.Trigonometric(args[0],Math.asin)
+            return self.Trigonometric(args[0],math.asin)
         elif name=='COS':
-            return self.Trigonometric(args[0],Math.cos)
+            return self.Trigonometric(args[0],math.cos)
         elif name=='SIN':
-            return self.Trigonometric(args[0],Math.sin)
+            return self.Trigonometric(args[0],math.sin)
         elif name=='TAN':
-            return self.Trigonometric(args[0],Math.tan)
+            return self.Trigonometric(args[0],math.tan)
         elif name=='LN':
-            return self.Trigonometric(args[0],Math.log)
+            return self.Trigonometric(args[0],math.log)
         elif name=='LOG':
-            return self.Trigonometric(args[0],Math.log10)
+            return self.Trigonometric(args[0],math.log10)
         elif name=='EXP':
-            return self.Trigonometric(args[0],Math.exp)
+            return self.Trigonometric(args[0],math.exp)
         elif name=='SQRT':
-            return self.Trigonometric(args[0],Math.sqrt)
+            return self.Trigonometric(args[0],math.sqrt)
         else:
             self.ThrowUnexpectedNode(node,'函数'+name+'不存在')
 
