@@ -1,6 +1,8 @@
 import sys
 from umychart_complier_jscomplier import JSComplier, SymbolOption, HQ_DATA_TYPE
 
+from umychart_complier_jscomplier import ScriptIndexConsole, ScriptIndexItem, SymbolOption, RequestOption, HQ_DATA_TYPE, ArgumentItem
+
 class TestCase :
     def __init__(self, code, option=SymbolOption()) :
         self.Code=code
@@ -228,17 +230,47 @@ def Test_DEVSQ():
 def Test_FINANCE(): # 财务数据测试
     case =TestCase(
         code=[
+        'DRAWLINE(HIGH>=HHV(HIGH,20),HIGH,LOW<=LLV(LOW,20),LOW,1);'
         'VAR4:CAPITAL;',
         'VAR3:FINANCE(32);',
         'VAR2:FINANCE(1);', 
-        'VAR2:FINANCE(33);', 
+        'VAR2:MA(FINANCE(33),5);', 
+        "DRAWTEXT(C<=O,O,'xxxx');",
+        'STICKLINE(CLOSE>OPEN, CLOSE, OPEN, 0.8, 1);',
+        'DRAWNUMBER(CLOSE/OPEN>1.0001,LOW,C);',
+        'DRAWNUMBER(CLOSE/OPEN>1.0001,LOW,33);',
+        'DRAWICON(CLOSE>OPEN,LOW,1);',
+        'PLOYLINE(HIGH>=HHV(HIGH,20),HIGH);',
+        'CYW: SUM(VAR4,10)/10000, COLORSTICK;',
         ])
 
     result=case.Run()
     return result
 
+def Test_ScriptIndexConsole():
+
+    # 创建脚本, 及参数
+    scpritInfo=ScriptIndexItem(name='测试脚本', id=888888,
+        script='MA1:MA(CLOSE,M1);\n'    # 指标脚本代码
+            'MA2:MA(CLOSE,M2);\n'
+            'MA3:MA(CLOSE,M3);',
+        args=[ ArgumentItem(name='M1', value=5), ArgumentItem(name='M2', value=10), ArgumentItem(name='M3', value=20) ] # 参数
+        )
+
+    indexConsole = ScriptIndexConsole(scpritInfo)
+
+    option = SymbolOption(
+        symbol='000001.sz',
+        right=1, # 复权 0 不复权 1 前复权 2 后复权
+        period=5 # 周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+        )
+    indexConsole.ExecuteScript(option)
+
+
 
 #Test_Add()
 #Test_Multiply()
 #Test_MAX_MIN()
-Test_FINANCE()
+#Test_FINANCE()
+
+Test_ScriptIndexConsole()

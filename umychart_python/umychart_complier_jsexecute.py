@@ -10,6 +10,7 @@ from umychart_complier_job import JS_EXECUTE_JOB_ID, JobItem
 from umychart_complier_jsparser import Syntax,BinaryExpression,AssignmentExpression
 from umychart_complier_jssymboldata import JSSymbolData, g_JSComplierResource
 from umychart_complier_jsalgorithm import JSAlgorithm, JSDraw
+from umychart_complier_help import JSComplierHelper
 
 #################################################################################################
 #
@@ -23,11 +24,13 @@ class ArgumentItem :
         self.Name=name
         self.Value=value
 
-class VariableItem:
-    def __init__(self, name, data,type) :
+# 输出变量
+class OutVariable:  
+    def __init__(self, name, type, data=None, draw=None) :
         self.Name=name
         self.Data=data
         self.Type=type
+        self.Draw=draw
 
 
 class JSExecute :
@@ -65,6 +68,9 @@ class JSExecute :
         self.Draw=JSDraw(errorHandler=self.ErrorHandler,symbolData=self.SymbolData)
         
         self.JobList=[]    # 执行的任务队列
+
+        if option and option.Arguments:
+             self.Arguments=option.Arguments
 
     def Execute(self) :
         self.SymbolData.RunDownloadJob(self.JobList) # 准备数据
@@ -140,9 +146,155 @@ class JSExecute :
                     if not isinstance(outVar, list) : 
                         outVar=self.SingleDataToArrayData(outVar)
 
-                    self.OutVarTable.append(VariableItem(name=varName, data=outVar,type=0))
-            
+                    self.OutVarTable.append(OutVariable(name=varName,data=outVar,type=0))
 
+                elif (item.Expression.Type==Syntax.CallExpression) :
+                    callItem=item.Expression
+                    if (JSDraw.IsDrawFunction(callItem.Callee.Name)) :
+                        draw=callItem.Draw
+                        draw.Name=callItem.Callee.Name
+                        self.OutVarTable.append(OutVariable(name=draw.Name, draw=draw, type=1))
+
+                elif (item.Expression.Type==Syntax.SequenceExpression) :
+                    varName=None
+                    draw=None
+                    color=None
+                    lineWidth=None
+                    colorStick=False
+                    pointDot=False
+                    circleDot=False
+                    lineStick=False
+                    stick=False
+                    volStick=False
+                    isShow=True
+                    isExData=False
+                    for itemExpression in item.Expression.Expression :
+                        if (itemExpression.Type==Syntax.AssignmentExpression and itemExpression.Operator==':' and itemExpression.Left) :
+                            varName=itemExpression.Left.Name
+                            varValue=self.VarTable[varName]
+                            if not JSComplierHelper.IsArray(varValue) :
+                                varValue=self.SingleDataToArrayData(varValue); 
+                                self.VarTable[varName]=varValue            # 把单数值转化成数组放到变量表里
+                        
+                        elif (itemExpression.Type==Syntax.Identifier) :
+                            value=itemExpression.Name
+                            if (value=='COLORSTICK') :
+                                colorStick=True
+                            elif (value=='POINTDOT') :
+                                pointDot=True
+                            elif (value=='CIRCLEDOT') :
+                                circleDot=True
+                            elif (value=='LINESTICK') :
+                                lineStick=True
+                            elif (value=='STICK') :
+                                stick=True
+                            elif (value=='VOLSTICK') :
+                                volStick=True
+                            elif (value.indexOf('COLOR')==0) :
+                                color=True
+                            elif (value.indexOf('LINETHICK')==0) :
+                                lineWidth=True
+                            elif (value.indexOf('NODRAW')==0) :
+                                isShow=False
+                            elif (value.indexOf('EXDATA')==0) :
+                                isExData=True # 扩展数据, 不显示再图形里面
+
+                        elif (itemExpression.Type==Syntax.Literal) :    #常量
+                            aryValue=self.SingleDataToArrayData(itemExpression.Value)
+                            varName=str(itemExpression.Value)
+                            self.VarTable[varName,aryValue]    # 把常量放到变量表里
+
+                        elif (itemExpression.Type==Syntax.CallExpression and JSDraw.IsDrawFunction(itemExpression.Callee.Name)) :
+                            draw=itemExpression.Draw
+                            draw.Name=itemExpression.Callee.Name
+
+                    if (pointDot and varName) :  # 圆点
+                        outVar=self.VarTable[varName]
+                        if (not JSComplierHelper.IsArray(outVar)) :
+                            outVar=self.SingleDataToArrayData(outVar)
+                        value=OutVariable(name=varName,data=outVar, type=3)
+                        value.Radius=2
+                        if color :
+                            value.Color=color
+                        if lineWidth :
+                            value.LineWidth=lineWidth
+                        self.OutVarTable.append(value)
+
+                    elif (circleDot and varName) :  # 圆点
+                        outVar=self.VarTable[varName]
+                        if not JSComplierHelper.IsArray(outVar) :
+                            outVar=self.SingleDataToArrayData(outVar)
+                        value=OutVariable(name=varName,data=outVar, type=3)
+                        value.Radius=1.3
+                        if color:
+                            value.Color=color
+                        if lineWidth:
+                            value.LineWidth=lineWidth
+                        self.OutVarTable.append(value)
+
+                    elif (lineStick and varName) :  # LINESTICK  同时画出柱状线和指标线
+                        outVar=self.VarTable[varName]
+                        value=OutVariable(name=varName, data=outVar, type=4)
+                        if color:
+                            value.Color=color
+                        if lineWidth:
+                            value.LineWidth=lineWidth
+                        self.OutVarTable.append(value)
+                    
+                    elif (stick and varName) : # STICK 画柱状线
+                        outVar=self.VarTable[varName]
+                        value=OutVariable(name=varName,data=outVar, type=5)
+                        if color :
+                            value.Color=color
+                        if lineWidth :
+                            value.LineWidth=lineWidth
+                        self.OutVarTable.append(value)
+                    
+                    elif (volStick and varName) :  # VOLSTICK   画彩色柱状线
+                        outVar=self.VarTable[varName]
+                        value=OutVariable(name=varName,data=outVar, type=6)
+                        if color :
+                            value.Color=color
+                        self.OutVarTable.append(value)
+                    
+                    elif (varName and color) :
+                        outVar=self.VarTable[varName]
+                        if not JSComplierHelper.IsArray(outVar) :
+                            outVar=self.SingleDataToArrayData(outVar)
+                        value=OutVariable(name=varName,data=outVar, type=0)
+                        value.Color=color
+                        if (lineWidth) :
+                            value.LineWidth=lineWidth
+                        if (isShow == False) :
+                            value.IsShow = False
+                        if (isExData==True) :
+                            value.IsExData = True
+                        self.OutVarTable.append(value)
+                    
+                    elif (draw and color) :
+                        value=OutVariable(name=draw.Name,data=draw, type=1)
+                        value.Color=color
+                        self.OutVarTable.append(value)
+                    
+                    elif (colorStick and varName) : # CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
+                        outVar=self.VarTable[varName]
+                        value=OutVariable(name=varName,data=outVar, type=2)
+                        value.Color=color
+                        self.OutVarTable.append(value)
+                    
+                    elif (varName) :
+                        outVar=self.VarTable[varName]
+                        value=OutVariable(name=varName,data=outVar, type=0)
+                        if color :
+                            value.Color=color
+                        if lineWidth :
+                            value.LineWidth=lineWidth
+                        if isShow==False :
+                            value.IsShow=False
+                        if isExData==True :
+                            value.IsExData = True
+                        self.OutVarTable.append(value)
+                    
         return self.OutVarTable
 
 
@@ -189,10 +341,10 @@ class JSExecute :
             node.Draw=self.Draw.SUPERDRAWTEXT(args[0],args[1],args[2],args[3],args[4])
             node.Out=[]
         elif funcName=='DRAWICON':
-            node.Draw=self.Draw.DRAWICON(args[0],args[1],args[2])
+            node.Draw=self.Draw.DRAWICON(args[0],args[1],int(args[2]))
             node.Out=[]
         elif funcName=='DRAWLINE':
-            node.Draw=self.Draw.DRAWLINE(args[0],args[1],args[2],args[3],args[4])
+            node.Draw=self.Draw.DRAWLINE(args[0],args[1],args[2],args[3],int(args[4]))
             node.Out=node.Draw.DrawData
         elif funcName=='DRAWBAND':
             node.Draw=self.Draw.DRAWBAND(args[0],args[1],args[2],args[3])

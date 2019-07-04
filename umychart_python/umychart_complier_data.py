@@ -168,9 +168,15 @@ class ChartData:
         return result
 
     def GetDate(self) :
-        result=[None] * len(self.Data)
+        result=JSComplierHelper.CreateArray(len(self.Data))
         for i in range(len(self.Data)) :
             result[i]=self.Data[i].Date
+        return result
+
+    def GetTime(self) :
+        result=JSComplierHelper.CreateArray(len(self.Data))
+        for i in range(len(self.Data)) :
+            result[i]=self.Data[i].Time
         return result
 
     def GetWeek(self) :

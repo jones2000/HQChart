@@ -1,6 +1,7 @@
 import sys
 import math
-from umychart_complier_jssymboldata import JSSymbolData
+from umychart_complier_jssymboldata import JSSymbolData, g_JSComplierResource
+from umychart_complier_help import JSComplierHelper ,Variant
 
 
 #######################################################################################################
@@ -15,34 +16,34 @@ class JSAlgorithm() :
 
     @staticmethod
     def IsNumber(value):
-        return isinstance(value,(int,float))
+        return JSComplierHelper.IsNumber(value)
 
     @staticmethod
     def IsDivideNumber(value):
-        return isinstance(value,(int,float)) and value!=0
+        return JSComplierHelper.IsDivideNumber(value)
 
     @staticmethod
     def IsArray(value) :
         return isinstance(value,list)
     
-    @staticmethod 
+    @staticmethod   # value 和 value2 是否都是数值型
     def Is2Number(value,value2) :
-        return isinstance(value,(int,float)) and isinstance(value2,(int,float))
+        return JSComplierHelper.IsNumber(value) and JSComplierHelper.IsNumber(value2)
 
-    @staticmethod
+    @staticmethod  # value 和 value2 是否有1个是非数值行
     def Is2NaN(value, value2) :
-        return value!=None and value2!=None
+        bValue=JSComplierHelper.IsNaN(value)
+        bValue2=JSComplierHelper.IsNaN(value2)
+        return bValue or bValue2
+        #return JSComplierHelper.IsNaN(value) or JSComplierHelper.IsNaN(value2)
 
     @staticmethod
     def IsNaN(value) :
-        return value!=None
+        return JSComplierHelper.IsNaN(value)
 
     @staticmethod
     def CreateArray(count, value=None) :
-        if count<=0 :
-            return []
-        else :
-            return [value]*count
+        return JSComplierHelper.CreateArray(count,value)
     
     @staticmethod   # 是否是一个有效素组 data!=null and data.length>0
     def IsVaildArray(data) :
@@ -236,7 +237,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count # 初始化
+            result=JSComplierHelper.CreateArray(count) # 初始化
             for i in range(count) :
                 if i<len1 and i<len2 and not JSAlgorithm.Is2NaN(data[i],data2[i]) :
                     result[i]= 1 if data[i]>data2[i] else 0
@@ -2353,7 +2354,400 @@ class JSAlgorithm() :
 #  绘图函数 
 #
 #######################################################################################################
+
+class DrawItem:
+    def __init__(self, drawType, drawData=[], text=None) :
+        self.DrawType=drawType
+        self.DrawData=drawData
+        self.Text=None
+
 class JSDraw():
     def __init__(self, errorHandler, symbolData) :
         self.ErrorHandler=errorHandler
         self.SymbolData=symbolData
+
+    @staticmethod
+    def IsDrawFunction(name) :
+        return name in ("STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF',
+                            'PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL')
+
+    def DRAWTEXT(self, condition,price,text) :
+        result=DrawItem(drawType='DRAWTEXT', text=text)
+        if (len(condition)<=0) :
+            return result
+        
+        dataLen=len(condition)
+        drawData=JSComplierHelper.CreateArray(dataLen)
+        IsNumber=JSComplierHelper.IsNumber(price)
+
+        for i in range(dataLen) :
+            if JSComplierHelper.IsNaN(condition[i]) or not condition[i] :
+                continue
+
+            if (IsNumber) : 
+                drawData[i]=price
+            else :
+                if (JSComplierHelper.IsNumber(price[i])) :
+                    drawData[i]=price[i]
+
+        result.DrawData=drawData
+        return result
+
+    # direction 文字Y轴位置 0=middle 1=价格的顶部 2=价格的底部
+    # offset 文字Y轴偏移
+    def SUPERDRAWTEXT(self,condition,price,text,direction,offset) :
+        result=DrawItem(drawType='SUPERDRAWTEXT', text=text)
+        result.YOffset=offset
+        result.Direction=direction
+        result.TextAlign='center'
+        if len(condition)<=0 :
+            return result
+
+        dataLen=len(condition)
+        drawData=JSComplierHelper.CreateArray(dataLen)
+        IsNumber=JSComplierHelper.IsNumber(price)
+
+        for i in range(dataLen) :
+            if JSComplierHelper.IsNaN(condition[i]) or not condition[i] :
+                continue
+
+            if IsNumber :
+                drawData[i]=price
+            else :
+                if JSComplierHelper.IsNumber(price[i]) :
+                    drawData[i]=price[i]
+
+        result.DrawData=drawData
+        return result
+
+
+    # STICKLINE 绘制柱线
+    # 在图形上绘制柱线。
+    # 用法：　STICKLINE(COND，PRICE1，PRICE2，WIDTH，EMPTY)，当COND条件满足时，在PRICE1和PRICE2位置之间画柱状线，宽度为WIDTH(10为标准间距)，EMPTH不为0则画空心柱。
+    # 例如：　STICKLINE(CLOSE>OPEN，CLOSE，OPEN，0.8，1)表示画K线中阳线的空心柱体部分。
+    def STICKLINE(self, condition,data,data2,width,type) :
+        result=DrawItem(drawType='STICKLINE')
+        result.Width=width 
+        result.Type=int(type)
+
+        if len(condition)<=0 :
+            return result
+
+        dataLen=len(condition)
+        drawData=JSComplierHelper.CreateArray(dataLen)
+        isNumber=JSComplierHelper.IsNumber(data)
+        isNumber2=JSComplierHelper.IsNumber(data2)
+   
+        for i in range(dataLen) :
+            if JSComplierHelper.IsNaN(condition[i]) or not condition[i] :
+                continue
+
+            if isNumber and isNumber2 :
+                item=Variant()
+                item.Value,item.Value2 = data,data2
+                drawData[i]=item
+            elif isNumber and not isNumber2 :
+                if JSComplierHelper.IsNaN(data2[i]) :
+                    continue
+                item=Variant()
+                item.Value,item.Value2 = data,data2[i]
+                drawData[i]=item
+            elif not isNumber and isNumber2 :
+                if JSComplierHelper.IsNaN(data[i]) :
+                    continue
+                item=Variant()
+                item.Value,item.Value2 = data[i],data2
+                drawData[i]=item
+            else :
+                if JSComplierHelper.IsNaN(data[i]) or JSComplierHelper.IsNaN(data2[i]) : 
+                    continue
+                item=Variant()
+                item.Value,item.Value2 = data[i],data2[i]
+                drawData[i]=item
+
+        result.DrawData=drawData
+        return result
+
+    # 画出带状线.
+    # 用法: DRAWBAND(VAL1,COLOR1,VAL2,COLOR2),当VAL1>VAL2时,在VAL1和VAL2之间填充COLOR1;当VAL1<VAL2时,填充COLOR2,这里的颜色均使用RGB函数计算得到.
+    # 例如: DRAWBAND(OPEN,RGB(0,224,224),CLOSE,RGB(255,96,96));
+    def DRAWBAND(self,data,color,data2,color2) :
+        result=DrawItem(drawType='DRAWBAND')
+        result.Color=[color.lower(),color2.lower()]  # 颜色使用小写字符串
+        len1, len2=len(data), len(data2)
+        count=max(len1, len2)
+
+        drawData=[]
+        for i in range(count) :
+            item=Variant()
+            item.Value, item.Value2 = None, None
+            if (i<len1) :
+                item.Value=data[i]
+            if (i<len2) :
+                item.Value2=data2[i]
+
+            drawData.append(item)
+
+        result.DrawData=drawData
+        return result
+
+    def DRAWKLINE(self,high,open,low,close) :
+        result=DrawItem(drawType='DRAWKLINE')
+        highLen, openLen, lowLen, closeLen=len(high),len(open), len(low), len(close)
+        count=max(highLen, openLen,lowLen,closeLen)
+        drawData=JSComplierHelper.CreateArray(count)
+        for i in range(count) :
+            item=Variant()
+            item.Open, item.High, item.Low,item.Close = None, None, None, None
+            if (i<highLen and i<openLen and i<lowLen and i<closeLen) :
+                item.Open=open[i]
+                item.High=high[i]
+                item.Low=low[i]
+                item.Close=close[i]
+
+            drawData[i]=item
+
+        result.DrawData=drawData
+        return result
+
+    # 满足条件画一根K线
+    def DRAWKLINE_IF(self, condition,high,open,low,close) :
+        result=DrawItem(drawType='DRAWKLINE_IF')
+        highLen, openLen, lowLen, closeLen=len(high),len(open), len(low), len(close)
+        count=max(highLen, openLen,lowLen,closeLen)
+        drawData=JSComplierHelper.CreateArray(count)
+
+        for i in range(count) :
+            item=Variant()
+            item.Open, item.High, item.Low,item.Close = None, None, None, None
+
+            if (i<highLen and i<openLen and i<lowLen and i<closeLen and i<len(condition)) :
+                if (condition[i]) :
+                    item.Open=open[i]
+                    item.High=high[i]
+                    item.Low=low[i]
+                    item.Close=close[i]
+
+            drawData[i]=item
+
+        result.DrawData=drawData
+        return result
+
+    
+    # 画出数字.
+    # 用法: DRAWNUMBER(COND,PRICE,NUMBER),当COND条件满足时,在PRICE位置书写数字NUMBER.
+    # 例如: DRAWNUMBER(CLOSE/OPEN>1.08,LOW,C)表示当日实体阳线大于8%时在最低价位置显示收盘价.
+    def DRAWNUMBER(self, condition,data,data2) :
+        drawData=Variant()
+        drawData.Value, drawData.Text = [], []
+        result=DrawItem(drawType='DRAWNUMBER', drawData=drawData)
+
+        isNumber=JSComplierHelper.IsNumber(data2)
+        if (isNumber) :
+            text= '%.2f' % data2
+
+        count=len(condition)
+        drawData.Value=JSComplierHelper.CreateArray(count)
+        drawData.Text=JSComplierHelper.CreateArray(count)
+
+        for i in range(count) :
+            if not condition[i] :
+                continue
+            if i>=len(data) or not JSComplierHelper.IsNumber(data[i]) :
+                continue
+
+            if (isNumber) :
+                drawData.Value[i]=data[i]
+                drawData.Text[i]=text
+            else :
+                if i>=len(data2) or data2[i]==None :
+                    continue
+                drawData.Value[i]=data[i]
+                if JSComplierHelper.IsNumber(data2[i]) :
+                    drawData.Text[i] = '%.2f' % data2[i]
+                else :
+                    drawData.Text[i] = str(data2[i])
+
+        result.DrawData=drawData
+        return result
+
+    # 在图形上绘制小图标.
+    # 用法: DRAWICON(COND,PRICE,TYPE),当COND条件满足时,在PRICE位置画TYPE号图标(TYPE为1--41).
+    # 例如: DRAWICON(CLOSE>OPEN,LOW,1)表示当收阳时在最低价位置画1号图标.
+    def DRAWICON(self, condition,data,type) :
+        icon=Variant()
+        if (type not in g_JSComplierResource.DrawIcon.Data) :
+            type=11 #默认图标
+        iconfont=g_JSComplierResource.DrawIcon.Data[type]
+        icon=Variant()
+        icon.Symbol, icon.Color, icon.Family, icon.IconFont, icon.ID = iconfont.Text, iconfont.Color, g_JSComplierResource.DrawIcon.Family, True, type
+
+        result=DrawItem(drawType='DRAWICON')
+        result.Icon=icon
+        if (len(condition)<=0) :
+            return result
+
+        isNumber=JSComplierHelper.IsNumber(data)
+        if JSComplierHelper.IsNumber(condition) :
+            if not condition : 
+                return result
+
+            drawData=JSComplierHelper.CreateArray(len(self.SymbolData.Data.Data))
+            for i in range(len(self.SymbolData.Data.Data)) :
+                if isNumber : 
+                    drawData[i]=data
+                else :
+                    if i<len(data) and JSComplierHelper.IsNumber(data[i]) :
+                        drawData[i]=data[i]
+            return result
+
+        drawData=JSComplierHelper.CreateArray(len(condition))
+        for i in range(len(condition)) :
+            if not condition[i] :
+                continue
+
+            if isNumber :
+                drawData[i]=data
+            else :
+                if JSComplierHelper.IsNumber(data[i]) :
+                    drawData[i]=data[i]
+
+        result.DrawData=drawData
+        return result
+
+    # PLOYLINE 折线段
+    # 在图形上绘制折线段。
+    # 用法：　PLOYLINE(COND，PRICE)，当COND条件满足时，以PRICE位置为顶点画折线连接。
+    # 例如：　PLOYLINE(HIGH>=HHV(HIGH,20),HIGH)表示在创20天新高点之间画折线。
+    def POLYLINE(self, condition,data) :
+        result=DrawItem(drawType='POLYLINE')
+        isNumber=JSComplierHelper.IsNumber(data)
+
+        drawData=JSComplierHelper.CreateArray(len(condition))
+        bFirstPoint=False
+        bSecondPont=False
+        if isNumber :
+            for i in range(len(condition)) :
+                if bFirstPoint==False :
+                    if not condition[i] :
+                        continue
+
+                    drawData[i]=data
+                    bFirstPoint=True
+                else :
+                    drawData[i]=data
+
+        else :
+            lineCache=Variant()
+            lineCache.Start, lineCache.End, lineCache.List = Variant(), Variant(), []
+            for i in range (len(condition)) :
+                if (bFirstPoint==False and bSecondPont==False) :
+                    if condition[i]==None or not condition[i] :
+                        continue
+                    if i>=len(data) or not JSComplierHelper.IsNumber(data[i]) :
+                        continue
+
+                    bFirstPoint=True
+                    # 第1个点
+                    lineCache.Start.ID=int(i)
+                    lineCache.Start.Value=data[i]  
+
+                elif (bFirstPoint==True and bSecondPont==False) :
+                    if condition[i]==None or not condition[i] :
+                        continue
+                    if i>=len(data) or not JSComplierHelper.IsNumber(data[i]) :
+                        continue
+
+                    # 第2个点
+                    lineCache.End.ID=int(i)
+                    lineCache.End.Value=data[i]  
+                    # 根据起始点和结束点 计算中间各个点的数据
+                    lineData=JSComplierHelper.CalculateDrawLine(lineCache)     # 计算2个点的线上 其他点的数值
+
+                    for item in lineData :
+                        drawData[item.ID]=item.Value
+
+                    start=Variant()
+                    start.ID, start.Value = lineCache.End.ID, lineCache.End.Value
+                    lineCache=Variant()
+                    lineCache.Start, lineCache.End = start, Variant()
+
+        result.DrawData=drawData
+        return result
+
+    
+    # DRAWLINE 绘制直线段
+    # 在图形上绘制直线段。
+    # 用法：　DRAWLINE(COND1，PRICE1，COND2，PRICE2，EXPAND)
+    # 当COND1条件满足时，在PRICE1位置画直线起点，当COND2条件满足时，在PRICE2位置画直线终点，EXPAND为延长类型。
+    # 例如：　DRAWLINE(HIGH>=HHV(HIGH,20),HIGH,LOW<=LLV(LOW,20),LOW,1)　表示在创20天新高与创20天新低之间画直线并且向右延长。
+    def DRAWLINE(self, condition,data,condition2,data2,expand) :
+        result=DrawItem(drawType='DRAWLINE')
+        result.Expand=expand
+
+        if len(condition)<=0 :
+            return result
+
+        condLen1, condLen2 = len(condition), len(condition2)
+        count=max(condLen1,condLen2)
+
+        drawData=JSComplierHelper.CreateArray(count)
+        bFirstPoint=False
+        bSecondPont=False
+        lineCache=Variant()
+        lineCache.Start, lineCache.End, lineCache.List = Variant(), Variant(), []
+
+        for i in range(count) :
+            if (i<condLen1 and i<condLen2) :
+                if (bFirstPoint==False and bSecondPont==False) :
+                    if condition[i]==None or not condition[i] :
+                        continue
+
+                    bFirstPoint=True
+                    # 第1个点
+                    lineCache.Start.ID=i
+                    lineCache.Start.Value=data[i]
+
+                elif (bFirstPoint==True and bSecondPont==False) :
+                    bCondition=(condition[i]!=None and condition[i])     # 条件1
+                    bCondition2=(condition2[i]!=None and condition2[i])  # 条件2
+
+                    if not bCondition and not bCondition2 :
+                        continue
+
+                    if bCondition :
+                        # 移动第1个点
+                        lineCache.Start.ID=i
+                        lineCache.Start.Value=data[i]  
+                    elif bCondition2:
+                        bSecondPont=True
+                        # 第2个点
+                        lineCache.End.ID=i
+                        lineCache.End.Value=data2[i]   
+
+                elif (bFirstPoint==True and bSecondPont==True) :   # 2个点都有了, 等待下一次的点出现
+                    bCondition=(condition[i]!=None and condition[i])     # 条件1
+                    bCondition2=(condition2[i]!=None and condition2[i])  # 条件2
+
+                    if bCondition :
+                        lineData=JSComplierHelper.CalculateDrawLine(lineCache)     # 计算2个点的线上 其他点的数值
+
+                        for item in lineData :
+                            drawData[item.ID]=item.Value
+
+                        bFirstPoint=bSecondPont=False
+                        lineCache=Variant()
+                        lineCache.Start, lineCache.End = Variant(), Variant()
+                    elif bCondition2 :
+                        lineCache.End.ID=i
+                        lineCache.End.Value=data2[i]   # 移动第2个点
+
+        if bFirstPoint==True and bSecondPont==True :     # 最后一组数据
+            lineData=JSComplierHelper.CalculateDrawLine(lineCache)     
+            for item in lineData :
+                drawData[item.ID]=item.Value
+
+        result.DrawData=drawData
+        return result
+
+    

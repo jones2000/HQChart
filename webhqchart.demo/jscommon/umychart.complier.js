@@ -6503,7 +6503,8 @@ function JSSymbolData(ast,option,jsExecute)
         let aryFixedData;
         if (bFinanceData) 
         {
-            aryFixedData=this.Data.GetFittingFinanceData(aryData);
+            if (this.SourceData) aryFixedData=this.SourceData.GetFittingFinanceData(aryData);
+            else aryFixedData=this.Data.GetFittingFinanceData(aryData);
         }
         else if (bMarketValue) 
         {
@@ -6518,7 +6519,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else 
         {
-            aryFixedData=this.Data.GetFittingData(aryData);
+            aryFixedData=this.SourceData.GetFittingData(aryData);
         }
 
         
@@ -7430,7 +7431,7 @@ JSSymbolData.prototype.JsonDataToFinance=function(data)
         if (financeData)    //如果存在1天公布多个报告期数据 只取最新的一个公告期数据
         {
             if (financeData.Announcement.year<announcement.year)
-                financeData={Date:item.date, Finance:finance, Announcement:announcement};
+                financeData={Date:data.date, Finance:finance, Announcement:announcement};
         }
         else
         {

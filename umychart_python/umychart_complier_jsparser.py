@@ -602,7 +602,7 @@ class JSParser:
                     precedences.pop()
                     left=stack.pop()
                     markers.pop()
-                    node=self.StartNode(markers[1])
+                    node=self.StartNode(markers[-1])
                     stack.append(self.Finalize(node, self.Node.BinaryExpression(operator, left, right)))
 
                 # Shift

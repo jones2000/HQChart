@@ -8,13 +8,37 @@ import sys
 import requests     # 网络数据下载
 from umychart_complier_job import JS_EXECUTE_JOB_ID, JobItem, HQ_DATA_TYPE,SymbolOption
 from umychart_complier_data import ChartData, HistoryData, MinuteData, SingleData
-from umychart_complier_help  import JSComplierHelper
+from umychart_complier_help  import JSComplierHelper, Variant
 
 # 全局api域名变量
+class TextItem:
+    def __init__(self, color,text=None,symbol=None) :
+        self.Text=text,
+        self.Color=color
+        self.Symbol=symbol
+
 class JSComplierResource :
     def __init__(self) :
         self.Domain = "https://opensource.zealink.com"               # API域名  
         self.CacheDomain = "https://opensourcecache.zealink.com"     # 缓存域名
+
+        drawIcon=Variant()
+        drawIcon.Family='iconfont'
+        drawIcon.Data={ 
+            1 : TextItem(text='\ue625', color='rgb(255,106,106)'),     # 向上箭头
+            2 : TextItem(text='\ue68b', color='rgb(46,139,87)'),       # 向下箭头
+            11: TextItem(text='\ue624', color='rgb(245,159,40)'),      # 点赞
+            12: TextItem(text='\ue600', color='rgb(245,159,40)'),
+            13: TextItem(text='\ue70f', color='rgb(209,37,35)'),         # B
+            14: TextItem(text='\ue64c', color='rgb(127,209,59)'),        # S
+            9 : TextItem(text='\ue626', color='rgb(245,159,40)'),        # $
+            36: TextItem(text='\ue68c', color='rgb(255,106,106)'),       # 关闭 红色
+            37: TextItem(text='\ue68c', color='rgb(46,139,87)'),         # 关闭 绿色
+            38: TextItem(text='\ue68d', color='rgb(238,44,44)'),         # ▲
+            39: TextItem(text='\ue68e', color='rgb(0,139,69)'),          # ▼
+            46: TextItem(text='\ue64d', color='rgb(51,51,51)'),        # message
+        }
+        self.DrawIcon=drawIcon
 
 g_JSComplierResource=JSComplierResource()
 

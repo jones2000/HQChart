@@ -159,7 +159,7 @@ class RequestOption :
         self.MaxMinuteDayCount=maxMinuteDayCount
 
 class SymbolOption :
-    def __init__(self, symbol='600000.sh' ,hqDataType=HQ_DATA_TYPE.KLINE_ID, right=0, period=0, reqeust=RequestOption(maxDataCount=1000,maxMinuteDayCount=5),args=[]) :
+    def __init__(self, symbol='600000.sh' ,hqDataType=HQ_DATA_TYPE.KLINE_ID, right=0, period=0, reqeust=RequestOption(maxDataCount=1000,maxMinuteDayCount=5),args=None) :
         self.HQDataType=hqDataType  # 数据类型
         self.Symbol=symbol  # 股票代码
         self.Right=right    # 复权
