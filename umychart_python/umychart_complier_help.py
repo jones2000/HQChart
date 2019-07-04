@@ -14,6 +14,13 @@ class JSComplierHelper:
             return False
         return JSComplierHelper.IsNumber(jsData[name])
 
+    @staticmethod   # 是否存在字段
+    def IsJsonExist(jsData,name) :
+        if name in jsData.keys() :
+            return True
+        return False
+
+
     @staticmethod
     def IsDivideNumber(value):
         return isinstance(value,(int,float)) and value!=0

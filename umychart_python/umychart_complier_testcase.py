@@ -242,6 +242,10 @@ def Test_FINANCE(): # 财务数据测试
         'DRAWICON(CLOSE>OPEN,LOW,1);',
         'PLOYLINE(HIGH>=HHV(HIGH,20),HIGH);',
         'CYW: SUM(VAR4,10)/10000, COLORSTICK;',
+        "DRAWCHANNEL(C>O,C,O,'rgb(20,20,20)',1,'3,4','rgb(40,40,40)');",
+        'SAR(10,2,20);',
+        'BACKSET(CLOSE>OPEN,2);',
+        'TT:DYNAINFO(13);',
         ])
 
     result=case.Run()
@@ -271,6 +275,6 @@ def Test_ScriptIndexConsole():
 #Test_Add()
 #Test_Multiply()
 #Test_MAX_MIN()
-#Test_FINANCE()
+Test_FINANCE()
 
 Test_ScriptIndexConsole()

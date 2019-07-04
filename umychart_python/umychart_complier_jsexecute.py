@@ -173,7 +173,7 @@ class JSExecute :
                             varName=itemExpression.Left.Name
                             varValue=self.VarTable[varName]
                             if not JSComplierHelper.IsArray(varValue) :
-                                varValue=self.SingleDataToArrayData(varValue); 
+                                varValue=self.SingleDataToArrayData(varValue) 
                                 self.VarTable[varName]=varValue            # 把单数值转化成数组放到变量表里
                         
                         elif (itemExpression.Type==Syntax.Identifier) :
@@ -330,7 +330,7 @@ class JSExecute :
         # console.log('[JSExecute::VisitCallExpression]' , funcName, '(', args.toString() ,')');
 
         if funcName=='DYNAINFO':    # 行情最新数据
-            node.Out=self.SymbolData.GetLatestCacheData(args[0])
+            node.Out=self.SymbolData.GetLatestCacheData(int(args[0]))
         elif funcName=='STICKLINE':
             node.Draw=self.Draw.STICKLINE(args[0],args[1],args[2],args[3],args[4])
             node.Out=[]
@@ -362,7 +362,7 @@ class JSExecute :
             node.Draw=self.Draw.DRAWNUMBER(args[0],args[1],args[2])
             node.Out=node.Draw.DrawData.Value
         elif funcName=="DRAWCHANNEL":
-            node.Draw=self.Draw.DRAWCHANNEL(args[0],args[1],args[2],args[3],args[4],args[5],args[6])
+            node.Draw=self.Draw.DRAWCHANNEL(args[0],args[1],args[2],args[3],int(args[4]),args[5],args[6])
             node.Out=[]
         elif funcName=='CODELIKE':
             node.Out=self.SymbolData.CODELIKE(args[0])

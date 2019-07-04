@@ -1,4 +1,5 @@
 import sys
+import json
 from umychart_complier_scanner import Error
 from umychart_complier_jsparser import JSParser, Tokenizer
 from umychart_complier_jssymboldata import g_JSComplierResource
@@ -79,7 +80,6 @@ class ScriptIndexConsole:
         self.OutVar=None
 
     def ExecuteScript(self, obj=SymbolOption()) :
-
         try :
             print('[ScriptIndexConsole::ExecuteScript] ', self.Script)
             parser=JSParser(self.Script)
@@ -107,20 +107,21 @@ class ScriptIndexConsole:
             if (obj.HQDataType==HQ_DATA_TYPE.KLINE_ID) :
                 result.Time=execute.SymbolData.Data.GetTime()   # 数据对应的时间
 
-
             return result
         except Error as error :
-            ErrorInfo=Variant()
-            ErrorInfo.Error=error
-            return ErrorInfo
+           ErrorInfo=Variant()
+           ErrorInfo.Error=error
+           return ErrorInfo
 
         except ValueError as error:
             ErrorInfo=Variant()
             ErrorInfo.Error=error
             return ErrorInfo
         
-        except :
-           return None
+        except BaseException as error :
+            ErrorInfo=Variant()
+            ErrorInfo.Error=error
+            return ErrorInfo
 
 
 

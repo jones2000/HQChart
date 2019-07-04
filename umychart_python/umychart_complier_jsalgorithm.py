@@ -2194,6 +2194,137 @@ class JSAlgorithm() :
 
         return result
 
+    
+    # 抛物转向.
+    # 用法: SAR(N,S,M),N为计算周期,S为步长,M为极值
+    # 例如: SAR(10,2,20)表示计算10日抛物转向,步长为2%,极限值为20%
+    def SAR(self,n,step,exValue) :
+        stockData= self.SymbolData.Data
+        dataLen=len(stockData.Data)
+        if n>=dataLen  :
+            return []
+        
+        result=JSAlgorithm.CreateArray(dataLen)
+        high, low =None, None
+        for i in range(n) :
+            item=stockData.Data[i]
+            if high==None:
+                high=item.High
+            elif high<item.High :
+                high=item.High
+
+            if low==None : 
+                low=item.Low
+            elif low>item.Low :
+                low=item.Low
+
+        SAR_LONG=0
+        SAR_SHORT=1
+        position=SAR_LONG
+        result[n-1]=low
+        nextSar=low
+        sip=stockData.Data[0].High
+        af=exValue/100
+        for i in range(n,dataLen) :
+            ysip=sip
+            item=stockData.Data[i]
+            yitem=stockData.Data[i-1]
+
+            if (position==SAR_LONG) :
+                if (item.Low<result[i-1]) :
+                    position=SAR_SHORT
+                    sip=item.Low
+                    af=step/100
+                    nextSar =max(item.High,yitem.High)
+                    nextSar =max(nextSar,ysip+af*(sip-ysip))
+                else :
+                    position = SAR_LONG
+                    if (item.High>ysip) :
+                        sip=item.High
+                        af=min(af+step/100,exValue/100)
+                    nextSar=min(item.Low,yitem.Low)
+                    nextSar=min(nextSar,result[i-1]+af*(sip-result[i-1]))
+            elif (position==SAR_SHORT) :
+                if (item.High>result[i-1]) :
+                    position=SAR_LONG
+                    sip=item.High
+                    af=step/100
+                    nextSar =min(item.Low,yitem.Low)
+                    nextSar =min(nextSar,result[i-1]+af*(sip-ysip))
+                else :
+                    position = SAR_SHORT
+                    if(item.Low<ysip) :
+                        sip=item.Low
+                        af=min(af+step/100,exValue/100)
+                    nextSar=max(item.High,yitem.High)
+                    nextSar=max(nextSar,result[i-1]+af*(sip-result[i-1]))
+
+            result[i]=nextSar
+
+        return result
+
+
+    # 抛物转向点.
+    # 用法: SARTURN(N,S,M),N为计算周期,S为步长,M为极值,若发生向上转向则返回1,若发生向下转向则返回-1,否则为0
+    # 其用法与SAR函数相同
+    def SARTURN(self,n,step,exValue) :
+        sar=self.SAR(n,step,exValue)
+        stockData= self.SymbolData.Data
+        dataLen=len(stockData)
+        result=JSAlgorithm.CreateArray(dataLen)
+
+        for index in range(len(sar)) :
+            if JSAlgorithm.IsNumber(sar[index]) :
+                break
+        
+        flag=0
+        if index<dataLen :
+            flag=stockData.Data[index].Close>sar[index]
+
+        for i in range(index+1,dataLen) :
+            item=stockData.Data[i]
+            if item.Close<sar[i] and flag :
+                result[i]=-1
+            else :
+                result[i]= 1 if (item.Close>sar[i] and not flag) else 0
+
+            flag=item.Close>sar[i]
+
+        return result
+
+    
+    # 属于未来函数,将当前位置到若干周期前的数据设为1.
+    # 用法: BACKSET(X,N),若X非0,则将当前位置到N周期前的数值设为1.
+    # 例如: BACKSET(CLOSE>OPEN,2)若收阳则将该周期及前一周期数值设为1,否则为0
+    def BACKSET(self,condition,n) :
+        if not condition :
+            return []
+        dataCount=len(condition)
+        if dataCount<=0 :
+            return []
+
+        result=JSAlgorithm.CreateArray(dataCount,0)   # 初始化0
+
+        for pos in range(dataCount) :
+            if JSAlgorithm.IsNumber(condition[pos]) :
+                break
+
+        if pos==dataCount :
+            return result
+
+        num=min(dataCount-pos,max(n,1))
+        for i in range(dataCount-1, -1,-1) :
+            value=condition[i]
+            if JSAlgorithm.IsNumber(value) and value :
+                for j in range(i, i-num,-1) :
+                    result[j]=1
+
+        if condition[i] :
+            for j in range(i, pos+1) :
+                result[j]=1
+
+        return result
+
 
 
     # 函数调用
@@ -2313,11 +2444,11 @@ class JSAlgorithm() :
         elif name=='REVERSE':
             return self.REVERSE(args[0])
         elif name=='SAR':
-            return self.SAR(args[0], args[1], args[2])
+            return self.SAR(int(args[0]), args[1], args[2])
         elif name=='SARTURN':
-            return self.SARTURN(args[0], args[1], args[2])
+            return self.SARTURN(int(args[0]), args[1], args[2])
         elif name=='BACKSET':
-            return self.BACKSET(args[0], args[1])
+            return self.BACKSET(args[0], int(args[1]))
             # 三角函数
         elif name=='ATAN':
             return self.Trigonometric(args[0],math.atan)
@@ -2746,6 +2877,100 @@ class JSDraw():
             lineData=JSComplierHelper.CalculateDrawLine(lineCache)     
             for item in lineData :
                 drawData[item.ID]=item.Value
+
+        result.DrawData=drawData
+        return result
+
+    
+    # 绘制通道
+    # condition:条件
+    # data,data2:通道顶部和底部
+    # borderColor: 通道顶部和底部线段颜色RGB(24,30,40) 不填就不画
+    # borderWidth: 通道顶部和底部线段宽度
+    # areaColor: 通道面积颜色 RGB(200,30,44) 不填使用默认颜色
+    # dotted: 通道顶部和底部虚线设置 '3,4' , 不填默认 3,3
+    def DRAWCHANNEL(self,condition, data, data2, borderColor, borderWidth, dotted, areaColor) :
+        result=DrawItem(drawType='DRAWCHANNEL')
+        result.Border=Variant()
+
+        if borderColor:
+            result.Border.Color=borderColor
+        if borderWidth>0:
+            result.Border.Width=borderWidth
+        if areaColor: 
+            result.AreaColor=areaColor
+
+        if dotted :
+            ary=dotted.split(',')
+            result.Border.Dotted=[]
+            for item in ary :
+                if not item :
+                    continue
+                value=int(item)
+                if value<=0 :
+                    continue
+                result.Border.Dotted.append(value)
+            if len(result.Border.Dotted)<=0:
+                 result.Border.Dotted=None
+
+        isNumber=JSComplierHelper.IsNumber(data)
+        isNumber2=JSComplierHelper.IsNumber(data2)
+        if JSComplierHelper.IsNumber(condition) :
+            if not condition :
+                return result  # 条件是否
+
+            drawData=JSComplierHelper.CreateArray(len(self.SymbolData.Data.Data))
+            for i in range(len(self.SymbolData.Data.Data)) :
+                if (isNumber and isNumber2) :
+                    item=Variant()
+                    item.Value, item.Value2 = data, data2
+                    drawData[i]=item
+                elif (isNumber and not isNumber2) :
+                    if JSComplierHelper.IsNaN(data2[i]) :
+                        continue
+                    item=Variant()
+                    item.Value, item.Value2 = data, data2[i]
+                    drawData[i]=item
+                elif (not isNumber and isNumber2) :
+                    if JSComplierHelper.IsNaN(data[i]):
+                        continue
+                    item=Variant()
+                    item.Value, item.Value2 = data[i], data2
+                    drawData[i]=item
+                else :
+                    if JSComplierHelper.IsNaN(data[i]) or JSComplierHelper.IsNaN(data2[i]) : 
+                        continue
+                    item=Variant()
+                    item.Value, item.Value2 = data[i], data2[i]
+                    drawData[i]=item
+        else :
+            drawData=JSComplierHelper.CreateArray(len(condition))
+            for i in range(len(condition)) :
+                if JSComplierHelper.IsNaN(condition[i]) or  not condition[i] :
+                    continue
+
+                if isNumber and isNumber2 :
+                    item=Variant()
+                    item.Value, item.Value2 = data, data2
+                    drawData[i]=item
+                elif (isNumber and not isNumber2) :
+                    if JSComplierHelper.IsNaN(data2[i]) :
+                        continue
+                    item=Variant()
+                    item.Value, item.Value2 = data, data2[i]
+                    drawData[i]=item
+                elif (not isNumber and isNumber2) :
+                    if JSComplierHelper.IsNaN(data[i]) :
+                        continue
+                    item=Variant()
+                    item.Value, item.Value2 = data[i], data2
+                    drawData[i]=item
+                else :
+                    if JSComplierHelper.IsNaN(data[i]) or JSComplierHelper.IsNaN(data2[i]) :
+                        continue
+                    item=Variant()
+                    item.Value, item.Value2 = data[i], data2[i]
+                    drawData[i]=item
 
         result.DrawData=drawData
         return result

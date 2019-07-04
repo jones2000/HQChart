@@ -4620,7 +4620,7 @@ function JSAlgorithm(errorHandler,symbolData)
         {
             var item=stockData.Data[i];
             if (high==null) high=item.High;
-            else if (high<item.High) high=item=high;
+            else if (high<item.High) high=item.High;
             if (low==null) low=item.Low;
             else if (low>item.Low) low=item.Low;
         }
@@ -5704,7 +5704,7 @@ function JSSymbolData(ast,option,jsExecute)
             case DYNAINFO_ARGUMENT_ID.AMPLITUDE:
                 return this.LatestData.Amplitude;
             case DYNAINFO_ARGUMENT_ID.CLOSE:
-                return this.LatestData.Close;
+                return this.LatestData.Price;
             default:
                 return null;
         }

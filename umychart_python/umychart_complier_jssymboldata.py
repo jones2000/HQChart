@@ -58,6 +58,19 @@ class FinanceData :
         value=self.Finance[name]
         return value
 
+# http://www.newone.com.cn/helpcontroller/index?code=zszy_pc
+class DYNAINFO_ARGUMENT_ID :
+    YCLOSE=3
+    OPEN=4
+    HIGH=5
+    LOW=6
+    CLOSE=7
+    VOL=8
+    AMOUNT=10
+    AMPLITUDE=13        # 振幅
+    INCREASE=14         # 涨幅
+    EXCHANGERATE=37     # 换手率
+
 
 class JSSymbolData() :
     def __init__(self, ast, option=SymbolOption(), procThrow=None) :
@@ -76,6 +89,7 @@ class JSSymbolData() :
         self.IndexData=None            # 大盘指数
         self.FinanceData={}            # 财务数据
         self.MarketValue=None          # 市值
+        self.LatestData=None                # 最新行情
 
         self.MaxRequestDataCount=option.MaxRequestDataCount   # 读取日线数据天数
         self.MaxRequestMinuteDayCount=option.MaxRequestMinuteDayCount # 读取分钟数据天数
@@ -105,6 +119,8 @@ class JSSymbolData() :
                             JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA
                             ) :
                 self.GetFinanceData(job.ID) 
+            elif job.ID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA : # 最新行情数据
+                self.GetLatestData()
 
 
     # 下载股票数据
@@ -641,6 +657,74 @@ class JSSymbolData() :
         return []
 
 
+    # 下载最新行情
+    def GetLatestData(self) :
+        if self.LatestData:
+            return
+
+        url=self.RealtimeApiUrl
+        postData={
+                "field": ["name","symbol","yclose","open","price","high","low","vol","amount","date","time","increase","exchangerate","amplitude"],
+                "symbol": [self.Symbol] }
+
+        print('[JSSymbolData::GetLatestData]  ',url, postData)
+        response=requests.post(url,postData)
+        jsonData=response.json()
+
+        if not JSComplierHelper.IsJsonExist(jsonData,'stock') :
+            return
+
+        if (len(jsonData['stock'])!=1) :
+            return
+
+        stock=jsonData['stock'][0]
+        item=Variant()
+        item.Symbol=stock['symbol']
+        item.Name=stock['name']
+        item.Date=stock['date']
+        item.Time=stock['time']
+        item.YClose=stock['yclose']
+        item.Price=stock['price']
+        item.Open:stock['open'] 
+        item.High:stock['high'] 
+        item.Low:stock['low'] 
+        item.Vol:stock['vol']
+        item.Amount=stock['amount']
+        item.Increase=stock['increase']
+        item.Exchangerate=stock['exchangerate']
+        item.Amplitude=stock['amplitude']
+        self.LatestData=item
+
+    # 最新行情
+    def GetLatestCacheData(self, dataname) :
+        if not self.LatestData :
+            return  None
+
+        if dataname==DYNAINFO_ARGUMENT_ID.YCLOSE:
+            return self.LatestData.YClose
+        elif dataname==DYNAINFO_ARGUMENT_ID.OPEN:
+            return self.LatestData.Open
+        elif dataname==DYNAINFO_ARGUMENT_ID.HIGH:
+            return self.LatestData.High
+        elif dataname==DYNAINFO_ARGUMENT_ID.LOW:
+            return self.LatestData.Low
+        elif dataname==DYNAINFO_ARGUMENT_ID.VOL:
+            return self.LatestData.Vol
+        elif dataname==DYNAINFO_ARGUMENT_ID.AMOUNT:
+            return self.LatestData.Amount
+        elif dataname==DYNAINFO_ARGUMENT_ID.INCREASE:
+            return self.LatestData.Increase
+        elif dataname==DYNAINFO_ARGUMENT_ID.EXCHANGERATE:
+            return self.LatestData.Exchangerate
+        elif dataname==DYNAINFO_ARGUMENT_ID.AMPLITUDE:
+            return self.LatestData.Amplitude
+        elif dataname==DYNAINFO_ARGUMENT_ID.CLOSE:
+            return self.LatestData.Price
+        else :
+            return None
+
+
+
     # CODELIKE 模糊股票代码
     def CODELIKE(self, value) :
         if self.Symbol and self.Symbol.find(value)==0 :
@@ -685,6 +769,18 @@ class JSSymbolData() :
         if not self.Data :
             return result
         return self.Data.GetWeek()
+
+    def REFDATE(self,data,date) :
+        index=None
+        for i in range(len(self.Data.Data)) :   # 查找日期对应的索引
+            if self.Data.Data[i].Date==date :
+                index=i
+                break
+
+        if index==None or index>=len(data) :
+            return None
+
+        return data[index]
 
     # 用法:结果从0到11,依次分别是1/5/15/30/60分钟,日/周/月,多分钟,多日,季,年
     def PERIOD(self) :
