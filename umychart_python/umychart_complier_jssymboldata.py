@@ -89,7 +89,10 @@ class JSSymbolData() :
         self.IndexData=None            # 大盘指数
         self.FinanceData={}            # 财务数据
         self.MarketValue=None          # 市值
-        self.LatestData=None                # 最新行情
+        self.LatestData=None           # 最新行情
+        self.MarginData={}             # 融资融券
+        self.ExtendData={}             # 其他扩展数据
+        self.NewsAnalysisData={}       # 新闻统计
 
         self.MaxRequestDataCount=option.MaxRequestDataCount   # 读取日线数据天数
         self.MaxRequestMinuteDayCount=option.MaxRequestMinuteDayCount # 读取分钟数据天数
@@ -98,6 +101,7 @@ class JSSymbolData() :
         self.MinuteKLineApiUrl= g_JSComplierResource.Domain+'/API/KLine3'             # 分钟K线
         self.RealtimeApiUrl= g_JSComplierResource.Domain+'/API/stock'                 # 实时行情
         self.StockHistoryDayApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay'  # 历史财务数据
+        self.StockNewsAnalysisApiUrl= g_JSComplierResource.CacheDomain+'/cache/newsanalyze'    # 新闻分析数据
 
 
     # 准备数据
@@ -121,6 +125,31 @@ class JSSymbolData() :
                 self.GetFinanceData(job.ID) 
             elif job.ID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA : # 最新行情数据
                 self.GetLatestData()
+            elif job.ID in  (JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE,
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE,
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE,       # 买入信息-融资余额
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT,        # 买入信息-买入额
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY,         # 买入信息-偿还额
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET,           # 买入信息-融资净买入
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE,      # 卖出信息-融券余量
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME,       # 卖出信息-卖出量
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY,        # 卖出信息-偿还量
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET) :        # 卖出信息-融券净卖出
+                self.GetMarginData(job.ID)
+            elif job.ID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA:         # 涨停个股统计
+                self.GetIndexIncreaseData(job)
+            elif job.ID in (JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE,             # 负面新闻
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH,             # 机构调研
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT,             # 互动易
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE,         # 股东增持
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2,        # 股东减持
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TRUSTHOLDER,          # 信托持股
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_BLOCKTRADING,         # 大宗交易
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_COMPANYNEWS,          # 官网新闻
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TOPMANAGERS,          # 高管要闻
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_PLEDGE) :             # 股权质押
+                self.GetNewsAnalysisData(job.ID)
+
 
 
     # 下载股票数据
@@ -723,7 +752,397 @@ class JSSymbolData() :
         else :
             return None
 
+    # 下载融资融券
+    def GetMarginData(self, jobID) :
+        if jobID in self.MarginData :
+            return True
+       
+        fieldList=["name","date","symbol"]
+        
+        if jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE:           # 融资融券余额
+            fieldList.append("margin.balance")
+            
+        elif jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE:              # 融资占比
+            fieldList.append("margin.rate")
+            
+        elif jobID in ( JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE,       # 买入信息-融资余额
+                        JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT,        # 买入信息-买入额
+                        JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY,         # 买入信息-偿还额
+                        JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET ) :        # 买入信息-融资净买入
+            fieldList.append("margin.buy")
+    
+        elif jobID in ( JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE,      # 卖出信息-融券余量
+                        JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME,       # 卖出信息-卖出量
+                        JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY,        # 卖出信息-偿还量
+                        JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET ) :       # 卖出信息-融券净卖出
+            fieldList.append("margin.sell")
+            
+        url=self.StockHistoryDayApiUrl
+        postData={
+                "field": fieldList,
+                "symbol": [self.Symbol],
+                "orderfield":"date" }
 
+        print('[JSSymbolData::GetMarginData] jobID , url, postData', jobID,url, postData)
+
+        # 请求数据
+        response=requests.post(url,postData)
+        jsonData=response.json()
+        self.RecvMarginData(jsonData,jobID)
+        return True
+
+
+    def RecvMarginData(self, jsonData,jobID) :
+        if not JSComplierHelper.IsJsonExist(jsonData,'stock') :
+            return
+
+        if (len(jsonData['stock'])!=1) :
+            return
+
+        stock=jsonData['stock'][0]
+        aryData, aryData2, aryData3, aryData4 = [] ,[], [], []
+        for item in stock['stockday'] :   
+            if not JSComplierHelper.IsJsonExist(item,'margin') :
+                continue
+            marginData=item['margin']
+            if not marginData :
+                continue
+
+            indexData=SingleData()
+            indexData.Date=item['date']
+
+            if jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE:
+                if not JSComplierHelper.IsNumber(marginData['balance']) :
+                    continue
+                indexData.Value=marginData['balance'] # 融资融券余额
+                aryData.append(indexData)
+                    
+            elif jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE:
+                if not JSComplierHelper.IsNumber(marginData.rate):
+                    continue
+                indexData.Value=marginData['rate']    # 融资占比
+                aryData.append(indexData)
+                
+            elif jobID in ( JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE,       # 买入信息-融资余额
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT,        # 买入信息-买入额
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY,         # 买入信息-偿还额
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET ) :        # 买入信息-融资净买入
+
+                    if not JSComplierHelper.IsJsonExist(marginData,'buy') :
+                        continue
+                    buyData=marginData['buy']
+                    if not buyData :
+                        continue
+
+                    if (not JSComplierHelper.IsNumber(buyData['balance']) or not JSComplierHelper.IsNumber(buyData['amount']) or 
+                            not JSComplierHelper.IsNumber(buyData['repay']) or not JSComplierHelper.IsNumber(buyData['net'])) :
+                        continue
+
+                    indexData.Value=buyData['balance']
+                    indexData2=SingleData()
+                    indexData2.Date=item['date']
+                    indexData2.Value=buyData['amount']
+                    indexData3=SingleData()
+                    indexData3.Date=item['date']
+                    indexData3.Value=buyData['repay']
+                    indexData4=SingleData()
+                    indexData4.Date=item['date']
+                    indexData4.Value=buyData['net']
+
+                    aryData.append(indexData)
+                    aryData2.append(indexData2)
+                    aryData3.append(indexData3)
+                    aryData4.append(indexData4)
+                    
+            elif jobID in ( JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE,      # 卖出信息-融券余量
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME,       # 卖出信息-卖出量
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY,        # 卖出信息-偿还量
+                            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET ) :       # 卖出信息-融券净卖出
+                if not JSComplierHelper.IsJsonExist(marginData,'sell') :
+                    continue
+                sellData=marginData['sell']
+                if not sellData :
+                    continue
+                if (not JSComplierHelper.IsNumber(sellData['balance']) or not JSComplierHelper.IsNumber(sellData['volume']) or 
+                        not JSComplierHelper.IsNumber(sellData['repay']) or not JSComplierHelper.IsNumber(sellData['net'])) :
+                    continue
+
+                indexData.Value=buyData['balance']
+                indexData2=SingleData()
+                indexData2.Date=item['date']
+                indexData2.Value=buyData['volume']
+                indexData3=SingleData()
+                indexData3.Date=item['date']
+                indexData3.Value=buyData['repay']
+                indexData4=SingleData()
+                indexData4.Date=item['date']
+                indexData4.Value=buyData['net']
+
+                aryData.append(indexData)
+                aryData2.append(indexData2)
+                aryData3.append(indexData3)
+                aryData4.append(indexData4)
+
+            else:
+                continue
+
+        allData=[]
+        if (jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE or jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE) :
+            item=Variant()
+            item.JobID, item.Data = jobID, aryData
+            allData.append(item)
+        elif jobID in (JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE , JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT ,
+                    JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY , JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET) :
+            item=Variant()
+            item.JobID, item.Data = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE, aryData
+            allData.append(item)
+            item=Variant()
+            item.JobID, item.Data = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_AMOUNT, aryData2
+            allData.append(item)
+            item=Variant()
+            item.JobID, item.Data = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_REPAY, aryData3
+            allData.append(item)
+            item=Variant()
+            item.JobID, item.Data = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_NET, aryData4
+            allData.append(item)
+        elif jobID in (JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME,
+                        JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY, JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET) :
+            item=Variant()
+            item.JobID, item.Data = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_BALANCE, aryData
+            allData.append(item)         
+            item=Variant()
+            item.JobID, item.Data = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME, aryData2
+            allData.append(item)
+            item=Variant()
+            item.JobID, item.Data = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY, aryData3
+            allData.append(item)
+            item=Variant()
+            item.JobID, item.Data = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET, aryData4
+            allData.append(item)
+
+        for item in allData :
+            aryFixedData=self.SourceData.GetFittingData(item.Data)
+
+            bindData=ChartData(data=aryFixedData)
+            bindData.Period=self.Period    # 周期
+
+            if bindData.Period>0 :         # 周期数据
+                periodData=bindData.GetPeriodSingleData(bindData.Period)
+                bindData.Data=periodData
+
+            data=bindData.GetValue()
+            self.MarginData[item.JobID]=data
+
+    # 融资融券函数
+    def GetMarginCacheData(self, id, node) :
+        jobID=JS_EXECUTE_JOB_ID.GetMarginJobID(id)
+        if not jobID :
+            self.ThrowUnexpectedNode(node,'不支持MARGIN('+str(id)+')')
+        if jobID in self.MarginData :
+            return self.MarginData[jobID]
+
+        return []
+
+    # 分钟涨幅股票个数统计数据下载
+    def GetIndexIncreaseData(self,job) :
+        upKey=str(job.ID)+'-UpCount-'+job.Symbol
+        downKey=str(job.ID)+'-DownCount-'+job.Symbol
+        if upKey in self.ExtendData and downKey in self.ExtendData:
+            return
+
+        symbol=job.Symbol
+        symbol=symbol.replace('.CI','.ci')
+        if (self.DataType==HQ_DATA_TYPE.MINUTE_ID or self.DataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) :  # 走势图数据
+            url=g_JSComplierResource.CacheDomain+'/cache/analyze/increaseanalyze/'+symbol+'.json'
+            print('[JSSymbolData::GetIndexIncreaseData] minute Get url= ' , url)
+            # 请求数据
+            response=requests.get(url)
+            jsonData=response.json()
+
+        elif (self.DataType==HQ_DATA_TYPE.KLINE_ID and self.Period==0) : # K线图 日线
+            url=self.KLineApiUrl
+            postData= {"symbol": symbol,"start": -1,"count": self.MaxRequestDataCount }
+            print('[JSSymbolData::GetIndexIncreaseData] KLine jobID , url, postData', job.ID, url, postData)
+            # 请求数据
+            response=requests.post(url,postData)
+            jsonData=response.json()
+            self.RecvHistoryIncreaseData(jsonData,upKey,downKey)
+
+    def RecvHistoryIncreaseData(self,jsonData,upKey,downKey) :
+        if not JSComplierHelper.IsJsonExist(jsonData,'data') :
+            return
+        upData,downData = [], []
+        for item in jsonData['data'] :
+            upItem=SingleData()
+            downItem=SingleData()
+            upItem.Date=item[0]
+            upItem.Value=item[8]
+            upData.append(upItem)
+            downItem.Date=item[0]
+            downItem.Value=item[9]
+            downData.append(downItem)
+
+        aryFixedData=self.SourceData.GetFittingData(upData)
+        bindData=ChartData(data=aryFixedData)
+        bindData.Period=self.Period    # 只支持日线
+        data=bindData.GetValue()
+        self.ExtendData[upKey]=data
+
+        aryFixedData=self.SourceData.GetFittingData(downData)
+        bindData=ChartData(data=aryFixedData)
+        bindData.Period=self.Period    # 只支持日线
+        data=bindData.GetValue()
+        self.ExtendData[downKey]=data
+
+    def RecvMinuteIncreaseData(self,jsonData,upKey,downKey) :
+        if not JSComplierHelper.IsJsonExist(jsonData,'minute') :
+            return
+        
+        minuteData=jsonData['minute']
+        if ( not JSComplierHelper.IsJsonExist(minuteData,'time') or  not JSComplierHelper.IsJsonExist(minuteData,'up') or
+                not JSComplierHelper.IsJsonExist(minuteData,'down'))  :
+                return
+
+        dataLen=len(len(self.SourceData.Data))
+        upData,downData =JSComplierHelper.CreateArray(dataLen),JSComplierHelper.CreateArray(dataLen)
+        jsonUp=minuteData['up']
+        jsonDown=minuteData['down']
+        j=0
+        for i in range(dataLen) :
+            item=self.SourceData.Data[i]
+            dateTime=item.DateTime # 日期加时间
+            if not dateTime :
+                continue
+            aryValue=dateTime.split(' ')
+            if len(aryValue)!=2 : 
+                continue
+            date=int(aryValue[0])
+            if date!=jsonData['date'] :
+                continue
+
+            upData[i]=jsonUp[j]
+            downData[i]=jsonDown[j]
+            j+=1
+
+        self.ExtendData[upKey]=upData
+        self.ExtendData[downKey]=downData
+
+            
+
+    # 分钟涨幅股票个数统计数据
+    def GetIndexIncreaseCacheData(self,funcName,symbol,node) :
+        key=None
+        if (funcName=='UPCOUNT') :
+            key=str(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA)+'-UpCount-'+symbol
+        elif (funcName=='DOWNCOUNT') :
+            key=str(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA)+'-DownCount-'+symbol
+        
+        if not key or key not in self.ExtendData :
+            self.ThrowUnexpectedNode(node,'不支持函数'+funcName+'('+symbol+')')
+
+        return self.ExtendData[key]
+
+    # 下载新闻统计
+    def GetNewsAnalysisData(self,jobID) :
+        if  jobID in self.NewsAnalysisData :
+            return
+
+        mapFolder={ 
+            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_NEGATIVE : "negative",
+            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_INTERACT : 'interact',
+            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_RESEARCH :  'research',            # NEWS(3) 调研
+            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE: 'holderchange',      # NEWS(4)   股东增持
+            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2:'holderchange',      # NEWS(5)   股东减持
+            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TRUSTHOLDER:  'trustholder',       # NEWS(6)   信托持股
+            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_BLOCKTRADING: 'Blocktrading',      # NEWS(7)   大宗交易
+            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_COMPANYNEWS:  'companynews',       # NEWS(8)   官网新闻
+            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_TOPMANAGERS:  'topmanagers',       # NEWS(9)   高管要闻
+            JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_PLEDGE:       'Pledge',            # NEWS(10)  股权质押
+        }
+            
+
+        if jobID not in mapFolder :
+            return
+
+        folderName=mapFolder[jobID]
+        url=self.StockNewsAnalysisApiUrl+'/'+folderName+'/'+self.Symbol+'.json'
+
+        # 请求数据
+        try :
+            print('[JSSymbolData::GetNewsAnalysisData] jobID , url ', jobID, url)
+            response=requests.get(url)
+            jsonData=response.json()
+        except :
+            # 没有新闻使用0数据填充
+            aryData=[]
+            for kline in self.SourceData.Data :
+                item=SingleData()
+                item.Date=kline.Date
+                item.Value=0
+                aryData.append(item)
+
+            bindData=ChartData(data=aryData)
+            self.NewsAnalysisData[jobID]=bindData.GetValue()
+            return 
+
+        if not JSComplierHelper.IsJsonExist(jsonData,'data') or not JSComplierHelper.IsJsonExist(jsonData,'date') :
+            return
+        analyzeData=jsonData['data']    # 数据
+        analyzeDate=jsonData['date']    # 日期
+        dataLen=len(analyzeData)
+        if dataLen <=0 :
+            return
+
+        # console.log('[JSSymbolData::RecvNewsAnalysisData] jobID',jobID, data.update);
+        if (jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE or jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2) :
+            
+            aryData, aryData2 = [],[]
+            analyzeData2=jsonData['data2'] # 第2组数据
+            for i in range(dataLen) :
+                item=SingleData()
+                item.Date=analyzeDate[i]
+                item.Value=analyzeData[i]
+                if JSComplierHelper.IsNumber(item.Value) :
+                    aryData.append(item)
+
+                if i<len(analyzeData2) :
+                    item=SingleData()
+                    item.Date=analyzeDate[i]
+                    item.Value=analyzeData2[i]
+                    if JSComplierHelper.IsNumber(item.Value) :
+                        aryData2.append(item)
+
+            aryFixedData=self.SourceData.GetFittingData2(aryData,0)
+            bindData=ChartData(data=aryFixedData)
+            self.NewsAnalysisData[JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE]=bindData.GetValue()
+
+            aryFixedData=self.SourceData.GetFittingData2(aryData2,0)
+            bindData=ChartData(data=aryFixedData)
+            self.NewsAnalysisData[JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2]=bindData.GetValue()
+
+        else :
+            aryData=[]
+            for i in range(dataLen) :
+                item=SingleData()
+                item.Date=analyzeDate[i]
+                item.Value=analyzeData[i]
+                aryData.append(item)
+
+            aryFixedData=self.SourceData.GetFittingData2(aryData,0)
+            bindData=ChartData(data=aryFixedData)
+            self.NewsAnalysisData[jobID]=bindData.GetValue()
+
+    
+    # 资讯统计数据
+    def GetNewsAnalysisCacheData(self,id,node) :
+        jobID=JS_EXECUTE_JOB_ID.GetNewsAnalysisID(id)
+        if not jobID :
+            self.ThrowUnexpectedNode(node,'不支持NEWS('+int(id)+')')
+
+        if jobID in self.NewsAnalysisData :
+            return self.NewsAnalysisData[jobID]
+
+        return []
 
     # CODELIKE 模糊股票代码
     def CODELIKE(self, value) :

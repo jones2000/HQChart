@@ -709,9 +709,9 @@ class JSParser:
                 self.Context.IsBindingElement=False
                 expr=self.InheritCoverGrammar(self.ParseGroupExpression)
             else :
-                expr=self.ThrowUnexpectedToken(self.NextToken())
+                self.ThrowUnexpectedToken(self.NextToken())
         else :
-            expr = self.ThrowUnexpectedToken(self.NextToken())
+            self.ThrowUnexpectedToken(self.NextToken())
 
         return expr
 

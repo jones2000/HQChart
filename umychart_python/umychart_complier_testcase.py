@@ -1,6 +1,5 @@
 import sys
 from umychart_complier_jscomplier import JSComplier, SymbolOption, HQ_DATA_TYPE
-
 from umychart_complier_jscomplier import ScriptIndexConsole, ScriptIndexItem, SymbolOption, RequestOption, HQ_DATA_TYPE, ArgumentItem
 
 class TestCase :
@@ -246,6 +245,12 @@ def Test_FINANCE(): # 财务数据测试
         'SAR(10,2,20);',
         'BACKSET(CLOSE>OPEN,2);',
         'TT:DYNAINFO(13);',
+        'T2:MARGIN(1);',
+        'T5:MARGIN(6);',
+        "上涨家数:UPCOUNT('CNA.CI'),COLORRED;",
+        "下跌家数:DOWNCOUNT('CNA.CI'),COLORGREEN;",
+        "TTTT:NEWS(2)+NEWS(4);",
+        "TTT2:NEWS(1);",
         ])
 
     result=case.Run()
@@ -268,7 +273,11 @@ def Test_ScriptIndexConsole():
         right=1, # 复权 0 不复权 1 前复权 2 后复权
         period=5 # 周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
         )
-    indexConsole.ExecuteScript(option)
+    result=indexConsole.ExecuteScript(option)
+
+    if not result.Error :
+        print('run successfully.')
+
 
 
 

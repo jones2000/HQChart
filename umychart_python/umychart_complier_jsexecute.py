@@ -190,13 +190,13 @@ class JSExecute :
                                 stick=True
                             elif (value=='VOLSTICK') :
                                 volStick=True
-                            elif (value.indexOf('COLOR')==0) :
-                                color=True
-                            elif (value.indexOf('LINETHICK')==0) :
-                                lineWidth=True
-                            elif (value.indexOf('NODRAW')==0) :
+                            elif (value.find('COLOR')==0) :
+                                color=value
+                            elif (value.find('LINETHICK')==0) :
+                                lineWidth=value
+                            elif (value.find('NODRAW')==0) :
                                 isShow=False
-                            elif (value.indexOf('EXDATA')==0) :
+                            elif (value.find('EXDATA')==0) :
                                 isExData=True # 扩展数据, 不显示再图形里面
 
                         elif (itemExpression.Type==Syntax.Literal) :    #常量
@@ -373,7 +373,7 @@ class JSExecute :
         elif funcName=='FINANCE':
             node.Out=self.SymbolData.GetFinanceCacheData(args[0],node)
         elif funcName=="MARGIN":
-            node.Out=self.SymbolData.GetMarginCacheData(args[0],node)
+            node.Out=self.SymbolData.GetMarginCacheData(int(args[0]),node)
         elif funcName=="HK2SHSZ":
             node.Out=self.SymbolData.GetHKToSHSZCacheData(args[0],node)
         elif funcName=="NEWS":

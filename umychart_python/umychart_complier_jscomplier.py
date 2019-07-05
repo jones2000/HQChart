@@ -52,6 +52,7 @@ class JSComplier:
         execute.JobList=parser.Node.GetDataJobList()
         result=execute.Execute()
 
+        print('[JSComplier.Execute] execute finish.')
         return result
 
     @staticmethod   # 修改API地址
@@ -96,6 +97,7 @@ class ScriptIndexConsole:
             execute.JobList=parser.Node.GetDataJobList()
             result=Variant()
             result.Stock=Variant()
+            result.Error=None
             result.OutVar=execute.Execute()
             print('[ScriptIndexConsole.ExecuteScript]  execute finish.')
 

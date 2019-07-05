@@ -6766,7 +6766,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         for(let i in allData)
         {
-            let aryFixedData=this.Data.GetFittingData(allData[i].Data);
+            let aryFixedData=this.SourceData.GetFittingData(allData[i].Data);
 
             var bindData=new ChartData();
             bindData.Data=aryFixedData;

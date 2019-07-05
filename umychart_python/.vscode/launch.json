@@ -8,7 +8,7 @@
             "name": "Python: Test Case",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceRoot}/umychart_complier_testcase.py",
+            "program": "${workspaceRoot}\\umychart_complier_testcase.py",
             "console": "integratedTerminal"
         }
     ]

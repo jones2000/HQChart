@@ -654,7 +654,7 @@ class ChartData:
         i,j =0,0
         while i<dataLen :
             date=self.Data[i].Date
-            if j>=overlayData.length :
+            if j>=len(overlayData) :
                 i+=1
                 continue
 
@@ -673,6 +673,39 @@ class ChartData:
             else :
                 result[i]=SingleData()
                 result[i].Date=date
+                i+=1
+
+        return result
+
+    # 缺省数据使用 emptyValue填充
+    def GetFittingData2(self,overlayData,defaultValue) :
+        dataLen=len(self.Data)
+        result=JSComplierHelper.CreateArray(dataLen)
+        i,j = 0,0
+        while i<dataLen :
+            date=self.Data[i].Date
+            if j>=len(overlayData) :
+                result[i]=SingleData()
+                result[i].Date=date
+                result[i].Value=defaultValue
+                i+=1
+                continue
+
+            overlayDate=overlayData[j].Date
+
+            if overlayDate==date :
+                item=SingleData()
+                item.Date=overlayData[j].Date
+                item.Value=overlayData[j].Value
+                result[i]=item
+                j+=1
+                i+=1
+            elif overlayDate<date :
+                j+=1
+            else :
+                result[i]=SingleData()
+                result[i].Date=date
+                result[i].Value=defaultValue
                 i+=1
 
         return result
