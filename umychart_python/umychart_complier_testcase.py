@@ -1,3 +1,5 @@
+# 开源项目 https://github.com/jones2000/HQChart
+
 import sys
 from umychart_complier_jscomplier import JSComplier, SymbolOption, HQ_DATA_TYPE
 from umychart_complier_jscomplier import ScriptIndexConsole, ScriptIndexItem, SymbolOption, RequestOption, HQ_DATA_TYPE, ArgumentItem

@@ -1,3 +1,5 @@
+# 开源项目 https://github.com/jones2000/HQChart
+
 import sys
 import json
 from umychart_complier_scanner import Error
