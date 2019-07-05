@@ -106,7 +106,7 @@ class ScriptIndexConsole:
             result.Stock.Symbol=execute.SymbolData.Symbol
 
             result.Date=execute.SymbolData.Data.GetDate()   # 数据对应的日期
-            if (obj.HQDataType==HQ_DATA_TYPE.KLINE_ID) :
+            if (obj.HQDataType==HQ_DATA_TYPE.KLINE_ID and obj.Period>=4) :
                 result.Time=execute.SymbolData.Data.GetTime()   # 数据对应的时间
 
             return result

@@ -251,6 +251,8 @@ def Test_FINANCE(): # 财务数据测试
         "下跌家数:DOWNCOUNT('CNA.CI'),COLORGREEN;",
         "TTTT:NEWS(2)+NEWS(4);",
         "TTT2:NEWS(1);",
+        'TT4:WINNER(CLOSE);',
+        'TT5:COST(10);',
         ])
 
     result=case.Run()
@@ -271,7 +273,7 @@ def Test_ScriptIndexConsole():
     option = SymbolOption(
         symbol='000001.sz',
         right=1, # 复权 0 不复权 1 前复权 2 后复权
-        period=5 # 周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+        period=0 # 周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
         )
     result=indexConsole.ExecuteScript(option)
 
@@ -284,6 +286,6 @@ def Test_ScriptIndexConsole():
 #Test_Add()
 #Test_Multiply()
 #Test_MAX_MIN()
-Test_FINANCE()
+#Test_FINANCE()
 
 Test_ScriptIndexConsole()

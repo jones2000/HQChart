@@ -2144,7 +2144,7 @@ class JSAlgorithm() :
         averageXProfit=JSAlgorithm.ArrayAverage(xProfit,n)    
         averageYProfit=JSAlgorithm.ArrayAverage(yProfit,n)
 
-        result=JSAlgorithm.CreateArray(count)
+        result=JSComplierHelper.CreateArray(count)
 
         for i in range(count) :
             if i>=len(xProfit) or i>=len(yProfit) or i>=len(averageXProfit) or i>=len(averageYProfit) :
@@ -2174,7 +2174,7 @@ class JSAlgorithm() :
             return []
 
         dataLen=len(data)
-        result=JSAlgorithm.CreateArray(dataLen)
+        result=JSComplierHelper.CreateArray(dataLen)
         for i in range(dataLen) :
             if JSAlgorithm.IsNumber(data[i]) :
                 break
@@ -2204,7 +2204,7 @@ class JSAlgorithm() :
         if n>=dataLen  :
             return []
         
-        result=JSAlgorithm.CreateArray(dataLen)
+        result=JSComplierHelper.CreateArray(dataLen)
         high, low =None, None
         for i in range(n) :
             item=stockData.Data[i]
@@ -2326,6 +2326,170 @@ class JSAlgorithm() :
         return result
 
 
+    # 计算截至到某一天的历史所有筹码
+    def CalculateChip(self,index,exchangeData,hisData,dRate) :
+        result=Variant()
+        result.Min, result.Max, result.Data = None, None, []
+        seed=1 # 筹码历史衰减换手系数
+        max, min= None, None
+        result.Data=JSComplierHelper.CreateArray(index+1)
+        for i in range(index, -1,-1) :
+            item=Variant()    # Vol:量 High:最高 Low:最低
+            kData=hisData[i]
+            if i==index :
+                item.Vol=kData.Vol*exchangeData[i]
+            else :
+                item.Vol=kData.Vol*seed
+
+            item.Date=kData.Date
+            item.High=kData.High
+            item.Low=kData.Low
+
+            if max==None :
+                max=item.High
+            elif max<item.High :
+                max=item.High
+            if min==None :
+                min=item.Low
+            elif min<item.Low :
+                min=item.Low
+
+            result.Data[i]=item
+
+            seed*=(1-(exchangeData[i]/100)*dRate)	# 换手率累乘
+
+        result.Max=max
+        result.Min=min
+        return result
+
+    # 获利盘比例.
+    # 用法: WINNER(CLOSE),表示以当前收市价卖出的获利盘比例,例如返回0.1表示10%获利盘;WINNER(10.5)表示10.5元价格的获利盘比例
+    # 该函数仅对日线分析周期有效
+    # ！！！！计算比较耗时间
+    def WINNER(self,data,node) :
+        exchangeID=201
+        exchangeData=self.SymbolData.GetFinanceCacheData(exchangeID,node)    # 换手率
+        if not exchangeData :
+            return []
+
+        isNumber=JSComplierHelper.IsNumber(data)
+        singleData=None
+        if isNumber :
+            singleData=int(float(data)*100)
+        compareData=None
+        klineData=self.SymbolData.Data.Data
+        klineLen=len(klineData)
+        result=JSComplierHelper.CreateArray(klineLen)
+        for i in range(klineLen-1, -1, -1) :
+            chipData=self.CalculateChip(i,exchangeData,klineData,1)
+            if ( chipData.Max==None or chipData.Min==None or chipData.Max<=0 or chipData.Min<=0) :
+                continue
+
+            # max=int(chipData.Max*100)
+            # min=int(chipData.Min*100)
+
+            if (singleData!=None) :
+                compareData=singleData
+            else :
+                if i>=len(data) :
+                    continue
+                compareData=int(data[i]*100)
+
+            totalVol, vol= 0,0
+            for j in range(i, -1, -1) :
+                item=chipData.Data[j]
+                start=int(item.Low*100)
+                end=int(item.High*100)
+                if ((end-start+1)<=0):
+                    continue
+
+                iAverageVolume=item.Vol
+                iAverageVolume=iAverageVolume/(end-start+1)
+                if (iAverageVolume<=0):
+                    continue
+
+                profitVol=0    # 获利的成交量
+                if (compareData>end) :
+                    profitVol=item.Vol
+                elif (compareData<start) :
+                    profitVol=0
+                else :
+                    profitVol=item.Vol*(compareData-start+1)/(end-start+1)
+
+                vol+=profitVol
+                totalVol+=item.Vol
+
+            if (totalVol>0) :
+                result[i]=vol/totalVol
+
+        return result
+
+    # 成本分布情况.
+    # 用法: COST(10),表示10%获利盘的价格是多少,即有10%的持仓量在该价格以下,其余90%在该价格以上,为套牢盘
+    # 该函数仅对日线分析周期有效
+    def COST(self,data, node) :
+        exchangeID=201
+        exchangeData=self.SymbolData.GetFinanceCacheData(exchangeID,node)    # 换手率
+        if not exchangeData :
+            return []
+
+        isNumber=JSComplierHelper.IsNumber(data)
+        singleData=None
+        if (isNumber) :
+            singleData=float(data)
+        compareData=None
+        klineData=self.SymbolData.Data.Data
+        klineLen=len(self.SymbolData.Data.Data)
+        result=JSComplierHelper.CreateArray(klineLen)
+        for i in range(klineLen-1,-1,-1) :
+            chipData=self.CalculateChip(i,exchangeData,klineData,1)
+            if (chipData.Max==None or chipData.Min==None or chipData.Max<=0 or chipData.Min<=0) :
+                continue
+
+            max=int(chipData.Max*100)
+            # min=int(chipData.Min*100)
+           
+            if (singleData!=None) :
+                compareData=singleData
+            else :
+                if (i>=data.length) :
+                    continue
+                compareData=data[i]
+            
+            totalVol,vol= 0,0
+            aryMap={}
+            for j in range(i,-1,-1) :
+                item=chipData.Data[j]
+                start=int(item.Low*100)
+                end=int(item.High*100)
+                if ((end-start+1)<=0) :
+                    continue
+
+                iAverageVolume=item.Vol
+                iAverageVolume=iAverageVolume/(end-start+1)
+                if iAverageVolume<=0 :
+                    continue
+
+                k=start # 起始价格
+                while k<end and k<=max :
+                    if k in aryMap :
+                        vol=aryMap[k]
+                        aryMap[k]=vol+iAverageVolume
+                    else :
+                        aryMap[k]=iAverageVolume
+                    k+=1
+
+                totalVol+=item.Vol
+
+            # 计算获利盘
+            vol=0
+            for key, value in aryMap.items() :
+                vol+=value
+                result[i]=key/100
+                if (vol/totalVol*100>compareData) :
+                    break
+
+        return result
 
     # 函数调用
     def CallFunction(self,name,args,node,symbolData=None) :
@@ -2410,9 +2574,9 @@ class JSAlgorithm() :
         elif name=='PEAKBARS':
             return self.PEAKBARS(args[0],args[1],args[2])
         elif name=='COST':
-            return self.COST(args[0])
+            return self.COST(args[0],node)
         elif name=='WINNER':
-            return self.WINNER(args[0])
+            return self.WINNER(args[0],node)
         elif name=='FORCAST':
             return self.FORCAST(args[0], int(args[1]))
         elif name=='STDP':

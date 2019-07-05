@@ -60,7 +60,7 @@ class JS_EXECUTE_JOB_ID :
 
     JOB_DOWNLOAD_HK_TO_SH=2050,      # 北上流入上证
     JOB_DOWNLOAD_HK_TO_SZ=2051,      # 北上流入深证
-    JOB_DOWNLOAD_HK_TO_SH_SZ=2052,   # /北上流总的
+    JOB_DOWNLOAD_HK_TO_SH_SZ=2052,   # 北上流总的
     
 
     JOB_RUN_SCRIPT=10000, # 执行脚本

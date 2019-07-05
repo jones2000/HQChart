@@ -591,7 +591,7 @@ class JSSymbolData() :
                     
             elif jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA:          # 换手率
                     capitalData=item['capital']
-                    if not financeData or not  JSComplierHelper.IsJsonNumber(capitalData,'a') :
+                    if not capitalData or not  JSComplierHelper.IsJsonNumber(capitalData,'a') :
                         continue
                     indexData.Value=capitalData['a'] # 流通股本
                     bFinanceData=True
@@ -669,6 +669,16 @@ class JSSymbolData() :
         if bindData.Period>0 :         # 周期数据
             periodData=bindData.GetPeriodSingleData(bindData.Period)
             bindData.Data=periodData
+
+        if jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA :   # 计算换手率 成交量/流通股本*100
+            for i in range(len(self.Data.Data)) :
+                if not bindData.Data[i] :
+                    continue
+                
+                if (JSComplierHelper.IsNumber(bindData.Data[i].Value) and bindData.Data[i].Value!=0) :
+                    bindData.Data[i].Value=self.Data.Data[i].Vol/bindData.Data[i].Value*100
+                else :
+                    bindData.Data[i].Value=1
 
         data=bindData.GetValue()
         self.FinanceData[jobID]=data
