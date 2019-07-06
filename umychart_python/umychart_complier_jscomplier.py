@@ -13,6 +13,9 @@ from umychart_complier_help import Variant
 #
 #
 ##################################################################################################
+
+
+
 class JSComplier:
     @staticmethod   # 词法分析
     def Tokenize(code):
@@ -73,6 +76,28 @@ class ScriptIndexItem:
         self.Script=script  #指标脚本
         self.Arguments=args #指标参数  ArgumentItem 数组
 
+class StockInfo :
+    def __init__(self, name=None, symbol=None) :
+        self.Name=name
+        self.Symbol=symbol
+
+class IndexResult:
+    def __init__(self, error=None, outVar=None) :
+        self.Error=error
+        self.OutVar=outVar
+        self.Stock=None
+        self.Date=None
+        self.Time=None
+
+    # 把返回的结果转换成json格式
+    def ToJson(self) : 
+        try :
+            jsonData=json.dumps(self, default=lambda obj:obj.__dict__)    # ScriptIndexConsole.Serializable)
+            return jsonData
+            # with open('data.txt','w') as file:
+            #     file.write(jsonData)
+        except BaseException as error :
+            print(error)
 
 class ScriptIndexConsole:
     def __init__(self, obj) : # obj = ScriptIndexItem()
@@ -92,40 +117,42 @@ class ScriptIndexConsole:
             print('[ScriptIndexConsole.ExecuteScript] parser finish.')
 
             option=SymbolOption(symbol=obj.Symbol, hqDataType=obj.HQDataType, right=obj.Right, period=obj.Period, 
-                    reqeust=RequestOption(maxDataCount=obj.MaxRequestDataCount, maxMinuteDayCount=obj.MaxRequestMinuteDayCount), 
+                    request=RequestOption(maxDataCount=obj.MaxRequestDataCount, maxMinuteDayCount=obj.MaxRequestMinuteDayCount), 
                     args=self.Arguments if obj.Arguments==None else obj.Arguments) # 个股指定指标参数优先使用
             
             execute=JSExecute(ast,option)
             execute.JobList=parser.Node.GetDataJobList()
-            result=Variant()
-            result.Stock=Variant()
-            result.Error=None
-            result.OutVar=execute.Execute()
+            outVar=execute.Execute() 
             print('[ScriptIndexConsole.ExecuteScript]  execute finish.')
 
-            # 股票信息
-            result.Stock.Name=execute.SymbolData.Name
-            result.Stock.Symbol=execute.SymbolData.Symbol
-
+            result=IndexResult(outVar=outVar)
+            result.Stock=StockInfo(name=execute.SymbolData.Name, symbol=execute.SymbolData.Symbol)  # 股票信息
             result.Date=execute.SymbolData.Data.GetDate()   # 数据对应的日期
             if (obj.HQDataType==HQ_DATA_TYPE.KLINE_ID and obj.Period>=4) :
                 result.Time=execute.SymbolData.Data.GetTime()   # 数据对应的时间
 
             return result
         except Error as error :
-           ErrorInfo=Variant()
-           ErrorInfo.Error=error
-           return ErrorInfo
+            result=IndexResult(error=error)
+            return result
 
         except ValueError as error:
-            ErrorInfo=Variant()
-            ErrorInfo.Error=error
-            return ErrorInfo
+            result=IndexResult(error=error)
+            return result
         
         except BaseException as error :
-            ErrorInfo=Variant()
-            ErrorInfo.Error=error
-            return ErrorInfo
+            result=IndexResult(error=error)
+            return result
+
+    @staticmethod   # 把返回的结果转换成json格式
+    def ToJson(data) : 
+        try :
+            jsonData=json.dumps(data, default=lambda obj:obj.__dict__)    # ScriptIndexConsole.Serializable)
+            return jsonData
+            # with open('data.txt','w') as file:
+            #     file.write(jsonData)
+        except BaseException as error :
+            print(error)
 
 
 

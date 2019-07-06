@@ -1,8 +1,11 @@
 # 开源项目 https://github.com/jones2000/HQChart
 
 import sys
+import codecs
+import webbrowser
 from umychart_complier_jscomplier import JSComplier, SymbolOption, HQ_DATA_TYPE
 from umychart_complier_jscomplier import ScriptIndexConsole, ScriptIndexItem, SymbolOption, RequestOption, HQ_DATA_TYPE, ArgumentItem
+from umychart_webtemplate import *
 
 class TestCase :
     def __init__(self, code, option=SymbolOption()) :
@@ -263,7 +266,7 @@ def Test_FINANCE(): # 财务数据测试
 def Test_ScriptIndexConsole():
 
     # 创建脚本, 及参数
-    scpritInfo=ScriptIndexItem(name='测试脚本', id=888888,
+    scpritInfo=ScriptIndexItem(name='我的MA指标', id=888888,
         script='MA1:MA(CLOSE,M1);\n'    # 指标脚本代码
             'MA2:MA(CLOSE,M2);\n'
             'MA3:MA(CLOSE,M3);',
@@ -275,14 +278,56 @@ def Test_ScriptIndexConsole():
     option = SymbolOption(
         symbol='000001.sz',
         right=1, # 复权 0 不复权 1 前复权 2 后复权
-        period=0 # 周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+        period=0, # 周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+        request=RequestOption(maxDataCount=500)
         )
     result=indexConsole.ExecuteScript(option)
 
-    if not result.Error :
-        print('run successfully.')
+    if result.Error :
+        return
 
+    print('run successfully.')
+    jsonData=result.ToJson()
+    varName='jsonData'  # 数据变量名字
+    
+    HQChartOption= """g_KLineOption={
+            Symbol:'%(symbol)s',    //股票代码
+            Right:%(right)d,        //复权
+            Period:%(period)d,      //周期
 
+            Windows:
+            [
+                {   Modify:false,Change:false, 
+                    Local: 
+                    { 
+                        Data:%(varName)s,   //py执行以后的json数据
+                        Type:'LocalJsonDataIndex' ,
+                        Name:'%(name)s',    //指标名字
+                        Args:[              //指标参数
+                            { Name: '%(arg1)s', Value: %(argvalue1)d },
+                            { Name: '%(arg2)s', Value: %(argvalue2)d },
+                            { Name: '%(arg3)s', Value: %(argvalue3)d }]
+                    }
+                },
+                //{Index:"VOL", Modify:false,Change:false},
+            ]
+        } 
+        """ %{"symbol":option.Symbol,'right':option.Right, 'period':option.Period, 'varName':varName, 'name':scpritInfo.Name,
+            'arg1':scpritInfo.Arguments[0].Name, 'argvalue1': scpritInfo.Arguments[0].Value,
+            'arg2':scpritInfo.Arguments[1].Name, 'argvalue2': scpritInfo.Arguments[1].Value,
+            'arg3':scpritInfo.Arguments[2].Name, 'argvalue3': scpritInfo.Arguments[2].Value }
+
+    localJsonData= varName + '=' + jsonData + '\n'
+    filePath='data.html'
+    # 生成图形化页面
+    with codecs.open(filePath,'w',"utf-8") as file:
+        file.write(HTML_PART1)
+        file.write(localJsonData)
+        file.write(HQChartOption)
+        file.write(HTML_PART_END)
+        file.close()
+
+    webbrowser.open(filePath,new = 1)
 
 
 #Test_Add()

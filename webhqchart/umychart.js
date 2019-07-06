@@ -218,6 +218,10 @@ function JSChart(divElement)
             {
                 chart.WindowIndex[i]=new JsonDataIndex(item.Name,item.Script,item.Args,item);    //脚本执行
             }
+            else if (item.Local && item.Local.Data)
+            {
+                chart.WindowIndex[i]=new LocalJsonDataIndex(item.Local.Name,item.Local.Args,{JsonData:item.Local.Data});
+            }
             else
             {
                 let indexItem=JSIndexMap.Get(item.Index);

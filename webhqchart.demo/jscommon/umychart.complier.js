@@ -9116,6 +9116,60 @@ function ScriptIndex(name,script,args,option)
 
         return true;
     }
+
+
+    //给一个默认的颜色
+    this.GetDefaultColor=function(id)
+    {
+        let COLOR_ARRAY=
+        [
+            "rgb(255,174,0)",
+            "rgb(25,199,255)",
+            "rgb(175,95,162)",
+            "rgb(236,105,65)",
+            "rgb(68,114,196)",
+            "rgb(229,0,79)",
+            "rgb(0,128,255)",
+            "rgb(252,96,154)",
+            "rgb(42,230,215)",
+            "rgb(24,71,178)",
+        ];
+
+        let number=parseInt(id);
+        return COLOR_ARRAY[number%(COLOR_ARRAY.length-1)];
+    }
+
+    //获取颜色
+    this.GetColor=function(colorName)
+    {
+        let COLOR_MAP=new Map([
+            ['COLORBLACK','rgb(0,0,0)'],
+            ['COLORBLUE','rgb(18,95,216)'],
+            ['COLORGREEN','rgb(25,158,0)'],
+            ['COLORCYAN','rgb(0,255,198)'],
+            ['COLORRED','rgb(238,21,21)'],
+            ['COLORMAGENTA','rgb(255,0,222)'],
+            ['COLORBROWN','rgb(149,94,15)'],
+            ['COLORLIGRAY','rgb(218,218,218)'],      //画淡灰色
+            ['COLORGRAY','rgb(133,133,133)'],        //画深灰色
+            ['COLORLIBLUE','rgb(94,204,255)'],       //淡蓝色
+            ['COLORLIGREEN','rgb(183,255,190)'],      //淡绿色
+            ['COLORLICYAN','rgb(154,255,242)'],      //淡青色
+            ['COLORLIRED','rgb(255,172,172)'],       //淡红色
+            ['COLORLIMAGENTA','rgb(255,145,241)'],   //淡洋红色
+            ['COLORWHITE','rgb(255,255,255)'],       //白色
+            ['COLORYELLOW','rgb(255,198,0)']
+        ]);
+
+        if (COLOR_MAP.has(colorName)) return COLOR_MAP.get(colorName);
+
+        //COLOR 自定义色
+        //格式为COLOR+“RRGGBB”：RR、GG、BB表示红色、绿色和蓝色的分量，每种颜色的取值范围是00-FF，采用了16进制。
+        //例如：MA5：MA(CLOSE，5)，COLOR00FFFF　表示纯红色与纯绿色的混合色：COLOR808000表示淡蓝色和淡绿色的混合色。
+        if (colorName.indexOf('COLOR')==0) return '#'+colorName.substr(5);
+
+        return 'rgb(30,144,255)';
+    }
 }
 
 //后台执行指标
@@ -9135,6 +9189,61 @@ function APIScriptIndex(name,script,args,option)
 
     }
 }
+
+// 本地json数据指标
+function LocalJsonDataIndex(name,args,option)
+{
+    this.newMethod=ScriptIndex;   //派生
+    this.newMethod(name,null,args,null);
+    delete this.newMethod;
+
+    this.JsonData;  //json格式数据
+    if (option.JsonData) this.JsonData=option.JsonData;
+
+    this.RequestData=function(hqChart,windowIndex,hisData)
+    {
+        if (!this.JsonData)
+        {
+            console.warn("[LocalJsonDataIndex::RequestData] JsonData is null");
+            if (param.HQChart.ScriptErrorCallback) param.HQChart.ScriptErrorCallback('json 数据不能为空');
+            return;
+        }
+
+        this.OutVar=this.FittingData(this.JsonData,hisData);
+        this.BindData(hqChart,windowIndex,hisData);
+    }
+
+    this.FittingData=function(jsonData, hisData)
+    {
+        outVar=jsonData.OutVar;
+        date=jsonData.Date;
+
+        result=[];
+
+        for(i in outVar)
+        {
+            item=outVar[i];
+            var indexData=[];
+            outVarItem={Name:item.Name,Type:item.Type}
+            for(j in item.Data)
+            {
+                var indexItem=new SingleData(); //单列指标数据
+                indexItem.Date=date[j];
+                indexItem.Value=item.Data[j];
+                indexData.push(indexItem);
+            }
+
+            var aryFittingData=hisData.GetFittingData(indexData); //数据和主图K线拟合
+            var bindData=new ChartData();
+            bindData.Data=aryFittingData;
+            outVarItem.Data=bindData.GetValue();
+            result.push(outVarItem)
+        }
+
+        return result;
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 //  无UI指标执行
@@ -9212,59 +9321,6 @@ function ScriptIndexConsole(obj)
         //console.log('[ScriptIndexConsole::RecvResultData] outVar ', outVar);
         if (self.FinishCallback) self.FinishCallback(result, param.JSExecute);
     }
-}
-
-//给一个默认的颜色
-ScriptIndex.prototype.GetDefaultColor=function(id)
-{
-    let COLOR_ARRAY=
-    [
-        "rgb(255,174,0)",
-        "rgb(25,199,255)",
-        "rgb(175,95,162)",
-        "rgb(236,105,65)",
-        "rgb(68,114,196)",
-        "rgb(229,0,79)",
-        "rgb(0,128,255)",
-        "rgb(252,96,154)",
-        "rgb(42,230,215)",
-        "rgb(24,71,178)",
-    ];
-
-    let number=parseInt(id);
-    return COLOR_ARRAY[number%(COLOR_ARRAY.length-1)];
-}
-
-//获取颜色
-ScriptIndex.prototype.GetColor=function(colorName)
-{
-    let COLOR_MAP=new Map([
-        ['COLORBLACK','rgb(0,0,0)'],
-        ['COLORBLUE','rgb(18,95,216)'],
-        ['COLORGREEN','rgb(25,158,0)'],
-        ['COLORCYAN','rgb(0,255,198)'],
-        ['COLORRED','rgb(238,21,21)'],
-        ['COLORMAGENTA','rgb(255,0,222)'],
-        ['COLORBROWN','rgb(149,94,15)'],
-        ['COLORLIGRAY','rgb(218,218,218)'],      //画淡灰色
-        ['COLORGRAY','rgb(133,133,133)'],        //画深灰色
-        ['COLORLIBLUE','rgb(94,204,255)'],       //淡蓝色
-        ['COLORLIGREEN','rgb(183,255,190)'],      //淡绿色
-        ['COLORLICYAN','rgb(154,255,242)'],      //淡青色
-        ['COLORLIRED','rgb(255,172,172)'],       //淡红色
-        ['COLORLIMAGENTA','rgb(255,145,241)'],   //淡洋红色
-        ['COLORWHITE','rgb(255,255,255)'],       //白色
-        ['COLORYELLOW','rgb(255,198,0)']
-    ]);
-
-    if (COLOR_MAP.has(colorName)) return COLOR_MAP.get(colorName);
-
-    //COLOR 自定义色
-    //格式为COLOR+“RRGGBB”：RR、GG、BB表示红色、绿色和蓝色的分量，每种颜色的取值范围是00-FF，采用了16进制。
-    //例如：MA5：MA(CLOSE，5)，COLOR00FFFF　表示纯红色与纯绿色的混合色：COLOR808000表示淡蓝色和淡绿色的混合色。
-    if (colorName.indexOf('COLOR')==0) return '#'+colorName.substr(5);
-
-    return 'rgb(30,144,255)';
 }
 
 
