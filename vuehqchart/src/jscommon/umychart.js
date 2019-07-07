@@ -4276,6 +4276,7 @@ function MinuteData()
 function SingleData()
 {
     this.Date;  //日期
+    this.Time;  //时间
     this.Value; //数据  (可以是一个数组)
 }
 
@@ -4862,6 +4863,53 @@ function ChartData()
                 result[i]=new SingleData();
                 result[i].Date=date;
                 result[i].Value=emptyValue;
+                ++i;
+            }
+        }
+
+        return result;
+    }
+
+    //  分钟数据拟合
+    this.GetMinuteFittingData=function(overlayData)
+    {
+        var result=[];
+        for(var i=0,j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+            var time=this.Data[i].Time;
+
+            if (j>=overlayData.length)
+            {
+                result[i]=null;
+                ++i;
+                continue;;
+            }
+
+            var overlayDate=overlayData[j].Date;
+            var overlayTime=overlayData[j].Time;
+            const overlayItem=overlayData[j];
+
+            if (overlayDate==date && overlayTime==time)
+            {
+                var item=new SingleData();
+                item.Date=overlayItem.Date;
+                item.Time=overlayItem.Time;
+                item.Value=overlayItem.Value;
+                result[i]=item;
+                ++j;
+                ++i;
+            }
+            else if (overlayDate<date || (overlayDate==date && overlayTime<time))
+            {
+                ++j;
+            }
+            else
+            {
+                var item=new SingleData();
+                item.Date=date;
+                item.Time=time;
+                result[i]=item;
                 ++i;
             }
         }

@@ -9217,6 +9217,7 @@ function LocalJsonDataIndex(name,args,option)
     {
         outVar=jsonData.OutVar;
         date=jsonData.Date;
+        time=jsonData.Time;
 
         result=[];
 
@@ -9229,11 +9230,15 @@ function LocalJsonDataIndex(name,args,option)
             {
                 var indexItem=new SingleData(); //单列指标数据
                 indexItem.Date=date[j];
+                if (time && j<time.length) indexItem.Time=time[j];
                 indexItem.Value=item.Data[j];
                 indexData.push(indexItem);
             }
 
-            var aryFittingData=hisData.GetFittingData(indexData); //数据和主图K线拟合
+            if (hisData.Period<4)
+                var aryFittingData=hisData.GetFittingData(indexData); //数据和主图K线拟合
+            else
+                var aryFittingData=hisData.GetMinuteFittingData(indexData); //数据和主图K线拟合
             var bindData=new ChartData();
             bindData.Data=aryFittingData;
             outVarItem.Data=bindData.GetValue();

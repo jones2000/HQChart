@@ -6,14 +6,14 @@ HTML_PART1="""<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'ht
 <meta name='viewport' content='width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no' />
 <title>HQChart-Py可视化</title>  
     <!-- 加载资源 -->
-    <link rel='stylesheet' href='hqchart/content/css/tools.css' />
+    <link rel='stylesheet' href='hqchart/umychart.resource/css/tools.css' />
     <link rel='stylesheet' href='hqchart/umychart.resource/font/iconfont.css' />
 </head>  
 <body>
     <div id='kline' style='width: 900px;height:400px;position: relative;'></div>
 
-    <script src='hqchart/content/js/jquery.min.js'></script>
-    <script src='hqchart/content/js/webfont.js'></script>
+    <script src='hqchart/umychart.resource/js/jquery.min.js'></script>
+    <script src='hqchart/umychart.resource/js/webfont.js'></script>
     <script src='hqchart/umychart.js'></script>             <!-- K线图形 -->
     <script src='hqchart/umychart.complier.js'></script>    <!-- 麦语言解析执行器 -->
     <script src='hqchart/umychart.index.data.js'></script>  <!-- 基础指标库 -->
