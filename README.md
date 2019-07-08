@@ -20,6 +20,7 @@
 
 --umychart_python 分析家语法（麦语法）python版本 (2019-6-26 开始立项开发) ❗这个是我第1次使用py, 进度会比较慢点， 大家多包含 😄， 有兴趣的朋友也可以加入一起开发。
   * 2019-7-1 进度 词法分析(完成) 语法分析(完成) AST(完成), 执行器框架迁移完成(K线数据完成, 四则运算完成, 逻辑运算完成, 部分指标函数完成)
+  * 2019-7-8 麦语法执行器基本移植完成
 
 # 声明
   本项目只提供行情图形库及麦语法脚本执行器.
@@ -96,6 +97,8 @@
 12. 分析家语法执行器 https://blog.csdn.net/jones2000/article/details/93731637 <br>
 13. 分钟完成一个小程序K线图 https://blog.csdn.net/jones2000/article/details/91471252 <br>
 14. 如何在K线图上添加弹幕 https://blog.csdn.net/jones2000/article/details/91125408 <br>
+15. HQChart使用教程15-分析家语法执行器python版本 https://blog.csdn.net/jones2000/article/details/94738592 <br>
+16. HQChart使用教程16-py中使用麦语言指标可视化 https://blog.csdn.net/jones2000/article/details/94920596 <br>
 
 **设计文档:**
 1. 如何(c++,js)写一个传统的K线图和走势图1 https://blog.csdn.net/jones2000/article/details/84779481 <br>
