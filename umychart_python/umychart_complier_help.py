@@ -93,6 +93,62 @@ class JSComplierHelper:
 
         return result
 
+    @staticmethod # result 数组长度由外部创建
+    def CalculateZIGLine(firstData,secondData,thridData,data,result) :
+        isUp=secondData.Up
+        findData=firstData
+        if (isUp) :
+            for i in range(firstData.ID+1, thridData.ID) :  # 查找最高点
+                subItem=data[i]
+                if not JSComplierHelper.IsNumber(subItem) :
+                    continue
+                if findData.Value<subItem :
+                    findData=Variant()
+                    findData.ID=i
+                    findData.Value=subItem
+        else :
+            for i in range(firstData.ID+1, thridData.ID) : #查找最低点
+                subItem=data[i]
+                if not JSComplierHelper.IsNumber(subItem) :
+                    continue
+                if findData.Value>subItem :
+                    findData=Variant()
+                    findData.ID=i
+                    findData.Value=subItem
+            
+        secondData.Value=findData.Value
+        secondData.ID=findData.ID
+
+        lineCache=Variant()
+        lineCache.Start, lineCache.End =Variant(), Variant()
+        lineCache.Start.ID=firstData.ID
+        lineCache.Start.Value=firstData.Value
+        lineCache.End.ID=secondData.ID
+        lineCache.End.Value=secondData.Value
+
+        lineData=JSComplierHelper.CalculateDrawLine(lineCache) #计算2个点的线上 其他点的数值
+        for lineItem in lineData :
+            result[lineItem.ID]=lineItem.Value
+
+        if thridData.ID==data.length-1:   # 最后一组数据
+            # 最后2个点的数据连成线
+            lineCache=Variant()
+            lineCache.Start, lineCache.End = Variant(), Variant()
+            lineCache.Start.ID=secondData.ID
+            lineCache.Start.Value=secondData.Value
+            lineCache.End.ID=thridData.ID
+            lineCache.End.Value=thridData.Value
+            lineData=JSComplierHelper.CalculateDrawLine(lineCache) # 计算2个点的线上 其他点的数值
+            for lineItem in lineData :
+                result[lineItem.ID]=lineItem.Value
+        else :
+            firstData.ID=secondData.ID
+            firstData.Value=secondData.Value
+
+            secondData.ID=thridData.ID
+            secondData.Value=thridData.Value
+            secondData.Up=firstData.Value < secondData.Value
+
 
 class Variant:
     def __init__(self) :

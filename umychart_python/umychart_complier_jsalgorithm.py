@@ -2493,6 +2493,160 @@ class JSAlgorithm() :
 
         return result
 
+    
+    # 属于未来函数,之字转向.
+    # 用法: ZIG(K,N),当价格变化量超过N%时转向,K表示0:开盘价,1:最高价,2:最低价,3:收盘价,其余:数组信息
+    # 例如: ZIG(3,5)表示收盘价的5%的ZIG转向
+    def ZIG(self,data,n) :
+        hisData=self.SymbolData.Data
+        result=[]
+        if JSComplierHelper.IsNumber(data):
+            if data==0 :
+                data=hisData.GetOpen()
+            elif data==1 :
+                data=hisData.GetHigh()
+            elif data==2 :
+                data=hisData.GetLow()
+            elif data==3:
+                data=hisData.GetClose()
+            else :
+                return []
+        
+        bFirstPoint=False
+        bSecondPont=False
+        firstData, secondData, thridData = Variant(), Variant(), Variant()
+        lastData=Variant()
+        dataLen=len(data)
+        result=JSComplierHelper.CreateArray(dataLen)
+        for i in range(dataLen) :
+            item=data[i]
+            if not JSComplierHelper.IsNumber(item) :
+                continue
+
+            if bFirstPoint==False :
+                bFirstPoint=True
+                firstData.ID=i  # 第1个点
+                firstData.Value=item   
+            elif bFirstPoint==True and bSecondPont==False :
+                temp=(item-firstData.Value)/firstData.Value*100
+                if temp>n :
+                    secondData.ID, secondData.Value, secondData.Up= i, item, True
+                    lastData.ID, lastData.Value=i, item
+                    bSecondPont=True
+                elif temp<-n :
+                    secondData.ID, secondData.Value, secondData.Up =i, item, False
+                    lastData.ID, lastData.Value=i, item
+                    bSecondPont=True
+            elif bFirstPoint==True and bSecondPont==True :
+                temp=(item-lastData.Value)/lastData.Value*100
+                if secondData.Up==True :    # 找下跌的点
+                    if temp<-n :
+                        thridData.ID, thridData.Value, thridData.Up =i, item, False
+                        JSComplierHelper.CalculateZIGLine(firstData,secondData,thridData,data,result)
+                        lastData.ID, lastData.Value =i, item
+                    else :
+                        if item>lastData.Value :
+                            lastData.ID, lastData.Value = i, item
+                else :
+                    if temp>n :
+                        thridData.ID, thridData.Value,thridData.Up  = i, item, True
+                        JSComplierHelper.CalculateZIGLine(firstData,secondData,thridData,data,result)
+                        lastData.ID, lastData.Value = i, item
+                    else :
+                        if item<lastData.Value :
+                            lastData.ID, lastData.Value =i, item
+
+        # 计算最后1组数据
+        thridData.ID=data.length-1,
+        thridData.Value=data[data.length-1], 
+        thridData.Up=not secondData.Up
+        JSComplierHelper.CalculateZIGLine(firstData,secondData,thridData,data,result)
+       
+        return result
+
+
+    # 属于未来函数,前M个ZIG转向波谷到当前距离.
+    # 用法: TROUGHBARS(K,N,M)表示之字转向ZIG(K,N)的前M个波谷到当前的周期数,M必须大于等于1
+    # 例如: TROUGHBARS(2,5,2)表示%5最低价ZIG转向的前2个波谷到当前的周期数
+    def TROUGHBARS(self,data,n,n2) :
+        zigData=self.ZIG(data,n)  # 计算ZIG
+        zigDataLen=len(zigData)
+        dataLen=len(data)
+        result=JSComplierHelper.CreateArray(dataLen)
+
+        for i in range(len(zigDataLen)) :
+            if JSComplierHelper.IsNumber(zigData[i]) :
+                break
+
+        trough=JSComplierHelper.CreateArray(dataLen)
+        start=i
+        for i in range(i,zigDataLen ) :  # 第1个波谷
+            if (i+1<zigDataLen and i-1>=0 and  zigData[i]<zigData[i-1] and zigData[i]<zigData[i+1]) : #波谷
+                trough[0]=i
+                break
+
+        j=0
+        for i in range(i+1,zigDataLen) :
+            if (i+1<zigDataLen and i-1>=0 and  zigData[i]<zigData[i-1] and zigData[i]<zigData[i+1]) : # 波谷
+                # console.log('[TROUGHBARS] i',i,zigData[i]);
+                j+=1
+                trough[j]=i
+                if j+1==n2 :
+                    result[i]=i-start
+                elif j+1>n2 :
+                    trough.pop(0) # 大于计算的波谷数,去掉第1个波谷
+                    start=trough[0]
+                    j-=1
+                    result[i]=i-start
+            else :
+                if j+1==n2 :
+                    result[i]=i-start
+
+        return result
+
+
+    # 属于未来函数,前M个ZIG转向波峰到当前距离.
+    # 用法:
+    # PEAKBARS(K,N,M)表示之字转向ZIG(K,N)的前M个波峰到当前的周期数,M必须大于等于1
+    # 例如: PEAKBARS(0,5,1)表示%5开盘价ZIG转向的上一个波峰到当前的周期数
+    def PEAKBARS(self, data,n,n2) :
+        zigData=self.ZIG(data,n)   # 计算ZIG
+        zigDataLen=len(zigData)
+        dataLen=len(data)
+        result=JSComplierHelper.CreateArray(dataLen)
+
+        for i in range(len(zigDataLen)) :
+            if JSComplierHelper.IsNumber(zigData[i]) :
+                break
+
+        trough=JSComplierHelper.CreateArray(dataLen)
+        start=i
+        for i in range(i, zigDataLen) : # 第1个波峰
+            if (i+1<zigDataLen and i-1>=0 and zigData[i]>zigData[i-1] and zigData[i]>zigData[i+1]) : # 波峰
+                trough[0]=i
+                break
+
+        j=0
+        for i in range(i+1, zigDataLen) :
+            if (i+1<zigDataLen and i-1>=0 and  zigData[i]>zigData[i-1] and zigData[i]>zigData[i+1]) : # 波峰
+                # console.log('[TROUGHBARS] i',i,zigData[i]);
+                j+=1
+                trough[j]=i
+                if j+1==n2 :
+                    result[i]=i-start
+                elif j+1>n2 :
+                    trough.pop(0) # 大于计算的波谷数,去掉第1个波谷
+                    start=trough[0]
+                    j-=1
+                    result[i]=i-start
+            else :
+                if j+1==n2 : 
+                    result[i]=i-start
+
+        return result
+
+
+
     # 函数调用
     def CallFunction(self,name,args,node,symbolData=None) :
         if name=='MAX':
@@ -2572,9 +2726,9 @@ class JSAlgorithm() :
         elif name=='ZIG':
             return self.ZIG(args[0],args[1])
         elif name=='TROUGHBARS':
-            return self.TROUGHBARS(args[0],args[1],args[2])
+            return self.TROUGHBARS(args[0],args[1],int(args[2]))
         elif name=='PEAKBARS':
-            return self.PEAKBARS(args[0],args[1],args[2])
+            return self.PEAKBARS(args[0],args[1],int(args[2]))
         elif name=='COST':
             return self.COST(args[0],node)
         elif name=='WINNER':

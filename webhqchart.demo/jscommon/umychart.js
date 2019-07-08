@@ -948,6 +948,12 @@ function JSChart(divElement)
         }
     }
 
+    this.SaveToImage = function (format,colorGB)    //format=保存的文件格式,  colorGB=背景色
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.SaveToImage) == 'function')
+          return this.JSChartContainer.SaveToImage(format,colorGB);
+      }
+
     //事件回调
     this.AddEventCallback=function(obj)
     {
@@ -2367,6 +2373,114 @@ function JSChartContainer(uielement)
         }
 
         return false;
+    }
+
+    // 保存图片
+    this.SaveToImage = function (format,colorGB) 
+    {
+        if (this.UIElement.width<=0 || this.UIElement.height<=0) return null;
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash) return null; // 数据加载中不能保存
+
+        console.log('[JSChartContainer::SaveToImage]', this.UIElement);
+        clrBG='rgb(255,255,255)';
+        if (colorGB) clrBG=colorGB;
+        this.Canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
+        this.Canvas.fillStyle=clrBG;
+        this.Canvas.fillRect(0,0,this.UIElement.width,this.UIElement.height);   //画一个背景色, 不然是一个黑的背景
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+        this.Canvas.lineWidth=pixelTatio;       //手机端需要根据分辨率比调整线段宽度
+
+        this.Frame.Draw();  //框架
+
+        for (var i in this.ChartPaint)  //框架内图形
+        {
+            var item=this.ChartPaint[i];
+            if (item.IsDrawFirst)
+                item.Draw();
+        }
+
+        for(var i in this.ChartPaint)
+        {
+            var item=this.ChartPaint[i];
+            if (!item.IsDrawFirst)
+                item.Draw();
+        }
+
+        for(var i in this.ChartPaintEx)
+        {
+            var item=this.ChartPaintEx[i];
+            item.Draw();
+        }
+
+        for(var i in this.OverlayChartPaint)    //叠加股票
+        {
+            var item=this.OverlayChartPaint[i];
+            item.Draw();
+        }
+
+        
+        for(var i in this.ExtendChartPaint)     //固定扩展图形
+        {
+            var item=this.ExtendChartPaint[i];
+            if (!item.IsDynamic && item.IsAnimation==false) item.Draw();
+        }
+
+        if (this.Frame.DrawInsideHorizontal) this.Frame.DrawInsideHorizontal();
+        this.Frame.DrawLock();
+
+        for(var i in this.ExtendChartPaint) //动态扩展图形
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.IsDynamic && item.DrawAfterTitle===false) item.Draw();
+        }
+
+        if (this.LastPoint.X!=null || this.LastPoint.Y!=null)
+        {
+            if (this.ChartCorssCursor)  //十字光标不画 
+            {
+                this.ChartCorssCursor.LastPoint=this.LastPoint;
+                this.ChartCorssCursor.CursorIndex=this.CursorIndex;
+            }
+        }
+
+        for(var i in this.TitlePaint)
+        {
+            var item=this.TitlePaint[i];
+            if (!item.IsDynamic) continue;
+
+            item.CursorIndex=this.CursorIndex;
+            item.Draw();
+        }
+
+        for(var i in this.ExtendChartPaint) //动态扩展图形
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.IsDynamic && item.DrawAfterTitle===true && item.IsAnimation==false) item.Draw();
+        }
+
+        if (this.EnableAnimation)
+        {
+            for(var i in this.ExtendChartPaint)    //动画
+            {
+                var item=this.ExtendChartPaint[i];
+                if (item.IsAnimation===true) item.Draw();
+            }
+        }
+
+        for(var i in this.ChartDrawPicture)
+        {
+            var item=this.ChartDrawPicture[i];
+            item.Draw();
+        }
+
+        if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.Status!=10)
+        {
+            this.CurrentChartDrawPicture.Draw();
+        }
+
+        var dataURL=this.UIElement.toDataURL(format ? format:'image/png', 1.0);
+        console.log('[JSChartContainer::SaveToImage] data= ', dataURL);
+        return dataURL;
     }
 }
 

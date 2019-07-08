@@ -6,6 +6,7 @@ import webbrowser
 from umychart_complier_jscomplier import JSComplier, SymbolOption, HQ_DATA_TYPE
 from umychart_complier_jscomplier import ScriptIndexConsole, ScriptIndexItem, SymbolOption, RequestOption, HQ_DATA_TYPE, ArgumentItem
 from umychart_webtemplate import *
+from umychart_complier_pandas_help import JSComplierPandasHelper
 
 class TestCase :
     def __init__(self, code, option=SymbolOption()) :
@@ -279,7 +280,7 @@ def Test_ScriptIndexConsole():
         symbol='000001.sz',
         right=1, # 复权 0 不复权 1 前复权 2 后复权
         period=0, # 周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
-        request=RequestOption(maxDataCount=500)
+        request=RequestOption(maxDataCount=500,maxMinuteDayCount=3)
         )
     result=indexConsole.ExecuteScript(option)
 
@@ -287,6 +288,9 @@ def Test_ScriptIndexConsole():
         return
 
     print('run successfully.')
+    JSComplierPandasHelper.ToDateTimeSeries(result) # 转化为pandas Series 数据格式
+    JSComplierPandasHelper.ToDataFrame(result)      # 转化为pandas DataFrame 数据格式
+
     jsonData=result.ToJson()
     varName='jsonData'  # 数据变量名字
     
