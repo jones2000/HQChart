@@ -8,16 +8,35 @@ HTML_PART1="""<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'ht
     <!-- 加载资源 -->
     <link rel='stylesheet' href='hqchart/umychart.resource/css/tools.css' />
     <link rel='stylesheet' href='hqchart/umychart.resource/font/iconfont.css' />
+    <link rel="stylesheet" href="hqchart/umychart.resource/css/python_demo.css" />
 </head>  
 <body>
-    <div id='kline' style='width: 900px;height:400px;position: relative;'></div>
 
     <script src='hqchart/umychart.resource/js/jquery.min.js'></script>
     <script src='hqchart/umychart.resource/js/webfont.js'></script>
+    <script src="hqchart/umychart.resource/js/python_demo.js"></script>
     <script src='hqchart/umychart.js'></script>             <!-- K线图形 -->
     <script src='hqchart/umychart.complier.js'></script>    <!-- 麦语言解析执行器 -->
     <script src='hqchart/umychart.index.data.js'></script>  <!-- 基础指标库 -->
     <script src='hqchart/umychart.style.js'></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <div class="tabNav" id='demoTabNav'>
+        <p class='active' data-index='0'>k线图</p>
+        <p data-index='1'>数据</p>
+    </div>
+    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+    <div id='divDataWrap'>
+        <div class='headerWrap'>
+            <table>
+                <thead></thead>
+            </table>
+        </div>
+        <div class="bodyWrap">
+            <table>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
     
     <script>
 
@@ -86,12 +105,13 @@ HTML_PART1="""<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'ht
 
             this.OnSize=function()  //自适应大小调整
             {
-                var height= $(window).height();
+                var height = $(window).height();
                 var width = $(window).width();
-                this.DivKLine.style.top='px';
-                this.DivKLine.style.left='px';
-                this.DivKLine.style.width=width+'px';
-                this.DivKLine.style.height=height+'px';
+                var klineHeight = height - $('#demoTabNav').outerHeight(true);
+                this.DivKLine.style.top = 'px';
+                this.DivKLine.style.left = 'px';
+                this.DivKLine.style.width = width + 'px';
+                this.DivKLine.style.height = klineHeight + 'px';
                 this.Chart.OnSize();
             }
         }

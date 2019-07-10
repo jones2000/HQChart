@@ -1615,7 +1615,7 @@ function JSAlgorithm(errorHandler,symbolData)
 
                 if (i<data.length && i<data2.length)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=data[i]+data2[i];
+                    if ( this.IsNumber(data[i]) && this.IsNumber(data2[i]) ) result[i]=data[i]+data2[i];
                 }
             }
 
@@ -1639,7 +1639,7 @@ function JSAlgorithm(errorHandler,symbolData)
         for(let i in aryData)
         {
             result[i]=null;
-            if (!isNaN(aryData[i]) && !isNaN(value)) result[i]=value+aryData[i];
+            if (this.IsNumber(aryData[i]) && this.IsNumber(value)) result[i]=value+aryData[i];
         }
 
         return result;
@@ -1665,7 +1665,7 @@ function JSAlgorithm(errorHandler,symbolData)
 
                 if (i<data.length && i<data2.length)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=data[i]-data2[i];
+                    if ( this.IsNumber(data[i]) &&  this.IsNumber(data2[i]) ) result[i]=data[i]-data2[i];
                 }
             }
 
@@ -1677,7 +1677,7 @@ function JSAlgorithm(errorHandler,symbolData)
             for(let i in data2)
             {
                 result[i]=null;
-                if (!isNaN(data) && !isNaN(data2[i])) result[i]=data-data2[i];
+                if (this.IsNumber(data) && this.IsNumber(data2[i])) result[i]=data-data2[i];
             }
         }
         else            //数组-单数据
@@ -1685,7 +1685,7 @@ function JSAlgorithm(errorHandler,symbolData)
             for(let i in data)
             {
                 result[i]=null;
-                if (!isNaN(data[i]) && !isNaN(data2)) result[i]=data[i]-data2;
+                if (this.IsNumber(data[i]) && this.IsNumber(data2)) result[i]=data[i]-data2;
             }
         }
 
@@ -1712,7 +1712,7 @@ function JSAlgorithm(errorHandler,symbolData)
 
                 if (i<data.length && i<data2.length)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=data[i]*data2[i];
+                    if ( this.IsNumber(data[i]) && this.IsNumber(data2[i]) ) result[i]=data[i]*data2[i];
                 }
             }
 
@@ -1736,7 +1736,7 @@ function JSAlgorithm(errorHandler,symbolData)
         for(let i in aryData)
         {
             result[i]=null;
-            if (!isNaN(aryData[i]) && !isNaN(value)) result[i]=value*aryData[i];
+            if (this.IsNumber(aryData[i]) && this.IsNumber(value)) result[i]=value*aryData[i];
         }
 
         return result;
@@ -5582,6 +5582,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.Period=0;              //周期
     this.Right=0;               //复权
     this.DataType=0;            //默认K线数据 2=分钟走势图数据 3=多日分钟走势图
+    this.IsBeforeData=false;    //当日走势图数据是否包含开盘前数据
 
     this.KLineApiUrl= g_JSComplierResource.Domain+"/API/KLine2";                   //日线
     this.MinuteKLineApiUrl= g_JSComplierResource.Domain+'/API/KLine3';             //分钟K线
@@ -5631,6 +5632,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.KLineApiUrl) this.KLineApiUrl=option.KLineApiUrl;
         if (option.Right) this.Right=option.Right;
         if (option.Period) this.Period=option.Period;
+        if (option.IsBeforeData===true) this.IsBeforeData=option.IsBeforeData
     }
 
     this.RecvError=function(request)
@@ -5997,21 +5999,44 @@ function JSSymbolData(ast,option,jsExecute)
         if (!minuteData.time || !minuteData.up || !minuteData.down) return;
         var upData=[],downData=[];
 
-        for(var i=0, j=0;i<this.Data.Data.length;++i)
+        if (this.IsBeforeData)
         {
-            upData[i]=null;
-            downData[i]=null;
-            var item=this.Data.Data[i];
-            var dateTime=item.DateTime; //日期加时间
-            if (!dateTime) continue;
-            var aryValue=dateTime.split(' ');
-            if (aryValue.length!=2) continue;
-            var date=parseInt(aryValue[0]);
-            if (date!=data.date) continue;
+            for(var i=0, j=0;i<this.Data.Data.length;++i)
+            {
+                upData[i]=null;
+                downData[i]=null;
+                var item=this.Data.Data[i];
+                if (item.Before) continue;  //盘前数据
+                var dateTime=item.DateTime; //日期加时间
+                if (!dateTime) continue;
+                var aryValue=dateTime.split(' ');
+                if (aryValue.length!=2) continue;
+                var date=parseInt(aryValue[0]);
+                if (date!=data.date) continue;MA(CLOSE,N2)
 
-            upData[i]=minuteData.up[j];
-            downData[i]=minuteData.down[j];
-            ++j;
+                upData[i]=minuteData.up[j];
+                downData[i]=minuteData.down[j];
+                ++j;
+            }
+        }
+        else
+        {
+            for(var i=0, j=0;i<this.Data.Data.length;++i)
+            {
+                upData[i]=null;
+                downData[i]=null;
+                var item=this.Data.Data[i];
+                var dateTime=item.DateTime; //日期加时间
+                if (!dateTime) continue;
+                var aryValue=dateTime.split(' ');
+                if (aryValue.length!=2) continue;
+                var date=parseInt(aryValue[0]);
+                if (date!=data.date) continue;
+
+                upData[i]=minuteData.up[j];
+                downData[i]=minuteData.down[j];
+                ++j;
+            }
         }
 
         this.ExtendData.set(key.UpKey,upData);
@@ -6847,16 +6872,50 @@ function JSSymbolData(ast,option,jsExecute)
     this.RecvMinuteHKToSHSZData=function(data,jobID)
     {
         var arySHSZData=[], arySHData=[], arySZData=[];
-        for(var i=0;i<data.time.length;++i)
+        if (this.IsBeforeData)
         {
-            var time=data.time[i];
-            var SHValue=data.hk2sh[i];
-            var SZValue=data.hk2sz[i];
-            var total=SHValue+SZValue;
+            for( i in this.SourceData.Data)
+            {
+                var item=this.SourceData.Data[i];
+                if (item.Before)
+                {
+                    arySHSZData.push(null);
+                    arySHData.push(null);
+                    arySZData.push(null);
+                }
+                else
+                {
+                    break;
+                }
+            }
 
-            arySHSZData.push(total);
-            arySHData.push(SHValue);
-            arySZData.push(SZValue);
+            for(var i=0;i<data.time.length;++i)
+            {
+                var time=data.time[i];
+                if (time===925) continue;
+
+                var SHValue=data.hk2sh[i];
+                var SZValue=data.hk2sz[i];
+                var total=SHValue+SZValue;
+    
+                arySHSZData.push(total);
+                arySHData.push(SHValue);
+                arySZData.push(SZValue);
+            }
+        }
+        else
+        {
+            for(var i=0;i<data.time.length;++i)
+            {
+                var time=data.time[i];
+                var SHValue=data.hk2sh[i];
+                var SZValue=data.hk2sz[i];
+                var total=SHValue+SZValue;
+    
+                arySHSZData.push(total);
+                arySHData.push(SHValue);
+                arySZData.push(SZValue);
+            }
         }
 
         var allData=
@@ -8515,7 +8574,8 @@ function ScriptIndex(name,script,args,option)
             MaxRequestDataCount:hqChart.MaxReqeustDataCount,
             MaxRequestMinuteDayCount:hqChart.MaxRequestMinuteDayCount,
             Arguments:this.Arguments,
-            Condition:this.Condition
+            Condition:this.Condition,
+            IsBeforeData:hqChart.IsBeforeData
         };
 
         if (hqDataType===3) option.TrateDate=hqChart.TradeDate;

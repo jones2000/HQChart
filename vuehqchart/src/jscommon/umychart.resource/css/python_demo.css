@@ -1,0 +1,12 @@
+/*python_demo.html 样式*/
+html,body {font: 14px 'Microsoft Yahei';}
+.tabNav {border: 1px solid #ccc; font-size: 14px; margin-top: 10px; margin-left: 20px; display: inline-block;}
+.tabNav p{display: inline-block; padding: 3px 25px; border-right: 1px solid #ccc;}
+.tabNav p:last-child {border-right: none;}
+.tabNav p.active {color: blue;}
+#kline {display: block; overflow: hidden;}
+#divDataWrap {display: none; overflow: hidden; padding: 10px 20px;}
+#divDataWrap table {width: 100%; border-collapse: collapse; border-spacing: 0;}
+#divDataWrap td {line-height: 22px; border: 1px solid #ccc; width: 300px; padding: 0 10px;}
+#divDataWrap tr>td:last-child {width: auto;}
+#divDataWrap .bodyWrap {overflow-y: auto; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc; margin-top: -1px; padding-top: -1px;}

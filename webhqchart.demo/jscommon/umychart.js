@@ -382,6 +382,7 @@ function JSChart(divElement)
             if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
             if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
         }
+
         this.AdjustChartBorder(chart);
 
         if (option.Frame)
@@ -407,6 +408,7 @@ function JSChart(divElement)
         }
 
         if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
+        if (option.IsShowBeforeData===true) chart.IsShowBeforeData=option.IsShowBeforeData;
 
         //分钟数据指标从第3个指标窗口设置
         let scriptData = new JSIndexScript();
@@ -3123,14 +3125,31 @@ function MinuteFrame()
     delete this.newMethod;
 
     this.MinuteCount=243;   //每天的分钟个数
+    this.IsBeforeData=false;    //是否显示集合竞价
+    this.BeforeBGColor=g_JSChartResource.Minute.BeforeBGColor;  //集合竞价背景
 
     this.DrawFrame=function()
     {
         this.SplitXYCoordinate();
 
+        if (this.IsBeforeData) this.DrawBeforeDataBG();
         this.DrawTitleBG();
         this.DrawHorizontal();
         this.DrawVertical();
+    }
+
+    //画集合竞价背景
+    this.DrawBeforeDataBG=function()
+    {
+        var left=ToFixedPoint(this.ChartBorder.GetLeft());
+        var top=ToFixedPoint(this.ChartBorder.GetTopEx());
+        var right=this.GetXFromIndex(14);
+        var bottom=ToFixedPoint(this.ChartBorder.GetBottom());
+        var width=right-left;
+        var height=bottom-top;
+
+        this.Canvas.fillStyle=this.BeforeBGColor;
+        this.Canvas.fillRect(left,top,width,height);
     }
 
     //分割x,y轴坐标信息
@@ -6986,17 +7005,31 @@ function ChartMinuteVolumBar()
         var xPointCount=this.ChartFrame.XPointCount;
         var yBottom=this.ChartFrame.GetYFromData(0);
         var yPrice=this.YClose; //上一分钟的价格
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        var data=this.Data;
+        for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
         {
-            var item = this.Data.Data[i];
-            if (!item || !item.Vol) continue;
+            var item = data.Data[i];
+            var vol=null;
+            if (!item) continue;
+            var price=null;
+            if (item.Before) 
+            {
+                vol=item.Before.Vol;
+                price=item.Before.Close;
+            }
+            else 
+            {
+                vol=item.Vol;
+                price=item.Close;
+            }
+            if (!vol) continue;
 
-            var y=this.ChartFrame.GetYFromData(item.Vol);
+            var y=this.ChartFrame.GetYFromData(vol);
             var x=this.ChartFrame.GetXFromIndex(i);
             if (x>chartright) break;
 
             //价格>=上一分钟价格 红色 否则绿色
-            this.Canvas.strokeStyle = item.Close >= yPrice ? this.UpColor:this.DownColor;
+            this.Canvas.strokeStyle = price >= yPrice ? this.UpColor:this.DownColor;
             this.Canvas.beginPath();
             if (isHScreen)
             {
@@ -7009,7 +7042,7 @@ function ChartMinuteVolumBar()
                 this.Canvas.lineTo(ToFixedPoint(x),yBottom);
             }
             this.Canvas.stroke();
-            yPrice=item.Close;
+            if (price) yPrice=price;
         }
     }
 
@@ -8235,6 +8268,7 @@ function ChartMinutePriceLine()
     this.YClose;
     this.IsDrawArea=true;    //是否画价格面积图
     this.AreaColor='rgba(0,191,255,0.1)';
+    this.SourceData;
 
     this.Draw=function()
     {
@@ -8253,13 +8287,30 @@ function ChartMinutePriceLine()
         var minuteCount=this.ChartFrame.MinuteCount;
         var bottom=this.ChartBorder.GetBottomEx();
         var left=this.ChartBorder.GetLeftEx();
+        var data=this.Data;
+        var isBeforeData=false;
+        if (this.SourceData) 
+        {
+            data=this.SourceData;
+            isBeforeData=true;
+        }
 
         var bFirstPoint=true;
         var ptFirst={}; //第1个点
         var drawCount=0;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
         {
-            var value=this.Data.Data[i];
+            var value=null;
+            if (isBeforeData)
+            {
+                var item=data.Data[i];
+                if (item.Before) value=item.Before.Close;
+                else value=item.Close;
+            }
+            else
+            {
+                value=data.Data[i];
+            }
             if (value==null) continue;
 
             var x=this.ChartFrame.GetXFromIndex(j);
@@ -8334,9 +8385,27 @@ function ChartMinutePriceLine()
 
         range.Min=this.YClose;
         range.Max=this.YClose;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        var data=this.Data;
+        var isBeforeData=false;
+        if (this.SourceData) 
         {
-            var value=this.Data.Data[i];
+            data=this.SourceData;
+            isBeforeData=true;
+        }
+
+        for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=null;
+            if (isBeforeData)
+            {
+                var item=data.Data[i];
+                if (item.Before) value=item.Before.Close;
+                else value=item.Close;
+            }
+            else
+            {
+                value=data.Data[i];
+            }
             if (value==null) continue;
 
             if (range.Max==null) range.Max=value;
@@ -11600,6 +11669,7 @@ function FrameSplitMinutePriceY()
     this.YClose;                        //昨收
     this.Data;                          //分钟数据
     this.AverageData;                   //分钟均线数据
+    this.SourceData;                    //原始数据
     this.OverlayChartPaint;
     this.SplitCount=7;
     this.Symbol;
@@ -11611,12 +11681,30 @@ function FrameSplitMinutePriceY()
 
         var max=this.YClose;
         var min=this.YClose;
-
-        for(var i in this.Data.Data)
+        var data=this.Data;
+        var isBerforeData=false;
+        if (this.SourceData)
         {
-            if (this.Data.Data[i]==null) continue;
-            if (max<this.Data.Data[i]) max=this.Data.Data[i];
-            if (min>this.Data.Data[i]) min=this.Data.Data[i];
+            data=this.SourceData;
+            isBerforeData=true;
+        }
+
+        for(var i in data.Data)
+        {
+            var value=null;
+            if (isBerforeData)
+            {
+                var item=data.Data[i];
+                if (item.Before) value=item.Before.Close;
+                else value=item.Close;
+            }
+            else
+            {
+                value=data.Data[i];
+            }
+            if (value==null) continue;
+            if (max<value) max=value;
+            if (min>value) min=value;
         }
 
         if (this.AverageData)
@@ -11697,6 +11785,7 @@ function FrameSplitMinuteX()
     this.Symbol=null;                   //股票代码 x轴刻度根据股票类型来调整
     this.DayCount=1;
     this.ShowDateFormate=1;             //0=YYYY-MM-DD  1=MM-DD
+    this.IsBeforeData=false;            //是否显示盘前数据
 
     this.Operator=function()
     {
@@ -11719,10 +11808,17 @@ function FrameSplitMinuteX()
         
         if (this.DayCount<=1)
         {
+            var beforeDataCount=14;
+            if (this.IsBeforeData) //增加盘前的数据个数
+            {
+                this.Frame.XPointCount=minuteCount+beforeDataCount;
+                this.Frame.MinuteCount=minuteCount+beforeDataCount;
+            }
             for(var i in xcoordinate)
             {
                 var info=new CoordinateInfo();
                 info.Value=xcoordinate[i][0];
+                if (this.IsBeforeData) info.Value+=beforeDataCount;
                 if (this.ShowText)
                     info.Message[0]=xcoordinate[i][3];
                 this.Frame.VerticalInfo[i]=info;
@@ -12249,6 +12345,7 @@ function HQMinuteTimeStringFormat()
 
     this.Frame;
     this.Symbol;
+    this.IsBeforeData=false;    //是否显示盘前数据
 
     this.Operator=function()
     {
@@ -12262,6 +12359,17 @@ function HQMinuteTimeStringFormat()
         var timeStringData=g_MinuteTimeStringData;
         var timeData=timeStringData.GetTimeData(this.Symbol);
         if (!timeData) return false;
+
+        if (this.IsBeforeData)  //增加盘前数据时间刻度
+        {
+            var allTimeData=[915,916,917,918,919,920,921,922,923,924,925,926,927,928,929]
+            for(i in timeData)
+            {
+                if (timeData[i]==925) continue;
+                allTimeData.push(timeData[i])
+            }
+            timeData=allTimeData;
+        }
 
         if (showIndex<0) showIndex=0;
         else if (showIndex>timeData.length) showIndex=timeData.length-1;
@@ -12777,17 +12885,29 @@ function DynamicMinuteTitlePainting()
         var text=IFrameSplitOperator.FormatDateTimeString(item.DateTime,this.IsShowDate);
         if (!this.DrawText(text,this.UnchagneColor,position)) return;
 
-        if (item.Close)
+        var close=item.Close;
+        var increase=item.Increase;
+        var vol=item.Vol;
+        var amount=item.Amount;
+        if (item.Before)    //读取盘前数据
         {
-            var color=this.GetColor(item.Close,this.YClose);
-            var text="价:"+item.Close.toFixed(defaultfloatPrecision);
+            close=item.Before.Close;
+            increase=item.Before.Increase;
+            vol=item.Before.Vol;
+            amount=item.Before.Amount;
+        }
+
+        if (close)
+        {
+            var color=this.GetColor(close,this.YClose);
+            var text="价:"+close.toFixed(defaultfloatPrecision);
             if (!this.DrawText(text,color,position)) return;
         }
 
-        if (item.Increase!=null)
+        if (increase!=null)
         {
-            var color=this.GetColor(item.Increase,0);
-            var text="幅:"+item.Increase.toFixed(2)+'%';
+            var color=this.GetColor(increase,0);
+            var text="幅:"+increase.toFixed(2)+'%';
             if (!this.DrawText(text,color,position)) return;
         }
 
@@ -12798,11 +12918,12 @@ function DynamicMinuteTitlePainting()
             if (!this.DrawText(text,color,position)) return;
         }
 
-        var text="量:"+IFrameSplitOperator.FormatValueString(item.Vol,2);
+        var text="量:"+IFrameSplitOperator.FormatValueString(vol,2);
         if (!this.DrawText(text,this.VolColor,position)) return;
 
-        var text="额:"+IFrameSplitOperator.FormatValueString(item.Amount,2);
+        var text="额:"+IFrameSplitOperator.FormatValueString(amount,2);
         if (!this.DrawText(text,this.AmountColor,position)) return;
+        
 
         //叠加股票的名字
         if (this.OverlayChartPaint && this.OverlayChartPaint[0] && this.OverlayChartPaint[0].Symbol && this.OverlayChartPaint[0].Title)
@@ -15899,6 +16020,7 @@ function JSChartResource()
     this.Minute.PriceColor="rgb(50,171,205)";
     this.Minute.AreaPriceColor='rgba(50,171,205,0.1)';  //价格的面积图
     this.Minute.AvPriceColor="rgb(238,127,9)";
+    this.Minute.BeforeBGColor='rgba(240,240,240,0.7)';  //分钟 集合竞价背景
 
     this.DefaultTextColor="rgb(43,54,69)";
     this.DefaultTextFont=14*GetDevicePixelRatio() +'px 微软雅黑';
@@ -19609,6 +19731,10 @@ function MinuteChartContainer(uielement)
     this.DayCount=1;                          //显示几天的数据
     this.DayData;                             //多日分钟数据
 
+    this.IsShowBeforeData=false;              //是否显示盘前数据 (当日)
+    this.BeforeData=null;                     //盘前数据
+    this.IsBeforeData=false;                      //是否支持显示盘前数据
+
     this.MinuteApiUrl=g_JSChartResource.Domain+"/API/Stock";
     this.HistoryMinuteApiUrl=g_JSChartResource.Domain+'/API/StockMinuteData';  //历史分钟数据
 
@@ -19755,12 +19881,15 @@ function MinuteChartContainer(uielement)
 
         var index=this.CursorIndex;
         index=parseInt(index.toFixed(0));
-        var data=this.Frame.Data;
+        var data=this.Frame.SourceData;
         if (data.DataOffset+index>=data.Data.length)
         {
             return;
         }
-        var close=data.Data[data.DataOffset+index];
+        var item=data.Data[data.DataOffset+index];
+        var close=null;
+        if (item.Before) close=item.Before.Close;
+        else close=item.Close
 
         this.LastPoint.Y=this.Frame.GetYFromData(close);
     }
@@ -20023,6 +20152,14 @@ function MinuteChartContainer(uielement)
         this.Draw();
     }
 
+    this.ShowBeforeData=function(isShow)
+    {
+        if (this.IsShowBeforeData==isShow) return;
+
+        this.IsShowBeforeData=isShow;
+        this.RequestData();
+    }
+
     this.RequestData=function()
     {
         if (this.DayCount<=1) this.RequestMinuteData();               
@@ -20095,11 +20232,13 @@ function MinuteChartContainer(uielement)
             item.Frame.XSplitOperator.DayCount=this.DayData.length;
             item.Frame.XSplitOperator.DayData=this.DayData;
             item.Frame.XSplitOperator.Operator();   //调整X轴个数
+            item.Frame.XSplitOperator.IsBeforeData=this.IsBeforeData;
             item.Frame.YSplitOperator.Symbol=this.Symbol;
         }
 
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
         this.ChartCorssCursor.StringFormatX.Symbol=this.Symbol;
+        this.ChartCorssCursor.StringFormatX.IsBeforeData=this.IsBeforeData;
         this.TitlePaint[0].IsShowDate=true;
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
@@ -20154,6 +20293,14 @@ function MinuteChartContainer(uielement)
             fields.push("yclearing");
         }
 
+        //  盘前数据(A股)
+        this.IsBeforeData=false;
+        if (this.IsShowBeforeData && this.DayCount===1 && MARKET_SUFFIX_NAME.IsSHSZStockA(self.Symbol)) 
+        {
+            this.IsBeforeData=true;
+            fields.push('before');
+        }
+        
         $.ajax({
             url: self.MinuteApiUrl,
             data:
@@ -20174,7 +20321,10 @@ function MinuteChartContainer(uielement)
 
     this.RecvMinuteData=function(data)
     {
-        var aryMinuteData=MinuteChartContainer.JsonDataToMinuteData(data);
+        if (this.IsBeforeData) 
+            var aryMinuteData=MinuteChartContainer.JsonDataToMinuteData2(data);
+        else
+            var aryMinuteData=MinuteChartContainer.JsonDataToMinuteData(data);
 
         if (this.DayCount>1)    //多日走势图
         {
@@ -20216,11 +20366,14 @@ function MinuteChartContainer(uielement)
             item.Frame.XSplitOperator.Symbol=this.Symbol;
             item.Frame.XSplitOperator.DayCount=1;
             item.Frame.XSplitOperator.Operator();   //调整X轴个数
+            item.Frame.XSplitOperator.IsBeforeData=this.IsBeforeData;
             item.Frame.YSplitOperator.Symbol=this.Symbol;
+            item.Frame.IsBeforeData=this.IsBeforeData;
         }
 
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
         this.ChartCorssCursor.StringFormatX.Symbol=this.Symbol;
+        this.ChartCorssCursor.StringFormatX.IsBeforeData=this.IsBeforeData;
         this.TitlePaint[0].IsShowDate=false;
 
         this.RequestOverlayMinuteData();//请求叠加数据 (主数据下载完再下载))
@@ -20395,7 +20548,7 @@ function MinuteChartContainer(uielement)
         if(time>1540) return ;
 
         var frequency=this.AutoUpdateFrequency;
-        if(time <930){
+        if(time <915){
             setTimeout(function(){
                 self.AutoUpdate();
             },frequency);
@@ -20433,10 +20586,12 @@ function MinuteChartContainer(uielement)
         this.ChartPaint[0].Data=bindData;
         this.ChartPaint[0].YClose=yClose;
         this.ChartPaint[0].NotSupportMessage=null;
+        this.ChartPaint[0].SourceData=this.IsBeforeData ? minuteData:null;
        
         this.Frame.SubFrame[0].Frame.YSplitOperator.YClose=yClose;
         this.Frame.SubFrame[0].Frame.YSplitOperator.Data=bindData;
         this.Frame.Data=this.ChartPaint[0].Data;
+        this.Frame.SourceData=minuteData;
 
         //均线
         bindData=new ChartData();
@@ -20444,6 +20599,7 @@ function MinuteChartContainer(uielement)
         this.ChartPaint[1].Data=bindData;
 
         this.Frame.SubFrame[0].Frame.YSplitOperator.AverageData=bindData;
+        this.Frame.SubFrame[0].Frame.YSplitOperator.SourceData=this.IsBeforeData ? minuteData:null;
         this.Frame.SubFrame[0].Frame.YSplitOperator.OverlayChartPaint=this.OverlayChartPaint;
 
         //成交量
@@ -20526,8 +20682,67 @@ function MinuteChartContainer(uielement)
     }
 }
 
+// 分钟走势图数据 带盘前数据
+MinuteChartContainer.JsonDataToMinuteData2=function(data)
+{
+    var symbol=data.stock[0].symbol;
+    var preClose=data.stock[0].yclose;      //前一个数据价格
+    var preAvPrice=data.stock[0].yclose;    //前一个均价
+    var yClose=data.stock[0].yclose;
+    var aryMinuteData=[];
+    var stockData=data.stock[0];
+    var date=stockData.date;    //日期
+    for(var i in stockData.before)
+    {
+        var item=new MinuteData();
+        var jsData=stockData.before[i];
+        var time=jsData[0];
+        item.Before={};
+        item.Before.Close=jsData[1];
+        if (!item.Before.Close) item.Before.Close=preClose;
+        else preClose=item.Before.Close;
+        item.Before.Vol=jsData[2]/100;  //沪深股票原始单位股
+        item.Before.Amount=jsData[3];   
+        item.DateTime=date.toString()+" "+time.toString();
+        if (yClose && item.Before.Close) 
+            item.Before.Increase=(item.Before.Close-yClose)/yClose*100; //涨幅 (最新价格-昨收)/昨收*100;
+        aryMinuteData.push(item);
+    }
+
+    for(var i in stockData.minute)
+    {
+        var jsData=stockData.minute[i];
+        var item=new MinuteData();
+        if (jsData.price) preClose=jsData.price;
+        if (jsData.avprice) preAvPrice=jsData.avprice;
+        if (jsData.time==925) continue;   //去掉9：25的数据
+
+        item.Close=jsData.price;
+        item.Open=jsData.open;
+        item.High=jsData.high;
+        item.Low=jsData.low;
+        item.Amount=jsData.amount;
+        item.Vol=jsData.vol/100;        //沪深股票原始单位股
+        item.DateTime=data.stock[0].date.toString()+" "+jsData.time.toString();
+
+        item.Increase=jsData.increase;
+        item.Risefall=jsData.risefall;
+        item.AvPrice=jsData.avprice;
+
+        //当前没有价格 使用上一个价格填充
+        if (!item.Close) item.Open=item.High=item.Low=item.Close=preClose;
+        if (!item.AvPrice) item.AvPrice=preAvPrice;
+        if (yClose && item.Close) 
+            item.Increase=(item.Close-yClose)/yClose*100; //涨幅 (最新价格-昨收)/昨收*100;
+
+        aryMinuteData.push(item);
+    }
+
+    return aryMinuteData;
+}
+
 //API 返回数据 转化为array[]
-MinuteChartContainer.JsonDataToMinuteData=function(data)
+MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
 {
     var symbol=data.stock[0].symbol;
     var upperSymbol=symbol.toUpperCase();
@@ -20581,7 +20796,8 @@ MinuteChartContainer.JsonDataToMinuteData=function(data)
 
         if (isFutures) item.AvPrice=null;    //期货均价暂时没有
             
-        if (yClose && item.Close) item.Increase=(item.Close-yClose)/yClose*100; //涨幅 (最新价格-昨收)/昨收*100;
+        if (yClose && item.Close) 
+            item.Increase=(item.Close-yClose)/yClose*100; //涨幅 (最新价格-昨收)/昨收*100;
 
         aryMinuteData[i]=item;
     }
@@ -20820,7 +21036,7 @@ function HistoryMinuteChartContainer(uielement)
 //API 返回数据 转化为array[]
 HistoryMinuteChartContainer.JsonDataToMinuteData=function(data)
 {
-    var aryMinuteData=new Array();
+    var aryMinuteData=[];
     for(var i in data.minute.time)
     {
         var item=new MinuteData();
@@ -26441,6 +26657,12 @@ function MinuteRightMenu(divElement)
             }
         ];
 
+        var symbol=chart.Symbol;
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(symbol))
+        {
+            dataList.push({text:'集合竞价',children: this.GetShowBeforeData(chart)})
+        }
+
         var identify=event.data.FrameID;
         console.log('[MinuteRightMenu::DoModal]',identify);
         rightMenu.Show({
@@ -26533,6 +26755,34 @@ function MinuteRightMenu(divElement)
                 click: function (windowIndex) { chart.ChangeIndex(windowIndex, 'TRIX') }
             }
         ];
+
+        return data;
+    }
+
+    this.GetShowBeforeData=function(chart)  //是否显示集合竞价
+    {
+        if (chart.IsShowBeforeData)
+        {
+            var data=
+            [
+                {
+                    text: "隐藏",
+                    click: function () { chart.ShowBeforeData(false); },
+                    isBorder:true
+                }
+            ]   
+        }
+        else
+        {
+            var data=
+            [
+                {
+                    text: "显示",
+                    click: function () { chart.ShowBeforeData(true); },
+                    isBorder:true
+                }, 
+            ]
+        }
 
         return data;
     }
@@ -26969,6 +27219,28 @@ var MARKET_SUFFIX_NAME=
         else if (upperSymbol.indexOf('.CI')>0)  //自定义指数
         {
             return true;
+        }
+
+        return false;
+    },
+
+    IsSHSZStockA:function(symbol) //是否是沪深A股
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (this.IsSH(upperSymbol))
+        {
+            var temp=upperSymbol.replace('.SH','');
+            if (upperSymbol.charAt(0)=='6') return true;
+
+        }
+        else if (this.IsSZ(upperSymbol))
+        {
+            if (upperSymbol.charAt(0)=='0')
+            {
+                if (upperSymbol.charAt(1)=='0' && upperSymbol.charAt(1)=='2') return true;  //002 中小板
+                if (upperSymbol.charAt(1)!='7' && upperSymbol.charAt(1)!='8') return true;
+            } 
         }
 
         return false;
