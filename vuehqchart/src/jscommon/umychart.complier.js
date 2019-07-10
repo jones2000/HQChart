@@ -6012,7 +6012,7 @@ function JSSymbolData(ast,option,jsExecute)
                 var aryValue=dateTime.split(' ');
                 if (aryValue.length!=2) continue;
                 var date=parseInt(aryValue[0]);
-                if (date!=data.date) continue;MA(CLOSE,N2)
+                if (date!=data.date) continue;
 
                 upData[i]=minuteData.up[j];
                 downData[i]=minuteData.down[j];
