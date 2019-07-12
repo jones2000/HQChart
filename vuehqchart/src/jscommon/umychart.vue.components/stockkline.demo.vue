@@ -6,6 +6,7 @@
                 <a class="item" v-for='(navItem,idx) in PeriodBar.Menu' :key='idx' :class='PeriodBar.Selected == idx ? "active":""'
                     href="javascript:;" @click='OnClickPeriodMenu(idx,$event)'>{{navItem}}</a>
             </div>
+            <div class="catchImg" @click='GetChartImg'>照相</div>
         </div>
 
         <!--  图形操作工具条  !-->
@@ -65,6 +66,19 @@
         <div class="indexbar" v-show='KLine.IsShow' ref='klineindexbar'>
             <span v-for='(item,index) in KLine.IndexBar.Menu' :key='index' :class='{active:KLine.IndexBar.Selected.indexOf(index)>=0}'
                 @click="OnClickIndexBar('kline',item,index)">{{item}}</span>
+        </div>
+        <!-- 图片保存对话框 -->
+        <div class="dialogMask" v-show='ShowDialog'>
+            <div class="dialogWrap">
+                <div class="titleWrap">
+                    <div class="titleText">图片url</div>
+                    <div class="closeBtn" @click='HideImageLoadDialog'><i class='iconfont icon-close'></i></div>
+                </div>
+                <div class="contentWrap">
+                    <div class="inputBox"><input id='imageLoadInput' type="text" v-model='ImageLodeUrl'><button class="copyBtn" @click='CopyUrl' type="button">复制</button></div>
+                </div>
+                <div class="btnWrap"><button class='okBtn' @click='SaveImage' type="button">保存图片</button></div>
+            </div>
         </div>
 
     </div>
@@ -377,6 +391,8 @@ export default
     {
         let data=
         { 
+            ImageLodeUrl:'',
+            ShowDialog:false,
             Symbol:'600000.sh',
             ID:JSCommon.JSChart.CreateGuid(),
             topheight: 0,
@@ -493,6 +509,14 @@ export default
 
     methods:
     {
+        CopyUrl(){
+            var input = document.getElementById('imageLoadInput');
+            input.select(); // 选中文本
+            if(document.execCommand) document.execCommand("copy"); // 执行浏览器复制命令
+        },
+        SaveImage(){
+            window.open(this.ImageLodeUrl);
+        },
         ChartStausCallback(event,data,jSChartContainer){
             var smallBtn = this.$refs.smallBtn;
             var bigBtn = this.$refs.bigBtn;
@@ -528,6 +552,53 @@ export default
                     this.StatusBtn.SmallDisabled = false;
                 }
             }
+        },
+        GetChartImg(){  //获得chart的base64图片
+            var img64 = '';
+            var chart = null;
+            if(this.Minute.IsShow && this.Minute.JSChart){
+                chart = this.Minute.JSChart;
+            }else if(this.KLine.IsShow && this.KLine.JSChart){
+                chart = this.KLine.JSChart;
+            }
+            img64 = chart.SaveToImage();
+            // console.log('StockLine::GetChartImg',img64);
+            this.QueryImgLoadUrl(img64);
+        },
+        QueryImgLoadUrl(img64){
+            var queryStr = {
+                "Base64": img64,
+                "BucketName": "downloadcache",
+                "Path": "hqchart/hq_snapshot"
+            };
+            var apiUrl ='//opensource.zealink.com/API/FileUploadForBase64';
+            this.QueryApiData(apiUrl,queryStr,this.RecvImgLoadUrl);
+        },
+        RecvImgLoadUrl(res){
+            console.log('RecvImgLoadUrl:',res);
+            var url = res.url;
+            this.ImageLodeUrl = url;
+            this.ShowImageLoadDialog();  //显示对话框
+        },
+        ShowImageLoadDialog(){
+            this.ShowDialog = true;
+        },
+        HideImageLoadDialog(){
+            this.ShowDialog = false;
+        },
+        QueryApiData(apiUrl,queryStr,callback) {  //股东人数与股价比较
+            $.ajax({
+                url: apiUrl,
+                method: "POST",
+                dataType: "json",
+                data: queryStr,
+                success: function (data) {
+                    callback(data);
+                },
+                error: function (request) {
+                    console.log(request, "error msg");
+                }
+            });
         },
         OnSize:function()
         {
@@ -1202,6 +1273,97 @@ a
         bottom: 0;
     }
 
+    .dialogMask{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+
+        .dialogWrap{
+            width: 320px;
+            height: 220px;
+            border-radius: 3px;
+            background-color: #fff;
+
+            .titleWrap{
+                height: 45px;
+                padding: 10px 20px;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+
+                .titleText{
+                    height: 25px;
+                    line-height: 25px;
+                }
+
+                .closeBtn{
+                    height: 25px;
+                    line-height: 25px;
+                    cursor: pointer;
+                }
+            }
+
+            .contentWrap{
+                padding: 38px 20px;
+
+                .inputBox{
+                    width: 100%;
+                    height: 28px;
+                    line-height: 28px;
+                    border: 1px solid #ededed;
+                    display: flex;
+                    flex-direction: row;
+
+                    input{
+                        flex-grow: 3;
+                        padding: 0 10px;
+                        border: none;
+                        outline: none;
+                    }
+
+                    .copyBtn{
+                        flex-grow: 1;
+                        border: 1px solid #217cd9;
+                        text-align: center;
+                        line-height: 28px;
+                        background: transparent;
+                        outline: none;
+                    }
+                }
+            }
+
+            .btnWrap{
+                height: 30px;
+                padding: 0 20px;
+                display: flex;
+                flex-direction: row;
+                justify-content: flex-end;
+
+                .okBtn{
+                    line-height: 30px;
+                    padding: 0 15px;
+                    background-color: #217cd9;
+                    border-radius: 3px;
+                    color: #fff;
+                    border: none;
+                    outline: none;
+                }
+                .okBtn:hover{
+                    background-color: #125fd9;
+                }
+            }
+        }
+    }
+
     .divchart{
         position: relative;
         .bottomToolForChart{
@@ -1266,11 +1428,22 @@ a
 /* 周期菜单 */
 .periodbar 
 {
+    position: relative;
     height: 36px;
+    width: 100%;
     background-color: #217cd9;
     padding-left: 36px;
     padding-right: 30px;
     overflow: hidden;
+    box-sizing: border-box;
+}
+
+.periodbar .catchImg {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #fff;
+    cursor: pointer;
 }
 
 .periodbar .item 
