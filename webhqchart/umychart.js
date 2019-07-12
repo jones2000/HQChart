@@ -903,6 +903,18 @@ function JSChart(divElement)
             this.JSChartContainer.SetMainDataConotrl(dataControl);
     }
 
+    this.AddOverlayIndex=function(windowIndex, indexName, identify)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.AddOverlayIndex)=='function') 
+            this.JSChartContainer.AddOverlayIndex(windowIndex, indexName,identify);
+    }
+
+    this.DeleteOverlayWindowsIndex=function(identify)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.DeleteOverlayWindowsIndex)=='function') 
+        this.JSChartContainer.DeleteOverlayWindowsIndex(identify);
+    }
+
     //设置强制横屏
     this.ForceLandscape=function(bForceLandscape)
     {
@@ -18694,7 +18706,7 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
-    this.AddOverlayIndex=function(windowIndex, indexName)
+    this.AddOverlayIndex=function(windowIndex, indexName,identify)
     {
         var overlay=this.CreateOverlayWindowsIndex(windowIndex, indexName);
         if (!overlay) return;
@@ -18707,7 +18719,7 @@ function KLineChartContainer(uielement)
     }
 
     //创建一个叠加指标
-    this.CreateOverlayWindowsIndex=function(windowIndex, indexName)
+    this.CreateOverlayWindowsIndex=function(windowIndex, indexName,identify)
     {
         let scriptData = new JSIndexScript();
         let indexInfo = scriptData.Get(indexName);  //系统指标
@@ -18724,6 +18736,7 @@ function KLineChartContainer(uielement)
         var subFrame=this.Frame.SubFrame[windowIndex];
         subFrame.Interval=this.OverlayIndexFrameWidth;
         var overlayFrame=new OverlayIndexItem();
+        if (identify) overlayFrame.Identify=identify;   //由外部指定id
         frame=new OverlayKLineFrame();
         frame.Canvas=this.Canvas;
         frame.MainFrame=subFrame.Frame;

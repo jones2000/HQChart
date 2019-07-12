@@ -6,7 +6,7 @@
                 <a class="item" v-for='(navItem,idx) in PeriodBar.Menu' :key='idx' :class='PeriodBar.Selected == idx ? "active":""'
                     href="javascript:;" @click='OnClickPeriodMenu(idx,$event)'>{{navItem}}</a>
             </div>
-            <div class="catchImg" @click='GetChartImg'>照相</div>
+            <div class="catchImg" @click='GetChartImg'><i class="iconfont icon-camera"></i></div>
         </div>
 
         <!--  图形操作工具条  !-->
@@ -72,7 +72,7 @@
             <div class="dialogWrap">
                 <div class="titleWrap">
                     <div class="titleText">图片url</div>
-                    <div class="closeBtn" @click='HideImageLoadDialog'><i class='iconfont icon-close'></i></div>
+                    <div class="closeBtnWrap" @click='HideImageLoadDialog'><i class='iconfont icon-close'></i></div>
                 </div>
                 <div class="contentWrap">
                     <div class="inputBox"><input id='imageLoadInput' type="text" v-model='ImageLodeUrl'><button class="copyBtn" @click='CopyUrl' type="button">复制</button></div>
@@ -393,6 +393,7 @@ export default
         { 
             ImageLodeUrl:'',
             ShowDialog:false,
+            ImageLoadDomain:'https://opensourcedownload.zealink.com',
             Symbol:'600000.sh',
             ID:JSCommon.JSChart.CreateGuid(),
             topheight: 0,
@@ -571,13 +572,13 @@ export default
                 "BucketName": "downloadcache",
                 "Path": "hqchart/hq_snapshot"
             };
-            var apiUrl ='//opensource.zealink.com/API/FileUploadForBase64';
+            var apiUrl ='https://opensource.zealink.com/API/FileUploadForBase64';
             this.QueryApiData(apiUrl,queryStr,this.RecvImgLoadUrl);
         },
         RecvImgLoadUrl(res){
             console.log('RecvImgLoadUrl:',res);
-            var url = res.url;
-            this.ImageLodeUrl = url;
+            var path = res.relativeurl;
+            this.ImageLodeUrl = this.ImageLoadDomain + '/' + path;
             this.ShowImageLoadDialog();  //显示对话框
         },
         ShowImageLoadDialog(){
@@ -1305,7 +1306,7 @@ a
                     line-height: 25px;
                 }
 
-                .closeBtn{
+                .Wrap{
                     height: 25px;
                     line-height: 25px;
                     cursor: pointer;
@@ -1440,10 +1441,15 @@ a
 
 .periodbar .catchImg {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 7px;
+    right: 20px;
     color: #fff;
     cursor: pointer;
+
+    i {
+        font-size: 20px;
+        color: #fff;
+    }
 }
 
 .periodbar .item 

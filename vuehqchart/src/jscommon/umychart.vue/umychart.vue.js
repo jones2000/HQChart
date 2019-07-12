@@ -3476,6 +3476,8 @@ function JSChart(divElement)
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
         }
         
+        //叠加指标宽度
+        if (option.OverlayIndexFrameWidth>40) chart.OverlayIndexFrameWidth=option.OverlayIndexFrameWidth;
         //叠加指标
         for (var i in option.OverlayIndex)
         {
@@ -4125,6 +4127,18 @@ function JSChart(divElement)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.SetMainDataConotrl)=='function') 
             this.JSChartContainer.SetMainDataConotrl(dataControl);
+    }
+
+    this.AddOverlayIndex=function(windowIndex, indexName, identify)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.AddOverlayIndex)=='function') 
+            this.JSChartContainer.AddOverlayIndex(windowIndex, indexName,identify);
+    }
+
+    this.DeleteOverlayWindowsIndex=function(identify)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.DeleteOverlayWindowsIndex)=='function') 
+        this.JSChartContainer.DeleteOverlayWindowsIndex(identify);
     }
 
     //设置强制横屏
@@ -7403,13 +7417,21 @@ function OverlayIndexItem()
     this.UpdateFrameMaxMin=function()   //调整坐标最大 最小值
     {
         var value={Max:null, Min:null}
-        for(var i in this.ChartPaint)
+        if (this.Frame.YSpecificMaxMin) //固定坐标
         {
-            var paint=this.ChartPaint[i];
-            var range=paint.GetMaxMin();
+            value.Max=this.Frame.YSpecificMaxMin.Max;
+            value.Min=this.Frame.YSpecificMaxMin.Min;
+        }
+        else
+        {
+            for(var i in this.ChartPaint)
+            {
+                var paint=this.ChartPaint[i];
+                var range=paint.GetMaxMin();
 
-            if (value.Max==null || value.Max<range.Max) value.Max=range.Max;
-            if (value.Min==null || value.Min>range.Min) value.Min=range.Min
+                if (value.Max==null || value.Max<range.Max) value.Max=range.Max;
+                if (value.Min==null || value.Min>range.Min) value.Min=range.Min
+            }
         }
 
         if (value.Max!=null && value.Min!=null)
@@ -20800,6 +20822,7 @@ function KLineChartContainer(uielement)
     this.ChartDrawStorageCache=null;    //首次需要创建的画图工具数据
 
     this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
+    this.OverlayIndexFrameWidth=55;             //叠加指标框架宽度
 
     //自动更新设置
     this.IsAutoUpdate=false;                    //是否自动更新行情数据
@@ -21909,7 +21932,7 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
-    this.AddOverlayIndex=function(windowIndex, indexName)
+    this.AddOverlayIndex=function(windowIndex, indexName,identify)
     {
         var overlay=this.CreateOverlayWindowsIndex(windowIndex, indexName);
         if (!overlay) return;
@@ -21922,18 +21945,24 @@ function KLineChartContainer(uielement)
     }
 
     //创建一个叠加指标
-    this.CreateOverlayWindowsIndex=function(windowIndex, indexName)
+    this.CreateOverlayWindowsIndex=function(windowIndex, indexName,identify)
     {
         let scriptData = new JSIndexScript();
-        let indexInfo = scriptData.Get(indexName);
+        let indexInfo = scriptData.Get(indexName);  //系统指标
         if (!indexInfo) 
         {
-            console.warn(`[KLineChartContainer::CreateOverlayIndex] can not find index[${indexName}]`);
-            return null;
+            var indexCustom=JSIndexMap.Get(indexName);  //定制指标
+            if (!indexCustom)
+            {
+                console.warn(`[KLineChartContainer::CreateOverlayIndex] can not find index[${indexName}]`);
+                return null;
+            }
         }
 
         var subFrame=this.Frame.SubFrame[windowIndex];
+        subFrame.Interval=this.OverlayIndexFrameWidth;
         var overlayFrame=new OverlayIndexItem();
+        if (identify) overlayFrame.Identify=identify;   //由外部指定id
         frame=new OverlayKLineFrame();
         frame.Canvas=this.Canvas;
         frame.MainFrame=subFrame.Frame;
@@ -21947,17 +21976,27 @@ function KLineChartContainer(uielement)
 
         overlayFrame.Frame=frame;
 
-        let indexData = 
-        { 
-            Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName , 
-            //扩展属性 可以是空
-            KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
-        };
+        if (indexInfo)
+        {
+            let indexData = 
+            { 
+                Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName , 
+                //扩展属性 可以是空
+                KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
+                FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
+            };
 
-        var scriptIndex=new OverlayScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
-        scriptIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame };    //叠加指标信息
-        overlayFrame.Script=scriptIndex;
+            var scriptIndex=new OverlayScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+            scriptIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame };    //叠加指标信息
+            overlayFrame.Script=scriptIndex;
+        }
+        else 
+        {
+            var scriptIndex=indexCustom.Create();
+            scriptIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame };    //叠加指标信息
+            scriptIndex.Create(this,windowIndex);
+            overlayFrame.Script=scriptIndex;
+        }
 
         subFrame.OverlayIndex.push(overlayFrame);
         return overlayFrame;
@@ -26071,6 +26110,8 @@ function BaseIndex(name)
     this.Index;         //指标阐述
     this.Name=name;     //指标名字
     this.Script=null;   //通达信脚本
+    
+    this.OverlayIndex=null; //叠加指标{ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame }
 
     //默认创建都是线段
     this.Create=function(hqChart,windowIndex)
@@ -26126,6 +26167,13 @@ function BaseIndex(name)
 
         return title;
     }
+
+    this.IsOverlay=function()   //是否是叠加指标
+    {
+        if (!this.OverlayIndex || this.OverlayIndex.IsOverlay!=true) return false;
+
+        return true;
+    }
 }
 
 //市场多空
@@ -26149,6 +26197,11 @@ function MarketLongShortIndex()
 
     this.Create=function(hqChart,windowIndex)
     {
+        var frame=null;
+        var isOverlay=this.IsOverlay();
+        if (isOverlay) frame=this.OverlayIndex.Frame.Frame;
+        else frame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
         for(var i in this.Index)
         {
             var paint=null;
@@ -26160,10 +26213,11 @@ function MarketLongShortIndex()
             paint.Color=this.Index[i].LineColor;
             paint.Canvas=hqChart.Canvas;
             paint.Name=this.Name+"-"+i.toString();
-            paint.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-            paint.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+            paint.ChartBorder=frame.ChartBorder;
+            paint.ChartFrame=frame
 
-            hqChart.ChartPaint.push(paint);
+            if (isOverlay) this.OverlayIndex.Frame.ChartPaint.push(paint);
+            else hqChart.ChartPaint.push(paint);
         }
     }
 
@@ -26238,7 +26292,10 @@ function MarketLongShortIndex()
 
     this.BindData=function(hqChart,windowIndex,hisData)
     {
-        var paint=hqChart.GetChartPaint(windowIndex);
+        var paint=null;
+        var isOverlay=this.IsOverlay();
+        if (isOverlay) paint=this.OverlayIndex.Frame.ChartPaint;
+        else paint=hqChart.GetChartPaint(windowIndex);
 
         if (paint.length!=this.Index.length) return false;
 
@@ -26248,15 +26305,30 @@ function MarketLongShortIndex()
         paint[1].Data.Data[0]=8;
         paint[2].Data.Data[0]=1;
 
-        //指定[0,9]
-        hqChart.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin={Max:9,Min:0,Count:3};
-
         var titleIndex=windowIndex+1;
 
-        for(var i in paint)
+        //指定[0,9]
+        if (isOverlay) 
         {
-            hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.Index[i].LineColor);
-            if (i>0) hqChart.TitlePaint[titleIndex].Data[i].DataType="StraightLine";
+            this.OverlayIndex.Frame.Frame.YSpecificMaxMin={Max:9,Min:0,Count:3};
+            var titlePaint=hqChart.TitlePaint[titleIndex];
+            var titleInfo={ Data:[], Title:'' };
+            titlePaint.OverlayIndex.set(this.OverlayIndex.Identify,titleInfo);
+            for(var i in paint)
+            {
+                var titleData=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.Index[i].LineColor);
+                if (i>0) titleData.DataType="StraightLine";
+                titlePaint.OverlayIndex.get(this.OverlayIndex.Identify).Data[i]=titleData;
+            }
+        }
+        else  
+        {
+            hqChart.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin={Max:9,Min:0,Count:3};
+            for(var i in paint)
+            {
+                hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.Index[i].LineColor);
+                if (i>0) hqChart.TitlePaint[titleIndex].Data[i].DataType="StraightLine";
+            }
         }
 
         return true;
@@ -26280,15 +26352,21 @@ function MarketTimingIndex()
 
     this.Create=function(hqChart,windowIndex)
     {
+        var frame=null;
+        var isOverlay=this.IsOverlay();
+        if (isOverlay) frame=this.OverlayIndex.Frame.Frame;
+        else frame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
         for(var i in this.Index)
         {
             var paint=new ChartMACD();
             paint.Canvas=hqChart.Canvas;
             paint.Name=this.Name+"-"+i.toString();
-            paint.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-            paint.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+            paint.ChartBorder=frame.ChartBorder;
+            paint.ChartFrame=frame;
 
-            hqChart.ChartPaint.push(paint);
+            if (isOverlay) this.OverlayIndex.Frame.ChartPaint.push(paint);
+            else hqChart.ChartPaint.push(paint);
         }
     }
 
@@ -26363,7 +26441,10 @@ function MarketTimingIndex()
 
     this.BindData=function(hqChart,windowIndex,hisData)
     {
-        var paint=hqChart.GetChartPaint(windowIndex);
+        var paint=null;
+        var isOverlay=this.IsOverlay();
+        if (isOverlay) paint=this.OverlayIndex.Frame.ChartPaint;
+        else paint=hqChart.GetChartPaint(windowIndex);
 
         if (paint.length!=this.Index.length) return false;
 
@@ -26373,11 +26454,27 @@ function MarketTimingIndex()
 
         var titleIndex=windowIndex+1;
 
-        for(var i in paint)
+        if (isOverlay) 
         {
-            hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.TitleColor);
-            hqChart.TitlePaint[titleIndex].Data[i].StringFormat=STRING_FORMAT_TYPE.THOUSANDS;
-            hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision=0;
+            var titlePaint=hqChart.TitlePaint[titleIndex];
+            var titleInfo={ Data:[], Title:'' };
+            titlePaint.OverlayIndex.set(this.OverlayIndex.Identify,titleInfo);
+            for(var i in paint)
+            {
+                var titleData=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.Index[i].LineColor);
+                titleData.StringFormat=STRING_FORMAT_TYPE.THOUSANDS;
+                titleData.FloatPrecision=0;
+                titlePaint.OverlayIndex.get(this.OverlayIndex.Identify).Data[i]=titleData;
+            }
+        }
+        else
+        {
+            for(var i in paint)
+            {
+                hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.TitleColor);
+                hqChart.TitlePaint[titleIndex].Data[i].StringFormat=STRING_FORMAT_TYPE.THOUSANDS;
+                hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision=0;
+            }
         }
 
         return true;
@@ -26401,22 +26498,32 @@ function MarketAttentionIndex()
 
     this.Create=function(hqChart,windowIndex)
     {
+        var frame=null;
+        var isOverlay=this.IsOverlay();
+        if (isOverlay) frame=this.OverlayIndex.Frame.Frame;
+        else frame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
         for(var i in this.Index)
         {
             var paint=new ChartMACD();   //柱子
             paint.Canvas=hqChart.Canvas;
             paint.Name=this.Name+"-"+i.toString();
-            paint.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-            paint.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+            paint.ChartBorder=frame.ChartBorder;
+            paint.ChartFrame=frame;
 
-            hqChart.ChartPaint.push(paint);
+            if (isOverlay) this.OverlayIndex.Frame.ChartPaint.push(paint);
+            else hqChart.ChartPaint.push(paint);
         }
     }
 
     //调整框架
     this.SetFrame=function(hqChart,windowIndex,hisData)
     {
-        hqChart.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin={Max:6,Min:0,Count:3};
+        var isOverlay=this.IsOverlay();
+        if (isOverlay)
+            this.OverlayIndex.Frame.Frame.YSpecificMaxMin={Max:6,Min:0,Count:3};
+        else
+            hqChart.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin={Max:6,Min:0,Count:3};
     }
 
     //请求数据
@@ -26491,7 +26598,10 @@ function MarketAttentionIndex()
 
     this.BindData=function(hqChart,windowIndex,hisData)
     {
-        var paint=hqChart.GetChartPaint(windowIndex);
+        var paint=null;
+        var isOverlay=this.IsOverlay();
+        if (isOverlay) paint=this.OverlayIndex.Frame.ChartPaint;
+        else paint=hqChart.GetChartPaint(windowIndex);
 
         if (paint.length!=this.Index.length) return false;
 
@@ -26500,12 +26610,27 @@ function MarketAttentionIndex()
         paint[0].NotSupportMessage=null;
 
         var titleIndex=windowIndex+1;
-
-        for(var i in paint)
+        if (isOverlay) 
         {
-            hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.TitleColor);
-            hqChart.TitlePaint[titleIndex].Data[i].StringFormat=STRING_FORMAT_TYPE.THOUSANDS;
-            hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision=0;
+            var titlePaint=hqChart.TitlePaint[titleIndex];
+            var titleInfo={ Data:[], Title:'' };
+            titlePaint.OverlayIndex.set(this.OverlayIndex.Identify,titleInfo);
+            for(var i in paint)
+            {
+                var titleData=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.Index[i].LineColor);
+                titleData.StringFormat=STRING_FORMAT_TYPE.THOUSANDS;
+                titleData.FloatPrecision=0;
+                titlePaint.OverlayIndex.get(this.OverlayIndex.Identify).Data[i]=titleData;
+            }
+        }
+        else
+        {
+            for(var i in paint)
+            {
+                hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.TitleColor);
+                hqChart.TitlePaint[titleIndex].Data[i].StringFormat=STRING_FORMAT_TYPE.THOUSANDS;
+                hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision=0;
+            }
         }
 
         return true;
@@ -26538,6 +26663,11 @@ function MarketHeatIndex()
 
     this.Create=function(hqChart,windowIndex)
     {
+        var frame=null;
+        var isOverlay=this.IsOverlay();
+        if (isOverlay) frame=this.OverlayIndex.Frame.Frame;
+        else frame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
         for(var i in this.Index)
         {
             var paint=null;
@@ -26553,10 +26683,11 @@ function MarketHeatIndex()
 
             paint.Canvas=hqChart.Canvas;
             paint.Name=this.Name+"-"+i.toString();
-            paint.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-            paint.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+            paint.ChartBorder=frame.ChartBorder;
+            paint.ChartFrame=frame;
 
-            hqChart.ChartPaint.push(paint);
+            if (isOverlay) this.OverlayIndex.Frame.ChartPaint.push(paint);
+            else hqChart.ChartPaint.push(paint);
         }
     }
 
@@ -26631,7 +26762,10 @@ function MarketHeatIndex()
 
     this.BindData=function(hqChart,windowIndex,hisData)
     {
-        var paint=hqChart.GetChartPaint(windowIndex);
+        var paint=null;
+        var isOverlay=this.IsOverlay();
+        if (isOverlay) paint=this.OverlayIndex.Frame.ChartPaint;
+        else paint=hqChart.GetChartPaint(windowIndex);
 
         if (paint.length!=this.Index.length) return false;
 
@@ -26646,17 +26780,34 @@ function MarketHeatIndex()
 
         var titleIndex=windowIndex+1;
 
-        for(var i in paint)
+        if (isOverlay) 
         {
-            var name="";    //显示的名字特殊处理
-            if(i==0)
-                name=hqChart.Name+this.Index[i].Name;
-            else
-                name="MA"+this.Index[i-1].Param;
+            var titlePaint=hqChart.TitlePaint[titleIndex];
+            var titleInfo={ Data:[], Title:'' };
+            titlePaint.OverlayIndex.set(this.OverlayIndex.Identify,titleInfo);
+            for(var i in paint)
+            {
+                var name=''
+                if(i==0) name=hqChart.Name+this.Index[i].Name;
+                else name="MA"+this.Index[i-1].Param;
+                var titleData=new DynamicTitleData(paint[i].Data,name,this.Index[i].LineColor);
+                titleData.StringFormat=STRING_FORMAT_TYPE.DEFAULT;
+                titleData.FloatPrecision=2;
+                titlePaint.OverlayIndex.get(this.OverlayIndex.Identify).Data[i]=titleData;
+            }
+        }
+        else
+        {
+            for(var i in paint)
+            {
+                var name="";    //显示的名字特殊处理
+                if(i==0) name=hqChart.Name+this.Index[i].Name;
+                else name="MA"+this.Index[i-1].Param;
 
-            hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,name,this.Index[i].LineColor);
-            hqChart.TitlePaint[titleIndex].Data[i].StringFormat=STRING_FORMAT_TYPE.DEFAULT;
-            hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision=2;
+                hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,name,this.Index[i].LineColor);
+                hqChart.TitlePaint[titleIndex].Data[i].StringFormat=STRING_FORMAT_TYPE.DEFAULT;
+                hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision=2;
+            }
         }
 
         //hqChart.TitlePaint[titleIndex].Explain="热度说明";
@@ -28453,7 +28604,9 @@ function ChangeIndexDialog(divElement)
     delete this.newMethod;
 
     this.DivElement=divElement;   //父节点
-    this.IndexTreeApiUrl="https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json";      //数据下载地址
+    this.IndexTreeApiUrl="https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json";               //数据下载地址
+    this.OverlayIndexTreeApiUrl="https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json";        //叠加指标列表数据下载地址
+    this.IsOverlayIndex=false;
 
     this.Create=function()
     {
@@ -28487,6 +28640,7 @@ function ChangeIndexDialog(divElement)
             return false;
         }
         var url = this.IndexTreeApiUrl;
+        if (this.IsOverlayIndex==true) url=this.OverlayIndexTreeApiUrl;
         $.ajax({
             url: url,
             type: 'get',
@@ -28581,6 +28735,7 @@ function ChangeIndexDialog(divElement)
         if(!dialog) return;
 
         if (dialog.ID==null) dialog.Create();   //第1次 需要创建div
+        dialog.IsOverlayIndex=isOverlay;
         dialog.ReqeustData();   //下载数据
 
         //切换窗口指标类型  每次委托事件执行之前，先用undelegate()解除之前的所有绑定
