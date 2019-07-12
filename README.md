@@ -62,6 +62,7 @@
           Profit: 总收益 StockProfit:个股收益  Excess:超额收益 MaxDropdown:最大回撤 Beta:β(Beta)系数 <br>
           NetValue: [ {Date:日期, Net:净值, Close:股票收盘价, IndexClose:大盘的收盘价}, ] <br>
 * 支持弹幕
+* 支持多指标叠加 ![走势图3](/小程序行情模块用例/image/hqchart_kline_lock2.png)
 
 # 2. 走势图
 * 支持指标 <br>
@@ -82,6 +83,7 @@
 * 指标回测(手机版) https://opensource.zealink.com/hqweb/operatebsh5/index.html?symbol=000001.sz <br>
 * K线训练 https://opensource.zealink.com/hqweb/demo/phone13.html <br>
 * 弹幕功能 https://opensource.zealink.com/hqweb/demo/phone21.html <br>
+* 多指标叠加 https://opensource.zealink.com/hqweb/demo/phone22.html <br>
 
 # 4.使用教程
 1. 如何快速创建一个K线图页面 https://blog.csdn.net/jones2000/article/details/90272733 <br>
