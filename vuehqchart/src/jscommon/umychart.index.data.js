@@ -43,7 +43,7 @@ function JSIndexScript()
             ['DMI', this.DMI],['CR', this.CR],['PSY', this.PSY],
             ['CCI', this.CCI],['DMA', this.DMA],['TRIX', this.TRIX],
             ['VR', this.VR],['EMV', this.EMV],['ROC', this.ROC],
-            ['MTM', this.MIM],['FSL', this.FSL],['CYR', this.CYR],
+            ['MTM', this.MTM],['FSL', this.FSL],['CYR', this.CYR],
             ['MASS', this.MASS],['WAD', this.WAD],['CHO', this.CHO],
             ['ADTM', this.ADTM],['HSL', this.HSL],['BIAS36', this.BIAS36],
             ['BIAS_QL', this.BIAS_QL],['DPO', this.DPO],['OSC', this.OSC],
