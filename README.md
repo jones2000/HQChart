@@ -63,6 +63,7 @@
           NetValue: [ {Date:日期, Net:净值, Close:股票收盘价, IndexClose:大盘的收盘价}, ] <br>
 * 支持弹幕
 * 支持多指标叠加 ![走势图3](/小程序行情模块用例/image/hqchart_kline_lock2.png)
+* 支持截图
 
 # 2. 走势图
 * 支持指标 <br>
