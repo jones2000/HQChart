@@ -3514,13 +3514,13 @@ function KLineFrame()
         var toolbarHeight=this.ChartBorder.GetTitleHeight();
         var left=chartWidth-(this.ChartBorder.Right/pixelTatio)-toolbarWidth;
         var top=this.ChartBorder.GetTop()/pixelTatio;
-        var spanIcon = "<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;' title='调整指标参数'></span>&nbsp;&nbsp;" +
-            "<span class='index_change icon iconfont icon-change_index' id='changeindex' style='cursor:pointer;' title='切换指标'>&nbsp;&nbsp;</span>" +
-            "<span class='index_overlay icon iconfont icon-overlay_index' id='overlayindex' style='cursor:pointer;' title='叠加指标'></span>";
+        var spanIcon = "<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='调整指标参数'></span>" +
+            "<span class='index_change icon iconfont icon-change_index' id='changeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='切换指标'></span>" +
+            "<span class='index_overlay icon iconfont icon-overlay_index' id='overlayindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='叠加指标'></span>";
 
         if (this.Identify!==0 && this.CloseIndex)  //第1个窗口不能关闭
         {
-            const spanCloseIcon="&nbsp;&nbsp;<span class='index_close icon iconfont icon-close' id='closeindex' style='cursor:pointer;' title='关闭指标窗口'></span>";
+            const spanCloseIcon="<span class='index_close icon iconfont icon-close' id='closeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='关闭指标窗口'></span>";
             spanIcon+=spanCloseIcon;
         }
 
@@ -12263,7 +12263,7 @@ function ChartCorssCursor()
         this.StringFormatY.Value=yValue;
         this.StringFormatY.FrameID=yValueExtend.FrameID;
 
-        //X轴
+        //Y轴
         if (this.IsShowText && this.StringFormatY.Operator() && (this.Frame.ChartBorder.Left>=30 || this.Frame.ChartBorder.Right>=30))
         {
             var text=this.StringFormatY.Text;
@@ -12273,7 +12273,7 @@ function ChartCorssCursor()
             if (this.Frame.ChartBorder.Left>=30)
             {
                 this.Canvas.fillStyle=this.TextBGColor;
-                if (left<textWidth) //左边空白的地方太少了画布下
+                if (left<textWidth ) //左边空白的地方太少了画布下
                 {
                     this.Canvas.fillRect(2,y-this.TextHeight/2,textWidth,this.TextHeight);
                     this.Canvas.textAlign="left";
@@ -12293,8 +12293,27 @@ function ChartCorssCursor()
 
             if (this.Frame.ChartBorder.Right>=30)
             {
+                var isOverlayIndex=false;       //是否有叠加子坐标
+                var overlayIndexInterval=null;  //子坐标间距
+                if (yValueExtend.FrameID>=0)
+                {
+                    var frame=this.Frame.SubFrame[yValueExtend.FrameID];
+                    isOverlayIndex=frame.OverlayIndex.length>0;
+                    overlayIndexInterval=frame.Interval;
+                }
+
                 this.Canvas.fillStyle=this.TextBGColor;
-                if (rightWidth<textWidth)   //右边空白显示不下, 
+                if (isOverlayIndex && textWidth>overlayIndexInterval)   //大于子坐标宽度
+                {
+                    var drawRight=right+overlayIndexInterval;
+                    if (drawRight>chartRight) drawRight=chartRight;
+                    this.Canvas.fillRect(drawRight-2-textWidth,y-this.TextHeight/2,textWidth,this.TextHeight);
+                    this.Canvas.textAlign="right";
+                    this.Canvas.textBaseline="middle";
+                    this.Canvas.fillStyle=this.TextColor;
+                    this.Canvas.fillText(text,drawRight-4,y,textWidth);
+                }
+                else if (rightWidth<textWidth)   //右边空白显示不下, 
                 {
                     this.Canvas.fillRect(chartRight-2-textWidth,y-this.TextHeight/2,textWidth,this.TextHeight);
                     this.Canvas.textAlign="right";
@@ -12313,6 +12332,7 @@ function ChartCorssCursor()
             }
         }
 
+        //X轴
         if (this.IsShowText && this.StringFormatX.Operator())
         {
             var text=this.StringFormatX.Text;
@@ -12345,6 +12365,35 @@ function ChartCorssCursor()
                 this.Canvas.textBaseline="middle";
                 this.Canvas.fillStyle=this.TextColor;
                 this.Canvas.fillText(text,x,yCenter,textWidth);
+            }
+        }
+
+        //子坐标Y轴
+        if (yValueExtend.FrameID>=0)
+        {
+            var frame=this.Frame.SubFrame[yValueExtend.FrameID];
+            var overlayLeft=right;
+            this.Canvas.font=this.Font;
+            for(var i in frame.OverlayIndex)
+            {
+                var item=frame.OverlayIndex[i];
+                overlayLeft+=frame.Interval;
+                if (overlayLeft+30>chartRight) break;
+                var yValue=item.Frame.GetYData(y);
+
+                for(var i=2;i>=0;--i)
+                {
+                    var text=IFrameSplitOperator.FormatValueString(yValue,i);
+                    var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
+                    if (textWidth<frame.Interval) break;
+                }
+
+                this.Canvas.fillStyle=this.TextBGColor;
+                this.Canvas.fillRect(overlayLeft+2,y-this.TextHeight/2,textWidth,this.TextHeight);
+                this.Canvas.textAlign="left";
+                this.Canvas.textBaseline="middle";
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(text,overlayLeft+4,y,textWidth);
             }
         }
     }

@@ -6740,13 +6740,13 @@ function KLineFrame()
         var toolbarHeight=this.ChartBorder.GetTitleHeight();
         var left=chartWidth-(this.ChartBorder.Right/pixelTatio)-toolbarWidth;
         var top=this.ChartBorder.GetTop()/pixelTatio;
-        var spanIcon = "<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;' title='调整指标参数'></span>&nbsp;&nbsp;" +
-            "<span class='index_change icon iconfont icon-change_index' id='changeindex' style='cursor:pointer;' title='切换指标'>&nbsp;&nbsp;</span>" +
-            "<span class='index_overlay icon iconfont icon-overlay_index' id='overlayindex' style='cursor:pointer;' title='叠加指标'></span>";
+        var spanIcon = "<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='调整指标参数'></span>" +
+            "<span class='index_change icon iconfont icon-change_index' id='changeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='切换指标'></span>" +
+            "<span class='index_overlay icon iconfont icon-overlay_index' id='overlayindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='叠加指标'></span>";
 
         if (this.Identify!==0 && this.CloseIndex)  //第1个窗口不能关闭
         {
-            const spanCloseIcon="&nbsp;&nbsp;<span class='index_close icon iconfont icon-close' id='closeindex' style='cursor:pointer;' title='关闭指标窗口'></span>";
+            const spanCloseIcon="<span class='index_close icon iconfont icon-close' id='closeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='关闭指标窗口'></span>";
             spanIcon+=spanCloseIcon;
         }
 
