@@ -62,8 +62,8 @@
           Profit: 总收益 StockProfit:个股收益  Excess:超额收益 MaxDropdown:最大回撤 Beta:β(Beta)系数 <br>
           NetValue: [ {Date:日期, Net:净值, Close:股票收盘价, IndexClose:大盘的收盘价}, ] <br>
 * 支持弹幕
-* 支持多指标叠加 ![走势图3](/小程序行情模块用例/image/hqchart_kline_lock2.png)
-* 支持截图
+* 支持多指标叠加 (2019-7-12 新加功能)  ![K线图](/小程序行情模块用例/image/hqchart_kline_lock2.png)
+* 支持截图 (2019-7-9 新加功能)
 
 # 2. 走势图
 * 支持指标 <br>
@@ -71,8 +71,9 @@
 * 支持沪深和港股,国内期货(开发中)<br>
 * 分钟数据显示 <br>
 * 支持多日分钟数据显示<br>
-* 支持A股集合竞价显示/隐藏 ![走势图2](/小程序行情模块用例/image/hqchart_minute3.png)
-* 支持指数领先指标(2019-7-15) ![K线图](/小程序行情模块用例/image/hqchart_kline_lock3.png)
+* 支持A股集合竞价显示/隐藏 (2019-7-12 新加功能) ![走势图2](/小程序行情模块用例/image/hqchart_minute3.png)
+* 支持指数领先指标(2019-7-15  新加功能) ![K线图](/小程序行情模块用例/image/hqchart_kline_lock3.png)
+
 # 3. 网页demo  <br>
 * K线图  https://opensource.zealink.com/hqweb/demo/phone7.html  <br>
 * 走势图 https://opensource.zealink.com/hqweb/demo/phone8.html  <br>
@@ -104,6 +105,8 @@
 14. 如何在K线图上添加弹幕 https://blog.csdn.net/jones2000/article/details/91125408 <br>
 15. HQChart使用教程15-分析家语法执行器python版本 https://blog.csdn.net/jones2000/article/details/94738592 <br>
 16. HQChart使用教程16-py中使用麦语言指标可视化 https://blog.csdn.net/jones2000/article/details/94920596 <br>
+17. HQChart使用教程17- 多技术指标独立坐标叠加 https://blog.csdn.net/jones2000/article/details/95618901 <br>
+18. HQChart使用教程18- K线截图 https://blog.csdn.net/jones2000/article/details/95738306 <br>
 
 **设计文档:**
 1. 如何(c++,js)写一个传统的K线图和走势图1 https://blog.csdn.net/jones2000/article/details/84779481 <br>
