@@ -4678,6 +4678,7 @@ function MinuteData()
     this.Increase;
     this.Risefall;
     this.AvPrice;
+    this.Lead=null;
 }
 
 //单指标数据
@@ -4860,6 +4861,17 @@ function ChartData()
         for(var i in this.Data)
         {
             result[i]=this.Data[i].Amount;
+        }
+
+        return result;
+    }
+
+    this.GetLead=function()
+    {
+        var result=new Array();
+        for(var i in this.Data)
+        {
+            result[i]=this.Data[i].Lead;
         }
 
         return result;
@@ -8555,6 +8567,10 @@ function ChartMinutePriceLine()
     this.IsDrawArea=true;    //是否画价格面积图
     this.AreaColor='rgba(0,191,255,0.1)';
     this.SourceData;
+    this.IsShowLead=false;
+    this.LeadData;
+    this.UpColor=g_JSChartResource.UpBarColor;
+    this.DownColor=g_JSChartResource.DownBarColor;
 
     this.Draw=function()
     {
@@ -8580,6 +8596,9 @@ function ChartMinutePriceLine()
             data=this.SourceData;
             isBeforeData=true;
         }
+
+        if (this.IsShowLead) 
+            this.DrawLead();
 
         var bFirstPoint=true;
         var ptFirst={}; //第1个点
@@ -8660,6 +8679,59 @@ function ChartMinutePriceLine()
                 this.Canvas.fillStyle=this.AreaColor;
                 this.Canvas.fill();
             }
+        }
+    }
+
+    //画领先指标
+    this.DrawLead=function()
+    {
+        if (!this.LeadData) return;
+
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        if (isHScreen) return;
+        //var dataWidth=this.ChartFrame.DataWidth;
+        //var distanceWidth=this.ChartFrame.DistanceWidth;
+        //var chartright=this.ChartBorder.GetRight();
+        if (isHScreen===true) chartright=this.ChartBorder.GetBottom();
+        var xPointCount=this.ChartFrame.XPointCount;
+        var minuteCount=this.ChartFrame.MinuteCount;
+        var bottom=this.ChartBorder.GetBottomEx();
+        var top=this.ChartBorder.GetTopEx();
+
+        if (xPointCount>minuteCount) return;
+
+        var aryLead=[]; //{X: Value:}
+        var max=null, min=null;
+        var yCenter=this.ChartFrame.GetYFromData(this.YClose);
+        var leadHeight=(yCenter-top)/3;
+        var data=this.LeadData;
+        for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+            if (value==0) continue;
+            var x=this.ChartFrame.GetXFromIndex(j);
+
+            if (max==null || max<value) max=value;
+            if (min==null || min>value) min=value;
+
+            aryLead.push({X:x, Value:value})
+        }
+
+        if (aryLead.length<=0) return;
+        var maxValue=Math.max(Math.abs(max),Math.abs(min));
+
+        for(var i in aryLead)
+        {
+            var item=aryLead[i];
+            var y=yCenter-(item.Value*leadHeight/maxValue);
+            var x=ToFixedPoint(item.X);
+            if (item.Value>0) this.Canvas.strokeStyle=this.UpColor;
+            else this.Canvas.strokeStyle=this.DownColor;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(x,yCenter);
+            this.Canvas.lineTo(x,y);
+            this.Canvas.stroke();
         }
     }
 
@@ -21163,6 +21235,15 @@ function MinuteChartContainer(uielement)
         this.ChartPaint[0].YClose=yClose;
         this.ChartPaint[0].NotSupportMessage=null;
         this.ChartPaint[0].SourceData=this.IsBeforeData ? minuteData:null;
+        this.ChartPaint[0].IsShowLead=false;
+        this.ChartPaint[0].LeadData=null;
+        if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol) && this.DayCount==1)  //指数显示领先指标
+        {
+            var bindLeadData=new ChartData();
+            bindLeadData.Data=minuteData.GetLead();
+            this.ChartPaint[0].LeadData=bindLeadData;
+            this.ChartPaint[0].IsShowLead=true;
+        }
        
         this.Frame.SubFrame[0].Frame.YSplitOperator.YClose=yClose;
         this.Frame.SubFrame[0].Frame.YSplitOperator.Data=bindData;
@@ -21355,6 +21436,9 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         item.Increase=jsData.increase;
         item.Risefall=jsData.risefall;
         item.AvPrice=jsData.avprice;
+        
+        if (IFrameSplitOperator.IsNumber(jsData.lead)) 
+            item.Lead=jsData.lead;  //领先指标 指数才有
 
         if (!item.Close) //当前没有价格 使用上一个价格填充
         {
