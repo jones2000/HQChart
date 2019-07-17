@@ -66,7 +66,7 @@ function JSIndexScript()
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
-            ['涨跌趋势', this.UpDownAnalyze],['北上资金', this.HK2SHSZ],
+            ['涨跌趋势', this.UpDownAnalyze],['北上资金', this.HK2SHSZ],['股东人数', this.ShareHolder],
 
             ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2],['Zealink-持仓信号', this.Zealink_Index3],
             ['Zealink-增减持',this.Zealink_Index4],['Zealink-大宗交易', this.Zealink_Index5], ['Zealink-信托持股', this.Zealink_Index6],
@@ -2125,6 +2125,20 @@ JSIndexScript.prototype.HK2SHSZ=function()
         Args: [],
         Script: //脚本
             "净流入:HK2SHSZ(1),COLORSTICK;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ShareHolder=function()
+{
+    let data=
+    {
+        Name: '股东人数', Description: '股东人数', IsMainIndex: false,FloatPrecision:0, 
+        Condition: { Period:[CONDITION_PERIOD.KLINE_DAY_ID] },
+        Args: [],
+        Script: //脚本
+            "人数:FINANCE(100);"
     };
 
     return data;

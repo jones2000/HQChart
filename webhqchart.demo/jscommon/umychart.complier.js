@@ -5647,7 +5647,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.LatestData) return this.Execute.RunNextJob();
 
         var self=this;
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: self.RealtimeApiUrl,
             data:
             {
@@ -5789,7 +5789,7 @@ function JSSymbolData(ast,option,jsExecute)
         var self=this;
         if (this.Period<=3)     //请求日线数据
         {
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: self.KLineApiUrl,
                 data:
                 {
@@ -5814,7 +5814,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else            //请求分钟数据
         {
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: self.MinuteKLineApiUrl,
                 data:
                 {
@@ -6064,7 +6064,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (this.DataType===HQ_DATA_TYPE.MINUTE_ID)  //当天分钟数据
         {
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: self.RealtimeApiUrl,
                 data:
                 {
@@ -6086,7 +6086,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (this.Period<=3)     //请求日线数据
         {
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: self.KLineApiUrl,
                 data:
                 {
@@ -6111,7 +6111,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else                //请求分钟数据
         {
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: this.MinuteKLineApiUrl,
                 data:
                 {
@@ -6352,6 +6352,9 @@ function JSSymbolData(ast,option,jsExecute)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA:    //过去4个季度现金分红总额
                 fieldList.push('execdividend.quarter4');
                 break;
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SHAREHOLDER_DATA:
+                fieldList.push('shareholder');                //股东信息
+                break;
         }
 
          //请求数据
@@ -6393,6 +6396,7 @@ function JSSymbolData(ast,option,jsExecute)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_AL_RATIO_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA:
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SHAREHOLDER_DATA:
                 return this.RecvStockDayData(recvData,jobID);
         }
     }
@@ -6517,6 +6521,13 @@ function JSSymbolData(ast,option,jsExecute)
                     if (!financeData) continue;
                     if (!this.IsNumber(financeData.quarter4)) continue;
                     indexData.Value=financeData.quarter4;       //过去4个季度现金分红总额
+                    bFinanceData=true;
+                    break;
+                case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SHAREHOLDER_DATA:   //股东人数
+                    var shareHolder=item.shareholder;
+                    if (!shareHolder || !this.IsNumber(shareHolder.count)) continue;
+                    indexData.Value=shareHolder.count;
+                    bFinanceData=true;
                     break;
                 default:
                     continue;
@@ -7527,6 +7538,7 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_PROFIT_YOY_DATA:111,            //利润同比 (Profit year on year)
     JOB_DOWNLOAD_AL_RATIO_DATA:112,              //资产负债率 (asset-liability ratio)
     JOB_DOWNLOAD_DIVIDEND_YIELD_DATA:113,        //股息率
+    JOB_DOWNLOAD_SHAREHOLDER_DATA:114,           //股东人数    
 
 
     JOB_DOWNLOAD_CAPITAL_DATA:200,               //流通股本（手）
@@ -7581,6 +7593,8 @@ var JS_EXECUTE_JOB_ID=
             [42,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_RELEASE_DATE_DATA],      //FINANCE(42)  上市的天数
             [43,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA],        //FINANCE(43)  利润同比 (Profit year on year)
             [45,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA],    //FINANCE(45)  股息率
+
+            [100,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SHAREHOLDER_DATA],      //FINANCE(100) 股东人数
 
             [200,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA],          //流通股本（手）
             [201,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA]          //换手率 成交量/流通股本
@@ -7659,6 +7673,7 @@ function JSExecute(ast,option)
     this.VarTable=new Map();        //变量表
     this.OutVarTable=new Array();   //输出变量
     this.Arguments=[];
+    this.ErrorCallback;             //执行错误回调
 
     //脚本自动变量表, 只读
     this.ConstVarTable=new Map([
@@ -7738,6 +7753,7 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_AL_RATIO_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA:
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SHAREHOLDER_DATA:
                 return this.SymbolData.GetFinanceData(jobItem.ID);
             
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_RELEASE_DATE_DATA:
@@ -8038,15 +8054,23 @@ function JSExecute(ast,option)
     }
 
     this.Run=function()
-    {                        
-        let data=this.RunAST();//执行脚本
-        console.log('[JSComplier.Run] execute finish', data);
+    { 
+        try
+        {                       
+            let data=this.RunAST();//执行脚本
+            console.log('[JSComplier.Run] execute finish', data);
         
-        if (this.UpdateUICallback) 
+            if (this.UpdateUICallback) 
+            {
+                console.log('[JSComplier.Run] invoke UpdateUICallback.');
+                if (this.CallbackParam && this.CallbackParam.Self && this.CallbackParam.Self.ClassName==='ScriptIndexConsole') this.CallbackParam.JSExecute=this;
+                this.UpdateUICallback(data,this.CallbackParam);
+            }
+        }
+        catch(error)
         {
-            console.log('[JSComplier.Run] invoke UpdateUICallback.');
-            if (this.CallbackParam && this.CallbackParam.Self && this.CallbackParam.Self.ClassName==='ScriptIndexConsole') this.CallbackParam.JSExecute=this;
-            this.UpdateUICallback(data,this.CallbackParam);
+            console.log(error);
+            if (this.ErrorCallback) this.ErrorCallback(error);
         }
     }
 
@@ -8425,6 +8449,7 @@ JSComplier.Execute=function(code,option,errorCallback)
 
             console.log('[JSComplier.Execute] execute .....');
             let execute=new JSExecute(ast,option);
+            execute.ErrorCallback=errorCallback;        //执行错误回调
             execute.JobList=parser.Node.GetDataJobList();
             execute.JobList.push({ID:JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT});
 
@@ -9277,6 +9302,7 @@ function OverlayScriptIndex(name,script,args,option)
         var titleIndex=windowIndex+1;
         var titlePaint=hqChart.TitlePaint[titleIndex];
         titlePaint.OverlayIndex.set(this.OverlayIndex.Identify,titleInfo);
+        this.OverlayIndex.Frame.Frame.Title=titleInfo.Title;    //给子框架设置标题
 
         for(var i in this.OutVar)
         {
@@ -9959,12 +9985,7 @@ function ScriptIndexConsole(obj)
         var self=param.Self;
         var jsExec=param.JSExecute;
 
-        var date=[];
-        for(var i=0;i<jsExec.SymbolData.Data.Data.length;++i)
-        {
-            var item=jsExec.SymbolData.Data.Data[i];
-            date[i]=item.Date;
-        }
+        var date=jsExec.SymbolData.Data.GetDate();
         
         var result=
         { 
@@ -9972,10 +9993,34 @@ function ScriptIndexConsole(obj)
             Date:date,  //日期对应 上面的数据
             Stock:{ Name:jsExec.SymbolData.Name, Symbol:jsExec.SymbolData.Symbol },
         };
+        if (jsExec.SymbolData.Period>=4) result.Time=jsExec.SymbolData.Data.GetTime();
         //console.log('[ScriptIndexConsole::RecvResultData] outVar ', outVar);
         if (self.FinishCallback) self.FinishCallback(result, param.JSExecute);
     }
 }
+
+ScriptIndexConsole.SetDomain = function (domain, cacheDomain)   //修改API地址
+{
+    JSComplier.SetDomain(domain,cacheDomain);
+}
+
+function JSNetwork()
+{
+
+}
+
+JSNetwork.HttpReqeust=function(obj) //对请求进行封装
+{
+    $.ajax(
+        { 
+            url: obj.url, data: obj.data,
+            type:obj.type, dataType: obj.dataType,async:obj.async, 
+            success: obj.success,
+            error: obj.error,
+        }
+    );
+}
+
 
 
 /* 测试例子

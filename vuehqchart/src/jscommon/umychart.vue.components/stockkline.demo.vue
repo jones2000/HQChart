@@ -12,9 +12,9 @@
         <!--  图形操作工具条  !-->
         <div class='chartbar' ref='divchartbar' id='chartbar'>
             <!-- 分时图设置导航条 -->
-            <div id='barForMinute' v-show="Minute.IsShow">
+            <div id='barForMinute' class='menuWrap' v-show="Minute.IsShow">
                 <div class="item" v-for='(menuOne,index) in Minute.Toolbar.Data' :key='menuOne.Text' @click="OnClickToolBar('minute',menuOne,index)">
-                    <p class="menuOne" :class='{light:Minute.Toolbar.Selected == index}'>
+                    <p class="menuOne" :class='{light:Minute.Toolbar.Selected == index}' v-show='menuOne.IsShow'>
                         <span>{{menuOne.Text}}</span>
                         <i class="iconfont" :class='Minute.Toolbar.Selected == index ? "icon-shang" : "icon-xia"'></i>
                     </p>
@@ -26,7 +26,7 @@
             </div>
 
           <!-- k线设置导航条 -->
-          <div id='barForKLine' v-show="KLine.IsShow">
+          <div id='barForKLine' class='menuWrap' v-show="KLine.IsShow">
                 <div v-bind:class="[menuOne.IsShow==true? 'item':'hide_item']" v-for='(menuOne,index) in KLine.Toolbar.Data' :key='menuOne.Text' v-show="KLineItemShow[index]" @click="OnClickToolBar('kline',menuOne,index)" >
                     <p class="menuOne" :class='{light:KLine.Toolbar.Selected == index}' v-show='menuOne.IsShow'>
                             <span>{{menuOne.Text}}</span>
@@ -223,6 +223,7 @@ DefaultData.GetPeriodMenu=function()
 var MINUTE_TOOLBAR_ID=
 {
     INDEX_ID:0, // 指标
+    INDEX_ID_TWO:1, // 指标
 }
 
 DefaultData.GetMinuteToolbar=function()
@@ -241,8 +242,11 @@ DefaultData.GetMinuteToolbar=function()
         [ 
             {Name:"MACD"}, {Name:"DMI"}, {Name:"DMA"}, {Name:"BRAR"}, 
             {Name:"KDJ"}, {Name:"RSI"}, {Name:"WR"}, {Name:"CCI"}, {Name:"TRIX"}, {Name:'北上资金'}, {Name:'涨跌趋势'}
-        ]
+        ],
+        IsShow:true
     }
+
+    
 
     data.Data[MINUTE_TOOLBAR_ID.INDEX_ID]=indexMenu;
 
@@ -454,7 +458,8 @@ export default
                 StartTime:null, 
                 Timer:null  //定时器
             },
-            MoveInterval:null
+            MoveInterval:null,
+            IsShowBeforeData:true  //显示
         }
 
         return data;
@@ -478,6 +483,19 @@ export default
                 let selected=menu.indexOf(this.DefaultPeriod);
                 this.PeriodBar.Selected=selected;
             }
+        }
+
+        if(!this.IsSHSZIndex()){
+            let indexMenu2 =
+            {
+                Text: '集合竞价',
+                Selected: [],
+                Menu: [{Name:'显示'}],
+                IsShow:true
+            }
+            // this.Minute.Toolbar.Data.push(indexMenu2);
+            this.Minute.Toolbar.Data[MINUTE_TOOLBAR_ID.INDEX_ID_TWO]=indexMenu2;
+            console.log('分时图：',this.Minute.Toolbar);
         }
 
         if (this.KLineOption) this.SetDefaultKLineOption(this.KLineOption);
@@ -652,7 +670,7 @@ export default
             if(this.KLine.IsShow){
                 var totalWidth = width - 20;
                 var dispalyAry = [];
-                if(this.IsSHSZIndex){ //是指数
+                if(this.IsSHSZIndex()){ //是指数
                     var startIndex = 2, endIndex = 7;
                     dispalyAry = [false,false,true,true,true,true,true,true];
                 }else{
@@ -673,6 +691,10 @@ export default
             }
            
             console.log(`[StockKLine::OnSize] Chart:(${width},${height})`);
+        },
+        IsSHSZIndex(){
+            var isIndex=JSCommon.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol);
+            return isIndex;
         },
 
         //创建日线图
@@ -757,6 +779,8 @@ export default
             var isIndex=JSCommon.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol);
             this.KLine.Toolbar.Data[KLINE_TOOLBAR_ID.RIGHT_ID].IsShow=!isIndex;
             this.KLine.Toolbar.Data[KLINE_TOOLBAR_ID.KLINE_INFO_ID].IsShow=!isIndex;
+
+            this.Minute.Toolbar.Data[MINUTE_TOOLBAR_ID.INDEX_ID_TWO].IsShow=!isIndex;
         },
 
         SetDefaultKLineOption:function(option)
@@ -1119,6 +1143,17 @@ export default
                     case '副图指标':
                         this.Minute.JSChart.ChangeIndex(1,secMenu.Name);
                         this.UpdateIndexBarSelected();
+                        break;
+                    case '集合竞价':
+                        if(this.IsShowBeforeData){  
+                            this.Minute.JSChart.JSChartContainer.ShowBeforeData(true);
+                            var text = '隐藏';
+                        }else{
+                            this.Minute.JSChart.JSChartContainer.ShowBeforeData(false);
+                            var text = '显示';
+                        }
+                        this.Minute.Toolbar.Data[MINUTE_TOOLBAR_ID.INDEX_ID_TWO].Menu[0].Name = text;
+                        this.IsShowBeforeData = !this.IsShowBeforeData;
                         break;
                 }
                 this.Minute.Toolbar.Selected = -1; //下标不相等，隐藏二级菜单
@@ -1505,23 +1540,22 @@ a
     position: relative;
     z-index: 999;
 
-    //隐藏菜单
-    #barForMinute,#barForKLine>.hide_item
+    /*隐藏菜单*/
+    .menuWrap >.hide_item
     {
         display: inline-block;
         cursor: pointer;
-        //height: 32px;
+        /* height: 32px; */
         line-height: 32px;
         padding-top: 6px;
         position: relative;
         box-sizing: border-box;
     }
 
-    #barForMinute,#barForKLine>.item 
+    .menuWrap >.item 
     {
         display: inline-block;
         cursor: pointer;
-        //height: 32px;
         line-height: 32px;
         width:104px;
         padding-top: 6px;
