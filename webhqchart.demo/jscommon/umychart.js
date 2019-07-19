@@ -3973,6 +3973,7 @@ function KLineHScreenFrame()
         var borderBottom=this.ChartBorder.Bottom;
 
         var yPrev=null; //上一个坐标y的值
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         for(var i=this.HorizontalInfo.length-1; i>=0; --i)  //从左往右画分割线
         {
             var item=this.HorizontalInfo[i];
@@ -3986,7 +3987,7 @@ function KLineHScreenFrame()
             this.Canvas.stroke();
 
             //坐标信息 左边 间距小于10 不画坐标
-            if (item.Message[0]!=null && borderTop>10)
+            if (item.Message[0]!=null && borderTop>10*pixelTatio)
             {
                 if (item.Font!=null) this.Canvas.font=item.Font;
 
@@ -4003,7 +4004,7 @@ function KLineHScreenFrame()
             }
 
             //坐标信息 右边 间距小于10 不画坐标
-            if (item.Message[1]!=null && borderBottom>10)
+            if (item.Message[1]!=null && borderBottom>10*pixelTatio)
             {
                 if (item.Font!=null) this.Canvas.font=item.Font;
 
@@ -4200,6 +4201,129 @@ function KLineHScreenFrame()
         cursorIndex.Index=lastCursorIndex-this.Data.DataOffset;
 
         return true;
+    }
+}
+
+
+function OverlayKLineHScreenFrame()
+{
+    this.newMethod=KLineHScreenFrame;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.MainFrame=null;    //主框架
+    this.RightOffset=50;
+    this.PenBorder=g_JSChartResource.OverlayFrame.BolderPen; //'rgb(0,0,0)'
+    this.IsShow=true;   //坐标是否显示
+    this.Title=null;
+    this.TitleColor=g_JSChartResource.OverlayFrame.TitleColor;
+    this.TitleFont=g_JSChartResource.OverlayFrame.TitleFont;
+
+    this.Draw=function()
+    {
+        this.SplitXYCoordinate();
+
+        if (this.IsShow)
+        {
+            this.DrawVertical();
+            this.DrawHorizontal();
+            this.DrawTitle();
+        }
+        
+        this.SizeChange=false;
+        this.XYSplit=false;
+    }
+
+    this.DrawTitle=function()   //画标题
+    {
+        /*
+        if (!this.Title) return;
+        var top = this.ChartBorder.GetTopTitle();
+        var bottom = this.ChartBorder.GetBottom();
+        var right=this.ChartBorder.GetRight();
+        right+=this.RightOffset;
+
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.font=this.TitleFont;
+        this.Canvas.textAlign="center";
+        this.Canvas.textBaseline="top";
+
+        var xText=right-2,yText=top+(bottom-top)/2;
+        this.Canvas.save();
+        this.Canvas.translate(xText, yText);
+        this.Canvas.rotate(90 * Math.PI / 180);
+        this.Canvas.fillText(this.Title, 0, 0);
+        this.Canvas.restore();
+        */
+    }
+
+    //分割x,y轴坐标信息
+    this.SplitXYCoordinate=function()
+    {
+        if (this.XYSplit==false) return;
+        if (this.YSplitOperator!=null) this.YSplitOperator.Operator();
+        // if (this.XSplitOperator!=null) this.XSplitOperator.Operator(); 子坐标和主坐标X轴一致 所以不用计算
+    }
+
+    //画Y轴
+    this.DrawHorizontal=function()
+    {
+        /*
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var bottom = this.ChartBorder.GetBottom();
+        var top = this.ChartBorder.GetTopTitle();
+        var borderRight=this.ChartBorder.Right;
+        right+=this.RightOffset;
+
+        var yPrev=null; //上一个坐标y的值
+        for(var i=this.HorizontalInfo.length-1; i>=0; --i)  //从上往下画分割线
+        {
+            var item=this.HorizontalInfo[i];
+            var y=this.GetYFromData(item.Value);
+            if (y!=null && Math.abs(y-yPrev)<this.MinYDistance) continue;  //两个坐标在近了 就不画了
+
+            if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
+            else if (y <= top + 2) this.Canvas.textBaseline = 'top';
+            else this.Canvas.textBaseline = "middle";
+
+            this.Canvas.strokeStyle=this.PenBorder;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(right-2,ToFixedPoint(y));
+            this.Canvas.lineTo(right,ToFixedPoint(y));
+            this.Canvas.stroke();
+
+            //坐标信息 右边 间距小于10 不画坐标
+            if (item.Message[1]!=null && borderRight>10)
+            {
+                if (item.Font!=null) this.Canvas.font=item.Font;
+
+                this.Canvas.fillStyle=item.TextColor;
+                this.Canvas.textAlign="left";
+                this.Canvas.fillText(item.Message[1],right+2,y);
+            }
+
+            yPrev=y;
+        }
+        */
+    }
+
+    //画X轴
+    this.DrawVertical=function()
+    {
+        /*
+        var top=this.ChartBorder.GetTopEx();
+        //var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var bottom=this.ChartBorder.GetBottomEx();
+        right+=this.RightOffset;
+
+        this.Canvas.strokeStyle=this.PenBorder;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ToFixedPoint(right),ToFixedPoint(top));
+        this.Canvas.lineTo(ToFixedPoint(right),ToFixedPoint(bottom));
+        this.Canvas.stroke();
+        */
     }
 }
 
@@ -13616,6 +13740,11 @@ function DynamicChartTitlePainting()
     {
         var bottom=this.Frame.ChartBorder.GetTop()+this.Frame.ChartBorder.TitleHeight/2;    //上下居中显示
         var right=this.Frame.ChartBorder.GetRight();
+        if (this.Frame.IsHScreen===true) 
+        {
+            bottom=-this.Frame.ChartBorder.TitleHeight/2;
+            right=this.Frame.ChartBorder.GetHeight();
+        }
         if (left>right) return;
 
         var spaceWidth=5*GetDevicePixelRatio();
@@ -13769,6 +13898,8 @@ function DynamicChartTitlePainting()
                 left+=textWidth;
             }
         }
+
+        this.DrawOverlayIndex(left+5*GetDevicePixelRatio());   //间距都空点 和主指标区分开
     }
 }
 
@@ -18922,7 +19053,7 @@ function KLineChartContainer(uielement)
         subFrame.Interval=this.OverlayIndexFrameWidth;
         var overlayFrame=new OverlayIndexItem();
         if (obj.Identify) overlayFrame.Identify=obj.Identify;   //由外部指定id
-        frame=new OverlayKLineFrame();
+        var frame= this.ClassName==='KLineChartHScreenContainer' ? new OverlayKLineHScreenFrame() : new OverlayKLineFrame();
         frame.Canvas=this.Canvas;
         frame.MainFrame=subFrame.Frame;
         frame.ChartBorder=subFrame.Frame.ChartBorder;

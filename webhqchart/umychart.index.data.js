@@ -2135,7 +2135,11 @@ JSIndexScript.prototype.ShareHolder=function()
     let data=
     {
         Name: '股东人数', Description: '股东人数', IsMainIndex: false,FloatPrecision:0, 
-        Condition: { Period:[CONDITION_PERIOD.KLINE_DAY_ID] },
+        Condition: { Period:[ 
+                                CONDITION_PERIOD.KLINE_DAY_ID,
+                                CONDITION_PERIOD.KLINE_MONTH_ID,
+                                CONDITION_PERIOD.KLINE_WEEK_ID,
+                                CONDITION_PERIOD.KLINE_YEAR_ID] },
         Args: [],
         Script: //脚本
             "人数:FINANCE(100);"

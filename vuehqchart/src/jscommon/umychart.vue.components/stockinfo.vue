@@ -492,9 +492,6 @@
         margin: 0;
     }
     html,body {color: #666;}
-
-    
-
     
     .PriceUp,
     .PriceUp>span {
