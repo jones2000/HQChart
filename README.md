@@ -1,3 +1,5 @@
+*如果你觉得我们的行情模块对你有帮助， 请给我们点下star. (●ˇ∀ˇ●)
+
 # 目录结构
 --node.jccomplier  nodejs通达信脚本选股后台api模块. 使用restify webapi框架 <br>
 --webhqchart 行情前端js代码模块 <br>
