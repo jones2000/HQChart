@@ -697,6 +697,7 @@ function Node()
     this.IsNeedBlockIncreaseData=new Set();     //是否需要市场涨跌股票数据统计
     this.IsNeedSymbolExData=new Set();          //下载股票行情的其他数据
     this.IsNeedHK2SHSZData=new Set();           //下载北上资金数据
+    this.IsNeedSectionFinance=new Map();        //下载截面财务数据 { key= 报告期 , Set() 字段}
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -742,6 +743,12 @@ function Node()
         for(var jobID of this.IsNeedSymbolExData)
         {
             jobs.push({ID:jobID});
+        }
+
+        //获取截面数据下载任务
+        for(var item of this.IsNeedSectionFinance)
+        {
+            jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_SF, SF:item});
         }
 
         return jobs;
@@ -837,6 +844,28 @@ function Node()
         {
             var blockSymbol=args[0].Value;
             if (!this.IsNeedBlockIncreaseData.has(blockSymbol))  this.IsNeedBlockIncreaseData.add(blockSymbol);
+            return;
+        }
+
+        if (callee.Name=='SF')  //Section finance
+        {
+            let period=JS_EXECUTE_JOB_ID.GetSectionReportPeriod(args[0].Value); //报告期
+            if (!period) return;
+            let jobID=JS_EXECUTE_JOB_ID.GetSectionFinanceID(args[1].Value);
+            if (!jobID) return;
+            var sfkey=period.Year+ '-' + period.Quarter;
+
+            if (!this.IsNeedSectionFinance.has(sfkey)) 
+            {
+                var finacne={ Period:period, Fields:new Set([jobID]) };
+                this.IsNeedSectionFinance.set(sfkey, finacne);
+            }
+            else
+            {
+                var finacne=this.IsNeedSectionFinance.get(sfkey);
+                if (!finacne.Fields.has(jobID)) finacne.Fields.add(jobID);
+            }
+            
             return;
         }
     }
@@ -5607,6 +5636,8 @@ function JSSymbolData(ast,option,jsExecute)
     this.HKToSHSZData=new Map();    //北上资金
     this.NewsAnalysisData=new Map();    //新闻统计
     this.ExtendData=new Map();          //其他的扩展数据
+
+    this.SectionFinanceData=new Map();  //截面报告数据
     
    
     //使用option初始化
@@ -7198,6 +7229,121 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
+    this.GetSectionFinanceData=function(job)
+    {
+        var sfKey=job.SF[0];
+        var period=job.SF[1].Period;
+        if (this.SectionFinanceData.has(sfKey)) return this.Execute.RunNextJob();
+
+        console.log(`[JSSymbolData::GetSectionFinanceData] ${period.Year}-${period.Quarter}`);
+        var fieldName='announcement'+period.Quarter;
+        var self=this;
+        var fieldList=["name","date","symbol", fieldName,'finance'+period.Quarter];
+        var cond=[fieldName+'.year', "int32", "eq", period.Year.toString() ];
+
+        //请求数据
+        JSNetwork.HttpReqeust({
+            url: this.StockHistoryDayApiUrl,
+            data:
+            {
+                "field": fieldList,
+                "symbol": [this.Symbol],
+                "condition":[{item:cond}]
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (recvData)
+            {
+                self.RecvSectionFinanceData(recvData,job);
+                self.Execute.RunNextJob();
+            }
+        });
+    }
+
+    this.RecvSectionFinanceData=function(data,job)
+    {
+        if (!data.stock || data.stock.length!=1) return;
+        var stockItem=data.stock[0];
+        if (!stockItem.stockday || stockItem.stockday.length<=0) return;
+        var dayItem=stockItem.stockday[0];
+        var period=job.SF[1].Period;
+        var finance=null;
+        if (period.Quarter===1) finance=dayItem.finance1;
+        else if (period.Quarter===2) finance=dayItem.finance2;
+        else if (period.Quarter===3) finance=dayItem.finance3;
+        else if (period.Quarter===4) finance=dayItem.finance4;
+        if (!finance) return;
+        
+        var data=new Map([
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_01,finance.currentassets],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_02,finance.monetaryfunds],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_03,finance.inventory],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_04,finance.currentliabilities],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_05,finance.ncurrentliabilities],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_06,finance.expenses3],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_07,finance.investmentincome],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_08,finance.pcnprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_09,finance.nnetprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_10,finance.npersearning],
+
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_11,finance.woewa],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_12,finance.inprocess],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_13,finance.accdepreciation],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_14,finance.mholderprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_15,finance.lossexchange],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_16,finance.baddebts],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_17,finance.fixedassets],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_18,finance.curdepreciation],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_19,finance.orevenues],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_20,finance.moprofit],
+
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_21,finance.oprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_22,finance.nprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_23,finance.areceivable],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_24,finance.financialcost],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_25,finance.ccfo],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_26,finance.totalassets],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_27,finance.totalliabilities],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_28,finance.totalownersequity],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_29,finance.grossmargin],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_30,finance.percreserve],
+
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_31,finance.peruprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_32,finance.persearning],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_33,finance.pernetasset],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_34,finance.perccfo],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_38,finance.alratio],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_39,finance.profityoy],
+        ]);
+
+        if (period.Quarter===4) //年报才有的数据
+        {
+            data.set(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_35,finance.nnprofitincrease);
+            data.set(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_36,finance.nnprofitspeed);
+            data.set(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_37,finance.nprofitincrease);
+        }
+
+        var sfKey=job.SF[0];
+        this.SectionFinanceData.set(sfKey,data);
+    }
+
+    this.GetSectionFinanceCacheData=function(date,fieldName,node)
+    {
+        var period=JS_EXECUTE_JOB_ID.GetSectionReportPeriod(date);
+        if (!period) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 报告期错误`);
+        var id=JS_EXECUTE_JOB_ID.GetSectionFinanceID(fieldName);
+        if (!id) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 财务数据字段名称错误`);
+
+        var sfKey=period.Year+'-'+period.Quarter;
+        if (!this.SectionFinanceData.has(sfKey)) return this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 没有这期财务数据`);
+
+        var financeData=this.SectionFinanceData.get(sfKey);
+        if (!financeData.has(id)) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 没有这期财务数据字段`);
+
+        return financeData.get(id);
+    }
+
    
     this.JsonDataToHistoryData=function(data)
     {
@@ -7572,6 +7718,52 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_HK_TO_SH:2050,      //北上流入上证
     JOB_DOWNLOAD_HK_TO_SZ:2051,      //北上流入深证
     JOB_DOWNLOAD_HK_TO_SH_SZ:2052,   //北上流总的
+
+
+    //截面数据
+    //财务数据 SF(公告期,数据名称)   如: SF(201901,"流动资产");
+    JOB_DOWNLOAD_SECTION_SF:20000,
+
+    JOB_DOWNLOAD_SECTION_F_01:20001,    //currentassets 流动资产
+    JOB_DOWNLOAD_SECTION_F_02:20002,    //monetaryfunds 货币资金
+    JOB_DOWNLOAD_SECTION_F_03:20003,    //inventory 存货
+    JOB_DOWNLOAD_SECTION_F_04:20004,    //currentliabilities 流动负债
+    JOB_DOWNLOAD_SECTION_F_05:20005,    //ncurrentliabilities 非流动负债
+    JOB_DOWNLOAD_SECTION_F_06:20006,    //3expenses 三项费用
+    JOB_DOWNLOAD_SECTION_F_07:20007,    //investmentincome 投资收益
+    JOB_DOWNLOAD_SECTION_F_08:20008,    //pcnprofit 归母净利润
+    JOB_DOWNLOAD_SECTION_F_09:20009,    //nnetprofit 扣非净利润
+    JOB_DOWNLOAD_SECTION_F_10:20010,    //npersearning 扣非每股收益
+    JOB_DOWNLOAD_SECTION_F_11:20011,    //woewa 加权平均净资产收益
+    JOB_DOWNLOAD_SECTION_F_12:20012,    //inprocess 在建工程
+    JOB_DOWNLOAD_SECTION_F_13:20013,    //accdepreciation 累计折旧
+    JOB_DOWNLOAD_SECTION_F_14:20014,    //mholderprofit 少数股东利润
+    JOB_DOWNLOAD_SECTION_F_15:20015,    //lossexchange 汇兑损益
+    JOB_DOWNLOAD_SECTION_F_16:20016,    //baddebts 坏账计提
+    JOB_DOWNLOAD_SECTION_F_17:20017,    //fixedassets 固定资产
+    JOB_DOWNLOAD_SECTION_F_18:20018,    //curdepreciation 当期折旧
+    JOB_DOWNLOAD_SECTION_F_19:20019,    //orevenues 营业总收入
+    JOB_DOWNLOAD_SECTION_F_20:20020,    //moprofit 主营业务利润
+    JOB_DOWNLOAD_SECTION_F_21:20021,    //oprofit 营业利润
+    JOB_DOWNLOAD_SECTION_F_22:20022,    //nprofit 净利润
+    JOB_DOWNLOAD_SECTION_F_23:20023,    //areceivable 应收账款
+    JOB_DOWNLOAD_SECTION_F_24:20024,    //financialcost 财务费用
+    JOB_DOWNLOAD_SECTION_F_25:20025,    //ccfo 经营性现金流
+    JOB_DOWNLOAD_SECTION_F_26:20026,    //totalassets 资产总计
+    JOB_DOWNLOAD_SECTION_F_27:20027,    //totalliabilities 负债总计
+    JOB_DOWNLOAD_SECTION_F_28:20028,    //totalownersequity 所有者权益总计
+    JOB_DOWNLOAD_SECTION_F_29:20029,    //grossmargin 毛利率
+    JOB_DOWNLOAD_SECTION_F_30:20030,    //percreserve 每股资本公积金
+    JOB_DOWNLOAD_SECTION_F_31:20031,    //peruprofit 每股未分配利润
+    JOB_DOWNLOAD_SECTION_F_32:20032,    //persearning 每股收益
+    JOB_DOWNLOAD_SECTION_F_33:20033,    //pernetasset 每股净资产
+    JOB_DOWNLOAD_SECTION_F_34:20034,    //perccfo 每股经营性现金流
+    JOB_DOWNLOAD_SECTION_F_35:20035,    //nnprofitincrease finance4特有,扣非净利润涨幅
+    JOB_DOWNLOAD_SECTION_F_36:20036,    //nnprofitspeed finance4特有,扣非净利润涨速
+    JOB_DOWNLOAD_SECTION_F_37:20037,    //nprofitincrease finance4特有,净利润涨幅
+    JOB_DOWNLOAD_SECTION_F_38:20038,    //alratio 资产负债率（数值乘以100）
+    JOB_DOWNLOAD_SECTION_F_39:20039,    //profityoy 利润同比%（数值乘以100）
+
     
 
     JOB_RUN_SCRIPT:10000, //执行脚本
@@ -7661,6 +7853,70 @@ var JS_EXECUTE_JOB_ID=
         if (dataMap.has(value)) return dataMap.get(value);
     
         return null;
+    },
+
+    //财务截面数据 分报告期
+    GetSectionFinanceID:function(value)
+    {
+        let dataMap=new Map([
+            ['流动资产', JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_01],
+            ['货币资金', JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_02],
+            ['存货', JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_03],
+            ['流动负债', JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_04],
+            ['非流动负债',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_05],
+            ['三项费用',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_06],
+            ['投资收益',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_07],
+            ['归母净利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_08],
+            ['扣非净利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_09],
+            ['扣非每股收益',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_10],
+            ['加权平均净资产收益',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_11],
+            ['在建工程',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_12],
+            ['累计折旧',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_13],
+            ['少数股东利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_14],
+            ['汇兑损益',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_15],
+            ['坏账计提',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_16],
+            ['固定资产',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_17],
+            ['当期折旧',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_18],
+            ['营业总收入',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_19],
+            ['主营业务利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_20],
+            ['营业利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_21],
+            ['净利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_22],
+            ['应收账款',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_23],
+            ['财务费用',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_24],
+            ['经营性现金流',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_25],
+            ['资产总计',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_26],
+            ['负债总计',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_27],
+            ['所有者权益总计',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_28],
+            ['毛利率',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_29],
+            ['每股资本公积金',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_30],
+            ['每股未分配利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_31],
+            ['每股收益',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_32],
+            ['每股净资产',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_33],
+            ['每股经营性现金流',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_34],
+            ['扣非净利润涨幅',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_35],
+            ['扣非净利润涨速',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_36],
+            ['净利润涨幅',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_37],
+            ['资产负债率',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_38],
+            [' 利润同比',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_39],
+        ]);
+
+        if (dataMap.has(value)) return dataMap.get(value);
+
+        return null;
+    },
+
+    //获取报告期 201801 
+    GetSectionReportPeriod:function(value)  
+    {
+        if (value<200001) return null;
+
+        var preiod={ Year:parseInt(value/100) };
+        preiod.Quarter=parseInt(value%10);
+
+        if (preiod.Quarter==1 || preiod.Quarter==2 || preiod.Quarter==3 || preiod.Quarter==4) 
+            return preiod;
+
+        return null;
     }
 
 };
@@ -7701,7 +7957,7 @@ function JSExecute(ast,option)
     this.Algorithm=new JSAlgorithm(this.ErrorHandler,this.SymbolData);
     this.Draw=new JSDraw(this.ErrorHandler,this.SymbolData);
     
-    this.JobList=[];    //执行的任务队列
+    this.JobList=[];            //执行的任务队列
 
     this.UpdateUICallback=null; //回调
     this.CallbackParam=null;
@@ -7787,6 +8043,9 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH:           //北上上证
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ:           //北上深证
                 return this.SymbolData.GetHKToSHSZData(jobItem.ID);
+
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_SF:
+                return this.SymbolData.GetSectionFinanceData(jobItem);   //财务截面报告数据
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
@@ -8200,6 +8459,9 @@ function JSExecute(ast,option)
             case 'UPCOUNT':
             case 'DOWNCOUNT':
                 node.Out=this.SymbolData.GetIndexIncreaseCacheData(funcName,args[0],node);
+                break;
+            case 'SF':
+                node.Out=this.SymbolData.GetSectionFinanceCacheData(args[0],args[1],node);
                 break;
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node);

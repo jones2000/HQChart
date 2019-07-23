@@ -18,6 +18,11 @@
                         <use xlink:href="#icon-hk"></use>
                     </svg>
                 </span>
+                <span :title='科创板' v-if='IsStockStar'>
+                    <svg class="icon iconStockinfo" aria-hidden="true">
+                        <use xlink:href="#icon-stockStar"></use>
+                    </svg>
+                </span>
             </p>
             <div class="codeInfo">
                 <span class="code">{{Symbol}}</span>
@@ -157,7 +162,8 @@
                 IsShow: {
                     SearchSymbol: false,
                     IconStyle: true
-                }
+                },
+                IsStockStar:false
             }
 
             return data;
@@ -212,6 +218,7 @@
 
             this.IsIndex = this.IsSHSZIndex();  //初始判断是否是指数
             console.log('::created IsIndex', this.IsIndex);
+            this.IsStockStar = this.IsSHStockSTAR();
         },
         methods: {
             GoSearch() {
@@ -279,6 +286,9 @@
             //是否是指数
             IsSHSZIndex: function () {
                 return JSCommon.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol);
+            },
+            IsSHStockSTAR: function(){
+                return JSCommon.MARKET_SUFFIX_NAME.IsSHStockSTAR(this.Symbol);
             },
             GetHeight() {
                 return $('#stockinfo').outerHeight(true) + 1;
@@ -410,6 +420,7 @@
                 if (this.Symbol == symbol) return;
 
                 this.Symbol = symbol;
+                this.IsStockStar = this.IsSHStockSTAR();
                 //UI数据初始化　确保每个字段都有 防止报错
                 this.StockData = DefaultData.GetStockData();
                 this.CellStyle = DefaultData.GetCellStyle();

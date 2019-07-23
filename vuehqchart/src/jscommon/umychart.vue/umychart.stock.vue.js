@@ -1194,6 +1194,10 @@ JSStock.GetLatestDetailData=function(symbol)
     return new LatestDetailData(symbol);
 }
 
+//分析板块请求数据
+JSStock.GetAnalylisPlate = function () {
+  return new AnalylisPlate();
+}
 
 var RECV_DATA_TYPE=
 {
@@ -3147,6 +3151,92 @@ function LatestDetailData(symbol)
         this.InvokeUpdateUICallback();
     }
 }
+
+//分析板块请求数据
+function AnalylisPlate()
+{
+  this.newMethod = IStockData;   //派生
+  this.newMethod();
+  delete this.newMethod;
+
+  this.ApiUrl = g_JSStockResource.Domain + "/api/StockListAnalyze";
+  this.PolicyGuid;   //查询策略的Guid
+  this.Plate = "";      //板块id
+  this.SymbolList = [];   //股票列表
+
+  this.RequestData = function()
+  {
+    var self = this;
+    $.ajax({
+      url: self.ApiUrl,
+      data: {
+        "PolicyGuid": self.PolicyGuid,
+        "Plate": self.Plate,
+        "Symbol": self.SymbolList
+      },
+      type:"post",
+      dataType: 'json',
+      async:true,
+      success: function (data) 
+      {
+        self.RecvData(data);
+      },
+      error: function (request) 
+      {
+        self.RecvError(request);
+      }
+    });
+  }
+
+  this.RecvData = function(recvData)
+  {
+    this.Data = {};
+    // console.log(recvData.data,"recvData,分析板块")
+    var data = recvData;
+    if (data.count == 0) return;
+    
+    if (data.concept){    //概念占比
+      // 0 = 概念名称 1 = 代码 0 = 占比 3 = 个数 4 = 涨幅 5 = 最新价 6 = 一周涨幅 7 = 四周涨幅
+      var conceptList = [];
+      for (var i in data.concept.data){
+        var item = data.concept.data[i];
+        var info = {};
+        info.Name = item[0];
+        info.Symbol = item[1];
+        info.Ratio = item[2];
+        info.Count = item[3];
+        info.Increase = item[4];
+        info.Price = item[5];
+        info.Week1 = item[6];
+        info.Week4 = item[7];
+        conceptList.push(info);
+      }
+      this.Data.Concept = conceptList;
+    }
+    if (data.distributed) {    //股票类型占比
+      this.Data.Distributed = data.distributed;
+    }
+    if (data.industry) {    //行业占比
+      this.Data.Industry = data.industry;
+    }
+    if (data.quadrant) {    //四象限占比
+      this.Data.Quadrant = data.quadrant;
+    }
+    if (data.region) {    //四象限占比
+      this.Data.Region = data.region;
+    }
+
+    // console.log(this.Data,"this.Data")
+    if (this.UpdateUICallback) this.UpdateUICallback(this);
+  }
+
+  this.RecvError = function (request)
+  {
+    console.log(request)
+  }
+}
+
+
 /*外部导入*/ 
 import $ from 'jquery'
 

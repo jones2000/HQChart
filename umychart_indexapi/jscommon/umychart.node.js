@@ -66,7 +66,7 @@ function JSIndexScript()
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
-            ['涨跌趋势', this.UpDownAnalyze],['北上资金', this.HK2SHSZ],
+            ['涨跌趋势', this.UpDownAnalyze],['北上资金', this.HK2SHSZ],['股东人数', this.ShareHolder],
 
             ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2],['Zealink-持仓信号', this.Zealink_Index3],
             ['Zealink-增减持',this.Zealink_Index4],['Zealink-大宗交易', this.Zealink_Index5], ['Zealink-信托持股', this.Zealink_Index6],
@@ -2130,6 +2130,24 @@ JSIndexScript.prototype.HK2SHSZ=function()
     return data;
 }
 
+JSIndexScript.prototype.ShareHolder=function()
+{
+    let data=
+    {
+        Name: '股东人数', Description: '股东人数', IsMainIndex: false,FloatPrecision:0, 
+        Condition: { Period:[ 
+                                CONDITION_PERIOD.KLINE_DAY_ID,
+                                CONDITION_PERIOD.KLINE_MONTH_ID,
+                                CONDITION_PERIOD.KLINE_WEEK_ID,
+                                CONDITION_PERIOD.KLINE_YEAR_ID] },
+        Args: [],
+        Script: //脚本
+            "人数:FINANCE(100);"
+    };
+
+    return data;
+}
+
 JSIndexScript.prototype.VOLRate=function()
 {
     let data=
@@ -3892,7 +3910,8 @@ function JSChart(divElement)
         if (!chart) return false;
 
         //是否自动更新
-        if(option.IsAutoUpdate!=null) chart.IsAutoUpdate=option.IsAutoUpdate;
+        if (option.IsAutoUpdate!=null) chart.IsAutoUpdate=option.IsAutoUpdate;
+        if (option.AutoUpdateFrequency>0) chart.AutoUpdateFrequency=option.AutoUpdateFrequency;
 
         //设置股票代码
         if (!option.Symbol) return false;
@@ -4863,7 +4882,8 @@ function JSChartContainer(uielement)
             item.Draw();
         }
 
-        this.Frame.DrawOveraly();   //画叠加指标
+        if (this.Frame.DrawOveraly)
+            this.Frame.DrawOveraly();   //画叠加指标
 
         //固定扩展图形
         for(var i in this.ExtendChartPaint)
@@ -6512,6 +6532,21 @@ function MinuteHScreenFrame()
         this.Canvas.fillRect(left,top,width,height);
     }
 
+    //画集合竞价背景
+    this.DrawBeforeDataBG=function()
+    {
+        var left=ToFixedPoint(this.ChartBorder.GetLeft());
+        var right=ToFixedPoint(this.ChartBorder.GetRightEx());
+        var top=ToFixedPoint(this.ChartBorder.GetTop());
+        var bottom=this.GetXFromIndex(14);
+        
+        var width=right-left;
+        var height=bottom-top;
+
+        this.Canvas.fillStyle=this.BeforeBGColor;
+        this.Canvas.fillRect(left,top,width,height);
+    }
+
     //Y坐标转y轴数值
     this.GetYData=function(x)
     {
@@ -7199,6 +7234,7 @@ function KLineHScreenFrame()
         var borderBottom=this.ChartBorder.Bottom;
 
         var yPrev=null; //上一个坐标y的值
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         for(var i=this.HorizontalInfo.length-1; i>=0; --i)  //从左往右画分割线
         {
             var item=this.HorizontalInfo[i];
@@ -7212,7 +7248,7 @@ function KLineHScreenFrame()
             this.Canvas.stroke();
 
             //坐标信息 左边 间距小于10 不画坐标
-            if (item.Message[0]!=null && borderTop>10)
+            if (item.Message[0]!=null && borderTop>10*pixelTatio)
             {
                 if (item.Font!=null) this.Canvas.font=item.Font;
 
@@ -7229,7 +7265,7 @@ function KLineHScreenFrame()
             }
 
             //坐标信息 右边 间距小于10 不画坐标
-            if (item.Message[1]!=null && borderBottom>10)
+            if (item.Message[1]!=null && borderBottom>10*pixelTatio)
             {
                 if (item.Font!=null) this.Canvas.font=item.Font;
 
@@ -7426,6 +7462,129 @@ function KLineHScreenFrame()
         cursorIndex.Index=lastCursorIndex-this.Data.DataOffset;
 
         return true;
+    }
+}
+
+
+function OverlayKLineHScreenFrame()
+{
+    this.newMethod=KLineHScreenFrame;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.MainFrame=null;    //主框架
+    this.RightOffset=50;
+    this.PenBorder=g_JSChartResource.OverlayFrame.BolderPen; //'rgb(0,0,0)'
+    this.IsShow=true;   //坐标是否显示
+    this.Title=null;
+    this.TitleColor=g_JSChartResource.OverlayFrame.TitleColor;
+    this.TitleFont=g_JSChartResource.OverlayFrame.TitleFont;
+
+    this.Draw=function()
+    {
+        this.SplitXYCoordinate();
+
+        if (this.IsShow)
+        {
+            this.DrawVertical();
+            this.DrawHorizontal();
+            this.DrawTitle();
+        }
+        
+        this.SizeChange=false;
+        this.XYSplit=false;
+    }
+
+    this.DrawTitle=function()   //画标题
+    {
+        /*
+        if (!this.Title) return;
+        var top = this.ChartBorder.GetTopTitle();
+        var bottom = this.ChartBorder.GetBottom();
+        var right=this.ChartBorder.GetRight();
+        right+=this.RightOffset;
+
+        this.Canvas.fillStyle=this.TitleColor;
+        this.Canvas.font=this.TitleFont;
+        this.Canvas.textAlign="center";
+        this.Canvas.textBaseline="top";
+
+        var xText=right-2,yText=top+(bottom-top)/2;
+        this.Canvas.save();
+        this.Canvas.translate(xText, yText);
+        this.Canvas.rotate(90 * Math.PI / 180);
+        this.Canvas.fillText(this.Title, 0, 0);
+        this.Canvas.restore();
+        */
+    }
+
+    //分割x,y轴坐标信息
+    this.SplitXYCoordinate=function()
+    {
+        if (this.XYSplit==false) return;
+        if (this.YSplitOperator!=null) this.YSplitOperator.Operator();
+        // if (this.XSplitOperator!=null) this.XSplitOperator.Operator(); 子坐标和主坐标X轴一致 所以不用计算
+    }
+
+    //画Y轴
+    this.DrawHorizontal=function()
+    {
+        /*
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var bottom = this.ChartBorder.GetBottom();
+        var top = this.ChartBorder.GetTopTitle();
+        var borderRight=this.ChartBorder.Right;
+        right+=this.RightOffset;
+
+        var yPrev=null; //上一个坐标y的值
+        for(var i=this.HorizontalInfo.length-1; i>=0; --i)  //从上往下画分割线
+        {
+            var item=this.HorizontalInfo[i];
+            var y=this.GetYFromData(item.Value);
+            if (y!=null && Math.abs(y-yPrev)<this.MinYDistance) continue;  //两个坐标在近了 就不画了
+
+            if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
+            else if (y <= top + 2) this.Canvas.textBaseline = 'top';
+            else this.Canvas.textBaseline = "middle";
+
+            this.Canvas.strokeStyle=this.PenBorder;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(right-2,ToFixedPoint(y));
+            this.Canvas.lineTo(right,ToFixedPoint(y));
+            this.Canvas.stroke();
+
+            //坐标信息 右边 间距小于10 不画坐标
+            if (item.Message[1]!=null && borderRight>10)
+            {
+                if (item.Font!=null) this.Canvas.font=item.Font;
+
+                this.Canvas.fillStyle=item.TextColor;
+                this.Canvas.textAlign="left";
+                this.Canvas.fillText(item.Message[1],right+2,y);
+            }
+
+            yPrev=y;
+        }
+        */
+    }
+
+    //画X轴
+    this.DrawVertical=function()
+    {
+        /*
+        var top=this.ChartBorder.GetTopEx();
+        //var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var bottom=this.ChartBorder.GetBottomEx();
+        right+=this.RightOffset;
+
+        this.Canvas.strokeStyle=this.PenBorder;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ToFixedPoint(right),ToFixedPoint(top));
+        this.Canvas.lineTo(ToFixedPoint(right),ToFixedPoint(bottom));
+        this.Canvas.stroke();
+        */
     }
 }
 
@@ -11969,15 +12128,16 @@ function ChartMinutePriceLine()
         if (!this.LeadData) return;
 
         var isHScreen=(this.ChartFrame.IsHScreen===true);
-        if (isHScreen) return;
+        //if (isHScreen) return;
         //var dataWidth=this.ChartFrame.DataWidth;
         //var distanceWidth=this.ChartFrame.DistanceWidth;
         //var chartright=this.ChartBorder.GetRight();
-        if (isHScreen===true) chartright=this.ChartBorder.GetBottom();
+       
         var xPointCount=this.ChartFrame.XPointCount;
         var minuteCount=this.ChartFrame.MinuteCount;
         var bottom=this.ChartBorder.GetBottomEx();
         var top=this.ChartBorder.GetTopEx();
+        if (isHScreen===true) top=this.ChartBorder.GetRightEx();
 
         if (xPointCount>minuteCount) return;
 
@@ -12005,13 +12165,22 @@ function ChartMinutePriceLine()
         for(var i in aryLead)
         {
             var item=aryLead[i];
-            var y=yCenter-(item.Value*leadHeight/maxValue);
-            var x=ToFixedPoint(item.X);
             if (item.Value>0) this.Canvas.strokeStyle=this.UpColor;
             else this.Canvas.strokeStyle=this.DownColor;
+
+            var y=yCenter-(item.Value*leadHeight/maxValue);
+            var x=ToFixedPoint(item.X);
             this.Canvas.beginPath();
-            this.Canvas.moveTo(x,yCenter);
-            this.Canvas.lineTo(x,y);
+            if (isHScreen===true)
+            {
+                this.Canvas.moveTo(yCenter,x);
+                this.Canvas.lineTo(y,x);
+            }
+            else
+            { 
+                this.Canvas.moveTo(x,yCenter);
+                this.Canvas.lineTo(x,y);
+            }
             this.Canvas.stroke();
         }
     }
@@ -12912,6 +13081,7 @@ function ChartPie()
         }
 
 
+        this.Canvas.save();
         this.Canvas.translate(width/2,height/2);
 
         let totalValue=0;   //求和
@@ -12974,9 +13144,7 @@ function ChartPie()
             start += rate*2*Math.PI;//起始角度
         }
 
-        
-
-
+        this.Canvas.restore();
     }
 
     //空数据
@@ -16842,6 +17010,11 @@ function DynamicChartTitlePainting()
     {
         var bottom=this.Frame.ChartBorder.GetTop()+this.Frame.ChartBorder.TitleHeight/2;    //上下居中显示
         var right=this.Frame.ChartBorder.GetRight();
+        if (this.Frame.IsHScreen===true) 
+        {
+            bottom=-this.Frame.ChartBorder.TitleHeight/2;
+            right=this.Frame.ChartBorder.GetHeight();
+        }
         if (left>right) return;
 
         var spaceWidth=5*GetDevicePixelRatio();
@@ -16995,6 +17168,8 @@ function DynamicChartTitlePainting()
                 left+=textWidth;
             }
         }
+
+        this.DrawOverlayIndex(left+5*GetDevicePixelRatio());   //间距都空点 和主指标区分开
     }
 }
 
@@ -21638,6 +21813,7 @@ function KLineChartContainer(uielement)
             {
                 self.ChartSplashPaint.IsEnableSplash = false;
                 self.RecvMinuteHistoryData(data);
+                self.AutoUpdate();
             }
         });
     }
@@ -21710,7 +21886,7 @@ function KLineChartContainer(uielement)
     }
 
     //请求实时行情数据
-    this.ReqeustRealtimeData=function()
+    this.RequestRealtimeData=function()
     {
         var self=this;
 
@@ -21797,6 +21973,91 @@ function KLineChartContainer(uielement)
         this.Frame.SetSizeChage(true);
         this.Draw();
         
+    }
+
+    this.RequestMinuteRealtimeData=function()
+    {
+        var self=this;
+        $.ajax({
+            url: this.RealtimeApiUrl,
+            data:
+            {
+                "field": ["name","symbol","price","yclose","minutecount","minute","date","time"],
+                "symbol": [self.Symbol],
+                "start": -1
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                self.RecvMinuteRealtimeData(data);
+                self.AutoUpdate();
+            }
+        });
+    }
+
+    this.RecvMinuteRealtimeData=function(data)
+    {
+        if (this.IsOnTouch==true) return;   //正在操作中不更新数据
+        if (!data.stock || !data.stock[0] || this.Symbol!=data.stock[0].symbol) return;
+        var realtimeData=KLineChartContainer.JsonDataToMinuteRealtimeData(data);
+        var tradeDate=data.stock[0].date;   //交易日日期
+        var index=null;
+        for(var i=this.SourceData.Data.length-1;i>0;--i)
+        {
+            var item=this.SourceData.Data[i];
+            if (item.Date!=tradeDate)
+            {
+                index=i;
+                break;
+            }
+        }
+
+        if (index==null) return;
+        
+        //实时行情数据更新
+        var start=index+1;
+        var oldLen=this.SourceData.Data.length;
+        for(var i=0,j=start;i<realtimeData.length;++i,++j)
+        {
+            this.SourceData.Data[j]=realtimeData[i];
+        }
+        console.log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by minute data [${start},${j}], [${oldLen}->${this.SourceData.Data.length}]`);
+
+        var bindData=new ChartData();
+        bindData.Data=this.SourceData.Data;
+        bindData.Period=this.Period;
+        bindData.Right=this.Right;
+        bindData.DataType=this.SourceData.DataType;
+
+        if (bindData.Right>0 && bindData.Period<=3)    //复权(日线数据才复权)
+        {
+            var rightData=bindData.GetRightDate(bindData.Right);
+            bindData.Data=rightData;
+        }
+
+        if (bindData.Period>0 && bindData.Period!=4)   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        {
+            var periodData=bindData.GetPeriodData(bindData.Period);
+            bindData.Data=periodData;
+        }
+
+        //绑定数据
+        this.UpdateMainData(bindData);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            this.BindIndexData(i,bindData);
+        }
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
     }
 
     //周期切换
@@ -22148,7 +22409,7 @@ function KLineChartContainer(uielement)
         subFrame.Interval=this.OverlayIndexFrameWidth;
         var overlayFrame=new OverlayIndexItem();
         if (obj.Identify) overlayFrame.Identify=obj.Identify;   //由外部指定id
-        frame=new OverlayKLineFrame();
+        var frame= this.ClassName==='KLineChartHScreenContainer' ? new OverlayKLineHScreenFrame() : new OverlayKLineFrame();
         frame.Canvas=this.Canvas;
         frame.MainFrame=subFrame.Frame;
         frame.ChartBorder=subFrame.Frame.ChartBorder;
@@ -23502,12 +23763,12 @@ function KLineChartContainer(uielement)
             {
                 if (self.Period<=3)
                 {
-                    self.ReqeustRealtimeData();                  //更新最新行情
+                    self.RequestRealtimeData();               //更新最新行情
                     //self.ReqeustKLineInfoData();
                 }
                 else 
                 {
-                    self.ReqeustHistoryMinuteData();            //请求分钟数据
+                    self.RequestMinuteRealtimeData();         //请求分钟数据
                 }  
             },frequency);
         }
@@ -23584,6 +23845,53 @@ KLineChartContainer.JsonDataToRealtimeData=function(data)
     item.Amount=data.stock[0].amount;
     item.Close=data.stock[0].price;
     return item;
+}
+
+KLineChartContainer.JsonDataToMinuteRealtimeData=function(data)
+{
+    var symbol=data.stock[0].symbol;
+    var upperSymbol=symbol.toUpperCase();
+    var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+    var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+    var aryMinuteData=new Array();
+    var preClose=data.stock[0].yclose;      //前一个数据价格
+    var date=data.stock[0].date;
+    if (isFutures && data.stock[0].yclearing)preClose=data.stock[0].yclearing;  //期货使用昨结算价
+    
+    for(var i in data.stock[0].minute)
+    {
+        var jsData=data.stock[0].minute[i];
+        var item = new HistoryData();
+
+        item.Close=jsData.price;
+        item.Open=jsData.open;
+        item.High=jsData.high;
+        item.Low=jsData.low;
+        if (isSHSZ) item.Vol=jsData.vol/100; //沪深股票原始单位股
+        else item.Vol=jsData.vol;
+        item.Amount=jsData.amount;
+        item.Date=date;
+        item.Time=jsData.time;
+
+        if (!item.Close) //当前没有价格 使用上一个价格填充
+        {
+            item.Close=preClose;
+            item.Open=item.High=item.Low=item.Close;
+        }
+
+        //价格是0的 都用空
+        if (item.Open<=0) item.Open=null;
+        if (item.Close<=0) item.Close=null;
+        if (item.High<=0) item.High=null;
+        if (item.Low<=0) item.Low=null;
+
+        //上次价格
+        if (jsData.price>0) preClose=jsData.price;
+
+        aryMinuteData[i]=item;
+    }
+
+    return aryMinuteData;
 }
 
 //API 返回数据 转化为array[]
@@ -29823,7 +30131,10 @@ function KLineRightMenu(divElement)
         var _self = this;
 
         var id=this.DivElement.id;
-        var $body=$("#"+id);
+        var $body = $("#" + id);
+
+        $body.find("div[id^='topMenu_']").remove();
+        $body.find("div[id^='childMenu_']").remove();
 
         var $topMenu = $("<div />");
         $topMenu.attr("id", "topMenu_"+_self.ID).addClass("context-menu-wrapper topmenu").hide();
@@ -29856,22 +30167,24 @@ function KLineRightMenu(divElement)
     this.Update=function()
     {
         var _self = this;
-        var id=this.DivElement.id;
-        var $body=$("#"+id);
+        //var id=this.DivElement.id;
+        //var $body=$("#"+id);
+        //
+        //var $topTable = $("#topTable_" + _self.ID);
+        //$topTable.empty();
+        //$topTable.append(_self.childrenList(_self.option.data));
+        //
+        //for (var i = 0; i < _self.option.data.length; i++) {
+        //    var isHasChildren = typeof _self.option.data[i].children != "undefined";
+        //
+        //    if (isHasChildren) {
+        //        var $childTable = $("#childTable_" + _self.ID + i);
+        //        $childTable.empty();
+        //        $childTable.append(_self.childrenList(_self.option.data[i].children));
+        //    }
+        //}
 
-        var $topTable = $("#topTable_" + _self.ID);
-        $topTable.empty();
-        $topTable.append(_self.childrenList(_self.option.data));
-
-        for (var i = 0; i < _self.option.data.length; i++) {
-            var isHasChildren = typeof _self.option.data[i].children != "undefined";
-
-            if (isHasChildren) {
-                var $childTable = $("#childTable_" + _self.ID + i);
-                $childTable.empty();
-                $childTable.append(_self.childrenList(_self.option.data[i].children));
-            }
-        }
+        _self.BindData();
         _self.BindEvent();
     }
 
@@ -30781,7 +31094,7 @@ function MinuteRightMenu(divElement)
         var symbol=chart.Symbol;
         if (MARKET_SUFFIX_NAME.IsSHSZStockA(symbol))
         {
-            dataList.push({text:'集合竞价',children: this.GetShowBeforeData(chart)})
+            dataList.push({text:'集合竞价',children: this.GetShowBeforeData(chart)});
         }
 
         var identify=event.data.FrameID;
@@ -30889,9 +31202,10 @@ function MinuteRightMenu(divElement)
                 {
                     text: "隐藏",
                     click: function () { chart.ShowBeforeData(false); },
-                    isBorder:true
                 }
-            ]   
+            ];
+            
+            return data;
         }
         else
         {
@@ -30900,12 +31214,11 @@ function MinuteRightMenu(divElement)
                 {
                     text: "显示",
                     click: function () { chart.ShowBeforeData(true); },
-                    isBorder:true
-                }, 
-            ]
-        }
+                }
+            ];
 
-        return data;
+            return data;
+        }
     }
 }
 
@@ -31364,6 +31677,17 @@ var MARKET_SUFFIX_NAME=
             } 
         }
 
+        return false;
+    },
+
+    IsSHStockSTAR:function(symbol)   // 是否是科创板 Sci-Tech innovAtion boaRd (STAR Market)
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (!this.IsSH(upperSymbol)) return false;
+        if (upperSymbol.charAt(0)=='6' && upperSymbol.charAt(1)=='8' && upperSymbol.charAt(2)=='8')
+            return true;
+        
         return false;
     }
 }
@@ -32811,6 +33135,7 @@ function Node()
     this.IsNeedBlockIncreaseData=new Set();     //是否需要市场涨跌股票数据统计
     this.IsNeedSymbolExData=new Set();          //下载股票行情的其他数据
     this.IsNeedHK2SHSZData=new Set();           //下载北上资金数据
+    this.IsNeedSectionFinance=new Map();        //下载截面财务数据 { key= 报告期 , Set() 字段}
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -32856,6 +33181,12 @@ function Node()
         for(var jobID of this.IsNeedSymbolExData)
         {
             jobs.push({ID:jobID});
+        }
+
+        //获取截面数据下载任务
+        for(var item of this.IsNeedSectionFinance)
+        {
+            jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_SF, SF:item});
         }
 
         return jobs;
@@ -32951,6 +33282,28 @@ function Node()
         {
             var blockSymbol=args[0].Value;
             if (!this.IsNeedBlockIncreaseData.has(blockSymbol))  this.IsNeedBlockIncreaseData.add(blockSymbol);
+            return;
+        }
+
+        if (callee.Name=='SF')  //Section finance
+        {
+            let period=JS_EXECUTE_JOB_ID.GetSectionReportPeriod(args[0].Value); //报告期
+            if (!period) return;
+            let jobID=JS_EXECUTE_JOB_ID.GetSectionFinanceID(args[1].Value);
+            if (!jobID) return;
+            var sfkey=period.Year+ '-' + period.Quarter;
+
+            if (!this.IsNeedSectionFinance.has(sfkey)) 
+            {
+                var finacne={ Period:period, Fields:new Set([jobID]) };
+                this.IsNeedSectionFinance.set(sfkey, finacne);
+            }
+            else
+            {
+                var finacne=this.IsNeedSectionFinance.get(sfkey);
+                if (!finacne.Fields.has(jobID)) finacne.Fields.add(jobID);
+            }
+            
             return;
         }
     }
@@ -37721,6 +38074,8 @@ function JSSymbolData(ast,option,jsExecute)
     this.HKToSHSZData=new Map();    //北上资金
     this.NewsAnalysisData=new Map();    //新闻统计
     this.ExtendData=new Map();          //其他的扩展数据
+
+    this.SectionFinanceData=new Map();  //截面报告数据
     
    
     //使用option初始化
@@ -37761,7 +38116,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.LatestData) return this.Execute.RunNextJob();
 
         var self=this;
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: self.RealtimeApiUrl,
             data:
             {
@@ -37903,7 +38258,7 @@ function JSSymbolData(ast,option,jsExecute)
         var self=this;
         if (this.Period<=3)     //请求日线数据
         {
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: self.KLineApiUrl,
                 data:
                 {
@@ -37928,7 +38283,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else            //请求分钟数据
         {
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: self.MinuteKLineApiUrl,
                 data:
                 {
@@ -39312,6 +39667,121 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
+    this.GetSectionFinanceData=function(job)
+    {
+        var sfKey=job.SF[0];
+        var period=job.SF[1].Period;
+        if (this.SectionFinanceData.has(sfKey)) return this.Execute.RunNextJob();
+
+        console.log(`[JSSymbolData::GetSectionFinanceData] ${period.Year}-${period.Quarter}`);
+        var fieldName='announcement'+period.Quarter;
+        var self=this;
+        var fieldList=["name","date","symbol", fieldName,'finance'+period.Quarter];
+        var cond=[fieldName+'.year', "int32", "eq", period.Year.toString() ];
+
+        //请求数据
+        JSNetwork.HttpReqeust({
+            url: this.StockHistoryDayApiUrl,
+            data:
+            {
+                "field": fieldList,
+                "symbol": [this.Symbol],
+                "condition":[{item:cond}]
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (recvData)
+            {
+                self.RecvSectionFinanceData(recvData,job);
+                self.Execute.RunNextJob();
+            }
+        });
+    }
+
+    this.RecvSectionFinanceData=function(data,job)
+    {
+        if (!data.stock || data.stock.length!=1) return;
+        var stockItem=data.stock[0];
+        if (!stockItem.stockday || stockItem.stockday.length<=0) return;
+        var dayItem=stockItem.stockday[0];
+        var period=job.SF[1].Period;
+        var finance=null;
+        if (period.Quarter===1) finance=dayItem.finance1;
+        else if (period.Quarter===2) finance=dayItem.finance2;
+        else if (period.Quarter===3) finance=dayItem.finance3;
+        else if (period.Quarter===4) finance=dayItem.finance4;
+        if (!finance) return;
+        
+        var data=new Map([
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_01,finance.currentassets],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_02,finance.monetaryfunds],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_03,finance.inventory],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_04,finance.currentliabilities],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_05,finance.ncurrentliabilities],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_06,finance.expenses3],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_07,finance.investmentincome],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_08,finance.pcnprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_09,finance.nnetprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_10,finance.npersearning],
+
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_11,finance.woewa],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_12,finance.inprocess],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_13,finance.accdepreciation],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_14,finance.mholderprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_15,finance.lossexchange],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_16,finance.baddebts],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_17,finance.fixedassets],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_18,finance.curdepreciation],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_19,finance.orevenues],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_20,finance.moprofit],
+
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_21,finance.oprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_22,finance.nprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_23,finance.areceivable],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_24,finance.financialcost],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_25,finance.ccfo],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_26,finance.totalassets],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_27,finance.totalliabilities],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_28,finance.totalownersequity],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_29,finance.grossmargin],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_30,finance.percreserve],
+
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_31,finance.peruprofit],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_32,finance.persearning],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_33,finance.pernetasset],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_34,finance.perccfo],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_38,finance.alratio],
+            [JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_39,finance.profityoy],
+        ]);
+
+        if (period.Quarter===4) //年报才有的数据
+        {
+            data.set(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_35,finance.nnprofitincrease);
+            data.set(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_36,finance.nnprofitspeed);
+            data.set(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_37,finance.nprofitincrease);
+        }
+
+        var sfKey=job.SF[0];
+        this.SectionFinanceData.set(sfKey,data);
+    }
+
+    this.GetSectionFinanceCacheData=function(date,fieldName,node)
+    {
+        var period=JS_EXECUTE_JOB_ID.GetSectionReportPeriod(date);
+        if (!period) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 报告期错误`);
+        var id=JS_EXECUTE_JOB_ID.GetSectionFinanceID(fieldName);
+        if (!id) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 财务数据字段名称错误`);
+
+        var sfKey=period.Year+'-'+period.Quarter;
+        if (!this.SectionFinanceData.has(sfKey)) return this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 没有这期财务数据`);
+
+        var financeData=this.SectionFinanceData.get(sfKey);
+        if (!financeData.has(id)) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 没有这期财务数据字段`);
+
+        return financeData.get(id);
+    }
+
    
     this.JsonDataToHistoryData=function(data)
     {
@@ -39686,6 +40156,52 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_HK_TO_SH:2050,      //北上流入上证
     JOB_DOWNLOAD_HK_TO_SZ:2051,      //北上流入深证
     JOB_DOWNLOAD_HK_TO_SH_SZ:2052,   //北上流总的
+
+
+    //截面数据
+    //财务数据 SF(公告期,数据名称)   如: SF(201901,"流动资产");
+    JOB_DOWNLOAD_SECTION_SF:20000,
+
+    JOB_DOWNLOAD_SECTION_F_01:20001,    //currentassets 流动资产
+    JOB_DOWNLOAD_SECTION_F_02:20002,    //monetaryfunds 货币资金
+    JOB_DOWNLOAD_SECTION_F_03:20003,    //inventory 存货
+    JOB_DOWNLOAD_SECTION_F_04:20004,    //currentliabilities 流动负债
+    JOB_DOWNLOAD_SECTION_F_05:20005,    //ncurrentliabilities 非流动负债
+    JOB_DOWNLOAD_SECTION_F_06:20006,    //3expenses 三项费用
+    JOB_DOWNLOAD_SECTION_F_07:20007,    //investmentincome 投资收益
+    JOB_DOWNLOAD_SECTION_F_08:20008,    //pcnprofit 归母净利润
+    JOB_DOWNLOAD_SECTION_F_09:20009,    //nnetprofit 扣非净利润
+    JOB_DOWNLOAD_SECTION_F_10:20010,    //npersearning 扣非每股收益
+    JOB_DOWNLOAD_SECTION_F_11:20011,    //woewa 加权平均净资产收益
+    JOB_DOWNLOAD_SECTION_F_12:20012,    //inprocess 在建工程
+    JOB_DOWNLOAD_SECTION_F_13:20013,    //accdepreciation 累计折旧
+    JOB_DOWNLOAD_SECTION_F_14:20014,    //mholderprofit 少数股东利润
+    JOB_DOWNLOAD_SECTION_F_15:20015,    //lossexchange 汇兑损益
+    JOB_DOWNLOAD_SECTION_F_16:20016,    //baddebts 坏账计提
+    JOB_DOWNLOAD_SECTION_F_17:20017,    //fixedassets 固定资产
+    JOB_DOWNLOAD_SECTION_F_18:20018,    //curdepreciation 当期折旧
+    JOB_DOWNLOAD_SECTION_F_19:20019,    //orevenues 营业总收入
+    JOB_DOWNLOAD_SECTION_F_20:20020,    //moprofit 主营业务利润
+    JOB_DOWNLOAD_SECTION_F_21:20021,    //oprofit 营业利润
+    JOB_DOWNLOAD_SECTION_F_22:20022,    //nprofit 净利润
+    JOB_DOWNLOAD_SECTION_F_23:20023,    //areceivable 应收账款
+    JOB_DOWNLOAD_SECTION_F_24:20024,    //financialcost 财务费用
+    JOB_DOWNLOAD_SECTION_F_25:20025,    //ccfo 经营性现金流
+    JOB_DOWNLOAD_SECTION_F_26:20026,    //totalassets 资产总计
+    JOB_DOWNLOAD_SECTION_F_27:20027,    //totalliabilities 负债总计
+    JOB_DOWNLOAD_SECTION_F_28:20028,    //totalownersequity 所有者权益总计
+    JOB_DOWNLOAD_SECTION_F_29:20029,    //grossmargin 毛利率
+    JOB_DOWNLOAD_SECTION_F_30:20030,    //percreserve 每股资本公积金
+    JOB_DOWNLOAD_SECTION_F_31:20031,    //peruprofit 每股未分配利润
+    JOB_DOWNLOAD_SECTION_F_32:20032,    //persearning 每股收益
+    JOB_DOWNLOAD_SECTION_F_33:20033,    //pernetasset 每股净资产
+    JOB_DOWNLOAD_SECTION_F_34:20034,    //perccfo 每股经营性现金流
+    JOB_DOWNLOAD_SECTION_F_35:20035,    //nnprofitincrease finance4特有,扣非净利润涨幅
+    JOB_DOWNLOAD_SECTION_F_36:20036,    //nnprofitspeed finance4特有,扣非净利润涨速
+    JOB_DOWNLOAD_SECTION_F_37:20037,    //nprofitincrease finance4特有,净利润涨幅
+    JOB_DOWNLOAD_SECTION_F_38:20038,    //alratio 资产负债率（数值乘以100）
+    JOB_DOWNLOAD_SECTION_F_39:20039,    //profityoy 利润同比%（数值乘以100）
+
     
 
     JOB_RUN_SCRIPT:10000, //执行脚本
@@ -39775,6 +40291,70 @@ var JS_EXECUTE_JOB_ID=
         if (dataMap.has(value)) return dataMap.get(value);
     
         return null;
+    },
+
+    //财务截面数据 分报告期
+    GetSectionFinanceID:function(value)
+    {
+        let dataMap=new Map([
+            ['流动资产', JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_01],
+            ['货币资金', JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_02],
+            ['存货', JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_03],
+            ['流动负债', JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_04],
+            ['非流动负债',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_05],
+            ['三项费用',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_06],
+            ['投资收益',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_07],
+            ['归母净利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_08],
+            ['扣非净利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_09],
+            ['扣非每股收益',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_10],
+            ['加权平均净资产收益',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_11],
+            ['在建工程',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_12],
+            ['累计折旧',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_13],
+            ['少数股东利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_14],
+            ['汇兑损益',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_15],
+            ['坏账计提',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_16],
+            ['固定资产',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_17],
+            ['当期折旧',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_18],
+            ['营业总收入',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_19],
+            ['主营业务利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_20],
+            ['营业利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_21],
+            ['净利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_22],
+            ['应收账款',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_23],
+            ['财务费用',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_24],
+            ['经营性现金流',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_25],
+            ['资产总计',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_26],
+            ['负债总计',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_27],
+            ['所有者权益总计',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_28],
+            ['毛利率',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_29],
+            ['每股资本公积金',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_30],
+            ['每股未分配利润',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_31],
+            ['每股收益',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_32],
+            ['每股净资产',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_33],
+            ['每股经营性现金流',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_34],
+            ['扣非净利润涨幅',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_35],
+            ['扣非净利润涨速',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_36],
+            ['净利润涨幅',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_37],
+            ['资产负债率',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_38],
+            [' 利润同比',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_39],
+        ]);
+
+        if (dataMap.has(value)) return dataMap.get(value);
+
+        return null;
+    },
+
+    //获取报告期 201801 
+    GetSectionReportPeriod:function(value)  
+    {
+        if (value<200001) return null;
+
+        var preiod={ Year:parseInt(value/100) };
+        preiod.Quarter=parseInt(value%10);
+
+        if (preiod.Quarter==1 || preiod.Quarter==2 || preiod.Quarter==3 || preiod.Quarter==4) 
+            return preiod;
+
+        return null;
     }
 
 };
@@ -39815,7 +40395,7 @@ function JSExecute(ast,option)
     this.Algorithm=new JSAlgorithm(this.ErrorHandler,this.SymbolData);
     this.Draw=new JSDraw(this.ErrorHandler,this.SymbolData);
     
-    this.JobList=[];    //执行的任务队列
+    this.JobList=[];            //执行的任务队列
 
     this.UpdateUICallback=null; //回调
     this.CallbackParam=null;
@@ -39901,6 +40481,9 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH:           //北上上证
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ:           //北上深证
                 return this.SymbolData.GetHKToSHSZData(jobItem.ID);
+
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_SF:
+                return this.SymbolData.GetSectionFinanceData(jobItem);   //财务截面报告数据
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
@@ -40314,6 +40897,9 @@ function JSExecute(ast,option)
             case 'UPCOUNT':
             case 'DOWNCOUNT':
                 node.Out=this.SymbolData.GetIndexIncreaseCacheData(funcName,args[0],node);
+                break;
+            case 'SF':
+                node.Out=this.SymbolData.GetSectionFinanceCacheData(args[0],args[1],node);
                 break;
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node);

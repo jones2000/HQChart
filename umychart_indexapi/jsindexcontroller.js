@@ -16,11 +16,10 @@ var HQChart=require('./jscommon/umychart.node');
 //  
 /*  post 数据:
 {
-    "symbol":["600000.sh","000001.sz","000008.sz","000017.sz","000056.sz","000338.sz","000408.sz","000415.sz","000498.sz","000557.sz"],
-    "code":"LC:= REF(CLOSE,1);RSI1:=SMA(MAX(CLOSE-LC,0),6,1)/SMA(ABS(CLOSE-LC),6,1)*100;OUT:CROSS(RSI1,20);"
+    "symbol":"600000.sh",
+    "indexname":"MA",
     "args":[{"name":"N1","value":10},{"name":"N2","value":12}],
-    "datecount":200, 
-    "calccount":50
+    "maxdatacount":200, 
 }
 
 返回数据

@@ -666,7 +666,8 @@ function JSChart(divElement)
         if (!chart) return false;
 
         //是否自动更新
-        if(option.IsAutoUpdate!=null) chart.IsAutoUpdate=option.IsAutoUpdate;
+        if (option.IsAutoUpdate!=null) chart.IsAutoUpdate=option.IsAutoUpdate;
+        if (option.AutoUpdateFrequency>0) chart.AutoUpdateFrequency=option.AutoUpdateFrequency;
 
         //设置股票代码
         if (!option.Symbol) return false;
@@ -1637,7 +1638,8 @@ function JSChartContainer(uielement)
             item.Draw();
         }
 
-        this.Frame.DrawOveraly();   //画叠加指标
+        if (this.Frame.DrawOveraly)
+            this.Frame.DrawOveraly();   //画叠加指标
 
         //固定扩展图形
         for(var i in this.ExtendChartPaint)
@@ -3283,6 +3285,21 @@ function MinuteHScreenFrame()
         var height=bottom-top;
 
         this.Canvas.fillStyle=this.TitleBGColor;
+        this.Canvas.fillRect(left,top,width,height);
+    }
+
+    //画集合竞价背景
+    this.DrawBeforeDataBG=function()
+    {
+        var left=ToFixedPoint(this.ChartBorder.GetLeft());
+        var right=ToFixedPoint(this.ChartBorder.GetRightEx());
+        var top=ToFixedPoint(this.ChartBorder.GetTop());
+        var bottom=this.GetXFromIndex(14);
+        
+        var width=right-left;
+        var height=bottom-top;
+
+        this.Canvas.fillStyle=this.BeforeBGColor;
         this.Canvas.fillRect(left,top,width,height);
     }
 
@@ -8867,15 +8884,16 @@ function ChartMinutePriceLine()
         if (!this.LeadData) return;
 
         var isHScreen=(this.ChartFrame.IsHScreen===true);
-        if (isHScreen) return;
+        //if (isHScreen) return;
         //var dataWidth=this.ChartFrame.DataWidth;
         //var distanceWidth=this.ChartFrame.DistanceWidth;
         //var chartright=this.ChartBorder.GetRight();
-        if (isHScreen===true) chartright=this.ChartBorder.GetBottom();
+       
         var xPointCount=this.ChartFrame.XPointCount;
         var minuteCount=this.ChartFrame.MinuteCount;
         var bottom=this.ChartBorder.GetBottomEx();
         var top=this.ChartBorder.GetTopEx();
+        if (isHScreen===true) top=this.ChartBorder.GetRightEx();
 
         if (xPointCount>minuteCount) return;
 
@@ -8903,13 +8921,22 @@ function ChartMinutePriceLine()
         for(var i in aryLead)
         {
             var item=aryLead[i];
-            var y=yCenter-(item.Value*leadHeight/maxValue);
-            var x=ToFixedPoint(item.X);
             if (item.Value>0) this.Canvas.strokeStyle=this.UpColor;
             else this.Canvas.strokeStyle=this.DownColor;
+
+            var y=yCenter-(item.Value*leadHeight/maxValue);
+            var x=ToFixedPoint(item.X);
             this.Canvas.beginPath();
-            this.Canvas.moveTo(x,yCenter);
-            this.Canvas.lineTo(x,y);
+            if (isHScreen===true)
+            {
+                this.Canvas.moveTo(yCenter,x);
+                this.Canvas.lineTo(y,x);
+            }
+            else
+            { 
+                this.Canvas.moveTo(x,yCenter);
+                this.Canvas.lineTo(x,y);
+            }
             this.Canvas.stroke();
         }
     }
@@ -9810,6 +9837,7 @@ function ChartPie()
         }
 
 
+        this.Canvas.save();
         this.Canvas.translate(width/2,height/2);
 
         let totalValue=0;   //求和
@@ -9872,9 +9900,7 @@ function ChartPie()
             start += rate*2*Math.PI;//起始角度
         }
 
-        
-
-
+        this.Canvas.restore();
     }
 
     //空数据
@@ -18256,16 +18282,23 @@ function KLineChartContainer(uielement)
         }
     }
 
-    this.UpdateMainData=function(hisData)
+    this.UpdateMainData=function(hisData,lastDataCount)
     {
         var frameHisdata=null;
         if (!this.Frame.Data) frameHisdata=this.Frame.Data;
         else if (this.Frame.SubFrame && this.Frame.SubFrame[0]) frameHisdata=this.Frame.SubFrame[0].Frame.Data;
         if (!frameHisdata) return;
 
+        var newDataCount=0;
+        if (lastDataCount>0 && hisData.Data.length>lastDataCount)
+        {
+            newDataCount=hisData.Data.length-lastDataCount;
+            console.log(`[KLineChartContainer::UpdateMainData]  [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}]`);
+        }
+
         this.ChartPaint[0].Data=hisData;
         this.ChartPaint[0].Symbol=this.Symbol;
-        this.ChartPaint[0].Data.DataOffset=frameHisdata.DataOffset;
+        this.ChartPaint[0].Data.DataOffset=frameHisdata.DataOffset+newDataCount;    //加上数据增加的个数
         for(var i in this.Frame.SubFrame)
         {
             var item =this.Frame.SubFrame[i].Frame;
@@ -18543,6 +18576,7 @@ function KLineChartContainer(uielement)
             {
                 self.ChartSplashPaint.IsEnableSplash = false;
                 self.RecvMinuteHistoryData(data);
+                self.AutoUpdate();
             }
         });
     }
@@ -18615,7 +18649,7 @@ function KLineChartContainer(uielement)
     }
 
     //请求实时行情数据
-    this.ReqeustRealtimeData=function()
+    this.RequestRealtimeData=function()
     {
         var self=this;
 
@@ -18702,6 +18736,97 @@ function KLineChartContainer(uielement)
         this.Frame.SetSizeChage(true);
         this.Draw();
         
+    }
+
+    this.RequestMinuteRealtimeData=function()
+    {
+        var self=this;
+        $.ajax({
+            url: this.RealtimeApiUrl,
+            data:
+            {
+                "field": ["name","symbol","price","yclose","minutecount","minute","date","time"],
+                "symbol": [self.Symbol],
+                "start": -1
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                self.RecvMinuteRealtimeData(data);
+                self.AutoUpdate();
+            }
+        });
+    }
+
+    this.RecvMinuteRealtimeData=function(data)
+    {
+        if (this.IsOnTouch==true) return;   //正在操作中不更新数据
+        if (!data.stock || !data.stock[0] || this.Symbol!=data.stock[0].symbol) return;
+        var realtimeData=KLineChartContainer.JsonDataToMinuteRealtimeData(data);
+
+        var frameHisdata=null;
+        if (!this.Frame.Data) frameHisdata=this.Frame.Data;
+        else if (this.Frame.SubFrame && this.Frame.SubFrame[0]) frameHisdata=this.Frame.SubFrame[0].Frame.Data;
+        if (!frameHisdata) return;
+        var lastDataCount=frameHisdata.Data.length;  //上一个的数据长度
+
+        var tradeDate=data.stock[0].date;   //交易日日期
+        var index=null;
+        for(var i=this.SourceData.Data.length-1;i>0;--i)
+        {
+            var item=this.SourceData.Data[i];
+            if (item.Date!=tradeDate)
+            {
+                index=i;
+                break;
+            }
+        }
+        if (index==null) return;
+
+        //实时行情数据更新
+        var start=index+1;
+        var oldLen=this.SourceData.Data.length;
+        for(var i=0,j=start;i<realtimeData.length;++i,++j)
+        {
+            this.SourceData.Data[j]=realtimeData[i];
+        }
+        console.log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by 1 minute data [${start},${j}], [${oldLen}->${this.SourceData.Data.length}]`);
+
+        var bindData=new ChartData();
+        bindData.Data=this.SourceData.Data;
+        bindData.Period=this.Period;
+        bindData.Right=this.Right;
+        bindData.DataType=this.SourceData.DataType;
+
+        if (bindData.Right>0 && bindData.Period<=3)    //复权(日线数据才复权)
+        {
+            var rightData=bindData.GetRightDate(bindData.Right);
+            bindData.Data=rightData;
+        }
+
+        if (bindData.Period>0 && bindData.Period!=4)   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        {
+            var periodData=bindData.GetPeriodData(bindData.Period);
+            bindData.Data=periodData;
+        }
+
+        //绑定数据
+        this.UpdateMainData(bindData,lastDataCount);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            this.BindIndexData(i,bindData);
+        }
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
     }
 
     //周期切换
@@ -20407,12 +20532,12 @@ function KLineChartContainer(uielement)
             {
                 if (self.Period<=3)
                 {
-                    self.ReqeustRealtimeData();                  //更新最新行情
+                    self.RequestRealtimeData();               //更新最新行情
                     //self.ReqeustKLineInfoData();
                 }
                 else 
                 {
-                    self.ReqeustHistoryMinuteData();            //请求分钟数据
+                    self.RequestMinuteRealtimeData();         //请求分钟数据
                 }  
             },frequency);
         }
@@ -20489,6 +20614,53 @@ KLineChartContainer.JsonDataToRealtimeData=function(data)
     item.Amount=data.stock[0].amount;
     item.Close=data.stock[0].price;
     return item;
+}
+
+KLineChartContainer.JsonDataToMinuteRealtimeData=function(data)
+{
+    var symbol=data.stock[0].symbol;
+    var upperSymbol=symbol.toUpperCase();
+    var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+    var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+    var aryMinuteData=new Array();
+    var preClose=data.stock[0].yclose;      //前一个数据价格
+    var date=data.stock[0].date;
+    if (isFutures && data.stock[0].yclearing)preClose=data.stock[0].yclearing;  //期货使用昨结算价
+    
+    for(var i in data.stock[0].minute)
+    {
+        var jsData=data.stock[0].minute[i];
+        var item = new HistoryData();
+
+        item.Close=jsData.price;
+        item.Open=jsData.open;
+        item.High=jsData.high;
+        item.Low=jsData.low;
+        if (isSHSZ) item.Vol=jsData.vol/100; //沪深股票原始单位股
+        else item.Vol=jsData.vol;
+        item.Amount=jsData.amount;
+        item.Date=date;
+        item.Time=jsData.time;
+
+        if (!item.Close) //当前没有价格 使用上一个价格填充
+        {
+            item.Close=preClose;
+            item.Open=item.High=item.Low=item.Close;
+        }
+
+        //价格是0的 都用空
+        if (item.Open<=0) item.Open=null;
+        if (item.Close<=0) item.Close=null;
+        if (item.High<=0) item.High=null;
+        if (item.Low<=0) item.Low=null;
+
+        //上次价格
+        if (jsData.price>0) preClose=jsData.price;
+
+        aryMinuteData[i]=item;
+    }
+
+    return aryMinuteData;
 }
 
 //API 返回数据 转化为array[]
@@ -28274,6 +28446,17 @@ var MARKET_SUFFIX_NAME=
             } 
         }
 
+        return false;
+    },
+
+    IsSHStockSTAR:function(symbol)   // 是否是科创板 Sci-Tech innovAtion boaRd (STAR Market)
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (!this.IsSH(upperSymbol)) return false;
+        if (upperSymbol.charAt(0)=='6' && upperSymbol.charAt(1)=='8' && upperSymbol.charAt(2)=='8')
+            return true;
+        
         return false;
     }
 }

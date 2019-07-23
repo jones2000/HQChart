@@ -1,6 +1,6 @@
 <template>
     <div :id='ID' class="stockchart" ref='stockchart' style="width:100%;height:100%">
-        <div class='hqchart' id="hqchart" ref="hqchart"/>
+        <div class='hqchart' id="hqchart" ref="hqchart"></div>
     </div>
 </template>
 
