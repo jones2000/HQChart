@@ -92,6 +92,7 @@
 * K线训练 https://opensource.zealink.com/hqweb/demo/phone13.html <br>
 * 弹幕功能 https://opensource.zealink.com/hqweb/demo/phone21.html <br>
 * 多指标叠加 https://opensource.zealink.com/hqweb/demo/phone22.html <br>
+* 截面数据(财务数据)计算器 https://opensource.zealink.com/hqweb/demo/sectiondatatest.html <br>
 
 # 4.使用教程
 1. 如何快速创建一个K线图页面 https://blog.csdn.net/jones2000/article/details/90272733 <br>
