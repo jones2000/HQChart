@@ -21526,16 +21526,23 @@ function KLineChartContainer(uielement)
         }
     }
 
-    this.UpdateMainData=function(hisData)
+    this.UpdateMainData=function(hisData,lastDataCount)
     {
         var frameHisdata=null;
         if (!this.Frame.Data) frameHisdata=this.Frame.Data;
         else if (this.Frame.SubFrame && this.Frame.SubFrame[0]) frameHisdata=this.Frame.SubFrame[0].Frame.Data;
         if (!frameHisdata) return;
 
+        var newDataCount=0;
+        if (lastDataCount>0 && hisData.Data.length>lastDataCount)
+        {
+            newDataCount=hisData.Data.length-lastDataCount;
+            console.log(`[KLineChartContainer::UpdateMainData]  [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}]`);
+        }
+
         this.ChartPaint[0].Data=hisData;
         this.ChartPaint[0].Symbol=this.Symbol;
-        this.ChartPaint[0].Data.DataOffset=frameHisdata.DataOffset;
+        this.ChartPaint[0].Data.DataOffset=frameHisdata.DataOffset+newDataCount;    //加上数据增加的个数
         for(var i in this.Frame.SubFrame)
         {
             var item =this.Frame.SubFrame[i].Frame;
@@ -22002,6 +22009,13 @@ function KLineChartContainer(uielement)
         if (this.IsOnTouch==true) return;   //正在操作中不更新数据
         if (!data.stock || !data.stock[0] || this.Symbol!=data.stock[0].symbol) return;
         var realtimeData=KLineChartContainer.JsonDataToMinuteRealtimeData(data);
+
+        var frameHisdata=null;
+        if (!this.Frame.Data) frameHisdata=this.Frame.Data;
+        else if (this.Frame.SubFrame && this.Frame.SubFrame[0]) frameHisdata=this.Frame.SubFrame[0].Frame.Data;
+        if (!frameHisdata) return;
+        var lastDataCount=frameHisdata.Data.length;  //上一个的数据长度
+
         var tradeDate=data.stock[0].date;   //交易日日期
         var index=null;
         for(var i=this.SourceData.Data.length-1;i>0;--i)
@@ -22013,9 +22027,8 @@ function KLineChartContainer(uielement)
                 break;
             }
         }
-
         if (index==null) return;
-        
+
         //实时行情数据更新
         var start=index+1;
         var oldLen=this.SourceData.Data.length;
@@ -22023,7 +22036,7 @@ function KLineChartContainer(uielement)
         {
             this.SourceData.Data[j]=realtimeData[i];
         }
-        console.log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by minute data [${start},${j}], [${oldLen}->${this.SourceData.Data.length}]`);
+        console.log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by 1 minute data [${start},${j}], [${oldLen}->${this.SourceData.Data.length}]`);
 
         var bindData=new ChartData();
         bindData.Data=this.SourceData.Data;
@@ -22044,7 +22057,7 @@ function KLineChartContainer(uielement)
         }
 
         //绑定数据
-        this.UpdateMainData(bindData);
+        this.UpdateMainData(bindData,lastDataCount);
         this.BindInstructionIndexData(bindData);    //执行指示脚本
 
         for(var i=0; i<this.Frame.SubFrame.length; ++i)
@@ -32644,6 +32657,14 @@ function ErrorHandler()
         let error=this.CreateError(index,line,col,description);
         throw error;
     }
+
+    //重新下载数据
+    this.ThrowDownloadJob=function(index, line, col, description,job)
+    {
+        let error=this.CreateError(index,line,col,description);
+        error.Job=job;
+        throw error;
+    }
 }
 
 //扫描类
@@ -33287,9 +33308,9 @@ function Node()
 
         if (callee.Name=='SF')  //Section finance
         {
-            let period=JS_EXECUTE_JOB_ID.GetSectionReportPeriod(args[0].Value); //报告期
+            let period=JS_EXECUTE_JOB_ID.GetSectionReportPeriod(args[0].Value,args[1].Value); //报告期
             if (!period) return;
-            let jobID=JS_EXECUTE_JOB_ID.GetSectionFinanceID(args[1].Value);
+            let jobID=JS_EXECUTE_JOB_ID.GetSectionFinanceID(args[2].Value);
             if (!jobID) return;
             var sfkey=period.Year+ '-' + period.Quarter;
 
@@ -38076,6 +38097,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.ExtendData=new Map();          //其他的扩展数据
 
     this.SectionFinanceData=new Map();  //截面报告数据
+    this.ThrowSFPeirod=new Set();             //重新获取数据
     
    
     //使用option初始化
@@ -39766,23 +39788,30 @@ function JSSymbolData(ast,option,jsExecute)
         this.SectionFinanceData.set(sfKey,data);
     }
 
-    this.GetSectionFinanceCacheData=function(date,fieldName,node)
+    this.GetSectionFinanceCacheData=function(year,quarter,fieldName,node)
     {
-        var period=JS_EXECUTE_JOB_ID.GetSectionReportPeriod(date);
-        if (!period) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 报告期错误`);
+        var period=JS_EXECUTE_JOB_ID.GetSectionReportPeriod(year,quarter);
+        if (!period) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${year}, ${quarter}, '${fieldName}') 报告期错误`);
         var id=JS_EXECUTE_JOB_ID.GetSectionFinanceID(fieldName);
-        if (!id) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 财务数据字段名称错误`);
+        if (!id) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${year}, ${quarter},'${fieldName}') 财务数据字段名称错误`);
 
         var sfKey=period.Year+'-'+period.Quarter;
-        if (!this.SectionFinanceData.has(sfKey)) return this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 没有这期财务数据`);
+        if (!this.SectionFinanceData.has(sfKey) && !this.ThrowSFPeirod.has(sfKey)) //动态下载的数据, 抛异常以后重新下载执行
+        {
+            this.ThrowSFPeirod.add(sfKey);  //抛过的异常就不抛了
+            var job={ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_SF, SF:[sfKey, {Period:period, Fields:new Set([id])}]};
+            this.Execute.ThrowDownloadSF(node, job, `FS(${year}, ${quarter}, '${fieldName}') 动态下载`);
+        }
+
+        if (!this.SectionFinanceData.has(sfKey)) 
+            return this.Execute.ThrowUnexpectedNode(node,`不支持FS(${year}, ${quarter}, '${fieldName}') 没有这期财务数据`);
 
         var financeData=this.SectionFinanceData.get(sfKey);
-        if (!financeData.has(id)) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${date}, '${fieldName}') 没有这期财务数据字段`);
+        if (!financeData.has(id)) this.Execute.ThrowUnexpectedNode(node,`不支持FS(${year}, ${quarter}, '${fieldName}') 没有这期财务数据字段`);
 
         return financeData.get(id);
     }
 
-   
     this.JsonDataToHistoryData=function(data)
     {
         var list = data.data;
@@ -40335,7 +40364,7 @@ var JS_EXECUTE_JOB_ID=
             ['扣非净利润涨速',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_36],
             ['净利润涨幅',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_37],
             ['资产负债率',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_38],
-            [' 利润同比',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_39],
+            ['利润同比',JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_F_39],
         ]);
 
         if (dataMap.has(value)) return dataMap.get(value);
@@ -40343,17 +40372,11 @@ var JS_EXECUTE_JOB_ID=
         return null;
     },
 
-    //获取报告期 201801 
-    GetSectionReportPeriod:function(value)  
+    //获取报告期 2018, 1 
+    GetSectionReportPeriod:function(year,quarter)  
     {
-        if (value<200001) return null;
-
-        var preiod={ Year:parseInt(value/100) };
-        preiod.Quarter=parseInt(value%10);
-
-        if (preiod.Quarter==1 || preiod.Quarter==2 || preiod.Quarter==3 || preiod.Quarter==4) 
-            return preiod;
-
+        if (year>=2000 && quarter>=1 && quarter<=4) 
+            return { Year:year, Quarter:quarter };
         return null;
     }
 
@@ -40365,7 +40388,7 @@ function JSExecute(ast,option)
 
     this.ErrorHandler=new ErrorHandler();
     this.VarTable=new Map();        //变量表
-    this.OutVarTable=new Array();   //输出变量
+    this.OutVarTable=[];   //输出变量
     this.Arguments=[];
     this.ErrorCallback;             //执行错误回调
 
@@ -40399,17 +40422,21 @@ function JSExecute(ast,option)
 
     this.UpdateUICallback=null; //回调
     this.CallbackParam=null;
+    this.IsSectionMode=false;
 
     if (option)
     {
         if (option.Callback) this.UpdateUICallback=option.Callback;
         if (option.CallbackParam) this.CallbackParam=option.CallbackParam;
         if (option.Arguments) this.Arguments=option.Arguments;
+        if (option.IsSectionMode) this.IsSectionMode=option.IsSectionMode;
     }
 
     this.Execute=function()
     {
         console.log('[JSExecute::Execute] JobList', this.JobList);
+        this.OutVarTable=[];
+        this.VarTable=new Map();
         this.RunNextJob();
     }
 
@@ -40602,7 +40629,7 @@ function JSExecute(ast,option)
                     let assignmentItem=item.Expression;
                     let varName=assignmentItem.Left.Name;
                     let outVar=this.VarTable.get(varName);
-                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                    if (!this.IsSectionMode && !Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
 
                     this.OutVarTable.push({Name:varName, Data:outVar,Type:0});
                 }
@@ -40767,7 +40794,17 @@ function JSExecute(ast,option)
         catch(error)
         {
             console.log(error);
-            if (this.ErrorCallback) this.ErrorCallback(error);
+            if (error.Job)
+            {
+                console.log('[JSComplier.Run] download job and reexectue', error.Job);
+                this.JobList.push(error.Job);
+                this.JobList.push({ID:JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT});
+                this.Execute();
+            }
+            else if (this.ErrorCallback) 
+            {
+                this.ErrorCallback(error);
+            }
         }
     }
 
@@ -40899,7 +40936,7 @@ function JSExecute(ast,option)
                 node.Out=this.SymbolData.GetIndexIncreaseCacheData(funcName,args[0],node);
                 break;
             case 'SF':
-                node.Out=this.SymbolData.GetSectionFinanceCacheData(args[0],args[1],node);
+                node.Out=this.SymbolData.GetSectionFinanceCacheData(args[0],args[1],args[2],node);
                 break;
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node);
@@ -41062,6 +41099,14 @@ function JSExecute(ast,option)
        
         return this.ErrorHandler.ThrowError(marker.Index,marker.Line,marker.Column,msg);
        
+    }
+
+    this.ThrowDownloadSF=function(node,job,message)
+    {
+        let marker=node.Marker;
+        let msg=message;
+
+        return this.ErrorHandler.ThrowDownloadJob(marker.Index,marker.Line,marker.Column,msg,job);
     }
 
     this.ThrowError=function()
@@ -42639,6 +42684,7 @@ function ScriptIndexConsole(obj)
     this.ClassName='ScriptIndexConsole';
     this.ErrorCallback;     //执行错误回调
     this.FinishCallback;    //执行完成回调
+    this.IsSectionMode=false;   //截面报表模式
 
     if (obj)
     {
@@ -42648,6 +42694,7 @@ function ScriptIndexConsole(obj)
         if (obj.Args) this.Arguments=obj.Args;
         if (obj.ErrorCallback) this.ErrorCallback=obj.ErrorCallback;
         if (obj.FinishCallback) this.FinishCallback=obj.FinishCallback;
+        if (obj.IsSectionMode) this.IsSectionMode=obj.IsSectionMode;
     }
 
     //执行脚本
@@ -42672,6 +42719,7 @@ function ScriptIndexConsole(obj)
             MaxRequestDataCount:obj.Request.MaxDataCount,
             MaxRequestMinuteDayCount:obj.Request.MaxMinuteDayCount,
             Arguments:this.Arguments,
+            IsSectionMode:this.IsSectionMode
         };
 
         if (obj.HQDataType===HQ_DATA_TYPE.HISTORY_MINUTE_ID) option.TrateDate=obj.Request.TradeDate;
@@ -42685,13 +42733,16 @@ function ScriptIndexConsole(obj)
         var self=param.Self;
         var jsExec=param.JSExecute;
 
-        var date=jsExec.SymbolData.Data.GetDate();
+        var date=null;
+        if (jsExec.SymbolData.Data)
+            date=jsExec.SymbolData.Data.GetDate();
         
         var result=
         { 
             Out:outVar, 
             Date:date,  //日期对应 上面的数据
-            Stock:{ Name:jsExec.SymbolData.Name, Symbol:jsExec.SymbolData.Symbol },
+            Stock:{ Name:jsExec.SymbolData.Name, Symbol:jsExec.SymbolData.Symbol }, //股票信息
+            Index: { Name:self.Name, ID:self.ID }   //指标信息
         };
         if (jsExec.SymbolData.Period>=4) result.Time=jsExec.SymbolData.Data.GetTime();
         //console.log('[ScriptIndexConsole::RecvResultData] outVar ', outVar);
