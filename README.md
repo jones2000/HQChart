@@ -113,6 +113,8 @@
 16. HQChart使用教程16-py中使用麦语言指标可视化 https://blog.csdn.net/jones2000/article/details/94920596 <br>
 17. HQChart使用教程17- 多技术指标独立坐标叠加 https://blog.csdn.net/jones2000/article/details/95618901 <br>
 18. HQChart使用教程18- K线截图 https://blog.csdn.net/jones2000/article/details/95738306 <br>
+19. HQChart使用教程19-基于HQChart的后台单股票指标计算服务 https://blog.csdn.net/jones2000/article/details/96479448 <br>
+20. HQChart使用教程20-单股票截面数据(财务数据)计算器 https://blog.csdn.net/jones2000/article/details/97135592 <br>
 
 **设计文档:**
 1. 如何(c++,js)写一个传统的K线图和走势图1 https://blog.csdn.net/jones2000/article/details/84779481 <br>
