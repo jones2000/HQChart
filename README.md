@@ -80,19 +80,19 @@
 * 支持指数领先指标(2019-7-15  新加功能) ![K线图](/小程序行情模块用例/image/hqchart_kline_lock3.png)
 
 # 3. 网页demo  <br>
-* K线图  https://opensource.zealink.com/hqweb/demo/phone7.html  <br>
-* 走势图 https://opensource.zealink.com/hqweb/demo/phone8.html  <br>
-* 走势图手机页面 https://opensource.zealink.com/hqweb/demo/phone2.html  <br>
-* K线图手机页面  https://opensource.zealink.com/hqweb/demo/phone.html  <br>
-* 横版走势图手机页面 https://opensource.zealink.com/hqweb/demo/phone10.html  <br>
-* 横版K线图手机页面  https://opensource.zealink.com/hqweb/demo/phone9.html  <br>
-* 多日走势图 https://opensource.zealink.com/hqweb/demo/phone15.html <br>
-* 个股筹码图 https://opensource.zealink.com/hqweb/demo/phone18.html <br>
-* 指标回测(手机版) https://opensource.zealink.com/hqweb/operatebsh5/index.html?symbol=000001.sz <br>
-* K线训练 https://opensource.zealink.com/hqweb/demo/phone13.html <br>
-* 弹幕功能 https://opensource.zealink.com/hqweb/demo/phone21.html <br>
-* 多指标叠加 https://opensource.zealink.com/hqweb/demo/phone22.html <br>
-* 截面数据(财务数据)计算器 https://opensource.zealink.com/hqweb/demo/sectiondatatest.html <br>
+* [K线图](https://opensource.zealink.com/hqweb/demo/phone7.html)  <br>
+* [走势图](https://opensource.zealink.com/hqweb/demo/phone8.html)  <br>
+* [走势图手机页面](https://opensource.zealink.com/hqweb/demo/phone2.html)  <br>
+* [K线图手机页面](https://opensource.zealink.com/hqweb/demo/phone.html)  <br>
+* [横版走势图手机页面](https://opensource.zealink.com/hqweb/demo/phone10.html)  <br>
+* [横版K线图手机页面](https://opensource.zealink.com/hqweb/demo/phone9.html)  <br>
+* [多日走势图](https://opensource.zealink.com/hqweb/demo/phone15.html) <br>
+* [个股筹码图](https://opensource.zealink.com/hqweb/demo/phone18.html) <br>
+* [指标回测(手机版)](https://opensource.zealink.com/hqweb/operatebsh5/index.html?symbol=000001.sz) <br>
+* [K线训练](https://opensource.zealink.com/hqweb/demo/phone13.html) <br>
+* [弹幕功能](https://opensource.zealink.com/hqweb/demo/phone21.html) <br>
+* [多指标叠加](https://opensource.zealink.com/hqweb/demo/phone22.html) <br>
+* [截面数据(财务数据)计算器](https://opensource.zealink.com/hqweb/demo/sectiondatatest.html) <br>
 
 # 4.使用教程
 1. [如何快速创建一个K线图页面](https://blog.csdn.net/jones2000/article/details/90272733) <br>
