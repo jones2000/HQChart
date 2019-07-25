@@ -117,12 +117,12 @@
 20. [HQChart使用教程20-单股票截面数据(财务数据)计算器](https://blog.csdn.net/jones2000/article/details/97135592) <br>
 
 **设计文档:**
-1. 如何(c++,js)写一个传统的K线图和走势图1 https://blog.csdn.net/jones2000/article/details/84779481 <br>
-2. 如何(c++,js)写一个传统的K线图和走势图2 - 走势图 https://blog.csdn.net/jones2000/article/details/84840770 <br>
-3. 如何(c++,js)写一个传统的K线图和走势图3-多指标窗口模式如何实现的 https://blog.csdn.net/jones2000/article/details/84979910 <br>
-4. 如何(c++,js)写一个传统的K线图和走势图3-十字光标的绘制 https://blog.csdn.net/jones2000/article/details/85123680 <br>
-5. 如何(c++,js)写一个传统的K线图和走势图4 - K线图 https://blog.csdn.net/jones2000/article/details/85235463 <br>
-6. 如何(c++,js)写一个传统的K线图和走势图5 - 移动筹码图 https://blog.csdn.net/jones2000/article/details/85356163 <br>
+1. [如何(c++,js)写一个传统的K线图和走势图1](https://blog.csdn.net/jones2000/article/details/84779481) <br>
+2. [如何(c++,js)写一个传统的K线图和走势图2-走势图](https://blog.csdn.net/jones2000/article/details/84840770) <br>
+3. [如何(c++,js)写一个传统的K线图和走势图3-多指标窗口模式如何实现的](https://blog.csdn.net/jones2000/article/details/84979910) <br>
+4. [如何(c++,js)写一个传统的K线图和走势图3-十字光标的绘制](https://blog.csdn.net/jones2000/article/details/85123680) <br>
+5. [如何(c++,js)写一个传统的K线图和走势图4-K线图](https://blog.csdn.net/jones2000/article/details/85235463) <br>
+6. [如何(c++,js)写一个传统的K线图和走势图5-移动筹码图](https://blog.csdn.net/jones2000/article/details/85356163) <br>
 
 * 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
 * QQ交流群(950092318) ![QQ群](/小程序行情模块用例/image/qqcode.png)
