@@ -95,25 +95,25 @@
 * 截面数据(财务数据)计算器 https://opensource.zealink.com/hqweb/demo/sectiondatatest.html <br>
 
 # 4.使用教程
-1. 如何快速创建一个K线图页面 https://blog.csdn.net/jones2000/article/details/90272733 <br>
-2. 如何把自定义指标显示在K线图页面 https://blog.csdn.net/jones2000/article/details/90273684 <br>
-3. 如何把指标上锁显示在K线图页面 https://blog.csdn.net/jones2000/article/details/90285723 <br>
-4. 如何自定义K线图颜色风格 https://blog.csdn.net/jones2000/article/details/90286933 <br>
-5. K线图控件操作函数说明 https://blog.csdn.net/jones2000/article/details/90301000 <br>
-6. 如何获取K线图上的指标数据进行回测 https://blog.csdn.net/jones2000/article/details/90314625 <br>
-7. 如何快速创建一个分时图页面 https://blog.csdn.net/jones2000/article/details/90319619 <br>
-8. 如何快速创建K线训练页面 https://blog.csdn.net/jones2000/article/details/90478687 <br>
-9. 手机端页面设置的几个特殊属性 https://blog.csdn.net/jones2000/article/details/90727468 <br>
-10. 如何把K线数据API替换成自己的API数据 https://blog.csdn.net/jones2000/article/details/90747715 <br>
-11. 如何快速创建一个横屏分时图页面 https://blog.csdn.net/jones2000/article/details/90453776 <br>
-12. 分析家语法执行器 https://blog.csdn.net/jones2000/article/details/93731637 <br>
-13. 分钟完成一个小程序K线图 https://blog.csdn.net/jones2000/article/details/91471252 <br>
-14. 如何在K线图上添加弹幕 https://blog.csdn.net/jones2000/article/details/91125408 <br>
-15. HQChart使用教程15-分析家语法执行器python版本 https://blog.csdn.net/jones2000/article/details/94738592 <br>
-16. HQChart使用教程16-py中使用麦语言指标可视化 https://blog.csdn.net/jones2000/article/details/94920596 <br>
-17. HQChart使用教程17- 多技术指标独立坐标叠加 https://blog.csdn.net/jones2000/article/details/95618901 <br>
-18. HQChart使用教程18- K线截图 https://blog.csdn.net/jones2000/article/details/95738306 <br>
-19. HQChart使用教程19-基于HQChart的后台单股票指标计算服务 https://blog.csdn.net/jones2000/article/details/96479448 <br>
+1. [如何快速创建一个K线图页面](https://blog.csdn.net/jones2000/article/details/90272733) <br>
+2. [如何把自定义指标显示在K线图页面](https://blog.csdn.net/jones2000/article/details/90273684) <br>
+3. [如何把指标上锁显示在K线图页面](https://blog.csdn.net/jones2000/article/details/90285723) <br>
+4. [如何自定义K线图颜色风格](https://blog.csdn.net/jones2000/article/details/90286933) <br>
+5. [K线图控件操作函数说明](https://blog.csdn.net/jones2000/article/details/90301000) <br>
+6. [如何获取K线图上的指标数据进行回测](https://blog.csdn.net/jones2000/article/details/90314625) <br>
+7. [如何快速创建一个分时图页面](https://blog.csdn.net/jones2000/article/details/90319619) <br>
+8. [如何快速创建K线训练页面](https://blog.csdn.net/jones2000/article/details/90478687) <br>
+9. [手机端页面设置的几个特殊属性](https://blog.csdn.net/jones2000/article/details/90727468) <br>
+10. [如何把K线数据API替换成自己的API数据](https://blog.csdn.net/jones2000/article/details/90747715) <br>
+11. [如何快速创建一个横屏分时图页面](https://blog.csdn.net/jones2000/article/details/90453776) <br>
+12. [分析家语法执行器](https://blog.csdn.net/jones2000/article/details/93731637) <br>
+13. [分钟完成一个小程序K线图](https://blog.csdn.net/jones2000/article/details/91471252) <br>
+14. [如何在K线图上添加弹幕](https://blog.csdn.net/jones2000/article/details/91125408) <br>
+15. [HQChart使用教程15-分析家语法执行器python版本](https://blog.csdn.net/jones2000/article/details/94738592) <br>
+16. [HQChart使用教程16-py中使用麦语言指标可视化](https://blog.csdn.net/jones2000/article/details/94920596) <br>
+17. [HQChart使用教程17- 多技术指标独立坐标叠加](https://blog.csdn.net/jones2000/article/details/95618901) <br>
+18. [HQChart使用教程18- K线截图](https://blog.csdn.net/jones2000/article/details/95738306) <br>
+19. [HQChart使用教程19-基于HQChart的后台单股票指标计算服务](https://blog.csdn.net/jones2000/article/details/96479448) <br>
 20. [HQChart使用教程20-单股票截面数据(财务数据)计算器](https://blog.csdn.net/jones2000/article/details/97135592) <br>
 
 **设计文档:**
