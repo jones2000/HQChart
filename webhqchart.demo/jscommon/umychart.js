@@ -10579,9 +10579,10 @@ function StockChip()
     this.InfoColor='rgb(0,0,0)';
     this.DayInfoColor='rgb(255,255,255)';
     this.LineHeight=16;
-    this.Left=50;   //左边间距
+    this.Left=50*GetDevicePixelRatio();   //左边间距
     this.IsAutoIndent=0;
     this.IsShowX=false;  //是否显示X刻度 成交量
+    this.ShowXCount=3;
 
     this.ButtonID=Guid();  //工具条Div id
 
@@ -10597,6 +10598,8 @@ function StockChip()
         if (option.ShowType>0) this.ShowType=option.ShowType;
         if (option.IsAutoIndent>0) this.IsAutoIndent=option.IsAutoIndent;    //是否自动缩进
         if (option.IsShowX) this.IsShowX=option.IsShowX;
+        if (option.Left>0) this.Left=option.Left*GetDevicePixelRatio();
+        if (option.ShowXCount>0) this.ShowXCount=option.ShowXCount;
     }
     
     this.Draw=function()
@@ -10640,21 +10643,22 @@ function StockChip()
         this.Canvas.textBaseline='bottom';
         this.Canvas.textAlign='left';
 
+        var lineHeight=this.LineHeight*GetDevicePixelRatio();
         var text='70%成本价'+ this.Data.Cast[1].MinPrice.toFixed(2)+'-'+this.Data.Cast[1].MaxPrice.toFixed(2)+'集中'+this.Data.Cast[1].Rate.toFixed(2)+'%';
         this.Canvas.fillText(text,left,bottom);
-        bottom-=this.LineHeight;
+        bottom-=lineHeight;
 
         text='90%成本价'+ this.Data.Cast[0].MinPrice.toFixed(2)+'-'+this.Data.Cast[0].MaxPrice.toFixed(2)+'集中'+this.Data.Cast[0].Rate.toFixed(2)+'%';;
         this.Canvas.fillText(text,left,bottom);
-        bottom-=this.LineHeight;
+        bottom-=lineHeight;
 
         text='平均成本：'+this.Data.ChipInfo.AveragePrice.toFixed(2)+'元';
         this.Canvas.fillText(text,left,bottom);
-        bottom-=this.LineHeight;
+        bottom-=lineHeight;
 
         text=+this.Data.YPrice.toFixed(2)+'处获利盘：'+this.Data.ChipInfo.YProfitRate.toFixed(2)+'%';
         this.Canvas.fillText(text,left,bottom);
-        bottom-=this.LineHeight;
+        bottom-=lineHeight;
 
         text='获利比例：';
         this.Canvas.fillText(text,left,bottom);
@@ -10662,19 +10666,19 @@ function StockChip()
         var barLeft=left+textWidth;
         var barWidth=(right-5-barLeft);
         this.Canvas.strokeStyle=this.ColorNoProfit;
-        this.Canvas.strokeRect(barLeft,bottom-this.LineHeight,barWidth,this.LineHeight);
+        this.Canvas.strokeRect(barLeft,bottom-lineHeight,barWidth,lineHeight);
         this.Canvas.strokeStyle=this.ColorProfit;
-        this.Canvas.strokeRect(barLeft,bottom-this.LineHeight,barWidth*(this.Data.ChipInfo.ProfitRate/100),this.LineHeight);
+        this.Canvas.strokeRect(barLeft,bottom-lineHeight,barWidth*(this.Data.ChipInfo.ProfitRate/100),lineHeight);
         text=this.Data.ChipInfo.ProfitRate.toFixed(2)+'%';
         this.Canvas.textAlign='center';
         this.Canvas.fillText(text,barLeft+barWidth/2,bottom);
-        bottom-=this.LineHeight;
+        bottom-=lineHeight;
 
         this.Canvas.textAlign='left';
         text='成本分布,日期：'+IFrameSplitOperator.FormatDateString(this.Data.SelectData.Date);
         if (this.Data.SelectData.Time) text+=' '+IFrameSplitOperator.FormatTimeString(this.Data.SelectData.Time);
         this.Canvas.fillText(text,left,bottom);
-        bottom-=this.LineHeight;
+        bottom-=lineHeight;
 
         if (this.ShowType!=1 && this.ShowType!=2) return;
 
@@ -10690,11 +10694,11 @@ function StockChip()
             text=item.Day+'周期'+(this.ShowType==1?'前':'内')+'成本'+rate.toFixed(2)+'%';
             if (i==0) textWidth=this.Canvas.measureText(text).width+8;
             this.Canvas.fillStyle=item.Color;
-            this.Canvas.fillRect(right-textWidth,bottom-this.LineHeight,textWidth,this.LineHeight);
+            this.Canvas.fillRect(right-textWidth,bottom-lineHeight,textWidth,lineHeight);
 
             this.Canvas.fillStyle=this.DayInfoColor;
             this.Canvas.fillText(text,right,bottom);
-            bottom-=this.LineHeight;
+            bottom-=lineHeight;
         }
     }
 
@@ -10741,12 +10745,13 @@ function StockChip()
             this.ChartBorder.UIElement.parentNode.appendChild(divButton);
         }
 
+        var pixelTatio = GetDevicePixelRatio();
         var left=ToFixedPoint(this.ChartBorder.GetRight()+this.Left);
         var right=ToFixedPoint(this.ChartBorder.GetChartWidth()-1);
         var toolbarWidth=right-left;
         var toolbarHeight=this.ChartBorder.GetTitleHeight();
         // var left=this.ChartBorder.GetRight();
-        var top=this.ChartBorder.GetTop();
+        var top=this.ChartBorder.GetTop()/pixelTatio;
 
         const spanStyle="<span class='{iconclass}' id='{iconid}' title='{icontitle}' style='cursor:pointer;display:inline-block;color:{iconcolor};font-size:{iconsize}px'></span>";
         const ICON_LIST=
@@ -10771,7 +10776,7 @@ function StockChip()
             spanHtml+=spanItem;
         }
 
-        divButton.style.right = 5 + "px";
+        divButton.style.right = 5/pixelTatio + "px";
         divButton.style.top = top + "px";
         //divButton.style.width=toolbarWidth+"px";
         divButton.style.height=toolbarHeight+'px';
@@ -11134,7 +11139,7 @@ function StockChip()
         return true;
     }
 
-    this.DrawFrame=function()  //Y轴成交量坐标
+    this.DrawFrame=function()  //X轴成交量坐标
     {
         if (this.IsShowX==false) return;
         if (this.Data.MaxVol<=0) return;
@@ -11155,24 +11160,35 @@ function StockChip()
             this.Canvas.lineTo(right,bottom);
         }
         
-        var showCount=4;
+        var showCount=this.ShowXCount;
         var maxValue=this.Data.MaxVol;
         var perValue=Math.floor(maxValue/showCount);
         this.Canvas.font=this.Font;
+        this.Canvas.textBaseline='top';
         this.Canvas.fillStyle=this.InfoColor;
-        for(i=1;i<showCount;++i)
+        var xOffset=10*GetDevicePixelRatio();
+        for(i=1;i<=showCount;++i)
         {
             var vol=perValue*i;
             var x=(vol/this.Data.MaxVol)*this.ClientRect.Width+this.ClientRect.Left;
             x=ToFixedPoint(x);
-            this.Canvas.moveTo(x,this.ClientRect.Top);
-            this.Canvas.lineTo(x,bottom);
-
-            this.Canvas.textBaseline='top';
-            this.Canvas.textAlign='center';
-
-            var text=IFrameSplitOperator.FormatValueString(vol, 1);
-            this.Canvas.fillText(text,x,bottom+2);
+            if (i==showCount)   //最后一个刻度不要画线了
+            {
+                this.Canvas.textAlign='right';
+                var text=IFrameSplitOperator.FormatValueString(maxValue, 1);
+                this.Canvas.fillText(text,x,bottom+2);
+            }
+            else
+            {
+                this.Canvas.moveTo(x,this.ClientRect.Top);
+                this.Canvas.lineTo(x,bottom);
+               
+                this.Canvas.textAlign='center';
+               
+                var text=IFrameSplitOperator.FormatValueString(vol, 1);
+                var textWidth=this.Canvas.measureText(text).width;
+                this.Canvas.fillText(text,Math.floor(x-textWidth*0.25),bottom+2);
+            }
         }
 
         this.Canvas.stroke();
