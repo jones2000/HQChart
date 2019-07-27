@@ -131,10 +131,10 @@
 
 * pc网页版行情目前正在开发中,基于VUE框架开发 <br>
   ![走势图2](/小程序行情模块用例/image/pch5hq.PNG)
-   [行情页面地址(v1.0）](https://opensource.zealink.com/vuehqweb/hq.demo.page.html) <br>
+   [行情页面地址(v1.0）](https://opensource.zealink.com/vuehqweb/hq.demo.page.html) <br><br>
   ![历史高频数据查询图2](/小程序行情模块用例/image/pch5history.PNG)
-   [查询页面地址](https://opensource.zealink.com/vuehqweb/queryContent.demo.page.html) <br>
+   [查询页面地址](https://opensource.zealink.com/vuehqweb/queryContent.demo.page.html) <br><br>
   ![多周期图2](/小程序行情模块用例/image/pch5hq2.png)
-   [多周期页面地址](https://opensource.zealink.com/vuehqweb/stockmultiperiod.demo.page.html) <br>
+   [多周期页面地址](https://opensource.zealink.com/vuehqweb/stockmultiperiod.demo.page.html) <br><br>
    ![综合排名2](/小程序行情模块用例/image/pch5hq3.png)
-   [综合排名页面地址](https://opensource.zealink.com/vuehqweb/stockmultiorder.demo.page.html) <br>
+   [综合排名页面地址](https://opensource.zealink.com/vuehqweb/stockmultiorder.demo.page.html) <br><br>
