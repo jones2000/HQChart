@@ -58,7 +58,7 @@
 * 支持通达信语法指标
 * 支持五彩K线(目前录入系统五彩K线30多个), 支持自定义通达信语法脚本的五彩K线
 * 支持专家系统指标
-* 支持个股筹码图
+* 支持个股筹码图 ![K线图](/小程序行情模块用例/image/hqchart_kline2.png)
 * 支持单指标单股票前端回测计算 (webhqchart\umychart.regressiontest.js) (2019-5-13 增加功能)<br>
      计算如下数据:  <br>   
           Trade: {Count 交易次数  Days:交易天数 Success:成功交易次数 Fail:失败交易次数} <br>
