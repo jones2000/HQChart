@@ -88,6 +88,7 @@ function JSChart(divElement)
         if (option.IsShowRightMenu==true) chart.RightMenu=new KLineRightMenu(this.DivElement);
         if (option.ScriptError) chart.ScriptErrorCallback=option.ScriptError;
         chart.SelectRectRightMenu=new KLineSelectRightMenu(this.DivElement);
+        if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
 
         if (option.KLine)   //k线图的属性设置
         {
@@ -1072,6 +1073,8 @@ function JSChartContainer(uielement)
     this.UIElement=uielement;
     this.MouseDrag;
     this.DragMode=1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+    this.DragTimer;
+    this.EnableScrollUpDown=false;                  //是否可以上下滚动图形((手机端才有))
 
     this.CursorIndex=0;             //十字光标X轴索引
     this.LastPoint=new Point();     //鼠标位置
@@ -1397,6 +1400,12 @@ function JSChartContainer(uielement)
         return (changed==1 || changed==2) && touching==2;
     }
 
+    this.PreventTouchEvent=function(e)
+    {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+    }
+
     this.GetToucheData=function(e, isForceLandscape)
     {
         var touches=new Array();
@@ -1433,9 +1442,8 @@ function JSChartContainer(uielement)
 
         this.JSChartContainer.IsOnTouch=true;
         this.JSChartContainer.PhonePinch=null;
-
-        e.preventDefault();
         var jsChart=this.JSChartContainer;
+        if (jsChart.EnableScrollUpDown==false) e.preventDefault();
 
         if (jsChart.IsPhoneDragging(e))
         {
@@ -1448,7 +1456,7 @@ function JSChartContainer(uielement)
             }
 
             //长按2秒,十字光标
-            var timeout=setTimeout(function()
+            this.DragTimer=setTimeout(function()
             {
                 if (drag.Click.X==drag.LastMove.X && drag.Click.Y==drag.LastMove.Y) //手指没有移动，出现十字光标
                 {
@@ -1505,10 +1513,8 @@ function JSChartContainer(uielement)
         uielement.ontouchmove=function(e)
         {
             if(!this.JSChartContainer) return;
-            e.preventDefault();
-
             var touches=jsChart.GetToucheData(e,this.JSChartContainer.IsForceLandscape);
-
+           
             if (jsChart.IsPhoneDragging(e))
             {
                 var drag=this.JSChartContainer.MouseDrag;
@@ -1523,10 +1529,22 @@ function JSChartContainer(uielement)
                 else
                 {
                     var moveSetp=Math.abs(drag.LastMove.X-touches[0].clientX);
+                    var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
                     moveSetp=parseInt(moveSetp);
                     if (this.JSChartContainer.DragMode==1)  //数据左右拖拽
                     {
-                        if (moveSetp<5) return;
+                        if (moveUpDown>0 && moveSetp<=3 && this.JSChartContainer.EnableScrollUpDown==true) 
+                        {
+                            clearTimeout(this.DragTimer);
+                            this.DragTimer=null;
+                            return;
+                        }
+
+                        if (moveSetp<5) 
+                        {
+                            jsChart.PreventTouchEvent(e);
+                            return;
+                        }
 
                         var isLeft=true;
                         if (drag.LastMove.X<touches[0].clientX) isLeft=false;//右移数据
@@ -1544,8 +1562,10 @@ function JSChartContainer(uielement)
                         drag.LastMove.Y=touches[0].clientY;
                     }
                 }
-            }else if (jsChart.IsPhonePinching(e))
+            }
+            else if (jsChart.IsPhonePinching(e))
             {
+                jsChart.PreventTouchEvent(e);
                 var phonePinch=this.JSChartContainer.PhonePinch;
                 if (!phonePinch) return;
 
@@ -1581,6 +1601,8 @@ function JSChartContainer(uielement)
 
                 phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
             }
+
+            jsChart.PreventTouchEvent(e);
         };
 
         uielement.ontouchend=function(e)
@@ -29374,7 +29396,7 @@ function JSMindContainer(uielement)
         return node;
     }
 
-    this.AddTableNode=function(ojb)
+    this.AddTableNode=function(obj)
     {
         return this.AddNode(obj,JSMIND_NODE_ID.TABLE_NODE);
     }
@@ -29397,10 +29419,11 @@ function INodeChartPainting()
     this.ChartBorder;                       //边框信息
     this.Name;                              //名称
     this.ClassName='INodeChartPainting';    //类名
+    this.SizeChange=true;
 
     this.Title;                             //标题
     this.TitleFont=new JSFont();
-
+    this.PenBorder="rgb(225,0,242)";        //边框颜色
     this.Data;                              //数据区
     this.Position;
 
@@ -29409,6 +29432,13 @@ function INodeChartPainting()
     this.ToInt=function(value)
     {
         return Math.floor(value+0.5);
+    }
+
+    this.IsNull=function(value)
+    {
+        if (value===undefined) return true;
+        if (value===null) return true;
+        return false;
     }
 }
 
@@ -29421,10 +29451,204 @@ function TableNodeChartPaint()
     delete this.newMethod;
 
     this.ClassName='TableNodeChartPaint';    //类名
+    //this.Data; [ [{ Name:列名1, Font:字体设置, ColFont:列字体(缺省使用Font) }, { Name:列名2, Font:字体设置 },], [{Text:显示内容, Value:数值, Font:}, ] ]
+    this.Data={
+        Header:[ [{ Name:'列名1', Font:new JSFont() }, { Name:'列名2', Font:new JSFont(), ColFont:new JSFont() }] ],
+        Body:[ [ {Text:'显示内容1-1', Value:1 },  {Text:'显示内容1-2', Value:1 } ],  [ {Text:'显示内容2-1', Value:1 },  {Text:'显示内容2-2', Value:1 } ]]
+    };
+
+    this.HeaderCache;   //[ {Height:宽度 } ]
+    this.ColumeCache;   //[ {Height:, Width:, ColFont:}]
+    this.RowHeightCache;
+    this.WidthCache;
+    this.TitleHeightCache;
+    
+
+    this.X=0;
+    this.Y=0;
+    this.Width=0;
+    this.PixelRatio=GetDevicePixelRatio();
+
+    this.ColMargin={ Left:5, Top:5, Right:5, Bottom:5 };
+    this.TitleMargin={ Left:5, Top:5, Right:5, Bottom:5 };
+    this.HeaderMargin={ Left:5, Top:5, Right:5, Bottom:5 };
 
     this.Draw=function()
     {
-        
+        this.X=this.Position.X;
+        this.Y=this.Position.Y;
+        this.Width=this.Position.Width;
+        this.PixelRatio=GetDevicePixelRatio();
+
+        if (this.SizeChange==true) this.CacluateSize()
+
+        this.DrawBorder();
+        this.DrawTitle();
+        this.DrawHeader();
+        this.DrawBody();
+
+        this.SizeChange=false;
+    }
+
+    this.DrawTitle=function()
+    {
+        var pixelRatio=this.PixelRatio;
+        var titleHeight=this.TitleHeightCache;
+        this.Canvas.font=this.TitleFont.GetFont();
+
+        this.Canvas.textAlign='center';
+        this.Canvas.textBaseline='middle';
+        this.Canvas.font=this.TextFont;
+        this.Canvas.fillStyle=this.TitleFont.Color;
+        this.Canvas.fillText(this.Title,this.X+this.ToInt(this.WidthCache/2),this.Y+this.ToInt(titleHeight/2));
+
+        this.Y+=this.TitleHeightCache;
+    }
+
+    this.DrawHeader=function()
+    {
+        var x=this.X, y=this.Y;
+        var aryHeader=this.Data.Header;
+        var pixelRatio=this.PixelRatio;
+        this.Canvas.textAlign='center';
+        this.Canvas.textBaseline='bottom';
+        for(var i in aryHeader)
+        {
+            var header=aryHeader[i];
+            var cacheItem=this.HeaderCache[i];
+            var headerHeight=cacheItem.Height;
+            var left=x, top=y;
+            for(var j in header)
+            {
+                var item=header[j];
+                var itemWidth=this.ColumeCache[i].Width;
+                this.Canvas.font=item.Font.GetFont();
+                this.Canvas.fillText(item.Name,left+this.ToInt((itemWidth)/2),top+headerHeight-this.ColMargin.Bottom*pixelRatio);
+
+                left+=itemWidth;
+            }
+            y+=headerHeight;
+        }
+
+        this.Y=y;
+    }
+
+    this.DrawBody=function()
+    {
+        var x=this.X, y=this.Y;
+        var body=this.Data.Body;
+        var pixelRatio=this.PixelRatio;
+        this.Canvas.textAlign='left';
+        this.Canvas.textBaseline='bottom';
+        var rowHeight=this.RowHeightCache;
+        for(var i in body)
+        {
+            var row=body[i];
+            var left=x, top=y;
+            for(var j in row)
+            {
+                var font=this.ColumeCache[j].Font;
+                var colWidth=this.ColumeCache[j].Width;
+                var item=row[j];
+                this.Canvas.font=font.GetFont();   //计算宽度
+
+                this.Canvas.font=font.GetFont();
+                this.Canvas.fillText(item.Text,left+this.ColMargin.Left*pixelRatio,top+rowHeight-this.ColMargin.Bottom*pixelRatio);
+                left+=colWidth;
+            }
+
+            y+=rowHeight;
+        }
+    }
+
+    this.DrawBorder=function()
+    {
+        this.Canvas.strokeStyle=this.PenBorder;
+        var left=this.X,top=this.Y;
+        var right=left+this.WidthCache;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(left,ToFixedPoint(top+this.TitleHeightCache));
+        this.Canvas.lineTo(right,ToFixedPoint(top+this.TitleHeightCache));
+
+        for(var i in this.HeaderCache)
+        {
+
+        }
+
+        this.Canvas.stroke();
+    }
+
+    this.CacluateSize=function()
+    {
+        var pixelRatio=this.PixelRatio;
+        this.HeaderCache=[];
+        this.ColumeCache=[];
+        this.RowHeightCache=null;
+        this.WidthCache=null;
+        this.TitleHeightCache=null;
+
+        this.TitleHeightCache=this.TitleFont.GetFontHeight()+(this.TitleMargin.Left+this.TitleMargin.Right)*pixelRatio;
+        this.Canvas.font=this.TitleFont.GetFont();
+        this.WidthCache=this.Canvas.measureText(this.Title).width+(this.TitleMargin.Left+this.TitleMargin.Right)*pixelRatio;
+
+        var aryHeader=this.Data.Header;
+        for(var i in aryHeader)
+        {
+            var header=aryHeader[i];
+            var headerCache={ Height:null };
+            this.RowHeightCache=null;
+            for(var j in header)
+            {
+                var item=header[j];
+                var fontHeight=item.Font.GetFontHeight()+(this.HeaderMargin.Top+this.HeaderMargin.Bottom)*pixelRatio;
+                if (headerCache.Height==null || headerCache.Height<fontHeight) headerCache.Height=fontHeight;    //表头高度
+
+                this.Canvas.font=item.Font.GetFont();   //计算宽度
+                var textWidth=this.ToInt(this.Canvas.measureText(item.Name).width+4*pixelRatio);
+
+                var colFont=item.ColFont? item.ColFont:item.Font;   //行高
+                var rowHeight=colFont.GetFontHeight()+(this.ColMargin.Top+this.ColMargin.Bottom)*pixelRatio;
+                if (this.RowHeightCache==null || this.RowHeightCache<rowHeight) this.RowHeightCache=rowHeight;
+                if (this.IsNull(this.ColumeCache[j]))
+                {
+                    this.ColumeCache[j]={ Font:colFont, Width:textWidth };
+                }
+                else
+                {
+                    var colItem=this.ColumeCache[j];
+                    colItem.Font=colFont;
+                    if (colItem.Width<textWidth) colItem.Width=textWidth;
+                }
+            }
+
+            this.HeaderCache[i]=headerCache;
+        }
+
+        //计算表格每列最大宽度
+        var body=this.Data.Body;
+        for(var i in body)
+        {
+            var row=body[i];
+            for(var j in row)
+            {
+                var font=this.ColumeCache[j].Font;
+                var item=row[j];
+                this.Canvas.font=font.GetFont();   //计算宽度
+                var textWidth=this.ToInt(this.Canvas.measureText(item.Text).width+(this.ColMargin.Left+this.ColMargin.Right)*pixelRatio);
+                if (this.ColumeCache[j].Width<textWidth) this.ColumeCache[j].Width=textWidth;
+            }
+        }
+
+        var totalWidth=0;
+        for(var i in this.ColumeCache)
+        {
+            totalWidth+=this.ColumeCache[i].Width;
+        }
+
+        if (totalWidth>this.WidthCache)
+        {
+            this.WidthCache=totalWidth;
+        }
     }
 }
 
@@ -29435,9 +29659,6 @@ function TextNodeChartPaint()
     delete this.newMethod;
 
     this.ClassName='TextNodeChartPaint';    //类名
-    //this.Data; [ {Text:, Font:JSFont  } ]
-
-    this.PenBorder="rgb(225,0,242)";
 
     //临时变量
     this.X=0;
@@ -29451,6 +29672,9 @@ function TextNodeChartPaint()
         this.Width=this.Position.Width;
 
         this.DrawTitle();
+        this.DrawContent();
+
+        this.SizeChange=false;
     }
 
     this.DrawTitle=function()
@@ -29471,6 +29695,11 @@ function TextNodeChartPaint()
         this.Canvas.fillText(this.Title,this.X+this.ToInt(this.Width/2),this.Y+this.ToInt(titleHeight/2));
 
         this.Y+=titleHeight;
+    }
+
+    this.DrawContent=function()
+    {
+
     }
 }
 
@@ -29522,6 +29751,12 @@ function JSMind(divElement)
     {
         if (this.JSMindContainer && typeof(this.JSMindContainer.AddTextNode)=='function')
             this.JSMindContainer.AddTextNode(obj);
+    }
+
+    this.AddTableNode=function(obj)
+    {
+        if (this.JSMindContainer && typeof(this.JSMindContainer.AddTableNode)=='function')
+            this.JSMindContainer.AddTableNode(obj);
     }
 }
 
