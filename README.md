@@ -140,3 +140,7 @@
    [多周期页面地址](https://opensource.zealink.com/vuehqweb/stockmultiperiod.demo.page.html) <br><br>
    ![综合排名2](/小程序行情模块用例/image/pch5hq3.png)
    [综合排名页面地址](https://opensource.zealink.com/vuehqweb/stockmultiorder.demo.page.html) <br><br>
+   
+   ## 基于VUE版本给客户开发的样例
+   [指数行情页面黑色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sh&colorType=black) <br>
+   [个股行情页面白色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sz) <br>
