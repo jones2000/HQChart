@@ -1485,8 +1485,9 @@ function JSChartContainer(uielement)
                 var touches = jsChart.GetToucheData(e, jsChart.IsForceLandscape);
                 var x = touches[0].clientX;
                 var y = touches[0].clientY;
-                x -= uielement.getBoundingClientRect().left;    //减去控件的偏移偏移量
-                y -= uielement.getBoundingClientRect().top;
+                var pixelTatio = GetDevicePixelRatio();
+                x -= uielement.getBoundingClientRect().left*pixelTatio;    //减去控件的偏移偏移量
+                y -= uielement.getBoundingClientRect().top*pixelTatio;
                 if (jsChart.TryClickLock(x, y)) return;
             }
 
