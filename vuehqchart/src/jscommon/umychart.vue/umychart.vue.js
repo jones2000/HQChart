@@ -12719,7 +12719,7 @@ function ChartChannel()
 
         var drawCount=0;
         var firstItem=lineData[0];
-        if (this.IsHScreen) this.Canvas.moveTo(firstItem.Y,firstItem.X,);
+        if (this.IsHScreen) this.Canvas.moveTo(firstItem.Y,firstItem.X);
         else this.Canvas.moveTo(firstItem.X,firstItem.Y);
         for(var i=1;i<lineData.length;++i)
         {
@@ -32630,9 +32630,28 @@ function JSMindNode()
 
     this.CreateScprit=function(obj)
     {
-        this.Scprit=new ScriptIndexConsole({ 
-            Name:this.Name, ID:this.ID, Args:obj.Args, Script:obj.Script,
-            ErrorCallback:obj.ErrorCallback, FinishCallback:obj.FinishCallback });
+        var indexOption=
+        { 
+            Name:obj.Name, ID:this.ID, Args:obj.Args, Script:obj.Script, IsSectionMode:obj.IsSectionMode,
+            ErrorCallback:obj.ErrorCallback, FinishCallback:obj.FinishCallback 
+        };
+        console.log('[JSMindNode::CreateScprit] indexOption, node ' , indexOption, this)
+        this.Scprit=new ScriptIndexConsole(indexOption);
+    }
+
+    this.SetSelected=function(selected)
+    {
+        for(var i in this.ChartPaint)
+        {
+            var item=this.ChartPaint[i];
+            item.IsSelected=selected;
+        }
+    }
+
+    this.Move=function(xStep, yStep)
+    {
+        this.Position.X+=xStep;
+        this.Position.Y+=yStep;
     }
 
     this.Draw=function()
@@ -32671,10 +32690,102 @@ function JSMindContainer(uielement)
     this.Canvas=uielement.getContext("2d");         //画布
     this.UIElement=uielement;
     this.MouseDrag;
-    this.DragMode=1;  
+    this.DragMode=1; 
+    this.SelectedNode=null;     //当前选中节点
+    this.Symbol;
+    
+    this.Create=function(obj)
+    {
+        this.UIElement.JSMindContainer=this;
+    }
+
+    uielement.onmousedown=function(e)
+    {
+        if(!this.JSMindContainer) return;
+        var self=this.JSMindContainer;
+        if(self.DragMode==0) return;
+
+        var drag=
+        {
+            "Click":{},
+            "LastMove":{}  //最后移动的位置
+        };
+
+        drag.Click.X=e.clientX;
+        drag.Click.Y=e.clientY;
+        drag.LastMove.X=e.clientX;
+        drag.LastMove.Y=e.clientY;
+
+        self.MouseDrag=drag;
+        document.JSMindContainer=self;
+        var oldSelectedNode=self.SelectedNode;
+
+        var pt={};
+        pt.X=e.clientX-this.getBoundingClientRect().left;
+        pt.Y=e.clientY-this.getBoundingClientRect().top;
+        var selectedNode=self.GetNodeByPoint(pt);
+        self.SelectedNode=selectedNode;
+
+        if (selectedNode!=oldSelectedNode)
+        {
+            if (oldSelectedNode) oldSelectedNode.SetSelected(false);
+            if (selectedNode) selectedNode.SetSelected(true);
+            self.Draw();
+        }
+        
+        /*
+        uielement.ondblclick=function(e)
+        {
+            var x = e.clientX-this.getBoundingClientRect().left;
+            var y = e.clientY-this.getBoundingClientRect().top;
+
+            if(this.JSChartContainer)
+                this.JSChartContainer.OnDoubleClick(x,y,e);
+        }
+        */
+
+        document.onmousemove=function(e)
+        {
+            if(!this.JSMindContainer) return;
+            var self=this.JSMindContainer;
+            var drag=self.MouseDrag;
+            if (!drag) return;
+
+            var moveSetp=Math.abs(drag.LastMove.X-e.clientX);
+
+            if (self.SelectedNode)
+            {
+                if(Math.abs(drag.LastMove.X-e.clientX)<5 && Math.abs(drag.LastMove.Y-e.clientY)<5) return;
+
+                if(self.MoveNode(e.clientX-drag.LastMove.X,e.clientY-drag.LastMove.Y))
+                {
+                    self.Draw();
+                }
+
+                drag.LastMove.X=e.clientX;
+                drag.LastMove.Y=e.clientY;
+            }
+        };
+
+        document.onmouseup=function(e)
+        {
+            //清空事件
+            document.onmousemove=null;
+            document.onmouseup=null;
+
+            //清空数据
+            console.log('[JSMindContainer::document.onmouseup]',e);
+            this.JSMindContainer.UIElement.style.cursor="default";
+            this.JSMindContainer.MouseDrag=null;
+            this.JSMindContainer=null;
+        }
+    }
 
     this.Draw=function()
     {
+        if (this.UIElement.width<=0 || this.UIElement.height<=0) return; 
+        this.Canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
+
         for(var i in this.Nodes)
         {
             var item=this.Nodes[i];
@@ -32682,14 +32793,50 @@ function JSMindContainer(uielement)
         }
     }
 
+    this.GetNodeByPoint=function(pt)
+    {
+        for(var i in this.Nodes)
+        {
+            var node=this.Nodes[i];
+            for(var j in node.ChartPaint)
+            {
+                var item=node.ChartPaint[j];
+                if (item.IsPointIn(pt)==1) return node;
+            }
+        }
+
+        return null;
+    }
+
+    this.MoveNode=function(xStep,yStep)
+    {
+        if (!this.SelectedNode) return false;
+
+        this.SelectedNode.Move(xStep,yStep);
+        return true;
+    }
+
     //添加一个节点 {Name:, Title:, DataScprit:, NodeType:}
     this.AddNode=function(obj,nodeType)  
     {
+        var self=this;
         var node=new JSMindNode();
         node.Name=obj.Name;
         if (obj.Title) node.Title=obj.Title;
         node.NodeType=nodeType;
         node.Position=obj.Position;
+        if (obj.Index)  //创建指标脚本
+        {
+            var indexInfo=
+            {
+                Name:obj.Index.Name, Args:obj.Index.Args, Script:obj.Index.Script, IsSectionMode:false,
+                ErrorCallback: function(error) { self.ExecuteError(node,error); },
+                FinishCallback:function(data, jsExectute) { self.ExecuteFinish(node, data, jsExectute); }
+            };
+
+            if (obj.Index.IsSectionMode==true) indexInfo.IsSectionMode=true;
+            node.CreateScprit(indexInfo);
+        }
 
         var chart=null;
         switch(nodeType)
@@ -32724,9 +32871,74 @@ function JSMindContainer(uielement)
         return this.AddNode(obj,JSMIND_NODE_ID.TEXT_NODE);
     }
 
-    this.ExecuteScript=function(obj)
+    this.ExecuteAllScript=function()
     {
+        var stockObj=
+        {
+            HQDataType:HQ_DATA_TYPE.KLINE_ID,
+            Stock: {Symbol:this.Symbol},
+            Request: { MaxDataCount: 500, MaxMinuteDayCount:5 },
+            Period:0 , Right:0
+        };
 
+        for(var i in this.Nodes)
+        {
+            var item=this.Nodes[i];
+            if (!item.Scprit) continue;
+            item.Scprit.ExecuteScript(stockObj);
+        }
+    }
+
+    this.ExecuteError=function(node,error)
+    {
+        console.log('[JSMindContainer::ExecuteError] node, error ', node, error);
+    }
+
+    this.ExecuteFinish=function(node, data, jsExectute)
+    {
+        console.log('[JSMindContainer::ExecuteFinish] node, data, jsExectute ', node, data, jsExectute);
+    }
+
+    this.LoadNodeData=function(data)    //加载节点树
+    {
+        for(var i in data.Root)
+        {
+            var item=data.Root[i];
+            this.LoadRootNode(item);
+        }
+    }
+
+    this.LoadRootNode=function(node)    //加载主节点
+    {
+        var jsNode=this.AddNode(node, node.Type);
+
+        if (node.Children)
+        {
+            for(var j in node.Children)
+            {
+                var childItem=node.Children[j];
+                this.LoadChildNode(childItem,jsNode);
+            }
+        }
+    }
+
+    this.LoadChildNode=function(node,parentJSNode)  //加载子节点
+    {
+        if (!node || !parentJSNode)  return;
+
+        var jsNode=this.AddNode(node,node.Type);
+        if (!jsNode) return;
+
+        if (node.Children)
+        {
+            for(var i in item.Children)
+            {
+                var childItem=item.Children[i];
+                this.LoadChildNode(childItem,jsNode);
+            }
+        }
+
+        parentJSNode.Children.push(jsNode);
     }
 }  
 
@@ -32738,6 +32950,7 @@ function INodeChartPainting()
     this.Name;                              //名称
     this.ClassName='INodeChartPainting';    //类名
     this.SizeChange=true;
+    this.IsSelected=false;                  //是否被选中
 
     this.Title;                             //标题
     this.TitleFont=new JSFont();
@@ -32759,6 +32972,11 @@ function INodeChartPainting()
         if (value===undefined) return true;
         if (value===null) return true;
         return false;
+    }
+
+    this.IsPointIn=function(pt) // -1=不在上面, 0=表头 
+    {
+        return -1;
     }
 }
 
@@ -32826,6 +33044,8 @@ function TableNodeChartPaint()
             this.DrawHeader();
             this.DrawBody();
         }
+
+        this.DrawSelectPoint();
 
         this.SizeChange=false;
     }
@@ -32967,11 +33187,13 @@ function TableNodeChartPaint()
         this.ColumeCache=[];
         this.RowHeightCache=null;
         this.WidthCache=null;
+        this.HeightCache=0;
         this.TitleHeightCache=null;
 
         this.TitleHeightCache=this.TitleFont.GetFontHeight()+(this.TitleMargin.Left+this.TitleMargin.Right)*pixelRatio;
         this.Canvas.font=this.TitleFont.GetFont();
         this.WidthCache=this.Canvas.measureText(this.Title).width+(this.TitleMargin.Left+this.TitleMargin.Right)*pixelRatio;
+        this.HeightCache+=this.TitleHeightCache;
 
         var aryHeader=this.Data.Header;
         for(var i in aryHeader)
@@ -33004,6 +33226,7 @@ function TableNodeChartPaint()
             }
 
             this.HeaderCache[i]=headerCache;
+            this.HeightCache+=headerCache.Height;
         }
 
         //计算表格每列最大宽度
@@ -33019,6 +33242,8 @@ function TableNodeChartPaint()
                 var textWidth=this.ToInt(this.Canvas.measureText(item.Text).width+(this.ColMargin.Left+this.ColMargin.Right)*pixelRatio);
                 if (this.ColumeCache[j].Width<textWidth) this.ColumeCache[j].Width=textWidth;
             }
+
+            this.HeightCache+=this.RowHeightCache;
         }
 
         var totalWidth=0;
@@ -33041,11 +33266,13 @@ function TableNodeChartPaint()
         this.ColumeCache=[];
         this.RowHeightCache=[];
         this.WidthCache=null;
+        this.HeightCache=0;
         this.TitleHeightCache=null;
 
         this.TitleHeightCache=this.TitleFont.GetFontHeight()+(this.TitleMargin.Left+this.TitleMargin.Right)*pixelRatio;
         this.Canvas.font=this.TitleFont.GetFont();
         this.WidthCache=this.Canvas.measureText(this.Title).width+(this.TitleMargin.Left+this.TitleMargin.Right)*pixelRatio;
+        this.HeightCache+=this.TitleHeightCache;
 
         var aryHeader=this.Data.Header;
         for(var i in aryHeader)
@@ -33122,6 +33349,11 @@ function TableNodeChartPaint()
         if (totalWidth>this.WidthCache)
         {
             this.WidthCache=totalWidth;
+        }
+
+        for(var i in this.RowHeightCache)
+        {
+            this.HeightCache+=this.RowHeightCache[j].Height;
         }
     }
 
@@ -33243,6 +33475,39 @@ function TableNodeChartPaint()
 
         this.Canvas.stroke();
     }
+
+
+    this.DrawSelectPoint=function()
+    {
+        if (!this.IsSelected) return;
+
+        var pointSize=4;
+        var left=this.Position.X, top=this.Position.Y;
+        var right=left+this.WidthCache, bottom=top+this.HeightCache;
+        this.Canvas.fillStyle='rgb(0,40,40)';
+        this.Canvas.fillRect(left,top,pointSize,pointSize);
+        this.Canvas.fillRect(this.ToInt(left+(this.WidthCache/2)),top,pointSize,pointSize);
+        this.Canvas.fillRect(right-pointSize,top,pointSize,pointSize);
+
+        this.Canvas.fillRect(left,this.ToInt(top+this.HeightCache/2),pointSize,pointSize);
+        this.Canvas.fillRect(right-pointSize,this.ToInt(top+this.HeightCache/2),pointSize,pointSize);
+
+        this.Canvas.fillRect(left,bottom-pointSize,pointSize,pointSize);
+        this.Canvas.fillRect(this.ToInt(left+(this.WidthCache/2)),bottom-pointSize,pointSize,pointSize);
+        this.Canvas.fillRect(right-pointSize,bottom-pointSize,pointSize,pointSize);
+    }
+
+    this.IsPointIn=function(pt) // -1=不在上面, 0=表头 
+    {
+        var left=this.Position.X;
+        var top=this.Position.Y;
+        var right=left+this.WidthCache;
+        var bottom=top+this.TitleHeightCache;
+
+        if (pt.X>left && pt.X<right && pt.Y>top && pt.Y<bottom) return 1;
+        
+        return -1;
+    }
 }
 
 function TextNodeChartPaint()
@@ -33304,7 +33569,7 @@ function JSMind(divElement)
 
     //h5 canvas
     this.CanvasElement=document.createElement("canvas");
-    this.CanvasElement.className='jschart-drawing';
+    this.CanvasElement.className='jsmind-drawing';
     this.CanvasElement.id=Guid();
     this.CanvasElement.setAttribute("tabindex",0);
     if(!divElement.hasChildNodes("canvas")) { divElement.appendChild(this.CanvasElement); }
@@ -33334,9 +33599,15 @@ function JSMind(divElement)
     this.SetOption=function(option)
     {
         var chart=new JSMindContainer(this.CanvasElement);
+        chart.Create({});
+        if (option.NodeTree) chart.LoadNodeData(option.NodeTree);
+
+        if (option.Symbol) chart.Symbol=option.Symbol;
+
+        chart.ExecuteAllScript();
 
         this.JSMindContainer=chart;
-        this.DivElement.JSChart=this;   //div中保存一份
+        this.DivElement.JSMind=this;   //div中保存一份
         this.JSMindContainer.Draw();
     }
 
