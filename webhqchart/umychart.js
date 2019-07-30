@@ -2,6 +2,29 @@
     封装图形控件
 */
 
+function JSCanvasElement()
+{
+    this.Height;
+    this.Width;
+    this.ID;
+    this.WebGLCanvas;
+
+    //获取画布
+    this.GetContext = function () {
+        return wx.createCanvasContext(this.ID);
+    }
+
+    this.GetWebGLCanvas=function(id)
+    {
+        var self=this;
+        const query = wx.createSelectorQuery();
+        query.select(id).node().exec((res) => {
+            console.log('[JSCanvasElement::GetWebGLCanvas] res ', res)
+            self.WebGLCanvas = res[0].node;
+        })
+    }
+}
+
 function JSChart(divElement)
 {
     this.DivElement=divElement;
@@ -1462,6 +1485,8 @@ function JSChartContainer(uielement)
                 var touches = jsChart.GetToucheData(e, jsChart.IsForceLandscape);
                 var x = touches[0].clientX;
                 var y = touches[0].clientY;
+                x -= uielement.getBoundingClientRect().left;    //减去控件的偏移偏移量
+                y -= uielement.getBoundingClientRect().top;
                 if (jsChart.TryClickLock(x, y)) return;
             }
 
