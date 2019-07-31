@@ -382,6 +382,7 @@ function JSChart(divElement)
 
         var windowsCount=2;
         if (option.Windows && option.Windows.length>0) windowsCount+=option.Windows.length; //指标窗口从第3个窗口开始
+        if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
 
         chart.Create(windowsCount);                            //创建子窗口
 
@@ -1625,7 +1626,7 @@ function JSChartContainer(uielement)
             console.log('[KLineChartContainer::uielement.ontouchend]',e);
             this.JSChartContainer.IsOnTouch = false;
             this.JSChartContainer.OnTouchFinished();
-            clearTimeout(timeout);
+            clearTimeout(this.DragTimer);
         }
 
     }
@@ -20930,8 +20931,8 @@ function MinuteChartContainer(uielement)
         this.JSChartContainer.IsOnTouch=true;
         this.JSChartContainer.PhonePinch=null;
 
-        e.preventDefault();
         var jsChart=this.JSChartContainer;
+        if (jsChart.EnableScrollUpDown==false) e.preventDefault();  //上下拖动图形不能阻止事件
 
         if (jsChart.IsPhoneDragging(e))
         {
@@ -20947,33 +20948,71 @@ function MinuteChartContainer(uielement)
             drag.Click.Y=touches[0].clientY;
             drag.LastMove.X=touches[0].clientX;
             drag.LastMove.Y=touches[0].clientY;
+            var self=this;
+            var T_ShowCorssCursor=function() //临时函数(Temp_) T_开头
+            {
+                if (jsChart.ChartCorssCursor.IsShow === true)    //移动十字光标
+                {
+                    var pixelTatio = GetDevicePixelRatio();
+                    var x = drag.Click.X-self.getBoundingClientRect().left*pixelTatio;
+                    var y = drag.Click.Y-self.getBoundingClientRect().top*pixelTatio;
+                    jsChart.OnMouseMove(x, y, e);
+                }
+            }
 
+            if (jsChart.EnableScrollUpDown==true)
+            {
+                this.DragTimer=setTimeout(function()
+                {
+                    if (drag.Click.X==drag.LastMove.X && drag.Click.Y==drag.LastMove.Y)
+                    {
+                        var mouseDrag=jsChart.MouseDrag;
+                        jsChart.MouseDrag=null;
+                        T_ShowCorssCursor();
+                        jsChart.PreventTouchEvent(e)
+                    }
+                }, 800);
+            }
+
+            this.JSChartContainer.MouseDrag=drag;
             document.JSChartContainer=this.JSChartContainer;
             this.JSChartContainer.SelectChartDrawPicture=null;
-            if (jsChart.ChartCorssCursor.IsShow === true)    //移动十字光标
-            {
-                var pixelTatio = GetDevicePixelRatio();
-                var x = drag.Click.X-this.getBoundingClientRect().left*pixelTatio;
-                var y = drag.Click.Y-this.getBoundingClientRect().top*pixelTatio;
-                jsChart.OnMouseMove(x, y, e);
-            }
+
+            if (jsChart.EnableScrollUpDown==false)
+                T_ShowCorssCursor();    //移动十字光标
         }
 
         uielement.ontouchmove=function(e)
         {
             if(!this.JSChartContainer) return;
-            e.preventDefault();
 
             var touches=jsChart.GetToucheData(e,this.JSChartContainer.IsForceLandscape);
             if (jsChart.IsPhoneDragging(e))
             {
                 var drag=this.JSChartContainer.MouseDrag;
-                if (drag==null)
+                if ((drag==null && jsChart.EnableScrollUpDown==true) || (drag && jsChart.EnableScrollUpDown==false))
                 {
                     var pixelTatio = GetDevicePixelRatio();
                     var x = touches[0].clientX-this.getBoundingClientRect().left*pixelTatio;
                     var y = touches[0].clientY-this.getBoundingClientRect().top*pixelTatio;
                     this.JSChartContainer.OnMouseMove(x,y,e);
+                }
+            }
+
+            if (jsChart.EnableScrollUpDown==false)
+            {
+                e.preventDefault();
+            }
+            else
+            {
+                if (drag==null) 
+                {
+                    jsChart.PreventTouchEvent(e); //十字光标出来了,阻止消息
+                }  
+                else 
+                {
+                    clearTimeout(this.DragTimer);   //上下推动图片,停止定时器,消息传递下去
+                    this.DragTimer=null;
                 }
             }
         };
@@ -20983,7 +21022,7 @@ function MinuteChartContainer(uielement)
             console.log('[MinuteChartContainer::uielement.ontouchend]',e);
             this.JSChartContainer.IsOnTouch = false;
             this.JSChartContainer.OnTouchFinished();
-            clearTimeout(timeout);
+            clearTimeout(this.DragTimer);
         }
 
     }
