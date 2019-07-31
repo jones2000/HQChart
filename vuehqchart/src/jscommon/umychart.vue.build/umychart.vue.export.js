@@ -28,6 +28,4 @@ export default {
     //style.js相关
     STYLE_TYPE_ID:STYLE_TYPE_ID,
     HQChartStyle:HQChartStyle,              //预定义全局的配色 黑
-
-    JSCanvasElement:JSCanvasElement        //简单图形
 }

@@ -1030,9 +1030,8 @@ export default
             if (isShow)
             {
                 if (StockChip) return;
-                var option={Name:'筹码分布', IsAutoIndent:1, ShowType:1};
+                var option={Name:'筹码分布', IsAutoIndent:1, ShowType:1, Width:250 };
                 var extendChart=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
-                chart.Frame.ChartBorder.Right+=chart.StockChipWidth;
                 chart.SetSizeChage(true);
                 chart.Draw();
             }
@@ -1040,12 +1039,10 @@ export default
             {
                 if (!StockChip) return;
                 chart.DeleteExtendChart(StockChip); 
-                if (StockChip.Chart.IsAutoIndent==1)
-                {
-                    chart.Frame.ChartBorder.Right-=chart.StockChipWidth;
-                    chart.SetSizeChage(true);
-                    chart.Draw();
-                }
+                var chipWidth=StockChip.Chart.Width;
+                chart.Frame.ChartBorder.Right-=chipWidth;
+                chart.SetSizeChage(true);
+                chart.Draw();
             }
         },
 
