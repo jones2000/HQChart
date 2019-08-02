@@ -8806,6 +8806,7 @@ function ScriptIndex(name,script,args,option)
     this.LockText=null;
     this.LockFont=null;
     this.LockCount=20;
+    this.LockMinWidth=null;
 
     if (option)
     {
@@ -8828,6 +8829,7 @@ function ScriptIndex(name,script,args,option)
         if (option.Lock.Text) this.LockText=option.Lock.Text;
         if (option.Lock.Font) this.LockFont=option.Lock.Font;
         if (option.Lock.Count) this.LockCount=option.Lock.Count;
+        if (option.Lock.MinWidth) this.LockMinWidth=option.Lock.MinWidth*GetDevicePixelRatio();
     }
 
     if (args) this.Arguments=args;
@@ -8844,6 +8846,7 @@ function ScriptIndex(name,script,args,option)
             if (lockData.Text) this.LockText=lockData.Text;
             if (lockData.Font) this.LockFont=lockData.Font;
             if (lockData.Count) this.LockCount=lockData.Count;
+            if (lockData.MinWidth) this.LockMinWidth=lockData.MinWidth*GetDevicePixelRatio();
         }
         else
         {   //清空锁配置信息
@@ -8990,7 +8993,7 @@ function ScriptIndex(name,script,args,option)
         else    //上锁
         {
             let lockData={ IsLocked:true,Callback:param.Self.LockCallback,IndexName:param.Self.Name ,ID:param.Self.LockID,
-                BG:param.Self.LockBG,Text:param.Self.LockText,TextColor:param.Self.LockTextColor, Font:param.Self.LockFont, Count:param.Self.LockCount };
+                BG:param.Self.LockBG,Text:param.Self.LockText,TextColor:param.Self.LockTextColor, Font:param.Self.LockFont, Count:param.Self.LockCount, MinWidth:param.Self.LockMinWidth };
             param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
         }
 

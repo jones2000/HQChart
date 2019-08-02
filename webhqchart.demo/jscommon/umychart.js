@@ -2934,6 +2934,7 @@ function IChartFramePainting()
         if (lockData.TextColor) this.LockPaint.TextColor=lockData.TextColor;  
         if (lockData.Font) this.LockPaint.Font=lockData.Font;
         if (lockData.Count) this.LockPaint.LockCount=lockData.Count;
+        if (lockData.MinWidth>0) this.LockPaint.MinWidth=lockData.MinWidth;
     }
 }
 
@@ -9607,6 +9608,7 @@ function ChartLock()
     this.LockID;        //锁ID
     this.Callback;      //回调
     this.IndexName;     //指标名字
+    this.MinWidth=null;  //最小宽度
 
     this.Draw=function()
     {
@@ -9652,6 +9654,14 @@ function ChartLock()
             lLeft = this.ChartBorder.GetLeft();
         var lHeight = this.ChartBorder.GetBottom() - this.ChartBorder.GetTop();
         var lWidth = this.ChartBorder.GetRight() - lLeft;
+
+        if (this.MinWidth>10 && lWidth<this.MinWidth) 
+        {
+            lWidth=this.MinWidth;
+            lLeft=this.ChartBorder.GetRight()-lWidth;
+            if (lLeft < this.ChartBorder.GetLeft()) lLeft = this.ChartBorder.GetLeft();
+        }
+
         this.Canvas.fillStyle = this.BGColor;
         this.Canvas.fillRect(lLeft, this.ChartBorder.GetTop(), lWidth, lHeight);
         var xCenter = lLeft + lWidth / 2;
