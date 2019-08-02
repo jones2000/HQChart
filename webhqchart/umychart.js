@@ -6481,8 +6481,8 @@ function ChartKLine()
                 var yBottom=Math.max(yOpen,yClose);
                 if (Math.abs(yOpen-yClose)<5)   //高度太小了, 上下各+5px
                 {
-                    yTop=Math.max(yHigh,yTop-5);
-                    yBottom=Math.min(yLow,yBottom+5);
+                    yTop=Math.min(yHigh,yTop-5);
+                    yBottom=Math.max(yLow,yBottom+5);
                 }
                 var rect=new Rect(left,yTop,dataWidth,yBottom-yTop);
                 //this.Canvas.fillStyle="rgb(0,0,100)";
