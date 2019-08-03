@@ -157,8 +157,16 @@ function JSChart(divElement)
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
                 if (!isNaN(item.Height)) chart.Frame.SubFrame[i].Height = item.Height;
-                if (item.IsShowLeftText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
-                if (item.IsShowRightText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度 
+                if (item.IsShowLeftText===false || item.IsShowLeftText===true) 
+                {
+                    chart.Frame.SubFrame[i].Frame.IsShowYText[0]=item.IsShowLeftText;
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
+                }
+                if (item.IsShowRightText===false || item.IsShowRightText===true) 
+                {
+                    chart.Frame.SubFrame[i].Frame.IsShowYText[1]=item.IsShowRightText;
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度
+                }
             }
         }
 
@@ -2975,6 +2983,7 @@ function AverageWidthFrame()
     this.MinXDistance = 30*GetDevicePixelRatio();       //X轴刻度最小间距
     this.MinYDistance=10*GetDevicePixelRatio();         //Y轴刻度最小间距
     this.CoordinateType=0;  //坐标类型 0=普通坐标 1=反转坐标
+    this.IsShowYText=[true,true];       //是否显示Y轴坐标坐标 [0=左侧] [1=右侧]
 
     this.DrawFrame=function()
     {
@@ -3054,7 +3063,7 @@ function AverageWidthFrame()
             else this.Canvas.textBaseline = "middle";
 
             //坐标信息 左边 间距小于10 不画坐标
-            if (item.Message[0]!=null && borderLeft>10)
+            if (item.Message[0]!=null && borderLeft>10 && this.IsShowYText[0]===true)
             {
                 if (item.Font!=null) this.Canvas.font=item.Font;
 
@@ -3064,7 +3073,7 @@ function AverageWidthFrame()
             }
 
             //坐标信息 右边 间距小于10 不画坐标
-            if (item.Message[1]!=null && borderRight>10)
+            if (item.Message[1]!=null && borderRight>10 && this.IsShowYText[1]===true)
             {
                 if (item.Font!=null) this.Canvas.font=item.Font;
 
@@ -3081,6 +3090,7 @@ function AverageWidthFrame()
     this.DrawInsideHorizontal = function () 
     {
         if (this.IsHScreen===true) return;  //横屏不画
+        if (this.IsShowYText[0]===false && this.IsShowYText[1]===false) return;
 
         var left = this.ChartBorder.GetLeft();
         var right = this.ChartBorder.GetRight();
@@ -3089,31 +3099,47 @@ function AverageWidthFrame()
         var borderRight = this.ChartBorder.Right;
         var borderLeft = this.ChartBorder.Left;
         var titleHeight = this.ChartBorder.TitleHeight;
-        if (borderLeft >= 10) return;
 
-        var pixelTatio = GetDevicePixelRatio();
-        var yPrev = null; //上一个坐标y的值
-        for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
+        if ( (borderLeft<10 && this.IsShowYText[0]===true) || (borderRight<10 && this.IsShowYText[1]===true) )
         {
-            var item = this.HorizontalInfo[i];
-            var y = this.GetYFromData(item.Value);
-            if (y != null && Math.abs(y - yPrev) < this.MinYDistance) continue;  //两个坐标在近了 就不画了
-
-            //坐标信息 左边 间距小于10 画在内部
-            if (item.Message[0] != null && borderLeft < 10) 
+            var pixelTatio = GetDevicePixelRatio();
+            var yPrev = null; //上一个坐标y的值
+            for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
             {
-                if (item.Font != null) this.Canvas.font = item.Font;
-                this.Canvas.fillStyle = item.TextColor;
-                this.Canvas.textAlign = "left";
-                if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
-                else if (y <= top + 2) this.Canvas.textBaseline = 'top';
-                else this.Canvas.textBaseline = "middle";
+                var item = this.HorizontalInfo[i];
+                var y = this.GetYFromData(item.Value);
+                if (y != null && Math.abs(y - yPrev) < this.MinYDistance) continue;  //两个坐标在近了 就不画了
 
-                var textObj={ X:left, Y:y, Text:{ BaseLine:this.Canvas.textBaseline, Font:this.Canvas.font, Value:item.Message[0]}} ;
-                if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj))
-                    this.Canvas.fillText(item.Message[0], left + 1*pixelTatio, y);
+                //坐标信息 左边 间距小于10 画在内部
+                if (item.Message[0] != null && borderLeft < 10 && this.IsShowYText[0]===true) 
+                {
+                    if (item.Font != null) this.Canvas.font = item.Font;
+                    this.Canvas.fillStyle = item.TextColor;
+                    this.Canvas.textAlign = "left";
+                    if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
+                    else if (y <= top + 2) this.Canvas.textBaseline = 'top';
+                    else this.Canvas.textBaseline = "middle";
+
+                    var textObj={ X:left, Y:y, Text:{ BaseLine:this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font:this.Canvas.font, Value:item.Message[0]}} ;
+                    if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj))
+                        this.Canvas.fillText(item.Message[0], left + 1*pixelTatio, y);
+                }
+
+                if (item.Message[1] != null && borderRight < 10 && this.IsShowYText[1]===true)
+                {
+                    if (item.Font != null) this.Canvas.font = item.Font;
+                    this.Canvas.fillStyle = item.TextColor;
+                    this.Canvas.textAlign = "right";
+                    if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
+                    else if (y <= top + 2) this.Canvas.textBaseline = 'top';
+                    else this.Canvas.textBaseline = "middle";
+
+                    var textObj={ X:right, Y:y, Text:{ BaseLine:this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font:this.Canvas.font, Value:item.Message[1]}} ;
+                    if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj))
+                        this.Canvas.fillText(item.Message[1], right - 1*pixelTatio, y);
+                }
+                yPrev = y;
             }
-            yPrev = y;
         }
     }
 
@@ -3758,6 +3784,7 @@ function KLineFrame()
         if (!this.ChartKLine.Max || !this.ChartKLine.Min) return false;
 
         var textWidth=this.Canvas.measureText(obj.Text.Value).width+4;    //刻度文字宽度
+        if (obj.Text.TextAlign==='right') obj.X-=textWidth;
         var max=this.ChartKLine.Max, min=this.ChartKLine.Min;
         var isOverlayMax=false, isOverlayMin=false;
         const textHeight=20;    //字体高度
