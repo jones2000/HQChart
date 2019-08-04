@@ -146,3 +146,5 @@
    ## 基于VUE版本给客户开发的样例
    [指数行情页面黑色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sh&colorType=black) <br>
    [个股行情页面白色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sz) <br>
+   ## js页面样例
+   [个股详情手机端h5](https://opensource.zealink.com/hqweb/hqpages/stockpage.html?) <br>
