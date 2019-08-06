@@ -172,6 +172,49 @@ function CompanyData() {
     }
 }
 
+//板块信息
+function PlateData() {
+    this.Industry;  //行业分类
+    this.Region;    //地区
+    this.Concept;   //概念
+
+    this.SetData = function (data) {
+        this.SetIndustryData(data);
+        this.SetRegionData(data);
+        this.SetConceptData(data);
+    }
+
+    this.SetIndustryData = function (data) {
+        if (!data.industry) return
+
+        this.Industry = [];
+        for (let i in data.industry) {
+            let item = data.industry[i];
+            this.Industry.push({Name: item.name, Symbol: item.symbol});
+        }
+    }
+
+    this.SetRegionData = function (data) {
+        if (!data.region) return
+
+        this.Region = [];
+        for (let i in data.region) {
+            let item = data.region[i];
+            this.Region.push({Name: item.name, Symbol: item.symbol});
+        }
+    }
+
+    this.SetConceptData = function (data) {
+        if (!data.concept) return
+
+        this.Concept = [];
+        for (let i in data.concept) {
+            let item = data.concept[i];
+            this.Concept.push({Name: item.name, Symbol: item.symbol});
+        }
+    }
+}
+
 //股票属性事件,属性
 function EventData() 
 {
@@ -507,6 +550,25 @@ function StockData(symbol)
                 return this.Company.Competence;
         }
     }
+
+    this.Plate; //板块
+    this.GetPlate = function (tagID, field) {
+        if (!this.Plate)  //只请求一次
+        {
+            this.PlateTagID.add(tagID);
+            return null;
+        }
+
+        switch (field) {
+            case STOCK_FIELD_NAME.PLATE_INDUSTRY:
+                return this.Plate.Industry;
+            case STOCK_FIELD_NAME.PLATE_CONCEPT:
+                return this.Plate.Concept;
+            case STOCK_FIELD_NAME.PLATE_REGION:
+                return this.Plate.Region;
+        }
+    }
+
     this.TagID=new Set();       //绑定的控件id
     this.BaseDataTagID=new Set();   //基础数据的控件id
     this.HeatTagID=new Set();   //需要热度的控件id
@@ -525,6 +587,7 @@ function StockData(symbol)
     this.DDE10ID = new Set();
     this.EventTagID = new Set();        //股票事件/属性
 	this.CompanyTagID = new Set();      //个股资料 (就请求1次)
+    this.PlateTagID = new Set();        //板块 概念 地区
 
     this.AttachTagID=function(id)
     {
@@ -795,6 +858,13 @@ function StockData(symbol)
         this.Company = new CompanyData();
         this.Company.SetData(data);
     }
+
+    this.SetPlateData = function (data) {
+        if (!data.industry && !data.region && !data.concept) return;
+
+        this.Plate = new PlateData();
+        this.Plate.SetData(data);
+    }
     //所有数据
     this.SetData = function (data) 
     {
@@ -930,6 +1000,9 @@ var STOCK_FIELD_NAME=
 
 	//个股资料
     COMPANY_NAME: 53,    //公司全称
+    PLATE_INDUSTRY: 54, //所属行业
+    PLATE_CONCEPT: 55,  //概念
+    PLATE_REGION: 56,   //地区
     COMPANY_BUSINESS: 57,
     COMPANY_VOL: 58,
     COMPANY_PRICE: 59,
@@ -1077,6 +1150,12 @@ function StockRead(stock,tagID)
             case STOCK_FIELD_NAME.FINANCE_EPS:
             case STOCK_FIELD_NAME.FINANCE_BENFORD:
                 return data.GetFinance(this.TagID,field);
+
+            //行业分类
+            case STOCK_FIELD_NAME.PLATE_INDUSTRY:
+            case STOCK_FIELD_NAME.PLATE_CONCEPT:
+            case STOCK_FIELD_NAME.PLATE_REGION:
+                return data.GetPlate(this.TagID, field);
             
             //资金流 
             case STOCK_FIELD_NAME.CAPITAL_FLOW_DAY:
@@ -1132,6 +1211,301 @@ function StockRead(stock,tagID)
         }
     }
 
+}
+
+//历史数据  个股财务粉饰 || 大宗交易 || 股东减持 || 限售解禁 || 业绩预告 || 空头指标
+function JSStockHistory() {
+    this.Symbol;
+    this.Callback;      //UI回调
+    this.Order = -1;      //排序方向
+    this.SortField;     //排序字段
+    this.Field;         //返回字段
+    this.Plate;         //全市场
+    this.Data = new Map();          //数据
+    this.ApiUrl = g_JSStockResource.Domain + "/API/StockHistoryDay";
+    this.PageSize = 20 ;//一页请求10调数据
+    this.PageIndex = 1;
+    this.Count;//数据总数
+    this.currentData = null;//请求入参
+
+
+    this.RequsetData = function (condition, condition2) {
+        var self = this;
+        var currentSymbol = typeof(self.Symbol) == "string" ? [this.Symbol] : this.Symbol;
+        var currentSymbolLength = currentSymbol ? currentSymbol.length : 0;
+
+        if (this.Plate){
+            this.currentData = {
+                "plate": this.Plate,//["CNA.ci"],
+                "symbol": currentSymbol,
+                "start": 0,
+                "end": this.PageSize,
+                "field": this.Field,
+                "orderfield": this.SortField,
+                "order": this.Order,
+                "condition": condition.GetQuery(),
+                "condition2": condition2 ? condition2.GetQuery() : [],
+            }
+        }else{
+            this.currentData = {
+                "symbol": currentSymbol,
+                "start": 0,
+                "end": currentSymbolLength,
+                "field": this.Field,
+                "orderfield": this.SortField,
+                "order": this.Order,
+                "condition": condition.GetQuery(),
+                "condition2": condition2 ? condition2.GetQuery() : [],
+            }
+        }
+
+        $.ajax({
+            url: this.ApiUrl,
+            data: self.currentData,
+            method: 'POST',
+
+            dataType: 'json',
+            success: function (data) {
+                self.Count = data.data.count;
+                self.RecvData(data, condition);
+            },
+            fail: function (request) {
+                self.RecvError(request, condition);
+            }
+        });
+    }
+
+    this.GetNextPage = function () {
+        var self = this;
+
+        if (this.PageSize * this.PageIndex < this.Count){
+            this.currentData.start = this.PageSize * this.PageIndex;
+            this.PageIndex++;
+            this.currentData.end = this.PageSize * this.PageIndex;
+
+            $.ajax({
+                url: this.ApiUrl,
+                data: self.currentData,
+                method: 'POST',
+                dataType: 'json',
+                success: function (data) {
+                    self.RecvData(data);
+                },
+                fail: function (request) {
+                    self.RecvError(request);
+                }
+            });
+        }else{
+            alert("数据已全部加载")
+            // wx.showToast({
+            //     title: "数据已全部加载",
+            //     icon: 'success',
+            //     duration: 1000
+            // })
+        }
+
+    }
+
+    //结果处理  个股财务粉饰
+    this.RecvData = function (recvData, condition) {
+        let data = recvData.data;
+        for (let i in data.stock) {
+            let item = data.stock[i];
+            let strSymbol = item.symbol;
+            let stockData = {};
+            // console.log("this.Data.has(strSymbol)", this.Data, strSymbol, this.Data.has(strSymbol));
+            if (this.Data.has(strSymbol)) {
+                stockData = this.Data.get(strSymbol);
+            }
+            else {
+                stockData = {
+                    Symbol: item.symbol,
+                    Name: item.name,
+                    Data: new Map() //Map key=日期  value=Map(key=字段名, value=数值)
+                };
+
+                this.Data.set(strSymbol, stockData);
+            }
+
+            this.SetStockData(item, stockData);
+        }
+
+        if (this.Callback) this.Callback(this, condition);
+    }
+
+    this.SetStockData = function (data, stockData) {
+        for (let i in data.stockday) {
+            let item = data.stockday[i];
+            let date = item.date;
+            let dataMap = new Map();
+            this.SetFinanceData(item, dataMap);
+            this.SetBlocktradingData(item, dataMap);
+            this.SetChangesData(item, dataMap);
+            this.SetLiftingData(item, dataMap);
+            this.SetPforecastData(item, dataMap);
+            this.SetShortIndicatorsData(item, dataMap);
+            stockData.Data.set(date, dataMap);
+        }
+
+        return stockData;
+    }
+
+    this.SetFinanceData = function (recvData, dataMap) {
+        //1季度
+        var finnance = recvData.finance1;
+        if (finnance) {
+            if (!isNaN(finnance.nprofitincrease)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE1_NPROFITINCREASE, finnance.nprofitincrease);
+            if (!isNaN(finnance.nnprofitincrease)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE1_NNPROFITINCREASE, finnance.nnprofitincrease);
+            if (!isNaN(finnance.nnprofitspeed)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE1_NNPROFITSPEED, finnance.nnprofitspeed);
+            if (!isNaN(finnance.benford)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE1_BENFORD, finnance.benford);
+        }
+
+        var announcement = recvData.announcement1;
+        if (announcement) {
+            if (!isNaN(announcement.year)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE1_YEAR, announcement.year);
+            if (!isNaN(announcement.quarter)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE1_QUARTER, announcement.quarter);
+        }
+
+        //2季度
+        var finnance = recvData.finance2;
+        if (finnance) {
+            if (!isNaN(finnance.nprofitincrease)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE2_NPROFITINCREASE, finnance.nprofitincrease);
+            if (!isNaN(finnance.nnprofitincrease)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE2_NNPROFITINCREASE, finnance.nnprofitincrease);
+            if (!isNaN(finnance.nnprofitspeed)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE2_NNPROFITSPEED, finnance.nnprofitspeed);
+            if (!isNaN(finnance.benford)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE2_BENFORD, finnance.benford);
+        }
+
+        var announcement = recvData.announcement2;
+        if (announcement) {
+            if (!isNaN(announcement.year)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE2_YEAR, announcement.year);
+            if (!isNaN(announcement.quarter)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE2_QUARTER, announcement.quarter);
+        }
+
+        //3季度
+        var finnance = recvData.finance3;
+        if (finnance) {
+            if (!isNaN(finnance.nprofitincrease)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE3_NPROFITINCREASE, finnance.nprofitincrease);
+            if (!isNaN(finnance.nnprofitincrease)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE3_NNPROFITINCREASE, finnance.nnprofitincrease);
+            if (!isNaN(finnance.nnprofitspeed)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE3_NNPROFITSPEED, finnance.nnprofitspeed);
+            if (!isNaN(finnance.benford)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE3_BENFORD, finnance.benford);
+        }
+
+        var announcement = recvData.announcement3;
+        if (announcement) {
+            if (!isNaN(announcement.year)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE3_YEAR, announcement.year);
+            if (!isNaN(announcement.quarter)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE3_QUARTER, announcement.quarter);
+        }
+
+        //4季度
+        var finnance = recvData.finance4;
+        if (finnance) {
+            if (!isNaN(finnance.nprofitincrease)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE4_NPROFITINCREASE, finnance.nprofitincrease);
+            if (!isNaN(finnance.nnprofitincrease)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE4_NNPROFITINCREASE, finnance.nnprofitincrease);
+            if (!isNaN(finnance.nnprofitspeed)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE4_NNPROFITSPEED, finnance.nnprofitspeed);
+            if (!isNaN(finnance.benford)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE4_BENFORD, finnance.benford);
+        }
+
+        var announcement = recvData.announcement4;
+        if (announcement) {
+            if (!isNaN(announcement.year)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE4_YEAR, announcement.year);
+            if (!isNaN(announcement.quarter)) dataMap.set(STOCK_HISTORY_FIELD_NAME.FINANCE4_QUARTER, announcement.quarter);
+        }
+    }
+
+    //大宗交易
+    this.SetBlocktradingData = function (recvData, dataMap) {
+        var blocktrading = recvData.blocktrading;
+        if (blocktrading) {
+            dataMap.set(
+                STOCK_HISTORY_FIELD_NAME.BLOCK_TRADING,
+                {
+                    Premium: blocktrading.premium,////总溢价
+                    Price: blocktrading.price, //总成交价
+                    Vol: blocktrading.vol, //总成交量
+                    Amount: blocktrading.amount//成交额
+                }
+            );
+        }
+    }
+
+    //股东减持
+    this.SetChangesData = function (recvData, dataMap) {
+        var changes = recvData.changes;
+        if (changes) {
+            dataMap.set(
+                STOCK_HISTORY_FIELD_NAME.HOLDERS_CHANGES, {List: changes.list}
+            );
+        }
+    }
+
+    //限售解禁
+    this.SetLiftingData = function (recvData, dataMap) {
+        var lifting = recvData.lifting;
+        if (lifting) {
+            // console.log("lifting",lifting);
+            dataMap.set(
+                STOCK_HISTORY_FIELD_NAME.LIFTING, {Lifting: lifting}
+            );
+        }
+    }
+
+    //业绩公告
+    this.SetPforecastData = function (recvData, dataMap) {
+        var pforecast = recvData.pforecast;
+        if (pforecast) {
+            // console.log("pforecast", pforecast)
+            dataMap.set(
+                STOCK_HISTORY_FIELD_NAME.PFORECAST,
+                {
+                    Lowprofit: pforecast[0].lowprofit,////最低利润
+                    Highprofit: pforecast[0].highprofit, //最高利润
+                    Lowchange: pforecast[0].lowchange, //最小变动幅度
+                    Highchange: pforecast[0].highchange, //最小变动幅度
+                    Reportdate: pforecast[0].reportdate, //报告期
+                }
+            );
+        }
+    }
+
+    //空头指标
+    this.SetShortIndicatorsData = function (recvData, dataMap) {
+        // console.log("recvData,dataMap", recvData, dataMap);
+        var policy = recvData.policy;
+        if (policy) {
+            const targetedList = ['三只乌鸦', '乌云盖顶', '黄昏之星', '巨量阴线', '头肩顶', '射击之星', '倾盆大雨', '断头铡刀', '淡友反攻', '空方炮', '连续1周空头排列'];
+            let targetedCount = 0, timeList = [], latestTime = 0, latestName = '';
+            // console.table(policy); //policy
+            policy.forEach(e => {
+                let isTarget = targetedList.some(c => c === e.name);
+                if (isTarget) {
+                    targetedCount++;
+                    timeList.push(e.time);
+                }
+            });
+            if(!targetedCount){
+                latestName = '';
+            }else {
+                latestTime = Math.max.apply(timeList, timeList);
+                latestName = policy.find(e => e.time === latestTime).name;
+            }
+            console.log(latestName,targetedCount, "latestName-targetedCount");
+            dataMap.set(
+                STOCK_HISTORY_FIELD_NAME.SHORTIND_ICATORS,
+                {
+                    latestIndicatorName: latestName,///最新指标名称
+                    indicatorCount: targetedCount, //最新指标数量
+                }
+            );
+        }
+    }
+
+    this.RecvError = function (request, condition) {
+
+    }
+
+    this.CreateCondition = function (name) {
+        return new QueryCondition(name);
+    }
 }
 
 
@@ -1199,6 +1573,11 @@ JSStock.GetAnalylisPlate = function () {
   return new AnalylisPlate();
 }
 
+//获取历史数据
+JSStock.GetStockHistory = function () {
+    return new JSStockHistory();
+}
+
 var RECV_DATA_TYPE=
 {
     BASE_DATA:1,        //股票行情基础数据
@@ -1216,6 +1595,7 @@ var RECV_DATA_TYPE=
     BLOCK_MEMBER_DATA: 13,  //板块成员
     SHORT_TERM_DATA:14,      //短线精灵
 	COMPANY_DATA: 15,      //个股资料
+    PLATE_DATA: 16,        //板块(行业 概念 地区)
 
     
 
@@ -1319,6 +1699,8 @@ function JSStock()
         var aryDDE=[], aryDDE3=[], aryDDE5=[], aryDDE10=[];
         var aryEvent = new Array();
 		var aryCompany = new Array();       //个股资料
+        var aryPlate = new Array();         //板块(行业 概念 地址)
+
 
         for(var item of this.MapStock)
         {
@@ -1351,6 +1733,7 @@ function JSStock()
 
             if (subscribe.Event == null && subscribe.EventTagID.size > 0) aryEvent.push(symbol);
 			if (subscribe.Company == null && subscribe.CompanyTagID.size > 0) aryCompany.push(symbol);
+            if (item[1].Plate == null && item[1].PlateTagID.size > 0) aryPlate.push(item[0]);
         }
 
         if (aryBuySell.length>0) this.RequestBuySellData(aryBuySell);
@@ -1376,6 +1759,7 @@ function JSStock()
 
 		//个股资料
         if (aryCompany.length > 0) this.RequestCompanyData(aryCompany);
+        if (aryPlate.length > 0) this.RequestPlateData(aryPlate);
         this.ReqeustAllSortData();    //成分排序
     }
 
@@ -1815,6 +2199,35 @@ function JSStock()
             }
         });
     }
+
+    this.RequestPlateData = function (arySymbol) {
+        var self = this;
+
+        $.ajax({
+            url: this.RealtimeApiUrl,
+            data: {
+                "field": [
+                    "name",
+                    "symbol",
+                    "industry",
+                    "region",
+                    "concept",
+                ],
+                "symbol": arySymbol,
+                "start": 0,
+                "end": 50
+            },
+            type: 'POST',
+            dataType: "json",
+            success: function (data) {
+                self.RecvData(data, RECV_DATA_TYPE.PLATE_DATA);
+            },
+            error: function (request) {
+                self.RecvError(request, RECV_DATA_TYPE.PLATE_DATA);
+            }
+        });
+    }
+
     this.RecvError=function(request,datatype,requestData)
     {
         console.log("RecvError: datatype="+ datatype.toString());
@@ -1868,6 +2281,9 @@ function JSStock()
                 break;
 			case RECV_DATA_TYPE.COMPANY_DATA:
                 mapTagData = this.RecvCompanyData(data, datatype);
+                break;
+            case RECV_DATA_TYPE.PLATE_DATA:
+                mapTagData = this.RecvPlateData(data, datatype);
                 break;
         }
 
@@ -2234,6 +2650,30 @@ function JSStock()
 
             if (stockData.CompanyTagID.size > 0) {
                 for (var id of stockData.CompanyTagID) {
+                    if (mapTagData.has(id)) {
+                        mapTagData.get(id).push(stockData.Symbol);
+                    }
+                    else {
+                        mapTagData.set(id, new Array(stockData.Symbol));
+                    }
+                }
+            }
+        }
+
+        return mapTagData;
+    }
+
+    this.RecvPlateData = function (data, datatype) {
+        var mapTagData = new Map();   //key=界面元素id, value=更新的股票列表
+        for (var i in data.stock) {
+            var item = data.stock[i];
+            var stockData = this.MapStock.get(item.symbol);
+            if (!stockData) continue;
+
+            stockData.SetPlateData(item);
+
+            if (stockData.PlateTagID.size > 0) {
+                for (var id of stockData.PlateTagID) {
                     if (mapTagData.has(id)) {
                         mapTagData.get(id).push(stockData.Symbol);
                     }
@@ -3191,7 +3631,7 @@ function AnalylisPlate()
   this.RecvData = function(recvData)
   {
     this.Data = {};
-    // console.log(recvData.data,"recvData,分析板块")
+    // console.log(recvData.data,"recvData,分析板块:::::")
     var data = recvData;
     if (data.count == 0) return;
     

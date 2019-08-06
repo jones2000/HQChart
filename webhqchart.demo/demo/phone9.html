@@ -32,9 +32,6 @@
             return null;
         }
 
-        
-        
-        
         $(window).resize(resizeCanvas);
         
         function resizeCanvas()
@@ -61,6 +58,9 @@
         
             var index3=getURLParams('index3');      //指标3
             if (index3==null) index3='MACD';
+
+            var language=getURLParams('language');
+            if (!language) language='CN';
         
             var aryIndex=new Array();
             aryIndex.push({"Index":index,"Modify":false,"Change":false});
@@ -93,9 +93,20 @@
                     Windows:aryIndex, //窗口指标
                     Symbol:symbol,
                     IsAutoUpate:true,       //是自动更新数据
-                    TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
+                    //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
                     IsShowRightMenu:true,          //右键菜单
-                    IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
+                    CorssCursorInfo:{ Left:2, Right:2, Bottom:1, IsShowCorss:true },  //十字光标刻度设置
+
+                    Language:language,
+
+                    /*
+                    OverlayIndex:
+                    [
+                        {Index:'RSI', Windows:0},
+                        {Index:'MACD', Windows:0 },
+                        {Index:'MA', Windows:1 }
+                    ],  //叠加指标
+                    */
         
                     KLine:
                     {
@@ -121,8 +132,8 @@
                     {
                         Left:20,    //左边间距
                         Right:40,     //右边间距
-                        Bottom:1,
-                        Top:60
+                        Bottom:60,
+                        Top:0,
                     },
                     
                     Frame:  //子框架设置
@@ -146,6 +157,13 @@
                 option.IsCorssOnlyDrawKLine=true;
                 option.CorssCursorTouchEnd=true;
             }
+
+            option.Windows[1].Lock= { 
+                IsLocked: true, Callback: unlockIndex,
+                BG: 'rgb(200,0,40)', TextColor: 'rgb(255,255,255)',
+                //Text: '上锁了',
+                Font: '12px 微软雅黑', Count: 10  //锁主右边几条数据
+            };
         
             jsChart.SetOption(option);
             //jsChart.LockIndex('飞龙四式',unlockIndex);
@@ -156,9 +174,11 @@
         
         })
         
-        function unlockIndex(indexName)
+        function unlockIndex(data)
         {
-            console.log(indexName);
+            console.log('[unlockIndex]' , data);
+            var chart=data.HQChart;
+            chart.LockIndex({IndexName:data.Data.IndexName, IsLocked:false});
         }
 
     </script>  

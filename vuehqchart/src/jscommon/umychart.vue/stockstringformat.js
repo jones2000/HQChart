@@ -20,19 +20,33 @@ StockStringFormat.FormatValueThousandsString=function(value,floatPrecision)
     if(floatPrecision>0){
         var numFloat = num.split('.')[1];
         var numM = num.split('.')[0];
-        while (numM.length > 3)
-        {
-            result = ',' + numM.slice(-3) + result;
-            numM = numM.slice(0, numM.length - 3);
+        var numMa = Number(numM);
+        var isLowZero = null;
+        if(numMa < 0){
+            numMa = Math.abs(numMa);
+            isLowZero = true;
         }
-        if (numM) { result = numM + result + '.' + numFloat; }
+        numMa = numMa.toString();
+        while (numMa.length > 3)
+        {
+            result = ',' + numMa.slice(-3) + result;
+            numMa = numMa.slice(0, numMa.length - 3);
+        }
+        if (numMa) { result = isLowZero != null ? ('-' + numMa + result + '.' + numFloat) : (numMa + result + '.' + numFloat); }
     }else{
-        while (num.length > 3)
-        {
-            result = ',' + num.slice(-3) + result;
-            num = num.slice(0, num.length - 3);
+        var numNF = Number(num);
+        var isLowZero = null;
+        if(numNF < 0){
+            numNF = Math.abs(numNF);
+            isLowZero = true;
         }
-        if (num) { result = num + result; }
+        numNF = numNF.toString();
+        while (numNF.length > 3)
+        {
+            result = ',' + numNF.slice(-3) + result;
+            numNF = numNF.slice(0, numNF.length - 3);
+        }
+        if (numNF) { result = isLowZero != null ? ('-' + numNF + result) : (numNF + result); }
     }
     
     return result;

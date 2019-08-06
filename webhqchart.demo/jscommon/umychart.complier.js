@@ -9001,13 +9001,16 @@ function ScriptIndex(name,script,args,option)
         param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
         param.HQChart.Draw();
 
-        var event=hqChart.GetIndexEvent();  //指标计算完成回调
-        if (event)
+        if (hqChart.GetIndexEvent)
         {
-            var self=param.Self;
-            var data={ OutVar:self.OutVar, WindowIndex: windowIndex, Name: self.Name, Arguments: self.Arguments, HistoryData: hisData, 
-                    Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
-            event.Callback(event,data,self);
+            var event=hqChart.GetIndexEvent();  //指标计算完成回调
+            if (event)
+            {
+                var self=param.Self;
+                var data={ OutVar:self.OutVar, WindowIndex: windowIndex, Name: self.Name, Arguments: self.Arguments, HistoryData: hisData, 
+                        Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
+                event.Callback(event,data,self);
+            }
         }
     }
 

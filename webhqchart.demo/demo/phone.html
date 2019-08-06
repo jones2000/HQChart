@@ -45,10 +45,14 @@
             var height= $(window).height();
             var width = $(window).width();
             var divKline=document.getElementById('kline');
+            //divKline.style.top=20+'px';
+            //divKline.style.left=20+'px';
+            //divKline.style.width=(width-20)+'px';
+            //divKline.style.height=(height-20)+'px';
             divKline.style.top=0+'px';
             divKline.style.left=0+'px';
-            divKline.style.width=width+'px';
-            divKline.style.height=height+'px';
+            divKline.style.width=(width)+'px';
+            divKline.style.height=(height)+'px';
             divKline.JSChart.OnSize();
         }
         
@@ -73,6 +77,9 @@
         
             var index3=getURLParams('index3');      //指标3
             if (index3==null) index3='MACD';
+
+            var language=getURLParams('language');
+            if (!language) language='CN';
         
             var aryIndex=new Array();
             aryIndex.push({Index:index,Modify:true,Change:true});
@@ -106,13 +113,15 @@
                                 {Index:"RSI"},
                                 
                             ], //窗口指标
-                    
+
                     Symbol:symbol,
-                    IsAutoUpdate:true,       //是自动更新数据
+                    IsAutoUpdate:true,          //是自动更新数据
+                    AutoUpdateFrequency:3000,   //数据更新频率
                     //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
         
                     IsShowRightMenu:true,          //右键菜单
                     IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
+                    CorssCursorInfo:{ Left:1, Right:1, Bottom:1, IsShowCorss:true, PressTime:300 },  //十字光标刻度设置
         
                     KLine:
                     {
@@ -137,11 +146,13 @@
         
                     Border: //边框
                     {
-                        Left:50,           //左边间距
-                        Right:80+40,       //右边间距
+                        Left:5,           //左边间距
+                        Right:1,       //右边间距
                         Bottom:25,
                         Top:25
                     },
+
+                    Language:language,
 
                     ExtendChart:    //扩展图形
                     [
@@ -150,9 +161,9 @@
                     
                     Frame:  //子框架设置 (Height 窗口高度比例值)
                     [
-                        {SplitCount:8,StringFormat:0, Height:4,IsShowLeftText:true},
-                        {SplitCount:2,StringFormat:0, Height:2,IsShowLeftText:true},
-                        {SplitCount:2,StringFormat:0, Height:2,IsShowLeftText:true}
+                        {SplitCount:5,Height:4,IsShowLeftText:true, IsShowRightText:false},
+                        {SplitCount:3,Height:2,IsShowLeftText:true, IsShowRightText:false},
+                        {SplitCount:2,Height:2,IsShowLeftText:true, IsShowRightText:false}
                     ]
                 }
 
@@ -166,7 +177,7 @@
                 option.KLine.Info=null;
                 option.KLine.PageSize=50;   
                 option.ExtendChart=[{Name:'KLineTooltip' }]; //开启手机端tooltip
-                option.ExtendChart=null;
+                //option.ExtendChart=null;
                 option.IsCorssOnlyDrawKLine=true;
                 option.CorssCursorTouchEnd=true;
                 for(var i in option.Windows)
@@ -175,6 +186,17 @@
                     option.Windows[i].Change=false;
                 }
             }
+
+            /*
+            option.Windows[1].Lock= { 
+                IsLocked: true, Callback: unlockIndex,
+                BG: 'rgb(200,0,40)', TextColor: 'rgb(255,255,255)',
+                //Text: '上锁了',
+                Font: '12px 微软雅黑', Count: 10,  //锁主右边几条数据
+                MinWidth:150,
+            };
+            */
+            
         
             chart.SetOption(option);
             //jsChart.LockIndex('飞龙四式',unlockIndex);
@@ -185,12 +207,31 @@
             resizeCanvas();
         
             //setTimeout(() => { chart.SetFirstShowDate({Date:20170501,PageSize:600});}, 20000);
+
+             //保存图片数据
+             /*
+            setTimeout(() => { 
+                var imageData=chart.SaveToImage();
+                var image = document.createElement('img');
+                image.src=imageData;
+                document.body.appendChild(image);
+
+                var download=document.createElement('a');
+                var imageDownloadData = imageData.replace("image/png", "image/octet-stream"); 
+                download.href=imageDownloadData
+                download.innerText='下载'
+                document.body.appendChild(download);
+                
+            }, 20000);
+            */
         
         })
         
-        function unlockIndex(indexName)
+        function unlockIndex(data)
         {
-            console.log(indexName);
+            console.log('[unlockIndex]' , data);
+            var chart=data.HQChart;
+            chart.LockIndex({IndexName:data.Data.IndexName, IsLocked:false});
         }
 
         function testcallback(event,data,obj)
