@@ -1022,6 +1022,16 @@ function JSChart(divElement)
             this.JSChartContainer.AddEventCallback(obj);
         }
     }
+
+    //设置语言 'EN', 'CN'
+    this.SetLanguage=function(language)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.SetLanguage)=='function')
+        {
+            console.log('[JSChart:SetLanguage] ', language);
+            this.JSChartContainer.SetLanguage(language);
+        }
+    }
 }
 
 //初始化
@@ -2618,6 +2628,39 @@ function JSChartContainer(uielement)
         var dataURL=this.UIElement.toDataURL(format ? format:'image/png', 1.0);
         console.log('[JSChartContainer::SaveToImage] data= ', dataURL);
         return dataURL;
+    }
+
+    this.SetLanguage=function(language)
+    {
+        var languageID=null;
+        switch(language)
+        {
+            case 'EN':
+                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
+                break;
+            case 'CN':
+                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+                break;
+            default:
+                console.warn(`[JSChartContainer::SetLanguage] language=${language} error`);
+                return;
+        }
+
+        if (this.LanguageID==languageID) return;
+        
+        this.LanguageID=languageID;
+        if (this.ChartCorssCursor && this.ChartCorssCursor.StringFormatY) this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
+
+        for(var i in this.TitlePaint)
+        {
+            var item=this.TitlePaint[i];
+            if (item) item.LanguageID=this.LanguageID;
+        }
+
+        if (this.Frame && this.Frame.SetLanguage) this.Frame.SetLanguage(this.LanguageID);
+
+        this.Frame.SetSizeChage(true);
+        this.Draw();
     }
 }
 
@@ -4771,6 +4814,19 @@ function HQTradeFrame()
         for(let i in this.SubFrame)
         {
             this.SubFrame[i].Frame.XYSplit=true;
+        }
+    }
+
+    this.SetLanguage=function(languageID)
+    {
+        for(let i in this.SubFrame)
+        {
+            var item=this.SubFrame[i];
+            if (item && item.Frame )
+            {
+                if (item.Frame.YSplitOperator) item.Frame.YSplitOperator.LanguageID=languageID;
+                if (item.Frame.XSplitOperator) item.Frame.XSplitOperator.LanguageID=languageID;
+            }
         }
     }
 }
@@ -11818,6 +11874,7 @@ function IFrameSplitOperator()
     this.StringFormat=0;                //刻度字符串格式
     this.IsShowLeftText=true;           //显示左边刻度 
     this.IsShowRightText=true;          //显示右边刻度
+    this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
 
     //////////////////////
     // data.Min data.Max data.Interval data.Count
@@ -12281,7 +12338,6 @@ function FrameSplitY()
     this.SplitCount=3;                        //刻度个数
     this.FloatPrecision = 2;                  //坐标小数位数(默认2)
     this.FLOATPRECISION_RANGE=[1,0.1,0.01,0.001,0.0001];
-    this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
 
     this.GetFloatPrecision=function(value,floatPrecision)
     {
@@ -12431,7 +12487,8 @@ function FrameSplitKLineX()
             }
             else if (lastMonth==null || lastMonth!=month)
             {
-                text=month.toString()+"月";
+                text=month.toString()+'月';
+                text=g_JSChartLocalization.GetText(text, this.LanguageID);
             }
 
             lastYear=year;
@@ -13804,28 +13861,28 @@ function DynamicMinuteTitlePainting()
         if (close)
         {
             var color=this.GetColor(close,this.YClose);
-            var text="价:"+close.toFixed(defaultfloatPrecision);
+            var text=g_JSChartLocalization.GetText('MTitle-Close',this.LanguageID)+close.toFixed(defaultfloatPrecision);
             if (!this.DrawText(text,color,position)) return;
         }
 
         if (increase!=null)
         {
             var color=this.GetColor(increase,0);
-            var text="幅:"+increase.toFixed(2)+'%';
+            var text=g_JSChartLocalization.GetText('MTitle-Increase',this.LanguageID)+increase.toFixed(2)+'%';
             if (!this.DrawText(text,color,position)) return;
         }
 
         if (item.AvPrice)
         {
             var color=this.GetColor(item.AvPrice,this.YClose);
-            var text="均:"+item.AvPrice.toFixed(defaultfloatPrecision);
+            var text=g_JSChartLocalization.GetText('MTitle-AvPrice',this.LanguageID)+item.AvPrice.toFixed(defaultfloatPrecision);
             if (!this.DrawText(text,color,position)) return;
         }
 
-        var text="量:"+IFrameSplitOperator.FormatValueString(vol,2);
+        var text=g_JSChartLocalization.GetText('MTitle-Vol',this.LanguageID)+IFrameSplitOperator.FormatValueString(vol,2);
         if (!this.DrawText(text,this.VolColor,position)) return;
 
-        var text="额:"+IFrameSplitOperator.FormatValueString(amount,2);
+        var text=g_JSChartLocalization.GetText('MTitle-Amount',this.LanguageID)+IFrameSplitOperator.FormatValueString(amount,2);
         if (!this.DrawText(text,this.AmountColor,position)) return;
         
 
@@ -17272,6 +17329,13 @@ function JSChartLocalization()
         ['KTitle-Vol', {CN:'量:', EN:'V:'}],
         ['KTitle-Amount', {CN:'额:', EN:'A:'}],
 
+        //走势图动态标题
+        ['MTitle-Close', {CN:'价:', EN:'C:'}],
+        ['MTitle-AvPrice', {CN:'均::', EN:'AC:'}],
+        ['MTitle-Increase', {CN:'幅:', EN:'I:'}],
+        ['MTitle-Vol', {CN:'量:', EN:'V:'}],
+        ['MTitle-Amount', {CN:'额:', EN:'A:'}],
+
         //周期
         ['日线', {CN:'日线', EN:'1D'}],
         ['周线', {CN:'周线', EN:'1W'}],
@@ -17295,7 +17359,20 @@ function JSChartLocalization()
         ['三', {CN:'三', EN:'Wed.'}],
         ['四', {CN:'四', EN:'Thur.'}],
         ['五', {CN:'五', EN:'Fri.'}],
-        ['六', {CN:'六', EN:'Sat.'}]
+        ['六', {CN:'六', EN:'Sat.'}],
+
+        ['1月', {CN:'1月', EN:'Jan'}],
+        ['2月', {CN:'2月', EN:'Feb'}],
+        ['3月', {CN:'3月', EN:'Mar'}],
+        ['4月', {CN:'4月', EN:'Apr'}],
+        ['5月', {CN:'5月', EN:'May'}],
+        ['6月', {CN:'6月', EN:'Jun'}],
+        ['7月', {CN:'7月', EN:'Jul'}],
+        ['8月', {CN:'8月', EN:'Aug'}],
+        ['9月', {CN:'9月', EN:'Sept'}],
+        ['10月', {CN:'10月', EN:'Oct'}],
+        ['11月', {CN:'11月', EN:'Nov'}],
+        ['12月', {CN:'13月', EN:'Dec'}]
 
     ]);
 
@@ -18526,6 +18603,7 @@ function KLineChartContainer(uielement)
             frame.XSplitOperator=new FrameSplitKLineX();
             frame.XSplitOperator.Frame=frame;
             frame.XSplitOperator.ChartBorder=border;
+            frame.XSplitOperator.LanguageID=this.LanguageID;
 
             if (i!=windowCount-1) frame.XSplitOperator.ShowText=false;
 
@@ -21349,6 +21427,7 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.Canvas=this.Canvas;
         this.ChartCorssCursor.StringFormatX=new HQMinuteTimeStringFormat();
         this.ChartCorssCursor.StringFormatY=new HQPriceStringFormat();
+        this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
 
         //创建框架容器
         this.Frame=new HQTradeFrame();
@@ -21509,6 +21588,7 @@ function MinuteChartContainer(uielement)
         this.TitlePaint[0].Frame=this.Frame.SubFrame[0].Frame;
         this.TitlePaint[0].Canvas=this.Canvas;
         this.TitlePaint[0].OverlayChartPaint=this.OverlayChartPaint;    //绑定叠加
+        this.TitlePaint[0].LanguageID=this.LanguageID;
 
         
         //主图叠加画法
