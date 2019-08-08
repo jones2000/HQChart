@@ -190,9 +190,14 @@ function JSChart(divElement)
         }
 
         //叠加股票
-        if (option.Overlay && option.Overlay.length)
+        
+        if (option.Overlay)
         {
-            chart.OverlayChartPaint[0].Symbol= option.Overlay[0].Symbol;
+            for(var i in option.Overlay)
+            {
+                var item=option.Overlay[i];
+                chart.OverlaySymbol(item.Symbol,item);
+            }
         }
 
         if (option.ExtendChart)
@@ -441,9 +446,13 @@ function JSChart(divElement)
         }
 
         //叠加股票
-        if (option.Overlay && option.Overlay.length)
+        if (option.Overlay)
         {
-            chart.OverlayChartPaint[0].Symbol= option.Overlay[0].Symbol;
+            for(var i in option.Overlay)
+            {
+                var item=option.Overlay[i];
+                chart.OverlaySymbol(item.Symbol);
+            }
         }
 
         if (option.MinuteLine)
@@ -872,10 +881,17 @@ function JSChart(divElement)
     }
 
     //叠加股票
-    this.OverlaySymbol=function(symbol)
+    this.OverlaySymbol=function(symbol,option)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.OverlaySymbol)=='function')
-            this.JSChartContainer.OverlaySymbol(symbol);
+            this.JSChartContainer.OverlaySymbol(symbol,option);
+    }
+
+    //删除一个叠加股票
+    this.DeleteOverlaySymbol=function(symbol)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.DeleteOverlaySymbol)=='function')
+        this.JSChartContainer.DeleteOverlaySymbol(symbol);
     }
 
     //设置当前屏的起始日期 { Date:起始日期(必填), PageSize:一屏显示的数据个数(可选)}
@@ -7184,6 +7200,14 @@ function ChartKLine()
 }
 
 //K线叠加 支持横屏
+var OVERLAY_STATUS_ID=
+{
+    STATUS_NONE_ID:0,           //空闲状态
+    STATUS_REQUESTDATA_ID:1,    //请求数据
+    STATUS_RECVDATA_ID:2,       //接收到数据
+    STATUS_FINISHED_ID:3,       //数据下载完成
+};
+
 function ChartOverlayKLine()
 {
     this.newMethod=IChartPainting;   //派生
@@ -7196,6 +7220,15 @@ function ChartOverlayKLine()
     this.SourceData;                //叠加的原始数据
     this.Title;
     this.DrawType=0;
+    this.CustomDrawType=null;       //图形类型
+    this.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
+    this.IsDelete=false;            //是否已经删除
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+        if (IFrameSplitOperator.IsNumber(option.DrawType)) this.CustomDrawType=option.DrawType;
+    }
 
     this.DrawKBar=function(firstOpen)   //firstOpen 当前屏第1个显示数据
     {
@@ -7207,6 +7240,9 @@ function ChartOverlayKLine()
         var chartright=this.ChartBorder.GetRight();
         if (isHScreen) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
+
+        var drawType=this.DrawType;
+        if (this.CustomDrawType!=null) drawType=this.CustomDrawType;
 
         var isFristDraw=true;
         var firstOverlayOpen=null;
@@ -7267,7 +7303,7 @@ function ChartOverlayKLine()
                         }
                         else 
                         {
-                            if (this.DrawType==3) this.Canvas.rect(ToFixedPoint(y),ToFixedPoint(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));   //空心柱
+                            if (drawType==3) this.Canvas.rect(ToFixedPoint(y),ToFixedPoint(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));   //空心柱
                             else this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
                         }
                     }
@@ -7279,7 +7315,7 @@ function ChartOverlayKLine()
                         }
                         else 
                         {
-                            if (this.DrawType==3) this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));   //空心柱
+                            if (drawType==3) this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));   //空心柱
                             else this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));
                         }
                     }
@@ -7587,12 +7623,12 @@ function ChartOverlayKLine()
 
         if (firstOpen==null) return;
 
-        if (this.DrawType==1)
-            this.DrawCloseLine(firstOpen);
-        else if (this.DrawType==2)
-            this.DrawAKLine(firstOpen);
-        else
-            this.DrawKBar(firstOpen);
+        var drawType=this.DrawType;
+        if (this.CustomDrawType!=null) drawType=this.CustomDrawType;
+
+        if (drawType==1) this.DrawCloseLine(firstOpen);
+        else if (drawType==2) this.DrawAKLine(firstOpen);
+        else this.DrawKBar(firstOpen);
     }
 
     this.GetMaxMin=function()
@@ -9188,11 +9224,15 @@ function ChartOverlayMinutePriceLine()
     this.Color="rgb(65,105,225)";
     this.MainData;                  //主图数据
     this.MainYClose;                //主图股票的前收盘价
+    this.SourceData;                //原始数据
+    this.BeforeDataCount=0;
+    this.IsBeforeData=false;
 
     this.ClassName="ChartOverlayMinutePriceLine";
     this.Title;
     this.Symbol;                    //叠加的股票代码
-    this.YClose;                    //叠加的股票前收盘
+    this.YClose;               //叠加的股票前收盘
+    this.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
 
     this.Draw=function()
     {
@@ -9213,13 +9253,15 @@ function ChartOverlayMinutePriceLine()
 
         var bFirstPoint=true;
         var drawCount=0;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        var xOffset=0;
+        if (this.IsBeforeData) xOffset=1;   //集合竞价模式从第2个数据开始 第1个数据是9:25数据
+        for(var i=this.Data.DataOffset+xOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i].Close;
             if (value==null) continue;
             var showValue=value/this.YClose*this.MainYClose;
 
-            var x=this.ChartFrame.GetXFromIndex(j);
+            var x=this.ChartFrame.GetXFromIndex(j+this.BeforeDataCount);
             var y=this.ChartFrame.GetYFromData(showValue);
 
             if (bFirstPoint)
@@ -12561,9 +12603,11 @@ function FrameSplitMinutePriceY()
             }
         }
 
-        if (this.OverlayChartPaint && this.OverlayChartPaint.length>0 && this.OverlayChartPaint[0] && this.OverlayChartPaint[0].Symbol)
+        for(var i in this.OverlayChartPaint)
         {
-            var range=this.OverlayChartPaint[0].GetMaxMin();
+            var item=this.OverlayChartPaint[i];
+            if (item.Status!=OVERLAY_STATUS_ID.STATUS_FINISHED_ID) continue;
+            var range=item.GetMaxMin();
             if (range.Max && range.Max>max) max=range.Max;
             if (range.Min && range.Min<min) min=range.Min;
         }
@@ -13741,10 +13785,13 @@ function DynamicKLineTitlePainting()
         if (!this.DrawText(text,this.AmountColor,position)) return;
 
         //叠加股票的名字
-        if (this.OverlayChartPaint && this.OverlayChartPaint[0] && this.OverlayChartPaint[0].Symbol && this.OverlayChartPaint[0].Title)
+        for(var i in this.OverlayChartPaint)
         {
-            var name=this.OverlayChartPaint[0].Title;
-            var clrText=this.OverlayChartPaint[0].Color;
+            var item=this.OverlayChartPaint[i];
+            if (!item.Symbol || !item.Title) continue;
+        
+            var name=item.Title;
+            var clrText=item.Color;
             var text='['+name+']';
             if (!this.DrawText(text,clrText,position)) return;
         }
@@ -13887,10 +13934,13 @@ function DynamicMinuteTitlePainting()
         
 
         //叠加股票的名字
-        if (this.OverlayChartPaint && this.OverlayChartPaint[0] && this.OverlayChartPaint[0].Symbol && this.OverlayChartPaint[0].Title)
+        for(var i in this.OverlayChartPaint)
         {
-            var name=this.OverlayChartPaint[0].Title;
-            var clrText=this.OverlayChartPaint[0].Color;
+            var item=this.OverlayChartPaint[i];
+            if (!item.Symbol || !item.Title) continue;
+
+            var name=item.Title;
+            var clrText=item.Color;
             var text='['+name+']';
             if (!this.DrawText(text,clrText,position)) return;
         }
@@ -17172,6 +17222,15 @@ function JSChartResource()
 
     ];
 
+    this.OverlaySymbol={ Random:0 };    //Random 颜色的随机数
+    this.OverlaySymbol.Color=   //叠加股票颜色
+    [
+        "rgb(38,198,218)",
+        "rgb(103,58,183)",
+        "rgb(0,191,165)",
+        "rgb(130,177,255)",
+    ];
+
     //历史数据api
     this.Index.StockHistoryDayApiUrl="https://opensource.zealink.com/API/StockHistoryDay";
     //市场多空
@@ -18690,15 +18749,6 @@ function KLineChartContainer(uielement)
         this.TitlePaint[0].Canvas=this.Canvas;
         this.TitlePaint[0].OverlayChartPaint=this.OverlayChartPaint;    //绑定叠加
         this.TitlePaint[0].LanguageID=this.LanguageID;
-
-        //主图叠加画法
-        var paint=new ChartOverlayKLine();
-        paint.Canvas=this.Canvas;
-        paint.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
-        paint.ChartFrame=this.Frame.SubFrame[0].Frame;
-        paint.Name="Overlay-KLine";
-        paint.DrawType=this.KLineDrawType;
-        this.OverlayChartPaint[0]=paint;
     }
 
     //绑定主图K线数据
@@ -18720,7 +18770,11 @@ function KLineChartContainer(uielement)
         this.ChartCorssCursor.StringFormatX.Data=this.ChartPaint[0].Data;   //十字光标
         this.Frame.Data=this.ChartPaint[0].Data;
 
-        this.OverlayChartPaint[0].MainData=this.ChartPaint[0].Data;         //K线叠加
+        for(var i in this.OverlayChartPaint)   //K线叠加 主图股票数据绑定到叠加上
+        {
+            var item=this.OverlayChartPaint[i];
+            item.MainData=this.ChartPaint[0].Data;
+        }        
 
         var dataOffset=hisData.Data.length-showCount;
         if (dataOffset<0) dataOffset=0;
@@ -18769,7 +18823,11 @@ function KLineChartContainer(uielement)
         this.ChartCorssCursor.StringFormatX.Data=this.ChartPaint[0].Data;   //十字光标
         this.Frame.Data=this.ChartPaint[0].Data;
 
-        this.OverlayChartPaint[0].MainData=this.ChartPaint[0].Data;         //K线叠加
+        for(var i in this.OverlayChartPaint)    //主图股票数据绑定到叠加股票上
+        {
+            var item=this.OverlayChartPaint[i];
+            item.MainData=this.ChartPaint[0].Data;
+        }
 
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
     }
@@ -19080,7 +19138,12 @@ function KLineChartContainer(uielement)
             firstSubFrame.YSplitOperator.Data=this.ChartPaint[0].Data;         //K线数据
         }
 
-        this.OverlayChartPaint[0].Data=null; //分钟数据不支持叠加 清空
+        for(var i in this.OverlayChartPaint)    //分钟数据不支持叠加 清空
+        {
+            var item=this.OverlayChartPaint[i];
+            item.Data=null;
+            //item.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
+        }
 
         this.RequestFlowCapitalData();      //请求流通股本数据 (主数据下载完再下载)
 
@@ -19722,7 +19785,11 @@ function KLineChartContainer(uielement)
             else if (item.ClassName=='ChartVolStick') item.KLineDrawType=this.KLineDrawType
         }
 
-        if (this.OverlayChartPaint[0]) this.OverlayChartPaint[0].DrawType=this.KLineDrawType;   //叠加K线修改
+        for(var i in this.OverlayChartPaint)    //叠加K线样式修改
+        {
+            var item=this.OverlayChartPaint[i];
+            item.DrawType=this.KLineDrawType;
+        } 
 
         this.Draw();
     }
@@ -20032,20 +20099,23 @@ function KLineChartContainer(uielement)
         }
 
         //叠加数据周期调整
-        if (this.OverlayChartPaint[0].SourceData)
+        for(var i in this.OverlayChartPaint)
         {
+            var item=this.OverlayChartPaint[i];
+            if (!item.SourceData) continue;
+        
             if(this.Period>=4)  //分钟不支持 清空掉
             {   
-                this.OverlayChartPaint[0].Data=null;
+                item.Data=null;
             }
-            else
-            {   //日线叠加
+            else    //日线叠加
+            {   
                 var bindData=new ChartData();
-                bindData.Data=this.OverlayChartPaint[0].SourceData.Data;
+                bindData.Data=item.SourceData.Data;
                 bindData.Period=this.Period;
                 bindData.Right=this.Right;
 
-                if (bindData.Right>0 && !IsIndexSymbol(this.OverlayChartPaint[0].Symbol))       //复权数据
+                if (bindData.Right>0 && !IsIndexSymbol(item.Symbol))       //复权数据
                 {
                     var rightData=bindData.GetRightDate(bindData.Right);
                     bindData.Data=rightData;
@@ -20060,7 +20130,7 @@ function KLineChartContainer(uielement)
                     bindData.Data=periodData;
                 }
 
-                this.OverlayChartPaint[0].Data=bindData;
+                item.Data=bindData;
             }
         }
 
@@ -20211,15 +20281,35 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
-    //叠加股票 只支持日线数据
-    this.OverlaySymbol=function(symbol)
+    //增加叠加股票 只支持日线数据
+    this.OverlaySymbol=function(symbol,option)
     {
-        if (!this.OverlayChartPaint[0].MainData) return false;
+        for(var i in this.OverlayChartPaint)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (item.Symbol===symbol)
+            {
+                console.warn(`[KLineChartContainer::OverlaySymbol] overlay symbol=${symbol} exist.`)
+                return false;
+            }
+        }
 
-        this.OverlayChartPaint[0].Symbol=symbol;
+        var paint=new ChartOverlayKLine();
+        paint.Canvas=this.Canvas;
+        paint.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
+        paint.ChartFrame=this.Frame.SubFrame[0].Frame;
+        paint.Name="Overlay-KLine";
+        paint.DrawType=this.KLineDrawType;
+        paint.Symbol=symbol;
+        paint.Color=g_JSChartResource.OverlaySymbol.Color[g_JSChartResource.OverlaySymbol.Random%g_JSChartResource.OverlaySymbol.Color.length];
+        paint.SetOption(option);
+        ++g_JSChartResource.OverlaySymbol.Random;
+        if (this.ChartPaint[0] && this.ChartPaint[0].Data && this.SourceData) paint.MainData=this.ChartPaint[0].Data;         //绑定主图数据
+        
+        this.OverlayChartPaint.push(paint);
 
         if (this.Period<=3) this.RequestOverlayHistoryData();                  //请求日线数据
-        
+
         return true;
     }
 
@@ -20227,6 +20317,38 @@ function KLineChartContainer(uielement)
     {
         if (!this.OverlayChartPaint.length) return;
 
+        var self = this;
+        for(var i in this.OverlayChartPaint)
+        {
+            let item=this.OverlayChartPaint[i];
+            if (!item.MainData) continue;   //等待主图股票数据未下载完
+            if (item.Status!=OVERLAY_STATUS_ID.STATUS_NONE_ID) continue;
+            let symbol=item.Symbol;
+            if (!symbol) continue;
+
+            item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
+            //请求数据
+            $.ajax({
+                url: this.KLineApiUrl,
+                data:
+                {
+                    "field": ["name","symbol","yclose","open","price","high"],
+                    "symbol": symbol,
+                    "start": -1,
+                    "count": this.MaxReqeustDataCount
+                },
+                type:"post",
+                dataType: "json",
+                async:true,
+                success: function (data)
+                {
+                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                    self.RecvOverlayHistoryData(data,item);
+                }
+            });
+        }
+
+        /*
         var symbol=this.OverlayChartPaint[0].Symbol;
         if (!symbol) return;
 
@@ -20257,10 +20379,13 @@ function KLineChartContainer(uielement)
                 self.RecvOverlayHistoryData(data);
             }
         });
+        */
     }
 
-    this.RecvOverlayHistoryData=function(data)
+    this.RecvOverlayHistoryData=function(data,paint)
     {
+        if (paint.IsDelete) return;
+
         var aryDayData=KLineChartContainer.JsonDataToHistoryData(data);
 
         //原始叠加数据
@@ -20274,7 +20399,7 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.DataType=0;
 
-        if (bindData.Right>0 && !IsIndexSymbol(data.symbol))    //复权数据 ,指数没有复权)
+        if (bindData.Right>0 && !IsIndexSymbol(data.symbol))    //复权数据 ,指数没有复权
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
@@ -20289,10 +20414,11 @@ function KLineChartContainer(uielement)
             bindData.Data=periodData;
         }
 
-        this.OverlayChartPaint[0].Data=bindData;
-        this.OverlayChartPaint[0].SourceData=sourceData;
-        this.OverlayChartPaint[0].Title=data.name;
-        this.OverlayChartPaint[0].Symbol=data.symbol;
+        paint.Data=bindData;
+        paint.SourceData=sourceData;
+        paint.Title=data.name;
+        paint.Symbol=data.symbol;
+        paint.Status=OVERLAY_STATUS_ID.STATUS_FINISHED_ID;
 
         this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=1; //调整为百份比坐标
 
@@ -20306,13 +20432,37 @@ function KLineChartContainer(uielement)
     //取消叠加股票
     this.ClearOverlaySymbol=function()
     {
-        this.OverlayChartPaint[0].Symbol=null;
-        this.OverlayChartPaint[0].Data=null;
-        this.OverlayChartPaint[0].SourceData=null;
-        this.OverlayChartPaint[0].TooltipRect=[];
+        for(var i in this.OverlayChartPaint)
+        {
+            var item=this.OverlayChartPaint[i];
+            item.IsDelete=true;
+        }
+
+        this.OverlayChartPaint=[];
         this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=0; //调整一般坐标
         this.UpdateFrameMaxMin();
         this.Draw();
+    }
+
+    //删除一个叠加股票
+    this.DeleteOverlaySymbol=function(symbol)
+    {
+        for(var i in this.OverlayChartPaint)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (item.Symbol===symbol)
+            {
+                item.IsDelete=true;
+                this.OverlayChartPaint.splice(i,1);
+                if (this.OverlayChartPaint.length<=0) this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=0; //调整一般坐标
+                this.UpdateFrameMaxMin();
+                this.Draw();
+                return true;
+            }
+        }
+
+        console.warn(`[KLineChartContainer::DeleteOverlaySymbol] overlay symbol=${symbol} not exist.`)
+        return false;
     }
 
     this.RequestFlowCapitalData=function()
@@ -21206,7 +21356,6 @@ function MinuteChartContainer(uielement)
     this.Symbol;
     this.Name;
     this.SourceData;                          //原始的历史数据
-    this.OverlaySourceData;                   //叠加的原始数据
     this.IsAutoUpdate=true;                   //是否自动更新行情数据
     this.AutoUpdateFrequency=30000;             //30秒更新一次数据
     this.TradeDate=0;                         //行情交易日期
@@ -21583,22 +21732,11 @@ function MinuteChartContainer(uielement)
         averageLine.Name="Minute-Vol-Bar";
         this.ChartPaint[2]=averageLine;
 
-
         this.TitlePaint[0]=new DynamicMinuteTitlePainting();
         this.TitlePaint[0].Frame=this.Frame.SubFrame[0].Frame;
         this.TitlePaint[0].Canvas=this.Canvas;
         this.TitlePaint[0].OverlayChartPaint=this.OverlayChartPaint;    //绑定叠加
         this.TitlePaint[0].LanguageID=this.LanguageID;
-
-        
-        //主图叠加画法
-        var paint=new ChartOverlayMinutePriceLine();
-        paint.Canvas=this.Canvas;
-        paint.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
-        paint.ChartFrame=this.Frame.SubFrame[0].Frame;
-        paint.Name="Overlay-Minute";
-        this.OverlayChartPaint[0]=paint;
-
     }
 
     //切换成 脚本指标
@@ -21641,6 +21779,7 @@ function MinuteChartContainer(uielement)
     this.ChangeSymbol=function(symbol)
     {
         this.Symbol=symbol;
+        this.ResetOverlaySymbolStatus();
         this.RequestData();
     }
 
@@ -21649,15 +21788,38 @@ function MinuteChartContainer(uielement)
         if (count<0 || count>10) return;
         this.DayCount=count;
 
+        this.ResetOverlaySymbolStatus();
         this.RequestData();
     }
 
     //叠加股票 只支持日线数据
     this.OverlaySymbol=function(symbol)
     {
-        if (!this.OverlayChartPaint[0].MainData) return false;
+        for(var i in this.OverlayChartPaint)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (item.Symbol==symbol)
+            {
+                console.warn(`[MinuteChartContainer::OverlaySymbol] overlay symbol=${symbol} exist.`);
+                return false;
+            }
+        }
 
-        this.OverlayChartPaint[0].Symbol=symbol;
+        var paint=new ChartOverlayMinutePriceLine();
+        paint.Canvas=this.Canvas;
+        paint.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
+        paint.ChartFrame=this.Frame.SubFrame[0].Frame;
+        paint.Name="Overlay-Minute";
+        paint.Symbol=symbol;
+        paint.Color=g_JSChartResource.OverlaySymbol.Color[g_JSChartResource.OverlaySymbol.Random%g_JSChartResource.OverlaySymbol.Color.length];
+        ++g_JSChartResource.OverlaySymbol.Random;
+        if (this.ChartPaint[0].YClose>0 && this.ChartPaint[0].Data) //绑定主图数据
+        {
+            paint.MainData=this.ChartPaint[0].Data; 
+            paint.MainYClose=this.ChartPaint[0].YClose;        
+        }
+
+        this.OverlayChartPaint.push(paint);
 
         if (this.DayCount<=1) this.RequestOverlayMinuteData();               //请求数据
         else this.RequestOverlayHistoryMinuteData();
@@ -21665,13 +21827,46 @@ function MinuteChartContainer(uielement)
         return true;
     }
 
+    this.ResetOverlaySymbolStatus=function()
+    {
+        for(var i in this.OverlayChartPaint)
+        {
+            var item=this.OverlayChartPaint[i];
+            item.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
+        }
+    }
+
+    //删除一个叠加股票
+    this.DeleteOverlaySymbol=function(symbol)
+    {
+        for(var i in this.OverlayChartPaint)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (item.Symbol===symbol)
+            {
+                item.IsDelete=true;
+                this.OverlayChartPaint.splice(i,1);
+                this.UpdateFrameMaxMin();
+                this.Draw();
+                return true;
+            }
+        }
+
+        console.warn(`[MinuteChartContainer::DeleteOverlaySymbol] overlay symbol=${symbol} not exist.`)
+        return false;
+    }
+
     //取消叠加股票
     this.ClearOverlaySymbol=function()
     {
-        this.OverlaySourceData=null;
-        this.OverlayChartPaint[0].Symbol=null;
-        this.OverlayChartPaint[0].Data=null;
-        this.OverlayChartPaint[0].YClose=null;
+        for(var i in this.OverlayChartPaint)
+        {
+            var item=this.OverlayChartPaint[i];
+            item.IsDelete=true;
+        }
+        this.OverlayChartPaint=[];
+        this.Frame.SubFrame[0].Frame.YSplitOperator.OverlayChartPaint=this.OverlayChartPaint;
+        this.TitlePaint[0].OverlayChartPaint=this.OverlayChartPaint;    //绑定叠加
         this.UpdateFrameMaxMin();
         this.Draw();
     }
@@ -21913,33 +22108,43 @@ function MinuteChartContainer(uielement)
     //请求叠加数据 (主数据下载完再下载))
     this.RequestOverlayMinuteData=function()
     {
-        if (!this.OverlayChartPaint.length) return;
-
-        var symbol=this.OverlayChartPaint[0].Symbol;
-        if (!symbol) return;
-
         var self = this;
         var date=this.TradeDate;    //最后一个交易日期
-         //请求数据
-         $.ajax({
-            url: self.HistoryMinuteApiUrl,
-            data:
-            {
-                "symbol":symbol,
-                "days": [date],
-            },
-            type:"post",
-            dataType: "json",
-            async:true,
-            success: function (data)
-            {
-                self.RecvOverlayMinuteData(data);
-            }
-        });
+
+        for(var i in this.OverlayChartPaint)
+        {
+            let item=this.OverlayChartPaint[i];
+            if (!item.MainData || !(item.MainYClose>0) ) continue;
+            if (item.Status!=OVERLAY_STATUS_ID.STATUS_NONE_ID) continue;
+            var symbol=item.Symbol;
+            if (!symbol) return;
+
+            item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
+
+            //请求数据
+            $.ajax({
+                url: self.HistoryMinuteApiUrl,
+                data:
+                {
+                    "symbol":symbol,
+                    "days": [date],
+                },
+                type:"post",
+                dataType: "json",
+                async:true,
+                success: function (data)
+                {
+                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                    self.RecvOverlayMinuteData(data,item);
+                }
+            });
+        }
     }
 
-    this.RecvOverlayMinuteData=function(data)
+    this.RecvOverlayMinuteData=function(data,paint)
     {
+        if (paint.IsDelete) return;
+
         var aryMinuteData=MinuteChartContainer.JsonDataToMinuteDataArray(data);
 
         var sourceData=null;
@@ -21949,13 +22154,13 @@ function MinuteChartContainer(uielement)
             if (aryMinuteData.length<=0) return;
 
             var minuteData=aryMinuteData[0];
-            for(var i in this.OverlaySourceData)
+            for(var i in paint.SourceData)
             {
-                var item=this.OverlaySourceData[i];
+                var item=paint.SourceData[i];
                 if (item.Date==minuteData.Date)
                 {
-                    this.OverlaySourceData[i]=minuteData;
-                    var allMinuteData=this.HistoryMinuteDataToArray(this.OverlaySourceData);
+                    paint.SourceData[i]=minuteData;
+                    var allMinuteData=this.HistoryMinuteDataToArray(paint.SourceData);
                     var sourceData=new ChartData();
                     sourceData.Data=allMinuteData;
                     yClose=minuteData.YClose;
@@ -21971,10 +22176,11 @@ function MinuteChartContainer(uielement)
             yClose=sourceData.YClose;
         }
 
-        this.OverlayChartPaint[0].Data=sourceData;
-        this.OverlayChartPaint[0].Title=data.name;
-        this.OverlayChartPaint[0].Symbol=data.symbol;
-        this.OverlayChartPaint[0].YClose=yClose;
+        paint.Data=sourceData;
+        paint.Title=data.name;
+        paint.Symbol=data.symbol;
+        paint.YClose=yClose;
+        paint.Status=OVERLAY_STATUS_ID.STATUS_FINISHED_ID;
 
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
@@ -21983,38 +22189,40 @@ function MinuteChartContainer(uielement)
 
     this.RequestOverlayHistoryMinuteData=function()
     {
-        if (!this.OverlayChartPaint.length) return;
-        var symbol=this.OverlayChartPaint[0].Symbol;
-        if (!symbol) return;
-
-        var self=this;
+        var self = this;
         var days=[];
         for(var i in this.DayData)
         {
             var item=this.DayData[i];
             days.push(item.Date);
         }
-
         if (days.length<=0) return;
 
-        $.ajax({
-            url: self.HistoryMinuteApiUrl,
-            data:
-            {
-                "symbol": symbol,
-                "days": days
-            },
-            type:"post",
-            dataType: "json",
-            async:true,
-            success: function (data)
-            {
-                self.RecvOverlayHistoryMinuteData(data);
-            }
-        });
+        for(var i in this.OverlayChartPaint)
+        {
+            let item=this.OverlayChartPaint[i]
+            var symbol=item.Symbol;
+            if (!symbol) return;
+            if (item.Status!=OVERLAY_STATUS_ID.STATUS_NONE_ID) continue;
+
+            item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
+
+            $.ajax({
+                url: self.HistoryMinuteApiUrl,
+                data:{ "symbol": symbol, "days": days },
+                type:"post",
+                dataType: "json",
+                async:true,
+                success: function (data)
+                {
+                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                    self.RecvOverlayHistoryMinuteData(data,item);
+                }
+            });
+        }
     }
 
-    this.RecvOverlayHistoryMinuteData=function(data)    //叠加历史的分钟数据
+    this.RecvOverlayHistoryMinuteData=function(data,paint)    //叠加历史的分钟数据
     {
         var dayData=MinuteChartContainer.JsonDataToMinuteDataArray(data);
         var overlayDayData=[];
@@ -22038,18 +22246,19 @@ function MinuteChartContainer(uielement)
             }
         }
 
-        this.OverlaySourceData=overlayDayData;
+        paint.SourceData=overlayDayData;
         var allMinuteData=this.HistoryMinuteDataToArray(overlayDayData);
-
+        var yClose=overlayDayData[overlayDayData.length-1].YClose;
+        
         //原始数据
         var sourceData=new ChartData();
         sourceData.Data=allMinuteData;
 
-        var yClose=overlayDayData[0].YClose;
-        this.OverlayChartPaint[0].Data=sourceData;
-        this.OverlayChartPaint[0].Title=data.name;
-        this.OverlayChartPaint[0].Symbol=data.symbol;
-        this.OverlayChartPaint[0].YClose=yClose;
+        paint.Data=sourceData;
+        paint.Title=data.name;
+        paint.Symbol=data.symbol;
+        paint.YClose=yClose;
+        paint.Status=OVERLAY_STATUS_ID.STATUS_FINISHED_ID;
 
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
@@ -22079,6 +22288,7 @@ function MinuteChartContainer(uielement)
             },frequency);
         }else{
             setTimeout(function(){
+                self.ResetOverlaySymbolStatus();
                 self.RequestMinuteData();
             },frequency);
         }
@@ -22151,10 +22361,25 @@ function MinuteChartContainer(uielement)
             this.ExtendChartPaint[0].Name=this.Name;
         }
 
-        if (this.OverlayChartPaint.length>0)
+        if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol) && this.DayCount==1)  //指数显示领先指标
         {
-            this.OverlayChartPaint[0].MainData=this.ChartPaint[0].Data;         //叠加
-            this.OverlayChartPaint[0].MainYClose=yClose;
+            var bindLeadData=new ChartData();
+            bindLeadData.Data=minuteData.GetLead();
+            this.ChartPaint[0].LeadData=bindLeadData;
+            this.ChartPaint[0].IsShowLead=true;
+        }
+           
+        var beforeDataCount=0;
+        var isBeforeData=this.IsBeforeData;
+        if (this.DayCount>1) isBeforeData=false;
+        if (isBeforeData) beforeDataCount=15;
+        for(var i in this.OverlayChartPaint)
+        {
+            var item=this.OverlayChartPaint[i];
+            item.MainData=this.ChartPaint[0].Data;         //叠加股票
+            item.MainYClose=yClose;
+            item.BeforeDataCount=beforeDataCount;           //只是集合竞价数据
+            item.IsBeforeData=isBeforeData;
         }
     }
 
@@ -27901,15 +28126,22 @@ function KLineRightMenu(divElement)
             }
         ];
 
-        if (chart.OverlayChartPaint && chart.OverlayChartPaint[0] && chart.OverlayChartPaint[0].Symbol)
+        for(var i in chart.OverlayChartPaint)
         {
-            var symbol=chart.OverlayChartPaint[0].Symbol;
-            const mapSymbol=new Map(
-                [
-                    ['000001.sh',0],['399001.sz',1],['399005.sz',2],['399006.sz',3],['000300.sh',4]
-                ]);
-            if (mapSymbol.has(symbol)) data[mapSymbol.get(symbol)].selected=true;
+            var item=chart.OverlayChartPaint[i];
+            var symbol=item.Symbol;
+            const mapSymbol=new Map([['000001.sh',0],['399001.sz',1],['399005.sz',2],['399006.sz',3],['000300.sh',4]]);
+            if (mapSymbol.has(symbol)) 
+            {
+                var menuItem=data[mapSymbol.get(symbol)];
+                let delSymbol=symbol;
+                menuItem.selected=true;
+                menuItem.click=function () { chart.DeleteOverlaySymbol(delSymbol); };
+            }
+        }
 
+        if (chart.OverlayChartPaint && chart.OverlayChartPaint.length>0)
+        {
             data[data.length-1].isBorder=true;
             data.push(
                 {
