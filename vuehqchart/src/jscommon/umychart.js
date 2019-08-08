@@ -20439,6 +20439,7 @@ function KLineChartContainer(uielement)
         }
 
         this.OverlayChartPaint=[];
+        this.TitlePaint[0].OverlayChartPaint=this.OverlayChartPaint;    //绑定叠加
         this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=0; //调整一般坐标
         this.UpdateFrameMaxMin();
         this.Draw();
