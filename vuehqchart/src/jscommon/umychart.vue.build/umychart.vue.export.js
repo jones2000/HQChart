@@ -23,6 +23,7 @@ export default {
     JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,    //图形控制类型
     JSAlgorithm:JSAlgorithm,                //算法类
     JSComplier:JSComplier,                  //指标编译器
+    JSIndexScript:JSIndexScript,            //系统指标库
     
     ScriptIndexConsole:ScriptIndexConsole,  //指标执行 无UI
     //style.js相关
