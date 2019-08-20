@@ -3661,7 +3661,7 @@ function KLineFrame()
     this.ModifyIndexEvent;  //改参数 点击事件
     this.ChangeIndexEvent;   //换指标 点击事件
 
-    this.LastCalculateWidth=0;
+    this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
 
     this.DrawToolbar=function()
     {
@@ -3833,13 +3833,14 @@ function KLineFrame()
         //console.log(`[KLineFrame::CalculateDataWidth] ZoomIndex=${this.ZoomIndex}, XPointCount=${this.XPointCount}, DataWidth=${this.DataWidth}, DistanceWidth=${this.DistanceWidth}`);
         var width=this.ChartBorder.GetWidth()-4;
 
-        if (this.ZoomIndex>0 && this.LastCalculateWidth==width) //宽度没变 尝试使用原来的柱子宽度
+        if (this.ZoomIndex>0 && this.LastCalculateStatus.Width==width && this.LastCalculateStatus.XPointCount==this.XPointCount) //宽度没变 尝试使用原来的柱子宽度
         {
             if ((this.DataWidth + this.DistanceWidth) * this.XPointCount <= width) //当前的柱子宽度够用 就不调整了
                 return;
         }
 
-        this.LastCalculateWidth=width;
+        this.LastCalculateStatus.Width=width;
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
         for(var i=0;i<ZOOM_SEED.length;++i)
         {
             if((ZOOM_SEED[i][0] + ZOOM_SEED[i][1]) * this.XPointCount < width)
@@ -3934,8 +3935,9 @@ function KLineFrame()
 
         this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
         this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
-
+       
         this.TrimKLineDataWidth(this.ChartBorder.GetWidth());
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
 
         //console.log(`[KLineFrame::ZoomUp] new status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
 
@@ -3977,9 +3979,10 @@ function KLineFrame()
         ++this.ZoomIndex;
         this.XPointCount=xPointCount;
         this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
-	    this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
-
+        this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
+        
         this.TrimKLineDataWidth(this.ChartBorder.GetWidth());
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
 
         //console.log(`[KLineFrame::ZoomDown] new status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
 
@@ -4798,6 +4801,8 @@ function HQTradeFrame()
                 item.Frame.ZoomIndex= mainFrame.ZoomIndex;
                 item.Frame.DataWidth= mainFrame.DataWidth;
                 item.Frame.DistanceWidth= mainFrame.DistanceWidth;
+                item.Frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
+                item.Frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
             }
 
             for(var j in item.OverlayIndex)
@@ -4807,6 +4812,8 @@ function HQTradeFrame()
                 overlayItem.Frame.ZoomIndex= mainFrame.ZoomIndex;
                 overlayItem.Frame.DataWidth= mainFrame.DataWidth;
                 overlayItem.Frame.DistanceWidth= mainFrame.DistanceWidth;
+                overlayItem.Frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
+                overlayItem.Frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
             }
         }
 
@@ -4826,6 +4833,8 @@ function HQTradeFrame()
                 item.Frame.ZoomIndex= mainFrame.ZoomIndex;
                 item.Frame.DataWidth= mainFrame.DataWidth;
                 item.Frame.DistanceWidth= mainFrame.DistanceWidth;
+                item.Frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
+                item.Frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
             }
 
             for(var j in item.OverlayIndex)
@@ -4835,6 +4844,8 @@ function HQTradeFrame()
                 overlayItem.Frame.ZoomIndex= mainFrame.ZoomIndex;
                 overlayItem.Frame.DataWidth= mainFrame.DataWidth;
                 overlayItem.Frame.DistanceWidth= mainFrame.DistanceWidth;
+                overlayItem.Frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
+                overlayItem.Frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
             }
         }
 
