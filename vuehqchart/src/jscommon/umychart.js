@@ -26215,6 +26215,7 @@ function AnnouncementInfo()
     delete this.newMethod;
 
     this.ClassName='AnnouncementInfo';
+    this.ApiType=1; //0=读API 1=读OSS缓存文件
 
     this.RequestData=function(hqChart)
     {
@@ -26225,28 +26226,51 @@ function AnnouncementInfo()
         };
 
         this.Data=[];
+        if (this.ApiType==1)    //取缓存文件
+        {
+            var url=`${g_JSChartResource.CacheDomain}/cache/analyze/shszreportlist/${param.HQChart.Symbol}.json`;
+            $.ajax({
+                url: url,
+                type:"get",
+                dataType: "json",
+                async:true,
+                success: function (recvData)
+                {
+                    self.RecvData(recvData,param);
+                },
+                error: function(http,e)
+                {
+                    self.RecvError(http,e,param);;
+                }
+            });
+        }
+        else    //取api
+        {
+            //请求数据
+            $.ajax({
+                url: g_JSChartResource.KLine.Info.Announcement.ApiUrl,
+                data:
+                {
+                    "filed": ["title","releasedate","symbol","id"],
+                    "symbol": [param.HQChart.Symbol],
+                    "querydate":{"StartDate":this.StartDate,"EndDate":this.GetToday()},
+                    "start":0,
+                    "end":this.MaxReqeustDataCount,
+                },
+                type:"post",
+                dataType: "json",
+                async:true,
+                success: function (recvData)
+                {
+                    self.RecvData(recvData,param);
+                },
+                error: function(http,e)
+                {
+                    self.RecvError(http,e,param);;
+                }
+            });
 
-        //请求数据
-        $.ajax({
-            url: g_JSChartResource.KLine.Info.Announcement.ApiUrl,
-            data:
-            {
-                "filed": ["title","releasedate","symbol","id"],
-                "symbol": [param.HQChart.Symbol],
-                "querydate":{"StartDate":this.StartDate,"EndDate":this.GetToday()},
-                "start":0,
-                "end":this.MaxReqeustDataCount,
-            },
-            type:"post",
-            dataType: "json",
-            async:true,
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-
-        return true;
+        }
     }
 
     this.RecvData=function(recvData,param)
@@ -26284,6 +26308,12 @@ function AnnouncementInfo()
 
         param.HQChart.UpdataChartInfo();
         param.HQChart.Draw();
+    }
+
+    this.RecvError=function(http,e,param)
+    {
+        console.warn("[AnnouncementInfo::RecvError] error, http ",e, http);
+        //if (param.HQChart.ScriptErrorCallback) param.HQChart.ScriptErrorCallback(e);
     }
 }
 
