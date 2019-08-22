@@ -1,0 +1,170 @@
+@charset "UTF-8";
+/**
+ * 
+ * @authors lixq
+ * @date    2018-10-16
+ */
+* {margin: 0; padding: 0;}
+body,html {font: 0.875rem "PingFang-SC-Medium"; color: #333;}
+html,body,div,a,img,table {-webkit-tap-highlight-color:transparent;}
+div:active { background: transparent;}
+a {text-decoration: none;}
+ul,ol {list-style: none;}
+.clear:after {content: " "; height: 0; display: block; overflow: hidden; clear: both;}
+.upColor {color: #ee1515;}
+.lowColor {color: #199e00; }
+
+/*页面头部*/
+.headTitle {height: 44px; box-sizing: border-box; padding-top: 4px;}
+.nameWrap {text-align: center; line-height: 21px; font-family: "PingFangSC-Light";}
+.stockName {/*font-family: "PingFang-SC-Heavy";*/ margin-right: 1.2%;}
+.flagBox { width: 1.6%; height: 12px; border-radius: 2px; line-height: 12px; color: #fff; font-size: 0.786rem; text-align: center; margin-right: 1px;}
+.rFlag { background-color: #f39800;}
+.tFlag { background-color: #125fd9;}
+.exchangeInfo { font-size: 0.714rem; color: #666; height: 15px; line-height: 15px; font-weight: bold; text-align: center;}
+.exchangeInfo>span {margin-right: 1.3%; font-family: "PingFangSC-Light";}
+
+.bodyBg {background-color: #f8f9fc;}
+.blockBg {background: #fff; margin-top: 5px;}
+/*.refreshText {text-align: center; color: #666; line-height: 25px; width: 100%; height: 25px; position: fixed; left: 0; bottom: 0;}*/
+
+/*价格部分*/
+.exchangeData {padding: 0 4%; border-bottom: 1px solid #ececec; background-color: #fff;}
+.exchangeData .priceCurrent,.exchangeData .priceHL,.exchangeData .priceOpen,.exchangeData .priceAmount {float: left;}
+.exchangeData .priceCurrent {width: 32.7%;}
+.exchangeData .priceHL {width: 21.4%; box-sizing: border-box; padding-right: 4.3%;}
+.exchangeData .priceOpen {width: 22%; box-sizing: border-box; padding-right: 3%;}
+.exchangeData .priceAmount {width: 23.9%;}
+.exchangeData .priceHL span,.exchangeData .priceOpen span,.exchangeData .priceAmount span {float: right; height: 20px; line-height: 20px;}
+.priceCurrent .priceCurrentNum {font: 2.143rem "PingFang-SC-Heavy"; padding-left: 1.4%; height: 29px; line-height: 29px; margin-bottom: 2px;}
+.priceCurrent .riseNum,.priceCurrent .risePrecent { font-size: 0.926rem; font-weight: bold; height: 21px; line-height: 21px;}
+.priceCurrent .riseNum { margin-right: 11.4%;}
+.priceHL .high,.priceOpen .open,.priceAmount .num { padding-top: 7px; height: 20px; line-height: 20px;}
+.exchangeInfoT {width: 100%; border-collapse: collapse; border: none;}
+.exchangeInfoT tr {height: 24px; line-height: 24px;}
+.exchangeInfoT tr>td { font-size: 0.857rem;}
+/*.exchangeInfoT tr>td:nth-of-type(2n+1) { font-weight: bold;}*/
+.exchangeInfoT tr>td:nth-of-type(1) { width: 6%;}
+.exchangeInfoT tr>td:nth-of-type(2) { width: 15%; padding-right: 3%; text-align: right;}
+.exchangeInfoT tr>td:nth-of-type(3) { width: 36.5%; padding-right: 3%; text-align: right; }
+.exchangeInfoT tr>td:nth-of-type(3)>.name {float: left;}
+/*.exchangeInfoT tr>td:nth-of-type(3) { width: 12%;}
+.exchangeInfoT tr>td:nth-of-type(4) { width: 24.5%; padding-right: 3%; text-align: right;}*/
+.exchangeInfoT tr>td:nth-of-type(4) { width: 16%;}
+.exchangeInfoT tr>td:nth-of-type(5) { width: 20.5%; text-align: right;}
+/*.exchangeInfoT sup {font-size: 8px;}*/
+.seeMore { height: 11px; background: url(../images/moreIcon.png) center top no-repeat; background-size: auto 100%;}
+
+/*k线部分*/
+.tabsContent .item {display: none; overflow: hidden;}
+.tabsContent .item.active {display: block;}
+.tabsTitle {height: 28px; line-height: 28px; border-bottom: 1px solid #ececec; border-top: 1px solid #ececec; padding: 0 4%;}
+.tabsTitle span,.tabsTitle li {width: 15%; height: 27px; line-height: 27px; border-bottom: 2px solid transparent; display: inline-block; text-align: center; vertical-align: top;}
+.tabsTitle span.active,.tabsTitle li.active { border-bottom-color: #217cd9; color: #217cd9;}
+#minuteKline,#kline 
+{
+	float: left; position: relative; overflow: hidden;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+/*#kline,#minuteKline { margin-left: 4%;}*/
+.rightMinute {float: right; width: 33.3%;}
+.minute-tab { border-top: none;}
+.minute-tab li { float: left; width: 50%; font-size: 0.786rem;}
+.kLineTabs .tabsTitle { padding-left: 2%;}
+.kLineTabs .tabsTitle span {font-size: 0.857rem; width: 16%}
+.kLineTabs .tabsTitle span:last-child {width: width: 18%;}
+#minuteFive .tableOne { margin-bottom: 12px; padding-top: 13px;}
+#minuteFive .tableTwo {padding-top: 10px; border-top: 1px solid #ececec;}
+#minuteFive td,#minute td {font: 0.714rem "Microsoft YaHei"; line-height: 27px;}
+#minute td { line-height: 29px;}
+.phoneRight { border: 1px solid #ececec; float: right; margin-right: 0.7%; width: 12.5%; height: 335px; margin-top: 20px; background-color: #f4f4f4;}
+.phoneRight li {line-height: 37px; font-size: 0.786rem; text-align: center;}
+.phoneRight li.active {color: #217cd9;}
+#showMinute {position: relative;}
+#showMinute:after {content: ""; border-width: 6px; border-style: solid; border-color: #217cd9 transparent transparent transparent; position: absolute; bottom: 6px; right: -6px;}
+.tableOne,.tableTwo { width: 98%; margin-left: 1%; margin-right: 1%;}
+.tableInfo {width: 100%; margin-top: 13px;}
+.tableOne tr>td:nth-of-type(1),.tableTwo tr>td:nth-of-type(1),.tableInfo tr>td:nth-of-type(1) {width: 26%;}
+.tableOne tr>td:nth-of-type(2),.tableTwo tr>td:nth-of-type(2),.tableInfo tr>td:nth-of-type(2) {width: 37%; text-align: right;}
+.tableOne tr>td:nth-of-type(3),.tableTwo tr>td:nth-of-type(3),.tableInfo tr>td:nth-of-type(3) {width: 37%; text-align: right;}
+.tableMinuteContent {display: none;}
+.tableMinuteContent.active {display: block;}
+.fiveDayMinuteWrap {display: none;}
+/*个股分析部分*/
+.blockTitle { height: 46px; box-sizing: border-box; padding-top: 9px; border-bottom: 1px solid #e1ecf2; padding-left: 4%;}
+.blockTitle span { display: block; height: 1.5rem; padding-left: 5.8%; border-left: 4px solid #0a58c7; color: #000; font-size: 1.286rem;}
+.subjectList { border-bottom: 1px solid #ececec;}
+.subjectList>li {width: 33%; text-align: center; float: left;}
+.subjectList>li:nth-of-type(2) {width: 34%; box-sizing: border-box; border-left: 1px solid #ececec; border-right: 1px solid #ececec;}
+.subjectList>li img { margin-top: 20px; vertical-align: top;}
+.subjectList>li:nth-of-type(1) img {width: 28.6%;}
+.subjectList>li:nth-of-type(2) img {width: 25%;}
+.subjectList>li:nth-of-type(3) img {width: 22.7%;}
+.subjectList>li p {line-height: 35px; color: #666;}
+/*问答部分*/
+.qAList { padding: 0 4%;}
+.qAList>li { padding: 13px 0 7px 0; border-bottom: 1px solid #ececec;}
+.qAList>li:last-child {border-bottom: none;}
+.qATtabs .tabsTitle span {width: 16%;}
+.qATtabs .tabsTitle span:nth-of-type(2) {width: 20%;}
+.qAList .qText {color: #f39800; font: 1.071rem "PingFang-SC-Regular";}
+.qAList .aText{margin-top: 9px; color: #217cd9; font: 1.071rem "PingFang-SC-Regular";}
+.qAList .time,.qAList .time>span {font: 0.857rem "PingFang-SC-Regular"; color: #8b8b8b;}
+.qAList .time>.author { margin-right: 9.6%;}
+.qAList>li>.qText,.qAList>li>.aText,.qAList>li>.time { line-height: 25px;}
+.bgQA { display: inline-block; width: 21px; height: 21px; box-sizing: border-box; padding-top: 2px; font-size: 1.071rem; line-height: 21px; text-align: center; border-radius: 4px; color: #fff; font-weight: 500; position: relative; background-color: #ccc; margin-right: 2.5%;}
+.bgQA:after {content: ""; border-width: 4px; border-style: solid; border-color: #ccc transparent transparent transparent; position: absolute; bottom: -8px; left: 50%; margin-left: -4px;}
+.qAList .qText .bgQA {background-color: #f39800;}
+.qAList .qText .bgQA:after {border-color: #f39800 transparent transparent transparent;}
+.qAList .aText .bgQA {background-color: #217cd9;}
+.qAList .aText .bgQA:after {border-color: #217cd9 transparent transparent transparent;}
+.likeNewsList {padding: 0 4%;}
+.likeNewsList li { border-bottom: 1px solid #ececec; padding: 10px 0 3px 0;}
+.likeNewsList li:last-child {border-bottom: none;}
+.likeNewsList li:nth-of-type(even) {background-color: #fafafa;}
+.likeNewsList .title,.likeNewsList .sourceInfo { line-height: 23px;}
+.likeNewsList .title {font: 1.071rem "PingFang-SC-Regular"; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #333;}
+.likeNewsList .source {font: 0.857rem "PingFang-SC-Regular"; color: #8b8b8b;}
+.likeNewsList .time {font: 0.857rem "ArialMT"; color: #656870; float: right; line-height: 23px;}
+.noticeList .title {color: #217cd9; white-space: pre-wrap;}
+.noData {font-size: 1.786rem; font-weight: bold; line-height: 100px; height: 100px; text-align: center;}
+.qATtabs .tabsContent {min-height: 100px;}
+.exchangeInfoT {display: none;}
+/*横屏页面*/
+.tabsTitle.landscape span { width: 10%;}
+
+/*横版自选详情页面地址*/
+.klinebox {float: left; position: relative;}/*545/667*/
+.klineList{float: right; width: 7.6%; margin-top: 3px; margin-right: 0.7%; border: 1px solid #ececec;}
+.klineList li {line-height: 34px; font-size: 0.786rem; text-align: center;}
+.klineList li.active { color: #217cd9;}
+#minuteWrap {position: relative;}
+#klineWraphq {display: none;}
+.screenWrap {padding-top: 7px;}
+.screenWrap .exchangeData>div {float: left;}
+.screenWrap p {line-height: 20px;}
+.screenWrap .nameWraps {width: 13%; padding-top: 7px; box-sizing: border-box; padding-left: 2px;}
+.screenWrap .priceCurrent {width: 13%; padding-top: 11px;}
+.screenWrap .riseInfo {width: 9%; padding-left: 4%; padding-top: 7px;}
+.screenWrap .priceHL {width: 16%;}
+.screenWrap .priceOpen {width: 17%;}
+.screenWrap .priceAmount {width: 28%;}
+.screenWrap .exchangeData {padding: 0;}
+.screenWrap .priceHL span, .screenWrap .priceOpen span, .screenWrap .priceAmount span { float: none; margin-left: 10px;}
+.screenWrap .tabTitle {border-top: none;}
+.screenWrap .num {padding-top: 0;}
+.screenWrap .totalValue {padding-top: 7px;}
+.shrinkWrap {height: 12px; text-align: center;}/*6 4*/
+.shrinkWrap .shrinkBtn {height: 12px; vertical-align: top;transform: rotate(180deg);-webkit-transform: rotate(180deg);}
+.shrinkWrap .shrinkBtn.open {transform: rotate(0deg);-webkit-transform: rotate(0deg);}
+
+
+@media screen and (max-width: 320px) {
+	.exchangeData {padding: 0 2%;};
+	.exchangeData .priceAmount {width: 27.9%;}
+}
