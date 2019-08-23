@@ -1049,6 +1049,16 @@ function JSChart(divElement)
             this.JSChartContainer.SetLanguage(language);
         }
     }
+
+    //切换指标模板
+    this.ChangeIndexTemplate=function(option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ChangeIndexTemplate)=='function')
+        {
+            console.log('[JSChart:ChangeIndexTemplate] ', option);
+            this.JSChartContainer.ChangeIndexTemplate(option);
+        }
+    }
 }
 
 //初始化
@@ -19966,6 +19976,97 @@ function KLineChartContainer(uielement)
             this.UpdataDataoffset();           //更新数据偏移
         }
 
+        this.Frame.SetSizeChage(true);
+        this.ResetFrameXYSplit();
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
+    }
+
+    this.ChangeIndexTemplate=function(option)   //切换指标模板 可以设置指标窗口个数 每个窗口的指标
+    {
+        if (!option.Windows) return;
+        var count=option.Windows.length;
+        if (count<=0) return;
+        var currentLength=this.Frame.SubFrame.length;
+
+        //清空所有的指标图型
+        for(var i=0;i<currentLength;++i)
+        {
+            this.DeleteIndexPaint(i);
+            var frame=this.Frame.SubFrame[i];
+            frame.YSpecificMaxMin=null;
+            frame.IsLocked=false;
+            frame.YSplitScale = null;
+        }
+        
+        if (currentLength>count)
+        {
+            for(var i=currentLength-1;i>=count;--i)
+            {
+                this.Frame.SubFrame[i].Frame.ClearToolbar();
+            }
+
+            this.Frame.SubFrame.splice(count,currentLength-count);
+            this.WindowIndex.splice(count,currentLength-count);
+        }
+        else
+        {
+            for(var i=currentLength;i<count;++i)  //创建新的指标窗口
+            {
+                var subFrame=this.CreateSubFrameItem(i);
+                this.Frame.SubFrame[i]=subFrame;
+                var titlePaint=new DynamicChartTitlePainting();
+                titlePaint.Frame=this.Frame.SubFrame[i].Frame;
+                titlePaint.Canvas=this.Canvas;
+                titlePaint.LanguageID=this.LanguageID;
+                this.TitlePaint[i+1]=titlePaint;
+            } 
+        }
+
+        var systemScript = new JSIndexScript();
+        var bindData=this.ChartPaint[0].Data;
+        for(var i=0;i<count;++i)
+        {
+            var windowIndex=i;
+            var indexID=option.Windows[i].Index;
+            var indexItem=JSIndexMap.Get(indexID);
+            var titleIndex=windowIndex+1;
+            this.TitlePaint[titleIndex].Data=[];
+            this.TitlePaint[titleIndex].Title=null;
+            if (indexItem)
+            {
+                this.WindowIndex[i]=indexItem.Create();
+                this.CreateWindowIndex(windowIndex);
+                this.BindIndexData(windowIndex,bindData);
+            }
+            else
+            {
+                var indexInfo = systemScript.Get(indexID);
+                if (indexInfo)
+                {
+                    let indexData = 
+                    { 
+                        Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexID ,
+                        //扩展属性 可以是空
+                        KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
+                        FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
+                    };
+
+                    this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+                    this.BindIndexData(windowIndex,bindData);   //执行脚本
+                }
+            }
+        }
+
+        //最后一个显示X轴坐标
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
+        {
+            var item=this.Frame.SubFrame[i].Frame;
+            if (i==this.Frame.SubFrame.length-1) item.XSplitOperator.ShowText=true;
+            else item.XSplitOperator.ShowText=false;
+        }
+
+        this.UpdataDataoffset();           //更新数据偏移
         this.Frame.SetSizeChage(true);
         this.ResetFrameXYSplit();
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
