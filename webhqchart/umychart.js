@@ -7955,6 +7955,116 @@ function ChartLine()
     }
 }
 
+//彩色线段
+function ChartPartLine()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartPartLine';     //类名
+    this.LineWidth;                     //线段宽度            
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        this.DrawLine();
+    }
+
+    this.DrawLine=function()
+    {
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var chartright=this.ChartBorder.GetRight();
+        if (bHScreen) chartright=this.ChartBorder.GetBottom();
+        var xPointCount=this.ChartFrame.XPointCount;
+        
+        this.Canvas.save();
+        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
+        var bFirstPoint=true;
+        var drawCount=0;
+        var lastColor;
+        var lastPoint={X:null,Y:null};
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var item=this.Data.Data[i];
+            if (item==null) continue;
+            var value=item.Value;
+            if (value==null) continue;
+
+            var color=item.RGB;
+            var x=this.ChartFrame.GetXFromIndex(j);
+            var y=this.ChartFrame.GetYFromData(value);
+
+            if (x>chartright) break;
+
+            if (color!=lastColor)
+            {
+                if (lastColor && drawCount>0) this.Canvas.stroke();
+
+                drawCount=0;
+                lastColor=color;
+                this.Canvas.strokeStyle=color;
+                this.Canvas.beginPath();
+
+                if (lastPoint.X!=null && lastPoint.Y!=null) //接着上一个点连线
+                {
+                    if (bHScreen) this.Canvas.moveTo(lastPoint.Y,lastPoint.X);  //横屏坐标轴对调
+                    else this.Canvas.moveTo(lastPoint.X,lastPoint.Y);
+
+                    if (bHScreen) this.Canvas.lineTo(y,x);
+                    else this.Canvas.lineTo(x,y);
+
+                    ++drawCount;
+                }
+                else
+                {
+                    if (bHScreen) this.Canvas.moveTo(y,x);  //横屏坐标轴对调
+                    else this.Canvas.moveTo(x,y);
+                }
+            }
+            else
+            {
+                if (bHScreen) this.Canvas.lineTo(y,x);
+                else this.Canvas.lineTo(x,y);
+                ++drawCount;
+            }
+
+            lastPoint.X=x;
+            lastPoint.Y=y;
+        }
+
+        if (drawCount>0) this.Canvas.stroke();
+        this.Canvas.restore();
+    }
+
+    this.GetMaxMin=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var range={};
+        range.Min=null;
+        range.Max=null;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var item = this.Data.Data[i];
+            if (!item || !item.Value) continue;
+            if (range.Max == null || range.Max<item.Value) range.Max = item.Value;
+            if (range.Min == null || range.Min>item.Value) range.Min = item.Value;
+        }
+
+        return range;
+    }
+}
+
 
 //POINTDOT 圆点 支持横屏
 function ChartPointDot()
@@ -20044,9 +20154,11 @@ function KLineChartContainer(uielement)
                 var indexInfo = systemScript.Get(indexID);
                 if (indexInfo)
                 {
+                    var args=indexInfo.Args;
+                    if (option.Windows[i].Args) args=option.Windows[i].Args;
                     let indexData = 
                     { 
-                        Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexID ,
+                        Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:indexID ,
                         //扩展属性 可以是空
                         KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
                         FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition

@@ -11199,6 +11199,116 @@ function ChartLine()
     }
 }
 
+//彩色线段
+function ChartPartLine()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartPartLine';     //类名
+    this.LineWidth;                     //线段宽度            
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        this.DrawLine();
+    }
+
+    this.DrawLine=function()
+    {
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var chartright=this.ChartBorder.GetRight();
+        if (bHScreen) chartright=this.ChartBorder.GetBottom();
+        var xPointCount=this.ChartFrame.XPointCount;
+        
+        this.Canvas.save();
+        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
+        var bFirstPoint=true;
+        var drawCount=0;
+        var lastColor;
+        var lastPoint={X:null,Y:null};
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var item=this.Data.Data[i];
+            if (item==null) continue;
+            var value=item.Value;
+            if (value==null) continue;
+
+            var color=item.RGB;
+            var x=this.ChartFrame.GetXFromIndex(j);
+            var y=this.ChartFrame.GetYFromData(value);
+
+            if (x>chartright) break;
+
+            if (color!=lastColor)
+            {
+                if (lastColor && drawCount>0) this.Canvas.stroke();
+
+                drawCount=0;
+                lastColor=color;
+                this.Canvas.strokeStyle=color;
+                this.Canvas.beginPath();
+
+                if (lastPoint.X!=null && lastPoint.Y!=null) //接着上一个点连线
+                {
+                    if (bHScreen) this.Canvas.moveTo(lastPoint.Y,lastPoint.X);  //横屏坐标轴对调
+                    else this.Canvas.moveTo(lastPoint.X,lastPoint.Y);
+
+                    if (bHScreen) this.Canvas.lineTo(y,x);
+                    else this.Canvas.lineTo(x,y);
+
+                    ++drawCount;
+                }
+                else
+                {
+                    if (bHScreen) this.Canvas.moveTo(y,x);  //横屏坐标轴对调
+                    else this.Canvas.moveTo(x,y);
+                }
+            }
+            else
+            {
+                if (bHScreen) this.Canvas.lineTo(y,x);
+                else this.Canvas.lineTo(x,y);
+                ++drawCount;
+            }
+
+            lastPoint.X=x;
+            lastPoint.Y=y;
+        }
+
+        if (drawCount>0) this.Canvas.stroke();
+        this.Canvas.restore();
+    }
+
+    this.GetMaxMin=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var range={};
+        range.Min=null;
+        range.Max=null;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var item = this.Data.Data[i];
+            if (!item || !item.Value) continue;
+            if (range.Max == null || range.Max<item.Value) range.Max = item.Value;
+            if (range.Min == null || range.Min>item.Value) range.Min = item.Value;
+        }
+
+        return range;
+    }
+}
+
 
 //POINTDOT 圆点 支持横屏
 function ChartPointDot()
@@ -23288,9 +23398,11 @@ function KLineChartContainer(uielement)
                 var indexInfo = systemScript.Get(indexID);
                 if (indexInfo)
                 {
+                    var args=indexInfo.Args;
+                    if (option.Windows[i].Args) args=option.Windows[i].Args;
                     let indexData = 
                     { 
-                        Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexID ,
+                        Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:indexID ,
                         //扩展属性 可以是空
                         KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
                         FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
@@ -35997,44 +36109,65 @@ function JSAlgorithm(errorHandler,symbolData)
 
     this.MA=function(data,dayCount)
     {
-        if (dayCount<=0) dayCount=1;
-        
         let result=[];
-        if (!data || !data.length) return result;
-        
-        for(var i=0;i<data.length;++i)
+        if (!Array.isArray(dayCount))
         {
-            result[i]=null;
-            if (this.IsNumber(data[i])) break;
-        }
-
-        var data=data.slice(0); //复制一份数据出来
-        for(var days=0;i<data.length;++i,++days)
-        {
-            if (days<dayCount-1)
+            if (dayCount<=0) dayCount=1;
+            if (!data || !data.length) return result;
+            
+            for(var i=0;i<data.length;++i)
             {
                 result[i]=null;
-                continue;
+                if (this.IsNumber(data[i])) break;
             }
 
-            let preValue=data[i-(dayCount-1)];
-            let sum=0;
-            for(let j=dayCount-1;j>=0;--j)
+            var data=data.slice(0); //复制一份数据出来
+            for(var days=0;i<data.length;++i,++days)
             {
-                var value=data[i-j];
-                if (!this.IsNumber(value)) 
+                if (days<dayCount-1)
                 {
-                    value=preValue;  //空数据就取上一个数据
-                    data[i-j]=value; 
+                    result[i]=null;
+                    continue;
                 }
-                else 
-                {
-                    preValue=value;
-                }
-                sum+=value;
-            }
 
-            result[i]=sum/dayCount;
+                let preValue=data[i-(dayCount-1)];
+                let sum=0;
+                for(let j=dayCount-1;j>=0;--j)
+                {
+                    var value=data[i-j];
+                    if (!this.IsNumber(value)) 
+                    {
+                        value=preValue;  //空数据就取上一个数据
+                        data[i-j]=value; 
+                    }
+                    else 
+                    {
+                        preValue=value;
+                    }
+                    sum+=value;
+                }
+
+                result[i]=sum/dayCount;
+            }
+        }
+        else
+        {
+            for(var i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                if (i>=dayCount.length) continue;
+                var sumCount=dayCount[i];
+                if (!this.IsNumber(sumCount)) continue;
+                if (sumCount<=0) sumCount=i;    //0计算当前所有的
+                
+                var sum=0;
+                for(var j=i, k=0;j>=0 && k<sumCount;--j,++k)
+                {
+                    sum+=data[j];
+                }
+
+                result[i]=sum/sumCount;
+            }
         }
 
         return result;
@@ -36630,24 +36763,42 @@ function JSAlgorithm(errorHandler,symbolData)
     this.SUM=function(data,n)
     {
         var result=[];
-        
-        if (n==0)
-        {
-            result[0]=data[0];
-    
-            for (var i=1; i<data.length; ++i)
+
+        if (!Array.isArray(n))
+        { 
+            if (n==0)
             {
-                result[i] = result[i-1]+data[i];
+                result[0]=data[0];
+        
+                for (var i=1; i<data.length; ++i)
+                {
+                    result[i] = result[i-1]+data[i];
+                }
+            }
+            else
+            {
+                for(var i=n-1,j=0;i<data.length;++i,++j)
+                {
+                    for(var k=0;k<n;++k)
+                    {
+                        if (k==0) result[i]=data[k+j];
+                        else result[i]+=data[k+j];
+                    }
+                }
             }
         }
         else
         {
-            for(var i=n-1,j=0;i<data.length;++i,++j)
+            for(var i=0;i<data.length;++i)
             {
-                for(var k=0;k<n;++k)
+                result[i]=null;
+                var totalCount=n[i];
+                if (!(totalCount>0)) continue;
+
+                for(var j=i, k=0 ;j>=0 && k<totalCount ;--j,++k)
                 {
-                    if (k==0) result[i]=data[k+j];
-                    else result[i]+=data[k+j];
+                    if (k==0) result[i]=data[j];
+                    else result[i]+=data[j];
                 }
             }
         }
@@ -38408,6 +38559,49 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    //用法:BETWEEN(A,B,C)表示A处于B和C之间时返回1,否则返回0 
+    //例如:BETWEEN(CLOSE,MA(CLOSE,20),MA(CLOSE,10))表示收盘价介于10日均线和20日均线之间
+    this.BETWEEN=function(condition, data, data2)
+    {
+        var result=[];
+        var isNumber=typeof(condition)=='number';
+        var isNumber2=typeof(data)=='number';
+        var isNumber3=typeof(data2)=='number';
+
+        if (isNumber && isNumber2 && isNumber3)   //单数值
+        {
+            return (condition>=data && condition<=data2) ? 1 : 0;
+        }
+
+        for(var i in condition)
+        {
+            result[i]=0;
+            var item=condition[i];
+            var left=null, right=null;
+
+            if (isNumber2) left=data;
+            else if (i<data.length-1) left=data[i];
+            
+            if (isNumber3) right=data2;
+            else if (i<data2.length-1) right=data2[i];
+
+            if (left==null || right==null) continue;
+
+            if (left>right)
+            {
+                if (item>=right && item<=left) 
+                    result[i]=1;
+            }
+            else
+            {
+                if (item<=right && item>=left) 
+                    result[i]=1;
+            }
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -38534,6 +38728,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.SARTURN(args[0], args[1], args[2]);
             case 'BACKSET':
                 return this.BACKSET(args[0], args[1]);
+            case 'BETWEEN':
+                return this.BETWEEN(args[0], args[1], args[2]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
@@ -39145,6 +39341,58 @@ function JSDraw(errorHandler,symbolData)
 
         return result;
     }
+
+    this.RGB=function(r,g,b)
+    {
+        var rgb=`RGB(${r},${g},${b})`;
+        return rgb;
+    }
+
+    //用法:PARTLINE(PRICE,COND1,COLOR1,COND2,COLOR2...),
+    //绘制PRICE线,当COND1条件满足时,用COLOR1颜色,当COND2条件满足时,用COLOR2颜色,否则不绘制,从COLOR1之后的参数均可以省略,最多可以有10组条件
+    //例如:PARTLINE(CLOSE,CLOSE>OPEN,RGB(255,0,0),CLOSE<OPEN,RGB(0,255,0),1,RGB(0,0,255))
+    //表示画收盘价线,阳线时用红色,阴线时用绿色,平盘用蓝色.注意最后一个条件为1,表示前面都不满足时必然满足这个条件
+    this.PARTLINE=function(args)
+    {
+        let drawData=[];
+        let result={DrawData:drawData, DrawType:'PARTLINE'};
+        if (args.length<3) return result;
+
+        var data=args[0];
+        var condition=[];
+        for(var i=1;i<args.length && i+1<args.length;i+=2)
+        {
+            condition.push({Cond:args[i], RGB:args[i+1]});
+        }
+
+        for(var i in data)
+        {
+            var drawItem={Value:null, RGB:null};
+            drawData[i]=drawItem;
+
+            var value=data[i];
+            if (!this.IsNumber(value)) continue;
+
+            var rgb=null;
+            for(var j in condition)
+            {
+                var item=condition[j];
+                if (i<item.Cond.length && item.Cond[i])
+                {
+                    rgb=item.RGB;
+                    break;
+                }
+            }
+
+            if (rgb) 
+            {
+                drawItem.Value=value;
+                drawItem.RGB=rgb;
+            }
+        }
+
+        return result;
+    }
 }
 
 
@@ -39192,7 +39440,7 @@ JSDraw.prototype.IsNumber=function(value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL']);
+    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE']);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -41924,6 +42172,10 @@ function JSExecute(ast,option)
                         if (isExData==true) value.IsExData = true;
                         this.OutVarTable.push(value);
                     }
+                    else if (draw)
+                    {
+                        this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
+                    }
                 }
             }
         }
@@ -42064,6 +42316,13 @@ function JSExecute(ast,option)
                 break;
             case "DRAWCHANNEL":
                 node.Draw=this.Draw.DRAWCHANNEL(args[0],args[1],args[2],args[3],args[4],args[5],args[6]);
+                node.Out=[];
+                break;
+            case 'RGB':
+                node.Out=this.Draw.RGB(args[0],args[1],args[2]);
+                break;
+            case 'PARTLINE':
+                node.Draw=this.Draw.PARTLINE(args);
                 node.Out=[];
                 break;
             case 'CODELIKE':
@@ -42956,6 +43215,18 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreatePartLine=function(hqChart,windowIndex,varItem,i)
+    {
+        let chart=new ChartPartLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建K线
     this.CreateSelfKLine=function(hqChart,windowIndex,hisData)
     {
@@ -43068,6 +43339,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWCHANNEL':
                         this.CreateChannel(hqChart,windowIndex,item,i);
+                        break;
+                    case 'PARTLINE':
+                        this.CreatePartLine(hqChart,windowIndex,item,i);
                         break;
                 }
             }
@@ -43708,6 +43982,22 @@ function OverlayScriptIndex(name,script,args,option)
         if (varItem.Draw.Border.Width>0) chart.LineWidth=varItem.Draw.Border.Width;
 
         //let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Draw.DrawData;
+        frame.ChartPaint.push(chart);
+    }
+
+    //
+    this.CreatePartLine=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartPartLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
         chart.Data.Data=varItem.Draw.DrawData;
         frame.ChartPaint.push(chart);
     }
