@@ -31,6 +31,25 @@ var CONDITION_PERIOD=
 
 };
 
+//自定义的指标脚本
+function CustomIndexScript()
+{
+    this.DataMap=new Map(); //key=指标id, value=data {ID:, Name：指标名字, Description：指标描述信息 Args:参数 ......}
+
+    this.Get=function(id)
+    {
+        if (!this.DataMap.has(id)) return null;
+        return this.DataMap.get(id);
+    }
+
+    this.Add=function(data)
+    {
+        this.DataMap.set(data.ID, data);
+    }
+}
+
+var g_CustomIndex=new CustomIndexScript();
+
 function JSIndexScript()
 {
     this.DataMap=new Map(
@@ -102,9 +121,19 @@ function JSIndexScript()
         ]);
 }
 
+JSIndexScript.AddIndex=function(aryIndex)  //添加自定义指标
+{
+    for(var i in aryIndex)
+    {
+        g_CustomIndex.Add(aryIndex[i]);
+    }
+}
+
 JSIndexScript.prototype.Get=function(id)
 {
-    //console.log('[JSIndexScript] load index data. count=',DataMap.size);
+    var data=g_CustomIndex.Get(id);
+    if (data) return data;
+
     var func=this.DataMap.get(id);
     if (func) return func();
 

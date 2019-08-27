@@ -2707,7 +2707,7 @@ function SearchStock(callback)
     {
         if (this.SearchString==input && this.SearchType==type)
         {
-
+            if (typeof(this.UpdateUICallback)=='function') this.UpdateUICallback(this);
         }
         else
         {
