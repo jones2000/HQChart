@@ -446,6 +446,15 @@ function JSChart(divElement)
             }
         }
 
+        if (option.ExtendChart)
+        {
+            for(var i in option.ExtendChart)
+            {
+                var item=option.ExtendChart[i];
+                chart.CreateExtendChart(item.Name, item);
+            }
+        }
+
         //叠加股票
         if (option.Overlay)
         {
@@ -1027,8 +1036,14 @@ function JSChart(divElement)
     this.SaveToImage = function (format,colorGB)    //format=保存的文件格式,  colorGB=背景色
     {
         if (this.JSChartContainer && typeof (this.JSChartContainer.SaveToImage) == 'function')
-          return this.JSChartContainer.SaveToImage(format,colorGB);
-      }
+            return this.JSChartContainer.SaveToImage(format,colorGB);
+    }
+
+    this.SaveToImageUrl=function(obj, callback)
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.SaveToImageUrl) == 'function')
+            return this.JSChartContainer.SaveToImageUrl(obj, callback);
+    }
 
     //事件回调
     this.AddEventCallback=function(obj)
@@ -2655,6 +2670,35 @@ function JSChartContainer(uielement)
         var dataURL=this.UIElement.toDataURL(format ? format:'image/png', 1.0);
         console.log('[JSChartContainer::SaveToImage] data= ', dataURL);
         return dataURL;
+    }
+
+
+    this.SaveToImageUrl=function(obj,callback) //obj:{Format: 图片格式, ColorGB: 背景色}, callback:function(bSuccess,obj)
+    {
+        if (!obj) obj={Format:'image/png', ColorGB:'rgb(255,255,255)'};
+        var imageData=this.SaveToImage(obj.Format, obj.ColorGB);
+        var postData={"Base64":imageData, "BucketName":"downloadcache", "Path":"hqchart/hq_snapshot"};
+        var url=g_JSChartResource.Domain+'/API/FileUploadForBase64';
+
+        $.ajax({
+            url: url,
+            method: "POST",
+            dataType: "json",
+            data: postData,
+            success: function (data) 
+            {
+                console.log('[JSChartContainer::SaveToImageUrl] recv data', data);
+                var result={Path:data.relativeurl, Domain:'https://opensourcedownload.zealink.com'};
+                result.Url=`${result.Domain}/${result.Path}`;
+                if (callback) callback(true,result,'');
+            },
+            error: function (request) 
+            {
+                console.log('[JSChartContainer::SaveToImageUrl] error ', request);
+                if (callback) callback(false,null,'upload failed');
+            }
+        });
+
     }
 
     this.SetLanguage=function(language)
@@ -10762,8 +10806,14 @@ function KLineTooltipPaint()
         if (!klineData) return;
 
         var lineCount=8;    //显示函数
-
-        if(klineData.Time!=null && !isNaN(klineData.Time) && klineData.Time>0) lineCount=9; //分钟K线多一列时间
+        if (this.ClassName==='MinuteTooltipPaint') 
+        {
+            lineCount=7;
+        }
+        else 
+        {
+            if(klineData.Time!=null && !isNaN(klineData.Time) && klineData.Time>0) lineCount=9; //分钟K线多一列时间
+        }
 
         //this.TitleColor=this.KLineTitlePaint.UnchagneColor;
         this.IsHScreen=this.ChartFrame.IsHScreen===true;
@@ -10772,11 +10822,11 @@ function KLineTooltipPaint()
         this.Height=this.LineHeight*lineCount+2*GetDevicePixelRatio()*2;
 
         this.DrawBG();
-        this.DrawKLineData(klineData);
+        this.DrawTooltipData(klineData);
         this.DrawBorder();
     }
 
-    this.DrawKLineData=function(item)
+    this.DrawTooltipData=function(item)
     {
         //console.log('[KLineTooltipPaint::DrawKLineData] ', item);
 
@@ -10901,6 +10951,111 @@ function KLineTooltipPaint()
         if (option.LineHeight>0) this.LineHeight=option.LineHeight*GetDevicePixelRatio();
         if (option.BGColor) this.BGColor=option.BGColor;
         if (option.LanguageID>0) this.LanguageID=option.LanguageID;
+    }
+}
+
+function MinuteTooltipPaint()
+{
+    this.newMethod=KLineTooltipPaint;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='MinuteTooltipPaint';
+    this.Left=1*GetDevicePixelRatio();
+    this.Top=1*GetDevicePixelRatio();
+    this.YClose;
+
+    this.GetTop=function()
+    {
+        if (this.IsHScreen) return this.ChartBorder.GetTop();
+        return this.ChartBorder.GetTop()+this.Top;
+    }
+
+    this.DrawTooltipData=function(item)
+    {
+        //console.log('[KLineTooltipPaint::DrawKLineData] ', item);
+        var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        var left=this.GetLeft()+2*GetDevicePixelRatio();
+        var top=this.GetTop()+3*GetDevicePixelRatio();
+        this.YClose=this.KLineTitlePaint.YClose;
+        
+        if (this.IsHScreen)
+        {
+            this.Canvas.save(); 
+            var x=this.GetLeft()+this.Height, y=this.GetTop();
+
+            this.Canvas.translate(x, y);
+            this.Canvas.rotate(90 * Math.PI / 180);
+
+            //x, y 作为原点
+            left=2*GetDevicePixelRatio();
+            top=3*GetDevicePixelRatio();
+        }
+
+        this.Canvas.textBaseline="top";
+        this.Canvas.textAlign="left";
+        this.Canvas.font=this.Font[0];
+        var labelWidth=this.Canvas.measureText('擎: ').width;
+
+        var aryDateTime=item.DateTime.split(' ');
+        if (aryDateTime && aryDateTime.length==2)
+        {
+            var text=IFrameSplitOperator.FormatDateString(aryDateTime[0]);
+            this.Canvas.fillStyle=this.TitleColor;
+            this.Canvas.fillText(text, left,top);
+
+            top+=this.LineHeight;  
+            text=IFrameSplitOperator.FormatTimeString(aryDateTime[1]);
+            this.Canvas.fillText(text, left,top);
+        }
+
+        //最新价格
+        top+=this.LineHeight;
+        this.Canvas.fillStyle=this.TitleColor;
+        text=g_JSChartLocalization.GetText('Tooltip-Price',this.LanguageID);
+        this.Canvas.fillText(text, left,top);
+        var color=this.KLineTitlePaint.GetColor(item.Close,this.YClose);
+        var text=item.Close.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        //均价
+        top+=this.LineHeight;
+        this.Canvas.fillStyle=this.TitleColor;
+        text=g_JSChartLocalization.GetText('Tooltip-AvPrice',this.LanguageID);
+        this.Canvas.fillText(text, left,top);
+        var color=this.KLineTitlePaint.GetColor(item.AvPrice,this.YClose);
+        var text=item.AvPrice.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        //涨幅
+        top+=this.LineHeight;
+        this.Canvas.fillStyle=this.TitleColor;
+        text=g_JSChartLocalization.GetText('Tooltip-Increase',this.LanguageID);
+        this.Canvas.fillText(text, left,top);
+        var value=(item.Close-this.YClose)/this.YClose*100;
+        var color = this.KLineTitlePaint.GetColor(value, 0);
+        var text = value.toFixed(2)+'%';
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        //成交量
+        this.Canvas.fillStyle=this.TitleColor;
+        top+=this.LineHeight;
+        text=g_JSChartLocalization.GetText('Tooltip-Vol',this.LanguageID);
+        this.Canvas.fillText(text, left,top);
+        var text=IFrameSplitOperator.FormatValueString(item.Vol,2,this.LanguageID);
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        //成交金额
+        top+=this.LineHeight;
+        text=g_JSChartLocalization.GetText('Tooltip-Amount',this.LanguageID);
+        this.Canvas.fillText(text, left,top);
+        var text=IFrameSplitOperator.FormatValueString(item.Amount,2,this.LanguageID);
+        this.Canvas.fillText(text,left+labelWidth,top);
+
+        if (this.IsHScreen) this.Canvas.restore();
     }
 }
 
@@ -14055,6 +14210,24 @@ function DynamicMinuteTitlePainting()
     this.IsShowName=true;   //标题是否显示股票名字
     this.OverlayChartPaint; //叠加画法
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+    this.LastShowData;  //保存最后显示的数据 给tooltip用
+
+    this.GetCurrentKLineData=function() //获取当天鼠标位置所在的K线数据
+    {
+        if (this.LastShowData) return this.LastShowData;
+
+        if (this.CursorIndex==null || !this.Data) return null;
+        if (this.Data.length<=0) return null;
+
+        var index=Math.abs(this.CursorIndex-0.5);
+        index=parseInt(index.toFixed(0));
+        var dataIndex=this.Data.DataOffset+index;
+        if (dataIndex>=this.Data.Data.length) dataIndex=this.Data.Data.length-1;
+        if (dataIndex<0) return null;
+
+        var item=this.Data.Data[dataIndex];
+        return item;
+    }
 
     this.DrawItem=function(item)
     {
@@ -14147,6 +14320,7 @@ function DynamicMinuteTitlePainting()
 
     this.Draw=function()
     {
+        this.LastShowData=null;
         if (!this.IsShow) return;
         if (this.CursorIndex==null || !this.Data || !this.Data.Data) return;
         if (this.Data.Data.length<=0) return;
@@ -14161,6 +14335,7 @@ function DynamicMinuteTitlePainting()
         if (dataIndex>=this.Data.Data.length) dataIndex=this.Data.Data.length-1;
 
         var item=this.Data.Data[dataIndex];
+        this.LastShowData=item;
 
         this.Canvas.save();
         this.DrawItem(item);
@@ -17569,6 +17744,8 @@ function JSChartLocalization()
         ['Tooltip-Increase', {CN:'幅:', EN:'I:'}],
         ['Tooltip-Vol', {CN:'量:', EN:'V:'}],
         ['Tooltip-Amount', {CN:'额:', EN:'A:'}],
+        ['Tooltip-AvPrice', {CN:'均:', EN:'AP:'}],
+        ['Tooltip-Price', {CN:'价:', EN:'P:'}],
 
         ['DivTooltip-Open', {CN:'开盘:', EN:'Open:'}],
         ['DivTooltip-High', {CN:'最高:', EN:'High:'}],
@@ -22871,6 +23048,26 @@ function MinuteChartContainer(uielement)
             }
         }
         */
+    }
+
+    this.CreateExtendChart=function(name, option)   //创建扩展图形
+    {
+        var chart;
+        switch(name)
+        {
+            case 'MinuteTooltip':
+                chart=new MinuteTooltipPaint();
+                chart.Canvas=this.Canvas;
+                chart.ChartBorder=this.Frame.ChartBorder;
+                chart.ChartFrame=this.Frame;
+                chart.HQChart=this;
+                option.LanguageID=this.LanguageID;
+                chart.SetOption(option);
+                this.ExtendChartPaint.push(chart);
+                return chart;
+            default:
+                return null;
+        }
     }
 }
 

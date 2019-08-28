@@ -31,6 +31,25 @@ var CONDITION_PERIOD=
 
 };
 
+//自定义的指标脚本
+function CustomIndexScript()
+{
+    this.DataMap=new Map(); //key=指标id, value=data {ID:, Name：指标名字, Description：指标描述信息 Args:参数 ......}
+
+    this.Get=function(id)
+    {
+        if (!this.DataMap.has(id)) return null;
+        return this.DataMap.get(id);
+    }
+
+    this.Add=function(data)
+    {
+        this.DataMap.set(data.ID, data);
+    }
+}
+
+var g_CustomIndex=new CustomIndexScript();
+
 function JSIndexScript()
 {
     this.DataMap=new Map(
@@ -102,9 +121,19 @@ function JSIndexScript()
         ]);
 }
 
+JSIndexScript.AddIndex=function(aryIndex)  //添加自定义指标
+{
+    for(var i in aryIndex)
+    {
+        g_CustomIndex.Add(aryIndex[i]);
+    }
+}
+
 JSIndexScript.prototype.Get=function(id)
 {
-    //console.log('[JSIndexScript] load index data. count=',DataMap.size);
+    var data=g_CustomIndex.Get(id);
+    if (data) return data;
+
     var func=this.DataMap.get(id);
     if (func) return func();
 
@@ -4271,8 +4300,14 @@ function JSChart(divElement)
     this.SaveToImage = function (format,colorGB)    //format=保存的文件格式,  colorGB=背景色
     {
         if (this.JSChartContainer && typeof (this.JSChartContainer.SaveToImage) == 'function')
-          return this.JSChartContainer.SaveToImage(format,colorGB);
-      }
+            return this.JSChartContainer.SaveToImage(format,colorGB);
+    }
+
+    this.SaveToImageUrl=function(obj, callback)
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.SaveToImageUrl) == 'function')
+            return this.JSChartContainer.SaveToImageUrl(obj, callback);
+    }
 
     //事件回调
     this.AddEventCallback=function(obj)
@@ -5899,6 +5934,35 @@ function JSChartContainer(uielement)
         var dataURL=this.UIElement.toDataURL(format ? format:'image/png', 1.0);
         console.log('[JSChartContainer::SaveToImage] data= ', dataURL);
         return dataURL;
+    }
+
+
+    this.SaveToImageUrl=function(obj,callback) //obj:{Format: 图片格式, ColorGB: 背景色}, callback:function(bSuccess,obj)
+    {
+        if (!obj) obj={Format:'image/png', ColorGB:'rgb(255,255,255)'};
+        var imageData=this.SaveToImage(obj.Format, obj.ColorGB);
+        var postData={"Base64":imageData, "BucketName":"downloadcache", "Path":"hqchart/hq_snapshot"};
+        var url=g_JSChartResource.Domain+'/API/FileUploadForBase64';
+
+        $.ajax({
+            url: url,
+            method: "POST",
+            dataType: "json",
+            data: postData,
+            success: function (data) 
+            {
+                console.log('[JSChartContainer::SaveToImageUrl] recv data', data);
+                var result={Path:data.relativeurl, Domain:'https://opensourcedownload.zealink.com'};
+                result.Url=`${result.Domain}/${result.Path}`;
+                if (callback) callback(true,result,'');
+            },
+            error: function (request) 
+            {
+                console.log('[JSChartContainer::SaveToImageUrl] error ', request);
+                if (callback) callback(false,null,'upload failed');
+            }
+        });
+
     }
 
     this.SetLanguage=function(language)

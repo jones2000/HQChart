@@ -106,7 +106,14 @@ function KLineTooltipPaint()
         if (!klineData) return;
 
         var lineCount = 8;    //显示函数
-        if (klineData.Time != null && !isNaN(klineData.Time) && klineData.Time > 0) lineCount = 9; //分钟K线多一列时间
+        if (this.ClassName === 'MinuteTooltipPaint') 
+        {
+            lineCount=7;
+        }
+        else
+        {
+            if (klineData.Time != null && !isNaN(klineData.Time) && klineData.Time > 0) lineCount = 9; //分钟K线多一列时间
+        }
 
         //this.TitleColor=this.KLineTitlePaint.UnchagneColor;
         this.IsHScreen = this.ChartFrame.IsHScreen === true;
@@ -115,7 +122,7 @@ function KLineTooltipPaint()
         this.Height = this.LineHeight * lineCount + 2 * 2;
 
         this.DrawBG();
-        this.DrawKLineData(klineData);
+        this.DrawTooltipData(klineData);
         this.DrawBorder();
     }
 
@@ -139,7 +146,7 @@ function KLineTooltipPaint()
         else this.Canvas.fillRect(left, top, this.Width, this.Height);
     }
 
-    this.DrawKLineData = function (item) 
+    this.DrawTooltipData = function (item) 
     {
         //console.log('[KLineTooltipPaint::DrawKLineData] ', item);
 
@@ -237,6 +244,99 @@ function KLineTooltipPaint()
     {
         if (option.LineHeight > 0) this.LineHeight = option.LineHeight;
         if (option.BGColor) this.BGColor = option.BGColor;
+    }
+}
+
+function MinuteTooltipPaint() 
+{
+    this.newMethod = KLineTooltipPaint;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName = 'MinuteTooltipPaint';
+
+    this.GetTop = function () 
+    {
+        if (this.IsHScreen) return this.ChartBorder.GetTop();
+        return this.ChartBorder.GetTop() + this.Top;
+    }
+
+    this.DrawTooltipData = function (item) 
+    {
+        //console.log('[KLineTooltipPaint::DrawKLineData] ', item);
+        var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        var left = this.GetLeft() + 2;
+        var top = this.GetTop() + 3;
+        this.YClose = this.KLineTitlePaint.YClose;
+
+        if (this.IsHScreen) 
+        {
+            this.Canvas.save();
+            var x = this.GetLeft() + this.Height, y = this.GetTop();
+
+            this.Canvas.translate(x, y);
+            this.Canvas.rotate(90 * Math.PI / 180);
+
+            //x, y 作为原点
+            left = 2;
+            top = 3;
+        }
+
+        this.Canvas.textBaseline = "top";
+        this.Canvas.textAlign = "left";
+        this.Canvas.font = this.Font[0];
+        var labelWidth = this.Canvas.measureText('擎: ').width;
+
+        var aryDateTime = item.DateTime.split(' ');
+        if (aryDateTime && aryDateTime.length == 2)
+        {
+            var text = this.HQChart.FormatDateString(aryDateTime[0]);
+            this.Canvas.fillStyle = this.TitleColor;
+            this.Canvas.fillText(text, left, top);
+
+            top += this.LineHeight;
+            text = this.HQChart.FormatTimeString(aryDateTime[1]);
+            this.Canvas.fillText(text, left, top);
+        }
+
+        top += this.LineHeight;
+        this.Canvas.fillStyle = this.TitleColor;
+        this.Canvas.fillText('价:', left, top);
+        var color = this.KLineTitlePaint.GetColor(item.Close, this.YClose);
+        text = item.Close.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle = color;
+        this.Canvas.fillText(text, left + labelWidth, top);
+
+        top += this.LineHeight;
+        this.Canvas.fillStyle = this.TitleColor;
+        this.Canvas.fillText('均:', left, top);
+        var color = this.KLineTitlePaint.GetColor(item.AvPrice, this.YClose);
+        var text = item.AvPrice.toFixed(defaultfloatPrecision);
+        this.Canvas.fillStyle = color;
+        this.Canvas.fillText(text, left + labelWidth, top);
+
+        top += this.LineHeight;
+        this.Canvas.fillStyle = this.TitleColor;
+        this.Canvas.fillText('幅:', left, top);
+        var value = (item.Close - this.YClose) / this.YClose * 100;
+        var color = this.KLineTitlePaint.GetColor(value, 0);
+        var text = value.toFixed(2) + '%';
+        this.Canvas.fillStyle = color;
+        this.Canvas.fillText(text, left + labelWidth, top);
+
+        this.Canvas.fillStyle = this.TitleColor;
+
+        top += this.LineHeight;
+        this.Canvas.fillText('量:', left, top);
+        var text = this.HQChart.FormatValueString(item.Vol, 2);
+        this.Canvas.fillText(text, left + labelWidth, top);
+
+        top += this.LineHeight;
+        this.Canvas.fillText('额:', left, top);
+        var text = this.HQChart.FormatValueString(item.Amount, 2);
+        this.Canvas.fillText(text, left + labelWidth, top);
+
+        if (this.IsHScreen) this.Canvas.restore();
     }
 }
 
@@ -496,10 +596,12 @@ module.exports =
         IExtendChartPainting: IExtendChartPainting,
         KLineTooltipPaint: KLineTooltipPaint,
         BarragePaint: BarragePaint,
+        MinuteTooltipPaint: MinuteTooltipPaint,
     },
 
     //单个类导出
     JSCommonExtendChartPaint_IExtendChartPainting: IExtendChartPainting,
     JSCommonExtendChartPaint_KLineTooltipPaint: KLineTooltipPaint,
     JSCommonExtendChartPaint_BarragePaint: BarragePaint,
+    JSCommonExtendChartPaint_MinuteTooltipPaint: MinuteTooltipPaint,
 };
