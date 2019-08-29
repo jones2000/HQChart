@@ -79,6 +79,8 @@ function JSChart(divElement)
         if (option.Type==="历史K线图横屏") chart=new KLineChartHScreenContainer(this.CanvasElement);
         else chart=new KLineChartContainer(this.CanvasElement);
 
+        if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
+
         //创建改参数div
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
         chart.ChangeIndexDialog=this.ChangeIndexDialog;
@@ -19400,20 +19402,33 @@ function KLineChartContainer(uielement)
         this.ChartSplashPaint.IsEnableSplash = true;
         this.FlowCapitalReady=false;
         this.Draw();
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestHistoryData', //类名::
+                Explain:'日K数据',
+                Request:{ Url:self.KLineApiUrl,  Type:'POST' ,
+                    Data: { symbol:self.Symbol, count:self.MaxReqeustDataCount, field: ["name","symbol","yclose","open","price","high","low","vol"] } }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.ChartSplashPaint.IsEnableSplash = false;
+                self.RecvHistoryData(data);
+                self.AutoUpdate();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         $.ajax({
             url: this.KLineApiUrl,
             data:
             {
-                "field": [
-                    "name",
-                    "symbol",
-                    "yclose",
-                    "open",
-                    "price",
-                    "high",
-                    "low",
-                    "vol"
-                ],
+                "field": ["name","symbol","yclose","open","price","high","low","vol"],
                 "symbol": self.Symbol,
                 "start": -1,
                 "count": self.MaxReqeustDataCount
@@ -19515,20 +19530,33 @@ function KLineChartContainer(uielement)
         this.ChartSplashPaint.IsEnableSplash = true;
         this.FlowCapitalReady=false;
         this.Draw();
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::ReqeustHistoryMinuteData', //类名::
+                Explain:'1分钟K线数据',
+                Request:{ Url:self.MinuteKLineApiUrl,  Type:'POST',
+                    Data: { symbol:self.Symbol, count:self.MaxRequestMinuteDayCount, field: ["name","symbol", "yclose","open","price","high","low","vol"] }  }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.ChartSplashPaint.IsEnableSplash = false;
+                self.RecvMinuteHistoryData(data);
+                self.AutoUpdate();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         $.ajax({
             url: this.MinuteKLineApiUrl,
             data:
             {
-                "field": [
-                    "name",
-                    "symbol",
-                    "yclose",
-                    "open",
-                    "price",
-                    "high",
-                    "low",
-                    "vol"
-                ],
+                "field": ["name","symbol", "yclose","open","price","high","low","vol"],
                 "symbol": self.Symbol,
                 "start": -1,
                 "count": self.MaxRequestMinuteDayCount
@@ -19622,23 +19650,31 @@ function KLineChartContainer(uielement)
     {
         var self=this;
 
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestRealtimeData', //类名::
+                Explain:'当天最新日线数据',
+                Request:{ Url:self.RealtimeApiUrl, Data:{ symbol: [self.Symbol], 
+                    field:["name","symbol","yclose","open","price","high","low","vol","amount","date","time"] }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvRealtimeData(data);
+                self.AutoUpdate();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         $.ajax({
             url: this.RealtimeApiUrl,
             data:
             {
-                "field": [
-                    "name",
-                    "symbol",
-                    "yclose",
-                    "open",
-                    "price",
-                    "high",
-                    "low",
-                    "vol",
-                    "amount",
-                    "date",
-                    "time"
-                ],
+                "field": ["name","symbol","yclose","open","price","high","low","vol","amount","date","time"],
                 "symbol": [self.Symbol],
                 "start": -1
             },
@@ -19710,6 +19746,27 @@ function KLineChartContainer(uielement)
     this.RequestMinuteRealtimeData=function()
     {
         var self=this;
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestMinuteRealtimeData', //类名::
+                Explain:'当天1分钟K线数据',
+                Request:{ Url:self.RealtimeApiUrl, Data:{ symbol: [self.Symbol], 
+                    field:["name","symbol","price","yclose","minutecount","minute","date","time"] }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvMinuteRealtimeData(data);
+                self.AutoUpdate();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         $.ajax({
             url: this.RealtimeApiUrl,
             data:
@@ -20877,6 +20934,27 @@ function KLineChartContainer(uielement)
             if (!symbol) continue;
 
             item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
+
+            if (this.NetworkFilter)
+            {
+                var obj=
+                {
+                    Name:'KLineChartContainer::RequestOverlayHistoryData', //类名::
+                    Explain:'叠加股票日K线数据',
+                    Request:{ Url:self.KLineApiUrl, Data: { symbol: symbol, count: this.MaxReqeustDataCount,
+                        field:["name","symbol","yclose","open","price","high"] }, Type:'POST' }, 
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                    self.RecvOverlayHistoryData(data,item);
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
             //请求数据
             $.ajax({
                 url: this.KLineApiUrl,
@@ -21023,6 +21101,25 @@ function KLineChartContainer(uielement)
 
         var self = this;
         let fieldList=["name","date","symbol","capital.a"];
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestFlowCapitalData', //类名::
+                Explain:'流通股本数据',
+                Request:{ Url:self.KLineApiUrl, Data: { symbol: [this.Symbol], orderfield:'date',field:fieldList }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvFlowCapitalData(recvData);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+        
         //请求数据
         $.ajax({
             url: this.StockHistoryDayApiUrl,

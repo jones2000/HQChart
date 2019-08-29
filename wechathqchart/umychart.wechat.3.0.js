@@ -41,6 +41,11 @@ import {
     JSCommonExtendChartPaint_MinuteTooltipPaint as MinuteTooltipPaint,
 } from "umychart.extendchart.wechat.js";
 
+import {
+    JSCommonIndex_IndexInfo as IndexInfo,
+    JJSCommonIndex_BaseIndex as BaseIndex,
+} from 'umychart.index.wechat.js'
+
 
 function JSCanvasElement() 
 {
@@ -92,6 +97,8 @@ function JSChart(element)
         var chart = null;
         if (option.Type === "历史K线图横屏") chart = new KLineChartHScreenContainer(this.CanvasElement);
         else chart = new KLineChartContainer(this.CanvasElement);
+
+        if (option.NetworkFilter) chart.NetworkFilter = option.NetworkFilter;
 
         if (option.KLine)   //k线图的属性设置
         {
@@ -10116,35 +10123,50 @@ function KLineChartContainer(uielement) {
     return paint;
   }
 
-  this.RequestHistoryData = function () {
-    var self = this;
-    this.ChartSplashPaint.IsEnableSplash = true;
-    wx.request({
-      url: this.KLineApiUrl,
-      data:
-      {
-        "field": [
-          "name",
-          "symbol",
-          "yclose",
-          "open",
-          "price",
-          "high",
-          "low",
-          "vol"
-        ],
-        "symbol": self.Symbol,
-        "start": -1,
-        "count": self.MaxReqeustDataCount
-      },
-      method: 'POST',
-      dataType: 'json',
-      success: function (data) {
-        self.ChartSplashPaint.IsEnableSplash = false;
-        self.RecvHistoryData(data);
-      }
-    });
-  }
+    this.RequestHistoryData = function () 
+    {
+        var self = this;
+        this.ChartSplashPaint.IsEnableSplash = true;
+        this.Draw();
+
+        if (this.NetworkFilter) 
+        {
+            var obj =
+            {
+                Name: 'KLineChartContainer::RequestHistoryData', //类名::
+                Explain: '日K数据',
+                Request: {
+                    Url: self.KLineApiUrl, Type: 'POST',
+                    Data: { symbol: self.Symbol, count: self.MaxReqeustDataCount, field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"] }
+                },
+                Self: this,
+                PreventDefault: false
+            };
+            this.NetworkFilter(obj, function (data) {
+                self.ChartSplashPaint.IsEnableSplash = false;
+                self.RecvHistoryData(data);
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        wx.request({
+        url: this.KLineApiUrl,
+        data:
+        {
+            "field": ["name","symbol","yclose","open","price","high","low","vol"],
+            "symbol": self.Symbol,
+            "start": -1,
+            "count": self.MaxReqeustDataCount
+        },
+        method: 'POST',
+        dataType: 'json',
+        success: function (data) {
+            self.ChartSplashPaint.IsEnableSplash = false;
+            self.RecvHistoryData(data);
+        }
+        });
+    }
 
     this.RecvHistoryData = function (recvData) 
     {
@@ -10217,35 +10239,52 @@ function KLineChartContainer(uielement) {
         }
     }
 
-  this.ReqeustHistoryMinuteData = function () {
-    var self = this;
-    this.ChartSplashPaint.IsEnableSplash = true;
-    wx.request({
-      url: this.MinuteKLineApiUrl,
-      data:
-      {
-        "field": [
-          "name",
-          "symbol",
-          "yclose",
-          "open",
-          "price",
-          "high",
-          "low",
-          "vol"
-        ],
-        "symbol": self.Symbol,
-        "start": -1,
-        "count": self.MaxRequestMinuteDayCount
-      },
-      method: 'POST',
-      dataType: "json",
-      success: function (data) {
-        self.ChartSplashPaint.IsEnableSplash = false;
-          self.RecvMinuteHistoryData(data);
-      }
-    });
-  }
+    this.ReqeustHistoryMinuteData = function () 
+    {
+        var self = this;
+        this.ChartSplashPaint.IsEnableSplash = true;
+
+        if (this.NetworkFilter)
+        {
+            var obj = 
+            {
+                Name: 'KLineChartContainer::ReqeustHistoryMinuteData', //类名
+                Explain: '1分钟K线数据',
+                Request: 
+                {
+                    Url: self.MinuteKLineApiUrl, Type: 'POST', Data: {
+                        symbol: self.Symbol, count: self.MaxRequestMinuteDayCount,
+                        field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"]
+                    }
+                },
+                Self: this,
+                PreventDefault: false
+            };
+            this.NetworkFilter(obj, function (data) {
+                self.ChartSplashPaint.IsEnableSplash = false;
+                self.RecvMinuteHistoryData(data);
+            });
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        wx.request({
+            url: this.MinuteKLineApiUrl,
+            data:
+            {
+                "field": ["name","symbol","yclose","open","price","high","low","vol"],
+                "symbol": self.Symbol,
+                "start": -1,
+                "count": self.MaxRequestMinuteDayCount
+            },
+            method: 'POST',
+            dataType: "json",
+            success: function (data) 
+            {
+                self.ChartSplashPaint.IsEnableSplash = false;
+                self.RecvMinuteHistoryData(data);
+            }
+        });
+    }
 
     this.RecvMinuteHistoryData = function (recvData) 
     {
@@ -10302,38 +10341,50 @@ function KLineChartContainer(uielement) {
         if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteHistoryData', this);
     }
 
-  //请求实时行情数据
-  this.ReqeustRealtimeData = function () {
-    var self = this;
+    //请求实时行情数据
+    this.ReqeustRealtimeData = function () 
+    {
+        var self = this;
 
-    $.ajax({
-      url: this.RealtimeApiUrl,
-      data:
-      {
-        "field": [
-          "name",
-          "symbol",
-          "yclose",
-          "open",
-          "price",
-          "high",
-          "low",
-          "vol",
-          "amount",
-          "date",
-          "time"
-        ],
-        "symbol": [self.Symbol],
-        "start": -1
-      },
-      type: "post",
-      dataType: "json",
-      async: true,
-      success: function (data) {
-        self.RecvRealtimeData(data);
-      }
-    });
-  }
+        if (this.NetworkFilter) 
+        {
+            var obj =
+            {
+                Name: 'KLineChartContainer::RequestRealtimeData', //类名::函数名
+                Explain: '当天最新日线数据',
+                Request: 
+                {
+                    Url: self.RealtimeApiUrl, Data: {
+                        symbol: [self.Symbol],
+                        field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol", "amount", "date", "time"]
+                    }, Type: 'POST'
+                },
+                Self: this,
+                PreventDefault: false
+            };
+            this.NetworkFilter(obj, function (data) {
+                self.RecvRealtimeData(data);
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        $.ajax({
+        url: this.RealtimeApiUrl,
+        data:
+        {
+            "field": ["name","symbol","yclose","open","price","high","low","vol","amount","date","time"],
+            "symbol": [self.Symbol],
+            "start": -1
+        },
+        type: "post",
+        dataType: "json",
+        async: true,
+        success: function (data) {
+            self.RecvRealtimeData(data);
+        }
+        });
+    }
 
   this.RecvRealtimeData = function (data) {
     var realtimeData = KLineChartContainer.JsonDataToRealtimeData(data);
@@ -10785,8 +10836,6 @@ function KLineChartContainer(uielement) {
     if (bUpdate == true) this.ReqeustKLineInfoData();
   }
 
-
-
   //叠加股票
   this.OverlaySymbol = function (symbol) {
     if (!this.OverlayChartPaint[0].MainData) return false;
@@ -10797,41 +10846,55 @@ function KLineChartContainer(uielement) {
     return true;
   }
 
-  this.RequestOverlayHistoryData = function () {
-    if (!this.OverlayChartPaint.length) return;
+    this.RequestOverlayHistoryData = function () 
+    {
+        if (!this.OverlayChartPaint.length) return;
 
-    var symbol = this.OverlayChartPaint[0].Symbol;
-    if (!symbol) return;
+        var symbol = this.OverlayChartPaint[0].Symbol;
+        if (!symbol) return;
 
-    var self = this;
+        var self = this;
 
-    //请求数据
-    wx.request({
-      url: this.KLineApiUrl,
-      data:
-      {
-        "field":
-          [
-            "name",
-            "symbol",
-            "yclose",
-            "open",
-            "price",
-            "high"
-          ],
-        "symbol": symbol,
-        "start": -1,
-        "count": this.MaxReqeustDataCount
-      },
-      method: 'POST',
-      dataType: "json",
-      async: true,
-      success: function (data) {
-        self.RecvOverlayHistoryData(data);
-      }
-    });
+        if (this.NetworkFilter) 
+        {
+            var obj =
+            {
+                Name: 'KLineChartContainer::RequestOverlayHistoryData', //类名::
+                Explain: '叠加股票日K线数据',
+                Request: {
+                    Url: self.KLineApiUrl, Data: {
+                        symbol: symbol, count: this.MaxReqeustDataCount,
+                        field: ["name", "symbol", "yclose", "open", "price", "high"]
+                    }, Type: 'POST'
+                },
+                Self: this,
+                PreventDefault: false
+            };
+            this.NetworkFilter(obj, function (data) {
+                self.RecvOverlayHistoryData(data);
+            });
 
-  }
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        //请求数据
+        wx.request({
+            url: this.KLineApiUrl,
+            data:
+            {
+                "field":["name","symbol","yclose","open","price","high"],
+                "symbol": symbol,
+                "start": -1,
+                "count": this.MaxReqeustDataCount
+            },
+            method: 'POST',
+            dataType: "json",
+            async: true,
+            success: function (data) {
+                self.RecvOverlayHistoryData(data);
+            }
+        });
+    }
 
   this.RecvOverlayHistoryData = function (recvData) {
     var data = recvData.data;
@@ -10885,29 +10948,7 @@ function KLineChartContainer(uielement) {
 
   //创建画图工具
   this.CreateChartDrawPicture = function (name) {
-    var drawPicture = null;
-    switch (name) {
-      case "线段":
-        drawPicture = new ChartDrawPictureLine();
-        break;
-      case "射线":
-        drawPicture = new ChartDrawPictureHaflLine();
-        break;
-      case "矩形":
-        drawPicture = new ChartDrawPictureRect();
-        break;
-      case "圆弧线":
-        drawPicture = new ChartDrawPictureArc();
-        break;
-
-      default:
-        return false;
-    }
-
-    drawPicture.Canvas = this.Canvas;
-    drawPicture.Status = 0;
-    this.CurrentChartDrawPicture = drawPicture;
-    return true;
+    return false;
   }
 
   this.SetChartDrawPictureFirstPoint = function (x, y) {
@@ -10999,45 +11040,6 @@ function KLineChartContainer(uielement) {
         }
       }
     }
-  }
-
-  //形态匹配
-  // scopeData.Plate 板块范围 scopeData.Symbol 股票范围
-  this.RequestKLineMatch = function (selectRectData, scopeData, fun) {
-    var _self = this;
-
-    var aryDate = new Array();
-    var aryValue = new Array();
-
-    for (var i = selectRectData.Start; i < selectRectData.End && i < selectRectData.Data.Data.length; ++i) {
-      aryDate.push(selectRectData.Data.Data[i].Date);
-      aryValue.push(selectRectData.Data.Data[i].Close);
-    }
-
-    //请求数据
-    $.ajax({
-      url: this.KLineMatchUrl,
-      data:
-      {
-        "userid": "guest",
-        "plate": scopeData.Plate,
-        "period": this.Period,
-        "right": this.Right,
-        "dayregion": 365,
-        "minsimilar": scopeData.Minsimilar,
-        "sampledate": aryDate,
-        "samplevalue": aryValue
-      },
-      type: "post",
-      dataType: "json",
-      async: true,
-      success: function (data) {
-        if ($.type(fun) == "function") {
-          // console.log(data);
-          fun(data);
-        }
-      }
-    });
   }
 
   //更新信息地雷
@@ -13461,83 +13463,6 @@ function MapChartContainer(uielement) {
     this.Frame.SetSizeChage(true);
     this.Draw();
   }
-}
-
-//////////////////////////////////////////////////////////
-//
-//  指标信息
-//
-function IndexInfo(name, param) {
-  this.Name = name;                 //名字
-  this.Param = param;               //参数
-  this.LineColor;                 //线段颜色
-  this.ReqeustData = null;          //数据请求
-}
-
-function BaseIndex(name) {
-  this.Index;               //指标阐述
-  this.Name = name;         //指标名字
-  this.UpdateUICallback;    //数据到达回调
-
-  //默认创建都是线段
-  this.Create = function (hqChart, windowIndex) {
-    for (var i in this.Index) {
-      if (!this.Index[i].Name) continue;
-
-      var maLine = new ChartLine();
-      maLine.Canvas = hqChart.Canvas;
-      maLine.Name = this.Name + '-' + i.toString();
-      maLine.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-      maLine.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
-      maLine.Color = this.Index[i].LineColor;
-
-      hqChart.ChartPaint.push(maLine);
-    }
-  }
-
-  //指标不支持 周期/复权/股票等
-  this.NotSupport = function (hqChart, windowIndex, message) {
-    var paint = hqChart.GetChartPaint(windowIndex);
-    for (var i in paint) {
-      paint[i].Data.Data = [];    //清空数据
-      if (i == 0) paint[i].NotSupportMessage = message;
-    }
-  }
-
-  //格式化指标名字+参数
-  //格式:指标名(参数1,参数2,参数3,...)
-  this.FormatIndexTitle = function () {
-    var title = this.Name;
-    var param = null;
-
-    for (var i in this.Index) {
-      var item = this.Index[i];
-      if (item.Param == null) continue;
-
-      if (param)
-        param += ',' + item.Param.toString();
-      else
-        param = item.Param.toString();
-    }
-
-    if (param) {
-      title += '(' + param + ')';
-    }
-
-    return title;
-  }
-
-  this.InvokeUpdateUICallback = function (paint) {
-    if (typeof (this.UpdateUICallback) != 'function') return;
-
-    let indexData = new Array();
-    for (let i in paint) {
-      indexData.push({ Name: this.Index[i].Name, Data: paint[i].Data });
-    }
-
-    this.UpdateUICallback(indexData);
-  }
-
 }
 
 //脚本指标
