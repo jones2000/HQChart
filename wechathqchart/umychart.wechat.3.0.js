@@ -332,6 +332,7 @@ function JSChart(element)
         var chart = null;
         if (option.Type === "分钟走势图横屏") chart = new MinuteChartHScreenContainer(this.CanvasElement);
         else chart = new MinuteChartContainer(this.CanvasElement);
+        if (option.NetworkFilter) chart.NetworkFilter = option.NetworkFilter;
 
         var windowsCount = 2;
         if (option.Windows && option.Windows.length > 0) windowsCount += option.Windows.length; //指标窗口从第3个窗口开始
@@ -948,6 +949,7 @@ function JSChartContainer(uielement)
 
     //事件回调
     this.mapEvent = new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
+    this.NetworkFilter;         //网络请求回调 function(data, callback);
 
     this.AddEventCallback = function (object) //设置事件回调 {event:事件id, callback:回调函数}
     {
@@ -11528,24 +11530,45 @@ function MinuteChartContainer(uielement) {
     else this.RequestHistoryMinuteData();              //请求数据
   }
 
-  this.RequestHistoryMinuteData = function ()     //请求历史分钟数据
-  {
-    var self = this;
-    wx.request({
-      url: self.HistoryMinuteApiUrl,
-      data:
-      {
-        "symbol": self.Symbol,
-        "daycount": self.DayCount
-      },
-      method: "post",
-      dataType: "json",
-      success: function (data) {
-        self.ChartSplashPaint.IsEnableSplash = false;
-        self.RecvHistoryMinuteData(data);
-      }
-    });
-  }
+    this.RequestHistoryMinuteData = function ()     //请求历史分钟数据
+    {
+        var self = this;
+        this.ChartSplashPaint.IsEnableSplash = true;
+        this.Draw();
+
+        if (this.NetworkFilter) 
+        {
+            var obj =
+            {
+                Name: 'MinuteChartContainer::RequestHistoryMinuteData', //类名::
+                Explain: '多日分时数据',
+                Request: { Url: self.HistoryMinuteApiUrl, Data: { daycount: self.DayCount, symbol: self.Symbol }, Type: 'POST' },
+                Self: this,
+                PreventDefault: false
+            };
+            this.NetworkFilter(obj, function (data) {
+                self.ChartSplashPaint.IsEnableSplash = false;
+                self.RecvHistoryMinuteData(data);
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        wx.request({
+        url: self.HistoryMinuteApiUrl,
+        data:
+        {
+            "symbol": self.Symbol,
+            "daycount": self.DayCount
+        },
+        method: "post",
+        dataType: "json",
+        success: function (data) {
+            self.ChartSplashPaint.IsEnableSplash = false;
+            self.RecvHistoryMinuteData(data);
+        }
+        });
+    }
 
     this.RecvHistoryMinuteData = function (recvdata) 
     {
@@ -11632,42 +11655,62 @@ function MinuteChartContainer(uielement) {
     }
   }
 
-  //请求分钟数据
-  this.RequestMinuteData = function () {
-    var self = this;
-
-    var fields =
-      [
-        "name", "symbol",
-        "yclose", "open", "price", "high", "low",
-        "vol", "amount",
-        "date", "time",
-        "minute", "minutecount"
-      ];
-
-    var upperSymbol = this.Symbol.toUpperCase();
-    if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) //期货的需要加上结算价
+    //请求分钟数据
+    this.RequestMinuteData = function () 
     {
-      fields.push("clearing");
-      fields.push("yclearing");
-    }
+        var self = this;
 
-    wx.request({
-      url: this.MinuteApiUrl,
-      data:
-      {
-        "field": fields,
-        "symbol": [this.Symbol],
-        "start": -1
-      },
-      method: "post",
-      dataType: "json",
-      success: function (data) {
-        self.ChartSplashPaint.IsEnableSplash = false;
-        self.RecvMinuteData(data);
-      }
-    });
-  }
+        var fields =
+        [
+            "name", "symbol",
+            "yclose", "open", "price", "high", "low",
+            "vol", "amount",
+            "date", "time",
+            "minute", "minutecount"
+        ];
+
+        var upperSymbol = this.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) //期货的需要加上结算价
+        {
+            fields.push("clearing");
+            fields.push("yclearing");
+        }
+
+        if (this.NetworkFilter) 
+        {
+            var obj =
+            {
+                Name: 'MinuteChartContainer::RequestMinuteData', //类名::函数名
+                Explain: '最新分时数据',
+                Request: { Url: self.MinuteApiUrl, Data: { field: fields, symbol: [self.Symbol] }, Type: 'POST' },
+                Self: this,
+                PreventDefault: false
+            };
+            this.NetworkFilter(obj, function (data) 
+            {
+                self.ChartSplashPaint.IsEnableSplash = false;
+                self.RecvMinuteData(data);
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        wx.request({
+            url: this.MinuteApiUrl,
+            data:
+            {
+                "field": fields,
+                "symbol": [this.Symbol],
+                "start": -1
+            },
+            method: "post",
+            dataType: "json",
+            success: function (data) {
+                self.ChartSplashPaint.IsEnableSplash = false;
+                self.RecvMinuteData(data);
+            }
+        });
+    }
 
   this.RecvMinuteData = function (data) {
     var aryMinuteData = MinuteChartContainer.JsonDataToMinuteData(data.data);
@@ -11727,31 +11770,51 @@ function MinuteChartContainer(uielement) {
     this.AutoUpdata();
   }
 
-  //请求叠加数据 (主数据下载完再下载))
-  this.RequestOverlayMinuteData = function () {
-    if (!this.OverlayChartPaint.length) return;
+    //请求叠加数据 (主数据下载完再下载))
+    this.RequestOverlayMinuteData = function () 
+    {
+        if (!this.OverlayChartPaint.length) return;
 
-    var symbol = this.OverlayChartPaint[0].Symbol;
-    if (!symbol) return;
+        var symbol = this.OverlayChartPaint[0].Symbol;
+        if (!symbol) return;
 
-    var self = this;
-    var date = this.TradeDate;    //最后一个交易日期
+        var self = this;
+        var date = this.TradeDate;    //最后一个交易日期
 
-    //请求数据
-    wx.request({
-      url: self.HistoryMinuteApiUrl,
-      data:
-      {
-        "symbol": symbol,
-        "days": [date],
-      },
-      method: "post",
-      dataType: "json",
-      success: function (data) {
-        self.RecvOverlayMinuteData(data);
-      }
-    });
-  }
+        if (this.NetworkFilter) 
+        {
+            var obj =
+            {
+                Name: 'MinuteChartContainer::RequestOverlayMinuteData', //类名::函数名
+                Explain: '叠加股票最新分时数据',
+                Request: { Url: self.HistoryMinuteApiUrl, Data: { days: [date], symbol: symbol }, Type: 'POST' },
+                Self: this,
+                PreventDefault: false
+            };
+            this.NetworkFilter(obj, function (data) 
+            {
+                self.RecvOverlayMinuteData(data);
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+
+        //请求数据
+        wx.request({
+            url: self.HistoryMinuteApiUrl,
+            data:
+            {
+                "symbol": symbol,
+                "days": [date],
+            },
+            method: "post",
+            dataType: "json",
+            success: function (data) {
+                self.RecvOverlayMinuteData(data);
+            }
+        });
+    }
 
   this.RecvOverlayMinuteData = function (recvData) {
     var data = recvData.data;
@@ -11795,35 +11858,55 @@ function MinuteChartContainer(uielement) {
     if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvOverlayMinuteData', this);
   }
 
-  this.RequestOverlayHistoryMinuteData = function () {
-    if (!this.OverlayChartPaint.length) return;
-    var symbol = this.OverlayChartPaint[0].Symbol;
-    if (!symbol) return;
+    this.RequestOverlayHistoryMinuteData = function () 
+    {
+        if (!this.OverlayChartPaint.length) return;
+        var symbol = this.OverlayChartPaint[0].Symbol;
+        if (!symbol) return;
 
-    var self = this;
-    var days = [];
-    for (var i in this.DayData) {
-      var item = this.DayData[i];
-      days.push(item.Date);
+        var self = this;
+        var days = [];
+        for (var i in this.DayData) 
+        {
+            var item = this.DayData[i];
+            days.push(item.Date);
+        }
+
+        if (days.length <= 0) return;
+
+        if (this.NetworkFilter) 
+        {
+            var obj =
+            {
+                Name: 'MinuteChartContainer::RequestOverlayHistoryMinuteData', //类名::函数名
+                Explain: '叠加股票多日分时数据',
+                Request: { Url: self.HistoryMinuteApiUrl, Data: { days: days, symbol: symbol }, Type: 'POST' },
+                Self: this,
+                PreventDefault: false
+            };
+            this.NetworkFilter(obj, function (data) 
+            {
+                self.RecvOverlayHistoryMinuteData(data);
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        wx.request({
+            url: self.HistoryMinuteApiUrl,
+            data:
+            {
+                "symbol": symbol,
+                "days": days
+            },
+            method: "post",
+            dataType: "json",
+            async: true,
+            success: function (data) {
+                self.RecvOverlayHistoryMinuteData(data);
+            }
+        });
     }
-
-    if (days.length <= 0) return;
-
-    wx.request({
-      url: self.HistoryMinuteApiUrl,
-      data:
-      {
-        "symbol": symbol,
-        "days": days
-      },
-      method: "post",
-      dataType: "json",
-      async: true,
-      success: function (data) {
-        self.RecvOverlayHistoryMinuteData(data);
-      }
-    });
-  }
 
   this.RecvOverlayHistoryMinuteData = function (recvData)    //叠加历史的分钟数据
   {

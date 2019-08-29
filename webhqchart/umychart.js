@@ -401,6 +401,8 @@ function JSChart(divElement)
         if (option.Type==="分钟走势图横屏") chart=new MinuteChartHScreenContainer(this.CanvasElement);
         else chart=new MinuteChartContainer(this.CanvasElement);
 
+        if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
+
         var windowsCount=2;
         if (option.Windows && option.Windows.length>0) windowsCount+=option.Windows.length; //指标窗口从第3个窗口开始
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
@@ -1203,6 +1205,8 @@ function JSChartContainer(uielement)
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.PressTime=500;
 
+    this.NetworkFilter;         //网络请求回调 function(data, callback);
+
     //设置事件回调
     //{event:事件id, callback:回调函数}
     this.AddEventCallback=function(object)
@@ -1728,6 +1732,7 @@ function JSChartContainer(uielement)
         }
         //框架
         this.Frame.Draw();
+        this.Frame.CalculateLock();
 
         //框架内图形
         for (var i in this.ChartPaint)
@@ -3055,7 +3060,20 @@ function IChartFramePainting()
             this.LockPaint.Canvas=this.Canvas;
             this.LockPaint.ChartBorder=this.ChartBorder;
             this.LockPaint.ChartFrame=this;
-            this.LockPaint.Draw();
+            this.LockPaint.Draw(true);
+        }
+    }
+
+    this.CalculateLock=function()
+    {
+        if (this.IsLocked)
+        {
+            if (this.LockPaint == null)
+                this.LockPaint = new ChartLock();
+            this.LockPaint.Canvas=this.Canvas;
+            this.LockPaint.ChartBorder=this.ChartBorder;
+            this.LockPaint.ChartFrame=this;
+            this.LockPaint.Draw(false);
         }
     }
 
@@ -3080,6 +3098,13 @@ function IChartFramePainting()
         if (lockData.Font) this.LockPaint.Font=lockData.Font;
         if (lockData.Count) this.LockPaint.LockCount=lockData.Count;
         if (lockData.MinWidth>0) this.LockPaint.MinWidth=lockData.MinWidth;
+    }
+
+    this.GetLockRect=function()
+    {
+        if (!this.IsLocked) return null;
+        if (!this.LockPaint) return null; 
+        return this.LockPaint.LockRect;
     }
 }
 
@@ -4739,6 +4764,15 @@ function HQTradeFrame()
         }
     }
 
+    this.CalculateLock=function()
+    {
+        for (var i in this.SubFrame)
+        {
+            var item = this.SubFrame[i];
+            item.Frame.CalculateLock();
+        }
+    }
+
     this.DrawInsideHorizontal = function () 
     {
         for (var i in this.SubFrame) 
@@ -6198,6 +6232,11 @@ function IChartPainting()
         else font =16*pixelTatio + 'px Arial';
         
         return font;
+    }
+
+    this.GetLockRect=function()
+    {
+        return this.ChartFrame.GetLockRect();
     }
 }
 
@@ -7955,6 +7994,12 @@ function ChartLine()
         var chartright=this.ChartBorder.GetRight();
         if (bHScreen) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
+        var lockRect=this.GetLockRect();
+        if (lockRect)
+        {
+            if (bHScreen) chartright=lockRect.Top;
+            else chartright=lockRect.Left;
+        }
 
         this.Canvas.save();
         if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
@@ -8328,6 +8373,8 @@ function ChartVolStick()
         var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
         var chartright=this.ChartBorder.GetRight();
         var xPointCount=this.ChartFrame.XPointCount;
+        var lockRect=this.GetLockRect();
+        if (lockRect) chartright=lockRect.Left;
 
         var yBottom=this.ChartFrame.GetYFromData(0);
 
@@ -8404,6 +8451,8 @@ function ChartVolStick()
         var xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+2.0;
         var chartBottom=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
+        var lockRect=this.GetLockRect();
+        if (lockRect) chartBottom=lockRect.Top;
 
         var yBottom=this.ChartFrame.GetYFromData(0);
 
@@ -9565,6 +9614,8 @@ function ChartMACD()
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetRight();
         var xPointCount=this.ChartFrame.XPointCount;
+        var lockRect=this.GetLockRect();
+        if (lockRect) chartright=lockRect.Left;
 
         var bFirstPoint=true;
         var drawCount=0;
@@ -9595,6 +9646,8 @@ function ChartMACD()
     {
         var chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
+        var lockRect=this.GetLockRect();
+        if (lockRect) chartright=lockRect.Top;
 
         var yBottom=this.ChartFrame.GetYFromData(0);
         
@@ -10007,7 +10060,7 @@ function ChartLock()
     this.IndexName;     //指标名字
     this.MinWidth=null;  //最小宽度
 
-    this.Draw=function()
+    this.Draw=function(isDraw)
     {
         this.LockRect=null;
         if (this.NotSupportMessage)
@@ -10018,7 +10071,7 @@ function ChartLock()
 
         if (this.ChartFrame.IsHScreen===true)
         {
-            this.HScreenDraw();
+            this.HScreenDraw(isDraw);
             return;
         }
 
@@ -10059,20 +10112,23 @@ function ChartLock()
             if (lLeft < this.ChartBorder.GetLeft()) lLeft = this.ChartBorder.GetLeft();
         }
 
-        this.Canvas.fillStyle = this.BGColor;
-        this.Canvas.fillRect(lLeft, this.ChartBorder.GetTop(), lWidth, lHeight);
-        var xCenter = lLeft + lWidth / 2;
-        var yCenter = this.ChartBorder.GetTop() + lHeight / 2;
-        this.Canvas.textAlign = 'center';
-        this.Canvas.textBaseline = 'middle';
-        this.Canvas.fillStyle = this.TextColor;
-        this.Canvas.font = this.Font;
-        this.Canvas.fillText(this.Title, xCenter, yCenter);
+        if (isDraw)
+        {
+            this.Canvas.fillStyle = this.BGColor;
+            this.Canvas.fillRect(lLeft, this.ChartBorder.GetTop(), lWidth, lHeight);
+            var xCenter = lLeft + lWidth / 2;
+            var yCenter = this.ChartBorder.GetTop() + lHeight / 2;
+            this.Canvas.textAlign = 'center';
+            this.Canvas.textBaseline = 'middle';
+            this.Canvas.fillStyle = this.TextColor;
+            this.Canvas.font = this.Font;
+            this.Canvas.fillText(this.Title, xCenter, yCenter);
+        }
 
         this.LockRect={Left:lLeft,Top:this.ChartBorder.GetTop(),Width:lWidth,Heigh:lHeight};    //保存上锁区域
     }
 
-    this.HScreenDraw=function()
+    this.HScreenDraw=function(isDraw)
     {
         var xOffset = this.ChartBorder.GetBottom();
 
@@ -14447,6 +14503,14 @@ function DynamicChartTitlePainting()
             left+=textWidth;
         }
 
+        var lockRect=this.Frame.GetLockRect();
+        if (lockRect)   //指标上锁区域不显示动态标题
+        {
+            var index=Math.abs(this.CursorIndex-0.5);
+            var x=this.Frame.GetXFromIndex(index.toFixed(0));
+            if (x>=lockRect.Left) return;
+        }
+
         for(var i in this.Data)
         {
             var item=this.Data[i];
@@ -14628,6 +14692,14 @@ function DynamicChartTitlePainting()
             var textWidth=this.Canvas.measureText(this.Title).width+2;
             this.Canvas.fillText(this.Title,left,bottom,textWidth);
             left+=textWidth;
+        }
+
+        var lockRect=this.Frame.GetLockRect();
+        if (lockRect)   //指标上锁区域不显示动态标题
+        {
+            var index=Math.abs(this.CursorIndex-0.5);
+            var x=this.Frame.GetXFromIndex(index.toFixed(0));
+            if (x>=lockRect.Top) return;
         }
 
         for(var i in this.Data)
@@ -22498,6 +22570,25 @@ function MinuteChartContainer(uielement)
         this.ChartSplashPaint.IsEnableSplash = true;
         this.Draw();
 
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'MinuteChartContainer::RequestHistoryMinuteData', //类名::
+                Explain:'多日分时数据',
+                Request:{ Url:self.HistoryMinuteApiUrl, Data:{daycount:self.DayCount, symbol:self.Symbol}, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvHistoryMinuteData(data);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         $.ajax({
             url: self.HistoryMinuteApiUrl,
             data:
@@ -22629,6 +22720,25 @@ function MinuteChartContainer(uielement)
             this.IsBeforeData=true;
             fields.push('before');
         }
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'MinuteChartContainer::RequestMinuteData', //类名::函数名
+                Explain:'最新分时数据',
+                Request:{ Url:self.MinuteApiUrl, Data:{field:fields, symbol:[self.Symbol]}, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvMinuteData(data);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
         
         $.ajax({
             url: self.MinuteApiUrl,
@@ -22731,6 +22841,25 @@ function MinuteChartContainer(uielement)
 
             item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
 
+            if (this.NetworkFilter)
+            {
+                var obj=
+                {
+                    Name:'MinuteChartContainer::RequestOverlayMinuteData', //类名::函数名
+                    Explain:'叠加股票最新分时数据',
+                    Request:{ Url:self.HistoryMinuteApiUrl, Data:{days:[date], symbol:symbol}, Type:'POST' }, 
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                    self.RecvOverlayMinuteData(data,item);
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
             //请求数据
             $.ajax({
                 url: self.HistoryMinuteApiUrl,
@@ -22816,6 +22945,25 @@ function MinuteChartContainer(uielement)
             if (item.Status!=OVERLAY_STATUS_ID.STATUS_NONE_ID) continue;
 
             item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
+
+            if (this.NetworkFilter)
+            {
+                var obj=
+                {
+                    Name:'MinuteChartContainer::RequestOverlayHistoryMinuteData', //类名::函数名
+                    Explain:'叠加股票多日分时数据',
+                    Request:{ Url:self.HistoryMinuteApiUrl, Data:{days:days, symbol:symbol}, Type:'POST' }, 
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                    self.RecvOverlayHistoryMinuteData(data,item);
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
 
             $.ajax({
                 url: self.HistoryMinuteApiUrl,
