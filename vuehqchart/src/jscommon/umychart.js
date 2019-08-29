@@ -1318,8 +1318,9 @@ function JSChartContainer(uielement)
         else    //是否在画图工具上
         {
             var drawPictrueData={};
-            drawPictrueData.X=e.clientX-this.getBoundingClientRect().left;
-            drawPictrueData.Y=e.clientY-this.getBoundingClientRect().top;
+            var pixelTatio = GetDevicePixelRatio(); //鼠标移动坐标是原始坐标 需要乘以放大倍速
+            drawPictrueData.X=(e.clientX-this.getBoundingClientRect().left)*pixelTatio;
+            drawPictrueData.Y=(e.clientY-this.getBoundingClientRect().top)*pixelTatio;
             if (this.JSChartContainer.GetChartDrawPictureByPoint(drawPictrueData))
             {
                 drawPictrueData.ChartDrawPicture.Status=20;
@@ -5540,6 +5541,17 @@ function ChartData()
                         startDate=dayData.Date;
                     }
                     break;
+                case 9: //季线
+                    var now=ChartData.GetQuarter(dayData.Date);
+                    now=parseInt(dayData.Date/10000)*10+now;
+                    var last=ChartData.GetQuarter(startDate);
+                    last=parseInt(startDate/10000)*10+last;
+                    if (now!=last)
+                    {
+                        isNewData=true;
+                        startDate=dayData.Date;
+                    }
+                    break;
             }
 
             if (isNewData)
@@ -5595,7 +5607,7 @@ function ChartData()
     //周期数据 1=周 2=月 3=年
     this.GetPeriodData=function(period)
     {
-        if (period==1 || period==2 || period==3) return this.GetDayPeriodData(period);
+        if (period==1 || period==2 || period==3 || period==9) return this.GetDayPeriodData(period);
         if (period==5 || period==6 || period==7 || period==8) return this.GetMinutePeriodData(period);
     }
 
@@ -6074,6 +6086,17 @@ function ChartData()
                         startDate=dayData.Date;
                     }
                     break;
+                case 9: //季线
+                    var now=ChartData.GetQuarter(dayData.Date);
+                    now=parseInt(dayData.Date/10000)*10+now;
+                    var last=ChartData.GetQuarter(startDate);
+                    last=parseInt(startDate/10000)*10+last;
+                    if (now!=last)
+                    {
+                        isNewData=true;
+                        startDate=dayData.Date;
+                    }
+                    break;
             }
 
             if (isNewData)
@@ -6137,6 +6160,35 @@ ChartData.GetFirday=function(value)
     return fridayDate;
 
 }
+
+ChartData.GetQuarter=function(value)
+{
+    var month=parseInt(value%10000/100);
+    if (month==1 || month==2 || month==3) return 1;
+    else if (month==4 || month==5 || month==6) return 2;
+    else if (month==7 || month==8 || month==9) return 3;
+    else if (month==10 || month==11 || month==12) return 4;
+    else return 0;
+}
+
+//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线  (isIncludeBase 是否包含基础日线周期)
+ChartData.IsDayPeriod=function(period, isIncludeBase)
+{
+    if (period==1 || period==2 || period==3 || period==9) return true;
+    if (period==0 && isIncludeBase==true) return true;
+
+    return false;
+}
+
+//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 (isIncludeBase 是否包含基础1分钟周期)
+ChartData.IsMinutePeriod=function(period,isIncludeBase)
+{
+    if (period==5 || period==6 || period==7 || period==8) return true;
+    if (period==4 && isIncludeBase==true) return true;
+
+    return false;
+}
+
 
 function TooltipData()              //提示信息
 {
@@ -13741,7 +13793,7 @@ function HQDateStringFormat()
         if (this.Data.DataOffset+index>=this.Data.Data.length) return false;
         var currentData = this.Data.Data[this.Data.DataOffset+index];
         this.Text=IFrameSplitOperator.FormatDateString(currentData.Date);
-        if (this.Data.Period >= 4) // 分钟周期
+        if (ChartData.IsMinutePeriod(this.Data.Period,true)) // 分钟周期
         {
             var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
             this.Text = this.Text + "  " + time;
@@ -13822,7 +13874,7 @@ function HistoryDataStringFormat()
         var date=new Date(parseInt(data.Date/10000),(data.Date/100%100-1),data.Date%100);
         var strDate=IFrameSplitOperator.FormatDateString(data.Date);
         var title2=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],this.LanguageID);
-        if (this.Value.ChartPaint.Data.Period >= 4) // 分钟周期
+        if (ChartData.IsMinutePeriod(this.Value.ChartPaint.Data.Period)) // 分钟周期
         {
             var hour=parseInt(data.Time/100);
             var minute=data.Time%100;
@@ -14066,7 +14118,7 @@ function IChartTitlePainting()
     this.TitleColor=g_JSChartResource.DefaultTextColor;
 }
 
-var PERIOD_NAME=["日线","周线","月线","年线","1分","5分","15分","30分","60分","",""];
+var PERIOD_NAME=["日线","周线","月线","年线","1分","5分","15分","30分","60分","季线",""];
 var RIGHT_NAME=['不复权','前复权','后复权'];
 
 function DynamicKLineTitlePainting()
@@ -17855,6 +17907,7 @@ function JSChartLocalization()
         ['15分', {CN:'15分', EN:'15Min'}],
         ['30分', {CN:'30', EN:'30Min'}],
         ['60分', {CN:'60分', EN:'60Min'}],
+        ['季线', {CN:'季线', EN:'1Q'}],
 
         //复权
         ['不复权', {CN:'不复权', EN:'No Right'}],
@@ -18883,7 +18936,7 @@ function KLineChartContainer(uielement)
     this.TradeIndex;                    //交易指标/专家系统
     this.Symbol;
     this.Name;
-    this.Period=0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+    this.Period=0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 9=季线
     this.Right=0;                       //复权 0 不复权 1 前复权 2 后复权
     this.SourceData;                    //原始的历史数据
     this.MaxReqeustDataCount=3000;      //数据个数
@@ -19467,7 +19520,7 @@ function KLineChartContainer(uielement)
             bindData.Data=rightData;
         }
 
-        if (bindData.Period>0 && bindData.Period<=3)   //周期数据
+        if (ChartData.IsDayPeriod(bindData.Period,false))   //周期数据
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -19589,7 +19642,7 @@ function KLineChartContainer(uielement)
         bindData.Period=this.Period;
         bindData.DataType=1; 
 
-        if (bindData.Period>=5)   //周期数据
+        if (ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
         {
             var periodData=sourceData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -19719,7 +19772,7 @@ function KLineChartContainer(uielement)
             bindData.Data=rightData;
         }
 
-        if (bindData.Period>0 && bindData.Period!=4)   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -19832,7 +19885,7 @@ function KLineChartContainer(uielement)
             bindData.Data=rightData;
         }
 
-        if (bindData.Period>0 && bindData.Period!=4)   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -19867,6 +19920,7 @@ function KLineChartContainer(uielement)
             case 1:     //周
             case 2:     //月
             case 3:     //年
+            case 9:     //季线
                 if (this.SourceData.DataType!=0) isDataTypeChange=true;
                 break;
             case 4:     //1分钟
@@ -19887,8 +19941,9 @@ function KLineChartContainer(uielement)
             return;
         }
 
-        if (this.Period<=3)
+        if (ChartData.IsDayPeriod(this.Period,true))
         {
+            this.ResetOverlaySymbolStatus();
             this.RequestHistoryData();                  //请求日线数据
             this.ReqeustKLineInfoData();
         }
@@ -20691,7 +20746,7 @@ function KLineChartContainer(uielement)
             bindData.Data=rightData;
         }
 
-        if (bindData.Period>0 && bindData.Period!=4)   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -20711,7 +20766,7 @@ function KLineChartContainer(uielement)
             var item=this.OverlayChartPaint[i];
             if (!item.SourceData) continue;
         
-            if(this.Period>=4)  //分钟不支持 清空掉
+            if(ChartData.IsMinutePeriod(this.Period,true))  //分钟不支持 清空掉
             {   
                 item.Data=null;
             }
@@ -20731,7 +20786,7 @@ function KLineChartContainer(uielement)
                 var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data);      //和主图数据拟合以后的数据
                 bindData.Data=aryOverlayData;
 
-                if (bindData.Period>0)   //周期数据
+                if (ChartData.IsDayPeriod(bindData.Period,false))   //周期数据
                 {
                     var periodData=bindData.GetPeriodData(bindData.Period);
                     bindData.Data=periodData;
@@ -20781,7 +20836,7 @@ function KLineChartContainer(uielement)
 
         this.ReloadChartDrawPicture();
 
-        if (this.Period<=3)
+        if (ChartData.IsDayPeriod(this.Period,true))
         {
             this.RequestHistoryData();                  //请求日线数据
             this.ReqeustKLineInfoData();
@@ -21036,7 +21091,7 @@ function KLineChartContainer(uielement)
         var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data);      //和主图数据拟合以后的数据
         bindData.Data=aryOverlayData;
 
-        if (bindData.Period>0)   //周期数据
+        if (ChartData.IsDayPeriod(bindData.Period,false))   //周期数据
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -21055,6 +21110,15 @@ function KLineChartContainer(uielement)
         this.Frame.SetSizeChage(true);
         this.Draw();
 
+    }
+
+    this.ResetOverlaySymbolStatus=function()
+    {
+        for(var i in this.OverlayChartPaint)
+        {
+            var item=this.OverlayChartPaint[i];
+            item.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
+        }
     }
 
     //取消叠加股票
@@ -21159,7 +21223,7 @@ function KLineChartContainer(uielement)
             }
         }
 
-        if (this.Period>=4) //分钟数据
+        if (ChartData.IsMinutePeriod(this.Period,true)) //分钟数据
         {
             var aryFixedData=this.SourceData.GetMinuteFittingFinanceData(aryData);
             for(let i in this.SourceData.Data)
@@ -21172,7 +21236,7 @@ function KLineChartContainer(uielement)
             var newBindData=new ChartData();
             newBindData.Data=this.SourceData.Data;
 
-            if (bindData.Period>4) //周期数据
+            if (ChartData.IsMinutePeriod(bindData.Period,false)) //周期数据
             {
                 var periodData=newBindData.GetPeriodData(bindData.Period);  
                 newBindData.Data=periodData;
@@ -21198,7 +21262,7 @@ function KLineChartContainer(uielement)
                 newBindData.Data=rightData;
             }
 
-            if (bindData.Period>0) //周期数据
+            if (ChartData.IsDayPeriod(bindData.Period,false)) //周期数据
             {
                 var periodData=newBindData.GetPeriodData(bindData.Period);  
                 newBindData.Data=periodData;
@@ -21637,7 +21701,7 @@ function KLineChartContainer(uielement)
                 }
             }
         }
-        else if ( this.Period==1 || this.Period==2 || this.Period==3)
+        else if (ChartData.IsDayPeriod(this.Period,false))
         {
             mapInfoData=new Map();
             var hisData=this.ChartPaint[0].Data;
@@ -21698,7 +21762,7 @@ function KLineChartContainer(uielement)
             bindData.Data=rightData;
         }
 
-        if (bindData.Period>0)   //周期数据
+        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -23788,7 +23852,7 @@ function CustomKLineChartContainer(uielement)
             bindData.Data=rightData;
         }
 
-        if (bindData.Period>0 && bindData.Period<=3)   //周期数据
+        if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
         {
             var periodData=sourceData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -28745,44 +28809,57 @@ function KLineRightMenu(divElement)
         var data=
         [
             {
-                text: "日线",
+                text: "日线", Value:0,
                 click: function () { chart.ChangePeriod(0); }
             }, 
             {
-                text: "周线",
+                text: "周线",Value:1,
                 click: function () { chart.ChangePeriod(1); }
             }, 
             {
-                text: "月线",
+                text: "月线",Value:2,
                 click: function () { chart.ChangePeriod(2); }
             }, 
             {
-                text: "年线",
+                text: "季线",Value:9,
+                click: function () { chart.ChangePeriod(9); }
+            },
+            {
+                text: "年线",Value:3,
                 click: function () { chart.ChangePeriod(3); }
             },
             {
-                text: "1分",
+                text: "1分",Value:4,
                 click: function () { chart.ChangePeriod(4); }
             },
             {
-                text: "5分",
+                text: "5分",Value:5,
                 click: function () { chart.ChangePeriod(5); }
             },
             {
-                text: "15分",
+                text: "15分",Value:6,
                 click: function () { chart.ChangePeriod(6); }
             },
             {
-                text: "30分",
+                text: "30分",Value:7,
                 click: function () { chart.ChangePeriod(7); }
             },
             {
-                text: "60分",
+                text: "60分",Value:8,
                 click: function () { chart.ChangePeriod(8); }
-            }
+            },
+            
         ];
 
-        if (chart.Period>=0 && chart.Period<data.length) data[chart.Period].selected=true;  //选中
+        for(var i in data)
+        {
+            var item=data[i];
+            if (item.Value==chart.Period)
+            {
+                item.selected=true;
+                break;
+            }
+        }
 
         return data; 
     }

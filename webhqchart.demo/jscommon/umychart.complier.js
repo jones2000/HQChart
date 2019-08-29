@@ -6028,7 +6028,7 @@ function JSSymbolData(ast,option,jsExecute)
         var aryOverlayData=this.SourceData.GetOverlayData(this.IndexData.Data);      //和主图数据拟合以后的数据
         this.IndexData.Data=aryOverlayData;
 
-        if (this.Period>0 && this.Period<=3)   //周期数据
+        if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
         {
             let periodData=this.IndexData.GetPeriodData(this.Period);
             this.IndexData.Data=periodData;
@@ -6044,7 +6044,7 @@ function JSSymbolData(ast,option,jsExecute)
         this.IndexData.DataType=1; /*分钟线数据 */
         this.IndexData.Data=hisData;
 
-        if (this.Period>=5)   //周期数据
+        if (ChartData.IsMinutePeriod(this.Period,false))   //周期数据
         {
             let periodData=this.IndexData.GetPeriodData(this.Period);
             this.IndexData.Data=periodData;
@@ -6329,7 +6329,7 @@ function JSSymbolData(ast,option,jsExecute)
             this.Data.Data=rightData;
         }
 
-        if (this.Period>0 && this.Period<=3)   //周期数据
+        if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
         {
             let periodData=this.Data.GetPeriodData(this.Period);
             this.Data.Data=periodData;
@@ -6351,7 +6351,7 @@ function JSSymbolData(ast,option,jsExecute)
         this.SourceData=new ChartData;
         this.SourceData.Data=hisData;
 
-        if (this.Period>=5)   //周期数据
+        if (ChartData.IsMinutePeriod(this.Period,false))   //周期数据
         {
             let periodData=this.Data.GetPeriodData(this.Period);
             this.Data.Data=periodData;
