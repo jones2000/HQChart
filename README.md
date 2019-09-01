@@ -79,7 +79,7 @@
 * 支持多日分钟数据显示<br>
 * 支持A股集合竞价显示/隐藏 (2019-7-12 新加功能) ![走势图2](/小程序行情模块用例/image/hqchart_minute3.png)
 * 支持指数领先指标(2019-7-15  新加功能) ![领先指标](/小程序行情模块用例/image/hqchart_kline_lock3.png)
-* 支持信息地雷 [信息地雷](/小程序行情模块用例/image/hqchart_minute_info.png)
+* 支持信息地雷 ![信息地雷](/小程序行情模块用例/image/hqchart_minute_info.png)
 
 # 3. 网页demo  <br>
 * [K线图](https://opensource.zealink.com/hqweb/demo/phone7.html)  <br>
