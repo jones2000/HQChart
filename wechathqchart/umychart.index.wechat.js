@@ -224,5 +224,5 @@ module.exports =
 
     //单个类导出
     JSCommonIndex_IndexInfo: IndexInfo,
-    JJSCommonIndex_BaseIndex: BaseIndex,
+    JSCommonIndex_BaseIndex: BaseIndex,
 };

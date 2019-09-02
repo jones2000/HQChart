@@ -9679,7 +9679,7 @@ function ChartMinuteInfo()
     {
         if (option.TextColor) this.TextColor=option.TextColor;
         if (option.TextBGColor) this.TextBGColor=option.TextBGColor;
-        if (option.Font) this.TextColor=option.Font;
+        if (option.Font) this.Font=option.Font;
         if (option.PointColor) this.PointColor=option.PointColor;
         if (option.LineColor) this.LineColor=option.LineColor;
         if (option.TextHeight>0) this.TextHeight=option.TextHeight;
@@ -23749,7 +23749,7 @@ function MinuteChartContainer(uielement)
 
     this.CreateMinuteInfo=function(option)  //在Create()以后 在调用
     {
-        chart=new ChartMinuteInfo();
+        var chart=new ChartMinuteInfo();
         chart.Canvas=this.Canvas;
         chart.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
         chart.ChartFrame=this.Frame.SubFrame[0].Frame;

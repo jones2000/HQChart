@@ -11,7 +11,9 @@ import {
 } from "umychart.data.wechat.js";
 
 import {
-  JSCommon_JSKLineInfoMap as JSKLineInfoMap, JSCommon_KLINE_INFO_TYPE as KLINE_INFO_TYPE, JSCommonKLineInfo
+    JSCommon_JSKLineInfoMap as JSKLineInfoMap, 
+    JSCommon_KLINE_INFO_TYPE as KLINE_INFO_TYPE, 
+    JSCommon_JSMinuteInfoMap as JSMinuteInfoMap,
 } from "umychart.klineinfo.wechat.js";
 
 import { JSCommonCoordinateData as JSCommonCoordinateData } from "umychart.coordinatedata.wechat.js";
@@ -31,6 +33,11 @@ import {
     JSCommonChartPaint_ChartLineStick as ChartLineStick,
     JSCommonChartPaint_ChartStickLine as ChartStickLine,
     JSCommonChartPaint_ChartOverlayKLine as ChartOverlayKLine,
+    JSCommonChartPaint_ChartMinuteInfo as ChartMinuteInfo,
+    JSCommonChartPaint_ChartPie as ChartPie,
+    JSCommonChartPaint_ChartCircle as ChartCircle,
+    JSCommonChartPaint_ChartChinaMap as ChartChinaMap,
+    JSCommonChartPaint_ChartRadar as ChartRadar,
 } from "umychart.chartpaint.wechat.js";
 
 //扩展画法图形库
@@ -43,8 +50,12 @@ import {
 
 import {
     JSCommonIndex_IndexInfo as IndexInfo,
-    JJSCommonIndex_BaseIndex as BaseIndex,
+    JSCommonIndex_BaseIndex as BaseIndex,
 } from 'umychart.index.wechat.js'
+
+import{
+    JSCommonResource_Global_JSChartResource as g_JSChartResource,
+} from 'umychart.resource.wechat.js'
 
 
 function JSCanvasElement() 
@@ -344,6 +355,8 @@ function JSChart(element)
         var windowsCount = 2;
         if (option.Windows && option.Windows.length > 0) windowsCount += option.Windows.length; //指标窗口从第3个窗口开始
 
+        if (option.Info && option.Info.length > 0) chart.SetMinuteInfo(option.Info, false);
+
         chart.Create(windowsCount);                            //创建子窗口
 
         if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
@@ -354,6 +367,8 @@ function JSChart(element)
             if (!isNaN(option.CorssCursorInfo.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom = option.CorssCursorInfo.Bottom;
             if (option.CorssCursorInfo.IsShowCorss === false) chart.ChartCorssCursor.IsShowCorss = option.CorssCursorInfo.IsShowCorss;
         }
+
+        if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
         if (option.DayCount > 1) chart.DayCount = option.DayCount;
 
         if (option.Border) 
@@ -886,7 +901,6 @@ JSChart.SetDomain = function (domain, cacheDomain) {
   if (cacheDomain) g_JSChartResource.CacheDomain = cacheDomain;
 
   JSCommonComplier.JSComplier.SetDomain(domain, cacheDomain);     //编译器数据api域名修改  
-  JSCommonKLineInfo.SetDomain(domain, cacheDomain)
 }
 
 //自定义风格
@@ -910,17 +924,18 @@ function JSChartContainer(uielement)
 {
     this.ClassName = 'JSChartContainer';
     var _self = this;
-    this.Frame;                                     //框架画法
+    this.Frame;                                       //框架画法
     this.ChartPaint = new Array();                    //图形画法
     this.ChartPaintEx = [];                           //图形扩展画法
     this.ChartInfo = new Array();                     //K线上信息地雷
+    this.ChartInfoPaint;                              //信息地理
     this.ExtendChartPaint = new Array();              //扩展画法
     this.TitlePaint = new Array();                    //标题画法
     this.OverlayChartPaint = new Array();             //叠加信息画法
     this.ChartDrawPicture = new Array();              //画图工具
     this.CurrentChartDrawPicture = null;              //当前的画图工具
     this.SelectChartDrawPicture = null;               //当前选中的画图
-    this.ChartCorssCursor;                          //十字光标
+    this.ChartCorssCursor;                            //十字光标
     this.ChartSplashPaint = null;                     //等待提示
     this.SplashTitle = '数据加载中';
     this.Canvas = uielement.GetContext("2d");         //画布
@@ -1204,7 +1219,6 @@ function JSChartContainer(uielement)
             item.Draw();
         }
 
-
         //叠加股票
         for (var i in this.OverlayChartPaint) 
         {
@@ -1221,7 +1235,7 @@ function JSChartContainer(uielement)
 
         //框架内部坐标
         this.Frame.DrawInsideHorizontal();
-
+        if (this.ChartInfoPaint) this.ChartInfoPaint.Draw();
         this.Frame.DrawLock();
 
         for (var i in this.TitlePaint)
@@ -5692,571 +5706,8 @@ function ChartSplashPaint() {
   }
 }
 
-/*
-    饼图
-*/
-function ChartPie() {
-  this.newMethod = IChartPainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
 
-  this.Draw = function () {
-    if (!this.Data || !this.Data.Data || !(this.Data.Data.length > 0)) return this.DrawEmptyData();
 
-    let left = this.ChartBorder.GetLeft();
-    let right = this.ChartBorder.GetRight();
-    let top = this.ChartBorder.GetTop();
-    let bottom = this.ChartBorder.GetBottom();
-    let width = this.ChartBorder.GetWidth();
-    let height = this.ChartBorder.GetHeight();
-
-    //圆半径
-    let radius = width / 4 * 0.8;
-    this.Canvas.save();
-    this.Canvas.translate(left + radius, top + height / 2);
-
-    let totalValue = 0;   //求和
-    for (let i in this.Data.Data) {
-      totalValue += this.Data.Data[i].Value;
-    }
-
-    let startAngle = Math.PI * 1.5;
-    let start = startAngle;
-    let end = startAngle;
-    //画饼图
-    for (let i in this.Data.Data) {
-      let item = this.Data.Data[i];
-      let rate = item.Value / totalValue; //占比
-
-      // 绘制扇形
-      this.Canvas.beginPath();
-      this.Canvas.moveTo(0, 0);
-
-      end += rate * 2 * Math.PI;//终止角度
-      this.Canvas.strokeStyle = "white";
-      this.Canvas.fillStyle = item.Color;
-      this.Canvas.arc(0, 0, radius, start, end);
-      this.Canvas.fill();
-      this.Canvas.closePath();
-      this.Canvas.stroke();
-
-      start += rate * 2 * Math.PI;//起始角度
-    }
-
-    //画文字
-    this.Canvas.restore();
-    let textLeft = left + width / 2 + 5;
-    // let textTop = top + height / 2 + 20;
-    let textTop = top;
-    this.Canvas.textBaseline = "bottom";
-    this.Canvas.font = "12px 微软雅黑";
-
-    for (let i = 0, j = 0; i < this.Data.Data.length; ++i) {
-      let item = this.Data.Data[i];
-      if (!item.Text) continue;
-
-      this.Canvas.fillStyle = item.Color;
-      this.Canvas.fillRect(textLeft, textTop - 15, 13, 13);
-
-      this.Canvas.fillStyle = 'rgb(102,102,102)';
-      this.Canvas.fillText(item.Text, textLeft + 16, textTop);
-      // textTop += 20;
-      textTop += 17;
-      if (textTop > top + height / 2 + radius) {
-        ++j;
-        if (j >= 2) break;
-
-        // textTop = top + height / 2 + 20;
-        textTop = top;
-        textLeft = right - (width / 4) + 5;
-      }
-    }
-  }
-
-  //空数据
-  this.DrawEmptyData = function () {
-    console.log('[ChartPie::DrawEmptyData]')
-
-    let left = this.ChartBorder.GetLeft();
-    let right = this.ChartBorder.GetRight();
-    let top = this.ChartBorder.GetTop();
-    let bottom = this.ChartBorder.GetBottom();
-    let width = this.ChartBorder.GetWidth();
-    let height = this.ChartBorder.GetHeight();
-
-    //圆半径
-    let radius = width / 4 * 0.8;
-    this.Canvas.save();
-    this.Canvas.translate(left + radius, top + height / 2);
-
-    this.Canvas.beginPath();
-    this.Canvas.fillStyle = 'rgb(211,211,211)';
-    this.Canvas.strokeStyle = "white";
-    this.Canvas.arc(0, 0, radius * 0.8, 0, 2 * Math.PI);
-    this.Canvas.fill();
-    this.Canvas.closePath();
-    this.Canvas.stroke();
-
-    this.Canvas.restore();
-  }
-}
-
-
-/*
-    圆环
-*/
-function ChartCircle() {
-  this.newMethod = IChartPainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
-
-  this.BGColor = 'white';  //背景色
-  this.TextHeight = 25;
-
-  //空数据
-  this.DrawEmptyData = function () {
-    console.log('[ChartCircle::DrawEmptyData]')
-  }
-
-  this.Draw = function () {
-    if (!this.Data || !this.Data.Data || !(this.Data.Data.length > 0)) return this.DrawEmptyData();
-
-    let left = this.ChartBorder.GetLeft();
-    let right = this.ChartBorder.GetRight();
-    let top = this.ChartBorder.GetTop();
-    let bottom = this.ChartBorder.GetBottom();
-    let width = this.ChartBorder.GetWidth();
-    let height = this.ChartBorder.GetHeight();
-
-    //圆半径
-    let lTextHeight = this.TextHeight;
-    let size = width - lTextHeight;
-    if (size > height - lTextHeight) size = height - lTextHeight;
-    let radius = (size - lTextHeight) / 2;
-    this.Canvas.save();
-    this.Canvas.translate(left + width / 2, top + height / 2 - lTextHeight / 2);
-
-    let totalValue = 0;   //求和
-    for (let i in this.Data.Data) {
-      totalValue += this.Data.Data[i].Value;
-    }
-
-    let startAngle = Math.PI * 1.5;
-    let start = startAngle;
-    let end = startAngle;
-    //画饼图
-    for (let i in this.Data.Data) {
-      let item = this.Data.Data[i];
-      let rate = item.Value / totalValue; //占比
-      //console.log('[ChartPie::Draw]', i, rate, item);
-
-      // 绘制扇形
-      this.Canvas.beginPath();
-      this.Canvas.moveTo(0, 0);
-
-      end += rate * 2 * Math.PI;//终止角度
-      this.Canvas.strokeStyle = "white";
-      this.Canvas.fillStyle = item.Color;
-      this.Canvas.arc(0, 0, radius, start, end);
-      this.Canvas.fill();
-      this.Canvas.closePath();
-      this.Canvas.stroke();
-
-      start += rate * 2 * Math.PI;//起始角度
-    }
-
-    //中心画一个背景色的圆
-    this.Canvas.beginPath();
-    this.Canvas.fillStyle = this.BGColor;
-    this.Canvas.arc(0, 0, radius * 0.5, 0, 2 * Math.PI);
-    this.Canvas.fill();
-    this.Canvas.closePath();
-    this.Canvas.stroke();
-
-    this.Canvas.restore();
-
-    //画文字
-    this.Canvas.restore();
-    let textLeft = left;
-    let textTop = top + height / 2 - lTextHeight / 2 + radius + 5 + 20;
-    this.Canvas.textBaseline = "bottom";
-    this.Canvas.textAlign = 'left';
-    this.Canvas.font = "14px 微软雅黑";
-    let textWidth = 0;
-    //以圆心左右显示
-    for (let i = 0, j = 0; i < this.Data.Data.length; ++i) {
-      let item = this.Data.Data[i];
-      if (!item.Text) continue;
-
-      this.Canvas.fillStyle = item.Color;
-
-      if (j % 2 == 0) {
-        textLeft = left + width / 2 - 10;
-        textWidth = this.Canvas.measureText(item.Text).width;
-        textLeft = textLeft - textWidth - 16;
-        this.Canvas.fillRect(textLeft, textTop - 15, 13, 13);
-        this.Canvas.fillStyle = 'rgb(102,102,102)';
-        this.Canvas.fillText(item.Text, textLeft + 16, textTop);
-      }
-      else {
-        textLeft = left + width / 2 + 10 + 10;
-        this.Canvas.fillRect(textLeft, textTop - 15, 13, 13);
-        this.Canvas.fillStyle = 'rgb(102,102,102)';
-        this.Canvas.fillText(item.Text, textLeft + 16, textTop);
-        textTop += 20;
-      }
-
-      if (textTop > bottom) break;
-
-      ++j;
-    }
-  }
-}
-
-/*
-    中国地图
-*/
-
-
-function ChartChinaMap() {
-  this.newMethod = IChartPainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
-
-  this.ImageData = null;
-  this.Left;
-  this.Top;
-  this.Width;
-  this.Height;
-  this.ImageWidth;
-  this.ImageHeight;
-
-  this.DefaultColor = [217, 222, 239];
-
-  this.Color =
-    [
-      { Name: '海南', Color: 'rgb(217,222,223)' },
-      { Name: '内蒙古', Color: 'rgb(217,222,225)' },
-      { Name: '新疆', Color: 'rgb(217,222,226)' },
-      { Name: '青海', Color: 'rgb(217,222,227)' },
-      { Name: '西藏', Color: 'rgb(217,222,228)' },
-      { Name: '云南', Color: 'rgb(217,222,229)' },
-      { Name: '黑龙江', Color: 'rgb(217,222,230)' },
-      { Name: '吉林', Color: 'rgb(217,222,231)' },
-      { Name: '辽宁', Color: 'rgb(217,222,232)' },
-      { Name: '河北', Color: 'rgb(217,222,233)' },
-      { Name: '山东', Color: 'rgb(217,222,234)' },
-      { Name: '江苏', Color: 'rgb(217,222,235)' },
-      { Name: '浙江', Color: 'rgb(217,222,236)' },
-      { Name: '福建', Color: 'rgb(217,222,237)' },
-      { Name: '广东', Color: 'rgb(217,222,238)' },
-      { Name: '广西', Color: 'rgb(217,222,239)' },
-      { Name: '贵州', Color: 'rgb(217,222,240)' },
-      { Name: '湖南', Color: 'rgb(217,222,241)' },
-      { Name: '江西', Color: 'rgb(217,222,242)' },
-      { Name: '安徽', Color: 'rgb(217,222,243)' },
-      { Name: '湖北', Color: 'rgb(217,222,244)' },
-      { Name: '重庆', Color: 'rgb(217,222,245)' },
-      { Name: '四川', Color: 'rgb(217,222,246)' },
-      { Name: '甘肃', Color: 'rgb(217,222,247)' },
-      { Name: '陕西', Color: 'rgb(217,222,248)' },
-      { Name: '山西', Color: 'rgb(217,222,249)' },
-      { Name: '河南', Color: 'rgb(217,222,250)' }
-    ];
-
-  this.Draw = function () {
-    let left = this.ChartBorder.GetLeft() + 1;
-    let right = this.ChartBorder.GetRight() - 1;
-    let top = this.ChartBorder.GetTop() + 1;
-    let bottom = this.ChartBorder.GetBottom() - 1;
-    let width = this.ChartBorder.GetWidth() - 2;
-    let height = this.ChartBorder.GetHeight() - 2;
-
-    let imageWidth = CHINA_MAP_IMAGE.width;
-    let imageHeight = CHINA_MAP_IMAGE.height;
-
-    let drawImageWidth = imageWidth;
-    let drawImageHeight = imageHeight;
-
-    if (height < drawImageHeight || width < drawImageWidth) {
-      this.ImageData = null;
-      return;
-    }
-
-    if (this.Left != left || this.Top != top || this.Width != width || this.Height != height || this.ImageWidth != imageWidth || this.ImageHeight != imageHeight) {
-      this.ImageData = null;
-
-      this.ImageWidth = imageWidth;
-      this.ImageHeight = imageHeight;
-      this.Left = left;
-      this.Top = top;
-      this.Width = width;
-      this.Height = height;
-
-      console.log(imageWidth, imageHeight);
-    }
-
-    if (this.ImageData == null) {
-      this.Canvas.drawImage(CHINA_MAP_IMAGE, 0, 0, imageWidth, imageHeight, left, top, drawImageWidth, drawImageHeight);
-      this.ImageData = this.Canvas.getImageData(left, top, drawImageWidth, drawImageHeight);
-
-      let defaultColorSet = new Set();  //默认颜色填充的色块
-      let colorMap = new Map();         //定义颜色填充的色块
-
-      let nameMap = new Map();
-      if (this.Data.length > 0) {
-        for (let i in this.Data) {
-          let item = this.Data[i];
-          nameMap.set(item.Name, item.Color)
-        }
-      }
-
-      console.log(this.Data);
-      for (let i in this.Color) {
-        let item = this.Color[i];
-        if (nameMap.has(item.Name)) {
-          colorMap.set(item.Color, nameMap.get(item.Name));
-        }
-        else {
-          defaultColorSet.add(item.Color);
-        }
-      }
-
-      var color;
-      for (let i = 0; i < this.ImageData.data.length; i += 4) {
-        color = 'rgb(' + this.ImageData.data[i] + ',' + this.ImageData.data[i + 1] + ',' + this.ImageData.data[i + 2] + ')';
-
-        if (defaultColorSet.has(color)) {
-          this.ImageData.data[i] = this.DefaultColor[0];
-          this.ImageData.data[i + 1] = this.DefaultColor[1];
-          this.ImageData.data[i + 2] = this.DefaultColor[2];
-        }
-        else if (colorMap.has(color)) {
-          let colorValue = colorMap.get(color);
-          this.ImageData.data[i] = colorValue[0];
-          this.ImageData.data[i + 1] = colorValue[1];
-          this.ImageData.data[i + 2] = colorValue[2];
-        }
-      }
-      this.Canvas.clearRect(left, top, drawImageWidth, drawImageHeight);
-      this.Canvas.putImageData(this.ImageData, left, top, 0, 0, drawImageWidth, drawImageHeight);
-    }
-    else {
-      this.Canvas.putImageData(this.ImageData, left, top, 0, 0, drawImageWidth, drawImageHeight);
-    }
-  }
-}
-
-/*
-    雷达图
-*/
-function ChartRadar() 
-{
-    this.newMethod = IChartPainting;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.BorderPoint = [];    //边框点
-    this.DataPoint = [];      //数据点
-    this.CenterPoint = {};
-    this.StartAngle = 0;
-    this.Color = 'rgb(198,198,198)';
-    this.AreaColor = 'rgba(242,154,118,0.4)';    //面积图颜色
-    this.AreaLineColor = 'rgb(242,154,118)';
-    this.TitleFont = '24px 微软雅黑';
-    this.TitleColor = 'rgb(102,102,102)';
-    this.BGColor = ['rgb(255,255,255)', 'rgb(224,224,224)']//背景色
-
-    this.DrawBorder = function ()  //画边框
-    {
-        if (this.BorderPoint.length <= 0) return;
-
-        this.Canvas.font = this.TitleFont;
-        this.Canvas.strokeStyle = this.Color;
-        
-        const aryBorder=[1,0.8,0.6,0.4,0.2];
-        for (let j in aryBorder)
-        {
-            var rate = aryBorder[j];
-            var isFirstDraw = true;
-            for (let i in this.BorderPoint) 
-            {
-                var item = this.BorderPoint[i];
-                item.X = this.CenterPoint.X + item.Radius * Math.cos(item.Angle * Math.PI / 180) * rate;
-                item.Y = this.CenterPoint.Y + item.Radius * Math.sin(item.Angle * Math.PI / 180) * rate;
-                if (isFirstDraw) 
-                {
-                    this.Canvas.beginPath();
-                    this.Canvas.moveTo(item.X, item.Y);
-                    isFirstDraw = false;
-                }
-                else 
-                {
-                    this.Canvas.lineTo(item.X, item.Y);
-                }
-
-                if (j==0) this.DrawText(item);
-            }
-
-            this.Canvas.closePath();
-            this.Canvas.stroke();
-            this.Canvas.fillStyle = this.BGColor[j%2==0?0:1];
-            this.Canvas.fill();
-        }
-
-        this.Canvas.beginPath();
-        for (let i in this.BorderPoint) 
-        {
-            var item = this.BorderPoint[i];
-            item.X = this.CenterPoint.X + item.Radius * Math.cos(item.Angle * Math.PI / 180);
-            item.Y = this.CenterPoint.Y + item.Radius * Math.sin(item.Angle * Math.PI / 180);
-            this.Canvas.moveTo(this.CenterPoint.X, this.CenterPoint.Y);
-            this.Canvas.lineTo(item.X, item.Y);
-        }
-        this.Canvas.stroke();
-    }
-
-    this.DrawArea = function () 
-    {
-        if (!this.DataPoint || this.DataPoint.length <= 0) return;
-
-        this.Canvas.fillStyle = this.AreaColor;
-        this.Canvas.strokeStyle = this.AreaLineColor;
-        this.Canvas.beginPath();
-        var isFirstDraw = true;
-        for (let i in this.DataPoint) 
-        {
-            var item = this.DataPoint[i];
-            if (isFirstDraw) 
-            {
-                this.Canvas.beginPath();
-                this.Canvas.moveTo(item.X, item.Y);
-                isFirstDraw = false;
-            }
-            else 
-            {
-                this.Canvas.lineTo(item.X, item.Y);
-            }
-        }
-
-        this.Canvas.closePath();
-        this.Canvas.fill();
-        this.Canvas.stroke();
-    }
-
-    this.DrawText=function(item)
-    {
-        if (!item.Text) return;
-          
-        //console.log(item.Text, item.Angle);
-        this.Canvas.fillStyle = this.TitleColor;
-        var xText = item.X, yText = item.Y;
-
-        //显示每个角度的位置
-        if (item.Angle > 0 && item.Angle < 45) {
-            this.Canvas.textAlign = 'left';
-            this.Canvas.textBaseline = 'middle';
-            xText += 2;
-        }
-        else if (item.Angle >= 0 && item.Angle < 90) {
-            this.Canvas.textAlign = 'left';
-            this.Canvas.textBaseline = 'top';
-            xText += 2;
-        }
-        else if (item.Angle >= 90 && item.Angle < 135) {
-            this.Canvas.textAlign = 'right';
-            this.Canvas.textBaseline = 'top';
-            xText -= 2;
-        }
-        else if (item.Angle >= 135 && item.Angle < 180) {
-            this.Canvas.textAlign = 'right';
-            this.Canvas.textBaseline = 'top';
-            xText -= 2;
-        }
-        else if (item.Angle >= 180 && item.Angle < 225) {
-            this.Canvas.textAlign = 'right';
-            this.Canvas.textBaseline = 'middle';
-            xText -= 2;
-        }
-        else if (item.Angle >= 225 && item.Angle <= 270) {
-            this.Canvas.textAlign = 'center';
-            this.Canvas.textBaseline = 'bottom';
-        }
-        else if (item.Angle > 270 && item.Angle < 315) {
-            this.Canvas.textAlign = 'left';
-            this.Canvas.textBaseline = 'bottom';
-            xText += 2;
-        }
-        else {
-            this.Canvas.textAlign = 'left';
-            this.Canvas.textBaseline = 'middle';
-            xText += 2;
-        }
-
-        this.Canvas.fillText(item.Text, xText, yText);
-    }
-
-    this.Draw = function () 
-    {
-        this.BorderPoint = [];
-        this.DataPoint = [];
-        this.InternalBorderPoint=[];
-        this.CenterPoint = {};
-        if (!this.Data || !this.Data.Data || !(this.Data.Data.length > 0))
-            this.CalculatePoints(null);
-        else
-            this.CalculatePoints(this.Data.Data);
-
-        this.DrawBorder();
-        this.DrawArea();
-    }
-
-    this.CalculatePoints = function (data) 
-    {
-        let left = this.ChartBorder.GetLeft();
-        let right = this.ChartBorder.GetRight();
-        let top = this.ChartBorder.GetTop();
-        let bottom = this.ChartBorder.GetBottom();
-        let width = this.ChartBorder.GetWidth();
-        let height = this.ChartBorder.GetHeight();
-
-        let ptCenter = { X: left + width / 2, Y: top + height / 2 };  //中心点
-        let radius = Math.min(width / 2, height / 2) - 2         //半径
-        let count = Math.max(5, data ? data.length : 0);
-        let averageAngle = 360 / count;
-        for (let i = 0; i < count; ++i) 
-        {
-            let ptBorder = { Index: i, Radius: radius, Angle: i * averageAngle + this.StartAngle };
-            let angle = ptBorder.Angle;
-
-            if (data && i < data.length) 
-            {
-                var item = data[i];
-                let ptData = { Index: i, Text: item.Text };
-                ptBorder.Text = item.Name;
-                if (!item.Value) 
-                {
-                    ptData.X = ptCenter.X;
-                    ptData.Y = ptCenter.Y;
-                }
-                else 
-                {
-                    var value = item.Value;
-                    if (value >= 1) value = 1;
-                    var dataRadius = radius * value;
-                    ptData.X = ptCenter.X + dataRadius * Math.cos(angle * Math.PI / 180);
-                    ptData.Y = ptCenter.Y + dataRadius * Math.sin(angle * Math.PI / 180);
-                }
-
-                this.DataPoint.push(ptData);
-            }
-
-            this.BorderPoint.push(ptBorder);
-        }
-
-        this.CenterPoint = ptCenter;
-    }
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //坐标分割
@@ -9683,180 +9134,6 @@ function IntegerSplitData()
     ];
 }
 
-/////////////////////////////////////////////////////////////////////////////
-//   全局配置颜色
-//
-//
-function JSChartResource() {
-  this.TooltipBGColor = "rgb(255, 255, 255)"; //背景色
-  this.TooltipAlpha = 0.92;                  //透明度
-
-  this.SelectRectBGColor = "rgba(1,130,212,0.06)"; //背景色
-  //   this.SelectRectAlpha=0.06;                  //透明度
-  this.BGColor='rgb(255,255,255)';          //背景色
-
-  this.UpBarColor = "rgb(238,21,21)";
-  this.DownBarColor = "rgb(25,158,0)";
-  this.UnchagneBarColor = "rgb(0,0,0)";
-
-  this.Minute = {};
-  this.Minute.VolBarColor = "rgb(238,127,9)";
-  this.Minute.PriceColor = "rgb(50,171,205)";
-  this.Minute.AreaPriceColor = 'rgba(50,171,205,0.1)';
-  this.Minute.AvPriceColor = "rgb(238,127,9)";
-
-  this.DefaultTextColor = "rgb(43,54,69)";
-  this.DefaultTextFont = '14px 微软雅黑';
-
-  this.DynamicTitleFont = '12px 微软雅黑'; //指标动态标题字体
-
-
-  this.UpTextColor = "rgb(238,21,21)";
-  this.DownTextColor = "rgb(25,158,0)";
-  this.UnchagneTextColor = "rgb(0,0,0)";
-  this.CloseLineColor = 'rgb(178,34,34)';
-
-  this.FrameBorderPen = "rgb(225,236,242)";
-  this.FrameSplitPen = "rgb(225,236,242)";          //分割线
-  this.FrameSplitTextColor = "rgb(51,51,51)";     //刻度文字颜色
-  this.FrameSplitTextFont = "12px 微软雅黑";        //坐标刻度文字字体
-  //this.FrameSplitTextFont = "14px PingFang-SC-Bold";//坐标刻度文字字体
-  this.FrameTitleBGColor = "rgb(246,251,253)";      //标题栏背景色
-
-  this.CorssCursorBGColor = "rgb(43,54,69)";            //十字光标背景
-  this.CorssCursorTextColor = "rgb(255,255,255)";
-  this.CorssCursorTextFont = "12px 微软雅黑";
-  this.CorssCursorPenColor = "rgb(130,130,130)";           //十字光标线段颜色
-
-  this.Domain = "https://opensource.zealink.com";               //API域名
-  this.CacheDomain = "https://opensourcecache.zealink.com";     //缓存域名
-
-  this.KLine =
-    {
-      MaxMin: { Font: '12px 微软雅黑', Color: 'rgb(111,111,111)' },   //K线最大最小值显示
-      Info:  //信息地雷
-      {
-        Color: 'rgb(205,149,12)',
-        Color2: 'rgb(255,133,3)',  //三角图形颜色
-        TextColor: '#197de9',
-        TextBGColor: 'rgba(220,220,220,0.5)',
-      }
-    };
-
-  this.Index = {};
-  //指标线段颜色
-  this.Index.LineColor =
-    [
-      "rgb(255,189,09)",
-      "rgb(22,198,255)",
-      "rgb(174,35,161)",
-      "rgb(236,105,65)",
-      "rgb(68,114,196)",
-      "rgb(229,0,79)",
-      "rgb(0,128,255)",
-      "rgb(252,96,154)",
-      "rgb(42,230,215)",
-      "rgb(24,71,178)",
-
-    ];
-
-  this.ColorArray =       //自定义指标默认颜色
-    [
-      "rgb(255,174,0)",
-      "rgb(25,199,255)",
-      "rgb(175,95,162)",
-      "rgb(236,105,65)",
-      "rgb(68,114,196)",
-      "rgb(229,0,79)",
-      "rgb(0,128,255)",
-      "rgb(252,96,154)",
-      "rgb(42,230,215)",
-      "rgb(24,71,178)",
-    ];
-
-  //历史数据api
-  this.Index.StockHistoryDayApiUrl = "https://opensource.zealink.com/API/StockHistoryDay";
-  //市场多空
-  this.Index.MarketLongShortApiUrl = "https://opensource.zealink.com/API/FactorTiming";
-  //市场关注度
-  this.Index.MarketAttentionApiUrl = "https://opensource.zealink.com/API/MarketAttention";
-  //行业,指数热度
-  this.Index.MarketHeatApiUrl = "https://opensource.zealink.com/API/MarketHeat"
-  //自定义指数热度
-  this.Index.CustomIndexHeatApiUrl = "https://opensource.zealink.com/API/QuadrantCalculate";
-
-  //指标不支持信息
-  this.Index.NotSupport = { Font: "14px 微软雅黑", TextColor: "rgb(52,52,52)" };
-
-  //画图工具
-  this.DrawPicture = {};
-  this.DrawPicture.LineColor =
-    [
-      "rgb(30,144,255)",
-    ];
-
-  this.DrawPicture.PointColor =
-    [
-      "rgb(105,105,105)",
-    ];
-
-  this.KLineTrain =
-    {
-      Font: 'bold 14px 宋体',
-      LastDataIcon: { Color: 'rgb(0,0,205)', Text: '⬇' },
-      BuyIcon: { Color: 'rgb(255,185, 15)', Text: '买' },
-      SellIcon: { Color: 'rgb(70,130,180)', Text: '卖' }
-    };
-
-  // //自定义风格
-  this.SetStyle = function (style) {
-    if (style.TooltipBGColor) this.TooltipBGColor = style.TooltipBGColor;
-    if (style.TooltipAlpha) this.TooltipAlpha = style.TooltipAlpha;
-    if (style.BGColor) this.BGColor = style.BGColor;
-    if (style.SelectRectBGColor) this.SelectRectBGColor = style.SelectRectBGColor;
-    if (style.UpBarColor) this.UpBarColor = style.UpBarColor;
-    if (style.DownBarColor) this.DownBarColor = style.DownBarColor;
-    if (style.UnchagneBarColor) this.UnchagneBarColor = style.UnchagneBarColor;
-    if (style.Minute) {
-      if (style.Minute.VolBarColor) this.Minute.VolBarColor = style.Minute.VolBarColor;
-      if (style.Minute.PriceColor) this.Minute.PriceColor = style.Minute.PriceColor;
-      if (style.Minute.AvPriceColor) this.Minute.AvPriceColor = style.Minute.AvPriceColor;
-    }
-    if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
-    if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;
-    if (style.DynamicTitleFont) this.DynamicTitleFont = style.DynamicTitleFont;
-    if (style.UpTextColor) this.UpTextColor = style.UpTextColor;
-    if (style.DownTextColor) this.DownTextColor = style.DownTextColor;
-    if (style.UnchagneTextColor) this.UnchagneTextColor = style.UnchagneTextColor;
-    if (style.CloseLineColor) this.CloseLineColor = style.CloseLineColor;
-    if (style.FrameBorderPen) this.FrameBorderPen = style.FrameBorderPen;
-    if (style.FrameSplitPen) this.FrameSplitPen = style.FrameSplitPen;
-    if (style.FrameSplitTextColor) this.FrameSplitTextColor = style.FrameSplitTextColor;
-    if (style.FrameSplitTextFont) this.FrameSplitTextFont = style.FrameSplitTextFont;
-    if (style.FrameTitleBGColor) this.FrameTitleBGColor = style.FrameTitleBGColor;
-    if (style.CorssCursorBGColor) this.CorssCursorBGColor = style.CorssCursorBGColor;
-    if (style.CorssCursorTextColor) this.CorssCursorTextColor = style.CorssCursorTextColor;
-    if (style.CorssCursorTextFont) this.CorssCursorTextFont = style.CorssCursorTextFont;
-    if (style.CorssCursorPenColor) this.CorssCursorPenColor = style.CorssCursorPenColor;
-    if (style.KLine) this.KLine = style.KLine;
-    if (style.Index) {
-      if (style.Index.LineColor) this.Index.LineColor = style.Index.LineColor;
-      if (style.Index.NotSupport) this.Index.NotSupport = style.Index.NotSupport;
-    }
-    if (style.ColorArray) this.ColorArray = style.ColorArray;
-    if (style.DrawPicture) {
-      this.DrawPicture.LineColor = style.DrawPicture.LineColor;
-      this.DrawPicture.PointColor = style.DrawPicture.PointColor;
-    }
-  }
-
-}
-
-
-var g_JSChartResource = new JSChartResource();
-
-
-
 /*
     指标列表 指标信息都在这里,不够后面再加字段
 */
@@ -11714,63 +10991,70 @@ function MinuteChartContainer(uielement) {
         });
     }
 
-  this.RecvMinuteData = function (data) {
-    var aryMinuteData = MinuteChartContainer.JsonDataToMinuteData(data.data);
-
-    if (this.DayCount > 1)    //多日走势图
+    this.RecvMinuteData = function (data) 
     {
-      this.UpdateLatestMinuteData(aryMinuteData, data.data.stock[0].date);
-      this.UpdateHistoryMinuteUI();
-      this.RequestOverlayMinuteData();    //更新最新叠加数据
-      if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
-      this.AutoUpdata();
-      return;
+        var aryMinuteData = MinuteChartContainer.JsonDataToMinuteData(data.data);
+
+        if (this.DayCount > 1)    //多日走势图
+        {
+            this.UpdateLatestMinuteData(aryMinuteData, data.data.stock[0].date);
+            this.UpdateHistoryMinuteUI();
+            this.RequestOverlayMinuteData();    //更新最新叠加数据
+            if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
+            this.AutoUpdata();
+            return;
+        }
+
+        //原始数据
+        var sourceData = new ChartData();
+        sourceData.Data = aryMinuteData;
+
+        this.TradeDate = data.data.stock[0].date;
+
+        this.SourceData = sourceData;
+        this.Symbol = data.data.stock[0].symbol;
+        this.Name = data.data.stock[0].name;
+        var yClose = data.data.stock[0].yclose;
+        var upperSymbol = this.Symbol.toUpperCase();
+        if (data.data.stock[0].yclearing && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) yClose = data.data.stock[0].yclearing; //期货使用前结算价
+        this.BindMainData(sourceData, yClose);
+
+        if (this.Frame.SubFrame.length > 2) 
+        {
+            var bindData = new ChartData();
+            bindData.Data = aryMinuteData;
+            for (var i = 2; i < this.Frame.SubFrame.length; ++i) 
+            {
+                this.BindIndexData(i, bindData);
+            }
+        }
+
+        for (let i in this.Frame.SubFrame)  //把股票代码设置到X轴刻度类里
+        {
+            var item = this.Frame.SubFrame[i];
+            item.Frame.XSplitOperator.Symbol = this.Symbol;
+            item.Frame.XSplitOperator.DayCount = 1;
+            item.Frame.XSplitOperator.Operator();   //调整X轴个数
+            item.Frame.YSplitOperator.Symbol = this.Symbol;
+        }
+
+        this.ChartCorssCursor.StringFormatY.Symbol = this.Symbol;
+        this.ChartCorssCursor.StringFormatX.Symbol = this.Symbol;
+
+        var chartInfo = this.GetChartMinuteInfo();
+        if (chartInfo) chartInfo.SourceData = this.SourceData;    //数据绑定到信息地雷上
+
+        this.RequestMinuteInfoData();
+        this.RequestOverlayMinuteData();//请求叠加数据 (主数据下载完再下载)
+
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+
+        if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
+
+        this.AutoUpdata();
     }
-
-    //原始数据
-    var sourceData = new ChartData();
-    sourceData.Data = aryMinuteData;
-
-    this.TradeDate = data.data.stock[0].date;
-
-    this.SourceData = sourceData;
-    this.Symbol = data.data.stock[0].symbol;
-    this.Name = data.data.stock[0].name;
-    var yClose = data.data.stock[0].yclose;
-    var upperSymbol = this.Symbol.toUpperCase();
-    if (data.data.stock[0].yclearing && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) yClose = data.data.stock[0].yclearing; //期货使用前结算价
-    this.BindMainData(sourceData, yClose);
-
-    if (this.Frame.SubFrame.length > 2) {
-      var bindData = new ChartData();
-      bindData.Data = aryMinuteData;
-      for (var i = 2; i < this.Frame.SubFrame.length; ++i) {
-        this.BindIndexData(i, bindData);
-      }
-    }
-
-    for (let i in this.Frame.SubFrame)  //把股票代码设置到X轴刻度类里
-    {
-      var item = this.Frame.SubFrame[i];
-      item.Frame.XSplitOperator.Symbol = this.Symbol;
-      item.Frame.XSplitOperator.DayCount = 1;
-      item.Frame.XSplitOperator.Operator();   //调整X轴个数
-      item.Frame.YSplitOperator.Symbol = this.Symbol;
-    }
-
-    this.ChartCorssCursor.StringFormatY.Symbol = this.Symbol;
-    this.ChartCorssCursor.StringFormatX.Symbol = this.Symbol;
-
-    this.RequestOverlayMinuteData();//请求叠加数据 (主数据下载完再下载)
-
-    this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-    this.Frame.SetSizeChage(true);
-    this.Draw();
-
-    if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
-
-    this.AutoUpdata();
-  }
 
     //请求叠加数据 (主数据下载完再下载))
     this.RequestOverlayMinuteData = function () 
@@ -12050,11 +11334,11 @@ function MinuteChartContainer(uielement) {
     return paint;
   }
 
-  //创建指定窗口指标
-  this.CreateWindowIndex = function (windowIndex) 
-  {
-    this.WindowIndex[windowIndex].Create(this, windowIndex);
-  }
+    //创建指定窗口指标
+    this.CreateWindowIndex = function (windowIndex) 
+    {
+        this.WindowIndex[windowIndex].Create(this, windowIndex);
+    }
 
     this.CreateExtendChart = function (name, option)   //创建扩展图形
     {
@@ -12074,6 +11358,75 @@ function MinuteChartContainer(uielement) {
             default:
                 return null;
         }
+    }
+
+    this.SetMinuteInfo = function (aryInfo, bUpdate) 
+    {
+        this.ChartInfo = [];  //先清空
+        for (var i in aryInfo) 
+        {
+            var infoItem = JSMinuteInfoMap.Get(aryInfo[i]);
+            if (!infoItem) continue;
+            var item = infoItem.Create();
+            this.ChartInfo.push(item);
+        }
+
+        if (bUpdate == true) this.RequestMinuteInfoData();
+    }
+
+    this.GetChartMinuteInfo = function () 
+    {
+        return this.ChartInfoPaint;
+    }
+
+    this.CreateMinuteInfo = function (option)  //在Create()以后 在调用
+    {
+        var chart = new ChartMinuteInfo();
+        chart.Canvas = this.Canvas;
+        chart.ChartBorder = this.Frame.SubFrame[0].Frame.ChartBorder;
+        chart.ChartFrame = this.Frame.SubFrame[0].Frame;
+        chart.ChartMinutePrice = this.ChartPaint[0];
+        if (option && chart.SetOption) chart.SetOption(option);
+        this.ChartInfoPaint = chart;
+        return chart;
+    }
+
+    //信息地雷数据请求
+    this.RequestMinuteInfoData = function () 
+    {
+        if (this.ChartInfo.length <= 0) return;
+
+        var chart = this.GetChartMinuteInfo();
+        if (!chart) chart = this.CreateMinuteInfo(null);  //不存在就创建 
+
+        chart.SourceData = this.SourceData;
+
+        //信息地雷信息
+        for (var i in this.ChartInfo) {
+            this.ChartInfo[i].RequestData(this);
+        }
+    }
+
+    //更新信息地雷
+    this.UpdataChartInfo = function () 
+    {
+        var chart = this.GetChartMinuteInfo();
+        if (!chart) return;
+
+        var infoMap = new Map();
+        for (var i in this.ChartInfo) 
+        {
+            var infoData = this.ChartInfo[i].Data;
+            for (var j in infoData) 
+            {
+                var item = infoData[j];
+                var dateTime = `${item.Date} ${item.Time}`;
+                if (infoMap.has(dateTime)) infoMap.get(dateTime).Data.push(item);
+                else infoMap.set(dateTime, { Data: new Array(item) });
+            }
+        }
+
+        chart.Data = infoMap;
     }
 }
 
