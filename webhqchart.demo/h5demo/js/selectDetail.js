@@ -710,6 +710,7 @@ $(function () {
                     showMinuteDOM.dataset['id'] = selectOneObj.id;
                     showMinuteDOM.dataset['value'] = selectOneObj.value;
                     $(".minuteWrap").hide();
+                    $(".fiveDayMinuteWrap").hide();
                     var period = parseInt(selectOneObj.id);
                     updateHistoryChart(period);
                     $(showMinuteDOM).addClass("active").siblings().removeClass("active");
