@@ -1778,6 +1778,7 @@ function JSStock()
             {
                 Name:'JSStock::RequestBaseData', //类名::方法
                 Explain:'股票基础数据',
+                ID:RECV_DATA_TYPE.BASE_DATA,
                 Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
                 Self:this,
                 PreventDefault:false
@@ -1821,6 +1822,7 @@ function JSStock()
             {
                 Name:'JSStock::RequestDerivativeData', //类名::方法
                 Explain:'实时衍生数据',
+                ID:RECV_DATA_TYPE.DERIVATIVE_DATA,
                 Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
                 Self:this,
                 PreventDefault:false
@@ -1865,6 +1867,7 @@ function JSStock()
             {
                 Name:'JSStock::RequestFinanceData', //类名::方法
                 Explain:'财务数据',
+                ID:RECV_DATA_TYPE.FINANCE_DATA,
                 Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
                 Self:this,
                 PreventDefault:false
@@ -1909,6 +1912,7 @@ function JSStock()
             {
                 Name:'JSStock::RequestBuySellData', //类名::方法
                 Explain:'买卖盘数据',
+                ID:RECV_DATA_TYPE.BUY_SELL_DATA,
                 Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
                 Self:this,
                 PreventDefault:false
@@ -1953,6 +1957,7 @@ function JSStock()
             {
                 Name:'JSStock::RequestDealData', //类名::方法
                 Explain:'分笔数据',
+                ID:RECV_DATA_TYPE.DEAL_DATA,
                 Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
                 Self:this,
                 PreventDefault:false
@@ -1996,6 +2001,7 @@ function JSStock()
             {
                 Name:'JSStock::RequestIndexBaseData', //类名::方法
                 Explain:'指数基础数据(包含上涨下跌家数)',
+                ID:RECV_DATA_TYPE.INDEX_BASE_DATA,
                 Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
                 Self:this,
                 PreventDefault:false
@@ -2105,6 +2111,7 @@ function JSStock()
             {
                 Name:'JSStock::ReqeustSortData', //类名::方法
                 Explain:'板块排序数据',
+                ID:RECV_DATA_TYPE.SORT_DATA,
                 Request:{ Url:self.RealtimeApiUrl, 
                     Data:{ field:field, plate: [sortItem.Plate] , orderfield:sortFiled, order:sortItem.Order,ordernull:1, filterstop:1 }, 
                     Type:'POST' }, 
