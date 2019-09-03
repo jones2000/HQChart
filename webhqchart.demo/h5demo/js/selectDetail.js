@@ -156,7 +156,7 @@ function LoadEnvironment() {
     JSEnvironment.MinuteOption = {
         Type: '分钟走势图', //历史分钟走势图
         Symbol: JSEnvironment.Symbol,
-        IsAutoUpate: true, //是自动更新数据
+        IsAutoUpdate: true, //是自动更新数据
 
         IsShowRightMenu: false, //右键菜单
         //IsShowCorssCursorInfo: false, //是否显示十字光标的刻度信息
@@ -186,7 +186,7 @@ function LoadEnvironment() {
     JSEnvironment.FiveDMinuteOption = {
         Type: '分钟走势图',
         Symbol: JSEnvironment.Symbol,
-        IsAutoUpate: true, //是自动更新数据
+        IsAutoUpdate: true, //是自动更新数据
 
         IsShowRightMenu: false, //右键菜单
         //IsShowCorssCursorInfo: false, //是否显示十字光标的刻度信息
@@ -225,7 +225,8 @@ function LoadEnvironment() {
             //{Index:"放心股-量能黄金点"},
         ], //窗口指标
         Symbol: JSEnvironment.Symbol,
-        IsAutoUpate: true, //是自动更新数据
+        IsAutoUpdate: true, //是自动更新数据
+        AutoUpdateFrequency:5000,
         CorssCursorTouchEnd:true,
 
         IsShowRightMenu: false, //右键菜单
