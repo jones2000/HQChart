@@ -1,4 +1,17 @@
 /*
+   Copyright (c) 2018 jones
+ 
+    http://www.apache.org/licenses/LICENSE-2.0
+
+   开源项目 https://github.com/jones2000/HQChart
+ 
+   jones_2000@163.com
+
+   系统指标 (H5版本)
+*/
+
+
+/*
     指标数据脚本 系统内置指标都写在这里
     Name：指标名字
     Description：指标描述信息
@@ -82,6 +95,7 @@ function JSIndexScript()
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
             ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],['量比',this.VOLRate],
+            ['平均K线',this.HeikinAshi],
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
@@ -3249,6 +3263,24 @@ DRAWKLINE_IF(VR17<VR18,HIGH,CLOSE,LOW,OPEN),COLORBLUE;\n\
 \n\
 INDEXCLOSE:INDEXC,EXDATA;		//取指数的收盘价 回测的时候计算BATE系数用 "
     };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.HeikinAshi=function()
+{
+    let data =
+    {
+        Name: '平均K线', Description: 'Heikin-Ashi 平均K线', IsMainIndex: true, KLineType:-1,
+        Args: [],
+        Script: //脚本
+"HCLOSE:(OPEN+HIGH+LOW+CLOSE)/4, NODRAW;\n\
+HOPEN:(REF(OPEN,1)+REF(CLOSE,1))/2,NODRAW;\n\
+HHIGH:MAX(HIGH,MAX(HOPEN,HCLOSE)),NODRAW;\n\
+HLOW:MIN(LOW,MIN(HOPEN,HCLOSE)),NODRAW;\n\
+DRAWKLINE(HHIGH,HOPEN,HLOW,HCLOSE);"
+    }
 
     return data;
 }

@@ -1,6 +1,15 @@
 /*
-    封装图形控件
+   Copyright (c) 2018 jones
+ 
+    http://www.apache.org/licenses/LICENSE-2.0
+
+   开源项目 https://github.com/jones2000/HQChart
+ 
+   jones_2000@163.com
+
+   封装行情类图形控件 (H5版本)
 */
+
 
 function JSChart(divElement)
 {
