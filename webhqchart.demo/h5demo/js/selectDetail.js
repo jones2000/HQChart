@@ -266,7 +266,14 @@ function LoadEnvironment() {
         [
             {Name:'KLineTooltip' }  //手机端tooltip
         ],
+
+        NetworkFilter:NetworkFilter,
     };
+}
+
+function NetworkFilter(data, callback)
+{
+    console.log('[NetworkFilter] data', data);
 }
 
 
