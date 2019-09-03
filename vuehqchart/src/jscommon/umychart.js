@@ -21533,7 +21533,7 @@ function KLineChartContainer(uielement)
             };
             this.NetworkFilter(obj, function(data) 
             { 
-                self.RecvFlowCapitalData(recvData);
+                self.RecvFlowCapitalData(data);
             });
 
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
