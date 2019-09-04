@@ -1632,7 +1632,7 @@ function JSStock()
     this.AutoUpateTimeout=15000;    //更新频率
     this.Timeout;
 
-    this.IsWechatApp=false; //是否是小程序模式
+    this.NetworkFilter;         //网络过滤接口 function(data, callback)
 
     this.GetStockRead=function(tagID,callback)
     {
@@ -1769,29 +1769,33 @@ function JSStock()
     this.RequestBaseData=function(arySymbol)
     {
         var self=this;
+        var field= ["name","symbol","yclose","open","price","high","low","vol",
+            "amount","date","time","week","increase","exchangerate","amplitude"];
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSStock::RequestBaseData', //类名::方法
+                Explain:'股票基础数据',
+                ID:RECV_DATA_TYPE.BASE_DATA,
+                Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvData(data,RECV_DATA_TYPE.BASE_DATA);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
        
         $.ajax({
             url: this.RealtimeApiUrl,
             data:
             {
-                "field": [
-                    "name",
-                    "symbol",
-                    "yclose",
-                    "open",
-                    "price",
-                    "high",
-                    "low",
-                    "vol",
-                    "amount",
-                    "date",
-                    "time",
-                    "week",
-                    "increase",
-                    "exchangerate",
-                    "amplitude"
-                ],
-                "symbol": arySymbol,
+                "field": field,"symbol": arySymbol,
             },
             type:"post",
             dataType: "json",
@@ -1811,22 +1815,31 @@ function JSStock()
     this.RequestDerivativeData=function(arySymbol)
     {
         var self=this;
+        var field= ["name","symbol","marketvalue","flowmarketvalue","pe","pb","bookrate","bookdiffer"];
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSStock::RequestDerivativeData', //类名::方法
+                Explain:'实时衍生数据',
+                ID:RECV_DATA_TYPE.DERIVATIVE_DATA,
+                Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvData(data,RECV_DATA_TYPE.DERIVATIVE_DATA);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
        
         $.ajax({
             url: this.RealtimeApiUrl,
             data:
             {
-                "field": [
-                    "name",
-                    "symbol",
-                    "marketvalue",
-                    "flowmarketvalue",
-                    "pe",
-                    "pb",
-                    "bookrate",
-                    "bookdiffer",
-                ],
-                "symbol": arySymbol,
+                "field":field,"symbol": arySymbol,
             },
             type:"post",
             dataType: "json",
@@ -1846,18 +1859,32 @@ function JSStock()
     this.RequestFinanceData=function(arySymbol)
     {
         var self=this;
+        var field= ["name","symbol","roe","finance"];
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSStock::RequestFinanceData', //类名::方法
+                Explain:'财务数据',
+                ID:RECV_DATA_TYPE.FINANCE_DATA,
+                Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvData(data,RECV_DATA_TYPE.FINANCE_DATA);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
        
         $.ajax({
             url: this.RealtimeApiUrl,
             data:
             {
-                "field": [
-                    "name",
-                    "symbol",
-                    "roe",
-                    "finance"
-                ],
-                "symbol": arySymbol,
+                "field": field,"symbol": arySymbol,
             },
             type:"post",
             dataType: "json",
@@ -1876,32 +1903,33 @@ function JSStock()
      //请求买卖盘
      this.RequestBuySellData=function(arySymbol)
      {
-         var self=this;
+        var self=this;
+        var field=["name","symbol","yclose","open","price","high","low","vol","amount",
+            "date","time","week","increase","buy","sell","exchangerate","amplitude"];
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSStock::RequestBuySellData', //类名::方法
+                Explain:'买卖盘数据',
+                ID:RECV_DATA_TYPE.BUY_SELL_DATA,
+                Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvData(data,RECV_DATA_TYPE.BUY_SELL_DATA);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
         
          $.ajax({
              url: this.RealtimeApiUrl,
              data:
              {
-                 "field": [
-                     "name",
-                     "symbol",
-                     "yclose",
-                     "open",
-                     "price",
-                     "high",
-                     "low",
-                     "vol",
-                     "amount",
-                     "date",
-                     "time",
-                     "week",
-                     "increase",
-                     "buy",
-                     "sell",
-                     "exchangerate",
-                     "amplitude"
-                 ],
-                 "symbol": arySymbol,
+                 "field": field,"symbol": arySymbol,
              },
              type:"post",
              dataType: "json",
@@ -1920,67 +1948,77 @@ function JSStock()
      //请求分笔
      this.RequestDealData=function(arySymbol)
      {
-         var self=this;
+        var self=this;
+        var field=["name","symbol","price","high","low","vol","amount","date","time","increase","deal"];
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSStock::RequestDealData', //类名::方法
+                Explain:'分笔数据',
+                ID:RECV_DATA_TYPE.DEAL_DATA,
+                Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvData(data,RECV_DATA_TYPE.DEAL_DATA);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
         
-         $.ajax({
-             url: this.RealtimeApiUrl,
-             data:
-             {
-                 "field": [
-                     "name",
-                     "symbol",
-                     "price",
-                     "high",
-                     "low",
-                     "vol",
-                     "amount",
-                     "date",
-                     "time",
-                     "increase",
-                     "deal",
-                 ],
-                 "symbol": arySymbol,
-             },
-             type:"post",
-             dataType: "json",
-             async:true,
-             success: function (data)
-             {
-                 self.RecvData(data,RECV_DATA_TYPE.DEAL_DATA);
-             },
-             error:function(request)
-             {
-                 self.RecvError(request,RECV_DATA_TYPE.DEAL_DATA);
-             }
-         });
+        $.ajax({
+            url: this.RealtimeApiUrl,
+            data:
+            {
+                "field": field, "symbol": arySymbol
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                self.RecvData(data,RECV_DATA_TYPE.DEAL_DATA);
+            },
+            error:function(request)
+            {
+                self.RecvError(request,RECV_DATA_TYPE.DEAL_DATA);
+            }
+        });
      }
 
     //指数基础数据(包含上涨下跌家数)
     this.RequestIndexBaseData=function(arySymbol)
     {
         var self=this;
+        var field= ["name", "symbol", "yclose", "open","price","high","low","vol","amount","date","time","week","indextop","increase"];
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSStock::RequestIndexBaseData', //类名::方法
+                Explain:'指数基础数据(包含上涨下跌家数)',
+                ID:RECV_DATA_TYPE.INDEX_BASE_DATA,
+                Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvData(data,RECV_DATA_TYPE.INDEX_BASE_DATA);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
        
         $.ajax({
             url: this.RealtimeApiUrl,
             data:
             {
-                "field": [
-                    "name",
-                    "symbol",
-                    "yclose",
-                    "open",
-                    "price",
-                    "high",
-                    "low",
-                    "vol",
-                    "amount",
-                    "date",
-                    "time",
-                    "week",
-                    "indextop",
-                    "increase"
-                ],
-                "symbol": arySymbol,
+                "field":field,"symbol": arySymbol,
             },
             type:"post",
             dataType: "json",
@@ -2064,27 +2102,35 @@ function JSStock()
             default:
                 return;
         }
+
+        var field= ["name","symbol","yclose","open","price","high","low","vol","amount","date","time", "week", "increase", "exchangerate"];
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSStock::ReqeustSortData', //类名::方法
+                Explain:'板块排序数据',
+                ID:RECV_DATA_TYPE.SORT_DATA,
+                Request:{ Url:self.RealtimeApiUrl, 
+                    Data:{ field:field, plate: [sortItem.Plate] , orderfield:sortFiled, order:sortItem.Order,ordernull:1, filterstop:1 }, 
+                    Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvData(data,RECV_DATA_TYPE.SORT_DATA,sortData);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
         
         $.ajax({
             url: this.RealtimeApiUrl,
             data:
             {
-                "field": [
-                    "name",
-                    "symbol",
-                    "yclose",
-                    "open",
-                    "price",
-                    "high",
-                    "low",
-                    "vol",
-                    "amount",
-                    "date",
-                    "time",
-                    "week",
-                    "increase",
-                    "exchangerate"
-                ],
+                "field":field,
                 "plate": [sortItem.Plate],
                 "orderfield":sortFiled,
                 "order":sortItem.Order,
@@ -2122,6 +2168,25 @@ function JSStock()
 
         if (!mapDay.has(id)) return;
         var value = mapDay.get(id);
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSStock::RequestSubDocumentData', //类名::方法
+                Explain:'子文档数据',
+                ID:value.RecvID,
+                Request:{ Url:self.RealtimeApiUrl, Data:{ field:["symbol",value.Field], symbol:arySymbol, start:0, end:50  }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvData(data, value.RecvID);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
 
         $.ajax({
             url: this.RealtimeApiUrl,
@@ -2707,7 +2772,7 @@ function SearchStock(callback)
     {
         if (this.SearchString==input && this.SearchType==type)
         {
-
+            if (typeof(this.UpdateUICallback)=='function') this.UpdateUICallback(this);
         }
         else
         {
