@@ -1811,6 +1811,7 @@ function JSChartContainer(uielement)
             }
         }
 
+        
         for(var i in this.TitlePaint)
         {
             var item=this.TitlePaint[i];
@@ -1869,6 +1870,7 @@ function JSChartContainer(uielement)
                 isErase=true;
         }
 
+        isErase=true;   //每次都擦除背景
         if (isErase==false)
         {
             for(var i in this.ExtendChartPaint)

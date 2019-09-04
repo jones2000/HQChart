@@ -5488,7 +5488,8 @@ function JSDraw(errorHandler,symbolData)
                 [13,{Symbol:'B',Color:'rgb(178,34,34)'}, ],[14,{Symbol:'S',Color:'rgb(0,139,69)'} ],
                 [36,{Symbol:'Χ',Color:'rgb(238,44,44)'} ],[37,{Symbol:'X',Color:'rgb(0,139,69)'} ],
                 [38,{Symbol:'▲',Color:'rgb(238,44,44)'} ],[39,{Symbol:'▼',Color:'rgb(0,139,69)'} ],
-                [40,{Symbol:'◉',Color:'rgb(238,44,44)'}], [41,{Symbol:'◈',Color:'rgb(238,44,44)'}]
+                [40,{Symbol:'◉',Color:'rgb(238,44,44)'}], [41,{Symbol:'◈',Color:'rgb(238,44,44)'}],
+                [42,{Symbol:'📌'}], [43,{Symbol:'💎'}], [44,{Symbol:'🥇'}],[45,{Symbol:'🥈'}],[46,{Symbol:'🥉'}],[47,{Symbol:'🏅'}]
             ]);
 
             icon=mapIcon.get(type);

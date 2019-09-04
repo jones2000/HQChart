@@ -5116,6 +5116,7 @@ function JSChartContainer(uielement)
             }
         }
 
+        
         for(var i in this.TitlePaint)
         {
             var item=this.TitlePaint[i];
@@ -5174,6 +5175,7 @@ function JSChartContainer(uielement)
                 isErase=true;
         }
 
+        isErase=true;   //每次都擦除背景
         if (isErase==false)
         {
             for(var i in this.ExtendChartPaint)
@@ -24838,7 +24840,7 @@ function KLineChartContainer(uielement)
             };
             this.NetworkFilter(obj, function(data) 
             { 
-                self.RecvFlowCapitalData(recvData);
+                self.RecvFlowCapitalData(data);
             });
 
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
@@ -40326,7 +40328,8 @@ function JSDraw(errorHandler,symbolData)
                 [13,{Symbol:'B',Color:'rgb(178,34,34)'}, ],[14,{Symbol:'S',Color:'rgb(0,139,69)'} ],
                 [36,{Symbol:'Χ',Color:'rgb(238,44,44)'} ],[37,{Symbol:'X',Color:'rgb(0,139,69)'} ],
                 [38,{Symbol:'▲',Color:'rgb(238,44,44)'} ],[39,{Symbol:'▼',Color:'rgb(0,139,69)'} ],
-                [40,{Symbol:'◉',Color:'rgb(238,44,44)'}], [41,{Symbol:'◈',Color:'rgb(238,44,44)'}]
+                [40,{Symbol:'◉',Color:'rgb(238,44,44)'}], [41,{Symbol:'◈',Color:'rgb(238,44,44)'}],
+                [42,{Symbol:'📌'}], [43,{Symbol:'💎'}], [44,{Symbol:'🥇'}],[45,{Symbol:'🥈'}],[46,{Symbol:'🥉'}],[47,{Symbol:'🏅'}]
             ]);
 
             icon=mapIcon.get(type);
