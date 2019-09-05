@@ -98,6 +98,7 @@
 * [走势图-大盘异动](https://opensource.zealink.com/hqweb/demo/phone23.html) <br>
 
 # 4.使用教程
+## H5教程
 1. [HQChart使用教程1- 如何快速创建一个K线图页面](https://blog.csdn.net/jones2000/article/details/90272733) <br>
 2. [HQChart使用教程2- 如何把自定义指标显示在K线图页面](https://blog.csdn.net/jones2000/article/details/90273684) <br>
 3. [HQChart使用教程3- 如何把指标上锁显示在K线图页面](https://blog.csdn.net/jones2000/article/details/90285723) <br>
@@ -144,7 +145,7 @@
 3. [HQChart使用教程30-K线图如何对接第3方数据3-1分钟K数据](https://blog.csdn.net/jones2000/article/details/100557649) <br>
 
 
-**设计文档:**
+## 设计文档:
 1. [如何(c++,js)写一个传统的K线图和走势图1](https://blog.csdn.net/jones2000/article/details/84779481) <br>
 2. [如何(c++,js)写一个传统的K线图和走势图2-走势图](https://blog.csdn.net/jones2000/article/details/84840770) <br>
 3. [如何(c++,js)写一个传统的K线图和走势图3-多指标窗口模式如何实现的](https://blog.csdn.net/jones2000/article/details/84979910) <br>
