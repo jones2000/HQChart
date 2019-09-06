@@ -10446,6 +10446,16 @@ function APIScriptIndex(name,script,args,option)
     {
         console.log('[APIScriptIndex::ExecuteScript] name, Arguments ', this.Name,this.Arguments );
 
+        var args=[];
+        if (this.Arguments)
+        {
+            for(var i in this.Arguments)
+            {
+                var item=this.Arguments[i];
+                args.push({name:item.Name, value:item.Value});
+            }
+        }
+
         var self=this;
         if (hqChart.NetworkFilter)
         {
@@ -10453,7 +10463,7 @@ function APIScriptIndex(name,script,args,option)
             {
                 Name:'APIScriptIndex::ExecuteScript', //类名::
                 Explain:'指标计算',
-                Request:{ Url:self.ApiUrl,  Type:'POST', Data: { indexname:this.Name,  symbol: hqChart.Symbol, args:this.Arguments,
+                Request:{ Url:self.ApiUrl,  Type:'POST', Data: { indexname:this.Name,  symbol: hqChart.Symbol, args:args,
                     period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount } }, 
                 Self:this,
                 PreventDefault:false
@@ -10468,7 +10478,7 @@ function APIScriptIndex(name,script,args,option)
 
         JSNetwork.HttpReqeust({
             url: self.ApiUrl,
-            data:{ indexname:this.Name,  symbol: hqChart.Symbol, args:this.Arguments, 
+            data:{ indexname:this.Name,  symbol: hqChart.Symbol, args:args, 
                 period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount }, 
             type:"post",
             dataType: "json",
@@ -10486,9 +10496,21 @@ function APIScriptIndex(name,script,args,option)
 
     this.RecvAPIData=function(data,hqChart,windowIndex,hisData)
     {
+        console.log('[APIScriptIndex::RecvAPIData] recv data ', this.Name,data );
         if (data.code!=0) return;
 
+        this.Arguments=[];
+        if (data.outdata.args)
+        {
+            for(var i in data.outdata.args)
+            {
+                var item= data.outdata.args[i];
+                this.Arguments.push({Name:item.name, Value:item.value});
+            }
+        }
+
         this.OutVar=this.FittingData(data.outdata,hqChart);
+        console.log('[APIScriptIndex::RecvAPIData] conver to OutVar ', this.OutVar);
         this.BindData(hqChart,windowIndex,hisData);
 
         if (this.IsLocked==false) //不上锁

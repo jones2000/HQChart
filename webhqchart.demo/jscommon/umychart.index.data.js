@@ -95,7 +95,8 @@ function JSIndexScript()
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
             ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],['量比',this.VOLRate],
-            ['平均K线',this.HeikinAshi],
+            ['平均K线',this.HeikinAshi], 
+            ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
@@ -3285,7 +3286,18 @@ DRAWKLINE(HHIGH,HOPEN,HLOW,HCLOSE);"
     return data;
 }
 
+JSIndexScript.prototype.EMPTY = function () 
+{
+    let data =
+    {
+        Name: '', Description: '空指标', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'VAR2:=C;'
+    };
 
+    return data;
+}
 
 
 JSIndexScript.prototype.TEST = function () 

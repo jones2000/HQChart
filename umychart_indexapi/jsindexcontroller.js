@@ -90,7 +90,7 @@ function JSIndexController(req,res,next)
             for(var i in postData.args) //变量全部转成大写
             {
                 var item=postData.args[i];
-                if (item.ame) this.Args.push({Name:item.name, Value:parseFloat(item.value)});  //变量值转数值型
+                if (item.name) this.Args.push({Name:item.name, Value:parseFloat(item.value)});  //变量值转数值型
             }
         }
         else if (indexInfo.Args)
@@ -152,6 +152,16 @@ function JSIndexController(req,res,next)
         if(data.Time) this.OutData.time=data.Time;
         this.OutData.stock={ name:data.Stock.Name, symbol:data.Stock.Symbol };
 
+        this.OutData.args=[];
+        if (this.Args)
+        {
+            for(var i in this.Args)
+            {
+                var item=this.Args[i];
+                this.OutData.args.push({name:item.Name, value:item.Value});
+            }
+        }
+
         for(var i in data.Out)
         {
             var item=data.Out[i];
@@ -162,6 +172,7 @@ function JSIndexController(req,res,next)
             if (item.IsExData==true) value.isexdata = true;
             this.OutData.outvar.push(outItem);
         }
+
 
         this.SendResult();
     }
