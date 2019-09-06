@@ -90,7 +90,15 @@ function JSIndexController(req,res,next)
             for(var i in postData.args) //变量全部转成大写
             {
                 var item=postData.args[i];
-                if (item.name) this.Args.push({Name:item.name, Value:parseFloat(item.value)});  //变量值转数值型
+                if (item.ame) this.Args.push({Name:item.name, Value:parseFloat(item.value)});  //变量值转数值型
+            }
+        }
+        else if (indexInfo.Args)
+        {
+            for(var i in indexInfo.Args) //变量全部转成大写
+            {
+                var item=indexInfo.Args[i];
+                if (item.Name) this.Args.push({Name:item.Name, Value:item.Value});  //变量值转数值型
             }
         }
 
@@ -147,7 +155,12 @@ function JSIndexController(req,res,next)
         for(var i in data.Out)
         {
             var item=data.Out[i];
-            this.OutData.outvar.push({name:item.Name, data:item.Data});
+            var outItem={name:item.Name, data:item.Data, type:item.Type};
+            if (item.Color) value.color=item.Color;
+            if (item.LineWidth) value.linewidth=item.LineWidth;
+            if (item.IsShow==false) value.isshow = false;
+            if (item.IsExData==true) value.isexdata = true;
+            this.OutData.outvar.push(outItem);
         }
 
         this.SendResult();

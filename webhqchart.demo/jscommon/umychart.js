@@ -261,6 +261,11 @@ function JSChart(divElement)
             {
                 chart.WindowIndex[i]=new LocalJsonDataIndex(item.Local.Name,item.Local.Args,{JsonData:item.Local.Data});
             }
+            else if (item.API)  //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
+            {
+                var apiItem=item.API;
+                chart.WindowIndex[i]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,item);
+            }
             else
             {
                 let indexItem=JSIndexMap.Get(item.Index);
@@ -460,6 +465,8 @@ function JSChart(divElement)
                 if (!chart.Frame.SubFrame[i]) continue;
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
+                if (item.IsShowLeftText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
+                if (item.IsShowRightText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度 
             }
         }
 
@@ -9767,6 +9774,7 @@ function ChartMinuteInfo()
         if (!infoItem  || !infoItem.Data || infoItem.Data.length<=0) return;
 
         var showItem=infoItem.Data[0];
+        this.Canvas.font = this.Font;
         var textWidth=this.Canvas.measureText(showItem.Title).width+4*this.PixelTatio;
         var textHeight=this.TextHeight*this.PixelTatio;
 
@@ -9805,6 +9813,7 @@ function ChartMinuteInfo()
         if (!infoItem  || !infoItem.Data || infoItem.Data.length<=0) return;
 
         var showItem=infoItem.Data[0];
+        this.Canvas.font = this.Font;
         var textHeight=this.Canvas.measureText(showItem.Title).width+4*this.PixelTatio;
         var textWidth=this.TextHeight*this.PixelTatio;
 
@@ -13458,14 +13467,14 @@ function FrameSplitMinutePriceY()
             var price=min+(distance*i);
             this.Frame.HorizontalInfo[i]= new CoordinateInfo();
             this.Frame.HorizontalInfo[i].Value=price;
-            this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(defaultfloatPrecision);
+            if (this.IsShowLeftText) this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(defaultfloatPrecision);
 
             if (this.YClose)
             {
                 var per=(price/this.YClose-1)*100;
                 if (per>0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.UpTextColor;
                 else if (per<0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.DownTextColor;
-                this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
+                if (this.IsShowRightText) this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
             }
         }
 
@@ -21529,7 +21538,7 @@ function KLineChartContainer(uielement)
             {
                 Name:'KLineChartContainer::RequestFlowCapitalData', //类名::
                 Explain:'流通股本数据',
-                Request:{ Url:self.KLineApiUrl, Data: { symbol: [this.Symbol], orderfield:'date',field:fieldList }, Type:'POST' }, 
+                Request:{ Url:self.StockHistoryDayApiUrl, Data: { symbol: [this.Symbol], orderfield:'date',field:fieldList }, Type:'POST' }, 
                 Self:this,
                 PreventDefault:false
             };

@@ -5795,7 +5795,9 @@ function JSSymbolData(ast,option,jsExecute)
     this.ExtendData=new Map();          //其他的扩展数据
 
     this.SectionFinanceData=new Map();  //截面报告数据
-    this.ThrowSFPeirod=new Set();             //重新获取数据
+    this.ThrowSFPeirod=new Set();       //重新获取数据
+
+    this.NetworkFilter;                 //网络请求回调 function(data, callback);
     
    
     //使用option初始化
@@ -5821,7 +5823,8 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.KLineApiUrl) this.KLineApiUrl=option.KLineApiUrl;
         if (option.Right) this.Right=option.Right;
         if (option.Period) this.Period=option.Period;
-        if (option.IsBeforeData===true) this.IsBeforeData=option.IsBeforeData
+        if (option.IsBeforeData===true) this.IsBeforeData=option.IsBeforeData;
+        if (option.NetworkFilter) this.NetworkFilter=option.NetworkFilter;
     }
 
     this.RecvError=function(request)
@@ -5836,6 +5839,27 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.LatestData) return this.Execute.RunNextJob();
 
         var self=this;
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSSymbolData::GetLatestData', //类名::
+                Explain:'DYNAINFO()',
+                Request:{ Url:self.RealtimeApiUrl,  Type:'POST' ,
+                    Data: { symbol:[this.Symbol], field: ["name","symbol","yclose","open","price","high","low","vol","amount","date","time","increase","exchangerate","amplitude"] } }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvLatestData(data);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         JSNetwork.HttpReqeust({
             url: self.RealtimeApiUrl,
             data:
@@ -5976,8 +6000,30 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.IndexData) return this.Execute.RunNextJob();
 
         var self=this;
-        if (this.Period<=3)     //请求日线数据
+        if (this.Period<=3 || this.Period==9)     //请求日线数据 9=季线
         {
+            if (this.NetworkFilter)
+            {
+                var obj=
+                {
+                    Name:'JSSymbolData::GetIndexData', //类名::
+                    Explain:'大盘数据',
+                    Period:self.Period,
+                    Request:{ Url:self.KLineApiUrl,  Type:'POST' ,
+                        Data: { field:[ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
+                            symbol: '000001.sh', start: -1 , count: self.MaxRequestDataCount+500 } },
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvIndexHistroyData(data);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
             JSNetwork.HttpReqeust({
                 url: self.KLineApiUrl,
                 data:
@@ -6003,6 +6049,28 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else            //请求分钟数据
         {
+            if (this.NetworkFilter)
+            {
+                var obj=
+                {
+                    Name:'JSSymbolData::GetIndexData', //类名::
+                    Explain:'大盘数据',
+                    Period:self.Period,
+                    Request:{ Url:self.MinuteKLineApiUrl,  Type:'POST' ,
+                        Data: { field:["name","symbol","yclose","open","price","high","low","vol"],
+                            symbol: '000001.sh', start: -1 , count: self.MaxRequestDataCount+5 } },
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvIndexMinuteHistroyData(data);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
             JSNetwork.HttpReqeust({
                 url: self.MinuteKLineApiUrl,
                 data:
@@ -6546,8 +6614,29 @@ function JSSymbolData(ast,option,jsExecute)
                 break;
         }
 
-         //请求数据
-         $.ajax({
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSSymbolData::GetFinanceData', //类名::
+                Explain:'财务数据',
+                JobID:jobID,
+                Request:{ Url:self.StockHistoryDayApiUrl,  Type:'POST' ,
+                    Data:{ field: fieldList, symbol: [this.Symbol], orderfield:"date" }, },
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvFinanceData(data,jobID);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        //请求数据
+        $.ajax({
             url: this.StockHistoryDayApiUrl,
             data:
             {
@@ -9061,6 +9150,7 @@ function ScriptIndex(name,script,args,option)
         };
 
         if (hqDataType===3) option.TrateDate=hqChart.TradeDate;
+        if (hqChart.NetworkFilter) option.NetworkFilter=hqChart.NetworkFilter;
 
         if (this.Condition && !this.IsMeetCondition(param,option))
         {
@@ -10345,14 +10435,126 @@ function APIScriptIndex(name,script,args,option)
     this.newMethod(name,script,args,option);
     delete this.newMethod;
 
-    this.ExecuteScript=function(hqChart,windowIndex,hisData)
+    this.ApiUrl;    //指标执行api地址
+
+    if (option.API) 
     {
-        
+        if (option.API.Url) this.ApiUrl=option.API.Url;
     }
 
-    this.RecvAPIData=function(data)
+    this.ExecuteScript=function(hqChart,windowIndex,hisData)
     {
+        console.log('[APIScriptIndex::ExecuteScript] name, Arguments ', this.Name,this.Arguments );
 
+        var self=this;
+        if (hqChart.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'APIScriptIndex::ExecuteScript', //类名::
+                Explain:'指标计算',
+                Request:{ Url:self.ApiUrl,  Type:'POST', Data: { indexname:this.Name,  symbol: hqChart.Symbol, args:this.Arguments,
+                    period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount } }, 
+                Self:this,
+                PreventDefault:false
+            };
+            hqChart.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvAPIData(data,hqChart,windowIndex,hisData);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        JSNetwork.HttpReqeust({
+            url: self.ApiUrl,
+            data:{ indexname:this.Name,  symbol: hqChart.Symbol, args:this.Arguments, 
+                period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount }, 
+            type:"post",
+            dataType: "json",
+            async:true, 
+            success: function (recvData)
+            {
+                self.RecvAPIData(recvData,hqChart,windowIndex,hisData);
+            },
+            error: function(request)
+            {
+                self.RecvError(request);
+            }
+        });
+    }
+
+    this.RecvAPIData=function(data,hqChart,windowIndex,hisData)
+    {
+        if (data.code!=0) return;
+
+        this.OutVar=this.FittingData(data.outdata,hqChart);
+        this.BindData(hqChart,windowIndex,hisData);
+
+        if (this.IsLocked==false) //不上锁
+        {
+            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
+        }
+        else    //上锁
+        {
+            let lockData={ IsLocked:true,Callback:this.LockCallback,IndexName:this.Name ,ID:this.LockID,
+                BG:this.LockBG,Text:this.LockText,TextColor:this.LockTextColor, Font:this.LockFont, Count:this.LockCount, MinWidth:this.LockMinWidth };
+            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
+        }
+
+        hqChart.UpdataDataoffset();           //更新数据偏移
+        hqChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        hqChart.Draw();
+
+        if (hqChart.GetIndexEvent)
+        {
+            var event=hqChart.GetIndexEvent();  //指标计算完成回调
+            if (event)
+            {
+                var self=param.Self;
+                var data={ OutVar:self.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData, 
+                        Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
+                event.Callback(event,data,this);
+            }
+        }
+    }
+
+    this.FittingData=function(jsonData, hqChart)
+    {
+        outVar=jsonData.outvar;
+        date=jsonData.date;
+        time=jsonData.time;
+        var kdata=hqChart.ChartPaint[0].Data;
+
+        //把数据拟合到kdata上
+        result=[];
+        
+        for(i in outVar)
+        {
+            item=outVar[i];
+            var indexData=[];
+            outVarItem={Name:item.name,Type:item.type}
+            for(j in item.data)
+            {
+                var indexItem=new SingleData(); //单列指标数据
+                indexItem.Date=date[j];
+                if (time && j<time.length) indexItem.Time=time[j];
+                indexItem.Value=item.data[j];
+                indexData.push(indexItem);
+            }
+
+            if (ChartData.IsDayPeriod(hqChart.Period))
+                var aryFittingData=kdata.GetFittingData(indexData); //数据和主图K线拟合
+            else
+                var aryFittingData=kdata.GetMinuteFittingData(indexData); //数据和主图K线拟合
+
+            var bindData=new ChartData();
+            bindData.Data=aryFittingData;
+            outVarItem.Data=bindData.GetValue();
+            result.push(outVarItem)
+        }
+
+        return result;
     }
 }
 

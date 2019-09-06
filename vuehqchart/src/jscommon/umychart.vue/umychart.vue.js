@@ -3765,6 +3765,8 @@ function JSChart(divElement)
                 if (!chart.Frame.SubFrame[i]) continue;
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
+                if (item.IsShowLeftText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
+                if (item.IsShowRightText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度 
             }
         }
 
@@ -13072,6 +13074,7 @@ function ChartMinuteInfo()
         if (!infoItem  || !infoItem.Data || infoItem.Data.length<=0) return;
 
         var showItem=infoItem.Data[0];
+        this.Canvas.font = this.Font;
         var textWidth=this.Canvas.measureText(showItem.Title).width+4*this.PixelTatio;
         var textHeight=this.TextHeight*this.PixelTatio;
 
@@ -13110,6 +13113,7 @@ function ChartMinuteInfo()
         if (!infoItem  || !infoItem.Data || infoItem.Data.length<=0) return;
 
         var showItem=infoItem.Data[0];
+        this.Canvas.font = this.Font;
         var textHeight=this.Canvas.measureText(showItem.Title).width+4*this.PixelTatio;
         var textWidth=this.TextHeight*this.PixelTatio;
 
@@ -16763,14 +16767,14 @@ function FrameSplitMinutePriceY()
             var price=min+(distance*i);
             this.Frame.HorizontalInfo[i]= new CoordinateInfo();
             this.Frame.HorizontalInfo[i].Value=price;
-            this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(defaultfloatPrecision);
+            if (this.IsShowLeftText) this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(defaultfloatPrecision);
 
             if (this.YClose)
             {
                 var per=(price/this.YClose-1)*100;
                 if (per>0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.UpTextColor;
                 else if (per<0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.DownTextColor;
-                this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
+                if (this.IsShowRightText) this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
             }
         }
 
@@ -40635,7 +40639,9 @@ function JSSymbolData(ast,option,jsExecute)
     this.ExtendData=new Map();          //其他的扩展数据
 
     this.SectionFinanceData=new Map();  //截面报告数据
-    this.ThrowSFPeirod=new Set();             //重新获取数据
+    this.ThrowSFPeirod=new Set();       //重新获取数据
+
+    this.NetworkFilter;                 //网络请求回调 function(data, callback);
     
    
     //使用option初始化
@@ -40661,7 +40667,8 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.KLineApiUrl) this.KLineApiUrl=option.KLineApiUrl;
         if (option.Right) this.Right=option.Right;
         if (option.Period) this.Period=option.Period;
-        if (option.IsBeforeData===true) this.IsBeforeData=option.IsBeforeData
+        if (option.IsBeforeData===true) this.IsBeforeData=option.IsBeforeData;
+        if (option.NetworkFilter) this.NetworkFilter=option.NetworkFilter;
     }
 
     this.RecvError=function(request)
@@ -40676,6 +40683,27 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.LatestData) return this.Execute.RunNextJob();
 
         var self=this;
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSSymbolData::GetLatestData', //类名::
+                Explain:'DYNAINFO()',
+                Request:{ Url:self.RealtimeApiUrl,  Type:'POST' ,
+                    Data: { symbol:[this.Symbol], field: ["name","symbol","yclose","open","price","high","low","vol","amount","date","time","increase","exchangerate","amplitude"] } }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvLatestData(data);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         JSNetwork.HttpReqeust({
             url: self.RealtimeApiUrl,
             data:
@@ -40816,8 +40844,30 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.IndexData) return this.Execute.RunNextJob();
 
         var self=this;
-        if (this.Period<=3)     //请求日线数据
+        if (this.Period<=3 || this.Period==9)     //请求日线数据 9=季线
         {
+            if (this.NetworkFilter)
+            {
+                var obj=
+                {
+                    Name:'JSSymbolData::GetIndexData', //类名::
+                    Explain:'大盘数据',
+                    Period:self.Period,
+                    Request:{ Url:self.KLineApiUrl,  Type:'POST' ,
+                        Data: { field:[ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
+                            symbol: '000001.sh', start: -1 , count: self.MaxRequestDataCount+500 } },
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvIndexHistroyData(data);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
             JSNetwork.HttpReqeust({
                 url: self.KLineApiUrl,
                 data:
@@ -40843,6 +40893,28 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else            //请求分钟数据
         {
+            if (this.NetworkFilter)
+            {
+                var obj=
+                {
+                    Name:'JSSymbolData::GetIndexData', //类名::
+                    Explain:'大盘数据',
+                    Period:self.Period,
+                    Request:{ Url:self.MinuteKLineApiUrl,  Type:'POST' ,
+                        Data: { field:["name","symbol","yclose","open","price","high","low","vol"],
+                            symbol: '000001.sh', start: -1 , count: self.MaxRequestDataCount+5 } },
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvIndexMinuteHistroyData(data);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
             JSNetwork.HttpReqeust({
                 url: self.MinuteKLineApiUrl,
                 data:
@@ -41386,8 +41458,29 @@ function JSSymbolData(ast,option,jsExecute)
                 break;
         }
 
-         //请求数据
-         $.ajax({
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSSymbolData::GetFinanceData', //类名::
+                Explain:'财务数据',
+                JobID:jobID,
+                Request:{ Url:self.StockHistoryDayApiUrl,  Type:'POST' ,
+                    Data:{ field: fieldList, symbol: [this.Symbol], orderfield:"date" }, },
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvFinanceData(data,jobID);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        //请求数据
+        $.ajax({
             url: this.StockHistoryDayApiUrl,
             data:
             {
@@ -43901,6 +43994,7 @@ function ScriptIndex(name,script,args,option)
         };
 
         if (hqDataType===3) option.TrateDate=hqChart.TradeDate;
+        if (hqChart.NetworkFilter) option.NetworkFilter=hqChart.NetworkFilter;
 
         if (this.Condition && !this.IsMeetCondition(param,option))
         {
