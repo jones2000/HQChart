@@ -18,12 +18,12 @@ var g_JSComplierResource=
 
     DrawIcon:{  Family:'iconfont', 
         Data:new Map([
-            [1, { Text:'\ue625', Color:'rgb(255,106,106)'}], //向上箭头
-            [2, { Text:'\ue68b', Color:'rgb(46,139,87)'}],    //向下箭头
-            [11,{ Text:'\ue624', Color:'rgb(245,159,40)'}],  //点赞
+            [1, { Text:'\ue625', Color:'rgb(255,106,106)'}],    //向上箭头
+            [2, { Text:'\ue68b', Color:'rgb(46,139,87)'}],      //向下箭头
+            [11,{ Text:'\ue624', Color:'rgb(245,159,40)'}],     //点赞
             [12,{ Text:'\ue600', Color:'rgb(245,159,40)'}],
-            [13,{Text:'\ue70f',Color:'rgb(209,37,35)'}, ],    //B
-            [14,{Text:'\ue64c',Color:'rgb(127,209,59)'} ],         //S
+            [13,{Text:'\ue70f',Color:'rgb(209,37,35)'}, ],      //B
+            [14,{Text:'\ue64c',Color:'rgb(127,209,59)'} ],      //S
             [9, {Text:'\ue626',Color:'rgb(245,159,40)'} ],      //$
             [36,{Text:'\ue68c',Color:'rgb(255,106,106)'} ],     //关闭 红色
             [37,{Text:'\ue68c',Color:'rgb(46,139,87)'} ],       //关闭 绿色
@@ -10541,6 +10541,33 @@ function APIScriptIndex(name,script,args,option)
         }
     }
 
+    this.FittingArray=function(sourceData,date,time,hqChart)
+    {
+        var kdata=hqChart.ChartPaint[0].Data;   //K线
+
+        var arySingleData=[];
+        for(i in sourceData)
+        {
+            var value=sourceData[i];
+            var indexItem=new SingleData(); //单列指标数据
+            indexItem.Date=date[i];
+            if (time && i<time.length) indexItem.Time=time[i];
+            indexItem.Value=value;
+            arySingleData.push(indexItem);
+        }
+
+        var aryFittingData;
+        if (ChartData.IsDayPeriod(hqChart.Period))
+            aryFittingData=kdata.GetFittingData(arySingleData);        //数据和主图K线拟合
+        else
+            aryFittingData=kdata.GetMinuteFittingData(arySingleData);  //数据和主图K线拟合
+
+        var bindData=new ChartData();
+        bindData.Data=aryFittingData;
+        var result=bindData.GetValue();
+        return result;
+    }
+
     this.FittingData=function(jsonData, hqChart)
     {
         outVar=jsonData.outvar;
@@ -10556,24 +10583,32 @@ function APIScriptIndex(name,script,args,option)
             item=outVar[i];
             var indexData=[];
             outVarItem={Name:item.name,Type:item.type}
-            for(j in item.data)
+            if (item.data)
             {
-                var indexItem=new SingleData(); //单列指标数据
-                indexItem.Date=date[j];
-                if (time && j<time.length) indexItem.Time=time[j];
-                indexItem.Value=item.data[j];
-                indexData.push(indexItem);
+                outVarItem.Data=this.FittingArray(item.data,date,time,hqChart);
+
+                if (item.color) outVarItem.Color=item.color;
+                if (item.linewidth>=1) outVarItem.LineWidth=item.linewidth;
+                if (item.isshow==false) outVarItem.IsShow = false;
+                if (item.isexdata==true) outVarItem.IsExData = true;
+
+                result.push(outVarItem);
             }
+            else if (item.Draw)
+            {
+                var draw=item.Draw;
+                var drawItem={};
+                if (draw.DrawType=='DRAWICON')
+                {
+                    drawItem.Icon=draw.Icon;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart);
+                    outVarItem.Draw=drawItem;
 
-            if (ChartData.IsDayPeriod(hqChart.Period))
-                var aryFittingData=kdata.GetFittingData(indexData); //数据和主图K线拟合
-            else
-                var aryFittingData=kdata.GetMinuteFittingData(indexData); //数据和主图K线拟合
-
-            var bindData=new ChartData();
-            bindData.Data=aryFittingData;
-            outVarItem.Data=bindData.GetValue();
-            result.push(outVarItem)
+                    result.push(outVarItem);
+                }
+            }
         }
 
         return result;

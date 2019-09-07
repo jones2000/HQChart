@@ -1,4 +1,16 @@
 /*
+   Copyright (c) 2018 jones
+ 
+    http://www.apache.org/licenses/LICENSE-2.0
+
+   开源项目 https://github.com/jones2000/HQChart
+ 
+   jones_2000@163.com
+
+   配色
+*/
+
+/*
     不同风格行情配置文件
     !!手机上字体大小需要*分辨率比
 */

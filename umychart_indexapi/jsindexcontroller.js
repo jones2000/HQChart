@@ -166,13 +166,13 @@ function JSIndexController(req,res,next)
         {
             var item=data.Out[i];
             var outItem={name:item.Name, data:item.Data, type:item.Type};
-            if (item.Color) value.color=item.Color;
-            if (item.LineWidth) value.linewidth=item.LineWidth;
-            if (item.IsShow==false) value.isshow = false;
-            if (item.IsExData==true) value.isexdata = true;
+            if (item.Color) outItem.color=item.Color;
+            if (item.LineWidth) outItem.linewidth=item.LineWidth;
+            if (item.IsShow==false) outItem.isshow = false;
+            if (item.IsExData==true) outItem.isexdata = true;
+            if (item.Draw) outItem.Draw=item.Draw;  //Draw里面数据太多了, 返回数据字段就不转写成小写了, 太麻烦了
             this.OutData.outvar.push(outItem);
         }
-
 
         this.SendResult();
     }
