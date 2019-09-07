@@ -99,15 +99,15 @@
 
 # 4.使用教程
 ## H5教程
-1. [HQChart使用教程1- 如何快速创建一个K线图页面](https://blog.csdn.net/jones2000/article/details/90272733) <br>
-2. [HQChart使用教程2- 如何把自定义指标显示在K线图页面](https://blog.csdn.net/jones2000/article/details/90273684) <br>
-3. [HQChart使用教程3- 如何把指标上锁显示在K线图页面](https://blog.csdn.net/jones2000/article/details/90285723) <br>
-4. [HQChart使用教程4- 如何自定义K线图颜色风格](https://blog.csdn.net/jones2000/article/details/90286933) <br>
-5. [HQChart使用教程5- K线图控件操作函数说明](https://blog.csdn.net/jones2000/article/details/90301000) <br>
-6. [HQChart使用教程6- 如何获取K线图上的指标数据进行回测](https://blog.csdn.net/jones2000/article/details/90314625) <br>
-7. [HQChart使用教程7- 如何快速创建一个分时图页面](https://blog.csdn.net/jones2000/article/details/90319619) <br>
-8. [HQChart使用教程9- 如何快速创建K线训练页面](https://blog.csdn.net/jones2000/article/details/90478687) <br>
-9. [HQChart使用教程10- 手机端页面设置的几个特殊属性](https://blog.csdn.net/jones2000/article/details/90727468) <br>
+1. [HQChart使用教程1-如何快速创建一个K线图页面](https://blog.csdn.net/jones2000/article/details/90272733) <br>
+2. [HQChart使用教程2-如何把自定义指标显示在K线图页面](https://blog.csdn.net/jones2000/article/details/90273684) <br>
+3. [HQChart使用教程3-如何把指标上锁显示在K线图页面](https://blog.csdn.net/jones2000/article/details/90285723) <br>
+4. [HQChart使用教程4-如何自定义K线图颜色风格](https://blog.csdn.net/jones2000/article/details/90286933) <br>
+5. [HQChart使用教程5-K线图控件操作函数说明](https://blog.csdn.net/jones2000/article/details/90301000) <br>
+6. [HQChart使用教程6-如何获取K线图上的指标数据进行回测](https://blog.csdn.net/jones2000/article/details/90314625) <br>
+7. [HQChart使用教程7-如何快速创建一个分时图页面](https://blog.csdn.net/jones2000/article/details/90319619) <br>
+8. [HQChart使用教程9-如何快速创建K线训练页面](https://blog.csdn.net/jones2000/article/details/90478687) <br>
+9. [HQChart使用教程10-手机端页面设置的几个特殊属性](https://blog.csdn.net/jones2000/article/details/90727468) <br>
 10. [HQChart使用教程11-如何把K线数据API替换成自己的API数据](https://blog.csdn.net/jones2000/article/details/90747715) <br>
 11. [HQChart使用教程8- 如何快速创建一个横屏分时图页面](https://blog.csdn.net/jones2000/article/details/90453776) <br>
 12. [HQChart使用教程14-分析家语法执行器](https://blog.csdn.net/jones2000/article/details/93731637) <br>
@@ -125,9 +125,10 @@
 24. [HQChart使用教程24-多语言设置](https://blog.csdn.net/jones2000/article/details/98734091) <br>
 25. [HQChart使用教程25-叠加多个品种设置](https://blog.csdn.net/jones2000/article/details/98878463) <br>
 26. [HQChart使用教程26-K线图及走势图数据自动更新设置](https://blog.csdn.net/jones2000/article/details/99483328) <br>
-27. [HQChart使用教程27- 动态设置K线图指标模板](https://blog.csdn.net/jones2000/article/details/100079989) <br>
+27. [HQChart使用教程27-动态设置K线图指标模板](https://blog.csdn.net/jones2000/article/details/100079989) <br>
 28. [HQChart使用教程28-如何创建系统指标](https://blog.csdn.net/jones2000/article/details/100103486) <br>
-29. [HQChart使用教程31- 走势图异动数据设置](https://blog.csdn.net/jones2000/article/details/100191957) <br>
+29. [HQChart使用教程31-走势图异动数据设置](https://blog.csdn.net/jones2000/article/details/100191957) <br>
+30. [HQChart使用教程32-如何K线图显示自定义SVG矢量图标](https://blog.csdn.net/jones2000/article/details/100613634) <br>
 
 ## 小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>

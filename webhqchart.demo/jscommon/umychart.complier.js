@@ -16,7 +16,9 @@ var g_JSComplierResource=
     Domain : "https://opensource.zealink.com",               //API域名
     CacheDomain : "https://opensourcecache.zealink.com",      //缓存域名
 
-    DrawIcon:{  Family:'iconfont', 
+    DrawIcon:
+    {  
+        Family:'iconfont', 
         Data:new Map([
             [1, { Text:'\ue625', Color:'rgb(255,106,106)'}],    //向上箭头
             [2, { Text:'\ue68b', Color:'rgb(46,139,87)'}],      //向下箭头
@@ -31,6 +33,31 @@ var g_JSComplierResource=
             [39,{Text:'\ue68e',Color:'rgb(0,139,69)'} ],        //▼
             [46,{Text:'\ue64d',Color:'rgb(51,51,51)'} ],        //message
         ])
+    },
+
+    CustomDrawIcon:
+    {
+        Data:new Map()  //自定义图标 key=id value={ID:, Text:, Color, Family: }
+    },
+
+    GetDrawIcon:function(id)
+    {
+        var icon;
+        if (g_JSComplierResource.CustomDrawIcon.Data.has(id))
+        {
+            const iconfont=g_JSComplierResource.CustomDrawIcon.Data.get(id);
+            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:iconfont.Family, IconFont:true, ID:id };
+            return icon;
+        }
+
+        if (g_JSComplierResource.DrawIcon.Data.has(id))
+        {
+            const iconfont=g_JSComplierResource.DrawIcon.Data.get(id);
+            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:g_JSComplierResource.DrawIcon.Family, IconFont:true, ID:id };
+            return icon;
+        }
+
+        return null;
     }
 }
 
@@ -5470,13 +5497,8 @@ function JSDraw(errorHandler,symbolData)
     */
     this.DRAWICON=function(condition,data,type)
     {
-        let icon;
-        if (g_JSComplierResource.DrawIcon && g_JSComplierResource.DrawIcon.Data && g_JSComplierResource.DrawIcon.Data.has(type))
-        {
-            const iconfont=g_JSComplierResource.DrawIcon.Data.get(type);
-            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:g_JSComplierResource.DrawIcon.Family, IconFont:true, ID:type };
-        }
-
+        var icon=g_JSComplierResource.GetDrawIcon(type);
+       
         if (!icon)
         {
             //图标对应的字符代码
@@ -9016,6 +9038,12 @@ JSComplier.SetDomain = function (domain, cacheDomain)   //修改API地址
 {
     if (domain) g_JSComplierResource.Domain = domain;
     if (cacheDomain) g_JSComplierResource.CacheDomain = cacheDomain;
+}
+
+
+JSComplier.AddIcon=function(obj)    //添加一个obj={ID:, Text:, Color, Family: }
+{
+    g_JSComplierResource.CustomDrawIcon.Data.set(obj.ID, obj);
 }
 
 var HQ_DATA_TYPE=
