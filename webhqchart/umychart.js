@@ -492,6 +492,7 @@ function JSChart(divElement)
         if (option.MinuteLine)
         {
             if (option.MinuteLine.IsDrawAreaPrice==false) chart.ChartPaint[0].IsDrawArea=false;
+            if (option.MinuteLine.IsShowLead==false) chart.IsShowLead=false;
         }
 
         if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
@@ -2208,6 +2209,7 @@ function JSChartContainer(uielement)
             format.Symbol=this.Symbol;
             format.LanguageID=this.LanguageID;
             if (!format.Operator()) return;
+            var textHeight=format.LineCount*25; //每行的行高25
 
             var scrollPos=GetScrollPosition();
             var left = x;
@@ -2215,9 +2217,9 @@ function JSChartContainer(uielement)
             var width=157;
             if (this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID) width=180;
             this.Tooltip.style.width = width+"px";
-            this.Tooltip.style.height =200+"px";
-            console.log(`[JSChartContainer::ShowTooltip] left=${left} top=${top} xMove=${xMove}` );
-            if (toolTip.ChartPaint.Name=="Overlay-KLine")  this.Tooltip.style.height =220+"px";
+            this.Tooltip.style.height =textHeight+"px";
+            //console.log(`[JSChartContainer::ShowTooltip] left=${left} top=${top} xMove=${xMove}` );
+            //if (toolTip.ChartPaint.Name=="Overlay-KLine")  this.Tooltip.style.height =220+"px";
             this.Tooltip.style.position = "absolute";
             //console.log('[JSChartContainer::ShowTooltip] getBoundingClientRect() ',this.UIElement.getBoundingClientRect())
             if (left+width>this.UIElement.getBoundingClientRect().width)
@@ -11265,6 +11267,7 @@ function KLineTooltipPaint()
         else 
         {
             if(klineData.Time!=null && !isNaN(klineData.Time) && klineData.Time>0) lineCount=9; //分钟K线多一列时间
+            if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.HQChart.Symbol) && klineData.FlowCapital>0) ++lineCount;
         }
 
         //this.TitleColor=this.KLineTitlePaint.UnchagneColor;
@@ -11373,6 +11376,17 @@ function KLineTooltipPaint()
         this.Canvas.fillText(text, left,top);
         var text=IFrameSplitOperator.FormatValueString(item.Amount,2,this.LanguageID);
         this.Canvas.fillText(text,left+labelWidth,top);
+
+        //换手率
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.HQChart.Symbol) && item.FlowCapital>0)
+        {
+            top+=this.LineHeight;
+            text=g_JSChartLocalization.GetText('Tooltip-Exchange',this.LanguageID);
+            this.Canvas.fillText(text, left,top);
+            var value=item.Vol/item.FlowCapital*100;
+            var text=value.toFixed(2)+'%';
+            this.Canvas.fillText(text,left+labelWidth,top);
+        }
 
         if (this.IsHScreen) this.Canvas.restore();
     }
@@ -14222,6 +14236,7 @@ function HistoryDataStringFormat()
     this.VolColor=g_JSChartResource.DefaultTextColor;
     this.AmountColor=g_JSChartResource.DefaultTextColor;
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+    this.LineCount=0;    //一共几行
 
     this.Operator=function()
     {
@@ -14257,13 +14272,23 @@ function HistoryDataStringFormat()
             "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Amount',this.LanguageID)+"</span>"+
             "<span class='tooltip-num' style='color:"+this.AmountColor+";'>"+IFrameSplitOperator.FormatValueString(data.Amount,2,this.LanguageID)+"</span><br/>"+
             "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Increase',this.LanguageID)+"</span>"+
-            "<span class='tooltip-num' style='color:"+this.GetColor(increase,0)+";'>"+increase.toFixed(2)+'%'+"</span><br/>";;
+            "<span class='tooltip-num' style='color:"+this.GetColor(increase,0)+";'>"+increase.toFixed(2)+'%'+"</span><br/>";
+
+        this.LineCount=8;
+        if(MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && data.FlowCapital>0)  //换手率
+        {
+            var value=data.Vol/data.FlowCapital*100;
+            strText+= "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Exchange',this.LanguageID)+"</span>"+
+            "<span class='tooltip-num' style='color:"+this.AmountColor+";'>"+value.toFixed(2)+'%'+"</span><br/>";
+            ++this.LineCount;
+        }
 
         //叠加股票
         if (this.Value.ChartPaint.Name=="Overlay-KLine")
         {
             var title="<span style='color:rgb(0,0,0);font:微软雅黑;font-size:12px;text-align:center;display: block;'>"+this.Value.ChartPaint.Title+"</span>";
             strText=title+strText;
+            ++this.LineCount;
         }
 
         this.Text=strText;
@@ -14604,6 +14629,13 @@ function DynamicKLineTitlePainting()
 
         var text=g_JSChartLocalization.GetText('KTitle-Amount',this.LanguageID)+IFrameSplitOperator.FormatValueString(item.Amount,2,this.LanguageID);
         if (!this.DrawText(text,this.AmountColor,position)) return;
+
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && item.FlowCapital>0)   //A股有换手率
+        {
+            var value=item.Vol/item.FlowCapital*100;    //成交量/流通A股*100
+            var text=g_JSChartLocalization.GetText('KTitle-Exchange',this.LanguageID)+IFrameSplitOperator.FormatValueString(value,2,this.LanguageID)+'%';
+            if (!this.DrawText(text,this.AmountColor,position)) return;
+        }
 
         //叠加股票的名字
         for(var i in this.OverlayChartPaint)
@@ -18238,6 +18270,7 @@ function JSChartLocalization()
         ['Tooltip-Amount', {CN:'额:', EN:'A:'}],
         ['Tooltip-AvPrice', {CN:'均:', EN:'AP:'}],
         ['Tooltip-Price', {CN:'价:', EN:'P:'}],
+        ['Tooltip-Exchange', {CN:'换:', EN:'E:'}],
 
         ['DivTooltip-Open', {CN:'开盘:', EN:'Open:'}],
         ['DivTooltip-High', {CN:'最高:', EN:'High:'}],
@@ -18246,6 +18279,7 @@ function JSChartLocalization()
         ['DivTooltip-Increase', {CN:'涨幅:', EN:'Increase:'}],
         ['DivTooltip-Vol', {CN:'数量:', EN:'Volume:'}],
         ['DivTooltip-Amount', {CN:'金额:', EN:'Amount:'}],
+        ['DivTooltip-Exchange', {CN:'换手:', EN:'Exchange:'}],
 
         //K线动态标题
         ['KTitle-Open', {CN:'开:', EN:'O:'}],
@@ -18255,6 +18289,7 @@ function JSChartLocalization()
         ['KTitle-Increase', {CN:'幅:', EN:'I:'}],
         ['KTitle-Vol', {CN:'量:', EN:'V:'}],
         ['KTitle-Amount', {CN:'额:', EN:'A:'}],
+        ['KTitle-Exchange', {CN:'换:', EN:'E:'}],
 
         //走势图动态标题
         ['MTitle-Close', {CN:'价:', EN:'C:'}],
@@ -22442,7 +22477,9 @@ function MinuteChartContainer(uielement)
 
     this.IsShowBeforeData=false;              //是否显示盘前数据 (当日)
     this.BeforeData=null;                     //盘前数据
-    this.IsBeforeData=false;                      //是否支持显示盘前数据
+    this.IsBeforeData=false;                  //是否支持显示盘前数据
+
+    this.IsShowLead=true;                     //指数是否显示领先指标
 
     this.MinuteApiUrl=g_JSChartResource.Domain+"/API/Stock";
     this.HistoryMinuteApiUrl=g_JSChartResource.Domain+'/API/StockMinuteData';  //历史分钟数据
@@ -23612,7 +23649,7 @@ function MinuteChartContainer(uielement)
         this.ChartPaint[0].SourceData=this.IsBeforeData ? minuteData:null;
         this.ChartPaint[0].IsShowLead=false;
         this.ChartPaint[0].LeadData=null;
-        if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol) && this.DayCount==1)  //指数显示领先指标
+        if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol) && this.DayCount==1 && this.IsShowLead)  //指数显示领先指标
         {
             var bindLeadData=new ChartData();
             bindLeadData.Data=minuteData.GetLead();
@@ -23649,14 +23686,6 @@ function MinuteChartContainer(uielement)
             this.ExtendChartPaint[0].Name=this.Name;
         }
 
-        if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol) && this.DayCount==1)  //指数显示领先指标
-        {
-            var bindLeadData=new ChartData();
-            bindLeadData.Data=minuteData.GetLead();
-            this.ChartPaint[0].LeadData=bindLeadData;
-            this.ChartPaint[0].IsShowLead=true;
-        }
-           
         var beforeDataCount=0;
         var isBeforeData=this.IsBeforeData;
         if (this.DayCount>1) isBeforeData=false;
