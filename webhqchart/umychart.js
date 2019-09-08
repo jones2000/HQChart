@@ -5524,7 +5524,7 @@ function ChartData()
                     newData.Close=minData.Close;
                     newData.Vol+=minData.Vol;
                     newData.Amount+=minData.Amount;
-                    newData.FlowCapital+=minData.FlowCapital;  
+                    newData.FlowCapital=minData.FlowCapital;  
                 }
             }
         }
@@ -5621,7 +5621,7 @@ function ChartData()
                     newData.Close=dayData.Close;
                     newData.Vol+=dayData.Vol;
                     newData.Amount+=dayData.Amount;
-                    newData.FlowCapital+=dayData.FlowCapital;
+                    newData.FlowCapital=dayData.FlowCapital;
                     newData.Date=dayData.Date;
                 }
             }

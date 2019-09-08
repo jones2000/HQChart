@@ -95,7 +95,8 @@ function JSIndexScript()
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
             ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],['量比',this.VOLRate],
-            ['平均K线',this.HeikinAshi],
+            ['平均K线',this.HeikinAshi], 
+            ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
@@ -3285,7 +3286,18 @@ DRAWKLINE(HHIGH,HOPEN,HLOW,HCLOSE);"
     return data;
 }
 
+JSIndexScript.prototype.EMPTY = function () 
+{
+    let data =
+    {
+        Name: '', Description: '空指标', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            'VAR2:=C;'
+    };
 
+    return data;
+}
 
 
 JSIndexScript.prototype.TEST = function () 
@@ -3566,6 +3578,11 @@ function JSChart(divElement)
             {
                 chart.WindowIndex[i]=new LocalJsonDataIndex(item.Local.Name,item.Local.Args,{JsonData:item.Local.Data});
             }
+            else if (item.API)  //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
+            {
+                var apiItem=item.API;
+                chart.WindowIndex[i]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,item);
+            }
             else
             {
                 let indexItem=JSIndexMap.Get(item.Index);
@@ -3765,6 +3782,8 @@ function JSChart(divElement)
                 if (!chart.Frame.SubFrame[i]) continue;
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
+                if (item.IsShowLeftText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
+                if (item.IsShowRightText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度 
             }
         }
 
@@ -3790,6 +3809,7 @@ function JSChart(divElement)
         if (option.MinuteLine)
         {
             if (option.MinuteLine.IsDrawAreaPrice==false) chart.ChartPaint[0].IsDrawArea=false;
+            if (option.MinuteLine.IsShowLead==false) chart.IsShowLead=false;
         }
 
         if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
@@ -5506,6 +5526,7 @@ function JSChartContainer(uielement)
             format.Symbol=this.Symbol;
             format.LanguageID=this.LanguageID;
             if (!format.Operator()) return;
+            var textHeight=format.LineCount*25; //每行的行高25
 
             var scrollPos=GetScrollPosition();
             var left = x;
@@ -5513,9 +5534,9 @@ function JSChartContainer(uielement)
             var width=157;
             if (this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID) width=180;
             this.Tooltip.style.width = width+"px";
-            this.Tooltip.style.height =200+"px";
-            console.log(`[JSChartContainer::ShowTooltip] left=${left} top=${top} xMove=${xMove}` );
-            if (toolTip.ChartPaint.Name=="Overlay-KLine")  this.Tooltip.style.height =220+"px";
+            this.Tooltip.style.height =textHeight+"px";
+            //console.log(`[JSChartContainer::ShowTooltip] left=${left} top=${top} xMove=${xMove}` );
+            //if (toolTip.ChartPaint.Name=="Overlay-KLine")  this.Tooltip.style.height =220+"px";
             this.Tooltip.style.position = "absolute";
             //console.log('[JSChartContainer::ShowTooltip] getBoundingClientRect() ',this.UIElement.getBoundingClientRect())
             if (left+width>this.UIElement.getBoundingClientRect().width)
@@ -8820,7 +8841,7 @@ function ChartData()
                     newData.Close=minData.Close;
                     newData.Vol+=minData.Vol;
                     newData.Amount+=minData.Amount;
-                    newData.FlowCapital+=minData.FlowCapital;  
+                    newData.FlowCapital=minData.FlowCapital;  
                 }
             }
         }
@@ -8917,7 +8938,7 @@ function ChartData()
                     newData.Close=dayData.Close;
                     newData.Vol+=dayData.Vol;
                     newData.Amount+=dayData.Amount;
-                    newData.FlowCapital+=dayData.FlowCapital;
+                    newData.FlowCapital=dayData.FlowCapital;
                     newData.Date=dayData.Date;
                 }
             }
@@ -13072,6 +13093,7 @@ function ChartMinuteInfo()
         if (!infoItem  || !infoItem.Data || infoItem.Data.length<=0) return;
 
         var showItem=infoItem.Data[0];
+        this.Canvas.font = this.Font;
         var textWidth=this.Canvas.measureText(showItem.Title).width+4*this.PixelTatio;
         var textHeight=this.TextHeight*this.PixelTatio;
 
@@ -13110,6 +13132,7 @@ function ChartMinuteInfo()
         if (!infoItem  || !infoItem.Data || infoItem.Data.length<=0) return;
 
         var showItem=infoItem.Data[0];
+        this.Canvas.font = this.Font;
         var textHeight=this.Canvas.measureText(showItem.Title).width+4*this.PixelTatio;
         var textWidth=this.TextHeight*this.PixelTatio;
 
@@ -14561,6 +14584,7 @@ function KLineTooltipPaint()
         else 
         {
             if(klineData.Time!=null && !isNaN(klineData.Time) && klineData.Time>0) lineCount=9; //分钟K线多一列时间
+            if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.HQChart.Symbol) && klineData.FlowCapital>0) ++lineCount;
         }
 
         //this.TitleColor=this.KLineTitlePaint.UnchagneColor;
@@ -14669,6 +14693,17 @@ function KLineTooltipPaint()
         this.Canvas.fillText(text, left,top);
         var text=IFrameSplitOperator.FormatValueString(item.Amount,2,this.LanguageID);
         this.Canvas.fillText(text,left+labelWidth,top);
+
+        //换手率
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.HQChart.Symbol) && item.FlowCapital>0)
+        {
+            top+=this.LineHeight;
+            text=g_JSChartLocalization.GetText('Tooltip-Exchange',this.LanguageID);
+            this.Canvas.fillText(text, left,top);
+            var value=item.Vol/item.FlowCapital*100;
+            var text=value.toFixed(2)+'%';
+            this.Canvas.fillText(text,left+labelWidth,top);
+        }
 
         if (this.IsHScreen) this.Canvas.restore();
     }
@@ -16763,14 +16798,14 @@ function FrameSplitMinutePriceY()
             var price=min+(distance*i);
             this.Frame.HorizontalInfo[i]= new CoordinateInfo();
             this.Frame.HorizontalInfo[i].Value=price;
-            this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(defaultfloatPrecision);
+            if (this.IsShowLeftText) this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(defaultfloatPrecision);
 
             if (this.YClose)
             {
                 var per=(price/this.YClose-1)*100;
                 if (per>0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.UpTextColor;
                 else if (per<0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.DownTextColor;
-                this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
+                if (this.IsShowRightText) this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
             }
         }
 
@@ -17518,6 +17553,7 @@ function HistoryDataStringFormat()
     this.VolColor=g_JSChartResource.DefaultTextColor;
     this.AmountColor=g_JSChartResource.DefaultTextColor;
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+    this.LineCount=0;    //一共几行
 
     this.Operator=function()
     {
@@ -17553,13 +17589,23 @@ function HistoryDataStringFormat()
             "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Amount',this.LanguageID)+"</span>"+
             "<span class='tooltip-num' style='color:"+this.AmountColor+";'>"+IFrameSplitOperator.FormatValueString(data.Amount,2,this.LanguageID)+"</span><br/>"+
             "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Increase',this.LanguageID)+"</span>"+
-            "<span class='tooltip-num' style='color:"+this.GetColor(increase,0)+";'>"+increase.toFixed(2)+'%'+"</span><br/>";;
+            "<span class='tooltip-num' style='color:"+this.GetColor(increase,0)+";'>"+increase.toFixed(2)+'%'+"</span><br/>";
+
+        this.LineCount=8;
+        if(MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && data.FlowCapital>0)  //换手率
+        {
+            var value=data.Vol/data.FlowCapital*100;
+            strText+= "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Exchange',this.LanguageID)+"</span>"+
+            "<span class='tooltip-num' style='color:"+this.AmountColor+";'>"+value.toFixed(2)+'%'+"</span><br/>";
+            ++this.LineCount;
+        }
 
         //叠加股票
         if (this.Value.ChartPaint.Name=="Overlay-KLine")
         {
             var title="<span style='color:rgb(0,0,0);font:微软雅黑;font-size:12px;text-align:center;display: block;'>"+this.Value.ChartPaint.Title+"</span>";
             strText=title+strText;
+            ++this.LineCount;
         }
 
         this.Text=strText;
@@ -17900,6 +17946,13 @@ function DynamicKLineTitlePainting()
 
         var text=g_JSChartLocalization.GetText('KTitle-Amount',this.LanguageID)+IFrameSplitOperator.FormatValueString(item.Amount,2,this.LanguageID);
         if (!this.DrawText(text,this.AmountColor,position)) return;
+
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && item.FlowCapital>0)   //A股有换手率
+        {
+            var value=item.Vol/item.FlowCapital*100;    //成交量/流通A股*100
+            var text=g_JSChartLocalization.GetText('KTitle-Exchange',this.LanguageID)+IFrameSplitOperator.FormatValueString(value,2,this.LanguageID)+'%';
+            if (!this.DrawText(text,this.AmountColor,position)) return;
+        }
 
         //叠加股票的名字
         for(var i in this.OverlayChartPaint)
@@ -21534,6 +21587,7 @@ function JSChartLocalization()
         ['Tooltip-Amount', {CN:'额:', EN:'A:'}],
         ['Tooltip-AvPrice', {CN:'均:', EN:'AP:'}],
         ['Tooltip-Price', {CN:'价:', EN:'P:'}],
+        ['Tooltip-Exchange', {CN:'换:', EN:'E:'}],
 
         ['DivTooltip-Open', {CN:'开盘:', EN:'Open:'}],
         ['DivTooltip-High', {CN:'最高:', EN:'High:'}],
@@ -21542,6 +21596,7 @@ function JSChartLocalization()
         ['DivTooltip-Increase', {CN:'涨幅:', EN:'Increase:'}],
         ['DivTooltip-Vol', {CN:'数量:', EN:'Volume:'}],
         ['DivTooltip-Amount', {CN:'金额:', EN:'Amount:'}],
+        ['DivTooltip-Exchange', {CN:'换手:', EN:'Exchange:'}],
 
         //K线动态标题
         ['KTitle-Open', {CN:'开:', EN:'O:'}],
@@ -21551,6 +21606,7 @@ function JSChartLocalization()
         ['KTitle-Increase', {CN:'幅:', EN:'I:'}],
         ['KTitle-Vol', {CN:'量:', EN:'V:'}],
         ['KTitle-Amount', {CN:'额:', EN:'A:'}],
+        ['KTitle-Exchange', {CN:'换:', EN:'E:'}],
 
         //走势图动态标题
         ['MTitle-Close', {CN:'价:', EN:'C:'}],
@@ -24834,7 +24890,7 @@ function KLineChartContainer(uielement)
             {
                 Name:'KLineChartContainer::RequestFlowCapitalData', //类名::
                 Explain:'流通股本数据',
-                Request:{ Url:self.KLineApiUrl, Data: { symbol: [this.Symbol], orderfield:'date',field:fieldList }, Type:'POST' }, 
+                Request:{ Url:self.StockHistoryDayApiUrl, Data: { symbol: [this.Symbol], orderfield:'date',field:fieldList }, Type:'POST' }, 
                 Self:this,
                 PreventDefault:false
             };
@@ -25738,7 +25794,9 @@ function MinuteChartContainer(uielement)
 
     this.IsShowBeforeData=false;              //是否显示盘前数据 (当日)
     this.BeforeData=null;                     //盘前数据
-    this.IsBeforeData=false;                      //是否支持显示盘前数据
+    this.IsBeforeData=false;                  //是否支持显示盘前数据
+
+    this.IsShowLead=true;                     //指数是否显示领先指标
 
     this.MinuteApiUrl=g_JSChartResource.Domain+"/API/Stock";
     this.HistoryMinuteApiUrl=g_JSChartResource.Domain+'/API/StockMinuteData';  //历史分钟数据
@@ -26908,7 +26966,7 @@ function MinuteChartContainer(uielement)
         this.ChartPaint[0].SourceData=this.IsBeforeData ? minuteData:null;
         this.ChartPaint[0].IsShowLead=false;
         this.ChartPaint[0].LeadData=null;
-        if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol) && this.DayCount==1)  //指数显示领先指标
+        if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol) && this.DayCount==1 && this.IsShowLead)  //指数显示领先指标
         {
             var bindLeadData=new ChartData();
             bindLeadData.Data=minuteData.GetLead();
@@ -26945,14 +27003,6 @@ function MinuteChartContainer(uielement)
             this.ExtendChartPaint[0].Name=this.Name;
         }
 
-        if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol) && this.DayCount==1)  //指数显示领先指标
-        {
-            var bindLeadData=new ChartData();
-            bindLeadData.Data=minuteData.GetLead();
-            this.ChartPaint[0].LeadData=bindLeadData;
-            this.ChartPaint[0].IsShowLead=true;
-        }
-           
         var beforeDataCount=0;
         var isBeforeData=this.IsBeforeData;
         if (this.DayCount>1) isBeforeData=false;
@@ -34856,14 +34906,16 @@ var g_JSComplierResource=
     Domain : "https://opensource.zealink.com",               //API域名
     CacheDomain : "https://opensourcecache.zealink.com",      //缓存域名
 
-    DrawIcon:{  Family:'iconfont', 
+    DrawIcon:
+    {  
+        Family:'iconfont', 
         Data:new Map([
-            [1, { Text:'\ue625', Color:'rgb(255,106,106)'}], //向上箭头
-            [2, { Text:'\ue68b', Color:'rgb(46,139,87)'}],    //向下箭头
-            [11,{ Text:'\ue624', Color:'rgb(245,159,40)'}],  //点赞
+            [1, { Text:'\ue625', Color:'rgb(255,106,106)'}],    //向上箭头
+            [2, { Text:'\ue68b', Color:'rgb(46,139,87)'}],      //向下箭头
+            [11,{ Text:'\ue624', Color:'rgb(245,159,40)'}],     //点赞
             [12,{ Text:'\ue600', Color:'rgb(245,159,40)'}],
-            [13,{Text:'\ue70f',Color:'rgb(209,37,35)'}, ],    //B
-            [14,{Text:'\ue64c',Color:'rgb(127,209,59)'} ],         //S
+            [13,{Text:'\ue70f',Color:'rgb(209,37,35)'}, ],      //B
+            [14,{Text:'\ue64c',Color:'rgb(127,209,59)'} ],      //S
             [9, {Text:'\ue626',Color:'rgb(245,159,40)'} ],      //$
             [36,{Text:'\ue68c',Color:'rgb(255,106,106)'} ],     //关闭 红色
             [37,{Text:'\ue68c',Color:'rgb(46,139,87)'} ],       //关闭 绿色
@@ -34871,6 +34923,31 @@ var g_JSComplierResource=
             [39,{Text:'\ue68e',Color:'rgb(0,139,69)'} ],        //▼
             [46,{Text:'\ue64d',Color:'rgb(51,51,51)'} ],        //message
         ])
+    },
+
+    CustomDrawIcon:
+    {
+        Data:new Map()  //自定义图标 key=id value={ID:, Text:, Color, Family: }
+    },
+
+    GetDrawIcon:function(id)
+    {
+        var icon;
+        if (g_JSComplierResource.CustomDrawIcon.Data.has(id))
+        {
+            const iconfont=g_JSComplierResource.CustomDrawIcon.Data.get(id);
+            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:iconfont.Family, IconFont:true, ID:id };
+            return icon;
+        }
+
+        if (g_JSComplierResource.DrawIcon.Data.has(id))
+        {
+            const iconfont=g_JSComplierResource.DrawIcon.Data.get(id);
+            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:g_JSComplierResource.DrawIcon.Family, IconFont:true, ID:id };
+            return icon;
+        }
+
+        return null;
     }
 }
 
@@ -40310,13 +40387,8 @@ function JSDraw(errorHandler,symbolData)
     */
     this.DRAWICON=function(condition,data,type)
     {
-        let icon;
-        if (g_JSComplierResource.DrawIcon && g_JSComplierResource.DrawIcon.Data && g_JSComplierResource.DrawIcon.Data.has(type))
-        {
-            const iconfont=g_JSComplierResource.DrawIcon.Data.get(type);
-            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:g_JSComplierResource.DrawIcon.Family, IconFont:true, ID:type };
-        }
-
+        var icon=g_JSComplierResource.GetDrawIcon(type);
+       
         if (!icon)
         {
             //图标对应的字符代码
@@ -40635,7 +40707,9 @@ function JSSymbolData(ast,option,jsExecute)
     this.ExtendData=new Map();          //其他的扩展数据
 
     this.SectionFinanceData=new Map();  //截面报告数据
-    this.ThrowSFPeirod=new Set();             //重新获取数据
+    this.ThrowSFPeirod=new Set();       //重新获取数据
+
+    this.NetworkFilter;                 //网络请求回调 function(data, callback);
     
    
     //使用option初始化
@@ -40661,7 +40735,8 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.KLineApiUrl) this.KLineApiUrl=option.KLineApiUrl;
         if (option.Right) this.Right=option.Right;
         if (option.Period) this.Period=option.Period;
-        if (option.IsBeforeData===true) this.IsBeforeData=option.IsBeforeData
+        if (option.IsBeforeData===true) this.IsBeforeData=option.IsBeforeData;
+        if (option.NetworkFilter) this.NetworkFilter=option.NetworkFilter;
     }
 
     this.RecvError=function(request)
@@ -40676,6 +40751,27 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.LatestData) return this.Execute.RunNextJob();
 
         var self=this;
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSSymbolData::GetLatestData', //类名::
+                Explain:'DYNAINFO()',
+                Request:{ Url:self.RealtimeApiUrl,  Type:'POST' ,
+                    Data: { symbol:[this.Symbol], field: ["name","symbol","yclose","open","price","high","low","vol","amount","date","time","increase","exchangerate","amplitude"] } }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvLatestData(data);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         JSNetwork.HttpReqeust({
             url: self.RealtimeApiUrl,
             data:
@@ -40816,8 +40912,30 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.IndexData) return this.Execute.RunNextJob();
 
         var self=this;
-        if (this.Period<=3)     //请求日线数据
+        if (this.Period<=3 || this.Period==9)     //请求日线数据 9=季线
         {
+            if (this.NetworkFilter)
+            {
+                var obj=
+                {
+                    Name:'JSSymbolData::GetIndexData', //类名::
+                    Explain:'大盘数据',
+                    Period:self.Period,
+                    Request:{ Url:self.KLineApiUrl,  Type:'POST' ,
+                        Data: { field:[ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
+                            symbol: '000001.sh', start: -1 , count: self.MaxRequestDataCount+500 } },
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvIndexHistroyData(data);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
             JSNetwork.HttpReqeust({
                 url: self.KLineApiUrl,
                 data:
@@ -40843,6 +40961,28 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else            //请求分钟数据
         {
+            if (this.NetworkFilter)
+            {
+                var obj=
+                {
+                    Name:'JSSymbolData::GetIndexData', //类名::
+                    Explain:'大盘数据',
+                    Period:self.Period,
+                    Request:{ Url:self.MinuteKLineApiUrl,  Type:'POST' ,
+                        Data: { field:["name","symbol","yclose","open","price","high","low","vol"],
+                            symbol: '000001.sh', start: -1 , count: self.MaxRequestDataCount+5 } },
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvIndexMinuteHistroyData(data);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
             JSNetwork.HttpReqeust({
                 url: self.MinuteKLineApiUrl,
                 data:
@@ -41386,8 +41526,29 @@ function JSSymbolData(ast,option,jsExecute)
                 break;
         }
 
-         //请求数据
-         $.ajax({
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSSymbolData::GetFinanceData', //类名::
+                Explain:'财务数据',
+                JobID:jobID,
+                Request:{ Url:self.StockHistoryDayApiUrl,  Type:'POST' ,
+                    Data:{ field: fieldList, symbol: [this.Symbol], orderfield:"date" }, },
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvFinanceData(data,jobID);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        //请求数据
+        $.ajax({
             url: this.StockHistoryDayApiUrl,
             data:
             {
@@ -43769,6 +43930,12 @@ JSComplier.SetDomain = function (domain, cacheDomain)   //修改API地址
     if (cacheDomain) g_JSComplierResource.CacheDomain = cacheDomain;
 }
 
+
+JSComplier.AddIcon=function(obj)    //添加一个obj={ID:, Text:, Color, Family: }
+{
+    g_JSComplierResource.CustomDrawIcon.Data.set(obj.ID, obj);
+}
+
 var HQ_DATA_TYPE=
 {
     KLINE_ID:0,         //K线
@@ -43901,6 +44068,7 @@ function ScriptIndex(name,script,args,option)
         };
 
         if (hqDataType===3) option.TrateDate=hqChart.TradeDate;
+        if (hqChart.NetworkFilter) option.NetworkFilter=hqChart.NetworkFilter;
 
         if (this.Condition && !this.IsMeetCondition(param,option))
         {
@@ -45185,14 +45353,183 @@ function APIScriptIndex(name,script,args,option)
     this.newMethod(name,script,args,option);
     delete this.newMethod;
 
-    this.ExecuteScript=function(hqChart,windowIndex,hisData)
+    this.ApiUrl;    //指标执行api地址
+
+    if (option.API) 
     {
-        
+        if (option.API.Url) this.ApiUrl=option.API.Url;
     }
 
-    this.RecvAPIData=function(data)
+    this.ExecuteScript=function(hqChart,windowIndex,hisData)
     {
+        console.log('[APIScriptIndex::ExecuteScript] name, Arguments ', this.Name,this.Arguments );
 
+        var args=[];
+        if (this.Arguments)
+        {
+            for(var i in this.Arguments)
+            {
+                var item=this.Arguments[i];
+                args.push({name:item.Name, value:item.Value});
+            }
+        }
+
+        var self=this;
+        if (hqChart.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'APIScriptIndex::ExecuteScript', //类名::
+                Explain:'指标计算',
+                Request:{ Url:self.ApiUrl,  Type:'POST', Data: { indexname:this.Name,  symbol: hqChart.Symbol, args:args,
+                    period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount } }, 
+                Self:this,
+                PreventDefault:false
+            };
+            hqChart.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvAPIData(data,hqChart,windowIndex,hisData);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        JSNetwork.HttpReqeust({
+            url: self.ApiUrl,
+            data:{ indexname:this.Name,  symbol: hqChart.Symbol, args:args, 
+                period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount }, 
+            type:"post",
+            dataType: "json",
+            async:true, 
+            success: function (recvData)
+            {
+                self.RecvAPIData(recvData,hqChart,windowIndex,hisData);
+            },
+            error: function(request)
+            {
+                self.RecvError(request);
+            }
+        });
+    }
+
+    this.RecvAPIData=function(data,hqChart,windowIndex,hisData)
+    {
+        console.log('[APIScriptIndex::RecvAPIData] recv data ', this.Name,data );
+        if (data.code!=0) return;
+
+        this.Arguments=[];
+        if (data.outdata.args)
+        {
+            for(var i in data.outdata.args)
+            {
+                var item= data.outdata.args[i];
+                this.Arguments.push({Name:item.name, Value:item.value});
+            }
+        }
+
+        this.OutVar=this.FittingData(data.outdata,hqChart);
+        console.log('[APIScriptIndex::RecvAPIData] conver to OutVar ', this.OutVar);
+        this.BindData(hqChart,windowIndex,hisData);
+
+        if (this.IsLocked==false) //不上锁
+        {
+            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
+        }
+        else    //上锁
+        {
+            let lockData={ IsLocked:true,Callback:this.LockCallback,IndexName:this.Name ,ID:this.LockID,
+                BG:this.LockBG,Text:this.LockText,TextColor:this.LockTextColor, Font:this.LockFont, Count:this.LockCount, MinWidth:this.LockMinWidth };
+            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
+        }
+
+        hqChart.UpdataDataoffset();           //更新数据偏移
+        hqChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        hqChart.Draw();
+
+        if (hqChart.GetIndexEvent)
+        {
+            var event=hqChart.GetIndexEvent();  //指标计算完成回调
+            if (event)
+            {
+                var self=param.Self;
+                var data={ OutVar:self.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData, 
+                        Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
+                event.Callback(event,data,this);
+            }
+        }
+    }
+
+    this.FittingArray=function(sourceData,date,time,hqChart)
+    {
+        var kdata=hqChart.ChartPaint[0].Data;   //K线
+
+        var arySingleData=[];
+        for(i in sourceData)
+        {
+            var value=sourceData[i];
+            var indexItem=new SingleData(); //单列指标数据
+            indexItem.Date=date[i];
+            if (time && i<time.length) indexItem.Time=time[i];
+            indexItem.Value=value;
+            arySingleData.push(indexItem);
+        }
+
+        var aryFittingData;
+        if (ChartData.IsDayPeriod(hqChart.Period))
+            aryFittingData=kdata.GetFittingData(arySingleData);        //数据和主图K线拟合
+        else
+            aryFittingData=kdata.GetMinuteFittingData(arySingleData);  //数据和主图K线拟合
+
+        var bindData=new ChartData();
+        bindData.Data=aryFittingData;
+        var result=bindData.GetValue();
+        return result;
+    }
+
+    this.FittingData=function(jsonData, hqChart)
+    {
+        outVar=jsonData.outvar;
+        date=jsonData.date;
+        time=jsonData.time;
+        var kdata=hqChart.ChartPaint[0].Data;
+
+        //把数据拟合到kdata上
+        result=[];
+        
+        for(i in outVar)
+        {
+            item=outVar[i];
+            var indexData=[];
+            outVarItem={Name:item.name,Type:item.type}
+            if (item.data)
+            {
+                outVarItem.Data=this.FittingArray(item.data,date,time,hqChart);
+
+                if (item.color) outVarItem.Color=item.color;
+                if (item.linewidth>=1) outVarItem.LineWidth=item.linewidth;
+                if (item.isshow==false) outVarItem.IsShow = false;
+                if (item.isexdata==true) outVarItem.IsExData = true;
+
+                result.push(outVarItem);
+            }
+            else if (item.Draw)
+            {
+                var draw=item.Draw;
+                var drawItem={};
+                if (draw.DrawType=='DRAWICON')
+                {
+                    drawItem.Icon=draw.Icon;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+            }
+        }
+
+        return result;
     }
 }
 
