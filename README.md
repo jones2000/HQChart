@@ -96,6 +96,8 @@
 * [多指标叠加](https://opensource.zealink.com/hqweb/demo/phone22.html) <br>
 * [截面数据(财务数据)计算器](https://opensource.zealink.com/hqweb/demo/sectiondatatest.html) <br>
 * [走势图-大盘异动](https://opensource.zealink.com/hqweb/demo/phone23.html) <br>
+* [分笔K线图](https://opensource.zealink.com/hqweb/demo/phone24.html) <br>
+
 
 # 4.使用教程
 ## H5教程

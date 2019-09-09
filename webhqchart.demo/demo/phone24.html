@@ -66,9 +66,6 @@
         
         $(function ()
         {
-
-            JSComplier.AddIcon({ID:1, Text:'\ue611', Color:'rgb(35,55,55)', Family:'js-iconfont'});    //添加一个obj={ID:, Text:, Color, Family: }
-
             var debug=getURLParams('debug');
             if (debug==1) 
             {
@@ -111,8 +108,6 @@
             divKline.style.width=width+'px';
             divKline.style.height=height+'px';
             chart.OnSize();
-
-            LoadCustomIndex();
         
             var option=
                 {
