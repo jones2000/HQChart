@@ -9532,6 +9532,12 @@ ChartData.IsMinutePeriod=function(period,isIncludeBase)
     return false;
 }
 
+//是否是分笔图
+ChartData.IsTickPeriod=function(period)
+{
+    return period==10;
+}
+
 
 function TooltipData()              //提示信息
 {
@@ -9699,6 +9705,10 @@ function ChartKLine()
 
     this.PtMax;     //最大值的位置
     this.PtMin;     //最小值的位置
+
+    this.TickSymbol='╳';    //分笔显示的图标
+    this.TickFontName='arial';
+    this.Period;            //周期
 
     this.DrawAKLine=function()  //美国线
     {
@@ -10270,6 +10280,45 @@ function ChartKLine()
         }
     }
 
+    this.DrawTick=function()        //分笔图
+    {
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
+        if (isHScreen) xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+2.0;
+        var chartright=this.ChartBorder.GetRight();
+        if (isHScreen) chartright=this.ChartBorder.GetBottom();
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        var fontSize=parseInt(dataWidth);
+        if (fontSize<=1) fontSize=2;
+        else if (fontSize>=18) fontSize=18;
+        var bFirstPoint=true;
+        this.Canvas.beginPath();
+        this.Canvas.font=fontSize*GetDevicePixelRatio()+'px '+this.TickFontName;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var data=this.Data.Data[i];
+            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+            var x=left+(right-left)/2;
+            var yClose=this.ChartFrame.GetYFromData(data.Close);
+
+            if (data.Flag===0) this.Canvas.fillStyle=this.UpColor;
+            else if (data.Flag==1) this.Canvas.fillStyle=this.DownColor;
+            else this.Canvas.fillStyle=this.UnchagneColor;
+
+            this.Canvas.textAlign='center'
+            this.Canvas.textBaseline='middle';
+            if (isHScreen)  this.Canvas.fillText(this.TickSymbol,yClose,x);
+            else this.Canvas.fillText(this.TickSymbol,x,yClose);
+        }
+    }
+
     this.Draw=function()
     {
         this.TooltipRect=[];
@@ -10280,6 +10329,12 @@ function ChartKLine()
         this.ChartFrame.ChartKLine={Max:null, Min:null };   //保存K线上 显示最大最小值坐标
 
         if (!this.IsShow) return;
+
+        if (ChartData.IsTickPeriod(this.Period))    //分笔图
+        {
+            this.DrawTick();
+            return;
+        }
 
         if (this.DrawType==1) 
         {
@@ -10584,97 +10639,6 @@ function ChartKLine()
         }
     }
 
-    
-    /*
-    //画某一天的信息地雷
-    this.DrawInfoDiv=function(item)
-    {
-        if (!this.InfoData || this.InfoData.length<=0) return;
-
-        var dataWidth=this.ChartFrame.DataWidth;
-        var distanceWidth=this.ChartFrame.DistanceWidth;
-
-        var infoData=this.InfoData.get(item.DayData.Date.toString());
-        if (!infoData || infoData.Data.length<=0) return;
-
-        var divInfo=document.createElement("div");
-        divInfo.className='kline-info';
-        divInfo.id=Guid();
-        var iconWidth=Math.abs(item.Xleft-item.XRight);
-        if (iconWidth>16)
-        {
-            iconWidth=16;
-            item.Xleft=item.Xleft+(Math.abs(item.Xleft-item.XRight)-iconWidth)/2;
-        }
-
-        var text='', title='';
-        var mapImage=new Map();
-        for(var i in infoData.Data)
-        {
-            var infoItem=infoData.Data[i];
-            var iconSrc=JSKLineInfoMap.GetIconUrl(infoItem.InfoType);
-            var imageInfo=mapImage.get(infoItem.InfoType);
-            if (!imageInfo)
-            {
-                divInfo.innerHTML+="<img src='"+iconSrc+"'"+ " infotype='"+infoItem.InfoType+"' />";
-                mapImage.set(infoItem.InfoType,new Array(infoItem) );
-            }
-            else
-            {
-                imageInfo.push(infoItem);
-            }
-            title+='\n'+infoItem.Title;
-        }
-
-        //divInfo.innerHTML=text;
-        var scrollPos=GetScrollPosition();
-        var left = item.Xleft+ this.ChartBorder.UIElement.getBoundingClientRect().left+scrollPos.Left;
-        var top = item.YMax+this.ChartBorder.UIElement.getBoundingClientRect().top+scrollPos.Top-5;
-
-        divInfo.style.left = left + "px";
-        divInfo.style.top = top-(mapImage.size*16) + "px";
-        //divInfo.title=title;
-        this.ChartBorder.UIElement.parentNode.appendChild(divInfo);
-
-        if (this.InfoTooltipEvent && this.InfoTooltipEvent.length>=2)
-        {
-            if (typeof(this.InfoTooltipEvent[0])=='function')
-            {
-                var chart=this.ChartBorder.UIElement.JSChartContainer;
-                var self=this;
-                mapImage.forEach(function(item,key,data)
-                {
-                    //绑定鼠标悬浮消息
-                    $("#"+divInfo.id+" img[infotype='"+key+"']").mouseover(
-                    {
-                            Chart:chart,    //图形类
-                            InfoType:key,   //信息地雷类型
-                            InfoList:item,  //信息数据列表
-                    },
-                    self.InfoTooltipEvent[0]);
-                });
-            }
-
-            if (typeof(this.InfoTooltipEvent[1])=='function')
-            {
-                var chart=this.ChartBorder.UIElement.JSChartContainer;
-                var self=this;
-                mapImage.forEach(function(item,key,data)
-                {
-                    //绑定鼠标离开
-                    $("#"+divInfo.id+" img[infotype='"+key+"']").mouseleave(
-                    {
-                            Chart:chart,    //图形类
-                    },
-                    self.InfoTooltipEvent[1]);
-                });
-            }
-        }
-
-        this.InfoDiv.push(divInfo);
-    }
-    */
-
     this.GetTooltipData=function(x,y,tooltip)
     {
         for(var i in this.InfoTooltipRect)
@@ -10731,6 +10695,31 @@ function ChartKLine()
         }
 
         return range;
+    }
+
+    //获取所有的价格
+    this.GetAllPrice=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var setPrice=new Set();
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var data=this.Data.Data[i];
+            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+            var value=data.Close;
+            setPrice.add(value);
+        }
+
+        var aryPrice=[];
+        for(var item of setPrice) 
+        {
+            aryPrice.push(item);
+        }
+
+        aryPrice.sort(function(a,b) { return a-b; });   //排序 升序
+
+        return aryPrice;
     }
 }
 
@@ -11827,7 +11816,7 @@ function ChartVolStick()
                 var x=this.ChartFrame.GetXFromIndex(j);
                 if (x>chartright) break;
 
-                if (kItem.Close>kItem.Open)
+                if (kItem.Close>=kItem.Open)
                     this.Canvas.strokeStyle=this.UpColor;
                 else
                     this.Canvas.strokeStyle=this.DownColor;
@@ -16409,6 +16398,9 @@ function FrameSplitKLinePriceY()
     this.Data;              //K线数据 (计算百分比坐标)
     this.FrameSplitData2;                //坐标轴分割方法(计算百分比刻度)
 
+    this.Period;            //周期
+    this.KLineChart;
+
     this.Operator=function()
     {
         var splitData={};
@@ -16423,14 +16415,21 @@ function FrameSplitKLinePriceY()
         if (isPhoneModel && MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,太长了
         console.log(`[FrameSplitKLinePriceY] Max=${splitData.Max} Min=${splitData.Min} Count=${splitData.Count} isPhoneModel=${isPhoneModel} defaultfloatPrecision=${defaultfloatPrecision} `);
 
-        switch(this.CoordinateType)
+        if (ChartData.IsTickPeriod(this.Period))
         {
-            case 1:
-                this.SplitPercentage(splitData,defaultfloatPrecision);
-                break;
-            default:
-                this.SplitDefault(splitData,defaultfloatPrecision);
-                break;
+            this.SplitTickData(splitData,defaultfloatPrecision);
+        }
+        else
+        {
+            switch(this.CoordinateType)
+            {
+                case 1:
+                    this.SplitPercentage(splitData,defaultfloatPrecision);
+                    break;
+                default:
+                    this.SplitDefault(splitData,defaultfloatPrecision);
+                    break;
+            }
         }
 
         this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo,false);
@@ -16438,6 +16437,21 @@ function FrameSplitKLinePriceY()
         this.Frame.HorizontalMin=splitData.Min;
 
         console.log(`[FrameSplitKLinePriceY] fixed . Max=${splitData.Max} Min=${splitData.Min} Count=${splitData.Count}`);
+    }
+
+    this.SplitTickData=function(splitData,floatPrecision)
+    {
+        var aryPrice=this.KLineChart.GetAllPrice();
+
+        this.Frame.HorizontalInfo=[];
+        for(var i in aryPrice)
+        {
+            var value=aryPrice[i];
+            this.Frame.HorizontalInfo[i]= new CoordinateInfo();
+            this.Frame.HorizontalInfo[i].Value=value;
+            if (this.IsShowLeftText) this.Frame.HorizontalInfo[i].Message[0]=value.toFixed(floatPrecision);
+            if (this.IsShowRightText) this.Frame.HorizontalInfo[i].Message[1]=value.toFixed(floatPrecision);
+        }
     }
 
     this.SplitPercentage=function(splitData,floatPrecision)    //百分比坐标
@@ -17486,6 +17500,11 @@ function HQDateStringFormat()
             var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
             this.Text = this.Text + "  " + time;
         }
+        else if (ChartData.IsTickPeriod(this.Data.Period))  //分笔
+        {
+            var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
+            this.Text = this.Text + "  " + time;
+        }
 
         return true;
     }
@@ -17817,7 +17836,7 @@ function IChartTitlePainting()
     this.TitleColor=g_JSChartResource.DefaultTextColor;
 }
 
-var PERIOD_NAME=["日线","周线","月线","年线","1分","5分","15分","30分","60分","季线",""];
+var PERIOD_NAME=["日线","周线","月线","年线","1分","5分","15分","30分","60分","季线","分笔", "",""];
 var RIGHT_NAME=['不复权','前复权','后复权'];
 
 function DynamicKLineTitlePainting()
@@ -21626,6 +21645,7 @@ function JSChartLocalization()
         ['30分', {CN:'30', EN:'30Min'}],
         ['60分', {CN:'60分', EN:'60Min'}],
         ['季线', {CN:'季线', EN:'1Q'}],
+        ['分笔', {CN:'分笔', EN:'Tick'}],
 
         //复权
         ['不复权', {CN:'不复权', EN:'No Right'}],
@@ -22654,7 +22674,7 @@ function KLineChartContainer(uielement)
     this.TradeIndex;                    //交易指标/专家系统
     this.Symbol;
     this.Name;
-    this.Period=0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 9=季线
+    this.Period=0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 9=季线 10=分笔线
     this.Right=0;                       //复权 0 不复权 1 前复权 2 后复权
     this.SourceData;                    //原始的历史数据
     this.MaxReqeustDataCount=3000;      //数据个数
@@ -22679,6 +22699,7 @@ function KLineChartContainer(uielement)
     this.RealtimeApiUrl=g_JSChartResource.Domain+"/API/Stock";                      //实时行情api地址
     this.KLineMatchUrl=g_JSChartResource.Domain+"/API/KLineMatch";                  //形态匹配
     this.StockHistoryDayApiUrl= g_JSChartResource.Domain+'/API/StockHistoryDay';    //股票历史数据
+    this.TickApiUrl=g_JSChartResource.Domain+'/API/StockDetail';                    //当天分笔数据
 
     this.MinuteDialog;      //双击历史K线 弹出分钟走势图
     this.RightMenu;         //右键菜单
@@ -23001,6 +23022,7 @@ function KLineChartContainer(uielement)
         var dataOffset=hisData.Data.length-showCount;
         if (dataOffset<0) dataOffset=0;
         this.ChartPaint[0].Data.DataOffset=dataOffset;
+        this.ChartPaint[0].Period=this.Period;
 
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
 
@@ -23261,7 +23283,8 @@ function KLineChartContainer(uielement)
         if (firstSubFrame && firstSubFrame.YSplitOperator)
         {
             firstSubFrame.YSplitOperator.Symbol=this.Symbol;
-            firstSubFrame.YSplitOperator.Data=this.ChartPaint[0].Data;         //K线数据
+            firstSubFrame.YSplitOperator.Data=this.ChartPaint[0].Data;          //K线数据
+            firstSubFrame.YSplitOperator.Period=this.Period;                    //周期
         }
         
         this.RequestFlowCapitalData();      //请求流通股本数据 (主数据下载完再下载)
@@ -23384,6 +23407,7 @@ function KLineChartContainer(uielement)
         {
             firstSubFrame.YSplitOperator.Symbol=this.Symbol;
             firstSubFrame.YSplitOperator.Data=this.ChartPaint[0].Data;         //K线数据
+            firstSubFrame.YSplitOperator.Period=this.Period;                    //周期
         }
 
         for(var i in this.OverlayChartPaint)    //分钟数据不支持叠加 清空
@@ -23626,6 +23650,192 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
+    //分笔数据
+    this.RequestTickData=function()
+    {
+        var self=this;
+        self.ChartSplashPaint.IsEnableSplash = true;
+        self.Draw();
+        
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestTickData', //类名::
+                Explain:'当天分笔数据',
+                Request:{ Url:self.TickApiUrl, Data:{ symbol: self.Symbol }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvTickData(data);
+                //self.AutoUpdate();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        $.ajax({
+            url: self.TickApiUrl,
+            data:{"symbol":self.Symbol},
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvTickData(data);
+                self.AutoUpdate();
+            }
+        });
+    }
+
+    this.RecvTickData=function(data)
+    {
+        var aryDayData=KLineChartContainer.JsonDataToTickData(data);
+
+        //原始数据
+        var sourceData=new ChartData();
+        sourceData.Data=aryDayData;
+        sourceData.DataType=2;      //0=日线数据 1=分钟数据 2=分笔数据
+
+        //显示的数据
+        var bindData=new ChartData();
+        bindData.Data=aryDayData;
+        bindData.Right=this.Right;
+        bindData.Period=this.Period;
+        bindData.DataType=2;
+
+        //绑定数据
+        this.SourceData=sourceData;
+        this.Symbol=data.symbol;
+        this.Name=data.name;
+        this.BindMainData(bindData,this.PageSize);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        var firstSubFrame;
+        for(var i=0; i<this.Frame.SubFrame.length; ++i) //执行指标
+        {
+            if (i==0) firstSubFrame=this.Frame.SubFrame[i].Frame;
+            this.BindIndexData(i,bindData);
+        }
+
+        if (firstSubFrame && firstSubFrame.YSplitOperator)
+        {
+            firstSubFrame.YSplitOperator.Symbol=this.Symbol;
+            firstSubFrame.YSplitOperator.Data=this.ChartPaint[0].Data;         //K线数据
+            firstSubFrame.YSplitOperator.Period=this.Period;                   //周期
+            firstSubFrame.YSplitOperator.KLineChart=this.ChartPaint[0];        //绑定K线图形
+        }
+        
+        //this.CreateChartDrawPictureByStorage(); //创建画图工具
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+
+        if (this.mapEvent.has(JSCHART_EVENT_ID.RECV_HISTROY_DATA))
+        {
+            var event=this.mapEvent.get(JSCHART_EVENT_ID.RECV_HISTROY_DATA);
+            var data={ HistoryData:bindData, Stock:{Symbol:this.Symbol, Name:this.Name } }
+            event.Callback(event,data,this);
+        }
+    }
+
+    //请求最新的分笔数据
+    this.RequestTickRealtimeData=function()
+    {
+        var self=this;
+        var start=0;
+        if (this.SourceData && this.SourceData.Data) start=this.SourceData.Data.length;
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestTickRealtimeData', //类名::
+                Explain:'当天最新分笔数据',
+                Request:{ Url:self.TickApiUrl, Data:{ symbol: self.Symbol, start:start, end:start+1000 }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvTickData(data);
+                self.AutoUpdate();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        $.ajax({
+            url: self.TickApiUrl,
+            data:{"symbol":self.Symbol, start:start-10, end:start+1000 },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvTickRealtimeData(data);
+                self.AutoUpdate();
+            }
+        });
+    }
+
+    this.RecvTickRealtimeData=function(data)
+    {
+        var aryDayData=KLineChartContainer.JsonDataToTickData(data);    //增量数据
+        if (!aryDayData || aryDayData.length<=0) return;
+
+        //更新原始数据
+        var source=this.SourceData.Data;
+        var lastDataCount=this.SourceData.Data.length;  //上一个的数据长度
+        var lastTime=0;
+        if (source.length>0) lastTime=source[source.length-1].Time;
+        var newCount=0;
+        for(var i in aryDayData)
+        {
+            var item=aryDayData[i];
+            if (item.Time<=lastTime) continue;
+            source.push(item);
+            ++newCount;
+        }
+        if (newCount<=0) return;
+
+        //显示的数据
+        var bindData=new ChartData();
+        bindData.Data=source;
+        bindData.Right=this.Right;
+        bindData.Period=this.Period;
+        bindData.DataType=2;
+
+        //绑定数据
+        this.Symbol=data.symbol;
+        this.Name=data.name;
+        this.UpdateMainData(bindData,lastDataCount);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            this.BindIndexData(i,bindData);
+        }
+        
+        //this.CreateChartDrawPictureByStorage(); //创建画图工具
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+    }
+
     //周期切换
     this.ChangePeriod=function(period)
     {
@@ -23648,6 +23858,9 @@ function KLineChartContainer(uielement)
             case 8:     //60分钟
                 if (this.SourceData.DataType!=1) isDataTypeChange=true;
                 break;
+            case 10:    //分笔线
+            if (this.SourceData.DataType!=2) isDataTypeChange=true;
+                break;
         }
 
         this.Period=period;
@@ -23665,16 +23878,21 @@ function KLineChartContainer(uielement)
             this.RequestHistoryData();                  //请求日线数据
             this.ReqeustKLineInfoData();
         }
-        else 
+        else if (ChartData.IsMinutePeriod(this.Period,true))
         {
             this.ReqeustHistoryMinuteData();            //请求分钟数据
         }  
+        else if (ChartData.IsTickPeriod(this.Period))
+        {
+            this.RequestTickData();                     //请求分笔数据
+        }
     }
 
     //复权切换
     this.ChangeRight=function(right)
     {
         if (IsIndexSymbol(this.Symbol)) return; //指数没有复权
+        if (ChartData.IsTickPeriod(this.Period)) return;            //分笔没有复权
 
         if (right<0 || right>2) return;
 
@@ -24559,10 +24777,14 @@ function KLineChartContainer(uielement)
             this.RequestHistoryData();                  //请求日线数据
             this.ReqeustKLineInfoData();
         }
-        else 
+        else if (ChartData.IsMinutePeriod(this.Period,true))
         {
             this.ReqeustHistoryMinuteData();            //请求分钟数据
-        }  
+        } 
+        else if (ChartData.IsTickPeriod(this.Period))
+        {
+            this.RequestTickData();
+        } 
     }
 
     this.ReqeustKLineInfoData=function()
@@ -25574,15 +25796,19 @@ function KLineChartContainer(uielement)
         {
             setTimeout(function()
             {
-                if (self.Period<=3)
+                if (ChartData.IsDayPeriod(self.Period,true))
                 {
                     self.RequestRealtimeData();               //更新最新行情
                     //self.ReqeustKLineInfoData();
                 }
-                else 
+                else if (ChartData.IsMinutePeriod(self.Period,true))
                 {
                     self.RequestMinuteRealtimeData();         //请求分钟数据
                 }  
+                else if (ChartData.IsTickPeriod(self.Period))
+                {
+                    self.RequestTickRealtimeData();           //请求最新分笔
+                }
             },frequency);
         }
     }
@@ -25769,6 +25995,68 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
         }
     }
     return aryDayData;
+}
+
+KLineChartContainer.JsonDataToTickData=function(data)
+{
+    /* 历史分笔数据格式
+    var aryDayData=[];
+    if (!data.deal || !data.day) return aryDayData;
+    var time=data.deal.time;
+    if (!time) return aryDayData;
+
+    var date=data.date;
+    var amount=data.deal.amount;
+    var flag=data.deal.flag;
+    var price=data.deal.price;
+    var vol=data.deal.vol;
+    var yClose=data.day.yclose;
+    for(var i in time)
+    {
+        var item = new HistoryData();
+
+        item.Date = date;
+        item.Low=item.High=item.Close=item.Open = price[i];
+        item.YClose = yClose;
+        item.Vol = vol[i];    //原始单位股
+        item.Amount = amount[i];
+        item.Flag=flag[i];
+        item.Time=time[i];
+        if (isNaN(item.Open) || item.Open<=0) continue; //停牌的数据剔除
+
+        yClose=item.Close;
+        aryDayData.push(item);
+    }
+
+    return aryDayData;
+    */
+
+   var aryDayData=[];
+   if (!data.detail) return aryDayData;
+
+   var date=data.date;
+   var yClose=data.yclose;
+   for(var i in data.detail)
+   {
+       var item = new HistoryData();
+       var tick=data.detail[i];
+       if (!tick) continue;
+
+       item.Date = date;
+       item.Time=tick[0];
+       item.Low=item.High=item.Close=item.Open = tick[1];
+       item.YClose = yClose;
+       item.Vol = tick[2];    //原始单位股
+       item.Amount = tick[3];
+       item.Flag=tick[4];
+      
+       if (isNaN(item.Open) || item.Open<=0) continue; //停牌的数据剔除
+
+       yClose=item.Close;
+       aryDayData.push(item);
+   }
+
+   return aryDayData;
 }
 
 
@@ -32744,6 +33032,10 @@ function KLineRightMenu(divElement)
                 text: "60分",Value:8,
                 click: function () { chart.ChangePeriod(8); }
             },
+            {
+                text: "分笔",Value:10,
+                click: function () { chart.ChangePeriod(10); }
+            },
             
         ];
 
@@ -35634,6 +35926,7 @@ function Node()
     this.IsNeedSymbolExData=new Set();          //下载股票行情的其他数据
     this.IsNeedHK2SHSZData=new Set();           //下载北上资金数据
     this.IsNeedSectionFinance=new Map();        //下载截面财务数据 { key= 报告期 , Set() 字段}
+    this.IsNeedUserData=new Set();              //下载用户数据
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -35687,6 +35980,12 @@ function Node()
             jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_SF, SF:item});
         }
 
+        //用户数据
+        for(var item of this.IsNeedUserData)
+        {
+            jobs.push({ID:item});
+        }
+
         return jobs;
     }
 
@@ -35724,6 +36023,9 @@ function Node()
             if (!this.IsNeedFinanceData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA))
                 this.IsNeedFinanceData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA);
         }
+
+        if (varName==='USERBUY') this.IsNeedUserData.add(JS_EXECUTE_JOB_ID.JOB_USER_BUY_DATA);
+        if (varName==='USERSELL') this.IsNeedUserData.add(JS_EXECUTE_JOB_ID.JBO_USER_SELL_DATA);
     }
 
     this.VerifySymbolFunction=function(callee,args)
@@ -40705,6 +41007,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.HKToSHSZData=new Map();    //北上资金
     this.NewsAnalysisData=new Map();    //新闻统计
     this.ExtendData=new Map();          //其他的扩展数据
+    this.UserData=new Map();            //用户数据
 
     this.SectionFinanceData=new Map();  //截面报告数据
     this.ThrowSFPeirod=new Set();       //重新获取数据
@@ -42511,6 +42814,81 @@ function JSSymbolData(ast,option,jsExecute)
         return financeData.get(id);
     }
 
+    this.GetUserData=function(job)
+    {
+        var self=this;
+        var jobID=job.ID;
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSSymbolData::GetUserData',
+                Explain:'用户信息',
+                JobID:jobID,
+                Request:{ Data:{ symbol:self.Symbol, period:self.Period }},
+                Self:this,
+                HQData:this.Data,   //行情数据
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvUserData(data,jobID);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        var data=
+        {
+            symbol:self.Symbol, 
+            data:
+            [
+                [20190814, 1],
+                [20190815, 3],
+                [20190904, 2],
+                [20190905, 4]
+            ]
+        }; //测试数据
+
+        self.RecvUserData(data,jobID);
+        self.Execute.RunNextJob();
+         
+    }
+
+    this.RecvUserData=function(data, jobID)
+    {
+        var userData=[];
+        for(var i in data.data)
+        {
+            var item=data.data[i];
+            var userItem=new SingleData();
+            userItem.Date=item[0]
+            userItem.Value=item[1];
+            if (item.length>=3) userItem.Time=item[2];
+            userData.push(userItem);
+        }
+
+        var aryFittingData;
+        if (ChartData.IsDayPeriod(this.Period,true))
+            aryFittingData=this.Data.GetFittingData(userData);        //数据和主图K线拟合
+        else if (ChartData.IsMinutePeriod(this.Period,true))
+            aryFittingData=this.Data.GetMinuteFittingData(userData);  //数据和主图K线拟合
+        else return;
+
+        var bindData=new ChartData();
+        bindData.Data=aryFittingData;
+        
+        this.UserData.set(jobID, bindData.GetValue());
+    }
+
+    this.GetCacheUserData=function(jobID)
+    {
+        if (this.UserData.has(jobID)) return this.UserData.get(jobID);
+
+        return [];
+    }
+
     this.JsonDataToHistoryData=function(data)
     {
         var list = data.data;
@@ -42885,6 +43263,9 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_HK_TO_SZ:2051,      //北上流入深证
     JOB_DOWNLOAD_HK_TO_SH_SZ:2052,   //北上流总的
 
+    JOB_USER_BUY_DATA:3000,              //用户 股票买 次数
+    JBO_USER_SELL_DATA:3001,             //用户 股票卖 次数
+
 
     //截面数据
     //财务数据 SF(公告期,数据名称)   如: SF(201901,"流动资产");
@@ -43110,7 +43491,10 @@ function JSExecute(ast,option)
         ['CAPITAL',null],
         //换手率
         ['EXCHANGE',null],
-        ['SETCODE', null]    
+        ['SETCODE', null],
+        
+        //用户信息
+        ['USERBUY', null], ['USERSELL',null]
     ]);   
 
     this.SymbolData=new JSSymbolData(this.AST,option,this);
@@ -43210,6 +43594,10 @@ function JSExecute(ast,option)
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_SF:
                 return this.SymbolData.GetSectionFinanceData(jobItem);   //财务截面报告数据
+            
+            case JS_EXECUTE_JOB_ID.JOB_USER_BUY_DATA:
+            case JS_EXECUTE_JOB_ID.JBO_USER_SELL_DATA:
+                return this.SymbolData.GetUserData(jobItem);            //下载用户数据
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
@@ -43265,6 +43653,12 @@ function JSExecute(ast,option)
                 return this.SymbolData.WEEK();
             case 'PERIOD':
                 return this.SymbolData.PERIOD();
+
+            case 'USERBUY':
+                return this.SymbolData.GetCacheUserData(JS_EXECUTE_JOB_ID.JOB_USER_BUY_DATA,node);
+            case 'USERSELL':
+                return this.SymbolData.GetCacheUserData(JS_EXECUTE_JOB_ID.JBO_USER_SELL_DATA,node);
+                
         }
     }
 

@@ -744,6 +744,7 @@ function Node()
     this.IsNeedSymbolExData=new Set();          //下载股票行情的其他数据
     this.IsNeedHK2SHSZData=new Set();           //下载北上资金数据
     this.IsNeedSectionFinance=new Map();        //下载截面财务数据 { key= 报告期 , Set() 字段}
+    this.IsNeedUserData=new Set();              //下载用户数据
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -797,6 +798,12 @@ function Node()
             jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_SF, SF:item});
         }
 
+        //用户数据
+        for(var item of this.IsNeedUserData)
+        {
+            jobs.push({ID:item});
+        }
+
         return jobs;
     }
 
@@ -834,6 +841,9 @@ function Node()
             if (!this.IsNeedFinanceData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA))
                 this.IsNeedFinanceData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA);
         }
+
+        if (varName==='USERBUY') this.IsNeedUserData.add(JS_EXECUTE_JOB_ID.JOB_USER_BUY_DATA);
+        if (varName==='USERSELL') this.IsNeedUserData.add(JS_EXECUTE_JOB_ID.JBO_USER_SELL_DATA);
     }
 
     this.VerifySymbolFunction=function(callee,args)
@@ -5815,6 +5825,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.HKToSHSZData=new Map();    //北上资金
     this.NewsAnalysisData=new Map();    //新闻统计
     this.ExtendData=new Map();          //其他的扩展数据
+    this.UserData=new Map();            //用户数据
 
     this.SectionFinanceData=new Map();  //截面报告数据
     this.ThrowSFPeirod=new Set();       //重新获取数据
@@ -7621,6 +7632,81 @@ function JSSymbolData(ast,option,jsExecute)
         return financeData.get(id);
     }
 
+    this.GetUserData=function(job)
+    {
+        var self=this;
+        var jobID=job.ID;
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSSymbolData::GetUserData',
+                Explain:'用户信息',
+                JobID:jobID,
+                Request:{ Data:{ symbol:self.Symbol, period:self.Period }},
+                Self:this,
+                HQData:this.Data,   //行情数据
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvUserData(data,jobID);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        var data=
+        {
+            symbol:self.Symbol, 
+            data:
+            [
+                [20190814, 1],
+                [20190815, 3],
+                [20190904, 2],
+                [20190905, 4]
+            ]
+        }; //测试数据
+
+        self.RecvUserData(data,jobID);
+        self.Execute.RunNextJob();
+         
+    }
+
+    this.RecvUserData=function(data, jobID)
+    {
+        var userData=[];
+        for(var i in data.data)
+        {
+            var item=data.data[i];
+            var userItem=new SingleData();
+            userItem.Date=item[0]
+            userItem.Value=item[1];
+            if (item.length>=3) userItem.Time=item[2];
+            userData.push(userItem);
+        }
+
+        var aryFittingData;
+        if (ChartData.IsDayPeriod(this.Period,true))
+            aryFittingData=this.Data.GetFittingData(userData);        //数据和主图K线拟合
+        else if (ChartData.IsMinutePeriod(this.Period,true))
+            aryFittingData=this.Data.GetMinuteFittingData(userData);  //数据和主图K线拟合
+        else return;
+
+        var bindData=new ChartData();
+        bindData.Data=aryFittingData;
+        
+        this.UserData.set(jobID, bindData.GetValue());
+    }
+
+    this.GetCacheUserData=function(jobID)
+    {
+        if (this.UserData.has(jobID)) return this.UserData.get(jobID);
+
+        return [];
+    }
+
     this.JsonDataToHistoryData=function(data)
     {
         var list = data.data;
@@ -7995,6 +8081,9 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_HK_TO_SZ:2051,      //北上流入深证
     JOB_DOWNLOAD_HK_TO_SH_SZ:2052,   //北上流总的
 
+    JOB_USER_BUY_DATA:3000,              //用户 股票买 次数
+    JBO_USER_SELL_DATA:3001,             //用户 股票卖 次数
+
 
     //截面数据
     //财务数据 SF(公告期,数据名称)   如: SF(201901,"流动资产");
@@ -8220,7 +8309,10 @@ function JSExecute(ast,option)
         ['CAPITAL',null],
         //换手率
         ['EXCHANGE',null],
-        ['SETCODE', null]    
+        ['SETCODE', null],
+        
+        //用户信息
+        ['USERBUY', null], ['USERSELL',null]
     ]);   
 
     this.SymbolData=new JSSymbolData(this.AST,option,this);
@@ -8320,6 +8412,10 @@ function JSExecute(ast,option)
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_SF:
                 return this.SymbolData.GetSectionFinanceData(jobItem);   //财务截面报告数据
+            
+            case JS_EXECUTE_JOB_ID.JOB_USER_BUY_DATA:
+            case JS_EXECUTE_JOB_ID.JBO_USER_SELL_DATA:
+                return this.SymbolData.GetUserData(jobItem);            //下载用户数据
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
@@ -8375,6 +8471,12 @@ function JSExecute(ast,option)
                 return this.SymbolData.WEEK();
             case 'PERIOD':
                 return this.SymbolData.PERIOD();
+
+            case 'USERBUY':
+                return this.SymbolData.GetCacheUserData(JS_EXECUTE_JOB_ID.JOB_USER_BUY_DATA,node);
+            case 'USERSELL':
+                return this.SymbolData.GetCacheUserData(JS_EXECUTE_JOB_ID.JBO_USER_SELL_DATA,node);
+                
         }
     }
 
