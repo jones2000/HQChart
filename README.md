@@ -1,3 +1,6 @@
+[![gitee star](https://gitee.com/jones2000/HQChart/badge/star.svg?theme=dark)]('https://gitee.com/jones2000/HQChart/stargazers')
+[![gitee fork](https://gitee.com/jones2000/HQChart/badge/fork.svg?theme=dark)]('https://gitee.com/jones2000/HQChart/members')
+
 如果你觉得我们的行情模块对你有帮助， 请给我们点下star. (●ˇ∀ˇ●)
 
 # 目录结构
