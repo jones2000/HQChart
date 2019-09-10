@@ -162,6 +162,16 @@ var BLACK_STYLE=
         BorderColor:'rgb(210,210,210)',     //边框颜色
         TitleColor:'rgb(210,210,210)',       //标题颜色
         TitleFont:13*GetDevicePixelRatio() +'px 微软雅黑'   //字体
+    },
+
+    //走势图 信息地雷
+    MinuteInfo:
+    {
+        TextColor: 'rgb(84,143,255)',
+        Font: 14*GetDevicePixelRatio() +'px 微软雅黑',
+        PointColor:'rgb(38,113,254)',
+        LineColor:'rgb(120,167,255)',
+        TextBGColor:'rgba(255,255,255,1)'
     }
     
 };

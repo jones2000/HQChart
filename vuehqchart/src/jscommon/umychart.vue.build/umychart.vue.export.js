@@ -24,6 +24,7 @@ export default {
     JSAlgorithm:JSAlgorithm,                //算法类
     JSComplier:JSComplier,                  //指标编译器
     JSIndexScript:JSIndexScript,            //系统指标库
+    GetDevicePixelRatio,GetDevicePixelRatio,
     
     ScriptIndexConsole:ScriptIndexConsole,  //指标执行 无UI
     //style.js相关
