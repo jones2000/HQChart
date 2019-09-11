@@ -6,6 +6,7 @@
 
 如果你觉得我们的行情模块对你有帮助， 请给我们点下star. (●ˇ∀ˇ●)
 
+
 # 目录结构
 --node.jccomplier  nodejs通达信脚本选股后台api模块. 使用restify webapi框架 <br>
 --webhqchart 行情前端js代码模块 <br>
@@ -31,6 +32,10 @@
   * 2019-7-8 麦语法执行器基本移植完成
   
 --umychart_indexapi nodejs指标后台计算demo (包括docker打包文件)
+
+# npm 安装
+npm install hqchart
+[https://www.npmjs.com/package/hqchart](https://www.npmjs.com/package/hqchart)
 
 # 声明
   本项目只提供行情图形库及麦语法脚本执行器.
@@ -104,6 +109,7 @@
 * [截面数据(财务数据)计算器](https://opensource.zealink.com/hqweb/demo/sectiondatatest.html) <br>
 * [走势图-大盘异动](https://opensource.zealink.com/hqweb/demo/phone23.html) <br>
 * [分笔K线图](https://opensource.zealink.com/hqweb/demo/phone24.html) <br>
+* 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
 
 
 # 4.使用教程
@@ -168,23 +174,22 @@
 5. [如何(c++,js)写一个传统的K线图和走势图4-K线图](https://blog.csdn.net/jones2000/article/details/85235463) <br>
 6. [如何(c++,js)写一个传统的K线图和走势图5-移动筹码图](https://blog.csdn.net/jones2000/article/details/85356163) <br>
 
-* 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
-* QQ交流群(950092318) ![QQ群](/小程序行情模块用例/image/qqcode.png)
-
 # 5.VUE 行情项目
 
-* pc网页版行情目前正在开发中,基于VUE框架开发 <br>
-  ![走势图2](/小程序行情模块用例/image/pch5hq.PNG)
-   [行情页面地址(v1.0）](https://opensource.zealink.com/vuehqweb/hq.demo.page.html) <br><br>
-  ![历史高频数据查询图2](/小程序行情模块用例/image/pch5history.PNG)
-   [查询页面地址](https://opensource.zealink.com/vuehqweb/queryContent.demo.page.html) <br><br>
-  ![多周期图2](/小程序行情模块用例/image/pch5hq2.png)
-   [多周期页面地址](https://opensource.zealink.com/vuehqweb/stockmultiperiod.demo.page.html) <br><br>
-   ![综合排名2](/小程序行情模块用例/image/pch5hq3.png)
-   [综合排名页面地址](https://opensource.zealink.com/vuehqweb/stockmultiorder.demo.page.html) <br><br>
+![走势图2](/小程序行情模块用例/image/pch5hq.PNG)
+[行情页面地址(v1.0）](https://opensource.zealink.com/vuehqweb/hq.demo.page.html) <br><br>
+![历史高频数据查询图2](/小程序行情模块用例/image/pch5history.PNG)
+[查询页面地址](https://opensource.zealink.com/vuehqweb/queryContent.demo.page.html) <br><br>
+![多周期图2](/小程序行情模块用例/image/pch5hq2.png)
+[多周期页面地址](https://opensource.zealink.com/vuehqweb/stockmultiperiod.demo.page.html) <br><br>
+![综合排名2](/小程序行情模块用例/image/pch5hq3.png)
+[综合排名页面地址](https://opensource.zealink.com/vuehqweb/stockmultiorder.demo.page.html) <br><br>
    
-   ## 基于VUE版本给客户开发的样例
-   [指数行情页面黑色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sh&colorType=black) <br>
-   [个股行情页面白色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sz) <br>
-   ## js页面样例
-   [个股详情手机端h5](https://opensource.zealink.com/hqweb/hqpages/stockpage.html?) <br>
+## 基于VUE版本给客户开发的样例
+[指数行情页面黑色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sh&colorType=black) <br>
+[个股行情页面白色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sz) <br>
+## js页面样例
+[个股详情手机端h5](https://opensource.zealink.com/hqweb/hqpages/stockpage.html?) <br>
+
+
+* QQ交流群(950092318) ![QQ群](/小程序行情模块用例/image/qqcode.png)
