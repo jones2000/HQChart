@@ -14608,8 +14608,8 @@ function DynamicKLineTitlePainting()
             var periodName=g_JSChartLocalization.GetText(PERIOD_NAME[this.Data.Period],this.LanguageID);
             var rightName=g_JSChartLocalization.GetText(RIGHT_NAME[this.Data.Right],this.LanguageID);
             var text="("+periodName+" "+rightName+")";
-            var isIndex=IsIndexSymbol(this.Symbol); //是否是指数
-            if(item.Time!=null || isIndex)  text="("+periodName+")";           //分钟K线 指数 没有复权
+            var isStock=MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol); //是否是指数
+            if(item.Time!=null || !isStock)  text="("+periodName+")";           //分钟K线 指数 没有复权
             if (!this.DrawText(text,this.UnchagneColor,position)) return;
         }
 
@@ -20353,13 +20353,14 @@ function KLineChartContainer(uielement)
         self.ChartSplashPaint.IsEnableSplash = true;
         self.Draw();
         
+        var cacheUrl=g_JSChartResource.CacheDomain+'/cache/dealday/today/'+self.Symbol+'.json'
         if (this.NetworkFilter)
         {
             var obj=
             {
                 Name:'KLineChartContainer::RequestTickData', //类名::
                 Explain:'当天分笔数据',
-                Request:{ Url:self.TickApiUrl, Data:{ symbol: self.Symbol }, Type:'POST' }, 
+                Request:{ Url:cacheUrl, Data:{ symbol: self.Symbol }, Type:'GET' }, 
                 Self:this,
                 PreventDefault:false
             };
@@ -20373,6 +20374,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
+        /*
         $.ajax({
             url: self.TickApiUrl,
             data:{"symbol":self.Symbol},
@@ -20386,6 +20388,27 @@ function KLineChartContainer(uielement)
                 self.AutoUpdate();
             }
         });
+        */
+        $.ajax({
+            url: cacheUrl,
+            data:{"symbol":self.Symbol},
+            type:"get",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvTickData(data);
+                self.AutoUpdate();
+            },
+            error: function(http,e)
+            {
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.AutoUpdate();
+                //self.RecvError(http,e,param);;
+            }
+        });
+       
     }
 
     this.RecvTickData=function(data)
@@ -20587,7 +20610,7 @@ function KLineChartContainer(uielement)
     //复权切换
     this.ChangeRight=function(right)
     {
-        if (IsIndexSymbol(this.Symbol)) return; //指数没有复权
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol)) return;  //A股股票有复权
         if (ChartData.IsTickPeriod(this.Period)) return;            //分笔没有复权
 
         if (right<0 || right>2) return;
@@ -21409,7 +21432,7 @@ function KLineChartContainer(uielement)
                 bindData.Period=this.Period;
                 bindData.Right=this.Right;
 
-                if (bindData.Right>0 && !IsIndexSymbol(item.Symbol))       //复权数据
+                if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(item.Symbol))       //复权数据
                 {
                     var rightData=bindData.GetRightDate(bindData.Right);
                     bindData.Data=rightData;
@@ -21455,7 +21478,7 @@ function KLineChartContainer(uielement)
     this.ChangeSymbol=function(symbol)
     {
         this.Symbol=symbol;
-        if (IsIndexSymbol(symbol)) this.Right=0;    //指数没有复权
+        if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol)) this.Right=0;    //指数没有复权
 
         //清空指标
         if (this.Frame && this.Frame.SubFrame)
@@ -21718,7 +21741,7 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.DataType=0;
 
-        if (bindData.Right>0 && !IsIndexSymbol(data.symbol))    //复权数据 ,指数没有复权
+        if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(data.symbol))    //复权数据 ,A股才有有复权
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
@@ -28221,7 +28244,7 @@ function MarketEventInfo()
 }
 
 
-
+//注意！！！ 这个函数已经不用了
 //是否是指数代码
 function IsIndexSymbol(symbol)
 {
@@ -28245,6 +28268,7 @@ function IsIndexSymbol(symbol)
     return false;
 }
 
+//注意！！！ 这个函数已经不用了
 //是否是基金代码
 function IsFundSymbol(symbol)
 {
@@ -30347,7 +30371,7 @@ function KLineRightMenu(divElement)
         }
         ];
 
-        if(IsIndexSymbol(chart.Symbol)){
+        if(MARKET_SUFFIX_NAME.IsSHSZIndex(chart.Symbol)){
             dataList.splice(1,1);
         }
 
