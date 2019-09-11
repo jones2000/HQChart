@@ -34,11 +34,11 @@
 --umychart_indexapi nodejs指标后台计算demo (包括docker打包文件)
 
 # npm 安装
-npm install hqchart
+npm install hqchart <br>
 [https://www.npmjs.com/package/hqchart](https://www.npmjs.com/package/hqchart)
 
 # 声明
-  本项目只提供行情图形库及麦语法脚本执行器.
+  本项目只提供行情图形库及麦语法脚本执行器.<br>
   页面中所有的行情数据都来自互联网或测试假数据, 不能确保数据的正确性, 仅供开发调试使用. 任何行情数据问题都与本项目无关. 请自行去交易所购买正版行情。
 
 # HQChart 3.0
@@ -70,7 +70,8 @@ npm install hqchart
 * 支持通达信语法指标
 * 支持五彩K线(目前录入系统五彩K线30多个), 支持自定义通达信语法脚本的五彩K线
 * 支持专家系统指标
-* 支持个股筹码图 ![K线图](/小程序行情模块用例/image/hqchart_kline2.png)
+* 支持个股筹码图  <br>
+![K线图](/小程序行情模块用例/image/hqchart_kline2.png)
 * 支持单指标单股票前端回测计算 (webhqchart\umychart.regressiontest.js) (2019-5-13 增加功能)<br>
      计算如下数据:  <br>   
           Trade: {Count 交易次数  Days:交易天数 Success:成功交易次数 Fail:失败交易次数} <br>
@@ -78,10 +79,12 @@ npm install hqchart
           Profit: 总收益 StockProfit:个股收益  Excess:超额收益 MaxDropdown:最大回撤 Beta:β(Beta)系数 <br>
           NetValue: [ {Date:日期, Net:净值, Close:股票收盘价, IndexClose:大盘的收盘价}, ] <br>
 * 支持弹幕
-* 支持多指标叠加 (2019-7-12 新加功能)  ![K线图](/小程序行情模块用例/image/hqchart_kline_lock2.png)
+* 支持多指标叠加 (2019-7-12 新加功能)   <br>
+![K线图](/小程序行情模块用例/image/hqchart_kline_lock2.png)
 * 支持截图 (2019-7-9 新加功能)
 * 支持K线日线数据或分钟数据自动更新 (2019-7-23)
-* 支持分笔K线图 (2019-9-9) ![K线图](/小程序行情模块用例/image/hqchart_kline3.png)
+* 支持分笔K线图 (2019-9-9)  <br>
+![K线图](/小程序行情模块用例/image/hqchart_kline3.png)
 
 # 2. 走势图
 * 支持指标 <br>
@@ -89,9 +92,12 @@ npm install hqchart
 * 支持沪深和港股,国内期货(开发中)<br>
 * 分钟数据显示 <br>
 * 支持多日分钟数据显示<br>
-* 支持A股集合竞价显示/隐藏 (2019-7-12 新加功能) ![走势图2](/小程序行情模块用例/image/hqchart_minute3.png)
-* 支持指数领先指标(2019-7-15  新加功能) ![领先指标](/小程序行情模块用例/image/hqchart_kline_lock3.png)
-* 支持信息地雷 ![信息地雷](/小程序行情模块用例/image/hqchart_minute_info.png)
+* 支持A股集合竞价显示/隐藏 (2019-7-12 新加功能)  <br>
+![走势图2](/小程序行情模块用例/image/hqchart_minute3.png)
+* 支持指数领先指标(2019-7-15  新加功能)  <br>
+![领先指标](/小程序行情模块用例/image/hqchart_kline_lock3.png)
+* 支持信息地雷 <br>
+![信息地雷](/小程序行情模块用例/image/hqchart_minute_info.png)
 
 # 3. 网页demo  <br>
 * [K线图](https://opensource.zealink.com/hqweb/demo/phone7.html)  <br>
