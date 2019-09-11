@@ -199,4 +199,5 @@ npm install hqchart <br>
 [个股详情手机端h5](https://opensource.zealink.com/hqweb/hqpages/stockpage.html?) <br>
 
 
-* QQ交流群(950092318) ![QQ群](/小程序行情模块用例/image/qqcode.png)
+* QQ交流群(950092318) <br>
+![QQ群](/小程序行情模块用例/image/qqcode.png)
