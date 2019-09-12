@@ -12987,6 +12987,7 @@ function ChartMinuteInfo()
     this.SourceData;
     this.ChartMinutePrice;
     this.YClose;
+    this.HQChartBorder;
 
     this.TextColor=g_JSChartResource.MinuteInfo.TextColor;
     this.Font=g_JSChartResource.MinuteInfo.Font;
@@ -13004,6 +13005,7 @@ function ChartMinuteInfo()
     this.FrameRight;
     this.YOffset=5;
     this.IsHScreen=false;
+    this.IsDrawFull=false;   //是否全屏画
 
     this.SetOption=function(option)
     {
@@ -13013,6 +13015,7 @@ function ChartMinuteInfo()
         if (option.PointColor) this.PointColor=option.PointColor;
         if (option.LineColor) this.LineColor=option.LineColor;
         if (option.TextHeight>0) this.TextHeight=option.TextHeight;
+        if (option.IsDrawFull==true) this.IsDrawFull=true;
     }
 
     this.Draw=function()
@@ -13030,6 +13033,7 @@ function ChartMinuteInfo()
         var minuteCount=this.ChartFrame.MinuteCount;
 
         this.FrameBottom=this.ChartBorder.GetBottom();
+        if (this.IsDrawFull && this.HQChartBorder) this.FrameBottom=this.HQChartBorder.GetBottom();
         this.FrameTop=this.ChartBorder.GetTop();
         this.FrameLeft=this.ChartBorder.GetLeft();
         this.FrameRight=this.ChartBorder.GetRight();
@@ -13165,15 +13169,15 @@ function ChartMinuteInfo()
         var isDrawLeft=item.IsLeft;
         this.Canvas.strokeStyle=this.LineColor;
         this.Canvas.beginPath();
-        this.Canvas.moveTo(item.Start.X,item.Start.Y);
+        this.Canvas.moveTo(ToFixedPoint(item.Start.X),item.Start.Y);
         if (isDrawLeft) 
         {
-            this.Canvas.lineTo(rtBorder.X,rtBorder.Y);
+            this.Canvas.lineTo(ToFixedPoint(item.Start.X),rtBorder.Y);
         }
         else 
         {
             if (this.IsHScreen) this.Canvas.lineTo(rtBorder.X,rtBorder.Y+rtBorder.Height);
-            else this.Canvas.lineTo(rtBorder.X+rtBorder.Width,rtBorder.Y);
+            else this.Canvas.lineTo(ToFixedPoint(item.Start.X),rtBorder.Y);
         }
         this.Canvas.stroke();
 
@@ -16735,6 +16739,21 @@ function FrameSplitMinutePriceY()
         this.Frame.HorizontalInfo=[];
         if (!this.Data) return;
 
+        var range=this.GetMaxMin();
+
+        if (MARKET_SUFFIX_NAME.IsUSA(this.Symbol))
+        {
+            this.USASplit(range);
+        }
+        else
+        {
+            this.DefaultSplit(range);
+        }
+        
+    }
+
+    this.GetMaxMin=function()   //计算图中所有的数据的最大最小值
+    {
         var max=this.YClose;
         var min=this.YClose;
         var data=this.Data;
@@ -16782,6 +16801,75 @@ function FrameSplitMinutePriceY()
             if (range.Min && range.Min<min) min=range.Min;
         }
 
+        return { Max:max, Min:min };
+    }
+
+    this.USASplit=function(range)
+    {
+        var max=range.Max;
+        var min=range.Min;
+
+        if (max==min)
+        {
+            max=max+max*0.1;
+            min=min-min*0.1;
+        }
+        else
+        {
+            var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+            var height=this.Frame.ChartBorder.GetHeight();   //画布的高度
+            var spacePrice=5*pixelTatio*(max-min)/height;
+            max+=spacePrice;
+            min-=spacePrice;
+        }
+
+        var showCount=this.SplitCount;
+        var distance=(max-min)/(showCount-1);
+        const minDistance=[1, 0.1, 0.01, 0.001, 0.0001];
+        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
+        if (distance<minDistance[defaultfloatPrecision]) 
+        {
+            distance=minDistance[defaultfloatPrecision];
+            max=min+distance*showCount;
+            //min=this.YClose-(distance*(showCount-1)/2);
+        }
+
+        for(var i=0;i<showCount;++i)
+        {
+            var price=min+(distance*i);
+            var coordinate=new CoordinateInfo();
+            coordinate.Value=price;
+            if (this.IsShowLeftText) coordinate.Message[0]=price.toFixed(defaultfloatPrecision);
+
+            if (this.YClose)
+            {
+                var per=(price/this.YClose-1)*100;
+                if (per>0) coordinate.TextColor=g_JSChartResource.UpTextColor;
+                else if (per<0) coordinate.TextColor=g_JSChartResource.DownTextColor;
+                if (this.IsShowRightText) coordinate.Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
+            }
+
+            this.Frame.HorizontalInfo.push(coordinate);
+        }
+
+        if (this.YClose>min && this.YClose<max)
+        {
+            var coordinate=new CoordinateInfo();
+            coordinate.Value=this.YClose;
+            this.Frame.HorizontalInfo.push(coordinate);
+        }
+
+        this.Frame.HorizontalInfo.sort(function(a,b) { return a.Value-b.Value; });
+
+        this.Frame.HorizontalMax=max;
+        this.Frame.HorizontalMin=min;
+    }
+
+    this.DefaultSplit=function(range)
+    {
+        var max=range.Max;
+        var min=range.Min;
+        
         if (this.YClose==max && this.YClose==min)
         {
             max=this.YClose+this.YClose*0.1;
@@ -17925,8 +18013,8 @@ function DynamicKLineTitlePainting()
             var periodName=g_JSChartLocalization.GetText(PERIOD_NAME[this.Data.Period],this.LanguageID);
             var rightName=g_JSChartLocalization.GetText(RIGHT_NAME[this.Data.Right],this.LanguageID);
             var text="("+periodName+" "+rightName+")";
-            var isIndex=IsIndexSymbol(this.Symbol); //是否是指数
-            if(item.Time!=null || isIndex)  text="("+periodName+")";           //分钟K线 指数 没有复权
+            var isStock=MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol); //是否是指数
+            if(item.Time!=null || !isStock)  text="("+periodName+")";           //分钟K线 指数 没有复权
             if (!this.DrawText(text,this.UnchagneColor,position)) return;
         }
 
@@ -23670,13 +23758,15 @@ function KLineChartContainer(uielement)
         self.ChartSplashPaint.IsEnableSplash = true;
         self.Draw();
         
+        //下载缓存文件
+        var cacheUrl=g_JSChartResource.CacheDomain+'/cache/dealday/today/'+self.Symbol+'.json'
         if (this.NetworkFilter)
         {
             var obj=
             {
                 Name:'KLineChartContainer::RequestTickData', //类名::
                 Explain:'当天分笔数据',
-                Request:{ Url:self.TickApiUrl, Data:{ symbol: self.Symbol }, Type:'POST' }, 
+                Request:{ Url:cacheUrl, Data:{ symbol: self.Symbol }, Type:'GET' }, 
                 Self:this,
                 PreventDefault:false
             };
@@ -23684,12 +23774,13 @@ function KLineChartContainer(uielement)
             { 
                 self.ChartSplashPaint.IsEnableSplash=false;
                 self.RecvTickData(data);
-                //self.AutoUpdate();
+                self.AutoUpdate();
             });
 
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
+        /*
         $.ajax({
             url: self.TickApiUrl,
             data:{"symbol":self.Symbol},
@@ -23703,6 +23794,27 @@ function KLineChartContainer(uielement)
                 self.AutoUpdate();
             }
         });
+        */
+        $.ajax({
+            url: cacheUrl,
+            data:{"symbol":self.Symbol},
+            type:"get",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvTickData(data);
+                self.AutoUpdate(1);
+            },
+            error: function(http,e)
+            {
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.AutoUpdate();
+                //self.RecvError(http,e,param);;
+            }
+        });
+       
     }
 
     this.RecvTickData=function(data)
@@ -23904,7 +24016,7 @@ function KLineChartContainer(uielement)
     //复权切换
     this.ChangeRight=function(right)
     {
-        if (IsIndexSymbol(this.Symbol)) return; //指数没有复权
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol)) return;  //A股股票有复权
         if (ChartData.IsTickPeriod(this.Period)) return;            //分笔没有复权
 
         if (right<0 || right>2) return;
@@ -24726,7 +24838,7 @@ function KLineChartContainer(uielement)
                 bindData.Period=this.Period;
                 bindData.Right=this.Right;
 
-                if (bindData.Right>0 && !IsIndexSymbol(item.Symbol))       //复权数据
+                if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(item.Symbol))       //复权数据
                 {
                     var rightData=bindData.GetRightDate(bindData.Right);
                     bindData.Data=rightData;
@@ -24772,7 +24884,7 @@ function KLineChartContainer(uielement)
     this.ChangeSymbol=function(symbol)
     {
         this.Symbol=symbol;
-        if (IsIndexSymbol(symbol)) this.Right=0;    //指数没有复权
+        if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol)) this.Right=0;    //指数没有复权
 
         //清空指标
         if (this.Frame && this.Frame.SubFrame)
@@ -25035,7 +25147,7 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.DataType=0;
 
-        if (bindData.Right>0 && !IsIndexSymbol(data.symbol))    //复权数据 ,指数没有复权
+        if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(data.symbol))    //复权数据 ,A股才有有复权
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
@@ -25777,13 +25889,8 @@ function KLineChartContainer(uielement)
         this.ChartPictureMenu.DoModal(event);
     }
 
-    //this.RecvKLineMatchData=function(data)
-    //{
-    //    console.log(data);
-    //}
-
     //数据自动更新
-    this.AutoUpdate=function()
+    this.AutoUpdate=function(waitTime)  //waitTime 更新时间
     {
         if (!this.IsAutoUpdate) return;
         var self = this;
@@ -25798,6 +25905,7 @@ function KLineChartContainer(uielement)
         if(time>1540) return ;
 
         var frequency=this.AutoUpdateFrequency;
+        if (waitTime>0) frequency=waitTime;
         if(time <930)
         {
             setTimeout(function()
@@ -27420,6 +27528,7 @@ function MinuteChartContainer(uielement)
         chart.Canvas=this.Canvas;
         chart.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
         chart.ChartFrame=this.Frame.SubFrame[0].Frame;
+        chart.HQChartBorder=this.Frame.ChartBorder;
         chart.ChartMinutePrice=this.ChartPaint[0];
         if (option && chart.SetOption) chart.SetOption(option);
         this.ChartInfoPaint=chart;
@@ -31538,7 +31647,7 @@ function MarketEventInfo()
 }
 
 
-
+//注意！！！ 这个函数已经不用了
 //是否是指数代码
 function IsIndexSymbol(symbol)
 {
@@ -31562,6 +31671,7 @@ function IsIndexSymbol(symbol)
     return false;
 }
 
+//注意！！！ 这个函数已经不用了
 //是否是基金代码
 function IsFundSymbol(symbol)
 {
@@ -33664,7 +33774,7 @@ function KLineRightMenu(divElement)
         }
         ];
 
-        if(IsIndexSymbol(chart.Symbol)){
+        if(MARKET_SUFFIX_NAME.IsSHSZIndex(chart.Symbol)){
             dataList.splice(1,1);
         }
 
@@ -34318,6 +34428,7 @@ var MARKET_SUFFIX_NAME=
 
     IsUSA:function(upperSymbol) //是否是美股
     {
+        if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.USA) > 0;
     },
 
