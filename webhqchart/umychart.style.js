@@ -15,10 +15,12 @@
     !!手机上字体大小需要*分辨率比
 */
 
+/* umychart.js 里面已经有了
 function GetDevicePixelRatio()
 {
     return window.devicePixelRatio || 1;
 }
+*/
 
 //黑色风格
 var BLACK_STYLE=

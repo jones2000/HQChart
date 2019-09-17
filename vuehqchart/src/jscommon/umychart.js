@@ -7058,35 +7058,22 @@ function ChartKLine()
         this.Canvas.textAlign=ptTop.Align;
         this.Canvas.textBaseline='bottom';
         var left=ptTop.Align=='left'?ptTop.X:ptTop.X;
-        this.Canvas.fillText(ptTop.Value.toFixed(defaultfloatPrecision),left,ptTop.Y);
+        var text=ptTop.Value.toFixed(defaultfloatPrecision);
+        if (ptTop.Align=='left') text='→'+text;
+        else text=text+'←';
+        this.Canvas.fillText(text,left,ptTop.Y);
         this.ChartFrame.ChartKLine.Max={X:left, Y:ptTop.Y, Text: { BaseLine:'bottom'}};
-
-        /*
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(ptMax.X,ptMax.Y);
-        this.Canvas.lineTo(left,ptMax.Y+8);
-        this.Canvas.strokeStyle=this.TextColor;
-        this.Canvas.stroke();
-        this.Canvas.closePath();
-        */
 
         var ptBottom=ptMin;
         if (ptMin.Y<ptMax.Y) ptBottom=ptMax;
         this.Canvas.textAlign=ptBottom.Align;
         this.Canvas.textBaseline='top';
         var left=ptBottom.Align=='left'?ptBottom.X:ptBottom.X;
-        this.Canvas.fillText(ptMin.Value.toFixed(defaultfloatPrecision),left,ptBottom.Y);
+        var text=ptMin.Value.toFixed(defaultfloatPrecision);
+        if (ptBottom.Align=='left') text='→'+text;
+        else  text=text+'←';
+        this.Canvas.fillText(text,left,ptBottom.Y);
         this.ChartFrame.ChartKLine.Min={X:left, Y:ptBottom.Y, Text:{ BaseLine:'top'}};
-
-
-        /*
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(ptMin.X,ptMin.Y);
-        this.Canvas.lineTo(left,ptMin.Y-8);
-        this.Canvas.strokeStyle=this.TextColor;
-        this.Canvas.stroke();
-        this.Canvas.closePath();
-        */
     }
 
     this.HScreenDrawMaxMinPrice=function(ptMax,ptMin)   //横屏模式下显示最大最小值
@@ -13424,7 +13411,7 @@ function FrameSplitMinutePriceY()
 
         var range=this.GetMaxMin();
 
-        if (MARKET_SUFFIX_NAME.IsUSA(this.Symbol))
+        if (this.Symbol && MARKET_SUFFIX_NAME.IsUSA(this.Symbol.toUpperCase()))
         {
             this.USASplit(range);
         }
@@ -13841,6 +13828,13 @@ function ChartCorssCursor()
                 this.Canvas.fillText(text,left+2,y,textWidth);
             }
 
+
+            if (this.StringFormatY.PercentageText)
+            {
+                text=this.StringFormatY.PercentageText+'%';
+                textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
+            }
+
             if (this.Frame.ChartBorder.Right>=30 && this.ShowTextMode.Right==1)
             {
                 var isOverlayIndex=false;       //是否有叠加子坐标
@@ -14234,16 +14228,20 @@ function HQPriceStringFormat()
     this.Symbol;
     this.FrameID;
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+    this.YClose;    //收盘价
+    this.PercentageText;   //百分比
 
     this.Operator=function()
     {
         if (!this.Value) return false;
 
+        this.PercentageText=null;
         var defaultfloatPrecision=2;     //价格小数位数 
         if (this.FrameID==0)    //第1个窗口显示原始价格
         {
             var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
             this.Text=this.Value.toFixed(defaultfloatPrecision);
+            if (this.YClose>0) this.PercentageText=((this.Value-this.YClose)*100/this.YClose).toFixed(2);   //走势图右边坐标显示百分比
         }
         else
         {
@@ -24089,6 +24087,9 @@ function MinuteChartContainer(uielement)
         this.TitlePaint[0].Name=this.Name;
         this.TitlePaint[0].YClose=yClose;
 
+        if (this.ChartCorssCursor && this.ChartCorssCursor.StringFormatY)
+            this.ChartCorssCursor.StringFormatY.YClose=yClose;
+
         if (this.ExtendChartPaint[0])
         {
             this.ExtendChartPaint[0].Symbol=this.Symbol;
@@ -31280,7 +31281,7 @@ function MinuteTimeStringData()
 
     this.GetUSA=function()
     {
-        if (!this.USA) this.USA=this.CreateUSAData(true);
+        if (!this.USA) this.USA=this.CreateUSAData(0);
         return this.USA;
     }
 
@@ -31307,28 +31308,37 @@ function MinuteTimeStringData()
         return this.CreateTimeData(TIME_SPLIT);
     }
 
-    this.CreateUSAData=function(isSummer)
+    this.CreateUSAData=function(type)
     {
-        //美国夏令时
-        if (isSummer)
+        if (type==1)    //美国夏令时
         {
-            const TIME_SUMMER_SPLIT =
-                [
-                    { Start: 2130, End: 2359 },
-                    { Start: 0, End: 400 }
-                ];
+            const TIME_SPLIT =
+            [
+                { Start: 2130, End: 2359 },
+                { Start: 0, End: 400 }
+            ];
 
             return this.CreateTimeData(TIME_SUMMER_SPLIT); 
         }
-            
-        //非夏令时
-        const TIME_SPLIT =
+        else if (type==2)    //非夏令时
+        {
+            const TIME_SPLIT =
             [
                 { Start: 2230, End: 2359 },
                 { Start: 0, End: 500 }
             ];
-        
-        return this.CreateTimeData(TIME_SPLIT); 
+            
+            return this.CreateTimeData(TIME_SPLIT); 
+        }
+        else    //使用美国本地时间
+        {
+            const TIME_SPLIT =
+            [
+                { Start: 930, End: 1600 }   //美国东部时间9:30到16:00
+            ];
+            
+            return this.CreateTimeData(TIME_SPLIT); 
+        }
     }
 
     this.CreateTimeData = function (timeSplit) 
@@ -31456,42 +31466,70 @@ function MinuteCoordinateData()
 
     //美股走势图时间刻度
     const USA_MINUTE_X_COORDINATE =
+    {
+        /*
+        Full:   //完整模式
+        [
+            [0, 0, "rgb(200,200,200)", "21:30"],
+            [60, 0, "RGB(200,200,200)", "22:30"],
+            [120, 1, "RGB(200,200,200)", "23:30"],
+            [210, 0, "RGB(200,200,200)", "01:00"],
+            [270, 0, "RGB(200,200,200)", "02:00"],
+            [330, 0, "RGB(200,200,200)", "03:00"],
+            [390, 0, "RGB(200,200,200)", "04:00"],
+        ],
+        Simple: //简洁模式
+        [
+            [0, 0, "rgb(200,200,200)", "21:30"],
+            [160, 1, "RGB(200,200,200)", "00:00"],
+            [270, 0, "RGB(200,200,200)", "02:00"],
+            [390, 0, "RGB(200,200,200)", "04:00"],
+        ],
+        Min:   //最小模式     
+        [
+            [0, 0, "rgb(200,200,200)", "21:30"],
+            [160, 1, "RGB(200,200,200)", "00:00"],
+            [390, 0, "RGB(200,200,200)", "04:00"],
+        ],
+        */
+
+        //美国本地时间
+        Full:   //完整模式
+        [
+            [0, 0, "rgb(200,200,200)", "9:30"],
+            [30, 0, "RGB(200,200,200)", "10:00"],
+            [90, 1, "RGB(200,200,200)", "11:00"],
+            [150, 0, "RGB(200,200,200)", "12:00"],
+            [210, 0, "RGB(200,200,200)", "13:00"],
+            [270, 0, "RGB(200,200,200)", "14:00"],
+            [330, 0, "RGB(200,200,200)", "15:00"],
+            [390, 0, "RGB(200,200,200)", "16:00"],
+        ],
+        Simple: //简洁模式
+        [
+            [30, 0, "rgb(200,200,200)", "10:00"],
+            [150, 1, "RGB(200,200,200)", "12:00"],
+            [270, 0, "RGB(200,200,200)", "14:00"],
+            [390, 0, "RGB(200,200,200)", "16:00"],
+        ],
+        Min:   //最小模式     
+        [
+            [30, 0, "rgb(200,200,200)", "10:00"],
+            [210, 1, "RGB(200,200,200)", "13:00"],
+            [390, 0, "RGB(200,200,200)", "16:00"],
+        ],
+
+        Count: 391,
+        MiddleCount: 211,
+
+        GetData: function (width) 
         {
-            Full:   //完整模式
-            [
-                [0, 0, "rgb(200,200,200)", "21:30"],
-                [60, 0, "RGB(200,200,200)", "22:30"],
-                [120, 1, "RGB(200,200,200)", "23:30"],
-                [210, 0, "RGB(200,200,200)", "01:00"],
-                [270, 0, "RGB(200,200,200)", "02:00"],
-                [330, 0, "RGB(200,200,200)", "03:00"],
-                [390, 0, "RGB(200,200,200)", "04:00"],
-            ],
-            Simple: //简洁模式
-            [
-                [0, 0, "rgb(200,200,200)", "21:30"],
-                [160, 1, "RGB(200,200,200)", "00:00"],
-                [270, 0, "RGB(200,200,200)", "02:00"],
-                [390, 0, "RGB(200,200,200)", "04:00"],
-            ],
-            Min:   //最小模式     
-            [
-                [0, 0, "rgb(200,200,200)", "21:30"],
-                [160, 1, "RGB(200,200,200)", "00:00"],
-                [390, 0, "RGB(200,200,200)", "04:00"],
-            ],
+            if (width < 200) return this.Min;
+            else if (width < 400) return this.Simple;
 
-            Count: 391,
-            MiddleCount: 211,
-
-            GetData: function (width) 
-            {
-                if (width < 200) return this.Min;
-                else if (width < 400) return this.Simple;
-
-                return this.Full;
-            }
-        };
+            return this.Full;
+        }
+    };
 
     this.GetCoordinateData = function (symbol, width) 
     {

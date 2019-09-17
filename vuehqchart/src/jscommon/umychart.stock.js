@@ -1557,6 +1557,9 @@ JSStock.GetBlockMember = function (symbol)
 {
     return new BlockMember(symbol);
 }
+JSStock.GetBlockTop = function () {
+    return new BlockTop();
+}
 
 //走势图图片路径
 JSStock.GetMinuteImage=function(symbol)
@@ -3209,6 +3212,86 @@ function BlockMember(symbol)
     }
 
 }
+
+//板块排名
+function BlockTop() {
+    this.newMethod = IStockData;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.BlockType = 1; //板块类型
+    this.Count = 20;
+
+    this.OrderField = 'increase';             //排序字段
+    this.Order = -1;                          //排序方向 -1 /1
+    this.Field = ["symbol", "price", "name", "vol", "increase", "indextop",'risefall'];
+
+    this.ApiUrl = g_JSStockResource.Domain + "/API/StockBlockTop";
+
+    this.SetField = function (field) {
+
+    }
+
+    this.ReqeustData = function () {
+        var self = this;
+
+        $.ajax({
+            url: this.ApiUrl,
+            data: {
+                "blocktype": this.BlockType,
+                "start": 0,
+                "end": this.Count,
+                "field": this.Field,
+                "orderfield": this.OrderField,
+                "order": this.Order
+            },
+            type:"post",
+            dataType: 'json',
+            async:true,
+            success: function (data) {
+                self.RecvData(data, RECV_DATA_TYPE.BLOCK_TOP_DATA);
+            },
+            fail: function (request) {
+                self.RecvError(request, RECV_DATA_TYPE.BLOCK_TOP_DATA);
+            }
+        });
+    }
+
+    this.RecvData = function (recvData, dataType) {
+        let data = recvData;
+        //console.log(data);
+
+        this.Data = [];
+        for (let i in data.stock) {
+            let item = data.stock[i];
+            this.Data.push(
+                {
+                    Name: item.name,
+                    Symbol: item.symbol,
+                    Increase: item.increase,
+                    Risefall: item.risefall,
+                    IndexTop: {
+                        Down: item.indextop.down,
+                        Stop: item.indextop.stop,
+                        Up: item.indextop.up,
+                        Unchanged: item.indextop.unchanged,
+                        DownStock: {Name: item.indextop.downstock.name, Symbol: item.indextop.downstock.symbol},
+                        UpStock: {Name: item.indextop.upstock.name, Symbol: item.indextop.upstock.symbol}
+                    }
+                });
+        }
+
+        if (this.UpdateUICallback) this.UpdateUICallback(this);
+
+        this.AutoUpate();
+    }
+
+    this.RecvError = function (request, dataType) {
+
+    }
+
+}
+
 
 
 //获取股票走势图图片路径
