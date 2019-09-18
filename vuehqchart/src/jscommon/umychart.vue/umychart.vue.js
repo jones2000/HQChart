@@ -34635,7 +34635,7 @@ function MinuteTimeStringData()
                 { Start: 0, End: 400 }
             ];
 
-            return this.CreateTimeData(TIME_SUMMER_SPLIT); 
+            return this.CreateTimeData(TIME_SPLIT); 
         }
         else if (type==2)    //非夏令时
         {
