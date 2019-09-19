@@ -14,20 +14,20 @@
 import {
   JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
   JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData
-} from "umychart.data.wechat.js";
+} from "./umychart.data.wechat.js";
 
 import {
     JSCommon_JSKLineInfoMap as JSKLineInfoMap, 
     JSCommon_KLINE_INFO_TYPE as KLINE_INFO_TYPE, 
     JSCommon_JSMinuteInfoMap as JSMinuteInfoMap,
-} from "umychart.klineinfo.wechat.js";
+} from "./umychart.klineinfo.wechat.js";
 
-import { JSCommonCoordinateData as JSCommonCoordinateData } from "umychart.coordinatedata.wechat.js";
+import { JSCommonCoordinateData as JSCommonCoordinateData } from "./umychart.coordinatedata.wechat.js";
 var MARKET_SUFFIX_NAME = JSCommonCoordinateData.MARKET_SUFFIX_NAME;
 
-import { JSCommonComplier } from "umychart.complier.wechat.js";     //通达信编译器
-import { JSCommonIndexScript } from "umychart.index.data.wechat.js"; //系统指标定义
-import { JSCommon_HQIndexFormula as HQIndexFormula } from "umychart.hqIndexformula.wechat.js";     //通达信编译器
+import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达信编译器
+import { JSCommonIndexScript } from "./umychart.index.data.wechat.js"; //系统指标定义
+import { JSCommon_HQIndexFormula as HQIndexFormula } from "./umychart.hqIndexformula.wechat.js";     //通达信编译器
 
 //图形库
 import {
@@ -44,7 +44,7 @@ import {
     JSCommonChartPaint_ChartCircle as ChartCircle,
     JSCommonChartPaint_ChartChinaMap as ChartChinaMap,
     JSCommonChartPaint_ChartRadar as ChartRadar,
-} from "umychart.chartpaint.wechat.js";
+} from "./umychart.chartpaint.wechat.js";
 
 //扩展画法图形库
 import {
@@ -52,16 +52,16 @@ import {
     JSCommonExtendChartPaint_KLineTooltipPaint as KLineTooltipPaint, 
     JSCommonExtendChartPaint_BarragePaint as BarragePaint,
     JSCommonExtendChartPaint_MinuteTooltipPaint as MinuteTooltipPaint,
-} from "umychart.extendchart.wechat.js";
+} from "./umychart.extendchart.wechat.js";
 
 import {
     JSCommonIndex_IndexInfo as IndexInfo,
     JSCommonIndex_BaseIndex as BaseIndex,
-} from 'umychart.index.wechat.js'
+} from './umychart.index.wechat.js'
 
 import{
     JSCommonResource_Global_JSChartResource as g_JSChartResource,
-} from 'umychart.resource.wechat.js'
+} from './umychart.resource.wechat.js'
 
 
 function JSCanvasElement() 
@@ -72,7 +72,8 @@ function JSCanvasElement()
     this.WebGLCanvas;
 
     //获取画布
-    this.GetContext = function () {
+    this.GetContext = function () 
+	{
         return wx.createCanvasContext(this.ID);
     }
 
@@ -610,7 +611,7 @@ function JSChart(element)
     //根据option内容绘制图形
     this.SetOption = function (option) 
     {
-        console.log(option, 'option')
+        console.log('[JSChart::SetOption]', option)
         var chart = null;
         switch (option.Type) 
         {
@@ -7685,7 +7686,8 @@ function DynamicMinuteTitlePainting()
         this.Canvas.textBaseline = "middle";
         this.Canvas.font = this.Font;
 
-        if (this.IsShowName) {
+        if (this.IsShowName) 
+		{
             this.Canvas.fillStyle = this.UnchagneColor;
             var textWidth = this.Canvas.measureText(this.Name).width + 2;    //后空2个像素
             if (left + textWidth > right) return;

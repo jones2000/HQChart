@@ -8,12 +8,12 @@ import
 {
     JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
     JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData
-} from "umychart.data.wechat.js";
+} from "./umychart.data.wechat.js";
 
 import 
 {
     JSCommonResource_Global_JSChartResource as g_JSChartResource,
-} from 'umychart.resource.wechat.js'
+} from './umychart.resource.wechat.js'
 
 //配色
 function JSChartPaintResource() 

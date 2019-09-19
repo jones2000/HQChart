@@ -10,7 +10,7 @@
     分析家语法编译器
 */
 
-import { JSCommonData } from "umychart.data.wechat.js";     //行情数据结构体 及涉及到的行情算法(复权,周期等)  
+import { JSCommonData } from "./umychart.data.wechat.js";     //行情数据结构体 及涉及到的行情算法(复权,周期等)  
 
 var g_JSComplierResource=
 {

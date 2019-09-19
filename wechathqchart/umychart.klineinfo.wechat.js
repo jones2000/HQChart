@@ -12,7 +12,7 @@
 
 import {
     JSCommonResource_Global_JSChartResource as g_JSChartResource,
-} from 'umychart.resource.wechat.js'
+} from './umychart.resource.wechat.js'
 
 var KLINE_INFO_TYPE=
 {

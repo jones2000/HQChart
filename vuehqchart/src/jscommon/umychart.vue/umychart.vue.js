@@ -3842,6 +3842,12 @@ function JSChart(divElement)
             if (option.MinuteLine.IsShowAveragePrice==false) chart.ChartPaint[1].IsShow=false;
         }
 
+        if(option.MinuteTitle)
+        {
+            if(option.MinuteTitle.IsShowName==false) chart.TitlePaint[0].IsShowName=false;
+            //if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
+        }
+
         if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
         if (option.IsShowBeforeData===true) chart.IsShowBeforeData=option.IsShowBeforeData;
 
@@ -27890,7 +27896,7 @@ function HistoryMinuteChartContainer(uielement)
     //请求分钟数据
     this.RequestHistoryMinuteData=function()
     {
-        var _self=this;
+        var self=this;
         var url=this.HistoryMinuteApiUrl+this.TradeDate.toString()+"/"+this.Symbol+".json";
 
         JSNetwork.HttpReqeust({
@@ -27900,11 +27906,13 @@ function HistoryMinuteChartContainer(uielement)
             async:true,
             success: function (data)
             {
-                _self.RecvHistoryMinuteData(data);
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvHistoryMinuteData(data);
             },
             error:function(reqeust)
             {
-                _self.RecvHistoryMinuteError(reqeust);
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvHistoryMinuteError(reqeust);
             }
         });
     }
@@ -28311,8 +28319,12 @@ function KLineTrainChartContainer(uielement, bHScreen)
         if (!this.ChartPaintEx[0]) this.CreateBuySellPaint();
         this.ChartPaintEx[0].Data=this.ChartPaint[0].Data;
 
-        this.OverlayChartPaint[0].MainData=this.ChartPaint[0].Data;         //K线叠加
-
+        for(var i in this.OverlayChartPaint )
+        {
+            var item=this.OverlayChartPaint[i];
+            item.MainData=this.ChartPaint[0].Data;         //K线叠加
+        }
+        
         var dataOffset=hisData.Data.length-showCount-this.TrainDataCount-20;   //随机选一段数据进行训练
         if (dataOffset<0) dataOffset=0;
         this.ChartPaint[0].Data.DataOffset=dataOffset;

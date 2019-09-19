@@ -14,9 +14,9 @@
 import {
     JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
     JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData
-} from "umychart.data.wechat.js";
+} from "./umychart.data.wechat.js";
 
-import { JSCommonCoordinateData as JSCommonCoordinateData } from "umychart.coordinatedata.wechat.js";
+import { JSCommonCoordinateData as JSCommonCoordinateData } from "./umychart.coordinatedata.wechat.js";
 
 function IExtendChartPainting() 
 {
