@@ -15,6 +15,7 @@
 
     <script src="content/js/jquery.min.js"></script>
     <script src="content/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
     <script src="../jscommon/umychart.js"></script>
     <script src="../jscommon/umychart.complier.js"></script>
     <script src="../jscommon/umychart.index.data.js"></script>
@@ -181,8 +182,9 @@
             //注册监听事件
             //chart.AddEventCallback({event:JSCHART_EVENT_ID.RECV_INDEX_DATA, callback:testcallback})
             //chart.AddEventCallback({event:JSCHART_EVENT_ID.CHART_STATUS, callback:ChartStatusCallback})
+            chart.AddEventCallback({event:JSCHART_EVENT_ID.BARRAGE_PLAY_END, callback:OnBarragePlayEnd})
 
-            var barrage=chart.StartAnimation(); //返回弹幕数据控制类
+            var barrage=chart.StartAnimation({Step:1}); //返回弹幕数据控制类
             setInterval(()=>{addBarrage(barrage); }, 3000)
             
         
@@ -195,17 +197,24 @@
         var BARRAGE_ID=1;
         function addBarrage(barrage)
         {
+            if (barrage.Count()>=20) return;
+            
             var testData = [
-                { Text:`[${++BARRAGE_ID}] 测试弹幕 (25px 宋体) RGB(0,0,205)`, Color:'RGBA(0,0,205,0.6)' , Font:{ Name:25*GetDevicePixelRatio()+'px 宋体', Hight: 25 }},
-                { Text:`[${++BARRAGE_ID}]测试弹幕 (22px 微软雅黑) RGB(33,0,205)`, Color:'RGBA(33,0,205,0.7)' , Font:{ Name:22*GetDevicePixelRatio()+'px 微软雅黑', Hight: 25 }},
-                { Text:`[${++BARRAGE_ID}]测试弹幕 RGB(20,240,20)`, Color:'RGBA(20,240,20)'},
-                { Text:`[${++BARRAGE_ID}]测试弹幕 (20px fangsong) RGB(100,0,205)`, Color:'RGBA(100,0,205,0.5)' , Font:{ Name:20*GetDevicePixelRatio()+'px fangsong', Hight: 25 }},
-                { Text:`[${++BARRAGE_ID}]测试弹幕 (16px 微软雅黑) RGB(255,30,20)`, Color:'RGB(255,30,20)' , Font:{ Name:16*GetDevicePixelRatio()+'px 微软雅黑', Hight: 16 }},
-                { Text:`[${++BARRAGE_ID}]测试弹幕 (14px 微软雅黑) RGB(100,0,205)`, Color:'RGBA(100,0,205,0.55)' , Font:{ Name:14*GetDevicePixelRatio()+'px 微软雅黑', Hight: 25 }},
-                { Text:`[${++BARRAGE_ID}]测试弹幕 (24px 微软雅黑) RGB(100,0,205)`, Color:'RGB(100,0,205)' , Font:{ Name:14*GetDevicePixelRatio()+'px 微软雅黑', Hight: 25 }}
+                { Text:`[${++BARRAGE_ID}]👍测试弹幕 (25px 宋体) RGB(0,0,205)`, Color:'RGBA(0,0,205,0.6)' , Font:{ Name:25*GetDevicePixelRatio()+'px 宋体', Hight: 25 }, Info: {ID:BARRAGE_ID}},
+                { Text:`[${++BARRAGE_ID}]✔测试弹幕 (22px 微软雅黑) RGB(33,0,205)`, Color:'RGBA(33,0,205,0.7)' , Font:{ Name:22*GetDevicePixelRatio()+'px 微软雅黑', Hight: 25 },Info: {ID:BARRAGE_ID}},
+                { Text:`[${++BARRAGE_ID}]🐕测试弹幕 RGB(20,240,20)`, Color:'RGBA(20,240,20)',Info: {ID:BARRAGE_ID}},
+                { Text:`[${++BARRAGE_ID}]👈测试弹幕 (20px fangsong) RGB(100,0,205)`, Color:'RGBA(100,0,205,0.5)' , Font:{ Name:20*GetDevicePixelRatio()+'px fangsong', Hight: 25 },Info: {ID:BARRAGE_ID}},
+                { Text:`[${++BARRAGE_ID}]🚦测试弹幕 (16px 微软雅黑) RGB(255,30,20)`, Color:'RGB(255,30,20)' , Font:{ Name:16*GetDevicePixelRatio()+'px 微软雅黑', Hight: 16 }},
+                { Text:`[${++BARRAGE_ID}]🚴‍♂️测试弹幕 (14px 微软雅黑) RGB(100,0,205)`, Color:'RGBA(100,0,205,0.55)' , Font:{ Name:14*GetDevicePixelRatio()+'px 微软雅黑', Hight: 25 },Info: {ID:BARRAGE_ID}},
+                { Text:`[${++BARRAGE_ID}]🙅‍♂️测试弹幕 (24px 微软雅黑) RGB(100,0,205)`, Color:'RGB(100,0,205)' , Font:{ Name:14*GetDevicePixelRatio()+'px 微软雅黑', Hight: 25 },Info: {ID:BARRAGE_ID}}
             ];
 
             barrage.AddBarrage(testData)
+        }
+
+        function OnBarragePlayEnd(event,data,obj)
+        {
+            console.log('[OnBarragePlayEnd] data ', data)
         }
         
         function unlockIndex(indexName)

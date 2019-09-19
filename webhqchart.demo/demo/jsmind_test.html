@@ -19,6 +19,7 @@
     <script src="../jscommon/umychart.complier.js"></script>
     <script src="../jscommon/umychart.index.data.js"></script>
     <script src="../jscommon/umychart.style.js"></script>
+    <script src="../jscommon/umychart.mind.js"></script>
     
      <!-- 引入vConsole的JS库 -->
      <script src="../vConsole-3.2.0/dist/vconsole.min.js"></script>
@@ -48,6 +49,7 @@
                                 "营业利润:SF(YY,1,'营业利润');" 
                             }
                         },
+                        
                         { Type:JSMIND_NODE_ID.TABLE_NODE, Name:"财务节点2", ID:'child-2', Title:"2018一季度财务数据", Position: { X:250+50,Y:250, Width:200, Height:500}, ShowMode:2 ,
                             Index: //指标脚本
                             { Name:'财务数据脚本', Args:[ { Name:'YY', Value:2018} ], IsSectionMode:true,
@@ -61,6 +63,8 @@
                                 "营业利润:SF(YY,1,'营业利润');" 
                             }
                         },
+
+                        
                         { Type:JSMIND_NODE_ID.TABLE_NODE, Name:"财务节点3", ID:'child-3', Title:"2019一季度财务数据", Position: { X:250*2+50,Y:250, Width:200, Height:500}, ShowMode:2 ,
                             Index: //指标脚本
                             { Name:'财务数据脚本', Args:[ { Name:'YY', Value:2019} ], IsSectionMode:true,
@@ -82,9 +86,44 @@
                                     "DATA2018=SF(YY-1,1,'净利润');\n" +
                                     "DATA2019=SF(YY,1,'净利润');\n" +
                                     "净利润比上一年:IF(DATA2019>DATA2018, '增加','减少');\n" +
-                                    "净利润连续增长:IF( DATA2019>DATA2018 AND DATA2018>DATA2017, '是','否');",
+                                    "净利润连续增长:IF( DATA2019>DATA2018 AND DATA2018>DATA2017, '是','否');\n" +
+                                    "净利润2019:DATA2019;\n" +
+                                    "净利润2018:DATA2018;\n"
                             }
+                        },
+                        { Type:JSMIND_NODE_ID.KLINE_NODE, Name:"K线图", ID:'child-5', Title:"最近3个月K线图", Position: { X:800,Y:70, Width:500, Height:500},
+                            KLine:
+                            {
+                                DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                                Right:1,                    //复权 0 不复权 1 前复权 2 后复权
+                                Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                                MaxReqeustDataCount:1000,   //数据个数
+                                PageSize:60,               //一屏显示多少数据
+                                //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
+                                //Info:["公告","互动易","调研"],          //信息地雷
+                                //FirstShowDate:20180401,             //首屏显示的起始日期              
+                            },
+                            Border: //边框
+                            {
+                                Left:1,           //左边间距
+                                Right:1,       //右边间距
+                                Bottom:25,
+                                Top:1
+                            },
+                            Frame:  //子框架设置 (Height 窗口高度比例值)
+                            [
+                                {SplitCount:3,Height:4,IsShowLeftText:true, IsShowRightText:false},
+                                {SplitCount:2,Height:2,IsShowLeftText:true, IsShowRightText:false},
+                                {SplitCount:2,Height:2,IsShowLeftText:true, IsShowRightText:false}
+                            ],
+                            Windows: 
+                            [ 
+                                {Index:"MA"}, 
+                                {Index:"VOL"}, 
+                                {Index:"RSI"},
+                            ], //窗口指标
                         }
+                        
                     ] 
                 }
             ],
@@ -97,7 +136,9 @@
 
                 { Start:'child-1', End:'child-4', Type:0 },
                 { Start:'child-2', End:'child-4', Type:0 },
-                { Start:'child-3', End:'child-4', Type:0 }
+                { Start:'child-3', End:'child-4', Type:0 },
+
+                { Start:'child-4', End:'child-5', Type:0 }
             ]
         }
 
@@ -111,8 +152,8 @@
             var divJsMind=document.getElementById('jsmind');
             divJsMind.style.top=0+'px';
             divJsMind.style.left=0+'px';
-            divJsMind.style.width=width+'px';
-            divJsMind.style.height=height+'px';
+            divJsMind.style.width=width*2+'px';
+            divJsMind.style.height=height*2+'px';
             divJsMind.JSMind.OnSize();
         }
         

@@ -1,5 +1,11 @@
 /*
+    copyright (c) 2018 jones
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
     开源项目 https://github.com/jones2000/HQChart
+
+    jones_2000@163.com
 
     封装图形控件 (微信小程序版本)
 */
@@ -4035,13 +4041,19 @@ function ChartKLine()
         this.Canvas.textAlign = ptMax.Align;
         this.Canvas.textBaseline = 'bottom';
         var left = ptMax.X;
-        this.Canvas.fillText(ptMax.Value.toFixed(defaultfloatPrecision), left, ptMax.Y);
+        var text = ptMax.Value.toFixed(defaultfloatPrecision);
+        if (ptMax.Align == 'left') text = '←' + text;
+        else text = text + '→';
+        this.Canvas.fillText(text, left, ptMax.Y);
         this.ChartFrame.ChartKLine.Max = { X: left, Y: ptMax.Y, Text: { BaseLine: 'bottom' } };
 
         this.Canvas.textAlign = ptMin.Align;
         this.Canvas.textBaseline = 'top';
         var left = ptMin.X;
-        this.Canvas.fillText(ptMin.Value.toFixed(defaultfloatPrecision), left, ptMin.Y);
+        text = ptMin.Value.toFixed(defaultfloatPrecision);
+        if (ptMin.Align == 'left') text = '←' + text;
+        else text = text + '→';
+        this.Canvas.fillText(text, left, ptMin.Y);
         this.ChartFrame.ChartKLine.Min = { X: left, Y: ptMin.Y, Text: { BaseLine: 'top' } };
     }
 
@@ -4061,7 +4073,10 @@ function ChartKLine()
         this.Canvas.fillStyle = this.TextColor;
         this.Canvas.textAlign = ptMax.Align;
         this.Canvas.textBaseline = 'bottom';
-        this.Canvas.fillText(ptMax.Value.toFixed(defaultfloatPrecision), 0, 0);
+        var text = ptMax.Value.toFixed(defaultfloatPrecision);
+        if (ptMax.Align == 'left') text = '←' + text;
+        else text = text + '→';
+        this.Canvas.fillText(text, 0, 0);
         this.Canvas.restore();
 
 
@@ -4075,7 +4090,10 @@ function ChartKLine()
         this.Canvas.fillStyle = this.TextColor;
         this.Canvas.textAlign = ptMin.Align;
         this.Canvas.textBaseline = 'top';
-        this.Canvas.fillText(ptMin.Value.toFixed(defaultfloatPrecision), 0, 0);
+        var text = ptMin.Value.toFixed(defaultfloatPrecision);
+        if (ptMin.Align == 'left') text = '←' + text;
+        else text = text + '→';
+        this.Canvas.fillText(text, 0, 0);
         this.Canvas.restore();
     }
 

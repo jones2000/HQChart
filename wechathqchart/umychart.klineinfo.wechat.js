@@ -1,7 +1,14 @@
-///////////////////////////////////////////////////////////
-//  小程序信息地雷数据
-//
-//
+/*
+    copyright (c) 2018 jones
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    开源项目 https://github.com/jones2000/HQChart
+
+    jones_2000@163.com
+
+    小程序信息地雷数据
+*/
 
 import {
     JSCommonResource_Global_JSChartResource as g_JSChartResource,

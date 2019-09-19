@@ -12,6 +12,7 @@
 
     <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
 
+    <script src="../jscommon/umychart.network.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
@@ -40,8 +41,10 @@
         
         $(function ()
         {
+            //JSChart.SetDomain("http://web4.umydata.com");
+
             var symbol=getURLParams('symbol');
-            if (symbol==null) symbol='600000.sh';
+            if (symbol==null) symbol='000001.sh';
         
             var index=getURLParams('index');        //指标3
             if (index==null) index='MACD';
@@ -59,6 +62,10 @@
                     IsAutoUpate:true,       //是自动更新数据
         
                     IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
+                    IsShowBeforeData:true,          //是否显示盘前数据
+                    DayCount:1,                     //1 最新交易日数据 >1 多日走势图
+
+                    Info:[ "大盘异动" ],
         
                     Border: //边框
                     {
@@ -68,11 +75,15 @@
                         Bottom:50
                     },
                     Frame:  //子框架设置
-                        [
-                            {SplitCount:5,StringFormat:0},
-                            {SplitCount:3,StringFormat:0},
-                            {SplitCount:3,StringFormat:0},
-                        ]
+                    [
+                        {SplitCount:5,StringFormat:0},
+                        {SplitCount:3,StringFormat:0},
+                        {SplitCount:3,StringFormat:0},
+                    ],
+                    ExtendChart:
+                    [
+                        {Name:'MinuteTooltip' }
+                    ]
                 }
             
             var windowHeight= $(window).height();

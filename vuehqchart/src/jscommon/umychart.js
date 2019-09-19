@@ -496,6 +496,12 @@ function JSChart(divElement)
             if (option.MinuteLine.IsShowAveragePrice==false) chart.ChartPaint[1].IsShow=false;
         }
 
+        if(option.MinuteTitle)
+        {
+            if(option.MinuteTitle.IsShowName==false) chart.TitlePaint[0].IsShowName=false;
+            //if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
+        }
+
         if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
         if (option.IsShowBeforeData===true) chart.IsShowBeforeData=option.IsShowBeforeData;
 
@@ -2715,7 +2721,7 @@ function JSChartContainer(uielement)
         var postData={"Base64":imageData, "BucketName":"downloadcache", "Path":"hqchart/hq_snapshot"};
         var url=g_JSChartResource.Domain+'/API/FileUploadForBase64';
 
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: url,
             method: "POST",
             dataType: "json",
@@ -7059,8 +7065,8 @@ function ChartKLine()
         this.Canvas.textBaseline='bottom';
         var left=ptTop.Align=='left'?ptTop.X:ptTop.X;
         var text=ptTop.Value.toFixed(defaultfloatPrecision);
-        if (ptTop.Align=='left') text='→'+text;
-        else text=text+'←';
+        if (ptTop.Align=='left') text='←'+text;
+        else text=text+'→';
         this.Canvas.fillText(text,left,ptTop.Y);
         this.ChartFrame.ChartKLine.Max={X:left, Y:ptTop.Y, Text: { BaseLine:'bottom'}};
 
@@ -7070,8 +7076,8 @@ function ChartKLine()
         this.Canvas.textBaseline='top';
         var left=ptBottom.Align=='left'?ptBottom.X:ptBottom.X;
         var text=ptMin.Value.toFixed(defaultfloatPrecision);
-        if (ptBottom.Align=='left') text='→'+text;
-        else  text=text+'←';
+        if (ptBottom.Align=='left') text='←'+text;
+        else  text=text+'→';
         this.Canvas.fillText(text,left,ptBottom.Y);
         this.ChartFrame.ChartKLine.Min={X:left, Y:ptBottom.Y, Text:{ BaseLine:'top'}};
     }
@@ -7092,17 +7098,11 @@ function ChartKLine()
         this.Canvas.fillStyle=this.TextColor;
         this.Canvas.textAlign=ptMax.Align;
         this.Canvas.textBaseline='bottom';
-        this.Canvas.fillText(ptMax.Value.toFixed(defaultfloatPrecision),0,0);
-
+        var text=ptMax.Value.toFixed(defaultfloatPrecision);
+        if (ptMax.Align=='left') text='←'+text;
+        else  text=text+'→';
+        this.Canvas.fillText(text,0,0);
         this.Canvas.restore();
-        /*
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(ptMax.Y,ptMax.X);
-        this.Canvas.lineTo(ptMax.Y-8,ptMax.X+left);
-        this.Canvas.strokeStyle=this.TextColor;
-        this.Canvas.stroke();
-        this.Canvas.closePath();
-        */
 
         
         var xText=ptMin.Y;
@@ -7115,17 +7115,11 @@ function ChartKLine()
         this.Canvas.fillStyle=this.TextColor;
         this.Canvas.textAlign=ptMin.Align;
         this.Canvas.textBaseline='top';
-        this.Canvas.fillText(ptMin.Value.toFixed(defaultfloatPrecision),0,0);
+        var text=ptMin.Value.toFixed(defaultfloatPrecision);
+        if (ptMin.Align=='left') text='←'+text;
+        else text=text+'→';
+        this.Canvas.fillText(text,0,0);
         this.Canvas.restore();
-
-        /*
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(ptMin.Y,ptMin.X,);
-        this.Canvas.lineTo(ptMin.Y+8,ptMin.X+left);
-        this.Canvas.strokeStyle=this.TextColor;
-        this.Canvas.stroke();
-        this.Canvas.closePath();
-        */
     }
 
     //画某一天的信息地雷
@@ -19999,7 +19993,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: this.KLineApiUrl,
             data:
             {
@@ -20128,7 +20122,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: this.MinuteKLineApiUrl,
             data:
             {
@@ -20247,7 +20241,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: this.RealtimeApiUrl,
             data:
             {
@@ -20344,7 +20338,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: this.RealtimeApiUrl,
             data:
             {
@@ -20476,7 +20470,7 @@ function KLineChartContainer(uielement)
             }
         });
         */
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: cacheUrl,
             data:{"symbol":self.Symbol},
             type:"get",
@@ -20579,7 +20573,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: self.TickApiUrl,
             data:{"symbol":self.Symbol, start:start-10, end:start+1000 },
             type:"post",
@@ -21757,7 +21751,7 @@ function KLineChartContainer(uielement)
             }
 
             //请求数据
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: this.KLineApiUrl,
                 data:
                 {
@@ -21931,7 +21925,7 @@ function KLineChartContainer(uielement)
         }
         
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: this.StockHistoryDayApiUrl,
             data:
             {
@@ -23560,7 +23554,7 @@ function MinuteChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: self.HistoryMinuteApiUrl,
             data:
             {
@@ -23710,7 +23704,7 @@ function MinuteChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
         
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: self.MinuteApiUrl,
             data:
             {
@@ -23835,7 +23829,7 @@ function MinuteChartContainer(uielement)
             }
 
             //请求数据
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: self.HistoryMinuteApiUrl,
                 data:
                 {
@@ -23939,7 +23933,7 @@ function MinuteChartContainer(uielement)
                 if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
             }
 
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: self.HistoryMinuteApiUrl,
                 data:{ "symbol": symbol, "days": days },
                 type:"post",
@@ -24556,21 +24550,23 @@ function HistoryMinuteChartContainer(uielement)
     //请求分钟数据
     this.RequestHistoryMinuteData=function()
     {
-        var _self=this;
+        var self=this;
         var url=this.HistoryMinuteApiUrl+this.TradeDate.toString()+"/"+this.Symbol+".json";
 
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: url,
             type:"get",
             dataType: "json",
             async:true,
             success: function (data)
             {
-                _self.RecvHistoryMinuteData(data);
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvHistoryMinuteData(data);
             },
             error:function(reqeust)
             {
-                _self.RecvHistoryMinuteError(reqeust);
+                self.ChartSplashPaint.IsEnableSplash=false;
+                self.RecvHistoryMinuteError(reqeust);
             }
         });
     }
@@ -24697,7 +24693,7 @@ function CustomKLineChartContainer(uielement)
         var self=this;
         this.ChartSplashPaint.IsEnableSplash = true;
         this.Draw();
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: this.CustomKLineApiUrl,
             data:
             {
@@ -24977,8 +24973,12 @@ function KLineTrainChartContainer(uielement, bHScreen)
         if (!this.ChartPaintEx[0]) this.CreateBuySellPaint();
         this.ChartPaintEx[0].Data=this.ChartPaint[0].Data;
 
-        this.OverlayChartPaint[0].MainData=this.ChartPaint[0].Data;         //K线叠加
-
+        for(var i in this.OverlayChartPaint )
+        {
+            var item=this.OverlayChartPaint[i];
+            item.MainData=this.ChartPaint[0].Data;         //K线叠加
+        }
+        
         var dataOffset=hisData.Data.length-showCount-this.TrainDataCount-20;   //随机选一段数据进行训练
         if (dataOffset<0) dataOffset=0;
         this.ChartPaint[0].Data.DataOffset=dataOffset;
@@ -26105,7 +26105,7 @@ function MarketLongShortIndex()
         }
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: g_JSChartResource.Index.MarketLongShortApiUrl,
             data:
             {
@@ -26254,7 +26254,7 @@ function MarketTimingIndex()
         }
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: g_JSChartResource.Index.MarketLongShortApiUrl,
             data:
             {
@@ -26410,7 +26410,7 @@ function MarketAttentionIndex()
         }
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: this.ApiUrl,
             data:
             {
@@ -26575,7 +26575,7 @@ function MarketHeatIndex()
         }
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: this.ApiUrl,
             data:
             {
@@ -26747,7 +26747,7 @@ function CustonIndexHeatIndex()
         }
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: this.ApiUrl,
             data:
             {
@@ -26919,7 +26919,7 @@ function BenfordIndex()
                         "or"]}
             ];
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: this.ApiUrl,
             data:
             {
@@ -27296,7 +27296,7 @@ function PyScriptIndex(name,script,args,option)
             });
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: this.ApiUrl,
             data:data,
             type:"post",
@@ -27770,7 +27770,7 @@ function InvestorInfo()
         this.Data=[];
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: g_JSChartResource.KLine.Info.Investor.ApiUrl,
             data:
             {
@@ -27834,7 +27834,7 @@ function AnnouncementInfo()
         if (this.ApiType==1)    //取缓存文件
         {
             var url=`${g_JSChartResource.CacheDomain}/cache/analyze/shszreportlist/${param.HQChart.Symbol}.json`;
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: url,
                 type:"get",
                 dataType: "json",
@@ -27852,7 +27852,7 @@ function AnnouncementInfo()
         else    //取api
         {
             //请求数据
-            $.ajax({
+            JSNetwork.HttpReqeust({
                 url: g_JSChartResource.KLine.Info.Announcement.ApiUrl,
                 data:
                 {
@@ -27944,7 +27944,7 @@ function PforecastInfo()
         this.Data=[];
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: g_JSChartResource.KLine.Info.Pforecast.ApiUrl,
             data:
             {
@@ -28021,7 +28021,7 @@ function ResearchInfo()
         this.Data=[];
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: g_JSChartResource.KLine.Info.Research.ApiUrl,
             data:
             {
@@ -28085,7 +28085,7 @@ function BlockTrading()
         this.Data=[];
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: g_JSChartResource.KLine.Info.BlockTrading.ApiUrl,
             data:
             {
@@ -28167,7 +28167,7 @@ function TradeDetail()
         this.Data=[];
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: g_JSChartResource.KLine.Info.TradeDetail.ApiUrl,
             data:
             {
@@ -28293,7 +28293,7 @@ function MarketEventInfo()
         }
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: url,
             type:"get",
             dataType: "json",
@@ -28639,7 +28639,7 @@ function ChangeIndexDialog(divElement)
         }
         var url = this.IndexTreeApiUrl;
         if (this.IsOverlayIndex==true) url=this.OverlayIndexTreeApiUrl;
-        $.ajax({
+        JSNetwork.HttpReqeust({
             url: url,
             type: 'get',
             success: function (res) {

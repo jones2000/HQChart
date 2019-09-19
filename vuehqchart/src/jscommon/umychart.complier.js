@@ -10908,24 +10908,6 @@ ScriptIndexConsole.SetDomain = function (domain, cacheDomain)   //修改API地�
     JSComplier.SetDomain(domain,cacheDomain);
 }
 
-function JSNetwork()
-{
-
-}
-
-JSNetwork.HttpReqeust=function(obj) //对请求进行封装
-{
-    $.ajax(
-        { 
-            url: obj.url, data: obj.data,
-            type:obj.type, dataType: obj.dataType,async:obj.async, 
-            success: obj.success,
-            error: obj.error,
-        }
-    );
-}
-
-
 
 /* 测试例子
 var code1='VARHIGH:IF(VAR1<=REF(HH,-1),REF(H,BARSLAST(VAR1>=REF(HH,1))),DRAWNULL),COLORYELLOW;';

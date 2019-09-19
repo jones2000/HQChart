@@ -3,7 +3,7 @@
 <head>  
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>页面行情(K线图)</title>  
+<title>叠加指标页面行情(K线图)</title>  
     <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
     <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
     <!-- 使用阿里云图片 -->
@@ -15,6 +15,7 @@
 
     <script src="content/js/jquery.min.js"></script>
     <script src="content/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
     <script src="../jscommon/umychart.js"></script>
     <script src="../jscommon/umychart.complier.js"></script>
     <script src="../jscommon/umychart.index.data.js"></script>
@@ -111,10 +112,12 @@
 
                     OverlayIndex:
                     [
-                        {Index:'RSI', Windows:0 },
+                        {Index:'RSI', Windows:0},
                         {Index:'MACD', Windows:0 },
                         {Index:'MA', Windows:1 }
                     ],  //叠加指标
+
+                    //OverlayIndexFrameWidth:50,
                     
                     Symbol:symbol,
                     IsAutoUpdate:false,       //是自动更新数据
@@ -147,7 +150,7 @@
                     Border: //边框
                     {
                         Left:10,           //左边间距
-                        Right:250,       //右边间距
+                        Right:230,       //右边间距
                         Bottom:25,
                         Top:25
                     },

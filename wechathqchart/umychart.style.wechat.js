@@ -1,5 +1,13 @@
 /*
-    不同风格行情配置文件
+    copyright (c) 2018 jones
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    开源项目 https://github.com/jones2000/HQChart
+
+    jones_2000@163.com
+
+    不同风格行情配置文件 (微信小程序版本)
 */
 
 var BLACK_STYLE =    //黑色风格

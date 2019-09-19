@@ -1,6 +1,15 @@
 /*
-   各个品种分钟走势图坐标信息
+    copyright (c) 2018 jones
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    开源项目 https://github.com/jones2000/HQChart
+
+    jones_2000@163.com
+
+    各个品种分钟走势图坐标信息
 */
+
 
 var MARKET_SUFFIX_NAME=
 {

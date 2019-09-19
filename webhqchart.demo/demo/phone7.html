@@ -86,6 +86,7 @@
     </div>
     
 
+    <script src="../jscommon/umychart.network.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
@@ -111,6 +112,88 @@
         	if (r != null) return decodeURI(r[2]);
         	return null;
         }
+
+
+        function GetUserBuy(obj)
+        {
+            console.log('[GetUserBuy] obj ', obj);
+            var result=[];
+            for(var i in obj.KData.Data)
+            {
+                result[i]=0;
+                var item=obj.KData.Data[i];
+                if (USER_BUY.has(item.Date)) 
+                    result[i]=USER_BUY.get(item.Date).Count;
+            }
+
+            return result;
+        }
+
+        var USER_BUY;
+        function DownloadUserBuy(obj)
+        {
+            console.log('[DownloadUserBuy] obj ', obj);
+
+            setTimeout(()=>
+            { 
+                USER_BUY=new Map([
+                    [20190705, {Count: 1 }],
+                    [20190714, {Count: 3 }],
+                    [20190806, {Count: 1 }],
+                    [20190826, {Count: 1 }],
+                    [20190902, {Count: 2 }],
+                ]);
+                obj.Success();
+            }, 500);
+            
+        }
+
+        JSComplier.AddVariant({ Name:'USERBUY',Download:DownloadUserBuy, Read:GetUserBuy } );
+
+        var USER_POSITION;  //用户某个股票的持仓
+        function DownloadUserPosition(obj)
+        {
+            console.log('[DownloadUserPosition] obj ', obj);
+            //模拟异步读取用户信息
+            setTimeout(()=>
+            { 
+                USER_POSITION=new Map([         //日期 Vol:持仓
+                    [20190705, {Vol: 3000 }],   
+                    [20190714, {Vol: 4000 }],
+                    [20190806, {Vol: 2000 }],
+                    [20190826, {Vol: 3000 }],
+                    [20190902, {Vol: 10000 }],
+                ]);
+                obj.Success(); //通知HQChart数据已到达继续执行， 需要要调用，否则指标会一直等待
+            }, 500);
+            
+        }
+
+        JSComplier.AddFunction({ Name:'USERMARKETVALUE',Download:DownloadUserPosition, Invoke:GetUserMarketValue } );
+
+        function GetUserMarketValue(obj)
+        {
+            console.log('[GetUserMarketValue] obj ', obj);
+            var result=[];
+            var preVol=0;   //最近一次持仓信息
+            var aryClose=obj.Args[0];   //获取第1个参数 (收盘价)
+            for(var i in obj.KData.Data)
+            {
+                result[i]=0;
+                var item=obj.KData.Data[i];
+                if (USER_POSITION.has(item.Date)) 
+                {
+                    preVol=USER_POSITION.get(item.Date).Vol;
+                    result[i]=preVol*aryClose[i];
+                }
+                else    //延用最近一次的持仓信息
+                {
+                    result[i]=preVol*aryClose[i];
+                }
+            }
+
+            return result;
+        }
     
         $(window).resize(resizeCanvas);
     
@@ -132,7 +215,16 @@
     
             var index = getURLParams('index');        //指标1
             if (index == null) index = 'MA';
-            aryIndex.push({Index: index, Modify: true, Change: true });
+            aryIndex.push({Index: index, Modify: true, Change: true ,Lock:
+                {
+                    IsLocked: false,
+                    Callback: unlockIndex,
+                    BG: 'rgba(200,0,40,0.5)',
+                    TextColor: 'rgb(255,255,255)',
+                    Text: '上锁了',
+                    Font: '12px 微软雅黑',
+                    //Count: 10  //锁主右边几条数据
+                }});
     
            
             let code = 'VAR1:MA(CLOSE,25),COLORYELLOW;VAR2:MA(CLOSE,40);'
@@ -147,25 +239,23 @@
         ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
     
             var jsIndexData = new JSIndexScript();
-            let testIndex = jsIndexData.Get('MACD');
+            let testIndex = jsIndexData.Get('VOL');
             console.log(testIndex);
     
             //指标3
             let scriptIndex = 
             { 
                 Name: testIndex.Name, Script: testIndex.Script, Args: testIndex.Args, "Modify": true, "Change": true,
-                /*
                 Lock:
                 {
                     IsLocked: true,
                     Callback: unlockIndex,
-                    BG: 'rgb(200,0,40)',
+                    BG: 'rgba(200,0,40,0.5)',
                     TextColor: 'rgb(255,255,255)',
                     Text: '上锁了',
                     Font: '12px 微软雅黑',
                     //Count: 10  //锁主右边几条数据
                 }
-                */
                  
             };
             aryIndex.push(scriptIndex);
@@ -192,32 +282,40 @@
                     //IsShowCorssCursorInfo: false,    //是否显示十字光标的刻度信息
     
                     ScriptError: ComplierError,
+                    NetworkFilter:NetworkFilter,
     
                     KLine:
-                        {
-                            DragMode: 1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
-                            Right: 1,                    //复权 0 不复权 1 前复权 2 后复权
-                            Period: 0,                   //周期 0 日线 1 周线 2 月线 3 年线 
-                            MaxReqeustDataCount: 1000,   //数据个数
-                            PageSize: 50,               //一屏显示多少数据
-                            IndexTreeApiUrl: "https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
-                            //Info:["业绩预告","公告","互动易","调研","大宗交易"],       //信息地雷
-                            //Info:["业绩预告","公告"],          //信息地雷
-                            KLineDoubleClick: true,              //双击分钟走势图
-                            IsShowTooltip: true                 //是否显示K线提示信息
-                        },
+                    {
+                        DragMode: 1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                        Right: 1,                    //复权 0 不复权 1 前复权 2 后复权
+                        Period: 0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                        MaxReqeustDataCount: 1000,   //数据个数
+                        PageSize: 50,               //一屏显示多少数据
+                        MaxRequestMinuteDayCount:10,
+                        IndexTreeApiUrl: "https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
+                        //Info:["业绩预告","公告","互动易","调研","大宗交易"],       //信息地雷
+                        //Info:["业绩预告","公告"],          //信息地雷
+                        KLineDoubleClick: true,              //双击分钟走势图
+                        IsShowTooltip: true                 //是否显示K线提示信息
+                    },
     
                     KLineTitle: //标题设置
-                        {
-                            IsShowName: true,       //不显示股票名称
-                            IsShowSettingInfo: false //不显示周期/复权
-                        },
+                    {
+                        IsShowName: true,       //不显示股票名称
+                        IsShowSettingInfo: true //不显示周期/复权
+                    },
+
+                    //画图工具
+                    DrawPicture:
+                    {
+                        StorageKey:'draw-key',  //给一个唯一的ID, 防止冲突
+                    },
     
                     Border: //边框
-                        {
-                            Left: 60,    //左边间距
-                            Right: 60     //右边间距
-                        },
+                    {
+                        Left: 60,    //左边间距
+                        Right: 60     //右边间距
+                    },
     
                     Frame:  //子框架设置
                     [
@@ -261,6 +359,12 @@
         Cross.on("api_execute", function (data) {
             Root.top.execute();
         });
+
+        function NetworkFilter(data, callback)
+        {
+            console.log('[NetworkFilter] data', data);
+        }
+
     </script>  
 </body>  
 </html>

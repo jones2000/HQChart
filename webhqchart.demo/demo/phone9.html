@@ -11,6 +11,7 @@
 
     <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
 
+    <script src="../jscommon/umychart.network.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
@@ -160,7 +161,14 @@
 
             option.Windows[1].Lock= { 
                 IsLocked: true, Callback: unlockIndex,
-                BG: 'rgb(200,0,40)', TextColor: 'rgb(255,255,255)',
+                BG: 'rgba(200,0,40,0.1)', TextColor: 'rgb(255,255,255)',
+                //Text: '上锁了',
+                Font: '12px 微软雅黑', Count: 10  //锁主右边几条数据
+            };
+
+            option.Windows[0].Lock= { 
+                IsLocked: true, Callback: unlockIndex,
+                BG: 'rgba(200,0,40,0.1)', TextColor: 'rgb(255,255,255)',
                 //Text: '上锁了',
                 Font: '12px 微软雅黑', Count: 10  //锁主右边几条数据
             };

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
     <!-- 使用阿里云图片 -->
     <!--<link rel="stylesheet" href="https://at.alicdn.com/t/font_1040563_1d1tgaoqofpi.css" />-->
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_1196214_ny3l0dbclr.css" />
     
 </head>  
 <body>
@@ -15,6 +16,8 @@
 
     <script src="content/js/jquery.min.js"></script>
     <script src="content/js/webfont.js"></script>
+
+    <script src="../jscommon/umychart.network.js"></script>
     <script src="../jscommon/umychart.js"></script>
     <script src="../jscommon/umychart.complier.js"></script>
     <script src="../jscommon/umychart.index.data.js"></script>
@@ -28,6 +31,7 @@
 
         //预加载下阿里云图片
         WebFont.load({ custom: { families: ['iconfont'] } });
+        WebFont.load({ custom: { families: ['js-iconfont'] } });
 
         function getURLParams(name) 
         {
@@ -55,10 +59,18 @@
             divKline.style.height=(height)+'px';
             divKline.JSChart.OnSize();
         }
+
+        function NetworkFilter(data, callback)
+        {
+            console.log('[NetworkFilter] data', data);
+        }
         
         
         $(function ()
         {
+
+            JSComplier.AddIcon({ID:1, Text:'\ue611', Color:'rgb(35,55,55)', Family:'js-iconfont'});    //添加一个obj={ID:, Text:, Color, Family: }
+
             var debug=getURLParams('debug');
             if (debug==1) 
             {
@@ -101,23 +113,44 @@
             divKline.style.width=width+'px';
             divKline.style.height=height+'px';
             chart.OnSize();
+
+            LoadCustomIndex();
         
             var option=
                 {
                     Type:'历史K线图',
                     Windows:aryIndex, //窗口指标
                     
-                    Windows: [
-                                {Index:"MA"},
-                                {Index:"VOL"},
-                                {Index:"RSI"},
+                    Windows: 
+                    [
+                        {
+                            //Index:'自定义图标'//"Zealink-操盘BS点", 
+                            Index:'MA'
+                            //API: {Name:'Zealink-操盘BS点',Script:null, Args:null, Url:'http://127.0.0.1:18080/api/jsindex' } 
+                        },
+                        {
+                            Index:"MACD", 
+                            //API: {Name:'MACD',Script:null, Args:null, Url:'http://127.0.0.1:18080/api/jsindex' } , 
+                            Lock:
+                            {
+                                IsLocked: true,
+                                Callback: unlockIndex,
+                                BG: 'rgba(220,220,220,0.5)',
+                                TextColor: 'rgb(255,215,0)',
+                                Text: '\ue611',
+                                Font: '50px js-iconfont',
+                                //Count: 10  //锁主右边几条数据
+                            }
+                        },
+                        //{Index:"RSI"},
                                 
-                            ], //窗口指标
+                    ], //窗口指标
 
                     Symbol:symbol,
                     IsAutoUpdate:true,          //是自动更新数据
                     AutoUpdateFrequency:3000,   //数据更新频率
                     //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
+                    NetworkFilter:NetworkFilter,
         
                     IsShowRightMenu:true,          //右键菜单
                     IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
@@ -132,10 +165,12 @@
                         PageSize:150,               //一屏显示多少数据
                         IndexTreeApiUrl:"https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
                         //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
-                        //Info:["公告","互动易","调研"],          //信息地雷
+                        //Info:["公告","互动易","调研"],           //信息地雷
+                        InfoPosition:1,                         //显示位置
                         KLineDoubleClick:true,              //双击分钟走势图
                         IsShowTooltip:true,                 //是否显示K线提示信息
-                        //FirstShowDate:20180401,             //首屏显示的起始日期              
+                        //FirstShowDate:20180401,             //首屏显示的起始日期   
+                        DrawType:0,           
                     },
         
                     KLineTitle: //标题设置
@@ -147,24 +182,46 @@
                     Border: //边框
                     {
                         Left:5,           //左边间距
-                        Right:1,       //右边间距
+                        Right:60,       //右边间距
                         Bottom:25,
                         Top:25
                     },
 
-                    Language:language,
+                    Language:language,  //英文 'EN' 中文:'CN'
 
                     ExtendChart:    //扩展图形
                     [
-                        {Name:'画图工具',Top:25,IsAutoIndent:1 }
+                        {Name:'画图工具',Top:25}
                     ],
                     
                     Frame:  //子框架设置 (Height 窗口高度比例值)
                     [
-                        {SplitCount:5,Height:4,IsShowLeftText:true, IsShowRightText:false},
-                        {SplitCount:3,Height:2,IsShowLeftText:true, IsShowRightText:false},
-                        {SplitCount:2,Height:2,IsShowLeftText:true, IsShowRightText:false}
-                    ]
+                        {   SplitCount:5,
+                            //Height:4,
+                            IsShowLeftText:false, 
+                            IsShowRightText:true
+                        },
+                        {
+                            SplitCount:3,
+                            //Height:2,
+                            IsShowLeftText:false, 
+                            IsShowRightText:true
+                        },
+                        {
+                            SplitCount:2,
+                            //Height:2,
+                            IsShowLeftText:false, 
+                            IsShowRightText:true
+                        }
+                    ],
+
+                    Overlay:
+                    [
+                        //{Symbol:'000001.sh', DrawType:0},   
+                        //{Symbol:'002415.sz', DrawType:0}
+                    ],
+
+                    
                 }
 
             var windowHeight= $(window).height();
@@ -207,6 +264,20 @@
             resizeCanvas();
         
             //setTimeout(() => { chart.SetFirstShowDate({Date:20170501,PageSize:600});}, 20000);
+            //setTimeout(() => { chart.SetLanguage('EN');}, 5000);
+
+            var template=
+            {
+                Windows: 
+                [
+                    {Index:"MA", Args:[ { Name:'M1', Value:10}, { Name:'M2', Value:15 }, { Name:'M3', Value:20} ]},
+                    {Index:"MACD"},
+                    {Index:"MTM"},
+                    {Index:"CCI"},
+                                
+                ], //窗口指标
+            }
+            //setTimeout(()=>{ chart.ChangeIndexTemplate(template);}, 8000);
 
              //保存图片数据
              /*
@@ -224,6 +295,18 @@
                 
             }, 20000);
             */
+
+             //保存图片数据
+            /*
+            setTimeout(() => { 
+                var imageData=chart.SaveToImageUrl(null,(bSuccess,data,message)=>
+                {
+                    var image = document.createElement('img');
+                    image.src=data.Url;
+                    document.body.appendChild(image);
+                })
+            }, 20000);
+            */
         
         })
         
@@ -237,6 +320,24 @@
         function testcallback(event,data,obj)
         {
             console.log('[testcallback]', data);
+        }
+
+        LoadCustomIndex=function()
+        {
+            var index=
+            [
+                {
+                    ID:"自定义图标",                    //指标ID
+                    Name:'自定义图标',                  //指标名称
+                    Description:'自定义图标',           //描述信息
+                    IsMainIndex:true,                  //是否是主图指标
+                    Args:[],                           //指标参数
+                    Script:                 //脚本
+                        'DRAWICON(CLOSE>OPEN,LOW,1);'
+                },
+            ];
+
+            JSIndexScript.AddIndex(index);  //添加到系统指标中
         }
 
     </script>  
