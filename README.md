@@ -36,9 +36,9 @@
 
 # npm 安装
 npm install hqchart <br>
-[https://www.npmjs.com/package/hqchart](https://www.npmjs.com/package/hqchart)
-VUE 例子:[demo-vue.md](/教程/demo-vue.md)
-React 例子:[demo-react.md](/教程/demo-react.md)
+[https://www.npmjs.com/package/hqchart](https://www.npmjs.com/package/hqchart) <br>
+VUE 例子:[demo-vue.md](/教程/demo-vue.md) <br>
+React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 # 声明
   本项目只提供行情图形库及麦语法脚本执行器.<br>
