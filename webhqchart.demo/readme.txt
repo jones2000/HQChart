@@ -21,3 +21,9 @@ demo/phone14.html K线训练手机版
 
 demo/phone15.html 多日走势图
 demo/phone18.html 移动筹码图
+
+demo/phone18.html 筹码分布(K线图)
+demo/phone21.html K线图弹幕
+demo/phone22.html 叠加指标页面行情(K线图)
+demo/phone23.html 概念异动(走势图)
+demo/phone24.html 分笔K线图
