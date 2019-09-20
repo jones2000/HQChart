@@ -12278,8 +12278,9 @@ function ChartSingleText()
     this.TextAlign='left';
     this.Direction=0;       //0=middle 1=bottom 2=top
     this.YOffset=0;
+    this.Position;          //指定输出位置
 
-    this.IconFont;  //Iconfont
+    this.IconFont;          //Iconfont
 
     this.Draw=function()
     {
@@ -12288,6 +12289,12 @@ function ChartSingleText()
         if (this.NotSupportMessage)
         {
             this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (this.Position) 
+        {
+            this.DrawPosition();
             return;
         }
 
@@ -12400,6 +12407,36 @@ function ChartSingleText()
                 this.DrawText(this.Text,x,y,isHScreen);
             }
         }
+    }
+
+    this.DrawPosition=function()    //绘制在指定位置上
+    {
+        if (!this.Text) return;
+        var isHScreen=(this.ChartFrame.IsHScreen===true)
+        if (isHScreen)
+        {
+            var x=this.ChartBorder.GetLeft()+this.ChartBorder.GetWidthEx()*this.Position.Y;
+            var y=this.ChartBorder.GetTop()+this.ChartBorder.GetHeight()*this.Position.X;
+        }
+        else
+        {
+            var x=this.ChartBorder.GetLeft()+this.ChartBorder.GetWidth()*this.Position.X;
+            var y=this.ChartBorder.GetTopEx()+this.ChartBorder.GetHeight()*this.Position.Y;
+        }
+
+        if (isHScreen) 
+        {
+            chartright=this.ChartBorder.GetBottom();
+            top=this.ChartBorder.GetRightEx();
+            bottom=this.ChartBorder.GetLeftEx();
+        }
+
+        this.Canvas.fillStyle=this.Color;
+        if (this.Position.Type==0) this.Canvas.textAlign='left';
+        else if (this.Position.Type==2) this.Canvas.textAlign='center';
+        else this.Canvas.textAlign='right';
+        this.DrawText(this.Text,x,y,isHScreen);
+
     }
 
     this.DrawText=function(text,x,y,isHScreen)
@@ -36232,6 +36269,12 @@ function Node()
                 this.IsNeedSymbolExData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA);
         }
 
+        if (varName=='HYBLOCK' || varName=='DYBLOCK' || varName=='GNBLOCK')
+        {
+            if (!this.IsNeedSymbolExData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA))
+                this.IsNeedSymbolExData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA);
+        }
+
         //流通股本（手）
         if (varName==='CAPITAL')
         {
@@ -40343,6 +40386,14 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    //STRCAT(A,B):将两个字符串A,B(非序列化)相加成一个字符串C.
+    //用法: STRCAT('多头','开仓')将两个字符串'多头','开仓'相加成一个字符串'多头开仓'
+    this.STRCAT=function(str1, str2)
+    {
+        var result=str1+str2;
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -40471,6 +40522,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.BACKSET(args[0], args[1]);
             case 'BETWEEN':
                 return this.BETWEEN(args[0], args[1], args[2]);
+            case 'STRCAT':
+                return this.STRCAT(args[0], args[1]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
@@ -40568,6 +40621,22 @@ function JSDraw(errorHandler,symbolData)
             {
                 if (this.IsNumber(price[i])) drawData[i]=price[i];
             }
+        }
+
+        return result;
+    }
+
+    this.DRAWTEXT_FIX=function(condition,x,y,type,text)
+    {
+        let result={Position:null, DrawType:'DRAWTEXT_FIX',Text:text};
+        if (condition.length<=0) return result;
+
+        for(var i in condition)
+        {
+            if (isNaN(condition[i]) || !condition[i]) continue;
+
+            result.Position={X:x, Y:y, Type:type};
+            return result;
         }
 
         return result;
@@ -41190,7 +41259,7 @@ JSDraw.prototype.IsNumber=function(value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE']);
+    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX']);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -41448,6 +41517,97 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         return result;
+    }
+
+    this.GetGroupData=function(job)
+    {
+        var key=job.ID.toString()+'-Group-'+this.Symbol;
+        if (this.ExtendData.has(key)) return this.Execute.RunNextJob();
+
+        var self=this;
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSSymbolData::GetGroupData', //类名::
+                Explain:'HYBLOCK|DYBLOCK',
+                Request:{ Url:self.RealtimeApiUrl,  Type:'POST' ,
+                    Data: { symbol:[this.Symbol], field: ["name","symbol","industry", 'concept','region'] } }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvGroupData(data,key);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        
+        JSNetwork.HttpReqeust({
+            url: self.RealtimeApiUrl,
+            data:
+            {
+                "field": ["name","symbol","industry", 'concept','region'],
+                "symbol": [this.Symbol]
+            },
+            type:"post",
+            dataType: "json",
+            async:true, 
+            success: function (recvData)
+            {
+                self.RecvGroupData(recvData,key);
+                self.Execute.RunNextJob();
+            },
+            error: function(request)
+            {
+                self.RecvError(request);
+            }
+        });
+    }
+
+    this.RecvGroupData=function(data,key)
+    {
+        if (!data.stock) return;
+        if (data.stock.length!=1) return;
+        var stock=data.stock[0];
+        var industry=stock.industry;
+        var concept=stock.concept;
+        var region=stock.region;
+
+        var groupData={Industry:[],Concept:[], Region:[] };
+        if (industry)
+        {
+            for(var i in industry)
+            {
+                var item=industry[i];
+                groupData.Industry.push({Name:item.name, Symbol:item.symbol});
+            }
+        }
+
+        if (concept)
+        {
+            for(var i in concept)
+            {
+                var item=concept[i];
+                groupData.Concept.push({Name:item.name, Symbol:item.symbol});
+            }
+        }
+
+        if (region)
+        {
+            for(var i in region)
+            {
+                var item=region[i];
+                groupData.Region.push({Name:item.name, Symbol:item.symbol});
+            }
+        }
+
+
+        this.ExtendData.set(key,groupData);
     }
 
 
@@ -41940,12 +42100,27 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.GetCurrBarsCount=function()
     {
-        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return new Array();
+        let result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
 
         let lCount=this.Data.Data.length;
-        let result=[];
         for(let i=lCount-1;i>=0;--i)
             result.push(i);
+
+        return result;
+    }
+
+    this.GetIsLastBar=function()
+    {
+        let result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result
+
+        let lCount=this.Data.Data.length;
+        for(let i=0;i<lCount;++i)
+        {
+            if (i==lCount-1) result.push(1);
+            else result.push(0);
+        }
 
         return result;
     }
@@ -43228,6 +43403,73 @@ function JSSymbolData(ast,option,jsExecute)
 
         return 0;
     }
+
+    this.GetSymbol=function()
+    {
+        return this.Symbol;
+    }
+
+    this.GetName=function()
+    {
+        return this.Name;
+    }
+
+    this.GetIndustry=function()
+    {
+        var key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA.toString()+'-Group-'+this.Symbol;
+        if (!this.ExtendData.has(key)) return '';
+
+        var group=this.ExtendData.get(key);
+        if (!group.Industry || group.Industry.length<=0) return '';
+
+        var result='';
+        for(var i in group.Industry)
+        {
+            var item=group.Industry[i];
+            if (result.length>0) result+=' ';
+            result+=item.Name;
+        }
+
+        return result;
+    }
+    
+    this.GetRegion=function()
+    {
+        var key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA.toString()+'-Group-'+this.Symbol;
+        if (!this.ExtendData.has(key)) return '';
+
+        var group=this.ExtendData.get(key);
+        if (!group.Region || group.Region.length<=0) return '';
+
+        var result='';
+        for(var i in group.Region)
+        {
+            var item=group.Region[i];
+            if (result.length>0) result+=' ';
+            result+=item.Name;
+        }
+
+        return result;
+    }
+
+    this.GetConcept=function()
+    {
+        var key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA.toString()+'-Group-'+this.Symbol;
+        if (!this.ExtendData.has(key)) return '';
+
+        var group=this.ExtendData.get(key);
+        if (!group.Concept || group.Concept.length<=0) return '';
+
+        var result='';
+        for(var i in group.Concept)
+        {
+            var item=group.Concept[i];
+            if (result.length>0) result+=' ';
+            result+=item.Name;
+        }
+
+        return result;
+    }
    
     this.DATE=function()
     {
@@ -43403,6 +43645,7 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_SYMBOL_LATEST_DATA:3,  //最新的股票行情数据
     JOB_DOWNLOAD_INDEX_INCREASE_DATA:4, //涨跌股票个数统计数据
     JOB_DOWNLOAD_VOLR_DATA:5,           //5日量比均量下载量比数据
+    JOB_DOWNLOAD_GROUP_DATA:6,          //所属行业|地区|概念
 
     //财务函数
     JOB_DOWNLOAD_TOTAL_EQUITY_DATA:100,          //总股本（万股）
@@ -43674,13 +43917,18 @@ function JSExecute(ast,option)
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
         ['INDEXADV',null],['INDEXDEC',null],
 
-        //到最后交易日的周期数
-        ['CURRBARSCOUNT',null],
-        //流通股本（手）
-        ['CAPITAL',null],
-        //换手率
-        ['EXCHANGE',null],
-        ['SETCODE', null],
+        ['CURRBARSCOUNT',null], //到最后交易日的周期数
+        ['ISLASTBAR',null],     //判断是否为最后一个周期
+
+        ['CAPITAL',null],   //流通股本（手）
+        ['EXCHANGE',null],   //换手率
+        ['SETCODE', null],  //市场类型
+        ['CODE',null],      //品种代码
+        ['STKNAME',null],   //品种名称
+
+        ['HYBLOCK',null],   //所属行业板块
+        ['DYBLOCK',null],   //所属地域板块
+        ['GNBLOCK',null]    //所属概念
 
     ]);   
 
@@ -43728,6 +43976,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetLatestData();
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA:  //量比
                 return this.SymbolData.GetVolRateData(jobItem);
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA:
+                return this.SymbolData.GetGroupData(jobItem);   //行业|概念|地区
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_TOTAL_EQUITY_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA:
@@ -43824,12 +44074,24 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetIndexCacheData(name);
             case 'CURRBARSCOUNT':
                 return this.SymbolData.GetCurrBarsCount();
+            case 'ISLASTBAR':
+                return this.SymbolData.GetIsLastBar();
             case 'CAPITAL':
                 return this.SymbolData.GetFinanceCacheData(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA);
             case 'EXCHANGE':
                 return this.SymbolData.GetFinanceCacheData(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA);
             case 'SETCODE':
                 return this.SymbolData.SETCODE();
+            case 'CODE':
+                return this.SymbolData.GetSymbol();
+            case 'STKNAME':
+                return this.SymbolData.GetName();
+            case 'HYBLOCK':
+                return this.SymbolData.GetIndustry();
+            case 'DYBLOCK':
+                return this.SymbolData.GetRegion();
+            case 'GNBLOCK':
+                return this.SymbolData.GetConcept();
 
             case 'DATE':
                 return this.SymbolData.DATE();
@@ -44161,6 +44423,10 @@ function JSExecute(ast,option)
                 break;
             case 'DRAWTEXT':
                 node.Draw=this.Draw.DRAWTEXT(args[0],args[1],args[2]);
+                node.Out=[];
+                break;
+            case 'DRAWTEXT_FIX':
+                node.Draw=this.Draw.DRAWTEXT_FIX(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=[];
                 break;
             case 'SUPERDRAWTEXT':
@@ -44846,7 +45112,8 @@ function ScriptIndex(name,script,args,option)
         else chartText.Color=this.GetDefaultColor(id);
 
         let titleIndex=windowIndex+1;
-        chartText.Data.Data=varItem.Draw.DrawData;
+        if (varItem.Draw.Position) chartText.Position=varItem.Draw.Position;    //赋值坐标
+        if (varItem.Draw.DrawData) chartText.Data.Data=varItem.Draw.DrawData;
         chartText.Text=varItem.Draw.Text;
         if (varItem.Draw.Direction>0) chartText.Direction=varItem.Draw.Direction;
         if (varItem.Draw.YOffset>0) chartText.YOffset=varItem.Draw.YOffset;
@@ -45219,6 +45486,7 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWTEXT':
                     case 'SUPERDRAWTEXT':
+                    case 'DRAWTEXT_FIX':
                         this.CreateText(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWLINE':
@@ -45408,6 +45676,7 @@ function OverlayScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWTEXT':
                     case 'SUPERDRAWTEXT':
+                    case 'DRAWTEXT_FIX':
                         this.CreateText(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWLINE':
@@ -45575,7 +45844,8 @@ function OverlayScriptIndex(name,script,args,option)
         else chart.Color=this.GetDefaultColor(id);
 
         let titleIndex=windowIndex+1;
-        chart.Data.Data=varItem.Draw.DrawData;
+        if (varItem.Draw.Position) chart.Position=varItem.Draw.Position;    //赋值坐标
+        if (varItem.Draw.DrawData) chart.Data.Data=varItem.Draw.DrawData;
         chart.Text=varItem.Draw.Text;
         if (varItem.Draw.Direction>0) chart.Direction=varItem.Draw.Direction;
         if (varItem.Draw.YOffset>0) chart.YOffset=varItem.Draw.YOffset;

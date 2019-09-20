@@ -8932,8 +8932,9 @@ function ChartSingleText()
     this.TextAlign='left';
     this.Direction=0;       //0=middle 1=bottom 2=top
     this.YOffset=0;
+    this.Position;          //指定输出位置
 
-    this.IconFont;  //Iconfont
+    this.IconFont;          //Iconfont
 
     this.Draw=function()
     {
@@ -8942,6 +8943,12 @@ function ChartSingleText()
         if (this.NotSupportMessage)
         {
             this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (this.Position) 
+        {
+            this.DrawPosition();
             return;
         }
 
@@ -9054,6 +9061,36 @@ function ChartSingleText()
                 this.DrawText(this.Text,x,y,isHScreen);
             }
         }
+    }
+
+    this.DrawPosition=function()    //绘制在指定位置上
+    {
+        if (!this.Text) return;
+        var isHScreen=(this.ChartFrame.IsHScreen===true)
+        if (isHScreen)
+        {
+            var x=this.ChartBorder.GetLeft()+this.ChartBorder.GetWidthEx()*this.Position.Y;
+            var y=this.ChartBorder.GetTop()+this.ChartBorder.GetHeight()*this.Position.X;
+        }
+        else
+        {
+            var x=this.ChartBorder.GetLeft()+this.ChartBorder.GetWidth()*this.Position.X;
+            var y=this.ChartBorder.GetTopEx()+this.ChartBorder.GetHeight()*this.Position.Y;
+        }
+
+        if (isHScreen) 
+        {
+            chartright=this.ChartBorder.GetBottom();
+            top=this.ChartBorder.GetRightEx();
+            bottom=this.ChartBorder.GetLeftEx();
+        }
+
+        this.Canvas.fillStyle=this.Color;
+        if (this.Position.Type==0) this.Canvas.textAlign='left';
+        else if (this.Position.Type==2) this.Canvas.textAlign='center';
+        else this.Canvas.textAlign='right';
+        this.DrawText(this.Text,x,y,isHScreen);
+
     }
 
     this.DrawText=function(text,x,y,isHScreen)
