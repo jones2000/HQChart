@@ -161,6 +161,7 @@ npm install hqchart <br>
 ## uni-app教程
 1. [HQChart使用教程35-如何在uni-app创建K线图(h5)](https://blog.csdn.net/jones2000/article/details/101039026) <br>
 2. [HQChart使用教程36-如何在uni-app创建走势图(h5)](https://blog.csdn.net/jones2000/article/details/101039673) <br>
+3. [HQChart使用教程37 - 如何在uni-app创建k线图(app)](https://github.com/jones2000/HQChart/tree/master/wechathqchart) <br>
 
 ## 第3方数据前端接入教程(走势图)
 1. [HQChart使用教程29-走势图如何对接第3方数据1](https://blog.csdn.net/jones2000/article/details/100132357) <br>
