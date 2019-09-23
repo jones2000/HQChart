@@ -2911,7 +2911,7 @@ function CoordinateInfo()
     this.TextColor=g_JSChartResource.FrameSplitTextColor        //文字颜色
     this.Font=g_JSChartResource.FrameSplitTextFont;             //字体
     this.LineColor=g_JSChartResource.FrameSplitPen;             //线段颜色
-    this.LineType=1;                                            //线段类型 -1 不画线段
+    this.LineType=1;                                            //线段类型 -1 不画线段 2 虚线
 }
 
 
@@ -3254,10 +3254,24 @@ function AverageWidthFrame()
             if (y!=null && Math.abs(y-yPrev)<this.MinYDistance) continue;  //两个坐标在近了 就不画了
 
             this.Canvas.strokeStyle=item.LineColor;
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(left,ToFixedPoint(y));
-            this.Canvas.lineTo(right,ToFixedPoint(y));
-            this.Canvas.stroke();
+
+            if (item.LineType==2)
+            {
+                this.Canvas.save();
+                this.Canvas.setLineDash([5,5]);   //虚线
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(left,ToFixedPoint(y));
+                this.Canvas.lineTo(right,ToFixedPoint(y));
+                this.Canvas.stroke();
+                this.Canvas.restore();
+            }
+            else
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(left,ToFixedPoint(y));
+                this.Canvas.lineTo(right,ToFixedPoint(y));
+                this.Canvas.stroke();
+            }
 
             if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
             else if (y <= top + 2) this.Canvas.textBaseline = 'top';
@@ -13609,6 +13623,11 @@ function FrameSplitMinutePriceY()
             this.Frame.HorizontalInfo[i]= new CoordinateInfo();
             this.Frame.HorizontalInfo[i].Value=price;
             if (this.IsShowLeftText) this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(defaultfloatPrecision);
+            if (price==this.YClose) 
+            {
+                this.Frame.HorizontalInfo[i].LineType=2;//中间的线画虚线
+                if (g_JSChartResource.FrameDotSplitPen) this.Frame.HorizontalInfo[i].LineColor=g_JSChartResource.FrameDotSplitPen;
+            }
 
             if (this.YClose)
             {
@@ -18161,8 +18180,9 @@ function JSChartResource()
     this.CloseLineColor='rgb(178,34,34)';
 
     this.FrameBorderPen="rgb(225,236,242)";
-    this.FrameSplitPen="rgb(225,236,242)";      //分割线
-    this.FrameSplitTextColor="rgb(117,125,129)";   //刻度文字颜色
+    this.FrameSplitPen="rgb(225,236,242)";          //分割线
+    this.FrameDotSplitPen='rgb(105,105,105)';       //分割虚线
+    this.FrameSplitTextColor="rgb(117,125,129)";    //刻度文字颜色
     this.FrameSplitTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";     //坐标刻度文字字体
     this.FrameTitleBGColor="rgb(246,251,253)";  //标题栏背景色
 
@@ -18354,6 +18374,7 @@ function JSChartResource()
         if (style.CloseLineColor) this.CloseLineColor = style.CloseLineColor;
         if (style.FrameBorderPen) this.FrameBorderPen = style.FrameBorderPen;
         if (style.FrameSplitPen) this.FrameSplitPen = style.FrameSplitPen;
+        if (style.FrameDotSplitPen) this.FrameDotSplitPen = style.FrameDotSplitPen;
         if (style.FrameSplitTextColor) this.FrameSplitTextColor = style.FrameSplitTextColor;
         if (style.FrameSplitTextFont) this.FrameSplitTextFont = style.FrameSplitTextFont;
         if (style.FrameTitleBGColor) this.FrameTitleBGColor = style.FrameTitleBGColor;
