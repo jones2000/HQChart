@@ -117,6 +117,11 @@ function JSChart(divElement)
             if (option.KLine.FirstShowDate>20000101) chart.CustomShow={ Date:option.KLine.FirstShowDate };
         }
 
+        if (option.Page)
+        {
+            if (option.Page.Enable==true) chart.Page.Enable=true;
+        }
+
         if (option.Language)
         {
             if (option.Language==='CN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
@@ -19526,6 +19531,8 @@ function KLineChartContainer(uielement)
     this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
     this.OverlayIndexFrameWidth=60;     //叠加指标框架宽度
 
+    this.Page={ Enable:false, Index:0, Finish:false };    //分页下载 Enable:是否分页下载 Index:已下载到第几页 Finish：是否所有分页完成
+
     //自动更新设置
     this.IsAutoUpdate=false;                    //是否自动更新行情数据
     this.AutoUpdateFrequency=30000;             //30秒更新一次数据
@@ -20031,6 +20038,8 @@ function KLineChartContainer(uielement)
         var self=this;
         this.ChartSplashPaint.IsEnableSplash = true;
         this.FlowCapitalReady=false;
+        this.Page.Finish=false; //重置分页
+        this.Page.Index=0;
         this.Draw();
 
         if (this.NetworkFilter)
@@ -20048,7 +20057,10 @@ function KLineChartContainer(uielement)
             { 
                 self.ChartSplashPaint.IsEnableSplash = false;
                 self.RecvHistoryData(data);
-                self.AutoUpdate();
+                if (self.Page.Enable==true && self.Page.Finish==false)
+                    self.RequestHistoryPageData();
+                else
+                    self.AutoUpdate();
             });
 
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
@@ -20070,7 +20082,10 @@ function KLineChartContainer(uielement)
             {
                 self.ChartSplashPaint.IsEnableSplash = false;
                 self.RecvHistoryData(data);
-                self.AutoUpdate();
+                if (self.Page.Enable==true && self.Page.Finish==false)
+                    self.RequestHistoryPageData();
+                else
+                    self.AutoUpdate();
             }
         });
     }
@@ -20123,11 +20138,15 @@ function KLineChartContainer(uielement)
             firstSubFrame.YSplitOperator.Data=this.ChartPaint[0].Data;          //K线数据
             firstSubFrame.YSplitOperator.Period=this.Period;                    //周期
         }
-        
-        this.RequestFlowCapitalData();      //请求流通股本数据 (主数据下载完再下载)
-        this.RequestOverlayHistoryData();   //请求叠加数据 (主数据下载完再下载)
 
-        this.CreateChartDrawPictureByStorage(); //创建画图工具
+        if (this.Page.Enable==true && this.Page.Finish==true)  //分页下载 这些数据迁移到分页下载完以后下载
+        {
+            this.RequestFlowCapitalData();          //请求流通股本数据 (主数据下载完再下载)
+            this.RequestOverlayHistoryData();       //请求叠加数据 (主数据下载完再下载)
+            this.CreateChartDrawPictureByStorage(); //创建画图工具
+        }
+
+        if (this.Page.Enable) this.Page.Index=1;    //第一页下载完成
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
@@ -20155,11 +20174,120 @@ function KLineChartContainer(uielement)
         }
     }
 
+    this.RequestHistoryPageData=function()  //请求分页
+    {
+        var self=this;
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestHistoryPageData', //类名::
+                Explain:'日K数据分页',
+                Request:{ Url:'none',  Type:'POST' ,
+                    Data: { symbol:self.Symbol, Index:self.Page.Index, field: ["name","symbol","yclose","open","price","high","low","vol"] } }, 
+                Page:self.Page,
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvHistoryPageData(data);
+                if (self.Page.Enable==true && self.Page.Finish==false)
+                    self.RequestHistoryPageData();  //继续下载
+                else
+                    self.AutoUpdate();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        //模拟异步请求
+        setTimeout(function()
+        {
+            self.Page.Finish=true;
+            var data= //测试数据
+            { 
+                data: 
+                [
+                    [ 20150218, 12.54, 12.5, 12.74, 11.95, 12.27, 117632441, 1459671045 ],
+                    [ 20150219, 12.27, 12.1, 12.23, 11.9, 12.23, 95889423, 1157078548 ],
+                    [ 20150220, 12.23, 12.17, 12.17, 11.9, 12.05, 67763439, 815652761] 
+                ]
+            };
+    
+            self.RecvHistoryPageData(data);
+            if (self.Page.Enable==true && self.Page.Finish==false)
+                self.RequestHistoryPageData();
+            else
+                self.AutoUpdate();
+
+        },500)
+    }
+
+    this.RecvHistoryPageData=function(data)
+    {
+        var aryDayData=KLineChartContainer.JsonDataToHistoryData(data);
+
+        var addCount=0;
+        for(var i in aryDayData)    //数据往前插
+        {
+            var item=aryDayData[i];
+            this.SourceData.Data.splice(i,0,item);
+            ++addCount;
+        }
+        
+        var bindData=new ChartData();
+        bindData.Data=this.SourceData.Data;
+        bindData.Period=this.Period;
+        bindData.Right=this.Right;
+        bindData.DataType=this.SourceData.DataType;
+
+        if (bindData.Right>0 && bindData.Period<=3)    //复权(日线数据才复权)
+        {
+            var rightData=bindData.GetRightDate(bindData.Right);
+            bindData.Data=rightData;
+        }
+
+        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        {
+            var periodData=bindData.GetPeriodData(bindData.Period);
+            bindData.Data=periodData;
+        }
+
+        //绑定数据
+        this.UpdateMainData(bindData);
+        this.ChartPaint[0].Data.DataOffset+=addCount;   //增加了数据 显示数据要偏移新增加的个数
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            this.BindIndexData(i,bindData);
+        }
+
+        ++this.Page.Index;
+
+        if (this.Page.Enable==true && this.Page.Finish==true)  //分页下载 这些数据迁移到分页下载完以后下载
+        {
+            this.RequestFlowCapitalData();          //请求流通股本数据 (主数据下载完再下载)
+            this.RequestOverlayHistoryData();       //请求叠加数据 (主数据下载完再下载)
+            this.CreateChartDrawPictureByStorage(); //创建画图工具
+        }
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+    }
+
     this.ReqeustHistoryMinuteData=function()
     {
         var self=this;
         this.ChartSplashPaint.IsEnableSplash = true;
         this.FlowCapitalReady=false;
+        this.Page.Finish=false; //重置分页
+        this.Page.Index=0;
         this.Draw();
 
         if (this.NetworkFilter)
@@ -20328,6 +20456,7 @@ function KLineChartContainer(uielement)
         var realtimeData=KLineChartContainer.JsonDataToRealtimeData(data);
         var item=this.SourceData.Data[this.SourceData.Data.length-1];   //最新的一条数据
 
+        var bAddItem=false;
         if (item.Date==realtimeData.Date)   //实时行情数据更新
         {
             console.log('[KLineChartContainer::RecvRealtimeData] update kline by minute data',realtimeData);
@@ -20350,6 +20479,7 @@ function KLineChartContainer(uielement)
             newItem.Amount=realtimeData.Amount;
             newItem.Date=realtimeData.Date;
             this.SourceData.Data.push(newItem);
+            bAddItem=true;
         }
         else
         {
@@ -20376,6 +20506,7 @@ function KLineChartContainer(uielement)
 
         //绑定数据
         this.UpdateMainData(bindData);
+        if (bAddItem) this.ChartPaint[0].Data.DataOffset+=1;   //增加了数据 显示数据要偏移新增加的个数
         this.BindInstructionIndexData(bindData);    //执行指示脚本
 
         for(var i=0; i<this.Frame.SubFrame.length; ++i)
