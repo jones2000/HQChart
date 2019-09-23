@@ -52,15 +52,43 @@ var BLACK_STYLE =    //黑色风格
     CorssCursorTextFont: "12px 微软雅黑",
     CorssCursorPenColor: "rgb(130,130,130)",           //十字光标线段颜色
     KLine:
-      {
+    {
         MaxMin: { Font: '12px 微软雅黑', Color: 'rgb(111,111,111)' },   //K线最大最小值显示
         Info:  //信息地雷
-          {
+        {
             Color: 'rgb(205,149,12)',
             TextColor: '#afc0da',
             TextBGColor: '#1a283e',
-          }
-      },
+            Investor:
+            {
+                ApiUrl: '/API/NewsInteract', //互动易
+            },
+            Announcement:                                           //公告
+            {
+                ApiUrl: '/API/ReportList',
+            },
+            Pforecast:  //业绩预告
+            {
+                ApiUrl: '/API/StockHistoryDay',
+            },
+            Research:   //调研
+            {
+                ApiUrl: '/API/InvestorRelationsList',
+            },
+            BlockTrading:   //大宗交易
+            {
+                ApiUrl: '/API/StockHistoryDay',
+            },
+            TradeDetail:    //龙虎榜
+            {
+                ApiUrl: '/API/StockHistoryDay',
+            },
+            Policy: //策略
+            {
+                ApiUrl: '/API/StockHistoryDay',
+            }
+        }
+    },
 
     Index: {      //指标线段颜色
       LineColor: [
@@ -145,15 +173,43 @@ var WHITE_STYLE=    //白色风格
     CorssCursorPenColor: "rgb(130,130,130)",           //十字光标线段颜色
 
     KLine:
-      {
+    {
         MaxMin: { Font: '12px 微软雅黑', Color: 'rgb(111,111,111)' },   //K线最大最小值显示
         Info:  //信息地雷
-          {
+        {
             Color: 'rgb(205,149,12)',
             TextColor: '#197de9',
             TextBGColor: '#e1e4ef',
-          }
-      },
+            Investor:
+            {
+                ApiUrl: '/API/NewsInteract', //互动易
+            },
+            Announcement:                                           //公告
+            {
+                ApiUrl: '/API/ReportList',
+            },
+            Pforecast:  //业绩预告
+            {
+                ApiUrl: '/API/StockHistoryDay',
+            },
+            Research:   //调研
+            {
+                ApiUrl: '/API/InvestorRelationsList',
+            },
+            BlockTrading:   //大宗交易
+            {
+                ApiUrl: '/API/StockHistoryDay',
+            },
+            TradeDetail:    //龙虎榜
+            {
+                ApiUrl: '/API/StockHistoryDay',
+            },
+            Policy: //策略
+            {
+                ApiUrl: '/API/StockHistoryDay',
+            }
+        }
+    },
 
     Index: {      //指标线段颜色
       LineColor: [

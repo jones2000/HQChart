@@ -102,12 +102,11 @@ function JSChart(element)
         }
     }
 
-  this.OnSize = function () {
-    if (this.JSChartContainer && this.JSChartContainer.Frame)
-      this.JSChartContainer.Frame.SetSizeChage(true);
-
-    if (this.JSChartContainer) this.JSChartContainer.Draw();
-  }
+    this.OnSize = function () 
+    {
+        if (this.JSChartContainer && this.JSChartContainer.Frame) this.JSChartContainer.Frame.SetSizeChage(true);
+        if (this.JSChartContainer) this.JSChartContainer.Draw();
+    }
 
     //历史K线图
     this.CreateKLineChartContainer = function (option) 
@@ -953,6 +952,7 @@ function JSChartContainer(uielement)
     this.TouchTimer = null;         //触屏定时器
     this.LastDrawStatus;            //最后一次画的状态
     this.LastDrawID=1;              //最后一次画的ID
+    this.SnapshotType = 0;
 
     this.CursorIndex = 0;             //十字光标X轴索引
     this.LastPoint = new Point();     //鼠标位置
@@ -1004,45 +1004,43 @@ function JSChartContainer(uielement)
     this.GetIndexEvent = function () { return this.GetEvent(JSCHART_EVENT_ID.RECV_INDEX_DATA); } //接收指标数据
     this.GetBarrageEvent=function() { return this.GetEvent(JSCHART_EVENT_ID.BARRAGE_PLAY_END);} //获取弹幕事件
 
-  //判断是单个手指
-  this.IsPhoneDragging = function (e) {
-    // console.log(e);
-    var changed = e.changedTouches.length;
-    var touching = e.touches.length;
+    //判断是单个手指
+    this.IsPhoneDragging = function (e) 
+    {
+        // console.log(e);
+        var changed = e.changedTouches.length;
+        var touching = e.touches.length;
 
-    return changed == 1 && touching == 1;
-  }
-
-  //是否是2个手指操所
-  this.IsPhonePinching = function (e) {
-    var changed = e.changedTouches.length;
-    var touching = e.touches.length;
-
-    return (changed == 1 || changed == 2) && touching == 2;
-  }
-
-  this.GetToucheData = function (e, isForceLandscape) {
-    var touches = new Array();
-    for (var i = 0; i < e.touches.length; ++i) {
-      var item = e.touches[i];
-      if (isForceLandscape) {
-        touches.push(
-          {
-            clientX: item.y, clientY: item.x,
-            pageX: item.y, pageY: item.x
-          });
-      }
-      else {
-        touches.push(
-          {
-            clientX: item.x, clientY: item.y,
-            pageX: item.x, pageY: item.y
-          });
-      }
+        return changed == 1 && touching == 1;
     }
 
-    return touches;
-  }
+    //是否是2个手指操所
+    this.IsPhonePinching = function (e) 
+    {
+        var changed = e.changedTouches.length;
+        var touching = e.touches.length;
+
+        return (changed == 1 || changed == 2) && touching == 2;
+    }
+
+    this.GetToucheData = function (e, isForceLandscape) 
+    {
+        var touches = new Array();
+        for (var i = 0; i < e.touches.length; ++i) 
+        {
+            var item = e.touches[i];
+            if (isForceLandscape) 
+            {
+                touches.push( { clientX: item.y, clientY: item.x, pageX: item.y, pageY: item.x });
+            }
+            else 
+            {
+                touches.push( {clientX: item.x, clientY: item.y, pageX: item.x, pageY: item.y });
+            }
+        }
+
+        return touches;
+    }
 
     //手机拖拽
     this.ontouchstart = function (e) 
@@ -1267,7 +1265,7 @@ function JSChartContainer(uielement)
             this.Canvas.draw(false, function () 
             {
                 //if (lastDrawID == self.LastDrawID) 
-                self.Frame.Snapshot();  //只保存最后一次的截图
+                self.Frame.Snapshot(self.SnapshotType);  //只保存最后一次的截图
                 console.log('[JSChartContainer:Draw] finish. DrawID('+ lastDrawID +','+ self.LastDrawID +')');
             });
         }
@@ -1279,13 +1277,31 @@ function JSChartContainer(uielement)
     //画动态信息
     this.DrawDynamicInfo = function () 
     {
-        if (this.Frame.ScreenImagePath == null) return;
-
         var self = this;
         var width = this.Frame.ChartBorder.GetChartWidth();
         var height = this.Frame.ChartBorder.GetChartHeight();
-        self.Canvas.drawImage(this.Frame.ScreenImagePath, 0, 0, width, height);
-        
+
+        if (self.SnapshotType==1)
+        {
+            if (this.Frame.ScreenImageData == null) return;
+            wx.canvasPutImageData({
+                canvasId: this.UIElement.ID,
+                x: 0,y: 0,width: width,height: height,
+                data: this.Frame.ScreenImageData,
+                success(res) { self.DrawDynamicChart(true); }
+            })
+        }
+        else
+        {
+            if (this.Frame.ScreenImagePath == null) return;
+            self.Canvas.drawImage(this.Frame.ScreenImagePath, 0, 0, width, height);
+            self.DrawDynamicChart(false);
+        }
+    }
+
+    this.DrawDynamicChart = function (bReserve)
+    {
+        var self = this;
         if (self.ChartCorssCursor) 
         {
             self.ChartCorssCursor.LastPoint = self.LastPoint;
@@ -1317,10 +1333,10 @@ function JSChartContainer(uielement)
             }
         }
 
-        this.LastDrawStatus ='DrawDynamicInfo';
-        console.log('[JSChartContainer:DrawDynamicInfo][ID=' + this.UIElement.ID + '] draw .....');
-        self.Canvas.draw(false, function () {
-            console.log('[JSChartContainer:DrawDynamicInfo] finish.');
+        this.LastDrawStatus = 'DrawDynamicInfo';
+        console.log('[JSChartContainer:DrawDynamicChart][ID=' + this.UIElement.ID + '] draw .....');
+        self.Canvas.draw(bReserve, function () {
+            console.log('[JSChartContainer:DrawDynamicChart] finish.');
         });
     }
 
@@ -2874,7 +2890,8 @@ function HQTradeFrame()
     this.SizeChange = true;                   //大小是否改变
     this.ChartBorder;
     this.Canvas;                            //画布
-    this.ScreenImagePath;                   //截图路径           
+    this.ScreenImagePath;                   //截图路径  
+    this.ScreenImageData=null;                   //截图数据         
     this.Data;                              //主数据
     this.Position;                          //画布的位置
     this.SizeChange = true;
@@ -2882,133 +2899,167 @@ function HQTradeFrame()
     this.CurrentSnapshotID=0;
     this.SnapshotStatus=0;                  //0空闲 1工作
 
-  this.CalculateChartBorder = function ()    //计算每个子框架的边框信息
-  {
-    if (this.SubFrame.length <= 0) return;
+    this.CalculateChartBorder = function ()    //计算每个子框架的边框信息
+    {
+        if (this.SubFrame.length <= 0) return;
 
-    var top = this.ChartBorder.GetTop();
-    var height = this.ChartBorder.GetHeight();
-    var totalHeight = 0;
+        var top = this.ChartBorder.GetTop();
+        var height = this.ChartBorder.GetHeight();
+        var totalHeight = 0;
 
-    for (var i in this.SubFrame) {
-      var item = this.SubFrame[i];
-      totalHeight += item.Height;
+        for (var i in this.SubFrame) 
+        {
+            var item = this.SubFrame[i];
+            totalHeight += item.Height;
+        }
+
+        for (var i in this.SubFrame) 
+        {
+            var item = this.SubFrame[i];
+            item.Frame.ChartBorder.Top = top;
+            item.Frame.ChartBorder.Left = this.ChartBorder.Left;
+            item.Frame.ChartBorder.Right = this.ChartBorder.Right;
+            var frameHeight = height * (item.Height / totalHeight) + top;
+            item.Frame.ChartBorder.Bottom = this.ChartBorder.GetChartHeight() - frameHeight;
+            top = frameHeight;
+        }
+
     }
 
-    for (var i in this.SubFrame) {
-      var item = this.SubFrame[i];
-      item.Frame.ChartBorder.Top = top;
-      item.Frame.ChartBorder.Left = this.ChartBorder.Left;
-      item.Frame.ChartBorder.Right = this.ChartBorder.Right;
-      var frameHeight = height * (item.Height / totalHeight) + top;
-      item.Frame.ChartBorder.Bottom = this.ChartBorder.GetChartHeight() - frameHeight;
-      top = frameHeight;
+    this.Draw = function () 
+    {
+        if (this.SizeChange === true) this.CalculateChartBorder();
+
+        for (var i in this.SubFrame) 
+        {
+            var item = this.SubFrame[i];
+            item.Frame.Draw();
+        }
+
+        this.SizeChange = false;
     }
 
-  }
-
-  this.Draw = function () {
-    if (this.SizeChange === true) this.CalculateChartBorder();
-
-    for (var i in this.SubFrame) {
-      var item = this.SubFrame[i];
-      item.Frame.Draw();
+    this.DrawLock = function () {
+        for (var i in this.SubFrame) {
+            var item = this.SubFrame[i];
+            item.Frame.DrawLock();
+        }
     }
 
-    this.SizeChange = false;
-  }
-
-  this.DrawLock = function () {
-    for (var i in this.SubFrame) {
-      var item = this.SubFrame[i];
-      item.Frame.DrawLock();
-    }
-  }
-
-  this.DrawInsideHorizontal = function () {
-    for (var i in this.SubFrame) {
-      var item = this.SubFrame[i];
-      item.Frame.DrawInsideHorizontal();
-    }
-  }
-
-  this.SetSizeChage = function (sizeChange) {
-    this.SizeChange = sizeChange;
-
-    for (var i in this.SubFrame) {
-      var item = this.SubFrame[i];
-      item.Frame.SizeChange = sizeChange;
+    this.DrawInsideHorizontal = function () {
+        for (var i in this.SubFrame) {
+            var item = this.SubFrame[i];
+            item.Frame.DrawInsideHorizontal();
+        }
     }
 
-    //画布的位置
-    this.Position = {
-      X: this.ChartBorder.UIElement.offsetLeft,
-      Y: this.ChartBorder.UIElement.offsetTop,
-      W: this.ChartBorder.UIElement.clientWidth,
-      H: this.ChartBorder.UIElement.clientHeight
-    };
-  }
+    this.SetSizeChage = function (sizeChange) {
+        this.SizeChange = sizeChange;
+
+        for (var i in this.SubFrame) {
+            var item = this.SubFrame[i];
+            item.Frame.SizeChange = sizeChange;
+        }
+
+        //画布的位置
+        this.Position = {
+            X: this.ChartBorder.UIElement.offsetLeft,
+            Y: this.ChartBorder.UIElement.offsetTop,
+            W: this.ChartBorder.UIElement.clientWidth,
+            H: this.ChartBorder.UIElement.clientHeight
+        };
+    }
+
+    this.Snapshot=function(type)
+    {
+        if (type == 1) this.SnapshotImageData();
+        else this.SnapshotImagePath();
+    }
 
     //图形快照
-    this.Snapshot = function () 
+    this.SnapshotImagePath = function () 
     {
         var self = this;
         var width = this.ChartBorder.GetChartWidth();
         var height = this.ChartBorder.GetChartHeight();
 
-        console.log('[HQTradeFrame::Snapshot][ID=' + this.ChartBorder.UIElement.ID + '] invoke canvasToTempFilePath' + '(width=' + width + ',height=' + height + ')' + ' SnapshotStatus='+ this.SnapshotStatus);
+        //console.log('[HQTradeFrame::SnapshotImageData][ID=' + this.ChartBorder.UIElement.ID + '] invoke canvasToTempFilePath' + '(width=' + width + ',height=' + height + ')' + ' SnapshotStatus='+ this.SnapshotStatus);
         //if (this.SnapshotStatus==1) return;
 
         ++this.SnapshotID;
         var id = this.SnapshotID;
         this.SnapshotStatus=1;
         wx.canvasToTempFilePath({
-        x: 0,
-        y: 0,
-        width: width,
-        height: height,
-        canvasId: this.ChartBorder.UIElement.ID,
-        success: function (res) {
-            self.ScreenImagePath = res.tempFilePath;
-            self.SnapshotStatus = 0;
-            self.CurrentSnapshotID = id;
-            console.log('[HQTradeFrame::Snapshot] SnapshotID(' + self.SnapshotID + ',' + self.CurrentSnapshotID + ') Path ='+ res.tempFilePath);
-        }
+            x: 0,
+            y: 0,
+            width: width,
+            height: height,
+            canvasId: this.ChartBorder.UIElement.ID,
+            success: function (res) 
+            {
+                self.ScreenImagePath = res.tempFilePath;
+                self.SnapshotStatus = 0;
+                self.CurrentSnapshotID = id;
+                //console.log('[HQTradeFrame::SnapshotImagePath] SnapshotID(' + self.SnapshotID + ',' + self.CurrentSnapshotID + ') Path ='+ res.tempFilePath);
+            }
         })
     }
 
-  this.GetXData = function (x) {
-    return this.SubFrame[0].Frame.GetXData(x);
-  }
+    this.SnapshotImageData=function()
+    {
+        var self = this;
+        var width = this.ChartBorder.GetChartWidth();
+        var height = this.ChartBorder.GetChartHeight();
 
-  this.GetYData = function (y, outObject) //outObject 可以保存返回的额外数据) 
-  {
-    var frame;
-    for (var i in this.SubFrame) {
-      var item = this.SubFrame[i];
-      var left = item.Frame.ChartBorder.GetLeft();
-      var top = item.Frame.ChartBorder.GetTopEx();
-      var width = item.Frame.ChartBorder.GetWidth();
-      var height = item.Frame.ChartBorder.GetHeightEx();
+        console.log(`[HQTradeFrame::SnapshotImageData][ID=${this.ChartBorder.UIElement.ID} invoke canvasGetImageData(${width}, ${height}) SnapshotStatus=${this.SnapshotStatus}`);
+        ++this.SnapshotID;
+        var id = this.SnapshotID;
+        this.SnapshotStatus = 1;
 
-      var rtItem = new Rect(left, top, width, height);
-      if (rtItem.IsPointIn(left, y)) {
-        frame = item.Frame;
-        if (outObject) outObject.FrameID = i;
-        break;
-      }
+        wx.canvasGetImageData({
+            canvasId: this.ChartBorder.UIElement.ID,
+            x: 0,
+            y: 0,
+            width: width,
+            height: height,
+            success(res) 
+            {
+                self.ScreenImageData = res.data;
+                self.SnapshotStatus = 0;
+                self.CurrentSnapshotID = id;
+                console.log(`[HQTradeFrame::SnapshotImageData] SnapshotID=${self.SnapshotID}, CurrentSnapshotID=${self.CurrentSnapshotID}, size=${res.data.length}`);
+            }
+        })
     }
 
-    if (frame != null) return frame.GetYData(y);
-  }
+    this.GetXData = function (x) { return this.SubFrame[0].Frame.GetXData(x); }
 
-  this.GetXFromIndex = function (index) {
-    return this.SubFrame[0].Frame.GetXFromIndex(index);
-  }
+    this.GetYData = function (y, outObject) //outObject 可以保存返回的额外数据) 
+    {
+        var frame;
+        for (var i in this.SubFrame) 
+        {
+            var item = this.SubFrame[i];
+            var left = item.Frame.ChartBorder.GetLeft();
+            var top = item.Frame.ChartBorder.GetTopEx();
+            var width = item.Frame.ChartBorder.GetWidth();
+            var height = item.Frame.ChartBorder.GetHeightEx();
 
-  this.GetYFromData = function (value) {
-    return this.SubFrame[0].Frame.GetYFromData(value);
-  }
+            var rtItem = new Rect(left, top, width, height);
+            if (rtItem.IsPointIn(left, y)) 
+            {
+                frame = item.Frame;
+                if (outObject) outObject.FrameID = i;
+                break;
+            }
+        }
+
+        if (frame != null) return frame.GetYData(y);
+    }
+
+    this.GetXFromIndex = function (index) { return this.SubFrame[0].Frame.GetXFromIndex(index); }
+
+    this.GetYFromData = function (value) { return this.SubFrame[0].Frame.GetYFromData(value); }
 
   this.ZoomUp = function (cursorIndex) {
     var result = this.SubFrame[0].Frame.ZoomUp(cursorIndex);
@@ -3035,11 +3086,13 @@ function HQTradeFrame()
   }
 
   //设置重新计算刻度坐标
-  this.ResetXYSplit = function () {
-    for (let i in this.SubFrame) {
-      this.SubFrame[i].Frame.XYSplit = true;
+    this.ResetXYSplit = function () 
+    {
+        for (let i in this.SubFrame) 
+        {
+            this.SubFrame[i].Frame.XYSplit = true;
+        }
     }
-  }
 }
 
 //行情框架横屏

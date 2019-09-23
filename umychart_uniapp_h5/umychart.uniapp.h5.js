@@ -5138,8 +5138,9 @@ function JSChartContainer(uielement)
             {
                 this.ChartCorssCursor.LastPoint=this.LastPoint;
                 this.ChartCorssCursor.CursorIndex=this.CursorIndex;
-                //移动端 拖拽数据的时候 不显示十字光标
-                if (!(this.CorssCursorTouchEnd===true && this.MouseDrag)) this.ChartCorssCursor.Draw();
+                //移动端 拖拽数据的时候 不显示十字光标, 没有按屏的时候也不显示十字光标
+                if (!(this.CorssCursorTouchEnd===true && this.MouseDrag) && !(this.CorssCursorTouchEnd==true && this.IsOnTouch==false) ) 
+                    this.ChartCorssCursor.Draw();
             }
         }
 

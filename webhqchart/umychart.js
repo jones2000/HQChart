@@ -1160,6 +1160,7 @@ var JSCHART_EVENT_ID=
     CHART_STATUS:5,          //每次Draw() 以后会调用
     BARRAGE_PLAY_END:6,      //单个弹幕播放完成
     RECV_OVERLAY_INDEX_DATA:7,//接收叠加指标数据
+    DBCLICK_KLINE:8,            //双击K线图
 }
 
 var JSCHART_OPERATOR_ID=
@@ -1221,6 +1222,7 @@ function JSChartContainer(uielement)
     //this.SelectRect.style.opacity=g_JSChartResource.SelectRectAlpha;
     this.SelectRect.id=Guid();
     uielement.parentNode.appendChild(this.SelectRect);
+    
     //区间选择右键菜单
     this.SelectRectRightMenu;   
 
@@ -19501,7 +19503,7 @@ function KLineChartContainer(uielement)
     this.ChartDrawStorageCache=null;    //首次需要创建的画图工具数据
 
     this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
-    this.OverlayIndexFrameWidth=60;             //叠加指标框架宽度
+    this.OverlayIndexFrameWidth=60;     //叠加指标框架宽度
 
     //自动更新设置
     this.IsAutoUpdate=false;                    //是否自动更新行情数据
@@ -20303,19 +20305,36 @@ function KLineChartContainer(uielement)
         if (this.IsOnTouch==true) return;   //正在操作中不更新数据
         if (!data.stock || !data.stock[0] || this.Symbol!=data.stock[0].symbol) return;
         var realtimeData=KLineChartContainer.JsonDataToRealtimeData(data);
+        var item=this.SourceData.Data[this.SourceData.Data.length-1];   //最新的一条数据
+
+        if (item.Date==realtimeData.Date)   //实时行情数据更新
+        {
+            console.log('[KLineChartContainer::RecvRealtimeData] update kline by minute data',realtimeData);
+
+            item.Close=realtimeData.Close;
+            item.High=realtimeData.High;
+            item.Low=realtimeData.Low;
+            item.Vol=realtimeData.Vol;
+            item.Amount=realtimeData.Amount;
+        }
+        else if (item.Date<realtimeData.Date)   //新增加数据
+        {
+            console.log('[KLineChartContainer::RecvRealtimeData] insert kline by minute data',realtimeData);
+
+            var newItem =new HistoryData();
+            newItem.Close=realtimeData.Close;
+            newItem.High=realtimeData.High;
+            newItem.Low=realtimeData.Low;
+            newItem.Vol=realtimeData.Vol;
+            newItem.Amount=realtimeData.Amount;
+            newItem.Date=realtimeData.Date;
+            this.SourceData.Data.push(newItem);
+        }
+        else
+        {
+            return;
+        }
         
-        if (this.SourceData.Data[this.SourceData.Data.length-1].Date!=realtimeData.Date) return;
-
-        console.log('[KLineChartContainer::RecvRealtimeData] update kline by minute data',realtimeData);
-
-        //实时行情数据更新
-        var item =this.SourceData.Data[this.SourceData.Data.length-1];
-        item.Close=realtimeData.Close;
-        item.High=realtimeData.High;
-        item.Low=realtimeData.Low;
-        item.Vol=realtimeData.Vol;
-        item.Amount=realtimeData.Amount;
-
         var bindData=new ChartData();
         bindData.Data=this.SourceData.Data;
         bindData.Period=this.Period;
@@ -22573,7 +22592,10 @@ function KLineChartContainer(uielement)
 
     this.OnDoubleClick=function(x,y,e)
     {
-        if (!this.MinuteDialog) return;
+        var event=null;
+        if (this.mapEvent.has(JSCHART_EVENT_ID.DBCLICK_KLINE)) event=this.mapEvent.get(JSCHART_EVENT_ID.DBCLICK_KLINE);
+
+        if (!this.MinuteDialog && !event) return;
 
         var tooltip=new TooltipData();
         for(var i in this.ChartPaint)
@@ -22587,9 +22609,17 @@ function KLineChartContainer(uielement)
 
         if (!tooltip.Data) return;
 
-        e.data={Chart:this,Tooltip:tooltip};
+        if (event)
+        {
+            var data={ Tooltip:tooltip, Stock:{Symbol:this.Symbol, Name:this.Name } }
+            event.Callback(event,data,this);
+        }
 
-        this.MinuteDialog.DoModal(e);
+        if (this.MinuteDialog)
+        {
+            e.data={Chart:this,Tooltip:tooltip};
+            this.MinuteDialog.DoModal(e);
+        }
     }
 
     //选中画图工具 出现单个图形设置菜单
@@ -29023,13 +29053,13 @@ function MinuteDialog(divElement)
         var div=document.createElement('div');
         div.className='jchart-kline-minute-box';
         div.id=this.ID;
-        div.innerHTML="<div><div class='minute-dialog-title'><span></span><strong class='close-munite icon iconfont icon-close'></strong></div></div>";
+        var hqchartID=Guid();
+        div.innerHTML=`<div><div class='minute-dialog-title'><span></span><strong class='close-munite icon iconfont icon-close'></strong></div><div class='minute-hqchart' id='${hqchartID}' ></div></div>`;
         div.style.width=this.Height+'px';
         div.style.height=this.Width+'px';
 
         this.DivElement.appendChild(div);
-        this.JSChart=JSChart.Init(div);
-
+        this.JSChart=JSChart.Init(document.getElementById(hqchartID));
 
         var option=
         {
