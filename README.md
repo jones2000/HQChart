@@ -190,7 +190,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 6. [如何(c++,js)写一个传统的K线图和走势图5-移动筹码图](https://blog.csdn.net/jones2000/article/details/85356163) <br>
 
 # 5.VUE 行情项目
-
+[代码地址(vuehqchart)](/vuehqchart) <br>
 ![走势图2](/小程序行情模块用例/image/pch5hq.PNG)
 [行情页面地址(v1.0）](https://opensource.zealink.com/vuehqweb/hq.demo.page.html) <br><br>
 ![历史高频数据查询图2](/小程序行情模块用例/image/pch5history.PNG)
@@ -205,6 +205,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 [个股行情页面白色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sz) <br>
 ## js页面样例
 [个股详情手机端h5](https://opensource.zealink.com/hqweb/hqpages/stockpage.html?) <br>
+[代码地址(webhqchart.demo\h5demo)](/webhqchart.demo/h5demo) <br>
 
 
 # QQ交流群(950092318) 
