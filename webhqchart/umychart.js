@@ -20199,7 +20199,7 @@ function KLineChartContainer(uielement)
                 Name:'KLineChartContainer::RequestHistoryPageData', //类名::
                 Explain:'日K数据分页',
                 Request:{ Url:'none',  Type:'POST' ,
-                    Data: { symbol:self.Symbol, Index:self.Page.Day.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], FirstDate:firstItem.Date } }, 
+                    Data: { symbol:self.Symbol, index:self.Page.Day.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], firstDate:firstItem.Date } }, 
                 Page:self.Page.Day,
                 Self:this,
                 PreventDefault:false
@@ -20446,7 +20446,7 @@ function KLineChartContainer(uielement)
                 Name:'KLineChartContainer::RecvHistoryMinutePageData', //类名::
                 Explain:'1分钟K线数据分页',
                 Request:{ Url:'none',  Type:'POST' ,
-                    Data: { symbol:self.Symbol, Index:self.Page.Minute.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], FirstDate:firstItem.Date } }, 
+                    Data: { symbol:self.Symbol, index:self.Page.Minute.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], firstDate:firstItem.Date } }, 
                 Page:self.Page.Minute,
                 Self:this,
                 PreventDefault:false
@@ -20491,6 +20491,8 @@ function KLineChartContainer(uielement)
                     [ 20190906,14.67,14.68,14.68,14.67,14.67,350126,5139012,944],
                     [ 20190906,14.67,14.67,14.69,14.67,14.69,561600,8246789,945]
                 ]
+                //symbol:'600000.sh',
+                //name:'浦发行情'
             };
     
             self.RecvHistoryMinutePageData(data);
@@ -23046,13 +23048,18 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
 
 KLineChartContainer.JsonDataToRealtimeData=function(data)
 {
+    var symbol=data.stock[0].symbol;
+    var upperSymbol=symbol.toUpperCase();
+    var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+
     var item=new HistoryData();
     item.Date=data.stock[0].date;
     item.Open=data.stock[0].open;
     item.YClose=data.stock[0].yclose;
     item.High=data.stock[0].high;
     item.Low=data.stock[0].low;
-    item.Vol=data.stock[0].vol/100; //原始单位股
+    if (isSHSZ) item.Vol=data.stock[0].vol/100; //原始单位股
+    else item.Vol=data.stock[0].vol;
     item.Amount=data.stock[0].amount;
     item.Close=data.stock[0].price;
     return item;
