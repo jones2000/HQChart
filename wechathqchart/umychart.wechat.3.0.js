@@ -63,6 +63,8 @@ import{
     JSCommonResource_Global_JSChartResource as g_JSChartResource,
 } from './umychart.resource.wechat.js'
 
+import { JSCommonUniApp } from './umchart.uniapp.canvas.helper.js'
+
 
 function JSCanvasElement() 
 {
@@ -70,11 +72,30 @@ function JSCanvasElement()
     this.Width;
     this.ID;
     this.WebGLCanvas;
+    this.IsUniApp=false;
 
     //获取画布
     this.GetContext = function () 
 	{
-        return wx.createCanvasContext(this.ID);
+        var canvas=wx.createCanvasContext(this.ID);
+        if (this.IsUniApp)
+        {
+            console.log('[JSCanvasElement::GetContext] measureText() => JSUniAppCanvasHelper.MeasureText()');
+            canvas.measureText = function (text) //uniapp 计算宽度需要自己计算
+            {
+                var width = JSCommonUniApp.JSUniAppCanvasHelper.MeasureText(text, canvas);
+                return { width: width };
+            }
+			
+			canvas.fillText_backup=canvas.fillText;	//uniapp fillText 填了最大长度就会失真, 所以去掉
+			canvas.fillText=function(text,x,y,maxWidth)
+			{
+				canvas.fillText_backup(text,x,y);
+			}
+			
+        }
+
+        return canvas;
     }
 
     this.GetWebGLCanvas=function(id)
