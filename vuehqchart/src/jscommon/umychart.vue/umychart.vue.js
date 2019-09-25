@@ -4355,7 +4355,13 @@ function JSChart(divElement)
     this.DeleteOverlayWindowsIndex=function(identify)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.DeleteOverlayWindowsIndex)=='function') 
-        this.JSChartContainer.DeleteOverlayWindowsIndex(identify);
+            this.JSChartContainer.DeleteOverlayWindowsIndex(identify);
+    }
+
+    this.StopAutoUpdate=function()
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.StopAutoUpdate)=='function') 
+            this.JSChartContainer.StopAutoUpdate();
     }
 
     //设置强制横屏
@@ -13822,6 +13828,56 @@ function ChartChannel()
     }
 }
 
+function ChartBackground()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Color=null;
+    this.ColorAngle=0;  //0 竖向 1 横向
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Color) return;
+        if (this.Color.length<=0) return;
+
+        if (this.Color.length==2)
+        {
+            if (this.ColorAngle==0)
+            {
+                var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                var ptEnd={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetBottomEx() };
+            }
+            else
+            {
+                var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                var ptEnd={ X:this.ChartBorder.GetRight(), Y:this.ChartBorder.GetTopEx() };
+            }
+
+            let gradient = this.Canvas.createLinearGradient(ptStart.X,ptStart.Y, ptEnd.X,ptEnd.Y);
+            gradient.addColorStop(0, this.Color[0]);
+            gradient.addColorStop(1, this.Color[1]);
+            this.Canvas.fillStyle=gradient;
+        }
+        else if (this.Color.length==1)
+        {
+            this.Canvas.fillStyle=this.Color[0];
+        }
+        else
+        {
+            return;
+        }
+
+        var left=this.ChartBorder.GetLeft();
+        var top=this.ChartBorder.GetTopEx();
+        var width=this.ChartBorder.GetWidth();
+        var height=this.ChartBorder.GetHeightEx();
+        this.Canvas.fillRect(left, top,width, height);
+    }
+}
+
 //锁  支持横屏
 function ChartLock()
 {
@@ -22908,6 +22964,12 @@ function KLineChartContainer(uielement)
         this.Page.Minute.Index=0;
     }
 
+    this.StopAutoUpdate=function()
+    {
+        if (!this.IsAutoUpdate) return;
+        this.IsAutoUpdate=false;
+    }
+
     this.ChartOperator=function(obj) //图形控制函数 {ID:JSCHART_OPERATOR_ID, ...参数 }
     {
         var id=obj.ID;
@@ -23545,7 +23607,7 @@ function KLineChartContainer(uielement)
                 Name:'KLineChartContainer::RequestHistoryPageData', //类名::
                 Explain:'日K数据分页',
                 Request:{ Url:'none',  Type:'POST' ,
-                    Data: { symbol:self.Symbol, Index:self.Page.Day.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], FirstDate:firstItem.Date } }, 
+                    Data: { symbol:self.Symbol, index:self.Page.Day.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], firstDate:firstItem.Date } }, 
                 Page:self.Page.Day,
                 Self:this,
                 PreventDefault:false
@@ -23792,7 +23854,7 @@ function KLineChartContainer(uielement)
                 Name:'KLineChartContainer::RecvHistoryMinutePageData', //类名::
                 Explain:'1分钟K线数据分页',
                 Request:{ Url:'none',  Type:'POST' ,
-                    Data: { symbol:self.Symbol, Index:self.Page.Minute.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], FirstDate:firstItem.Date } }, 
+                    Data: { symbol:self.Symbol, index:self.Page.Minute.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], firstDate:firstItem.Date } }, 
                 Page:self.Page.Minute,
                 Self:this,
                 PreventDefault:false
@@ -23837,6 +23899,8 @@ function KLineChartContainer(uielement)
                     [ 20190906,14.67,14.68,14.68,14.67,14.67,350126,5139012,944],
                     [ 20190906,14.67,14.67,14.69,14.67,14.69,561600,8246789,945]
                 ]
+                //symbol:'600000.sh',
+                //name:'浦发行情'
             };
     
             self.RecvHistoryMinutePageData(data);
@@ -23970,6 +24034,8 @@ function KLineChartContainer(uielement)
             console.log('[KLineChartContainer::RecvRealtimeData] insert kline by minute data',realtimeData);
 
             var newItem =new HistoryData();
+            newItem.YClose=realtimeData.YClose;
+            newItem.Open=realtimeData.Open;
             newItem.Close=realtimeData.Close;
             newItem.High=realtimeData.High;
             newItem.Low=realtimeData.Low;
@@ -26392,13 +26458,18 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
 
 KLineChartContainer.JsonDataToRealtimeData=function(data)
 {
+    var symbol=data.stock[0].symbol;
+    var upperSymbol=symbol.toUpperCase();
+    var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+
     var item=new HistoryData();
     item.Date=data.stock[0].date;
     item.Open=data.stock[0].open;
     item.YClose=data.stock[0].yclose;
     item.High=data.stock[0].high;
     item.Low=data.stock[0].low;
-    item.Vol=data.stock[0].vol/100; //原始单位股
+    if (isSHSZ) item.Vol=data.stock[0].vol/100; //原始单位股
+    else item.Vol=data.stock[0].vol;
     item.Amount=data.stock[0].amount;
     item.Close=data.stock[0].price;
     return item;
@@ -36809,7 +36880,6 @@ function JSParser(code)
         ')': 0,
         ';': 0,
         ',': 0,
-        '=': 0,
         ']': 0,
         '||': 1,
         'OR':1,
@@ -36819,6 +36889,7 @@ function JSParser(code)
         '^': 4,
         '&': 5,
         '==': 6,
+        '=': 6,
         '!=': 6,
         '<>':6,
         '===': 6,
@@ -36885,7 +36956,7 @@ function JSParser(code)
         if (this.LookAhead.Type!=7 /*Punctuator*/) return false;
         let op=this.LookAhead.Value;
 
-        return op=='=' || op==':' || op==':=';
+        return op==':' || op==':=';
     }
 
     this.GetTokenRaw=function(token)
@@ -41506,6 +41577,12 @@ function JSDraw(errorHandler,symbolData)
         return rgb;
     }
 
+    this.RGBA=function(r,g,b,a)
+    {
+        var rgba=`RGB(${r},${g},${b},${a})`;
+        return rgba;
+    }
+
     //用法:PARTLINE(PRICE,COND1,COLOR1,COND2,COLOR2...),
     //绘制PRICE线,当COND1条件满足时,用COLOR1颜色,当COND2条件满足时,用COLOR2颜色,否则不绘制,从COLOR1之后的参数均可以省略,最多可以有10组条件
     //例如:PARTLINE(CLOSE,CLOSE>OPEN,RGB(255,0,0),CLOSE<OPEN,RGB(0,255,0),1,RGB(0,0,255))
@@ -41547,6 +41624,36 @@ function JSDraw(errorHandler,symbolData)
                 drawItem.Value=value;
                 drawItem.RGB=rgb;
             }
+        }
+
+        return result;
+    }
+
+    //填充背景.
+    //用法: DRAWGBK(COND,COLOR1,COLOR2,colorAngle)  colorAngle=渐近色角度
+    //例如: DRAWGBK(O>C,RGB(0,255,0),RGB(255,0,0),0);
+    this.DRAWGBK=function(condition, color, color2, colorAngle)
+    {
+        let drawData={ Color:[],  Angle:colorAngle };
+        if (color) drawData.Color.push(color);
+        if (color2) drawData.Color.push(color2);
+
+        let result={DrawData:null, DrawType:'DRAWGBK'};
+        if (Array.isArray(condition))
+        {
+            for(var i in condition)
+            {
+                var item=condition[i];
+                if (item) 
+                {
+                    result.DrawData=drawData;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            if (condition) result.DrawData=drawData;
         }
 
         return result;
@@ -41598,7 +41705,7 @@ JSDraw.prototype.IsNumber=function(value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX']);
+    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK']);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -44812,6 +44919,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.PARTLINE(args);
                 node.Out=[];
                 break;
+            case 'DRAWGBK':
+                node.Draw=this.Draw.DRAWGBK(args[0],args[1],args[2],args[3]);
+                node.Out=[];
+                break;
             case 'CODELIKE':
                 node.Out=this.SymbolData.CODELIKE(args[0]);
                 break;
@@ -44927,6 +45038,7 @@ function JSExecute(ast,option)
                             value.Out=this.Algorithm.LTE(leftValue,rightValue);
                             break;
                         case '==':
+                        case '=':   //= 比较
                             value.Out=this.Algorithm.EQ(leftValue,rightValue);
                             break;
                         case '!=':
@@ -45651,6 +45763,23 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(line);
     }
 
+    this.CreateBackgroud=function(hqChart,windowIndex,varItem,id)
+    {
+        let chart=new ChartBackground();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            chart.Color=drawData.Color;
+            chart.ColorAngle=drawData.Angle;
+        }
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateNumberText=function(hqChart,windowIndex,varItem,id)
     {
         let chartText=new ChartSingleText();
@@ -45842,6 +45971,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'POLYLINE':
                         this.CreatePolyLine(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWGBK':
+                        this.CreateBackgroud(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWNUMBER':
                         this.CreateNumberText(hqChart,windowIndex,item,i);

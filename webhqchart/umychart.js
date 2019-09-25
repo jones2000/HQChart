@@ -1009,7 +1009,13 @@ function JSChart(divElement)
     this.DeleteOverlayWindowsIndex=function(identify)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.DeleteOverlayWindowsIndex)=='function') 
-        this.JSChartContainer.DeleteOverlayWindowsIndex(identify);
+            this.JSChartContainer.DeleteOverlayWindowsIndex(identify);
+    }
+
+    this.StopAutoUpdate=function()
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.StopAutoUpdate)=='function') 
+            this.JSChartContainer.StopAutoUpdate();
     }
 
     //设置强制横屏
@@ -10476,6 +10482,56 @@ function ChartChannel()
     }
 }
 
+function ChartBackground()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Color=null;
+    this.ColorAngle=0;  //0 竖向 1 横向
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Color) return;
+        if (this.Color.length<=0) return;
+
+        if (this.Color.length==2)
+        {
+            if (this.ColorAngle==0)
+            {
+                var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                var ptEnd={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetBottomEx() };
+            }
+            else
+            {
+                var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                var ptEnd={ X:this.ChartBorder.GetRight(), Y:this.ChartBorder.GetTopEx() };
+            }
+
+            let gradient = this.Canvas.createLinearGradient(ptStart.X,ptStart.Y, ptEnd.X,ptEnd.Y);
+            gradient.addColorStop(0, this.Color[0]);
+            gradient.addColorStop(1, this.Color[1]);
+            this.Canvas.fillStyle=gradient;
+        }
+        else if (this.Color.length==1)
+        {
+            this.Canvas.fillStyle=this.Color[0];
+        }
+        else
+        {
+            return;
+        }
+
+        var left=this.ChartBorder.GetLeft();
+        var top=this.ChartBorder.GetTopEx();
+        var width=this.ChartBorder.GetWidth();
+        var height=this.ChartBorder.GetHeightEx();
+        this.Canvas.fillRect(left, top,width, height);
+    }
+}
+
 //锁  支持横屏
 function ChartLock()
 {
@@ -19560,6 +19616,12 @@ function KLineChartContainer(uielement)
 
         this.Page.Minute.Finish=false;
         this.Page.Minute.Index=0;
+    }
+
+    this.StopAutoUpdate=function()
+    {
+        if (!this.IsAutoUpdate) return;
+        this.IsAutoUpdate=false;
     }
 
     this.ChartOperator=function(obj) //图形控制函数 {ID:JSCHART_OPERATOR_ID, ...参数 }
