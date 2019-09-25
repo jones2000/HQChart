@@ -26678,6 +26678,12 @@ function MinuteChartContainer(uielement)
     this.MinuteApiUrl=g_JSChartResource.Domain+"/API/Stock";
     this.HistoryMinuteApiUrl=g_JSChartResource.Domain+'/API/StockMinuteData';  //历史分钟数据
 
+    this.StopAutoUpdate=function()
+    {
+        if (!this.IsAutoUpdate) return;
+        this.IsAutoUpdate=false;
+    }
+
     //手机拖拽
     uielement.ontouchstart=function(e)
     {
