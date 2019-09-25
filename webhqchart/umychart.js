@@ -20626,6 +20626,8 @@ function KLineChartContainer(uielement)
             console.log('[KLineChartContainer::RecvRealtimeData] insert kline by minute data',realtimeData);
 
             var newItem =new HistoryData();
+            newItem.YClose=realtimeData.YClose;
+            newItem.Open=realtimeData.Open;
             newItem.Close=realtimeData.Close;
             newItem.High=realtimeData.High;
             newItem.Low=realtimeData.Low;
