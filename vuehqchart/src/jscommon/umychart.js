@@ -5515,6 +5515,7 @@ function ChartData()
             return this.Data;
         var bFirstPeriodData = false;
         var newData = null;
+        var preTime=null;   //上一次的计算时间
         for (var i = 0; i < this.Data.length; )
         {
             bFirstPeriodData = true;
@@ -5532,12 +5533,19 @@ function ChartData()
                     ++j;
                     continue;    
                 } 
-                if (minData.Time == 925 || minData.Time == 930 || minData.Time == 1300)
-                    ;
+                if (minData.Time == 925 || minData.Time == 930 )
+                {
+
+                }
+                else if (preTime!=null && minData.Time == 1300 && (minData.Time-preTime)>1) //1点的数据 如果不是连续的 就不算个数
+                {
+
+                }
                 else
                     ++j;
                 newData.Date = minData.Date;
                 newData.Time = minData.Time;
+                preTime=newData.Time;
                 if (minData.Open==null || minData.Close==null)
                     continue;
                 if (newData.Open==null || newData.Close==null)
@@ -23010,27 +23018,21 @@ function KLineChartContainer(uielement)
     this.AutoUpdate=function(waitTime)  //waitTime 更新时间
     {
         if (!this.IsAutoUpdate) return;
+        if (!this.Symbol) return;
+
         var self = this;
-
-        //9:30 - 15:40 非周6，日 每隔30秒更新一次 this.RequestMinuteData();
-        var nowDate= new Date(),
-            day = nowDate.getDay(),
-            time = nowDate.getHours() * 100 + nowDate.getMinutes();
-
-        if(day == 6 || day== 0) return ;
-
-        if(time>1540) return ;
+        var marketStatus=MARKET_SUFFIX_NAME.GetMarketStatus(this.Symbol);
+        if (marketStatus==0 || marketStatus==3) return; //闭市,盘后
 
         var frequency=this.AutoUpdateFrequency;
-        if (waitTime>0) frequency=waitTime;
-        if(time <930)
+        if (marketStatus==1) //盘前
         {
-            setTimeout(function()
-            {
-                self.AutoUpdate();
+            setTimeout(function() 
+            { 
+                self.AutoUpdate(); 
             },frequency);
-
-        }else
+        }
+        else if (marketStatus==2) //盘中
         {
             setTimeout(function()
             {
@@ -24447,26 +24449,25 @@ function MinuteChartContainer(uielement)
     //数据自动更新
     this.AutoUpdate=function()
     {
-        var self = this;
-
         if (!this.IsAutoUpdate) return;
+        if (!this.Symbol) return;
 
-        //9:30 - 15:40 非周6，日 每隔30秒更新一次 this.RequestMinuteData();
-        var nowDate= new Date(),
-            day = nowDate.getDay(),
-            time = nowDate.getHours() * 100 + nowDate.getMinutes();
-
-        if(day == 6 || day== 0) return ;
-
-        if(time>1540) return ;
+        var self = this;
+        var marketStatus=MARKET_SUFFIX_NAME.GetMarketStatus(this.Symbol);
+        if (marketStatus==0 || marketStatus==3) return; //闭市,盘后
 
         var frequency=this.AutoUpdateFrequency;
-        if(time <915){
-            setTimeout(function(){
-                self.AutoUpdate();
+        if (marketStatus==1) //盘前
+        {
+            setTimeout(function() 
+            { 
+                self.AutoUpdate(); 
             },frequency);
-        }else{
-            setTimeout(function(){
+        }
+        else if (marketStatus==2)   //盘中
+        {
+            setTimeout(function()
+            {
                 self.ResetOverlaySymbolStatus();
                 self.RequestMinuteData();
             },frequency);
@@ -31691,6 +31692,39 @@ var MARKET_SUFFIX_NAME=
             return true;
         
         return false;
+    },
+
+    GetMarketStatus:function(symbol)    //获取市场状态 0=闭市 1=盘前 2=盘中 3=盘后
+    {
+        if (!symbol) return 0;
+        var upperSymbol=symbol.toUpperCase();
+        if (this.IsUSA(upperSymbol))
+        {
+            var usaDate=GetLocalTime(-5);
+            day = usaDate.getDay(),
+            time = usaDate.getHours() * 100 + usaDate.getMinutes();
+            if(day == 6 || day== 0) return 0;   //周末
+
+            //9:30 - 16:00 考虑夏令时间时间增加1小时 9:30 - 17:00
+            if (time>1730) return 3;
+            if (time<930) return 1;
+
+            return 2;
+        }
+        else
+        {
+            
+            var nowDate= new Date(),
+            day = nowDate.getDay(),
+            time = nowDate.getHours() * 100 + nowDate.getMinutes();
+            if(day == 6 || day== 0) return 0;   //周末
+
+            //9:30 - 15:40
+            if(time>1540) return 3;
+            if(time<925) return 1;
+            return 2;   
+        }
+   
     }
 }
 
@@ -32472,6 +32506,19 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision=g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
 
     return defaultfloatPrecision;
+}
+
+function GetLocalTime(i)    //得到标准时区的时间的函数
+{
+    if (typeof i !== 'number') return;
+    var d = new Date();
+    //得到1970年一月一日到现在的秒数
+    var len = d.getTime();
+    //本地时间与GMT时间的时间偏移差
+    var offset = d.getTimezoneOffset() * 60000;
+    //得到现在的格林尼治时间
+    var utcTime = len + offset;
+    return new Date(utcTime + 3600000 * i);
 }
 
 
