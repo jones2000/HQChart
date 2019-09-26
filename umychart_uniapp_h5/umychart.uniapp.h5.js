@@ -13807,6 +13807,7 @@ function ChartChannel()
     }
 }
 
+//填充背景 TODO:横屏
 function ChartBackground()
 {
     this.newMethod=IChartPainting;   //派生
@@ -13854,6 +13855,89 @@ function ChartBackground()
         var width=this.ChartBorder.GetWidth();
         var height=this.ChartBorder.GetHeightEx();
         this.Canvas.fillRect(left, top,width, height);
+    }
+}
+
+// 文字+线段输出
+function ChartTextLine()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Text;  //Text=内容 Color
+    this.Line;  //Type=线段类型 0=不画 1=直线 2=虚线, Color
+    this.Price;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Text || !this.Line || !IFrameSplitOperator.IsNumber(this.Price)) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var bottom=this.ChartBorder.GetBottomEx();
+        var top=this.ChartBorder.GetTopEx();
+        var y=this.ChartFrame.GetYFromData(this.Price);
+        var textWidth=0;
+        if (this.Text.Title)
+        {
+            var x=left+2*GetDevicePixelRatio();
+            var yText=y;
+            this.Canvas.textAlign = 'left';
+            this.Canvas.textBaseline = 'middle';
+            var offsetY=8*GetDevicePixelRatio();
+            if (y-offsetY<top) 
+            {
+                this.Canvas.textBaseline='top';
+                yText=top;
+            }
+            else if (y+offsetY>bottom) 
+            {
+                this.Canvas.textBaseline='bottom';
+                yText=bottom;
+            }
+            
+            this.Canvas.fillStyle = this.Text.Color;
+            this.Canvas.font = this.Text.Font;
+            this.Canvas.fillText(this.Text.Title, x, yText);
+            textWidth=this.Canvas.measureText(this.Text.Title).width+4*GetDevicePixelRatio();
+        }
+
+        if (this.Line.Type>0)
+        {
+            if (this.Line.Type==2)  //虚线
+            {
+                this.Canvas.save();
+                this.Canvas.setLineDash([3,5]);   //虚线
+            }
+
+            var x=left+textWidth;
+            this.Canvas.strokeStyle=this.Line.Color;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(x,ToFixedPoint(y));
+            this.Canvas.lineTo(right,ToFixedPoint(y));
+            this.Canvas.stroke();
+
+            if (this.Line.Type==2)
+            {
+                this.Canvas.restore();
+            }
+        }
+
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={Min:null, Max:null};
+        if (IFrameSplitOperator.IsNumber(this.Price))
+        {
+            range.Min=this.Price;
+            range.Max=this.Price;
+        }
+        
+        return range;
     }
 }
 
@@ -35701,6 +35785,8 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-WR', {Time:0,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2}],
+        [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:5,Decimal:1}],
+        [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:5,Decimal:1}],
         //郑州期货交易所
         [MARKET_SUFFIX_NAME.CZCE + '-CF', {Time:3,Decimal:0}],
         [MARKET_SUFFIX_NAME.CZCE + '-SR', {Time:3,Decimal:0}],
@@ -41663,6 +41749,43 @@ function JSDraw(errorHandler,symbolData)
 
         return result;
     }
+
+    //画文字 及线段
+    this.DRAWTEXT_LINE=function(condition, price, text, textcolor, fontSize, linetype, linecolor)
+    {
+        let drawData={ Text:{ Title:text, Color:textcolor }, Line:{ Type:linetype, Color:linecolor } };
+        if (fontSize<=0) fontSize=12;
+        drawData.Text.Font=fontSize*GetDevicePixelRatio()+'px 微软雅黑'; 
+
+        let result={DrawData:null, DrawType:'DRAWTEXT_LINE'};
+        
+        if (Array.isArray(condition))
+        {
+            for(var i in condition)
+            {
+                var item=condition[i];
+                if (item) 
+                {
+                    if (Array.isArray(price)) drawData.Price=price[i];
+                    else drawData.Price=price;
+                    result.DrawData=drawData;
+                   
+                    break;
+                }
+            }
+        }
+        else
+        {
+            if (condition) 
+            {
+                if (Array.isArray(price)) drawData.Price=price[0];
+                else drawData.Price=price;
+                result.DrawData=drawData;
+            }
+        }
+
+        return result;
+    }
 }
 
 
@@ -41710,7 +41833,11 @@ JSDraw.prototype.IsNumber=function(value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK']);
+    let setFunctionName=new Set(
+    [
+        "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
+        'POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE'
+    ]);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -44928,6 +45055,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWGBK(args[0],args[1],args[2],args[3]);
                 node.Out=[];
                 break;
+            case 'DRAWTEXT_LINE':
+                node.Draw=this.Draw.DRAWTEXT_LINE(args[0],args[1],args[2],args[3],args[4],args[5],args[6]);
+                node.Out=[];
+                break;
             case 'CODELIKE':
                 node.Out=this.SymbolData.CODELIKE(args[0]);
                 break;
@@ -45785,6 +45916,24 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateTextLine=function(hqChart,windowIndex,varItem,id)
+    {
+        let chart=new ChartTextLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            chart.Text=drawData.Text;
+            chart.Line=drawData.Line;
+            chart.Price=drawData.Price;
+        }
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateNumberText=function(hqChart,windowIndex,varItem,id)
     {
         let chartText=new ChartSingleText();
@@ -45979,6 +46128,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWGBK':
                         this.CreateBackgroud(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWTEXT_LINE':
+                        this.CreateTextLine(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWNUMBER':
                         this.CreateNumberText(hqChart,windowIndex,item,i);

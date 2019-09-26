@@ -5819,6 +5819,43 @@ function JSDraw(errorHandler,symbolData)
 
         return result;
     }
+
+    //画文字 及线段
+    this.DRAWTEXT_LINE=function(condition, price, text, textcolor, fontSize, linetype, linecolor)
+    {
+        let drawData={ Text:{ Title:text, Color:textcolor }, Line:{ Type:linetype, Color:linecolor } };
+        if (fontSize<=0) fontSize=12;
+        drawData.Text.Font=fontSize*GetDevicePixelRatio()+'px 微软雅黑'; 
+
+        let result={DrawData:null, DrawType:'DRAWTEXT_LINE'};
+        
+        if (Array.isArray(condition))
+        {
+            for(var i in condition)
+            {
+                var item=condition[i];
+                if (item) 
+                {
+                    if (Array.isArray(price)) drawData.Price=price[i];
+                    else drawData.Price=price;
+                    result.DrawData=drawData;
+                   
+                    break;
+                }
+            }
+        }
+        else
+        {
+            if (condition) 
+            {
+                if (Array.isArray(price)) drawData.Price=price[0];
+                else drawData.Price=price;
+                result.DrawData=drawData;
+            }
+        }
+
+        return result;
+    }
 }
 
 
@@ -5866,7 +5903,11 @@ JSDraw.prototype.IsNumber=function(value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName=new Set(["STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE','POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK']);
+    let setFunctionName=new Set(
+    [
+        "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
+        'POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE'
+    ]);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -9084,6 +9125,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWGBK(args[0],args[1],args[2],args[3]);
                 node.Out=[];
                 break;
+            case 'DRAWTEXT_LINE':
+                node.Draw=this.Draw.DRAWTEXT_LINE(args[0],args[1],args[2],args[3],args[4],args[5],args[6]);
+                node.Out=[];
+                break;
             case 'CODELIKE':
                 node.Out=this.SymbolData.CODELIKE(args[0]);
                 break;
@@ -9941,6 +9986,24 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateTextLine=function(hqChart,windowIndex,varItem,id)
+    {
+        let chart=new ChartTextLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            chart.Text=drawData.Text;
+            chart.Line=drawData.Line;
+            chart.Price=drawData.Price;
+        }
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateNumberText=function(hqChart,windowIndex,varItem,id)
     {
         let chartText=new ChartSingleText();
@@ -10135,6 +10198,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWGBK':
                         this.CreateBackgroud(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWTEXT_LINE':
+                        this.CreateTextLine(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWNUMBER':
                         this.CreateNumberText(hqChart,windowIndex,item,i);
