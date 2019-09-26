@@ -446,7 +446,7 @@ class JSExecute :
                         value.Out=self.Algorithm.LT(leftValue,rightValue)
                     elif value.Operator== '<=':
                         value.Out=self.Algorithm.LTE(leftValue,rightValue)
-                    elif value.Operator== '==':
+                    elif value.Operator in ('=','=='):
                         value.Out=self.Algorithm.EQ(leftValue,rightValue)
                     elif value.Operator in ('!=','<>') :
                         value.Out=self.Algorithm.NEQ(leftValue,rightValue)

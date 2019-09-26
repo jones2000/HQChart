@@ -5347,7 +5347,7 @@ function JSDraw(errorHandler,symbolData)
 
                     if(bCondition)
                     {
-                        lineCache.Start={ID:i, Value:data[i]};  //移动第1个点
+                        //lineCache.Start={ID:i, Value:data[i]};  //移动第1个点
                     }
                     else if (bCondition2)
                     {
@@ -5355,39 +5355,20 @@ function JSDraw(errorHandler,symbolData)
                         lineCache.End={ID:i, Value:data2[i]};   //第2个点
                     }
                 }
-                else if (bFirstPoint==true && bSecondPont==true)    //2个点都有了, 等待下一次的点出现
+
+                if (bFirstPoint==true && bSecondPont==true)
                 {
-                    var bCondition=(condition[i]!=null &&condition[i]);     //条件1
-                    var bCondition2=(condition2[i]!=null && condition2[i]); //条件2
+                    let lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
 
-                    if(bCondition)
+                    for(let j in lineData)
                     {
-                        let lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
-
-                        for(let j in lineData)
-                        {
-                            let item=lineData[j];
-                            drawData[item.ID]=item.Value;
-                        }
-
-                        bFirstPoint=bSecondPont=false;
-                        lineCache={Start:{ },End:{ }};
+                        let item=lineData[j];
+                        drawData[item.ID]=item.Value;
                     }
-                    else if (bCondition2)
-                    {
-                        lineCache.End={ID:i, Value:data2[i]};   //移动第2个点
-                    }
-                }
-            }
-        }
 
-        if (bFirstPoint==true && bSecondPont==true)     //最后一组数据
-        {
-            let lineData=this.CalculateDrawLine(lineCache);     
-            for(let j in lineData)
-            {
-                let item=lineData[j];
-                drawData[item.ID]=item.Value;
+                    bFirstPoint=bSecondPont=false;
+                    lineCache={Start:{ },End:{ }};
+                }  
             }
         }
 

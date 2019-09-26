@@ -359,7 +359,6 @@ class JSParser:
             ')': 0,
             ';': 0,
             ',': 0,
-            '=': 0,
             ']': 0,
             '||': 1,
             'OR':1,
@@ -372,6 +371,7 @@ class JSParser:
             '!=': 6,
             '<>': 6,
             '===': 6,
+            '=': 6,
             '!==': 6,
             '<': 7,
             '>': 7,
@@ -419,7 +419,7 @@ class JSParser:
         if self.LookAhead.Type!=7 :
             return False  #7=Punctuator
         op=self.LookAhead.Value
-        return op in ('=', ':', ':=')
+        return op in (':', ':=')
 
     def GetTokenRaw(self, token) :
         return self.Scanner.Source[token.Start : token.End]
