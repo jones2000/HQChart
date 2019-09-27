@@ -2498,6 +2498,7 @@ function KLineFrame()
 
     this.DrawFrame = function () 
     {
+        //console.log('[KLineFrame::DrawFrame]', this.SizeChange);
         this.SplitXYCoordinate();
         if (this.SizeChange == true) this.CalculateDataWidth();
 
@@ -2523,12 +2524,16 @@ function KLineFrame()
 
         for (var i = 0; i < ZOOM_SEED.length; ++i) 
         {
+            let barWidth = ZOOM_SEED[i][0];         //数据宽度
+            let distanceWidth = ZOOM_SEED[i][1];    //间距宽度
             if ((ZOOM_SEED[i][0] + ZOOM_SEED[i][1]) * this.XPointCount < width) 
             {
                 this.ZoomIndex = i;
                 this.DataWidth = ZOOM_SEED[i][0];
                 this.DistanceWidth = ZOOM_SEED[i][1];
                 this.TrimKLineDataWidth(width);
+
+                console.log(`[KLineFrame::CalculateDataWidth] ZoomIndex=${this.ZoomIndex} DataWidth=${this.DataWidth} DistanceWidth=${this.DistanceWidth}` );
                 return;
             }
         }
@@ -2536,7 +2541,8 @@ function KLineFrame()
 
     this.TrimKLineDataWidth = function (width) 
     {
-        if (this.ZoomIndex >= ZOOM_SEED.length - 2) //最后2个缩放,调整间距不调整数据宽度, 数据都是画竖线的
+        var zoom = ZOOM_SEED[this.ZoomIndex];
+        if (zoom[0]<4) //最后2个缩放,调整间距不调整数据宽度, 数据都是画竖线的
         {
             while (true) 
             {
@@ -3511,7 +3517,7 @@ var ZOOM_SEED =
     [24, 7], [20, 7],
     [18, 6], [16, 6],
     [14, 5], [12, 5],
-    [8, 4], [3, 3],
+    [8, 4],  [4, 4], [3, 3],
     [3, 1],  
     /*
     [49, 10], [46, 9], [43, 8],
@@ -9596,7 +9602,9 @@ function KLineChartContainer(uielement) {
         this.Symbol = data.symbol;
         this.Name = data.name;
         this.BindMainData(bindData, this.PageSize);
+        this.Frame.SetSizeChage(true);              //数据到达通知坐标框架
         this.BindInstructionIndexData(bindData);    //执行指示脚本
+        
         var firstSubFrame;  //主窗口
         for (var i = 0; i < this.Frame.SubFrame.length; ++i)    //执行指标
         {
@@ -9708,8 +9716,9 @@ function KLineChartContainer(uielement) {
         this.Symbol = data.symbol;
         this.Name = data.name;
         this.BindMainData(bindData, this.PageSize);
+        this.Frame.SetSizeChage(true);
         this.BindInstructionIndexData(bindData);    //执行指示脚本
-
+        
         var firstSubFrame;  //主窗口
         for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
         {
@@ -10513,12 +10522,12 @@ function KLineChartContainer(uielement) {
     this.MinuteDialog.DoModal(e);
   }
 
-  this.GetMaxPageSize = function () {
-    let width = this.Frame.ChartBorder.GetWidth();
-    let barWidth = (ZOOM_SEED[ZOOM_SEED.length - 1][0] + ZOOM_SEED[ZOOM_SEED.length - 1][1]);
-    return parseInt(width / barWidth) - 8;
-  }
-
+    this.GetMaxPageSize = function () 
+    {
+        let width = this.Frame.ChartBorder.GetWidth();
+        let barWidth = (ZOOM_SEED[ZOOM_SEED.length - 1][0] + ZOOM_SEED[ZOOM_SEED.length - 1][1]);
+        return parseInt(width / barWidth) - 8;
+    }
 }
 
 //API 返回数据 转化为array[]
