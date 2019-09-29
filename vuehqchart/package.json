@@ -2,7 +2,7 @@
   "name": "hqchart",
   "description": "stock chart",
   "author": "jones2000",
-  "version": "1.0.6981",
+  "version": "1.0.7010",
   "main": "index.js",
   "private": false,
   "license": "MIT",

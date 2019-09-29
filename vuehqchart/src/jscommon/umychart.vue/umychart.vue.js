@@ -35362,7 +35362,7 @@ var MARKET_SUFFIX_NAME=
         var upperSymbol=symbol.toUpperCase();
         if (this.IsUSA(upperSymbol))
         {
-            var usaDate=GetLocalTime(-5);
+            var usaDate=GetLocalTime(-4);
             day = usaDate.getDay(),
             time = usaDate.getHours() * 100 + usaDate.getMinutes();
             if(day == 6 || day== 0) return 0;   //周末
