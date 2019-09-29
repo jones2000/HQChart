@@ -1152,6 +1152,13 @@ JSChart.SetTextResource=function(key,value)
     g_JSChartLocalization.SetTextResource(key,value);
 }
 
+//自定义分钟周期K线 period=[11-19]
+JSChart.SetCustomMinutePeriod=function(period, count)
+{
+    console.log(`[JSChart::SetCustomMinutePeriod] period=${period} count=${count}`);
+    CUSTOM_MINUTE_PERIOD.set(period,count);
+}
+
 //获取设备分辨率比
 JSChart.GetDevicePixelRatio=function()
 {
@@ -5511,6 +5518,11 @@ function ChartData()
             periodDataCount = 30;
         else if (period == 8)
             periodDataCount = 60;
+        else if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)
+        {
+            periodDataCount=period-CUSTOM_MINUTE_PERIOD_START;
+            return this.GetMinuteCustomPeriodData(periodDataCount);
+        }
         else
             return this.Data;
         var bFirstPeriodData = false;
@@ -5575,9 +5587,60 @@ function ChartData()
         return result;
     }
 
+    //自定义分钟
+    this.GetMinuteCustomPeriodData=function(count)
+    {
+        var result = new Array();
+        var periodDataCount = count;
+        var bFirstPeriodData = false;
+        var newData = null;
+        for (var i = 0; i < this.Data.length; )
+        {
+            bFirstPeriodData = true;
+            for (var j = 0; j < periodDataCount && i < this.Data.length; ++i, ++j)
+            {
+                if (bFirstPeriodData)
+                {
+                    newData = new HistoryData();
+                    result.push(newData);
+                    bFirstPeriodData = false;
+                }
+                var minData = this.Data[i];
+                if (minData == null) continue;    
+                
+                newData.Date = minData.Date;
+                newData.Time = minData.Time;
+                if (minData.Open==null || minData.Close==null) continue;
+                if (newData.Open==null || newData.Close==null)
+                {
+                    newData.Open=minData.Open;
+                    newData.High=minData.High;
+                    newData.Low=minData.Low;
+                    newData.YClose=minData.YClose;
+                    newData.Close=minData.Close;
+                    newData.Vol=minData.Vol;
+                    newData.Amount=minData.Amount;    
+                    newData.FlowCapital=minData.FlowCapital;  
+                }
+                else
+                {
+                    if (newData.High<minData.High)  newData.High=minData.High;
+                    if (newData.Low>minData.Low) newData.Low=minData.Low;
+                    newData.Close=minData.Close;
+                    newData.Vol+=minData.Vol;
+                    newData.Amount+=minData.Amount;
+                    newData.FlowCapital=minData.FlowCapital;  
+                }
+            }
+        }
+        return result;
+    }
     //计算周,月,年
     this.GetDayPeriodData=function(period)
     {
+        if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)
+            return this.GetDayCustomPeriodData(period-CUSTOM_DAY_PERIOD_START);
+
         var result=new Array();
         var index=0;
         var startDate=0;
@@ -5674,11 +5737,59 @@ function ChartData()
         return result;
     }
 
+    this.GetDayCustomPeriodData=function(count)
+    {
+        var result = [];
+        var periodDataCount = count;
+        var bFirstPeriodData = false;
+        var newData = null;
+        for (var i = 0; i < this.Data.length; )
+        {
+            bFirstPeriodData = true;
+            for (var j = 0; j < periodDataCount && i < this.Data.length; ++i, ++j)
+            {
+                if (bFirstPeriodData)
+                {
+                    newData = new HistoryData();
+                    result.push(newData);
+                    bFirstPeriodData = false;
+                }
+                var dayData = this.Data[i];
+                if (dayData == null) continue;    
+                
+                newData.Date = dayData.Date;
+                
+                if (dayData.Open==null || dayData.Close==null) continue;
+                if (newData.Open==null || newData.Close==null)
+                {
+                    newData.Open=dayData.Open;
+                    newData.High=dayData.High;
+                    newData.Low=dayData.Low;
+                    newData.YClose=dayData.YClose;
+                    newData.Close=dayData.Close;
+                    newData.Vol=dayData.Vol;
+                    newData.Amount=dayData.Amount;    
+                    newData.FlowCapital=dayData.FlowCapital;  
+                }
+                else
+                {
+                    if (newData.High<dayData.High)  newData.High=dayData.High;
+                    if (newData.Low>dayData.Low) newData.Low=dayData.Low;
+                    newData.Close=dayData.Close;
+                    newData.Vol+=dayData.Vol;
+                    newData.Amount+=dayData.Amount;
+                    newData.FlowCapital=dayData.FlowCapital;  
+                }
+            }
+        }
+        return result;
+    }
+
     //周期数据 1=周 2=月 3=年
     this.GetPeriodData=function(period)
     {
-        if (period==1 || period==2 || period==3 || period==9) return this.GetDayPeriodData(period);
-        if (period==5 || period==6 || period==7 || period==8) return this.GetMinutePeriodData(period);
+        if (period==1 || period==2 || period==3 || period==9 || (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)) return this.GetDayPeriodData(period);
+        if (period==5 || period==6 || period==7 || period==8 || (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
     }
 
     //复权  0 不复权 1 前复权 2 后复权
@@ -6296,23 +6407,28 @@ ChartData.GetQuarter=function(value)
     else return 0;
 }
 
-//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线  (isIncludeBase 是否包含基础日线周期)
+//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线  [40001-50000] 自定义日线 (isIncludeBase 是否包含基础日线周期)
+var CUSTOM_DAY_PERIOD_START=40000, CUSTOM_DAY_PERIOD_END=50000;
 ChartData.IsDayPeriod=function(period, isIncludeBase)
 {
     if (period==1 || period==2 || period==3 || period==9) return true;
+    if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END) return true;
     if (period==0 && isIncludeBase==true) return true;
 
     return false;
 }
 
-//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 (isIncludeBase 是否包含基础1分钟周期)
+//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 [20001-30000] 自定义分钟 (isIncludeBase 是否包含基础1分钟周期)
+var CUSTOM_MINUTE_PERIOD_START=20000, CUSTOM_MINUTE_PERIOD_END=30000;
 ChartData.IsMinutePeriod=function(period,isIncludeBase)
 {
     if (period==5 || period==6 || period==7 || period==8) return true;
+    if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END) return true;
     if (period==4 && isIncludeBase==true) return true;
 
     return false;
 }
+
 
 //是否是分笔图
 ChartData.IsTickPeriod=function(period)
@@ -15128,7 +15244,13 @@ function DynamicKLineTitlePainting()
         if (this.IsShowSettingInfo)
         {
             this.Canvas.fillStyle=this.UnchagneColor;
-            var periodName=g_JSChartLocalization.GetText(PERIOD_NAME[this.Data.Period],this.LanguageID);
+            var periodName='';
+            if (this.Data.Period>CUSTOM_MINUTE_PERIOD_START && this.Data.Period<=CUSTOM_MINUTE_PERIOD_END) 
+                periodName=(this.Data.Period-CUSTOM_MINUTE_PERIOD_START)+g_JSChartLocalization.GetText('自定义分钟',this.LanguageID);
+            else if (this.Data.Period>CUSTOM_DAY_PERIOD_START && this.Data.Period<=CUSTOM_DAY_PERIOD_END)
+                periodName=(this.Data.Period-CUSTOM_DAY_PERIOD_START)+g_JSChartLocalization.GetText('自定义日线',this.LanguageID);
+            else 
+                periodName=g_JSChartLocalization.GetText(PERIOD_NAME[this.Data.Period],this.LanguageID);
             var rightName=g_JSChartLocalization.GetText(RIGHT_NAME[this.Data.Right],this.LanguageID);
             var text="("+periodName+" "+rightName+")";
             var isStock=MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol); //是否是指数
@@ -18893,7 +19015,10 @@ function JSChartLocalization()
         ['9月', {CN:'9月', EN:'Sept'}],
         ['10月', {CN:'10月', EN:'Oct'}],
         ['11月', {CN:'11月', EN:'Nov'}],
-        ['12月', {CN:'12月', EN:'Dec'}]
+        ['12月', {CN:'12月', EN:'Dec'}],
+
+        ['自定义分钟', {CN:'分', EN:'Min'}],
+        ['自定义日线', {CN:'日', EN:'D'}]
 
     ]);
 
@@ -21411,6 +21536,15 @@ function KLineChartContainer(uielement)
             case 6:     //15分钟
             case 7:     //30分钟
             case 8:     //60分钟
+            case 11:    //自定义分钟
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+            case 17:
+            case 18:
+            case 19:
                 if (this.SourceData.DataType!=1) isDataTypeChange=true;
                 break;
             case 10:    //分笔线
