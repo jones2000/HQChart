@@ -5886,6 +5886,61 @@ function ChartData()
         return result;
     }
 
+    //日期转化 对应数据索引
+    this.GetDateIndex=function(data)
+    {
+        for(var i=0,j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+
+            if (j>=data.length) break;
+
+            var dateItem=data[j];
+
+            if (dateItem.Date==date)
+            {
+                dateItem.Index=i;
+                ++j;
+            }
+            else if (dateItem.Date<date)
+            {
+                ++j;
+            }
+            else
+            {
+                ++i;
+            }
+        }
+    }
+
+    //日期 时间转化 对应数据索引
+    this.GetDateTimeIndex=function(data)
+    {
+        for(var i=0,j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+            var time=this.Data[i].Time;
+
+            if (j>=data.length) break;
+
+            var dateTimeItem=data[j];
+
+            if (dateTimeItem.Date==date && dateTimeItem.Time==time)
+            {
+                dateTimeItem.Index=i;
+                ++j;
+            }
+            else if (dateTimeItem.Date<date || (dateTimeItem.Date==date && dateTimeItem.Time<time))
+            {
+                ++j;
+            }
+            else
+            {
+                ++i;
+            }
+        }
+    }
+
     //  分钟数据拟合
     this.GetMinuteFittingData=function(overlayData)
     {
@@ -10620,6 +10675,181 @@ function ChartTextLine()
             range.Max=this.Price;
         }
         
+        return range;
+    }
+}
+
+// 线段集合
+function ChartMultiLine()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    
+    this.Lines=[];   // [ {Point:[ {Index, Value }, ], Color: }, ] 
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Data || this.Data.length<=0) return;
+
+        var xPointCount=this.ChartFrame.XPointCount;
+        var offset=this.Data.DataOffset;
+
+        var drawLines=[];
+        for(var i in this.Lines)
+        {
+            var line=this.Lines[i];
+            var drawPoints={ Point:[], Color:line.Color };
+            for(var j in line.Point)
+            {
+                var point=line.Point[j];
+                if (!IFrameSplitOperator.IsNumber(point.Index)) continue;
+
+                var index=point.Index-offset;
+                if (index>=0 && index<xPointCount)
+                {
+                    var x=this.ChartFrame.GetXFromIndex(index);
+                    var y=this.ChartFrame.GetYFromData(point.Value);
+                    drawPoints.Point.push({X:x, Y:y});
+                }
+            }
+
+            if (drawPoints.Point.length>=2) drawLines.push(drawPoints)
+        }
+
+        for(var i in drawLines)
+        {
+            var item=drawLines[i];
+            this.DrawLine(item);
+        }
+    }
+
+    this.DrawLine=function(line)
+    {
+        this.Canvas.strokeStyle=line.Color;
+        for(var i in line.Point)
+        {
+            var item=line.Point[i];
+            if (i==0)
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(item.X,item.Y);
+            }
+            else
+            {
+                this.Canvas.lineTo(item.X,item.Y);
+            }
+        }
+        
+        this.Canvas.stroke();
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        var end=start+xPointCount;
+
+        for(var i in this.Lines)
+        {
+            var line=this.Lines[i];
+            for(var j in line.Point)
+            {
+                var point=line.Point[j];
+                if (point.Index>=start && point.Index<end)
+                {
+                    if (range.Max==null) range.Max=point.Value;
+                    else if (range.Max<point.Value) range.Max=point.Value;
+                    if (range.Min==null) range.Min=point.Value;
+                    else if (range.Min>point.Value) range.Min=point.Value;
+                }
+            }
+        }
+
+        return range;
+    }
+}
+
+//多文本集合
+function ChartMultiText()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Texts=[];  //[ {Index:, Value:, Text:, Color:, Font: } ]
+    this.Font=g_JSChartResource.DefaultTextFont;
+    this.Color=g_JSChartResource.DefaultTextColor;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Data || this.Data.length<=0) return;
+        if (!this.Texts) return;
+
+        var xPointCount=this.ChartFrame.XPointCount;
+        var offset=this.Data.DataOffset;
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+
+        for(var i in this.Texts)
+        {
+            var item=this.Texts[i];
+
+            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
+
+            var index=item.Index-offset;
+            if (index>=0 && index<xPointCount)
+            {
+                var x=this.ChartFrame.GetXFromIndex(index);
+                var y=this.ChartFrame.GetYFromData(item.Value);
+
+                if (item.Color)  this.Canvas.fillStyle = item.Color;
+                else this.Canvas.fillStyle = this.Color;
+                if (item.Font) this.Canvas.font = item.Font;
+                else this.Canvas.font=this.Font;
+
+                var textWidth=this.Canvas.measureText(item.Text).width;
+                this.Canvas.textAlign='center';
+                if (x+textWidth/2>=right) 
+                {
+                    this.Canvas.textAlign='right';
+                    x=right;
+                }
+                else if (x-textWidth/2<left)
+                {
+                    this.Canvas.textAlign = 'left';
+                    x=left;
+                }
+                this.Canvas.textBaseline = 'middle';
+                this.Canvas.fillText(item.Text, x, y);
+            }
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+        if (!this.Texts) return range;
+
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        var end=start+xPointCount;
+
+        for(var i in this.Texts)
+        {
+            var item=this.Texts[i];
+            if (item.Index>=start && item.Index<end)
+            {
+                if (range.Max==null) range.Max=item.Value;
+                else if (range.Max<item.Value) range.Max=item.Value;
+                if (range.Min==null) range.Min=item.Value;
+                else if (range.Min>item.Value) range.Min=item.Value;
+            }
+        }
+
         return range;
     }
 }

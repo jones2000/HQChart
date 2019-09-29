@@ -76,29 +76,38 @@ function JSIndexController(req,res,next)
             return false;
         }
 
-        var scriptData = new HQChart.JSIndexScript();
-        var indexInfo = scriptData.Get(this.IndexName);
-        if (!indexInfo)
+        if (postData.script)
         {
-            this.ErrorMessage=`can't find ${this.IndexName}`;
-            return false;
+            this.Script=postData.script;
         }
-        this.Script=indexInfo.Script;
+        else
+        {
+            var scriptData = new HQChart.JSIndexScript();
+            var indexInfo = scriptData.Get(this.IndexName);
+            if (!indexInfo)
+            {
+                this.ErrorMessage=`can't find ${this.IndexName}`;
+                return false;
+            }
+            this.Script=indexInfo.Script;
+
+            if (indexInfo.Args)
+            {
+                for(var i in indexInfo.Args) //变量全部转成大写
+                {
+                    var item=indexInfo.Args[i];
+                    if (item.Name) this.Args.push({Name:item.Name, Value:item.Value});  //变量值转数值型
+                }
+            }
+        }
 
         if (postData.args)  //参数
         {
+            this.Args=[];
             for(var i in postData.args) //变量全部转成大写
             {
                 var item=postData.args[i];
                 if (item.name) this.Args.push({Name:item.name, Value:parseFloat(item.value)});  //变量值转数值型
-            }
-        }
-        else if (indexInfo.Args)
-        {
-            for(var i in indexInfo.Args) //变量全部转成大写
-            {
-                var item=indexInfo.Args[i];
-                if (item.Name) this.Args.push({Name:item.Name, Value:item.Value});  //变量值转数值型
             }
         }
 
@@ -173,6 +182,19 @@ function JSIndexController(req,res,next)
             if (item.Draw) outItem.Draw=item.Draw;  //Draw里面数据太多了, 返回数据字段就不转写成小写了, 太麻烦了
             this.OutData.outvar.push(outItem);
         }
+
+        //var outItem={name:'MULTI_LINE', type:1};
+        //var point1={Point:[{Date:20190909, Value:15.5},{Date:20190909, Value:14.5}, {Date:20190910, Value:14.2} , {Date:20190911, Value:14.05}], Color:'rgb(244,55,50)'};
+        //var point2={Point:[{Date:20190812, Value:14.5}, {Date:20190815, Value:14.2} , {Date:20190822, Value:14.15}], Color:'rgb(0,55,50)'};
+        //var point1={Point:[{ Date:20190925,Time:1025, Value:15.5},{Date:20190925, Time:1022, Value:14.5}, {Date:20190925, Time:1311, Value:14.6} , {Date:20190926,Time:1401, Value:14.05}], Color:'rgb(244,55,50)'};
+        //var point2={Point:[{Date:20190926, Time:945, Value:14.5}, {Date:20190927, Time:1011, Value:14.2} , {Date:20190927, Time:1425, Value:14.15}], Color:'rgb(0,55,50)'};
+        //outItem.Draw={ DrawType:'MULTI_LINE', DrawData:[point1,point2] };
+
+        //var outItem={name:'MULTI_TEXT', type:1};
+        //var texts=[{Date:20190926, Time:945, Value:14.5, Text:'111111',Color:'rgb(244,255,50)'}, {Date:20190927, Time:1011, Value:14.2,Text:'33333',Color:'rgb(0,55,50)'} , {Date:20190927, Time:1425, Value:14.15,Text:'22222'}];
+        //outItem.Draw={ DrawType:'MULTI_TEXT', DrawData:texts };
+        //this.OutData.outvar.push(outItem);
+
 
         this.SendResult();
     }
