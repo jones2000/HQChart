@@ -156,7 +156,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 31. [HQChart使用教程33-如何在麦语法中自定义变量](https://blog.csdn.net/jones2000/article/details/100710615) <br>
 32. [HQChart使用教程34-如何在麦语法中自定义函数](https://blog.csdn.net/jones2000/article/details/100734839) <br>
 33. [HQChart使用教程39-指标中如何绘制文本分割线](https://blog.csdn.net/jones2000/article/details/101487482) <br>
-34. [HQChart使用教程40-如何自定义分钟周期或日期周期K线](https://blog.csdn.net/jones2000/article/details/101722958) <br>
+34. [HQChart使用教程40-如何自定义分钟周期或日线周期K线](https://blog.csdn.net/jones2000/article/details/101722958) <br>
 
 
 ## 小程序教程
@@ -186,6 +186,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 8. [HQChart使用教程30-K线图如何对接第3方数据8-1分钟K线数据分页下载](https://blog.csdn.net/jones2000/article/details/101277092) <br>
 9. [HQChart使用教程30-K线图如何对接第3方数据9-BS指标数据](https://blog.csdn.net/jones2000/article/details/101350429) <br>
 10. [HQChart使用教程30-K线图如何对接第3方数据10-如何绘制自定义线段或多边行指标数据](https://blog.csdn.net/jones2000/article/details/101694618)<br>
+11. [HQChart使用教程30-K线图如何对接第3方数据11-如何绘制多组自定义图标](https://blog.csdn.net/jones2000/article/details/101757384) <br>
 
 
 ## 设计文档:
