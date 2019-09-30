@@ -1152,13 +1152,6 @@ JSChart.SetTextResource=function(key,value)
     g_JSChartLocalization.SetTextResource(key,value);
 }
 
-//自定义分钟周期K线 period=[11-19]
-JSChart.SetCustomMinutePeriod=function(period, count)
-{
-    console.log(`[JSChart::SetCustomMinutePeriod] period=${period} count=${count}`);
-    CUSTOM_MINUTE_PERIOD.set(period,count);
-}
-
 //获取设备分辨率比
 JSChart.GetDevicePixelRatio=function()
 {

@@ -2488,7 +2488,7 @@ JSIndexScript.prototype.COLOR_SGCJ=function()
 {
     let data=
     {
-        Name: '乌云盖顶', Description: '乌云盖顶', IsMainIndex: true, InstructionType:2,
+        Name: '曙光初现', Description: '曙光初现', IsMainIndex: true, InstructionType:2,
         Script: //脚本
 'VAR1:BACKSET( \n\
 REF(CLOSE,1)/REF(OPEN,1)<0.97 AND \n\
@@ -8828,6 +8828,11 @@ function ChartData()
             periodDataCount = 30;
         else if (period == 8)
             periodDataCount = 60;
+        else if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)
+        {
+            periodDataCount=period-CUSTOM_MINUTE_PERIOD_START;
+            return this.GetMinuteCustomPeriodData(periodDataCount);
+        }
         else
             return this.Data;
         var bFirstPeriodData = false;
@@ -8892,9 +8897,60 @@ function ChartData()
         return result;
     }
 
+    //自定义分钟
+    this.GetMinuteCustomPeriodData=function(count)
+    {
+        var result = new Array();
+        var periodDataCount = count;
+        var bFirstPeriodData = false;
+        var newData = null;
+        for (var i = 0; i < this.Data.length; )
+        {
+            bFirstPeriodData = true;
+            for (var j = 0; j < periodDataCount && i < this.Data.length; ++i, ++j)
+            {
+                if (bFirstPeriodData)
+                {
+                    newData = new HistoryData();
+                    result.push(newData);
+                    bFirstPeriodData = false;
+                }
+                var minData = this.Data[i];
+                if (minData == null) continue;    
+                
+                newData.Date = minData.Date;
+                newData.Time = minData.Time;
+                if (minData.Open==null || minData.Close==null) continue;
+                if (newData.Open==null || newData.Close==null)
+                {
+                    newData.Open=minData.Open;
+                    newData.High=minData.High;
+                    newData.Low=minData.Low;
+                    newData.YClose=minData.YClose;
+                    newData.Close=minData.Close;
+                    newData.Vol=minData.Vol;
+                    newData.Amount=minData.Amount;    
+                    newData.FlowCapital=minData.FlowCapital;  
+                }
+                else
+                {
+                    if (newData.High<minData.High)  newData.High=minData.High;
+                    if (newData.Low>minData.Low) newData.Low=minData.Low;
+                    newData.Close=minData.Close;
+                    newData.Vol+=minData.Vol;
+                    newData.Amount+=minData.Amount;
+                    newData.FlowCapital=minData.FlowCapital;  
+                }
+            }
+        }
+        return result;
+    }
     //计算周,月,年
     this.GetDayPeriodData=function(period)
     {
+        if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)
+            return this.GetDayCustomPeriodData(period-CUSTOM_DAY_PERIOD_START);
+
         var result=new Array();
         var index=0;
         var startDate=0;
@@ -8991,11 +9047,59 @@ function ChartData()
         return result;
     }
 
+    this.GetDayCustomPeriodData=function(count)
+    {
+        var result = [];
+        var periodDataCount = count;
+        var bFirstPeriodData = false;
+        var newData = null;
+        for (var i = 0; i < this.Data.length; )
+        {
+            bFirstPeriodData = true;
+            for (var j = 0; j < periodDataCount && i < this.Data.length; ++i, ++j)
+            {
+                if (bFirstPeriodData)
+                {
+                    newData = new HistoryData();
+                    result.push(newData);
+                    bFirstPeriodData = false;
+                }
+                var dayData = this.Data[i];
+                if (dayData == null) continue;    
+                
+                newData.Date = dayData.Date;
+                
+                if (dayData.Open==null || dayData.Close==null) continue;
+                if (newData.Open==null || newData.Close==null)
+                {
+                    newData.Open=dayData.Open;
+                    newData.High=dayData.High;
+                    newData.Low=dayData.Low;
+                    newData.YClose=dayData.YClose;
+                    newData.Close=dayData.Close;
+                    newData.Vol=dayData.Vol;
+                    newData.Amount=dayData.Amount;    
+                    newData.FlowCapital=dayData.FlowCapital;  
+                }
+                else
+                {
+                    if (newData.High<dayData.High)  newData.High=dayData.High;
+                    if (newData.Low>dayData.Low) newData.Low=dayData.Low;
+                    newData.Close=dayData.Close;
+                    newData.Vol+=dayData.Vol;
+                    newData.Amount+=dayData.Amount;
+                    newData.FlowCapital=dayData.FlowCapital;  
+                }
+            }
+        }
+        return result;
+    }
+
     //周期数据 1=周 2=月 3=年
     this.GetPeriodData=function(period)
     {
-        if (period==1 || period==2 || period==3 || period==9) return this.GetDayPeriodData(period);
-        if (period==5 || period==6 || period==7 || period==8) return this.GetMinutePeriodData(period);
+        if (period==1 || period==2 || period==3 || period==9 || (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)) return this.GetDayPeriodData(period);
+        if (period==5 || period==6 || period==7 || period==8 || (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
     }
 
     //复权  0 不复权 1 前复权 2 后复权
@@ -9613,23 +9717,28 @@ ChartData.GetQuarter=function(value)
     else return 0;
 }
 
-//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线  (isIncludeBase 是否包含基础日线周期)
+//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线  [40001-50000] 自定义日线 (isIncludeBase 是否包含基础日线周期)
+var CUSTOM_DAY_PERIOD_START=40000, CUSTOM_DAY_PERIOD_END=50000;
 ChartData.IsDayPeriod=function(period, isIncludeBase)
 {
     if (period==1 || period==2 || period==3 || period==9) return true;
+    if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END) return true;
     if (period==0 && isIncludeBase==true) return true;
 
     return false;
 }
 
-//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 (isIncludeBase 是否包含基础1分钟周期)
+//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 [20001-30000] 自定义分钟 (isIncludeBase 是否包含基础1分钟周期)
+var CUSTOM_MINUTE_PERIOD_START=20000, CUSTOM_MINUTE_PERIOD_END=30000;
 ChartData.IsMinutePeriod=function(period,isIncludeBase)
 {
     if (period==5 || period==6 || period==7 || period==8) return true;
+    if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END) return true;
     if (period==4 && isIncludeBase==true) return true;
 
     return false;
 }
+
 
 //是否是分笔图
 ChartData.IsTickPeriod=function(period)
@@ -14089,7 +14198,7 @@ function ChartMultiLine()
     }
 }
 
-//多文本集合
+// 多文本集合
 function ChartMultiText()
 {
     this.newMethod=IChartPainting;   //派生
@@ -14158,6 +14267,93 @@ function ChartMultiText()
         for(var i in this.Texts)
         {
             var item=this.Texts[i];
+            if (item.Index>=start && item.Index<end)
+            {
+                if (range.Max==null) range.Max=item.Value;
+                else if (range.Max<item.Value) range.Max=item.Value;
+                if (range.Min==null) range.Min=item.Value;
+                else if (range.Min>item.Value) range.Min=item.Value;
+            }
+        }
+
+        return range;
+    }
+}
+
+// 图标集合
+function ChartMultiSVGIcon()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Icon;  //[ {Index:, Value:, Symbol:, Color:, } ]
+    this.Family;
+    this.Color=g_JSChartResource.DefaultTextColor;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Data || this.Data.length<=0) return;
+        if (!this.Family || !this.Icon) return;
+
+        var xPointCount=this.ChartFrame.XPointCount;
+        var offset=this.Data.DataOffset;
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        this.DataWidth=this.ChartFrame.DataWidth;
+        this.DistanceWidth=this.ChartFrame.DistanceWidth;
+
+        var fontSize=(this.DataWidth+this.DistanceWidth)-2;
+        if (fontSize<8) fontSize=8;
+        this.Canvas.font=fontSize+'px '+this.Family;
+
+        for(var i in this.Icon)
+        {
+            var item=this.Icon[i];
+            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
+
+            var index=item.Index-offset;
+            if (index>=0 && index<xPointCount)
+            {
+                var x=this.ChartFrame.GetXFromIndex(index);
+                var y=this.ChartFrame.GetYFromData(item.Value);
+
+                if (item.Color)  this.Canvas.fillStyle = item.Color;
+                else this.Canvas.fillStyle = this.Color;
+
+                var textWidth=this.Canvas.measureText(item.Text).width;
+                this.Canvas.textAlign='center';
+                if (x+textWidth/2>=right) 
+                {
+                    this.Canvas.textAlign='right';
+                    x=right;
+                }
+                else if (x-textWidth/2<left)
+                {
+                    this.Canvas.textAlign = 'left';
+                    x=left;
+                }
+                if (item.Baseline==1) this.Canvas.textBaseline='top';
+                else if (item.Baseline==2) this.Canvas.textBaseline='bottom';
+                else this.Canvas.textBaseline = 'middle';
+                this.Canvas.fillText(item.Symbol, x, y);
+            }
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+        if (!this.Texts) return range;
+
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        var end=start+xPointCount;
+
+        for(var i in this.Icon)
+        {
+            var item=this.Icon[i];
             if (item.Index>=start && item.Index<end)
             {
                 if (range.Max==null) range.Max=item.Value;
@@ -18445,7 +18641,13 @@ function DynamicKLineTitlePainting()
         if (this.IsShowSettingInfo)
         {
             this.Canvas.fillStyle=this.UnchagneColor;
-            var periodName=g_JSChartLocalization.GetText(PERIOD_NAME[this.Data.Period],this.LanguageID);
+            var periodName='';
+            if (this.Data.Period>CUSTOM_MINUTE_PERIOD_START && this.Data.Period<=CUSTOM_MINUTE_PERIOD_END) 
+                periodName=(this.Data.Period-CUSTOM_MINUTE_PERIOD_START)+g_JSChartLocalization.GetText('自定义分钟',this.LanguageID);
+            else if (this.Data.Period>CUSTOM_DAY_PERIOD_START && this.Data.Period<=CUSTOM_DAY_PERIOD_END)
+                periodName=(this.Data.Period-CUSTOM_DAY_PERIOD_START)+g_JSChartLocalization.GetText('自定义日线',this.LanguageID);
+            else 
+                periodName=g_JSChartLocalization.GetText(PERIOD_NAME[this.Data.Period],this.LanguageID);
             var rightName=g_JSChartLocalization.GetText(RIGHT_NAME[this.Data.Right],this.LanguageID);
             var text="("+periodName+" "+rightName+")";
             var isStock=MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol); //是否是指数
@@ -22210,7 +22412,10 @@ function JSChartLocalization()
         ['9月', {CN:'9月', EN:'Sept'}],
         ['10月', {CN:'10月', EN:'Oct'}],
         ['11月', {CN:'11月', EN:'Nov'}],
-        ['12月', {CN:'12月', EN:'Dec'}]
+        ['12月', {CN:'12月', EN:'Dec'}],
+
+        ['自定义分钟', {CN:'分', EN:'Min'}],
+        ['自定义日线', {CN:'日', EN:'D'}]
 
     ]);
 
@@ -24157,7 +24362,7 @@ function KLineChartContainer(uielement)
             this.NetworkFilter(obj, function(data) 
             { 
                 self.RecvHistoryMinutePageData(data);
-                var page=self.Page.Day;
+                var page=self.Page.Minute;
                 if (page.Enable==true && page.Finish==false)
                     self.ReqeustHistoryMinutePageData();  //继续下载
                 else
@@ -24459,7 +24664,7 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.DataType=this.SourceData.DataType;
 
-        if (bindData.Right>0 && bindData.Period<=3)    //复权(日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
@@ -24714,25 +24919,36 @@ function KLineChartContainer(uielement)
         if (this.Period==period) return;
 
         var isDataTypeChange=false;
-        switch(period)
+        if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_START)
         {
-            case 0:     //日线
-            case 1:     //周
-            case 2:     //月
-            case 3:     //年
-            case 9:     //季线
-                if (this.SourceData.DataType!=0) isDataTypeChange=true;
-                break;
-            case 4:     //1分钟
-            case 5:     //5分钟
-            case 6:     //15分钟
-            case 7:     //30分钟
-            case 8:     //60分钟
-                if (this.SourceData.DataType!=1) isDataTypeChange=true;
-                break;
-            case 10:    //分笔线
-            if (this.SourceData.DataType!=2) isDataTypeChange=true;
-                break;
+            if (this.SourceData.DataType!=0) isDataTypeChange=true;
+        }
+        else if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)
+        {
+            if (this.SourceData.DataType!=1) isDataTypeChange=true;
+        }
+        else
+        {
+            switch(period)
+            {
+                case 0:     //日线
+                case 1:     //周
+                case 2:     //月
+                case 3:     //年
+                case 9:     //季线
+                    if (this.SourceData.DataType!=0) isDataTypeChange=true;
+                    break;
+                case 4:     //1分钟
+                case 5:     //5分钟
+                case 6:     //15分钟
+                case 7:     //30分钟
+                case 8:     //60分钟
+                    if (this.SourceData.DataType!=1) isDataTypeChange=true;
+                    break;
+                case 10:    //分笔线
+                if (this.SourceData.DataType!=2) isDataTypeChange=true;
+                    break;
+            }
         }
 
         this.Period=period;
@@ -25548,13 +25764,13 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.DataType=this.SourceData.DataType;
 
-        if (bindData.Right>0 && bindData.Period<=3)    //复权(日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
         }
 
-        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -25782,7 +25998,7 @@ function KLineChartContainer(uielement)
         
         this.OverlayChartPaint.push(paint);
 
-        if (this.Period<=3) this.RequestOverlayHistoryData();                  //请求日线数据
+        if (ChartData.IsDayPeriod(this.Period, true)) this.RequestOverlayHistoryData();                  //请求日线数据
 
         return true;
     }
@@ -35333,9 +35549,9 @@ var MARKET_SUFFIX_NAME=
         var upperSymbol=symbol.toUpperCase();
         if (this.IsUSA(upperSymbol))
         {
-            var usaDate=GetLocalTime(-5);
-            day = usaDate.getDay(),
-            time = usaDate.getHours() * 100 + usaDate.getMinutes();
+            var usaDate=GetLocalTime(-4);
+            var day = usaDate.getDay();
+            var time = usaDate.getHours() * 100 + usaDate.getMinutes();
             if(day == 6 || day== 0) return 0;   //周末
 
             //9:30 - 16:00 考虑夏令时间时间增加1小时 9:30 - 17:00
@@ -35347,9 +35563,9 @@ var MARKET_SUFFIX_NAME=
         else
         {
             
-            var nowDate= new Date(),
-            day = nowDate.getDay(),
-            time = nowDate.getHours() * 100 + nowDate.getMinutes();
+            var nowDate= new Date();
+            var day = nowDate.getDay();
+            var time = nowDate.getHours() * 100 + nowDate.getMinutes();
             if(day == 6 || day== 0) return 0;   //周末
 
             //9:30 - 15:40
@@ -35357,7 +35573,7 @@ var MARKET_SUFFIX_NAME=
             if(time<925) return 1;
             return 2;   
         }
-   
+
     }
 }
 
@@ -42427,7 +42643,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.IndexData) return this.Execute.RunNextJob();
 
         var self=this;
-        if (this.Period<=3 || this.Period==9)     //请求日线数据 9=季线
+        if (ChartData.IsDayPeriod(this.Period,true))     //请求日线数据 9=季线
         {
             if (this.NetworkFilter)
             {
@@ -42474,7 +42690,7 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             });
         }
-        else            //请求分钟数据
+        else  if (ChartData.IsMinutePeriod(this.Period, true))          //请求分钟数据
         {
             if (this.NetworkFilter)
             {
@@ -42768,7 +42984,7 @@ function JSSymbolData(ast,option,jsExecute)
             return;
         }
 
-        if (this.Period<=3)     //请求日线数据
+        if (ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
         {
             JSNetwork.HttpReqeust({
                 url: self.KLineApiUrl,
@@ -42793,7 +43009,7 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             });
         }
-        else                //请求分钟数据
+        else if (ChartData.IsMinutePeriod(this.Period, true))               //请求分钟数据
         {
             JSNetwork.HttpReqeust({
                 url: this.MinuteKLineApiUrl,
@@ -46279,6 +46495,20 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateMultiSVGIcon=function(hqChart,windowIndex,varItem,i)
+    {
+        let chart=new ChartMultiSVGIcon();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Family=varItem.Draw.DrawData.Family;
+        chart.Icon= varItem.Draw.DrawData.Icon;
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建K线
     this.CreateSelfKLine=function(hqChart,windowIndex,hisData)
     {
@@ -46417,6 +46647,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'MULTI_TEXT':
                         this.CreateMultiText(hqChart,windowIndex,item,i);
+                        break;
+                    case 'MULTI_SVGICON':
+                        this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
                         break;
                 }
             }
@@ -47402,6 +47635,16 @@ function APIScriptIndex(name,script,args,option)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=this.FittingMultiText(draw.DrawData,date,time,hqChart);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=='MULTI_SVGICON')
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData={ Icon:this.FittingMultiText(draw.DrawData.Icon,date,time,hqChart), Family:draw.DrawData.Family };
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);
