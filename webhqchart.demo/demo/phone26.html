@@ -63,40 +63,43 @@
                 var request=data.Request;
                 if (request.Data.indexname=='SVG图标标记')
                 {
-                    var hqchart=data.HQChart;
-                    var kData=hqchart.ChartPaint[0].Data;
-
-                    var closeLine={name:'收盘价线', type:0, data:kData.GetClose() };
-                    var line2= 
-                    { 
-                        name:'MULTI_SVGICON', type:1, 
-                        Draw: 
-                        { 
-                            DrawType:'MULTI_SVGICON', 
-                            DrawData: 
-                            {
-                                Family:'js-iconfont', 
-                                Icon:
-                                [
-                                    { Date:20190916, Value:15.5, Symbol:'\ue611', Color:'rgb(240,0,0)', Baseline:1 },  //0 居中 1 上 2 下
-                                    { Date:20190919, Value:15.3, Symbol:'\ue615', Color:'rgb(240,240,0)',Baseline:2 },
-                                    { Date:20190909, Value:15.4, Symbol:'\ue615', Color:'rgb(240,100,30)'}
-                                ] 
-                            }
-                        } //绘制图标数组
-                    };
-
-                    
-                    var apiData=
-                    {
-                        code:0, 
-                        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
-                        outdata: { date:kData.GetDate() , outvar:[closeLine,line2] } 
-                    };
-                    
                     data.PreventDefault=true;
-                    console.log('[NetworkFilter::NetworkFilter] apiData ', apiData);
-                    callback(apiData);
+                    setTimeout(()=>
+                    {
+                        var hqchart=data.HQChart;
+                        var kData=hqchart.ChartPaint[0].Data;
+
+                        var closeLine={name:'收盘价线', type:0, data:kData.GetClose() };
+                        var line2= 
+                        { 
+                            name:'MULTI_SVGICON', type:1, 
+                            Draw: 
+                            { 
+                                DrawType:'MULTI_SVGICON', 
+                                DrawData: 
+                                {
+                                    Family:'js-iconfont', 
+                                    Icon:
+                                    [
+                                        { Date:20190916, Value:15.5, Symbol:'\ue611', Color:'rgb(240,0,0)', Baseline:1 },  //0 居中 1 上 2 下
+                                        { Date:20190919, Value:15.3, Symbol:'\ue615', Color:'rgb(240,240,0)',Baseline:2 },
+                                        { Date:20190909, Value:15.4, Symbol:'\ue615', Color:'rgb(240,100,30)'}
+                                    ] 
+                                }
+                            } //绘制图标数组
+                        };
+
+                        var apiData=
+                        {
+                            code:0, 
+                            stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+                            outdata: { date:kData.GetDate() , outvar:[closeLine,line2] } 
+                        };
+                        
+                        
+                        console.log('[NetworkFilter::NetworkFilter] apiData ', apiData);
+                        callback(apiData);
+                    }, 500);
                 }
             }
         }
