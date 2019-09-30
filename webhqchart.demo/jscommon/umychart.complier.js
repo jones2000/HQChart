@@ -6265,7 +6265,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.IndexData) return this.Execute.RunNextJob();
 
         var self=this;
-        if (this.Period<=3 || this.Period==9)     //请求日线数据 9=季线
+        if (ChartData.IsDayPeriod(this.Period,true))     //请求日线数据 9=季线
         {
             if (this.NetworkFilter)
             {
@@ -6312,7 +6312,7 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             });
         }
-        else            //请求分钟数据
+        else  if (ChartData.IsMinutePeriod(this.Period, true))          //请求分钟数据
         {
             if (this.NetworkFilter)
             {
@@ -6606,7 +6606,7 @@ function JSSymbolData(ast,option,jsExecute)
             return;
         }
 
-        if (this.Period<=3)     //请求日线数据
+        if (ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
         {
             JSNetwork.HttpReqeust({
                 url: self.KLineApiUrl,
@@ -6631,7 +6631,7 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             });
         }
-        else                //请求分钟数据
+        else if (ChartData.IsMinutePeriod(this.Period, true))               //请求分钟数据
         {
             JSNetwork.HttpReqeust({
                 url: this.MinuteKLineApiUrl,
@@ -10117,6 +10117,20 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateMultiSVGIcon=function(hqChart,windowIndex,varItem,i)
+    {
+        let chart=new ChartMultiSVGIcon();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Family=varItem.Draw.DrawData.Family;
+        chart.Icon= varItem.Draw.DrawData.Icon;
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建K线
     this.CreateSelfKLine=function(hqChart,windowIndex,hisData)
     {
@@ -10255,6 +10269,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'MULTI_TEXT':
                         this.CreateMultiText(hqChart,windowIndex,item,i);
+                        break;
+                    case 'MULTI_SVGICON':
+                        this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
                         break;
                 }
             }
@@ -11240,6 +11257,16 @@ function APIScriptIndex(name,script,args,option)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=this.FittingMultiText(draw.DrawData,date,time,hqChart);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=='MULTI_SVGICON')
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData={ Icon:this.FittingMultiText(draw.DrawData.Icon,date,time,hqChart), Family:draw.DrawData.Family };
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);

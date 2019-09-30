@@ -2379,8 +2379,8 @@ function JSStock()
 
     this.AutoUpdate=function()
     {
-        if (!this.IsAutoUpdate) return;
         if (this.Timeout) clearTimeout(this.Timeout);   //清空定时器
+        if (!this.IsAutoUpdate) return;
 
         var self=this;
         var isBeforOpen=false;
@@ -2924,15 +2924,27 @@ function IStockData()
 
         if (!this.IsAutoUpdate) return;
 
-        //周日 周6 不更新， [9：30-3：30]以外的时间不更新
-        var self = this;
-        let today = new Date();
-        let time = today.getHours() * 100 + today.getMinutes();
-        if (today.getDay() > 0 && today.getDay() < 6 && time >= 930 && time < 1530)
-            this.Timeout = setTimeout(function () {
-                self.RequestData();
-            }, this.AutoUpateTimeout);
-
+        if (this.Timeout) clearTimeout(this.Timeout);   //清空定时器
+        if (!this.IsAutoUpdate) return;
+        
+        var self=this;
+        if (this.Symbol)
+        {
+            var status=STOCK_MARKET.GetMarketStatus(this.Symbol);
+            if (status==2) this.Timeout=setTimeout( function() {  self.RequestData(); },this.AutoUpateTimeout );
+            else if (status==1) this.Timeout=setTimeout( function() {  self.AutoUpdate(); },this.AutoUpateTimeout );
+        }
+        else
+        {
+            //周日 周6 不更新， [9：30-3：30] 以外的时间不更新
+            var self = this;
+            let today = new Date();
+            let time = today.getHours() * 100 + today.getMinutes();
+            if (today.getDay() > 0 && today.getDay() < 6 && time >= 930 && time < 1530)
+                this.Timeout = setTimeout(function () {
+                    self.RequestData();
+                }, this.AutoUpateTimeout);
+        }
     }
 
     this.InvokeUpdateUICallback=function()

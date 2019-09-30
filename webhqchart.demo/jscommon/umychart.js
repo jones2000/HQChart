@@ -10888,7 +10888,7 @@ function ChartMultiLine()
     }
 }
 
-//多文本集合
+// 多文本集合
 function ChartMultiText()
 {
     this.newMethod=IChartPainting;   //派生
@@ -10957,6 +10957,93 @@ function ChartMultiText()
         for(var i in this.Texts)
         {
             var item=this.Texts[i];
+            if (item.Index>=start && item.Index<end)
+            {
+                if (range.Max==null) range.Max=item.Value;
+                else if (range.Max<item.Value) range.Max=item.Value;
+                if (range.Min==null) range.Min=item.Value;
+                else if (range.Min>item.Value) range.Min=item.Value;
+            }
+        }
+
+        return range;
+    }
+}
+
+// 图标集合
+function ChartMultiSVGIcon()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Icon;  //[ {Index:, Value:, Symbol:, Color:, } ]
+    this.Family;
+    this.Color=g_JSChartResource.DefaultTextColor;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Data || this.Data.length<=0) return;
+        if (!this.Family || !this.Icon) return;
+
+        var xPointCount=this.ChartFrame.XPointCount;
+        var offset=this.Data.DataOffset;
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        this.DataWidth=this.ChartFrame.DataWidth;
+        this.DistanceWidth=this.ChartFrame.DistanceWidth;
+
+        var fontSize=(this.DataWidth+this.DistanceWidth)-2;
+        if (fontSize<8) fontSize=8;
+        this.Canvas.font=fontSize+'px '+this.Family;
+
+        for(var i in this.Icon)
+        {
+            var item=this.Icon[i];
+            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
+
+            var index=item.Index-offset;
+            if (index>=0 && index<xPointCount)
+            {
+                var x=this.ChartFrame.GetXFromIndex(index);
+                var y=this.ChartFrame.GetYFromData(item.Value);
+
+                if (item.Color)  this.Canvas.fillStyle = item.Color;
+                else this.Canvas.fillStyle = this.Color;
+
+                var textWidth=this.Canvas.measureText(item.Text).width;
+                this.Canvas.textAlign='center';
+                if (x+textWidth/2>=right) 
+                {
+                    this.Canvas.textAlign='right';
+                    x=right;
+                }
+                else if (x-textWidth/2<left)
+                {
+                    this.Canvas.textAlign = 'left';
+                    x=left;
+                }
+                if (item.Baseline==1) this.Canvas.textBaseline='top';
+                else if (item.Baseline==2) this.Canvas.textBaseline='bottom';
+                else this.Canvas.textBaseline = 'middle';
+                this.Canvas.fillText(item.Symbol, x, y);
+            }
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+        if (!this.Texts) return range;
+
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        var end=start+xPointCount;
+
+        for(var i in this.Icon)
+        {
+            var item=this.Icon[i];
             if (item.Index>=start && item.Index<end)
             {
                 if (range.Max==null) range.Max=item.Value;
@@ -21522,34 +21609,36 @@ function KLineChartContainer(uielement)
         if (this.Period==period) return;
 
         var isDataTypeChange=false;
-        switch(period)
+        if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_START)
         {
-            case 0:     //日线
-            case 1:     //周
-            case 2:     //月
-            case 3:     //年
-            case 9:     //季线
-                if (this.SourceData.DataType!=0) isDataTypeChange=true;
-                break;
-            case 4:     //1分钟
-            case 5:     //5分钟
-            case 6:     //15分钟
-            case 7:     //30分钟
-            case 8:     //60分钟
-            case 11:    //自定义分钟
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-            case 16:
-            case 17:
-            case 18:
-            case 19:
-                if (this.SourceData.DataType!=1) isDataTypeChange=true;
-                break;
-            case 10:    //分笔线
-            if (this.SourceData.DataType!=2) isDataTypeChange=true;
-                break;
+            if (this.SourceData.DataType!=0) isDataTypeChange=true;
+        }
+        else if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)
+        {
+            if (this.SourceData.DataType!=1) isDataTypeChange=true;
+        }
+        else
+        {
+            switch(period)
+            {
+                case 0:     //日线
+                case 1:     //周
+                case 2:     //月
+                case 3:     //年
+                case 9:     //季线
+                    if (this.SourceData.DataType!=0) isDataTypeChange=true;
+                    break;
+                case 4:     //1分钟
+                case 5:     //5分钟
+                case 6:     //15分钟
+                case 7:     //30分钟
+                case 8:     //60分钟
+                    if (this.SourceData.DataType!=1) isDataTypeChange=true;
+                    break;
+                case 10:    //分笔线
+                if (this.SourceData.DataType!=2) isDataTypeChange=true;
+                    break;
+            }
         }
 
         this.Period=period;
@@ -22365,13 +22454,13 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.DataType=this.SourceData.DataType;
 
-        if (bindData.Right>0 && bindData.Period<=3)    //复权(日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
         }
 
-        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -22599,7 +22688,7 @@ function KLineChartContainer(uielement)
         
         this.OverlayChartPaint.push(paint);
 
-        if (this.Period<=3) this.RequestOverlayHistoryData();                  //请求日线数据
+        if (ChartData.IsDayPeriod(this.Period, true)) this.RequestOverlayHistoryData();                  //请求日线数据
 
         return true;
     }
@@ -32151,8 +32240,8 @@ var MARKET_SUFFIX_NAME=
         if (this.IsUSA(upperSymbol))
         {
             var usaDate=GetLocalTime(-4);
-            day = usaDate.getDay(),
-            time = usaDate.getHours() * 100 + usaDate.getMinutes();
+            var day = usaDate.getDay();
+            var time = usaDate.getHours() * 100 + usaDate.getMinutes();
             if(day == 6 || day== 0) return 0;   //周末
 
             //9:30 - 16:00 考虑夏令时间时间增加1小时 9:30 - 17:00
@@ -32164,9 +32253,9 @@ var MARKET_SUFFIX_NAME=
         else
         {
             
-            var nowDate= new Date(),
-            day = nowDate.getDay(),
-            time = nowDate.getHours() * 100 + nowDate.getMinutes();
+            var nowDate= new Date();
+            var day = nowDate.getDay();
+            var time = nowDate.getHours() * 100 + nowDate.getMinutes();
             if(day == 6 || day== 0) return 0;   //周末
 
             //9:30 - 15:40
@@ -32174,7 +32263,7 @@ var MARKET_SUFFIX_NAME=
             if(time<925) return 1;
             return 2;   
         }
-   
+
     }
 }
 

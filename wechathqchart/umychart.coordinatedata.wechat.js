@@ -20,6 +20,13 @@ var MARKET_SUFFIX_NAME=
     CFFEX: '.CFE',       //中期所 (China Financial Futures Exchange)
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
+    USA: '.USA',          //美股
+
+    IsUSA: function (upperSymbol) //是否是美股
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.USA) > 0;
+    },
 
     IsSH: function (upperSymbol)
     {
@@ -111,6 +118,70 @@ var MARKET_SUFFIX_NAME=
         }
 
         return false;
+    },
+
+    IsSHSZStockA: function (symbol) //是否是沪深A股
+    {
+        if (!symbol) return false;
+        var upperSymbol = symbol.toUpperCase();
+        if (this.IsSH(upperSymbol)) 
+        {
+            var temp = upperSymbol.replace('.SH', '');
+            if (upperSymbol.charAt(0) == '6') return true;
+        }
+        else if (this.IsSZ(upperSymbol)) 
+        {
+            if (upperSymbol.charAt(0) == '0') 
+            {
+                if (upperSymbol.charAt(1) == '0' && upperSymbol.charAt(1) == '2') return true;  //002 中小板
+                if (upperSymbol.charAt(1) != '7' && upperSymbol.charAt(1) != '8') return true;
+            }
+        }
+
+        return false;
+    },
+
+    IsSHStockSTAR: function (symbol)   // 是否是科创板 Sci-Tech innovAtion boaRd (STAR Market)
+    {
+        if (!symbol) return false;
+        var upperSymbol = symbol.toUpperCase();
+        if (!this.IsSH(upperSymbol)) return false;
+        if (upperSymbol.charAt(0) == '6' && upperSymbol.charAt(1) == '8' && upperSymbol.charAt(2) == '8')
+            return true;
+
+        return false;
+    },
+
+    GetMarketStatus: function (symbol)    //获取市场状态 0=闭市 1=盘前 2=盘中 3=盘后
+    {
+        if (!symbol) return 0;
+        var upperSymbol = symbol.toUpperCase();
+        if (this.IsUSA(upperSymbol)) 
+        {
+            var usaDate = GetLocalTime(-4);
+            var day = usaDate.getDay();
+            var time = usaDate.getHours() * 100 + usaDate.getMinutes();
+            if (day == 6 || day == 0) return 0;   //周末
+
+            //9:30 - 16:00 考虑夏令时间时间增加1小时 9:30 - 17:00
+            if (time > 1730) return 3;
+            if (time < 930) return 1;
+
+            return 2;
+        }
+        else 
+        {
+            var nowDate = new Date();
+            var day = nowDate.getDay();
+            var time = nowDate.getHours() * 100 + nowDate.getMinutes();
+            if (day == 6 || day == 0) return 0;   //周末
+
+            //9:30 - 15:40
+            if (time > 1540) return 3;
+            if (time < 925) return 1;
+            return 2;
+        }
+
     }
 }
 

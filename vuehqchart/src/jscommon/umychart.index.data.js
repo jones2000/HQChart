@@ -2488,7 +2488,7 @@ JSIndexScript.prototype.COLOR_SGCJ=function()
 {
     let data=
     {
-        Name: '乌云盖顶', Description: '乌云盖顶', IsMainIndex: true, InstructionType:2,
+        Name: '曙光初现', Description: '曙光初现', IsMainIndex: true, InstructionType:2,
         Script: //脚本
 'VAR1:BACKSET( \n\
 REF(CLOSE,1)/REF(OPEN,1)<0.97 AND \n\

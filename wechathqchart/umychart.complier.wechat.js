@@ -5546,7 +5546,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.IndexData) return this.Execute.RunNextJob();
 
         var self=this;
-        if (this.Period<=3)     //请求日线数据
+        if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
         {
             wx.request({
                 url: self.KLineApiUrl,
@@ -5570,7 +5570,7 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             });
         }
-        else            //请求分钟数据
+        else if (JSCommonData.ChartData.IsMinutePeriod(this.Period, true))          //请求分钟数据
         {
             wx.request({
                 url: self.MinuteKLineApiUrl,
@@ -5594,7 +5594,6 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             });
         }
-
     }
 
     this.RecvIndexHistroyData=function(recvData)
@@ -5607,13 +5606,13 @@ function JSSymbolData(ast,option,jsExecute)
         this.IndexData.DataType=0; /*日线数据 */
         this.IndexData.Data=hisData;
 
-        var aryOverlayData=this.Data.GetOverlayData(this.IndexData.Data);      //和主图数据拟合以后的数据
+        var aryOverlayData = this.SourceData.GetOverlayData(this.IndexData.Data);      //和主图数据拟合以后的数据
         this.IndexData.Data=aryOverlayData;
 
-        if (this.Period>0 && this.Period<=3)   //周期数据
+        if (JSCommonData.ChartData.IsDayPeriod(this.Period, false))   //周期数据
         {
             let periodData=this.IndexData.GetPeriodData(this.Period);
-            this.Data.Data=periodData;
+            this.IndexData.Data=periodData;
         }
     }
 
@@ -5627,7 +5626,7 @@ function JSSymbolData(ast,option,jsExecute)
         this.IndexData.DataType=1; /*分钟线数据 */
         this.IndexData.Data=hisData;
 
-        if (this.Period>=5)   //周期数据
+        if (JSCommonData.ChartData.IsMinutePeriod(this.Period, false))   //周期数据
         {
             let periodData=this.IndexData.GetPeriodData(this.Period);
             this.IndexData.Data=periodData;
@@ -5743,7 +5742,7 @@ function JSSymbolData(ast,option,jsExecute)
             return;
         }
 
-        if (this.Period<=3)     //请求日线数据
+        if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
         {
             wx.request({
                 url: self.KLineApiUrl,
@@ -5768,7 +5767,7 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             });
         }
-        else                //请求分钟数据
+        else if (JSCommonData.ChartData.IsMinutePeriod(this.Period, true))               //请求分钟数据
         {
             wx.request({
                 url: this.MinuteKLineApiUrl,
@@ -5813,7 +5812,7 @@ function JSSymbolData(ast,option,jsExecute)
             this.Data.Data=rightData;
         }
 
-        if (this.Period>0 && this.Period<=3)   //周期数据
+        if (JSCommonData.ChartData.IsDayPeriod(this.Period, false))   //周期数据
         {
             let periodData=this.Data.GetPeriodData(this.Period);
             this.Data.Data=periodData;
@@ -5834,7 +5833,7 @@ function JSSymbolData(ast,option,jsExecute)
         this.SourceData = new JSCommonData.ChartData;
         this.SourceData.Data = hisData;
 
-        if (this.Period>=5)   //周期数据
+        if (JSCommonData.ChartData.IsMinutePeriod(this.Period, false))   //周期数据
         {
             let periodData=this.Data.GetPeriodData(this.Period);
             this.Data.Data=periodData;
