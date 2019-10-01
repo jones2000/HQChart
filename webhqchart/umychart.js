@@ -10788,7 +10788,7 @@ function ChartTextLine()
     }
 }
 
-// 线段集合
+// 线段集合  支持横屏
 function ChartMultiLine()
 {
     this.newMethod=IChartPainting;   //派生
@@ -10796,12 +10796,14 @@ function ChartMultiLine()
     delete this.newMethod;
     
     this.Lines=[];   // [ {Point:[ {Index, Value }, ], Color: }, ] 
+    this.IsHScreen=false;
 
     this.Draw=function()
     {
         if (!this.IsShow) return;
         if (!this.Data || this.Data.length<=0) return;
 
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
         var xPointCount=this.ChartFrame.XPointCount;
         var offset=this.Data.DataOffset;
 
@@ -10836,6 +10838,7 @@ function ChartMultiLine()
 
     this.DrawLine=function(line)
     {
+        
         this.Canvas.strokeStyle=line.Color;
         for(var i in line.Point)
         {
@@ -10843,11 +10846,13 @@ function ChartMultiLine()
             if (i==0)
             {
                 this.Canvas.beginPath();
-                this.Canvas.moveTo(item.X,item.Y);
+                if (this.IsHScreen) this.Canvas.moveTo(item.Y,item.X);
+                else this.Canvas.moveTo(item.X,item.Y);
             }
             else
             {
-                this.Canvas.lineTo(item.X,item.Y);
+                if (this.IsHScreen) this.Canvas.lineTo(item.Y,item.X);
+                else this.Canvas.lineTo(item.X,item.Y);
             }
         }
         
@@ -10888,7 +10893,7 @@ function ChartMultiText()
     this.newMethod();
     delete this.newMethod;
 
-    this.Texts=[];  //[ {Index:, Value:, Text:, Color:, Font: } ]
+    this.Texts=[];  //[ {Index:, Value:, Text:, Color:, Font: , Baseline:} ]
     this.Font=g_JSChartResource.DefaultTextFont;
     this.Color=g_JSChartResource.DefaultTextColor;
 
@@ -10932,7 +10937,9 @@ function ChartMultiText()
                     this.Canvas.textAlign = 'left';
                     x=left;
                 }
-                this.Canvas.textBaseline = 'middle';
+                if (item.Baseline==1) this.Canvas.textBaseline='top';
+                else if (item.Baseline==2) this.Canvas.textBaseline='bottom';
+                else this.Canvas.textBaseline = 'middle';
                 this.Canvas.fillText(item.Text, x, y);
             }
         }
@@ -10963,16 +10970,17 @@ function ChartMultiText()
     }
 }
 
-// 图标集合
+// 图标集合 支持横屏
 function ChartMultiSVGIcon()
 {
     this.newMethod=IChartPainting;   //派生
     this.newMethod();
     delete this.newMethod;
 
-    this.Icon;  //[ {Index:, Value:, Symbol:, Color:, } ]
+    this.Icon;  //[ {Index:, Value:, Symbol:, Color:, Baseline:} ]
     this.Family;
     this.Color=g_JSChartResource.DefaultTextColor;
+    this.IsHScreen=false;
 
     this.Draw=function()
     {
@@ -10980,12 +10988,18 @@ function ChartMultiSVGIcon()
         if (!this.Data || this.Data.length<=0) return;
         if (!this.Family || !this.Icon) return;
 
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
         var xPointCount=this.ChartFrame.XPointCount;
         var offset=this.Data.DataOffset;
         var left=this.ChartBorder.GetLeft();
         var right=this.ChartBorder.GetRight();
         this.DataWidth=this.ChartFrame.DataWidth;
         this.DistanceWidth=this.ChartFrame.DistanceWidth;
+        if (this.IsHScreen)
+        {
+            left=this.ChartBorder.GetTop();
+            right=this.ChartBorder.GetBottom();
+        }
 
         var fontSize=(this.DataWidth+this.DistanceWidth)-2;
         if (fontSize<8) fontSize=8;
@@ -11010,17 +11024,28 @@ function ChartMultiSVGIcon()
                 if (x+textWidth/2>=right) 
                 {
                     this.Canvas.textAlign='right';
-                    x=right;
+                    x+=this.DataWidth/2;
                 }
                 else if (x-textWidth/2<left)
                 {
                     this.Canvas.textAlign = 'left';
-                    x=left;
+                    x-=this.DataWidth/2;
                 }
                 if (item.Baseline==1) this.Canvas.textBaseline='top';
                 else if (item.Baseline==2) this.Canvas.textBaseline='bottom';
                 else this.Canvas.textBaseline = 'middle';
-                this.Canvas.fillText(item.Symbol, x, y);
+                if (this.IsHScreen)
+                {
+                    this.Canvas.save(); 
+                    this.Canvas.translate(y, x);
+                    this.Canvas.rotate(90 * Math.PI / 180);
+                    this.Canvas.fillText(item.Symbol,0,0);
+                    this.Canvas.restore();
+                }
+                else
+                {
+                    this.Canvas.fillText(item.Symbol, x, y);
+                }
             }
         }
     }

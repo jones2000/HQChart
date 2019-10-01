@@ -5340,16 +5340,10 @@ function JSDraw(errorHandler,symbolData)
                 }
                 else if (bFirstPoint==true && bSecondPont==false)
                 {
-                    var bCondition=(condition[i]!=null &&condition[i]);     //条件1
                     var bCondition2=(condition2[i]!=null && condition2[i]); //条件2
+                    if (!bCondition2) continue;
 
-                    if (!bCondition && !bCondition2) continue;
-
-                    if(bCondition)
-                    {
-                        //lineCache.Start={ID:i, Value:data[i]};  //移动第1个点
-                    }
-                    else if (bCondition2)
+                    if (bCondition2)
                     {
                         bSecondPont=true;
                         lineCache.End={ID:i, Value:data2[i]};   //第2个点
@@ -8220,6 +8214,19 @@ function JSSymbolData(ast,option,jsExecute)
         return PERIOD_MAP[this.Period];
     } 
 
+    this.GetDrawNull=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for(let i in this.Data.Data)
+        {
+            result[i]=null;
+        }
+
+        return result;
+    }
+
 }
 
 //是否有是有效的数字
@@ -8576,7 +8583,9 @@ function JSExecute(ast,option)
 
         ['HYBLOCK',null],   //所属行业板块
         ['DYBLOCK',null],   //所属地域板块
-        ['GNBLOCK',null]    //所属概念
+        ['GNBLOCK',null],    //所属概念
+
+        ['DRAWNULL',null]
 
     ]);   
 
@@ -8751,6 +8760,9 @@ function JSExecute(ast,option)
                 return this.SymbolData.WEEK();
             case 'PERIOD':
                 return this.SymbolData.PERIOD();
+
+            case 'DRAWNULL':
+                return this.SymbolData.GetDrawNull();
         }
     }
 
@@ -8944,9 +8956,12 @@ function JSExecute(ast,option)
                         if (isExData==true) value.IsExData = true;
                         this.OutVarTable.push(value);
                     }
-                    else if (draw && color)
+                    else if (draw)  //画图函数
                     {
-                        this.OutVarTable.push({Name:draw.Name, Draw:draw, Color:color, Type:1});
+                        var outVar={Name:draw.Name, Draw:draw, Type:1};
+                        if (color) outVar.Color=color;
+                        if (lineWidth) outVar.LineWidth=lineWidth;
+                        this.OutVarTable.push(outVar);
                     }
                     else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
                     {
@@ -8963,10 +8978,6 @@ function JSExecute(ast,option)
                         if (isShow==false) value.IsShow=false;
                         if (isExData==true) value.IsExData = true;
                         this.OutVarTable.push(value);
-                    }
-                    else if (draw)
-                    {
-                        this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
                     }
                 }
             }
