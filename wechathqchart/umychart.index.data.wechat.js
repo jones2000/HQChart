@@ -22,6 +22,25 @@
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
 */
 
+//周期条件枚举
+var CONDITION_PERIOD =
+{
+    MINUTE_ID: 101,            //分钟      走势图
+    MULTIDAY_MINUTE_ID: 102,   //多日分钟  走势图
+    HISTORY_MINUTE_ID: 103,    //历史分钟  走势图
+
+    //K线周期
+    KLINE_DAY_ID: 0,
+    KLINE_WEEK_ID: 1,
+    KLINE_MONTH_ID: 2,
+    KLINE_YEAR_ID: 3,
+    KLINE_MINUTE_ID: 4,
+    KLINE_5_MINUTE_ID: 5,
+    KLINE_15_MINUTE_ID: 6,
+    KLINE_30_MINUTE_ID: 7,
+    KLINE_60_MINUTE_ID: 8
+};
+
 function JSIndexScript()
 {
 
@@ -58,7 +77,7 @@ JSIndexScript.prototype.Get=function(id)
             ['SG-XDT', this.SG_XDT], ['SG-SMX', this.SG_SMX], ['SG-LB', this.SG_LB], ['SG-PF', this.SG_PF],
             ['RAD', this.RAD], ['SHT', this.SHT], ['ZLJC', this.ZLJC], ['ZLMM', this.ZLMM], ['SLZT', this.SLZT],
             ['ADVOL', this.ADVOL], ['CYC', this.CYC], ['CYS', this.CYS], ['CYQKL', this.CYQKL],
-            ['SCR', this.SCR], ['ASR', this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],
+            ['SCR', this.SCR], ['ASR', this.ASR], ['SAR', this.SAR], ['TJCJL', this.TJCJL], ['量比', this.VOLRate],
 
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
             ['操盘BS点', this.FXG_BSPoint],
@@ -1780,6 +1799,19 @@ STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05 AND CROSS(C6,C) AND V>
     return data;
 }
 
+JSIndexScript.prototype.VOLRate = function () 
+{
+    let data =
+    {
+        Name: '量比', Description: '量比', IsMainIndex: false, Condition: { Period: [CONDITION_PERIOD.MINUTE_ID, CONDITION_PERIOD.MULTIDAY_MINUTE_ID] },
+        Args: [],
+        Script: //脚本
+            "LIANGBI:VOLR;"
+    };
+
+    return data;
+}
+
 /*
     飞龙四式-主图
 */
@@ -2866,7 +2898,13 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                'VAR2:PERIOD;'
+                //'VAR2:WEEK;'+
+                //'T1:INDEXC;'+
+                //'T2:=HYBLOCK;'
+
+                'B1:= WEEK = 1;'+
+                'S1:= WEEK = 5;'+
+                'DRAWLINE(B1, L, S1, H,0), COLORBLACK, LINETHICK4;'
         };
 
     return data;

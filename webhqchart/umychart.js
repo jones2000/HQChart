@@ -30854,7 +30854,18 @@ function KLineRightMenu(divElement)
                 text: "分笔",Value:10,
                 click: function () { chart.ChangePeriod(10); }
             },
-            
+            {
+                text: "自定义周期:3分钟",Value:20003,
+                click: function () { chart.ChangePeriod(20003); }
+            },
+            {
+                text: "自定义周期:35分钟",Value:20035,
+                click: function () { chart.ChangePeriod(20035); }
+            },
+            {
+                text: "自定义周期:8日",Value:40008,
+                click: function () { chart.ChangePeriod(40008); }
+            }
         ];
 
         for(var i in data)

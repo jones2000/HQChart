@@ -690,6 +690,7 @@ function Node()
     this.IsNeedMarginData = new Set();
     this.IsNeedNewsAnalysisData = new Set();      //新闻统计数据
     this.IsNeedBlockIncreaseData = new Set();     //是否需要市场涨跌股票数据统计
+    this.IsNeedSymbolExData = new Set();          //下载股票行情的其他数据
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -725,6 +726,12 @@ function Node()
             jobs.push({ID:jobID});
         }
 
+        //行情其他数据
+        for (var jobID of this.IsNeedSymbolExData) 
+        {
+            jobs.push({ ID:jobID });
+        }
+
         return jobs;
     }
 
@@ -742,6 +749,18 @@ function Node()
         {
             this.IsNeedSymbolData=true;
             return;
+        }
+
+        if (varName === 'VOLR') 
+        {
+            if (!this.IsNeedSymbolExData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA))
+                this.IsNeedSymbolExData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA);
+        }
+
+        if (varName == 'HYBLOCK' || varName == 'DYBLOCK' || varName == 'GNBLOCK') 
+        {
+            if (!this.IsNeedSymbolExData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA))
+                this.IsNeedSymbolExData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA);
         }
 
         //流通股本（手）
@@ -898,7 +917,6 @@ function JSParser(code)
         ')': 0,
         ';': 0,
         ',': 0,
-        '=': 0,
         ']': 0,
         '||': 1,
         'OR':1,
@@ -907,6 +925,7 @@ function JSParser(code)
         '|': 3,
         '^': 4,
         '&': 5,
+        '=': 6,
         '==': 6,
         '!=': 6,
         '<>': 6,
@@ -974,7 +993,7 @@ function JSParser(code)
         if (this.LookAhead.Type!=7 /*Punctuator*/) return false;
         let op=this.LookAhead.Value;
 
-        return op=='=' || op==':' || op==':=';
+        return op==':' || op==':=';
     }
 
     this.GetTokenRaw=function(token)
@@ -5045,54 +5064,29 @@ function JSDraw(errorHandler, symbolData)
                 }
                 else if (bFirstPoint==true && bSecondPont==false)
                 {
-                    var bCondition=(condition[i]!=null &&condition[i]);     //条件1
                     var bCondition2=(condition2[i]!=null && condition2[i]); //条件2
+                    if (!bCondition2) continue;
 
-                    if (!bCondition && !bCondition2) continue;
-
-                    if(bCondition)
-                    {
-                        lineCache.Start={ID:i, Value:data[i]};  //移动第1个点
-                    }
-                    else if (bCondition2)
+                    if (bCondition2)
                     {
                         bSecondPont=true;
                         lineCache.End={ID:i, Value:data2[i]};   //第2个点
                     }
                 }
-                else if (bFirstPoint==true && bSecondPont==true)    //2个点都有了, 等待下一次的点出现
+                
+                if (bFirstPoint==true && bSecondPont==true)    //2个点都有了, 等待下一次的点出现
                 {
-                    var bCondition=(condition[i]!=null &&condition[i]);     //条件1
-                    var bCondition2=(condition2[i]!=null && condition2[i]); //条件2
+                    let lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
 
-                    if(bCondition)
+                    for(let j in lineData)
                     {
-                        let lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
-
-                        for(let j in lineData)
-                        {
-                            let item=lineData[j];
-                            drawData[item.ID]=item.Value;
-                        }
-
-                        bFirstPoint=bSecondPont=false;
-                        lineCache={Start:{ },End:{ }};
+                        let item=lineData[j];
+                        drawData[item.ID]=item.Value;
                     }
-                    else if (bCondition2)
-                    {
-                        lineCache.End={ID:i, Value:data2[i]};   //移动第2个点
-                    }
+
+                    bFirstPoint=bSecondPont=false;
+                    lineCache={Start:{ },End:{ }};
                 }
-            }
-        }
-
-        if (bFirstPoint==true && bSecondPont==true)     //最后一组数据
-        {
-            let lineData=this.CalculateDrawLine(lineCache);     
-            for(let j in lineData)
-            {
-                let item=lineData[j];
-                drawData[item.ID]=item.Value;
             }
         }
 
@@ -5444,7 +5438,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.MarginData = new Map();  //融资融券
     this.NewsAnalysisData = new Map();    //新闻统计
     this.ExtendData = new Map();          //其他的扩展数据
-    
+    this.NetworkFilter;                   //网络请求回调 function(data, callback);
    
     //使用option初始化
     if (option)
@@ -5467,6 +5461,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.MaxReqeustDataCount>0) this.MaxReqeustDataCount=option.MaxReqeustDataCount;
         if (option.MaxRequestMinuteDayCount>0) this.MaxRequestMinuteDayCount=option.MaxRequestMinuteDayCount;
         if (option.KLineApiUrl) this.KLineApiUrl=option.KLineApiUrl;
+        if (option.NetworkFilter) this.NetworkFilter = option.NetworkFilter;
     }
 
     //最新行情
@@ -5539,6 +5534,166 @@ function JSSymbolData(ast,option,jsExecute)
                 return null;
         }
     }
+
+    this.GetVolRateData = function (job, node) {
+        var volrKey = job.ID.toString() + '-VolRate-' + this.Symbol;
+        if (this.ExtendData.has(volrKey)) return this.Execute.RunNextJob();
+
+        var self = this;
+        wx.request({
+            url: self.RealtimeApiUrl,
+            data:
+            {
+                "field": ["name", "symbol", "avgvol5", 'date'],
+                "symbol": [this.Symbol]
+            },
+            method: "POST",
+            dataType: "json",
+            async: true,
+            success: function (recvData) 
+            {
+                self.RecvVolRateData(recvData, volrKey);
+                self.Execute.RunNextJob();
+            },
+            error: function (request) 
+            {
+                self.RecvError(request);
+            }
+        });
+    }
+
+    this.RecvVolRateData = function (recvData, key) 
+    {
+        var data=recvData.data;
+        if (!data.stock || data.stock.length != 1) return;
+        var avgVol5 = data.stock[0].avgvol5;
+        var date = data.stock[0].date;
+        var item = { AvgVol5: avgVol5, Date: date };
+        this.ExtendData.set(key, item);
+
+        console.log('[JSSymbolData::RecvVolRateData]', item);
+    }
+
+    this.GetVolRateCacheData = function (node) 
+    {
+        var key = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA.toString() + '-VolRate-' + this.Symbol;
+        if (!key || !this.ExtendData.has(key)) this.Execute.ThrowUnexpectedNode(node, '不支持VOLR');
+
+        var result = [];
+        var value = this.ExtendData.get(key);
+        var avgVol5 = value.AvgVol5 / 241;
+        var totalVol = 0;
+        //5日成交总量只取了最新一天的,历史的暂时没有取,所以数据计算的时候只计算最新的一天, 其他都空
+        for (var i = 0, j = 0; i < this.Data.Data.length; ++i) 
+        {
+            result[i] = null;
+            var item = this.Data.Data[i];
+            var dateTime = item.DateTime; //日期加时间
+            if (!dateTime) continue;
+            var aryValue = dateTime.split(' ');
+            if (aryValue.length != 2) continue;
+            var date = parseInt(aryValue[0]);
+            if (date != value.Date) continue;
+
+            totalVol += item.Vol;
+            if (avgVol5 > 0) result[i] = totalVol / (j + 1) / avgVol5 * 100;
+            ++j;
+        }
+
+        return result;
+    }
+
+    this.GetGroupData = function (job) 
+    {
+        var key = job.ID.toString() + '-Group-' + this.Symbol;
+        if (this.ExtendData.has(key)) return this.Execute.RunNextJob();
+
+        var self = this;
+
+        if (this.NetworkFilter) {
+            var obj =
+            {
+                Name: 'JSSymbolData::GetGroupData', //类名::
+                Explain: 'HYBLOCK|DYBLOCK',
+                Request: {
+                    Url: self.RealtimeApiUrl, Type: 'POST',
+                    Data: { symbol: [this.Symbol], field: ["name", "symbol", "industry", 'concept', 'region'] }
+                },
+                Self: this,
+                PreventDefault: false
+            };
+            this.NetworkFilter(obj, function (data) {
+                self.RecvGroupData(data, key);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+
+        wx.request({
+            url: self.RealtimeApiUrl,
+            data:
+            {
+                "field": ["name", "symbol", "industry", 'concept', 'region'],
+                "symbol": [this.Symbol]
+            },
+            method: 'POST',
+            dataType: "json",
+            async: true,
+            success: function (recvData) 
+            {
+                self.RecvGroupData(recvData, key);
+                self.Execute.RunNextJob();
+            },
+            error: function (request) 
+            {
+                self.RecvError(request);
+            }
+        });
+    }
+
+    this.RecvGroupData = function (recvData, key) 
+    {
+        var data = recvData.data;
+        if (!data.stock) return;
+        if (data.stock.length != 1) return;
+        var stock = data.stock[0];
+        var industry = stock.industry;
+        var concept = stock.concept;
+        var region = stock.region;
+
+        var groupData = { Industry: [], Concept: [], Region: [] };
+        if (industry) 
+        {
+            for (var i in industry) 
+            {
+                var item = industry[i];
+                groupData.Industry.push({ Name: item.name, Symbol: item.symbol });
+            }
+        }
+
+        if (concept) 
+        {
+            for (var i in concept) 
+            {
+                var item = concept[i];
+                groupData.Concept.push({ Name: item.name, Symbol: item.symbol });
+            }
+        }
+
+        if (region) 
+        {
+            for (var i in region) 
+            {
+                var item = region[i];
+                groupData.Region.push({ Name: item.name, Symbol: item.symbol });
+            }
+        }
+
+        this.ExtendData.set(key, groupData);
+    }
+
 
     //获取大盘指数数据
     this.GetIndexData=function()
@@ -5890,6 +6045,21 @@ function JSSymbolData(ast,option,jsExecute)
         let result=[];
         for(let i=lCount-1;i>=0;--i)
             result.push(i);
+
+        return result;
+    }
+
+    this.GetIsLastBar = function () 
+    {
+        let result = [];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result
+
+        let lCount = this.Data.Data.length;
+        for (let i = 0; i < lCount; ++i) 
+        {
+            if (i == lCount - 1) result.push(1);
+            else result.push(0);
+        }
 
         return result;
     }
@@ -6739,13 +6909,74 @@ function JSSymbolData(ast,option,jsExecute)
     SETCODE 市场类型
     0:深圳 1:上海,47:中金所期货 28:郑州商品 29:大连商品 30:上海商品,27:香港指数 31:香港主板,48:香港创业板... 
     */
-   this.SETCODE=function()
-   {
-       if (this.Symbol.indexOf('.sh')) return 1;
-       if (this.Symbol.indexOf('.sz')) return 0;
+    this.SETCODE=function()
+    {
+        if (this.Symbol.indexOf('.sh')) return 1;
+        if (this.Symbol.indexOf('.sz')) return 0;
 
-       return 0;
-   }
+        return 0;
+    }
+
+    this.GetSymbol = function () { return this.Symbol; }
+
+    this.GetName = function () { return this.Name; }
+
+    this.GetIndustry = function () //行业
+    {
+        var key = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA.toString() + '-Group-' + this.Symbol;
+        if (!this.ExtendData.has(key)) return '';
+
+        var group = this.ExtendData.get(key);
+        if (!group.Industry || group.Industry.length <= 0) return '';
+
+        var result = '';
+        for (var i in group.Industry) 
+        {
+            var item = group.Industry[i];
+            if (result.length > 0) result += ' ';
+            result += item.Name;
+        }
+
+        return result;
+    }
+
+    this.GetRegion = function ()    //地区
+    {
+        var key = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA.toString() + '-Group-' + this.Symbol;
+        if (!this.ExtendData.has(key)) return '';
+
+        var group = this.ExtendData.get(key);
+        if (!group.Region || group.Region.length <= 0) return '';
+
+        var result = '';
+        for (var i in group.Region) 
+        {
+            var item = group.Region[i];
+            if (result.length > 0) result += ' ';
+            result += item.Name;
+        }
+
+        return result;
+    }
+
+    this.GetConcept = function () //概念
+    {
+        var key = JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA.toString() + '-Group-' + this.Symbol;
+        if (!this.ExtendData.has(key)) return '';
+
+        var group = this.ExtendData.get(key);
+        if (!group.Concept || group.Concept.length <= 0) return '';
+
+        var result = '';
+        for (var i in group.Concept) 
+        {
+            var item = group.Concept[i];
+            if (result.length > 0) result += ' ';
+            result += item.Name;
+        }
+
+        return result;
+    }
 
     this.DATE = function () 
     {
@@ -6795,6 +7026,33 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
+    //星期 1-7
+    this.WEEK = function ()
+     {
+        var result = [];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        var tempDate = new Date();
+        for (let i in this.Data.Data) 
+        {
+            var item = this.Data.Data[i];
+            result[i] = null;
+            if (!this.IsNumber(item.Date)) continue;
+
+            var year = parseInt(item.Date / 10000);
+            var month = parseInt(item.Date % 10000 / 100);
+            var day = item.Date % 100;
+
+            tempDate.setFullYear(year);
+            tempDate.setMonth(month - 1);
+            tempDate.setDate(day);
+
+            result[i] = tempDate.getDay();
+        }
+
+        return result;
+    }
+
     this.REFDATE = function (data, date) 
     {
         var result = null;
@@ -6816,10 +7074,26 @@ function JSSymbolData(ast,option,jsExecute)
     //用法:结果从0到11,依次分别是1/5/15/30/60分钟,日/周/月,多分钟,多日,季,年
     this.PERIOD=function()
     {
-        //Period周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
-        const PERIOD_MAP=[5,6,7,11, 0,1,2,3,4,5];
-        return PERIOD_MAP[this.Period];
+        //Period周期 0=日线 1=周线 2=月线 3=年线 9=季线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+        const PERIOD_MAP=[5,6,7,11, 0,1,2,3,4,5, 9];
+        if (this.Period >= 0 && this.Period <= PERIOD_MAP.length - 1)
+            return PERIOD_MAP[this.Period];
+        
+        return this.Period;
     } 
+
+    this.GetDrawNull = function () 
+    {
+        var result = [];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for (let i in this.Data.Data) 
+        {
+            result[i] = null;
+        }
+
+        return result;
+    }
 }
 
 //是否有是有效的数字
@@ -6892,6 +7166,8 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_INDEX_DATA:2,  //下载大盘的K线数据
     JOB_DOWNLOAD_SYMBOL_LATEST_DATA:3,  //最新的股票行情数据
     JOB_DOWNLOAD_INDEX_INCREASE_DATA: 4, //涨跌股票个数统计数据
+    JOB_DOWNLOAD_VOLR_DATA: 5,           //5日量比均量下载量比数据
+    JOB_DOWNLOAD_GROUP_DATA: 6,          //所属行业|地区|概念
 
     //财务函数
     JOB_DOWNLOAD_TOTAL_EQUITY_DATA: 100,          //总股本（万股）
@@ -6936,6 +7212,9 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_NEWS_ANALYSIS_COMPANYNEWS: 2007,          //官网新闻
     JOB_DOWNLOAD_NEWS_ANALYSIS_TOPMANAGERS: 2008,          //高管要闻
     JOB_DOWNLOAD_NEWS_ANALYSIS_PLEDGE: 2009,               //股权质押
+
+    JOB_CUSTOM_FUNCTION_DATA: 6000,       //自定义函数
+    JOB_CUSTOM_VARIANT_DATA: 6001,        //自定义变量
 
     JOB_RUN_SCRIPT:10000, //执行脚本
 
@@ -7024,21 +7303,29 @@ function JSExecute(ast,option)
     this.ConstVarTable=new Map([
         //个股数据
         ['CLOSE',null],['VOL',null],['OPEN',null],['HIGH',null],['LOW',null],['AMOUNT',null],
-        ['C',null],['V',null],['O',null],['H',null],['L',null],
+        ['C', null], ['V', null], ['O', null], ['H', null], ['L', null], ['VOLR', null],
 
         //日期类
-        ['DATE', null], ['YEAR', null], ['MONTH', null], ['PERIOD', null],
+        ['DATE', null], ['YEAR', null], ['MONTH', null], ['PERIOD', null], ['WEEK', null],
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
         ['INDEXADV', null], ['INDEXDEC', null],
 
+        ['CURRBARSCOUNT', null], //到最后交易日的周期数
+        ['ISLASTBAR', null],     //判断是否为最后一个周期
+        
+        ['CAPITAL', null],   //流通股本（手）
+        ['EXCHANGE', null],  //换手率
+        ['SETCODE', null],   //市场类型
+        ['CODE', null],      //品种代码
+        ['STKNAME', null],   //品种名称 
 
-        //到最后交易日的周期数
-        ['CURRBARSCOUNT',null],
-        //流通股本（手）
-        ['CAPITAL',null],
-        ['SETCODE', null]    
+        ['HYBLOCK', null],   //所属行业板块
+        ['DYBLOCK', null],   //所属地域板块
+        ['GNBLOCK', null],    //所属概念
+
+        ['DRAWNULL', null]   
     ]);   
 
     this.SymbolData=new JSSymbolData(this.AST,option,this);
@@ -7078,6 +7365,10 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetIndexIncreaseData(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA:
                 return this.SymbolData.GetLatestData();
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA:  //量比
+                return this.SymbolData.GetVolRateData(jobItem);
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA:
+                return this.SymbolData.GetGroupData(jobItem); //行业|概念|地区
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_TOTAL_EQUITY_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA:
@@ -7128,7 +7419,7 @@ function JSExecute(ast,option)
         }
     }
 
-    this.ReadSymbolData=function(name)
+    this.ReadSymbolData=function(name,node)
     {
         switch(name)
         {
@@ -7144,6 +7435,8 @@ function JSExecute(ast,option)
             case 'L':
             case 'AMOUNT':
                 return this.SymbolData.GetSymbolCacheData(name);
+            case 'VOLR':
+                return this.SymbolData.GetVolRateCacheData(node);
 
             //大盘数据
             case 'INDEXA':
@@ -7158,12 +7451,25 @@ function JSExecute(ast,option)
 
             case 'CURRBARSCOUNT':
                 return this.SymbolData.GetCurrBarsCount();
+            case 'ISLASTBAR':
+                return this.SymbolData.GetIsLastBar();
             case 'CAPITAL':
                 return this.SymbolData.GetFinanceCacheData(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA);
             case 'EXCHANGE':
                 return this.SymbolData.GetFinanceCacheData(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA);
             case 'SETCODE':
                 return this.SymbolData.SETCODE();
+
+            case 'CODE':
+                return this.SymbolData.GetSymbol();
+            case 'STKNAME':
+                return this.SymbolData.GetName();
+            case 'HYBLOCK':
+                return this.SymbolData.GetIndustry();
+            case 'DYBLOCK':
+                return this.SymbolData.GetRegion();
+            case 'GNBLOCK':
+                return this.SymbolData.GetConcept();
             
             case 'DATE':
                 return this.SymbolData.DATE();
@@ -7171,8 +7477,13 @@ function JSExecute(ast,option)
                 return this.SymbolData.YEAR();
             case 'MONTH':
                 return this.SymbolData.MONTH();
+            case 'WEEK':
+                return this.SymbolData.WEEK();
             case 'PERIOD':
                 return this.SymbolData.PERIOD();
+
+            case 'DRAWNULL':
+                return this.SymbolData.GetDrawNull();
         }
     }
 
@@ -7185,7 +7496,7 @@ function JSExecute(ast,option)
 
             if (data==null) //动态加载,用到再加载
             {
-                data=this.ReadSymbolData(name);
+                data=this.ReadSymbolData(name,node);
                 this.ConstVarTable.set(name,data);
             }
 
@@ -7352,9 +7663,12 @@ function JSExecute(ast,option)
                         if (isExData == true) value.IsExData = true;
                         this.OutVarTable.push(value);
                     }
-                    else if (draw && color)
+                    else if (draw)
                     {
-                        this.OutVarTable.push({Name:draw.Name, Draw:draw, Color:color, Type:1});
+                        var outVar = { Name: draw.Name, Draw: draw, Type: 1 };
+                        if (color) outVar.Color = color;
+                        if (lineWidth) outVar.LineWidth = lineWidth;
+                        this.OutVarTable.push(outVar);
                     }
                     else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
                     {
@@ -7600,6 +7914,7 @@ function JSExecute(ast,option)
                             value.Out=this.Algorithm.LTE(leftValue,rightValue);
                             break;
                         case '==':
+                        case '=':
                             value.Out=this.Algorithm.EQ(leftValue,rightValue);
                             break;
                         case '!=':

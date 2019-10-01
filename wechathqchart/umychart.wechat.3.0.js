@@ -12383,35 +12383,38 @@ function ScriptIndex(name, script, args, option)
     }
   }
 
-  this.ExecuteScript = function (hqChart, windowIndex, hisData) {
-    this.OutVar = [];
-    let self = this;
-    let param =
+    this.ExecuteScript = function (hqChart, windowIndex, hisData) 
     {
-      HQChart: hqChart,
-      WindowIndex: windowIndex,
-      HistoryData: hisData,
-      Self: this
-    };
+        this.OutVar = [];
+        let self = this;
+        let param =
+        {
+            HQChart: hqChart,
+            WindowIndex: windowIndex,
+            HistoryData: hisData,
+            Self: this
+        };
 
-    let hqDataType = 0;   //默认K线
-    if (hqChart.ClassName === 'MinuteChartContainer') hqDataType = 2;   //分钟数据
-    let option =
-    {
-      HQDataType: hqDataType,
-      Symbol: hqChart.Symbol,
-      Data: hisData,
-      SourceData: hqChart.SourceData, //原始数据
-      Callback: this.RecvResultData, CallbackParam: param,
-      Async: true,
-      MaxReqeustDataCount: hqChart.MaxReqeustDataCount,
-      MaxRequestMinuteDayCount: hqChart.MaxRequestMinuteDayCount,
-      Arguments: this.Arguments
-    };
+        let hqDataType = 0;   //默认K线
+        if (hqChart.ClassName === 'MinuteChartContainer') hqDataType = 2;   //分钟数据
+        let option =
+        {
+            HQDataType: hqDataType,
+            Symbol: hqChart.Symbol,
+            Data: hisData,
+            SourceData: hqChart.SourceData, //原始数据
+            Callback: this.RecvResultData, CallbackParam: param,
+            Async: true,
+            MaxReqeustDataCount: hqChart.MaxReqeustDataCount,
+            MaxRequestMinuteDayCount: hqChart.MaxRequestMinuteDayCount,
+            Arguments: this.Arguments
+        };
 
-    let code = this.Script;
-    let run = JSCommonComplier.JSComplier.Execute(code, option, hqChart.ScriptErrorCallback);
-  }
+        if (hqChart.NetworkFilter) option.NetworkFilter = hqChart.NetworkFilter;
+
+        let code = this.Script;
+        let run = JSCommonComplier.JSComplier.Execute(code, option, hqChart.ScriptErrorCallback);
+    }
 
     this.RecvResultData = function (outVar, param) 
     {
