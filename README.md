@@ -35,6 +35,7 @@
 --umychart_indexapi nodejs指标后台计算demo (包括docker打包文件)
 
 # npm 安装
+npm install jquery <br>
 npm install hqchart <br>
 [https://www.npmjs.com/package/hqchart](https://www.npmjs.com/package/hqchart) <br>
 VUE 例子:[demo-vue.md](/教程/demo-vue.md) <br>
