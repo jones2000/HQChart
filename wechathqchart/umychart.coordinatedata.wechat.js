@@ -884,4 +884,6 @@ module.exports =
         MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
         GetfloatPrecision: GetfloatPrecision,
     },
+
+    JSCommonCoordinateData_MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
 };
