@@ -30,7 +30,13 @@ export default
                 Windows:        //指定指标
                 [
                     //{ Index: "KDJ" }
-                ] 
+                ] ,
+                MinuteLine:
+                {
+                    //IsDrawAreaPrice:false,        //是否画价格面积图
+                    //IsShowLead:false,             //是否显示领先指标
+                    //SplitType:1,                  //0=默认值最大最小值 1=涨跌停作为最大最小值
+                },
             },
             Option2:
             {

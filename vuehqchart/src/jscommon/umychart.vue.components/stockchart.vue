@@ -222,6 +222,7 @@ export default
             if (option.Windows) this.Option.Windows=option.Windows;
             if (ObjectHelper.IsPlusNumber(option.DayCount>0)) this.Option.DayCount=option.DayCount;
             if (ObjectHelper.IsObjectExist(option.IsShowCorssCursorInfo)) this.Option.IsShowCorssCursorInfo=option.IsShowCorssCursorInfo;   //十字光标
+            if (option.MinuteLine) this.Option.MinuteLine=option.MinuteLine;
         },
 
         SetHistoryMinuteOption:function(option)
