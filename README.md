@@ -102,6 +102,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![领先指标](/小程序行情模块用例/image/hqchart_kline_lock3.png)
 * 支持信息地雷 <br>
 ![信息地雷](/小程序行情模块用例/image/hqchart_minute_info.png)
+* 支持涨停坐标 <br>
 
 # 3. 网页demo  <br>
 * [K线图](https://opensource.zealink.com/hqweb/demo/phone7.html)  <br>
