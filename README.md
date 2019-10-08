@@ -176,6 +176,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 3. [HQChart使用教程29-走势图如何对接第3方数据3-多日分时数据](https://blog.csdn.net/jones2000/article/details/100150842) <br>
 4. [HQChart使用教程29-走势图如何对接第3方数据4-叠加股票分时数据](https://blog.csdn.net/jones2000/article/details/100167703) <br>
 5. [HQChart使用教程29-走势图如何对接第3方数据4-异动提示信息](https://blog.csdn.net/jones2000/article/details/100516071) <br>
+6. [HQChart使用教程29-走势图如何对接第3方数据5-指标数据](https://blog.csdn.net/jones2000/article/details/102426337) <br>
 
 ## 第3方数据前端接入教程(K线图)
 1. [HQChart使用教程30-K线图如何对接第3方数据1](https://blog.csdn.net/jones2000/article/details/100181279) <br>
@@ -222,3 +223,6 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 # QQ交流群(950092318) 
 有bug,问题,新的功能需求都可以在QQ群里提 <br>
 ![QQ群](/小程序行情模块用例/image/qqcode.png)
+
+# 赞助
+![微信二维码](https://opensourcecache.zealink.com/jones/IMG_2563.JPG)

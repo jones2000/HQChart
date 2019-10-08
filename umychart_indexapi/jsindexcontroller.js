@@ -118,7 +118,7 @@ function JSIndexController(req,res,next)
 
         if (postData.period>0) this.Period=parseInt(postData.period); //周期
         if (postData.right>0) this.Right=parseInt(postData.right);    //复权
-        if (postData.HQDataType>0) this.HQDataType=parseInt(postData.HQDataType);
+        if (postData.hqdatatype>0) this.HQDataType=parseInt(postData.hqdatatype);
         if (postData.daycount>0) this.DayCount=parseInt(postData.daycount);
 
         return true;

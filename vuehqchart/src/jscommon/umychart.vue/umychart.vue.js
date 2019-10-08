@@ -47950,9 +47950,9 @@ function APIScriptIndex(name,script,args,option)
         var postData =
         { 
             indexname:this.Name,  symbol: hqChart.Symbol, script:this.Script, args:args,
-            period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount, HQDataType: hqDataType
+            period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount, hqdatatype: hqDataType
         };
-        if (hqDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) postData.daycount=hqChart.DayCount;
+        if (hqDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID || hqDataType==HQ_DATA_TYPE.MINUTE_ID) postData.daycount=hqChart.DayCount;
         this.HQDataType=hqDataType;
 
         if (hqChart.NetworkFilter)
