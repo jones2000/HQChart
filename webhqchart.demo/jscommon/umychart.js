@@ -5637,6 +5637,8 @@ function ChartData()
     {
         if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)
             return this.GetDayCustomPeriodData(period-CUSTOM_DAY_PERIOD_START);
+        
+        var isBit=MARKET_SUFFIX_NAME.IsBIT(this.Symbol);
 
         var result=new Array();
         var index=0;
@@ -5650,11 +5652,23 @@ function ChartData()
             switch(period)
             {
                 case 1: //周线
-                    var fridayDate=ChartData.GetFirday(dayData.Date);
-                    if (fridayDate!=startDate)
+                    if (isBit)  //数字货币全年的
                     {
-                        isNewData=true;
-                        startDate=fridayDate;
+                        var sundayDate=ChartData.GetSunday(dayData.Date);
+                        if (sundayDate!=startDate)
+                        {
+                            isNewData=true;
+                            startDate=sundayDate;
+                        }
+                    }
+                    else
+                    {
+                        var fridayDate=ChartData.GetFirday(dayData.Date);
+                        if (fridayDate!=startDate)
+                        {
+                            isNewData=true;
+                            startDate=fridayDate;
+                        }
                     }
                     break;
                 case 2: //月线
@@ -6461,6 +6475,25 @@ ChartData.GetFirday=function(value)
     var week=date.getDay();
     return fridayDate;
 
+}
+
+ChartData.GetSunday=function(value)
+{
+    var date=new Date(parseInt(value/10000),(value/100%100-1),value%100);
+    var day=date.getDay();
+    if (day==0) return value;
+
+    var timestamp=date.getTime();
+    if (day>0)
+    {
+        var prevTimestamp=(24*60*60*1000)*(7-day);
+        timestamp+=prevTimestamp;
+    }
+
+    date.setTime(timestamp);
+    var sundayDate= date.getFullYear()*10000+(date.getMonth()+1)*100+date.getDate();
+    var week=date.getDay();
+    return sundayDate;
 }
 
 ChartData.GetQuarter=function(value)
@@ -21391,6 +21424,7 @@ function KLineChartContainer(uielement)
         bindData.Period=this.Period;
         bindData.Right=this.Right;
         bindData.DataType=this.SourceData.DataType;
+        bindData.Symbol=this.Symbol;
 
         if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
         {
@@ -21878,6 +21912,9 @@ function KLineChartContainer(uielement)
     {
         if (!MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol)) return;  //A股股票有复权
         if (ChartData.IsTickPeriod(this.Period)) return;            //分笔没有复权
+        
+        var upperSymbol=this.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) return;
 
         if (right<0 || right>2) return;
 
@@ -31733,7 +31770,9 @@ function KLineRightMenu(divElement)
         }
         ];
 
-        if(MARKET_SUFFIX_NAME.IsSHSZIndex(chart.Symbol)){
+        var upperSymbol=chart.Symbol.toUpperCase();
+        if(MARKET_SUFFIX_NAME.IsSHSZIndex(chart.Symbol) || MARKET_SUFFIX_NAME.IsBIT(upperSymbol))
+        {
             dataList.splice(1,1);
         }
 

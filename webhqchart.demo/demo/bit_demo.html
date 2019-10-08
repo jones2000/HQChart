@@ -19,8 +19,12 @@
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
 
-    <script src='bit_demo_testdata.js'></script> <!--测试数据 全量数据 -->
-    <script src='bit_demo_testdata2.js'></script> <!--测试数据 增量数据 -->
+    <script src='bit_demo_testdata.js'></script> <!--测试数据 分钟线全量数据 -->
+    <script src='bit_demo_testdata2.js'></script> <!--测试数据 分钟线增量数据 -->
+
+    <script src='bit_demo_testdata3.js'></script> <!--测试数据 日线全量数据 -->
+    <script src='bit_demo_testdata4.js'></script> <!--测试数据 日线增量数据 -->
+    
     
     <script>
 
@@ -42,6 +46,7 @@
 
                 
                 Symbol:'BTCUSDT.BIT',
+                //Symbol:'600000.sh',
                 IsAutoUpdate:true,          //是自动更新数据
                 AutoUpdateFrequency:5000,   //数据更新频率
     
@@ -53,7 +58,7 @@
                 {
                     DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
                     Right:0,                    //复权 0 不复权 1 前复权 2 后复权
-                    Period:6,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
                     MaxReqeustDataCount:1000,   //数据个数
                     MaxRequestMinuteDayCount:10, //分钟数据取5天
                     PageSize:50,               //一屏显示多少数据
@@ -120,11 +125,17 @@
                 console.log('[NetworkFilter] data', data);
                 switch(data.Name)
                 {
-                    case 'KLineChartContainer::ReqeustHistoryMinuteData':   //全量数据下载
+                    case 'KLineChartContainer::ReqeustHistoryMinuteData':   //1分钟全量数据下载
                         this.RequestHistoryMinuteData(data, callback);
                         break;
-                    case 'KLineChartContainer::RequestMinuteRealtimeData':  //增量数据更新
+                    case 'KLineChartContainer::RequestMinuteRealtimeData':  //1分钟增量数据更新
                         this.RequestMinuteRealtimeData(data,callback);
+                        break;
+                    case 'KLineChartContainer::RequestHistoryData':     //日线全量数据下载
+                        this.RequestHistoryData(data,callback);
+                        break;
+                    case 'KLineChartContainer::RequestRealtimeData':    //日线增量数据更新
+                        this.RequestRealtimeData(data,callback);
                         break;
                 }
             }
@@ -198,6 +209,78 @@
                     yClose=item.close;
                     hqChartData.data.push(newItem);
                 }
+
+                callback(hqChartData);
+            }
+
+            this.RequestHistoryData=function(data,callback)
+            {
+                data.PreventDefault=true;
+                var self=this;
+                var symbol=data.Request.Data.symbol;
+
+                setTimeout(() => {
+                    self.RecvHistoryData(BIT_TEST_DATA3,callback); 
+                }, 200);
+            }
+
+            this.RecvHistoryData=function(data,callback)
+            {
+                var hqChartData={code:0, data:[]};
+                hqChartData.symbol='BTCUSDT.BIT';
+                hqChartData.name='BTCUSDT';
+
+                var yClose=null;
+                for(var i=data.data.length-1; i>=0; --i)
+                {
+                    var item=data.data[i];
+                    var timestamp = item.id;
+                    var dateTime = new Date();
+                    dateTime.setTime(timestamp * 1000);
+
+                    var date=dateTime.getFullYear()*10000+(dateTime.getMonth()+1)*100+dateTime.getDate();
+                    var time=dateTime.getHours()*100+dateTime.getMinutes();
+                    var newItem=[date,yClose, item.open, item.high, item.low, item.close, item.vol, item.amount];
+
+                    yClose=item.close;
+                    hqChartData.data.push(newItem);
+                }
+
+                callback(hqChartData);
+            }
+
+            this.RequestRealtimeData=function(data,callback)
+            {
+                data.PreventDefault=true;
+                var self=this;
+                var symbol=data.Request.Data.symbol;
+
+                setTimeout(() => {
+                    self.RecvRealtimeData(BIT_TEST_DATA4,callback); 
+                }, 200);
+            }
+
+            this.RecvRealtimeData=function(data,callback)
+            {
+                var stock={symbol:'BTCUSDT.BIT', name:'BTCUSDT'};
+                var hqChartData={code:0, stock:[stock]};
+
+                var item=data.data[0];   //取最新的一条更新
+                var timestamp = item.id;
+                var dateTime = new Date();
+                dateTime.setTime(timestamp * 1000);
+
+                var date=dateTime.getFullYear()*10000+(dateTime.getMonth()+1)*100+dateTime.getDate();
+                var time=dateTime.getHours()*100+dateTime.getMinutes();
+
+                stock.date=date;
+                stock.open=item.open;
+                stock.high=item.high;
+                stock.low=item.low;
+                stock.vol=item.vol;
+                stock.price=item.close;
+                stock.amount=item.amount;
+                //stock.yclose; 最好前收盘也要
 
                 callback(hqChartData);
             }
