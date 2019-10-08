@@ -2739,7 +2739,7 @@ function JSChartContainer(uielement)
         var postData={"Base64":imageData, "BucketName":"downloadcache", "Path":"hqchart/hq_snapshot"};
         var url=g_JSChartResource.Domain+'/API/FileUploadForBase64';
 
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: url,
             method: "POST",
             dataType: "json",
@@ -5785,6 +5785,27 @@ function ChartData()
     //周期数据 1=周 2=月 3=年
     this.GetPeriodData=function(period)
     {
+        if (MARKET_SUFFIX_NAME.IsBIT(this.Symbol))
+        {
+            if (period==5 || period==6 || period==7 || period==8 || (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)) //分钟K线
+            {
+                var periodDataCount = 5;
+                if (period == 5)
+                    periodDataCount = 5;
+                else if (period == 6)
+                    periodDataCount = 15;
+                else if (period == 7)
+                    periodDataCount = 30;
+                else if (period == 8)
+                    periodDataCount = 60;
+                else if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)
+                    periodDataCount=period-CUSTOM_MINUTE_PERIOD_START;
+
+                return this.GetMinuteCustomPeriodData(periodDataCount);
+            }
+        }
+
+
         if (period==1 || period==2 || period==3 || period==9 || (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)) return this.GetDayPeriodData(period);
         if (period==5 || period==6 || period==7 || period==8 || (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
     }
@@ -6366,6 +6387,54 @@ function ChartData()
         }
 
         return result;
+    }
+
+    this.MergeMinuteData=function(data) //合并数据
+    {
+        var firstItem=data[0];
+        var index=null;
+        for(var i=this.Data.length-1; i>=0;--i)
+        {
+            var date=this.Data[i].Date;
+            var time=this.Data[i].Time;
+
+            if (firstItem.Date>=date && firstItem.Time>=time)
+            {
+                index=i;
+                break;
+            }
+        }
+
+        if (index==null) return false;
+
+        for(var j=index,i=0;i<data.length-1;)
+        {
+            var item=data[i];
+            if (j>=this.Data.length-1)
+            {
+                var newItem=HistoryData.Copy(item);
+                this.Data[j]=newItem;
+                ++j;
+                ++i;
+            }
+            else
+            {
+                var oldItem=this.Data[j];
+                if (oldItem.Date==item.Date && oldItem.Time==item.Time) //更新数据
+                {
+                    ++j;
+                    ++i;
+                }
+                else
+                {
+                    ++j;
+                }
+            }
+        }
+
+        //console.log('[ChartData::MergeMinuteData] ', this.Data, data);
+
+        return true;
     }
 }
 
@@ -15025,7 +15094,7 @@ function HistoryDataStringFormat()
         var date=new Date(parseInt(data.Date/10000),(data.Date/100%100-1),data.Date%100);
         var strDate=IFrameSplitOperator.FormatDateString(data.Date);
         var title2=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],this.LanguageID);
-        if (ChartData.IsMinutePeriod(this.Value.ChartPaint.Data.Period)) // 分钟周期
+        if (ChartData.IsMinutePeriod(this.Value.ChartPaint.Data.Period,true)) // 分钟周期
         {
             var hour=parseInt(data.Time/100);
             var minute=data.Time%100;
@@ -15034,7 +15103,8 @@ function HistoryDataStringFormat()
             title2 = strHour + ":" + strMinute;
         }
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
-        var increase=(data.Close-data.YClose)/data.YClose*100;
+        var increase=null;
+        if (data.YClose>0) increase=(data.Close-data.YClose)/data.YClose*100;
         var strText=
             "<span class='tooltip-title'>"+strDate+"&nbsp&nbsp"+title2+"</span>"+
             "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Open',this.LanguageID)+"</span>"+
@@ -15051,7 +15121,8 @@ function HistoryDataStringFormat()
             "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Amount',this.LanguageID)+"</span>"+
             "<span class='tooltip-num' style='color:"+this.AmountColor+";'>"+IFrameSplitOperator.FormatValueString(data.Amount,2,this.LanguageID)+"</span><br/>"+
             "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Increase',this.LanguageID)+"</span>"+
-            "<span class='tooltip-num' style='color:"+this.GetColor(increase,0)+";'>"+increase.toFixed(2)+'%'+"</span><br/>";
+            (increase==null? "<span class='tooltip-num' style='color:"+this.GetColor(0,0)+";'>"+'--'+"</span><br/>" :
+            "<span class='tooltip-num' style='color:"+this.GetColor(increase,0)+";'>"+increase.toFixed(2)+'%'+"</span><br/>");
 
         this.LineCount=8;
         if(MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && data.FlowCapital>0)  //换手率
@@ -20731,7 +20802,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.KLineApiUrl,
             data:
             {
@@ -20769,6 +20840,7 @@ function KLineChartContainer(uielement)
         var sourceData=new ChartData();
         sourceData.Data=aryDayData;
         sourceData.DataType=0;      //0=日线数据 1=分钟数据
+        sourceData.Symbol=data.symbol;
 
         //显示的数据
         var bindData=new ChartData();
@@ -20776,6 +20848,7 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.Period=this.Period;
         bindData.DataType=0;
+        bindData.Symbol=data.symbol;
 
         if (bindData.Right>0)    //复权
         {
@@ -20996,7 +21069,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.MinuteKLineApiUrl,
             data:
             {
@@ -21034,6 +21107,7 @@ function KLineChartContainer(uielement)
         var sourceData=new ChartData();
         sourceData.Data=aryDayData;
         sourceData.DataType=1;      //0=日线数据 1=分钟数据
+        sourceData.Symbol=data.symbol;
 
         //显示的数据
         var bindData=new ChartData();
@@ -21041,6 +21115,7 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.Period=this.Period;
         bindData.DataType=1; 
+        bindData.Symbol=data.symbol;
 
         if (ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
         {
@@ -21254,7 +21329,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.RealtimeApiUrl,
             data:
             {
@@ -21371,7 +21446,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.RealtimeApiUrl,
             data:
             {
@@ -21390,9 +21465,62 @@ function KLineChartContainer(uielement)
         });
     }
 
+    this.RecvMinuteRealtimeDataV2=function(data)    //新版本的
+    {
+        if (this.IsOnTouch==true) return;   //正在操作中不更新数据
+        var aryMinuteData=KLineChartContainer.JsonDataToMinuteHistoryData(data);
+        if (!aryMinuteData || aryMinuteData.length<=0) return;
+        var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
+
+        if (!this.SourceData.MergeMinuteData(aryMinuteData)) return;
+
+        console.log(`[KLineChartContainer::RecvMinuteRealtimeDataV2] update kline by 1 minute data [${lastDataCount}->${this.SourceData.Data.length}]`);
+
+        var bindData=new ChartData();
+        bindData.Data=this.SourceData.Data;
+        bindData.Period=this.Period;
+        bindData.Right=this.Right;
+        bindData.DataType=this.SourceData.DataType;
+        bindData.Symbol=this.Symbol;
+
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
+        {
+            var rightData=bindData.GetRightDate(bindData.Right);
+            bindData.Data=rightData;
+        }
+
+        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        {
+            var periodData=bindData.GetPeriodData(bindData.Period);
+            bindData.Data=periodData;
+        }
+
+        //绑定数据
+        this.UpdateMainData(bindData,lastDataCount);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            this.BindIndexData(i,bindData);
+        }
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+    }
+
     this.RecvMinuteRealtimeData=function(data)
     {
         if (this.IsOnTouch==true) return;   //正在操作中不更新数据
+        if (data.ver==2.0) 
+        {
+            this.RecvMinuteRealtimeDataV2(data);
+            return;
+        }
+
         if (!data.stock || !data.stock[0] || this.Symbol!=data.stock[0].symbol) return;
         var realtimeData=KLineChartContainer.JsonDataToMinuteRealtimeData(data);
         var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
@@ -21425,6 +21553,7 @@ function KLineChartContainer(uielement)
         bindData.Period=this.Period;
         bindData.Right=this.Right;
         bindData.DataType=this.SourceData.DataType;
+        bindData.Symbol=this.Symbol;
 
         if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
         {
@@ -21509,7 +21638,7 @@ function KLineChartContainer(uielement)
             }
         });
         */
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: cacheUrl,
             data:{"symbol":self.Symbol},
             type:"get",
@@ -21612,7 +21741,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: self.TickApiUrl,
             data:{"symbol":self.Symbol, start:start-10, end:start+1000 },
             type:"post",
@@ -22531,6 +22660,7 @@ function KLineChartContainer(uielement)
         bindData.Period=this.Period;
         bindData.Right=this.Right;
         bindData.DataType=this.SourceData.DataType;
+        bindData.Symbol=this.Symbol;
 
         if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
         {
@@ -22809,7 +22939,7 @@ function KLineChartContainer(uielement)
             }
 
             //请求数据
-            JSNetwork.HttpReqeust({
+            JSNetwork.HttpRequest({
                 url: this.KLineApiUrl,
                 data:
                 {
@@ -22960,6 +23090,12 @@ function KLineChartContainer(uielement)
     {
         if (!this.Symbol) return;
         if (this.FlowCapitalReady==true) return;
+        if (MARKET_SUFFIX_NAME.IsBIT(this.Symbol)) //数字货币不需要下载流通股本
+        {
+            console.log(`[KLineChartContainer::RequestFlowCapitalData] symbol=${this.Symbol} not need download data.`);
+            this.FlowCapitalReady=true;
+            return;
+        }
 
         var self = this;
         let fieldList=["name","date","symbol","capital.a"];
@@ -22983,7 +23119,7 @@ function KLineChartContainer(uielement)
         }
         
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.StockHistoryDayApiUrl,
             data:
             {
@@ -24642,7 +24778,7 @@ function MinuteChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: self.HistoryMinuteApiUrl,
             data:
             {
@@ -24793,7 +24929,7 @@ function MinuteChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
         
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: self.MinuteApiUrl,
             data:
             {
@@ -24947,7 +25083,7 @@ function MinuteChartContainer(uielement)
             }
 
             //请求数据
-            JSNetwork.HttpReqeust({
+            JSNetwork.HttpRequest({
                 url: self.HistoryMinuteApiUrl,
                 data:
                 {
@@ -25051,7 +25187,7 @@ function MinuteChartContainer(uielement)
                 if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
             }
 
-            JSNetwork.HttpReqeust({
+            JSNetwork.HttpRequest({
                 url: self.HistoryMinuteApiUrl,
                 data:{ "symbol": symbol, "days": days },
                 type:"post",
@@ -25681,7 +25817,7 @@ function HistoryMinuteChartContainer(uielement)
         var self=this;
         var url=this.HistoryMinuteApiUrl+this.TradeDate.toString()+"/"+this.Symbol+".json";
 
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: url,
             type:"get",
             dataType: "json",
@@ -25821,7 +25957,7 @@ function CustomKLineChartContainer(uielement)
         var self=this;
         this.ChartSplashPaint.IsEnableSplash = true;
         this.Draw();
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.CustomKLineApiUrl,
             data:
             {
@@ -27233,7 +27369,7 @@ function MarketLongShortIndex()
         }
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: g_JSChartResource.Index.MarketLongShortApiUrl,
             data:
             {
@@ -27382,7 +27518,7 @@ function MarketTimingIndex()
         }
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: g_JSChartResource.Index.MarketLongShortApiUrl,
             data:
             {
@@ -27538,7 +27674,7 @@ function MarketAttentionIndex()
         }
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.ApiUrl,
             data:
             {
@@ -27703,7 +27839,7 @@ function MarketHeatIndex()
         }
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.ApiUrl,
             data:
             {
@@ -27875,7 +28011,7 @@ function CustonIndexHeatIndex()
         }
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.ApiUrl,
             data:
             {
@@ -28047,7 +28183,7 @@ function BenfordIndex()
                         "or"]}
             ];
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.ApiUrl,
             data:
             {
@@ -28424,7 +28560,7 @@ function PyScriptIndex(name,script,args,option)
             });
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.ApiUrl,
             data:data,
             type:"post",
@@ -28898,7 +29034,7 @@ function InvestorInfo()
         this.Data=[];
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: g_JSChartResource.KLine.Info.Investor.ApiUrl,
             data:
             {
@@ -28962,7 +29098,7 @@ function AnnouncementInfo()
         if (this.ApiType==1)    //取缓存文件
         {
             var url=`${g_JSChartResource.CacheDomain}/cache/analyze/shszreportlist/${param.HQChart.Symbol}.json`;
-            JSNetwork.HttpReqeust({
+            JSNetwork.HttpRequest({
                 url: url,
                 type:"get",
                 dataType: "json",
@@ -28980,7 +29116,7 @@ function AnnouncementInfo()
         else    //取api
         {
             //请求数据
-            JSNetwork.HttpReqeust({
+            JSNetwork.HttpRequest({
                 url: g_JSChartResource.KLine.Info.Announcement.ApiUrl,
                 data:
                 {
@@ -29072,7 +29208,7 @@ function PforecastInfo()
         this.Data=[];
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: g_JSChartResource.KLine.Info.Pforecast.ApiUrl,
             data:
             {
@@ -29149,7 +29285,7 @@ function ResearchInfo()
         this.Data=[];
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: g_JSChartResource.KLine.Info.Research.ApiUrl,
             data:
             {
@@ -29213,7 +29349,7 @@ function BlockTrading()
         this.Data=[];
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: g_JSChartResource.KLine.Info.BlockTrading.ApiUrl,
             data:
             {
@@ -29295,7 +29431,7 @@ function TradeDetail()
         this.Data=[];
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: g_JSChartResource.KLine.Info.TradeDetail.ApiUrl,
             data:
             {
@@ -29421,7 +29557,7 @@ function MarketEventInfo()
         }
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: url,
             type:"get",
             dataType: "json",
@@ -29767,7 +29903,7 @@ function ChangeIndexDialog(divElement)
         }
         var url = this.IndexTreeApiUrl;
         if (this.IsOverlayIndex==true) url=this.OverlayIndexTreeApiUrl;
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: url,
             type: 'get',
             success: function (res) {
@@ -32248,6 +32384,13 @@ var MARKET_SUFFIX_NAME=
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
     USA:'.USA',          //美股
+    BIT:'.BIT',          //数字货币 如比特币
+
+    IsBIT:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.BIT) > 0;
+    },
 
     IsUSA:function(upperSymbol) //是否是美股
     {
@@ -32394,6 +32537,10 @@ var MARKET_SUFFIX_NAME=
             if (time>1730) return 3;
             if (time<930) return 1;
 
+            return 2;
+        }
+        else if (this.IsBIT(upperSymbol))   //数字货币24小时
+        {
             return 2;
         }
         else

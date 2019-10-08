@@ -6028,7 +6028,7 @@ function JSSymbolData(ast,option,jsExecute)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: self.RealtimeApiUrl,
             data:
             {
@@ -6189,7 +6189,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: self.RealtimeApiUrl,
             data:
             {
@@ -6283,7 +6283,7 @@ function JSSymbolData(ast,option,jsExecute)
                 if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
             }
 
-            JSNetwork.HttpReqeust({
+            JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
                 {
@@ -6330,7 +6330,7 @@ function JSSymbolData(ast,option,jsExecute)
                 if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
             }
 
-            JSNetwork.HttpReqeust({
+            JSNetwork.HttpRequest({
                 url: self.MinuteKLineApiUrl,
                 data:
                 {
@@ -6580,7 +6580,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (this.DataType===HQ_DATA_TYPE.MINUTE_ID)  //当天分钟数据
         {
-            JSNetwork.HttpReqeust({
+            JSNetwork.HttpRequest({
                 url: self.RealtimeApiUrl,
                 data:
                 {
@@ -6602,7 +6602,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
         {
-            JSNetwork.HttpReqeust({
+            JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
                 {
@@ -6627,7 +6627,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else if (ChartData.IsMinutePeriod(this.Period, true))               //请求分钟数据
         {
-            JSNetwork.HttpReqeust({
+            JSNetwork.HttpRequest({
                 url: this.MinuteKLineApiUrl,
                 data:
                 {
@@ -7763,7 +7763,7 @@ function JSSymbolData(ast,option,jsExecute)
         var cond=[fieldName+'.year', "int32", "eq", period.Year.toString() ];
 
         //请求数据
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: this.StockHistoryDayApiUrl,
             data:
             {
@@ -11039,7 +11039,7 @@ function APIScriptIndex(name,script,args,option)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        JSNetwork.HttpReqeust({
+        JSNetwork.HttpRequest({
             url: self.ApiUrl,
             data:{ indexname:this.Name,  symbol: hqChart.Symbol, script:this.Script, args:args, 
                 period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount }, 
