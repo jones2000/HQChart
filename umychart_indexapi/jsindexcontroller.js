@@ -49,6 +49,8 @@ function JSIndexController(req,res,next)
     this.IndexName;
     this.Script;            //脚本 
     this.Args=[];           //参数
+    this.HQDataType=HQChart.HQ_DATA_TYPE.KLINE_ID;
+    this.DayCount;
 
     this.ErrorMessage=null;      //脚本执行错误
     this.OutData;           //输出变量值 {outvar:[{name: , data:[] }], date:[], time:[] }
@@ -114,8 +116,10 @@ function JSIndexController(req,res,next)
         if (postData.maxdatacount>0) this.DataCount.MaxDataCount=postData.maxdatacount;
         if (postData.maxminutedaycount>0) this.DataCount.MaxMinuteDayCount=postData.maxminutedaycount;
 
-        if (postData.period>0) this.Period=postData.period; //周期
-        if (postData.right>0) this.Right=postData.right;    //复权
+        if (postData.period>0) this.Period=parseInt(postData.period); //周期
+        if (postData.right>0) this.Right=parseInt(postData.right);    //复权
+        if (postData.HQDataType>0) this.HQDataType=parseInt(postData.HQDataType);
+        if (postData.daycount>0) this.DayCount=parseInt(postData.daycount);
 
         return true;
     }
@@ -142,11 +146,13 @@ function JSIndexController(req,res,next)
 
         var stockObj=
         {
-            HQDataType:HQChart.HQ_DATA_TYPE.KLINE_ID,
+            HQDataType:this.HQDataType,
             Stock: {Symbol:this.Symbol},
             Request: this.DataCount,
             Period:this.Period , Right:this.Right
         };
+
+        if (this.HQDataType===HQChart.HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) stockObj.DayCount=this.DayCount;
 
         indexConsole.ExecuteScript(stockObj);
 
@@ -156,7 +162,7 @@ function JSIndexController(req,res,next)
     //执行脚本返回数据
     this.ExecuteFinish=function(data, jsExectute)  
     {
-        this.OutData={outvar:[]};
+        this.OutData={outvar:[], hqdatatype:this.HQDataType};
         this.OutData.date=data.Date;
         if(data.Time) this.OutData.time=data.Time;
         this.OutData.stock={ name:data.Stock.Name, symbol:data.Stock.Symbol };

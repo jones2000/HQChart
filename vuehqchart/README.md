@@ -56,6 +56,8 @@ npm install
 <script>
 
 import HQChart from 'hqchart'
+import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
+import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
 
 function DefaultData(){}
 
@@ -179,6 +181,8 @@ export default
 <script>
   
 import HQChart from 'hqchart'
+import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
+import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
 
 function DefaultData(){}
 

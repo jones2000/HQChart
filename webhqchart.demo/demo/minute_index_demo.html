@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>分时图接入第3方指标</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+
+    <script src="content/js/jquery.min.js"></script>
+    <script src="content/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <script>
+
+        //简单的把K线控件封装下
+        function KLineChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine);   //把K线图绑定到一个Div上
+            var self=this;
+            //K线配置信息
+            this.Option = 
+            {
+                Type:'分钟走势图',   //创建图形类型
+                
+                Windows: //窗口指标
+                [
+                    {
+                        Index:"自定义指标", 
+                        API: {Name:'自定义指标',Script:null, Args:null, Url:'http://127.0.0.1:18080/api/jsindex' }
+                    }    //窗口指标
+                ], 
+                
+                Symbol:'000001.sz',
+                IsAutoUpdate:true,              //是自动更新数据
+                DayCount:5,                     //1 最新交易日数据 >1 多日走势图
+                IsShowRightMenu:true,           //是否显示右键菜单
+    
+                MinuteLine:
+                {
+                    //IsDrawAreaPrice:false,      //是否画价格面积图
+                    //SplitType:1,                //0=默认值最大最小值 1=涨跌停作为最大最小值
+                },
+
+                Border: //边框
+                {
+                    Left:50,    //左边间距
+                    Right:50,     //右边间距
+                    Top:25,
+                    Bottom:50
+                },
+                
+                Frame:  //子框架设置
+                [
+                    {SplitCount:5},
+                    {SplitCount:3},
+                    {SplitCount:3},
+                ],
+
+                Overlay: //叠加股票 目前只支持1只股票
+                [
+                    //{Symbol:'000001.sh'}
+                ],
+
+                NetworkFilter:function(data, callback) { self.NetworkFilter(data, callback); } ,   //绑定网络协议回调
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                $(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
+
+                //var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                //JSChart.SetStyle(blackStyle);
+                //this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                this.OnSize();  //让K线全屏
+                this.Chart.SetOption(this.Option);  //设置K线配置
+            }
+
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height();
+                var width = $(window).width();
+                this.DivKLine.style.top='px';
+                this.DivKLine.style.left='px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                this.Chart.OnSize();
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[NetworkFilter] data', data);
+                switch(data.Name)
+                {
+                    case 'APIScriptIndex::ExecuteScript':   //指标执行
+                        this.RequestIndexData(data, callback);
+                        break;
+                }
+            }
+
+            this.RequestIndexData=function(data, callback)
+            {
+                var indexName=data.Request.Data.indexname;  //指标名字
+                data.PreventDefault=true;                   //由外部计算
+
+                var self=this;
+
+                setTimeout(() => {
+                    self.CalcualteIndex(data,callback); 
+                }, 200);
+               
+            }
+
+            this.CalcualteIndex=function(data, callback)    //计算指标
+            {
+                var symbol=data.Request.Data.symbol;    //股票代码
+                var sourceData=data.HQChart.SourceData; //HQChart里面的分钟数据
+
+                var outData={ outvar:[] };
+                var hqChartData={code:0, outdata:outData} ;
+
+                outData.date=sourceData.GetDate();  //日期
+                outData.time=sourceData.GetTime();  //时间
+
+                //计算指标数据
+                var outVariant={name: "收盘价", type: 0 , data:[] };   //输出变量 线段
+                for(var i in sourceData.Data)
+                {
+                    var item=sourceData.Data[i];
+                    outVariant.data[i]=item.Close;
+                }
+                outData.outvar.push(outVariant);
+
+                var outVariant2={name: "收盘价MA5", type: 0 , data:HQIndexFormula.MA(outVariant.data,5) };   //输出变量 线段
+                outData.outvar.push(outVariant2);
+
+                var outVariant3={name: "收盘价MA10", type: 0 , data:HQIndexFormula.MA(outVariant.data,10) };   //输出变量 线段
+                outData.outvar.push(outVariant3);
+
+                callback(hqChartData);
+            }
+
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+            var klineControl=new KLineChart(document.getElementById('kline'));
+            klineControl.Create();
+        })
+
+    </script>  
+</body>  
+</html>

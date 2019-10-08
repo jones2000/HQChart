@@ -521,6 +521,11 @@ function JSChart(divElement)
             {
                 chart.WindowIndex[2+parseInt(i)]=new ScriptIndex(item.Name,item.Script,item.Args);    //脚本执行
             }
+            else if (item.API)  //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
+            {
+                var apiItem=item.API;
+                chart.WindowIndex[2+parseInt(i)]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,item);
+            }
             else
             {
                 var indexItem=JSIndexMap.Get(item.Index);
@@ -5237,6 +5242,8 @@ function MinuteData()
     this.Risefall;
     this.AvPrice;
     this.Lead=null;
+    this.Time;
+    this.Date;
 }
 
 //单指标数据
@@ -20290,7 +20297,7 @@ function KLineChartContainer(uielement)
     this.StopAutoUpdate=function()
     {
         this.CancelAutoUpdate();
-        this.AutoUpdateEvent(false);
+        this.AutoUpdateEvent(false,'KLineChartContainer::StopAutoUpdate');
         if (!this.IsAutoUpdate) return;
         this.IsAutoUpdate=false;
     }
@@ -20778,14 +20785,14 @@ function KLineChartContainer(uielement)
         return paint;
     }
 
-    this.AutoUpdateEvent=function(bStart)   //自定更新事件, 是给websocket使用
+    this.AutoUpdateEvent=function(bStart, explain)   //自定更新事件, 是给websocket使用
     {
         var eventID=bStart ? JSCHART_EVENT_ID.RECV_START_AUTOUPDATE:JSCHART_EVENT_ID.RECV_STOP_AUTOUPDATE;
         if (!this.mapEvent.has(eventID)) return;
 
         var self=this;
         var event=this.mapEvent.get(eventID);
-        var data={ Stock:{ Symbol:this.Symbol, Name:this.Name, Right:this.Right, Period:this.Period  } };
+        var data={ Stock:{ Symbol:this.Symbol, Name:this.Name, Right:this.Right, Period:this.Period  }, Explain: explain };
         if (bStart) 
         {
             data.Callback=function(data) //数据到达更新回调
@@ -20827,7 +20834,7 @@ function KLineChartContainer(uielement)
                 }
                 else
                 {
-                    self.AutoUpdateEvent(true);
+                    self.AutoUpdateEvent(true,'KLineChartContainer::RequestHistoryData');
                     self.AutoUpdate();
                 }
             });
@@ -20858,7 +20865,7 @@ function KLineChartContainer(uielement)
                 }
                 else
                 {
-                    self.AutoUpdateEvent(true);
+                    self.AutoUpdateEvent(true,'KLineChartContainer::RequestHistoryData');
                     self.AutoUpdate();
                 }
             }
@@ -21094,7 +21101,7 @@ function KLineChartContainer(uielement)
                 }
                 else
                 {
-                    self.AutoUpdateEvent(true);
+                    self.AutoUpdateEvent(true,'KLineChartContainer::ReqeustHistoryMinuteData');
                     self.AutoUpdate();
                 }
             });
@@ -21125,7 +21132,7 @@ function KLineChartContainer(uielement)
                 }
                 else 
                 {
-                    self.AutoUpdateEvent(true);
+                    self.AutoUpdateEvent(true,'KLineChartContainer::ReqeustHistoryMinuteData');
                     self.AutoUpdate();
                 }
             }
@@ -21888,7 +21895,7 @@ function KLineChartContainer(uielement)
         if (ChartData.IsDayPeriod(this.Period,true))
         {
             this.CancelAutoUpdate();                    //先停止定时器
-            this.AutoUpdateEvent(false);                //切换周期先停止更新
+            this.AutoUpdateEvent(false,'KLineChartContainer::ChangePeriod');                //切换周期先停止更新
             this.ResetOverlaySymbolStatus();
             this.RequestHistoryData();                  //请求日线数据
             this.ReqeustKLineInfoData();
@@ -21896,13 +21903,13 @@ function KLineChartContainer(uielement)
         else if (ChartData.IsMinutePeriod(this.Period,true))
         {
             this.CancelAutoUpdate();                    //先停止定时器
-            this.AutoUpdateEvent(false);                //切换周期先停止更新
+            this.AutoUpdateEvent(false,'KLineChartContainer::ChangePeriod');                //切换周期先停止更新
             this.ReqeustHistoryMinuteData();            //请求分钟数据
         }  
         else if (ChartData.IsTickPeriod(this.Period))
         {
             this.CancelAutoUpdate();                    //先停止定时器
-            this.AutoUpdateEvent(false);
+            this.AutoUpdateEvent(false,'KLineChartContainer::ChangePeriod');
             this.RequestTickData();                     //请求分笔数据
         }
     }
@@ -21912,7 +21919,7 @@ function KLineChartContainer(uielement)
     {
         if (!MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol)) return;  //A股股票有复权
         if (ChartData.IsTickPeriod(this.Period)) return;            //分笔没有复权
-        
+
         var upperSymbol=this.Symbol.toUpperCase();
         if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) return;
 
@@ -22782,7 +22789,7 @@ function KLineChartContainer(uielement)
     this.ChangeSymbol=function(symbol)
     {
         this.CancelAutoUpdate();    //先停止定时器
-        this.AutoUpdateEvent(false);
+        this.AutoUpdateEvent(false,'KLineChartContainer::ChangeSymbol');
         this.Symbol=symbol;
         if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol)) this.Right=0;    //指数没有复权
 
@@ -24835,7 +24842,7 @@ function MinuteChartContainer(uielement)
 
     this.RecvHistoryMinuteData=function(data)
     {
-        this.DayData=MinuteChartContainer.JsonDataToMinuteDataArray(data);;
+        this.DayData=MinuteChartContainer.JsonDataToMinuteDataArray(data);
         this.Symbol=data.symbol;
         this.Name=data.name;
 
@@ -25583,6 +25590,8 @@ MinuteChartContainer.JsonDataToMinuteData2=function(data)
         item.Before.Vol=jsData[2]/100;  //沪深股票原始单位股
         item.Before.Amount=jsData[3];   
         item.DateTime=date.toString()+" "+time.toString();
+        item.Date=date;
+        item.Time=time;
         if (yClose && item.Before.Close) 
             item.Before.Increase=(item.Before.Close-yClose)/yClose*100; //涨幅 (最新价格-昨收)/昨收*100;
         aryMinuteData.push(item);
@@ -25603,6 +25612,8 @@ MinuteChartContainer.JsonDataToMinuteData2=function(data)
         item.Amount=jsData.amount;
         item.Vol=jsData.vol/100;        //沪深股票原始单位股
         item.DateTime=data.stock[0].date.toString()+" "+jsData.time.toString();
+        item.Date=data.stock[0].date;
+        item.Time=jsData.time;
 
         item.Increase=jsData.increase;
         item.Risefall=jsData.risefall;
@@ -25646,11 +25657,17 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         else item.Vol=jsData.vol;
         item.Amount=jsData.amount;
         item.DateTime=data.stock[0].date.toString()+" "+jsData.time.toString();
+        item.Date=data.stock[0].date;
+        item.Time=jsData.time;
 
         if (i==0) 
         {
             item.IsFristData=true;
-            if(isSHSZ) item.DateTime=data.stock[0].date.toString() + " 0925"; //沪深股票 第1个数据 写死9：25
+            if(isSHSZ) 
+            {
+                item.DateTime=data.stock[0].date.toString() + " 0925"; //沪深股票 第1个数据 写死9：25
+                item.Time=925;
+            }
         }
         
         item.Increase=jsData.increase;
@@ -25731,6 +25748,8 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
                 preAvPrice=jsData[7];
             }
             item.DateTime=date.toString()+" "+jsData[0].toString();
+            item.Date=date;
+            item.Time=jsData[0];
             
             if (!item.Close)    //当前没有价格 使用上一个价格填充
             {
@@ -25744,7 +25763,11 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
             else item.Increase=null;
             if (j==0)      //第1个数据 写死9：25
             {
-                if (isSHSZ) item.DateTime=date.toString()+" 0925";
+                if (isSHSZ) 
+                {
+                    item.DateTime=date.toString()+" 0925";
+                    item.Time=925;
+                }
                 item.IsFristData=true;
             }
 
