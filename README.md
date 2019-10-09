@@ -89,6 +89,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * 支持K线日线数据或分钟数据自动更新 (2019-7-23)
 * 支持分笔K线图 (2019-9-9)  <br>
 ![K线图](/小程序行情模块用例/image/hqchart_kline3.png)
+* 支持K线面积图
+![K线图](/小程序行情模块用例/image/hqchart_kline_area.png)
 
 # 2. 走势图
 * 支持指标 <br>
