@@ -1722,6 +1722,10 @@ function JSChartContainer(uielement)
                             this.JSChartContainer.ResetFrameXYSplit();
                             this.JSChartContainer.Draw();
                         }
+                        else
+                        {
+                            if (this.JSChartContainer.DragDownloadData) this.JSChartContainer.DragDownloadData();
+                        }
 
                         drag.LastMove.X=touches[0].clientX;
                         drag.LastMove.Y=touches[0].clientY;
