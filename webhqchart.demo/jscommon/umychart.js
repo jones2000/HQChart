@@ -20387,6 +20387,7 @@ function KLineChartContainer(uielement)
     //this.KLineApiUrl="http://opensource.zealink.com/API/KLine2";                  //历史K线api地址
     this.KLineApiUrl=g_JSChartResource.Domain+"/API/KLine2";                        //历史K线api地址
     this.MinuteKLineApiUrl=g_JSChartResource.Domain+'/API/KLine3';                  //历史分钟数据
+    this.DragMinuteKLineApiUrl=g_JSChartResource.Domain+'/API/KLine4';              //拖动数据下载
     this.RealtimeApiUrl=g_JSChartResource.Domain+"/API/Stock";                      //实时行情api地址
     this.KLineMatchUrl=g_JSChartResource.Domain+"/API/KLineMatch";                  //形态匹配
     this.StockHistoryDayApiUrl= g_JSChartResource.Domain+'/API/StockHistoryDay';    //股票历史数据
@@ -24047,16 +24048,24 @@ function KLineChartContainer(uielement)
         this.CancelAutoUpdate();
         var download=this.DragDownload.Minute;
         download.Status=1;
+        var firstItem=this.SourceData.Data[0];   //最新的一条数据
+        var postData=
+        {
+            "field": ["name","symbol", "yclose","open","price","high","low","vol"],
+            "symbol": self.Symbol,
+            "enddate": firstItem.Date,
+            "endtime" :firstItem.Time,
+            "count": self.MaxRequestMinuteDayCount,
+            "first":{ date: firstItem.Date, time:firstItem.Time }
+        };
 
         if (this.NetworkFilter)
         {
-            var firstItem=this.SourceData.Data[0];   //最新的一条数据
             var obj=
             {
                 Name:'KLineChartContainer::RequestDragMinuteData', //类名::函数
                 Explain:'拖拽1分钟K线数据下载',
-                Request:{ Url:'none',  Type:'POST' ,
-                    Data: { symbol:self.Symbol, field: ["name","symbol","yclose","open","price","high","low","vol"], first:{ date: firstItem.Date, time:firstItem.Time } } }, 
+                Request:{ Url:this.DragMinuteKLineApiUrl,  Type:'POST' , Data: postData  }, 
                 DragDownload:download,
                 Self:this,
                 PreventDefault:false
@@ -24072,42 +24081,20 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        //模拟异步请求
-        setTimeout(function()
-        {
-            
-            var data= //测试数据
-            { 
-                data: 
-                [
-                    [ 20190906,14.58,14.71,14.71,14.71,14.71,1096425,16128411,925],
-                    [ 20190906,14.71,14.73,14.74,14.71,14.71,2154859,31731820,930],
-                    [ 20190906,14.71,14.71,14.71,14.68,14.69,1427516,20989208,931],
-                    [ 20190906,14.69,14.69,14.71,14.68,14.7, 1680503,24694143,932],
-                    [ 20190906,14.7,14.69,14.7,14.65,14.65,1315900,19310964,933],
-                    [ 20190906,14.65,14.66,14.69,14.65,14.68,702955,10313842,934],
-                    [ 20190906,14.68,14.7,14.71,14.67, 14.67,1735266,25495875,935],
-                    [ 20190906,14.67,14.68,14.7,14.67,14.67,739000,10845398,936],
-                    [ 20190906,14.67,14.67,14.68,14.67,14.68,389800,5721266,937],
-                    [ 20190906,14.68,14.68,14.7,14.68,14.69,648477,9527859,938],
-                    [ 20190906,14.69,14.7,14.71,14.69,14.7,1128400,16589794,939],
-                    [ 20190906,14.7,14.7,14.71,14.69,14.71,714858,10509708,940],
-                    [ 20190906,14.71,14.71,14.71,14.69,14.69,401500,5900477,941],
-                    [ 20190906,14.69,14.69,14.71,14.69,14.69,1165684,17131034,942],
-                    [ 20190906,14.69, 14.69,14.7,14.67,14.67,498516, 7321024,943],
-                    [ 20190906,14.67,14.68,14.68,14.67,14.67,350126,5139012,944],
-                    [ 20190906,14.67,14.67,14.69,14.67,14.69,561600,8246789,945]
-                ]
-                //symbol:'600000.sh',
-                //name:'浦发行情'
-            };
-    
-            self.RecvDragMinuteData(data);
-            download.Status=0;
-            self.AutoUpdateEvent(true,'KLineChartContainer::RequestDragMinuteData');   //自动更新
-            self.AutoUpdate();
-
-        },500)
+        JSNetwork.HttpRequest({
+            url: this.DragMinuteKLineApiUrl,
+            data:postData,
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function(data)
+            {
+                self.RecvDragMinuteData(data);
+                download.Status=0;
+                self.AutoUpdateEvent(true,'KLineChartContainer::RequestDragMinuteData');   //自动更新
+                self.AutoUpdate();
+            }
+        });
     }
 
     this.RecvDragMinuteData=function(data)

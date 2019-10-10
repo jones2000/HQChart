@@ -37,7 +37,8 @@ function JSChartResource()
     this.UpTextColor = "rgb(238,21,21)";
     this.DownTextColor = "rgb(25,158,0)";
     this.UnchagneTextColor = "rgb(0,0,0)";
-    this.CloseLineColor = 'rgb(178,34,34)';
+    this.CloseLineColor = 'rgb(0,191,255)';
+    this.CloseLineAreaColor = ['rgba(0,191,255,0.8)', 'rgba(0,191,255,0.2)'];
 
     this.FrameBorderPen = "rgb(225,236,242)";
     this.FrameSplitPen = "rgb(225,236,242)";          //分割线
@@ -191,6 +192,7 @@ function JSChartResource()
         if (style.DownTextColor) this.DownTextColor = style.DownTextColor;
         if (style.UnchagneTextColor) this.UnchagneTextColor = style.UnchagneTextColor;
         if (style.CloseLineColor) this.CloseLineColor = style.CloseLineColor;
+        if (style.CloseLineAreaColor) this.CloseLineAreaColor = style.CloseLineAreaColor;
         if (style.FrameBorderPen) this.FrameBorderPen = style.FrameBorderPen;
         if (style.FrameSplitPen) this.FrameSplitPen = style.FrameSplitPen;
         if (style.FrameSplitTextColor) this.FrameSplitTextColor = style.FrameSplitTextColor;

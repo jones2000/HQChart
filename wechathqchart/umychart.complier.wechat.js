@@ -6881,6 +6881,8 @@ function JSSymbolData(ast,option,jsExecute)
                 item.DateTime = data.stock[0].date.toString() + " 0925";
             else
                 item.DateTime = data.stock[0].date.toString() + " " + jsData.time.toString();
+            item.Date = data.stock[0].date;
+            item.Time = jsData.time;
             item.Increate = jsData.increate;
             item.Risefall = jsData.risefall;
             item.AvPrice = jsData.avprice;

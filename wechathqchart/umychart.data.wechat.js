@@ -83,6 +83,8 @@ function MinuteData()
     this.Increase;
     this.Risefall;
     this.AvPrice;
+    this.Date;
+    this.Time;
 }
 
 //单指标数据

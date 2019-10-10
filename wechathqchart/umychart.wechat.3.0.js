@@ -206,6 +206,12 @@ function JSChart(element)
             if (option.KLine.InfoDrawType) chart.ChartPaint[0].InfoDrawType = option.KLine.InfoDrawType;
         }
 
+        if (option.DragDownload)
+        {
+            if (option.DragDownload.Day && option.DragDownload.Day.Enable == true) chart.DragDownload.Day.Enable = true;
+            if (option.DragDownload.Minute && option.DragDownload.Minute.Enable == true) chart.DragDownload.Minute.Enable = true;
+        }
+
         if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
         if (option.CorssCursorInfo) 
         {
@@ -1165,78 +1171,86 @@ function JSChartContainer(uielement)
     }
 
 
-  this.ontouchmove = function (e) {
-    var jsChart = this;
+    this.ontouchmove = function (e) 
+    {
+        var jsChart = this;
+        var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
 
-    var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
-
-    if (this.IsPhoneDragging(e)) {
-      var drag = jsChart.MouseDrag;
-      if (drag == null) {
-        var x = touches[0].clientX;
-        var y = touches[0].clientY;
-        jsChart.OnMouseMove(x, y, e);
-      }
-      else {
-        var moveSetp = Math.abs(drag.LastMove.X - touches[0].clientX);
-        moveSetp = parseInt(moveSetp);
-        if (jsChart.DragMode == 1)  //数据左右拖拽
+        if (this.IsPhoneDragging(e)) 
         {
-          if (moveSetp < 5) return;
+            var drag = jsChart.MouseDrag;
+            if (drag == null) 
+            {
+                var x = touches[0].clientX;
+                var y = touches[0].clientY;
+                jsChart.OnMouseMove(x, y, e);
+            }
+            else 
+            {
+                var moveSetp = Math.abs(drag.LastMove.X - touches[0].clientX);
+                moveSetp = parseInt(moveSetp);
+                if (jsChart.DragMode == 1)  //数据左右拖拽
+                {
+                    if (moveSetp < 5) return;
+                    var isLeft = true;
+                    if (drag.LastMove.X < touches[0].clientX) isLeft = false;//右移数据
 
-          var isLeft = true;
-          if (drag.LastMove.X < touches[0].clientX) isLeft = false;//右移数据
+                    if (jsChart.DataMove(moveSetp, isLeft)) 
+                    {
+                        jsChart.UpdataDataoffset();
+                        jsChart.UpdatePointByCursorIndex();
+                        jsChart.UpdateFrameMaxMin();
+                        jsChart.ResetFrameXYSplit();
+                        jsChart.Draw();
+                    }
+                    else
+                    {
+                        if (jsChart.DragDownloadData) jsChart.DragDownloadData();
+                    }
 
-          if (jsChart.DataMove(moveSetp, isLeft)) {
-            jsChart.UpdataDataoffset();
-            jsChart.UpdatePointByCursorIndex();
-            jsChart.UpdateFrameMaxMin();
-            jsChart.ResetFrameXYSplit();
-            jsChart.Draw();
-          }
-
-          drag.LastMove.X = touches[0].clientX;
-          drag.LastMove.Y = touches[0].clientY;
+                    drag.LastMove.X = touches[0].clientX;
+                    drag.LastMove.Y = touches[0].clientY;
+                }
+            }
         }
-      }
+        else if (this.IsPhonePinching(e))
+        {
+            var phonePinch = jsChart.PhonePinch;
+            if (!phonePinch) return;
+
+            var yHeight = Math.abs(touches[0].pageY - touches[1].pageY);
+            var yLastHeight = Math.abs(phonePinch.Last.Y - phonePinch.Last.Y2);
+            var yStep = yHeight - yLastHeight;
+            if (Math.abs(yStep) < 5) return;
+
+            if (yStep > 0)    //放大
+            {
+                var cursorIndex = {};
+                cursorIndex.Index = parseInt(Math.abs(jsChart.CursorIndex - 0.5).toFixed(0));
+                if (!jsChart.Frame.ZoomUp(cursorIndex)) return;
+                jsChart.CursorIndex = cursorIndex.Index;
+                jsChart.UpdatePointByCursorIndex();
+                jsChart.UpdataDataoffset();
+                jsChart.UpdateFrameMaxMin();
+                jsChart.ResetFrameXYSplit();
+                jsChart.Draw();
+            }
+            else        //缩小
+            {
+                var cursorIndex = {};
+                cursorIndex.Index = parseInt(Math.abs(jsChart.CursorIndex - 0.5).toFixed(0));
+                if (!jsChart.Frame.ZoomDown(cursorIndex)) return;
+                jsChart.CursorIndex = cursorIndex.Index;
+                jsChart.UpdataDataoffset();
+                jsChart.UpdatePointByCursorIndex();
+                jsChart.UpdateFrameMaxMin();
+                jsChart.ResetFrameXYSplit();
+                jsChart.Draw();
+            }
+
+            phonePinch.Last = { "X": touches[0].pageX, "Y": touches[0].pageY, "X2": touches[1].pageX, "Y2": touches[1].pageY };
+        }
     }
-    else if (this.IsPhonePinching(e)) {
-      var phonePinch = jsChart.PhonePinch;
-      if (!phonePinch) return;
-
-      var yHeight = Math.abs(touches[0].pageY - touches[1].pageY);
-      var yLastHeight = Math.abs(phonePinch.Last.Y - phonePinch.Last.Y2);
-      var yStep = yHeight - yLastHeight;
-      if (Math.abs(yStep) < 5) return;
-
-      if (yStep > 0)    //放大
-      {
-        var cursorIndex = {};
-        cursorIndex.Index = parseInt(Math.abs(jsChart.CursorIndex - 0.5).toFixed(0));
-        if (!jsChart.Frame.ZoomUp(cursorIndex)) return;
-        jsChart.CursorIndex = cursorIndex.Index;
-        jsChart.UpdatePointByCursorIndex();
-        jsChart.UpdataDataoffset();
-        jsChart.UpdateFrameMaxMin();
-        jsChart.ResetFrameXYSplit();
-        jsChart.Draw();
-      }
-      else        //缩小
-      {
-        var cursorIndex = {};
-        cursorIndex.Index = parseInt(Math.abs(jsChart.CursorIndex - 0.5).toFixed(0));
-        if (!jsChart.Frame.ZoomDown(cursorIndex)) return;
-        jsChart.CursorIndex = cursorIndex.Index;
-        jsChart.UpdataDataoffset();
-        jsChart.UpdatePointByCursorIndex();
-        jsChart.UpdateFrameMaxMin();
-        jsChart.ResetFrameXYSplit();
-        jsChart.Draw();
-      }
-
-      phonePinch.Last = { "X": touches[0].pageX, "Y": touches[0].pageY, "X2": touches[1].pageX, "Y2": touches[1].pageY };
-    }
-  }
 
     this.ontouchend = function (e) 
     {
@@ -3567,8 +3581,9 @@ function ChartKLine()
     delete this.newMethod;
 
     this.Symbol;        //股票代码
-    this.DrawType = 0;    // 0=K线  1=收盘价线 2=美国线 3=空心K线柱子
+    this.DrawType = 0;    // 0=K线  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积
     this.CloseLineColor = g_JSChartResource.CloseLineColor;
+    this.CloseLineAreaColor = g_JSChartResource.CloseLineAreaColor;
     this.UpColor = g_JSChartResource.UpBarColor;
     this.DownColor = g_JSChartResource.DownBarColor;
     this.UnchagneColor = g_JSChartResource.UnchagneBarColor;          //平盘
@@ -3725,6 +3740,92 @@ function ChartKLine()
         }
 
         if (bFirstPoint == false) this.Canvas.stroke();
+    }
+
+    this.DrawCloseArea = function ()   //收盘价面积
+    {
+        var isHScreen = (this.ChartFrame.IsHScreen === true);
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + 2.0;
+        if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+
+        var bFirstPoint = true;
+        var firstPoint = null;
+        this.Canvas.beginPath();
+        this.Canvas.strokeStyle = this.CloseLineColor;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        {
+            var data = this.Data.Data[i];
+            if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
+
+            var left = xOffset;
+            var right = xOffset + dataWidth;
+            if (right > chartright) break;
+            var x = left + (right - left) / 2;
+            var yClose = this.ChartFrame.GetYFromData(data.Close);
+
+            if (bFirstPoint) 
+            {
+                if (isHScreen) 
+                {
+                    this.Canvas.moveTo(yClose, x);
+                    firstPoint = { X: yClose, Y: x };
+                }
+                else 
+                {
+                    this.Canvas.moveTo(x, yClose);
+                    firstPoint = { X: x, Y: yClose };
+                }
+                bFirstPoint = false;
+            }
+            else 
+            {
+                if (isHScreen) this.Canvas.lineTo(yClose, x);
+                else this.Canvas.lineTo(x, yClose);
+            }
+        }
+
+        if (bFirstPoint) return; 
+        
+        this.Canvas.stroke();
+        //画面积
+        if (isHScreen) 
+        {
+            this.Canvas.lineTo(this.ChartBorder.GetLeft(), x);
+            this.Canvas.lineTo(this.ChartBorder.GetLeft(), firstPoint.Y);
+        }
+        else 
+        {
+            this.Canvas.lineTo(x, this.ChartBorder.GetBottom());
+            this.Canvas.lineTo(firstPoint.X, this.ChartBorder.GetBottom());
+        }
+        this.Canvas.closePath();
+
+        if (Array.isArray(this.CloseLineAreaColor)) 
+        {
+            if (isHScreen) 
+            {
+                let gradient = this.Canvas.createLinearGradient(this.ChartBorder.GetRightEx(), this.ChartBorder.GetTop(), this.ChartBorder.GetLeft(), this.ChartBorder.GetTop());
+                gradient.addColorStop(0, this.CloseLineAreaColor[0]);
+                gradient.addColorStop(1, this.CloseLineAreaColor[1]);
+                this.Canvas.fillStyle = gradient;
+            }
+            else 
+            {
+                let gradient = this.Canvas.createLinearGradient(firstPoint.X, this.ChartBorder.GetTopEx(), firstPoint.X, this.ChartBorder.GetBottom());
+                gradient.addColorStop(0, this.CloseLineAreaColor[0]);
+                gradient.addColorStop(1, this.CloseLineAreaColor[1]);
+                this.Canvas.fillStyle = gradient;
+            }
+        }
+        else {
+            this.Canvas.fillStyle = this.CloseLineAreaColor;
+        }
+        this.Canvas.fill();
     }
 
     this.DrawKBar = function () 
@@ -4144,6 +4245,10 @@ function ChartKLine()
         else if (this.DrawType == 2)
         {
             this.DrawAKLine();
+        }
+        else if (this.DrawType==4)
+        {
+            this.DrawCloseArea();
         }
         else
         {
@@ -7087,10 +7192,24 @@ function KLineChartContainer(uielement)
     this.AutoUpdateFrequency = 30000;             //30秒更新一次数据
     this.AutoUpdateTimer;                         //自动定时器
 
+    this.DragDownload = {
+        Day: { Enable: false, IsEnd: false, Status: 0 },      //日线数据拖拽下载(暂不支持) Status: 0空闲 1 下载中
+        Minute: { Enable: false, IsEnd: false, status: 0 }    //分钟数据拖拽下载
+    };
+
     this.KLineApiUrl = g_JSChartResource.Domain + "/API/KLine2";                        //历史K线api地址
     this.MinuteKLineApiUrl = g_JSChartResource.Domain + '/API/KLine3';                  //历史分钟数据
     this.RealtimeApiUrl = g_JSChartResource.Domain + "/API/Stock";                      //实时行情api地址
     this.KLineMatchUrl = g_JSChartResource.Domain + "/API/KLineMatch";                  //形态匹配
+    this.DragMinuteKLineApiUrl = g_JSChartResource.Domain + '/API/KLine4';              //拖动数据下载
+
+    this.ResetDragDownload = function () 
+    {
+        this.DragDownload.Day.Finish = false;
+        this.DragDownload.Day.Status = 0;
+        this.DragDownload.Minute.Finish = false;
+        this.DragDownload.Minute.Status = 0;
+    }
 
   //创建
   //windowCount 窗口个数
@@ -7357,6 +7476,7 @@ function KLineChartContainer(uielement)
     {
         var self = this;
         this.ChartSplashPaint.IsEnableSplash = true;
+        this.ResetDragDownload();
         this.Draw();
 
         if (this.NetworkFilter) 
@@ -7479,6 +7599,7 @@ function KLineChartContainer(uielement)
     {
         var self = this;
         this.ChartSplashPaint.IsEnableSplash = true;
+        this.ResetDragDownload();
 
         if (this.NetworkFilter)
         {
@@ -8621,6 +8742,127 @@ function KLineChartContainer(uielement)
         let barWidth = (ZOOM_SEED[ZOOM_SEED.length - 1][0] + ZOOM_SEED[ZOOM_SEED.length - 1][1]);
         return parseInt(width / barWidth) - 8;
     }
+
+    //数据拖拽下载
+    this.DragDownloadData = function () 
+    {
+        var data = null;
+        if (!this.Frame.Data) data = this.Frame.Data;
+        else data = this.Frame.SubFrame[0].Frame.Data;
+        if (!data) return false;
+        if (data.DataOffset > 0) return;
+
+        console.log('[KLineChartContainer.JsonDataToHistoryData] start download data');
+        if (ChartData.IsMinutePeriod(this.Period, true)) //下载分钟数据
+        {
+            if (!this.DragDownload.Minute.Enable) return;
+            if (this.DragDownload.Minute.IsEnd) return; //全部下载完了
+            if (this.DragDownload.Minute.Status != 0) return;
+            this.RequestDragMinuteData();
+        }
+        else if (ChartData.IsDayPeriod(this.Period, true)) // 下载日线
+        {
+            if (!this.DragDownload.Day.Enable) return;
+            if (this.DragDownload.Day.IsEnd) return; //全部下载完了
+            if (this.DragDownload.Day.Status != 0) return;
+            this.RequestDragDayData();
+        }
+    }
+
+    this.RequestDragMinuteData = function () 
+    {
+        var self = this;
+        this.AutoUpdateEvent(false, 'KLineChartContainer::RequestDragMinuteData');   //停止自动更新
+        this.CancelAutoUpdate();
+        var download = this.DragDownload.Minute;
+        download.Status = 1;
+        var firstItem = this.SourceData.Data[0];   //最新的一条数据
+        var postData =
+        {
+            "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"],
+            "symbol": self.Symbol,
+            "enddate": firstItem.Date,
+            "endtime": firstItem.Time,
+            "count": self.MaxRequestMinuteDayCount,
+            "first": { date: firstItem.Date, time: firstItem.Time }
+        };
+
+        if (this.NetworkFilter) {
+            var obj =
+            {
+                Name: 'KLineChartContainer::RequestDragMinuteData', //类名::函数
+                Explain: '拖拽1分钟K线数据下载',
+                Request: { Url: this.DragMinuteKLineApiUrl, Type: 'POST', Data: postData },
+                DragDownload: download,
+                Self: this,
+                PreventDefault: false
+            };
+            this.NetworkFilter(obj, function (data) {
+                self.RecvDragMinuteData(data);
+                download.Status = 0;
+                self.AutoUpdateEvent(true, 'KLineChartContainer::RequestDragMinuteData');   //自动更新
+                self.AutoUpdate();
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        wx.request({
+            url: this.DragMinuteKLineApiUrl,
+            data: postData,
+            method: 'POST',
+            dataType: "json",
+            async: true,
+            success: function (data) {
+                self.RecvDragMinuteData(data);
+                download.Status = 0;
+                self.AutoUpdateEvent(true, 'KLineChartContainer::RequestDragMinuteData');   //自动更新
+                self.AutoUpdate();
+            }
+        });
+    }
+
+    this.RecvDragMinuteData = function (recvdata) 
+    {
+        var data=recvdata.data;
+        var aryDayData = KLineChartContainer.JsonDataToMinuteHistoryData(data);
+        var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
+
+        for (var i in aryDayData)    //数据往前插
+        {
+            var item = aryDayData[i];
+            this.SourceData.Data.splice(i, 0, item);
+        }
+
+        var bindData = new ChartData();
+        bindData.Data = this.SourceData.Data;
+        bindData.Period = this.Period;
+        bindData.Right = this.Right;
+        bindData.DataType = this.SourceData.DataType;
+        bindData.Symbol = this.Symbol;
+
+        if (ChartData.IsDayPeriod(bindData.Period, false) || ChartData.IsMinutePeriod(bindData.Period, false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        {
+            var periodData = bindData.GetPeriodData(bindData.Period);
+            bindData.Data = periodData;
+        }
+
+        //绑定数据
+        this.UpdateMainData(bindData, lastDataCount);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
+        {
+            this.BindIndexData(i, bindData);
+        }
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+    }
 }
 
 //API 返回数据 转化为array[]
@@ -9748,70 +9990,73 @@ function MinuteChartContainer(uielement)
 }
 
 //API 返回数据 转化为array[]
-MinuteChartContainer.JsonDataToMinuteData = function (data) {
-  var upperSymbol = data.stock[0].symbol.toUpperCase();
-  var isSHSZ = MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
-  var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
-  var preClose = data.stock[0].yclose;      //前一个数据价格
-  var preAvPrice = data.stock[0].yclose;    //前一个均价
-  var yClose = data.stock[0].yclose;
-  if (isFutures && data.stock[0].yclearing) yClose = preClose = preAvPrice = data.stock[0].yclearing;  //期货使用昨结算价
+MinuteChartContainer.JsonDataToMinuteData = function (data) 
+{
+    var upperSymbol = data.stock[0].symbol.toUpperCase();
+    var isSHSZ = MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+    var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+    var preClose = data.stock[0].yclose;      //前一个数据价格
+    var preAvPrice = data.stock[0].yclose;    //前一个均价
+    var yClose = data.stock[0].yclose;
+    if (isFutures && data.stock[0].yclearing) yClose = preClose = preAvPrice = data.stock[0].yclearing;  //期货使用昨结算价
 
-  var aryMinuteData = new Array();
-  for (var i in data.stock[0].minute) {
-    var jsData = data.stock[0].minute[i];
-    var item = new MinuteData();
-
-    if (jsData.price) preClose = jsData.price;
-    if (jsData.avprice) preAvPrice = jsData.avprice;
-
-    item.Close = jsData.price;
-    item.Open = jsData.open;
-    item.High = jsData.high;
-    item.Low = jsData.low;
-    if (isSHSZ) item.Vol = jsData.vol / 100; //原始单位股
-    else item.Vol = jsData.vol;
-    item.Amount = jsData.amount;
-    item.Increase = jsData.increase;
-    item.Risefall = jsData.risefall;
-    item.AvPrice = jsData.avprice;
-
-    if (!item.Close) //当前没有价格 使用上一个价格填充
+    var aryMinuteData = new Array();
+    for (var i in data.stock[0].minute) 
     {
-      item.Close = preClose;
-      item.Open = item.High = item.Low = item.Close;
+        var jsData = data.stock[0].minute[i];
+        var item = new MinuteData();
+
+        if (jsData.price) preClose = jsData.price;
+        if (jsData.avprice) preAvPrice = jsData.avprice;
+
+        item.Close = jsData.price;
+        item.Open = jsData.open;
+        item.High = jsData.high;
+        item.Low = jsData.low;
+        if (isSHSZ) item.Vol = jsData.vol / 100; //原始单位股
+        else item.Vol = jsData.vol;
+        item.Amount = jsData.amount;
+        item.Increase = jsData.increase;
+        item.Risefall = jsData.risefall;
+        item.AvPrice = jsData.avprice;
+
+        if (!item.Close) //当前没有价格 使用上一个价格填充
+        {
+            item.Close = preClose;
+            item.Open = item.High = item.Low = item.Close;
+        }
+        if (!item.AvPrice) item.AvPrice = preAvPrice;
+
+        item.DateTime = data.stock[0].date.toString() + " " + jsData.time.toString();
+        item.Date = data.stock[0].date;
+        item.Time = jsData.time;
+        if (i == 0)      //第1个数据 写死9：25
+        {
+            item.IsFristData = true;
+            if (isSHSZ) item.DateTime = data.stock[0].date.toString() + " 0925";
+            if (item.Close <= 0) //第1分钟 没数据就用开盘价
+            {
+                item.Close = data.stock[0].open;
+                item.High = item.Low = data.stock[0].open;
+                item.AvPrice = data.stock[0].open;
+                console.log('[MinuteChartContainer::JsonDataToMinuteData] first minute data is empty.', data.stock[0].symbol, jsData);
+            }
+        }
+
+        //价格是0的 都用空
+        if (item.Open <= 0) item.Open = null;
+        if (item.Close <= 0) item.Close = null;
+        if (item.AvPrice <= 0) item.AvPrice = null;
+        if (item.High <= 0) item.High = null;
+        if (item.Low <= 0) item.Low = null;
+
+        if (isFutures) item.AvPrice = null;    //期货均价暂时没有
+        if (yClose && item.Close) item.Increase = (item.Close - yClose) / yClose * 100; //涨幅 (最新价格-昨收)/昨收*10
+
+        aryMinuteData[i] = item;
     }
-    if (!item.AvPrice) item.AvPrice = preAvPrice;
 
-    item.DateTime = data.stock[0].date.toString() + " " + jsData.time.toString();
-    if (i == 0)      //第1个数据 写死9：25
-    {
-      item.IsFristData = true;
-      if (isSHSZ) item.DateTime = data.stock[0].date.toString() + " 0925";
-      if (item.Close <= 0) //第1分钟 没数据就用开盘价
-      {
-        item.Close = data.stock[0].open;
-        item.High = item.Low = data.stock[0].open;
-        item.AvPrice = data.stock[0].open;
-        console.log('[MinuteChartContainer::JsonDataToMinuteData] first minute data is empty.', data.stock[0].symbol, jsData);
-      }
-    }
-
-
-    //价格是0的 都用空
-    if (item.Open <= 0) item.Open = null;
-    if (item.Close <= 0) item.Close = null;
-    if (item.AvPrice <= 0) item.AvPrice = null;
-    if (item.High <= 0) item.High = null;
-    if (item.Low <= 0) item.Low = null;
-
-    if (isFutures) item.AvPrice = null;    //期货均价暂时没有
-    if (yClose && item.Close) item.Increase = (item.Close - yClose) / yClose * 100; //涨幅 (最新价格-昨收)/昨收*10
-
-    aryMinuteData[i] = item;
-  }
-
-  return aryMinuteData;
+    return aryMinuteData;
 }
 
 //多日日线数据API 转化成array[];
@@ -9859,6 +10104,8 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
             else item.Increase = null;
 
             item.DateTime = date.toString() + " " + jsData[0].toString();
+            item.Date = date;
+            item.Time = jsData[0];
             if (j == 0 )      
             {
                 if (isSHSZ) item.DateTime = date.toString() + " 0925";//第1个数据 写死9：25
@@ -10050,48 +10297,54 @@ function HistoryMinuteChartContainer(uielement) {
 }
 
 //API 返回数据 转化为array[]
-HistoryMinuteChartContainer.JsonDataToMinuteData = function (data) {
-  var aryMinuteData = new Array();
-  for (var i in data.minute.time) {
-    var item = new MinuteData();
-
-    if (data.minute.price[i] <= 0 && i > 0) //当前这一分钟价格为空,使用上一分钟的数据
+HistoryMinuteChartContainer.JsonDataToMinuteData = function (data) 
+{
+    var aryMinuteData = new Array();
+    for (var i in data.minute.time) 
     {
-      item.Close = aryMinuteData[i - 1].Close;
-      item.Open = aryMinuteData[i - 1].Close;
-      item.High = item.Close;
-      item.Low = item.Close;
-      item.Vol = data.minute.vol[i] / 100; //原始单位股
-      item.Amount = data.minute.amount[i];
-      item.DateTime = data.date.toString() + " " + data.minute.time[i].toString();
-      //item.Increate=jsData.increate;
-      //item.Risefall=jsData.risefall;
-      item.AvPrice = aryMinuteData[i - 1].AvPrice;
+        var item = new MinuteData();
+        if (data.minute.price[i] <= 0 && i > 0) //当前这一分钟价格为空,使用上一分钟的数据
+        {
+            item.Close = aryMinuteData[i - 1].Close;
+            item.Open = aryMinuteData[i - 1].Close;
+            item.High = item.Close;
+            item.Low = item.Close;
+            item.Vol = data.minute.vol[i] / 100; //原始单位股
+            item.Amount = data.minute.amount[i];
+            item.DateTime = data.date.toString() + " " + data.minute.time[i].toString();
+            item.Date = data.date;
+            item.Time = data.minute.time[i];
+            //item.Increate=jsData.increate;
+            //item.Risefall=jsData.risefall;
+            item.AvPrice = aryMinuteData[i - 1].AvPrice;
+        }
+        else 
+        {
+            item.Close = data.minute.price[i];
+            item.Open = data.minute.open[i];
+            item.High = data.minute.high[i];
+            item.Low = data.minute.low[i];
+            item.Vol = data.minute.vol[i] / 100; //原始单位股
+            item.Amount = data.minute.amount[i];
+            item.DateTime = data.date.toString() + " " + data.minute.time[i].toString();
+            item.Date = data.date;
+            item.Time = data.minute.time[i];
+            //item.Increate=jsData.increate;
+            //item.Risefall=jsData.risefall;
+            item.AvPrice = data.minute.avprice[i];
+        }
+
+        //价格是0的 都用空
+        if (item.Open <= 0) item.Open = null;
+        if (item.Close <= 0) item.Close = null;
+        if (item.AvPrice <= 0) item.AvPrice = null;
+        if (item.High <= 0) item.High = null;
+        if (item.Low <= 0) item.Low = null;
+
+        aryMinuteData[i] = item;
     }
-    else {
-      item.Close = data.minute.price[i];
-      item.Open = data.minute.open[i];
-      item.High = data.minute.high[i];
-      item.Low = data.minute.low[i];
-      item.Vol = data.minute.vol[i] / 100; //原始单位股
-      item.Amount = data.minute.amount[i];
-      item.DateTime = data.date.toString() + " " + data.minute.time[i].toString();
-      //item.Increate=jsData.increate;
-      //item.Risefall=jsData.risefall;
-      item.AvPrice = data.minute.avprice[i];
-    }
 
-    //价格是0的 都用空
-    if (item.Open <= 0) item.Open = null;
-    if (item.Close <= 0) item.Close = null;
-    if (item.AvPrice <= 0) item.AvPrice = null;
-    if (item.High <= 0) item.High = null;
-    if (item.Low <= 0) item.Low = null;
-
-    aryMinuteData[i] = item;
-  }
-
-  return aryMinuteData;
+    return aryMinuteData;
 }
 
 /////////////////////////////////////////////////////////////////////////////
