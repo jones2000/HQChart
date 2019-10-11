@@ -230,7 +230,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![QQ群](/小程序行情模块用例/image/qqcode.png)
 
 # 奖项
-![GVP]](/小程序行情模块用例/image/gvp.jpg)
+![GVP](/小程序行情模块用例/image/gvp.jpg)
 
 # 赞助
 ![微信二维码](/小程序行情模块用例/image/wx_code.PNG)
