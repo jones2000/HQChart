@@ -163,6 +163,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 34. [HQChart使用教程40-如何自定义分钟周期或日线周期K线](https://blog.csdn.net/jones2000/article/details/101722958) <br>
 35. [HQChart使用教程41-分钟K线设置拖拽自动下载历史数据](https://blog.csdn.net/jones2000/article/details/102471720) <br>
 36. [HQChart使用教程42-K线图如何对接数字货币](https://blog.csdn.net/jones2000/article/details/102493905) <br>
+37. [HQChart使用教程43-日K线设置拖拽自动下载历史数据](https://blog.csdn.net/jones2000/article/details/102511317) <br>
 
 
 ## 小程序教程
@@ -227,6 +228,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 # QQ交流群(950092318) 
 有bug,问题,新的功能需求都可以在QQ群里提 <br>
 ![QQ群](/小程序行情模块用例/image/qqcode.png)
+
+# 奖项
+![GVP]](/小程序行情模块用例/image/gvp.jpg)
 
 # 赞助
 ![微信二维码](/小程序行情模块用例/image/wx_code.PNG)

@@ -153,6 +153,7 @@ export default
         'DefaultSymbol',     //默认股票
         'DefaultOption',     //走势图设置
         'DefaultAPIDomain',         //数据API域名设置
+        'DefaultStyle',
         'IsCreateManual'  //是否是手动创建
     ],
 
@@ -173,6 +174,7 @@ export default
     {
         //处理默认传入的参数
         if (this.DefaultSymbol) this.Symbol=this.DefaultSymbol; //默认股票
+        if(this.DefaultStyle) this.JSchartStyle = this.DefaultStyle;
         if (this.DefaultOption) this.SetOption(this.DefaultOption);
         if (this.DefaultAPIDomain) 
         {
@@ -273,6 +275,9 @@ export default
         {
             if (this.JSChart) return;
             this.Option.Symbol=this.Symbol;
+
+            if(this.JSchartStyle) JSCommon.JSChart.SetStyle(this.JSchartStyle);  //设置图形样式
+            
             let chart=JSCommon.JSChart.Init(this.$refs.hqchart);
             chart.SetOption(this.Option);
             this.JSChart=chart;

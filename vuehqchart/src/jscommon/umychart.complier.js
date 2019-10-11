@@ -11126,6 +11126,8 @@ function APIScriptIndex(name,script,args,option)
     if (option.API) 
     {
         if (option.API.Url) this.ApiUrl=option.API.Url;
+        if (option.API.Name) this.Name=this.ID=option.API.Name;
+        if (option.API.ID) this.ID=option.API.ID;
     }
 
     this.ExecuteScript=function(hqChart,windowIndex,hisData)
@@ -11157,7 +11159,7 @@ function APIScriptIndex(name,script,args,option)
         var self=this;
         var postData =
         { 
-            indexname:this.Name,  symbol: hqChart.Symbol, script:this.Script, args:args,
+            indexname:this.ID,  symbol: hqChart.Symbol, script:this.Script, args:args,
             period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount, hqdatatype: hqDataType
         };
         if (hqDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID || hqDataType==HQ_DATA_TYPE.MINUTE_ID) postData.daycount=hqChart.DayCount;
@@ -11204,6 +11206,8 @@ function APIScriptIndex(name,script,args,option)
     {
         console.log('[APIScriptIndex::RecvAPIData] recv data ', this.Name,data );
         if (data.code!=0) return;
+
+        if (data.outdata && data.outdata.name) this.Name=data.outdata.name;
 
         this.Arguments=[];
         if (data.outdata.args)

@@ -47,6 +47,7 @@ function JSIndexController(req,res,next)
     this.Right=0;
     this.Symbol;
     this.IndexName;
+    this.Name;
     this.Script;            //脚本 
     this.Args=[];           //参数
     this.HQDataType=HQChart.HQ_DATA_TYPE.KLINE_ID;
@@ -77,6 +78,7 @@ function JSIndexController(req,res,next)
             this.ErrorMessage='index name is empty';
             return false;
         }
+        this.Name=this.IndexName;
 
         if (postData.script)
         {
@@ -92,6 +94,7 @@ function JSIndexController(req,res,next)
                 return false;
             }
             this.Script=indexInfo.Script;
+            this.Name=indexInfo.Name;
 
             if (indexInfo.Args)
             {
@@ -162,7 +165,7 @@ function JSIndexController(req,res,next)
     //执行脚本返回数据
     this.ExecuteFinish=function(data, jsExectute)  
     {
-        this.OutData={outvar:[], hqdatatype:this.HQDataType};
+        this.OutData={ outvar:[], hqdatatype:this.HQDataType, name:this.Name };
         this.OutData.date=data.Date;
         if(data.Time) this.OutData.time=data.Time;
         this.OutData.stock={ name:data.Stock.Name, symbol:data.Stock.Symbol };
@@ -236,6 +239,153 @@ JSIndexController.Post=function(req, res, next)
     var controller=new JSIndexController(req,res,next);
     controller.Post();
 }
+
+var g_MongoConfig;
+JSIndexController.SetMongodb=function(option)
+{
+    g_MongoConfig={ Url:option.Url, DBName:option.DBName, TableName:option.TableName };
+}
+
+JSIndexController.LoadIndex=function(option)  //加载指标
+{
+    var indexData=new JSMongoIndex();
+    indexData.Load(option);
+}
+
+JSIndexController.ReloadIndex=function(req, res, next)
+{
+    var controller=new JSUpateIndexController(req, res, next);
+    controller.Post();
+}
+
+//更新单个指标脚本
+function JSUpateIndexController(req,res,next)
+{
+    this.Request=req;
+    this.Response=res;
+    this.Next=next;
+    this.StartTime=new Date();
+    this.IndexID;
+    this.ErrorMessage;
+
+    this.GetPostData=function()
+    {
+        var postData=this.Request.body;
+        if (!postData) 
+        {
+            this.ErrorMessage='post data is empty';
+            return false;
+        }
+
+        this.IndexID=postData.indexid;
+        if (!this.IndexID) 
+        {
+            this.ErrorMessage='index is is empty';
+            return false;
+        }
+
+        return true;
+    }
+
+    this.Post=function()
+    {
+        if (!this.GetPostData())
+        {
+            this.SendResult();
+            return;
+        }
+
+        var indexData=new JSMongoIndex();
+        indexData.Load(
+            {
+                Success:(data)=> { this.UpdateSuccess(data); }
+            }
+        );
+
+        next();
+    }
+
+    this.UpdateSuccess=function(data)
+    {
+        this.SendResult();
+    }
+
+    this.SendResult=function()
+    {
+        var nowDate=new Date();
+        var ticket=nowDate.getTime() - this.StartTime.getTime();
+
+        this.Response.header("Access-Control-Allow-Origin", "*");
+        if (this.ErrorMessage)
+        {
+            //返回数据 json 字段全部小写
+            this.Response.send({ code:1, error:this.ErrorMessage, ticket:ticket });
+        }
+        else
+        {
+            //返回数据 json 字段全部小写
+            this.Response.send({ code:0, ticket:ticket });
+        }
+    }
+}
+
+
+function JSMongoIndex()
+{
+    this.Load=function(option)
+    {
+        const MongoClient = require('mongodb').MongoClient;
+        const assert = require('assert');
+        const config=g_MongoConfig;
+        if (!config) return;
+        
+        var self=this;
+        MongoClient.connect(config.Url, { useUnifiedTopology: true , useNewUrlParser: true  }, 
+            function(err, client) 
+            {
+                assert.equal(null, err);
+                var db = client.db(config.DBName);
+                if (option && option.IndexID)
+                {
+                    db.collection(config.TableName). find({'id':option.IndexID}).toArray(function(err, result) { // 返回单个查询数据
+                        if (err) throw err;
+                        self.RecvData(result);
+                        client.close();
+                        if (option && option.Success) option.Success(this.Data);
+                    });
+                }
+                else
+                {
+                    db.collection(config.TableName). find({}).toArray(function(err, result) { // 返回集合中所有数据
+                        if (err) throw err;
+                        self.RecvData(result);
+                        client.close();
+                        if (option && option.Success) option.Success(this.Data);
+                    });
+                }
+            }
+        );
+    }
+
+    this.Data=[];
+
+    this.RecvData=function(data)
+    {
+        this.Data=[];
+        for(var i in data)
+        {
+            var item=data[i];
+            var indexItem={Name:item.name, Args:item.args, Script:item.Script, ID:item.id, IsMainIndex:false};
+            if (item.ismainindex==true) indexItem.IsMainIndex=true;
+            this.Data.push(indexItem);
+        }
+
+        console.log('[JSMongoIndex::RecvData] add index ',this.Data)
+        HQChart.JSIndexScript.AddIndex(this.Data);
+    }
+}
+
+
 
 
 //导出统一使用JSCommon命名空间名
