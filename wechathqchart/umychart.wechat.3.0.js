@@ -7202,13 +7202,15 @@ function KLineChartContainer(uielement)
     this.RealtimeApiUrl = g_JSChartResource.Domain + "/API/Stock";                      //实时行情api地址
     this.KLineMatchUrl = g_JSChartResource.Domain + "/API/KLineMatch";                  //形态匹配
     this.DragMinuteKLineApiUrl = g_JSChartResource.Domain + '/API/KLine4';              //拖动数据下载
+    this.DragKLineApiUrl = g_JSChartResource.Domain + '/API/KLine5';                    //拖动日K数据下载
 
     this.ResetDragDownload = function () 
     {
-        this.DragDownload.Day.Finish = false;
         this.DragDownload.Day.Status = 0;
-        this.DragDownload.Minute.Finish = false;
+        this.DragDownload.Day.IsEnd=false;
+        
         this.DragDownload.Minute.Status = 0;
+        this.DragDownload.Minute.isEnd=false;
     }
 
   //创建
@@ -8752,9 +8754,9 @@ function KLineChartContainer(uielement)
         if (!data) return false;
         if (data.DataOffset > 0) return;
 
-        console.log('[KLineChartContainer.JsonDataToHistoryData] start download data');
         if (ChartData.IsMinutePeriod(this.Period, true)) //下载分钟数据
         {
+            console.log(`[KLineChartContainer.DragDownloadData] Minute:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
             if (!this.DragDownload.Minute.Enable) return;
             if (this.DragDownload.Minute.IsEnd) return; //全部下载完了
             if (this.DragDownload.Minute.Status != 0) return;
@@ -8762,6 +8764,7 @@ function KLineChartContainer(uielement)
         }
         else if (ChartData.IsDayPeriod(this.Period, true)) // 下载日线
         {
+            console.log(`[KLineChartContainer.DragDownloadData] Day:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
             if (!this.DragDownload.Day.Enable) return;
             if (this.DragDownload.Day.IsEnd) return; //全部下载完了
             if (this.DragDownload.Day.Status != 0) return;
@@ -8826,6 +8829,100 @@ function KLineChartContainer(uielement)
     {
         var data=recvdata.data;
         var aryDayData = KLineChartContainer.JsonDataToMinuteHistoryData(data);
+        var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
+
+        for (var i in aryDayData)    //数据往前插
+        {
+            var item = aryDayData[i];
+            this.SourceData.Data.splice(i, 0, item);
+        }
+
+        var bindData = new ChartData();
+        bindData.Data = this.SourceData.Data;
+        bindData.Period = this.Period;
+        bindData.Right = this.Right;
+        bindData.DataType = this.SourceData.DataType;
+        bindData.Symbol = this.Symbol;
+
+        if (ChartData.IsDayPeriod(bindData.Period, false) || ChartData.IsMinutePeriod(bindData.Period, false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        {
+            var periodData = bindData.GetPeriodData(bindData.Period);
+            bindData.Data = periodData;
+        }
+
+        //绑定数据
+        this.UpdateMainData(bindData, lastDataCount);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
+        {
+            this.BindIndexData(i, bindData);
+        }
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+    }
+
+    this.RequestDragDayData = function () 
+    {
+        var self = this;
+        this.AutoUpdateEvent(false, 'KLineChartContainer::RequestDragDayData');   //停止自动更新
+        this.CancelAutoUpdate();
+        var download = this.DragDownload.Day;
+        download.Status = 1;
+        var firstItem = this.SourceData.Data[0];   //最新的一条数据
+        var postData =
+        {
+            "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"],
+            "symbol": self.Symbol,
+            "enddate": firstItem.Date,
+            "count": self.MaxReqeustDataCount,
+            "first": { date: firstItem.Date }
+        };
+
+        if (this.NetworkFilter) {
+            var obj =
+            {
+                Name: 'KLineChartContainer::RequestDragDayData', //类名::函数
+                Explain: '拖拽日K数据下载',
+                Request: { Url: this.DragKLineApiUrl, Type: 'POST', Data: postData },
+                DragDownload: download,
+                Self: this,
+                PreventDefault: false
+            };
+            this.NetworkFilter(obj, function (data) {
+                self.RecvDragDayData(data);
+                download.Status = 0;
+                self.AutoUpdateEvent(true, 'KLineChartContainer::RequestDragDayData');   //自动更新
+                self.AutoUpdate();
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        wx.request({
+            url: this.DragKLineApiUrl,
+            data: postData,
+            method: 'POST',
+            dataType: "json",
+            async: true,
+            success: function (data) {
+                self.RecvDragDayData(data);
+                download.Status = 0;
+                self.AutoUpdateEvent(true, 'KLineChartContainer::RequestDragDayData');   //自动更新
+                self.AutoUpdate();
+            }
+        });
+    }
+
+    this.RecvDragDayData = function (recvdata) 
+    {
+        var data = recvdata.data;
+        var aryDayData = KLineChartContainer.JsonDataToHistoryData(data);
         var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
 
         for (var i in aryDayData)    //数据往前插

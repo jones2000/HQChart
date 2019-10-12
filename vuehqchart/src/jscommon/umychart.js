@@ -20400,11 +20400,11 @@ function KLineChartContainer(uielement)
 
     this.ResetDragDownload=function()
     {
-        this.DragDownload.Day.Finish=false;
         this.DragDownload.Day.Status=0;
+        this.DragDownload.Day.IsEnd=false;
 
-        this.DragDownload.Minute.Finish=false;
         this.DragDownload.Minute.Status=0;
+        this.DragDownload.Minute.IsEnd=false;
     }
 
     this.ResetPage=function()   //重置分页下载
