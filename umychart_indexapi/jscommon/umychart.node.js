@@ -3440,6 +3440,12 @@ function JSChart(divElement)
             if (option.Page.Minute && option.Page.Minute.Enable==true) chart.Page.Minute.Enable=true;
         }
 
+        if (option.DragDownload)
+        {
+            if (option.DragDownload.Day && option.DragDownload.Day.Enable==true) chart.DragDownload.Day.Enable=true;
+            if (option.DragDownload.Minute && option.DragDownload.Minute.Enable==true) chart.DragDownload.Minute.Enable=true;
+        }
+
         if (option.Language)
         {
             if (option.Language==='CN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
@@ -4768,6 +4774,10 @@ function JSChartContainer(uielement)
                     this.JSChartContainer.ResetFrameXYSplit();
                     this.JSChartContainer.Draw();
                 }
+                else
+                {
+                    if (this.JSChartContainer.DragDownloadData) this.JSChartContainer.DragDownloadData();
+                }
 
                 drag.LastMove.X=e.clientX;
                 drag.LastMove.Y=e.clientY;
@@ -5028,6 +5038,10 @@ function JSChartContainer(uielement)
                             this.JSChartContainer.UpdateFrameMaxMin();
                             this.JSChartContainer.ResetFrameXYSplit();
                             this.JSChartContainer.Draw();
+                        }
+                        else
+                        {
+                            if (this.JSChartContainer.DragDownloadData) this.JSChartContainer.DragDownloadData();
                         }
 
                         drag.LastMove.X=touches[0].clientX;
@@ -10005,8 +10019,9 @@ function ChartKLine()
 
     this.ClassName='ChartKLine';    //类名
     this.Symbol;        //股票代码
-    this.DrawType=0;    // 0=实心K线柱子  1=收盘价线 2=美国线 3=空心K线柱子
+    this.DrawType=0;    // 0=实心K线柱子  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
     this.CloseLineColor=g_JSChartResource.CloseLineColor;
+    this.CloseLineAreaColor=g_JSChartResource.CloseLineAreaColor;
     this.UpColor=g_JSChartResource.UpBarColor;
     this.DownColor=g_JSChartResource.DownBarColor;
     this.UnchagneColor=g_JSChartResource.UnchagneBarColor;          //平盘
@@ -10142,6 +10157,91 @@ function ChartKLine()
 
         this.PtMax=ptMax;
         this.PtMin=ptMin;
+    }
+
+    this.DrawCloseArea=function()   //收盘价面积图
+    {
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
+        if (isHScreen) xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+2.0;
+        var chartright=this.ChartBorder.GetRight();
+        if (isHScreen) chartright=this.ChartBorder.GetBottom();
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        var bFirstPoint=true;
+        var firstPoint=null;
+        this.Canvas.beginPath();
+        this.Canvas.strokeStyle=this.CloseLineColor;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var data=this.Data.Data[i];
+            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+            var x=left+(right-left)/2;
+            var yClose=this.ChartFrame.GetYFromData(data.Close);
+
+            if (bFirstPoint)
+            {
+                if (isHScreen) 
+                {
+                    this.Canvas.moveTo(yClose,x);
+                    firstPoint={ X:yClose, Y:x };
+                }
+                else 
+                {
+                    this.Canvas.moveTo(x,yClose);
+                    firstPoint={ X:x, Y:yClose };
+                }
+                bFirstPoint=false;
+            }
+            else
+            {
+                if (isHScreen) this.Canvas.lineTo(yClose,x);
+                else this.Canvas.lineTo(x,yClose);
+            }
+        }
+
+        if (bFirstPoint) return;
+
+        this.Canvas.stroke();
+        if (isHScreen)
+        {
+            this.Canvas.lineTo(this.ChartBorder.GetLeft(),x);
+            this.Canvas.lineTo(this.ChartBorder.GetLeft(),firstPoint.Y);
+        }
+        else
+        {
+            this.Canvas.lineTo(x,this.ChartBorder.GetBottom());
+            this.Canvas.lineTo(firstPoint.X,this.ChartBorder.GetBottom());
+        }
+        this.Canvas.closePath();
+        if (Array.isArray(this.CloseLineAreaColor))
+        {
+            if (isHScreen)
+            {
+                let gradient = this.Canvas.createLinearGradient(this.ChartBorder.GetRightEx(),this.ChartBorder.GetTop(), this.ChartBorder.GetLeft(),this.ChartBorder.GetTop());
+                gradient.addColorStop(0, this.CloseLineAreaColor[0]);
+                gradient.addColorStop(1, this.CloseLineAreaColor[1]);
+                this.Canvas.fillStyle=gradient;
+            }
+            else
+            {
+                let gradient = this.Canvas.createLinearGradient(firstPoint.X,this.ChartBorder.GetTopEx(), firstPoint.X,this.ChartBorder.GetBottom());
+                gradient.addColorStop(0, this.CloseLineAreaColor[0]);
+                gradient.addColorStop(1, this.CloseLineAreaColor[1]);
+                this.Canvas.fillStyle=gradient;
+            }
+        }
+        else
+        {
+            this.Canvas.fillStyle=this.CloseLineAreaColor;
+        }
+        this.Canvas.fill();
     }
 
     this.DrawCloseLine=function()   //收盘价线
@@ -10665,6 +10765,10 @@ function ChartKLine()
         else if (this.DrawType==2)
         {
             this.DrawAKLine();
+        }
+        else if (this.DrawType==4)
+        {
+            this.DrawCloseArea();
         }
         else
         {
@@ -22228,7 +22332,8 @@ function JSChartResource()
     this.UpTextColor="rgb(238,21,21)";
     this.DownTextColor="rgb(25,158,0)";
     this.UnchagneTextColor="rgb(0,0,0)";
-    this.CloseLineColor='rgb(178,34,34)';
+    this.CloseLineColor='rgb(0,191,255)';
+    this.CloseLineAreaColor=['rgba(0,191,255,0.8)','rgba(0,191,255,0.2)'];
 
     this.FrameBorderPen="rgb(225,236,242)";
     this.FrameSplitPen="rgb(225,236,242)";          //分割线
@@ -22423,6 +22528,7 @@ function JSChartResource()
         if (style.DownTextColor) this.DownTextColor = style.DownTextColor;
         if (style.UnchagneTextColor) this.UnchagneTextColor = style.UnchagneTextColor;
         if (style.CloseLineColor) this.CloseLineColor = style.CloseLineColor;
+        if (style.CloseLineAreaColor) this.CloseLineAreaColor = style.CloseLineAreaColor;
         if (style.FrameBorderPen) this.FrameBorderPen = style.FrameBorderPen;
         if (style.FrameSplitPen) this.FrameSplitPen = style.FrameSplitPen;
         if (style.FrameDotSplitPen) this.FrameDotSplitPen = style.FrameDotSplitPen;
@@ -23585,6 +23691,11 @@ function KLineChartContainer(uielement)
         Minute:{ Enable:false, Index:0, Finish:false }  //分钟
     };  //分页下载 Enable:是否分页下载 Index:已下载到第几页 Finish：是否所有分页完成  
 
+    this.DragDownload= { 
+        Day:{ Enable:false, IsEnd:false, Status:0 },      //日线数据拖拽下载 Status: 0空闲 1 下载中
+        Minute: { Enable:false, IsEnd:false, status:0 }   //分钟数据拖拽下载
+    };
+
     //自动更新设置
     this.IsAutoUpdate=false;                    //是否自动更新行情数据
     this.AutoUpdateFrequency=30000;             //30秒更新一次数据
@@ -23593,6 +23704,8 @@ function KLineChartContainer(uielement)
     //this.KLineApiUrl="http://opensource.zealink.com/API/KLine2";                  //历史K线api地址
     this.KLineApiUrl=g_JSChartResource.Domain+"/API/KLine2";                        //历史K线api地址
     this.MinuteKLineApiUrl=g_JSChartResource.Domain+'/API/KLine3';                  //历史分钟数据
+    this.DragMinuteKLineApiUrl=g_JSChartResource.Domain+'/API/KLine4';              //拖动1分钟K数据下载
+    this.DragKLineApiUrl=g_JSChartResource.Domain+'/API/KLine5';                    //拖动日K数据下载
     this.RealtimeApiUrl=g_JSChartResource.Domain+"/API/Stock";                      //实时行情api地址
     this.KLineMatchUrl=g_JSChartResource.Domain+"/API/KLineMatch";                  //形态匹配
     this.StockHistoryDayApiUrl= g_JSChartResource.Domain+'/API/StockHistoryDay';    //股票历史数据
@@ -23601,6 +23714,15 @@ function KLineChartContainer(uielement)
     this.MinuteDialog;      //双击历史K线 弹出分钟走势图
     this.RightMenu;         //右键菜单
     this.ChartPictureMenu;  //画图工具 单个图形设置菜单
+
+    this.ResetDragDownload=function()
+    {
+        this.DragDownload.Day.Status=0;
+        this.DragDownload.Day.IsEnd=false;
+
+        this.DragDownload.Minute.Status=0;
+        this.DragDownload.Minute.IsEnd=false;
+    }
 
     this.ResetPage=function()   //重置分页下载
     {
@@ -24127,6 +24249,7 @@ function KLineChartContainer(uielement)
         this.ChartSplashPaint.IsEnableSplash = true;
         this.FlowCapitalReady=false;
         this.ResetPage(); //重置分页
+        this.ResetDragDownload();
         this.Draw();
 
         if (this.NetworkFilter)
@@ -24288,7 +24411,7 @@ function KLineChartContainer(uielement)
                 Name:'KLineChartContainer::RequestHistoryPageData', //类名::
                 Explain:'日K数据分页',
                 Request:{ Url:'none',  Type:'POST' ,
-                    Data: { symbol:self.Symbol, index:self.Page.Day.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], firstDate:firstItem.Date } }, 
+                    Data: { symbol:self.Symbol, index:self.Page.Day.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], firstDate:firstItem.Date, first:{ date: firstItem.Date } } }, 
                 Page:self.Page.Day,
                 Self:this,
                 PreventDefault:false
@@ -24394,6 +24517,7 @@ function KLineChartContainer(uielement)
         this.ChartSplashPaint.IsEnableSplash = true;
         this.FlowCapitalReady=false;
         this.ResetPage(); //重置分页
+        this.ResetDragDownload();
         this.Draw();
 
         if (this.NetworkFilter)
@@ -24548,7 +24672,7 @@ function KLineChartContainer(uielement)
                 Name:'KLineChartContainer::RecvHistoryMinutePageData', //类名::
                 Explain:'1分钟K线数据分页',
                 Request:{ Url:'none',  Type:'POST' ,
-                    Data: { symbol:self.Symbol, index:self.Page.Minute.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], firstDate:firstItem.Date } }, 
+                    Data: { symbol:self.Symbol, index:self.Page.Minute.Index, field: ["name","symbol","yclose","open","price","high","low","vol"], firstDate:firstItem.Date, first:{ date: firstItem.Date, time:firstItem.Time } } }, 
                 Page:self.Page.Minute,
                 Self:this,
                 PreventDefault:false
@@ -24623,7 +24747,7 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.DataType=this.SourceData.DataType;
 
-        if (bindData.Right>0 && bindData.Period<=3)    //复权(日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsMinutePeriod(bindData.Period,false))    //复权(日线数据才复权)
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
@@ -24950,6 +25074,25 @@ function KLineChartContainer(uielement)
         if (!frameHisdata) return -1;
         var lastDataCount=frameHisdata.Data.length;  //上一个的数据长度
         return lastDataCount;
+    }
+
+    this.GetRequestDataCount=function() //K线请求数据个数　(由于可以拖拽下载历史数据,所有原来固定个数的就不能用了)
+    {
+        var result={MaxRequestDataCount:this.MaxReqeustDataCount, MaxRequestMinuteDayCount:this.MaxRequestMinuteDayCount };
+        
+        if (!this.SourceData || !this.SourceData.Data || this.SourceData.Data.length<=0) return result;
+
+        if (ChartData.IsDayPeriod(this.Period,true))
+        {
+            var lCount=this.SourceData.Data.length;
+            if (lCount>result.MaxRequestDataCount) result.MaxRequestDataCount=lCount;
+        }
+        else if (ChartData.IsMinutePeriod(this.Period,true))
+        {
+
+        }
+
+        return result;
     }
 
     //分笔数据
@@ -27207,6 +27350,231 @@ function KLineChartContainer(uielement)
         status.Zoom.Index=subFrame.ZoomIndex;
         status.Zoom.Max=ZOOM_SEED.length;
         return status;
+    }
+
+    //数据拖拽下载
+    this.DragDownloadData=function()
+    {
+        var data=null;
+        if (!this.Frame.Data) data=this.Frame.Data;
+        else data=this.Frame.SubFrame[0].Frame.Data;
+        if (!data) return false;
+        if (data.DataOffset>0) return;
+
+        if (ChartData.IsMinutePeriod(this.Period,true)) //下载分钟数据
+        {
+            console.log(`[KLineChartContainer.DragDownloadData] Minute:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
+            if (!this.DragDownload.Minute.Enable) return;
+            if (this.DragDownload.Minute.IsEnd) return; //全部下载完了
+            if (this.DragDownload.Minute.Status!=0) return;
+            this.RequestDragMinuteData();
+        }
+        else if (ChartData.IsDayPeriod(this.Period,true))
+        {
+            console.log(`[KLineChartContainer.DragDownloadData] Day:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
+            if (!this.DragDownload.Day.Enable) return;
+            if (this.DragDownload.Day.IsEnd) return; //全部下载完了
+            if (this.DragDownload.Day.Status!=0) return;
+            this.RequestDragDayData();
+        }
+    }
+
+    this.RequestDragMinuteData=function()
+    {
+        var self=this;
+        this.AutoUpdateEvent(false,'KLineChartContainer::RequestDragMinuteData');   //停止自动更新
+        this.CancelAutoUpdate();
+        var download=this.DragDownload.Minute;
+        download.Status=1;
+        var firstItem=this.SourceData.Data[0];   //最新的一条数据
+        var postData=
+        {
+            "field": ["name","symbol", "yclose","open","price","high","low","vol"],
+            "symbol": self.Symbol,
+            "enddate": firstItem.Date,
+            "endtime" :firstItem.Time,
+            "count": self.MaxRequestMinuteDayCount,
+            "first":{ date: firstItem.Date, time:firstItem.Time }
+        };
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestDragMinuteData', //类名::函数
+                Explain:'拖拽1分钟K线数据下载',
+                Request:{ Url:this.DragMinuteKLineApiUrl,  Type:'POST' , Data: postData  }, 
+                DragDownload:download,
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            {
+                self.RecvDragMinuteData(data);
+                download.Status=0;
+                self.AutoUpdateEvent(true,'KLineChartContainer::RequestDragMinuteData');   //自动更新
+                self.AutoUpdate();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        JSNetwork.HttpRequest({
+            url: this.DragMinuteKLineApiUrl,
+            data:postData,
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function(data)
+            {
+                self.RecvDragMinuteData(data);
+                download.Status=0;
+                self.AutoUpdateEvent(true,'KLineChartContainer::RequestDragMinuteData');   //自动更新
+                self.AutoUpdate();
+            }
+        });
+    }
+
+    this.RecvDragMinuteData=function(data)
+    {
+        var aryDayData=KLineChartContainer.JsonDataToMinuteHistoryData(data);
+        var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
+
+        for(var i in aryDayData)    //数据往前插
+        {
+            var item=aryDayData[i];
+            this.SourceData.Data.splice(i,0,item);
+        }
+
+        var bindData=new ChartData();
+        bindData.Data=this.SourceData.Data;
+        bindData.Period=this.Period;
+        bindData.Right=this.Right;
+        bindData.DataType=this.SourceData.DataType;
+        bindData.Symbol=this.Symbol;
+
+        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        {
+            var periodData=bindData.GetPeriodData(bindData.Period);
+            bindData.Data=periodData;
+        }
+
+        //绑定数据
+        this.UpdateMainData(bindData,lastDataCount);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            this.BindIndexData(i,bindData);
+        }
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+    }
+
+    this.RequestDragDayData=function()
+    {
+        var self=this;
+        this.AutoUpdateEvent(false,'KLineChartContainer::RequestDragDayData');   //停止自动更新
+        this.CancelAutoUpdate();
+        var download=this.DragDownload.Day;
+        download.Status=1;
+        var firstItem=this.SourceData.Data[0];   //最新的一条数据
+        var postData=
+        {
+            "field": ["name","symbol", "yclose","open","price","high","low","vol"],
+            "symbol": self.Symbol,
+            "enddate": firstItem.Date,
+            "count": self.MaxReqeustDataCount,
+            "first":{ date: firstItem.Date }
+        };
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestDragDayData', //类名::函数
+                Explain:'拖拽日K数据下载',
+                Request:{ Url:this.DragKLineApiUrl,  Type:'POST' , Data: postData  }, 
+                DragDownload:download,
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            {
+                self.RecvDragDayData(data);
+                download.Status=0;
+                self.AutoUpdateEvent(true,'KLineChartContainer::RequestDragDayData');   //自动更新
+                self.AutoUpdate();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        JSNetwork.HttpRequest({
+            url: this.DragKLineApiUrl,
+            data:postData,
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function(data)
+            {
+                self.RecvDragDayData(data);
+                download.Status=0;
+                self.AutoUpdateEvent(true,'KLineChartContainer::RequestDragDayData');   //自动更新
+                self.AutoUpdate();
+            }
+        });
+    }
+
+    this.RecvDragDayData=function(data)
+    {
+        var aryDayData=KLineChartContainer.JsonDataToHistoryData(data);
+        if (aryDayData.length<=0)
+        {
+            this.DragDownload.Day.IsEnd=true;   //下完了
+            return;
+        }
+        var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
+
+        for(var i in aryDayData)    //数据往前插
+        {
+            var item=aryDayData[i];
+            this.SourceData.Data.splice(i,0,item);
+        }
+
+        var bindData=new ChartData();
+        bindData.Data=this.SourceData.Data;
+        bindData.Period=this.Period;
+        bindData.Right=this.Right;
+        bindData.DataType=this.SourceData.DataType;
+        bindData.Symbol=this.Symbol;
+
+        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        {
+            var periodData=bindData.GetPeriodData(bindData.Period);
+            bindData.Data=periodData;
+        }
+
+        //绑定数据
+        this.UpdateMainData(bindData,lastDataCount);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            this.BindIndexData(i,bindData);
+        }
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
     }
 
 }
@@ -34808,6 +35176,10 @@ function KLineRightMenu(divElement)
             {
                 text: "收盘线",
                 click: function () { chart.ChangeKLineDrawType(1); }
+            },
+            {
+                text: "收盘面积",
+                click: function () { chart.ChangeKLineDrawType(4); }
             }
         ];
 
@@ -34824,6 +35196,9 @@ function KLineRightMenu(divElement)
                 break;
             case 3:
                 data[0].selected=true;
+                break;
+            case 4:
+                data[4].selected=true;
                 break;
         }
         return data;
@@ -36250,7 +36625,7 @@ function MinuteCoordinateData()
         else 
         {
             var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
-            if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol))
+            if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol) || MARKET_SUFFIX_NAME.IsSHSZIndex(upperSymbol))
                 data = SHZE_MINUTE_X_COORDINATE;
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
                 data = HK_MINUTE_X_COORDINATE;
@@ -42739,7 +43114,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.SourceData) this.SourceData=option.SourceData;
         if (option.Symbol) this.Symbol=option.Symbol;
         if (option.Name) this.Name=option.Name;
-        if (option.MaxReqeustDataCount>0) this.MaxRequestDataCount=option.MaxReqeustDataCount;
+        if (option.MaxRequestDataCount>0) this.MaxRequestDataCount=option.MaxRequestDataCount;
         if (option.MaxRequestMinuteDayCount>0) this.MaxRequestMinuteDayCount=option.MaxRequestMinuteDayCount;
         if (option.KLineApiUrl) this.KLineApiUrl=option.KLineApiUrl;
         if (option.Right) this.Right=option.Right;
@@ -47877,6 +48252,8 @@ function APIScriptIndex(name,script,args,option)
     if (option.API) 
     {
         if (option.API.Url) this.ApiUrl=option.API.Url;
+        if (option.API.Name) this.Name=this.ID=option.API.Name;
+        if (option.API.ID) this.ID=option.API.ID;
     }
 
     this.ExecuteScript=function(hqChart,windowIndex,hisData)
@@ -47905,13 +48282,14 @@ function APIScriptIndex(name,script,args,option)
             }
         }
 
+        var requestCount=hqChart.GetRequestDataCount();
         var self=this;
         var postData =
         { 
-            indexname:this.Name,  symbol: hqChart.Symbol, script:this.Script, args:args,
-            period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount, HQDataType: hqDataType
+            indexname:this.ID,  symbol: hqChart.Symbol, script:this.Script, args:args,
+            period:hqChart.Period, right:hqChart.Right, maxdatacount:requestCount.MaxRequestDataCount, maxminutedaycount:requestCount.MaxRequestMinuteDayCount, hqdatatype: hqDataType
         };
-        if (hqDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) postData.daycount=hqChart.DayCount;
+        if (hqDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID || hqDataType==HQ_DATA_TYPE.MINUTE_ID) postData.daycount=hqChart.DayCount;
         this.HQDataType=hqDataType;
 
         if (hqChart.NetworkFilter)
@@ -47955,6 +48333,8 @@ function APIScriptIndex(name,script,args,option)
     {
         console.log('[APIScriptIndex::RecvAPIData] recv data ', this.Name,data );
         if (data.code!=0) return;
+
+        if (data.outdata && data.outdata.name) this.Name=data.outdata.name;
 
         this.Arguments=[];
         if (data.outdata.args)

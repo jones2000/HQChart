@@ -21759,6 +21759,25 @@ function KLineChartContainer(uielement)
         return lastDataCount;
     }
 
+    this.GetRequestDataCount=function() //K线请求数据个数　(由于可以拖拽下载历史数据,所有原来固定个数的就不能用了)
+    {
+        var result={MaxRequestDataCount:this.MaxReqeustDataCount, MaxRequestMinuteDayCount:this.MaxRequestMinuteDayCount };
+        
+        if (!this.SourceData || !this.SourceData.Data || this.SourceData.Data.length<=0) return result;
+
+        if (ChartData.IsDayPeriod(this.Period,true))
+        {
+            var lCount=this.SourceData.Data.length;
+            if (lCount>result.MaxRequestDataCount) result.MaxRequestDataCount=lCount;
+        }
+        else if (ChartData.IsMinutePeriod(this.Period,true))
+        {
+
+        }
+
+        return result;
+    }
+
     //分笔数据
     this.RequestTickData=function()
     {

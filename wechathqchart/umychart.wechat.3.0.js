@@ -585,88 +585,98 @@ function JSChart(element)
     return chart;
   }
 
-  this.CreateKLineTrainChartContainer = function (option) {
-    var bHScreen = (option.Type == 'K线训练横屏' ? true : false);
-    var chart = new KLineTrainChartContainer(this.CanvasElement, bHScreen);
-
-    if (option.KLine)   //k线图的属性设置
+    this.CreateKLineTrainChartContainer = function (option) 
     {
-      if (option.KLine.Right >= 0) chart.Right = option.KLine.Right;
-      if (option.KLine.Period >= 0) chart.Period = option.KLine.Period;
-      if (option.KLine.MaxReqeustDataCount > 0) chart.MaxReqeustDataCount = option.KLine.MaxReqeustDataCount;
-      if (option.KLine.Info && option.KLine.Info.length > 0) chart.SetKLineInfo(option.KLine.Info, false);
-      if (option.KLine.PageSize > 0) chart.PageSize = option.KLine.PageSize;
-      if (option.KLine.IsShowTooltip == false) chart.IsShowTooltip = false;
-      if (option.KLine.MaxRequestMinuteDayCount > 0) chart.MaxRequestMinuteDayCount = option.KLine.MaxRequestMinuteDayCount;
-      if (option.KLine.DrawType) chart.KLineDrawType = option.KLine.DrawType;
+        var bHScreen = (option.Type == 'K线训练横屏' ? true : false);
+        var chart = new KLineTrainChartContainer(this.CanvasElement, bHScreen);
 
-    }
-
-    if (option.Train) {
-      if (option.Train.DataCount) chart.TrainDataCount = option.Train.DataCount;
-      if (option.Train.Callback) chart.TrainCallback = option.Train.Callback;
-    }
-
-    if (!option.Windows || option.Windows.length <= 0) return null;
-
-    //创建子窗口
-    chart.Create(option.Windows.length);
-
-    if (option.Border) {
-      if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left = option.Border.Left;
-      if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right = option.Border.Right;
-      if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top = option.Border.Top;
-      if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom = option.Border.Bottom;
-    }
-
-
-    if (option.IsShowCorssCursorInfo == false) chart.ChartCorssCursor.IsShowText = option.IsShowCorssCursorInfo;//取消显示十字光标刻度信息
-
-    if (option.Frame) {
-      for (var i in option.Frame) {
-        if (!chart.Frame.SubFrame[i]) continue;
-        var item = option.Frame[i];
-        if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = item.SplitCount;
-        if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
-      }
-    }
-
-    //股票名称 日期 周期都不显示
-    chart.TitlePaint[0].IsShowName = false;
-    chart.TitlePaint[0].IsShowSettingInfo = false;
-    chart.TitlePaint[0].IsShowDateTime = false;
-
-    //创建子窗口的指标
-    let scriptData = new JSCommonIndexScript.JSIndexScript();
-    for (var i in option.Windows) {
-      var item = option.Windows[i];
-      if (item.Script) {
-        chart.WindowIndex[i] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
-      }
-      else {
-        let indexItem = JSIndexMap.Get(item.Index);
-        if (indexItem) {
-          chart.WindowIndex[i] = indexItem.Create();
-          chart.CreateWindowIndex(i);
-        }
-        else {
-          let indexInfo = scriptData.Get(item.Index);
-          if (!indexInfo) continue;
-
-          if (item.Lock) indexInfo.Lock = item.Lock;
-          chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
+        if (option.KLine)   //k线图的属性设置
+        {
+            if (option.KLine.Right >= 0) chart.Right = option.KLine.Right;
+            if (option.KLine.Period >= 0) chart.Period = option.KLine.Period;
+            if (option.KLine.MaxReqeustDataCount > 0) chart.MaxReqeustDataCount = option.KLine.MaxReqeustDataCount;
+            if (option.KLine.Info && option.KLine.Info.length > 0) chart.SetKLineInfo(option.KLine.Info, false);
+            if (option.KLine.PageSize > 0) chart.PageSize = option.KLine.PageSize;
+            if (option.KLine.IsShowTooltip == false) chart.IsShowTooltip = false;
+            if (option.KLine.MaxRequestMinuteDayCount > 0) chart.MaxRequestMinuteDayCount = option.KLine.MaxRequestMinuteDayCount;
+            if (option.KLine.DrawType) chart.KLineDrawType = option.KLine.DrawType;
         }
 
-      }
+        if (option.Train) 
+        {
+            if (option.Train.DataCount) chart.TrainDataCount = option.Train.DataCount;
+            if (option.Train.Callback) chart.TrainCallback = option.Train.Callback;
+        }
 
-      if (item.Modify != null) chart.Frame.SubFrame[i].Frame.ModifyIndex = item.Modify;
-      if (item.Change != null) chart.Frame.SubFrame[i].Frame.ChangeIndex = item.Change;
+        if (!option.Windows || option.Windows.length <= 0) return null;
 
-      if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight = item.TitleHeight;
+        //创建子窗口
+        chart.Create(option.Windows.length);
+
+        if (option.Border) 
+        {
+            if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left = option.Border.Left;
+            if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right = option.Border.Right;
+            if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top = option.Border.Top;
+            if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom = option.Border.Bottom;
+        }
+
+
+        if (option.IsShowCorssCursorInfo == false) chart.ChartCorssCursor.IsShowText = option.IsShowCorssCursorInfo;//取消显示十字光标刻度信息
+
+        if (option.Frame) 
+        {
+            for (var i in option.Frame) 
+            {
+                if (!chart.Frame.SubFrame[i]) continue;
+                var item = option.Frame[i];
+                if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = item.SplitCount;
+                if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
+                if (item.IsShowLeftText === false || item.IsShowLeftText === true) chart.Frame.SubFrame[i].Frame.IsShowYText[0] = item.IsShowLeftText;            //显示左边刻度
+                if (item.IsShowRightText === false || item.IsShowRightText === true) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度 
+            }
+        }
+
+        //股票名称 日期 周期都不显示
+        chart.TitlePaint[0].IsShowName = false;
+        chart.TitlePaint[0].IsShowSettingInfo = false;
+        chart.TitlePaint[0].IsShowDateTime = false;
+
+        //创建子窗口的指标
+        let scriptData = new JSCommonIndexScript.JSIndexScript();
+        for (var i in option.Windows) 
+        {
+            var item = option.Windows[i];
+            if (item.Script) 
+            {
+                chart.WindowIndex[i] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
+            }
+            else 
+            {
+                let indexItem = JSIndexMap.Get(item.Index);
+                if (indexItem) 
+                {
+                    chart.WindowIndex[i] = indexItem.Create();
+                    chart.CreateWindowIndex(i);
+                }
+                else 
+                {
+                    let indexInfo = scriptData.Get(item.Index);
+                    if (!indexInfo) continue;
+
+                    if (item.Lock) indexInfo.Lock = item.Lock;
+                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
+                }
+
+            }
+
+            if (item.Modify != null) chart.Frame.SubFrame[i].Frame.ModifyIndex = item.Modify;
+            if (item.Change != null) chart.Frame.SubFrame[i].Frame.ChangeIndex = item.Change;
+            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight = item.TitleHeight;
+        }
+
+        return chart;
     }
-
-    return chart;
-  }
 
     //根据option内容绘制图形
     this.SetOption = function (option) 

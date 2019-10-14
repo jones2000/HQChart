@@ -5988,7 +5988,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.SourceData) this.SourceData=option.SourceData;
         if (option.Symbol) this.Symbol=option.Symbol;
         if (option.Name) this.Name=option.Name;
-        if (option.MaxReqeustDataCount>0) this.MaxRequestDataCount=option.MaxReqeustDataCount;
+        if (option.MaxRequestDataCount>0) this.MaxRequestDataCount=option.MaxRequestDataCount;
         if (option.MaxRequestMinuteDayCount>0) this.MaxRequestMinuteDayCount=option.MaxRequestMinuteDayCount;
         if (option.KLineApiUrl) this.KLineApiUrl=option.KLineApiUrl;
         if (option.Right) this.Right=option.Right;
@@ -11156,11 +11156,12 @@ function APIScriptIndex(name,script,args,option)
             }
         }
 
+        var requestCount=hqChart.GetRequestDataCount();
         var self=this;
         var postData =
         { 
             indexname:this.ID,  symbol: hqChart.Symbol, script:this.Script, args:args,
-            period:hqChart.Period, right:hqChart.Right, maxdatacount:hqChart.MaxReqeustDataCount, maxminutedaycount:hqChart.MaxRequestMinuteDayCount, hqdatatype: hqDataType
+            period:hqChart.Period, right:hqChart.Right, maxdatacount:requestCount.MaxRequestDataCount, maxminutedaycount:requestCount.MaxRequestMinuteDayCount, hqdatatype: hqDataType
         };
         if (hqDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID || hqDataType==HQ_DATA_TYPE.MINUTE_ID) postData.daycount=hqChart.DayCount;
         this.HQDataType=hqDataType;

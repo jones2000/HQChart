@@ -116,8 +116,8 @@ function JSIndexController(req,res,next)
             }
         }
 
-        if (postData.maxdatacount>0) this.DataCount.MaxDataCount=postData.maxdatacount;
-        if (postData.maxminutedaycount>0) this.DataCount.MaxMinuteDayCount=postData.maxminutedaycount;
+        if (postData.maxdatacount>0) this.DataCount.MaxDataCount=parseInt(postData.maxdatacount);
+        if (postData.maxminutedaycount>0) this.DataCount.MaxMinuteDayCount=parseInt(postData.maxminutedaycount);
 
         if (postData.period>0) this.Period=parseInt(postData.period); //周期
         if (postData.right>0) this.Right=parseInt(postData.right);    //复权
