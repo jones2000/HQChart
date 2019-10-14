@@ -9887,6 +9887,7 @@ function ScriptIndex(name,script,args,option)
         
         let titleIndex=windowIndex+1;
         bar.Data.Data=varItem.Draw.DrawData;
+        bar.BarType=varItem.Draw.Type;
 
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
