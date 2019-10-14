@@ -106,6 +106,12 @@ function JSIndexController(req,res,next)
             }
         }
 
+        if (!this.Script)
+        {
+            this.ErrorMessage='script is empty';
+            return false;
+        }
+
         if (postData.args)  //参数
         {
             this.Args=[];
@@ -375,7 +381,7 @@ function JSMongoIndex()
         for(var i in data)
         {
             var item=data[i];
-            var indexItem={Name:item.name, Args:item.args, Script:item.Script, ID:item.id, IsMainIndex:false};
+            var indexItem={Name:item.name, Args:item.args, Script:item.script, ID:item.id, IsMainIndex:false};
             if (item.ismainindex==true) indexItem.IsMainIndex=true;
             this.Data.push(indexItem);
         }

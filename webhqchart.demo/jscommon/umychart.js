@@ -5567,7 +5567,7 @@ function ChartData()
                 {
 
                 }
-                else if (preTime!=null && minData.Time == 1300 && (minData.Time-preTime)>1) //1点的数据 如果不是连续的 就不算个数
+                else if (preTime!=null && minData.Time == 1300 && preTime!=1259 ) //1点的数据 如果不是连续的 就不算个数
                 {
 
                 }
