@@ -578,6 +578,7 @@ function ChartStickLine()
 
     this.Color = "rgb(255,193,37)";   //线段颜色
     this.LineWidth = 2;               //线段宽度
+    this.BarType = 0; //柱子类型 0=实心 1=空心
 
     this.Draw = function () 
     {
@@ -608,6 +609,7 @@ function ChartStickLine()
             {
                 bFillKLine = true;
                 this.Canvas.fillStyle = this.Color;
+                this.Canvas.strokeStyle = this.Color;
             }
             else    //太细了 画竖线
             {
@@ -661,10 +663,28 @@ function ChartStickLine()
             }
             else if (bFillKLine) 
             {
-                if (isHScreen)
-                    this.Canvas.fillRect(ToFixedRect(Math.min(y, y2)), ToFixedRect(xOffset), ToFixedRect(Math.abs(y - y2)), ToFixedRect(dataWidth));
+                if (this.BarType == 1)    //实心
+                {
+                    if (isHScreen) 
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.fillRect(ToFixedRect(Math.min(y, y2)), ToFixedRect(xOffset), ToFixedRect(Math.abs(y - y2)), ToFixedRect(dataWidth));
+                        this.Canvas.stroke();
+                    }
+                    else 
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedRect(xOffset), ToFixedRect(Math.min(y, y2)), ToFixedRect(dataWidth), ToFixedRect(Math.abs(y - y2)));
+                        this.Canvas.stroke();
+                    }
+                }
                 else
-                    this.Canvas.fillRect(ToFixedRect(xOffset), ToFixedRect(Math.min(y, y2)), ToFixedRect(dataWidth), ToFixedRect(Math.abs(y - y2)));
+                {
+                    if (isHScreen)
+                        this.Canvas.fillRect(ToFixedRect(Math.min(y, y2)), ToFixedRect(xOffset), ToFixedRect(Math.abs(y - y2)), ToFixedRect(dataWidth));
+                    else
+                        this.Canvas.fillRect(ToFixedRect(xOffset), ToFixedRect(Math.min(y, y2)), ToFixedRect(dataWidth), ToFixedRect(Math.abs(y - y2)));
+                }
             }
             else 
             {

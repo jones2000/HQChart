@@ -11260,7 +11260,7 @@ function APIScriptIndex(name,script,args,option)
         }
     }
 
-    this.FittingArray=function(sourceData,date,time,hqChart)
+    this.FittingArray=function(sourceData,date,time,hqChart,arrayType)  //arrayType 0=单值数组 1=结构体
     {
         var kdata=hqChart.ChartPaint[0].Data;   //K线
 
@@ -11283,7 +11283,9 @@ function APIScriptIndex(name,script,args,option)
 
         var bindData=new ChartData();
         bindData.Data=aryFittingData;
-        var result=bindData.GetValue();
+        var result;
+        if (arrayType==1) result=bindData.GetObject();
+        else result=bindData.GetValue();
         return result;
     }
 
@@ -11375,7 +11377,8 @@ function APIScriptIndex(name,script,args,option)
         {
             item=outVar[i];
             var indexData=[];
-            var outVarItem={Name:item.name,Type:item.type}
+            var outVarItem={Name:item.name,Type:item.type};
+            if (item.color) outVarItem.Color=item.color;
             if (item.data)
             {
                 outVarItem.Data=this.FittingArray(item.data,date,time,hqChart);
@@ -11391,7 +11394,7 @@ function APIScriptIndex(name,script,args,option)
             {
                 var draw=item.Draw;
                 var drawItem={};
-                if (draw.DrawType=='DRAWICON')
+                if (draw.DrawType=='DRAWICON')  //图标
                 {
                     drawItem.Icon=draw.Icon;
                     drawItem.Name=draw.Name;
@@ -11401,12 +11404,23 @@ function APIScriptIndex(name,script,args,option)
 
                     result.push(outVarItem);
                 }
-                else if (draw.DrawType=='DRAWTEXT')
+                else if (draw.DrawType=='DRAWTEXT') //文本
                 {
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=='STICKLINE')    //柱子
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.Width=draw.Width;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);

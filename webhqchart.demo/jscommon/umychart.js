@@ -512,6 +512,7 @@ function JSChart(divElement)
         if(option.MinuteTitle)
         {
             if(option.MinuteTitle.IsShowName==false) chart.TitlePaint[0].IsShowName=false;
+            if(option.MinuteTitle.IsShowDate===false || option.MinuteTitle.IsShowDate===true) chart.TitlePaint[0].IsShowDate=option.MinuteTitle.IsShowDate;
             //if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
         }
 
@@ -6325,17 +6326,35 @@ function ChartData()
 
     this.GetValue=function()
     {
-        var result=new Array();
+        var result=[];
         for(var i in this.Data)
         {
             if (this.Data[i] && this.Data[i].Value!=null)
             { 
-                if (!isNaN(this.Data[i].Value))
-                    result[i]=this.Data[i].Value;
-                else if (this.Data[i].Value instanceof Array)   //支持数组
-                    result[i]=this.Data[i].Value;
+                var item=this.Data[i].Value;
+                if (!isNaN(item))
+                    result[i]=item;
+                else if (item instanceof Array)   //支持数组
+                    result[i]=item;
                 else
                     result[i]=null;
+            }
+            else
+                result[i]=null;
+        }
+
+        return result;
+    }
+
+    this.GetObject=function()
+    {
+        var result=[];
+        for(var i in this.Data)
+        {
+            if (this.Data[i] && this.Data[i].Value)
+            { 
+                var item=this.Data[i].Value;
+                result[i]=item;
             }
             else
                 result[i]=null;
@@ -25441,7 +25460,8 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
         this.ChartCorssCursor.StringFormatX.Symbol=this.Symbol;
         this.ChartCorssCursor.StringFormatX.IsBeforeData=this.IsBeforeData;
-        this.TitlePaint[0].IsShowDate=false;
+
+        if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) this.TitlePaint[0].IsShowDate=false;
 
         var chartInfo=this.GetChartMinuteInfo();
         if (chartInfo) chartInfo.SourceData=this.SourceData;    //数据绑定到信息地雷上
@@ -26037,6 +26057,7 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
     var yClose=data.stock[0].yclose;
     if (isFutures && data.stock[0].yclearing) yClose=preClose=preAvPrice=data.stock[0].yclearing;  //期货使用昨结算价
     
+    var date=data.stock[0].date;    //默认使用外部日期, 但跨天的 走势图使用内部的日期
     for(var i in data.stock[0].minute)
     {
         var jsData=data.stock[0].minute[i];
@@ -26049,8 +26070,9 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         if (isSHSZ) item.Vol=jsData.vol/100; //沪深股票原始单位股
         else item.Vol=jsData.vol;
         item.Amount=jsData.amount;
-        item.DateTime=data.stock[0].date.toString()+" "+jsData.time.toString();
-        item.Date=data.stock[0].date;
+        if (jsData.date>0) date=jsData.date;    //分钟数据中有日期 优先使用
+        item.DateTime=date.toString()+" "+jsData.time.toString();
+        item.Date=date;
         item.Time=jsData.time;
 
         if (i==0) 

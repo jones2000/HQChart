@@ -16,11 +16,32 @@ var MARKET_SUFFIX_NAME=
     SH:'.SH',
     SZ:'.SZ',
     HK:'.HK',
+    FHK: '.FHK',         //港股期货 
     SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange)
     CFFEX: '.CFE',       //中期所 (China Financial Futures Exchange)
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
-    USA: '.USA',          //美股
+    USA: '.USA',         //美股
+    BIT: '.BIT',         //数字货币 如比特币
+    FTSE: '.FTSE',       //富时中国
+
+    IsFTSE: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.FTSE) > 0;
+    },
+
+    IsFHK: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.FHK) > 0;
+    },
+
+    IsBIT: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.BIT) > 0;
+    },
 
     IsUSA: function (upperSymbol) //是否是美股
     {
@@ -169,6 +190,24 @@ var MARKET_SUFFIX_NAME=
 
             return 2;
         }
+        else if (this.IsBIT(upperSymbol))   //数字货币24小时
+        {
+            return 2;
+        }
+        else if (this.IsSHFE(upperSymbol))  //富时中国 9:00-16:30 17:00-04:45
+        {
+            if (day == 6 || day == 0) return 0;   //周末
+            if (time >= 830 && time <= 2359) return 2;
+            if (time >= 0 && time <= 500) return 2;
+            return 0;
+        }
+        else if (this.IsFHK(upperSymbol))   //港股指数期货 9:15-12:00 13:00-16:30 17:15-01:00
+        {
+            if (day == 6 || day == 0) return 0;   //周末
+            if (time >= 900 && time <= 2359) return 2;
+            if (time >= 0 && time <= 120) return 2;
+            return 0;
+        }
         else 
         {
             var nowDate = new Date();
@@ -193,6 +232,8 @@ function MinuteTimeStringData()
     this.HK = null;         //香港交易所时间
     this.Futures=new Map(); //期货交易时间 key=时间名称 Value=数据
     this.USA = null;        //美股交易时间
+    this.FTSE = null;         //富时中国
+    this.FHK = null;          //港股指数期货
 
     this.Initialize = function ()  //初始化 默认只初始化沪深的 其他市场动态生成
     {
@@ -227,6 +268,18 @@ function MinuteTimeStringData()
     {
         if (!this.USA) this.USA=this.CreateUSAData();
         return this.USA;
+    }
+
+    this.GetFTSE = function () 
+    {
+        if (!this.FTSE) this.FTSE = this.CreateFTSEData();
+        return this.FTSE;
+    }
+
+    this.GetFHK = function () 
+    {
+        if (!this.FHK) this.FHK = this.CreateFHKData();
+        return this.FHK;
     }
 
     this.CreateSHSZData = function () 
@@ -268,7 +321,39 @@ function MinuteTimeStringData()
                 { Start: 0, End: 500 }
             ];
 
-        return this.CreateTimeData(TIME_SPLIT); 
+        //使用美国本地时间
+        const TIME_LOCAL_SPLIT =
+            [
+                { Start: 930, End: 1600 }   //美国东部时间9:30到16:00
+            ];
+
+        return this.CreateTimeData(TIME_LOCAL_SPLIT); 
+    }
+
+    this.CreateFTSEData = function () 
+    {
+        const TIME_SPLIT =
+            [
+                { Start: 1700, End: 2359 },
+                { Start: 0, End: 445 },
+                { Start: 900, End: 1630 }
+            ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateFHKData = function () 
+    {
+        //港股指数期货 9:15-12:00 13:00-16:30 17:15-01:00
+        const TIME_SPLIT =
+            [
+                { Start: 1715, End: 2359 },
+                { Start: 0, End: 100 },
+                { Start: 915, End: 1200 },
+                { Start: 1300, End: 1630 },
+            ];
+
+        return this.CreateTimeData(TIME_SPLIT);
     }
 
     this.CreateTimeData = function (timeSplit) 
@@ -299,6 +384,8 @@ function MinuteTimeStringData()
             if (!splitData) return null;
             return this.GetFutures(splitData);
         }
+        if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) return this.GetFTSE();
+        if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) return this.GetFHK();
     }
 }
 
@@ -349,49 +436,173 @@ function MinuteCoordinateData()
 
     //港股走势图时间刻度
     const HK_MINUTE_X_COORDINATE =
+    {
+        Full:   //完整模式
+        [
+            [0, 1, "RGB(200,200,200)", "09:30"],
+            [30, 0, "RGB(200,200,200)", "10:00"],
+            [60, 1, "RGB(200,200,200)", "10:30"],
+            [90, 0, "RGB(200,200,200)", "11:00"],
+            [120, 1, "RGB(200,200,200)", "11:30"],
+            [151, 0, "RGB(200,200,200)", "13:00"],
+            [181, 1, "RGB(200,200,200)", "13:30"],
+            [211, 0, "RGB(200,200,200)", "14:00"],
+            [241, 1, "RGB(200,200,200)", "14:30"],
+            [271, 0, "RGB(200,200,200)", "15:00"],
+            [301, 1, "RGB(200,200,200)", "15:30"],
+            [331, 1, "RGB(200,200,200)", "16:00"]
+        ],
+        Simple: //简洁模式
+        [
+            [0, 1, "RGB(200,200,200)", "09:30"],
+            [60, 1, "RGB(200,200,200)", "10:30"],
+            [120, 1, "RGB(200,200,200)", "11:30"],
+            [211, 0, "RGB(200,200,200)", "14:00"],
+            [271, 0, "RGB(200,200,200)", "15:00"],
+            [331, 1, "RGB(200,200,200)", "16:00"]
+        ],
+        Min:   //最小模式     
+        [
+            [0, 1, "RGB(200,200,200)", "09:30"],
+            [151, 0, "RGB(200,200,200)", "13:00"],
+            [331, 1, "RGB(200,200,200)", "16:00"]
+        ],
+
+        Count: 332,
+        MiddleCount: 151,
+
+        GetData: function (width) 
         {
-            Full:   //完整模式
+            if (width < 200) return this.Min;
+            else if (width < 450) return this.Simple;
+
+            return this.Full;
+        }
+    };
+
+    //富时中国
+    const FTSE_MINUTE_X_COORDINATE =
+    {
+        Full:   //完整模式
             [
-                [0, 1, "RGB(200,200,200)", "09:30"],
-                [30, 0, "RGB(200,200,200)", "10:00"],
-                [60, 1, "RGB(200,200,200)", "10:30"],
-                [90, 0, "RGB(200,200,200)", "11:00"],
-                [120, 1, "RGB(200,200,200)", "11:30"],
-                [151, 0, "RGB(200,200,200)", "13:00"],
-                [181, 1, "RGB(200,200,200)", "13:30"],
-                [211, 0, "RGB(200,200,200)", "14:00"],
-                [241, 1, "RGB(200,200,200)", "14:30"],
-                [271, 0, "RGB(200,200,200)", "15:00"],
-                [301, 1, "RGB(200,200,200)", "15:30"],
-                [331, 1, "RGB(200,200,200)", "16:00"]
+                [0, 1, "RGB(200,200,200)", "17:00"],
+                //[60, 0, "RGB(200,200,200)", "18:00"],
+                [120, 1, "RGB(200,200,200)", "19:00"],
+                //[180, 0, "RGB(200,200,200)", "20:00"],
+                [240, 1, "RGB(200,200,200)", "21:00"],
+                //[300, 0, "RGB(200,200,200)", "22:00"],
+                [360, 1, "RGB(200,200,200)", "23:00"],
+                //[420, 0, "RGB(200,200,200)", "00:00"],
+                [480, 1, "RGB(200,200,200)", "01:00"],
+                //[540, 0, "RGB(200,200,200)", "02:00"],
+                [600, 1, "RGB(200,200,200)", "03:00"],
+                //[660, 1, "RGB(200,200,200)", "04:00"],
+                [706, 1, "RGB(200,200,200)", "09:00"],
+                //[766, 1, "RGB(200,200,200)", "10:00"],
+                [826, 1, "RGB(200,200,200)", "11:00"],
+                //[886, 1, "RGB(200,200,200)", "12:00"],
+                [946, 1, "RGB(200,200,200)", "13:00"],
+                //[1006, 1, "RGB(200,200,200)", "14:00"],
+                [1066, 1, "RGB(200,200,200)", "15:00"],
+                [1156, 1, "RGB(200,200,200)", "16:30"],
             ],
-            Simple: //简洁模式
+        Simple: //简洁模式
             [
-                [0, 1, "RGB(200,200,200)", "09:30"],
-                [60, 1, "RGB(200,200,200)", "10:30"],
-                [120, 1, "RGB(200,200,200)", "11:30"],
-                [211, 0, "RGB(200,200,200)", "14:00"],
-                [271, 0, "RGB(200,200,200)", "15:00"],
-                [331, 1, "RGB(200,200,200)", "16:00"]
+                [0, 1, "RGB(200,200,200)", "17:00"],
+                //[60, 0, "RGB(200,200,200)", "18:00"],
+                //[120, 1, "RGB(200,200,200)", "19:00"],
+                //[180, 0, "RGB(200,200,200)", "20:00"],
+                [240, 1, "RGB(200,200,200)", "21:00"],
+                //[300, 0, "RGB(200,200,200)", "22:00"],
+                //[360, 1, "RGB(200,200,200)", "23:30"],
+                //[420, 0, "RGB(200,200,200)", "00:00"],
+                [480, 1, "RGB(200,200,200)", "01:00"],
+                //[540, 0, "RGB(200,200,200)", "02:00"],
+                //[600, 1, "RGB(200,200,200)", "03:00"],
+                //[660, 1, "RGB(200,200,200)", "04:00"],
+                [706, 1, "RGB(200,200,200)", "09:00"],
+                //[766, 1, "RGB(200,200,200)", "10:00"],
+                //[826, 1, "RGB(200,200,200)", "11:00"],
+                //[886, 1, "RGB(200,200,200)", "12:00"],
+                [946, 1, "RGB(200,200,200)", "13:00"],
+                //[1006, 1, "RGB(200,200,200)", "14:00"],
+                //[1066, 1, "RGB(200,200,200)", "15:00"],
+                [1156, 1, "RGB(200,200,200)", "16:30"],
             ],
-            Min:   //最小模式     
+        Min:   //最小模式     
             [
-                [0, 1, "RGB(200,200,200)", "09:30"],
-                [151, 0, "RGB(200,200,200)", "13:00"],
-                [331, 1, "RGB(200,200,200)", "16:00"]
+                [0, 1, "RGB(200,200,200)", "17:00"],
+                [706, 1, "RGB(200,200,200)", "09:00"],
+                [1156, 1, "RGB(200,200,200)", "16:30"],
             ],
 
-            Count: 332,
-            MiddleCount: 151,
+        Count: 1157,
+        MiddleCount: 707,
 
-            GetData: function (width) 
-            {
-                if (width < 200) return this.Min;
-                else if (width < 450) return this.Simple;
+        GetData: function (width) {
+            if (width < 200) return this.Min;
+            else if (width < 450) return this.Simple;
 
-                return this.Full;
-            }
-        };
+            return this.Full;
+        }
+    };
+
+    //港股指数期货
+    const FHK_MINUTE_X_COORDINATE =
+    {
+        Full:   //完整模式
+            [
+                [0, 1, "RGB(200,200,200)", "17:15"],
+                //[45, 0, "RGB(200,200,200)", "18:00"],
+                [105, 1, "RGB(200,200,200)", "19:00"],
+                //[165, 0, "RGB(200,200,200)", "20:00"],
+                [225, 1, "RGB(200,200,200)", "21:00"],
+                //[285, 0, "RGB(200,200,200)", "22:00"],
+                [345, 1, "RGB(200,200,200)", "23:00"],
+                //[405, 0, "RGB(200,200,200)", "00:00"],
+                [466, 0, "RGB(200,200,200)", "09:15"],
+                //[511, 1, "RGB(200,200,200)", "10:00"],
+                [571, 1, "RGB(200,200,200)", "11:00"],
+                //[632, 1, "RGB(200,200,200)", "13:00"],
+                [692, 1, "RGB(200,200,200)", "14:00"],
+                //[752, 1, "RGB(200,200,200)", "15:00"],
+                [843, 1, "RGB(200,200,200)", "16:30"],
+            ],
+        Simple: //简洁模式
+            [
+                [0, 1, "RGB(200,200,200)", "17:15"],
+                //[45, 0, "RGB(200,200,200)", "18:00"],
+                //[105, 1, "RGB(200,200,200)", "19:00"],
+                //[165, 0, "RGB(200,200,200)", "20:00"],
+                [225, 1, "RGB(200,200,200)", "21:00"],
+                //[285, 0, "RGB(200,200,200)", "22:00"],
+                //[345, 1, "RGB(200,200,200)", "23:00"],
+                //[405, 0, "RGB(200,200,200)", "00:00"],
+                [466, 0, "RGB(200,200,200)", "09:15"],
+                //[511, 1, "RGB(200,200,200)", "10:00"],
+                //[571, 1, "RGB(200,200,200)", "11:00"],
+                [632, 1, "RGB(200,200,200)", "13:00"],
+                //[692, 1, "RGB(200,200,200)", "14:00"],
+                //[752, 1, "RGB(200,200,200)", "15:00"],
+                [843, 1, "RGB(200,200,200)", "16:30"],
+            ],
+        Min:   //最小模式     
+            [
+                [0, 1, "RGB(200,200,200)", "17:15"],
+                [466, 0, "RGB(200,200,200)", "09:15"],
+                [843, 1, "RGB(200,200,200)", "16:30"],
+            ],
+
+        Count: 843,
+        MiddleCount: 466,
+
+        GetData: function (width) {
+            if (width < 200) return this.Min;
+            else if (width < 450) return this.Simple;
+
+            return this.Full;
+        }
+    };
 
     this.GetCoordinateData = function (symbol, width) 
     {
@@ -409,6 +620,12 @@ function MinuteCoordinateData()
                 data = HK_MINUTE_X_COORDINATE;
             else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
                 return this.GetFuturesData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
+                data = this.GetUSAData(upperSymbol, width);
+            else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol, width))
+                data = this.GetFTSEData(upperSymbol, width);
+            else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol, width))
+                data = this.GetFHKData(upperSymbol, width);
         }
 
         //console.log('[MiuteCoordinateData]', width);
