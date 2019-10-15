@@ -479,6 +479,7 @@ function JSChart(divElement)
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
                 if (item.IsShowLeftText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
                 if (item.IsShowRightText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度 
+                if (item.Height>0) chart.Frame.SubFrame[i].Height = item.Height;
             }
         }
 
@@ -6466,11 +6467,12 @@ function ChartData()
 
         if (index==null) return false;
 
-        for(var j=index,i=0;i<data.length-1;)
+        for(var j=index,i=0;i<data.length; )
         {
             var item=data[i];
             if (j>=this.Data.length-1)
             {
+                if (j-1>0 && !item.YClose) item.YClose=this.Data[j-1].YClose;   //前收盘如果没有就是上一记录的收盘
                 var newItem=HistoryData.Copy(item);
                 this.Data[j]=newItem;
                 ++j;
@@ -21474,7 +21476,7 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.DataType=this.SourceData.DataType;
 
-        if (bindData.Right>0 && ChartData.IsMinutePeriod(bindData.Period,false))    //复权(日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,false))    //复权(日线数据才复权)
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
@@ -33024,6 +33026,9 @@ var MARKET_SUFFIX_NAME=
     {
         if (!symbol) return 0;
         var upperSymbol=symbol.toUpperCase();
+        var nowDate= new Date();
+        var day = nowDate.getDay();
+        var time = nowDate.getHours() * 100 + nowDate.getMinutes();
         if (this.IsUSA(upperSymbol))
         {
             var usaDate=GetLocalTime(-4);
@@ -33041,7 +33046,7 @@ var MARKET_SUFFIX_NAME=
         {
             return 2;
         }
-        else if (this.IsSHFE(upperSymbol))  //富时中国 9:00-16:30 17:00-04:45
+        else if (this.IsFTSE(upperSymbol))  //富时中国 9:00-16:30 17:00-04:45
         {
             if(day == 6 || day== 0) return 0;   //周末
             if (time>=830 && time<=2359) return 2;
@@ -33055,14 +33060,9 @@ var MARKET_SUFFIX_NAME=
             if (time>=0 && time<=120) return 2;
             return 0;
         }
-        else
+        else    //9:30 - 15:40
         {
-            var nowDate= new Date();
-            var day = nowDate.getDay();
-            var time = nowDate.getHours() * 100 + nowDate.getMinutes();
             if(day == 6 || day== 0) return 0;   //周末
-
-            //9:30 - 15:40
             if(time>1540) return 3;
             if(time<925) return 1;
             return 2;   
