@@ -1,0 +1,134 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>走势图Websocket实例</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="divminute" style="width: 900px;height:400px;position: relative;"></div>
+
+    <script src="content/js/jquery.min.js"></script>
+    <script src="content/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    
+    <script>
+
+        //简单的把分时控件封装下
+        function MinuteChart(divMinute)
+        {
+            this.DivMinute=divMinute;
+            this.Chart=JSChart.Init(divMinute);   //把分时图绑定到一个Div上
+            this.UpdateMinuteData=null;           //更新分时图分钟数据回调
+            this.MinuteChart=null;                //分时图形
+            this.MinuteData=null;                 //hqchart分钟数据结构
+
+            var self=this;
+            //分时图配置信息
+            this.Option= {
+                Type:'分钟走势图',   //创建图形类型
+                
+                Windows: //窗口指标
+                [
+                    {Index:"MACD", Modify:false,Change:false},
+                ], 
+                
+                Symbol:'000001.sz',
+                IsAutoUpdate:false,              //是自动更新数据
+                DayCount:1,                     //1 最新交易日数据 >1 多日走势图
+                IsShowCorssCursorInfo:true,     //是否显示十字光标的刻度信息
+                IsShowRightMenu:true,           //是否显示右键菜单
+    
+                MinuteLine:
+                {
+                    IsDrawAreaPrice:false,      //是否画价格面积图
+                },
+
+                Border: //边框
+                {
+                    Left:50,    //左边间距
+                    Right:50,     //右边间距
+                    Top:50,
+                    Bottom:50
+                },
+                
+                Frame:  //子框架设置
+                [
+                    {SplitCount:5,StringFormat:0},
+                    {SplitCount:3,StringFormat:0},
+                    {SplitCount:3,StringFormat:0},
+                ],
+
+                Overlay:    //叠加股票 目前只支持1只股票
+                [
+                    //{Symbol:'000001.sh'}
+                ],
+
+                NetworkFilter:function(data, callback) { self.NetworkFilter(data, callback); } ,   //绑定网络协议回调
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                $(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
+
+                //var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                //JSChart.SetStyle(blackStyle);
+                //this.DivMinute.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                this.OnSize();  //让分时图全屏
+                this.Chart.SetOption(this.Option);  //设置K线配置
+            }
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height();
+                var width = $(window).width();
+                this.DivMinute.style.top='px';
+                this.DivMinute.style.left='px';
+                this.DivMinute.style.width=width+'px';
+                this.DivMinute.style.height=height+'px';
+                this.Chart.OnSize();
+            }
+
+            this.OnRecvMinuteData=function(data)    //websocket收到数据以后
+            {
+                if (!this.UpdateMinuteData || !this.MinuteChart) return;    //没有启动好
+                
+                //把收到的数据转成hqchart数据结构
+                //data = > this.MinuteData
+                this.MinuteChart.ChartSplashPaint.IsEnableSplash=false;     //不显示数据下载中的动画
+				this.UpdateMinuteData(this.MinuteData);
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[NetworkFilter] data', data);
+                switch(data.Name)
+                {
+                    case 'MinuteChartContainer::RequestMinuteData':
+                        data.PreventDefault=true;	//禁止HQChart内部请求数据
+                        if (this.UpdateMinuteData) this.UpdateMinuteData=callback;  //获取更新回调接口
+                        if (this.MinuteChart) this.MinuteChart=data.Self;
+                        break;
+                }
+            }
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+            var minuteControl=new MinuteChart(document.getElementById('divminute'));
+            minuteControl.Create();
+        })
+
+    </script>  
+</body>  
+</html>
