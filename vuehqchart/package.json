@@ -2,10 +2,10 @@
   "name": "hqchart",
   "description": "stock chart",
   "author": "jones2000",
-  "version": "1.0.7063",
+  "version": "1.0.7160",
   "main": "index.js",
   "private": false,
-  "license": "MIT",
+  "license": "Apache License 2.0",
   "scripts": {
     "dev": "webpack-dev-server --inline --hot --open --env.dev",
     "page": "webpack-dev-server --inline --hot --open --env.dev --open-page ",

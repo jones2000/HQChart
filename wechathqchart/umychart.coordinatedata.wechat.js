@@ -177,6 +177,10 @@ var MARKET_SUFFIX_NAME=
     {
         if (!symbol) return 0;
         var upperSymbol = symbol.toUpperCase();
+        var nowDate = new Date();
+        var day = nowDate.getDay();
+        var time = nowDate.getHours() * 100 + nowDate.getMinutes();
+
         if (this.IsUSA(upperSymbol)) 
         {
             var usaDate = GetLocalTime(-4);
@@ -194,7 +198,7 @@ var MARKET_SUFFIX_NAME=
         {
             return 2;
         }
-        else if (this.IsSHFE(upperSymbol))  //富时中国 9:00-16:30 17:00-04:45
+        else if (this.IsFTSE(upperSymbol))  //富时中国 9:00-16:30 17:00-04:45
         {
             if (day == 6 || day == 0) return 0;   //周末
             if (time >= 830 && time <= 2359) return 2;
@@ -208,14 +212,9 @@ var MARKET_SUFFIX_NAME=
             if (time >= 0 && time <= 120) return 2;
             return 0;
         }
-        else 
+        else    //9:30 - 15:40
         {
-            var nowDate = new Date();
-            var day = nowDate.getDay();
-            var time = nowDate.getHours() * 100 + nowDate.getMinutes();
             if (day == 6 || day == 0) return 0;   //周末
-
-            //9:30 - 15:40
             if (time > 1540) return 3;
             if (time < 925) return 1;
             return 2;

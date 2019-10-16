@@ -21,6 +21,7 @@
     FloatPrecision: 小数位数 缺省=2
     YSplitScale:  Y固定刻度 [1,8,10]
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
+    StringFormat: 1=带单位万/亿 1=原始格式
     Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), }
 */
 
@@ -172,7 +173,7 @@ JSIndexScript.prototype.MA=function()
 {
     let data=
     {
-        Name:'MA', Description:'均线', IsMainIndex:true,
+        Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
         Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} ],
         Script: //脚本
 'MA1:MA(CLOSE,M1);\n\
@@ -3610,7 +3611,11 @@ function JSChart(divElement)
 
                     if (item.Lock) indexInfo.Lock=item.Lock;
                     indexInfo.ID=item.Index;
-                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                    var args=indexInfo.Args;
+                    if (item.Args) args=item.Args;
+                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
+                    if (item.StringFormat>0) chart.WindowIndex[i].StringFormat=item.StringFormat;
+                    if (item.FloatPrecision>=0) chart.WindowIndex[i].FloatPrecision=item.FloatPrecision;
                 }
 
             }
@@ -3796,6 +3801,7 @@ function JSChart(divElement)
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
                 if (item.IsShowLeftText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
                 if (item.IsShowRightText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度 
+                if (item.Height>0) chart.Frame.SubFrame[i].Height = item.Height;
             }
         }
 
@@ -3829,6 +3835,7 @@ function JSChart(divElement)
         if(option.MinuteTitle)
         {
             if(option.MinuteTitle.IsShowName==false) chart.TitlePaint[0].IsShowName=false;
+            if(option.MinuteTitle.IsShowDate===false || option.MinuteTitle.IsShowDate===true) chart.TitlePaint[0].IsShowDate=option.MinuteTitle.IsShowDate;
             //if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
         }
 
@@ -3862,7 +3869,11 @@ function JSChart(divElement)
                     let indexInfo = scriptData.Get(item.Index);
                     if (!indexInfo) continue;
                     indexInfo.ID=item.Index;
-                    chart.WindowIndex[2+parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                    var args=indexInfo.Args;
+                    if (item.Args) args=item.Args;
+                    chart.WindowIndex[2+parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
+                    if (item.StringFormat>0) chart.WindowIndex[2+parseInt(i)].StringFormat=item.StringFormat;
+                    if (item.FloatPrecision>=0) chart.WindowIndex[2+parseInt(i)].FloatPrecision=item.FloatPrecision;
                 }
             }
 
@@ -4490,6 +4501,11 @@ JSChart.GetDevicePixelRatio=function()
 JSChart.CreateGuid=function()
 {
     return Guid();
+}
+
+JSChart.GetResource=function()  //获取颜色配置 (设置配必须啊在JSChart.Init()之前)
+{
+    return g_JSChartResource;
 }
 
 var JSCHART_EVENT_ID=
@@ -9637,17 +9653,35 @@ function ChartData()
 
     this.GetValue=function()
     {
-        var result=new Array();
+        var result=[];
         for(var i in this.Data)
         {
             if (this.Data[i] && this.Data[i].Value!=null)
             { 
-                if (!isNaN(this.Data[i].Value))
-                    result[i]=this.Data[i].Value;
-                else if (this.Data[i].Value instanceof Array)   //支持数组
-                    result[i]=this.Data[i].Value;
+                var item=this.Data[i].Value;
+                if (!isNaN(item))
+                    result[i]=item;
+                else if (item instanceof Array)   //支持数组
+                    result[i]=item;
                 else
                     result[i]=null;
+            }
+            else
+                result[i]=null;
+        }
+
+        return result;
+    }
+
+    this.GetObject=function()
+    {
+        var result=[];
+        for(var i in this.Data)
+        {
+            if (this.Data[i] && this.Data[i].Value)
+            { 
+                var item=this.Data[i].Value;
+                result[i]=item;
             }
             else
                 result[i]=null;
@@ -9759,11 +9793,12 @@ function ChartData()
 
         if (index==null) return false;
 
-        for(var j=index,i=0;i<data.length-1;)
+        for(var j=index,i=0;i<data.length; )
         {
             var item=data[i];
             if (j>=this.Data.length-1)
             {
+                if (j-1>0 && !item.YClose) item.YClose=this.Data[j-1].YClose;   //前收盘如果没有就是上一记录的收盘
                 var newItem=HistoryData.Copy(item);
                 this.Data[j]=newItem;
                 ++j;
@@ -12002,7 +12037,7 @@ function ChartStick()
     delete this.newMethod;
 
     this.Color="rgb(255,193,37)";   //线段颜色
-    this.LineWidth;               //线段宽度
+    this.LineWidth;                 //线段宽度
     this.ClassName='ChartStick';
 
     this.DrawLine=function()
@@ -12431,6 +12466,7 @@ function ChartStickLine()
     this.ClassName='ChartStickLine';    //类名
     this.Color="rgb(255,193,37)";               //线段颜色
     this.LineWidth=2*GetDevicePixelRatio();     //线段宽度
+    this.BarType=0; //柱子类型 0=实心 1=空心
 
     this.Draw=function()
     {
@@ -12460,6 +12496,7 @@ function ChartStickLine()
             {
                 bFillKLine=true; 
                 this.Canvas.fillStyle=this.Color; 
+                this.Canvas.strokeStyle=this.Color;
             }
             else    //太细了 画竖线
             {
@@ -12509,15 +12546,33 @@ function ChartStickLine()
                     var left=xOffset-fixedWidth;
                     var barWidth=dataWidth+distanceWidth+fixedWidth*2;
                     if (left+barWidth>chartright) barWidth=chartright-left; //不要超过右边框子
-                    this.Canvas.fillRect(left,Math.min(y,y2),barWidth,Math.abs(y-y2));
+                    this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(barWidth),ToFixedRect(Math.abs(y-y2)));
                 }
             }
             else if (bFillKLine)
             {
-                if (isHScreen) 
-                    this.Canvas.fillRect(ToFixedRect(Math.min(y,y2)),ToFixedRect(xOffset),ToFixedRect(Math.abs(y-y2)),ToFixedRect(dataWidth));
-                else 
-                    this.Canvas.fillRect(ToFixedRect(xOffset),ToFixedRect(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
+                if (this.BarType==1)    //实心
+                {
+                    if (isHScreen)
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.fillRect(ToFixedRect(Math.min(y,y2)),ToFixedRect(xOffset),ToFixedRect(Math.abs(y-y2)),ToFixedRect(dataWidth));
+                        this.Canvas.stroke();
+                    }
+                    else
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedRect(xOffset),ToFixedRect(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
+                        this.Canvas.stroke();
+                    }
+                }
+                else
+                {
+                    if (isHScreen) 
+                        this.Canvas.fillRect(ToFixedRect(Math.min(y,y2)),ToFixedRect(xOffset),ToFixedRect(Math.abs(y-y2)),ToFixedRect(dataWidth));
+                    else 
+                        this.Canvas.fillRect(ToFixedRect(xOffset),ToFixedRect(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
+                }
             }
             else
             {
@@ -19163,6 +19218,7 @@ function DynamicMinuteTitlePainting()
 var STRING_FORMAT_TYPE =
 {
     DEFAULT: 1,     //默认 2位小数 单位自动转化 (万 亿)
+    ORIGINAL:2,     //原始数据
     THOUSANDS:21,   //千分位分割
 };
 
@@ -19194,8 +19250,10 @@ function DynamicChartTitlePainting()
     {
         if (item.StringFormat==STRING_FORMAT_TYPE.DEFAULT)
             return IFrameSplitOperator.FormatValueString(value,item.FloatPrecision,this.LanguageID);
-        else if (item.StringFormat=STRING_FORMAT_TYPE.THOUSANDS)
+        else if (item.StringFormat==STRING_FORMAT_TYPE.THOUSANDS)
             return IFrameSplitOperator.FormatValueThousandsString(value,item.FloatPrecision);
+        else if (item.StringFormat==STRING_FORMAT_TYPE.ORIGINAL) 
+            return value.toFixed(item.FloatPrecision).toString();
     }
 
     this.FormatMultiReport=function(data,format)
@@ -24747,7 +24805,7 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.DataType=this.SourceData.DataType;
 
-        if (bindData.Right>0 && ChartData.IsMinutePeriod(bindData.Period,false))    //复权(日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,false))    //复权(日线数据才复权)
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
@@ -28733,7 +28791,8 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
         this.ChartCorssCursor.StringFormatX.Symbol=this.Symbol;
         this.ChartCorssCursor.StringFormatX.IsBeforeData=this.IsBeforeData;
-        this.TitlePaint[0].IsShowDate=false;
+
+        if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) this.TitlePaint[0].IsShowDate=false;
 
         var chartInfo=this.GetChartMinuteInfo();
         if (chartInfo) chartInfo.SourceData=this.SourceData;    //数据绑定到信息地雷上
@@ -29329,6 +29388,7 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
     var yClose=data.stock[0].yclose;
     if (isFutures && data.stock[0].yclearing) yClose=preClose=preAvPrice=data.stock[0].yclearing;  //期货使用昨结算价
     
+    var date=data.stock[0].date;    //默认使用外部日期, 但跨天的 走势图使用内部的日期
     for(var i in data.stock[0].minute)
     {
         var jsData=data.stock[0].minute[i];
@@ -29341,8 +29401,9 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         if (isSHSZ) item.Vol=jsData.vol/100; //沪深股票原始单位股
         else item.Vol=jsData.vol;
         item.Amount=jsData.amount;
-        item.DateTime=data.stock[0].date.toString()+" "+jsData.time.toString();
-        item.Date=data.stock[0].date;
+        if (jsData.date>0) date=jsData.date;    //分钟数据中有日期 优先使用
+        item.DateTime=date.toString()+" "+jsData.time.toString();
+        item.Date=date;
         item.Time=jsData.time;
 
         if (i==0) 
@@ -36132,13 +36193,27 @@ var MARKET_SUFFIX_NAME=
 {
     SH:'.SH',
     SZ:'.SZ',
-    HK:'.HK',
+    HK:'.HK',            //港股
+    FHK:'.FHK',          //港股期货            
     SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange)
     CFFEX: '.CFE',       //中期所 (China Financial Futures Exchange)
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
     USA:'.USA',          //美股
     BIT:'.BIT',          //数字货币 如比特币
+    FTSE:'.FTSE',        //富时中国
+
+    IsFTSE:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.FTSE) > 0;
+    },
+
+    IsFHK:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.FHK) > 0;
+    },
 
     IsBIT:function(upperSymbol)
     {
@@ -36280,6 +36355,9 @@ var MARKET_SUFFIX_NAME=
     {
         if (!symbol) return 0;
         var upperSymbol=symbol.toUpperCase();
+        var nowDate= new Date();
+        var day = nowDate.getDay();
+        var time = nowDate.getHours() * 100 + nowDate.getMinutes();
         if (this.IsUSA(upperSymbol))
         {
             var usaDate=GetLocalTime(-4);
@@ -36297,15 +36375,23 @@ var MARKET_SUFFIX_NAME=
         {
             return 2;
         }
-        else
+        else if (this.IsFTSE(upperSymbol))  //富时中国 9:00-16:30 17:00-04:45
         {
-            
-            var nowDate= new Date();
-            var day = nowDate.getDay();
-            var time = nowDate.getHours() * 100 + nowDate.getMinutes();
             if(day == 6 || day== 0) return 0;   //周末
-
-            //9:30 - 15:40
+            if (time>=830 && time<=2359) return 2;
+            if (time>=0 && time<=500) return 2;
+            return 0;
+        }
+        else if (this.IsFHK(upperSymbol))   //港股指数期货 9:15-12:00 13:00-16:30 17:15-01:00
+        {
+            if(day == 6 || day== 0) return 0;   //周末
+            if (time>=900 && time<=2359) return 2;
+            if (time>=0 && time<=320) return 2;
+            return 0;
+        }
+        else    //9:30 - 15:40
+        {
+            if(day == 6 || day== 0) return 0;   //周末
             if(time>1540) return 3;
             if(time<925) return 1;
             return 2;   
@@ -36322,6 +36408,16 @@ var MARKET_SUFFIX_NAME=
         if (name.indexOf('ST')>=0) return { Max:0.05, Min:-0.05 }; //ST 股票 [5% - -5%]
         
         return {Max:0.1 , Min:-0.1}; //[10% - -10%]
+    },
+
+    GetFHKDecimal:function(symbol)  //港股指数期货 小数位数
+    {
+        return 0;
+    },
+
+    GetFTSEDecimal:function(symbol) //富时中国A50期货 小数位数
+    {
+        return 0;
     }
 }
 
@@ -36333,6 +36429,8 @@ function MinuteTimeStringData()
     this.HK = null;         //香港交易所时间
     this.Futures=new Map(); //期货交易时间 key=时间名称 Value=数据
     this.USA = null;        //美股交易时间
+    this.FTSE=null;         //富时中国
+    this.FHK=null;          //港股指数期货
 
     this.Initialize = function ()  //初始化 默认只初始化沪深的 其他市场动态生成
     {
@@ -36369,6 +36467,18 @@ function MinuteTimeStringData()
         return this.USA;
     }
 
+    this.GetFTSE=function()
+    {
+        if (!this.FTSE) this.FTSE=this.CreateFTSEData();
+        return this.FTSE;
+    }
+
+    this.GetFHK=function()
+    {
+        if (!this.FHK) this.FHK=this.CreateFHKData();
+        return this.FHK;
+    }
+
     this.CreateSHSZData = function () 
     {
         const TIME_SPLIT =
@@ -36388,6 +36498,32 @@ function MinuteTimeStringData()
                 { Start: 930, End: 1200 },
                 { Start: 1300, End: 1600 }
             ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateFTSEData=function()
+    {
+        const TIME_SPLIT=
+        [
+            { Start:1700, End:2359 },
+            { Start:0,  End:445 },
+            { Start:900, End:1630 }
+        ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateFHKData=function()
+    {
+         //港股指数期货 9:15-12:00 13:00-16:30 17:15-03:00
+         const TIME_SPLIT=           
+         [
+             { Start:1715, End:2359 },
+             { Start:0,  End:300 },
+             { Start:915, End:1200 },
+             { Start:1300, End:1630 },
+         ];
 
         return this.CreateTimeData(TIME_SPLIT);
     }
@@ -36454,6 +36590,8 @@ function MinuteTimeStringData()
             if (!splitData) return null;
             return this.GetFutures(splitData);
         }
+        if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) return this.GetFTSE();
+        if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) return this.GetFHK();
     }
 }
 
@@ -36615,6 +36753,116 @@ function MinuteCoordinateData()
         }
     };
 
+    //富时中国
+    const FTSE_MINUTE_X_COORDINATE=
+    {
+        Full:   //完整模式
+        [
+            [0, 1, "RGB(200,200,200)", "17:00"],
+            //[60, 0, "RGB(200,200,200)", "18:00"],
+            [120, 1, "RGB(200,200,200)", "19:00"],
+            //[180, 0, "RGB(200,200,200)", "20:00"],
+            [240, 1, "RGB(200,200,200)", "21:00"],
+            //[300, 0, "RGB(200,200,200)", "22:00"],
+            [360, 1, "RGB(200,200,200)", "23:00"],
+            //[420, 0, "RGB(200,200,200)", "00:00"],
+            [480, 1, "RGB(200,200,200)", "01:00"],
+            //[540, 0, "RGB(200,200,200)", "02:00"],
+            [600, 1, "RGB(200,200,200)", "03:00"],
+            //[660, 1, "RGB(200,200,200)", "04:00"],
+            [706, 1, "RGB(200,200,200)", "09:00"],
+            //[766, 1, "RGB(200,200,200)", "10:00"],
+            [826, 1, "RGB(200,200,200)", "11:00"],
+            //[886, 1, "RGB(200,200,200)", "12:00"],
+            [946, 1, "RGB(200,200,200)", "13:00"],
+            //[1006, 1, "RGB(200,200,200)", "14:00"],
+            [1066, 1, "RGB(200,200,200)", "15:00"],
+            [1156, 1, "RGB(200,200,200)", "16:30"],
+        ],
+        Simple: //简洁模式
+        [
+            [0, 1, "RGB(200,200,200)", "17:00"],
+            //[60, 0, "RGB(200,200,200)", "18:00"],
+            //[120, 1, "RGB(200,200,200)", "19:00"],
+            //[180, 0, "RGB(200,200,200)", "20:00"],
+            [240, 1, "RGB(200,200,200)", "21:00"],
+            //[300, 0, "RGB(200,200,200)", "22:00"],
+            //[360, 1, "RGB(200,200,200)", "23:30"],
+            //[420, 0, "RGB(200,200,200)", "00:00"],
+            [480, 1, "RGB(200,200,200)", "01:00"],
+            //[540, 0, "RGB(200,200,200)", "02:00"],
+            //[600, 1, "RGB(200,200,200)", "03:00"],
+            //[660, 1, "RGB(200,200,200)", "04:00"],
+            [706, 1, "RGB(200,200,200)", "09:00"],
+            //[766, 1, "RGB(200,200,200)", "10:00"],
+            //[826, 1, "RGB(200,200,200)", "11:00"],
+            //[886, 1, "RGB(200,200,200)", "12:00"],
+            [946, 1, "RGB(200,200,200)", "13:00"],
+            //[1006, 1, "RGB(200,200,200)", "14:00"],
+            //[1066, 1, "RGB(200,200,200)", "15:00"],
+            [1156, 1, "RGB(200,200,200)", "16:30"],
+        ],
+        Min:   //最小模式     
+        [
+            [0, 1, "RGB(200,200,200)", "17:00"],
+            [706, 1, "RGB(200,200,200)", "09:00"],
+            [1156, 1, "RGB(200,200,200)", "16:30"],
+        ],
+
+        Count: 1157,
+        MiddleCount: 707,
+
+        GetData: function (width) 
+        {
+            if (width < 200) return this.Min;
+            else if (width < 450) return this.Simple;
+
+            return this.Full;
+        }
+    }
+
+    //港股指数期货
+    const FHK_MINUTE_X_COORDINATE=
+    {
+        Full:   //完整模式
+        [
+            [0, 1, "RGB(200,200,200)", "17:15"],
+            [105, 1, "RGB(200,200,200)", "19:00"],
+            [225, 1, "RGB(200,200,200)", "21:00"],
+            [345, 1, "RGB(200,200,200)", "23:00"],
+            [586, 0, "RGB(200,200,200)", "09:15"],
+            [691, 1, "RGB(200,200,200)", "11:00"],
+            [812, 1, "RGB(200,200,200)", "14:00"],
+            [963, 1, "RGB(200,200,200)", "16:30"],
+        ],
+        Simple: //简洁模式
+        [
+            [0, 1, "RGB(200,200,200)", "17:15"],
+            [225, 1, "RGB(200,200,200)", "21:00"],
+            [586, 0, "RGB(200,200,200)", "09:15"],
+            [752, 1, "RGB(200,200,200)", "13:00"],
+            [963, 1, "RGB(200,200,200)", "16:30"],
+        ],
+        Min:   //最小模式     
+        [
+            [0, 1, "RGB(200,200,200)", "17:15"],
+            [586, 0, "RGB(200,200,200)", "09:15"],
+            [963, 1, "RGB(200,200,200)", "16:30"],
+        ],
+
+        Count: 963,
+        MiddleCount: 526,
+
+        GetData: function (width) 
+        {
+            if (width < 200) return this.Min;
+            else if (width < 450) return this.Simple;
+
+            return this.Full;
+        }
+    }
+
+
     this.GetCoordinateData = function (symbol, width) 
     {
         var data = null;
@@ -36633,6 +36881,10 @@ function MinuteCoordinateData()
                 return this.GetFuturesData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
                 data = this.GetUSAData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol,width))
+                data=this.GetFTSEData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol,width))
+                data=this.GetFHKData(upperSymbol,width);
         }
 
         //console.log('[MiuteCoordinateData]', width);
@@ -36686,6 +36938,18 @@ function MinuteCoordinateData()
 
         result.Data = data;
         return result;
+    }
+
+    this.GetFTSEData=function(upperSymbol,width)
+    {
+        var result=FTSE_MINUTE_X_COORDINATE;
+        return result;
+    }
+
+    this.GetFHKData=function()
+    {
+        var result=FHK_MINUTE_X_COORDINATE;
+        return result
     }
 }
 
@@ -37103,6 +37367,8 @@ function GetfloatPrecision(symbol)  //获取小数位数
 
     if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision=3;    //基金3位小数
     else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision=g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
+    else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
 
     return defaultfloatPrecision;
 }
@@ -46746,6 +47012,7 @@ function ScriptIndex(name,script,args,option)
     this.OutVar=[];
     this.ID;                //指标ID
     this.FloatPrecision=2;  //小数位数
+    this.StringFormat;
     this.KLineType=null;    //K线显示类型
     this.InstructionType;   //五彩K线, 交易指标
     this.YSpecificMaxMin=null;  //最大最小值
@@ -46766,6 +47033,7 @@ function ScriptIndex(name,script,args,option)
     if (option)
     {
         if (option.FloatPrecision>=0) this.FloatPrecision=option.FloatPrecision;
+        if (option.StringFormat>0) this.StringFormat=option.StringFormat;
         if (option.ID) this.ID=option.ID;
         if (option.KLineType>=0 || option.KLineType===-1) this.KLineType=option.KLineType;
         if (option.InstructionType) this.InstructionType=option.InstructionType;
@@ -47013,6 +47281,7 @@ function ScriptIndex(name,script,args,option)
         
         let titleIndex=windowIndex+1;
         bar.Data.Data=varItem.Draw.DrawData;
+        bar.BarType=varItem.Draw.Type;
 
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
@@ -47558,11 +47827,18 @@ function ScriptIndex(name,script,args,option)
             {
                 this.CreateVolStick(hqChart,windowIndex,item,i,hisData);
             }
+
+            var titlePaint=hqChart.TitlePaint[windowIndex+1];
+            if (titlePaint &&  titlePaint.Data && i<titlePaint.Data.length) //设置标题数值 小数位数和格式
+            {
+                if (this.StringFormat>0) titlePaint.Data[i].StringFormat=this.StringFormat;
+                if (this.FloatPrecision>=0) titlePaint.Data[i].FloatPrecision=this.FloatPrecision;
+            }
         }
 
         let titleIndex=windowIndex+1;
         hqChart.TitlePaint[titleIndex].Title=this.Name;
-
+        
         let indexParam='';
         for(let i in this.Arguments)
         {
@@ -48385,7 +48661,7 @@ function APIScriptIndex(name,script,args,option)
         }
     }
 
-    this.FittingArray=function(sourceData,date,time,hqChart)
+    this.FittingArray=function(sourceData,date,time,hqChart,arrayType)  //arrayType 0=单值数组 1=结构体
     {
         var kdata=hqChart.ChartPaint[0].Data;   //K线
 
@@ -48408,7 +48684,9 @@ function APIScriptIndex(name,script,args,option)
 
         var bindData=new ChartData();
         bindData.Data=aryFittingData;
-        var result=bindData.GetValue();
+        var result;
+        if (arrayType==1) result=bindData.GetObject();
+        else result=bindData.GetValue();
         return result;
     }
 
@@ -48500,7 +48778,8 @@ function APIScriptIndex(name,script,args,option)
         {
             item=outVar[i];
             var indexData=[];
-            var outVarItem={Name:item.name,Type:item.type}
+            var outVarItem={Name:item.name,Type:item.type};
+            if (item.color) outVarItem.Color=item.color;
             if (item.data)
             {
                 outVarItem.Data=this.FittingArray(item.data,date,time,hqChart);
@@ -48516,7 +48795,7 @@ function APIScriptIndex(name,script,args,option)
             {
                 var draw=item.Draw;
                 var drawItem={};
-                if (draw.DrawType=='DRAWICON')
+                if (draw.DrawType=='DRAWICON')  //图标
                 {
                     drawItem.Icon=draw.Icon;
                     drawItem.Name=draw.Name;
@@ -48526,12 +48805,23 @@ function APIScriptIndex(name,script,args,option)
 
                     result.push(outVarItem);
                 }
-                else if (draw.DrawType=='DRAWTEXT')
+                else if (draw.DrawType=='DRAWTEXT') //文本
                 {
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=='STICKLINE')    //柱子
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.Width=draw.Width;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);

@@ -293,7 +293,11 @@ function JSChart(divElement)
 
                     if (item.Lock) indexInfo.Lock=item.Lock;
                     indexInfo.ID=item.Index;
-                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                    var args=indexInfo.Args;
+                    if (item.Args) args=item.Args;
+                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
+                    if (item.StringFormat>0) chart.WindowIndex[i].StringFormat=item.StringFormat;
+                    if (item.FloatPrecision>=0) chart.WindowIndex[i].FloatPrecision=item.FloatPrecision;
                 }
 
             }
@@ -547,7 +551,11 @@ function JSChart(divElement)
                     let indexInfo = scriptData.Get(item.Index);
                     if (!indexInfo) continue;
                     indexInfo.ID=item.Index;
-                    chart.WindowIndex[2+parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                    var args=indexInfo.Args;
+                    if (item.Args) args=item.Args;
+                    chart.WindowIndex[2+parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
+                    if (item.StringFormat>0) chart.WindowIndex[2+parseInt(i)].StringFormat=item.StringFormat;
+                    if (item.FloatPrecision>=0) chart.WindowIndex[2+parseInt(i)].FloatPrecision=item.FloatPrecision;
                 }
             }
 
@@ -15892,6 +15900,7 @@ function DynamicMinuteTitlePainting()
 var STRING_FORMAT_TYPE =
 {
     DEFAULT: 1,     //默认 2位小数 单位自动转化 (万 亿)
+    ORIGINAL:2,     //原始数据
     THOUSANDS:21,   //千分位分割
 };
 
@@ -15923,8 +15932,10 @@ function DynamicChartTitlePainting()
     {
         if (item.StringFormat==STRING_FORMAT_TYPE.DEFAULT)
             return IFrameSplitOperator.FormatValueString(value,item.FloatPrecision,this.LanguageID);
-        else if (item.StringFormat=STRING_FORMAT_TYPE.THOUSANDS)
+        else if (item.StringFormat==STRING_FORMAT_TYPE.THOUSANDS)
             return IFrameSplitOperator.FormatValueThousandsString(value,item.FloatPrecision);
+        else if (item.StringFormat==STRING_FORMAT_TYPE.ORIGINAL) 
+            return value.toFixed(item.FloatPrecision).toString();
     }
 
     this.FormatMultiReport=function(data,format)
@@ -33057,7 +33068,7 @@ var MARKET_SUFFIX_NAME=
         {
             if(day == 6 || day== 0) return 0;   //周末
             if (time>=900 && time<=2359) return 2;
-            if (time>=0 && time<=120) return 2;
+            if (time>=0 && time<=320) return 2;
             return 0;
         }
         else    //9:30 - 15:40
@@ -33079,6 +33090,16 @@ var MARKET_SUFFIX_NAME=
         if (name.indexOf('ST')>=0) return { Max:0.05, Min:-0.05 }; //ST 股票 [5% - -5%]
         
         return {Max:0.1 , Min:-0.1}; //[10% - -10%]
+    },
+
+    GetFHKDecimal:function(symbol)  //港股指数期货 小数位数
+    {
+        return 0;
+    },
+
+    GetFTSEDecimal:function(symbol) //富时中国A50期货 小数位数
+    {
+        return 0;
     }
 }
 
@@ -33177,11 +33198,11 @@ function MinuteTimeStringData()
 
     this.CreateFHKData=function()
     {
-         //港股指数期货 9:15-12:00 13:00-16:30 17:15-01:00
+         //港股指数期货 9:15-12:00 13:00-16:30 17:15-03:00
          const TIME_SPLIT=           
          [
              { Start:1715, End:2359 },
-             { Start:0,  End:100 },
+             { Start:0,  End:300 },
              { Start:915, End:1200 },
              { Start:1300, End:1630 },
          ];
@@ -33488,48 +33509,31 @@ function MinuteCoordinateData()
         Full:   //完整模式
         [
             [0, 1, "RGB(200,200,200)", "17:15"],
-            //[45, 0, "RGB(200,200,200)", "18:00"],
             [105, 1, "RGB(200,200,200)", "19:00"],
-            //[165, 0, "RGB(200,200,200)", "20:00"],
             [225, 1, "RGB(200,200,200)", "21:00"],
-            //[285, 0, "RGB(200,200,200)", "22:00"],
             [345, 1, "RGB(200,200,200)", "23:00"],
-            //[405, 0, "RGB(200,200,200)", "00:00"],
-            [466, 0, "RGB(200,200,200)", "09:15"],
-            //[511, 1, "RGB(200,200,200)", "10:00"],
-            [571, 1, "RGB(200,200,200)", "11:00"],
-            //[632, 1, "RGB(200,200,200)", "13:00"],
-            [692, 1, "RGB(200,200,200)", "14:00"],
-            //[752, 1, "RGB(200,200,200)", "15:00"],
-            [843, 1, "RGB(200,200,200)", "16:30"],
+            [586, 0, "RGB(200,200,200)", "09:15"],
+            [691, 1, "RGB(200,200,200)", "11:00"],
+            [812, 1, "RGB(200,200,200)", "14:00"],
+            [963, 1, "RGB(200,200,200)", "16:30"],
         ],
         Simple: //简洁模式
         [
             [0, 1, "RGB(200,200,200)", "17:15"],
-            //[45, 0, "RGB(200,200,200)", "18:00"],
-            //[105, 1, "RGB(200,200,200)", "19:00"],
-            //[165, 0, "RGB(200,200,200)", "20:00"],
             [225, 1, "RGB(200,200,200)", "21:00"],
-            //[285, 0, "RGB(200,200,200)", "22:00"],
-            //[345, 1, "RGB(200,200,200)", "23:00"],
-            //[405, 0, "RGB(200,200,200)", "00:00"],
-            [466, 0, "RGB(200,200,200)", "09:15"],
-            //[511, 1, "RGB(200,200,200)", "10:00"],
-            //[571, 1, "RGB(200,200,200)", "11:00"],
-            [632, 1, "RGB(200,200,200)", "13:00"],
-            //[692, 1, "RGB(200,200,200)", "14:00"],
-            //[752, 1, "RGB(200,200,200)", "15:00"],
-            [843, 1, "RGB(200,200,200)", "16:30"],
+            [586, 0, "RGB(200,200,200)", "09:15"],
+            [752, 1, "RGB(200,200,200)", "13:00"],
+            [963, 1, "RGB(200,200,200)", "16:30"],
         ],
         Min:   //最小模式     
         [
             [0, 1, "RGB(200,200,200)", "17:15"],
-            [466, 0, "RGB(200,200,200)", "09:15"],
-            [843, 1, "RGB(200,200,200)", "16:30"],
+            [586, 0, "RGB(200,200,200)", "09:15"],
+            [963, 1, "RGB(200,200,200)", "16:30"],
         ],
 
-        Count: 843,
-        MiddleCount: 466,
+        Count: 963,
+        MiddleCount: 526,
 
         GetData: function (width) 
         {
@@ -34045,6 +34049,8 @@ function GetfloatPrecision(symbol)  //获取小数位数
 
     if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision=3;    //基金3位小数
     else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision=g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
+    else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
 
     return defaultfloatPrecision;
 }

@@ -9620,6 +9620,7 @@ function ScriptIndex(name,script,args,option)
     this.OutVar=[];
     this.ID;                //指标ID
     this.FloatPrecision=2;  //小数位数
+    this.StringFormat;
     this.KLineType=null;    //K线显示类型
     this.InstructionType;   //五彩K线, 交易指标
     this.YSpecificMaxMin=null;  //最大最小值
@@ -9640,6 +9641,7 @@ function ScriptIndex(name,script,args,option)
     if (option)
     {
         if (option.FloatPrecision>=0) this.FloatPrecision=option.FloatPrecision;
+        if (option.StringFormat>0) this.StringFormat=option.StringFormat;
         if (option.ID) this.ID=option.ID;
         if (option.KLineType>=0 || option.KLineType===-1) this.KLineType=option.KLineType;
         if (option.InstructionType) this.InstructionType=option.InstructionType;
@@ -10433,11 +10435,18 @@ function ScriptIndex(name,script,args,option)
             {
                 this.CreateVolStick(hqChart,windowIndex,item,i,hisData);
             }
+
+            var titlePaint=hqChart.TitlePaint[windowIndex+1];
+            if (titlePaint &&  titlePaint.Data && i<titlePaint.Data.length) //设置标题数值 小数位数和格式
+            {
+                if (this.StringFormat>0) titlePaint.Data[i].StringFormat=this.StringFormat;
+                if (this.FloatPrecision>=0) titlePaint.Data[i].FloatPrecision=this.FloatPrecision;
+            }
         }
 
         let titleIndex=windowIndex+1;
         hqChart.TitlePaint[titleIndex].Title=this.Name;
-
+        
         let indexParam='';
         for(let i in this.Arguments)
         {
