@@ -4210,10 +4210,10 @@ function JSChart(divElement)
     }
 
     //K线切换指标
-    this.ChangeIndex=function(windowIndex,indexName)
+    this.ChangeIndex=function(windowIndex,indexName,option)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeIndex)=='function')
-            this.JSChartContainer.ChangeIndex(windowIndex,indexName);
+            this.JSChartContainer.ChangeIndex(windowIndex,indexName,option);
     }
 
     this.ChangeScriptIndex=function(windowIndex,indexData)
@@ -25626,7 +25626,7 @@ function KLineChartContainer(uielement)
     }
 
     //切换指标 指定切换窗口指标
-    this.ChangeIndex=function(windowIndex,indexName)
+    this.ChangeIndex=function(windowIndex,indexName,option)
     {
         var indexItem=JSIndexMap.Get(indexName);
         if (!indexItem) 
@@ -25648,8 +25648,15 @@ function KLineChartContainer(uielement)
                 Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
                 //扩展属性 可以是空
                 KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
+                FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition, StringFormat:indexInfo.StringFormat
             };
+
+            if (option)
+            {
+                if (option.FloatPrecision>=0) indexData.FloatPrecision=option.FloatPrecision;
+                if (option.StringFormat>0) indexData.StringFormat=option.StringFormat;
+                if (option.Args) indexData.Args=option.Args;
+            }
             
             return this.ChangeScriptIndex(windowIndex, indexData);
         }
@@ -28329,7 +28336,7 @@ function MinuteChartContainer(uielement)
         this.Draw();
     }
 
-    this.ChangeIndex=function(windowIndex,indexName)
+    this.ChangeIndex=function(windowIndex,indexName,option)
     {
         if (this.Frame.SubFrame.length<3) return;
 
@@ -28345,8 +28352,15 @@ function MinuteChartContainer(uielement)
             Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
             //扩展属性 可以是空
             KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
+            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,StringFormat:indexInfo.StringFormat
         };
+
+        if (option)
+        {
+            if (option.FloatPrecision>=0) indexData.FloatPrecision=option.FloatPrecision;
+            if (option.StringFormat>0) indexData.StringFormat=option.StringFormat;
+            if (option.Args) indexData.Args=option.Args;
+        }
         
         return this.ChangeScriptIndex(windowIndex, indexData);
     }

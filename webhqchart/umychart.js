@@ -22337,6 +22337,7 @@ function KLineChartContainer(uielement)
             {
                 if (option.FloatPrecision>=0) indexData.FloatPrecision=option.FloatPrecision;
                 if (option.StringFormat>0) indexData.StringFormat=option.StringFormat;
+                if (option.Args) indexData.Args=option.Args;
             }
             
             return this.ChangeScriptIndex(windowIndex, indexData);
@@ -25040,6 +25041,7 @@ function MinuteChartContainer(uielement)
         {
             if (option.FloatPrecision>=0) indexData.FloatPrecision=option.FloatPrecision;
             if (option.StringFormat>0) indexData.StringFormat=option.StringFormat;
+            if (option.Args) indexData.Args=option.Args;
         }
         
         return this.ChangeScriptIndex(windowIndex, indexData);
