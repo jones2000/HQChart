@@ -5341,6 +5341,31 @@ function JSDraw(errorHandler, symbolData)
 
         return result;
     }
+
+    // 相对位置上画矩形.
+    //用法: DRAWRECTREL(LEFT,TOP,RIGHT,BOTTOM,COLOR),以图形窗口(LEFT,TOP)为左上角,(RIGHT,BOTTOM)为右下角绘制矩形,坐标单位是窗口沿水平和垂直方向的1/1000,取值范围是0—999,超出范围则可能显示在图形窗口外,矩形中间填充颜色COLOR,COLOR为0表示不填充.
+    //例如: DRAWRECTREL(0,0,500,500,RGB(255,255,0))表示在图形最左上部1/4位置用黄色绘制矩形
+    this.DRAWRECTREL = function (left, top, right, bottom, color) 
+    {
+
+        let drawData = { Rect: { Left: left, Top: top, Right: right, Bottom: bottom }, Color: color };
+        if (color == 0) drawData.Color = null;
+        let result = { DrawData: drawData, DrawType: 'DRAWRECTREL' };
+
+        return result;
+    }
+
+    this.RGB = function (r, g, b) 
+    {
+        var rgb = `rgb(${r},${g},${b})`;
+        return rgb;
+    }
+
+    this.RGBA = function (r, g, b, a) 
+    {
+        var rgba = `rgba(${r},${g},${b},${a})`;
+        return rgba;
+    }
 }
 
 
@@ -5388,7 +5413,7 @@ JSDraw.prototype.IsNumber = function (value)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT','DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER','DRAWICON']);
+    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT', 'DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWICON','DRAWRECTREL']);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -7806,6 +7831,13 @@ function JSExecute(ast,option)
             case 'DRAWNUMBER':
                 node.Draw = this.Draw.DRAWNUMBER(args[0], args[1], args[2]);
                 node.Out = node.Draw.DrawData.Value;
+                break;
+            case 'RGB':
+                node.Out = this.Draw.RGB(args[0], args[1], args[2]);
+                break;
+            case 'DRAWRECTREL':
+                node.Draw = this.Draw.DRAWRECTREL(args[0], args[1], args[2], args[3], args[4]);
+                node.Out = [];
                 break;
             case 'CODELIKE':
                 node.Out=this.SymbolData.CODELIKE(args[0]);

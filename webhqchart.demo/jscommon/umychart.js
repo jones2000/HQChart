@@ -11042,8 +11042,8 @@ function ChartRectangle()
         top=this.ChartBorder.GetTopEx()+top;
         right=this.ChartBorder.GetLeft()+right;
         bottom=this.ChartBorder.GetTopEx()+bottom;
-        width=Math.abs(left-right);
-        height=Math.abs(top-bottom);
+        var width=Math.abs(left-right);
+        var height=Math.abs(top-bottom);
         if (bFill) this.Canvas.fillRect(left, top,width, height);
         this.Canvas.rect(ToFixedPoint(left), ToFixedPoint(top),ToFixedRect(width), ToFixedRect(height));
         this.Canvas.stroke();

@@ -790,6 +790,7 @@ function DynamicMinuteTitlePainting()
 var STRING_FORMAT_TYPE =
 {
     DEFAULT: 1,     //默认 2位小数 单位自动转化 (万 亿)
+    ORIGINAL: 2,     //原始数据
     THOUSANDS: 21,   //千分位分割
 };
 
@@ -822,11 +823,14 @@ function DynamicChartTitlePainting()
     this.EraseRect;
     this.EraseColor = g_JSChartResource.BGColor;  //用来擦出的背景色
 
-    this.FormatValue = function (value, item) {
+    this.FormatValue = function (value, item) 
+    {
         if (item.StringFormat == STRING_FORMAT_TYPE.DEFAULT)
             return IFrameSplitOperator.FormatValueString(value, item.FloatPrecision);
         else if (item.StringFormat = STRING_FORMAT_TYPE.THOUSANDS)
             return IFrameSplitOperator.FormatValueThousandsString(value, item.FloatPrecision);
+        else if (item.StringFormat == STRING_FORMAT_TYPE.ORIGINAL)
+            return value.toFixed(item.FloatPrecision).toString();
     }
 
     this.FormatMultiReport = function (data, format) {

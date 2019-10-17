@@ -18,6 +18,7 @@
     KLineType:K线设置 -1=主图不显示K线(只在主图有效) 0=在副图显示K线 1=在副图显示K线(收盘价线) 2=在副图显示K线(美国线)
     InstructionType: 1=专家指示  2=五彩K线
     FloatPrecision: 小数位数 缺省=2
+    StringFormat: 1=带单位万/亿 2=原始格式  缺省=1
     YSplitScale:  Y固定刻度 [1,8,10]
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
 */
@@ -129,7 +130,7 @@ JSIndexScript.prototype.MA=function()
 {
     let data=
     {
-        Name:'MA', Description:'均线', IsMainIndex:true,
+        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat:2,
         Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} ],
         Script: //脚本
 'MA1:MA(CLOSE,M1);\n\
@@ -2902,9 +2903,7 @@ JSIndexScript.prototype.TEST = function ()
                 //'T1:INDEXC;'+
                 //'T2:=HYBLOCK;'
 
-                'B1:= WEEK = 1;'+
-                'S1:= WEEK = 5;'+
-                'DRAWLINE(B1, L, S1, H,0), COLORBLACK, LINETHICK4;'
+                'DRAWRECTREL(0,0,500,500,RGB(255,255,0)), COLORRED;'
         };
 
     return data;

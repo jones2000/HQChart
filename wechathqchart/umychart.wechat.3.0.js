@@ -47,6 +47,7 @@ import {
     JSCommonChartPaint_ChartStickLine as ChartStickLine,
     JSCommonChartPaint_ChartOverlayKLine as ChartOverlayKLine,
     JSCommonChartPaint_ChartMinuteInfo as ChartMinuteInfo,
+    JSCommonChartPaint_ChartRectangle as ChartRectangle,
     JSCommonChartPaint_ChartPie as ChartPie,
     JSCommonChartPaint_ChartCircle as ChartCircle,
     JSCommonChartPaint_ChartChinaMap as ChartChinaMap,
@@ -310,7 +311,11 @@ function JSChart(element)
 
                     if (item.Lock) indexInfo.Lock = item.Lock;
                     indexInfo.ID = item.Index;
-                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
+                    var args = indexInfo.Args;
+                    if (item.Args) args = item.Args;
+                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args, indexInfo);    //脚本执行
+                    if (item.StringFormat > 0) chart.WindowIndex[i].StringFormat = item.StringFormat;
+                    if (item.FloatPrecision >= 0) chart.WindowIndex[i].FloatPrecision = item.FloatPrecision;
                 }
             }
 
@@ -454,7 +459,8 @@ function JSChart(element)
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
                 if (item.XMessageAlign == 'bottom') chart.Frame.SubFrame[i].Frame.XMessageAlign = item.XMessageAlign;
                 if (item.IsShowLeftText === false || item.IsShowLeftText===true ) chart.Frame.SubFrame[i].Frame.IsShowYText[0] = item.IsShowLeftText;            //显示左边刻度
-                if (item.IsShowRightText === false || item.IsShowRightText===true) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度 
+                if (item.IsShowRightText === false || item.IsShowRightText===true) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度
+                if (item.Height > 0) chart.Frame.SubFrame[i].Height = item.Height; 
             }
         }
 
@@ -508,9 +514,12 @@ function JSChart(element)
                 {
                     let indexInfo = scriptData.Get(item.Index);
                     if (!indexInfo) continue;
-
+                    var args = indexInfo.Args;
+                    if (item.Args) args = item.Args;
                     if (item.Lock) indexInfo.Lock = item.Lock;
-                    chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
+                    chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args, indexInfo);    //脚本执行
+                    if (item.StringFormat > 0) chart.WindowIndex[2 + parseInt(i)].StringFormat = item.StringFormat;
+                    if (item.FloatPrecision >= 0) chart.WindowIndex[2 + parseInt(i)].FloatPrecision = item.FloatPrecision;
                 }
             }
 
@@ -734,11 +743,12 @@ function JSChart(element)
     if (this.JSChartContainer) this.JSChartContainer.ChangeSymbol(symbol);
   }
 
-  //K线切换指标
-  this.ChangeIndex = function (windowIndex, indexName) {
-    if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeIndex) == 'function')
-      this.JSChartContainer.ChangeIndex(windowIndex, indexName);
-  }
+    //K线切换指标
+    this.ChangeIndex = function (windowIndex, indexName, option) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeIndex) == 'function')
+            this.JSChartContainer.ChangeIndex(windowIndex, indexName, option);
+    }
 
   //切换K线指标
   this.ChangeScriptIndex = function (windowIndex, indexData) {
@@ -8130,7 +8140,7 @@ function KLineChartContainer(uielement)
 
 
     //切换指标 指定切换窗口指标
-    this.ChangeIndex = function (windowIndex, indexName) 
+    this.ChangeIndex = function (windowIndex, indexName, option) 
     {
         var indexItem = JSIndexMap.Get(indexName);
         if (!indexItem) 
@@ -8152,8 +8162,16 @@ function KLineChartContainer(uielement)
                 Name: indexInfo.Name, Script: indexInfo.Script, Args: indexInfo.Args, ID: indexName,
                 //扩展属性 可以是空
                 KLineType: indexInfo.KLineType, YSpecificMaxMin: indexInfo.YSpecificMaxMin, YSplitScale: indexInfo.YSplitScale,
-                FloatPrecision: indexInfo.FloatPrecision,
+                FloatPrecision: indexInfo.FloatPrecision, StringFormat: indexInfo.StringFormat
             };
+
+            if (option) 
+            {
+                if (option.FloatPrecision >= 0) indexData.FloatPrecision = option.FloatPrecision;
+                if (option.StringFormat > 0) indexData.StringFormat = option.StringFormat;
+                if (option.Args) indexData.Args = option.Args;
+            }
+
             return this.ChangeScriptIndex(windowIndex, indexData);
         }
 
@@ -9388,7 +9406,7 @@ function MinuteChartContainer(uielement)
         this.Draw();
     }
 
-    this.ChangeIndex = function (windowIndex, indexName) 
+    this.ChangeIndex = function (windowIndex, indexName, option) 
     {
         if (this.Frame.SubFrame.length < 3) return;
 
@@ -9404,8 +9422,15 @@ function MinuteChartContainer(uielement)
             Name: indexInfo.Name, Script: indexInfo.Script, Args: indexInfo.Args, ID: indexName,
             //扩展属性 可以是空
             KLineType: indexInfo.KLineType, YSpecificMaxMin: indexInfo.YSpecificMaxMin, YSplitScale: indexInfo.YSplitScale,
-            FloatPrecision: indexInfo.FloatPrecision, Condition: indexInfo.Condition
+            FloatPrecision: indexInfo.FloatPrecision, Condition: indexInfo.Condition, StringFormat: indexInfo.StringFormat
         };
+
+        if (option) 
+        {
+            if (option.FloatPrecision >= 0) indexData.FloatPrecision = option.FloatPrecision;
+            if (option.StringFormat > 0) indexData.StringFormat = option.StringFormat;
+            if (option.Args) indexData.Args = option.Args;
+        }
 
         return this.ChangeScriptIndex(windowIndex, indexData);
     }
@@ -11510,6 +11535,7 @@ function ScriptIndex(name, script, args, option)
     this.OutVar = [];
     this.ID;    //指标ID
     this.FloatPrecision = 2;    //小数位数
+    this.StringFormat;
     this.KLineType = null;      //K线显示类型
     this.InstructionType;       //五彩K线, 交易指标
     this.YSpecificMaxMin = null;  //最大最小值
@@ -11528,6 +11554,7 @@ function ScriptIndex(name, script, args, option)
     if (option) 
     {
         if (option.FloatPrecision >= 0) this.FloatPrecision = option.FloatPrecision;
+        if (option.StringFormat > 0) this.StringFormat = option.StringFormat;
         if (option.ID) this.ID = option.ID;
         if (option.KLineType) this.KLineType = option.KLineType;
         if (option.InstructionType) this.InstructionType = option.InstructionType;
@@ -11930,6 +11957,20 @@ function ScriptIndex(name, script, args, option)
     hqChart.ChartPaint.push(chartText);
   }
 
+    this.CreateRectangle = function (hqChart, windowIndex, varItem, i) 
+    {
+        let chart = new ChartRectangle();
+        chart.Canvas = hqChart.Canvas;
+        chart.Name = varItem.Name;
+        chart.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Color = [varItem.Draw.DrawData.Color];
+        chart.Rect = varItem.Draw.DrawData.Rect;
+        if (varItem.Color) chart.BorderColor = this.GetColor(varItem.Color);
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建K线背景
     this.CreateSelfKLine = function (hqChart, windowIndex, hisData) 
     {
@@ -12041,6 +12082,9 @@ function ScriptIndex(name, script, args, option)
                 case 'DRAWICON':
                     this.CreateIcon(hqChart, windowIndex, item, i);
                     break;
+                case 'DRAWRECTREL':
+                    this.CreateRectangle(hqChart, windowIndex, item, i);
+                    break;
                 }
             }
             else if (item.Type == 2) 
@@ -12062,6 +12106,13 @@ function ScriptIndex(name, script, args, option)
             else if (item.Type == 6) 
             {
                 this.CreateVolStick(hqChart, windowIndex, item, i, hisData);
+            }
+
+            var titlePaint = hqChart.TitlePaint[windowIndex + 1];
+            if (titlePaint && titlePaint.Data && i < titlePaint.Data.length) //设置标题数值 小数位数和格式
+            {
+                if (this.StringFormat > 0) titlePaint.Data[i].StringFormat = this.StringFormat;
+                if (this.FloatPrecision >= 0) titlePaint.Data[i].FloatPrecision = this.FloatPrecision;
             }
         }
 

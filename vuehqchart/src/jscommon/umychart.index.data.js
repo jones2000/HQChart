@@ -21,7 +21,7 @@
     FloatPrecision: 小数位数 缺省=2
     YSplitScale:  Y固定刻度 [1,8,10]
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
-    StringFormat: 1=带单位万/亿 1=原始格式
+    StringFormat: 1=带单位万/亿 2=原始格式
     Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), }
 */
 
