@@ -5545,9 +5545,10 @@ function JSChartContainer(uielement)
     this.UpdatePointByCursorIndex=function()
     {
         this.LastPoint.X=this.Frame.GetXFromIndex(this.CursorIndex);
-
         var index=Math.abs(this.CursorIndex-0.5);
         index=parseInt(index.toFixed(0));
+        if (this.ClassName=='KLineChartContainer') index=this.CursorIndex;
+
         var data=this.Frame.Data;
         if (data.DataOffset+index>=data.Data.length)
         {
@@ -5562,8 +5563,9 @@ function JSChartContainer(uielement)
     {
         var index=Math.abs(this.CursorIndex-0.5);
         index=parseInt(index.toFixed(0));
-        var data=this.Frame.Data;
+        if (this.ClassName=='KLineChartContainer') index=this.CursorIndex;
 
+        var data=this.Frame.Data;
         var toolTip=new TooltipData();
         toolTip.Data=data.Data[data.DataOffset+index];
         toolTip.ChartPaint=this.ChartPaint[0];
@@ -8924,7 +8926,7 @@ function ChartData()
                     ++j;
                     continue;    
                 } 
-                if (minData.Time == 925 || minData.Time == 930 )
+                if ( (preTime!=null && minData.Time == 925 && preTime!=924) || (preTime!=null && minData.Time == 930 && preTime!=929))  //9：25, 9:30 不连续就不算个数
                 {
 
                 }
@@ -18675,10 +18677,10 @@ function HQDateStringFormat()
 
     this.Operator=function()
     {
-        if (!this.Value) return false;
+        if (!IFrameSplitOperator.IsNumber(this.Value)) return false;
         if (!this.Data) return false;
 
-        var index=Math.abs(this.Value-0.5);
+        var index=this.Value;
         index=parseInt(index.toFixed(0));
         if (this.Data.DataOffset+index>=this.Data.Data.length) return false;
         var currentData = this.Data.Data[this.Data.DataOffset+index];
