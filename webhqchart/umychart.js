@@ -10976,6 +10976,80 @@ function ChartBackground()
     }
 }
 
+//画矩形
+function ChartRectangle()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Color=[];
+    this.Rect;
+    this.BorderColor=g_JSChartResource.FrameBorderPen;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Color || !this.Rect) return;
+        if (this.Color.length<=0) return;
+
+        this.Canvas.strokeStyle=this.BorderColor;
+        var bFill=false;
+        if (this.Color.length==2)
+        {
+            /*  TODO 渐变下次做吧
+            if (this.ColorAngle==0)
+            {
+                var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                var ptEnd={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetBottomEx() };
+            }
+            else
+            {
+                var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                var ptEnd={ X:this.ChartBorder.GetRight(), Y:this.ChartBorder.GetTopEx() };
+            }
+
+            let gradient = this.Canvas.createLinearGradient(ptStart.X,ptStart.Y, ptEnd.X,ptEnd.Y);
+            gradient.addColorStop(0, this.Color[0]);
+            gradient.addColorStop(1, this.Color[1]);
+            this.Canvas.fillStyle=gradient;
+            */
+
+            this.Canvas.fillStyle=this.Color[0];
+            bFill=true;
+        }
+        else if (this.Color.length==1)
+        {
+            if (this.Color[0])
+            {
+                this.Canvas.fillStyle=this.Color[0];
+                bFill=true;
+            }
+        }
+        else
+        {
+            return;
+        }
+
+        var chartWidth=this.ChartBorder.GetWidth();
+        var chartHeight=this.ChartBorder.GetHeightEx();
+        var left=this.Rect.Left/1000*chartWidth;
+        var top=this.Rect.Top/1000*chartHeight;
+        var right=this.Rect.Right/1000*chartWidth;
+        var bottom=this.Rect.Bottom/1000*chartHeight;
+
+        left=this.ChartBorder.GetLeft()+left
+        top=this.ChartBorder.GetTopEx()+top;
+        right=this.ChartBorder.GetLeft()+right;
+        bottom=this.ChartBorder.GetTopEx()+bottom;
+        width=Math.abs(left-right);
+        height=Math.abs(top-bottom);
+        if (bFill) this.Canvas.fillRect(left, top,width, height);
+        this.Canvas.rect(ToFixedPoint(left), ToFixedPoint(top),ToFixedRect(width), ToFixedRect(height));
+        this.Canvas.stroke();
+    }
+}
+
 // 文字+线段输出
 function ChartTextLine()
 {
