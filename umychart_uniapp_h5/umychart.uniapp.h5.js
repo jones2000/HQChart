@@ -21,7 +21,7 @@
     FloatPrecision: 小数位数 缺省=2
     YSplitScale:  Y固定刻度 [1,8,10]
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
-    StringFormat: 1=带单位万/亿 1=原始格式
+    StringFormat: 1=带单位万/亿 2=原始格式
     Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), }
 */
 
@@ -7324,6 +7324,30 @@ function KLineFrame()
         return offset;
     }
 
+    //X坐标转x轴数值
+    this.GetXData=function(x)
+    {
+        if (x<=this.ChartBorder.GetLeft()) return 0;
+        if (x>=this.ChartBorder.GetRight()) return this.XPointCount;
+        
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var distanceWidth=this.DistanceWidth;
+        var dataWidth=this.DataWidth;
+
+        var index=0;
+        var xPoint=left+dataWidth+distanceWidth;
+        while(xPoint<right && index<10000)  //自己算x的数值
+        {
+            if (xPoint>x) break;
+            xPoint+=(dataWidth+distanceWidth);
+            ++index;
+        }
+
+        //var test=(x-this.ChartBorder.GetLeft())*(this.XPointCount*1.0/this.ChartBorder.GetWidth());
+        return index;
+    }
+
     //计算数据宽度
     this.CalculateDataWidth=function()
     {
@@ -7358,7 +7382,11 @@ function KLineFrame()
     {
         var dataWidth=ZOOM_SEED[this.ZoomIndex][1];
         var distanceWidth=ZOOM_SEED[this.ZoomIndex][0];
-        if (dataWidth==1) return;
+        if (dataWidth==1 && distanceWidth==0) 
+        {
+            this.DataWidth=width/this.XPointCount;
+            return;
+        }
 
         while(true)
         {
@@ -14360,8 +14388,8 @@ function ChartRectangle()
         top=this.ChartBorder.GetTopEx()+top;
         right=this.ChartBorder.GetLeft()+right;
         bottom=this.ChartBorder.GetTopEx()+bottom;
-        width=Math.abs(left-right);
-        height=Math.abs(top-bottom);
+        var width=Math.abs(left-right);
+        var height=Math.abs(top-bottom);
         if (bFill) this.Canvas.fillRect(left, top,width, height);
         this.Canvas.rect(ToFixedPoint(left), ToFixedPoint(top),ToFixedRect(width), ToFixedRect(height));
         this.Canvas.stroke();
@@ -15671,11 +15699,14 @@ function KLineTooltipPaint()
         var text=IFrameSplitOperator.FormatValueString(item.Vol,2,this.LanguageID);
         this.Canvas.fillText(text,left+labelWidth,top);
 
-        top+=this.LineHeight;
-        text=g_JSChartLocalization.GetText('Tooltip-Amount',this.LanguageID);
-        this.Canvas.fillText(text, left,top);
-        var text=IFrameSplitOperator.FormatValueString(item.Amount,2,this.LanguageID);
-        this.Canvas.fillText(text,left+labelWidth,top);
+        if (item.Amount!=null)
+        {
+            top+=this.LineHeight;
+            text=g_JSChartLocalization.GetText('Tooltip-Amount',this.LanguageID);
+            this.Canvas.fillText(text, left,top);
+            var text=IFrameSplitOperator.FormatValueString(item.Amount,2,this.LanguageID);
+            this.Canvas.fillText(text,left+labelWidth,top);
+        }
 
         //换手率
         if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.HQChart.Symbol) && item.FlowCapital>0)
@@ -17657,14 +17688,52 @@ function FrameSplitKLineX()
     delete this.newMethod;
 
     this.ShowText=true;                 //是否显示坐标信息
+    this.Period;                        //周期
+    this.Symbol;                        //股票代码
+    this.MinTextDistance=50*GetDevicePixelRatio();
 
-    this.Operator=function()
+
+    this.SplitDateTime=function()   //根据时间分割
     {
-        if (this.Frame.Data==null) return;
+        this.Frame.VerticalInfo=[];
+        var itemWidth=this.Frame.DistanceWidth+this.Frame.DataWidth;
+        var xOffset=this.Frame.Data.DataOffset;
+        var xPointCount=this.Frame.XPointCount;
+        var lastYear=null, lastMonth=null;
+        var textDistance=0;
+
+        for(var i=0, index=xOffset; i<xPointCount && index<this.Frame.Data.Data.length; ++i,++index)
+        {
+            textDistance+=itemWidth;
+            var infoData=null;
+            if (i==0)
+            {
+                var date=IFrameSplitOperator.FormatDateString(this.Frame.Data.Data[index].Date,'MM-DD');
+                infoData={Value:index-xOffset, Text:date};
+            }
+            else if (textDistance>this.MinTextDistance)
+            {
+                var time=IFrameSplitOperator.FormatTimeString(this.Frame.Data.Data[index].Time);
+                infoData={Value:index-xOffset, Text:time};
+            }
+
+            if (infoData)
+            {
+                var info= new CoordinateInfo();
+                info.Value=infoData.Value;
+                if (this.ShowText) info.Message[0]=infoData.Text;
+                this.Frame.VerticalInfo.push(info);
+                textDistance=0;
+                if (i==0) textDistance=-(this.MinTextDistance/2);
+            }
+        }
+    }
+
+    this.SplitDate=function()   //根据日期分割
+    {
         this.Frame.VerticalInfo=[];
         var xOffset=this.Frame.Data.DataOffset;
         var xPointCount=this.Frame.XPointCount;
-
         var lastYear=null, lastMonth=null;
         var minDistance=12;
         for(var i=0, index=xOffset, distance=minDistance;i<xPointCount && index<this.Frame.Data.Data.length ;++i,++index)
@@ -17703,6 +17772,23 @@ function FrameSplitKLineX()
             this.Frame.VerticalInfo.push(info);
             distance=0;
         }
+    }
+
+    this.Operator=function()
+    {
+        if (this.Frame.Data==null) return;
+        
+
+        if (ChartData.IsMinutePeriod(this.Period, true)) 
+        {
+            this.SplitDateTime();
+        }
+        else 
+        {
+            this.SplitDate();
+        }
+
+        
     }
 }
 
@@ -24171,6 +24257,9 @@ function KLineChartContainer(uielement)
             var item =this.Frame.SubFrame[i].Frame;
             item.XPointCount=showCount;
             item.Data=this.ChartPaint[0].Data;
+
+            item.XSplitOperator.Symbol=this.Symbol;
+            item.XSplitOperator.Period=this.Period;
         }
 
         this.TitlePaint[0].Data=this.ChartPaint[0].Data;                    //动态标题
@@ -27471,6 +27560,8 @@ function KLineChartContainer(uielement)
         barWidth= (ZOOM_SEED[0][0] + ZOOM_SEED[0][1]);
         pageSize.Min=parseInt(width / barWidth) - 2;
 
+        console.log(`[KLineChartContainer::GetMaxMinPageSize] Max=${pageSize.Max} Min=${pageSize.Min}`);
+
         return pageSize;
     }
 
@@ -27814,6 +27905,10 @@ KLineChartContainer.JsonDataToMinuteRealtimeData=function(data)
 //API 返回数据 转化为array[]
 KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
 {
+    var upperSymbol=null;
+    if (data.symbol) upperSymbol=data.symbol.toUpperCase();
+    var isSHSZ=false;
+    if (upperSymbol) isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
     var list = data.data;
     var aryDayData=new Array();
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8;
@@ -27827,7 +27922,8 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
         item.Close = list[i][close];
         item.High = list[i][high];
         item.Low = list[i][low];
-        item.Vol = list[i][vol]/100;    //原始单位股
+        if (isSHSZ) item.Vol = list[i][vol]/100;    //原始单位股
+        else item.Vol = list[i][vol];
         item.Amount = list[i][amount];
         item.Time=list[i][time];
 
