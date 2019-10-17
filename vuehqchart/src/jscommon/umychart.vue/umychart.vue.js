@@ -9001,7 +9001,7 @@ function ChartData()
                         newData.Low=minData.Low;
                     newData.Close=minData.Close;
                     newData.Vol+=minData.Vol;
-                    newData.Amount+=minData.Amount;
+                    if (minData.Amount!=null) newData.Amount+=minData.Amount;
                     newData.FlowCapital=minData.FlowCapital;  
                 }
             }
@@ -9050,7 +9050,7 @@ function ChartData()
                     if (newData.Low>minData.Low) newData.Low=minData.Low;
                     newData.Close=minData.Close;
                     newData.Vol+=minData.Vol;
-                    newData.Amount+=minData.Amount;
+                    if (minData.Amount!=null) newData.Amount+=minData.Amount;   //null数据不相加
                     newData.FlowCapital=minData.FlowCapital;  
                 }
             }
@@ -9163,7 +9163,7 @@ function ChartData()
 
                     newData.Close=dayData.Close;
                     newData.Vol+=dayData.Vol;
-                    newData.Amount+=dayData.Amount;
+                    if (dayData.Amount!=null) newData.Amount+=dayData.Amount;
                     newData.FlowCapital=dayData.FlowCapital;
                     newData.Date=dayData.Date;
                 }
@@ -9213,7 +9213,7 @@ function ChartData()
                     if (newData.Low>dayData.Low) newData.Low=dayData.Low;
                     newData.Close=dayData.Close;
                     newData.Vol+=dayData.Vol;
-                    newData.Amount+=dayData.Amount;
+                    if (dayData.Amount!=null) newData.Amount+=dayData.Amount;
                     newData.FlowCapital=dayData.FlowCapital;  
                 }
             }
@@ -15739,10 +15739,10 @@ function KLineTooltipPaint()
         top+=this.LineHeight;
         text=g_JSChartLocalization.GetText('Tooltip-Vol',this.LanguageID);
         this.Canvas.fillText(text, left,top);
-        var text=IFrameSplitOperator.FormatValueString(item.Vol,2,this.LanguageID);
+        var text=IFrameSplitOperator.FromatIntegerString(item.Vol,2,this.LanguageID);
         this.Canvas.fillText(text,left+labelWidth,top);
 
-        if (item.Amount!=null)
+        if (IFrameSplitOperator.IsNumber(item.Amount))
         {
             top+=this.LineHeight;
             text=g_JSChartLocalization.GetText('Tooltip-Amount',this.LanguageID);
@@ -15900,15 +15900,18 @@ function MinuteTooltipPaint()
         top+=this.LineHeight;
         text=g_JSChartLocalization.GetText('Tooltip-Vol',this.LanguageID);
         this.Canvas.fillText(text, left,top);
-        var text=IFrameSplitOperator.FormatValueString(vol,2,this.LanguageID);
+        var text=IFrameSplitOperator.FromatIntegerString(vol,2,this.LanguageID);
         this.Canvas.fillText(text,left+labelWidth,top);
 
         //成交金额
-        top+=this.LineHeight;
-        text=g_JSChartLocalization.GetText('Tooltip-Amount',this.LanguageID);
-        this.Canvas.fillText(text, left,top);
-        var text=IFrameSplitOperator.FormatValueString(amount,2,this.LanguageID);
-        this.Canvas.fillText(text,left+labelWidth,top);
+        if (IFrameSplitOperator.IsNumber(amount))
+        {
+            top+=this.LineHeight;
+            text=g_JSChartLocalization.GetText('Tooltip-Amount',this.LanguageID);
+            this.Canvas.fillText(text, left,top);
+            var text=IFrameSplitOperator.FormatValueString(amount,2,this.LanguageID);
+            this.Canvas.fillText(text,left+labelWidth,top);
+        }
 
         if (this.IsHScreen) this.Canvas.restore();
     }
@@ -17329,6 +17332,13 @@ IFrameSplitOperator.FormatValueString=function(value, floatPrecision,languageID)
     return '';
 }
 
+//整形输出格式化 floatPrecision=小数位数
+IFrameSplitOperator.FromatIntegerString=function(value, floatPrecision,languageID)
+{
+    if (value<10000 && IFrameSplitOperator.IsInteger(value)) floatPrecision=0;  //<10000的整形 去掉小数位数
+    return IFrameSplitOperator.FormatValueString(value, floatPrecision,languageID);
+}
+
 IFrameSplitOperator.NumberToString=function(value)
 {
     if (value<10) return '0'+value.toString();
@@ -17445,6 +17455,12 @@ IFrameSplitOperator.IsPlusNumber=function(value)
     if (isNaN(value)) return false;
 
     return value>0;
+}
+
+//是否是整形
+IFrameSplitOperator.IsInteger=function(x) 
+{
+    return (typeof x === 'number') && (x % 1 === 0);
 }
 
 //判断字段是否存在
@@ -19199,11 +19215,14 @@ function DynamicKLineTitlePainting()
         var text = g_JSChartLocalization.GetText('KTitle-Increase',this.LanguageID) + value.toFixed(2)+'%';
         if (!this.DrawText(text,color,position)) return;
 
-        var text=g_JSChartLocalization.GetText('KTitle-Vol',this.LanguageID)+IFrameSplitOperator.FormatValueString(item.Vol,2,this.LanguageID);
+        var text=g_JSChartLocalization.GetText('KTitle-Vol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Vol,2,this.LanguageID);
         if (!this.DrawText(text,this.VolColor,position)) return;
 
-        var text=g_JSChartLocalization.GetText('KTitle-Amount',this.LanguageID)+IFrameSplitOperator.FormatValueString(item.Amount,2,this.LanguageID);
-        if (!this.DrawText(text,this.AmountColor,position)) return;
+        if (IFrameSplitOperator.IsNumber(item.Amount))
+        {
+            var text=g_JSChartLocalization.GetText('KTitle-Amount',this.LanguageID)+IFrameSplitOperator.FormatValueString(item.Amount,2,this.LanguageID);
+            if (!this.DrawText(text,this.AmountColor,position)) return;
+        }
 
         if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && item.FlowCapital>0)   //A股有换手率
         {
@@ -19372,12 +19391,14 @@ function DynamicMinuteTitlePainting()
             if (!this.DrawText(text,color,position)) return;
         }
 
-        var text=g_JSChartLocalization.GetText('MTitle-Vol',this.LanguageID)+IFrameSplitOperator.FormatValueString(vol,2);
+        var text=g_JSChartLocalization.GetText('MTitle-Vol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(vol,2);
         if (!this.DrawText(text,this.VolColor,position)) return;
 
-        var text=g_JSChartLocalization.GetText('MTitle-Amount',this.LanguageID)+IFrameSplitOperator.FormatValueString(amount,2);
-        if (!this.DrawText(text,this.AmountColor,position)) return;
-        
+        if (IFrameSplitOperator.IsNumber(amount))
+        {
+            var text=g_JSChartLocalization.GetText('MTitle-Amount',this.LanguageID)+IFrameSplitOperator.FormatValueString(amount,2);
+            if (!this.DrawText(text,this.AmountColor,position)) return;
+        }
 
         //叠加股票的名字
         for(var i in this.OverlayChartPaint)
@@ -29674,7 +29695,7 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         //均价太大 可能是后台算错了
         var checkValue=Math.abs(item.AvPrice-item.Close);
         //console.log(`[MinuteChartContainer::JsonDataToMinuteData] checkValue=${checkValue}, ${item.Close*0.13} `)
-        if (checkValue>item.Close*0.13 ) 
+        if (isSHSZ && checkValue>item.Close*0.13 ) 
             item.AvPrice=preAvPrice;
 
         //上次价格
@@ -29715,11 +29736,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
             item.Low=jsData[4];
             item.Vol=jsData[5]/100; //原始单位股
             item.Amount=jsData[6];
-            if (7<jsData.length && jsData[7]>0) 
-            {
-                item.AvPrice=jsData[7];    //均价
-                preAvPrice=jsData[7];
-            }
+            if (7<jsData.length && jsData[7]>0) item.AvPrice=jsData[7];    //均价
             item.DateTime=date.toString()+" "+jsData[0].toString();
             item.Date=date;
             item.Time=jsData[0];
@@ -29751,6 +29768,15 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
             if (item.High<=0) item.High=null;
             if (item.Low<=0) item.Low=null;
             if (item.AvPrice<=0) item.AvPrice=null;
+
+            //均价太大 可能是后台算错了
+            if (item.AvPrice && isSHSZ)
+            {
+                var checkValue=Math.abs(item.AvPrice-item.Close);
+                if (checkValue>item.Close*0.13 ) item.AvPrice=preAvPrice;
+            }
+
+            if (jsData.length>7 && jsData[7]>0 && item.AvPrice===jsData[7]) preAvPrice=jsData[7];
 
             minuteData[j]=item;
         }
