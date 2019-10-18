@@ -2116,15 +2116,16 @@ function AverageWidthFrame()
                     if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj)) this.Canvas.fillText(item.Message[0], left + 1, y);
                 }
 
-                if (item.Message[1] != null && borderRight < 10 && this.IsShowYText[1] === true) {
+                if (item.Message[1] != null && borderRight < 10 && this.IsShowYText[1] === true) 
+                {
                     if (item.Font != null) this.Canvas.font = item.Font;
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.textAlign = "right";
                     if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
                     else if (y <= top + 2) this.Canvas.textBaseline = 'top';
                     else this.Canvas.textBaseline = "middle";
-
-                    var textObj = { X: right, Y: y, Text: { BaseLine: this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font: this.Canvas.font, Value: item.Message[1] } };
+                    var textWidth = this.Canvas.measureText(item.Message[1]).width;
+                    var textObj = { X: right - textWidth, Y: y, Text: { BaseLine: this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font: this.Canvas.font, Value: item.Message[1] } };
                     if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj))
                         this.Canvas.fillText(item.Message[1], right - 1, y);
                 }
