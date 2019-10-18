@@ -15,6 +15,11 @@ import
     JSCommonResource_Global_JSChartResource as g_JSChartResource,
 } from './umychart.resource.wechat.js'
 
+import {
+    JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
+    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
+} from "./umychart.data.wechat.js";
+
 import { JSCommonCoordinateData as JSCommonCoordinateData } from "./umychart.coordinatedata.wechat.js";
 var MARKET_SUFFIX_NAME = JSCommonCoordinateData.MARKET_SUFFIX_NAME;
 
@@ -553,14 +558,51 @@ function FrameSplitKLineX()
 
     this.ShowText = true;                 //是否显示坐标信息
     this.MinDistance = 12;                //刻度间隔
+    this.Period;                          //周期
+    this.Symbol;                          //股票代码
+    this.MinTextDistance = 50;
 
-    this.Operator = function () 
+    this.SplitDateTime = function ()   //根据时间分割
     {
-        if (this.Frame.Data == null) return;
+        this.Frame.VerticalInfo = [];
+        var itemWidth = this.Frame.DistanceWidth + this.Frame.DataWidth;
+        var xOffset = this.Frame.Data.DataOffset;
+        var xPointCount = this.Frame.XPointCount;
+        var lastYear = null, lastMonth = null;
+        var textDistance = 0;
+
+        for (var i = 0, index = xOffset; i < xPointCount && index < this.Frame.Data.Data.length; ++i, ++index) 
+        {
+            textDistance += itemWidth;
+            var infoData = null;
+            if (i == 0) 
+            {
+                var date = IFrameSplitOperator.FormatDateString(this.Frame.Data.Data[index].Date, 'MM-DD');
+                infoData = { Value: index - xOffset, Text: date };
+            }
+            else if (textDistance > this.MinTextDistance) 
+            {
+                var time = IFrameSplitOperator.FormatTimeString(this.Frame.Data.Data[index].Time);
+                infoData = { Value: index - xOffset, Text: time };
+            }
+
+            if (infoData) 
+            {
+                var info = new CoordinateInfo();
+                info.Value = infoData.Value;
+                if (this.ShowText) info.Message[0] = infoData.Text;
+                this.Frame.VerticalInfo.push(info);
+                textDistance = 0;
+                if (i == 0) textDistance = -(this.MinTextDistance / 2);
+            }
+        }
+    }
+
+    this.SplitDate = function ()   //根据日期分割
+    {
         this.Frame.VerticalInfo = [];
         var xOffset = this.Frame.Data.DataOffset;
         var xPointCount = this.Frame.XPointCount;
-
         var lastYear = null, lastMonth = null;
 
         for (var i = 0, index = xOffset, distance = this.MinDistance; i < xPointCount && index < this.Frame.Data.Data.length; ++i, ++index) 
@@ -600,6 +642,15 @@ function FrameSplitKLineX()
             this.Frame.VerticalInfo.push(info);
             distance = 0;
         }
+    }
+
+    this.Operator = function () 
+    {
+        if (this.Frame.Data == null) return;
+        if (ChartData.IsMinutePeriod(this.Period, true)) 
+            this.SplitDateTime();
+        else 
+            this.SplitDate();
     }
 }
 

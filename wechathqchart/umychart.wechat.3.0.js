@@ -1518,19 +1518,22 @@ function JSChartContainer(uielement)
     //console.log(e);
   }
 
-  this.UpdatePointByCursorIndex = function () {
-    this.LastPoint.X = this.Frame.GetXFromIndex(this.CursorIndex);
+    this.UpdatePointByCursorIndex = function () 
+    {
+        this.LastPoint.X = this.Frame.GetXFromIndex(this.CursorIndex);
 
-    var index = Math.abs(this.CursorIndex - 0.5);
-    index = parseInt(index.toFixed(0));
-    var data = this.Frame.Data;
-    if (data.DataOffset + index >= data.Data.length) {
-      return;
+        var index = Math.abs(this.CursorIndex - 0.5);
+        index = parseInt(index.toFixed(0));
+        if (this.ClassName == 'KLineChartContainer') index = this.CursorIndex;
+        var data = this.Frame.Data;
+        if (data.DataOffset + index >= data.Data.length) 
+        {
+            return;
+        }
+        var close = data.Data[data.DataOffset + index].Close;
+
+        this.LastPoint.Y = this.Frame.GetYFromData(close);
     }
-    var close = data.Data[data.DataOffset + index].Close;
-
-    this.LastPoint.Y = this.Frame.GetYFromData(close);
-  }
 
   this.ResetFrameXYSplit = function () {
     if (typeof (this.Frame.ResetXYSplit) == 'function')
@@ -2576,6 +2579,30 @@ function KLineFrame()
         return offset;
     }
 
+    //X坐标转x轴数值
+    this.GetXData = function (x) 
+    {
+        if (x <= this.ChartBorder.GetLeft()) return 0;
+        if (x >= this.ChartBorder.GetRight()) return this.XPointCount;
+
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRight();
+        var distanceWidth = this.DistanceWidth;
+        var dataWidth = this.DataWidth;
+
+        var index = 0;
+        var xPoint = left + dataWidth + distanceWidth;
+        while (xPoint < right && index < 10000)  //自己算x的数值
+        {
+            if (xPoint > x) break;
+            xPoint += (dataWidth + distanceWidth);
+            ++index;
+        }
+
+        //var test=(x-this.ChartBorder.GetLeft())*(this.XPointCount*1.0/this.ChartBorder.GetWidth());
+        return index;
+    }
+
     this.CalculateDataWidth = function ()   //计算数据宽度
     {
         if (this.XPointCount < 2) return;
@@ -2601,6 +2628,14 @@ function KLineFrame()
     this.TrimKLineDataWidth = function (width) 
     {
         var zoom = ZOOM_SEED[this.ZoomIndex];
+        var dataWidth = ZOOM_SEED[this.ZoomIndex][1];
+        var distanceWidth = ZOOM_SEED[this.ZoomIndex][0];
+        if (dataWidth == 1 && distanceWidth == 0) 
+        {
+            this.DataWidth = width / this.XPointCount;
+            return;
+        }
+
         if (zoom[0]<4) //最后2个缩放,调整间距不调整数据宽度, 数据都是画竖线的
         {
             while (true) 
@@ -3577,7 +3612,7 @@ var ZOOM_SEED =
     [18, 6], [16, 6],
     [14, 5], [12, 5],
     [8, 4],  [4, 4], [3, 3],
-    [3, 1],  
+    [3, 1],  [2,1], [1,1], [0,1]
     /*
     [49, 10], [46, 9], [43, 8],
     [41, 7.5], [39, 7], [37, 6],
@@ -6424,7 +6459,7 @@ function HQDateStringFormat()
         if (!this.Value) return false;
         if (!this.Data) return false;
 
-        var index = Math.abs(this.Value - 0.5);
+        var index = this.Value;
         index = parseInt(index.toFixed(0));
         if (this.Data.DataOffset + index >= this.Data.Data.length) return false;
 
@@ -7364,6 +7399,9 @@ function KLineChartContainer(uielement)
             var item = this.Frame.SubFrame[i].Frame;
             item.XPointCount = showCount+1;
             item.Data = this.ChartPaint[0].Data;
+
+            item.XSplitOperator.Symbol = this.Symbol;
+            item.XSplitOperator.Period = this.Period;
         }
 
         this.TitlePaint[0].Data = this.ChartPaint[0].Data;                    //动态标题
@@ -9084,59 +9122,71 @@ KLineChartContainer.JsonDataToMinuteRealtimeData = function (data)
 }
 
 //API 返回数据 转化为array[]
-KLineChartContainer.JsonDataToMinuteHistoryData = function (data) {
-  var list = data.data;
-  var aryDayData = new Array();
-  var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8;
-  for (var i = 0; i < list.length; ++i) {
-    var item = new HistoryData();
+KLineChartContainer.JsonDataToMinuteHistoryData = function (data) 
+{
+    var upperSymbol = null;
+    if (data.symbol) upperSymbol = data.symbol.toUpperCase();
+    var isSHSZ = false;
+    if (upperSymbol) isSHSZ = MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+    var list = data.data;
+    var aryDayData = new Array();
+    var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8;
+    for (var i = 0; i < list.length; ++i) 
+    {
+        var item = new HistoryData();
+        item.Date = list[i][date];
+        item.Open = list[i][open];
+        item.YClose = list[i][yclose];
+        item.Close = list[i][close];
+        item.High = list[i][high];
+        item.Low = list[i][low];
+        if (isSHSZ) item.Vol = list[i][vol] / 100;    //原始单位股
+        else item.Vol = list[i][vol];    //原始单位股
+        item.Amount = list[i][amount];
+        item.Time = list[i][time];
 
-    item.Date = list[i][date];
-    item.Open = list[i][open];
-    item.YClose = list[i][yclose];
-    item.Close = list[i][close];
-    item.High = list[i][high];
-    item.Low = list[i][low];
-    item.Vol = list[i][vol];    //原始单位股
-    item.Amount = list[i][amount];
-    item.Time = list[i][time];
-
-    aryDayData.push(item);
-  }
-
-  // 无效数据处理
-  for (var i = 0; i < aryDayData.length; ++i) {
-    var minData = aryDayData[i];
-    if (minData == null) coninue;
-    if (isNaN(minData.Open) || minData.Open <= 0 || isNaN(minData.High) || minData.High <= 0 || isNaN(minData.Low) || minData.Low <= 0
-      || isNaN(minData.Close) || minData.Close <= 0 || isNaN(minData.YClose) || minData.YClose <= 0) {
-      if (i == 0) {
-        if (minData.YClose > 0) {
-          minData.Open = minData.YClose;
-          minData.High = minData.YClose;
-          minData.Low = minData.YClose;
-          minData.Close = minData.YClose;
-        }
-      }
-      else // 用前一个有效数据填充
-      {
-        for (var j = i - 1; j >= 0; --j) {
-          var minData2 = aryDayData[j];
-          if (minData2 == null) coninue;
-          if (minData2.Open > 0 && minData2.High > 0 && minData2.Low > 0 && minData2.Close > 0) {
-            if (minData.YClose <= 0) minData.YClose = minData2.Close;
-            minData.Open = minData2.Open;
-            minData.High = minData2.High;
-            minData.Low = minData2.Low;
-            minData.Close = minData2.Close;
-            break;
-          }
-        }
-      }
+        aryDayData.push(item);
     }
-  }
 
-  return aryDayData;
+    // 无效数据处理
+    for (var i = 0; i < aryDayData.length; ++i) 
+    {
+        var minData = aryDayData[i];
+        if (minData == null) coninue;
+        if (isNaN(minData.Open) || minData.Open <= 0 || isNaN(minData.High) || minData.High <= 0 || isNaN(minData.Low) || minData.Low <= 0
+        || isNaN(minData.Close) || minData.Close <= 0 || isNaN(minData.YClose) || minData.YClose <= 0) 
+        {
+            if (i == 0) 
+            {
+                if (minData.YClose > 0) 
+                {
+                    minData.Open = minData.YClose;
+                    minData.High = minData.YClose;
+                    minData.Low = minData.YClose;
+                    minData.Close = minData.YClose;
+                }
+            }
+            else // 用前一个有效数据填充
+            {
+                for (var j = i - 1; j >= 0; --j) 
+                {
+                    var minData2 = aryDayData[j];
+                    if (minData2 == null) coninue;
+                    if (minData2.Open > 0 && minData2.High > 0 && minData2.Low > 0 && minData2.Close > 0) 
+                    {
+                        if (minData.YClose <= 0) minData.YClose = minData2.Close;
+                        minData.Open = minData2.Open;
+                        minData.High = minData2.High;
+                        minData.Low = minData2.Low;
+                        minData.Close = minData2.Close;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    return aryDayData;
 }
 
 

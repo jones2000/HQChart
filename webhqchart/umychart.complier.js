@@ -4984,6 +4984,32 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    //CON2STR(A,N):取A最后的值(非序列值)转为字符串,小数位数N.
+    //用法: CON2STR(FINANCE(20),3)表示取营业收入,以3位小数转为字符串
+    this.CON2STR=function(data,n)
+    {
+        var result=[];
+        if (Array.isArray(data))
+        {
+            for(var i=data.length-1 ; i>=0; --i)
+            {
+                var item=data[i];
+                if (IFrameSplitOperator.IsNumber(item))
+                {
+                    result=item.toFixed(n);
+                    return result;
+                }
+            }
+        }
+        else
+        {
+            if (IFrameSplitOperator.IsNumber(data)) 
+                result=data.toFixed(n);
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -5114,6 +5140,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.BETWEEN(args[0], args[1], args[2]);
             case 'STRCAT':
                 return this.STRCAT(args[0], args[1]);
+            case 'CON2STR':
+                return this.CON2STR(args[0], args[1]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
@@ -8975,7 +9003,11 @@ function JSExecute(ast,option)
                     let assignmentItem=item.Expression;
                     let varName=assignmentItem.Left.Name;
                     let outVar=this.VarTable.get(varName);
-                    if (!this.IsSectionMode && !Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                    if (!this.IsSectionMode && !Array.isArray(outVar)) 
+                    {
+                        if (typeof(outVar)=='string') outVar=this.SingleDataToArrayData(parseFloat(outVar));
+                        else outVar=this.SingleDataToArrayData(outVar);
+                    }
 
                     this.OutVarTable.push({Name:varName, Data:outVar,Type:0});
                 }

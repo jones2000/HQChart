@@ -326,7 +326,7 @@ function ChartData()
                     ++j;
                     continue;    
                 } 
-                if (minData.Time == 925 || minData.Time == 930)
+                if ((preTime != null && minData.Time == 925 && preTime != 924) || (preTime != null && minData.Time == 930 && preTime != 929)) //9：25, 9:30 不连续就不算个数
                 {
                 }
                 else if (preTime != null && minData.Time == 1300 && preTime!=1259) //1点的数据 如果不是连续的 就不算个数
