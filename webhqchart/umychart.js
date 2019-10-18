@@ -5340,6 +5340,15 @@ function KLineInfoData()
     this.ExtendData;    //扩展数据
 }
 
+function DataPlus () { };       //外部数据计算方法接口
+DataPlus.GetMinutePeriodData=null;
+/*
+DataPlus.GetMinutePeriodData=function(period,data,self)
+{
+
+}
+*/
+
 function ChartData()
 {
     this.Data=new Array();
@@ -5571,6 +5580,8 @@ function ChartData()
     //计算分钟
     this.GetMinutePeriodData=function(period)
     {
+        if (DataPlus.GetMinutePeriodData) return DataPlus.GetMinutePeriodData(period,this.Data,this);
+
         var result = new Array();
         var periodDataCount = 5;
         if (period == 5)
@@ -16084,6 +16095,7 @@ var STRING_FORMAT_TYPE =
 {
     DEFAULT: 1,     //默认 2位小数 单位自动转化 (万 亿)
     ORIGINAL:2,     //原始数据
+    INTEGER:3,      //整形数据输出 如果不是整形使用 DEFAULT
     THOUSANDS:21,   //千分位分割
 };
 
@@ -16119,6 +16131,8 @@ function DynamicChartTitlePainting()
             return IFrameSplitOperator.FormatValueThousandsString(value,item.FloatPrecision);
         else if (item.StringFormat==STRING_FORMAT_TYPE.ORIGINAL) 
             return value.toFixed(item.FloatPrecision).toString();
+        else if (item.StringFormat==STRING_FORMAT_TYPE.INTEGER)
+            return IFrameSplitOperator.FromatIntegerString(value,item.FloatPrecision,this.LanguageID);
     }
 
     this.FormatMultiReport=function(data,format)
