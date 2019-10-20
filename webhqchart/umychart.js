@@ -140,6 +140,8 @@ function JSChart(divElement)
             if (option.DrawPicture.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawPicture.StorageKey);
         }
 
+        if (option.StepPixel>0) chart.StepPixel=option.StepPixel;
+
         if (!option.Windows || option.Windows.length<=0) return null;
 
         //创建子窗口
@@ -197,6 +199,8 @@ function JSChart(divElement)
                     chart.Frame.SubFrame[i].Frame.IsShowYText[1]=item.IsShowRightText;
                     chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度
                 }
+                if (item.TopSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace=item.TopSpace;
+                if (item.BottomSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace=item.BottomSpace;
             }
         }
 
@@ -8463,6 +8467,7 @@ function ChartLine()
     this.Color="rgb(255,193,37)";   //线段颜色
     this.LineWidth;                 //线段宽度
     this.DrawType=0;                //画图方式  0=无效数平滑  1=无效数不画断开
+    this.IsDotLine=false;           //虚线
 
     this.Draw=function()
     {
@@ -8548,6 +8553,7 @@ function ChartLine()
         this.Canvas.save();
         if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
         this.Canvas.strokeStyle=this.Color;
+        if (this.IsDotLine) this.Canvas.setLineDash([3,5]); //画虚线
 
         var bFirstPoint=true;
         var drawCount=0;

@@ -9035,6 +9035,7 @@ function JSExecute(ast,option)
                     let volStick=false;
                     let isShow=true;
                     let isExData=false;
+                    let isDotLine=false;
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -9054,6 +9055,7 @@ function JSExecute(ast,option)
                             if (value==='COLORSTICK') colorStick=true;
                             else if (value==='POINTDOT') pointDot=true;
                             else if (value==='CIRCLEDOT') circleDot=true;
+                            else if (value=='DOTLINE') isDotLine=true;
                             else if (value==='LINESTICK') lineStick=true;
                             else if (value==='STICK') stick=true;
                             else if (value==='VOLSTICK') volStick=true;
@@ -9124,6 +9126,7 @@ function JSExecute(ast,option)
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (isShow == false) value.IsShow = false;
                         if (isExData==true) value.IsExData = true;
+                        if (isDotLine==true) value.IsDotLine=true;
                         this.OutVarTable.push(value);
                     }
                     else if (draw)  //画图函数
@@ -9147,6 +9150,7 @@ function JSExecute(ast,option)
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (isShow==false) value.IsShow=false;
                         if (isExData==true) value.IsExData = true;
+                        if (isDotLine==true) value.IsDotLine=true;
                         this.OutVarTable.push(value);
                     }
                 }
@@ -9913,6 +9917,7 @@ function ScriptIndex(name,script,args,option)
             if (!isNaN(width) && width>0) line.LineWidth=width;
         }
 
+        if (varItem.IsDotLine) line.IsDotLine=true; //虚线
         if (varItem.IsShow==false) line.IsShow=false;
         
         let titleIndex=windowIndex+1;
@@ -11459,7 +11464,7 @@ function APIScriptIndex(name,script,args,option)
                 outVarItem.Data=this.FittingArray(item.data,date,time,hqChart);
 
                 if (item.color) outVarItem.Color=item.color;
-                if (item.linewidth>=1) outVarItem.LineWidth=item.linewidth;
+                if (item.linewidth>=1) outVarItem.LineWidth=item.linewidth; 
                 if (item.isshow==false) outVarItem.IsShow = false;
                 if (item.isexdata==true) outVarItem.IsExData = true;
 

@@ -5592,7 +5592,7 @@ function JSSymbolData(ast,option,jsExecute)
             case DYNAINFO_ARGUMENT_ID.AMPLITUDE:
                 return this.LatestData.Amplitude;
             case DYNAINFO_ARGUMENT_ID.CLOSE:
-                return this.LatestData.Close;
+                return this.LatestData.Price;
             default:
                 return null;
         }
@@ -7644,6 +7644,7 @@ function JSExecute(ast,option)
                     let volStick=false;
                     let isShow = true;
                     let isExData = false;
+                    let isDotLine = false;
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -7663,6 +7664,7 @@ function JSExecute(ast,option)
                             if (value==='COLORSTICK') colorStick=true;
                             else if (value==='POINTDOT') pointDot=true;
                             else if (value==='CIRCLEDOT') circleDot=true;
+                            else if (value == 'DOTLINE') isDotLine = true;
                             else if (value==='LINESTICK') lineStick=true;
                             else if (value==='STICK') stick=true;
                             else if (value==='VOLSTICK') volStick=true;
@@ -7730,6 +7732,7 @@ function JSExecute(ast,option)
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (isShow == false) value.IsShow = false;
                         if (isExData == true) value.IsExData = true;
+                        if (isDotLine == true) value.IsDotLine = true;
                         this.OutVarTable.push(value);
                     }
                     else if (draw)
@@ -7753,6 +7756,7 @@ function JSExecute(ast,option)
                         if (lineWidth) value.LineWidth = lineWidth;
                         if (isShow == false) value.IsShow = false;
                         if (isExData == true) value.IsExData = true;
+                        if (isDotLine == true) value.IsDotLine = true;
                         this.OutVarTable.push(value);
                     }
                 }

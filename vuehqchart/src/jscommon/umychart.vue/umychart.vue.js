@@ -3499,6 +3499,8 @@ function JSChart(divElement)
             if (option.DrawPicture.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawPicture.StorageKey);
         }
 
+        if (option.StepPixel>0) chart.StepPixel=option.StepPixel;
+
         if (!option.Windows || option.Windows.length<=0) return null;
 
         //创建子窗口
@@ -3556,6 +3558,8 @@ function JSChart(divElement)
                     chart.Frame.SubFrame[i].Frame.IsShowYText[1]=item.IsShowRightText;
                     chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度
                 }
+                if (item.TopSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace=item.TopSpace;
+                if (item.BottomSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace=item.BottomSpace;
             }
         }
 
@@ -11822,6 +11826,7 @@ function ChartLine()
     this.Color="rgb(255,193,37)";   //线段颜色
     this.LineWidth;                 //线段宽度
     this.DrawType=0;                //画图方式  0=无效数平滑  1=无效数不画断开
+    this.IsDotLine=false;           //虚线
 
     this.Draw=function()
     {
@@ -11907,6 +11912,7 @@ function ChartLine()
         this.Canvas.save();
         if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
         this.Canvas.strokeStyle=this.Color;
+        if (this.IsDotLine) this.Canvas.setLineDash([3,5]); //画虚线
 
         var bFirstPoint=true;
         var drawCount=0;
@@ -46694,6 +46700,7 @@ function JSExecute(ast,option)
                     let volStick=false;
                     let isShow=true;
                     let isExData=false;
+                    let isDotLine=false;
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -46713,6 +46720,7 @@ function JSExecute(ast,option)
                             if (value==='COLORSTICK') colorStick=true;
                             else if (value==='POINTDOT') pointDot=true;
                             else if (value==='CIRCLEDOT') circleDot=true;
+                            else if (value=='DOTLINE') isDotLine=true;
                             else if (value==='LINESTICK') lineStick=true;
                             else if (value==='STICK') stick=true;
                             else if (value==='VOLSTICK') volStick=true;
@@ -46783,6 +46791,7 @@ function JSExecute(ast,option)
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (isShow == false) value.IsShow = false;
                         if (isExData==true) value.IsExData = true;
+                        if (isDotLine==true) value.IsDotLine=true;
                         this.OutVarTable.push(value);
                     }
                     else if (draw)  //画图函数
@@ -46806,6 +46815,7 @@ function JSExecute(ast,option)
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (isShow==false) value.IsShow=false;
                         if (isExData==true) value.IsExData = true;
+                        if (isDotLine==true) value.IsDotLine=true;
                         this.OutVarTable.push(value);
                     }
                 }
@@ -47572,6 +47582,7 @@ function ScriptIndex(name,script,args,option)
             if (!isNaN(width) && width>0) line.LineWidth=width;
         }
 
+        if (varItem.IsDotLine) line.IsDotLine=true; //虚线
         if (varItem.IsShow==false) line.IsShow=false;
         
         let titleIndex=windowIndex+1;
@@ -49118,7 +49129,7 @@ function APIScriptIndex(name,script,args,option)
                 outVarItem.Data=this.FittingArray(item.data,date,time,hqChart);
 
                 if (item.color) outVarItem.Color=item.color;
-                if (item.linewidth>=1) outVarItem.LineWidth=item.linewidth;
+                if (item.linewidth>=1) outVarItem.LineWidth=item.linewidth; 
                 if (item.isshow==false) outVarItem.IsShow = false;
                 if (item.isexdata==true) outVarItem.IsExData = true;
 

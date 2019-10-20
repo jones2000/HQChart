@@ -241,6 +241,8 @@ function JSChart(element)
                 if (item.UpdateTitleUICallback && chart.Frame.SubFrame[i].Frame.TitlePaint) chart.Frame.SubFrame[i].Frame.TitlePaint.UpdateUICallback = item.UpdateTitleUICallback;
                 if (item.IsShowLeftText === false || item.IsShowLeftText === true) chart.Frame.SubFrame[i].Frame.IsShowYText[0] = item.IsShowLeftText;            //显示左边刻度
                 if (item.IsShowRightText === false || item.IsShowRightText === true) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度 
+                if (item.TopSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace = item.TopSpace;
+                if (item.BottomSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace = item.BottomSpace;
             }
         }
 
@@ -11739,6 +11741,7 @@ function ScriptIndex(name, script, args, option)
             if (!isNaN(width) && width > 0) line.LineWidth = width;
         }
 
+        if (varItem.IsDotLine) line.IsDotLine = true; //虚线
         if (varItem.IsShow == false) line.IsShow = false;
 
         let titleIndex = windowIndex + 1;
