@@ -8499,6 +8499,25 @@ function KLineChartContainer(uielement)
         return true;
     }
 
+    this.GetRequestDataCount = function () //K线请求数据个数　(由于可以拖拽下载历史数据,所有原来固定个数的就不能用了)
+    {
+        var result = { MaxRequestDataCount: this.MaxReqeustDataCount, MaxRequestMinuteDayCount: this.MaxRequestMinuteDayCount };
+
+        if (!this.SourceData || !this.SourceData.Data || this.SourceData.Data.length <= 0) return result;
+
+        if (ChartData.IsDayPeriod(this.Period, true)) 
+        {
+            var lCount = this.SourceData.Data.length;
+            if (lCount > result.MaxRequestDataCount) result.MaxRequestDataCount = lCount;
+        }
+        else if (ChartData.IsMinutePeriod(this.Period, true)) 
+        {
+
+        }
+
+        return result;
+    }
+
     this.RequestOverlayHistoryData = function () 
     {
         if (!this.OverlayChartPaint.length) return;
@@ -8507,7 +8526,8 @@ function KLineChartContainer(uielement)
         if (!symbol) return;
 
         var self = this;
-
+        var dataCount = this.GetRequestDataCount();
+        var firstDate = this.SourceData.Data[0].Date;
         if (this.NetworkFilter) 
         {
             var obj =
@@ -8516,8 +8536,8 @@ function KLineChartContainer(uielement)
                 Explain: '叠加股票日K线数据',
                 Request: {
                     Url: self.KLineApiUrl, Data: {
-                        symbol: symbol, count: this.MaxReqeustDataCount,
-                        field: ["name", "symbol", "yclose", "open", "price", "high"]
+                        symbol: symbol, count: dataCount.MaxRequestDataCount, "first": { date: firstDate },
+                        field: ["name", "symbol", "yclose", "open", "price", "high", 'vol', 'amount']
                     }, Type: 'POST'
                 },
                 Self: this,
