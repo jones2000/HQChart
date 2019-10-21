@@ -3500,6 +3500,7 @@ function JSChart(divElement)
         }
 
         if (option.StepPixel>0) chart.StepPixel=option.StepPixel;
+        if (option.IsApiPeriod==true) chart.IsApiPeriod=option.IsApiPeriod;
 
         if (!option.Windows || option.Windows.length<=0) return null;
 
@@ -8982,11 +8983,15 @@ function ChartData()
                     ++j;
                     continue;    
                 } 
-                if ( (preTime!=null && minData.Time == 925 && preTime!=924) || (preTime!=null && minData.Time == 930 && preTime!=929))  //9：25, 9:30 不连续就不算个数
+                if (minData.Time==925 && (preTime==null || preTime!=924))  //9：25, 9:30 不连续就不算个数
                 {
 
                 }
-                else if (preTime!=null && minData.Time == 1300 && preTime!=1259 ) //1点的数据 如果不是连续的 就不算个数
+                else if (minData.Time == 930 && (preTime==null || preTime!=929) )
+                {
+
+                }
+                else if (minData.Time == 1300 && (preTime==null || preTime!=1259) ) //1点的数据 如果不是连续的 就不算个数
                 {
 
                 }
@@ -19137,7 +19142,7 @@ function DynamicKLineTitlePainting()
         if (this.CursorIndex==null || !this.Data) return null;
         if (this.Data.length<=0) return null;
 
-        var index=Math.abs(this.CursorIndex-0.5);
+        var index=this.CursorIndex;
         index=parseInt(index.toFixed(0));
         var dataIndex=this.Data.DataOffset+index;
         if (dataIndex>=this.Data.Data.length) dataIndex=this.Data.Data.length-1;
@@ -19270,7 +19275,7 @@ function DynamicKLineTitlePainting()
         this.Canvas.font=this.Font;
         this.SpaceWidth = this.Canvas.measureText('0').width;
 
-        var index=Math.abs(this.CursorIndex-0.5);
+        var index=this.CursorIndex;
         index=parseInt(index.toFixed(0));
         var dataIndex=this.Data.DataOffset+index;
         if (dataIndex>=this.Data.Data.length) dataIndex=this.Data.Data.length-1;
@@ -23974,6 +23979,7 @@ function KLineChartContainer(uielement)
     this.Symbol;
     this.Name;
     this.Period=0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 9=季线 10=分笔线
+    this.IsApiPeriod=false;             //使用API计算周期
     this.Right=0;                       //复权 0 不复权 1 前复权 2 后复权
     this.SourceData;                    //原始的历史数据
     this.MaxReqeustDataCount=3000;      //数据个数
@@ -24635,13 +24641,13 @@ function KLineChartContainer(uielement)
         bindData.DataType=0;
         bindData.Symbol=data.symbol;
 
-        if (bindData.Right>0)    //复权
+        if (bindData.Right>0 && !this.IsApiPeriod)    //复权
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
         }
 
-        if (ChartData.IsDayPeriod(bindData.Period,false))   //周期数据
+        if (ChartData.IsDayPeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -24903,7 +24909,7 @@ function KLineChartContainer(uielement)
         bindData.DataType=1; 
         bindData.Symbol=data.symbol;
 
-        if (ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
+        if (ChartData.IsMinutePeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
         {
             var periodData=sourceData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -25270,13 +25276,13 @@ function KLineChartContainer(uielement)
         bindData.DataType=this.SourceData.DataType;
         bindData.Symbol=this.Symbol;
 
-        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true) && !this.IsApiPeriod)    //复权(日线数据才复权)
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
         }
 
-        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        if ((ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false)) && !this.IsApiPeriod)   //周期数据 (0= 日线,4=1分钟线 不需要处理)
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -25651,7 +25657,7 @@ function KLineChartContainer(uielement)
         this.Period=period;
         this.ReloadChartDrawPicture();   //切换周期了 清空画图工具
 
-        if (isDataTypeChange==false)
+        if (isDataTypeChange==false && !this.IsApiPeriod)
         {
             this.Update();
             return;
