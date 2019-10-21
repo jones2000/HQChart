@@ -140,8 +140,16 @@ function KLineTooltipPaint()
         var left = this.GetLeft();
         var top = this.GetTop();
         this.Canvas.strokeStyle = this.BorderColor;
-        if (isHScreen) this.Canvas.strokeRect(this.HQChart.ToFixedPoint(left), this.HQChart.ToFixedPoint(top), this.Height, this.Width);
-        else this.Canvas.strokeRect(this.HQChart.ToFixedPoint(left), this.HQChart.ToFixedPoint(top), this.Width, this.Height);
+        if (isHScreen)
+        { 
+            this.Canvas.strokeRect(this.HQChart.ToFixedPoint(left), this.HQChart.ToFixedPoint(top), 
+                this.HQChart.ToFixedRect(this.Height), this.HQChart.ToFixedRect(this.Width));
+        }
+        else 
+        {
+            this.Canvas.strokeRect(this.HQChart.ToFixedPoint(left), this.HQChart.ToFixedPoint(top), 
+                this.HQChart.ToFixedRect(this.Width), this.HQChart.ToFixedRect(this.Height));
+        }
     }
 
     this.DrawBG = function () 

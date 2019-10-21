@@ -26681,8 +26681,11 @@ function KLineChartContainer(uielement)
     this.RequestOverlayHistoryData=function()
     {
         if (!this.OverlayChartPaint.length) return;
+        if (!this.SourceData || !this.SourceData.Data) return;  //主图数据还没有到完
 
         var self = this;
+        var dataCount=this.GetRequestDataCount();
+        var firstDate=this.SourceData.Data[0].Date;
         for(var i in this.OverlayChartPaint)
         {
             let item=this.OverlayChartPaint[i];
@@ -26699,8 +26702,8 @@ function KLineChartContainer(uielement)
                 {
                     Name:'KLineChartContainer::RequestOverlayHistoryData', //类名::
                     Explain:'叠加股票日K线数据',
-                    Request:{ Url:self.KLineApiUrl, Data: { symbol: symbol, count: this.MaxReqeustDataCount,
-                        field:["name","symbol","yclose","open","price","high"] }, Type:'POST' }, 
+                    Request:{ Url:self.KLineApiUrl, Data: { symbol: symbol, count: dataCount.MaxRequestDataCount,"first":{ date: firstDate },
+                        field:["name","symbol","yclose","open","price","high",'vol','amount'] }, Type:'POST' }, 
                     Self:this,
                     PreventDefault:false
                 };

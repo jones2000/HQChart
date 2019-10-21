@@ -1060,6 +1060,7 @@ function JSChartContainer(uielement)
     this.FormatDateString = IFrameSplitOperator.FormatDateString;
     this.FormatValueString = IFrameSplitOperator.FormatValueString;
     this.ToFixedPoint = ToFixedPoint;
+    this.ToFixedRect = ToFixedRect;
     this.FormatTimeString = IFrameSplitOperator.FormatTimeString;
 
     //this.JSCHART_EVENT_ID = JSCHART_EVENT_ID;
