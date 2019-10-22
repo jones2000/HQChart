@@ -3490,6 +3490,7 @@ function JSChart(divElement)
          //取消显示十字光标刻度信息
         if (option.IsCorssOnlyDrawKLine===true) chart.ChartCorssCursor.IsOnlyDrawKLine=option.IsCorssOnlyDrawKLine;
         if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
+        if (option.IsClickShowCorssCursor==true) chart.IsClickShowCorssCursor=option.IsClickShowCorssCursor;
         if (option.CorssCursorInfo)
         {
             if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left=option.CorssCursorInfo.Left;
@@ -3507,6 +3508,8 @@ function JSChart(divElement)
                 if (!chart.Frame.SubFrame[i]) continue;
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
+                if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) chart.Frame.SubFrame[i].Frame.YSplitOperator.FloatPrecision=item.FloatPrecision;
+                if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom=item.Custom;
                 if (!isNaN(item.Height)) chart.Frame.SubFrame[i].Height = item.Height;
                 if (item.IsShowLeftText===false || item.IsShowLeftText===true) 
                 {
@@ -4555,6 +4558,7 @@ function JSChartContainer(uielement)
     this.CurrentChartDrawPicture=null;              //当前的画图工具
     this.SelectChartDrawPicture=null;               //当前选中的画图
     this.ChartCorssCursor;                          //十字光标
+    this.IsClickShowCorssCursor=false;              //手势点击显示十字光标
     this.ChartSplashPaint=null;                     //等待提示
     this.Canvas=uielement.getContext("2d");         //画布
     this.UIElement=uielement;
@@ -4994,6 +4998,14 @@ function JSChartContainer(uielement)
             {
                 return;
             }
+
+            if (jsChart.IsClickShowCorssCursor)
+            {
+                var pixelTatio = GetDevicePixelRatio();
+                var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
+                var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
+                jsChart.OnMouseMove(x,y,e);
+            }
         }
         else if (jsChart.IsPhonePinching(e))
         {
@@ -5179,6 +5191,7 @@ function JSChartContainer(uielement)
         }
 
         if (this.Frame.DrawInsideHorizontal) this.Frame.DrawInsideHorizontal();
+        if (this.Frame.DrawCustomHorizontal) this.Frame.DrawCustomHorizontal();
         if (this.ChartInfoPaint) this.ChartInfoPaint.Draw();
         this.Frame.DrawLock();
         this.Frame.Snapshot();
@@ -7169,6 +7182,8 @@ function KLineFrame()
 
     this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
 
+    this.CustomHorizontalInfo=[];
+
     this.DrawToolbar=function()
     {
         if (!this.ChartBorder.UIElement) return;
@@ -7528,6 +7543,64 @@ function KLineFrame()
         cursorIndex.Index=lastCursorIndex-this.Data.DataOffset;
 
         return true;
+    }
+
+    this.DrawCustomHorizontal=function()    //Y轴刻度定制显示
+    {
+        for(var i in this.CustomHorizontalInfo)
+        {
+            var item=this.CustomHorizontalInfo[i];
+            switch(item.Type)
+            {
+                case 0:
+                    this.DrawLatestPrice(item);
+                    break;
+            }
+        }
+    }
+
+    this.DrawLatestPrice=function(item) //显示最新价格
+    {
+        if (this.IsHScreen===true) return;  //横屏不画
+        if (this.IsShowYText[1]===false) return;
+        if (item.Value>this.HorizontalMax || item.Value<this.HorizontalMin) return;
+
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRight();
+        var bottom = this.ChartBorder.GetBottom();
+        var top = this.ChartBorder.GetTopTitle();
+        var borderRight = this.ChartBorder.Right;
+        var borderLeft = this.ChartBorder.Left;
+        var titleHeight = this.ChartBorder.TitleHeight;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var textHeight=18*pixelTatio;
+        var y = this.GetYFromData(item.Value);
+        this.Canvas.save();
+        this.Canvas.strokeStyle=item.LineColor;
+        this.Canvas.setLineDash([5*pixelTatio,5*pixelTatio]);   //虚线
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(left,ToFixedPoint(y));
+        this.Canvas.lineTo(right,ToFixedPoint(y));
+        this.Canvas.stroke();
+        this.Canvas.restore();
+
+        if (borderRight<10)
+        {
+
+        }
+        else
+        {
+            if (item.Font != null) this.Canvas.font = item.Font;
+            this.Canvas.textAlign = "left";
+            this.Canvas.textBaseline = "middle";
+            var textWidth = this.Canvas.measureText(item.Message[1]).width+2*pixelTatio;
+            this.Canvas.fillStyle=item.LineColor;
+            var bgTop=y-textHeight/2-1*pixelTatio;
+            this.Canvas.fillRect(right,bgTop,textWidth,textHeight);
+            this.Canvas.fillStyle = item.TextColor;
+            this.Canvas.fillText(item.Message[1], right + 1*pixelTatio, y);
+        }
     }
 }
 
@@ -8235,7 +8308,16 @@ function HQTradeFrame()
           var item = this.SubFrame[i];
           if (item.Frame.DrawInsideHorizontal) item.Frame.DrawInsideHorizontal();
         }
-      }
+    }
+
+    this.DrawCustomHorizontal=function()    //定制坐标
+    {
+        for (var i in this.SubFrame) 
+        {
+          var item = this.SubFrame[i];
+          if (item.Frame.DrawCustomHorizontal) item.Frame.DrawCustomHorizontal();
+        }
+    }
 
     this.SetSizeChage=function(sizeChange)
     {
@@ -17462,9 +17544,11 @@ function FrameSplitKLinePriceY()
     this.Symbol;
     this.Data;              //K线数据 (计算百分比坐标)
     this.FrameSplitData2;                //坐标轴分割方法(计算百分比刻度)
+    this.FloatPrecision=null;   //小数位数 (设置了就使用这个位数,否则使用品种对应的小数位数)
 
     this.Period;            //周期
     this.KLineChart;
+    this.Custom=[]; //[{Type:0}];   定制刻度 0=显示最后的价格刻度
 
     this.Operator=function()
     {
@@ -17478,6 +17562,7 @@ function FrameSplitKLinePriceY()
         var isPhoneModel=width<450*pixelTatio;
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
         if (isPhoneModel && MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,太长了
+        if (this.FloatPrecision!=null) defaultfloatPrecision=this.FloatPrecision;
         console.log(`[FrameSplitKLinePriceY] Max=${splitData.Max} Min=${splitData.Min} Count=${splitData.Count} isPhoneModel=${isPhoneModel} defaultfloatPrecision=${defaultfloatPrecision} `);
 
         if (ChartData.IsTickPeriod(this.Period))
@@ -17553,6 +17638,35 @@ function FrameSplitKLinePriceY()
             if (this.IsShowLeftText)  this.Frame.HorizontalInfo[i].Message[0]=value.toFixed(floatPrecision);
             if (this.IsShowRightText)   this.Frame.HorizontalInfo[i].Message[1]=value.toFixed(floatPrecision);
         }
+
+        this.Frame.CustomHorizontalInfo=[];
+        for(var i in this.Custom)
+        {
+            var item=this.Custom[i];
+            if (item.Type==0)
+            {
+                var latestItem=this.GetLatestPrice(floatPrecision);
+                if (latestItem) this.Frame.CustomHorizontalInfo.push(latestItem);
+            }
+        }
+        
+    }
+
+    this.GetLatestPrice=function(floatPrecision)
+    {
+        if (!this.Data || !this.Data.Data) return null;
+        if (this.Data.Data.length<=0) return null;
+        var latestItem=this.Data.Data[this.Data.Data.length-1];
+        var info=new CoordinateInfo();
+        info.Type=0;
+        info.Value=latestItem.Close;
+        info.TextColor=g_JSChartResource.FrameLatestPriceTextColor;
+        info.Message[1]=latestItem.Close.toFixed(floatPrecision);
+        if (latestItem.Close>latestItem.Open) info.LineColor=g_JSChartResource.UpBarColor;
+        else if (latestItem.Close<latestItem.Open) info.LineColor=g_JSChartResource.DownBarColor;
+        else info.LineColor=g_JSChartResource.UnchagneBarColor;
+
+        return info;
     }
 
     this.GetFirstOpenPrice=function()   //获取显示第1个数据的开盘价
@@ -22607,6 +22721,7 @@ function JSChartResource()
     this.FrameSplitTextColor="rgb(117,125,129)";    //刻度文字颜色
     this.FrameSplitTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";     //坐标刻度文字字体
     this.FrameTitleBGColor="rgb(246,251,253)";  //标题栏背景色
+    this.FrameLatestPriceTextColor='rgb(255,255,255)';   //最新价格文字颜色
 
     this.OverlayFrame={
         BolderPen:'rgb(190,190,190)',
