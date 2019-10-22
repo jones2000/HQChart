@@ -213,6 +213,8 @@ function JSChart(element)
             if (option.DragDownload.Minute && option.DragDownload.Minute.Enable == true) chart.DragDownload.Minute.Enable = true;
         }
 
+        if (option.IsApiPeriod == true) chart.IsApiPeriod = option.IsApiPeriod;
+
         if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
         if (option.CorssCursorInfo) 
         {
@@ -2627,6 +2629,11 @@ function KLineFrame()
                 return;
             }
         }
+
+        //太多了 就平均分了
+        this.ZoomIndex = ZOOM_SEED.length - 1;
+        this.DataWidth = width / this.XPointCount;
+        this.DistanceWidth = 0;
     }
 
     this.TrimKLineDataWidth = function (width) 
@@ -7240,6 +7247,7 @@ function KLineChartContainer(uielement)
     this.Symbol;
     this.Name;
     this.Period = 0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+    this.IsApiPeriod = false;             //使用API计算周期
     this.Right = 0;                       //复权 0 不复权 1 前复权 2 后复权
     this.SourceData;                    //原始的历史数据
     this.MaxReqeustDataCount = 3000;      //数据个数
@@ -7603,13 +7611,13 @@ function KLineChartContainer(uielement)
         bindData.Period = this.Period;
         bindData.DataType = 0;
 
-        if (bindData.Right > 0)    //复权
+        if (bindData.Right > 0 && !this.IsApiPeriod)    //复权
         {
             var rightData = bindData.GetRightDate(bindData.Right);
             bindData.Data = rightData;
         }
 
-        if (ChartData.IsDayPeriod(bindData.Period, false))   //周期数据
+        if (ChartData.IsDayPeriod(bindData.Period, false) && !this.IsApiPeriod)   //周期数据
         {
             var periodData = bindData.GetPeriodData(bindData.Period);
             bindData.Data = periodData;
@@ -7728,7 +7736,7 @@ function KLineChartContainer(uielement)
         bindData.Period = this.Period;
         bindData.DataType = 1;
 
-        if (ChartData.IsMinutePeriod(bindData.Period, false))   //周期数据
+        if (ChartData.IsMinutePeriod(bindData.Period, false) && !this.IsApiPeriod)   //周期数据
         {
             var periodData = sourceData.GetPeriodData(bindData.Period);
             bindData.Data = periodData;
@@ -8042,7 +8050,7 @@ function KLineChartContainer(uielement)
         }
 
         this.Period = period;
-        if (isDataTypeChange == false) 
+        if (isDataTypeChange == false && !this.IsApiPeriod) 
         {
             this.Update();
             return;

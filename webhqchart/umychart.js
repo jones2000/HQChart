@@ -4080,6 +4080,11 @@ function KLineFrame()
                 return;
             }
         }
+
+        //太多了 就平均分了
+        this.ZoomIndex=ZOOM_SEED.length-1;
+        this.DataWidth=width/this.XPointCount;
+        this.DistanceWidth=0;
     }
 
     this.TrimKLineDataWidth=function(width)
