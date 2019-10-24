@@ -4528,6 +4528,7 @@ var JSCHART_EVENT_ID=
     DBCLICK_KLINE:8,            //双击K线图
     RECV_START_AUTOUPDATE:9,    //开始自动更新
     RECV_STOP_AUTOUPDATE:10,    //停止自动更新
+    ON_CONTEXT_MENU:11,         //右键菜单事件
 }
 
 var JSCHART_OPERATOR_ID=
@@ -7398,6 +7399,11 @@ function KLineFrame()
                 return;
             }
         }
+
+        //太多了 就平均分了
+        this.ZoomIndex=ZOOM_SEED.length-1;
+        this.DataWidth=width/this.XPointCount;
+        this.DistanceWidth=0;
     }
 
     this.TrimKLineDataWidth=function(width)
@@ -9064,6 +9070,16 @@ function ChartData()
                     newData.Vol+=minData.Vol;
                     if (minData.Amount!=null) newData.Amount+=minData.Amount;
                     newData.FlowCapital=minData.FlowCapital;  
+                }
+
+                if (i+1 < this.Data.length) //判断下一个数据是否是不同日期的
+                {
+                    var nextItem=this.Data[i+1];
+                    if (nextItem && nextItem.Date!=minData.Date)    //不同日期的, 周期结束
+                    {
+                        ++i;
+                        break;
+                    }
                 }
             }
         }
@@ -27328,6 +27344,14 @@ function KLineChartContainer(uielement)
             var frameId=this.Frame.PtInFrame(x,y);
             e.data={ Chart:this, FrameID:frameId };
             this.RightMenu.DoModal(e);
+        }
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CONTEXT_MENU);
+        if (event)
+        {
+            var frameId=this.Frame.PtInFrame(x,y);
+            var data={ X:x, Y:y, Event:e, FrameID:frameId };
+            event.Callback(event,data,this);
         }
     }
 
