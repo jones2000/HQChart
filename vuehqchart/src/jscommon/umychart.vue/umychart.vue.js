@@ -19303,7 +19303,7 @@ function DynamicKLineTitlePainting()
         }
         else
         {
-            if (this.Frame.ChartBorder.Top<5) return;
+            if (this.Frame.ChartBorder.Top<5*GetDevicePixelRatio()) return;
         }
 
         this.Canvas.textAlign="left";
@@ -36839,6 +36839,11 @@ var MARKET_SUFFIX_NAME=
     GetFTSEDecimal:function(symbol) //富时中国A50期货 小数位数
     {
         return 0;
+    },
+
+    GetBITDecimal:function(symbol)
+    {
+        return 2;
     }
 }
 
@@ -37790,6 +37795,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision=g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
     else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetBITDecimal(upperSymbol);
 
     return defaultfloatPrecision;
 }
