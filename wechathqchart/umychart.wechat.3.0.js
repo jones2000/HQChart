@@ -216,6 +216,7 @@ function JSChart(element)
         if (option.IsApiPeriod == true) chart.IsApiPeriod = option.IsApiPeriod;
 
         if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
+        if (option.IsClickShowCorssCursor == true) chart.IsClickShowCorssCursor = option.IsClickShowCorssCursor;
         if (option.CorssCursorInfo) 
         {
             if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left = option.CorssCursorInfo.Left;
@@ -1032,6 +1033,7 @@ function JSChartContainer(uielement)
     this.CurrentChartDrawPicture = null;              //当前的画图工具
     this.SelectChartDrawPicture = null;               //当前选中的画图
     this.ChartCorssCursor;                            //十字光标
+    this.IsClickShowCorssCursor = false;              //手势点击显示十字光标
     this.ChartSplashPaint = null;                     //等待提示
     this.SplashTitle = '数据加载中';
     this.Canvas = uielement.GetContext("2d");         //画布
@@ -1170,11 +1172,11 @@ function JSChartContainer(uielement)
                 }, 800);
             }
 
-        var drag =
-        {
-            "Click": {},
-            "LastMove": {},  //最后移动的位置
-        };
+            var drag =
+            {
+                "Click": {},
+                "LastMove": {},  //最后移动的位置
+            };
 
             var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
 
@@ -1184,6 +1186,13 @@ function JSChartContainer(uielement)
             drag.LastMove.Y = touches[0].clientY;
 
             jsChart.MouseDrag = drag;
+
+            if (jsChart.IsClickShowCorssCursor) 
+            {
+                var x = drag.Click.X;
+                var y = drag.Click.Y;
+                jsChart.OnMouseMove(x, y, e);
+            }
         }
         else if (this.IsPhonePinching(e)) 
         {
@@ -11803,29 +11812,29 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(bar);
     }
 
-  //创建文本
-  this.CreateText = function (hqChart, windowIndex, varItem, id) {
-    let chartText = new ChartSingleText();
-    chartText.Canvas = hqChart.Canvas;
+    //创建文本
+    this.CreateText = function (hqChart, windowIndex, varItem, id) 
+    {
+        let chartText = new ChartSingleText();
+        chartText.Canvas = hqChart.Canvas;
+        chartText.TextAlign='center';
 
-    chartText.Name = varItem.Name;
-    chartText.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-    chartText.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
-    if (varItem.Color) chartText.Color = this.GetColor(varItem.Color);
-    else chartText.Color = this.GetDefaultColor(id);
+        chartText.Name = varItem.Name;
+        chartText.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chartText.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Color) chartText.Color = this.GetColor(varItem.Color);
+        else chartText.Color = this.GetDefaultColor(id);
 
-    let titleIndex = windowIndex + 1;
-    chartText.Data.Data = varItem.Draw.DrawData;
-    chartText.Text = varItem.Draw.Text;
-    if (varItem.Draw.Direction > 0) chartText.Direction = varItem.Draw.Direction;
-    if (varItem.Draw.YOffset > 0) chartText.YOffset = varItem.Draw.YOffset;
-    if (varItem.Draw.TextAlign) chartText.TextAlign = varItem.Draw.TextAlign;
+        let titleIndex = windowIndex + 1;
+        chartText.Data.Data = varItem.Draw.DrawData;
+        chartText.Text = varItem.Draw.Text;
+        if (varItem.Draw.Direction > 0) chartText.Direction = varItem.Draw.Direction;
+        if (varItem.Draw.YOffset > 0) chartText.YOffset = varItem.Draw.YOffset;
+        if (varItem.Draw.TextAlign) chartText.TextAlign = varItem.Draw.TextAlign;
 
-    //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
-
-    hqChart.ChartPaint.push(chartText);
-
-  }
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+        hqChart.ChartPaint.push(chartText);
+    }
 
   //COLORSTICK 
   this.CreateMACD = function (hqChart, windowIndex, varItem, id) {

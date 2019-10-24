@@ -1198,6 +1198,16 @@ JSChart.GetResource=function()  //获取颜色配置 (设置配必须啊在JSCha
     return g_JSChartResource;
 }
 
+JSChart.GetMinuteTimeStringData=function()
+{
+    return g_MinuteTimeStringData;
+}
+
+JSChart.GetMinuteCoordinateData=function()
+{
+    return g_MinuteCoordinateData;
+}
+
 var JSCHART_EVENT_ID=
 {
     RECV_KLINE_MATCH:1, //接收到形态匹配
@@ -33941,7 +33951,7 @@ function MinuteCoordinateData()
         {
             var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
             if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol) || MARKET_SUFFIX_NAME.IsSHSZIndex(upperSymbol))
-                data = SHZE_MINUTE_X_COORDINATE;
+                data = this.GetSHSZData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
                 data = HK_MINUTE_X_COORDINATE;
             else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
@@ -33956,6 +33966,12 @@ function MinuteCoordinateData()
 
         //console.log('[MiuteCoordinateData]', width);
         var result = { Count: data.Count, MiddleCount: data.MiddleCount, Data: data.GetData(width) };
+        return result;
+    }
+
+    this.GetSHSZData=function(upperSymbol,width)
+    {
+        var result=SHZE_MINUTE_X_COORDINATE;
         return result;
     }
 
