@@ -264,6 +264,7 @@ function ChartLine()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName ='ChartLine';
     this.Color = "rgb(255,193,37)"; //线段颜色
     this.LineWidth;               //线段宽度
     this.DrawType = 0;            //画图方式  0=无效数平滑  1=无效数不画断开
@@ -583,6 +584,7 @@ function ChartStickLine()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName ='ChartStickLine';
     this.Color = "rgb(255,193,37)";   //线段颜色
     this.LineWidth = 2;               //线段宽度
     this.BarType = 0; //柱子类型 0=实心 1=空心
@@ -754,6 +756,7 @@ function ChartRectangle()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName ='ChartRectangle';
     this.Color = [];
     this.Rect;
     this.BorderColor = g_JSChartResource.FrameBorderPen;
@@ -834,6 +837,7 @@ function ChartOverlayKLine()
     this.Name = "ChartOverlayKLine";
     this.Title;
     this.DrawType = 0;
+    this.ClassName ='ChartOverlayKLine';
 
     this.DrawKBar = function (firstOpen)   //firstOpen 当前屏第1个显示数据
     {
@@ -1267,6 +1271,7 @@ function ChartMultiText()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName ='ChartMultiText';
     this.Texts = [];  //[ {Index:, Value:, Text:, Color:, Font: , Baseline:} ]
     this.Font = g_JSChartResource.DefaultTextFont;
     this.Color = g_JSChartResource.DefaultTextColor;

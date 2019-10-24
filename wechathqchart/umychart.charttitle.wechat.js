@@ -103,6 +103,20 @@ function DynamicKLineTitlePainting()
         return item;
     }
 
+    this.GetDataIndex=function()
+    {
+        if (this.CursorIndex == null || !this.Data) return null;
+        if (this.Data.length <= 0) return null;
+
+        var index = this.CursorIndex;
+        index = parseInt(index.toFixed(0));
+        var dataIndex = this.Data.DataOffset + index;
+        if (dataIndex >= this.Data.Data.length) dataIndex = this.Data.Data.length - 1;
+        if (dataIndex < 0) return null;
+
+        return index;
+    }
+
     this.SendUpdateUIMessage = function (funcName) //通知外面 标题变了
     {
         if (!this.UpdateUICallback) return;

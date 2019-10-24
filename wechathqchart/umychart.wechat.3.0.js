@@ -3661,6 +3661,7 @@ function ChartKLine()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName ='ChartKLine';
     this.Symbol;        //股票代码
     this.DrawType = 0;    // 0=K线  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积
     this.CloseLineColor = g_JSChartResource.CloseLineColor;
@@ -5333,79 +5334,87 @@ function ChartOverlayMinutePriceLine() {
 }
 
 //MACD森林线 支持横屏
-function ChartMACD() {
-  this.newMethod = IChartPainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function ChartMACD() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.UpColor = g_JSChartResource.UpBarColor;
-  this.DownColor = g_JSChartResource.DownBarColor;
+    this.ClassName ='ChartMACD';
+    this.UpColor = g_JSChartResource.UpBarColor;
+    this.DownColor = g_JSChartResource.DownBarColor;
 
-  this.Draw = function () {
-    if (this.NotSupportMessage) {
-      this.DrawNotSupportmessage();
-      return;
+    this.Draw = function () 
+    {
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (this.ChartFrame.IsHScreen === true) 
+        {
+            this.HScreenDraw();
+            return;
+        }
+
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        var xPointCount = this.ChartFrame.XPointCount;
+
+        var bFirstPoint = true;
+        var drawCount = 0;
+        var yBottom = this.ChartFrame.GetYFromData(0);
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(value);
+
+            if (x > chartright) break;
+
+            var xFix = parseInt(x.toString()) + 0.5;    //毛边修正
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(xFix, yBottom);
+            this.Canvas.lineTo(xFix, y);
+
+            if (value >= 0) this.Canvas.strokeStyle = this.UpColor;
+            else this.Canvas.strokeStyle = this.DownColor;
+            this.Canvas.stroke();
+            this.Canvas.closePath();
+        }
     }
 
-    if (this.ChartFrame.IsHScreen === true) {
-      this.HScreenDraw();
-      return;
+    this.HScreenDraw = function () 
+    {
+        var chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+
+        var yBottom = this.ChartFrame.GetYFromData(0);
+
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(value);
+
+            if (x > chartright) break;
+
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(yBottom, ToFixedPoint(x));
+            this.Canvas.lineTo(y, ToFixedPoint(x));
+
+            if (value >= 0) this.Canvas.strokeStyle = this.UpColor;
+            else this.Canvas.strokeStyle = this.DownColor;
+            this.Canvas.stroke();
+            this.Canvas.closePath();
+        }
     }
-
-    var dataWidth = this.ChartFrame.DataWidth;
-    var distanceWidth = this.ChartFrame.DistanceWidth;
-    var chartright = this.ChartBorder.GetRight();
-    var xPointCount = this.ChartFrame.XPointCount;
-
-    var bFirstPoint = true;
-    var drawCount = 0;
-    var yBottom = this.ChartFrame.GetYFromData(0);
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (value == null) continue;
-
-      var x = this.ChartFrame.GetXFromIndex(j);
-      var y = this.ChartFrame.GetYFromData(value);
-
-      if (x > chartright) break;
-
-      var xFix = parseInt(x.toString()) + 0.5;    //毛边修正
-      this.Canvas.beginPath();
-      this.Canvas.moveTo(xFix, yBottom);
-      this.Canvas.lineTo(xFix, y);
-
-      if (value >= 0) this.Canvas.strokeStyle = this.UpColor;
-      else this.Canvas.strokeStyle = this.DownColor;
-      this.Canvas.stroke();
-      this.Canvas.closePath();
-    }
-  }
-
-  this.HScreenDraw = function () {
-    var chartright = this.ChartBorder.GetBottom();
-    var xPointCount = this.ChartFrame.XPointCount;
-
-    var yBottom = this.ChartFrame.GetYFromData(0);
-
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var value = this.Data.Data[i];
-      if (value == null) continue;
-
-      var x = this.ChartFrame.GetXFromIndex(j);
-      var y = this.ChartFrame.GetYFromData(value);
-
-      if (x > chartright) break;
-
-      this.Canvas.beginPath();
-      this.Canvas.moveTo(yBottom, ToFixedPoint(x));
-      this.Canvas.lineTo(y, ToFixedPoint(x));
-
-      if (value >= 0) this.Canvas.strokeStyle = this.UpColor;
-      else this.Canvas.strokeStyle = this.DownColor;
-      this.Canvas.stroke();
-      this.Canvas.closePath();
-    }
-  }
 }
 
 //基础图形的XY坐标互换柱子
@@ -8317,7 +8326,8 @@ function KLineChartContainer(uielement)
         switch (name)
         {
             case 'KLineTooltip':
-                chart = new KLineTooltipPaint();
+                if (option.Create && typeof(option.Create)=='function') chart=option.Create();
+                else chart = new KLineTooltipPaint();
                 chart.Canvas = this.Canvas;
                 chart.ChartBorder = this.Frame.ChartBorder;
                 chart.ChartFrame = this.Frame;
@@ -13479,6 +13489,8 @@ module.exports =
         Guid: Guid,
         IFrameSplitOperator: IFrameSplitOperator,
         ChartData, ChartData,
+        KLineTooltipPaint: KLineTooltipPaint,
+        JSCommonCoordinateData, JSCommonCoordinateData,
         JSCHART_EVENT_ID:JSCHART_EVENT_ID,
     },
 };
