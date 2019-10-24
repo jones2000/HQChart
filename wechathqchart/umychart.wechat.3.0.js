@@ -48,6 +48,7 @@ import {
     JSCommonChartPaint_ChartOverlayKLine as ChartOverlayKLine,
     JSCommonChartPaint_ChartMinuteInfo as ChartMinuteInfo,
     JSCommonChartPaint_ChartRectangle as ChartRectangle,
+    JSCommonChartPaint_ChartMultiText as ChartMultiText,
     JSCommonChartPaint_ChartPie as ChartPie,
     JSCommonChartPaint_ChartCircle as ChartCircle,
     JSCommonChartPaint_ChartChinaMap as ChartChinaMap,
@@ -300,6 +301,11 @@ function JSChart(element)
             if (item.Script) 
             {
                 chart.WindowIndex[i] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
+            }
+            else if (item.API)  //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
+            {
+                var apiItem = item.API;
+                chart.WindowIndex[i] = new APIScriptIndex(apiItem.Name, apiItem.Script, apiItem.Args, item);
             }
             else 
             {
@@ -11613,6 +11619,15 @@ function MapChartContainer(uielement) {
   }
 }
 
+var HQ_DATA_TYPE =
+{
+    KLINE_ID: 0,         //K线
+    MINUTE_ID: 2,        //当日走势图
+    HISTORY_MINUTE_ID: 3,//历史分钟走势图
+    MULTIDAY_MINUTE_ID: 4,//多日走势图
+};
+
+
 //脚本指标
 //name=指标名字 args=参数名字 参数值
 function ScriptIndex(name, script, args, option) 
@@ -12063,6 +12078,19 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateMultiText = function (hqChart, windowIndex, varItem, i)
+    {
+        let chart = new ChartMultiText();
+        chart.Canvas = hqChart.Canvas;
+        chart.Name = varItem.Name;
+        chart.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data = hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Texts = varItem.Draw.DrawData;
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建K线背景
     this.CreateSelfKLine = function (hqChart, windowIndex, hisData) 
     {
@@ -12177,6 +12205,11 @@ function ScriptIndex(name, script, args, option)
                 case 'DRAWRECTREL':
                     this.CreateRectangle(hqChart, windowIndex, item, i);
                     break;
+
+                //第3方指标定制
+                case 'MULTI_TEXT':
+                    this.CreateMultiText(hqChart, windowIndex, item, i);
+                    break;
                 }
             }
             else if (item.Type == 2) 
@@ -12226,46 +12259,343 @@ function ScriptIndex(name, script, args, option)
 
         return true;
     }
+
+    
+    this.GetDefaultColor = function (id)   //给一个默认的颜色
+    {
+        let COLOR_ARRAY = g_JSChartResource.ColorArray;
+        let number = parseInt(id);
+        return COLOR_ARRAY[number % (COLOR_ARRAY.length - 1)];
+    }
+
+    
+    this.GetColor = function (colorName)    //获取颜色
+    {
+        let COLOR_MAP = new Map([
+            ['COLORBLACK', 'rgb(0,0,0)'],
+            ['COLORBLUE', 'rgb(18,95,216)'],
+            ['COLORGREEN', 'rgb(25,158,0)'],
+            ['COLORCYAN', 'rgb(0,255,198)'],
+            ['COLORRED', 'rgb(238,21,21)'],
+            ['COLORMAGENTA', 'rgb(255,0,222)'],
+            ['COLORBROWN', 'rgb(149,94,15)'],
+            ['COLORLIGRAY', 'rgb(218,218,218)'],      //画淡灰色
+            ['COLORGRAY', 'rgb(133,133,133)'],        //画深灰色
+            ['COLORLIBLUE', 'rgb(94,204,255)'],       //淡蓝色
+            ['COLORLIGREEN', 'rgb(183,255,190)'],      //淡绿色
+            ['COLORLICYAN', 'rgb(154,255,242)'],      //淡青色
+            ['COLORLIRED', 'rgb(255,172,172)'],       //淡红色
+            ['COLORLIMAGENTA', 'rgb(255,145,241)'],   //淡洋红色
+            ['COLORWHITE', 'rgb(255,255,255)'],       //白色
+            ['COLORYELLOW', 'rgb(255,198,0)']
+        ]);
+
+        if (COLOR_MAP.has(colorName)) return COLOR_MAP.get(colorName);
+
+        //COLOR 自定义色
+        //格式为COLOR+“RRGGBB”：RR、GG、BB表示红色、绿色和蓝色的分量，每种颜色的取值范围是00-FF，采用了16进制。
+        //例如：MA5：MA(CLOSE，5)，COLOR00FFFF　表示纯红色与纯绿色的混合色：COLOR808000表示淡蓝色和淡绿色的混合色。
+        if (colorName.indexOf('COLOR') == 0) return '#' + colorName.substr(5);
+        return 'rgb(30,144,255)';
+    }
 }
 
-//给一个默认的颜色
-ScriptIndex.prototype.GetDefaultColor = function (id) 
+
+
+
+
+function APIScriptIndex(name, script, args, option)     //后台执行指标
 {
-    let COLOR_ARRAY = g_JSChartResource.ColorArray;
-    let number = parseInt(id);
-    return COLOR_ARRAY[number % (COLOR_ARRAY.length - 1)];
-}
+    this.newMethod = ScriptIndex;   //派生
+    this.newMethod(name, script, args, option);
+    delete this.newMethod;
 
-//获取颜色
-ScriptIndex.prototype.GetColor = function (colorName) 
-{
-    let COLOR_MAP = new Map([
-        ['COLORBLACK', 'rgb(0,0,0)'],
-        ['COLORBLUE', 'rgb(18,95,216)'],
-        ['COLORGREEN', 'rgb(25,158,0)'],
-        ['COLORCYAN', 'rgb(0,255,198)'],
-        ['COLORRED', 'rgb(238,21,21)'],
-        ['COLORMAGENTA', 'rgb(255,0,222)'],
-        ['COLORBROWN', 'rgb(149,94,15)'],
-        ['COLORLIGRAY', 'rgb(218,218,218)'],      //画淡灰色
-        ['COLORGRAY', 'rgb(133,133,133)'],        //画深灰色
-        ['COLORLIBLUE', 'rgb(94,204,255)'],       //淡蓝色
-        ['COLORLIGREEN', 'rgb(183,255,190)'],      //淡绿色
-        ['COLORLICYAN', 'rgb(154,255,242)'],      //淡青色
-        ['COLORLIRED', 'rgb(255,172,172)'],       //淡红色
-        ['COLORLIMAGENTA', 'rgb(255,145,241)'],   //淡洋红色
-        ['COLORWHITE', 'rgb(255,255,255)'],       //白色
-        ['COLORYELLOW', 'rgb(255,198,0)']
-    ]);
+    this.ApiUrl;    //指标执行api地址
+    this.HQDataType;
 
-    if (COLOR_MAP.has(colorName)) return COLOR_MAP.get(colorName);
+    if (option.API) 
+    {
+        if (option.API.Url) this.ApiUrl = option.API.Url;
+        if (option.API.Name) this.Name = this.ID = option.API.Name;
+        if (option.API.ID) this.ID = option.API.ID;
+    }
 
-    //COLOR 自定义色
-    //格式为COLOR+“RRGGBB”：RR、GG、BB表示红色、绿色和蓝色的分量，每种颜色的取值范围是00-FF，采用了16进制。
-    //例如：MA5：MA(CLOSE，5)，COLOR00FFFF　表示纯红色与纯绿色的混合色：COLOR808000表示淡蓝色和淡绿色的混合色。
-    if (colorName.indexOf('COLOR') == 0) return '#' + colorName.substr(5);
+    this.ExecuteScript = function (hqChart, windowIndex, hisData) 
+    {
+        console.log('[APIScriptIndex::ExecuteScript] name, Arguments ', this.Name, this.Arguments);
 
-    return 'rgb(30,144,255)';
+        //数据类型
+        let hqDataType = HQ_DATA_TYPE.KLINE_ID;   //默认K线
+        if (hqChart.ClassName === 'MinuteChartContainer' || hqChart.ClassName === 'MinuteChartHScreenContainer') 
+        {
+            if (hqChart.DayCount > 1) hqDataType = HQ_DATA_TYPE.MULTIDAY_MINUTE_ID; //多日分钟
+            else hqDataType = HQ_DATA_TYPE.MINUTE_ID;                             //分钟数据
+        }
+        else if (hqChart.ClassName === 'HistoryMinuteChartContainer') 
+        {
+            hqDataType = HQ_DATA_TYPE.HISTORY_MINUTE_ID;   //历史分钟
+        }
+
+        var args = [];
+        if (this.Arguments) 
+        {
+            for (var i in this.Arguments) 
+            {
+                var item = this.Arguments[i];
+                args.push({ name: item.Name, value: item.Value });
+            }
+        }
+
+        var requestCount = hqChart.GetRequestDataCount();
+        var self = this;
+        var postData =
+        {
+            indexname: this.ID, symbol: hqChart.Symbol, script: this.Script, args: args,
+            period: hqChart.Period, right: hqChart.Right, maxdatacount: requestCount.MaxRequestDataCount, maxminutedaycount: requestCount.MaxRequestMinuteDayCount, hqdatatype: hqDataType
+        };
+        if (hqDataType == HQ_DATA_TYPE.MULTIDAY_MINUTE_ID || hqDataType == HQ_DATA_TYPE.MINUTE_ID) postData.daycount = hqChart.DayCount;
+        this.HQDataType = hqDataType;
+
+        if (hqChart.NetworkFilter) 
+        {
+            var obj =
+            {
+                Name: 'APIScriptIndex::ExecuteScript', //类名::
+                Explain: '指标计算',
+                Request: { Url: self.ApiUrl, Type: 'POST', Data: postData },
+                Self: this,
+                HQChart: hqChart,
+                PreventDefault: false
+            };
+
+            hqChart.NetworkFilter(obj, function (data) 
+            {
+                self.RecvAPIData(data, hqChart, windowIndex, hisData);
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        wx.request({
+            url: self.ApiUrl,
+            data: postData,
+            method: 'POST',
+            dataType: "json",
+            async: true,
+            success: function (recvData) 
+            {
+                self.RecvAPIData(recvData, hqChart, windowIndex, hisData);
+            },
+            error: function (request) 
+            {
+                self.RecvError(request);
+            }
+        });
+    }
+
+    this.RecvAPIData = function (recvData, hqChart, windowIndex, hisData) 
+    {
+        var data=recvData.data;
+        console.log('[APIScriptIndex::RecvAPIData] recv data ', this.Name, data);
+        if (data.code != 0) return;
+
+        if (data.outdata && data.outdata.name) this.Name = data.outdata.name;
+
+        this.Arguments = [];
+        if (data.outdata.args) 
+        {
+            for (var i in data.outdata.args) 
+            {
+                var item = data.outdata.args[i];
+                this.Arguments.push({ Name: item.name, Value: item.value });
+            }
+        }
+
+        if (this.HQDataType == HQ_DATA_TYPE.KLINE_ID) 
+        {
+            this.OutVar = this.FittingData(data.outdata, hqChart);
+            console.log('[APIScriptIndex::RecvAPIData] conver to OutVar ', this.OutVar);
+        }
+        else 
+        {
+            this.OutVar = this.FittingMinuteData(data.outdata, hqChart);   //走势图数据
+        }
+        this.BindData(hqChart, windowIndex, hisData);
+
+        if (this.IsLocked == false) //不上锁
+        {
+            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
+        }
+        else    //上锁
+        {
+            let lockData = 
+            {
+                IsLocked: true, Callback: this.LockCallback, IndexName: this.Name, ID: this.LockID,
+                BG: this.LockBG, Text: this.LockText, TextColor: this.LockTextColor, Font: this.LockFont, Count: this.LockCount, MinWidth: this.LockMinWidth
+            };
+            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
+        }
+
+        hqChart.UpdataDataoffset();           //更新数据偏移
+        hqChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        hqChart.Draw();
+
+        if (hqChart.GetIndexEvent) 
+        {
+            var event = hqChart.GetIndexEvent();  //指标计算完成回调
+            if (event) 
+            {
+                var self = param.Self;
+                var data = 
+                {
+                    OutVar: self.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData,
+                    Stock: { Symbol: hqChart.Symbol, Name: hqChart.Name }
+                };
+                event.Callback(event, data, this);
+            }
+        }
+    }
+
+    this.FittingData = function (jsonData, hqChart) 
+    {
+        var outVar = jsonData.outvar;
+        var date = jsonData.date;
+        var time = jsonData.time;
+        var kdata = hqChart.ChartPaint[0].Data;
+
+        //把数据拟合到kdata上
+        var result = [];
+
+        for (var i in outVar) 
+        {
+            var item = outVar[i];
+            var indexData = [];
+            var outVarItem = { Name: item.name, Type: item.type };
+            if (item.color) outVarItem.Color = item.color;
+            if (item.data) 
+            {
+                outVarItem.Data = this.FittingArray(item.data, date, time, hqChart);
+
+                if (item.color) outVarItem.Color = item.color;
+                if (item.linewidth >= 1) outVarItem.LineWidth = item.linewidth;
+                if (item.isshow == false) outVarItem.IsShow = false;
+                if (item.isexdata == true) outVarItem.IsExData = true;
+
+                result.push(outVarItem);
+            }
+            else if (item.Draw) 
+            {
+                var draw = item.Draw;
+                var drawItem = {};
+                if (draw.DrawType == 'DRAWICON')  //图标
+                {
+                    drawItem.Icon = draw.Icon;
+                    drawItem.Name = draw.Name;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingArray(draw.DrawData, date, time, hqChart);
+                    outVarItem.Draw = drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType == 'DRAWTEXT') //文本
+                {
+                    drawItem.Text = draw.Text;
+                    drawItem.Name = draw.Name;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingArray(draw.DrawData, date, time, hqChart);
+                    outVarItem.Draw = drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType == 'STICKLINE')    //柱子
+                {
+                    drawItem.Name = draw.Name;
+                    drawItem.Type = draw.Type;
+                    drawItem.Width = draw.Width;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingArray(draw.DrawData, date, time, hqChart, 1);
+                    outVarItem.Draw = drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType == 'MULTI_LINE') 
+                {
+                    drawItem.Text = draw.Text;
+                    drawItem.Name = draw.Name;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingMultiLine(draw.DrawData, date, time, hqChart);
+                    outVarItem.Draw = drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType == 'MULTI_TEXT')
+                {
+                    drawItem.Text = draw.Text;
+                    drawItem.Name = draw.Name;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingMultiText(draw.DrawData, date, time, hqChart);
+                    outVarItem.Draw = drawItem;
+                    result.push(outVarItem);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    this.FittingArray = function (sourceData, date, time, hqChart, arrayType)  //arrayType 0=单值数组 1=结构体
+    {
+        var kdata = hqChart.ChartPaint[0].Data;   //K线
+
+        var arySingleData = [];
+        for (var i in sourceData) 
+        {
+            var value = sourceData[i];
+            var indexItem = new SingleData(); //单列指标数据
+            indexItem.Date = date[i];
+            if (time && i < time.length) indexItem.Time = time[i];
+            indexItem.Value = value;
+            arySingleData.push(indexItem);
+        }
+
+        var aryFittingData;
+        if (ChartData.IsDayPeriod(hqChart.Period))
+            aryFittingData = kdata.GetFittingData(arySingleData);        //数据和主图K线拟合
+        else
+            aryFittingData = kdata.GetMinuteFittingData(arySingleData);  //数据和主图K线拟合
+
+        var bindData = new ChartData();
+        bindData.Data = aryFittingData;
+        var result;
+        if (arrayType == 1) result = bindData.GetObject();
+        else result = bindData.GetValue();
+        return result;
+    }
+
+    this.FittingMultiText = function (sourceData, date, time, hqChart) 
+    {
+        var kdata = hqChart.ChartPaint[0].Data;   //K线
+
+        if (ChartData.IsDayPeriod(hqChart.Period, true))  //日线
+        {
+            sourceData.sort(function (a, b) { return a.Date - b.Date; });
+            kdata.GetDateIndex(sourceData);
+            return sourceData;
+        }
+        else if (ChartData.IsMinutePeriod(hqChart.Period, true)) //分钟线
+        {
+            sourceData.sort(function (a, b) {
+                if (a.Date == b.Date) return a.Time - b.Time;
+                return a.Date - b.Date;
+            }
+            );
+
+            kdata.GetDateTimeIndex(sourceData);
+            return sourceData;
+        }
+
+        return null;
+    }
 }
 
 //市场多空
@@ -13148,6 +13478,7 @@ module.exports =
         JSChart: JSChart,
         Guid: Guid,
         IFrameSplitOperator: IFrameSplitOperator,
+        ChartData, ChartData,
         JSCHART_EVENT_ID:JSCHART_EVENT_ID,
     },
 };

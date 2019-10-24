@@ -333,6 +333,33 @@ IFrameSplitOperator.FormatDateTimeString = function (value, foramt)
     return text;
 }
 
+IFrameSplitOperator.IsNumber = function (value) 
+{
+    if (value == null) return false;
+    if (isNaN(value)) return false;
+    return true;
+}
+
+IFrameSplitOperator.IsPlusNumber = function (value) //判断是否是正数
+{
+    if (value == null) return false;
+    if (isNaN(value)) return false;
+    return value > 0;
+}
+
+IFrameSplitOperator.IsInteger = function (x) //是否是整形
+{
+    return (typeof x === 'number') && (x % 1 === 0);
+}
+
+IFrameSplitOperator.IsObjectExist = function (obj) //判断字段是否存在
+{
+    if (obj === undefined) return false;
+    if (obj == null) return false;
+
+    return true;
+}
+
 //K线Y轴分割
 function FrameSplitKLinePriceY() 
 {

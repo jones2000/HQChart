@@ -11345,7 +11345,7 @@ function APIScriptIndex(name,script,args,option)
         var kdata=hqChart.ChartPaint[0].Data;   //K线
 
         var arySingleData=[];
-        for(i in sourceData)
+        for(var i in sourceData)
         {
             var value=sourceData[i];
             var indexItem=new SingleData(); //单列指标数据
@@ -11451,11 +11451,11 @@ function APIScriptIndex(name,script,args,option)
         var kdata=hqChart.ChartPaint[0].Data;
 
         //把数据拟合到kdata上
-        result=[];
+        var result=[];
         
-        for(i in outVar)
+        for(var i in outVar)
         {
-            item=outVar[i];
+            var item=outVar[i];
             var indexData=[];
             var outVarItem={Name:item.name,Type:item.type};
             if (item.color) outVarItem.Color=item.color;
@@ -11546,9 +11546,9 @@ function APIScriptIndex(name,script,args,option)
         var outVar=jsonData.outvar;
         var date=jsonData.date;
         var time=jsonData.time;
-        result=[];
+        var result=[];
         
-        for(i in outVar)
+        for(var i in outVar)
         {
             item=outVar[i];
             var outVarItem={Name:item.name,Type:item.type}
@@ -11572,7 +11572,7 @@ function APIScriptIndex(name,script,args,option)
         var minutedata=hqChart.SourceData;;   //分钟线
 
         var arySingleData=[];
-        for(i in sourceData)
+        for(var i in sourceData)
         {
             var value=sourceData[i];
             var indexItem=new SingleData(); //单列指标数据

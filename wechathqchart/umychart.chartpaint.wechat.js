@@ -23,6 +23,11 @@ import
     JSCommonResource_Global_JSChartResource as g_JSChartResource,
 } from './umychart.resource.wechat.js'
 
+import 
+{
+    JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
+} from './umychart.framesplit.wechat.js'
+
 //配色
 function JSChartPaintResource() 
 {
@@ -1255,6 +1260,90 @@ function ChartOverlayKLine()
     }
 }
 
+// 多文本集合
+function ChartMultiText() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Texts = [];  //[ {Index:, Value:, Text:, Color:, Font: , Baseline:} ]
+    this.Font = g_JSChartResource.DefaultTextFont;
+    this.Color = g_JSChartResource.DefaultTextColor;
+
+    this.Draw = function () 
+    {
+        if (!this.IsShow) return;
+        if (!this.Data || this.Data.length <= 0) return;
+        if (!this.Texts) return;
+
+        var xPointCount = this.ChartFrame.XPointCount;
+        var offset = this.Data.DataOffset;
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRight();
+
+        for (var i in this.Texts) 
+        {
+            var item = this.Texts[i];
+
+            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
+
+            var index = item.Index - offset;
+            if (index >= 0 && index < xPointCount) 
+            {
+                var x = this.ChartFrame.GetXFromIndex(index);
+                var y = this.ChartFrame.GetYFromData(item.Value);
+
+                if (item.Color) this.Canvas.fillStyle = item.Color;
+                else this.Canvas.fillStyle = this.Color;
+                if (item.Font) this.Canvas.font = item.Font;
+                else this.Canvas.font = this.Font;
+
+                var textWidth = this.Canvas.measureText(item.Text).width;
+                this.Canvas.textAlign = 'center';
+                if (x + textWidth / 2 >= right)
+                {
+                    this.Canvas.textAlign = 'right';
+                    x = right;
+                }
+                else if (x - textWidth / 2 < left) 
+                {
+                    this.Canvas.textAlign = 'left';
+                    x = left;
+                }
+                if (item.Baseline == 1) this.Canvas.textBaseline = 'top';
+                else if (item.Baseline == 2) this.Canvas.textBaseline = 'bottom';
+                else this.Canvas.textBaseline = 'middle';
+                this.Canvas.fillText(item.Text, x, y);
+            }
+        }
+    }
+
+    this.GetMaxMin = function () 
+    {
+        var range = { Min: null, Max: null };
+        if (!this.Texts) return range;
+
+        var xPointCount = this.ChartFrame.XPointCount;
+        var start = this.Data.DataOffset;
+        var end = start + xPointCount;
+
+        for (var i in this.Texts) 
+        {
+            var item = this.Texts[i];
+            if (item.Index >= start && item.Index < end) 
+            {
+                if (range.Max == null) range.Max = item.Value;
+                else if (range.Max < item.Value) range.Max = item.Value;
+                if (range.Min == null) range.Min = item.Value;
+                else if (range.Min > item.Value) range.Min = item.Value;
+            }
+        }
+
+        return range;
+    }
+}
+
 //分钟信息地雷 支持横屏
 function ChartMinuteInfo() 
 {
@@ -2201,6 +2290,7 @@ module.exports =
         ChartOverlayKLine: ChartOverlayKLine,
         ChartMinuteInfo: ChartMinuteInfo,
         ChartRectangle: ChartRectangle,
+        ChartMultiText: ChartMultiText,
 
         ChartPie: ChartPie,
         ChartCircle: ChartCircle,
@@ -2223,4 +2313,5 @@ module.exports =
     JSCommonChartPaint_ChartRadar: ChartRadar,
     JSCommonChartPaint_ChartMinuteInfo: ChartMinuteInfo,
     JSCommonChartPaint_ChartRectangle: ChartRectangle,
+    JSCommonChartPaint_ChartMultiText: ChartMultiText,
 };

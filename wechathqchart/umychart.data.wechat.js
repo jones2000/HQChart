@@ -247,6 +247,28 @@ function ChartData()
         return result;
     }
 
+    this.GetDate = function () 
+    {
+        var result = [];
+        for (var i in this.Data) 
+        {
+            result[i] = this.Data[i].Date;
+        }
+
+        return result;
+    }
+
+    this.GetTime = function () 
+    {
+        var result = [];
+        for (var i in this.Data) 
+        {
+            result[i] = this.Data[i].Time;
+        }
+
+        return result;
+    }
+
     this.GetUp = function ()   //上涨家数
     {
         var result = [];
@@ -287,6 +309,61 @@ function ChartData()
         }
 
         return result;
+    }
+
+    
+    this.GetDateIndex = function (data) //日期转化 对应数据索引
+    {
+        for (var i = 0, j = 0; i < this.Data.length;) 
+        {
+            var date = this.Data[i].Date;
+
+            if (j >= data.length) break;
+
+            var dateItem = data[j];
+
+            if (dateItem.Date == date) 
+            {
+                dateItem.Index = i;
+                ++j;
+            }
+            else if (dateItem.Date < date) 
+            {
+                ++j;
+            }
+            else 
+            {
+                ++i;
+            }
+        }
+    }
+
+    
+    this.GetDateTimeIndex = function (data) //日期 时间转化 对应数据索引
+    {
+        for (var i = 0, j = 0; i < this.Data.length;) 
+        {
+            var date = this.Data[i].Date;
+            var time = this.Data[i].Time;
+
+            if (j >= data.length) break;
+
+            var dateTimeItem = data[j];
+
+            if (dateTimeItem.Date == date && dateTimeItem.Time == time) 
+            {
+                dateTimeItem.Index = i;
+                ++j;
+            }
+            else if (dateTimeItem.Date < date || (dateTimeItem.Date == date && dateTimeItem.Time < time)) 
+            {
+                ++j;
+            }
+            else 
+            {
+                ++i;
+            }
+        }
     }
 
     this.GetMinutePeriodData=function(period)
@@ -764,6 +841,53 @@ function ChartData()
                 result[i] = new SingleData();
                 result[i].Date = date;
                 result[i].Value = emptyValue;
+                ++i;
+            }
+        }
+
+        return result;
+    }
+
+    
+    this.GetMinuteFittingData = function (overlayData) //  分钟数据拟合
+    {
+        var result = [];
+        for (var i = 0, j = 0; i < this.Data.length;) 
+        {
+            var date = this.Data[i].Date;
+            var time = this.Data[i].Time;
+
+            if (j >= overlayData.length) 
+            {
+                result[i] = null;
+                ++i;
+                continue;;
+            }
+
+            var overlayDate = overlayData[j].Date;
+            var overlayTime = overlayData[j].Time;
+            const overlayItem = overlayData[j];
+
+            if (overlayDate == date && overlayTime == time) 
+            {
+                var item = new SingleData();
+                item.Date = overlayItem.Date;
+                item.Time = overlayItem.Time;
+                item.Value = overlayItem.Value;
+                result[i] = item;
+                ++j;
+                ++i;
+            }
+            else if (overlayDate < date || (overlayDate == date && overlayTime < time))
+            {
+                ++j;
+            }
+            else 
+            {
+                var item = new SingleData();
+                item.Date = date;
+                item.Time = time;
+                result[i] = item;
                 ++i;
             }
         }
