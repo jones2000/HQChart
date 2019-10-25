@@ -218,6 +218,7 @@ function JSChart(element)
 
         if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
         if (option.IsClickShowCorssCursor == true) chart.IsClickShowCorssCursor = option.IsClickShowCorssCursor;
+        if (option.IsFullDraw == true) chart.IsFullDraw = option.IsFullDraw;
         if (option.CorssCursorInfo) 
         {
             if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left = option.CorssCursorInfo.Left;
@@ -1063,8 +1064,9 @@ function JSChartContainer(uielement)
     this.FrameSplitData.set("double", new SplitData());
     this.FrameSplitData.set("price", new PriceSplitData());
 
-    this.UpdateUICallback;    //数据到达通知前端
+    this.UpdateUICallback;      //数据到达通知前端
     this.IsOnTouch = false;     //当前是否正式手势操作
+    this.IsFullDraw=false;       //是否使用重绘模式 (可能会卡)
 
     //公共函数转发,不然要导出麻烦
     this.FormatDateString = IFrameSplitOperator.FormatDateString;
@@ -1300,8 +1302,95 @@ function JSChartContainer(uielement)
         this.Draw();//手放开 重新绘制  
     }
 
+    this.FullDraw=function(drawType)
+    {
+        var self = this;
+        this.Canvas.clearRect(0, 0, this.UIElement.Width, this.UIElement.Height);
+
+        this.Frame.Draw();  //框架 
+
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)  //动画
+        {
+            this.Frame.DrawInsideHorizontal();
+            this.ChartSplashPaint.Draw();
+            this.LastDrawStatus = 'FullDraw';
+            this.Canvas.draw();
+            return;
+        }
+
+        for (var i in this.ChartPaint) //图形
+        {
+            var item = this.ChartPaint[i];
+            if (item.IsDrawFirst) item.Draw();
+        }
+
+        for (var i in this.ChartPaint) //图形2 框架内图形
+        {
+            var item = this.ChartPaint[i];
+            if (!item.IsDrawFirst) item.Draw();
+        }
+
+        for (var i in this.ChartPaintEx) //扩展图形
+        {
+            var item = this.ChartPaintEx[i];
+            item.Draw();
+        }
+
+        for (var i in this.OverlayChartPaint) //叠加股票
+        {
+            var item = this.OverlayChartPaint[i];
+            item.Draw();
+        }
+
+        this.Frame.DrawInsideHorizontal();  //框架内部坐标
+        if (this.ChartInfoPaint) this.ChartInfoPaint.Draw();
+        this.Frame.DrawLock();
+
+        for (var i in this.TitlePaint)  //标题
+        {
+            var item = this.TitlePaint[i];
+            if (!item.IsDynamic) continue;
+            if (typeof (item.DrawTitle) == 'function') item.DrawTitle();
+        }
+
+        if (drawType == 'DrawDynamicInfo' || this.IsOnTouch)
+        {
+            var self = this;
+            if (self.ChartCorssCursor) //十字光标
+            {
+                self.ChartCorssCursor.LastPoint = self.LastPoint;
+                self.ChartCorssCursor.CursorIndex = self.CursorIndex;
+                self.ChartCorssCursor.Draw();
+            }
+
+            for (var i in self.TitlePaint) //标题
+            {
+                var item = self.TitlePaint[i];
+                if (!item.IsDynamic) continue;
+
+                item.CursorIndex = self.CursorIndex;
+                item.Draw();
+            }
+
+            for (var i in this.ExtendChartPaint)    //动态扩展图形   在动态标题以后画
+            {
+                var item = this.ExtendChartPaint[i];
+                if (item.IsDynamic && item.DrawAfterTitle) item.Draw();
+            }
+        }
+
+        this.LastDrawStatus = 'FullDraw';
+        this.Canvas.draw(false);
+    }
+
     this.Draw = function () 
     {
+        if (this.IsFullDraw)
+        {
+            this.FullDraw('Draw');
+            return;
+        }
+
         if (this.IsOnTouch == true && (this.ClassName == 'MinuteChartContainer' || this.ClassName =='MinuteChartHScreenContainer'))  return;
 
         var self = this;
@@ -1391,6 +1480,12 @@ function JSChartContainer(uielement)
     //画动态信息
     this.DrawDynamicInfo = function () 
     {
+        if (this.IsFullDraw) 
+        {
+            this.FullDraw('DrawDynamicInfo');
+            return;
+        }
+
         var self = this;
         var width = this.Frame.ChartBorder.GetChartWidth();
         var height = this.Frame.ChartBorder.GetChartHeight();
@@ -7270,7 +7365,7 @@ function KLineChartContainer(uielement)
     this.TradeIndex;                    //交易指标/专家系统
     this.Symbol;
     this.Name;
-    this.Period = 0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
+    this.Period = 0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 9=季线 10=分笔线 11=120分钟 12=240分钟
     this.IsApiPeriod = false;             //使用API计算周期
     this.Right = 0;                       //复权 0 不复权 1 前复权 2 后复权
     this.SourceData;                    //原始的历史数据
@@ -8068,6 +8163,8 @@ function KLineChartContainer(uielement)
             case 6:     //15分钟
             case 7:     //30分钟
             case 8:     //60分钟
+            case 11:    //2小时
+            case 12:    //4小时
                 if (this.SourceData.DataType != 1) isDataTypeChange = true;
                 break;
             }
@@ -13491,6 +13588,7 @@ module.exports =
         ChartData, ChartData,
         KLineTooltipPaint: KLineTooltipPaint,
         JSCommonCoordinateData, JSCommonCoordinateData,
+        FrameSplitKLineX, FrameSplitKLineX,
         JSCHART_EVENT_ID:JSCHART_EVENT_ID,
     },
 };

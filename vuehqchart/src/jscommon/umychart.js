@@ -5695,6 +5695,10 @@ function ChartData()
             periodDataCount = 30;
         else if (period == 8)
             periodDataCount = 60;
+        else if (period==11)
+            periodDataCount=120;
+        else if (period==12)
+            periodDataCount=240;
         else if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)
         {
             periodDataCount=period-CUSTOM_MINUTE_PERIOD_START;
@@ -6006,6 +6010,10 @@ function ChartData()
                     periodDataCount = 30;
                 else if (period == 8)
                     periodDataCount = 60;
+                else if (period==11)
+                    periodDataCount = 120;
+                else if (period==12)
+                    periodDataCount = 240;
                 else if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)
                     periodDataCount=period-CUSTOM_MINUTE_PERIOD_START;
 
@@ -6015,7 +6023,7 @@ function ChartData()
 
 
         if (period==1 || period==2 || period==3 || period==9 || (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)) return this.GetDayPeriodData(period);
-        if (period==5 || period==6 || period==7 || period==8 || (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
+        if (period==5 || period==6 || period==7 || period==8 || period==11 || period==12 || (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
     }
 
     //复权  0 不复权 1 前复权 2 后复权
@@ -6730,11 +6738,11 @@ ChartData.IsDayPeriod=function(period, isIncludeBase)
     return false;
 }
 
-//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 [20001-30000] 自定义分钟 (isIncludeBase 是否包含基础1分钟周期)
+//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 11=120分钟 12=240分钟 [20001-30000] 自定义分钟 (isIncludeBase 是否包含基础1分钟周期)
 var CUSTOM_MINUTE_PERIOD_START=20000, CUSTOM_MINUTE_PERIOD_END=30000;
 ChartData.IsMinutePeriod=function(period,isIncludeBase)
 {
-    if (period==5 || period==6 || period==7 || period==8) return true;
+    if (period==5 || period==6 || period==7 || period==8 ||period==11 || period==12) return true;
     if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END) return true;
     if (period==4 && isIncludeBase==true) return true;
 
@@ -6742,7 +6750,7 @@ ChartData.IsMinutePeriod=function(period,isIncludeBase)
 }
 
 
-//是否是分笔图
+//是否是分笔图 10=分笔
 ChartData.IsTickPeriod=function(period)
 {
     return period==10;
@@ -14639,20 +14647,18 @@ function FrameSplitKLineX()
     this.Operator=function()
     {
         if (this.Frame.Data==null) return;
-        
+        if (FrameSplitKLineX.SplitCustom) FrameSplitKLineX.SplitCustom(this);   //自定义分割
+        else if (ChartData.IsMinutePeriod(this.Period, true)) this.SplitDateTime();
+        else this.SplitDate();
+    }
 
-        if (ChartData.IsMinutePeriod(this.Period, true)) 
-        {
-            this.SplitDateTime();
-        }
-        else 
-        {
-            this.SplitDate();
-        }
-
-        
+    this.CreateCoordinateInfo=function()
+    {
+        return new CoordinateInfo();
     }
 }
+
+//FrameSplitKLineX.SplitCustom=function(split) { }
 
 function FrameSplitMinutePriceY()
 {
@@ -15888,7 +15894,7 @@ function IChartTitlePainting()
     this.TitleColor=g_JSChartResource.DefaultTextColor;
 }
 
-var PERIOD_NAME=["日线","周线","月线","年线","1分","5分","15分","30分","60分","季线","分笔", "",""];
+var PERIOD_NAME=["日线","周线","月线","年线","1分","5分","15分","30分","60分","季线","分笔", "2小时","4小时","","",""];
 var RIGHT_NAME=['不复权','前复权','后复权'];
 
 function DynamicKLineTitlePainting()
@@ -19729,6 +19735,8 @@ function JSChartLocalization()
         ['60分', {CN:'60分', EN:'60Min'}],
         ['季线', {CN:'季线', EN:'1Q'}],
         ['分笔', {CN:'分笔', EN:'Tick'}],
+        ['2小时', {CN:'2小时', EN:'2H'}],
+        ['4小时', {CN:'4小时', EN:'4H'}],
 
         //复权
         ['不复权', {CN:'不复权', EN:'No Right'}],
@@ -20760,7 +20768,7 @@ function KLineChartContainer(uielement)
     this.TradeIndex;                    //交易指标/专家系统
     this.Symbol;
     this.Name;
-    this.Period=0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 9=季线 10=分笔线
+    this.Period=0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 9=季线 10=分笔线 11=120分钟 12=240分钟
     this.IsApiPeriod=false;             //使用API计算周期
     this.Right=0;                       //复权 0 不复权 1 前复权 2 后复权
     this.SourceData;                    //原始的历史数据
@@ -22428,6 +22436,8 @@ function KLineChartContainer(uielement)
                 case 6:     //15分钟
                 case 7:     //30分钟
                 case 8:     //60分钟
+                case 11:    //2小时
+                case 12:    //4小时
                     if (this.SourceData.DataType!=1) isDataTypeChange=true;
                     break;
                 case 10:    //分笔线
@@ -31980,6 +31990,14 @@ function KLineRightMenu(divElement)
             {
                 text: "60分",Value:8,
                 click: function () { chart.ChangePeriod(8); }
+            },
+            {
+                text: "2小时",Value:11,
+                click: function () { chart.ChangePeriod(11); }
+            },
+            {
+                text: "4小时",Value:12,
+                click: function () { chart.ChangePeriod(12); }
             },
             {
                 text: "分笔",Value:10,

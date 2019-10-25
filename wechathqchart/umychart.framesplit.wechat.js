@@ -674,12 +674,18 @@ function FrameSplitKLineX()
     this.Operator = function () 
     {
         if (this.Frame.Data == null) return;
-        if (ChartData.IsMinutePeriod(this.Period, true)) 
-            this.SplitDateTime();
-        else 
-            this.SplitDate();
+        if (FrameSplitKLineX.SplitCustom) FrameSplitKLineX.SplitCustom(this);   //自定义分割
+        else if (ChartData.IsMinutePeriod(this.Period, true)) this.SplitDateTime();
+        else this.SplitDate();
+    }
+
+    this.CreateCoordinateInfo=function()
+    {
+        return new CoordinateInfo();    //创建一个节点坐标
     }
 }
+
+//FrameSplitKLineX.SplitCustom=function(split) { }
 
 function FrameSplitMinutePriceY() 
 {

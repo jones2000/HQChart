@@ -57,7 +57,7 @@ function IChartTitlePainting()
     this.UpdateUICallback;              //通知外面更新标题
 }
 
-var PERIOD_NAME = ["日线", "周线", "月线", "年线", "1分", "5分", "15分", "30分", "60分", "季线", "分笔", "", "", "", ""];
+var PERIOD_NAME = ["日线", "周线", "月线", "年线", "1分", "5分", "15分", "30分", "60分", "季线", "分笔", "2小时", "4小时", "", ""];
 var RIGHT_NAME = ['不复权', '前复权', '后复权'];
 //K线标题
 function DynamicKLineTitlePainting() 

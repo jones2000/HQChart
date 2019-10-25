@@ -381,6 +381,10 @@ function ChartData()
             periodDataCount = 30;
         else if (period == 8)
             periodDataCount = 60;
+        else if (period == 11)
+            periodDataCount = 120;
+        else if (period == 12)
+            periodDataCount = 240;
         else
             return this.Data;
         var bFirstPeriodData = false;
@@ -403,11 +407,15 @@ function ChartData()
                     ++j;
                     continue;    
                 } 
-                if ((preTime != null && minData.Time == 925 && preTime != 924) || (preTime != null && minData.Time == 930 && preTime != 929)) //9：25, 9:30 不连续就不算个数
+                if (minData.Time == 925 && (preTime == null || preTime != 924))  //9：25, 9:30 不连续就不算个数
                 {
                 }
-                else if (preTime != null && minData.Time == 1300 && preTime!=1259) //1点的数据 如果不是连续的 就不算个数
+                else if (minData.Time == 930 && (preTime == null || preTime != 929))
                 {
+                }
+                else if (minData.Time == 1300 && (preTime == null || preTime != 1259)) //1点的数据 如果不是连续的 就不算个数
+                {
+
                 }
                 else
                     ++j;
@@ -435,6 +443,16 @@ function ChartData()
                     newData.Close=minData.Close;
                     newData.Vol+=minData.Vol;
                     newData.Amount+=minData.Amount;
+                }
+
+                if (i + 1 < this.Data.length) //判断下一个数据是否是不同日期的
+                {
+                    var nextItem = this.Data[i + 1];
+                    if (nextItem && nextItem.Date != minData.Date)    //不同日期的, 周期结束
+                    {
+                        ++i;
+                        break;
+                    }
                 }
             }
         }
@@ -640,7 +658,7 @@ function ChartData()
     this.GetPeriodData=function(period)
     {
         if (period == 1 || period == 2 || period == 3 || period == 9 || (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END)) return this.GetDayPeriodData(period);
-        if (period == 5 || period == 6 || period == 7 || period == 8 || (period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
+        if (period == 5 || period == 6 || period == 7 || period == 8 || period == 11 || period == 12 ||(period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
     }
 
     //复权  0 不复权 1 前复权 2 后复权
@@ -1152,11 +1170,11 @@ ChartData.IsDayPeriod = function (period, isIncludeBase)
     return false;
 }
 
-//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 [20001-30000] 自定义分钟 (isIncludeBase 是否包含基础1分钟周期)
+//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 11=2h 12=4h[20001-30000] 自定义分钟 (isIncludeBase 是否包含基础1分钟周期)
 var CUSTOM_MINUTE_PERIOD_START = 20000, CUSTOM_MINUTE_PERIOD_END = 30000;
 ChartData.IsMinutePeriod = function (period, isIncludeBase) 
 {
-    if (period == 5 || period == 6 || period == 7 || period == 8) return true;
+    if (period == 5 || period == 6 || period == 7 || period == 8 || period == 11 || period == 12) return true;
     if (period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END) return true;
     if (period == 4 && isIncludeBase == true) return true;
 
