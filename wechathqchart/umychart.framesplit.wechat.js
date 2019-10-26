@@ -371,6 +371,8 @@ function FrameSplitKLinePriceY()
     this.Symbol;
     this.Data;              //K线数据 (计算百分比坐标)
 
+    this.Custom = []; //[{Type:0}];   定制刻度 0=显示最后的价格刻度
+
     this.Operator = function () 
     {
         var splitData = {};
@@ -402,6 +404,34 @@ function FrameSplitKLinePriceY()
         this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, false);
         this.Frame.HorizontalMax = splitData.Max;
         this.Frame.HorizontalMin = splitData.Min;
+
+        this.Frame.CustomHorizontalInfo = [];
+        for (var i in this.Custom) 
+        {
+            var item = this.Custom[i];
+            if (item.Type == 0) 
+            {
+                var latestItem = this.GetLatestPrice(defaultfloatPrecision);
+                if (latestItem) this.Frame.CustomHorizontalInfo.push(latestItem);
+            }
+        }
+    }
+
+    this.GetLatestPrice = function (floatPrecision) 
+    {
+        if (!this.Data || !this.Data.Data) return null;
+        if (this.Data.Data.length <= 0) return null;
+        var latestItem = this.Data.Data[this.Data.Data.length - 1];
+        var info = new CoordinateInfo();
+        info.Type = 0;
+        info.Value = latestItem.Close;
+        info.TextColor = g_JSChartResource.FrameLatestPrice.TextColor;
+        info.Message[1] = latestItem.Close.toFixed(floatPrecision);
+        if (latestItem.Close > latestItem.Open) info.LineColor = g_JSChartResource.FrameLatestPrice.UpBarColor;
+        else if (latestItem.Close < latestItem.Open) info.LineColor = g_JSChartResource.FrameLatestPrice.DownBarColor;
+        else info.LineColor = g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
+
+        return info;
     }
 
     this.GetFirstOpenPrice = function ()   //获取显示第1个数据的开盘价

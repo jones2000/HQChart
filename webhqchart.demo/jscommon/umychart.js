@@ -4274,18 +4274,24 @@ function KLineFrame()
         var pixelTatio = GetDevicePixelRatio();
         var textHeight=18*pixelTatio;
         var y = this.GetYFromData(item.Value);
-        this.Canvas.save();
-        this.Canvas.strokeStyle=item.LineColor;
-        this.Canvas.setLineDash([5*pixelTatio,5*pixelTatio]);   //虚线
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(left,ToFixedPoint(y));
-        this.Canvas.lineTo(right,ToFixedPoint(y));
-        this.Canvas.stroke();
-        this.Canvas.restore();
-
+        
         if (borderRight<10)
         {
+            if (item.Font != null) this.Canvas.font = item.Font;
+            this.Canvas.textAlign = "left";
+            this.Canvas.textBaseline = "middle";
+            var textWidth = this.Canvas.measureText(item.Message[1]).width+2*pixelTatio;
+            var bgColor=item.LineColor;
+            var rgb=this.RGBToStruct(item.LineColor);
+            if (rgb) bgColor=`rgba(${rgb.R}, ${rgb.G}, ${rgb.B}, ${g_JSChartResource.FrameLatestPrice.BGAlpha})`;   //内部刻度 背景增加透明度
+            this.Canvas.fillStyle=bgColor;
+            var bgTop=y-textHeight/2-1*pixelTatio;
+            var textLeft=right-textWidth;
+            this.Canvas.fillRect(textLeft,bgTop,textWidth,textHeight);
+            this.Canvas.fillStyle = item.TextColor;
+            this.Canvas.fillText(item.Message[1], textLeft + 1*pixelTatio, y);
 
+            this.DrawDotLine(left,textLeft,y,item.LineColor);
         }
         else
         {
@@ -4298,7 +4304,39 @@ function KLineFrame()
             this.Canvas.fillRect(right,bgTop,textWidth,textHeight);
             this.Canvas.fillStyle = item.TextColor;
             this.Canvas.fillText(item.Message[1], right + 1*pixelTatio, y);
+
+            this.DrawDotLine(left,right,y,item.LineColor);
         }
+    }
+
+    this.DrawDotLine=function(left,right,y, color)
+    {
+        var pixelTatio = GetDevicePixelRatio();
+        this.Canvas.save();
+        this.Canvas.strokeStyle=color;
+        this.Canvas.setLineDash([5*pixelTatio,5*pixelTatio]);   //虚线
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(left,ToFixedPoint(y));
+        this.Canvas.lineTo(right,ToFixedPoint(y));
+        this.Canvas.stroke();
+        this.Canvas.restore();
+    }
+
+    this.RGBToStruct=function(rgb)
+    {
+        if(/^(rgb|RGB)/.test(rgb))
+        {
+            var aColor = rgb.replace(/(?:\(|\)|rgb|RGB)*/g,"").split(",");
+            var result={};
+            if (aColor.length!=3) return null;
+
+            result.R = Number(aColor[0]);
+            result.G = Number(aColor[1]);
+            result.B = Number(aColor[2]);
+            return result;
+        }
+       
+        return null;
     }
 }
 
@@ -14376,11 +14414,11 @@ function FrameSplitKLinePriceY()
         var info=new CoordinateInfo();
         info.Type=0;
         info.Value=latestItem.Close;
-        info.TextColor=g_JSChartResource.FrameLatestPriceTextColor;
+        info.TextColor=g_JSChartResource.FrameLatestPrice.TextColor;
         info.Message[1]=latestItem.Close.toFixed(floatPrecision);
-        if (latestItem.Close>latestItem.Open) info.LineColor=g_JSChartResource.UpBarColor;
-        else if (latestItem.Close<latestItem.Open) info.LineColor=g_JSChartResource.DownBarColor;
-        else info.LineColor=g_JSChartResource.UnchagneBarColor;
+        if (latestItem.Close>latestItem.Open) info.LineColor=g_JSChartResource.FrameLatestPrice.UpBarColor;
+        else if (latestItem.Close<latestItem.Open) info.LineColor=g_JSChartResource.FrameLatestPrice.DownBarColor;
+        else info.LineColor=g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
 
         return info;
     }
@@ -19435,7 +19473,14 @@ function JSChartResource()
     this.FrameSplitTextColor="rgb(117,125,129)";    //刻度文字颜色
     this.FrameSplitTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";     //坐标刻度文字字体
     this.FrameTitleBGColor="rgb(246,251,253)";  //标题栏背景色
-    this.FrameLatestPriceTextColor='rgb(255,255,255)';   //最新价格文字颜色
+
+    this.FrameLatestPrice = {
+        TextColor:'rgb(255,255,255)',   //最新价格文字颜色
+        UpBarColor:"rgb(238,21,21)",    //上涨
+        DownBarColor:"rgb(25,158,0)",   //下跌
+        UnchagneBarColor:"rgb(0,0,0)",   //平盘
+        BGAlpha:0.6
+    };
 
     this.OverlayFrame={
         BolderPen:'rgb(190,190,190)',

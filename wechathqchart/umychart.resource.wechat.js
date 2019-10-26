@@ -46,6 +46,13 @@ function JSChartResource()
     this.FrameSplitTextFont = "12px 微软雅黑";        //坐标刻度文字字体
     //this.FrameSplitTextFont = "14px PingFang-SC-Bold";//坐标刻度文字字体
     this.FrameTitleBGColor = "rgb(246,251,253)";      //标题栏背景色
+    this.FrameLatestPrice = {
+        TextColor: 'rgb(255,255,255)',   //最新价格文字颜色
+        UpBarColor: "rgb(238,21,21)",    //上涨
+        DownBarColor: "rgb(25,158,0)",   //下跌
+        UnchagneBarColor: "rgb(0,0,0)",   //平盘
+        BGAlpha: 0.6
+    };
 
     this.CorssCursorBGColor = "rgb(43,54,69)";            //十字光标背景
     this.CorssCursorTextColor = "rgb(255,255,255)";
