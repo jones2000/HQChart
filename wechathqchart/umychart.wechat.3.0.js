@@ -106,11 +106,19 @@ function JSCanvasElement()
     this.ID;
     this.WebGLCanvas;
     this.IsUniApp=false;
+    this.CanvasNode=null;   //新版小程序使用
 
     //获取画布
     this.GetContext = function () 
 	{
-        var canvas=wx.createCanvasContext(this.ID);
+        var canvas;
+        if (this.CanvasNode) 
+        {
+            console.log("[JSCanvasElement::GetContext] create by getContext('2d')");
+            canvas=this.CanvasNode.getContext('2d');
+            canvas.draw=function() { };
+        }
+        else canvas=wx.createCanvasContext(this.ID);
         if (this.IsUniApp)
         {
             console.log('[JSCanvasElement::GetContext] measureText() => JSUniAppCanvasHelper.MeasureText()');

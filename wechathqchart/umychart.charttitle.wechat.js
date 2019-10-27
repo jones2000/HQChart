@@ -114,7 +114,7 @@ function DynamicKLineTitlePainting()
         if (dataIndex >= this.Data.Data.length) dataIndex = this.Data.Data.length - 1;
         if (dataIndex < 0) return null;
 
-        return index;
+        return dataIndex;
     }
 
     this.SendUpdateUIMessage = function (funcName) //通知外面 标题变了
