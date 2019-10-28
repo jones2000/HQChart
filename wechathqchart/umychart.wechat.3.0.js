@@ -192,6 +192,7 @@ function JSChart(element)
             if (option.KLine.DrawType) chart.KLineDrawType = option.KLine.DrawType;
         }
 
+        if (option.SplashTitle) chart.SplashTitle = option.SplashTitle; //设置提示信息内容
         if (!option.Windows || option.Windows.length <= 0) return null;
 
         //创建子窗口
@@ -448,6 +449,7 @@ function JSChart(element)
         if (option.Windows && option.Windows.length > 0) windowsCount += option.Windows.length; //指标窗口从第3个窗口开始
 
         if (option.Info && option.Info.length > 0) chart.SetMinuteInfo(option.Info, false);
+        if (option.SplashTitle) chart.SplashTitle = option.SplashTitle; //设置提示信息内容
 
         chart.Create(windowsCount);                            //创建子窗口
 
