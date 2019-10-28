@@ -220,6 +220,21 @@ var MARKET_SUFFIX_NAME=
             return 2;
         }
 
+    },
+
+    GetFHKDecimal: function (symbol)  //港股指数期货 小数位数
+    {
+        return 0;
+    },
+
+    GetFTSEDecimal: function (symbol) //富时中国A50期货 小数位数
+    {
+        return 0;
+    },
+
+    GetBITDecimal: function (symbol) 
+    {
+        return 2;
     }
 }
 
@@ -1086,6 +1101,9 @@ function GetfloatPrecision(symbol)  //获取小数位数
 
     if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision = 3;    //基金3位小数
     else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision = g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
+    else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetBITDecimal(upperSymbol);
 
     return defaultfloatPrecision;
 }

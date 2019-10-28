@@ -411,13 +411,13 @@ function FrameSplitKLinePriceY()
             var item = this.Custom[i];
             if (item.Type == 0) 
             {
-                var latestItem = this.GetLatestPrice(defaultfloatPrecision);
+                var latestItem = this.GetLatestPrice(defaultfloatPrecision, item);
                 if (latestItem) this.Frame.CustomHorizontalInfo.push(latestItem);
             }
         }
     }
 
-    this.GetLatestPrice = function (floatPrecision) 
+    this.GetLatestPrice = function (floatPrecision, option) 
     {
         if (!this.Data || !this.Data.Data) return null;
         if (this.Data.Data.length <= 0) return null;
@@ -426,7 +426,8 @@ function FrameSplitKLinePriceY()
         info.Type = 0;
         info.Value = latestItem.Close;
         info.TextColor = g_JSChartResource.FrameLatestPrice.TextColor;
-        info.Message[1] = latestItem.Close.toFixed(floatPrecision);
+        if (option.Position == 'left') info.Message[0] = latestItem.Close.toFixed(floatPrecision);
+        else info.Message[1] = latestItem.Close.toFixed(floatPrecision);
         if (latestItem.Close > latestItem.Open) info.LineColor = g_JSChartResource.FrameLatestPrice.UpBarColor;
         else if (latestItem.Close < latestItem.Open) info.LineColor = g_JSChartResource.FrameLatestPrice.DownBarColor;
         else info.LineColor = g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
