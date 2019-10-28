@@ -4084,8 +4084,8 @@ function KLineFrame()
             if((ZOOM_SEED[i][0] + ZOOM_SEED[i][1]) * this.XPointCount < width)
             {
                 this.ZoomIndex=i;
-                this.DataWidth = ZOOM_SEED[i][0];
-                this.DistanceWidth = ZOOM_SEED[i][1];
+                this.DataWidth = ZOOM_SEED[i][1];
+                this.DistanceWidth = ZOOM_SEED[i][0];
                 this.TrimKLineDataWidth(width);
                 console.log('[KLineFrame::CalculateDataWidth] ZOOM_SEED, DataWidth, DistanceWidth, XPointCount', ZOOM_SEED[this.ZoomIndex], this.DataWidth,this.DistanceWidth,this.XPointCount);
                 return;

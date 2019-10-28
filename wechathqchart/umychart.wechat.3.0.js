@@ -2831,13 +2831,13 @@ function KLineFrame()
 
         for (var i = 0; i < ZOOM_SEED.length; ++i) 
         {
-            let barWidth = ZOOM_SEED[i][0];         //数据宽度
-            let distanceWidth = ZOOM_SEED[i][1];    //间距宽度
+            let barWidth = ZOOM_SEED[i][1];         //数据宽度
+            let distanceWidth = ZOOM_SEED[i][0];    //间距宽度
             if ((ZOOM_SEED[i][0] + ZOOM_SEED[i][1]) * this.XPointCount < width) 
             {
                 this.ZoomIndex = i;
-                this.DataWidth = ZOOM_SEED[i][0];
-                this.DistanceWidth = ZOOM_SEED[i][1];
+                this.DataWidth = ZOOM_SEED[i][1];
+                this.DistanceWidth = ZOOM_SEED[i][0];
                 this.TrimKLineDataWidth(width);
 
                 console.log(`[KLineFrame::CalculateDataWidth] ZoomIndex=${this.ZoomIndex} DataWidth=${this.DataWidth} DistanceWidth=${this.DistanceWidth}` );
@@ -4148,7 +4148,8 @@ function ChartKLine()
 
             var left = xOffset;
             var right = xOffset + dataWidth;
-            if (right > chartright) break;
+            if (right > chartright) 
+                break;
             var x = left + (right - left) / 2;
             var yLow = this.ChartFrame.GetYFromData(data.Low);
             var yHigh = this.ChartFrame.GetYFromData(data.High);
@@ -9076,7 +9077,9 @@ function KLineChartContainer(uielement)
     {
         let width = this.Frame.ChartBorder.GetWidth();
         let barWidth = (ZOOM_SEED[ZOOM_SEED.length - 1][0] + ZOOM_SEED[ZOOM_SEED.length - 1][1]);
-        return parseInt(width / barWidth) - 8;
+        let pageSize = parseInt(width / barWidth) - 8;
+        console.log(`[KLineChartContainer::GetMaxPageSize] width=${width} barWidth=${barWidth} pageSize=${pageSize}`);
+        return pageSize
     }
 
     //数据拖拽下载

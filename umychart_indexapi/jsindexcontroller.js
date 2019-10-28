@@ -381,7 +381,17 @@ function JSMongoIndex()
         for(var i in data)
         {
             var item=data[i];
-            var indexItem={Name:item.name, Args:item.args, Script:item.script, ID:item.id, IsMainIndex:false};
+            var indexItem={Name:item.name, Args:null, Script:item.script, ID:item.id, IsMainIndex:false};
+            if (item.args && item.args.length>0)
+            {
+                indexItem.Args=[];
+                for(var j in item.args)
+                {
+                    var argItem=item.args[j];
+                    indexItem.Args.push({Name:argItem.name, Value:argItem.value});
+                }
+            }
+
             if (item.ismainindex==true) indexItem.IsMainIndex=true;
             this.Data.push(indexItem);
         }
