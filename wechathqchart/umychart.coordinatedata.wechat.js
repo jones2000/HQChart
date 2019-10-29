@@ -22,8 +22,10 @@ var MARKET_SUFFIX_NAME=
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
     USA: '.USA',         //美股
-    BIT: '.BIT',         //数字货币 如比特币
     FTSE: '.FTSE',       //富时中国
+
+    BIT: '.BIT',         //数字货币 如比特币
+    BIZ: '.BIZ',         //数字货币
 
     IsFTSE: function (upperSymbol) 
     {
@@ -40,7 +42,9 @@ var MARKET_SUFFIX_NAME=
     IsBIT: function (upperSymbol) 
     {
         if (!upperSymbol) return false;
-        return upperSymbol.indexOf(this.BIT) > 0;
+        if (upperSymbol.indexOf(this.BIT) > 0) return true;
+        if (upperSymbol.indexOf(this.BIZ) > 0) return true;
+        return false;
     },
 
     IsUSA: function (upperSymbol) //是否是美股

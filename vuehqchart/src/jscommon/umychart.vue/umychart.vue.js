@@ -14867,6 +14867,7 @@ function ChartMultiText()
         {
             var item=this.Texts[i];
 
+            if (!item.Text) continue;
             if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
 
             var index=item.Index-offset;

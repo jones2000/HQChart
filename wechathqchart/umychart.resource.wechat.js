@@ -205,6 +205,16 @@ function JSChartResource()
         if (style.FrameSplitTextColor) this.FrameSplitTextColor = style.FrameSplitTextColor;
         if (style.FrameSplitTextFont) this.FrameSplitTextFont = style.FrameSplitTextFont;
         if (style.FrameTitleBGColor) this.FrameTitleBGColor = style.FrameTitleBGColor;
+
+        if (style.FrameLatestPrice) 
+        {
+            if (style.FrameLatestPrice.TextColor) this.FrameLatestPrice.TextColor = style.FrameLatestPrice.TextColor;
+            if (style.FrameLatestPrice.UpBarColor) this.FrameLatestPrice.UpBarColor = style.FrameLatestPrice.UpBarColor;
+            if (style.FrameLatestPrice.DownBarColor) this.FrameLatestPrice.DownBarColor = style.FrameLatestPrice.DownBarColor;
+            if (style.FrameLatestPrice.UnchagneBarColor) this.FrameLatestPrice.UnchagneBarColor = style.FrameLatestPrice.UnchagneBarColor;
+            if (style.FrameLatestPrice.BGAlpha) this.FrameLatestPrice.BGAlpha = style.FrameLatestPrice.BGAlpha;
+        }
+
         if (style.CorssCursorBGColor) this.CorssCursorBGColor = style.CorssCursorBGColor;
         if (style.CorssCursorTextColor) this.CorssCursorTextColor = style.CorssCursorTextColor;
         if (style.CorssCursorTextFont) this.CorssCursorTextFont = style.CorssCursorTextFont;

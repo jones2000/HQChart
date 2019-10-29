@@ -7961,7 +7961,7 @@ function KLineChartContainer(uielement)
         {
             var event = this.mapEvent.get(JSCHART_EVENT_ID.RECV_HISTROY_DATA);
             var data = { HistoryData: bindData, Stock: { Symbol: this.Symbol, Name: this.Name } }
-            item.Callback(event, data, this);
+            event.Callback(event, data, this);
         }
         else    //老的回调暂时保留
         {

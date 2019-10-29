@@ -11508,6 +11508,7 @@ function ChartMultiText()
         {
             var item=this.Texts[i];
 
+            if (!item.Text) continue;
             if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
 
             var index=item.Index-offset;
@@ -19750,6 +19751,16 @@ function JSChartResource()
         if (style.FrameSplitTextColor) this.FrameSplitTextColor = style.FrameSplitTextColor;
         if (style.FrameSplitTextFont) this.FrameSplitTextFont = style.FrameSplitTextFont;
         if (style.FrameTitleBGColor) this.FrameTitleBGColor = style.FrameTitleBGColor;
+
+        if (style.FrameLatestPrice) 
+        {
+            if (style.FrameLatestPrice.TextColor) this.FrameLatestPrice.TextColor = style.FrameLatestPrice.TextColor;
+            if (style.FrameLatestPrice.UpBarColor) this.FrameLatestPrice.UpBarColor = style.FrameLatestPrice.UpBarColor;
+            if (style.FrameLatestPrice.DownBarColor) this.FrameLatestPrice.DownBarColor = style.FrameLatestPrice.DownBarColor;
+            if (style.FrameLatestPrice.UnchagneBarColor) this.FrameLatestPrice.UnchagneBarColor = style.FrameLatestPrice.UnchagneBarColor;
+            if (style.FrameLatestPrice.BGAlpha) this.FrameLatestPrice.BGAlpha = style.FrameLatestPrice.BGAlpha;
+        }
+
         if (style.CorssCursorBGColor) this.CorssCursorBGColor = style.CorssCursorBGColor;
         if (style.CorssCursorTextColor) this.CorssCursorTextColor = style.CorssCursorTextColor;
         if (style.CorssCursorTextFont) this.CorssCursorTextFont = style.CorssCursorTextFont;
@@ -33418,8 +33429,10 @@ var MARKET_SUFFIX_NAME=
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
     USA:'.USA',          //美股
-    BIT:'.BIT',          //数字货币 如比特币
     FTSE:'.FTSE',        //富时中国
+
+    BIT:'.BIT',          //数字货币 如比特币
+    BIZ:'.BIZ',         //数字货币
 
     IsFTSE:function(upperSymbol)
     {
@@ -33436,7 +33449,9 @@ var MARKET_SUFFIX_NAME=
     IsBIT:function(upperSymbol)
     {
         if (!upperSymbol) return false;
-        return upperSymbol.indexOf(this.BIT) > 0;
+        if (upperSymbol.indexOf(this.BIT) > 0) return true;
+        if (upperSymbol.indexOf(this.BIZ) > 0) return true;
+        return false;
     },
 
     IsUSA:function(upperSymbol) //是否是美股
