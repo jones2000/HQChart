@@ -18,6 +18,7 @@ var MARKET_SUFFIX_NAME=
     HK:'.HK',
     FHK: '.FHK',         //港股期货 
     SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange)
+    SHFE2: '.SHFE',       //上期所 (Shanghai Futures Exchange)
     CFFEX: '.CFE',       //中期所 (China Financial Futures Exchange)
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
@@ -77,7 +78,10 @@ var MARKET_SUFFIX_NAME=
 
     IsSHFE: function (upperSymbol)
     {
-        return upperSymbol.indexOf(this.SHFE) > 0;
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.SHFE) > 0) return true;
+        if (upperSymbol.indexOf(this.SHFE2) > 0) return true;
+        return false;
     },
         
     IsCFFEX: function (upperSymbol) 

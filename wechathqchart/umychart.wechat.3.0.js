@@ -1159,7 +1159,7 @@ function JSChartContainer(uielement)
     this.ontouchstart = function (e) 
     {
         var jsChart = this;
-        if (jsChart.DragMode == 0) return;
+        //if (jsChart.DragMode == 0) return;
 
         jsChart.IsOnTouch=true;
         jsChart.PhonePinch = null;
@@ -1205,13 +1205,13 @@ function JSChartContainer(uielement)
             drag.LastMove.X = touches[0].clientX;
             drag.LastMove.Y = touches[0].clientY;
 
-            jsChart.MouseDrag = drag;
+            if (jsChart.DragMode == 1) jsChart.MouseDrag = drag;
 
             if (jsChart.IsClickShowCorssCursor) 
             {
                 var x = drag.Click.X;
                 var y = drag.Click.Y;
-                jsChart.OnMouseMove(x, y, e);
+                jsChart.OnMouseMove(x, y, e,true);
             }
         }
         else if (this.IsPhonePinching(e)) 
@@ -1625,22 +1625,25 @@ function JSChartContainer(uielement)
         this.DrawDynamicInfo();
     }
 
-  this.OnMouseMove = function (x, y, e) {
-    var lastY = this.LastPoint.Y;
-    this.LastPoint.X = x;
-    this.LastPoint.Y = y;
-    var lastCursorIndex = this.CursorIndex;
-    this.CursorIndex = this.Frame.GetXData(x);
-    if (parseInt(lastCursorIndex - 0.5) == parseInt(this.CursorIndex - 0.5) && Math.abs(lastY - y) < 1) return;  //一个一个数据移动
+    this.OnMouseMove = function (x, y, e, bFullDraw) 
+    {
+        var lastY = this.LastPoint.Y;
+        this.LastPoint.X = x;
+        this.LastPoint.Y = y;
+        var lastCursorIndex = this.CursorIndex;
+        this.CursorIndex = this.Frame.GetXData(x);
+        if (parseInt(lastCursorIndex - 0.5) == parseInt(this.CursorIndex - 0.5) && Math.abs(lastY - y) < 1) return;  //一个一个数据移动
 
-    if (this.IsForceLandscape) {
-      //横屏图片太大不让贴,分两张图贴,多次截图的函数是坏的, 直接重画了
-      this.Draw();
+        if (bFullDraw)
+        {
+            this.FullDraw();
+        }
+        else
+        {
+            if (this.IsForceLandscape) this.Draw();//横屏图片太大不让贴,分两张图贴,多次截图的函数是坏的, 直接重画了
+            else this.DrawDynamicInfo();
+        }
     }
-    else {
-      this.DrawDynamicInfo();
-    }
-  }
 
 
   this.OnDoubleClick = function (x, y, e) {
