@@ -8268,6 +8268,12 @@ function KLineChartContainer(uielement)
     {
         var data=recvData.data;
         if (this.IsOnTouch == true) return;   //正在操作中不更新数据
+        if (data.ver == 2.0) 
+        {
+            this.RecvMinuteRealtimeDataV2(data);    //v2.0数据版本
+            return;
+        }
+
         if (!data.stock || !data.stock[0] || this.Symbol != data.stock[0].symbol) return;
         var realtimeData = KLineChartContainer.JsonDataToMinuteRealtimeData(data);
         var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
@@ -8308,6 +8314,53 @@ function KLineChartContainer(uielement)
         }
 
         if (ChartData.IsDayPeriod(bindData.Period, false) || ChartData.IsMinutePeriod(bindData.Period, false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        {
+            var periodData = bindData.GetPeriodData(bindData.Period);
+            bindData.Data = periodData;
+        }
+
+        //绑定数据
+        this.UpdateMainData(bindData, lastDataCount);
+        this.Frame.SetSizeChage(true);
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for (var i = 0; i < this.Frame.SubFrame.length; ++i) {
+            this.BindIndexData(i, bindData);
+        }
+
+        //刷新画图
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+    }
+
+    this.RecvMinuteRealtimeDataV2 = function (data)    //新版本的
+    {
+        if (this.IsOnTouch == true) return;   //正在操作中不更新数据
+        var aryMinuteData = KLineChartContainer.JsonDataToMinuteHistoryData(data);
+        if (!aryMinuteData || aryMinuteData.length <= 0) return;
+        var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
+
+        if (!this.SourceData.MergeMinuteData(aryMinuteData)) return;
+
+        console.log(`[KLineChartContainer::RecvMinuteRealtimeDataV2] update kline by 1 minute data [${lastDataCount}->${this.SourceData.Data.length}]`);
+
+        var bindData = new ChartData();
+        bindData.Data = this.SourceData.Data;
+        bindData.Period = this.Period;
+        bindData.Right = this.Right;
+        bindData.DataType = this.SourceData.DataType;
+        bindData.Symbol = this.Symbol;
+
+        if (bindData.Right > 0 && ChartData.IsDayPeriod(bindData.Period, true) && !this.IsApiPeriod)    //复权(日线数据才复权)
+        {
+            var rightData = bindData.GetRightDate(bindData.Right);
+            bindData.Data = rightData;
+        }
+
+        if ((ChartData.IsDayPeriod(bindData.Period, false) || ChartData.IsMinutePeriod(bindData.Period, false)) && !this.IsApiPeriod)   //周期数据 (0= 日线,4=1分钟线 不需要处理)
         {
             var periodData = bindData.GetPeriodData(bindData.Period);
             bindData.Data = periodData;

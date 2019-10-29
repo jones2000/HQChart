@@ -1123,6 +1123,54 @@ function ChartData()
 
         return result;
     }
+
+    this.MergeMinuteData = function (data) //合并数据
+    {
+        var firstItem = data[0];
+        var index = null;
+        for (var i = this.Data.length - 1; i >= 0; --i)
+         {
+            var date = this.Data[i].Date;
+            var time = this.Data[i].Time;
+
+            if (firstItem.Date >= date && firstItem.Time >= time) 
+            {
+                index = i;
+                break;
+            }
+        }
+
+        if (index == null) return false;
+
+        for (var j = index, i = 0; i < data.length;) 
+        {
+            var item = data[i];
+            if (j >= this.Data.length - 1) 
+            {
+                if (j - 1 > 0 && !item.YClose) item.YClose = this.Data[j - 1].YClose;   //前收盘如果没有就是上一记录的收盘
+                var newItem = HistoryData.Copy(item);
+                this.Data[j] = newItem;
+                ++j;
+                ++i;
+            }
+            else 
+            {
+                var oldItem = this.Data[j];
+                if (oldItem.Date == item.Date && oldItem.Time == item.Time) //更新数据
+                {
+                    ++j;
+                    ++i;
+                }
+                else 
+                {
+                    ++j;
+                }
+            }
+        }
+
+        //console.log('[ChartData::MergeMinuteData] ', this.Data, data);
+        return true;
+    }
 }
 
 ChartData.GetFirday=function(value)
