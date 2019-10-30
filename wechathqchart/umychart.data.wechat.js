@@ -53,6 +53,26 @@ HistoryData.Copy=function(data)
     return newData;
 }
 
+//把数据 src 复制到 dest中
+HistoryData.CopyTo = function (dest, src)
+{
+    dest.Date = src.Date;
+    dest.YClose = src.YClose;
+    dest.Open = src.Open;
+    dest.Close = src.Close;
+    dest.High = src.High;
+    dest.Low = src.Low;
+    dest.Vol = src.Vol;
+    dest.Amount = src.Amount;
+    dest.Time = src.Time;
+    dest.FlowCapital = src.FlowCapital;
+
+    dest.Stop = src.Stop;
+    dest.Up = src.Up;
+    dest.Down = src.Down;
+    dest.Unchanged = src.Unchanged;
+}
+
 //数据复权拷贝
 HistoryData.CopyRight=function(data,seed)
 {
@@ -1158,6 +1178,7 @@ function ChartData()
                 var oldItem = this.Data[j];
                 if (oldItem.Date == item.Date && oldItem.Time == item.Time) //更新数据
                 {
+                    HistoryData.CopyTo(oldItem, item);
                     ++j;
                     ++i;
                 }

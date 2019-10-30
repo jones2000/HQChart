@@ -8277,29 +8277,9 @@ function KLineChartContainer(uielement)
         if (!data.stock || !data.stock[0] || this.Symbol != data.stock[0].symbol) return;
         var realtimeData = KLineChartContainer.JsonDataToMinuteRealtimeData(data);
         var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
-
-        var tradeDate = data.stock[0].date;   //交易日日期
-        var index = null;
-        for (var i = this.SourceData.Data.length - 1; i > 0; --i) 
-        {
-            var item = this.SourceData.Data[i];
-            if (item.Date != tradeDate) 
-            {
-                index = i;
-                break;
-            }
-        }
-        if (index == null) return;
-
-        //实时行情数据更新
-        var start = index + 1;
-        var oldLen = this.SourceData.Data.length;
-        for (var i = 0, j = start; i < realtimeData.length; ++i, ++j) 
-        {
-            this.SourceData.Data[j] = realtimeData[i];
-            if (j - 1 >= 0) this.SourceData.Data[j].YClose = this.SourceData.Data[j - 1].Close; //前收盘设置下
-        }
-        //console.log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by 1 minute data [${start},${j}], [${oldLen}->${this.SourceData.Data.length}]`);
+        var lastSourceDataCount = this.SourceData.Data.length;
+        if (!this.SourceData.MergeMinuteData(realtimeData)) return;
+        console.log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by 1 minute data [${lastSourceDataCount}->${this.SourceData.Data.length}]`);
 
         var bindData = new ChartData();
         bindData.Data = this.SourceData.Data;

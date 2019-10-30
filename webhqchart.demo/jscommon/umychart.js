@@ -5454,6 +5454,26 @@ HistoryData.Copy=function(data)
     return newData;
 }
 
+//把数据 src 复制到 dest中
+HistoryData.CopyTo=function(dest,src)
+{
+    dest.Date=src.Date;
+    dest.YClose=src.YClose;
+    dest.Open=src.Open;
+    dest.Close=src.Close;
+    dest.High=src.High;
+    dest.Low=src.Low;
+    dest.Vol=src.Vol;
+    dest.Amount=src.Amount;
+    dest.Time=src.Time;
+    dest.FlowCapital=src.FlowCapital;
+
+    dest.Stop=src.Stop;
+    dest.Up=src.Up;
+    dest.Down=src.Down;
+    dest.Unchanged=src.Unchanged;
+}
+
 //数据复权拷贝
 HistoryData.CopyRight=function(data,seed)
 {
@@ -6797,6 +6817,7 @@ function ChartData()
                 var oldItem=this.Data[j];
                 if (oldItem.Date==item.Date && oldItem.Time==item.Time) //更新数据
                 {
+                    HistoryData.CopyTo(oldItem,item);
                     ++j;
                     ++i;
                 }
@@ -21927,8 +21948,9 @@ function KLineChartContainer(uielement)
         var page=this.Page.Minute;
         if (page.Enable==false || (page.Enable==true && page.Finish==true) )
         {
-            this.RequestFlowCapitalData();          //请求流通股本数据 (主数据下载完再下载)
-            this.CreateChartDrawPictureByStorage(); //创建画图工具
+            this.RequestFlowCapitalData();              //请求流通股本数据 (主数据下载完再下载)
+            this.RequestOverlayHistoryMinuteData();     //请求叠加数据 (主数据下载完再下载)
+            this.CreateChartDrawPictureByStorage();     //创建画图工具
         }
 
         if (page.Enable) ++page.Index;
@@ -22282,6 +22304,15 @@ function KLineChartContainer(uielement)
     this.RequestMinuteRealtimeData=function()
     {
         var self=this;
+        var arySymbol=[self.Symbol];
+        for(var i in this.OverlayChartPaint)    //叠加的股票更新
+        {
+            var item=this.OverlayChartPaint[i];
+            if (!item.Symbol) continue;
+            if (!item.MainData) continue;   //等待主图股票数据未下载完
+            if (item.Status!=OVERLAY_STATUS_ID.STATUS_FINISHED_ID) continue;
+            arySymbol.push(item.Symbol);
+        }
 
         if (this.NetworkFilter)
         {
@@ -22289,7 +22320,7 @@ function KLineChartContainer(uielement)
             {
                 Name:'KLineChartContainer::RequestMinuteRealtimeData', //类名::
                 Explain:'当天1分钟K线数据',
-                Request:{ Url:self.RealtimeApiUrl, Data:{ symbol: [self.Symbol], 
+                Request:{ Url:self.RealtimeApiUrl, Data:{ symbol: arySymbol, 
                     field:["name","symbol","price","yclose","minutecount","minute","date","time"] }, Type:'POST' }, 
                 Self:this,
                 PreventDefault:false
@@ -22308,7 +22339,7 @@ function KLineChartContainer(uielement)
             data:
             {
                 "field": ["name","symbol","price","yclose","minutecount","minute","date","time"],
-                "symbol": [self.Symbol],
+                "symbol": arySymbol,
                 "start": -1
             },
             type:"post",
@@ -22381,29 +22412,10 @@ function KLineChartContainer(uielement)
         var realtimeData=KLineChartContainer.JsonDataToMinuteRealtimeData(data, this.Symbol);
         if (!realtimeData) return;
         var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
+        var lastSourceDataCount=this.SourceData.Data.length;
+        if (!this.SourceData.MergeMinuteData(realtimeData)) return;
 
-        var tradeDate=data.stock[0].date;   //交易日日期
-        var index=null;
-        for(var i=this.SourceData.Data.length-1;i>0;--i)
-        {
-            var item=this.SourceData.Data[i];
-            if (item.Date!=tradeDate)
-            {
-                index=i;
-                break;
-            }
-        }
-        if (index==null) return;
-
-        //实时行情数据更新
-        var start=index+1;
-        var oldLen=this.SourceData.Data.length;
-        for(var i=0,j=start;i<realtimeData.length;++i,++j)
-        {
-            this.SourceData.Data[j]=realtimeData[i];
-            if (j-1>=0) this.SourceData.Data[j].YClose=this.SourceData.Data[j-1].Close; //前收盘设置下
-        }
-        console.log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by 1 minute data [${start},${j}], [${oldLen}->${this.SourceData.Data.length}]`);
+        console.log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by 1 minute data [${lastSourceDataCount}->${this.SourceData.Data.length}]`);
 
         var bindData=new ChartData();
         bindData.Data=this.SourceData.Data;
@@ -22426,7 +22438,8 @@ function KLineChartContainer(uielement)
 
         //绑定数据
         this.UpdateMainData(bindData,lastDataCount);
-        this.BindInstructionIndexData(bindData);    //执行指示脚本
+        this.UpdateOverlayMinuteRealtimeData(data);       //更新叠加股票数据
+        this.BindInstructionIndexData(bindData);          //执行指示脚本
 
         for(var i=0; i<this.Frame.SubFrame.length; ++i)
         {
@@ -22439,6 +22452,39 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+    }
+
+    //更新当天的全量分钟数据
+    this.UpdateOverlayMinuteRealtimeData=function(data) 
+    {
+        for(var i in this.OverlayChartPaint)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (!item.Symbol) continue;
+            if (!item.MainData) continue;   //等待主图股票数据未下载完
+            if (item.Status!=OVERLAY_STATUS_ID.STATUS_FINISHED_ID) continue;
+            var realtimeData=KLineChartContainer.JsonDataToMinuteRealtimeData(data,item.Symbol);  //获取叠加股票的最新数据
+            if (!realtimeData) continue;
+            var sourceData=item.SourceData; //叠加股票的所有数据
+            if (!sourceData.MergeMinuteData(realtimeData)) return;
+
+            var bindData=new ChartData();
+            bindData.Data=sourceData.Data;
+            bindData.Period=this.Period;
+            bindData.Right=this.Right;
+            bindData.DataType=0;
+
+            var aryOverlayData=this.SourceData.GetOverlayMinuteData(bindData.Data);      //和主图数据拟合以后的数据
+            bindData.Data=aryOverlayData;
+
+            if (ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
+            {
+                var periodData=bindData.GetPeriodData(bindData.Period);
+                bindData.Data=periodData;
+            }
+
+            item.Data=bindData;
+        }
     }
 
     this.GetHistoryDataCount=function()
