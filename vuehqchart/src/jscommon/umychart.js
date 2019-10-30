@@ -1187,6 +1187,12 @@ JSChart.SetTextResource=function(key,value)
     g_JSChartLocalization.SetTextResource(key,value);
 }
 
+//获取本地化资源
+JSChart.GetLocalization=function()  
+{
+    return g_JSChartLocalization;
+}
+
 //获取设备分辨率比
 JSChart.GetDevicePixelRatio=function()
 {
