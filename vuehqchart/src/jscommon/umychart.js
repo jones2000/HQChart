@@ -1795,9 +1795,16 @@ function JSChartContainer(uielement)
                 var yHeight=Math.abs(touches[0].pageY-touches[1].pageY);
                 var yLastHeight=Math.abs(phonePinch.Last.Y-phonePinch.Last.Y2);
                 var yStep=yHeight-yLastHeight;
-                if (Math.abs(yStep)<5) return;
 
-                if (yStep>0)    //放大
+                var xHeight=Math.abs(touches[0].pageX-touches[1].pageX);
+                var xLastHeight=Math.abs(phonePinch.Last.X-phonePinch.Last.X2);
+                var xStep=xHeight-xLastHeight;
+                
+                if (Math.abs(yStep)<5 && Math.abs(xStep)<5) return;
+                var step=yStep;
+                if (Math.abs(yStep)<5) step=xStep;
+
+                if (step>0)    //放大
                 {
                     var cursorIndex={};
                     cursorIndex.Index=parseInt(Math.abs(this.JSChartContainer.CursorIndex-0.5).toFixed(0));

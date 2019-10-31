@@ -325,7 +325,7 @@ DefaultData.GetKLineToolbar=function()
     {
         Text: '主图线型',
         Selected: [],
-        Menu: [{Name:"空心K线",Value:3}, {Name:"实心K线",Value:0}, {Name:"美国线",Value:2}, {Name:"收盘线",Value:1}],
+        Menu: [{Name:"空心K线",Value:3}, {Name:"实心K线",Value:0}, {Name:"美国线",Value:2}, {Name:"收盘线",Value:1},{Name:"面积图",Value:4}],
         IsShow:true,
     };
 
