@@ -3459,6 +3459,7 @@ function JSChart(divElement)
         }
 
         if (option.StepPixel>0) chart.StepPixel=option.StepPixel;
+        if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
         if (option.IsApiPeriod==true) chart.IsApiPeriod=option.IsApiPeriod;
 
         if (!option.Windows || option.Windows.length<=0) return null;
@@ -4593,7 +4594,8 @@ function JSChartContainer(uielement)
     this.LastPoint=new Point();     //鼠标位置
     this.IsForceLandscape=false;    //是否强制横屏
     this.CorssCursorTouchEnd = false;   //手离开屏幕自动隐藏十字光标
-    this.StepPixel=4;                //移动一个数据需要的像素
+    this.StepPixel=4;                   //移动一个数据需要的像素
+    this.ZoomStepPixel=5;               //放大缩小手势需要的最小像素
     this.EnableAnimation=false;         //是否开启动画
 
     //tooltip提示信息
@@ -5117,10 +5119,10 @@ function JSChartContainer(uielement)
                 var xHeight=Math.abs(touches[0].pageX-touches[1].pageX);
                 var xLastHeight=Math.abs(phonePinch.Last.X-phonePinch.Last.X2);
                 var xStep=xHeight-xLastHeight;
-                
-                if (Math.abs(yStep)<5 && Math.abs(xStep)<5) return;
+                var minStep=jsChart.ZoomStepPixel;
+                if (Math.abs(yStep)<minStep && Math.abs(xStep)<minStep) return;
                 var step=yStep;
-                if (Math.abs(yStep)<5) step=xStep;
+                if (Math.abs(yStep)<minStep) step=xStep;
 
                 if (step>0)    //放大
                 {
