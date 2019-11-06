@@ -454,6 +454,7 @@ function JSChart(element)
         chart.Create(windowsCount);                            //创建子窗口
 
         if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
+        if (option.IsFullDraw == true) chart.IsFullDraw = option.IsFullDraw;
         if (option.CorssCursorInfo)     //十字光标设置
         {
             if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left = option.CorssCursorInfo.Left;
