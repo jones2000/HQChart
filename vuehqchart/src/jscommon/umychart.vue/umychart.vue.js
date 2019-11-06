@@ -3332,7 +3332,7 @@ JSIndexScript.prototype.EMPTY = function ()
 {
     let data =
     {
-        Name: '', Description: '空指标', IsMainIndex: false,
+        Name: '', Description: '空指标', IsMainIndex: true,
         Args: [],
         Script: //脚本
             'VAR2:=C;'

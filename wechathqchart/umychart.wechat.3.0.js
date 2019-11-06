@@ -1033,6 +1033,11 @@ JSChart.SetStyle = function (style) {
   if (style) g_JSChartResource.SetStyle(style);
 }
 
+JSChart.GetResource = function ()  //获取颜色配置 (设置配必须啊在JSChart.Init()之前)
+{
+    return g_JSChartResource;
+}
+
 var JSCHART_EVENT_ID =
 {
     RECV_INDEX_DATA: 2,  //接收指标数据

@@ -1973,7 +1973,7 @@ JSIndexScript.prototype.EMPTY = function ()
 {
     let data =
     {
-        Name: '', Description: '空指标', IsMainIndex: false,
+        Name: '', Description: '空指标', IsMainIndex: true,
         Args: [],
         Script: //脚本
             'VAR2:=C;'
@@ -2903,7 +2903,7 @@ JSIndexScript.prototype.TEST = function ()
                 //'T1:INDEXC;'+
                 //'T2:=HYBLOCK;'
 
-                'DRAWRECTREL(0,0,500,500,RGB(255,255,0)), COLORRED;'
+                'DRAWTEXT(CLOSE>OPEN,LOW,"⬆"),COLORRED;'
         };
 
     return data;
