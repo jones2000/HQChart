@@ -2925,7 +2925,11 @@ function ToFixed(number, precision)
     var multiplier = Math.pow(10, precision);
     var value=Math.round(Math.abs(number) * multiplier) / multiplier * b;
 
-    var s = value.toString();
+    if (/^(\d+(?:\.\d+)?)(e)([\-]?\d+)$/.test(value))
+        var s=value.toFixed2(precision);
+    else 
+        var s = value.toString();
+    
     var rs = s.indexOf('.');
     if (rs < 0 && precision>0)
     {
@@ -2938,12 +2942,15 @@ function ToFixed(number, precision)
         s += '0';
     }
 
+    
+
     return s;
 }
 
+Number.prototype.toFixed2=Number.prototype.toFixed; //备份下老的
 Number.prototype.toFixed = function( precision )
 {
-    return ToFixed(this,precision)
+    return ToFixed(this,precision);
 }
 
 function Guid()
@@ -7074,8 +7081,9 @@ var ZOOM_SEED=  //0=柱子宽度  1=间距
     [24,7],     [20,7], 
     [18,6],     [16,6],
     [14,5],     [12,5],
-    [8,4],      [3,3],
+    [8,4], [6,4], [4,4], 
 
+    [3,3],
     [3,1], [2,1], [1,1], [1,0],
 ];
 
@@ -12696,9 +12704,17 @@ function KLineTooltipPaint()
         this.Canvas.fillStyle=this.TitleColor;
         text=g_JSChartLocalization.GetText('Tooltip-Increase',this.LanguageID);
         this.Canvas.fillText(text, left,top);
-        var value=(item.Close-item.YClose)/item.YClose*100;
-        var color = this.KLineTitlePaint.GetColor(value, 0);
-        var text = value.toFixed(2)+'%';
+        if (item.YClose>0)
+        {
+            var value=(item.Close-item.YClose)/item.YClose*100;
+            var color = this.KLineTitlePaint.GetColor(value, 0);
+            var text = value.toFixed(2)+'%';
+        }
+        else
+        {
+            var text='--.--';
+            var color=this.KLineTitlePaint.GetColor(0, 0);
+        }
         this.Canvas.fillStyle=color;
         this.Canvas.fillText(text,left+labelWidth,top);
 
@@ -16131,6 +16147,7 @@ function DynamicKLineTitlePainting()
     this.VolColor=g_JSChartResource.DefaultTextColor;
     this.AmountColor=g_JSChartResource.DefaultTextColor;
     this.DateTimeColor=g_JSChartResource.DefaultTextColor;
+    this.NameColor = g_JSChartResource.DefaultTextColor;
 
     this.Symbol;
     this.Name;
@@ -16194,7 +16211,7 @@ function DynamicKLineTitlePainting()
 
         if (this.IsShowSettingInfo)
         {
-            this.Canvas.fillStyle=this.DateTimeColor;
+            this.Canvas.fillStyle=this.NameColor;
             var periodName='';
             if (this.Data.Period>CUSTOM_MINUTE_PERIOD_START && this.Data.Period<=CUSTOM_MINUTE_PERIOD_END) 
                 periodName=(this.Data.Period-CUSTOM_MINUTE_PERIOD_START)+g_JSChartLocalization.GetText('自定义分钟',this.LanguageID);
@@ -16206,14 +16223,14 @@ function DynamicKLineTitlePainting()
             var text="("+periodName+" "+rightName+")";
             var isStock=MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol); //是否是指数
             if(item.Time!=null || !isStock)  text="("+periodName+")";           //分钟K线 指数 没有复权
-            if (!this.DrawText(text,this.UnchagneColor,position)) return;
+            if (!this.DrawText(text,this.NameColor,position)) return;
         }
 
         if (this.IsShowDateTime)    //是否显示日期
         {
             this.Canvas.fillStyle=this.DateTimeColor;
             var text=IFrameSplitOperator.FormatDateString(item.Date);
-            if (!this.DrawText(text,this.UnchagneColor,position)) return;
+            if (!this.DrawText(text,this.DateTimeColor,position)) return;
         }
 
         if(item.Time!=null && !isNaN(item.Time) && item.Time>0)
@@ -25234,6 +25251,7 @@ KLineChartContainer.JsonDataToMinuteRealtimeData=function(data,symbol)
         item.Amount=jsData.amount;
         item.Date=date;
         item.Time=jsData.time;
+        item.YClose=preClose;
 
         if (!item.Close) //当前没有价格 使用上一个价格填充
         {

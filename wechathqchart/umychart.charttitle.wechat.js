@@ -77,6 +77,8 @@ function DynamicKLineTitlePainting()
 
     this.VolColor = g_JSChartResource.DefaultTextColor;
     this.AmountColor = g_JSChartResource.DefaultTextColor;
+    this.DateTimeColor = g_JSChartResource.DefaultTextColor;
+    this.NameColor = g_JSChartResource.DefaultTextColor;
 
     this.Symbol;
     this.Name;
@@ -194,17 +196,19 @@ function DynamicKLineTitlePainting()
         this.Canvas.font = this.Font;
         var position = { Left: left, Bottom: bottom, IsHScreen: false };
 
-        if (this.IsShowName && this.Name) {
-            if (!this.DrawKLineText(this.Name, this.UnchagneColor, position)) return;
+        if (this.IsShowName && this.Name) 
+        {
+            if (!this.DrawKLineText(this.Name, this.NameColor, position)) return;
         }
 
-        if (this.IsShowSettingInfo && this.Data.Period != null && this.Data.Right != null) {
+        if (this.IsShowSettingInfo && this.Data.Period != null && this.Data.Right != null) 
+        {
             var periodName = this.GetPeriodName(this.Data.Period);
             var rightName = RIGHT_NAME[this.Data.Right];
             var isIndex = MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol); //是否是指数
             var text = "(" + periodName + " " + rightName + ")";
             if (ChartData.IsMinutePeriod(this.Data.Period, true) || isIndex) text = "(" + periodName + ")";//分钟K线 或 指数没有复权
-            if (!this.DrawKLineText(text, this.UnchagneColor, position)) return;
+            if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
         }
     }
 
@@ -224,17 +228,19 @@ function DynamicKLineTitlePainting()
         var left = 2;
         var bottom = -2;
         var position = { Left: left, Bottom: bottom, IsHScreen: false };
-        if (this.IsShowName && this.Name) {
-            if (!this.DrawKLineText(this.Name, this.UnchagneColor, position)) return;
+        if (this.IsShowName && this.Name) 
+        {
+            if (!this.DrawKLineText(this.Name, this.NameColor, position)) return;
         }
 
-        if (this.IsShowSettingInfo && this.Data.Period != null && this.Data.Right != null) {
+        if (this.IsShowSettingInfo && this.Data.Period != null && this.Data.Right != null) 
+        {
             var periodName = this.GetPeriodName(this.Data.Period);
             var rightName = RIGHT_NAME[this.Data.Right];
             var text = "(" + periodName + " " + rightName + ")";
             var isIndex = MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol); //是否是指数
             if (this.Data.Period >= 4 || isIndex) text = "(" + periodName + ")";
-            if (!this.DrawKLineText(text, this.UnchagneColor, position)) return;
+            if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
         }
     }
 

@@ -1889,26 +1889,34 @@ function JSChartContainer(uielement)
   }
 }
 
-function ToFixed(number, precision) {
-  var b = 1;
-  if (isNaN(number)) return number;
-  if (number < 0) b = -1;
-  var multiplier = Math.pow(10, precision);
-  var value = Math.round(Math.abs(number) * multiplier) / multiplier * b;
+function ToFixed(number, precision) 
+{
+    var b = 1;
+    if (isNaN(number)) return number;
+    if (number < 0) b = -1;
+    var multiplier = Math.pow(10, precision);
+    var value = Math.round(Math.abs(number) * multiplier) / multiplier * b;
 
-  var s = value.toString();
-  var rs = s.indexOf('.');
-  if (rs < 0 && precision > 0) {
-    rs = s.length;
-    s += '.';
-  }
+    if (/^(\d+(?:\.\d+)?)(e)([\-]?\d+)$/.test(value))
+        var s = value.toFixed2(precision);
+    else
+        var s = value.toString();
+    var rs = s.indexOf('.');
+    if (rs < 0 && precision > 0) 
+    {
+        rs = s.length;
+        s += '.';
+    }
 
-  while (s.length <= rs + precision) {
-    s += '0';
-  }
+    while (s.length <= rs + precision) 
+    {
+        s += '0';
+    }
 
-  return s;
+    return s;
 }
+
+Number.prototype.toFixed2 = Number.prototype.toFixed; //备份下老的
 
 Number.prototype.toFixed = function (precision) {
   return ToFixed(this, precision)
@@ -9507,6 +9515,7 @@ KLineChartContainer.JsonDataToMinuteRealtimeData = function (data)
         item.Amount = jsData.amount;
         item.Date = date;
         item.Time = jsData.time;
+        item.YClose = preClose;
 
         if (!item.Close) //当前没有价格 使用上一个价格填充
         {

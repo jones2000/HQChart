@@ -234,9 +234,17 @@ function KLineTooltipPaint()
         top += this.LineHeight;
         this.Canvas.fillStyle = this.TitleColor;
         this.Canvas.fillText('幅:', left, top);
-        var value = (item.Close - item.YClose) / item.YClose * 100;
-        var color = this.KLineTitlePaint.GetColor(value, 0);
-        var text = value.toFixed(2) + '%';
+        if (item.YClose>0)
+        {
+            var value = (item.Close - item.YClose) / item.YClose * 100;
+            var color = this.KLineTitlePaint.GetColor(value, 0);
+            var text = value.toFixed(2) + '%';
+        }
+        else
+        {
+            var text='--.--';
+            var color = this.KLineTitlePaint.GetColor(0, 0);
+        }
         this.Canvas.fillStyle = color;
         this.Canvas.fillText(text, left + labelWidth, top);
 
