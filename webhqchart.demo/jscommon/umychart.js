@@ -651,6 +651,8 @@ function JSChart(divElement)
         var bHScreen=(option.Type=='K线训练横屏'? true:false);
         var chart=new KLineTrainChartContainer(this.CanvasElement,bHScreen);
 
+        if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
+
         //创建改参数div
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
         chart.ChangeIndexDialog=this.ChangeIndexDialog;

@@ -624,6 +624,8 @@ function JSChart(element)
         var bHScreen = (option.Type == 'K线训练横屏' ? true : false);
         var chart = new KLineTrainChartContainer(this.CanvasElement, bHScreen);
 
+        if (option.NetworkFilter) chart.NetworkFilter = option.NetworkFilter;
+
         if (option.KLine)   //k线图的属性设置
         {
             if (option.KLine.Right >= 0) chart.Right = option.KLine.Right;
