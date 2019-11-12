@@ -16130,6 +16130,7 @@ function DynamicKLineTitlePainting()
 
     this.VolColor=g_JSChartResource.DefaultTextColor;
     this.AmountColor=g_JSChartResource.DefaultTextColor;
+    this.DateTimeColor=g_JSChartResource.DefaultTextColor;
 
     this.Symbol;
     this.Name;
@@ -16193,7 +16194,7 @@ function DynamicKLineTitlePainting()
 
         if (this.IsShowSettingInfo)
         {
-            this.Canvas.fillStyle=this.UnchagneColor;
+            this.Canvas.fillStyle=this.DateTimeColor;
             var periodName='';
             if (this.Data.Period>CUSTOM_MINUTE_PERIOD_START && this.Data.Period<=CUSTOM_MINUTE_PERIOD_END) 
                 periodName=(this.Data.Period-CUSTOM_MINUTE_PERIOD_START)+g_JSChartLocalization.GetText('自定义分钟',this.LanguageID);
@@ -16210,7 +16211,7 @@ function DynamicKLineTitlePainting()
 
         if (this.IsShowDateTime)    //是否显示日期
         {
-            this.Canvas.fillStyle=this.UnchagneColor;
+            this.Canvas.fillStyle=this.DateTimeColor;
             var text=IFrameSplitOperator.FormatDateString(item.Date);
             if (!this.DrawText(text,this.UnchagneColor,position)) return;
         }
@@ -33754,7 +33755,15 @@ var MARKET_SUFFIX_NAME=
     FTSE:'.FTSE',        //富时中国
 
     BIT:'.BIT',          //数字货币 如比特币
-    BIZ:'.BIZ',         //数字货币
+    BIZ:'.BIZ',          //数字货币
+
+    ET:'.ET',            //其他未知的品种
+
+    IsET:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.ET) > 0;
+    },
 
     IsFTSE:function(upperSymbol)
     {
@@ -33947,6 +33956,10 @@ var MARKET_SUFFIX_NAME=
             if (time>=0 && time<=320) return 2;
             return 0;
         }
+        else if (this.IsET(upperSymbol))
+        {
+            return this.GetETMarketStatus(symbol);
+        }
         else    //9:30 - 15:40
         {
             if(day == 6 || day== 0) return 0;   //周末
@@ -33980,6 +33993,17 @@ var MARKET_SUFFIX_NAME=
 
     GetBITDecimal:function(symbol)
     {
+        return 2;
+    },
+
+    GetETDecimal:function(symbol)
+    {
+        return 2;
+    },
+
+    GetETMarketStatus:function(symbol)  
+    {
+        // 0=闭市 1=盘前 2=盘中 3=盘后
         return 2;
     }
 }
@@ -34939,6 +34963,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetBITDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetETDecimal(upperSymbol); 
 
     return defaultfloatPrecision;
 }

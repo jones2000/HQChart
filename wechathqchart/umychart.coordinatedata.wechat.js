@@ -28,6 +28,14 @@ var MARKET_SUFFIX_NAME=
     BIT: '.BIT',         //数字货币 如比特币
     BIZ: '.BIZ',         //数字货币
 
+    ET: '.ET',           //其他未知的品种
+
+    IsET: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.ET) > 0;
+    },
+
     IsFTSE: function (upperSymbol) 
     {
         if (!upperSymbol) return false;
@@ -220,6 +228,10 @@ var MARKET_SUFFIX_NAME=
             if (time >= 0 && time <= 120) return 2;
             return 0;
         }
+        else if (this.IsET(upperSymbol)) 
+        {
+            return this.GetETMarketStatus(symbol);
+        }
         else    //9:30 - 15:40
         {
             if (day == 6 || day == 0) return 0;   //周末
@@ -242,6 +254,17 @@ var MARKET_SUFFIX_NAME=
 
     GetBITDecimal: function (symbol) 
     {
+        return 2;
+    },
+
+    GetETDecimal: function (symbol) 
+    {
+        return 2;
+    },
+
+    GetETMarketStatus: function (symbol) 
+    {
+        // 0=闭市 1=盘前 2=盘中 3=盘后
         return 2;
     }
 }
@@ -1112,6 +1135,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetBITDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetETDecimal(upperSymbol); 
 
     return defaultfloatPrecision;
 }
