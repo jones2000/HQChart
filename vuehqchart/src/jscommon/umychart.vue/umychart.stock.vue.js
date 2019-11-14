@@ -3284,34 +3284,37 @@ function BlockTop() {
         });
     }
 
-    this.RecvData = function (recvData, dataType) {
-        let data = recvData;
-        //console.log(data);
+  this.RecvData = function (recvData, dataType) {
+    let data = recvData;
 
-        this.Data = [];
-        for (let i in data.stock) {
-            let item = data.stock[i];
-            this.Data.push(
-                {
-                    Name: item.name,
-                    Symbol: item.symbol,
-                    Increase: item.increase,
-                    Risefall: item.risefall,
-                    IndexTop: {
-                        Down: item.indextop.down,
-                        Stop: item.indextop.stop,
-                        Up: item.indextop.up,
-                        Unchanged: item.indextop.unchanged,
-                        DownStock: {Name: item.indextop.downstock.name, Symbol: item.indextop.downstock.symbol},
-                        UpStock: {Name: item.indextop.upstock.name, Symbol: item.indextop.upstock.symbol}
-                    }
-                });
-        }
-
-        if (this.UpdateUICallback) this.UpdateUICallback(this);
-
-        this.AutoUpate();
+    this.Data = [];
+    this.resCount = data.count;
+    for (let i in data.stock) {
+      let item = data.stock[i];
+      if (item.indextop != null) {
+        var indextop = {
+          Down: item.indextop.down,
+          Stop: item.indextop.stop,
+          Up: item.indextop.up,
+          Unchanged: item.indextop.unchanged,
+          DownStock: { Name: item.indextop.downstock.name, Symbol: item.indextop.downstock.symbol },
+          UpStock: { Name: item.indextop.upstock.name, Symbol: item.indextop.upstock.symbol }
+        };
+      };
+      this.Data.push(
+        {
+          Name: item.name,
+          Symbol: item.symbol,
+          Increase: item.increase,
+          Risefall: item.risefall,
+          IndexTop: indextop
+        });
     }
+
+    if (this.UpdateUICallback) this.UpdateUICallback(this);
+
+    this.AutoUpate();
+  }
 
     this.RecvError = function (request, dataType) {
 

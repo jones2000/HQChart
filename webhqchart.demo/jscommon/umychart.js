@@ -4330,8 +4330,8 @@ function KLineFrame()
                 this.Canvas.fillRect(textLeft,bgTop,textWidth,textHeight);
                 this.Canvas.fillStyle = item.TextColor;
                 this.Canvas.fillText(item.Message[0], textLeft + 1*pixelTatio, y);
-
-                this.DrawDotLine(textLeft+textWidth,right,y,item.LineColor);
+                
+                if (item.LineType!=-1) this.DrawDotLine(textLeft+textWidth,right,y,item.LineColor);
             }
             else
             {
@@ -4344,8 +4344,7 @@ function KLineFrame()
                 this.Canvas.fillRect(left-textWidth,bgTop,textWidth,textHeight);
                 this.Canvas.fillStyle = item.TextColor;
                 this.Canvas.fillText(item.Message[0], left - 1*pixelTatio, y);
-
-                this.DrawDotLine(left,right,y,item.LineColor);
+                if (item.LineType!=-1) this.DrawDotLine(left,right,y,item.LineColor);
             }
         }
         else if (item.Message[1])   //右
@@ -4366,7 +4365,7 @@ function KLineFrame()
                 this.Canvas.fillStyle = item.TextColor;
                 this.Canvas.fillText(item.Message[1], textLeft + 1*pixelTatio, y);
 
-                this.DrawDotLine(left,textLeft,y,item.LineColor);
+                if (item.LineType!=-1) this.DrawDotLine(left,textLeft,y,item.LineColor);
             }
             else
             {
@@ -4380,7 +4379,7 @@ function KLineFrame()
                 this.Canvas.fillStyle = item.TextColor;
                 this.Canvas.fillText(item.Message[1], right + 1*pixelTatio, y);
 
-                this.DrawDotLine(left,right,y,item.LineColor);
+                if (item.LineType!=-1) this.DrawDotLine(left,right,y,item.LineColor);
             }
         }
     }
@@ -14588,6 +14587,8 @@ function FrameSplitKLinePriceY()
         if (latestItem.Close>latestItem.Open) info.LineColor=g_JSChartResource.FrameLatestPrice.UpBarColor;
         else if (latestItem.Close<latestItem.Open) info.LineColor=g_JSChartResource.FrameLatestPrice.DownBarColor;
         else info.LineColor=g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
+
+        if (option.IsShowLine==false) info.LineType=-1;
 
         return info;
     }
@@ -25618,6 +25619,14 @@ function MinuteChartContainer(uielement)
             var frameId=this.Frame.PtInFrame(x,y);
             e.data={ Chart:this, FrameID:frameId };
             this.RightMenu.DoModal(e);
+        }
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CONTEXT_MENU);
+        if (event)
+        {
+            var frameId=this.Frame.PtInFrame(x,y);
+            var data={ X:x, Y:y, Event:e, FrameID:frameId };
+            event.Callback(event,data,this);
         }
     }
 
