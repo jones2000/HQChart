@@ -4564,6 +4564,7 @@ var JSCHART_EVENT_ID=
     RECV_START_AUTOUPDATE:9,    //开始自动更新
     RECV_STOP_AUTOUPDATE:10,    //停止自动更新
     ON_CONTEXT_MENU:11,         //右键菜单事件
+    ON_TITLE_DRAW:12,           //标题信息绘制事件
 }
 
 var JSCHART_OPERATOR_ID=
@@ -5263,13 +5264,14 @@ function JSChartContainer(uielement)
             }
         }
 
-        
+        var eventTitleDraw=this.GetEventCallback(JSCHART_EVENT_ID.ON_TITLE_DRAW);
         for(var i in this.TitlePaint)
         {
             var item=this.TitlePaint[i];
             if (!item.IsDynamic) continue;
 
             item.CursorIndex=this.CursorIndex;
+            item.OnDrawEvent=eventTitleDraw;
             item.Draw();
         }
 
@@ -19491,6 +19493,7 @@ function DynamicKLineTitlePainting()
     this.IsShowSettingInfo=true;    //是否显示设置信息(周期 复权)
     this.IsShowDateTime=true;       //是否显示日期
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+    this.OnDrawEvent;
 
     this.GetCurrentKLineData=function() //获取当天鼠标位置所在的K线数据
     {
@@ -19624,8 +19627,11 @@ function DynamicKLineTitlePainting()
     this.Draw=function()
     {
         if (!this.IsShow) return;
-        if (this.CursorIndex==null || !this.Data) return;
-        if (this.Data.length<=0) return;
+        if (this.CursorIndex==null || !this.Data || this.Data.length<=0) 
+        {
+            this.OnDrawEventCallback(null);
+            return;
+        }
 
         this.Canvas.font=this.Font;
         this.SpaceWidth = this.Canvas.measureText('0').width;
@@ -19634,12 +19640,24 @@ function DynamicKLineTitlePainting()
         index=parseInt(index.toFixed(0));
         var dataIndex=this.Data.DataOffset+index;
         if (dataIndex>=this.Data.Data.length) dataIndex=this.Data.Data.length-1;
-        if (dataIndex<0) return;
+        if (dataIndex<0) 
+        {
+            this.OnDrawEventCallback(null);
+            return;
+        }
 
         var item=this.Data.Data[dataIndex];
+        this.OnDrawEventCallback(item);
         this.Canvas.save();
         this.DrawItem(item);
         this.Canvas.restore();
+    }
+
+    this.OnDrawEventCallback=function(drawData)
+    {
+        if (!this.OnDrawEvent || !this.OnDrawEvent.Callback) return;
+        var data={ Draw: drawData, Name:'DynamicKLineTitlePainting'};
+        this.OnDrawEvent.Callback(this.OnDrawEvent,data,this);
     }
 
     this.GetColor=function(price,yclse)
@@ -19681,6 +19699,7 @@ function DynamicMinuteTitlePainting()
     this.OverlayChartPaint; //叠加画法
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.LastShowData;  //保存最后显示的数据 给tooltip用
+    this.OnDrawEvent;
 
     this.GetCurrentKLineData=function() //获取当天鼠标位置所在的K线数据
     {
