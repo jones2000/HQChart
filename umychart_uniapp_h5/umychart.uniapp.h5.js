@@ -3340,6 +3340,7 @@ function JSChart(divElement)
     this.CanvasElement.className='jschart-drawing';
     this.CanvasElement.id=Guid();
     this.CanvasElement.setAttribute("tabindex",0);
+    if (this.CanvasElement.style) this.CanvasElement.style.outline='none';
     if(!divElement.hasChildNodes("canvas")){
         divElement.appendChild(this.CanvasElement);
     }
@@ -3418,6 +3419,7 @@ function JSChart(divElement)
         if (option.ScriptError) chart.ScriptErrorCallback=option.ScriptError;
         chart.SelectRectRightMenu=new KLineSelectRightMenu(this.DivElement);
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
+        if (option.DisableMouse==true) chart.DisableMouse=option.DisableMouse;
 
         if (option.KLine)   //k线图的属性设置
         {
@@ -4638,6 +4640,8 @@ function JSChartContainer(uielement)
     this.mapEvent=new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
 
     this.IsOnTouch = false;     //是否再操作数据
+    this.TouchDrawCount = 0;    //手势绘制次数
+    this.DisableMouse=false;    //禁止鼠标事件
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.PressTime=500;
 
@@ -4687,6 +4691,7 @@ function JSChartContainer(uielement)
 
         //加载数据中,禁用鼠标事件
         if (this.JSChartContainer.ChartSplashPaint && this.JSChartContainer.ChartSplashPaint.IsEnableSplash == true) return;
+        if (this.JSChartContainer.DisableMouse==true) return;
 
         if(this.JSChartContainer)
             this.JSChartContainer.OnMouseMove(x,y,e);
@@ -4980,6 +4985,7 @@ function JSChartContainer(uielement)
         if(this.JSChartContainer.DragMode==0) return;
 
         this.JSChartContainer.IsOnTouch=true;
+        this.JSChartContainer.TouchDrawCount=0;
         this.JSChartContainer.PhonePinch=null;
         var jsChart=this.JSChartContainer;
         if (jsChart.EnableScrollUpDown==false) e.preventDefault();
@@ -5171,6 +5177,7 @@ function JSChartContainer(uielement)
             console.log('[KLineChartContainer::uielement.ontouchend]',e);
             this.JSChartContainer.IsOnTouch = false;
             this.JSChartContainer.OnTouchFinished();
+            this.JSChartContainer.TouchDrawCount=0;
             clearTimeout(this.DragTimer);
         }
 
@@ -5301,6 +5308,8 @@ function JSChartContainer(uielement)
             if (typeof(this.GetChartStatus)=='function') data=this.GetChartStatus();
             event.Callback(event,data,this);
         }
+
+        ++this.TouchDrawCount;
     }
 
     //画动态信息
@@ -5379,6 +5388,8 @@ function JSChartContainer(uielement)
         {
             this.CurrentChartDrawPicture.Draw();
         }
+
+        ++this.TouchDrawCount;
     }
 
     this.DrawAnimation=function()   //绘制动画 如弹幕
@@ -26875,7 +26886,7 @@ function KLineChartContainer(uielement)
     {
         if (this.CorssCursorTouchEnd===true)    //手势离开十字光标消失
         {
-            this.DrawDynamicInfo();
+            if (this.TouchDrawCount>0) this.DrawDynamicInfo();
             return;
         }
 
