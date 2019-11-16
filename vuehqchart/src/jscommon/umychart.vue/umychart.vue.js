@@ -3811,6 +3811,7 @@ function JSChart(divElement)
         var windowsCount=2;
         if (option.Windows && option.Windows.length>0) windowsCount+=option.Windows.length; //指标窗口从第3个窗口开始
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
+        if (option.DisableMouse==true) chart.DisableMouse=option.DisableMouse;
 
         if (option.Language)
         {
@@ -15992,7 +15993,10 @@ function KLineTooltipPaint()
         //this.TitleColor=this.KLineTitlePaint.UnchagneColor;
         this.IsHScreen=this.ChartFrame.IsHScreen===true;
         this.Canvas.font=this.Font[0];
-        this.Width=this.Canvas.measureText(' 擎: 9999.99亿 ').width;
+        var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        var maxText=' 擎: 9999.99亿 ';
+        if (defaultfloatPrecision>=5) maxText=` 擎: ${99.99.toFixed(defaultfloatPrecision)} `;  //小数位数太多了
+        this.Width=this.Canvas.measureText(maxText).width;
         this.Height=this.LineHeight*lineCount+2*GetDevicePixelRatio()*2;
 
         this.DrawBG();
