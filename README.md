@@ -239,7 +239,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## 第3方数据对接样例
 1. 数字货币对接 <br>
    数据来源： https://www.coinzeus.io/cn <br>
-   [测试页面](https://opensource.zealink.com/hqweb/bitdemo/stockhq.html) <br>
+   [h5测试页面](https://opensource.zealink.com/hqweb/bitdemo/stockhq.html) <br>
    源码在群文件中. <br>
 
 
