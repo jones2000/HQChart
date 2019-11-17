@@ -240,7 +240,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 1. 数字货币对接 <br>
    数据来源： https://www.coinzeus.io/cn <br>
    [h5测试页面](https://opensource.zealink.com/hqweb/bitdemo/stockhq.html) <br>
-   源码在群文件中. <br>
+   [代码地址(vue.demo/bitdemo)](/vue.demo/bitdemo) <br>
 
 
 # QQ交流群(950092318) 
