@@ -2,14 +2,15 @@
   "name": "hqchart",
   "description": "stock chart",
   "author": "jones2000",
-  "version": "1.0.7160",
-  "main": "index.js",
+  "version": "1.0.7422.1",
+  "main": "lib/main.js",
   "private": false,
   "license": "Apache License 2.0",
   "scripts": {
     "dev": "webpack-dev-server --inline --hot --open --env.dev",
     "page": "webpack-dev-server --inline --hot --open --env.dev --open-page ",
-    "build": "rimraf dist && webpack -p --progress --hide-modules"
+    "build": "rimraf dist && webpack -p --progress --hide-modules",
+    "lib": "babel -d lib/ src/jscommon/umychart.vue"
   },
   "dependencies": {
     "axios": "^0.16.2",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^6.6.0",
+    "babel-cli": "^6.26.0",
     "babel-core": "^6.24.1",
     "babel-loader": "^6.4.0",
     "babel-preset-vue-app": "^1.2.0",

@@ -4,6 +4,11 @@ src\jscommon\phoneHorizontal
 src\jscommon\umychart.complier.node
 src\jscommon\umychart.vue.build
 src\jscommon\umychart.wechat
+src\jscommon\umychart.vue.components
+src\jscommon\umychart_python
+src\jscommon\umychart.node.build
+src\jscommon\umychart.uniapp.build
 src\jscommon\*.js
 src\jscommon\*.html
 src\jscommon\*.json
+src\pages
