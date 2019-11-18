@@ -141,29 +141,38 @@ function JSIndexController(req,res,next)
             return;
         }
         
-        var self=this;
-        var obj=
+        try
         {
-            Name:this.IndexName, ID:this.IndexName, 
-            Args:this.Args,
-            Script:this.Script,
-            ErrorCallback:function(error) { self.ExecuteError(error); },
-            FinishCallback:function(data, jsExectute) { self.ExecuteFinish(data, jsExectute); }
+            var self=this;
+            var obj=
+            {
+                Name:this.IndexName, ID:this.IndexName, 
+                Args:this.Args,
+                Script:this.Script,
+                ErrorCallback:function(error) { self.ExecuteError(error); },
+                FinishCallback:function(data, jsExectute) { self.ExecuteFinish(data, jsExectute); }
+            }
+
+            var indexConsole=new HQChart.ScriptIndexConsole(obj);
+
+            var stockObj=
+            {
+                HQDataType:this.HQDataType,
+                Stock: {Symbol:this.Symbol},
+                Request: this.DataCount,
+                Period:this.Period , Right:this.Right
+            };
+
+            if (this.HQDataType===HQChart.HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) stockObj.DayCount=this.DayCount;
+
+            indexConsole.ExecuteScript(stockObj);
         }
-
-        var indexConsole=new HQChart.ScriptIndexConsole(obj);
-
-        var stockObj=
+        catch(error)
         {
-            HQDataType:this.HQDataType,
-            Stock: {Symbol:this.Symbol},
-            Request: this.DataCount,
-            Period:this.Period , Right:this.Right
-        };
-
-        if (this.HQDataType===HQChart.HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) stockObj.DayCount=this.DayCount;
-
-        indexConsole.ExecuteScript(stockObj);
+            this.ErrorMessage='执行异常';
+            this.SendResult();
+            return;
+        }
 
         next();
     }
