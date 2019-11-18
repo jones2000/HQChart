@@ -10151,6 +10151,7 @@ function ChartData()
     {
         var firstItem=data[0];
         var index=null;
+        var bFind=false;    //第1个数据是否完全匹配
         for(var i=this.Data.length-1; i>=0;--i)
         {
             var date=this.Data[i].Date;
@@ -10159,13 +10160,30 @@ function ChartData()
             if (firstItem.Date>=date && firstItem.Time>=time)
             {
                 index=i;
+                if (firstItem.Date==date && firstItem.Time==time) bFind=true;
                 break;
             }
         }
 
         if (index==null) return false;
 
-        for(var j=index,i=0;i<data.length; )
+        var j=index;
+        var i=0;
+        if (bFind==true)    //第1个数据匹配,覆盖
+        {
+            var item=data[i];
+            if (j-1>0 && !item.YClose) item.YClose=this.Data[j-1].YClose;   //前收盘如果没有就是上一记录的收盘
+            var newItem=HistoryData.Copy(item);
+            this.Data[j]=newItem;
+            ++j;
+            ++i;
+        }
+        else            //从下一个数据开始插入
+        {
+            ++j;
+        }
+
+        for(;i<data.length; )
         {
             var item=data[i];
             if (j>=this.Data.length-1)
