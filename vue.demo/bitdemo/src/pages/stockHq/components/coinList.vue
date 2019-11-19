@@ -45,13 +45,13 @@ function numberFormat(value) {
         sizes = ['', '万', '亿', '万亿'],
         i,
         result;
-        if(value < k){
-            result = keepTwoDecimal(value, 2);
-        }else{
-            i = Math.floor(Math.log(value) / Math.log(k)); 
-        
-            result = ((value / Math.pow(k, i))).toFixed(2) + sizes[i];
-        }
+    if(value < k){
+        result = keepTwoDecimal(value, 2);
+    }else{
+        i = Math.floor(Math.log(value) / Math.log(k)); 
+    
+        result = ((value / Math.pow(k, i))).toFixed(2) + sizes[i];
+    }
     return result;
 }
 
@@ -76,7 +76,7 @@ DefaultData.BitList=function()
 
 export default 
 {
-    name:'BitList', //类名
+    name:'BitList',
 
     data()
     {
@@ -97,7 +97,7 @@ export default
     {
         ClickSymbol(item) 
         {
-            this.$emit('ChangeSymbol', item.Symbol, item.Name,item.FloatPrecision)
+            this.$emit('ChangeSymbol', item.Symbol, item.Name, item.FloatPrecision)
         },
 
         LoadMarketData() 

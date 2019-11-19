@@ -1,6 +1,7 @@
 <template>
     <div id="app" ref='app' style="height:100%">
-        <stockHq DefaultPairName="ETH/BTC" DefaultName="以太币" DefaultfloatPrecision=8 DefaultPeriod=0 ref='klinechart'></stockHq>
+        <stockHq DefaultPairName="ETH/BTC" DefaultName="以太币" DefaultfloatPrecision=8 DefaultPeriod=0 ref='klinechart'>
+        </stockHq>
         <coinList @ChangeSymbol="ChangeSymbol">
         </coinList>
     </div>
@@ -20,15 +21,11 @@ export default
         var data={};
         return data;
     },
+
     components: 
     { 
         stockHq: stockHq, 
         coinList: coinList
-    },
-
-    created() 
-    {
-        
     },
 
     mounted()
@@ -36,10 +33,6 @@ export default
         this.OnSize();
     },
 
-    computed: 
-    {
-        
-    },
     methods: 
     {
         ChangeSymbol(symbol,name,floatPrecision)    //转发切换股票数据到图形
@@ -69,4 +62,3 @@ a {text-decoration: none;}
 ul,ol {list-style: none;}
 .clear:after {content: " "; height: 0; display: block; overflow: hidden; clear: both;}
 </style>
-  

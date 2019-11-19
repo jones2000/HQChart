@@ -16,16 +16,17 @@
                 <span
                     v-for='(item,index) in Period.Menu'
                     :key='index'
-                    :class='{active : item.Period == Period.SelItem.Period}'
+                    :class='{active : item.Name == Period.SelItem.Name}'
                     @click='ChangePeriod(item)'>{{item.Name}}</span>
             </p>
         </div>
 
         <!-- k线图 -->
-        <div class="klineWrap" id="kline" ref='divkline'></div>
+        <div class="klineWrap" id="kline" ref='divkline' v-show='KLine.IsShow'></div>
+        <div class="klineWrap" id="kline" ref='divkminute' v-show='Minute.IsShow'></div>
 
         <!-- k线图指标 -->
-        <div class="indexWrap" ref='divindex'>
+        <div class="indexWrap" ref='divindex' v-show="Index.IsShow">
             <span
                 :key="index2"
                 v-for='(item,index2) in Index.Menu'
@@ -37,7 +38,6 @@
 </template>
 
 <script>
-//import JSCommon from '../../../jscommon/umychart.vue/umychart.vue.js'
 import HQChart from 'hqchart'
 import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
 import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
@@ -116,10 +116,73 @@ DefaultData.GetKlineOption = function()
     return data;
 }
 
+DefaultData.GetKMinuteOption = function()
+{
+    let data = 
+    {
+        Type: '历史K线图',
+        //窗口指标
+        Windows: 
+        [
+            { Index: "EMPTY", Modify:false, Change:false, TitleHeight:0 },
+            { Index: "VOL", Modify:false, Change:false },
+        ],
+        //Symbol: '600000.sh',
+        IsAutoUpdate: true,
+        AutoUpdateFrequency: 10000, //数据更新频率 ms
+
+        IsShowRightMenu: false, //右键菜单
+        IsApiPeriod: true,      //使用Api计算周期
+
+        IsClickShowCorssCursor:true,    //手势点击出现十字光标
+        IsCorssOnlyDrawKLine:true,      //十字光标在K线中间
+        CorssCursorTouchEnd:true,       //手势离开屏幕十字光标自动隐藏
+        EnableScrollUpDown:true,        //允许手势上下操作滚动页面
+        CorssCursorInfo:{ Left:0, Right:2, Bottom:1, IsShowCorss:true },  //十字光标刻度设置 Left, Right, Bottom十字光标刻度显示设置 0=不显示 1=现在在框外 2=显示在框内
+
+        KLine: 
+        {
+            DragMode: 1, //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+            Right: 1, //复权 0 不复权 1 前复权 2 后复权
+            Period: 4, //周期 0 日线 1 周线 2 月线 3 年线
+            MaxReqeustDataCount: 1000, //日线数据最近1000天
+            MaxRequestMinuteDayCount: 15,    //分钟数据最近15天
+            PageSize: 30, //一屏显示多少数据
+            IsShowTooltip: false, //是否显示K线提示信息
+            DrawType:4,    
+        },
+        //标题设置
+        KLineTitle: 
+        {
+            IsShowName: false, //不显示股票名称
+            IsShowSettingInfo: false //不显示周期/复权
+        },
+        //边框
+        Border: 
+        {
+            Left: 0, //左边间距
+            Right: 1, //右边间距
+            Top: 1,
+            Bottom:20,
+        },
+        //子框架设置
+        Frame: 
+        [
+            { SplitCount: 3, IsShowLeftText:false, Custom:[{Type:0}] },
+            { SplitCount: 3, IsShowLeftText:false, },
+            { SplitCount: 3, IsShowLeftText:false, },
+        ],
+
+        ExtendChart:[ { Name:'KLineTooltip' } ],    //tooltip十字光标提示信息
+    };
+    return data;
+}
+
 DefaultData.GetPeriod=function()    //周期菜单
 {
     var data=
     [
+        {Name:'分时', Period:4, Type:0, Min:1 },
         {Name:'1', Period:4, Type:0, Min:1 },
         {Name:'5', Period:5, Type:0, Min:5 },
         {Name:'15', Period:6, Type:0, Min:15 },
@@ -170,10 +233,18 @@ export default
             PairName:'ETH/BTC', //货币代码
             FloatPrecision:2,   //品种的小数位数
 
-            KLine: 
+            KLine:  //K线
             {
                 JSChart: null,
                 Option: DefaultData.GetKlineOption(),
+                IsShow:true,
+            },
+
+            Minute: //分时 (使用K线面积图来做分时图)
+            {
+                JSChart: null,
+                Option: DefaultData.GetKMinuteOption(),
+                IsShow:false,
             },
 
             Period:     //周期菜单
@@ -185,14 +256,10 @@ export default
             Index:      //指标菜单
             {
                 Menu:DefaultData.GetIndexMenu(),       //菜单项
-                SelItem:DefaultData.GetIndexMenu()[0]
+                SelItem:DefaultData.GetIndexMenu()[0],
+                IsShow:true,
             },
         }
-    },
-
-    watch: 
-    {
-        
     },
 
     created()
@@ -235,6 +302,12 @@ export default
             divKLine.style.width=width+'px';
             divKLine.style.height=klineHeight+'px';
             if (this.KLine.JSChart) this.KLine.JSChart.OnSize();
+
+            var divKMinute=this.$refs.divkminute;
+            var kMinuteHeight=height-divPeriod.offsetHeight-divSymbol.offsetHeight-4; //总的高度减去其他控件高度就是图形高度
+            divKMinute.style.width=width+'px';
+            divKMinute.style.height=kMinuteHeight+'px';
+            if (this.Minute.JSChart) this.Minute.JSChart.OnSize();
         },
 
         ChangeSymbol(symbol,name,floatPrecision) //切换股票
@@ -244,18 +317,35 @@ export default
             this.Symbol=symbol+'.BIT';
             this.Name=name;
             this.FloatPrecision=floatPrecision;
-            this.KLine.JSChart.ChangeSymbol(this.Symbol);
+            if (this.KLine.JSChart) this.KLine.JSChart.ChangeSymbol(this.Symbol);
+            if (this.Minute.JSChart) this.Minute.JSChart.ChangeSymbol(this.Symbol);
         },
 
         ChangeIndex(item)   //切换指标
         {
-            this.KLine.JSChart.ChangeIndex(item.WindowIndex,item.ID );
+            if (this.KLine.JSChart) this.KLine.JSChart.ChangeIndex(item.WindowIndex,item.ID );
         },
 
         ChangePeriod(item)
         {
             this.Period.SelItem=item;
-            this.KLine.JSChart.ChangePeriod(item.Period);
+            if (item.Name=='分时')
+            {
+                if (!this.Minute.JSChart) this.CreateMinute();
+
+                this.Index.IsShow=false;
+                this.KLine.IsShow=false;
+                this.Minute.IsShow=true;
+            }
+            else
+            {
+                if (this.KLine.JSChart) this.KLine.JSChart.ChangePeriod(item.Period);
+                else this.CreateKLine();
+
+                this.Index.IsShow=true;
+                this.KLine.IsShow=true;
+                this.Minute.IsShow=false;
+            }
         },
 
 
@@ -275,6 +365,18 @@ export default
             this.KLine.JSChart.SetOption(this.KLine.Option);
         },
 
+        CreateMinute()
+        {
+            if(this.Minute.JSChart) return;
+
+            JSCommon.MARKET_SUFFIX_NAME.GetBITDecimal = (symbol)=> {return this.FloatPrecision; } // 不同品种虚拟币，使用不同小数位数
+            var divKLine=this.$refs.divkminute;
+            this.Minute.JSChart = JSCommon.JSChart.Init(divKLine);
+            this.Minute.Option.Symbol=this.Symbol;
+            this.Minute.Option.NetworkFilter = (data, callback) => { this.MinuteNetworkFilter(data, callback); };  //网络请求回调函数
+            this.Minute.JSChart.SetOption(this.Minute.Option);
+        },
+
         GetPeriodInfo(period)
         {
             for(var i in this.Period.Menu)
@@ -286,24 +388,85 @@ export default
             return null;
         },
 
-        NetworkFilter(data, callback)   //第3方数据替换接口
+        MinuteNetworkFilter(data, callback)
         {
             console.log('[BitKLine::NetworkFilter] data', data);
             switch(data.Name) 
             {
-                case 'KLineChartContainer::ReqeustHistoryMinuteData':   //1分钟全量数据下载
-                    this.RequestMinuteHistoryData(data,callback);
-                    break;
-                case 'KLineChartContainer::RequestHistoryData':         //日线全量数据下载
-                    this.RequestHistoryData(data,callback);
-                    break;
-                case 'KLineChartContainer::RequestRealtimeData':        //日线实时数据更新
-                    this.RequestRealtimeData(data,callback);
+                case 'KLineChartContainer::ReqeustHistoryMinuteData':   //分钟全量数据下载
+                    this.ReqeustHistoryMinuteData(data,callback, { PageSize:500 });
                     break;
                 case 'KLineChartContainer::RequestMinuteRealtimeData':  //分钟实时数据更新
                     this.RequestMinuteRealtimeData(data,callback);
                     break;
             }
+        },
+
+        NetworkFilter(data, callback)   //第3方数据替换接口
+        {
+            console.log('[BitKLine::NetworkFilter] data', data);
+            switch(data.Name) 
+            {
+                case 'KLineChartContainer::ReqeustHistoryMinuteData':   //分钟全量数据下载
+                    this.ReqeustHistoryMinuteData(data,callback,{ PageSize:50 });
+                    break;
+                case 'KLineChartContainer::RequestHistoryData':         //日线全量数据下载
+                    this.RequestHistoryData(data,callback);
+                    break;
+                case 'KLineChartContainer::RequestMinuteRealtimeData':  //分钟实时数据更新
+                    this.RequestMinuteRealtimeData(data,callback);
+                    break;
+                case 'KLineChartContainer::RequestRealtimeData':        //日线实时数据更新
+                    this.RequestRealtimeData(data,callback);
+                    break;
+            }
+        },
+
+        ReqeustHistoryMinuteData(data,callback,option) //第3方分钟线历史数据请求
+        {
+            data.PreventDefault = true;
+            var period=data.Self.Period;    //获取周期
+            var symbol=this.Symbol;
+            var name=this.Name;
+            var peirodMenu=this.GetPeriodInfo(period)
+            var type=peirodMenu.Type, min=peirodMenu.Min, count=500;
+
+            var startDateTime = moment().format('YYYYMMDDHHmmss');
+            var hash = sha256.create();
+            hash.update(API_KEY + this.PairName + type + min + startDateTime + count + SECRET_KEY);
+            var secretHash = hash.hex();
+
+            $.ajax({
+                url: 'https://bit.zealink.com/api/selectchart',
+                type: 'post',
+                data: 
+                {
+                    pairname: this.PairName,
+                    apikey: API_KEY,
+                    type: type,
+                    min: min,
+                    startdatetime: startDateTime,
+                    count: count,
+                    secrethash: secretHash
+                },
+                success: (recvData) => {
+                    this.RecvMinuteHistoryData(recvData, callback, { Name:name, Symbol:symbol ,Chart:data.Self}, option);
+                }
+            })
+        },
+
+        RecvMinuteHistoryData(recvData, callback, stockData, option) 
+        {
+            console.log('[BitKLine::RecvMinuteHistoryData]',recvData);
+            var klineData=this.JsonToHQChartMinuteHistoryData(recvData);
+
+            var hqChartData={code:0, data:klineData};
+            hqChartData.symbol=stockData.Symbol;
+            hqChartData.name=stockData.Name;
+            stockData.Chart.PageSize=option.PageSize;    //设置一屏显示数据个数
+
+            console.log('[BitKLine::RecvMinuteHistoryData] hqchartdata',hqChartData);
+            callback(hqChartData);
         },
 
         RequestHistoryData(data, callback)  //第3方日线历史数据请求
@@ -321,24 +484,25 @@ export default
             var secretHash = hash.hex();
 
             $.ajax({
-                 url: 'https://bit.zealink.com/api/selectchart',
-                 type: 'post',
-                 data: 
-                 {
-                     pairname: this.PairName,
-                     apikey: API_KEY,
-                     type: type,
-                     min: min,
-                     startdatetime: startDateTime,
-                     count: count,
-                     secrethash: secretHash
-                 },
-                 success: (recvData) => { this.RecvHistoryData(recvData, callback, { Name:name, Symbol:symbol, Chart:data.Self });
-                 }
-             })
+                url: 'https://bit.zealink.com/api/selectchart',
+                type: 'post',
+                data: 
+                {
+                    pairname: this.PairName,
+                    apikey: API_KEY,
+                    type: type,
+                    min: min,
+                    startdatetime: startDateTime,
+                    count: count,
+                    secrethash: secretHash
+                },
+                success: (recvData) => {
+                    this.RecvHistoryData(recvData, callback, { Name:name, Symbol:symbol, Chart:data.Self });
+                }
+            })
         },
 
-        RecvHistoryData(recvData, callback,stockData)
+        RecvHistoryData(recvData, callback, stockData)
         {
             console.log('[BitKLine::RecvHistoryData]',recvData);
             var klineData=this.JsonToHQChartHistoryData(recvData);
@@ -352,102 +516,9 @@ export default
             callback(hqChartData);
         },
 
-        RequestMinuteHistoryData(data,callback) //第3方分钟线历史数据请求
-        {
-            data.PreventDefault = true;
-            var period=data.Self.Period;
-            var symbol=this.Symbol;
-            var name=this.Name;
-            var peirodMenu=this.GetPeriodInfo(period)
-            var type=peirodMenu.Type, min=peirodMenu.Min, count=500;
-
-            var startDateTime = moment().format('YYYYMMDDHHmmss');
-            var hash = sha256.create();
-            hash.update(API_KEY + this.PairName + type + min + startDateTime + count + SECRET_KEY);
-            var secretHash = hash.hex();
-
-            $.ajax({
-                 url: 'https://bit.zealink.com/api/selectchart',
-                 type: 'post',
-                 data: 
-                 {
-                     pairname: this.PairName,
-                     apikey: API_KEY,
-                     type: type,
-                     min: min,
-                     startdatetime: startDateTime,
-                     count: count,
-                     secrethash: secretHash
-                 },
-                 success: (recvData) => { this.RecvMinuteHistoryData(recvData, callback, { Name:name, Symbol:symbol ,Chart:data.Self});
-                 }
-             })
-        },
-
-        RecvMinuteHistoryData(recvData, callback,stockData) 
-        {
-            console.log('[BitKLine::RecvMinuteHistoryData]',recvData);
-            var klineData=this.JsonToHQChartMinuteHistoryData(recvData);
-
-            var hqChartData={code:0, data:klineData};
-            hqChartData.symbol=stockData.Symbol;
-            hqChartData.name=stockData.Name;
-            stockData.Chart.PageSize=50;    //设置一屏显示数据个数
-
-            console.log('[BitKLine::RecvMinuteHistoryData] hqchartdata',hqChartData);
-            callback(hqChartData);
-        },
-
-        RequestRealtimeData(data,callback)  //第3方日线实时数据更新请求
-        {
-            data.PreventDefault = true;
-
-            var period=data.Self.Period;    //获取周期
-            var symbol=this.Symbol;
-            var name=this.Name;
-            var peirodMenu=this.GetPeriodInfo(period)
-            var type=peirodMenu.Type, min=peirodMenu.Min, count=2;  //取最新2条数据
-
-            var startDateTime = moment().format('YYYYMMDDHHmmss');
-            var hash = sha256.create();
-            hash.update(API_KEY + this.PairName + type + min + startDateTime + count + SECRET_KEY);
-            var secretHash = hash.hex();
-
-            $.ajax({
-                 url: 'https://bit.zealink.com/api/selectchart',
-                 type: 'post',
-                 data: 
-                 {
-                     pairname: this.PairName,
-                     apikey: API_KEY,
-                     type: type,
-                     min: min,
-                     startdatetime: startDateTime,
-                     count: count,
-                     secrethash: secretHash
-                 },
-                 success: (recvData) => { this.RecvRealtimeData(recvData, callback, { Name:name, Symbol:symbol });
-                 }
-             })
-        },
-
-        RecvRealtimeData(recvData, callback,stockData)
-        {
-            console.log('[BitKLine::RecvRealtimeData]',recvData);
-
-            var stockItem=this.JsonToHQChartRealtimeData(recvData);
-            stockItem.symbol=stockData.Symbol;
-            stockItem.name=stockData.Name;
-            var hqChartData={code:0, stock:[stockItem]};
-            
-            console.log('[BitKLine::RecvRealtimeData] hqchartdata',hqChartData);
-            callback(hqChartData);
-        },
-
         RequestMinuteRealtimeData(data,callback)    //第3方分钟实时数据更新请求
         {
             data.PreventDefault = true;
-
             var period=data.Self.Period;    //获取周期
             var symbol=this.Symbol;
             var name=this.Name;
@@ -460,24 +531,25 @@ export default
             var secretHash = hash.hex();
 
             $.ajax({
-                 url: 'https://bit.zealink.com/api/selectchart',
-                 type: 'post',
-                 data: 
-                 {
-                     pairname: this.PairName,
-                     apikey: API_KEY,
-                     type: type,
-                     min: min,
-                     startdatetime: startDateTime,
-                     count: count,
-                     secrethash: secretHash
-                 },
-                 success: (recvData) => { this.RecvMinuteRealtimeData(recvData, callback, { Name:name, Symbol:symbol });
-                 }
-             })
+                url: 'https://bit.zealink.com/api/selectchart',
+                type: 'post',
+                data: 
+                {
+                    pairname: this.PairName,
+                    apikey: API_KEY,
+                    type: type,
+                    min: min,
+                    startdatetime: startDateTime,
+                    count: count,
+                    secrethash: secretHash
+                },
+                success: (recvData) => {
+                    this.RecvMinuteRealtimeData(recvData, callback, { Name:name, Symbol:symbol });
+                }
+            })
         },
 
-        RecvMinuteRealtimeData(recvData, callback,stockData)
+        RecvMinuteRealtimeData(recvData, callback, stockData)
         {
             console.log('[BitKLine::RecvMinuteRealtimeData]',recvData);
 
@@ -492,30 +564,53 @@ export default
 
         },
 
-        JsonToHQChartHistoryData(recvData)  //日线数据转化为hqchart数据格式
+        RequestRealtimeData(data,callback)  //第3方日线实时数据更新请求
         {
-            var data=recvData.data.series;
-            var yClose=null;
-            var klineData=[];
-            for(var i in data)
-            {
-                var item=data[i];
-                var aryItem = item.split('|');
-                var date=parseInt(aryItem[0]/1000000);
-                var open = parseFloat(aryItem[1]);
-                var high = parseFloat(aryItem[2]);
-                var low = parseFloat(aryItem[3]);
-                var close = parseFloat(aryItem[4]);
-                var vol = parseFloat(aryItem[5]);
-                klineData.push([date, yClose, open, high, low, close, vol, null]);
+            data.PreventDefault = true;
+            var period=data.Self.Period;    //获取周期
+            var symbol=this.Symbol;
+            var name=this.Name;
+            var peirodMenu=this.GetPeriodInfo(period)
+            var type=peirodMenu.Type, min=peirodMenu.Min, count=2;  //取最新2条数据
 
-                yClose=close;
-            }
+            var startDateTime = moment().format('YYYYMMDDHHmmss');
+            var hash = sha256.create();
+            hash.update(API_KEY + this.PairName + type + min + startDateTime + count + SECRET_KEY);
+            var secretHash = hash.hex();
 
-            return klineData;
+            $.ajax({
+                url: 'https://bit.zealink.com/api/selectchart',
+                type: 'post',
+                data: 
+                {
+                    pairname: this.PairName,
+                    apikey: API_KEY,
+                    type: type,
+                    min: min,
+                    startdatetime: startDateTime,
+                    count: count,
+                    secrethash: secretHash
+                },
+                success: (recvData) => {
+                    this.RecvRealtimeData(recvData, callback, { Name:name, Symbol:symbol });
+                }
+            })
         },
 
-        JsonToHQChartMinuteHistoryData(recvData)  //分钟数据转化为hqchart数据格式
+        RecvRealtimeData(recvData, callback, stockData)
+        {
+            console.log('[BitKLine::RecvRealtimeData]',recvData);
+
+            var stockItem=this.JsonToHQChartRealtimeData(recvData);
+            stockItem.symbol=stockData.Symbol;
+            stockItem.name=stockData.Name;
+            var hqChartData={code:0, stock:[stockItem]};
+            
+            console.log('[BitKLine::RecvRealtimeData] hqchartdata',hqChartData);
+            callback(hqChartData);
+        },
+
+        JsonToHQChartMinuteHistoryData(recvData)  //分钟（历史/最新）数据转化为hqchart数据格式
         {
             var data=recvData.data.series;
             var yClose=null;
@@ -532,6 +627,29 @@ export default
                 var close = parseFloat(aryItem[4]);
                 var vol = parseFloat(aryItem[5]);
                 klineData.push([date, yClose, open, high, low, close, vol, null, time]);
+
+                yClose=close;
+            }
+
+            return klineData;
+        },
+
+        JsonToHQChartHistoryData(recvData)  //日线历史数据转化为hqchart数据格式
+        {
+            var data=recvData.data.series;
+            var yClose=null;
+            var klineData=[];
+            for(var i in data)
+            {
+                var item=data[i];
+                var aryItem = item.split('|');
+                var date=parseInt(aryItem[0]/1000000);
+                var open = parseFloat(aryItem[1]);
+                var high = parseFloat(aryItem[2]);
+                var low = parseFloat(aryItem[3]);
+                var close = parseFloat(aryItem[4]);
+                var vol = parseFloat(aryItem[5]);
+                klineData.push([date, yClose, open, high, low, close, vol, null]);
 
                 yClose=close;
             }
@@ -562,7 +680,6 @@ export default
 
             return stockData;
         },
-
     }
 }
 

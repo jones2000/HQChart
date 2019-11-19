@@ -1248,6 +1248,7 @@ var JSCHART_EVENT_ID=
     RECV_STOP_AUTOUPDATE:10,    //停止自动更新
     ON_CONTEXT_MENU:11,         //右键菜单事件
     ON_TITLE_DRAW:12,           //标题信息绘制事件
+    ON_SELECT_RECT:13           //区间选择事件通知
 }
 
 var JSCHART_OPERATOR_ID=
@@ -1585,6 +1586,18 @@ function JSChartContainer(uielement)
 
                 if (this.JSChartContainer.GetSelectRectData(selectData))
                 {
+                    var event=this.JSChartContainer.GetEventCallback(JSCHART_EVENT_ID.ON_SELECT_RECT);
+                    if (event && event.Callback)
+                    {
+                        var data=
+                        { 
+                            X:drag.LastMove.X-uielement.getBoundingClientRect().left,
+                            Y:drag.LastMove.Y-uielement.getBoundingClientRect().top,
+                            SelectData:selectData,                      //区间选择的数据 
+                        };
+                        event.Callback(event,data,this.JSChartContainer);
+                    }
+
                     if (this.JSChartContainer.SelectRectRightMenu)
                     {
                         e.data=
