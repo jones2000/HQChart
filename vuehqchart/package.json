@@ -13,7 +13,7 @@
     "lib": "babel src/jscommon/umychart.vue --out-dir lib"
   },
   "dependencies": {
-    "axios": "^0.16.2",
+    "axios": "^0.19.0",
     "element-ui": "^1.4.13",
     "node-sass": "^4.11.0",
     "promise-polyfill": "^6.0.2",
