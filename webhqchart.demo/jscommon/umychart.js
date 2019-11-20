@@ -1261,6 +1261,11 @@ var JSCHART_OPERATOR_ID=
     OP_ZOOM_IN:4,   //放大
     OP_GOTO_HOME:5, //第1页数据
 }
+
+var JSCHART_DRAG_ID=
+{
+    CLICK_TOUCH_MODE_ID:3   //长按十字光标显示保留/点击十字光标消失 (使用TouchStatus)
+}
 /*
     图形控件
 */
@@ -1286,7 +1291,8 @@ function JSChartContainer(uielement)
     this.Canvas=uielement.getContext("2d");         //画布
     this.UIElement=uielement;
     this.MouseDrag;
-    this.DragMode=1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+    this.DragMode=1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择 3(CLICK_TOUCH_MODE_ID)=长按十字光标显示保留/点击十字光标消失 (使用TouchStatus)
+    this.TouchStatus={ CorssCursorShow:false },     //十字光标是否显示
     this.DragTimer;
     this.EnableScrollUpDown=false;                  //是否可以上下滚动图形((手机端才有))
 
@@ -1702,21 +1708,25 @@ function JSChartContainer(uielement)
                 if (jsChart.TryClickLock(x, y)) return;
             }
 
-            //长按2秒,十字光标
-            this.DragTimer=setTimeout(function()
+            if (!(jsChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && jsChart.TouchStatus.CorssCursorShow==true))
             {
-                if (drag.Click.X==drag.LastMove.X && drag.Click.Y==drag.LastMove.Y) //手指没有移动，出现十字光标
+                //长按2秒,十字光标
+                this.DragTimer=setTimeout(function()
                 {
-                    var mouseDrag=jsChart.MouseDrag;
-                    jsChart.MouseDrag=null;
-                    //移动十字光标
-                    var pixelTatio = GetDevicePixelRatio();
-                    var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
-                    var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
-                    jsChart.OnMouseMove(x,y,e);
-                }
+                    if (drag.Click.X==drag.LastMove.X && drag.Click.Y==drag.LastMove.Y) //手指没有移动，出现十字光标
+                    {
+                        var mouseDrag=jsChart.MouseDrag;
+                        jsChart.MouseDrag=null;
+                        //移动十字光标
+                        var pixelTatio = GetDevicePixelRatio();
+                        var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
+                        var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
+                        if (jsChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID) jsChart.TouchStatus.CorssCursorShow=true;    //十字显示
+                        jsChart.OnMouseMove(x,y,e);
+                    }
 
-            }, jsChart.PressTime);
+                }, jsChart.PressTime);
+            }
 
             var drag=
             {
@@ -1786,7 +1796,18 @@ function JSChartContainer(uielement)
                     var moveSetp=Math.abs(drag.LastMove.X-touches[0].clientX);
                     var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
                     moveSetp=parseInt(moveSetp);
-                    if (this.JSChartContainer.DragMode==1)  //数据左右拖拽
+                    var isMoveCorssCursor=(jsChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && jsChart.TouchStatus.CorssCursorShow==true); //是否移动十字光标
+                    if (isMoveCorssCursor)  //点击模式下 十字光标显示 左右移动十字光标
+                    {
+                        var mouseDrag=jsChart.MouseDrag;
+                        jsChart.MouseDrag=null;
+                        //移动十字光标
+                        var pixelTatio = GetDevicePixelRatio();
+                        var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
+                        var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
+                        jsChart.OnMouseMove(x,y,e);
+                    }
+                    else if (this.JSChartContainer.DragMode==1 || isMoveCorssCursor==false)  //数据左右拖拽
                     {
                         if (moveUpDown>0 && moveSetp<=3 && this.JSChartContainer.EnableScrollUpDown==true) 
                         {
@@ -4451,8 +4472,9 @@ function KLineFrame()
             var item=this.CustomHorizontalInfo[i];
             switch(item.Type)
             {
-                case 0:
-                    this.DrawCustomItem(item);  //最新价格刻度
+                case 0: //最新价格刻度
+                case 1: //固定价格刻度
+                    this.DrawCustomItem(item);  
                     break;
             }
         }
@@ -14634,6 +14656,10 @@ function FrameSplitKLinePriceY()
                 var latestItem=this.GetLatestPrice(floatPrecision,item);
                 if (latestItem) this.Frame.CustomHorizontalInfo.push(latestItem);
             }
+            else if (item.Type==1)
+            {
+                this.CustomFixedCoordinate(item);
+            }
         }
         
     }
@@ -14672,6 +14698,29 @@ function FrameSplitKLinePriceY()
         }
 
         return null;
+    }
+
+    this.CustomFixedCoordinate=function(option)    //固定坐标刻度
+    {
+        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
+        for(var i in option.Data)
+        {
+            var item=option.Data[i];
+            var info=new CoordinateInfo();
+            info.Type=1;
+            info.TextColor=item.TextColor;
+            info.LineColor=item.Color;
+            info.LineType=2;    //虚线
+
+            info.Value=item.Value;
+            var text;
+            if (item.Text) text=item.Text;
+            else text=info.Value.toFixed(defaultfloatPrecision);
+            if (option.Position=='left') info.Message[0]=text;
+            else info.Message[1]=text;
+
+            this.Frame.CustomHorizontalInfo.push(info);
+        }
     }
 
     //////////////////////
@@ -23683,6 +23732,15 @@ function KLineChartContainer(uielement)
 
     this.OnTouchFinished=function()
     {
+        if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && this.TouchStatus.CorssCursorShow==true)
+        {
+            if (this.TouchDrawCount>0) return;
+
+            this.TouchStatus.CorssCursorShow=false;
+            this.DrawDynamicInfo();
+            return;
+        }
+
         if (this.CorssCursorTouchEnd===true)    //手势离开十字光标消失
         {
             if (this.TouchDrawCount>0) this.DrawDynamicInfo();
