@@ -4,29 +4,35 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>页面行情(K线图横屏)</title>  
-    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
     <link rel="stylesheet" href="content/font/iconfont.css" />
 </head>  
 <body>
 
     <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
 
+    <script src="../jscommon/umychart.network.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.style.js"></script>
+    <script src="content/js/webfont.js"></script>
     
     <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
     <script>
+        
+        //预加载下阿里云图片
+        WebFont.load({ custom: { families: ['iconfont'] } });
+
         function getURLParams(name) 
         {
         	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
         	var r = window.location.search.substr(1).match(reg);
         	if (r != null) return decodeURI(r[2]);
-        	return null;
+            
+            return null;
         }
-        
-        
+
         $(window).resize(resizeCanvas);
         
         function resizeCanvas()
@@ -53,11 +59,26 @@
         
             var index3=getURLParams('index3');      //指标3
             if (index3==null) index3='MACD';
+
+            var language=getURLParams('language');
+            if (!language) language='CN';
         
             var aryIndex=new Array();
             aryIndex.push({"Index":index,"Modify":false,"Change":false});
             aryIndex.push({"Index":index2,"Modify":false,"Change":false});
-            if (index3) aryIndex.push({"Index":index3,"Modify":false,"Change":false});
+
+            /*
+            if (index3) aryIndex.push({Index:index3,Modify:false,Change:false, Lock:
+                {
+                    IsLocked: true,
+                    Callback: unlockIndex,
+                    BG: 'rgb(200,0,40)',
+                    TextColor: 'rgb(255,255,255)',
+                    //Text: '上锁了',
+                    Font: '12px 微软雅黑',
+                    Count: 10  //锁主右边几条数据
+                }});
+            */
 
             //黑色风格设置, 默认是白色风格
             //var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID);
@@ -73,9 +94,20 @@
                     Windows:aryIndex, //窗口指标
                     Symbol:symbol,
                     IsAutoUpate:true,       //是自动更新数据
-        
+                    //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
                     IsShowRightMenu:true,          //右键菜单
-                    IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
+                    CorssCursorInfo:{ Left:2, Right:2, Bottom:1, IsShowCorss:true },  //十字光标刻度设置
+
+                    Language:language,
+
+                    /*
+                    OverlayIndex:
+                    [
+                        {Index:'RSI', Windows:0},
+                        {Index:'MACD', Windows:0 },
+                        {Index:'MA', Windows:1 }
+                    ],  //叠加指标
+                    */
         
                     KLine:
                     {
@@ -86,9 +118,9 @@
                         PageSize:50,               //一屏显示多少数据
                         IndexTreeApiUrl:"https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
                         //Info:["业绩预告","公告","互动易","调研","大宗交易"],       //信息地雷
-                        //Info:["业绩预告","公告"],          //信息地雷
+                        Info:["公告","互动易","调研"],          //信息地雷
                         KLineDoubleClick:true,              //双击分钟走势图
-                        IsShowTooltip:true                 //是否显示K线提示信息
+                        IsShowTooltip:false                 //是否显示K线提示信息
                     },
         
                     KLineTitle: //标题设置
@@ -100,9 +132,9 @@
                     Border: //边框
                     {
                         Left:20,    //左边间距
-                        Right:20,     //右边间距
-                        Bottom:1,
-                        Top:50
+                        Right:40,     //右边间距
+                        Bottom:60,
+                        Top:0,
                     },
                     
                     Frame:  //子框架设置
@@ -110,7 +142,12 @@
                         {SplitCount:3,StringFormat:1},
                         {SplitCount:3,StringFormat:1},
                         {SplitCount:3,StringFormat:1}
-                    ]
+                    ],
+
+                    ExtendChart:    //扩展图形
+                    [
+                        {Name:'KLineTooltip' }  //手机端tooltip
+                    ],
                 }
 
             var windowHeight= $(window).height();
@@ -118,7 +155,23 @@
             if (windowWidth<=420)   //手机小屏左右不显示坐标
             {
                 option.KLine.IsShowTooltip=false;
+                option.IsCorssOnlyDrawKLine=true;
+                option.CorssCursorTouchEnd=true;
             }
+
+            option.Windows[1].Lock= { 
+                IsLocked: true, Callback: unlockIndex,
+                BG: 'rgba(200,0,40,0.1)', TextColor: 'rgb(255,255,255)',
+                //Text: '上锁了',
+                Font: '12px 微软雅黑', Count: 10  //锁主右边几条数据
+            };
+
+            option.Windows[0].Lock= { 
+                IsLocked: true, Callback: unlockIndex,
+                BG: 'rgba(200,0,40,0.1)', TextColor: 'rgb(255,255,255)',
+                //Text: '上锁了',
+                Font: '12px 微软雅黑', Count: 10  //锁主右边几条数据
+            };
         
             jsChart.SetOption(option);
             //jsChart.LockIndex('飞龙四式',unlockIndex);
@@ -129,9 +182,11 @@
         
         })
         
-        function unlockIndex(indexName)
+        function unlockIndex(data)
         {
-            console.log(indexName);
+            console.log('[unlockIndex]' , data);
+            var chart=data.HQChart;
+            chart.LockIndex({IndexName:data.Data.IndexName, IsLocked:false});
         }
 
     </script>  

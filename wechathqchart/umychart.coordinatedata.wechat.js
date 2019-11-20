@@ -1,16 +1,66 @@
 /*
-   各个品种分钟走势图坐标信息
+    copyright (c) 2018 jones
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    开源项目 https://github.com/jones2000/HQChart
+
+    jones_2000@163.com
+
+    各个品种分钟走势图坐标信息
 */
+
 
 var MARKET_SUFFIX_NAME=
 {
     SH:'.SH',
     SZ:'.SZ',
     HK:'.HK',
+    FHK: '.FHK',         //港股期货 
     SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange)
+    SHFE2: '.SHFE',       //上期所 (Shanghai Futures Exchange)
     CFFEX: '.CFE',       //中期所 (China Financial Futures Exchange)
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
+    USA: '.USA',         //美股
+    FTSE: '.FTSE',       //富时中国
+
+    BIT: '.BIT',         //数字货币 如比特币
+    BIZ: '.BIZ',         //数字货币
+
+    ET: '.ET',           //其他未知的品种
+
+    IsET: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.ET) > 0;
+    },
+
+    IsFTSE: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.FTSE) > 0;
+    },
+
+    IsFHK: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.FHK) > 0;
+    },
+
+    IsBIT: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.BIT) > 0) return true;
+        if (upperSymbol.indexOf(this.BIZ) > 0) return true;
+        return false;
+    },
+
+    IsUSA: function (upperSymbol) //是否是美股
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.USA) > 0;
+    },
 
     IsSH: function (upperSymbol)
     {
@@ -36,7 +86,10 @@ var MARKET_SUFFIX_NAME=
 
     IsSHFE: function (upperSymbol)
     {
-        return upperSymbol.indexOf(this.SHFE) > 0;
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.SHFE) > 0) return true;
+        if (upperSymbol.indexOf(this.SHFE2) > 0) return true;
+        return false;
     },
         
     IsCFFEX: function (upperSymbol) 
@@ -81,8 +134,10 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
-    IsSHSZIndex: function (upperSymbol)     //是否是沪深指数代码
+    IsSHSZIndex: function (symbol)     //是否是沪深指数代码
     {
+        if (!symbol) return false;
+        
         var upperSymbol = symbol.toUpperCase();
         if (this.IsSH(upperSymbol)) 
         {
@@ -100,6 +155,117 @@ var MARKET_SUFFIX_NAME=
         }
 
         return false;
+    },
+
+    IsSHSZStockA: function (symbol) //是否是沪深A股
+    {
+        if (!symbol) return false;
+        var upperSymbol = symbol.toUpperCase();
+        if (this.IsSH(upperSymbol)) 
+        {
+            var temp = upperSymbol.replace('.SH', '');
+            if (upperSymbol.charAt(0) == '6') return true;
+        }
+        else if (this.IsSZ(upperSymbol)) 
+        {
+            if (upperSymbol.charAt(0) == '0') 
+            {
+                if (upperSymbol.charAt(1) == '0' && upperSymbol.charAt(1) == '2') return true;  //002 中小板
+                if (upperSymbol.charAt(1) != '7' && upperSymbol.charAt(1) != '8') return true;
+            }
+        }
+
+        return false;
+    },
+
+    IsSHStockSTAR: function (symbol)   // 是否是科创板 Sci-Tech innovAtion boaRd (STAR Market)
+    {
+        if (!symbol) return false;
+        var upperSymbol = symbol.toUpperCase();
+        if (!this.IsSH(upperSymbol)) return false;
+        if (upperSymbol.charAt(0) == '6' && upperSymbol.charAt(1) == '8' && upperSymbol.charAt(2) == '8')
+            return true;
+
+        return false;
+    },
+
+    GetMarketStatus: function (symbol)    //获取市场状态 0=闭市 1=盘前 2=盘中 3=盘后
+    {
+        if (!symbol) return 0;
+        var upperSymbol = symbol.toUpperCase();
+        var nowDate = new Date();
+        var day = nowDate.getDay();
+        var time = nowDate.getHours() * 100 + nowDate.getMinutes();
+
+        if (this.IsUSA(upperSymbol)) 
+        {
+            var usaDate = GetLocalTime(-4);
+            var day = usaDate.getDay();
+            var time = usaDate.getHours() * 100 + usaDate.getMinutes();
+            if (day == 6 || day == 0) return 0;   //周末
+
+            //9:30 - 16:00 考虑夏令时间时间增加1小时 9:30 - 17:00
+            if (time > 1730) return 3;
+            if (time < 930) return 1;
+
+            return 2;
+        }
+        else if (this.IsBIT(upperSymbol))   //数字货币24小时
+        {
+            return 2;
+        }
+        else if (this.IsFTSE(upperSymbol))  //富时中国 9:00-16:30 17:00-04:45
+        {
+            if (day == 6 || day == 0) return 0;   //周末
+            if (time >= 830 && time <= 2359) return 2;
+            if (time >= 0 && time <= 500) return 2;
+            return 0;
+        }
+        else if (this.IsFHK(upperSymbol))   //港股指数期货 9:15-12:00 13:00-16:30 17:15-01:00
+        {
+            if (day == 6 || day == 0) return 0;   //周末
+            if (time >= 900 && time <= 2359) return 2;
+            if (time >= 0 && time <= 120) return 2;
+            return 0;
+        }
+        else if (this.IsET(upperSymbol)) 
+        {
+            return this.GetETMarketStatus(symbol);
+        }
+        else    //9:30 - 15:40
+        {
+            if (day == 6 || day == 0) return 0;   //周末
+            if (time > 1540) return 3;
+            if (time < 925) return 1;
+            return 2;
+        }
+
+    },
+
+    GetFHKDecimal: function (symbol)  //港股指数期货 小数位数
+    {
+        return 0;
+    },
+
+    GetFTSEDecimal: function (symbol) //富时中国A50期货 小数位数
+    {
+        return 0;
+    },
+
+    GetBITDecimal: function (symbol) 
+    {
+        return 2;
+    },
+
+    GetETDecimal: function (symbol) 
+    {
+        return 2;
+    },
+
+    GetETMarketStatus: function (symbol) 
+    {
+        // 0=闭市 1=盘前 2=盘中 3=盘后
+        return 2;
     }
 }
 
@@ -111,6 +277,8 @@ function MinuteTimeStringData()
     this.HK = null;         //香港交易所时间
     this.Futures=new Map(); //期货交易时间 key=时间名称 Value=数据
     this.USA = null;        //美股交易时间
+    this.FTSE = null;         //富时中国
+    this.FHK = null;          //港股指数期货
 
     this.Initialize = function ()  //初始化 默认只初始化沪深的 其他市场动态生成
     {
@@ -145,6 +313,18 @@ function MinuteTimeStringData()
     {
         if (!this.USA) this.USA=this.CreateUSAData();
         return this.USA;
+    }
+
+    this.GetFTSE = function () 
+    {
+        if (!this.FTSE) this.FTSE = this.CreateFTSEData();
+        return this.FTSE;
+    }
+
+    this.GetFHK = function () 
+    {
+        if (!this.FHK) this.FHK = this.CreateFHKData();
+        return this.FHK;
     }
 
     this.CreateSHSZData = function () 
@@ -186,7 +366,39 @@ function MinuteTimeStringData()
                 { Start: 0, End: 500 }
             ];
 
-        return this.CreateTimeData(TIME_SPLIT); 
+        //使用美国本地时间
+        const TIME_LOCAL_SPLIT =
+            [
+                { Start: 930, End: 1600 }   //美国东部时间9:30到16:00
+            ];
+
+        return this.CreateTimeData(TIME_LOCAL_SPLIT); 
+    }
+
+    this.CreateFTSEData = function () 
+    {
+        const TIME_SPLIT =
+            [
+                { Start: 1700, End: 2359 },
+                { Start: 0, End: 445 },
+                { Start: 900, End: 1630 }
+            ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateFHKData = function () 
+    {
+        //港股指数期货 9:15-12:00 13:00-16:30 17:15-01:00
+        const TIME_SPLIT =
+            [
+                { Start: 1715, End: 2359 },
+                { Start: 0, End: 100 },
+                { Start: 915, End: 1200 },
+                { Start: 1300, End: 1630 },
+            ];
+
+        return this.CreateTimeData(TIME_SPLIT);
     }
 
     this.CreateTimeData = function (timeSplit) 
@@ -217,6 +429,8 @@ function MinuteTimeStringData()
             if (!splitData) return null;
             return this.GetFutures(splitData);
         }
+        if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) return this.GetFTSE();
+        if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) return this.GetFHK();
     }
 }
 
@@ -267,49 +481,173 @@ function MinuteCoordinateData()
 
     //港股走势图时间刻度
     const HK_MINUTE_X_COORDINATE =
+    {
+        Full:   //完整模式
+        [
+            [0, 1, "RGB(200,200,200)", "09:30"],
+            [30, 0, "RGB(200,200,200)", "10:00"],
+            [60, 1, "RGB(200,200,200)", "10:30"],
+            [90, 0, "RGB(200,200,200)", "11:00"],
+            [120, 1, "RGB(200,200,200)", "11:30"],
+            [151, 0, "RGB(200,200,200)", "13:00"],
+            [181, 1, "RGB(200,200,200)", "13:30"],
+            [211, 0, "RGB(200,200,200)", "14:00"],
+            [241, 1, "RGB(200,200,200)", "14:30"],
+            [271, 0, "RGB(200,200,200)", "15:00"],
+            [301, 1, "RGB(200,200,200)", "15:30"],
+            [331, 1, "RGB(200,200,200)", "16:00"]
+        ],
+        Simple: //简洁模式
+        [
+            [0, 1, "RGB(200,200,200)", "09:30"],
+            [60, 1, "RGB(200,200,200)", "10:30"],
+            [120, 1, "RGB(200,200,200)", "11:30"],
+            [211, 0, "RGB(200,200,200)", "14:00"],
+            [271, 0, "RGB(200,200,200)", "15:00"],
+            [331, 1, "RGB(200,200,200)", "16:00"]
+        ],
+        Min:   //最小模式     
+        [
+            [0, 1, "RGB(200,200,200)", "09:30"],
+            [151, 0, "RGB(200,200,200)", "13:00"],
+            [331, 1, "RGB(200,200,200)", "16:00"]
+        ],
+
+        Count: 332,
+        MiddleCount: 151,
+
+        GetData: function (width) 
         {
-            Full:   //完整模式
+            if (width < 200) return this.Min;
+            else if (width < 450) return this.Simple;
+
+            return this.Full;
+        }
+    };
+
+    //富时中国
+    const FTSE_MINUTE_X_COORDINATE =
+    {
+        Full:   //完整模式
             [
-                [0, 1, "RGB(200,200,200)", "09:30"],
-                [30, 0, "RGB(200,200,200)", "10:00"],
-                [60, 1, "RGB(200,200,200)", "10:30"],
-                [90, 0, "RGB(200,200,200)", "11:00"],
-                [120, 1, "RGB(200,200,200)", "11:30"],
-                [151, 0, "RGB(200,200,200)", "13:00"],
-                [181, 1, "RGB(200,200,200)", "13:30"],
-                [211, 0, "RGB(200,200,200)", "14:00"],
-                [241, 1, "RGB(200,200,200)", "14:30"],
-                [271, 0, "RGB(200,200,200)", "15:00"],
-                [301, 1, "RGB(200,200,200)", "15:30"],
-                [331, 1, "RGB(200,200,200)", "16:00"]
+                [0, 1, "RGB(200,200,200)", "17:00"],
+                //[60, 0, "RGB(200,200,200)", "18:00"],
+                [120, 1, "RGB(200,200,200)", "19:00"],
+                //[180, 0, "RGB(200,200,200)", "20:00"],
+                [240, 1, "RGB(200,200,200)", "21:00"],
+                //[300, 0, "RGB(200,200,200)", "22:00"],
+                [360, 1, "RGB(200,200,200)", "23:00"],
+                //[420, 0, "RGB(200,200,200)", "00:00"],
+                [480, 1, "RGB(200,200,200)", "01:00"],
+                //[540, 0, "RGB(200,200,200)", "02:00"],
+                [600, 1, "RGB(200,200,200)", "03:00"],
+                //[660, 1, "RGB(200,200,200)", "04:00"],
+                [706, 1, "RGB(200,200,200)", "09:00"],
+                //[766, 1, "RGB(200,200,200)", "10:00"],
+                [826, 1, "RGB(200,200,200)", "11:00"],
+                //[886, 1, "RGB(200,200,200)", "12:00"],
+                [946, 1, "RGB(200,200,200)", "13:00"],
+                //[1006, 1, "RGB(200,200,200)", "14:00"],
+                [1066, 1, "RGB(200,200,200)", "15:00"],
+                [1156, 1, "RGB(200,200,200)", "16:30"],
             ],
-            Simple: //简洁模式
+        Simple: //简洁模式
             [
-                [0, 1, "RGB(200,200,200)", "09:30"],
-                [60, 1, "RGB(200,200,200)", "10:30"],
-                [120, 1, "RGB(200,200,200)", "11:30"],
-                [211, 0, "RGB(200,200,200)", "14:00"],
-                [271, 0, "RGB(200,200,200)", "15:00"],
-                [331, 1, "RGB(200,200,200)", "16:00"]
+                [0, 1, "RGB(200,200,200)", "17:00"],
+                //[60, 0, "RGB(200,200,200)", "18:00"],
+                //[120, 1, "RGB(200,200,200)", "19:00"],
+                //[180, 0, "RGB(200,200,200)", "20:00"],
+                [240, 1, "RGB(200,200,200)", "21:00"],
+                //[300, 0, "RGB(200,200,200)", "22:00"],
+                //[360, 1, "RGB(200,200,200)", "23:30"],
+                //[420, 0, "RGB(200,200,200)", "00:00"],
+                [480, 1, "RGB(200,200,200)", "01:00"],
+                //[540, 0, "RGB(200,200,200)", "02:00"],
+                //[600, 1, "RGB(200,200,200)", "03:00"],
+                //[660, 1, "RGB(200,200,200)", "04:00"],
+                [706, 1, "RGB(200,200,200)", "09:00"],
+                //[766, 1, "RGB(200,200,200)", "10:00"],
+                //[826, 1, "RGB(200,200,200)", "11:00"],
+                //[886, 1, "RGB(200,200,200)", "12:00"],
+                [946, 1, "RGB(200,200,200)", "13:00"],
+                //[1006, 1, "RGB(200,200,200)", "14:00"],
+                //[1066, 1, "RGB(200,200,200)", "15:00"],
+                [1156, 1, "RGB(200,200,200)", "16:30"],
             ],
-            Min:   //最小模式     
+        Min:   //最小模式     
             [
-                [0, 1, "RGB(200,200,200)", "09:30"],
-                [151, 0, "RGB(200,200,200)", "13:00"],
-                [331, 1, "RGB(200,200,200)", "16:00"]
+                [0, 1, "RGB(200,200,200)", "17:00"],
+                [706, 1, "RGB(200,200,200)", "09:00"],
+                [1156, 1, "RGB(200,200,200)", "16:30"],
             ],
 
-            Count: 332,
-            MiddleCount: 151,
+        Count: 1157,
+        MiddleCount: 707,
 
-            GetData: function (width) 
-            {
-                if (width < 200) return this.Min;
-                else if (width < 450) return this.Simple;
+        GetData: function (width) {
+            if (width < 200) return this.Min;
+            else if (width < 450) return this.Simple;
 
-                return this.Full;
-            }
-        };
+            return this.Full;
+        }
+    };
+
+    //港股指数期货
+    const FHK_MINUTE_X_COORDINATE =
+    {
+        Full:   //完整模式
+            [
+                [0, 1, "RGB(200,200,200)", "17:15"],
+                //[45, 0, "RGB(200,200,200)", "18:00"],
+                [105, 1, "RGB(200,200,200)", "19:00"],
+                //[165, 0, "RGB(200,200,200)", "20:00"],
+                [225, 1, "RGB(200,200,200)", "21:00"],
+                //[285, 0, "RGB(200,200,200)", "22:00"],
+                [345, 1, "RGB(200,200,200)", "23:00"],
+                //[405, 0, "RGB(200,200,200)", "00:00"],
+                [466, 0, "RGB(200,200,200)", "09:15"],
+                //[511, 1, "RGB(200,200,200)", "10:00"],
+                [571, 1, "RGB(200,200,200)", "11:00"],
+                //[632, 1, "RGB(200,200,200)", "13:00"],
+                [692, 1, "RGB(200,200,200)", "14:00"],
+                //[752, 1, "RGB(200,200,200)", "15:00"],
+                [843, 1, "RGB(200,200,200)", "16:30"],
+            ],
+        Simple: //简洁模式
+            [
+                [0, 1, "RGB(200,200,200)", "17:15"],
+                //[45, 0, "RGB(200,200,200)", "18:00"],
+                //[105, 1, "RGB(200,200,200)", "19:00"],
+                //[165, 0, "RGB(200,200,200)", "20:00"],
+                [225, 1, "RGB(200,200,200)", "21:00"],
+                //[285, 0, "RGB(200,200,200)", "22:00"],
+                //[345, 1, "RGB(200,200,200)", "23:00"],
+                //[405, 0, "RGB(200,200,200)", "00:00"],
+                [466, 0, "RGB(200,200,200)", "09:15"],
+                //[511, 1, "RGB(200,200,200)", "10:00"],
+                //[571, 1, "RGB(200,200,200)", "11:00"],
+                [632, 1, "RGB(200,200,200)", "13:00"],
+                //[692, 1, "RGB(200,200,200)", "14:00"],
+                //[752, 1, "RGB(200,200,200)", "15:00"],
+                [843, 1, "RGB(200,200,200)", "16:30"],
+            ],
+        Min:   //最小模式     
+            [
+                [0, 1, "RGB(200,200,200)", "17:15"],
+                [466, 0, "RGB(200,200,200)", "09:15"],
+                [843, 1, "RGB(200,200,200)", "16:30"],
+            ],
+
+        Count: 843,
+        MiddleCount: 466,
+
+        GetData: function (width) {
+            if (width < 200) return this.Min;
+            else if (width < 450) return this.Simple;
+
+            return this.Full;
+        }
+    };
 
     this.GetCoordinateData = function (symbol, width) 
     {
@@ -327,6 +665,12 @@ function MinuteCoordinateData()
                 data = HK_MINUTE_X_COORDINATE;
             else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
                 return this.GetFuturesData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
+                data = this.GetUSAData(upperSymbol, width);
+            else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol, width))
+                data = this.GetFTSEData(upperSymbol, width);
+            else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol, width))
+                data = this.GetFHKData(upperSymbol, width);
         }
 
         //console.log('[MiuteCoordinateData]', width);
@@ -387,8 +731,8 @@ function FuturesTimeData()
             [
                 //9:00-10:15,10:30-11:30,13:30-15:00
                 { Start: 900, End: 1015 },
-                { Start: 1030, End: 1130 },
-                { Start: 1300, End: 1500 }
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
             ],
             Coordinate:
             {
@@ -397,9 +741,9 @@ function FuturesTimeData()
                     { Value: 900, Text: '9:00' },
                     { Value: 930, Text: '9:30' },
                     { Value: 1000, Text: '10:00' },
-                    { Value: 1030, Text: '10:30' },
+                    { Value: 1031, Text: '10:30' },
                     { Value: 1100, Text: '11:00' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1400, Text: '14:00' },
                     { Value: 1430, Text: '14:30' },
                     { Value: 1500, Text: '15:00' },
@@ -408,14 +752,14 @@ function FuturesTimeData()
                 [
                     { Value: 900, Text: '9:00' },
                     { Value: 1000, Text: '10:00' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1430, Text: '14:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 900, Text: '9:00' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1500, Text: '15:00' },
                 ]
             }
@@ -426,7 +770,7 @@ function FuturesTimeData()
             Data:
             [
                 { Start: 915, End: 1130 },
-                { Start: 1300, End: 1515 }
+                { Start: 1301, End: 1515 }
             ],
             Coordinate:
             {
@@ -436,7 +780,7 @@ function FuturesTimeData()
                     { Value: 1000, Text: '10:00' },
                     { Value: 1030, Text: '10:30' },
                     { Value: 1100, Text: '11:00' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1330, Text: '13:30' },
                     { Value: 1400, Text: '14:00' },
                     { Value: 1430, Text: '14:30' },
@@ -446,14 +790,14 @@ function FuturesTimeData()
                 [
                     { Value: 930, Text: '9:30' },
                     { Value: 1030, Text: '10:30' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1400, Text: '14:00' },
                     { Value: 1515, Text: '15:15' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 930, Text: '9:30' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1515, Text: '15:15' },
                 ]
             }
@@ -463,7 +807,7 @@ function FuturesTimeData()
             Data:
             [
                 { Start: 930, End: 1130 },
-                { Start: 1300, End: 1500 }
+                { Start: 1301, End: 1500 }
             ],
             Coordinate:
             {
@@ -473,7 +817,7 @@ function FuturesTimeData()
                     { Value: 1000, Text: '10:00' },
                     { Value: 1030, Text: '10:30' },
                     { Value: 1100, Text: '11:00' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1330, Text: '13:30' },
                     { Value: 1400, Text: '14:00' },
                     { Value: 1430, Text: '14:30' },
@@ -483,14 +827,14 @@ function FuturesTimeData()
                 [
                     { Value: 930, Text: '9:30' },
                     { Value: 1030, Text: '10:30' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1400, Text: '14:00' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 930, Text: '9:30' },
-                    { Value: 1300, Text: '13:00' },
+                    { Value: 1301, Text: '13:00' },
                     { Value: 1500, Text: '15:00' },
                 ]
             }
@@ -500,9 +844,9 @@ function FuturesTimeData()
             Data:
             [
                 { Start: 2100, End: 2330 },
-                { Start: 900, End: 1015 },
-                { Start: 1030, End: 1130 },
-                { Start: 1330, End: 1500 }
+                { Start: 901, End: 1015 },
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
             ],
             Coordinate:
             {
@@ -511,23 +855,23 @@ function FuturesTimeData()
                     { Value: 2100, Text: '21:00' },
                     { Value: 2200, Text: '22:00' },
                     { Value: 2300, Text: '23:00' },
-                    { Value: 900, Text: '9:00' },
-                    { Value: 1030, Text: '10:30' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1031, Text: '10:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1430, Text: '14:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Simple: //简洁模式
                 [
                     { Value: 2100, Text: '21:00' },
-                    { Value: 900, Text: '9:00' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 2100, Text: '21:00' },
-                    { Value: 900, Text: '9:00' },
+                    { Value: 901, Text: '9:00' },
                     { Value: 1500, Text: '15:00' },
                 ]
             }
@@ -538,9 +882,9 @@ function FuturesTimeData()
             [   
                 { Start: 2100, End: 2359 },
                 { Start: 0, End: 100 },
-                { Start: 900, End: 1015 },
-                { Start: 1030, End: 1130 },
-                { Start: 1300, End: 1500 }
+                { Start: 901, End: 1015 },
+                { Start: 1031, End: 1130 },
+                { Start: 1301, End: 1500 }
             ],
             Coordinate:
             {
@@ -549,23 +893,23 @@ function FuturesTimeData()
                     { Value: 2100, Text: '21:00' },
                     { Value: 2200, Text: '22:00' },
                     { Value: 2300, Text: '23:00' },
-                    { Value: 900, Text: '9:00' },
+                    { Value: 901, Text: '9:00' },
                     { Value: 1030, Text: '10:30' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Simple: //简洁模式
                 [
                     { Value: 2100, Text: '21:00' },
                     { Value: 2300, Text: '23:00' },
-                    { Value: 900, Text: '9:00' },
-                    { Value: 1030, Text: '10:30' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1031, Text: '10:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 2100, Text: '21:00' },
-                    { Value: 900, Text: '9:00' },
+                    { Value: 901, Text: '9:00' },
                     { Value: 1500, Text: '15:00' },
                 ]
             }
@@ -576,9 +920,9 @@ function FuturesTimeData()
             [
                 { Start: 2100, End: 2359 },
                 { Start: 0, End: 230 },
-                { Start: 900, End: 1015 },
-                { Start: 1030, End: 1130 },
-                { Start: 1300, End: 1500 }
+                { Start: 901, End: 1015 },
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
             ],
             Coordinate:
             {
@@ -587,23 +931,23 @@ function FuturesTimeData()
                     { Value: 2100, Text: '21:00' },
                     { Value: 2300, Text: '23:00' },
                     { Value: 100, Text: '1:00' },
-                    { Value: 900, Text: '9:00' },
-                    { Value: 1030, Text: '10:30' },
-                    { Value: 1330, Text: '13:30' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1031, Text: '10:30' },
+                    { Value: 1331, Text: '13:30' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Simple: //简洁模式
                 [
                     { Value: 2100, Text: '21:00' },
                     { Value: 2300, Text: '23:00' },
-                    { Value: 900, Text: '9:00' },
+                    { Value: 901, Text: '9:00' },
                     { Value: 1100, Text: '11:00' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Min:   //最小模式  
                 [
                     { Value: 2100, Text: '21:00' },
-                    { Value: 900, Text: '9:00' },
+                    { Value: 901, Text: '9:00' },
                     { Value: 1500, Text: '15:00' },
                 ]
             }
@@ -614,8 +958,8 @@ function FuturesTimeData()
             [
                 { Start: 2100, End: 2300 },
                 { Start: 901, End: 1015 },
-                { Start: 1030, End: 1130 },
-                { Start: 1330, End: 1500 }
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
             ],
             Coordinate:
             {
@@ -624,8 +968,8 @@ function FuturesTimeData()
                         { Value: 2100, Text: '21:00' },
                         { Value: 2200, Text: '22:00' },
                         { Value: 2300, Text: '23:00' },
-                        { Value: 1030, Text: '10:30' },
-                        { Value: 1330, Text: '13:30' },
+                        { Value: 1031, Text: '10:30' },
+                        { Value: 1331, Text: '13:30' },
                         { Value: 1430, Text: '14:30' },
                         { Value: 1500, Text: '15:00' },
                     ],
@@ -633,7 +977,7 @@ function FuturesTimeData()
                     [
                         { Value: 2100, Text: '21:00' },
                         { Value: 2300, Text: '23:00' },
-                        { Value: 1330, Text: '13:30' },
+                        { Value: 1331, Text: '13:30' },
                         { Value: 1500, Text: '15:00' },
                     ],
                 Min:   //最小模式  
@@ -779,6 +1123,23 @@ var g_MinuteTimeStringData = new MinuteTimeStringData();
 var g_MinuteCoordinateData = new MinuteCoordinateData();
 var g_FuturesTimeData = new FuturesTimeData();
 
+
+function GetfloatPrecision(symbol)  //获取小数位数
+{
+    var defaultfloatPrecision = 2;    //默认2位
+    if (!symbol) return defaultfloatPrecision;
+    var upperSymbol = symbol.toUpperCase();
+
+    if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision = 3;    //基金3位小数
+    else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision = g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
+    else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetBITDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetETDecimal(upperSymbol); 
+
+    return defaultfloatPrecision;
+}
+
 //导出统一使用JSCommon命名空间名
 module.exports =
 {
@@ -787,5 +1148,8 @@ module.exports =
         MinuteCoordinateData: g_MinuteCoordinateData,
         MinuteTimeStringData: g_MinuteTimeStringData,
         MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
+        GetfloatPrecision: GetfloatPrecision,
     },
+
+    JSCommonCoordinateData_MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
 };

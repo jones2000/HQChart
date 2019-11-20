@@ -1,0 +1,402 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>外部计算分钟周期</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+
+    <script src="content/js/jquery.min.js"></script>
+    <script src="content/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <script src='HSIML_minute_testdata.js'></script> <!--测试数据 分钟线全量数据 -->
+    
+    <script>
+
+        //定义外部计算周期函数 替换掉内部的
+        
+        DataPlus.GetMinutePeriodData=function(period,data,self)
+        {
+            console.log('[GetMinutePeriodData] symbol= ', self.Symbol);
+            var result = [];
+            var startIndex=0;
+            var periodDataCount = 5;
+            var firstDateTime=data[0].Time;
+            if (period == 5) 
+            {
+                periodDataCount = 5;
+                for(startIndex=0;startIndex<data.length;++startIndex)
+                {
+                    var item=data[startIndex];
+                    var time=item.Time; 
+                    //1, 16, 21, 26, 31,36, 41, 46, 51, 56
+                    if (time%10==6 || time%10==1) break;
+                }
+            }
+            else if (period == 6) 
+            {
+                periodDataCount = 15;
+                for(startIndex=0;startIndex<data.length;++startIndex)
+                {
+                    var item=data[startIndex];
+                    var time=item.Time; 
+                    var m1=parseInt(time/10);
+                    var m2=time%10;
+                    //1, 16, 31, 46 
+                    if ( (m2==6 && (m1==1 || m1==4))  || (m2==1 && (m1==0|| m1==3)) ) 
+                        break;
+                }
+            }
+            else if (period == 7) 
+            {
+                periodDataCount = 30;
+                for(startIndex=0;startIndex<data.length;++startIndex)
+                {
+                    var item=data[startIndex];
+                    var time=item.Time; 
+                    var m1=parseInt(time/10);
+                    var m2=time%10;
+                    //16, 46 ,1
+                    if ( time==16 || time==46 || time==1 ) 
+                        break;
+                }
+            }
+            else if (period == 8) 
+            {
+                periodDataCount = 60;
+                for(startIndex=0;startIndex<data.length;++startIndex)
+                {
+                    var item=data[startIndex];
+                    var time=item.Time; 
+                    var m1=parseInt(time/10);
+                    var m2=time%10;
+                    //16
+                    if ( time==16) 
+                        break;
+                }
+            }
+
+            var bFirstPeriodData = false;
+            var newData = null;
+            var preTime=null;   //上一次的计算时间
+            for (var i = startIndex; i < data.length; )
+            {
+                bFirstPeriodData = true;
+                for (var j = 0; j < periodDataCount && i < data.length; ++i)
+                {
+                    if (bFirstPeriodData)
+                    {
+                        newData = new HistoryData();
+                        result.push(newData);
+                        bFirstPeriodData = false;
+                    }
+                    var minData = data[i];
+                    if (minData == null)
+                    {
+                        ++j;
+                        continue;    
+                    } 
+                    else
+                        ++j;
+                    newData.Date = minData.Date;
+                    newData.Time = minData.Time;
+                    preTime=newData.Time;
+                    if (minData.Open==null || minData.Close==null)
+                        continue;
+                    if (newData.Open==null || newData.Close==null)
+                    {
+                        newData.Open=minData.Open;
+                        newData.High=minData.High;
+                        newData.Low=minData.Low;
+                        newData.YClose=minData.YClose;
+                        newData.Close=minData.Close;
+                        newData.Vol=minData.Vol;
+                        newData.Amount=minData.Amount;    
+                        newData.FlowCapital=minData.FlowCapital;  
+                    }
+                    else
+                    {
+                        if (newData.High<minData.High) 
+                            newData.High=minData.High;
+                        if (newData.Low>minData.Low) 
+                            newData.Low=minData.Low;
+                        newData.Close=minData.Close;
+                        newData.Vol+=minData.Vol;
+                        if (minData.Amount!=null) newData.Amount+=minData.Amount;
+                        newData.FlowCapital=minData.FlowCapital;  
+                    }
+                }
+            }
+            return result;
+        }
+        
+
+        //简单的把K线控件封装下
+        function KLineChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine);   //把K线图绑定到一个Div上
+            var self=this;
+            //K线配置信息
+            this.Option= {
+                Type:'历史K线图',   //创建图形类型
+                
+                Windows: //窗口指标
+                [
+                    {Index:"MA" , Modify:false,Change:false},
+                    {Index:"VOL", Modify:false,Change:false}, 
+                ], 
+
+                
+                Symbol:'HSIML.FHK',   //数字货币使用.BIT后缀
+                //Symbol:'600000.sh',
+                IsAutoUpdate:false,          //是自动更新数据
+                AutoUpdateFrequency:5000,   //数据更新频率
+    
+                IsShowRightMenu:true,          //右键菜单
+                IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
+                //CorssCursorTouchEnd:true,
+    
+                KLine:  //K线设置
+                {
+                    DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                    Right:0,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period:5,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxReqeustDataCount:1000,   //数据个数
+                    MaxRequestMinuteDayCount:10, //分钟数据取5天
+                    PageSize:50,               //一屏显示多少数据
+                    //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
+                    IsShowTooltip:true,                 //是否显示K线提示信息
+                    DrawType:0                         //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
+                },
+    
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true //不显示周期/复权
+                },
+
+                NetworkFilter:function(data, callback) { self.NetworkFilter(data, callback); } ,   //绑定网络协议回调
+    
+                Border: //边框
+                {
+                    Left:5,         //左边间距
+                    Right:70,       //右边间距
+                    Bottom:25,      //底部间距
+                    Top:25          //顶部间距
+                },
+                
+                Frame:  //子框架设置
+                [
+                    {SplitCount:3,StringFormat:0, IsShowLeftText:false},
+                    {SplitCount:2,StringFormat:0, IsShowLeftText:false},
+                    {SplitCount:2,StringFormat:0, IsShowLeftText:false}
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    //{Name:'KLineTooltip' }  //手机端tooltip
+                ],
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                $(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
+
+                //var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                //JSChart.SetStyle(blackStyle);
+                //this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                this.OnSize();  //让K线全屏
+                this.Chart.SetOption(this.Option);  //设置K线配置
+            }
+
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height();
+                var width = $(window).width();
+                this.DivKLine.style.top='px';
+                this.DivKLine.style.left='px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                this.Chart.OnSize();
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[NetworkFilter] data', data);
+                switch(data.Name)
+                {
+                    case 'KLineChartContainer::ReqeustHistoryMinuteData':   //1分钟全量数据下载
+                        this.RequestHistoryMinuteData(data, callback);
+                        break;
+                    case 'KLineChartContainer::RequestMinuteRealtimeData':  //1分钟增量数据更新
+                        this.RequestMinuteRealtimeData(data,callback);
+                        break;
+                    case 'KLineChartContainer::RequestHistoryData':     //日线全量数据下载
+                        this.RequestHistoryData(data,callback);
+                        break;
+                    case 'KLineChartContainer::RequestRealtimeData':    //日线增量数据更新
+                        this.RequestRealtimeData(data,callback);
+                        break;
+                    case 'APIScriptIndex::ExecuteScript':
+                        console.log('[NetworkFilter] index name ',data.Request.Data.indexname);
+                        break;
+                }
+            }
+
+            this.RequestHistoryMinuteData=function(data, callback)
+            {
+                data.PreventDefault=true;
+                var self=this;
+                var symbol=data.Request.Data.symbol;
+
+                setTimeout(() => {
+                    self.RecvHistoryMinuteData(testdta,callback); 
+                }, 200);
+               
+            }
+
+            this.RecvHistoryMinuteData=function(data, callback)
+            {
+                var hqChartData={code:0, data:data};
+                hqChartData.symbol='HSIML.FHK';
+                hqChartData.name='HSIML';
+
+                callback(hqChartData);
+            }
+
+
+            /*
+            this.RequestMinuteRealtimeData=function(data,callback)
+            {
+                data.PreventDefault=true;
+                var self=this;
+                var symbol=data.Request.Data.symbol;
+
+                setTimeout(() => {
+                    self.RecvMinuteRealtimeData(BIT_TEST_DATA2,callback); 
+                }, 200);
+            }
+
+            this.RecvMinuteRealtimeData=function(data,callback)
+            {
+                var hqChartData={code:0, data:[], ver:2.0 };
+                hqChartData.symbol='BTCUSDT.BIT';
+                hqChartData.name='BTCUSDT';
+
+                var yClose=null;
+                for(var i=data.data.length-1; i>=0; --i)
+                {
+                    var item=data.data[i];
+                    var timestamp = item.id;
+                    var dateTime = new Date();
+                    dateTime.setTime(timestamp * 1000);
+
+                    var date=dateTime.getFullYear()*10000+(dateTime.getMonth()+1)*100+dateTime.getDate();
+                    var time=dateTime.getHours()*100+dateTime.getMinutes();
+                    var newItem=[date,yClose, item.open, item.high, item.low, item.close, item.vol, item.amount, time];
+
+                    yClose=item.close;
+                    hqChartData.data.push(newItem);
+                }
+
+                callback(hqChartData);
+            }
+
+            this.RequestHistoryData=function(data,callback)
+            {
+                data.PreventDefault=true;
+                var self=this;
+                var symbol=data.Request.Data.symbol;
+
+                setTimeout(() => {
+                    self.RecvHistoryData(BIT_TEST_DATA3,callback); 
+                }, 200);
+            }
+
+            this.RecvHistoryData=function(data,callback)
+            {
+                var hqChartData={code:0, data:[]};
+                hqChartData.symbol='BTCUSDT.BIT';
+                hqChartData.name='BTCUSDT';
+
+                var yClose=null;
+                for(var i=data.data.length-1; i>=0; --i)
+                {
+                    var item=data.data[i];
+                    var timestamp = item.id;
+                    var dateTime = new Date();
+                    dateTime.setTime(timestamp * 1000);
+
+                    var date=dateTime.getFullYear()*10000+(dateTime.getMonth()+1)*100+dateTime.getDate();
+                    var time=dateTime.getHours()*100+dateTime.getMinutes();
+                    var newItem=[date,yClose, item.open, item.high, item.low, item.close, item.vol, item.amount];
+
+                    yClose=item.close;
+                    hqChartData.data.push(newItem);
+                }
+
+                callback(hqChartData);
+            }
+
+            this.RequestRealtimeData=function(data,callback)
+            {
+                data.PreventDefault=true;
+                var self=this;
+                var symbol=data.Request.Data.symbol;
+
+                setTimeout(() => {
+                    self.RecvRealtimeData(BIT_TEST_DATA4,callback); 
+                }, 200);
+            }
+
+            this.RecvRealtimeData=function(data,callback)
+            {
+                var stock={symbol:'BTCUSDT.BIT', name:'BTCUSDT'};
+                var hqChartData={code:0, stock:[stock]};
+
+                var item=data.data[0];   //取最新的一条更新
+                var timestamp = item.id;
+                var dateTime = new Date();
+                dateTime.setTime(timestamp * 1000);
+
+                var date=dateTime.getFullYear()*10000+(dateTime.getMonth()+1)*100+dateTime.getDate();
+                var time=dateTime.getHours()*100+dateTime.getMinutes();
+
+                stock.date=date;
+                stock.open=item.open;
+                stock.high=item.high;
+                stock.low=item.low;
+                stock.vol=item.vol;
+                stock.price=item.close;
+                stock.amount=item.amount;
+                //stock.yclose; 最好前收盘也要
+
+                callback(hqChartData);
+            }
+            */
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+            var klineControl=new KLineChart(document.getElementById('kline'));
+            klineControl.Create();
+        })
+
+    </script>  
+</body>  
+</html>

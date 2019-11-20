@@ -1,7 +1,18 @@
-///////////////////////////////////////////////////////////
-//  小程序信息地雷数据
-//
-//
+/*
+    copyright (c) 2018 jones
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    开源项目 https://github.com/jones2000/HQChart
+
+    jones_2000@163.com
+
+    小程序信息地雷数据
+*/
+
+import {
+    JSCommonResource_Global_JSChartResource as g_JSChartResource,
+} from './umychart.resource.wechat.js'
 
 var KLINE_INFO_TYPE=
 {
@@ -19,54 +30,6 @@ var KLINE_INFO_TYPE=
     TRADEDETAIL:10,              //龙虎榜
 
     POLICY:11                   //策略信息
-}
-
-function JSChartResource()
-{
-    this.Domain="https://opensource.zealink.com",               //API域名
-
-    this.KLine = 
-    {
-        Info:  //信息地雷
-        {
-            Investor:
-            {
-                ApiUrl: '/API/NewsInteract', //互动易
-            },
-            Announcement:                                           //公告
-            {
-                ApiUrl: '/API/ReportList',
-            },
-            Pforecast:  //业绩预告
-            {
-                ApiUrl: '/API/StockHistoryDay',
-            },
-            Research:   //调研
-            {
-                ApiUrl: '/API/InvestorRelationsList',
-            },
-            BlockTrading:   //大宗交易
-            {
-                ApiUrl: '/API/StockHistoryDay',
-            },
-            TradeDetail:    //龙虎榜
-            {
-                ApiUrl: '/API/StockHistoryDay',
-            },
-            Policy: //策略
-            {
-                ApiUrl: '/API/StockHistoryDay',
-            }
-        }
-    };
-}
-
-var g_JSChartResource = new JSChartResource();
-
-
-function SetDomain(domain, cacheDomain) 
-{
-    if (domain) g_JSChartResource.Domain = domain;
 }
 
 function KLineInfoData()
@@ -621,6 +584,106 @@ function PolicyInfo()
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////
+//  走势图信息地雷
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////
+function JSMinuteInfoMap() { }
+
+JSMinuteInfoMap.InfoMap = new Map(
+[
+    ["大盘异动", { Create: function () { return new MarketEventInfo() } }],
+]);
+
+JSMinuteInfoMap.Get = function (id) 
+{
+    return JSMinuteInfoMap.InfoMap.get(id);
+}
+
+function IMinuteInfo() 
+{
+    this.Data;
+    this.ClassName = 'IMinuteInfo';
+}
+
+//////////////////////////////////////////////////////////////////////
+//  大盘异动
+// 结构 {Date:日期 Time:时间, Title:标题, Type:0 }
+////////////////////////////////////////////////////////////////////
+function MarketEventInfo() 
+{
+    this.newMethod = IMinuteInfo;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName = 'MarketEventInfo';
+
+    this.RequestData = function (hqChart) 
+    {
+        var self = this;
+        this.Data = [];
+        var param =
+        {
+            HQChart: hqChart
+        };
+
+        var url = g_JSChartResource.CacheDomain + '/cache/analyze/shszevent/marketevent/concept/' + hqChart.TradeDate + '.json';
+
+        if (hqChart.NetworkFilter) {
+            var obj =
+            {
+                Name: 'MarketEventInfo::RequestData', //类名::
+                Explain: '大盘异动',
+                Request: { Url: url, Type: 'Get', Data: { Date: hqChart.TradeDate, Symbol: hqChart.Symbol } },
+                Self: this,
+                PreventDefault: false
+            };
+            hqChart.NetworkFilter(obj, function (data) 
+            {
+                self.RecvData(data, param);
+                param.HQChart.UpdataChartInfo();
+                param.HQChart.Draw();
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        //请求数据
+        wx.request({
+            url: url,
+            method: "get",
+            dataType: "json",
+            success: function (recvData) {
+                self.RecvData(recvData, param);
+            },
+            error: function (http, e) {
+                console.warn("[MarketEventInfo::RequestData] error, http ", e, http);
+            }
+        });
+
+        return true;
+    }
+
+    this.RecvData = function (recvData, param) 
+    {
+        var data=recvData.data;
+        for (var i in data.event) 
+        {
+            var event = data.event[i];
+            for (var j in event.data) 
+            {
+                var item = event.data[j];
+                if (item.length < 2) continue;
+                var info = { Date: event.date, Time: item[0], Title: item[1], Type: 0 };
+                this.Data.push(info);
+            }
+        }
+
+        param.HQChart.UpdataChartInfo();
+        param.HQChart.Draw();
+    }
+}
 
 //导出统一使用JSCommon命名空间名
 module.exports =
@@ -629,10 +692,11 @@ module.exports =
     {
         JSKLineInfoMap: JSKLineInfoMap,
         KLINE_INFO_TYPE: KLINE_INFO_TYPE,
-        SetDomain: SetDomain,
+        JSMinuteInfoMap: JSMinuteInfoMap,
     },
 
     //单个类导出
     JSCommon_JSKLineInfoMap: JSKLineInfoMap,
-    JSCommon_KLINE_INFO_TYPE: KLINE_INFO_TYPE
+    JSCommon_KLINE_INFO_TYPE: KLINE_INFO_TYPE,
+    JSCommon_JSMinuteInfoMap: JSMinuteInfoMap,
 };

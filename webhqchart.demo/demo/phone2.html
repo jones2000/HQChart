@@ -4,17 +4,18 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>页面行情(走势图)</title>  
-    <link rel="stylesheet" href="content/css/tools.css" />
-    <link rel="stylesheet" href="content/font/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
 </head>  
 <body>
 
     <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
 
-    <script type="text/javascript" src="../jscommon/umychart.js"></script>
-    <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
-    <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
-    <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>
+    <script src="../jscommon/umychart.complier.js"></script>
+    <script src="../jscommon/umychart.index.data.js"></script>
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
     <script>
         function getURLParams(name) 
         {
@@ -35,18 +36,75 @@
             divKline.style.height=height+'px';
             divKline.JSChart.OnSize();
         }
+
+        function NetworkFilter(data, callback)
+        {
+            console.log('[NetworkFilter] data', data);
+            
+            /*
+            if (data.Name=='MarketEventInfo::RequestData')
+            {
+                var recvData=
+                { 
+                    event:
+                    [
+                        {
+                            date:20190830,
+                            data:
+                            [
+                                [935,'新能源' ],
+                                [938,'国产芯片' ],
+                                [949,'稀有金属'],
+                                [945,'网络切片'],
+                                [946,'超清视频',],
+                                [950,'云计算'],
+                                [1000,'石墨烯' ],
+                                [1005,'新疆振兴'],
+                                [1010,'移动支付'],
+                                [1310,'物联网'],
+                                [1315,'智能电网'],
+                                [1350,'锂电池'],
+                                [1410,'核电'],
+                                [1420,'冰雪产业'],
+                                [1435,'宁德时代概念'],
+                                [1440,'装配式建筑'],
+                                [1455,'工业互联网'],
+                            ]
+                        }
+                    ]
+                }
+
+                setTimeout(() => { callback(recvData); }, 800);
+
+                data.PreventDefault=true;
+            }
+            */
+        }
         
         
         $(function ()
         {
             var symbol=getURLParams('symbol');
-            if (symbol==null) symbol='600000.sh';
+            //if (symbol==null) symbol='000001.sh';
+            //if (symbol==null) symbol='00001.hk';
+            //if (symbol==null) symbol='002022.sz';
+            //if (symbol==null) symbol='150013.sz';   //基金
+            //if (symbol==null) symbol='HSI.hk';
+            //if (symbol==null) symbol='tf1903.cfe';
+            //if (symbol==null) symbol='cf1909.czc';
+            if (symbol==null) symbol='MSFT.usa';
+            
         
             var index=getURLParams('index');        //指标3
+            //if (index==null) index='北上资金';
             if (index==null) index='MACD';
             var aryIndex=new Array();
             if (index) aryIndex.push({"Index":index});
 
+            var language=getURLParams('language');
+            if (!language) language='CN';
+
+            //JSChart.SetDomain("http://web4.umydata.com");
             // 创建股票K线图
             var jsChart=JSChart.Init(document.getElementById('kline'));
         
@@ -55,9 +113,31 @@
                     Type:'分钟走势图',
                     Windows:  aryIndex,     //窗口指标
                     Symbol:symbol,          //股票代码
-                    IsAutoUpate:true,       //是自动更新数据
         
-                    IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
+                    CorssCursorInfo:{ Left:2, Right:2, Bottom:1, IsShowCorss:true },  //十字光标刻度设置
+                    DayCount:1,                     //1 最新交易日数据 >1 多日走势图
+                    IsShowBeforeData:true,          //是否显示盘前数据
+                    IsAutoUpdate:false,              //是自动更新数据,
+                    EnableScrollUpDown:true,
+                    AutoUpdateFrequency:1000,
+
+                    //Info:[ "大盘异动" ],
+                    //MinuteInfo:{ TextHeight:18 },
+
+                    MinuteLine:
+                    {
+                        //IsDrawAreaPrice:false,      //是否画价格面积图
+                        //IsShowLead:false,             //是否显示领先指标
+                    },
+
+                    MinuteTitle: //标题设置
+                    {
+                        IsShowName:false,       //不显示股票名称
+                    },
+
+                    IsShowRightMenu:true,
+
+                    Language:language,  //英文 'EN' 中文:'CN'
         
                     Border: //边框
                     {
@@ -66,11 +146,18 @@
                         Top:20
                     },
                     Frame:  //子框架设置
-                        [
-                            {SplitCount:5,StringFormat:1},
-                            {SplitCount:3,StringFormat:1},
-                            {SplitCount:3,StringFormat:0},
-                        ]
+                    [
+                        {SplitCount:5,IsShowLeftText:true,IsShowRightText:true},
+                        {SplitCount:3,IsShowLeftText:true,IsShowRightText:true},
+                        {SplitCount:3,StringFormat:0},
+                    ],
+                    Overlay:
+                    [
+                        //{Symbol:'600000.sh'},
+                        //{Symbol:'002415.sz'}
+                    ],
+
+                    NetworkFilter:NetworkFilter
                 }
             
             var windowHeight= $(window).height();
@@ -79,6 +166,8 @@
             {
                 option.Border.Left=1;
                 option.Border.Right=1;
+                option.CorssCursorTouchEnd=true;
+                option.ExtendChart=[{Name:'MinuteTooltip' }]; //开启手机端tooltip
             }
         
             jsChart.SetOption(option);

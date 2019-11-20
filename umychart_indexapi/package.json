@@ -1,0 +1,16 @@
+{
+  "name": "hqcharapi",
+  "version": "1.0.0",
+  "description": "hqchart for api demo",
+  "main": "hqchartapi.js",
+  "dependencies": {
+    "mongodb": "^3.3.2",
+    "request": "^2.88.0",
+    "restify": "^7.2.1"
+  },
+  "scripts": {
+    "build": "babel ../jscommon/umychart.complier.js -d build/"
+  },
+  "author": "jones2000",
+  "license": "ISC"
+}

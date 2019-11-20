@@ -1,0 +1,57 @@
+{
+  "name": "zealink-news",
+  "description": "zealink news",
+  "author": "wgduan",
+  "private": true,
+  "scripts": {
+    "dev": "webpack-dev-server --inline --hot --env.dev",
+    "page": "webpack-dev-server --inline --hot --open --env.dev --open-page ",
+    "build": "rimraf dist && webpack -p --progress --hide-modules"
+  },
+  "dependencies": {
+    "ali-oss": "^4.16.0",
+    "axios": "^0.16.2",
+    "dayjs": "^1.8.15",
+    "echarts": "^4.2.1",
+    "element-ui": "^2.10.1",
+    "jquery": "^3.4.1",
+    "js-md5": "^0.7.3",
+    "js-sha256": "^0.9.0",
+    "less": "^3.9.0",
+    "less-loader": "^5.0.0",
+    "md5": "^2.2.1",
+    "moment": "^2.24.0",
+    "promise-polyfill": "^6.0.2",
+    "qs": "^6.5.0",
+    "swiper": "^3.4.2",
+    "vue": "^2.1.8",
+    "vue-mobile-calendar": "^3.2.0",
+    "vue-router": "^2.8.1",
+    "weixin-js-sdk": "^1.4.0-test"
+  },
+  "engines": {
+    "node": ">=6"
+  },
+  "devDependencies": {
+    "autoprefixer": "^6.6.0",
+    "babel-core": "^6.24.1",
+    "babel-loader": "^6.4.0",
+    "babel-plugin-component": "^1.1.1",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-vue-app": "^1.2.0",
+    "css-loader": "^0.27.0",
+    "file-loader": "^0.10.1",
+    "hqchart": "^1.1.7439",
+    "html-webpack-plugin": "^2.24.1",
+    "node-sass": "^4.12.0",
+    "postcss-loader": "^1.3.3",
+    "rimraf": "^2.5.4",
+    "sass-loader": "^7.1.0",
+    "style-loader": "^0.13.2",
+    "url-loader": "^0.5.8",
+    "vue-loader": "^11.1.4",
+    "vue-template-compiler": "^2.1.8",
+    "webpack": "^2.7.0",
+    "webpack-dev-server": "^2.4.2"
+  }
+}

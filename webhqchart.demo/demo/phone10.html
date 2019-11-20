@@ -3,14 +3,16 @@
 <head>  
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<metaname="x5-orientation" content="portrait"></metaname>
 <title>页面行情(走势图横屏)</title>  
     <link rel="stylesheet" href="content/css/tools.css" />
-    <link rel="stylesheet" href="content/font/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
 </head>  
 <body>
 
     <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
 
+    <script src="../jscommon/umychart.network.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
@@ -39,8 +41,10 @@
         
         $(function ()
         {
+            //JSChart.SetDomain("http://web4.umydata.com");
+
             var symbol=getURLParams('symbol');
-            if (symbol==null) symbol='600000.sh';
+            if (symbol==null) symbol='000001.sh';
         
             var index=getURLParams('index');        //指标3
             if (index==null) index='MACD';
@@ -58,7 +62,10 @@
                     IsAutoUpate:true,       //是自动更新数据
         
                     IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
-                    DayCount:5,    
+                    IsShowBeforeData:true,          //是否显示盘前数据
+                    DayCount:1,                     //1 最新交易日数据 >1 多日走势图
+
+                    Info:[ "大盘异动" ],
         
                     Border: //边框
                     {
@@ -68,18 +75,22 @@
                         Bottom:50
                     },
                     Frame:  //子框架设置
-                        [
-                            {SplitCount:5,StringFormat:1},
-                            {SplitCount:3,StringFormat:1},
-                            {SplitCount:3,StringFormat:0},
-                        ]
+                    [
+                        {SplitCount:5,StringFormat:0},
+                        {SplitCount:3,StringFormat:0},
+                        {SplitCount:3,StringFormat:0},
+                    ],
+                    ExtendChart:
+                    [
+                        {Name:'MinuteTooltip' }
+                    ]
                 }
             
             var windowHeight= $(window).height();
             var windowWidth = $(window).width();
             if (windowWidth<=420)   //手机小屏左右不显示坐标
             {
-                
+                option.CorssCursorTouchEnd=true;
             }
         
             jsChart.SetOption(option);

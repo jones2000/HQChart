@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--优先使用IE最新版本和Chrome-->
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<!--移动设备上屏幕显示区域的设置-->
+<meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+<!--主要是针对苹果手机将数字自动识别为号码-->
+<meta name="format-detection" content="telephone=no">
+<!--启用全屏模式，伪装app，离线应用。-->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<!--隐藏状态栏/设置状态栏颜色-->
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<!-- 针对手持设备优化，主要是针对一些老的不识别viewport的浏览器-->
+<meta name="HandheldFriendly" content="True">
+<!-- 微软的老式浏览器 告诉浏览器页面为某个宽度特殊优化-->
+<meta name="MobileOptimized" content="width">
+<!--指定适合自己网站的渲染内核名称-->
+<meta name="renderer" content="webkit" />
+
+<head>
+  <meta charset="utf-8">
+  <title>行情</title>
+</head>
+
+<body>
+  <div id="app"></div>
+</body>
+
+<style>
+  /*web app 全局样式*/
+  html,
+  body,
+  div,
+  span,
+  applet,
+  object,
+  iframe,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  blockquote,
+  pre,
+  a,
+  abbr,
+  acronym,
+  address,
+  big,
+  cite,
+  code,
+  del,
+  dfn,
+  em,
+  font,
+  img,
+  ins,
+  kbd,
+  q,
+  s,
+  samp,
+  small,
+  strike,
+  strong,
+  sub,
+  sup,
+  tt,
+  var,
+  b,
+  u,
+  i,
+  center,
+  dl,
+  dt,
+  dd,
+  ol,
+  ul,
+  li,
+  fieldset,
+  form,
+  label,
+  legend,
+  table,
+  caption,
+  tbody,
+  tfoot,
+  thead,
+  tr,
+  th,
+  td,
+  header,
+  input {
+    margin: 0;
+    padding: 0;
+  }
+
+  a {
+    text-decoration: none;
+    cursor: pointer;
+    color: #555756;
+  }
+
+  li {
+    list-style: none;
+  }
+
+  a:hover {
+    text-decoration: none;
+  }
+
+  a img {
+    border: none;
+  }
+
+  a>img {
+    vertical-align: bottom;
+  }
+
+  input {
+    outline: none;
+    border: 0;
+  }
+
+  /*定义会html根目录字体样式*/
+  html {
+    font-size: 62.5%;
+    -webkit-text-size-adjust: none;
+    /*禁用iPhone中safari的自豪自动调整*/
+    height: 100%;
+    width: 100%;
+    background: #fff;
+  }
+
+  body {
+    font-family: "微软雅黑";
+    font-size: 1.6rem;
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+  }
+
+  /* 设置HTML5元素为块 */
+  article,
+  aside,
+  details,
+  figcaption,
+  figure,
+  footer,
+  header,
+  hgroup,
+  menu,
+  nav,
+  section {
+    display: block;
+  }
+
+  /* 设置图片视频等自适应调整 */
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    width: auto\9;
+  }
+
+  .video embed,
+  .video object,
+  .video iframe {
+    width: 100%;
+    height: auto;
+  }
+</style>
+
+</html>

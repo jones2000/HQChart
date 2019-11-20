@@ -1,0 +1,264 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>K线图-第3方数据-文字</title>  
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+    <link rel="stylesheet" href="phone26_iconfont.css" />
+    <!-- 使用阿里云图片 -->
+    
+</head>  
+<body>
+    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+
+    <script src="content/js/jquery.min.js"></script>
+    <script src="content/js/webfont.js"></script>
+
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>
+    <script src="../jscommon/umychart.complier.js"></script>
+    <script src="../jscommon/umychart.index.data.js"></script>
+    <script src="../jscommon/umychart.style.js"></script>
+    
+
+     <!-- 引入vConsole的JS库 -->
+     <script src="../vConsole-3.2.0/dist/vconsole.min.js"></script>
+    
+    <script>
+
+        //预加载下阿里云图片
+        WebFont.load({ custom: { families: ['iconfont'] } });
+        WebFont.load({ custom: { families: ['js-iconfont'] } });
+
+        function getURLParams(name) 
+        {
+        	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        	var r = window.location.search.substr(1).match(reg);
+        	if (r != null) return decodeURI(r[2]);
+        	return null;
+        }
+        
+        $(window).resize(resizeCanvas);
+        
+        function resizeCanvas()
+        {
+            var height= $(window).height();
+            var width = $(window).width();
+            var divKline=document.getElementById('kline');
+            divKline.style.top=0+'px';
+            divKline.style.left=0+'px';
+            divKline.style.width=(width)+'px';
+            divKline.style.height=(height)+'px';
+            divKline.JSChart.OnSize();
+        }
+
+        function NetworkFilter(data, callback)
+        {
+            console.log('[NetworkFilter] data', data);
+
+            if (data.Name=='APIScriptIndex::ExecuteScript')
+            {
+                var request=data.Request;
+                if (request.Data.indexname=='文字标记')
+                {
+                    data.PreventDefault=true;
+                    setTimeout(()=>
+                    {
+                        var hqchart=data.HQChart;
+                        var kData=hqchart.ChartPaint[0].Data;
+
+                        var closeLine={name:'收盘价线', type:0, data:kData.GetClose() };
+                        var text= 
+                        { 
+                            name:'MULTI_TEXT', type:1, 
+                            Draw: 
+                            { 
+                                DrawType:'MULTI_TEXT', 
+                                DrawData: 
+                                [
+                                    {Date:20190926, Time:945, Value:14.5, Text:'测试文字1',Color:'rgb(0,255,50)'},
+                                    {Date:20190801, Time:1011, Value:14.2,Text:'14.2',Color:'rgb(0,55,50)'} , 
+                                    {Date:20190905, Time:1425, Value:14.15,Text:'发财了'}
+                                ]
+                            } //绘制文字
+                        };
+
+                        for(var i in kData.Data)
+                        {
+                            var item=kData.Data[i];
+                            if (i%40==0) text.Draw.DrawData.push({ Date:item.Date, Value:item.High, Text:item.High.toFixed(2), Baseline:2, Color:'rgb(165,42,42)' });
+                            else if (i%20==0) text.Draw.DrawData.push({ Date:item.Date, Value:item.Low, Text:item.Low.toFixed(2), Baseline:1, Color:'rgb(0,100,0)' })
+                        }
+
+                        var apiData=
+                        {
+                            code:0, 
+                            stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+                            outdata: { date:kData.GetDate() , outvar:[closeLine,text] } 
+                        };
+                        
+                        
+                        console.log('[NetworkFilter::NetworkFilter] apiData ', apiData);
+                        callback(apiData);
+                    }, 500);
+                }
+            }
+        }
+        
+        
+        $(function ()
+        {
+            var debug=getURLParams('debug');
+            if (debug==1) 
+            {
+                var vConsole = new VConsole();
+                console.log('create VConsole');
+            }
+
+            var symbol=getURLParams('symbol');
+            if (symbol==null) symbol='000001.sz';
+        
+            // 创建股票K线图
+            var chart=JSChart.Init(document.getElementById('kline'));
+
+            var height= $(window).height();
+            var width = $(window).width();
+            var divKline=document.getElementById('kline');
+            divKline.style.width=width+'px';
+            divKline.style.height=height+'px';
+            chart.OnSize();
+        
+            var option=
+            {
+                Type:'历史K线图',
+                //Type:'历史K线图横屏',
+                
+                Windows: 
+                [
+                    {
+                        Index:'文字标记',
+                        API: 
+                        {
+                            Name:'文字标记',
+                            Script:null,
+                            Args:null, 
+                            Url:'http://127.0.0.1:18080/api/jsindex' 
+                        } 
+                        
+                    },
+                    {
+                        Index:"MACD", 
+                    },
+                            
+                ], //窗口指标
+
+                Symbol:symbol,
+                IsAutoUpdate:true,          //是自动更新数据
+                AutoUpdateFrequency:3000,   //数据更新频率
+                //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
+                NetworkFilter:NetworkFilter,
+    
+                IsShowRightMenu:true,          //右键菜单
+                IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
+                CorssCursorInfo:{ Left:1, Right:1, Bottom:1, IsShowCorss:true, PressTime:300 },  //十字光标刻度设置
+    
+                KLine:
+                {
+                    DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                    Right:1,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxReqeustDataCount:1000,   //数据个数
+                    MaxRequestMinuteDayCount:6,
+                    PageSize:90,               //一屏显示多少数据
+                    IndexTreeApiUrl:"https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
+                    //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
+                    //Info:["公告","互动易","调研"],           //信息地雷
+                    InfoPosition:1,                         //显示位置
+                    KLineDoubleClick:false,              //双击分钟走势图
+                    IsShowTooltip:true,                 //是否显示K线提示信息
+                    //FirstShowDate:20180401,             //首屏显示的起始日期   
+                    DrawType:0,           
+                },
+    
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true //不显示周期/复权
+                },
+    
+                Border: //边框
+                {
+                    Left:5,           //左边间距
+                    Right:60,       //右边间距
+                    Bottom:50,
+                    Top:1
+                },
+
+                Language:"CN",  //英文 'EN' 中文:'CN'
+
+                ExtendChart:    //扩展图形
+                [
+                    {Name:'画图工具',Top:25}
+                ],
+                
+                Frame:  //子框架设置 (Height 窗口高度比例值)
+                [
+                    {   SplitCount:5,
+                        //Height:4,
+                        IsShowLeftText:false, 
+                        IsShowRightText:true
+                    },
+                    {
+                        SplitCount:3,
+                        //Height:2,
+                        IsShowLeftText:false, 
+                        IsShowRightText:true
+                    },
+                    {
+                        SplitCount:2,
+                        //Height:2,
+                        IsShowLeftText:false, 
+                        IsShowRightText:true
+                    }
+                ],
+
+                Overlay:
+                [
+                    //{Symbol:'000001.sh', DrawType:0},   
+                    //{Symbol:'002415.sz', DrawType:0}
+                ],
+
+                
+            }
+
+            var windowHeight= $(window).height();
+            var windowWidth = $(window).width();
+            if (windowWidth<=420)   //手机小屏左右不显示坐标
+            {
+                option.Border.Left=1;
+                option.Border.Right=1;
+                option.KLine.IsShowTooltip=false;   //关闭pc端tooltip
+                option.KLine.Info=null;
+                option.KLine.PageSize=50;   
+                option.ExtendChart=[{Name:'KLineTooltip' }]; //开启手机端tooltip
+                //option.ExtendChart=null;
+                option.IsCorssOnlyDrawKLine=true;
+                option.CorssCursorTouchEnd=true;
+                for(var i in option.Windows)
+                {
+                    option.Windows[i].Modify=false;
+                    option.Windows[i].Change=false;
+                }
+            }
+            
+        
+            chart.SetOption(option);
+
+            resizeCanvas();
+        })
+        
+    </script>  
+</body>  
+</html>

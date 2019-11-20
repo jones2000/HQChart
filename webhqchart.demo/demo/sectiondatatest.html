@@ -1,0 +1,155 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>指标执行测试</title>  
+    
+</head>  
+<body>
+    <div id='index_data1' style='margin:10px 10px 10px 10px;'> 
+        <table class="table">
+        </table>
+    </div>
+    <div id='index_script1' style='margin:10px 10px 10px 10px;'></div>
+    
+    <div id='index_data2' style='margin:10px 10px 10px 10px;'> 
+        <table class="table"></table>
+    </div>
+    <div id='index_script2' style='margin:10px 10px 10px 10px;'></div>
+
+    <script src="content/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.js"></script>
+    <script src="../jscommon/umychart.complier.js"></script>
+    
+    <script>
+
+        function SectionIndex(obj)
+        {
+            this.Symbol='600000.sh';
+            this.TableID;
+
+            this.Name;
+            this.ID;
+            this.Args=[];
+            this.Script;
+
+            this.IndexControl;
+
+            if (obj)
+            {
+                if (obj.Symbol) this.Symbol=obj.Symbol;
+                if (obj.Name) this.Name=obj.Name;
+                if (obj.ID) this.ID=obj.ID;
+                if (obj.Args) this.Args=obj.Args;
+                if (obj.Script) this.Script=obj.Script;
+                if (obj.TableID) this.TableID=obj.TableID;
+            }
+
+            this.Run=function()
+            {
+                var self=this;
+                var obj=
+                {
+                    Name:this.Name, ID:this.ID, 
+                    Args:this.Args,
+                    Script: this.Script,
+                    ErrorCallback:function(error) { self.ExecuteError(error) },
+                    FinishCallback:function(data, jsExectute) { self.ExecuteFinish(data, jsExectute) },
+                    IsSectionMode:true,
+                };
+
+                var stockObj=
+                {
+                    HQDataType:HQ_DATA_TYPE.KLINE_ID,
+                    Stock: {Symbol:this.Symbol},
+                    Request: { MaxDataCount: 500, MaxMinuteDayCount:5 },
+                    Period:0 , Right:0
+                };
+
+                this.IndexControl=new ScriptIndexConsole(obj);
+                this.IndexControl.ExecuteScript(stockObj);
+            }
+
+            this.ExecuteError=function(error)
+            {
+                console.log('[SectionIndex::ExecuteError] Error: ',error)
+            }
+
+            this.ExecuteFinish=function(data, jsExectute)
+            {
+                console.log('[SectionIndex::ExecuteFinish] data, jsExectute ',data, jsExectute);
+                var table=$(this.TableID)[0];
+
+                var tr=$('<tr>')[0];
+                var tb=$('<td>')[0];
+                tb.innerText=this.Name;
+                tr.append(tb);
+                tb=$('<td>')[0];
+                tb.innerText=this.Symbol;
+                tr.append(tb);
+                table.appendChild(tr);
+
+                var outVar=data.Out;
+                for(var i in outVar)
+                {
+                    var item=outVar[i];
+                    tr=$('<tr>')[0];
+                    tb=$('<td>')[0];
+                    tb.innerText=item.Name;
+                    tr.append(tb);
+                    
+                    tb=$('<td>')[0];
+                    tb.innerText=item.Data;
+                    tr.append(tb);
+
+                    table.appendChild(tr);
+                }
+                
+            }
+        }
+
+        $(function ()
+        {
+            var index=new SectionIndex(
+                {
+                    Name:'财务数据', ID:'1111', 
+                    Symbol:'600000.sh',
+                    Args:[ { Name:'YY', Value:2018} ],
+                    Script: //脚本
+                        "投资收益:SF(YY,2,'投资收益');\n"+
+                        "营业利润:SF(YY,2,'营业利润');" ,
+
+                    TableID:'#index_data1 .table'
+                }
+            );
+            $("#index_script1 ")[0].innerText='脚本:\n'+index.Script;
+            index.Run();
+
+
+            var index2=new SectionIndex(
+                {
+                    Name:'财务数据', ID:'1112', 
+                    Symbol:'600000.sh',
+                    Args:[ { Name:'YY', Value:2019} ],
+                    Script: //脚本
+                        "DATA2017=SF(YY-2,1,'营业总收入');\n" +
+                        "DATA2018=SF(YY-1,1,'营业总收入');\n" +
+                        "DATA2019=SF(YY,1,'营业总收入');\n" +
+                        "营业总收入2019一季度:DATA2019;\n" +
+                        "营业总收入2018一季度:DATA2018;\n" +
+                        "营业总收入2017一季度:DATA2017;\n" +
+                        "比上一年:IF(DATA2019>DATA2018, '增加','减少');\n" +
+                        "连续增长:IF( DATA2019>DATA2018 AND DATA2018>DATA2017, '是','否');",
+
+                    TableID:'#index_data2 .table'
+                }
+            );
+            $("#index_script2 ")[0].innerText='脚本:\n'+index2.Script;
+            index2.Run();
+        })
+        
+
+    </script>  
+</body>  
+</html>

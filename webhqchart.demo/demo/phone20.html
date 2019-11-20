@@ -1,0 +1,234 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>本地指标数据页面行情(K线图)</title>
+    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+    <link rel="stylesheet" href="content/css/phone20.tools.css" />
+</head>
+
+<body>
+    <div class="tools">
+        <div class="top" id="tools_top">
+            <button class="toolsButton" v-on:click="formatJson()">格式化</button>
+            <button class="toolsButton" v-on:click="execute()">执行</button>
+        </div>
+        <div class="bottom" id="tools_bottom">
+            <textarea class="textarea" v-model="value"></textarea>
+        </div>
+    </div>
+    <div id="kline" style="width: 900px;height:400px;position: relative;float:left;"></div>
+
+    <script src="content/js/jquery.min.js"></script>
+    
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>
+    <script src="../jscommon/umychart.complier.js"></script>
+    <script src="../jscommon/umychart.index.data.js"></script>
+    <script src="../jscommon/umychart.style.js"></script>
+
+    <!-- 引入vConsole的JS库 -->
+    <script src="../vConsole-3.2.0/dist/vconsole.min.js"></script>
+
+    <script type="text/javascript" src="content/js/vue.js"></script>
+    <script type="text/javascript" src="content/js/phone20.tools.js"></script>
+
+    <script>
+        var chart,
+            option;
+
+        function getURLParams(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return decodeURI(r[2]);
+            return null;
+        }
+
+
+        $(window).resize(resizeCanvas);
+
+        function resizeCanvas() {
+            var height = $(window).height() - 100;
+            var width = $(window).width() - 350;
+            var divKline = document.getElementById('kline');
+            divKline.style.width = width + 'px';
+            divKline.style.height = height + 'px';
+            //divKline.style.left='300px';
+            divKline.style.top = '50px';
+
+            $(".textarea").css("height", height);
+
+            divKline.JSChart.OnSize();
+        }
+
+
+        $(function () {
+            var debug = getURLParams('debug');
+            if (debug == 1) {
+                var vConsole = new VConsole();
+                console.log('create VConsole');
+            }
+
+            var symbol = getURLParams('symbol');
+            //if (symbol==null) symbol='00001.hk';
+            if (symbol == null) symbol = '300104.sz';
+
+            var index = getURLParams('index');        //指标1
+            if (index == null) index = 'MA';
+
+            var index2 = getURLParams('index2');      //指标2
+            if (index2 == null) index2 = 'Zealink-资金吸筹';
+
+            var index3 = getURLParams('index3');      //指标3
+            if (index3 == null) index3 = 'Zealink-牛熊区间';
+
+            var aryIndex = new Array();
+            aryIndex.push({ "Index": index, "Modify": false, "Change": false });
+            aryIndex.push({ "Index": index2, "Modify": false, "Change": false });
+            if (index3) aryIndex.push({ "Index": index3, "Modify": false, "Change": false });
+
+            //黑色风格设置, 默认是白色风格
+            //var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID);
+            //JSChart.SetStyle(blackStyle);
+            //document.getElementById('kline').style.backgroundColor=blackStyle.BGColor;
+
+            // 创建股票K线图
+            console.log('create JSChart');
+            chart = JSChart.Init(document.getElementById('kline'));
+
+            option =
+                {
+                    Type: '历史K线图',
+                    Windows:    //窗口指标
+                        [
+                            { Index: 'MA' },
+                            { Name: localIndexData.Name, JsonData: localIndexData }
+                            // {Index:'KDJ'}
+                        ],
+                    //ColorIndex:{Index:'五彩K线-双飞乌鸦'},  //五彩K线指标
+                    //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
+                    Symbol: symbol,
+                    IsAutoUpate: true,       //是自动更新数据
+
+                    IsShowRightMenu: true,          //右键菜单
+                    IsShowCorssCursorInfo: true,    //是否显示十字光标的刻度信息
+
+                    KLine:
+                    {
+                        DragMode: 1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                        Right: 1,                    //复权 0 不复权 1 前复权 2 后复权
+                        Period: 0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                        MaxReqeustDataCount: 1000,   //数据个数
+                        PageSize: 50,               //一屏显示多少数据
+                        IndexTreeApiUrl: "https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
+                        //Info:["业绩预告","公告","互动易","调研","大宗交易"],       //信息地雷
+                        //Info:["业绩预告","公告"],          //信息地雷
+                        KLineDoubleClick: true,              //双击分钟走势图
+                        IsShowTooltip: true,                //是否显示K线提示信息
+                        DrawType: 0,
+                    },
+
+                    KLineTitle: //标题设置
+                    {
+                        IsShowName: true,       //不显示股票名称
+                        IsShowSettingInfo: true //不显示周期/复权
+                    },
+
+                    Border: //边框
+                    {
+                        Left: 100,    //左边间距
+                        Right: 100,     //右边间距
+                        Bottom: 25
+                    },
+
+                    Frame:  //子框架设置
+                        [
+                            { SplitCount: 3 },
+                            { SplitCount: 3 },
+                            //{SplitCount:3}
+                        ],
+
+                    Overlay:
+                        [
+                            // {Symbol:'000001.sh'}
+                        ]
+                }
+
+            var windowHeight = $(window).height();
+            var windowWidth = $(window).width();
+            if (windowWidth <= 420)   //手机小屏左右不显示坐标
+            {
+                option.Border.Left = 1;
+                option.Border.Right = 1;
+                option.KLine.IsShowTooltip = false;
+            }
+
+            //chart.SetOption(option);
+            //jsChart.LockIndex('飞龙四式',unlockIndex);
+
+            //resizeCanvas();
+
+            //setTimeout(() => { chart.ChangeKLineDrawType(0);}, 20000);
+
+            //setTimeout(() => { chart.ChangeSymbol("000001.sz");}, 20000);
+            //setTimeout(() => { chart.ChangeInstructionIndex("五彩K线-双飞乌鸦");}, 20000);
+            //setTimeout(() => { chart.CancelInstructionIndex();}, 40000);
+
+            Tools.init();
+
+        });
+
+        function unlockIndex(indexName) {
+            console.log(indexName);
+        }
+
+
+        var localIndexData = {
+            Name: '本地指标',
+            data:
+                [
+                    {
+                        graph: 'line', name: '数据1',
+                        data:
+                            [
+                                0.024824691382736262,
+                                0.032374480460405156,
+                                0.04458121744572169,
+                                0.04804452827422119,
+                                0.04816620068993625,
+                                0.04623678426287751,
+                                0.044134354415412094,
+                                0.03906130996159819,
+                                0.03485595712198429,
+                                0.027985036993695978
+                            ]
+                    },
+                    {
+                        graph: 'line', name: '数据2',
+                        data:
+                            [
+                                0.03485595712198429,
+                                0.027985036993695978,
+                                0.01926115987753625,
+                                0.005162524566799893,
+                                -0.1551760682992808,
+                                -0.1789222510884499,
+                                -0.21026489398988552,
+                                -0.20300735023312827,
+                                -0.19358702614033593,
+                                -0.18222554155884677
+                            ]
+                    }
+                ],
+
+            date: [20190102, 20190103, 20190104, 20190107, 20190108, 20190109, 20190110, 20190111, 20190114, 20190115]
+        };
+
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+﻿.tools {
+    float:left;
+    padding:10px;
+}
+
+.tools .top{
+    margin-bottom:5px;
+    float:right;
+}
+
+.tools .bottom .textarea{
+    height:800px;
+    width:300px;
+    padding:5px;
+}
+
+.toolsButton {
+    height:32px;
+    padding:0 8px;
+    cursor:pointer;
+}

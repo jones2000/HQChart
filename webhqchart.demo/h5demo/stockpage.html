@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<title>自选详情</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<link href="css/selectDetail.css" rel="stylesheet">
+	<link href="css/iosSelect.css" rel="stylesheet">
+</head>
+
+<body class="bodyBg">
+	<!--页面头部-->
+	<div class="headTitle">
+		<div class="nameWrap"><span class="stockName"></span><span class="flagBox rFlag">融</span><span class="flagBox tFlag">通</span></div>
+		<div class="exchangeInfo"><span class="date"></span><span class="time"></span></div>
+	</div>
+	<!--价格部分-->
+	<div class="exchangeData" id="main">
+		<div class="clear">
+			<div class="priceCurrent">
+				<p class="priceCurrentNum"></p>
+				<p class="riseInfo"><span class="riseNum"></span><span class="risePrecent"></span></p>
+			</div>
+			<div class="priceHL">
+				<p class="high">高<span></span></p>
+				<p class="low">低<span></span></p>
+			</div>
+			<div class="priceOpen">
+				<p class="open">开<span></span></p>
+				<p class="change">换<span></span></p>
+			</div>
+			<div class="priceAmount">
+				<p class="num">额<span></span></p>
+				<p class="totalValue">量<span></span></p>
+			</div>
+		</div>
+		<table class="exchangeInfoT">
+			<tbody>
+				<tr>
+					<td>PE</td>
+					<td><span class="pe"></span></td>
+					<td class="clear"><span class="name">总市值</span><span class="marketV"></span></td>
+					<td>流通市值</td>
+					<td><span class="flowMarketV"></span></td>
+				</tr>
+				<tr>
+					<td>EPS</td>
+					<td><span class="eps"></span></td>
+					<td class="clear"><span class="name">滚动EPS</span><span class="scrollEPS"></span></td>
+					<td>ROE</td>
+					<td><span class="roe"></span></td>
+				</tr>
+				<tr>
+					<td>PB</td>
+					<td><span class="pb"></span></td>
+					<td class="clear"><span class="name">振幅</span><span class="amplitude"></span></td>
+					<td></td>
+					<td></td>
+				</tr>
+			</tbody>
+		</table>
+		<p class="shrinkWrap"><img class="shrinkBtn" src="images/shrink_icon.png" alt=""></p>
+	</div>
+	<!--k线部分-->
+	<div class="tabs kLineTabs blockBg">
+		<p class="tabsTitle"><span class="active" id="minuteChartSelect">分时</span><span id="fiveDMinute">五日</span><span class="k">日线</span><span
+			 class="k">周线</span><span class="k">月线</span><span id="showMinute">1分钟</span><input type="hidden" id="minuteId"></p>
+		<!-- 分时图部分 -->
+		<div class="clear minuteWrap">
+			<div id="minuteKline"></div>
+			<!-- 分时图右侧内容 -->
+			<div class="rightMinute">
+				<ul class="minute-tab clear tabsTitle">
+					<li class="tableSell active-minute active">五档</li>
+					<li class="tableBuy">明细</li>
+				</ul>
+				<div class="tabsContent">
+					<div id="minuteFive" class="tableMinuteContent item active">
+						<table class="tableOne"></table>
+						<table class="tableTwo"></table>
+					</div>
+					<div id="minute" class="tableMinuteContent item">
+					</div>
+				</div>
+
+			</div>
+		</div>
+		<!-- 5日分时图部分 -->
+		<div class="fiveDayMinuteWrap">
+			<div id="fiveDayMinute"></div>
+		</div>
+		<!-- k线图部分 -->
+		<div class="clear klineWrap">
+			<div id="kline"></div>
+			<!-- k线图右侧内容 -->
+			<div class="phoneRight">
+				<!-- <ul class="ulOne">
+	            <li class="noRight">不复权</li>
+	            <li class="preRight active">前复权</li>
+	            <li class="appendRight">后复权</li>
+	        </ul>
+	        <ul class="ulTwo">
+	        </ul> -->
+			</div>
+		</div>
+	</div>
+	<!--个股分析部分-->
+	<div class="blockBg">
+		<div class="blockTitle"><span>个股分析</span></div>
+		<ul class="subjectList clear">
+			<li><a href="#">
+					<img src="images/yearB.png" alt="">
+					<p>年报挖掘</p>
+				</a>
+			</li>
+			<li><a href="#">
+					<img src="images/gongg.png" alt="">
+					<p>公告解读</p>
+				</a>
+			</li>
+			<li><a href="#">
+					<img src="images/caiW.png" alt="">
+					<p>财务粉饰</p>
+				</a>
+			</li>
+		</ul>
+	</div>
+	<!--新闻部分-->
+	<div class="tabs qATtabs blockBg">
+		<p class="tabsTitle"><span>新闻</span><span class="active">互动易</span><span>调研</span><span>公告</span><span>概况</span><span>财务</span></p>
+		<div class="tabsContent qATabsContent">
+			<ul class="newsList likeNewsList item" id="newsList"></ul>
+			<ul class="qAList item active" id="qAList">
+			</ul>
+			<ul class="visitList item" id="visitList">
+				<li class="noData">近一年内暂无数据</li>
+			</ul>
+			<ul class="noticeList likeNewsList item" id="noticeList">
+			</ul>
+			<ul class="item" style="min-height: 100px;">
+				<li class="noData" id="">暂无数据</li>
+			</ul>
+			<ul class="item" style="min-height: 100px;">
+				<li class="noData" id="">暂无数据</li>
+			</ul>
+		</div>
+	</div>
+
+	<div class="container"></div>
+
+	<script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+	<script type="text/javascript" src="../jscommon/umychart.network.js"></script>
+	<script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
+	<script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
+	<script type="text/javascript" src="../jscommon/umychart.js"></script>
+	<script type="text/javascript" src="../jscommon/umychart.stock.js"></script>
+	<script type="text/javascript" src="js/umychart.news.js"></script>
+	<script type="text/javascript" src="js/iosSelect.js"></script>
+	<!--<script type="text/javascript" src="../vConsole-3.2.0/dist/vconsole.min.js"></script>-->
+	<script type="text/javascript" src="js/selectDetail.js"></script>
+
+	<script>
+		//JSComplier.SetDomain('https://opensource.zealink.com');
+		//JSChart.SetDomain('https://opensource.zealink.com');
+		//JSStock.SetDomain('https://opensource.zealink.com');
+	</script>
+
+</body>
+
+</html>

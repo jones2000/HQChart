@@ -1,0 +1,237 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>页面行情(K线图)</title>  
+    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+    <!-- 使用阿里云图片 -->
+    <!--<link rel="stylesheet" href="https://at.alicdn.com/t/font_1040563_1d1tgaoqofpi.css" />-->
+    
+</head>  
+<body>
+    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+
+    <script src="content/js/jquery.min.js"></script>
+    <script src="content/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>
+    <script src="../jscommon/umychart.complier.js"></script>
+    <script src="../jscommon/umychart.index.data.js"></script>
+    <script src="../jscommon/umychart.style.js"></script>
+    
+
+     <!-- 引入vConsole的JS库 -->
+     <script src="../vConsole-3.2.0/dist/vconsole.min.js"></script>
+    
+    <script>
+
+        //预加载下阿里云图片
+        WebFont.load({ custom: { families: ['iconfont'] } });
+
+        function getURLParams(name) 
+        {
+        	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        	var r = window.location.search.substr(1).match(reg);
+        	if (r != null) return decodeURI(r[2]);
+        	return null;
+        }
+        
+        
+        $(window).resize(resizeCanvas);
+        
+        function resizeCanvas()
+        {
+            var height= $(window).height();
+            var width = $(window).width();
+            var divKline=document.getElementById('kline');
+            divKline.style.top=0+'px';
+            divKline.style.left=0+'px';
+            divKline.style.width=(width)+'px';
+            divKline.style.height=height+'px';
+            divKline.JSChart.OnSize();
+        }
+        
+        
+        $(function ()
+        {
+            var debug=getURLParams('debug');
+            if (debug==1) 
+            {
+                var vConsole = new VConsole();
+                console.log('create VConsole');
+            }
+
+            var symbol=getURLParams('symbol');
+            if (symbol==null) symbol='000001.sz';
+        
+            var index=getURLParams('index');        //指标1
+            if (index==null) index='MA';
+        
+            var index2=getURLParams('index2');      //指标2
+            if (index2==null) index2='VOL';
+        
+            var index3=getURLParams('index3');      //指标3
+            if (index3==null) index3='MACD';
+        
+            var aryIndex=new Array();
+            aryIndex.push({Index:index,Modify:true,Change:true});
+            aryIndex.push({Index:index2,Modify:true,Change:true});
+            if (index3) aryIndex.push({Index:index3,Modify:true,Change:true});
+
+            //黑色风格设置, 默认是白色风格
+            //var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID);
+            //JSChart.SetStyle(blackStyle);
+            //document.getElementById('kline').style.backgroundColor=blackStyle.BGColor;
+        
+            // 创建股票K线图
+            console.log('create JSChart');
+            var chart=JSChart.Init(document.getElementById('kline'));
+
+            var height= $(window).height();
+            var width = $(window).width();
+            var divKline=document.getElementById('kline');
+            divKline.style.width=width+'px';
+            divKline.style.height=height+'px';
+            chart.OnSize();
+        
+            var option=
+                {
+                    Type:'历史K线图',
+                    Windows:aryIndex, //窗口指标
+                    
+                    Windows: [
+                                {Index:"MA"},
+                                {Index:"VOL"},
+                                {Index:"RSI"},
+                                
+                            ], //窗口指标
+                    
+                    Symbol:symbol,
+                    IsAutoUpdate:true,       //是自动更新数据
+                    //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
+        
+                    IsShowRightMenu:true,          //右键菜单
+                    IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
+        
+                    KLine:
+                    {
+                        DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                        Right:1,                    //复权 0 不复权 1 前复权 2 后复权
+                        Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                        MaxReqeustDataCount:1000,   //数据个数
+                        PageSize:150,               //一屏显示多少数据
+                        IndexTreeApiUrl:"https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
+                        //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
+                        //Info:["公告","互动易","调研"],          //信息地雷
+                        KLineDoubleClick:true,              //双击分钟走势图
+                        IsShowTooltip:true,                 //是否显示K线提示信息
+                        //FirstShowDate:20180401,             //首屏显示的起始日期              
+                    },
+        
+                    KLineTitle: //标题设置
+                    {
+                        IsShowName:true,       //不显示股票名称
+                        IsShowSettingInfo:true //不显示周期/复权
+                    },
+        
+                    Border: //边框
+                    {
+                        Left:50,           //左边间距
+                        Right:50,       //右边间距
+                        Bottom:25,
+                        Top:25
+                    },
+
+                    ExtendChart:    //扩展图形
+                    [
+                        //{Name:'画图工具',Top:25,IsAutoIndent:1 }
+                    ],
+                    
+                    Frame:  //子框架设置 (Height 窗口高度比例值)
+                    [
+                        {SplitCount:3,StringFormat:0, Height:4,IsShowLeftText:true},
+                        {SplitCount:2,StringFormat:0, Height:2,IsShowLeftText:true},
+                        {SplitCount:2,StringFormat:0, Height:2,IsShowLeftText:true}
+                    ]
+                }
+
+            var windowHeight= $(window).height();
+            var windowWidth = $(window).width();
+            if (windowWidth<=420)   //手机小屏左右不显示坐标
+            {
+                option.Border.Left=1;
+                option.Border.Right=1;
+                option.KLine.IsShowTooltip=false;   //关闭pc端tooltip
+                option.KLine.Info=null;
+                option.KLine.PageSize=50;   
+                option.ExtendChart=[{Name:'KLineTooltip' }]; //开启手机端tooltip
+                option.IsCorssOnlyDrawKLine=true;
+                option.CorssCursorTouchEnd=true;
+                for(var i in option.Windows)
+                {
+                    option.Windows[i].Modify=false;
+                    option.Windows[i].Change=false;
+                }
+            }
+        
+            chart.SetOption(option);
+            //jsChart.LockIndex('飞龙四式',unlockIndex);
+
+            //注册监听事件
+            //chart.AddEventCallback({event:JSCHART_EVENT_ID.RECV_INDEX_DATA, callback:testcallback})
+            //chart.AddEventCallback({event:JSCHART_EVENT_ID.CHART_STATUS, callback:ChartStatusCallback})
+            chart.AddEventCallback({event:JSCHART_EVENT_ID.BARRAGE_PLAY_END, callback:OnBarragePlayEnd})
+
+            var barrage=chart.StartAnimation({Step:1}); //返回弹幕数据控制类
+            setInterval(()=>{addBarrage(barrage); }, 3000)
+            
+        
+            resizeCanvas();
+        
+            //setTimeout(() => { chart.SetFirstShowDate({Date:20170501,PageSize:600});}, 20000);
+        
+        })
+
+        var BARRAGE_ID=1;
+        function addBarrage(barrage)
+        {
+            if (barrage.Count()>=20) return;
+            
+            var testData = [
+                { Text:`[${++BARRAGE_ID}]👍测试弹幕 (25px 宋体) RGB(0,0,205)`, Color:'RGBA(0,0,205,0.6)' , Font:{ Name:25*GetDevicePixelRatio()+'px 宋体', Hight: 25 }, Info: {ID:BARRAGE_ID}},
+                { Text:`[${++BARRAGE_ID}]✔测试弹幕 (22px 微软雅黑) RGB(33,0,205)`, Color:'RGBA(33,0,205,0.7)' , Font:{ Name:22*GetDevicePixelRatio()+'px 微软雅黑', Hight: 25 },Info: {ID:BARRAGE_ID}},
+                { Text:`[${++BARRAGE_ID}]🐕测试弹幕 RGB(20,240,20)`, Color:'RGBA(20,240,20)',Info: {ID:BARRAGE_ID}},
+                { Text:`[${++BARRAGE_ID}]👈测试弹幕 (20px fangsong) RGB(100,0,205)`, Color:'RGBA(100,0,205,0.5)' , Font:{ Name:20*GetDevicePixelRatio()+'px fangsong', Hight: 25 },Info: {ID:BARRAGE_ID}},
+                { Text:`[${++BARRAGE_ID}]🚦测试弹幕 (16px 微软雅黑) RGB(255,30,20)`, Color:'RGB(255,30,20)' , Font:{ Name:16*GetDevicePixelRatio()+'px 微软雅黑', Hight: 16 }},
+                { Text:`[${++BARRAGE_ID}]🚴‍♂️测试弹幕 (14px 微软雅黑) RGB(100,0,205)`, Color:'RGBA(100,0,205,0.55)' , Font:{ Name:14*GetDevicePixelRatio()+'px 微软雅黑', Hight: 25 },Info: {ID:BARRAGE_ID}},
+                { Text:`[${++BARRAGE_ID}]🙅‍♂️测试弹幕 (24px 微软雅黑) RGB(100,0,205)`, Color:'RGB(100,0,205)' , Font:{ Name:14*GetDevicePixelRatio()+'px 微软雅黑', Hight: 25 },Info: {ID:BARRAGE_ID}}
+            ];
+
+            barrage.AddBarrage(testData)
+        }
+
+        function OnBarragePlayEnd(event,data,obj)
+        {
+            console.log('[OnBarragePlayEnd] data ', data)
+        }
+        
+        function unlockIndex(indexName)
+        {
+            console.log(indexName);
+        }
+
+        function ChartStatusCallback(event,data,obj)
+        {
+            console.log('[ChartStatusCallback]', data);
+        }
+
+        function testcallback(event,data,obj)
+        {
+            console.log('[testcallback]', data);
+        }
+
+    </script>  
+</body>  
+</html>

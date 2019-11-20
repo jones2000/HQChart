@@ -3,8 +3,8 @@
 <head>  
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
 <title>通达信脚本网页版(走势图)</title>  
-    <link rel="stylesheet" href="content/css/tools.css" />
-    <link rel="stylesheet" href="content/font/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
     <link rel="stylesheet" href="plugins/code_color/codemirror.css" />
     <link rel="stylesheet" href="content/css/phone7.tools.css" />
 </head>  
@@ -16,7 +16,7 @@
             <span>指标名称：</span>
             <input class="input" v-model="indexName" />
             <select class="changeIndex" v-model="changeIndex">
-                <option value="1">副图</option>
+                <option value="2">副图</option>
                 <option value="0">主图</option>
             </select>
             <button class="toolsButton" v-on:click="execute()">执行</button>
@@ -78,19 +78,17 @@
         </div>
     </div>
     
-
+    <script src="../jscommon/umychart.network.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.complier.js"></script>
     <script type="text/javascript" src="../jscommon/umychart.index.data.js"></script>
-    
-    
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
     <script type="text/javascript" src="plugins/code_color/codemirror.js"></script>
     <script type="text/javascript" src="plugins/code_color/javascript.js"></script>
-    
     <script type="text/javascript" src="content/js/vue.js"></script>
     <script type="text/javascript" src="content/js/phone7.tools.js"></script>
     
-    <script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+    
     <script>
     
         var jsChart;
@@ -119,14 +117,14 @@
         $(function ()
         {
             var symbol=getURLParams('symbol');
-            if (symbol==null) symbol='600984.sh';
+            if (symbol==null) symbol='000001.sh';
         
             var aryIndex=new Array();
         
             var index=getURLParams('index');        //指标1
-            if (index==null) index='MA';
+            if (index==null) index='RSI';
             aryIndex.push({"Index":index,"Modify":true,"Change":true});
-            aryIndex.push({"Index":"MACD","Modify":true,"Change":true});
+            //aryIndex.push({"Index":"MACD","Modify":true,"Change":true});
         
         /*
             var index2=getURLParams('index2');      //指标2
@@ -145,7 +143,7 @@
         ADXR:EXPMEMA(ADX,MM),COLORYELLOW,LINETHICK2;';
         
             var jsIndexData=new JSIndexScript();
-            let testIndex=jsIndexData.Get('UOS');
+            let testIndex=jsIndexData.Get('RSI');
             console.log(testIndex);
         
             //指标3
@@ -164,6 +162,7 @@
         
                 IsShowRightMenu:true,   //右键菜单
                 IsShowCorssCursorInfo:false,    //是否显示十字光标的刻度信息
+                //DayCount:3,
         
                 Border: //边框
                     {
