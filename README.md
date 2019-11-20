@@ -170,6 +170,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 40. [HQChart使用教程47-如何自定义右键菜单](https://blog.csdn.net/jones2000/article/details/102720671) <br>
 41. [HQChart使用教程48-如何自定义X轴刻度](https://blog.csdn.net/jones2000/article/details/102741428) <br>
 42. [HQChart使用教程49-指标配置项说明](https://blog.csdn.net/jones2000/article/details/102928907) <br>
+43. [HQChart使用教程50-Y轴自定义刻度设置说明](https://blog.csdn.net/jones2000/article/details/103174483) <br>
 
 
 ## 小程序教程
@@ -233,9 +234,11 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## 基于VUE版本给客户开发的样例
 [指数行情页面黑色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sh&colorType=black) <br>
 [个股行情页面白色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sz) <br>
+[代码地址(vue.demo/infoHqdemo)](/vue.demo/infoHqdemo) <br>
+
 ## js页面样例
 [个股详情手机端h5](https://opensource.zealink.com/hqweb/hqpages/stockpage.html?) <br>
-[代码地址(webhqchart.demo\h5demo)](/webhqchart.demo/h5demo) <br>
+[代码地址(webhqchart.demo/h5demo)](/webhqchart.demo/h5demo) <br>
 ## 第3方数据对接样例
 1. 数字货币对接 <br>
    数据来源： https://www.coinzeus.io/cn <br>
