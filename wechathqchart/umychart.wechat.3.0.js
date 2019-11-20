@@ -1050,6 +1050,7 @@ var JSCHART_EVENT_ID =
     BARRAGE_PLAY_END: 6,        //单个弹幕播放完成
     RECV_START_AUTOUPDATE: 9,    //开始自动更新
     RECV_STOP_AUTOUPDATE: 10,    //停止自动更新
+    RECV_MINUTE_DATA: 14          //分时图数据到达
 }
 
 /*
@@ -9949,10 +9950,20 @@ function MinuteChartContainer(uielement)
     return false;
   }
 
-  this.RequestData = function () {
-    if (this.DayCount <= 1) this.RequestMinuteData();
-    else this.RequestHistoryMinuteData();              //请求数据
-  }
+    this.RequestData = function () 
+    {
+        if (this.DayCount <= 1) this.RequestMinuteData();
+        else this.RequestHistoryMinuteData();              //请求数据
+    }
+
+    this.RecvMinuteDataEvent = function () 
+    {
+        if (!this.mapEvent.has(JSCHART_EVENT_ID.RECV_MINUTE_DATA)) return;
+
+        var event = this.mapEvent.get(JSCHART_EVENT_ID.RECV_MINUTE_DATA);
+        var data = { MinuteData: this.SourceData, Stock: { Symbol: this.Symbol, Name: this.Name } }
+        event.Callback(event, data, this);
+    }
 
     this.RequestHistoryMinuteData = function ()     //请求历史分钟数据
     {
@@ -10007,6 +10018,7 @@ function MinuteChartContainer(uielement)
         this.Name = data.name;
 
         this.UpdateHistoryMinuteUI();
+        this.RecvMinuteDataEvent();
         this.RequestOverlayHistoryMinuteData();
 
         if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistoryMinuteData', this);
@@ -10144,6 +10156,7 @@ function MinuteChartContainer(uielement)
         {
             this.UpdateLatestMinuteData(aryMinuteData, data.data.stock[0].date);
             this.UpdateHistoryMinuteUI();
+            this.RecvMinuteDataEvent();
             this.RequestOverlayMinuteData();    //更新最新叠加数据
             if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
             this.AutoUpdate();
@@ -10188,7 +10201,7 @@ function MinuteChartContainer(uielement)
 
         var chartInfo = this.GetChartMinuteInfo();
         if (chartInfo) chartInfo.SourceData = this.SourceData;    //数据绑定到信息地雷上
-
+        this.RecvMinuteDataEvent();
         this.RequestMinuteInfoData();
         this.RequestOverlayMinuteData();//请求叠加数据 (主数据下载完再下载)
 
