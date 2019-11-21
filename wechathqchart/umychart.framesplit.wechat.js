@@ -46,6 +46,8 @@ function IFrameSplitOperator()
     this.FrameSplitData;                //坐标轴分割方法
     this.SplitCount = 5;                  //刻度个数
     this.StringFormat = 0;                //刻度字符串格式 -1 刻度文字全部不显示 -2 刻度文字右边不显示
+    this.IsShowLeftText = true;           //显示左边刻度 
+    this.IsShowRightText = true;          //显示右边刻度
 
     //////////////////////
     // data.Min data.Max data.Interval data.Count
@@ -64,7 +66,8 @@ function IFrameSplitOperator()
         if (fixMin < 0 && data.Min > 0) fixMin = 0;   //都是正数的, 最小值最小调整为0
 
         var count = 0;
-        for (var i = fixMin; (i - fixMax) < 0.00000001; i += splitItem.FixInterval) {
+        for (var i = fixMin; (i - fixMax) < 0.00000001; i += splitItem.FixInterval) 
+        {
             ++count;
         }
 
@@ -372,6 +375,7 @@ function FrameSplitKLinePriceY()
     this.Data;              //K线数据 (计算百分比坐标)
 
     this.Custom = []; //[{Type:0}];   定制刻度 0=显示最后的价格刻度
+    this.SplitType = 0;       //0=自动分割  1=固定分割
 
     this.Operator = function () 
     {
@@ -380,39 +384,88 @@ function FrameSplitKLinePriceY()
         splitData.Min = this.Frame.HorizontalMin;
         splitData.Count = this.SplitCount;
         splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
-        this.IntegerCoordinateSplit(splitData);
 
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
         if (JSCommonCoordinateData.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,
 
-        var firstOpenPrice;
-        if (this.CoordinateType == 1) firstOpenPrice = this.GetFirstOpenPrice();
-        this.Frame.HorizontalInfo = [];
-        for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) 
+        switch (this.CoordinateType)
         {
-            this.Frame.HorizontalInfo[i] = new CoordinateInfo();
-            this.Frame.HorizontalInfo[i].Value = value;
-            this.Frame.HorizontalInfo[i].Message[0] = value.toFixed(defaultfloatPrecision);
-            this.Frame.HorizontalInfo[i].Message[1] = this.Frame.HorizontalInfo[i].Message[0];
-            if (this.CoordinateType == 1 && firstOpenPrice) //百分比坐标 (TODO:需要重新切分坐标,不然显示的百分比不好看)
-            {
-                var perValue = (value - firstOpenPrice) / firstOpenPrice * 100;
-                this.Frame.HorizontalInfo[i].Message[1] = perValue.toFixed(2) + '%';
-            }
+            case 1:
+                this.SplitPercentage(splitData, defaultfloatPrecision);
+                break;
+            default:
+                if (this.SplitType == 1) this.SplitFixed(splitData, defaultfloatPrecision);
+                else this.SplitDefault(splitData, defaultfloatPrecision);
+                this.CustomCoordinate(defaultfloatPrecision);
+                break;
         }
 
         this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, false);
         this.Frame.HorizontalMax = splitData.Max;
         this.Frame.HorizontalMin = splitData.Min;
+    }
 
+    this.SplitDefault = function (splitData, floatPrecision)       //默认坐标
+    {
+        this.IntegerCoordinateSplit(splitData);
+
+        this.Frame.HorizontalInfo = [];
+        for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval)
+        {
+            this.Frame.HorizontalInfo[i] = new CoordinateInfo();
+            this.Frame.HorizontalInfo[i].Value = value;
+            if (this.IsShowLeftText) this.Frame.HorizontalInfo[i].Message[0] = value.toFixed(floatPrecision);
+            if (this.IsShowRightText) this.Frame.HorizontalInfo[i].Message[1] = value.toFixed(floatPrecision);
+        }
+    }
+
+    this.SplitPercentage = function (splitData, floatPrecision)    //百分比坐标
+    {
+        var firstOpenPrice = this.GetFirstOpenPrice();
+        splitData.Max = (splitData.Max - firstOpenPrice) / firstOpenPrice;
+        splitData.Min = (splitData.Min - firstOpenPrice) / firstOpenPrice;
+        splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
+        this.IntegerCoordinateSplit2(splitData);
+
+        this.Frame.HorizontalInfo = [];
+        for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) 
+        {
+            var price = (value + 1) * firstOpenPrice;
+            this.Frame.HorizontalInfo[i] = new CoordinateInfo();
+            this.Frame.HorizontalInfo[i].Value = price;
+            if (this.IsShowLeftText) this.Frame.HorizontalInfo[i].Message[0] = price.toFixed(floatPrecision);   //左边价格坐标      
+            if (this.IsShowRightText) this.Frame.HorizontalInfo[i].Message[1] = (value * 100).toFixed(2) + '%';      //右边百分比
+        }
+
+        splitData.Min = (1 + splitData.Min) * firstOpenPrice; //最大最小值调整
+        splitData.Max = (1 + splitData.Max) * firstOpenPrice;
+    }
+
+    this.SplitFixed = function (splitData, floatPrecision)      //固定分割坐标
+    {
+        this.Frame.HorizontalInfo = [];
+        for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) {
+            this.Frame.HorizontalInfo[i] = new CoordinateInfo();
+            this.Frame.HorizontalInfo[i].Value = value;
+            if (this.IsShowLeftText) this.Frame.HorizontalInfo[i].Message[0] = value.toFixed(floatPrecision);
+            if (this.IsShowRightText) this.Frame.HorizontalInfo[i].Message[1] = value.toFixed(floatPrecision);
+        }
+    }
+
+    this.CustomCoordinate = function (floatPrecision) 
+    {
         this.Frame.CustomHorizontalInfo = [];
         for (var i in this.Custom) 
         {
             var item = this.Custom[i];
-            if (item.Type == 0) 
+            if (item.Type == 0)     //最新价格刻度
             {
-                var latestItem = this.GetLatestPrice(defaultfloatPrecision, item);
+                var latestItem = this.GetLatestPrice(floatPrecision, item);
                 if (latestItem) this.Frame.CustomHorizontalInfo.push(latestItem);
+            }
+            else if (item.Type == 1)    //固定价格刻度
+            {
+                this.CustomFixedCoordinate(item);
             }
         }
     }
@@ -431,6 +484,7 @@ function FrameSplitKLinePriceY()
         if (latestItem.Close > latestItem.Open) info.LineColor = g_JSChartResource.FrameLatestPrice.UpBarColor;
         else if (latestItem.Close < latestItem.Open) info.LineColor = g_JSChartResource.FrameLatestPrice.DownBarColor;
         else info.LineColor = g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
+        if (option.IsShowLine == false) info.LineType = -1;
 
         return info;
     }
@@ -447,6 +501,30 @@ function FrameSplitKLinePriceY()
             return data.Open;
         }
         return null;
+    }
+
+    this.CustomFixedCoordinate = function (option)    //固定坐标刻度
+    {
+        var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
+        for (var i in option.Data) 
+        {
+            var item = option.Data[i];
+            var info = new CoordinateInfo();
+            info.Type = 1;
+            info.TextColor = item.TextColor;
+            info.LineColor = item.Color;
+            info.LineType = 2;    //虚线
+            if (option.IsShowLine == false) info.LineType = -1;
+
+            info.Value = item.Value;
+            var text;
+            if (item.Text) text = item.Text;
+            else text = info.Value.toFixed(defaultfloatPrecision);
+            if (option.Position == 'left') info.Message[0] = text;
+            else info.Message[1] = text;
+
+            this.Frame.CustomHorizontalInfo.push(info);
+        }
     }
 
 }
@@ -730,39 +808,64 @@ function FrameSplitMinutePriceY()
     this.OverlayChartPaint;
     this.SplitCount = 7;
     this.Symbol;
+    this.Custom;
 
-    this.Operator = function () {
+    this.Operator = function () 
+    {
         this.Frame.HorizontalInfo = [];
+        this.Frame.CustomHorizontalInfo = [];
         if (!this.Data) return;
 
+        var range=this.GetMaxMin();
+
+        this.DefaultSplit(range);
+        this.CustomCoordinate();
+    }
+
+    this.GetMaxMin = function ()   //计算图中所有的数据的最大最小值
+    {
         var max = this.YClose;
         var min = this.YClose;
 
-        for (var i in this.Data.Data) {
+        for (var i in this.Data.Data) 
+        {
             if (!this.Data.Data[i]) continue;   //价格必须大于0
             if (max < this.Data.Data[i]) max = this.Data.Data[i];
             if (min > this.Data.Data[i]) min = this.Data.Data[i];
         }
 
-        if (this.AverageData) {
-            for (var i in this.AverageData.Data) {
+        if (this.AverageData) 
+        {
+            for (var i in this.AverageData.Data) 
+            {
                 if (!this.AverageData.Data[i]) continue;    //价格必须大于0
                 if (max < this.AverageData.Data[i]) max = this.AverageData.Data[i];
                 if (min > this.AverageData.Data[i]) min = this.AverageData.Data[i];
             }
         }
 
-        if (this.OverlayChartPaint && this.OverlayChartPaint.length > 0 && this.OverlayChartPaint[0] && this.OverlayChartPaint[0].Symbol) {
+        if (this.OverlayChartPaint && this.OverlayChartPaint.length > 0 && this.OverlayChartPaint[0] && this.OverlayChartPaint[0].Symbol) 
+        {
             var range = this.OverlayChartPaint[0].GetMaxMin();
             if (range.Max && range.Max > max) max = range.Max;
             if (range.Min && range.Min < min) min = range.Min;
         }
 
-        if (this.YClose == max && this.YClose == min) {
+        return { Max: max, Min: min };
+    }
+
+    this.DefaultSplit = function (range)
+    {
+        var max = range.Max;
+        var min = range.Min;
+
+        if (this.YClose == max && this.YClose == min) 
+        {
             max = this.YClose + this.YClose * 0.1;
             min = this.YClose - this.YClose * 0.1;
         }
-        else {
+        else 
+        {
             var distanceValue = Math.max(Math.abs(this.YClose - max), Math.abs(this.YClose - min));
             max = this.YClose + distanceValue;
             min = this.YClose - distanceValue;
@@ -774,20 +877,23 @@ function FrameSplitMinutePriceY()
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);;    //默认小数位数
         if (JSCommonCoordinateData.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,太长了
 
-        if (distance < minDistance[defaultfloatPrecision]) {
+        if (distance < minDistance[defaultfloatPrecision]) 
+        {
             distance = minDistance[defaultfloatPrecision];
             max = this.YClose + (distance * (showCount - 1) / 2);
             min = this.YClose - (distance * (showCount - 1) / 2);
         }
 
-        for (var i = 0; i < showCount; ++i) {
+        for (var i = 0; i < showCount; ++i) 
+        {
             var price = min + (distance * i);
             this.Frame.HorizontalInfo[i] = new CoordinateInfo();
             this.Frame.HorizontalInfo[i].Value = price;
 
             this.Frame.HorizontalInfo[i].Message[0] = price.toFixed(defaultfloatPrecision);
 
-            if (this.YClose) {
+            if (this.YClose)
+             {
                 var per = (price / this.YClose - 1) * 100;
                 if (per > 0) this.Frame.HorizontalInfo[i].TextColor = g_JSChartResource.UpTextColor;
                 else if (per < 0) this.Frame.HorizontalInfo[i].TextColor = g_JSChartResource.DownTextColor;
@@ -797,6 +903,50 @@ function FrameSplitMinutePriceY()
 
         this.Frame.HorizontalMax = max;
         this.Frame.HorizontalMin = min;
+    }
+
+    this.CustomCoordinate = function ()    //自定义刻度
+    {
+        if (!this.Custom) return;
+
+        for (var i in this.Custom) 
+        {
+            var item = this.Custom[i];
+            if (item.Type == 1) this.CustomFixedCoordinate(item);
+        }
+    }
+
+    this.CustomFixedCoordinate = function (option)    //固定坐标刻度
+    {
+        var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
+        for (var i in option.Data) 
+        {
+            var item = option.Data[i];
+            var info = new CoordinateInfo();
+            info.Type = 1;
+            info.TextColor = item.TextColor;
+            info.LineColor = item.Color;
+            info.LineType = 2;    //虚线
+            if (option.IsShowLine == false) info.LineType = -1;
+
+            if (IFrameSplitOperator.IsNumber(item.Increase)) //涨幅计算价格
+            {
+                if (!IFrameSplitOperator.IsNumber(this.YClose)) conintue;
+                info.Value = this.YClose * (1 + item.Increase);
+            }
+            else 
+            {
+                info.Value = item.Value;
+            }
+
+            var text;
+            if (item.Text) text = item.Text;
+            else text = info.Value.toFixed(defaultfloatPrecision);
+            if (option.Position == 'left') info.Message[0] = text;
+            else info.Message[1] = text;
+
+            this.Frame.CustomHorizontalInfo.push(info);
+        }
     }
 
 }
