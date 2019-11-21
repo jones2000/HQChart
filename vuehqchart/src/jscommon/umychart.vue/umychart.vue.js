@@ -27314,7 +27314,7 @@ function KLineChartContainer(uielement)
             if (!item.IsClickTitle) continue;
             if (!item.IsClickTitle(x,y)) continue;
 
-            var data={ Point:{X:x, Y:y}, Title:item.Title, FromeID:item.Frame.Identify };
+            var data={ Point:{X:x, Y:y}, Title:item.Title, FrameID:item.Frame.Identify };
             console.log('[KLineChartContainer::TryClickIndexTitle] click title ', data);
 
             var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE);
