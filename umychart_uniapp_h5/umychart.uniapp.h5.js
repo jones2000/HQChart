@@ -5300,9 +5300,15 @@ function JSChartContainer(uielement)
             {
                 this.ChartCorssCursor.LastPoint=this.LastPoint;
                 this.ChartCorssCursor.CursorIndex=this.CursorIndex;
-                //移动端 拖拽数据的时候 不显示十字光标, 没有按屏的时候也不显示十字光标
-                if (!(this.CorssCursorTouchEnd===true && this.MouseDrag) && !(this.CorssCursorTouchEnd==true && this.IsOnTouch==false) ) 
+                
+                if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
+                {   //点击手势模式下
+                    if (this.TouchStatus.CorssCursorShow==true) this.ChartCorssCursor.Draw();
+                }
+                else if (!(this.CorssCursorTouchEnd===true && this.MouseDrag) && !(this.CorssCursorTouchEnd==true && this.IsOnTouch==false)) 
+                {   //移动端 拖拽数据的时候 不显示十字光标, 没有按屏的时候也不显示十字光标
                     this.ChartCorssCursor.Draw();
+                }
             }
         }
 
@@ -5394,8 +5400,14 @@ function JSChartContainer(uielement)
         {
             this.ChartCorssCursor.LastPoint=this.LastPoint;
             this.ChartCorssCursor.CursorIndex=this.CursorIndex;
-            if ( !(this.IsOnTouch===false && this.CorssCursorTouchEnd===true))
+            if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
+            {
+                if (this.TouchStatus.CorssCursorShow==true) this.ChartCorssCursor.Draw();
+            }
+            else if ( !(this.IsOnTouch===false && this.CorssCursorTouchEnd===true))
+            {
                 this.ChartCorssCursor.Draw();
+            }
         }
 
         for(var i in this.TitlePaint)
@@ -16079,7 +16091,14 @@ function KLineTooltipPaint()
     this.Draw=function()
     {
         if (!this.HQChart || !this.HQChart.TitlePaint || !this.HQChart.TitlePaint[0]) return;
-        if (!this.HQChart.IsOnTouch) return;
+        if (this.HQChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
+        {
+            if (this.HQChart.TouchStatus.CorssCursorShow==false) return;
+        }
+        else if (!this.HQChart.IsOnTouch) 
+        {
+            return;
+        }
 
         this.KLineTitlePaint=this.HQChart.TitlePaint[0];
         var klineData=this.KLineTitlePaint.GetCurrentKLineData();
@@ -16092,7 +16111,7 @@ function KLineTooltipPaint()
         }
         else 
         {
-            if(klineData.Time!=null && !isNaN(klineData.Time) && klineData.Time>0) lineCount=9; //分钟K线多一列时间
+            if (klineData.Time!=null && !isNaN(klineData.Time) && klineData.Time>0) lineCount=9; //分钟K线多一列时间
             if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.HQChart.Symbol) && klineData.FlowCapital>0) ++lineCount;
         }
 
@@ -17969,6 +17988,7 @@ function FrameSplitKLinePriceY()
         if (this.FloatPrecision!=null) defaultfloatPrecision=this.FloatPrecision;
         console.log(`[FrameSplitKLinePriceY] Max=${splitData.Max} Min=${splitData.Min} Count=${splitData.Count} isPhoneModel=${isPhoneModel} defaultfloatPrecision=${defaultfloatPrecision} `);
 
+        var bFilter=true;   //是否需要通过高度过滤刻度
         if (ChartData.IsTickPeriod(this.Period))
         {
             this.SplitTickData(splitData,defaultfloatPrecision);
@@ -17981,14 +18001,21 @@ function FrameSplitKLinePriceY()
                     this.SplitPercentage(splitData,defaultfloatPrecision);
                     break;
                 default:
-                    if (this.SplitType==1) this.SplitFixed(splitData,defaultfloatPrecision);
-                    else this.SplitDefault(splitData,defaultfloatPrecision);
-                    this.CustomCoordinate(defaultfloatPrecision);
+                    if (this.SplitType==1) 
+                    {
+                        this.SplitFixed(splitData,defaultfloatPrecision);
+                        bFilter=false;
+                    }
+                    else 
+                    {
+                        this.SplitDefault(splitData,defaultfloatPrecision);
+                    }
                     break;
             }
         }
 
-        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo,false);
+        this.CustomCoordinate(defaultfloatPrecision);
+        if (bFilter) this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo,false);
         this.Frame.HorizontalMax=splitData.Max;
         this.Frame.HorizontalMin=splitData.Min;
 
@@ -27182,9 +27209,9 @@ function KLineChartContainer(uielement)
 
     this.OnTouchFinished=function()
     {
-        if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && this.TouchStatus.CorssCursorShow==true)
+        if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
         {
-            if (this.TouchDrawCount>0) return;
+            if (this.TouchStatus.CorssCursorShow==true && this.TouchDrawCount>0) return;
 
             this.TouchStatus.CorssCursorShow=false;
             this.DrawDynamicInfo();
