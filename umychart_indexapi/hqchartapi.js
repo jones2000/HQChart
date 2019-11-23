@@ -29,7 +29,8 @@ server.get('/api', homepage);
 
 function homepage(req, res, next)
 {
-  res.send({message: 'homepage'});
+  res.send(200,{message: 'homepage'});
+  return next();
 }
 
 console.log(`[HQChartApi] Start server Port=${config.Port} ......`);

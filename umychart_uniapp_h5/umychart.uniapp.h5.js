@@ -3420,6 +3420,7 @@ function JSChart(divElement)
         chart.SelectRectRightMenu=new KLineSelectRightMenu(this.DivElement);
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
         if (option.DisableMouse==true) chart.DisableMouse=option.DisableMouse;
+        if (option.TouchMoveMinAngle) chart.TouchMoveMinAngle=option.TouchMoveMinAngle;
 
         if (option.KLine)   //k线图的属性设置
         {
@@ -4615,7 +4616,7 @@ function JSChartContainer(uielement)
     this.DragMode=1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择 3(CLICK_TOUCH_MODE_ID)=长按十字光标显示保留/点击十字光标消失 (使用TouchStatus)
     this.TouchStatus={ CorssCursorShow:false },     //十字光标是否显示
     this.DragTimer;
-    this.EnableScrollUpDown=false;                  //是否可以上下滚动图形((手机端才有))
+    this.EnableScrollUpDown=false;                  //是否可以上下滚动图形(手机端才有)
 
     this.CursorIndex=0;             //十字光标X轴索引
     this.LastPoint=new Point();     //鼠标位置
@@ -4623,6 +4624,7 @@ function JSChartContainer(uielement)
     this.CorssCursorTouchEnd = false;   //手离开屏幕自动隐藏十字光标
     this.StepPixel=4;                   //移动一个数据需要的像素
     this.ZoomStepPixel=5;               //放大缩小手势需要的最小像素
+    this.TouchMoveMinAngle=70;          //左右移动最小角度
     this.EnableAnimation=false;         //是否开启动画
 
     //tooltip提示信息
@@ -5004,6 +5006,51 @@ function JSChartContainer(uielement)
         return touches;
     }
 
+    this.IsSingleTouch=function(e)  //是否是单点触屏
+    {
+        var touchCount=e.touches.length;
+
+        return touchCount==1;
+    }
+
+    this.StopDragTimer=function()
+    {
+        if (IFrameSplitOperator.IsNumber(this.DragTimer))
+        {
+            clearTimeout(this.DragTimer);
+            this.DragTimer=null;
+        }
+    }
+
+
+    this.GetMoveAngle=function(pt,pt2)  //计算角度
+    {
+        var xMove=Math.abs(pt.X-pt2.X);
+        var yMove=Math.abs(pt.Y-pt2.Y);
+        var angle=Math.atan(xMove/yMove)*180/Math.PI;
+        return angle;
+    }
+
+    this.ScrollPage=function(yOffset)   //滚动页面
+    {
+        var top, left;
+        if (document.documentElement && document.documentElement.scrollTop) 
+        {
+            top = document.documentElement.scrollTop;
+            left = document.documentElement.scrollLeft;
+            //w = document.documentElement.scrollWidth;
+            //h = document.documentElement.scrollHeight;
+        } else if (document.body) 
+        {
+            top = document.body.scrollTop;
+            left = document.body.scrollLeft;
+            //w = document.body.scrollWidth;
+            //h = document.body.scrollHeight;
+        }
+
+        window.scroll({ top: top+yOffset,left: left});
+    }
+
     //手机拖拽
     uielement.ontouchstart=function(e)
     {
@@ -5013,8 +5060,14 @@ function JSChartContainer(uielement)
         this.JSChartContainer.IsOnTouch=true;
         this.JSChartContainer.TouchDrawCount=0;
         this.JSChartContainer.PhonePinch=null;
+        this.JSChartContainer.StopDragTimer();
         var jsChart=this.JSChartContainer;
-        if (jsChart.EnableScrollUpDown==false) e.preventDefault();
+        var isSingleTouch=jsChart.IsSingleTouch(e);
+        if (jsChart.EnableScrollUpDown==false ||  !isSingleTouch || //多点触屏
+            (jsChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && jsChart.TouchStatus.CorssCursorShow==true)) //十字光标显示,不能滚动页面   
+        {
+            e.preventDefault();
+        }
 
         if (jsChart.IsPhoneDragging(e))
         {
@@ -5030,8 +5083,17 @@ function JSChartContainer(uielement)
                 if (jsChart.TryClickIndexTitle && jsChart.TryClickIndexTitle(x,y)) return;
             }
 
+            var bStartTimer=true;
+            if (jsChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
+            {
+                if (jsChart.TouchStatus.CorssCursorShow==true) bStartTimer=false;
+            }
+            else
+            {
+                if (!isSingleTouch) bStartTimer=false;
+            }
 
-            if (!(jsChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && jsChart.TouchStatus.CorssCursorShow==true))
+            if (bStartTimer)
             {
                 //长按2秒,十字光标
                 this.DragTimer=setTimeout(function()
@@ -5102,7 +5164,7 @@ function JSChartContainer(uielement)
         {
             if(!this.JSChartContainer) return;
             var touches=jsChart.GetToucheData(e,this.JSChartContainer.IsForceLandscape);
-           
+
             if (jsChart.IsPhoneDragging(e))
             {
                 var drag=this.JSChartContainer.MouseDrag;
@@ -5116,10 +5178,14 @@ function JSChartContainer(uielement)
                 }
                 else
                 {
+                    var moveAngle=jsChart.GetMoveAngle(drag.LastMove,{X:touches[0].clientX, Y:touches[0].clientY});
                     var moveSetp=Math.abs(drag.LastMove.X-touches[0].clientX);
                     var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
                     moveSetp=parseInt(moveSetp);
                     var isMoveCorssCursor=(jsChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && jsChart.TouchStatus.CorssCursorShow==true); //是否移动十字光标
+
+                    //console.log("[JSChartContainer::uielement.ontouchmove]  moveAngle , moveUpDown", moveAngle,moveUpDown);
+
                     if (isMoveCorssCursor)  //点击模式下 十字光标显示 左右移动十字光标
                     {
                         var mouseDrag=jsChart.MouseDrag;
@@ -5132,14 +5198,14 @@ function JSChartContainer(uielement)
                     }
                     else if (this.JSChartContainer.DragMode==1 || isMoveCorssCursor==false)  //数据左右拖拽
                     {
-                        if (moveUpDown>0 && moveSetp<=3 && this.JSChartContainer.EnableScrollUpDown==true) 
+                        if ( ((moveUpDown>0 && moveSetp<=3) || moveAngle<=jsChart.TouchMoveMinAngle) && this.JSChartContainer.EnableScrollUpDown==true ) 
                         {
                             clearTimeout(this.DragTimer);
                             this.DragTimer=null;
                             return;
                         }
 
-                        if (moveSetp<5) 
+                        if (moveSetp<5 || moveAngle<=jsChart.TouchMoveMinAngle) 
                         {
                             jsChart.PreventTouchEvent(e);
                             return;

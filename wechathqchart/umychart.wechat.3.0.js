@@ -1054,6 +1054,15 @@ var JSCHART_EVENT_ID =
     RECV_MINUTE_DATA: 14          //分时图数据到达
 }
 
+var JSCHART_OPERATOR_ID =
+{
+    OP_SCROLL_LEFT: 1,
+    OP_SCROLL_RIGHT: 2,
+    OP_ZOOM_OUT: 3,  //缩小
+    OP_ZOOM_IN: 4,   //放大
+    OP_GOTO_HOME: 5, //第1页数据
+}
+
 /*
     图形控件
 */
@@ -1800,41 +1809,42 @@ function JSChartContainer(uielement)
     }
   }
 
-  this.DataMove = function (step, isLeft) {
-    step=parseInt(step/4);
-    if (step<=0) return false;
-
-    var data = null;
-    if (!this.Frame.Data) data = this.Frame.Data;
-    else data = this.Frame.SubFrame[0].Frame.Data;
-    if (!data) return false;
-
-    var xPointcount = 0;
-    if (this.Frame.XPointCount) xPointcount = this.Frame.XPointCount;
-    else xPointcount = this.Frame.SubFrame[0].Frame.XPointCount;
-    if (!xPointcount) return false;
-
-    if (isLeft) //-->
+    this.DataMove = function (step, isLeft) 
     {
-      if (xPointcount + data.DataOffset >= data.Data.length) return false;
+        step=parseInt(step/this.StepPixel);
+        if (step<=0) return false;
 
-      data.DataOffset += step;
+        var data = null;
+        if (!this.Frame.Data) data = this.Frame.Data;
+        else data = this.Frame.SubFrame[0].Frame.Data;
+        if (!data) return false;
 
-      if (data.DataOffset + xPointcount >= data.Data.length)
-        data.DataOffset = data.Data.length - xPointcount;
+        var xPointcount = 0;
+        if (this.Frame.XPointCount) xPointcount = this.Frame.XPointCount;
+        else xPointcount = this.Frame.SubFrame[0].Frame.XPointCount;
+        if (!xPointcount) return false;
 
-      return true;
+        if (isLeft) //-->
+        {
+            if (xPointcount + data.DataOffset >= data.Data.length) return false;
+
+            data.DataOffset += step;
+
+            if (data.DataOffset + xPointcount >= data.Data.length)
+                data.DataOffset = data.Data.length - xPointcount;
+
+            return true;
+        }
+        else        //<--
+        {
+            if (data.DataOffset <= 0) return false;
+
+            data.DataOffset -= step;
+            if (data.DataOffset < 0) data.DataOffset = 0;
+
+            return true;
+        }
     }
-    else        //<--
-    {
-      if (data.DataOffset <= 0) return false;
-
-      data.DataOffset -= step;
-      if (data.DataOffset < 0) data.DataOffset = 0;
-
-      return true;
-    }
-  }
 
   //获取鼠标在当前子窗口id
   this.GetSubFrameIndex = function (x, y) {
@@ -7623,6 +7633,9 @@ function KLineChartContainer(uielement)
     this.AutoUpdateFrequency = 30000;             //30秒更新一次数据
     this.AutoUpdateTimer;                         //自动定时器
 
+    this.StepPixel = 4;                   //移动一个数据需要的像素
+    this.ZoomStepPixel = 5;               //放大缩小手势需要的最小像素
+
     this.DragDownload = {
         Day: { Enable: false, IsEnd: false, Status: 0 },      //日线数据拖拽下载(暂不支持) Status: 0空闲 1 下载中
         Minute: { Enable: false, IsEnd: false, status: 0 }    //分钟数据拖拽下载
@@ -7644,8 +7657,77 @@ function KLineChartContainer(uielement)
         this.DragDownload.Minute.isEnd=false;
     }
 
-    //创建
-    //windowCount 窗口个数
+    this.ChartOperator = function (obj) //图形控制函数 {ID:JSCHART_OPERATOR_ID, ...参数 }
+    {
+        var id = obj.ID;
+        if (id === JSCHART_OPERATOR_ID.OP_SCROLL_LEFT || id === JSCHART_OPERATOR_ID.OP_SCROLL_RIGHT)    //左右移动 { Step:移动数据个数 }
+        {
+            var isLeft = (id === JSCHART_OPERATOR_ID.OP_SCROLL_LEFT ? true : false);
+            var step = 1;
+            if (obj.Step > 0) step = obj.Step;
+            if (this.DataMove(step * this.StepPixel, isLeft))    //每次移动一个数据
+            {
+                this.UpdataDataoffset();
+                this.UpdatePointByCursorIndex();
+                this.UpdateFrameMaxMin();
+                this.ResetFrameXYSplit();
+                this.Draw();
+            }
+        }
+        else if (id === JSCHART_OPERATOR_ID.OP_ZOOM_IN || id === JSCHART_OPERATOR_ID.OP_ZOOM_OUT)       //缩放
+        {
+            var cursorIndex = {};
+            cursorIndex.Index = parseInt(Math.abs(this.CursorIndex - 0.5).toFixed(0));
+            if (id === JSCHART_OPERATOR_ID.OP_ZOOM_IN) 
+            {
+                if (!this.Frame.ZoomUp(cursorIndex)) return;
+            }
+            else 
+            {
+                if (!this.Frame.ZoomDown(cursorIndex)) return;
+            }
+            this.CursorIndex = cursorIndex.Index;
+            this.UpdataDataoffset();
+            this.UpdatePointByCursorIndex();
+            this.UpdateFrameMaxMin();
+            this.Draw();
+        }
+        else if (id === JSCHART_OPERATOR_ID.OP_GOTO_HOME) //返回最新
+        {
+            var hisData = null;
+            if (!this.Frame.Data) hisData = this.Frame.Data;
+            else hisData = this.Frame.SubFrame[0].Frame.Data;
+            if (!hisData) return;  //数据还没有到达
+
+            var showCount = this.PageSize;
+            //var pageSize = this.GetMaxMinPageSize();
+            //if (pageSize.Max < showCount) showCount = pageSize.Max;
+            //else if (pageSize.Min > showCount) showCount = pageSize.Min;
+
+            for (var i in this.Frame.SubFrame)   //设置一屏显示的数据个数
+            {
+                var item = this.Frame.SubFrame[i].Frame;
+                item.XPointCount = showCount;
+            }
+
+            var index = hisData.Data.length - showCount;
+            hisData.DataOffset = index;
+            this.CursorIndex = 0;
+
+            this.LastPoint.X = null;
+            this.LastPoint.Y = null;
+
+            console.log(`[KLineChartContainer::ChartOperator] OP_GOTO_HOME, dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${showCount}`);
+
+            this.UpdataDataoffset();           //更新数据偏移
+            this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+            this.Frame.SetSizeChage(true);
+            this.Draw();
+            this.UpdatePointByCursorIndex();   //更新十字光标位子
+        }
+    }
+
+    //创建windowCount 窗口个数
     this.Create = function (windowCount) 
     {
         this.UIElement.JSChartContainer = this;

@@ -138,7 +138,7 @@ function JSIndexController(req,res,next)
         if (!this.GetPostData())
         {
             this.SendResult();
-            return;
+            return next();
         }
         
         try
@@ -171,10 +171,9 @@ function JSIndexController(req,res,next)
         {
             this.ErrorMessage='执行异常';
             this.SendResult();
-            return;
         }
 
-        next();
+        return next();
     }
 
     //执行脚本返回数据
@@ -307,7 +306,7 @@ function JSUpateIndexController(req,res,next)
         if (!this.GetPostData())
         {
             this.SendResult();
-            return;
+            return next();
         }
 
         var indexData=new JSMongoIndex();
@@ -317,7 +316,7 @@ function JSUpateIndexController(req,res,next)
             }
         );
 
-        next();
+        return next();
     }
 
     this.UpdateSuccess=function(data)
