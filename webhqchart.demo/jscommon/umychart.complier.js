@@ -6143,7 +6143,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.ExtendData.has(volrKey)) return this.Execute.RunNextJob();
 
         var self=this;
-        $.ajax({
+        JSNetwork.HttpRequest({
             url: self.RealtimeApiUrl,
             data:
             {
@@ -6475,7 +6475,7 @@ function JSSymbolData(ast,option,jsExecute)
         {
             var apiUrl=g_JSComplierResource.CacheDomain+'/cache/analyze/increaseanalyze/'+symbol+'.json';
             console.log('[JSSymbolData::GetIndexIncreaseData] minute Get url=' , apiUrl);
-            $.ajax({
+            JSNetwork.HttpRequest({
                 url: apiUrl,
                 type:"get",
                 dataType: "json",
@@ -6494,7 +6494,7 @@ function JSSymbolData(ast,option,jsExecute)
         else if (this.DataType===HQ_DATA_TYPE.KLINE_ID && this.Period===0) //K线图 日线
         {
             console.log('[JSSymbolData::GetIndexIncreaseData] K day Get url=' , self.KLineApiUrl);
-            $.ajax({
+            JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
                 {
@@ -6857,7 +6857,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.FinanceData.has(jobID)) return this.Execute.RunNextJob();
 
         var self=this;
-        $.ajax({
+        JSNetwork.HttpRequest({
             url: self.RealtimeApiUrl,
             data:
             {
@@ -6985,7 +6985,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpRequest({
             url: this.StockHistoryDayApiUrl,
             data:
             {
@@ -7303,7 +7303,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpRequest({
             url: this.StockHistoryDayApiUrl,
             data:
             {
@@ -7472,7 +7472,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (dataType===2)
         {
             //请求数据
-            $.ajax({
+            JSNetwork.HttpRequest({
                 url: url,
                 data:
                 {
@@ -7492,7 +7492,7 @@ function JSSymbolData(ast,option,jsExecute)
         else
         {
             //请求数据
-            $.ajax({
+            JSNetwork.HttpRequest({
                 url: url,
                 type:"get",
                 dataType: "json",
@@ -7735,7 +7735,7 @@ function JSSymbolData(ast,option,jsExecute)
         var url=this.StockNewsAnalysisApiUrl+'/'+folderName+'/'+this.Symbol+'.json';
 
         //请求数据
-        $.ajax({
+        JSNetwork.HttpRequest({
             url: url,
             type:"get",
             dataType: "json",
@@ -9605,6 +9605,7 @@ JSComplier.Execute=function(code,option,errorCallback)
             let execute=new JSExecute(ast,option);
             execute.ErrorCallback=errorCallback;        //执行错误回调
             execute.JobList=parser.Node.GetDataJobList();
+            if (option.ClassName=='ScriptIndexConsole') execute.JobList.unshift({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA});
             execute.JobList.push({ID:JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT});
 
             let result=execute.Execute();
@@ -11700,7 +11701,8 @@ function ScriptIndexConsole(obj)
             MaxRequestDataCount:obj.Request.MaxDataCount,
             MaxRequestMinuteDayCount:obj.Request.MaxMinuteDayCount,
             Arguments:this.Arguments,
-            IsSectionMode:this.IsSectionMode
+            IsSectionMode:this.IsSectionMode,
+            ClassName:'ScriptIndexConsole',
         };
 
         if (obj.HQDataType===HQ_DATA_TYPE.HISTORY_MINUTE_ID) option.TrateDate=obj.Request.TradeDate;

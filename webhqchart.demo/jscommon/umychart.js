@@ -1882,8 +1882,7 @@ function JSChartContainer(uielement)
                     {
                         if ( ((moveUpDown>0 && moveSetp<=3) || moveAngle<=jsChart.TouchMoveMinAngle) && this.JSChartContainer.EnableScrollUpDown==true ) 
                         {
-                            clearTimeout(this.DragTimer);
-                            this.DragTimer=null;
+                            jsChart.StopDragTimer();
                             return;
                         }
 
@@ -1943,6 +1942,7 @@ function JSChartContainer(uielement)
                     this.JSChartContainer.UpdateFrameMaxMin();
                     this.JSChartContainer.Draw();
                     this.JSChartContainer.ShowTooltipByKeyDown();
+                    jsChart.StopDragTimer();
                 }
                 else        //缩小
                 {
@@ -1955,6 +1955,7 @@ function JSChartContainer(uielement)
                     this.JSChartContainer.UpdateFrameMaxMin();
                     this.JSChartContainer.Draw();
                     this.JSChartContainer.ShowTooltipByKeyDown();
+                    jsChart.StopDragTimer();
                 }
 
                 phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
@@ -34963,32 +34964,37 @@ function MinuteCoordinateData()
     {
         Full:   //完整模式
         [
-            [0, 1, "RGB(200,200,200)", "17:15"],
-            [105, 1, "RGB(200,200,200)", "19:00"],
-            [225, 1, "RGB(200,200,200)", "21:00"],
-            [345, 1, "RGB(200,200,200)", "23:00"],
-            [586, 0, "RGB(200,200,200)", "09:15"],
-            [691, 1, "RGB(200,200,200)", "11:00"],
-            [812, 1, "RGB(200,200,200)", "14:00"],
-            [963, 1, "RGB(200,200,200)", "16:30"],
+            [0, 1, "RGB(200,200,200)", "06:00"],
+            [120, 1, "RGB(200,200,200)", "08:00"],
+            [240, 1, "RGB(200,200,200)", "10:00"],
+            [360, 1, "RGB(200,200,200)", "12:00"],
+            [480, 0, "RGB(200,200,200)", "14:00"],
+            [600, 1, "RGB(200,200,200)", "16:00"],
+            [720, 1, "RGB(200,200,200)", "18:00"],
+            [840, 1, "RGB(200,200,200)", "20:00"],
+            [960, 1, "RGB(200,200,200)", "22:00"],
+            [1080, 1, "RGB(200,200,200)", "0:00"],
+            [1200, 1, "RGB(200,200,200)", "02:00"],
+            [1320, 1, "RGB(200,200,200)", "04:00"],
         ],
         Simple: //简洁模式
         [
-            [0, 1, "RGB(200,200,200)", "17:15"],
-            [225, 1, "RGB(200,200,200)", "21:00"],
-            [586, 0, "RGB(200,200,200)", "09:15"],
-            [752, 1, "RGB(200,200,200)", "13:00"],
-            [963, 1, "RGB(200,200,200)", "16:30"],
+            [0, 1, "RGB(200,200,200)", "06:00"],
+            [240, 1, "RGB(200,200,200)", "10:00"],
+            [480, 0, "RGB(200,200,200)", "14:00"],
+            [720, 1, "RGB(200,200,200)", "18:00"],
+            [960, 1, "RGB(200,200,200)", "22:00"],
+            [1200, 1, "RGB(200,200,200)", "02:00"],
         ],
         Min:   //最小模式     
         [
-            [0, 1, "RGB(200,200,200)", "17:15"],
-            [586, 0, "RGB(200,200,200)", "09:15"],
-            [963, 1, "RGB(200,200,200)", "16:30"],
+            [0, 1, "RGB(200,200,200)", "06:00"],
+            [480, 0, "RGB(200,200,200)", "14:00"],
+            [960, 1, "RGB(200,200,200)", "22:00"],
         ],
 
-        Count: 963,
-        MiddleCount: 526,
+        Count: 1440,
+        MiddleCount: 600,
 
         GetData: function (width) 
         {

@@ -272,6 +272,11 @@ JSIndexController.ReloadIndex=function(req, res, next)
     controller.Post();
 }
 
+JSIndexController.SetDomain=function(domain, cacheDomain)
+{
+    HQChart.ScriptIndexConsole.SetDomain (domain, cacheDomain)   //修改API地址
+}
+
 //更新单个指标脚本
 function JSUpateIndexController(req,res,next)
 {
