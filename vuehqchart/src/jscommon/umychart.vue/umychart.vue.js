@@ -13799,6 +13799,8 @@ function ChartMinutePriceLine()
         if (this.IsShowLead) 
             this.DrawLead();
 
+        if (!data) return;
+
         var bFirstPoint=true;
         var ptFirst={}; //第1个点
         var drawCount=0;
@@ -16411,6 +16413,7 @@ function MinuteTooltipPaint()
         var left=this.GetLeft()+2*GetDevicePixelRatio();
         var top=this.GetTop()+3*GetDevicePixelRatio();
         this.YClose=this.KLineTitlePaint.YClose;
+        var upperSymbol=this.HQChart.Symbol.toUpperCase();
         
         if (this.IsHScreen)
         {
@@ -16465,7 +16468,7 @@ function MinuteTooltipPaint()
         this.Canvas.fillText(text,left+labelWidth,top);
 
         //均价
-        if (!item.Before)   //集合竞价没有均价
+        if (!item.Before && !MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol))   //集合竞价|外汇没有均价
         {
             top+=this.LineHeight;
             this.Canvas.fillStyle=this.TitleColor;
@@ -29966,7 +29969,12 @@ function MinuteChartContainer(uielement)
         this.TradeDate=this.DayData[0].Date;
 
         this.BindMainData(sourceData,this.DayData[0].YClose);
-        if (MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol)) this.ChartPaint[1].Data=null;   //期货均线暂时不用
+        var upperSymbol=this.Symbol.toUpperCase();
+         //期货, 外汇 均线暂时不用
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol) || MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) 
+        {
+            this.ChartPaint[1].Data=null;  
+        }
 
         if (this.Frame.SubFrame.length>2)
         {
@@ -30484,9 +30492,17 @@ function MinuteChartContainer(uielement)
         this.Frame.SourceData=minuteData;
 
         //均线
+       
+        
         bindData=new ChartData();
         bindData.Data=minuteData.GetMinuteAvPrice();
         this.ChartPaint[1].Data=bindData;
+
+        var upperSymbol=this.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol) || MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol))    //外汇 期货没有均线
+        {
+            this.ChartPaint[1].Data=null;
+        }
 
         this.Frame.SubFrame[0].Frame.YSplitOperator.AverageData=bindData;
         this.Frame.SubFrame[0].Frame.YSplitOperator.SourceData=this.IsBeforeData ? minuteData:null;
