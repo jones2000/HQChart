@@ -8514,7 +8514,7 @@ function KLineChartContainer(uielement)
 
     this.SendKLineUpdateEvent = function (bindData)
     {
-        var event = this.GetEventCallback(JSCHART_EVENT_ID.RECV_KLINE_UPDATE_DATA);
+        var event = this.GetEvent(JSCHART_EVENT_ID.RECV_KLINE_UPDATE_DATA);
         if (event && event.Callback) 
         {
             var data = { HistoryData: bindData, Stock: { Symbol: this.Symbol, Name: this.Name } }
