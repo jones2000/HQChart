@@ -4572,7 +4572,8 @@ var JSCHART_EVENT_ID=
     ON_TITLE_DRAW:12,           //标题信息绘制事件
     ON_SELECT_RECT:13,          //区间选择事件通知
     RECV_MINUTE_DATA:14,        //分时图数据到达
-    ON_CLICK_INDEXTITLE:15      //点击指标标题事件        
+    ON_CLICK_INDEXTITLE:15,     //点击指标标题事件
+    RECV_KLINE_UPDATE_DATA:16   //K线日,分钟更新数据到达      
 }
 
 var JSCHART_OPERATOR_ID=
@@ -25324,6 +25325,20 @@ function KLineChartContainer(uielement)
         event.Callback(event,data,this);
     }
 
+    this.SendKLineUpdateEvent=function(bindData)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.RECV_KLINE_UPDATE_DATA);
+        if (event && event.Callback)
+        {
+            var data={ HistoryData:bindData, Stock:{Symbol:this.Symbol, Name:this.Name } }
+            event.Callback(event,data,this);
+            return true;
+        }
+
+        return false;
+    }
+    
+
     this.RequestHistoryData=function()
     {
         var self=this;
@@ -25999,7 +26014,8 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
-        
+
+        this.SendKLineUpdateEvent(bindData);
     }
 
     this.UpdateOverlayRealtimeData=function(data)
@@ -26167,6 +26183,8 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+
+        this.SendKLineUpdateEvent(bindData);
     }
 
     this.RecvMinuteRealtimeData=function(data)
@@ -26221,6 +26239,8 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+
+        this.SendKLineUpdateEvent(bindData);
     }
 
     //更新当天的全量分钟数据

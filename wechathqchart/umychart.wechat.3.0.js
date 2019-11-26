@@ -1051,7 +1051,8 @@ var JSCHART_EVENT_ID =
     BARRAGE_PLAY_END: 6,        //单个弹幕播放完成
     RECV_START_AUTOUPDATE: 9,    //开始自动更新
     RECV_STOP_AUTOUPDATE: 10,    //停止自动更新
-    RECV_MINUTE_DATA: 14          //分时图数据到达
+    RECV_MINUTE_DATA: 14,          //分时图数据到达
+    RECV_KLINE_UPDATE_DATA: 16   //K线日,分钟更新数据到达   
 }
 
 var JSCHART_OPERATOR_ID =
@@ -8350,6 +8351,8 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+
+        this.SendKLineUpdateEvent(bindData);
     }
 
     this.GetHistoryDataCount = function () 
@@ -8456,6 +8459,8 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+
+        this.SendKLineUpdateEvent(bindData);
     }
 
     this.RecvMinuteRealtimeDataV2 = function (data)    //新版本的
@@ -8503,6 +8508,21 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+
+        this.SendKLineUpdateEvent(bindData);
+    }
+
+    this.SendKLineUpdateEvent = function (bindData)
+    {
+        var event = this.GetEventCallback(JSCHART_EVENT_ID.RECV_KLINE_UPDATE_DATA);
+        if (event && event.Callback) 
+        {
+            var data = { HistoryData: bindData, Stock: { Symbol: this.Symbol, Name: this.Name } }
+            event.Callback(event, data, this);
+            return true;
+        }
+
+        return false;
     }
 
     //周期切换
