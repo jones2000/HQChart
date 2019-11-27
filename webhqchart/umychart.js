@@ -7105,6 +7105,59 @@ function ChartData()
 
         return true;
     }
+
+    this.CoverTo=function(data, curPeriod, changePeriod) //把数据用data, 日期时间不变, curPeriod=当前周期  changePeriod=需要转换周期
+    {
+        var result=[];
+        var tempItem=null;
+        var isMinute=ChartData.IsMinutePeriod(curPeriod,true);
+        var isMinute2=ChartData.IsMinutePeriod(changePeriod,true);
+        var isMimToMin=isMinute && isMinute2;
+        var isMinToDay=isMinute && !isMinute2;
+        var isDayToDay=!isMinute && !isMinute2;
+
+        for(var i=0,j=0; i<this.Data.length; ++i)
+        {
+            var item=this.Data[i];  //原始数据
+            for(;j<data.length;++j)
+            {
+                var periodItem=data[j];
+
+                if (isMimToMin)  //都是分钟数据
+                {
+                    if (periodItem.Date==item.Date && periodItem.Time>=item.Time)
+                    {
+                        tempItem=periodItem;
+                        break;
+                    }
+                }
+                else if (isMinToDay || isDayToDay)    //分钟 => 日线, 日线 => 日线
+                {
+                    if (periodItem.Date>=item.Date)
+                    {
+                        tempItem=periodItem;
+                        break;
+                    }
+                }
+            }
+            
+            var newItem=null;
+            if (tempItem) 
+            {
+                newItem=HistoryData.Copy(tempItem);
+                newItem.PDate=tempItem.Date;
+                newItem.PTime=tempItem.Time;
+            }
+            else newItem=new HistoryData();
+            
+            newItem.Date=item.Date;
+            if (isMimToMin && isMinToDay) newItem.Time=item.Time;
+            result.push(newItem);
+        }
+
+        console.log('[ChartData::CoverTo] result', result);
+        return result;
+    }
 }
 
 ChartData.GetFirday=function(value)

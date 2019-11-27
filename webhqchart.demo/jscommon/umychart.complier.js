@@ -759,6 +759,7 @@ function Node()
     this.IsNeedIndexData=false;         //是否需要大盘数据
     this.IsNeedLatestData=false;        //是否需要最新的个股行情数据
     this.IsNeedSymbolData=false;        //是否需要下载股票数据
+    this.IsNeedSymbolDayData=false;     //跨周期是否下载日线数据
     this.IsNeedFinanceData=new Set();   //需要下载的财务数据
     this.IsNeedMarginData=new Set();
     this.IsNeedNewsAnalysisData=new Set();      //新闻统计数据
@@ -776,6 +777,7 @@ function Node()
         if (this.IsNeedSymbolData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA});
         if (this.IsNeedIndexData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_DATA});
         if (this.IsNeedLatestData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA});
+        if (this.IsNeedSymbolDayData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DAY_DATA});
 
         //涨跌停家数统计
         for(var blockSymbol of this.IsNeedBlockIncreaseData)    
@@ -939,6 +941,14 @@ function Node()
         {
             var blockSymbol=args[0].Value;
             if (!this.IsNeedBlockIncreaseData.has(blockSymbol))  this.IsNeedBlockIncreaseData.add(blockSymbol);
+            return;
+        }
+
+        if (callee.Name=='COVER_C' || callee.Name=='COVER_O' || callee.Name=='COVER_H' || callee.Name=='COVER_L' || callee.Name=='COVER_A' || callee.Name=='COVER_V')   //跨周期函数
+        {
+            var periodName=args[0].Value;
+            if (periodName=='DAY' || periodName=='WEEK' || periodName=='YEAR' || periodName=='MONTH')
+            this.IsNeedSymbolDayData=true;
             return;
         }
 
@@ -3273,7 +3283,7 @@ function JSAlgorithm(errorHandler,symbolData)
             return result;
         var Ex = 0, Ey = 0, Sxy = 0, Sxx = 0, Const, Slope;
         var i, j;
-        for(j = 0; j < datanum && !this.isNumber(data[j]); ++j)
+        for(j = 0; j < datanum && !this.IsNumber(data[j]); ++j)
         {
             result[j] = null;
         }
@@ -3293,7 +3303,7 @@ function JSAlgorithm(errorHandler,symbolData)
                Sxx += (i-j-Ex)*(i-j-Ex);
            }
            Slope = Sxy / Sxx;
-           Const = (Ey - Ex*Slope) / num;
+           Const = Ey - Ex*Slope/num;
            result[i] = Slope * num + Const;
         }
 
@@ -5010,6 +5020,90 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    //  跨周期函数COVER_C(), COVER_O(), COVER_H(), COVER_L(), COVER_A(), COVER_V()
+    this.CoverPeriod=function(name, periodName)
+    {
+        const PERIOD_LIST=
+        [
+            {Name:'MIN1', Period:4, Order:1},
+            {Name:'MIN5', Period:5, Order:2},
+            {Name:'MIN15', Period:6, Order:3},
+            {Name:'MIN30', Period:7, Order:4},
+            {Name:'MIN60', Period:8, Order:5},
+
+            {Name:'DAY', Period:0, Order:1000},
+            {Name:'WEEK', Period:1, Order:1001},
+            {Name:'MONTH', Period:2, Order:1002},
+            {Name:"YEAR", Period:3, Order:1003}
+        ];
+
+        var periodInfo;
+        for(var i in PERIOD_LIST)
+        {
+            if (PERIOD_LIST[i].Name==periodName)
+            {
+                periodInfo=PERIOD_LIST[i];
+                break;
+            }
+        }
+        if (!periodInfo) return null;
+
+        var curPeriodInfo;
+        var currentPeriod=this.SymbolData.Data.Period;
+        for(var i in PERIOD_LIST)
+        {
+            if (PERIOD_LIST[i].Period==currentPeriod)
+            {
+                curPeriodInfo=PERIOD_LIST[i];
+                break;
+            }
+        }
+        if (!curPeriodInfo) return null;
+
+        if (curPeriodInfo.Order>curPeriodInfo.Order) return null;   //只能小周期转大周期
+
+        var result;
+        if (curPeriodInfo.Period==periodInfo.Period) 
+        {
+            result=this.SymbolData.Data;
+        }
+        else
+        {
+            var hisData;
+            if (ChartData.IsMinutePeriod(curPeriodInfo.Period,true) && ChartData.IsDayPeriod(periodInfo.Period,true))
+            {
+                if (periodInfo.Period==0) hisData=this.SymbolData.DayData.Data; //日线直接用
+                else hisData=this.SymbolData.DayData.GetPeriodData(periodInfo.Period);
+            }
+            else
+            {
+                hisData=this.SymbolData.SourceData.GetPeriodData(periodInfo.Period);
+            }
+            var data=this.SymbolData.Data.CoverTo(hisData, curPeriodInfo.Period, periodInfo.Period);
+            result=new ChartData();
+            result.Data=data;
+        }
+
+        switch(name)
+        {
+            case 'COVER_C':
+                return result.GetClose();
+            case 'COVER_O':
+                return result.GetOpen();
+            case 'COVER_H':
+                return result.GetHigh();
+            case 'COVER_L':
+                return result.GetLow();
+            case 'COVER_A':
+                return result.GetAmount();
+            case 'COVER_V':
+                return result.GetVol();
+            default:
+                return null;
+        }
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -5142,6 +5236,13 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.STRCAT(args[0], args[1]);
             case 'CON2STR':
                 return this.CON2STR(args[0], args[1]);
+            case 'COVER_C':
+            case 'COVER_O':
+            case 'COVER_H':
+            case 'COVER_L':
+            case 'COVER_A':
+            case 'COVER_V':
+                return this.CoverPeriod(name,args[0]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
@@ -5971,6 +6072,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.Symbol='600000.sh';
     this.Name;
     this.Data=null;             //个股数据
+    this.DayData=null;          //日线数据
     this.SourceData=null;       //不复权的个股数据
     this.MarketValue=null;      //总市值
     this.Period=0;              //周期
@@ -6813,6 +6915,58 @@ function JSSymbolData(ast,option,jsExecute)
             case 'AMOUNT':
                 return this.Data.GetAmount();
         }
+    }
+
+    this.GetSymbolDayData=function()
+    {
+        //分钟周期才需要下载日线
+        if (this.DataType!=HQ_DATA_TYPE.KLINE_ID || !ChartData.IsMinutePeriod(this.Period,true) || this.DayData)
+            return this.Execute.RunNextJob();
+        
+        var self=this;
+        JSNetwork.HttpRequest({
+            url: self.KLineApiUrl,
+            data:
+            {
+                "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
+                "symbol": self.Symbol,
+                "start": -1,
+                "count": self.MaxRequestDataCount
+            },
+            type:"post",
+            dataType: "json",
+            async:true, 
+            success: function (recvData)
+            {
+                self.RecvSymbolDayData(recvData);
+                self.Execute.RunNextJob();
+            },
+            error: function(request)
+            {
+                self.RecvError(request);
+            }
+        });
+    }
+
+    this.RecvSymbolDayData=function(data)
+    {
+        console.log('[JSSymbolData::RecvSymbolDayData] recv data' , data);
+
+        let hisData=this.JsonDataToHistoryData(data);
+        var dayData=new ChartData();
+        dayData.DataType=0; /*日线数据 */
+        dayData.Data=hisData;
+        
+        if (this.Right>0)    //复权
+        {
+            let rightData=this.Data.GetRightDate(this.Right);
+            dayData.Data=rightData;
+        }
+
+        dayData.Right=this.Right;
+        dayData.Period=this.Period;
+
+        this.DayData=dayData;
     }
 
     this.GetCurrBarsCount=function()
@@ -8467,6 +8621,7 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_INDEX_INCREASE_DATA:4, //涨跌股票个数统计数据
     JOB_DOWNLOAD_VOLR_DATA:5,           //5日量比均量下载量比数据
     JOB_DOWNLOAD_GROUP_DATA:6,          //所属行业|地区|概念
+    JOB_DOWNLOAD_SYMBOL_DAY_DATA:7,     //股票日线数据
 
     //财务函数
     JOB_DOWNLOAD_TOTAL_EQUITY_DATA:100,          //总股本（万股）
@@ -8791,6 +8946,8 @@ function JSExecute(ast,option)
         {
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA:
                 return this.SymbolData.GetSymbolData();
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DAY_DATA:
+                return this.SymbolData.GetSymbolDayData();
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_DATA:
                 return this.SymbolData.GetIndexData();
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA:
