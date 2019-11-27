@@ -5074,12 +5074,24 @@ function JSAlgorithm(errorHandler,symbolData)
             if (ChartData.IsMinutePeriod(curPeriodInfo.Period,true) && ChartData.IsDayPeriod(periodInfo.Period,true))
             {
                 if (periodInfo.Period==0) hisData=this.SymbolData.DayData.Data; //日线直接用
-                else hisData=this.SymbolData.DayData.GetPeriodData(periodInfo.Period);
+                else hisData=this.SymbolData.DayData.GetPeriodData(periodInfo.Period);  //分钟数据不复权 直接算周期就可以了
             }
             else
             {
-                hisData=this.SymbolData.SourceData.GetPeriodData(periodInfo.Period);
+                var bindData=new ChartData();
+                bindData.Data=this.SymbolData.SourceData.Data;
+                bindData.Period=this.SymbolData.Period;
+                bindData.Right=this.SymbolData.Right;
+
+                if (ChartData.IsDayPeriod(periodInfo.Period,true) && bindData.Right>0) //日线数据才复权
+                {
+                    var rightData=bindData.GetRightData(bindData.Right);
+                    bindData.Data=rightData;
+                }
+
+                hisData=bindData.GetPeriodData(periodInfo.Period);
             }
+
             var data=this.SymbolData.Data.CoverTo(hisData, curPeriodInfo.Period, periodInfo.Period);
             result=new ChartData();
             result.Data=data;
@@ -6955,14 +6967,8 @@ function JSSymbolData(ast,option,jsExecute)
         let hisData=this.JsonDataToHistoryData(data);
         var dayData=new ChartData();
         dayData.DataType=0; /*日线数据 */
-        dayData.Data=hisData;
+        dayData.Data=hisData;   //保存原始数据 不复权
         
-        if (this.Right>0)    //复权
-        {
-            let rightData=this.Data.GetRightDate(this.Right);
-            dayData.Data=rightData;
-        }
-
         dayData.Right=this.Right;
         dayData.Period=this.Period;
 

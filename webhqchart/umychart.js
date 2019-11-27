@@ -6441,6 +6441,8 @@ function ChartData()
         return result;
     }
 
+    this.GetRightData=this.GetRightDate;
+
     //叠加数据和主数据拟合,去掉主数据没有日期的数据
     this.GetOverlayData=function(overlayData)
     {
