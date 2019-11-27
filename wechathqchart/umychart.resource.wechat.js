@@ -57,7 +57,8 @@ function JSChartResource()
     this.CorssCursorBGColor = "rgb(43,54,69)";            //十字光标背景
     this.CorssCursorTextColor = "rgb(255,255,255)";
     this.CorssCursorTextFont = "12px 微软雅黑";
-    this.CorssCursorPenColor = "rgb(130,130,130)";           //十字光标线段颜色
+    this.CorssCursorHPenColor = "rgb(130,130,130)";          //十字光标线段颜色(水平)
+    this.CorssCursorVPenColor = "rgb(130,130,130)";          //十字光标线段颜色(垂直)
 
     this.Domain = "https://opensource.zealink.com";               //API域名
     this.CacheDomain = "https://opensourcecache.zealink.com";     //缓存域名
@@ -218,7 +219,8 @@ function JSChartResource()
         if (style.CorssCursorBGColor) this.CorssCursorBGColor = style.CorssCursorBGColor;
         if (style.CorssCursorTextColor) this.CorssCursorTextColor = style.CorssCursorTextColor;
         if (style.CorssCursorTextFont) this.CorssCursorTextFont = style.CorssCursorTextFont;
-        if (style.CorssCursorPenColor) this.CorssCursorPenColor = style.CorssCursorPenColor;
+        if (style.CorssCursorHPenColor) this.CorssCursorHPenColor = style.CorssCursorHPenColor;
+        if (style.CorssCursorVPenColor) this.CorssCursorVPenColor = style.CorssCursorVPenColor;
         if (style.KLine) this.KLine = style.KLine;
         if (style.Index) 
         {

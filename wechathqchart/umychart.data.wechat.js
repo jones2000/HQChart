@@ -1257,6 +1257,20 @@ ChartData.IsTickPeriod = function (period)
     return period == 10;
 }
 
+function Rect(x, y, width, height) 
+{
+    this.Left = x,
+    this.Top = y;
+    this.Right = x + width;
+    this.Bottom = y + height;
+
+    this.IsPointIn = function (x, y) 
+    {
+        if (x >= this.Left && x <= this.Right && y >= this.Top && y <= this.Bottom) return true;
+        return false;
+    }
+}
+
 
 //导出统一使用JSCommon命名空间名
 module.exports =
@@ -1266,7 +1280,8 @@ module.exports =
         HistoryData: HistoryData,
         ChartData: ChartData,
         SingleData: SingleData,
-        MinuteData: MinuteData
+        MinuteData: MinuteData,
+        Rect: Rect,
     },
 
     //单个类导出
@@ -1277,5 +1292,6 @@ module.exports =
     JSCommon_CUSTOM_DAY_PERIOD_START: CUSTOM_DAY_PERIOD_START,
     JSCommon_CUSTOM_DAY_PERIOD_END: CUSTOM_DAY_PERIOD_END,
     JSCommon_CUSTOM_MINUTE_PERIOD_START: CUSTOM_MINUTE_PERIOD_START,
-    JSCommon_CUSTOM_MINUTE_PERIOD_END: CUSTOM_MINUTE_PERIOD_END
+    JSCommon_CUSTOM_MINUTE_PERIOD_END: CUSTOM_MINUTE_PERIOD_END,
+    JSCommon_Rect: Rect,
 };

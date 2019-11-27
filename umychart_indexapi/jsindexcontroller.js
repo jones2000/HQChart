@@ -317,6 +317,7 @@ function JSUpateIndexController(req,res,next)
         var indexData=new JSMongoIndex();
         indexData.Load(
             {
+                IndexID:this.IndexID,
                 Success:(data)=> { this.UpdateSuccess(data); }
             }
         );

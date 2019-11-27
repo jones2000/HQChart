@@ -185,6 +185,8 @@ function JSChart(divElement)
             if (option.CorssCursorInfo.IsShowCorss===false) chart.ChartCorssCursor.IsShowCorss=option.CorssCursorInfo.IsShowCorss;
             if (option.CorssCursorInfo.IsShowClose == true) chart.ChartCorssCursor.IsShowClose = option.CorssCursorInfo.IsShowClose;    //Y轴显示收盘价
             if (option.CorssCursorInfo.PressTime) chart.PressTime=option.CorssCursorInfo.PressTime; //长按显示十字光标的时间
+            if (option.CorssCursorInfo.HPenType>0) chart.ChartCorssCursor.HPenType=option.CorssCursorInfo.HPenType;
+            if (option.CorssCursorInfo.VPenType>0) chart.ChartCorssCursor.VPenType=option.CorssCursorInfo.VPenType;
         }
 
         if (option.SplashTitle) chart.ChartSplashPaint.SplashTitle=option.SplashTitle;
@@ -15594,7 +15596,13 @@ function ChartCorssCursor()
 {
     this.Frame;
     this.Canvas;                            //画布
-    this.PenColor=g_JSChartResource.CorssCursorPenColor;        //十字线颜色
+
+    this.HPenColor=g_JSChartResource.CorssCursorHPenColor; //水平线颜色
+    this.HPenType=0;  //水平线样式 0=虚线 1=实线
+
+    this.VPenColor=g_JSChartResource.CorssCursorVPenColor; //垂直线颜色
+    this.VPenType=0;  //垂直线颜色 0=虚线 1=实线 2=K线宽度
+
     this.Font=g_JSChartResource.CorssCursorTextFont;            //字体
     this.TextColor=g_JSChartResource.CorssCursorTextColor;      //文本颜色
     this.TextBGColor=g_JSChartResource.CorssCursorBGColor;      //文本背景色
@@ -15680,15 +15688,30 @@ function ChartCorssCursor()
         //十字线
         if (this.IsShowCorss)
         {
+            var pixel=GetDevicePixelRatio();
             this.Canvas.save();
-            this.Canvas.strokeStyle=this.PenColor;
-            this.Canvas.setLineDash([3,2]);   //虚线
+            this.Canvas.strokeStyle=this.HPenColor;
+            if (this.HPenType==0) this.Canvas.setLineDash([3*pixel,2*pixel]);   //虚线
             //this.Canvas.lineWidth=0.5
             this.Canvas.beginPath();
-
             this.Canvas.moveTo(left,ToFixedPoint(y));
             this.Canvas.lineTo(right,ToFixedPoint(y));
+            this.Canvas.stroke();
+            this.Canvas.restore();
 
+            this.Canvas.save();
+            this.Canvas.strokeStyle=this.VPenColor;
+            if (this.VPenType==0) 
+            {
+                this.Canvas.setLineDash([3*pixel,2*pixel]);   //虚线
+            }
+            else if (this.VPenType==2) 
+            {
+                let barWidth=this.Frame.SubFrame[0].Frame.DataWidth;    //和K线一样宽度
+                if (barWidth>2*pixel) this.Canvas.lineWidth=barWidth;
+            }
+
+            this.Canvas.beginPath();
             if (this.Frame.SubFrame.length>0)
             {
                 for(var i in this.Frame.SubFrame)
@@ -15705,9 +15728,9 @@ function ChartCorssCursor()
                 this.Canvas.moveTo(ToFixedPoint(x),top);
                 this.Canvas.lineTo(ToFixedPoint(x),bottom);
             }
-
             this.Canvas.stroke();
             this.Canvas.restore();
+            
         }
 
         var xValue=this.Frame.GetXData(x);
@@ -15903,17 +15926,32 @@ function ChartCorssCursor()
         //十字线
         if (this.IsShowCorss)
         {
+            var pixel=GetDevicePixelRatio();
             this.Canvas.save();
-            this.Canvas.strokeStyle=this.PenColor;
-            this.Canvas.setLineDash([3,2]);   //虚线
-            //this.Canvas.lineWidth=0.5
-            this.Canvas.beginPath();
+            this.Canvas.strokeStyle=this.HPenColor;
+            if (this.HPenType==0) this.Canvas.setLineDash([3*pixel,2*pixel]);   //虚线
 
             //画竖线
+            this.Canvas.beginPath();
             this.Canvas.moveTo(ToFixedPoint(x),top);
             this.Canvas.lineTo(ToFixedPoint(x),bottom);
+            this.Canvas.stroke();
+            this.Canvas.restore();
 
             //画横线
+            this.Canvas.save();
+            this.Canvas.strokeStyle=this.VPenColor;
+            if (this.VPenType==0) 
+            {
+                this.Canvas.setLineDash([3*pixel,2*pixel]);   //虚线
+            }
+            else if (this.VPenType==2) 
+            {
+                let barWidth=this.Frame.SubFrame[0].Frame.DataWidth;    //和K线一样宽度
+                if (barWidth>2*pixel) this.Canvas.lineWidth=barWidth;
+            }
+
+            this.Canvas.beginPath();
             if (this.Frame.SubFrame.length>0)
             {
                 for(var i in this.Frame.SubFrame)
@@ -20154,7 +20192,8 @@ function JSChartResource()
     this.CorssCursorBGColor="rgb(43,54,69)";            //十字光标背景
     this.CorssCursorTextColor="rgb(255,255,255)";
     this.CorssCursorTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";
-    this.CorssCursorPenColor="rgb(130,130,130)";           //十字光标线段颜色
+    this.CorssCursorHPenColor="rgb(130,130,130)";          //十字光标线段颜色(水平)
+    this.CorssCursorVPenColor="rgb(130,130,130)";          //十字光标线段颜色(垂直)
 
     this.LockBGColor = "rgb(220, 220, 220)";
     this.LockTextColor = "rgb(210, 34, 34)";
@@ -20351,7 +20390,8 @@ function JSChartResource()
         if (style.CorssCursorBGColor) this.CorssCursorBGColor = style.CorssCursorBGColor;
         if (style.CorssCursorTextColor) this.CorssCursorTextColor = style.CorssCursorTextColor;
         if (style.CorssCursorTextFont) this.CorssCursorTextFont = style.CorssCursorTextFont;
-        if (style.CorssCursorPenColor) this.CorssCursorPenColor = style.CorssCursorPenColor;
+        if (style.CorssCursorVPenColor) this.CorssCursorVPenColor = style.CorssCursorVPenColor;
+        if (style.CorssCursorHPenColor) this.CorssCursorHPenColor = style.CorssCursorHPenColor;
         if (style.KLine) this.KLine = style.KLine;
 
         if (style.Index) 
