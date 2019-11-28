@@ -27,3 +27,5 @@ demo/phone21.html K线图弹幕
 demo/phone22.html 叠加指标页面行情(K线图)
 demo/phone23.html 概念异动(走势图)
 demo/phone24.html 分笔K线图
+
+demo/et_minute.html 自定义品种分时图
