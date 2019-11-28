@@ -16528,8 +16528,13 @@ function MinuteTooltipPaint()
         this.Canvas.fillStyle=color;
         this.Canvas.fillText(text,left+labelWidth,top);
 
+        var isShowAvPrice=true;
+        if (item.Before) isShowAvPrice=false;   //集合竞价均价
+        else if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) isShowAvPrice=false;     //外汇没有均价
+        else if (MARKET_SUFFIX_NAME.IsET(upperSymbol) && !MARKET_SUFFIX_NAME.IsETShowAvPrice(upperSymbol)) isShowAvPrice=false;
+
         //均价
-        if (!item.Before && !MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol))   //集合竞价|外汇没有均价
+        if (isShowAvPrice)   
         {
             top+=this.LineHeight;
             this.Canvas.fillStyle=this.TitleColor;
@@ -20258,7 +20263,11 @@ function DynamicMinuteTitlePainting()
             if (!this.DrawText(text,color,position)) return;
         }
 
-        if (item.AvPrice)
+        var isShowAvPrice=true;
+        var upperSymbol=this.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsET(upperSymbol) && !MARKET_SUFFIX_NAME.IsETShowAvPrice(upperSymbol)) isShowAvPrice=false;
+
+        if (item.AvPrice && isShowAvPrice)
         {
             var color=this.GetColor(item.AvPrice,this.YClose);
             var text=g_JSChartLocalization.GetText('MTitle-AvPrice',this.LanguageID)+item.AvPrice.toFixed(defaultfloatPrecision);
@@ -37768,6 +37777,11 @@ var MARKET_SUFFIX_NAME=
         return upperSymbol.indexOf(this.ET) > 0;
     },
 
+    IsETShowAvPrice:function(upperSymbol)   //是否显示均价
+    {
+        return false;
+    },
+
     IsForeignExchange(upperSymbol)
     {
         if (!upperSymbol) return false;
@@ -38044,6 +38058,11 @@ function MinuteTimeStringData()
         //this.HK = this.CreateHKData();
     }
 
+    this.GetET=function(upperSymbol)   //当天所有的分钟
+    {
+        throw {Name:'MinuteTimeStringData::GetET', Error:'not implement'};
+    }
+
     this.GetSHSZ=function() //动态创建
     {
         if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
@@ -38217,6 +38236,7 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) return this.GetFTSE();
         if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) return this.GetFHK();
         if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) return this.GetForeignExchange();
+        if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) return this.GetET(upperSymbol);
     }
 }
 
@@ -38559,6 +38579,8 @@ function MinuteCoordinateData()
                 data=this.GetFHKData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol))
                 data=this.GetForeignExchangeData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsET(upperSymbol))
+                data=this.GetETData(upperSymbol,width);
         }
 
         //console.log('[MiuteCoordinateData]', width);
@@ -38636,6 +38658,11 @@ function MinuteCoordinateData()
     {
         var result=FOREX_MINUTE_X_COORDINATE;
         return result;
+    }
+
+    this.GetETData=function(upperSymbol,width)
+    {
+        throw {Name:'MinuteCoordinateData::GetETData', Error:'not implement'};
     }
 }
 

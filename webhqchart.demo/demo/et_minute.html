@@ -1,0 +1,272 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>页面行情(K线图)</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="content/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="divminute" style="width: 900px;height:400px;position: relative;"></div>
+
+    <script src="content/js/jquery.min.js"></script>
+    <script src="content/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <script src='./et_testdata.js'></script>
+    
+    <script>
+        //////////////////////////////////////////////////////////////
+        // 假设 XXYY品种交易时间段如下
+        // 8:00 -10:00 , 13:00- 15:00,  23:00 - 2:00
+        //
+        //////////////////////////////////////////////////////////////
+
+        //X轴刻度显示配置
+        const XXYY_MINUTE_X_COORDINATE=
+        {
+            Full:   //完整模式
+            [
+                [0, 1, "RGB(200,200,200)", "08:00"],    //0=数据索引 1=暂时为用到 2=线段和字颜色 3=刻度显示的文字
+                [120, 1, "RGB(200,200,200)", "13:00"],
+                [241, 1, "RGB(200,200,200)", "15:00"],
+                [302, 1, "RGB(200,200,200)", "0:00"],
+                [422, 1, "RGB(200,200,200)", "2:00"],
+                
+            ],
+            Simple: //简洁模式
+            [
+                [0, 1, "RGB(200,200,200)", "08:00"],
+                [120, 1, "RGB(200,200,200)", "13:00"],
+                [241, 1, "RGB(200,200,200)", "15:00"],
+                [302, 1, "RGB(200,200,200)", "0:00"],
+                [422, 1, "RGB(200,200,200)", "2:00"],
+            ],
+            Min:   //最小模式     
+            [
+                [0, 1, "RGB(200,200,200)", "08:00"],
+                [241, 1, "RGB(200,200,200)", "15:00"],
+                [422, 1, "RGB(200,200,200)", "2:00"],
+            ],
+
+            Count: 423,
+            MiddleCount: 200,   //中心的位置
+
+            GetData: function (width) 
+            {
+                if (width < 200) return this.Min;
+                else if (width < 450) return this.Simple;
+
+                return this.Full;
+            }
+        }
+
+        //简单的把分时控件封装下
+        function MinuteChart(divMinute)
+        {
+            this.OriginalSymbol='XXYY'; //原始代码
+            this.TradeTimeData=new Map();   //所有的交易时间
+            this.FloatPrecision=5;  //小数位数
+
+            this.DivMinute=divMinute;
+            this.Chart=JSChart.Init(divMinute);   //把分时图绑定到一个Div上
+
+            //分时图配置信息
+            this.Option= {
+                Type:'分钟走势图',   //创建图形类型
+
+                Windows: //窗口指标
+                [
+                    //{Index:"涨跌趋势", Modify:false,Change:false},
+                ], 
+                
+                IsAutoUpdate:false,       //是自动更新数据
+                DayCount:1,                     //1 最新交易日数据 >1 多日走势图
+                IsShowCorssCursorInfo:true,    //是否显示十字光标的刻度信息
+                CorssCursorTouchEnd:true,       //手势放开以后,十字光标小时
+                IsShowRightMenu:true,       //是否显示右键菜单
+    
+                MinuteLine:
+                {
+                    IsDrawAreaPrice:false,      //是否画价格面积图
+                },
+
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true //不显示周期/复权
+                },
+    
+                Border: //边框
+                {
+                    Left:1,    //左边间距
+                    Right:1,     //右边间距
+                    Top:25,
+                    Bottom:25
+                },
+                
+                Frame:  //子框架设置
+                [
+                    {SplitCount:5,Height:30},
+                    {SplitCount:3,Height:10},
+                ],
+
+                ExtendChart:
+                [
+                    {Name:'MinuteTooltip' } //Tooltip
+                ]
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                $(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
+
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                JSChart.SetStyle(blackStyle);
+                this.DivMinute.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                this.OnSize();  //让分时图全屏
+
+                JSChart.GetMinuteTimeStringData().GetET=(upperSymbol)=>{ return this.GetETTimeData(upperSymbol); }              //当天所有的交易时间点
+                JSChart.GetMinuteCoordinateData().GetETData=(upperSymbol)=> { return this.GetETCoordinateData(upperSymbol); }   //X轴刻度设置
+                MARKET_SUFFIX_NAME.GetETDecimal = (symbol)=> { return this.FloatPrecision; } // 不同品种，使用不同小数位数
+
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback) } ;   //绑定网络协议回调
+                this.Option.Symbol=this.OriginalSymbol+'.ET';           //扩展品种代码后缀
+                this.Chart.SetOption(this.Option);  //设置K线配置
+            }
+
+            this.CreateTradeTimeData=function(symbol)
+            {
+                //交易时间段
+                const TIME_SPLIT =
+                [
+                    { Start: 800, End: 1000 },
+                    { Start: 1300, End: 1500 },
+                    { Start: 2300, End: 2359 }, //跨天要分开写
+                    { Start:0, End:200}
+                ];
+
+                return JSChart.GetMinuteTimeStringData().CreateTimeData(TIME_SPLIT);
+            }
+
+            this.GetETTimeData=function(upperSymbol)    //获取X轴所有的时间
+            {
+                //根据不同的品种 返回不同的交易时间段分钟
+                if (this.TradeTimeData.has(upperSymbol)) return this.TradeTimeData.get(upperSymbol);
+
+                var data=this.CreateTradeTimeData(upperSymbol);
+                this.TradeTimeData.set(upperSymbol,data);   //缓存下
+                return data;
+            }
+
+            this.GetETCoordinateData=function(upperSymbol)  //获取X轴分割信息
+            {
+                //根据不同的品种 返回不同的X轴刻度
+                return XXYY_MINUTE_X_COORDINATE;
+            }
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height();
+                var width = $(window).width();
+                this.DivMinute.style.top='px';
+                this.DivMinute.style.left='px';
+                this.DivMinute.style.width=width+'px';
+                this.DivMinute.style.height=height+'px';
+                this.Chart.OnSize();
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[MinuteChart::NetworkFilter] data', data);
+                switch(data.Name)
+                {
+                    case 'MinuteChartContainer::RequestMinuteData':     //当天数据下载
+                        this.RequestMinuteData(data, callback);
+                        break;
+                }
+            }
+
+            this.RequestMinuteData=function(data, callback)   //请求分钟数据
+            {
+                data.PreventDefault=true;   //禁止使用HQChart内部请求
+                var stock={OriginalSymbol:this.OriginalSymbol, Symbol:data.Request.Data.symbol[0]};    //原始代码， 内部代码
+                data.Self.ChartPaint[1].IsShow=false;   //是否显示均线
+                if (data.Self.ChartSplashPaint.IsEnableSplash)
+                {
+                    console.log('[MinuteChart::RequestMinuteData] first reqeust');
+                    this.RequestDayMinuteData(data, callback,stock);    //全量数据
+                }
+                else 
+                {
+                    console.log('[MinuteChart::RequestMinuteData] update reqeust');
+                    this.RequestUpdateMinuteData(data, callback,stock); //增量数据
+                }
+            }
+
+            this.RequestDayMinuteData=function(data,callback, stock) //请求当天的所有分钟数据
+            {
+                console.log(`[MinuteChart::RequestDayMinuteData] request all minute data . OriginalSymbol=${stock.OriginalSymbol}, Symbol=${stock.Symbol}`);
+
+                //模拟异步请求数据
+                setTimeout(() => {
+                    this.RecvMinuteData(TEST_DATA, callback,stock);
+                }, 200);
+            }
+
+            this.RecvMinuteData=function(recvData,callback,stock)
+            {
+                var yClose=parseFloat(recvData.yclose);    //昨收盘 
+                var minuteData=[];   //HQChart 分时数据格式
+
+                //symbol：填hqchart统一的内部代码, name:名称，这个使用原始代码 你也可以用中文名字
+                var stockData={name:stock.OriginalSymbol, symbol:stock.Symbol, yclose:yClose, minute:minuteData };
+
+                for(var i= recvData.obj.length-1; i>=0; --i)
+                {
+                    var item=recvData.obj[i];
+                    var dateTime=new Date(item.D);
+                    //数据都是数值类型!!!
+                    var date=dateTime.getFullYear()*10000+(dateTime.getMonth()+1)*100+dateTime.getDate();
+                    var time=dateTime.getHours()*100+dateTime.getMinutes();
+                    var stockItem=
+                    { 
+                        date:date,
+                        time:time,
+                        price:parseFloat(item.C), 
+                        open:parseFloat(item.O),
+                        high:parseFloat(item.H),
+                        low:parseFloat(item.L),
+                        amount:parseFloat(item.A),
+                        vol:parseFloat(item.V),
+                        avprice:null,
+                    }
+
+                    minuteData.push(stockItem);
+                }
+
+                this.Cache=stockData;   //把当天全量数据保存起来
+
+                var hqchartData={stock:[stockData]};
+                callback(hqchartData);
+            }
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+            var minuteControl=new MinuteChart(document.getElementById('divminute'));
+            minuteControl.Create();
+        })
+
+    </script>  
+</body>  
+</html>
