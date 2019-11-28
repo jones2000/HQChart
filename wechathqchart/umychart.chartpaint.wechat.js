@@ -1760,6 +1760,72 @@ function ChartMinuteInfo()
     }
 }
 
+//买卖盘
+function ChartBuySell() 
+{
+    this.newMethod = ChartSingleText;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.TextFont = g_JSChartResource.KLineTrain.Font;                //"bold 14px arial";           //买卖信息字体
+    this.LastDataIcon = g_JSChartResource.KLineTrain.LastDataIcon; //{Color:'rgb(0,0,205)',Text:'↓'};
+    this.BuyIcon = g_JSChartResource.KLineTrain.BuyIcon; //{Color:'rgb(0,0,205)',Text:'B'};
+    this.SellIcon = g_JSChartResource.KLineTrain.SellIcon; //{Color:'rgb(0,0,205)',Text:'S'};
+    this.BuySellData = new Map();   //{Date:日期*10000+时间, Op:买/卖 0=buy 1=sell}
+    this.LastData = {}; //当前屏最后一个数据
+
+    this.Draw = function () 
+    {
+        if (!this.Data || !this.Data.Data) return;
+
+        var isHScreen = (this.ChartFrame.IsHScreen === true);
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen === true) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+
+        this.Canvas.font = this.TextFont;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+            if (x > chartright) break;
+
+            this.LastData = { ID: j, Data: value };
+            var key = value.Date * 10000;
+            if (IFrameSplitOperator.IsNumber(value.Time)) key += value.Time;
+            if (!this.BuySellData.has(key)) continue;
+            var bsItem = this.BuySellData.get(key);
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var yHigh = this.ChartFrame.GetYFromData(value.High);
+            var yLow = this.ChartFrame.GetYFromData(value.Low);
+            if (bsItem.Op == 0)   //买 标识在最低价上
+            {
+                this.Canvas.textAlign = 'center';
+                this.Canvas.textBaseline = 'top';
+                this.Canvas.fillStyle = this.BuyIcon.Color;
+                this.DrawText(this.BuyIcon.Text, x, yLow, isHScreen);
+            }
+            else    //买 标识在最高价上
+            {
+                this.Canvas.textAlign = 'center';
+                this.Canvas.textBaseline = 'bottom';
+                this.Canvas.fillStyle = this.SellIcon.Color;
+                this.DrawText(this.SellIcon.Text, x, yHigh, isHScreen);
+            }
+        }
+
+        var x = this.ChartFrame.GetXFromIndex(this.LastData.ID);
+        var yHigh = this.ChartFrame.GetYFromData(this.LastData.Data.High);
+        this.Canvas.textAlign = 'center';
+        this.Canvas.textBaseline = 'bottom';
+        this.Canvas.fillStyle = this.LastDataIcon.Color;
+        this.Canvas.font = this.TextFont;
+        this.DrawText(this.LastDataIcon.Text, x, yHigh, isHScreen);
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // 其他图形
 //
@@ -2831,6 +2897,7 @@ module.exports =
         ChartRectangle: ChartRectangle,
         ChartMultiText: ChartMultiText,
         ChartMultiLine: ChartMultiLine,
+        ChartBuySell: ChartBuySell,
 
         ChartPie: ChartPie,
         ChartCircle: ChartCircle,
@@ -2857,5 +2924,6 @@ module.exports =
     JSCommonChartPaint_ChartRectangle: ChartRectangle,
     JSCommonChartPaint_ChartMultiText: ChartMultiText,
     JSCommonChartPaint_ChartMultiLine: ChartMultiLine,
+    JSCommonChartPaint_ChartBuySell: ChartBuySell,
     JSCommonChartPaint_ChartCorssCursor: ChartCorssCursor,
 };

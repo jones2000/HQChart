@@ -26927,9 +26927,28 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
+    //切换api指标
+    this.ChangeAPIIndex=function(windowIndex,indexData)
+    {
+        this.DeleteIndexPaint(windowIndex);
+        //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
+        var apiItem=indexData.API;
+        this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,indexData);
+
+        var bindData=this.ChartPaint[0].Data;
+        this.BindIndexData(windowIndex,bindData);   //执行脚本
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
+    }
+
     //切换指标 指定切换窗口指标
     this.ChangeIndex=function(windowIndex,indexName,option)
     {
+        if (option && option.API)   //切换api指标
+            return this.ChangeAPIIndex(windowIndex,option);
+
         var indexItem=JSIndexMap.Get(indexName);
         if (!indexItem) 
         {
@@ -41736,7 +41755,7 @@ function JSAlgorithm(errorHandler,symbolData)
             var preValue = data[i - (dayCount-1)];
             var sum = 0;
             var count = 0;
-            for (var j = dayCount-1; j >= 0; ++j)
+            for (var j = dayCount-1; j >= 0; --j)
             {
                var value = data[i-j];
                if (!this.IsNumber(value))

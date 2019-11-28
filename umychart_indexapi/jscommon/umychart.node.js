@@ -3503,6 +3503,8 @@ function JSChart(divElement)
             if (option.CorssCursorInfo.IsShowCorss===false) chart.ChartCorssCursor.IsShowCorss=option.CorssCursorInfo.IsShowCorss;
             if (option.CorssCursorInfo.IsShowClose == true) chart.ChartCorssCursor.IsShowClose = option.CorssCursorInfo.IsShowClose;    //Y轴显示收盘价
             if (option.CorssCursorInfo.PressTime) chart.PressTime=option.CorssCursorInfo.PressTime; //长按显示十字光标的时间
+            if (option.CorssCursorInfo.HPenType>0) chart.ChartCorssCursor.HPenType=option.CorssCursorInfo.HPenType;
+            if (option.CorssCursorInfo.VPenType>0) chart.ChartCorssCursor.VPenType=option.CorssCursorInfo.VPenType;
         }
 
         if (option.SplashTitle) chart.ChartSplashPaint.SplashTitle=option.SplashTitle;
@@ -3977,6 +3979,7 @@ function JSChart(divElement)
         var chart=new KLineTrainChartContainer(this.CanvasElement,bHScreen);
 
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
+        if (option.IsApiPeriod==true) chart.IsApiPeriod=option.IsApiPeriod;
 
         //创建改参数div
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
@@ -15570,7 +15573,7 @@ function ChartBuySell()
     this.LastDataIcon=g_JSChartResource.KLineTrain.LastDataIcon; //{Color:'rgb(0,0,205)',Text:'↓'};
     this.BuyIcon=g_JSChartResource.KLineTrain.BuyIcon; //{Color:'rgb(0,0,205)',Text:'B'};
     this.SellIcon=g_JSChartResource.KLineTrain.SellIcon; //{Color:'rgb(0,0,205)',Text:'S'};
-    this.BuySellData=new Map();   //{Date:日期, Op:买/卖 0=buy 1=sell}
+    this.BuySellData=new Map();   //{Date:日期*10000+时间, Op:买/卖 0=buy 1=sell}
     this.LastData={}; //当前屏最后一个数据
     this.IconFont=g_JSChartResource.KLineTrain.IconFont;
 
@@ -15605,9 +15608,11 @@ function ChartBuySell()
             if (x>chartright) break;
 
             this.LastData={ID:j,Data:value};
-
-            if (!this.BuySellData.has(value.Date)) continue;
-            var bsItem=this.BuySellData.get(value.Date);
+            
+            var key=value.Date*10000;
+            if (IFrameSplitOperator.IsNumber(value.Time)) key+=value.Time;
+            if (!this.BuySellData.has(key)) continue;
+            var bsItem=this.BuySellData.get(key);
             var x=this.ChartFrame.GetXFromIndex(j);
             var yHigh=this.ChartFrame.GetYFromData(value.High);
             var yLow=this.ChartFrame.GetYFromData(value.Low);
@@ -18912,7 +18917,13 @@ function ChartCorssCursor()
 {
     this.Frame;
     this.Canvas;                            //画布
-    this.PenColor=g_JSChartResource.CorssCursorPenColor;        //十字线颜色
+
+    this.HPenColor=g_JSChartResource.CorssCursorHPenColor; //水平线颜色
+    this.HPenType=0;  //水平线样式 0=虚线 1=实线
+
+    this.VPenColor=g_JSChartResource.CorssCursorVPenColor; //垂直线颜色
+    this.VPenType=0;  //垂直线颜色 0=虚线 1=实线 2=K线宽度
+
     this.Font=g_JSChartResource.CorssCursorTextFont;            //字体
     this.TextColor=g_JSChartResource.CorssCursorTextColor;      //文本颜色
     this.TextBGColor=g_JSChartResource.CorssCursorBGColor;      //文本背景色
@@ -18998,15 +19009,30 @@ function ChartCorssCursor()
         //十字线
         if (this.IsShowCorss)
         {
+            var pixel=GetDevicePixelRatio();
             this.Canvas.save();
-            this.Canvas.strokeStyle=this.PenColor;
-            this.Canvas.setLineDash([3,2]);   //虚线
+            this.Canvas.strokeStyle=this.HPenColor;
+            if (this.HPenType==0) this.Canvas.setLineDash([3*pixel,2*pixel]);   //虚线
             //this.Canvas.lineWidth=0.5
             this.Canvas.beginPath();
-
             this.Canvas.moveTo(left,ToFixedPoint(y));
             this.Canvas.lineTo(right,ToFixedPoint(y));
+            this.Canvas.stroke();
+            this.Canvas.restore();
 
+            this.Canvas.save();
+            this.Canvas.strokeStyle=this.VPenColor;
+            if (this.VPenType==0) 
+            {
+                this.Canvas.setLineDash([3*pixel,2*pixel]);   //虚线
+            }
+            else if (this.VPenType==2) 
+            {
+                let barWidth=this.Frame.SubFrame[0].Frame.DataWidth;    //和K线一样宽度
+                if (barWidth>2*pixel) this.Canvas.lineWidth=barWidth;
+            }
+
+            this.Canvas.beginPath();
             if (this.Frame.SubFrame.length>0)
             {
                 for(var i in this.Frame.SubFrame)
@@ -19023,9 +19049,9 @@ function ChartCorssCursor()
                 this.Canvas.moveTo(ToFixedPoint(x),top);
                 this.Canvas.lineTo(ToFixedPoint(x),bottom);
             }
-
             this.Canvas.stroke();
             this.Canvas.restore();
+            
         }
 
         var xValue=this.Frame.GetXData(x);
@@ -19221,17 +19247,32 @@ function ChartCorssCursor()
         //十字线
         if (this.IsShowCorss)
         {
+            var pixel=GetDevicePixelRatio();
             this.Canvas.save();
-            this.Canvas.strokeStyle=this.PenColor;
-            this.Canvas.setLineDash([3,2]);   //虚线
-            //this.Canvas.lineWidth=0.5
-            this.Canvas.beginPath();
+            this.Canvas.strokeStyle=this.HPenColor;
+            if (this.HPenType==0) this.Canvas.setLineDash([3*pixel,2*pixel]);   //虚线
 
             //画竖线
+            this.Canvas.beginPath();
             this.Canvas.moveTo(ToFixedPoint(x),top);
             this.Canvas.lineTo(ToFixedPoint(x),bottom);
+            this.Canvas.stroke();
+            this.Canvas.restore();
 
             //画横线
+            this.Canvas.save();
+            this.Canvas.strokeStyle=this.VPenColor;
+            if (this.VPenType==0) 
+            {
+                this.Canvas.setLineDash([3*pixel,2*pixel]);   //虚线
+            }
+            else if (this.VPenType==2) 
+            {
+                let barWidth=this.Frame.SubFrame[0].Frame.DataWidth;    //和K线一样宽度
+                if (barWidth>2*pixel) this.Canvas.lineWidth=barWidth;
+            }
+
+            this.Canvas.beginPath();
             if (this.Frame.SubFrame.length>0)
             {
                 for(var i in this.Frame.SubFrame)
@@ -23472,7 +23513,8 @@ function JSChartResource()
     this.CorssCursorBGColor="rgb(43,54,69)";            //十字光标背景
     this.CorssCursorTextColor="rgb(255,255,255)";
     this.CorssCursorTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";
-    this.CorssCursorPenColor="rgb(130,130,130)";           //十字光标线段颜色
+    this.CorssCursorHPenColor="rgb(130,130,130)";          //十字光标线段颜色(水平)
+    this.CorssCursorVPenColor="rgb(130,130,130)";          //十字光标线段颜色(垂直)
 
     this.LockBGColor = "rgb(220, 220, 220)";
     this.LockTextColor = "rgb(210, 34, 34)";
@@ -23669,7 +23711,8 @@ function JSChartResource()
         if (style.CorssCursorBGColor) this.CorssCursorBGColor = style.CorssCursorBGColor;
         if (style.CorssCursorTextColor) this.CorssCursorTextColor = style.CorssCursorTextColor;
         if (style.CorssCursorTextFont) this.CorssCursorTextFont = style.CorssCursorTextFont;
-        if (style.CorssCursorPenColor) this.CorssCursorPenColor = style.CorssCursorPenColor;
+        if (style.CorssCursorVPenColor) this.CorssCursorVPenColor = style.CorssCursorVPenColor;
+        if (style.CorssCursorHPenColor) this.CorssCursorHPenColor = style.CorssCursorHPenColor;
         if (style.KLine) this.KLine = style.KLine;
 
         if (style.Index) 
@@ -26843,9 +26886,28 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
+    //切换api指标
+    this.ChangeAPIIndex=function(windowIndex,indexData)
+    {
+        this.DeleteIndexPaint(windowIndex);
+        //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
+        var apiItem=indexData.API;
+        this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,indexData);
+
+        var bindData=this.ChartPaint[0].Data;
+        this.BindIndexData(windowIndex,bindData);   //执行脚本
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
+    }
+
     //切换指标 指定切换窗口指标
     this.ChangeIndex=function(windowIndex,indexName,option)
     {
+        if (option && option.API)   //切换api指标
+            return this.ChangeAPIIndex(windowIndex,option);
+
         var indexItem=JSIndexMap.Get(indexName);
         if (!indexItem) 
         {
@@ -31276,7 +31338,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
     this.BuySellPaint;          //买卖点画法
     this.TrainDataCount=300;    //训练数据个数
     this.AutoRunTimer=null;     //K线自动前进定时器
-    this.BuySellData=[];        //模拟买卖数据 {Buy:{Price:价格,Date:日期} , Sell:{Price:价格,Date:日期} 
+    this.BuySellData=[];        //模拟买卖数据 {Buy:{Price:价格,Date:日期, Time:时间} , Sell:{Price:价格,Date:日期, Time:时间} 
     this.TrainDataIndex;        //当前训练的数据索引
     this.TrainCallback;         //训练回调 (K线每前进一次就调用一次)
     this.DragMode=0;
@@ -31592,19 +31654,35 @@ function KLineTrainChartContainer(uielement, bHScreen)
 
     this.BuyOrSell=function()   //模拟买卖
     {
+        var isMinutePeriod=ChartData.IsMinutePeriod(this.Period,true);
         var buySellPaint=this.ChartPaintEx[0];
         var lastData=buySellPaint.LastData.Data;
         var buySellData=this.GetLastBuySellData();
+    
         if (buySellData && buySellData.Buy && !buySellData.Sell)
         {
+            var key=lastData.Date*10000;
             buySellData.Sell={Price:lastData.Close,Date:lastData.Date};
-            buySellPaint.BuySellData.set(lastData.Date,{Op:1});
+            if (isMinutePeriod) 
+            {
+                buySellData.Sell.Time=lastData.Time;
+                key+=lastData.Time;
+            }
+            buySellPaint.BuySellData.set(key,{Op:1});
             this.MoveNextKLineData();
             return;
         }
         
-        this.BuySellData.push({ Buy:{Price:lastData.Close,Date:lastData.Date}, Sell:null });
-        buySellPaint.BuySellData.set(lastData.Date,{Op:0});
+        var key=lastData.Date*10000;
+        var newItem={ Buy:{Price:lastData.Close,Date:lastData.Date}, Sell:null };
+        if (isMinutePeriod) 
+        {
+            newItem.Buy.Time=lastData.Time;
+            key+=lastData.Time;
+        }
+        this.BuySellData.push(newItem);
+        
+        buySellPaint.BuySellData.set(key,{Op:0});
         this.MoveNextKLineData();
     }
 }
@@ -41636,7 +41714,7 @@ function JSAlgorithm(errorHandler,symbolData)
             var preValue = data[i - (dayCount-1)];
             var sum = 0;
             var count = 0;
-            for (var j = dayCount-1; j >= 0; ++j)
+            for (var j = dayCount-1; j >= 0; --j)
             {
                var value = data[i-j];
                if (!this.IsNumber(value))

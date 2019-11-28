@@ -2501,7 +2501,7 @@ function JSAlgorithm(errorHandler, symbolData)
             var preValue = data[i - (dayCount - 1)];
             var sum = 0;
             var count = 0;
-            for (var j = dayCount - 1; j >= 0; ++j) 
+            for (var j = dayCount - 1; j >= 0; --j) 
             {
                 var value = data[i - j];
                 if (!this.IsNumber(value)) 
