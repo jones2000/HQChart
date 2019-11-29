@@ -36,6 +36,11 @@ var MARKET_SUFFIX_NAME=
         return upperSymbol.indexOf(this.ET) > 0;
     },
 
+    IsETShowAvPrice: function (upperSymbol)   //是否显示均价
+    {
+        return false;
+    },
+
     IsFTSE: function (upperSymbol) 
     {
         if (!upperSymbol) return false;
@@ -286,6 +291,11 @@ function MinuteTimeStringData()
         //this.HK = this.CreateHKData();
     }
 
+    this.GetET = function (upperSymbol)   //当天所有的分钟
+    {
+        throw { Name: 'MinuteTimeStringData::GetET', Error: 'not implement' };
+    }
+
     this.GetSHSZ=function() //动态创建
     {
         if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
@@ -431,6 +441,7 @@ function MinuteTimeStringData()
         }
         if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) return this.GetFTSE();
         if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) return this.GetFHK();
+        if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) return this.GetET(upperSymbol);
     }
 }
 
@@ -671,6 +682,8 @@ function MinuteCoordinateData()
                 data = this.GetFTSEData(upperSymbol, width);
             else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol, width))
                 data = this.GetFHKData(upperSymbol, width);
+            else if (MARKET_SUFFIX_NAME.IsET(upperSymbol))
+                data = this.GetETData(upperSymbol, width);
         }
 
         //console.log('[MiuteCoordinateData]', width);
@@ -717,6 +730,23 @@ function MinuteCoordinateData()
 
         result.Data = data;
         return result;
+    }
+
+    this.GetFTSEData = function (upperSymbol, width) 
+    {
+        var result = FTSE_MINUTE_X_COORDINATE;
+        return result;
+    }
+
+    this.GetFHKData = function (upperSymbol, width) 
+    {
+        var result = FHK_MINUTE_X_COORDINATE;
+        return result
+    }
+
+    this.GetETData = function (upperSymbol, width) 
+    {
+        throw { Name: 'MinuteCoordinateData::GetETData', Error: 'not implement' };
     }
 }
 
