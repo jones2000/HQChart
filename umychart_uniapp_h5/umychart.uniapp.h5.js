@@ -34371,17 +34371,39 @@ function InvestorInfo()
 
         this.Data=[];
 
+        var postData=
+        {
+            filed: ["question","answerdate","symbol","id"],
+            symbol: [param.HQChart.Symbol],
+            querydate:{"StartDate":this.StartDate,"EndDate":this.GetToday()},
+            start:0,
+            end:this.MaxReqeustDataCount,
+        };
+
+        if (hqChart.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'InvestorInfo::RequestData', //类名::函数
+                Explain:'互动易',
+                Request:{ Url:g_JSChartResource.KLine.Info.Investor.ApiUrl, Type:'post', Data: { postData } }, 
+                Self:this,
+                HQChart:hqChart,
+                PreventDefault:false
+            };
+
+            hqChart.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvData(data,param);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         //请求数据
         JSNetwork.HttpRequest({
             url: g_JSChartResource.KLine.Info.Investor.ApiUrl,
-            data:
-            {
-                "filed": ["question","answerdate","symbol","id"],
-                "symbol": [param.HQChart.Symbol],
-                "querydate":{"StartDate":this.StartDate,"EndDate":this.GetToday()},
-                "start":0,
-                "end":this.MaxReqeustDataCount,
-            },
+            data:postData,
             type:"post",
             dataType: "json",
             async:true,

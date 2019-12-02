@@ -126,7 +126,10 @@ function KLineTooltipPaint()
         //this.TitleColor=this.KLineTitlePaint.UnchagneColor;
         this.IsHScreen = this.ChartFrame.IsHScreen === true;
         this.Canvas.font = this.Font[0];
-        this.Width = this.Canvas.measureText(' 擎: 9999.99亿 ').width;
+        var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        var maxText = ' 擎: 9999.99亿 ';
+        if (defaultfloatPrecision >= 5) maxText = ` 擎: ${99.99.toFixed(defaultfloatPrecision)} `;  //小数位数太多了
+        this.Width = this.Canvas.measureText(maxText).width;
         this.Height = this.LineHeight * lineCount + 2 * 2;
 
         this.DrawBG();
