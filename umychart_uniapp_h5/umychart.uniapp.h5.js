@@ -4576,7 +4576,9 @@ var JSCHART_EVENT_ID=
     ON_SELECT_RECT:13,          //区间选择事件通知
     RECV_MINUTE_DATA:14,        //分时图数据到达
     ON_CLICK_INDEXTITLE:15,     //点击指标标题事件
-    RECV_KLINE_UPDATE_DATA:16   //K线日,分钟更新数据到达      
+    RECV_KLINE_UPDATE_DATA:16,   //K线日,分钟更新数据到达
+    ON_CLICK_DRAWPICTURE:17,    //点击画图工具 
+    ON_FINISH_DRAWPICTURE:18    //完成画图工具    
 }
 
 var JSCHART_OPERATOR_ID=
@@ -5035,86 +5037,49 @@ function JSChartContainer(uielement)
         return angle;
     }
 
-    this.ScrollPage=function(yOffset)   //滚动页面
-    {
-        var top, left;
-        if (document.documentElement && document.documentElement.scrollTop) 
-        {
-            top = document.documentElement.scrollTop;
-            left = document.documentElement.scrollLeft;
-            //w = document.documentElement.scrollWidth;
-            //h = document.documentElement.scrollHeight;
-        } else if (document.body) 
-        {
-            top = document.body.scrollTop;
-            left = document.body.scrollLeft;
-            //w = document.body.scrollWidth;
-            //h = document.body.scrollHeight;
-        }
-
-        window.scroll({ top: top+yOffset,left: left});
-    }
-
     //手机拖拽
-    uielement.ontouchstart=function(e)
-    {
-        if(!this.JSChartContainer) return;
-        if(this.JSChartContainer.DragMode==0) return;
+    uielement.ontouchstart=(e)=> { this.OnTouchStart(e); } 
+    uielement.ontouchmove=(e)=> {this.OnTouchMove(e); }
+    uielement.ontouchend=(e)=> {this.OnTouchEnd(e); }    
 
-        this.JSChartContainer.IsOnTouch=true;
-        this.JSChartContainer.TouchDrawCount=0;
-        this.JSChartContainer.PhonePinch=null;
-        this.JSChartContainer.StopDragTimer();
-        var jsChart=this.JSChartContainer;
-        var isSingleTouch=jsChart.IsSingleTouch(e);
-        if (jsChart.EnableScrollUpDown==false ||  !isSingleTouch || //多点触屏
-            (jsChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && jsChart.TouchStatus.CorssCursorShow==true)) //十字光标显示,不能滚动页面   
+    this.OnTouchStart=function(e)
+    {
+        if(this.DragMode==0) return;
+
+        this.IsOnTouch=true;
+        this.TouchDrawCount=0;
+        this.PhonePinch=null;
+        this.StopDragTimer();
+
+        var isSingleTouch=this.IsSingleTouch(e);
+        if (this.EnableScrollUpDown==false ||  !isSingleTouch || //多点触屏
+            (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && this.TouchStatus.CorssCursorShow==true)) //十字光标显示,不能滚动页面   
         {
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
         }
 
-        if (jsChart.IsPhoneDragging(e))
+        if (this.IsPhoneDragging(e))
         {
-            if (jsChart.TryClickLock || jsChart.TryClickIndexTitle) //指标枷锁区域 , 指标标题点击
+            if (this.TryClickLock || this.TryClickIndexTitle) //指标枷锁区域 , 指标标题点击
             {
-                var touches = jsChart.GetToucheData(e, jsChart.IsForceLandscape);
+                var touches = this.GetToucheData(e, this.IsForceLandscape);
                 var x = touches[0].clientX;
                 var y = touches[0].clientY;
                 var pixelTatio = GetDevicePixelRatio();
                 x -= uielement.getBoundingClientRect().left*pixelTatio;    //减去控件的偏移偏移量
                 y -= uielement.getBoundingClientRect().top*pixelTatio;
-                if (jsChart.TryClickLock && jsChart.TryClickLock(x, y)) return;
-                if (jsChart.TryClickIndexTitle && jsChart.TryClickIndexTitle(x,y)) return;
+                if (this.TryClickLock && this.TryClickLock(x, y)) return;
+                if (this.TryClickIndexTitle && this.TryClickIndexTitle(x,y)) return;
             }
 
             var bStartTimer=true;
-            if (jsChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
+            if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
             {
-                if (jsChart.TouchStatus.CorssCursorShow==true) bStartTimer=false;
+                if (this.TouchStatus.CorssCursorShow==true) bStartTimer=false;
             }
             else
             {
                 if (!isSingleTouch) bStartTimer=false;
-            }
-
-            if (bStartTimer)
-            {
-                //长按2秒,十字光标
-                this.DragTimer=setTimeout(function()
-                {
-                    if (drag.Click.X==drag.LastMove.X && drag.Click.Y==drag.LastMove.Y) //手指没有移动，出现十字光标
-                    {
-                        var mouseDrag=jsChart.MouseDrag;
-                        jsChart.MouseDrag=null;
-                        //移动十字光标
-                        var pixelTatio = GetDevicePixelRatio();
-                        var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
-                        var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
-                        if (jsChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID) jsChart.TouchStatus.CorssCursorShow=true;    //十字显示
-                        jsChart.OnMouseMove(x,y,e);
-                    }
-
-                }, jsChart.PressTime);
             }
 
             var drag=
@@ -5123,30 +5088,86 @@ function JSChartContainer(uielement)
                 "LastMove":{}  //最后移动的位置
             };
 
-            var touches=jsChart.GetToucheData(e,jsChart.IsForceLandscape);
+            var touches=this.GetToucheData(e,this.IsForceLandscape);
 
             drag.Click.X=touches[0].clientX;
             drag.Click.Y=touches[0].clientY;
             drag.LastMove.X=touches[0].clientX;
             drag.LastMove.Y=touches[0].clientY;
 
-            this.JSChartContainer.MouseDrag=drag;
-            document.JSChartContainer=this.JSChartContainer;
-            this.JSChartContainer.SelectChartDrawPicture=null;
-            if (this.JSChartContainer.CurrentChartDrawPicture)  //画图工具模式
+            this.MouseDrag=drag;
+            this.SelectChartDrawPicture=null;
+            var isDrawPictrue=false;
+            if (this.CurrentChartDrawPicture)  //画图工具模式
             {
+                var drawPicture=this.CurrentChartDrawPicture;
+                if (drawPicture.Status==2)
+                    this.SetChartDrawPictureThirdPoint(drag.Click.X,drag.Click.Y);
+                else
+                {
+                    this.SetChartDrawPictureFirstPoint(drag.Click.X,drag.Click.Y);
+                    //只有1个点 直接完成
+                    if (this.FinishChartDrawPicturePoint()) this.DrawDynamicInfo({Corss:false, Tooltip:false});
+                }
+
+                if (e.cancelable) e.preventDefault();
                 return;
             }
+            else
+            {
+                var drawPictrueData={};
+                var pixelTatio = GetDevicePixelRatio(); //鼠标移动坐标是原始坐标 需要乘以放大倍速
+                drawPictrueData.X=(touches[0].clientX-uielement.getBoundingClientRect().left);
+                drawPictrueData.Y=(touches[0].clientY-uielement.getBoundingClientRect().top);
+                if (this.GetChartDrawPictureByPoint(drawPictrueData))
+                {
+                    drawPictrueData.ChartDrawPicture.Status=20;
+                    drawPictrueData.ChartDrawPicture.ValueToPoint();
+                    drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
+                    this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    let event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
+                    if (event && event.Callback)
+                    {
+                        let sendData={ DrawPicture: drawPictrueData.ChartDrawPicture };
+                        event.Callback(event,sendData,this);
+                    }
 
-            if (jsChart.IsClickShowCorssCursor)
+                    if (e.cancelable) e.preventDefault();
+                    return;
+                }
+            }
+
+            if (bStartTimer)
+            {
+                //长按2秒,十字光标
+                var self=this;
+                this.DragTimer=setTimeout(function()
+                {
+                    if (drag.Click.X==drag.LastMove.X && drag.Click.Y==drag.LastMove.Y) //手指没有移动，出现十字光标
+                    {
+                        var mouseDrag=self.MouseDrag;
+                        self.MouseDrag=null;
+                        //移动十字光标
+                        var pixelTatio = GetDevicePixelRatio();
+                        var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
+                        var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
+                        if (self.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID) self.TouchStatus.CorssCursorShow=true;    //十字显示
+                        self.OnMouseMove(x,y,e);
+                    }
+
+                }, self.PressTime);
+            }
+
+            if (this.IsClickShowCorssCursor)
             {
                 var pixelTatio = GetDevicePixelRatio();
                 var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
                 var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
-                jsChart.OnMouseMove(x,y,e);
+                this.OnMouseMove(x,y,e);
             }
         }
-        else if (jsChart.IsPhonePinching(e))
+        else if (this.IsPhonePinching(e))
         {
             var phonePinch=
             {
@@ -5154,147 +5175,196 @@ function JSChartContainer(uielement)
                 "Last":{}
             };
 
-            var touches=jsChart.GetToucheData(e,jsChart.IsForceLandscape);
+            var touches=this.GetToucheData(e,this.IsForceLandscape);
 
             phonePinch.Start={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
             phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
 
-            this.JSChartContainer.PhonePinch=phonePinch;
-            document.JSChartContainer=this.JSChartContainer;
-            this.JSChartContainer.SelectChartDrawPicture=null;
+            this.PhonePinch=phonePinch;
+            this.SelectChartDrawPicture=null;
         }
+    }
 
-        uielement.ontouchmove=function(e)
+    this.OnTouchMove=function(e)
+    {
+        var touches=this.GetToucheData(e,this.IsForceLandscape);
+
+        if (this.IsPhoneDragging(e))
         {
-            if(!this.JSChartContainer) return;
-            var touches=jsChart.GetToucheData(e,this.JSChartContainer.IsForceLandscape);
-
-            if (jsChart.IsPhoneDragging(e))
+            var drag=this.MouseDrag;
+            if (drag==null)
             {
-                var drag=this.JSChartContainer.MouseDrag;
-                if (drag==null)
+                var pixelTatio = GetDevicePixelRatio();
+                var x = touches[0].clientX-uielement.getBoundingClientRect().left*pixelTatio;
+                var y = touches[0].clientY-uielement.getBoundingClientRect().top*pixelTatio;
+                if (this.IsForceLandscape) y=uielement.getBoundingClientRect().width-touches[0].clientY;    //强制横屏Y计算
+                this.OnMouseMove(x,y,e);
+            }
+            else
+            {
+                var moveAngle=this.GetMoveAngle(drag.LastMove,{X:touches[0].clientX, Y:touches[0].clientY});
+                var moveSetp=Math.abs(drag.LastMove.X-touches[0].clientX);
+                var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
+                moveSetp=parseInt(moveSetp);
+                var isMoveCorssCursor=(this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && this.TouchStatus.CorssCursorShow==true); //是否移动十字光标
+
+                //console.log("[JSChartContainer::uielement.ontouchmove]  moveAngle , moveUpDown", moveAngle,moveUpDown);
+
+                if (this.CurrentChartDrawPicture)
                 {
+                    var drawPicture=this.CurrentChartDrawPicture;
+                    if (drawPicture.Status==1 || drawPicture.Status==2)
+                    {
+                        if(moveSetp<5 && moveUpDown<5) return;
+                        if(this.SetChartDrawPictureSecondPoint(touches[0].clientX,touches[0].clientY))
+                        {
+                            this.DrawDynamicInfo();
+                        }
+                    }
+                    else if (drawPicture.Status==3)
+                    {
+                        if(this.SetChartDrawPictureThirdPoint(touches[0].clientX,touches[0].clientY))
+                        {
+                            this.DrawDynamicInfo();
+                        }
+                    }
+                    else if (drawPicture.Status==20)    //画图工具移动
+                    {
+                        if(moveSetp<5 && moveUpDown<5) return;
+
+                        if(this.MoveChartDrawPicture(touches[0].clientX-drag.LastMove.X,touches[0].clientY-drag.LastMove.Y))
+                        {
+                            this.DrawDynamicInfo();
+                        }
+                    }
+
+                    drag.LastMove.X=touches[0].clientX;
+                    drag.LastMove.Y=touches[0].clientY;
+                }
+                else if (isMoveCorssCursor)  //点击模式下 十字光标显示 左右移动十字光标
+                {
+                    var mouseDrag=this.MouseDrag;
+                    this.MouseDrag=null;
+                    //移动十字光标
                     var pixelTatio = GetDevicePixelRatio();
-                    var x = touches[0].clientX-this.getBoundingClientRect().left*pixelTatio;
-                    var y = touches[0].clientY-this.getBoundingClientRect().top*pixelTatio;
-                    if (this.JSChartContainer.IsForceLandscape) y=this.getBoundingClientRect().width-touches[0].clientY;    //强制横屏Y计算
-                    this.JSChartContainer.OnMouseMove(x,y,e);
+                    var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
+                    var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
+                    this.OnMouseMove(x,y,e);
                 }
-                else
+                else if (this.DragMode==1 || isMoveCorssCursor==false)  //数据左右拖拽
                 {
-                    var moveAngle=jsChart.GetMoveAngle(drag.LastMove,{X:touches[0].clientX, Y:touches[0].clientY});
-                    var moveSetp=Math.abs(drag.LastMove.X-touches[0].clientX);
-                    var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
-                    moveSetp=parseInt(moveSetp);
-                    var isMoveCorssCursor=(jsChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && jsChart.TouchStatus.CorssCursorShow==true); //是否移动十字光标
-
-                    //console.log("[JSChartContainer::uielement.ontouchmove]  moveAngle , moveUpDown", moveAngle,moveUpDown);
-
-                    if (isMoveCorssCursor)  //点击模式下 十字光标显示 左右移动十字光标
+                    if ( ((moveUpDown>0 && moveSetp<=3) || moveAngle<=this.TouchMoveMinAngle) && this.EnableScrollUpDown==true ) 
                     {
-                        var mouseDrag=jsChart.MouseDrag;
-                        jsChart.MouseDrag=null;
-                        //移动十字光标
-                        var pixelTatio = GetDevicePixelRatio();
-                        var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
-                        var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
-                        jsChart.OnMouseMove(x,y,e);
+                        this.StopDragTimer();
+                        return;
                     }
-                    else if (this.JSChartContainer.DragMode==1 || isMoveCorssCursor==false)  //数据左右拖拽
+
+                    if (moveSetp<5 || moveAngle<=this.TouchMoveMinAngle) 
                     {
-                        if ( ((moveUpDown>0 && moveSetp<=3) || moveAngle<=jsChart.TouchMoveMinAngle) && this.JSChartContainer.EnableScrollUpDown==true ) 
-                        {
-                            jsChart.StopDragTimer();
-                            return;
-                        }
-
-                        if (moveSetp<5 || moveAngle<=jsChart.TouchMoveMinAngle) 
-                        {
-                            jsChart.PreventTouchEvent(e);
-                            return;
-                        }
-
-                        var isLeft=true;
-                        if (drag.LastMove.X<touches[0].clientX) isLeft=false;//右移数据
-
-                        if(this.JSChartContainer.DataMove(moveSetp,isLeft))
-                        {
-                            this.JSChartContainer.UpdataDataoffset();
-                            this.JSChartContainer.UpdatePointByCursorIndex();
-                            this.JSChartContainer.UpdateFrameMaxMin();
-                            this.JSChartContainer.ResetFrameXYSplit();
-                            this.JSChartContainer.Draw();
-                        }
-                        else
-                        {
-                            if (this.JSChartContainer.DragDownloadData) this.JSChartContainer.DragDownloadData();
-                        }
-
-                        drag.LastMove.X=touches[0].clientX;
-                        drag.LastMove.Y=touches[0].clientY;
+                        this.PreventTouchEvent(e);
+                        return;
                     }
+
+                    var isLeft=true;
+                    if (drag.LastMove.X<touches[0].clientX) isLeft=false;//右移数据
+
+                    if(this.DataMove(moveSetp,isLeft))
+                    {
+                        this.UpdataDataoffset();
+                        this.UpdatePointByCursorIndex();
+                        this.UpdateFrameMaxMin();
+                        this.ResetFrameXYSplit();
+                        this.Draw();
+                    }
+                    else
+                    {
+                        if (this.DragDownloadData) this.DragDownloadData();
+                    }
+
+                    drag.LastMove.X=touches[0].clientX;
+                    drag.LastMove.Y=touches[0].clientY;
                 }
             }
-            else if (jsChart.IsPhonePinching(e))
-            {
-                jsChart.PreventTouchEvent(e);
-                var phonePinch=this.JSChartContainer.PhonePinch;
-                if (!phonePinch) return;
-
-                var yHeight=Math.abs(touches[0].pageY-touches[1].pageY);
-                var yLastHeight=Math.abs(phonePinch.Last.Y-phonePinch.Last.Y2);
-                var yStep=yHeight-yLastHeight;
-
-                var xHeight=Math.abs(touches[0].pageX-touches[1].pageX);
-                var xLastHeight=Math.abs(phonePinch.Last.X-phonePinch.Last.X2);
-                var xStep=xHeight-xLastHeight;
-                var minStep=jsChart.ZoomStepPixel;
-                if (Math.abs(yStep)<minStep && Math.abs(xStep)<minStep) return;
-                var step=yStep;
-                if (Math.abs(yStep)<minStep) step=xStep;
-
-                if (step>0)    //放大
-                {
-                    var cursorIndex={};
-                    cursorIndex.Index=parseInt(Math.abs(this.JSChartContainer.CursorIndex-0.5).toFixed(0));
-                    if (!this.JSChartContainer.Frame.ZoomUp(cursorIndex)) return;
-                    this.JSChartContainer.CursorIndex=cursorIndex.Index;
-                    this.JSChartContainer.UpdatePointByCursorIndex();
-                    this.JSChartContainer.UpdataDataoffset();
-                    this.JSChartContainer.UpdateFrameMaxMin();
-                    this.JSChartContainer.Draw();
-                    this.JSChartContainer.ShowTooltipByKeyDown();
-                    jsChart.StopDragTimer();
-                }
-                else        //缩小
-                {
-                    var cursorIndex={};
-                    cursorIndex.Index=parseInt(Math.abs(this.JSChartContainer.CursorIndex-0.5).toFixed(0));
-                    if (!this.JSChartContainer.Frame.ZoomDown(cursorIndex)) return;
-                    this.JSChartContainer.CursorIndex=cursorIndex.Index;
-                    this.JSChartContainer.UpdataDataoffset();
-                    this.JSChartContainer.UpdatePointByCursorIndex();
-                    this.JSChartContainer.UpdateFrameMaxMin();
-                    this.JSChartContainer.Draw();
-                    this.JSChartContainer.ShowTooltipByKeyDown();
-                    jsChart.StopDragTimer();
-                }
-
-                phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
-            }
-
-            jsChart.PreventTouchEvent(e);
-        };
-
-        uielement.ontouchend=function(e)
+        }
+        else if (this.IsPhonePinching(e))
         {
-            console.log('[KLineChartContainer::uielement.ontouchend]',e);
-            this.JSChartContainer.IsOnTouch = false;
-            this.JSChartContainer.OnTouchFinished();
-            this.JSChartContainer.TouchDrawCount=0;
-            clearTimeout(this.DragTimer);
+            this.PreventTouchEvent(e);
+            var phonePinch=this.PhonePinch;
+            if (!phonePinch) return;
+
+            var yHeight=Math.abs(touches[0].pageY-touches[1].pageY);
+            var yLastHeight=Math.abs(phonePinch.Last.Y-phonePinch.Last.Y2);
+            var yStep=yHeight-yLastHeight;
+
+            var xHeight=Math.abs(touches[0].pageX-touches[1].pageX);
+            var xLastHeight=Math.abs(phonePinch.Last.X-phonePinch.Last.X2);
+            var xStep=xHeight-xLastHeight;
+            var minStep=this.ZoomStepPixel;
+            if (Math.abs(yStep)<minStep && Math.abs(xStep)<minStep) return;
+            var step=yStep;
+            if (Math.abs(yStep)<minStep) step=xStep;
+
+            if (step>0)    //放大
+            {
+                var cursorIndex={};
+                cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
+                if (!this.Frame.ZoomUp(cursorIndex)) return;
+                this.CursorIndex=cursorIndex.Index;
+                this.UpdatePointByCursorIndex();
+                this.UpdataDataoffset();
+                this.UpdateFrameMaxMin();
+                this.Draw();
+                this.ShowTooltipByKeyDown();
+                this.StopDragTimer();
+            }
+            else        //缩小
+            {
+                var cursorIndex={};
+                cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
+                if (!this.Frame.ZoomDown(cursorIndex)) return;
+                this.CursorIndex=cursorIndex.Index;
+                this.UpdataDataoffset();
+                this.UpdatePointByCursorIndex();
+                this.UpdateFrameMaxMin();
+                this.Draw();
+                this.ShowTooltipByKeyDown();
+                this.StopDragTimer();
+            }
+
+            phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
         }
 
+        this.PreventTouchEvent(e);
+    }
+
+    this.OnTouchEnd=function(e)
+    {
+        console.log('[KLineChartContainer:OnTouchEnd]',e);
+
+        var bClearDrawPicture=true;
+        if (this.CurrentChartDrawPicture)
+        {
+            var drawPicture=this.CurrentChartDrawPicture;
+            if (drawPicture.Status==2 || drawPicture.Status==1 || drawPicture.Status==3)
+            {
+                drawPicture.PointStatus=drawPicture.Status;
+                if (this.FinishChartDrawPicturePoint())
+                    this.DrawDynamicInfo();
+                else
+                    bClearDrawPicture=false;
+            }
+            else if (drawPicture.Status==20)
+            {
+                if (this.FinishMoveChartDrawPicture())
+                    this.DrawDynamicInfo();
+            }
+        }
+
+        this.IsOnTouch = false;
+        if (bClearDrawPicture===true) this.CurrentChartDrawPicture=null;
+        this.StopDragTimer();
+        this.OnTouchFinished();
+        this.TouchDrawCount=0;
     }
 
     this.Draw=function()
@@ -5434,7 +5504,7 @@ function JSChartContainer(uielement)
     }
 
     //画动态信息
-    this.DrawDynamicInfo=function()
+    this.DrawDynamicInfo=function(option)
     {
         if (this.Frame.ScreenImageData==null) return;
 
@@ -5471,11 +5541,15 @@ function JSChartContainer(uielement)
         {
             this.ChartCorssCursor.LastPoint=this.LastPoint;
             this.ChartCorssCursor.CursorIndex=this.CursorIndex;
-            if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
+            if (option && option.Corss==false)
+            {
+
+            }
+            else if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
             {
                 if (this.TouchStatus.CorssCursorShow==true) this.ChartCorssCursor.Draw();
             }
-            else if ( !(this.IsOnTouch===false && this.CorssCursorTouchEnd===true))
+            else if ( !(this.IsOnTouch===false && this.CorssCursorTouchEnd===true) && !this.CurrentChartDrawPicture)
             {
                 this.ChartCorssCursor.Draw();
             }
@@ -5493,6 +5567,7 @@ function JSChartContainer(uielement)
         for(var i in this.ExtendChartPaint)    //动态扩展图形   在动态标题以后画
         {
             var item=this.ExtendChartPaint[i];
+            if (item.ClassName=='KLineTooltipPaint' && option && option.Tooltip==false) continue;
             if (item.IsDynamic && item.DrawAfterTitle===true) item.Draw();
         }
 
@@ -16250,6 +16325,8 @@ function KLineTooltipPaint()
             return;
         }
 
+        if (this.HQChart.CurrentChartDrawPicture) return;   //画图工具操作的时候 不显示
+
         this.KLineTitlePaint=this.HQChart.TitlePaint[0];
         var klineData=this.KLineTitlePaint.GetCurrentKLineData();
         if (!klineData) return;
@@ -20884,12 +20961,13 @@ function IChartDrawPicture()
 
         //画点
         this.ClipFrame();
+        var pixel=GetDevicePixelRatio();
         for(var i in aryPoint)
         {
             var item=aryPoint[i];
 
             this.Canvas.beginPath();
-            this.Canvas.arc(item.X,item.Y,5,0,360,false);
+            this.Canvas.arc(item.X,item.Y,5*pixel,0,360,false);
             this.Canvas.fillStyle=this.PointColor;      //填充颜色
             this.Canvas.fill();                         //画实心圆
             this.Canvas.closePath();
@@ -20959,6 +21037,7 @@ function IChartDrawPicture()
         if (!data) return -1;
         if (!this.Value) return -1;
 
+        var pixel=GetDevicePixelRatio();
         for(var i=0;i<this.Value.length; ++i)   //是否在点上
         {
             var item=this.Value[i];
@@ -20966,7 +21045,7 @@ function IChartDrawPicture()
             pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset);
             pt.Y=this.Frame.GetYFromData(item.YValue);
             this.Canvas.beginPath();
-            this.Canvas.arc(pt.X,pt.Y,5,0,360);
+            this.Canvas.arc(pt.X,pt.Y,5*pixel,0,360);
             if (this.Canvas.isPointInPath(x,y))  return i;
         }
 
@@ -22267,11 +22346,12 @@ function ChartDrawPictureIconFont()
         this.Canvas.fillText(this.Text,drawPoint[0].X,drawPoint[0].Y);
         var textWidth=this.Canvas.measureText(this.Text).width;
 
+        var pixel=GetDevicePixelRatio();
         this.TextRect={};
         this.TextRect.Left=drawPoint[0].X-textWidth/2;
-        this.TextRect.Top=drawPoint[0].Y-this.FontOption.Size;
+        this.TextRect.Top=drawPoint[0].Y-this.FontOption.Size*pixel;
         this.TextRect.Width=textWidth;
-        this.TextRect.Height=this.FontOption.Size;
+        this.TextRect.Height=this.FontOption.Size*pixel;
         //this.Canvas.strokeRect(this.TextRect.Left,this.TextRect.Top,this.TextRect.Width,this.TextRect.Height);
         this.Canvas.restore();
     }
@@ -28353,6 +28433,7 @@ function KLineChartContainer(uielement)
         drawPicture.Point[0].X=x-this.UIElement.getBoundingClientRect().left;
         drawPicture.Point[0].Y=y-this.UIElement.getBoundingClientRect().top;
         drawPicture.Status=1;   //第1个点完成
+        return true;
     }
 
     this.SetChartDrawPictureSecondPoint=function(x,y)
@@ -28365,6 +28446,7 @@ function KLineChartContainer(uielement)
         drawPicture.Point[1].Y=y-this.UIElement.getBoundingClientRect().top;
 
         drawPicture.Status=2;   //设置第2个点
+        return true;
     }
 
     //设置第3个点
@@ -28378,6 +28460,7 @@ function KLineChartContainer(uielement)
         drawPicture.Point[2].Y=y-this.UIElement.getBoundingClientRect().top;
 
         drawPicture.Status=3;   //设置第3个点
+        return true;
     }
 
     //xStep,yStep 移动的偏移量
@@ -28405,7 +28488,14 @@ function KLineChartContainer(uielement)
         this.CurrentChartDrawPicture=null;
 
         //通知上层画好了
-        if (drawPicture.FinishedCallback) drawPicture.FinishedCallback(drawPicture);
+        let event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FINISH_DRAWPICTURE); //完成画图工具事件
+        if (event && event.Callback)
+        {
+            let sendData={ DrawPicture: drawPicture };
+            event.Callback(event,sendData,this);
+        }
+        else if (drawPicture.FinishedCallback) drawPicture.FinishedCallback(drawPicture);
+
         if (this.ChartDrawStorage) this.ChartDrawStorage.SaveDrawData(drawPicture);
 
         return true;
