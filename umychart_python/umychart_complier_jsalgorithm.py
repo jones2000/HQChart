@@ -2226,7 +2226,7 @@ class JSAlgorithm() :
         result[n-1]=low
         nextSar=low
         sip=stockData.Data[0].High
-        af=exValue/100
+        af=step/100
         for i in range(n,dataLen) :
             ysip=sip
             item=stockData.Data[i]
