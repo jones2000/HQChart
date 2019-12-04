@@ -1006,7 +1006,7 @@ function JSChart(divElement)
             this.JSChartContainer.SetFirstShowDate(obj);
     }
 
-    //K线切换类型 0=实心K线 1=收盘价线 2=美国线 3=空心K线
+    //K线切换类型 0=实心K线 1=收盘价线 2=美国线 3=空心K线 4=面积图
     this.ChangeKLineDrawType=function(drawType)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeKLineDrawType)=='function')
@@ -8679,16 +8679,34 @@ function ChartKLine()
         var range={};
         range.Max=null;
         range.Min=null;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        if (this.DrawType==1 || this.DrawType==4 )    // 1=收盘价线 4=收盘价面积图
         {
-            var data=this.Data.Data[i];
-            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+            for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+            {
+                var data=this.Data.Data[i];
+                if (!IFrameSplitOperator.IsNumber(data.Close)) continue;
 
-            if (range.Max==null) range.Max=data.High;
-            if (range.Min==null) range.Min=data.Low;
+                if (range.Max==null) range.Max=data.Close;
+                if (range.Min==null) range.Min=data.Close;
 
-            if (range.Max<data.High) range.Max=data.High;
-            if (range.Min>data.Low) range.Min=data.Low;
+                if (range.Max<data.Close) range.Max=data.Close;
+                if (range.Min>data.Close) range.Min=data.Close;
+            }
+        }
+        else
+        {
+            for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+            {
+                var data=this.Data.Data[i];
+                if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+                
+                if (range.Max==null) range.Max=data.High;
+                if (range.Min==null) range.Min=data.Low;
+
+                if (range.Max<data.High) range.Max=data.High;
+                if (range.Min>data.Low) range.Min=data.Low;
+            }
         }
 
         return range;
@@ -24074,6 +24092,8 @@ function KLineChartContainer(uielement)
             item.DrawType=this.KLineDrawType;
         } 
 
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
         this.Draw();
     }
 

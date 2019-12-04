@@ -4365,7 +4365,7 @@ function JSChart(divElement)
             this.JSChartContainer.SetFirstShowDate(obj);
     }
 
-    //K线切换类型 0=实心K线 1=收盘价线 2=美国线 3=空心K线
+    //K线切换类型 0=实心K线 1=收盘价线 2=美国线 3=空心K线 4=面积图
     this.ChangeKLineDrawType=function(drawType)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeKLineDrawType)=='function')
@@ -12038,16 +12038,34 @@ function ChartKLine()
         var range={};
         range.Max=null;
         range.Min=null;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        if (this.DrawType==1 || this.DrawType==4 )    // 1=收盘价线 4=收盘价面积图
         {
-            var data=this.Data.Data[i];
-            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+            for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+            {
+                var data=this.Data.Data[i];
+                if (!IFrameSplitOperator.IsNumber(data.Close)) continue;
 
-            if (range.Max==null) range.Max=data.High;
-            if (range.Min==null) range.Min=data.Low;
+                if (range.Max==null) range.Max=data.Close;
+                if (range.Min==null) range.Min=data.Close;
 
-            if (range.Max<data.High) range.Max=data.High;
-            if (range.Min>data.Low) range.Min=data.Low;
+                if (range.Max<data.Close) range.Max=data.Close;
+                if (range.Min>data.Close) range.Min=data.Close;
+            }
+        }
+        else
+        {
+            for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+            {
+                var data=this.Data.Data[i];
+                if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+                
+                if (range.Max==null) range.Max=data.High;
+                if (range.Min==null) range.Min=data.Low;
+
+                if (range.Max<data.High) range.Max=data.High;
+                if (range.Min>data.Low) range.Min=data.Low;
+            }
         }
 
         return range;
@@ -27433,6 +27451,8 @@ function KLineChartContainer(uielement)
             item.DrawType=this.KLineDrawType;
         } 
 
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
         this.Draw();
     }
 
@@ -44455,45 +44475,17 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+
+    
+
     ////////////////////////////////////////////////////////////////////////
     //  跨周期函数COVER_C(), COVER_O(), COVER_H(), COVER_L(), COVER_A(), COVER_V()
     this.CoverPeriod=function(name, periodName)
     {
-        const PERIOD_LIST=
-        [
-            {Name:'MIN1', Period:4, Order:1},
-            {Name:'MIN5', Period:5, Order:2},
-            {Name:'MIN15', Period:6, Order:3},
-            {Name:'MIN30', Period:7, Order:4},
-            {Name:'MIN60', Period:8, Order:5},
-
-            {Name:'DAY', Period:0, Order:1000},
-            {Name:'WEEK', Period:1, Order:1001},
-            {Name:'MONTH', Period:2, Order:1002},
-            {Name:"YEAR", Period:3, Order:1003}
-        ];
-
-        var periodInfo;
-        for(var i in PERIOD_LIST)
-        {
-            if (PERIOD_LIST[i].Name==periodName)
-            {
-                periodInfo=PERIOD_LIST[i];
-                break;
-            }
-        }
+        var periodInfo=this.GetPeriodInfo({Name:periodName});
         if (!periodInfo) return null;
 
-        var curPeriodInfo;
-        var currentPeriod=this.SymbolData.Data.Period;
-        for(var i in PERIOD_LIST)
-        {
-            if (PERIOD_LIST[i].Period==currentPeriod)
-            {
-                curPeriodInfo=PERIOD_LIST[i];
-                break;
-            }
-        }
+        var curPeriodInfo=this.GetPeriodInfo({PeriodID:this.SymbolData.Data.Period});
         if (!curPeriodInfo) return null;
 
         if (curPeriodInfo.Order>curPeriodInfo.Order) return null;   //只能小周期转大周期
@@ -44546,6 +44538,71 @@ function JSAlgorithm(errorHandler,symbolData)
                 return result.GetAmount();
             case 'COVER_V':
                 return result.GetVol();
+            default:
+                return null;
+        }
+    }
+
+    //index=单独取某一个周期的第几个数据 从最新数据开始
+    this.CoverPeriodItem=function(name, periodName, index)
+    {
+        var periodInfo=this.GetPeriodInfo({Name:periodName});
+        if (!periodInfo) return null;
+
+        var curPeriodInfo=this.GetPeriodInfo({PeriodID:this.SymbolData.Data.Period});
+        if (!curPeriodInfo) return null;
+
+        if (curPeriodInfo.Order>curPeriodInfo.Order) return null;   //只能小周期转大周期
+
+        var klineData=null;
+        if (curPeriodInfo.Period==periodInfo.Period) 
+        {
+            klineData=this.SymbolData.Data.Data;
+        }
+        else
+        {
+            if (ChartData.IsMinutePeriod(curPeriodInfo.Period,true) && ChartData.IsDayPeriod(periodInfo.Period,true))
+            {
+                if (periodInfo.Period==0) klineData=this.SymbolData.DayData.Data;      //日线直接用
+                else klineData=this.SymbolData.DayData.GetPeriodData(periodInfo.Period);    //分钟数据不复权 直接算周期就可以了
+            }
+            else
+            {
+                var bindData=new ChartData();
+                bindData.Data=this.SymbolData.SourceData.Data;
+                bindData.Period=this.SymbolData.Period;
+                bindData.Right=this.SymbolData.Right;
+
+                if (ChartData.IsDayPeriod(periodInfo.Period,true) && bindData.Right>0) //日线数据才复权
+                {
+                    var rightData=bindData.GetRightData(bindData.Right);
+                    bindData.Data=rightData;
+                }
+
+                klineData=bindData.GetPeriodData(periodInfo.Period);
+            }
+        }
+
+        if (!klineData && klineData.length<=0) return null;
+
+        var dataIndex=klineData.length-1-index;
+        if (dataIndex<0) dataIndex=0;
+        var klineItem=klineData[dataIndex];
+
+        switch(name)
+        {
+            case 'COVER_C':
+                return klineItem.Close;
+            case 'COVER_O':
+                return klineItem.Open;
+            case 'COVER_H':
+                return klineItem.High;
+            case 'COVER_L':
+                return klineItem.Low;
+            case 'COVER_A':
+                return klineItem.Amount;
+            case 'COVER_V':
+                return klineItem.Vol;
             default:
                 return null;
         }
@@ -44689,6 +44746,7 @@ function JSAlgorithm(errorHandler,symbolData)
             case 'COVER_L':
             case 'COVER_A':
             case 'COVER_V':
+                if (args.length==2) return this.CoverPeriodItem(name,args[0],args[1]);
                 return this.CoverPeriod(name,args[0]);
             //三角函数
             case 'ATAN':
@@ -44736,6 +44794,48 @@ function JSAlgorithm(errorHandler,symbolData)
         return this.ErrorHandler.ThrowError(marker.Index,marker.Line,marker.Column,msg);
        
     }
+}
+
+
+JSAlgorithm.prototype.GetPeriodInfo=function(obj)    //{Name:周期名字  PeriodID:周期ID}
+{
+    const PERIOD_LIST=
+    [
+        {Name:'MIN1', Period:4, Order:1},
+        {Name:'MIN5', Period:5, Order:2},
+        {Name:'MIN15', Period:6, Order:3},
+        {Name:'MIN30', Period:7, Order:4},
+        {Name:'MIN60', Period:8, Order:5},
+
+        {Name:'DAY', Period:0, Order:1000},
+        {Name:'WEEK', Period:1, Order:1001},
+        {Name:'MONTH', Period:2, Order:1002},
+        {Name:"YEAR", Period:3, Order:1003}
+    ];
+
+    if (obj.Name)
+    {
+        for(var i in PERIOD_LIST)
+        {
+            if (obj.Name && PERIOD_LIST[i].Name==obj.Name) 
+                return PERIOD_LIST[i];
+        }
+
+        return null;
+    }
+
+    if (IFrameSplitOperator.IsNumber(obj.PeriodID))
+    {
+        for(var i in PERIOD_LIST)
+        {
+            if (PERIOD_LIST[i].Period==obj.PeriodID)
+                return PERIOD_LIST[i];
+        }
+
+        return null;
+    }
+
+    return null;
 }
 
 //是否有是有效的数字
