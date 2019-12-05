@@ -313,6 +313,8 @@ function JSChart(divElement)
                     indexInfo.ID=item.Index;
                     var args=indexInfo.Args;
                     if (item.Args) args=item.Args;
+                    if (item.IsShortTitle) indexInfo.IsShortTitle=item.IsShortTitle;
+                    if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
                     chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
                     if (item.StringFormat>0) chart.WindowIndex[i].StringFormat=item.StringFormat;
                     if (item.FloatPrecision>=0) chart.WindowIndex[i].FloatPrecision=item.FloatPrecision;
@@ -23935,6 +23937,8 @@ function KLineChartContainer(uielement)
                 if (option.FloatPrecision>=0) indexData.FloatPrecision=option.FloatPrecision;
                 if (option.StringFormat>0) indexData.StringFormat=option.StringFormat;
                 if (option.Args) indexData.Args=option.Args;
+                if (option.TitleFont) indexData.TitleFont=option.TitleFont;
+                if (option.IsShortTitle) indexData.IsShortTitle=option.IsShortTitle;
             }
             
             return this.ChangeScriptIndex(windowIndex, indexData);
