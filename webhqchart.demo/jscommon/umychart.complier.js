@@ -5025,7 +5025,7 @@ function JSAlgorithm(errorHandler,symbolData)
 
     ////////////////////////////////////////////////////////////////////////
     //  跨周期函数COVER_C(), COVER_O(), COVER_H(), COVER_L(), COVER_A(), COVER_V()
-    this.CoverPeriod=function(name, periodName)
+    this.CoverPeriod=function(name, periodName,n)
     {
         var periodInfo=this.GetPeriodInfo({Name:periodName});
         if (!periodInfo) return null;
@@ -5069,6 +5069,14 @@ function JSAlgorithm(errorHandler,symbolData)
             result.Data=data;
         }
 
+        if (IFrameSplitOperator.IsPlusNumber(n))
+        {
+            var refResult=new ChartData();
+            var data=result.GetRef(n);
+            refResult.Data=data;
+            result=refResult;
+        }
+
         switch(name)
         {
             case 'COVER_C':
@@ -5087,72 +5095,7 @@ function JSAlgorithm(errorHandler,symbolData)
                 return null;
         }
     }
-
-    //index=单独取某一个周期的第几个数据 从最新数据开始
-    this.CoverPeriodItem=function(name, periodName, index)
-    {
-        var periodInfo=this.GetPeriodInfo({Name:periodName});
-        if (!periodInfo) return null;
-
-        var curPeriodInfo=this.GetPeriodInfo({PeriodID:this.SymbolData.Data.Period});
-        if (!curPeriodInfo) return null;
-
-        if (curPeriodInfo.Order>curPeriodInfo.Order) return null;   //只能小周期转大周期
-
-        var klineData=null;
-        if (curPeriodInfo.Period==periodInfo.Period) 
-        {
-            klineData=this.SymbolData.Data.Data;
-        }
-        else
-        {
-            if (ChartData.IsMinutePeriod(curPeriodInfo.Period,true) && ChartData.IsDayPeriod(periodInfo.Period,true))
-            {
-                if (periodInfo.Period==0) klineData=this.SymbolData.DayData.Data;      //日线直接用
-                else klineData=this.SymbolData.DayData.GetPeriodData(periodInfo.Period);    //分钟数据不复权 直接算周期就可以了
-            }
-            else
-            {
-                var bindData=new ChartData();
-                bindData.Data=this.SymbolData.SourceData.Data;
-                bindData.Period=this.SymbolData.Period;
-                bindData.Right=this.SymbolData.Right;
-
-                if (ChartData.IsDayPeriod(periodInfo.Period,true) && bindData.Right>0) //日线数据才复权
-                {
-                    var rightData=bindData.GetRightData(bindData.Right);
-                    bindData.Data=rightData;
-                }
-
-                klineData=bindData.GetPeriodData(periodInfo.Period);
-            }
-        }
-
-        if (!klineData && klineData.length<=0) return null;
-
-        var dataIndex=klineData.length-1-index;
-        if (dataIndex<0) dataIndex=0;
-        var klineItem=klineData[dataIndex];
-
-        switch(name)
-        {
-            case 'COVER_C':
-                return klineItem.Close;
-            case 'COVER_O':
-                return klineItem.Open;
-            case 'COVER_H':
-                return klineItem.High;
-            case 'COVER_L':
-                return klineItem.Low;
-            case 'COVER_A':
-                return klineItem.Amount;
-            case 'COVER_V':
-                return klineItem.Vol;
-            default:
-                return null;
-        }
-    }
-
+    
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -5291,7 +5234,7 @@ function JSAlgorithm(errorHandler,symbolData)
             case 'COVER_L':
             case 'COVER_A':
             case 'COVER_V':
-                if (args.length==2) return this.CoverPeriodItem(name,args[0],args[1]);
+                if (args.length==2) return this.CoverPeriod(name,args[0],args[1]);
                 return this.CoverPeriod(name,args[0]);
             //三角函数
             case 'ATAN':

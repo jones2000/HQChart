@@ -10741,6 +10741,35 @@ function ChartData()
         console.log('[ChartData::CoverTo] result', result);
         return result;
     }
+
+    this.GetRef=function(n)
+    {
+        let result=[];
+
+        for(var i=0 ;i<this.Data.length; ++i )
+        {
+            result[i]=null;
+            var itemDate=this.Data[i];  //原始数据
+
+            if (i-n<0) 
+            {
+                var newData=new HistoryData();
+                newData.Date=itemDate.Date;
+                newData.Time=itemDate.Time;
+                result[i]=newData;
+                continue;
+            }
+
+            var itemData=this.Data[i-n];
+            var newData=HistoryData.Copy(itemData);
+            newData.Date=itemDate.Date;
+            newData.Time=itemDate.Time;
+
+            result[i]=newData;
+        }
+
+        return result;
+    }
 }
 
 ChartData.GetFirday=function(value)
@@ -31749,16 +31778,19 @@ function KLineTrainChartContainer(uielement, bHScreen)
         else e.returnValue = false;
     }
 
-     //手机拖拽
-    uielement.ontouchstart=function(e)
+    //手机拖拽
+    uielement.ontouchstart=(e)=> { this.OnTouchStart(e); }
+    uielement.ontouchmove=(e)=> { this.OnTouchMove(e); }
+    uielement.ontouchend=(e)=> { this.OnTouchEnd(e); }
+
+    this.OnTouchStart=function(e)
     {
-        if(!this.JSChartContainer) return;
-        this.JSChartContainer.PhonePinch=null;
-
+        this.PhonePinch=null;
+        this.IsOnTouch=true;
+        this.TouchDrawCount=0;
         e.preventDefault();
-        var jsChart=this.JSChartContainer;
 
-        if (jsChart.IsPhoneDragging(e))
+        if (this.IsPhoneDragging(e))
         {
             var drag=
             {
@@ -31766,7 +31798,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
                 "LastMove":{}  //最后移动的位置
             };
 
-            var touches=jsChart.GetToucheData(e,false);
+            var touches=this.GetToucheData(e,false);
 
             drag.Click.X=touches[0].clientX;
             drag.Click.Y=touches[0].clientY;
@@ -31779,15 +31811,14 @@ function KLineTrainChartContainer(uielement, bHScreen)
                 jsChart.MouseDrag=null;
                 //移动十字光标
                 var pixelTatio = GetDevicePixelRatio();
-                var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
-                var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
-                jsChart.OnMouseMove(x,y,e);
+                var x = drag.Click.X-this.UIElement.getBoundingClientRect().left*pixelTatio;
+                var y = drag.Click.Y-this.UIElement.getBoundingClientRect().top*pixelTatio;
+                this.OnMouseMove(x,y,e);
             }
 
-            document.JSChartContainer=this.JSChartContainer;
-            this.JSChartContainer.SelectChartDrawPicture=null;
+            this.SelectChartDrawPicture=null;
         }
-        else if (jsChart.IsPhonePinching(e))
+        else if (this.IsPhonePinching(e))
         {
             var phonePinch=
             {
@@ -31795,50 +31826,42 @@ function KLineTrainChartContainer(uielement, bHScreen)
                 "Last":{}
             };
 
-            var touches=jsChart.GetToucheData(e,false);
+            var touches=this.GetToucheData(e,false);
 
             phonePinch.Start={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
             phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
 
-            this.JSChartContainer.PhonePinch=phonePinch;
-            document.JSChartContainer=this.JSChartContainer;
-            this.JSChartContainer.SelectChartDrawPicture=null;
+            this.PhonePinch=phonePinch;
+            this.SelectChartDrawPicture=null;
         }
-
-        uielement.ontouchmove=function(e)
-        {
-            if(!this.JSChartContainer) return;
-            e.preventDefault();
-
-            var touches=jsChart.GetToucheData(e,false);
-
-            if (jsChart.IsPhoneDragging(e))
-            {
-                var drag=this.JSChartContainer.MouseDrag;
-                if (drag==null)
-                {
-                    var pixelTatio = GetDevicePixelRatio();
-                    var x = touches[0].clientX-this.getBoundingClientRect().left*pixelTatio;
-                    var y = touches[0].clientY-this.getBoundingClientRect().top*pixelTatio;
-                    this.JSChartContainer.OnMouseMove(x,y,e);
-                }
-                else
-                {
-                    
-                }
-            }else if (jsChart.IsPhonePinching(e))
-            {
-                phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
-            }
-        };
-
-        uielement.ontouchend=function(e)
-        {
-            clearTimeout(timeout);
-        }
-
     }
 
+    this.OnTouchMove=function(e)
+    {
+        e.preventDefault();
+
+        var touches=this.GetToucheData(e,false);
+
+        if (this.IsPhoneDragging(e))
+        {
+            var drag=this.MouseDrag;
+            if (drag==null)
+            {
+                var pixelTatio = GetDevicePixelRatio();
+                var x = touches[0].clientX-this.UIElement.getBoundingClientRect().left*pixelTatio;
+                var y = touches[0].clientY-this.UIElement.getBoundingClientRect().top*pixelTatio;
+                this.OnMouseMove(x,y,e);
+            }
+            else
+            {
+                
+            }
+        }
+        else if (this.IsPhonePinching(e))
+        {
+            phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
+        }
+    }
 
     this.CreateBuySellPaint=function()  //在主窗口建立以后 创建买卖点
     {
@@ -44480,7 +44503,7 @@ function JSAlgorithm(errorHandler,symbolData)
 
     ////////////////////////////////////////////////////////////////////////
     //  跨周期函数COVER_C(), COVER_O(), COVER_H(), COVER_L(), COVER_A(), COVER_V()
-    this.CoverPeriod=function(name, periodName)
+    this.CoverPeriod=function(name, periodName,n)
     {
         var periodInfo=this.GetPeriodInfo({Name:periodName});
         if (!periodInfo) return null;
@@ -44524,6 +44547,14 @@ function JSAlgorithm(errorHandler,symbolData)
             result.Data=data;
         }
 
+        if (IFrameSplitOperator.IsPlusNumber(n))
+        {
+            var refResult=new ChartData();
+            var data=result.GetRef(n);
+            refResult.Data=data;
+            result=refResult;
+        }
+
         switch(name)
         {
             case 'COVER_C':
@@ -44542,72 +44573,7 @@ function JSAlgorithm(errorHandler,symbolData)
                 return null;
         }
     }
-
-    //index=单独取某一个周期的第几个数据 从最新数据开始
-    this.CoverPeriodItem=function(name, periodName, index)
-    {
-        var periodInfo=this.GetPeriodInfo({Name:periodName});
-        if (!periodInfo) return null;
-
-        var curPeriodInfo=this.GetPeriodInfo({PeriodID:this.SymbolData.Data.Period});
-        if (!curPeriodInfo) return null;
-
-        if (curPeriodInfo.Order>curPeriodInfo.Order) return null;   //只能小周期转大周期
-
-        var klineData=null;
-        if (curPeriodInfo.Period==periodInfo.Period) 
-        {
-            klineData=this.SymbolData.Data.Data;
-        }
-        else
-        {
-            if (ChartData.IsMinutePeriod(curPeriodInfo.Period,true) && ChartData.IsDayPeriod(periodInfo.Period,true))
-            {
-                if (periodInfo.Period==0) klineData=this.SymbolData.DayData.Data;      //日线直接用
-                else klineData=this.SymbolData.DayData.GetPeriodData(periodInfo.Period);    //分钟数据不复权 直接算周期就可以了
-            }
-            else
-            {
-                var bindData=new ChartData();
-                bindData.Data=this.SymbolData.SourceData.Data;
-                bindData.Period=this.SymbolData.Period;
-                bindData.Right=this.SymbolData.Right;
-
-                if (ChartData.IsDayPeriod(periodInfo.Period,true) && bindData.Right>0) //日线数据才复权
-                {
-                    var rightData=bindData.GetRightData(bindData.Right);
-                    bindData.Data=rightData;
-                }
-
-                klineData=bindData.GetPeriodData(periodInfo.Period);
-            }
-        }
-
-        if (!klineData && klineData.length<=0) return null;
-
-        var dataIndex=klineData.length-1-index;
-        if (dataIndex<0) dataIndex=0;
-        var klineItem=klineData[dataIndex];
-
-        switch(name)
-        {
-            case 'COVER_C':
-                return klineItem.Close;
-            case 'COVER_O':
-                return klineItem.Open;
-            case 'COVER_H':
-                return klineItem.High;
-            case 'COVER_L':
-                return klineItem.Low;
-            case 'COVER_A':
-                return klineItem.Amount;
-            case 'COVER_V':
-                return klineItem.Vol;
-            default:
-                return null;
-        }
-    }
-
+    
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -44746,7 +44712,7 @@ function JSAlgorithm(errorHandler,symbolData)
             case 'COVER_L':
             case 'COVER_A':
             case 'COVER_V':
-                if (args.length==2) return this.CoverPeriodItem(name,args[0],args[1]);
+                if (args.length==2) return this.CoverPeriod(name,args[0],args[1]);
                 return this.CoverPeriod(name,args[0]);
             //三角函数
             case 'ATAN':

@@ -85,6 +85,23 @@ function FinanceData()
     }
 }
 
+//股本数据
+function CapitalData()
+{
+    this.Date;  //变动日期	
+    this.A;     //流通A股
+    this.Total; //总股本
+    this.ARate; //流通A股占比
+
+    this.SetData=function(data)
+    {
+        if (!isNaN(data.capital.date)) this.Date=data.capital.date;
+        if (!isNaN(data.capital.a)) this.A=data.capital.a;
+        if (!isNaN(data.capital.total)) this.Total=data.capital.total;
+        if (!isNaN(data.capital.arate)) this.ARate=data.capital.arate;
+    }
+}
+
 //资金流(当日)
 function CapitalFlowDayData()
 {
@@ -296,6 +313,7 @@ function StockData(symbol)
     this.Time;      //交易时间
     this.ExchangeRate;  //换手率
     this.Amplitude;     //振幅
+    this.VolRatio;      //量比
 
     this.Increase;  //涨幅
     this.MaxPrice;  //涨停价
@@ -348,6 +366,9 @@ function StockData(symbol)
                 return this.MinPrice;
             case STOCK_FIELD_NAME.RISE_FALL_PRICE:
                 return this.RFPrice;
+            case STOCK_FIELD_NAME.VOLRATIO:
+                return this.VolRatio;
+
             
             case STOCK_FIELD_NAME.INDEXTOP:
                 return this.IndexTop;
@@ -406,7 +427,9 @@ function StockData(symbol)
     this.FlowMarketValue;   //流通市值
     this.Bookrate;          //委比
     this.Bookdiffer;        //委差
-    this.PE;
+    this.PE;        //市盈率
+    this.PE2;       //市盈率（TTM）
+    this.PE3;       //市盈率（动）
     this.PB;
     this.GetDerivative=function(tagID,field)
     {
@@ -424,6 +447,10 @@ function StockData(symbol)
                 return this.Bookdiffer;
             case STOCK_FIELD_NAME.PE:
                 return this.PE;
+            case STOCK_FIELD_NAME.PE2:
+                return this.PE2;
+            case STOCK_FIELD_NAME.PE3:
+                return this.PE3;
             case STOCK_FIELD_NAME.PB:
                 return this.PB;
         }
@@ -463,6 +490,26 @@ function StockData(symbol)
                 return this.Finance.EPS;
             case STOCK_FIELD_NAME.FINANCE_BENFORD:
                 return this.Finance.Benford;
+        }
+    }
+
+    this.Capital;   //股本
+    this.GetCapital=function(tagID, field)
+    {
+        if (!this.Capital)  //只请求一次
+        {
+            this.CapitalTagID.add(tagID);
+            return null;
+        }
+
+        switch(field)
+        {
+            case STOCK_FIELD_NAME.CAPITAL_TOTAL:
+                return this.Capital.Total;
+            case STOCK_FIELD_NAME.CAPITAL_A:
+                return this.Capital.A;
+            case STOCK_FIELD_NAME.CAPTIAL_ARATE:
+                return this.Capital.ARate;
         }
     }
 
@@ -588,6 +635,7 @@ function StockData(symbol)
     this.DealTagID=new Set();   //分笔的控件id
     this.DerivativeTagID=new Set(); //衍生数据
     this.FinanceTagID=new Set();    //财务数据 (就请求1次)
+    this.CapitalTagID=new Set();    //股本数据 (就请求1次)
 
     this.CapitalFlowDayID=new Set();        //当日资金流
     this.CapitalFlowDay3ID = new Set();     //3日资金流
@@ -615,6 +663,7 @@ function StockData(symbol)
         this.DealTagID.clear();
         this.DerivativeTagID.clear();
         this.FinanceTagID.clear();
+        this.CapitalTagID.clear();
 
         this.CapitalFlowDayID.clear();
         this.CapitalFlowDay3ID.clear();
@@ -644,6 +693,7 @@ function StockData(symbol)
         this.DealTagID.delete(id);
         this.DerivativeTagID.delete(id);
         this.FinanceTagID.delete(id);
+        this.CapitalTagID.delete(id);
 
         this.CapitalFlowDayID.delete(id);
         this.CapitalFlowDay3ID.delete(id);
@@ -680,6 +730,7 @@ function StockData(symbol)
         this.Increase=data.increase;
         if (!isNaN(data.exchangerate)) this.ExchangeRate=data.exchangerate;
         if (!isNaN(data.amplitude)) this.Amplitude=data.amplitude;
+        if (!isNaN(data.volratio)) this.VolRatio=data.volratio;
         
         if (this.Name.indexOf('ST')>=0)
         {
@@ -714,6 +765,8 @@ function StockData(symbol)
         this.Bookrate=data.bookrate;                 //委比
         this.Bookdiffer=data.bookdiffer;            //委差
         this.PE=data.pe;                            //市盈率
+        this.PE2=data.pe2;                            //市盈率
+        this.PE3=data.pe3;                            //市盈率
         this.PB=data.pb;                            //市净率
     }
 
@@ -724,6 +777,14 @@ function StockData(symbol)
 
         this.Finance=new FinanceData();
         this.Finance.SetData(data);  
+    }
+
+    this.SetCapitalData=function(data)
+    {
+        if (!data.capital) return;
+
+        this.Capital=new CapitalData();
+        this.Capital.SetData(data);  
     }
 
     //指数基础数据
@@ -900,6 +961,7 @@ function StockData(symbol)
 
         if (data.finance) this.SetFinanceData(data);
         if (data.finance) this.SetFinanceDetailData(data);
+        if (data.capital) this.SetCapitalData(data);
 
         if (data.mamplitude) 
         {
@@ -1034,7 +1096,16 @@ var STOCK_FIELD_NAME=
     //      港股,
     //      沪港通,
     //      St标识 0：正常股票，1：st股票，2：*st股票
-    EVENTS: 75,   
+    EVENTS: 75,  
+    
+    CAPITAL_A:76,       //流通A股
+    CAPITAL_TOTAL:77,   //总股本
+    CAPTIAL_ARATE:78,   //流通A股占比
+
+    VOLRATIO:79,    //量比
+    PE2:80,         //市盈率（TTM）
+    PE3:81,         //市盈率（动）
+
 
     INDEXTOP:100,
     WEEK:101,
@@ -1129,6 +1200,7 @@ function StockRead(stock,tagID)
             case STOCK_FIELD_NAME.RISE_FALL_PRICE:
             case STOCK_FIELD_NAME.INDEXTOP:
             case STOCK_FIELD_NAME.WEEK:
+            case STOCK_FIELD_NAME.VOLRATIO:
                 return data.GetBaseData(this.TagID,field);
 
             case STOCK_FIELD_NAME.HEAT:
@@ -1146,6 +1218,8 @@ function StockRead(stock,tagID)
             case STOCK_FIELD_NAME.BOOK_RATE:
             case STOCK_FIELD_NAME.BOOK_DIFFER:
             case STOCK_FIELD_NAME.PE:
+            case STOCK_FIELD_NAME.PE2:
+            case STOCK_FIELD_NAME.PE3:
             case STOCK_FIELD_NAME.PB:
                 return data.GetDerivative(this.TagID,field);
 
@@ -1194,6 +1268,11 @@ function StockRead(stock,tagID)
             case STOCK_FIELD_NAME.COMPANY_RELEASEDATE:
             case STOCK_FIELD_NAME.COMPANY_COMPETENCE:
                 return data.GetCompany(this.TagID, field);
+            //股本
+            case STOCK_FIELD_NAME.CAPITAL_A:
+            case STOCK_FIELD_NAME.CAPTIAL_ARATE:
+            case STOCK_FIELD_NAME.CAPITAL_TOTAL:
+                return data.GetCapital(this.TagID, field);
             default:
                 return null;
         }
@@ -1611,6 +1690,7 @@ var RECV_DATA_TYPE=
     SHORT_TERM_DATA:14,      //短线精灵
 	COMPANY_DATA: 15,      //个股资料
     PLATE_DATA: 16,        //板块(行业 概念 地区)
+    CAPITAL_DATA:17,        //股本
 
     
 
@@ -1715,6 +1795,7 @@ function JSStock()
         var aryEvent = new Array();
 		var aryCompany = new Array();       //个股资料
         var aryPlate = new Array();         //板块(行业 概念 地址)
+        var aryCapital=new Array();
 
 
         for(var item of this.MapStock)
@@ -1745,6 +1826,7 @@ function JSStock()
             if (subscribe.DealTagID.size>0) aryDeal.push(symbol);
             if (subscribe.DerivativeTagID.size>0) aryDerivative.push(symbol);
             if (subscribe.FinanceTagID.size>0) aryFinance.push(symbol);
+            if (subscribe.CapitalTagID.size>0) aryCapital.push(symbol);
 
             if (subscribe.Event == null && subscribe.EventTagID.size > 0) aryEvent.push(symbol);
 			if (subscribe.Company == null && subscribe.CompanyTagID.size > 0) aryCompany.push(symbol);
@@ -1758,6 +1840,7 @@ function JSStock()
         if (aryDeal.length>0) this.RequestDealData(aryDeal);
         if (aryDerivative.length>0) this.RequestDerivativeData(aryDerivative);
         if (aryFinance.length>0) this.RequestFinanceData(aryFinance);
+        if (aryCapital.length>0) this.RequestCapitalData(aryCapital);
 
         //资金流
         if (aryFlow.length > 0) this.RequestSubDocumentData(aryFlow, 'flowday');
@@ -1785,7 +1868,7 @@ function JSStock()
     {
         var self=this;
         var field= ["name","symbol","yclose","open","price","high","low","vol",
-            "amount","date","time","week","increase","exchangerate","amplitude"];
+            "amount","date","time","week","increase","exchangerate","amplitude","volratio"];
 
         if (this.NetworkFilter)
         {
@@ -1830,7 +1913,7 @@ function JSStock()
     this.RequestDerivativeData=function(arySymbol)
     {
         var self=this;
-        var field= ["name","symbol","marketvalue","flowmarketvalue","pe","pb","bookrate","bookdiffer"];
+        var field= ["name","symbol","marketvalue","flowmarketvalue","pe","pe2","pe3","pb","bookrate","bookdiffer"];
         if (this.NetworkFilter)
         {
             var obj=
@@ -1914,6 +1997,52 @@ function JSStock()
             }
         });
     }
+
+    //请求股本
+    this.RequestCapitalData=function(arySymbol)
+    {
+        var self=this;
+        var field= ["name","symbol","capital"];
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSStock::RequestCapitalData', //类名::方法
+                Explain:'股本数据',
+                ID:RECV_DATA_TYPE.CAPITAL_DATA,
+                Request:{ Url:self.RealtimeApiUrl, Data:{ field:field, symbol:arySymbol }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvData(data,RECV_DATA_TYPE.CAPITAL_DATA);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+       
+        $.ajax({
+            url: this.RealtimeApiUrl,
+            data:
+            {
+                "field": field,"symbol": arySymbol,
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                self.RecvData(data,RECV_DATA_TYPE.CAPITAL_DATA);
+            },
+            error:function(request)
+            {
+                self.RecvError(request,RECV_DATA_TYPE.CAPITAL_DATA);
+            }
+        });
+    }
+    
 
      //请求买卖盘
      this.RequestBuySellData=function(arySymbol)
@@ -2346,6 +2475,9 @@ function JSStock()
             case RECV_DATA_TYPE.FINANCE_DATA:
                 mapTagData=this.RecvFinanceData(data,datatype);
                 break;
+            case RECV_DATA_TYPE.CAPITAL_DATA:
+                mapTagData=this.RecvCapitalData(data,datatype);
+                break;
             case RECV_DATA_TYPE.CAPITAL_FLOW_DAY_DATA:
             case RECV_DATA_TYPE.CAPITAL_FLOW_DAY3_DATA:
             case RECV_DATA_TYPE.CAPITAL_FLOW_DAY5_DATA:
@@ -2546,6 +2678,39 @@ function JSStock()
 
         return mapTagData;
     }
+
+    this.RecvCapitalData=function(data,datatype)
+    {
+        var mapTagData=new Map();   //key=界面元素id, value=更新的股票列表
+        for(var i in data.stock)
+        {
+            var item =data.stock[i];
+            var stockData=this.MapStock.get(item.symbol);
+            if (!stockData) continue;
+
+            stockData.SetCapitalData(item);
+
+            if (stockData.CapitalTagID.size>0) 
+            {
+                for(var id of stockData.CapitalTagID)
+                {
+                    if (mapTagData.has(id)) 
+                    {
+                        mapTagData.get(id).push(stockData.Symbol);
+                    }
+                    else 
+                    {
+                        mapTagData.set(id, new Array(stockData.Symbol));
+                    }
+                }
+            }
+        }
+
+        return mapTagData;
+    }
+
+
+    
 
     this.RecvDealData=function(data,datatype)
     {
