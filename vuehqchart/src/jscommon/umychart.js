@@ -1262,7 +1262,8 @@ var JSCHART_EVENT_ID=
     ON_CLICK_INDEXTITLE:15,     //点击指标标题事件
     RECV_KLINE_UPDATE_DATA:16,   //K线日,分钟更新数据到达
     ON_CLICK_DRAWPICTURE:17,    //点击画图工具 
-    ON_FINISH_DRAWPICTURE:18    //完成画图工具    
+    ON_FINISH_DRAWPICTURE:18,    //完成画图工具    
+    ON_INDEXTITLE_DRAW:19       //指标标题重绘事件
 }
 
 var JSCHART_OPERATOR_ID=
@@ -2149,13 +2150,15 @@ function JSChartContainer(uielement)
         }
 
         var eventTitleDraw=this.GetEventCallback(JSCHART_EVENT_ID.ON_TITLE_DRAW);
+        var eventIndexTitleDraw=this.GetEventCallback(JSCHART_EVENT_ID.ON_INDEXTITLE_DRAW);
         for(var i in this.TitlePaint)
         {
             var item=this.TitlePaint[i];
             if (!item.IsDynamic) continue;
 
             item.CursorIndex=this.CursorIndex;
-            item.OnDrawEvent=eventTitleDraw;
+            if (item.ClassName=='DynamicChartTitlePainting') item.OnDrawEvent=eventIndexTitleDraw
+            else item.OnDrawEvent=eventTitleDraw;
             item.Draw();
         }
 
@@ -16874,6 +16877,7 @@ function IChartTitlePainting()
     this.Font=g_JSChartResource.TitleFont;
     this.Title;                         //固定标题(可以为空)
     this.TitleColor=g_JSChartResource.DefaultTextColor;
+    this.ClassName='IChartTitlePainting';
 }
 
 var PERIOD_NAME=["日线","周线","月线","年线","1分","5分","15分","30分","60分","季线","分笔", "2小时","4小时","","",""];
@@ -16885,6 +16889,7 @@ function DynamicKLineTitlePainting()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='DynamicKLineTitlePainting';
     this.IsDynamic=true;
     this.IsShow=true;       //是否显示
 
@@ -17106,6 +17111,8 @@ function DynamicMinuteTitlePainting()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='DynamicMinuteTitlePainting';
+
     this.SpaceWidth=1*GetDevicePixelRatio();
     this.YClose;
     this.IsShowDate=false;  //标题是否显示日期
@@ -17277,6 +17284,8 @@ function DynamicChartTitlePainting()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='DynamicChartTitlePainting';
+
     this.IsDynamic=true;
     this.Data=new Array();
     this.Explain;
@@ -17287,6 +17296,7 @@ function DynamicChartTitlePainting()
     this.TitleRect;             //指标名字显示区域
     this.IsDrawTitleBG=false;    //是否绘制指标名字背景色
     this.BGColor=g_JSChartResource.IndexTitleBGColor;
+    this.OnDrawEvent;
 
     this.IsClickTitle=function(x,y) //是否点击了指标标题
     {
@@ -17657,6 +17667,13 @@ function DynamicChartTitlePainting()
         }
 
         this.DrawOverlayIndex(left+5*GetDevicePixelRatio());   //间距都空点 和主指标区分开
+    }
+
+    this.OnDrawEventCallback=function(drawData)
+    {
+        if (!this.OnDrawEvent || !this.OnDrawEvent.Callback) return;
+        var data={ Draw: drawData, Name:'DynamicChartTitlePainting'};
+        this.OnDrawEvent.Callback(this.OnDrawEvent,data,this);
     }
 }
 
@@ -23692,7 +23709,28 @@ function KLineChartContainer(uielement)
 
         this.Right=right;
 
-        this.Update();
+        if (!this.IsApiPeriod)
+        {
+            this.Update();
+            return;
+        }
+        else    //API周期数据 重新请求数据
+        {
+            if (ChartData.IsDayPeriod(this.Period,true))
+            {
+                this.CancelAutoUpdate();                    //先停止定时器
+                this.AutoUpdateEvent(false,'KLineChartContainer::ChangeRight');                //切换复权先停止更新
+                this.ResetOverlaySymbolStatus();
+                this.RequestHistoryData();                  //请求日线数据
+            }
+            else if (ChartData.IsMinutePeriod(this.Period,true))
+            {
+                this.CancelAutoUpdate();                    //先停止定时器
+                this.AutoUpdateEvent(false,'KLineChartContainer::ChangeRight');                //切换复权先停止更新
+                this.ResetOverlaySymbolStatus();
+                this.ReqeustHistoryMinuteData();            //请求分钟数据
+            }  
+        }
     }
 
     //设置第1屏的起始日期

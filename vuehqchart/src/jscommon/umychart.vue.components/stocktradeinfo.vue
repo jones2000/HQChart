@@ -407,7 +407,8 @@ export default {
 
   name: "StockTradeInfo",
   props: [
-    "IsShareStock" //是否共享使用一个Stock类,
+    "IsShareStock", //是否共享使用一个Stock类,
+    "DefaultSymbol"
   ],
 
   data() {
