@@ -30752,7 +30752,7 @@ function MinuteChartContainer(uielement)
                     self.RecvOverlayMinuteData(data,item);
                 });
 
-                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+                if (obj.PreventDefault==true) continue;   //已被上层替换,不调用默认的网络请求
             }
 
             //请求数据
