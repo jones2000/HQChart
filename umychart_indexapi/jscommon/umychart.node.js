@@ -27027,7 +27027,28 @@ function KLineChartContainer(uielement)
 
         this.Right=right;
 
-        this.Update();
+        if (!this.IsApiPeriod)
+        {
+            this.Update();
+            return;
+        }
+        else    //API周期数据 重新请求数据
+        {
+            if (ChartData.IsDayPeriod(this.Period,true))
+            {
+                this.CancelAutoUpdate();                    //先停止定时器
+                this.AutoUpdateEvent(false,'KLineChartContainer::ChangeRight');                //切换复权先停止更新
+                this.ResetOverlaySymbolStatus();
+                this.RequestHistoryData();                  //请求日线数据
+            }
+            else if (ChartData.IsMinutePeriod(this.Period,true))
+            {
+                this.CancelAutoUpdate();                    //先停止定时器
+                this.AutoUpdateEvent(false,'KLineChartContainer::ChangeRight');                //切换复权先停止更新
+                this.ResetOverlaySymbolStatus();
+                this.ReqeustHistoryMinuteData();            //请求分钟数据
+            }  
+        }
     }
 
     //设置第1屏的起始日期
@@ -30690,7 +30711,7 @@ function MinuteChartContainer(uielement)
                     self.RecvOverlayMinuteData(data,item);
                 });
 
-                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+                if (obj.PreventDefault==true) continue;   //已被上层替换,不调用默认的网络请求
             }
 
             //请求数据
@@ -44612,6 +44633,25 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    this.POW=function(data, n)
+    {
+        var result=[];
+        if (!IFrameSplitOperator.IsNumber(n)) return result;
+
+        let isNumber=typeof(data)=='number';
+       
+        if (isNumber) return Math.pow(data,n);
+
+        for(var i in data)
+        {
+            var item=data[i];
+            if (IFrameSplitOperator.IsNumber(item)) result[i]=Math.pow(item,n);
+            else result[i]=null;
+        }
+        
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -44754,6 +44794,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.CoverPeriod(name,args[0]);
             case 'MOD':
                 return this.MOD(args[0],args[1]);
+            case 'POW':
+                return this.POW(args[0],args[1]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);

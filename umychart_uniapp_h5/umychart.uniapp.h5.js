@@ -44633,6 +44633,25 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    this.POW=function(data, n)
+    {
+        var result=[];
+        if (!IFrameSplitOperator.IsNumber(n)) return result;
+
+        let isNumber=typeof(data)=='number';
+       
+        if (isNumber) return Math.pow(data,n);
+
+        for(var i in data)
+        {
+            var item=data[i];
+            if (IFrameSplitOperator.IsNumber(item)) result[i]=Math.pow(item,n);
+            else result[i]=null;
+        }
+        
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -44775,6 +44794,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.CoverPeriod(name,args[0]);
             case 'MOD':
                 return this.MOD(args[0],args[1]);
+            case 'POW':
+                return this.POW(args[0],args[1]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
