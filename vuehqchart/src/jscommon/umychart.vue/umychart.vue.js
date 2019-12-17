@@ -44693,6 +44693,38 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    this.CEILING=function(data)
+    {
+        let isNumber=typeof(data)=='number';
+        if (isNumber) return parseInt(data);
+
+        var result=[];
+        for(var i in data)
+        {
+            var item=data[i];
+            if (IFrameSplitOperator.IsNumber(item)) result[i]=parseInt(item);
+            else result[i]=null;
+        }
+
+        return result;
+    }
+
+    this.FLOOR=function(data)
+    {
+        let isNumber=typeof(data)=='number';
+        if (isNumber) return parseInt((data-1));
+
+        var result=[];
+        for(var i in data)
+        {
+            var item=data[i];
+            if (IFrameSplitOperator.IsNumber(item)) result[i]=parseInt((item-1));
+            else result[i]=null;
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -44837,6 +44869,10 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.MOD(args[0],args[1]);
             case 'POW':
                 return this.POW(args[0],args[1]);
+            case 'CEILING':
+                return this.CEILING(args[0]);
+            case 'FLOOR':
+                return this.FLOOR(args[0]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
