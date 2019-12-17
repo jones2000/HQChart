@@ -243,6 +243,10 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 [个股行情页面白色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sz) <br>
 [代码地址(vue.demo/infoHqdemo)](/vue.demo/infoHqdemo) <br>
 
+## VUE版本手机端样例1
+![手机端行情页面](/小程序行情模块用例/image/hchart_phone_1.png) <br>
+[手机端行情页面](https://opensource.zealink.com/product/hqNewdemoH5/stockHq.html#/StockHq)<br>
+
 ## js页面样例
 [个股详情手机端h5](https://opensource.zealink.com/hqweb/hqpages/stockpage.html?) <br>
 [代码地址(webhqchart.demo/h5demo)](/webhqchart.demo/h5demo) <br>
