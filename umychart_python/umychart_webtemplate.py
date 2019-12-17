@@ -15,6 +15,7 @@ HTML_PART1="""<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'ht
     <script src='hqchart/umychart.resource/js/jquery.min.js'></script>
     <script src='hqchart/umychart.resource/js/webfont.js'></script>
     <script src="hqchart/umychart.resource/js/python_demo.js"></script>
+    <script src="hqchart/umychart.network.js"></script>
     <script src='hqchart/umychart.js'></script>             <!-- K线图形 -->
     <script src='hqchart/umychart.complier.js'></script>    <!-- 麦语言解析执行器 -->
     <script src='hqchart/umychart.index.data.js'></script>  <!-- 基础指标库 -->
