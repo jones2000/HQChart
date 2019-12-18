@@ -12056,6 +12056,13 @@ function LocalJsonDataIndex(name,args,option)
         for(i in outVar)
         {
             item=outVar[i];
+            console.log('[LocalJsonDataIndex::FittingData] item', item);
+            if (item.Type!=0 && item.Type!=3)   //复杂的图形不支持
+            {
+                console.warn("[LocalJsonDataIndex::FittingData] can't support ", item.Name, item.Type);
+                continue; 
+            }
+            
             var indexData=[];
             outVarItem={Name:item.Name,Type:item.Type}
             for(j in item.Data)

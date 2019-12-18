@@ -564,6 +564,7 @@ class JSAlgorithm() :
         result=[]
         if JSAlgorithm.IsNumber(n) :
             count=len(data)
+            n=int(n)
             if count<=0 :
                 return result
             if n>=count :
@@ -576,18 +577,21 @@ class JSAlgorithm() :
 
         else :   # n 为数组的情况
             nCount=len(n)
+            count=len(data)
+            result=[None]*count
             for i in range(len(data)) :
                 result[i]=None
                 if i>=nCount :
                     continue
 
                 value=n[i]
-                if value>0 and value<=i :
-                    result[i]=data[i-value]
-                elif i : 
-                    result[i]=result[i-1]
-                else :
-                    result[i]=data[i]
+                if (JSAlgorithm.IsNumber(value)) :
+                    if value>0 and value<=i :
+                        result[i]=data[i-value]
+                    elif i : 
+                        result[i]=result[i-1]
+                    else :
+                        result[i]=data[i]
 
         return result
 
@@ -1568,7 +1572,7 @@ class JSAlgorithm() :
         for i in range(dataLen) :
             if data[i] :
                 result[i]=1
-                for j in range(j<n) :
+                for j in range(n) :
                     if j+i+1>=dataLen :
                         break
                     result[j+i+1]=0
@@ -2654,7 +2658,7 @@ class JSAlgorithm() :
         elif name=='MIN':
             return self.MIN(args[0], args[1])
         elif name=='REF':
-            return self.REF(args[0], int(args[1]))
+            return self.REF(args[0], args[1])
         elif name=='ABS':
             return self.ABS(args[0])
         elif name=='MA':
@@ -2704,7 +2708,7 @@ class JSAlgorithm() :
         elif name=='EXISTR':
             return self.EXISTR(args[0],int(args[1]),int(args[2]))
         elif name=='FILTER':
-            return self.FILTER(args[0],args[1])
+            return self.FILTER(args[0],int(args[1]))
         elif name=='TFILTER':
             return self.TFILTER(args[0],args[1],int(args[2]))
         elif name=='SLOPE':
