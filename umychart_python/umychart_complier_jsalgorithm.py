@@ -1818,7 +1818,7 @@ class JSAlgorithm() :
                     continue
 
                 if data[i]>data2 :
-                    day+=1
+                    days+=1
                 else :
                     days=0
 

@@ -21,16 +21,17 @@ class JSComplierPandasHelper :
 
         for outItem in data.OutVar :
             indexName=outItem.Name
-            aryValue=[]
-            for item in outItem.Data:
-                if item==None :
-                    aryValue.append(np.NaN)
-                else :
-                    aryValue.append(item)
+            if outItem.Type==0: # 暂时只输出线段的
+                aryValue=[]
+                for item in outItem.Data:
+                    if item==None :
+                        aryValue.append(np.NaN)
+                    else :
+                        aryValue.append(item)
 
-            result[indexName]=pd.Series(aryValue, index=pd.to_datetime(aryIndex))
-            print('[JSComplierPandasHelper::ToDateTimeSeries] name=' ,indexName)
-            print(result[indexName])
+                result[indexName]=pd.Series(aryValue, index=pd.to_datetime(aryIndex))
+                print('[JSComplierPandasHelper::ToDateTimeSeries] name=' ,indexName)
+                print(result[indexName])
         return result
 
 
@@ -54,14 +55,15 @@ class JSComplierPandasHelper :
 
         for outItem in data.OutVar :
             indexName=outItem.Name
-            aryValue=[]
-            for item in outItem.Data:
-                if item==None :
-                    aryValue.append(np.NaN)
-                else :
-                    aryValue.append(item)
+            if outItem.Type==0: # 暂时只输出线段的
+                aryValue=[]
+                for item in outItem.Data:
+                    if item==None :
+                        aryValue.append(np.NaN)
+                    else :
+                        aryValue.append(item)
 
-            df[indexName]=aryValue
+                df[indexName]=aryValue
 
         print('[JSComplierPandasHelper::ToDateTimeSeries] dispaly data\n' ,df)
         return df
