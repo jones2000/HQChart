@@ -74,6 +74,8 @@ import {
 
 import{
     JSCommonResource_Global_JSChartResource as g_JSChartResource,
+    JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
+    JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
 import { JSCommonUniApp } from './umychart.uniapp.canvas.helper.js'
@@ -199,6 +201,12 @@ function JSChart(element)
         if (option.SplashTitle) chart.SplashTitle = option.SplashTitle; //设置提示信息内容
         if (!option.Windows || option.Windows.length <= 0) return null;
 
+        if (option.Language) 
+        {
+            if (option.Language === 'CN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+            else if (option.Language === 'EN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
+        }
+
         //创建子窗口
         chart.Create(option.Windows.length);
 
@@ -226,6 +234,8 @@ function JSChart(element)
             if (option.DragDownload.Day && option.DragDownload.Day.Enable == true) chart.DragDownload.Day.Enable = true;
             if (option.DragDownload.Minute && option.DragDownload.Minute.Enable == true) chart.DragDownload.Minute.Enable = true;
         }
+
+       
 
         if (option.IsApiPeriod == true) chart.IsApiPeriod = option.IsApiPeriod;
 
@@ -457,6 +467,12 @@ function JSChart(element)
 
         if (option.Info && option.Info.length > 0) chart.SetMinuteInfo(option.Info, false);
         if (option.SplashTitle) chart.SplashTitle = option.SplashTitle; //设置提示信息内容
+
+        if (option.Language) 
+        {
+            if (option.Language === 'CN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+            else if (option.Language === 'EN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
+        }
 
         chart.Create(windowsCount);                            //创建子窗口
 
@@ -1118,6 +1134,8 @@ function JSChartContainer(uielement)
     this.UpdateUICallback;      //数据到达通知前端
     this.IsOnTouch = false;     //当前是否正式手势操作
     this.IsFullDraw=false;       //是否使用重绘模式 (可能会卡)
+
+    this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
 
     //公共函数转发,不然要导出麻烦
     this.FormatDateString = IFrameSplitOperator.FormatDateString;
@@ -6327,6 +6345,7 @@ function HQPriceStringFormat()
 
     this.Symbol;
     this.FrameID;
+    this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
 
     this.Operator = function () 
     {
@@ -6340,7 +6359,7 @@ function HQPriceStringFormat()
         }
         else 
         {
-            this.Text = IFrameSplitOperator.FormatValueString(this.Value, defaultfloatPrecision);
+            this.Text = IFrameSplitOperator.FormatValueString(this.Value, defaultfloatPrecision, this.LanguageID);
         }
 
         return true;
@@ -6405,72 +6424,6 @@ function HQMinuteTimeStringFormat() {
     return true;
   }
 }
-
-
-//行情tooltip提示信息格式
-var WEEK_NAME = ["日", "一", "二", "三", "四", "五", "六"];
-function HistoryDataStringFormat() {
-  this.newMethod = IChangeStringFormat;   //派生
-  this.newMethod();
-  delete this.newMethod;
-
-  this.UpColor = g_JSChartResource.UpTextColor;
-  this.DownColor = g_JSChartResource.DownTextColor;
-  this.UnchagneColor = g_JSChartResource.UnchagneTextColor;
-
-  this.VolColor = g_JSChartResource.DefaultTextColor;
-  this.AmountColor = g_JSChartResource.DefaultTextColor;
-
-  this.Operator = function () {
-    var data = this.Value.Data;
-    if (!data) return false;
-
-    var date = new Date(parseInt(data.Date / 10000), (data.Date / 100 % 100 - 1), data.Date % 100);
-    var week = WEEK_NAME[date.getDay()];
-    var strText =
-      "<span class='tooltip-title'>" + data.Date + "&nbsp&nbsp" + week + "</span>" +
-      "<span class='tooltip-con'>开盘:</span>" +
-      "<span class='tooltip-num' style='color:" + this.GetColor(data.Open, data.YClose) + ";'>" + data.Open.toFixed(2) + "</span><br/>" +
-      "<span class='tooltip-con'>最高:</span>" +
-      "<span class='tooltip-num' style='color:" + this.GetColor(data.High, data.YClose) + ";'>" + data.High.toFixed(2) + "</span><br/>" +
-      "<span class='tooltip-con'>最低:</span>" +
-      "<span class='tooltip-num' style='color:" + this.GetColor(data.Low, data.YClose) + ";'>" + data.Low.toFixed(2) + "</span><br/>" +
-      "<span class='tooltip-con'>收盘:</span>" +
-      "<span class='tooltip-num' style='color:" + this.GetColor(data.Close, data.YClose) + ";'>" + data.Close.toFixed(2) + "</span><br/>" +
-      //"<span style='color:"+this.YClose+";font:微软雅黑;font-size:12px'>&nbsp;前收: "+IFrameSplitOperator.FormatValueString(data.YClose,2)+"</span><br/>"+
-      "<span class='tooltip-con'>数量:</span>" +
-      "<span class='tooltip-num' style='color:" + this.VolColor + ";'>" + IFrameSplitOperator.FormatValueString(data.Vol, 2) + "</span><br/>" +
-      "<span class='tooltip-con'>金额:</span>" +
-      "<span class='tooltip-num' style='color:" + this.AmountColor + ";'>" + IFrameSplitOperator.FormatValueString(data.Amount, 2) + "</span><br/>";
-
-    //叠加股票
-    if (this.Value.ChartPaint.Name == "Overlay-KLine") {
-      var title = "<span style='color:rgb(0,0,0);font:微软雅黑;font-size:12px;text-align:center;display: block;'>" + this.Value.ChartPaint.Title + "</span>";
-      strText = title + strText;
-    }
-
-    this.Text = strText;
-    return true;
-  }
-
-  this.GetColor = function (price, yclse) {
-    if (price > yclse) return this.UpColor;
-    else if (price < yclse) return this.DownColor;
-    else return this.UnchagneColor;
-  }
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//                      标题
-//
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
 
 
 /*
@@ -7251,6 +7204,7 @@ function KLineChartContainer(uielement)
         this.ChartCorssCursor.Canvas = this.Canvas;
         this.ChartCorssCursor.StringFormatX = new HQDateStringFormat();
         this.ChartCorssCursor.StringFormatY = new HQPriceStringFormat();
+        this.ChartCorssCursor.StringFormatY.LanguageID = this.LanguageID;
 
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
@@ -7277,64 +7231,68 @@ function KLineChartContainer(uielement)
             var titlePaint = new DynamicChartTitlePainting();
             titlePaint.Frame = this.Frame.SubFrame[i].Frame;
             titlePaint.Canvas = this.Canvas;
+            titlePaint.LanguageID = this.LanguageID;
             this.Frame.SubFrame[i].Frame.TitlePaint = titlePaint;
-
             this.TitlePaint.push(titlePaint);
         }
     }
 
-  //创建子窗口
-  this.CreateChildWindow = function (windowCount) {
-    for (var i = 0; i < windowCount; ++i) {
-      var border = new ChartBorder();
-      border.UIElement = this.UIElement;
+    //创建子窗口
+    this.CreateChildWindow = function (windowCount) 
+    {
+        for (var i = 0; i < windowCount; ++i)
+        {
+            var border = new ChartBorder();
+            border.UIElement = this.UIElement;
 
-      var frame = new KLineFrame();
-      frame.Canvas = this.Canvas;
-      frame.ChartBorder = border;
-      frame.Identify = i;                   //窗口序号
+            var frame = new KLineFrame();
+            frame.Canvas = this.Canvas;
+            frame.ChartBorder = border;
+            frame.Identify = i;                   //窗口序号
 
-      frame.HorizontalMax = 20;
-      frame.HorizontalMin = 10;
+            frame.HorizontalMax = 20;
+            frame.HorizontalMin = 10;
 
-      if (i == 0) {
-        frame.YSplitOperator = new FrameSplitKLinePriceY();
-        frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
-        border.BottomSpace = 12;  //主图上下留空间
-        border.TopSpace = 12;
-      }
-      else {
-        frame.YSplitOperator = new FrameSplitY();
-        frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
-      }
+            if (i == 0) 
+            {
+                frame.YSplitOperator = new FrameSplitKLinePriceY();
+                frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
+                border.BottomSpace = 12;  //主图上下留空间
+                border.TopSpace = 12;
+            }
+            else 
+            {
+                frame.YSplitOperator = new FrameSplitY();
+                frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
+                frame.YSplitOperator.LanguageID = this.LanguageID;
+            }
 
-      frame.YSplitOperator.Frame = frame;
-      frame.YSplitOperator.ChartBorder = border;
-      frame.XSplitOperator = new FrameSplitKLineX();
-      frame.XSplitOperator.Frame = frame;
-      frame.XSplitOperator.ChartBorder = border;
+            frame.YSplitOperator.Frame = frame;
+            frame.YSplitOperator.ChartBorder = border;
+            frame.XSplitOperator = new FrameSplitKLineX();
+            frame.XSplitOperator.Frame = frame;
+            frame.XSplitOperator.ChartBorder = border;
 
-      if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
+            if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
 
-      for (var j = frame.HorizontalMin; j <= frame.HorizontalMax; j += 1) {
-        frame.HorizontalInfo[j] = new CoordinateInfo();
-        frame.HorizontalInfo[j].Value = j;
-        if (i == 0 && j == frame.HorizontalMin) continue;
+            for (var j = frame.HorizontalMin; j <= frame.HorizontalMax; j += 1) 
+            {
+                frame.HorizontalInfo[j] = new CoordinateInfo();
+                frame.HorizontalInfo[j].Value = j;
+                if (i == 0 && j == frame.HorizontalMin) continue;
 
-        frame.HorizontalInfo[j].Message[1] = j.toString();
-        frame.HorizontalInfo[j].Font = "14px 微软雅黑";
-      }
+                frame.HorizontalInfo[j].Message[1] = j.toString();
+                frame.HorizontalInfo[j].Font = "14px 微软雅黑";
+            }
 
-      var subFrame = new SubFrameItem();
-      subFrame.Frame = frame;
-      if (i == 0)
-        subFrame.Height = 20;
-      else
-        subFrame.Height = 10;
+            var subFrame = new SubFrameItem();
+            subFrame.Frame = frame;
+            if (i == 0) subFrame.Height = 20;
+            else subFrame.Height = 10;
 
-      this.Frame.SubFrame[i] = subFrame;
+            this.Frame.SubFrame[i] = subFrame;
+        }
     }
-  }
 
     //创建主图K线画法
     this.CreateMainKLine = function () 
@@ -7351,6 +7309,7 @@ function KLineChartContainer(uielement)
         this.TitlePaint[0] = new DynamicKLineTitlePainting();
         this.TitlePaint[0].Frame = this.Frame.SubFrame[0].Frame;
         this.TitlePaint[0].Canvas = this.Canvas;
+        this.TitlePaint[0].LanguageID = this.LanguageID;
 
         //主图叠加画法
         var paint = new ChartOverlayKLine();
@@ -8353,6 +8312,7 @@ function KLineChartContainer(uielement)
                 chart.ChartBorder = this.Frame.ChartBorder;
                 chart.ChartFrame = this.Frame;
                 chart.HQChart = this;
+                option.LanguageID = this.LanguageID;
                 chart.SetOption(option);
                 this.ExtendChartPaint.push(chart);
                 return chart;
@@ -9363,6 +9323,7 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.Canvas = this.Canvas;
         this.ChartCorssCursor.StringFormatX = new HQMinuteTimeStringFormat();
         this.ChartCorssCursor.StringFormatY = new HQPriceStringFormat();
+        this.ChartCorssCursor.StringFormatY.LanguageID = this.LanguageID;
 
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
@@ -9389,6 +9350,7 @@ function MinuteChartContainer(uielement)
             var titlePaint = new DynamicChartTitlePainting();
             titlePaint.Frame = this.Frame.SubFrame[i].Frame;
             titlePaint.Canvas = this.Canvas;
+            titlePaint.LanguageID = this.LanguageID;
 
             this.TitlePaint.push(titlePaint);
         }
@@ -9396,90 +9358,94 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.StringFormatX.Frame = this.Frame.SubFrame[0].Frame;
     }
 
-  //创建子窗口
-  this.CreateChildWindow = function (windowCount) {
-    for (var i = 0; i < windowCount; ++i) {
-      var border = new ChartBorder();
-      border.UIElement = this.UIElement;
-
-      var frame = new MinuteFrame();
-      frame.Canvas = this.Canvas;
-      frame.ChartBorder = border;
-      if (i < 2) frame.ChartBorder.TitleHeight = 0;
-      frame.XPointCount = 243;
-
-      var DEFAULT_HORIZONTAL = [9, 8, 7, 6, 5, 4, 3, 2, 1];
-      frame.HorizontalMax = DEFAULT_HORIZONTAL[0];
-      frame.HorizontalMin = DEFAULT_HORIZONTAL[DEFAULT_HORIZONTAL.length - 1];
-
-      if (i == 0) {
-        frame.YSplitOperator = new FrameSplitMinutePriceY();
-        frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
-      }
-      else {
-        frame.YSplitOperator = new FrameSplitY();
-        frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
-      }
-
-      frame.YSplitOperator.Frame = frame;
-      frame.YSplitOperator.ChartBorder = border;
-      frame.XSplitOperator = new FrameSplitMinuteX();
-      frame.XSplitOperator.Frame = frame;
-      frame.XSplitOperator.ChartBorder = border;
-      if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
-      frame.XSplitOperator.Operator();
-
-      for (var j in DEFAULT_HORIZONTAL) {
-        frame.HorizontalInfo[j] = new CoordinateInfo();
-        frame.HorizontalInfo[j].Value = DEFAULT_HORIZONTAL[j];
-        if (i == 0 && j == frame.HorizontalMin) continue;
-
-        frame.HorizontalInfo[j].Message[1] = DEFAULT_HORIZONTAL[j].toString();
-        frame.HorizontalInfo[j].Font = "14px 微软雅黑";
-      }
-
-      var subFrame = new SubFrameItem();
-      subFrame.Frame = frame;
-      if (i == 0)
-        subFrame.Height = 20;
-      else
-        subFrame.Height = 10;
-
-      this.Frame.SubFrame[i] = subFrame;
-    }
-  }
-
-  //删除某一个窗口的指标
-  this.DeleteIndexPaint = function (windowIndex) {
-    let paint = new Array();
-    for (let i in this.ChartPaint)  //踢出当前窗口的指标画法
+    //创建子窗口
+    this.CreateChildWindow = function (windowCount) 
     {
-      let item = this.ChartPaint[i];
+        for (var i = 0; i < windowCount; ++i) 
+        {
+            var border = new ChartBorder();
+            border.UIElement = this.UIElement;
 
-      if (i == 0 || item.ChartFrame != this.Frame.SubFrame[windowIndex].Frame)
-        paint.push(item);
+            var frame = new MinuteFrame();
+            frame.Canvas = this.Canvas;
+            frame.ChartBorder = border;
+            if (i < 2) frame.ChartBorder.TitleHeight = 0;
+            frame.XPointCount = 243;
+
+            var DEFAULT_HORIZONTAL = [9, 8, 7, 6, 5, 4, 3, 2, 1];
+            frame.HorizontalMax = DEFAULT_HORIZONTAL[0];
+            frame.HorizontalMin = DEFAULT_HORIZONTAL[DEFAULT_HORIZONTAL.length - 1];
+
+            if (i == 0) 
+            {
+                frame.YSplitOperator = new FrameSplitMinutePriceY();
+                frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
+            }
+            else 
+            {
+                frame.YSplitOperator = new FrameSplitY();
+                frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
+                frame.YSplitOperator.LanguageID = this.LanguageID;
+            }
+
+            frame.YSplitOperator.Frame = frame;
+            frame.YSplitOperator.ChartBorder = border;
+            frame.XSplitOperator = new FrameSplitMinuteX();
+            frame.XSplitOperator.Frame = frame;
+            frame.XSplitOperator.ChartBorder = border;
+            if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
+            frame.XSplitOperator.Operator();
+
+            for (var j in DEFAULT_HORIZONTAL) 
+            {
+                frame.HorizontalInfo[j] = new CoordinateInfo();
+                frame.HorizontalInfo[j].Value = DEFAULT_HORIZONTAL[j];
+                if (i == 0 && j == frame.HorizontalMin) continue;
+
+                frame.HorizontalInfo[j].Message[1] = DEFAULT_HORIZONTAL[j].toString();
+                frame.HorizontalInfo[j].Font = "14px 微软雅黑";
+            }
+
+            var subFrame = new SubFrameItem();
+            subFrame.Frame = frame;
+            if (i == 0) subFrame.Height = 20;
+            else subFrame.Height = 10;
+
+            this.Frame.SubFrame[i] = subFrame;
+        }
     }
 
-    //清空指定最大最小值
-    this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = null;
-    this.Frame.SubFrame[windowIndex].Frame.IsLocked = false;          //解除上锁
+    //删除某一个窗口的指标
+    this.DeleteIndexPaint = function (windowIndex) 
+    {
+        let paint = new Array();
+        for (let i in this.ChartPaint)  //踢出当前窗口的指标画法
+        {
+            let item = this.ChartPaint[i];
+            if (i == 0 || item.ChartFrame != this.Frame.SubFrame[windowIndex].Frame)
+                paint.push(item);
+        }
 
-    this.ChartPaint = paint;
+        //清空指定最大最小值
+        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = null;
+        this.Frame.SubFrame[windowIndex].Frame.IsLocked = false;          //解除上锁
 
-    //清空东条标题
-    var titleIndex = windowIndex + 1;
-    this.TitlePaint[titleIndex].Data = [];
-    this.TitlePaint[titleIndex].Title = null;
-  }
+        this.ChartPaint = paint;
 
-  this.CreateStockInfo = function () {
-    this.ExtendChartPaint[0] = new StockInfoExtendChartPaint();
-    this.ExtendChartPaint[0].Canvas = this.Canvas;
-    this.ExtendChartPaint[0].ChartBorder = this.Frame.ChartBorder;
-    this.ExtendChartPaint[0].ChartFrame = this.Frame;
+        //清空东条标题
+        var titleIndex = windowIndex + 1;
+        this.TitlePaint[titleIndex].Data = [];
+        this.TitlePaint[titleIndex].Title = null;
+    }
 
-    this.Frame.ChartBorder.Right = 300;
-  }
+    this.CreateStockInfo = function () {
+        this.ExtendChartPaint[0] = new StockInfoExtendChartPaint();
+        this.ExtendChartPaint[0].Canvas = this.Canvas;
+        this.ExtendChartPaint[0].ChartBorder = this.Frame.ChartBorder;
+        this.ExtendChartPaint[0].ChartFrame = this.Frame;
+
+        this.Frame.ChartBorder.Right = 300;
+    }
 
     //创建主图K线画法
     this.CreateMainKLine = function () 
@@ -9515,6 +9481,7 @@ function MinuteChartContainer(uielement)
         this.TitlePaint[0] = new DynamicMinuteTitlePainting();
         this.TitlePaint[0].Frame = this.Frame.SubFrame[0].Frame;
         this.TitlePaint[0].Canvas = this.Canvas;
+        this.TitlePaint[0].LanguageID = this.LanguageID;
 
         //主图叠加画法
         var paint = new ChartOverlayMinutePriceLine();

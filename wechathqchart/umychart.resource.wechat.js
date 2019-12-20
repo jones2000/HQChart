@@ -168,6 +168,23 @@ function JSChartResource()
         SellIcon: { Color: 'rgb(70,130,180)', Text: '卖' }
     };
 
+    //K线tooltip
+    this.TooltipPaint =
+    {
+        BGColor: 'rgba(250,250,250,0.8)',    //背景色
+        BorderColor: 'rgb(120,120,120)',     //边框颜色
+        TitleColor: 'rgb(120,120,120)',       //标题颜色
+        TitleFont: '13px 微软雅黑'   //字体
+    },
+
+    //弹幕
+    this.Barrage =
+    {
+        Font: '16px 微软雅黑',   //字体
+        Height: 20,
+        Color: 'RGB(109,109,109)'
+    }
+
     //走势图 信息地雷
     this.MinuteInfo = {
         TextColor: 'rgb(84,143,255)',
@@ -227,11 +244,21 @@ function JSChartResource()
             if (style.Index.LineColor) this.Index.LineColor = style.Index.LineColor;
             if (style.Index.NotSupport) this.Index.NotSupport = style.Index.NotSupport;
         }
+        
         if (style.ColorArray) this.ColorArray = style.ColorArray;
+
         if (style.DrawPicture) 
         {
             this.DrawPicture.LineColor = style.DrawPicture.LineColor;
             this.DrawPicture.PointColor = style.DrawPicture.PointColor;
+        }
+
+        if (style.TooltipPaint) 
+        {
+            if (style.TooltipPaint.BGColor) this.TooltipPaint.BGColor = style.TooltipPaint.BGColor;
+            if (style.TooltipPaint.BorderColor) this.TooltipPaint.BorderColor = style.TooltipPaint.BorderColor;
+            if (style.TooltipPaint.TitleColor) this.TooltipPaint.TitleColor = style.TooltipPaint.TitleColor;
+            if (style.TooltipPaint.TitleFont) this.TooltipPaint.TitleFont = style.TooltipPaint.TitleFont;
         }
     }
 
@@ -239,16 +266,129 @@ function JSChartResource()
 
 var g_JSChartResource = new JSChartResource();
 
+var JSCHART_LANGUAGE_ID =
+{
+    LANGUAGE_CHINESE_ID: 0,
+    LANGUAGE_ENGLISH_ID: 1
+};
+
+function JSChartLocalization() 
+{
+    this.TextResource = new Map([
+        //内部tooltip
+        ['Tooltip-Open', { CN: '开:', EN: 'O:' }],
+        ['Tooltip-High', { CN: '高:', EN: 'H:' }],
+        ['Tooltip-Low', { CN: '低:', EN: 'L:' }],
+        ['Tooltip-Close', { CN: '收:', EN: 'C:' }],
+        ['Tooltip-Increase', { CN: '幅:', EN: 'I:' }],
+        ['Tooltip-Vol', { CN: '量:', EN: 'V:' }],
+        ['Tooltip-Amount', { CN: '额:', EN: 'A:' }],
+        ['Tooltip-AvPrice', { CN: '均:', EN: 'AP:' }],
+        ['Tooltip-Price', { CN: '价:', EN: 'P:' }],
+        ['Tooltip-Exchange', { CN: '换:', EN: 'E:' }],
+
+        //K线动态标题
+        ['KTitle-Open', { CN: '开:', EN: 'O:' }],
+        ['KTitle-High', { CN: '高:', EN: 'H:' }],
+        ['KTitle-Low', { CN: '低:', EN: 'L:' }],
+        ['KTitle-Close', { CN: '收:', EN: 'C:' }],
+        ['KTitle-Increase', { CN: '幅:', EN: 'I:' }],
+        ['KTitle-Vol', { CN: '量:', EN: 'V:' }],
+        ['KTitle-Amount', { CN: '额:', EN: 'A:' }],
+        ['KTitle-Exchange', { CN: '换:', EN: 'E:' }],
+
+        //走势图动态标题
+        ['MTitle-Close', { CN: '价:', EN: 'C:' }],
+        ['MTitle-AvPrice', { CN: '均:', EN: 'AC:' }],
+        ['MTitle-Increase', { CN: '幅:', EN: 'I:' }],
+        ['MTitle-Vol', { CN: '量:', EN: 'V:' }],
+        ['MTitle-Amount', { CN: '额:', EN: 'A:' }],
+
+        //周期
+        ['日线', { CN: '日线', EN: '1D' }],
+        ['周线', { CN: '周线', EN: '1W' }],
+        ['月线', { CN: '月线', EN: '1M' }],
+        ['年线', { CN: '年线', EN: '1Y' }],
+        ['1分', { CN: '1分', EN: '1Min' }],
+        ['5分', { CN: '5分', EN: '5Min' }],
+        ['15分', { CN: '15分', EN: '15Min' }],
+        ['30分', { CN: '30', EN: '30Min' }],
+        ['60分', { CN: '60分', EN: '60Min' }],
+        ['季线', { CN: '季线', EN: '1Q' }],
+        ['分笔', { CN: '分笔', EN: 'Tick' }],
+        ['2小时', { CN: '2小时', EN: '2H' }],
+        ['4小时', { CN: '4小时', EN: '4H' }],
+
+        //复权
+        ['不复权', { CN: '不复权', EN: 'No Right' }],
+        ['前复权', { CN: '前复权', EN: 'Pro Right' }],
+        ['后复权', { CN: '后复权', EN: 'Post Right' }],
+
+        //week
+        ['日', { CN: '日', EN: 'Sun.' }],
+        ['一', { CN: '一', EN: 'Mon.' }],
+        ['二', { CN: '二', EN: 'Tues.' }],
+        ['三', { CN: '三', EN: 'Wed.' }],
+        ['四', { CN: '四', EN: 'Thur.' }],
+        ['五', { CN: '五', EN: 'Fri.' }],
+        ['六', { CN: '六', EN: 'Sat.' }],
+
+        ['1月', { CN: '1月', EN: 'Jan' }],
+        ['2月', { CN: '2月', EN: 'Feb' }],
+        ['3月', { CN: '3月', EN: 'Mar' }],
+        ['4月', { CN: '4月', EN: 'Apr' }],
+        ['5月', { CN: '5月', EN: 'May' }],
+        ['6月', { CN: '6月', EN: 'Jun' }],
+        ['7月', { CN: '7月', EN: 'Jul' }],
+        ['8月', { CN: '8月', EN: 'Aug' }],
+        ['9月', { CN: '9月', EN: 'Sept' }],
+        ['10月', { CN: '10月', EN: 'Oct' }],
+        ['11月', { CN: '11月', EN: 'Nov' }],
+        ['12月', { CN: '12月', EN: 'Dec' }],
+
+        ['自定义分钟', { CN: '分', EN: 'Min' }],
+        ['自定义日线', { CN: '日', EN: 'D' }]
+
+    ]);
+
+    this.GetText = function (key, language) 
+    {
+        var item = this.TextResource.get(key);
+        if (!item) return '';
+
+        switch (language) 
+        {
+            case JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID:
+                return item.CN;
+            case JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID:
+                return item.EN;
+            default:
+                return item.CN;
+        }
+    }
+
+    this.SetTextResource = function (key, value) 
+    {
+        this.TextResource.set(key, value)
+    }
+};
+
+var g_JSChartLocalization = new JSChartLocalization();
+
 //导出统一使用JSCommon命名空间名
 module.exports =
 {
     JSCommonResource:
     {
         JSChartResource: JSChartResource,
-        Global_JSChartResource: g_JSChartResource
+        Global_JSChartResource: g_JSChartResource,
+        Global_JSChartLocalization: g_JSChartLocalization,
+        JSCHART_LANGUAGE_ID: JSCHART_LANGUAGE_ID,
     },
 
     //单个类导出
     JSCommonResource_JSChartResource: JSChartResource,
     JSCommonResource_Global_JSChartResource: g_JSChartResource,
+    JSCommonResource_Global_JSChartLocalization: g_JSChartLocalization,
+    JSCommonResource_JSCHART_LANGUAGE_ID: JSCHART_LANGUAGE_ID
 };

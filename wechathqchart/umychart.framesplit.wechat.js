@@ -13,6 +13,7 @@
 import 
 {
     JSCommonResource_Global_JSChartResource as g_JSChartResource,
+    JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
 } from './umychart.resource.wechat.js'
 
 import {
@@ -48,6 +49,7 @@ function IFrameSplitOperator()
     this.StringFormat = 0;                //刻度字符串格式 -1 刻度文字全部不显示 -2 刻度文字右边不显示
     this.IsShowLeftText = true;           //显示左边刻度 
     this.IsShowRightText = true;          //显示右边刻度
+    this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
 
     //////////////////////
     // data.Min data.Max data.Interval data.Count
@@ -220,8 +222,8 @@ IFrameSplitOperator.FormatValueThousandsString = function (value, floatPrecision
     return result;
 }
 
-//数据输出格式化 floatPrecision=小数位数
-IFrameSplitOperator.FormatValueString = function (value, floatPrecision) 
+//数据输出格式化 floatPrecision=小数位数 languageID=语言
+IFrameSplitOperator.FormatValueString = function (value, floatPrecision, languageID) 
 {
     if (value == null || isNaN(value)) 
     {
@@ -242,17 +244,29 @@ IFrameSplitOperator.FormatValueString = function (value, floatPrecision)
     }
 
     var absValue = Math.abs(value);
-    if (absValue < 10000) {
-        return value.toFixed(floatPrecision);
+    if (languageID === JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID) 
+    {
+        if (absValue < 10000)
+            return value.toFixed(floatPrecision);
+        else if (absValue < 1000000)
+            return (value / 1000).toFixed(floatPrecision) + "K";
+        else if (absValue < 1000000000)
+            return (value / 1000000).toFixed(floatPrecision) + "M";
+        else if (absValue < 1000000000000)
+            return (value / 1000000000).toFixed(floatPrecision) + "B";
+        else
+            return (value / 1000000000000).toFixed(floatPrecision) + "T";
     }
-    else if (absValue < 100000000) {
-        return (value / 10000).toFixed(floatPrecision) + "万";
-    }
-    else if (absValue < 1000000000000) {
-        return (value / 100000000).toFixed(floatPrecision) + "亿";
-    }
-    else {
-        return (value / 1000000000000).toFixed(floatPrecision) + "万亿";
+    else
+    {
+        if (absValue < 10000) 
+            return value.toFixed(floatPrecision);
+        else if (absValue < 100000000) 
+            return (value / 10000).toFixed(floatPrecision) + "万";
+        else if (absValue < 1000000000000) 
+            return (value / 100000000).toFixed(floatPrecision) + "亿";
+        else 
+            return (value / 1000000000000).toFixed(floatPrecision) + "万亿";
     }
 
     return TRUE;
@@ -586,7 +600,7 @@ function FrameSplitY()
                     if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision])++floatPrecision;
                     if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision])++floatPrecision;
                     if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision])++floatPrecision;
-                    coordinate.Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
+                    coordinate.Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision, this.LanguageID);
                 }
                 coordinate.Message[0] = coordinate.Message[1];
 
@@ -608,7 +622,7 @@ function FrameSplitY()
                 {
                     var floatPrecision = this.FloatPrecision;
                     if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision = 0;
-                    this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
+                    this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision, this.LanguageID);
                 }
                 else if (this.StringFormat == -1) //刻度不显示
                 {
@@ -626,7 +640,7 @@ function FrameSplitY()
                         if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision])++floatPrecision;
                         if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision])++floatPrecision;
                         if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision])++floatPrecision;
-                        this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision);
+                        this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision, this.LanguageID);
                     }
                 }
 

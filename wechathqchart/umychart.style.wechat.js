@@ -128,6 +128,14 @@ var BLACK_STYLE =    //黑色风格
       LineColor: "rgb(30,144,255)",
       PointColor: "rgb(105,105,105)",
     },
+
+    TooltipPaint:   //Tooltip
+    {
+        BGColor: 'rgba(20,20,20,0.8)',          //背景色
+        BorderColor: 'rgb(210,210,210)',        //边框颜色
+        TitleColor: 'rgb(210,210,210)',         //标题颜色
+        TitleFont:'13px 微软雅黑'               //字体
+    },
     
 };
 
