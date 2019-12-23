@@ -31028,7 +31028,7 @@ function MinuteChartContainer(uielement)
         this.ChartPaint[1].Data=bindData;
 
         var upperSymbol=this.Symbol.toUpperCase();
-        if (MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol) || MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol))    //外汇 期货没有均线
+        if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol))    //外汇没有均线
         {
             this.ChartPaint[1].Data=null;
         }
@@ -31105,6 +31105,7 @@ function MinuteChartContainer(uielement)
             chart.ChartBorder=frame.ChartBorder;
             chart.ChartFrame=frame
             chart.Identify=overlayFrame.Identify;
+            chart.Color=g_JSChartResource.Minute.PositionColor;
             overlayFrame.ChartPaint.push(chart);
 
             subFrame.OverlayIndex.push(overlayFrame);
@@ -31469,6 +31470,8 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
             item.DateTime=date.toString()+" "+jsData[0].toString();
             item.Date=date;
             item.Time=jsData[0];
+            if (8<jsData.length && jsData[8]>0) item.Date=jsData[8];    //日期
+            if (isFutures && 9<jsData.length) item.Position=jsData[9];  //持仓
             
             if (!item.Close)    //当前没有价格 使用上一个价格填充
             {
@@ -33195,20 +33198,20 @@ function MarketLongShortIndex()
     delete this.newMethod;
 
     this.Index=new Array(
-        new IndexInfo("市场多空指标",null),
         new IndexInfo("多头区域",null),
-        new IndexInfo("空头区域",null)
+        new IndexInfo("空头区域",null),
+        new IndexInfo("市场多空指标",null),
     );
 
-    this.Index[0].LineColor=g_JSChartResource.Index.LineColor[0];
-    this.Index[1].LineColor=g_JSChartResource.UpBarColor;
-    this.Index[2].LineColor=g_JSChartResource.DownBarColor;
+    this.Index[0].LineColor=g_JSChartResource.UpBarColor;
+    this.Index[1].LineColor=g_JSChartResource.DownBarColor;
+    this.Index[2].LineColor=g_JSChartResource.Index.LineColor[0];
 
     this.LongShortData; //多空数据
 
     this.CreateChart=function(id) 
     {
-        if (id==0) return new ChartLine();
+        if (id==2) return new ChartLine();
 
         return new ChartStraightLine();
     }
@@ -33296,10 +33299,9 @@ function MarketLongShortIndex()
         if (paint.length!=this.Index.length) return false;
 
         //paint[0].Data.Data=SWLData;
-        paint[0].Data.Data=this.LongShortData;
-        paint[0].NotSupportMessage=null;
-        paint[1].Data.Data[0]=8;
-        paint[2].Data.Data[0]=1;
+        paint[2].Data.Data=this.LongShortData;
+        paint[0].Data.Data[0]=8;
+        paint[1].Data.Data[0]=1;
 
         var titleIndex=windowIndex+1;
 
@@ -33313,7 +33315,7 @@ function MarketLongShortIndex()
             for(var i in paint)
             {
                 var titleData=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.Index[i].LineColor);
-                if (i>0) titleData.DataType="StraightLine";
+                if (i!=2) titleData.DataType="StraightLine";
                 titlePaint.OverlayIndex.get(this.OverlayIndex.Identify).Data[i]=titleData;
             }
         }
@@ -33323,7 +33325,7 @@ function MarketLongShortIndex()
             for(var i in paint)
             {
                 hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(paint[i].Data,this.Index[i].Name,this.Index[i].LineColor);
-                if (i>0) hqChart.TitlePaint[titleIndex].Data[i].DataType="StraightLine";
+                if (i!=2) hqChart.TitlePaint[titleIndex].Data[i].DataType="StraightLine";
             }
         }
 
@@ -51816,10 +51818,11 @@ var BLACK_STYLE=
 
     Minute: 
     {
-      VolBarColor: "rgb(255,236,0)",
-      PriceColor: "rgb(25,180,231)",
-      AreaPriceColor:"rgba(63,158,255,.3)",
-      AvPriceColor: "rgb(255,236,0)",
+        VolBarColor: "rgb(255,236,0)",
+        PriceColor: "rgb(25,180,231)",
+        AreaPriceColor:"rgba(63,158,255,.3)",
+        AvPriceColor: "rgb(255,236,0)",
+        PositionColor:'rgb(218,165,32)', 
     },
 
 
