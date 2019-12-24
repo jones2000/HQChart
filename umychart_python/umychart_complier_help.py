@@ -130,7 +130,7 @@ class JSComplierHelper:
         for lineItem in lineData :
             result[lineItem.ID]=lineItem.Value
 
-        if thridData.ID==data.length-1:   # 最后一组数据
+        if thridData.ID==len(data)-1:   # 最后一组数据
             # 最后2个点的数据连成线
             lineCache=Variant()
             lineCache.Start, lineCache.End = Variant(), Variant()

@@ -29893,7 +29893,11 @@ function MarketLongShortIndex()
 
     this.CreateChart=function(id) 
     {
-        if (id==2) return new ChartLine();
+        if (id==2){
+          var newChartLine = new ChartLine();
+          newChartLine.LineWidth = 2;
+          return newChartLine;
+        }
 
         return new ChartStraightLine();
     }

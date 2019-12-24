@@ -2561,8 +2561,8 @@ class JSAlgorithm() :
                             lastData.ID, lastData.Value =i, item
 
         # 计算最后1组数据
-        thridData.ID=data.length-1,
-        thridData.Value=data[data.length-1], 
+        thridData.ID=len(data)-1
+        thridData.Value=data[len(data)-1]
         thridData.Up=not secondData.Up
         JSComplierHelper.CalculateZIGLine(firstData,secondData,thridData,data,result)
        
@@ -2575,10 +2575,10 @@ class JSAlgorithm() :
     def TROUGHBARS(self,data,n,n2) :
         zigData=self.ZIG(data,n)  # 计算ZIG
         zigDataLen=len(zigData)
-        dataLen=len(data)
+        dataLen=len(zigData)
         result=JSComplierHelper.CreateArray(dataLen)
 
-        for i in range(len(zigDataLen)) :
+        for i in range(zigDataLen) :
             if JSComplierHelper.IsNumber(zigData[i]) :
                 break
 
@@ -2616,10 +2616,10 @@ class JSAlgorithm() :
     def PEAKBARS(self, data,n,n2) :
         zigData=self.ZIG(data,n)   # 计算ZIG
         zigDataLen=len(zigData)
-        dataLen=len(data)
+        dataLen=len(zigData)
         result=JSComplierHelper.CreateArray(dataLen)
 
-        for i in range(len(zigDataLen)) :
+        for i in range(zigDataLen) :
             if JSComplierHelper.IsNumber(zigData[i]) :
                 break
 
