@@ -14634,6 +14634,8 @@ function ChartMinuteInfo()
 
         this.FixTextRect(rtBorder,yData);
         var InfoDrawItem={ Border:rtBorder, Start:{X:x,Y:y}, IsLeft:isDrawLeft, Title:showItem.Title };
+        if (showItem.Color) InfoDrawItem.Color=showItem.Color;
+        if (showItem.BGColor) InfoDrawItem.BGColor=showItem.BGColor;
 
         this.InfoDrawCache.push(InfoDrawItem);
         this.TextRectCache.push(rtBorder);
@@ -14707,7 +14709,8 @@ function ChartMinuteInfo()
     {
         var rtBorder=item.Border;
         var x=rtBorder.X, y=rtBorder.Y;
-        this.Canvas.fillStyle=this.TextBGColor;
+        if (item.BGColor) this.Canvas.fillStyle=item.BGColor
+        else this.Canvas.fillStyle=this.TextBGColor;
         this.Canvas.fillRect(x, y, rtBorder.Width,rtBorder.Height);
 
         this.Canvas.strokeStyle=this.LineColor;
@@ -14725,7 +14728,8 @@ function ChartMinuteInfo()
 
         this.Canvas.textAlign = 'left'
         this.Canvas.textBaseline = 'middle';
-        this.Canvas.fillStyle = this.TextColor;
+        if (item.Color) this.Canvas.fillStyle=item.Color;
+        else this.Canvas.fillStyle = this.TextColor;
         this.Canvas.font = this.Font;
         if (this.IsHScreen) this.Canvas.fillText(item.Title, x+2*this.PixelTatio, y-rtBorder.Width/2);
         else this.Canvas.fillText(item.Title, x+2*this.PixelTatio, y+rtBorder.Height/2);
@@ -35469,6 +35473,8 @@ function MarketEventInfo()
                 var item=event.data[j];
                 if (item.length<2) continue; 
                 var info={Date:event.date, Time:item[0], Title:item[1], Type:0};
+                if (item.length>=3 && item[2]) info.Color=item[2];  //[3]=字体颜色
+                if (item.length>=4 && item[3]) info.BGColor=item[3];  //[3]=背景颜色
                 this.Data.push(info);
             }
         }
