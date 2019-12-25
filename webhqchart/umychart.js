@@ -222,6 +222,7 @@ function JSChart(divElement)
         {
             if (option.KLine.ShowKLine == false) chart.ChartPaint[0].IsShow = false;
             if (option.KLine.InfoPosition>0) chart.ChartPaint[0].InfoPosition=option.KLine.InfoPosition;
+            if (option.KLine.IsShowMaxMinPrice == false) chart.ChartPaint[0].IsShowMaxMinPrice=option.KLine.IsShowMaxMinPrice;
         }
 
         if(option.KLineTitle)
@@ -1241,6 +1242,11 @@ JSChart.GetMinuteTimeStringData=function()
 JSChart.GetMinuteCoordinateData=function()
 {
     return g_MinuteCoordinateData;
+}
+
+JSChart.GetKLineZoom=function() //K线缩放配置
+{
+    return ZOOM_SEED;
 }
 
 var JSCHART_EVENT_ID=
@@ -12144,6 +12150,7 @@ function ChartMultiLine()
         {
             var line=this.Lines[i];
             var drawPoints={ Point:[], Color:line.Color };
+            if (line.BGColor) drawPoints.BGColor=line.BGColor;
             for(var j in line.Point)
             {
                 var point=line.Point[j];
@@ -12170,7 +12177,28 @@ function ChartMultiLine()
 
     this.DrawLine=function(line)
     {
-        
+        if (line.BGColor)   //背景色
+        {
+            this.Canvas.fillStyle=line.BGColor;
+            for(var i in line.Point)
+            {
+                var item=line.Point[i];
+                if (i==0)
+                {
+                    this.Canvas.beginPath();
+                    if (this.IsHScreen) this.Canvas.moveTo(item.Y,item.X);
+                    else this.Canvas.moveTo(item.X,item.Y);
+                }
+                else
+                {
+                    if (this.IsHScreen) this.Canvas.lineTo(item.Y,item.X);
+                    else this.Canvas.lineTo(item.X,item.Y);
+                }
+            }
+            this.Canvas.closePath();
+            this.Canvas.fill();
+        }
+
         this.Canvas.strokeStyle=line.Color;
         for(var i in line.Point)
         {

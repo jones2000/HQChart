@@ -282,6 +282,7 @@ function JSChart(element)
         if (option.KLine)
         {
             if (option.KLine.ShowKLine == false) chart.ChartPaint[0].IsShow = false;
+            if (option.KLine.IsShowMaxMinPrice == false) chart.ChartPaint[0].IsShowMaxMinPrice = false;
         }
 
         if (option.KLineTitle) 
@@ -1064,6 +1065,11 @@ JSChart.SetStyle = function (style) {
 JSChart.GetResource = function ()  //获取颜色配置 (设置配必须啊在JSChart.Init()之前)
 {
     return g_JSChartResource;
+}
+
+JSChart.GetKLineZoom = function () //K线缩放配置
+{
+    return ZOOM_SEED;
 }
 
 var JSCHART_EVENT_ID =
