@@ -1,4 +1,11 @@
-# 开源项目 https://github.com/jones2000/HQChart
+#   Copyright (c) 2018 jones
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+#   开源项目 https://github.com/jones2000/HQChart
+#
+#   jones_2000@163.com
+
 
 import sys
 import codecs
@@ -268,9 +275,9 @@ def Test_ScriptIndexConsole():
 
     # 创建脚本, 及参数
     scpritInfo=ScriptIndexItem(name='我的MA指标', id=888888,
-        script='MA1:MA(CLOSE,M1);\n'    # 指标脚本代码
-            'MA2:MA(CLOSE,M2);\n'
-            'MA3:MA(CLOSE,M3);',
+        script=    # 指标脚本代码
+            'V9:TROUGHBARS(3,15,1)<10;\n'
+'T1:PEAKBARS(3,15,1)<10;\n',
         args=[ ArgumentItem(name='M1', value=5), ArgumentItem(name='M2', value=10), ArgumentItem(name='M3', value=20) ] # 参数
         )
 
@@ -285,6 +292,7 @@ def Test_ScriptIndexConsole():
     result=indexConsole.ExecuteScript(option)
 
     if result.Error :
+        print(result.Error)
         return
 
     print('run successfully.')

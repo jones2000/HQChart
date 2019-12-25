@@ -42,29 +42,43 @@ var CONDITION_PERIOD =
     KLINE_60_MINUTE_ID: 8
 };
 
-function JSIndexScript()
+//自定义的指标脚本
+function CustomIndexScript() 
 {
+    this.DataMap = new Map(); //key=指标id, value=data {ID:, Name：指标名字, Description：指标描述信息 Args:参数 ......}
 
+    this.Get = function (id) 
+    {
+        if (!this.DataMap.has(id)) return null;
+        return this.DataMap.get(id);
+    }
+
+    this.Add = function (data) 
+    {
+        this.DataMap.set(data.ID, data);
+    }
 }
 
-JSIndexScript.prototype.Get=function(id)
+var g_CustomIndex = new CustomIndexScript();
+
+function JSIndexScript()
 {
-    var DataMap=new Map(
+    this.DataMap = new Map(
         [
-            ['MA', this.MA], ['均线', this.MA],['BOLL', this.BOLL],['BBI', this.BBI],
-            ['DKX', this.DKX],['MIKE', this.MIKE],['PBX', this.PBX],
-            ['ENE', this.ENE],['MACD', this.MACD],['KDJ', this.KDJ],
-            ['VOL', this.VOL],['成交量', this.VOL],['RSI', this.RSI],['BRAR', this.BRAR],
-            ['WR', this.WR],['BIAS', this.BIAS],['OBV', this.OBV],
-            ['DMI', this.DMI],['CR', this.CR],['PSY', this.PSY],
-            ['CCI', this.CCI],['DMA', this.DMA],['TRIX', this.TRIX],
-            ['VR', this.VR],['EMV', this.EMV],['ROC', this.ROC],
-            ['MIM', this.MIM],['FSL', this.FSL],['CYR', this.CYR],
-            ['MASS', this.MASS],['WAD', this.WAD],['CHO', this.CHO],
-            ['ADTM', this.ADTM],['HSL', this.HSL],['BIAS36', this.BIAS36],
-            ['BIAS_QL', this.BIAS_QL],['DPO', this.DPO],['OSC', this.OSC],
-            ['ATR', this.ATR],['NVI', this.NVI],['PVI', this.PVI],
-            ['UOS', this.UOS],['CYW', this.CYW],['LON', this.LON],
+            ['MA', this.MA], ['均线', this.MA], ['BOLL', this.BOLL], ['BBI', this.BBI],
+            ['DKX', this.DKX], ['MIKE', this.MIKE], ['PBX', this.PBX],
+            ['ENE', this.ENE], ['MACD', this.MACD], ['KDJ', this.KDJ],
+            ['VOL', this.VOL], ['成交量', this.VOL], ['RSI', this.RSI], ['BRAR', this.BRAR],
+            ['WR', this.WR], ['BIAS', this.BIAS], ['OBV', this.OBV],
+            ['DMI', this.DMI], ['CR', this.CR], ['PSY', this.PSY],
+            ['CCI', this.CCI], ['DMA', this.DMA], ['TRIX', this.TRIX],
+            ['VR', this.VR], ['EMV', this.EMV], ['ROC', this.ROC],
+            ['MIM', this.MIM], ['FSL', this.FSL], ['CYR', this.CYR],
+            ['MASS', this.MASS], ['WAD', this.WAD], ['CHO', this.CHO],
+            ['ADTM', this.ADTM], ['HSL', this.HSL], ['BIAS36', this.BIAS36],
+            ['BIAS_QL', this.BIAS_QL], ['DPO', this.DPO], ['OSC', this.OSC],
+            ['ATR', this.ATR], ['NVI', this.NVI], ['PVI', this.PVI],
+            ['UOS', this.UOS], ['CYW', this.CYW], ['LON', this.LON],
             ['NDB', this.NDB], ['SKDJ', this.SKDJ], ['KD', this.KD], ['FKX', this.FKX],
             ['DKCOL', this.DKCOL], ['UDL', this.UDL], ['MFI', this.MFI], ['LWR', this.LWR],
             ['MARSI', this.MARSI], ['CYD', this.CYD], ['CYF', this.CYF], ['TAPI', this.TAPI],
@@ -83,12 +97,12 @@ JSIndexScript.prototype.Get=function(id)
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
             ['操盘BS点', this.FXG_BSPoint],
 
-            ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2],['Zealink-持仓信号', this.Zealink_Index3],
+            ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2], ['Zealink-持仓信号', this.Zealink_Index3],
             ['Zealink-增减持', this.Zealink_Index4], ['Zealink-大宗交易', this.Zealink_Index5], ['Zealink-信托持股', this.Zealink_Index6],
             ['Zealink-官网新闻', this.Zealink_Index7], ['Zealink-高管要闻', this.Zealink_Index8], ['Zealink-股权质押', this.Zealink_Index9],
 
             ['飞龙四式', this.Dragon4_Main], ['飞龙四式-附图', this.Dragon4_Fig],
-            ['资金分析', this.FundsAnalysis], ['融资占比', this.MarginProportion], 
+            ['资金分析', this.FundsAnalysis], ['融资占比', this.MarginProportion],
             ['负面新闻', this.NewsNegative], ['机构调研', this.NewsResearch], ['董秘连线', this.NewsInteract], ['涨跌趋势', this.UpDownAnalyze],
 
             //外包指标
@@ -119,10 +133,25 @@ JSIndexScript.prototype.Get=function(id)
             ['TEST', this.TEST] //测试用
         ]
     );
+}
 
-    var func=DataMap.get(id);
+JSIndexScript.AddIndex = function (aryIndex)  //添加自定义指标
+{
+    for (var i in aryIndex) 
+    {
+        g_CustomIndex.Add(aryIndex[i]);
+    }
+}
+
+JSIndexScript.prototype.Get=function(id)
+{
+    var data = g_CustomIndex.Get(id);
+    if (data) return data;
+
+    var func=this.DataMap.get(id);
     if (func) return func();
 
+    console.log(`[JSIndexScript::Get] can't find index by id=${id}`);
     return null;
 }
 

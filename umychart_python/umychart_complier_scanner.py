@@ -1,4 +1,11 @@
-# 开源项目 https://github.com/jones2000/HQChart
+#   Copyright (c) 2018 jones
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+#   开源项目 https://github.com/jones2000/HQChart
+#
+#   jones_2000@163.com
+
 
 #################################################################
 #
