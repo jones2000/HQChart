@@ -3887,7 +3887,7 @@ function JSChart(divElement)
             for(var i in option.Overlay)
             {
                 var item=option.Overlay[i];
-                chart.OverlaySymbol(item.Symbol);
+                chart.OverlaySymbol(item.Symbol,item);
             }
         }
 
@@ -28280,7 +28280,8 @@ function KLineChartContainer(uielement)
         paint.Name="Overlay-KLine";
         paint.DrawType=this.KLineDrawType;
         paint.Symbol=symbol;
-        paint.Color=g_JSChartResource.OverlaySymbol.Color[g_JSChartResource.OverlaySymbol.Random%g_JSChartResource.OverlaySymbol.Color.length];
+        if (option && option.Color) paint.Color=option.Color;
+        else paint.Color=g_JSChartResource.OverlaySymbol.Color[g_JSChartResource.OverlaySymbol.Random%g_JSChartResource.OverlaySymbol.Color.length];
         paint.SetOption(option);
         ++g_JSChartResource.OverlaySymbol.Random;
         if (this.ChartPaint[0] && this.ChartPaint[0].Data && this.SourceData) paint.MainData=this.ChartPaint[0].Data;         //绑定主图数据
@@ -30399,8 +30400,8 @@ function MinuteChartContainer(uielement)
         this.RequestData();
     }
 
-    //叠加股票 只支持日线数据
-    this.OverlaySymbol=function(symbol)
+    //叠加股票
+    this.OverlaySymbol=function(symbol,option)
     {
         for(var i in this.OverlayChartPaint)
         {
@@ -30418,7 +30419,8 @@ function MinuteChartContainer(uielement)
         paint.ChartFrame=this.Frame.SubFrame[0].Frame;
         paint.Name="Overlay-Minute";
         paint.Symbol=symbol;
-        paint.Color=g_JSChartResource.OverlaySymbol.Color[g_JSChartResource.OverlaySymbol.Random%g_JSChartResource.OverlaySymbol.Color.length];
+        if (option && option.Color) paint.Color=option.Color; //外部设置颜色
+        else paint.Color=g_JSChartResource.OverlaySymbol.Color[g_JSChartResource.OverlaySymbol.Random%g_JSChartResource.OverlaySymbol.Color.length];
         ++g_JSChartResource.OverlaySymbol.Random;
         if (this.ChartPaint[0].YClose>0 && this.ChartPaint[0].Data) //绑定主图数据
         {

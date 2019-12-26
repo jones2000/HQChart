@@ -294,10 +294,16 @@ function JSChart(element)
             if (option.KLineTitle.LineCount > 1) chart.TitlePaint[0].LineCount = option.KLineTitle.LineCount;
         }
 
-        //叠加股票
-        if (option.Overlay && option.Overlay.length) 
+        //叠加股票 只支持叠加1个股票
+        for (var i in option.Overlay)
         {
-            chart.OverlayChartPaint[0].Symbol = option.Overlay[0].Symbol;
+            var item = option.Overlay[i];
+            if (item.Symbol) 
+            {
+                chart.OverlayChartPaint[0].Symbol = item.Symbol;
+                if (item.Color) chart.OverlayChartPaint[0].Color=item.Color;
+                break;
+            }
         }
 
         if (option.ExtendChart) //创建扩展画法
@@ -533,7 +539,17 @@ function JSChart(element)
             }
         }
 
-        //叠加股票
+        //叠加股票 只支持1只股票
+        for (var i in option.Overlay)
+        {
+            var item = option.Overlay[i];
+            if (item.Symbol)
+            {
+                chart.OverlayChartPaint[0].Symbol = item.Symbol;
+                if (item.Color) chart.OverlayChartPaint[0].Color = item.Color;
+                break;
+            }
+        }
         if (option.Overlay && option.Overlay.length) 
         {
             chart.OverlayChartPaint[0].Symbol = option.Overlay[0].Symbol;
@@ -876,11 +892,12 @@ function JSChart(element)
       this.JSChartContainer.SetMainDataConotrl(dataControl);
   }
 
-  //叠加股票
-  this.OverlaySymbol = function (symbol) {
-    if (this.JSChartContainer && typeof (this.JSChartContainer.OverlaySymbol) == 'function')
-      this.JSChartContainer.OverlaySymbol(symbol);
-  }
+    //叠加股票
+    this.OverlaySymbol = function (symbol,option) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.OverlaySymbol) == 'function')
+            this.JSChartContainer.OverlaySymbol(symbol, option);
+    }
 
   //设置强制横屏
   this.ForceLandscape = function (bForceLandscape) {
@@ -8509,11 +8526,16 @@ function KLineChartContainer(uielement)
     }
 
     //叠加股票
-    this.OverlaySymbol = function (symbol) 
+    this.OverlaySymbol = function (symbol,option) 
     {
-        if (!this.OverlayChartPaint[0].MainData) return false;
+        var paint = this.OverlayChartPaint[0];
+        if (!paint.MainData) return false;
 
-        this.OverlayChartPaint[0].Symbol = symbol;
+        paint.Symbol = symbol;
+        if (option)
+        {
+            if (paint.Color) paint.Color = option.Color;
+        }
         if (ChartData.IsDayPeriod(this.Period, true)) this.RequestOverlayHistoryData();                  //请求日线数据
 
         return true;
@@ -9555,17 +9577,23 @@ function MinuteChartContainer(uielement)
     this.RequestData();
   }
 
-  //叠加股票 只支持日线数据
-  this.OverlaySymbol = function (symbol) {
-    if (!this.OverlayChartPaint[0].MainData) return false;
+    //叠加股票 只支持日线数据
+    this.OverlaySymbol = function (symbol,option) 
+    {
+        var paint = this.OverlayChartPaint[0];
+        if (!paint.MainData) return false;
 
-    this.OverlayChartPaint[0].Symbol = symbol;
+        paint.Symbol = symbol;
+        if (option)
+        {
+            if (option.Color) paint.Color=option.Color;
+        }
 
-    if (this.DayCount <= 1) this.RequestOverlayMinuteData();               //请求数据
-    else this.RequestOverlayHistoryMinuteData();
+        if (this.DayCount <= 1) this.RequestOverlayMinuteData();               //请求数据
+        else this.RequestOverlayHistoryMinuteData();
 
-    return true;
-  }
+        return true;
+    }
 
   this.TryClickLock = function (x, y) {
     for (let i in this.Frame.SubFrame) {
