@@ -15520,7 +15520,11 @@ function ChartMultiLine()
                 {
                     var x=this.ChartFrame.GetXFromIndex(index);
                     var y=this.ChartFrame.GetYFromData(point.Value);
-                    drawPoints.Point.push({X:x, Y:y});
+                    drawPoints.Point.push({X:x, Y:y, End:false});
+                }
+                else
+                {
+                    if (drawPoints.Point.length>0) drawPoints.Point[drawPoints.Point.length-1].End=true;  //点断开
                 }
             }
 
@@ -15559,23 +15563,32 @@ function ChartMultiLine()
         }
 
         this.Canvas.strokeStyle=line.Color;
+        var drawCount=0;
         for(var i in line.Point)
         {
             var item=line.Point[i];
-            if (i==0)
+            if (drawCount==0)
             {
                 this.Canvas.beginPath();
                 if (this.IsHScreen) this.Canvas.moveTo(item.Y,item.X);
                 else this.Canvas.moveTo(item.X,item.Y);
+                ++drawCount;
             }
             else
             {
                 if (this.IsHScreen) this.Canvas.lineTo(item.Y,item.X);
                 else this.Canvas.lineTo(item.X,item.Y);
+                ++drawCount;
+            }
+
+            if (item.End==true) //点断了 要重新画
+            {
+                if (drawCount>0) this.Canvas.stroke();
+                drawCount=0;
             }
         }
-        
-        this.Canvas.stroke();
+
+        if (drawCount>0) this.Canvas.stroke();
     }
 
     this.GetMaxMin=function()
@@ -35503,8 +35516,8 @@ function MarketEventInfo()
                 var item=event.data[j];
                 if (item.length<2) continue; 
                 var info={Date:event.date, Time:item[0], Title:item[1], Type:0};
-                if (item.length>=3 && item[2]) info.Color=item[2];  //[3]=字体颜色
-                if (item.length>=4 && item[3]) info.BGColor=item[3];  //[3]=背景颜色
+                if (item.length>=3 && item[2] && typeof(item[2])=='string') info.Color=item[2];  //[3]=字体颜色
+                if (item.length>=4 && item[3] && typeof(item[3])=='string') info.BGColor=item[3];  //[3]=背景颜色
                 this.Data.push(info);
             }
         }
@@ -52081,6 +52094,7 @@ export default {
 
     //类导出
     JSChart:JSChart,        //行情图形库
+    ChartData:ChartData,    //数据类
     MARKET_SUFFIX_NAME:MARKET_SUFFIX_NAME,  // 判断股票属性
     IFrameSplitOperator:IFrameSplitOperator,//格式化字符串方法
     JSKLineInfoMap:JSKLineInfoMap,

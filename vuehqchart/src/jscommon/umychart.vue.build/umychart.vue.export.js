@@ -16,6 +16,7 @@ export default {
 
     //类导出
     JSChart:JSChart,        //行情图形库
+    ChartData:ChartData,    //数据类
     MARKET_SUFFIX_NAME:MARKET_SUFFIX_NAME,  // 判断股票属性
     IFrameSplitOperator:IFrameSplitOperator,//格式化字符串方法
     JSKLineInfoMap:JSKLineInfoMap,
