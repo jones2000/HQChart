@@ -11257,7 +11257,9 @@ function ChartMinuteInfo()
         var textHeight=this.TextHeight*this.PixelTatio;
 
         var x=this.ChartFrame.GetXFromIndex(index);
-        var y=this.ChartFrame.GetYFromData(minuteItem.Close);
+        var y;
+        if (IFrameSplitOperator.IsNumber(showItem.Price)) y=this.ChartFrame.GetYFromData(showItem.Price);
+        else y=this.ChartFrame.GetYFromData(minuteItem.Close);
         x=ToFixedPoint(x);
 
         var isDrawLeft=x<(this.FrameLeft+Math.abs(this.FrameLeft-this.FrameRight)/2);
@@ -11298,7 +11300,9 @@ function ChartMinuteInfo()
         var textWidth=this.TextHeight*this.PixelTatio;
 
         var y=this.ChartFrame.GetXFromIndex(index);
-        var x=this.ChartFrame.GetYFromData(minuteItem.Close);
+        var x;
+        if (IFrameSplitOperator.IsNumber(showItem.Price)) x=this.ChartFrame.GetYFromData(showItem.Price);
+        else x=this.ChartFrame.GetYFromData(minuteItem.Close);
         y=ToFixedPoint(y);
 
         var isDrawLeft=y<(this.FrameLeft+Math.abs(this.FrameLeft-this.FrameRight)/2);
@@ -13561,7 +13565,7 @@ function MinuteTooltipPaint()
         else if (MARKET_SUFFIX_NAME.IsET(upperSymbol) && !MARKET_SUFFIX_NAME.IsETShowAvPrice(upperSymbol)) isShowAvPrice=false;
 
         //均价
-        if (isShowAvPrice)   
+        if (isShowAvPrice && IFrameSplitOperator.IsNumber(item.AvPrice))   
         {
             top+=this.LineHeight;
             this.Canvas.fillStyle=this.TitleColor;
@@ -27230,11 +27234,8 @@ function MinuteChartContainer(uielement)
 
         this.BindMainData(sourceData,this.DayData[0].YClose);
         var upperSymbol=this.Symbol.toUpperCase();
-         //期货, 外汇 均线暂时不用
-        if (MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol) || MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) 
-        {
-            this.ChartPaint[1].Data=null;  
-        }
+         //外汇 均线暂时不用
+        if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) this.ChartPaint[1].Data=null;  
 
         if (this.Frame.SubFrame.length>2)
         {
@@ -27758,9 +27759,7 @@ function MinuteChartContainer(uielement)
 
         var upperSymbol=this.Symbol.toUpperCase();
         if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol))    //外汇没有均线
-        {
             this.ChartPaint[1].Data=null;
-        }
 
         this.Frame.SubFrame[0].Frame.YSplitOperator.AverageData=bindData;
         this.Frame.SubFrame[0].Frame.YSplitOperator.SourceData=this.IsBeforeData ? minuteData:null;
@@ -28193,7 +28192,8 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
             item.Open=jsData[1];
             item.High=jsData[3];
             item.Low=jsData[4];
-            item.Vol=jsData[5]/100; //原始单位股
+            if (isSHSZ) item.Vol=jsData[5]/100; //原始单位股
+            else item.Vol=jsData[5];
             item.Amount=jsData[6];
             if (7<jsData.length && jsData[7]>0) item.AvPrice=jsData[7];    //均价
             item.DateTime=date.toString()+" "+jsData[0].toString();
@@ -32155,11 +32155,23 @@ function MarketEventInfo()
             for(var j in event.data)
             {
                 var item=event.data[j];
-                if (item.length<2) continue; 
-                var info={Date:event.date, Time:item[0], Title:item[1], Type:0};
-                if (item.length>=3 && item[2] && typeof(item[2])=='string') info.Color=item[2];  //[3]=字体颜色
-                if (item.length>=4 && item[3] && typeof(item[3])=='string') info.BGColor=item[3];  //[3]=背景颜色
-                this.Data.push(info);
+                if (Array.isArray(item))
+                {
+                    if (item.length<2) continue; 
+                    var info={Date:event.date, Time:item[0], Title:item[1], Type:0};
+                    if (item.length>=3 && item[2] && typeof(item[2])=='string') info.Color=item[2];  //[3]=字体颜色
+                    if (item.length>=4 && item[3] && typeof(item[3])=='string') info.BGColor=item[3];  //[3]=背景颜色
+                    this.Data.push(info);
+                }
+                else    //新格式
+                {
+                    if (!IFrameSplitOperator.IsNumber(item.Date) || !IFrameSplitOperator.IsNumber(item.Time) || !item.Title) continue;
+                    var info={ Date:item.Date, Time:item.Time, Title:item.Title, Type:0 };
+                    if (item.Color) info.Color=item.Color;
+                    if (item.BGColor) info.BGColor=item.BGColor;
+                    if (IFrameSplitOperator.IsNumber(item.Price)) info.Price=item.Price;
+                    this.Data.push(info);
+                }
             }
         }
 
