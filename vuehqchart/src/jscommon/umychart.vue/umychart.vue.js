@@ -4537,6 +4537,25 @@ function JSChart(divElement)
             this.JSChartContainer.ChangeIndexTemplate(option);
         }
     }
+
+    //画图工具
+    this.SetChartDrawOption=function(option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.SetChartDrawOption)=='function')
+        {
+            console.log('[JSChart:SetChartDrawOption] ', option);
+            this.JSChartContainer.SetChartDrawOption(option);
+        }
+    }
+
+    this.CreateChartDrawPicture=function(name)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.CreateChartDrawPicture)=='function')
+        {
+            console.log('[JSChart:CreateChartDrawPicture] ', name);
+            this.JSChartContainer.CreateChartDrawPicture(name);
+        }
+    }
 }
 
 //初始化
@@ -4662,6 +4681,7 @@ function JSChartContainer(uielement)
     this.OverlayChartPaint=new Array();             //叠加信息画法
     this.ChartDrawPicture=new Array();              //画图工具
     this.ChartDrawStorage;                          //画图工具保存
+    this.ChartDrawOption={ IsLockScreen:false, Zoom:5 };   //画图工具设置 { IsLockScreen://是否锁住屏幕, Zoom: //线段|点放大倍数 }
     this.CurrentChartDrawPicture=null;              //当前的画图工具
     this.SelectChartDrawPicture=null;               //当前选中的画图
     this.ChartCorssCursor;                          //十字光标
@@ -5124,7 +5144,11 @@ function JSChartContainer(uielement)
             }
 
             var bStartTimer=true;
-            if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
+            if (this.ChartDrawOption.IsLockScreen)
+            {
+                bStartTimer=false;
+            }
+            else if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
             {
                 if (this.TouchStatus.CorssCursorShow==true) bStartTimer=false;
             }
@@ -5151,6 +5175,7 @@ function JSChartContainer(uielement)
             drag.LastMove.Y=touches[0].clientY;
 
             this.MouseDrag=drag;
+            if (this.SelectChartDrawPicture) this.SelectChartDrawPicture.IsSelected=false;
             this.SelectChartDrawPicture=null;
             var isDrawPictrue=false;
             if (this.CurrentChartDrawPicture)  //画图工具模式
@@ -5179,6 +5204,7 @@ function JSChartContainer(uielement)
                     drawPictrueData.ChartDrawPicture.Status=20;
                     drawPictrueData.ChartDrawPicture.ValueToPoint();
                     drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
+                    drawPictrueData.ChartDrawPicture.IsSelected=true;
                     this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
                     this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
                     let event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
@@ -5210,7 +5236,11 @@ function JSChartContainer(uielement)
                 }, self.PressTime);
             }
 
-            if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
+            if (this.ChartDrawOption.IsLockScreen)
+            {
+                this.MouseDrag=null;
+            }
+            else if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
             {
 
             }
@@ -5252,7 +5282,7 @@ function JSChartContainer(uielement)
             if (drag==null)
             {
                 if (this.IsForceLandscape) y=uielement.getBoundingClientRect().width-touches[0].clientY;    //强制横屏Y计算
-                this.MoveCorssCursor({X:touches[0].clientX, Y:touches[0].clientY},e);
+                if (!this.ChartDrawOption.IsLockScreen) this.MoveCorssCursor({X:touches[0].clientX, Y:touches[0].clientY},e);
             }
             else
             {
@@ -18536,6 +18566,13 @@ IFrameSplitOperator.IsObjectExist=function(obj)
     return true;
 }
 
+//是否时bool
+IFrameSplitOperator.IsBool=function(value)
+{
+    if (value===true || value===false) return true;
+    return false;
+}
+
 function FrameSplitKLinePriceY()
 {
     this.newMethod=IFrameSplitOperator;   //派生
@@ -21162,6 +21199,8 @@ function IChartDrawPicture()
     this.Guid=Guid();                            //ID标识
     this.Symbol;        //对应的股票
     this.Period;        //对应的周期
+    this.IsSelected=false;  //是否选中
+    this.Option;
 
     // this.LineColor=g_JSChartResource.DrawPicture.LineColor[0];                            //线段颜色
     this.LineColor="#1e90ff";      //线段颜色，input type="color" 不支持rgb和rgba 的格式
@@ -21397,7 +21436,9 @@ function IChartDrawPicture()
         if (!data) return -1;
         if (!this.Value) return -1;
 
-        var pixel=GetDevicePixelRatio();
+        var radius=5;
+        if (this.Option) radius+=this.Option.Zoom;
+        radius*=GetDevicePixelRatio();
         for(var i=0;i<this.Value.length; ++i)   //是否在点上
         {
             var item=this.Value[i];
@@ -21405,7 +21446,7 @@ function IChartDrawPicture()
             pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset);
             pt.Y=this.Frame.GetYFromData(item.YValue);
             this.Canvas.beginPath();
-            this.Canvas.arc(pt.X,pt.Y,5*pixel,0,360);
+            this.Canvas.arc(pt.X,pt.Y,radius,0,360);
             if (this.Canvas.isPointInPath(x,y))  return i;
         }
 
@@ -21417,6 +21458,10 @@ function IChartDrawPicture()
     {
         if (!this.LinePoint) return -1;
 
+        var lineWidth=5;
+        if (this.Option) lineWidth+=this.Option.Zoom;
+        var pixel=GetDevicePixelRatio();
+        lineWidth*=pixel;
         for(var i in this.LinePoint)
         {
             var item=this.LinePoint[i];
@@ -21425,17 +21470,17 @@ function IChartDrawPicture()
             this.Canvas.beginPath();
             if (ptStart.X==ptEnd.X) //竖线
             {
-                this.Canvas.moveTo(ptStart.X-5,ptStart.Y);
-                this.Canvas.lineTo(ptStart.X+5,ptStart.Y);
-                this.Canvas.lineTo(ptEnd.X+5,ptEnd.Y);
-                this.Canvas.lineTo(ptEnd.X-5,ptEnd.Y);
+                this.Canvas.moveTo(ptStart.X-lineWidth,ptStart.Y);
+                this.Canvas.lineTo(ptStart.X+lineWidth,ptStart.Y);
+                this.Canvas.lineTo(ptEnd.X+lineWidth,ptEnd.Y);
+                this.Canvas.lineTo(ptEnd.X-lineWidth,ptEnd.Y);
             }
             else
             {
-                this.Canvas.moveTo(ptStart.X,ptStart.Y+5);
-                this.Canvas.lineTo(ptStart.X,ptStart.Y-5);
-                this.Canvas.lineTo(ptEnd.X,ptEnd.Y-5);
-                this.Canvas.lineTo(ptEnd.X,ptEnd.Y+5);
+                this.Canvas.moveTo(ptStart.X,ptStart.Y+lineWidth);
+                this.Canvas.lineTo(ptStart.X,ptStart.Y-lineWidth);
+                this.Canvas.lineTo(ptEnd.X,ptEnd.Y-lineWidth);
+                this.Canvas.lineTo(ptEnd.X,ptEnd.Y+lineWidth);
             }
             this.Canvas.closePath();
             if (this.Canvas.isPointInPath(x,y))
@@ -21584,6 +21629,15 @@ function ChartDrawPictureLine()
         this.Canvas.moveTo(ptStart.X,ptStart.Y);
         this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
         this.Canvas.stroke();
+
+        /*
+        if (this.IsSelected)
+        {
+            this.Canvas.strokeStyle='rgba(255,0,0,0.5)';
+            this.Canvas.lineWidth=20 * GetDevicePixelRatio();
+            this.Canvas.stroke();
+        }
+        */
 
         var line={Start:ptStart, End:ptEnd};
         this.LinePoint.push(line);
@@ -22736,8 +22790,14 @@ function ChartDrawPictureIconFont()
         if (!data) return -1;
         if (!this.TextRect) return -1;
 
+        var offset=0;
+        if (this.Option && this.Option.Zoom>=1)
+        {
+            offset=this.Option.Zoom*GetDevicePixelRatio();
+        }
+
         this.Canvas.beginPath();
-        this.Canvas.rect(this.TextRect.Left,this.TextRect.Top,this.TextRect.Width,this.TextRect.Height);
+        this.Canvas.rect(this.TextRect.Left-offset,this.TextRect.Top-offset,this.TextRect.Width+offset*2,this.TextRect.Height+offset*2);
         if (this.Canvas.isPointInPath(x,y)) return 100;
 
         return -1;
@@ -28697,6 +28757,12 @@ function KLineChartContainer(uielement)
         if (bDraw) this.Draw();
     }
 
+    this.SetChartDrawOption=function(option)
+    {
+        if (IFrameSplitOperator.IsBool(option.IsLockScreen)) this.ChartDrawOption.IsLockScreen=option.IsLockScreen;
+        if (IFrameSplitOperator.IsNumber(option.Zoom) && option.Zoom>=0)  this.ChartDrawOption.Zoom=option.Zoom;
+    }
+
     //创建画图工具
     this.CreateChartDrawPicture=function(name, callback)
     {
@@ -28796,6 +28862,7 @@ function KLineChartContainer(uielement)
         drawPicture.Status=0;
         drawPicture.Symbol=this.Symbol;
         drawPicture.Period=this.Period;
+        drawPicture.Option=this.ChartDrawOption;
         if (callback) drawPicture.FinishedCallback=callback;    //完成通知上层回调
         self=this;
         drawPicture.Update=function()   //更新回调函数
