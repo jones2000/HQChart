@@ -1098,8 +1098,10 @@ var JSCHART_EVENT_ID =
     BARRAGE_PLAY_END: 6,        //单个弹幕播放完成
     RECV_START_AUTOUPDATE: 9,    //开始自动更新
     RECV_STOP_AUTOUPDATE: 10,    //停止自动更新
+    ON_TITLE_DRAW: 12,           //标题信息绘制事件
     RECV_MINUTE_DATA: 14,          //分时图数据到达
-    RECV_KLINE_UPDATE_DATA: 16   //K线日,分钟更新数据到达   
+    RECV_KLINE_UPDATE_DATA: 16,   //K线日,分钟更新数据到达 
+    ON_INDEXTITLE_DRAW: 19       //指标标题重绘事件  
 }
 
 var JSCHART_OPERATOR_ID =
@@ -1194,8 +1196,8 @@ function JSChartContainer(uielement)
         return item;
     }
     
-    this.GetIndexEvent = function () { return this.GetEvent(JSCHART_EVENT_ID.RECV_INDEX_DATA); } //接收指标数据
-    this.GetBarrageEvent=function() { return this.GetEvent(JSCHART_EVENT_ID.BARRAGE_PLAY_END);} //获取弹幕事件
+    this.GetIndexEvent = function () { return this.GetEvent(JSCHART_EVENT_ID.RECV_INDEX_DATA); }    //接收指标数据
+    this.GetBarrageEvent=function() { return this.GetEvent(JSCHART_EVENT_ID.BARRAGE_PLAY_END);}     //获取弹幕事件
 
     //判断是单个手指
     this.IsPhoneDragging = function (e) 
@@ -1546,10 +1548,16 @@ function JSChartContainer(uielement)
         if (this.ChartInfoPaint) this.ChartInfoPaint.Draw();
         this.Frame.DrawLock();
 
+        var eventTitleDraw = this.GetEvent(JSCHART_EVENT_ID.ON_TITLE_DRAW);
+        var eventIndexTitleDraw = this.GetEvent(JSCHART_EVENT_ID.ON_INDEXTITLE_DRAW);
         for (var i in this.TitlePaint)
         {
             var item = this.TitlePaint[i];
             if (!item.IsDynamic) continue;
+
+            if (item.ClassName == 'DynamicChartTitlePainting') item.OnDrawEvent = eventIndexTitleDraw
+            else item.OnDrawEvent = eventTitleDraw;
+            
             if (typeof (item.DrawTitle) == 'function') item.DrawTitle();
         }
 

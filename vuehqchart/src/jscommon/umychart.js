@@ -17221,7 +17221,7 @@ function DynamicKLineTitlePainting()
     this.OnDrawEventCallback=function(drawData)
     {
         if (!this.OnDrawEvent || !this.OnDrawEvent.Callback) return;
-        var data={ Draw: drawData, Name:'DynamicKLineTitlePainting'};
+        var data={ Draw: drawData, Name:this.ClassName};
         this.OnDrawEvent.Callback(this.OnDrawEvent,data,this);
     }
 

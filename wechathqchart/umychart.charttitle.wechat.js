@@ -57,7 +57,8 @@ function IChartTitlePainting()
     this.Title;                         //固定标题(可以为空)
     this.TitleColor = g_JSChartResource.DefaultTextColor;
     this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-    this.UpdateUICallback;              //通知外面更新标题
+    this.UpdateUICallback;              //通知外面更新标题(老接口废弃)
+    this.OnDrawEvent;                   //外部事件通知
 }
 
 var PERIOD_NAME = ["日线", "周线", "月线", "年线", "1分", "5分", "15分", "30分", "60分", "季线", "分笔", "2小时", "4小时", "", ""];
@@ -69,6 +70,7 @@ function DynamicKLineTitlePainting()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName ='DynamicKLineTitlePainting';
     this.IsDynamic = true;
     this.IsShow = true;       //是否显示
     this.LineCount = 1;         //默认显示1行
@@ -176,14 +178,17 @@ function DynamicKLineTitlePainting()
         return name;
     }
 
-    this.DrawTitle = function () {
+    this.DrawTitle = function () 
+    {
         this.SendUpdateUIMessage('DrawTitle');
+        this.OnDrawEventCallback(null, 'DynamicKLineTitlePainting::DrawTitle');
 
         if (!this.IsShow) return;
         if (!this.IsShowName && !this.IsShowSettingInfo) return;
         if (this.LineCount > 1) return;
 
-        if (this.Frame.IsHScreen === true) {
+        if (this.Frame.IsHScreen === true) 
+        {
             this.Canvas.save();
             this.HScreenDrawTitle();
             this.Canvas.restore();
@@ -216,7 +221,8 @@ function DynamicKLineTitlePainting()
         }
     }
 
-    this.HScreenDrawTitle = function () {
+    this.HScreenDrawTitle = function () 
+    {
         var xText = this.Frame.ChartBorder.GetRight();
         var yText = this.Frame.ChartBorder.GetTop();
         var right = this.Frame.ChartBorder.GetHeight();
@@ -407,30 +413,48 @@ function DynamicKLineTitlePainting()
         }
     }
 
-    this.Draw = function () {
+    this.OnDrawEventCallback = function (drawData, explain) 
+    {
+        if (!this.OnDrawEvent || !this.OnDrawEvent.Callback) return;
+        var data = { Draw: drawData, Name: this.ClassName, Explain: explain };
+        this.OnDrawEvent.Callback(this.OnDrawEvent, data, this);
+    }
+
+    this.Draw = function () 
+    {
         this.SendUpdateUIMessage('Draw');
 
         if (!this.IsShow) return;
-        if (this.CursorIndex == null || !this.Data) return;
-        if (this.Data.length <= 0) return;
-
+        if (this.CursorIndex == null || !this.Data || this.Data.length <= 0) 
+        {
+            this.OnDrawEventCallback(null, 'DynamicKLineTitlePainting::Draw');
+            return;
+        }
+        
         this.SpaceWidth = this.Canvas.measureText(' ').width;
         var index = Math.abs(this.CursorIndex - 0.5);
         index = parseInt(index.toFixed(0));
         var dataIndex = this.Data.DataOffset + index;
         if (dataIndex >= this.Data.Data.length) dataIndex = this.Data.Data.length - 1;
-        if (dataIndex < 0) return;
+        if (dataIndex < 0) 
+        {
+            this.OnDrawEventCallback(null, 'DynamicKLineTitlePainting::Draw');
+            return;
+        }
 
         var item = this.Data.Data[dataIndex];
+        this.OnDrawEventCallback(item, 'DynamicKLineTitlePainting::Draw');
 
-        if (this.Frame.IsHScreen === true) {
+        if (this.Frame.IsHScreen === true) 
+        {
             this.Canvas.save();
             if (this.LineCount > 1) this.DrawMulitLine(item);
             else this.DrawSingleLine(item);
             this.Canvas.restore();
             if (!item.Time && item.Date && this.InfoData) this.HSCreenKLineInfoDraw(item.Date);
         }
-        else {
+        else 
+        {
             if (this.LineCount > 1) this.DrawMulitLine(item);
             else this.DrawSingleLine(item);
 
@@ -586,6 +610,7 @@ function DynamicMinuteTitlePainting()
     this.IsShowName = true;   //标题是否显示股票名字
     this.Symbol;
     this.LastShowData;  //保存最后显示的数据 给tooltip用
+    this.ClassName ='DynamicMinuteTitlePainting';
 
     this.GetCurrentKLineData = function () //获取当天鼠标位置所在的K线数据
     {
@@ -641,11 +666,14 @@ function DynamicMinuteTitlePainting()
         this.UpdateUICallback(sendData);
     }
 
-    this.DrawTitle = function () {
+    this.DrawTitle = function () 
+    {
         this.SendUpdateUIMessage('DrawTitle');
+        this.OnDrawEventCallback(null, "DynamicMinuteTitlePainting::DrawTitle");
     }
 
-    this.GetDecimal = function (symbol) {
+    this.GetDecimal = function (symbol) 
+    {
         return JSCommonCoordinateData.GetfloatPrecision(symbol);//价格小数位数
     }
 
@@ -708,7 +736,8 @@ function DynamicMinuteTitlePainting()
         left += itemWidth;
     }
 
-    this.DrawItem = function (item) {
+    this.DrawItem = function (item) 
+    {
         var isHScreen = this.Frame.IsHScreen === true;
         var left = this.Frame.ChartBorder.GetLeft();;
         var bottom = this.Frame.ChartBorder.GetTop() - this.Frame.ChartBorder.Top / 2;
@@ -797,12 +826,16 @@ function DynamicMinuteTitlePainting()
         
     }
 
-    this.Draw = function () {
+    this.Draw = function () 
+    {
         this.LastShowData = null;
         this.SendUpdateUIMessage('Draw');
         if (!this.IsShow) return;
-        if (this.CursorIndex == null || !this.Data || !this.Data.Data) return;
-        if (this.Data.Data.length <= 0) return;
+        if (this.CursorIndex == null || !this.Data || !this.Data.Data || this.Data.Data.length <= 0) 
+        {
+            this.OnDrawEventCallback(null,"DynamicMinuteTitlePainting::Draw");
+            return;
+        }
 
         var index = this.CursorIndex;
         index = parseInt(index.toFixed(0));
@@ -811,8 +844,10 @@ function DynamicMinuteTitlePainting()
 
         var item = this.Data.Data[dataIndex];
         this.LastShowData = item;
+        this.OnDrawEventCallback(item, "DynamicMinuteTitlePainting::Draw");
 
-        if (this.LineCount > 1 && !(this.Frame.IsHScreen === true)) {
+        if (this.LineCount > 1 && !(this.Frame.IsHScreen === true)) 
+        {
             this.DrawMulitLine(item);
             return;
         }
