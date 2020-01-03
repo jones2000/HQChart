@@ -16676,19 +16676,26 @@ function KLineTooltipPaint()
         return this.ChartBorder.GetTopEx()+this.Top;
     }
 
-    this.Draw=function()
+    this.IsEnableDraw=function()
     {
-        if (!this.HQChart || !this.HQChart.TitlePaint || !this.HQChart.TitlePaint[0]) return;
+        if (!this.HQChart || !this.HQChart.TitlePaint || !this.HQChart.TitlePaint[0]) return false;
         if (this.HQChart.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
         {
-            if (this.HQChart.TouchStatus.CorssCursorShow==false) return;
+            if (this.HQChart.TouchStatus.CorssCursorShow==false) return false;
         }
         else if (!this.HQChart.IsOnTouch) 
         {
-            return;
+            return false;
         }
 
-        if (this.HQChart.CurrentChartDrawPicture) return;   //画图工具操作的时候 不显示
+        if (this.HQChart.CurrentChartDrawPicture) return false;   //画图工具操作的时候 不显示
+
+        return true;
+    }
+
+    this.Draw=function()
+    {
+        if (!this.IsEnableDraw()) return;
 
         this.KLineTitlePaint=this.HQChart.TitlePaint[0];
         var klineData=this.KLineTitlePaint.GetCurrentKLineData();
@@ -20580,7 +20587,7 @@ function DynamicKLineTitlePainting()
     this.OnDrawEventCallback=function(drawData)
     {
         if (!this.OnDrawEvent || !this.OnDrawEvent.Callback) return;
-        var data={ Draw: drawData, Name:'DynamicKLineTitlePainting'};
+        var data={ Draw: drawData, Name:this.ClassName};
         this.OnDrawEvent.Callback(this.OnDrawEvent,data,this);
     }
 
@@ -27974,7 +27981,8 @@ function KLineChartContainer(uielement)
                 this.Frame.ChartBorder.Right+=chart.Width;  //创建筹码需要增加右边的间距
                 return chart;
             case 'KLineTooltip':
-                chart=new KLineTooltipPaint();
+                if (option.Create && typeof(option.Create)=='function') chart=option.Create();
+                else chart=new KLineTooltipPaint();
                 chart.Canvas=this.Canvas;
                 chart.ChartBorder=this.Frame.ChartBorder;
                 chart.ChartFrame=this.Frame;
