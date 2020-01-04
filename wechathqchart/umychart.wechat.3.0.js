@@ -1447,10 +1447,16 @@ function JSChartContainer(uielement)
         if (this.ChartInfoPaint) this.ChartInfoPaint.Draw();
         this.Frame.DrawLock();
 
+        var eventTitleDraw = this.GetEvent(JSCHART_EVENT_ID.ON_TITLE_DRAW);
+        var eventIndexTitleDraw = this.GetEvent(JSCHART_EVENT_ID.ON_INDEXTITLE_DRAW);
         for (var i in this.TitlePaint)  //标题
         {
             var item = this.TitlePaint[i];
             if (!item.IsDynamic) continue;
+            
+            if (item.ClassName == 'DynamicChartTitlePainting') item.OnDrawEvent = eventIndexTitleDraw
+            else item.OnDrawEvent = eventTitleDraw;
+
             if (typeof (item.DrawTitle) == 'function') item.DrawTitle();
         }
 
