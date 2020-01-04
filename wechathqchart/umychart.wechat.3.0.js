@@ -818,10 +818,11 @@ function JSChart(element)
         this.JSChartContainer.Draw();
     }
 
-  //切换股票代码接口
-  this.ChangeSymbol = function (symbol) {
-    if (this.JSChartContainer) this.JSChartContainer.ChangeSymbol(symbol);
-  }
+    //切换股票代码接口
+    this.ChangeSymbol = function (symbol) 
+    {
+        if (this.JSChartContainer) this.JSChartContainer.ChangeSymbol(symbol);
+    }
 
     //K线切换指标
     this.ChangeIndex = function (windowIndex, indexName, option) 
@@ -830,11 +831,12 @@ function JSChart(element)
             this.JSChartContainer.ChangeIndex(windowIndex, indexName, option);
     }
 
-  //切换K线指标
-  this.ChangeScriptIndex = function (windowIndex, indexData) {
-    if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeScriptIndex) == 'function')
-      this.JSChartContainer.ChangeScriptIndex(windowIndex, indexData);
-  }
+    //切换K线指标
+    this.ChangeScriptIndex = function (windowIndex, indexData) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeScriptIndex) == 'function')
+            this.JSChartContainer.ChangeScriptIndex(windowIndex, indexData);
+    }
 
     //获取当前显示的指标信息
     this.GetIndexInfo = function () 
@@ -845,11 +847,12 @@ function JSChart(element)
             return [];
     }
 
-  //K线周期切换
-  this.ChangePeriod = function (period) {
-    if (this.JSChartContainer && typeof (this.JSChartContainer.ChangePeriod) == 'function')
-      this.JSChartContainer.ChangePeriod(period);
-  }
+    //K线周期切换
+    this.ChangePeriod = function (period) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChangePeriod) == 'function')
+        this.JSChartContainer.ChangePeriod(period);
+    }
 
     //切换系统指示
     this.ChangeInstructionIndex = function (indexName)
@@ -872,6 +875,15 @@ function JSChart(element)
             this.JSChartContainer.CancelInstructionIndex();
     }
 
+    //切换指标模板
+    this.ChangeIndexTemplate = function (option) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeIndexTemplate) == 'function') {
+            console.log('[JSChart:ChangeIndexTemplate] ', option);
+            this.JSChartContainer.ChangeIndexTemplate(option);
+        }
+    }
+
     //K线复权切换
     this.ChangeRight = function (right) 
     {
@@ -886,11 +898,12 @@ function JSChart(element)
             this.JSChartContainer.ChangeKLineDrawType(drawType);
     }
 
-  //切换数据类
-  this.ChangMainDataControl = function (dataControl) {
-    if (this.JSChartContainer && typeof (this.JSChartContainer.SetMainDataConotrl) == 'function')
-      this.JSChartContainer.SetMainDataConotrl(dataControl);
-  }
+    //切换数据类
+    this.ChangMainDataControl = function (dataControl) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.SetMainDataConotrl) == 'function')
+        this.JSChartContainer.SetMainDataConotrl(dataControl);
+    }
 
     //叠加股票
     this.OverlaySymbol = function (symbol,option) 
@@ -907,29 +920,35 @@ function JSChart(element)
     }
   }
 
-  //锁|解锁指标
-  this.LockIndex = function (lockData) {
-    if (this.JSChartContainer && typeof (this.JSChartContainer.LockIndex) == 'function') {
-      console.log('[JSChart:LockIndex] lockData', lockData);
-      this.JSChartContainer.LockIndex(lockData);
+    //锁|解锁指标
+    this.LockIndex = function (lockData) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.LockIndex) == 'function') 
+        {
+            console.log('[JSChart:LockIndex] lockData', lockData);
+            this.JSChartContainer.LockIndex(lockData);
+        }
     }
-  }
 
-  //历史分钟数据 更改日期
-  this.ChangeTradeDate = function (tradeDate) {
-    if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeTradeDate) == 'function') {
-      console.log('[JSChart:ChangeTradeDate] date', tradeDate);
-      this.JSChartContainer.ChangeTradeDate(tradeDate);
+    //历史分钟数据 更改日期
+    this.ChangeTradeDate = function (tradeDate) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeTradeDate) == 'function') 
+        {
+            console.log('[JSChart:ChangeTradeDate] date', tradeDate);
+            this.JSChartContainer.ChangeTradeDate(tradeDate);
+        }
     }
-  }
 
-  //多日走势图
-  this.ChangeDayCount = function (count) {
-    if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeDayCount) == 'function') {
-      console.log('[JSChart:ChangeDayCount] count', count);
-      this.JSChartContainer.ChangeDayCount(count);
+    //多日走势图
+    this.ChangeDayCount = function (count) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeDayCount) == 'function') 
+        {
+            console.log('[JSChart:ChangeDayCount] count', count);
+            this.JSChartContainer.ChangeDayCount(count);
+        }
     }
-  }
 
     this.StopAutoUpdate = function () 
     {
@@ -1453,7 +1472,7 @@ function JSChartContainer(uielement)
         {
             var item = this.TitlePaint[i];
             if (!item.IsDynamic) continue;
-            
+
             if (item.ClassName == 'DynamicChartTitlePainting') item.OnDrawEvent = eventIndexTitleDraw
             else item.OnDrawEvent = eventTitleDraw;
 
@@ -7331,6 +7350,51 @@ function KLineChartContainer(uielement)
         }
     }
 
+    this.CreateSubFrameItem = function (id) 
+    {
+        var border = new ChartBorder();
+        border.UIElement = this.UIElement;
+
+        var frame = new KLineFrame();
+        frame.Canvas = this.Canvas;
+        frame.ChartBorder = border;
+        frame.Identify = id;                   //窗口序号
+
+        if (this.ModifyIndexDialog) frame.ModifyIndexEvent = this.ModifyIndexDialog.DoModal;        //绑定菜单事件
+        if (this.ChangeIndexDialog) frame.ChangeIndexEvent = this.ChangeIndexDialog.DoModal;
+
+        frame.HorizontalMax = 20;
+        frame.HorizontalMin = 10;
+        frame.YSplitOperator = new FrameSplitY();
+        frame.YSplitOperator.LanguageID = this.LanguageID;
+        frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
+        frame.YSplitOperator.Frame = frame;
+        frame.YSplitOperator.ChartBorder = border;
+        frame.XSplitOperator = new FrameSplitKLineX();
+        frame.XSplitOperator.Frame = frame;
+        frame.XSplitOperator.ChartBorder = border;
+        frame.XSplitOperator.ShowText = false;
+
+        //K线数据绑定
+        var xPointCouont = this.Frame.SubFrame[0].Frame.XPointCount;
+        frame.XPointCount = xPointCouont;
+        frame.Data = this.ChartPaint[0].Data;
+
+        for (var j = frame.HorizontalMin; j <= frame.HorizontalMax; j += 1) 
+        {
+            frame.HorizontalInfo[j] = new CoordinateInfo();
+            frame.HorizontalInfo[j].Value = j;
+            frame.HorizontalInfo[j].Message[1] = j.toString();
+            frame.HorizontalInfo[j].Font = "14px 微软雅黑";
+        }
+
+        var subFrame = new SubFrameItem();
+        subFrame.Frame = frame;
+        subFrame.Height = 10;
+
+        return subFrame;
+    }
+
     //创建主图K线画法
     this.CreateMainKLine = function () 
     {
@@ -7433,26 +7497,28 @@ function KLineChartContainer(uielement)
         this.ChartCorssCursor.StringFormatY.Symbol = this.Symbol;
     }
 
-  //创建指定窗口指标
-  this.CreateWindowIndex = function (windowIndex) {
-    this.WindowIndex[windowIndex].Create(this, windowIndex);
-  }
-
-  this.BindIndexData = function (windowIndex, hisData) {
-    if (!this.WindowIndex[windowIndex]) return;
-    if (typeof (this.WindowIndex[windowIndex].RequestData) == "function")  //数据需要另外下载的.
+    //创建指定窗口指标
+    this.CreateWindowIndex = function (windowIndex) 
     {
-      this.WindowIndex[windowIndex].RequestData(this, windowIndex, hisData);
-      return;
-    }
-    if (typeof (this.WindowIndex[windowIndex].ExecuteScript) == 'function')    //脚本指标
-    {
-      this.WindowIndex[windowIndex].ExecuteScript(this, windowIndex, hisData);
-      return;
+        this.WindowIndex[windowIndex].Create(this, windowIndex);
     }
 
-    this.WindowIndex[windowIndex].BindData(this, windowIndex, hisData);
-  }
+    this.BindIndexData = function (windowIndex, hisData) 
+    {
+        if (!this.WindowIndex[windowIndex]) return;
+        if (typeof (this.WindowIndex[windowIndex].RequestData) == "function")  //数据需要另外下载的.
+        {
+            this.WindowIndex[windowIndex].RequestData(this, windowIndex, hisData);
+            return;
+        }
+        if (typeof (this.WindowIndex[windowIndex].ExecuteScript) == 'function')    //脚本指标
+        {
+            this.WindowIndex[windowIndex].ExecuteScript(this, windowIndex, hisData);
+            return;
+        }
+
+        this.WindowIndex[windowIndex].BindData(this, windowIndex, hisData);
+    }
 
     //执行指示(专家指示 五彩K线)
     this.BindInstructionIndexData = function (hisData) 
@@ -8335,6 +8401,94 @@ function KLineChartContainer(uielement)
         }
 
         return aryIndex;
+    }
+
+    this.ChangeIndexTemplate = function (option)   //切换指标模板 可以设置指标窗口个数 每个窗口的指标
+    {
+        if (!option.Windows) return;
+        var count = option.Windows.length;
+        if (count <= 0) return;
+        var currentLength = this.Frame.SubFrame.length;
+
+        //清空所有的指标图型
+        for (var i = 0; i < currentLength; ++i) 
+        {
+            this.DeleteIndexPaint(i);
+            var frame = this.Frame.SubFrame[i];
+            frame.YSpecificMaxMin = null;
+            frame.IsLocked = false;
+            frame.YSplitScale = null;
+        }
+
+        if (currentLength > count) 
+        {
+            this.Frame.SubFrame.splice(count, currentLength - count);
+            this.WindowIndex.splice(count, currentLength - count);
+        }
+        else 
+        {
+            for (var i = currentLength; i < count; ++i)  //创建新的指标窗口
+            {
+                var subFrame = this.CreateSubFrameItem(i);
+                this.Frame.SubFrame[i] = subFrame;
+                var titlePaint = new DynamicChartTitlePainting();
+                titlePaint.Frame = this.Frame.SubFrame[i].Frame;
+                titlePaint.Canvas = this.Canvas;
+                titlePaint.LanguageID = this.LanguageID;
+                this.TitlePaint[i + 1] = titlePaint;
+            }
+        }
+
+        var systemScript = new JSCommonIndexScript.JSIndexScript();
+        var bindData = this.ChartPaint[0].Data;
+        for (var i = 0; i < count; ++i) 
+        {
+            var windowIndex = i;
+            var indexID = option.Windows[i].Index;
+            var indexItem = JSIndexMap.Get(indexID);
+            var titleIndex = windowIndex + 1;
+            this.TitlePaint[titleIndex].Data = [];
+            this.TitlePaint[titleIndex].Title = null;
+            if (indexItem) 
+            {
+                this.WindowIndex[i] = indexItem.Create();
+                this.CreateWindowIndex(windowIndex);
+                this.BindIndexData(windowIndex, bindData);
+            }
+            else 
+            {
+                var indexInfo = systemScript.Get(indexID);
+                if (indexInfo) 
+                {
+                    var args = indexInfo.Args;
+                    if (option.Windows[i].Args) args = option.Windows[i].Args;
+                    let indexData =
+                    {
+                        Name: indexInfo.Name, Script: indexInfo.Script, Args: args, ID: indexID,
+                        //扩展属性 可以是空
+                        KLineType: indexInfo.KLineType, YSpecificMaxMin: indexInfo.YSpecificMaxMin, YSplitScale: indexInfo.YSplitScale,
+                        FloatPrecision: indexInfo.FloatPrecision, Condition: indexInfo.Condition
+                    };
+
+                    this.WindowIndex[i] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
+                    this.BindIndexData(windowIndex, bindData);   //执行脚本
+                }
+            }
+        }
+
+        //最后一个显示X轴坐标
+        for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
+        {
+            var item = this.Frame.SubFrame[i].Frame;
+            if (i == this.Frame.SubFrame.length - 1) item.XSplitOperator.ShowText = true;
+            else item.XSplitOperator.ShowText = false;
+        }
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.Frame.SetSizeChage(true);
+        this.ResetFrameXYSplit();
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
     }
 
     this.CreateExtendChart = function (name, option)   //创建扩展图形
