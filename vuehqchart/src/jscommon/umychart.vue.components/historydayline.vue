@@ -204,19 +204,19 @@
     }
 </script>
 
-<style scoped lang='scss'>
+<style scoped lang='less'>
 *{margin: 0;padding: 0;}
 .divHistoryDayLine{
     width: 100%;
     height: 100%;
     font: 14px "Microsoft Yahei";
-    $border: 1px solid #ccc;
+    @border: 1px solid #ccc;
     .table{
         border-spacing: 0;
         border-collapse: collapse;
         width: 100%;
         thead>tr>th,thead>tr>td,tbody>tr>td{
-            border: $border;
+            border: @border;
             padding: 0 10px;
         }
         thead>tr>th,thead>tr>td{

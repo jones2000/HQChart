@@ -338,7 +338,7 @@ export default
 
 </script>
 
-<style scoped lang='scss'>
+<style scoped lang='less'>
     * {margin: 0; padding: 0;}
     .jsvuecontainer{
         font: 14px 'Microsoft Yahei';

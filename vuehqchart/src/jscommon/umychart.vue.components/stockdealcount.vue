@@ -192,7 +192,7 @@
 </script>
 
 
-<style lang="scss" type="text/scss">
+<style lang="less" type="text/scss">
 .divstockdealcount {
   height: 100%;
   border-top: none;

@@ -494,8 +494,8 @@
     }
 </script>
 
-<style scoped lang="scss">
-    $border: 1px solid #e1ecf2;
+<style scoped lang="less">
+    @border: 1px solid #e1ecf2;
 
     * {
         font: 14px/normal "Microsoft Yahei";

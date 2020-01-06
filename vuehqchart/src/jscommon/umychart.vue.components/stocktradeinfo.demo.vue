@@ -238,11 +238,13 @@ export default
 
 </script>
 
-<style lang="stylus" scoped>
-*
-    padding:0; margin: 0;
-ul,ol
-    list-style:none;
-
+<style lang="less" scoped>
+*{
+  padding:0; margin: 0;
+}
+    
+ul,ol{
+  list-style:none;
+}
 </style>
 

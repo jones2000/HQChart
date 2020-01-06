@@ -1067,8 +1067,8 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
-$border: 1px solid #e1ecf2;
+<style lang="less" scoped>
+@border: 1px solid #e1ecf2;
 
 html,
 body,
@@ -1108,14 +1108,14 @@ ul {
 }
 
 .tradeinfo {
-  border: $border;
+  border: @border;
   width: 100%;
   height: 100%;
   position: relative;
 
   .firstLine {
     width: 100%;
-    border-bottom: $border;
+    border-bottom: @border;
     padding-left: 10px;
     display: flex;
     flex-direction: row;
@@ -1132,7 +1132,7 @@ ul {
   .sellFive,
   .detailList,
   .shorttermlist {
-    border-bottom: $border;
+    border-bottom: @border;
     padding: 0 10px;
     display: flex;
     flex-direction: row;
@@ -1187,10 +1187,10 @@ ul {
       width: 100%;
       display: flex;
       flex-direction: row;
-      border-bottom: $border;
+      border-bottom: @border;
       > span {
         flex-grow: 1;
-        border-right: $border;
+        border-right: @border;
         display: inline-block;
         line-height: 22px;
         text-align: center;
@@ -1208,7 +1208,7 @@ ul {
       }
     }
     .mainFlow {
-      border-bottom: $border;
+      border-bottom: @border;
       > p {
         display: flex;
         flex-direction: row;
@@ -1224,7 +1224,7 @@ ul {
       }
     }
     .orderList {
-      border-bottom: $border;
+      border-bottom: @border;
       table {
         width: 100%;
         td {
@@ -1240,7 +1240,7 @@ ul {
     .netValueWrap {
       padding: 4px 8px;
       > .charWrap {
-        border: $border;
+        border: @border;
         width: 100%;
         height: 93px;
         position: relative;

@@ -196,6 +196,7 @@ function JSChart(element)
             if (option.KLine.KLineDoubleClick == false) chart.MinuteDialog = this.MinuteDialog = null;
             if (option.KLine.MaxRequestMinuteDayCount > 0) chart.MaxRequestMinuteDayCount = option.KLine.MaxRequestMinuteDayCount;
             if (option.KLine.DrawType) chart.KLineDrawType = option.KLine.DrawType;
+            if (option.KLine.RightSpaceCount > 0) chart.RightSpaceCount = option.KLine.RightSpaceCount;
         }
 
         if (option.SplashTitle) chart.SplashTitle = option.SplashTitle; //设置提示信息内容
@@ -1909,13 +1910,24 @@ function JSChartContainer(uielement)
 
         if (isLeft) //-->
         {
-            if (xPointcount + data.DataOffset >= data.Data.length) return false;
+            if (this.RightSpaceCount > 0)
+            {
+                if (xPointcount + data.DataOffset >= data.Data.length + this.RightSpaceCount - 1) return false;
 
-            data.DataOffset += step;
+                data.DataOffset += step;
 
-            if (data.DataOffset + xPointcount >= data.Data.length)
-                data.DataOffset = data.Data.length - xPointcount;
+                if (data.DataOffset + xPointcount >= data.Data.length + this.RightSpaceCount)
+                    data.DataOffset = data.Data.length - (xPointcount - this.RightSpaceCount);
+            }
+            else
+            {
+                if (xPointcount + data.DataOffset >= data.Data.length) return false;
 
+                data.DataOffset += step;
+
+                if (data.DataOffset + xPointcount >= data.Data.length)
+                    data.DataOffset = data.Data.length - xPointcount;
+            }
             return true;
         }
         else        //<--
@@ -7155,6 +7167,7 @@ function KLineChartContainer(uielement)
     this.IsAutoUpdate = false;                    //是否自动更新行情数据
     this.AutoUpdateFrequency = 30000;             //30秒更新一次数据
     this.AutoUpdateTimer;                         //自动定时器
+    this.RightSpaceCount=1;
 
     this.StepPixel = 4;                   //移动一个数据需要的像素
     this.ZoomStepPixel = 5;               //放大缩小手势需要的最小像素
@@ -7431,7 +7444,7 @@ function KLineChartContainer(uielement)
         for (var i in this.Frame.SubFrame) 
         {
             var item = this.Frame.SubFrame[i].Frame;
-            item.XPointCount = showCount+1;
+            item.XPointCount = showCount + this.RightSpaceCount;
             item.Data = this.ChartPaint[0].Data;
 
             item.XSplitOperator.Symbol = this.Symbol;

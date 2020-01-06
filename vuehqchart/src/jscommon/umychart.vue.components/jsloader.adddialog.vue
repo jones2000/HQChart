@@ -187,7 +187,7 @@
     }
 </script>
 
-<style scoped lang='scss'>
+<style scoped lang='less'>
     .dialogContainer {
         font: 14px 'Microsoft Yahei';
         position: absolute;

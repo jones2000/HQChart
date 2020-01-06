@@ -505,7 +505,7 @@ export default {
 };
 </script>
 
-<style lang='scss'>
+<style lang='less'>
 * {
   margin: 0;
   padding: 0;
@@ -697,14 +697,14 @@ body {
       height: 20px;
       margin-top: 20px;
       margin-left: 20px;
-      $tabBorder: 1px solid #2f2f2f;
-      border: $tabBorder;
+      @tabBorder: 1px solid #2f2f2f;
+      border: @tabBorder;
       > span {
         display: inline-block;
         line-height: 20px;
         padding: 0 10px;
         cursor: pointer;
-        border-right: $tabBorder;
+        border-right: @tabBorder;
       }
       > span:last-child {
         border-right: none;

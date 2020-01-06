@@ -118,6 +118,7 @@ function JSChart(divElement)
             if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
             if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
             if (option.KLine.FirstShowDate>20000101) chart.CustomShow={ Date:option.KLine.FirstShowDate };
+            if (option.KLine.RightSpaceCount>0) chart.RightSpaceCount=option.KLine.RightSpaceCount;
         }
 
         if (option.Page)
@@ -2869,13 +2870,22 @@ function JSChartContainer(uielement)
 
         if (isLeft) //-->
         {
-            if (xPointcount+data.DataOffset>=data.Data.length) return false;
+            if (this.RightSpaceCount>0)
+            {
+                if (xPointcount+data.DataOffset>=data.Data.length+this.RightSpaceCount-1) return false;
+                data.DataOffset+=step;
 
-            data.DataOffset+=step;
+                if (data.DataOffset+xPointcount>=data.Data.length+this.RightSpaceCount)
+                    data.DataOffset=data.Data.length-(xPointcount-this.RightSpaceCount);
+            }
+            else
+            {
+                if (xPointcount+data.DataOffset>=data.Data.length) return false;
+                data.DataOffset+=step;
 
-            if (data.DataOffset+xPointcount>=data.Data.length)
-                data.DataOffset=data.Data.length-xPointcount;
-
+                if (data.DataOffset+xPointcount>=data.Data.length)
+                    data.DataOffset=data.Data.length-xPointcount;
+            }
             return true;
         }
         else        //<--
@@ -22039,6 +22049,7 @@ function KLineChartContainer(uielement)
     this.FlowCapitalReady=false;        //流通股本是否下载完成
     this.ChartDrawStorage=new ChartDrawStorage();
     this.ChartDrawStorageCache=null;    //首次需要创建的画图工具数据
+    this.RightSpaceCount=0;            //右侧空白个数
 
     this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
     this.OverlayIndexFrameWidth=60;     //叠加指标框架宽度
@@ -22394,7 +22405,7 @@ function KLineChartContainer(uielement)
         for(var i in this.Frame.SubFrame)
         {
             var item =this.Frame.SubFrame[i].Frame;
-            item.XPointCount=showCount;
+            item.XPointCount=showCount+this.RightSpaceCount;
             item.Data=this.ChartPaint[0].Data;
 
             item.XSplitOperator.Symbol=this.Symbol;

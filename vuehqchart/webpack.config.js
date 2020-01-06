@@ -47,6 +47,10 @@ module.exports = (options = {}) => ({
         }
       },
       {
+        test: /\.less$/,
+        loader: "style-loader!css-loader!less-loader",
+      },
+      {
         test: /\.styl/,
         use: ['style-loader','css-loader','stylus-loader']
       },

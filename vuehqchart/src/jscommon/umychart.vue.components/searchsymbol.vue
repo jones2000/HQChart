@@ -2,7 +2,7 @@
     股票代码搜索控件
 -->
 
-  <template>
+<template>
   <div class="symbolWrap">
     <div class="inputBox" v-on:keyup.38="KeyUp" v-on:keyup.40="KeyDown" v-on:keyup.enter="KeyEnter">
       <input
@@ -168,7 +168,7 @@
 </script>
 
 
-<style lang="scss">
+<style lang="less">
 .symbolWrap {
   position: relative;
   .Select {

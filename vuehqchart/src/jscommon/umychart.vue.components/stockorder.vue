@@ -269,13 +269,13 @@ export default
 
 </script>
 
-<style scoped lang='scss'>
+<style scoped lang='less'>
     * {margin: 0;padding: 0;}
     html,body,table {
         font: 14px 'Simsun';
         color: #333;
     }
-    /* $border: 1px solid #ebebeb; */
+    
     .rankingList {
         width: 100%;
         height: 100%;
