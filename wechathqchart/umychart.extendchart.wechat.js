@@ -182,14 +182,20 @@ function KLineTooltipPaint()
         var text = this.HQChart.FormatDateString(item.Date);
         this.Canvas.fillStyle = this.TitleColor;
         this.Canvas.fillText(text, left, top);
-
-        if (item.Time != null && !isNaN(item.Time) && item.Time > 0) 
+        var period = this.HQChart.Period;
+        if (ChartData.IsMinutePeriod(period, true) && item.Time)
         {
             top += this.LineHeight;
             text = this.HQChart.FormatTimeString(item.Time);
             this.Canvas.fillText(text, left, top);
         }
-
+        else if (ChartData.IsSecondPeriod(period) && item.Time)
+        {
+            top += this.LineHeight;
+            text = this.HQChart.FormatTimeString(item.Time,"HH:MM:SS");
+            this.Canvas.fillText(text, left, top);
+        }
+        
         top += this.LineHeight;
         this.Canvas.fillStyle = this.TitleColor;
         text = g_JSChartLocalization.GetText('Tooltip-Open', this.LanguageID);

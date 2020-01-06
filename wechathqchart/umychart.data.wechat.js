@@ -21,7 +21,7 @@ function HistoryData()
     this.Low;
     this.Vol;
     this.Amount;
-    this.Time;
+    this.Time;  //分钟 HHMM / 秒HHMMSS
 
     //指数才有的数据
     this.Stop;  //停牌家数
@@ -1228,8 +1228,8 @@ ChartData.GetQuarter = function (value)
     else return 0;
 }
 
-//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线  [40001-50000] 自定义日线 (isIncludeBase 是否包含基础日线周期)
-var CUSTOM_DAY_PERIOD_START = 40000, CUSTOM_DAY_PERIOD_END = 50000;
+//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线  [40001-50000) 自定义日线 (isIncludeBase 是否包含基础日线周期)
+var CUSTOM_DAY_PERIOD_START = 40000, CUSTOM_DAY_PERIOD_END = 49999;
 ChartData.IsDayPeriod = function (period, isIncludeBase) 
 {
     if (period == 1 || period == 2 || period == 3 || period == 9) return true;
@@ -1239,14 +1239,22 @@ ChartData.IsDayPeriod = function (period, isIncludeBase)
     return false;
 }
 
-//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 11=2h 12=4h[20001-30000] 自定义分钟 (isIncludeBase 是否包含基础1分钟周期)
-var CUSTOM_MINUTE_PERIOD_START = 20000, CUSTOM_MINUTE_PERIOD_END = 30000;
+//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 11=2h 12=4h[20001-30000) 自定义分钟 (isIncludeBase 是否包含基础1分钟周期)
+var CUSTOM_MINUTE_PERIOD_START = 20000, CUSTOM_MINUTE_PERIOD_END = 29999;
 ChartData.IsMinutePeriod = function (period, isIncludeBase) 
 {
     if (period == 5 || period == 6 || period == 7 || period == 8 || period == 11 || period == 12) return true;
     if (period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END) return true;
     if (period == 4 && isIncludeBase == true) return true;
 
+    return false;
+}
+
+//是否是秒周期 [30001-32000)
+var CUSTOM_SECOND_PERIOD_START = 30000, CUSTOM_SECOND_PERIOD_END = 32000;
+ChartData.IsSecondPeriod = function (period) 
+{
+    if (period > CUSTOM_SECOND_PERIOD_START && period <= CUSTOM_SECOND_PERIOD_END) return true;
     return false;
 }
 
@@ -1293,5 +1301,7 @@ module.exports =
     JSCommon_CUSTOM_DAY_PERIOD_END: CUSTOM_DAY_PERIOD_END,
     JSCommon_CUSTOM_MINUTE_PERIOD_START: CUSTOM_MINUTE_PERIOD_START,
     JSCommon_CUSTOM_MINUTE_PERIOD_END: CUSTOM_MINUTE_PERIOD_END,
+    JSCommon_CUSTOM_SECOND_PERIOD_START: CUSTOM_SECOND_PERIOD_START,
+    JSCommon_CUSTOM_SECOND_PERIOD_END: CUSTOM_SECOND_PERIOD_END,
     JSCommon_Rect: Rect,
 };

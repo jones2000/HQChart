@@ -25,6 +25,8 @@ import
     JSCommon_CUSTOM_DAY_PERIOD_END as CUSTOM_DAY_PERIOD_END,
     JSCommon_CUSTOM_MINUTE_PERIOD_START as CUSTOM_MINUTE_PERIOD_START,
     JSCommon_CUSTOM_MINUTE_PERIOD_END as CUSTOM_MINUTE_PERIOD_END,
+    JSCommon_CUSTOM_SECOND_PERIOD_START as CUSTOM_SECOND_PERIOD_START,
+    JSCommon_CUSTOM_SECOND_PERIOD_END as CUSTOM_SECOND_PERIOD_END,
 } from "./umychart.data.wechat.js";
 
 import 
@@ -74,7 +76,8 @@ function DynamicKLineTitlePainting()
     this.IsDynamic = true;
     this.IsShow = true;       //是否显示
     this.LineCount = 1;         //默认显示1行
-    this.SpaceWidth = 1;        //空格宽度    
+    this.SpaceWidth = 1;        //空格宽度  
+    this.Period;                //周期  
 
     this.UpColor = g_JSChartResource.UpTextColor;
     this.DownColor = g_JSChartResource.DownTextColor;
@@ -173,6 +176,8 @@ function DynamicKLineTitlePainting()
             name = (period - CUSTOM_MINUTE_PERIOD_START) + g_JSChartLocalization.GetText('自定义分钟', this.LanguageID);
         else if (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END)
             name = (period - CUSTOM_DAY_PERIOD_START) + g_JSChartLocalization.GetText('自定义日线',this.LanguageID);
+        else if (period > CUSTOM_SECOND_PERIOD_START && period <= CUSTOM_SECOND_PERIOD_END)
+            periodName = (period - CUSTOM_SECOND_PERIOD_START) + g_JSChartLocalization.GetText('自定义秒', this.LanguageID);
         else
             name = g_JSChartLocalization.GetText(PERIOD_NAME[period], this.LanguageID);
         return name;
@@ -263,7 +268,8 @@ function DynamicKLineTitlePainting()
         var width = this.Frame.ChartBorder.GetWidth();
         var height = this.Frame.ChartBorder.GetTop();
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);//价格小数位数
-        if (isHScreen) {
+        if (isHScreen) 
+        {
             var left = leftSpace;;
             var width = this.Frame.ChartBorder.GetHeight();
             var height = this.Frame.ChartBorder.Right;
@@ -283,7 +289,7 @@ function DynamicKLineTitlePainting()
         this.Canvas.font = this.Font;
 
         var text = IFrameSplitOperator.FormatDateString(item.Date);
-        this.Canvas.fillStyle = this.UnchagneColor;
+        this.Canvas.fillStyle = this.DateTimeColor;
         this.Canvas.fillText(text, left, bottom, itemWidth);
         left += itemWidth;
 
@@ -307,9 +313,16 @@ function DynamicKLineTitlePainting()
         bottom += itemHeight;   //换行
         var left = this.Frame.ChartBorder.GetLeft() + leftSpace;
         if (isHScreen) left = leftSpace;
-        if (item.Time != null && !isNaN(item.Time) && item.Time > 0) {
-            this.Canvas.fillStyle = this.UnchagneColor;
+        if (ChartData.IsMinutePeriod(this.Period, true) && item.Time)
+        {
+            this.Canvas.fillStyle = this.DateTimeColor;
             var text = IFrameSplitOperator.FormatTimeString(item.Time);
+            this.Canvas.fillText(text, left, bottom, itemWidth);
+        }
+        else if (ChartData.IsSecondPeriod(this.Period) && item.Time)
+        {
+            this.Canvas.fillStyle = this.DateTimeColor;
+            var text = IFrameSplitOperator.FormatTimeString(item.Time, 'HH:MM:SS');
             this.Canvas.fillText(text, left, bottom, itemWidth);
         }
         left += itemWidth;
@@ -339,7 +352,8 @@ function DynamicKLineTitlePainting()
         var right = this.Frame.ChartBorder.GetRight();
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);//价格小数位数
 
-        if (isHScreen) {
+        if (isHScreen) 
+        {
             right = this.Frame.ChartBorder.GetHeight();
             if (this.Frame.ChartBorder.Right < 5) return;
             left = 2;
@@ -349,7 +363,8 @@ function DynamicKLineTitlePainting()
             this.Canvas.translate(xText, yText);
             this.Canvas.rotate(90 * Math.PI / 180);
         }
-        else {
+        else 
+        {
             if (bottom < 5) return;
         }
 
@@ -361,7 +376,7 @@ function DynamicKLineTitlePainting()
 
         if (this.IsShowName) //名称
         {
-            if (!this.DrawKLineText(this.Name, this.UnchagneColor, position, false)) return;
+            if (!this.DrawKLineText(this.Name, this.NameColor, position, false)) return;
         }
 
         if (this.IsShowSettingInfo) //周期 复权信息
@@ -372,16 +387,22 @@ function DynamicKLineTitlePainting()
             var text = "(" + periodName + " " + rightName + ")";
             var isIndex = MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol); //是否是指数
             if (item.Time != null || isIndex) text = "(" + periodName + ")";
-            if (!this.DrawKLineText(text, this.UnchagneColor, position, false)) return;
+            if (!this.DrawKLineText(text, this.DateTimeColor, position, false)) return;
         }
 
         var text = IFrameSplitOperator.FormatDateString(item.Date); //日期
-        if (!this.DrawKLineText(text, this.UnchagneColor, position)) return;
+        if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
 
-        if (item.Time != null && !isNaN(item.Time) && item.Time > 0) //时间
+        //时间
+        if (ChartData.IsMinutePeriod(this.Period, true) && item.Time)
         {
             var text = IFrameSplitOperator.FormatTimeString(item.Time);
-            if (!this.DrawKLineText(text, this.UnchagneColor, position)) return;
+            if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
+        }
+        else if (ChartData.IsSecondPeriod(this.Period) && item.Time)
+        {
+            var text = IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS");
+            if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
         }
 
         var color = this.GetColor(item.Open, item.YClose);

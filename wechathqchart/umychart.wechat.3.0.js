@@ -18,6 +18,8 @@ import {
     JSCommon_CUSTOM_DAY_PERIOD_END as CUSTOM_DAY_PERIOD_END,
     JSCommon_CUSTOM_MINUTE_PERIOD_START as CUSTOM_MINUTE_PERIOD_START,
     JSCommon_CUSTOM_MINUTE_PERIOD_END as CUSTOM_MINUTE_PERIOD_END,
+    JSCommon_CUSTOM_SECOND_PERIOD_START as CUSTOM_SECOND_PERIOD_START,
+    JSCommon_CUSTOM_SECOND_PERIOD_END as CUSTOM_SECOND_PERIOD_END,
     JSCommon_Rect as Rect,
 } from "./umychart.data.wechat.js";
 
@@ -6457,6 +6459,11 @@ function HQDateStringFormat()
             var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
             this.Text = this.Text + " " + time;
         }
+        else if (ChartData.IsSecondPeriod(this.Data.Period))
+        {
+            var time = IFrameSplitOperator.FormatTimeString(currentData.Time,"HH:MM:SS");
+            this.Text = this.Text + " " + time;
+        }
 
         return true;
     }
@@ -7454,6 +7461,7 @@ function KLineChartContainer(uielement)
         this.TitlePaint[0].Data = this.ChartPaint[0].Data;                    //动态标题
         this.TitlePaint[0].Symbol = this.Symbol;
         this.TitlePaint[0].Name = this.Name;
+        this.TitlePaint[0].Period = this.Period;
 
         this.ChartCorssCursor.StringFormatX.Data = this.ChartPaint[0].Data;   //十字光标
         this.Frame.Data = this.ChartPaint[0].Data;
@@ -8123,7 +8131,8 @@ function KLineChartContainer(uielement)
         {
             if (this.SourceData.DataType != 0) isDataTypeChange = true;
         }
-        else if (period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END) 
+        else if ((period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END) || 
+                    (period > CUSTOM_SECOND_PERIOD_START && period <= CUSTOM_SECOND_PERIOD_END)) 
         {
             if (this.SourceData.DataType != 1) isDataTypeChange = true;
         }
@@ -8163,7 +8172,7 @@ function KLineChartContainer(uielement)
             this.RequestHistoryData();                  //请求日线数据
             this.ReqeustKLineInfoData();
         }
-        else if (ChartData.IsMinutePeriod(this.Period, true))
+        else if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period))
         {
             this.CancelAutoUpdate();                    //先停止更新
             this.AutoUpdateEvent(false);
@@ -8171,18 +8180,39 @@ function KLineChartContainer(uielement)
         }
     }
 
-  //复权切换
-  this.ChangeRight = function (right) {
-    if (IsIndexSymbol(this.Symbol)) return; //指数没有复权
+    //复权切换
+    this.ChangeRight = function (right) 
+    {
+        if (IsIndexSymbol(this.Symbol)) return; //指数没有复权
 
-    if (right < 0 || right > 2) return;
+        if (right < 0 || right > 2) return;
 
-    if (this.Right == right) return;
+        if (this.Right == right) return;
 
-    this.Right = right;
+        this.Right = right;
 
-    this.Update();
-  }
+        if (!this.IsApiPeriod)
+        {
+            this.Update();
+            return;
+        }
+        else
+        {
+            if (ChartData.IsDayPeriod(this.Period, true)) 
+            {
+                this.CancelAutoUpdate();                    //先停止更新
+                this.AutoUpdateEvent(false);
+                this.RequestHistoryData();                  //请求日线数据
+                this.ReqeustKLineInfoData();
+            }
+            else if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period)) 
+            {
+                this.CancelAutoUpdate();                    //先停止更新
+                this.AutoUpdateEvent(false);
+                this.ReqeustHistoryMinuteData();            //请求分钟数据
+            }
+        }
+    }
 
   //删除某一个窗口的指标
   this.DeleteIndexPaint = function (windowIndex) {
@@ -8656,7 +8686,7 @@ function KLineChartContainer(uielement)
             this.RequestHistoryData();                  //请求日线数据
             this.ReqeustKLineInfoData();
         }
-        else if (ChartData.IsMinutePeriod(this.Period, true))
+        else if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period))
         {
             this.ReqeustHistoryMinuteData();            //请求分钟数据
         }
@@ -9039,12 +9069,15 @@ function KLineChartContainer(uielement)
         }
         else if (marketStatus == 2) //盘中
         {
-            this.AutoUpdateTimer=setTimeout(function () {
-                if (ChartData.IsDayPeriod(self.Period, true)) {
+            this.AutoUpdateTimer=setTimeout(function () 
+            {
+                if (ChartData.IsDayPeriod(self.Period, true)) 
+                {
                     self.RequestRealtimeData();               //更新最新行情
                     //self.ReqeustKLineInfoData();
                 }
-                else if (ChartData.IsMinutePeriod(self.Period, true)) {
+                else if (ChartData.IsMinutePeriod(self.Period, true) || ChartData.IsSecondPeriod(self.Period)) 
+                {
                     self.RequestMinuteRealtimeData();         //请求分钟数据
                 }
             }, frequency);

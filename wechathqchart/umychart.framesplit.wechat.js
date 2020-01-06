@@ -292,12 +292,22 @@ IFrameSplitOperator.FormatDateString = function (value, format)
     }
 }
 
-IFrameSplitOperator.FormatTimeString = function (value) 
+IFrameSplitOperator.FormatTimeString = function (value, format) 
 {
-    var hour = parseInt(value / 100);
-    var minute = value % 100;
+    if (format == 'HH:MM:SS') 
+    {
+        var hour = parseInt(value / 10000);
+        var minute = parseInt((value % 10000) / 100);
+        var second = value % 100;
+        return IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
+    }
+    else 
+    {
+        var hour = parseInt(value / 100);
+        var minute = value % 100;
 
-    return IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute);
+        return IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute);
+    }
 }
 
 //报告格式化
@@ -748,6 +758,42 @@ function FrameSplitKLineX()
         }
     }
 
+    this.SplitSecond = function ()   //根据时间分割
+    {
+        this.Frame.VerticalInfo = [];
+        var itemWidth = this.Frame.DistanceWidth + this.Frame.DataWidth;
+        var xOffset = this.Frame.Data.DataOffset;
+        var xPointCount = this.Frame.XPointCount;
+        var lastYear = null, lastMonth = null;
+        var textDistance = 0;
+
+        for (var i = 0, index = xOffset; i < xPointCount && index < this.Frame.Data.Data.length; ++i, ++index) 
+        {
+            textDistance += itemWidth;
+            var infoData = null;
+            if (i == 0) 
+            {
+                var date = IFrameSplitOperator.FormatDateString(this.Frame.Data.Data[index].Date, 'MM-DD');
+                infoData = { Value: index - xOffset, Text: date };
+            }
+            else if (textDistance > this.MinTextDistance) 
+            {
+                var time = IFrameSplitOperator.FormatTimeString(this.Frame.Data.Data[index].Time,"HH:MM:SS");
+                infoData = { Value: index - xOffset, Text: time };
+            }
+
+            if (infoData) 
+            {
+                var info = new CoordinateInfo();
+                info.Value = infoData.Value;
+                if (this.ShowText) info.Message[0] = infoData.Text;
+                this.Frame.VerticalInfo.push(info);
+                textDistance = 0;
+                if (i == 0) textDistance = -(this.MinTextDistance / 2);
+            }
+        }
+    }
+
     this.SplitDate = function ()   //根据日期分割
     {
         this.Frame.VerticalInfo = [];
@@ -799,6 +845,7 @@ function FrameSplitKLineX()
         if (this.Frame.Data == null) return;
         if (FrameSplitKLineX.SplitCustom) FrameSplitKLineX.SplitCustom(this);   //自定义分割
         else if (ChartData.IsMinutePeriod(this.Period, true)) this.SplitDateTime();
+        else if (ChartData.IsSecondPeriod(this.Period)) this.SplitSecond();
         else this.SplitDate();
     }
 

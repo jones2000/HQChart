@@ -9328,7 +9328,7 @@ function HistoryData()
     this.Low;
     this.Vol;
     this.Amount;
-    this.Time;
+    this.Time;      //mmhh 或者 mmhhss
     this.FlowCapital=0;   //流通股本
     this.Position=null;   //持仓量
 
@@ -10910,8 +10910,8 @@ ChartData.GetQuarter=function(value)
     else return 0;
 }
 
-//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线  [40001-50000] 自定义日线 (isIncludeBase 是否包含基础日线周期)
-var CUSTOM_DAY_PERIOD_START=40000, CUSTOM_DAY_PERIOD_END=50000;
+//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线  [40001-50000) 自定义日线 (isIncludeBase 是否包含基础日线周期)
+var CUSTOM_DAY_PERIOD_START=40000, CUSTOM_DAY_PERIOD_END=49999;
 ChartData.IsDayPeriod=function(period, isIncludeBase)
 {
     if (period==1 || period==2 || period==3 || period==9) return true;
@@ -10921,14 +10921,22 @@ ChartData.IsDayPeriod=function(period, isIncludeBase)
     return false;
 }
 
-//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 11=120分钟 12=240分钟 [20001-30000] 自定义分钟 (isIncludeBase 是否包含基础1分钟周期)
-var CUSTOM_MINUTE_PERIOD_START=20000, CUSTOM_MINUTE_PERIOD_END=30000;
+//是否是分钟周期 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 11=120分钟 12=240分钟 [20001-30000) 自定义分钟 (isIncludeBase 是否包含基础1分钟周期)
+var CUSTOM_MINUTE_PERIOD_START=20000, CUSTOM_MINUTE_PERIOD_END=29999;
 ChartData.IsMinutePeriod=function(period,isIncludeBase)
 {
     if (period==5 || period==6 || period==7 || period==8 ||period==11 || period==12) return true;
     if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END) return true;
     if (period==4 && isIncludeBase==true) return true;
 
+    return false;
+}
+
+//是否是秒周期 [30001-32000)
+var CUSTOM_SECOND_PERIOD_START=30000, CUSTOM_SECOND_PERIOD_END=32000;
+ChartData.IsSecondPeriod=function(period)
+{
+    if (period>CUSTOM_SECOND_PERIOD_START && period<=CUSTOM_SECOND_PERIOD_END) return true;
     return false;
 }
 
@@ -16767,10 +16775,17 @@ function KLineTooltipPaint()
         this.Canvas.fillStyle=this.TitleColor;
         this.Canvas.fillText(text, left,top);
 
-        if(item.Time!=null && !isNaN(item.Time) && item.Time>0)
+        var period=this.HQChart.Period;
+        if (ChartData.IsMinutePeriod(period,true) && item.Time)
         {
             top+=this.LineHeight;  
             text=IFrameSplitOperator.FormatTimeString(item.Time);
+            this.Canvas.fillText(text, left,top);
+        }
+        else if (ChartData.IsSecondPeriod(period) && item.Time)
+        {
+            top+=this.LineHeight;  
+            text=IFrameSplitOperator.FormatTimeString(item.Time,'HH:MM:SS');
             this.Canvas.fillText(text, left,top);
         }
 
@@ -18471,9 +18486,16 @@ IFrameSplitOperator.FormatDateString=function(value,format)
     }
 }
 
-IFrameSplitOperator.FormatTimeString=function(value)
+IFrameSplitOperator.FormatTimeString=function(value, format)    //format hh:mm:ss
 {
-    if (value<10000)
+    if (format=='HH:MM:SS')
+    {
+        var hour=parseInt(value/10000);
+        var minute=parseInt((value%10000)/100);
+        var second=value%100;
+        return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
+    }
+    else if (format=='HH:MM')
     {
         var hour=parseInt(value/100);
         var minute=value%100;
@@ -18481,10 +18503,19 @@ IFrameSplitOperator.FormatTimeString=function(value)
     }
     else
     {
-        var hour=parseInt(value/10000);
-        var minute=parseInt((value%10000)/100);
-        var second=value%100;
-        return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
+        if (value<10000)
+        {
+            var hour=parseInt(value/100);
+            var minute=value%100;
+            return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute);
+        }
+        else
+        {
+            var hour=parseInt(value/10000);
+            var minute=parseInt((value%10000)/100);
+            var second=value%100;
+            return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
+        }
     }
 }
 
@@ -18956,6 +18987,7 @@ function FrameSplitKLineX()
     this.Period;                        //周期
     this.Symbol;                        //股票代码
     this.MinTextDistance=50*GetDevicePixelRatio();
+    this.MinBarDistance=5; //刻度间最小的K线间距
 
 
     this.SplitDateTime=function()   //根据时间分割
@@ -18966,17 +18998,18 @@ function FrameSplitKLineX()
         var xPointCount=this.Frame.XPointCount;
         var lastYear=null, lastMonth=null;
         var textDistance=0;
-
+        var barDistance=0;
         for(var i=0, index=xOffset; i<xPointCount && index<this.Frame.Data.Data.length; ++i,++index)
         {
             textDistance+=itemWidth;
+            ++barDistance;
             var infoData=null;
             if (i==0)
             {
                 var date=IFrameSplitOperator.FormatDateString(this.Frame.Data.Data[index].Date,'MM-DD');
                 infoData={Value:index-xOffset, Text:date};
             }
-            else if (textDistance>this.MinTextDistance)
+            else if (textDistance>this.MinTextDistance && barDistance>=this.MinBarDistance)
             {
                 var time=IFrameSplitOperator.FormatTimeString(this.Frame.Data.Data[index].Time);
                 infoData={Value:index-xOffset, Text:time};
@@ -18989,6 +19022,45 @@ function FrameSplitKLineX()
                 if (this.ShowText) info.Message[0]=infoData.Text;
                 this.Frame.VerticalInfo.push(info);
                 textDistance=0;
+                barDistance=0;
+                if (i==0) textDistance=-(this.MinTextDistance/2);
+            }
+        }
+    }
+
+    this.SplitSecond=function()   //根据时间分割
+    {
+        this.Frame.VerticalInfo=[];
+        var itemWidth=this.Frame.DistanceWidth+this.Frame.DataWidth;
+        var xOffset=this.Frame.Data.DataOffset;
+        var xPointCount=this.Frame.XPointCount;
+        var textDistance=0;
+        var barDistance=0;
+
+        for(var i=0, index=xOffset; i<xPointCount && index<this.Frame.Data.Data.length; ++i,++index)
+        {
+            textDistance+=itemWidth;
+            ++barDistance;
+            var infoData=null;
+            if (i==0)
+            {
+                var date=IFrameSplitOperator.FormatDateString(this.Frame.Data.Data[index].Date,'MM-DD');
+                infoData={Value:index-xOffset, Text:date};
+            }
+            else if (textDistance>this.MinTextDistance && barDistance>=this.MinBarDistance)
+            {
+                var time=IFrameSplitOperator.FormatTimeString(this.Frame.Data.Data[index].Time,"HH:MM:SS");
+                infoData={Value:index-xOffset, Text:time};
+            }
+
+            if (infoData)
+            {
+                var info= new CoordinateInfo();
+                info.Value=infoData.Value;
+                if (this.ShowText) info.Message[0]=infoData.Text;
+                this.Frame.VerticalInfo.push(info);
+                textDistance=0;
+                barDistance=0;
                 if (i==0) textDistance=-(this.MinTextDistance/2);
             }
         }
@@ -19044,6 +19116,7 @@ function FrameSplitKLineX()
         if (this.Frame.Data==null) return;
         if (FrameSplitKLineX.SplitCustom) FrameSplitKLineX.SplitCustom(this);   //自定义分割
         else if (ChartData.IsMinutePeriod(this.Period, true)) this.SplitDateTime();
+        else if (ChartData.IsSecondPeriod(this.Period)) this.SplitSecond();
         else this.SplitDate();
     }
 
@@ -20058,9 +20131,14 @@ function HQDateStringFormat()
         if (this.Data.DataOffset+index>=this.Data.Data.length) return false;
         var currentData = this.Data.Data[this.Data.DataOffset+index];
         this.Text=IFrameSplitOperator.FormatDateString(currentData.Date);
-        if (ChartData.IsMinutePeriod(this.Data.Period,true)) // 分钟周期
+        if (ChartData.IsMinutePeriod(this.Data.Period,true) ) // 分钟周期
         {
             var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
+            this.Text = this.Text + "  " + time;
+        }
+        else if (ChartData.IsSecondPeriod(this.Data.Period))
+        {
+            var time = IFrameSplitOperator.FormatTimeString(currentData.Time,'HH:MM:SS');
             this.Text = this.Text + "  " + time;
         }
         else if (ChartData.IsTickPeriod(this.Data.Period))  //分笔
@@ -20414,6 +20492,7 @@ function DynamicKLineTitlePainting()
     this.ClassName='DynamicKLineTitlePainting';
     this.IsDynamic=true;
     this.IsShow=true;       //是否显示
+    this.Period;            //周期
 
     this.UpColor=g_JSChartResource.UpTextColor;
     this.DownColor=g_JSChartResource.DownTextColor;
@@ -20493,6 +20572,8 @@ function DynamicKLineTitlePainting()
                 periodName=(this.Data.Period-CUSTOM_MINUTE_PERIOD_START)+g_JSChartLocalization.GetText('自定义分钟',this.LanguageID);
             else if (this.Data.Period>CUSTOM_DAY_PERIOD_START && this.Data.Period<=CUSTOM_DAY_PERIOD_END)
                 periodName=(this.Data.Period-CUSTOM_DAY_PERIOD_START)+g_JSChartLocalization.GetText('自定义日线',this.LanguageID);
+            else if (this.Data.Period>CUSTOM_SECOND_PERIOD_START && this.Data.Period<=CUSTOM_SECOND_PERIOD_END)
+                periodName=(this.Data.Period-CUSTOM_SECOND_PERIOD_START)+g_JSChartLocalization.GetText('自定义秒',this.LanguageID);
             else 
                 periodName=g_JSChartLocalization.GetText(PERIOD_NAME[this.Data.Period],this.LanguageID);
             var rightName=g_JSChartLocalization.GetText(RIGHT_NAME[this.Data.Right],this.LanguageID);
@@ -20509,10 +20590,15 @@ function DynamicKLineTitlePainting()
             if (!this.DrawText(text,this.DateTimeColor,position)) return;
         }
 
-        if(item.Time!=null && !isNaN(item.Time) && item.Time>0)
+        if (ChartData.IsMinutePeriod(this.Period,true) && item.Time)
         {
             var text=IFrameSplitOperator.FormatTimeString(item.Time);
-            if (!this.DrawText(text,this.UnchagneColor,position)) return;
+            if (!this.DrawText(text,this.DateTimeColor,position)) return;
+        }
+        else if (ChartData.IsSecondPeriod(this.Period) && item.Time)
+        {
+            var text=IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS");
+            if (!this.DrawText(text,this.DateTimeColor,position)) return;
         }
 
         var color=this.GetColor(item.Open,item.YClose);
@@ -24394,7 +24480,8 @@ function JSChartLocalization()
         ['12月', {CN:'12月', EN:'Dec'}],
 
         ['自定义分钟', {CN:'分', EN:'Min'}],
-        ['自定义日线', {CN:'日', EN:'D'}]
+        ['自定义日线', {CN:'日', EN:'D'}],
+        ['自定义秒', {CN:'秒', EN:'S'}]
 
     ]);
 
@@ -25774,6 +25861,7 @@ function KLineChartContainer(uielement)
         this.TitlePaint[0].Data=this.ChartPaint[0].Data;                    //动态标题
         this.TitlePaint[0].Symbol=this.Symbol;
         this.TitlePaint[0].Name=this.Name;
+        this.TitlePaint[0].Period=this.Period;
 
         this.ChartCorssCursor.StringFormatX.Data=this.ChartPaint[0].Data;   //十字光标
         this.Frame.Data=this.ChartPaint[0].Data;
@@ -27181,7 +27269,8 @@ function KLineChartContainer(uielement)
         {
             if (this.SourceData.DataType!=0) isDataTypeChange=true;
         }
-        else if (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)
+        else if ((period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END) || 
+                    (period>CUSTOM_SECOND_PERIOD_START && period<=CUSTOM_SECOND_PERIOD_END))
         {
             if (this.SourceData.DataType!=1) isDataTypeChange=true;
         }
@@ -27228,7 +27317,7 @@ function KLineChartContainer(uielement)
             this.RequestHistoryData();                  //请求日线数据
             this.ReqeustKLineInfoData();
         }
-        else if (ChartData.IsMinutePeriod(this.Period,true))
+        else if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period))
         {
             this.CancelAutoUpdate();                    //先停止定时器
             this.AutoUpdateEvent(false,'KLineChartContainer::ChangePeriod');                //切换周期先停止更新
@@ -27272,7 +27361,7 @@ function KLineChartContainer(uielement)
                 this.ResetOverlaySymbolStatus();
                 this.RequestHistoryData();                  //请求日线数据
             }
-            else if (ChartData.IsMinutePeriod(this.Period,true))
+            else if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period))
             {
                 this.CancelAutoUpdate();                    //先停止定时器
                 this.AutoUpdateEvent(false,'KLineChartContainer::ChangeRight');                //切换复权先停止更新
@@ -28250,7 +28339,7 @@ function KLineChartContainer(uielement)
             this.RequestHistoryData();                  //请求日线数据
             this.ReqeustKLineInfoData();
         }
-        else if (ChartData.IsMinutePeriod(this.Period,true))
+        else if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period))
         {
             this.ReqeustHistoryMinuteData();            //请求分钟数据
         } 
@@ -29387,7 +29476,7 @@ function KLineChartContainer(uielement)
                     self.RequestRealtimeData();               //更新最新行情
                     //self.ReqeustKLineInfoData();
                 }
-                else if (ChartData.IsMinutePeriod(self.Period,true))
+                else if (ChartData.IsMinutePeriod(self.Period,true) || ChartData.IsSecondPeriod(self.Period))
                 {
                     self.RequestMinuteRealtimeData();         //请求分钟数据
                 }  

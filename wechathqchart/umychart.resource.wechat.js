@@ -347,7 +347,8 @@ function JSChartLocalization()
         ['12月', { CN: '12月', EN: 'Dec' }],
 
         ['自定义分钟', { CN: '分', EN: 'Min' }],
-        ['自定义日线', { CN: '日', EN: 'D' }]
+        ['自定义日线', { CN: '日', EN: 'D' }],
+        ['自定义秒', { CN: '秒', EN: 'S' }]
 
     ]);
 
