@@ -110,21 +110,21 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * 支持涨停坐标 <br>
 
 # 3. 网页demo  <br>
-* [K线图](https://opensource.zealink.com/hqweb/demo/phone7.html)  <br>
-* [走势图](https://opensource.zealink.com/hqweb/demo/phone8.html)  <br>
-* [走势图手机页面](https://opensource.zealink.com/hqweb/demo/phone2.html)  <br>
-* [K线图手机页面](https://opensource.zealink.com/hqweb/demo/phone.html)  <br>
-* [横版走势图手机页面](https://opensource.zealink.com/hqweb/demo/phone10.html)  <br>
-* [横版K线图手机页面](https://opensource.zealink.com/hqweb/demo/phone9.html)  <br>
-* [多日走势图](https://opensource.zealink.com/hqweb/demo/phone15.html) <br>
-* [个股筹码图](https://opensource.zealink.com/hqweb/demo/phone18.html) <br>
-* [指标回测(手机版)](https://opensource.zealink.com/hqweb/operatebsh5/index.html?symbol=000001.sz) <br>
-* [K线训练](https://opensource.zealink.com/hqweb/demo/phone13.html) <br>
-* [弹幕功能](https://opensource.zealink.com/hqweb/demo/phone21.html) <br>
-* [多指标叠加](https://opensource.zealink.com/hqweb/demo/phone22.html) <br>
-* [截面数据(财务数据)计算器](https://opensource.zealink.com/hqweb/demo/sectiondatatest.html) <br>
-* [走势图-大盘异动](https://opensource.zealink.com/hqweb/demo/phone23.html) <br>
-* [分笔K线图](https://opensource.zealink.com/hqweb/demo/phone24.html) <br>
+* [K线图](https://opensource2.zealink.com/hqweb/demo/phone7.html)  <br>
+* [走势图](https://opensource2.zealink.com/hqweb/demo/phone8.html)  <br>
+* [走势图手机页面](https://opensource2.zealink.com/hqweb/demo/phone2.html)  <br>
+* [K线图手机页面](https://opensource2.zealink.com/hqweb/demo/phone.html)  <br>
+* [横版走势图手机页面](https://opensource2.zealink.com/hqweb/demo/phone10.html)  <br>
+* [横版K线图手机页面](https://opensource2.zealink.com/hqweb/demo/phone9.html)  <br>
+* [多日走势图](https://opensource2.zealink.com/hqweb/demo/phone15.html) <br>
+* [个股筹码图](https://opensource2.zealink.com/hqweb/demo/phone18.html) <br>
+* [指标回测(手机版)](https://opensource2.zealink.com/hqweb/operatebsh5/index.html?symbol=000001.sz) <br>
+* [K线训练](https://opensource2.zealink.com/hqweb/demo/phone13.html) <br>
+* [弹幕功能](https://opensource2.zealink.com/hqweb/demo/phone21.html) <br>
+* [多指标叠加](https://opensource2.zealink.com/hqweb/demo/phone22.html) <br>
+* [截面数据(财务数据)计算器](https://opensource2.zealink.com/hqweb/demo/sectiondatatest.html) <br>
+* [走势图-大盘异动](https://opensource2.zealink.com/hqweb/demo/phone23.html) <br>
+* [分笔K线图](https://opensource2.zealink.com/hqweb/demo/phone24.html) <br>
 * 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
 
 
@@ -231,25 +231,25 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 # 5.VUE 行情项目
 [代码地址(vuehqchart)](/vuehqchart) <br>
 ![走势图2](/小程序行情模块用例/image/pch5hq.PNG)
-[行情页面地址(v1.0）](https://opensource.zealink.com/vuehqweb/hq.demo.page.html) <br><br>
+[行情页面地址(v1.0）](https://opensource2.zealink.com/vuehqweb/hq.demo.page.html) <br><br>
 ![历史高频数据查询图2](/小程序行情模块用例/image/pch5history.PNG)
-[查询页面地址](https://opensource.zealink.com/vuehqweb/queryContent.demo.page.html) <br><br>
+[查询页面地址](https://opensource2.zealink.com/vuehqweb/queryContent.demo.page.html) <br><br>
 ![多周期图2](/小程序行情模块用例/image/pch5hq2.png)
-[多周期页面地址](https://opensource.zealink.com/vuehqweb/stockmultiperiod.demo.page.html) <br><br>
+[多周期页面地址](https://opensource2.zealink.com/vuehqweb/stockmultiperiod.demo.page.html) <br><br>
 ![综合排名2](/小程序行情模块用例/image/pch5hq3.png)
-[综合排名页面地址](https://opensource.zealink.com/vuehqweb/stockmultiorder.demo.page.html) <br><br>
+[综合排名页面地址](https://opensource2.zealink.com/vuehqweb/stockmultiorder.demo.page.html) <br><br>
    
 ## 基于VUE版本给客户开发的样例
-[指数行情页面黑色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sh&colorType=black) <br>
-[个股行情页面白色风格](https://opensource.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sz) <br>
+[指数行情页面黑色风格](https://opensource2.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sh&colorType=black) <br>
+[个股行情页面白色风格](https://opensource2.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sz) <br>
 [代码地址(vue.demo/infoHqdemo)](/vue.demo/infoHqdemo) <br>
 
 ## VUE版本手机端样例1
 ![手机端行情页面](/小程序行情模块用例/image/hchart_phone_1.png) <br>
-[手机端行情页面](https://opensource.zealink.com/product/hqNewdemoH5/stockHq.html#/StockHq)<br>
+[手机端行情页面](https://opensource2.zealink.com/product/hqNewdemoH5/stockHq.html#/StockHq)<br>
 
 ## js页面样例
-[个股详情手机端h5](https://opensource.zealink.com/hqweb/hqpages/stockpage.html?) <br>
+[个股详情手机端h5](https://opensources2.zealink.com/hqweb/hqpages/stockpage.html?) <br>
 [代码地址(webhqchart.demo/h5demo)](/webhqchart.demo/h5demo) <br>
 ## 第3方数据对接样例
 1. 数字货币对接 <br>
