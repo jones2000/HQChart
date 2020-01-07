@@ -9437,7 +9437,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
         var minData = aryDayData[i];
         if (minData == null) coninue;
         if (isNaN(minData.Open) || minData.Open <= 0 || isNaN(minData.High) || minData.High <= 0 || isNaN(minData.Low) || minData.Low <= 0
-        || isNaN(minData.Close) || minData.Close <= 0 || isNaN(minData.YClose) || minData.YClose <= 0) 
+        || isNaN(minData.Close) || minData.Close <= 0 ) 
         {
             if (i == 0) 
             {

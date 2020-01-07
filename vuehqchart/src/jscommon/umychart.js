@@ -16866,11 +16866,11 @@ function HistoryDataStringFormat()
         var title2=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],this.LanguageID);
         if (ChartData.IsMinutePeriod(this.Value.ChartPaint.Data.Period,true)) // 分钟周期
         {
-            var hour=parseInt(data.Time/100);
-            var minute=data.Time%100;
-            var strHour=hour>=10?hour.toString():"0"+hour.toString();
-            var strMinute=minute>=10?minute.toString():"0"+minute.toString();
-            title2 = strHour + ":" + strMinute;
+            title2=IFrameSplitOperator.FormatTimeString(data.Time);
+        }
+        else if (ChartData.IsSecondPeriod(this.Value.ChartPaint.Data.Period))
+        {
+            title2=IFrameSplitOperator.FormatTimeString(data.Time,'HH:MM:SS');
         }
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
         var increase=null;
@@ -26543,7 +26543,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
         var minData = aryDayData[i];
         if (minData == null) coninue;
         if (isNaN(minData.Open) || minData.Open <= 0 || isNaN(minData.High) || minData.High <= 0 || isNaN(minData.Low) || minData.Low <= 0 
-            || isNaN(minData.Close) || minData.Close <= 0 || isNaN(minData.YClose) || minData.YClose <= 0)
+            || isNaN(minData.Close) || minData.Close <= 0 )
         {
             if (i == 0)
             {

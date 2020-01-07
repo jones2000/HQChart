@@ -20184,11 +20184,11 @@ function HistoryDataStringFormat()
         var title2=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],this.LanguageID);
         if (ChartData.IsMinutePeriod(this.Value.ChartPaint.Data.Period,true)) // 分钟周期
         {
-            var hour=parseInt(data.Time/100);
-            var minute=data.Time%100;
-            var strHour=hour>=10?hour.toString():"0"+hour.toString();
-            var strMinute=minute>=10?minute.toString():"0"+minute.toString();
-            title2 = strHour + ":" + strMinute;
+            title2=IFrameSplitOperator.FormatTimeString(data.Time);
+        }
+        else if (ChartData.IsSecondPeriod(this.Value.ChartPaint.Data.Period))
+        {
+            title2=IFrameSplitOperator.FormatTimeString(data.Time,'HH:MM:SS');
         }
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
         var increase=null;
@@ -29861,7 +29861,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
         var minData = aryDayData[i];
         if (minData == null) coninue;
         if (isNaN(minData.Open) || minData.Open <= 0 || isNaN(minData.High) || minData.High <= 0 || isNaN(minData.Low) || minData.Low <= 0 
-            || isNaN(minData.Close) || minData.Close <= 0 || isNaN(minData.YClose) || minData.YClose <= 0)
+            || isNaN(minData.Close) || minData.Close <= 0 )
         {
             if (i == 0)
             {
@@ -52080,6 +52080,14 @@ var BLACK_STYLE=
     FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
     FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
     FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
+
+    FrameLatestPrice : {
+        TextColor:'rgb(255,255,255)',   //最新价格文字颜色
+        UpBarColor:"rgb(238,21,21)",    //上涨
+        DownBarColor:"rgb(25,158,0)",   //下跌
+        UnchagneBarColor:"rgb(190,190,190)",   //平盘
+        BGAlpha:0.6
+    },
 
     CorssCursorBGColor: "rgb(43,54,69)",            //十字光标背景
     CorssCursorTextColor: "rgb(255,255,255)",
