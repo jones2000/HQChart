@@ -20768,11 +20768,11 @@ function DynamicMinuteTitlePainting()
         var position = { Left: left, Bottom: bottom, IsHScreen: isHScreen };
         if(this.IsShowName)
         {
-            if (!this.DrawText(this.Name,this.UnchagneColor,position)) return;
+            if (!this.DrawText(this.Name,this.NameColor,position)) return;
         }
 
         var text=IFrameSplitOperator.FormatDateTimeString(item.DateTime,this.IsShowDate);
-        if (!this.DrawText(text,this.UnchagneColor,position)) return;
+        if (!this.DrawText(text,this.DateTimeColor,position)) return;
 
         var close=item.Close;
         var increase=item.Increase;
@@ -30091,8 +30091,32 @@ function MinuteChartContainer(uielement)
         if (this.IsPhoneDragging(e))
         {
             var drag=this.MouseDrag;
-            if ((drag==null && this.EnableScrollUpDown==true) || (drag && this.EnableScrollUpDown==false))
+            if (drag==null)
             {
+                if(this.EnableScrollUpDown==true)
+                {
+                    var pixelTatio = GetDevicePixelRatio();
+                    var x = touches[0].clientX-uielement.getBoundingClientRect().left*pixelTatio;
+                    var y = touches[0].clientY-uielement.getBoundingClientRect().top*pixelTatio;
+                    this.OnMouseMove(x,y,e);
+                }
+            }
+            else
+            {
+                var moveAngle=this.GetMoveAngle(drag.LastMove,{X:touches[0].clientX, Y:touches[0].clientY});
+                var moveSetp=Math.abs(drag.LastMove.X-touches[0].clientX);
+                var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
+                moveSetp=parseInt(moveSetp);
+
+                //上下滚动
+                if ( ((moveUpDown>0 && moveSetp<=3) || moveAngle<=this.TouchMoveMinAngle) && this.EnableScrollUpDown==true ) 
+                {
+                    this.StopDragTimer();
+                    return;
+                }
+
+                this.PreventTouchEvent(e);
+                this.MouseDrag=null;
                 var pixelTatio = GetDevicePixelRatio();
                 var x = touches[0].clientX-uielement.getBoundingClientRect().left*pixelTatio;
                 var y = touches[0].clientY-uielement.getBoundingClientRect().top*pixelTatio;

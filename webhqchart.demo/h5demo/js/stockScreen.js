@@ -16,6 +16,7 @@ var JSGLOBAL = {
     KLineIndex: ['均线', 'VOL', 'MACD', 'KDJ', 'BOLL'], //K线指标
     JqUlOne: $('<ul class="ulOne"><li class="noRight">不复权</li><li class="noRight active">前复权</li><li class="noRight">后复权</li><ul>'),
     JqUlTwo: $('<ul class="ulTwo"></ul>'),
+    chartHeight:500,
 }
 
 function updateBaseData(id, arySymbol, dataType, jsStock) {
@@ -293,14 +294,14 @@ function resizeCanvas() {
     if (JSGLOBAL.minuteChart != null) {
         //分钟走势图宽高
         $("#minuteWrap").width($("body").width());
-        $("#minuteWrap").height(281);
+        $("#minuteWrap").height(JSGLOBAL.chartHeight);
         document.getElementById("minuteWrap").JSChart.OnSize();
     }
     if (JSGLOBAL.klineChart != null) {
         //K线图宽高
         var truewidth = $("body").width() * 0.903;
         $("#klinebox").width(truewidth);
-        $("#klinebox").height(281);
+        $("#klinebox").height(JSGLOBAL.chartHeight);
         document.getElementById("klinebox").JSChart.OnSize();
     }
 }
@@ -323,11 +324,11 @@ $(function() {
 
     //分钟走势图宽高
     $("#minuteWrap").width($("body").width());
-    $("#minuteWrap").height(281);
+    $("#minuteWrap").height(JSGLOBAL.chartHeight);
     //K线图宽高
     var truewidth = $("body").width() * 0.903;
     $("#klinebox").width(truewidth);
-    $("#klinebox").height(281);
+    $("#klinebox").height(JSGLOBAL.chartHeight);
 
     showMinuteChart(JSGLOBAL.symbol);
 
