@@ -157,11 +157,13 @@ function LoadEnvironment() {
         Type: '分钟走势图', //历史分钟走势图
         Symbol: JSEnvironment.Symbol,
         IsAutoUpdate: true, //是自动更新数据
+        NetworkFilter:NetworkFilter,
 
         IsShowRightMenu: false, //右键菜单
         //IsShowCorssCursorInfo: false, //是否显示十字光标的刻度信息
         CorssCursorTouchEnd:true,
         EnableScrollUpDown:true,    //允许上下拖动图形
+        CorssCursorInfo:{ Left:2, Right:2, Bottom:1, IsShowCorss:true},
 
         Border: //边框
         {
@@ -171,17 +173,20 @@ function LoadEnvironment() {
             Bottom: 20
         },
 
-        KLineTitle: //标题设置
+        MinuteTitle: //标题设置
         {
             IsShowName: false, //不显示股票名称
-            IsShowSettingInfo: false, //不显示周期/复权
         },
 
         Frame: //子框架设置,刻度小数位数设置
-            [
-                { SplitCount: 5, StringFormat: 0 },
-                { SplitCount: 3, StringFormat: 0 }
-            ]
+        [
+            { SplitCount: 5, StringFormat: 0 },
+            { SplitCount: 3, StringFormat: 0 }
+        ],
+        ExtendChart:    //扩展图形
+        [
+            {Name:'MinuteTooltip' }  //手机端tooltip
+        ],
     };
     JSEnvironment.FiveDMinuteOption = {
         Type: '分钟走势图',
@@ -193,6 +198,7 @@ function LoadEnvironment() {
         DayCount: 5,  //5日
         CorssCursorTouchEnd:true,
         EnableScrollUpDown:true,    //允许上下拖动图形
+        NetworkFilter:NetworkFilter,
 
         Border: //边框
         {
@@ -202,17 +208,20 @@ function LoadEnvironment() {
             Bottom: 20
         },
 
-        KLineTitle: //标题设置
+        MinuteTitle: //标题设置
         {
             IsShowName: false, //不显示股票名称
-            IsShowSettingInfo: false, //不显示周期/复权
         },
 
         Frame: //子框架设置,刻度小数位数设置
-            [
-                { SplitCount: 5, StringFormat: 1 },
-                { SplitCount: 3, StringFormat: 1 }
-            ]
+        [
+            { SplitCount: 5, StringFormat: 1 },
+            { SplitCount: 3, StringFormat: 1 }
+        ],
+        ExtendChart:    //扩展图形
+        [
+            {Name:'MinuteTooltip' }  //手机端tooltip
+        ],
     };
 
     //K线图配置
@@ -226,11 +235,12 @@ function LoadEnvironment() {
         ], //窗口指标
         Symbol: JSEnvironment.Symbol,
         IsAutoUpdate: true, //是自动更新数据
-        AutoUpdateFrequency:5000,
         CorssCursorTouchEnd:true,
+        NetworkFilter:NetworkFilter,
 
         IsShowRightMenu: false, //右键菜单
         EnableScrollUpDown:true,    //允许上下拖动图形
+        DisableMouse:true,
 
         KLine: {
             DragMode: 1, //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
@@ -267,14 +277,7 @@ function LoadEnvironment() {
         [
             {Name:'KLineTooltip' }  //手机端tooltip
         ],
-
-        NetworkFilter:NetworkFilter,
     };
-}
-
-function NetworkFilter(data, callback)
-{
-    console.log('[NetworkFilter] data', data);
 }
 
 
@@ -642,6 +645,11 @@ function changeTab(tabsClassName) {
     });
 }
 
+function NetworkFilter(data, callback)
+{
+    console.log('[NetworkFilter] data', data);
+}
+
 $(function () {
     LoadEnvironment();
 
@@ -813,6 +821,7 @@ $(function () {
     });
 
     JSEnvironment.StockCache = JSStock.Init(); //初始化数据控件
+    JSEnvironment.StockCache.NetworkFilter=NetworkFilter;
     var arySymbol = new Array();
     arySymbol.push(JSEnvironment.Symbol);
     UpdateMain(null, null, null, JSEnvironment.StockCache);
