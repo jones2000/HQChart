@@ -4068,6 +4068,7 @@ function MinuteFrame()
     this.IsBeforeData=false;    //是否显示集合竞价
     this.BeforeBGColor=g_JSChartResource.Minute.BeforeBGColor;  //集合竞价背景
     this.CustomHorizontalInfo=[];
+    this.RightFrame=null;   //右侧多重坐标
 
     this.DrawFrame=function()
     {
@@ -5706,7 +5707,11 @@ function HQTradeFrame()
             }
         }
 
-        if (frame!=null) return frame.GetYData(y);
+        if (frame!=null) 
+        {
+            if (frame.RightFrame) outObject.RightYValue=frame.RightFrame.GetYData(y);    //右侧子坐标
+            return frame.GetYData(y);
+        }
     }
 
     this.PtInFrame=function(x,y)    //鼠标哪个指标窗口
@@ -15615,6 +15620,22 @@ function FrameSplitY()
         this.RemoveZero(this.Frame.HorizontalInfo);
         this.Frame.HorizontalMax=splitData.Max;
         this.Frame.HorizontalMin=splitData.Min;
+
+        this.RightFrameSplitY();
+    }
+
+    this.RightFrameSplitY=function()
+    {
+        if (!this.Frame.RightFrame) return;
+
+        var rightFrame=this.Frame.RightFrame;
+        for(var i in this.Frame.HorizontalInfo)
+        {
+            var item=this.Frame.HorizontalInfo[i];
+            var y=this.Frame.GetYFromData(item.Value);
+            var yValue=rightFrame.GetYData(y);
+            item.Message[1] = IFrameSplitOperator.FormatValueString(yValue, this.FloatPrecision,this.LanguageID);
+        }
     }
 }
 
@@ -16277,6 +16298,7 @@ function ChartCorssCursor()
 
         this.StringFormatX.Value=xValue;
         this.StringFormatY.Value=yValue;
+        this.StringFormatY.RValue=yValueExtend.RightYValue; //右侧子坐标
         this.StringFormatY.FrameID=yValueExtend.FrameID;
 
         //Y轴
@@ -16317,12 +16339,13 @@ function ChartCorssCursor()
                 this.Canvas.fillText(text,left+2,y,textWidth);
             }
 
-
             if (this.StringFormatY.PercentageText)
             {
                 text=this.StringFormatY.PercentageText+'%';
                 textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
             }
+
+            if (this.StringFormatY.RText) text=this.StringFormatY.RText;
 
             if (this.Frame.ChartBorder.Right>=30 && this.ShowTextMode.Right==1)
             {
@@ -16732,11 +16755,14 @@ function HQPriceStringFormat()
     this.Symbol;
     this.FrameID;
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-    this.YClose;    //收盘价
-    this.PercentageText;   //百分比
+    this.YClose;            //收盘价
+    this.PercentageText;    //百分比
+    this.RValue;            //右边值
+    this.RText;
 
     this.Operator=function()
     {
+        this.RText=null;
         if (!this.Value) return false;
 
         this.PercentageText=null;
@@ -16746,6 +16772,12 @@ function HQPriceStringFormat()
             var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
             this.Text=this.Value.toFixed(defaultfloatPrecision);
             if (this.YClose>0) this.PercentageText=((this.Value-this.YClose)*100/this.YClose).toFixed(2);   //走势图右边坐标显示百分比
+        }
+        else if (this.FrameID==1)
+        {
+            
+            this.Text=IFrameSplitOperator.FormatValueString(this.Value,defaultfloatPrecision,this.LanguageID);
+            if (IFrameSplitOperator.IsNumber(this.RValue)) this.RText=IFrameSplitOperator.FormatValueString(this.RValue,defaultfloatPrecision,this.LanguageID);
         }
         else
         {
@@ -26678,111 +26710,105 @@ function MinuteChartContainer(uielement)
         this.IsAutoUpdate=false;
     }
 
-    //手机拖拽
-    uielement.ontouchstart=function(e)
+    //手势
+    this.OnTouchStart=function(e)
     {
-        if(!this.JSChartContainer) return;
-        if(this.JSChartContainer.DragMode==0) return;
+        if(this.DragMode==0) return;
 
-        this.JSChartContainer.IsOnTouch=true;
-        this.JSChartContainer.PhonePinch=null;
+        this.IsOnTouch=true;
+        this.TouchDrawCount=0;
+        this.PhonePinch=null;
+        this.StopDragTimer();
 
-        var jsChart=this.JSChartContainer;
-        if (jsChart.EnableScrollUpDown==false) e.preventDefault();  //上下拖动图形不能阻止事件
+        if (this.EnableScrollUpDown==false) e.preventDefault();  //上下拖动图形不能阻止事件
 
-        if (jsChart.IsPhoneDragging(e))
+        if (this.IsPhoneDragging(e))
         {
-            var drag=
-            {
-                "Click":{},
-                "LastMove":{},  //最后移动的位置
-            };
-
-            var touches=jsChart.GetToucheData(e,jsChart.IsForceLandscape);
+            var drag= { Click:{}, LastMove:{} };//LastMove=最后移动的位置
+            var touches=this.GetToucheData(e,this.IsForceLandscape);
 
             drag.Click.X=touches[0].clientX;
             drag.Click.Y=touches[0].clientY;
             drag.LastMove.X=touches[0].clientX;
             drag.LastMove.Y=touches[0].clientY;
             var self=this;
+
             var T_ShowCorssCursor=function() //临时函数(Temp_) T_开头
             {
-                if (jsChart.ChartCorssCursor.IsShow === true)    //移动十字光标
+                if (self.ChartCorssCursor.IsShow === true)    //移动十字光标
                 {
                     var pixelTatio = GetDevicePixelRatio();
-                    var x = drag.Click.X-self.getBoundingClientRect().left*pixelTatio;
-                    var y = drag.Click.Y-self.getBoundingClientRect().top*pixelTatio;
-                    jsChart.OnMouseMove(x, y, e);
+                    var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
+                    var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
+                    self.OnMouseMove(x, y, e);
                 }
             }
 
-            if (jsChart.EnableScrollUpDown==true)
+            if (this.EnableScrollUpDown==true)
             {
                 this.DragTimer=setTimeout(function()
                 {
                     if (drag.Click.X==drag.LastMove.X && drag.Click.Y==drag.LastMove.Y)
                     {
-                        var mouseDrag=jsChart.MouseDrag;
-                        jsChart.MouseDrag=null;
+                        var mouseDrag=self.MouseDrag;
+                        self.MouseDrag=null;
                         T_ShowCorssCursor();
-                        jsChart.PreventTouchEvent(e)
+                        self.PreventTouchEvent(e)
                     }
                 }, 800);
             }
 
-            this.JSChartContainer.MouseDrag=drag;
-            document.JSChartContainer=this.JSChartContainer;
-            this.JSChartContainer.SelectChartDrawPicture=null;
+            this.MouseDrag=drag;
+            
+            this.SelectChartDrawPicture=null;
 
-            if (jsChart.EnableScrollUpDown==false)
+            if (this.EnableScrollUpDown==false)
                 T_ShowCorssCursor();    //移动十字光标
         }
-
-        uielement.ontouchmove=function(e)
-        {
-            if(!this.JSChartContainer) return;
-
-            var touches=jsChart.GetToucheData(e,this.JSChartContainer.IsForceLandscape);
-            if (jsChart.IsPhoneDragging(e))
-            {
-                var drag=this.JSChartContainer.MouseDrag;
-                if ((drag==null && jsChart.EnableScrollUpDown==true) || (drag && jsChart.EnableScrollUpDown==false))
-                {
-                    var pixelTatio = GetDevicePixelRatio();
-                    var x = touches[0].clientX-this.getBoundingClientRect().left*pixelTatio;
-                    var y = touches[0].clientY-this.getBoundingClientRect().top*pixelTatio;
-                    this.JSChartContainer.OnMouseMove(x,y,e);
-                }
-            }
-
-            if (jsChart.EnableScrollUpDown==false)
-            {
-                e.preventDefault();
-            }
-            else
-            {
-                if (drag==null) 
-                {
-                    jsChart.PreventTouchEvent(e); //十字光标出来了,阻止消息
-                }  
-                else 
-                {
-                    clearTimeout(this.DragTimer);   //上下推动图片,停止定时器,消息传递下去
-                    this.DragTimer=null;
-                }
-            }
-        };
-
-        uielement.ontouchend=function(e)
-        {
-            console.log('[MinuteChartContainer::uielement.ontouchend]',e);
-            this.JSChartContainer.IsOnTouch = false;
-            this.JSChartContainer.OnTouchFinished();
-            clearTimeout(this.DragTimer);
-        }
-
     }
 
+    this.OnTouchMove=function(e)
+    {
+        var touches=this.GetToucheData(e,this.IsForceLandscape);
+        if (this.IsPhoneDragging(e))
+        {
+            var drag=this.MouseDrag;
+            if ((drag==null && this.EnableScrollUpDown==true) || (drag && this.EnableScrollUpDown==false))
+            {
+                var pixelTatio = GetDevicePixelRatio();
+                var x = touches[0].clientX-uielement.getBoundingClientRect().left*pixelTatio;
+                var y = touches[0].clientY-uielement.getBoundingClientRect().top*pixelTatio;
+                this.OnMouseMove(x,y,e);
+            }
+        }
+
+        if (this.EnableScrollUpDown==false)
+        {
+            e.preventDefault();
+        }
+        else
+        {
+            if (drag==null) 
+            {
+                this.PreventTouchEvent(e); //十字光标出来了,阻止消息
+            }  
+            else 
+            {
+                this.StopDragTimer();   //上下推动图片,停止定时器,消息传递下去
+            }
+        }
+    }
+
+    this.OnTouchEnd=function(e)
+    {
+        console.log('[MinuteChartContainer::OnTouchEnd]',e);
+        this.IsOnTouch = false;
+        this.StopDragTimer();
+        this.OnTouchFinished();
+        this.TouchDrawCount=0;
+    }
+
+    
     //键盘左右移动十字光标
     this.OnKeyDown=function(e)
     {
@@ -27432,6 +27458,13 @@ function MinuteChartContainer(uielement)
             item.Frame.XSplitOperator.IsBeforeData=this.IsBeforeData;
             item.Frame.YSplitOperator.Symbol=this.Symbol;
             item.Frame.IsBeforeData=this.IsBeforeData;
+
+            for(var j in item.OverlayIndex) //子坐标X轴个数同步
+            {
+                var overlayItem=item.OverlayIndex[j];
+                overlayItem.Frame.XPointCount=item.Frame.XPointCount;
+                overlayItem.Frame.MinuteCount=item.Frame.MinuteCount;
+            }
         }
 
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
@@ -27598,6 +27631,13 @@ function MinuteChartContainer(uielement)
             item.Frame.XSplitOperator.IsBeforeData=this.IsBeforeData;
             item.Frame.YSplitOperator.Symbol=this.Symbol;
             item.Frame.IsBeforeData=this.IsBeforeData;
+
+            for(var j in item.OverlayIndex) //子坐标X轴个数同步
+            {
+                var overlayItem=item.OverlayIndex[j];
+                overlayItem.Frame.XPointCount=item.Frame.XPointCount;
+                overlayItem.Frame.MinuteCount=item.Frame.MinuteCount;
+            }
         }
 
         this.ChartCorssCursor.StringFormatY.Symbol=this.Symbol;
@@ -28012,6 +28052,7 @@ function MinuteChartContainer(uielement)
             overlayFrame.ChartPaint.push(chart);
 
             subFrame.OverlayIndex.push(overlayFrame);
+            subFrame.Frame.RightFrame=frame;  //右边坐标绑定到主坐标上
         }
         else
         {
@@ -28031,6 +28072,7 @@ function MinuteChartContainer(uielement)
     {
         if (this.Frame.SubFrame.length<2) return;
         var subFrame=this.Frame.SubFrame[1];    //第2个窗口
+        subFrame.Frame.RightFrame=null;
         subFrame.OverlayIndex=[];
     }
 
@@ -29225,11 +29267,8 @@ function KLineChartHScreenContainer(uielement)
                 if (!isSingleTouch) bStartTimer=false;
             }
 
-            var drag=
-            {
-                "Click":{},
-                "LastMove":{}  //最后移动的位置
-            };
+            var drag= {  Click:{}, LastMove:{}  }; //LastMove=最后移动的位置
+           
 
             var touches=this.GetToucheData(e,false);
 
