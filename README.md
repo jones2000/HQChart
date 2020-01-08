@@ -217,7 +217,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 ## 实战教程
 1. [HQChart实战教程1-外汇分时图](https://blog.csdn.net/jones2000/article/details/103254501) <br>
-2. [HQChart实战教程1-使用跨周期写指标](https://blog.csdn.net/jones2000/article/details/103275668) <br>
+2. [HQChart实战教程2-使用跨周期写指标](https://blog.csdn.net/jones2000/article/details/103275668) <br>
+3. [HQChart实战教程3-http+ws对接分钟K线数据](https://blog.csdn.net/jones2000/article/details/103882063) <br>
 
 
 ## 设计文档:
