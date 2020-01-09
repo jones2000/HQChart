@@ -397,6 +397,7 @@ function FrameSplitKLinePriceY()
     this.CoordinateType = 0;  //坐标类型 0=普通坐标  1=百分比坐标 (右边坐标刻度)
     this.Symbol;
     this.Data;              //K线数据 (计算百分比坐标)
+    this.FrameSplitData2;   //坐标轴分割方法(计算百分比刻度)
 
     this.Custom = []; //[{Type:0}];   定制刻度 0=显示最后的价格刻度
     this.SplitType = 0;       //0=自动分割  1=固定分割
@@ -549,6 +550,37 @@ function FrameSplitKLinePriceY()
 
             this.Frame.CustomHorizontalInfo.push(info);
         }
+    }
+
+
+    //////////////////////
+    // data.Min data.Max data.Interval data.Count
+    //
+    this.IntegerCoordinateSplit2 = function (data) 
+    {
+        var splitItem = this.FrameSplitData2.Find(data.Interval);
+        if (!splitItem) return false;
+
+        if (data.Interval == splitItem.FixInterval) return true;
+
+        //调整到整数倍数,不能整除的 +1
+        var fixMax = parseInt((data.Max / (splitItem.FixInterval) + 0.5).toFixed(0)) * splitItem.FixInterval;
+        var fixMin = parseInt((data.Min / (splitItem.FixInterval) - 0.5).toFixed(0)) * splitItem.FixInterval;
+        if (data.Min == 0) fixMin = 0;  //最小值是0 不用调整了.
+        if (fixMin < 0 && data.Min > 0) fixMin = 0;   //都是正数的, 最小值最小调整为0
+
+        var count = 0;
+        for (var i = fixMin; (i - fixMax) < 0.00000001; i += splitItem.FixInterval) 
+        {
+            ++count;
+        }
+
+        data.Interval = splitItem.FixInterval;
+        data.Max = fixMax;
+        data.Min = fixMin;
+        data.Count = count;
+
+        return true;
     }
 
 }

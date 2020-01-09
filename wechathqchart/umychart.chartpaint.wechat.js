@@ -839,6 +839,13 @@ function ChartOverlayKLine()
     this.Title;
     this.DrawType = 0;
     this.ClassName ='ChartOverlayKLine';
+    this.CustomDrawType = null;       //图形类型
+
+    this.SetOption = function (option) 
+    {
+        if (!option) return;
+        if (IFrameSplitOperator.IsNumber(option.DrawType)) this.CustomDrawType = option.DrawType;
+    }
 
     this.DrawKBar = function (firstOpen)   //firstOpen 当前屏第1个显示数据
     {
@@ -1219,9 +1226,14 @@ function ChartOverlayKLine()
 
         if (firstOpen == null) return;
 
+        var drawTypeBackup = this.DrawType; //备份下线段类型
+        if (this.CustomDrawType != null) this.DrawType = this.CustomDrawType;
+
         if (this.DrawType == 1) this.DrawCloseLine(firstOpen);
         else if (this.DrawType == 2) this.DrawAKLine(firstOpen);
         else this.DrawKBar(firstOpen);
+
+        this.DrawType = drawTypeBackup; //还原线段类型
     }
 
     this.GetMaxMin = function () 

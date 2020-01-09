@@ -219,7 +219,7 @@ function DynamicKLineTitlePainting()
         {
             var periodName = this.GetPeriodName(this.Data.Period);
             var rightName = RIGHT_NAME[this.Data.Right];
-            var isIndex = MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol); //是否是指数
+            var isStock = MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol); //是否是指数
             var text = "(" + periodName + " " + rightName + ")";
             if (ChartData.IsMinutePeriod(this.Data.Period, true) || !isStock || ChartData.IsSecondPeriod(this.Data.Period))
                 text = "(" + periodName + ")";	//分钟K线 或 指数没有复权

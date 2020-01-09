@@ -305,6 +305,7 @@ function JSChart(element)
             {
                 chart.OverlayChartPaint[0].Symbol = item.Symbol;
                 if (item.Color) chart.OverlayChartPaint[0].Color=item.Color;
+                chart.OverlayChartPaint[0].SetOption(item);
                 break;
             }
         }
@@ -7333,6 +7334,7 @@ function KLineChartContainer(uielement)
             {
                 frame.YSplitOperator = new FrameSplitKLinePriceY();
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
+                frame.YSplitOperator.FrameSplitData2 = this.FrameSplitData.get('double');
                 border.BottomSpace = 12;  //主图上下留空间
                 border.TopSpace = 12;
             }
@@ -8855,6 +8857,7 @@ function KLineChartContainer(uielement)
         this.OverlayChartPaint[0].SourceData = sourceData;
         this.OverlayChartPaint[0].Title = data.name;
         this.OverlayChartPaint[0].Symbol = data.symbol;
+        this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType = 1; //调整为百份比坐标
 
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
