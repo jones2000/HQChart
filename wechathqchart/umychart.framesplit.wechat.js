@@ -387,6 +387,12 @@ IFrameSplitOperator.IsObjectExist = function (obj) //判断字段是否存在
     return true;
 }
 
+IFrameSplitOperator.IsString = function (value) 
+{
+    if (value && typeof (value) == 'string') return true;
+    return false;
+}
+
 //K线Y轴分割
 function FrameSplitKLinePriceY() 
 {

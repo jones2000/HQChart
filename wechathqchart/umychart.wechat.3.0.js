@@ -3645,7 +3645,16 @@ function HQTradeFrame()
             }
         }
 
-        if (frame != null) return frame.GetYData(y);
+        if (frame != null) 
+        {
+            var yValue=frame.GetYData(y);
+            if (frame.YSplitOperator.CoordinateType == 1) //百分比坐标 右边显示百分比信息
+            {
+                var firstOpenPrice = frame.YSplitOperator.GetFirstOpenPrice();
+                outObject.RightYValue = ((yValue - firstOpenPrice) / firstOpenPrice * 100).toFixed(2) + '%';
+            }
+            return yValue;
+        }
     }
 
     this.GetXFromIndex = function (index) { return this.SubFrame[0].Frame.GetXFromIndex(index); }
@@ -6417,9 +6426,14 @@ function HQPriceStringFormat()
     this.Symbol;
     this.FrameID;
     this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+    this.PercentageText;    //百分比
+    this.RValue;            //右边值
+    this.RText;
 
     this.Operator = function () 
     {
+        this.RText = null;
+        if (IFrameSplitOperator.IsString(this.RValue)) this.RText = this.RValue;
         if (!this.Value) return false;
 
         var defaultfloatPrecision = 2;     //价格小数位数 
@@ -8865,16 +8879,18 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
-  //取消叠加股票
-  this.ClearOverlaySymbol = function () {
-    this.OverlayChartPaint[0].Symbol = null;
-    this.OverlayChartPaint[0].Data = null;
-    this.OverlayChartPaint[0].SourceData = null;
-    this.OverlayChartPaint[0].TooltipRect = [];
+    //取消叠加股票
+    this.ClearOverlaySymbol = function () 
+    {
+        this.OverlayChartPaint[0].Symbol = null;
+        this.OverlayChartPaint[0].Data = null;
+        this.OverlayChartPaint[0].SourceData = null;
+        this.OverlayChartPaint[0].TooltipRect = [];
+        this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType = 0; //调整一般坐标
 
-    this.UpdateFrameMaxMin();
-    this.Draw();
-  }
+        this.UpdateFrameMaxMin();
+        this.Draw();
+    }
 
   //创建画图工具
   this.CreateChartDrawPicture = function (name) {

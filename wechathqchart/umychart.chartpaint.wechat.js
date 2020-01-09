@@ -2597,6 +2597,7 @@ function ChartCorssCursor()
         var xValue = this.Frame.GetXData(x);
         var yValueExtend = {};
         var yValue = this.Frame.GetYData(y, yValueExtend);
+        this.StringFormatY.RValue = yValueExtend.RightYValue; //右侧子坐标
         if (this.IsShowClose && this.Close != null) yValue = this.Close;
 
         this.StringFormatX.Value = xValue;
@@ -2604,12 +2605,14 @@ function ChartCorssCursor()
         this.StringFormatY.FrameID = yValueExtend.FrameID;
 
         if (((this.ShowTextMode.Left == 1 && this.Frame.ChartBorder.Left >= 30) || this.ShowTextMode.Left == 2 ||
-            (this.ShowTextMode.Right == 1 && this.Frame.ChartBorder.Right >= 30) || this.ShowTextMode.Right == 2) && this.StringFormatY.Operator()) {
+            (this.ShowTextMode.Right == 1 && this.Frame.ChartBorder.Right >= 30) || this.ShowTextMode.Right == 2) && this.StringFormatY.Operator()) 
+        {
             var text = this.StringFormatY.Text;
             this.Canvas.font = this.Font;
             var textWidth = this.Canvas.measureText(text).width + 4;    //前后各空2个像素
 
-            if (this.Frame.ChartBorder.Left >= 30 && this.ShowTextMode.Left == 1) {
+            if (this.Frame.ChartBorder.Left >= 30 && this.ShowTextMode.Left == 1) 
+            {
                 this.Canvas.fillStyle = this.TextBGColor;
                 if (left < textWidth) //左边空白的地方太少了画布下
                 {
@@ -2619,7 +2622,8 @@ function ChartCorssCursor()
                     this.Canvas.fillStyle = this.TextColor;
                     this.Canvas.fillText(text, 2 + 2, y, textWidth);
                 }
-                else {
+                else 
+                {
                     this.Canvas.fillRect(left - 2, y - this.TextHeight / 2, -textWidth, this.TextHeight);
                     this.Canvas.textAlign = "right";
                     this.Canvas.textBaseline = "middle";
@@ -2627,7 +2631,8 @@ function ChartCorssCursor()
                     this.Canvas.fillText(text, left - 4, y, textWidth);
                 }
             }
-            else if (this.ShowTextMode.Left == 2) {
+            else if (this.ShowTextMode.Left == 2) 
+            {
                 this.Canvas.fillStyle = this.TextBGColor;
                 this.Canvas.fillRect(left, y - this.TextHeight / 2, textWidth, this.TextHeight);
                 this.Canvas.textAlign = "left";
@@ -2636,7 +2641,14 @@ function ChartCorssCursor()
                 this.Canvas.fillText(text, left + 2, y, textWidth);
             }
 
-            if (this.Frame.ChartBorder.Right >= 30 && this.ShowTextMode.Right == 1) {
+            if (this.StringFormatY.RText) 
+            {
+                text = this.StringFormatY.RText;
+                var textWidth = this.Canvas.measureText(text).width + 4;    //前后各空2个像素
+            }
+
+            if (this.Frame.ChartBorder.Right >= 30 && this.ShowTextMode.Right == 1) 
+            {
                 this.Canvas.fillStyle = this.TextBGColor;
                 if (rightWidth > textWidth)               //右边不够就不画
                 {
@@ -2646,7 +2658,8 @@ function ChartCorssCursor()
                     this.Canvas.fillStyle = this.TextColor;
                     this.Canvas.fillText(text, right + 4, y, textWidth);
                 }
-                else {
+                else 
+                {
                     this.Canvas.fillRect(chartRight - 2 - textWidth, y - this.TextHeight / 2, textWidth, this.TextHeight);
                     this.Canvas.textAlign = "right";
                     this.Canvas.textBaseline = "middle";
@@ -2654,7 +2667,8 @@ function ChartCorssCursor()
                     this.Canvas.fillText(text, chartRight - 4, y, textWidth);
                 }
             }
-            else if (this.ShowTextMode.Right == 2) {
+            else if (this.ShowTextMode.Right == 2) 
+            {
                 this.Canvas.fillStyle = this.TextBGColor;
                 var showLeft = right - textWidth;
                 this.Canvas.fillRect(showLeft, y - this.TextHeight / 2, textWidth, this.TextHeight);
@@ -2665,7 +2679,8 @@ function ChartCorssCursor()
             }
         }
 
-        if (this.ShowTextMode.Bottom == 1 && this.StringFormatX.Operator()) {
+        if (this.ShowTextMode.Bottom == 1 && this.StringFormatX.Operator()) 
+        {
             var text = this.StringFormatX.Text;
             this.Canvas.font = this.Font;
 
@@ -2679,14 +2694,16 @@ function ChartCorssCursor()
                 this.Canvas.fillStyle = this.TextColor;
                 this.Canvas.fillText(text, x + 1, bottom + 2, textWidth);
             }
-            else if ((right - left) - x < textWidth) {            //右边位置不够用，顶着右边画
+            else if ((right - left) - x < textWidth) 
+            {            //右边位置不够用，顶着右边画
                 this.Canvas.fillRect(x - textWidth, bottom + 2, textWidth, this.TextHeight);
                 this.Canvas.textAlign = "right";
                 this.Canvas.textBaseline = "top";
                 this.Canvas.fillStyle = this.TextColor;
                 this.Canvas.fillText(text, x - 1, bottom + 2, textWidth);
             }
-            else {
+            else 
+            {
                 this.Canvas.fillRect(x - textWidth / 2, bottom + 2, textWidth, this.TextHeight);
                 this.Canvas.textAlign = "center";
                 this.Canvas.textBaseline = "top";

@@ -5710,7 +5710,14 @@ function HQTradeFrame()
         if (frame!=null) 
         {
             if (frame.RightFrame) outObject.RightYValue=frame.RightFrame.GetYData(y);    //右侧子坐标
-            return frame.GetYData(y);
+
+            var yValue=frame.GetYData(y);
+            if (frame.YSplitOperator.CoordinateType==1) //百分比坐标 右边显示百分比信息
+            {
+                var  firstOpenPrice=frame.YSplitOperator.GetFirstOpenPrice();
+                outObject.RightYValue=((yValue-firstOpenPrice)/firstOpenPrice*100).toFixed(2)+'%';
+            }
+            return yValue;
         }
     }
 
@@ -15267,6 +15274,12 @@ IFrameSplitOperator.IsBool=function(value)
     return false;
 }
 
+IFrameSplitOperator.IsString=function(value)
+{
+    if (value && typeof(value)=='string') return true;
+    return false;
+}
+
 function FrameSplitKLinePriceY()
 {
     this.newMethod=IFrameSplitOperator;   //派生
@@ -16345,7 +16358,11 @@ function ChartCorssCursor()
                 textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
             }
 
-            if (this.StringFormatY.RText) text=this.StringFormatY.RText;
+            if (this.StringFormatY.RText) 
+            {
+                text=this.StringFormatY.RText;
+                var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
+            }
 
             if (this.Frame.ChartBorder.Right>=30 && this.ShowTextMode.Right==1)
             {
@@ -16763,6 +16780,7 @@ function HQPriceStringFormat()
     this.Operator=function()
     {
         this.RText=null;
+        if (IFrameSplitOperator.IsString(this.RValue)) this.RText=this.RValue;
         if (!this.Value) return false;
 
         this.PercentageText=null;
