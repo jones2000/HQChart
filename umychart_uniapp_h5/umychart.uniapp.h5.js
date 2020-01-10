@@ -20626,10 +20626,13 @@ function DynamicKLineTitlePainting()
         var text=g_JSChartLocalization.GetText('KTitle-Close',this.LanguageID)+item.Close.toFixed(defaultfloatPrecision);
         if (!this.DrawText(text,color,position)) return;
 
-        var value=(item.Close-item.YClose)/item.YClose*100;
-        var color = this.GetColor(value, 0);
-        var text = g_JSChartLocalization.GetText('KTitle-Increase',this.LanguageID) + value.toFixed(2)+'%';
-        if (!this.DrawText(text,color,position)) return;
+        if (item.YClose>0)
+        {
+            var value=(item.Close-item.YClose)/item.YClose*100;
+            var color = this.GetColor(value, 0);
+            var text = g_JSChartLocalization.GetText('KTitle-Increase',this.LanguageID) + value.toFixed(2)+'%';
+            if (!this.DrawText(text,color,position)) return;
+        }
 
         var text=g_JSChartLocalization.GetText('KTitle-Vol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Vol,2,this.LanguageID);
         if (!this.DrawText(text,this.VolColor,position)) return;
@@ -29851,7 +29854,8 @@ KLineChartContainer.JsonDataToMinuteRealtimeData=function(data,symbol)
         if (isSHSZ) item.Vol=jsData.vol/100; //沪深股票原始单位股
         else item.Vol=jsData.vol;
         item.Amount=jsData.amount;
-        item.Date=date;
+        if (jsData.date>0) item.Date=jsData.date;
+        else item.Date=date;
         item.Time=jsData.time;
         item.YClose=preClose;
 

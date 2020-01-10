@@ -9398,7 +9398,8 @@ KLineChartContainer.JsonDataToMinuteRealtimeData = function (data)
         if (isSHSZ) item.Vol = jsData.vol / 100; //沪深股票原始单位股
         else item.Vol = jsData.vol;
         item.Amount = jsData.amount;
-        item.Date = date;
+        if (jsData.date > 0) item.Date = jsData.date;
+        else item.Date = date;
         item.Time = jsData.time;
         item.YClose = preClose;
 
