@@ -1,3 +1,14 @@
+
+//日志输出类
+var JSConsole=
+{ 
+    Chart:{ Log:console.log },      //图形日志
+    Complier:{ Log:console.log }    //编译器日志
+};
+
+
+
+
 /*
    Copyright (c) 2018 jones
  
@@ -3370,6 +3381,17 @@ JSIndexScript.prototype.TEST = function ()
 */
 
 
+//日志输出类
+if (!JSConsole)
+{
+    var JSConsole=
+    { 
+        Chart:{ Log:console.log },      //图形日志
+        Complier:{ Log:console.log }    //编译器日志
+    };
+}
+
+
 function JSChart(divElement)
 {
     this.DivElement=divElement;
@@ -3410,7 +3432,7 @@ function JSChart(divElement)
         this.CanvasElement.height*=pixelTatio;
         this.CanvasElement.width*=pixelTatio;
 
-        console.log(`[JSChart::OnSize] devicePixelRatio=${window.devicePixelRatio}, height=${this.CanvasElement.height}, width=${this.CanvasElement.width}`);
+        JSConsole.Chart.Log(`[JSChart::OnSize] devicePixelRatio=${window.devicePixelRatio}, height=${this.CanvasElement.height}, width=${this.CanvasElement.width}`);
 
         if (this.JSChartContainer && this.JSChartContainer.Frame)
             this.JSChartContainer.Frame.SetSizeChage(true);
@@ -4443,7 +4465,7 @@ function JSChart(divElement)
     {
         if (this.JSChartContainer) 
         {
-            console.log("[JSChart::ForceLandscape] bForceLandscape="+bForceLandscape);
+            JSConsole.Chart.Log("[JSChart::ForceLandscape] bForceLandscape="+bForceLandscape);
             this.JSChartContainer.IsForceLandscape=bForceLandscape;
         }
     }
@@ -4453,7 +4475,7 @@ function JSChart(divElement)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.LockIndex)=='function')
         {
-            console.log('[JSChart:LockIndex] lockData', lockData);
+            JSConsole.Chart.Log('[JSChart:LockIndex] lockData', lockData);
             this.JSChartContainer.LockIndex(lockData);
         }
     }
@@ -4463,7 +4485,7 @@ function JSChart(divElement)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.ChangeTradeDate)=='function')
         {
-            console.log('[JSChart:ChangeTradeDate] date', tradeDate);
+            JSConsole.Chart.Log('[JSChart:ChangeTradeDate] date', tradeDate);
             this.JSChartContainer.ChangeTradeDate(tradeDate);
         }
     }
@@ -4473,7 +4495,7 @@ function JSChart(divElement)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.ChangeDayCount)=='function')
         {
-            console.log('[JSChart:ChangeDayCount] count', count);
+            JSConsole.Chart.Log('[JSChart:ChangeDayCount] count', count);
             this.JSChartContainer.ChangeDayCount(count);
         }
     }
@@ -4483,7 +4505,7 @@ function JSChart(divElement)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.StartAnimation)=='function')
         {
-            console.log('[JSChart:StartAnimation] start.');
+            JSConsole.Chart.Log('[JSChart:StartAnimation] start.');
             return this.JSChartContainer.StartAnimation(option);
         }
     }
@@ -4492,7 +4514,7 @@ function JSChart(divElement)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.StopAnimation)=='function')
         {
-            console.log('[JSChart:StopAnimation] start.');
+            JSConsole.Chart.Log('[JSChart:StopAnimation] start.');
             return this.JSChartContainer.StopAnimation();
         }
     }
@@ -4514,7 +4536,7 @@ function JSChart(divElement)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.AddEventCallback)=='function')
         {
-            console.log('[JSChart:AddEventCallback] ', obj);
+            JSConsole.Chart.Log('[JSChart:AddEventCallback] ', obj);
             this.JSChartContainer.AddEventCallback(obj);
         }
     }
@@ -4524,7 +4546,7 @@ function JSChart(divElement)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.SetLanguage)=='function')
         {
-            console.log('[JSChart:SetLanguage] ', language);
+            JSConsole.Chart.Log('[JSChart:SetLanguage] ', language);
             this.JSChartContainer.SetLanguage(language);
         }
     }
@@ -4534,7 +4556,7 @@ function JSChart(divElement)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.ChangeIndexTemplate)=='function')
         {
-            console.log('[JSChart:ChangeIndexTemplate] ', option);
+            JSConsole.Chart.Log('[JSChart:ChangeIndexTemplate] ', option);
             this.JSChartContainer.ChangeIndexTemplate(option);
         }
     }
@@ -4544,7 +4566,7 @@ function JSChart(divElement)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.SetChartDrawOption)=='function')
         {
-            console.log('[JSChart:SetChartDrawOption] ', option);
+            JSConsole.Chart.Log('[JSChart:SetChartDrawOption] ', option);
             this.JSChartContainer.SetChartDrawOption(option);
         }
     }
@@ -4553,7 +4575,7 @@ function JSChart(divElement)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.CreateChartDrawPicture)=='function')
         {
-            console.log('[JSChart:CreateChartDrawPicture] ', name);
+            JSConsole.Chart.Log('[JSChart:CreateChartDrawPicture] ', name);
             this.JSChartContainer.CreateChartDrawPicture(name);
         }
     }
@@ -4784,7 +4806,7 @@ function JSChartContainer(uielement)
 
     this.UIOnMouseMove=function(e)
     {
-        //console.log('[JSChartContainer.UIOnMouseMove] e.clientX, e.clientY, left, top ',e.clientX, e.clientY, this.getBoundingClientRect().left,this.getBoundingClientRect().top);
+        //JSConsole.Chart.Log('[JSChartContainer.UIOnMouseMove] e.clientX, e.clientY, left, top ',e.clientX, e.clientY, this.getBoundingClientRect().left,this.getBoundingClientRect().top);
         var pixelTatio = GetDevicePixelRatio(); //鼠标移动坐标是原始坐标 需要乘以放大倍速
         var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
@@ -4822,7 +4844,7 @@ function JSChartContainer(uielement)
 
         if (this.TryClickLock)
         {
-            //console.log('[uielement.onmousedown] left, top ',e.clientX, e.clientY, this.getBoundingClientRect().left,this.getBoundingClientRect().top);
+            //JSConsole.Chart.Log('[uielement.onmousedown] left, top ',e.clientX, e.clientY, this.getBoundingClientRect().left,this.getBoundingClientRect().top);
             var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
             var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
             if (this.TryClickLock(x,y)) return;
@@ -5025,7 +5047,7 @@ function JSChartContainer(uielement)
         }
 
         //清空数据
-        console.log('[KLineChartContainer::document.onmouseup]',e);
+        JSConsole.Chart.Log('[KLineChartContainer::document.onmouseup]',e);
         this.UIElement.style.cursor="default";
         this.MouseDrag=null;
         this.IsOnTouch=false;
@@ -5036,7 +5058,7 @@ function JSChartContainer(uielement)
     //判断是单个手指
     this.IsPhoneDragging=function(e)
     {
-        // console.log(e);
+        // JSConsole.Chart.Log(e);
         var changed=e.changedTouches.length;
         var touching=e.touches.length;
 
@@ -5293,7 +5315,7 @@ function JSChartContainer(uielement)
                 moveSetp=parseInt(moveSetp);
                 var isMoveCorssCursor=(this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID && this.TouchStatus.CorssCursorShow==true); //是否移动十字光标
 
-                //console.log("[JSChartContainer::uielement.ontouchmove]  moveAngle , moveUpDown", moveAngle,moveUpDown);
+                //JSConsole.Chart.Log("[JSChartContainer::uielement.ontouchmove]  moveAngle , moveUpDown", moveAngle,moveUpDown);
 
                 if (this.CurrentChartDrawPicture)
                 {
@@ -5422,7 +5444,7 @@ function JSChartContainer(uielement)
 
     this.OnTouchEnd=function(e)
     {
-        console.log('[KLineChartContainer:OnTouchEnd]',e);
+        JSConsole.Chart.Log('[KLineChartContainer:OnTouchEnd]',e);
 
         var bClearDrawPicture=true;
         if (this.CurrentChartDrawPicture)
@@ -5891,7 +5913,7 @@ function JSChartContainer(uielement)
             case 46:    //del
                 if (!this.SelectChartDrawPicture) break;
                 var drawPicture=this.SelectChartDrawPicture;
-                console.log(drawPicture,"drawPicturedrawPicturedrawPicture")
+                JSConsole.Chart.Log(drawPicture,"drawPicturedrawPicturedrawPicture")
                 this.SelectChartDrawPicture=null;
                 this.ClearChartDrawPicture(drawPicture);    //删除选中的画图工具
                 break;
@@ -5906,7 +5928,7 @@ function JSChartContainer(uielement)
 
     this.OnDoubleClick=function(x,y,e)
     {
-        //console.log(e);
+        //JSConsole.Chart.Log(e);
     }
 
     this.UpdatePointByCursorIndex=function()
@@ -5964,10 +5986,10 @@ function JSChartContainer(uielement)
             if (this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID) width=180;
             this.Tooltip.style.width = width+"px";
             this.Tooltip.style.height =textHeight+"px";
-            //console.log(`[JSChartContainer::ShowTooltip] left=${left} top=${top} xMove=${xMove}` );
+            //JSConsole.Chart.Log(`[JSChartContainer::ShowTooltip] left=${left} top=${top} xMove=${xMove}` );
             //if (toolTip.ChartPaint.Name=="Overlay-KLine")  this.Tooltip.style.height =220+"px";
             this.Tooltip.style.position = "absolute";
-            //console.log('[JSChartContainer::ShowTooltip] getBoundingClientRect() ',this.UIElement.getBoundingClientRect())
+            //JSConsole.Chart.Log('[JSChartContainer::ShowTooltip] getBoundingClientRect() ',this.UIElement.getBoundingClientRect())
             if (left+width>this.UIElement.getBoundingClientRect().width)
                 this.Tooltip.style.left = (left-width) + "px";
             else
@@ -6048,7 +6070,7 @@ function JSChartContainer(uielement)
         var x=this.Frame.GetXFromIndex(fixedStart);
         var x2=this.Frame.GetXFromIndex(fixedEnd);
 
-        console.log('[JSChartContainer::UpdateSelectRect]',start,end,x,x2);
+        JSConsole.Chart.Log('[JSChartContainer::UpdateSelectRect]',start,end,x,x2);
         var scrollPos=GetScrollPosition();
         this.SelectRect.style.left = x + scrollPos.Left+"px";
         this.SelectRect.style.width = (x2-x)+"px";
@@ -6295,7 +6317,7 @@ function JSChartContainer(uielement)
 
         var index=parseInt(frame.GetXData(x));
 
-        //console.log('x='+ x +' date='+data.Data[data.DataOffset+index].Date);
+        //JSConsole.Chart.Log('x='+ x +' date='+data.Data[data.DataOffset+index].Date);
         return data.DataOffset+index;
     }
 
@@ -6359,7 +6381,7 @@ function JSChartContainer(uielement)
         if (this.UIElement.width<=0 || this.UIElement.height<=0) return null;
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash) return null; // 数据加载中不能保存
 
-        console.log('[JSChartContainer::SaveToImage]', this.UIElement);
+        JSConsole.Chart.Log('[JSChartContainer::SaveToImage]', this.UIElement);
         var clrBG='rgb(255,255,255)';
         if (colorGB) clrBG=colorGB;
         this.Canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
@@ -6457,7 +6479,7 @@ function JSChartContainer(uielement)
         }
 
         var dataURL=this.UIElement.toDataURL(format ? format:'image/png', 1.0);
-        console.log('[JSChartContainer::SaveToImage] data= ', dataURL);
+        JSConsole.Chart.Log('[JSChartContainer::SaveToImage] data= ', dataURL);
         return dataURL;
     }
 
@@ -6476,14 +6498,14 @@ function JSChartContainer(uielement)
             data: postData,
             success: function (data) 
             {
-                console.log('[JSChartContainer::SaveToImageUrl] recv data', data);
+                JSConsole.Chart.Log('[JSChartContainer::SaveToImageUrl] recv data', data);
                 var result={Path:data.relativeurl, Domain:'https://opensourcedownload.zealink.com'};
                 result.Url=`${result.Domain}/${result.Path}`;
                 if (callback) callback(true,result,'');
             },
             error: function (request) 
             {
-                console.log('[JSChartContainer::SaveToImageUrl] error ', request);
+                JSConsole.Chart.Log('[JSChartContainer::SaveToImageUrl] error ', request);
                 if (callback) callback(false,null,'upload failed');
             }
         });
@@ -6820,7 +6842,7 @@ function IChartFramePainting()
         var width=right-left;
         var height=bottom-top;
 
-        //console.log('[IChartFramePainting.DrawBorder] bottom',bottom);
+        //JSConsole.Chart.Log('[IChartFramePainting.DrawBorder] bottom',bottom);
 
         this.Canvas.strokeStyle=this.PenBorder;
         this.Canvas.strokeRect(left,top,width,height);
@@ -7141,7 +7163,7 @@ function AverageWidthFrame()
         var bottom=this.ChartBorder.GetBottom();
         var right=this.ChartBorder.GetRight();
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
-        //console.log('[AverageWidthFrame.DrawVertical] bottom',bottom);
+        //JSConsole.Chart.Log('[AverageWidthFrame.DrawVertical] bottom',bottom);
 
         var xPrev=null; //上一个坐标x的值
         var textRightPrev=null; //上一次刻度输出右边x坐标
@@ -7868,7 +7890,7 @@ function KLineFrame()
         var pixelTatio = GetDevicePixelRatio();
         var chartWidth=parseInt(this.ChartBorder.UIElement.parentElement.style.width.replace("px",""));  
         var chartHeight=parseInt(this.ChartBorder.UIElement.parentElement.style.height.replace("px",""));
-        //console.log('[KLineFrame::DrawToolbar] ',chartWidth,chartHeight,pixelTatio);
+        //JSConsole.Chart.Log('[KLineFrame::DrawToolbar] ',chartWidth,chartHeight,pixelTatio);
 
         var toolbarWidth=100;
         var toolbarHeight=this.ChartBorder.GetTitleHeight();
@@ -8034,7 +8056,7 @@ function KLineFrame()
     {
         if (this.XPointCount<2) return;
 
-        //console.log(`[KLineFrame::CalculateDataWidth] ZoomIndex=${this.ZoomIndex}, XPointCount=${this.XPointCount}, DataWidth=${this.DataWidth}, DistanceWidth=${this.DistanceWidth}`);
+        //JSConsole.Chart.Log(`[KLineFrame::CalculateDataWidth] ZoomIndex=${this.ZoomIndex}, XPointCount=${this.XPointCount}, DataWidth=${this.DataWidth}, DistanceWidth=${this.DistanceWidth}`);
         var width=this.ChartBorder.GetWidth()-4;
 
         if (this.ZoomIndex>0 && this.LastCalculateStatus.Width==width && this.LastCalculateStatus.XPointCount==this.XPointCount) //宽度没变 尝试使用原来的柱子宽度
@@ -8053,7 +8075,7 @@ function KLineFrame()
                 this.DataWidth = ZOOM_SEED[i][0];
                 this.DistanceWidth = ZOOM_SEED[i][1];
                 this.TrimKLineDataWidth(width);
-                console.log('[KLineFrame::CalculateDataWidth] ZOOM_SEED, DataWidth, DistanceWidth, XPointCount', ZOOM_SEED[this.ZoomIndex], this.DataWidth,this.DistanceWidth,this.XPointCount);
+                JSConsole.Chart.Log('[KLineFrame::CalculateDataWidth] ZOOM_SEED, DataWidth, DistanceWidth, XPointCount', ZOOM_SEED[this.ZoomIndex], this.DataWidth,this.DistanceWidth,this.XPointCount);
                 return;
             }
         }
@@ -8139,7 +8161,7 @@ function KLineFrame()
         var lastCursorIndex=this.Data.DataOffset + cursorIndex.Index;
 
         if (lastDataIndex>this.Data.Data.length) lastDataIndex=this.Data.Data.length-1;
-        //console.log(`[KLineFrame::ZoomUp] old status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
+        //JSConsole.Chart.Log(`[KLineFrame::ZoomUp] old status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
 
         --this.ZoomIndex;
         var xPointCount=this.CalculateCount(this.ZoomIndex);
@@ -8152,7 +8174,7 @@ function KLineFrame()
         this.TrimKLineDataWidth(this.ChartBorder.GetWidth());
         this.LastCalculateStatus.XPointCount=this.XPointCount;
 
-        //console.log(`[KLineFrame::ZoomUp] new status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
+        //JSConsole.Chart.Log(`[KLineFrame::ZoomUp] new status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
 
         if (lastDataIndex>=this.Data.Data.length)
         {
@@ -8184,7 +8206,7 @@ function KLineFrame()
         var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
         if (lastDataIndex>=this.Data.Data.length) lastDataIndex=this.Data.Data.length-1;
 
-        //console.log(`[KLineFrame::ZoomDown] old status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
+        //JSConsole.Chart.Log(`[KLineFrame::ZoomDown] old status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
 
         var xPointCount=this.CalculateCount(this.ZoomIndex+1);
         var lastCursorIndex=this.Data.DataOffset + cursorIndex.Index;
@@ -8197,7 +8219,7 @@ function KLineFrame()
         this.TrimKLineDataWidth(this.ChartBorder.GetWidth());
         this.LastCalculateStatus.XPointCount=this.XPointCount;
 
-        //console.log(`[KLineFrame::ZoomDown] new status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
+        //JSConsole.Chart.Log(`[KLineFrame::ZoomDown] new status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
 
         if (lastDataIndex-xPointCount+1<0)
             this.Data.DataOffset=0;
@@ -10780,7 +10802,7 @@ function ChartData()
             }
         }
 
-        //console.log('[ChartData::MergeMinuteData] ', this.Data, data);
+        //JSConsole.Chart.Log('[ChartData::MergeMinuteData] ', this.Data, data);
 
         return true;
     }
@@ -10834,7 +10856,7 @@ function ChartData()
             result.push(newItem);
         }
 
-        console.log('[ChartData::CoverTo] result', result);
+        JSConsole.Chart.Log('[ChartData::CoverTo] result', result);
         return result;
     }
 
@@ -12139,7 +12161,7 @@ function ChartKLine()
             this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
             if (this.Canvas.isPointInPath(x,y))
             {
-                //console.log('[ChartKLine::GetTooltipData]', item);
+                //JSConsole.Chart.Log('[ChartKLine::GetTooltipData]', item);
                 tooltip.Data=item;
                 tooltip.ChartPaint=this;
                 tooltip.Type=1; //信息地雷
@@ -13935,7 +13957,7 @@ function ChartSingleText()
             }
             else
             {
-                //console.log('[ChartSingleText::Draw] ',this.Direction,this.Text)
+                //JSConsole.Chart.Log('[ChartSingleText::Draw] ',this.Direction,this.Text)
                 this.DrawText(this.Text,x,y,isHScreen);
             }
         }
@@ -14551,7 +14573,7 @@ function ChartOverlayMinutePriceLine()
         range.Max=this.MainYClose+distance;
         range.Min=this.MainYClose-distance;
 
-        //console.log(`[ChartOverlayMinutePriceLine::GetMaxMin] max=${range.Max} min=${range.Min}`);
+        //JSConsole.Chart.Log(`[ChartOverlayMinutePriceLine::GetMaxMin] max=${range.Max} min=${range.Min}`);
         return range;
     }
 }
@@ -16207,7 +16229,7 @@ function ChartPie()
         {
             let item =this.Data.Data[i];
             let rate=(item.Value/totalValue).toFixed(2); //占比
-            //console.log('[ChartPie::Draw]', i, rate, item);
+            //JSConsole.Chart.Log('[ChartPie::Draw]', i, rate, item);
 
             // 绘制扇形
             this.Canvas.beginPath();
@@ -16228,7 +16250,7 @@ function ChartPie()
             let x = (this.Radius + this.Distance)*Math.cos(end- (end-start)/2);
             let y = (this.Radius + this.Distance)*Math.sin(end - (end-start)/2);
             this.Canvas.lineTo(x,y);
-            // console.log(x,y,"xy")
+            // JSConsole.Chart.Log(x,y,"xy")
             
             // 绘制横线
             let txtLine = this.txtLine;
@@ -16261,7 +16283,7 @@ function ChartPie()
     //空数据
     this.DrawEmptyData=function()
     {
-        console.log('[ChartPie::DrawEmptyData]')
+        JSConsole.Chart.Log('[ChartPie::DrawEmptyData]')
     }
 }
 
@@ -16365,7 +16387,7 @@ function ChartRadar()
     {
         if (!item.Text) return;
           
-        //console.log(item.Text, item.Angle);
+        //JSConsole.Chart.Log(item.Text, item.Angle);
         this.Canvas.fillStyle = this.TitleColor;
         var xText = item.X, yText = item.Y;
 
@@ -16476,7 +16498,7 @@ function ChartRadar()
     //空数据
     this.DrawEmptyData=function()
     {
-        console.log('[ChartPie::DrawEmptyData]')
+        JSConsole.Chart.Log('[ChartPie::DrawEmptyData]')
     }
 }
 
@@ -16564,7 +16586,7 @@ function ChartChinaMap()
             this.Width=width;
             this.Height=height;
 
-            console.log(imageWidth,imageHeight);
+            JSConsole.Chart.Log(imageWidth,imageHeight);
         }
         
         if (this.ImageData==null)
@@ -16585,7 +16607,7 @@ function ChartChinaMap()
                 }
             }
 
-            console.log(this.Data);
+            JSConsole.Chart.Log(this.Data);
             for(let i in this.Color)
             {
                 let item=this.Color[i];
@@ -16759,7 +16781,7 @@ function KLineTooltipPaint()
 
     this.DrawTooltipData=function(item)
     {
-        //console.log('[KLineTooltipPaint::DrawKLineData] ', item);
+        //JSConsole.Chart.Log('[KLineTooltipPaint::DrawKLineData] ', item);
 
         var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
         var left=this.GetLeft()+2*GetDevicePixelRatio();
@@ -16933,7 +16955,7 @@ function MinuteTooltipPaint()
 
     this.DrawTooltipData=function(item)
     {
-        //console.log('[KLineTooltipPaint::DrawKLineData] ', item);
+        //JSConsole.Chart.Log('[KLineTooltipPaint::DrawKLineData] ', item);
         var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
         var left=this.GetLeft()+2*GetDevicePixelRatio();
         var top=this.GetTop()+3*GetDevicePixelRatio();
@@ -17184,7 +17206,7 @@ function StockChip()
         }
         else
         {
-            console.log('[StockChip::Draw] no data');
+            JSConsole.Chart.Log('[StockChip::Draw] no data');
         }
 
         this.DrawBorder();
@@ -17576,7 +17598,7 @@ function StockChip()
         var mouseY=this.HQChart.LastPoint.Y;
         if (mouseY) yPrice=this.HQChart.Frame.SubFrame[0].Frame.GetYData(mouseY);
         
-        //console.log("[StockChip::CalculateChip]",count,this.HQChart.CursorIndex,selData);
+        //JSConsole.Chart.Log("[StockChip::CalculateChip]",count,this.HQChart.CursorIndex,selData);
         const rate=1;
         var aryVol=[];
         var seed=1,vol,maxPrice,minPrice;
@@ -17595,7 +17617,7 @@ function StockChip()
             if (!minPrice || minPrice>item.Low) minPrice=item.Low;
         }
 
-        //console.log("[StockChip::CalculateChip]",maxPrice,minPrice);
+        //JSConsole.Chart.Log("[StockChip::CalculateChip]",maxPrice,minPrice);
         if (!maxPrice || !minPrice) return true;
 
         maxPrice=parseInt(maxPrice*100);
@@ -18083,7 +18105,7 @@ function BarrageList()
             }
         }
 
-        console.log(`[BarrageList::CacluatePlayLine] LineCount=${this.PlayList.length} Height=${this.Height}` )
+        JSConsole.Chart.Log(`[BarrageList::CacluatePlayLine] LineCount=${this.PlayList.length} Height=${this.Height}` )
     }
 
     //添加弹幕
@@ -18668,7 +18690,7 @@ function FrameSplitKLinePriceY()
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
         if (isPhoneModel && MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,太长了
         if (this.FloatPrecision!=null) defaultfloatPrecision=this.FloatPrecision;
-        console.log(`[FrameSplitKLinePriceY] Max=${splitData.Max} Min=${splitData.Min} Count=${splitData.Count} isPhoneModel=${isPhoneModel} defaultfloatPrecision=${defaultfloatPrecision} `);
+        JSConsole.Chart.Log(`[FrameSplitKLinePriceY::Operator] Max=${splitData.Max} Min=${splitData.Min} Count=${splitData.Count} isPhoneModel=${isPhoneModel} defaultfloatPrecision=${defaultfloatPrecision} `);
 
         var bFilter=true;   //是否需要通过高度过滤刻度
         if (ChartData.IsTickPeriod(this.Period))
@@ -18701,7 +18723,7 @@ function FrameSplitKLinePriceY()
         this.Frame.HorizontalMax=splitData.Max;
         this.Frame.HorizontalMin=splitData.Min;
 
-        console.log(`[FrameSplitKLinePriceY] fixed . Max=${splitData.Max} Min=${splitData.Min} Count=${splitData.Count}`);
+        JSConsole.Chart.Log(`[FrameSplitKLinePriceY::Operator] fixed . Max=${splitData.Max} Min=${splitData.Min} Count=${splitData.Count}`);
     }
 
     this.SplitTickData=function(splitData,floatPrecision)
@@ -19382,7 +19404,7 @@ function FrameSplitMinutePriceY()
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         var width=this.Frame.ChartBorder.GetChartWidth();   //画布的宽度
         var isPhoneModel=width<450*pixelTatio;
-        console.log('[FrameSplitMinutePriceY]'+ 'max='+ max + ' min='+ min +' isPhoneModel='+isPhoneModel);
+        JSConsole.Chart.Log('[FrameSplitMinutePriceY]'+ 'max='+ max + ' min='+ min +' isPhoneModel='+isPhoneModel);
 
         var showCount=this.SplitCount;
         var distance=(max-min)/(showCount-1);
@@ -19783,7 +19805,7 @@ function ChartCorssCursor()
             this.Canvas.fillStyle=this.TextBGColor;
             var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
             var yCenter=bottom+2+this.TextHeight/2;
-            //console.log('[ChartCorssCursor::Draw] ',yCenter);
+            //JSConsole.Chart.Log('[ChartCorssCursor::Draw] ',yCenter);
             if (x-textWidth/2<3)    //左边位置不够了, 顶着左边画
             {
                 this.Canvas.fillRect(x-1,bottom+2,textWidth,this.TextHeight);
@@ -22010,7 +22032,7 @@ function ChartDrawPictureRect()
 
             this.Canvas.beginPath();
             this.Canvas.arc(pt.X,pt.Y,5,0,360);
-            //console.log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
+            //JSConsole.Chart.Log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
             if (this.Canvas.isPointInPath(x,y))
                 return i;
 
@@ -22173,7 +22195,7 @@ function ChartDrawPictureArc()
 
             this.Canvas.beginPath();
             this.Canvas.arc(pt.X,pt.Y,5,0,360);
-            //console.log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
+            //JSConsole.Chart.Log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
             if (this.Canvas.isPointInPath(x,y))
                 return i;
 
@@ -22633,7 +22655,7 @@ function ChartDrawPictureParallelChannel()
                 var angle=Math.atan(Math.abs(x/y));
                 var yMove=this.ChannelWidth/Math.sin(angle);
 
-                //console.log('[ChartDrawPictureParallelChannel::CalculateDrawPoint]',xMove);
+                //JSConsole.Chart.Log('[ChartDrawPictureParallelChannel::CalculateDrawPoint]',xMove);
                 
                 linePoint={Start:new Point(), End:new Point() };
                 linePoint.Start.X=drawPoint[0].X;
@@ -22858,7 +22880,7 @@ function ChartDrawPictureText()
 
     this.SetTextOption=function()
     {
-        console.log('[ChartDrawPictureText::SetTextOption]');
+        JSConsole.Chart.Log('[ChartDrawPictureText::SetTextOption]');
         //创建div设置窗口
         if (!this.SettingMenu) this.SettingMenu=new ChartPictureTextSettingMenu(this.Frame.ChartBorder.UIElement.parentNode);
 
@@ -23844,7 +23866,7 @@ function ChartDrawStorage()
         if (!key) return;
         this.StorageKey=key;
         var cacheValue = localStorage[this.StorageKey];
-        console.log(`[ChartDrawStorage::Save] Load to localStorage, key=${this.StorageKey}, cache=${cacheValue}`);
+        JSConsole.Chart.Log(`[ChartDrawStorage::Save] Load to localStorage, key=${this.StorageKey}, cache=${cacheValue}`);
 
         if (!cacheValue) return;
         if (typeof(cacheValue) != "string") return;
@@ -23884,7 +23906,7 @@ function ChartDrawStorage()
             saveData.push(itemData)
         }
 
-        console.log(`[ChartDrawStorage::Save] save to localStorage, key=${this.StorageKey}`);
+        JSConsole.Chart.Log(`[ChartDrawStorage::Save] save to localStorage, key=${this.StorageKey}`);
         var strData=JSON.stringify(saveData);
         localStorage[this.StorageKey]=strData;
     }
@@ -23897,18 +23919,18 @@ function ChartDrawStorage()
 
         if (this.DrawData.has(strKey))  //更新
         {
-            console.log('[ChartDrawStorage::SaveDrawData] Upate: key, drawPicture, data', strKey, drawPicture,data);
+            JSConsole.Chart.Log('[ChartDrawStorage::SaveDrawData] Upate: key, drawPicture, data', strKey, drawPicture,data);
             this.DrawData.get(strKey).set(data.Guid, data);
         }
         else    //新增
         {
-            console.log('[ChartDrawStorage::SaveDrawData] Insert: key, drawPicture, data', strKey, drawPicture,data);
+            JSConsole.Chart.Log('[ChartDrawStorage::SaveDrawData] Insert: key, drawPicture, data', strKey, drawPicture,data);
             var newData=new Map();
             newData.set(data.Guid, data);
             this.DrawData.set(strKey,newData);
         }
 
-        console.log('[ChartDrawStorage::SaveDrawData] All draw data： ', this.DrawData);
+        JSConsole.Chart.Log('[ChartDrawStorage::SaveDrawData] All draw data： ', this.DrawData);
 
         this.Save();
     }
@@ -25668,7 +25690,7 @@ function KLineChartContainer(uielement)
             this.LastPoint.X=null;
             this.LastPoint.Y=null;
 
-            console.log(`[KLineChartContainer::ChartOperator] OP_GOTO_HOME, dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${showCount}`);
+            JSConsole.Chart.Log(`[KLineChartContainer::ChartOperator] OP_GOTO_HOME, dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${showCount}`);
 
             this.UpdataDataoffset();           //更新数据偏移
             this.UpdateFrameMaxMin();          //调整坐标最大 最小值
@@ -25680,7 +25702,7 @@ function KLineChartContainer(uielement)
 
     this.OnWheel=function(e)
     {
-        console.log('[KLineChartContainer::OnWheel]',e);
+        JSConsole.Chart.Log('[KLineChartContainer::OnWheel]',e);
         var x = e.clientX-this.UIElement.getBoundingClientRect().left;
         var y = e.clientY-this.UIElement.getBoundingClientRect().top;
 
@@ -25954,7 +25976,7 @@ function KLineChartContainer(uielement)
         if (lastDataCount>0 && hisData.Data.length>lastDataCount)
         {
             newDataCount=hisData.Data.length-lastDataCount;
-            console.log(`[KLineChartContainer::UpdateMainData]  [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}]`);
+            JSConsole.Chart.Log(`[KLineChartContainer::UpdateMainData]  [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}]`);
         }
 
         this.ChartPaint[0].Data=hisData;
@@ -25999,7 +26021,7 @@ function KLineChartContainer(uielement)
         }
         if (index===null) 
         {
-            console.log(`[KLineChartContainer::SetCustomShow] Can't find first date=${firstDate}`);
+            JSConsole.Chart.Log(`[KLineChartContainer::SetCustomShow] Can't find first date=${firstDate}`);
             return;
         }
 
@@ -26741,7 +26763,7 @@ function KLineChartContainer(uielement)
 
         if (item.Date==realtimeData.Date)   //实时行情数据更新
         {
-            console.log('[KLineChartContainer::RecvRealtimeData] update kline by minute data',realtimeData);
+            JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] update kline by minute data',realtimeData);
 
             item.Close=realtimeData.Close;
             item.High=realtimeData.High;
@@ -26751,7 +26773,7 @@ function KLineChartContainer(uielement)
         }
         else if (item.Date<realtimeData.Date)   //新增加数据
         {
-            console.log('[KLineChartContainer::RecvRealtimeData] insert kline by minute data',realtimeData);
+            JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] insert kline by minute data',realtimeData);
 
             var newItem =new HistoryData();
             newItem.YClose=realtimeData.YClose;
@@ -26822,7 +26844,7 @@ function KLineChartContainer(uielement)
 
             if (latestData.Date==realtimeData.Date)   //实时行情数据更新
             {
-                console.log('[KLineChartContainer::UpdateOverlayRealtimeData] update kline by minute data',realtimeData);
+                JSConsole.Chart.Log('[KLineChartContainer::UpdateOverlayRealtimeData] update kline by minute data',realtimeData);
 
                 latestData.Close=realtimeData.Close;
                 latestData.High=realtimeData.High;
@@ -26832,7 +26854,7 @@ function KLineChartContainer(uielement)
             }
             else if (item.Date<realtimeData.Date)   //新增加数据
             {
-                console.log('[KLineChartContainer::UpdateOverlayRealtimeData] insert kline by minute data',realtimeData);
+                JSConsole.Chart.Log('[KLineChartContainer::UpdateOverlayRealtimeData] insert kline by minute data',realtimeData);
 
                 var newItem =new HistoryData();
                 newItem.YClose=realtimeData.YClose;
@@ -26936,7 +26958,7 @@ function KLineChartContainer(uielement)
 
         if (!this.SourceData.MergeMinuteData(aryMinuteData)) return;
 
-        console.log(`[KLineChartContainer::RecvMinuteRealtimeDataV2] update kline by 1 minute data [${lastDataCount}->${this.SourceData.Data.length}]`);
+        JSConsole.Chart.Log(`[KLineChartContainer::RecvMinuteRealtimeDataV2] update kline by 1 minute data [${lastDataCount}->${this.SourceData.Data.length}]`);
 
         var bindData=new ChartData();
         bindData.Data=this.SourceData.Data;
@@ -26991,7 +27013,7 @@ function KLineChartContainer(uielement)
         var lastSourceDataCount=this.SourceData.Data.length;
         if (!this.SourceData.MergeMinuteData(realtimeData)) return;
 
-        console.log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by 1 minute data [${lastSourceDataCount}->${this.SourceData.Data.length}]`);
+        JSConsole.Chart.Log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by 1 minute data [${lastSourceDataCount}->${this.SourceData.Data.length}]`);
 
         var bindData=new ChartData();
         bindData.Data=this.SourceData.Data;
@@ -27429,7 +27451,7 @@ function KLineChartContainer(uielement)
     {
         if (!obj || !obj.Date) return;
 
-        console.log('[KLineChartContainer::SetFirstShowDate] obj=', obj);
+        JSConsole.Chart.Log('[KLineChartContainer::SetFirstShowDate] obj=', obj);
 
         var hisData=null;
         if (!this.Frame.Data) hisData=this.Frame.Data;
@@ -27466,7 +27488,7 @@ function KLineChartContainer(uielement)
 
         if (index===null) 
         {
-            console.log(`[KLineChartContainer::SetFirstShowDate] an't find first date=${obj.Date} time=${obj.Time}`, obj);
+            JSConsole.Chart.Log(`[KLineChartContainer::SetFirstShowDate] an't find first date=${obj.Date} time=${obj.Time}`, obj);
             return;
         }
 
@@ -27489,7 +27511,7 @@ function KLineChartContainer(uielement)
         this.LastPoint.X=null;
         this.LastPoint.Y=null;
 
-        console.log(`[KLineChartContainer::SetFirstShowDate] dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${customShowCount}`);
+        JSConsole.Chart.Log(`[KLineChartContainer::SetFirstShowDate] dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${customShowCount}`);
 
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
@@ -28052,7 +28074,7 @@ function KLineChartContainer(uielement)
 
     this.RemoveIndexWindow=function(id)
     {
-        console.log('[KLineChartContainer::RemoveIndexWindow] remove id', id);
+        JSConsole.Chart.Log('[KLineChartContainer::RemoveIndexWindow] remove id', id);
         if (id==0) return;
         if (!this.Frame.SubFrame) return;
         if (id>=this.Frame.SubFrame.length) return;
@@ -28243,7 +28265,7 @@ function KLineChartContainer(uielement)
             if (!item.IsClickTitle(x,y)) continue;
 
             var data={ Point:{X:x, Y:y}, Title:item.Title, FrameID:item.Frame.Identify };
-            console.log('[KLineChartContainer::TryClickIndexTitle] click title ', data);
+            JSConsole.Chart.Log('[KLineChartContainer::TryClickIndexTitle] click title ', data);
 
             var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE);
             if (event && event.Callback) event.Callback(event,data,this);
@@ -28790,7 +28812,7 @@ function KLineChartContainer(uielement)
         if (this.FlowCapitalReady==true) return;
         if (MARKET_SUFFIX_NAME.IsBIT(this.Symbol)) //数字货币不需要下载流通股本
         {
-            console.log(`[KLineChartContainer::RequestFlowCapitalData] symbol=${this.Symbol} not need download data.`);
+            JSConsole.Chart.Log(`[KLineChartContainer::RequestFlowCapitalData] symbol=${this.Symbol} not need download data.`);
             this.FlowCapitalReady=true;
             return;
         }
@@ -29031,7 +29053,7 @@ function KLineChartContainer(uielement)
             self.DrawDynamicInfo();
         };
         this.CurrentChartDrawPicture=drawPicture;
-        //console.log("[KLineChartContainer::CreateChartDrawPicture] ", name,this.CurrentChartDrawPicture);
+        //JSConsole.Chart.Log("[KLineChartContainer::CreateChartDrawPicture] ", name,this.CurrentChartDrawPicture);
         return true;
     }
 
@@ -29103,7 +29125,7 @@ function KLineChartContainer(uielement)
         var drawPicture=this.CurrentChartDrawPicture;
         if (!drawPicture) return false;
 
-        //console.log("xStep="+xStep+" yStep="+yStep);
+        //JSConsole.Chart.Log("xStep="+xStep+" yStep="+yStep);
         drawPicture.Move(xStep,yStep);
 
         return true;
@@ -29245,7 +29267,7 @@ function KLineChartContainer(uielement)
         var self =this;
         var scope=param.Scope;
         var waitDailog=param.WaitDialog;
-        console.log('[KLineChartContainer::RequestKLineMatch',sample,scope)
+        JSConsole.Chart.Log('[KLineChartContainer::RequestKLineMatch',sample,scope)
 
         var aryDate=new Array();
         var aryValue=new Array();
@@ -29300,7 +29322,7 @@ function KLineChartContainer(uielement)
     //接收形态选股结果
     this.RecvKLineMatchData=function(data,sample)
     {
-        console.log('[KLineChartContainer::RecvKLineMatchData] recv',data,sample);
+        JSConsole.Chart.Log('[KLineChartContainer::RecvKLineMatchData] recv',data,sample);
         var filterData=[]; //结果数据
         for(var i in data.match)
         {
@@ -29315,7 +29337,7 @@ function KLineChartContainer(uielement)
             }
         }
         filterData.sort(function(a,b){return b.Similar-a.Similar;});    //排序
-        console.log('[KLineChartContainer::RecvKLineMatchData] filterData',filterData);
+        JSConsole.Chart.Log('[KLineChartContainer::RecvKLineMatchData] filterData',filterData);
 
         if (this.mapEvent.has(JSCHART_EVENT_ID.RECV_KLINE_MATCH))
         {
@@ -29391,7 +29413,7 @@ function KLineChartContainer(uielement)
                         }
                     }
                 }
-                //console.log('[KLineChartContainer::UpdataChartInfo]',item);
+                //JSConsole.Chart.Log('[KLineChartContainer::UpdataChartInfo]',item);
             }
 
             //清空临时变量
@@ -29485,7 +29507,7 @@ function KLineChartContainer(uielement)
     //选中画图工具 出现单个图形设置菜单
     this.OnSelectChartPicture=function(chart)
     {   
-        console.log('[KLineChartContainer::OnSelectChartPicture',chart);
+        JSConsole.Chart.Log('[KLineChartContainer::OnSelectChartPicture',chart);
         if (!this.ChartPictureMenu) this.ChartPictureMenu=new ChartPictureSettingMenu(this.UIElement.parentNode);
 
         var event={ data: { ChartPicture:chart, HQChart:this}};
@@ -29551,7 +29573,7 @@ function KLineChartContainer(uielement)
         barWidth= (ZOOM_SEED[0][0] + ZOOM_SEED[0][1]);
         pageSize.Min=parseInt(width / barWidth) - 2;
 
-        console.log(`[KLineChartContainer::GetMaxMinPageSize] Max=${pageSize.Max} Min=${pageSize.Min}`);
+        JSConsole.Chart.Log(`[KLineChartContainer::GetMaxMinPageSize] Max=${pageSize.Max} Min=${pageSize.Min}`);
 
         return pageSize;
     }
@@ -29584,7 +29606,7 @@ function KLineChartContainer(uielement)
 
         if (ChartData.IsMinutePeriod(this.Period,true)) //下载分钟数据
         {
-            console.log(`[KLineChartContainer.DragDownloadData] Minute:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
+            JSConsole.Chart.Log(`[KLineChartContainer.DragDownloadData] Minute:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
             if (!this.DragDownload.Minute.Enable) return;
             if (this.DragDownload.Minute.IsEnd) return; //全部下载完了
             if (this.DragDownload.Minute.Status!=0) return;
@@ -29592,7 +29614,7 @@ function KLineChartContainer(uielement)
         }
         else if (ChartData.IsDayPeriod(this.Period,true))
         {
-            console.log(`[KLineChartContainer.DragDownloadData] Day:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
+            JSConsole.Chart.Log(`[KLineChartContainer.DragDownloadData] Day:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
             if (!this.DragDownload.Day.Enable) return;
             if (this.DragDownload.Day.IsEnd) return; //全部下载完了
             if (this.DragDownload.Day.Status!=0) return;
@@ -30206,7 +30228,7 @@ function MinuteChartContainer(uielement)
 
     this.OnTouchEnd=function(e)
     {
-        console.log('[MinuteChartContainer::OnTouchEnd]',e);
+        JSConsole.Chart.Log('[MinuteChartContainer::OnTouchEnd]',e);
         this.IsOnTouch = false;
         this.StopDragTimer();
         this.OnTouchFinished();
@@ -31078,7 +31100,7 @@ function MinuteChartContainer(uielement)
         var range=MARKET_SUFFIX_NAME.GetLimitPriceRange(this.Symbol, this.Name);   //通过规则获取涨停价格
         if (!range) 
         {
-            console.log(`[MinuteChartContainer::CaclutateLimitPrice] ${this.Symbol} no limit price.`)
+            JSConsole.Chart.Log(`[MinuteChartContainer::CaclutateLimitPrice] ${this.Symbol} no limit price.`)
             return;
         }
 
@@ -31086,11 +31108,11 @@ function MinuteChartContainer(uielement)
         if (yClose<=0) return;
         this.LimitPrice={ Max:yClose*(1+range.Max), Min:yClose*(1+range.Min) };
 
-        console.log(`[MinuteChartContainer::CaclutateLimitPrice] ${this.Symbol} yClose:${yClose} max:${this.LimitPrice.Max} min:${this.LimitPrice.Min}`);
+        JSConsole.Chart.Log(`[MinuteChartContainer::CaclutateLimitPrice] ${this.Symbol} yClose:${yClose} max:${this.LimitPrice.Max} min:${this.LimitPrice.Min}`);
 
         this.LimitPrice.Max=parseFloat(this.LimitPrice.Max.toFixed(2));
         this.LimitPrice.Min=parseFloat(this.LimitPrice.Min.toFixed(2));
-        console.log(`[MinuteChartContainer::CaclutateLimitPrice] ${this.Symbol} tofixed(2) max:${this.LimitPrice.Max} min:${this.LimitPrice.Min}`);
+        JSConsole.Chart.Log(`[MinuteChartContainer::CaclutateLimitPrice] ${this.Symbol} tofixed(2) max:${this.LimitPrice.Max} min:${this.LimitPrice.Min}`);
     }
 
     //请求叠加数据 (主数据下载完再下载))
@@ -31774,7 +31796,7 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         
         //均价太大 可能是后台算错了
         var checkValue=Math.abs(item.AvPrice-item.Close);
-        //console.log(`[MinuteChartContainer::JsonDataToMinuteData] checkValue=${checkValue}, ${item.Close*0.13} `)
+        //JSConsole.Chart.Log(`[MinuteChartContainer::JsonDataToMinuteData] checkValue=${checkValue}, ${item.Close*0.13} `)
         if (isSHSZ && checkValue>item.Close*0.13 ) 
             item.AvPrice=preAvPrice;
 
@@ -32825,7 +32847,7 @@ function KLineChartHScreenContainer(uielement)
 
     this.OnTouchEnd=function(e)
     {
-        console.log('[KLineChartHScreenContainer:OnTouchEnd]',e);
+        JSConsole.Chart.Log('[KLineChartHScreenContainer:OnTouchEnd]',e);
         this.IsOnTouch = false;
         this.StopDragTimer();
         this.OnTouchFinished();
@@ -34213,7 +34235,7 @@ function CustonIndexHeatIndex()
     {
         if (recvData.data==null || recvData.data.length<0) return;
 
-        //console.log(recvData.data);
+        //JSConsole.Chart.Log(recvData.data);
         var aryData=new Array();
         for(let i in recvData.data)
         {
@@ -34425,7 +34447,7 @@ function BenfordIndex()
 
     this.RecvData=function(recvData,param)
     {
-        console.log(recvData);
+        JSConsole.Chart.Log(recvData);
         if (recvData.stock==null || recvData.stock.length<=0) return;
 
         var aryData=this.JsonDataToMapSingleData(recvData);
@@ -34742,7 +34764,7 @@ function PyScriptIndex(name,script,args,option)
             },
             complete:function(h)
             {
-                //console.log(h);
+                //JSConsole.Chart.Log(h);
             },
             error: function(http,e)
             {
@@ -34756,7 +34778,7 @@ function PyScriptIndex(name,script,args,option)
 
     this.RecvError=function(http,e,param)
     {
-        console.log("[PyScriptIndex::RecvError] error",e);
+        JSConsole.Chart.Log("[PyScriptIndex::RecvError] error",e);
         if (param.HQChart.ScriptErrorCallback) param.HQChart.ScriptErrorCallback(e);
     }
 
@@ -34764,12 +34786,12 @@ function PyScriptIndex(name,script,args,option)
     {
         if (recvData.code!=0) 
         {
-            console.log("[PyScriptIndex::RecvData] failed.", recvData);
+            JSConsole.Chart.Log("[PyScriptIndex::RecvData] failed.", recvData);
             if (param.HQChart.ScriptErrorCallback) param.HQChart.ScriptErrorCallback(recvData.msg);
             return;   //失败了
         }
 
-        console.log('[PyScriptIndex::RecvData] recv data.',recvData);
+        JSConsole.Chart.Log('[PyScriptIndex::RecvData] recv data.',recvData);
         var aryDate=recvData.date;
         for(var i in recvData.data)
         {
@@ -36656,7 +36678,7 @@ function KLineSelectRectDialog(divElement)
             showData.Amplitude = (showData.High - showData.Low) / showData.YClose * 100;     //振幅
         }
 
-        // console.log('[KLineSelectRectDialog::BindData]', showData);
+        // JSConsole.Chart.Log('[KLineSelectRectDialog::BindData]', showData);
         var defaultfloatPrecision=GetfloatPrecision(this.SelectData.Symbol);
         var startDate = showData.Date.Start.toString().substring(0,4) + "/" + showData.Date.Start.toString().substring(4,6) + "/" +  showData.Date.Start.toString().substring(6,8);
         var endDate = showData.Date.End.toString().substring(0,4) +  "/" + showData.Date.End.toString().substring(4,6) +  "/" + showData.Date.End.toString().substring(6,8);
@@ -36837,7 +36859,7 @@ function KLineMatchDialog(divElement)
 
     this.BindData=function()
     {
-        console.log(`[KLineMatchDialog::BindData] 形态源: ${this.Sample.Stock.Name} 区间:${this.Sample.Date.Start} - ${this.Sample.Date.End}`);
+        JSConsole.Chart.Log(`[KLineMatchDialog::BindData] 形态源: ${this.Sample.Stock.Name} 区间:${this.Sample.Date.Start} - ${this.Sample.Date.End}`);
         var count = this.MatchData.length + 1;
         var pageData = {NewData:{},MetaData:[],PageCount:0,Count:count};
         var pageCount = 0;
@@ -36877,7 +36899,7 @@ function KLineMatchDialog(divElement)
 
         this.PaginationMetaData(pageData);
         this.PageData = pageData;
-        console.log('[KLineMatchDialog::DoModal pageData]',pageData);
+        JSConsole.Chart.Log('[KLineMatchDialog::DoModal pageData]',pageData);
 
         this.RenderDom(1);
 
@@ -36888,7 +36910,7 @@ function KLineMatchDialog(divElement)
     }
     this.RenderDom = function(page){
         let currentPageData = this.PageData.NewData[page];
-        console.log('[KLineMatchDialog::RenderDom currentPageData]',currentPageData);
+        JSConsole.Chart.Log('[KLineMatchDialog::RenderDom currentPageData]',currentPageData);
         let bodyHtml = '';
         for(let i = 0; i < currentPageData.length; i++){
             bodyHtml += `<tr>
@@ -36937,7 +36959,7 @@ function KLineMatchDialog(divElement)
     
     this.PaginationCurrentIndex = function(event) {  //分页切换
         var text = $(this).text();
-        console.log('[::PaginationCurrentIndex text]',text);
+        JSConsole.Chart.Log('[::PaginationCurrentIndex text]',text);
         var currentPageNum = Number($(this).parent().data("current"));
         var maxPageNum = event.data.maxpage;
         var callback = event.data.Callback;
@@ -37967,7 +37989,7 @@ function KLineRightMenu(divElement)
             dataList.splice(3,0,delOverlayIndexMenu);
         }
 
-        console.log('[KLineRightMenu::DoModal]',identify);
+        JSConsole.Chart.Log('[KLineRightMenu::DoModal]',identify);
         rightMenu.Show({
             windowIndex :identify,
             x:x+chart.UIElement.offsetLeft,
@@ -38032,7 +38054,7 @@ function KLineSelectRightMenu(divElement)
                 text: "区间统计",
                 click: function () 
                 {
-                    console.log('[KLineSelectRightMenu::click] 区间统计');
+                    JSConsole.Chart.Log('[KLineSelectRightMenu::click] 区间统计');
                     var dialog=new KLineSelectRectDialog(divElement);
                     dialog.DoModal(event);
                 }
@@ -38118,7 +38140,7 @@ function MinuteRightMenu(divElement)
         }
 
         var identify=event.data.FrameID;
-        console.log('[MinuteRightMenu::DoModal]',identify);
+        JSConsole.Chart.Log('[MinuteRightMenu::DoModal]',identify);
         rightMenu.Show({
             windowIndex :identify,
             x:x+chart.UIElement.offsetLeft,
@@ -38354,7 +38376,7 @@ function ChartPictureSettingMenu(divElement)
         })
 
 
-        console.log("[ChartPictureSettingMenu::DoModal]", {Top:top,Left:left, Right:right});
+        JSConsole.Chart.Log("[ChartPictureSettingMenu::DoModal]", {Top:top,Left:left, Right:right});
     }
 }
 
@@ -38388,7 +38410,7 @@ function ChartPictureTextSettingMenu(divElement)
             LineColor:lineColor,
             FontOption:{Family: fontOption.Family, Size: fontOption.Size, Weight: fontOption.Weight, Style: fontOption.Style }
         };
-        console.log('[ChartPictureTextSettingMenu::DoModal] picture info',this.BackupData);
+        JSConsole.Chart.Log('[ChartPictureTextSettingMenu::DoModal] picture info',this.BackupData);
 
         var self=this;
         var div=this.DivElement.getElementsByClassName('chartpicture-text-setting')[0];
@@ -38571,7 +38593,7 @@ function ChartPictureTextSettingMenu(divElement)
                 Picture:this.ChartPicture
             },
             function(event){
-                console.log('[ChartPictureTextSettingMenu::DoModal] $(".chartpicture-text-setting .tArea").keyup()');
+                JSConsole.Chart.Log('[ChartPictureTextSettingMenu::DoModal] $(".chartpicture-text-setting .tArea").keyup()');
                 var content = $(this).val();
                 var chart = event.data.Picture;
                 chart.Text = content;
@@ -39429,7 +39451,7 @@ function MinuteCoordinateData()
                 data=this.GetETData(upperSymbol,width);
         }
 
-        //console.log('[MiuteCoordinateData]', width);
+        //JSConsole.Chart.Log('[MiuteCoordinateData]', width);
         var result = { Count: data.Count, MiddleCount: data.MiddleCount, Data: data.GetData(width) };
         return result;
     }
@@ -39963,6 +39985,16 @@ function GetLocalTime(i)    //得到标准时区的时间的函数
 
    分析家语法编译执行器 (H5版本)
 */
+
+//日志输出类
+if (!JSConsole)
+{
+    var JSConsole=
+    { 
+        Chart:{ Log:console.log },      //图形日志
+        Complier:{ Log:console.log }    //编译器日志
+    };
+}
 
 //API默认地址
 var g_JSComplierResource=
@@ -43880,7 +43912,7 @@ function JSAlgorithm(errorHandler,symbolData)
             result[i]=null;
             if (i+1<zigData.length && i-1>=0 &&  zigData[i]<zigData[i-1] && zigData[i]<zigData[i+1]) //波谷
             {
-                console.log('[TROUGHBARS] i',i,zigData[i]);
+                JSConsole.Complier.Log('[TROUGHBARS] i',i,zigData[i]);
                 ++j;
                 trough[j]=i;
                 if (j+1==n2)
@@ -43937,7 +43969,7 @@ function JSAlgorithm(errorHandler,symbolData)
             result[i]=null;
             if (i+1<zigData.length && i-1>=0 &&  zigData[i]>zigData[i-1] && zigData[i]>zigData[i+1]) //波峰
             {
-                console.log('[TROUGHBARS] i',i,zigData[i]);
+                JSConsole.Complier.Log('[TROUGHBARS] i',i,zigData[i]);
                 ++j;
                 trough[j]=i;
                 if (j+1==n2)
@@ -46275,7 +46307,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvError=function(request)
     {
-        console.log('[JSSymbolData::RecvError] ajax error.',request.status);
+        JSConsole.Complier.Log('[JSSymbolData::RecvError] ajax error.',request.status);
         throw {FunctionName:'RecvError', Request:request};
     }
 
@@ -46337,7 +46369,7 @@ function JSSymbolData(ast,option,jsExecute)
             YClose:stock.yclose,Price:stock.price, Open:stock.open, High:stock.high, Low:stock.low, Vol:stock.vol, Amount:stock.amount, 
             Increase:stock.increase, Exchangerate:stock.exchangerate, Amplitude:stock.amplitude};
 
-        console.log('[JSSymbolData::RecvLatestData]', this.LatestData);
+        JSConsole.Complier.Log('[JSSymbolData::RecvLatestData]', this.LatestData);
     }
 
     this.GetLatestCacheData=function(dataname)
@@ -46428,7 +46460,7 @@ function JSSymbolData(ast,option,jsExecute)
             YClose:stock.yclose,Price:stock.price, Open:stock.open, High:stock.high, Low:stock.low, Vol:stock.vol, Amount:stock.amount, 
             Increase:stock.increase, Amplitude:stock.amplitude};
 
-        console.log('[JSSymbolData::RecvLatestIndexData]', this.LatestIndexData);
+        JSConsole.Complier.Log('[JSSymbolData::RecvLatestIndexData]', this.LatestIndexData);
     }
 
     this.GetLatestIndexCacheData=function(dataname)
@@ -46492,7 +46524,7 @@ function JSSymbolData(ast,option,jsExecute)
         var item={AvgVol5:avgVol5, Date:date};
         this.ExtendData.set(key,item);
 
-        console.log('[JSSymbolData::RecvVolRateData]', item);
+        JSConsole.Complier.Log('[JSSymbolData::RecvVolRateData]', item);
     }
 
     this.GetVolRateCacheData=function(node)
@@ -46721,7 +46753,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvIndexHistroyData=function(data)
     {
-        console.log('[JSSymbolData::RecvIndexHistroyData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvIndexHistroyData] recv data' , data);
 
         let hisData=this.JsonDataToHistoryData(data);
         this.IndexData=new ChartData();
@@ -46740,7 +46772,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvIndexMinuteHistroyData=function(data)
     {
-        console.log('[JSSymbolData::RecvIndexMinuteHistroyData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvIndexMinuteHistroyData] recv data' , data);
 
         let hisData=this.JsonDataToMinuteHistoryData(data);
         this.IndexData=new ChartData();
@@ -46793,7 +46825,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.DataType===HQ_DATA_TYPE.MINUTE_ID || this.DataType===HQ_DATA_TYPE.MULTIDAY_MINUTE_ID)  //走势图数据
         {
             var apiUrl=g_JSComplierResource.CacheDomain+'/cache/analyze/increaseanalyze/'+symbol+'.json';
-            console.log('[JSSymbolData::GetIndexIncreaseData] minute Get url=' , apiUrl);
+            JSConsole.Complier.Log('[JSSymbolData::GetIndexIncreaseData] minute Get url=' , apiUrl);
             JSNetwork.HttpRequest({
                 url: apiUrl,
                 type:"get",
@@ -46812,7 +46844,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else if (this.DataType===HQ_DATA_TYPE.KLINE_ID && this.Period===0) //K线图 日线
         {
-            console.log('[JSSymbolData::GetIndexIncreaseData] K day Get url=' , self.KLineApiUrl);
+            JSConsole.Complier.Log('[JSSymbolData::GetIndexIncreaseData] K day Get url=' , self.KLineApiUrl);
             JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
@@ -46839,7 +46871,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvHistoryIncreaseData=function(data,key)
     {
-        console.log('[JSSymbolData::RecvHistoryIncreaseData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvHistoryIncreaseData] recv data' , data);
 
         var upData=[],downData=[];
         for(var i in data.data)
@@ -46872,7 +46904,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvMinuteIncreaseData=function(data,key)
     {
-        console.log('[JSSymbolData::RecvMinuteIncreaseData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvMinuteIncreaseData] recv data' , data);
         if (!data.minute) return;
         var minuteData=data.minute;
         if (!minuteData.time || !minuteData.up || !minuteData.down) return;
@@ -47038,7 +47070,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvHistroyData=function(data)
     {
-        console.log('[JSSymbolData::RecvHistroyData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvHistroyData] recv data' , data);
 
         let hisData=this.JsonDataToHistoryData(data);
         this.Data=new ChartData();
@@ -47066,7 +47098,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvMinuteHistroyData=function(data)
     {
-        console.log('[JSSymbolData::RecvMinuteHistroyData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvMinuteHistroyData] recv data' , data);
 
         let hisData=this.JsonDataToMinuteHistoryData(data);
         this.Data=new ChartData();
@@ -47088,7 +47120,7 @@ function JSSymbolData(ast,option,jsExecute)
     //最新的分钟数据走势图
     this.RecvMinuteData=function(data)
     {
-        console.log('[JSSymbolData::RecvMinuteData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvMinuteData] recv data' , data);
 
         var aryMinuteData=this.JsonDataToMinuteData(data);
         this.Data=new ChartData();
@@ -47167,7 +47199,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvSymbolDayData=function(data)
     {
-        console.log('[JSSymbolData::RecvSymbolDayData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvSymbolDayData] recv data' , data);
 
         let hisData=this.JsonDataToHistoryData(data);
         var dayData=new ChartData();
@@ -47261,7 +47293,7 @@ function JSSymbolData(ast,option,jsExecute)
             aryData[i]=item;
         }
 
-        console.log('[JSSymbolData::RecvCompanyReleaseDate] jobID=', jobID, aryData)
+        JSConsole.Complier.Log('[JSSymbolData::RecvCompanyReleaseDate] jobID=', jobID, aryData)
 
         var bindData=new ChartData();
         bindData.Data=aryData;
@@ -47282,7 +47314,7 @@ function JSSymbolData(ast,option,jsExecute)
     {
         if (this.FinanceData.has(jobID)) return this.Execute.RunNextJob();
 
-        console.log('[JSSymbolData::GetFinanceData] jobID=', jobID);
+        JSConsole.Complier.Log('[JSSymbolData::GetFinanceData] jobID=', jobID);
         var self=this;
         let fieldList=["name","date","symbol"];
         
@@ -47395,7 +47427,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvStockDayData=function(recvData,jobID)
     {
-        //console.log(recvData);
+        //JSConsole.Complier.Log(recvData);
         if (!recvData.stock || recvData.stock.length!=1) return;
 
         let stock=recvData.stock[0];
@@ -47552,7 +47584,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         
 
-        //console.log('[JSSymbolData::RecvStockDayData] jobID=' + jobID, aryFixedData)
+        //JSConsole.Complier.Log('[JSSymbolData::RecvStockDayData] jobID=' + jobID, aryFixedData)
 
         var bindData=new ChartData();
         bindData.Data=aryFixedData;
@@ -47639,7 +47671,7 @@ function JSSymbolData(ast,option,jsExecute)
     {
         if (this.MarginData.has(jobID)) return this.Execute.RunNextJob();
 
-        console.log('[JSSymbolData::GetMarginData] jobID=', jobID);
+        JSConsole.Complier.Log('[JSSymbolData::GetMarginData] jobID=', jobID);
         var self=this;
         let fieldList=["name","date","symbol"];
         
@@ -47689,7 +47721,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvMarginData=function(data,jobID)
     {
-        console.log(data);
+        JSConsole.Complier.Log(data);
         if (!data.stock || data.stock.length!=1) return;
 
         let stock=data.stock[0];
@@ -47832,7 +47864,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         url=this.HKToSHSZApiUrl[dataType];
         var self=this;
-        console.log(`[JSSymbolData::GetHKToSHSZData] jobID=${jobID}, url=${url}, dataType=${dataType}`);
+        JSConsole.Complier.Log(`[JSSymbolData::GetHKToSHSZData] jobID=${jobID}, url=${url}, dataType=${dataType}`);
 
         if (dataType===2)
         {
@@ -48120,7 +48152,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvNewsAnalysisDataError=function(request, textStatus,jobID)
     {
-        console.log('[JSSymbolData::RecvNewsAnalysisDataError] ajax error.',request.status);
+        JSConsole.Complier.Log('[JSSymbolData::RecvNewsAnalysisDataError] ajax error.',request.status);
 
         //没有新闻使用0数据填充
         var aryData=[];
@@ -48142,7 +48174,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (!data.data || !data.date) return;
         if (data.data.length<=0 || data.data.length!=data.date.length) return;
         
-        console.log('[JSSymbolData::RecvNewsAnalysisData] jobID',jobID, data.update);
+        JSConsole.Complier.Log('[JSSymbolData::RecvNewsAnalysisData] jobID',jobID, data.update);
         if (jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE|| jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2)
         {
             var aryData=[], aryData2=[];
@@ -48196,7 +48228,7 @@ function JSSymbolData(ast,option,jsExecute)
         var period=job.SF[1].Period;
         if (this.SectionFinanceData.has(sfKey)) return this.Execute.RunNextJob();
 
-        console.log(`[JSSymbolData::GetSectionFinanceData] ${period.Year}-${period.Quarter}`);
+        JSConsole.Complier.Log(`[JSSymbolData::GetSectionFinanceData] ${period.Year}-${period.Quarter}`);
         var fieldName='announcement'+period.Quarter;
         var self=this;
         var fieldList=["name","date","symbol", fieldName,'finance'+period.Quarter];
@@ -49144,7 +49176,7 @@ function JSExecute(ast,option)
 
     this.Execute=function()
     {
-        console.log('[JSExecute::Execute] JobList', this.JobList);
+        JSConsole.Complier.Log('[JSExecute::Execute] JobList', this.JobList);
         this.OutVarTable=[];
         this.VarTable=new Map();
         this.RunNextJob();
@@ -49532,7 +49564,7 @@ function JSExecute(ast,option)
             }
         }
 
-        console.log('[JSExecute::Run]', this.VarTable);
+        JSConsole.Complier.Log('[JSExecute::Run]', this.VarTable);
 
         return this.OutVarTable;
     }
@@ -49542,21 +49574,21 @@ function JSExecute(ast,option)
         try
         {                       
             let data=this.RunAST();//执行脚本
-            console.log('[JSComplier.Run] execute finish', data);
+            JSConsole.Complier.Log('[JSComplier.Run] execute finish', data);
         
             if (this.UpdateUICallback) 
             {
-                console.log('[JSComplier.Run] invoke UpdateUICallback.');
+                JSConsole.Complier.Log('[JSComplier.Run] invoke UpdateUICallback.');
                 if (this.CallbackParam && this.CallbackParam.Self && this.CallbackParam.Self.ClassName==='ScriptIndexConsole') this.CallbackParam.JSExecute=this;
                 this.UpdateUICallback(data,this.CallbackParam);
             }
         }
         catch(error)
         {
-            console.log(error);
+            JSConsole.Complier.Log(error);
             if (error.Job)
             {
-                console.log('[JSComplier.Run] download job and reexectue', error.Job);
+                JSConsole.Complier.Log('[JSComplier.Run] download job and reexectue', error.Job);
                 this.JobList.push(error.Job);
                 this.JobList.push({ID:JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT});
                 this.Execute();
@@ -49618,7 +49650,7 @@ function JSExecute(ast,option)
             args.push(value);
         }
 
-        if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitCallExpression]' , funcName, '(', args.toString() ,')');
+        if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitCallExpression]' , funcName, '(', args.toString() ,')');
 
         switch(funcName)
         {
@@ -49748,7 +49780,7 @@ function JSExecute(ast,option)
         else if (right.Type==Syntax.Identifier) //右值是变量
             value=this.ReadVariable(right.Name,right);
 
-        if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitAssignmentExpression]' , varName, ' = ',value);
+        if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitAssignmentExpression]' , varName, ' = ',value);
         this.VarTable.set(varName,value);
     }
 
@@ -49778,7 +49810,7 @@ function JSExecute(ast,option)
                     let leftValue=this.GetNodeValue(value.Left);
                     let rightValue=this.GetNodeValue(value.Right);
 
-                    if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitBinaryExpression] BinaryExpression',value , leftValue, rightValue);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitBinaryExpression] BinaryExpression',value , leftValue, rightValue);
                     value.Out=null; //保存中间值
 
                     switch(value.Operator)
@@ -49817,14 +49849,14 @@ function JSExecute(ast,option)
                             break;
                     }
 
-                    if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitBinaryExpression] BinaryExpression',value);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitBinaryExpression] BinaryExpression',value);
                 }
                 else if (value.Type==Syntax.LogicalExpression)
                 {
                     let leftValue=this.GetNodeValue(value.Left);
                     let rightValue=this.GetNodeValue(value.Right);
 
-                    if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitBinaryExpression] LogicalExpression',value , leftValue, rightValue);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitBinaryExpression] LogicalExpression',value , leftValue, rightValue);
                     value.Out=null; //保存中间值
 
                     switch(value.Operator)
@@ -49839,7 +49871,7 @@ function JSExecute(ast,option)
                             break;
                     }
 
-                    if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitBinaryExpression] LogicalExpression',value);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitBinaryExpression] LogicalExpression',value);
                 }
                 
                 node=temp;
@@ -49909,7 +49941,7 @@ function JSComplier()
 //词法分析
 JSComplier.Tokenize=function(code)
 {
-    console.log('[JSComplier.Tokenize]', code);
+    JSConsole.Complier.Log('[JSComplier.Tokenize]', code);
     let tokenizer=new Tokenizer(code);
     let tokens=[];
     try
@@ -49933,7 +49965,7 @@ JSComplier.Tokenize=function(code)
 //语法解析 生成抽象语法树(Abstract Syntax Tree)
 JSComplier.Parse=function(code)
 {
-    console.log('[JSComplier.Parse]',code);
+    JSConsole.Complier.Log('[JSComplier.Parse]',code);
 
     let parser=new JSParser(code);
     parser.Initialize();
@@ -49966,17 +49998,17 @@ JSComplier.Execute=function(code,option,errorCallback)
     {
         try
         {
-            console.log('[JSComplier.Execute]',code,option);
+            JSConsole.Complier.Log('[JSComplier.Execute]',code,option);
 
-            console.log('[JSComplier.Execute] parser .....');
+            JSConsole.Complier.Log('[JSComplier.Execute] parser .....');
             let parser=new JSParser(code);
             parser.Initialize();
             let program=parser.ParseScript(); 
             
             let ast=program;
-            console.log('[JSComplier.Execute] parser finish.', ast);
+            JSConsole.Complier.Log('[JSComplier.Execute] parser finish.', ast);
 
-            console.log('[JSComplier.Execute] execute .....');
+            JSConsole.Complier.Log('[JSComplier.Execute] execute .....');
             let execute=new JSExecute(ast,option);
             execute.ErrorCallback=errorCallback;        //执行错误回调
             execute.JobList=parser.Node.GetDataJobList();
@@ -49987,7 +50019,7 @@ JSComplier.Execute=function(code,option,errorCallback)
 
         }catch(error)
         {
-            console.log(error);
+            JSConsole.Complier.Log(error);
 
             if (errorCallback) errorCallback(error);
         }
@@ -49995,7 +50027,7 @@ JSComplier.Execute=function(code,option,errorCallback)
 
     asyncExecute();
 
-    console.log('[JSComplier.Execute] async execute.');
+    JSConsole.Complier.Log('[JSComplier.Execute] async execute.');
 }
 
 
@@ -50181,7 +50213,7 @@ function ScriptIndex(name,script,args,option)
     //是否符合限制条件
     this.IsMeetCondition=function(param,option)
     {
-        console.log('[ScriptIndex::IsMeetCondition] ', this.Condition);
+        JSConsole.Complier.Log('[ScriptIndex::IsMeetCondition] ', this.Condition);
         if (this.Condition.Period)      //周期是否满足
         {
             if (!this.IsMeetPeriodCondition(param,option)) return false;
@@ -51598,7 +51630,7 @@ function APIScriptIndex(name,script,args,option)
 
     this.ExecuteScript=function(hqChart,windowIndex,hisData)
     {
-        console.log('[APIScriptIndex::ExecuteScript] name, Arguments ', this.Name,this.Arguments );
+        JSConsole.Complier.Log('[APIScriptIndex::ExecuteScript] name, Arguments ', this.Name,this.Arguments );
 
         //数据类型
         let hqDataType=HQ_DATA_TYPE.KLINE_ID;   //默认K线
@@ -51671,7 +51703,7 @@ function APIScriptIndex(name,script,args,option)
 
     this.RecvAPIData=function(data,hqChart,windowIndex,hisData)
     {
-        console.log('[APIScriptIndex::RecvAPIData] recv data ', this.Name,data );
+        JSConsole.Complier.Log('[APIScriptIndex::RecvAPIData] recv data ', this.Name,data );
         if (data.code!=0) return;
 
         if (data.outdata && data.outdata.name) this.Name=data.outdata.name;
@@ -51689,7 +51721,7 @@ function APIScriptIndex(name,script,args,option)
         if (this.HQDataType==HQ_DATA_TYPE.KLINE_ID)
         {
             this.OutVar=this.FittingData(data.outdata,hqChart);
-            console.log('[APIScriptIndex::RecvAPIData] conver to OutVar ', this.OutVar);
+            JSConsole.Complier.Log('[APIScriptIndex::RecvAPIData] conver to OutVar ', this.OutVar);
         }
         else
         {
@@ -52010,7 +52042,7 @@ function LocalJsonDataIndex(name,args,option)
         for(i in outVar)
         {
             item=outVar[i];
-            console.log('[LocalJsonDataIndex::FittingData] item', item);
+            JSConsole.Complier.Log('[LocalJsonDataIndex::FittingData] item', item);
             if (item.Type!=0 && item.Type!=3)   //复杂的图形不支持
             {
                 console.warn("[LocalJsonDataIndex::FittingData] can't support ", item.Name, item.Type);
@@ -52122,7 +52154,7 @@ function ScriptIndexConsole(obj)
 
         if (jsExec.SymbolData.DataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID || jsExec.SymbolData.DataType==HQ_DATA_TYPE.MINUTE_ID) result.Time=jsExec.SymbolData.Data.GetTime();
         else if (jsExec.SymbolData.DataType==HQ_DATA_TYPE.KLINE_ID && ChartData.IsMinutePeriod(jsExec.SymbolData.Period,true)) result.Time=jsExec.SymbolData.Data.GetTime();
-        //console.log('[ScriptIndexConsole::RecvResultData] outVar ', outVar);
+        //JSConsole.Complier.Log('[ScriptIndexConsole::RecvResultData] outVar ', outVar);
         if (self.FinishCallback) self.FinishCallback(result, param.JSExecute);
     }
 }
@@ -52138,11 +52170,11 @@ var code1='VARHIGH:IF(VAR1<=REF(HH,-1),REF(H,BARSLAST(VAR1>=REF(HH,1))),DRAWNULL
 var code2='VAR1=((SMA(MAX((CLOSE - LC),0),3,1) / SMA(ABS((CLOSE - LC)),3,1)) * 100);';
 var code3='mm1=1-2*-9+20;';
 
-console.log(code1+code2)
+JSConsole.Complier.Log(code1+code2)
 var tokens=JSComplier.Tokenize(code1+code2);
 var ast=JSComplier.Parse(code2+code1);
 
-console.log(ast);
+JSConsole.Complier.Log(ast);
 *//*
    Copyright (c) 2018 jones
  
@@ -52389,4 +52421,6 @@ export default {
     //style.js相关
     STYLE_TYPE_ID:STYLE_TYPE_ID,
     HQChartStyle:HQChartStyle,              //预定义全局的配色 黑
+
+    JSConsole:JSConsole,    //日志输出
 }
