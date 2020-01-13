@@ -3479,6 +3479,8 @@ function JSChart(divElement)
             else if(option.Language==='EN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
         }
 
+        if (option.SourceDatatLimit) chart.SetSourceDatatLimit(option.SourceDatatLimit);
+
         if (option.DrawPicture) //画图工具
         {
             if (option.DrawPicture.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawPicture.StorageKey);
@@ -10700,7 +10702,22 @@ function ChartData()
 
     this.MergeMinuteData=function(data) //合并数据
     {
-        var firstItem=data[0];
+        var sourceFirstItem=this.Data[0];
+        var firstItemID=0;
+        var firstItem=null;
+        for(var i=0;i<data.length;++i)  //查找比原始数据起始位置大的数据位置
+        {
+            var item=data[i];
+            if (item.Date>=sourceFirstItem.Date && item.Time>=sourceFirstItem.Time)
+            {
+                firstItemID=i;
+                firstItem=item;
+                break;
+            }
+        }
+
+        if (firstItem==null) return false;
+
         var index=null;
         var bFind=false;    //第1个数据是否完全匹配
         for(var i=this.Data.length-1; i>=0;--i)
@@ -10718,8 +10735,8 @@ function ChartData()
 
         if (index==null) return false;
 
-        var j=index;
-        var i=0;
+        var j=index;        //原始数据插入位置
+        var i=firstItemID;  //合并数据起始位置
         if (bFind==true)    //第1个数据匹配,覆盖
         {
             var item=data[i];
@@ -25529,7 +25546,8 @@ function KLineChartContainer(uielement)
     this.FlowCapitalReady=false;        //流通股本是否下载完成
     this.ChartDrawStorage=new ChartDrawStorage();
     this.ChartDrawStorageCache=null;    //首次需要创建的画图工具数据
-    this.RightSpaceCount=0;            //右侧空白个数
+    this.RightSpaceCount=0;             //右侧空白个数
+    this.SourceDataLimit=new Map();     //每个周期缓存数据最大个数 key=周期 value=最大个数    
 
     this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
     this.OverlayIndexFrameWidth=60;     //叠加指标框架宽度
@@ -26908,11 +26926,54 @@ function KLineChartContainer(uielement)
         });
     }
 
+    this.SetSourceDatatLimit=function(aryLimit)
+    {
+        this.SourceDataLimit=new Map();
+        for(var i in aryLimit)
+        {
+            var item=aryLimit[i];
+            this.SourceDataLimit.set(item.Period, item.MaxCount); //每个周期缓存数据最大个数 key=周期 value=最大个数 
+            
+            JSConsole.Chart.Log(`[KLineChartContainer::SetSourceDatatLimit] Period=${item.Period}, MaxCount=${item.MaxCount}`);
+        }
+    }       
+
+    this.ReduceSourceData=function()
+    {
+        if (!this.SourceDataLimit) return;
+        if (!this.SourceDataLimit.has(this.Period)) return;
+
+        var limitCount=this.SourceDataLimit.get(this.Period);
+
+        var frameHisdata=null;
+        if (!this.Frame.Data) frameHisdata=this.Frame.Data;
+        else if (this.Frame.SubFrame && this.Frame.SubFrame[0]) frameHisdata=this.Frame.SubFrame[0].Frame.Data;
+        if (!frameHisdata) return;
+
+        if (limitCount<50) return;
+        var dataOffset=frameHisdata.DataOffset;
+        var removeCount=0;
+        while(this.SourceData.Data.length>limitCount)
+        {
+            this.SourceData.Data.shift();
+            --dataOffset;
+            ++removeCount;
+        }
+
+        if (removeCount>0)
+        {
+            if (dataOffset<0) dataOffset=0;
+            frameHisdata.DataOffset=dataOffset;
+            JSConsole.Chart.Log(`[KLineChartContainer::ReduceSourceData] remove data ${removeCount}, dataOffset=${dataOffset}`);
+        }
+    }
+
     this.RecvMinuteRealtimeDataV2=function(data)    //新版本的
     {
         if (this.IsOnTouch==true) return;   //正在操作中不更新数据
         var aryMinuteData=KLineChartContainer.JsonDataToMinuteHistoryData(data);
         if (!aryMinuteData || aryMinuteData.length<=0) return;
+        if (this.IsApiPeriod) this.ReduceSourceData();  //减少数据
         var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
 
         if (!this.SourceData.MergeMinuteData(aryMinuteData)) return;
@@ -26968,6 +27029,7 @@ function KLineChartContainer(uielement)
 
         var realtimeData=KLineChartContainer.JsonDataToMinuteRealtimeData(data, this.Symbol);
         if (!realtimeData) return;
+        if (this.IsApiPeriod) this.ReduceSourceData();  //减少数据
         var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
         var lastSourceDataCount=this.SourceData.Data.length;
         if (!this.SourceData.MergeMinuteData(realtimeData)) return;
@@ -30137,13 +30199,10 @@ function MinuteChartContainer(uielement)
             var drag=this.MouseDrag;
             if (drag==null)
             {
-                if(this.EnableScrollUpDown==true)
-                {
-                    var pixelTatio = GetDevicePixelRatio();
-                    var x = touches[0].clientX-uielement.getBoundingClientRect().left*pixelTatio;
-                    var y = touches[0].clientY-uielement.getBoundingClientRect().top*pixelTatio;
-                    this.OnMouseMove(x,y,e);
-                }
+                var pixelTatio = GetDevicePixelRatio();
+                var x = touches[0].clientX-uielement.getBoundingClientRect().left*pixelTatio;
+                var y = touches[0].clientY-uielement.getBoundingClientRect().top*pixelTatio;
+                this.OnMouseMove(x,y,e);
             }
             else
             {

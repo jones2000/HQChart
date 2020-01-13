@@ -1146,7 +1146,20 @@ function ChartData()
 
     this.MergeMinuteData = function (data) //合并数据
     {
-        var firstItem = data[0];
+        var sourceFirstItem = this.Data[0];
+        var firstItemID = 0;
+        var firstItem = null;
+        for (var i = 0; i < data.length; ++i)  //查找比原始数据起始位置大的数据位置
+        {
+            var item = data[i];
+            if (item.Date >= sourceFirstItem.Date && item.Time >= sourceFirstItem.Time) {
+                firstItemID = i;
+                firstItem = item;
+                break;
+            }
+        }
+        if (firstItem == null) return false;
+
         var index = null;
         var bFind = false;    //第1个数据是否完全匹配
         for (var i = this.Data.length - 1; i >= 0; --i)
@@ -1164,7 +1177,7 @@ function ChartData()
 
         if (index == null) return false;
         var j = index;
-        var i = 0;
+        var i = firstItemID;
         if (bFind == true)    //第1个数据匹配,覆盖
         {
             var item = data[i];

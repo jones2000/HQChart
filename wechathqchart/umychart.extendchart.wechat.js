@@ -343,14 +343,17 @@ function MinuteTooltipPaint()
         this.Canvas.fillStyle = color;
         this.Canvas.fillText(text, left + labelWidth, top);
 
-        top += this.LineHeight;
-        this.Canvas.fillStyle = this.TitleColor;
-        text = g_JSChartLocalization.GetText('Tooltip-AvPrice', this.LanguageID);
-        this.Canvas.fillText(text, left, top);
-        var color = this.KLineTitlePaint.GetColor(item.AvPrice, this.YClose);
-        var text = item.AvPrice.toFixed(defaultfloatPrecision);
-        this.Canvas.fillStyle = color;
-        this.Canvas.fillText(text, left + labelWidth, top);
+        if (IFrameSplitOperator.IsNumber(item.AvPrice))
+        {
+            top += this.LineHeight;
+            this.Canvas.fillStyle = this.TitleColor;
+            text = g_JSChartLocalization.GetText('Tooltip-AvPrice', this.LanguageID);
+            this.Canvas.fillText(text, left, top);
+            var color = this.KLineTitlePaint.GetColor(item.AvPrice, this.YClose);
+            var text = item.AvPrice.toFixed(defaultfloatPrecision);
+            this.Canvas.fillStyle = color;
+            this.Canvas.fillText(text, left + labelWidth, top);
+        }
 
         top += this.LineHeight;
         this.Canvas.fillStyle = this.TitleColor;

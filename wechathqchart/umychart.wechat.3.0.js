@@ -210,6 +210,8 @@ function JSChart(element)
             else if (option.Language === 'EN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
         }
 
+        if (option.SourceDatatLimit) chart.SetSourceDatatLimit(option.SourceDatatLimit);
+
         //创建子窗口
         chart.Create(option.Windows.length);
 
@@ -237,8 +239,6 @@ function JSChart(element)
             if (option.DragDownload.Day && option.DragDownload.Day.Enable == true) chart.DragDownload.Day.Enable = true;
             if (option.DragDownload.Minute && option.DragDownload.Minute.Enable == true) chart.DragDownload.Minute.Enable = true;
         }
-
-       
 
         if (option.IsApiPeriod == true) chart.IsApiPeriod = option.IsApiPeriod;
 
@@ -7190,6 +7190,7 @@ function KLineChartContainer(uielement)
     this.AutoUpdateFrequency = 30000;             //30秒更新一次数据
     this.AutoUpdateTimer;                         //自动定时器
     this.RightSpaceCount=1;
+    this.SourceDataLimit = new Map();     //每个周期缓存数据最大个数 key=周期 value=最大个数  
 
     this.StepPixel = 4;                   //移动一个数据需要的像素
     this.ZoomStepPixel = 5;               //放大缩小手势需要的最小像素
@@ -8021,6 +8022,47 @@ function KLineChartContainer(uielement)
         });
     }
 
+    this.SetSourceDatatLimit = function (aryLimit) 
+    {
+        this.SourceDataLimit = new Map();
+        for (var i in aryLimit) 
+        {
+            var item = aryLimit[i];
+            this.SourceDataLimit.set(item.Period, item.MaxCount); //每个周期缓存数据最大个数 key=周期 value=最大个数 
+            console.log(`[KLineChartContainer::SetSourceDatatLimit] Period=${item.Period}, MaxCount=${item.MaxCount}`);
+        }
+    } 
+
+    this.ReduceSourceData = function () 
+    {
+        if (!this.SourceDataLimit) return;
+        if (!this.SourceDataLimit.has(this.Period)) return;
+
+        var limitCount = this.SourceDataLimit.get(this.Period);
+        if (limitCount < 50) return;
+
+        var frameHisdata = null;
+        if (!this.Frame.Data) frameHisdata = this.Frame.Data;
+        else if (this.Frame.SubFrame && this.Frame.SubFrame[0]) frameHisdata = this.Frame.SubFrame[0].Frame.Data;
+        if (!frameHisdata) return;
+
+        var dataOffset = frameHisdata.DataOffset;
+        var removeCount = 0;
+        while (this.SourceData.Data.length > limitCount) 
+        {
+            this.SourceData.Data.shift();
+            --dataOffset;
+            ++removeCount;
+        }
+
+        if (removeCount > 0) 
+        {
+            if (dataOffset < 0) dataOffset = 0;
+            frameHisdata.DataOffset = dataOffset;
+            console.log(`[KLineChartContainer::ReduceSourceData] remove data ${removeCount}, dataOffset=${dataOffset}`);
+        }
+    }      
+
     this.RecvMinuteRealtimeData = function (recvData) 
     {
         var data=recvData.data;
@@ -8033,6 +8075,8 @@ function KLineChartContainer(uielement)
 
         if (!data.stock || !data.stock[0] || this.Symbol != data.stock[0].symbol) return;
         var realtimeData = KLineChartContainer.JsonDataToMinuteRealtimeData(data);
+        if (!realtimeData) return;
+        if (this.IsApiPeriod) this.ReduceSourceData();  //减少数据
         var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
         var lastSourceDataCount = this.SourceData.Data.length;
         if (!this.SourceData.MergeMinuteData(realtimeData)) return;
@@ -8080,6 +8124,7 @@ function KLineChartContainer(uielement)
         if (this.IsOnTouch == true) return;   //正在操作中不更新数据
         var aryMinuteData = KLineChartContainer.JsonDataToMinuteHistoryData(data);
         if (!aryMinuteData || aryMinuteData.length <= 0) return;
+        if (this.IsApiPeriod) this.ReduceSourceData();  //减少数据
         var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
 
         if (!this.SourceData.MergeMinuteData(aryMinuteData)) return;
@@ -10562,7 +10607,6 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
         if (item.High <= 0) item.High = null;
         if (item.Low <= 0) item.Low = null;
 
-        if (isFutures) item.AvPrice = null;    //期货均价暂时没有
         if (yClose && item.Close) item.Increase = (item.Close - yClose) / yClose * 100; //涨幅 (最新价格-昨收)/昨收*10
 
         aryMinuteData[i] = item;
