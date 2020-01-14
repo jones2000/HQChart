@@ -4672,7 +4672,8 @@ var JSCHART_EVENT_ID=
     RECV_KLINE_UPDATE_DATA:16,   //K线日,分钟更新数据到达
     ON_CLICK_DRAWPICTURE:17,    //点击画图工具 
     ON_FINISH_DRAWPICTURE:18,    //完成画图工具    
-    ON_INDEXTITLE_DRAW:19       //指标标题重绘事件
+    ON_INDEXTITLE_DRAW:19,       //指标标题重绘事件
+    ON_CUSTOM_VERTICAL_DRAW:20,  //自定义X轴绘制事件
 }
 
 var JSCHART_OPERATOR_ID=
@@ -5499,6 +5500,11 @@ function JSChartContainer(uielement)
         }
         //框架
         this.Frame.Draw();
+        if (this.Frame.DrawCustomVertical) 
+        {
+            var eventCVericalDraw=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_VERTICAL_DRAW);
+            this.Frame.DrawCustomVertical(eventCVericalDraw);
+        }
         this.Frame.CalculateLock();
 
         //框架内图形
@@ -7854,9 +7860,9 @@ function KLineFrame()
 
     this.ToolbarID=Guid();  //工具条Div id
 
-    this.ModifyIndex=true;  //是否显示'改参数'菜单
-    this.ChangeIndex=true;  //是否显示'换指标'菜单
-    this.CloseIndex=true;   //是否显示'关闭指标窗口'菜单
+    this.ModifyIndex=true;      //是否显示'改参数'菜单
+    this.ChangeIndex=true;      //是否显示'换指标'菜单
+    this.CloseIndex=true;       //是否显示'关闭指标窗口'菜单
     this.OverlayIndex=false;    //是否显示叠加指标
 
     this.ModifyIndexEvent;  //改参数 点击事件
@@ -7864,8 +7870,12 @@ function KLineFrame()
 
     this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
 
-    this.CustomHorizontalInfo=[];
+    this.CustomHorizontalInfo=[];   //定制Y轴刻度
     this.IsDrawTitleBG=false;
+
+    this.CustomVerticalInfo=[];     //定制X轴刻度 Type:0,  Date:, Time: ,        Line:{ Color:线段颜色, Type:线段类型 0 直线 1 虚线 }
+                                    //           Type:1,  Space: 第几个空白间距,  Line:{ Color:线段颜色, Type:线段类型 0 直线 1 虚线 }
+    this.DrawCustomVerticalEvent;
 
     this.DrawToolbar=function()
     {
@@ -8246,6 +8256,117 @@ function KLineFrame()
                     break;
             }
         }
+    }
+
+    this.DrawCustomVerticalItem=function(item)
+    {
+        this.Canvas.save(); 
+        if (item.Data.Line.Type==1) this.Canvas.setLineDash([5,5]);   //虚线
+        this.Canvas.strokeStyle=item.Data.Line.Color;
+        this.Canvas.beginPath();
+        if (item.IsHScreen)
+        {
+            this.Canvas.moveTo(item.Top,ToFixedPoint(item.X));
+            this.Canvas.lineTo(item.Bottom,ToFixedPoint(item.X));
+        }
+        else
+        {
+            this.Canvas.moveTo(ToFixedPoint(item.X),item.Top);
+            this.Canvas.lineTo(ToFixedPoint(item.X),item.Bottom);
+        }
+        this.Canvas.stroke();
+        this.Canvas.restore();
+    }
+
+    this.DrawCustomVertical=function()  //X轴定制刻度显示
+    {
+        if (!this.CustomVerticalInfo) return;
+        if (this.CustomVerticalInfo.length<=0) return;
+        if (!this.Data) return;
+
+        var isHScreen=this.IsHScreen;
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
+       
+        var dataWidth=this.DataWidth;
+        var distanceWidth=this.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
+
+        if (isHScreen) 
+        {
+            xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+2.0;
+            top=this.ChartBorder.GetLeftEx();
+            bottom=this.ChartBorder.GetRightEx();
+        }
+
+        var j=0;
+        for(var i=this.Data.DataOffset;i<this.Data.Data.length && j<this.XPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var kItem=this.Data.Data[i];
+            for(var k in this.CustomVerticalInfo)
+            {
+                var item=this.CustomVerticalInfo[k];
+                if (item.Type!=0) continue;
+
+                if (IFrameSplitOperator.IsNumber(item.Time))
+                {
+                    if (kItem.Date!=item.Date || kItem.Time!=item.Time) continue;
+                }
+                else
+                {
+                    if (kItem.Date!=item.Date) continue;
+                }
+
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                var x=left+(right-left)/2;  
+
+                var DrawData={X:x, Top:top, Bottom:bottom, Data:item , IsHScreen:isHScreen};
+                this.DrawCustomVerticalItem(DrawData);
+                if (this.DrawCustomVerticalEvent) 
+                    this.DrawCustomVerticalEvent.Callback(this.DrawCustomVerticalEvent, DrawData, this);
+
+                break;
+            }
+        }
+
+        for(var i=1;j<this.XPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            for(var k in  this.CustomVerticalInfo)
+            {
+                var item=this.CustomVerticalInfo[k];
+                if (item.Type!=1) continue;
+                if (item.Space!=i) continue;
+
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                var x=left+(right-left)/2; 
+                
+                var DrawData={X:x, Top:top, Bottom:bottom, Data:item,IsHScreen:isHScreen };
+                this.DrawCustomVerticalItem(DrawData);
+                if (this.DrawCustomVerticalEvent) 
+                    this.DrawCustomVerticalEvent.Callback(this.DrawCustomVerticalEvent, DrawData, this);
+
+                break;
+            }
+        }
+    }
+
+    this.DrawCustomXItem=function(item)
+    {
+        if (!this.Data) return;
+        var isTimePeriod=IFrameSplitOperator.IsNumber(item.Time);
+        if (isTimePeriod)
+        {
+            if (firstItem.Date>item.Date || kItem.Time!=item.Time) continue;
+        }
+        else
+        {
+
+        }
+
+        
+        
     }
 }
 
@@ -9027,6 +9148,16 @@ function HQTradeFrame()
         {
           var item = this.SubFrame[i];
           if (item.Frame.DrawCustomHorizontal) item.Frame.DrawCustomHorizontal();
+        }
+    }
+
+    this.DrawCustomVertical=function(event)
+    {
+        for (var i in this.SubFrame) 
+        {
+          var item = this.SubFrame[i];
+          item.Frame.DrawCustomVerticalEvent=event;
+          if (item.Frame.DrawCustomVertical) item.Frame.DrawCustomVertical();
         }
     }
 
@@ -26149,6 +26280,7 @@ function KLineChartContainer(uielement)
             { 
                 if (ChartData.IsDayPeriod(self.Period,true)) self.RecvRealtimeData(data); 
                 else if (ChartData.IsMinutePeriod(self.Period,true)) self.RecvMinuteRealtimeData(data);
+                else if (ChartData.IsSecondPeriod(self.Period)) self.RecvMinuteRealtimeData(data);
             }
         }
         event.Callback(event,data,this);
@@ -29880,6 +30012,15 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+    }
+
+    this.SetCustomVerical=function(windowId, data)
+    {
+        if (!this.Frame) return;
+        if (windowId>=this.Frame.SubFrame.length) return;
+
+        var item=this.Frame.SubFrame[windowId];
+        if (item.Frame) item.Frame.CustomVerticalInfo=data;
     }
 
 }

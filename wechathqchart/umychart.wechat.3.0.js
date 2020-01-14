@@ -1124,7 +1124,8 @@ var JSCHART_EVENT_ID =
     ON_TITLE_DRAW: 12,           //标题信息绘制事件
     RECV_MINUTE_DATA: 14,          //分时图数据到达
     RECV_KLINE_UPDATE_DATA: 16,   //K线日,分钟更新数据到达 
-    ON_INDEXTITLE_DRAW: 19       //指标标题重绘事件  
+    ON_INDEXTITLE_DRAW: 19,       //指标标题重绘事件 
+    ON_CUSTOM_VERTICAL_DRAW: 20,  //自定义X轴绘制事件 
 }
 
 var JSCHART_OPERATOR_ID =
@@ -1432,6 +1433,12 @@ function JSChartContainer(uielement)
 
         this.Frame.Draw();  //框架 
 
+        if (this.Frame.DrawCustomVertical) 
+        {
+            var eventCVericalDraw = this.GetEvent(JSCHART_EVENT_ID.ON_CUSTOM_VERTICAL_DRAW);
+            this.Frame.DrawCustomVertical(eventCVericalDraw);
+        }
+
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)  //动画
         {
             this.Frame.DrawInsideHorizontal();
@@ -1528,6 +1535,12 @@ function JSChartContainer(uielement)
 
         //框架 
         this.Frame.Draw();
+
+        if (this.Frame.DrawCustomVertical) 
+        {
+            var eventCVericalDraw = this.GetEvent(JSCHART_EVENT_ID.ON_CUSTOM_VERTICAL_DRAW);
+            this.Frame.DrawCustomVertical(eventCVericalDraw);
+        }
 
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash) 
         {
@@ -2976,6 +2989,12 @@ function KLineFrame()
     this.ChangeIndex = true;  //是否显示'换指标'菜单
     this.CustomHorizontalInfo = [];
 
+    //定制X轴刻度 
+    //Type:0,  Date:, Time: ,        Line:{ Color:线段颜色, Type:线段类型 0 直线 1 虚线 }
+    //Type: 1, Space: 第几个空白间距, Line: { Color: 线段颜色, Type: 线段类型 0 直线 1 虚线 }
+    this.CustomVerticalInfo = [];               
+    this.DrawCustomVerticalEvent;
+
     this.DrawFrame = function () 
     {
         //console.log('[KLineFrame::DrawFrame]', this.SizeChange);
@@ -3032,6 +3051,97 @@ function KLineFrame()
                 case 1: //固定价格刻度
                     this.DrawCustomItem(item);
                     break;
+            }
+        }
+    }
+
+    this.DrawCustomVerticalItem = function (item) {
+        this.Canvas.save();
+        if (item.Data.Line.Type == 1) this.Canvas.setLineDash([5, 5]);   //虚线
+        this.Canvas.strokeStyle = item.Data.Line.Color;
+        this.Canvas.beginPath();
+        if (item.IsHScreen) {
+            this.Canvas.moveTo(item.Top, ToFixedPoint(item.X));
+            this.Canvas.lineTo(item.Bottom, ToFixedPoint(item.X));
+        }
+        else {
+            this.Canvas.moveTo(ToFixedPoint(item.X), item.Top);
+            this.Canvas.lineTo(ToFixedPoint(item.X), item.Bottom);
+        }
+        this.Canvas.stroke();
+        this.Canvas.restore();
+    }
+
+    this.DrawCustomVertical = function ()  //X轴定制刻度显示
+    {
+        if (!this.CustomVerticalInfo) return;
+        if (this.CustomVerticalInfo.length <= 0) return;
+        if (!this.Data) return;
+
+        var isHScreen = this.IsHScreen;
+        var top = this.ChartBorder.GetTopEx();
+        var bottom = this.ChartBorder.GetBottomEx();
+
+        var dataWidth = this.DataWidth;
+        var distanceWidth = this.DistanceWidth;
+        var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + 2.0;
+
+        if (isHScreen) 
+        {
+            xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
+            top = this.ChartBorder.GetLeftEx();
+            bottom = this.ChartBorder.GetRightEx();
+        }
+
+        var j = 0;
+        for (var i = this.Data.DataOffset; i < this.Data.Data.length && j < this.XPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        {
+            var kItem = this.Data.Data[i];
+            for (var k in this.CustomVerticalInfo) 
+            {
+                var item = this.CustomVerticalInfo[k];
+                if (item.Type != 0) continue;
+
+                if (IFrameSplitOperator.IsNumber(item.Time)) 
+                {
+                    if (kItem.Date != item.Date || kItem.Time != item.Time) continue;
+                }
+                else 
+                {
+                    if (kItem.Date != item.Date) continue;
+                }
+
+                var left = xOffset;
+                var right = xOffset + dataWidth;
+                var x = left + (right - left) / 2;
+
+                var DrawData = { X: x, Top: top, Bottom: bottom, Data: item, IsHScreen: isHScreen };
+                this.DrawCustomVerticalItem(DrawData);
+                if (this.DrawCustomVerticalEvent)
+                    this.DrawCustomVerticalEvent.Callback(this.DrawCustomVerticalEvent, DrawData, this);
+
+                break;
+            }
+        }
+
+        for (var i = 1; j < this.XPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        {
+            for (var k in this.CustomVerticalInfo) 
+            {
+                var item = this.CustomVerticalInfo[k];
+                if (item.Type != 1) continue;
+                if (item.Space != i) continue;
+
+                var left = xOffset;
+                var right = xOffset + dataWidth;
+                var x = left + (right - left) / 2;
+
+                var DrawData = { X: x, Top: top, Bottom: bottom, Data: item, IsHScreen: isHScreen };
+                this.DrawCustomVerticalItem(DrawData);
+                if (this.DrawCustomVerticalEvent)
+                    this.DrawCustomVerticalEvent.Callback(this.DrawCustomVerticalEvent, DrawData, this);
+
+                break;
             }
         }
     }
@@ -3535,12 +3645,22 @@ function HQTradeFrame()
         }
     }
 
-    this.DrawCustomHorizontal = function ()    //定制坐标
+    this.DrawCustomHorizontal = function ()    //定制Y坐标
     {
         for (var i in this.SubFrame) 
         {
             var item = this.SubFrame[i];
             if (item.Frame.DrawCustomHorizontal) item.Frame.DrawCustomHorizontal();
+        }
+    }
+
+    this.DrawCustomVertical = function (event)  //定制X坐标
+    {
+        for (var i in this.SubFrame) 
+        {
+            var item = this.SubFrame[i];
+            item.Frame.DrawCustomVerticalEvent = event;
+            if (item.Frame.DrawCustomVertical) item.Frame.DrawCustomVertical();
         }
     }
 
@@ -9372,6 +9492,15 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+    }
+
+    this.SetCustomVerical = function (windowId, data) 
+    {
+        if (!this.Frame) return;
+        if (windowId >= this.Frame.SubFrame.length) return;
+
+        var item = this.Frame.SubFrame[windowId];
+        if (item.Frame) item.Frame.CustomVerticalInfo = data;
     }
 }
 
