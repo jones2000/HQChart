@@ -219,6 +219,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 1. [HQChart实战教程1-外汇分时图](https://blog.csdn.net/jones2000/article/details/103254501) <br>
 2. [HQChart实战教程2-使用跨周期写指标](https://blog.csdn.net/jones2000/article/details/103275668) <br>
 3. [HQChart实战教程3-http+ws对接分钟K线数据](https://blog.csdn.net/jones2000/article/details/103882063) <br>
+4. [HQChart实战教程4-http+ws对接日K线数据](https://blog.csdn.net/jones2000/article/details/103966271) <br>
+5. [HQChart实战教程5-http+ws对接单日分时图数据](https://blog.csdn.net/jones2000/article/details/103966925) <br>
 
 
 ## 设计文档:
@@ -248,10 +250,13 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## VUE版本手机端样例1
 ![手机端行情页面](/小程序行情模块用例/image/hchart_phone_1.png) <br>
 [手机端行情页面](https://opensource2.zealink.com/product/hqNewdemoH5/stockHq.html#/StockHq)<br>
+[代码地址(vue.demo/hq_h5_pages)](/vue.demo/hq_h5_pages) <br>
 
 ## js页面样例
 [个股详情手机端h5](https://opensource2.zealink.com/hqweb/hqpages/stockpage.html?) <br>
 [代码地址(webhqchart.demo/h5demo)](/webhqchart.demo/h5demo) <br>
+[VUE代码地址(vue.demo/stockpage_h5)](/vue.demo/stockpage_h5) <br>
+
 ## 第3方数据对接样例
 1. 数字货币对接 <br>
    数据来源： https://www.coinzeus.io/cn <br>
