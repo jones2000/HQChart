@@ -4494,8 +4494,10 @@ function KLineFrame()
 
     this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
 
-    this.CustomHorizontalInfo=[];
+    this.CustomHorizontalInfo=[];   //定制Y轴刻度
     this.IsDrawTitleBG=false;
+
+    this.CustomVerticalInfo=[];     //定制X轴刻度 Date:, Time: , Color:线段颜色, LineType:线段类型 0 直线 1 虚线
 
     this.DrawToolbar=function()
     {
@@ -4876,6 +4878,12 @@ function KLineFrame()
                     break;
             }
         }
+    }
+
+    this.DrawCustomVerticalInfo=function()  //X轴定制刻度显示
+    {
+        if (!this.CustomVerticalInfo) return;
+        if (this.CustomVerticalInfo.length<=0) return;
     }
 }
 
@@ -22779,6 +22787,7 @@ function KLineChartContainer(uielement)
             { 
                 if (ChartData.IsDayPeriod(self.Period,true)) self.RecvRealtimeData(data); 
                 else if (ChartData.IsMinutePeriod(self.Period,true)) self.RecvMinuteRealtimeData(data);
+                else if (ChartData.IsSecondPeriod(self.Period)) self.RecvMinuteRealtimeData(data);
             }
         }
         event.Callback(event,data,this);
