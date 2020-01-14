@@ -7601,7 +7601,7 @@ function KLineChartContainer(uielement)
             {
                 if (ChartData.IsDayPeriod(self.Period, true)) self.RecvRealtimeData(data);
                 else if (ChartData.IsMinutePeriod(self.Period, true)) self.RecvMinuteRealtimeData(data);
-                else if (ChartData.IsSecondPeriod(self.Perios)) self.RecvMinuteRealtimeData(data);
+                else if (ChartData.IsSecondPeriod(self.Period)) self.RecvMinuteRealtimeData(data);
             }
         }
         event.Callback(event, data, this);
