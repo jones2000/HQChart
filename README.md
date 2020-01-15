@@ -253,6 +253,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 [代码地址(vue.demo/hq_h5_pages)](/vue.demo/hq_h5_pages) <br>
 
 ## js页面样例
+![手机端行情页面](/小程序行情模块用例/image/hqchart_phone_2.png) <br>
 [个股详情手机端h5](https://opensource2.zealink.com/hqweb/hqpages/stockpage.html?) <br>
 [代码地址(webhqchart.demo/h5demo)](/webhqchart.demo/h5demo) <br>
 [VUE代码地址(vue.demo/stockpage_h5)](/vue.demo/stockpage_h5) <br>
