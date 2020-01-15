@@ -4981,23 +4981,6 @@ function KLineFrame()
             }
         }
     }
-
-    this.DrawCustomXItem=function(item)
-    {
-        if (!this.Data) return;
-        var isTimePeriod=IFrameSplitOperator.IsNumber(item.Time);
-        if (isTimePeriod)
-        {
-            if (firstItem.Date>item.Date || kItem.Time!=item.Time) continue;
-        }
-        else
-        {
-
-        }
-
-        
-        
-    }
 }
 
 function OverlayKLineFrame()
