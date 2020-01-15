@@ -10854,7 +10854,7 @@ function ChartData()
         if (bFind==true)    //第1个数据匹配,覆盖
         {
             var item=data[i];
-            if (j-1>0 && !item.YClose) item.YClose=this.Data[j-1].YClose;   //前收盘如果没有就是上一记录的收盘
+            if (j-1>0 && !item.YClose) item.YClose=this.Data[j-1].Close;   //前收盘如果没有就是上一记录的收盘
             var newItem=HistoryData.Copy(item);
             this.Data[j]=newItem;
             ++j;
