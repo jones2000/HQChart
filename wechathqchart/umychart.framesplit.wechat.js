@@ -901,6 +901,9 @@ function FrameSplitMinutePriceY()
     this.newMethod();
     delete this.newMethod;
 
+    this.High = null;                 //最高最低价
+    this.Low = null;
+
     this.YClose;                        //昨收
     this.Data;                          //分钟数据
     this.AverageData;                   //分钟均线数据
@@ -948,6 +951,12 @@ function FrameSplitMinutePriceY()
             var range = this.OverlayChartPaint[0].GetMaxMin();
             if (range.Max && range.Max > max) max = range.Max;
             if (range.Min && range.Min < min) min = range.Min;
+        }
+
+        if (IFrameSplitOperator.IsNumber(this.High) && IFrameSplitOperator.IsNumber(this.Low)) 
+        {
+            if (max < this.High) max = this.High;
+            if (min > this.Low) min = this.Low;
         }
 
         return { Max: max, Min: min };

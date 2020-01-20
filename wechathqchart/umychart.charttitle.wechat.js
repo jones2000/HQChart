@@ -179,7 +179,7 @@ function DynamicKLineTitlePainting()
         else if (period > CUSTOM_SECOND_PERIOD_START && period <= CUSTOM_SECOND_PERIOD_END)
             name = (period - CUSTOM_SECOND_PERIOD_START) + g_JSChartLocalization.GetText('自定义秒', this.LanguageID);
         else
-            name = g_JSChartLocalization.GetText(PERIOD_NAME[period], this.LanguageID);
+            name = g_JSChartLocalization.GetText(ChartData.GetPeriodName(period), this.LanguageID);
         return name;
     }
 

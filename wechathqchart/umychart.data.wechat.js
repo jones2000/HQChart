@@ -10,6 +10,11 @@
     行情数据结构 及计算方法
 */
 
+import 
+{
+    JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME
+} from "./umychart.coordinatedata.wechat.js";
+
 //历史K线数据
 function HistoryData()
 {
@@ -123,6 +128,7 @@ function ChartData()
     this.DataOffset=0;                        //数据偏移
     this.Period=0;                            //周期 0 日线 1 周线 2 月线 3年线
     this.Right=0;                             //复权 0 不复权 1 前复权 2 后复权
+    this.Symbol;                              //股票代码
 
     this.Data2=new Array();                   //第1组数据 走势图:历史分钟数据
 
@@ -533,9 +539,11 @@ function ChartData()
         if (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END)    //自定义周期
             return this.GetDayCustomPeriodData(period - CUSTOM_DAY_PERIOD_START);
 
+        var isBit = MARKET_SUFFIX_NAME.IsBIT(this.Symbol);
         var result=[];
         var index=0;
         var startDate=0;
+        var weekCount = 2;
         var newData=null;
         for(var i in this.Data)
         {
@@ -545,11 +553,26 @@ function ChartData()
             switch(period)
             {
                 case 1: //周线
-                    var fridayDate=ChartData.GetFirday(dayData.Date);
+                    if (isBit) var fridayDate = ChartData.GetSunday(dayData.Date);
+                    else var fridayDate=ChartData.GetFirday(dayData.Date);
                     if (fridayDate!=startDate)
                     {
                         isNewData=true;
                         startDate=fridayDate;
+                    }
+                    break;
+                case 21: //双周
+                    if (isBit) var fridayDate = ChartData.GetSunday(dayData.Date);
+                    else var fridayDate = ChartData.GetFirday(dayData.Date);
+                    if (fridayDate != startDate) 
+                    {
+                        ++weekCount;
+                        if (weekCount >= 2) 
+                        {
+                            isNewData = true;
+                            weekCount = 0;
+                        }
+                        startDate = fridayDate;
                     }
                     break;
                 case 2: //月线
@@ -677,7 +700,7 @@ function ChartData()
     //周期数据 1=周 2=月 3=年 9=季 
     this.GetPeriodData=function(period)
     {
-        if (period == 1 || period == 2 || period == 3 || period == 9 || (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END)) return this.GetDayPeriodData(period);
+        if (period == 1 || period == 2 || period == 3 || period == 9 || period == 21 || (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END)) return this.GetDayPeriodData(period);
         if (period == 5 || period == 6 || period == 7 || period == 8 || period == 11 || period == 12 ||(period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
     }
 
@@ -1248,6 +1271,25 @@ ChartData.GetFirday=function(value)
     return fridayDate;
 }
 
+ChartData.GetSunday = function (value) 
+{
+    var date = new Date(parseInt(value / 10000), (value / 100 % 100 - 1), value % 100);
+    var day = date.getDay();
+    if (day == 0) return value;
+
+    var timestamp = date.getTime();
+    if (day > 0) 
+    {
+        var prevTimestamp = (24 * 60 * 60 * 1000) * (7 - day);
+        timestamp += prevTimestamp;
+    }
+
+    date.setTime(timestamp);
+    var sundayDate = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+    var week = date.getDay();
+    return sundayDate;
+}
+
 ChartData.GetQuarter = function (value) 
 {
     var month = parseInt(value % 10000 / 100);
@@ -1258,11 +1300,11 @@ ChartData.GetQuarter = function (value)
     else return 0;
 }
 
-//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线  [40001-50000) 自定义日线 (isIncludeBase 是否包含基础日线周期)
+//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线 21=双周 [40001-50000) 自定义日线 (isIncludeBase 是否包含基础日线周期)
 var CUSTOM_DAY_PERIOD_START = 40000, CUSTOM_DAY_PERIOD_END = 49999;
 ChartData.IsDayPeriod = function (period, isIncludeBase) 
 {
-    if (period == 1 || period == 2 || period == 3 || period == 9) return true;
+    if (period == 1 || period == 2 || period == 3 || period == 9 || period==21 ) return true;
     if (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END) return true;
     if (period == 0 && isIncludeBase == true) return true;
 
@@ -1293,6 +1335,21 @@ ChartData.IsSecondPeriod = function (period)
 ChartData.IsTickPeriod = function (period) 
 {
     return period == 10;
+}
+
+//获取周期名字
+ChartData.GetPeriodName = function (period) 
+{
+    var mapName = new Map(
+        [
+            [0, '日线'], [1, '周线'], [2, '月线'], [3, '年线'], [9, '季线'], [21, '双周'],
+            [4, '1分'], [5, '5分'], [6, '15分'], [7, '30分'], [8, '60分'], [11, '2小时'], [12, '4小时'],
+            [10, '分笔']
+        ]);
+
+    if (mapName.has(period)) return mapName.get(period);
+
+    return '';
 }
 
 function Rect(x, y, width, height) 

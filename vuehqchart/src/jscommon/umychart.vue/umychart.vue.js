@@ -6967,6 +6967,7 @@ function AverageWidthFrame()
     this.MinYDistance=10*GetDevicePixelRatio();         //Y轴刻度最小间距
     this.CoordinateType=0;  //坐标类型 0=普通坐标 1=反转坐标
     this.IsShowYText=[true,true];       //是否显示Y轴坐标坐标 [0=左侧] [1=右侧]
+    this.XBottomOffset=g_JSChartResource.Frame.XBottomOffset;   //X轴文字显示向下偏移
 
     this.DrawFrame=function()
     {
@@ -7219,7 +7220,7 @@ function AverageWidthFrame()
                 
                 if (textRightPrev==null || textLeft>textRightPrev)
                 {
-                    this.Canvas.fillText(this.VerticalInfo[i].Message[0],x,bottom+1*pixelTatio);
+                    this.Canvas.fillText(this.VerticalInfo[i].Message[0],x,bottom+this.XBottomOffset);
                     textRightPrev=textLeft+testWidth;
                 }
             }
@@ -10012,6 +10013,7 @@ function ChartData()
         var result=new Array();
         var index=0;
         var startDate=0;
+        var weekCount=2;
         var newData=null;
         for(var i in this.Data)
         {
@@ -10021,23 +10023,28 @@ function ChartData()
             switch(period)
             {
                 case 1: //周线
-                    if (isBit)  //数字货币全年的
+                    if (isBit)  var fridayDate=ChartData.GetSunday(dayData.Date); //数字货币全年的
+                    else var fridayDate=ChartData.GetFirday(dayData.Date);
+                    
+                    if (fridayDate!=startDate)
                     {
-                        var sundayDate=ChartData.GetSunday(dayData.Date);
-                        if (sundayDate!=startDate)
-                        {
-                            isNewData=true;
-                            startDate=sundayDate;
-                        }
+                        isNewData=true;
+                        startDate=fridayDate;
                     }
-                    else
+                    break;
+                case 21: //双周
+                    if (isBit)  var fridayDate=ChartData.GetSunday(dayData.Date); //数字货币全年的
+                    else var fridayDate=ChartData.GetFirday(dayData.Date);
+
+                    if (fridayDate!=startDate)
                     {
-                        var fridayDate=ChartData.GetFirday(dayData.Date);
-                        if (fridayDate!=startDate)
+                        ++weekCount;
+                        if (weekCount>=2) 
                         {
                             isNewData=true;
-                            startDate=fridayDate;
+                            weekCount=0;
                         }
+                        startDate=fridayDate;
                     }
                     break;
                 case 2: //月线
@@ -10193,7 +10200,7 @@ function ChartData()
         }
 
 
-        if (period==1 || period==2 || period==3 || period==9 || (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)) return this.GetDayPeriodData(period);
+        if (period==1 || period==2 || period==3 || period==9 || period==21 || (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)) return this.GetDayPeriodData(period);
         if (period==5 || period==6 || period==7 || period==8 || period==11 || period==12 || (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
     }
 
@@ -11075,11 +11082,11 @@ ChartData.GetQuarter=function(value)
     else return 0;
 }
 
-//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线  [40001-50000) 自定义日线 (isIncludeBase 是否包含基础日线周期)
+//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线 21=双周 [40001-50000) 自定义日线 (isIncludeBase 是否包含基础日线周期)
 var CUSTOM_DAY_PERIOD_START=40000, CUSTOM_DAY_PERIOD_END=49999;
 ChartData.IsDayPeriod=function(period, isIncludeBase)
 {
-    if (period==1 || period==2 || period==3 || period==9) return true;
+    if (period==1 || period==2 || period==3 || period==9 || period==21) return true;
     if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END) return true;
     if (period==0 && isIncludeBase==true) return true;
 
@@ -11110,6 +11117,21 @@ ChartData.IsSecondPeriod=function(period)
 ChartData.IsTickPeriod=function(period)
 {
     return period==10;
+}
+
+//获取周期名字
+ChartData.GetPeriodName=function(period)
+{
+    var mapName=new Map(
+    [
+        [0, '日线'],[1, '周线'],[2, '月线'],[3, '年线'],[9, '季线'], [21,'双周'],
+        [4, '1分'], [5, '5分'], [6, '15分'],[7, '30分'],[8, '60分'],[11, '2小时'],[12, '4小时'],
+        [10, '分笔']
+    ]);
+
+    if (mapName.has(period)) return mapName.get(period);
+
+    return '';
 }
 
 
@@ -19321,6 +19343,9 @@ function FrameSplitMinutePriceY()
     this.newMethod();
     delete this.newMethod;
 
+    this.High=null;                 //最高最低价
+    this.Low=null;
+
     this.YClose;                        //昨收
     this.Data;                          //分钟数据
     this.AverageData;                   //分钟均线数据
@@ -19449,6 +19474,12 @@ function FrameSplitMinutePriceY()
         {
             if (max<this.LimitPrice.Max) max=this.LimitPrice.Max;
             if (min>this.LimitPrice.Min) min=this.LimitPrice.Min;
+        }
+
+        if (IFrameSplitOperator.IsNumber(this.High) && IFrameSplitOperator.IsNumber(this.Low))
+        {
+            if (max<this.High) max=this.High;
+            if (min>this.Low) min=this.Low;
         }
 
         return { Max:max, Min:min };
@@ -20683,7 +20714,7 @@ function IChartTitlePainting()
     this.ClassName='IChartTitlePainting';
 }
 
-var PERIOD_NAME=["日线","周线","月线","年线","1分","5分","15分","30分","60分","季线","分笔", "2小时","4小时","","",""];
+//var PERIOD_NAME=["日线","周线","月线","年线","1分","5分","15分","30分","60分","季线","分笔", "2小时","4小时","双周","",""];
 var RIGHT_NAME=['不复权','前复权','后复权'];
 
 function DynamicKLineTitlePainting()
@@ -20778,7 +20809,7 @@ function DynamicKLineTitlePainting()
             else if (this.Data.Period>CUSTOM_SECOND_PERIOD_START && this.Data.Period<=CUSTOM_SECOND_PERIOD_END)
                 periodName=(this.Data.Period-CUSTOM_SECOND_PERIOD_START)+g_JSChartLocalization.GetText('自定义秒',this.LanguageID);
             else 
-                periodName=g_JSChartLocalization.GetText(PERIOD_NAME[this.Data.Period],this.LanguageID);
+                periodName=g_JSChartLocalization.GetText(ChartData.GetPeriodName(this.Data.Period),this.LanguageID);
             var rightName=g_JSChartLocalization.GetText(RIGHT_NAME[this.Data.Right],this.LanguageID);
             var text="("+periodName+" "+rightName+")";
             var isStock=MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol); //是否是指数
@@ -24334,6 +24365,7 @@ function JSChartResource()
     this.FrameSplitTextColor="rgb(117,125,129)";    //刻度文字颜色
     this.FrameSplitTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";     //坐标刻度文字字体
     this.FrameTitleBGColor="rgb(246,251,253)";  //标题栏背景色
+    this.Frame={ XBottomOffset:1*GetDevicePixelRatio() };   //X轴文字向下偏移
 
     this.FrameLatestPrice = {
         TextColor:'rgb(255,255,255)',   //最新价格文字颜色
@@ -24539,6 +24571,11 @@ function JSChartResource()
         if (style.FrameSplitTextFont) this.FrameSplitTextFont = style.FrameSplitTextFont;
         if (style.FrameTitleBGColor) this.FrameTitleBGColor = style.FrameTitleBGColor;
 
+        if (style.Frame)
+        {
+            if (style.Frame.XBottomOffset) this.Frame.XBottomOffset=style.Frame.XBottomOffset;
+        }
+
         if (style.FrameLatestPrice) 
         {
             if (style.FrameLatestPrice.TextColor) this.FrameLatestPrice.TextColor = style.FrameLatestPrice.TextColor;
@@ -24646,6 +24683,7 @@ function JSChartLocalization()
         //周期
         ['日线', {CN:'日线', EN:'1D'}],
         ['周线', {CN:'周线', EN:'1W'}],
+        ['双周', {CN:'双周', EN:"2W"}],
         ['月线', {CN:'月线', EN:'1M'}],
         ['年线', {CN:'年线', EN:'1Y'}],
         ['1分', {CN:'1分', EN:'1Min'}],
@@ -27535,6 +27573,7 @@ function KLineChartContainer(uielement)
                 case 2:     //月
                 case 3:     //年
                 case 9:     //季线
+                case 21:    //双周
                     if (this.SourceData.DataType!=0) isDataTypeChange=true;
                     break;
                 case 4:     //1分钟
@@ -31220,7 +31259,8 @@ function MinuteChartContainer(uielement)
         var upperSymbol=this.Symbol.toUpperCase();
         if (data.stock[0].yclearing && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) yClose=data.stock[0].yclearing; //期货使用前结算价
         this.CaclutateLimitPrice(yClose, data.stock[0].limitprice); //计算涨停价格
-        this.BindMainData(sourceData,yClose);
+        var extendData={ High:data.stock[0].high, Low:data.stock[0].low };
+        this.BindMainData(sourceData,yClose, extendData);
 
         if (this.Frame.SubFrame.length>2)
         {
@@ -31553,7 +31593,7 @@ function MinuteChartContainer(uielement)
     }
 
     //绑定分钟数据
-    this.BindMainData=function(minuteData,yClose)
+    this.BindMainData=function(minuteData,yClose, extendData)
     {
         //分钟数据
         var bindData=new ChartData();
@@ -31590,6 +31630,11 @@ function MinuteChartContainer(uielement)
         this.Frame.SubFrame[0].Frame.YSplitOperator.SourceData=this.IsBeforeData ? minuteData:null;
         this.Frame.SubFrame[0].Frame.YSplitOperator.OverlayChartPaint=this.OverlayChartPaint;
         this.Frame.SubFrame[0].Frame.YSplitOperator.LimitPrice=this.LimitPrice;
+        if (extendData)
+        {
+            this.Frame.SubFrame[0].Frame.YSplitOperator.High=extendData.High;
+            this.Frame.SubFrame[0].Frame.YSplitOperator.Low=extendData.Low;
+        }
 
         //成交量
         this.ChartPaint[2].Data=minuteData;
@@ -37481,6 +37526,10 @@ function KLineRightMenu(divElement)
                 text: "周线",Value:1,
                 click: function () { chart.ChangePeriod(1); }
             }, 
+            {
+                text: "双周线",Value:21,
+                click: function () { chart.ChangePeriod(21); }
+            },
             {
                 text: "月线",Value:2,
                 click: function () { chart.ChangePeriod(2); }
@@ -52421,6 +52470,8 @@ var BLACK_STYLE=
     FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
     FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
     FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
+
+    Frame:{ XBottomOffset:1*GetDevicePixelRatio() },   //X轴文字向下偏移
 
     FrameLatestPrice : {
         TextColor:'rgb(255,255,255)',   //最新价格文字颜色

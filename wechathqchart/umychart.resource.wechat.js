@@ -46,6 +46,8 @@ function JSChartResource()
     this.FrameSplitTextFont = "12px 微软雅黑";        //坐标刻度文字字体
     //this.FrameSplitTextFont = "14px PingFang-SC-Bold";//坐标刻度文字字体
     this.FrameTitleBGColor = "rgb(246,251,253)";      //标题栏背景色
+    this.Frame = { XBottomOffset: 0 };   //X轴文字向下偏移
+
     this.FrameLatestPrice = {
         TextColor: 'rgb(255,255,255)',   //最新价格文字颜色
         UpBarColor: "rgb(238,21,21)",    //上涨
@@ -224,6 +226,11 @@ function JSChartResource()
         if (style.FrameSplitTextFont) this.FrameSplitTextFont = style.FrameSplitTextFont;
         if (style.FrameTitleBGColor) this.FrameTitleBGColor = style.FrameTitleBGColor;
 
+        if (style.Frame) 
+        {
+            if (style.Frame.XBottomOffset) this.Frame.XBottomOffset = style.Frame.XBottomOffset;
+        }
+
         if (style.FrameLatestPrice) 
         {
             if (style.FrameLatestPrice.TextColor) this.FrameLatestPrice.TextColor = style.FrameLatestPrice.TextColor;
@@ -307,6 +314,7 @@ function JSChartLocalization()
         //周期
         ['日线', { CN: '日线', EN: '1D' }],
         ['周线', { CN: '周线', EN: '1W' }],
+        ['双周', { CN: '双周', EN: "2W" }],
         ['月线', { CN: '月线', EN: '1M' }],
         ['年线', { CN: '年线', EN: '1Y' }],
         ['1分', { CN: '1分', EN: '1Min' }],

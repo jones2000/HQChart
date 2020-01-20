@@ -62,6 +62,8 @@ var BLACK_STYLE=
     FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
     FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
 
+    Frame:{ XBottomOffset:1*GetDevicePixelRatio() },   //X轴文字向下偏移
+
     FrameLatestPrice : {
         TextColor:'rgb(255,255,255)',   //最新价格文字颜色
         UpBarColor:"rgb(238,21,21)",    //上涨

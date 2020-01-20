@@ -114,19 +114,28 @@ function JSCanvasElement()
     this.ID;
     this.WebGLCanvas;
     this.IsUniApp=false;
-    this.CanvasNode=null;   //新版小程序使用
+    this.CanvasNode=null;
 
     //获取画布
     this.GetContext = function () 
 	{
         var canvas;
-        if (this.CanvasNode) 
+        if (this.CanvasNode && this.CanvasNode.node) 
         {
+            var node = this.CanvasNode.node;
             console.log("[JSCanvasElement::GetContext] create by getContext('2d')");
-            canvas=this.CanvasNode.getContext('2d');
+            canvas = node.getContext('2d');
+            const dpr = wx.getSystemInfoSync().pixelRatio;
+            //node.width = node.width / dpr;
+            //node.height = node.height / dpr;
+            //canvas.scale(dpr, dpr);
             canvas.draw=function() { };
         }
-        else canvas=wx.createCanvasContext(this.ID);
+        else 
+        {
+            canvas=wx.createCanvasContext(this.ID);
+        }
+
         if (this.IsUniApp)
         {
             console.log('[JSCanvasElement::GetContext] measureText() => JSUniAppCanvasHelper.MeasureText()');
@@ -2345,6 +2354,7 @@ function AverageWidthFrame()
     this.XMessageAlign = 'top';   //X轴刻度文字上下对齐方式
     this.IsShowTitle = true;      //是否显示动态标题
     this.IsShowYText = [true, true];       //是否显示Y轴坐标坐标 [0=左侧] [1=右侧]
+    this.XBottomOffset = g_JSChartResource.Frame.XBottomOffset;   //X轴文字显示向下偏移
 
     this.DrawFrame = function () 
     {
@@ -2499,68 +2509,74 @@ function AverageWidthFrame()
     }
   }
 
-  //画X轴
-  this.DrawVertical = function () {
-    var top = this.ChartBorder.GetTopTitle();
-    var bottom = this.ChartBorder.GetBottom();
-    var right = this.ChartBorder.GetRight();
+    //画X轴
+    this.DrawVertical = function ()
+    {
+        var top = this.ChartBorder.GetTopTitle();
+        var bottom = this.ChartBorder.GetBottom();
+        var right = this.ChartBorder.GetRight();
 
-    var yText = bottom;
-    if (this.XMessageAlign == 'bottom') yText = this.ChartBorder.GetChartHeight();
-    else this.XMessageAlign = 'top';
+        var yText = bottom;
+        if (this.XMessageAlign == 'bottom') yText = this.ChartBorder.GetChartHeight();
+        else this.XMessageAlign = 'top';
 
-    var xPrev = null; //上一个坐标x的值
-    let xPrevTextRight = null;
-    for (var i in this.VerticalInfo) {
-      var x = this.GetXFromIndex(this.VerticalInfo[i].Value);
-      if (x > right) break;
-      if (xPrev != null && Math.abs(x - xPrev) < this.MinXDistance) continue;
+        var xPrev = null; //上一个坐标x的值
+        let xPrevTextRight = null;
+        for (var i in this.VerticalInfo) 
+        {
+            var x = this.GetXFromIndex(this.VerticalInfo[i].Value);
+            if (x > right) break;
+            if (xPrev != null && Math.abs(x - xPrev) < this.MinXDistance) continue;
 
-      if (this.IsShowXLine && this.VerticalInfo[i].LineType > 0) {
-        this.Canvas.strokeStyle = this.VerticalInfo[i].LineColor;
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(ToFixedPoint(x), top);
-        this.Canvas.lineTo(ToFixedPoint(x), bottom);
-        this.Canvas.stroke();
-      }
+            if (this.IsShowXLine && this.VerticalInfo[i].LineType > 0) 
+            {
+                this.Canvas.strokeStyle = this.VerticalInfo[i].LineColor;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(ToFixedPoint(x), top);
+                this.Canvas.lineTo(ToFixedPoint(x), bottom);
+                this.Canvas.stroke();
+            }
 
-      if (this.VerticalInfo[i].Message[0] != null && this.ChartBorder.Bottom > 5) {
-        let xTextRight = null;
-        let xTextLeft = null;
-        if (this.VerticalInfo[i].Font != null)
-          this.Canvas.font = this.VerticalInfo[i].Font;
+            if (this.VerticalInfo[i].Message[0] != null && this.ChartBorder.Bottom > 5) 
+            {
+                let xTextRight = null;
+                let xTextLeft = null;
+                if (this.VerticalInfo[i].Font != null)
+                this.Canvas.font = this.VerticalInfo[i].Font;
+                this.Canvas.fillStyle = this.VerticalInfo[i].TextColor;
 
-        this.Canvas.fillStyle = this.VerticalInfo[i].TextColor;
+                var testWidth = this.Canvas.measureText(this.VerticalInfo[i].Message[0]).width;
+                if (x < testWidth / 2) 
+                {
+                    this.Canvas.textAlign = "left";
+                    this.Canvas.textBaseline = this.XMessageAlign;
+                    xTextRight = x + testWidth;
+                    xTextLeft = x;
+                }
+                else if ((x + testWidth / 2) >= this.ChartBorder.GetChartWidth()) 
+                {
+                    this.Canvas.textAlign = "right";
+                    this.Canvas.textBaseline = this.XMessageAlign;
+                    xTextRight = x + testWidth;
+                    xTextLeft = x;
+                }
+                else 
+                {
+                    this.Canvas.textAlign = "center";
+                    this.Canvas.textBaseline = this.XMessageAlign;
+                    xTextRight = x + testWidth / 2;
+                    xTextLeft = x - testWidth / 2;
+                }
 
-        var testWidth = this.Canvas.measureText(this.VerticalInfo[i].Message[0]).width;
-        if (x < testWidth / 2) {
-          this.Canvas.textAlign = "left";
-          this.Canvas.textBaseline = this.XMessageAlign;
-          xTextRight = x + testWidth;
-          xTextLeft = x;
+                if (xPrevTextRight != null && xPrevTextRight > xTextLeft) continue;
+
+                this.Canvas.fillText(this.VerticalInfo[i].Message[0], x, yText + this.XBottomOffset);
+                xPrevTextRight = xTextRight;
+            }
+
+            xPrev = x;
         }
-        else if ((x + testWidth / 2) >= this.ChartBorder.GetChartWidth()) {
-          this.Canvas.textAlign = "right";
-          this.Canvas.textBaseline = this.XMessageAlign;
-          xTextRight = x + testWidth;
-          xTextLeft = x;
-        }
-        else {
-          this.Canvas.textAlign = "center";
-          this.Canvas.textBaseline = this.XMessageAlign;
-          xTextRight = x + testWidth / 2;
-          xTextLeft = x - testWidth / 2;
-        }
-
-        if (xPrevTextRight != null && xPrevTextRight > xTextLeft) continue;
-
-        this.Canvas.fillText(this.VerticalInfo[i].Message[0], x, yText);
-        xPrevTextRight = xTextRight;
-      }
-
-      xPrev = x;
     }
-  }
 
     this.GetYData = function (y) //Y坐标转y轴数值
     {
@@ -2990,8 +3006,8 @@ function KLineFrame()
     this.CustomHorizontalInfo = [];
 
     //定制X轴刻度 
-    //Type:0,  Date:, Time: ,        Line:{ Color:线段颜色, Type:线段类型 0 直线 1 虚线 }
-    //Type: 1, Space: 第几个空白间距, Line: { Color: 线段颜色, Type: 线段类型 0 直线 1 虚线 }
+    //Type:0,  Date:, Time: , Name:名字,       Line:{ Color:线段颜色, Type:线段类型 0 直线 1 虚线 }
+    //Type: 1, Space: 第几个空白间距, Name:名字, Line: { Color: 线段颜色, Type: 线段类型 0 直线 1 虚线 }
     this.CustomVerticalInfo = [];               
     this.DrawCustomVerticalEvent;
 
@@ -7911,6 +7927,7 @@ function KLineChartContainer(uielement)
         var sourceData = new ChartData();
         sourceData.Data = aryDayData;
         sourceData.DataType = 1;      //0=日线数据 1=分钟数据
+        sourceData.Symbol = data.symbol;
 
         //显示的数据
         var bindData = new ChartData();
@@ -7918,6 +7935,7 @@ function KLineChartContainer(uielement)
         bindData.Right = this.Right;
         bindData.Period = this.Period;
         bindData.DataType = 1;
+        bindData.Symbol = data.symbol;
 
         if (ChartData.IsMinutePeriod(bindData.Period, false) && !this.IsApiPeriod)   //周期数据
         {
@@ -8057,6 +8075,7 @@ function KLineChartContainer(uielement)
         bindData.Period = this.Period;
         bindData.Right = this.Right;
         bindData.DataType = this.SourceData.DataType;
+        bindData.Symbol = this.Symbol;
 
         if (bindData.Right > 0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
         {
@@ -8208,6 +8227,7 @@ function KLineChartContainer(uielement)
         bindData.Period = this.Period;
         bindData.Right = this.Right;
         bindData.DataType = this.SourceData.DataType;
+        bindData.Symbol = this.Symbol;
 
         if (bindData.Right > 0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
         {
@@ -8326,6 +8346,7 @@ function KLineChartContainer(uielement)
             case 1:     //周
             case 2:     //月
             case 3:     //年
+            case 21:    //双周
                 if (this.SourceData.DataType != 0) isDataTypeChange = true;
                 break;
             case 4:     //1分钟
@@ -8786,6 +8807,7 @@ function KLineChartContainer(uielement)
         bindData.Period = this.Period;
         bindData.Right = this.Right;
         bindData.DataType = this.SourceData.DataType;
+        bindData.Symbol = this.Symbol;
 
         if (bindData.Right > 0 && ChartData.IsDayPeriod(bindData.Period, true))    //复权(日线数据才复权)
         {
@@ -10246,7 +10268,8 @@ function MinuteChartContainer(uielement)
         var yClose = data.data.stock[0].yclose;
         var upperSymbol = this.Symbol.toUpperCase();
         if (data.data.stock[0].yclearing && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) yClose = data.data.stock[0].yclearing; //期货使用前结算价
-        this.BindMainData(sourceData, yClose);
+        var extendData = { High: data.data.stock[0].high, Low: data.data.stock[0].low };
+        this.BindMainData(sourceData, yClose, extendData);
 
         if (this.Frame.SubFrame.length > 2) 
         {
@@ -10526,7 +10549,7 @@ function MinuteChartContainer(uielement)
     }
 
    
-    this.BindMainData = function (minuteData, yClose)  //绑定分钟数据
+    this.BindMainData = function (minuteData, yClose, extendData)  //绑定分钟数据
     {
         //分钟数据
         var bindData = new ChartData();
@@ -10545,6 +10568,11 @@ function MinuteChartContainer(uielement)
 
         this.Frame.SubFrame[0].Frame.YSplitOperator.AverageData = bindData;
         this.Frame.SubFrame[0].Frame.YSplitOperator.OverlayChartPaint = this.OverlayChartPaint;
+        if (extendData) 
+        {
+            this.Frame.SubFrame[0].Frame.YSplitOperator.High = extendData.High;
+            this.Frame.SubFrame[0].Frame.YSplitOperator.Low = extendData.Low;
+        }
 
         //成交量
         this.ChartPaint[2].Data = minuteData;
@@ -11080,6 +11108,7 @@ function CustomKLineChartContainer(uielement) {
         var sourceData = new ChartData();
         sourceData.Data = aryDayData;
         sourceData.DataType = 0;      //0=日线数据 1=分钟数据
+        sourceData.Symbol = data.symbol;
 
         //显示的数据
         var bindData = new ChartData();
@@ -11087,6 +11116,7 @@ function CustomKLineChartContainer(uielement) {
         bindData.Right = 0;   //指数没有复权
         bindData.Period = this.Period;
         bindData.DataType = 0;
+        bindData.Symbol = data.symbol;
 
         if (ChartData.IsDayPeriod(this.Period, false))   //周期数据
         {
