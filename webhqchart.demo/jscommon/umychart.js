@@ -4539,14 +4539,17 @@ function KLineFrame()
         var toolbarHeight=this.ChartBorder.GetTitleHeight();
         var left=chartWidth-(this.ChartBorder.Right/pixelTatio)-toolbarWidth;
         var top=this.ChartBorder.GetTop()/pixelTatio;
-        var spanIcon = "<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='调整指标参数'></span>" +
-            "<span class='index_change icon iconfont icon-change_index' id='changeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='切换指标'></span>" +
-            "<span class='index_overlay icon iconfont icon-overlay_index' id='overlayindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='叠加指标'></span>";
+
+        const modifyButton=`<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='调整指标参数'></span>`;
+        const changeButton=`<span class='index_change icon iconfont icon-change_index' id='changeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='切换指标'></span>`;
+        const overlayButton=`<span class='index_overlay icon iconfont icon-overlay_index' id='overlayindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='叠加指标'></span>`;
+        const closeButton=`<span class='index_close icon iconfont icon-close' id='closeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='关闭指标窗口'></span>`;
+
+        var spanIcon=modifyButton+changeButton+overlayButton;
 
         if (this.Identify!==0 && this.CloseIndex)  //第1个窗口不能关闭
         {
-            const spanCloseIcon="<span class='index_close icon iconfont icon-close' id='closeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='关闭指标窗口'></span>";
-            spanIcon+=spanCloseIcon;
+            spanIcon+=closeButton;
         }
 
         //var scrollPos=GetScrollPosition();
@@ -21153,7 +21156,9 @@ function JSChartResource()
     this.FrameSplitTextColor="rgb(117,125,129)";    //刻度文字颜色
     this.FrameSplitTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";     //坐标刻度文字字体
     this.FrameTitleBGColor="rgb(246,251,253)";  //标题栏背景色
-    this.Frame={ XBottomOffset:1*GetDevicePixelRatio() };   //X轴文字向下偏移
+    this.Frame={ 
+        XBottomOffset:1*GetDevicePixelRatio()  //X轴文字向下偏移
+    };   
 
     this.FrameLatestPrice = {
         TextColor:'rgb(255,255,255)',   //最新价格文字颜色
@@ -33190,10 +33195,11 @@ function ModifyIndexDialog(divElement)
         dialog.BindCancel();  //绑定取消和关闭事件
 
         //居中显示
+        var pixelTatio = GetDevicePixelRatio();
         var border=chart.Frame.ChartBorder;
         var scrollPos=GetScrollPosition();
-        var left=border.GetLeft()+border.GetWidth()/2;
-        var top=border.GetTop()+border.GetHeight()/2;
+        var left=(border.GetLeft()+border.GetWidth()/2)/pixelTatio;
+        var top=(border.GetTop()+border.GetHeight()/2)/pixelTatio;
         //left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
         //top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
 
@@ -33363,14 +33369,14 @@ function ChangeIndexDialog(divElement)
         dialog.BindClose(chart);
 
         //居中显示
+        var pixelTatio = GetDevicePixelRatio();
         var border=chart.Frame.ChartBorder;
         var scrollPos=GetScrollPosition();
-        var left=border.GetLeft()+border.GetWidth()/2;
-        var top=border.GetTop()+border.GetHeight()/2;
+        var left=(border.GetLeft()+border.GetWidth()/2)/pixelTatio;
+        var top=(border.GetTop()+border.GetHeight()/2)/pixelTatio;
         //left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
         //top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
         dialog.Show(left,top,200,200);
-
     }
 }
 

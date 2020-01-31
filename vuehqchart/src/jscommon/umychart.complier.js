@@ -10976,19 +10976,29 @@ function ScriptIndex(name,script,args,option)
     //给一个默认的颜色
     this.GetDefaultColor=function(id)
     {
-        let COLOR_ARRAY=
-        [
-            "rgb(255,174,0)",
-            "rgb(25,199,255)",
-            "rgb(175,95,162)",
-            "rgb(236,105,65)",
-            "rgb(68,114,196)",
-            "rgb(229,0,79)",
-            "rgb(0,128,255)",
-            "rgb(252,96,154)",
-            "rgb(42,230,215)",
-            "rgb(24,71,178)",
-        ];
+        let COLOR_ARRAY=null;
+        //使用全局线段配置
+        if (g_JSChartResource && g_JSChartResource.Index && g_JSChartResource.Index.LineColor)
+        {
+            COLOR_ARRAY=g_JSChartResource.Index.LineColor;
+        }
+
+        if (!COLOR_ARRAY || !Array.isArray(COLOR_ARRAY))
+        {
+            COLOR_ARRAY=
+            [
+                "rgb(255,174,0)",
+                "rgb(25,199,255)",
+                "rgb(175,95,162)",
+                "rgb(236,105,65)",
+                "rgb(68,114,196)",
+                "rgb(229,0,79)",
+                "rgb(0,128,255)",
+                "rgb(252,96,154)",
+                "rgb(42,230,215)",
+                "rgb(24,71,178)",
+            ];
+        }
 
         let number=parseInt(id);
         return COLOR_ARRAY[number%(COLOR_ARRAY.length-1)];
