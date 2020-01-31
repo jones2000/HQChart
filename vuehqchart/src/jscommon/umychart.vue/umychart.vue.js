@@ -36376,8 +36376,13 @@ function IDivDialog(divElement)
     //显示窗口
     this.Show=function(left,top,width,height)
     {
-        //显示位置
-        $("#"+this.ID).css({'display':'block','top':top+'px', "left":left+'px', "width":width+'px', "height":height+'px' });
+        var cssData={display:'block'};
+        if (IFrameSplitOperator.IsNumber(left)) cssData.left=left+'px';
+        if (IFrameSplitOperator.IsNumber(top)) cssData.top=top+'px';
+        if (IFrameSplitOperator.IsNumber(width)) cssData.width=width+'px';
+        if (IFrameSplitOperator.IsNumber(height)) cssData.height=height+'px';
+
+        $("#"+this.ID).css(cssData);
     }
 }
 
@@ -36410,10 +36415,10 @@ function ModifyIndexDialog(divElement)
                 <strong id='close' class='icon iconfont icon-close'></strong>\
             </div>\
             <div class='parameter-content'><input/>MA</div>\
-        <div class='parameter-footer'>\
-            <button class='submit' >确定</button>\
-            <button class='cancel' >取消</button>\
-        </div>\
+            <div class='parameter-footer'>\
+                <button class='submit' >确定</button>\
+                <button class='cancel' >取消</button>\
+            </div>\
         </div>";
 
         this.DivElement.appendChild(div);
@@ -36564,17 +36569,7 @@ function ModifyIndexDialog(divElement)
         dialog.BindParam(chart,identify);   //绑定参数
         dialog.BindCancel();  //绑定取消和关闭事件
 
-        //居中显示
-        var pixelTatio = GetDevicePixelRatio();
-        var border=chart.Frame.ChartBorder;
-        var scrollPos=GetScrollPosition();
-        var left=(border.GetLeft()+border.GetWidth()/2)/pixelTatio;
-        var top=(border.GetTop()+border.GetHeight()/2)/pixelTatio;
-        //left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
-        //top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
-
-        dialog.Show(left,top,200,200);      //显示
-
+        dialog.Show();//显示, 在css里调整居中
     }
 }
 
@@ -36737,16 +36732,7 @@ function ChangeIndexDialog(divElement)
         dialog.BindSearch(chart);
         //关闭弹窗
         dialog.BindClose(chart);
-
-        //居中显示
-        var pixelTatio = GetDevicePixelRatio();
-        var border=chart.Frame.ChartBorder;
-        var scrollPos=GetScrollPosition();
-        var left=(border.GetLeft()+border.GetWidth()/2)/pixelTatio;
-        var top=(border.GetTop()+border.GetHeight()/2)/pixelTatio;
-        //left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
-        //top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
-        dialog.Show(left,top,200,200);
+        dialog.Show();
     }
 }
 
