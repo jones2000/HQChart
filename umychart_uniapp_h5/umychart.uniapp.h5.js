@@ -26002,8 +26002,12 @@ function KLineChartContainer(uielement)
         this.Canvas.beginPath();
         this.Canvas.rect(this.Frame.ChartBorder.GetLeft(),this.Frame.ChartBorder.GetTop(),this.Frame.ChartBorder.GetWidth(),this.Frame.ChartBorder.GetHeight());
         isInClient=this.Canvas.isPointInPath(x,y);
+
+        var wheelValue=e.wheelDelta;
+        if (!IFrameSplitOperator.IsObjectExist(e.wheelDelta))
+            wheelValue=e.deltaY* -0.01;
         
-        if (isInClient && e.wheelDelta<0)       //缩小
+        if (isInClient && wheelValue<0)       //缩小
         {
             var cursorIndex={};
             cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
@@ -26016,7 +26020,7 @@ function KLineChartContainer(uielement)
                 this.Draw();
             }
         }
-        else if (isInClient && e.wheelDelta>0)  //放大
+        else if (isInClient && wheelValue>0)  //放大
         {
             var cursorIndex={};
             cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
@@ -29385,7 +29389,7 @@ function KLineChartContainer(uielement)
         drawPicture.Period=this.Period;
         drawPicture.Option=this.ChartDrawOption;
         if (callback) drawPicture.FinishedCallback=callback;    //完成通知上层回调
-        self=this;
+        var self=this;
         drawPicture.Update=function()   //更新回调函数
         {
             self.DrawDynamicInfo();
@@ -29402,8 +29406,9 @@ function KLineChartContainer(uielement)
         if (!this.Frame.SubFrame || this.Frame.SubFrame.length<=0) return false;
 
         //相对坐标
-        var xFixed=x-this.UIElement.getBoundingClientRect().left;
-        var yFixed=y-this.UIElement.getBoundingClientRect().top;
+        var pixelTatio = GetDevicePixelRatio(); //x,y是原始坐标 需要乘以放大倍速
+        var xFixed=(x-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var yFixed=(y-this.UIElement.getBoundingClientRect().top)*pixelTatio;
         for(var i in this.Frame.SubFrame)
         {
             var frame=this.Frame.SubFrame[i].Frame;
@@ -29424,8 +29429,8 @@ function KLineChartContainer(uielement)
         if (!drawPicture.Frame) return false;
 
         drawPicture.Point[0]=new Point();
-        drawPicture.Point[0].X=x-this.UIElement.getBoundingClientRect().left;
-        drawPicture.Point[0].Y=y-this.UIElement.getBoundingClientRect().top;
+        drawPicture.Point[0].X=(x-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        drawPicture.Point[0].Y=(y-this.UIElement.getBoundingClientRect().top)*pixelTatio;
         drawPicture.Status=1;   //第1个点完成
         return true;
     }
@@ -29435,9 +29440,10 @@ function KLineChartContainer(uielement)
         var drawPicture=this.CurrentChartDrawPicture;
         if (!drawPicture) return false;
 
+        var pixelTatio = GetDevicePixelRatio(); //x,y是原始坐标 需要乘以放大倍速
         drawPicture.Point[1]=new Point();
-        drawPicture.Point[1].X=x-this.UIElement.getBoundingClientRect().left;
-        drawPicture.Point[1].Y=y-this.UIElement.getBoundingClientRect().top;
+        drawPicture.Point[1].X=(x-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        drawPicture.Point[1].Y=(y-this.UIElement.getBoundingClientRect().top)*pixelTatio;
 
         drawPicture.Status=2;   //设置第2个点
         return true;
@@ -29449,20 +29455,24 @@ function KLineChartContainer(uielement)
         var drawPicture=this.CurrentChartDrawPicture;
         if (!drawPicture) return false;
 
+        var pixelTatio = GetDevicePixelRatio(); //x,y是原始坐标 需要乘以放大倍速
         drawPicture.Point[2]=new Point();
-        drawPicture.Point[2].X=x-this.UIElement.getBoundingClientRect().left;
-        drawPicture.Point[2].Y=y-this.UIElement.getBoundingClientRect().top;
+        drawPicture.Point[2].X=(x-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        drawPicture.Point[2].Y=(y-this.UIElement.getBoundingClientRect().top)*pixelTatio;
 
         drawPicture.Status=3;   //设置第3个点
         return true;
     }
 
     //xStep,yStep 移动的偏移量
-    this.MoveChartDrawPicture=function(xStep,yStep)
+    this.MoveChartDrawPicture=function(x,y)
     {
         var drawPicture=this.CurrentChartDrawPicture;
         if (!drawPicture) return false;
 
+        var pixelTatio = GetDevicePixelRatio(); //x,y 需要乘以放大倍速
+        var xStep=x*pixelTatio;
+        var yStep=y*pixelTatio;
         //JSConsole.Chart.Log("xStep="+xStep+" yStep="+yStep);
         drawPicture.Move(xStep,yStep);
 

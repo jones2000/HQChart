@@ -15,6 +15,7 @@
 
 <script>
 import StockFull from '../../jscommon/umychart.vue.components/stockfull.vue'
+import HQChart from '../../jscommon/umychart.vue/umychart.vue'
 
 //定制K线设置
 const CUSTOM_KLINE_OPTION=
@@ -45,6 +46,7 @@ const CUSTOM_MINUTE_OPTION=
 
 
 
+
 export default 
 {
     data () 
@@ -62,6 +64,12 @@ export default
     {
         var symbol = this.GetURLParams('symbol');
         if (symbol != null) this.Symbol = symbol;
+        var isLog=this.GetURLParams('log');
+        if (isLog=='false') 
+        {
+            HQChart.JSConsole.Chart.Log=()=>{}
+            HQChart.JSConsole.Complier.Log=()=>{}
+        }
     },
 
     mounted:function()
