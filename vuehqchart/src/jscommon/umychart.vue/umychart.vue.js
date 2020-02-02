@@ -3538,10 +3538,14 @@ function JSChart(divElement)
 
         if (option.Border)
         {
-            if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left=option.Border.Left;
-            if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right=option.Border.Right;
-            if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
-            if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
+            if (IFrameSplitOperator.IsNumber(option.Border.Left)) chart.Frame.ChartBorder.Left=option.Border.Left;
+            else option.Border.Left=chart.Frame.ChartBorder.Left;
+            if (IFrameSplitOperator.IsNumber(option.Border.Right)) chart.Frame.ChartBorder.Right=option.Border.Right;
+            else option.Border.Right=chart.Frame.ChartBorder.Right;
+            if (IFrameSplitOperator.IsNumber(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
+            else option.Border.Top=chart.Frame.ChartBorder.Top;
+            if (IFrameSplitOperator.IsNumber(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
+            else option.Border.Bottom=chart.Frame.ChartBorder.Bottom;
         }
 
         this.AdjustChartBorder(chart);
@@ -3557,7 +3561,7 @@ function JSChart(divElement)
             }
         }
 
-         //取消显示十字光标刻度信息
+        //取消显示十字光标刻度信息
         if (option.IsCorssOnlyDrawKLine===true) chart.ChartCorssCursor.IsOnlyDrawKLine=option.IsCorssOnlyDrawKLine;
         if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
         if (option.IsClickShowCorssCursor==true) chart.IsClickShowCorssCursor=option.IsClickShowCorssCursor;
@@ -3572,6 +3576,10 @@ function JSChart(divElement)
             if (option.CorssCursorInfo.HPenType>0) chart.ChartCorssCursor.HPenType=option.CorssCursorInfo.HPenType;
             if (option.CorssCursorInfo.VPenType>0) chart.ChartCorssCursor.VPenType=option.CorssCursorInfo.VPenType;
         }
+
+        //保存十字光标文字高度
+        option.CorssCursor={};
+        option.CorssCursor.TitleHeight=chart.ChartCorssCursor.TextHeight;
 
         if (option.SplashTitle) chart.ChartSplashPaint.SplashTitle=option.SplashTitle;
 
@@ -3713,7 +3721,8 @@ function JSChart(divElement)
             if (item.Overlay!=null) chart.Frame.SubFrame[i].Frame.OverlayIndex=item.Overlay;
             if (item.IsDrawTitleBG==true)  chart.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
 
-            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+            if (IFrameSplitOperator.IsNumber(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+            else item.TitleHeight=chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
         }
         
         //叠加指标宽度
@@ -4579,6 +4588,16 @@ function JSChart(divElement)
         {
             JSConsole.Chart.Log('[JSChart:CreateChartDrawPicture] ', name);
             this.JSChartContainer.CreateChartDrawPicture(name);
+        }
+    }
+
+    //重新加载配置
+    this.ReloadResource=function(option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ReloadResource)=='function')
+        {
+            JSConsole.Chart.Log('[JSChart:ReloadResource] ');
+            this.JSChartContainer.ReloadResource(option);
         }
     }
 }
@@ -6552,6 +6571,90 @@ function JSChartContainer(uielement)
         this.Frame.SetSizeChage(true);
         this.Draw();
     }
+
+    this.ReloadTiltePaintResource=function(resource)  //重新加载配置
+    {
+        for(var i in this.TitlePaint)
+        {
+            var item=this.TitlePaint[i];
+            if (item.ReloadResource) item.ReloadResource(resource);
+        }
+    }
+
+    this.ReloadResource=function(option)
+    {
+        this.ReloadBorder(option);
+        this.ReloadTiltePaintResource(option.Resource);
+        this.ReloadChartPaint(option.Resource);
+        this.ReloadFrame(option.Resource);
+        this.ReloadChartCorssCursor(option,option.Resource);
+    }
+
+    this.ReloadBorder=function(option)  //根据页面缩放调整对应边框的尺长
+    {
+        if (!option) return;
+
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+        if (option.Border)
+        {
+            var item=option.Border;
+            if (IFrameSplitOperator.IsNumber(item.Left)) this.Frame.ChartBorder.Left=item.Left*pixelTatio;
+            if (IFrameSplitOperator.IsNumber(item.Right)) this.Frame.ChartBorder.Right=item.Right*pixelTatio;
+            if (IFrameSplitOperator.IsNumber(item.Top)) this.Frame.ChartBorder.Top=item.Top*pixelTatio;
+            if (IFrameSplitOperator.IsNumber(item.Bottom)) this.Frame.ChartBorder.Bottom=item.Bottom*pixelTatio;
+        }
+
+        for(var i in option.Windows)
+        {
+            var item=option.Windows[i];
+            if (i>=this.Frame.SubFrame.length) continue;
+            var subFrame=this.Frame.SubFrame[i];
+            var border=subFrame.Frame.ChartBorder;
+            if (IFrameSplitOperator.IsNumber(item.TitleHeight)) border.TitleHeight=item.TitleHeight*pixelTatio;
+        }
+
+        for(var i in option.Frame)
+        {
+            var item=option.Frame[i];
+            if (i>=this.Frame.SubFrame.length) continue;
+
+            var subFrame=this.Frame.SubFrame[i];
+            var border=subFrame.Frame.ChartBorder;
+            if (item.TopSpace>=0) border.TopSpace=item.TopSpace*pixelTatio;
+            if (item.BottomSpace>=0) border.BottomSpace=item.BottomSpace*pixelTatio;
+        }
+    }
+
+    this.ReloadFrame=function(resource)
+    {
+        for(var i in this.Frame.SubFrame)
+        {
+            var item=this.Frame.SubFrame[i];
+            var subFrame=item.Frame;
+            if (subFrame && subFrame.ReloadResource) subFrame.ReloadResource(resource);
+        }
+    }
+
+    this.ReloadChartPaint=function(resource)
+    {
+        for(var i in this.ChartPaint)
+        {
+            var item=this.ChartPaint[i];
+            if (item && item.ReloadResource) item.ReloadResource(resource);
+        }
+    }
+
+    this.ReloadChartCorssCursor=function(option, resource)
+    {
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+        if (option && option.CorssCursor)
+        {
+            var item=option.CorssCursor;
+            if (IFrameSplitOperator.IsNumber(item.TitleHeight)) this.ChartCorssCursor.TextHeight=item.TitleHeight*pixelTatio;  //十字光标文本信息高度
+        }
+
+        if (this.ChartCorssCursor.ReloadResource) this.ChartCorssCursor.ReloadResource(resource);
+    }
 }
 
 function GetDevicePixelRatio()
@@ -6926,6 +7029,25 @@ function IChartFramePainting()
         if (!this.IsLocked) return null;
         if (!this.LockPaint) return null; 
         return this.LockPaint.LockRect;
+    }
+
+    this.ReloadResource=function(resource)
+    {
+        for(var i in this.HorizontalInfo)
+        {
+            var item=this.HorizontalInfo[i];
+            if (!item.Font) continue;
+
+            item.Font=g_JSChartResource.FrameSplitTextFont; //字体
+        }
+
+        for(var i in this.VerticalInfo)
+        {
+            var item=this.VerticalInfo[i];
+            if (!item.Font) continue;
+
+            item.Font=g_JSChartResource.FrameSplitTextFont; //字体
+        }
     }
 }
 
@@ -11312,6 +11434,19 @@ function ChartKLine()
     this.TickSymbol='╳';    //分笔显示的图标
     this.TickFontName='arial';
     this.Period;            //周期
+
+    this.ReloadResource=function(resource)
+    {
+        this.TextFont=g_JSChartResource.KLine.MaxMin.Font;
+        this.TextColor=g_JSChartResource.KLine.MaxMin.Color;
+
+        this.CloseLineColor=g_JSChartResource.CloseLineColor;
+        this.CloseLineAreaColor=g_JSChartResource.CloseLineAreaColor;
+
+        this.UpColor=g_JSChartResource.UpBarColor;
+        this.DownColor=g_JSChartResource.DownBarColor;
+        this.UnchagneColor=g_JSChartResource.UnchagneBarColor;          //平盘
+    }
 
     this.DrawAKLine=function()  //美国线
     {
@@ -19742,6 +19877,16 @@ function ChartCorssCursor()
     //内部使用
     this.Close=null;     //收盘价格
 
+    this.ReloadResource=function(resource)
+    {
+        this.Font=g_JSChartResource.CorssCursorTextFont;            //字体
+
+        this.HPenColor=g_JSChartResource.CorssCursorHPenColor; //水平线颜色
+        this.VPenColor=g_JSChartResource.CorssCursorVPenColor; //垂直线颜色
+        this.TextColor=g_JSChartResource.CorssCursorTextColor;      //文本颜色
+        this.TextBGColor=g_JSChartResource.CorssCursorBGColor;      //文本背景色
+    }
+
     this.GetCloseYPoint=function(index)
     {
         if (!this.StringFormatX.Data) return null;
@@ -20715,6 +20860,12 @@ function IChartTitlePainting()
     this.Title;                         //固定标题(可以为空)
     this.TitleColor=g_JSChartResource.DefaultTextColor;
     this.ClassName='IChartTitlePainting';
+
+    this.ReloadResource=function()
+    {
+        this.Font=g_JSChartResource.TitleFont;
+        this.TitleColor=g_JSChartResource.DefaultTextColor;
+    }
 }
 
 //var PERIOD_NAME=["日线","周线","月线","年线","1分","5分","15分","30分","60分","季线","分笔", "2小时","4小时","双周","",""];
@@ -20751,6 +20902,22 @@ function DynamicKLineTitlePainting()
     this.IsShowDateTime=true;       //是否显示日期
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.OnDrawEvent;
+
+    this.ReloadResource=function()
+    {
+        this.Font=g_JSChartResource.TitleFont;
+
+        this.TitleColor=g_JSChartResource.DefaultTextColor;
+
+        this.UpColor=g_JSChartResource.UpTextColor;
+        this.DownColor=g_JSChartResource.DownTextColor;
+        this.UnchagneColor=g_JSChartResource.UnchagneTextColor;
+
+        this.VolColor=g_JSChartResource.DefaultTextColor;
+        this.AmountColor=g_JSChartResource.DefaultTextColor;
+        this.DateTimeColor=g_JSChartResource.DefaultTextColor;
+        this.NameColor = g_JSChartResource.DefaultTextColor;
+    }
 
     this.GetCurrentKLineData=function() //获取当天鼠标位置所在的K线数据
     {
@@ -23053,11 +23220,12 @@ function ChartDrawPictureText()
         this.Canvas.fillText(this.Text,drawPoint[0].X,drawPoint[0].Y);
         var textWidth=this.Canvas.measureText(this.Text).width;
 
+        var textHeight=this.FontOption.Size*GetDevicePixelRatio();
         this.TextRect={};
         this.TextRect.Left=drawPoint[0].X-textWidth/2;
-        this.TextRect.Top=drawPoint[0].Y-this.FontOption.Size;
+        this.TextRect.Top=drawPoint[0].Y-textHeight;
         this.TextRect.Width=textWidth;
-        this.TextRect.Height=this.FontOption.Size;
+        this.TextRect.Height=textHeight
         //this.Canvas.strokeRect(this.TextRect.Left,this.TextRect.Top,this.TextRect.Width,this.TextRect.Height);
         this.Canvas.restore();
 
@@ -38811,6 +38979,7 @@ function ChartPictureSettingMenu(divElement)
         this.HQChart=event.data.HQChart;
         this.ChartPicture=event.data.ChartPicture;
 
+        var pixelTatio = GetDevicePixelRatio();
         var frame=this.HQChart.Frame.SubFrame[0].Frame;
         // var top=frame.ChartBorder.GetTopTitle();
         var top=frame.ChartBorder.Top + 40;
@@ -38833,8 +39002,9 @@ function ChartPictureSettingMenu(divElement)
             '        <p class="subtool-del"><i class="iconfont icon-recycle_bin"></i></p>';
         }
 
-        this.SubToolsDiv.style.right = right + "px";
-        this.SubToolsDiv.style.top = top + "px";
+        
+        this.SubToolsDiv.style.right = right/pixelTatio + "px";
+        this.SubToolsDiv.style.top = top/pixelTatio + "px";
         this.SubToolsDiv.innerHTML = toolsDiv;
         this.SubToolsDiv.style.position = "absolute";
         this.SubToolsDiv.style.display = "block";
@@ -38948,9 +39118,11 @@ function ChartPictureTextSettingMenu(divElement)
                                 '<span class="okBtn btn">确认</span>'+
                                 '<span class="cancelBtn btn">取消</span>'+
                             '</div>';
+
+        var pixelTatio = GetDevicePixelRatio();
         var DoModalStr = titleContainerStr+contentContainerStr+btnContainer;
-        this.SettingDiv.style.left = this.Position.Left + "px";
-        this.SettingDiv.style.top = this.Position.Top + "px";
+        this.SettingDiv.style.left = this.Position.Left/pixelTatio + "px";
+        this.SettingDiv.style.top = this.Position.Top/pixelTatio + "px";
         this.SettingDiv.innerHTML=DoModalStr;
         this.SettingDiv.style.position = "absolute";
         this.SettingDiv.style.display = "block";
