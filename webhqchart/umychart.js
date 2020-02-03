@@ -2234,6 +2234,8 @@ function JSChartContainer(uielement)
             item.CursorIndex=this.CursorIndex;
             if (item.ClassName=='DynamicChartTitlePainting') item.OnDrawEvent=eventIndexTitleDraw
             else item.OnDrawEvent=eventTitleDraw;
+
+            if (item.OnDrawEvent) item.OnDrawEvent.FunctionName='Draw';
             item.Draw();
         }
 
@@ -2334,6 +2336,7 @@ function JSChartContainer(uielement)
             if (!item.IsDynamic) continue;
 
             item.CursorIndex=this.CursorIndex;
+            if (item.OnDrawEvent) item.OnDrawEvent.FunctionName='DrawDynamicInfo';
             item.Draw();
         }
 
