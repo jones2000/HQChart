@@ -349,17 +349,16 @@ td.context-menu {
 
 /*区间统计*/
 .jchart-select-statistics-box {
-    position: absolute;
-    z-index: 520;
-    width:551px;
-    height:214px;
-    border: 1px solid #ECEFF2;
-    border-radius: 2px;
-    background:#fff;
+    position: fixed;
+    width:100%;
+    height:100%;
+    left:0;
+    top:0;
+    background-color: rgba(0,0,0,0.01);
     display:none;
-    box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.38);
-    font-family: 微软雅黑;
+    z-index: 999;
 }
+
 .interval .top {
     padding-left: 10px;
     box-sizing: border-box;
@@ -633,19 +632,23 @@ td.context-menu {
 
 /*参数设置面板*/
 .jchart-changeindex-box{
-    position: absolute;
+    position: fixed;
     display: none;
     width:100%;
     height:100%;
+    left:0;
+    top:0;
     z-index: 999;
     background-color: rgba(0,0,0,0.01);
 }
 
 .jchart-modifyindex-box{
-    position: absolute;
+    position: fixed;
     display: none;
     width:100%;
     height:100%;
+    left:0;
+    top:0;
     z-index: 999;
     background-color: rgba(0,0,0,0.01);
 }
@@ -1090,3 +1093,5 @@ input[type="color"] {
     position: relative;
     top:-5px;
 }
+
+

@@ -37418,15 +37418,7 @@ function KLineSelectRectDialog(divElement)
 
         this.BindData();
 
-        //居中显示
-        var border=chart.Frame.ChartBorder;
-        var scrollPos=GetScrollPosition();
-        var left=border.GetWidth()/2;
-        var top=border.GetHeight()/2;
-        //left = left + border.UIElement.getBoundingClientRect().left+scrollPos.Left;
-        //top = top+ border.UIElement.getBoundingClientRect().top+scrollPos.Top;
-
-        this.Show(left,top,200,200);      //显示
+        this.Show();      //通过CSS居中显示
     }
 
     //形态匹配
