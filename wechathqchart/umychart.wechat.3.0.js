@@ -21,6 +21,7 @@ import {
     JSCommon_CUSTOM_SECOND_PERIOD_START as CUSTOM_SECOND_PERIOD_START,
     JSCommon_CUSTOM_SECOND_PERIOD_END as CUSTOM_SECOND_PERIOD_END,
     JSCommon_Rect as Rect,
+    JSCommon_DataPlus as DataPlus,
 } from "./umychart.data.wechat.js";
 
 import {
@@ -14054,7 +14055,8 @@ module.exports =
         JSChart: JSChart,
         Guid: Guid,
         IFrameSplitOperator: IFrameSplitOperator,
-        ChartData, ChartData,
+        ChartData: ChartData,
+        DataPlus: DataPlus,
         KLineTooltipPaint: KLineTooltipPaint,
         MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
         JSCommonCoordinateData, JSCommonCoordinateData,

@@ -120,6 +120,15 @@ function SingleData()
 }
 
 
+function DataPlus() { };            //外部数据计算方法接口
+DataPlus.GetMinutePeriodData = null;
+/*
+DataPlus.GetMinutePeriodData=function(period,data,self)
+{
+
+}
+*/
+
 //////////////////////////////////////////////////////////////////////
 // 数据集合
 function ChartData()
@@ -394,6 +403,8 @@ function ChartData()
 
     this.GetMinutePeriodData=function(period)
     {
+        if (DataPlus.GetMinutePeriodData) return DataPlus.GetMinutePeriodData(period, this.Data, this);
+
         if (period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END) 
             return this.GetMinuteCustomPeriodData(period - CUSTOM_MINUTE_PERIOD_START);
 
@@ -1377,6 +1388,7 @@ module.exports =
         SingleData: SingleData,
         MinuteData: MinuteData,
         Rect: Rect,
+        DataPlus: DataPlus,
     },
 
     //单个类导出
@@ -1391,4 +1403,5 @@ module.exports =
     JSCommon_CUSTOM_SECOND_PERIOD_START: CUSTOM_SECOND_PERIOD_START,
     JSCommon_CUSTOM_SECOND_PERIOD_END: CUSTOM_SECOND_PERIOD_END,
     JSCommon_Rect: Rect,
+    JSCommon_DataPlus: DataPlus,
 };
