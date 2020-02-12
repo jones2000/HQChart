@@ -4582,12 +4582,12 @@ function JSChart(divElement)
         }
     }
 
-    this.CreateChartDrawPicture=function(name)
+    this.CreateChartDrawPicture=function(name,option)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.CreateChartDrawPicture)=='function')
         {
             JSConsole.Chart.Log('[JSChart:CreateChartDrawPicture] ', name);
-            this.JSChartContainer.CreateChartDrawPicture(name);
+            this.JSChartContainer.CreateChartDrawPicture(name,option);
         }
     }
 
@@ -5227,10 +5227,10 @@ function JSChartContainer(uielement)
             {
                 var drawPicture=this.CurrentChartDrawPicture;
                 if (drawPicture.Status==2)
-                    this.SetChartDrawPictureThirdPoint(drag.Click.X,drag.Click.Y);
+                    this.SetChartDrawPictureThirdPoint(drag.Click.X,drag.Click.Y,true);
                 else
                 {
-                    this.SetChartDrawPictureFirstPoint(drag.Click.X,drag.Click.Y);
+                    this.SetChartDrawPictureFirstPoint(drag.Click.X,drag.Click.Y,true);
                     //只有1个点 直接完成
                     if (this.FinishChartDrawPicturePoint()) this.DrawDynamicInfo({Corss:false, Tooltip:false});
                 }
@@ -5345,14 +5345,14 @@ function JSChartContainer(uielement)
                     if (drawPicture.Status==1 || drawPicture.Status==2)
                     {
                         if(moveSetp<5 && moveUpDown<5) return;
-                        if(this.SetChartDrawPictureSecondPoint(touches[0].clientX,touches[0].clientY))
+                        if(this.SetChartDrawPictureSecondPoint(touches[0].clientX,touches[0].clientY,true))
                         {
                             this.DrawDynamicInfo();
                         }
                     }
                     else if (drawPicture.Status==3)
                     {
-                        if(this.SetChartDrawPictureThirdPoint(touches[0].clientX,touches[0].clientY))
+                        if(this.SetChartDrawPictureThirdPoint(touches[0].clientX,touches[0].clientY,true))
                         {
                             this.DrawDynamicInfo();
                         }
@@ -5361,7 +5361,7 @@ function JSChartContainer(uielement)
                     {
                         if(moveSetp<5 && moveUpDown<5) return;
 
-                        if(this.MoveChartDrawPicture(touches[0].clientX-drag.LastMove.X,touches[0].clientY-drag.LastMove.Y))
+                        if(this.MoveChartDrawPicture(touches[0].clientX-drag.LastMove.X,touches[0].clientY-drag.LastMove.Y,true))
                         {
                             this.DrawDynamicInfo();
                         }
@@ -21717,6 +21717,8 @@ function IChartDrawPicture()
 
     // this.LineColor=g_JSChartResource.DrawPicture.LineColor[0];                            //线段颜色
     this.LineColor="#1e90ff";      //线段颜色，input type="color" 不支持rgb和rgba 的格式
+    this.LineWidth=2;              //线段宽度
+    this.BackupLineWidth=null;
     this.AreaColor='rgba(25,25,25,0.4)';    //面积颜色
     this.PointColor=g_JSChartResource.DrawPicture.PointColor[0];
     
@@ -21728,6 +21730,34 @@ function IChartDrawPicture()
     this.Draw=function()
     {
 
+    }
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (option.LineColor) this.LineColor=option.LineColor;
+        if (option.LineWidth>0) this.LineWidth=option.LineWidth;
+        if (option.AreaColor) this.AreaColor=option.AreaColor;
+        if (option.PointColor) this.PointColor=option.PointColor;
+    }
+
+    this.SetLineWidth=function()
+    {
+        this.BackupLineWidth=null;
+        if (this.LineWidth>0)
+        {
+            this.BackupLineWidth=this.Canvas.lineWidth;
+            this.Canvas.lineWidth=this.LineWidth*GetDevicePixelRatio();
+        }
+    }
+
+    this.RestoreLineWidth=function()
+    {
+        if (this.BackupLineWidth!=null)
+        {
+            this.Canvas.lineWidth=this.BackupLineWidth;
+        }
     }
 
     //Point => Value
@@ -22191,11 +22221,13 @@ function ChartDrawPictureLine()
         var ptStart=drawPoint[0];
         var ptEnd=drawPoint[1];
 
+        this.SetLineWidth();
         this.Canvas.strokeStyle=this.LineColor;
         this.Canvas.beginPath();
         this.Canvas.moveTo(ptStart.X,ptStart.Y);
         this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
         this.Canvas.stroke();
+        this.RestoreLineWidth();
 
         /*
         if (this.IsSelected)
@@ -29501,7 +29533,7 @@ function KLineChartContainer(uielement)
     }
 
     //创建画图工具
-    this.CreateChartDrawPicture=function(name, callback)
+    this.CreateChartDrawPicture=function(name, option, callback)
     {
         var drawPicture=null;
         switch(name)
@@ -29601,6 +29633,7 @@ function KLineChartContainer(uielement)
         drawPicture.Period=this.Period;
         drawPicture.Option=this.ChartDrawOption;
         if (callback) drawPicture.FinishedCallback=callback;    //完成通知上层回调
+        if (option) drawPicture.SetOption(option);
         var self=this;
         drawPicture.Update=function()   //更新回调函数
         {
@@ -29611,7 +29644,7 @@ function KLineChartContainer(uielement)
         return true;
     }
 
-    this.SetChartDrawPictureFirstPoint=function(x,y)
+    this.SetChartDrawPictureFirstPoint=function(x,y, isPhone)
     {
         var drawPicture=this.CurrentChartDrawPicture;
         if (!drawPicture) return false;
@@ -29619,6 +29652,7 @@ function KLineChartContainer(uielement)
 
         //相对坐标
         var pixelTatio = GetDevicePixelRatio(); //x,y是原始坐标 需要乘以放大倍速
+        if (isPhone) pixelTatio=1;
         var xFixed=(x-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         var yFixed=(y-this.UIElement.getBoundingClientRect().top)*pixelTatio;
         for(var i in this.Frame.SubFrame)
@@ -29647,12 +29681,13 @@ function KLineChartContainer(uielement)
         return true;
     }
 
-    this.SetChartDrawPictureSecondPoint=function(x,y)
+    this.SetChartDrawPictureSecondPoint=function(x,y,isPhone)
     {
         var drawPicture=this.CurrentChartDrawPicture;
         if (!drawPicture) return false;
 
         var pixelTatio = GetDevicePixelRatio(); //x,y是原始坐标 需要乘以放大倍速
+        if (isPhone) pixelTatio=1;
         drawPicture.Point[1]=new Point();
         drawPicture.Point[1].X=(x-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         drawPicture.Point[1].Y=(y-this.UIElement.getBoundingClientRect().top)*pixelTatio;
@@ -29662,12 +29697,13 @@ function KLineChartContainer(uielement)
     }
 
     //设置第3个点
-    this.SetChartDrawPictureThirdPoint=function(x,y)
+    this.SetChartDrawPictureThirdPoint=function(x,y,isPhone)
     {
         var drawPicture=this.CurrentChartDrawPicture;
         if (!drawPicture) return false;
 
         var pixelTatio = GetDevicePixelRatio(); //x,y是原始坐标 需要乘以放大倍速
+        if (isPhone) pixelTatio=1;
         drawPicture.Point[2]=new Point();
         drawPicture.Point[2].X=(x-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         drawPicture.Point[2].Y=(y-this.UIElement.getBoundingClientRect().top)*pixelTatio;
@@ -29677,12 +29713,13 @@ function KLineChartContainer(uielement)
     }
 
     //xStep,yStep 移动的偏移量
-    this.MoveChartDrawPicture=function(x,y)
+    this.MoveChartDrawPicture=function(x,y,isPhone)
     {
         var drawPicture=this.CurrentChartDrawPicture;
         if (!drawPicture) return false;
 
         var pixelTatio = GetDevicePixelRatio(); //x,y 需要乘以放大倍速
+        if (isPhone) pixelTatio=1;
         var xStep=x*pixelTatio;
         var yStep=y*pixelTatio;
         //JSConsole.Chart.Log("xStep="+xStep+" yStep="+yStep);
@@ -33288,10 +33325,10 @@ function KLineChartHScreenContainer(uielement)
             {
                 var drawPicture=this.CurrentChartDrawPicture;
                 if (drawPicture.Status==2)
-                    this.SetChartDrawPictureThirdPoint(drag.Click.X,drag.Click.Y);
+                    this.SetChartDrawPictureThirdPoint(drag.Click.X,drag.Click.Y,true);
                 else
                 {
-                    this.SetChartDrawPictureFirstPoint(drag.Click.X,drag.Click.Y);
+                    this.SetChartDrawPictureFirstPoint(drag.Click.X,drag.Click.Y,true);
                     //只有1个点 直接完成
                     if (this.FinishChartDrawPicturePoint()) this.DrawDynamicInfo({Corss:false, Tooltip:false});
                 }
@@ -33401,14 +33438,14 @@ function KLineChartHScreenContainer(uielement)
                     if (drawPicture.Status==1 || drawPicture.Status==2)
                     {
                         if(moveSetp<5 && moveUpDown<5) return;
-                        if(this.SetChartDrawPictureSecondPoint(touches[0].clientX,touches[0].clientY))
+                        if(this.SetChartDrawPictureSecondPoint(touches[0].clientX,touches[0].clientY,true))
                         {
                             this.DrawDynamicInfo();
                         }
                     }
                     else if (drawPicture.Status==3)
                     {
-                        if(this.SetChartDrawPictureThirdPoint(touches[0].clientX,touches[0].clientY))
+                        if(this.SetChartDrawPictureThirdPoint(touches[0].clientX,touches[0].clientY,true))
                         {
                             this.DrawDynamicInfo();
                         }
@@ -33417,7 +33454,7 @@ function KLineChartHScreenContainer(uielement)
                     {
                         if(moveSetp<5 && moveUpDown<5) return;
 
-                        if(this.MoveChartDrawPicture(touches[0].clientX-drag.LastMove.X,touches[0].clientY-drag.LastMove.Y))
+                        if(this.MoveChartDrawPicture(touches[0].clientX-drag.LastMove.X,touches[0].clientY-drag.LastMove.Y,true))
                         {
                             this.DrawDynamicInfo();
                         }
