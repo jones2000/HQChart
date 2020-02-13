@@ -22226,12 +22226,14 @@ function ChartDrawPictureHaflLine()
         this.ClipFrame();
 
         this.Canvas.strokeStyle=this.LineColor;
+        this.SetLineWidth();
         this.Canvas.beginPath();
         this.Canvas.moveTo(drawPoint[0].X,drawPoint[0].Y);
         this.Canvas.lineTo(drawPoint[1].X,drawPoint[1].Y);
         var endPoint=this.CalculateEndPoint(drawPoint);
         this.Canvas.lineTo(endPoint.X,endPoint.Y);
         this.Canvas.stroke();
+        this.RestoreLineWidth();
 
         var line={Start:ptStart, End:ptEnd};
         this.LinePoint.push(line);
@@ -22299,10 +22301,12 @@ function ChartDrawPictureHorizontalLine()
         this.ClipFrame();
 
         this.Canvas.strokeStyle=this.LineColor;
+        this.SetLineWidth();
         this.Canvas.beginPath();
         this.Canvas.moveTo(left,drawPoint[0].Y);
         this.Canvas.lineTo(right,drawPoint[0].Y);
         this.Canvas.stroke();
+        this.RestoreLineWidth();
 
         var line={Start:new Point(), End:new Point()};
         line.Start.X=left;
@@ -22347,10 +22351,12 @@ function ChartDrawPictureTrendLine()
         this.ClipFrame();
 
         this.Canvas.strokeStyle=this.LineColor;
+        this.SetLineWidth();
         this.Canvas.beginPath();
         this.Canvas.moveTo(extendLine.Start.X,extendLine.Start.Y);
         this.Canvas.lineTo(extendLine.End.X,extendLine.End.Y);
         this.Canvas.stroke();
+        this.RestoreLineWidth();
 
         var line={Start:ptStart, End:ptEnd};
         this.LinePoint.push(line);
@@ -22379,9 +22385,11 @@ function ChartDrawPictureRect()
         this.ClipFrame();
 
         this.Canvas.strokeStyle=this.LineColor;
+        this.SetLineWidth();
         this.Canvas.beginPath();
         this.Canvas.rect(drawPoint[0].X,drawPoint[0].Y,drawPoint[1].X-drawPoint[0].X,drawPoint[1].Y-drawPoint[0].Y);
         this.Canvas.stroke();
+        this.RestoreLineWidth();
         
         //透明背景
         this.Canvas.fillStyle=this.AreaColor;
@@ -22483,6 +22491,7 @@ function ChartDrawPictureArc()
 
         //this.Canvas.beginPath();
         //this.Canvas.rect(drawPoint[0].X,drawPoint[0].Y,drawPoint[1].X-drawPoint[0].X,drawPoint[1].Y-drawPoint[0].Y);
+        this.SetLineWidth();
         if (drawPoint[0].X < drawPoint[1].X && drawPoint[0].Y > drawPoint[1].Y) // 第一象限
         {
             var a = drawPoint[1].X - drawPoint[0].X;
@@ -22547,6 +22556,7 @@ function ChartDrawPictureArc()
 
         this.Canvas.strokeStyle=this.LineColor;
         this.Canvas.stroke();
+        this.RestoreLineWidth();
         //this.Canvas.closePath();
         this.Canvas.restore();
 
@@ -22707,11 +22717,13 @@ function ChartDrawPictureWaveMW()
         this.ClipFrame();
         
         this.CalculateLines(drawPoint);
+        this.SetLineWidth();
         for(var i in this.LinePoint)
         {
             var item=this.LinePoint[i];
             this.DrawLine(item.Start,item.End);
         }
+        this.RestoreLineWidth();
        
         this.DrawPoint(drawPoint); //画点
         this.Canvas.restore();
@@ -23386,6 +23398,7 @@ function ChartDrawPictureGannFan()
         this.ClipFrame();
         var quadrant=this.GetQuadrant(drawPoint[0],drawPoint[1]);
 
+        this.SetLineWidth();
         if (quadrant===1 || quadrant===4)
         {
             this.CalculateLines(drawPoint[0],drawPoint[1],quadrant);
@@ -23407,6 +23420,7 @@ function ChartDrawPictureGannFan()
         {
             this.DrawLine(drawPoint[0],drawPoint[1],false);
         }
+        this.RestoreLineWidth();
 
         this.Canvas.restore();
         this.DrawPoint(drawPoint); //画点
@@ -23693,11 +23707,13 @@ function ChartDrawPictureGoldenSection()
         this.CalculateLines(drawPoint[0],drawPoint[1]);
         this.ClipFrame();
         
+        this.SetLineWidth();
         for(var i in this.LinePoint)
         {
             var item=this.LinePoint[i];
             this.DrawLine(item.Start,item.End,item.IsDottedLine);
         }
+        this.RestoreLineWidth();
 
         for(var i in this.LinePoint)
         {
@@ -24223,13 +24239,15 @@ function ChartDrawPictureFibonacci()
 
         this.ClipFrame();
 
+        this.SetLineWidth();
         for(var i in this.LinePoint)
         {
             var item=this.LinePoint[i];
             this.DrawLine(item.Start,item.End);
             this.DrawTitle(item.Start,item.Title);
         }
-
+        this.RestoreLineWidth();
+        
         this.DrawPoint(drawPoint);  //画点
         this.Canvas.restore(); 
     }
@@ -26180,7 +26198,7 @@ function KLineChartContainer(uielement)
 
             var index=hisData.Data.length-showCount;
             hisData.DataOffset=index;
-            this.CursorIndex=0.6;
+            this.CursorIndex=0;
 
             this.LastPoint.X=null;
             this.LastPoint.Y=null;
