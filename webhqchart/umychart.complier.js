@@ -10811,7 +10811,18 @@ function ScriptIndex(name,script,args,option)
                 else if (item.Name=='EXITLONG') sellData=item.Data;
             }
 
-            hqChart.SetInstructionData(this.InstructionType, {Buy:buyData, Sell:sellData, Name:this.Name, ID:this.ID});       //设置指示数据
+            var indexParam='';
+            for(let i in this.Arguments)
+            {
+                let item=this.Arguments[i];
+                if (indexParam.length>0) indexParam+=',';
+                indexParam+=item.Value.toString();
+            }
+
+            if (indexParam.length>0) indexParam='('+indexParam+')';
+            
+
+            hqChart.SetInstructionData(this.InstructionType, {Buy:buyData, Sell:sellData, Name:this.Name, Param:indexParam, ID:this.ID});       //设置指示数据
             return true;
         }
     }

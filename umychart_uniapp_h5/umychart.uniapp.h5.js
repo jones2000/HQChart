@@ -6013,6 +6013,25 @@ function JSChartContainer(uielement)
             this.Tooltip.innerHTML=format.Text;
             this.Tooltip.style.display = "block";
         }
+        else if (toolTip.Type==2)   //指标信息
+        {
+            var left = x;
+            var top = y;
+            var width=100;
+            var format=new KLineTradeDataStringFormat();
+            format.Value=toolTip;
+            format.Symbol=this.Symbol;;
+            if (!format.Operator()) return;
+
+            this.Tooltip.className='jchart-klinetrade-tooltip';
+            this.Tooltip.style.position = "absolute";
+            this.Tooltip.style.left = left + "px";
+            this.Tooltip.style.top = (top +xMove)+ "px";
+            this.Tooltip.style.width = width+"px";
+            this.Tooltip.style.height =null;
+            this.Tooltip.innerHTML=format.Text;;
+            this.Tooltip.style.display = "block";
+        }
     }
 
     this.HideTooltip=function()
@@ -11377,10 +11396,11 @@ function ChartKLine()
     this.DownColor=g_JSChartResource.DownBarColor;
     this.UnchagneColor=g_JSChartResource.UnchagneBarColor;          //平盘
     this.ColorData;             //五彩K线颜色 >0：g_JSChartResource.UpBarColor 其他：g_JSChartResource.DownBarColor
-    this.TradeData;             //交易系统 包含买卖数据{Buy:, Sell:}
+    this.TradeData;             //交易系统 包含买卖数据{Buy:, Sell:, Name:指标名称 }
     this.TradeIcon=g_JSChartResource.KLine.TradeIcon;
-    this.TooltipRect=new Array();           //2位数组 0 数据序号 1 区域
+    this.TooltipRect=[];                    //2位数组 0 数据序号 1 区域
     this.InfoTooltipRect=[];                //2维数组 0 数据,  1 区域
+    this.TradeIconTooltipRect=[];           //2维数组 0 数据,  1 区域
 
     this.IsShowMaxMinPrice=true;                 //是否显示最大最小值
     this.IsShowKTooltip=true;                    //是否显示K线tooltip
@@ -12108,6 +12128,7 @@ function ChartKLine()
     {
         this.TooltipRect=[];
         this.InfoTooltipRect=[];
+        this.TradeIconTooltipRect=[];
         this.PtMax={X:null,Y:null,Value:null,Align:'left'}; //清空最大
         this.PtMin={X:null,Y:null,Value:null,Align:'left'}; //清空最小
 
@@ -12262,7 +12283,7 @@ function ChartKLine()
                     this.Canvas.fillText(icon.HScreenText,iconTop,item.XCenter,iconSize);
 
                     var iconRect=new Rect(item.XCenter-iconSize/2,iconTop-iconSize,iconSize,iconSize);
-                    infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:iconTop, Y:item.XCenter} };
+                    var infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:iconTop, Y:item.XCenter} };
                     mapImage.set(infoItem.InfoType,infoCache);
 
                     iconTop+=iconSize;
@@ -12381,6 +12402,10 @@ function ChartKLine()
                     this.Canvas.textAlign='center';
                     this.Canvas.textBaseline='top';
                     this.Canvas.fillText(this.TradeIcon.Buy.Text,x,yLow);
+
+                    var iconRect=new Rect(x-iconSize/2,yLow,iconSize,iconSize);
+                    var iconData={ Data:{ Type:1, KData:data, Name:this.TradeData.Name, Param:this.TradeData.Param }, Rect:iconRect, TextRect:{X:x, Y:yLow} };
+                    this.TradeIconTooltipRect.push(iconData); 
                 }
             }
 
@@ -12398,6 +12423,10 @@ function ChartKLine()
                     this.Canvas.textAlign='center';
                     this.Canvas.textBaseline='bottom';
                     this.Canvas.fillText(this.TradeIcon.Sell.Text,x,yHigh);
+
+                    var iconRect=new Rect(x-iconSize/2,yHigh-iconSize,iconSize,iconSize);
+                    var iconData={ Data:{ Type:2, KData:data, Name:this.TradeData.Name,Param:this.TradeData.Param }, Rect:iconRect, TextRect:{X:x, Y:yHigh} };
+                    this.TradeIconTooltipRect.push(iconData); 
                 }
             }
         }
@@ -12405,6 +12434,23 @@ function ChartKLine()
 
     this.GetTooltipData=function(x,y,tooltip)
     {
+        for(var i in this.TradeIconTooltipRect)
+        {
+            var item=this.TradeIconTooltipRect[i];
+            if (!item.Rect) continue;
+            var rect=item.Rect;
+            this.Canvas.beginPath();
+            this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
+            if (this.Canvas.isPointInPath(x,y))
+            {
+                JSConsole.Chart.Log('[ChartKLine::GetTooltipData] trade icon ', item);
+                tooltip.Data=item;
+                tooltip.ChartPaint=this;
+                tooltip.Type=2; //指标
+                return true;
+            }
+        }
+
         for(var i in this.InfoTooltipRect)
         {
             var item=this.InfoTooltipRect[i];
@@ -12414,7 +12460,7 @@ function ChartKLine()
             this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
             if (this.Canvas.isPointInPath(x,y))
             {
-                //JSConsole.Chart.Log('[ChartKLine::GetTooltipData]', item);
+                //JSConsole.Chart.Log('[ChartKLine::GetTooltipData] info ', item);
                 tooltip.Data=item;
                 tooltip.ChartPaint=this;
                 tooltip.Type=1; //信息地雷
@@ -12436,6 +12482,7 @@ function ChartKLine()
                 return true;
             }
         }
+
         return false;
     }
 
@@ -20803,6 +20850,28 @@ function KLineInfoDataStringFormat()
     }
 }
 
+//交易信息提示信息格式
+function KLineTradeDataStringFormat()
+{
+    this.newMethod=IChangeStringFormat;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Operator=function()
+    {
+        var data=this.Value.Data;
+        if (!data) return false;
+
+        var item=data.Data;
+        var title=`<span class='tooltip-index-name'>${item.Name}${item.Param}:</span>`;
+        var content;
+        if (item.Type==1) content=`<span class='tooltip-index-buy'>买入</span>`;
+        else content=`<span class='tooltip-index-sell'>卖出</span>`;
+
+        this.Text=title+content;
+        return true;
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                      标题
@@ -21267,7 +21336,7 @@ function DynamicChartTitlePainting()
     this.Data=new Array();
     this.Explain;
     this.ColorIndex;    //五彩K线名字 {Name:'名字'}
-    this.TradeIndex;    //专家系统名字{Name:'名字'}
+    this.TradeIndex;    //专家系统名字{Name:'名字', Param:'参数'}
     this.OverlayIndex=new Map();   //叠加指标 key=Identify value={ Data:数据, Title:标题, Identify:标识}
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.TitleRect;             //指标名字显示区域
@@ -21454,8 +21523,9 @@ function DynamicChartTitlePainting()
         if (this.TradeIndex)
         {
             this.Canvas.fillStyle='rgb(105,105,105)';
-            var textWidth=this.Canvas.measureText(this.TradeIndex.Name).width+2;    //后空2个像素
-            this.Canvas.fillText(this.TradeIndex.Name,left,bottom,textWidth);
+            var tradeName=this.TradeIndex.Name+this.TradeIndex.Param;
+            var textWidth=this.Canvas.measureText(tradeName).width+2;    //后空2个像素
+            this.Canvas.fillText(tradeName,left,bottom,textWidth);
             left+=textWidth;
         }
 
@@ -28126,8 +28196,8 @@ function KLineChartContainer(uielement)
         }
         else if (type==1)   //专家指示
         {
-            this.ChartPaint[0].TradeData={Sell:instructionData.Sell, Buy:instructionData.Buy};
-            if (title) title.TradeIndex={Name:instructionData.Name}
+            this.ChartPaint[0].TradeData={Sell:instructionData.Sell, Buy:instructionData.Buy, Name:instructionData.Name, Param:instructionData.Param };
+            if (title) title.TradeIndex={ Name:instructionData.Name, Param:instructionData.Param };
         }
     }
 
@@ -51461,7 +51531,18 @@ function ScriptIndex(name,script,args,option)
                 else if (item.Name=='EXITLONG') sellData=item.Data;
             }
 
-            hqChart.SetInstructionData(this.InstructionType, {Buy:buyData, Sell:sellData, Name:this.Name, ID:this.ID});       //设置指示数据
+            var indexParam='';
+            for(let i in this.Arguments)
+            {
+                let item=this.Arguments[i];
+                if (indexParam.length>0) indexParam+=',';
+                indexParam+=item.Value.toString();
+            }
+
+            if (indexParam.length>0) indexParam='('+indexParam+')';
+            
+
+            hqChart.SetInstructionData(this.InstructionType, {Buy:buyData, Sell:sellData, Name:this.Name, Param:indexParam, ID:this.ID});       //设置指示数据
             return true;
         }
     }
