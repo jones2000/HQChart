@@ -10795,10 +10795,21 @@ function ScriptIndex(name,script,args,option)
     this.BindInstructionData=function(hqChart,windowIndex,hisData)  //绑定指示指标
     {
         if (this.OutVar==null || this.OutVar.length<0) return;
+
+        //参数
+        var indexParam='';
+        for(let i in this.Arguments)
+        {
+            let item=this.Arguments[i];
+            if (indexParam.length>0) indexParam+=',';
+            indexParam+=item.Value.toString();
+        }
+        if (indexParam.length>0) indexParam='('+indexParam+')';
+
         if (this.InstructionType==2)        //五彩K线
         {
             let varItem=this.OutVar[this.OutVar.length-1]; //取最后一组数据作为指示数据
-            hqChart.SetInstructionData(this.InstructionType, {Data:varItem.Data, Name:this.Name, ID:this.ID });       //设置指示数据
+            hqChart.SetInstructionData(this.InstructionType, {Data:varItem.Data, Name:this.Name, Param:indexParam, ID:this.ID });       //设置指示数据
             return true;
         }
         else if (this.InstructionType==1)   //交易系统
@@ -10810,17 +10821,6 @@ function ScriptIndex(name,script,args,option)
                 if (item.Name=='ENTERLONG') buyData=item.Data;
                 else if (item.Name=='EXITLONG') sellData=item.Data;
             }
-
-            var indexParam='';
-            for(let i in this.Arguments)
-            {
-                let item=this.Arguments[i];
-                if (indexParam.length>0) indexParam+=',';
-                indexParam+=item.Value.toString();
-            }
-
-            if (indexParam.length>0) indexParam='('+indexParam+')';
-            
 
             hqChart.SetInstructionData(this.InstructionType, {Buy:buyData, Sell:sellData, Name:this.Name, Param:indexParam, ID:this.ID});       //设置指示数据
             return true;

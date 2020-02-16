@@ -5564,7 +5564,11 @@ function JSChartContainer(uielement)
             if (item.ClassName=='DynamicChartTitlePainting') item.OnDrawEvent=eventIndexTitleDraw
             else item.OnDrawEvent=eventTitleDraw;
 
-            if (item.OnDrawEvent) item.OnDrawEvent.FunctionName='Draw';
+            if (item.OnDrawEvent) 
+            {
+                item.OnDrawEvent.FunctionName='Draw';
+                item.OnDrawEvent.PointPosition=null;
+            }
             item.Draw();
         }
 
@@ -5659,13 +5663,23 @@ function JSChartContainer(uielement)
             }
         }
 
+        var ptPosition=null;    //鼠标位置 null 无效 -1 在外面 >=0 对应的指标窗口中ID
+        if (option && option.ParentFunction=='OnMouseMove' && option.Point)
+        {
+            ptPosition=this.Frame.PtInFrame(option.Point.X, option.Point.Y);
+        }
+
         for(var i in this.TitlePaint)
         {
             var item=this.TitlePaint[i];
             if (!item.IsDynamic) continue;
 
             item.CursorIndex=this.CursorIndex;
-            if (item.OnDrawEvent) item.OnDrawEvent.FunctionName='DrawDynamicInfo';
+            if (item.OnDrawEvent) 
+            {
+                item.OnDrawEvent.FunctionName='DrawDynamicInfo';
+                item.OnDrawEvent.PointPosition=ptPosition;
+            }
             item.Draw();
         }
 
@@ -5787,7 +5801,8 @@ function JSChartContainer(uielement)
             }
         }
 
-        this.DrawDynamicInfo();
+        var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y} };
+        this.DrawDynamicInfo(option);
 
         if (this.IsShowTooltip && bDrawPicture==false)
         {
@@ -21514,15 +21529,16 @@ function DynamicChartTitlePainting()
 
         if (this.ColorIndex)
         {
-            this.Canvas.fillStyle='rgb(105,105,105)'
-            var textWidth=this.Canvas.measureText(this.ColorIndex.Name).width+2;    //后空2个像素
-            this.Canvas.fillText(this.ColorIndex.Name,left,bottom,textWidth);
+            this.Canvas.fillStyle=g_JSChartResource.Title.ColorIndexColor;
+            var tradeName=this.ColorIndex.Name+this.ColorIndex.Param;
+            var textWidth=this.Canvas.measureText(tradeName).width+2;    //后空2个像素
+            this.Canvas.fillText(tradeName,left,bottom,textWidth);
             left+=textWidth;
         }
 
         if (this.TradeIndex)
         {
-            this.Canvas.fillStyle='rgb(105,105,105)';
+            this.Canvas.fillStyle=g_JSChartResource.Title.TradeIndexColor;
             var tradeName=this.TradeIndex.Name+this.TradeIndex.Param;
             var textWidth=this.Canvas.measureText(tradeName).width+2;    //后空2个像素
             this.Canvas.fillText(tradeName,left,bottom,textWidth);
@@ -24764,6 +24780,11 @@ function JSChartResource()
     this.TitleFont=13*GetDevicePixelRatio() +'px 微软雅黑';
     this.IndexTitleBGColor='rgb(217,219,220)';  //指标名字背景色
 
+    this.Title={
+        TradeIndexColor:'rgb(105,105,105)',
+        ColorIndexColor:'rgb(112,128,144)'
+    };
+
     this.UpTextColor="rgb(238,21,21)";
     this.DownTextColor="rgb(25,158,0)";
     this.UnchagneTextColor="rgb(0,0,0)";
@@ -25034,6 +25055,12 @@ function JSChartResource()
             if (style.MinuteInfo.PointColor) this.MinuteInfo.PointColor=style.MinuteInfo.PointColor;
             if (style.MinuteInfo.LineColor) this.MinuteInfo.LineColor=style.MinuteInfo.LineColor;
             if (style.MinuteInfo.TextBGColor) this.MinuteInfo.TextBGColor=style.MinuteInfo.TextBGColor;
+        }
+
+        if (style.Title)
+        {
+            if (style.Title.TradeIndexColor) this.Title.TradeIndexColor=style.Title.TradeIndexColor;
+            if (style.Title.ColorIndexColor) this.Title.ColorIndexColor=style.Title.ColorIndexColor;
         }
     }
 }
@@ -28192,7 +28219,7 @@ function KLineChartContainer(uielement)
         if (type==2) //五彩K线
         {
             this.ChartPaint[0].ColorData=instructionData.Data;
-            if (title) title.ColorIndex={Name:instructionData.Name};
+            if (title) title.ColorIndex={Name:instructionData.Name, Param:instructionData.Param };
         }
         else if (type==1)   //专家指示
         {
@@ -51515,10 +51542,21 @@ function ScriptIndex(name,script,args,option)
     this.BindInstructionData=function(hqChart,windowIndex,hisData)  //绑定指示指标
     {
         if (this.OutVar==null || this.OutVar.length<0) return;
+
+        //参数
+        var indexParam='';
+        for(let i in this.Arguments)
+        {
+            let item=this.Arguments[i];
+            if (indexParam.length>0) indexParam+=',';
+            indexParam+=item.Value.toString();
+        }
+        if (indexParam.length>0) indexParam='('+indexParam+')';
+
         if (this.InstructionType==2)        //五彩K线
         {
             let varItem=this.OutVar[this.OutVar.length-1]; //取最后一组数据作为指示数据
-            hqChart.SetInstructionData(this.InstructionType, {Data:varItem.Data, Name:this.Name, ID:this.ID });       //设置指示数据
+            hqChart.SetInstructionData(this.InstructionType, {Data:varItem.Data, Name:this.Name, Param:indexParam, ID:this.ID });       //设置指示数据
             return true;
         }
         else if (this.InstructionType==1)   //交易系统
@@ -51530,17 +51568,6 @@ function ScriptIndex(name,script,args,option)
                 if (item.Name=='ENTERLONG') buyData=item.Data;
                 else if (item.Name=='EXITLONG') sellData=item.Data;
             }
-
-            var indexParam='';
-            for(let i in this.Arguments)
-            {
-                let item=this.Arguments[i];
-                if (indexParam.length>0) indexParam+=',';
-                indexParam+=item.Value.toString();
-            }
-
-            if (indexParam.length>0) indexParam='('+indexParam+')';
-            
 
             hqChart.SetInstructionData(this.InstructionType, {Buy:buyData, Sell:sellData, Name:this.Name, Param:indexParam, ID:this.ID});       //设置指示数据
             return true;
