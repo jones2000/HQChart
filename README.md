@@ -50,16 +50,16 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 # HQChart 3.0
 * 分网页版本 及 微信小程序版本 <br>
-  ![走势图](/小程序行情模块用例/image/hqchart_minute.PNG)
-  ![走势图2](/小程序行情模块用例/image/hqchart_minute2.PNG)
-  ![走势图3](/小程序行情模块用例/image/hqchart_minute_hscreen.PNG)
-  ![K线图](/小程序行情模块用例/image/hqchart_kline.PNG)
-  ![K线图2](/小程序行情模块用例/image/hqchart_kline_lock.PNG)
-  ![K线图3](/小程序行情模块用例/image/hqchart_kline_hscreen.PNG)
-  ![K线图4](/小程序行情模块用例/image/hqchart_kline_hscreen2.PNG)
-  ![多日走势图1](/小程序行情模块用例/image/hqchart_minute_5day.PNG)
-  ![多日走势图2](/小程序行情模块用例/image/hqchart_minute_5day2.PNG)
-  ![多日走势图3](/小程序行情模块用例/image/hqchart_minute_5day3.PNG)
+  ![走势图](https://opensource2.zealink.com/hqchart.demo.image/hqchart_minute.PNG)
+  ![走势图2](https://opensource2.zealink.com/hqchart.demo.image/hqchart_minute2.PNG)
+  ![走势图3](https://opensource2.zealink.com/hqchart.demo.image/hqchart_minute_hscreen.PNG)
+  ![K线图](https://opensource2.zealink.com/hqchart.demo.image/hqchart_kline.PNG)
+  ![K线图2](https://opensource2.zealink.com/hqchart.demo.image/hqchart_kline_lock.PNG)
+  ![K线图3](https://opensource2.zealink.com/hqchart.demo.image/hqchart_kline_hscreen.PNG)
+  ![K线图4](https://opensource2.zealink.com/hqchart.demo.image/hqchart_kline_hscreen2.PNG)
+  ![多日走势图1](https://opensource2.zealink.com/hqchart.demo.image/image/hqchart_minute_5day.PNG)
+  ![多日走势图2](https://opensource2.zealink.com/hqchart.demo.image/hqchart_minute_5day2.PNG)
+  ![多日走势图3](https://opensource2.zealink.com/hqchart.demo.image/image/hqchart_minute_5day3.PNG)
   
 # 1. K线图
 * 支持前复权,后复权 <br>
@@ -237,13 +237,13 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 # 5.VUE 行情项目
 [代码地址(vuehqchart)](/vuehqchart) <br>
-![走势图2](/小程序行情模块用例/image/pch5hq.PNG)
+![走势图2](https://opensource2.zealink.com/hqchart.demo.image/image/pch5hq.PNG)
 [行情页面地址(v1.0）](https://opensource2.zealink.com/vuehqweb/hq.demo.page.html) <br><br>
-![历史高频数据查询图2](/小程序行情模块用例/image/pch5history.PNG)
+![历史高频数据查询图2](https://opensource2.zealink.com/hqchart.demo.image/image/pch5history.PNG)
 [查询页面地址](https://opensource2.zealink.com/vuehqweb/queryContent.demo.page.html) <br><br>
-![多周期图2](/小程序行情模块用例/image/pch5hq2.png)
+![多周期图2](https://opensource2.zealink.com/hqchart.demo.image/image/pch5hq2.png)
 [多周期页面地址](https://opensource2.zealink.com/vuehqweb/stockmultiperiod.demo.page.html) <br><br>
-![综合排名2](/小程序行情模块用例/image/pch5hq3.png)
+![综合排名2](https://opensource2.zealink.com/hqchart.demo.image/image/pch5hq3.png)
 [综合排名页面地址](https://opensource2.zealink.com/vuehqweb/stockmultiorder.demo.page.html) <br><br>
    
 ## 基于VUE版本给客户开发的样例
@@ -252,12 +252,12 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 [代码地址(vue.demo/infoHqdemo)](/vue.demo/infoHqdemo) <br>
 
 ## VUE版本手机端样例1
-![手机端行情页面](/小程序行情模块用例/image/hchart_phone_1.png) <br>
+![手机端行情页面](https://opensource2.zealink.com/hqchart.demo.image/image/hchart_phone_1.png) <br>
 [手机端行情页面](https://opensource2.zealink.com/product/hqNewdemoH5/stockHq.html#/StockHq)<br>
 [代码地址(vue.demo/hq_h5_pages)](/vue.demo/hq_h5_pages) <br>
 
 ## js页面样例
-![手机端行情页面](/小程序行情模块用例/image/hqchart_phone_2.png) <br>
+![手机端行情页面](https://opensource2.zealink.com/hqchart.demo.image/image/hqchart_phone_2.png) <br>
 [个股详情手机端h5](https://opensource2.zealink.com/hqweb/hqpages/stockpage.html?) <br>
 [代码地址(webhqchart.demo/h5demo)](/webhqchart.demo/h5demo) <br>
 [VUE代码地址(vue.demo/stockpage_h5)](/vue.demo/stockpage_h5) <br>
