@@ -1,4 +1,4 @@
-![logo](./logo2.png)
+![logo](https://opensource2.zealink.com/hqchart.demo.image/logo2.png)
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![github star](https://img.shields.io/github/stars/jones2000/HQChart.svg)]('https://github.com/jones2000/HQChart/stargazers')
