@@ -247,6 +247,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 [综合排名页面地址](https://opensource2.zealink.com/vuehqweb/stockmultiorder.demo.page.html) <br><br>
    
 ## 基于VUE版本给客户开发的样例
+![PC行情页面](/小程序行情模块用例/image/hqchart_pc_demo1.png) <br>
 [指数行情页面黑色风格](https://opensource2.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sh&colorType=black) <br>
 [个股行情页面白色风格](https://opensource2.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sz) <br>
 [代码地址(vue.demo/infoHqdemo)](/vue.demo/infoHqdemo) <br>
@@ -265,6 +266,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## 第3方数据对接样例
 1. 数字货币对接 <br>
    数据来源： https://www.coinzeus.io/cn <br>
+   ![行情页面](/小程序行情模块用例/image/hqchart_bit_demo1.png) <br>
    [h5测试页面](https://opensource.zealink.com/hqweb/bitdemo/stockhq.html) <br>
    [代码地址(vue.demo/bitdemo)](/vue.demo/bitdemo) <br>
 
