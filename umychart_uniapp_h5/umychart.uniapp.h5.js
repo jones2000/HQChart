@@ -3814,6 +3814,11 @@ function JSChart(divElement)
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
         if (option.DisableMouse==true) chart.DisableMouse=option.DisableMouse;
 
+        if (option.Minute)   //分钟走势图属性设置
+        {
+            if (option.Minute.IsShowTooltip==false) chart.IsShowTooltip=false;
+        }
+
         if (option.Language)
         {
             if (option.Language==='CN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
@@ -4628,6 +4633,11 @@ JSChart.GetMinuteCoordinateData=function()
 JSChart.GetKLineZoom=function() //K线缩放配置
 {
     return ZOOM_SEED;
+}
+
+JSChart.GetDivTooltipDataFormat=function()  //div tooltip数据格式化
+{
+    return g_DivTooltipDataForamt;
 }
 
 var JSCHART_EVENT_ID=
@@ -5811,9 +5821,12 @@ function JSChartContainer(uielement)
             {
                 var item=this.ChartPaint[i];
                 if (item.GetTooltipData(x,y,toolTip))
-                {
                     break;
-                }
+            }
+
+            if (this.ChartInfoPaint)
+            {
+                this.ChartInfoPaint.GetTooltipData(x,y,toolTip);
             }
 
             if (!toolTip.Data)
@@ -5976,18 +5989,18 @@ function JSChartContainer(uielement)
         var xMove=15/pixelTatio;    //顶部坐标偏移位置
         if (toolTip.Type===0) //K线信息
         {
-            var format=new HistoryDataStringFormat();
+            var scrollPos=GetScrollPosition();
+            var left = x;
+            var top = y;
+
+            var format=g_DivTooltipDataForamt.Create('HistoryDataStringFormat');
             format.Value=toolTip;
             format.Symbol=this.Symbol;
             format.LanguageID=this.LanguageID;
             if (!format.Operator()) return;
             var textHeight=format.LineCount*25; //每行的行高25
+            var width=format.Width;
 
-            var scrollPos=GetScrollPosition();
-            var left = x;
-            var top = y;
-            var width=157;
-            if (this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID) width=180;
             this.Tooltip.style.width = width+"px";
             this.Tooltip.style.height =textHeight+"px";
             //JSConsole.Chart.Log(`[JSChartContainer::ShowTooltip] left=${left} top=${top} xMove=${xMove}` );
@@ -6008,11 +6021,12 @@ function JSChartContainer(uielement)
             var scrollPos=GetScrollPosition();
             var left = x;
             var top = y;
-            var width=500;
-            var format=new KLineInfoDataStringFormat();
+
+            var format=g_DivTooltipDataForamt.Create('KLineInfoDataStringFormat');
             format.Value=toolTip;
             format.Symbol=this.Symbol;
             if (!format.Operator()) return;
+            var width=format.Width;
 
             this.Tooltip.className='jchart-klineinfo-tooltip';
             this.Tooltip.style.position = "absolute";
@@ -6032,13 +6046,34 @@ function JSChartContainer(uielement)
         {
             var left = x;
             var top = y;
-            var width=100;
-            var format=new KLineTradeDataStringFormat();
+            
+            var format=g_DivTooltipDataForamt.Create('KLineTradeDataStringFormat');
             format.Value=toolTip;
             format.Symbol=this.Symbol;;
             if (!format.Operator()) return;
+            var width=format.Width;
 
             this.Tooltip.className='jchart-klinetrade-tooltip';
+            this.Tooltip.style.position = "absolute";
+            this.Tooltip.style.left = left + "px";
+            this.Tooltip.style.top = (top +xMove)+ "px";
+            this.Tooltip.style.width = width+"px";
+            this.Tooltip.style.height =null;
+            this.Tooltip.innerHTML=format.Text;;
+            this.Tooltip.style.display = "block";
+        }
+        else if (toolTip.Type==3)   //分时图异动信息
+        {
+            var left = x;
+            var top = y;
+
+            var format=g_DivTooltipDataForamt.Create('MinuteInfoDataStringFormat');
+            format.Value=toolTip;
+            format.Symbol=this.Symbol;;
+            if (!format.Operator()) return;
+            var width=format.Width;
+
+            this.Tooltip.className='jchart-minuteinfo-tooltip'; //分时图异动
             this.Tooltip.style.position = "absolute";
             this.Tooltip.style.left = left + "px";
             this.Tooltip.style.top = (top +xMove)+ "px";
@@ -14925,6 +14960,8 @@ function ChartMinuteInfo()
     this.IsHScreen=false;
     this.IsDrawFull=false;   //是否全屏画
 
+    this.TooltipRect=[];    //Rect 
+
     this.SetOption=function(option)
     {
         if (option.TextColor) this.TextColor=option.TextColor;
@@ -14938,6 +14975,7 @@ function ChartMinuteInfo()
 
     this.Draw=function()
     {
+        this.TooltipRect=[];
         if (!this.ChartMinutePrice) return;
         if (!this.Data || this.Data.size<=0) return;
 
@@ -14997,6 +15035,13 @@ function ChartMinuteInfo()
         {
             var item=this.InfoDrawCache[i];
             this.DrawInfoText(item);
+            if (!this.IsHScreen) 
+            {
+                var rtBorder=item.Border;
+                var textRect=new Rect(rtBorder.X,rtBorder.Y,rtBorder.Width,rtBorder.Height);
+                var tooltipData={ Data:{ Item:item }, Rect:textRect };
+                this.TooltipRect.push(tooltipData);
+            }
         }
 
         this.TextRectCache=[];
@@ -15038,7 +15083,7 @@ function ChartMinuteInfo()
         if (!isDrawLeft) rtBorder.X-=rtBorder.Width;
 
         this.FixTextRect(rtBorder,yData);
-        var InfoDrawItem={ Border:rtBorder, Start:{X:x,Y:y}, IsLeft:isDrawLeft, Title:showItem.Title };
+        var InfoDrawItem={ Border:rtBorder, Start:{X:x,Y:y}, IsLeft:isDrawLeft, Title:showItem.Title, Date:showItem.Date, Time:showItem.Time, Content:showItem.Content };
         if (showItem.Color) InfoDrawItem.Color=showItem.Color;
         if (showItem.BGColor) InfoDrawItem.BGColor=showItem.BGColor;
 
@@ -15220,6 +15265,28 @@ function ChartMinuteInfo()
     {
         var range={Min:null, Max:null};
         return range;
+    }
+
+    this.GetTooltipData=function(x,y,tooltip)
+    {
+        for(var i in this.TooltipRect)
+        {
+            var item=this.TooltipRect[i];
+            if (!item.Rect) continue;
+            var rect=item.Rect;
+            this.Canvas.beginPath();
+            this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
+            if (this.Canvas.isPointInPath(x,y))
+            {
+                //JSConsole.Chart.Log('[ChartMinuteInfo::GetTooltipData] info ', item);
+                tooltip.Data=item;
+                tooltip.ChartPaint=this;
+                tooltip.Type=3; //异动信息
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
@@ -20465,6 +20532,7 @@ function ChartSplashPaint()
 
 /////////////////////////////////////////////////////////////////////////////////
 //
+
 function IChangeStringFormat()
 {
     this.Data;
@@ -20620,11 +20688,15 @@ function HistoryDataStringFormat()
     this.AmountColor=g_JSChartResource.DefaultTextColor;
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.LineCount=0;    //一共几行
+    this.Width=157;
 
     this.Operator=function()
     {
         var data=this.Value.Data;
         if (!data) return false;
+
+        this.Width=157;
+        if (this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID) this.Width=180;
 
         var date=new Date(parseInt(data.Date/10000),(data.Date/100%100-1),data.Date%100);
         var strDate=IFrameSplitOperator.FormatDateString(data.Date);
@@ -20698,6 +20770,7 @@ function KLineInfoDataStringFormat()
     this.UpColor=g_JSChartResource.UpTextColor;
     this.DownColor=g_JSChartResource.DownTextColor;
     this.UnchagneColor=g_JSChartResource.UnchagneTextColor;
+    this.Width=500;
 
     this.Operator=function()
     {
@@ -20872,6 +20945,7 @@ function KLineTradeDataStringFormat()
     this.newMethod();
     delete this.newMethod;
 
+    this.Width=100;
     this.Operator=function()
     {
         var data=this.Value.Data;
@@ -20887,6 +20961,52 @@ function KLineTradeDataStringFormat()
         return true;
     }
 }
+
+//分时图异动信息格式化
+function MinuteInfoDataStringFormat()
+{
+    this.newMethod=IChangeStringFormat;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Width=200;
+    this.Operator=function()
+    {
+        var data=this.Value.Data;
+        if (!data) return false;
+
+        var item=data.Data.Item;
+        var strTime=IFrameSplitOperator.FormatTimeString(item.Time);
+        var time=`<span class='tooltip-minuteinfo-time'>${strTime} </span>`;
+        var content=`<span class='tooltip-minuteinfo-content'>${item.Title}</span>`;
+        if (item.Content) content=`<span class='tooltip-minuteinfo-content'>${item.Content}</span>`;
+
+        this.Text=time+content;
+        return true;
+    }
+}
+
+function DivTooltipDataForamt()
+{
+    this.DataMap=new Map(
+        [
+            ["KLineTradeDataStringFormat",      {Create:function(){ return new KLineTradeDataStringFormat()}  }],
+            ["MinuteInfoDataStringFormat",      {Create:function(){ return new MinuteInfoDataStringFormat()}  }],
+            ["HistoryDataStringFormat",         {Create:function(){ return new HistoryDataStringFormat()}  }],
+            ["KLineInfoDataStringFormat",       {Create:function(){ return new KLineInfoDataStringFormat()}  }]
+        ]
+    );
+
+    this.Create=function(name)
+    {
+        if (!this.DataMap.has(name)) return null;
+
+        var item=this.DataMap.get(name);
+        return item.Create();
+    }
+}
+
+var g_DivTooltipDataForamt=new DivTooltipDataForamt();
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                      标题
@@ -36595,6 +36715,7 @@ function MarketEventInfo()
                     if (item.Color) info.Color=item.Color;
                     if (item.BGColor) info.BGColor=item.BGColor;
                     if (IFrameSplitOperator.IsNumber(item.Price)) info.Price=item.Price;
+                    if (item.Content) info.Content=item.Content;
                     this.Data.push(info);
                 }
             }
