@@ -2696,6 +2696,7 @@ function JSChartContainer(uielement)
             var format=g_DivTooltipDataForamt.Create('KLineInfoDataStringFormat');
             format.Value=toolTip;
             format.Symbol=this.Symbol;
+            format.LanguageID=this.LanguageID;
             if (!format.Operator()) return;
             var width=format.Width;
 
@@ -2720,7 +2721,8 @@ function JSChartContainer(uielement)
             
             var format=g_DivTooltipDataForamt.Create('KLineTradeDataStringFormat');
             format.Value=toolTip;
-            format.Symbol=this.Symbol;;
+            format.Symbol=this.Symbol;
+            format.LanguageID=this.LanguageID;
             if (!format.Operator()) return;
             var width=format.Width;
 
@@ -2740,7 +2742,8 @@ function JSChartContainer(uielement)
 
             var format=g_DivTooltipDataForamt.Create('MinuteInfoDataStringFormat');
             format.Value=toolTip;
-            format.Symbol=this.Symbol;;
+            format.Symbol=this.Symbol;
+            format.LanguageID=this.LanguageID;
             if (!format.Operator()) return;
             var width=format.Width;
 
@@ -11754,7 +11757,9 @@ function ChartMinuteInfo()
         if (!isDrawLeft) rtBorder.X-=rtBorder.Width;
 
         this.FixTextRect(rtBorder,yData);
-        var InfoDrawItem={ Border:rtBorder, Start:{X:x,Y:y}, IsLeft:isDrawLeft, Title:showItem.Title, Date:showItem.Date, Time:showItem.Time, Content:showItem.Content };
+        var InfoDrawItem= {  Border:rtBorder, Start:{X:x,Y:y}, IsLeft:isDrawLeft, Title:showItem.Title, Date:showItem.Date, Time:showItem.Time };
+        if (showItem.Content) InfoDrawItem.Content=showItem.Content;
+        if (showItem.Link) InfoDrawItem.Link=showItem.Link;
         if (showItem.Color) InfoDrawItem.Color=showItem.Color;
         if (showItem.BGColor) InfoDrawItem.BGColor=showItem.BGColor;
 
@@ -18141,8 +18146,13 @@ function DynamicChartTitlePainting()
     this.IsDynamic=true;
     this.Data=new Array();
     this.Explain;
+
     this.ColorIndex;    //五彩K线名字 {Name:'名字'}
+    this.IsShowColorIndexTitle=true;
+
     this.TradeIndex;    //专家系统名字{Name:'名字', Param:'参数'}
+    this.IsShowTradeIndexTitle=true;
+
     this.OverlayIndex=new Map();   //叠加指标 key=Identify value={ Data:数据, Title:标题, Identify:标识}
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.TitleRect;             //指标名字显示区域
@@ -18318,7 +18328,7 @@ function DynamicChartTitlePainting()
             }
         }
 
-        if (this.ColorIndex)
+        if (this.ColorIndex && this.IsShowColorIndexTitle)
         {
             this.Canvas.fillStyle=g_JSChartResource.Title.ColorIndexColor;
             var tradeName=this.ColorIndex.Name+this.ColorIndex.Param;
@@ -18327,7 +18337,7 @@ function DynamicChartTitlePainting()
             left+=textWidth;
         }
 
-        if (this.TradeIndex)
+        if (this.TradeIndex && this.IsShowTradeIndexTitle)
         {
             this.Canvas.fillStyle=g_JSChartResource.Title.TradeIndexColor;
             var tradeName=this.TradeIndex.Name+this.TradeIndex.Param;
@@ -28886,8 +28896,10 @@ function MinuteChartContainer(uielement)
         this.ChartPaint[2].Data=minuteData;
         this.ChartPaint[2].YClose=yClose;
 
-        if(MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol))  this.BindOverlayMainData(minuteData,yClose);    //期货持仓量
-        else this.ClearBindOverlayMainData();
+        if(MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol) || MARKET_SUFFIX_NAME.IsSHO(upperSymbol))  
+            this.BindOverlayMainData(minuteData,yClose);    //期货,期权 持仓量
+        else 
+            this.ClearBindOverlayMainData();
 
         this.TitlePaint[0].Data=this.SourceData;                    //动态标题
         this.TitlePaint[0].Symbol=this.Symbol;
@@ -29205,6 +29217,7 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
     var upperSymbol=symbol.toUpperCase();
     var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
     var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+    var isSHO=MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
     var aryMinuteData=new Array();
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var preAvPrice=data.stock[0].yclose;    //前一个均价
@@ -29228,7 +29241,7 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         item.DateTime=date.toString()+" "+jsData.time.toString();
         item.Date=date;
         item.Time=jsData.time;
-        if (isFutures) item.Position=jsData.position;
+        if (isFutures || isSHO) item.Position=jsData.position;  //期货 期权有持仓
 
         if (i==0) 
         {
@@ -29290,6 +29303,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
     var symbol=data.symbol;
     var upperSymbol=symbol.toUpperCase();
     var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+    var isSHO=MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
     var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
     var result=[];
     for(var i in data.data)
@@ -29318,7 +29332,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
             item.Date=date;
             item.Time=jsData[0];
             if (8<jsData.length && jsData[8]>0) item.Date=jsData[8];    //日期
-            if (isFutures && 9<jsData.length) item.Position=jsData[9];  //持仓
+            if ((isFutures || isSHO) && 9<jsData.length) item.Position=jsData[9];  //持仓
             
             if (!item.Close)    //当前没有价格 使用上一个价格填充
             {
@@ -33387,6 +33401,7 @@ function MarketEventInfo()
                     if (item.BGColor) info.BGColor=item.BGColor;
                     if (IFrameSplitOperator.IsNumber(item.Price)) info.Price=item.Price;
                     if (item.Content) info.Content=item.Content;
+                    if (item.Link) info.Link=item.Link;
                     this.Data.push(info);
                 }
             }
@@ -36185,6 +36200,7 @@ var MARKET_SUFFIX_NAME=
 {
     SH:'.SH',
     SZ:'.SZ',
+    SHO:'.SHO',          //上海交易所 股票期权
     HK:'.HK',            //港股
     FHK:'.FHK',          //港股期货            
     SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange)
@@ -36257,6 +36273,13 @@ var MARKET_SUFFIX_NAME=
     {
         var pos = upperSymbol.length - this.SZ.length;
         var find = upperSymbol.indexOf(this.SZ);
+        return find == pos;
+    },
+
+    IsSHO: function(upperSymbol)
+    {
+        var pos = upperSymbol.length - this.SHO.length;
+        var find = upperSymbol.indexOf(this.SHO);
         return find == pos;
     },
 
@@ -36454,6 +36477,11 @@ var MARKET_SUFFIX_NAME=
         return 2;
     },
 
+    GetSHODecimal:function(symbol)
+    {
+        return 4;
+    },
+
     GetETDecimal:function(symbol)
     {
         return 2;
@@ -36476,6 +36504,7 @@ var MARKET_SUFFIX_NAME=
 function MinuteTimeStringData() 
 {
     this.SHSZ = null;       //上海深证交易所时间
+    this.SHO=null;          //上海股票期权交易时间
     this.HK = null;         //香港交易所时间
     this.Futures=new Map(); //期货交易时间 key=时间名称 Value=数据
     this.USA = null;        //美股交易时间
@@ -36498,6 +36527,12 @@ function MinuteTimeStringData()
     {
         if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
         return this.SHSZ;
+    }
+
+    this.GetSHO=function()
+    {
+        if (!this.SHO) this.SHO=this.CreateSHOData();
+        return this.SHO;
     }
 
     this.GetHK=function()
@@ -36551,6 +36586,17 @@ function MinuteTimeStringData()
             ];
 
         return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateSHOData=function()
+    {
+        const TIME_SPLIT =
+        [
+            { Start: 930, End: 1129 },
+            { Start: 1300, End: 1500 }
+        ];
+
+    return this.CreateTimeData(TIME_SPLIT);
     }
 
     this.CreateHKData = function () 
@@ -36656,6 +36702,7 @@ function MinuteTimeStringData()
 
         var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
         if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) return this.GetSHSZ();
+        if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK();
         if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
         if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
@@ -36706,6 +36753,48 @@ function MinuteCoordinateData()
 
             Count: 243,
             MiddleCount: 122,
+
+            GetData: function (width) 
+            {
+                if (width < 200) return this.Min;
+                else if (width < 400) return this.Simple;
+
+                return this.Full;
+            }
+        };
+
+    //上海股票期权时间刻度
+    const SHO_MINUTE_X_COORDINATE =
+        {
+            Full:   //完整模式
+            [
+                [0, 0, "rgb(200,200,200)", "09:30"],
+                [30, 0, "RGB(200,200,200)", "10:00"],
+                [60, 0, "RGB(200,200,200)", "10:30"],
+                [90, 0, "RGB(200,200,200)", "11:00"],
+                [120, 1, "RGB(200,200,200)", "13:00"],
+                [150, 0, "RGB(200,200,200)", "13:30"],
+                [180, 0, "RGB(200,200,200)", "14:00"],
+                [210, 0, "RGB(200,200,200)", "14:30"],
+                [240, 1, "RGB(200,200,200)", "15:00"], // 15:00
+            ],
+            Simple: //简洁模式
+            [
+                [0, 0, "rgb(200,200,200)", "09:30"],
+                [60, 0, "RGB(200,200,200)", "10:30"],
+                [120, 1, "RGB(200,200,200)", "13:00"],
+                [180, 0, "RGB(200,200,200)", "14:00"],
+                [240, 1, "RGB(200,200,200)", "15:00"]
+            ],
+            Min:   //最小模式     
+            [
+                [0, 0, "rgb(200,200,200)", "09:30"],
+                [120, 1, "RGB(200,200,200)", "13:00"],
+                [240, 1, "RGB(200,200,200)", "15:00"]
+            ],
+
+            Count: 241,
+            MiddleCount: 120,
 
             GetData: function (width) 
             {
@@ -36998,6 +37087,8 @@ function MinuteCoordinateData()
             var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
             if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol) || MARKET_SUFFIX_NAME.IsSHSZIndex(upperSymbol))
                 data = this.GetSHSZData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol))
+                data=this.GetSHOData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
                 data = HK_MINUTE_X_COORDINATE;
             else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
@@ -37029,6 +37120,12 @@ function MinuteCoordinateData()
     {
         var result=USA_MINUTE_X_COORDINATE;
 
+        return result;
+    }
+
+    this.GetSHOData=function(upperSymbol,width)
+    {
+        var result=SHO_MINUTE_X_COORDINATE;
         return result;
     }
 
@@ -37510,6 +37607,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
     var upperSymbol=symbol.toUpperCase();
 
     if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision=3;    //基金3位小数
+    else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetSHODecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision=g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
     else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
