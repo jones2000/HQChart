@@ -54,6 +54,7 @@ import {
     JSCommonChartPaint_ChartRectangle as ChartRectangle,
     JSCommonChartPaint_ChartMultiText as ChartMultiText,
     JSCommonChartPaint_ChartMultiLine as ChartMultiLine,
+    JSCommonChartPaint_ChartMultiBar as ChartMultiBar,
     JSCommonChartPaint_ChartPie as ChartPie,
     JSCommonChartPaint_ChartCircle as ChartCircle,
     JSCommonChartPaint_ChartChinaMap as ChartChinaMap,
@@ -12619,6 +12620,19 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateMultiBar = function (hqChart, windowIndex, varItem, i) 
+    {
+        let chart = new ChartMultiBar();
+        chart.Canvas = hqChart.Canvas;
+        chart.Name = varItem.Name;
+        chart.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data = hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Bars = varItem.Draw.DrawData;
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建K线背景
     this.CreateSelfKLine = function (hqChart, windowIndex, hisData) 
     {
@@ -12740,6 +12754,9 @@ function ScriptIndex(name, script, args, option)
                     break;
                 case 'MULTI_LINE':
                     this.CreateMultiLine(hqChart, windowIndex, item, i);
+                    break;
+                case 'MULTI_BAR':
+                    this.CreateMultiBar(hqChart, windowIndex, item, i);
                     break;
                 }
             }
@@ -13050,6 +13067,16 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType == 'MULTI_LINE') 
+                {
+                    drawItem.Text = draw.Text;
+                    drawItem.Name = draw.Name;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingMultiLine(draw.DrawData, date, time, hqChart);
+                    outVarItem.Draw = drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType == 'MULTI_BAR') 
                 {
                     drawItem.Text = draw.Text;
                     drawItem.Name = draw.Name;
