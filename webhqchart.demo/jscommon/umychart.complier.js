@@ -10734,6 +10734,19 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateMultiBar=function(hqChart,windowIndex,varItem,i)
+    {
+        let chart=new ChartMultiBar();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Bars=varItem.Draw.DrawData; 
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateMultiText=function(hqChart,windowIndex,varItem,i)
     {
         let chart=new ChartMultiText();
@@ -10924,6 +10937,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'MULTI_LINE':
                         this.CreateMultiLine(hqChart,windowIndex,item,i);
+                        break;
+                    case 'MULTI_BAR':
+                        this.CreateMultiBar(hqChart,windowIndex,item,i);
                         break;
                     case 'MULTI_TEXT':
                         this.CreateMultiText(hqChart,windowIndex,item,i);
@@ -11968,6 +11984,16 @@ function APIScriptIndex(name,script,args,option)
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType=='MULTI_LINE')
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingMultiLine(draw.DrawData,date,time,hqChart);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=='MULTI_BAR')
                 {
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;

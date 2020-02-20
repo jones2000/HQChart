@@ -12629,7 +12629,172 @@ function ChartTextLine()
     }
 }
 
-// 线段集合  支持横屏
+// 柱子集合  支持横屏
+function ChartMultiBar()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    
+    this.Bars=[];   // [ {Point:[ {Index, Value, Value2 }, ], Color:, Width: , Type: 0 实心 1 空心 }, ] 
+    this.IsHScreen=false;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Data || this.Data.length<=0) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var xPointCount=this.ChartFrame.XPointCount;
+        var offset=this.Data.DataOffset;
+        var dataWidth=this.ChartFrame.DataWidth;
+        var pixelRatio=GetDevicePixelRatio();
+
+        var drawBars=[];
+        for(var i in this.Bars)
+        {
+            var item=this.Bars[i];
+            var drawPoints={ Point:[], Color:item.Color, Width:dataWidth, Type:0 };
+            if (item.Type>0) drawPoints.Type=item.Type;
+            if (item.Width>0) 
+            {
+                drawPoints.Width=item.Width*pixelRatio;
+                if (drawPoints.Width>dataWidth) drawPoints.Width=dataWidth;
+            }
+            else
+            {
+                if(drawPoints.Width<4) drawPoints.Width=1*pixelRatio;
+            }
+
+            for(var j in item.Point)
+            {
+                var point=item.Point[j];
+                if (!IFrameSplitOperator.IsNumber(point.Index)) continue;
+
+                var index=point.Index-offset;
+                if (index>=0 && index<xPointCount)
+                {
+                    var x=this.ChartFrame.GetXFromIndex(index);
+                    var y=this.ChartFrame.GetYFromData(point.Value);
+                    var y2=this.ChartFrame.GetYFromData(point.Value2);
+                    drawPoints.Point.push({X:x, Y:y, Y2:y2});
+                }
+            }
+
+            if (drawPoints.Point.length>0) drawBars.push(drawPoints)
+        }
+
+        for(var i in drawBars)
+        {
+            var item=drawBars[i];
+            if (item.Width>=4) 
+            {
+                if (item.Type==1) this.DrawHollowBar(item);
+                else this.DrawFillBar(item);
+            }
+            else 
+            {
+                this.DrawLineBar(item);
+            }
+        }
+    }
+
+    this.DrawLineBar=function(bar)
+    {
+        this.Canvas.strokeStyle=bar.Color;
+        var backupLineWidth=this.Canvas.lineWidth;
+        this.Canvas.lineWidth=bar.Width;
+        for(var i in bar.Point)
+        {
+            var item=bar.Point[i];
+
+            this.Canvas.beginPath();
+            if (this.IsHScreen)
+            {
+                this.Canvas.moveTo(ToFixedPoint(item.Y),ToFixedPoint(item.X));
+                this.Canvas.lineTo(ToFixedPoint(item.Y2),ToFixedPoint(item.X));
+            }
+            else
+            {
+                this.Canvas.moveTo(ToFixedPoint(item.X),ToFixedPoint(item.Y));
+                this.Canvas.lineTo(ToFixedPoint(item.X),ToFixedPoint(item.Y2));
+            }
+            
+            this.Canvas.stroke();
+        }
+
+        this.Canvas.lineWidth=backupLineWidth;
+    }
+
+    this.DrawFillBar=function(bar)
+    {
+        this.Canvas.fillStyle=bar.Color;
+        for(var i in bar.Point)
+        {
+            var item=bar.Point[i];
+            var x=item.X-(bar.Width/2);
+            var y=Math.min(item.Y,item.Y2);
+            var barWidth=bar.Width;
+            var barHeight=Math.abs(item.Y-item.Y2);
+            if (this.IsHScreen)
+                this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(x),ToFixedRect(barHeight),ToFixedRect(barWidth));
+            else 
+                this.Canvas.fillRect(ToFixedRect(x),ToFixedRect(y),ToFixedRect(barWidth),ToFixedRect(barHeight));
+        }
+    }
+
+    this.DrawHollowBar=function(bar)    //空心柱子
+    {
+        this.Canvas.strokeStyle=bar.Color;
+        var backupLineWidth=1;
+        for(var i in bar.Point)
+        {
+            var item=bar.Point[i];
+            var x=item.X-(bar.Width/2);
+            var y=Math.min(item.Y,item.Y2);
+            var barWidth=bar.Width;
+            var barHeight=Math.abs(item.Y-item.Y2);
+            this.Canvas.beginPath();
+            if (this.IsHScreen)
+                this.Canvas.rect(ToFixedPoint(y),ToFixedPoint(x),ToFixedRect(barHeight),ToFixedRect(barWidth));
+            else
+                this.Canvas.rect(ToFixedPoint(x),ToFixedPoint(y),ToFixedRect(barWidth),ToFixedRect(barHeight));
+
+            this.Canvas.stroke();
+        }
+
+        this.Canvas.lineWidth=backupLineWidth;
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        var end=start+xPointCount;
+        for(var i in this.Bars)
+        {
+            var item=this.Bars[i];
+            for(var j in item.Point)
+            {
+                var point=item.Point[j];
+                if (point.Index>=start && point.Index<end)
+                {
+                    var minValue=Math.min(point.Value,point.Value2);
+                    var maxValue=Math.max(point.Value,point.Value2);
+                    if (range.Max==null) range.Max=maxValue;
+                    else if (range.Max<maxValue) range.Max=maxValue;
+                    if (range.Min==null) range.Min=minValue;
+                    else if (range.Min>minValue) range.Min=minValue;
+                }
+            }
+        }
+
+        return range;
+    }
+}
+
+// 线段集合 支持横屏
 function ChartMultiLine()
 {
     this.newMethod=IChartPainting;   //派生
@@ -37616,6 +37781,59 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetForeignExchangeDecimal(upperSymbol);
 
     return defaultfloatPrecision;
+}
+
+//把不连续的分时数据转成连续的分时数据
+function GenerateMinuteStockJsonData(data)
+{
+    var stock =
+    { 
+        symbol:data.symbol, name:data.name,time:data.time, date:data.date,
+        price:data.price, open:data.open, yclose:data.yclose, high:data.high, low:data.low, vol:data.vol,amount:data.amount,
+        minute:[]
+    };
+
+    var mapMinute=new Map();
+    for(var i in data.minute)
+    {
+        var item=data.minute[i];
+        mapMinute.set(item.time,item);
+    }
+
+    var timeData=g_MinuteTimeStringData.GetTimeData(stock.symbol);
+    for(var i in timeData)  //根据交易时间产生数据
+    {
+        var time=timeData[i];
+        var minuteItem={ time:time, vaild:false };
+        if (mapMinute.has(time))
+        {
+            var find=mapMinute.get(time);
+            minuteItem.vaild=true;
+            minuteItem.price=find.price;
+            minuteItem.open=find.open;
+            minuteItem.high=find.high;
+            minuteItem.low=find.low;
+            minuteItem.avprice=find.avprice;
+            minuteItem.vol=find.vol;
+            minuteItem.amount=find.amount;
+            if (IFrameSplitOperator.IsNumber(find.increase)) minuteItem.increase=find.increase;
+            if (IFrameSplitOperator.IsNumber(find.risefall)) minuteItem.risefall=find.risefall;
+            if (IFrameSplitOperator.IsNumber(find.position)) minuteItem.position=find.position;
+        }
+        stock.minute.push(minuteItem);
+    }
+
+    var vaildCount=0;
+    for(var i=stock.minute.length-1;i>=0;--i)
+    {
+        vaildCount=i+1;
+        var item=stock.minute[i];
+        if (item.vaild==true) break;
+    }
+
+    stock.minute=stock.minute.slice(0,vaildCount);  //去掉最后无用的数据
+
+    return stock;
 }
 
 function GetLocalTime(i)    //得到标准时区的时间的函数
