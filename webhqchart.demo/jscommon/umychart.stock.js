@@ -1783,6 +1783,8 @@ function JSStock()
     
     this.RequestData=function()
     {
+        this.ClearTimer();
+        
         var arySymbol=new Array();  //股票
         var aryIndex=new Array();   //指数
         var aryHeat=new Array();    //热度
@@ -2509,9 +2511,18 @@ function JSStock()
         this.AutoUpdate();
     }
 
+    this.ClearTimer=function()
+    {
+        if (this.Timeout) 
+        {
+            clearTimeout(this.Timeout);   //清空定时器
+            this.Timeout=null;
+        }
+    }
+
     this.AutoUpdate=function()
     {
-        if (this.Timeout) clearTimeout(this.Timeout);   //清空定时器
+        this.ClearTimer();
         if (!this.IsAutoUpdate) return;
 
         var self=this;

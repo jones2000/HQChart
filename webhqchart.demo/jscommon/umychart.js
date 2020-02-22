@@ -2670,6 +2670,7 @@ function JSChartContainer(uielement)
             format.LanguageID=this.LanguageID;
             if (!format.Operator()) return;
             var textHeight=format.LineCount*25; //每行的行高25
+            if (format.Height>0) textHeight=format.Height;  //新版本高度有格式化类计算完成
             var width=format.Width;
 
             this.Tooltip.style.width = width+"px";
@@ -17529,7 +17530,8 @@ function HistoryDataStringFormat()
     this.AmountColor=g_JSChartResource.DefaultTextColor;
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.LineCount=0;    //一共几行
-    this.Width=157;
+    this.Width=157;     //宽度
+    this.Height=25*5;     //高度
 
     this.Operator=function()
     {
@@ -17590,6 +17592,8 @@ function HistoryDataStringFormat()
         }
 
         this.Text=strText;
+
+        this.Height=this.LineCount*25;
         return true;
     }
 
