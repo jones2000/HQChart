@@ -178,7 +178,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 46. [HQChart使用教程53-log日志输出控制](https://blog.csdn.net/jones2000/article/details/104122774) <br>
 47. [HQChart使用教程54- K线缩放控制按钮接口说明](https://blog.csdn.net/jones2000/article/details/104346016) <br>
 48. [HQChart使用教程55- 自定义PC端K线图Tooltip](https://blog.csdn.net/jones2000/article/details/104443471) <br>
-
+49. [HQChart使用教程56-内置品种对应后缀列表说明](https://blog.csdn.net/jones2000/article/details/104457569) <br>
 
 ## 小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
