@@ -7703,7 +7703,14 @@ function ChartData()
         for(var i=0;i<data.length;++i)  //查找比原始数据起始位置大的数据位置
         {
             var item=data[i];
-            if (item.Date>=sourceFirstItem.Date && item.Time>=sourceFirstItem.Time)
+            if (item.Date>sourceFirstItem.Date)
+            {
+                firstItemID=i;
+                firstItem=item;
+                break;
+            }
+
+            if (item.Date==sourceFirstItem.Date && item.Time>=sourceFirstItem.Time)
             {
                 firstItemID=i;
                 firstItem=item;
@@ -23626,7 +23633,7 @@ function KLineChartContainer(uielement)
         }
         
         this.ChartPaint[0].Data.DataOffset=index;
-        this.CursorIndex=0.6;
+        this.CursorIndex=0;
     }
 
     //创建指定窗口指标
