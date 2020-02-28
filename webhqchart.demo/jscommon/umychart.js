@@ -4694,8 +4694,9 @@ function KLineFrame()
     this.CloseIndex=true;       //是否显示'关闭指标窗口'菜单
     this.OverlayIndex=false;    //是否显示叠加指标
 
-    this.ModifyIndexEvent;  //改参数 点击事件
+    this.ModifyIndexEvent;   //改参数 点击事件
     this.ChangeIndexEvent;   //换指标 点击事件
+    this.ToolbarRect=null;   //保存工具条的位置
 
     this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
 
@@ -4725,7 +4726,8 @@ function KLineFrame()
 
         if (!this.ModifyIndex && !this.ChangeIndex && !this.OverlayIndex)
         {
-            divToolbar.style.display='none';
+            if (divToolbar.style.display!='none')
+                divToolbar.style.display='none';
             return;
         }
 
@@ -4739,6 +4741,18 @@ function KLineFrame()
         var toolbarHeight=this.ChartBorder.GetTitleHeight();
         var left=chartWidth-(this.ChartBorder.Right/pixelTatio)-toolbarWidth;
         var top=this.ChartBorder.GetTop()/pixelTatio;
+
+        if (this.ToolbarRect)
+        {
+            //尺寸变动移动才重新设置DOM
+            if (this.ToolbarRect.Left==left && this.ToolbarRect.Top==top && 
+                this.ToolbarRect.Width==toolbarWidth && this.ToolbarRect.Height==toolbarHeight/pixelTatio)
+            {
+                return;
+            }
+        }
+
+        this.ToolbarRect={ Left:left, Top:top, Width:toolbarWidth, Height:toolbarHeight/pixelTatio };
 
         const modifyButton=`<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='调整指标参数'></span>`;
         const changeButton=`<span class='index_change icon iconfont icon-change_index' id='changeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='切换指标'></span>`;
