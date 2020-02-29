@@ -39171,6 +39171,10 @@ function KLineSelectRightMenu(divElement)
 
         //判断是否重复创建
         if (!_self.ID) _self.Create();
+        //判断下如果DOM没了需要重新创建
+        var divIdName='topMenu_'+_self.ID;
+        var divDom=document.getElementById(divIdName);
+        if (!divDom) _self.Create();
 
         var $topMenu = $("#topMenu_"+_self.ID),
             topWidth = $topMenu.outerWidth(),
