@@ -860,7 +860,7 @@ function Node()
             return;
         }
 
-        let setSymbolDataName=new Set(['CLOSE','C','VOL','V','OPEN','O','HIGH','H','LOW','L','AMOUNT']);
+        let setSymbolDataName=new Set(['CLOSE','C','VOL','V','OPEN','O','HIGH','H','LOW','L','AMOUNT','AMO','VOLINSTK']);
         if (setSymbolDataName.has(varName)) 
         {
             this.IsNeedSymbolData=true;
@@ -7186,7 +7186,10 @@ function JSSymbolData(ast,option,jsExecute)
             case 'L':
                 return this.Data.GetLow();
             case 'AMOUNT':
+            case 'AMO':
                 return this.Data.GetAmount();
+            case 'VOLINSTK':
+                return this.Data.Position();
         }
     }
 
@@ -9152,7 +9155,9 @@ function JSExecute(ast,option)
     this.ConstVarTable=new Map([
         //个股数据
         ['CLOSE',null],['VOL',null],['OPEN',null],['HIGH',null],['LOW',null],['AMOUNT',null],
-        ['C',null],['V',null],['O',null],['H',null],['L',null],['VOLR',null],
+        ['C',null],['V',null],['O',null],['H',null],['L',null],['AMO',null], 
+        ['VOLR',null],      //量比
+        ['VOLINSTK',null],  //持仓量
 
         //日期类
         ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],
@@ -9309,6 +9314,8 @@ function JSExecute(ast,option)
             case 'LOW':
             case 'L':
             case 'AMOUNT':
+            case 'AMO':
+            case 'VOLINSTK':
                 return this.SymbolData.GetSymbolCacheData(name);
             case 'VOLR':
                 return this.SymbolData.GetVolRateCacheData(node);
