@@ -7189,7 +7189,7 @@ function JSSymbolData(ast,option,jsExecute)
             case 'AMO':
                 return this.Data.GetAmount();
             case 'VOLINSTK':
-                return this.Data.Position();
+                return this.Data.GetPosition();
         }
     }
 
@@ -9474,6 +9474,7 @@ function JSExecute(ast,option)
                     let isShow=true;
                     let isExData=false;
                     let isDotLine=false;
+                    let isOverlayLine=false;    //叠加线
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -9501,6 +9502,7 @@ function JSExecute(ast,option)
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
                             else if (value.indexOf('NODRAW')==0) isShow=false;
                             else if (value.indexOf('EXDATA')==0) isExData=true; //扩展数据, 不显示再图形里面
+                            else if (value.indexOf('LINEOVERLAY')==0) isOverlayLine=true;
                         }
                         else if(itemExpression.Type==Syntax.Literal)    //常量
                         {
@@ -9565,6 +9567,7 @@ function JSExecute(ast,option)
                         if (isShow == false) value.IsShow = false;
                         if (isExData==true) value.IsExData = true;
                         if (isDotLine==true) value.IsDotLine=true;
+                        if (isOverlayLine==true) value.IsOverlayLine=true;
                         this.OutVarTable.push(value);
                     }
                     else if (draw)  //画图函数
@@ -9589,6 +9592,7 @@ function JSExecute(ast,option)
                         if (isShow==false) value.IsShow=false;
                         if (isExData==true) value.IsExData = true;
                         if (isDotLine==true) value.IsDotLine=true;
+                        if (isOverlayLine==true) value.IsOverlayLine=true;
                         this.OutVarTable.push(value);
                     }
                 }
@@ -10370,6 +10374,33 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(line);
     }
 
+    this.CreateOverlayLine=function(hqChart,windowIndex,varItem,id)
+    {
+        let line=new ChartSubLine();
+        line.Canvas=hqChart.Canvas;
+        line.DrawType=1;
+        line.Name=varItem.Name;
+        line.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        line.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Color) line.Color=this.GetColor(varItem.Color);
+        else line.Color=this.GetDefaultColor(id);
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) line.LineWidth=width;
+        }
+
+        //if (varItem.IsDotLine) line.IsDotLine=true; //虚线
+        if (varItem.IsShow==false) line.IsShow=false;
+        
+        let titleIndex=windowIndex+1;
+        line.Data.Data=varItem.Data;
+        hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
+
+        hqChart.ChartPaint.push(line);
+    }
+
     //创建柱子
     this.CreateBar=function(hqChart,windowIndex,varItem,id)
     {
@@ -10892,7 +10923,8 @@ function ScriptIndex(name,script,args,option)
 
             if (item.Type==0)  
             {
-                this.CreateLine(hqChart,windowIndex,item,i);
+                if (item.IsOverlayLine) this.CreateOverlayLine(hqChart,windowIndex,item,i);
+                else this.CreateLine(hqChart,windowIndex,item,i);
             }
             else if (item.Type==1)
             {

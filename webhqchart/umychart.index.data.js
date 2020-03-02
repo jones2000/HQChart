@@ -99,6 +99,8 @@ function JSIndexScript()
             ['平均K线',this.HeikinAshi], 
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
+            ['CJL2', this.CJL],  //期货持仓量
+
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
             ['涨跌趋势', this.UpDownAnalyze],['北上资金', this.HK2SHSZ],['股东人数', this.ShareHolder],
@@ -3295,6 +3297,20 @@ JSIndexScript.prototype.EMPTY = function ()
         Args: [],
         Script: //脚本
             'VAR2:=C;'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CJL = function () 
+{
+    let data =
+    {
+        Name: 'CJL', Description: '期货持仓量', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+"成交量:VOL,VOLSTICK;\n\
+持仓量:VOLINSTK,LINEOVERLAY;"
     };
 
     return data;

@@ -9952,7 +9952,7 @@ function ChartLine()
             if (value==null) continue;
 
             var x=this.ChartFrame.GetXFromIndex(j);
-            var y=this.ChartFrame.GetYFromData(value);
+            var y=this.GetYFromData(value);
 
             if (x>chartright) break;
 
@@ -10012,7 +10012,7 @@ function ChartLine()
             }
 
             var x=this.ChartFrame.GetXFromIndex(j);
-            var y=this.ChartFrame.GetYFromData(value);
+            var y=this.GetYFromData(value);
 
             if (x>chartright) break;
 
@@ -10035,16 +10035,21 @@ function ChartLine()
         if (drawCount>0) this.Canvas.stroke();
         this.Canvas.restore();
     }
+
+    this.GetYFromData=function(value)
+    {
+        return this.ChartFrame.GetYFromData(value);
+    }
 }
 
 //子线段
 function ChartSubLine()
 {
-    this.newMethod=IChartPainting;   //派生
+    this.newMethod=ChartLine;       //派生
     this.newMethod();
     delete this.newMethod;
 
-    this.ClassName='ChartLine';    //类名
+    this.ClassName='ChartLine';     //类名
     this.Color="rgb(255,193,37)";   //线段颜色
     this.LineWidth;                 //线段宽度
     this.DrawType=0;                //画图方式  0=无效数平滑  1=无效数不画断开
@@ -10063,6 +10068,8 @@ function ChartSubLine()
         {
             case 0:
                 return this.DrawLine();
+            case 1: 
+                return this.DrawStraightLine();
         }
     }
 
@@ -10094,50 +10101,6 @@ function ChartSubLine()
             if (this.SubFrame.Min==null || this.SubFrame.Min>value) this.SubFrame.Min=value;
             if (this.SubFrame.Max==null || this.SubFrame.Max<value) this.SubFrame.Max=value;
         }
-    }
-
-    this.DrawLine=function()
-    {
-        var bHScreen=(this.ChartFrame.IsHScreen===true);
-        var dataWidth=this.ChartFrame.DataWidth;
-        var distanceWidth=this.ChartFrame.DistanceWidth;
-        var chartright=this.ChartBorder.GetRight();
-        if (bHScreen) chartright=this.ChartBorder.GetBottom();
-        var xPointCount=this.ChartFrame.XPointCount;
-        
-        this.Canvas.save();
-        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
-        var bFirstPoint=true;
-        var drawCount=0;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
-        {
-            var value=this.Data.Data[i];
-            if (value==null) continue;
-
-            var x=this.ChartFrame.GetXFromIndex(j);
-            var y=this.GetYFromData(value);
-
-            if (x>chartright) break;
-
-            if (bFirstPoint)
-            {
-                this.Canvas.strokeStyle=this.Color;
-                this.Canvas.beginPath();
-                if (bHScreen) this.Canvas.moveTo(y,x);  //横屏坐标轴对调
-                else this.Canvas.moveTo(x,y);
-                bFirstPoint=false;
-            }
-            else
-            {
-                if (bHScreen) this.Canvas.lineTo(y,x);
-                else this.Canvas.lineTo(x,y);
-            }
-
-            ++drawCount;
-        }
-
-        if (drawCount>0) this.Canvas.stroke();
-        this.Canvas.restore();
     }
 
     this.GetMaxMin=function()   //数据不参与坐标轴最大最小值计算
@@ -26631,7 +26594,9 @@ function KLineChartContainer(uielement)
     {
         if (!this.Symbol) return;
         if (this.FlowCapitalReady==true) return;
-        if (MARKET_SUFFIX_NAME.IsBIT(this.Symbol)) //数字货币不需要下载流通股本
+
+        var upperSymbol=this.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol) || MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) //数字货币, 期货 不需要下载流通股本
         {
             JSConsole.Chart.Log(`[KLineChartContainer::RequestFlowCapitalData] symbol=${this.Symbol} not need download data.`);
             this.FlowCapitalReady=true;
