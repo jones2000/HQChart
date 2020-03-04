@@ -45,6 +45,7 @@ import {
     JSCommonChartPaint_IChartPainting as IChartPainting, 
     JSCommonChartPaint_ChartSingleText as ChartSingleText, 
     JSCommonChartPaint_ChartLine as ChartLine,
+    JSCommonChartPaint_ChartSubLine as ChartSubLine,
     JSCommonChartPaint_ChartPointDot as ChartPointDot, 
     JSCommonChartPaint_ChartStick as ChartStick,
     JSCommonChartPaint_ChartLineStick as ChartLineStick,
@@ -8038,7 +8039,11 @@ function KLineChartContainer(uielement)
     {
         if (this.IsOnTouch == true) return;   //正在操作中不更新数据
         var data=recvdata.data;
-        if (!data.stock || !data.stock[0] || this.Symbol != data.stock[0].symbol) return;
+        if (!data || !data.stock || !data.stock[0] || this.Symbol != data.stock[0].symbol) 
+        {
+            console.log('[KLineChartContainer::RecvRealtimeData] recvdata error', recvdata);
+            return;
+        }
         
         var realtimeData = KLineChartContainer.JsonDataToRealtimeData(data);
         var item = this.SourceData.Data[this.SourceData.Data.length - 1];   //最新的一条数据
@@ -9529,30 +9534,38 @@ function KLineChartContainer(uielement)
 }
 
 //API 返回数据 转化为array[]
-KLineChartContainer.JsonDataToHistoryData = function (data) {
-  var list = data.data;
-  var aryDayData = new Array();
-  if (!list) return aryDayData;
+KLineChartContainer.JsonDataToHistoryData = function (data) 
+{
+    var list = data.data;
+    var aryDayData = new Array();
+    if (!list) return aryDayData;
 
-  var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7;
-  for (var i = 0; i < list.length; ++i) {
-    var item = new HistoryData();
+    var upperSymbol = null;
+    if (data.symbol) upperSymbol = data.symbol.toUpperCase();
+    var isFutures = false;    //是否是期货
+    isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
 
-    item.Date = list[i][date];
-    item.Open = list[i][open];
-    item.YClose = list[i][yclose];
-    item.Close = list[i][close];
-    item.High = list[i][high];
-    item.Low = list[i][low];
-    item.Vol = list[i][vol];    //原始单位股
-    item.Amount = list[i][amount];
+    var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, position = 8;
+    for (var i = 0; i < list.length; ++i) 
+    {
+        var item = new HistoryData();
+        var jsData = list[i];
+        item.Date = jsData[date];
+        item.Open = jsData[open];
+        item.YClose = jsData[yclose];
+        item.Close = jsData[close];
+        item.High = jsData[high];
+        item.Low = jsData[low];
+        item.Vol = jsData[vol];    //原始单位股
+        item.Amount = jsData[amount];
+        if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position = jsData[position];//期货持仓
 
-    if (isNaN(item.Open) || item.Open <= 0) continue; //停牌的数据剔除
+        if (isNaN(item.Open) || item.Open <= 0) continue; //停牌的数据剔除
 
-    aryDayData.push(item);
-  }
+        aryDayData.push(item);
+    }
 
-  return aryDayData;
+    return aryDayData;
 }
 
 KLineChartContainer.JsonDataToRealtimeData = function (data) 
@@ -9571,6 +9584,7 @@ KLineChartContainer.JsonDataToRealtimeData = function (data)
     else data.stock[0].vol;
     item.Amount = data.stock[0].amount;
     item.Close = data.stock[0].price;
+    if (IFrameSplitOperator.IsNumber(data.stock[0].position)) item.Position = data.stock[0].position; //持仓量
     return item;
 }
 
@@ -9601,6 +9615,7 @@ KLineChartContainer.JsonDataToMinuteRealtimeData = function (data)
         else item.Date = date;
         item.Time = jsData.time;
         item.YClose = preClose;
+        if (IFrameSplitOperator.IsNumber(jsData.position)) item.Position = jsData.position; //持仓量
 
         if (!item.Close) //当前没有价格 使用上一个价格填充
         {
@@ -9630,9 +9645,12 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
     if (data.symbol) upperSymbol = data.symbol.toUpperCase();
     var isSHSZ = false;
     if (upperSymbol) isSHSZ = MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+    var isFutures = false;    //是否是期货
+    if (upperSymbol) isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+
     var list = data.data;
     var aryDayData = new Array();
-    var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8;
+    var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position = 9;;
     for (var i = 0; i < list.length; ++i) 
     {
         var item = new HistoryData();
@@ -9646,6 +9664,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
         else item.Vol = list[i][vol];    //原始单位股
         item.Amount = list[i][amount];
         item.Time = list[i][time];
+        if (IFrameSplitOperator.IsNumber(list[i][position])) item.Position = list[i][position]; //期货持仓
 
         aryDayData.push(item);
     }
@@ -12320,6 +12339,32 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(line);
     }
 
+    this.CreateOverlayLine = function (hqChart, windowIndex, varItem, id) 
+    {
+        let line = new ChartSubLine();
+        line.Canvas = hqChart.Canvas;
+        line.DrawType = 1;  //无效数不画
+        line.Name = varItem.Name;
+        line.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        line.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Color) line.Color = this.GetColor(varItem.Color);
+        else line.Color = this.GetDefaultColor(id);
+
+        if (varItem.LineWidth) {
+            let width = parseInt(varItem.LineWidth.replace("LINETHICK", ""));
+            if (!isNaN(width) && width > 0) line.LineWidth = width;
+        }
+
+        if (varItem.IsDotLine) line.IsDotLine = true; //虚线
+        if (varItem.IsShow == false) line.IsShow = false;
+
+        let titleIndex = windowIndex + 1;
+        line.Data.Data = varItem.Data;
+        hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(line.Data, varItem.Name, line.Color);
+
+        hqChart.ChartPaint.push(line);
+    }
+
     //创建柱子
     this.CreateBar = function (hqChart, windowIndex, varItem, id) 
     {
@@ -12710,7 +12755,8 @@ function ScriptIndex(name, script, args, option)
 
             if (item.Type == 0) 
             {
-                this.CreateLine(hqChart, windowIndex, item, i);
+                if (item.IsOverlayLine) this.CreateOverlayLine(hqChart, windowIndex, item, i);
+                else this.CreateLine(hqChart, windowIndex, item, i);
             }
             else if (item.Type == 1) 
             {

@@ -97,6 +97,8 @@ function JSIndexScript()
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
             ['操盘BS点', this.FXG_BSPoint],
 
+            ['CJL2', this.CJL],  //期货持仓量
+
             ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2], ['Zealink-持仓信号', this.Zealink_Index3],
             ['Zealink-增减持', this.Zealink_Index4], ['Zealink-大宗交易', this.Zealink_Index5], ['Zealink-信托持股', this.Zealink_Index6],
             ['Zealink-官网新闻', this.Zealink_Index7], ['Zealink-高管要闻', this.Zealink_Index8], ['Zealink-股权质押', this.Zealink_Index9],
@@ -2932,7 +2934,7 @@ JSIndexScript.prototype.TEST = function ()
                 //'T1:INDEXC;'+
                 //'T2:=HYBLOCK;'
 
-                'DRAWTEXT(CLOSE>OPEN,LOW,"⬆"),COLORRED;'
+                '成交量:VOL,VOLSTICK;T2:C,LINEOVERLAY;'
         };
 
     return data;
@@ -3200,6 +3202,20 @@ JSIndexScript.prototype.Zealink_Index9 = function ()
         Args: [],
         Script: //脚本
             '次数:NEWS(10);'
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CJL = function () 
+{
+    let data =
+    {
+        Name: 'CJL', Description: '期货持仓量', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            "成交量:VOL,VOLSTICK;\n\
+持仓量:VOLINSTK,LINEOVERLAY;"
     };
 
     return data;

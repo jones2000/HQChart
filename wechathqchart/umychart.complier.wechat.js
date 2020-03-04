@@ -6096,7 +6096,10 @@ function JSSymbolData(ast,option,jsExecute)
             case 'L':
                 return this.Data.GetLow();
             case 'AMOUNT':
+            case 'AMO':
                 return this.Data.GetAmount();
+            case 'VOLINSTK':
+                return this.Data.GetPosition();
         }
     }
 
@@ -7367,7 +7370,7 @@ function JSExecute(ast,option)
     //脚本自动变量表, 只读
     this.ConstVarTable=new Map([
         //个股数据
-        ['CLOSE',null],['VOL',null],['OPEN',null],['HIGH',null],['LOW',null],['AMOUNT',null],
+        ['CLOSE', null], ['VOL', null], ['OPEN', null], ['HIGH', null], ['LOW', null], ['AMOUNT', null], ['AMO', null], ['VOLINSTK',null],
         ['C', null], ['V', null], ['O', null], ['H', null], ['L', null], ['VOLR', null],
 
         //日期类
@@ -7499,6 +7502,7 @@ function JSExecute(ast,option)
             case 'LOW':
             case 'L':
             case 'AMOUNT':
+            case 'VOLINSTK':
                 return this.SymbolData.GetSymbolCacheData(name);
             case 'VOLR':
                 return this.SymbolData.GetVolRateCacheData(node);
@@ -7645,6 +7649,7 @@ function JSExecute(ast,option)
                     let isShow = true;
                     let isExData = false;
                     let isDotLine = false;
+                    let isOverlayLine = false;    //叠加线
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -7672,6 +7677,7 @@ function JSExecute(ast,option)
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
                             else if (value.indexOf('NODRAW') == 0) isShow = false;
                             else if (value.indexOf('EXDATA') == 0) isExData = true; //扩展数据, 不显示再图形里面
+                            else if (value.indexOf('LINEOVERLAY') == 0) isOverlayLine = true;
                         }
                         else if (itemExpression.Type == Syntax.Literal)    //常量
                         {
@@ -7733,6 +7739,7 @@ function JSExecute(ast,option)
                         if (isShow == false) value.IsShow = false;
                         if (isExData == true) value.IsExData = true;
                         if (isDotLine == true) value.IsDotLine = true;
+                        if (isOverlayLine == true) value.IsOverlayLine = true;
                         this.OutVarTable.push(value);
                     }
                     else if (draw)
@@ -7757,6 +7764,7 @@ function JSExecute(ast,option)
                         if (isShow == false) value.IsShow = false;
                         if (isExData == true) value.IsExData = true;
                         if (isDotLine == true) value.IsDotLine = true;
+                        if (isOverlayLine == true) value.IsOverlayLine = true;
                         this.OutVarTable.push(value);
                     }
                 }

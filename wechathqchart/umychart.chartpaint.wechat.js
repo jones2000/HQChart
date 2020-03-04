@@ -1,5 +1,4 @@
 /*
-    /*
     copyright (c) 2018 jones
 
     http://www.apache.org/licenses/LICENSE-2.0
@@ -310,7 +309,7 @@ function ChartLine()
             if (value == null) continue;
 
             var x = this.ChartFrame.GetXFromIndex(j);
-            var y = this.ChartFrame.GetYFromData(value);
+            var y = this.GetYFromData(value);
 
             if (x > chartright) break;
 
@@ -364,7 +363,7 @@ function ChartLine()
             }
 
             var x = this.ChartFrame.GetXFromIndex(j);
-            var y = this.ChartFrame.GetYFromData(value);
+            var y = this.GetYFromData(value);
 
             if (x > chartright) break;
 
@@ -386,6 +385,92 @@ function ChartLine()
 
         if (drawCount > 0) this.Canvas.stroke();
         this.Canvas.restore();
+    }
+
+    this.GetYFromData = function (value) 
+    {
+        return this.ChartFrame.GetYFromData(value);
+    }
+}
+
+//子线段
+function ChartSubLine() 
+{
+    this.newMethod = ChartLine;       //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName = 'ChartSubLine';     //类名
+    this.Color = "rgb(255,193,37)";   //线段颜色
+    this.LineWidth;                 //线段宽度
+    this.DrawType = 0;                //画图方式  0=无效数平滑  1=无效数不画断开
+    this.IsDotLine = false;           //虚线
+
+    this.SubFrame = { Max: null, Min: null };
+
+    this.Draw = function () 
+    {
+        if (!this.IsShow) return;
+        if (!this.Data || !this.Data.Data) return;
+
+        this.CalculateDataMaxMin();
+
+        switch (this.DrawType) 
+        {
+            case 0:
+                return this.DrawLine();
+            case 1:
+                return this.DrawStraightLine();
+        }
+    }
+
+    this.GetYFromData = function (value) 
+    {
+        var bHScreen = (this.ChartFrame.IsHScreen === true);
+
+        if (bHScreen)
+        {
+            if (value <= this.SubFrame.Min) return this.ChartBorder.GetLeftEx();
+            if (value >= this.SubFrame.Max) return this.ChartBorder.GetRightEx();
+
+            var width = this.ChartBorder.GetWidthEx() * (value - this.SubFrame.Min) / (this.SubFrame.Max - this.SubFrame.Min);
+            return this.ChartBorder.GetLeftEx() + width;
+        }
+        else
+        {
+            if (value <= this.SubFrame.Min) return this.ChartBorder.GetBottomEx();
+            if (value >= this.SubFrame.Max) return this.ChartBorder.GetTopEx();
+
+            var height = this.ChartBorder.GetHeightEx() * (value - this.SubFrame.Min) / (this.SubFrame.Max - this.SubFrame.Min);
+            return this.ChartBorder.GetBottomEx() - height;
+        }        
+    }
+
+    this.CalculateDataMaxMin = function () 
+    {
+        this.SubFrame = { Max: null, Min: null };
+
+        var bHScreen = (this.ChartFrame.IsHScreen === true);
+        var chartright = this.ChartBorder.GetRight();
+        if (bHScreen) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+
+            var x = this.ChartFrame.GetXFromIndex(j);
+            if (x > chartright) break;
+
+            if (this.SubFrame.Min == null || this.SubFrame.Min > value) this.SubFrame.Min = value;
+            if (this.SubFrame.Max == null || this.SubFrame.Max < value) this.SubFrame.Max = value;
+        }
+    }
+
+    this.GetMaxMin = function ()   //数据不参与坐标轴最大最小值计算
+    {
+        var range = { Min: null, Max: null };
+        return range;
     }
 }
 
@@ -3100,6 +3185,7 @@ module.exports =
     {
         IChartPaintin: IChartPainting,
         ChartLine: ChartLine,
+        ChartSubLine: ChartSubLine,
         ChartSingleText: ChartSingleText,
         ChartPointDot: ChartPointDot,
         ChartStick: ChartStick,
@@ -3124,6 +3210,7 @@ module.exports =
     //单个类导出
     JSCommonChartPaint_IChartPainting: IChartPainting,
     JSCommonChartPaint_ChartLine: ChartLine,
+    JSCommonChartPaint_ChartSubLine: ChartSubLine,
     JSCommonChartPaint_ChartSingleText: ChartSingleText,
     JSCommonChartPaint_ChartPointDot: ChartPointDot,
     JSCommonChartPaint_ChartStick: ChartStick,

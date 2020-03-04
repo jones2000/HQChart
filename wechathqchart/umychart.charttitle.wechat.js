@@ -89,6 +89,7 @@ function DynamicKLineTitlePainting()
     this.NameColor = g_JSChartResource.DefaultTextColor;
 
     this.Symbol;
+    this.UpperSymbol;
     this.Name;
     this.InfoData;
     this.InfoTextHeight = 15;
@@ -183,8 +184,24 @@ function DynamicKLineTitlePainting()
         return name;
     }
 
+    this.GetRightName = function (rightID, periodID)
+    {
+        //分钟K线没有复权
+        if (ChartData.IsMinutePeriod(periodID, true) || ChartData.IsSecondPeriod(periodID))
+            return null;
+
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.UpperSymbol))   //A股有复权
+        {
+            var rightName = RIGHT_NAME[rightID];
+            return rightName
+        }
+
+        return null;
+    }
+
     this.DrawTitle = function () 
     {
+        this.UpperSymbol=this.Symbol ? this.Symbol.toUpperCase():'';
         this.SendUpdateUIMessage('DrawTitle');
         this.OnDrawEventCallback(null, 'DynamicKLineTitlePainting::DrawTitle');
 
@@ -218,11 +235,9 @@ function DynamicKLineTitlePainting()
         if (this.IsShowSettingInfo && this.Data.Period != null && this.Data.Right != null) 
         {
             var periodName = this.GetPeriodName(this.Data.Period);
-            var rightName = RIGHT_NAME[this.Data.Right];
-            var isStock = MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol); //是否是指数
-            var text = "(" + periodName + " " + rightName + ")";
-            if (ChartData.IsMinutePeriod(this.Data.Period, true) || !isStock || ChartData.IsSecondPeriod(this.Data.Period))
-                text = "(" + periodName + ")";	//分钟K线 或 指数没有复权
+            var rightName = this.GetRightName(this.Data.Right);
+            var text = "(" + periodName + ")";
+            if (rightName) text = "(" + periodName + " " + rightName + ")";
             if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
         }
     }
@@ -252,10 +267,9 @@ function DynamicKLineTitlePainting()
         if (this.IsShowSettingInfo && this.Data.Period != null && this.Data.Right != null) 
         {
             var periodName = this.GetPeriodName(this.Data.Period);
-            var rightName = RIGHT_NAME[this.Data.Right];
-            var text = "(" + periodName + " " + rightName + ")";
-            var isIndex = MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol); //是否是指数
-            if (this.Data.Period >= 4 || isIndex) text = "(" + periodName + ")";
+            var rightName = this.GetRightName(this.Data.Right);
+            var text = "(" + periodName + ")";
+            if (rightName) text = "(" + periodName + " " + rightName + ")";
             if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
         }
     }
@@ -382,12 +396,10 @@ function DynamicKLineTitlePainting()
 
         if (this.IsShowSettingInfo) //周期 复权信息
         {
-            this.Canvas.fillStyle = this.UnchagneColor;
             var periodName = this.GetPeriodName(this.Data.Period);
-            var rightName = RIGHT_NAME[this.Data.Right];
-            var text = "(" + periodName + " " + rightName + ")";
-            var isIndex = MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol); //是否是指数
-            if (item.Time != null || isIndex) text = "(" + periodName + ")";
+            var rightName = this.GetRightName(this.Data.Right);
+            var text = "(" + periodName + ")";
+            if (rightName) text = "(" + periodName + " " + rightName + ")";
             if (!this.DrawKLineText(text, this.DateTimeColor, position, false)) return;
         }
 
@@ -433,6 +445,12 @@ function DynamicKLineTitlePainting()
             var text = g_JSChartLocalization.GetText('KTitle-Amount', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Amount, 2);
             if (!this.DrawKLineText(text, this.AmountColor, position)) return;
         }
+
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(this.UpperSymbol) && IFrameSplitOperator.IsNumber(item.Position))
+        {
+            var text = g_JSChartLocalization.GetText('KTitle-Position', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Position, 2);
+            if (!this.DrawKLineText(text, this.VolColor, position)) return;
+        }
     }
 
     this.OnDrawEventCallback = function (drawData, explain) 
@@ -444,6 +462,7 @@ function DynamicKLineTitlePainting()
 
     this.Draw = function () 
     {
+        this.UpperSymbol = this.Symbol ? this.Symbol.toUpperCase() : '';
         this.SendUpdateUIMessage('Draw');
 
         if (!this.IsShow) return;

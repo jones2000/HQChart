@@ -27,6 +27,8 @@ function HistoryData()
     this.Vol;
     this.Amount;
     this.Time;  //分钟 HHMM / 秒HHMMSS
+    this.FlowCapital = 0;   //流通股本
+    this.Position = null;   //持仓量
 
     //指数才有的数据
     this.Stop;  //停牌家数
@@ -48,6 +50,8 @@ HistoryData.Copy=function(data)
     newData.Vol=data.Vol;
     newData.Amount=data.Amount;
     newData.Time=data.Time;
+    newData.FlowCapital = data.FlowCapital;
+    newData.Position = data.Position;
 
     //指数才有的数据
     newData.Stop = data.Stop;
@@ -92,6 +96,9 @@ HistoryData.CopyRight=function(data,seed)
     newData.Vol=data.Vol;
     newData.Amount=data.Amount;
 
+    newData.FlowCapital = data.FlowCapital;
+    newData.Position = data.Position;
+
     return newData;
 }
 
@@ -110,6 +117,7 @@ function MinuteData()
     this.AvPrice;
     this.Date;
     this.Time;
+    this.Position = null;  //持仓量
 }
 
 //单指标数据
@@ -277,6 +285,17 @@ function ChartData()
         for(var i in this.Data)
         {
             result[i]=this.Data[i].Amount;
+        }
+
+        return result;
+    }
+
+    this.GetPosition = function () 
+    {
+        var result = new Array();
+        for (var i in this.Data) 
+        {
+            result[i] = this.Data[i].Position;
         }
 
         return result;
@@ -469,7 +488,9 @@ function ChartData()
                     newData.YClose=minData.YClose;
                     newData.Close=minData.Close;
                     newData.Vol=minData.Vol;
-                    newData.Amount=minData.Amount;      
+                    newData.Amount=minData.Amount;   
+                    newData.Position = minData.Position;   
+                    newData.FlowCapital = minData.FlowCapital;  
                 }
                 else
                 {
@@ -480,6 +501,8 @@ function ChartData()
                     newData.Close=minData.Close;
                     newData.Vol+=minData.Vol;
                     newData.Amount+=minData.Amount;
+                    newData.Position = minData.Position;
+                    newData.FlowCapital = minData.FlowCapital;  
                 }
 
                 if (i + 1 < this.Data.length) //判断下一个数据是否是不同日期的
@@ -530,6 +553,7 @@ function ChartData()
                     newData.Vol = minData.Vol;
                     newData.Amount = minData.Amount;
                     newData.FlowCapital = minData.FlowCapital;
+                    newData.Position = minData.Position; 
                 }
                 else 
                 {
@@ -539,6 +563,7 @@ function ChartData()
                     newData.Vol += minData.Vol;
                     newData.Amount += minData.Amount;
                     newData.FlowCapital = minData.FlowCapital;
+                    newData.Position = minData.Position;
                 }
             }
         }
@@ -628,6 +653,8 @@ function ChartData()
                 newData.Close=dayData.Close;
                 newData.Vol=dayData.Vol;
                 newData.Amount=dayData.Amount;
+                newData.FlowCapital = dayData.FlowCapital;
+                newData.Position = dayData.Position; 
             }
             else
             {
@@ -643,6 +670,8 @@ function ChartData()
                     newData.Close=dayData.Close;
                     newData.Vol=dayData.Vol;
                     newData.Amount=dayData.Amount;
+                    newData.FlowCapital = dayData.FlowCapital;
+                    newData.Position = dayData.Position; 
                 }
                 else
                 {
@@ -653,6 +682,8 @@ function ChartData()
                     newData.Vol+=dayData.Vol;
                     newData.Amount+=dayData.Amount;
                     newData.Date=dayData.Date;
+                    newData.FlowCapital = dayData.FlowCapital;
+                    newData.Position = dayData.Position;
                 }
             }
         }
@@ -693,6 +724,7 @@ function ChartData()
                     newData.Vol = dayData.Vol;
                     newData.Amount = dayData.Amount;
                     newData.FlowCapital = dayData.FlowCapital;
+                    newData.Position = dayData.Position;  
                 }
                 else 
                 {
@@ -701,6 +733,7 @@ function ChartData()
                     newData.Close = dayData.Close;
                     newData.Vol += dayData.Vol;
                     newData.Amount += dayData.Amount;
+                    newData.Position = dayData.Position;
                     newData.FlowCapital = dayData.FlowCapital;
                 }
             }

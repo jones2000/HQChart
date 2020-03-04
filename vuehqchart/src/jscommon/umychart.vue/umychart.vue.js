@@ -13435,7 +13435,7 @@ function ChartSubLine()
     this.newMethod();
     delete this.newMethod;
 
-    this.ClassName='ChartLine';     //类名
+    this.ClassName='ChartSubLine';     //类名
     this.Color="rgb(255,193,37)";   //线段颜色
     this.LineWidth;                 //线段宽度
     this.DrawType=0;                //画图方式  0=无效数平滑  1=无效数不画断开
@@ -13461,11 +13461,24 @@ function ChartSubLine()
 
     this.GetYFromData=function(value)
     {
-        if(value<=this.SubFrame.Min) return this.ChartBorder.GetBottomEx();
-        if(value>=this.SubFrame.Max) return this.ChartBorder.GetTopEx();
+        var bHScreen = (this.ChartFrame.IsHScreen === true);
 
-        var height=this.ChartBorder.GetHeightEx()*(value-this.SubFrame.Min)/(this.SubFrame.Max-this.SubFrame.Min);
-        return this.ChartBorder.GetBottomEx()-height;
+        if (bHScreen)
+        {
+            if (value <= this.SubFrame.Min) return this.ChartBorder.GetLeftEx();
+            if (value >= this.SubFrame.Max) return this.ChartBorder.GetRightEx();
+
+            var width = this.ChartBorder.GetWidthEx() * (value - this.SubFrame.Min) / (this.SubFrame.Max - this.SubFrame.Min);
+            return this.ChartBorder.GetLeftEx() + width;
+        }
+        else
+        {
+            if(value<=this.SubFrame.Min) return this.ChartBorder.GetBottomEx();
+            if(value>=this.SubFrame.Max) return this.ChartBorder.GetTopEx();
+    
+            var height=this.ChartBorder.GetHeightEx()*(value-this.SubFrame.Min)/(this.SubFrame.Max-this.SubFrame.Min);
+            return this.ChartBorder.GetBottomEx()-height;
+        }
     }
 
     this.CalculateDataMaxMin=function()
@@ -17478,12 +17491,12 @@ function KLineTooltipPaint()
         if (this.HQChart.Symbol) upperSymbol=this.HQChart.Symbol.toUpperCase();
         if (this.ClassName==='MinuteTooltipPaint') 
         {
-            if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) lineCount=8;    //期货多一个持仓量
-            else lineCount=7;
+            lineCount=7;
+            if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) ++lineCount;    //期货多一个持仓量
         }
         else 
         {
-            if (IFrameSplitOperator.IsNumber(klineData.Time) ) ++lineCount; //分钟K线多一列时间
+            if (IFrameSplitOperator.IsNumber(klineData.Time) ) ++lineCount;     //分钟K线多一列时间
             if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.HQChart.Symbol) && klineData.FlowCapital>0) ++lineCount;
             if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) && IFrameSplitOperator.IsNumber(klineData.Position)) ++lineCount;    //持仓
         }
@@ -21781,6 +21794,12 @@ function DynamicMinuteTitlePainting()
             if (!this.DrawText(text,this.AmountColor,position)) return;
         }
 
+        if (IFrameSplitOperator.IsNumber(item.Position))
+        {
+            var text=g_JSChartLocalization.GetText('MTitle-Position',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Position,2);
+            if (!this.DrawText(text,this.VolColor,position)) return;
+        }
+
         //叠加股票的名字
         for(var i in this.OverlayChartPaint)
         {
@@ -25625,6 +25644,7 @@ function JSChartLocalization()
         ['MTitle-Increase', {CN:'幅:', EN:'I:'}],
         ['MTitle-Vol', {CN:'量:', EN:'V:'}],
         ['MTitle-Amount', {CN:'额:', EN:'A:'}],
+        ['MTitle-Position', {CN:'持:', EN:'P:'}],
 
         //周期
         ['日线', {CN:'日线', EN:'1D'}],
@@ -51904,7 +51924,7 @@ function ScriptIndex(name,script,args,option)
             if (!isNaN(width) && width>0) line.LineWidth=width;
         }
 
-        //if (varItem.IsDotLine) line.IsDotLine=true; //虚线
+        if (varItem.IsDotLine) line.IsDotLine=true; //虚线
         if (varItem.IsShow==false) line.IsShow=false;
         
         let titleIndex=windowIndex+1;

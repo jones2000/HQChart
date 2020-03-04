@@ -479,8 +479,10 @@ export default {
       this.InitalStock();
       this.JSStock.RequestData();
 
-      this.MoreDealLink = './stockdeallastest.demo.page.html?symbol=' + this.Symbol;
+      // this.MoreDealLink = './stockdeallastest.demo.page.html?symbol=' + this.Symbol;
     }
+
+    this.MoreDealLink = './stockdeallastest.demo.page.html?symbol=' + this.Symbol;
 
     this.OnSize();
   },

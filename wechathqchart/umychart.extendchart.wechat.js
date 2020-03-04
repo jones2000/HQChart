@@ -11,20 +11,27 @@
 */ 
 
 //行情数据结构体 及涉及到的行情算法(复权,周期等) 
-import {
+import 
+{
     JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
     JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData
 } from "./umychart.data.wechat.js";
 
-import { JSCommonCoordinateData as JSCommonCoordinateData } from "./umychart.coordinatedata.wechat.js";
+import 
+{
+    JSCommonCoordinateData as JSCommonCoordinateData,
+    JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME
+} from "./umychart.coordinatedata.wechat.js";
 
-import {
+import 
+{
     JSCommonResource_Global_JSChartResource as g_JSChartResource,
     JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
     JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
-import {
+import 
+{
     JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
 } from './umychart.framesplit.wechat.js'
 
@@ -101,6 +108,10 @@ function KLineTooltipPaint()
         var klineData = this.KLineTitlePaint.GetCurrentKLineData();
         if (!klineData) return;
 
+        var upperSymbol;
+        if (this.HQChart.Symbol) upperSymbol = this.HQChart.Symbol.toUpperCase();
+        var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)?true:false;
+
         var lineCount = 8;    //显示函数
         if (this.ClassName === 'MinuteTooltipPaint') 
         {
@@ -108,10 +119,10 @@ function KLineTooltipPaint()
         }
         else
         {
-            if (klineData.Time != null && !isNaN(klineData.Time) && klineData.Time > 0) lineCount = 9; //分钟K线多一列时间
+            if (IFrameSplitOperator.IsNumber(klineData.Time)) ++lineCount;      //分钟K线多一列时间
+            if (isFutures && IFrameSplitOperator.IsNumber(klineData.Position))++lineCount;   //持仓量
         }
 
-        //this.TitleColor=this.KLineTitlePaint.UnchagneColor;
         this.IsHScreen = this.ChartFrame.IsHScreen === true;
         this.Canvas.font = this.Font[0];
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
@@ -267,6 +278,19 @@ function KLineTooltipPaint()
             text = g_JSChartLocalization.GetText('Tooltip-Amount',this.LanguageID);
             this.Canvas.fillText(text, left, top);
             var text = this.HQChart.FormatValueString(item.Amount, 2, this.LanguageID);
+            this.Canvas.fillText(text, left + labelWidth, top);
+        }
+
+        //持仓量
+        var upperSymbol;
+        if (this.HQChart.Symbol) upperSymbol = this.HQChart.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) && IFrameSplitOperator.IsNumber(item.Position)) 
+        {
+            this.Canvas.fillStyle = this.TitleColor;
+            top += this.LineHeight;
+            text = g_JSChartLocalization.GetText('Tooltip-Position', this.LanguageID);
+            this.Canvas.fillText(text, left, top);
+            var text = IFrameSplitOperator.FormatValueString(item.Position, 2, this.LanguageID);
             this.Canvas.fillText(text, left + labelWidth, top);
         }
 

@@ -293,6 +293,7 @@ function JSChartLocalization()
         ['Tooltip-AvPrice', { CN: '均:', EN: 'AP:' }],
         ['Tooltip-Price', { CN: '价:', EN: 'P:' }],
         ['Tooltip-Exchange', { CN: '换:', EN: 'E:' }],
+        ['Tooltip-Position', { CN: '持:', EN: 'P:' }],
 
         //K线动态标题
         ['KTitle-Open', { CN: '开:', EN: 'O:' }],
@@ -303,6 +304,7 @@ function JSChartLocalization()
         ['KTitle-Vol', { CN: '量:', EN: 'V:' }],
         ['KTitle-Amount', { CN: '额:', EN: 'A:' }],
         ['KTitle-Exchange', { CN: '换:', EN: 'E:' }],
+        ['KTitle-Position', { CN: '持:', EN: 'P:' }],
 
         //走势图动态标题
         ['MTitle-Close', { CN: '价:', EN: 'C:' }],
@@ -310,6 +312,7 @@ function JSChartLocalization()
         ['MTitle-Increase', { CN: '幅:', EN: 'I:' }],
         ['MTitle-Vol', { CN: '量:', EN: 'V:' }],
         ['MTitle-Amount', { CN: '额:', EN: 'A:' }],
+        ['MTitle-Position', { CN: '持:', EN: 'P:' }],
 
         //周期
         ['日线', { CN: '日线', EN: '1D' }],
