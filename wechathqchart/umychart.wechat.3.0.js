@@ -9950,13 +9950,23 @@ function MinuteChartContainer(uielement)
         averageLine.IsDrawArea = false;
         this.ChartPaint[1] = averageLine;
 
-        var averageLine = new ChartMinuteVolumBar();
-        averageLine.Color = g_JSChartResource.Minute.VolBarColor;
-        averageLine.Canvas = this.Canvas;
-        averageLine.ChartBorder = this.Frame.SubFrame[1].Frame.ChartBorder;
-        averageLine.ChartFrame = this.Frame.SubFrame[1].Frame;
-        averageLine.Name = "Minute-Vol-Bar";
-        this.ChartPaint[2] = averageLine;
+        //成交量柱子
+        var chartVol = new ChartMinuteVolumBar();
+        chartVol.Color = g_JSChartResource.Minute.VolBarColor;
+        chartVol.Canvas = this.Canvas;
+        chartVol.ChartBorder = this.Frame.SubFrame[1].Frame.ChartBorder;
+        chartVol.ChartFrame = this.Frame.SubFrame[1].Frame;
+        chartVol.Name = "Minute-Vol-Bar";
+        this.ChartPaint[2] = chartVol;
+
+        //持仓线
+        var chartPosition=new ChartSubLine();
+        chartPosition.Color = g_JSChartResource.Minute.PriceColor;
+        chartPosition.Canvas = this.Canvas;
+        chartPosition.ChartBorder = this.Frame.SubFrame[1].Frame.ChartBorder;
+        chartPosition.ChartFrame = this.Frame.SubFrame[1].Frame;
+        chartPosition.Name = "Minute-Position-Line";
+        this.ChartPaint[3] = chartPosition;
 
         this.TitlePaint[0] = new DynamicMinuteTitlePainting();
         this.TitlePaint[0].Frame = this.Frame.SubFrame[0].Frame;
@@ -10599,6 +10609,19 @@ function MinuteChartContainer(uielement)
         this.ChartPaint[2].Data = minuteData;
         this.ChartPaint[2].YClose = yClose;
 
+        var upperSymbol=this.Symbol.toUpperCase();
+        var bFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+        var bSHO = MARKET_SUFFIX_NAME.IsSHO(upperSymbol);
+
+        if (bFutures || bSHO)
+        {
+            this.ChartPaint[3].Data.Data = minuteData.GetPosition();
+        }
+        else
+        {
+            this.ChartPaint[3].Data.Data=null;
+        }
+        
         this.TitlePaint[0].Data = this.SourceData;                    //动态标题
         this.TitlePaint[0].Symbol = this.Symbol;
         this.TitlePaint[0].Name = this.Name;
@@ -10731,6 +10754,8 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
     var upperSymbol = data.stock[0].symbol.toUpperCase();
     var isSHSZ = MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
     var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+    var isSHO = MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
+
     var preClose = data.stock[0].yclose;      //前一个数据价格
     var preAvPrice = data.stock[0].yclose;    //前一个均价
     var yClose = data.stock[0].yclose;
@@ -10766,6 +10791,8 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
         item.DateTime = data.stock[0].date.toString() + " " + jsData.time.toString();
         item.Date = data.stock[0].date;
         item.Time = jsData.time;
+        if (isFutures || isSHO) item.Position = jsData.position;  //期货 期权有持仓
+
         if (i == 0)      //第1个数据 写死9：25
         {
             item.IsFristData = true;
@@ -10800,6 +10827,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
     var upperSymbol = data.symbol.toUpperCase();
     var isSHSZ = MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
     var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+    var isSHO = MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
     var result = [];
     for (var i in data.data) 
     {
@@ -10841,6 +10869,8 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
             item.DateTime = date.toString() + " " + jsData[0].toString();
             item.Date = date;
             item.Time = jsData[0];
+            if ((isFutures || isSHO) && 9 < jsData.length) item.Position = jsData[9];  //持仓
+
             if (j == 0 )      
             {
                 if (isSHSZ) item.DateTime = date.toString() + " 0925";//第1个数据 写死9：25

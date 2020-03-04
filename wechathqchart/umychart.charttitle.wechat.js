@@ -650,8 +650,10 @@ function DynamicMinuteTitlePainting()
     this.IsShowDate = false;  //标题是否显示日期
     this.IsShowName = true;   //标题是否显示股票名字
     this.Symbol;
+    this.UpperSymbol;
     this.LastShowData;  //保存最后显示的数据 给tooltip用
     this.ClassName ='DynamicMinuteTitlePainting';
+    this.SpaceWidth = 2;
 
     this.GetCurrentKLineData = function () //获取当天鼠标位置所在的K线数据
     {
@@ -709,6 +711,7 @@ function DynamicMinuteTitlePainting()
 
     this.DrawTitle = function () 
     {
+        this.UpperSymbol = this.Symbol ? this.Symbol.toUpperCase() : '';
         this.SendUpdateUIMessage('DrawTitle');
         this.OnDrawEventCallback(null, "DynamicMinuteTitlePainting::DrawTitle");
     }
@@ -785,7 +788,8 @@ function DynamicMinuteTitlePainting()
         var right = this.Frame.ChartBorder.GetRight();
         var defaultfloatPrecision = this.GetDecimal(this.Symbol);    //价格小数位数
 
-        if (isHScreen) {
+        if (isHScreen) 
+        {
             if (this.Frame.ChartBorder.Right < 5) return;
             var left = 2;
             var bottom = this.Frame.ChartBorder.Right / 2;    //上下居中显示
@@ -795,80 +799,69 @@ function DynamicMinuteTitlePainting()
             this.Canvas.translate(xText, yText);
             this.Canvas.rotate(90 * Math.PI / 180);
         }
-        else {
+        else 
+        {
             if (bottom < 5) return;
         }
 
         this.Canvas.textAlign = "left";
         this.Canvas.textBaseline = "middle";
         this.Canvas.font = this.Font;
+        var position = { Left: left, Bottom: bottom, IsHScreen: isHScreen };
 
-        if (this.IsShowName) {
-            this.Canvas.fillStyle = this.UnchagneColor;
-            var textWidth = this.Canvas.measureText(this.Name).width + 2;    //后空2个像素
-            if (left + textWidth > right) return;
-            this.Canvas.fillText(this.Name, left, bottom, textWidth);
-            left += textWidth;
+        if (this.IsShowName) 
+        {
+            if (!this.DrawMinuteText(this.Name, this.NameColor, position, true)) return;
         }
 
         this.Canvas.fillStyle = this.UnchagneColor;
         var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate ? 'YYYY-MM-DD HH-MM' : 'HH-MM');
-        var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
-        if (left + textWidth > right) return;
-        this.Canvas.fillText(text, left, bottom, textWidth);
-        left += textWidth;
+        if (!this.DrawMinuteText(text, this.DateTimeColor, position)) return;
 
-        if (item.Close != null) {
-            this.Canvas.fillStyle = this.GetColor(item.Close, this.YClose);
+        if (IFrameSplitOperator.IsNumber(item.Close)) 
+        {
+            var color = this.GetColor(item.Close, this.YClose);
             var text = g_JSChartLocalization.GetText('MTitle-Close', this.LanguageID) + item.Close.toFixed(defaultfloatPrecision);
-            var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
-            if (left + textWidth > right) return;
-            this.Canvas.fillText(text, left, bottom, textWidth);
-            left += textWidth;
+            if (!this.DrawMinuteText(text, color, position)) return;
         }
 
-        if (item.Increase != null) {
-            this.Canvas.fillStyle = this.GetColor(item.Increase, 0);
+        if (IFrameSplitOperator.IsNumber(item.Increase)) 
+        {
+            var color = this.GetColor(item.Increase, 0);
             var text = g_JSChartLocalization.GetText('MTitle-Increase', this.LanguageID) + item.Increase.toFixed(2) + '%';
-            var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
-            if (left + textWidth > right) return;
-            this.Canvas.fillText(text, left, bottom, textWidth);
-            left += textWidth;
+            if (!this.DrawMinuteText(text, color, position)) return;
         }
 
-        if (item.AvPrice != null) {
-            this.Canvas.fillStyle = this.GetColor(item.AvPrice, this.YClose);
+        if (IFrameSplitOperator.IsNumber(item.AvPrice))
+        {
+            var color = this.GetColor(item.AvPrice, this.YClose);
             var text = g_JSChartLocalization.GetText('MTitle-AvPrice', this.LanguageID) + item.AvPrice.toFixed(defaultfloatPrecision);
-            var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
-            if (left + textWidth > right) return;
-            this.Canvas.fillText(text, left, bottom, textWidth);
-            left += textWidth;
+            if (!this.DrawMinuteText(text, color, position)) return;
         }
 
         if (IFrameSplitOperator.IsNumber(item.Vol))
         {
-            this.Canvas.fillStyle = this.VolColor;
             var text = g_JSChartLocalization.GetText('MTitle-Vol', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Vol, 2, this.LanguageID);
-            var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
-            if (left + textWidth > right) return;
-            this.Canvas.fillText(text, left, bottom, textWidth);
-            left += textWidth;
+            if (!this.DrawMinuteText(text, this.VolColor, position)) return;
         }
 
         if (IFrameSplitOperator.IsNumber(item.Amount))
         {
-            this.Canvas.fillStyle = this.AmountColor;
             var text = g_JSChartLocalization.GetText('MTitle-Amount', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Amount, 2, this.LanguageID);
-            var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
-            if (left + textWidth > right) return;
-            this.Canvas.fillText(text, left, bottom, textWidth);
-            left += textWidth;
+            if (!this.DrawMinuteText(text, this.AmountColor, position)) return;
+        }
+
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(this.UpperSymbol) && IFrameSplitOperator.IsNumber(item.Position))
+        {
+            var text = g_JSChartLocalization.GetText('MTitle-Position', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Position, 2, this.LanguageID);
+            if (!this.DrawMinuteText(text, this.VolColor, position)) return;
         }
         
     }
 
     this.Draw = function () 
     {
+        this.UpperSymbol = this.Symbol ? this.Symbol.toUpperCase() : '';
         this.LastShowData = null;
         this.SendUpdateUIMessage('Draw');
         if (!this.IsShow) return;
@@ -896,6 +889,23 @@ function DynamicMinuteTitlePainting()
         this.Canvas.save();
         this.DrawItem(item);
         this.Canvas.restore();
+    }
+
+    this.DrawMinuteText = function (title, color, position, isShow) 
+    {
+        if (!title) return true;
+
+        var isHScreen = this.Frame.IsHScreen === true;
+        var right = this.Frame.ChartBorder.GetRight();
+        if (isHScreen) right = this.Frame.ChartBorder.GetHeight();
+
+        this.Canvas.fillStyle = color;
+        var textWidth = this.Canvas.measureText(title).width;
+        if (position.Left + textWidth > right) return false;
+        if (!(isShow === false)) this.Canvas.fillText(title, position.Left, position.Bottom, textWidth);
+
+        position.Left += textWidth + this.SpaceWidth;
+        return true;
     }
 }
 

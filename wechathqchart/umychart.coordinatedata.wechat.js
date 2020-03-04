@@ -15,6 +15,7 @@ var MARKET_SUFFIX_NAME=
 {
     SH:'.SH',
     SZ:'.SZ',
+    SHO:'.SHO',          //上海交易所 股票期权
     HK:'.HK',
     FHK: '.FHK',         //港股期货 
     SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange)
@@ -79,6 +80,13 @@ var MARKET_SUFFIX_NAME=
     {
         var pos = upperSymbol.length - this.SZ.length;
         var find = upperSymbol.indexOf(this.SZ);
+        return find == pos;
+    },
+
+    IsSHO: function (upperSymbol) 
+    {
+        var pos = upperSymbol.length - this.SHO.length;
+        var find = upperSymbol.indexOf(this.SHO);
         return find == pos;
     },
 
@@ -302,6 +310,12 @@ function MinuteTimeStringData()
         return this.SHSZ;
     }
 
+    this.GetSHO = function () 
+    {
+        if (!this.SHO) this.SHO = this.CreateSHOData();
+        return this.SHO;
+    }
+
     this.GetHK=function()
     {
         if (!this.HK) this.HK = this.CreateHKData();
@@ -343,6 +357,17 @@ function MinuteTimeStringData()
             [
                 { Start: 925, End: 925 },
                 { Start: 930, End: 1130 },
+                { Start: 1300, End: 1500 }
+            ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateSHOData = function () 
+    {
+        const TIME_SPLIT =
+            [
+                { Start: 930, End: 1129 },
                 { Start: 1300, End: 1500 }
             ];
 
@@ -489,6 +514,47 @@ function MinuteCoordinateData()
                 return this.Full;
             }
         };
+
+    //上海股票期权时间刻度
+    const SHO_MINUTE_X_COORDINATE =
+    {
+        Full:   //完整模式
+            [
+                [0, 0, "rgb(200,200,200)", "09:30"],
+                [30, 0, "RGB(200,200,200)", "10:00"],
+                [60, 0, "RGB(200,200,200)", "10:30"],
+                [90, 0, "RGB(200,200,200)", "11:00"],
+                [120, 1, "RGB(200,200,200)", "13:00"],
+                [150, 0, "RGB(200,200,200)", "13:30"],
+                [180, 0, "RGB(200,200,200)", "14:00"],
+                [210, 0, "RGB(200,200,200)", "14:30"],
+                [240, 1, "RGB(200,200,200)", "15:00"], // 15:00
+            ],
+        Simple: //简洁模式
+            [
+                [0, 0, "rgb(200,200,200)", "09:30"],
+                [60, 0, "RGB(200,200,200)", "10:30"],
+                [120, 1, "RGB(200,200,200)", "13:00"],
+                [180, 0, "RGB(200,200,200)", "14:00"],
+                [240, 1, "RGB(200,200,200)", "15:00"]
+            ],
+        Min:   //最小模式     
+            [
+                [0, 0, "rgb(200,200,200)", "09:30"],
+                [120, 1, "RGB(200,200,200)", "13:00"],
+                [240, 1, "RGB(200,200,200)", "15:00"]
+            ],
+
+        Count: 241,
+        MiddleCount: 120,
+
+        GetData: function (width) {
+            if (width < 200) return this.Min;
+            else if (width < 400) return this.Simple;
+
+            return this.Full;
+        }
+    };
 
     //港股走势图时间刻度
     const HK_MINUTE_X_COORDINATE =
@@ -672,6 +738,8 @@ function MinuteCoordinateData()
             var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
             if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol))
                 data = SHZE_MINUTE_X_COORDINATE;
+            else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol))
+                data = this.GetSHOData(upperSymbol, width);
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
                 data = HK_MINUTE_X_COORDINATE;
             else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
@@ -747,6 +815,18 @@ function MinuteCoordinateData()
     this.GetETData = function (upperSymbol, width) 
     {
         throw { Name: 'MinuteCoordinateData::GetETData', Error: 'not implement' };
+    }
+
+    this.GetUSAData = function (upperSymbol, width) 
+    {
+        var result = USA_MINUTE_X_COORDINATE;
+        return result;
+    }
+
+    this.GetSHOData = function (upperSymbol, width) 
+    {
+        var result = SHO_MINUTE_X_COORDINATE;
+        return result;
     }
 }
 

@@ -37053,7 +37053,7 @@ function MinuteTimeStringData()
             { Start: 1300, End: 1500 }
         ];
 
-    return this.CreateTimeData(TIME_SPLIT);
+        return this.CreateTimeData(TIME_SPLIT);
     }
 
     this.CreateHKData = function () 

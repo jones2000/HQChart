@@ -116,11 +116,12 @@ function KLineTooltipPaint()
         if (this.ClassName === 'MinuteTooltipPaint') 
         {
             lineCount=7;
+            if (isFutures && IFrameSplitOperator.IsNumber(klineData.Position)) ++lineCount;    //期货多一个持仓量
         }
         else
         {
             if (IFrameSplitOperator.IsNumber(klineData.Time)) ++lineCount;      //分钟K线多一列时间
-            if (isFutures && IFrameSplitOperator.IsNumber(klineData.Position))++lineCount;   //持仓量
+            if (isFutures && IFrameSplitOperator.IsNumber(klineData.Position)) ++lineCount;   //持仓量
         }
 
         this.IsHScreen = this.ChartFrame.IsHScreen === true;
@@ -405,6 +406,19 @@ function MinuteTooltipPaint()
             text = g_JSChartLocalization.GetText('Tooltip-Amount', this.LanguageID);
             this.Canvas.fillText(text, left, top);
             var text = this.HQChart.FormatValueString(item.Amount, 2, this.LanguageID);
+            this.Canvas.fillText(text, left + labelWidth, top);
+        }
+
+        //持仓量
+        var upperSymbol;
+        if (this.HQChart.Symbol) upperSymbol = this.HQChart.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) && IFrameSplitOperator.IsNumber(item.Position)) 
+        {
+            this.Canvas.fillStyle = this.TitleColor;
+            top += this.LineHeight;
+            text = g_JSChartLocalization.GetText('Tooltip-Position', this.LanguageID);
+            this.Canvas.fillText(text, left, top);
+            var text = IFrameSplitOperator.FormatValueString(item.Position, 2, this.LanguageID);
             this.Canvas.fillText(text, left + labelWidth, top);
         }
         
