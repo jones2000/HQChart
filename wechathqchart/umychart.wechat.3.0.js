@@ -125,14 +125,19 @@ function JSCanvasElement()
         var canvas;
         if (this.CanvasNode && this.CanvasNode.node) 
         {
+            const width = this.CanvasNode.width;
+            const height = this.CanvasNode.height;
+
             var node = this.CanvasNode.node;
+            node._height = height;
+            node._width = width;
             console.log("[JSCanvasElement::GetContext] create by getContext('2d')");
             canvas = node.getContext('2d');
             const dpr = wx.getSystemInfoSync().pixelRatio;
-            //node.width = node.width / dpr;
-            //node.height = node.height / dpr;
-            //canvas.scale(dpr, dpr);
-            canvas.draw=function() { };
+            node.width = width * dpr;
+            node.height = height * dpr;
+            canvas.scale(dpr, dpr);
+            canvas.draw = (bDraw, callback) => { if (callback) callback(); };
         }
         else 
         {
@@ -574,6 +579,7 @@ function JSChart(element)
         if (option.MinuteLine) 
         {
             if (option.MinuteLine.IsDrawAreaPrice == false) chart.ChartPaint[0].IsDrawArea = false;
+            if (option.MinuteLine.IsShowAveragePrice == false) chart.ChartPaint[1].IsShow = false;
         }
 
         let scriptData = new JSCommonIndexScript.JSIndexScript();
@@ -3724,7 +3730,7 @@ function HQTradeFrame()
             y: 0,
             width: width,
             height: height,
-            canvasId: this.ChartBorder.UIElement.ID,
+            canvasId: this.ChartBorder.UIElement.ID, 
             success: function (res) 
             {
                 self.ScreenImagePath = res.tempFilePath;
@@ -5676,6 +5682,8 @@ function ChartMinutePriceLine()
             this.DrawNotSupportmessage();
             return;
         }
+
+        if (!this.IsShow) return;
 
         var isHScreen = (this.ChartFrame.IsHScreen === true);
         var dataWidth = this.ChartFrame.DataWidth;
