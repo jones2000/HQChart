@@ -28529,7 +28529,7 @@ function KLineChartContainer(uielement)
         if (this.Period==period) return;
 
         var isDataTypeChange=false;
-        if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_START)
+        if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)
         {
             if (this.SourceData.DataType!=0) isDataTypeChange=true;
         }

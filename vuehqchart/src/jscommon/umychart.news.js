@@ -132,11 +132,6 @@ function INewsContent(id)
   }
 }
 
-var RECV_DATA_TYPE =
-{
-    NEWS_DATA: 1,        //个股新闻数据
-}
-
 //个股新闻
 function StockNews(symbol)
 {
