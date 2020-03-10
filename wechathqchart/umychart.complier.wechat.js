@@ -4763,7 +4763,7 @@ function JSAlgorithm(errorHandler, symbolData)
             for (var i = data.length - 1; i >= 0; --i) 
             {
                 var item = data[i];
-                if (IFrameSplitOperator.IsNumber(item)) 
+                if (this.IsNumber(item)) 
                 {
                     result = item.toFixed(n);
                     return result;
@@ -4772,13 +4772,59 @@ function JSAlgorithm(errorHandler, symbolData)
         }
         else 
         {
-            if (IFrameSplitOperator.IsNumber(data))
+            if (this.IsNumber(data))
                 result = data.toFixed(n);
         }
 
         return result;
     }
 
+    this.ZTPRICE = function (data, rate) 
+    {
+        if (!this.IsNumber(rate)) return null;
+
+        if (Array.isArray(data)) 
+        {
+            var result = [];
+            for (var i in data) 
+            {
+                var item = data[i];
+                if (this.IsNumber(item)) result[i] = (1 + rate) * item;
+                else result[i] = null;
+            }
+
+            return result;
+        }
+        else if (this.IsNumber(data)) 
+        {
+            var result = (1 + rate) * data;
+            return result;
+        }
+    }
+
+    this.DTPRICE = function (data, rate) 
+    {
+        if (!this.IsNumber(rate)) return null;
+
+        if (Array.isArray(data)) 
+        {
+            var result = [];
+            for (var i in data) 
+            {
+                var item = data[i];
+                if (this.IsNumber(item)) result[i] = (1 - rate) * item;
+                else result[i] = null;
+            }
+
+            return result;
+        }
+        else if (this.IsNumber(data)) 
+        {
+            var result = (1 - rate) * data;
+            return result;
+        }
+
+    }
 
     //函数调用
     this.CallFunction=function(name,args,node)
@@ -4910,6 +4956,10 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.STRCAT(args[0], args[1]);
             case 'CON2STR':
                 return this.CON2STR(args[0], args[1]);
+            case 'DTPRICE':
+                return this.DTPRICE(args[0], args[1]);
+            case 'ZTPRICE':
+                return this.ZTPRICE(args[0], args[1]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);

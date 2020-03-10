@@ -2934,7 +2934,9 @@ JSIndexScript.prototype.TEST = function ()
                 //'T1:INDEXC;'+
                 //'T2:=HYBLOCK;'
 
-                '成交量:VOL,VOLSTICK;T2:C,LINEOVERLAY;'
+            'T2:ZTPRICE(REF(CLOSE,1),0.1);\n\
+T1: REF(CLOSE, 1);\n\
+T3: REF(CLOSE, 1) * 1.1;'
         };
 
     return data;

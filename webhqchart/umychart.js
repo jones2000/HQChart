@@ -14528,6 +14528,7 @@ function StockChip()
     this.IsShowX=false;  //是否显示X刻度 成交量
     this.ShowXCount=3;
     this.Width=150*this.PixelRatio;       //筹码图宽度
+    this.CalculateType=0;   //0=平均分布 1=三角分布
 
     this.ButtonID=Guid();  //工具条Div id
 
@@ -14544,6 +14545,7 @@ function StockChip()
         if (option.IsShowX) this.IsShowX=option.IsShowX;
         if (option.ShowXCount>0) this.ShowXCount=option.ShowXCount;
         if (option.Width>100) this.Width=option.Width*GetDevicePixelRatio();
+        if (option.CalculateType>0) this.CalculateType=option.CalculateType;
     }
     
     this.Draw=function()
@@ -14942,6 +14944,64 @@ function StockChip()
         this.Canvas.strokeRect(this.ClientRect.Left,this.ClientRect.Top,this.ClientRect.Width,this.ClientRect.Height);
     }
 
+    this.EvenlyDistribute=function(aryChip, data)    //平均分布 data={Low, High, Vol, MaxVol, MaxPrice, MinPrice }
+    {
+        var low=data.Low, high=data.High, maxPrice=data.MaxPrice, minPrice=data.MinPrice, maxVol=1;
+        var averageVol=data.Vol/(high-low);
+
+        for(var j=low;j<=high && j<=maxPrice;++j)
+        {
+            var index=j-minPrice;
+            aryChip[index]+=averageVol;
+            if (maxVol<aryChip[index]) maxVol=aryChip[index];
+        }
+
+        data.MaxVol=maxVol;
+    }
+
+    this.TriangleDistribute=function(aryChip, data)  //三角分布
+    {
+        var low=data.Low, high=data.High, maxPrice=data.MaxPrice, minPrice=data.MinPrice, maxVol=1;
+        var ANGLE = 45, PI=3.1415926535;
+        var middlePrice = (high - low) / 2.0 + low;
+
+        var totalValue=0;
+        var aryVol=[];
+        for(var i=low+1, j=1 ;i<=middlePrice;++i,++j)
+        {
+            var y = Math.tan(ANGLE* PI / 180)*j;
+
+            totalValue+=y;
+            aryVol.push({Index:i-minPrice, Value:y});
+        }
+
+        for(var i=high-1, j=1 ;i>middlePrice;--i,++j)
+        {
+            var y = Math.tan(ANGLE* PI / 180)*j;
+
+            totalValue+=y
+            aryVol.push({Index:i-minPrice, Value:y});
+        }
+
+        if (totalValue>0)
+        {
+            for(var i=0;i<aryVol.length;++i)
+            {
+                var item=aryVol[i];
+                aryChip[item.Index]+=item.Value*data.Vol/totalValue;
+                if (maxVol<aryChip[item.Index]) maxVol=aryChip[item.Index];
+            }
+
+            data.MaxVol=maxVol;
+        }
+    }
+
+    this.CalculateDistribute=function(aryChip, data)
+    {
+        if (this.CalculateType==1) this.TriangleDistribute(aryChip, data);
+        else this.EvenlyDistribute(aryChip, data);
+    }
+
     this.CalculateChip=function()   //计算筹码
     {
         if (!this.HQChart) return false;
@@ -14992,8 +15052,8 @@ function StockChip()
             aryChip.push(0);
         }
 
-        var maxVol=1;
         var dayChip=[];
+        var distributeData;
         if (this.ShowType==2)
         {
             var dayChip=
@@ -15018,13 +15078,9 @@ function StockChip()
                         break;
                     }
                 }
-                
-                for(var j=low;j<=high && j<=maxPrice;++j)
-                {
-                    var index=j-minPrice;
-                    aryChip[index]+=averageVol;
-                    if (maxVol<aryChip[index]) maxVol=aryChip[index];
-                }
+
+                distributeData={Low:low, High:high, Vol:item.Vol, MaxPrice:maxPrice, MinPrice:minPrice};
+                this.CalculateDistribute(aryChip, distributeData );
             }
         }
         else if (this.ShowType==1)
@@ -15053,12 +15109,8 @@ function StockChip()
                     }
                 }
                 
-                for(var j=low;j<=high && j<=maxPrice;++j)
-                {
-                    var index=j-minPrice;
-                    aryChip[index]+=averageVol;
-                    if (maxVol<aryChip[index]) maxVol=aryChip[index];
-                }
+                distributeData={Low:low, High:high, Vol:item.Vol, MaxPrice:maxPrice, MinPrice:minPrice};
+                this.CalculateDistribute(aryChip, distributeData);
             }
         }
         else
@@ -15072,16 +15124,12 @@ function StockChip()
                 if (high-low>0) averageVol=item.Vol/(high-low);
                 if (averageVol<=0.000000001) continue;
 
-                for(var j=low;j<=high && j<=maxPrice;++j)
-                {
-                    var index=j-minPrice;
-                    aryChip[index]+=averageVol;
-                    if (maxVol<aryChip[index]) maxVol=aryChip[index];
-                }
+                distributeData={Low:low, High:high, Vol:item.Vol, MaxPrice:maxPrice, MinPrice:minPrice};
+                this.CalculateDistribute(aryChip, distributeData);
             }
         }
 
-        this.Data={AllChip:aryChip, MaxVol:maxVol, MaxPrice:maxPrice, MinPrice:minPrice,SelectData:selData, DayChip:dayChip, YPrice:yPrice};
+        this.Data={AllChip:aryChip, MaxVol:distributeData.MaxVol, MaxPrice:maxPrice, MinPrice:minPrice,SelectData:selData, DayChip:dayChip, YPrice:yPrice};
         return true;
     }
 

@@ -5022,7 +5022,7 @@ function JSAlgorithm(errorHandler,symbolData)
             for(var i=data.length-1 ; i>=0; --i)
             {
                 var item=data[i];
-                if (IFrameSplitOperator.IsNumber(item))
+                if (this.IsNumber(item))
                 {
                     result=item.toFixed(n);
                     return result;
@@ -5031,7 +5031,7 @@ function JSAlgorithm(errorHandler,symbolData)
         }
         else
         {
-            if (IFrameSplitOperator.IsNumber(data)) 
+            if (this.IsNumber(data)) 
                 result=data.toFixed(n);
         }
 
@@ -5051,7 +5051,7 @@ function JSAlgorithm(errorHandler,symbolData)
         var curPeriodInfo=this.GetPeriodInfo({PeriodID:this.SymbolData.Data.Period});
         if (!curPeriodInfo) return null;
 
-        if (curPeriodInfo.Order>curPeriodInfo.Order) return null;   //只能小周期转大周期
+        if (curPeriodInfo.Order>periodInfo.Order) return null;   //只能小周期转大周期
 
         var result;
         if (curPeriodInfo.Period==periodInfo.Period) 
@@ -5176,7 +5176,7 @@ function JSAlgorithm(errorHandler,symbolData)
         for(var i in data)
         {
             var item=data[i];
-            if (IFrameSplitOperator.IsNumber(item)) result[i]=Math.pow(item,n);
+            if (this.IsNumber(item)) result[i]=Math.pow(item,n);
             else result[i]=null;
         }
         
@@ -5192,7 +5192,7 @@ function JSAlgorithm(errorHandler,symbolData)
         for(var i in data)
         {
             var item=data[i];
-            if (IFrameSplitOperator.IsNumber(item)) result[i]=parseInt(item);
+            if (this.IsNumber(item)) result[i]=parseInt(item);
             else result[i]=null;
         }
 
@@ -5208,11 +5208,58 @@ function JSAlgorithm(errorHandler,symbolData)
         for(var i in data)
         {
             var item=data[i];
-            if (IFrameSplitOperator.IsNumber(item)) result[i]=parseInt((item-1));
+            if (this.IsNumber(item)) result[i]=parseInt((item-1));
             else result[i]=null;
         }
 
         return result;
+    }
+
+    this.ZTPRICE=function(data, rate)
+    {
+        if (!this.IsNumber(rate)) return null;
+
+        if (Array.isArray(data))
+        {
+            var result=[];
+            for(var i in data)
+            {
+                var item=data[i];
+                if (this.IsNumber(item)) result[i]=(1+rate)*item;
+                else result[i]=null;
+            }
+    
+            return result;
+        }
+        else if (this.IsNumber(data))
+        {
+            var result=(1+rate)*data;
+            return result;
+        }
+    }
+
+    this.DTPRICE=function(data, rate)
+    {
+        if (!this.IsNumber(rate)) return null;
+
+        if (Array.isArray(data))
+        {
+            var result=[];
+            for(var i in data)
+            {
+                var item=data[i];
+                if (this.IsNumber(item)) result[i]=(1-rate)*item;
+                else result[i]=null;
+            }
+    
+            return result;
+        }
+        else if (this.IsNumber(data))
+        {
+            var result=(1-rate)*data;
+            return result;
+        }
+        
     }
 
     //函数调用
@@ -5347,6 +5394,10 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.STRCAT(args[0], args[1]);
             case 'CON2STR':
                 return this.CON2STR(args[0], args[1]);
+            case 'DTPRICE':
+                return this.DTPRICE(args[0], args[1]);
+            case 'ZTPRICE':
+                return this.ZTPRICE(args[0], args[1]);
             case 'COVER_C':
             case 'COVER_O':
             case 'COVER_H':
