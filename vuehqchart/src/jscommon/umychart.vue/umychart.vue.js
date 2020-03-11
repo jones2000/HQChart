@@ -40332,6 +40332,13 @@ var MARKET_SUFFIX_NAME=
         {
             return this.GetETMarketStatus(symbol);
         }
+        else if (this.IsHK(upperSymbol))    //港股
+        {
+            if(day == 6 || day== 0) return 0;   //周末
+            if(time>1630) return 3;
+            if(time<925) return 1;
+            return 2;   
+        }
         else    //9:30 - 15:40
         {
             if(day == 6 || day== 0) return 0;   //周末
