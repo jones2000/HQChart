@@ -183,7 +183,7 @@ var MARKET_SUFFIX_NAME=
         {
             if (upperSymbol.charAt(0) == '0') 
             {
-                if (upperSymbol.charAt(1) == '0' && upperSymbol.charAt(1) == '2') return true;  //002 中小板
+                if (upperSymbol.charAt(1) == '0' && upperSymbol.charAt(2) == '2') return true;  //002 中小板
                 if (upperSymbol.charAt(1) != '7' && upperSymbol.charAt(1) != '8') return true;
             }
         }
@@ -244,6 +244,13 @@ var MARKET_SUFFIX_NAME=
         else if (this.IsET(upperSymbol)) 
         {
             return this.GetETMarketStatus(symbol);
+        }
+        else if (this.IsHK(upperSymbol))    //港股
+        {
+            if (day == 6 || day == 0) return 0;   //周末
+            if (time > 1630) return 3;
+            if (time < 925) return 1;
+            return 2;
         }
         else    //9:30 - 15:40
         {
