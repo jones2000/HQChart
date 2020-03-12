@@ -21824,8 +21824,11 @@ function DynamicMinuteTitlePainting()
     {
         this.LastShowData=null;
         if (!this.IsShow) return;
-        if (this.CursorIndex==null || !this.Data || !this.Data.Data) return;
-        if (this.Data.Data.length<=0) return;
+        if (this.CursorIndex==null || !this.Data || !this.Data.Data || this.Data.Data.length<=0) 
+        {
+            this.OnDrawEventCallback(null);
+            return;
+        }
 
         this.Canvas.font=this.Font;
         this.SpaceWidth = this.Canvas.measureText('0').width;
@@ -21840,6 +21843,7 @@ function DynamicMinuteTitlePainting()
         this.LastShowData=item;
 
         this.Canvas.save();
+        this.OnDrawEventCallback(item);
         this.DrawItem(item);
         this.Canvas.restore();
     }
