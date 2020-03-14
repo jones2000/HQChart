@@ -3300,7 +3300,7 @@ function JSAlgorithm(errorHandler,symbolData)
         if (num < 1 || num >= datanum)
             return result;
         var Ex = 0, Ey = 0, Sxy = 0, Sxx = 0, Const, Slope;
-        var i, j;
+        var i, j,x;
         for(j = 0; j < datanum && !this.IsNumber(data[j]); ++j)
         {
             result[j] = null;
@@ -3308,20 +3308,20 @@ function JSAlgorithm(errorHandler,symbolData)
         for(i = j+num-1; i < datanum; ++i)
         {
            Ex = Ey = Sxy = Sxx = 0;
-           for(j = 0; j < num && j <= i; ++j)
+           for(j = 0, x=num; j < num && j <= i; ++j, --x)
            {
-               Ex += (i - j);
+               Ex += x;
                Ey += data[i - j];
            }
            Ex /= num;
            Ey /= num;
-           for(j = 0; j < num && j <= i; ++j)
+           for(j = 0, x=num; j < num && j <= i; ++j,--x)
            {
-               Sxy += (i-j-Ex)*(data[i-j]-Ey);
-               Sxx += (i-j-Ex)*(i-j-Ex);
+               Sxy += (x-Ex)*(data[i-j]-Ey);
+               Sxx += (x-Ex)*(x-Ex);
            }
            Slope = Sxy / Sxx;
-           Const = Ey - Ex*Slope/num;
+           Const = Ey - Ex*Slope;
            result[i] = Slope * num + Const;
         }
 
@@ -10863,6 +10863,20 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateColorKLine=function(hqChart,windowIndex,varItem,i)
+    {
+        let chart=new ChartColorKline();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.KLineColor= varItem.Draw.DrawData.KLine;
+        if (varItem.Color) chart.Color=varItem.Color;
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateRectangle=function(hqChart,windowIndex,varItem,i)
     {
         let chart=new ChartRectangle();
@@ -11036,6 +11050,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'MULTI_SVGICON':
                         this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
+                        break;
+                    case "COLOR_KLINE":
+                        this.CreateColorKLine(hqChart,windowIndex,item,i);
                         break;
                 }
             }
@@ -12109,6 +12126,25 @@ function APIScriptIndex(name,script,args,option)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData={ Icon:this.FittingMultiText(draw.DrawData.Icon,date,time,hqChart), Family:draw.DrawData.Family };
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="COLOR_KLINE")
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    var klineOption=this.FittingMultiText(draw.DrawData.KLine,date,time,hqChart);
+                    var mapKLineOption=new Map();
+                    for(var i in klineOption)
+                    {
+                        var item=klineOption[i];
+                        mapKLineOption.set(item.Index,item);
+                    }
+
+                    drawItem.DrawData={ KLine:mapKLineOption };
+                    if (draw.Color)  outVarItem.Color=draw.Color;
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);
