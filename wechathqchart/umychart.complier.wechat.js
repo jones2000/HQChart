@@ -3093,30 +3093,32 @@ function JSAlgorithm(errorHandler, symbolData)
         if (num < 1 || num >= datanum)
             return result;
         var Ex = 0, Ey = 0, Sxy = 0, Sxx = 0, Const, Slope;
-        var i, j;
-        for(j = 0; j < datanum && !this.isNumber(data[j]); ++j)
+        var i, j,x;
+        for(j = 0; j < datanum && !this.IsNumber(data[j]); ++j)
         {
             result[j] = null;
         }
         for(i = j+num-1; i < datanum; ++i)
         {
            Ex = Ey = Sxy = Sxx = 0;
-           for(j = 0; j < num && j <= i; ++j)
+            for (j = 0, x = num; j < num && j <= i; ++j,--x)
            {
-               Ex += (i - j);
+               Ex +=x;
                Ey += data[i - j];
            }
            Ex /= num;
            Ey /= num;
-           for(j = 0; j < num && j <= i; ++j)
+            for (j = 0, x = num; j < num && j <= i; ++j, --x)
            {
-               Sxy += (i-j-Ex)*(data[i-j]-Ey);
-               Sxx += (i-j-Ex)*(i-j-Ex);
+               Sxy += (x-Ex)*(data[i-j]-Ey);
+               Sxx += (x-Ex)*(x-Ex);
            }
            Slope = Sxy / Sxx;
-           Const = (Ey - Ex*Slope) / num;
+           Const = Ey - Ex*Slope;
            result[i] = Slope * num + Const;
         }
+
+        return result;
     }
 
     //SLOPE 线性回归斜率
@@ -4826,6 +4828,38 @@ function JSAlgorithm(errorHandler, symbolData)
 
     }
 
+    /*
+    FRACPART(A)	 取得小数部分
+    含义:FRACPART(A)返回数值的小数部分
+    阐释:例如FRACPART(12.3)求得0.3,FRACPART(-3.5)求得-0.5
+    */
+    this.FRACPART = function (data) 
+    {
+        if (Array.isArray(data)) 
+        {
+            var result = [];
+            var integer = 0;
+            for (var i in data) 
+            {
+                var item = data[i];
+                if (this.IsNumber(item))
+                {
+                    integer = parseInt(item);
+                    result[i] = item - integer;
+                }
+                else result[i] = null;
+            }
+
+            return result;
+        }
+        else if (this.IsNumber(data)) 
+        {
+            integer = parseInt(data);
+            var result = data - integer;
+            return result;
+        }
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node)
     {
@@ -4960,6 +4994,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.DTPRICE(args[0], args[1]);
             case 'ZTPRICE':
                 return this.ZTPRICE(args[0], args[1]);
+            case 'FRACPART':
+                return this.FRACPART(args[0]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);

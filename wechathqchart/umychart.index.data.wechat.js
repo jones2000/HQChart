@@ -2934,9 +2934,7 @@ JSIndexScript.prototype.TEST = function ()
                 //'T1:INDEXC;'+
                 //'T2:=HYBLOCK;'
 
-            'T2:ZTPRICE(REF(CLOSE,1),0.1);\n\
-T1: REF(CLOSE, 1);\n\
-T3: REF(CLOSE, 1) * 1.1;'
+                'ZB067:FORCAST(C,5);'
         };
 
     return data;

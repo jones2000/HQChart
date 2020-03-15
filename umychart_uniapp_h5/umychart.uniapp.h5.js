@@ -3473,7 +3473,7 @@ function JSChart(divElement)
             if (option.KLine.IsShowTooltip==false) chart.IsShowTooltip=false;
             if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
             if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
-            if (option.KLine.FirstShowDate>20000101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };
+            if (option.KLine.FirstShowDate>19910101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };
             if (option.KLine.RightSpaceCount>0) chart.RightSpaceCount=option.KLine.RightSpaceCount;
         }
 
@@ -6956,6 +6956,7 @@ function IChartFramePainting()
 {
     this.HorizontalInfo=new Array();    //Y轴
     this.VerticalInfo=new Array();      //X轴
+    this.ClassName='IChartFramePainting';
 
     this.Canvas;                        //画布
 
@@ -6980,7 +6981,8 @@ function IChartFramePainting()
     this.LockPaint = null;
 
     this.YSpecificMaxMin=null;         //指定Y轴最大最小值
-    this.IsShowBorder = true;            //是否显示边框
+    this.IsShowBorder = true;          //是否显示边框
+    
 
     this.Draw=function()
     {
@@ -8033,6 +8035,7 @@ function KLineFrame()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='KLineFrame';
     this.ToolbarID=Guid();  //工具条Div id
 
     this.ModifyIndex=true;      //是否显示'改参数'菜单
@@ -8554,6 +8557,8 @@ function OverlayKLineFrame()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='OverlayKLineFrame';
+
     this.MainFrame=null;    //主框架
     this.RightOffset=50;
     this.PenBorder=g_JSChartResource.OverlayFrame.BolderPen; //'rgb(0,0,0)'
@@ -8671,6 +8676,7 @@ function KLineHScreenFrame()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='KLineHScreenFrame';
     this.IsHScreen=true;        //是否是横屏
 
     //画标题背景色
@@ -9015,6 +9021,7 @@ function OverlayKLineHScreenFrame()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='OverlayKLineHScreenFrame';
     this.MainFrame=null;    //主框架
     this.RightOffset=50;
     this.PenBorder=g_JSChartResource.OverlayFrame.BolderPen; //'rgb(0,0,0)'
@@ -22239,6 +22246,8 @@ function DynamicChartTitlePainting()
     this.BGColor=g_JSChartResource.IndexTitleBGColor;
     this.OnDrawEvent;
 
+    this.IsKLineFrame=false;    //是否是K线框架标题
+
     this.IsClickTitle=function(x,y) //是否点击了指标标题
     {
         if (!this.TitleRect) return false;
@@ -22300,6 +22309,7 @@ function DynamicChartTitlePainting()
 
     this.Draw=function()
     {
+        this.IsKLineFrame= this.Frame.ClassName=='KLineFrame' || this.Frame.ClassName=='KLineHScreenFrame';
         this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
         this.TitleRect=null;
         if (this.CursorIndex==null ) return;
@@ -22342,6 +22352,7 @@ function DynamicChartTitlePainting()
         if (lockRect)   //指标上锁区域不显示动态标题
         {
             var index=Math.abs(this.CursorIndex-0.5);
+            if (this.IsKLineFrame) index=this.CursorIndex;
             var x=this.Frame.GetXFromIndex(index.toFixed(0));
             if (x>=lockRect.Left) return;
         }
@@ -22364,6 +22375,7 @@ function DynamicChartTitlePainting()
             {
                 var index=Math.abs(this.CursorIndex-0.5);
                 index=parseInt(index.toFixed(0));
+                if (this.IsKLineFrame) index=this.CursorIndex;
                 var dataIndex=item.Data.DataOffset+index;
                 if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
                 if (dataIndex<0) continue;
@@ -22472,6 +22484,7 @@ function DynamicChartTitlePainting()
                 {
                     var index=Math.abs(this.CursorIndex-0.5);
                     index=parseInt(index.toFixed(0));
+                    if (this.IsKLineFrame) index=this.CursorIndex;
                     var dataIndex=item.Data.DataOffset+index;
                     if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
                     if (dataIndex<0) continue;
@@ -22545,6 +22558,7 @@ function DynamicChartTitlePainting()
         if (lockRect)   //指标上锁区域不显示动态标题
         {
             var index=Math.abs(this.CursorIndex-0.5);
+            if (this.IsKLineFrame) index=this.CursorIndex;
             var x=this.Frame.GetXFromIndex(index.toFixed(0));
             if (x>=lockRect.Top) return;
         }
@@ -22567,6 +22581,7 @@ function DynamicChartTitlePainting()
             {
                 var index=Math.abs(this.CursorIndex-0.5);
                 index=parseInt(index.toFixed(0));
+                if (this.IsKLineFrame) index=this.CursorIndex;
                 var dataIndex=item.Data.DataOffset+index;
                 if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
                 if (dataIndex<0) continue;
@@ -27505,7 +27520,7 @@ function KLineChartContainer(uielement)
 
     this.SetCustomShow=function(customShow,hisData)
     {
-        if (!customShow || !customShow.Date || customShow.Date<20000101) return;
+        if (!customShow || !customShow.Date || customShow.Date<19910101) return;
 
         var firstDate=customShow.Date;
         var index=null;
@@ -45671,75 +45686,110 @@ function JSAlgorithm(errorHandler,symbolData)
                     return result;
             }
         }
-        
-        var bFirstPoint=false;
-        var bSecondPont=false;
-        var firstData={}, secondData={}, thridData={};
-        var lastData={};
-        for(let i in data)
-        {
-            result[i]=null;
-            var item=data[i];
-            if (!this.IsNumber(item)) continue;
 
-            if (bFirstPoint==false)
+        return this.ZIG_Calculate(data,n);
+    }
+
+    this.GetFirstVaildIndex=function(data)
+    {
+        for (var i = 0; i <data.length; ++i)
+        {
+            if (this.IsNumber(data[i]))
+                return i;
+        }
+    
+        return data.length;
+    }
+
+    this.ZIG_Calculate=function(data,dRate)
+    {
+        var dest=[];
+        var nDataCount=data.length;
+        var m=this.GetFirstVaildIndex(data);
+	    var i = 0, lLastPos = 0, lState = 0, j = 0;
+        var dif = 0;
+        for (i = m + 1, lLastPos = lState = m; i<nDataCount - 1 && lState == m; ++i)
+        {
+            lState = Math.abs(data[i] - data[m]) * 100 >= dRate*data[m] ? (data[i]>data[m] ? i : -i) : m;
+        }
+
+        for (; i<nDataCount - 1; ++i)
+        {
+            if (data[i] >= data[i - 1] && data[i] >= data[i + 1])
             {
-                bFirstPoint=true;
-                firstData={ID:parseInt(i), Value:item};  //第1个点
-            }
-            else if (bFirstPoint==true && bSecondPont==false)
-            {
-                var temp=(item-firstData.Value)/firstData.Value*100;
-                if (temp>n)
+                if (lState<0)
                 {
-                    secondData={ID:parseInt(i), Value:item, Up:true};
-                    lastData={ID:parseInt(i), Value:item};
-                    bSecondPont=true;
-                }
-                else if (temp<-n)
-                {
-                    secondData={ID:parseInt(i), Value:item, Up:false};
-                    lastData={ID:parseInt(i), Value:item};
-                    bSecondPont=true;
-                }
-            }
-            else if (bFirstPoint==true && bSecondPont==true)
-            {
-                var temp=(item-lastData.Value)/lastData.Value*100;
-                if (secondData.Up==true)    //找下跌的点
-                {
-                    if (temp<-n)
-                    {
-                        thridData={ID:parseInt(i), Value:item, Up:false};
-                        this.CalculateZIGLine(firstData,secondData,thridData,data,result);
-                        lastData={ID:parseInt(i), Value:item};
-                    }
+                    if ((data[i] - data[-lState]) * 100<dRate*data[-lState]) continue;
                     else
                     {
-                        if (item>lastData.Value) lastData={ID:parseInt(i), Value:item};
+                        dif = (data[lLastPos] - data[j = -lState]) / (-lState - lLastPos);
+                        dest[j--]=data[-lState];
+                        for (; j >= lLastPos; j--)
+                            dest[j]=data[-lState] + (-lState - j)*dif;
+                        lLastPos = -lState;
+                        lState = i;
                     }
                 }
-                else
+                else if (data[i]>data[lState])  lState = i;
+            }
+            else if (data[i] <= data[i - 1] && data[i] <= data[i + 1])
+            {
+                if (lState>0)
                 {
-                    if (temp>n)
-                    {
-                        thridData={ID:parseInt(i), Value:item, Up:true};
-                        this.CalculateZIGLine(firstData,secondData,thridData,data,result);
-                        lastData={ID:parseInt(i), Value:item};
-                    }
+                    if ((data[lState] - data[i]) * 100<dRate*data[lState]) continue;
                     else
                     {
-                        if (item<lastData.Value) lastData={ID:parseInt(i), Value:item};
+                        dif = (data[lState] - data[j = lLastPos]) / (lState - lLastPos);
+                        dest[j++]=data[lLastPos];
+                        for (; j <= lState; ++j)
+                            dest[j]=data[lLastPos] + (j - lLastPos)*dif;
+                        lLastPos = lState;
+                        lState = -i;
                     }
                 }
+                else if (data[i]<data[-lState]) lState = -i;
             }
         }
 
-        //计算最后1组数据
-        thridData={ID:data.length-1, Value:data[data.length-1], Up:!secondData.Up};
-        this.CalculateZIGLine(firstData,secondData,thridData,data,result);
-       
-        return result;
+        if (Math.abs(lState) >= nDataCount - 2)
+        {
+            if (lState>0 && data[nDataCount - 1] >= data[lState]) lState = nDataCount - 1;
+            if (lState<0 && data[nDataCount - 1] <= data[-lState]) lState = 1 - nDataCount;
+        }
+
+        if (lState>0)
+        {
+            dif = (data[lState] - data[j = lLastPos]) / (lState - lLastPos );
+            dest[j++]=data[lLastPos];
+            for (; j <= lState; ++j)
+                dest[j]=data[lLastPos] + (j - lLastPos)*dif;
+        }
+        else
+        {
+            dif = (data[lLastPos] - data[j = -lState]) / (-lState - lLastPos);
+            dest[j--]=data[-lState];
+            for (; j >= lLastPos; j--)
+                dest[j]=(data[-lState] + (-lState - j)*dif);
+        }
+        if ((lState = Math.abs(lState))<nDataCount - 1)
+        {
+            if (data[nDataCount - 1] >= data[lState])
+            {
+                dif = (data[nDataCount - 1] - data[j = lState]) / (nDataCount - lState);
+                dest[j++]=(data[lState]);
+                for (; j<nDataCount; ++j)
+                    dest[j]=(data[lState] + (j - lState)*dif);
+            }
+            else
+            {
+                dif = (data[lState] - data[j = nDataCount - 1]) / (nDataCount - lState);
+                dest[j--]=(data[nDataCount - 1]);
+                for (; j >= lState; j--)
+                    dest[j]=(data[nDataCount - 1] + (nDataCount - j)*dif);
+            }
+        }
+
+        return dest;
     }
 
     this.JSDraw=null;
@@ -45810,51 +45860,86 @@ function JSAlgorithm(errorHandler,symbolData)
     this.TROUGHBARS=function(data,n,n2)
     {
         var zigData=this.ZIG(data,n);   //计算ZIG
-        var i=0,result=[];
-        for(i=0;i<zigData.length;++i) 
-        {
-            result[i]=null;
-            if (this.IsNumber(zigData[i])) break;
-        }
+        var dest=[];
 
+        var lEnd =n2;
+        if (lEnd<1) return dest;
+
+        var nDataCount = zigData.length;
+        var trough = [];
+        for(var i=0;i<lEnd;++i) trough[i]=0;
+        var lFlag = 0;
+        var i = this.GetFirstVaildIndex(zigData) + 1;
+        for (lEnd--; i<nDataCount && zigData[i]>zigData[i - 1]; ++i);
+
+        for (; i<nDataCount && zigData[i]<zigData[i - 1]; ++i);
+
+        for (trough[0] = --i; i<nDataCount - 1; ++i)
+        {
+            if (zigData[i]<zigData[i + 1])
+            {
+                if (lFlag)
+                {
+                    if (lEnd)
+                    {
+                        var tempTrough=trough.slice(0);
+                        for(var j=0;j<lEnd;++j)
+                        {
+                            trough[j+1]=tempTrough[j];
+                        }
+                    } 
+                    trough[lFlag = 0] = i;
+                }
+            }
+            else lFlag = 1;
+            if (trough[lEnd]) dest[i]=(i - trough[lEnd]);
+        }
+        if (trough[lEnd]) dest[i]=(i - trough[lEnd]);
+
+        return dest;
+    }
+
+    this.TROUGH=function(data,n,n2)
+    {
+        var zigData=this.ZIG(data,n);   //计算ZIG
+        var dest=[];
+
+        var End=n2;
+        if(End<1) return dest;
+
+        var nDataCount = zigData.length;
         var trough=[];
-        var start=i,j=0;
-        for(;i<zigData.length;++i)  //第1个波谷
-        {
-            if (i+1<zigData.length && i-1>=0 &&  zigData[i]<zigData[i-1] && zigData[i]<zigData[i+1]) //波谷
-            {
-                trough[0]=i;
-                break;
-            }
-        }
+        for(var i=0;i<End;++i) trough[i]=0;
+        var i=1,Flag=0;
+        var i = this.GetFirstVaildIndex(zigData) + 1;
 
-        for(i+=1;i<zigData.length;++i)
-        {
-            result[i]=null;
-            if (i+1<zigData.length && i-1>=0 &&  zigData[i]<zigData[i-1] && zigData[i]<zigData[i+1]) //波谷
-            {
-                JSConsole.Complier.Log('[TROUGHBARS] i',i,zigData[i]);
-                ++j;
-                trough[j]=i;
-                if (j+1==n2)
-                {
-                    result[i]=i-start;
-                }
-                else if (j+1>n2)
-                {
-                    trough.shift(); //大于计算的波谷数,去掉第1个波谷
-                    start=trough[0];
-                    --j;
-                    result[i]=i-start;
+        for(End--; i<nDataCount && zigData[i]>zigData[i-1]; ++i);
+
+        for(; i<nDataCount && zigData[i]<zigData[i-1]; ++i);
+
+        for(trough[0]=--i;i<nDataCount-1;++i)
+        {	
+            if(zigData[i]<zigData[i+1])
+            {	
+                if(Flag) 
+                {	
+                    if(End) 
+                    {
+                        var tempTrough=trough.slice(0);
+                        for(var j=0;j<End;++j)
+                        {
+                            trough[j+1]=tempTrough[j];
+                        }
+                    }
+                    trough[Flag=0]=i;
                 }
             }
-            else
-            {
-                if (j+1===n2) result[i]=i-start;
-            }
+            else Flag=1;
+            if(trough[End]) dest[i]=zigData[trough[End]];
         }
+        if(trough[End]) dest[i]=zigData[trough[End]];
 
-        return result;
+        return dest;
     }
 
     /*
@@ -45867,51 +45952,87 @@ function JSAlgorithm(errorHandler,symbolData)
     this.PEAKBARS=function(data,n,n2)
     {
         var zigData=this.ZIG(data,n);   //计算ZIG
-        var i=0,result=[];
-        for(i=0;i<zigData.length;++i) 
-        {
-            result[i]=null;
-            if (this.IsNumber(zigData[i])) break;
-        }
+        var dest=[];
 
-        var trough=[];
-        var start=i,j=0;
-        for(;i<zigData.length;++i)  //第1个波峰
-        {
-            if (i+1<zigData.length && i-1>=0 &&  zigData[i]>zigData[i-1] && zigData[i]>zigData[i+1]) //波峰
-            {
-                trough[0]=i;
-                break;
-            }
-        }
+        var nDataCount = zigData.length;
+        var lEnd = n2;
+        if (lEnd < 1) return dest;
 
-        for(i+=1;i<zigData.length;++i)
+        var peak = [];
+        for(var i=0;i<lEnd;++i) peak[i]=0;
+        var lFlag = 0;
+        
+        var i = this.GetFirstVaildIndex(zigData) + 1;
+        for (lEnd--; i<nDataCount && zigData[i]<zigData[i - 1]; ++i);
+
+        for (; i<nDataCount && zigData[i]>zigData[i - 1]; ++i);
+
+        for (peak[0] = --i; i<nDataCount - 1; ++i)
         {
-            result[i]=null;
-            if (i+1<zigData.length && i-1>=0 &&  zigData[i]>zigData[i-1] && zigData[i]>zigData[i+1]) //波峰
+            if (zigData[i]>zigData[i + 1])
             {
-                JSConsole.Complier.Log('[TROUGHBARS] i',i,zigData[i]);
-                ++j;
-                trough[j]=i;
-                if (j+1==n2)
+                if (lFlag)
                 {
-                    result[i]=i-start;
-                }
-                else if (j+1>n2)
-                {
-                    trough.shift(); //大于计算的波谷数,去掉第1个波谷
-                    start=trough[0];
-                    --j;
-                    result[i]=i-start;
+                    if (lEnd) 
+                    {
+                        var tempPeak=peak.slice(0);
+                        for(var j=0;j<lEnd;++j)
+                        {
+                            peak[j+1]=tempPeak[j];
+                        }
+                    }
+                    peak[lFlag = 0] = i;
                 }
             }
-            else
-            {
-                if (j+1===n2) result[i]=i-start;
-            }
+            else lFlag = 1;
+            if (peak[lEnd]) dest[i]=(i - peak[lEnd]);
         }
+        if (peak[lEnd])dest[i]=(i - peak[lEnd]);
 
-        return result;
+        return dest;
+    }
+
+    this.PEAK=function(data,n,n2)
+    {
+        var zigData=this.ZIG(data,n);   //计算ZIG
+        var dest=[];
+
+        var nDataCount = zigData.length;
+        var lEnd = n2;
+        if (lEnd < 1) return dest;
+
+        var lFlag = 0;
+        var peak = [];
+        for(var i=0;i<lEnd;++i) peak[i]=0;
+        
+        var i = this.GetFirstVaildIndex(zigData) + 1;
+        for (lEnd--; i<nDataCount && zigData[i]<zigData[i - 1]; ++i);
+
+        for (; i<nDataCount && zigData[i]>zigData[i - 1]; ++i);
+
+        for (peak[0] = --i; i<nDataCount - 1; ++i)
+        {
+            if (zigData[i]>zigData[i + 1])
+            {
+                if (lFlag)
+                {
+                    if (lEnd) 
+                    {
+                        var tempPeak=peak.slice(0);
+                        for(var j=0;j<lEnd;++j)
+                        {
+                            peak[j+1]=tempPeak[j];
+                        }
+                    }
+                    peak[lFlag = 0] = i;
+                }
+            }
+            else lFlag = 1;
+            if (peak[lEnd]) dest[i]=(zigData[peak[lEnd]]);
+        }
+        if (peak[lEnd]) dest[i]=(zigData[peak[lEnd]]);
+        
+        return dest;
     }
 
     /*
@@ -47159,6 +47280,38 @@ function JSAlgorithm(errorHandler,symbolData)
         
     }
 
+    /*
+    FRACPART(A)	 取得小数部分
+    含义:FRACPART(A)返回数值的小数部分
+    阐释:例如FRACPART(12.3)求得0.3,FRACPART(-3.5)求得-0.5
+    */
+    this.FRACPART=function(data)
+    {
+        if (Array.isArray(data))
+        {
+            var result=[];
+            var integer=0;
+            for(var i in data)
+            {
+                var item=data[i];
+                if (this.IsNumber(item)) 
+                {
+                    integer=parseInt(item);
+                    result[i]=item-integer;
+                }
+                else result[i]=null;
+            }
+    
+            return result;
+        }
+        else if (this.IsNumber(data))
+        {
+            integer=parseInt(data);
+            var result=data-integer;
+            return result;
+        }
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -47243,8 +47396,12 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.ZIG(args[0],args[1]);
             case 'TROUGHBARS':
                 return this.TROUGHBARS(args[0],args[1],args[2]);
+            case "TROUGH":
+                return this.TROUGH(args[0],args[1],args[2]);
             case 'PEAKBARS':
                 return this.PEAKBARS(args[0],args[1],args[2]);
+            case 'PEAK':
+                return this.PEAK(args[0],args[1],args[2]);
             case 'COST':
                 return this.COST(args[0]);
             case 'WINNER':
@@ -47311,6 +47468,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.CEILING(args[0]);
             case 'FLOOR':
                 return this.FLOOR(args[0]);
+            case 'FRACPART':
+                return this.FRACPART(args[0]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
@@ -49194,9 +49353,15 @@ function JSSymbolData(ast,option,jsExecute)
 
         let lCount=this.Data.Data.length;
         for(let i=lCount-1;i>=0;--i)
-            result.push(i);
+            result[i]=(i);
 
         return result;
+    }
+
+    this.GetTotalBarsCount=function()
+    {
+        let lCount=this.Data.Data.length;
+        return lCount;
     }
 
     this.GetIsLastBar=function()
@@ -51117,6 +51282,7 @@ function JSExecute(ast,option)
         ['FROMOPEN',null],  //已开盘有多长分钟
 
         ['CURRBARSCOUNT',null], //到最后交易日的周期数
+        ['TOTALBARSCOUNT',null],
         ['ISLASTBAR',null],     //判断是否为最后一个周期
 
         ['CAPITAL',null],   //流通股本（手）
@@ -51281,6 +51447,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetIndexCacheData(name);
             case 'CURRBARSCOUNT':
                 return this.SymbolData.GetCurrBarsCount();
+            case "TOTALBARSCOUNT":
+                return this.SymbolData.GetTotalBarsCount();
             case 'ISLASTBAR':
                 return this.SymbolData.GetIsLastBar();
             case 'CAPITAL':

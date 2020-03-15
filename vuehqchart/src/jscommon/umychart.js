@@ -128,7 +128,7 @@ function JSChart(divElement)
             if (option.KLine.IsShowTooltip==false) chart.IsShowTooltip=false;
             if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
             if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
-            if (option.KLine.FirstShowDate>20000101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };
+            if (option.KLine.FirstShowDate>19910101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };
             if (option.KLine.RightSpaceCount>0) chart.RightSpaceCount=option.KLine.RightSpaceCount;
         }
 
@@ -3611,6 +3611,7 @@ function IChartFramePainting()
 {
     this.HorizontalInfo=new Array();    //Y轴
     this.VerticalInfo=new Array();      //X轴
+    this.ClassName='IChartFramePainting';
 
     this.Canvas;                        //画布
 
@@ -3635,7 +3636,8 @@ function IChartFramePainting()
     this.LockPaint = null;
 
     this.YSpecificMaxMin=null;         //指定Y轴最大最小值
-    this.IsShowBorder = true;            //是否显示边框
+    this.IsShowBorder = true;          //是否显示边框
+    
 
     this.Draw=function()
     {
@@ -4688,6 +4690,7 @@ function KLineFrame()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='KLineFrame';
     this.ToolbarID=Guid();  //工具条Div id
 
     this.ModifyIndex=true;      //是否显示'改参数'菜单
@@ -5209,6 +5212,8 @@ function OverlayKLineFrame()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='OverlayKLineFrame';
+
     this.MainFrame=null;    //主框架
     this.RightOffset=50;
     this.PenBorder=g_JSChartResource.OverlayFrame.BolderPen; //'rgb(0,0,0)'
@@ -5326,6 +5331,7 @@ function KLineHScreenFrame()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='KLineHScreenFrame';
     this.IsHScreen=true;        //是否是横屏
 
     //画标题背景色
@@ -5670,6 +5676,7 @@ function OverlayKLineHScreenFrame()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='OverlayKLineHScreenFrame';
     this.MainFrame=null;    //主框架
     this.RightOffset=50;
     this.PenBorder=g_JSChartResource.OverlayFrame.BolderPen; //'rgb(0,0,0)'
@@ -18894,6 +18901,8 @@ function DynamicChartTitlePainting()
     this.BGColor=g_JSChartResource.IndexTitleBGColor;
     this.OnDrawEvent;
 
+    this.IsKLineFrame=false;    //是否是K线框架标题
+
     this.IsClickTitle=function(x,y) //是否点击了指标标题
     {
         if (!this.TitleRect) return false;
@@ -18955,6 +18964,7 @@ function DynamicChartTitlePainting()
 
     this.Draw=function()
     {
+        this.IsKLineFrame= this.Frame.ClassName=='KLineFrame' || this.Frame.ClassName=='KLineHScreenFrame';
         this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
         this.TitleRect=null;
         if (this.CursorIndex==null ) return;
@@ -18997,6 +19007,7 @@ function DynamicChartTitlePainting()
         if (lockRect)   //指标上锁区域不显示动态标题
         {
             var index=Math.abs(this.CursorIndex-0.5);
+            if (this.IsKLineFrame) index=this.CursorIndex;
             var x=this.Frame.GetXFromIndex(index.toFixed(0));
             if (x>=lockRect.Left) return;
         }
@@ -19019,6 +19030,7 @@ function DynamicChartTitlePainting()
             {
                 var index=Math.abs(this.CursorIndex-0.5);
                 index=parseInt(index.toFixed(0));
+                if (this.IsKLineFrame) index=this.CursorIndex;
                 var dataIndex=item.Data.DataOffset+index;
                 if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
                 if (dataIndex<0) continue;
@@ -19127,6 +19139,7 @@ function DynamicChartTitlePainting()
                 {
                     var index=Math.abs(this.CursorIndex-0.5);
                     index=parseInt(index.toFixed(0));
+                    if (this.IsKLineFrame) index=this.CursorIndex;
                     var dataIndex=item.Data.DataOffset+index;
                     if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
                     if (dataIndex<0) continue;
@@ -19200,6 +19213,7 @@ function DynamicChartTitlePainting()
         if (lockRect)   //指标上锁区域不显示动态标题
         {
             var index=Math.abs(this.CursorIndex-0.5);
+            if (this.IsKLineFrame) index=this.CursorIndex;
             var x=this.Frame.GetXFromIndex(index.toFixed(0));
             if (x>=lockRect.Top) return;
         }
@@ -19222,6 +19236,7 @@ function DynamicChartTitlePainting()
             {
                 var index=Math.abs(this.CursorIndex-0.5);
                 index=parseInt(index.toFixed(0));
+                if (this.IsKLineFrame) index=this.CursorIndex;
                 var dataIndex=item.Data.DataOffset+index;
                 if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
                 if (dataIndex<0) continue;
@@ -24160,7 +24175,7 @@ function KLineChartContainer(uielement)
 
     this.SetCustomShow=function(customShow,hisData)
     {
-        if (!customShow || !customShow.Date || customShow.Date<20000101) return;
+        if (!customShow || !customShow.Date || customShow.Date<19910101) return;
 
         var firstDate=customShow.Date;
         var index=null;
