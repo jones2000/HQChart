@@ -15,6 +15,8 @@
 <script>
 import JSCommon from "../umychart.vue/umychart.vue.js";
 import StockChart from './stockchart.vue'
+import '../../jscommon/umychart.resource/font/iconfont.css'
+import '../../jscommon/umychart.resource/css/tools.css'
 
 //股票周期枚举
 var STOCK_PERIOD=
@@ -41,6 +43,12 @@ DefaultData.GetKLineOption = function (option)
     {
         Type: '历史K线图', 
         IsShowCorssCursorInfo:true,
+        Windows:        //指定指标
+        [
+            { Index: "MA",Modify: true, Change: true },
+            { Index: "KDJ" ,Modify: true, Change: true, Close:true},
+            { Index: "VOL" ,Modify: true, Change: true, Close:true}
+        ],
         KLine:
         {
             Right:1,                            //复权 0 不复权 1 前复权 2 后复权

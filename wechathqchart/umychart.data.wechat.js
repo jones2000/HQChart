@@ -1242,7 +1242,7 @@ function ChartData()
             var date = this.Data[i].Date;
             var time = this.Data[i].Time;
 
-            if (firstItem.Date >= date && firstItem.Time >= time) 
+            if (firstItem.Date > date || (firstItem.Date == date && firstItem.Time >= time) ) 
             {
                 index = i;
                 if (firstItem.Date == date && firstItem.Time == time) bFind = true;

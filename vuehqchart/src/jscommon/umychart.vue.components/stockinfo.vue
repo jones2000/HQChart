@@ -4,17 +4,17 @@
             <p class="stockName">
                 <span class='nameText'>{{StockData.Name.Text}}</span>
                 <span title='融资融券标的' v-if='StockData.IsMargin'>
-                    <svg class="icon iconStockinfo" aria-hidden="true">
+                    <svg class="symbolIkcon iconStockinfo" aria-hidden="true">
                         <use xlink:href="#icon-margin"></use>
                     </svg>
                 </span>
                 <span title='沪港通标的' v-if='StockData.IsSHHK'>
-                    <svg class="icon iconStockinfo" aria-hidden="true">
+                    <svg class="symbolIkcon iconStockinfo" aria-hidden="true">
                         <use xlink:href="#icon-shhk"></use>
                     </svg>
                 </span>
                 <span :title='"AH股\n港股："+StockData.HK.Symbol' v-if='StockData.IsHK'>
-                    <svg class="icon iconStockinfo" aria-hidden="true">
+                    <svg class="symbolIkcon iconStockinfo" aria-hidden="true">
                         <use xlink:href="#icon-hk"></use>
                     </svg>
                 </span>

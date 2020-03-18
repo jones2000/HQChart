@@ -3677,8 +3677,6 @@ function JSAlgorithm(errorHandler,symbolData)
 
     /*三角函数调用 func 三角函数 
     反正切值. 用法: ATAN(X)返回X的反正切值
-    反余弦值. 用法: ACOS(X)返回X的反余弦值
-    反正弦值. 用法: ASIN(X)返回X的反正弦值
     余弦值.  用法: COS(X)返回X的余弦值
     正弦值.  用法: SIN(X)返回X的正弦值
     正切值.  用法: TAN(X)返回X的正切值
@@ -3710,6 +3708,75 @@ function JSAlgorithm(errorHandler,symbolData)
         }
     }
 
+    //反正弦值. 用法: ASIN(X)返回X的反正弦值
+    this.ASIN=function(data)
+    {
+        if (!Array.isArray(data))
+        {
+            if (this.IsNumber(data)) return Math.acos(data);
+
+            return null;
+        }
+        else
+        {
+            var result=[];
+            for(let i in data)
+            {
+                var item=data[i];
+                result[i]=null;
+                if (this.IsNumber(item)) 
+                {
+                    if (item>=-1 && item<=1) 
+                    {
+                        result[i]=Math.asin(item);
+                    }
+                    else if (i-1>=0)
+                    {
+                        var preItem=result[i-1];
+                        if (this.IsNumber(preItem)) result[i]=preItem;
+                    }
+                }
+            }
+
+            return result;
+        }
+    }
+
+
+    //反余弦值. 用法: ACOS(X)返回X的反余弦值
+    this.ACOS=function(data)
+    {
+        if (!Array.isArray(data))
+        {
+            if (this.IsNumber(data)) return Math.acos(data);
+
+            return null;
+        }
+        else
+        {
+            var result=[];
+            for(let i in data)
+            {
+                var item=data[i];
+                result[i]=null;
+                if (this.IsNumber(item)) 
+                {
+                    if (item>=-1 && item<=1) 
+                    {
+                        result[i]=Math.acos(item);
+                    }
+                    else if (i-1>=0)
+                    {
+                        var preItem=result[i-1];
+                        if (this.IsNumber(preItem)) result[i]=preItem;
+                    }
+                }
+            }
+
+            return result;
+        }
+    }
+
     /*
     LAST(X,A,B):持续存在.
     用法:
@@ -3719,29 +3786,31 @@ function JSAlgorithm(errorHandler,symbolData)
     */
     this.LAST=function(data,n,n2)
     {
+        if (!Array.isArray(data)) return [];
+        
         var result=[];
-        if (n2<=0) n2=data.length-1;
-        if (n2>n) return result;
-
-        var day=0;
-
-        for(let i=0,j=0;i<data.length;++i)
+        var lCount=data.length;
+        var nStart = n;
+        var nEnd = n2, k = 0, i = 0, j = 0, t = 0;
+        for (; k < lCount; ++k)
         {
-            result[i]=0;
-            day=0;
-            var start=i-n;
-            var end=i-n2;
-            if (start<0 || end<0) continue;
-
-            for(j=start;j<data.length && j<=end;++j,++day)
-            {
-                if (!data[j]) break;
-            }
-
-            if (day==end-start+1)   //[start,end]
-                result[i]=1;
+            if (data[k]) break;
         }
 
+        for (i = k, t = k - nEnd + 1; i<lCount; ++i, ++t)
+        {
+            j = (nStart == 0) ? k : Math.max(k, i - nStart);
+            for (; j < t; ++j)
+            {
+                if (data[j]<=0)
+                {
+                    break;
+                }
+            }
+
+            result[i]=(j<t ? 0 : 1);
+        }
+        
         return result;
     }
 
@@ -5562,9 +5631,9 @@ function JSAlgorithm(errorHandler,symbolData)
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
             case 'ACOS':
-                return this.Trigonometric(args[0],Math.acos);
+                return this.ACOS(args[0]);
             case 'ASIN':
-                return this.Trigonometric(args[0],Math.asin);
+                return this.ASIN(args[0]);
             case 'COS':
                 return this.Trigonometric(args[0],Math.cos);
             case 'SIN':
@@ -7441,7 +7510,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         let lCount=this.Data.Data.length;
         for(let i=lCount-1;i>=0;--i)
-            result[i]=(i);
+            result.push(i);
 
         return result;
     }
@@ -7674,7 +7743,7 @@ function JSSymbolData(ast,option,jsExecute)
                     var financeData=item.capital;
                     if (!financeData) continue;
                     if (!this.IsNumber(financeData.a)) continue;
-                    indexData.Value=financeData.a/100;    //流通股本（手）
+                    indexData.Value=financeData.a/100;    //当前流通股本（手）
                     bFinanceData=true;
                     break;
                 case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_TOTAL_EQUITY_DATA:
@@ -7786,6 +7855,17 @@ function JSSymbolData(ast,option,jsExecute)
             }
 
             aryData.push(indexData);
+        }
+
+        if (jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA) //当前流通股本 单数值
+        {
+            var value=null;
+            if (aryData.length>0)
+            {
+                value=parseInt(aryData[aryData.length-1].Value);
+            }
+            this.FinanceData.set(jobID,value);
+            return;
         }
 
         let aryFixedData;
@@ -8909,7 +8989,7 @@ function JSSymbolData(ast,option,jsExecute)
         for(let i in this.Data.Data)
         {
             var item=this.Data.Data[i];
-            result[i]=item.Date;
+            result[i]=item.Date-19000000;
         }
 
         return result;
@@ -9215,7 +9295,7 @@ var JS_EXECUTE_JOB_ID=
 
             [100,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SHAREHOLDER_DATA],      //FINANCE(100) 股东人数
 
-            [200,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA],          //流通股本（手）
+            [200,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA],          //CAPITAL  当前流通股本（手）
             [201,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA]          //换手率 成交量/流通股本
            
         ]);

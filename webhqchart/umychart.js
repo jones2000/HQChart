@@ -2970,6 +2970,7 @@ function JSChartContainer(uielement)
 
     this.DataMove=function(step,isLeft)
     {
+        var moveStep=step;
         step=parseInt(step/this.StepPixel);  //除以4个像素
         if (step<=0) return false;
 
@@ -2982,6 +2983,13 @@ function JSChartContainer(uielement)
         if (this.Frame.XPointCount) xPointcount=this.Frame.XPointCount;
         else xPointcount=this.Frame.SubFrame[0].Frame.XPointCount;
         if (!xPointcount) return false;
+
+        if (this.Frame.SubFrame && this.Frame.SubFrame.length>0 && this.Frame.SubFrame[0].Frame)
+        {
+            var fristFrame=this.Frame.SubFrame[0].Frame;
+            if (fristFrame.DataWidth<=1 || fristFrame.DistanceWidth<=1) //K线在缩放很小的时候 移动加速
+                step=moveStep*this.StepPixel;
+        }
 
         if (isLeft) //-->
         {
@@ -7762,7 +7770,7 @@ function ChartData()
             var date=this.Data[i].Date;
             var time=this.Data[i].Time;
 
-            if (firstItem.Date>=date && firstItem.Time>=time)
+            if (firstItem.Date>date || (firstItem.Date==date  &&  firstItem.Time>=time) )
             {
                 index=i;
                 if (firstItem.Date==date && firstItem.Time==time) bFind=true;
@@ -34567,7 +34575,7 @@ function ChangeIndexDialog(divElement)
     //下载数据 如果上次下载过可以 可以不用下载
     this.ReqeustData=function()
     {
-        if($(".target-left ul li").length>0){
+        if($("#" + this.ID + " .target-left ul li").length>0){
             return false;
         }
         var url = this.IndexTreeApiUrl;
@@ -34584,6 +34592,7 @@ function ChangeIndexDialog(divElement)
 
         //处理左侧list列表
         function changeIndexLeftList(item) {
+            $(".target-left ul").html('');
             $.each(item,function(i,result){
                 var htmlList;
                 htmlList = '<li>' + result.node + '</li>';

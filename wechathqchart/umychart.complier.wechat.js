@@ -3468,8 +3468,6 @@ function JSAlgorithm(errorHandler, symbolData)
 
     /*三角函数调用 func 三角函数 
     反正切值. 用法: ATAN(X)返回X的反正切值
-    反余弦值. 用法: ACOS(X)返回X的反余弦值
-    反正弦值. 用法: ASIN(X)返回X的反正弦值
     余弦值.  用法: COS(X)返回X的余弦值
     正弦值.  用法: SIN(X)返回X的正弦值
     正切值.  用法: TAN(X)返回X的正切值
@@ -3495,6 +3493,74 @@ function JSAlgorithm(errorHandler, symbolData)
                 var item = data[i];
                 if (this.IsNumber(item)) result[i] = func(item);
                 else result[i] = null;
+            }
+
+            return result;
+        }
+    }
+
+    //反正弦值. 用法: ASIN(X)返回X的反正弦值
+    this.ASIN = function (data) 
+    {
+        if (!Array.isArray(data)) 
+        {
+            if (this.IsNumber(data)) return Math.acos(data);
+            return null;
+        }
+        else 
+        {
+            var result = [];
+            for (let i in data) 
+            {
+                var item = data[i];
+                result[i] = null;
+                if (this.IsNumber(item)) 
+                {
+                    if (item >= -1 && item <= 1) 
+                    {
+                        result[i] = Math.asin(item);
+                    }
+                    else if (i - 1 >= 0) 
+                    {
+                        var preItem = result[i - 1];
+                        if (this.IsNumber(preItem)) result[i] = preItem;
+                    }
+                }
+            }
+
+            return result;
+        }
+    }
+
+
+    //反余弦值. 用法: ACOS(X)返回X的反余弦值
+    this.ACOS = function (data) 
+    {
+        if (!Array.isArray(data)) 
+        {
+            if (this.IsNumber(data)) return Math.acos(data);
+
+            return null;
+        }
+        else 
+        {
+            var result = [];
+            for (let i in data) 
+            {
+                var item = data[i];
+                result[i] = null;
+                if (this.IsNumber(item)) 
+                {
+                    if (item >= -1 && item <= 1) 
+                    {
+                        result[i] = Math.acos(item);
+                    }
+                    else if (i - 1 >= 0)    //超出范围使用上一个数值
+                    {
+                        var preItem = result[i - 1];
+                        if (this.IsNumber(preItem)) result[i] = preItem;
+                    }
+                }
             }
 
             return result;
@@ -5000,9 +5066,9 @@ function JSAlgorithm(errorHandler, symbolData)
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);
             case 'ACOS':
-                return this.Trigonometric(args[0], Math.acos);
+                return this.ACOS(args[0]);
             case 'ASIN':
-                return this.Trigonometric(args[0], Math.asin);
+                return this.ASIN(args[0]);
             case 'COS':
                 return this.Trigonometric(args[0], Math.cos);
             case 'SIN':
@@ -6507,6 +6573,17 @@ function JSSymbolData(ast,option,jsExecute)
             aryData.push(indexData);
         }
 
+        if (jobID == JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA) //当前流通股本 单数值
+        {
+            var value = null;
+            if (aryData.length > 0) 
+            {
+                value = parseInt(aryData[aryData.length - 1].Value);
+            }
+            this.FinanceData.set(jobID, value);
+            return;
+        }
+
         let aryFixedData;
         if (bFinanceData) 
         {
@@ -7140,7 +7217,7 @@ function JSSymbolData(ast,option,jsExecute)
         for (let i in this.Data.Data) 
         {
             var item = this.Data.Data[i];
-            result[i] = item.Date;
+            result[i] = item.Date - 19000000;;
         }
 
         return result;
