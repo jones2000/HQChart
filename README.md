@@ -261,6 +261,13 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 [手机端行情页面](https://opensource2.zealink.com/product/hqNewdemoH5/stockHq.html#/StockHq)<br>
 [代码地址(vue.demo/hq_h5_pages)](/vue.demo/hq_h5_pages) <br>
 
+## VUE版本手机端样例2 黑色风格
+![手机端行情页面](/小程序行情模块用例/image/hqchart_phone_3.png) <br>
+![手机端行情页面](/小程序行情模块用例/image/hqchart_phone_4.png) <br>
+[手机端行情页面](https://opensource2.zealink.com/hqweb/hq_h5_demo_black/stockHq.html#/StockHq)<br>
+[代码地址(vue.demo/hq_h5_pages)](/vue.demo/hq_h5_demo_black) <br>
+
+
 ## js页面样例
 ![手机端行情页面](/小程序行情模块用例/image/hqchart_phone_2.png) <br>
 [个股详情手机端h5](https://opensource2.zealink.com/hqweb/hqpages/stockpage.html?) <br>
