@@ -12361,7 +12361,7 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
         }
 
         var aryFittingData;
-        if (ChartData.IsDayPeriod(hqChart.Period))
+        if (ChartData.IsDayPeriod(hqChart.Period,true))
             aryFittingData = kdata.GetFittingData(arySingleData);        //数据和主图K线拟合
         else
             aryFittingData = kdata.GetMinuteFittingData(arySingleData);  //数据和主图K线拟合

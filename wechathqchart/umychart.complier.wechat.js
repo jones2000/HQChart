@@ -351,6 +351,16 @@ function Scanner(code, ErrorHandler)
             case ',':
                 ++this.Index;
                 break;
+            case '.':
+                ++this.Index;
+                /*if (this.Source[this.Index] === '.' && this.Source[this.Index + 1] === '.') 
+                {
+                    //Spread operator: ...
+                    this.Index += 2;
+                    str = '...';
+                }
+                */
+                break;
             default:
                 str=this.Source.substr(this.Index,3);
                 if (str=='AND') 
@@ -692,6 +702,8 @@ function Node()
     this.IsNeedBlockIncreaseData = new Set();     //是否需要市场涨跌股票数据统计
     this.IsNeedSymbolExData = new Set();          //下载股票行情的其他数据
 
+    this.IsAPIData = []       //加载API数据
+
     this.GetDataJobList=function()  //下载数据任务列表
     {
         let jobs=[];
@@ -724,6 +736,12 @@ function Node()
         for (var jobID of this.IsNeedNewsAnalysisData) 
         {
             jobs.push({ID:jobID});
+        }
+
+        for (var i in this.IsAPIData) 
+        {
+            var item = this.IsAPIData[i];
+            jobs.push(item);
         }
 
         //行情其他数据
@@ -777,7 +795,7 @@ function Node()
         }
     }
 
-    this.VerifySymbolFunction=function(callee,args)
+    this.VerifySymbolFunction = function (callee, args, token)
     {
         if (callee.Name=='DYNAINFO') 
         {
@@ -824,6 +842,15 @@ function Node()
         {
             var blockSymbol = args[0].Value;
             if (!this.IsNeedBlockIncreaseData.has(blockSymbol)) this.IsNeedBlockIncreaseData.add(blockSymbol);
+            return;
+        }
+
+        if (callee.Name == "LOADAPIDATA") //加载API数据
+        {
+            var item = { Name: callee.Name, ID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CUSTOM_API_DATA, Args: args };
+            if (token) item.Token = { Index: token.Start, Line: token.LineNumber };
+
+            this.IsAPIData.push(item);
             return;
         }
     }
@@ -878,11 +905,16 @@ function Node()
         return { Type:Syntax.EmptyStatement };
     }
 
-    this.CallExpression=function(callee, args) 
+    this.CallExpression = function (callee, args, token) 
     {
-        this.VerifySymbolFunction(callee, args);
+        this.VerifySymbolFunction(callee, args, token);
 
         return { Type:Syntax.CallExpression, Callee:callee, Arguments:args };
+    }
+
+    this.StaticMemberExpression = function (object, property) 
+    {
+        return { Type: Syntax.MemberExpression, Computed: false, Object: object, Property: property };
     }
 }
 
@@ -1308,12 +1340,20 @@ function JSParser(code)
 
         while(true)
         {
-            if (this.Match('('))
+            if (this.Match('.')) 
+            {
+                this.Context.IsBindingElement = false;
+                this.Context.IsAssignmentTarget = true;
+                this.Expect('.');
+                const property = this.ParseIdentifierName();
+                expr = this.Finalize(this.StartNode(startToken), this.Node.StaticMemberExpression(expr, property));
+            }
+            else if (this.Match('('))
             {
                 this.Context.IsBindingElement=false;
                 this.Context.IsAssignmentTarget=false;
                 var args=this.ParseArguments(); //解析 调用参数
-                expr=this.Finalize(this.StartNode(startToken), this.Node.CallExpression(expr,args));
+                expr = this.Finalize(this.StartNode(startToken), this.Node.CallExpression(expr, args, startToken));
             }
             else
             {
@@ -1322,6 +1362,38 @@ function JSParser(code)
         }
 
         return expr;
+    }
+
+    /*
+    BooleanLiteral = 1,
+    EOF=2,
+    Identifier=3,
+    Keyword=4,
+    NullLiteral=5,
+    NumericLiteral=6,
+    Punctuator=7,
+    StringLiteral=9,
+    RegularExpression=9,
+    Template=10
+    */
+    this.IsIdentifierName = function (token) 
+    {
+        return token.Type === 3 //Identifier 
+            || token.Type === 4 //Keyword 
+            || token.Type === 1 //BooleanLiteral 
+            || token.Type === 5;//NullLiteral;
+    }
+
+    this.ParseIdentifierName = function () 
+    {
+        const node = this.CreateNode();
+        const token = this.NextToken();
+        if (!this.IsIdentifierName(token)) 
+        {
+            this.ThrowUnexpectedToken(token);
+        }
+
+        return this.Finalize(node, this.Node.Identifier(token.Value));
     }
 
     // https://tc39.github.io/ecma262/#sec-left-hand-side-expressions
@@ -1464,6 +1536,7 @@ function JSParser(code)
         switch(expr.Type)
         {
             case Syntax.Identifier:
+            case Syntax.MemberExpression:
             case Syntax.AssignmentExpression:
                 break;
             default:
@@ -6994,6 +7067,141 @@ function JSSymbolData(ast,option,jsExecute)
             this.NewsAnalysisData.set(jobID, bindData.GetValue());
         }
     }
+
+    this.DownloadCustomAPIData = function (job) 
+    {
+        if (!this.NetworkFilter) return this.Execute.RunNextJob();
+
+        var args = [];
+        for (var i in job.Args) 
+        {
+            var item = job.Args[i];
+            if (item.Type == Syntax.Literal) 
+            {
+                args.push(item.Value);
+            }
+            else if (item.Type == Syntax.Identifier)  //变量 !!只支持默认的变量值
+            {
+                var isFind = false;
+                for (var j in this.Arguments) 
+                {
+                    const argItem = this.Arguments[j];
+                    if (argItem.Name == item.Name) 
+                    {
+                        args.push(argItem.Value);
+                        isFind = true;
+                        break;
+                    }
+                }
+
+                if (!isFind) 
+                {
+                    var token = job.Token;
+                    this.Execute.ErrorHandler.ThrowError(token.Index, token.Line, 0, `LoadAPIData() Error: can't read ${item.Name}`);
+                }
+            }
+            else 
+            {
+                return this.Execute.RunNextJob();
+            }
+        }
+
+        var self = this;
+        var obj =
+        {
+            Name: 'JSSymbolData::DownloadCustomAPIData', //类名::函数名
+            Explain: '下载自定义api数据',
+            Period: this.Period,
+            Right: this.Right,
+            Symbol: this.Symbol,
+            KData: this.Data,        //K线数据
+            Cache: this.CustomAPIData,
+            Args: args,
+            Self: this,
+            PreventDefault: false
+        };
+
+        this.NetworkFilter(obj, function (data) {
+            self.RecvCustomAPIData(data, args);
+            self.Execute.RunNextJob();
+        });
+
+        if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+
+        this.Execute.RunNextJob();
+    }
+
+    this.RecvCustomAPIData = function (recvData, args) 
+    {
+        if (!recvData || !recvData.data) return;
+
+        var data = recvData.data;
+        var apiKey = this.GenerateCustomAPIKey(args);
+        if (ChartData.IsMinutePeriod(this.Period, true)) 
+        {
+            if (!data.date || !data.time) return;
+
+            var date = data.date;
+            var time = data.time;
+            for (var key in data) 
+            {
+                if (key == 'date' || key == 'time') continue;
+                var item = data[key];
+            }
+        }
+        else if (ChartData.IsDayPeriod(this.Period, true)) 
+        {
+            if (!data.date) return;
+
+            var date = data.date;
+            var result = { __Type__: "Object" };
+            for (var key in data) {
+                if (key == 'date') continue;
+
+                var item = data[key];
+                if (Array.isArray(item)) 
+                {
+                    var value = this.FittingCustomAPIArray(item, date);
+                    result[key] = value;
+                }
+                else if (this.IsNumber(item)) 
+                {
+                    result[key] = item;
+                }
+            }
+
+            this.CustomAPIData.set(apiKey, result);
+        }
+    }
+
+    this.FittingCustomAPIArray = function (data, date, time) 
+    {
+        var kdata = this.Data;   //K线
+
+        var arySingleData = [];
+        for (var i in data) 
+        {
+            var value = data[i];
+            var indexItem = new SingleData(); //单列指标数据
+            indexItem.Date = date[i];
+            if (time && i < time.length) indexItem.Time = time[i];
+            indexItem.Value = value;
+            arySingleData.push(indexItem);
+        }
+
+        var aryFittingData;
+        if (ChartData.IsDayPeriod(this.Period, true))
+            aryFittingData = kdata.GetFittingData(arySingleData);        //数据和主图K线拟合
+        else if (ChartData.IsMinutePeriod(this.Period, true))
+            aryFittingData = kdata.GetMinuteFittingData(arySingleData);  //数据和主图K线拟合
+        else
+            return null;
+
+        var bindData = new ChartData();
+        bindData.Data = aryFittingData;
+        var result = bindData.GetValue();
+        return result;
+    }
    
     this.JsonDataToHistoryData=function(data)
     {
@@ -7447,6 +7655,8 @@ var JS_EXECUTE_JOB_ID=
     JOB_CUSTOM_FUNCTION_DATA: 6000,       //自定义函数
     JOB_CUSTOM_VARIANT_DATA: 6001,        //自定义变量
 
+    JOB_DOWNLOAD_CUSTOM_API_DATA: 30000,    //自定义数据
+
     JOB_RUN_SCRIPT:10000, //执行脚本
 
     GetFinnanceJobID:function(value)
@@ -7645,6 +7855,9 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_PLEDGE:               //股权质押
                 return this.SymbolData.GetNewsAnalysisData(jobItem.ID);
 
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CUSTOM_API_DATA:
+                return this.SymbolData.DownloadCustomAPIData(jobItem);
+
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
         }
@@ -7738,6 +7951,26 @@ function JSExecute(ast,option)
         if (this.VarTable.has(name)) return this.VarTable.get(name);
 
         this.ThrowUnexpectedNode(node, '变量'+name+'不存在');
+        return null;
+    }
+
+    this.ReadMemberVariable = function (node) 
+    {
+        var obj = node.Object;
+        var member = node.Property;
+
+        let maiObj;
+        if (obj.Type == Syntax.BinaryExpression || obj.Type == Syntax.LogicalExpression)
+            maiObj = this.VisitBinaryExpression(obj);
+        else if (obj.Type == Syntax.CallExpression)
+            maiObj = this.VisitCallExpression(obj);
+        else
+            maiObj = this.GetNodeValue(obj);
+
+        if (!maiObj) return null;
+        var value = maiObj[member.Name];
+        if (value) return value;
+
         return null;
     }
 
@@ -8078,6 +8311,9 @@ function JSExecute(ast,option)
             case 'DOWNCOUNT':
                 node.Out = this.SymbolData.GetIndexIncreaseCacheData(funcName, args[0], node);
                 break;
+            case 'LOADAPIDATA':
+                node.Out = this.SymbolData.GetCustomApiData(args);
+                break;
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args,node);
                 break;
@@ -8104,6 +8340,8 @@ function JSExecute(ast,option)
             value=right.Value;
         else if (right.Type==Syntax.Identifier) //右值是变量
             value=this.ReadVariable(right.Name,right);
+        else if (right.Type == Syntax.MemberExpression)
+            value = this.ReadMemberVariable(right);
 
         if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitAssignmentExpression]' , varName, ' = ',value);
         this.VarTable.set(varName,value);

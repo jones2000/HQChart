@@ -28,6 +28,12 @@ import
     JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
 } from './umychart.framesplit.wechat.js'
 
+import
+{
+    JSCommonCoordinateData as JSCommonCoordinateData,
+    JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME
+} from "./umychart.coordinatedata.wechat.js";
+
 //配色
 function JSChartPaintResource() 
 {
