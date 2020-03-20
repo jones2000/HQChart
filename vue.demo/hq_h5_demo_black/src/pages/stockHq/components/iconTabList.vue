@@ -60,9 +60,9 @@
           {Name:"日线",Value:0},
           {Name:"周线",Value:1},
           {Name:"月线",Value:2},
-          {Name:"年线",Value:3},
+          // {Name:"年线",Value:3},
           // {Name:"1分钟",Value:4},
-          // {Name:"5分钟",Value:5},
+          {Name:"5分钟",Value:5},
           // {Name:"15分钟",Value:6},
           // {Name:"30分钟",Value:7},
           // {Name:"60分钟",Value:8}

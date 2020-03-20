@@ -162,7 +162,7 @@
       // background: rgba(0,0,0,0.4);
       .exchangeInfoT {padding: 1em;box-sizing:border-box;width: 100%; border-collapse: collapse; border: none;background-color: #1a1c30;}
       .exchangeInfoT tr {height: 1.6rem; line-height: 2rem;}
-      .exchangeInfoT tr>td { font-size: 1.3rem;}
+      .exchangeInfoT tr>td { font-size: 1.1rem;}
       .exchangeInfoT tr>td:nth-of-type(1) { width: 12%;}
       .exchangeInfoT tr>td:nth-of-type(2) { width: 22%; padding-right: 4%; text-align: right;}
       .exchangeInfoT tr>td:nth-of-type(3) { width: 36%; padding-right: 4%; text-align: right; }

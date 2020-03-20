@@ -373,7 +373,7 @@
         methods:{
             OnSize(){
               var width = window.innerWidth;
-              var chartHeight = window.innerHeight - $(".headTitle").outerHeight(true) - $(".exchangeData").outerHeight(true) - $(".tabList").outerHeight(true) - 40;
+              var chartHeight = window.innerHeight - $(".headTitle").outerHeight(true) - $(".exchangeData").outerHeight(true) - $(".tabList").outerHeight(true) - 50;
 
               if(this.IsFiveminute){
                 $('#minuteChart').width(width);
@@ -492,6 +492,7 @@
                 this.Minute.Option.Symbol=this.Symbol;
                 let chart=JSCommon.JSChart.Init(this.$refs.minute);
                 var blackStyle = JSCommon.HQChartStyle.GetStyleConfig(JSCommon.STYLE_TYPE_ID.BLACK_ID);
+                blackStyle.FrameTitleBGColor = "#1a1c30";
                 JSCommon.JSChart.SetStyle(blackStyle);
                 this.$refs.minute.style.backgroundColor='#1a1c30';
                 chart.SetOption(this.Minute.Option);
@@ -512,6 +513,7 @@
                     Amount:{Text:''},
                 };
                 var data = data.Draw;
+                if(data == null) return;
                 if(data.Time >= 1000){
                     objNew.Time = data.Time.toString().substring(0,2)+":"+data.Time.toString().substring(2,4);
                 }else{
@@ -886,7 +888,7 @@ ul,ol {list-style: none;}
 }
 
 .PriceNull {
-    color: inherit;
+    color: #ffffff!important;
 }
 
 // BackNull
@@ -907,7 +909,7 @@ ul,ol {list-style: none;}
     height: 3.4rem;
     line-height: 3.4rem;
     color: #ffffff;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
 }
 .tooltip-span{
     margin-right: 5px;
@@ -1003,7 +1005,7 @@ ul,ol {list-style: none;}
 #minuteFive .tableOne { margin-bottom: 12px; padding-top: 13px;}
 #minuteFive .tableTwo {padding-top: 10px; border-top: 1px solid #ececec;}
 #minuteFive td,#minute td {font: 1.2rem "Microsoft YaHei"; line-height: 27px;}
-#minute td { line-height: 29px;}
+#minute td { line-height: 29px;font-size: 1rem;}
 .phoneRight { border: 1px solid #ececec; float: right; margin-right: 0.7%; width: 12.5%; height: 335px; margin-top: 20px; background-color: #f4f4f4;}
 .phoneRight li {line-height: 37px; font-size: 0.786rem; text-align: center;}
 .phoneRight li.active {color: #217cd9;}

@@ -279,9 +279,9 @@
           {Name:"日线",Value:0},
           {Name:"周线",Value:1},
           {Name:"月线",Value:2},
-          {Name:"年线",Value:3},
+          // {Name:"年线",Value:3},
           // {Name:"1分钟",Value:4},
-          // {Name:"5分钟",Value:5},
+          {Name:"5分钟",Value:5},
           // {Name:"15分钟",Value:6},
           // {Name:"30分钟",Value:7},
           // {Name:"60分钟",Value:8}
@@ -455,6 +455,7 @@
         this.Minute.Option.Symbol=this.Symbol;
         let chart=JSCommon.JSChart.Init(this.$refs.minute);
         var blackStyle = JSCommon.HQChartStyle.GetStyleConfig(JSCommon.STYLE_TYPE_ID.BLACK_ID);
+        blackStyle.FrameTitleBGColor = "#1a1c30";
         JSCommon.JSChart.SetStyle(blackStyle);
         this.$refs.minute.style.backgroundColor='#1a1c30';
         chart.SetOption(this.Minute.Option);
@@ -477,6 +478,7 @@
             Amount:{Text:''},
         };
         var data = data.Draw;
+        if(data == null) return;
         if(data.Time >= 1000){
             objNew.Time = data.Time.toString().substring(0,2)+":"+data.Time.toString().substring(2,4);
         }else{
