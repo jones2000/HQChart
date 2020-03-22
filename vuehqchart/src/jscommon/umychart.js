@@ -29833,7 +29833,8 @@ function MinuteChartContainer(uielement)
 
         var yClose=data.stock[0].yclose;
         var upperSymbol=this.Symbol.toUpperCase();
-        if (data.stock[0].yclearing && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) yClose=data.stock[0].yclearing; //期货使用前结算价
+        var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) || MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol);
+        if (data.stock[0].yclearing>0 && isFutures) yClose=data.stock[0].yclearing; //期货使用前结算价
         this.CaclutateLimitPrice(yClose, data.stock[0].limitprice); //计算涨停价格
         var extendData=null;
         if (data.stock[0].high>0 && data.stock[0].low>0) extendData={ High:data.stock[0].high, Low:data.stock[0].low };
@@ -30537,7 +30538,7 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
     var symbol=data.stock[0].symbol;
     var upperSymbol=symbol.toUpperCase();
     var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
-    var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+    var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) || MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol);    //国内期货, 纽约期货交易所
     var isSHO=MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
     var aryMinuteData=new Array();
     var preClose=data.stock[0].yclose;      //前一个数据价格
@@ -30625,7 +30626,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
     var upperSymbol=symbol.toUpperCase();
     var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
     var isSHO=MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
-    var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+    var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) || MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol);    //国内期货, 纽约期货交易所
     var result=[];
     for(var i in data.data)
     {
@@ -37635,6 +37636,8 @@ var MARKET_SUFFIX_NAME=
 
     FOREX:'.FOREX',      //外汇 (Foreign Exchange)
 
+    NYMEX:'.NYMEX',      //纽约商品期货交易所(New York Mercantile Exchange)
+
     ET:'.ET',            //其他未知的品种
 
     IsET:function(upperSymbol)
@@ -37646,6 +37649,12 @@ var MARKET_SUFFIX_NAME=
     IsETShowAvPrice:function(upperSymbol)   //是否显示均价
     {
         return false;
+    },
+
+    IsNYMEX:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.NYMEX)>0;
     },
 
     IsForeignExchange(upperSymbol)
@@ -37867,6 +37876,10 @@ var MARKET_SUFFIX_NAME=
             if(time<925) return 1;
             return 2;   
         }
+        else if (this.IsNYMEX(upperSymbol))
+        {
+            return this.GetNYMEXMarketStatus(upperSymbol);
+        }
         else    //9:30 - 15:40
         {
             if(day == 6 || day== 0) return 0;   //周末
@@ -37918,10 +37931,20 @@ var MARKET_SUFFIX_NAME=
         return 4;
     },
 
+    GetNYMEXDecimal:function(symbol)    //纽约期货交易所
+    {
+        return g_NYMEXTimeData.GetDecimal(symbol);
+    },
+
     GetETMarketStatus:function(symbol)  
     {
         // 0=闭市 1=盘前 2=盘中 3=盘后
         return 2;
+    },
+
+    GetNYMEXMarketStatus:function(symbol)
+    {
+        return g_NYMEXTimeData.GetMarketStatus(symbol);
     }
 }
 
@@ -38141,6 +38164,12 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) return this.GetFHK();
         if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) return this.GetForeignExchange();
         if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) return this.GetET(upperSymbol);
+        if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol))    //纽约期货交易所
+        {
+            var splitData = g_NYMEXTimeData.GetSplitData(upperSymbol);
+            if (!splitData) return null;
+            return this.GetFutures(splitData);
+        }
     }
 }
 
@@ -38529,6 +38558,8 @@ function MinuteCoordinateData()
                 data=this.GetForeignExchangeData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsET(upperSymbol))
                 data=this.GetETData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol,width))
+               return  data=this.GetNYMEXData(upperSymbol,width);
         }
 
         //JSConsole.Chart.Log('[MiuteCoordinateData]', width);
@@ -38596,6 +38627,40 @@ function MinuteCoordinateData()
         return result;
     }
 
+    this.GetNYMEXData=function(upperSymbol,width)
+    {
+        var splitData = g_NYMEXTimeData.GetSplitData(upperSymbol);
+        if (!splitData) return null;
+        var stringData = g_MinuteTimeStringData.GetFutures(splitData);
+        if (!stringData) return null;
+        var result = { Count: stringData.length };
+        var coordinate=null;
+        var minWidth=200, simpleWidth=480;
+        
+        if (width < minWidth) coordinate = splitData.Coordinate.Min;
+        else if (width < simpleWidth) coordinate = splitData.Coordinate.Simple;
+        else coordinate = splitData.Coordinate.Full;
+        
+        var data=[];
+        for(var i=0;i<stringData.length;++i)
+        {
+            var value = stringData[i];
+            for(var j=0;j<coordinate.length;++j)
+            {
+                var coordinateItem = coordinate[j];
+                if (value == coordinateItem.Value)
+                {
+                    var item = [i, 0, 'RGB(200,200,200)', coordinateItem.Text];
+                    data.push(item);
+                    break;
+                }
+            }
+        }
+
+        result.Data = data;
+        return result;
+    }
+
     this.GetFTSEData=function(upperSymbol,width)
     {
         var result=FTSE_MINUTE_X_COORDINATE;
@@ -38620,7 +38685,7 @@ function MinuteCoordinateData()
     }
 }
 
-//期货不同品种 交易时间数据 
+//国内期货不同品种 交易时间数据 
 function FuturesTimeData()
 {
     const TIME_SPLIT=
@@ -39021,9 +39086,115 @@ function FuturesTimeData()
     }
 }
 
+
+//纽约商品期货交易所 交易时间数据 
+function NYMEXTimeData()
+{
+    const TIME_SPLIT=
+    [
+        {
+            Name:'6:00-5:00',
+            Data:
+            [
+                //6:00 - 5:00
+                { Start: 600, End: 2359 },
+                { Start: 0, End: 500 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 600, Text: '6:00' },
+                    { Value: 800, Text: '8:00' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1200, Text: '12:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1600, Text: '16:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 2000, Text: '20:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 0, Text: '0:00' },
+                    { Value: 200, Text: '2:00' },
+                    { Value: 400, Text: '4:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 600, Text: '6:00' },
+                    //{ Value: 800, Text: '8:00' },
+                    { Value: 1000, Text: '10:00' },
+                    //{ Value: 1200, Text: '12:00' },
+                    { Value: 1400, Text: '14:00' },
+                    //{ Value: 1600, Text: '16:00' },
+                    { Value: 1800, Text: '18:00' },
+                    //{ Value: 2000, Text: '20:00' },
+                    { Value: 2200, Text: '22:00' },
+                    //{ Value: 0, Text: '0:00' },
+                    { Value: 200, Text: '2:00' }
+                    //{ Value: 400, Text: '4:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 600, Text: '6:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 500, Text: '5:00' }
+                ]
+            }
+        }
+    ]
+
+    this.IsCL=function(upperSymbol)    //原油
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf("CL.NYMEX")>0;
+    }
+
+    this.IsNG=function(upperSymbol)     //天然气
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf("NG.NYMEX")>0;
+    }
+
+    this.GetSplitData=function(upperSymbol)
+    {
+        if (this.IsCL(upperSymbol)) return TIME_SPLIT[0];
+        else if (this.IsCL(upperSymbol)) return TIME_SPLIT[0];
+
+        return null;
+    }
+
+    this.GetDecimal=function(upperSymbol)
+    {
+        if (this.IsCL(upperSymbol)) return 3;
+        else if (this.IsCL(upperSymbol)) return 4;
+
+        return 3;
+    }
+
+    this.GetMarketStatus=function(upperSymbol) // 0=闭市 1=盘前 2=盘中 3=盘后
+    {
+        if (this.IsCL(upperSymbol) || this.IsCL(upperSymbol)) 
+        {
+            var nowDate= new Date();
+            var day = nowDate.getDay();
+            var time = nowDate.getHours() * 100 + nowDate.getMinutes();
+            if(day == 6 || day== 0) return 0;   //周末
+            if(time>500 && time<600) return 1;
+            return 2;   
+        }
+
+        return 2;
+    }
+
+    this.GetData=function(upperSymbol)
+    {
+
+    }
+}
+
 var g_MinuteTimeStringData = new MinuteTimeStringData();
 var g_MinuteCoordinateData = new MinuteCoordinateData();
 var g_FuturesTimeData = new FuturesTimeData();
+var g_NYMEXTimeData=new NYMEXTimeData();
 
 
 function GetfloatPrecision(symbol)  //获取小数位数
@@ -39040,6 +39211,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetBITDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetETDecimal(upperSymbol); 
     else if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetForeignExchangeDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol)) defaultfloatPrecision=g_NYMEXTimeData.GetDecimal(upperSymbol);
 
     return defaultfloatPrecision;
 }
