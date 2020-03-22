@@ -19,7 +19,7 @@
                     </svg>
                 </span>
                 <span :title='科创板' v-if='IsStockStar'>
-                    <svg class="icon iconStockinfo" aria-hidden="true">
+                    <svg class="symbolIkcon iconStockinfo" aria-hidden="true">
                         <use xlink:href="#icon-stockStar"></use>
                     </svg>
                 </span>

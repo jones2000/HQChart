@@ -80,7 +80,7 @@ var BLACK_STYLE=
 
     KLine:
     {
-        MaxMin: { Font: 12*GetDevicePixelRatio() +'px 微软雅黑', Color: 'rgb(111,111,111)' },   //K线最大最小值显示
+        MaxMin: { Font: 12*GetDevicePixelRatio() +'px 微软雅黑', Color: 'rgb(255,250,240)' },   //K线最大最小值显示
         Info:  //信息地雷
         {
             Investor:

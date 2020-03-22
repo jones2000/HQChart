@@ -7137,7 +7137,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         var data = recvData.data;
         var apiKey = this.GenerateCustomAPIKey(args);
-        if (ChartData.IsMinutePeriod(this.Period, true)) 
+        if (JSCommonData.ChartData.IsMinutePeriod(this.Period, true)) 
         {
             if (!data.date || !data.time) return;
 
@@ -7149,7 +7149,7 @@ function JSSymbolData(ast,option,jsExecute)
                 var item = data[key];
             }
         }
-        else if (ChartData.IsDayPeriod(this.Period, true)) 
+        else if (JSCommonData.ChartData.IsDayPeriod(this.Period, true)) 
         {
             if (!data.date) return;
 
@@ -7182,7 +7182,7 @@ function JSSymbolData(ast,option,jsExecute)
         for (var i in data) 
         {
             var value = data[i];
-            var indexItem = new SingleData(); //单列指标数据
+            var indexItem = new JSCommonData.SingleData(); //单列指标数据
             indexItem.Date = date[i];
             if (time && i < time.length) indexItem.Time = time[i];
             indexItem.Value = value;
@@ -7190,14 +7190,14 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         var aryFittingData;
-        if (ChartData.IsDayPeriod(this.Period, true))
+        if (JSCommonData.ChartData.IsDayPeriod(this.Period, true))
             aryFittingData = kdata.GetFittingData(arySingleData);        //数据和主图K线拟合
-        else if (ChartData.IsMinutePeriod(this.Period, true))
+        else if (JSCommonData.ChartData.IsMinutePeriod(this.Period, true))
             aryFittingData = kdata.GetMinuteFittingData(arySingleData);  //数据和主图K线拟合
         else
             return null;
 
-        var bindData = new ChartData();
+        var bindData = new JSCommonData.ChartData();
         bindData.Data = aryFittingData;
         var result = bindData.GetValue();
         return result;
