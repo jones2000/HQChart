@@ -42490,13 +42490,13 @@ function NYMEXTimeData()
     this.IsCL=function(upperSymbol)    //原油
     {
         if (!upperSymbol) return false;
-        return upperSymbol.indexOf("CL.NYMEX")>0;
+        return upperSymbol.indexOf("CL")==0 && upperSymbol.indexOf(".NYMEX")>0;
     }
 
     this.IsNG=function(upperSymbol)     //天然气
     {
         if (!upperSymbol) return false;
-        return upperSymbol.indexOf("NG.NYMEX")>0;
+        return upperSymbol.indexOf("NG")==0 && upperSymbol.indexOf(".NYMEX")>0;
     }
 
     this.GetSplitData=function(upperSymbol)
