@@ -8206,6 +8206,24 @@ function IChartPainting()
     {
         return this.ChartFrame.GetLockRect();
     }
+
+    this.SetFillStyle=function(color, x0, y0, x1, y1)
+    {
+        if (Array.isArray(color))
+        {
+            let gradient = this.Canvas.createLinearGradient(x0, y0, x1, y1);
+            var offset=1/(color.length);
+            for(var i in color)
+            {
+                gradient.addColorStop(i*offset, color[i]);
+            }
+            this.Canvas.fillStyle=gradient;
+        }
+        else
+        {
+            this.Canvas.fillStyle=color;
+        }
+    }
 }
 
 
@@ -11909,13 +11927,15 @@ function ChartMinutePriceLine()
                     {
                         this.Canvas.lineTo(left,x);
                         this.Canvas.lineTo(left,ptFirst.X);
+                        this.SetFillStyle(this.AreaColor,this.ChartBorder.GetRightEx(),bottom,this.ChartBorder.GetLeftEx(),bottom);
                     }
                     else
                     {
                         this.Canvas.lineTo(x,bottom);
                         this.Canvas.lineTo(ptFirst.X,bottom);
+                        this.SetFillStyle(this.AreaColor, left,this.ChartBorder.GetTopEx(), left,bottom);
                     }
-                    this.Canvas.fillStyle=this.AreaColor;
+                    
                     this.Canvas.fill();
                 }
                 drawCount=0;
@@ -11931,13 +11951,15 @@ function ChartMinutePriceLine()
                 {
                     this.Canvas.lineTo(left,x);
                     this.Canvas.lineTo(left,ptFirst.X);
+                    this.SetFillStyle(this.AreaColor,this.ChartBorder.GetRightEx(),bottom,this.ChartBorder.GetLeftEx(),bottom);
                 }
                 else
                 {
                     this.Canvas.lineTo(x,bottom);
                     this.Canvas.lineTo(ptFirst.X,bottom);
+                    this.SetFillStyle(this.AreaColor,left,this.ChartBorder.GetTopEx(), left,bottom);
                 }
-                this.Canvas.fillStyle=this.AreaColor;
+
                 this.Canvas.fill();
             }
         }
@@ -39090,7 +39112,7 @@ function FuturesTimeData()
 //纽约商品期货交易所 交易时间数据 
 function NYMEXTimeData()
 {
-    const TIME_SPLIT=
+    this.TIME_SPLIT=
     [
         {
             Name:'6:00-5:00',
@@ -39154,18 +39176,24 @@ function NYMEXTimeData()
         return upperSymbol.indexOf("NG")==0 && upperSymbol.indexOf(".NYMEX")>0;
     }
 
+    this.IsRB=function(upperSymbol) //汽油
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf("RB")==0 && upperSymbol.indexOf(".NYMEX")>0;
+    }
+
     this.GetSplitData=function(upperSymbol)
     {
-        if (this.IsCL(upperSymbol)) return TIME_SPLIT[0];
-        else if (this.IsCL(upperSymbol)) return TIME_SPLIT[0];
+        if (this.IsCL(upperSymbol) || this.IsCL(upperSymbol) || this.IsRB(upperSymbol)) return this.TIME_SPLIT[0];
 
-        return null;
+        return this.TIME_SPLIT[0];
     }
 
     this.GetDecimal=function(upperSymbol)
     {
         if (this.IsCL(upperSymbol)) return 3;
         else if (this.IsCL(upperSymbol)) return 4;
+        else if (this.IsRB(upperSymbol)) return 4;
 
         return 3;
     }
@@ -39183,11 +39211,6 @@ function NYMEXTimeData()
         }
 
         return 2;
-    }
-
-    this.GetData=function(upperSymbol)
-    {
-
     }
 }
 

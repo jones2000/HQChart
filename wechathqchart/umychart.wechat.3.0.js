@@ -4893,13 +4893,14 @@ function ChartMinutePriceLine()
                     {
                         this.Canvas.lineTo(left, x);
                         this.Canvas.lineTo(left, ptFirst.X);
+                        this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRightEx(), bottom, this.ChartBorder.GetLeftEx(), bottom);
                     }
                     else 
                     {
                         this.Canvas.lineTo(x, bottom);
                         this.Canvas.lineTo(ptFirst.X, bottom);
+                        this.SetFillStyle(this.AreaColor, left, this.ChartBorder.GetTopEx(), left, bottom);
                     }
-                    this.Canvas.fillStyle = this.AreaColor;
                     this.Canvas.fill();
                 }
                 drawCount = 0;
@@ -4915,13 +4916,14 @@ function ChartMinutePriceLine()
                 {
                     this.Canvas.lineTo(left, x);
                     this.Canvas.lineTo(left, ptFirst.X);
+                    this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRightEx(), bottom, this.ChartBorder.GetLeftEx(), bottom);
                 }
                 else 
                 {
                     this.Canvas.lineTo(x, bottom);
                     this.Canvas.lineTo(ptFirst.X, bottom);
+                    this.SetFillStyle(this.AreaColor, left, this.ChartBorder.GetTopEx(), left, bottom);
                 }
-                this.Canvas.fillStyle = this.AreaColor;
                 this.Canvas.fill();
             }
         }
@@ -9466,7 +9468,8 @@ function MinuteChartContainer(uielement)
         this.Name = data.data.stock[0].name;
         var yClose = data.data.stock[0].yclose;
         var upperSymbol = this.Symbol.toUpperCase();
-        if (data.data.stock[0].yclearing && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) yClose = data.data.stock[0].yclearing; //期货使用前结算价
+        var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) || MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol);
+        if (data.data.stock[0].yclearing && isFutures) yClose = data.data.stock[0].yclearing; //期货使用前结算价
         var extendData = { High: data.data.stock[0].high, Low: data.data.stock[0].low };
         this.BindMainData(sourceData, yClose, extendData);
 
@@ -9921,7 +9924,7 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
 {
     var upperSymbol = data.stock[0].symbol.toUpperCase();
     var isSHSZ = MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
-    var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+    var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) || MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol);
     var isSHO = MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
 
     var preClose = data.stock[0].yclose;      //前一个数据价格
@@ -9929,6 +9932,7 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
     var yClose = data.stock[0].yclose;
     if (isFutures && data.stock[0].yclearing) yClose = preClose = preAvPrice = data.stock[0].yclearing;  //期货使用昨结算价
 
+    var date = data.stock[0].date;
     var aryMinuteData = new Array();
     for (var i in data.stock[0].minute) 
     {
@@ -9956,7 +9960,8 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
         }
         if (!item.AvPrice) item.AvPrice = preAvPrice;
 
-        item.DateTime = data.stock[0].date.toString() + " " + jsData.time.toString();
+        if (jsData.date > 0) date = jsData.date;    //分钟数据中有日期 优先使用
+        item.DateTime = date.toString() + " " + jsData.time.toString();
         item.Date = data.stock[0].date;
         item.Time = jsData.time;
         if (isFutures || isSHO) item.Position = jsData.position;  //期货 期权有持仓
@@ -9994,7 +9999,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
 {
     var upperSymbol = data.symbol.toUpperCase();
     var isSHSZ = MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
-    var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
+    var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) || MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol);
     var isSHO = MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
     var result = [];
     for (var i in data.data) 

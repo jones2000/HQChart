@@ -125,6 +125,24 @@ function IChartPainting()
 
         return font;
     }
+
+    this.SetFillStyle = function (color, x0, y0, x1, y1) 
+    {
+        if (Array.isArray(color)) 
+        {
+            let gradient = this.Canvas.createLinearGradient(x0, y0, x1, y1);
+            var offset = 1 / (color.length);
+            for (var i in color)
+            {
+                gradient.addColorStop(i * offset, color[i]);
+            }
+            this.Canvas.fillStyle = gradient;
+        }
+        else 
+        {
+            this.Canvas.fillStyle = color;
+        }
+    }
 }
 
 //K线画法
