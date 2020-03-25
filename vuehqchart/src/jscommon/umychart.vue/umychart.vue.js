@@ -4709,6 +4709,14 @@ JSChart.GetDivTooltipDataFormat=function()  //div tooltip数据格式化
     return g_DivTooltipDataForamt;
 }
 
+JSChart.SetUSATimeType=function(type)    //设置 0=标准时间 1=夏令时间 3=美国时间
+{
+    g_NYMEXTimeData.TimeType=type;
+    g_COMEXTimeData.TimeType=type;
+    g_NYBOTTimeData.TimeType=type;
+    g_CBOTTimeData.TimeType=type;
+}
+
 var JSCHART_EVENT_ID=
 {
     RECV_KLINE_MATCH:1, //接收到形态匹配
@@ -41049,6 +41057,10 @@ var MARKET_SUFFIX_NAME=
 
     NYMEX:'.NYMEX',      //纽约商品期货交易所(New York Mercantile Exchange)
     COMEX:".COMEX",      //纽约商品期货交易所(New York Mercantile Exchange)
+    NYBOT:".NYBOT",      //美國紐約商品交易所
+    CBOT:".CBOT",        //芝商所
+
+    LME:".LME",          //伦敦金属交易所
 
     ET:'.ET',            //其他未知的品种
 
@@ -41073,6 +41085,24 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.COMEX)>0;
+    },
+
+    IsNYBOT:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.NYBOT)>0;
+    },
+
+    IsCBOT:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.CBOT)>0;
+    },
+
+    IsLME:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.LME)>0;
     },
 
     IsForeignExchange(upperSymbol)
@@ -41166,7 +41196,9 @@ var MARKET_SUFFIX_NAME=
 
     IsFutures:function(upperSymbol) //是否是期货 包含国外的
     {
-        return this.IsChinaFutures(upperSymbol) || this.IsNYMEX(upperSymbol) || this.IsCOMEX(upperSymbol);
+        return this.IsChinaFutures(upperSymbol) || 
+            this.IsNYMEX(upperSymbol) || this.IsCOMEX(upperSymbol) || this.IsNYBOT(upperSymbol) || this.IsCBOT(upperSymbol) ||
+            this.IsLME(upperSymbol);
     },
 
     IsSHSZ:function(upperSymbol)            //是否是沪深的股票
@@ -41307,6 +41339,18 @@ var MARKET_SUFFIX_NAME=
         {
             return this.GetCOMEXMarketStatus(upperSymbol);
         }
+        else if (this.IsNYBOT(upperSymbol))
+        {
+            return this.GetNYBOTMarketStatus(upperSymbol);
+        }
+        else if (this.IsCBOT(upperSymbol))
+        {
+            return this.GetCBOTMarketStatus(upperSymbol);
+        }
+        else if (this.IsLME(upperSymbol))
+        {
+            return this.GetLMEMarketStatus(upperSymbol);
+        }
         else    //9:30 - 15:40
         {
             if(day == 6 || day== 0) return 0;   //周末
@@ -41368,6 +41412,21 @@ var MARKET_SUFFIX_NAME=
         return g_COMEXTimeData.GetDecimal(symbol);
     },
 
+    GetNYBOTDecimal:function(symbol)
+    {
+        return g_NYBOTTimeData.GetDecimal(symbol);
+    },
+
+    GetCBOTDecimal:function(symbol)
+    {
+        return g_CBOTTimeData.GetDecimal(symbol);
+    },
+
+    GetLMEDecimal:function(symbol)
+    {
+        return g_LMETimeData.GetDecimal(symbol);
+    },
+
     GetETMarketStatus:function(symbol)  
     {
         // 0=闭市 1=盘前 2=盘中 3=盘后
@@ -41382,6 +41441,21 @@ var MARKET_SUFFIX_NAME=
     GetCOMEXMarketStatus:function(symbol)
     {
         return g_COMEXTimeData.GetMarketStatus(symbol);
+    },
+
+    GetNYBOTMarketStatus:function(symbol)
+    {
+        return g_NYBOTTimeData.GetMarketStatus(symbol);
+    },
+
+    GetCBOTMarketStatus:function(symbol)
+    {
+        return g_CBOTTimeData.GetMarketStatus(symbol);
+    },
+
+    GetLMEMarketStatus:function(symbol)
+    {
+        return g_LMETimeData.GetMarketStatus(symbol);
     }
 }
 
@@ -41612,6 +41686,27 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsCOMEX(upperSymbol))    //纽约期货交易所
         {
             var splitData = g_COMEXTimeData.GetSplitData(upperSymbol);
+            if (!splitData) return null;
+            return this.GetFutures(splitData);
+        }
+
+        if (MARKET_SUFFIX_NAME.IsNYBOT(upperSymbol))    //纽约期货交易所
+        {
+            var splitData = g_NYBOTTimeData.GetSplitData(upperSymbol);
+            if (!splitData) return null;
+            return this.GetFutures(splitData);
+        }
+
+        if (MARKET_SUFFIX_NAME.IsCBOT(upperSymbol))    //芝商所
+        {
+            var splitData = g_CBOTTimeData.GetSplitData(upperSymbol);
+            if (!splitData) return null;
+            return this.GetFutures(splitData);
+        }
+
+        if (MARKET_SUFFIX_NAME.IsLME(upperSymbol))    //伦敦LME
+        {
+            var splitData = g_LMETimeData.GetSplitData(upperSymbol);
             if (!splitData) return null;
             return this.GetFutures(splitData);
         }
@@ -42007,6 +42102,13 @@ function MinuteCoordinateData()
                return  data=this.GetNYMEXData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsCOMEX(upperSymbol,width))
                return  data=this.GetCOMEXData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsNYBOT(upperSymbol,width))
+               return  data=this.GetNYBOTData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsCBOT(upperSymbol,width))
+               return  data=this.GetCBOTData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsLME(upperSymbol,width))
+               return  data=this.GetLMEData(upperSymbol,width);
+            
         }
 
         //JSConsole.Chart.Log('[MiuteCoordinateData]', width);
@@ -42087,6 +42189,21 @@ function MinuteCoordinateData()
     this.GetCOMEXData=function(upperSymbol,width)
     {
         return this.GetFuturesData(upperSymbol,width, g_COMEXTimeData);
+    }
+
+    this.GetNYBOTData=function(upperSymbol,width)
+    {
+        return this.GetFuturesData(upperSymbol,width, g_NYBOTTimeData);
+    }
+
+    this.GetCBOTData=function(upperSymbol,width)
+    {
+        return this.GetFuturesData(upperSymbol,width, g_CBOTTimeData);
+    }
+
+    this.GetLMEData=function(upperSymbol,width)
+    {
+        return this.GetFuturesData(upperSymbol,width, g_LMETimeData);
     }
 
     this.GetFTSEData=function(upperSymbol,width)
@@ -42518,6 +42635,7 @@ function FuturesTimeData()
 //纽约商业交易所 交易时间数据 
 function NYMEXTimeData()
 {
+    //美国标准时间
     this.TIME_SPLIT=
     [
         {
@@ -42570,6 +42688,59 @@ function NYMEXTimeData()
         }
     ]
 
+    //美国夏时令
+    this.TIME_SPLIT2=
+    [
+        {
+            Name:'7:00-6:00',
+            Data:
+            [
+                //6:00 - 5:00
+                { Start: 700, End: 2359 },
+                { Start: 0, End: 600 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 700, Text: '7:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                    { Value: 1700, Text: '17:00' },
+                    { Value: 1900, Text: '19:00' },
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1, Text: '1:00' },
+                    { Value: 300, Text: '3:00' },
+                    { Value: 500, Text: '5:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 700, Text: '7:00' },
+                    //{ Value: 900, Text: '9:00' },
+                    { Value: 1100, Text: '11:00' },
+                    //{ Value: 1300, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                    //{ Value: 1700, Text: '17:00' },
+                    { Value: 1900, Text: '19:00' },
+                    //{ Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    //{ Value: 1, Text: '1:00' },
+                    { Value: 300, Text: '3:00' }
+                    //{ Value: 500, Text: '5:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 700, Text: '7:00' },
+                    { Value: 1900, Text: '19:00' },
+                    { Value: 500, Text: '5:00' }
+                ]
+            }
+        }
+    ]
+
     this.FUTURES_LIST=
     [
         { Symbol:"CL", Decimal:2, Time:0 }, //原油
@@ -42582,7 +42753,8 @@ function NYMEXTimeData()
         { Symbol:"HO", Decimal:4, Time:0 }, //燃油
     ]
 
-    this.MarketSuffix=".NYMEX"
+    this.MarketSuffix=".NYMEX";
+    this.TimeType=0; // 0=标准时间 1=夏令时间 2=美国时间
 
     this.GetFuturesInfo=function(upperSymbol)
     {
@@ -42602,10 +42774,12 @@ function NYMEXTimeData()
 
     this.GetSplitData=function(upperSymbol)
     {
+        //夏令和标准时间切换
+        var timeSplit=this.TimeType==0 ? this.TIME_SPLIT : this.TIME_SPLIT2;
         var find=this.GetFuturesInfo(upperSymbol);
-        if (find) return this.TIME_SPLIT[find.Time];
+        if (find) return timeSplit[find.Time];
 
-        return this.TIME_SPLIT[0];
+        return timeSplit[0];
     }
 
     this.GetDecimal=function(upperSymbol)
@@ -42623,7 +42797,7 @@ function NYMEXTimeData()
         var day = usaDate.getDay();
         var time = nowDate.getHours() * 100 + nowDate.getMinutes();
         if(day == 6 || day== 0) return 0;   //周末
-        if(time>500 && time<600) return 1;
+        if(time>430 && time<730) return 1;
 
         return 2;   
     }
@@ -42644,10 +42818,660 @@ function COMEXTimeData()
         { Symbol:"QI", Decimal:4, Time:0 }, //迷你白银
         { Symbol:"SI", Decimal:3, Time:0 }, //COMEX白银
         { Symbol:"QI", Decimal:4, Time:0 }, //迷你白银
-        { Symbol:"HG", Decimal:4, Time:0 }, //COMEX铜
+        { Symbol:"HG", Decimal:4, Time:0 }  //COMEX铜
     ]
 
     this.MarketSuffix=".COMEX";
+}
+
+function NYBOTTimeData()
+{
+    this.newMethod=NYMEXTimeData;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    //美国标准时间
+    this.TIME_SPLIT=
+    [
+        {
+            Name:'9:00-2:20',
+            Data:
+            [
+                //9:00-2:20
+                { Start: 900, End: 2359 },
+                { Start: 0, End: 220 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                    { Value: 1700, Text: '17:00' },
+                    { Value: 1900, Text: '19:00' },
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 100, Text: '1:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    //{ Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    //{ Value: 1500, Text: '15:00' },
+                    { Value: 1700, Text: '17:00' },
+                    //{ Value: 1900, Text: '19:00' },
+                    { Value: 2100, Text: '21:00' },
+                    //{ Value: 2300, Text: '23:00' },
+                    { Value: 100, Text: '1:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1700, Text: '17:00' },
+                    { Value: 100, Text: '1:00' }
+                ]
+            }
+        },
+        {
+            Name:'15:30-1:00',
+            Data:
+            [
+                //9:00-2:20
+                { Start: 1530, End: 2359 },
+                { Start: 0, End: 100 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 1600, Text: '16:00' },
+                    { Value: 1700, Text: '17:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 1900, Text: '19:00' },
+                    { Value: 2000, Text: '20:00' },
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 0, Text: '0:00' },
+                    { Value: 100, Text: '1:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 1600, Text: '16:00' },
+                    //{ Value: 1600, Text: '17:00' },
+                    { Value: 1800, Text: '18:00' },
+                    //{ Value: 1900, Text: '19:00' },
+                    { Value: 2000, Text: '20:00' },
+                    //{ Value: 2100, Text: '21:00' },
+                    { Value: 2200, Text: '22:00' },
+                    //{ Value: 2300, Text: '23:00' },
+                    { Value: 0, Text: '0:00' },
+                    //{ Value: 100, Text: '1:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 1600, Text: '16:00' },
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 100, Text: '1:00' }
+                ]
+            }
+        }
+    ]
+
+    //美国夏时令
+    this.TIME_SPLIT2=
+    [
+        {
+            Name:'10:00-3:20',
+            Data:
+            [
+                //9:00-2:20
+                { Start: 1000, End: 2359 },
+                { Start: 0, End: 320 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1200, Text: '12:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1600, Text: '16:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 2000, Text: '20:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 0, Text: '0:00' },
+                    { Value: 200, Text: '2:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 1000, Text: '10:00' },
+                    //{ Value: 1200, Text: '12:00' },
+                    { Value: 1400, Text: '14:00' },
+                    //{ Value: 1600, Text: '16:00' },
+                    { Value: 1800, Text: '18:00' },
+                    //{ Value: 2000, Text: '20:00' },
+                    { Value: 2200, Text: '22:00' },
+                    //{ Value: 0, Text: '0:00' },
+                    { Value: 200, Text: '2:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 200, Text: '2:00' }
+                ]
+            }
+        },
+        {
+            Name:'16:30-2:00',
+            Data:
+            [
+                { Start: 1630, End: 2359 },
+                { Start: 0, End: 200 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 1700, Text: '17:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 1900, Text: '19:00' },
+                    { Value: 2000, Text: '20:00' },
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 0, Text: '0:00' },
+                    { Value: 100, Text: '1:00' },
+                    { Value: 200, Text: '2:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 1700, Text: '17:00' },
+                    //{ Value: 1800, Text: '18:00' },
+                    { Value: 1900, Text: '19:00' },
+                    //{ Value: 2000, Text: '20:00' },
+                    { Value: 2100, Text: '21:00' },
+                    //{ Value: 2200, Text: '22:00' },
+                    { Value: 2300, Text: '23:00' },
+                    //{ Value: 0, Text: '0:00' },
+                    { Value: 100, Text: '1:00' }
+                    //{ Value: 200, Text: '2:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 1700, Text: '17:00' },
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 200, Text: '2:00' }
+                ]
+            }
+        }
+    ]
+
+    this.FUTURES_LIST=
+    [
+        { Symbol:"SB", Decimal:2, Time:1 }, //11号白糖
+        { Symbol:"CT", Decimal:2, Time:0 }, //棉花
+        //{ Symbol:"KC", Decimal:2, Time:0 }, //咖啡
+        //{ Symbol:"DX", Decimal:2, Time:0 }, //美元指数
+        //{ Symbol:"CC", Decimal:2, Time:0 }  //可可
+    ]
+
+    this.MarketSuffix=".NYBOT";
+
+    this.GetMarketStatus=function(upperSymbol) // 0=闭市 1=盘前 2=盘中 3=盘后
+    {
+        var usaDate=GetLocalTime(-4);   //需要转成美国时间的 周6 周日
+        var day = usaDate.getDay();
+        var time = usaDate.getHours() * 100 + usaDate.getMinutes();
+        if(day == 6 || day== 0) return 0;   //周末
+
+        var find=this.GetFuturesInfo(upperSymbol);
+        if (!find) return 2;
+        
+        if (find.Symbol=="SB")  //Sugar No. 11 Futures 03:30 - 13:00
+        {
+            if (time>300 && time<1400) return 2;
+        }
+        else if (find.Symbol=="CT") //美棉 21:00-14:20 
+        {
+            if( (time>=0 && time<=1500 ) || (time>=2000 && time<=2359) ) return 2;
+            return 1;
+        }
+
+        return 0;   
+    }
+}
+
+//芝商所
+function CBOTTimeData()
+{
+    this.newMethod=NYMEXTimeData;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    //夏令时间
+    this.TIME_SPLIT=
+    [
+        {
+            Name:'8:00-2:20',
+            Data:
+            [
+                //6:00 - 5:00
+                { Start: 800, End: 2359 },
+                { Start: 0, End: 220 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 800, Text: '8:00' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1200, Text: '12:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1600, Text: '16:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 2000, Text: '20:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 0, Text: '0:00' },
+                    { Value: 200, Text: '2:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 800, Text: '8:00' },
+                    //{ Value: 1000, Text: '10:00' },
+                    { Value: 1200, Text: '12:00' },
+                    //{ Value: 1400, Text: '14:00' },
+                    { Value: 1600, Text: '16:00' },
+                    //{ Value: 1800, Text: '18:00' },
+                    { Value: 2000, Text: '20:00' },
+                    //{ Value: 2200, Text: '22:00' },
+                    { Value: 0, Text: '0:00' }
+                    //{ Value: 200, Text: '2:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 800, Text: '8:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 200, Text: '2:00' }
+                ]
+            }
+        },
+        {
+            Name:'8:00-2:45',
+            Data:
+            [
+                //6:00 - 5:00
+                { Start: 800, End: 2359 },
+                { Start: 0, End: 245 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 800, Text: '8:00' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1200, Text: '12:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1600, Text: '16:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 2000, Text: '20:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 0, Text: '0:00' },
+                    { Value: 200, Text: '2:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 800, Text: '8:00' },
+                    //{ Value: 1000, Text: '10:00' },
+                    { Value: 1200, Text: '12:00' },
+                    //{ Value: 1400, Text: '14:00' },
+                    { Value: 1600, Text: '16:00' },
+                    //{ Value: 1800, Text: '18:00' },
+                    { Value: 2000, Text: '20:00' },
+                    //{ Value: 2200, Text: '22:00' },
+                    { Value: 0, Text: '0:00' }
+                    //{ Value: 200, Text: '2:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 800, Text: '8:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 200, Text: '2:00' }
+                ]
+            }
+        },
+        {
+            Name:'6:00-5:00',
+            Data:
+            [
+                //6:00 - 5:00
+                { Start: 600, End: 2359 },
+                { Start: 0, End: 500 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 600, Text: '6:00' },
+                    { Value: 800, Text: '8:00' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1200, Text: '12:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1600, Text: '16:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 2000, Text: '20:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 0, Text: '0:00' },
+                    { Value: 200, Text: '2:00' },
+                    { Value: 400, Text: '4:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 600, Text: '6:00' },
+                    //{ Value: 800, Text: '8:00' },
+                    { Value: 1000, Text: '10:00' },
+                    //{ Value: 1200, Text: '12:00' },
+                    { Value: 1400, Text: '14:00' },
+                    //{ Value: 1600, Text: '16:00' },
+                    { Value: 1800, Text: '18:00' },
+                    //{ Value: 2000, Text: '20:00' },
+                    { Value: 2200, Text: '22:00' },
+                    //{ Value: 0, Text: '0:00' },
+                    { Value: 200, Text: '2:00' }
+                    //{ Value: 400, Text: '4:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 600, Text: '6:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 500, Text: '5:00' }
+                ]
+            }
+        }
+    ]
+
+    //标准时间
+    this.TIME_SPLIT2=
+    [
+        {
+            Name:'9:00-3:20',
+            Data:
+            [
+                { Start: 900, End: 2359 },
+                { Start: 0, End: 320 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                    { Value: 1700, Text: '17:00' },
+                    { Value: 1900, Text: '19:00' },
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1, Text: '1:00' },
+                    { Value: 300, Text: '3:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    //{ Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    //{ Value: 1500, Text: '15:00' },
+                    { Value: 1700, Text: '17:00' },
+                    //{ Value: 1900, Text: '19:00' },
+                    { Value: 2100, Text: '21:00' },
+                    //{ Value: 2300, Text: '23:00' },
+                    { Value: 1, Text: '1:00' }
+                    //{ Value: 300, Text: '3:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1900, Text: '19:00' },
+                    { Value: 300, Text: '3:00' }
+                ]
+            }
+        },
+        {
+            Name:'9:00-3:45',
+            Data:
+            [
+                { Start: 900, End: 2359 },
+                { Start: 0, End: 345 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                    { Value: 1700, Text: '17:00' },
+                    { Value: 1900, Text: '19:00' },
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1, Text: '1:00' },
+                    { Value: 300, Text: '3:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    //{ Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    //{ Value: 1500, Text: '15:00' },
+                    { Value: 1700, Text: '17:00' },
+                    //{ Value: 1900, Text: '19:00' },
+                    { Value: 2100, Text: '21:00' },
+                    //{ Value: 2300, Text: '23:00' },
+                    { Value: 1, Text: '1:00' }
+                    //{ Value: 300, Text: '3:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1900, Text: '19:00' },
+                    { Value: 300, Text: '3:00' }
+                ]
+            }
+        },
+        {
+            Name:'7:00-6:00',
+            Data:
+            [
+                { Start: 700, End: 2359 },
+                { Start: 0, End: 600 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 700, Text: '7:00' },
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                    { Value: 1700, Text: '17:00' },
+                    { Value: 1900, Text: '19:00' },
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1, Text: '1:00' },
+                    { Value: 300, Text: '3:00' },
+                    { Value: 500, Text: '5:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 700, Text: '7:00' },
+                    //{ Value: 900, Text: '9:00' },
+                    { Value: 1100, Text: '11:00' },
+                    //{ Value: 1300, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                    //{ Value: 1700, Text: '17:00' },
+                    { Value: 1900, Text: '19:00' },
+                    //{ Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    //{ Value: 1, Text: '1:00' },
+                    { Value: 300, Text: '3:00' }
+                    //{ Value: 500, Text: '5:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 700, Text: '7:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 500, Text: '5:00' }
+                ]
+            }
+        }
+    ]
+
+    this.FUTURES_LIST=
+    [
+        { Symbol:"ZC", Decimal:2, Time:0 }, //玉米
+        { Symbol:"XC", Decimal:2, Time:1 }, //迷你玉米
+        { Symbol:"ZS", Decimal:2, Time:0 }, //大豆
+        { Symbol:"XK", Decimal:2, Time:1 }, //迷你大豆
+        { Symbol:"ZL", Decimal:2, Time:0 }, //豆油
+        { Symbol:"ZR", Decimal:2, Time:0 }, //稻谷
+        { Symbol:"ZO", Decimal:2, Time:0 }, //燕麦
+        { Symbol:"ZW", Decimal:2, Time:0 }, //小麦
+        { Symbol:"XW", Decimal:2, Time:1 }, //迷你小麦
+        { Symbol:"ZM", Decimal:1, Time:0 }, //豆粕
+
+        { Symbol:"EH", Decimal:3, Time:2 }, //乙醇
+
+        { Symbol:"YM", Decimal:0, Time:2 }, //小型道指
+        { Symbol:"ES", Decimal:2, Time:2 }, //小型标普
+        { Symbol:"NQ", Decimal:2, Time:2 }, //小型纳指
+
+        { Symbol:"TY", Decimal:4, Time:2 }, //10年美国债
+        { Symbol:"TU", Decimal:4, Time:2 }, //2年美国债
+        { Symbol:"FV", Decimal:4, Time:2 }, //5年美国债
+        { Symbol:"US", Decimal:4, Time:2 }, //30年美国债
+        { Symbol:"UL", Decimal:4, Time:2 }, //超国债
+    ]
+
+    this.MarketSuffix=".CBOT";
+}
+
+function LMETimeData()
+{
+    this.newMethod=NYMEXTimeData;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    //标准时间
+    this.TIME_SPLIT=
+    [
+        {
+            Name:'LME 9:00-3:00',
+            Data:
+            [
+                { Start: 900, End: 2359 },
+                { Start: 0, End: 300 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                    { Value: 1700, Text: '17:00' },
+                    { Value: 1900, Text: '19:00' },
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 100, Text: '1:00' },
+                    { Value: 300, Text: '3:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    //{ Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    //{ Value: 1500, Text: '15:00' },
+                    { Value: 1700, Text: '17:00' },
+                    //{ Value: 1900, Text: '19:00' },
+                    { Value: 2100, Text: '21:00' },
+                    //{ Value: 2300, Text: '23:00' },
+                    { Value: 100, Text: '1:00' }
+                   // { Value: 300, Text: '3:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 300, Text: '3:00' }
+                ]
+            }
+        }
+    ]
+
+    //夏令
+    this.TIME_SPLIT=
+    [
+        {
+            Name:'LME 8:00-2:00',
+            Data:
+            [
+                { Start: 800, End: 2359 },
+                { Start: 0, End: 200 },
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 800, Text: '8:00' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1200, Text: '12:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1600, Text: '16:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 2000, Text: '20:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 0, Text: '0:00' },
+                    { Value: 200, Text: '2:00' }
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 800, Text: '8:00' },
+                    //{ Value: 1000, Text: '10:00' },
+                    { Value: 1200, Text: '12:00' },
+                    //{ Value: 1400, Text: '14:00' },
+                    { Value: 1600, Text: '16:00' },
+                    //{ Value: 1800, Text: '18:00' },
+                    { Value: 2000, Text: '20:00' },
+                    //{ Value: 2200, Text: '22:00' },
+                    { Value: 0, Text: '0:00' }
+                    //{ Value: 200, Text: '2:00' }
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 800, Text: '8:00' },
+                    { Value: 1800, Text: '18:00' },
+                    { Value: 200, Text: '2:00' }
+                ]
+            }
+        }
+    ]
+
+    this.FUTURES_LIST=
+    [
+        { Symbol:"SND", Decimal:0, Time:0 }, //综合锡03
+        { Symbol:"AHD", Decimal:2, Time:0 }, //综合铝03
+        { Symbol:"PBD", Decimal:2, Time:0 }, //综合铅03
+        { Symbol:"ZSD", Decimal:2, Time:0 }, //综合锌03
+        { Symbol:"CAD", Decimal:2, Time:0 }, //综合铜03
+        { Symbol:"NID", Decimal:0, Time:0 }, //综合镍03
+    ]
 }
 
 var g_MinuteTimeStringData = new MinuteTimeStringData();
@@ -42655,6 +43479,9 @@ var g_MinuteCoordinateData = new MinuteCoordinateData();
 var g_FuturesTimeData = new FuturesTimeData();
 var g_NYMEXTimeData=new NYMEXTimeData();
 var g_COMEXTimeData=new COMEXTimeData();
+var g_NYBOTTimeData=new NYBOTTimeData();
+var g_CBOTTimeData=new CBOTTimeData();
+var g_LMETimeData=new LMETimeData();
 
 
 function GetfloatPrecision(symbol)  //获取小数位数
@@ -42673,6 +43500,8 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetForeignExchangeDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol)) defaultfloatPrecision=g_NYMEXTimeData.GetDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsCOMEX(upperSymbol)) defaultfloatPrecision=g_COMEXTimeData.GetDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsNYBOT(upperSymbol)) defaultfloatPrecision=g_NYBOTTimeData.GetDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsCBOT(upperSymbol)) defaultfloatPrecision=g_CBOTTimeData.GetDecimal(upperSymbol);
 
     return defaultfloatPrecision;
 }

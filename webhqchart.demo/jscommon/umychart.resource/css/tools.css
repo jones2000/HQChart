@@ -689,6 +689,7 @@ td.context-menu {
 .parameter-header strong{
     position: absolute;
     right: 10px;
+    top: 10px;
     font-size: 14px;
     font-weight: 300;
 }
@@ -770,6 +771,7 @@ td.context-menu {
 .target-header strong{
     position: absolute;
     right: 10px;
+    top: 10px;
     font-size: 14px;
     font-weight: 300;
 }
