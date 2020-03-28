@@ -74,7 +74,7 @@ JSNetwork.HttpRequest=function(obj) //对请求进行封装
     YSplitScale:  Y固定刻度 [1,8,10]
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
     StringFormat: 1=带单位万/亿 2=原始格式
-    Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), }
+    Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), Include:[](指定支持的股票)}
 */
 
 //周期条件枚举
@@ -87,14 +87,16 @@ var CONDITION_PERIOD=
     //K线周期
     KLINE_DAY_ID:0,
     KLINE_WEEK_ID:1,
+    KLINE_TWOWEEK_ID:21,
     KLINE_MONTH_ID:2,
+    KLINE_QUARTER_ID:9,
+   
     KLINE_YEAR_ID:3,
     KLINE_MINUTE_ID:4,
     KLINE_5_MINUTE_ID:5,
     KLINE_15_MINUTE_ID:6,
     KLINE_30_MINUTE_ID:7,
-    KLINE_60_MINUTE_ID:8
-
+    KLINE_60_MINUTE_ID:8,
 };
 
 //自定义的指标脚本
@@ -148,7 +150,7 @@ function JSIndexScript()
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
             ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],['量比',this.VOLRate],
-            ['平均K线',this.HeikinAshi], 
+            ['平均K线',this.HeikinAshi], ["ADL", this.ADL],
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
             ['CJL2', this.CJL],  //期货持仓量
@@ -3336,6 +3338,27 @@ HOPEN:(REF(OPEN,1)+REF(CLOSE,1))/2,NODRAW;\n\
 HHIGH:MAX(HIGH,MAX(HOPEN,HCLOSE)),NODRAW;\n\
 HLOW:MIN(LOW,MIN(HOPEN,HCLOSE)),NODRAW;\n\
 DRAWKLINE(HHIGH,HOPEN,HLOW,HCLOSE);"
+    }
+
+    return data;
+}
+
+
+JSIndexScript.prototype.ADL=function()
+{
+    let data =
+    {
+        Name: '腾落指标', Description: '腾落指标', IsMainIndex: false, StringFormat:2,
+        Condition: 
+        { 
+            Period:[CONDITION_PERIOD.KLINE_DAY_ID, CONDITION_PERIOD.KLINE_WEEK_ID, CONDITION_PERIOD.KLINE_TWOWEEK_ID,
+                CONDITION_PERIOD.KLINE_MONTH_ID, CONDITION_PERIOD.KLINE_QUARTER_ID ,CONDITION_PERIOD.KLINE_YEAR_ID ],
+            Include:["000001.SH", "399001.SZ", "399001.SZ", "399005.SZ"] 
+        },
+        Args: [ { Name: 'M', Value: 7 } ],
+        Script: //脚本
+"ADL:SUM(ADVANCE-DECLINE,0);\n\
+MAADL:MA(ADL,M);"
     }
 
     return data;
@@ -11140,6 +11163,7 @@ function ChartData()
         var result=new Array();
         var index=0;
         var startDate=0;
+        var weekCount=2;
         var newData=null;
         for(var i in this.Data)
         {
@@ -11154,6 +11178,19 @@ function ChartData()
                     if (fridayDate!=startDate)
                     {
                         isNewData=true;
+                        startDate=fridayDate;
+                    }
+                    break;
+                case 21: //双周
+                    var fridayDate=ChartData.GetFirday(dayData.Date);
+                    if (fridayDate!=startDate)
+                    {
+                        ++weekCount;
+                        if (weekCount>=2) 
+                        {
+                            isNewData=true;
+                            weekCount=0;
+                        }
                         startDate=fridayDate;
                     }
                     break;
@@ -43472,6 +43509,8 @@ function LMETimeData()
         { Symbol:"CAD", Decimal:2, Time:0 }, //综合铜03
         { Symbol:"NID", Decimal:0, Time:0 }, //综合镍03
     ]
+
+    this.MarketSuffix=".LME";
 }
 
 var g_MinuteTimeStringData = new MinuteTimeStringData();
@@ -44362,7 +44401,7 @@ function Node()
     this.IsNeedFinanceData=new Set();   //需要下载的财务数据
     this.IsNeedMarginData=new Set();
     this.IsNeedNewsAnalysisData=new Set();      //新闻统计数据
-    this.IsNeedBlockIncreaseData=new Set();     //是否需要市场涨跌股票数据统计
+    this.NeedBlockIncreaseData=[];              //是否需要市场涨跌股票数据统计
     this.IsNeedSymbolExData=new Set();          //下载股票行情的其他数据
     this.IsNeedHK2SHSZData=new Set();           //下载北上资金数据
     this.IsNeedSectionFinance=new Map();        //下载截面财务数据 { key= 报告期 , Set() 字段}
@@ -44382,9 +44421,9 @@ function Node()
         if (this.IsNeedLatestIndexData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_LATEST_INDEX_DATA});
 
         //涨跌停家数统计
-        for(var blockSymbol of this.IsNeedBlockIncreaseData)    
+        for(var i in this.NeedBlockIncreaseData)    
         {
-            jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA,Symbol:blockSymbol});
+            jobs.push(this.NeedBlockIncreaseData[i]);
         }
 
         //加载财务数据
@@ -44441,13 +44480,13 @@ function Node()
         for(var i in this.IsCustomFunction)
         {
             var item=this.IsCustomFunction[i];
-            jobs.push({ID:item.ID, Name:item.Name, Args:item.Args});
+            jobs.push(item);
         }
 
         return jobs;
     }
 
-    this.VerifySymbolVariable=function(varName)
+    this.VerifySymbolVariable=function(varName, token)
     {
         let setIndexName=new Set(['INDEXA','INDEXC','INDEXH','INDEXL',"INDEXO","INDEXV",'INDEXDEC','INDEXADV']);
         if (setIndexName.has(varName)) 
@@ -44494,6 +44533,14 @@ function Node()
             return;
         }
 
+        if (varName=='ADVANCE' || varName=="DECLINE")
+        {
+            var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA, IsSelfSymbol:true, FunctionName:varName };
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+            this.NeedBlockIncreaseData.push(item);  
+            return;
+        }
+
         if (g_JSComplierResource.IsCustomVariant(varName)) //自定义函数( 不过滤了, 调一次就写一次)
         {
             var item={Name:varName, ID:JS_EXECUTE_JOB_ID.JOB_CUSTOM_VARIANT_DATA}
@@ -44503,6 +44550,15 @@ function Node()
 
     this.VerifySymbolFunction=function(callee,args, token)
     {
+        //自定义函数 可以覆盖系统内置函数 ( 不过滤了, 调一次就写一次)
+        if (g_JSComplierResource.IsCustomFunction(callee.Name)) 
+        {
+            var item={Name:callee.Name, ID:JS_EXECUTE_JOB_ID.JOB_CUSTOM_FUNCTION_DATA, Args:args}
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber};
+            this.IsCustomFunction.push(item);
+            return;
+        }
+
         if (callee.Name=='DYNAINFO') 
         {
             this.IsNeedLatestData=true;
@@ -44553,8 +44609,9 @@ function Node()
 
         if (callee.Name=='UPCOUNT' || callee.Name=='DOWNCOUNT')    //上涨下跌个数
         {
-            var blockSymbol=args[0].Value;
-            if (!this.IsNeedBlockIncreaseData.has(blockSymbol))  this.IsNeedBlockIncreaseData.add(blockSymbol);
+            var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA, Args:args, FunctionName:callee.Name };
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+            this.NeedBlockIncreaseData.push(item);  
             return;
         }
 
@@ -44596,12 +44653,6 @@ function Node()
             this.IsAPIData.push(item);
             return;
         }
-
-        if (g_JSComplierResource.IsCustomFunction(callee.Name)) //自定义函数( 不过滤了, 调一次就写一次)
-        {
-            var item={Name:callee.Name, ID:JS_EXECUTE_JOB_ID.JOB_CUSTOM_FUNCTION_DATA, Args:args}
-            this.IsCustomFunction.push(item);
-        }
     }
 
     this.ExpressionStatement=function(expression)
@@ -44632,9 +44683,9 @@ function Node()
         return { Type:Syntax.Literal, Value:value, Raw:raw };
     }
 
-    this.Identifier=function(name)
+    this.Identifier=function(name, token)
     {
-        this.VerifySymbolVariable(name);
+        this.VerifySymbolVariable(name, token);
 
         return { Type:Syntax.Identifier, Name:name};
     }
@@ -45143,7 +45194,7 @@ function JSParser(code)
             this.ThrowUnexpectedToken(token);
         }
 
-        return this.Finalize(node, this.Node.Identifier(token.Value));
+        return this.Finalize(node, this.Node.Identifier(token.Value, token));
     }
 
     // https://tc39.github.io/ecma262/#sec-left-hand-side-expressions
@@ -45185,7 +45236,8 @@ function JSParser(code)
         switch(this.LookAhead.Type)
         {
             case 3:/* Identifier */
-                expr=this.Finalize(node, this.Node.Identifier(this.NextToken().Value));
+                token=this.NextToken();
+                expr=this.Finalize(node, this.Node.Identifier(token.Value, token));
                 break;
             case 6:/* NumericLiteral */
             case 8:/* StringLiteral */
@@ -49301,19 +49353,22 @@ function JSAlgorithm(errorHandler,symbolData)
             case 'SQRT':
                 return this.Trigonometric(args[0],Math.sqrt);
             default:
-                if (g_JSComplierResource.IsCustomFunction(name))
-                    return this.CallCustomFunction(name, args, symbolData);
-
                 this.ThrowUnexpectedNode(node,'函数'+name+'不存在');
         }
     }
 
-    this.CallCustomFunction=function(name, args,symbolData)
+    this.CallCustomFunction=function(name, args, symbolData, node)
     {
         var item=g_JSComplierResource.CustomFunction.Data.get(name);
         if (!item || !item.Invoke) return [];
 
-        var obj={ Name:name, Args:args, Symbol:symbolData.Symbol, Period:symbolData.Period, Right:symbolData.Right, KData:symbolData.Data };
+        var self=this;
+        var obj=
+        { 
+            Name:name, Args:args, 
+            Symbol:symbolData.Symbol, Period:symbolData.Period, Right:symbolData.Right, KData:symbolData.Data,
+            ThrowError:function(message) { self.ThrowUnexpectedNode(node, message); }
+        };
         return item.Invoke(obj);
     }
 
@@ -50756,19 +50811,57 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
+    //指数转成对应的板块
+    this.GetBlockSymbol=function(symbol)    
+    {
+        if (!symbol) return null;
+        var upperSymbol=symbol.toUpperCase();
+        const SYMBOL_TO_BLOCK_MAP=new Map([
+            ["000001.SH","SME.ci"],
+            ["399001.SZ","SZA.ci"],["399001.SZ"," GEM.ci"],["399005.SZ","SME.ci"]
+        ]);
+
+        if (SYMBOL_TO_BLOCK_MAP.has(upperSymbol)) return SYMBOL_TO_BLOCK_MAP.get(upperSymbol);
+
+        if(upperSymbol.indexOf('.CI')<0) return null;
+
+        var blockSymbol=symbol.replace('.CI','.ci');
+        return blockSymbol;
+    }
+
     //分钟涨幅股票个数统计数据下载
     this.GetIndexIncreaseData=function(job)
     {
-        var upKey=job.ID.toString()+'-UpCount-'+job.Symbol;
-        var downKey=job.ID.toString()+'-DownCount-'+job.Symbol;
+        var symbol=null;
+        if (job.IsSelfSymbol)
+        {
+            symbol=this.Symbol;
+        }
+        else
+        {
+            if (!job.Args || job.Args.length<=0)
+            {
+                var token=job.Token;
+                this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`${job.FunctionName} Error: 参数不能为空`);
+            }
+            symbol=job.Args[0].Value;
+        }
+
+        var blockSymbol=this.GetBlockSymbol(symbol);
+        if (!blockSymbol)  
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`${job.FunctionName} Error: can't support ${symbol}`);
+        }
+
+        var upKey=job.ID.toString()+'-UpCount-'+blockSymbol;
+        var downKey=job.ID.toString()+'-DownCount-'+blockSymbol;
         if (this.ExtendData.has(upKey) && this.ExtendData.has(downKey)) return this.Execute.RunNextJob();
 
-        var symbol=job.Symbol;
-        symbol=symbol.replace('.CI','.ci');
         var self=this;
         if (this.DataType===HQ_DATA_TYPE.MINUTE_ID || this.DataType===HQ_DATA_TYPE.MULTIDAY_MINUTE_ID)  //走势图数据
         {
-            var apiUrl=g_JSComplierResource.CacheDomain+'/cache/analyze/increaseanalyze/'+symbol+'.json';
+            var apiUrl=g_JSComplierResource.CacheDomain+'/cache/analyze/increaseanalyze/'+blockSymbol+'.json';
             JSConsole.Complier.Log('[JSSymbolData::GetIndexIncreaseData] minute Get url=' , apiUrl);
             JSNetwork.HttpRequest({
                 url: apiUrl,
@@ -50786,14 +50879,14 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             });
         }
-        else if (this.DataType===HQ_DATA_TYPE.KLINE_ID && this.Period===0) //K线图 日线
+        else if (this.DataType===HQ_DATA_TYPE.KLINE_ID && ChartData.IsDayPeriod(this.Period,true)) //K线图 日线
         {
             JSConsole.Complier.Log('[JSSymbolData::GetIndexIncreaseData] K day Get url=' , self.KLineApiUrl);
             JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
                 {
-                    "symbol": symbol,
+                    "symbol": blockSymbol,
                     "start": -1,
                     "count": self.MaxRequestDataCount
                 },
@@ -50810,6 +50903,10 @@ function JSSymbolData(ast,option,jsExecute)
                     self.RecvError(request);
                 }
             });
+        }
+        else
+        {
+            this.Execute.RunNextJob();
         }
     }
 
@@ -50831,19 +50928,15 @@ function JSSymbolData(ast,option,jsExecute)
             downData[i]=downItem;
         }
 
-        var aryFixedData=this.Data.GetFittingData(upData);
-        var bindData=new ChartData();
-        bindData.Data=aryFixedData; 
-        bindData.Period=this.Period;    //只支持日线
-        var data=bindData.GetValue();
-        this.ExtendData.set(key.UpKey,data);
+        var upFixedData, downFixedData;
+        if (this.SourceData) upFixedData=this.SourceData.GetFittingData(upData);
+        else upFixedData=this.Data.GetFittingData(aryData);
 
-        aryFixedData=this.Data.GetFittingData(downData);
-        bindData=new ChartData();
-        bindData.Data=aryFixedData; 
-        bindData.Period=this.Period;    //只支持日线
-        data=bindData.GetValue();
-        this.ExtendData.set(key.DownKey,data);
+        if (this.SourceData) downFixedData=this.SourceData.GetFittingData(downData);
+        else downFixedData=this.Data.GetFittingData(aryData);
+
+        this.ExtendData.set(key.UpKey,upFixedData);
+        this.ExtendData.set(key.DownKey,downFixedData);
     }
 
     this.RecvMinuteIncreaseData=function(data,key)
@@ -50901,13 +50994,38 @@ function JSSymbolData(ast,option,jsExecute)
     //分钟涨幅股票个数统计数据
     this.GetIndexIncreaseCacheData=function(funcName,symbol,node)
     {
+        var blockSymbol=this.GetBlockSymbol(symbol);
+        if (!blockSymbol) this.Execute.ThrowUnexpectedNode(node,'不支持函数'+funcName+'('+symbol+')');
+
         var key;
-        if (funcName=='UPCOUNT') key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA.toString()+'-UpCount-'+symbol;
-        else if (funcName=='DOWNCOUNT') key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA.toString()+'-DownCount-'+symbol;
+        if (funcName=='UPCOUNT' || funcName=='ADVANCE') key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA.toString()+'-UpCount-'+blockSymbol;
+        else if (funcName=='DOWNCOUNT' || funcName=='DECLINE') key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA.toString()+'-DownCount-'+blockSymbol;
         
         if (!key || !this.ExtendData.has(key)) this.Execute.ThrowUnexpectedNode(node,'不支持函数'+funcName+'('+symbol+')');
 
-        return this.ExtendData.get(key);
+        if (this.DataType===HQ_DATA_TYPE.MINUTE_ID || this.DataType===HQ_DATA_TYPE.MULTIDAY_MINUTE_ID)  //分时图
+        {
+            return this.ExtendData.get(key);
+        }
+        else if (this.DataType===HQ_DATA_TYPE.KLINE_ID && ChartData.IsDayPeriod(this.Period,true))  //K线图
+        {
+            var data=this.ExtendData.get(key);
+            var bindData=new ChartData();
+            bindData.Data=data;
+            bindData.Period=this.Period;    //周期
+
+            if (bindData.Period>0)          //周期数据
+            {
+                var periodData=bindData.GetPeriodSingleData(bindData.Period);
+                bindData.Data=periodData;
+            }
+
+            return bindData.GetValue();
+        }
+        else
+        {
+            return null;
+        }
     }
 
 
@@ -52323,14 +52441,56 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.DownloadCustomFunctionData=function(job)
     {
-        var item=g_JSComplierResource.CustomFunction.Data.get(job.Name);
-        if (!item || !item.Download) return this.Execute.RunNextJob();
+        var func=g_JSComplierResource.CustomFunction.Data.get(job.Name);
+        if (!func || !func.Download) return this.Execute.RunNextJob();
+
+        var args=[];
+        for(var i in job.Args)
+        {
+            var item=job.Args[i];
+            if (item.Type==Syntax.Literal)
+            {
+                args.push(item.Value);
+            }
+            else if (item.Type==Syntax.Identifier) //变量 !!只支持默认的变量值
+            {
+                var isFind=false;
+                for(var j in this.Arguments)
+                {
+                    const argItem=this.Arguments[j];
+                    if (argItem.Name==item.Name)
+                    {
+                        args.push(argItem.Value);
+                        isFind=true;
+                        break;
+                    }
+                }
+
+                if (!isFind) 
+                {
+                    var token=job.Token;
+                    this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`DownloadCustomFunctionData() Error: can't read ${item.Name}`);
+                }
+            }
+            else
+            {
+                return this.Execute.RunNextJob();
+            }
+        }
 
         var self=this;
-        var obj={ Symbol:this.Symbol, KData:this.Data, Period:this.Period, Right:this.Right, Args:job.Args, Name:job.Name,
-            Success: function() { self.Execute.RunNextJob() } };
+        var obj=
+        { 
+            Symbol:this.Symbol, KData:this.Data, Period:this.Period, Right:this.Right, Args:args, Name:job.Name, Token:job.Token,
+            ThrowError:function(message) 
+            { 
+                var token=job.Token;
+                self.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,message); 
+            },
+            Success: function() { self.Execute.RunNextJob() } 
+        };
 
-        item.Download(obj);
+        func.Download(obj);
     }
 
     this.DownloadCustomAPIData=function(job)
@@ -53267,6 +53427,8 @@ function JSExecute(ast,option)
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
         ['INDEXADV',null],['INDEXDEC',null],
 
+        ["ADVANCE",null],['DECLINE', null],
+
         ['FROMOPEN',null],  //已开盘有多长分钟
 
         ['CURRBARSCOUNT',null], //到最后交易日的周期数
@@ -53307,9 +53469,15 @@ function JSExecute(ast,option)
 
     this.Execute=function()
     {
-        JSConsole.Complier.Log('[JSExecute::Execute] JobList', this.JobList);
         this.OutVarTable=[];
         this.VarTable=new Map();
+        JSConsole.Complier.Log('[JSExecute::Execute] Load Arguments', this.Arguments);
+        for(let i in this.Arguments)    //预定义的变量
+        {
+            let item =this.Arguments[i];
+            this.VarTable.set(item.Name,item.Value);
+        }
+
         this.RunNextJob();
     }
 
@@ -53317,6 +53485,7 @@ function JSExecute(ast,option)
     {
         if (this.JobList.length<=0) return;
 
+        JSConsole.Complier.Log('[JSExecute::Execute] JobList', this.JobList);
         var jobItem=this.JobList.shift();
 
         switch(jobItem.ID)
@@ -53473,6 +53642,10 @@ function JSExecute(ast,option)
 
             case 'DRAWNULL':
                 return this.SymbolData.GetDrawNull();
+
+            case 'ADVANCE':
+            case 'DECLINE':
+                return this.SymbolData.GetIndexIncreaseCacheData(name,this.SymbolData.Symbol,node);
         }
     }
 
@@ -53544,13 +53717,6 @@ function JSExecute(ast,option)
 
     this.RunAST=function()
     {
-        //预定义的变量
-        for(let i in this.Arguments)
-        {
-            let item =this.Arguments[i];
-            this.VarTable.set(item.Name,item.Value);
-        }
-
         if (!this.AST) this.ThrowError();
         if (!this.AST.Body) this.ThrowError();
 
@@ -53812,6 +53978,12 @@ function JSExecute(ast,option)
         }
 
         if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitCallExpression]' , funcName, '(', args.toString() ,')');
+
+        if (g_JSComplierResource.IsCustomFunction(funcName))
+        {
+            node.Out=this.Algorithm.CallCustomFunction(funcName, args, this.SymbolData, node);
+            return node.Out;
+        }
 
         switch(funcName)
         {
@@ -54383,6 +54555,7 @@ function ScriptIndex(name,script,args,option)
         if (this.Condition.Period)      //周期是否满足
         {
             if (!this.IsMeetPeriodCondition(param,option)) return false;
+            if (!this.IsMeetIncludeCondition(param,option)) return false;
         }
 
         return true;
@@ -54408,6 +54581,8 @@ function ScriptIndex(name,script,args,option)
                 case CONDITION_PERIOD.KLINE_WEEK_ID:
                 case CONDITION_PERIOD.KLINE_MONTH_ID:
                 case CONDITION_PERIOD.KLINE_YEAR_ID:
+                case CONDITION_PERIOD.KLINE_TWOWEEK_ID:
+                case CONDITION_PERIOD.KLINE_QUARTER_ID:
 
                 case CONDITION_PERIOD.KLINE_MINUTE_ID:
                 case CONDITION_PERIOD.KLINE_5_MINUTE_ID:
@@ -54419,6 +54594,20 @@ function ScriptIndex(name,script,args,option)
             }
         }
 
+        return false;
+    }
+
+    this.IsMeetIncludeCondition=function(param,option)
+    {
+        if (!this.Condition.Include || this.Condition.Include.length<=0) return true;
+
+        var symbol=param.HQChart.Symbol;
+        if (symbol) symbol=symbol.toUpperCase();
+        for(var i in this.Condition.Include)
+        {
+            var item=this.Condition.Include[i];
+            if (symbol==item) return true;
+        }
         return false;
     }
 

@@ -22,7 +22,7 @@
     YSplitScale:  Y固定刻度 [1,8,10]
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
     StringFormat: 1=带单位万/亿 2=原始格式
-    Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), }
+    Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), Include:[](指定支持的股票)}
 */
 
 //周期条件枚举
@@ -35,14 +35,16 @@ var CONDITION_PERIOD=
     //K线周期
     KLINE_DAY_ID:0,
     KLINE_WEEK_ID:1,
+    KLINE_TWOWEEK_ID:21,
     KLINE_MONTH_ID:2,
+    KLINE_QUARTER_ID:9,
+   
     KLINE_YEAR_ID:3,
     KLINE_MINUTE_ID:4,
     KLINE_5_MINUTE_ID:5,
     KLINE_15_MINUTE_ID:6,
     KLINE_30_MINUTE_ID:7,
-    KLINE_60_MINUTE_ID:8
-
+    KLINE_60_MINUTE_ID:8,
 };
 
 //自定义的指标脚本
@@ -96,7 +98,7 @@ function JSIndexScript()
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
             ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],['量比',this.VOLRate],
-            ['平均K线',this.HeikinAshi], 
+            ['平均K线',this.HeikinAshi], ["ADL", this.ADL],
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
             ['CJL2', this.CJL],  //期货持仓量
@@ -3284,6 +3286,27 @@ HOPEN:(REF(OPEN,1)+REF(CLOSE,1))/2,NODRAW;\n\
 HHIGH:MAX(HIGH,MAX(HOPEN,HCLOSE)),NODRAW;\n\
 HLOW:MIN(LOW,MIN(HOPEN,HCLOSE)),NODRAW;\n\
 DRAWKLINE(HHIGH,HOPEN,HLOW,HCLOSE);"
+    }
+
+    return data;
+}
+
+
+JSIndexScript.prototype.ADL=function()
+{
+    let data =
+    {
+        Name: '腾落指标', Description: '腾落指标', IsMainIndex: false, StringFormat:2,
+        Condition: 
+        { 
+            Period:[CONDITION_PERIOD.KLINE_DAY_ID, CONDITION_PERIOD.KLINE_WEEK_ID, CONDITION_PERIOD.KLINE_TWOWEEK_ID,
+                CONDITION_PERIOD.KLINE_MONTH_ID, CONDITION_PERIOD.KLINE_QUARTER_ID ,CONDITION_PERIOD.KLINE_YEAR_ID ],
+            Include:["000001.SH", "399001.SZ", "399001.SZ", "399005.SZ"] 
+        },
+        Args: [ { Name: 'M', Value: 7 } ],
+        Script: //脚本
+"ADL:SUM(ADVANCE-DECLINE,0);\n\
+MAADL:MA(ADL,M);"
     }
 
     return data;

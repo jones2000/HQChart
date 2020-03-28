@@ -7754,6 +7754,7 @@ function ChartData()
         var result=new Array();
         var index=0;
         var startDate=0;
+        var weekCount=2;
         var newData=null;
         for(var i in this.Data)
         {
@@ -7768,6 +7769,19 @@ function ChartData()
                     if (fridayDate!=startDate)
                     {
                         isNewData=true;
+                        startDate=fridayDate;
+                    }
+                    break;
+                case 21: //双周
+                    var fridayDate=ChartData.GetFirday(dayData.Date);
+                    if (fridayDate!=startDate)
+                    {
+                        ++weekCount;
+                        if (weekCount>=2) 
+                        {
+                            isNewData=true;
+                            weekCount=0;
+                        }
                         startDate=fridayDate;
                     }
                     break;
@@ -40086,6 +40100,8 @@ function LMETimeData()
         { Symbol:"CAD", Decimal:2, Time:0 }, //综合铜03
         { Symbol:"NID", Decimal:0, Time:0 }, //综合镍03
     ]
+
+    this.MarketSuffix=".LME";
 }
 
 var g_MinuteTimeStringData = new MinuteTimeStringData();
