@@ -46265,6 +46265,45 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    this.XMA=function(data,n)
+    {
+        var result=[];
+        var offset=0;
+        for(;offset<data.length;++offset)
+        {
+            if (this.IsNumber(data[offset])) break;
+        }
+
+        var p = parseInt((n - 2) / 2);
+	    var sum = 0;
+        var count = 0, start=0, end = 0;
+    
+        for(var i=offset, j=0; i<data.length; ++i)
+        {
+            start = i - p - 1;
+            end = i + (n - p) - 1;
+            for (j = start; j < end; ++j)
+            {
+                if (j >= 0 && j<data.length) 
+                {
+                    if (this.IsNumber(data[j]))
+                    {
+                        sum += data[j];
+                        ++count;
+                    }
+                }
+            }
+    
+            if (count!=0) result[i]=(sum / count);
+            else result[i]=null;
+
+            sum = 0;
+            count = 0;
+        }
+
+        return result;
+    }
+
     /* 
         SMA 移动平均
         返回移动平均。
@@ -49153,6 +49192,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.SMA(args[0], args[1],args[2]);
             case "DMA":
                 return this.DMA(args[0], args[1]);
+            case "XMA":
+                return this.XMA(args[0], args[1]);
             case 'EXPMA':
                 return this.EXPMA(args[0], args[1]);
             case 'EXPMEMA':
