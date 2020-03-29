@@ -7238,11 +7238,15 @@ function JSSymbolData(ast,option,jsExecute)
     //指数转成对应的板块
     this.GetBlockSymbol=function(symbol)    
     {
+        //中文对应板块代码
+        const BLOCK_CN_NAME_MAP=new Map([ ["沪深A股","CNA.ci"], ["创业板","GEM.ci"], ["沪市A股","SHA.ci"], ["中小板","SME.ci"], ["深市A股","SZA.ci"] ]);
+        if (BLOCK_CN_NAME_MAP.has(symbol)) return BLOCK_CN_NAME_MAP.get(symbol);
+
         if (!symbol) return null;
         var blockSymbol=null;
         var upperSymbol=symbol.toUpperCase();
 
-        if (upperSymbol.indexOf('.SH') || upperSymbol.indexOf('.SZ')) 
+        if (upperSymbol.indexOf('.SH')>0 || upperSymbol.indexOf('.SZ')>0 ) 
         {
             const INDEX_SYMBOL_SET=new Set(["000001.SH", "000003.SH", "000016.SH", "000300.SH", "000905.SH", "399001.SZ", " 399005.SZ", "399006.SZ"]);
             if (!INDEX_SYMBOL_SET.has(upperSymbol)) return null;
@@ -7250,7 +7254,7 @@ function JSSymbolData(ast,option,jsExecute)
             blockSymbol=symbol.replace('.SH','.sh');
             blockSymbol=symbol.replace('.SZ','.sz');
         }
-        else if (symbol.indexOf('.CI')) 
+        else if (symbol.indexOf('.CI')>0) 
         {
             blockSymbol=symbol.replace('.CI','.ci');
         }

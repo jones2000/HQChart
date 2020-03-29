@@ -30,6 +30,11 @@ var MARKET_SUFFIX_NAME=
     BIZ: '.BIZ',         //数字货币
 
     NYMEX: '.NYMEX',      //纽约商品期货交易所(New York Mercantile Exchange)
+    COMEX: ".COMEX",      //纽约商品期货交易所(New York Mercantile Exchange)
+    NYBOT: ".NYBOT",      //美國紐約商品交易所
+    CBOT: ".CBOT",        //芝商所
+
+    LME: ".LME",          //伦敦金属交易所
 
     ET: '.ET',           //其他未知的品种
 
@@ -48,6 +53,30 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.NYMEX) > 0;
+    },
+
+    IsCOMEX: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.COMEX) > 0;
+    },
+
+    IsNYBOT: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.NYBOT) > 0;
+    },
+
+    IsCBOT: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.CBOT) > 0;
+    },
+
+    IsLME: function (upperSymbol) 
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.LME) > 0;
     },
 
     IsFTSE: function (upperSymbol) 
@@ -115,22 +144,32 @@ var MARKET_SUFFIX_NAME=
         
     IsCFFEX: function (upperSymbol) 
     {
+        if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.CFFEX) > 0;
     },
 
     IsDCE: function (upperSymbol) 
     {
+        if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.DCE) > 0;
     },
 
     IsCZCE: function (upperSymbol) 
     {
+        if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.CZCE) > 0;
     },
 
     IsChinaFutures: function (upperSymbol)   //是否是国内期货
     {
         return this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol);
+    },
+
+    IsFutures: function (upperSymbol) //是否是期货 包含国外的
+    {
+        return this.IsChinaFutures(upperSymbol) ||
+            this.IsNYMEX(upperSymbol) || this.IsCOMEX(upperSymbol) || this.IsNYBOT(upperSymbol) || this.IsCBOT(upperSymbol) ||
+            this.IsLME(upperSymbol);
     },
 
     IsSHSZ: function (upperSymbol)            //是否是沪深的股票
