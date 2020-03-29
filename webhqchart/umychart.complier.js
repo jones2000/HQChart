@@ -7239,7 +7239,23 @@ function JSSymbolData(ast,option,jsExecute)
     this.GetBlockSymbol=function(symbol)    
     {
         if (!symbol) return null;
+        var blockSymbol=null;
         var upperSymbol=symbol.toUpperCase();
+
+        if (upperSymbol.indexOf('.SH') || upperSymbol.indexOf('.SZ')) 
+        {
+            const INDEX_SYMBOL_SET=new Set(["000001.SH", "000003.SH", "000016.SH", "000300.SH", "000905.SH", "399001.SZ", " 399005.SZ", "399006.SZ"]);
+            if (!INDEX_SYMBOL_SET.has(upperSymbol)) return null;
+
+            blockSymbol=symbol.replace('.SH','.sh');
+            blockSymbol=symbol.replace('.SZ','.sz');
+        }
+        else if (symbol.indexOf('.CI')) 
+        {
+            blockSymbol=symbol.replace('.CI','.ci');
+        }
+
+        /*
         const SYMBOL_TO_BLOCK_MAP=new Map([
             ["000001.SH","SME.ci"],
             ["399001.SZ","SZA.ci"],["399001.SZ"," GEM.ci"],["399005.SZ","SME.ci"]
@@ -7248,8 +7264,8 @@ function JSSymbolData(ast,option,jsExecute)
         if (SYMBOL_TO_BLOCK_MAP.has(upperSymbol)) return SYMBOL_TO_BLOCK_MAP.get(upperSymbol);
 
         if(upperSymbol.indexOf('.CI')<0) return null;
+        */
 
-        var blockSymbol=symbol.replace('.CI','.ci');
         return blockSymbol;
     }
 
@@ -7312,7 +7328,8 @@ function JSSymbolData(ast,option,jsExecute)
                 {
                     "symbol": blockSymbol,
                     "start": -1,
-                    "count": self.MaxRequestDataCount
+                    "count": self.MaxRequestDataCount,
+                    "field":['up', 'down']
                 },
                 type:"post",
                 dataType: "json",

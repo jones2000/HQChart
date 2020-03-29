@@ -37804,16 +37804,21 @@ var MARKET_SUFFIX_NAME=
         
     IsCFFEX: function (upperSymbol) 
     {
-        return upperSymbol.indexOf(this.CFFEX) > 0;
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.CFFEX) > 0) return true;
+        
+        return false;
     },
 
     IsDCE: function (upperSymbol) 
     {
+        if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.DCE) > 0;
     },
 
     IsCZCE: function (upperSymbol) 
     {
+        if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.CZCE) > 0;
     },
 

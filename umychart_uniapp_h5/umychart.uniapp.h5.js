@@ -33,7 +33,7 @@ var JSConsole=
     YSplitScale:  Y固定刻度 [1,8,10]
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
     StringFormat: 1=带单位万/亿 2=原始格式
-    Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), Include:[](指定支持的股票)}
+    Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), Include:[](指定支持的股票,代码全部大写包括后缀)}
 */
 
 //周期条件枚举
@@ -3312,7 +3312,7 @@ JSIndexScript.prototype.ADL=function()
         { 
             Period:[CONDITION_PERIOD.KLINE_DAY_ID, CONDITION_PERIOD.KLINE_WEEK_ID, CONDITION_PERIOD.KLINE_TWOWEEK_ID,
                 CONDITION_PERIOD.KLINE_MONTH_ID, CONDITION_PERIOD.KLINE_QUARTER_ID ,CONDITION_PERIOD.KLINE_YEAR_ID ],
-            Include:["000001.SH", "399001.SZ", "399001.SZ", "399005.SZ"] 
+            Include:["000001.SH", "000003.SH", "000016.SH", "000300.SH", "000905.SH", "399001.SZ", " 399005.SZ", "399006.SZ"] 
         },
         Args: [ { Name: 'M', Value: 7 } ],
         Script: //脚本
@@ -41172,16 +41172,21 @@ var MARKET_SUFFIX_NAME=
         
     IsCFFEX: function (upperSymbol) 
     {
-        return upperSymbol.indexOf(this.CFFEX) > 0;
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.CFFEX) > 0) return true;
+        
+        return false;
     },
 
     IsDCE: function (upperSymbol) 
     {
+        if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.DCE) > 0;
     },
 
     IsCZCE: function (upperSymbol) 
     {
+        if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.CZCE) > 0;
     },
 
@@ -50815,7 +50820,23 @@ function JSSymbolData(ast,option,jsExecute)
     this.GetBlockSymbol=function(symbol)    
     {
         if (!symbol) return null;
+        var blockSymbol=null;
         var upperSymbol=symbol.toUpperCase();
+
+        if (upperSymbol.indexOf('.SH') || upperSymbol.indexOf('.SZ')) 
+        {
+            const INDEX_SYMBOL_SET=new Set(["000001.SH", "000003.SH", "000016.SH", "000300.SH", "000905.SH", "399001.SZ", " 399005.SZ", "399006.SZ"]);
+            if (!INDEX_SYMBOL_SET.has(upperSymbol)) return null;
+
+            blockSymbol=symbol.replace('.SH','.sh');
+            blockSymbol=symbol.replace('.SZ','.sz');
+        }
+        else if (symbol.indexOf('.CI')) 
+        {
+            blockSymbol=symbol.replace('.CI','.ci');
+        }
+
+        /*
         const SYMBOL_TO_BLOCK_MAP=new Map([
             ["000001.SH","SME.ci"],
             ["399001.SZ","SZA.ci"],["399001.SZ"," GEM.ci"],["399005.SZ","SME.ci"]
@@ -50824,8 +50845,8 @@ function JSSymbolData(ast,option,jsExecute)
         if (SYMBOL_TO_BLOCK_MAP.has(upperSymbol)) return SYMBOL_TO_BLOCK_MAP.get(upperSymbol);
 
         if(upperSymbol.indexOf('.CI')<0) return null;
+        */
 
-        var blockSymbol=symbol.replace('.CI','.ci');
         return blockSymbol;
     }
 
@@ -50888,7 +50909,8 @@ function JSSymbolData(ast,option,jsExecute)
                 {
                     "symbol": blockSymbol,
                     "start": -1,
-                    "count": self.MaxRequestDataCount
+                    "count": self.MaxRequestDataCount,
+                    "field":['up', 'down']
                 },
                 type:"post",
                 dataType: "json",
