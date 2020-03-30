@@ -3,7 +3,8 @@
 var JSConsole=
 { 
     Chart:{ Log:console.log },      //图形日志
-    Complier:{ Log:console.log }    //编译器日志
+    Complier:{ Log:console.log },   //编译器日志
+    JSTable:{ Log:console.log }      //表格日志
 };
 
 
@@ -26631,7 +26632,7 @@ function JSChartLocalization()
         ['1分', {CN:'1分', EN:'1Min'}],
         ['5分', {CN:'5分', EN:'5Min'}],
         ['15分', {CN:'15分', EN:'15Min'}],
-        ['30分', {CN:'30', EN:'30Min'}],
+        ['30分', {CN:'30分', EN:'30Min'}],
         ['60分', {CN:'60分', EN:'60Min'}],
         ['季线', {CN:'季线', EN:'1Q'}],
         ['分笔', {CN:'分笔', EN:'Tick'}],
