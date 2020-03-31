@@ -28204,6 +28204,32 @@ function KLineChartContainer(uielement)
         this.CursorIndex=0;
     }
 
+    this.ShowSelectData=function(selectData)
+    {
+        this.HideSelectRect();
+        if (this.SelectRectRightMenu) this.SelectRectRightMenu.Hide();
+
+        JSConsole.Chart.Log('[KLineChartContainer::ShowSelectData] selectData', selectData);
+        var dataOffset=selectData.Start;
+        var showCount=(selectData.End-selectData.Start)+1;
+
+        JSConsole.Chart.Log(`[KLineChartContainer::ShowSelectData] DataOffset=${dataOffset}, ShowCount=${showCount}`);
+
+        for(var i in this.Frame.SubFrame)
+        {
+            var item =this.Frame.SubFrame[i].Frame;
+            item.XPointCount=showCount;
+        }
+        this.ChartPaint[0].Data.DataOffset=dataOffset;
+        this.CursorIndex=0;
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
+    }
+
     //创建指定窗口指标
     this.CreateWindowIndex=function(windowIndex)
     {
@@ -40500,7 +40526,16 @@ function KLineSelectRightMenu(divElement)
                     var dialog=new KLineSelectRectDialog(divElement);
                     dialog.DoModal(event);
                 }
-            } 
+            },
+            {
+                text:'区间放大',
+                click:function()
+                {
+                    JSConsole.Chart.Log('[KLineSelectRightMenu::click] 区间放大');
+                    var chart=event.data.Chart;
+                    chart.ShowSelectData(event.data.SelectData);
+                }
+            }
         ];
 
         rightMenu.Show({
