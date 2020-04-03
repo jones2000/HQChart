@@ -3777,6 +3777,7 @@ function JSChart(divElement)
             if (item.Windows>=chart.Frame.SubFrame.length) continue;
             var obj={ WindowIndex:item.Windows,IndexName: item.Index, ShowRightText:item.ShowRightText };
             if (item.Args) obj.Args=item.Args;
+            if (item.API) obj.API=item.API;
             chart.CreateOverlayWindowsIndex(obj);
         }
 
@@ -4503,7 +4504,7 @@ function JSChart(divElement)
             this.JSChartContainer.SetMainDataConotrl(dataControl);
     }
 
-    this.AddOverlayIndex=function(obj) //{WindowIndex:窗口ID, IndexName:指标ID, Identify:叠加指标ID(可选)}
+    this.AddOverlayIndex=function(obj) //{WindowIndex:窗口ID, IndexName:指标ID, Identify:叠加指标ID(可选), API}
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.AddOverlayIndex)=='function') 
             this.JSChartContainer.AddOverlayIndex(obj);
@@ -9328,8 +9329,16 @@ function OverlayIndexItem()
                 var paint=this.ChartPaint[i];
                 var range=paint.GetMaxMin();
 
-                if (value.Max==null || value.Max<range.Max) value.Max=range.Max;
-                if (value.Min==null || value.Min>range.Min) value.Min=range.Min
+                if (IFrameSplitOperator.IsNumber(range.Max))
+                {
+                    if (value.Max==null || value.Max<range.Max) value.Max=range.Max;
+                }
+                
+                if (IFrameSplitOperator.IsNumber(range.Min))
+                {
+                    if (value.Min==null || value.Min>range.Min) value.Min=range.Min;
+                }
+                
             }
         }
 
@@ -16455,6 +16464,7 @@ function ChartBackground()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName="ChartBackground";
     this.Color=null;
     this.ColorAngle=0;  //0 竖向 1 横向
 
@@ -16505,6 +16515,8 @@ function ChartRectangle()
     this.newMethod=IChartPainting;   //派生
     this.newMethod();
     delete this.newMethod;
+
+    this.ClassName="ChartRectangle";
 
     this.Color=[];
     this.Rect;
@@ -16579,6 +16591,8 @@ function ChartTextLine()
     this.newMethod=IChartPainting;   //派生
     this.newMethod();
     delete this.newMethod;
+
+    this.ClassName="ChartTextLine";
 
     this.Text;  //Text=内容 Color
     this.Line;  //Type=线段类型 0=不画 1=直线 2=虚线, Color
@@ -16663,6 +16677,7 @@ function ChartMultiBar()
     this.newMethod();
     delete this.newMethod;
     
+    this.ClassName="ChartMultiBar";
     this.Bars=[];   // [ {Point:[ {Index, Value, Value2 }, ], Color:, Width: , Type: 0 实心 1 空心 }, ] 
     this.IsHScreen=false;
 
@@ -16828,6 +16843,7 @@ function ChartMultiLine()
     this.newMethod();
     delete this.newMethod;
     
+    this.ClassName="ChartMultiLine";
     this.Lines=[];   // [ {Point:[ {Index, Value }, ], Color: }, ] 
     this.IsHScreen=false;
 
@@ -16961,6 +16977,7 @@ function ChartMultiText()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName="ChartMultiText";
     this.Texts=[];  //[ {Index:, Value:, Text:, Color:, Font: , Baseline:} ]
     this.Font=g_JSChartResource.DefaultTextFont;
     this.Color=g_JSChartResource.DefaultTextColor;
@@ -17066,6 +17083,7 @@ function ChartMultiSVGIcon()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName="ChartMultiSVGIcon";
     this.Icon;  //[ {Index:, Value:, Symbol:, Color:, Baseline:} ]
     this.Family;
     this.Color=g_JSChartResource.DefaultTextColor;
@@ -29998,19 +30016,27 @@ function KLineChartContainer(uielement)
     }
 
     //创建一个叠加指标
-    this.CreateOverlayWindowsIndex=function(obj) // {WindowIndex:, IndexName:, Identify:, ShowRightText:}
+    this.CreateOverlayWindowsIndex=function(obj) // {WindowIndex:, IndexName:, Identify:, ShowRightText:, API:}
     {
         let indexName=obj.IndexName;
         let windowIndex=obj.WindowIndex;
-        let scriptData = new JSIndexScript();
-        let indexInfo = scriptData.Get(indexName);  //系统指标
-        if (!indexInfo) 
+        var apiItem=null, indexInfo=null, indexCustom=null;
+        if (obj.API)
         {
-            var indexCustom=JSIndexMap.Get(indexName);  //定制指标
-            if (!indexCustom)
+            apiItem=obj.API;
+        }
+        else
+        {
+            let scriptData = new JSIndexScript();
+            indexInfo = scriptData.Get(indexName);  //系统指标
+            if (!indexInfo) 
             {
-                console.warn(`[KLineChartContainer::CreateOverlayIndex] can not find index[${indexName}]`);
-                return null;
+                indexCustom=JSIndexMap.Get(indexName);  //定制指标
+                if (!indexCustom)
+                {
+                    console.warn(`[KLineChartContainer::CreateOverlayIndex] can not find index[${indexName}]`);
+                    return null;
+                }
             }
         }
 
@@ -30032,10 +30058,15 @@ function KLineChartContainer(uielement)
         frame.YSplitOperator.ChartBorder=frame.ChartBorder;
         frame.YSplitOperator.SplitCount=subFrame.Frame.YSplitOperator.SplitCount;
         
-
         overlayFrame.Frame=frame;
 
-        if (indexInfo)
+        if (apiItem)
+        {
+            var apiIndex=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,obj, true);
+            apiIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame };    //叠加指标信息
+            overlayFrame.Script=apiIndex;
+        }
+        else if (indexInfo)
         {
             let indexData = 
             { 
@@ -55635,6 +55666,19 @@ function OverlayScriptIndex(name,script,args,option)
                     case 'DRAWCHANNEL':
                         this.CreateChannel(hqChart,windowIndex,item,i);
                         break;
+
+                    case 'MULTI_LINE':
+                        this.CreateMultiLine(hqChart,windowIndex,item,i);
+                        break;
+                    case 'MULTI_BAR':
+                        this.CreateMultiBar(hqChart,windowIndex,item,i);
+                        break;
+                    case 'MULTI_TEXT':
+                        this.CreateMultiText(hqChart,windowIndex,item,i);
+                        break;
+                    case 'MULTI_SVGICON':
+                        this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
+                        break;
                 }
             }
             else if (item.Type==2)
@@ -56109,6 +56153,71 @@ function OverlayScriptIndex(name,script,args,option)
         frame.ChartPaint.push(chart);
     }
 
+    this.CreateMultiLine=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMultiLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Lines=varItem.Draw.DrawData; 
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateMultiBar=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMultiBar();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Bars=varItem.Draw.DrawData; 
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateMultiText=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMultiText();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Texts=varItem.Draw.DrawData; 
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateMultiSVGIcon=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMultiSVGIcon();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Family=varItem.Draw.DrawData.Family;
+        chart.Icon= varItem.Draw.DrawData.Icon;
+        frame.ChartPaint.push(chart);
+    }
+
     //创建K线
     this.CreateSelfKLine=function(hqChart,windowIndex,hisData)
     {
@@ -56152,12 +56261,14 @@ function OverlayScriptIndex(name,script,args,option)
 }
 
 //后台执行指标
-function APIScriptIndex(name,script,args,option)
+function APIScriptIndex(name,script,args,option, isOverlay)
 {
-    this.newMethod=ScriptIndex;   //派生
+    if (isOverlay) this.newMethod=OverlayScriptIndex;   
+    else this.newMethod=ScriptIndex;
     this.newMethod(name,script,args,option);
     delete this.newMethod;
 
+    this.IsOverlayIndex=(isOverlay==true);  //是否是叠加指标
     this.ApiUrl;    //指标执行api地址
     this.HQDataType;
 
