@@ -160,7 +160,8 @@ DefaultData.GetKLineOption=function()
             MaxReqeustDataCount: 1000, //日线数据最近1000天
             MaxRequestMinuteDayCount: 15,    //分钟数据最近15天
             PageSize: 50, //一屏显示多少数据 
-            IsShowTooltip: true //是否显示K线提示信息
+            IsShowTooltip: true, //是否显示K线提示信息
+            RightSpaceCount:2,  //右边预留2个K线宽度空白
         },
 
         KLineTitle: //标题设置

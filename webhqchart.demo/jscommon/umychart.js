@@ -4782,6 +4782,7 @@ function KLineFrame()
     this.CustomVerticalInfo=[];     //定制X轴刻度 Type:0,  Date:, Time: ,        Line:{ Color:线段颜色, Type:线段类型 0 直线 1 虚线 }
                                     //           Type:1,  Space: 第几个空白间距,  Line:{ Color:线段颜色, Type:线段类型 0 直线 1 虚线 }
     this.DrawCustomVerticalEvent;
+    this.RightSpaceCount=0;
 
     this.DrawToolbar=function()
     {
@@ -4996,7 +4997,7 @@ function KLineFrame()
         if (this.XPointCount<2) return;
 
         //JSConsole.Chart.Log(`[KLineFrame::CalculateDataWidth] ZoomIndex=${this.ZoomIndex}, XPointCount=${this.XPointCount}, DataWidth=${this.DataWidth}, DistanceWidth=${this.DistanceWidth}`);
-        var width=this.ChartBorder.GetWidth()-4;
+        var width=this.ChartBorder.GetWidth()-g_JSChartResource.FrameMargin;
 
         if (this.ZoomIndex>0 && this.LastCalculateStatus.Width==width && this.LastCalculateStatus.XPointCount==this.XPointCount) //宽度没变 尝试使用原来的柱子宽度
         {
@@ -5095,44 +5096,45 @@ function KLineFrame()
     {
         if (this.ZoomIndex<=0) return false;
         if (this.Data.DataOffset<0) return false;
+        var dataCount=this.Data.Data.length;
+        var maxDataCount=dataCount+this.RightSpaceCount;
 
+        var rightSpaceCount=0;
         var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
         var lastCursorIndex=this.Data.DataOffset + cursorIndex.Index;
+        if (lastDataIndex>=dataCount) 
+        {
+            rightSpaceCount=lastDataIndex-(this.Data.Data.length-1);    //计算右边预留空间
+            lastDataIndex=this.Data.Data.length-1;
+            if (rightSpaceCount>this.RightSpaceCount) rightSpaceCount=this.RightSpaceCount;
+        }
 
-        if (lastDataIndex>this.Data.Data.length) lastDataIndex=this.Data.Data.length-1;
-        //JSConsole.Chart.Log(`[KLineFrame::ZoomUp] old status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
+        var xPointCount=this.CalculateCount(this.ZoomIndex-1);
+        JSConsole.Chart.Log(`[KLineFrame::ZoomUp] old status. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${this.Data.Data.length} rightSpaceCount=${rightSpaceCount}`);
 
         --this.ZoomIndex;
-        var xPointCount=this.CalculateCount(this.ZoomIndex);
-
-        this.XPointCount=xPointCount;
-
-        this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
-        this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
-       
-        this.TrimKLineDataWidth(this.ChartBorder.GetWidth());
-        this.LastCalculateStatus.XPointCount=this.XPointCount;
-
-        //JSConsole.Chart.Log(`[KLineFrame::ZoomUp] new status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
-
-        if (lastDataIndex>=this.Data.Data.length)
+        if (xPointCount>=maxDataCount) 
         {
-            this.Data.DataOffset=this.Data.Data.length-this.XPointCount-2;
-            cursorIndex.Index=this.Data.Data.length-this.Data.DataOffset-1;
+            xPointCount=maxDataCount;
+            this.XPointCount=xPointCount;
+            this.Data.DataOffset=0;
+
+            JSConsole.Chart.Log(`[KLineFrame::ZoomUp] Show all data. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount}`);
         }
         else
         {
-            if (lastDataIndex<this.XPointCount)
-            {
-                this.Data.DataOffset=0;
-                cursorIndex.Index=lastCursorIndex;
-            }
-            else
-            {
-                this.Data.DataOffset = lastDataIndex - this.XPointCount+1;
-                cursorIndex.Index=lastCursorIndex-this.Data.DataOffset;
-            }
+            this.XPointCount=xPointCount;
+            this.Data.DataOffset = lastDataIndex - (this.XPointCount-rightSpaceCount)+1;
+
+            JSConsole.Chart.Log(`[KLineFrame::ZoomUp] calculate. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount} DataOffset=${this.Data.DataOffset}`);
         }
+       
+        this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
+        this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
+        var width=this.ChartBorder.GetWidth()-g_JSChartResource.FrameMargin;
+        this.TrimKLineDataWidth(width);
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
+        cursorIndex.Index=lastCursorIndex-this.Data.DataOffset;
 
         return true;
     }
@@ -5141,30 +5143,46 @@ function KLineFrame()
     {
         if (this.ZoomIndex+1>=ZOOM_SEED.length) return false;
         if (this.Data.DataOffset<0) return false;
+        var dataCount=this.Data.Data.length;
+        var maxDataCount=dataCount+this.RightSpaceCount;
+        if (this.XPointCount>=dataCount) return false;
 
+        var rightSpaceCount=0;
         var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
-        if (lastDataIndex>=this.Data.Data.length) lastDataIndex=this.Data.Data.length-1;
-
-        //JSConsole.Chart.Log(`[KLineFrame::ZoomDown] old status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
+        if (lastDataIndex>=this.Data.Data.length) 
+        {
+            rightSpaceCount=lastDataIndex-(this.Data.Data.length-1);    //计算右边预留空间
+            lastDataIndex=this.Data.Data.length-1;
+            if (rightSpaceCount>this.RightSpaceCount) rightSpaceCount=this.RightSpaceCount;
+        }
 
         var xPointCount=this.CalculateCount(this.ZoomIndex+1);
         var lastCursorIndex=this.Data.DataOffset + cursorIndex.Index;
 
+        JSConsole.Chart.Log(`[KLineFrame::ZoomDown] old status. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${this.Data.Data.length} lastCursorIndex=${lastCursorIndex} rightSpaceCount=${rightSpaceCount}`);
+
         ++this.ZoomIndex;
-        this.XPointCount=xPointCount;
+        if (xPointCount>=maxDataCount) 
+        {
+            xPointCount=maxDataCount;
+            this.XPointCount=xPointCount;
+            this.Data.DataOffset=0;
+            
+            JSConsole.Chart.Log(`[KLineFrame::ZoomDown] Show all data. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount}`);
+        }
+        else
+        {
+            this.XPointCount=xPointCount;
+            this.Data.DataOffset = lastDataIndex - (this.XPointCount-rightSpaceCount)+1;
+
+            JSConsole.Chart.Log(`[KLineFrame::ZoomDown] calculate. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount} DataOffset=${this.Data.DataOffset}`);
+        }
+
         this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
         this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
-        
-        this.TrimKLineDataWidth(this.ChartBorder.GetWidth());
+        var width=this.ChartBorder.GetWidth()-g_JSChartResource.FrameMargin;
+        this.TrimKLineDataWidth(width);
         this.LastCalculateStatus.XPointCount=this.XPointCount;
-
-        //JSConsole.Chart.Log(`[KLineFrame::ZoomDown] new status. XPointCount=${this.XPointCount} ZoomIndex=${this.ZoomIndex}`);
-
-        if (lastDataIndex-xPointCount+1<0)
-            this.Data.DataOffset=0;
-        else
-            this.Data.DataOffset = lastDataIndex - this.XPointCount+1;
-
         cursorIndex.Index=lastCursorIndex-this.Data.DataOffset;
 
         return true;
@@ -5671,7 +5689,7 @@ function KLineHScreenFrame()
     {
         if (this.XPointCount<2) return;
 
-        var width=this.ChartBorder.GetHeight()-4;
+        var width=this.ChartBorder.GetHeight()-g_JSChartResource.FrameMargin;
 
         for(var i=0;i<ZOOM_SEED.length;++i)
         {
@@ -5698,40 +5716,46 @@ function KLineHScreenFrame()
     {
         if (this.ZoomIndex<=0) return false;
         if (this.Data.DataOffset<0) return false;
+        var dataCount=this.Data.Data.length;
+        var maxDataCount=dataCount+this.RightSpaceCount;
+        if (this.XPointCount>=dataCount) return false;
 
+        var rightSpaceCount=0;
         var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
         var lastCursorIndex=this.Data.DataOffset + cursorIndex.Index;
-
-        if (lastDataIndex>this.Data.Data.length) lastDataIndex=this.Data.Data.length-1;
-
-        --this.ZoomIndex;
-        var xPointCount=this.CalculateCount(this.ZoomIndex);
-
-        this.XPointCount=xPointCount;
-
-        this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
-	    this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
-
-        this.TrimKLineDataWidth(this.ChartBorder.GetHeight());
-
-        if (lastDataIndex>=this.Data.Data.length)
+        if (lastDataIndex>=dataCount) 
         {
-            this.Data.DataOffset=this.Data.Data.length-this.XPointCount-2;
-            cursorIndex.Index=this.Data.Data.length-this.Data.DataOffset-1;
+            rightSpaceCount=lastDataIndex-(dataCount-1);    //计算右边预留空间
+            lastDataIndex=dataCount-1;
+            if (rightSpaceCount>this.RightSpaceCount) rightSpaceCount=this.RightSpaceCount;
+        }
+        
+        var xPointCount=this.CalculateCount(this.ZoomIndex-1);
+        JSConsole.Chart.Log(`[KLineHScreenFrame::ZoomUp] old status. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${this.Data.Data.length} rightSpaceCount=${rightSpaceCount}`);
+        
+        --this.ZoomIndex;
+        if (xPointCount>=maxDataCount) 
+        {
+            xPointCount=maxDataCount;
+            this.XPointCount=xPointCount;
+            this.Data.DataOffset=0;
+
+            JSConsole.Chart.Log(`[KLineHScreenFrame::ZoomUp] Show all data. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount}`);
         }
         else
         {
-            if (lastDataIndex<this.XPointCount)
-            {
-                this.Data.DataOffset=0;
-                cursorIndex.Index=lastCursorIndex;
-            }
-            else
-            {
-                this.Data.DataOffset = lastDataIndex - this.XPointCount+1;
-                cursorIndex.Index=lastCursorIndex-this.Data.DataOffset;
-            }
+            this.XPointCount=xPointCount;
+            this.Data.DataOffset = lastDataIndex - (this.XPointCount-rightSpaceCount)+1;
+
+            JSConsole.Chart.Log(`[KLineHScreenFrame::ZoomUp] calculate. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount} DataOffset=${this.Data.DataOffset}`);
         }
+
+        this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
+	    this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
+        var width=this.ChartBorder.GetHeight()-g_JSChartResource.FrameMargin;
+        this.TrimKLineDataWidth(width);
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
+        cursorIndex.Index=lastCursorIndex-this.Data.DataOffset;
 
         return true;
     }
@@ -5740,25 +5764,45 @@ function KLineHScreenFrame()
     {
         if (this.ZoomIndex+1>=ZOOM_SEED.length) return false;
         if (this.Data.DataOffset<0) return false;
+        var dataCount=this.Data.Data.length;
+        var maxDataCount=dataCount+this.RightSpaceCount;
+        if (this.XPointCount>=dataCount) return false;
 
+        var rightSpaceCount=0;
         var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
-        if (lastDataIndex>=this.Data.Data.length) lastDataIndex=this.Data.Data.length-1;
-        var xPointCount=this.CalculateCount(this.ZoomIndex+1);
+        if (lastDataIndex>=this.Data.Data.length) 
+        {
+            rightSpaceCount=lastDataIndex-(this.Data.Data.length-1);    //计算右边预留空间
+            lastDataIndex=this.Data.Data.length-1;
+            if (rightSpaceCount>this.RightSpaceCount) rightSpaceCount=this.RightSpaceCount;
+        }
 
+        var xPointCount=this.CalculateCount(this.ZoomIndex+1);
         var lastCursorIndex=this.Data.DataOffset + cursorIndex.Index;
+        JSConsole.Chart.Log(`[KLineHScreenFrame::ZoomDown] old status. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${this.Data.Data.length} lastCursorIndex=${lastCursorIndex} rightSpaceCount=${rightSpaceCount}`);
 
         ++this.ZoomIndex;
-        this.XPointCount=xPointCount;
+        if (xPointCount>=maxDataCount) 
+        {
+            xPointCount=maxDataCount;
+            this.XPointCount=xPointCount;
+            this.Data.DataOffset=0;
+            
+            JSConsole.Chart.Log(`[KLineHScreenFrame::ZoomDown] Show all data. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount}`);
+        }
+        else
+        {
+            this.XPointCount=xPointCount;
+            this.Data.DataOffset = lastDataIndex - (this.XPointCount-rightSpaceCount)+1;
+
+            JSConsole.Chart.Log(`[KLineHScreenFrame::ZoomDown] calculate. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount} DataOffset=${this.Data.DataOffset}`);
+        }
+
         this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
 	    this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
-
-        this.TrimKLineDataWidth(this.ChartBorder.GetHeight());
-
-        if (lastDataIndex-xPointCount+1<0)
-            this.Data.DataOffset=0;
-        else
-            this.Data.DataOffset = lastDataIndex - this.XPointCount+1;
-
+        var width=this.ChartBorder.GetHeight()-g_JSChartResource.FrameMargin;
+        this.TrimKLineDataWidth(width);
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
         cursorIndex.Index=lastCursorIndex-this.Data.DataOffset;
 
         return true;
@@ -5923,7 +5967,7 @@ function OverlayIndexItem()
                 {
                     if (value.Max==null || value.Max<range.Max) value.Max=range.Max;
                 }
-                
+
                 if (IFrameSplitOperator.IsNumber(range.Min))
                 {
                     if (value.Min==null || value.Min>range.Min) value.Min=range.Min;
@@ -22958,6 +23002,9 @@ function JSChartResource()
         BGAlpha:0.6
     };
 
+    this.FrameMargin=4;     //左右一共的边距
+    this.FrameLeftMargin=2;
+
     this.OverlayFrame={
         BolderPen:'rgb(190,190,190)',
         TitleColor:'rgb(105,105,105)',
@@ -24568,7 +24615,8 @@ function KLineChartContainer(uielement)
             var frame=new KLineFrame();
             frame.Canvas=this.Canvas;
             frame.ChartBorder=border;
-            frame.Identify=i;                   //窗口序号
+            frame.Identify=i;                           //窗口序号
+            frame.RightSpaceCount=this.RightSpaceCount; //右边
 
             if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
             if (this.ChangeIndexDialog) frame.ChangeIndexEvent=this.ChangeIndexDialog.DoModal;
@@ -31926,6 +31974,7 @@ function KLineChartHScreenContainer(uielement)
             frame.Canvas=this.Canvas;
             frame.ChartBorder=border;
             frame.Identify=i;                   //窗口序号
+            frame.RightSpaceCount=this.RightSpaceCount; //右边
 
             if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
             if (this.ChangeIndexDialog) frame.ChangeIndexEvent=this.ChangeIndexDialog.DoModal;
