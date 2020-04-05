@@ -8407,7 +8407,7 @@ function KLineFrame()
         if (this.XPointCount<2) return;
 
         //JSConsole.Chart.Log(`[KLineFrame::CalculateDataWidth] ZoomIndex=${this.ZoomIndex}, XPointCount=${this.XPointCount}, DataWidth=${this.DataWidth}, DistanceWidth=${this.DistanceWidth}`);
-        var width=this.ChartBorder.GetWidth()-g_JSChartResource.FrameMargin;
+        var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
 
         if (this.ZoomIndex>0 && this.LastCalculateStatus.Width==width && this.LastCalculateStatus.XPointCount==this.XPointCount) //宽度没变 尝试使用原来的柱子宽度
         {
@@ -8497,8 +8497,7 @@ function KLineFrame()
 
     this.CalculateCount=function(zoomIndex)
     {
-        var width=this.ChartBorder.GetWidth()-4;
-
+        var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
         return parseInt(width/(ZOOM_SEED[zoomIndex][0] + ZOOM_SEED[zoomIndex][1]));
     }
 
@@ -8541,7 +8540,7 @@ function KLineFrame()
        
         this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
         this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
-        var width=this.ChartBorder.GetWidth()-g_JSChartResource.FrameMargin;
+        var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
         this.TrimKLineDataWidth(width);
         this.LastCalculateStatus.XPointCount=this.XPointCount;
         cursorIndex.Index=lastCursorIndex-this.Data.DataOffset;
@@ -8590,12 +8589,18 @@ function KLineFrame()
 
         this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
         this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
-        var width=this.ChartBorder.GetWidth()-g_JSChartResource.FrameMargin;
+        var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
         this.TrimKLineDataWidth(width);
         this.LastCalculateStatus.XPointCount=this.XPointCount;
         cursorIndex.Index=lastCursorIndex-this.Data.DataOffset;
 
         return true;
+    }
+
+    this.GetFrameWidth=function()
+    {
+        if (this.IsHScreen) return this.ChartBorder.GetHeight();
+        return this.ChartBorder.GetWidth();
     }
 
     this.DrawCustomHorizontal=function()    //Y轴刻度定制显示
@@ -9095,6 +9100,7 @@ function KLineHScreenFrame()
     }
 
     //计算数据宽度
+    /*
     this.CalculateDataWidth=function()
     {
         if (this.XPointCount<2) return;
@@ -9115,13 +9121,9 @@ function KLineHScreenFrame()
             }
         }
     }
+    */
 
-    this.CalculateCount=function(zoomIndex) //计算当天的缩放比例下 一屏显示的数据个数
-    {
-        var width=this.ChartBorder.GetHeight();
-        return parseInt(width/(ZOOM_SEED[zoomIndex][0] + ZOOM_SEED[zoomIndex][1]));
-    }
-
+    /*
     this.ZoomUp=function(cursorIndex)
     {
         if (this.ZoomIndex<=0) return false;
@@ -9217,6 +9219,7 @@ function KLineHScreenFrame()
 
         return true;
     }
+    */
 }
 
 
