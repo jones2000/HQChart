@@ -53262,6 +53262,8 @@ function JSSymbolData(ast,option,jsExecute)
             readArgument.Value=item;
         }
 
+        if (readArgument.Value=='') readArgument.Value=this.Symbol; //缺省使用股票代码
+
         //A股后缀小写
         if (readArgument.Value.indexOf('.SH')>0) result.Symbol=readArgument.Value.replace('.SH', ".sh");
         else if (readArgument.Value.indexOf('.SZ')>0) result.Symbol=readArgument.Value.replace('.SZ', ".sz");
@@ -54547,13 +54549,18 @@ function JSExecute(ast,option)
                     let assignmentItem=item.Expression;
                     let varName=assignmentItem.Left.Name;
                     let outVar=this.VarTable.get(varName);
-                    if (!this.IsSectionMode && !Array.isArray(outVar)) 
+                    var type=0;
+                    if (outVar && typeof(outVar)=='object' && outVar.__Type__=='Object')
+                    {
+                        type=1000;
+                    }
+                    else if (!this.IsSectionMode && !Array.isArray(outVar)) 
                     {
                         if (typeof(outVar)=='string') outVar=this.SingleDataToArrayData(parseFloat(outVar));
                         else outVar=this.SingleDataToArrayData(outVar);
                     }
 
-                    this.OutVarTable.push({Name:varName, Data:outVar,Type:0});
+                    this.OutVarTable.push({Name:varName, Data:outVar,Type:type});
                 }
                 else if (item.Expression.Type==Syntax.CallExpression)
                 {
@@ -56078,6 +56085,7 @@ function ScriptIndex(name,script,args,option)
         {
             let item=this.OutVar[i];
             if (item.IsExData===true) continue; //扩展数据不显示图形
+            if (item.Type==1000) continue;      //数据集合
 
             if (item.Type==0)  
             {
