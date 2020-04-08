@@ -3015,11 +3015,14 @@ function KLineFrame()
     this.ChangeIndex = true;  //是否显示'换指标'菜单
     this.CustomHorizontalInfo = [];
 
+    this.LastCalculateStatus = { Width: 0, XPointCount: 0 };    //最后一次计算宽度的状态
+
     //定制X轴刻度 
     //Type:0,  Date:, Time: , Name:名字,       Line:{ Color:线段颜色, Type:线段类型 0 直线 1 虚线 }
     //Type: 1, Space: 第几个空白间距, Name:名字, Line: { Color: 线段颜色, Type: 线段类型 0 直线 1 虚线 }
     this.CustomVerticalInfo = [];               
     this.DrawCustomVerticalEvent;
+    this.RightSpaceCount = 0;
 
     this.DrawFrame = function () 
     {
@@ -3175,7 +3178,7 @@ function KLineFrame()
     this.CalculateDataWidth = function ()   //计算数据宽度
     {
         if (this.XPointCount < 2) return;
-        var width = this.ChartBorder.GetWidth() - 4;    //预留4个像素 防止最后1个柱子不够画
+        var width = this.GetFrameWidth() - g_JSChartResource.FrameMargin;    //预留4个像素 防止最后1个柱子不够画
 
         for (var i = 0; i < ZOOM_SEED.length; ++i) 
         {
@@ -3264,119 +3267,155 @@ function KLineFrame()
         return isOverlayMax || isOverlayMin;
     }
 
-  //分割x,y轴坐标信息
-  this.SplitXYCoordinate = function () {
-    if (this.XYSplit == false) return;
-    if (this.YSplitOperator != null) this.YSplitOperator.Operator();
-    if (this.XSplitOperator != null) this.XSplitOperator.Operator();
-  }
-
-  this.CalculateCount = function (zoomIndex) {
-    var width = this.ChartBorder.GetWidth();
-
-    return parseInt(width / (ZOOM_SEED[zoomIndex][0] + ZOOM_SEED[zoomIndex][1]));
-  }
-
-  this.ZoomUp = function (cursorIndex) {
-    if (this.ZoomIndex <= 0) return false;
-    if (this.Data.DataOffset < 0) return false;
-
-    var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
-    var lastCursorIndex = this.Data.DataOffset + cursorIndex.Index;
-
-    if (lastDataIndex > this.Data.Data.length) lastDataIndex = this.Data.Data.length - 1;
-
-    --this.ZoomIndex;
-    var xPointCount = this.CalculateCount(this.ZoomIndex);
-
-    this.XPointCount = xPointCount;
-
-    this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
-    this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
-
-    this.TrimKLineDataWidth(this.ChartBorder.GetWidth());
-
-    if (lastDataIndex >= this.Data.Data.length) {
-      this.Data.DataOffset = this.Data.Data.length - this.XPointCount - 2;
-      cursorIndex.Index = this.Data.Data.length - this.Data.DataOffset - 1;
+    //分割x,y轴坐标信息
+    this.SplitXYCoordinate = function () 
+    {
+        if (this.XYSplit == false) return;
+        if (this.YSplitOperator != null) this.YSplitOperator.Operator();
+        if (this.XSplitOperator != null) this.XSplitOperator.Operator();
     }
-    else {
-      if (lastDataIndex < this.XPointCount) {
-        this.Data.DataOffset = 0;
-        cursorIndex.Index = lastCursorIndex;
-      }
-      else {
-        this.Data.DataOffset = lastDataIndex - this.XPointCount + 1;
+
+    this.CalculateCount = function (zoomIndex) 
+    {
+        var width = this.GetFrameWidth() - g_JSChartResource.FrameMargin;
+        return parseInt(width / (ZOOM_SEED[zoomIndex][0] + ZOOM_SEED[zoomIndex][1]));
+    }
+
+    this.ZoomUp = function (cursorIndex) 
+    {
+        if (this.ZoomIndex <= 0) return false;
+        if (this.Data.DataOffset < 0) return false;
+        var dataCount = this.Data.Data.length;
+        var maxDataCount = dataCount + this.RightSpaceCount;
+
+        var rightSpaceCount = 0;
+        var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
+        var lastCursorIndex = this.Data.DataOffset + cursorIndex.Index;
+
+        if (lastDataIndex >= dataCount)
+         {
+            rightSpaceCount = lastDataIndex - (this.Data.Data.length - 1);    //计算右边预留空间
+            lastDataIndex = this.Data.Data.length - 1;
+            if (rightSpaceCount > this.RightSpaceCount) rightSpaceCount = this.RightSpaceCount;
+        }
+
+        var xPointCount = this.CalculateCount(this.ZoomIndex-1);
+
+        --this.ZoomIndex;
+        this.XPointCount = xPointCount;
+        if (xPointCount >= maxDataCount) 
+        {
+            xPointCount = maxDataCount;
+            this.XPointCount = xPointCount;
+            this.Data.DataOffset = 0;
+        }
+        else 
+        {
+            this.XPointCount = xPointCount;
+            this.Data.DataOffset = lastDataIndex - (this.XPointCount - rightSpaceCount) + 1;
+        }
+
+        this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
+        this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
+        var width = this.GetFrameWidth() - g_JSChartResource.FrameMargin;
+        this.TrimKLineDataWidth(width);
+
+        this.LastCalculateStatus.XPointCount = this.XPointCount;
         cursorIndex.Index = lastCursorIndex - this.Data.DataOffset;
-      }
+
+        return true;
     }
 
-    return true;
-  }
+    this.ZoomDown = function (cursorIndex) 
+    {
+        if (this.ZoomIndex + 1 >= ZOOM_SEED.length) return false;
+        if (this.Data.DataOffset < 0) return false;
+        var dataCount = this.Data.Data.length;
+        var maxDataCount = dataCount + this.RightSpaceCount;
+        if (this.XPointCount >= dataCount) return false;
 
-  this.ZoomDown = function (cursorIndex) {
-    if (this.ZoomIndex + 1 >= ZOOM_SEED.length) return false;
-    if (this.Data.DataOffset < 0) return false;
+        var rightSpaceCount = 0;
+        var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
+        if (lastDataIndex >= this.Data.Data.length) 
+        {
+            rightSpaceCount = lastDataIndex - (this.Data.Data.length - 1);    //计算右边预留空间
+            lastDataIndex = this.Data.Data.length - 1;
+            if (rightSpaceCount > this.RightSpaceCount) rightSpaceCount = this.RightSpaceCount;
+        }
 
-    var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
-    if (lastDataIndex >= this.Data.Data.length) lastDataIndex = this.Data.Data.length - 1;
-    var xPointCount = this.CalculateCount(this.ZoomIndex + 1);
+        var xPointCount = this.CalculateCount(this.ZoomIndex + 1);
+        var lastCursorIndex = this.Data.DataOffset + cursorIndex.Index;
 
-    var lastCursorIndex = this.Data.DataOffset + cursorIndex.Index;
+        ++this.ZoomIndex;
+        if (xPointCount >= maxDataCount) 
+        {
+            xPointCount = maxDataCount;
+            this.XPointCount = xPointCount;
+            this.Data.DataOffset = 0;
+        }
+        else 
+        {
+            this.XPointCount = xPointCount;
+            this.Data.DataOffset = lastDataIndex - (this.XPointCount - rightSpaceCount) + 1;
+        }
 
-    ++this.ZoomIndex;
-    this.XPointCount = xPointCount;
-    this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
-    this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
+        this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
+        this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
+        var width = this.GetFrameWidth() - g_JSChartResource.FrameMargin;
+        this.TrimKLineDataWidth(width);
 
-    this.TrimKLineDataWidth(this.ChartBorder.GetWidth());
+        this.LastCalculateStatus.XPointCount = this.XPointCount;
+        cursorIndex.Index = lastCursorIndex - this.Data.DataOffset;
 
-    if (lastDataIndex - xPointCount + 1 < 0)
-      this.Data.DataOffset = 0;
-    else
-      this.Data.DataOffset = lastDataIndex - this.XPointCount + 1;
+        return true;
+    }
 
-    cursorIndex.Index = lastCursorIndex - this.Data.DataOffset;
-
-    return true;
-  }
+    this.GetFrameWidth = function () 
+    {
+        if (this.IsHScreen) return this.ChartBorder.GetHeight();
+        return this.ChartBorder.GetWidth();
+    }
 }
 
 //K线横屏框架
-function KLineHScreenFrame() {
-  this.newMethod = KLineFrame;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function KLineHScreenFrame() 
+{
+    this.newMethod = KLineFrame;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.IsHScreen = true;        //是否是横屏
+    this.IsHScreen = true;        //是否是横屏
 
-  this.DrawInsideHorizontal = function () {
+    this.DrawInsideHorizontal = function () 
+    {
 
-  }
+    }
 
-  //画标题背景色
-  this.DrawTitleBG = function () {
-    /*
-    if (this.ChartBorder.TitleHeight <= 0) return;
+    //画标题背景色
+    this.DrawTitleBG = function () 
+    {
+        /*
+        if (this.ChartBorder.TitleHeight <= 0) return;
 
-    var left = ToFixedPoint(this.ChartBorder.GetRightEx());
-    var top = ToFixedPoint(this.ChartBorder.GetTop());
-    var bottom = ToFixedPoint(this.ChartBorder.GetBottom());
-    var width = this.ChartBorder.TitleHeight;
-    var height = bottom - top;
+        var left = ToFixedPoint(this.ChartBorder.GetRightEx());
+        var top = ToFixedPoint(this.ChartBorder.GetTop());
+        var bottom = ToFixedPoint(this.ChartBorder.GetBottom());
+        var width = this.ChartBorder.TitleHeight;
+        var height = bottom - top;
 
-    this.Canvas.fillStyle = this.TitleBGColor;
-    this.Canvas.fillRect(left, top, width, height);
-    */
-  }
+        this.Canvas.fillStyle = this.TitleBGColor;
+        this.Canvas.fillRect(left, top, width, height);
+        */
+    }
 
-  this.GetYFromData = function (value) {
-    if (value <= this.HorizontalMin) return this.ChartBorder.GetLeftEx();
-    if (value >= this.HorizontalMax) return this.ChartBorder.GetRightEx();
+    this.GetYFromData = function (value) 
+    {
+        if (value <= this.HorizontalMin) return this.ChartBorder.GetLeftEx();
+        if (value >= this.HorizontalMax) return this.ChartBorder.GetRightEx();
 
-    var width = this.ChartBorder.GetWidthEx() * (value - this.HorizontalMin) / (this.HorizontalMax - this.HorizontalMin);
-    return this.ChartBorder.GetLeftEx() + width;
-  }
+        var width = this.ChartBorder.GetWidthEx() * (value - this.HorizontalMin) / (this.HorizontalMax - this.HorizontalMin);
+        return this.ChartBorder.GetLeftEx() + width;
+    }
 
   //画Y轴
   this.DrawHorizontal = function () {
@@ -3433,17 +3472,19 @@ function KLineHScreenFrame() {
     }
   }
 
-  this.GetXFromIndex = function (index) {
-    if (index < 0) index = 0;
-    if (index > this.xPointCount - 1) index = this.xPointCount - 1;
+    this.GetXFromIndex = function (index) 
+    {
+        if (index < 0) index = 0;
+        if (index > this.xPointCount - 1) index = this.xPointCount - 1;
 
-    var offset = this.ChartBorder.GetTop() + 2 + this.DistanceWidth / 2 + this.DataWidth / 2;
-    for (var i = 1; i <= index; ++i) {
-      offset += this.DistanceWidth + this.DataWidth;
+        var offset = this.ChartBorder.GetTop() + 2 + this.DistanceWidth / 2 + this.DataWidth / 2;
+        for (var i = 1; i <= index; ++i) 
+        {
+            offset += this.DistanceWidth + this.DataWidth;
+        }
+
+        return offset;
     }
-
-    return offset;
-  }
 
   //画X轴
   this.DrawVertical = function () {
@@ -3490,115 +3531,30 @@ function KLineHScreenFrame() {
     }
   }
 
-  //Y坐标转y轴数值
-  this.GetYData = function (x) {
-    if (x < this.ChartBorder.GetLeftEx()) return this.HorizontalMin;
-    if (x > this.ChartBorder.GetRightEx()) return this.HorizontalMax;
+    //Y坐标转y轴数值
+    this.GetYData = function (x) 
+    {
+        if (x < this.ChartBorder.GetLeftEx()) return this.HorizontalMin;
+        if (x > this.ChartBorder.GetRightEx()) return this.HorizontalMax;
 
-    return (x - this.ChartBorder.GetLeftEx()) / this.ChartBorder.GetWidthEx() * (this.HorizontalMax - this.HorizontalMin) + this.HorizontalMin;
-  }
-
-  //X坐标转x轴数值
-  this.GetXData = function (y) {
-    if (y <= this.ChartBorder.GetTop()) return 0;
-    if (y >= this.ChartBorder.GetBottom()) return this.XPointCount;
-
-    return (y - this.ChartBorder.GetTop()) * (this.XPointCount * 1.0 / this.ChartBorder.GetHeight());
-  }
-
-  //计算数据宽度
-  this.CalculateDataWidth = function () {
-    if (this.XPointCount < 2) return;
-
-    var width = this.ChartBorder.GetHeight() - 4;
-
-    for (var i = 0; i < ZOOM_SEED.length; ++i) {
-      if ((ZOOM_SEED[i][0] + ZOOM_SEED[i][1]) * this.XPointCount < width) {
-        this.ZoomIndex = i;
-        this.DataWidth = ZOOM_SEED[i][0];
-        this.DistanceWidth = ZOOM_SEED[i][1];
-        if (i == 0) break;      // 如果是最大的缩放因子，不再调整数据宽度
-
-        this.TrimKLineDataWidth(width);
-        return;
-      }
-    }
-  }
-
-  this.CalculateCount = function (zoomIndex) //计算当天的缩放比例下 一屏显示的数据个数
-  {
-    var width = this.ChartBorder.GetHeight();
-    return parseInt(width / (ZOOM_SEED[zoomIndex][0] + ZOOM_SEED[zoomIndex][1]));
-  }
-
-  this.ZoomUp = function (cursorIndex) {
-    if (this.ZoomIndex <= 0) return false;
-    if (this.Data.DataOffset < 0) return false;
-
-    var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
-    var lastCursorIndex = this.Data.DataOffset + cursorIndex.Index;
-
-    if (lastDataIndex > this.Data.Data.length) lastDataIndex = this.Data.Data.length - 1;
-
-    --this.ZoomIndex;
-    var xPointCount = this.CalculateCount(this.ZoomIndex);
-
-    this.XPointCount = xPointCount;
-
-    this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
-    this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
-
-    this.TrimKLineDataWidth(this.ChartBorder.GetHeight());
-
-    if (lastDataIndex >= this.Data.Data.length) {
-      this.Data.DataOffset = this.Data.Data.length - this.XPointCount - 2;
-      cursorIndex.Index = this.Data.Data.length - this.Data.DataOffset - 1;
-    }
-    else {
-      if (lastDataIndex < this.XPointCount) {
-        this.Data.DataOffset = 0;
-        cursorIndex.Index = lastCursorIndex;
-      }
-      else {
-        this.Data.DataOffset = lastDataIndex - this.XPointCount + 1;
-        cursorIndex.Index = lastCursorIndex - this.Data.DataOffset;
-      }
+        return (x - this.ChartBorder.GetLeftEx()) / this.ChartBorder.GetWidthEx() * (this.HorizontalMax - this.HorizontalMin) + this.HorizontalMin;
     }
 
-    return true;
-  }
+    //X坐标转x轴数值
+    this.GetXData = function (y) 
+    {
+        if (y <= this.ChartBorder.GetTop()) return 0;
+        if (y >= this.ChartBorder.GetBottom()) return this.XPointCount;
 
-  this.ZoomDown = function (cursorIndex) {
-    if (this.ZoomIndex + 1 >= ZOOM_SEED.length) return false;
-    if (this.Data.DataOffset < 0) return false;
+        return (y - this.ChartBorder.GetTop()) * (this.XPointCount * 1.0 / this.ChartBorder.GetHeight());
+    }
 
-    var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
-    if (lastDataIndex >= this.Data.Data.length) lastDataIndex = this.Data.Data.length - 1;
-    var xPointCount = this.CalculateCount(this.ZoomIndex + 1);
-
-    var lastCursorIndex = this.Data.DataOffset + cursorIndex.Index;
-
-    ++this.ZoomIndex;
-    this.XPointCount = xPointCount;
-    this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
-    this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
-
-    this.TrimKLineDataWidth(this.ChartBorder.GetHeight());
-
-    if (lastDataIndex - xPointCount + 1 < 0)
-      this.Data.DataOffset = 0;
-    else
-      this.Data.DataOffset = lastDataIndex - this.XPointCount + 1;
-
-    cursorIndex.Index = lastCursorIndex - this.Data.DataOffset;
-
-    return true;
-  }
 }
 
-function SubFrameItem() {
-  this.Frame;
-  this.Height;
+function SubFrameItem() 
+{
+    this.Frame;
+    this.Height;
 }
 
 //行情框架
@@ -6650,6 +6606,7 @@ function KLineChartContainer(uielement)
             frame.Canvas = this.Canvas;
             frame.ChartBorder = border;
             frame.Identify = i;                   //窗口序号
+            frame.RightSpaceCount = this.RightSpaceCount; //右边
 
             frame.HorizontalMax = 20;
             frame.HorizontalMin = 10;
@@ -10640,63 +10597,69 @@ function KLineChartHScreenContainer(uielement) {
     }
   }
 
-  //创建子窗口
-  this.CreateChildWindow = function (windowCount) {
-    for (var i = 0; i < windowCount; ++i) {
-      var border = new ChartBorder();
-      border.UIElement = this.UIElement;
+    //创建子窗口
+    this.CreateChildWindow = function (windowCount) 
+    {
+        for (var i = 0; i < windowCount; ++i) 
+        {
+            var border = new ChartBorder();
+            border.UIElement = this.UIElement;
 
-      var frame = new KLineHScreenFrame();
-      frame.Canvas = this.Canvas;
-      frame.ChartBorder = border;
-      frame.Identify = i;                   //窗口序号
+            var frame = new KLineHScreenFrame();
+            frame.Canvas = this.Canvas;
+            frame.ChartBorder = border;
+            frame.Identify = i;                   //窗口序号
+            frame.RightSpaceCount = this.RightSpaceCount; //右边
 
-      if (this.ModifyIndexDialog) frame.ModifyIndexEvent = this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-      if (this.ChangeIndexDialog) frame.ChangeIndexEvent = this.ChangeIndexDialog.DoModal;
+            if (this.ModifyIndexDialog) frame.ModifyIndexEvent = this.ModifyIndexDialog.DoModal;        //绑定菜单事件
+            if (this.ChangeIndexDialog) frame.ChangeIndexEvent = this.ChangeIndexDialog.DoModal;
 
-      frame.HorizontalMax = 20;
-      frame.HorizontalMin = 10;
+            frame.HorizontalMax = 20;
+            frame.HorizontalMin = 10;
 
-      if (i == 0) {
-        frame.YSplitOperator = new FrameSplitKLinePriceY();
-        frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
-        //主图上下间距
-        border.TopSpace = 12;
-        border.BottomSpace = 12;
-      }
-      else {
-        frame.YSplitOperator = new FrameSplitY();
-        frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
-        //frame.IsLocked = true;
-      }
+            if (i == 0) 
+            {
+                frame.YSplitOperator = new FrameSplitKLinePriceY();
+                frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
+                //主图上下间距
+                border.TopSpace = 12;
+                border.BottomSpace = 12;
+            }
+            else 
+            {
+                frame.YSplitOperator = new FrameSplitY();
+                frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
+                //frame.IsLocked = true;
+            }
 
-      frame.YSplitOperator.Frame = frame;
-      frame.YSplitOperator.ChartBorder = border;
-      frame.XSplitOperator = new FrameSplitKLineX();
-      frame.XSplitOperator.Frame = frame;
-      frame.XSplitOperator.ChartBorder = border;
+            frame.YSplitOperator.Frame = frame;
+            frame.YSplitOperator.ChartBorder = border;
+            frame.XSplitOperator = new FrameSplitKLineX();
+            frame.XSplitOperator.Frame = frame;
+            frame.XSplitOperator.ChartBorder = border;
 
-      if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
+            if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
 
-      for (var j = frame.HorizontalMin; j <= frame.HorizontalMax; j += 1) {
-        frame.HorizontalInfo[j] = new CoordinateInfo();
-        frame.HorizontalInfo[j].Value = j;
-        if (i == 0 && j == frame.HorizontalMin) continue;
+            for (var j = frame.HorizontalMin; j <= frame.HorizontalMax; j += 1) 
+            {
+                frame.HorizontalInfo[j] = new CoordinateInfo();
+                frame.HorizontalInfo[j].Value = j;
+                if (i == 0 && j == frame.HorizontalMin) continue;
 
-        frame.HorizontalInfo[j].Message[1] = j.toString();
-        frame.HorizontalInfo[j].Font = "14px 微软雅黑";
-      }
+                frame.HorizontalInfo[j].Message[1] = j.toString();
+                frame.HorizontalInfo[j].Font = "14px 微软雅黑";
+            }
 
-      var subFrame = new SubFrameItem();
-      subFrame.Frame = frame;
-      if (i == 0)
-        subFrame.Height = 20;
-      else
-        subFrame.Height = 10;
+            var subFrame = new SubFrameItem();
+            subFrame.Frame = frame;
+            if (i == 0)
+                subFrame.Height = 20;
+            else
+                subFrame.Height = 10;
 
-      this.Frame.SubFrame[i] = subFrame;
+            this.Frame.SubFrame[i] = subFrame;
+        }
     }
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
