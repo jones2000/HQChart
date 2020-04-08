@@ -157,6 +157,11 @@ function JSChart(divElement)
             if (option.DrawPicture.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawPicture.StorageKey);
         }
 
+        if (option.DrawTool)    //画图工具
+        {
+            if (option.DrawTool.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawTool.StorageKey);
+        }
+
         if (option.StepPixel>0) chart.StepPixel=option.StepPixel;
         if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
         if (option.IsApiPeriod==true) chart.IsApiPeriod=option.IsApiPeriod;
@@ -5124,6 +5129,7 @@ function KLineFrame()
         {
             this.XPointCount=xPointCount;
             this.Data.DataOffset = lastDataIndex - (this.XPointCount-rightSpaceCount)+1;
+            if (this.Data.DataOffset<0) this.Data.DataOffset=0;
 
             JSConsole.Chart.Log(`[KLineFrame::ZoomUp] calculate. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount} DataOffset=${this.Data.DataOffset}`);
         }
@@ -5173,6 +5179,7 @@ function KLineFrame()
         {
             this.XPointCount=xPointCount;
             this.Data.DataOffset = lastDataIndex - (this.XPointCount-rightSpaceCount)+1;
+            if (this.Data.DataOffset<0) this.Data.DataOffset=0;
 
             JSConsole.Chart.Log(`[KLineFrame::ZoomDown] calculate. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount} DataOffset=${this.Data.DataOffset}`);
         }
@@ -8229,6 +8236,47 @@ function ChartData()
         }
 
         return result;
+    }
+
+    //获取数据索引
+    this.FindDataIndexByDateTime=function(aryDateTime) //aryDateTime=[ { Date:, Time:, Index:-1 }, ......]
+    {
+        var findCount=0;
+        for(var i in aryDateTime)
+        {
+            aryDateTime[i].Index=-1;
+        }
+
+        for(var i in this.Data)
+        {
+            var item=this.Data[i];
+            for(var j in aryDateTime)
+            {
+                var findItem=aryDateTime[j];
+                if (findItem.Index>=0) continue;
+
+                if (IFrameSplitOperator.IsNumber(findItem.Time))
+                {
+                    if (findItem.Date==item.Date && findItem.Time==item.Time)
+                    {
+                        findItem.Index=parseInt(i);
+                        ++findCount;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (findItem.Date==item.Date)
+                    {
+                        findItem.Index=parseInt(i);
+                        ++findCount;
+                        break;
+                    }
+                }
+
+                if (findCount>=aryDateTime.length) break;
+            }
+        }
     }
 }
 
@@ -20181,9 +20229,12 @@ function IChartDrawPicture()
                 var xValue=parseInt(this.Frame.GetXData(item.Y))+data.DataOffset;
                 var yValue=this.Frame.GetYData(item.X);
 
-                this.Value[i]={};
-                this.Value[i].XValue=xValue;
-                this.Value[i].YValue=yValue;
+                var valueItem={ XValue:xValue, YValue:yValue };
+                var kline=data.Data[xValue];
+                valueItem.DateTime={ Date:kline.Date };
+                if (IFrameSplitOperator.IsNumber(kline.Time)) valueItem.DateTime.Time=kline.Time;
+
+                this.Value[i]=valueItem;
             }
         }
         else
@@ -20194,9 +20245,12 @@ function IChartDrawPicture()
                 var xValue=parseInt(this.Frame.GetXData(item.X))+data.DataOffset;
                 var yValue=this.Frame.GetYData(item.Y);
 
-                this.Value[i]={};
-                this.Value[i].XValue=xValue;
-                this.Value[i].YValue=yValue;
+                var valueItem={ XValue:xValue, YValue:yValue };
+                var kline=data.Data[xValue];
+                valueItem.DateTime={ Date:kline.Date };
+                if (IFrameSplitOperator.IsNumber(kline.Time)) valueItem.DateTime.Time=kline.Time;
+
+                this.Value[i]=valueItem;
             }
         }
 
@@ -20215,6 +20269,7 @@ function IChartDrawPicture()
         var data=this.Frame.Data;
         if (!data) return false;
 
+        //this.UpdateXValue();
         var isHScreen=this.Frame.IsHScreen;
         this.Point=[];
         for(var i in this.Value)
@@ -20232,6 +20287,30 @@ function IChartDrawPicture()
                 pt.Y=this.Frame.GetYFromData(item.YValue);
             }
             this.Point[i]=pt;
+        }
+    }
+
+    this.UpdateXValue=function()    //通过datetime更新x的索引
+    {
+        if (!this.Frame) return false;
+        var data=this.Frame.Data;
+        if (!data) return false;
+
+        var aryDateTime=[];
+        for(var i in this.Value)
+        {
+            var item=this.Value[i];
+            var dateTime={ Date:item.DateTime.Date };
+            if (IFrameSplitOperator.IsNumber(item.DateTime.Time)) dateTime.Time=item.DateTime.Time;
+            aryDateTime[i]=dateTime;
+        }
+
+        data.FindDataIndexByDateTime(aryDateTime);
+        for(var i in aryDateTime)
+        {
+            var findItem=aryDateTime[i];
+            var valueItem=this.Value[i];
+            if (findItem.Index>=0) valueItem.XValue=findItem.Index;
         }
     }
 
@@ -20542,7 +20621,7 @@ function IChartDrawPicture()
         for(var i in this.Value)
         {
             var item=this.Value[i];
-            storageData.Value.push({XValue:item.XValue, YValue:item.YValue});
+            storageData.Value.push({ XValue:item.XValue, YValue:item.YValue, DateTime:item.DateTime });
         }
 
         if (this.Text) storageData.Text=this.Text;  //如果有文本, 也导出
@@ -28252,6 +28331,16 @@ function KLineChartContainer(uielement)
         return true;
     }
 
+    //数据长度变化 需要更新画图工具X轴索引
+    this.UpdateChartDrawXValue=function()
+    {
+        for(var i in this.ChartDrawPicture)
+        {
+            var item=this.ChartDrawPicture[i];
+            item.UpdateXValue();
+        }
+    }
+
 
     //注册鼠标右键事件
     this.OnRightMenu=function(x,y,e)
@@ -28338,6 +28427,7 @@ function KLineChartContainer(uielement)
             drawPicture.Canvas=this.Canvas;
             drawPicture.Status=10;
             drawPicture.Frame=this.Frame.SubFrame[item.FrameID].Frame;  //绑定框架坐标
+            drawPicture.UpdateXValue();
             drawPicture.ValueToPoint();
 
             if (drawPicture.ClassName==='ChartDrawPictureText') drawPicture.IsInitialized=true;
@@ -28811,6 +28901,7 @@ function KLineChartContainer(uielement)
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
+        this.UpdateChartDrawXValue();      //更新画图工具X轴索引
         this.Draw();
     }
 
@@ -28912,7 +29003,8 @@ function KLineChartContainer(uielement)
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
-        this.Draw();
+        this.UpdateChartDrawXValue();       //更新画图工具X轴索引
+        this.Draw();    
     }
 
     this.SetCustomVerical=function(windowId, data)

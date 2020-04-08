@@ -6696,6 +6696,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.MaxRequestDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
+    this.KLineDateTimeRange;        //请求的K线日期范围
 
     this.LatestData;            //最新行情
     this.IndexData;             //大盘指数
@@ -6743,6 +6744,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.NetworkFilter) this.NetworkFilter=option.NetworkFilter;
         if (option.DayCount>0) this.DayCount=option.DayCount;
         if (option.Arguments) this.Arguments=option.Arguments;
+        if (option.KLineRange) this.KLineDateTimeRange=option.KLineRange;
     }
 
     this.RecvError=function(request)
@@ -7562,6 +7564,13 @@ function JSSymbolData(ast,option,jsExecute)
                     PreventDefault:false
                 };
 
+                if (this.KLineDateTimeRange)
+                {
+                    obj.Request.KLineDataTimeRange={Start:{ Date:this.KLineDateTimeRange.Start.Date},  End:{ Date:this.KLineDateTimeRange.End.Date} };
+                    if (this.IsNumber(this.KLineDateTimeRange.Start.Time)) obj.Request.KLineDataTimeRange.Start.Time=this.KLineDateTimeRange.Start.Time;
+                    if (this.IsNumber(this.KLineDateTimeRange.End.Time)) obj.Request.KLineDataTimeRange.End.Time=this.KLineDateTimeRange.End.Time;
+                }
+
                 this.NetworkFilter(obj, function(data) 
                 { 
                     self.RecvHistroyData(data);
@@ -7615,6 +7624,13 @@ function JSSymbolData(ast,option,jsExecute)
                     Self:this,
                     PreventDefault:false
                 };
+
+                if (this.KLineDateTimeRange)
+                {
+                    obj.Request.KLineDataTimeRange={Start:{ Date:this.KLineDateTimeRange.Start.Date},  End:{ Date:this.KLineDateTimeRange.End.Date} };
+                    if (this.IsNumber(this.KLineDateTimeRange.Start.Time)) obj.Request.KLineDataTimeRange.Start.Time=this.KLineDateTimeRange.Start.Time;
+                    if (this.IsNumber(this.KLineDateTimeRange.End.Time)) obj.Request.KLineDataTimeRange.End.Time=this.KLineDateTimeRange.End.Time;
+                }
 
                 this.NetworkFilter(obj, function(data) 
                 { 
@@ -9391,6 +9407,17 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         JSConsole.Complier.Log('[JSSymbolData::CallScriptIndex] call script index', indexInfo);
+        var DateTimeRange=null;
+        if (this.Data && this.Data.Data.length>0)
+        {
+            var start=this.Data.Data[0];
+            var end=this.Data.Data[this.Data.Data.length-1];
+            DateTimeRange=
+            {
+                Start:{Date:start.Date, Time: start.Time},
+                End:{Date:end.Date, Time: end.Time},
+            }
+        }
 
         var option=
         {
@@ -9407,12 +9434,13 @@ function JSSymbolData(ast,option,jsExecute)
             },
             CallbackParam:indexInfo,
             Async:true,
-            MaxRequestDataCount:this.MaxRequestDataCount+10,
+            MaxRequestDataCount:this.MaxRequestDataCount+30*2,
             MaxRequestMinuteDayCount:this.MaxRequestMinuteDayCount+2,
             Arguments:indexInfo.Args,
             //Condition:this.Condition,
             IsBeforeData:this.IsBeforeData,
-            NetworkFilter:this.NetworkFilter
+            NetworkFilter:this.NetworkFilter,
+            KLineRange:DateTimeRange    //K线数据范围
         };
 
         //执行脚本
