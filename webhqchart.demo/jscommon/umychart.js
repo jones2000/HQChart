@@ -1847,11 +1847,9 @@ function JSChartContainer(uielement)
             if (this.TryClickLock || this.TryClickIndexTitle) //指标枷锁区域 , 指标标题点击
             {
                 var touches = this.GetToucheData(e, this.IsForceLandscape);
-                var x = touches[0].clientX;
-                var y = touches[0].clientY;
-                var pixelTatio = GetDevicePixelRatio();
-                x -= uielement.getBoundingClientRect().left*pixelTatio;    //减去控件的偏移偏移量
-                y -= uielement.getBoundingClientRect().top*pixelTatio;
+                var pt=this.PointAbsoluteToRelative(touches[0].clientX, touches[0].clientY, true);
+                var x = pt.X;
+                var y = pt.Y;
                 if (this.TryClickLock && this.TryClickLock(x, y)) return;
                 if (this.TryClickIndexTitle && this.TryClickIndexTitle(x,y)) return;
             }
@@ -1908,10 +1906,9 @@ function JSChartContainer(uielement)
             }
             else
             {
-                var drawPictrueData={};
+                var pt=this.PointAbsoluteToRelative(touches[0].clientX,touches[0].clientY, true);
+                var drawPictrueData={ X:pt.X, Y:pt.Y };
                 var pixelTatio = GetDevicePixelRatio(); //鼠标移动坐标是原始坐标 需要乘以放大倍速
-                drawPictrueData.X=(touches[0].clientX-uielement.getBoundingClientRect().left);
-                drawPictrueData.Y=(touches[0].clientY-uielement.getBoundingClientRect().top);
                 if (this.GetChartDrawPictureByPoint(drawPictrueData))
                 {
                     drawPictrueData.ChartDrawPicture.Status=20;
@@ -28242,6 +28239,27 @@ function KLineChartContainer(uielement)
         return true;
     }
 
+    //把X, Y绝对位置转成的相对位置的点
+    this.PointAbsoluteToRelative=function(x, y, isPhone)
+    {
+        var pt={ X:x, Y:y };
+        var pixelTatio = GetDevicePixelRatio();             //x,y是原始坐标 需要乘以放大倍速
+        var uiRect=this.UIElement.getBoundingClientRect();  //dom返回的是没有放大倍数的值
+
+        if (isPhone)
+        {
+            pt.X=x-uiRect.left*pixelTatio;      //手机端 dom返回的是没有放大倍数的值
+            pt.Y=y-uiRect.top*pixelTatio;
+        }
+        else
+        {
+            pt.X=(x-uiRect.left)*pixelTatio;
+            pt.Y=(y-uiRect.top)*pixelTatio;
+        }
+
+        return pt;
+    }
+
     this.SetChartDrawPictureFirstPoint=function(x,y, isPhone)
     {
         var drawPicture=this.CurrentChartDrawPicture;
@@ -28249,10 +28267,10 @@ function KLineChartContainer(uielement)
         if (!this.Frame.SubFrame || this.Frame.SubFrame.length<=0) return false;
 
         //相对坐标
-        var pixelTatio = GetDevicePixelRatio(); //x,y是原始坐标 需要乘以放大倍速
-        if (isPhone) pixelTatio=1;
-        var xFixed=(x-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-        var yFixed=(y-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+        var pt=this.PointAbsoluteToRelative(x, y, isPhone);
+        var xFixed=pt.X;
+        var yFixed=pt.Y;
+
         for(var i in this.Frame.SubFrame)
         {
             var frame=this.Frame.SubFrame[i].Frame;
@@ -28273,8 +28291,8 @@ function KLineChartContainer(uielement)
         if (!drawPicture.Frame) return false;
 
         drawPicture.Point[0]=new Point();
-        drawPicture.Point[0].X=(x-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-        drawPicture.Point[0].Y=(y-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+        drawPicture.Point[0].X=xFixed;
+        drawPicture.Point[0].Y=yFixed;
         drawPicture.Status=1;   //第1个点完成
         return true;
     }
@@ -28284,11 +28302,12 @@ function KLineChartContainer(uielement)
         var drawPicture=this.CurrentChartDrawPicture;
         if (!drawPicture) return false;
 
-        var pixelTatio = GetDevicePixelRatio(); //x,y是原始坐标 需要乘以放大倍速
-        if (isPhone) pixelTatio=1;
+        //相对坐标
+        var pt=this.PointAbsoluteToRelative(x, y, isPhone);
+
         drawPicture.Point[1]=new Point();
-        drawPicture.Point[1].X=(x-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-        drawPicture.Point[1].Y=(y-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+        drawPicture.Point[1].X=pt.X;
+        drawPicture.Point[1].Y=pt.Y;
 
         drawPicture.Status=2;   //设置第2个点
         return true;
@@ -28300,11 +28319,12 @@ function KLineChartContainer(uielement)
         var drawPicture=this.CurrentChartDrawPicture;
         if (!drawPicture) return false;
 
-        var pixelTatio = GetDevicePixelRatio(); //x,y是原始坐标 需要乘以放大倍速
-        if (isPhone) pixelTatio=1;
+        //相对坐标
+        var pt=this.PointAbsoluteToRelative(x, y, isPhone);
+
         drawPicture.Point[2]=new Point();
-        drawPicture.Point[2].X=(x-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-        drawPicture.Point[2].Y=(y-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+        drawPicture.Point[2].X=pt.X;
+        drawPicture.Point[2].Y=pt.Y;
 
         drawPicture.Status=3;   //设置第3个点
         return true;
