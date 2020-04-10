@@ -130,6 +130,7 @@ function JSChart(divElement)
             if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
             if (option.KLine.FirstShowDate>19910101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };
             if (option.KLine.RightSpaceCount>0) chart.RightSpaceCount=option.KLine.RightSpaceCount;
+            if (option.KLine.ZoomType>0) chart.ZoomType=option.KLine.ZoomType;
         }
 
         if (option.Page)
@@ -2619,7 +2620,7 @@ function JSChartContainer(uielement)
                 }
                 break;
             case 38:    //up
-                var cursorIndex={};
+                var cursorIndex={ ZoomType:this.ZoomType };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
                 if (!this.Frame.ZoomUp(cursorIndex)) break;
                 this.CursorIndex=cursorIndex.Index;
@@ -2630,7 +2631,7 @@ function JSChartContainer(uielement)
                 this.ShowTooltipByKeyDown();
                 break;
             case 40:    //down
-                var cursorIndex={};
+                var cursorIndex={ ZoomType:this.ZoomType };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
                 if (!this.Frame.ZoomDown(cursorIndex)) break;
                 this.CursorIndex=cursorIndex.Index;
@@ -5127,8 +5128,17 @@ function KLineFrame()
         }
         else
         {
+            var dataOffset=lastDataIndex - (xPointCount-rightSpaceCount)+1;
+            if (cursorIndex.ZoomType==1)    //以十字光标为中心左右放大
+            {
+                var moveOffset=(this.XPointCount-xPointCount)+1;
+                var leftOffset=parseInt(cursorIndex.Index/this.XPointCount*moveOffset);
+                var rightOffset=moveOffset-leftOffset;
+                var dataOffset=this.Data.DataOffset+leftOffset;
+            }
+
             this.XPointCount=xPointCount;
-            this.Data.DataOffset = lastDataIndex - (this.XPointCount-rightSpaceCount)+1;
+            this.Data.DataOffset=dataOffset;
             if (this.Data.DataOffset<0) this.Data.DataOffset=0;
 
             JSConsole.Chart.Log(`[KLineFrame::ZoomUp] calculate. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount} DataOffset=${this.Data.DataOffset}`);
@@ -5144,7 +5154,7 @@ function KLineFrame()
         return true;
     }
 
-    this.ZoomDown=function(cursorIndex)
+    this.ZoomDown=function(cursorIndex) //缩小
     {
         if (this.ZoomIndex+1>=ZOOM_SEED.length) return false;
         if (this.Data.DataOffset<0) return false;
@@ -5172,13 +5182,23 @@ function KLineFrame()
             xPointCount=maxDataCount;
             this.XPointCount=xPointCount;
             this.Data.DataOffset=0;
-            
+
             JSConsole.Chart.Log(`[KLineFrame::ZoomDown] Show all data. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount}`);
         }
         else
         {
+            var dataOffset=lastDataIndex - (xPointCount-rightSpaceCount)+1;
+            if (cursorIndex.ZoomType==1)    //当前十字光标位置左右同时缩小
+            {
+                var moveOffset=(xPointCount-this.XPointCount)+1;
+                var leftOffset=parseInt(cursorIndex.Index/this.XPointCount*moveOffset);
+                var rightOffset=moveOffset-leftOffset;
+                var dataOffset=this.Data.DataOffset-leftOffset;
+                if (dataOffset+(xPointCount-this.RightSpaceCount)>=dataCount) dataOffset=this.Data.DataOffset-moveOffset;
+            }
+
             this.XPointCount=xPointCount;
-            this.Data.DataOffset = lastDataIndex - (this.XPointCount-rightSpaceCount)+1;
+            this.Data.DataOffset=dataOffset;
             if (this.Data.DataOffset<0) this.Data.DataOffset=0;
 
             JSConsole.Chart.Log(`[KLineFrame::ZoomDown] calculate. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount} DataOffset=${this.Data.DataOffset}`);
@@ -24631,6 +24651,7 @@ function KLineChartContainer(uielement)
 
     this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
     this.OverlayIndexFrameWidth=60;     //叠加指标框架宽度
+    this.ZoomType=0;                    //缩放模式 0=最右边固定缩放, 1=十字光标两边缩放
 
     this.Page= { 
         Day:{ Enable:false, Index:0, Finish:false },    //日线
@@ -24774,7 +24795,7 @@ function KLineChartContainer(uielement)
         
         if (isInClient && wheelValue<0)       //缩小
         {
-            var cursorIndex={};
+            var cursorIndex={ ZoomType:this.ZoomType };
             cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
             if (this.Frame.ZoomDown(cursorIndex))
             {
@@ -24787,7 +24808,7 @@ function KLineChartContainer(uielement)
         }
         else if (isInClient && wheelValue>0)  //放大
         {
-            var cursorIndex={};
+            var cursorIndex={ ZoomType:this.ZoomType };
             cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
             if (this.Frame.ZoomUp(cursorIndex))
             {
@@ -31473,7 +31494,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
                 }
                 break;
             case 38:    //up
-                var cursorIndex={};
+                var cursorIndex={ ZoomType:this.ZoomType };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
                 if (!this.Frame.ZoomUp(cursorIndex)) break;
                 this.CursorIndex=cursorIndex.Index;
@@ -31484,7 +31505,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
                 this.ShowTooltipByKeyDown();
                 break;
             case 40:    //down
-                var cursorIndex={};
+                var cursorIndex={ ZoomType:this.ZoomType };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
                 if (!this.Frame.ZoomDown(cursorIndex)) break;
                 this.CursorIndex=cursorIndex.Index;
