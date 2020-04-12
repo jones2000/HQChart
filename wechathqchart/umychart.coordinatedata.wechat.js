@@ -333,6 +333,11 @@ var MARKET_SUFFIX_NAME=
         return 2;
     },
 
+    GetSHODecimal: function (symbol) 
+    {
+        return 4;
+    },
+
     GetNYMEXDecimal: function (symbol)    //纽约期货交易所
     {
         return g_NYMEXTimeData.GetDecimal(symbol);
@@ -1459,6 +1464,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
     var upperSymbol = symbol.toUpperCase();
 
     if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision = 3;    //基金3位小数
+    else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetSHODecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision = g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
     else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
