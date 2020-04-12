@@ -26,7 +26,7 @@
             :title="item.name"
             class="title-style"
         >
-            <svg class="icon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
+            <svg class="symbolIkcon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
             <use :href="item.icon"></use>
             </svg>
         </li>
@@ -37,7 +37,7 @@
             :class="AddBackgroundColor(item.name)"
             :title="item.name"
         >
-            <svg class="icon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
+            <svg class="symbolIkcon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
             <use :href="item.icon"></use>
             </svg>
         </li>
@@ -48,7 +48,7 @@
             :class="AddBackgroundColor(item.name)"
             :title="item.name"
         >
-            <svg class="icon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
+            <svg class="symbolIkcon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
             <use :href="item.icon"></use>
             </svg>
         </li>
@@ -59,7 +59,7 @@
             :class="AddBackgroundColor(item.name)"
             :title="item.tip"
         >
-            <svg class="icon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
+            <svg class="symbolIkcon icon-style" aria-hidden="true" @click="ClickIcon(item.name)">
             <use :href="item.icon"></use>
             </svg>
         </li>
