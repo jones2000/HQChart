@@ -4,7 +4,7 @@
         <!-- 股票最新信息 -->
         <div ref='divstockinfo' v-show="isNoFullChart">
             <StockInfo ref='stockinfo' 
-            IsShareStock=1 
+            IsShareStock=0 
             :DefaultSymbol="DefaultSymbol" 
             :blackStyle = this.blackStyle></StockInfo>
         </div>
@@ -55,6 +55,7 @@ const CUSTOM_MINUTE_OPTION = {
 import commTool from "../../utils/commTool.js";
 import StockInfo from "./components/StockInfo.vue";
 import StockKLine from "./components/StockKLine.vue";
+// import JSCommon from "../../jscommon/umychart.vue/umychart.vue.js";
 import HQChart from 'hqchart'
 
 export default {
@@ -93,20 +94,26 @@ export default {
       : "white";
     if (this.colorType == "black") {
       this.blackStyle = HQChart.Chart.HQChartStyle.GetStyleConfig(
-        HQChart.Chart.STYLE_TYPE_ID.BLACK_ID
+        HQChart.Chart.STYLE_TYPE_ID.BLACK_ID             
       );
     } else {
       this.blackStyle = null;
     }
+
+    // var isLog = commTool.getURLParams("log");
+    // if(isLog == 'false'){
+    //   HQChart.JSConsole.Chart.Log=function() { }  //不输出图形日志
+    //   HQChart.JSConsole.Complier.Log=function() { }	//不输出指标脚本执行日志
+    // }   
   },
   mounted() {
     this.OnSize();
 
-    var stockInfo = this.$refs.stockinfo;
-    stockInfo.SetJSStock(this.JSStock); //绑定一个外部的stock ( 五档买卖盘和分笔数据可以共享这一个股票数据类)
-    stockInfo.SetChangeSymbolCallback(this.OnChangeSymbol); //股票切换以后通知
-    stockInfo.SetSymbol(this.Symbol);
-    stockInfo.InitalStock();
+    // var stockInfo = this.$refs.stockinfo;
+    // stockInfo.SetJSStock(this.JSStock); //绑定一个外部的stock ( 五档买卖盘和分笔数据可以共享这一个股票数据类)
+    // stockInfo.SetChangeSymbolCallback(this.OnChangeSymbol); //股票切换以后通知
+    // stockInfo.SetSymbol(this.Symbol);
+    // stockInfo.InitalStock();
 
     var kline = this.$refs.stockkline;
     // kline.Event.ChangePeriodEvent=this.OnChangePeriod;    //设置周期切换回调
