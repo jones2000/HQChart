@@ -15,6 +15,7 @@ function JSNetwork()
 
 }
 
+/*
 JSNetwork.HttpReqeust=function(obj) //对请求进行封装
 {
     $.ajax(
@@ -26,6 +27,8 @@ JSNetwork.HttpReqeust=function(obj) //对请求进行封装
         }
     );
 }
+*/
+
 
 JSNetwork.HttpRequest=function(obj) //对请求进行封装
 {

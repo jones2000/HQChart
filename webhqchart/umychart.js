@@ -3501,7 +3501,7 @@ function Guid()
     {
        return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
     }
-    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+    return "guid" + (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
 }
 
 function GetScrollPosition()
@@ -23219,36 +23219,36 @@ function JSChartResource()
     this.SelectRectBGColor="rgba(1,130,212,0.06)"; //背景色
  //   this.SelectRectAlpha=0.06;                  //透明度
 
-    this.UpBarColor="rgb(238,21,21)";
-    this.DownBarColor="rgb(25,158,0)";
-    this.UnchagneBarColor="rgb(0,0,0)";
+    this.UpBarColor="rgb(238,21,21)";   //上涨柱子颜色
+    this.DownBarColor="rgb(25,158,0)";  //下跌柱子颜色
+    this.UnchagneBarColor="rgb(0,0,0)"; //平盘柱子颜色
 
     this.Minute={};
-    this.Minute.VolBarColor="rgb(238,127,9)";
-    this.Minute.PriceColor="rgb(50,171,205)";
+    this.Minute.VolBarColor="rgb(238,127,9)";           //分时图成交量柱子颜色（已经不用了 使用红绿柱)
+    this.Minute.PriceColor="rgb(50,171,205)";           //分时图价格线颜色
     this.Minute.AreaPriceColor='rgba(50,171,205,0.1)';  //价格的面积图
-    this.Minute.AvPriceColor="rgb(238,127,9)";
+    this.Minute.AvPriceColor="rgb(238,127,9)";          //分时图均价线颜色
     this.Minute.BeforeBGColor='rgba(240,240,240,0.7)';  //分钟 集合竞价背景
-    this.Minute.PositionColor='rgb(218,165,32)';                  //持仓量
+    this.Minute.PositionColor='rgb(218,165,32)';        //持仓量线段颜色
 
-    this.DefaultTextColor="rgb(43,54,69)";
-    this.DefaultTextFont=14*GetDevicePixelRatio() +'px 微软雅黑';
-    this.TitleFont=13*GetDevicePixelRatio() +'px 微软雅黑';
-    this.IndexTitleBGColor='rgb(217,219,220)';  //指标名字背景色
+    this.DefaultTextColor="rgb(43,54,69)";                          //图形中默认的字体颜色
+    this.DefaultTextFont=14*GetDevicePixelRatio() +'px 微软雅黑';    //图形中默认的字体
+    this.TitleFont=13*GetDevicePixelRatio() +'px 微软雅黑';          //指标显示,tooltip显示字体
+    this.IndexTitleBGColor='rgb(217,219,220)';                      //指标名字背景色
 
     this.Title={
-        TradeIndexColor:'rgb(105,105,105)',
-        ColorIndexColor:'rgb(112,128,144)'
+        TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
+        ColorIndexColor:'rgb(112,128,144)'  //五彩K线颜色
     };
 
-    this.UpTextColor="rgb(238,21,21)";
-    this.DownTextColor="rgb(25,158,0)";
-    this.UnchagneTextColor="rgb(0,0,0)";
-    this.CloseLineColor='rgb(0,191,255)';
-    this.CloseLineAreaColor=['rgba(0,191,255,0.8)','rgba(0,191,255,0.2)'];
+    this.UpTextColor="rgb(238,21,21)";      //上涨文字颜色
+    this.DownTextColor="rgb(25,158,0)";     //下跌文字颜色
+    this.UnchagneTextColor="rgb(0,0,0)";    //平盘文字颜色 
+    this.CloseLineColor='rgb(0,191,255)';   //收盘价线颜色
+    this.CloseLineAreaColor=['rgba(0,191,255,0.8)','rgba(0,191,255,0.2)'];  //收盘价面积图颜色
 
-    this.FrameBorderPen="rgb(225,236,242)";
-    this.FrameSplitPen="rgb(225,236,242)";          //分割线
+    this.FrameBorderPen="rgb(225,236,242)";         //边框颜色
+    this.FrameSplitPen="rgb(225,236,242)";          //刻度分割线
     this.FrameDotSplitPen='rgb(105,105,105)';       //分割虚线
     this.FrameSplitTextColor="rgb(117,125,129)";    //刻度文字颜色
     this.FrameSplitTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";     //坐标刻度文字字体
@@ -23257,6 +23257,7 @@ function JSChartResource()
         XBottomOffset:1*GetDevicePixelRatio()  //X轴文字向下偏移
     };   
 
+    //Y轴最新价格刻度颜色
     this.FrameLatestPrice = {
         TextColor:'rgb(255,255,255)',   //最新价格文字颜色
         UpBarColor:"rgb(238,21,21)",    //上涨
@@ -23268,20 +23269,21 @@ function JSChartResource()
     this.FrameMargin=4;     //左右一共的边距
     this.FrameLeftMargin=2;
 
+    //叠加指标框架
     this.OverlayFrame={
-        BolderPen:'rgb(190,190,190)',
-        TitleColor:'rgb(105,105,105)',
-        TitleFont:11*GetDevicePixelRatio() +'px arial',
+        BolderPen:'rgb(190,190,190)',                    //指标边框线
+        TitleColor:'rgb(105,105,105)',                   //指标名字颜色
+        TitleFont:11*GetDevicePixelRatio() +'px arial',  //指标名字字体
     };
 
     this.CorssCursorBGColor="rgb(43,54,69)";            //十字光标背景
-    this.CorssCursorTextColor="rgb(255,255,255)";
+    this.CorssCursorTextColor="rgb(255,255,255)";       //十字光文字颜色
     this.CorssCursorTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";
     this.CorssCursorHPenColor="rgb(130,130,130)";          //十字光标线段颜色(水平)
     this.CorssCursorVPenColor="rgb(130,130,130)";          //十字光标线段颜色(垂直)
 
-    this.LockBGColor = "rgb(220, 220, 220)";
-    this.LockTextColor = "rgb(210, 34, 34)";
+    this.LockBGColor = "rgb(220, 220, 220)";        //指标锁区域颜色
+    this.LockTextColor = "rgb(210, 34, 34)";        //指标锁提示信息文字颜色
 
     this.Domain="https://opensource.zealink.com";               //API域名
     this.CacheDomain="https://opensourcecache.zealink.com";     //缓存域名

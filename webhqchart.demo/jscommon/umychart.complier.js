@@ -985,10 +985,15 @@ function Node()
             return;
         }
 
-        if (callee.Name=='COST' || callee.Name=='WINNER')   //筹码都需要换手率
+        if (callee.Name=='COST' || callee.Name=='WINNER' || callee.Name=='PPART' || callee.Name=='COSTEX' ||
+            callee.Name=='LWINNER' || callee.Name=='PWINNER')   //需要流通股
         {
-            if (!this.IsNeedFinanceData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA))
-                this.IsNeedFinanceData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA);
+            //if (!this.IsNeedFinanceData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA))
+            //    this.IsNeedFinanceData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA);
+        
+            if (!this.IsNeedFinanceData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FLOW_EQUITY_DATA))
+                this.IsNeedFinanceData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FLOW_EQUITY_DATA);
+                
             return;
         }
 
@@ -4376,6 +4381,108 @@ function JSAlgorithm(errorHandler,symbolData)
     COST(10),表示10%获利盘的价格是多少,即有10%的持仓量在该价格以下,其余90%在该价格以上,为套牢盘
     该函数仅对日线分析周期有效
     */
+    this.COST=function(data, node)
+    {
+        var result=[];
+        var rate=data/100;
+        if(rate<0.000001 || rate>1) return result;
+    
+        var kData=this.SymbolData.Data.Data;
+        if (!kData || kData.length<=0) return result;
+        var aryCapital=this.SymbolData.GetFinanceCacheData(7, node); //流通股本
+
+        var dMaxPrice=kData[0].High,dMinPrice=kData[0].Low;
+        for(var i=0;i<kData.length;++i)
+        {
+            var item=kData[i];
+            dMinPrice = Math.min(dMinPrice,item.Low);
+            dMaxPrice = Math.max(dMaxPrice,item.High);
+        }
+
+        if (dMinPrice > 1000 || dMinPrice < 0 || dMaxPrice>1000 || dMinPrice < 0)
+            this.ThrowUnexpectedNode(node,'WINNER() 历史K线最大最小值错误, 超出(0,1000)范围');
+
+        var lMaxPrice = parseInt(dMaxPrice * 100 + 1);
+        var lMinPrice = parseInt(dMinPrice * 100 - 1);
+        var lLow = 0, lHigh = 0, lClose = 0;
+        //去掉小数
+        dMaxPrice = lMaxPrice / 100.0;
+        dMinPrice = lMinPrice / 100.0;
+        var lSpeed = lMaxPrice - lMinPrice + 1;
+        if (lSpeed < 1) return result;
+        
+        var aryVolPrice=[],aryPerVol=[];
+        for(var i=0;i<lSpeed;++i)
+        {
+            aryVolPrice[i]=0;
+            aryPerVol[i]=0;
+        }
+
+        var dHSL = 0, dTotalVol = 0, dVol = 0, dCost=0;
+        for(var i=0;i<kData.length;++i)
+        {
+            if (i >= aryCapital.length) continue;
+            if (aryCapital[i]>1)
+            {
+                var kItem=kData[i]
+                dHSL = kItem.Vol/aryCapital[i];
+
+                for( var j=0;j<lSpeed;j++) 
+                    aryVolPrice[j]*=(1-dHSL);
+
+                lLow=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.Low *100)))-lMinPrice;
+                lHigh=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.High*100)))-lMinPrice;
+                lClose=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.Close*100)))-lMinPrice;
+
+                for(var j=0;j<lSpeed;++j) aryPerVol[j]=0;
+
+                var lHalf =parseInt((lLow + lHigh + 2 * lClose) / 4);
+                if (lHalf == lHigh || lHalf == lLow)
+                {
+                    aryPerVol[lHalf] += kItem.Vol;
+                }
+                else
+                {
+                    var	dVH = kItem.Vol / (lHalf - lLow);
+                    for (k = lLow; k<lHalf; ++k)
+                    {
+                        aryPerVol[k] += (k - lLow)*(dVH / (lHalf - lLow));
+                    }
+                    for (k; k <= lHigh; ++k)
+                    {
+                        aryPerVol[k] += (k - lHigh)*(dVH / (lHalf - lHigh));
+                    }
+                }
+
+                var dTotalVol = 0;
+                for (var j = lLow; j <= lHigh; j++)
+                {
+                    aryVolPrice[j] += aryPerVol[j];
+                }
+
+                for (var j = 0; j < lSpeed; j++)
+                {
+                    dTotalVol += aryVolPrice[j];
+                }
+
+                for(j=0,dCost=dVol=0;j<lSpeed;++j)
+                {	
+                    dVol+=aryVolPrice[j];
+                    if(dVol>=dTotalVol*rate)
+                    {	
+                        dCost=(dMaxPrice-dMinPrice)*j/lSpeed+dMinPrice;
+                        break;
+                    }
+                }
+            }
+
+            result[i]=dCost;
+        }
+
+        return result;
+    }
+
+    /*
     this.COST=function(data)
     {
         var result=[];
@@ -4449,14 +4556,112 @@ function JSAlgorithm(errorHandler,symbolData)
 
         return result;
     }
+    */
 
     /*
     获利盘比例.
     用法:
     WINNER(CLOSE),表示以当前收市价卖出的获利盘比例,例如返回0.1表示10%获利盘;WINNER(10.5)表示10.5元价格的获利盘比例
     该函数仅对日线分析周期有效
-    ！！！！计算比较耗时间
     */
+    this.WINNER=function(data, node)
+    {
+        var result=[];
+        var kData=this.SymbolData.Data.Data;
+        if (!kData || kData.length<=0) return result;
+        var aryCapital=this.SymbolData.GetFinanceCacheData(7, node); //流通股本
+
+        var dMaxPrice=kData[0].High,dMinPrice=kData[0].Low;
+        for(var i=0;i<kData.length;++i)
+        {
+            var item=kData[i];
+            dMinPrice = Math.min(dMinPrice,item.Low);
+            dMaxPrice = Math.max(dMaxPrice,item.High);
+        }
+
+        if (dMinPrice > 1000 || dMinPrice < 0 || dMaxPrice>1000 || dMinPrice < 0)
+            this.ThrowUnexpectedNode(node,'WINNER() 历史K线最大最小值错误, 超出(0,1000)范围');
+
+        var lMaxPrice = parseInt(dMaxPrice * 100 + 1);
+	    var lMinPrice = parseInt(dMinPrice * 100 - 1);
+	    var lLow = 0, lHigh = 0, lClose = 0;
+        //去掉小数
+        dMaxPrice = lMaxPrice / 100.0;
+        dMinPrice = lMinPrice / 100.0;
+	    var lSpeed = lMaxPrice - lMinPrice + 1;
+        if (lSpeed < 1) return result;
+        
+        var aryVolPrice=[],aryPerVol=[];
+        for(var i=0;i<lSpeed;++i)
+        {
+            aryVolPrice[i]=0;
+            aryPerVol[i]=0;
+        }
+
+        var dHSL = 0, dTotalVol = 0, dVol = 0;
+        for(var i=0;i<kData.length;++i)
+        {
+            if (i >= aryCapital.length) continue;
+            if (!(aryCapital[i]>1)) continue;
+            var kItem=kData[i]
+            dHSL = kItem.Vol/aryCapital[i];
+
+            for( var j=0;j<lSpeed;j++) 
+                aryVolPrice[j]*=(1-dHSL);
+
+            lLow=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.Low *100)))-lMinPrice;
+            lHigh=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.High*100)))-lMinPrice;
+            lClose=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.Close*100)))-lMinPrice;
+
+            for(var j=0;j<lSpeed;++j) aryPerVol[j]=0;
+
+            var lHalf =parseInt((lLow + lHigh + 2 * lClose) / 4);
+            if (lHalf == lHigh || lHalf == lLow)
+            {
+                aryPerVol[lHalf] += kItem.Vol;
+            }
+            else
+            {
+                var	dVH = kItem.Vol / (lHalf - lLow);
+                for (k = lLow; k<lHalf; ++k)
+                {
+                    aryPerVol[k] += (k - lLow)*(dVH / (lHalf - lLow));
+                }
+                for (k; k <= lHigh; ++k)
+                {
+                    aryPerVol[k] += (k - lHigh)*(dVH / (lHalf - lHigh));
+                }
+            }
+
+            var dTotalVol = 0;
+            for (var j = lLow; j <= lHigh; j++)
+            {
+                aryVolPrice[j] += aryPerVol[j];
+            }
+
+            for (var j = 0; j < lSpeed; j++)
+            {
+                dTotalVol += aryVolPrice[j];
+            }
+
+            if (Array.isArray(data))
+                lHigh = parseInt(Math.min((data[i] * 100) - lMinPrice, lSpeed - 1));
+            else
+                lHigh = parseInt(Math.min((data * 100) - lMinPrice, lSpeed - 1));
+
+            for (var j = 0, dVol = 0; j <= lHigh; j++)
+            {
+                dVol += aryVolPrice[j];
+            }
+
+            if (dTotalVol > 0) result[i]=dVol / dTotalVol;
+            else if (i - 1 >= 0) result[i] = result[i - 1];
+        }
+    
+        return result;
+    }
+
+    /*
     this.WINNER=function(data)
     {
         var result=[];
@@ -4512,6 +4717,272 @@ function JSAlgorithm(errorHandler,symbolData)
             if (totalVol>0) result[i]=vol/totalVol;
         }
 
+        return result;
+    }
+    */
+
+    /*
+    区间成本.
+    用法:
+    例如COSTEX(CLOSE,REF(CLOSE,1)),表示近两日收盘价格间筹码的成本
+    该函数仅对日线分析周期有效
+    */
+    this.COSTEX=function(data, data2, node)
+    {
+        var result=[];
+        var kData=this.SymbolData.Data.Data;
+        if (!kData || kData.length<=0) return result;
+        var aryCapital=this.SymbolData.GetFinanceCacheData(7, node); //流通股本
+
+        var dMaxPrice=kData[0].High,dMinPrice=kData[0].Low;
+        for(var i=0;i<kData.length;++i)
+        {
+            var item=kData[i];
+            dMinPrice = Math.min(dMinPrice,item.Low);
+            dMaxPrice = Math.max(dMaxPrice,item.High);
+        }
+
+        if (dMinPrice > 1000 || dMinPrice < 0 || dMaxPrice>1000 || dMinPrice < 0)
+            this.ThrowUnexpectedNode(node,'COSTEX() 历史K线最大最小值错误, 超出(0,1000)范围');
+
+        var lMaxPrice = parseInt(dMaxPrice * 100 + 1);
+        var lMinPrice = parseInt(dMinPrice * 100 - 1);
+        var lLow = 0, lHigh = 0, lClose = 0;
+        //去掉小数
+        dMaxPrice = lMaxPrice / 100.0;
+        dMinPrice = lMinPrice / 100.0;
+        var lSpeed = lMaxPrice - lMinPrice + 1;
+        if (lSpeed < 1) return result;
+        
+        var aryVolPrice=[],aryPerVol=[];
+        for(var i=0;i<lSpeed;++i)
+        {
+            aryVolPrice[i]=0;
+            aryPerVol[i]=0;
+        }
+
+        var dHSL = 0, dTotalVol = 0, dVol = 0, dVola=0, dPerVola=0, dVolb=0, dPerVolb=0;
+        for(var i=0, j=0;i<kData.length;++i)
+        {
+            if (i >= aryCapital.length) continue;
+            if (aryCapital[i]>1)
+            {
+                var kItem=kData[i]
+                dHSL = kItem.Vol/aryCapital[i];
+
+                for( var j=0;j<lSpeed;j++) 
+                    aryVolPrice[j]*=(1-dHSL);
+
+                lLow=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.Low *100)))-lMinPrice;
+                lHigh=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.High*100)))-lMinPrice;
+                lClose=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.Close*100)))-lMinPrice;
+
+                for(var j=0;j<lSpeed;++j) aryPerVol[j]=0;
+
+                var lHalf =parseInt((lLow + lHigh + 2 * lClose) / 4);
+                if (lHalf == lHigh || lHalf == lLow)
+                {
+                    aryPerVol[lHalf] += kItem.Vol;
+                }
+                else
+                {
+                    var	dVH = kItem.Vol / (lHalf - lLow);
+                    for (k = lLow; k<lHalf; ++k)
+                    {
+                        aryPerVol[k] += (k - lLow)*(dVH / (lHalf - lLow));
+                    }
+                    for (k; k <= lHigh; ++k)
+                    {
+                        aryPerVol[k] += (k - lHigh)*(dVH / (lHalf - lHigh));
+                    }
+                }
+
+                dTotalVol = 0;
+                for (var j = lLow; j <= lHigh; j++)
+                {
+                    aryVolPrice[j] += aryPerVol[j];
+                }
+
+                for (var j = 0; j < lSpeed; j++)
+                {
+                    dTotalVol += aryVolPrice[j];
+                }
+
+                if (Array.isArray(data)) lHigh = parseInt(Math.min((data[i] * 100) - lMinPrice, lSpeed - 1));
+                else lHigh = parseInt(Math.min((data * 100) - lMinPrice, lSpeed - 1));
+                for (j = 0, dVola = 0, dPerVola = 0; j <= lHigh; j++)
+                {
+                    dVola += aryVolPrice[j];
+                    dPerVola += (0.01*(j + lMinPrice))*aryVolPrice[j];
+                }
+
+                if (Array.isArray(data2)) lHigh = parseInt(Math.min((data2[i] * 100) - lMinPrice, lSpeed - 1));
+                else lHigh = parseInt(Math.min((data2 * 100) - lMinPrice, lSpeed - 1));
+                for (j = 0,  dVolb = 0, dPerVolb = 0; j <= lHigh; j++)
+                {
+                    dVolb += aryVolPrice[j];
+                    dPerVolb += (0.01*(j + lMinPrice))*aryVolPrice[j];
+                }
+
+                dVol = dVola - dVolb;
+			    dPerVolRange = dPerVola - dPerVolb;
+			    if (Math.abs(dPerVolRange) > 0.001 && dVol!=0 ) result[i]=dPerVolRange / dVol;
+			    else if (i-1>=0) result[i] = result[i - 1];
+            }
+        }
+
+        return result;
+    }
+
+    this.PPART=function(n,node)
+    {
+        var result=[];
+        var startDay=n;
+        if (startDay<0) return result;
+
+        var kData=this.SymbolData.Data.Data;
+        if (!kData || kData.length<=0) return result;
+        var aryCapital=this.SymbolData.GetFinanceCacheData(7, node); //流通股本
+        
+        for (var i = startDay, j = 0; i < kData.length; ++i)
+        {
+            var start = i - startDay;
+            if (start < 0) continue;
+            
+            var partVol = 0;
+            for (j = 0; j < startDay; ++j)	//前n日成交量和
+            {
+                var kItem=kData[j + start];
+                partVol += kItem.Vol;
+            }
+    
+            if (i < aryCapital.length)
+            {
+                if (aryCapital[i]>0)
+                {
+                    var value=1 - (partVol / aryCapital[i]);
+                    result[i]=value;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /*
+    近期获利盘比例.
+    用法: LWINNER(5,CLOSE),表示最近5天的那部分成本以当前收市价卖出的获利盘比例
+    例如: 返回0.1表示10%获利盘
+    */
+    this.LWINNER=function(n, data, node)
+    {
+        var startDay =n;
+        if (startDay<=0) this.ThrowUnexpectedNode(node,'LWINNER() 第1个参数错误');
+
+        var result=[];
+        var kData=this.SymbolData.Data.Data;
+        if (!kData || kData.length<=0) return result;
+        var aryCapital=this.SymbolData.GetFinanceCacheData(7, node); //流通股本
+        var dTotalVol=0,dVol=0;
+        for (var i = startDay-1, j=0, k=0 ; i < kData.length; ++i)
+        {
+            var index = i - startDay + 1;
+
+            var dMaxPrice=kData[index].High,dMinPrice=kData[index].Low;
+            for(var j=0;j<startDay;++j)
+            {
+                var item=kData[index+j];
+                dMinPrice = Math.min(dMinPrice,item.Low);
+                dMaxPrice = Math.max(dMaxPrice,item.High);
+            }
+
+            if (dMinPrice > 1000 || dMinPrice < 0 || dMaxPrice>1000 || dMinPrice < 0)
+                this.ThrowUnexpectedNode(node,'WINNER() 历史K线最大最小值错误, 超出(0,1000)范围');
+
+            var lMaxPrice = parseInt(dMaxPrice * 100 + 1);
+            var lMinPrice = parseInt(dMinPrice * 100 - 1);
+            var lLow = 0, lHigh = 0, lClose = 0;
+            dMaxPrice = lMaxPrice / 100.0;
+            dMinPrice = lMinPrice / 100.0;
+            var lSpeed = lMaxPrice - lMinPrice + 1;
+            if (lSpeed < 1) return result;
+            
+            var aryVolPrice=[],aryPerVol=[];
+            for(var j=0;j<lSpeed;++j)
+            {
+                aryVolPrice[j]=0;
+                aryPerVol[j]=0;
+            }
+
+            for (j = 0; j<startDay; ++j)
+		    {
+                var capital=aryCapital[index + j];
+                if (capital<1) continue;
+                
+                var kItem=kData[index + j];
+                var dHSL = kItem.Vol / capital;
+                for (k = 0; k < lSpeed; k++)
+                {
+                    aryVolPrice[k] *= (1 - dHSL);
+                }
+
+                lLow=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.Low *100)))-lMinPrice;
+                lHigh=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.High*100)))-lMinPrice;
+                lClose=parseInt(Math.min(lMaxPrice,Math.max(lMinPrice,kItem.Close*100)))-lMinPrice;
+    
+                for(var k=0;k<lSpeed;++k) aryPerVol[k]=0;
+
+                var lHalf =parseInt((lLow + lHigh + 2 * lClose) / 4);
+                if (lHalf == lHigh || lHalf == lLow)
+                {
+                    aryPerVol[lHalf] += kItem.Vol;
+                }
+                else
+                {
+                    var	dVH = kItem.Vol / (lHalf - lLow);
+                    for (k = lLow; k<lHalf; ++k)
+                    {
+                        aryPerVol[k] += (k - lLow)*(dVH / (lHalf - lLow));
+                    }
+                    for (k; k <= lHigh; ++k)
+                    {
+                        aryPerVol[k] += (k - lHigh)*(dVH / (lHalf - lHigh));
+                    }
+                }
+    
+                dTotalVol = 0;
+                for (var k = lLow; k <= lHigh; k++)
+                {
+                    aryVolPrice[k] += aryPerVol[k];
+                }
+            }
+
+            for (var j = 0; j < lSpeed; j++)
+            {
+                dTotalVol += aryVolPrice[j];
+            }
+
+            if (Array.isArray(data)) 
+                lHigh = parseInt(Math.min((data[i] * 100) - lMinPrice, lSpeed - 1));
+            else 
+                lHigh = parseInt(Math.min((data * 100) - lMinPrice, lSpeed - 1));
+
+            dVol = 0; 
+            for (k = 0 ; k <= lHigh; k++)
+            {
+                dVol += aryVolPrice[k];
+            }
+            
+            if (dTotalVol > 0 && dVol > 0 && dVol <= dTotalVol) result[i]=dVol / dTotalVol;
+            else if (i - 1 >= 0) result[i] = result[i - 1];
+        }
+
+        return result;
+    }
+
+    this.PWINNER=function(n, data, node)
+    {
+        var result=[];
         return result;
     }
 
@@ -5706,7 +6177,15 @@ function JSAlgorithm(errorHandler,symbolData)
             case 'COST':
                 return this.COST(args[0]);
             case 'WINNER':
-                return this.WINNER(args[0]);
+                return this.WINNER(args[0],node);
+            case 'PPART':
+                return this.PPART(args[0],node);
+            case "COSTEX":
+                return this.COSTEX(args[0],args[1],node);
+            case "LWINNER":
+                return this.LWINNER(args[0],args[1],node);
+            case "PWINNER":
+                return this.PWINNER(args[0],args[1],node);
             case 'FORCAST':
                 return this.FORCAST(args[0], args[1]);
             case 'STDP':
@@ -8067,7 +8546,7 @@ function JSSymbolData(ast,option,jsExecute)
                     var financeData=item.capital;
                     if (!financeData) continue;
                     if (!this.IsNumber(financeData.a)) continue;
-                    indexData.Value=financeData.a/10000; //流通股本（万股）
+                    indexData.Value=financeData.a; //流通股本（股）
                     bFinanceData=true;
                     break;
                 case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FLOW_MARKETVALUE_DATA:   //流通市值
@@ -10014,7 +10493,7 @@ var JS_EXECUTE_JOB_ID=
 
     //财务函数
     JOB_DOWNLOAD_TOTAL_EQUITY_DATA:100,          //总股本（万股）
-    JOB_DOWNLOAD_FLOW_EQUITY_DATA:101,           //流通股本（万股）
+    JOB_DOWNLOAD_FLOW_EQUITY_DATA:101,           //流通股本（股）
     JOB_DOWNLOAD_PER_U_PROFIT_DATA:102,          //每股未分配利润
     JOB_DOWNLOAD_PER_NETASSET_DATA:103,          //每股净资产
     JOB_DOWNLOAD_PER_C_RESERVE_DATA:104,         //每股资本公积金
@@ -10117,7 +10596,7 @@ var JS_EXECUTE_JOB_ID=
     {
         let dataMap=new Map([
             [1,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_TOTAL_EQUITY_DATA],       //FINANCE(1)   总股本（万股）
-            [7,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FLOW_EQUITY_DATA],        //FINANCE(7)   流通股本（万股）
+            [7,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FLOW_EQUITY_DATA],        //FINANCE(7)   流通股本（股）
             [9,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_AL_RATIO_DATA],           //FINANCE(9)   资产负债率 (asset-liability ratio)
             [18,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PER_C_RESERVE_DATA],     //FINANCE(18)  每股公积金
             [30,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_N_PROFIT_DATA],          //FINANCE(30)  净利润
