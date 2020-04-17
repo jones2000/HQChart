@@ -817,7 +817,7 @@ function MinuteCoordinateData()
         {
             var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
             if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol))
-                data = SHZE_MINUTE_X_COORDINATE;
+                data = this.GetSHSZData(upperSymbol, width); 
             else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol))
                 data = this.GetSHOData(upperSymbol, width);
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
@@ -838,6 +838,12 @@ function MinuteCoordinateData()
 
         //console.log('[MiuteCoordinateData]', width);
         var result = { Count: data.Count, MiddleCount: data.MiddleCount, Data: data.GetData(width) };
+        return result;
+    }
+
+    this.GetSHSZData = function (upperSymbol, width) 
+    {
+        var result = SHZE_MINUTE_X_COORDINATE;
         return result;
     }
 

@@ -9926,7 +9926,7 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
         if (i == 0)      //第1个数据 写死9：25
         {
             item.IsFristData = true;
-            if (isSHSZ) item.DateTime = data.stock[0].date.toString() + " 0925";
+            //if (isSHSZ) item.DateTime = data.stock[0].date.toString() + " 0925";
             if (item.Close <= 0) //第1分钟 没数据就用开盘价
             {
                 item.Close = data.stock[0].open;
@@ -10003,7 +10003,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
 
             if (j == 0 )      
             {
-                if (isSHSZ) item.DateTime = date.toString() + " 0925";//第1个数据 写死9：25
+                //if (isSHSZ) item.DateTime = date.toString() + " 0925";//第1个数据 写死9：25
                 item.IsFristData = true;
             }
 
