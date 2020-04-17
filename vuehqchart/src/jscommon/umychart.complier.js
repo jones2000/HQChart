@@ -786,7 +786,7 @@ function Node()
     this.IsNeedNewsAnalysisData=new Set();      //新闻统计数据
     this.NeedBlockIncreaseData=[];              //是否需要市场涨跌股票数据统计
     this.IsNeedSymbolExData=new Set();          //下载股票行情的其他数据
-    this.IsNeedHK2SHSZData=new Set();           //下载北上资金数据
+    this.NeedHK2SHSZData=[];           //下载北上资金数据
     this.IsNeedSectionFinance=new Map();        //下载截面财务数据 { key= 报告期 , Set() 字段}
 
     this.IsCustomFunction=[];    //自定义函数 {Name, ID, Args:}    
@@ -827,9 +827,9 @@ function Node()
         }
 
         //加载北上资金
-        for(var jobID of this.IsNeedHK2SHSZData)
+        for(var i in this.NeedHK2SHSZData)
         {
-            jobs.push({ID:jobID});
+            jobs.push(this.NeedHK2SHSZData[i]);
         }
 
         //加载新闻统计
@@ -980,8 +980,9 @@ function Node()
 
         if (callee.Name==='HK2SHSZ')    //北上资金
         {
-            let jobID=JS_EXECUTE_JOB_ID.GetHK2SHSZJobID(args[0].Value);
-            if (jobID && !this.IsNeedHK2SHSZData.has(jobID)) this.IsNeedHK2SHSZData.add(jobID);
+            var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SHSZ, Args:args,  FunctionName:callee.Name };
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+            this.NeedHK2SHSZData.push(item);
             return;
         }
 
@@ -4897,7 +4898,7 @@ function JSAlgorithm(errorHandler,symbolData)
             }
 
             if (dMinPrice > 1000 || dMinPrice < 0 || dMaxPrice>1000 || dMinPrice < 0)
-                this.ThrowUnexpectedNode(node,'WINNER() 历史K线最大最小值错误, 超出(0,1000)范围');
+                this.ThrowUnexpectedNode(node,'LWINNER() 历史K线最大最小值错误, 超出(0,1000)范围');
 
             var lMaxPrice = parseInt(dMaxPrice * 100 + 1);
             var lMinPrice = parseInt(dMinPrice * 100 - 1);
@@ -7166,11 +7167,12 @@ function JSSymbolData(ast,option,jsExecute)
     this.StockHistoryDayApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay';  //历史财务数据
     this.StockHistoryDay3ApiUrl= g_JSComplierResource.Domain+'/API/StockHistoryDay3';  //历史财务数据
     this.StockNewsAnalysisApiUrl= g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                //新闻分析数据
-    this.HKToSHSZApiUrl=    //北上资金
+    this.HKToSHSZApiUrl=    //北上资金 !!顺序不要变 后面都是写死的
     [ 
         g_JSComplierResource.CacheDomain+'/cache/historyday/all/hk2shsz.json',      //日线数据
         g_JSComplierResource.CacheDomain+'/cache/analyze/hk2shsz/hk2shsz.json',     //最新分钟
-        g_JSComplierResource.Domain+'/API/HKToSHSZMinuteData'                       //多日分时分钟
+        g_JSComplierResource.Domain+'/API/HKToSHSZMinuteData',                      //多日分时分钟
+        g_JSComplierResource.CacheDomain+'/cache/analyze/hk2szshanalyze'            //个股的北上
     ] ;          
 
     this.MaxRequestDataCount=1000;
@@ -8950,9 +8952,107 @@ function JSSymbolData(ast,option,jsExecute)
         return [];
     }
 
-    this.GetHKToSHSZData=function(jobID)
+    this.GetHKToSHSZData=function(job)
     {
-        if (this.HKToSHSZData.has(jobID)) return this.Execute.RunNextJob();
+        var args=job.Args;
+        var code=this.Symbol;
+        if (args.length>0)
+        {
+            var item=args[0];
+            if (item.Type==Syntax.Literal) 
+            {
+                code=item.Value;
+            }
+            else if (item.Type==Syntax.Identifier)  //变量 !!只支持默认的变量值
+            {
+                var isFind=false;
+                for(var j in this.Arguments)
+                {
+                    const argItem=this.Arguments[j];
+                    if (argItem.Name==item.Name)
+                    {
+                        code=argItem.Value;
+                        isFind=true;
+                        break;
+                    }
+                }
+
+                if (!isFind) 
+                {
+                    var token=job.Token;
+                    this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`HK2SHSZ() Error: can't read ${item.Name}`);
+                }
+            }
+        }
+
+        job.Symbol=code;
+
+        if (code==1 || code==2 || code==3)    //下载全市场数据
+            this.GetHKToSHSZMarketData(code,job);
+        else
+            this.GetHKToSHSZStockData(code,job);      //下载个股数据
+    }
+
+    this.GetHKToSHSZStockData=function(symbol,job)
+    {
+        if (this.HKToSHSZData.has(symbol)) return this.Execute.RunNextJob();
+
+        var upperSymbol=symbol.toLowerCase();   //代码小写
+        var self=this;
+        var url=`${this.HKToSHSZApiUrl[3]}/${upperSymbol}.json`;
+        //请求数据
+        JSNetwork.HttpRequest({
+            url: url,
+            type:"get",
+            dataType: "json",
+            async:true,
+            success: function (recvData)
+            {
+                self.RecvHKToSHSZStockData(recvData,job);
+                self.Execute.RunNextJob();
+            },
+            error:function(request)
+            {
+                console.warn(`[JSSymbolData::GetHKToSHSZStockData] request url=${url} failed. error=${request.status}`);
+                self.RecvHKToSHSZStockData(null,job);
+                self.Execute.RunNextJob();
+            }
+        });
+    }
+
+    this.RecvHKToSHSZStockData=function(data,job)
+    {
+        if (!data) return;
+
+        var symbol=data.symbol;
+        var upperSymbol=symbol.toUpperCase();
+        var aryData=[];
+        for(var i=0;i<data.date.length;++i)
+        {
+            var item=new SingleData();
+            item.Date=data.date[i];
+            item.Value=data.vol[i];   //股
+            aryData.push(item);
+        }
+
+        var aryFixedData=this.Data.GetFittingData(aryData);
+        var bindData=new ChartData();
+        bindData.Data=aryFixedData;
+        bindData.Period=this.Period;    //周期
+
+        if (bindData.Period>0)          //周期数据
+        {
+            var periodData=bindData.GetPeriodSingleData(bindData.Period);
+            bindData.Data=periodData;
+        }
+
+        var data=bindData.GetValue();
+        this.HKToSHSZData.set(upperSymbol,data);
+    }
+
+    this.GetHKToSHSZMarketData=function(symbol,job)
+    {
+        if (this.HKToSHSZData.has(symbol)) return this.Execute.RunNextJob();
 
         var url, dataType=0;
         if (this.DataType===HQ_DATA_TYPE.MINUTE_ID) dataType=1;
@@ -8961,9 +9061,9 @@ function JSSymbolData(ast,option,jsExecute)
 
         url=this.HKToSHSZApiUrl[dataType];
         var self=this;
-        JSConsole.Complier.Log(`[JSSymbolData::GetHKToSHSZData] jobID=${jobID}, url=${url}, dataType=${dataType}`);
+        JSConsole.Complier.Log(`[JSSymbolData::GetHKToSHSZMarketData] code=${symbol} url=${url}, dataType=${dataType}`);
 
-        if (dataType===2)
+        if (dataType===2)   //多日分时数据 (取这个股票的多日日期对应的北上数据)
         {
             //请求数据
             JSNetwork.HttpRequest({
@@ -8978,7 +9078,7 @@ function JSSymbolData(ast,option,jsExecute)
                 async:true,
                 success: function (recvData)
                 {
-                    self.RecvMulitMinuteHKToSHSZData(recvData,jobID);
+                    self.RecvMulitMinuteHKToSHSZData(recvData,job);
                     self.Execute.RunNextJob();
                 }
             });
@@ -8993,15 +9093,16 @@ function JSSymbolData(ast,option,jsExecute)
                 async:true,
                 success: function (recvData)
                 {
-                    if (dataType==0) self.RecvHKToSHSZData(recvData,jobID);
-                    else if (dataType==1) self.RecvMinuteHKToSHSZData(recvData,jobID);
+                    if (dataType==0) self.RecvHKToSHSZData(recvData,job);
+                    else if (dataType==1) self.RecvMinuteHKToSHSZData(recvData,job);
                     self.Execute.RunNextJob();
                 }
             });
         }
+        
     }
 
-    this.RecvMinuteHKToSHSZData=function(data,jobID)
+    this.RecvMinuteHKToSHSZData=function(data,job)
     {
         var arySHSZData=[], arySHData=[], arySZData=[];
         if (this.IsBeforeData)
@@ -9052,19 +9153,19 @@ function JSSymbolData(ast,option,jsExecute)
 
         var allData=
         [
-            {Data:arySHSZData, JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH_SZ}, 
-            {Data:arySHData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH}, 
-            {Data:arySZData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ}
+            {Data:arySHSZData, ID:1}, 
+            {Data:arySHData,ID:2}, 
+            {Data:arySZData,ID:3}
         ];
 
         for(var i in allData)
         {
             var item=allData[i];
-            this.HKToSHSZData.set(item.JobID,item.Data);
+            this.HKToSHSZData.set(item.ID,item.Data);
         }
     }
 
-    this.RecvHKToSHSZData=function(data,jobID)
+    this.RecvHKToSHSZData=function(data,job)
     {
         var arySHSZData=[], arySHData=[], arySZData=[];
         for(var i=0;i<data.date.length;++i)
@@ -9093,9 +9194,9 @@ function JSSymbolData(ast,option,jsExecute)
 
         var allData=
         [
-            {Data:arySHSZData, JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH_SZ}, 
-            {Data:arySHData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH}, 
-            {Data:arySZData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ}
+            {Data:arySHSZData, ID:1}, 
+            {Data:arySHData,ID:2 }, 
+            {Data:arySZData,ID:3 }
         ];
 
         for(let i in allData)
@@ -9113,11 +9214,11 @@ function JSSymbolData(ast,option,jsExecute)
             }
 
             let data=bindData.GetValue();
-            this.HKToSHSZData.set(allData[i].JobID,data);
+            this.HKToSHSZData.set(allData[i].ID,data);
         }
     }
 
-    this.RecvMulitMinuteHKToSHSZData=function(data,jobID)   //多日分时图北上资金
+    this.RecvMulitMinuteHKToSHSZData=function(data,job)   //多日分时图北上资金
     {
         if (!data.data || data.data.length<=0) return;
 
@@ -9178,26 +9279,26 @@ function JSSymbolData(ast,option,jsExecute)
 
         var allData=
         [
-            {Data:arySHSZData, JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH_SZ}, 
-            {Data:arySHData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH}, 
-            {Data:arySZData,JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ}
+            {Data:arySHSZData, ID:1}, 
+            {Data:arySHData,ID:2}, 
+            {Data:arySZData,ID:3}
         ];
 
         for(var i in allData)
         {
             var item=allData[i];
-            this.HKToSHSZData.set(item.JobID,item.Data);
+            this.HKToSHSZData.set(item.ID,item.Data);
         }
         
     }
 
     //北上资金函数
-    this.GetHKToSHSZCacheData=function(id, node)
+    this.GetHKToSHSZCacheData=function(code, node)
     {
-        let jobID=JS_EXECUTE_JOB_ID.GetHK2SHSZJobID(id);
-        if (!jobID) this.Execute.ThrowUnexpectedNode(node,'不支持HK2SHSZ('+id+')');
-        if(this.HKToSHSZData.has(jobID)) return this.HKToSHSZData.get(jobID);
-
+        //if (!this.HKToSHSZData.has(code)) this.Execute.ThrowUnexpectedNode(node,`不支持HK2SHSZ(${code})`);
+        if (!code) code=this.Symbol;
+        if (typeof(code)=='string') code=code.toUpperCase();
+        if(this.HKToSHSZData.has(code)) return this.HKToSHSZData.get(code);
         return [];
     }
 
@@ -10541,6 +10642,8 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_HK_TO_SZ:2051,      //北上流入深证
     JOB_DOWNLOAD_HK_TO_SH_SZ:2052,   //北上流总的
 
+    JOB_DOWNLOAD_HK_TO_SHSZ:2053,   //个股北上流入
+
     JOB_CUSTOM_FUNCTION_DATA:6000,       //自定义函数
     JOB_CUSTOM_VARIANT_DATA:6001,        //自定义变量
     //截面数据
@@ -10638,20 +10741,6 @@ var JS_EXECUTE_JOB_ID=
             [8,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_VOLUME],       //MARGIN(8)   卖出信息-卖出量
             [9,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_REPAY],        //MARGIN(9)   卖出信息-偿还量
             [10,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_SELL_NET],         //MARGIN(10)  卖出信息-融券净卖出 
-        ]);
-    
-        if (dataMap.has(value)) return dataMap.get(value);
-    
-        return null;
-    },
-
-    //北上资金
-    GetHK2SHSZJobID:function(value)
-    {
-        let dataMap=new Map([
-            [1,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH_SZ],          //HK2SHSZ(1)   北上流总的
-            [2,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH],             //HK2SHSZ(2)   北上流入上证
-            [3,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ],             //HK2SHSZ(3)   北上流入深证
         ]);
     
         if (dataMap.has(value)) return dataMap.get(value);
@@ -10889,10 +10978,8 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_PLEDGE:               //股权质押
                 return this.SymbolData.GetNewsAnalysisData(jobItem.ID);
 
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH_SZ:        //北上总的
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SH:           //北上上证
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SZ:           //北上深证
-                return this.SymbolData.GetHKToSHSZData(jobItem.ID);
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_HK_TO_SHSZ:
+                return this.SymbolData.GetHKToSHSZData(jobItem);
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_SF:
                 return this.SymbolData.GetSectionFinanceData(jobItem);   //财务截面报告数据
