@@ -2170,6 +2170,7 @@ function JSChartContainer(uielement)
 
     this.Draw=function()
     {
+        if (this.ChartCorssCursor) this.ChartCorssCursor.Status=0;
         if (this.UIElement.width<=0 || this.UIElement.height<=0) return; 
 
         this.Canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
@@ -2659,21 +2660,40 @@ function JSChartContainer(uielement)
         //JSConsole.Chart.Log(e);
     }
 
-    this.UpdatePointByCursorIndex=function()
+    this.UpdatePointByCursorIndex=function(type)    //type 1=根据十字光标更新
     {
-        this.LastPoint.X=this.Frame.GetXFromIndex(this.CursorIndex);
+        var pt={X:null, Y:null};
+        pt.X=this.Frame.GetXFromIndex(this.CursorIndex);
         var index=Math.abs(this.CursorIndex-0.5);
-        index=parseInt(index.toFixed(0));
         if (this.ClassName=='KLineChartContainer') index=this.CursorIndex;
 
         var data=this.Frame.Data;
-        if (data.DataOffset+index>=data.Data.length)
+        if (data.DataOffset+index<data.Data.length)
         {
-            return;
+            var close=data.Data[data.DataOffset+index].Close;
+            pt.Y=this.Frame.GetYFromData(close);
         }
-        var close=data.Data[data.DataOffset+index].Close;
+       
+        if (type==1 && this.ChartCorssCursor)
+        {
+            if (this.ChartCorssCursor.Status==1)    //十字光标显示中, 不调整位置
+            {
 
-        this.LastPoint.Y=this.Frame.GetYFromData(close);
+            }
+            else
+            {
+                this.LastPoint.X=this.Frame.GetXFromIndex(this.CursorIndex);
+                var index=Math.abs(this.CursorIndex-0.5);
+                index=parseInt(index.toFixed(0));
+                if (this.ClassName=='KLineChartContainer') index=this.CursorIndex;
+                this.LastPoint.Y=null;
+            }
+        }
+        else
+        {
+            this.LastPoint.X=pt.X;
+            this.LastPoint.Y=pt.Y;
+        }
     }
 
     this.ShowTooltipByKeyDown=function()
@@ -18136,6 +18156,7 @@ function ChartCorssCursor()
 
     //内部使用
     this.Close=null;     //收盘价格
+    this.Status=0;       //当前状态 0=隐藏 1=显示
 
     this.ReloadResource=function(resource)
     {
@@ -18165,6 +18186,7 @@ function ChartCorssCursor()
 
     this.Draw=function()
     {
+        this.Status=0;
         if (!this.LastPoint) return;
 
         this.Close=null;
@@ -18465,6 +18487,8 @@ function ChartCorssCursor()
                 this.Canvas.fillText(text,overlayLeft+4,y,textWidth);
             }
         }
+
+        this.Status=1;
     }
 
     this.HScreenDraw=function()
@@ -18716,6 +18740,8 @@ function ChartCorssCursor()
                 this.Canvas.restore();
             }
         }
+
+        this.Status=1;
     }
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -25933,7 +25959,7 @@ function KLineChartContainer(uielement)
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
-        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdatePointByCursorIndex(1);  //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
@@ -26145,7 +26171,7 @@ function KLineChartContainer(uielement)
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
-        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdatePointByCursorIndex(1);  //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
@@ -26202,7 +26228,7 @@ function KLineChartContainer(uielement)
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
-        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdatePointByCursorIndex(1);  //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
@@ -31022,11 +31048,11 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         if (i==0) 
         {
             item.IsFristData=true;
-            if(isSHSZ) 
-            {
-                item.DateTime=data.stock[0].date.toString() + " 0925"; //沪深股票 第1个数据 写死9：25
-                item.Time=925;
-            }
+            //if(isSHSZ) 
+            //{
+            //    item.DateTime=data.stock[0].date.toString() + " 0925"; //沪深股票 第1个数据 写死9：25
+            //    item.Time=925;
+            //}
         }
         
         item.Increase=jsData.increase;
@@ -31122,11 +31148,11 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
             else item.Increase=null;
             if (j==0)      //第1个数据 写死9：25
             {
-                if (isSHSZ) 
-                {
-                    item.DateTime=date.toString()+" 0925";
-                    item.Time=925;
-                }
+                //if (isSHSZ) 
+                //{
+                //    item.DateTime=date.toString()+" 0925";
+                //    item.Time=925;
+                //}
                 item.IsFristData=true;
             }
 
