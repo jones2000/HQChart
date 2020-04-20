@@ -538,7 +538,7 @@ function JSChart(element)
                 if (item.XMessageAlign == 'bottom') chart.Frame.SubFrame[i].Frame.XMessageAlign = item.XMessageAlign;
                 if (item.IsShowLeftText === false || item.IsShowLeftText===true ) chart.Frame.SubFrame[i].Frame.IsShowYText[0] = item.IsShowLeftText;            //显示左边刻度
                 if (item.IsShowRightText === false || item.IsShowRightText===true) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度
-                if (item.Height > 0) chart.Frame.SubFrame[i].Height = item.Height; 
+                if (item.Height >= 0) chart.Frame.SubFrame[i].Height = item.Height; 
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom = item.Custom;
             }
         }
@@ -3620,14 +3620,18 @@ function HQTradeFrame()
         for (var i in this.SubFrame) 
         {
             var item = this.SubFrame[i];
+            if (item.Height <= 0) continue;
+
             item.Frame.Draw();
         }
 
         this.SizeChange = false;
     }
 
-    this.DrawLock = function () {
-        for (var i in this.SubFrame) {
+    this.DrawLock = function () 
+    {
+        for (var i in this.SubFrame) 
+        {
             var item = this.SubFrame[i];
             item.Frame.DrawLock();
         }
