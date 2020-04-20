@@ -53698,13 +53698,31 @@ function JSSymbolData(ast,option,jsExecute)
         this.Execute.RunNextJob();
     }
 
+    /*
+    recvData: 
+    { 
+        Type: 0=集合数据(默认)  1=单列数据
+        DataType: 0=K线类数据  1=财务类数据
+    }
+    */
     this.RecvCustomAPIData=function(recvData,args)
+    {
+        if (!recvData) return;
+
+        if (recvData.Type==1) 
+            this.RecvCustomAPISingleData(recvData,args);
+        else 
+            this.RecvCustomAPIGroupData(recvData,args);
+    }
+
+    //集合数据
+    this.RecvCustomAPIGroupData=function(recvData,args)
     {
         if (!recvData || !recvData.data) return;
 
         var data=recvData.data;
         var apiKey=this.GenerateCustomAPIKey(args);
-        if (ChartData.IsMinutePeriod(this.Period,true))
+        if (ChartData.IsMinutePeriod(this.Period,true)) //分钟 TODO:
         {
             if (!data.date || !data.time) return;
 
@@ -53742,6 +53760,76 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
+    //单列数据
+    this.RecvCustomAPISingleData=function(recvData,args)
+    {
+        var data=recvData.data;
+        var apiKey=this.GenerateCustomAPIKey(args);
+        if (ChartData.IsMinutePeriod(this.Period,true)) //分钟 TODO:
+        {
+            if (!data.date || !data.time) return;
+
+            var date=data.date;
+            var time=data.time;
+            for (var key in data)
+            {
+                if (key=='date' || key=='time') continue;
+                var item=data[key];
+            }
+        }
+        else if (ChartData.IsDayPeriod(this.Period,true))   //日线
+        {
+            if (!data.date) return;
+
+            var date=data.date;
+            var value=data.value;
+
+            var result=null;
+            if (Array.isArray(value))
+            {
+                if (recvData.DataType==1) result=this.FittingCustomAPIFinanceArray(value,date);
+                else result=this.FittingCustomAPIArray(value,date);
+            }
+            else
+            {
+                result=value;
+            }
+
+            this.CustomAPIData.set(apiKey, result);
+        }
+    }
+
+    //财务数据拟合
+    this.FittingCustomAPIFinanceArray=function(data, date, time)
+    {
+        var kdata=this.Data;   //K线
+        var arySingleData=[];
+
+        for(var i in data)
+        {
+            var value=data[i];
+            var indexItem=new SingleData();
+            indexItem.Date=date[i];
+            if (time && i<time.length) indexItem.Time=time[i];
+            indexItem.Value=value;
+            arySingleData.push(indexItem);
+        }
+
+        var aryFittingData;
+        if (ChartData.IsDayPeriod(this.Period,true))
+            aryFittingData=kdata.GetFittingFinanceData(arySingleData);        
+        else if (ChartData.IsMinutePeriod(this.Period,true))
+            aryFittingData=kdata.GetMinuteFittingFinanceData(arySingleData); 
+        else 
+            return null;
+
+        var bindData=new ChartData();
+        bindData.Data=aryFittingData;
+        var result=bindData.GetValue();
+        return result;
+    }
+
+    //K线类数据拟合
     this.FittingCustomAPIArray=function(data,date,time)
     {
         var kdata=this.Data;   //K线

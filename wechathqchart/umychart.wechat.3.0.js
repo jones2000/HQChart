@@ -139,6 +139,7 @@ function JSCanvasElement()
             node.height = height * dpr;
             canvas.scale(dpr, dpr);
             canvas.draw = (bDraw, callback) => { if (callback) callback(); };
+            canvas.DomNode = node;
         }
         else 
         {
@@ -1672,8 +1673,20 @@ function JSChartContainer(uielement)
         else
         {
             if (this.Frame.ScreenImagePath == null) return;
-            self.Canvas.drawImage(this.Frame.ScreenImagePath, 0, 0, width, height);
-            self.DrawDynamicChart(false);
+            if (self.Canvas && self.Canvas.DomNode) //新版本2D画布
+            {
+                let tempImage = self.Canvas.DomNode.createImage();  //新版本的必须要装成image类 比较坑
+                tempImage.src = this.Frame.ScreenImagePath;
+                self.Canvas.clearRect(0, 0, width, height);
+                self.Canvas.drawImage(tempImage, 0, 0, width, height);
+                self.DrawDynamicChart(false);
+            }
+            else
+            {
+                self.Canvas.drawImage(this.Frame.ScreenImagePath, 0, 0, width, height);
+                self.DrawDynamicChart(false);
+            }
+           
         }
     }
 
@@ -3682,20 +3695,38 @@ function HQTradeFrame()
         ++this.SnapshotID;
         var id = this.SnapshotID;
         this.SnapshotStatus=1;
-        wx.canvasToTempFilePath({
-            x: 0,
-            y: 0,
-            width: width,
-            height: height,
-            canvasId: this.ChartBorder.UIElement.ID, 
-            success: function (res) 
-            {
-                self.ScreenImagePath = res.tempFilePath;
-                self.SnapshotStatus = 0;
-                self.CurrentSnapshotID = id;
-                //console.log('[HQTradeFrame::SnapshotImagePath] SnapshotID(' + self.SnapshotID + ',' + self.CurrentSnapshotID + ') Path ='+ res.tempFilePath);
-            }
-        })
+        if (this.Canvas && this.Canvas.DomNode) //新版2D画布
+        {
+            wx.canvasToTempFilePath({
+                x: 0,
+                y: 0,
+                width: width,
+                height: height,
+                canvas: this.Canvas.DomNode,
+                success: function (res) {
+                    self.ScreenImagePath = res.tempFilePath;
+                    self.SnapshotStatus = 0;
+                    self.CurrentSnapshotID = id;
+                    console.log(`[HQTradeFrame::SnapshotImagePath] SnapshotID(${self.SnapshotID}, ${self.CurrentSnapshotID}), Path=${res.tempFilePath}`);
+                }
+            })
+        }
+        else
+        {
+            wx.canvasToTempFilePath({
+                x: 0,
+                y: 0,
+                width: width,
+                height: height,
+                canvasId: this.ChartBorder.UIElement.ID,
+                success: function (res) {
+                    self.ScreenImagePath = res.tempFilePath;
+                    self.SnapshotStatus = 0;
+                    self.CurrentSnapshotID = id;
+                    //console.log('[HQTradeFrame::SnapshotImagePath] SnapshotID(' + self.SnapshotID + ',' + self.CurrentSnapshotID + ') Path ='+ res.tempFilePath);
+                }
+            })
+        }
     }
 
     this.SnapshotImageData=function()
