@@ -4,3 +4,5 @@ copy ..\umychart.listctrl.js+umychart.listctrl.vue.export.js ..\umychart.vue\umy
 
 copy ..\umychart.regressiontest.js+umychart.regressiontest.wechat.export.js ..\umychart.wechat\umychart.regressiontest.wechat.js /b
 
+copy ..\umychart.aliYunnetwork.js+umychart.aliYunnetwork.vue.export.js ..\umychart.vue\umychart.aliYunnetwork.vue.js /b
+
