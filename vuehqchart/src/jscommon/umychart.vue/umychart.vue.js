@@ -4164,6 +4164,21 @@ function JSChart(divElement)
         if (option.IsCorssOnlyDrawKLine===true) chart.ChartCorssCursor.IsOnlyDrawKLine=option.IsCorssOnlyDrawKLine;
         if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
         if (option.IsClickShowCorssCursor==true) chart.IsClickShowCorssCursor=option.IsClickShowCorssCursor;
+        if (option.CorssCursorInfo)
+        {
+            if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left=option.CorssCursorInfo.Left;
+            if (!isNaN(option.CorssCursorInfo.Right)) chart.ChartCorssCursor.ShowTextMode.Right=option.CorssCursorInfo.Right;
+            if (!isNaN(option.CorssCursorInfo.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom=option.CorssCursorInfo.Bottom;
+            if (option.CorssCursorInfo.IsShowCorss===false) chart.ChartCorssCursor.IsShowCorss=option.CorssCursorInfo.IsShowCorss;
+            if (option.CorssCursorInfo.IsShowClose == true) chart.ChartCorssCursor.IsShowClose = option.CorssCursorInfo.IsShowClose;    //Y轴显示收盘价
+            if (option.CorssCursorInfo.PressTime) chart.PressTime=option.CorssCursorInfo.PressTime; //长按显示十字光标的时间
+            if (option.CorssCursorInfo.HPenType>0) chart.ChartCorssCursor.HPenType=option.CorssCursorInfo.HPenType;
+            if (option.CorssCursorInfo.VPenType>0) chart.ChartCorssCursor.VPenType=option.CorssCursorInfo.VPenType;
+        }
+
+        //保存十字光标文字高度
+        option.CorssCursor={};
+        option.CorssCursor.TitleHeight=chart.ChartCorssCursor.TextHeight;
 
         if (option.Frame)
         {
@@ -4178,6 +4193,20 @@ function JSChart(divElement)
             }
         }
 
+        if (option.KLine) 
+        {
+            if (option.KLine.ShowKLine == false) chart.ChartPaint[0].IsShow = false;
+            if (option.KLine.InfoPosition>0) chart.ChartPaint[0].InfoPosition=option.KLine.InfoPosition;
+            if (option.KLine.IsShowMaxMinPrice == false) chart.ChartPaint[0].IsShowMaxMinPrice=option.KLine.IsShowMaxMinPrice;
+        }
+
+        if(option.KLineTitle)    //股票名称 日期 周期
+        {
+            if(option.KLineTitle.IsShowName==false) chart.TitlePaint[0].IsShowName=false;
+            if(option.KLineTitle.IsShowSettingInfo==false) chart.TitlePaint[0].IsShowSettingInfo=false;
+            if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
+        }
+
         if (option.ExtendChart)
         {
             for(var i in option.ExtendChart)
@@ -4186,11 +4215,6 @@ function JSChart(divElement)
                 chart.CreateExtendChart(item.Name, item);
             }
         }
-
-        //股票名称 日期 周期都不显示
-        chart.TitlePaint[0].IsShowName=false;
-        chart.TitlePaint[0].IsShowSettingInfo=false;
-        chart.TitlePaint[0].IsShowDateTime=false;
 
         //创建子窗口的指标
         let scriptData = new JSIndexScript();
