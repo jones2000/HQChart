@@ -119,7 +119,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * [多日走势图](https://opensource2.zealink.com/hqweb/demo/phone15.html) <br>
 * [个股筹码图](https://opensource2.zealink.com/hqweb/demo/phone18.html) <br>
 * [指标回测(手机版)](https://opensource2.zealink.com/hqweb/operatebsh5/index.html?symbol=000001.sz) <br>
-* [K线训练](https://opensource2.zealink.com/hqweb/demo/phone13.html) <br>
+* [手机K线训练](https://opensource2.zealink.com/hqweb/demo/demo_ktrain.html) <br>
+* [手机K线训练横屏](https://opensource2.zealink.com/hqweb/demo/demo_ktrain2.html) <br>
 * [弹幕功能](https://opensource2.zealink.com/hqweb/demo/phone21.html) <br>
 * [多指标叠加](https://opensource2.zealink.com/hqweb/demo/phone22.html) <br>
 * [截面数据(财务数据)计算器](https://opensource2.zealink.com/hqweb/demo/sectiondatatest.html) <br>
