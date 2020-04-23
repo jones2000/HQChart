@@ -10390,6 +10390,20 @@ function ChartData()
         return result;
     }
 
+    //获取数据日期和时间范围
+    this.GetDateRange=function()
+    {
+        if (!this.Data || this.Data.length<=0) return null;
+
+        var start=this.Data[0];
+        var end=this.Data[this.Data.length-1];
+        var range={ Start:{Date:start.Date}, End:{Date:end.Date} };
+        if (IFrameSplitOperator.IsNumber(start.Time)) range.Start.Time=start.Time;
+        if (IFrameSplitOperator.IsNumber(end.Time)) range.End.Time=end.Time;
+
+        return range;
+    }
+
     //计算分钟
     this.GetMinutePeriodData=function(period)
     {
@@ -14419,12 +14433,12 @@ function ChartOverlayLine()
     this.GetFirstVaildIndex=function()
     {
         var startIndex=this.Data.DataOffset;
-        for(var i=startIndex; i<this.MainData.Data.length && i<this.Data.Data.length; ++i)
+        for(var i=startIndex, j=0 ; i<this.MainData.Data.length && i<this.Data.Data.length; ++i,++j )
         {
             var value=this.MainData.Data[i];
             var overlayValue=this.Data.Data[i];
             if (IFrameSplitOperator.IsNumber(value) && IFrameSplitOperator.IsNumber(overlayValue)) 
-                return { Index:i, OverlayValue:overlayValue, MainValue:value };
+                return { Index:j, DataOffset:i, OverlayValue:overlayValue, MainValue:value };
         }
 
         return null;
@@ -14456,7 +14470,7 @@ function ChartOverlayLine()
 
         var bFirstPoint=true;
         var drawCount=0;
-        for(var i=firstData.Index,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        for(var i=firstData.DataOffset,j=firstData.Index;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
             if (value==null) 
@@ -14503,7 +14517,7 @@ function ChartOverlayLine()
         var firstData=this.GetFirstVaildIndex();
         if (!firstData) return range;
 
-        for(var i=firstData.Index,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        for(var i=firstData.DataOffset,j=firstData.Index; i<this.Data.Data.length && j<xPointCount; ++i,++j)
         {
             var overlayValue=this.Data.Data[i];
             if (!IFrameSplitOperator.IsNumber(overlayValue)) continue;
@@ -45336,7 +45350,8 @@ function Node()
 
     this.IsAPIData=[]       //加载API数据
 
-    this.ExecuteIndex=[];   //执行调用指标
+    this.ExecuteIndex=[];       //执行调用指标
+    this.OtherSymbolData=[];    //其他股票数据 key=股票代码(小写)
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -45413,6 +45428,12 @@ function Node()
         for(var i in this.ExecuteIndex)
         {
             var item=this.ExecuteIndex[i];
+            jobs.push(item);
+        }
+
+        for(var i in this.OtherSymbolData)
+        {
+            var item=this.OtherSymbolData[i];
             jobs.push(item);
         }
 
@@ -45600,6 +45621,17 @@ function Node()
             this.IsAPIData.push(item);
             return;
         }
+
+        let setStockDataName=new Set(['CLOSE','VOL','V','OPEN','O','HIGH','H','LOW','L','AMOUNT','AMO','VOLINSTK']);
+        if (setStockDataName.has(callee.Name)) 
+        {
+            var item= { Name:callee.Name, ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_OTHER_SYMBOL_DATA,Args:args };
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber};
+
+            this.OtherSymbolData.push(item);
+            return;
+        }
+
     }
 
     this.ExpressionStatement=function(expression)
@@ -51742,7 +51774,8 @@ function JSSymbolData(ast,option,jsExecute)
     this.ExtendData=new Map();          //其他的扩展数据
     this.UserData=new Map();            //用户数据
     this.CustomAPIData=new Map();       //自定义API数据
-    this.ScriptIndexOutData=new Map();     //调用脚本执行返回的数据
+    this.ScriptIndexOutData=new Map();  //调用脚本执行返回的数据
+    this.OtherSymbolData=new Map();     //其他股票信息 key=symbol value=[historydata]
 
     this.SectionFinanceData=new Map();  //截面报告数据
     this.ThrowSFPeirod=new Set();       //重新获取数据
@@ -52259,6 +52292,219 @@ function JSSymbolData(ast,option,jsExecute)
         {
             let periodData=this.IndexData.GetPeriodData(this.Period);
             this.IndexData.Data=periodData;
+        }
+    }
+
+    //获取其他股票数据
+    this.GetOtherSymbolData=function(job)
+    {
+        var args=job.Args;
+        var code=this.Symbol;
+        if (args.length>0)
+        {
+            var item=args[0];
+            if (item.Type==Syntax.Literal) 
+            {
+                code=item.Value;
+            }
+            else if (item.Type==Syntax.Identifier)  //变量 !!只支持默认的变量值
+            {
+                var isFind=false;
+                for(var j in this.Arguments)
+                {
+                    const argItem=this.Arguments[j];
+                    if (argItem.Name==item.Name)
+                    {
+                        code=argItem.Value;
+                        isFind=true;
+                        break;
+                    }
+                }
+
+                if (!isFind) 
+                {
+                    var token=job.Token;
+                    this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`${job.FunctionName}() Error: can't read ${item.Name}`);
+                }
+            }
+        }
+
+        job.Symbol=code.toLowerCase();
+        if (job.Symbol==this.Symbol) return this.Execute.RunNextJob();
+        if (this.OtherSymbolData.has(job.Symbol)) return this.Execute.RunNextJob();
+
+        var self=this;
+        if (ChartData.IsDayPeriod(this.Period,true))     //请求日线数据 9=季线
+        {
+            if (this.NetworkFilter)
+            {
+                var dateRange=this.Data.GetDateRange();
+                var obj=
+                {
+                    Name:'JSSymbolData::GetOtherSymbolData', //类名::函数名
+                    Explain:'指定个股数据',
+                    Period:self.Period,
+                    DateRange:dateRange,
+                    Request:{ Url:self.KLineApiUrl,  Type:'POST' ,
+                        Data: { field:[ "name", "symbol","yclose","open","price","high","low","vol"],
+                            symbol: job.Symbol, start: -1 , count: self.MaxRequestDataCount+500 } },
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvOtherSymbolKDayData(data,job);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
+            JSNetwork.HttpRequest({
+                url: self.KLineApiUrl,
+                data:
+                {
+                    "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
+                    "symbol": job.Symbol,
+                    "start": -1,
+                    "count": self.MaxRequestDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
+                },
+                type:"post",
+                dataType: "json",
+                async:true, 
+                success: function (recvData)
+                {
+                    self.RecvOtherSymbolKDayData(recvData,job);
+                    self.Execute.RunNextJob();
+                },
+                error: function(request)
+                {
+                    self.RecvError(request);
+                }
+            });
+        }
+        else  if (ChartData.IsMinutePeriod(this.Period, true))          //请求分钟数据
+        {
+            if (this.NetworkFilter)
+            {
+                var dateRange=this.Data.GetDateRange();
+                var obj=
+                {
+                    Name:'JSSymbolData::GetOtherSymbolData', //类名::函数名
+                    Explain:'指定个股数据',
+                    Period:self.Period,
+                    DateRange:dateRange,
+                    Request:{ Url:self.MinuteKLineApiUrl,  Type:'POST' ,
+                        Data: { field:["name","symbol","yclose","open","price","high","low","vol"],
+                            symbol: job.Symbol, start: -1 , count: self.MaxRequestDataCount+5 } },
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvOtherSymbolKMinuteData(data,job);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
+            JSNetwork.HttpRequest({
+                url: self.MinuteKLineApiUrl,
+                data:
+                {
+                    "field": ["name","symbol","yclose","open","price","high","low","vol"],
+                    "symbol": job.Symbol,
+                    "start": -1,
+                    "count": self.MaxRequestMinuteDayCount+5
+                },
+                type:"post",
+                dataType: "json",
+                async:true,
+                success: function (data)
+                {
+                    self.RecvOtherSymbolKMinuteData(data,job);
+                    self.Execute.RunNextJob();
+                },
+                error: function(request)
+                {
+                    self.RecvError(request);
+                }
+            });
+        }
+    }
+
+    this.RecvOtherSymbolKDayData=function(data,job)
+    {
+        JSConsole.Complier.Log('[JSSymbolData::RecvOtherSymbolKDayData] recv data' , data);
+
+        let hisData=this.JsonDataToHistoryData(data);
+        var kData=new ChartData();
+        kData.DataType=0; /*日线数据 */
+        kData.Data=hisData;
+
+        var aryOverlayData=this.SourceData.GetOverlayData(kData.Data);      //和主图数据拟合以后的数据
+        kData.Data=aryOverlayData;
+
+        if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
+        {
+            let periodData=kData.GetPeriodData(this.Period);
+            kData.Data=periodData;
+        }
+
+        this.OtherSymbolData.set(job.Symbol, kData);
+    }
+
+    this.RecvOtherSymbolKMinuteData=function(data, job)
+    {
+        JSConsole.Complier.Log('[JSSymbolData::RecvOtherSymbolKMinuteData] recv data' , data);
+
+        let hisData=this.JsonDataToMinuteHistoryData(data);
+        var kData=new ChartData();
+        kData.DataType=1; /*分钟线数据 */
+        kData.Data=hisData;
+
+        if (ChartData.IsMinutePeriod(this.Period,false))   //周期数据
+        {
+            let periodData=kData.GetPeriodData(this.Period);
+            kData.Data=periodData;
+        }
+
+        this.OtherSymbolData.set(job.Symbol, kData);
+    }
+
+    this.GetOtherSymolCacheData=function(dataName, args)
+    {
+        if (args.length<=0) return this.GetSymbolCacheData(dataName);
+        var symbol=args[0].toString().toLowerCase();
+        if (symbol==this.Symbol) return this.GetSymbolCacheData(dataName);
+
+        if (!this.OtherSymbolData.has(symbol)) return [];
+
+        var kData=this.OtherSymbolData.get(symbol);
+
+        switch(dataName)
+        {
+            case 'CLOSE':
+            case 'C':
+                return kData.GetClose();
+            case 'VOL':
+            case 'V':
+                return kData.GetVol();
+            case 'OPEN':
+            case 'O':
+                return kData.GetOpen();
+            case 'HIGH':
+            case 'H':
+                return kData.GetHigh();
+            case 'LOW':
+            case 'L':
+                return kData.GetLow();
+            case 'AMOUNT':
+            case 'AMO':
+                return kData.GetAmount();
+            case 'VOLINSTK':
+                return kData.GetPosition();
         }
     }
 
@@ -55232,6 +55478,7 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_GROUP_DATA:6,          //所属行业|地区|概念
     JOB_DOWNLOAD_SYMBOL_DAY_DATA:7,     //股票日线数据
     JOB_DOWNLOAD_LATEST_INDEX_DATA:8,   //下载最新大盘数据
+    JOB_DOWNLOAD_OTHER_SYMBOL_DATA:9,   //下载其他股票的K线数据
 
     //财务函数
     JOB_DOWNLOAD_TOTAL_EQUITY_DATA:100,          //总股本（万股）
@@ -55573,6 +55820,9 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetVolRateData(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA:
                 return this.SymbolData.GetGroupData(jobItem);   //行业|概念|地区
+
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_OTHER_SYMBOL_DATA:  //指定股票数据
+                return this.SymbolData.GetOtherSymbolData(jobItem);
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_TOTAL_EQUITY_DATA:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA:
@@ -56174,6 +56424,20 @@ function JSExecute(ast,option)
                 break;
             case "STKINDI":
                 node.Out=this.SymbolData.GetScriptIndexOutData(args,node);
+                break;
+            case 'CLOSE':
+            case 'C':
+            case 'VOL':
+            case 'V':
+            case 'OPEN':
+            case 'O':
+            case 'HIGH':
+            case 'H':
+            case 'LOW':
+            case 'L':
+            case 'AMOUNT':
+            case 'AMO':
+                node.Out=this.SymbolData.GetOtherSymolCacheData(funcName, args);
                 break;
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node, this.SymbolData);

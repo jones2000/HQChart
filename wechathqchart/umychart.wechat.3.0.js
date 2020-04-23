@@ -1648,6 +1648,7 @@ function JSChartContainer(uielement)
     }
 
     //画动态信息
+    this.TempImage=null;
     this.DrawDynamicInfo = function () 
     {
         if (this.IsFullDraw) 
@@ -1675,11 +1676,17 @@ function JSChartContainer(uielement)
             if (this.Frame.ScreenImagePath == null) return;
             if (self.Canvas && self.Canvas.DomNode) //新版本2D画布
             {
-                let tempImage = self.Canvas.DomNode.createImage();  //新版本的必须要装成image类 比较坑
-                tempImage.src = this.Frame.ScreenImagePath;
-                self.Canvas.clearRect(0, 0, width, height);
-                self.Canvas.drawImage(tempImage, 0, 0, width, height);
-                self.DrawDynamicChart(false);
+                //console.log("[DrawDynamicInfo] ScreenImagePath ", this.Frame.ScreenImagePath);
+                if (!this.TempImage) this.TempImage= self.Canvas.DomNode.createImage();  //新版本的必须要装成image类 比较坑
+                this.TempImage.src = this.Frame.ScreenImagePath;
+                //console.log("[DrawDynamicInfo] tempImage ", this.TempImage);
+                this.TempImage.onload=()=>
+                {
+                    //console.log("[DrawDynamicInfo] onload ", self.TempImage);
+                    self.Canvas.clearRect(0, 0, width, height);
+                    self.Canvas.drawImage(self.TempImage, 0, 0, width, height);
+                    self.DrawDynamicChart(false);
+                }
             }
             else
             {

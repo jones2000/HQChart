@@ -6977,6 +6977,20 @@ function ChartData()
         return result;
     }
 
+    //获取数据日期和时间范围
+    this.GetDateRange=function()
+    {
+        if (!this.Data || this.Data.length<=0) return null;
+
+        var start=this.Data[0];
+        var end=this.Data[this.Data.length-1];
+        var range={ Start:{Date:start.Date}, End:{Date:end.Date} };
+        if (IFrameSplitOperator.IsNumber(start.Time)) range.Start.Time=start.Time;
+        if (IFrameSplitOperator.IsNumber(end.Time)) range.End.Time=end.Time;
+
+        return range;
+    }
+
     //计算分钟
     this.GetMinutePeriodData=function(period)
     {
@@ -11006,12 +11020,12 @@ function ChartOverlayLine()
     this.GetFirstVaildIndex=function()
     {
         var startIndex=this.Data.DataOffset;
-        for(var i=startIndex; i<this.MainData.Data.length && i<this.Data.Data.length; ++i)
+        for(var i=startIndex, j=0 ; i<this.MainData.Data.length && i<this.Data.Data.length; ++i,++j )
         {
             var value=this.MainData.Data[i];
             var overlayValue=this.Data.Data[i];
             if (IFrameSplitOperator.IsNumber(value) && IFrameSplitOperator.IsNumber(overlayValue)) 
-                return { Index:i, OverlayValue:overlayValue, MainValue:value };
+                return { Index:j, DataOffset:i, OverlayValue:overlayValue, MainValue:value };
         }
 
         return null;
@@ -11043,7 +11057,7 @@ function ChartOverlayLine()
 
         var bFirstPoint=true;
         var drawCount=0;
-        for(var i=firstData.Index,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        for(var i=firstData.DataOffset,j=firstData.Index;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
             if (value==null) 
@@ -11090,7 +11104,7 @@ function ChartOverlayLine()
         var firstData=this.GetFirstVaildIndex();
         if (!firstData) return range;
 
-        for(var i=firstData.Index,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        for(var i=firstData.DataOffset,j=firstData.Index; i<this.Data.Data.length && j<xPointCount; ++i,++j)
         {
             var overlayValue=this.Data.Data[i];
             if (!IFrameSplitOperator.IsNumber(overlayValue)) continue;
