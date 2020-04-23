@@ -21,28 +21,29 @@
                 </div>
                 <div class="priceOpen">
                     <p class="open">开<span :class='StockData.Open.Color'>{{StockData.Open.Text}}</span></p>
-                    <p class="change">换<span :class='StockData.Excahngerate.Color'>{{StockData.Excahngerate.Text}}</span></p>
+                    <p class="change" v-if='!IsIndex'>换<span :class='StockData.Excahngerate.Color'>{{StockData.Excahngerate.Text}}</span></p>
+                    <p class="change" v-if='IsIndex'>昨收<span>{{StockData.YClose.Text}}</span></p>
                 </div>
                 <div class="priceAmount">
                     <p class="num">额<span>{{StockData.Amount.Text}}</span></p>
                     <p class="totalValue">量<span>{{StockData.Vol.Text}}</span></p>
                 </div>
             </div>
-            <table class="exchangeInfoT" v-show='ExchangeInfoTShow'>
+            <table :class="[IsIndex ?'indexExchangeInfoT':'exchangeInfoT']" v-if='!IsIndex && ExchangeInfoTShow'>
                 <tbody>
                     <tr>
                         <td>PE</td>
-                        <td><span class="pe">{{StockData.Pe.Text}}</span></td>
+                        <td><div class="pe">{{StockData.Pe.Text}}</div></td>
                         <td class="clear"><span class="name">总市值</span><span class="marketV">{{StockData.MarketV.Text}}</span></td>
                         <td>流通市值</td>
-                        <td><span class="flowMarketV">{{StockData.FlowMarketV.Text}}</span></td>
+                        <td><div class="flowMarketV">{{StockData.FlowMarketV.Text}}</div></td>
                     </tr>
                     <tr>
                         <td>EPS</td>
-                        <td><span class="eps">{{StockData.Eps.Text}}</span></td>
+                        <td><div class="eps">{{StockData.Eps.Text}}</div></td>
                         <td class="clear"><span class="name">滚动EPS</span><span class="scrollEPS">{{StockData.ScrollEPS.Text}}</span></td>
                         <td>ROE</td>
-                        <td><span class="roe">{{StockData.Roe.Text}}</span></td>
+                        <td><div class="roe">{{StockData.Roe.Text}}</div></td>
                     </tr>
                     <tr>
                         <td>PB</td>
@@ -52,6 +53,22 @@
                         <td></td>
                     </tr>
                 </tbody>
+            </table>
+            <table :class="[IsIndex ?'indexExchangeInfoT':'exchangeInfoT']" v-if='IsIndex && ExchangeInfoTShow'>
+              <tbody>
+                  <tr>
+                      <td>上涨家数</td>
+                      <td><span class="pe">{{StockData.Up.Text}}</span></td>
+                      <td>上涨家数</td>
+                      <td><span class="flowMarketV">{{StockData.Down.Text}}</span></td>
+                  </tr>
+                  <tr>
+                      <td>平盘</td>
+                      <td><span class="eps">{{StockData.Unchanged.Text}}</span></td>
+                      <td></td>
+                      <td></td>
+                  </tr>
+              </tbody>
             </table>
             <p class="shrinkWrap" @click='ShowOrHideExchangeInfoT'><img class="shrinkBtn" :class='CollapseImgClass' src="../assets/images/shrink_icon.png" alt=""></p>
         </div>
@@ -69,7 +86,7 @@
                 <div id="kline" v-show='Kline.IsShow'></div>
 
                 <!-- 分时图右侧内容 -->
-                <div class="rightMinute" v-show='Minute.IsShow'>
+                <div class="rightMinute" v-show='!IsIndex && Minute.IsShow'>
                     <ul class="minute-tab clear tabsTitle">
                         <li class="tableSell active-minute" @click='ChangeMinuteTab(0)' :class='{active:MinuteMenuIndex == 0}'>五档</li>
                         <li class="tableBuy" @click='ChangeMinuteTab(1)' :class='{active:MinuteMenuIndex == 1}'>明细</li>
@@ -113,7 +130,7 @@
                 </div>
 
                 <!-- k线图右侧内容 -->
-                <div class="phoneRight" v-show='RightMenu.IsShow'>
+                <div class="phoneRight" v-show='!IsIndex && RightMenu.IsShow'>
                     <ul class="ulOne">
                         <li v-for='item in RightMenu.List' :key="item.ID" @click='ChangeKlinRight(item)' class="noRight" :class='{active:item==RightMenu.Selected}'>{{item.Name}}</li>
                     </ul>
@@ -336,7 +353,7 @@
                 CollapseImgClass:'',
                 MinuteMenuIndex:0,
                 IsIndex:false,
-                Symbol:'600000.sh',
+                Symbol:'600000.sh', //399006.sz
                 JSStock:null,
                 ID: JSCommon.JSChart.CreateGuid(),
                 StockData: DefaultData.GetStockData(),
@@ -487,7 +504,7 @@
                 var chartHeight = 360;
                 if(this.Minute.IsShow)
                 {
-                    var chartWidth = width - $('.rightMinute').outerWidth(true);
+                    var chartWidth = this.IsIndex ? width : width - $('.rightMinute').outerWidth(true);
                     $('#minuteChart').width(chartWidth);
                     $('#minuteChart').height(chartHeight);
                 }else if(this.FiveMinute.IsShow)
@@ -497,8 +514,8 @@
                     $('#minuteFiveDaychart').height(chartHeight);
                 }else if(this.Kline.IsShow)
                 {
-                     var chartWidth = width;
-                    if (this.RightMenu.IsShow) chartWidth = width - $('.phoneRight').outerWidth(true);
+                    var chartWidth = width;
+                    if (this.RightMenu.IsShow) chartWidth = this.IsIndex ? width : width - $('.phoneRight').outerWidth(true);
                     $('#kline').width(chartWidth);
                     $('#kline').height(chartHeight);
                     if (this.Kline.JSChart) this.Kline.JSChart.OnSize();
@@ -925,11 +942,11 @@ ul,ol {list-style: none;}
 .blockBg {background: #fff; margin-top: 5px;}
 
 /*价格部分*/
-.exchangeData {padding: 0 4%; border-bottom: 1px solid #ececec; background-color: #fff; font-size: 1.3rem;}
+.exchangeData {padding: 0 2%; border-bottom: 1px solid #ececec; background-color: #fff; font-size: 1.3rem;}
 .exchangeData .priceCurrent,.exchangeData .priceHL,.exchangeData .priceOpen,.exchangeData .priceAmount {float: left;}
-.exchangeData .priceCurrent {width: 32.7%;}
-.exchangeData .priceHL {width: 21.4%; box-sizing: border-box; padding-right: 4.3%;}
-.exchangeData .priceOpen {width: 22%; box-sizing: border-box; padding-right: 3%;}
+.exchangeData .priceCurrent {width: 30%;}
+.exchangeData .priceHL {width: 22%; box-sizing: border-box; padding-right: 2.3%;}
+.exchangeData .priceOpen {width: 24.1%; box-sizing: border-box; padding-right: 2%;}
 .exchangeData .priceAmount {width: 23.9%;}
 .exchangeData .priceHL .low, .exchangeData .priceOpen .change, .exchangeData .priceAmount .totalValue { height: 20px; line-height: 20px;}
 .exchangeData .priceHL span,.exchangeData .priceOpen span,.exchangeData .priceAmount span {float: right;}
@@ -937,19 +954,20 @@ ul,ol {list-style: none;}
 .priceCurrent .riseNum,.priceCurrent .risePrecent { font-size: 0.926rem; font-weight: bold; height: 18px; line-height: 18px;}
 .priceCurrent .riseNum { margin-right: 11.4%;}
 .priceHL .high,.priceOpen .open,.priceAmount .num { padding-top: 7px; height: 20px; line-height: 20px;}
-.exchangeInfoT {width: 100%; border-collapse: collapse; border: none;}
-.exchangeInfoT tr {height: 1.6rem; line-height: 1.6rem;}
+.exchangeInfoT,.indexExchangeInfoT {width: 100%; border-collapse: collapse; border: none;}
+.exchangeInfoT tr,
+.indexExchangeInfoT tr {height: 1.6rem; line-height: 1.6rem;}
 .exchangeInfoT tr>td { font-size: 1.3rem;}
-/*.exchangeInfoT tr>td:nth-of-type(2n+1) { font-weight: bold;}*/
-.exchangeInfoT tr>td:nth-of-type(1) { width: 6%;}
-.exchangeInfoT tr>td:nth-of-type(2) { width: 15%; padding-right: 3%; text-align: right;}
-.exchangeInfoT tr>td:nth-of-type(3) { width: 36.5%; padding-right: 3%; text-align: right; }
-.exchangeInfoT tr>td:nth-of-type(3)>.name {float: left;}
-/*.exchangeInfoT tr>td:nth-of-type(3) { width: 12%;}
-.exchangeInfoT tr>td:nth-of-type(4) { width: 24.5%; padding-right: 3%; text-align: right;}*/
-.exchangeInfoT tr>td:nth-of-type(4) { width: 16%;}
-.exchangeInfoT tr>td:nth-of-type(5) { width: 20.5%; text-align: right;}
-/*.exchangeInfoT sup {font-size: 8px;}*/
+/* .exchangeInfoT .pe {box-sizing: border-box;width: 10%; text-align: right;} */
+.exchangeInfoT tr>td:nth-of-type(2) { width: 22%; padding-right: 3%; text-align: right;}
+.exchangeInfoT tr>td:nth-of-type(3) { width: 35.5%; padding-right: 6%; text-align: right;}
+.exchangeInfoT .name{float: left;}
+.exchangeInfoT tr>td:last-child{text-align: right;}
+
+.indexExchangeInfoT tr>td:first-child{width: 30%;}
+.indexExchangeInfoT tr>td:nth-of-type(2){width: 22%;}
+.indexExchangeInfoT tr>td:nth-of-type(3){width:24.1%;}
+
 .shrinkWrap {text-align: center; height: 15px;}
 .shrinkWrap img {display: inline-block; height: 12px; vertical-align: top;transform: rotate(180deg);-webkit-transform: rotate(180deg);}
 .shrinkWrap img.open {transform: rotate(0deg);-webkit-transform: rotate(0deg);}

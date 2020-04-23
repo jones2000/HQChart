@@ -1,16 +1,19 @@
 <template>
     <div id="app">
-      <router-view></router-view>
+      <StockHq></StockHq>
     </div>
   </template>
   
   <script>
-  
+  import StockHq from './components/stockHq.vue'
   export default {
     data () {
       return {
   
       }  
+    },
+    components:{
+      StockHq
     },
     created(){
       document.title = "行情页面";
