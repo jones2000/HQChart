@@ -10979,6 +10979,135 @@ function ChartSubLine()
     }
 }
 
+//叠加线段
+function ChartOverlayLine()
+{
+    this.newMethod=ChartLine;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.MainData=new ChartData();  //主数据
+
+    this.Draw=function()
+    {
+        if (!this.Data || !this.Data.Data) return;
+        if (!this.MainData || !this.MainData.Data) return;
+
+        switch(this.DrawType)
+        {
+            case 0:
+                return this.DrawLine();
+            case 1: 
+                return this.DrawStraightLine();
+        }
+    }
+
+    //获取第1个有效数据
+    this.GetFirstVaildIndex=function()
+    {
+        var startIndex=this.Data.DataOffset;
+        for(var i=startIndex; i<this.MainData.Data.length && i<this.Data.Data.length; ++i)
+        {
+            var value=this.MainData.Data[i];
+            var overlayValue=this.Data.Data[i];
+            if (IFrameSplitOperator.IsNumber(value) && IFrameSplitOperator.IsNumber(overlayValue)) 
+                return { Index:i, OverlayValue:overlayValue, MainValue:value };
+        }
+
+        return null;
+    }
+
+    //无效数不画
+    this.DrawStraightLine=function()
+    {
+        var firstData=this.GetFirstVaildIndex();
+        if (!firstData) return;
+
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var chartright=this.ChartBorder.GetRight();
+        if (bHScreen) chartright=this.ChartBorder.GetBottom();
+        var xPointCount=this.ChartFrame.XPointCount;
+        var lockRect=this.GetLockRect();
+        if (lockRect)
+        {
+            if (bHScreen) chartright=lockRect.Top;
+            else chartright=lockRect.Left;
+        }
+
+        this.Canvas.save();
+        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
+        this.Canvas.strokeStyle=this.Color;
+        if (this.IsDotLine) this.Canvas.setLineDash([3,5]); //画虚线
+
+        var bFirstPoint=true;
+        var drawCount=0;
+        for(var i=firstData.Index,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=this.Data.Data[i];
+            if (value==null) 
+            {
+                if (drawCount>0) this.Canvas.stroke();
+                bFirstPoint=true;
+                drawCount=0;
+                continue;
+            }
+
+            var x=this.ChartFrame.GetXFromIndex(j);
+            var fixedValue=value/firstData.OverlayValue*firstData.MainValue;
+            var y=this.GetYFromData(fixedValue);
+
+            if (x>chartright) break;
+
+            if (bFirstPoint)
+            {
+                this.Canvas.beginPath();
+                if (bHScreen) this.Canvas.moveTo(y,x);  //横屏坐标轴对调
+                else this.Canvas.moveTo(x,y);
+                bFirstPoint=false;
+            }
+            else
+            {
+                if (bHScreen) this.Canvas.lineTo(y,x);
+                else this.Canvas.lineTo(x,y);
+            }
+
+            ++drawCount;
+        }
+
+        if (drawCount>0) this.Canvas.stroke();
+        this.Canvas.restore();
+    }
+
+    this.GetMaxMin=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var range={};
+        range.Min=null;
+        range.Max=null;
+
+        var firstData=this.GetFirstVaildIndex();
+        if (!firstData) return range;
+
+        for(var i=firstData.Index,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var overlayValue=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(overlayValue)) continue;
+
+            var value=overlayValue/firstData.OverlayValue*firstData.MainValue;
+
+            if (range.Max==null) range.Max=value;
+            if (range.Min==null) range.Min=value;
+
+            if (range.Max<value) range.Max=value;
+            if (range.Min>value) range.Min=value;
+        }
+
+        return range;
+    }
+}
+
 //彩色线段
 function ChartPartLine()
 {

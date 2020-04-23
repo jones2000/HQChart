@@ -7070,6 +7070,16 @@ function JSDraw(errorHandler,symbolData)
 
         return result;
     }
+
+    //画百分比叠加线
+    this.DRAWOVERLAYLINE=function(data, mainData, title)
+    {
+        let drawData={ Data:data, MainData:mainData };
+        if (title && typeof(title)=='string') drawData.Title=title;
+        let result={ DrawData:drawData, DrawType:'DRAWOVERLAYLINE' };
+       
+        return result;
+    }
 }
 
 
@@ -7120,7 +7130,8 @@ JSDraw.prototype.IsDrawFunction=function(name)
     let setFunctionName=new Set(
     [
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
-        'POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL'
+        'POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',
+        'DRAWOVERLAYLINE'
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -11584,6 +11595,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWRECTREL(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=[];
                 break;
+            case "DRAWOVERLAYLINE":
+                node.Draw=this.Draw.DRAWOVERLAYLINE(args[0],args[1],args[2]);
+                node.Out=node.Draw.DrawData.Data;
+                break;
             case 'CODELIKE':
                 node.Out=this.SymbolData.CODELIKE(args[0]);
                 break;
@@ -12689,6 +12704,36 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateScriptOverlayLine=function(hqChart,windowIndex,varItem,i)
+    {
+        let chart=new ChartOverlayLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.DrawType=1;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(i);
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+
+        if (varItem.IsDotLine) chart.IsDotLine=true; //虚线
+        if (varItem.IsShow==false) chart.IsShow=false;
+
+        let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Draw.DrawData.Data;
+        chart.MainData.Data=varItem.Draw.DrawData.MainData;
+
+        if (varItem.Draw.DrawData.Title)
+            hqChart.TitlePaint[titleIndex].Data[i]=new DynamicTitleData(chart.Data,varItem.Draw.DrawData.Title,chart.Color);
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建K线
     this.CreateSelfKLine=function(hqChart,windowIndex,hisData)
     {
@@ -12837,6 +12882,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWRECTREL':
                         this.CreateRectangle(hqChart,windowIndex,item,i);
+                        break;
+                    case "DRAWOVERLAYLINE":
+                        this.CreateScriptOverlayLine(hqChart,windowIndex,item,i);
                         break;
                     case 'MULTI_LINE':
                         this.CreateMultiLine(hqChart,windowIndex,item,i);
