@@ -237,6 +237,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 8. [HQChart实战教程8-如何手动重新初始化hqchart](https://blog.csdn.net/jones2000/article/details/105302626)<br>
 9. [HQChart实战教程9-自定义A股分时图](https://blog.csdn.net/jones2000/article/details/105587559) <br>
 10. [HQChart实战教程10-全ws数据对接HQChart(数字货币对接实战)](https://blog.csdn.net/jones2000/article/details/105698038) <br>
+11. [HQChart实战教程11-火币网ws数据对接](https://blog.csdn.net/jones2000/article/details/105721190) <br>
 
 
 ## 设计文档:
