@@ -42403,6 +42403,7 @@ function MinuteTimeStringData()
     this.FTSE=null;         //富时中国
     this.FHK=null;          //港股指数期货
     this.ForeEx=null;       //外汇
+    this.BIT=null;          //数字货币
 
     this.Initialize = function ()  //初始化 默认只初始化沪深的 其他市场动态生成
     {
@@ -42466,6 +42467,12 @@ function MinuteTimeStringData()
     {
         if (!this.ForeEx) this.ForeEx=this.CreateForeignExchangeData();
         return this.ForeEx;
+    }
+
+    this.GetBIT=function(upperSymbol)
+    {
+        if (!this.BIT) this.BIT=this.CreateBITData();
+        return this.BIT;
     }
 
     this.CreateSHSZData = function () 
@@ -42573,6 +42580,18 @@ function MinuteTimeStringData()
         return this.CreateTimeData(TIME_SPLIT);
     }
 
+    this.CreateBITData=function()
+    {
+         //数字货币 7:00 - 6:59
+         const TIME_SPLIT=           
+         [
+             { Start:600, End:2359 },
+             { Start:0,  End:559 },
+         ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
     this.CreateTimeData = function (timeSplit) 
     {
         var data = [];
@@ -42607,6 +42626,7 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) return this.GetFHK();
         if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) return this.GetForeignExchange();
         if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) return this.GetET(upperSymbol);
+        if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) return this.GetBIT(upperSymbol);
 
         if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol))    //纽约期货交易所
         {
@@ -43028,6 +43048,8 @@ function MinuteCoordinateData()
                 data=this.GetFHKData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol))
                 data=this.GetForeignExchangeData(upperSymbol,width);
+            else if ((MARKET_SUFFIX_NAME.IsBIT(upperSymbol,width)))
+                data=this.GetBITData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsET(upperSymbol))
                 data=this.GetETData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol,width))
@@ -43152,7 +43174,13 @@ function MinuteCoordinateData()
 
     this.GetForeignExchangeData=function(upperSymbol,width)
     {
-        var result=FOREX_MINUTE_X_COORDINATE;
+        var result=FOREX_MINUTE_X_COORDINATE;  
+        return result;
+    }
+
+    this.GetBITData=function(upperSymbol,width)
+    {
+        var result=FOREX_MINUTE_X_COORDINATE;   //先用外汇的吧
         return result;
     }
 

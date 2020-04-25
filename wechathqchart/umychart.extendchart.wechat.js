@@ -14,7 +14,10 @@
 import 
 {
     JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
-    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData
+    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
+    JSCommon_Guid as Guid,
+    JSCommon_ToFixedPoint as ToFixedPoint,
+    JSCommon_ToFixedRect as ToFixedRect,
 } from "./umychart.data.wechat.js";
 
 import 
@@ -566,6 +569,234 @@ function BarrageList()
     this.Count = function () { return this.Cache.length; } //未播放的弹幕个数
 }
 
+//背景图 支持横屏
+function BackgroundPaint() 
+{
+    this.newMethod = IExtendChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName = 'BackgroundPaint';
+
+    this.IsDynamic = false;
+    this.IsCallbackDraw = true;   //在回调函数里绘制, 不在Draw()中绘制
+
+    this.FrameID = 0;
+    this.Data;      //背景数据 { Start:, End:, Color:[] }
+    this.ID = Guid(); //唯一的ID
+
+    /*
+    this.Data=
+    [ 
+        { Start:{ Date:20181201 }, End:{ Date:20181230 }, Color:'rgb(44,55,44)' } , 
+        { Start:{ Date:20190308 }, End:{ Date:20190404 }, Color:['rgb(44,55,255)','rgb(200,55,255)'] } 
+    ]
+    */
+
+    this.ChartSubFrame;
+    this.ChartBorder;
+    this.KData;
+    this.Period;
+    this.XPointCount = 0;
+
+    this.SetOption = function (option) //设置
+    {
+        if (option.FrameID > 0) this.FrameID = option.FrameID;
+        if (IFrameSplitOperator.IsObjectExist(option.ID)) this.ID = option.ID;
+    }
+
+    this.Draw = function () 
+    {
+        if (!this.Data || !this.HQChart) return;
+        if (!this.ChartFrame || !this.ChartFrame.SubFrame || this.ChartFrame.SubFrame.length <= this.FrameID) return;
+        var klineChart = this.HQChart.ChartPaint[0];
+        if (!klineChart || !klineChart.Data) return;
+
+        this.ChartSubFrame = this.ChartFrame.SubFrame[this.FrameID].Frame;
+        this.ChartBorder = this.ChartSubFrame.ChartBorder;
+        this.KData = klineChart.Data;
+        this.Period = this.HQChart.Period;
+        if (!this.KData || this.KData.Data.length <= 0) return;
+
+        var isHScreen = (this.ChartSubFrame.IsHScreen === true);
+        this.XPointCount = this.ChartSubFrame.XPointCount;
+        var xPointCount = this.ChartSubFrame.XPointCount;
+
+        var firstKItem = this.KData.Data[this.KData.DataOffset];
+        var endIndex = this.KData.DataOffset + xPointCount - 1;
+        if (endIndex >= this.KData.Data.length) endIndex = this.KData.Data.length - 1;
+        var endKItem = this.KData.Data[endIndex];
+        var showData = this.GetShowData(firstKItem, endKItem);
+        if (!showData || showData.length <= 0) return;
+
+        var kLineMap = this.BuildKLineMap();
+        var bottom = this.ChartBorder.GetBottomEx();
+        var top = this.ChartBorder.GetTopEx();
+        var height = this.ChartBorder.GetHeightEx();
+        if (isHScreen) 
+        {
+            top = this.ChartBorder.GetRightEx();
+            bottom = this.ChartBorder.GetLeftEx();
+            height = this.ChartBorder.GetWidthEx();
+        }
+
+        for (var i in showData) 
+        {
+            var item = showData[i];
+            var rt = this.GetBGCoordinate(item, kLineMap);
+            if (!rt) continue;
+
+            if (Array.isArray(item.Color)) 
+            {
+                var gradient;
+                if (isHScreen) gradient = this.Canvas.createLinearGradient(bottom, rt.Left, top, rt.Left);
+                else gradient = this.Canvas.createLinearGradient(rt.Left, top, rt.Left, bottom);
+                var offset = 1 / item.Color.length;
+                for (var i in item.Color) 
+                {
+                    gradient.addColorStop(i * offset, item.Color[i]);
+                }
+                this.Canvas.fillStyle = gradient;
+            }
+            else 
+            {
+                this.Canvas.fillStyle = item.Color;
+            }
+
+            if (isHScreen) this.Canvas.fillRect(ToFixedRect(bottom), ToFixedRect(rt.Left), ToFixedRect(height), ToFixedRect(rt.Width));
+            else this.Canvas.fillRect(ToFixedRect(rt.Left), ToFixedRect(top), ToFixedRect(rt.Width), ToFixedRect(height));
+        }
+    }
+
+    this.GetShowData = function (first, end) 
+    {
+        var aryData = [];
+        for (var i in this.Data) {
+            var item = this.Data[i];
+            var showItem = {};
+            if (item.Start.Date >= first.Date && item.Start.Date <= end.Date) showItem.Start = item.Start;
+            if (item.End.Date >= first.Date && item.End.Date <= end.Date) showItem.End = item.End;
+            if (showItem.Start || showItem.End) 
+            {
+                showItem.Color = item.Color;
+                aryData.push(showItem);
+            }
+        }
+
+        return aryData;
+    }
+
+    this.BuildKLineMap = function () 
+    {
+        var isHScreen = (this.ChartSubFrame.IsHScreen === true);
+        var dataWidth = this.ChartSubFrame.DataWidth;
+        var distanceWidth = this.ChartSubFrame.DistanceWidth;
+        var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + g_JSChartResource.FrameLeftMargin;
+        if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + g_JSChartResource.FrameLeftMargin;
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen) chartright = this.ChartBorder.GetBottom();
+
+        var mapKLine = { Data: new Map() }; //Key: date / date time, Value:索引
+        for (var i = this.KData.DataOffset, j = 0; i < this.KData.Data.length && j < this.XPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        {
+            var kItem = this.KData.Data[i];
+            var left = xOffset;
+            var right = xOffset + dataWidth;
+            if (right > chartright) break;
+            var x = left + (right - left) / 2;
+
+            if (j == 0) mapKLine.XLeft = left;
+            mapKLine.XRight = right;
+
+            var value = { Index: i, ShowIndex: j, X: x, Right: right, Left: left, Date: kItem.Date };
+            if (ChartData.IsMinutePeriod(this.Period, true)) 
+            {
+                var key = `Date:${kItem.Date} Time:${kItem.Time}`;
+                value.Time = kItem.Time;
+            }
+            else 
+            {
+                var key = `Date:${kItem.Date}`;
+            }
+
+            mapKLine.Data.set(key, value);
+        }
+
+        return mapKLine;
+    }
+
+    this.GetBGCoordinate = function (item, kLineMap) 
+    {
+        var xLeft = null, xRight = null;
+        if (item.Start) 
+        {
+            if (ChartData.IsMinutePeriod(this.Period, true))
+                var key = `Date:${item.Start.Date} Time:${item.Start.Time}`;
+            else
+                var key = `Date:${item.Start.Date}`;
+
+            if (kLineMap.Data.has(key)) 
+            {
+                var findItem = kLineMap.Data.get(key);
+                xLeft = findItem.Left;
+            }
+            else 
+            {
+                for (var kItem of kLineMap.Data) 
+                {
+                    var value = kItem[1];
+                    if (value.Date > item.Start.Date) 
+                    {
+                        xLeft = value.Left;
+                        break;
+                    }
+                }
+            }
+        }
+        else 
+        {
+            xLeft = kLineMap.XLeft;
+        }
+
+        if (item.End) 
+        {
+            if (ChartData.IsMinutePeriod(this.Period, true))
+                var key = `Date:${item.End.Date} Time:${item.End.Time}`;
+            else
+                var key = `Date:${item.End.Date}`;
+
+            if (kLineMap.Data.has(key)) 
+            {
+                var findItem = kLineMap.Data.get(key);
+                xRight = findItem.Right;
+            }
+            else 
+            {
+                var previousX = null;
+                for (var kItem of kLineMap.Data) 
+                {
+                    var value = kItem[1];
+                    if (value.Date > item.End.Date) 
+                    {
+                        xRight = previousX;
+                        break;
+                    }
+                    previousX = value.Right;
+                }
+            }
+        }
+        else 
+        {
+            xRight = kLineMap.XRight;
+        }
+
+        if (xLeft == null || xRight == null) return null;
+
+        return { Left: xLeft, Right: xRight, Width: xRight - xLeft };
+    }
+}
+
+
 //弹幕
 function BarragePaint() 
 {
@@ -684,6 +915,7 @@ module.exports =
         KLineTooltipPaint: KLineTooltipPaint,
         BarragePaint: BarragePaint,
         MinuteTooltipPaint: MinuteTooltipPaint,
+        BackgroundPaint: BackgroundPaint,
     },
 
     //单个类导出
@@ -691,4 +923,5 @@ module.exports =
     JSCommonExtendChartPaint_KLineTooltipPaint: KLineTooltipPaint,
     JSCommonExtendChartPaint_BarragePaint: BarragePaint,
     JSCommonExtendChartPaint_MinuteTooltipPaint: MinuteTooltipPaint,
+    JSCommonExtendChartPaint_BackgroundPaint: BackgroundPaint,
 };

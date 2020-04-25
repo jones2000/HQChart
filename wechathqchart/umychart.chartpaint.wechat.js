@@ -2831,12 +2831,30 @@ function ChartBuySell()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName = "ChartBuySell";
     this.TextFont = g_JSChartResource.KLineTrain.Font;                //"bold 14px arial";           //买卖信息字体
     this.LastDataIcon = g_JSChartResource.KLineTrain.LastDataIcon; //{Color:'rgb(0,0,205)',Text:'↓'};
     this.BuyIcon = g_JSChartResource.KLineTrain.BuyIcon; //{Color:'rgb(0,0,205)',Text:'B'};
     this.SellIcon = g_JSChartResource.KLineTrain.SellIcon; //{Color:'rgb(0,0,205)',Text:'S'};
-    this.BuySellData = new Map();   //{Date:日期*10000+时间, Op:买/卖 0=buy 1=sell}
-    this.LastData = {}; //当前屏最后一个数据
+    this.BuySellData = new Map();   //Key=数据索引index Value:Data:[ { Op: 买/卖 0=buy 1=sell, Date:, Time, Price: Vol:}, ] 
+
+    this.AddTradeItem = function (tradeItem) 
+    {
+        if (this.BuySellData.has(tradeItem.Key)) 
+        {
+            var Trade = this.BuySellData.get(tradeItem.Key);
+            Trade.Data.push(tradeItem);
+        }
+        else 
+        {
+            this.BuySellData.set(tradeItem.Key, { Data: [tradeItem] });
+        }
+    }
+
+    this.ClearTradeData = function () 
+    {
+        this.BuySellData = new Map();
+    }
 
     this.Draw = function () 
     {
@@ -2849,6 +2867,16 @@ function ChartBuySell()
         if (isHScreen === true) chartright = this.ChartBorder.GetBottom();
         var xPointCount = this.ChartFrame.XPointCount;
 
+        var bottom = this.ChartBorder.GetBottomEx();
+        var top = this.ChartBorder.GetTopEx();
+        var height = this.ChartBorder.GetHeightEx();
+        if (isHScreen) 
+        {
+            top = this.ChartBorder.GetRightEx();
+            bottom = this.ChartBorder.GetLeftEx();
+            height = this.ChartBorder.GetWidthEx();
+        }
+
         this.Canvas.font = this.TextFont;
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
         {
@@ -2856,37 +2884,80 @@ function ChartBuySell()
             if (value == null) continue;
             if (x > chartright) break;
 
-            this.LastData = { ID: j, Data: value };
-            var key = value.Date * 10000;
-            if (IFrameSplitOperator.IsNumber(value.Time)) key += value.Time;
+            if (i == this.Data.Data.length - 1) 
+            {
+                var x = this.ChartFrame.GetXFromIndex(j);
+                var yHigh = this.ChartFrame.GetYFromData(value.High);
+                if (this.LastDataIcon.Text)
+                {
+                    this.Canvas.textAlign = 'center';
+                    this.Canvas.textBaseline = 'bottom';
+                    this.Canvas.fillStyle = this.LastDataIcon.Color;
+                    this.Canvas.font = this.TextFont;
+                    this.DrawText(this.LastDataIcon.Text, x, yHigh, isHScreen);
+                }
+                else
+                {
+                    var obj = 
+                    { 
+                        X: x, Top: top, Bottom: bottom, Height: height, 
+                        DataWidth: dataWidth, Color: this.LastDataIcon.Color, IsHScreen: isHScreen,
+                    };
+                    this.DrawLastData(obj);
+                }
+            }
+
+            var key = i;
             if (!this.BuySellData.has(key)) continue;
-            var bsItem = this.BuySellData.get(key);
+
+            var trade = this.BuySellData.get(key);
             var x = this.ChartFrame.GetXFromIndex(j);
             var yHigh = this.ChartFrame.GetYFromData(value.High);
             var yLow = this.ChartFrame.GetYFromData(value.Low);
-            if (bsItem.Op == 0)   //买 标识在最低价上
+            var drawInfo = [false, false];    //0=buy 1=sell
+            for (var k in trade.Data)
             {
-                this.Canvas.textAlign = 'center';
-                this.Canvas.textBaseline = 'top';
-                this.Canvas.fillStyle = this.BuyIcon.Color;
-                this.DrawText(this.BuyIcon.Text, x, yLow, isHScreen);
-            }
-            else    //买 标识在最高价上
-            {
-                this.Canvas.textAlign = 'center';
-                this.Canvas.textBaseline = 'bottom';
-                this.Canvas.fillStyle = this.SellIcon.Color;
-                this.DrawText(this.SellIcon.Text, x, yHigh, isHScreen);
+                if (drawInfo[0] == true && drawInfo[1] == true) break;  //买卖图标只画一次
+
+                var bsItem = trade.Data[k];
+                if (bsItem.Op == 0 && drawInfo[0] == false)   //买 标识在最低价上
+                {
+                    this.Canvas.textAlign = 'center';
+                    this.Canvas.textBaseline = 'top';
+                    this.Canvas.fillStyle = this.BuyIcon.Color;
+                    this.DrawText(this.BuyIcon.Text, x, yLow, isHScreen);
+                    drawInfo[0] = true;
+                }
+                else if (bsItem.Op == 1 && drawInfo[1] == false)   //卖 标识在最高价上
+                {
+                    this.Canvas.textAlign = 'center';
+                    this.Canvas.textBaseline = 'bottom';
+                    this.Canvas.fillStyle = this.SellIcon.Color;
+                    this.DrawText(this.SellIcon.Text, x, yHigh, isHScreen);
+                    drawInfo[1] = true;
+                }
             }
         }
+    }
 
-        var x = this.ChartFrame.GetXFromIndex(this.LastData.ID);
-        var yHigh = this.ChartFrame.GetYFromData(this.LastData.Data.High);
-        this.Canvas.textAlign = 'center';
-        this.Canvas.textBaseline = 'bottom';
-        this.Canvas.fillStyle = this.LastDataIcon.Color;
-        this.Canvas.font = this.TextFont;
-        this.DrawText(this.LastDataIcon.Text, x, yHigh, isHScreen);
+    this.DrawLastData=function(obj)
+    {
+        this.Canvas.fillStyle = obj.Color;
+
+        var width = obj.DataWidth;
+        if (this.LastDataIcon.Width >= 2 && this.LastDataIcon.Width < obj.DataWidth) 
+            width = this.LastDataIcon.Width;
+        var left = obj.X - width / 2;
+
+        if (obj.IsHScreen)
+        {
+            this.Canvas.fillRect(ToFixedRect(obj.Bottom), ToFixedRect(left), ToFixedRect(obj.Height), ToFixedRect(width));
+        }
+        else
+        {
+            var left = obj.X - width/2;
+            this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(obj.Top), ToFixedRect(width), ToFixedRect(obj.Height));
+        }
     }
 }
 

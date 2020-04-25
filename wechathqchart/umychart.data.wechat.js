@@ -15,6 +15,16 @@ import
     JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME
 } from "./umychart.coordinatedata.wechat.js";
 
+function Guid() 
+{
+    function S4() 
+    {
+        return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+    }
+
+    return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
+}
+
 //历史K线数据
 function HistoryData()
 {
@@ -1418,6 +1428,19 @@ function Rect(x, y, width, height)
     }
 }
 
+//修正线段有毛刺
+function ToFixedPoint(value) 
+{
+    //return value;
+    return parseInt(value) + 0.5;
+}
+
+function ToFixedRect(value) 
+{
+    var rounded;
+    return rounded = (0.5 + value) << 0;
+}
+
 
 //导出统一使用JSCommon命名空间名
 module.exports =
@@ -1445,4 +1468,7 @@ module.exports =
     JSCommon_CUSTOM_SECOND_PERIOD_END: CUSTOM_SECOND_PERIOD_END,
     JSCommon_Rect: Rect,
     JSCommon_DataPlus: DataPlus,
+    JSCommon_Guid: Guid,
+    JSCommon_ToFixedPoint: ToFixedPoint,
+    JSCommon_ToFixedRect: ToFixedRect,
 };
