@@ -6457,6 +6457,15 @@ function HQTradeFrame()
             }
         }
     }
+
+    this.GetCurrentPageSize=function()  //获取当前页显示的数据个数
+    {
+        if (this.SubFrame.length<=0) return null;
+        var item=this.SubFrame[0];
+        if (!item || !item.Frame) return null;
+
+        return item.Frame.XPointCount;
+    }
 }
 
 //行情框架横屏
@@ -32093,7 +32102,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
         this.SourceData.Data.length=lEnd;
     }
 
-    this.Run=function()
+    this.Run=function(option)
     {
         if (this.AutoRunTimer) return;
         if (this.TrainDataCount<=0) return;
@@ -32101,24 +32110,43 @@ function KLineTrainChartContainer(uielement, bHScreen)
         var self=this;
         this.AutoRunTimer=setInterval(function()
         {
-            if (!self.MoveNextKLineData()) clearInterval(self.AutoRunTimer);
+            if (!self.MoveNextKLineData(option)) clearInterval(self.AutoRunTimer);
         }, 1000);
     }
 
-    this.MoveNextKLineData=function()
+    this.MoveNextKLineData=function(option) //{PageSize:, Step:}
     {
         if (this.TrainDataCount<=0) return false;
 
-        var index=this.TrainInfo.Start.Index+1;
-        if (index>=this.KLineSourceData.Data.length) return false;
+        var step=1;
+        if (option && option.Step>1) step=option.Step;
 
-        var kItem=this.KLineSourceData.Data[index];
-        this.SourceData.Data.push(kItem);
+        var moveStep=0;
+        for(var i=0; i<step; ++i)
+        {
+            var index=this.TrainInfo.End.Index+1;
+            if (index>=this.KLineSourceData.Data.length) break;
+    
+            var kItem=this.KLineSourceData.Data[index];
+            this.SourceData.Data.push(kItem);
+    
+            this.TrainInfo.End.Index=index;
+            this.TrainInfo.End.Date=kItem.Date;
+            this.TrainInfo.End.Time=kItem.Time;
+            --this.TrainDataCount;
+            ++moveStep;
 
-        this.TrainInfo.Start.Index=index;
-        this.TrainInfo.End.Date=kItem.Date;
-        this.TrainInfo.End.Time=kItem.Time;
-        --this.TrainDataCount;
+            if (this.TrainDataCount<=0) break;
+        }
+
+        if (moveStep==0) return false;
+
+        //使用当前页数据个数移动K线
+        var pageSize=this.Frame.GetCurrentPageSize();
+        if (IFrameSplitOperator.IsNumber(pageSize))
+            this.PageSize=pageSize-this.RightSpaceCount;
+
+        if (option && option.PageSize>0) this.PageSize=option.PageSize;
 
         this.Update();
 
