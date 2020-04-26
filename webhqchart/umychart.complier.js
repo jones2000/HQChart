@@ -11911,6 +11911,18 @@ function JSExecute(ast,option)
             value=this.ReadVariable(right.Name,right);
         else if (right.Type==Syntax.MemberExpression)
             value=this.ReadMemberVariable(right);
+        else if (right.Type==Syntax.UnaryExpression)
+        {
+            if (right.Operator=='-') 
+            {
+                var tempValue=this.GetNodeValue(right.Argument);
+                value=this.Algorithm.Subtract(0,tempValue);
+            }
+            else 
+            {
+                value=right.Argument.Value;
+            }
+        }
 
         if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitAssignmentExpression]' , varName, ' = ',value);
         this.VarTable.set(varName,value);
