@@ -237,9 +237,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 7. [HQChart实战教程7-自定义显示手势点击K线显示信息](https://blog.csdn.net/jones2000/article/details/104168610) <br>
 8. [HQChart实战教程8-如何手动重新初始化hqchart](https://blog.csdn.net/jones2000/article/details/105302626)<br>
 9. [HQChart实战教程9-自定义A股分时图](https://blog.csdn.net/jones2000/article/details/105587559) <br>
-10. [HQChart实战教程10-全ws数据对接HQChart(数字货币对接实战)](https://blog.csdn.net/jones2000/article/details/105698038) <br>
-11. [HQChart实战教程11-火币网ws数据对接](https://blog.csdn.net/jones2000/article/details/105721190) <br>
-12. [HQChart实战教程12-火币网ws数据对接分时图](https://blog.csdn.net/jones2000/article/details/105756659) <br>
+10. [HQChart实战教程10-全ws数据对接HQChart(数字货币对接实战)(付费文章)](https://blog.csdn.net/jones2000/article/details/105698038) <br>
+11. [HQChart实战教程11-火币网ws数据对接(付费文章)](https://blog.csdn.net/jones2000/article/details/105721190) <br>
+12. [HQChart实战教程12-火币网ws数据对接分时图(付费文章)](https://blog.csdn.net/jones2000/article/details/105756659) <br>
 
 
 ## 设计文档:
