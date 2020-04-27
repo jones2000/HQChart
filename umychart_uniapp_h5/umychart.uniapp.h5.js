@@ -7856,6 +7856,7 @@ function MinuteFrame()
             var item=this.CustomHorizontalInfo[i];
             switch(item.Type)
             {
+                case 0:
                 case 1:
                     this.DrawCustomItem(item);  //自定义刻度
                     break;
@@ -21639,11 +21640,39 @@ function FrameSplitMinutePriceY()
     {
         if (!this.Custom) return;
 
+        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
         for(var i in this.Custom)
         {
             var item=this.Custom[i];
             if (item.Type==1) this.CustomFixedCoordinate(item);
+            else if (item.Type==0) 
+            {
+                var latestItem=this.GetLatestPrice(defaultfloatPrecision,item);
+                this.Frame.CustomHorizontalInfo.push(latestItem);
+            }
         }
+    }
+
+    this.GetLatestPrice=function(floatPrecision,option)
+    {
+        if (!this.Data || !this.Data.Data) return null;
+        if (this.Data.Data.length<=0) return null;
+        var price=this.Data.Data[this.Data.Data.length-1];
+        if (!IFrameSplitOperator.IsNumber(price) || !IFrameSplitOperator.IsNumber(this.YClose)) return null;
+
+        var info=new CoordinateInfo();
+        info.Type=0;
+        info.Value=price;
+        info.TextColor=g_JSChartResource.FrameLatestPrice.TextColor;
+        if (option.Position=='left') info.Message[0]=price.toFixed(floatPrecision);
+        else info.Message[1]=price.toFixed(floatPrecision);
+        if (price>this.YClose) info.LineColor=g_JSChartResource.FrameLatestPrice.UpBarColor;
+        else if (price<this.YClose) info.LineColor=g_JSChartResource.FrameLatestPrice.DownBarColor;
+        else info.LineColor=g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
+
+        if (option.IsShowLine==false) info.LineType=-1;
+
+        return info;
     }
 
     this.CustomFixedCoordinate=function(option)    //固定坐标刻度
