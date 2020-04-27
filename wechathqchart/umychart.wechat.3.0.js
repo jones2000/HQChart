@@ -2842,6 +2842,7 @@ function MinuteFrame()
             var item = this.CustomHorizontalInfo[i];
             switch (item.Type) 
             {
+                case 0:
                 case 1:
                     this.DrawCustomItem(item);  //自定义刻度
                     break;

@@ -18279,7 +18279,7 @@ function FrameSplitMinutePriceY()
             else if (item.Type==0) 
             {
                 var latestItem=this.GetLatestPrice(defaultfloatPrecision,item);
-                this.Frame.CustomHorizontalInfo.push(latestItem);
+                if (latestItem) this.Frame.CustomHorizontalInfo.push(latestItem);
             }
         }
     }
