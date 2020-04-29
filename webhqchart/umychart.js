@@ -1271,6 +1271,16 @@ function JSChart(divElement)
         }
     }
 
+    //删除画图工具
+    this.ClearChartDrawPicture=function(drawPicture)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ClearChartDrawPicture)=='function')
+        {
+            //JSConsole.Chart.Log('[JSChart:ClearChartDrawPicture] ', drawPicture);
+            this.JSChartContainer.ClearChartDrawPicture(drawPicture);
+        }
+    }
+
     //重新加载配置
     this.ReloadResource=function(option)
     {
@@ -2686,12 +2696,20 @@ function JSChartContainer(uielement)
         //JSConsole.Chart.Log(e);
     }
 
+    this.IsKLineContainer=function()
+    {
+        if (this.ClassName=='KLineChartContainer' || this.ClassName=='KLineChartHScreenContainer' ||
+            this.ClassName=="KLineTrainChartContainer") return true;
+
+        return false;
+    }
+
     this.UpdatePointByCursorIndex=function(type)    //type 1=根据十字光标更新
     {
         var pt={X:null, Y:null};
         pt.X=this.Frame.GetXFromIndex(this.CursorIndex);
         var index=Math.abs(this.CursorIndex-0.5);
-        if (this.ClassName=='KLineChartContainer' || this.ClassName=='KLineTrainChartContainer') index=this.CursorIndex;
+        if (this.IsKLineContainer()) index=this.CursorIndex;
 
         var data=this.Frame.Data;
         if (data.DataOffset+index<data.Data.length)
@@ -2711,7 +2729,7 @@ function JSChartContainer(uielement)
                 this.LastPoint.X=this.Frame.GetXFromIndex(this.CursorIndex);
                 var index=Math.abs(this.CursorIndex-0.5);
                 index=parseInt(index.toFixed(0));
-                if (this.ClassName=='KLineChartContainer') index=this.CursorIndex;
+                if (this.IsKLineContainer()) index=this.CursorIndex;
                 this.LastPoint.Y=null;
             }
         }
