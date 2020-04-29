@@ -2639,6 +2639,8 @@ function JSAlgorithm(errorHandler,symbolData)
     this.MA=function(data,dayCount)
     {
         let result=[];
+        if (dayCount<=0) return result;
+        
         if (!Array.isArray(dayCount))
         {
             if (dayCount<=0) dayCount=1;

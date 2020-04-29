@@ -126,7 +126,9 @@ function JSIndexScript()
 {
     this.DataMap=new Map(
         [
-            ['MA', this.MA],['均线', this.MA],['BOLL', this.BOLL],['BOLL副图', this.BOLL2],['BBI', this.BBI],
+            ['MA', this.MA],['均线', this.MA],
+            ["MA4", this.MA4],["MA5", this.MA5],["MA6", this.MA6],["MA7", this.MA7],["MA8", this.MA8],
+            ['BOLL', this.BOLL],['BOLL副图', this.BOLL2],['BBI', this.BBI],
             ['DKX', this.DKX],['MIKE', this.MIKE],['PBX', this.PBX],
             ['ENE', this.ENE],['MACD', this.MACD],['KDJ', this.KDJ],
             ['VOL', this.VOL],['RSI', this.RSI],['BRAR', this.BRAR],
@@ -239,6 +241,113 @@ JSIndexScript.prototype.MA=function()
 'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
 MA3:MA(CLOSE,M3);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MA4=function()
+{
+    let data=
+    {
+        Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
+        Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20},{ Name:'M4', Value:60} ],
+        Script: //脚本
+'MA1:MA(CLOSE,M1);\n\
+MA2:MA(CLOSE,M2);\n\
+MA3:MA(CLOSE,M3);\n\
+MA4:MA(CLOSE,M4);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MA5=function()
+{
+    let data=
+    {
+        Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
+        Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} ,{ Name:'M4', Value:60} ,{ Name:'M5', Value:0}],
+        Script: //脚本
+'MA1:MA(CLOSE,M1);\n\
+MA2:MA(CLOSE,M2);\n\
+MA3:MA(CLOSE,M3);\n\
+MA4:MA(CLOSE,M4);\n\
+MA5:MA(CLOSE,M5);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MA6=function()
+{
+    let data=
+    {
+        Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
+        Args:
+        [ 
+            { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} , { Name:'M4', Value:60} ,
+            { Name:'M5', Value:0},{ Name:'M6', Value:0}
+        ],
+        Script: //脚本
+'MA1:MA(CLOSE,M1);\n\
+MA2:MA(CLOSE,M2);\n\
+MA3:MA(CLOSE,M3);\n\
+MA4:MA(CLOSE,M4);\n\
+MA5:MA(CLOSE,M5);\n\
+MA6:MA(CLOSE,M6);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MA7=function()
+{
+    let data=
+    {
+        Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
+        Args:
+        [ 
+            { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20}, { Name:'M4', Value:60},
+            { Name:'M5', Value:0},{ Name:'M6', Value:0} ,{ Name:'M7', Value:0 } 
+        ],
+        Script: //脚本
+'MA1:MA(CLOSE,M1);\n\
+MA2:MA(CLOSE,M2);\n\
+MA3:MA(CLOSE,M3);\n\
+MA4:MA(CLOSE,M4);\n\
+MA5:MA(CLOSE,M5);\n\
+MA6:MA(CLOSE,M6);\n\
+MA7:MA(CLOSE,M7);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MA8=function()
+{
+    let data=
+    {
+        Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
+        Args:
+        [ 
+            { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20}, { Name:'M4', Value:60},
+            { Name:'M5', Value:0},{ Name:'M6', Value:0} ,{ Name:'M7', Value:0 } ,{ Name:'M8', Value:0 } 
+        ],
+        Script: //脚本
+'MA1:MA(CLOSE,M1);\n\
+MA2:MA(CLOSE,M2);\n\
+MA3:MA(CLOSE,M3);\n\
+MA4:MA(CLOSE,M4);\n\
+MA5:MA(CLOSE,M5);\n\
+MA6:MA(CLOSE,M6);\n\
+MA7:MA(CLOSE,M7);\n\
+MA8:MA(CLOSE,M8);'
 
     };
 
@@ -3544,6 +3653,12 @@ function JSChart(divElement)
             if (option.KLine.FirstShowDate>19910101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };
             if (option.KLine.RightSpaceCount>0) chart.RightSpaceCount=option.KLine.RightSpaceCount;
             if (option.KLine.ZoomType>0) chart.ZoomType=option.KLine.ZoomType;
+        }
+
+        if (option.EnableFlowCapital)
+        {
+            var item=option.EnableFlowCapital;
+            if (item.BIT==true) chart.EnableFlowCapital.BIT=item.BIT;
         }
 
         if (option.Page)
@@ -28601,6 +28716,7 @@ function KLineChartContainer(uielement)
     this.KLineDrawType=0;
     this.ScriptErrorCallback;           //脚本执行错误回调
     this.FlowCapitalReady=false;        //流通股本是否下载完成
+    this.EnableFlowCapital;             //强制现在流通股 { BIT:数据货币true/false, }
     this.ChartDrawStorage=new ChartDrawStorage();
     this.ChartDrawStorageCache=null;    //首次需要创建的画图工具数据
     this.RightSpaceCount=0;             //右侧空白个数
@@ -31980,6 +32096,26 @@ function KLineChartContainer(uielement)
         if (this.FlowCapitalReady==true) return;
 
         var upperSymbol=this.Symbol.toUpperCase();
+        
+        var bNeedDonloadData=true;
+        if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol) || MARKET_SUFFIX_NAME.IsFutures(upperSymbol)) //数字货币, 期货 不需要下载流通股本
+            bNeedDonloadData=false;
+
+        if (this.EnableFlowCapital) //强制下载流通股
+        {
+            if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) 
+            {
+                if (this.EnableFlowCapital.BIT==true) bNeedDonloadData=true;
+            }
+        }
+
+        if (!bNeedDonloadData)
+        {
+            JSConsole.Chart.Log(`[KLineChartContainer::RequestFlowCapitalData] symbol=${this.Symbol} not need download data.`);
+            this.FlowCapitalReady=true;
+            return;
+        }
+
         if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol) || MARKET_SUFFIX_NAME.IsFutures(upperSymbol)) //数字货币, 期货 不需要下载流通股本
         {
             JSConsole.Chart.Log(`[KLineChartContainer::RequestFlowCapitalData] symbol=${this.Symbol} not need download data.`);
@@ -47298,6 +47434,8 @@ function JSAlgorithm(errorHandler,symbolData)
     this.MA=function(data,dayCount)
     {
         let result=[];
+        if (dayCount<=0) return result;
+        
         if (!Array.isArray(dayCount))
         {
             if (dayCount<=0) dayCount=1;

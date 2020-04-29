@@ -70,7 +70,9 @@ function JSIndexScript()
 {
     this.DataMap=new Map(
         [
-            ['MA', this.MA],['均线', this.MA],['BOLL', this.BOLL],['BOLL副图', this.BOLL2],['BBI', this.BBI],
+            ['MA', this.MA],['均线', this.MA],
+            ["MA4", this.MA4],["MA5", this.MA5],["MA6", this.MA6],["MA7", this.MA7],["MA8", this.MA8],
+            ['BOLL', this.BOLL],['BOLL副图', this.BOLL2],['BBI', this.BBI],
             ['DKX', this.DKX],['MIKE', this.MIKE],['PBX', this.PBX],
             ['ENE', this.ENE],['MACD', this.MACD],['KDJ', this.KDJ],
             ['VOL', this.VOL],['RSI', this.RSI],['BRAR', this.BRAR],
@@ -183,6 +185,113 @@ JSIndexScript.prototype.MA=function()
 'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
 MA3:MA(CLOSE,M3);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MA4=function()
+{
+    let data=
+    {
+        Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
+        Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20},{ Name:'M4', Value:60} ],
+        Script: //脚本
+'MA1:MA(CLOSE,M1);\n\
+MA2:MA(CLOSE,M2);\n\
+MA3:MA(CLOSE,M3);\n\
+MA4:MA(CLOSE,M4);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MA5=function()
+{
+    let data=
+    {
+        Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
+        Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} ,{ Name:'M4', Value:60} ,{ Name:'M5', Value:0}],
+        Script: //脚本
+'MA1:MA(CLOSE,M1);\n\
+MA2:MA(CLOSE,M2);\n\
+MA3:MA(CLOSE,M3);\n\
+MA4:MA(CLOSE,M4);\n\
+MA5:MA(CLOSE,M5);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MA6=function()
+{
+    let data=
+    {
+        Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
+        Args:
+        [ 
+            { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} , { Name:'M4', Value:60} ,
+            { Name:'M5', Value:0},{ Name:'M6', Value:0}
+        ],
+        Script: //脚本
+'MA1:MA(CLOSE,M1);\n\
+MA2:MA(CLOSE,M2);\n\
+MA3:MA(CLOSE,M3);\n\
+MA4:MA(CLOSE,M4);\n\
+MA5:MA(CLOSE,M5);\n\
+MA6:MA(CLOSE,M6);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MA7=function()
+{
+    let data=
+    {
+        Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
+        Args:
+        [ 
+            { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20}, { Name:'M4', Value:60},
+            { Name:'M5', Value:0},{ Name:'M6', Value:0} ,{ Name:'M7', Value:0 } 
+        ],
+        Script: //脚本
+'MA1:MA(CLOSE,M1);\n\
+MA2:MA(CLOSE,M2);\n\
+MA3:MA(CLOSE,M3);\n\
+MA4:MA(CLOSE,M4);\n\
+MA5:MA(CLOSE,M5);\n\
+MA6:MA(CLOSE,M6);\n\
+MA7:MA(CLOSE,M7);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.MA8=function()
+{
+    let data=
+    {
+        Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
+        Args:
+        [ 
+            { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20}, { Name:'M4', Value:60},
+            { Name:'M5', Value:0},{ Name:'M6', Value:0} ,{ Name:'M7', Value:0 } ,{ Name:'M8', Value:0 } 
+        ],
+        Script: //脚本
+'MA1:MA(CLOSE,M1);\n\
+MA2:MA(CLOSE,M2);\n\
+MA3:MA(CLOSE,M3);\n\
+MA4:MA(CLOSE,M4);\n\
+MA5:MA(CLOSE,M5);\n\
+MA6:MA(CLOSE,M6);\n\
+MA7:MA(CLOSE,M7);\n\
+MA8:MA(CLOSE,M8);'
 
     };
 

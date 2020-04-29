@@ -133,6 +133,12 @@ function JSChart(divElement)
             if (option.KLine.ZoomType>0) chart.ZoomType=option.KLine.ZoomType;
         }
 
+        if (option.EnableFlowCapital)
+        {
+            var item=option.EnableFlowCapital;
+            if (item.BIT==true) chart.EnableFlowCapital.BIT=item.BIT;
+        }
+
         if (option.Page)
         {
             if (option.Page.Day && option.Page.Day.Enable==true) chart.Page.Day.Enable=true;
@@ -25188,6 +25194,7 @@ function KLineChartContainer(uielement)
     this.KLineDrawType=0;
     this.ScriptErrorCallback;           //脚本执行错误回调
     this.FlowCapitalReady=false;        //流通股本是否下载完成
+    this.EnableFlowCapital;             //强制现在流通股 { BIT:数据货币true/false, }
     this.ChartDrawStorage=new ChartDrawStorage();
     this.ChartDrawStorageCache=null;    //首次需要创建的画图工具数据
     this.RightSpaceCount=0;             //右侧空白个数
@@ -28567,6 +28574,26 @@ function KLineChartContainer(uielement)
         if (this.FlowCapitalReady==true) return;
 
         var upperSymbol=this.Symbol.toUpperCase();
+        
+        var bNeedDonloadData=true;
+        if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol) || MARKET_SUFFIX_NAME.IsFutures(upperSymbol)) //数字货币, 期货 不需要下载流通股本
+            bNeedDonloadData=false;
+
+        if (this.EnableFlowCapital) //强制下载流通股
+        {
+            if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) 
+            {
+                if (this.EnableFlowCapital.BIT==true) bNeedDonloadData=true;
+            }
+        }
+
+        if (!bNeedDonloadData)
+        {
+            JSConsole.Chart.Log(`[KLineChartContainer::RequestFlowCapitalData] symbol=${this.Symbol} not need download data.`);
+            this.FlowCapitalReady=true;
+            return;
+        }
+
         if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol) || MARKET_SUFFIX_NAME.IsFutures(upperSymbol)) //数字货币, 期货 不需要下载流通股本
         {
             JSConsole.Chart.Log(`[KLineChartContainer::RequestFlowCapitalData] symbol=${this.Symbol} not need download data.`);
