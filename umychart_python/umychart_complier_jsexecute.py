@@ -80,6 +80,10 @@ class JSExecute :
 
         if option and option.Arguments:
              self.Arguments=option.Arguments
+        
+        # 创建外部的数据类SymbolData, ProcCreateSymbolData 创建类函数
+        if option and option.ProcCreateSymbolData:
+            self.SymbolData=option.ProcCreateSymbolData(ast=ast,option=option, procThrow=self.ThrowUnexpectedNode)
 
     def Execute(self) :
         self.SymbolData.RunDownloadJob(self.JobList) # 准备数据

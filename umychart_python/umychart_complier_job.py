@@ -168,7 +168,7 @@ class RequestOption :
         self.MaxMinuteDayCount=maxMinuteDayCount
 
 class SymbolOption :
-    def __init__(self, symbol='600000.sh' ,hqDataType=HQ_DATA_TYPE.KLINE_ID, right=0, period=0, request=RequestOption(maxDataCount=1000,maxMinuteDayCount=5),args=None) :
+    def __init__(self, symbol='600000.sh' ,hqDataType=HQ_DATA_TYPE.KLINE_ID, right=0, period=0, request=RequestOption(maxDataCount=1000,maxMinuteDayCount=5),args=None, procCreateSymbolData=None) :
         self.HQDataType=hqDataType  # 数据类型
         self.Symbol=symbol  # 股票代码
         self.Right=right    # 复权
@@ -176,6 +176,7 @@ class SymbolOption :
         self.MaxRequestDataCount=request.MaxDataCount
         self.MaxRequestMinuteDayCount=request.MaxMinuteDayCount
         self.Arguments=args # 指标参数
+        self.ProcCreateSymbolData=procCreateSymbolData # 外部创建SymbolData
 
 
 
