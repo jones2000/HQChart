@@ -12,7 +12,7 @@
     "axios": "^0.16.2",
     "element-ui": "^1.4.13",
     "hqchart": "^1.1.7444",
-    "jquery": "^3.4.0",
+    "jquery": "^3.5.0",
     "lodash": "^4.17.11",
     "moment": "^2.19.1",
     "promise-polyfill": "^6.0.2",
