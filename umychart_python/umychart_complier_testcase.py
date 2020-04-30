@@ -14,6 +14,7 @@ from umychart_complier_jscomplier import JSComplier, SymbolOption, HQ_DATA_TYPE
 from umychart_complier_jscomplier import ScriptIndexConsole, ScriptIndexItem, SymbolOption, RequestOption, HQ_DATA_TYPE, ArgumentItem
 from umychart_webtemplate import *
 from umychart_complier_pandas_help import JSComplierPandasHelper
+from umychart_complier_jssymboldata import JSSymbolData
 
 class TestCase :
     def __init__(self, code, option=SymbolOption()) :
@@ -271,6 +272,16 @@ def Test_FINANCE(): # 财务数据测试
     result=case.Run()
     return result
 
+# 派生数据类 重写的自己需要数据
+class MySymbolData(JSSymbolData):
+    pass
+
+# 创建自己的数据类
+def CreateMySymbolData(ast, option=None, procThrow=None):
+    obj=MySymbolData(ast,option,procThrow)
+    return obj
+
+
 def Test_ScriptIndexConsole():
 
     # 创建脚本, 及参数
@@ -289,6 +300,7 @@ def Test_ScriptIndexConsole():
         period=0, # 周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
         request=RequestOption(maxDataCount=500,maxMinuteDayCount=3)
         )
+    option.ProcCreateSymbolData=CreateMySymbolData
     result=indexConsole.ExecuteScript(option)
 
     if result.Error :

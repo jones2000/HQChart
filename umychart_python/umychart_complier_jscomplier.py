@@ -127,6 +127,9 @@ class ScriptIndexConsole:
                     request=RequestOption(maxDataCount=obj.MaxRequestDataCount, maxMinuteDayCount=obj.MaxRequestMinuteDayCount), 
                     args=self.Arguments if obj.Arguments==None else obj.Arguments) # 个股指定指标参数优先使用
             
+            if obj and obj.ProcCreateSymbolData:
+                option.ProcCreateSymbolData=obj.ProcCreateSymbolData
+
             execute=JSExecute(ast,option)
             execute.JobList=parser.Node.GetDataJobList()
             outVar=execute.Execute() 
