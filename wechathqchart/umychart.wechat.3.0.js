@@ -10982,6 +10982,8 @@ function KLineTrainChartContainer(uielement, bHScreen)
 
         //最后一个显示数据
         this.TrainInfo.LastShowData = showItem;
+        //最后一个原始数据
+        this.TrainInfo.LastData = this.SourceData.Data[this.SourceData.Data.length - 1];
 
         if (funcName != 'Update')
             this.UpdateTrainUICallback("开始");
@@ -11052,6 +11054,8 @@ function KLineTrainChartContainer(uielement, bHScreen)
             this.TrainInfo.End.Time = kItem.Time;
             --this.TrainDataCount;
             ++moveStep;
+
+            
 
             if (this.TrainDataCount <= 0) break;
         }
