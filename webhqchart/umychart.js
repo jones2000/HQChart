@@ -15604,6 +15604,7 @@ function StockChip()
     this.ShowXCount=3;
     this.Width=150*this.PixelRatio;       //筹码图宽度
     this.CalculateType=0;   //0=平均分布 1=三角分布
+    this.PriceZoom=100;     //价格放大倍数
 
     this.ButtonID=Guid();  //工具条Div id
 
@@ -15621,6 +15622,7 @@ function StockChip()
         if (option.ShowXCount>0) this.ShowXCount=option.ShowXCount;
         if (option.Width>100) this.Width=option.Width*GetDevicePixelRatio();
         if (option.CalculateType>0) this.CalculateType=option.CalculateType;
+        if (IFrameSplitOperator.IsNumber(option.PriceZoom)) this.PriceZoom=option.PriceZoom;
     }
     
     this.Draw=function()
@@ -15849,7 +15851,7 @@ function StockChip()
         {
             var vol=this.Data.AllChip[i];
             if(!vol) continue;
-            var price=(i+this.Data.MinPrice)/100;
+            var price=(i+this.Data.MinPrice)/this.PriceZoom;
             totalVol+=vol;
             totalAmount+=price*vol;
 
@@ -15867,7 +15869,7 @@ function StockChip()
         {
             var vol=this.Data.AllChip[i];
             if(!vol) continue;
-            var price=(i+this.Data.MinPrice)/100;
+            var price=(i+this.Data.MinPrice)/this.PriceZoom;
             if (price>maxPrice || price<minPrice) continue;
 
             var y=KLineFrame.GetYFromData(price);
@@ -15921,7 +15923,7 @@ function StockChip()
             var vol=this.Data.AllChip[i];
             if (vol<=0) continue;
 
-            var price=(i+this.Data.MinPrice)/100;
+            var price=(i+this.Data.MinPrice)/this.PriceZoom;
             tempVol+=vol;
             var rate=tempVol/totalProfitVol;
             
@@ -16022,6 +16024,7 @@ function StockChip()
     this.EvenlyDistribute=function(aryChip, data)    //平均分布 data={Low, High, Vol, MaxVol, MaxPrice, MinPrice }
     {
         var low=data.Low, high=data.High, maxPrice=data.MaxPrice, minPrice=data.MinPrice, maxVol=1;
+        if ( (high-low)== 0) return;
         var averageVol=data.Vol/(high-low);
 
         for(var j=low;j<=high && j<=maxPrice;++j)
@@ -16117,8 +16120,10 @@ function StockChip()
         //JSConsole.Chart.Log("[StockChip::CalculateChip]",maxPrice,minPrice);
         if (!maxPrice || !minPrice) return true;
 
-        maxPrice=parseInt(maxPrice*100);
-        minPrice=parseInt(minPrice*100);
+        var priceZoom=this.PriceZoom;
+
+        maxPrice=parseInt(maxPrice*priceZoom);
+        minPrice=parseInt(minPrice*priceZoom);
 
         var dataCount=maxPrice-minPrice;
         var aryChip=new Array()
@@ -16139,8 +16144,8 @@ function StockChip()
             for(let i in aryVol)
             {
                 var item=aryVol[i];
-                var high=parseInt(item.High*100);
-                var low=parseInt(item.Low*100);
+                var high=parseInt(item.High*priceZoom);
+                var low=parseInt(item.Low*priceZoom);
                 var averageVol=item.Vol;
                 if (high-low>0) averageVol=item.Vol/(high-low);
                 if (averageVol<=0.000000001) continue;
@@ -16169,8 +16174,8 @@ function StockChip()
             for(let i=aryVol.length-1;i>=0;--i)
             {
                 var item=aryVol[i];
-                var high=parseInt(item.High*100);
-                var low=parseInt(item.Low*100);
+                var high=parseInt(item.High*priceZoom);
+                var low=parseInt(item.Low*priceZoom);
                 var averageVol=item.Vol;
                 if (high-low>0) averageVol=item.Vol/(high-low);
                 if (averageVol<=0.000000001) continue;
@@ -16193,8 +16198,8 @@ function StockChip()
             for(let i in aryVol)
             {
                 var item=aryVol[i];
-                var high=parseInt(item.High*100);
-                var low=parseInt(item.Low*100);
+                var high=parseInt(item.High*priceZoom);
+                var low=parseInt(item.Low*priceZoom);
                 var averageVol=item.Vol;
                 if (high-low>0) averageVol=item.Vol/(high-low);
                 if (averageVol<=0.000000001) continue;
