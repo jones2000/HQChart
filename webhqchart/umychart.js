@@ -14287,8 +14287,6 @@ function ChartMultiSVGIcon()
     this.GetMaxMin=function()
     {
         var range={ Min:null, Max:null };
-        if (!this.Texts) return range;
-
         var xPointCount=this.ChartFrame.XPointCount;
         var start=this.Data.DataOffset;
         var end=start+xPointCount;

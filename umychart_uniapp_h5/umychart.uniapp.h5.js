@@ -113,6 +113,7 @@ function JSIndexScript()
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
             ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],['量比',this.VOLRate],
             ['平均K线',this.HeikinAshi], ["ADL", this.ADL],
+            ['VOL-TDX',this.VOL_TDX],
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
             ['CJL2', this.CJL],  //期货持仓量
@@ -479,6 +480,27 @@ JSIndexScript.prototype.VOL=function()
 'VOL:VOL,VOLSTICK;\n\
 MA1:MA(VOL,M1);\n\
 MA2:MA(VOL,M2);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VOL_TDX=function()
+{
+    let data=
+    {
+        Name:'VOL-TDX', Description:'成交量(虚拟)', IsMainIndex:false,FloatPrecision:0,
+        Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10} ],
+        Script: //脚本
+'TOTAL:=IF(PERIOD=1,5,IF(PERIOD=2,15,IF(PERIOD=3,30,IF(PERIOD=4,60,IF(PERIOD=5,TOTALFZNUM,1)))));\n\
+MTIME:=MOD(FROMOPEN,TOTAL);\n\
+CTIME:=IF(MTIME<0.5,TOTAL,MTIME);\n\
+VVOL:IF((CURRBARSCOUNT=1 AND DYNAINFO(8)>1),VOL*(TOTAL+3)/(CTIME+3),DRAWNULL),NODRAW;\n\
+STICKLINE((CURRBARSCOUNT=1 AND DYNAINFO(8)>1),VVOL,0,-1,-1),COLORYELLOW;\n\
+VOLUME:VOL,VOLSTICK;\n\
+MAVOL1:MA(VOLUME,M1);\n\
+MAVOL2:MA(VOLUME,M2);'
 
     };
 
@@ -17765,8 +17787,6 @@ function ChartMultiSVGIcon()
     this.GetMaxMin=function()
     {
         var range={ Min:null, Max:null };
-        if (!this.Texts) return range;
-
         var xPointCount=this.ChartFrame.XPointCount;
         var start=this.Data.DataOffset;
         var end=start+xPointCount;
@@ -51300,6 +51320,8 @@ function JSDraw(errorHandler,symbolData)
     {
         let drawData=[];
         let result={DrawData:drawData, DrawType:'STICKLINE',Width:width, Type:type};
+        if (result.Width<0) result.Width=50;    //<0的宽度 使用K线宽度
+        if (result.Type<0) result.Type=1;
 
         if(condition.length<=0) return result;
 
@@ -53348,9 +53370,16 @@ function JSSymbolData(ast,option,jsExecute)
 
         let lCount=this.Data.Data.length;
         for(let i=lCount-1;i>=0;--i)
-            result.push(i);
+            result.push(i+1);   //数据从0开始
 
         return result;
+    }
+
+    this.GetTotalTradeMinuteCount=function()
+    {
+        var data=g_MinuteCoordinateData.GetCoordinateData(this.Symbol);
+        if (data && data.Count>0) return data.Count-1;
+        return 242;
     }
 
     this.GetTotalBarsCount=function()
@@ -55991,7 +56020,8 @@ function JSExecute(ast,option)
 
         ["ADVANCE",null],['DECLINE', null],
 
-        ['FROMOPEN',null],  //已开盘有多长分钟
+        ['FROMOPEN',null],      //已开盘有多长分钟
+        ['TOTALFZNUM', null],   //该品种的每天的总交易分钟数.
 
         ['CURRBARSCOUNT',null], //到最后交易日的周期数
         ['TOTALBARSCOUNT',null],
@@ -56173,6 +56203,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetCurrBarsCount();
             case "TOTALBARSCOUNT":
                 return this.SymbolData.GetTotalBarsCount();
+            case "TOTALFZNUM":
+                return this.SymbolData.GetTotalTradeMinuteCount();
             case 'ISLASTBAR':
                 return this.SymbolData.GetIsLastBar();
             case 'CAPITAL':

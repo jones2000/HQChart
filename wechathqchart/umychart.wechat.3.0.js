@@ -10918,7 +10918,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
         delete this.newMethod;
     }
 
-    this.ClassName = 'KLineTrainChartContainer';
+    this.ClassName2 = 'KLineTrainChartContainer';
     this.BuySellPaint;          //买卖点画法
     this.TrainDataCount = 300;    //训练数据个数
     this.AutoRunTimer = null;     //K线自动前进定时器

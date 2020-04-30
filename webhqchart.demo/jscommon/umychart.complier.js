@@ -6498,6 +6498,8 @@ function JSDraw(errorHandler,symbolData)
     {
         let drawData=[];
         let result={DrawData:drawData, DrawType:'STICKLINE',Width:width, Type:type};
+        if (result.Width<0) result.Width=50;    //<0的宽度 使用K线宽度
+        if (result.Type<0) result.Type=1;
 
         if(condition.length<=0) return result;
 
@@ -8546,9 +8548,16 @@ function JSSymbolData(ast,option,jsExecute)
 
         let lCount=this.Data.Data.length;
         for(let i=lCount-1;i>=0;--i)
-            result.push(i);
+            result.push(i+1);   //数据从0开始
 
         return result;
+    }
+
+    this.GetTotalTradeMinuteCount=function()
+    {
+        var data=g_MinuteCoordinateData.GetCoordinateData(this.Symbol);
+        if (data && data.Count>0) return data.Count-1;
+        return 242;
     }
 
     this.GetTotalBarsCount=function()
@@ -11189,7 +11198,8 @@ function JSExecute(ast,option)
 
         ["ADVANCE",null],['DECLINE', null],
 
-        ['FROMOPEN',null],  //已开盘有多长分钟
+        ['FROMOPEN',null],      //已开盘有多长分钟
+        ['TOTALFZNUM', null],   //该品种的每天的总交易分钟数.
 
         ['CURRBARSCOUNT',null], //到最后交易日的周期数
         ['TOTALBARSCOUNT',null],
@@ -11371,6 +11381,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetCurrBarsCount();
             case "TOTALBARSCOUNT":
                 return this.SymbolData.GetTotalBarsCount();
+            case "TOTALFZNUM":
+                return this.SymbolData.GetTotalTradeMinuteCount();
             case 'ISLASTBAR':
                 return this.SymbolData.GetIsLastBar();
             case 'CAPITAL':
