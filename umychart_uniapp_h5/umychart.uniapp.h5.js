@@ -3846,6 +3846,7 @@ function JSChart(divElement)
 
             if (IFrameSplitOperator.IsNumber(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
             else item.TitleHeight=chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
+            if (item.IsShowTitleArraw==false) chart.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
         }
         
         //叠加指标宽度
@@ -7251,6 +7252,7 @@ function IChartFramePainting()
 
     this.YSpecificMaxMin=null;         //指定Y轴最大最小值
     this.IsShowBorder = true;          //是否显示边框
+    this.IsShowTitleArraw=true;        //是否显示指标信息上涨下跌箭头
     
 
     this.Draw=function()
@@ -23793,6 +23795,7 @@ function DynamicChartTitlePainting()
 
     this.ColorIndex;    //五彩K线名字 {Name:'名字'}
     this.IsShowColorIndexTitle=true;
+    this.IsShowUpDownArrow=true;   //指标数据是否显示 上涨下跌箭头
 
     this.TradeIndex;    //专家系统名字{Name:'名字', Param:'参数'}
     this.IsShowTradeIndexTitle=true;
@@ -23869,6 +23872,7 @@ function DynamicChartTitlePainting()
     {
         this.IsKLineFrame= this.Frame.ClassName=='KLineFrame' || this.Frame.ClassName=='KLineHScreenFrame';
         this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
+        this.IsShowUpDownArrow=this.Frame.IsShowTitleArraw;
         this.TitleRect=null;
         if (this.CursorIndex==null ) return;
         if (!this.Data) return;
@@ -23953,7 +23957,21 @@ function DynamicChartTitlePainting()
                 }
                 else
                 {
+                    var arrow=null;
+                    if (this.IsShowUpDownArrow)
+                    {
+                        var proValue=null;
+                        if (dataIndex-1>=0) proValue=item.Data.Data[dataIndex-1];
+                        if (IFrameSplitOperator.IsNumber(proValue))
+                        {
+                            if (proValue>value) arrow='↓';
+                            else if (proValue<value) arrow='↑';
+                            else arrow='→';
+                        }
+                    }
+                
                     valueText=this.FormatValue(value,item);
+                    if (arrow) valueText+=arrow;
                 }
             }
 
@@ -24845,7 +24863,7 @@ function ChartDrawPictureHaflLine()
     }
 }
 
-// 画图工具-水平线
+// 画图工具-水平线 支持横屏
 function ChartDrawPictureHorizontalLine()
 {
     this.newMethod=IChartDrawPicture;   //派生
@@ -24866,34 +24884,75 @@ function ChartDrawPictureHorizontalLine()
         if (this.Value.length!=1) return;
         if (!this.IsYValueInFrame(this.Value[0].YValue)) return null;
 
+        var isHScreen=this.Frame.IsHScreen;
         var left=this.Frame.ChartBorder.GetLeft();
         var right=this.Frame.ChartBorder.GetRight();
+        if (isHScreen)
+        {
+            left=this.Frame.ChartBorder.GetTop();
+            right=this.Frame.ChartBorder.GetBottom();
+        }
         this.ClipFrame();
 
         this.Canvas.strokeStyle=this.LineColor;
         this.SetLineWidth();
         this.Canvas.beginPath();
-        this.Canvas.moveTo(left,drawPoint[0].Y);
-        this.Canvas.lineTo(right,drawPoint[0].Y);
+        if (isHScreen)
+        {
+            this.Canvas.moveTo(drawPoint[0].X,left);
+            this.Canvas.lineTo(drawPoint[0].X,right);
+        }
+        else
+        {
+            this.Canvas.moveTo(left,drawPoint[0].Y);
+            this.Canvas.lineTo(right,drawPoint[0].Y);
+        }
         this.Canvas.stroke();
         this.RestoreLineWidth();
 
         var line={Start:new Point(), End:new Point()};
-        line.Start.X=left;
-        line.Start.Y=drawPoint[0].Y;
-        line.End.X=right;
-        line.End.Y=drawPoint[0].Y;
+        if (isHScreen)
+        {
+            line.Start.X=drawPoint[0].X;
+            line.Start.Y=left;
+            line.End.X=drawPoint[0].X;
+            line.End.Y=right;
+        }
+        else
+        {
+            line.Start.X=left;
+            line.Start.Y=drawPoint[0].Y;
+            line.End.X=right;
+            line.End.Y=drawPoint[0].Y;
+        }
         this.LinePoint.push(line);
 
-        //显示价格
-        var yValue=this.Frame.GetYData(drawPoint[0].Y);
-        this.Canvas.fillStyle=this.LineColor;
-        this.Canvas.textAlign="let";
-        this.Canvas.textBaseline="bottom";
-        this.Canvas.font=this.Font;
-        this.Canvas.fillText(yValue.toFixed(2),left,drawPoint[0].Y);
-
+        //画点
         this.DrawPoint(drawPoint);
+
+        //显示价格
+        
+        this.Canvas.fillStyle=this.LineColor;
+        this.Canvas.font=this.Font;
+        if (isHScreen)
+        {
+            this.Canvas.textAlign="left";
+            this.Canvas.textBaseline="bottom";
+            var xText=drawPoint[0].X;
+            var yText=left;
+            this.Canvas.translate(xText, yText);
+            this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
+            var yValue=this.Frame.GetYData(drawPoint[0].X);
+            this.Canvas.fillText(yValue.toFixed(2),0,0);
+        }
+        else
+        {
+            this.Canvas.textAlign="left";
+            this.Canvas.textBaseline="bottom";
+            var yValue=this.Frame.GetYData(drawPoint[0].Y);
+            this.Canvas.fillText(yValue.toFixed(2),left,drawPoint[0].Y);
+        }
+        
         this.Canvas.restore();
     }
 }
@@ -32072,13 +32131,6 @@ function KLineChartContainer(uielement)
             return;
         }
 
-        if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol) || MARKET_SUFFIX_NAME.IsFutures(upperSymbol)) //数字货币, 期货 不需要下载流通股本
-        {
-            JSConsole.Chart.Log(`[KLineChartContainer::RequestFlowCapitalData] symbol=${this.Symbol} not need download data.`);
-            this.FlowCapitalReady=true;
-            return;
-        }
-
         var self = this;
         let fieldList=["name","date","symbol","capital.a"];
 
@@ -35550,7 +35602,6 @@ function KLineTrainChartContainer(uielement, bHScreen)
         delete this.newMethod;
     }
 
-    this.ClassName='KLineTrainChartContainer';
     this.BuySellPaint;          //买卖点画法
     this.TrainDataCount=300;    //训练数据个数
     this.TrainStartDate;        //训练开始日期时间 { Date:, Time: }
