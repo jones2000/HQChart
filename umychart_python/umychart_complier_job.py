@@ -71,32 +71,39 @@ class JS_EXECUTE_JOB_ID :
     JOB_DOWNLOAD_HK_TO_SZ=2051,      # 北上流入深证
     JOB_DOWNLOAD_HK_TO_SH_SZ=2052,   # 北上流总的
     
-
     JOB_RUN_SCRIPT=10000, # 执行脚本
+
+    MAP_FINANCE_ID= {
+        1:JOB_DOWNLOAD_TOTAL_EQUITY_DATA,       # FINANCE(1)   总股本（万股）
+        7:JOB_DOWNLOAD_FLOW_EQUITY_DATA,        # FINANCE(7)   流通股本（万股）
+        9:JOB_DOWNLOAD_AL_RATIO_DATA,           # FINANCE(9)   资产负债率 (asset-liability ratio)
+        18:JOB_DOWNLOAD_PER_C_RESERVE_DATA,     # FINANCE(18)  每股公积金
+        30:JOB_DOWNLOAD_N_PROFIT_DATA,          # FINANCE(30)  净利润
+        32:JOB_DOWNLOAD_PER_U_PROFIT_DATA,      # FINANCE(32)  每股未分配利润
+        33:JOB_DOWNLOAD_PER_S_EARNING2_DATA,    # FINANCE(33)  每股收益(折算为全年收益),对于沪深品种有效
+        34:JOB_DOWNLOAD_PER_NETASSET_DATA,      # FINANCE(34)  每股净资产
+        38:JOB_DOWNLOAD_PER_S_EARNING_DATA,     # FINANCE(38)  每股收益(最近一期季报)
+        40:JOB_DOWNLOAD_FLOW_MARKETVALUE_DATA,  # FINANCE(40)  流通市值 
+        41:JOB_DOWNLOAD_MARKETVALUE_DATA,       # FINANCE(41)  总市值
+        42:JOB_DOWNLOAD_RELEASE_DATE_DATA,      # FINANCE(42)  上市的天数
+        43:JOB_DOWNLOAD_PROFIT_YOY_DATA,        # FINANCE(43)  利润同比 (Profit year on year)
+        45:JOB_DOWNLOAD_DIVIDEND_YIELD_DATA,    # FINANCE(45)  股息率
+
+        200:JOB_DOWNLOAD_CAPITAL_DATA,          # 流通股本（手）
+        201:JOB_DOWNLOAD_EXCHANGE_DATA          # 换手率 成交量/流通股本
+    }
 
     @staticmethod
     def GetFinnanceJobID(value):
-        dataMap= {
-            1:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_TOTAL_EQUITY_DATA,         # FINANCE(1)   总股本（万股）
-            7:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FLOW_EQUITY_DATA,          # FINANCE(7)   流通股本（万股）
-            9:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_AL_RATIO_DATA,           # FINANCE(9)   资产负债率 (asset-liability ratio)
-            18:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PER_C_RESERVE_DATA,     # FINANCE(18)  每股公积金
-            30:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_N_PROFIT_DATA,          # FINANCE(30)  净利润
-            32:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PER_U_PROFIT_DATA,      # FINANCE(32)  每股未分配利润
-            33:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PER_S_EARNING2_DATA,    # FINANCE(33)  每股收益(折算为全年收益),对于沪深品种有效
-            34:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PER_NETASSET_DATA,      # FINANCE(34)  每股净资产
-            38:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PER_S_EARNING_DATA,     # FINANCE(38)  每股收益(最近一期季报)
-            40:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FLOW_MARKETVALUE_DATA,  # FINANCE(40)  流通市值 
-            41:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARKETVALUE_DATA,       # FINANCE(41)  总市值
-            42:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_RELEASE_DATE_DATA,      # FINANCE(42)  上市的天数
-            43:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA,        # FINANCE(43)  利润同比 (Profit year on year)
-            45:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA,    # FINANCE(45)  股息率
+        return JS_EXECUTE_JOB_ID.MAP_FINANCE_ID.get(value)
 
-            200:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA,          # 流通股本（手）
-            201:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA          # 换手率 成交量/流通股本
-        }
-    
-        return dataMap.get(value)
+    @staticmethod
+    def GetFinanceIDByJobID(jobID) :
+        for key, value in JS_EXECUTE_JOB_ID.MAP_FINANCE_ID.items() :
+            if value==jobID :
+                return key
+        return None
+
     
 
     @staticmethod # 融资融券
@@ -149,9 +156,12 @@ class JS_EXECUTE_JOB_ID :
 
 
 class JobItem :
-    def __init__(self, id, symbol=None) :
+    def __init__(self, id, symbol=None, funcName=None, args=None, varName=None) :
         self.ID=id  # 任务ID
         self.Symbol=symbol  # 任务的代码 可以为空
+        self.Args=args
+        self.FunctionName=funcName
+        self.VariantName=varName
 
 
 class HQ_DATA_TYPE :

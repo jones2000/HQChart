@@ -131,7 +131,7 @@ class JSSymbolData() :
                             JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_AL_RATIO_DATA,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_PROFIT_YOY_DATA,
                             JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_DIVIDEND_YIELD_DATA
                             ) :
-                self.GetFinanceData(job.ID) 
+                self.GetFinanceData(job.ID, job) 
             elif job.ID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA : # 最新行情数据
                 self.GetLatestData()
             elif job.ID in  (JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE,
@@ -460,7 +460,7 @@ class JSSymbolData() :
             return self.IndexData.GetDown()
 
     # 下载财务数据
-    def GetFinanceData(self, jobID) :
+    def GetFinanceData(self, jobID, job) :
         if jobID in self.FinanceData :
             return
 
