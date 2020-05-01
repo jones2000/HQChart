@@ -10295,9 +10295,11 @@ var KLINE_INFO_TYPE=
 
     RESEARCH:8,                 //调研
     BLOCKTRADING:9,             //大宗交易
-    TRADEDETAIL:10              //龙虎榜
+    TRADEDETAIL:10,              //龙虎榜
 
-
+    //公告预留类型
+    ANNOUNCEMENT_EX_START:100,
+    ANNOUNCEMENT_EX_END:200,
 }
 
 function KLineInfoData()
@@ -27458,8 +27460,8 @@ function JSChartResource()
                 Announcement:                                           //公告
                 {
                     ApiUrl:'https://opensource.zealink.com/API/ReportList',
-                    IconFont: { Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' }, //SVG 文本
-                    IconFont2: { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' } //SVG 文本 //季报
+                    IconFont: { Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' },  //SVG 文本
+                    IconFont2: { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' }, //SVG 文本 //季报
                 },
                 Pforecast:  //业绩预告
                 {
@@ -27480,7 +27482,20 @@ function JSChartResource()
                 {
                     ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
                     IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' } //SVG 文本
-                }
+                },
+
+                //扩展图标库
+                IconLibrary:
+                {
+                    Family:'iconfont',
+                    Icon:
+                    [
+                        { Text:'\ue630', HScreenText:'\ue689', Color:'#f39f7c' }, 
+                        { Text:'\ue632', HScreenText:'\ue688', Color:'#19b1b7' },
+                        { Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' },
+                        { Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' }
+                    ]
+                },
 
             },
             NumIcon:
@@ -38796,7 +38811,7 @@ JSKLineInfoMap.GetClassInfo=function(id)
 }
 
 JSKLineInfoMap.GetIconUrl=function(type)
-{
+{     
     switch(type)
     {
         case KLINE_INFO_TYPE.INVESTOR:
@@ -38822,8 +38837,30 @@ JSKLineInfoMap.GetIconUrl=function(type)
     }
 }
 
+JSKLineInfoMap.GetIconLibrary=function(index)
+{
+    var iconLib=g_JSChartResource.KLine.Info.IconLibrary;
+    if (!iconLib || !iconLib.Icon) return g_JSChartResource.KLine.Info.Announcement.IconFont;
+
+    if (index>=0 && index<iconLib.Icon.length)
+    {
+        var item=iconLib.Icon[index];
+        var obj={ Text:item.Text, HScreenText:item.HScreenText, Color:item.Color, Family:iconLib.Family };
+        return obj;
+    }
+
+    return g_JSChartResource.KLine.Info.Announcement.IconFont;
+}
+
 JSKLineInfoMap.GetIconFont=function(type)
 {
+    //公告扩展数据
+    if (type>=KLINE_INFO_TYPE.ANNOUNCEMENT_EX_START && type<=KLINE_INFO_TYPE.ANNOUNCEMENT_EX_END)
+    {
+        var index=type-KLINE_INFO_TYPE.ANNOUNCEMENT_EX_START;
+        return JSKLineInfoMap.GetIconLibrary(index);
+    }
+
     switch(type)
     {
         case KLINE_INFO_TYPE.INVESTOR:
@@ -38856,12 +38893,56 @@ function IKLineInfo()
     this.StartDate=20160101;
     this.Data;
     this.ClassName='IKLineInfo';
+    this.Explain="IKLineInfo";
 
     this.GetToday=function()
     {
         var date=new Date();
         var today=date.getFullYear()*10000+(date.getMonth()+1)*100+date.getDate();
         return today;
+    }
+
+    this.GetRequestData=function(hqChart)
+    {
+        var obj=
+        { 
+            Symbol:hqChart.Symbol ,
+            MaxReqeustDataCount: hqChart.MaxReqeustDataCount,            //日线数据个数
+            MaxRequestMinuteDayCount:hqChart.MaxRequestMinuteDayCount    //分钟数据请求的天数
+        };
+        
+        return obj;
+    }
+
+    this.NetworkFilter=function(hqChart)
+    {
+        if (!hqChart.NetworkFilter) return false;
+
+        var self=this;
+
+        var param=
+        {
+            HQChart:hqChart,
+        };
+
+        var obj=
+        {
+            Name:`${this.ClassName}::RequestData`, //类名::函数
+            Explain:this.Explain,
+            Request:this.GetRequestData(hqChart), 
+            Self:this,
+            HQChart:hqChart,
+            PreventDefault:false
+        };
+
+        hqChart.NetworkFilter(obj, function(data) 
+        { 
+            self.RecvData(data,param);
+        });
+
+        if (obj.PreventDefault==true) return true;   //已被上层替换,不调用默认的网络请求
+        
+        return false;
     }
 }
 
@@ -38875,7 +38956,7 @@ function InvestorInfo()
     delete this.newMethod;
 
     this.ClassName='InvestorInfo';
-
+    this.Explain='互动易'
     this.RequestData=function(hqChart)
     {
         var self = this;
@@ -38885,6 +38966,7 @@ function InvestorInfo()
         };
 
         this.Data=[];
+        if (this.NetworkFilter(hqChart)) return; //已被上层替换,不调用默认的网络请求
 
         var postData=
         {
@@ -38894,26 +38976,6 @@ function InvestorInfo()
             start:0,
             end:this.MaxReqeustDataCount,
         };
-
-        if (hqChart.NetworkFilter)
-        {
-            var obj=
-            {
-                Name:'InvestorInfo::RequestData', //类名::函数
-                Explain:'互动易',
-                Request:{ Url:g_JSChartResource.KLine.Info.Investor.ApiUrl, Type:'post', Data: { postData } }, 
-                Self:this,
-                HQChart:hqChart,
-                PreventDefault:false
-            };
-
-            hqChart.NetworkFilter(obj, function(data) 
-            { 
-                self.RecvData(data,param);
-            });
-
-            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
-        }
 
         //请求数据
         JSNetwork.HttpRequest({
@@ -38959,6 +39021,7 @@ function AnnouncementInfo()
     delete this.newMethod;
 
     this.ClassName='AnnouncementInfo';
+    this.Explain='公告';
     this.ApiType=1; //0=读API 1=读OSS缓存文件
 
     this.RequestData=function(hqChart)
@@ -38970,6 +39033,9 @@ function AnnouncementInfo()
         };
 
         this.Data=[];
+
+        if (this.NetworkFilter(hqChart)) return; //已被上层替换,不调用默认的网络请求
+
         if (this.ApiType==1)    //取缓存文件
         {
             var url=`${g_JSChartResource.CacheDomain}/cache/analyze/shszreportlist/${param.HQChart.Symbol}.json`;
@@ -39047,6 +39113,15 @@ function AnnouncementInfo()
                         break;
                 }
             }
+
+            //目前只支持1个类型
+            for(var j in item.typeex)
+            {
+                var id=item.typeex[j];
+                infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT_EX_START+id;
+                break;
+            }
+
             this.Data.push(infoData);
         }
 
