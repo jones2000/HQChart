@@ -103,6 +103,4 @@ class SymbolDataJson(JSSymbolData):
         bindData=ChartData(data=aryFixedData)
         aryValue=bindData.GetValue()
         self.FinanceData[jobID]=aryValue
-
-
    

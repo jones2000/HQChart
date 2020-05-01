@@ -17,6 +17,7 @@ import sys
 from umychart_complier_util import xrange, unicode, uchr, uord
 from umychart_complier_scanner import Scanner, RawToken, ErrorHandler, Error, Messages
 from umychart_complier_job import JS_EXECUTE_JOB_ID, JobItem
+from umychart_complier_help import Variant
 
 
 TOKEN_NAME={ }
@@ -275,7 +276,14 @@ class Node:
             return
 
         if callee.Name == 'COST' or callee.Name == 'WINNER' :   # 筹码都需要换手率
-            item=JobItem(id=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA, funcName=callee.Name)
+            argItem=Variant()
+            argItem.Value=201
+            item=JobItem(id=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA, funcName=callee.Name, args=[argItem] )
+            self.NeedFinanceData.append(item)
+
+            argItem=Variant()
+            argItem.Value=7
+            item=JobItem(id=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FLOW_EQUITY_DATA, funcName=callee.Name, args=[argItem])
             self.NeedFinanceData.append(item)
             return
 

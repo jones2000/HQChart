@@ -461,7 +461,8 @@ class JSSymbolData() :
 
     # 下载财务数据
     def GetFinanceData(self, jobID, job) :
-        if jobID in self.FinanceData :
+        key=int(job.Args[0].Value)
+        if key in self.FinanceData :
             return
 
         print('[JSSymbolData::GetFinanceData] jobID=', jobID)
@@ -503,7 +504,7 @@ class JSSymbolData() :
         print('[JSSymbolData::GetFinanceData]  ',url, postData)
         response=requests.post(url,postData)
         jsonData=response.json()
-        self.RecvStockDayData(jsonData,jobID)
+        self.RecvStockDayData(jsonData,jobID, key)
 
     @staticmethod # 财务数据格式转换
     def JsonDataToFinance(data) :
@@ -549,7 +550,7 @@ class JSSymbolData() :
         
 
     # 把历史json数据转换为内存数据
-    def RecvStockDayData(self, recvData,jobID) :
+    def RecvStockDayData(self, recvData, jobID, key) :
         stocks=recvData['stock']
         if not stocks or  len(stocks)!=1 :
             return
@@ -690,17 +691,14 @@ class JSSymbolData() :
                     bindData.Data[i].Value=1
 
         data=bindData.GetValue()
-        self.FinanceData[jobID]=data
+        self.FinanceData[key]=data
 
 
     # 财务函数
     def GetFinanceCacheData(self, id, node) :
-        jobID=JS_EXECUTE_JOB_ID.GetFinnanceJobID(id)
-        if not jobID :
-            self.ThrowUnexpectedNode(node,'不支持FINANCE('+str(int(id))+')')
-
-        if jobID in self.FinanceData :
-            return self.FinanceData.get(jobID)
+        key=int(id)
+        if key in self.FinanceData :
+            return self.FinanceData.get(key)
 
         return []
 
