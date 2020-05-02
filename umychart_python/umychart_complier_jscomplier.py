@@ -114,11 +114,13 @@ class ScriptIndexConsole:
         self.Name=obj.Name
         self.OutVar=None
         self.AST=None           # 语法树
+        self.Parser=None
 
     def ExecuteScript(self, obj=SymbolOption(), rebuild=True) : # rebuild 是否重新编译执行
         try :
             print('[ScriptIndexConsole::ExecuteScript] ', self.Script)
-            if (self.AST and rebuild==False):
+            if (self.AST and self.Parser and rebuild==False):
+                parser=self.Parser
                 ast= self.AST
                 print('[ScriptIndexConsole.ExecuteScript] use cache ast.')
             else :
@@ -126,7 +128,8 @@ class ScriptIndexConsole:
                 parser.Initialize()
                 program=parser.ParseScript()
                 ast=program
-                self.AST=ast    #缓存语法树
+                self.AST=ast        #缓存语法树
+                self.Parser=parser
                 print('[ScriptIndexConsole.ExecuteScript] parser finish.')
 
             option=SymbolOption(symbol=obj.Symbol, hqDataType=obj.HQDataType, right=obj.Right, period=obj.Period, 

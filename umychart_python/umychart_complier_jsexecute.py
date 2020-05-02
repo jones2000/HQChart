@@ -418,6 +418,12 @@ class JSExecute :
             value=right.Value
         elif right.Type==Syntax.Identifier : # 右值是变量
             value=self.ReadVariable(right.Name,right)
+        elif right.Type==Syntax.UnaryExpression: # 带符号常量
+            if (right.Operator=="-") :
+                tempValue=self.GetNodeValue(right.Argument)
+                value=self.Algorithm.Subtract(0,tempValue)
+            else :
+                value=right.Argument.Value
 
         # console.log('[JSExecute::VisitAssignmentExpression]' , varName, ' = ',value);
         self.VarTable[varName]=value
