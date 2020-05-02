@@ -139,7 +139,7 @@ class JSExecute :
 
     # 单数据转成数组 个数和历史数据一致
     def SingleDataToArrayData(self,value) :
-        count=len(self.SymbolData.Data.Data)
+        count=self.SymbolData.Data.GetCount()
         result=[value]*count
         return result
 

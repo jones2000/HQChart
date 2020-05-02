@@ -18,8 +18,24 @@ import datetime
 from umychart_complier_help  import JSComplierHelper
 
 class PERIOD_ID:
+    # 日线周期
+    DAY=0
+    WEEK=1
+    MONTH=2
+    QUARTER=9
+    YEAR=3
+    # 分钟周期
+    MINUTE=4
+    MINUTE_5=5
+    MINUTE_15=6
+    MINUTE_30=7
+    MINUTE_60=8
+    MINUTE_120=11
+    MINUTE_240=12
+    # 自定日线周期
     CUSTOM_DAY_PERIOD_START= 40000
     CUSTOM_DAY_PERIOD_END= 49999
+    # 自定义分钟周期
     CUSTOM_MINUTE_PERIOD_START=20000
     CUSTOM_MINUTE_PERIOD_END=29999
 
@@ -135,6 +151,9 @@ class ChartData:
             return True
         return False
 
+    # 数据长度
+    def GetCount(self):
+        return len(self.Data.Data)
 
     # 获取收盘价
     def GetClose(self) :

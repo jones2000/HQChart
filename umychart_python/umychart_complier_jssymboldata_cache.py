@@ -22,6 +22,9 @@ from umychart_complier_help  import JSComplierHelper, Variant
 class ChartDataCache():
     def __init__(self) :
         self.Data={}  # key = CLOSE|OPEN|HIGH|LOW|AMOUNT|VOL
+    
+    def GetCount(self):
+        return len(self.GetClose())
 
     def GetClose(self) :
         return self.Data.get("CLOSE",[])
