@@ -4043,6 +4043,9 @@ function JSChart(divElement)
 
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
 
+        chart.ModifyIndexDialog=this.ModifyIndexDialog;
+        chart.ChangeIndexDialog=this.ChangeIndexDialog;
+
         var windowsCount=2;
         if (option.Windows && option.Windows.length>0) windowsCount+=option.Windows.length; //指标窗口从第3个窗口开始
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
@@ -4145,23 +4148,24 @@ function JSChart(divElement)
         let scriptData = new JSIndexScript();
         for(var i in option.Windows)
         {
+            var index=2+parseInt(i);
             var item=option.Windows[i];
             if (item.Script)
             {
-                chart.WindowIndex[2+parseInt(i)]=new ScriptIndex(item.Name,item.Script,item.Args);    //脚本执行
+                chart.WindowIndex[index]=new ScriptIndex(item.Name,item.Script,item.Args);    //脚本执行
             }
             else if (item.API)  //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
             {
                 var apiItem=item.API;
-                chart.WindowIndex[2+parseInt(i)]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,item);
+                chart.WindowIndex[index]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,item);
             }
             else
             {
                 var indexItem=JSIndexMap.Get(item.Index);
                 if (indexItem)
                 {
-                    chart.WindowIndex[2+parseInt(i)]=indexItem.Create();       //创建子窗口的指标
-                    chart.CreateWindowIndex(2+parseInt(i));
+                    chart.WindowIndex[index]=indexItem.Create();       //创建子窗口的指标
+                    chart.CreateWindowIndex(index);
                 }
                 else
                 {
@@ -4170,13 +4174,16 @@ function JSChart(divElement)
                     indexInfo.ID=item.Index;
                     var args=indexInfo.Args;
                     if (item.Args) args=item.Args;
-                    chart.WindowIndex[2+parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
-                    if (item.StringFormat>0) chart.WindowIndex[2+parseInt(i)].StringFormat=item.StringFormat;
-                    if (item.FloatPrecision>=0) chart.WindowIndex[2+parseInt(i)].FloatPrecision=item.FloatPrecision;
+                    chart.WindowIndex[index] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
+                    if (item.StringFormat>0) chart.WindowIndex[index].StringFormat=item.StringFormat;
+                    if (item.FloatPrecision>=0) chart.WindowIndex[index].FloatPrecision=item.FloatPrecision;
                 }
             }
 
-            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[2+parseInt(i)].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+            if (item.Modify!=null) chart.Frame.SubFrame[index].Frame.ModifyIndex=item.Modify;
+            if (item.Change!=null) chart.Frame.SubFrame[index].Frame.ChangeIndex=item.Change;
+            if (item.Close!=null) chart.Frame.SubFrame[index].Frame.CloseIndex=item.Close;
+            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight=item.TitleHeight;
         }
         this.AdjustTitleHeight(chart);
 
@@ -7986,15 +7993,144 @@ function MinuteFrame()
     this.BeforeBGColor=g_JSChartResource.Minute.BeforeBGColor;  //集合竞价背景
     this.CustomHorizontalInfo=[];
     this.RightFrame=null;   //右侧多重坐标
+    this.ToolbarID=Guid();  //工具条Div id
+
+    this.ModifyIndex=true;      //是否显示'改参数'菜单
+    this.ChangeIndex=true;      //是否显示'换指标'菜单
+    this.CloseIndex=true;       //是否显示'关闭指标窗口'菜单
+
+    this.ModifyIndexEvent;   //改参数 点击事件
+    this.ChangeIndexEvent;   //换指标 点击事件
+    this.ToolbarRect=null;   //保存工具条的位置
+
+    this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
 
     this.DrawFrame=function()
     {
         this.SplitXYCoordinate();
 
         if (this.IsBeforeData) this.DrawBeforeDataBG();
+
         this.DrawTitleBG();
         this.DrawHorizontal();
         this.DrawVertical();
+
+        if (this.SizeChange==true) this.DrawToolbar();  //大小变动才画工具条
+    }
+
+    this.DrawToolbar=function()
+    {
+        if (this.Identify<2) return;
+        if (!this.ChartBorder.UIElement) return;
+
+        var divToolbar=document.getElementById(this.ToolbarID);
+        if (divToolbar && this.SizeChange==false) return;
+
+        if (!divToolbar)
+        {
+            divToolbar=document.createElement("div");
+            divToolbar.className='klineframe-toolbar';
+            divToolbar.id=this.ToolbarID;
+            divToolbar.oncontextmenu = function() { return false;}; //屏蔽右键系统菜单
+            //为divToolbar添加属性identify
+            divToolbar.setAttribute("identify",this.Identify.toString());
+            this.ChartBorder.UIElement.parentNode.appendChild(divToolbar);
+        }
+
+        if (!this.ModifyIndex && !this.ChangeIndex && !this.OverlayIndex)
+        {
+            if (divToolbar.style.display!='none')
+                divToolbar.style.display='none';
+            return;
+        }
+
+        //使用外城div尺寸 画图尺寸是被放大的
+        var pixelTatio = GetDevicePixelRatio();
+        var chartWidth=parseInt(this.ChartBorder.UIElement.parentElement.style.width.replace("px",""));  
+        var chartHeight=parseInt(this.ChartBorder.UIElement.parentElement.style.height.replace("px",""));
+        //JSConsole.Chart.Log('[KLineFrame::DrawToolbar] ',chartWidth,chartHeight,pixelTatio);
+
+        var toolbarWidth=100;
+        var toolbarHeight=this.ChartBorder.GetTitleHeight();
+        var left=chartWidth-(this.ChartBorder.Right/pixelTatio)-toolbarWidth;
+        var top=this.ChartBorder.GetTop()/pixelTatio;
+
+        if (this.ToolbarRect)
+        {
+            //尺寸变动移动才重新设置DOM
+            if (this.ToolbarRect.Left==left && this.ToolbarRect.Top==top && 
+                this.ToolbarRect.Width==toolbarWidth && this.ToolbarRect.Height==toolbarHeight/pixelTatio)
+            {
+                return;
+            }
+        }
+
+        this.ToolbarRect={ Left:left, Top:top, Width:toolbarWidth, Height:toolbarHeight/pixelTatio };
+
+        const modifyButton=`<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='调整指标参数'></span>`;
+        const changeButton=`<span class='index_change icon iconfont icon-change_index' id='changeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='切换指标'></span>`;
+        const closeButton=`<span class='index_close icon iconfont icon-close' id='closeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='关闭指标窗口'></span>`;
+
+        var spanIcon=modifyButton+changeButton;
+        if (this.CloseIndex)
+        {
+            spanIcon+=closeButton;
+        }
+
+        //var scrollPos=GetScrollPosition();
+        //left = left+scrollPos.Left;
+        //top = top+scrollPos.Top;
+        divToolbar.style.left = left + "px";
+        divToolbar.style.top = top + "px";
+        divToolbar.style.width=toolbarWidth+"px";                   //宽度先不调整吧
+        divToolbar.style.height=(toolbarHeight/pixelTatio)+'px';    //只调整高度
+        divToolbar.innerHTML=spanIcon;
+
+        var chart=this.ChartBorder.UIElement.JSChartContainer;
+        var identify=this.Identify;
+        if (!this.ModifyIndex)  //隐藏'改参数'
+            $("#"+divToolbar.id+" .index_param").hide();
+        else if (typeof(this.ModifyIndexEvent)=='function')  //绑定点击事件
+            $("#"+divToolbar.id+" .index_param").click(
+                {
+                    Chart:this.ChartBorder.UIElement.JSChartContainer,
+                    Identify:this.Identify
+                },this.ModifyIndexEvent);
+
+        if (!this.ChangeIndex)  //隐藏'换指标'
+        {
+            $("#"+divToolbar.id+" .index_change").hide();
+        }  
+        else if (typeof(this.ChangeIndexEvent)=='function')
+        {
+            $("#"+divToolbar.id+" .index_change").click(
+                {
+                    Chart:this.ChartBorder.UIElement.JSChartContainer,
+                    Identify:this.Identify,
+                    IsOverlay:false
+                },this.ChangeIndexEvent);
+        }
+
+        $("#"+divToolbar.id+" .index_close").click(
+            {
+                Chart:this.ChartBorder.UIElement.JSChartContainer,
+                Identify:this.Identify
+            },
+            function(event)
+            {
+                var hqChart=event.data.Chart;
+                var id=event.data.Identify;
+                hqChart.RemoveIndexWindow(id);
+            });
+
+        divToolbar.style.display = "block";
+    }
+
+    this.ClearToolbar=function()
+    {
+        var divToolbar=document.getElementById(this.ToolbarID);
+        if (!divToolbar) return;
+        this.ChartBorder.UIElement.parentNode.removeChild(divToolbar);
     }
 
     //画集合竞价背景
@@ -8113,6 +8249,11 @@ function MinuteHScreenFrame()
 
         this.Canvas.fillStyle=this.TitleBGColor;
         this.Canvas.fillRect(left,top,width,height);
+    }
+
+    this.DrawToolbar=function()
+    {
+        return;
     }
 
     //画集合竞价背景
@@ -33865,8 +34006,15 @@ function MinuteChartContainer(uielement)
             var frame=new MinuteFrame();
             frame.Canvas=this.Canvas;
             frame.ChartBorder=border;
+            frame.Identify=i;
             if (i<2) frame.ChartBorder.TitleHeight=0;
             frame.XPointCount=243;
+
+            if (i>=2)
+            {
+                if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
+                if (this.ChangeIndexDialog) frame.ChangeIndexEvent=this.ChangeIndexDialog.DoModal;
+            }
 
             var DEFAULT_HORIZONTAL=[9,8,7,6,5,4,3,2,1];
             frame.HorizontalMax=DEFAULT_HORIZONTAL[0];
@@ -33923,6 +34071,12 @@ function MinuteChartContainer(uielement)
         frame.ChartBorder=border;
         frame.Identify=id;                   //窗口序号
         frame.XPointCount=243;
+
+        if (id>=2)
+        {
+            if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
+            if (this.ChangeIndexDialog) frame.ChangeIndexEvent=this.ChangeIndexDialog.DoModal;
+        }
 
         var DEFAULT_HORIZONTAL=[9,8,7,6,5,4,3,2,1];
         frame.HorizontalMax=DEFAULT_HORIZONTAL[0];
@@ -34134,6 +34288,50 @@ function MinuteChartContainer(uielement)
         this.Frame.SetSizeChage(true);
         this.ResetFrameXYSplit();
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
+    }
+
+    this.RemoveIndexWindow=function(id)
+    {
+        JSConsole.Chart.Log('[MinuteChartContainer::RemoveIndexWindow] remove id', id);
+        if (id<2) return;
+        if (!this.Frame.SubFrame) return;
+        if (id>=this.Frame.SubFrame.length) return;
+
+        var delFrame=this.Frame.SubFrame[id].Frame;
+        this.DeleteIndexPaint(id);
+        this.Frame.SubFrame[id].Frame.ClearToolbar();
+        this.Frame.SubFrame.splice(id,1);
+        this.WindowIndex.splice(id,1);
+        this.TitlePaint.splice(id+1,1); //删除对应的动态标题
+
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
+        {
+            var item=this.Frame.SubFrame[i].Frame;
+            if (i==this.Frame.SubFrame.length-1) item.XSplitOperator.ShowText=true;
+            else item.XSplitOperator.ShowText=false;
+
+            item.Identify=i;
+        }
+
+        /*
+        if (this.ChartDrawPicture.length>0)
+        {
+            var aryDrawPicture=[];
+            for(var i in this.ChartDrawPicture)
+            {
+                var item=this.ChartDrawPicture[i];
+                if (item.Frame==delFrame) continue;
+                aryDrawPicture.push(item);
+            }
+           
+            this.ChartDrawPicture=aryDrawPicture;
+        }
+        */
+
+        this.Frame.SetSizeChage(true);
+        this.UpdateFrameMaxMin();
+        this.ResetFrameXYSplit();
         this.Draw();
     }
 
@@ -35140,7 +35338,16 @@ function MinuteChartContainer(uielement)
         chart.Data=infoMap;
     }
 
-    
+    this.UpdateWindowIndex=function(index)
+    {
+        if (index<2) return;
+
+        var bindData=this.SourceData;
+        this.BindIndexData(index,bindData)
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
+    }
 }
 
 // 分钟走势图数据 带盘前数据
