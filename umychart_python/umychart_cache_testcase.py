@@ -75,7 +75,17 @@ def RunTestCase():
 
     # 替换成自己的数据类
     option.ProcCreateSymbolData=SymbolDataCache.Create  
-    result=indexConsole.ExecuteScript(option)
+    result=indexConsole.ExecuteScript(option,False)
+
+    # 使用缓存的AST执行
+    option = SymbolOption(
+        symbol='000001.sz',
+        right=1, # 复权 0 不复权 1 前复权 2 后复权
+        period=PERIOD_ID.DAY, # 周期
+        request=RequestOption(maxDataCount=500,maxMinuteDayCount=3)
+        )
+    option.ProcCreateSymbolData=SymbolDataCache.Create  
+    result=indexConsole.ExecuteScript(option,False)
 
     return result
 

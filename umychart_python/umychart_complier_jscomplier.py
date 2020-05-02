@@ -113,15 +113,21 @@ class ScriptIndexConsole:
         self.Arguments=obj.Arguments    # 指标默认参数
         self.Name=obj.Name
         self.OutVar=None
+        self.AST=None           # 语法树
 
-    def ExecuteScript(self, obj=SymbolOption()) :
+    def ExecuteScript(self, obj=SymbolOption(), rebuild=True) : # rebuild 是否重新编译执行
         try :
             print('[ScriptIndexConsole::ExecuteScript] ', self.Script)
-            parser=JSParser(self.Script)
-            parser.Initialize()
-            program=parser.ParseScript()
-            ast=program
-            print('[ScriptIndexConsole.ExecuteScript] parser finish.')
+            if (self.AST and rebuild==False):
+                ast= self.AST
+                print('[ScriptIndexConsole.ExecuteScript] use cache ast.')
+            else :
+                parser=JSParser(self.Script)
+                parser.Initialize()
+                program=parser.ParseScript()
+                ast=program
+                self.AST=ast    #缓存语法树
+                print('[ScriptIndexConsole.ExecuteScript] parser finish.')
 
             option=SymbolOption(symbol=obj.Symbol, hqDataType=obj.HQDataType, right=obj.Right, period=obj.Period, 
                     request=RequestOption(maxDataCount=obj.MaxRequestDataCount, maxMinuteDayCount=obj.MaxRequestMinuteDayCount), 
