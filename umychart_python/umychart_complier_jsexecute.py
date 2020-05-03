@@ -72,6 +72,7 @@ class JSExecute :
             'SETCODE':None  
         }  
 
+        # 创建外部的数据类SymbolData, ProcCreateSymbolData 创建类函数
         if option and option.ProcCreateSymbolData:
             self.SymbolData=option.ProcCreateSymbolData(ast=ast,option=option, procThrow=self.ThrowUnexpectedNode)
         else :
@@ -84,9 +85,7 @@ class JSExecute :
         if option and option.Arguments:
              self.Arguments=option.Arguments
         
-        # 创建外部的数据类SymbolData, ProcCreateSymbolData 创建类函数
-        
-
+          
     def Execute(self) :
         self.SymbolData.RunDownloadJob(self.JobList) # 准备数据
         outVar=self.RunAST()
@@ -101,8 +100,7 @@ class JSExecute :
         elif name in ('INDEXA','INDEXC','INDEXH','INDEXO','INDEXV','INDEXL','INDEXADV','INDEXDEC') : # 大盘数据
            return self.SymbolData.GetIndexCacheData(name)
         elif name== 'CURRBARSCOUNT':
-            pass
-            # return self.SymbolData.GetCurrBarsCount()
+            return self.SymbolData.GetCurrBarsCount()
         elif name== 'CAPITAL':
             return self.SymbolData.GetFinanceCacheData(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CAPITAL_DATA, node=node)
         elif name== 'EXCHANGE':

@@ -17,7 +17,7 @@ import time
 import datetime
 from umychart_complier_help  import JSComplierHelper
 
-class PERIOD_ID:
+class PERIOD_ID: 
     # 日线周期
     DAY=0
     WEEK=1
@@ -153,8 +153,21 @@ class ChartData:
 
     # 数据长度
     def GetCount(self):
-        return len(self.Data.Data)
+        return len(self.Data)
 
+    # 获取最大最小值
+    def GetMaxMin(self):
+        dMaxPrice=self.Data[0].High
+        dMinPrice=self.Data[0].Low
+        for i in range(len(self.Data)) :
+            item=self.Data[i]
+            dMinPrice = min(dMinPrice,item.Low)
+            dMaxPrice = max(dMaxPrice,item.High)
+        return {"Max":dMaxPrice, "Min":dMinPrice}
+        
+    def GetItem(self,index):
+        return self.Data[index]
+        
     # 获取收盘价
     def GetClose(self) :
         result=[None] * len(self.Data)

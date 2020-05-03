@@ -9,6 +9,7 @@
 
 import sys
 import math
+import copy
 from umychart_complier_jssymboldata import JSSymbolData, g_JSComplierResource
 from umychart_complier_help import JSComplierHelper ,Variant
 
@@ -2378,7 +2379,87 @@ class JSAlgorithm() :
     # 获利盘比例.
     # 用法: WINNER(CLOSE),表示以当前收市价卖出的获利盘比例,例如返回0.1表示10%获利盘;WINNER(10.5)表示10.5元价格的获利盘比例
     # 该函数仅对日线分析周期有效
-    # ！！！！计算比较耗时间
+    def WINNER(self,data,node) :
+        kData=self.SymbolData.Data
+        if (not kData or kData.GetCount()<=0) :
+            return []
+        dataLen=kData.GetCount()
+        aryCapital=self.SymbolData.GetFinanceCacheData(7,node) # 流通股本
+        result=JSAlgorithm.CreateArray(dataLen)
+
+        priceRange=kData.GetMaxMin()
+        dMaxPrice, dMinPrice = priceRange["Max"], priceRange["Min"]
+        if (dMinPrice > 1000 or dMinPrice < 0 or dMaxPrice>1000 or dMinPrice < 0) :
+            self.ThrowUnexpectedNode(node,'WINNER() 历史K线最大最小值错误, 超出(0,1000)范围')
+            
+        lMaxPrice=int(dMaxPrice*100 + 1)
+        lMinPrice=int(dMinPrice*100 - 1)
+        lLow, lHigh, lClose = 0, 0, 0
+        dMaxPrice = lMaxPrice / 100.0
+        dMinPrice = lMinPrice / 100.0
+        lSpeed = lMaxPrice - lMinPrice + 1
+        if (lSpeed < 1) :
+            return result
+
+        aryVolPrice=JSAlgorithm.CreateArray(lSpeed,0)
+        aryPerVol=JSAlgorithm.CreateArray(lSpeed,0)
+
+        dHSL, dTotalVol, dVol = 0, 0, 0
+        for i in range(dataLen) :
+            if (i >= len(aryCapital)) :
+                continue
+            if (aryCapital[i]<1):
+                continue
+
+            kItem=kData.GetItem(i)
+            dHSL = kItem.Vol/aryCapital[i]
+
+            for j in range(lSpeed) :
+                aryVolPrice[j]*=(1-dHSL)
+
+            lLow=int(min(lMaxPrice,max(lMinPrice,kItem.Low *100)))-lMinPrice
+            lHigh=int(min(lMaxPrice,max(lMinPrice,kItem.High*100)))-lMinPrice
+            lClose=int(min(lMaxPrice,max(lMinPrice,kItem.Close*100)))-lMinPrice
+
+            for j in range(lSpeed) :
+                aryPerVol[j]=0
+
+            lHalf =int((lLow + lHigh + 2 * lClose) / 4)
+            if (lHalf == lHigh or lHalf == lLow) :
+                aryPerVol[lHalf] += kItem.Vol
+            else :
+                dVH = kItem.Vol / (lHalf - lLow)
+                for k in range(lLow,lHalf) :
+                    aryPerVol[k] += (k - lLow)*(dVH / (lHalf - lLow))
+                for k in range(lHalf,lHigh+1) :
+                    aryPerVol[k] += (k - lHigh)*(dVH / (lHalf - lHigh))
+
+            dTotalVol = 0
+            for j in range(lLow,lHigh+1) :
+                aryVolPrice[j] += aryPerVol[j]
+
+            for j in range(lSpeed) :
+                dTotalVol += aryVolPrice[j]
+
+            if isinstance(data,list):
+                lHigh = int(min((data[i] * 100) - lMinPrice, lSpeed - 1))
+            else :
+                lHigh = int(min((data * 100) - lMinPrice, lSpeed - 1))
+
+            dVol=0
+            for j in range(lHigh+1) :
+                dVol += aryVolPrice[j]
+
+            if (dTotalVol > 0) :
+                result[i]=dVol / dTotalVol
+            elif (i - 1 >= 0) :
+                result[i] = result[i - 1]
+        
+        return result
+
+        
+    
+    '''
     def WINNER(self,data,node) :
         exchangeID=201
         exchangeData=self.SymbolData.GetFinanceCacheData(exchangeID,node)    # 换手率
@@ -2436,10 +2517,89 @@ class JSAlgorithm() :
                 result[i]=vol/totalVol
 
         return result
+    '''
 
     # 成本分布情况.
     # 用法: COST(10),表示10%获利盘的价格是多少,即有10%的持仓量在该价格以下,其余90%在该价格以上,为套牢盘
     # 该函数仅对日线分析周期有效
+    def COST(self,data, node) :
+        rate=data/100
+        if (rate<0.000001 or rate>1) :
+            return []
+
+        kData=self.SymbolData.Data
+        if (not kData or kData.GetCount()<=0) :
+            return []
+        dataLen=kData.GetCount()
+        aryCapital=self.SymbolData.GetFinanceCacheData(7,node) # 流通股本
+        result=JSAlgorithm.CreateArray(dataLen)
+
+        priceRange=kData.GetMaxMin()
+        dMaxPrice, dMinPrice = priceRange["Max"], priceRange["Min"]
+        if (dMinPrice > 1000 or dMinPrice < 0 or dMaxPrice>1000 or dMinPrice < 0) :
+            self.ThrowUnexpectedNode(node,'WINNER() 历史K线最大最小值错误, 超出(0,1000)范围')
+            
+        lMaxPrice=int(dMaxPrice*100 + 1)
+        lMinPrice=int(dMinPrice*100 - 1)
+        lLow, lHigh, lClose = 0, 0, 0
+        dMaxPrice = lMaxPrice / 100.0
+        dMinPrice = lMinPrice / 100.0
+        lSpeed = lMaxPrice - lMinPrice + 1
+        if (lSpeed < 1) :
+            return result
+
+        aryVolPrice=JSAlgorithm.CreateArray(lSpeed,0)
+        aryPerVol=JSAlgorithm.CreateArray(lSpeed,0)
+
+        dHSL, dTotalVol, dVol, dCost = 0, 0, 0,0
+        for i in range(dataLen) :
+            if (i >= len(aryCapital)) :
+                continue
+
+            if (aryCapital[i]>1):
+                kItem=kData.GetItem(i)
+                dHSL = kItem.Vol/aryCapital[i]
+
+                for j in range(lSpeed) :
+                    aryVolPrice[j]*=(1-dHSL)
+
+                lLow=int(min(lMaxPrice,max(lMinPrice,kItem.Low *100)))-lMinPrice
+                lHigh=int(min(lMaxPrice,max(lMinPrice,kItem.High*100)))-lMinPrice
+                lClose=int(min(lMaxPrice,max(lMinPrice,kItem.Close*100)))-lMinPrice
+
+                for j in range(lSpeed) :
+                    aryPerVol[j]=0
+
+                lHalf =int((lLow + lHigh + 2 * lClose) / 4)
+                if (lHalf == lHigh or lHalf == lLow) :
+                    aryPerVol[lHalf] += kItem.Vol
+                else :
+                    dVH = kItem.Vol / (lHalf - lLow)
+                    for k in range(lLow,lHalf) :
+                        aryPerVol[k] += (k - lLow)*(dVH / (lHalf - lLow))
+                    for k in range(lHalf,lHigh+1) :
+                        aryPerVol[k] += (k - lHigh)*(dVH / (lHalf - lHigh))
+
+                dTotalVol = 0
+                for j in range(lLow,lHigh+1) :
+                    aryVolPrice[j] += aryPerVol[j]
+
+                for j in range(lSpeed) :
+                    dTotalVol += aryVolPrice[j]
+
+                dCost, dVol = 0,0
+                for j in range(lSpeed) :
+                    dVol+=aryVolPrice[j]
+                    if (dVol>=dTotalVol*rate) :
+                        dCost=(dMaxPrice-dMinPrice)*j/lSpeed+dMinPrice
+                        break
+
+            result[i]=dCost
+
+        return result
+
+
+    '''
     def COST(self,data, node) :
         exchangeID=201
         exchangeData=self.SymbolData.GetFinanceCacheData(exchangeID,node)    # 换手率
@@ -2503,14 +2663,152 @@ class JSAlgorithm() :
                     break
 
         return result
+    '''
 
+    # 远期成本分布比例.
+    # 用法: PPART(10),表示10前的成本占总成本的比例,0.2表示20%
+    def PPART(self, n, node) :
+        startDay=int(n)
+        if (startDay<0):
+            return []
+
+        kData=self.SymbolData.Data
+        if (not kData or kData.GetCount()<=0) :
+            return []
+
+        dataLen=kData.GetCount()
+        aryCapital=self.SymbolData.GetFinanceCacheData(7,node) # 流通股本
+        result=JSAlgorithm.CreateArray(dataLen)    
+        
+        for i in range(startDay, dataLen) :
+            start = i - startDay
+            if (start < 0) :
+                continue
+            
+            #前n日成交量和
+            partVol = 0
+            for j in range(startDay) :	
+                kItem=kData.GetItem(j + start)
+                partVol += kItem.Vol
+            
+            if i < len(aryCapital) :
+                if (aryCapital[i]>0) :
+                    value=1 - (partVol / aryCapital[i])
+                    result[i]=value
+
+        return result
     
+    # 区间成本.
+    # 用法: 例如COSTEX(CLOSE,REF(CLOSE,1)),表示近两日收盘价格间筹码的成本
+    # 该函数仅对日线分析周期有效
+    def COSTEX(self,data, data2, node):
+        kData=self.SymbolData.Data
+        if (not kData or kData.GetCount()<=0) :
+            return []
+        dataLen=kData.GetCount()
+        aryCapital=self.SymbolData.GetFinanceCacheData(7,node) # 流通股本
+        result=JSAlgorithm.CreateArray(dataLen)
+
+        priceRange=kData.GetMaxMin()
+        dMaxPrice, dMinPrice = priceRange["Max"], priceRange["Min"]
+        if (dMinPrice > 1000 or dMinPrice < 0 or dMaxPrice>1000 or dMinPrice < 0) :
+            self.ThrowUnexpectedNode(node,'COSTEX() 历史K线最大最小值错误, 超出(0,1000)范围')
+            
+        lMaxPrice=int(dMaxPrice*100 + 1)
+        lMinPrice=int(dMinPrice*100 - 1)
+        lLow, lHigh, lClose = 0, 0, 0
+        dMaxPrice = lMaxPrice / 100.0
+        dMinPrice = lMinPrice / 100.0
+        lSpeed = lMaxPrice - lMinPrice + 1
+        if (lSpeed < 1) :
+            return result
+
+        aryVolPrice=JSAlgorithm.CreateArray(lSpeed,0)
+        aryPerVol=JSAlgorithm.CreateArray(lSpeed,0)
+
+        dHSL, dTotalVol, dVol, dVola, dPerVola, dVolb, dPerVolb = 0, 0, 0, 0, 0, 0, 0
+        for i in range(dataLen) :
+            if (i >= len(aryCapital)) :
+                continue
+
+            if (aryCapital[i]>1):
+                kItem=kData.GetItem(i)
+                dHSL = kItem.Vol/aryCapital[i]
+
+                for j in range(lSpeed) :
+                    aryVolPrice[j]*=(1-dHSL)
+
+                lLow=int(min(lMaxPrice,max(lMinPrice,kItem.Low *100)))-lMinPrice
+                lHigh=int(min(lMaxPrice,max(lMinPrice,kItem.High*100)))-lMinPrice
+                lClose=int(min(lMaxPrice,max(lMinPrice,kItem.Close*100)))-lMinPrice
+
+                for j in range(lSpeed) :
+                    aryPerVol[j]=0
+
+                lHalf =int((lLow + lHigh + 2 * lClose) / 4)
+                if (lHalf == lHigh or lHalf == lLow) :
+                    aryPerVol[lHalf] += kItem.Vol
+                else :
+                    dVH = kItem.Vol / (lHalf - lLow)
+                    for k in range(lLow,lHalf) :
+                        aryPerVol[k] += (k - lLow)*(dVH / (lHalf - lLow))
+                    for k in range(lHalf,lHigh+1) :
+                        aryPerVol[k] += (k - lHigh)*(dVH / (lHalf - lHigh))
+
+                dTotalVol = 0
+                for j in range(lLow,lHigh+1) :
+                    aryVolPrice[j] += aryPerVol[j]
+
+                for j in range(lSpeed) :
+                    dTotalVol += aryVolPrice[j]
+
+                if isinstance(data,list):
+                    if (data[i]==None) :
+                        continue
+                    lHigh = int(min((data[i] * 100) - lMinPrice, lSpeed - 1))
+                else :
+                    lHigh = int(min((data * 100) - lMinPrice, lSpeed - 1))
+
+                dVola, dPerVola = 0,0
+                for j in range(lHigh+1):
+                    dVola += aryVolPrice[j]
+                    dPerVola += (0.01*(j + lMinPrice))*aryVolPrice[j]
+
+                if isinstance(data2,list) :
+                    if (data2[i]==None):
+                        continue
+                    lHigh = int(min((data2[i] * 100) - lMinPrice, lSpeed - 1))
+                else :
+                    lHigh = int(min((data2 * 100) - lMinPrice, lSpeed - 1))
+
+                dVolb, dPerVolb = 0, 0
+                for j in range(lHigh+1) :
+                    dVolb += aryVolPrice[j]
+                    dPerVolb += (0.01*(j + lMinPrice))*aryVolPrice[j]
+                
+                dVol = dVola - dVolb
+                dPerVolRange = dPerVola - dPerVolb
+                if abs(dPerVolRange)>0.001 and dVol!=0 :
+                    result[i]=dPerVolRange / dVol
+                elif (i-1>=0) :
+                    result[i] = result[i - 1]
+           
+        return result
+
+    # 近期获利盘比例.
+    # 用法: LWINNER(5,CLOSE),表示最近5天的那部分成本以当前收市价卖出的获利盘比例
+    # 例如: 返回0.1表示10%获利盘
+    def LWINNER(self, n, data, node) :
+        return []
+
+    def PWINNER(self, n, data, node) :
+        return []
+
     # 属于未来函数,之字转向.
     # 用法: ZIG(K,N),当价格变化量超过N%时转向,K表示0:开盘价,1:最高价,2:最低价,3:收盘价,其余:数组信息
     # 例如: ZIG(3,5)表示收盘价的5%的ZIG转向
     def ZIG(self,data,n) :
         hisData=self.SymbolData.Data
-        result=[]
         if JSComplierHelper.IsNumber(data):
             if data==0 :
                 data=hisData.GetOpen()
@@ -2523,98 +2821,150 @@ class JSAlgorithm() :
             else :
                 return []
         
-        bFirstPoint=False
-        bSecondPont=False
-        firstData, secondData, thridData = Variant(), Variant(), Variant()
-        lastData=Variant()
-        dataLen=len(data)
-        result=JSComplierHelper.CreateArray(dataLen)
-        for i in range(dataLen) :
-            item=data[i]
-            if not JSComplierHelper.IsNumber(item) :
-                continue
+        return self.ZIG_Calculate(data,n)
 
-            if bFirstPoint==False :
-                bFirstPoint=True
-                firstData.ID=i  # 第1个点
-                firstData.Value=item   
-            elif bFirstPoint==True and bSecondPont==False :
-                temp=(item-firstData.Value)/firstData.Value*100
-                if temp>n :
-                    secondData.ID, secondData.Value, secondData.Up= i, item, True
-                    lastData.ID, lastData.Value=i, item
-                    bSecondPont=True
-                elif temp<-n :
-                    secondData.ID, secondData.Value, secondData.Up =i, item, False
-                    lastData.ID, lastData.Value=i, item
-                    bSecondPont=True
-            elif bFirstPoint==True and bSecondPont==True :
-                temp=(item-lastData.Value)/lastData.Value*100
-                if secondData.Up==True :    # 找下跌的点
-                    if temp<-n :
-                        thridData.ID, thridData.Value, thridData.Up =i, item, False
-                        JSComplierHelper.CalculateZIGLine(firstData,secondData,thridData,data,result)
-                        lastData.ID, lastData.Value =i, item
-                    else :
-                        if item>lastData.Value :
-                            lastData.ID, lastData.Value = i, item
+    # 获取第1个有效数据索引
+    def GetFirstVaildIndex(self, data):
+        count=len(data)
+        for i in range(count):
+            if (JSComplierHelper.IsNumber(data[i])):
+                return i
+        
+        return count
+
+    def ZIG_Calculate(self, data,dRate):
+        nDataCount=len(data)
+        dest=JSAlgorithm.CreateArray(nDataCount)
+        m=self.GetFirstVaildIndex(data)
+        i, lLastPos, lState, j = 0, 0, 0, 0
+        dif = 0
+        lLastPos, lState = m, m
+        for i in range(m+1, nDataCount-1) :
+            if (lState==m):
+                break
+            if abs(data[i] - data[m]) * 100 >= dRate*data[m]:
+                if (data[i]>data[m]) :
+                    lState=i
                 else :
-                    if temp>n :
-                        thridData.ID, thridData.Value,thridData.Up  = i, item, True
-                        JSComplierHelper.CalculateZIGLine(firstData,secondData,thridData,data,result)
-                        lastData.ID, lastData.Value = i, item
+                    lState=-1
+            else :
+                lState=m
+        
+        for i in range(i, nDataCount-1) :
+            if (data[i] >= data[i - 1] and data[i] >= data[i + 1]) :
+                if (lState<0) :
+                    if ((data[i] - data[-lState]) * 100<dRate*data[-lState]) :
+                        continue
                     else :
-                        if item<lastData.Value :
-                            lastData.ID, lastData.Value =i, item
+                        j = -lState
+                        dif = (data[lLastPos] - data[j]) / (-lState - lLastPos)
+                        dest[j]=data[-lState]
+                        j-=1
+                        for j in range(j,lLastPos-1,-1):    # for (; j >= lLastPos; j--)
+                            dest[j]=data[-lState] + (-lState - j)*dif
+                        lLastPos = -lState
+                        lState = i
+                
+                elif (data[i]>data[lState]):
+                    lState = i
+            elif (data[i] <= data[i - 1] and data[i] <= data[i + 1]) :
+                if (lState>0) :
+                    if ((data[lState] - data[i]) * 100<dRate*data[lState]):
+                        continue
+                    else :
+                        j = lLastPos
+                        dif = (data[lState] - data[j]) / (lState - lLastPos)
+                        dest[j]=data[lLastPos]
+                        j+=1
+                        for j in range(j,lState+1) :
+                            dest[j]=data[lLastPos] + (j - lLastPos)*dif
+                        lLastPos = lState
+                        lState = -i
+                elif (data[i]<data[-lState]) :
+                    lState = -i
 
-        # 计算最后1组数据
-        thridData.ID=len(data)-1
-        thridData.Value=data[len(data)-1]
-        thridData.Up=not secondData.Up
-        JSComplierHelper.CalculateZIGLine(firstData,secondData,thridData,data,result)
-       
-        return result
+        if (abs(lState) >= nDataCount - 2) :
+            if (lState>0 and data[nDataCount - 1] >= data[lState]) :
+                lState = nDataCount - 1
+            if (lState<0 and data[nDataCount - 1] <= data[-lState]) :
+                lState = 1 - nDataCount
+
+        if (lState>0) :
+            j = lLastPos
+            dif = (data[lState] - data[j]) / (lState - lLastPos )
+            dest[j]=data[lLastPos]
+            j+=1
+            for j in range(j, lState+1) :
+                dest[j]=data[lLastPos] + (j - lLastPos)*dif
+        else :
+            j = -lState
+            dif = (data[lLastPos] - data[j]) / (-lState - lLastPos)
+            dest[j]=data[-lState]
+            j-=1
+            for j in range(j,lLastPos-1,-1) : # for (; j >= lLastPos; j--)
+                dest[j]=(data[-lState] + (-lState - j)*dif)
+        
+        lState = abs(lState)
+        if (lState<nDataCount - 1) :
+            if (data[nDataCount - 1] >= data[lState]) :
+                j = lState
+                dif = (data[nDataCount - 1] - data[j]) / (nDataCount - lState)
+                dest[j]=(data[lState])
+                j+=1
+                for j in range(j, nDataCount):
+                    dest[j]=(data[lState] + (j - lState)*dif)
+            else :
+                j = nDataCount - 1
+                dif = (data[lState] - data[j]) / (nDataCount - lState)
+                dest[j]=(data[nDataCount - 1])
+                j-=1
+                for j in range(j, lState-1, -1) : #for (; j >= lState; j--)
+                    dest[j]=(data[nDataCount - 1] + (nDataCount - j)*dif)
+
+        return dest
 
 
     # 属于未来函数,前M个ZIG转向波谷到当前距离.
     # 用法: TROUGHBARS(K,N,M)表示之字转向ZIG(K,N)的前M个波谷到当前的周期数,M必须大于等于1
     # 例如: TROUGHBARS(2,5,2)表示%5最低价ZIG转向的前2个波谷到当前的周期数
     def TROUGHBARS(self,data,n,n2) :
-        zigData=self.ZIG(data,n)  # 计算ZIG
-        zigDataLen=len(zigData)
-        dataLen=len(zigData)
-        result=JSComplierHelper.CreateArray(dataLen)
+        zigData=self.ZIG(data,n)   # 计算ZIG
+        lEnd=n2
+        if (lEnd<1) :
+            return []
 
-        for i in range(zigDataLen) :
-            if JSComplierHelper.IsNumber(zigData[i]) :
-                break
+        nDataCount = len(zigData)
+        dest=JSAlgorithm.CreateArray(nDataCount)
+        trough = JSAlgorithm.CreateArray(lEnd,0)
+        lFlag = 0
+        i = self.GetFirstVaildIndex(zigData) + 1
+        lEnd-=1
+        while i<nDataCount and zigData[i]>zigData[i - 1] :
+            i+=1
+        
+        while i<nDataCount and zigData[i]<zigData[i - 1] :
+            i+=1
 
-        trough=JSComplierHelper.CreateArray(dataLen)
-        start=i
-        for i in range(i,zigDataLen ) :  # 第1个波谷
-            if (i+1<zigDataLen and i-1>=0 and  zigData[i]<zigData[i-1] and zigData[i]<zigData[i+1]) : #波谷
-                trough[0]=i
-                break
-
-        j=0
-        for i in range(i+1,zigDataLen) :
-            if (i+1<zigDataLen and i-1>=0 and  zigData[i]<zigData[i-1] and zigData[i]<zigData[i+1]) : # 波谷
-                # console.log('[TROUGHBARS] i',i,zigData[i]);
-                j+=1
-                trough[j]=i
-                if j+1==n2 :
-                    result[i]=i-start
-                elif j+1>n2 :
-                    trough.pop(0) # 大于计算的波谷数,去掉第1个波谷
-                    start=trough[0]
-                    j-=1
-                    result[i]=i-start
+        i-=1
+        trough[0] = i
+        for i in range(i, nDataCount - 1) :
+            if (zigData[i]<zigData[i + 1]) :
+                if (lFlag) :
+                    if (lEnd) :
+                        tempTrough=copy.deepcopy(trough)
+                        for j in range(lEnd) :
+                            trough[j+1]=tempTrough[j]
+                    lFlag = 0
+                    trough[lFlag] = i
             else :
-                if j+1==n2 :
-                    result[i]=i-start
+                lFlag = 1
+            if (trough[lEnd]) :
+                dest[i]=(i - trough[lEnd])
 
-        return result
+        if (trough[lEnd]) :
+            dest[i]=(i - trough[lEnd])
 
+        return dest
 
     # 属于未来函数,前M个ZIG转向波峰到当前距离.
     # 用法:
@@ -2622,39 +2972,42 @@ class JSAlgorithm() :
     # 例如: PEAKBARS(0,5,1)表示%5开盘价ZIG转向的上一个波峰到当前的周期数
     def PEAKBARS(self, data,n,n2) :
         zigData=self.ZIG(data,n)   # 计算ZIG
-        zigDataLen=len(zigData)
-        dataLen=len(zigData)
-        result=JSComplierHelper.CreateArray(dataLen)
+        lEnd=n2
+        if (lEnd<1) :
+            return []
 
-        for i in range(zigDataLen) :
-            if JSComplierHelper.IsNumber(zigData[i]) :
-                break
+        nDataCount = len(zigData)
+        dest=JSAlgorithm.CreateArray(nDataCount)
+        trough = JSAlgorithm.CreateArray(lEnd,0)
+        lFlag = 0
+        i = self.GetFirstVaildIndex(zigData) + 1
+        lEnd-=1
+        while i<nDataCount and zigData[i]>zigData[i - 1] :
+            i+=1
+        
+        while i<nDataCount and zigData[i]<zigData[i - 1] :
+            i+=1
 
-        trough=JSComplierHelper.CreateArray(dataLen)
-        start=i
-        for i in range(i, zigDataLen) : # 第1个波峰
-            if (i+1<zigDataLen and i-1>=0 and zigData[i]>zigData[i-1] and zigData[i]>zigData[i+1]) : # 波峰
-                trough[0]=i
-                break
-
-        j=0
-        for i in range(i+1, zigDataLen) :
-            if (i+1<zigDataLen and i-1>=0 and  zigData[i]>zigData[i-1] and zigData[i]>zigData[i+1]) : # 波峰
-                # console.log('[TROUGHBARS] i',i,zigData[i]);
-                j+=1
-                trough[j]=i
-                if j+1==n2 :
-                    result[i]=i-start
-                elif j+1>n2 :
-                    trough.pop(0) # 大于计算的波谷数,去掉第1个波谷
-                    start=trough[0]
-                    j-=1
-                    result[i]=i-start
+        i-=1
+        trough[0] = i
+        for i in range(i, nDataCount - 1) :
+            if (zigData[i]<zigData[i + 1]) :
+                if (lFlag) :
+                    if (lEnd) :
+                        tempTrough=copy.deepcopy(trough)
+                        for j in range(lEnd) :
+                            trough[j+1]=tempTrough[j]
+                    lFlag = 0
+                    trough[lFlag] = i
             else :
-                if j+1==n2 : 
-                    result[i]=i-start
+                lFlag = 1
+            if(trough[lEnd]) :
+                dest[i]=zigData[trough[lEnd]]
 
-        return result
+        if (trough[lEnd]) :
+            dest[i]=zigData[trough[lEnd]]
+
+        return dest
 
 
 
@@ -2744,6 +3097,14 @@ class JSAlgorithm() :
             return self.COST(args[0],node)
         elif name=='WINNER':
             return self.WINNER(args[0],node)
+        elif name=='PPART':
+            return self.PPART(args[0],node)
+        elif name=='COSTEX':
+            return self.COSTEX(args[0],args[1],node)
+        elif name=='LWINNER':
+            return self.LWINNER(args[0],args[1],node)
+        elif name=='PWINNER':
+            return self.PWINNER(args[0],args[1],node)
         elif name=='FORCAST':
             return self.FORCAST(args[0], int(args[1]))
         elif name=='STDP':

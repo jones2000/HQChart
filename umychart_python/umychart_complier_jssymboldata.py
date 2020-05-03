@@ -568,21 +568,21 @@ class JSSymbolData() :
                 capitalData=item['capital']
                 if not capitalData or not JSComplierHelper.IsJsonNumber(capitalData,'a'):
                     continue
-                indexData.Value=capitalData['a']/100    # 流通股本（手）
+                indexData.Value=capitalData['a']/100    # 流通股本 手
                 bFinanceData=True
 
             elif jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_TOTAL_EQUITY_DATA:
                 capitalData=item['capital']
                 if not capitalData or not JSComplierHelper.IsJsonNumber(capitalData,'total'):
                     continue
-                indexData.Value=capitalData['total']/10000 #总股本（万股）
+                indexData.Value=capitalData['total'] #总股本 股
                 bFinanceData=True
 
             elif jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FLOW_EQUITY_DATA: 
                     capitalData=item['capital']
                     if not capitalData or not JSComplierHelper.IsJsonNumber(capitalData,'a'):
                         continue
-                    indexData.Value=capitalData['a']/10000 # 流通股本（万股）
+                    indexData.Value=capitalData['a'] # 流通股本 股
                     bFinanceData=True
 
             elif jobID==JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FLOW_MARKETVALUE_DATA:   #流通市值
@@ -1223,3 +1223,16 @@ class JSSymbolData() :
         # Period周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟
         PERIOD_MAP=[5,6,7,11, 0,1,2,3,4,5]
         return PERIOD_MAP[self.Period]
+
+    def GetCurrBarsCount(self):
+        if (not self.Data):
+            return []
+        lCount=self.Data.GetCount()
+        if (lCount<=0):
+            return []
+
+        result=[]
+        for i in range(lCount-1, -1, -1):
+            result.append(i+1) #数据从1开始
+
+        return result

@@ -26,6 +26,33 @@ class ChartDataCache():
     def GetCount(self):
         return len(self.GetClose())
 
+    # 获取最大最小值
+    def GetMaxMin(self):
+        aryHigh=self.GetHigh()
+        aryLow=self.GetLow()
+        dMaxPrice=aryHigh[0].High
+        dMinPrice=aryLow[0].Low
+        for i in range(len(aryHigh)) :
+            itemHigh=aryHigh[i]
+            itemLow=aryLow[i]
+            dMinPrice = min(dMinPrice,itemLow)
+            dMaxPrice = max(dMaxPrice,itemHigh)
+        return {"Max":dMaxPrice, "Min":dMinPrice}
+        
+    def GetItem(self,index):
+        item=Variant()
+        item.Date=self.GetDate()[index]
+        item.Close=self.GetClose()[index]
+        item.Open=self.GetOpen()[index]
+        item.High=self.GetHigh()[index]
+        item.Low=self.GetLow()[index]
+        item.Vol=self.GetVol()[index]
+        item.Amount=self.GetAmount()[index]
+        if ("time" in self.Data.keys()) :
+            item.Time=self.GetTime()[index]
+            
+        return item
+
     def GetClose(self) :
         return self.Data.get("CLOSE",[])
     

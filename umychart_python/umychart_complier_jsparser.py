@@ -275,12 +275,7 @@ class Node:
                 self.IsNeedNewsAnalysisData.add(jobID)
             return
 
-        if callee.Name == 'COST' or callee.Name == 'WINNER' :   # 筹码都需要换手率
-            argItem=Variant()
-            argItem.Value=201
-            item=JobItem(id=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_EXCHANGE_DATA, funcName=callee.Name, args=[argItem] )
-            self.NeedFinanceData.append(item)
-
+        if callee.Name in ( 'COST', 'WINNER', 'PPART', 'COSTEX', 'LWINNER', 'PWINNER'  ) :   # 筹码需要流通股
             argItem=Variant()
             argItem.Value=7
             item=JobItem(id=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FLOW_EQUITY_DATA, funcName=callee.Name, args=[argItem])
