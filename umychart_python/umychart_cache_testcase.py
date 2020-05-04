@@ -75,10 +75,12 @@ class CacheData:
         symbolData.Data.Data['LOW']=aryLow
         symbolData.Data.Data['HIGH']=aryHigh
         symbolData.Data.Data['OPEN']=aryOpen
+        symbolData.Data.Data['AMOUNT']=aryVol
 
         # 财务数据
         #FINANCE(7)
-        symbolData.FinanceData[7]=[110, 121, 140.3, 161.2, 181.3, 110.3, 120.4]
+        symbolData.FinanceData[7]=[14922777132.0, 114922777132.021, 14922777132.0, 14922777132.0, 14922777132.0, 
+            21618279922.0, 14922777132.3, 14922777132.0, 21618279922.0, 21618279922.0]
 
         # 大盘数据 数据要和对应这个股票的日期对应上
         symbolData.IndexData.Data["CLOSE"]=[210, 211, 210.3, 211.2, 211.3, 210.3, 210.4]
@@ -104,10 +106,10 @@ T16:PEAKBARS(0,5,1);
 T15:TROUGHBARS(2,5,2);
 T14:ZIG(3,5);
 T13:COSTEX(CLOSE,REF(CLOSE,1));
-T12:PPART(10);
+T12:PPART(5);
 T11:COST(10);
 T0:WINNER(CLOSE);
-T1:INDEXC;
+//T1:INDEXC;
 T3:FINANCE(7);
 T2:C;
 T4:DYNAINFO(4);
@@ -122,7 +124,7 @@ def RunTestCase():
     name='测试脚本'
 
     # 指标脚本代码
-    script=MACD_INDEX
+    script=TEST_INDEX
 
     # 参数
     args=[ ArgumentItem(name='M1', value=5), ArgumentItem(name='M2', value=10), ArgumentItem(name='M3', value=20)] 

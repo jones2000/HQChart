@@ -30,8 +30,8 @@ class ChartDataCache():
     def GetMaxMin(self):
         aryHigh=self.GetHigh()
         aryLow=self.GetLow()
-        dMaxPrice=aryHigh[0].High
-        dMinPrice=aryLow[0].Low
+        dMaxPrice=aryHigh[0]
+        dMinPrice=aryLow[0]
         for i in range(len(aryHigh)) :
             itemHigh=aryHigh[i]
             itemLow=aryLow[i]
@@ -48,7 +48,7 @@ class ChartDataCache():
         item.Low=self.GetLow()[index]
         item.Vol=self.GetVol()[index]
         item.Amount=self.GetAmount()[index]
-        if ("time" in self.Data.keys()) :
+        if ("TIME" in self.Data.keys()) :
             item.Time=self.GetTime()[index]
             
         return item
