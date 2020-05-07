@@ -7051,12 +7051,14 @@ function ChartData()
         return result;
     }
 
-    this.GetVol=function()
+    this.GetVol=function(unit)
     {
+        var value=1;
+        if (IFrameSplitOperator.IsNumber(unit)>0) value=unit;
         var result=new Array();
         for(var i in this.Data)
         {
-            result[i]=this.Data[i].Vol;
+            result[i]=this.Data[i].Vol/value;
         }
 
         return result;
@@ -29941,8 +29943,7 @@ KLineChartContainer.JsonDataToRealtimeData=function(data, symbol)
     item.YClose=stock.yclose;
     item.High=stock.high;
     item.Low=stock.low;
-    if (isSHSZ) item.Vol=stock.vol/100; //原始单位股
-    else item.Vol=stock.vol;
+    item.Vol=stock.vol; //股
     item.Amount=stock.amount;
     item.Close=stock.price;
     if (IFrameSplitOperator.IsNumber(stock.position)) item.Position=stock.position; //持仓量
@@ -29981,8 +29982,7 @@ KLineChartContainer.JsonDataToMinuteRealtimeData=function(data,symbol)
         item.Open=jsData.open;
         item.High=jsData.high;
         item.Low=jsData.low;
-        if (isSHSZ) item.Vol=jsData.vol/100; //沪深股票原始单位股
-        else item.Vol=jsData.vol;
+        item.Vol=jsData.vol;   //股
         item.Amount=jsData.amount;
         if (jsData.date>0) item.Date=jsData.date;
         else item.Date=date;
@@ -30034,8 +30034,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
         item.Close = jsData[close];
         item.High = jsData[high];
         item.Low = jsData[low];
-        if (isSHSZ) item.Vol = jsData[vol]/100;    //原始单位股
-        else item.Vol = jsData[vol];
+        item.Vol = jsData[vol];    //股
         item.Amount = jsData[amount];
         item.Time=jsData[time];
         if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position=jsData[position]; //期货持仓

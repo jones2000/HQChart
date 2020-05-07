@@ -4421,7 +4421,7 @@ function JSAlgorithm(errorHandler,symbolData)
         }
 
         if (dMinPrice > 1000 || dMinPrice < 0 || dMaxPrice>1000 || dMinPrice < 0)
-            this.ThrowUnexpectedNode(node,'WINNER() 历史K线最大最小值错误, 超出(0,1000)范围');
+            this.ThrowUnexpectedNode(node,'COST() 历史K线最大最小值错误, 超出(0,1000)范围');
 
         var lMaxPrice = parseInt(dMaxPrice * 100 + 1);
         var lMinPrice = parseInt(dMinPrice * 100 - 1);
@@ -4855,6 +4855,11 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    /*
+    远期成本分布比例.
+    用法:
+    PPART(10),表示10前的成本占总成本的比例,0.2表示20%
+    */
     this.PPART=function(n,node)
     {
         var result=[];
@@ -5904,6 +5909,8 @@ function JSAlgorithm(errorHandler,symbolData)
             result=refResult;
         }
 
+        var upperSymbol=this.SymbolData.Symbol.toUpperCase();
+
         switch(name)
         {
             case 'COVER_C':
@@ -5917,6 +5924,8 @@ function JSAlgorithm(errorHandler,symbolData)
             case 'COVER_A':
                 return result.GetAmount();
             case 'COVER_V':
+                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) 
+                    return result.GetVol(100);
                 return result.GetVol();
             default:
                 return null;
@@ -7926,10 +7935,12 @@ function JSSymbolData(ast,option,jsExecute)
         if (args.length<=0) return this.GetSymbolCacheData(dataName);
         var symbol=args[0].toString().toLowerCase();
         if (symbol==this.Symbol) return this.GetSymbolCacheData(dataName);
+        
 
         if (!this.OtherSymbolData.has(symbol)) return [];
 
         var kData=this.OtherSymbolData.get(symbol);
+        var upperSymbol=symbol.toUpperCase();
 
         switch(dataName)
         {
@@ -7938,6 +7949,8 @@ function JSSymbolData(ast,option,jsExecute)
                 return kData.GetClose();
             case 'VOL':
             case 'V':
+                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) 
+                    return kData.GetVol(100);   //A股的 把股转成手
                 return kData.GetVol();
             case 'OPEN':
             case 'O':
@@ -8470,6 +8483,8 @@ function JSSymbolData(ast,option,jsExecute)
     {
         if (!this.Data) return new Array();
 
+        var upperSymbol=this.Symbol.toUpperCase();
+
         switch(dataName)
         {
             case 'CLOSE':
@@ -8477,6 +8492,8 @@ function JSSymbolData(ast,option,jsExecute)
                 return this.Data.GetClose();
             case 'VOL':
             case 'V':
+                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) 
+                    return this.Data.GetVol(100);   //A股的 把股转成手
                 return this.Data.GetVol();
             case 'OPEN':
             case 'O':
@@ -14025,13 +14042,21 @@ function APIScriptIndex(name,script,args,option, isOverlay)
             }
         }
 
-        var requestCount=hqChart.GetRequestDataCount();
+        var requestCount;
+        if (hqChart.GetRequestDataCount) requestCount=hqChart.GetRequestDataCount();
         var self=this;
         var postData =
         { 
             indexname:this.ID,  symbol: hqChart.Symbol, script:this.Script, args:args,
-            period:hqChart.Period, right:hqChart.Right, maxdatacount:requestCount.MaxRequestDataCount, maxminutedaycount:requestCount.MaxRequestMinuteDayCount, hqdatatype: hqDataType
+            period:hqChart.Period, right:hqChart.Right, hqdatatype: hqDataType
         };
+
+        if (requestCount)
+        {
+            postData.maxdatacount=requestCount.MaxRequestDataCount;
+            postData.maxminutedaycount=requestCount.MaxRequestMinuteDayCount;
+        }
+
         if (hqDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID || hqDataType==HQ_DATA_TYPE.MINUTE_ID) postData.daycount=hqChart.DayCount;
         this.HQDataType=hqDataType;
 

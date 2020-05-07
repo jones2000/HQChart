@@ -2923,6 +2923,47 @@ class JSAlgorithm() :
 
         return dest
 
+    # 属于未来函数,前M个ZIG转向波谷值.
+    # 用法: TROUGH(K,N,M)表示之字转向ZIG(K,N)的前M个波谷的数值,M必须大于等于1
+    # 例如: TROUGH(2,5,2)表示%5最低价ZIG转向的前2个波谷的数值
+    def TROUGH(self,data,n,n2):
+        zigData=self.ZIG(data,n)   # 计算ZIG
+        lEnd=n2
+        if (lEnd<1) :
+            return []
+
+        nDataCount = len(zigData)
+        dest=JSAlgorithm.CreateArray(nDataCount)
+        trough = JSAlgorithm.CreateArray(lEnd,0)
+        lFlag = 0
+        i = self.GetFirstVaildIndex(zigData) + 1
+        lEnd-=1
+        while i<nDataCount and zigData[i]>zigData[i - 1] :
+            i+=1
+        
+        while i<nDataCount and zigData[i]<zigData[i - 1] :
+            i+=1
+
+        i-=1
+        trough[0] = i
+        for i in range(i, nDataCount - 1) :
+            if (zigData[i]<zigData[i + 1]) :
+                if (lFlag) :
+                    if (lEnd) :
+                        tempTrough=copy.deepcopy(trough)
+                        for j in range(lEnd) :
+                            trough[j+1]=tempTrough[j]
+                    lFlag = 0
+                    trough[lFlag] = i
+            else :
+                lFlag = 1
+            if (trough[lEnd]):
+                 dest[i]=zigData[trough[lEnd]]
+
+        if (trough[lEnd]) :
+            dest[i]=zigData[trough[lEnd]]
+
+        return dest
 
     # 属于未来函数,前M个ZIG转向波谷到当前距离.
     # 用法: TROUGHBARS(K,N,M)表示之字转向ZIG(K,N)的前M个波谷到当前的周期数,M必须大于等于1
@@ -2966,6 +3007,50 @@ class JSAlgorithm() :
 
         return dest
 
+
+    # 属于未来函数,前M个ZIG转向波峰值.
+    #用法: PEAK(K,N,M)表示之字转向ZIG(K,N)的前M个波峰的数值,M必须大于等于1
+    # 例如: PEAK(1,5,1)表示%5最高价ZIG转向的上一个波峰的数值
+    def PEAK(self, data,n,n2) :
+        zigData=self.ZIG(data,n)   # 计算ZIG
+        lEnd=n2
+        if (lEnd<1) :
+            return []
+
+        nDataCount = len(zigData)
+        dest=JSAlgorithm.CreateArray(nDataCount)
+        trough = JSAlgorithm.CreateArray(lEnd,0)
+        lFlag = 0
+        i = self.GetFirstVaildIndex(zigData) + 1
+        lEnd-=1
+        while i<nDataCount and zigData[i]>zigData[i - 1] :
+            i+=1
+        
+        while i<nDataCount and zigData[i]<zigData[i - 1] :
+            i+=1
+
+        i-=1
+        trough[0] = i
+        for i in range(i, nDataCount - 1) :
+            if (zigData[i]<zigData[i + 1]) :
+                if (lFlag) :
+                    if (lEnd) :
+                        tempTrough=copy.deepcopy(trough)
+                        for j in range(lEnd) :
+                            trough[j+1]=tempTrough[j]
+                    lFlag = 0
+                    trough[lFlag] = i
+            else :
+                lFlag = 1
+            if(trough[lEnd]) :
+                dest[i]=zigData[trough[lEnd]]
+
+        if (trough[lEnd]) :
+            dest[i]=zigData[trough[lEnd]]
+
+        return dest
+
+
     # 属于未来函数,前M个ZIG转向波峰到当前距离.
     # 用法:
     # PEAKBARS(K,N,M)表示之字转向ZIG(K,N)的前M个波峰到当前的周期数,M必须大于等于1
@@ -3002,10 +3087,10 @@ class JSAlgorithm() :
             else :
                 lFlag = 1
             if(trough[lEnd]) :
-                dest[i]=zigData[trough[lEnd]]
+                dest[i]=dest[i]=(i - trough[lEnd])
 
         if (trough[lEnd]) :
-            dest[i]=zigData[trough[lEnd]]
+            dest[i]=(i - trough[lEnd])
 
         return dest
 
@@ -3089,8 +3174,12 @@ class JSAlgorithm() :
             return self.DEVSQ(args[0], int(args[1]))
         elif name=='ZIG':
             return self.ZIG(args[0],args[1])
+        elif name=='TROUGH':
+            return self.TROUGH(args[0],args[1],int(args[2]))
         elif name=='TROUGHBARS':
             return self.TROUGHBARS(args[0],args[1],int(args[2]))
+        elif name=='PEAK':
+            return self.PEAK(args[0],args[1],int(args[2]))
         elif name=='PEAKBARS':
             return self.PEAKBARS(args[0],args[1],int(args[2]))
         elif name=='COST':
