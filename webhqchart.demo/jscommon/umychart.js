@@ -25852,6 +25852,13 @@ function KLineChartContainer(uielement)
         {
             var item =this.Frame.SubFrame[i].Frame;
             item.Data=this.ChartPaint[0].Data;
+
+            if (i==0)   //更新Y轴K线数据
+            {
+                item.YSplitOperator.Symbol=this.Symbol;
+                item.YSplitOperator.Data=this.ChartPaint[0].Data;          //K线数据
+                item.YSplitOperator.Period=this.Period;                    //周期
+            }
         }
 
         this.TitlePaint[0].Data=this.ChartPaint[0].Data;                    //动态标题
@@ -26969,13 +26976,13 @@ function KLineChartContainer(uielement)
         bindData.DataType=this.SourceData.DataType;
         bindData.Symbol=this.Symbol;
 
-        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true) && !this.IsApiPeriod)    //复权(日线数据才复权)
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
         }
 
-        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        if ( (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false)) && !this.IsApiPeriod)   //周期数据 (0= 日线,4=1分钟线 不需要处理)
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;

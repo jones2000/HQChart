@@ -4465,7 +4465,7 @@ function JSAlgorithm(errorHandler,symbolData)
                 else
                 {
                     var	dVH = kItem.Vol / (lHalf - lLow);
-                    for (k = lLow; k<lHalf; ++k)
+                    for (var k = lLow; k<lHalf; ++k)
                     {
                         aryPerVol[k] += (k - lLow)*(dVH / (lHalf - lLow));
                     }
@@ -4644,7 +4644,7 @@ function JSAlgorithm(errorHandler,symbolData)
             else
             {
                 var	dVH = kItem.Vol / (lHalf - lLow);
-                for (k = lLow; k<lHalf; ++k)
+                for (var k = lLow; k<lHalf; ++k)
                 {
                     aryPerVol[k] += (k - lLow)*(dVH / (lHalf - lLow));
                 }
@@ -4808,7 +4808,7 @@ function JSAlgorithm(errorHandler,symbolData)
                 else
                 {
                     var	dVH = kItem.Vol / (lHalf - lLow);
-                    for (k = lLow; k<lHalf; ++k)
+                    for (var k = lLow; k<lHalf; ++k)
                     {
                         aryPerVol[k] += (k - lLow)*(dVH / (lHalf - lLow));
                     }
@@ -4966,11 +4966,11 @@ function JSAlgorithm(errorHandler,symbolData)
                 else
                 {
                     var	dVH = kItem.Vol / (lHalf - lLow);
-                    for (k = lLow; k<lHalf; ++k)
+                    for (let k = lLow; k<lHalf; ++k)
                     {
                         aryPerVol[k] += (k - lLow)*(dVH / (lHalf - lLow));
                     }
-                    for (k; k <= lHigh; ++k)
+                    for (let k; k <= lHigh; ++k)
                     {
                         aryPerVol[k] += (k - lHigh)*(dVH / (lHalf - lHigh));
                     }
