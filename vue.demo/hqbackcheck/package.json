@@ -1,0 +1,47 @@
+{
+  "name": "zealink-news",
+  "description": "zealink news",
+  "author": "wgduan",
+  "private": true,
+  "scripts": {
+    "dev": "webpack-dev-server --inline --hot --open --env.dev",
+    "page": "webpack-dev-server --inline --hot --open --env.dev --open-page ",
+    "build": "rimraf dist && webpack -p --progress --hide-modules"
+  },
+  "dependencies": {
+    "axios": "^0.16.2",
+    "echarts": "^4.2.1",
+    "element-ui": "^1.1.2",
+    "hqchart": "^1.1.8426",
+    "jquery": "^3.4.0",
+    "less": "^3.11.1",
+    "less-loader": "^5.0.0",
+    "promise-polyfill": "^6.0.2",
+    "qs": "^6.5.0",
+    "vue": "^2.1.8",
+    "vue-codemirror": "^4.0.6",
+    "webfontloader": "^1.6.28"
+  },
+  "engines": {
+    "node": ">=6"
+  },
+  "devDependencies": {
+    "autoprefixer": "^6.6.0",
+    "babel-core": "^6.24.1",
+    "babel-loader": "^6.4.0",
+    "babel-preset-vue-app": "^1.2.0",
+    "css-loader": "^0.27.0",
+    "file-loader": "^0.10.1",
+    "html-webpack-plugin": "^2.24.1",
+    "node-sass": "^4.11.0",
+    "postcss-loader": "^1.3.3",
+    "rimraf": "^2.5.4",
+    "sass-loader": "^7.1.0",
+    "style-loader": "^0.13.2",
+    "url-loader": "^0.5.8",
+    "vue-loader": "^11.1.4",
+    "vue-template-compiler": "^2.1.8",
+    "webpack": "^2.4.1",
+    "webpack-dev-server": "^2.4.2"
+  }
+}
