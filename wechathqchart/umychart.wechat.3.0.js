@@ -6890,6 +6890,12 @@ function KLineChartContainer(uielement)
         {
             var item = this.Frame.SubFrame[i].Frame;
             item.Data = this.ChartPaint[0].Data;
+            if (i==0)
+            {
+                item.YSplitOperator.Symbol = this.Symbol;
+                item.YSplitOperator.Data = this.ChartPaint[0].Data;          //K线数据
+                item.YSplitOperator.Period = this.Period;                    //周期
+            }
         }
 
         this.TitlePaint[0].Data = this.ChartPaint[0].Data;                    //动态标题

@@ -982,16 +982,34 @@ class JSAlgorithm() :
 
     def COUNT(self, data,n):
         dataLen=len(data)
-        result=[None]*dataLen
+        result=[0]*dataLen # 初始全部是0
 
-        for i in range(dataLen) :
-            count=0
-            for j in range(n) :
-                if i-j<0 :
-                    break
-                if data[i-j] :
-                    count+=1
-            result[i]=count
+        if (JSAlgorithm.IsArray(n)):
+            for i in range(len(n)) :
+                period=n[i]
+                if (not JSAlgorithm.IsNumber(period)):
+                    continue
+                period=int(period)
+                if (period<1) :
+                    period=i+1
+                count=0
+                for j in range(period) :
+                    index=i-j
+                    if (index<0):
+                        break
+                    if data[index] :
+                        count+=1
+                result[i]=count
+        else :
+            n=int(n)
+            for i in range(dataLen) :
+                count=0
+                for j in range(n) :
+                    if i-j<0 :
+                        break
+                    if data[i-j] :
+                        count+=1
+                result[i]=count
         
         return result
 
@@ -3119,7 +3137,7 @@ class JSAlgorithm() :
         elif name=='EXPMEMA':
             return self.EXPMEMA(args[0], int(args[1]))
         elif name=='COUNT':
-            return self.COUNT(args[0], int(args[1]))
+            return self.COUNT(args[0], args[1])
         elif name=='LLV':
             return self.LLV(args[0], args[1])
         elif name=='LLVBARS':

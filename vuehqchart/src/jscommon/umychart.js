@@ -28735,7 +28735,7 @@ function KLineChartContainer(uielement)
         var aryOverlayData=this.SourceData.GetOverlayMinuteData(bindData.Data);      //和主图数据拟合以后的数据
         bindData.Data=aryOverlayData;
 
-        if (ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
+        if (ChartData.IsMinutePeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据, API周期数据不用计算
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;

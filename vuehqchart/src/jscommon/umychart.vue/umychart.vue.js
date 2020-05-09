@@ -32279,7 +32279,7 @@ function KLineChartContainer(uielement)
         var aryOverlayData=this.SourceData.GetOverlayMinuteData(bindData.Data);      //和主图数据拟合以后的数据
         bindData.Data=aryOverlayData;
 
-        if (ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
+        if (ChartData.IsMinutePeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据, API周期数据不用计算
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -48195,22 +48195,78 @@ function JSAlgorithm(errorHandler,symbolData)
         }
         return result;
     }
+
+    /*
+    统计满足条件的周期数.
+	用法:COUNT(X, N), 统计N周期中满足X条件的周期数, 若N<0则从第一个有效值开始.
+    例如 :COUNT(CLOSE>OPEN, 20)表示统计20周期内收阳的周期数
+    N 支持数组
+    */
     this.COUNT=function(data,n)
     {
-        let result=[];
-
-        for(let i=0; i<data.length; ++i)
+        if (Array.isArray(n))
         {
-            let count=0;
-            for(let j=0;j<n && i-j>=0;++j)
+            var start=null;
+            var dataCount=data.length;
+            for(var i=0;i<dataCount;++i) 
             {
-                if (data[i-j]) ++count;
+                if (this.IsNumber(data[i])) 
+                {
+                    start=i;
+                    break;
+                }
+            }
+            if (start==null) return [];
+
+            var result=[];
+            var count=0;
+            for(var i=0;i<n.length;++i)
+            {
+                var period=n[i];
+                if (!IFrameSplitOperator.IsNumber(period)) continue;
+                
+                if (period<1) period=i+1;
+                count=0;
+                for(var j=i, k=0 ;j>=0 && k<period ;--j,++k)    //当前往前period天 统计
+                {
+                    if (data[j]) ++count;
+                }
+
+                result[i]=count;
             }
 
-            result[i]=count;
+            return result;
         }
-
-        return result;
+        else
+        {
+            var period=n;
+            var dataCount=data.length;
+            var period=period<1?dataCount:period;
+    
+            var i=0,j=0;
+            for(;i<dataCount;++i)   // 取第1个有效数据
+            {
+                if (this.IsNumber(data[i])) break;
+            }
+    
+            var result=[];
+            var days=0;
+            for(;i<dataCount && j<period; ++i,++j)
+            {
+                days=data[i]?days+1:days;
+                result[i]=days;
+            }
+            
+            for(;i<dataCount;++i)
+            {
+                if (data[i-period] && days) days--;
+    
+                days=data[i] ? days+1 : days;
+                result[i]=days;
+            }
+    
+            return result;
+        }
     }
 
     /*
