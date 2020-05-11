@@ -4072,6 +4072,7 @@ function JSChart(divElement)
             if (!isNaN(option.CorssCursorInfo.Right)) chart.ChartCorssCursor.ShowTextMode.Right=option.CorssCursorInfo.Right;
             if (!isNaN(option.CorssCursorInfo.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom=option.CorssCursorInfo.Bottom;
             if (option.CorssCursorInfo.IsShowCorss===false) chart.ChartCorssCursor.IsShowCorss=option.CorssCursorInfo.IsShowCorss;
+            if (option.CorssCursorInfo.RightTextFormat>0) chart.ChartCorssCursor.TextFormat.Right=option.CorssCursorInfo.RightTextFormat;
         }
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
@@ -4100,10 +4101,19 @@ function JSChart(divElement)
                 if (!chart.Frame.SubFrame[i]) continue;
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
-                if (item.IsShowLeftText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
-                if (item.IsShowRightText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度 
+                if (item.IsShowLeftText==false) 
+                {
+                    chart.Frame.SubFrame[i].Frame.IsShowYText[0]=item.IsShowLeftText;
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
+                }
+                if (item.IsShowRightText==false) 
+                {
+                    chart.Frame.SubFrame[i].Frame.IsShowYText[1]=item.IsShowRightText;
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度 
+                }
                 if (item.Height>=0) chart.Frame.SubFrame[i].Height = item.Height;
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom=item.Custom;
+                if (item.RightTextFormat>0) chart.Frame.SubFrame[i].Frame.YSplitOperator.RightTextFormat=item.RightTextFormat;
             }
         }
 
@@ -11144,7 +11154,7 @@ function ChartData()
     this.GetRightData=this.GetRightDate;
 
     //叠加数据和主数据拟合,去掉主数据没有日期的数据
-    this.GetOverlayData=function(overlayData)
+    this.GetOverlayData=function(overlayData, bApiPeriod)
     {
         var result=[];
 
@@ -11198,7 +11208,7 @@ function ChartData()
         return result;
     }
 
-    this.GetOverlayMinuteData=function(overlayData)
+    this.GetOverlayMinuteData=function(overlayData, bApiPeriod)
     {
         var result=[];
 
@@ -11256,7 +11266,6 @@ function ChartData()
 
         return result;
     }
-
 
     /*
         技术指标数据方法
@@ -21969,6 +21978,7 @@ function FrameSplitMinutePriceY()
     this.SplitType=0;                   //0=默认根据最大最小值分割 1=涨跌停分割
     this.LimitPrice;
     this.Custom;
+    this.RightTextFormat=0;           //右边刻度显示模式 0=百分比  1=价格
 
     this.Operator=function()
     {
@@ -22161,14 +22171,19 @@ function FrameSplitMinutePriceY()
             var price=min+(distance*i);
             var coordinate=new CoordinateInfo();
             coordinate.Value=price;
-            if (this.IsShowLeftText) coordinate.Message[0]=price.toFixed(defaultfloatPrecision);
+            var strPrice=price.toFixed(defaultfloatPrecision);  //价格刻度字符串
+            if (this.IsShowLeftText) coordinate.Message[0]=strPrice;
 
             if (this.YClose)
             {
                 var per=(price/this.YClose-1)*100;
                 if (per>0) coordinate.TextColor=g_JSChartResource.UpTextColor;
                 else if (per<0) coordinate.TextColor=g_JSChartResource.DownTextColor;
-                if (this.IsShowRightText) coordinate.Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
+                if (this.IsShowRightText) 
+                {
+                    if (this.RightTextFormat==1) coordinate.Message[1]=strPrice;
+                    else coordinate.Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
+                }
             }
 
             this.Frame.HorizontalInfo.push(coordinate);
@@ -22224,22 +22239,30 @@ function FrameSplitMinutePriceY()
         for(var i=0;i<showCount;++i)
         {
             var price=min+(distance*i);
-            this.Frame.HorizontalInfo[i]= new CoordinateInfo();
-            this.Frame.HorizontalInfo[i].Value=price;
-            if (this.IsShowLeftText) this.Frame.HorizontalInfo[i].Message[0]=price.toFixed(defaultfloatPrecision);
+            var coordinate=new CoordinateInfo();
+            this.Frame.HorizontalInfo[i]=coordinate
+            coordinate.Value=price;
+            var strPrice=price.toFixed(defaultfloatPrecision);  //价格刻度字符串
+            if (this.IsShowLeftText) coordinate.Message[0]=strPrice
             if (price==this.YClose) 
             {
-                this.Frame.HorizontalInfo[i].LineType=2;//中间的线画虚线
-                if (g_JSChartResource.FrameDotSplitPen) this.Frame.HorizontalInfo[i].LineColor=g_JSChartResource.FrameDotSplitPen;
+                coordinate.LineType=2;//中间的线画虚线
+                if (g_JSChartResource.FrameDotSplitPen) coordinate.LineColor=g_JSChartResource.FrameDotSplitPen;
             }
 
             if (this.YClose)
             {
                 var per=(price/this.YClose-1)*100;
-                if (per>0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.UpTextColor;
-                else if (per<0) this.Frame.HorizontalInfo[i].TextColor=g_JSChartResource.DownTextColor;
-                if (this.IsShowRightText) this.Frame.HorizontalInfo[i].Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
+                if (per>0) coordinate.TextColor=g_JSChartResource.UpTextColor;
+                else if (per<0) coordinate.TextColor=g_JSChartResource.DownTextColor;
+
+                if (this.IsShowRightText) 
+                {
+                    if (this.RightTextFormat==1)  coordinate.Message[1]=strPrice;
+                    else coordinate.Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
+                }
             }
+            
         }
 
         this.Frame.HorizontalMax=max;
@@ -22373,9 +22396,12 @@ function ChartCorssCursor()
     this.StringFormatY;
 
     this.ShowTextMode={ Left:1, Right:1, Bottom:1 }; //0=不显示  1=显示在框架外 2=显示在框架内
+    this.TextFormat= { Right:0 };               //0=默认 1=价格显示(分时图才有用)
     this.IsShowCorss=true;  //是否显示十字光标
     this.IsShow=true;
     this.IsShowClose=false;     //Y轴始终显示收盘价
+
+    
 
     //内部使用
     this.Close=null;     //收盘价格
@@ -22550,8 +22576,11 @@ function ChartCorssCursor()
 
             if (this.StringFormatY.PercentageText)
             {
-                text=this.StringFormatY.PercentageText+'%';
-                textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
+                if (this.TextFormat.Right==0)
+                {
+                    text=this.StringFormatY.PercentageText+'%';
+                    textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
+                }
             }
 
             if (this.StringFormatY.RText) 
@@ -23082,6 +23111,7 @@ function HQPriceStringFormat()
         return true;
     }
 
+    //深度图刻度
     this.GetExtendPaintData=function(floatPrecision)
     {
         var value=parseInt(this.Value*ZOOM_VALUE[floatPrecision]);
@@ -30338,10 +30368,10 @@ function KLineChartContainer(uielement)
                 bindData.Data=rightData;
             }
 
-            var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data);      //和主图数据拟合以后的数据
+            var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
             bindData.Data=aryOverlayData;
 
-            if (ChartData.IsDayPeriod(bindData.Period,false))   //周期数据
+            if (ChartData.IsDayPeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
             {
                 var periodData=bindData.GetPeriodData(bindData.Period);
                 bindData.Data=periodData;
@@ -30572,10 +30602,10 @@ function KLineChartContainer(uielement)
             bindData.Right=this.Right;
             bindData.DataType=0;
 
-            var aryOverlayData=this.SourceData.GetOverlayMinuteData(bindData.Data);      //和主图数据拟合以后的数据
+            var aryOverlayData=this.SourceData.GetOverlayMinuteData(bindData.Data,this.IsApiPeriod);      //和主图数据拟合以后的数据
             bindData.Data=aryOverlayData;
 
-            if (ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
+            if (ChartData.IsMinutePeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
             {
                 var periodData=bindData.GetPeriodData(bindData.Period);
                 bindData.Data=periodData;
@@ -31868,10 +31898,10 @@ function KLineChartContainer(uielement)
                 bindData.Period=this.Period;
                 bindData.Right=this.Right;
 
-                var aryOverlayData=this.SourceData.GetOverlayMinuteData(bindData.Data);      //和主图数据拟合以后的数据
+                var aryOverlayData=this.SourceData.GetOverlayMinuteData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
                 bindData.Data=aryOverlayData;
 
-                if (ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
+                if (ChartData.IsMinutePeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
                 {
                     var periodData=bindData.GetPeriodData(bindData.Period);
                     bindData.Data=periodData;
@@ -31892,10 +31922,10 @@ function KLineChartContainer(uielement)
                     bindData.Data=rightData;
                 }
 
-                var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data);      //和主图数据拟合以后的数据
+                var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
                 bindData.Data=aryOverlayData;
 
-                if (ChartData.IsDayPeriod(bindData.Period,false))   //周期数据
+                if (ChartData.IsDayPeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
                 {
                     var periodData=bindData.GetPeriodData(bindData.Period);
                     bindData.Data=periodData;
@@ -32175,10 +32205,10 @@ function KLineChartContainer(uielement)
             bindData.Data=rightData;
         }
 
-        var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data);      //和主图数据拟合以后的数据
+        var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
         bindData.Data=aryOverlayData;
 
-        if (ChartData.IsDayPeriod(bindData.Period,false))   //周期数据
+        if (ChartData.IsDayPeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
         {
             var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
@@ -32276,7 +32306,7 @@ function KLineChartContainer(uielement)
         bindData.Right=this.Right;
         bindData.DataType=1;
 
-        var aryOverlayData=this.SourceData.GetOverlayMinuteData(bindData.Data);      //和主图数据拟合以后的数据
+        var aryOverlayData=this.SourceData.GetOverlayMinuteData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
         bindData.Data=aryOverlayData;
 
         if (ChartData.IsMinutePeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据, API周期数据不用计算
@@ -44402,6 +44432,7 @@ function COMEXTimeData()
         { Symbol:"MG", Decimal:1, Time:0 }, //微型黄金
         { Symbol:"QI", Decimal:4, Time:0 }, //迷你白银
         { Symbol:"SI", Decimal:3, Time:0 }, //COMEX白银
+        { Symbol:"QI", Decimal:4, Time:0 }, //迷你白银
         { Symbol:"HG", Decimal:4, Time:0 }  //COMEX铜
     ]
 

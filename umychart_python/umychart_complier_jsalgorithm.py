@@ -1225,30 +1225,56 @@ class JSAlgorithm() :
 
         return result
 
+    # 求总和.
+    # 用法: SUM(X,N),统计N周期中X的总和,N=0则从第一个有效值开始.
+    # 例如: SUM(VOL,0)表示统计从上市第一天以来的成交量总和
+    # N 支持变量数组
     def SUM(self, data,n) :
         if not JSAlgorithm.IsVaildArray(data) :
             return []
 
         dataLen=len(data)   
-        if dataLen<n:
-            return []
-
         result=JSAlgorithm.CreateArray(dataLen)
-        
-        if n==0 :
-            result[0]=data[0]
-            for i in range(1,dataLen) :
-                result[i] = result[i-1]+data[i]
+
+        if (JSAlgorithm.IsArray(n)) :
+            for i in range(len(n)) :
+                period=n[i]
+                if (not JSAlgorithm.IsNumber(period)):
+                    continue
+
+                period=int(period)
+                if (period<1) :
+                    period=i+1
+
+                value=0
+                for j in range(period) :
+                    index=i-j
+                    if index<0 :
+                        break
+                    if (JSAlgorithm.IsNumber(data[i])) :
+                        value+=data[i]
+
+                result[i]=value
 
         else :
-            j=0
-            for i in range(n-1, dataLen) :
-                for k in range(n) :
-                    if k==0:
-                        result[i]=data[k+j]
-                    else :
-                        result[i]+=data[k+j]
-                j+=1
+            n=int(n)
+            if dataLen<n:
+                return []
+
+            if n==0 :
+                result[0]=data[0]
+                for i in range(1,dataLen) :
+                    result[i] = result[i-1]+data[i]
+
+            else :
+                j=0
+                for i in range(n-1, dataLen) :
+                    for k in range(n) :
+                        if k==0:
+                            result[i]=data[k+j]
+                        else :
+                            result[i]+=data[k+j]
+                    j+=1
 
         return result
 
@@ -3163,7 +3189,7 @@ class JSAlgorithm() :
         elif name=='NOT':
             return self.NOT(args[0])
         elif name=='SUM':
-            return self.SUM(args[0], int(args[1]))
+            return self.SUM(args[0], args[1])
         elif name=='RANGE':
             return self.RANGE(args[0],args[1],args[2])
         elif name=='EXIST':

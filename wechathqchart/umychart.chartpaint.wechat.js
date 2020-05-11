@@ -400,7 +400,8 @@ function ChartKLine()
         var downColor = this.DownColor;
         var unchagneColor = this.UnchagneColor;
 
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) {
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        {
             var data = this.Data.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
 
@@ -408,6 +409,7 @@ function ChartKLine()
             var right = xOffset + dataWidth;
             if (right > chartright)
                 break;
+
             var x = left + (right - left) / 2;
             var yLow = this.ChartFrame.GetYFromData(data.Low);
             var yHigh = this.ChartFrame.GetYFromData(data.High);
@@ -441,55 +443,68 @@ function ChartKLine()
 
             if (data.Open < data.Close)       //阳线
             {
-                if (dataWidth >= 4) {
+                if (dataWidth >= 4) 
+                {
                     this.Canvas.strokeStyle = upColor;
                     if (data.High > data.Close)   //上影线
                     {
                         this.Canvas.beginPath();
-                        if (isHScreen) {
+                        if (isHScreen) 
+                        {
                             this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(x));
                             this.Canvas.lineTo(ToFixedPoint(this.DrawType == 3 ? Math.max(yClose, yOpen) : yClose), ToFixedPoint(x));
                         }
-                        else {
+                        else 
+                        {
                             this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
                             this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(this.DrawType == 3 ? Math.min(yClose, yOpen) : yClose));
                         }
                         this.Canvas.stroke();
                         y = yClose;
                     }
-                    else {
+                    else 
+                    {
                         y = yClose;
                     }
 
                     this.Canvas.fillStyle = upColor;
-                    if (isHScreen) {
-                        if (Math.abs(yOpen - y) < 1) {
+                    if (isHScreen) 
+                    {
+                        if (Math.abs(yOpen - y) < 1) 
+                        {
                             this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), 1, ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
                         }
-                        else {
+                        else 
+                        {
                             if (this.DrawType == 3) //空心柱
                             {
                                 this.Canvas.beginPath();
                                 this.Canvas.rect(ToFixedPoint(y), ToFixedPoint(left), ToFixedRect(yOpen - y), ToFixedRect(dataWidth));
                                 this.Canvas.stroke();
                             }
-                            else {
-                                this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), ToFixedRect(yOpen - y), ToFixedRect(dataWidth));
+                            else 
+                            {
+                                //宽度是负数竟然不会画, h5就可以
+                                this.Canvas.fillRect(ToFixedRect(Math.max(yOpen, y)), ToFixedRect(left), ToFixedRect(Math.abs(yOpen - y)), ToFixedRect(dataWidth));
                             }
                         }
                     }
-                    else {
-                        if (Math.abs(yOpen - y) < 1) {
+                    else 
+                    {
+                        if (Math.abs(yOpen - y) < 1) 
+                        {
                             this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(y), ToFixedRect(dataWidth), 1);    //高度小于1,统一使用高度1
                         }
-                        else {
+                        else 
+                        {
                             if (this.DrawType == 3) //空心柱
                             {
                                 this.Canvas.beginPath();
                                 this.Canvas.rect(ToFixedPoint(left), ToFixedPoint(y), ToFixedRect(dataWidth), ToFixedRect(yOpen - y));
                                 this.Canvas.stroke();
                             }
-                            else {
+                            else 
+                            {
                                 this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(y), ToFixedRect(dataWidth), ToFixedRect(yOpen - y));
                             }
                         }
@@ -498,24 +513,29 @@ function ChartKLine()
                     if (data.Open > data.Low) //下影线
                     {
                         this.Canvas.beginPath();
-                        if (isHScreen) {
+                        if (isHScreen) 
+                        {
                             this.Canvas.moveTo(ToFixedPoint(this.DrawType == 3 ? Math.min(yClose, yOpen) : y), ToFixedPoint(x));
                             this.Canvas.lineTo(ToFixedPoint(yLow), ToFixedPoint(x));
                         }
-                        else {
+                        else 
+                        {
                             this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(this.DrawType == 3 ? Math.max(yClose, yOpen) : y));
                             this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yLow));
                         }
                         this.Canvas.stroke();
                     }
                 }
-                else {
+                else 
+                {
                     this.Canvas.beginPath();
-                    if (isHScreen) {
+                    if (isHScreen) 
+                    {
                         this.Canvas.moveTo(yHigh, ToFixedPoint(x));
                         this.Canvas.lineTo(yLow, ToFixedPoint(x));
                     }
-                    else {
+                    else 
+                    {
                         this.Canvas.moveTo(ToFixedPoint(x), yHigh);
                         this.Canvas.lineTo(ToFixedPoint(x), yLow);
                     }
@@ -525,32 +545,45 @@ function ChartKLine()
             }
             else if (data.Open > data.Close)  //阴线
             {
-                if (dataWidth >= 4) {
+                if (dataWidth >= 4) 
+                {
                     this.Canvas.strokeStyle = downColor;
                     if (data.High > data.Close)   //上影线
                     {
                         this.Canvas.beginPath();
-                        if (isHScreen) {
+                        if (isHScreen)
+                         {
                             this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(x));
                             this.Canvas.lineTo(ToFixedPoint(yOpen), ToFixedPoint(x));
                         }
-                        else {
+                        else 
+                        {
                             this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
                             this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yOpen));
                         }
                         this.Canvas.stroke();
                         y = yOpen;
                     }
-                    else {
+                    else 
+                    {
                         y = yOpen
                     }
 
                     this.Canvas.fillStyle = downColor;
-                    if (isHScreen) {
-                        if (Math.abs(yClose - y) < 1) this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), 1, ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
-                        else this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), ToFixedRect(yClose - y), ToFixedRect(dataWidth));
+                    if (isHScreen) 
+                    {
+                        if (Math.abs(yClose - y) < 1) 
+                        {
+                            this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), 1, ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
+                        }
+                        else 
+                        {
+                            //宽度是负数竟然不会画, h5就可以
+                            this.Canvas.fillRect(ToFixedRect(Math.max(yClose, y)), ToFixedRect(left), ToFixedRect(Math.abs(yClose - y)), ToFixedRect(dataWidth));
+                        }
                     }
-                    else {
+                    else 
+                    {
                         if (Math.abs(yClose - y) < 1) this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(y), ToFixedRect(dataWidth), 1);    //高度小于1,统一使用高度1
                         else this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(y), ToFixedRect(dataWidth), ToFixedRect(yClose - y));
                     }
@@ -558,24 +591,29 @@ function ChartKLine()
                     if (data.Open > data.Low) //下影线
                     {
                         this.Canvas.beginPath();
-                        if (isHScreen) {
+                        if (isHScreen) 
+                        {
                             this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(x));
                             this.Canvas.lineTo(ToFixedPoint(yLow), ToFixedPoint(x));
                         }
-                        else {
+                        else 
+                        {
                             this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
                             this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yLow));
                         }
                         this.Canvas.stroke();
                     }
                 }
-                else {
+                else 
+                {
                     this.Canvas.beginPath();
-                    if (isHScreen) {
+                    if (isHScreen) 
+                    {
                         this.Canvas.moveTo(yHigh, ToFixedPoint(x));
                         this.Canvas.lineTo(yLow, ToFixedPoint(x));
                     }
-                    else {
+                    else 
+                    {
                         this.Canvas.moveTo(ToFixedPoint(x), yHigh);
                         this.Canvas.lineTo(ToFixedPoint(x), yLow);
                     }
@@ -585,41 +623,49 @@ function ChartKLine()
             }
             else // 平线
             {
-                if (dataWidth >= 4) {
+                if (dataWidth >= 4) 
+                {
                     this.Canvas.strokeStyle = unchagneColor;
                     this.Canvas.beginPath();
                     if (data.High > data.Close)   //上影线
                     {
-                        if (isHScreen) {
+                        if (isHScreen) 
+                        {
                             this.Canvas.moveTo(y, ToFixedPoint(x));
                             this.Canvas.lineTo(yOpen, ToFixedPoint(x));
                         }
-                        else {
+                        else 
+                        {
                             this.Canvas.moveTo(ToFixedPoint(x), y);
                             this.Canvas.lineTo(ToFixedPoint(x), yOpen);
                         }
                         y = yOpen;
                     }
-                    else {
+                    else 
+                    {
                         y = yOpen;
                     }
 
-                    if (isHScreen) {
+                    if (isHScreen) 
+                    {
                         this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(left));
                         this.Canvas.lineTo(ToFixedPoint(y), ToFixedPoint(right));
                     }
-                    else {
+                    else 
+                    {
                         this.Canvas.moveTo(ToFixedPoint(left), ToFixedPoint(y));
                         this.Canvas.lineTo(ToFixedPoint(right), ToFixedPoint(y));
                     }
 
                     if (data.Open > data.Low) //下影线
                     {
-                        if (isHScreen) {
+                        if (isHScreen) 
+                        {
                             this.Canvas.moveTo(ToFixedPoint(y), ToFixedPoint(x));
                             this.Canvas.lineTo(ToFixedPoint(yLow), ToFixedPoint(x));
                         }
-                        else {
+                        else 
+                        {
                             this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
                             this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yLow));
                         }
@@ -627,13 +673,16 @@ function ChartKLine()
 
                     this.Canvas.stroke();
                 }
-                else {
+                else 
+                {
                     this.Canvas.beginPath();
-                    if (isHScreen) {
+                    if (isHScreen) 
+                    {
                         this.Canvas.moveTo(yHigh, ToFixedPoint(x));
                         this.Canvas.lineTo(yLow, ToFixedPoint(x));
                     }
-                    else {
+                    else 
+                    {
                         this.Canvas.moveTo(ToFixedPoint(x), yHigh);
                         this.Canvas.lineTo(ToFixedPoint(x), yLow);
                     }
