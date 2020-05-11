@@ -380,7 +380,8 @@ function ChartKLine()
         this.Canvas.fill();
     }
 
-    this.DrawKBar = function () {
+    this.DrawKBar = function () 
+    {
         var isHScreen = (this.ChartFrame.IsHScreen === true);
         var dataWidth = this.ChartFrame.DataWidth;
         var distanceWidth = this.ChartFrame.DistanceWidth;
@@ -485,7 +486,8 @@ function ChartKLine()
                             else 
                             {
                                 //宽度是负数竟然不会画, h5就可以
-                                this.Canvas.fillRect(ToFixedRect(Math.max(yOpen, y)), ToFixedRect(left), ToFixedRect(Math.abs(yOpen - y)), ToFixedRect(dataWidth));
+                                //this.Canvas.fillRect(ToFixedRect(y), ToFixedRect(left), ToFixedRect(yOpen - y), ToFixedRect(dataWidth));
+                                this.Canvas.fillRect(ToFixedRect(Math.min(yOpen, y)), ToFixedRect(left), ToFixedRect(Math.abs(yOpen - y)), ToFixedRect(dataWidth));
                             }
                         }
                     }
@@ -579,7 +581,7 @@ function ChartKLine()
                         else 
                         {
                             //宽度是负数竟然不会画, h5就可以
-                            this.Canvas.fillRect(ToFixedRect(Math.max(yClose, y)), ToFixedRect(left), ToFixedRect(Math.abs(yClose - y)), ToFixedRect(dataWidth));
+                            this.Canvas.fillRect(ToFixedRect(Math.min(yClose, y)), ToFixedRect(left), ToFixedRect(Math.abs(yClose - y)), ToFixedRect(dataWidth));
                         }
                     }
                     else 
