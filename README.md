@@ -243,7 +243,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 10. [HQChart实战教程10-全ws数据对接HQChart(数字货币对接实战)(付费文章)](https://blog.csdn.net/jones2000/article/details/105698038) <br>
 11. [HQChart实战教程11-火币网ws数据对接(付费文章)](https://blog.csdn.net/jones2000/article/details/105721190) <br>
 12. [HQChart实战教程12-火币网ws数据对接分时图(付费文章)](https://blog.csdn.net/jones2000/article/details/105756659) <br>
-13. [HQChart实战教程13-火币网ws数据对接K线（uniapp)](https://blog.csdn.net/jones2000/article/details/105804461)<br>
+13. [HQChart实战教程13-火币网ws数据对接K线（uniapp)(付费文章)](https://blog.csdn.net/jones2000/article/details/105804461)<br>
+14. [HQChart实战教程14-K线图对接第3方http/https数据教程整理](https://blog.csdn.net/jones2000/article/details/106064879)<br>
 
 
 ## 设计文档:
