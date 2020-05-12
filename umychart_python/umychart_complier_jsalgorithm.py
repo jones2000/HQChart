@@ -688,7 +688,15 @@ class JSAlgorithm() :
 
         return result
 
-    def MA(self, data,dayCount) :
+    # 返回简单移动平均
+    # 用法:
+    # MA(X,N):X的N日简单移动平均,算法(X1+X2+X3+...+Xn)/N,N支持变量
+    # N 支持数组
+    def MA(self, data,n) :
+        if (JSAlgorithm.IsArray(n)):
+            return self.MA_ARRAY(data,n)
+
+        dayCount=int(n) 
         if dayCount<=0:
             dayCount=1
         
@@ -724,6 +732,35 @@ class JSAlgorithm() :
             result[i]=sum/dayCount
 
         return result
+
+    # MA N=数组
+    def MA_ARRAY(self,data,n):
+        if not data or len(data)<=0:
+            return []
+
+        dataCount=len(data)
+        result=JSAlgorithm.CreateArray(dataCount)
+        for i in range(len(n)) :
+            period=n[i]
+            if (not JSAlgorithm.IsNumber(period)) :
+                continue
+            period=int(period)
+            if (period<=0):
+                continue
+            sum=0
+            value=0
+            for j in range(period):
+                index=i-j
+                if (index<0):
+                    break
+                value=data[index]
+                if JSAlgorithm.IsNumber(value):
+                    sum+=value
+            value=sum/period
+            result[i]=value
+
+        return result
+
 
     # 指数平均数指标 EMA(close,10)
     def EMA(self,data,dayCount) :
@@ -3151,7 +3188,7 @@ class JSAlgorithm() :
         elif name=='ABS':
             return self.ABS(args[0])
         elif name=='MA':
-            return self.MA(args[0], int(args[1]))
+            return self.MA(args[0], args[1])
         elif name=="EMA":
             return self.EMA(args[0], int(args[1]))
         elif name=="SMA":

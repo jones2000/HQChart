@@ -9,8 +9,11 @@
 
 #####################################################################
 #
-#   股票数据类(读取缓存数据)
+#   股票数据类(读取缓存数据),对接第3方数据可以直接派生这个类
 #   禁用所有数据下载, 数据直接读缓存
+#   对接数据有2种方式
+#   1. 通过 SymbolDataCache::LoadCallback绑定数据初始化加载所有的缓存数据
+#   2. 通过 SymbolDataCache::GetSymbolData,SymbolDataCache::GetLatestData,SymbolDataCache::GetFinanceData,SymbolDataCache::GetIndexData 动态加载需要的缓存数据
 #
 #####################################################################
 import json
@@ -116,18 +119,22 @@ class SymbolDataCache(JSSymbolData):
 
     # 下载股票数据
     def GetSymbolData(self) :
+        # 数据保存到self.Data
         pass
 
     # 下载最新行情
     def GetLatestData(self) :
+        # 数据保存到self.LatestKCache
         pass
 
     # 下载财务数据
     def GetFinanceData(self, jobID, job) :
+        # 数据保存到self.FinanceData
         pass
 
     # 获取大盘指数数据
     def GetIndexData(self) :
+        # 数据保存到self.IndexData
         pass
 
     # 最新行情

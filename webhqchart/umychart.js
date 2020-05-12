@@ -11251,7 +11251,7 @@ function ChartOverlayLine()
         if (this.IsDotLine) this.Canvas.setLineDash([3,5]); //画虚线
 
         var bFirstPoint=true;
-        var drawCount=0;
+        var drawCount=0,rate=0;
         for(var i=firstData.DataOffset,j=firstData.Index;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
@@ -11264,7 +11264,11 @@ function ChartOverlayLine()
             }
 
             var x=this.ChartFrame.GetXFromIndex(j);
-            var fixedValue=value/firstData.OverlayValue*firstData.MainValue;
+            var diff=value-firstData.OverlayValue;
+            if (firstData.OverlayValue!=0) rate= 1+ diff/Math.abs(firstData.OverlayValue);
+            else rate=1+diff;
+            var fixedValue=firstData.MainValue*rate;
+            //var fixedValue=value/firstData.OverlayValue*firstData.MainValue;
             var y=this.GetYFromData(fixedValue);
 
             if (x>chartright) break;
@@ -11304,7 +11308,11 @@ function ChartOverlayLine()
             var overlayValue=this.Data.Data[i];
             if (!IFrameSplitOperator.IsNumber(overlayValue)) continue;
 
-            var value=overlayValue/firstData.OverlayValue*firstData.MainValue;
+            var diff=overlayValue-firstData.OverlayValue;
+            if (firstData.OverlayValue!=0) rate= 1+ diff/Math.abs(firstData.OverlayValue);
+            else rate=1+diff;
+            var value=firstData.MainValue*rate;
+            //var value=overlayValue/firstData.OverlayValue*firstData.MainValue;
 
             if (range.Max==null) range.Max=value;
             if (range.Min==null) range.Min=value;
