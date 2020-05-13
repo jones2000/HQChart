@@ -301,12 +301,28 @@ IFrameSplitOperator.FormatTimeString = function (value, format)
         var second = value % 100;
         return IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
     }
-    else 
+    else if (format == 'HH:MM') 
     {
         var hour = parseInt(value / 100);
         var minute = value % 100;
-
         return IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute);
+    }
+    else 
+    {
+        if (value < 10000)
+        {
+            var hour = parseInt(value / 100);
+            var minute = value % 100;
+            return IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute);
+        }
+        else
+        {
+            var hour = parseInt(value / 10000);
+            var minute = parseInt((value % 10000) / 100);
+            var second = value % 100;
+            return IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
+        }
+        
     }
 }
 

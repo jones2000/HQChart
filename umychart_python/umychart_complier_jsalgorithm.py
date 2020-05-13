@@ -749,6 +749,7 @@ class JSAlgorithm() :
                 continue
             sum=0
             value=0
+            sumCount=0
             for j in range(period):
                 index=i-j
                 if (index<0):
@@ -756,14 +757,20 @@ class JSAlgorithm() :
                 value=data[index]
                 if JSAlgorithm.IsNumber(value):
                     sum+=value
-            value=sum/period
-            result[i]=value
+                sumCount+=1
+            if (sumCount>0):
+                value=sum/sumCount
+                result[i]=value
 
         return result
 
 
     # 指数平均数指标 EMA(close,10)
-    def EMA(self,data,dayCount) :
+    def EMA(self,data,n) :
+        if (JSAlgorithm.IsArray(n)):
+            return self.EMA_ARRAY(data,n)
+
+        dayCount=int(n)   
         result = []
         offset=0
         if offset>=len(data) :
@@ -784,6 +791,41 @@ class JSAlgorithm() :
             result[p2Index]=((2*data[p2Index]+(dayCount-1)*result[p1Index]))/(dayCount+1)
             p1Index+=1
             p2Index+=1
+
+        return result
+
+    # EMA(N) = 2/(N+1)*C + (N-1)/(N+1)*EMA', EMA'为前一天的ema
+    def EMA_ARRAY(self,data,n):
+        dataCount=len(data)
+        if (dataCount<=0):
+            return []
+
+        result=JSAlgorithm.CreateArray(dataCount)
+        for i in range(len(n)) :
+            period=n[i]
+            if (not JSAlgorithm.IsNumber(period)) :
+                continue
+            period=int(period)
+            if (period<=0) :
+                continue
+            if (period>i+1) :
+                period=i+1
+            ema=None
+            lastEMA=None
+            EMAFactor=[ 2.0/ (period + 1), (period - 1.0) / (period + 1.0)]
+            for j in range(period) :
+                index=i-(period-j-1)
+                value=data[index]
+                if (not JSAlgorithm.IsNumber(value)):
+                    continue
+                if (lastEMA==None):
+                    ema=value
+                    lastEMA=ema
+                else :
+                    ema = EMAFactor[0] * value + EMAFactor[1] * lastEMA
+                    lastEMA=ema
+            if (ema!=None) :
+                result[i]=ema
 
         return result
  
@@ -3190,7 +3232,7 @@ class JSAlgorithm() :
         elif name=='MA':
             return self.MA(args[0], args[1])
         elif name=="EMA":
-            return self.EMA(args[0], int(args[1]))
+            return self.EMA(args[0], args[1])
         elif name=="SMA":
             return self.SMA(args[0], int(args[1]),int(args[2]))
         elif name=="DMA":
