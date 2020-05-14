@@ -1170,6 +1170,15 @@ var JSCHART_OPERATOR_ID =
     OP_GOTO_HOME: 5, //第1页数据
 }
 
+function Guid()
+{
+    function S4()
+    {
+       return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+    }
+    return "guid" + (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+}
+
 /*
     图形控件
 */

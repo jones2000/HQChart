@@ -6979,6 +6979,8 @@ function JSChartContainer(uielement)
         this.ReloadChartPaint(option.Resource);
         this.ReloadFrame(option.Resource);
         this.ReloadChartCorssCursor(option,option.Resource);
+
+        if (option.Draw==true) this.Draw(); //是否立即重绘
     }
 
     this.ReloadBorder=function(option)  //根据页面缩放调整对应边框的尺长
@@ -7446,20 +7448,26 @@ function IChartFramePainting()
 
     this.ReloadResource=function(resource)
     {
+        if (!resource)
+        {
+            this.PenBorder=g_JSChartResource.FrameBorderPen;        //边框颜色
+            this.TitleBGColor=g_JSChartResource.FrameTitleBGColor;  //标题背景色
+        }
+
         for(var i in this.HorizontalInfo)
         {
             var item=this.HorizontalInfo[i];
-            if (!item.Font) continue;
-
-            item.Font=g_JSChartResource.FrameSplitTextFont; //字体
+            if (item.Font) item.Font=g_JSChartResource.FrameSplitTextFont;             //字体
+            if (item.TextColor) item.TextColor=g_JSChartResource.FrameSplitTextColor        //文字颜色
+            if (item.LineColor) item.LineColor=g_JSChartResource.FrameSplitPen;             //线段颜色
         }
 
         for(var i in this.VerticalInfo)
         {
             var item=this.VerticalInfo[i];
-            if (!item.Font) continue;
-
-            item.Font=g_JSChartResource.FrameSplitTextFont; //字体
+            if (item.Font) item.Font=g_JSChartResource.FrameSplitTextFont;             //字体
+            if (item.TextColor) item.TextColor=g_JSChartResource.FrameSplitTextColor        //文字颜色
+            if (item.LineColor) item.LineColor=g_JSChartResource.FrameSplitPen;             //线段颜色
         }
     }
 }
@@ -48022,20 +48030,55 @@ function JSAlgorithm(errorHandler,symbolData)
     {
         var result = [];
 
-        var i=0;
-        var lastData=null;
-        for(;i<data.length; ++i)
+        if (Array.isArray(n))
         {
-            if (data[i]==null || isNaN(data[i])) continue;
-            lastData=data[i];
-            result[i]=lastData; //第一天的数据
-            break;
-        }
+            for( var i=0;i<n.length;++i)
+            {
+                var period=n[i];
+                if (!this.IsNumber(period)) continue;
+                period=parseInt(period);
+                if (period<=0) continue;
+                if (period>i+1) period=i+1;
+                
+                var lastSMA=null;
+                var sma=null;
+                for(var j=0;j<period;++j)
+                {
+                    var index=i-(period-j-1);
+                    var item=data[index];
+                    if (!this.IsNumber(item)) continue;
+                    if (lastSMA==null) 
+                    {
+                        lastSMA=item;
+                        sma=item;
+                    }
+                    else
+                    {
+                        sma=(m*item+(period-m)*lastSMA)/period;
+                        lastSMA=sma;
+                    }
+                }
 
-        for(++i;i<data.length;++i)
+                result[i]=sma;
+            }
+        }
+        else
         {
-            result[i]=(m*data[i]+(n-m)*lastData)/n;
-            lastData=result[i];
+            var i=0;
+            var lastData=null;
+            for(;i<data.length; ++i)
+            {
+                if (data[i]==null || isNaN(data[i])) continue;
+                lastData=data[i];
+                result[i]=lastData; //第一天的数据
+                break;
+            }
+    
+            for(++i;i<data.length;++i)
+            {
+                result[i]=(m*data[i]+(n-m)*lastData)/n;
+                lastData=result[i];
+            }
         }
 
         return result;

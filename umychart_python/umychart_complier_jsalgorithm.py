@@ -831,8 +831,15 @@ class JSAlgorithm() :
  
     # SMA 移动平均
     # 返回移动平均。
-    # 用法：　SMA(X，N，M)　X的M日移动平均，M为权重，如Y=(X*M+Y'*(N-M))/N 
+    # 用法：　SMA(X，N，M)　X的N日移动平均，M为权重，如Y=(X*M+Y'*(N-M))/N 
     def SMA(self,data,n,m) :
+        if (JSAlgorithm.IsArray(n)) :
+            return self.SMA_ARRAY(data,n,m)
+
+        period=int(n)
+        if (period<=0) :
+            return []
+
         result = [None]*len(data)
         lastData=None
         for i in range(len(data)) :
@@ -840,10 +847,44 @@ class JSAlgorithm() :
                 lastData=data[i]
                 result[i]=lastData # 第一天的数据
                 break
-
+        
         for i in range(i+1,len(data)) :
-            result[i]=(m*data[i]+(n-m)*lastData)/n
+            result[i]=(m*data[i]+(period-m)*lastData)/period
             lastData=result[i]
+
+        return result
+
+    def SMA_ARRAY(self,data,n,m) :
+        dataCount=len(data)
+        if (dataCount<=0):
+            return []
+        
+        result=JSAlgorithm.CreateArray(dataCount)
+        for i in range(len(n)):
+            period=n[i]
+            if (not JSAlgorithm.IsNumber(period)) :
+                continue
+            period=int(period)
+            if (period<=0):
+                continue
+            if (period<i+1):
+                period=i+1
+
+            sma=None
+            lastSMA=None
+            for j in range(period) :
+                index=i-(period-j-1)
+                value=data[index]
+                if (not JSAlgorithm.IsNumber(value)):
+                    continue
+                if (lastSMA==None):
+                    sma=value
+                    lastSMA=sma
+                else :
+                    sma=(m*data[i]+(period-m)*lastSMA)/period
+                    lastSMA=sma
+            if (sma!=None):
+                result[i]=sma
 
         return result
 
@@ -3234,7 +3275,7 @@ class JSAlgorithm() :
         elif name=="EMA":
             return self.EMA(args[0], args[1])
         elif name=="SMA":
-            return self.SMA(args[0], int(args[1]),int(args[2]))
+            return self.SMA(args[0], args[1],args[2])
         elif name=="DMA":
             return self.DMA(args[0], args[1])
         elif name=='EXPMA':

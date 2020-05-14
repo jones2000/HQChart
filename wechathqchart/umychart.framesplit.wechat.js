@@ -196,94 +196,114 @@ function IFrameSplitOperator()
 }
 
 //字符串格式化 千分位分割
-IFrameSplitOperator.FormatValueThousandsString = function (value, floatPrecision) 
+IFrameSplitOperator.FormatValueThousandsString=function(value,floatPrecision)
 {
-    if (value == null || isNaN(value)) 
+    if (value==null || isNaN(value))
     {
-        if (floatPrecision > 0) 
+        if (floatPrecision>0)
         {
-            var nullText = '-.';
-            for (var i = 0; i < floatPrecision; ++i)
-                nullText += '-';
+            var nullText='-.';
+            for(var i=0;i<floatPrecision;++i)
+                nullText+='-';
             return nullText;
         }
 
         return '--';
     }
 
-    var result = '';
-    var num = value.toFixed(floatPrecision);
-    while (num.length > 3) 
-    {
-        result = ',' + num.slice(-3) + result;
-        num = num.slice(0, num.length - 3);
+    var result='';
+    var num=value.toFixed(floatPrecision);
+    if(floatPrecision>0){
+        var numFloat = num.split('.')[1];
+        var numM = num.split('.')[0];
+        while (numM.length > 3)
+        {
+            result = ',' + numM.slice(-3) + result;
+            numM = numM.slice(0, numM.length - 3);
+        }
+        if (numM) { result = numM + result + '.' + numFloat; }
+    }else{
+        while (num.length > 3)
+        {
+            result = ',' + num.slice(-3) + result;
+            num = num.slice(0, num.length - 3);
+        }
+        if (num) { result = num + result; }
     }
-    if (num) { result = num + result; }
+    
     return result;
 }
 
-//数据输出格式化 floatPrecision=小数位数 languageID=语言
-IFrameSplitOperator.FormatValueString = function (value, floatPrecision, languageID) 
+//数据输出格式化 floatPrecision=小数位数
+IFrameSplitOperator.FormatValueString=function(value, floatPrecision,languageID)
 {
-    if (value == null || isNaN(value)) 
+    if (value==null || isNaN(value))
     {
-        if (floatPrecision > 0) 
+        if (floatPrecision>0)
         {
-            var nullText = '-.';
-            for (var i = 0; i < floatPrecision; ++i)
-                nullText += '-';
+            var nullText='-.';
+            for(var i=0;i<floatPrecision;++i)
+                nullText+='-';
             return nullText;
         }
 
         return '--';
     }
 
-    if (value < 0.00000000001 && value > -0.00000000001) 
+    if (value<0.00000000001 && value>-0.00000000001)
     {
         return "0";
     }
 
     var absValue = Math.abs(value);
-    if (languageID === JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID) 
+    if (languageID===JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID)
     {
         if (absValue < 10000)
             return value.toFixed(floatPrecision);
         else if (absValue < 1000000)
-            return (value / 1000).toFixed(floatPrecision) + "K";
+            return (value/1000).toFixed(floatPrecision)+"K";
         else if (absValue < 1000000000)
-            return (value / 1000000).toFixed(floatPrecision) + "M";
+            return (value/1000000).toFixed(floatPrecision)+"M";
         else if (absValue < 1000000000000)
-            return (value / 1000000000).toFixed(floatPrecision) + "B";
-        else
-            return (value / 1000000000000).toFixed(floatPrecision) + "T";
+            return (value/1000000000).toFixed(floatPrecision)+"B";
+        else 
+            return (value/1000000000000).toFixed(floatPrecision)+"T";
     }
     else
     {
-        if (absValue < 10000) 
+        if (absValue < 10000)
             return value.toFixed(floatPrecision);
-        else if (absValue < 100000000) 
-            return (value / 10000).toFixed(floatPrecision) + "万";
-        else if (absValue < 1000000000000) 
-            return (value / 100000000).toFixed(floatPrecision) + "亿";
-        else 
-            return (value / 1000000000000).toFixed(floatPrecision) + "万亿";
+        else if (absValue < 100000000)
+            return (value/10000).toFixed(floatPrecision)+"万";
+        else if (absValue < 1000000000000)
+            return (value/100000000).toFixed(floatPrecision)+"亿";
+        else
+            return (value/1000000000000).toFixed(floatPrecision)+"万亿";
     }
 
-    return TRUE;
+    return '';
 }
 
-IFrameSplitOperator.NumberToString = function (value) 
+//整形输出格式化 floatPrecision=小数位数
+IFrameSplitOperator.FromatIntegerString=function(value, floatPrecision,languageID)
 {
-    if (value < 10) return '0' + value.toString();
+    if (value<10000 && IFrameSplitOperator.IsInteger(value)) floatPrecision=0;  //<10000的整形 去掉小数位数
+    return IFrameSplitOperator.FormatValueString(value, floatPrecision,languageID);
+}
+
+IFrameSplitOperator.NumberToString=function(value)
+{
+    if (value<10) return '0'+value.toString();
     return value.toString();
 }
 
-IFrameSplitOperator.FormatDateString = function (value, format) 
+IFrameSplitOperator.FormatDateString=function(value,format)
 {
-    var year = parseInt(value / 10000);
-    var month = parseInt(value / 100) % 100;
-    var day = value % 100;
-    switch (format) 
+    var year=parseInt(value/10000);
+    var month=parseInt(value/100)%100;
+    var day=value%100;
+
+    switch(format)
     {
         case 'MM-DD':
             return IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
@@ -292,14 +312,14 @@ IFrameSplitOperator.FormatDateString = function (value, format)
     }
 }
 
-IFrameSplitOperator.FormatTimeString = function (value, format) 
+IFrameSplitOperator.FormatTimeString=function(value, format)    //format hh:mm:ss
 {
-    if (format == 'HH:MM:SS') 
+    if (format=='HH:MM:SS')
     {
-        var hour = parseInt(value / 10000);
-        var minute = parseInt((value % 10000) / 100);
-        var second = value % 100;
-        return IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
+        var hour=parseInt(value/10000);
+        var minute=parseInt((value%10000)/100);
+        var second=value%100;
+        return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
     }
     else if (format == 'HH:MM') 
     {
@@ -327,85 +347,110 @@ IFrameSplitOperator.FormatTimeString = function (value, format)
 }
 
 //报告格式化
-IFrameSplitOperator.FormatReportDateString = function (value)
- {
-    var year = parseInt(value / 10000);
-    var month = parseInt(value / 100) % 100;
+IFrameSplitOperator.FormatReportDateString=function(value)
+{
+    var year=parseInt(value/10000);
+    var month=parseInt(value/100)%100;
     var monthText;
-    switch (month) {
+    switch(month)
+    {
         case 3:
-            monthText = "一季度报";
+            monthText="一季度报";
             break;
         case 6:
-            monthText = "半年报";
+            monthText="半年报";
             break;
         case 9:
-            monthText = "三季度报";
+            monthText="三季度报";
             break;
         case 12:
-            monthText = "年报";
+            monthText="年报";
             break;
     }
 
-    return year.toString() + monthText;
+    return year.toString()+ monthText;
 }
 
-IFrameSplitOperator.FormatDateTimeString = function (value, foramt) 
+IFrameSplitOperator.FormatDateTimeString=function(value,isShowDate)
 {
-    var aryValue = value.split(' ');
-    if (aryValue.length < 2) return "";
+    var aryValue=value.split(' ');
+    if (aryValue.length<2) return "";
+    var time=parseInt(aryValue[1]);
+    var minute=time%100;
+    var hour=parseInt(time/100);
+    var text=(hour<10? ('0'+hour.toString()):hour.toString()) + ':' + (minute<10?('0'+minute.toString()):minute.toString());
 
-    var time = parseInt(aryValue[1]);
-    var minute = time % 100;
-    var hour = parseInt(time / 100);
-    var date = parseInt(aryValue[0]);
-    var year = parseInt(date / 10000);
-    var month = parseInt(date % 10000 / 100);
-    var day = date % 100;
-
-    switch (foramt) {
-        case 'YYYY-MM-DD HH-MM':
-            return year.toString() + '-' + IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day) + ' ' + IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute);
-        case 'YYYY-MM-DD':
-            return year.toString() + '-' + IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
-        default:
-            return IFrameSplitOperator.NumberToString(hour) + ':' + IFrameSplitOperator.NumberToString(minute);
-
+    if (isShowDate==true)
+    {
+        var date=parseInt(aryValue[0]);
+        var year=parseInt(date/10000);
+        var month=parseInt(date%10000/100);
+        var day=date%100;
+        text=year.toString() +'-'+ (month<10? ('0'+month.toString()) :month.toString()) +'-'+ (day<10? ('0'+day.toString()):day.toString()) +" " +text;
     }
 
     return text;
 }
 
-IFrameSplitOperator.IsNumber = function (value) 
+//字段颜色格式化
+IFrameSplitOperator.FormatValueColor = function (value, value2) 
 {
-    if (value == null) return false;
+    if (value != null && value2 == null)  //只传一个值的 就判断value正负
+    {
+        if (value == 0) return 'PriceNull';
+        else if (value > 0) return 'PriceUp';
+        else return 'PriceDown';
+    }
+
+    //2个数值对比 返回颜色
+    if (value == null || value2 == null) return 'PriceNull';
+    if (value == value2) return 'PriceNull';
+    else if (value > value2) return 'PriceUp';
+    else return 'PriceDown';
+}
+
+IFrameSplitOperator.IsNumber=function(value)
+{
+    if (value==null) return false;
     if (isNaN(value)) return false;
+
     return true;
 }
 
-IFrameSplitOperator.IsPlusNumber = function (value) //判断是否是正数
+//判断是否是正数
+IFrameSplitOperator.IsPlusNumber=function(value)
 {
-    if (value == null) return false;
+    if (value==null) return false;
     if (isNaN(value)) return false;
-    return value > 0;
+
+    return value>0;
 }
 
-IFrameSplitOperator.IsInteger = function (x) //是否是整形
+//是否是整形
+IFrameSplitOperator.IsInteger=function(x) 
 {
     return (typeof x === 'number') && (x % 1 === 0);
 }
 
-IFrameSplitOperator.IsObjectExist = function (obj) //判断字段是否存在
+//判断字段是否存在
+IFrameSplitOperator.IsObjectExist=function(obj)
 {
-    if (obj === undefined) return false;
-    if (obj == null) return false;
-
+    if (obj===undefined) return false;
+    if (obj==null) return false;
+    
     return true;
 }
 
-IFrameSplitOperator.IsString = function (value) 
+//是否时bool
+IFrameSplitOperator.IsBool=function(value)
 {
-    if (value && typeof (value) == 'string') return true;
+    if (value===true || value===false) return true;
+    return false;
+}
+
+IFrameSplitOperator.IsString=function(value)
+{
+    if (value && typeof(value)=='string') return true;
     return false;
 }
 

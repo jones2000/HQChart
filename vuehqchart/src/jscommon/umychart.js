@@ -3435,6 +3435,8 @@ function JSChartContainer(uielement)
         this.ReloadChartPaint(option.Resource);
         this.ReloadFrame(option.Resource);
         this.ReloadChartCorssCursor(option,option.Resource);
+
+        if (option.Draw==true) this.Draw(); //是否立即重绘
     }
 
     this.ReloadBorder=function(option)  //根据页面缩放调整对应边框的尺长
@@ -3902,20 +3904,26 @@ function IChartFramePainting()
 
     this.ReloadResource=function(resource)
     {
+        if (!resource)
+        {
+            this.PenBorder=g_JSChartResource.FrameBorderPen;        //边框颜色
+            this.TitleBGColor=g_JSChartResource.FrameTitleBGColor;  //标题背景色
+        }
+
         for(var i in this.HorizontalInfo)
         {
             var item=this.HorizontalInfo[i];
-            if (!item.Font) continue;
-
-            item.Font=g_JSChartResource.FrameSplitTextFont; //字体
+            if (item.Font) item.Font=g_JSChartResource.FrameSplitTextFont;             //字体
+            if (item.TextColor) item.TextColor=g_JSChartResource.FrameSplitTextColor        //文字颜色
+            if (item.LineColor) item.LineColor=g_JSChartResource.FrameSplitPen;             //线段颜色
         }
 
         for(var i in this.VerticalInfo)
         {
             var item=this.VerticalInfo[i];
-            if (!item.Font) continue;
-
-            item.Font=g_JSChartResource.FrameSplitTextFont; //字体
+            if (item.Font) item.Font=g_JSChartResource.FrameSplitTextFont;             //字体
+            if (item.TextColor) item.TextColor=g_JSChartResource.FrameSplitTextColor        //文字颜色
+            if (item.LineColor) item.LineColor=g_JSChartResource.FrameSplitPen;             //线段颜色
         }
     }
 }

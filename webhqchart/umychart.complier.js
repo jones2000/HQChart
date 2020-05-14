@@ -2819,20 +2819,55 @@ function JSAlgorithm(errorHandler,symbolData)
     {
         var result = [];
 
-        var i=0;
-        var lastData=null;
-        for(;i<data.length; ++i)
+        if (Array.isArray(n))
         {
-            if (data[i]==null || isNaN(data[i])) continue;
-            lastData=data[i];
-            result[i]=lastData; //第一天的数据
-            break;
-        }
+            for( var i=0;i<n.length;++i)
+            {
+                var period=n[i];
+                if (!this.IsNumber(period)) continue;
+                period=parseInt(period);
+                if (period<=0) continue;
+                if (period>i+1) period=i+1;
+                
+                var lastSMA=null;
+                var sma=null;
+                for(var j=0;j<period;++j)
+                {
+                    var index=i-(period-j-1);
+                    var item=data[index];
+                    if (!this.IsNumber(item)) continue;
+                    if (lastSMA==null) 
+                    {
+                        lastSMA=item;
+                        sma=item;
+                    }
+                    else
+                    {
+                        sma=(m*item+(period-m)*lastSMA)/period;
+                        lastSMA=sma;
+                    }
+                }
 
-        for(++i;i<data.length;++i)
+                result[i]=sma;
+            }
+        }
+        else
         {
-            result[i]=(m*data[i]+(n-m)*lastData)/n;
-            lastData=result[i];
+            var i=0;
+            var lastData=null;
+            for(;i<data.length; ++i)
+            {
+                if (data[i]==null || isNaN(data[i])) continue;
+                lastData=data[i];
+                result[i]=lastData; //第一天的数据
+                break;
+            }
+    
+            for(++i;i<data.length;++i)
+            {
+                result[i]=(m*data[i]+(n-m)*lastData)/n;
+                lastData=result[i];
+            }
         }
 
         return result;
