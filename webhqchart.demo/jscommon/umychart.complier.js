@@ -2813,7 +2813,7 @@ function JSAlgorithm(errorHandler,symbolData)
     /* 
         SMA 移动平均
         返回移动平均。
-        用法：　SMA(X，N，M)　X的M日移动平均，M为权重，如Y=(X*M+Y'*(N-M))/N 
+        用法：　SMA(X，N，M)　X的N日移动平均，M为权重，如Y=(X*M+Y'*(N-M))/N 
     */
     this.SMA=function(data,n,m)
     {

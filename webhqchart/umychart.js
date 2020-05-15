@@ -3436,7 +3436,8 @@ function JSChartContainer(uielement)
         this.ReloadFrame(option.Resource);
         this.ReloadChartCorssCursor(option,option.Resource);
 
-        if (option.Draw==true) this.Draw(); //是否立即重绘
+        if (option.Update) this.Update();       //是否立即更新并重绘
+        else if (option.Draw==true) this.Draw(); //是否立即重绘
     }
 
     this.ReloadBorder=function(option)  //根据页面缩放调整对应边框的尺长

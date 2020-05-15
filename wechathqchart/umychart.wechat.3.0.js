@@ -709,6 +709,7 @@ function JSChart(element)
         {
             if (option.Train.DataCount) chart.TrainDataCount = option.Train.DataCount;
             if (option.Train.Callback) chart.TrainCallback = option.Train.Callback;
+            if (option.Train.StartDate) chart.TrainStartDate = option.Train.StartDate;
         }
 
         if (!option.Windows || option.Windows.length <= 0) return null;

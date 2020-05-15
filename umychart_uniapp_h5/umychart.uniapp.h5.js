@@ -6936,7 +6936,8 @@ function JSChartContainer(uielement)
         this.ReloadFrame(option.Resource);
         this.ReloadChartCorssCursor(option,option.Resource);
 
-        if (option.Draw==true) this.Draw(); //是否立即重绘
+        if (option.Update) this.Update();       //是否立即更新并重绘
+        else if (option.Draw==true) this.Draw(); //是否立即重绘
     }
 
     this.ReloadBorder=function(option)  //根据页面缩放调整对应边框的尺长
@@ -47980,7 +47981,7 @@ function JSAlgorithm(errorHandler,symbolData)
     /* 
         SMA 移动平均
         返回移动平均。
-        用法：　SMA(X，N，M)　X的M日移动平均，M为权重，如Y=(X*M+Y'*(N-M))/N 
+        用法：　SMA(X，N，M)　X的N日移动平均，M为权重，如Y=(X*M+Y'*(N-M))/N 
     */
     this.SMA=function(data,n,m)
     {
