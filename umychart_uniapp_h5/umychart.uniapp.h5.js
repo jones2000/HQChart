@@ -47684,7 +47684,7 @@ function JSAlgorithm(errorHandler,symbolData)
             result=data.slice(0,data.length-n);
 
             //平滑处理
-            var firstData=result[0];
+            var firstData=data[0];
             for(let i=0;i<n;++i)
                 result.unshift(firstData);
         }
@@ -49095,26 +49095,69 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    /*
+    是否存在.
+    例如: EXIST(CLOSE>OPEN,10) 
+    表示10日内存在着阳线
+    */
     this.EXIST=function(data,n)
     {
-        n=parseInt(n);
-
         if (typeof(data)=='number') return 0;
 
-        var latestID=null; //最新满足条件的数据索引
-        var result=[];
-        var value;
-        for(let i=0;i<data.length;++i)
+        if (Array.isArray(n))
         {
-            result[i]=null;
-            value=data[i];
-            if (this.IsNumber(value) && value>0) latestID=i;
+            var result=[];
+            if (data.length<=0) return result;
 
-            if (latestID!=null && i-latestID<n) result[i]=1;
-            else result[i]=0;
+            for( var i in data) //初始化
+            {
+                result[i]=0;
+            }
+
+            for(var i=0;i<n.length && i<data.length;++i)
+            {
+                var period=n[i];
+                if (!this.IsNumber(period)) continue;
+                period=parseInt(period);
+                if (period<=0) continue;
+                if (period>i+1) period=i+1;
+
+                var bExist=false;
+                var index=0, value=0;
+                for(var j=0;j<period;++j)
+                {
+                    index=i-(period-j-1);
+                    value=data[i];
+                    if (this.IsNumber(value) && value>0)
+                    {
+                        bExist=true;
+                        break;
+                    }
+                }
+
+                result[i]=bExist?1:0;
+            }
+
+            return result;
         }
-
-        return result;
+        else
+        {
+            n=parseInt(n);
+            var latestID=null; //最新满足条件的数据索引
+            var result=[];
+            var value;
+            for(let i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                value=data[i];
+                if (this.IsNumber(value) && value>0) latestID=i;
+    
+                if (latestID!=null && i-latestID<n) result[i]=1;
+                else result[i]=0;
+            }
+    
+            return result;
+        }
     }
 
     this.TFILTER=function(data,data2,n)

@@ -11,6 +11,9 @@ import math
 
 class JSComplierHelper:
 
+    # 无效数值
+    NoneNumber=float('nan')
+
     # 公共帮助方法
     @staticmethod
     def IsNumber(value):
@@ -60,7 +63,7 @@ class JSComplierHelper:
         return not isinstance(value,(int,float))
 
     @staticmethod
-    def CreateArray(count, value=None) :
+    def CreateArray(count, value=NoneNumber) :
         if count<=0 :
             return []
         else :

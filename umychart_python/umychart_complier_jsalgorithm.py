@@ -1829,21 +1829,51 @@ class JSAlgorithm() :
         if not JSAlgorithm.IsVaildArray(data) :
             return []
 
-        dataLen = len(data)
-        result=JSAlgorithm.CreateArray(dataLen)
-        latestID=None # 最新满足条件的数据索引
-        
-        for i in range(dataLen) :
-            value=data[i]
-            if JSAlgorithm.IsNumber(value) and value>0:
-                latestID=i  # 最新满足条件的数据索引
+        if (JSAlgorithm.IsArray(n)) :
+            dataLen = len(data)
+            result=JSAlgorithm.CreateArray(dataLen,0)
+            for i in range(len(n)) :
+                if (i>=dataLen):
+                    break
+                period=n[i]
+                if (not JSAlgorithm.IsNumber(period)) :
+                    continue
+                period=int(period)
+                if (period<=0):
+                    continue
+                if (period>i+1) :
+                    period=i+1
 
-            if latestID!=None and i-latestID<n :
-                result[i]=1
-            else :
-                result[i]=0
+                bFind=False
+                for j in range(period):
+                    index=i-(period-j-1)
+                    value=data[index]
+                    if (JSAlgorithm.IsNumber(value) and value>0):
+                        bFind=True
+                        break
+                if (bFind):
+                    result[i]=1
+                else:
+                    result[i]=0
 
-        return result
+            return result  
+
+        else :
+            dataLen = len(data)
+            result=JSAlgorithm.CreateArray(dataLen)
+            latestID=None # 最新满足条件的数据索引
+            n=int(n)
+            for i in range(dataLen) :
+                value=data[i]
+                if JSAlgorithm.IsNumber(value) and value>0:
+                    latestID=i  # 最新满足条件的数据索引
+
+                if latestID!=None and i-latestID<n :
+                    result[i]=1
+                else :
+                    result[i]=0
+
+            return result
 
     def TFILTER(self, data,data2,n) :
         # TODO: 待完成
@@ -3436,7 +3466,7 @@ class JSAlgorithm() :
         elif name=='RANGE':
             return self.RANGE(args[0],args[1],args[2])
         elif name=='EXIST':
-            return self.EXIST(args[0],int(args[1]))
+            return self.EXIST(args[0],args[1])
         elif name=='EXISTR':
             return self.EXISTR(args[0],int(args[1]),int(args[2]))
         elif name=='FILTER':
