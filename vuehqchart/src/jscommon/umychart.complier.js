@@ -3025,40 +3025,84 @@ function JSAlgorithm(errorHandler,symbolData)
     {
         let result=[];
         if (!data || !data.length) return result;
-        if (dayCount < 1) dayCount = 1;
-        var i = 0;
-        for(i = 0; i < data.length && !this.IsNumber(data[i]); ++i)
+
+        if (Array.isArray(dayCount))
         {
-            result[i] = null;
+            for(i=0;i<dayCount.length && i<data.length;++i)
+            {
+                result[i]=null;
+                var period=dayCount[i];
+                if (period<=0) continue;
+                var start=0,value=0, index=0, preValue=0;
+                for(var j=0;j<period;++j)
+                {
+                    index=i-(period-j-1);
+                    value=data[index];
+                    start=j;
+                    if (this.IsNumber(value))
+                    {
+                        preValue=value;
+                        break;
+                    }
+                }
+
+                if (start>=period) continue;
+                var sum=0, count=0;
+                for(var j=start, k=1;j<period; ++j, ++k)
+                {
+                    index=i-(period-j-1);
+                    value=data[index];
+                    if (this.IsNumber(value))
+                        preValue=value;
+                    else
+                        value=preValue;
+
+                    count += k;
+                    sum += value * k;
+                }
+
+                result[i] = sum / count;
+            }
+
+            return result;
         }
-        var data = data.slice(0);
-        for(var days=0; i < data.length; ++i,++days)
+        else
         {
-            if (days < dayCount-1)
+            if (dayCount<=0) return [];
+            var i = 0;
+            for(i = 0; i < data.length && !this.IsNumber(data[i]); ++i)
             {
                 result[i] = null;
-                continue;
             }
-            var preValue = data[i - (dayCount-1)];
-            var sum = 0;
-            var count = 0;
-            for (var j = dayCount-1; j >= 0; --j)
+            var data = data.slice(0);
+            for(var days=0; i < data.length; ++i,++days)
             {
-               var value = data[i-j];
-               if (!this.IsNumber(value))
-               {
-                   value = preValue;
-                   data[i-j] = value;
-               }
-               else
-                    preValue = value;
+                if (days < dayCount-1)
+                {
+                    result[i] = null;
+                    continue;
+                }
+                var preValue = data[i - (dayCount-1)];
+                var sum = 0;
+                var count = 0;
+                for (var j = dayCount-1; j >= 0; --j)
+                {
+                var value = data[i-j];
+                if (!this.IsNumber(value))
+                {
+                    value = preValue;
+                    data[i-j] = value;
+                }
+                else
+                        preValue = value;
 
-                count += dayCount - j;
-                sum += value * (dayCount - j);
+                    count += dayCount - j;
+                    sum += value * (dayCount - j);
+                }
+                result[i] = sum / count;
             }
-            result[i] = sum / count;
+            return result;
         }
-        return result;
     }
     /*
     返回平滑移动平均

@@ -29782,9 +29782,31 @@ function KLineChartContainer(uielement)
     this.RecvDragMinuteData=function(data)
     {
         var aryDayData=KLineChartContainer.JsonDataToMinuteHistoryData(data);
+        if (!aryDayData || aryDayData.length<=0) return;
+
         var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
 
-        for(var i in aryDayData)    //数据往前插
+        var firstData=this.SourceData.Data[0];
+        var endIndex=null;
+        for(var i=aryDayData.length-1;i>=0;--i)
+        {
+            var item=aryDayData[i];
+            if (firstData.Date>item.Date || (firstData.Date==item.Date && firstData.Time>item.Time)) 
+            {
+                endIndex=i;
+                break;
+            }
+            else if (firstData.Date==item.Date && firstData.Time==item.Time)
+            {
+                firstData.YClose=item.YClose;
+                endIndex=i-1;
+                break;
+            }
+        }
+
+        if (endIndex==null && endIndex<0) return;
+        
+        for(var i=0;i<aryDayData.length && i<=endIndex;++i)    //数据往前插
         {
             var item=aryDayData[i];
             this.SourceData.Data.splice(i,0,item);
@@ -29797,10 +29819,13 @@ function KLineChartContainer(uielement)
         bindData.DataType=this.SourceData.DataType;
         bindData.Symbol=this.Symbol;
 
-        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        if (!this.IsApiPeriod)
         {
-            var periodData=bindData.GetPeriodData(bindData.Period);
-            bindData.Data=periodData;
+            if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+            {
+                var periodData=bindData.GetPeriodData(bindData.Period);
+                bindData.Data=periodData;
+            }
         }
 
         //绑定数据

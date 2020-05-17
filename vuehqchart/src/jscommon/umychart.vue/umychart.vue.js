@@ -33326,9 +33326,31 @@ function KLineChartContainer(uielement)
     this.RecvDragMinuteData=function(data)
     {
         var aryDayData=KLineChartContainer.JsonDataToMinuteHistoryData(data);
+        if (!aryDayData || aryDayData.length<=0) return;
+
         var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
 
-        for(var i in aryDayData)    //数据往前插
+        var firstData=this.SourceData.Data[0];
+        var endIndex=null;
+        for(var i=aryDayData.length-1;i>=0;--i)
+        {
+            var item=aryDayData[i];
+            if (firstData.Date>item.Date || (firstData.Date==item.Date && firstData.Time>item.Time)) 
+            {
+                endIndex=i;
+                break;
+            }
+            else if (firstData.Date==item.Date && firstData.Time==item.Time)
+            {
+                firstData.YClose=item.YClose;
+                endIndex=i-1;
+                break;
+            }
+        }
+
+        if (endIndex==null && endIndex<0) return;
+        
+        for(var i=0;i<aryDayData.length && i<=endIndex;++i)    //数据往前插
         {
             var item=aryDayData[i];
             this.SourceData.Data.splice(i,0,item);
@@ -33341,10 +33363,13 @@ function KLineChartContainer(uielement)
         bindData.DataType=this.SourceData.DataType;
         bindData.Symbol=this.Symbol;
 
-        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        if (!this.IsApiPeriod)
         {
-            var periodData=bindData.GetPeriodData(bindData.Period);
-            bindData.Data=periodData;
+            if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+            {
+                var periodData=bindData.GetPeriodData(bindData.Period);
+                bindData.Data=periodData;
+            }
         }
 
         //绑定数据
@@ -48237,40 +48262,84 @@ function JSAlgorithm(errorHandler,symbolData)
     {
         let result=[];
         if (!data || !data.length) return result;
-        if (dayCount < 1) dayCount = 1;
-        var i = 0;
-        for(i = 0; i < data.length && !this.IsNumber(data[i]); ++i)
+
+        if (Array.isArray(dayCount))
         {
-            result[i] = null;
+            for(i=0;i<dayCount.length && i<data.length;++i)
+            {
+                result[i]=null;
+                var period=dayCount[i];
+                if (period<=0) continue;
+                var start=0,value=0, index=0, preValue=0;
+                for(var j=0;j<period;++j)
+                {
+                    index=i-(period-j-1);
+                    value=data[index];
+                    start=j;
+                    if (this.IsNumber(value))
+                    {
+                        preValue=value;
+                        break;
+                    }
+                }
+
+                if (start>=period) continue;
+                var sum=0, count=0;
+                for(var j=start, k=1;j<period; ++j, ++k)
+                {
+                    index=i-(period-j-1);
+                    value=data[index];
+                    if (this.IsNumber(value))
+                        preValue=value;
+                    else
+                        value=preValue;
+
+                    count += k;
+                    sum += value * k;
+                }
+
+                result[i] = sum / count;
+            }
+
+            return result;
         }
-        var data = data.slice(0);
-        for(var days=0; i < data.length; ++i,++days)
+        else
         {
-            if (days < dayCount-1)
+            if (dayCount<=0) return [];
+            var i = 0;
+            for(i = 0; i < data.length && !this.IsNumber(data[i]); ++i)
             {
                 result[i] = null;
-                continue;
             }
-            var preValue = data[i - (dayCount-1)];
-            var sum = 0;
-            var count = 0;
-            for (var j = dayCount-1; j >= 0; --j)
+            var data = data.slice(0);
+            for(var days=0; i < data.length; ++i,++days)
             {
-               var value = data[i-j];
-               if (!this.IsNumber(value))
-               {
-                   value = preValue;
-                   data[i-j] = value;
-               }
-               else
-                    preValue = value;
+                if (days < dayCount-1)
+                {
+                    result[i] = null;
+                    continue;
+                }
+                var preValue = data[i - (dayCount-1)];
+                var sum = 0;
+                var count = 0;
+                for (var j = dayCount-1; j >= 0; --j)
+                {
+                var value = data[i-j];
+                if (!this.IsNumber(value))
+                {
+                    value = preValue;
+                    data[i-j] = value;
+                }
+                else
+                        preValue = value;
 
-                count += dayCount - j;
-                sum += value * (dayCount - j);
+                    count += dayCount - j;
+                    sum += value * (dayCount - j);
+                }
+                result[i] = sum / count;
             }
-            result[i] = sum / count;
+            return result;
         }
-        return result;
     }
     /*
     返回平滑移动平均

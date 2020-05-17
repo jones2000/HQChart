@@ -366,9 +366,9 @@ class JSSymbolData() :
             return self.Data.GetOpen()
         elif dataName in ('HIGH', 'H') :
             return self.Data.GetHigh()
-        elif dataName in ('LOW', 'AMOUNT') :
+        elif dataName in ('LOW',"L") :
             return self.Data.GetLow()
-        elif dataName in ('AMOUNT') :
+        elif dataName in ('AMOUNT',"AMO") :
             return self.Data.GetAmount()
 
 

@@ -52,7 +52,7 @@ class JSAlgorithm() :
         return JSComplierHelper.IsNaN(value)
 
     @staticmethod
-    def CreateArray(count, value=None) :
+    def CreateArray(count, value=JSComplierHelper.NoneNumber) :
         return JSComplierHelper.CreateArray(count,value)
     
     @staticmethod   # 是否是一个有效素组 data!=null and data.length>0
@@ -97,7 +97,7 @@ class JSAlgorithm() :
             len1=len(data)
             len2=len(data2)
             count=max(len1, len2)
-            result=[None]*count # 初始化
+            result=JSAlgorithm.CreateArray(count) # 初始化
             for i in range(count) :
                 if i<len1 and i<len2 and JSAlgorithm.Is2Number(data[i],data2[i]) :
                     result[i]=data[i]+data2[i]
@@ -112,8 +112,9 @@ class JSAlgorithm() :
             value=data2
             aryData=data
 
-        result=[None]*len(aryData)
-        for i in range(len(aryData)) :
+        count=len(aryData)
+        result=JSAlgorithm.CreateArray(count)
+        for i in range(count) :
             if JSAlgorithm.Is2Number(aryData[i],value) :
                 result[i]=value+aryData[i]
 
@@ -134,7 +135,7 @@ class JSAlgorithm() :
             len1=len(data)
             len2=len(data2)
             count=max(len1, len2)
-            result=[None]*count
+            result=JSAlgorithm.CreateArray(count)
             for i in range(count) :
                 if i<len1 and i<len2 and JSAlgorithm.Is2Number(data[i],data2[i]) :
                     result[i]=data[i]-data2[i]
@@ -142,15 +143,15 @@ class JSAlgorithm() :
             return result
 
         if isNumber :   # 单数据-数组
-            result=[None]*len(data2)
-            for i in range(len(data2)) :
-                result[i]=None
+            count=len(data2)
+            result=JSAlgorithm.CreateArray(count)
+            for i in range(count) :
                 if JSAlgorithm.Is2Number(data,data2[i]) :
                     result[i]=data-data2[i]
         else :           # 数组-单数据
-            result=[None]*len(data)
-            for i in range(len(data)) :
-                result[i]=None
+            count=len(data)
+            result=JSAlgorithm.CreateArray(count)
+            for i in range(count) :
                 if JSAlgorithm.Is2Number(data[i],data2) :
                     result[i]=data[i]-data2
 
@@ -169,7 +170,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count # 初始化
+            result=JSAlgorithm.CreateArray(count) # 初始化
             for i in range(count) :
                 if i<len1 and i<len2 and JSAlgorithm.Is2Number(data[i],data2[i]) :
                     result[i]=data[i]*data2[i]
@@ -184,8 +185,9 @@ class JSAlgorithm() :
             value=data2
             aryData=data
 
-        result=[None]*len(aryData) # 初始化
-        for i in range(len(aryData)) :
+        count=len(aryData)
+        result=JSAlgorithm.CreateArray(count) # 初始化
+        for i in range(count) :
             if JSAlgorithm.Is2Number(aryData[i],value) :
                 result[i]=value*aryData[i]
 
@@ -206,7 +208,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count # 初始化
+            result=JSAlgorithm.CreateArray(count) # 初始化
             for i in range(count) :
                 if i<len1 and i<len2 and JSAlgorithm.IsNumber(data[i]) and JSAlgorithm.IsDivideNumber(data2[i]) :
                     result[i]=data[i]/data2[i]
@@ -214,15 +216,15 @@ class JSAlgorithm() :
             return result
 
         if isNumber :  # 单数据-数组
-            result=[None]*len(data2) # 初始化
-            for i in range(len(data2)) :
-                result[i]=None
+            count=len(data2)
+            result=JSAlgorithm.CreateArray(count) # 初始化
+            for i in range(count) :
                 if JSAlgorithm.IsNumber(data) and JSAlgorithm.IsDivideNumber(data2[i]) :
                     result[i]=data/data2[i]
         else : # 数组-单数据
-            result=[None]*len(data) # 初始化
-            for i in range(len(data)) :
-                result[i]=None
+            count=len(data)
+            result=JSAlgorithm.CreateArray(count) # 初始化
+            for i in range(count) :
                 if JSAlgorithm.IsNumber(data[i]) and JSAlgorithm.IsDivideNumber(data2) :
                     result[i]=data[i]/data2
 
@@ -256,14 +258,16 @@ class JSAlgorithm() :
 
 
         if isNumber :  # 单数据-数组
-            result=[None]*len(data2) # 初始化
-            for i in range(len(data2)) :
+            count=len(data2)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data,data2[i]) :
                     result[i]=1 if data>data2[i] else 0
         
         else :           # 数组-单数据
-            result=[None]*len(data) # 初始化
-            for i in range(len(data)) :
+            count=len(data)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data[i],data2) :
                     result[i]=1 if data[i]>data2 else 0
 
@@ -282,7 +286,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count # 初始化
+            result=JSComplierHelper.CreateArray(count) # 初始化
             for i in range(count) :
                 if i<len1 and i<len2 and not JSAlgorithm.Is2NaN(data[i],data2[i]) :
                     result[i]= 1 if data[i]>=data2[i] else 0
@@ -291,14 +295,16 @@ class JSAlgorithm() :
 
 
         if isNumber :  # 单数据-数组
-            result=[None]*len(data2) # 初始化
-            for i in range(len(data2)) :
+            count=len(data2)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data,data2[i]) :
                     result[i]=1 if data>=data2[i] else 0
         
         else :           # 数组-单数据
-            result=[None]*len(data) # 初始化
-            for i in range(len(data)) :
+            count=len(data)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data[i],data2) :
                     result[i]=1 if data[i]>=data2 else 0
 
@@ -317,7 +323,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count # 初始化
+            result=JSComplierHelper.CreateArray(count) # 初始化
             for i in range(count) :
                 if i<len1 and i<len2 and not JSAlgorithm.Is2NaN(data[i],data2[i]) :
                     result[i]= 1 if data[i]<data2[i] else 0
@@ -326,14 +332,16 @@ class JSAlgorithm() :
 
 
         if isNumber :  # 单数据-数组
-            result=[None]*len(data2) # 初始化
-            for i in range(len(data2)) :
+            count=len(data2)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data,data2[i]) :
                     result[i]=1 if data<data2[i] else 0
         
         else :           # 数组-单数据
-            result=[None]*len(data) # 初始化
-            for i in range(len(data)) :
+            count=len(data)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data[i],data2) :
                     result[i]=1 if data[i]<data2 else 0
 
@@ -352,7 +360,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count # 初始化
+            result=JSComplierHelper.CreateArray(count) # 初始化
             for i in range(count) :
                 if i<len1 and i<len2 and not JSAlgorithm.Is2NaN(data[i],data2[i]) :
                     result[i]= 1 if data[i]<=data2[i] else 0
@@ -361,14 +369,16 @@ class JSAlgorithm() :
 
 
         if isNumber :  # 单数据-数组
-            result=[None]*len(data2) # 初始化
-            for i in range(len(data2)) :
+            count=len(data2)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data,data2[i]) :
                     result[i]=1 if data<=data2[i] else 0
         
         else :           # 数组-单数据
-            result=[None]*len(data) # 初始化
-            for i in range(len(data)) :
+            count=len(data)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data[i],data2) :
                     result[i]=1 if data[i]<=data2 else 0
 
@@ -387,7 +397,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count # 初始化
+            result=JSComplierHelper.CreateArray(count) # 初始化
             for i in range(count) :
                 if i<len1 and i<len2 and not JSAlgorithm.Is2NaN(data[i],data2[i]) :
                     result[i]= 1 if data[i]==data2[i] else 0
@@ -396,14 +406,16 @@ class JSAlgorithm() :
 
 
         if isNumber :  # 单数据-数组
-            result=[None]*len(data2) # 初始化
-            for i in range(len(data2)) :
+            count=len(data2)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data,data2[i]) :
                     result[i]=1 if data==data2[i] else 0
         
         else :           # 数组-单数据
-            result=[None]*len(data) # 初始化
-            for i in range(len(data)) :
+            count=len(data)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data[i],data2) :
                     result[i]=1 if data[i]==data2 else 0
 
@@ -422,7 +434,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count # 初始化
+            result=JSComplierHelper.CreateArray(count) # 初始化
             for i in range(count) :
                 if i<len1 and i<len2 and not JSAlgorithm.Is2NaN(data[i],data2[i]) :
                     result[i]= 1 if data[i]!=data2[i] else 0
@@ -431,14 +443,16 @@ class JSAlgorithm() :
 
 
         if isNumber :  # 单数据-数组
-            result=[None]*len(data2) # 初始化
-            for i in range(len(data2)) :
+            count=len(data2)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data,data2[i]) :
                     result[i]=1 if data!=data2[i] else 0
         
         else :           # 数组-单数据
-            result=[None]*len(data2) # 初始化
-            for i in range(len(data)) :
+            count=len(data)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data[i],data2) :
                     result[i]=1 if data[i]!=data2 else 0
 
@@ -464,7 +478,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count # 初始化
+            result=JSComplierHelper.CreateArray(count) # 初始化
             for i in range(count) :
                 if i<len1 and i<len2 and not JSAlgorithm.Is2NaN(data[i],data2[i]) :
                     result[i]= 1 if data[i] and data2[i] else 0
@@ -473,14 +487,16 @@ class JSAlgorithm() :
 
 
         if isNumber :  # 单数据-数组
-            result=[None]*len(data2) # 初始化
-            for i in range(len(data2)) :
+            count=len(data2)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data,data2[i]) :
                     result[i]=1 if data and data2[i] else 0
         
         else :           # 数组-单数据
-            result=[None]*len(data) # 初始化
-            for i in range(len(data)) :
+            count=len(data)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data[i],data2) :
                     result[i]=1 if data[i] and data2 else 0
 
@@ -500,7 +516,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count # 初始化
+            result=JSComplierHelper.CreateArray(count) # 初始化
             for i in range(count) :
                 if i<len1 and i<len2 and not JSAlgorithm.Is2NaN(data[i],data2[i]) :
                     result[i]= 1 if data[i] or data2[i] else 0
@@ -509,14 +525,16 @@ class JSAlgorithm() :
 
 
         if isNumber :  # 单数据-数组
-            result=[None]*len(data2) # 初始化
-            for i in range(len(data2)) :
+            count=len(data2)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data,data2[i]) :
                     result[i]=1 if data or data2[i] else 0
         
         else :           # 数组-单数据
-            result=[None]*len(data) # 初始化
-            for i in range(len(data)) :
+            count=len(data)
+            result=JSComplierHelper.CreateArray(count) # 初始化
+            for i in range(count) :
                 if not JSAlgorithm.Is2NaN(data[i],data2) :
                     result[i]=1 if data[i] or data2 else 0
 
@@ -540,8 +558,9 @@ class JSAlgorithm() :
             return trueData if data else falseData
         
         # 都是数组
-        result=[None]*len(data)
-        for i in range(len(data)) :
+        count=len(data)
+        result=JSComplierHelper.CreateArray(count)
+        for i in range(count) :
             if data[i] :
                 if isNumber2 :
                     result[i]=trueData
@@ -592,9 +611,8 @@ class JSAlgorithm() :
         else :   # n 为数组的情况
             nCount=len(n)
             count=len(data)
-            result=[None]*count
+            result=JSComplierHelper.CreateArray(count)
             for i in range(len(data)) :
-                result[i]=None
                 if i>=nCount :
                     continue
 
@@ -626,14 +644,14 @@ class JSAlgorithm() :
             result=data[0:count-n]
 
             for i in range(n) :
-                result.insert(0,None)
+                result.insert(0,JSComplierHelper.NoneNumber)
 
         else :   # n 为数组的情况
             nCount=len(n)
             count=len(data)
-            result=[None]*count
+            result=JSComplierHelper.CreateArray(count)
             for i in range(len(data)) :
-                result[i]=None
+                result[i]=JSComplierHelper.NoneNumber
                 if i>=nCount :
                     continue
 
@@ -668,9 +686,8 @@ class JSAlgorithm() :
         else :   # n 为数组的情况
             nCount=len(n)
             count=len(data)
-            result=[None]*count
+            result=JSComplierHelper.CreateArray(count)
             for i in range(len(data)) :
-                result[i]=None
                 if i>=nCount :
                     continue
 
@@ -702,14 +719,13 @@ class JSAlgorithm() :
             result=data[0:count-n]
 
             for i in range(n) :
-                result.append(None)
+                result.append(JSComplierHelper.NoneNumber)
 
         else :   # n 为数组的情况
             nCount=len(n)
             count=len(data)
-            result=[None]*count
+            result=JSComplierHelper.CreateArray(count)
             for i in range(len(data)) :
-                result[i]=None
                 if i>=nCount :
                     continue
 
@@ -733,7 +749,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count
+            result=JSComplierHelper.CreateArray(count)
             for i in range(count) :
                 if i<len1 and i<len2 and JSAlgorithm.Is2Number(data[i],data2[i]) :
                     result[i]= max(data[i],data2[i])
@@ -742,14 +758,16 @@ class JSAlgorithm() :
 
 
         if isNumber :  # 单数据-数组
-            result=[None]*len(data2)
-            for i in range(len(data2)) :
+            count=len(data2)
+            result=JSComplierHelper.CreateArray(count)
+            for i in range(count) :
                 if JSAlgorithm.Is2Number(data,data2[i]) :
                     result[i]=max(data,data2[i])
         
         else :           # 数组-单数据
-            result=[None]*len(data)
-            for i in range(len(data)) :
+            count=len(data)
+            result=JSComplierHelper.CreateArray(count)
+            for i in range(count) :
                 if JSAlgorithm.Is2Number(data[i],data2) :
                     result[i]=max(data[i],data2)
 
@@ -769,7 +787,7 @@ class JSAlgorithm() :
         if not isNumber and not isNumber2 :
             len1, len2 = len(data), len(data2)
             count=max(len1, len2)
-            result=[None]*count
+            result=JSComplierHelper.CreateArray(count)
             for i in range(count) :
                 if i<len1 and i<len2 and JSAlgorithm.Is2Number(data[i],data2[i]) :
                     result[i]= min(data[i],data2[i])
@@ -778,14 +796,16 @@ class JSAlgorithm() :
 
 
         if isNumber :  # 单数据-数组
-            result=[None]*len(data2)
-            for i in range(len(data2)) :
+            count=len(data2)
+            result=JSComplierHelper.CreateArray(count)
+            for i in range(count) :
                 if JSAlgorithm.Is2Number(data,data2[i]) :
                     result[i]=min(data,data2[i])
         
         else :           # 数组-单数据
-            result=[None]*len(data)
-            for i in range(len(data)) :
+            count=len(data)
+            result=JSComplierHelper.CreateArray(count)
+            for i in range(count) :
                 if JSAlgorithm.Is2Number(data[i],data2) :
                     result[i]=min(data[i],data2)
 
@@ -797,9 +817,9 @@ class JSAlgorithm() :
         if isNumber :
             return abs(data)
         
-        result=[None]*len(data)
-        for i in range(len(data)) :
-            result[i]=None
+        count=len(data)
+        result=JSComplierHelper.CreateArray(count)
+        for i in range(count) :
             if not JSAlgorithm.IsNaN(data[i]) :
                  result[i]=abs(data[i])
 
@@ -821,7 +841,7 @@ class JSAlgorithm() :
         if not data or len(data)<=0:
             return result
         
-        result=[None]*len(data) # 初始化数据
+        result=JSComplierHelper.CreateArray(len(data)) # 初始化数据
         for i in range(len(data)) :
             if JSAlgorithm.IsNumber(data[i]):
                 break
@@ -893,7 +913,7 @@ class JSAlgorithm() :
         if offset>=len(data) :
             return result
 
-        result=[None]*len(data) # 初始化数据
+        result=JSComplierHelper.CreateArray(len(data)) # 初始化数据
 
         # 取首个有效数据
         for i in range(len(data)) :
@@ -957,7 +977,7 @@ class JSAlgorithm() :
         if (period<=0) :
             return []
 
-        result = [None]*len(data)
+        result = JSComplierHelper.CreateArray(len(data))
         lastData=None
         for i in range(len(data)) :
             if JSAlgorithm.IsNumber(data[i]) :
@@ -1016,7 +1036,7 @@ class JSAlgorithm() :
         if len1<0 or len2!=len2 :
             return result
 
-        result = [None]*len(data)
+        result = JSAlgorithm.CreateArray(len(data))
         for index in range(len1) :
             if JSAlgorithm.Is2Number(data[index],data2[index]) :
                 result[index]=data[index]
@@ -1034,43 +1054,87 @@ class JSAlgorithm() :
     # 返回加权移动平均
     # 用法:WMA(X,N):X的N日加权移动平均.
     # 算法:Yn=(1*X1+2*X2+...+n*Xn)/(1+2+...+n)
-    def WMA(self,data, dayCount) :
+    def WMA(self,data, n) :
         result=[]
         len1=len(data)
         if not data or len1<=0 :
             return result
-        if dayCount < 1 :
-            dayCount = 1
 
-        result=[None]*len1 # 初始化
-        for i in range(len1) :
-            if JSAlgorithm.IsNumber(data[i]) :
-                break
-        
-        data2 = data[0:]
-        days=-1
-        for i in range(i,len1):
-            days+=1
+        result=JSAlgorithm.CreateArray(len1) # 初始化
 
-            if days < dayCount-1 :
-                continue
+        if (JSAlgorithm.IsArray(n)) :
+            for i in range(len(n)):
+                period=n[i]
+                if (not JSAlgorithm.IsNumber(period)) :
+                    continue
+                period=int(period)
+                if (period<=0):
+                    continue
+                if (period>i+1) :
+                    period=i+1
+
+                start=0
+                preValue=0
+                for j in range(period) :
+                    index=i-(period-j-1)
+                    value=data[index]
+                    start=j
+                    if (JSAlgorithm.IsNumber(value)) :
+                        preValue=value
+                        break
+                
+                if (start>=period) :
+                    continue
+
+                sum, count , k =0, 0, 1
+                for j in range(start, period) :
+                    index=i-(period-j-1)
+                    value=data[index]
+                    if (JSAlgorithm.IsNumber(value)) :
+                        preValue = value
+                    else :
+                        value=preValue
+
+                    count+= k
+                    sum += value * k
+                    k+=1
+
+                result[i] = sum / count
+                    
+        else :
+            dayCount=int(n)
+            if dayCount<=0 :
+                return result
+
+            start=0
+            for i in range(len1) :
+                start=i
+                if JSAlgorithm.IsNumber(data[i]) :
+                    break
             
-            preValue = data2[i - (dayCount-1)]
-            sum = 0
-            count = 0
-            for j in range(dayCount-1,-1,-1) :
-                value = data2[i-j]
-                if JSAlgorithm.IsNumber(value) :
-                    value = preValue
-                    data2[i-j] = value
-                else :
-                    preValue = value
+            data2 = data[0:]
+            days =int(-1)
+            for i in range(start,len1) :
+                days+=1
+                if days < dayCount-1 :
+                    continue
+                
+                preValue = data2[i - (dayCount-1)]
+                sum = 0
+                count = 0
+                for j in range(dayCount-1,-1,-1) :
+                    value = data2[i-j]
+                    if not JSAlgorithm.IsNumber(value) :
+                        value = preValue
+                        data2[i-j] = value
+                    else :
+                        preValue = value
 
-                count += dayCount - j
-                sum += value * (dayCount - j)
+                    count += dayCount - j
+                    sum += value * (dayCount - j)
+                
+                result[i] = sum / count
             
-            result[i] = sum / count
-        
         return result
 
     
@@ -1083,7 +1147,7 @@ class JSAlgorithm() :
         if not data or dataLen<=0 :
             return result
 
-        result=[None]*dataLen
+        result=JSAlgorithm.CreateArray(dataLen)
         for i in range(dataLen) :
             if JSAlgorithm.IsNumber(data[i]) :
                 break
@@ -1118,7 +1182,7 @@ class JSAlgorithm() :
         if dayCount>=dataLen :
             return result
     
-        result=[None]*dataLen # 初始化
+        result=JSAlgorithm.CreateArray(dataLen) # 初始化
         for i in range(dayCount,dataLen) :      # 获取第1个有效数据
             if JSAlgorithm.IsNumber(data[i]) :
                 result[i]=data[i]
@@ -1139,7 +1203,7 @@ class JSAlgorithm() :
         if dayCount>=dataLen : 
             return result
 
-        result=[None]*dataLen # 初始化
+        result=JSAlgorithm.CreateArray(dataLen) # 初始化
         for i in range(dataLen) :
             if JSAlgorithm.IsNumber(data[i]) :
                 break
@@ -1177,7 +1241,7 @@ class JSAlgorithm() :
         if len1<=0 or len2<=0: 
             return result
 
-        result=[None]*len1
+        result=JSAlgorithm.CreateArray(len1)
         for start in range(len1) :
             if JSAlgorithm.IsNumber(data[start]) :
                 break
@@ -1195,7 +1259,7 @@ class JSAlgorithm() :
                 result[i] = i - j
 
         for i in range(start+1,len1) :
-            if result[i]==None :
+            if result[i]==JSComplierHelper.NoneNumber :
                 result[i] = result[i-1]
         
         return result
@@ -1210,7 +1274,7 @@ class JSAlgorithm() :
             return 0-data
 
         count=len(data)
-        result = [None]*count
+        result = JSAlgorithm.CreateArray(count)
         for i in range(count) :
             if JSAlgorithm.IsNumber(data[i]) :
                 result[i]=0-data[i]
@@ -1412,7 +1476,7 @@ class JSAlgorithm() :
                 result[index]= 1 if data[index]>data2[index] and data[index-1]<data2[index-1] else 0
 
         elif JSAlgorithm.IsArray(data) and JSAlgorithm.IsNumber(data2):
-            data2=int(data2)
+            # data2=float(data2)
             len1=len(data)
             result=JSAlgorithm.CreateArray(len1,0)
             for index in range(len1) :
@@ -1423,7 +1487,7 @@ class JSAlgorithm() :
                 result[index]= 1 if data[index]>data2 and data[index-1]<data2 else 0
 
         elif JSAlgorithm.IsNumber(data) and JSAlgorithm.IsArray(data2) :
-            data=int(data)
+            # data=float(data)
             len2=len(data2)
             result=JSAlgorithm.CreateArray(len2,0)
             for index in range(len2) :
@@ -3534,7 +3598,7 @@ class JSAlgorithm() :
         elif name=='BETA2':
             return self.BETA2(args[0],args[1],int(args[2]))
         elif name=='WMA':
-            return self.WMA(args[0], int(args[1]))
+            return self.WMA(args[0], args[1])
         elif name=='MEMA':
             return self.MEMA(args[0], int(args[1]))
         elif name=='SUMBARS':
