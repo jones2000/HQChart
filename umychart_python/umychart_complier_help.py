@@ -17,7 +17,11 @@ class JSComplierHelper:
     # 公共帮助方法
     @staticmethod
     def IsNumber(value):
-        return isinstance(value,(int,float))
+        if not isinstance(value,(int,float)) :
+            return False
+        if (math.isnan(value)):
+            return False
+        return True
 
     @staticmethod
     def IsJsonNumber(jsData,name):
