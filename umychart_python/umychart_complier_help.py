@@ -38,7 +38,9 @@ class JSComplierHelper:
 
     @staticmethod
     def IsDivideNumber(value):
-        return isinstance(value,(int,float)) and value!=0
+        if (not JSComplierHelper.IsNumber(value)):
+            return False
+        return value!=0
 
     @staticmethod
     def IsJsonDivideNumber(jsData,name):
@@ -64,7 +66,11 @@ class JSComplierHelper:
     # For people stuck with python <= 2.5. Nan != Nan did not work reliably. Used numpy instead." Having said that, I've not actually ever seen it fail
     @staticmethod
     def IsNaN(value) :
-        return not isinstance(value,(int,float))
+        if (not isinstance(value,(int,float))):
+            return True
+        if (math.isnan(value)) :
+            return True
+        return False
 
     @staticmethod
     def CreateArray(count, value=NoneNumber) :
