@@ -7336,10 +7336,21 @@ function JSDraw(errorHandler,symbolData)
             for(var j in condition)
             {
                 var item=condition[j];
-                if (i<item.Cond.length && item.Cond[i])
+                if (Array.isArray(item.Cond))
                 {
-                    rgb=item.RGB;
-                    break;
+                    if (i<item.Cond.length && item.Cond[i])
+                    {
+                        rgb=item.RGB;
+                        break;
+                    }
+                }
+                else 
+                {
+                    if (this.IsNumber(item.Cond) && item.Cond)  //单数值条件
+                    {
+                        rgb=item.RGB;
+                        break;
+                    }
                 }
             }
 
