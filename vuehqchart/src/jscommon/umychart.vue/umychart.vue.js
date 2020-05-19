@@ -3913,6 +3913,8 @@ function JSChart(divElement)
             if (IFrameSplitOperator.IsNumber(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
             else item.TitleHeight=chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
             if (item.IsShowTitleArraw==false) chart.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
+            if (item.IsShowIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowIndexName=false;
+            if (item.IndexParamSpace>=0) chart.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
         }
         
         //叠加指标宽度
@@ -4614,10 +4616,10 @@ function JSChart(divElement)
     }
 
     //K线周期切换
-    this.ChangePeriod=function(period)
+    this.ChangePeriod=function(period, option)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangePeriod)=='function')
-            this.JSChartContainer.ChangePeriod(period);
+            this.JSChartContainer.ChangePeriod(period, option);
     }
 
     //K线复权切换
@@ -4649,10 +4651,10 @@ function JSChart(divElement)
     }
 
     //K线切换类型 0=实心K线 1=收盘价线 2=美国线 3=空心K线 4=面积图
-    this.ChangeKLineDrawType=function(drawType)
+    this.ChangeKLineDrawType=function(drawType, isDraw)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeKLineDrawType)=='function')
-            this.JSChartContainer.ChangeKLineDrawType(drawType);
+            this.JSChartContainer.ChangeKLineDrawType(drawType,isDraw);
     }
 	
 	//指标窗口个数
@@ -7344,6 +7346,8 @@ function IChartFramePainting()
     this.YSpecificMaxMin=null;         //指定Y轴最大最小值
     this.IsShowBorder = true;          //是否显示边框
     this.IsShowTitleArraw=true;        //是否显示指标信息上涨下跌箭头
+    this.IsShowIndexName=true;         //是否显示指标名字
+    this.IndexParamSpace=2;            //指标参数数值显示间距
     
 
     this.Draw=function()
@@ -21082,7 +21086,7 @@ function IFrameSplitOperator()
 
     this.Filter = function (aryInfo,keepZero) 
     {
-        if (this.SplitCount <= 0 || aryInfo.length <= 0 || aryInfo.length < this.SplitCount) return aryInfo;
+        if (this.SplitCount <= 0 || aryInfo.length <= 0 || aryInfo.length <= this.SplitCount) return aryInfo;
 
         //分割线比预设的多, 过掉一些
         var filter = parseInt(aryInfo.length / this.SplitCount);
@@ -21928,10 +21932,14 @@ function FrameSplitKLineX()
         var xPointCount=this.Frame.XPointCount;
         var lastYear=null, lastMonth=null;
         var minDistance=12;
+        var monthCount=0;
         for(var i=0, index=xOffset, distance=minDistance;i<xPointCount && index<this.Frame.Data.Data.length ;++i,++index)
         {
             var year=parseInt(this.Frame.Data.Data[index].Date/10000);
             var month=parseInt(this.Frame.Data.Data[index].Date/100)%100;
+
+            if (lastMonth!=month) 
+                ++monthCount;
 
             if (distance<minDistance ||
                 (lastYear!=null && lastYear==year && lastMonth!=null && lastMonth==month))
@@ -21956,6 +21964,52 @@ function FrameSplitKLineX()
 
             lastYear=year;
             lastMonth=month;
+            if (this.ShowText)
+            {
+                info.Message[0]=text;
+            }
+
+            this.Frame.VerticalInfo.push(info);
+            distance=0;
+        }
+
+        if (this.Period==0 && monthCount<=2)
+            this.SplitShortDate();
+    }
+
+    //分隔在2个月一下的格式
+    this.SplitShortDate=function()
+    {
+        this.Frame.VerticalInfo=[];
+        var xOffset=this.Frame.Data.DataOffset;
+        var xPointCount=this.Frame.XPointCount;
+        var minDistance=12;
+        var isFirstYear=true;
+        for(var i=0, index=xOffset, distance=minDistance;i<xPointCount && index<this.Frame.Data.Data.length ;++i,++index)
+        {
+            var year=parseInt(this.Frame.Data.Data[index].Date/10000);
+            //var month=parseInt(this.Frame.Data.Data[index].Date/100)%100;
+            //var day=parseInt(this.Frame.Data.Data[index].Date%100);
+
+            if (distance<minDistance)
+            {
+                ++distance;
+                continue;
+            }
+
+            var info= new CoordinateInfo();
+            info.Value=index-xOffset;
+            var text;
+            if (isFirstYear)
+            {
+                text=year.toString();
+                isFirstYear=false;
+            }
+            else
+            {
+                text=IFrameSplitOperator.FormatDateString(this.Frame.Data.Data[index].Date,'MM-DD');
+            }
+
             if (this.ShowText)
             {
                 info.Message[0]=text;
@@ -24069,16 +24123,18 @@ function DynamicChartTitlePainting()
     this.ColorIndex;    //五彩K线名字 {Name:'名字'}
     this.IsShowColorIndexTitle=true;
     this.IsShowUpDownArrow=true;   //指标数据是否显示 上涨下跌箭头
+    this.IsShowIndexName=true;     //是否显示指标名字
 
     this.TradeIndex;    //专家系统名字{Name:'名字', Param:'参数'}
     this.IsShowTradeIndexTitle=true;
 
     this.OverlayIndex=new Map();   //叠加指标 key=Identify value={ Data:数据, Title:标题, Identify:标识}
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-    this.TitleRect;             //指标名字显示区域
+    this.TitleRect;              //指标名字显示区域
     this.IsDrawTitleBG=false;    //是否绘制指标名字背景色
     this.BGColor=g_JSChartResource.IndexTitleBGColor;
     this.OnDrawEvent;
+    this.ParamSpace=2;           //参数显示的间距
 
     this.IsKLineFrame=false;    //是否是K线框架标题
 
@@ -24146,6 +24202,8 @@ function DynamicChartTitlePainting()
         this.IsKLineFrame= this.Frame.ClassName=='KLineFrame' || this.Frame.ClassName=='KLineHScreenFrame';
         this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
         this.IsShowUpDownArrow=this.Frame.IsShowTitleArraw;
+        this.IsShowIndexName=this.Frame.IsShowIndexName;
+        this.ParamSpace=this.Frame.IndexParamSpace;
         this.TitleRect=null;
         if (this.CursorIndex==null ) return;
         if (!this.Data) return;
@@ -24167,7 +24225,7 @@ function DynamicChartTitlePainting()
         this.Canvas.textBaseline="middle";
         this.Canvas.font=this.Font;
 
-        if (this.Title)
+        if (this.Title && this.IsShowIndexName)
         {
             var textWidth=this.Canvas.measureText(this.Title).width+2;
             if (this.IsDrawTitleBG)
@@ -24251,7 +24309,8 @@ function DynamicChartTitlePainting()
             this.Canvas.fillStyle=item.Color;
 
             var text=item.Name+":"+valueText;
-            var textWidth=this.Canvas.measureText(text).width+2;    //后空2个像素
+            var space=this.ParamSpace*GetDevicePixelRatio();
+            var textWidth=this.Canvas.measureText(text).width+space;    //后空2个像素
             this.Canvas.fillText(text,left,bottom,textWidth);
             left+=textWidth;
         }
@@ -24385,7 +24444,7 @@ function DynamicChartTitlePainting()
         this.Canvas.textBaseline="middle";
         this.Canvas.font=this.Font;
 
-        if (this.Title)
+        if (this.Title && this.IsShowIndexName)
         {
             var textWidth=this.Canvas.measureText(this.Title).width+2;
 
@@ -30891,9 +30950,21 @@ function KLineChartContainer(uielement)
     }
 
     //周期切换
-    this.ChangePeriod=function(period)
+    this.ChangePeriod=function(period,option)
     {
-        if (this.Period==period) return;
+        var isChangeKLineDrawType=false;
+        if (option && option.KLine)
+        {
+            if (IFrameSplitOperator.IsNumber(option.KLine.DrawType)) isChangeKLineDrawType=true;
+        };
+
+        if (this.Period==period) 
+        {
+            if (isChangeKLineDrawType) this.ChangeKLineDrawType(option.KLine.DrawType);
+            return;
+        }
+
+        if (isChangeKLineDrawType) this.ChangeKLineDrawType(option.KLine.DrawType,false);   //切换K线类型, 不重绘
 
         var isDataTypeChange=false;
         if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)
@@ -31429,7 +31500,7 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
     
-    this.ChangeKLineDrawType=function(drawType)
+    this.ChangeKLineDrawType=function(drawType, isDraw)
     {
         if (this.KLineDrawType==drawType) return;
 
@@ -31446,6 +31517,8 @@ function KLineChartContainer(uielement)
             var item=this.OverlayChartPaint[i];
             item.DrawType=this.KLineDrawType;
         } 
+
+        if (isDraw==false) return;
 
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);

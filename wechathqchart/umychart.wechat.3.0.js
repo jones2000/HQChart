@@ -394,6 +394,8 @@ function JSChart(element)
             if (item.Change != null) chart.Frame.SubFrame[i].Frame.ChangeIndex = item.Change;
             if (typeof (item.UpdateUICallback) == 'function') chart.WindowIndex[i].UpdateUICallback = item.UpdateUICallback;
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight = item.TitleHeight;
+            if (item.IsShowIndexName == false) chart.Frame.SubFrame[i].Frame.IsShowIndexName = false;
+            if (item.IndexParamSpace >= 0) chart.Frame.SubFrame[i].Frame.IndexParamSpace = item.IndexParamSpace;
         }
 
         return chart;
@@ -2271,37 +2273,40 @@ function ChartBorder() {
   }
 }
 
-function IChartFramePainting() {
-  this.HorizontalInfo = new Array();    //Y轴
-  this.VerticalInfo = new Array();      //X轴
+function IChartFramePainting() 
+{
+    this.HorizontalInfo = new Array();    //Y轴
+    this.VerticalInfo = new Array();      //X轴
 
-  this.Canvas;                        //画布
+    this.Canvas;                        //画布
 
-  this.Identify;                      //窗口标识
+    this.Identify;                      //窗口标识
 
-  this.ChartBorder;
-  this.PenBorder = g_JSChartResource.FrameBorderPen;        //边框颜色
-  this.TitleBGColor = g_JSChartResource.FrameTitleBGColor;  //标题背景色
-  this.IsShow = true;                   //是否显示
-  this.SizeChange = true;               //大小是否改变
-  this.XYSplit = true;                  //XY轴坐标信息改变
+    this.ChartBorder;
+    this.PenBorder = g_JSChartResource.FrameBorderPen;        //边框颜色
+    this.TitleBGColor = g_JSChartResource.FrameTitleBGColor;  //标题背景色
+    this.IsShow = true;                   //是否显示
+    this.SizeChange = true;               //大小是否改变
+    this.XYSplit = true;                  //XY轴坐标信息改变
 
-  this.HorizontalMax;                 //Y轴最大值
-  this.HorizontalMin;                 //Y轴最小值
-  this.XPointCount = 10;                //X轴数据个数
+    this.HorizontalMax;                 //Y轴最大值
+    this.HorizontalMin;                 //Y轴最小值
+    this.XPointCount = 10;                //X轴数据个数
 
-  this.YSplitOperator;               //Y轴分割
-  this.XSplitOperator;               //X轴分割
-  this.Data;                         //主数据
+    this.YSplitOperator;               //Y轴分割
+    this.XSplitOperator;               //X轴分割
+    this.Data;                         //主数据
 
-  this.YSpecificMaxMin = null;         //指定Y轴最大最小值
-  this.YSplitScale=null;               //固定分割刻度数组 [2,5,8]
+    this.YSpecificMaxMin = null;         //指定Y轴最大最小值
+    this.YSplitScale=null;               //固定分割刻度数组 [2,5,8]
 
-  this.IsShowBorder = true;            //是否显示边框
+    this.IsShowBorder = true;            //是否显示边框
+    this.IsShowIndexName = true;         //是否显示指标名字
+    this.IndexParamSpace = 2;            //指标参数数值显示间距
 
-  //上锁信息
-  this.IsLocked = false;               //是否上锁
-  this.LockPaint = null;
+    //上锁信息
+    this.IsLocked = false;               //是否上锁
+    this.LockPaint = null;
 
   this.Draw = function () {
     this.DrawFrame();

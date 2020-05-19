@@ -83,7 +83,7 @@ function IFrameSplitOperator()
 
     this.Filter = function (aryInfo, keepZero)   //keepZero 保留0轴
     {
-        if (this.SplitCount <= 0 || aryInfo.length <= 0 || aryInfo.length < this.SplitCount) return aryInfo;
+        if (this.SplitCount <= 0 || aryInfo.length <= 0 || aryInfo.length <= this.SplitCount) return aryInfo;
 
         //分割线比预设的多, 过掉一些
         var filter = parseInt(aryInfo.length / this.SplitCount);
@@ -899,11 +899,13 @@ function FrameSplitKLineX()
         var xOffset = this.Frame.Data.DataOffset;
         var xPointCount = this.Frame.XPointCount;
         var lastYear = null, lastMonth = null;
+        var monthCount=0;
 
         for (var i = 0, index = xOffset, distance = this.MinDistance; i < xPointCount && index < this.Frame.Data.Data.length; ++i, ++index) 
         {
             var year = parseInt(this.Frame.Data.Data[index].Date / 10000);
             var month = parseInt(this.Frame.Data.Data[index].Date / 100) % 100;
+            if (lastMonth != month) ++monthCount;
 
             if ((distance < this.MinDistance && lastYear == year) ||
                 (lastYear != null && lastYear == year && lastMonth != null && lastMonth == month)) 
@@ -928,6 +930,51 @@ function FrameSplitKLineX()
 
             lastYear = year;
             lastMonth = month;
+
+            if (this.ShowText) 
+            {
+                info.Message[0] = text;
+            }
+
+            this.Frame.VerticalInfo.push(info);
+            distance = 0;
+        }
+
+        if (this.Period == 0 && monthCount <= 2)
+            this.SplitShortDate();
+    }
+
+    //分隔在2个月一下的格式
+    this.SplitShortDate = function () 
+    {
+        this.Frame.VerticalInfo = [];
+        var xOffset = this.Frame.Data.DataOffset;
+        var xPointCount = this.Frame.XPointCount;
+        var minDistance = 12;
+        var isFirstYear = true;
+        for (var i = 0, index = xOffset, distance = minDistance; i < xPointCount && index < this.Frame.Data.Data.length; ++i, ++index) {
+            var year = parseInt(this.Frame.Data.Data[index].Date / 10000);
+            //var month=parseInt(this.Frame.Data.Data[index].Date/100)%100;
+            //var day=parseInt(this.Frame.Data.Data[index].Date%100);
+
+            if (distance < minDistance) 
+            {
+                ++distance;
+                continue;
+            }
+
+            var info = new CoordinateInfo();
+            info.Value = index - xOffset;
+            var text;
+            if (isFirstYear) 
+            {
+                text = year.toString();
+                isFirstYear = false;
+            }
+            else 
+            {
+                text = IFrameSplitOperator.FormatDateString(this.Frame.Data.Data[index].Date, 'MM-DD');
+            }
 
             if (this.ShowText) 
             {

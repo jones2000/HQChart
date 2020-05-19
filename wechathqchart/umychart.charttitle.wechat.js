@@ -946,6 +946,9 @@ function DynamicChartTitlePainting()
     this.EraseRect;
     this.EraseColor = g_JSChartResource.BGColor;  //用来擦出的背景色
 
+    this.IsShowIndexName = true;     //是否显示指标名字
+    this.ParamSpace = 2;           //参数显示的间距
+
     this.FormatValue = function (value, item) 
     {
         if (item.StringFormat == STRING_FORMAT_TYPE.DEFAULT)
@@ -956,7 +959,8 @@ function DynamicChartTitlePainting()
             return value.toFixed(item.FloatPrecision).toString();
     }
 
-    this.FormatMultiReport = function (data, format) {
+    this.FormatMultiReport = function (data, format) 
+    {
         var text = "";
         for (var i in data) {
             var item = data[i];
@@ -1033,13 +1037,18 @@ function DynamicChartTitlePainting()
         this.UpdateUICallback(sendData);
     }
 
-    this.DrawTitle = function () {
+    this.DrawTitle = function () 
+    {
         this.EraseRect = null;
         this.SendUpdateUIMessage('DrawTitle');
         if (this.Frame.ChartBorder.TitleHeight < 5) return;
         if (this.Frame.IsShowTitle == false) return;
 
-        if (this.Frame.IsHScreen === true) {
+        this.IsShowIndexName = this.Frame.IsShowIndexName;
+        this.ParamSpace = this.Frame.IndexParamSpace;
+
+        if (this.Frame.IsHScreen === true) 
+        {
             this.Canvas.save();
             this.HScreenDrawTitle();
             this.Canvas.restore();
@@ -1060,7 +1069,8 @@ function DynamicChartTitlePainting()
             textWidth = this.Canvas.measureText(this.Title).width + 2;
             let height = this.Frame.ChartBorder.TitleHeight;
             let top = this.Frame.ChartBorder.GetTop();
-            if (height > 20) {
+            if (height > 20) 
+            {
                 top += (height - 20) / 2 + (height - 45) / 2;
                 height = 20;
             }
@@ -1075,7 +1085,8 @@ function DynamicChartTitlePainting()
             this.Canvas.fillRect(left, top, textWidth, height);
         }
 
-        if (this.Title) {
+        if (this.Title && this.IsShowIndexName) 
+        {
             this.Canvas.fillStyle = this.TitleColor;
             const metrics = this.Canvas.measureText(this.Title);
             textWidth = metrics.width + 2;
@@ -1083,8 +1094,10 @@ function DynamicChartTitlePainting()
             left += textWidth;
         }
 
-        if (this.Text && this.Text.length > 0) {
-            for (let i in this.Text) {
+        if (this.Text && this.Text.length > 0) 
+        {
+            for (let i in this.Text) 
+            {
                 let item = this.Text[i];
                 this.Canvas.fillStyle = item.Color;
                 textWidth = this.Canvas.measureText(item.Text).width + 2;
@@ -1095,26 +1108,33 @@ function DynamicChartTitlePainting()
 
         left += 4;
         var eraseRight = left, eraseLeft = left;
-        for (var i in this.Data) {
+        for (var i in this.Data) 
+        {
             var item = this.Data[i];
             if (!item || !item.Data || !item.Data.Data) continue;
             if (item.Data.Data.length <= 0) continue;
 
             var indexName = '●' + item.Name;
             this.Canvas.fillStyle = item.Color;
-            textWidth = this.Canvas.measureText(indexName).width + 4;
+            textWidth = this.Canvas.measureText(indexName).width + this.ParamSpace;
             if (left + textWidth >= right) break;
             this.Canvas.fillText(indexName, left, bottom, textWidth);
             left += textWidth;
             eraseRight = left;
         }
 
-        if (eraseRight > eraseLeft) {
-            this.EraseRect = { Left: eraseLeft, Right: eraseRight, Top: this.Frame.ChartBorder.GetTop() + 1, Width: eraseRight - eraseLeft, Height: this.Frame.ChartBorder.TitleHeight - 2 };
+        if (eraseRight > eraseLeft) 
+        {
+            this.EraseRect = 
+            { 
+                Left: eraseLeft, Right: eraseRight, Top: this.Frame.ChartBorder.GetTop() + 1, 
+                Width: eraseRight - eraseLeft, Height: this.Frame.ChartBorder.TitleHeight - 2 
+            };
         }
     }
 
-    this.EraseTitle = function () {
+    this.EraseTitle = function () 
+    {
         if (!this.EraseRect) return;
         this.Canvas.fillStyle = this.EraseColor;
         this.Canvas.fillRect(this.EraseRect.Left, this.EraseRect.Top, this.EraseRect.Width, this.EraseRect.Height);
@@ -1128,6 +1148,9 @@ function DynamicChartTitlePainting()
         if (!this.Data) return;
         if (this.Frame.ChartBorder.TitleHeight < 5) return;
         if (this.Frame.IsShowTitle == false) return;
+
+        this.IsShowIndexName = this.Frame.IsShowIndexName;
+        this.ParamSpace = this.Frame.IndexParamSpace;
 
         if (this.Frame.IsHScreen === true) 
         {
@@ -1148,7 +1171,7 @@ function DynamicChartTitlePainting()
         this.Canvas.textBaseline = this.TitleAlign;
         this.Canvas.font = this.Font;
 
-        if (this.Title) 
+        if (this.Title && this.IsShowIndexName) 
         {
             this.Canvas.fillStyle = this.TitleColor;
             let textWidth = this.Canvas.measureText(this.Title).width + 2;
@@ -1210,7 +1233,7 @@ function DynamicChartTitlePainting()
             this.Canvas.fillStyle = item.Color;
 
             var text = item.Name + ":" + valueText;
-            var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
+            var textWidth = this.Canvas.measureText(text).width + this.ParamSpace;    //后空2个像素
             this.Canvas.fillText(text, left, bottom, textWidth);
             left += textWidth;
         }
@@ -1228,7 +1251,8 @@ function DynamicChartTitlePainting()
         }
     }
 
-    this.HScreenDraw = function () {
+    this.HScreenDraw = function () 
+    {
         var xText = this.Frame.ChartBorder.GetRightTitle();
         var yText = this.Frame.ChartBorder.GetTop();
         this.Canvas.translate(xText, yText);
@@ -1244,15 +1268,18 @@ function DynamicChartTitlePainting()
         this.Canvas.textBaseline = "middle";
         this.Canvas.font = this.Font;
 
-        if (this.Title) {
+        if (this.Title && this.IsShowIndexName) 
+        {
             this.Canvas.fillStyle = this.TitleColor;
             var textWidth = this.Canvas.measureText(this.Title).width + 2;
             //this.Canvas.fillText(this.Title, left, bottom, textWidth);
             left += textWidth;
         }
 
-        if (this.Text && this.Text.length > 0) {
-            for (let i in this.Text) {
+        if (this.Text && this.Text.length > 0) 
+        {
+            for (let i in this.Text) 
+            {
                 let item = this.Text[i];
                 this.Canvas.fillStyle = item.Color;
                 let textWidth = this.Canvas.measureText(item.Text).width + 2;
@@ -1261,7 +1288,8 @@ function DynamicChartTitlePainting()
             }
         }
 
-        for (var i in this.Data) {
+        for (var i in this.Data) 
+        {
             var item = this.Data[i];
             if (!item || !item.Data || !item.Data.Data || !item.Name) continue;
 
@@ -1274,7 +1302,8 @@ function DynamicChartTitlePainting()
                 value = item.Data.Data[0];
                 valueText = this.FormatValue(value, item);
             }
-            else {
+            else 
+            {
                 var index = Math.abs(this.CursorIndex - 0.5);
                 index = parseInt(index.toFixed(0));
                 if (item.Data.DataOffset + index >= item.Data.Data.length) continue;
@@ -1298,7 +1327,7 @@ function DynamicChartTitlePainting()
             this.Canvas.fillStyle = item.Color;
 
             var text = item.Name + ":" + valueText;
-            var textWidth = this.Canvas.measureText(text).width + 2;    //后空2个像素
+            var textWidth = this.Canvas.measureText(text).width + this.ParamSpace;    //后空2个像素
             this.Canvas.fillText(text, left, bottom, textWidth);
             left += textWidth;
         }
@@ -1315,7 +1344,8 @@ function DynamicChartTitlePainting()
         }
     }
 
-    this.HScreenDrawTitle = function () {
+    this.HScreenDrawTitle = function () 
+    {
         this.EraseRect = null;
         var xText = this.Frame.ChartBorder.GetRightTitle();
         var yText = this.Frame.ChartBorder.GetTop();
@@ -1333,7 +1363,8 @@ function DynamicChartTitlePainting()
         this.Canvas.font = this.Font;
 
         let textWidth = 10;
-        if (this.TitleBG && this.Title) {
+        if (this.TitleBG && this.Title) 
+        {
             textWidth = this.Canvas.measureText(this.Title).width + 2;
             let height = this.Frame.ChartBorder.TitleHeight;
             let top = this.Frame.ChartBorder.GetTop();
@@ -1352,7 +1383,8 @@ function DynamicChartTitlePainting()
             this.Canvas.fillRect(left, top, textWidth, height);
         }
 
-        if (this.Title) {
+        if (this.Title && this.IsShowIndexName) 
+        {
             this.Canvas.fillStyle = this.TitleColor;
             const metrics = this.Canvas.measureText(this.Title);
             textWidth = metrics.width + 2;
@@ -1360,8 +1392,10 @@ function DynamicChartTitlePainting()
             left += textWidth;
         }
 
-        if (this.Text && this.Text.length > 0) {
-            for (let i in this.Text) {
+        if (this.Text && this.Text.length > 0) 
+        {
+            for (let i in this.Text) 
+            {
                 let item = this.Text[i];
                 this.Canvas.fillStyle = item.Color;
                 textWidth = this.Canvas.measureText(item.Text).width + 2;
@@ -1372,22 +1406,28 @@ function DynamicChartTitlePainting()
 
         left += 4;
         var eraseRight = left, eraseLeft = left;
-        for (var i in this.Data) {
+        for (var i in this.Data) 
+        {
             var item = this.Data[i];
             if (!item || !item.Data || !item.Data.Data) continue;
             if (item.Data.Data.length <= 0) continue;
 
             var indexName = '●' + item.Name;
             this.Canvas.fillStyle = item.Color;
-            textWidth = this.Canvas.measureText(indexName).width + 4;
+            textWidth = this.Canvas.measureText(indexName).width + this.ParamSpace;
             if (left + textWidth >= right) break;
             this.Canvas.fillText(indexName, left, bottom, textWidth);
             left += textWidth;
             eraseRight = left;
         }
 
-        if (eraseRight > eraseLeft) {
-            this.EraseRect = { Left: eraseLeft, Right: eraseRight, Top: -(this.Frame.ChartBorder.TitleHeight - 1), Width: eraseRight - eraseLeft, Height: this.Frame.ChartBorder.TitleHeight - 2 };
+        if (eraseRight > eraseLeft) 
+        {
+            this.EraseRect = 
+            { 
+                Left: eraseLeft, Right: eraseRight, Top: -(this.Frame.ChartBorder.TitleHeight - 1), 
+                Width: eraseRight - eraseLeft, Height: this.Frame.ChartBorder.TitleHeight - 2 
+            };
         }
     }
 }
