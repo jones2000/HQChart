@@ -618,6 +618,7 @@ class JSAlgorithm() :
 
                 value=n[i]
                 if (JSAlgorithm.IsNumber(value)) :
+                    value=int(value)
                     if value>=0 and value<=i :
                         result[i]=data[i-value]
                     elif i : 
@@ -657,6 +658,7 @@ class JSAlgorithm() :
 
                 value=n[i]
                 if (JSAlgorithm.IsNumber(value)) :
+                    value=int(value)
                     if value>=0 and value<=i :
                         result[i]=data[i-value]
 
@@ -693,6 +695,7 @@ class JSAlgorithm() :
 
                 value=n[i]
                 if (JSAlgorithm.IsNumber(value)) :
+                    value=int(value)
                     if value>0 and value+i<count :
                         result[i]=data[i+value]
                     elif i : 
@@ -731,6 +734,7 @@ class JSAlgorithm() :
 
                 value=n[i]
                 if (JSAlgorithm.IsNumber(value)) :
+                    value=int(value)
                     if value>=0 and value+i< count:
                         result[i]=data[i-value]
 

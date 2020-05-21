@@ -1519,6 +1519,7 @@ function JSChartContainer(uielement)
     this.PressTime=500;
 
     this.NetworkFilter;         //网络请求回调 function(data, callback);
+    this.LastMouseStatus={}
 
     //设置事件回调
     //{event:事件id, callback:回调函数}
@@ -1572,7 +1573,21 @@ function JSChartContainer(uielement)
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
         if (this.DisableMouse==true) return;
 
+        //保存最后一次鼠标移动信息
+        var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
+        this.LastMouseStatus.OnMouseMove=MoveStatus;
+        //JSConsole.Chart.Log("[JSChartContainer::UIOnMouseMove] MoveStatus", MoveStatus);
+
         this.OnMouseMove(x,y,e);
+    }
+
+    this.IsMouseOnClient=function(x,y)
+    {
+        var isInClient=false;
+        this.Canvas.beginPath();
+        this.Canvas.rect(this.Frame.ChartBorder.GetLeft(),this.Frame.ChartBorder.GetTop(),this.Frame.ChartBorder.GetWidth(),this.Frame.ChartBorder.GetHeight());
+        isInClient=this.Canvas.isPointInPath(x,y);
+        return isInClient;
     }
 
     this.UIOnContextMenu=function(e)
@@ -2735,7 +2750,7 @@ function JSChartContainer(uielement)
         return false;
     }
 
-    this.UpdatePointByCursorIndex=function(type)    //type 1=根据十字光标更新
+    this.UpdatePointByCursorIndex=function(type)    //type 1=根据十字光标更新 2=强制不取消十字光标
     {
         var pt={X:null, Y:null};
         pt.X=this.Frame.GetXFromIndex(this.CursorIndex);
@@ -2763,6 +2778,11 @@ function JSChartContainer(uielement)
                 if (this.IsKLineContainer()) index=this.CursorIndex;
                 this.LastPoint.Y=null;
             }
+        }
+        else if (type==2 && this.ChartCorssCursor)  //取消鼠标位置，十字光标就不显示了
+        {
+            this.LastPoint.Y=null;
+            this.LastPoint.X=null;
         }
         else
         {
@@ -3438,7 +3458,7 @@ function JSChartContainer(uielement)
         this.ReloadFrame(option.Resource);
         this.ReloadChartCorssCursor(option,option.Resource);
 
-        if (option.Update) this.Update();       //是否立即更新并重绘
+        if (option.Update) this.Update( {UpdateCursorIndexType:2} );       //是否立即更新并重绘
         else if (option.Draw==true) this.Draw(); //是否立即重绘
     }
 
@@ -26302,8 +26322,9 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
+        this.UpdatePointByCursorIndex(2);   //取消十字光标
         this.Draw();
-        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        
 
         //叠加指标
         for(var i=0;i<this.Frame.SubFrame.length;++i)
@@ -26573,7 +26594,7 @@ function KLineChartContainer(uielement)
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
-        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        this.UpdatePointByCursorIndex(2);  //切换周期了取消十字光标
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
@@ -27467,7 +27488,7 @@ function KLineChartContainer(uielement)
 
         if (isDataTypeChange==false && !this.IsApiPeriod)
         {
-            this.Update();
+            this.Update( {UpdateCursorIndexType:2} ); //更新的时候 取消显示十字光标
             return;
         }
 
@@ -28408,7 +28429,7 @@ function KLineChartContainer(uielement)
         }
     }
 
-    this.Update=function()
+    this.Update=function(option) //option: { UpdateCursorIndexType:更新十字光标方式 }
     {
         if (!this.SourceData) return;
         if (this.BeforeBindMainData) this.BeforeBindMainData('Update');
@@ -28497,7 +28518,8 @@ function KLineChartContainer(uielement)
         
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
-        this.UpdatePointByCursorIndex();   //更新十字光标位子
+        if (option && option.UpdateCursorIndexType>0) this.UpdatePointByCursorIndex(option.UpdateCursorIndexType);
+        else this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
