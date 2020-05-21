@@ -117,6 +117,7 @@ function JSIndexScript()
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
             ['CJL2', this.CJL],  //期货持仓量
+            ['ASI', this.ASI],['DC', this.DC],['DEMA', this.DEMA],["VWAP", this.VWAP],
 
             ['飞龙四式', this.Dragon4_Main],['飞龙四式-附图', this.Dragon4_Fig],
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
@@ -3481,6 +3482,125 @@ JSIndexScript.prototype.CJL = function ()
 
     return data;
 }
+
+JSIndexScript.prototype.ASI = function () 
+{
+    let data =
+    {
+        Name: 'ASI', Description: '振动升降指标', IsMainIndex: false,
+        Args: [{ Name: 'N1', Value: 6 }],
+        Script: //脚本
+"X_1:=REF(CLOSE,1);\n\
+X_2:=ABS(HIGH-X_1);\n\
+X_3:=ABS(LOW-X_1);\n\
+X_4:=ABS(HIGH-REF(LOW,1));\n\
+X_5:=ABS(X_1-REF(OPEN,1));\n\
+X_6:=IF(X_2>X_3 AND X_2>X_4,X_2+X_3/2+X_5/4,IF(X_3>X_4 AND X_3>X_2,X_3+X_2/2+X_5/4,X_4+X_5/4));\n\
+X_7:=CLOSE-X_1+(CLOSE-OPEN)/2+X_1-REF(OPEN,1);\n\
+X_8:=8*X_7/X_6*MAX(X_2,X_3);\n\
+ASI:SUM(X_8,0),LINETHICK2;\n\
+MASI:MA(ASI,N1),LINETHICK2;"
+    };
+
+    return data;
+}
+
+/*
+History
+The Donchian Channels (DC) indicator was created by the famous commodities trader Richard Donchian. Donchian would become known as The Father of Trend Following.
+
+Calculation
+For this example, a 20 day period is used which is a very commonly used timeframe.
+
+Upper Channel = 20 Day High
+Lower Channel = 20 Day Low
+Middle Channel = (20 Day High + 20 Day Low)/2
+*/
+JSIndexScript.prototype.DC = function () 
+{
+    let data =
+    {
+        Name: 'DC', Description: '唐奇安通道', IsMainIndex: true,
+        Args: [{ Name: 'N1', Value: 20 }],
+        Script: //脚本
+"UPPER:HHV(H,N1),COLORBLUE,LINETHICK2;\n\
+LOWER:LLV(L,N1),COLORBLUE,LINETHICK2;\n\
+MIDDLE:(UPPER+LOWER)/2,COLORRED,LINETHICK3;"
+    };
+
+    return data;
+}
+
+/*
+双重指数移动均线(DEMA)由Patrick Mulloy开发并于1994年2月在"股票与商品期货的技术分析"杂志中出版。
+用于平滑价格系列并被直接应用到金融证券的价格图表中。此外，它还用于平滑其他指标的价值。
+
+DEMA的优势是在锯齿状的价格移动中清除错误信号并允许趋势强劲时保持仓位。
+
+计算
+该指标基于指数移动平均线 (EMA). 从EMA值中查看价格偏差错误：
+err(i) = Price(i) - EMA(Price, N, i)
+
+此处:
+err(i) ― 当前EMA误差;
+Price(i) ― 当前价格;
+EMA(Price, N, i) ― 价格系列的以N为周期的EMA的当前值。
+
+添加指数平均线错误值到价格指数移动平均数值，可以获得EDMA；
+DEMA(i) = EMA(Price,N,i)+ EMA(err,N,i) = EMA(Price,N,i)+EMA(Price-EMA(Price,N,i),N,i) =
+= 2*EMA(Price,N,i)-EMA(Price-EMA(Price,N,i),N,i)=2*EMA(Price,N,i)-EMA2(Price,N,i)
+
+此处:
+EMA(err, N, i) ― 误差err的指数均线的当前值;
+EMA2(Price, N, i) ― 价格的二重连续平滑的当前值。
+*/
+JSIndexScript.prototype.DEMA = function () 
+{
+    let data =
+    {
+        Name: 'DEMA', Description: '双重指数移动均线', IsMainIndex: true,
+        Args: [{ Name: 'N1', Value: 10 }],
+        Script: //脚本
+"ERR:=C-EMA(C,N1);\n\
+DEMA:EMA(C,10)+EMA(ERR,N1);"
+    };
+
+    return data;
+}
+
+/*
+Calculation
+There are five steps in calculating VWAP:
+
+Calculate the Typical Price for the period.
+    [(High + Low + Close)/3)]
+Multiply the Typical Price by the period Volume.
+    (Typical Price x Volume)
+Create a Cumulative Total of Typical Price.
+    Cumulative(Typical Price x Volume)
+Create a Cumulative Total of Volume.
+    Cumulative(Volume)
+Divide the Cumulative Totals.
+    VWAP = Cumulative(Typical Price x Volume) / Cumulative(Volume)
+*/
+
+JSIndexScript.prototype.VWAP = function () 
+{
+    let data =
+    {
+        Name: 'VWAP', Description: '成交量加权平均价', IsMainIndex: true,
+        Args: [{ Name: 'N1', Value: 10 }],
+        Script: //脚本
+"PRICE:=(H+L+C)/3;\n\
+T2:=VOL*PRICE;\n\
+VWAP:SUM(T2,0)/SUM(VOL,0);"
+    };
+
+    return data;
+}
+
+
+
 
 
 JSIndexScript.prototype.TEST = function () 
@@ -30321,16 +30441,19 @@ function KLineChartContainer(uielement)
         bindData.DataType=this.SourceData.DataType;
         bindData.Symbol=this.Symbol;
 
-        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true) && MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol))    //复权(A股日线数据才复权)
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
         }
 
-        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        if (!this.IsApiPeriod)
         {
-            var periodData=bindData.GetPeriodData(bindData.Period);
-            bindData.Data=periodData;
+            if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+            {
+                var periodData=bindData.GetPeriodData(bindData.Period);
+                bindData.Data=periodData;
+            }
         }
 
         this.UpdateMainData(bindData,lastDataCount);//更新主图数据

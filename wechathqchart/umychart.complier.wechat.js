@@ -2414,7 +2414,7 @@ function JSAlgorithm(errorHandler, symbolData)
 
     this.MA=function(data,dayCount)
     {
-        if (dayCount <= 0) dayCount = 1;
+        if (dayCount <= 0) return [];
 
         let result = [];
         if (!data || !data.length) return result;

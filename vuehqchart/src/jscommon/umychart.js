@@ -26821,16 +26821,19 @@ function KLineChartContainer(uielement)
         bindData.DataType=this.SourceData.DataType;
         bindData.Symbol=this.Symbol;
 
-        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true) && MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol))    //复权(A股日线数据才复权)
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
         }
 
-        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+        if (!this.IsApiPeriod)
         {
-            var periodData=bindData.GetPeriodData(bindData.Period);
-            bindData.Data=periodData;
+            if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
+            {
+                var periodData=bindData.GetPeriodData(bindData.Period);
+                bindData.Data=periodData;
+            }
         }
 
         this.UpdateMainData(bindData,lastDataCount);//更新主图数据
