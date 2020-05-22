@@ -20837,7 +20837,7 @@ function BackgroundPaint()
         var chartright=this.ChartBorder.GetRight();
         if (isHScreen) chartright=this.ChartBorder.GetBottom();
 
-        var mapKLine={ Data:new Map() } ; //Key: date / date time, Value:索引
+        var mapKLine={ Data:new Map() ,Start:null, End:null } ; //Key: date / date time, Value:索引
         for(var i=this.KData.DataOffset,j=0; i<this.KData.Data.length && j<this.XPointCount; ++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var kItem=this.KData.Data[i];
@@ -20861,6 +20861,10 @@ function BackgroundPaint()
             }
                
             mapKLine.Data.set(key,value);
+
+            //保存下起始和结束位置
+            if (j==0) mapKLine.Start=value;
+            mapKLine.End=value;
         }
 
         return mapKLine;
@@ -20869,9 +20873,10 @@ function BackgroundPaint()
     this.GetBGCoordinate=function(item,kLineMap)
     {
         var xLeft=null, xRight=null;
+        var isMinutePeriod=ChartData.IsMinutePeriod(this.Period,true);
         if (item.Start)
         {
-            if (ChartData.IsMinutePeriod(this.Period,true))
+            if (isMinutePeriod)
                 var key=`Date:${item.Start.Date} Time:${item.Start.Time}`;
             else 
                 var key=`Date:${item.Start.Date}`;
@@ -20883,13 +20888,42 @@ function BackgroundPaint()
             }
             else 
             {
-                for(var kItem of kLineMap.Data)
+                if (isMinutePeriod)
                 {
-                    var value=kItem[1];
-                    if (value.Date>item.Start.Date)
+                    if (item.Start.Date<kLineMap.Start.Date || (item.Start.Date==kLineMap.Start.Date && item.Start.Time<=kLineMap.Start.Time) ) 
                     {
-                        xLeft=value.Left;
-                        break;
+                        xLeft=kLineMap.Start.Left;
+                    }
+                    else
+                    {
+                        for(var kItem of kLineMap.Data)
+                        {
+                            var value=kItem[1];
+                            if (value.Date>item.Start.Date || (value.Date==item.Start.Date && value.Time>item.Start.Time))
+                            {
+                                xLeft=value.Left;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (item.Start.Date<=kLineMap.Start.Date) 
+                    {
+                        xLeft=kLineMap.Start.Left;
+                    }
+                    else
+                    {
+                        for(var kItem of kLineMap.Data)
+                        {
+                            var value=kItem[1];
+                            if (value.Date>item.Start.Date)
+                            {
+                                xLeft=value.Left;
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -20901,7 +20935,7 @@ function BackgroundPaint()
 
         if (item.End)
         {
-            if (ChartData.IsMinutePeriod(this.Period,true))
+            if (isMinutePeriod)
                 var key=`Date:${item.End.Date} Time:${item.End.Time}`;
             else 
                 var key=`Date:${item.End.Date}`;
@@ -20913,16 +20947,47 @@ function BackgroundPaint()
             }
             else
             {
-                var previousX=null;
-                for(var kItem of kLineMap.Data)
+                if (isMinutePeriod)
                 {
-                    var value=kItem[1];
-                    if (value.Date>item.End.Date)
+                    if (item.End.Date<kLineMap.End.Date || (item.End.Date==kLineMap.End.Date && item.End.Time>=kLineMap.End.Time) ) 
                     {
-                        xRight=previousX;
-                        break;
+                        xRight=kLineMap.End.Right;
                     }
-                    previousX=value.Right;
+                    else
+                    {
+                        var previousX=null;
+                        for(var kItem of kLineMap.Data)
+                        {
+                            var value=kItem[1];
+                            if (value.Date>item.End.Date || (value.Date==item.End.Date && value.Time>item.End.Time) )
+                            {
+                                xRight=previousX;
+                                break;
+                            }
+                            previousX=value.Right;
+                        }
+                    }
+                }
+                else
+                {
+                    if (item.End.Date<=kLineMap.End.Date) 
+                    {
+                        xRight=kLineMap.End.Right;
+                    }
+                    else
+                    {
+                        var previousX=null;
+                        for(var kItem of kLineMap.Data)
+                        {
+                            var value=kItem[1];
+                            if (value.Date>item.End.Date)
+                            {
+                                xRight=previousX;
+                                break;
+                            }
+                            previousX=value.Right;
+                        }
+                    }
                 }
             }
         }
