@@ -4763,7 +4763,7 @@ function JSChart(divElement)
         this.JSChartContainer.DeleteOverlaySymbol(symbol);
     }
 
-    //设置当前屏的起始日期 { Date:起始日期(必填), PageSize:一屏显示的数据个数(可选)}
+    //设置当前屏的起始日期 { Date:起始日期(必填), Time:起始时间(分钟K线必填) PageSize:一屏显示的数据个数(可选)}
     this.SetFirstShowDate=function(obj)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.SetFirstShowDate)=='function')
@@ -21918,6 +21918,7 @@ function FrameSplitY()
     this.FloatPrecision = 2;                  //坐标小数位数(默认2)
     this.FLOATPRECISION_RANGE=[1,0.1,0.01,0.001,0.0001];
     this.SplitType=0;       //0=自动分割  1=固定分割
+    this.Custom=[];         //[{Type:0}]; 定制刻度
 
     this.GetFloatPrecision=function(value,floatPrecision)
     {
@@ -22026,6 +22027,7 @@ function FrameSplitY()
             }
         }
 
+        this.CustomCoordinate();
         if (this.SplitType!=1) this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo,(splitData.Max>0 && splitData.Min<0));
         this.RemoveZero(this.Frame.HorizontalInfo);
         this.Frame.HorizontalMax=splitData.Max;
@@ -22045,6 +22047,47 @@ function FrameSplitY()
             var y=this.Frame.GetYFromData(item.Value);
             var yValue=rightFrame.GetYData(y);
             item.Message[1] = IFrameSplitOperator.FormatValueString(yValue, this.FloatPrecision,this.LanguageID);
+        }
+    }
+
+    this.CustomCoordinate=function()
+    {
+        this.Frame.CustomHorizontalInfo=[];
+        for(var i in this.Custom)
+        {
+            var item=this.Custom[i];
+            if (item.Type==0)
+            {
+                
+            }
+            else if (item.Type==1)
+            {
+                this.CustomFixedCoordinate(item);
+            }
+        }
+    }
+
+    this.CustomFixedCoordinate=function(option)    //固定坐标刻度
+    {
+        var defaultfloatPrecision=2;
+        for(var i in option.Data)
+        {
+            var item=option.Data[i];
+            var info=new CoordinateInfo();
+            info.Type=1;
+            info.TextColor=item.TextColor;
+            info.LineColor=item.Color;
+            info.LineType=2;    //虚线
+            if (option.IsShowLine==false) info.LineType=-1;
+
+            info.Value=item.Value;
+            var text;
+            if (item.Text) text=item.Text;
+            else text=info.Value.toFixed(defaultfloatPrecision);
+            if (option.Position=='left') info.Message[0]=text;
+            else info.Message[1]=text;
+
+            this.Frame.CustomHorizontalInfo.push(info);
         }
     }
 }
@@ -31319,16 +31362,31 @@ function KLineChartContainer(uielement)
         else if (ChartData.IsMinutePeriod(this.Period,true))
         {
             let findTime=obj.Time;
-            if (!IFrameSplitOperator.IsPlusNumber(obj.Time)) findTime=0;
-            for(var i=0;i<hisData.Data.length;++i)
+            if (IFrameSplitOperator.IsPlusNumber(findTime))
             {
-                var item=hisData.Data[i];
-                if (item.Date>=obj.Date && item.Time>=findTime)
+                for(var i=0;i<hisData.Data.length;++i)
                 {
-                    index=i;
-                    break;
+                    var item=hisData.Data[i];
+                    if (item.Date>obj.Date || (item.Date==obj.Date && item.Time>=findTime))
+                    {
+                        index=i;
+                        break;
+                    }
                 }
             }
+            else    //只有日期
+            {
+                for(var i=0;i<hisData.Data.length;++i)
+                {
+                    var item=hisData.Data[i];
+                    if (item.Date>=obj.Date)
+                    {
+                        index=i;
+                        break;
+                    }
+                }
+            }
+            
         }
 
         if (index===null) 
@@ -31361,8 +31419,8 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
+        this.UpdatePointByCursorIndex(2);   //更新十字光标位子
         this.Draw();
-        this.UpdatePointByCursorIndex();   //更新十字光标位子
     }
 
     //删除某一个窗口的指标

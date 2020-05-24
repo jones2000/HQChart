@@ -2669,7 +2669,7 @@ function AverageWidthFrame()
 
     this.DrawCustomItem = function (item) //显示自定义刻度
     {
-        if (this.IsHScreen === true) return;  //横屏不画
+        //if (this.IsHScreen === true) return;  //横屏不画
         if (!item.Message[1] && !item.Message[0]) return;
         if (item.Value > this.HorizontalMax || item.Value < this.HorizontalMin) return;
 
@@ -2680,6 +2680,14 @@ function AverageWidthFrame()
         var borderRight = this.ChartBorder.Right;
         var borderLeft = this.ChartBorder.Left;
         var titleHeight = this.ChartBorder.TitleHeight;
+
+        if (this.IsHScreen) 
+        {
+            borderLeft = this.ChartBorder.Top;
+            borderRight = this.ChartBorder.Bottom;
+            top = this.ChartBorder.GetTop();
+            bottom = this.ChartBorder.GetBottom();
+        }
 
         var textHeight = 18;
         var y = this.GetYFromData(item.Value);
@@ -2696,13 +2704,23 @@ function AverageWidthFrame()
                 var rgb = this.RGBToStruct(item.LineColor);
                 if (rgb) bgColor = `rgba(${rgb.R}, ${rgb.G}, ${rgb.B}, ${g_JSChartResource.FrameLatestPrice.BGAlpha})`;   //内部刻度 背景增加透明度
                 this.Canvas.fillStyle = bgColor;
-                var bgTop = y - textHeight / 2 - 1;
-                var textLeft = left + 1;
-                this.Canvas.fillRect(textLeft, bgTop, textWidth, textHeight);
-                this.Canvas.fillStyle = item.TextColor;
-                this.Canvas.fillText(item.Message[0], textLeft + 1, y);
-
-                if (item.LineType != -1) this.DrawDotLine(textLeft + textWidth, right, y, item.LineColor);
+                if (this.IsHScreen) 
+                {
+                    var bgTop = top;
+                    var textLeft = y - textHeight / 2 - 1;
+                    this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
+                    this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[0], Color: item.TextColor, XOffset: 1, YOffset: 2 });
+                    if (item.LineType != -1) this.DrawDotLine(bgTop + textWidth, bottom, y, item.LineColor);
+                }
+                else
+                {
+                    var bgTop = y - textHeight / 2 - 1;
+                    var textLeft = left + 1;
+                    this.Canvas.fillRect(textLeft, bgTop, textWidth, textHeight);
+                    this.Canvas.fillStyle = item.TextColor;
+                    this.Canvas.fillText(item.Message[0], textLeft + 1, y);
+                    if (item.LineType != -1) this.DrawDotLine(textLeft + textWidth, right, y, item.LineColor);
+                }
             }
             else 
             {
@@ -2711,12 +2729,23 @@ function AverageWidthFrame()
                 this.Canvas.textBaseline = "middle";
                 var textWidth = this.Canvas.measureText(item.Message[0]).width + 2;
                 this.Canvas.fillStyle = item.LineColor;
-                var bgTop = y - textHeight / 2 - 1;
-                this.Canvas.fillRect(left - textWidth, bgTop, textWidth, textHeight);
-                this.Canvas.fillStyle = item.TextColor;
-                this.Canvas.fillText(item.Message[0], left - 1, y);
+                if (this.IsHScreen) 
+                {
+                    var bgTop = top - textWidth;
+                    var textLeft = y - textHeight / 2 - 1 ;
+                    this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
+                    this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[0], Color: item.TextColor, XOffset: 1, YOffset: 2 });
+                    if (item.LineType != -1) this.DrawDotLine(bgTop + textWidth, bottom, y, item.LineColor);
+                }
+                else
+                {
+                    var bgTop = y - textHeight / 2 - 1;
+                    this.Canvas.fillRect(left - textWidth, bgTop, textWidth, textHeight);
+                    this.Canvas.fillStyle = item.TextColor;
+                    this.Canvas.fillText(item.Message[0], left - 1, y);
 
-                if (item.LineType != -1) this.DrawDotLine(left, right, y, item.LineColor);
+                    if (item.LineType != -1) this.DrawDotLine(left, right, y, item.LineColor);
+                }
             }
         }
         else if (item.Message[1]) 
@@ -2731,13 +2760,24 @@ function AverageWidthFrame()
                 var rgb = this.RGBToStruct(item.LineColor);
                 if (rgb) bgColor = `rgba(${rgb.R}, ${rgb.G}, ${rgb.B}, ${g_JSChartResource.FrameLatestPrice.BGAlpha})`;   //内部刻度 背景增加透明度
                 this.Canvas.fillStyle = bgColor;
-                var bgTop = y - textHeight / 2 - 1;
-                var textLeft = right - textWidth;
-                this.Canvas.fillRect(textLeft, bgTop, textWidth, textHeight);
-                this.Canvas.fillStyle = item.TextColor;
-                this.Canvas.fillText(item.Message[1], textLeft + 1, y);
-
-                if (item.LineType != -1) this.DrawDotLine(left, textLeft, y, item.LineColor);
+                if (this.IsHScreen) 
+                {
+                    var bgTop = bottom - textWidth;
+                    var textLeft = y - textHeight / 2 - 1;
+                    this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
+                    this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[1], Color: item.TextColor, XOffset: 1, YOffset: 2 });
+                    if (item.LineType != -1) this.DrawDotLine(top, bgTop, y, item.LineColor);
+                }
+                else
+                {
+                    var bgTop = y - textHeight / 2 - 1;
+                    var textLeft = right - textWidth;
+                    this.Canvas.fillRect(textLeft, bgTop, textWidth, textHeight);
+                    this.Canvas.fillStyle = item.TextColor;
+                    this.Canvas.fillText(item.Message[1], textLeft + 1, y);
+                    if (item.LineType != -1) this.DrawDotLine(left, textLeft, y, item.LineColor);
+                }
+               
             }
             else 
             {
@@ -2746,12 +2786,22 @@ function AverageWidthFrame()
                 this.Canvas.textBaseline = "middle";
                 var textWidth = this.Canvas.measureText(item.Message[1]).width + 2;
                 this.Canvas.fillStyle = item.LineColor;
-                var bgTop = y - textHeight / 2 - 1;
-                this.Canvas.fillRect(right, bgTop, textWidth, textHeight);
-                this.Canvas.fillStyle = item.TextColor;
-                this.Canvas.fillText(item.Message[1], right + 1, y);
-
-                if (item.LineType != -1) this.DrawDotLine(left, right, y, item.LineColor);
+                if (this.IsHScreen) 
+                {
+                    var bgTop = bottom;
+                    var textLeft = y - textHeight / 2 - 1 ;
+                    this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
+                    this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[1], Color: item.TextColor, XOffset: 1 , YOffset: 2 });
+                    if (item.LineType != -1) this.DrawDotLine(top, bgTop, y, item.LineColor);
+                }
+                else
+                {
+                    var bgTop = y - textHeight / 2 - 1;
+                    this.Canvas.fillRect(right, bgTop, textWidth, textHeight);
+                    this.Canvas.fillStyle = item.TextColor;
+                    this.Canvas.fillText(item.Message[1], right + 1, y);
+                    if (item.LineType != -1) this.DrawDotLine(left, right, y, item.LineColor);
+                }
             }
         }
     }
@@ -2762,8 +2812,16 @@ function AverageWidthFrame()
         this.Canvas.strokeStyle = color;
         this.Canvas.setLineDash([5, 5]);   //虚线
         this.Canvas.beginPath();
-        this.Canvas.moveTo(left, ToFixedPoint(y));
-        this.Canvas.lineTo(right, ToFixedPoint(y));
+        if (this.IsHScreen) 
+        {
+            this.Canvas.moveTo(ToFixedPoint(y), left);
+            this.Canvas.lineTo(ToFixedPoint(y), right);
+        }
+        else
+        {
+            this.Canvas.moveTo(left, ToFixedPoint(y));
+            this.Canvas.lineTo(right, ToFixedPoint(y));
+        }
         this.Canvas.stroke();
         this.Canvas.restore();
     }
@@ -2782,6 +2840,19 @@ function AverageWidthFrame()
             return result;
         }
         return null;
+    }
+
+    this.DrawHScreenText = function (center, data) 
+    {
+        this.Canvas.textAlign = "left";
+        this.Canvas.textBaseline = "middle";
+        this.Canvas.fillStyle = data.Color;
+
+        this.Canvas.save();
+        this.Canvas.translate(center.X, center.Y);
+        this.Canvas.rotate(90 * Math.PI / 180);
+        this.Canvas.fillText(data.Text, data.XOffset, data.YOffset);
+        this.Canvas.restore();
     }
 }
 
@@ -3453,7 +3524,69 @@ function KLineHScreenFrame()
 
     this.DrawInsideHorizontal = function () 
     {
+        if (this.IsShowYText[0] === false && this.IsShowYText[1] === false) return;
 
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRightEx();
+        var top = this.ChartBorder.GetTop();
+        var bottom = this.ChartBorder.GetBottom();
+        var borderTop = this.ChartBorder.Top;
+        var borderBottom = this.ChartBorder.Bottom;
+        var titleHeight = this.ChartBorder.TitleHeight;
+        var pixelTatio = 1;
+
+        var isDrawLeft = (borderTop < 10 * pixelTatio || this.YTextPosition[0] == 2) && this.IsShowYText[0] === true;
+        var isDrawRight = (borderBottom < 10 * pixelTatio || this.YTextPosition[1] == 2) && this.IsShowYText[1] === true;
+
+        if (isDrawLeft || isDrawRight) 
+        {
+            var yPrev = null; //上一个坐标y的值
+            for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
+            {
+                var item = this.HorizontalInfo[i];
+                var y = this.GetYFromData(item.Value);
+                if (y != null && yPrev != null && Math.abs(y - yPrev) < this.MinYDistance) continue;  //两个坐标在近了 就不画了
+
+                //坐标信息 左边 间距小于10 画在内部
+                if (item.Message[0] != null && isDrawLeft) 
+                {
+                    if (item.Font != null) this.Canvas.font = item.Font;
+                    this.Canvas.fillStyle = item.TextColor;
+                    this.Canvas.textAlign = "left";
+                    if (y >= right - 2) this.Canvas.textBaseline = 'top';
+                    else if (y <= left + 2) this.Canvas.textBaseline = 'bottom';
+                    else this.Canvas.textBaseline = "middle";
+
+                    var textObj = { X: left, Y: y, Text: { BaseLine: this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font: this.Canvas.font, Value: item.Message[0] } };
+                    var xText = y, yText = top;
+                    this.Canvas.save();
+                    this.Canvas.translate(xText, yText);
+                    this.Canvas.rotate(90 * Math.PI / 180);
+                    this.Canvas.fillText(item.Message[0], -2, 0);
+                    this.Canvas.restore();
+                }
+
+                if (item.Message[1] != null && isDrawRight) 
+                {
+                    if (item.Font != null) this.Canvas.font = item.Font;
+                    this.Canvas.fillStyle = item.TextColor;
+                    this.Canvas.textAlign = "right";
+                    if (y >= right - 2) this.Canvas.textBaseline = 'top';
+                    else if (y <= left + 2) this.Canvas.textBaseline = 'bottom';
+                    else this.Canvas.textBaseline = "middle";
+                    var textWidth = this.Canvas.measureText(item.Message[1]).width;
+                    var textObj = { X: right - textWidth, Y: y, Text: { BaseLine: this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font: this.Canvas.font, Value: item.Message[1] } };
+
+                    var xText = y, yText = bottom;
+                    this.Canvas.save();
+                    this.Canvas.translate(xText, yText);
+                    this.Canvas.rotate(90 * Math.PI / 180);
+                    this.Canvas.fillText(item.Message[1], 2, 0);
+                    this.Canvas.restore();
+                }
+                yPrev = y;
+            }
+        }
     }
 
     //画标题背景色
