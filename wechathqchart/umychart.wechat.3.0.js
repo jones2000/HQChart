@@ -888,10 +888,10 @@ function JSChart(element)
     }
 
     //K线周期切换
-    this.ChangePeriod = function (period) 
+    this.ChangePeriod = function (period, option) 
     {
         if (this.JSChartContainer && typeof (this.JSChartContainer.ChangePeriod) == 'function')
-        this.JSChartContainer.ChangePeriod(period);
+            this.JSChartContainer.ChangePeriod(period, option);
     }
 
     //切换系统指示
@@ -7718,9 +7718,22 @@ function KLineChartContainer(uielement)
     }
 
     //周期切换
-    this.ChangePeriod = function (period) 
+    this.ChangePeriod = function (period, option) 
     {
-        if (this.Period == period) return;
+        var isChangeKLineDrawType = false;
+        if (option && option.KLine) 
+        {
+            if (IFrameSplitOperator.IsNumber(option.KLine.DrawType)) isChangeKLineDrawType = true;
+        };
+
+        if (this.Period == period) 
+        {
+            if (isChangeKLineDrawType) this.ChangeKLineDrawType(option.KLine.DrawType);
+            return;
+        }
+
+        if (isChangeKLineDrawType) this.ChangeKLineDrawType(option.KLine.DrawType, false);   //切换K线类型, 不重绘
+        
         var isDataTypeChange = false;
         var isDataTypeChange = false;
         if (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_START) 
@@ -8011,7 +8024,7 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
-    this.ChangeKLineDrawType = function (drawType) 
+    this.ChangeKLineDrawType = function (drawType, isDraw) 
     {
         if (this.KLineDrawType == drawType) return;
 
@@ -8025,6 +8038,10 @@ function KLineChartContainer(uielement)
 
         if (this.OverlayChartPaint[0]) this.OverlayChartPaint[0].DrawType = this.KLineDrawType;   //叠加K线修改
 
+        if (isDraw == false) return;
+
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
         this.Draw();
     }
 
