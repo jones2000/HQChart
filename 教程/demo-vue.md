@@ -106,6 +106,8 @@ export default
             var minute=this.$refs.minute;
             minute.style.width=chartWidth+'px';
             minute.style.height=chartHeight+'px';
+
+            if (this.Minute.JSChart) this.Minute.JSChart.OnSize();
         },
 
         CreateMinuteChart() //创建日线图
