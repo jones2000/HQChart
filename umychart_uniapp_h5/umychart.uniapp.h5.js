@@ -30781,7 +30781,7 @@ function KLineChartContainer(uielement)
         if (!aryMinuteData || aryMinuteData.length<=0) return;
         if (this.IsApiPeriod) this.ReduceSourceData();  //减少数据
         var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
-
+        if (!this.SourceData) return;
         if (!this.SourceData.MergeMinuteData(aryMinuteData)) return;
 
         JSConsole.Chart.Log(`[KLineChartContainer::RecvMinuteRealtimeDataV2] update kline by 1 minute data [${lastDataCount}->${this.SourceData.Data.length}]`);
@@ -31169,12 +31169,18 @@ function KLineChartContainer(uielement)
     this.ChangePeriod=function(period,option)
     {
         var isChangeKLineDrawType=false;
-        if (option && option.KLine)
+        var isReload=false; //是否重新请求数据
+        if (option  )
         {
-            if (IFrameSplitOperator.IsNumber(option.KLine.DrawType)) isChangeKLineDrawType=true;
+            if (option.KLine)
+            {
+                if (IFrameSplitOperator.IsNumber(option.KLine.DrawType)) isChangeKLineDrawType=true;
+            }
+
+            if (option.Reload==true) isReload=true;
         };
 
-        if (this.Period==period) 
+        if (this.Period==period && isReload==false) 
         {
             if (isChangeKLineDrawType) this.ChangeKLineDrawType(option.KLine.DrawType);
             return;
