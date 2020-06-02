@@ -3754,7 +3754,7 @@ function ChartCorssCursor()
         this.StringFormatY.RValue = yValueExtend.RightYValue; //右侧子坐标
         if (this.IsShowClose && this.Close != null) yValue = this.Close;
 
-        this.StringFormatX.Value = xValue;
+        this.StringFormatX.Value = this.CursorIndex;
         this.StringFormatY.Value = yValue;
         this.StringFormatY.FrameID = yValueExtend.FrameID;
 

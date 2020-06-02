@@ -6961,6 +6961,82 @@ function JSDraw(errorHandler,symbolData)
         return result;
     }
 
+    this.GetDataByIndex=function(data, index)
+    {
+        var result={Result:false , Data:null };
+        if (this.IsNumber(data)) 
+        {
+            result.Result=true;
+            result.Data=data;
+        }
+        else
+        {
+            if (index<data.length)
+            {
+                result.Result=true;
+                result.Data=data[index];
+            }
+            else
+            {
+                result.Result=false;
+            }
+        }
+
+        return result;        
+    }
+
+    /*
+    FILLRGN(MA1>MA2, MA1,MA2),colorred 
+    表示MA1>MA2时以红色填充MA1和MA2之间的区域
+    */
+    this.FILLRGN=function(condition, data,data2)
+    {
+        let drawData=[];
+        let result={DrawData:drawData, DrawType:'FILLRGN'}; 
+        var isNumber=this.IsNumber(data);
+        var isNumber2=this.IsNumber(data2);
+
+        if (Array.isArray(condition))   //数组
+        {
+            for(var i in condition)
+            {
+                drawData[i]=null;
+                var condItem=condition[i];
+                if (!condItem) continue;
+                
+                var value=this.GetDataByIndex(data, i);
+                if (!value.Result) continue;
+
+                var value2=this.GetDataByIndex(data2, i);
+                if (!value2.Result) continue;
+
+                var item={ Value:value.Data, Value2:value2.Data };
+                drawData[i]=item;
+            }
+        }
+        else
+        {
+            if (condition)
+            {
+                for(var i=0;i<this.SymbolData.Data.Data.length;++i) //以K线长度为数据长度
+                {
+                    drawData[i]=null;
+
+                    var value=this.GetDataByIndex(data, i);
+                    if (!value.Result) continue;
+
+                    var value2=this.GetDataByIndex(data2, i);
+                    if (!value2.Result) continue;
+
+                    var item={ Value:value.Data, Value2:value2.Data };
+                    drawData[i]=item;
+                }
+            }
+        }
+
+        return result;
+    }
+
     this.DRAWKLINE=function(high,open,low,close)
     {
         let drawData=[];
@@ -7504,7 +7580,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
     [
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
         'POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',
-        'DRAWOVERLAYLINE'
+        'DRAWOVERLAYLINE',"FILLRGN"
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -12164,6 +12240,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWBAND(args[0],args[1],args[2],args[3]);
                 node.Out=[];
                 break;
+            case "FILLRGN":
+                node.Draw=this.Draw.FILLRGN(args[0],args[1],args[2]);
+                node.Out=[];
+                break;
             case 'DRAWKLINE':
                 node.Draw=this.Draw.DRAWKLINE(args[0],args[1],args[2],args[3]);
                 node.Out=[];
@@ -13094,6 +13174,20 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateFillRGN=function(hqChart,windowIndex,varItem,id)
+    {
+        let chart=new ChartLineArea();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.Data.Data=varItem.Draw.DrawData;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建K线图
     this.CreateKLine=function(hqChart,windowIndex,varItem,id)
     {
@@ -13487,6 +13581,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWBAND':
                         this.CreateBand(hqChart,windowIndex,item,i);
+                        break;
+                    case "FILLRGN":
+                        this.CreateFillRGN(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWKLINE':
                         this.CreateKLine(hqChart,windowIndex,item,i);

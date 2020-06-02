@@ -661,7 +661,7 @@ function DynamicMinuteTitlePainting()
         if (this.CursorIndex == null || !this.Data) return null;
         if (this.Data.length <= 0) return null;
 
-        var index = Math.abs(this.CursorIndex - 0.5);
+        var index = Math.abs(this.CursorIndex);
         index = parseInt(index.toFixed(0));
         var dataIndex = this.Data.DataOffset + index;
         if (dataIndex >= this.Data.Data.length) dataIndex = this.Data.Data.length - 1;

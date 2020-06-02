@@ -5994,35 +5994,37 @@ function HQDateStringFormat()
     }
 }
 
-function HQMinuteTimeStringFormat() {
-  this.newMethod = IChangeStringFormat;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function HQMinuteTimeStringFormat() 
+{
+    this.newMethod = IChangeStringFormat;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
-  this.Frame;
-  this.Symbol;
+    this.Frame;
+    this.Symbol;
 
-  this.Operator = function () {
-    if (this.Value == null || isNaN(this.Value)) return false;
+    this.Operator = function () 
+    {
+        if (this.Value == null || isNaN(this.Value)) return false;
 
-    var index = Math.abs(this.Value);
-    index = parseInt(index.toFixed(0));
-    var showIndex = index;
-    if (this.Frame && this.Frame.MinuteCount) showIndex = index % this.Frame.MinuteCount;
+        var index = Math.abs(this.Value);
+        index = parseInt(index.toFixed(0));
+        var showIndex = index;
+        if (this.Frame && this.Frame.MinuteCount) showIndex = index % this.Frame.MinuteCount;
 
-    var timeStringData = JSCommonCoordinateData.MinuteTimeStringData;
-    var timeData = timeStringData.GetTimeData(this.Symbol);
-    if (!timeData) return false;
+        var timeStringData = JSCommonCoordinateData.MinuteTimeStringData;
+        var timeData = timeStringData.GetTimeData(this.Symbol);
+        if (!timeData) return false;
 
-    if (showIndex < 0) showIndex = 0;
-    else if (showIndex > timeData.length) showIndex = timeData.length - 1;
-    if (this.Frame && index >= this.Frame.XPointCount)
-      showIndex = timeData.length - 1;
+        if (showIndex < 0) showIndex = 0;
+        else if (showIndex > timeData.length) showIndex = timeData.length - 1;
+        if (this.Frame && index >= this.Frame.XPointCount)
+        showIndex = timeData.length - 1;
 
-    var time = timeData[showIndex];
-    this.Text = IFrameSplitOperator.FormatTimeString(time);
-    return true;
-  }
+        var time = timeData[showIndex];
+        this.Text = IFrameSplitOperator.FormatTimeString(time);
+        return true;
+    }
 }
 
 
