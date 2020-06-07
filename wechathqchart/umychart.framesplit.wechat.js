@@ -465,6 +465,7 @@ function FrameSplitKLinePriceY()
     this.Symbol;
     this.Data;              //K线数据 (计算百分比坐标)
     this.FrameSplitData2;   //坐标轴分割方法(计算百分比刻度)
+    this.FloatPrecision = null;   //小数位数 (设置了就使用这个位数,否则使用品种对应的小数位数)
 
     this.Custom = []; //[{Type:0}];   定制刻度 0=显示最后的价格刻度
     this.SplitType = 0;       //0=自动分割  1=固定分割
@@ -478,7 +479,8 @@ function FrameSplitKLinePriceY()
         splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
 
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
-        if (JSCommonCoordinateData.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,
+        if (JSCommonCoordinateData.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数
+        if (this.FloatPrecision != null) defaultfloatPrecision = this.FloatPrecision;
 
         switch (this.CoordinateType)
         {

@@ -30847,6 +30847,11 @@ function MinuteChartContainer(uielement)
         }
     }
 
+    this.OnWheel=function(e)
+    {
+        JSConsole.Chart.Log('[MinuteChartContainer::OnWheel]',e);
+    }
+
     this.UpdatePointByCursorIndex=function()
     {
         this.LastPoint.X=this.Frame.GetXFromIndex(this.CursorIndex);
@@ -30912,7 +30917,8 @@ function MinuteChartContainer(uielement)
 
         this.ChartCorssCursor.StringFormatX.Frame=this.Frame.SubFrame[0].Frame;
 
-        this.UIElement.addEventListener("keydown", OnKeyDown, true);    //键盘消息
+        this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e);} , true);              //键盘消息
+        this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
     }
 
     //创建子窗口
