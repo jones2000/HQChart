@@ -1427,6 +1427,7 @@ var JSCHART_EVENT_ID=
     ON_FINISH_DRAWPICTURE:18,    //完成画图工具    
     ON_INDEXTITLE_DRAW:19,       //指标标题重绘事件
     ON_CUSTOM_VERTICAL_DRAW:20,  //自定义X轴绘制事件
+    RECV_KLINE_MANUAL_UPDATE_DATA:21, //手动更新K线事件
 }
 
 var JSCHART_OPERATOR_ID=
@@ -1443,6 +1444,9 @@ var JSCHART_DRAG_ID=
     DISABLE_DRAG_ID:0,
     CLICK_TOUCH_MODE_ID:3   //长按十字光标显示保留/点击十字光标消失 (使用TouchStatus)
 }
+
+
+
 /*
     图形控件
 */
@@ -8627,6 +8631,22 @@ function ChartData()
             }
         }
     }
+
+    //深拷贝数据
+    this.CloneData=function(className)
+    {
+        var result=[];
+        if (className=="HistoryData")
+        {
+            for(var i in this.Data)
+            {
+                var item=this.Data[i];
+                var newItem=HistoryData.Copy(item);
+                result.push(newItem);
+            }
+        }
+        return result;
+    }
 }
 
 
@@ -8938,6 +8958,7 @@ function ChartKLine()
     this.TickSymbol='╳';    //分笔显示的图标
     this.TickFontName='arial';
     this.Period;            //周期
+    this.ShowRange={ };     //K线显示范围 { Start:, End:,  DataCount:, ShowCount: }
 
     this.ReloadResource=function(resource)
     {
@@ -9213,9 +9234,15 @@ function ChartKLine()
         var downColor=this.DownColor;
         var unchagneColor=this.UnchagneColor; 
 
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        this.ShowRange.Start=this.Data.DataOffset;
+        this.ShowRange.End=this.ShowRange.Start;
+        this.ShowRange.DataCount=0;
+        this.ShowRange.ShowCount=xPointCount;
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth),++this.ShowRange.DataCount)
         {
             var data=this.Data.Data[i];
+            this.ShowRange.End=i;
             if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
 
             var left=xOffset;
@@ -17327,6 +17354,30 @@ function BackgroundPaint()
     {
         var xLeft=null, xRight=null;
         var isMinutePeriod=ChartData.IsMinutePeriod(this.Period,true);
+        var bSingleDate=false;
+        if (isMinutePeriod)
+        {
+            if (item.Start.Date==item.End.Date && item.Start.Time==item.End.Time) bSingleDate=true;
+        }
+        else
+        {
+            if (item.Start.Date==item.End.Date) bSingleDate=true;
+        }
+
+        if (bSingleDate)
+        {
+            if (isMinutePeriod)
+                var key=`Date:${item.Start.Date} Time:${item.Start.Time}`;
+            else 
+                var key=`Date:${item.Start.Date}`;
+
+            if (!kLineMap.Data.has(key)) return null;
+            var findItem=kLineMap.Data.get(key);
+            xLeft=findItem.Left;
+            xRight=findItem.Right;
+            return { Left:xLeft, Right:xRight, Width:xRight-xLeft };
+        }
+        
         if (item.Start)
         {
             if (isMinutePeriod)
@@ -25854,6 +25905,82 @@ function KLineChartContainer(uielement)
         this.IsAutoUpdate=false;
     }
 
+    //沙盘操作 { ID: 1=开始, Data:绑定K线数据(可选)
+    //          ID: 2=更新数据, Data:绑定K线数据
+    //          ID: 3=结束, IsAutoUpdate:是否启动自动更新(可选) }
+    this.SandTableOperator=function(obj)
+    {
+        switch(obj.ID)
+        {
+            case 1:
+                this.StopAutoUpdate();
+                if (obj.Data) this.ManualUpdateKData(obj);
+                break;
+            case 2:
+                this.ManualUpdateKData(obj);
+                break;
+            case 3:
+                if (obj.IsAutoUpdate) this.IsAutoUpdate=obj.IsAutoUpdate;
+                this.ChangeSymbol(this.Symbol);
+                break;
+        }
+    }
+
+    //外部手动更新K线数据, 内部不计算周期和复权
+    this.ManualUpdateKData=function(obj)
+    {
+        var kData=obj.Data;
+        var lastDataCount=kData.length;
+        var bindData=new ChartData();
+        bindData.Data=kData;
+        bindData.Period=this.Period;
+        bindData.Right=this.Right;
+        bindData.Symbol=this.Symbol;
+
+        this.UpdateMainData(bindData,lastDataCount);//更新主图数据
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            this.BindIndexData(i,bindData);
+        }
+
+        //更新当前屏K线索引
+        if (IFrameSplitOperator.IsNumber(obj.DataOffset) && obj.DataOffset>=0)
+        {
+            var data=null;
+            if (this.Frame.Data)
+                data=this.Frame.Data;
+            else
+                data=this.Frame.SubFrame[0].Frame.Data;
+            if (data) data.DataOffset=obj.DataOffset;
+        }
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdatePointByCursorIndex(1);  //更新十字光标位子
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();                        //刷新画图
+
+        this.SendManualKLineUpdateEvent(bindData);
+    }
+
+    //获取k线数据
+    this.GetKDataInfo=function()
+    {
+        if (!this.ChartPaint[0]) return null;
+
+        var chartKLine=this.ChartPaint[0];
+        var obj={};
+        if (chartKLine.Data && chartKLine.Data.Data)
+            obj.Data=chartKLine.Data.CloneData("HistoryData");
+        obj.ShowRange=chartKLine.ShowRange;
+        obj.Period=this.Period;
+        obj.RightSpaceCount=this.RightSpaceCount;
+
+        return obj;
+    }
+
     this.ChartOperator=function(obj) //图形控制函数 {ID:JSCHART_OPERATOR_ID, ...参数 }
     {
         var id=obj.ID;
@@ -26406,6 +26533,19 @@ function KLineChartContainer(uielement)
     this.SendKLineUpdateEvent=function(bindData)
     {
         var event=this.GetEventCallback(JSCHART_EVENT_ID.RECV_KLINE_UPDATE_DATA);
+        if (event && event.Callback)
+        {
+            var data={ HistoryData:bindData, Stock:{Symbol:this.Symbol, Name:this.Name } }
+            event.Callback(event,data,this);
+            return true;
+        }
+
+        return false;
+    }
+
+    this.SendManualKLineUpdateEvent=function(bindData)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.RECV_KLINE_MANUAL_UPDATE_DATA);
         if (event && event.Callback)
         {
             var data={ HistoryData:bindData, Stock:{Symbol:this.Symbol, Name:this.Name } }
