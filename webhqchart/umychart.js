@@ -27216,7 +27216,7 @@ function KLineChartContainer(uielement)
         bindData.DataType=this.SourceData.DataType;
         bindData.Symbol=this.Symbol;
 
-        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true) && MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol))    //复权(A股日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true) && MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && !this.IsApiPeriod)    //复权(A股日线数据才复权)
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;
@@ -27299,7 +27299,7 @@ function KLineChartContainer(uielement)
             bindData.Right=this.Right;
             bindData.DataType=0;
 
-            if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(data.symbol))    //复权数据 ,A股才有有复权
+            if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(data.symbol) && !this.IsApiPeriod)    //复权数据 ,A股才有有复权
             {
                 var rightData=bindData.GetRightDate(bindData.Right);
                 bindData.Data=rightData;

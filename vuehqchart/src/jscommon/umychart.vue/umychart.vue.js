@@ -167,6 +167,8 @@ function JSIndexScript()
             ['资金分析', this.FundsAnalysis],['融资占比',this.MarginProportion],['负面新闻', this.NewsNegative],
             ['涨跌趋势', this.UpDownAnalyze],['北上资金', this.HK2SHSZ],['股东人数', this.ShareHolder],
 
+            ["两融余额", this.Margin2],["两融余额2", this.Margin3],
+
             ['Zealink-资金吸筹', this.Zealink_Index1], ['Zealink-牛熊区间', this.Zealink_Index2],['Zealink-持仓信号', this.Zealink_Index3],
             ['Zealink-增减持',this.Zealink_Index4],['Zealink-大宗交易', this.Zealink_Index5], ['Zealink-信托持股', this.Zealink_Index6],
             ['Zealink-官网新闻', this.Zealink_Index7], ['Zealink-高管要闻', this.Zealink_Index8],['Zealink-股权质押', this.Zealink_Index9],
@@ -2208,6 +2210,40 @@ JSIndexScript.prototype.MarginProportion=function()
 
     return data; 
 }
+
+JSIndexScript.prototype.Margin2=function()
+{
+    let data =
+    {
+        Name: '两融余额', Description: '融资融券余额', IsMainIndex: false, 
+        Condition: { Period:[CONDITION_PERIOD.KLINE_DAY_ID] },
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+        'T1:MARGIN(1);\n\
+        T2:MA(MARGIN(1),N);'
+    };
+
+    return data; 
+}
+
+JSIndexScript.prototype.Margin3=function()
+{
+    let data =
+    {
+        Name: '两融余额', Description: '融资融券余额', IsMainIndex: false, 
+        Condition: { Period:[CONDITION_PERIOD.KLINE_DAY_ID] },
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+        'T1:=MARGIN(1);\n\
+        T2:=MA(MARGIN(1),N);\n\
+        STICKLINE(T1-T2>=0,0,T1-T2,50,T1>T2),COLORRED;\n\
+        STICKLINE(T1-T2<0,T1-T2,0,50,T1>T2),COLORGREEN;'
+    };
+
+    return data; 
+}
+
+
 
 JSIndexScript.prototype.FXG_BSPoint=function()
 {
