@@ -18180,7 +18180,7 @@ function FrameSplitKLinePriceY()
     this.newMethod=IFrameSplitOperator;   //派生
     this.newMethod();
     delete this.newMethod;
-    this.CoordinateType=0;  //坐标类型 0=普通坐标  1=百分比坐标 (右边坐标刻度)
+    this.CoordinateType=0;  //坐标类型 0=普通坐标  1=百分比坐标 (右边坐标刻度) 2=对数对标
     this.Symbol;
     this.Data;              //K线数据 (计算百分比坐标)
     this.FrameSplitData2;                //坐标轴分割方法(计算百分比刻度)
@@ -18217,6 +18217,16 @@ function FrameSplitKLinePriceY()
             {
                 case 1:
                     this.SplitPercentage(splitData,defaultfloatPrecision);
+                    break;
+                case 2: //对数坐标
+                    if (this.SplitLogarithmic(splitData,defaultfloatPrecision))
+                    {
+                        bFilter=false;
+                    }
+                    else
+                    {
+                        this.SplitDefault(splitData,defaultfloatPrecision);
+                    }
                     break;
                 default:
                     if (this.SplitType==1) 
@@ -18275,6 +18285,91 @@ function FrameSplitKLinePriceY()
 
         splitData.Min=(1+splitData.Min)*firstOpenPrice; //最大最小值调整
         splitData.Max=(1+splitData.Max)*firstOpenPrice;
+    }
+
+    this.SplitLogarithmic=function(splitData,floatPrecision) //对数坐标
+    {
+        var minInterval=g_JSChartResource.FromeLogarithmic.MinInterval;       //最小间距
+        var firstOpenPrice=this.GetFirstOpenPrice();    //获取当前屏第1个K线的开盘价
+        if (!IFrameSplitOperator.IsNumber(firstOpenPrice)) return false;
+        var height=this.ChartBorder.GetHeightEx();
+
+        var ARRAY_INCREASE=[0.01, 0.02, 0.04, 0.08, 0.1, 0.2];
+        var increase=ARRAY_INCREASE[ARRAY_INCREASE.length-1];
+        for(var i=0; i<ARRAY_INCREASE.length;++i)
+        {
+            var value=ARRAY_INCREASE[i];
+            var interval=(firstOpenPrice*value)*(height/(splitData.Max-splitData.Min));
+            if (interval>minInterval)
+            {
+                increase=value;
+                break;
+            }
+        }
+
+        var aryUp=[];
+        var price=firstOpenPrice;
+        var i=increase;
+        do
+        {
+            var item={ Start:price };
+            price=firstOpenPrice*(1+i);
+            item.End=price;
+            aryUp.push(item);
+
+            i+=increase;
+        } while(price<splitData.Max);
+        var max=price;
+
+        var aryDown=[];
+        var price=firstOpenPrice;
+        var i=increase;
+        do
+        {
+            var item={ Start:price };
+            price=firstOpenPrice*(1-i);
+            item.End=price;
+            aryDown.push(item);
+
+            i+=increase;
+        } while(price>splitData.Min);
+        var min=price;
+
+        splitData.Max=max;
+        splitData.Min=min;
+        
+        JSConsole.Chart.Log("[FrameSplitKLinePriceY::SplitLogarithmic] up, down", aryUp, aryDown);
+
+        this.Frame.HorizontalInfo=[];
+        var item=new CoordinateInfo();
+        item.Value=firstOpenPrice;
+        item.Font=g_JSChartResource.FromeLogarithmic.OpenPriceFont;
+        var strText=item.Value.toFixed(floatPrecision);
+        if (this.IsShowLeftText) item.Message[0]=strText;     //左边价格坐标      
+        if (this.IsShowRightText) item.Message[1]=strText;    //右边价格坐标 
+        this.Frame.HorizontalInfo.push(item);
+
+        for(var i in aryUp)
+        {
+            var item=new CoordinateInfo();
+            item.Value=aryUp[i].End;
+            var strText=item.Value.toFixed(floatPrecision);
+            if (this.IsShowLeftText) item.Message[0]=strText;     //左边价格坐标      
+            if (this.IsShowRightText) item.Message[1]=strText;    //右边价格坐标 
+            this.Frame.HorizontalInfo.push(item);
+        }
+
+        for(var i in aryDown)
+        {
+            var item=new CoordinateInfo();
+            item.Value=aryDown[i].End;
+            var strText=item.Value.toFixed(floatPrecision);
+            if (this.IsShowLeftText) item.Message[0]=strText;     //左边价格坐标      
+            if (this.IsShowRightText) item.Message[1]=strText;    //右边价格坐标 
+            this.Frame.HorizontalInfo.splice(0,0,item);
+        }
+
+        return true;
     }
 
     this.SplitDefault=function(splitData,floatPrecision)       //默认坐标
@@ -24431,11 +24526,17 @@ function JSChartResource()
     this.FrameSplitPen="rgb(225,236,242)";          //刻度分割线
     this.FrameDotSplitPen='rgb(105,105,105)';       //分割虚线
     this.FrameSplitTextColor="rgb(117,125,129)";    //刻度文字颜色
-    this.FrameSplitTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";     //坐标刻度文字字体
+    this.FrameSplitTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";            //坐标刻度文字字体
     this.FrameTitleBGColor="rgb(246,251,253)";  //标题栏背景色
     this.Frame={ 
         XBottomOffset:1*GetDevicePixelRatio()  //X轴文字向下偏移
-    };   
+    };
+
+    //对数坐标
+    this.FromeLogarithmic= {
+        OpenPriceFont: "bold "+14*GetDevicePixelRatio() +"px 微软雅黑",     //开盘价刻度文字字体
+        MinInterval: 45*GetDevicePixelRatio()       //刻度最小间距
+    };  
 
     //Y轴最新价格刻度颜色
     this.FrameLatestPrice = {
@@ -28400,28 +28501,43 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
-    //修改坐标类型
-    this.ChangeCoordinateType=function(type)
+    //修改坐标类型 
+    //{ Type:  0=普通坐标  1=百分比坐标 (右边坐标刻度) 2=对数对标 , IsReverse:是否反转坐标 }
+    this.ChangeCoordinateType=function(obj) 
     {
         if (!this.Frame && !this.Frame.SubFrame) return;
         if (!this.Frame.SubFrame.length) return;
 
-        if (type==2) //反转坐标
+        if (IFrameSplitOperator.IsNumber(obj))  //老版本
         {
-            this.Frame.SubFrame[0].Frame.CoordinateType=1;
-        }
-        else if(type==1)
-        {
-            this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=type;
-        }
-        else if (type==0)
-        {
-            this.Frame.SubFrame[0].Frame.CoordinateType=0;
-            this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=0;
+            var type=obj;
+            if (type==2) //反转坐标
+            {
+                this.Frame.SubFrame[0].Frame.CoordinateType=1;
+            }
+            else if(type==1)
+            {
+                this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=type;
+            }
+            else if (type==0)
+            {
+                this.Frame.SubFrame[0].Frame.CoordinateType=0;
+                this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=0;
+            }
+            else if (type==3)   //对数坐标
+            {
+                this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=2;
+            }
+            else
+            {
+                return;
+            }
         }
         else
         {
-            return;
+            if (obj.Type>=0 && obj.Type<=2) this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=obj.Type;
+            if (obj.IsReverse===true) this.Frame.SubFrame[0].Frame.CoordinateType=1;
+            else if (obj.IsReverse==false) this.Frame.SubFrame[0].Frame.CoordinateType=0;
         }
 
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
@@ -38741,24 +38857,33 @@ function KLineRightMenu(divElement)
         [
             {
                 text: "普通坐标",
-                click: function () { chart.ChangeCoordinateType(0); }
+                click: function () { chart.ChangeCoordinateType( {Type:0} ); }
             },
             {
                 text: "百分比坐标",
-                click: function () { chart.ChangeCoordinateType(1); }
+                click: function () { chart.ChangeCoordinateType( {Type:1} ); }
             },
             {
                 text: "反转坐标",
-                click: function () { chart.ChangeCoordinateType(2); }
+                click: function () { chart.ChangeCoordinateType( { IsReverse:true } ); }
+            },
+            {
+                text: "对数坐标",
+                click: function () { chart.ChangeCoordinateType( {Type:2} ); }
             }
         ];
 
         if (chart.Frame && chart.Frame.SubFrame && chart.Frame.SubFrame.length>0) 
         {
-            if (chart.Frame.SubFrame[0].Frame.CoordinateType==1) data[2].selected=true;
-            else data[0].selected=true;
+            if (chart.Frame.SubFrame[0].Frame.CoordinateType==1) 
+            {
+                data[2].selected=true;
+                data[2].click=function() { chart.ChangeCoordinateType( { IsReverse:false } ); } //取消反转
+            }
 
-            if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==1) data[1].selected=true;
+            if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==1) data[1].selected=true;  //百分比
+            else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==0) data[0].selected=true; //普通坐标
+            else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==2) data[3].selected=true; //对数
         }
 
         return data;
