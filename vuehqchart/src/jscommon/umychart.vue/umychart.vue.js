@@ -32360,34 +32360,44 @@ function KLineChartContainer(uielement)
         for(var i=0;i<count;++i)
         {
             var windowIndex=i;
-            var indexID=option.Windows[i].Index;
-            var indexItem=JSIndexMap.Get(indexID);
+            var item=option.Windows[i];
             var titleIndex=windowIndex+1;
             this.TitlePaint[titleIndex].Data=[];
             this.TitlePaint[titleIndex].Title=null;
-            if (indexItem)
+
+            if (item.Script)    //自定义X轴绘制事件
             {
-                this.WindowIndex[i]=indexItem.Create();
-                this.CreateWindowIndex(windowIndex);
-                this.BindIndexData(windowIndex,bindData);
+                this.WindowIndex[i]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
+                this.BindIndexData(windowIndex,bindData);   //执行脚本
             }
             else
             {
-                var indexInfo = systemScript.Get(indexID);
-                if (indexInfo)
+                var indexID=item.Index;
+                var indexItem=JSIndexMap.Get(indexID);
+                if (indexItem)
                 {
-                    var args=indexInfo.Args;
-                    if (option.Windows[i].Args) args=option.Windows[i].Args;
-                    let indexData = 
-                    { 
-                        Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:indexID ,
-                        //扩展属性 可以是空
-                        KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                        FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
-                    };
-
-                    this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
-                    this.BindIndexData(windowIndex,bindData);   //执行脚本
+                    this.WindowIndex[i]=indexItem.Create();
+                    this.CreateWindowIndex(windowIndex);
+                    this.BindIndexData(windowIndex,bindData);
+                }
+                else
+                {
+                    var indexInfo = systemScript.Get(indexID);
+                    if (indexInfo)
+                    {
+                        var args=indexInfo.Args;
+                        if (option.Windows[i].Args) args=option.Windows[i].Args;
+                        let indexData = 
+                        { 
+                            Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:indexID ,
+                            //扩展属性 可以是空
+                            KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
+                            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
+                        };
+    
+                        this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+                        this.BindIndexData(windowIndex,bindData);   //执行脚本
+                    }
                 }
             }
         }
@@ -33577,9 +33587,10 @@ function KLineChartContainer(uielement)
     //注册鼠标右键事件
     this.OnRightMenu=function(x,y,e)
     {
+        var pixelTatio = GetDevicePixelRatio(); //x,y 需要乘以放大倍速
         if (this.RightMenu)
         {
-            var frameId=this.Frame.PtInFrame(x,y);
+            var frameId=this.Frame.PtInFrame(x*pixelTatio,y*pixelTatio);
             e.data={ Chart:this, FrameID:frameId };
             this.RightMenu.DoModal(e);
         }
@@ -33587,7 +33598,7 @@ function KLineChartContainer(uielement)
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CONTEXT_MENU);
         if (event)
         {
-            var frameId=this.Frame.PtInFrame(x,y);
+            var frameId=this.Frame.PtInFrame(x*pixelTatio,y*pixelTatio);
             var data={ X:x, Y:y, Event:e, FrameID:frameId };
             event.Callback(event,data,this);
         }
