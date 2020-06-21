@@ -10257,10 +10257,10 @@ function JSSymbolData(ast,option,jsExecute)
             {
                 args.push(item.Value);
             }
-            else if (item.Type==Syntax.Identifier) //变量 !!只支持默认的变量值
+            else if (item.Type==Syntax.Identifier) //变量
             {
                 var isFind=false;
-                for(var j in this.Arguments)
+                for(var j in this.Arguments)    //默认的变量值
                 {
                     const argItem=this.Arguments[j];
                     if (argItem.Name==item.Name)
@@ -10273,8 +10273,9 @@ function JSSymbolData(ast,option,jsExecute)
 
                 if (!isFind) 
                 {
-                    var token=job.Token;
-                    this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`DownloadCustomFunctionData() Error: can't read ${item.Name}`);
+                    args.push(null);    //执行前未获取的变量用null
+                    //var token=job.Token;
+                    //this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`DownloadCustomFunctionData() Error: can't read ${item.Name}`);
                 }
             }
             else
