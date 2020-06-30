@@ -8,7 +8,9 @@
 [![npm package](https://img.shields.io/npm/v/hqchart.svg?style=flat-square)](https://www.npmjs.org/package/hqchart)
 [![npm dw](https://img.shields.io/npm/dw/hqchart)](https://img.shields.io/npm/dw/hqchart)
 
-如果你觉得我们的行情模块对你有帮助， 请给我们点下star. (●ˇ∀ˇ●)
+如果你觉得我们的行情模块对你有帮助， 请给我们点下star. (●ˇ∀ˇ●) <br>
+
+**教程列表和demo效果图在下面,下拉页面就可以看到!!!!!!!!!!!!**
 
 
 # 目录结构
