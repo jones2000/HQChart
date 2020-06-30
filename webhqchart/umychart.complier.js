@@ -12089,6 +12089,7 @@ function JSExecute(ast,option)
                     {
                         let outVar=this.VarTable.get(varName);
                         let value={Name:varName, Data:outVar, Color:color, Type:2};
+                        if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
                     }
                     else if (varName)
@@ -13038,6 +13039,11 @@ function ScriptIndex(name,script,args,option)
         chartMACD.Name=varItem.Name;
         chartMACD.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chartMACD.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.LineWidth) 
+        {
+            var width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chartMACD.LineWidth=width;
+        }
 
         let titleIndex=windowIndex+1;
         chartMACD.Data.Data=varItem.Data;

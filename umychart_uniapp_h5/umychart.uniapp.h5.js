@@ -86,7 +86,7 @@ function JSIndexScript()
             ["MA4", this.MA4],["MA5", this.MA5],["MA6", this.MA6],["MA7", this.MA7],["MA8", this.MA8],
             ['BOLL', this.BOLL],['BOLL副图', this.BOLL2],['BBI', this.BBI],
             ['DKX', this.DKX],['MIKE', this.MIKE],['PBX', this.PBX],
-            ['ENE', this.ENE],['MACD', this.MACD],['KDJ', this.KDJ],
+            ['ENE', this.ENE],['MACD', this.MACD],['KDJ', this.KDJ],["MACD2", this.MACD2],
             ['VOL', this.VOL],['RSI', this.RSI],['BRAR', this.BRAR],
             ['WR', this.WR],['BIAS', this.BIAS],['OBV', this.OBV],
             ['DMI', this.DMI],['CR', this.CR],['PSY', this.PSY],
@@ -450,6 +450,23 @@ JSIndexScript.prototype.MACD=function()
 'DIF:EMA(CLOSE,SHORT)-EMA(CLOSE,LONG);\n\
 DEA:EMA(DIF,MID);\n\
 MACD:(DIF-DEA)*2,COLORSTICK;'
+
+    };
+
+    return data;
+}
+
+//上下柱子
+JSIndexScript.prototype.MACD2=function()
+{
+    let data=
+    {
+        Name:'MACD', Description:'平滑异同平均', IsMainIndex:false,
+        Args:[ { Name:'SHORT', Value:12}, { Name:'LONG', Value:26}, { Name:'MID', Value:9} ],
+        Script: //脚本
+'DIF:EMA(CLOSE,SHORT)-EMA(CLOSE,LONG);\n\
+DEA:EMA(DIF,MID);\n\
+MACD:(DIF-DEA)*2,COLORSTICK,LINETHICK50;'
 
     };
 
@@ -17286,6 +17303,7 @@ function ChartMACD()
     this.ClassName="ChartMACD";
     this.UpColor=g_JSChartResource.UpBarColor;
     this.DownColor=g_JSChartResource.DownBarColor;
+    this.LineWidth=1;
 
     this.Draw=function()
     {
@@ -17311,6 +17329,13 @@ function ChartMACD()
         var bFirstPoint=true;
         var drawCount=0;
         var yBottom=this.ChartFrame.GetYFromData(0);
+        
+        var lineWidth=this.LineWidth*GetDevicePixelRatio();
+        if (this.LineWidth==50) lineWidth=dataWidth;
+        else if (lineWidth>dataWidth) lineWidth=dataWidth;
+        
+        var backupLineWidth=this.Canvas.lineWidth;
+        this.Canvas.lineWidth=lineWidth;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
@@ -17331,16 +17356,27 @@ function ChartMACD()
             this.Canvas.stroke();
             this.Canvas.closePath();
         }
+
+        this.Canvas.lineWidth=backupLineWidth;
     }
 
     this.HScreenDraw=function()
     {
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
         var lockRect=this.GetLockRect();
         if (lockRect) chartright=lockRect.Top;
 
         var yBottom=this.ChartFrame.GetYFromData(0);
+
+        var lineWidth=this.LineWidth*GetDevicePixelRatio();
+        if (this.LineWidth==50) lineWidth=dataWidth;
+        else if (lineWidth>dataWidth) lineWidth=dataWidth;
+
+        var backupLineWidth=this.Canvas.lineWidth;
+        this.Canvas.lineWidth=lineWidth;
         
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
@@ -17361,6 +17397,8 @@ function ChartMACD()
             this.Canvas.stroke();
             this.Canvas.closePath();
         }
+
+        this.Canvas.lineWidth=backupLineWidth;
     }
 }
 
@@ -58384,6 +58422,7 @@ function JSExecute(ast,option)
                     {
                         let outVar=this.VarTable.get(varName);
                         let value={Name:varName, Data:outVar, Color:color, Type:2};
+                        if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
                     }
                     else if (varName)
@@ -59333,6 +59372,11 @@ function ScriptIndex(name,script,args,option)
         chartMACD.Name=varItem.Name;
         chartMACD.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chartMACD.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.LineWidth) 
+        {
+            var width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chartMACD.LineWidth=width;
+        }
 
         let titleIndex=windowIndex+1;
         chartMACD.Data.Data=varItem.Data;

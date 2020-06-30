@@ -13630,6 +13630,7 @@ function ChartMACD()
     this.ClassName="ChartMACD";
     this.UpColor=g_JSChartResource.UpBarColor;
     this.DownColor=g_JSChartResource.DownBarColor;
+    this.LineWidth=1;
 
     this.Draw=function()
     {
@@ -13655,6 +13656,13 @@ function ChartMACD()
         var bFirstPoint=true;
         var drawCount=0;
         var yBottom=this.ChartFrame.GetYFromData(0);
+        
+        var lineWidth=this.LineWidth*GetDevicePixelRatio();
+        if (this.LineWidth==50) lineWidth=dataWidth;
+        else if (lineWidth>dataWidth) lineWidth=dataWidth;
+        
+        var backupLineWidth=this.Canvas.lineWidth;
+        this.Canvas.lineWidth=lineWidth;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
@@ -13675,16 +13683,27 @@ function ChartMACD()
             this.Canvas.stroke();
             this.Canvas.closePath();
         }
+
+        this.Canvas.lineWidth=backupLineWidth;
     }
 
     this.HScreenDraw=function()
     {
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
         var lockRect=this.GetLockRect();
         if (lockRect) chartright=lockRect.Top;
 
         var yBottom=this.ChartFrame.GetYFromData(0);
+
+        var lineWidth=this.LineWidth*GetDevicePixelRatio();
+        if (this.LineWidth==50) lineWidth=dataWidth;
+        else if (lineWidth>dataWidth) lineWidth=dataWidth;
+
+        var backupLineWidth=this.Canvas.lineWidth;
+        this.Canvas.lineWidth=lineWidth;
         
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
@@ -13705,6 +13724,8 @@ function ChartMACD()
             this.Canvas.stroke();
             this.Canvas.closePath();
         }
+
+        this.Canvas.lineWidth=backupLineWidth;
     }
 }
 
