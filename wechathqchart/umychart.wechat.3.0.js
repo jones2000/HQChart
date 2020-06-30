@@ -2427,7 +2427,8 @@ function AverageWidthFrame()
     this.IsShowTitle = true;      //是否显示动态标题
     this.IsShowYText = [true, true];       //是否显示Y轴坐标坐标 [0=左侧] [1=右侧]
     this.XBottomOffset = g_JSChartResource.Frame.XBottomOffset;   //X轴文字显示向下偏移
-
+    this.YTextPosition=[0,0],       //是坐标否强制画在内部 [0=左侧] [1=右侧] 1=OUT" , 2=INSIDE
+    
     this.DrawOtherChart;      //其他画法调用
 
     this.DrawFrame = function () 
@@ -5272,6 +5273,7 @@ function ChartMACD()
     this.ClassName ='ChartMACD';
     this.UpColor = g_JSChartResource.UpBarColor;
     this.DownColor = g_JSChartResource.DownBarColor;
+    this.LineWidth=1;
 
     this.Draw = function () 
     {
@@ -5291,6 +5293,13 @@ function ChartMACD()
         var distanceWidth = this.ChartFrame.DistanceWidth;
         var chartright = this.ChartBorder.GetRight();
         var xPointCount = this.ChartFrame.XPointCount;
+
+        var lineWidth=this.LineWidth;
+        if (this.LineWidth==50) lineWidth=dataWidth;
+        else if (lineWidth>dataWidth) lineWidth=dataWidth;
+
+        this.Canvas.save();
+        this.Canvas.lineWidth=lineWidth;
 
         var bFirstPoint = true;
         var drawCount = 0;
@@ -5315,14 +5324,24 @@ function ChartMACD()
             this.Canvas.stroke();
             this.Canvas.closePath();
         }
+
+        this.Canvas.restore();
     }
 
     this.HScreenDraw = function () 
     {
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
         var chartright = this.ChartBorder.GetBottom();
         var xPointCount = this.ChartFrame.XPointCount;
-
         var yBottom = this.ChartFrame.GetYFromData(0);
+
+        var lineWidth=this.LineWidth;
+        if (this.LineWidth==50) lineWidth=dataWidth;
+        else if (lineWidth>dataWidth) lineWidth=dataWidth;
+
+        this.Canvas.save();
+        this.Canvas.lineWidth=lineWidth;
 
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
         {
@@ -5343,6 +5362,8 @@ function ChartMACD()
             this.Canvas.stroke();
             this.Canvas.closePath();
         }
+
+        this.Canvas.restore();
     }
 }
 
@@ -11959,21 +11980,27 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chartText);
     }
 
-  //COLORSTICK 
-  this.CreateMACD = function (hqChart, windowIndex, varItem, id) {
-    let chartMACD = new ChartMACD();
-    chartMACD.Canvas = hqChart.Canvas;
+    //COLORSTICK 
+    this.CreateMACD = function (hqChart, windowIndex, varItem, id) 
+    {
+        let chartMACD = new ChartMACD();
+        chartMACD.Canvas = hqChart.Canvas;
 
-    chartMACD.Name = varItem.Name;
-    chartMACD.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-    chartMACD.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartMACD.Name = varItem.Name;
+        chartMACD.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chartMACD.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.LineWidth) 
+        {
+            var width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chartMACD.LineWidth=width;
+        }
 
-    let titleIndex = windowIndex + 1;
-    chartMACD.Data.Data = varItem.Data;
-    hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(chartMACD.Data, varItem.Name, this.GetDefaultColor(id));
+        let titleIndex = windowIndex + 1;
+        chartMACD.Data.Data = varItem.Data;
+        hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(chartMACD.Data, varItem.Name, this.GetDefaultColor(id));
 
-    hqChart.ChartPaint.push(chartMACD);
-  }
+        hqChart.ChartPaint.push(chartMACD);
+    }
 
   this.CreatePointDot = function (hqChart, windowIndex, varItem, id) {
     let pointDot = new ChartPointDot();

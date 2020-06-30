@@ -68,7 +68,7 @@ function JSIndexScript()
             ['MA', this.MA], ['均线', this.MA], ['BOLL', this.BOLL], ['BBI', this.BBI],
             ["MA4", this.MA4], ["MA5", this.MA5], ["MA6", this.MA6], ["MA7", this.MA7], ["MA8", this.MA8],
             ['DKX', this.DKX], ['MIKE', this.MIKE], ['PBX', this.PBX],
-            ['ENE', this.ENE], ['MACD', this.MACD], ['KDJ', this.KDJ],
+            ['ENE', this.ENE], ['MACD', this.MACD], ['KDJ', this.KDJ],["MACD2", this.MACD2],
             ['VOL', this.VOL], ['成交量', this.VOL], ['RSI', this.RSI], ['BRAR', this.BRAR],
             ['WR', this.WR], ['BIAS', this.BIAS], ['OBV', this.OBV],
             ['DMI', this.DMI], ['CR', this.CR], ['PSY', this.PSY],
@@ -394,6 +394,25 @@ JSIndexScript.prototype.MACD=function()
 'DIF:EMA(CLOSE,SHORT)-EMA(CLOSE,LONG);\n\
 DEA:EMA(DIF,MID);\n\
 MACD:(DIF-DEA)*2,COLORSTICK;'
+
+    };
+
+    return data;
+}
+
+//上下柱子
+JSIndexScript.prototype.MACD2=function()
+{
+    let data=
+    {
+        Name:'MACD', Description:'平滑异同平均', IsMainIndex:false,
+        Args:[ { Name:'SHORT', Value:12}, { Name:'LONG', Value:26}, { Name:'MID', Value:9} ],
+        Script: //脚本
+'DIF2:=EMA(CLOSE,SHORT)-EMA(CLOSE,LONG);\n\
+DEA2:=EMA(DIF2,MID);\n\
+MACD:(DIF2-DEA2)*2,COLORSTICK,LINETHICK50;\n\
+DIF:DIF2;\n\
+DEA:DEA2;'
 
     };
 
