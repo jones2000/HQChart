@@ -508,9 +508,11 @@ JSIndexScript.prototype.MACD2=function()
         Name:'MACD', Description:'平滑异同平均', IsMainIndex:false,
         Args:[ { Name:'SHORT', Value:12}, { Name:'LONG', Value:26}, { Name:'MID', Value:9} ],
         Script: //脚本
-'DIF:EMA(CLOSE,SHORT)-EMA(CLOSE,LONG);\n\
-DEA:EMA(DIF,MID);\n\
-MACD:(DIF-DEA)*2,COLORSTICK,LINETHICK50;'
+'DIF2:=EMA(CLOSE,SHORT)-EMA(CLOSE,LONG);\n\
+DEA2:=EMA(DIF2,MID);\n\
+MACD:(DIF2-DEA2)*2,COLORSTICK,LINETHICK50;\n\
+DIF:DIF2;\n\
+DEA:DEA2;'
 
     };
 
