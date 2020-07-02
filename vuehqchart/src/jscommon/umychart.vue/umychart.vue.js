@@ -45305,7 +45305,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.DCE + '-FB', {Time:0,Decimal:2}],
         [MARKET_SUFFIX_NAME.DCE + '-BB', {Time:0,Decimal:2}],
         [MARKET_SUFFIX_NAME.DCE + '-PP', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.DCE + '-JM', {Time:3,Decimal:1}],
+        [MARKET_SUFFIX_NAME.DCE + '-JM', {Time:6,Decimal:1,Name:'焦煤'}],
         //上期所
         [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0}],
@@ -45367,7 +45367,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.DCE + '-M', {Time:3,Decimal:0}],
         [MARKET_SUFFIX_NAME.DCE + '-Y', {Time:3,Decimal:0}],
         [MARKET_SUFFIX_NAME.DCE + '-P', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.DCE + '-J', {Time:3,Decimal:1}],
+        [MARKET_SUFFIX_NAME.DCE + '-J', {Time:6,Decimal:1,Name:'焦炭'}],
         [MARKET_SUFFIX_NAME.DCE + '-I', {Time:3,Decimal:1}],
         //中期所 
         [MARKET_SUFFIX_NAME.CFFEX + '-T', {Time:1,Decimal:3}],
