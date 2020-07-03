@@ -45257,11 +45257,16 @@ function FuturesTimeData()
 
     const MAP_TWOWORDS=new Map([
         //大连商品交易所
-        [MARKET_SUFFIX_NAME.DCE + '-JD', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.DCE + '-FB', {Time:0,Decimal:2}],
-        [MARKET_SUFFIX_NAME.DCE + '-BB', {Time:0,Decimal:2}],
-        [MARKET_SUFFIX_NAME.DCE + '-PP', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-JD', {Time:0,Decimal:0,Name:"鸡蛋"}],
+        [MARKET_SUFFIX_NAME.DCE + '-FB', {Time:0,Decimal:2,Name:"纤板"}],
+        [MARKET_SUFFIX_NAME.DCE + '-BB', {Time:0,Decimal:2,Name:"胶板"}],
+        [MARKET_SUFFIX_NAME.DCE + '-PP', {Time:6,Decimal:0,Name:"丙烯"}],
         [MARKET_SUFFIX_NAME.DCE + '-JM', {Time:6,Decimal:1,Name:'焦煤'}],
+        [MARKET_SUFFIX_NAME.DCE + '-EG', {Time:6,Decimal:0,Name:'乙二醇'}],
+        [MARKET_SUFFIX_NAME.DCE + '-EB', {Time:6,Decimal:0,Name:'苯乙烯'}],
+        [MARKET_SUFFIX_NAME.DCE + '-CS', {Time:6,Decimal:0,Name:'淀粉'}],
+        [MARKET_SUFFIX_NAME.DCE + '-PG', {Time:6,Decimal:0,Name:'液化气'}],
+        [MARKET_SUFFIX_NAME.DCE + '-RR', {Time:6,Decimal:0,Name:'梗米'}],
         //上期所
         [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0}],
@@ -45315,16 +45320,16 @@ function FuturesTimeData()
 
     const MAP_ONEWORD=new Map([
         //大连商品交易所
-        [MARKET_SUFFIX_NAME.DCE + '-C', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.DCE + '-L', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.DCE + '-V', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.DCE + '-A', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.DCE + '-B', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.DCE + '-M', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.DCE + '-Y', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.DCE + '-P', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.DCE + '-C', {Time:6,Decimal:0,Name:"玉米"}],
+        [MARKET_SUFFIX_NAME.DCE + '-L', {Time:6,Decimal:0,Name:"乙烯"}],
+        [MARKET_SUFFIX_NAME.DCE + '-V', {Time:6,Decimal:0,Name:"PVC"}],
+        [MARKET_SUFFIX_NAME.DCE + '-A', {Time:6,Decimal:0,Name:"豆一"}],
+        [MARKET_SUFFIX_NAME.DCE + '-B', {Time:6,Decimal:0,Name:"豆二"}],
+        [MARKET_SUFFIX_NAME.DCE + '-M', {Time:6,Decimal:0,Name:"豆粕"}],
+        [MARKET_SUFFIX_NAME.DCE + '-Y', {Time:6,Decimal:0,Name:"豆油"}],
+        [MARKET_SUFFIX_NAME.DCE + '-P', {Time:6,Decimal:0,Name:"棕榈"}],
         [MARKET_SUFFIX_NAME.DCE + '-J', {Time:6,Decimal:1,Name:'焦炭'}],
-        [MARKET_SUFFIX_NAME.DCE + '-I', {Time:3,Decimal:1}],
+        [MARKET_SUFFIX_NAME.DCE + '-I', {Time:6,Decimal:1,Name:"铁矿"}],
         //中期所 
         [MARKET_SUFFIX_NAME.CFFEX + '-T', {Time:1,Decimal:3}],
     ]);
