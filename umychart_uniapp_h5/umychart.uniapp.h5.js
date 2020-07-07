@@ -3851,7 +3851,7 @@ function JSChart(divElement)
         if (!option.Windows || option.Windows.length<=0) return null;
 
         //创建子窗口
-        chart.Create(option.Windows.length);
+        chart.Create(option.Windows.length, option.Listener);
 
         if (option.Border)
         {
@@ -4200,7 +4200,7 @@ function JSChart(divElement)
 
         if (option.Info && option.Info.length>0) chart.SetMinuteInfo(option.Info,false);
 
-        chart.Create(windowsCount);                            //创建子窗口
+        chart.Create(windowsCount,option.Listener);                            //创建子窗口
 
         if (option.CorssCursorInfo)
         {
@@ -4595,13 +4595,21 @@ function JSChart(divElement)
         if (option.AutoUpdateFrequency>0) chart.AutoUpdateFrequency=option.AutoUpdateFrequency;
 
         //设置股票代码
-        if (!option.Symbol) return false;
-        chart.Draw();
-        chart.ChangeSymbol(option.Symbol);
-
-        this.JSChartContainer=chart;
-        this.DivElement.JSChart=this;   //div中保存一份
-        this.JSChartContainer.Draw();
+        if (!option.Symbol) 
+        {
+            chart.DrawEmpty();
+            this.JSChartContainer=chart;
+            this.DivElement.JSChart=this;   //div中保存一份
+        }
+        else
+        {
+            chart.Draw();
+            chart.ChangeSymbol(option.Symbol);
+    
+            this.JSChartContainer=chart;
+            this.DivElement.JSChart=this;   //div中保存一份
+            this.JSChartContainer.Draw();
+        }
     }
 
     this.CreateSimpleChart=function(option)
@@ -5931,6 +5939,17 @@ function JSChartContainer(uielement)
         var y = point.Y-this.UIElement.getBoundingClientRect().top*pixelTatio;
         if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID) this.TouchStatus.CorssCursorShow=true;    //十字显示
         this.OnMouseMove(x,y,e);
+    }
+
+    this.DrawEmpty=function()
+    {
+        if (this.UIElement.width<=0 || this.UIElement.height<=0) return; 
+        this.Canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
+        if (this.Frame)
+        {
+            this.Frame.ScreenImageData=null;
+            this.Frame.Draw();
+        }
     }
 
     this.Draw=function()
@@ -30174,7 +30193,7 @@ function KLineChartContainer(uielement)
 
     //创建
     //windowCount 窗口个数
-    this.Create=function(windowCount)
+    this.Create=function(windowCount, option)
     {
         this.UIElement.JSChartContainer=this;
 
@@ -30215,8 +30234,26 @@ function KLineChartContainer(uielement)
             this.TitlePaint.push(titlePaint);
         }
 
-        this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
-        this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                //上下滚动消息
+        var bRegisterKeydown=true;
+        var bRegisterWheel=true;
+
+        if (option)
+        {
+            if (option.KeyDown===false) 
+            {
+                bRegisterKeydown=false;
+                JSConsole.Chart.Log('[KLineChartContainer::Create] not register keydown event.');
+            }
+
+            if (option.Wheel===false) 
+            {
+                bRegisterWheel=false;
+                JSConsole.Chart.Log('[KLineChartContainer::Create] not register wheel event.');
+            }
+        }
+
+        if (bRegisterKeydown) this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
+        if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                //上下滚动消息
     }
 
     //创建子窗口
@@ -33034,6 +33071,12 @@ function KLineChartContainer(uielement)
         this.CancelAutoUpdate();    //先停止定时器
         this.AutoUpdateEvent(false,'KLineChartContainer::ChangeSymbol');
         this.Symbol=symbol;
+        if (!symbol)
+        {
+            this.DrawEmpty();
+            return;
+        }
+
         if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol)) this.Right=0;    //指数没有复权
 
         //清空指标
@@ -35113,7 +35156,7 @@ function MinuteChartContainer(uielement)
 
     //创建
     //windowCount 窗口个数
-    this.Create=function(windowCount)
+    this.Create=function(windowCount,option)
     {
         this.UIElement.JSChartContainer=this;
 
@@ -35155,8 +35198,26 @@ function MinuteChartContainer(uielement)
 
         this.ChartCorssCursor.StringFormatX.Frame=this.Frame.SubFrame[0].Frame;
 
-        this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e);} , true);              //键盘消息
-        this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
+        var bRegisterKeydown=true;
+        var bRegisterWheel=true;
+
+        if (option)
+        {
+            if (option.KeyDown===false) 
+            {
+                bRegisterKeydown=false;
+                JSConsole.Chart.Log('[MinuteChartContainer::Create] not register keydown event.');
+            }
+
+            if (option.Wheel===false) 
+            {
+                bRegisterWheel=false;
+                JSConsole.Chart.Log('[MinuteChartContainer::Create] not register wheel event.');
+            }
+        }
+
+        if (bRegisterKeydown) this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e);} , true);              //键盘消息
+        if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
     }
 
     //创建子窗口
@@ -35506,9 +35567,16 @@ function MinuteChartContainer(uielement)
         this.Symbol=symbol;
         this.ResetOverlaySymbolStatus();
 
-        this.ChartSplashPaint.IsEnableSplash = true;    //增加下载动画
-        this.Draw();
-        this.RequestData();
+        if (symbol) 
+        {
+            this.ChartSplashPaint.IsEnableSplash = true;    //增加下载动画
+            this.Draw();
+            this.RequestData();
+        }
+        else
+        {
+            this.DrawEmpty();
+        }
     }
 
     this.ChangeDayCount=function(count)
@@ -45285,15 +45353,15 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:5,Decimal:1}],
         [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:5,Decimal:1}],
         //郑州期货交易所
-        [MARKET_SUFFIX_NAME.CZCE + '-CF', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-SR', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-MA', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-ZC', {Time:3,Decimal:1}],
-        [MARKET_SUFFIX_NAME.CZCE + '-TA', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-RM', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-OI', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-ME', {Time:3,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-FG', {Time:3,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-CF', {Time:6,Decimal:0,Name:"棉花"}],
+        [MARKET_SUFFIX_NAME.CZCE + '-SR', {Time:6,Decimal:0,Name:"油菜籽"}],
+        [MARKET_SUFFIX_NAME.CZCE + '-MA', {Time:6,Decimal:0,Name:"甲醇"}],
+        [MARKET_SUFFIX_NAME.CZCE + '-ZC', {Time:6,Decimal:1,Name:'动力煤'}],
+        [MARKET_SUFFIX_NAME.CZCE + '-TA', {Time:6,Decimal:0,Name:"精对苯二甲酸(PTA)"}],
+        [MARKET_SUFFIX_NAME.CZCE + '-RM', {Time:6,Decimal:0,Name:'菜籽粕'}],
+        [MARKET_SUFFIX_NAME.CZCE + '-OI', {Time:6,Decimal:0,Name:"菜籽油"}],
+        [MARKET_SUFFIX_NAME.CZCE + '-ME', {Time:3,Decimal:0,Name:"甲醇(老)"}],
+        [MARKET_SUFFIX_NAME.CZCE + '-FG', {Time:6,Decimal:0,Name:'平板玻璃'}],
         [MARKET_SUFFIX_NAME.CZCE + '-WS', {Time:0,Decimal:0}],
         [MARKET_SUFFIX_NAME.CZCE + '-WT', {Time:0,Decimal:0}],
         [MARKET_SUFFIX_NAME.CZCE + '-GN', {Time:0,Decimal:0}],
