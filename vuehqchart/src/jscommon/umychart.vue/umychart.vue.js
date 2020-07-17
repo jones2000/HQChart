@@ -5136,6 +5136,11 @@ JSChart.SetUSATimeType=function(type)    //设置 0=标准时间 1=夏令时间 
     g_CBOTTimeData.TimeType=type;
 }
 
+JSChart.GetChinaFuturesTimeData=function()  //获取国内期货交易时间配置
+{
+    return g_FuturesTimeData;
+}
+
 var JSCHART_EVENT_ID=
 {
     RECV_KLINE_MATCH:1, //接收到形态匹配
@@ -19760,6 +19765,8 @@ function MinuteTooltipPaint()
     this.DrawTooltipData=function(item)
     {
         //JSConsole.Chart.Log('[KLineTooltipPaint::DrawKLineData] ', item);
+        if (!this.HQChart.Symbol) return;
+        
         var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
         var left=this.GetLeft()+2*GetDevicePixelRatio();
         var top=this.GetTop()+3*GetDevicePixelRatio();
@@ -24514,7 +24521,10 @@ function DivTooltipDataForamt()
             ["KLineTradeDataStringFormat",      {Create:function(){ return new KLineTradeDataStringFormat()}  }],
             ["MinuteInfoDataStringFormat",      {Create:function(){ return new MinuteInfoDataStringFormat()}  }],
             ["HistoryDataStringFormat",         {Create:function(){ return new HistoryDataStringFormat()}  }],
-            ["KLineInfoDataStringFormat",       {Create:function(){ return new KLineInfoDataStringFormat()}  }]
+            ["KLineInfoDataStringFormat",       {Create:function(){ return new KLineInfoDataStringFormat()}  }],
+
+            ["CorssCursor_XStringFormat", { Create:function(){ return new HQDateStringFormat()} }],
+            ["CorssCursor_YStringFormat", { Create:function(){ return new HQPriceStringFormat()} }]
         ]
     );
 
@@ -30244,8 +30254,8 @@ function KLineChartContainer(uielement)
         //创建十字光标
         this.ChartCorssCursor=new ChartCorssCursor();
         this.ChartCorssCursor.Canvas=this.Canvas;
-        this.ChartCorssCursor.StringFormatX=new HQDateStringFormat();
-        this.ChartCorssCursor.StringFormatY=new HQPriceStringFormat();
+        this.ChartCorssCursor.StringFormatX=g_DivTooltipDataForamt.Create("CorssCursor_XStringFormat");
+        this.ChartCorssCursor.StringFormatY=g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
         this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
         this.ChartCorssCursor.StringFormatY.ExtendChartPaint=this.ExtendChartPaint;
 
@@ -37948,8 +37958,8 @@ function KLineChartHScreenContainer(uielement)
         //创建十字光标
         this.ChartCorssCursor=new ChartCorssCursor();
         this.ChartCorssCursor.Canvas=this.Canvas;
-        this.ChartCorssCursor.StringFormatX=new HQDateStringFormat();
-        this.ChartCorssCursor.StringFormatY=new HQPriceStringFormat();
+        this.ChartCorssCursor.StringFormatX=g_DivTooltipDataForamt.Create("CorssCursor_XStringFormat");
+        this.ChartCorssCursor.StringFormatY=g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
         this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
         this.ChartCorssCursor.StringFormatY.ExtendChartPaint=this.ExtendChartPaint;
 
@@ -45100,7 +45110,7 @@ function MinuteCoordinateData()
 //国内期货不同品种 交易时间数据 
 function FuturesTimeData()
 {
-    const TIME_SPLIT=
+    this.TIME_SPLIT=
     [
         {
             Name:'9:00-10:15,10:30-11:30,13:30-15:00',
@@ -45367,7 +45377,7 @@ function FuturesTimeData()
         }
     ];
 
-    const MAP_TWOWORDS=new Map([
+    this.MAP_TWOWORDS=new Map([
         //大连商品交易所
         [MARKET_SUFFIX_NAME.DCE + '-JD', {Time:0,Decimal:0,Name:"鸡蛋"}],
         [MARKET_SUFFIX_NAME.DCE + '-FB', {Time:0,Decimal:2,Name:"纤板"}],
@@ -45379,6 +45389,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.DCE + '-CS', {Time:6,Decimal:0,Name:'淀粉'}],
         [MARKET_SUFFIX_NAME.DCE + '-PG', {Time:6,Decimal:0,Name:'液化气'}],
         [MARKET_SUFFIX_NAME.DCE + '-RR', {Time:6,Decimal:0,Name:'梗米'}],
+
         //上期所
         [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0}],
@@ -45391,11 +45402,13 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-RB', {Time:6,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-BU', {Time:6,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-HC', {Time:6,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-SP', {Time:6,Decimal:0,Name:"纸浆"}],
         [MARKET_SUFFIX_NAME.SHFE + '-WR', {Time:0,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2}],
         [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:5,Decimal:1}],
         [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:5,Decimal:1}],
+       
         //郑州期货交易所
         [MARKET_SUFFIX_NAME.CZCE + '-CF', {Time:6,Decimal:0,Name:"棉花"}],
         [MARKET_SUFFIX_NAME.CZCE + '-SR', {Time:6,Decimal:0,Name:"油菜籽"}],
@@ -45422,6 +45435,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CZCE + '-LR', {Time:0,Decimal:0}],
         [MARKET_SUFFIX_NAME.CZCE + '-SF', {Time:0,Decimal:0}],
         [MARKET_SUFFIX_NAME.CZCE + '-SM', {Time:0,Decimal:0}],
+
         //中期所 
         [MARKET_SUFFIX_NAME.CFFEX + '-TF', {Time:1,Decimal:3}],
         [MARKET_SUFFIX_NAME.CFFEX + '-TS', {Time:1,Decimal:3}],
@@ -45430,7 +45444,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CFFEX + '-IF', {Time:2,Decimal:1}],
     ]);
 
-    const MAP_ONEWORD=new Map([
+    this.MAP_ONEWORD=new Map([
         //大连商品交易所
         [MARKET_SUFFIX_NAME.DCE + '-C', {Time:6,Decimal:0,Name:"玉米"}],
         [MARKET_SUFFIX_NAME.DCE + '-L', {Time:6,Decimal:0,Name:"乙烯"}],
@@ -45445,6 +45459,23 @@ function FuturesTimeData()
         //中期所 
         [MARKET_SUFFIX_NAME.CFFEX + '-T', {Time:1,Decimal:3}],
     ]);
+
+    //添加新品种
+    this.AddNewFutures=function(obj)    //{ Suffix:后缀, Symbol:品种代码, Time:交易时间段, Decimal:小数位数, Name:名字 }
+    {
+        if (!obj) return;
+
+        var key=obj.Suffix+'-'+obj.Symbol;
+        var item={ Time:obj.Time, Decimal:obj.Decimal, Name:obj.Name };
+        if (obj.Symbol.length==1)
+        {
+            this.MAP_ONEWORD.set(key, item);
+        }
+        else if (obj.Symbol.length==2)
+        {
+            this.MAP_TWOWORDS.set(key, item);
+        }
+    }
 
     this.GetData=function(upperSymbol)
     {
@@ -45473,14 +45504,14 @@ function FuturesTimeData()
             twoWordsName = MARKET_SUFFIX_NAME.CZCE + '-' + twoWords;
         }
 
-        if (MAP_TWOWORDS.has(twoWordsName))
+        if (this.MAP_TWOWORDS.has(twoWordsName))
         {
-            return MAP_TWOWORDS.get(twoWordsName);
+            return this.MAP_TWOWORDS.get(twoWordsName);
         }
 
-        if (MAP_ONEWORD.has(oneWordName))
+        if (this.MAP_ONEWORD.has(oneWordName))
         {
-            return MAP_ONEWORD.get(oneWordName);
+            return this.MAP_ONEWORD.get(oneWordName);
         }
 
         return null;
@@ -45491,7 +45522,7 @@ function FuturesTimeData()
         var data=this.GetData(upperSymbol);
         if (!data) return null;
 
-        return TIME_SPLIT[data.Time];
+        return this.TIME_SPLIT[data.Time];
     }
 
     this.GetDecimal=function(upperSymbol)
