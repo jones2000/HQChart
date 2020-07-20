@@ -163,6 +163,7 @@ DefaultData.GetKLineOption=function()
             IsShowTooltip: true, //是否显示K线提示信息
             RightSpaceCount:2,  //右边预留2个K线宽度空白
             ZoomType:1,         //PC页面版 缩放以十字光标为中心两边缩放
+            DataWidth:10,
         },
 
         KLineTitle: //标题设置
@@ -653,7 +654,7 @@ export default
             var divKline=this.$refs.kline;
             divKline.style.width=chartWidth+'px';
             divKline.style.height=chartHeight+'px';
-            if (this.KLine.JSChart) this.KLine.JSChart.OnSize();
+            if (this.KLine.JSChart) this.KLine.JSChart.OnSize({Type:1});
 
             if (this.KLine.JSChart)
             {

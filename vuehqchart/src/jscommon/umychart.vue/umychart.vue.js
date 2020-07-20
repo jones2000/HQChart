@@ -3762,7 +3762,7 @@ function JSChart(divElement)
     this.ChangeIndexDialog=new ChangeIndexDialog(divElement);
     this.MinuteDialog=new MinuteDialog(divElement);
 
-    this.OnSize=function()
+    this.OnSize=function(option) //{ Type:1 新版本OnSize }
     {
         //画布大小通过div获取
         var height=parseInt(this.DivElement.style.height.replace("px",""));
@@ -3783,10 +3783,18 @@ function JSChart(divElement)
 
         JSConsole.Chart.Log(`[JSChart::OnSize] devicePixelRatio=${window.devicePixelRatio}, height=${this.CanvasElement.height}, width=${this.CanvasElement.width}`);
 
-        if (this.JSChartContainer && this.JSChartContainer.Frame)
-            this.JSChartContainer.Frame.SetSizeChage(true);
-
-        if (this.JSChartContainer) this.JSChartContainer.Draw();
+        if (this.JSChartContainer)
+        {
+            if (this.JSChartContainer.OnSize && option && option.Type==1) 
+            {
+                this.JSChartContainer.OnSize();
+            }
+            else
+            {
+                if (this.JSChartContainer.Frame) this.JSChartContainer.Frame.SetSizeChage(true);
+                this.JSChartContainer.Draw();
+            }
+        } 
     }
 
     //手机屏需要调整 间距
@@ -3850,6 +3858,7 @@ function JSChart(divElement)
             if (option.KLine.FirstShowDate>19910101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };
             if (option.KLine.RightSpaceCount>0) chart.RightSpaceCount=option.KLine.RightSpaceCount;
             if (option.KLine.ZoomType>0) chart.ZoomType=option.KLine.ZoomType;
+            if (option.KLine.DataWidth>=1) chart.KLineSize={ DataWidth:option.KLine.DataWidth };
         }
 
         if (option.EnableFlowCapital)
@@ -6501,7 +6510,7 @@ function JSChartContainer(uielement)
         return false;
     }
 
-    this.UpdatePointByCursorIndex=function(type)    //type 1=根据十字光标更新 2=强制不取消十字光标
+    this.UpdatePointByCursorIndex=function(type)    //type 1=根据十字光标更新 2=强制取消十字光标
     {
         var pt={X:null, Y:null};
         pt.X=this.Frame.GetXFromIndex(this.CursorIndex);
@@ -9031,9 +9040,11 @@ function KLineFrame()
         //JSConsole.Chart.Log(`[KLineFrame::CalculateDataWidth] ZoomIndex=${this.ZoomIndex}, XPointCount=${this.XPointCount}, DataWidth=${this.DataWidth}, DistanceWidth=${this.DistanceWidth}`);
         var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
 
-        if (this.ZoomIndex>0 && this.LastCalculateStatus.Width==width && this.LastCalculateStatus.XPointCount==this.XPointCount) //宽度没变 尝试使用原来的柱子宽度
+        if (this.ZoomIndex>=0 && this.LastCalculateStatus.Width==width && this.LastCalculateStatus.XPointCount==this.XPointCount) //宽度没变 尝试使用原来的柱子宽度
         {
-            if ((this.DataWidth + this.DistanceWidth) * this.XPointCount <= width) //当前的柱子宽度够用 就不调整了
+            var caclWidth=(this.DistanceWidth/2+g_JSChartResource.FrameLeftMargin)+(this.DataWidth + this.DistanceWidth)*(this.XPointCount-1);
+            var caclWidth2=(this.DataWidth + this.DistanceWidth) * this.XPointCount;
+            if (caclWidth<= width) //当前的柱子宽度够用 就不调整了
                 return;
         }
 
@@ -9056,6 +9067,64 @@ function KLineFrame()
         this.ZoomIndex=ZOOM_SEED.length-1;
         this.DataWidth=width/this.XPointCount;
         this.DistanceWidth=0;
+    }
+
+    this.OnSize=function(obj)
+    {
+        var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
+        var xPointCount=0;
+        var y=this.DistanceWidth/2+g_JSChartResource.FrameLeftMargin+(this.DataWidth+this.DistanceWidth);
+        for(;y<width; y+=(this.DataWidth+this.DistanceWidth), ++xPointCount)
+        {
+            
+        }
+
+        obj.CurCount=this.XPointCount;
+        obj.CalcCount=xPointCount;
+        obj.DataWidth=this.DataWidth;
+        obj.DistanceWidth=this.DistanceWidth;
+        obj.Changed=false;
+
+        this.LastCalculateStatus.Width=width;
+        if (obj.CurCount==obj.CalcCount) return obj;
+
+        this.XPointCount=xPointCount;
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
+        if (this.Data)
+        {
+            this.Data.DataOffset+=(obj.CurCount-obj.CalcCount);
+            if (this.Data.DataOffset<0) this.Data.DataOffset=0;
+            obj.Changed=true;
+        }
+        return obj;
+    }
+
+    this.SetDataWidth=function(dataWidth)
+    {
+        var zoomIndex=ZOOM_SEED.length-1;
+        for(var i in ZOOM_SEED)
+        {
+            var item=ZOOM_SEED[i];
+            if (item[0]<=dataWidth) 
+            {
+                zoomIndex=parseInt(i)-1;
+                break;
+            }
+        }
+
+        this.ZoomIndex=zoomIndex;
+        this.DataWidth=ZOOM_SEED[this.ZoomIndex][0];
+        this.DistanceWidth=ZOOM_SEED[this.ZoomIndex][1];
+        var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
+        var xPointCount=0;
+        for(var y=this.DistanceWidth;y<=width; y+=(this.DataWidth+this.DistanceWidth), ++xPointCount) { }
+
+        this.XPointCount=xPointCount;
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
+        this.LastCalculateStatus.Width=width;
+
+        var obj={ XPointCount:this.XPointCount, DataWidth:this.DataWidth, DistanceWidth:this.DistanceWidth };
+        return obj;
     }
 
     this.TrimKLineDataWidth=function(width)
@@ -10576,64 +10645,14 @@ function HQTradeFrame()
     this.ZoomUp=function(cursorIndex)
     {
         var result=this.SubFrame[0].Frame.ZoomUp(cursorIndex);
-        var mainFrame=this.SubFrame[0].Frame;
-        for(var i=0;i<this.SubFrame.length;++i)
-        {
-            var item=this.SubFrame[i];
-            if (i>0) //第1个窗口主坐标已经算好了
-            {
-                item.Frame.XPointCount= mainFrame.XPointCount;
-                item.Frame.ZoomIndex= mainFrame.ZoomIndex;
-                item.Frame.DataWidth= mainFrame.DataWidth;
-                item.Frame.DistanceWidth= mainFrame.DistanceWidth;
-                item.Frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
-                item.Frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
-            }
-
-            for(var j in item.OverlayIndex)
-            {
-                var overlayItem=this.SubFrame[i].OverlayIndex[j];
-                overlayItem.Frame.XPointCount= mainFrame.XPointCount;
-                overlayItem.Frame.ZoomIndex= mainFrame.ZoomIndex;
-                overlayItem.Frame.DataWidth= mainFrame.DataWidth;
-                overlayItem.Frame.DistanceWidth= mainFrame.DistanceWidth;
-                overlayItem.Frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
-                overlayItem.Frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
-            }
-        }
-
+        this.UpdateAllFrame();
         return result;
     }
 
     this.ZoomDown=function(cursorIndex)
     {
         var result=this.SubFrame[0].Frame.ZoomDown(cursorIndex);
-        var mainFrame=this.SubFrame[0].Frame;
-        for(var i=0;i<this.SubFrame.length;++i)
-        {
-            var item=this.SubFrame[i];
-            if (i>0)    //第1个窗口主坐标已经算好了
-            {
-                item.Frame.XPointCount= mainFrame.XPointCount;
-                item.Frame.ZoomIndex= mainFrame.ZoomIndex;
-                item.Frame.DataWidth= mainFrame.DataWidth;
-                item.Frame.DistanceWidth= mainFrame.DistanceWidth;
-                item.Frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
-                item.Frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
-            }
-
-            for(var j in item.OverlayIndex)
-            {
-                var overlayItem=this.SubFrame[i].OverlayIndex[j];
-                overlayItem.Frame.XPointCount= mainFrame.XPointCount;
-                overlayItem.Frame.ZoomIndex= mainFrame.ZoomIndex;
-                overlayItem.Frame.DataWidth= mainFrame.DataWidth;
-                overlayItem.Frame.DistanceWidth= mainFrame.DistanceWidth;
-                overlayItem.Frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
-                overlayItem.Frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
-            }
-        }
-
+        this.UpdateAllFrame();
         return result;
     }
 
@@ -10667,6 +10686,51 @@ function HQTradeFrame()
 
         return item.Frame.XPointCount;
     }
+
+    this.OnSize=function()
+    {
+        var obj={};
+        this.SubFrame[0].Frame.OnSize(obj);
+        this.UpdateAllFrame();
+        return obj;
+    }
+
+    this.SetDataWidth=function(dataWidth)
+    {
+        var obj=this.SubFrame[0].Frame.SetDataWidth(dataWidth);
+        this.UpdateAllFrame();
+        return obj;
+    }
+
+    this.UpdateAllFrame=function()
+    {
+        var mainFrame=this.SubFrame[0].Frame;
+        for(var i=0;i<this.SubFrame.length;++i)
+        {
+            var item=this.SubFrame[i];
+            if (i>0)    //第1个窗口主坐标已经算好了
+            {
+                item.Frame.XPointCount= mainFrame.XPointCount;
+                item.Frame.ZoomIndex= mainFrame.ZoomIndex;
+                item.Frame.DataWidth= mainFrame.DataWidth;
+                item.Frame.DistanceWidth= mainFrame.DistanceWidth;
+                item.Frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
+                item.Frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
+            }
+
+            for(var j in item.OverlayIndex)
+            {
+                var overlayItem=this.SubFrame[i].OverlayIndex[j];
+                overlayItem.Frame.XPointCount= mainFrame.XPointCount;
+                overlayItem.Frame.ZoomIndex= mainFrame.ZoomIndex;
+                overlayItem.Frame.DataWidth= mainFrame.DataWidth;
+                overlayItem.Frame.DistanceWidth= mainFrame.DistanceWidth;
+                overlayItem.Frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
+                overlayItem.Frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
+            }
+        }
+    }
+
 }
 
 //行情框架横屏
@@ -29991,6 +30055,7 @@ function KLineChartContainer(uielement)
     this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
     this.OverlayIndexFrameWidth=60;     //叠加指标框架宽度
     this.ZoomType=0;                    //缩放模式 0=最右边固定缩放, 1=十字光标两边缩放
+    this.KLineSize=null;                //{ DataWidth:, }
 
     this.Page= { 
         Day:{ Enable:false, Index:0, Finish:false },    //日线
@@ -30446,6 +30511,21 @@ function KLineChartContainer(uielement)
     {
         this.ChartPaint[0].Data=hisData;
         this.ChartPaint[0].Symbol=this.Symbol;
+
+        if (this.KLineSize)
+        {
+            if (this.KLineSize.DataWidth==null)
+            {
+                showCount=this.Frame.SubFrame[0].Frame.XPointCount-this.RightSpaceCount;
+            }
+            else
+            {
+                var obj=this.Frame.SetDataWidth(this.KLineSize.DataWidth);
+                showCount=obj.XPointCount-this.RightSpaceCount;
+                this.KLineSize.DataWidth=null;
+            }
+        }
+
         for(var i in this.Frame.SubFrame)
         {
             var item =this.Frame.SubFrame[i].Frame;
@@ -34676,6 +34756,24 @@ function KLineChartContainer(uielement)
 
         var item=this.Frame.SubFrame[windowId];
         if (item.Frame) item.Frame.CustomVerticalInfo=data;
+    }
+
+    this.OnSize=function()
+    {
+        if (!this.Frame) return;
+        if (!this.Frame.OnSize) return;
+
+        //this.Frame.CalculateChartBorder();
+        var obj=this.Frame.OnSize();
+        this.Frame.SetSizeChage(true);
+        if (obj.Changed)
+        {
+            this.UpdataDataoffset();
+            this.UpdatePointByCursorIndex(2);
+            this.UpdateFrameMaxMin();
+        }
+
+        this.Draw();
     }
 
 }
@@ -45405,7 +45503,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-SP', {Time:6,Decimal:0,Name:"纸浆"}],
         [MARKET_SUFFIX_NAME.SHFE + '-WR', {Time:0,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0}],
-        [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2}],
+        [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2,Name:"黄金"}],
         [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:5,Decimal:1}],
         [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:5,Decimal:1}],
        

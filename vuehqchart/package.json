@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "axios": "^0.16.2",
+    "echarts": "^4.8.0",
     "element-ui": "^1.4.13",
     "node-sass": "^4.11.0",
     "promise-polyfill": "^6.0.2",
@@ -22,7 +23,8 @@
     "sass-loader": "^7.1.0",
     "vue": "^2.6.9",
     "vue-plugin-timers": "^0.1.6",
-    "webpack": "^3.0"
+    "webpack": "^3.0",
+    "vue-router": "^2.8.1"
   },
   "engines": {
     "node": ">=6"
