@@ -178,15 +178,16 @@ function ChartKLine()
         var isHScreen = (this.ChartFrame.IsHScreen === true);
         var dataWidth = this.ChartFrame.DataWidth;
         var distanceWidth = this.ChartFrame.DistanceWidth;
-        var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + 2.0;
-        if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
+        var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + g_JSChartResource.FrameLeftMargin;
+        if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + g_JSChartResource.FrameLeftMargin;
         var chartright = this.ChartBorder.GetRight();
         if (isHScreen) chartright = this.ChartBorder.GetBottom();
         var xPointCount = this.ChartFrame.XPointCount;
 
         var ptMax = { X: null, Y: null, Value: null, Align: 'left' };
         var ptMin = { X: null, Y: null, Value: null, Align: 'left' };
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) {
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        {
             var data = this.Data.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
 

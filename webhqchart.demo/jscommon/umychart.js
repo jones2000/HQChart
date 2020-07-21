@@ -5266,7 +5266,7 @@ function KLineFrame()
             }
             else
             {
-                var offset=this.ChartBorder.GetLeft()+2+this.DistanceWidth/2+this.DataWidth/2;
+                var offset=this.ChartBorder.GetLeft()+g_JSChartResource.FrameLeftMargin+this.DistanceWidth/2+this.DataWidth/2;
                 var absIndex=Math.abs(index);
                 for(var i=0;i<absIndex;++i)
                 {
@@ -5279,7 +5279,7 @@ function KLineFrame()
             if (index < 0) index = 0;
             if (index > this.xPointCount - 1) index = this.xPointCount - 1;
 
-            var offset=this.ChartBorder.GetLeft()+2+this.DistanceWidth/2+this.DataWidth/2;
+            var offset=this.ChartBorder.GetLeft()+g_JSChartResource.FrameLeftMargin+this.DistanceWidth/2+this.DataWidth/2;
             for(var i=1;i<=index;++i)
             {
                 offset+=this.DistanceWidth+this.DataWidth;
@@ -5293,7 +5293,7 @@ function KLineFrame()
     this.GetXData=function(x)
     {
         if (x<=this.ChartBorder.GetLeft()) return 0;
-        if (x>=this.ChartBorder.GetRight()) return this.XPointCount;
+        if (x>=this.ChartBorder.GetRight()) return this.XPointCount-1;
         
         var left=this.ChartBorder.GetLeft()+g_JSChartResource.FrameLeftMargin;
         var right=this.ChartBorder.GetRight()-g_JSChartResource.FrameRightMargin;
@@ -5301,8 +5301,8 @@ function KLineFrame()
         var dataWidth=this.DataWidth;
 
         var index=0;
-        var xPoint=left+dataWidth+distanceWidth;
-        while(xPoint<right && index<10000)  //自己算x的数值
+        var xPoint=left+distanceWidth/2+dataWidth+distanceWidth;
+        while(xPoint<right && index<10000 && index+1<this.XPointCount)  //自己算x的数值
         {
             if (xPoint>x) break;
             xPoint+=(dataWidth+distanceWidth);
@@ -5398,7 +5398,8 @@ function KLineFrame()
         this.DistanceWidth=ZOOM_SEED[this.ZoomIndex][1];
         var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
         var xPointCount=0;
-        for(var y=this.DistanceWidth;y<=width; y+=(this.DataWidth+this.DistanceWidth), ++xPointCount) { }
+        var y=this.DistanceWidth/2+g_JSChartResource.FrameLeftMargin+(this.DataWidth+this.DistanceWidth);
+        for(;y<=width; y+=(this.DataWidth+this.DistanceWidth), ++xPointCount) { }
 
         this.XPointCount=xPointCount;
         this.LastCalculateStatus.XPointCount=this.XPointCount;
@@ -6324,7 +6325,7 @@ function KLineHScreenFrame()
     this.GetXData=function(y)
     {
         if (y<=this.ChartBorder.GetTop()) return 0;
-		if (y>=this.ChartBorder.GetBottom()) return this.XPointCount;
+		if (y>=this.ChartBorder.GetBottom()) return this.XPointCount-1;
 
         var left=this.ChartBorder.GetTop();
         var right=this.ChartBorder.GetBottom();
@@ -6332,8 +6333,8 @@ function KLineHScreenFrame()
         var dataWidth=this.DataWidth;
 
         var index=0;
-        var xPoint=left+dataWidth+distanceWidth;
-        while(xPoint<right && index<10000)  //自己算x的数值
+        var xPoint=left+distanceWidth/2+ dataWidth+distanceWidth;
+        while(xPoint<right && index<10000 && index+1<this.XPointCount)  //自己算x的数值
         {
             if (xPoint>y) break;
             xPoint+=(dataWidth+distanceWidth);

@@ -192,10 +192,26 @@ function JSChart(element)
         }
     }
 
-    this.OnSize = function () 
+    this.OnSize = function (option) 
     {
-        if (this.JSChartContainer && this.JSChartContainer.Frame) this.JSChartContainer.Frame.SetSizeChage(true);
-        if (this.JSChartContainer) this.JSChartContainer.Draw();
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNumber(option.Width)) this.CanvasElement.Width=option.Width;
+            if (IFrameSplitOperator.IsNumber(option.Height)) this.CanvasElement.Height=option.Height;
+        }
+
+        if (this.JSChartContainer)
+        {
+            if (option && option.Type==1 && this.JSChartContainer.OnSize)
+            {
+                this.JSChartContainer.OnSize();
+            }
+            else
+            {
+                if (this.JSChartContainer.Frame) this.JSChartContainer.Frame.SetSizeChage(true);
+                this.JSChartContainer.Draw();
+            }
+        }
     }
 
     //历史K线图
@@ -219,6 +235,7 @@ function JSChart(element)
             if (option.KLine.MaxRequestMinuteDayCount > 0) chart.MaxRequestMinuteDayCount = option.KLine.MaxRequestMinuteDayCount;
             if (option.KLine.DrawType) chart.KLineDrawType = option.KLine.DrawType;
             if (option.KLine.RightSpaceCount > 0) chart.RightSpaceCount = option.KLine.RightSpaceCount;
+            if (option.KLine.DataWidth>=1) chart.KLineSize={ DataWidth:option.KLine.DataWidth };
         }
 
         if (option.SplashTitle) chart.SplashTitle = option.SplashTitle; //设置提示信息内容
@@ -1844,8 +1861,15 @@ function JSChartContainer(uielement)
         this.LastPoint.Y = y;
         var lastCursorIndex = this.CursorIndex;
         this.CursorIndex = this.Frame.GetXData(x);
-        if (parseInt(lastCursorIndex - 0.5) == parseInt(this.CursorIndex - 0.5) && Math.abs(lastY - y) < 1) return;  //一个一个数据移动
-
+        if ( this.ClassName=="KLineChartContainer" || this.ClassName=="KLineChartHScreenContainer" )
+        {
+            if (lastCursorIndex == this.CursorIndex && Math.abs(lastY - y) < 1) return;  //一个一个数据移动
+        }
+        else
+        {
+            if (parseInt(lastCursorIndex - 0.5) == parseInt(this.CursorIndex - 0.5) && Math.abs(lastY - y) < 1) return;  //一个一个数据移动
+        }
+        
         if (bFullDraw)
         {
             this.FullDraw();
@@ -3178,7 +3202,7 @@ function KLineFrame()
         if (index < 0) index = 0;
         if (index > this.xPointCount - 1) index = this.xPointCount - 1;
 
-        var offset = this.ChartBorder.GetLeft() + 2 + this.DistanceWidth / 2 + this.DataWidth / 2;
+        var offset = this.ChartBorder.GetLeft() + g_JSChartResource.FrameLeftMargin + this.DistanceWidth / 2 + this.DataWidth / 2;
         for (var i = 1; i <= index; ++i) { offset += this.DistanceWidth + this.DataWidth; }
         return offset;
     }
@@ -3187,16 +3211,16 @@ function KLineFrame()
     this.GetXData = function (x) 
     {
         if (x <= this.ChartBorder.GetLeft()) return 0;
-        if (x >= this.ChartBorder.GetRight()) return this.XPointCount;
+        if (x >= this.ChartBorder.GetRight()) return this.XPointCount-1;
 
-        var left = this.ChartBorder.GetLeft();
-        var right = this.ChartBorder.GetRight();
+        var left=this.ChartBorder.GetLeft()+g_JSChartResource.FrameLeftMargin;
+        var right=this.ChartBorder.GetRight()-g_JSChartResource.FrameRightMargin;
         var distanceWidth = this.DistanceWidth;
         var dataWidth = this.DataWidth;
 
         var index = 0;
-        var xPoint = left + dataWidth + distanceWidth;
-        while (xPoint < right && index < 10000)  //自己算x的数值
+        var xPoint = left + distanceWidth/2 + dataWidth + distanceWidth;
+        while (xPoint < right && index < 10000 && index+1<this.XPointCount )  //自己算x的数值
         {
             if (xPoint > x) break;
             xPoint += (dataWidth + distanceWidth);
@@ -3318,6 +3342,17 @@ function KLineFrame()
         if (this.XPointCount < 2) return;
         var width = this.GetFrameWidth() - g_JSChartResource.FrameMargin;    //预留4个像素 防止最后1个柱子不够画
 
+        if (this.ZoomIndex>=0 && this.LastCalculateStatus.Width==width && this.LastCalculateStatus.XPointCount==this.XPointCount) //宽度没变 尝试使用原来的柱子宽度
+        {
+            var caclWidth=(this.DistanceWidth/2+g_JSChartResource.FrameLeftMargin)+(this.DataWidth + this.DistanceWidth)*(this.XPointCount-1);
+            var caclWidth2=(this.DataWidth + this.DistanceWidth) * this.XPointCount;
+            if (caclWidth<= width) //当前的柱子宽度够用 就不调整了
+                return;
+        }
+
+        this.LastCalculateStatus.Width=width;
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
+
         for (var i = 0; i < ZOOM_SEED.length; ++i) 
         {
             let barWidth = ZOOM_SEED[i][0];         //数据宽度
@@ -3338,6 +3373,62 @@ function KLineFrame()
         this.ZoomIndex = ZOOM_SEED.length - 1;
         this.DataWidth = width / this.XPointCount;
         this.DistanceWidth = 0;
+    }
+
+    this.OnSize=function(obj)
+    {
+        var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
+        var xPointCount=0;
+        var y=this.DistanceWidth/2+g_JSChartResource.FrameLeftMargin+(this.DataWidth+this.DistanceWidth);
+        for(;y<width; y+=(this.DataWidth+this.DistanceWidth), ++xPointCount) { }
+
+        obj.CurCount=this.XPointCount;
+        obj.CalcCount=xPointCount;
+        obj.DataWidth=this.DataWidth;
+        obj.DistanceWidth=this.DistanceWidth;
+        obj.Changed=false;
+
+        this.LastCalculateStatus.Width=width;
+        if (obj.CurCount==obj.CalcCount) return obj;
+
+        this.XPointCount=xPointCount;
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
+        if (this.Data)
+        {
+            this.Data.DataOffset+=(obj.CurCount-obj.CalcCount);
+            if (this.Data.DataOffset<0) this.Data.DataOffset=0;
+            obj.Changed=true;
+        }
+        return obj;
+    }
+
+    this.SetDataWidth=function(dataWidth)
+    {
+        var zoomIndex=ZOOM_SEED.length-1;
+        for(var i in ZOOM_SEED)
+        {
+            var item=ZOOM_SEED[i];
+            if (item[0]<=dataWidth) 
+            {
+                zoomIndex=parseInt(i)-1;
+                break;
+            }
+        }
+
+        this.ZoomIndex=zoomIndex;
+        this.DataWidth=ZOOM_SEED[this.ZoomIndex][0];
+        this.DistanceWidth=ZOOM_SEED[this.ZoomIndex][1];
+        var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
+        var xPointCount=0;
+        var y=this.DistanceWidth/2+g_JSChartResource.FrameLeftMargin+(this.DataWidth+this.DistanceWidth);
+        for(;y<=width; y+=(this.DataWidth+this.DistanceWidth), ++xPointCount) { }
+
+        this.XPointCount=xPointCount;
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
+        this.LastCalculateStatus.Width=width;
+
+        var obj={ XPointCount:this.XPointCount, DataWidth:this.DataWidth, DistanceWidth:this.DistanceWidth };
+        return obj;
     }
 
     this.TrimKLineDataWidth = function (width) 
@@ -3744,7 +3835,7 @@ function KLineHScreenFrame()
     this.GetXData = function (y) 
     {
         if (y <= this.ChartBorder.GetTop()) return 0;
-        if (y >= this.ChartBorder.GetBottom()) return this.XPointCount;
+        if (y >= this.ChartBorder.GetBottom()) return this.XPointCount-1;
 
         return (y - this.ChartBorder.GetTop()) * (this.XPointCount * 1.0 / this.ChartBorder.GetHeight());
     }
@@ -4000,13 +4091,7 @@ function HQTradeFrame()
     this.ZoomUp = function (cursorIndex) 
     {
         var result = this.SubFrame[0].Frame.ZoomUp(cursorIndex);
-        for (var i = 1; i < this.SubFrame.length; ++i) 
-        {
-            this.SubFrame[i].Frame.XPointCount = this.SubFrame[0].Frame.XPointCount;
-            this.SubFrame[i].Frame.ZoomIndex = this.SubFrame[0].Frame.ZoomIndex;
-            this.SubFrame[i].Frame.DataWidth = this.SubFrame[0].Frame.DataWidth;
-            this.SubFrame[i].Frame.DistanceWidth = this.SubFrame[0].Frame.DistanceWidth;
-        }
+        this.UpdateAllFrame();
 
         return result;
     }
@@ -4014,15 +4099,39 @@ function HQTradeFrame()
     this.ZoomDown = function (cursorIndex) 
     {
         var result = this.SubFrame[0].Frame.ZoomDown(cursorIndex);
-        for (var i = 1; i < this.SubFrame.length; ++i) 
-        {
-            this.SubFrame[i].Frame.XPointCount = this.SubFrame[0].Frame.XPointCount;
-            this.SubFrame[i].Frame.ZoomIndex = this.SubFrame[0].Frame.ZoomIndex;
-            this.SubFrame[i].Frame.DataWidth = this.SubFrame[0].Frame.DataWidth;
-            this.SubFrame[i].Frame.DistanceWidth = this.SubFrame[0].Frame.DistanceWidth;
-        }
+        this.UpdateAllFrame();
 
         return result;
+    }
+
+    this.SetDataWidth=function(dataWidth)
+    {
+        var obj=this.SubFrame[0].Frame.SetDataWidth(dataWidth);
+        this.UpdateAllFrame();
+        return obj;
+    }
+
+    this.OnSize=function()
+    {
+        var obj={};
+        this.SubFrame[0].Frame.OnSize(obj);
+        this.UpdateAllFrame();
+        return obj;
+    }
+
+    this.UpdateAllFrame=function()
+    {
+        var mainFrame=this.SubFrame[0].Frame;
+        for (var i = 1; i < this.SubFrame.length; ++i) 
+        {
+            var item=this.SubFrame[i];
+            item.Frame.XPointCount = mainFrame.XPointCount;
+            item.Frame.ZoomIndex = mainFrame.ZoomIndex;
+            item.Frame.DataWidth = mainFrame.DataWidth;
+            item.Frame.DistanceWidth = mainFrame.DistanceWidth;
+            item.Frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
+            item.Frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
+        }
     }
 
     //设置重新计算刻度坐标
@@ -6714,7 +6823,7 @@ function KLineChartContainer(uielement)
     this.Period = 0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 9=季线 10=分笔线 11=120分钟 12=240分钟
     this.IsApiPeriod = false;             //使用API计算周期
     this.Right = 0;                       //复权 0 不复权 1 前复权 2 后复权
-    this.SourceData;                    //原始的历史数据
+    this.SourceData;                      //原始的历史数据
     this.MaxReqeustDataCount = 3000;      //数据个数
     this.MaxRequestMinuteDayCount = 5;    //分钟数据请求的天数
     this.PageSize = 200;                  //每页数据个数
@@ -6725,6 +6834,7 @@ function KLineChartContainer(uielement)
     this.AutoUpdateTimer;                         //自动定时器
     this.RightSpaceCount=1;
     this.SourceDataLimit = new Map();     //每个周期缓存数据最大个数 key=周期 value=最大个数  
+    this.KLineSize=null;                  //{ DataWidth:, }
 
     this.StepPixel = 4;                   //移动一个数据需要的像素
     this.ZoomStepPixel = 5;               //放大缩小手势需要的最小像素
@@ -7003,6 +7113,21 @@ function KLineChartContainer(uielement)
     {
         this.ChartPaint[0].Data = hisData;
         this.ChartPaint[0].Symbol = this.Symbol;
+
+        if (this.KLineSize)
+        {
+            if (this.KLineSize.DataWidth==null)
+            {
+                showCount=this.Frame.SubFrame[0].Frame.XPointCount-this.RightSpaceCount;
+            }
+            else
+            {
+                var obj=this.Frame.SetDataWidth(this.KLineSize.DataWidth);
+                showCount=obj.XPointCount-this.RightSpaceCount;
+                this.KLineSize.DataWidth=null;
+            }
+        }
+
         for (var i in this.Frame.SubFrame) 
         {
             var item = this.Frame.SubFrame[i].Frame;
@@ -8982,6 +9107,23 @@ function KLineChartContainer(uielement)
 
         var item = this.Frame.SubFrame[windowId];
         if (item.Frame) item.Frame.CustomVerticalInfo = data;
+    }
+
+    this.OnSize=function()
+    {
+        if (!this.Frame) return;
+        if (!this.Frame.OnSize) return;
+
+        var obj=this.Frame.OnSize();
+        this.Frame.SetSizeChage(true);
+        if (obj.Changed)
+        {
+            this.UpdataDataoffset();
+            this.UpdatePointByCursorIndex();
+            this.UpdateFrameMaxMin();
+        }
+
+        this.Draw();
     }
 }
 

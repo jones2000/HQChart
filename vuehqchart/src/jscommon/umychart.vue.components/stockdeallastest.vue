@@ -82,30 +82,30 @@
       this.ChoiceCountIndex = this.ChoiceIndex != null ? this.ChoiceIndex : "";
     //   this.IsReverseData = this.IsReverse != null ? this.IsReverse : false;
       this.Symbol = this.DealSymbol != null ? this.DealSymbol : "600000.sh";
-  
+
       this.LatestDetail = JSCommonStock.JSStock.GetLatestDetailData(this.Symbol);
-      this.LatestDetail.PageSize = this.Pagination.PageSize;
       this.LatestDetail.InvokeUpdateUICallback = this.UpdateData;
-      this.LatestDetail.RequestData();
+
     },
     
     mounted: function() {
       console.log("[stockdeal::mounted]");
       this.loadingBody = true;
-      this.OnSize();
+      // this.OnSize();
     },
     watch: {
-      DealSymbol: function(val) {
-        this.LatestDetail = JSCommonStock.JSStock.GetDealDay(val);
-        this.LatestDetail.PageSize = this.Pagination.PageSize;
-        this.LatestDetail.InvokeUpdateUICallback = this.UpdateData;
-        this.LatestDetail.RequestData();
-      },
+      // DealSymbol: function(val) {
+      //   this.LatestDetail = JSCommonStock.JSStock.GetDealDay(val);
+      //   this.LatestDetail.PageSize = this.Pagination.PageSize;
+      //   this.LatestDetail.InvokeUpdateUICallback = this.UpdateData;
+      //   this.LatestDetail.RequestData();
+      // },
     },
   
     methods: {
       UpdateData() {
-        console.log("[stockdeallastest::UpdateData]data:", this.LatestDetail.Data);
+        let test = 0;
+        console.log("[stockdeallastest::UpdateData]data:",++test, this.LatestDetail.Data);
         var data = this.LatestDetail.Data;
         // this.$emit("LatestDetail", data);
         if (data != null) {

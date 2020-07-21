@@ -59,6 +59,7 @@ function JSChartResource()
 
     this.FrameMargin = 4;     //左右一共的边距
     this.FrameLeftMargin = 2;
+    this.FrameRightMargin=2;
 
     this.CorssCursorBGColor = "rgb(43,54,69)";            //十字光标背景
     this.CorssCursorTextColor = "rgb(255,255,255)";
