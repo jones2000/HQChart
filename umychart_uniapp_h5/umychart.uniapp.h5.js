@@ -5106,6 +5106,16 @@ JSChart.GetChinaFuturesTimeData=function()  //获取国内期货交易时间配�
     return g_FuturesTimeData;
 }
 
+JSChart.AddPeriodCallback=function(obj)     //添加自定义周期方法 { Period:周期ID, Callback:回调 }
+{
+    g_DataPlus.AddPeriodCallback(obj);
+}
+
+JSChart.RemovePeriodCallback=function(obj) //添加自定义周期方法 { Period:周期ID, }
+{
+    g_DataPlus.RemovePeriodCallback(obj);
+}
+
 var JSCHART_EVENT_ID=
 {
     RECV_KLINE_MATCH:1, //接收到形态匹配
@@ -10962,8 +10972,37 @@ function KLineInfoData()
     this.ExtendData;    //扩展数据
 }
 
-function DataPlus () { };       //外部数据计算方法接口
+//外部数据计算方法接口
+function DataPlus () 
+{ 
+    this.PeriodCallback=new Map();
+
+    this.GetPeriodCallback=function(period)
+    {
+        if (!this.PeriodCallback.has(period)) return null;
+        
+        return this.PeriodCallback.get(period);
+    }
+
+    this.AddPeriodCallback=function(obj)
+    {
+        if (!IFrameSplitOperator.IsNumber(obj.Period) || !obj.Callback) return;
+
+        var item={ Period:obj.Period, Callback:obj.Callback };
+        this.PeriodCallback.set(obj.Period, item);
+    }
+
+    this.RemovePeriodCallback=function(obj)
+    {
+        if (!this.PeriodCallback.has(obj.ID)) return;
+        this.PeriodCallback.delete(obj.ID);
+    }
+}; 
+
 DataPlus.GetMinutePeriodData=null;
+
+var g_DataPlus=new DataPlus();
+
 /*
 DataPlus.GetMinutePeriodData=function(period,data,self)
 {
@@ -11558,6 +11597,10 @@ function ChartData()
     //周期数据 1=周 2=月 3=年
     this.GetPeriodData=function(period)
     {
+        //外部自定义周期计算函数
+        var itemCallback=g_DataPlus.GetPeriodCallback(period);
+        if (itemCallback) return itemCallback.Callback(period,this.Data,this);
+
         if (MARKET_SUFFIX_NAME.IsBIT(this.Symbol))
         {
             if (period==5 || period==6 || period==7 || period==8 || (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)) //分钟K线
