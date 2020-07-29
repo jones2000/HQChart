@@ -9488,10 +9488,10 @@ function KLineFrame()
                 if (this.Data.DataOffset<0) this.Data.DataOffset=0;
             }
         }
-        else if (xPointCount>=maxDataCount) 
+        else if (xPointCount>=maxDataCount)     //所有数据无法显示完一屏
         {
             //xPointCount=maxDataCount;
-            //this.XPointCount=xPointCount;
+            this.XPointCount=xPointCount;
             this.Data.DataOffset=0;
             isShowAll=true; //数据铺满全屏, 不需要调整宽度
             JSConsole.Chart.Log(`[KLineFrame::ZoomDown] Show all data. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount}`);
@@ -30574,6 +30574,7 @@ function KLineChartContainer(uielement)
         if (!this.Frame.Data) frameHisdata=this.Frame.Data;
         else if (this.Frame.SubFrame && this.Frame.SubFrame[0]) frameHisdata=this.Frame.SubFrame[0].Frame.Data;
         if (!frameHisdata) return;
+        //var xPointCount=this.Frame.SubFrame[0].Frame.XPointCount;   //当前一屏能显示的数据个数
 
         var newDataCount=0;
         if (lastDataCount>0 && hisData.Data.length>lastDataCount)
