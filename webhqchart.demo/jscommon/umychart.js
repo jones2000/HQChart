@@ -1135,9 +1135,11 @@ function JSChart(divElement)
     }
 	
 	//指标窗口个数
-    this.ChangeIndexWindowCount = function(count){
-        if(this.JSChartContainer && typeof(this.JSChartContainer.ChangeIndexWindowCount) == 'function'){
-            this.JSChartContainer.ChangeIndexWindowCount(count);
+    this.ChangeIndexWindowCount = function(count, option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ChangeIndexWindowCount) == 'function')
+        {
+            this.JSChartContainer.ChangeIndexWindowCount(count,option);
         }
     }
 	
@@ -5130,7 +5132,7 @@ function KLineFrame()
             this.ChartBorder.UIElement.parentNode.appendChild(divToolbar);
         }
 
-        if (!this.ModifyIndex && !this.ChangeIndex && !this.OverlayIndex)
+        if (!this.ModifyIndex && !this.ChangeIndex && !this.OverlayIndex && !this.CloseIndex)
         {
             if (divToolbar.style.display!='none')
                 divToolbar.style.display='none';
@@ -29014,7 +29016,7 @@ function KLineChartContainer(uielement)
     }
 
     //设置指标窗口个数
-    this.ChangeIndexWindowCount=function(count)
+    this.ChangeIndexWindowCount=function(count,option)
     {
         if (count<=0) return;
         if (this.Frame.SubFrame.length==count) return;
@@ -29054,13 +29056,40 @@ function KLineChartContainer(uielement)
             }
 
             //创建指标
-            const indexName=["RSI","MACD","VOL","UOS","CHO","BRAR"];
+            var indexName= [ {Index:"RSI"}, {Index:"MACD"}, {Index:"VOL"}, {Index:"UOS"}, {Index:"CHO"}, {Index:"BRAR"} ];  //增加的指标名字
+            if (option && option.Windows.length>0)
+                indexName=option.Windows;   //外部设置增加窗口的默认指标
+
             let scriptData = new JSIndexScript();
             for(var i=currentLength;i<count;++i)
             {
-                var name=indexName[i%indexName.length];
+                var item=indexName[i%indexName.length];
+                var name=item.Index;
                 let indexInfo = scriptData.Get(name);
-                this.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                var args=indexInfo.Args;
+                if (item.Args) args=item.Args;
+                let indexData = 
+                { 
+                    Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:item.Index,
+                    //扩展属性 可以是空
+                    KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
+                    FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
+                };
+    
+                this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+
+                if (item.Modify!=null) this.Frame.SubFrame[i].Frame.ModifyIndex=item.Modify;
+                if (item.Change!=null) this.Frame.SubFrame[i].Frame.ChangeIndex=item.Change;
+                if (item.Close!=null) this.Frame.SubFrame[i].Frame.CloseIndex=item.Close;
+                if (item.Overlay!=null) chart.Frame.SubFrame[i].Frame.OverlayIndex=item.Overlay;
+                if (item.IsDrawTitleBG==true)  this.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+
+                if (IFrameSplitOperator.IsNumber(item.TitleHeight)) this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+                else item.TitleHeight=this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
+                if (item.IsShowTitleArraw==false) this.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
+                if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
+                if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+
                 var bindData=this.ChartPaint[0].Data;
                 this.BindIndexData(i,bindData);   //执行脚本
             }
@@ -29168,6 +29197,19 @@ function KLineChartContainer(uielement)
                     }
                 }
             }
+
+            if (item.Modify!=null) this.Frame.SubFrame[i].Frame.ModifyIndex=item.Modify;
+            if (item.Change!=null) this.Frame.SubFrame[i].Frame.ChangeIndex=item.Change;
+            if (item.Close!=null) this.Frame.SubFrame[i].Frame.CloseIndex=item.Close;
+            if (item.Overlay!=null) chart.Frame.SubFrame[i].Frame.OverlayIndex=item.Overlay;
+            if (item.IsDrawTitleBG==true)  this.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+
+            if (IFrameSplitOperator.IsNumber(item.TitleHeight)) this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+            else item.TitleHeight=this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
+            if (item.IsShowTitleArraw==false) this.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
+            if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
+            if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+
         }
 
         //最后一个显示X轴坐标

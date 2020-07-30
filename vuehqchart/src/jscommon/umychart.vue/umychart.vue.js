@@ -8851,7 +8851,7 @@ function KLineFrame()
             this.ChartBorder.UIElement.parentNode.appendChild(divToolbar);
         }
 
-        if (!this.ModifyIndex && !this.ChangeIndex && !this.OverlayIndex)
+        if (!this.ModifyIndex && !this.ChangeIndex && !this.OverlayIndex && !this.CloseIndex)
         {
             if (divToolbar.style.display!='none')
                 divToolbar.style.display='none';
@@ -32796,6 +32796,19 @@ function KLineChartContainer(uielement)
                 };
     
                 this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+
+                if (item.Modify!=null) this.Frame.SubFrame[i].Frame.ModifyIndex=item.Modify;
+                if (item.Change!=null) this.Frame.SubFrame[i].Frame.ChangeIndex=item.Change;
+                if (item.Close!=null) this.Frame.SubFrame[i].Frame.CloseIndex=item.Close;
+                if (item.Overlay!=null) chart.Frame.SubFrame[i].Frame.OverlayIndex=item.Overlay;
+                if (item.IsDrawTitleBG==true)  this.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+
+                if (IFrameSplitOperator.IsNumber(item.TitleHeight)) this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+                else item.TitleHeight=this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
+                if (item.IsShowTitleArraw==false) this.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
+                if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
+                if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+
                 var bindData=this.ChartPaint[0].Data;
                 this.BindIndexData(i,bindData);   //执行脚本
             }
@@ -32903,6 +32916,19 @@ function KLineChartContainer(uielement)
                     }
                 }
             }
+
+            if (item.Modify!=null) this.Frame.SubFrame[i].Frame.ModifyIndex=item.Modify;
+            if (item.Change!=null) this.Frame.SubFrame[i].Frame.ChangeIndex=item.Change;
+            if (item.Close!=null) this.Frame.SubFrame[i].Frame.CloseIndex=item.Close;
+            if (item.Overlay!=null) chart.Frame.SubFrame[i].Frame.OverlayIndex=item.Overlay;
+            if (item.IsDrawTitleBG==true)  this.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+
+            if (IFrameSplitOperator.IsNumber(item.TitleHeight)) this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+            else item.TitleHeight=this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
+            if (item.IsShowTitleArraw==false) this.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
+            if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
+            if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+
         }
 
         //最后一个显示X轴坐标
