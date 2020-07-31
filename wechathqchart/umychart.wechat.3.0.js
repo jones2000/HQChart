@@ -2553,13 +2553,14 @@ function AverageWidthFrame()
             var item = this.HorizontalInfo[i];
             var y = this.GetYFromData(item.Value);
             if (y != null && yPrev != null && Math.abs(y - yPrev) <this.MinYDistance) continue;  //两个坐标在近了 就不画了
-            if (bottom==y) continue;    //和底部线段重叠了就不绘制
-
-            this.Canvas.strokeStyle = item.LineColor;
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(left, ToFixedPoint(y));
-            this.Canvas.lineTo(right, ToFixedPoint(y));
-            this.Canvas.stroke();
+            if (bottom!=y) //和底部线段重叠了就不绘制
+            {
+                this.Canvas.strokeStyle = item.LineColor;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(left, ToFixedPoint(y));
+                this.Canvas.lineTo(right, ToFixedPoint(y));
+                this.Canvas.stroke();
+            }
 
             if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
             else if (y <= top + 2) this.Canvas.textBaseline = 'top';
@@ -3717,6 +3718,7 @@ function KLineHScreenFrame()
         var bottom = this.ChartBorder.GetBottom();
         var borderTop = this.ChartBorder.Top;
         var borderBottom = this.ChartBorder.Bottom;
+        var left=this.ChartBorder.GetLeft();
 
         var yPrev = null; //上一个坐标y的值
         for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从左往右画分割线
@@ -3725,12 +3727,28 @@ function KLineHScreenFrame()
             var y = this.GetYFromData(item.Value);
             if (y != null && Math.abs(y - yPrev) < 15) continue;  //两个坐标在近了 就不画了
 
-            this.Canvas.strokeStyle = item.LineColor;
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(ToFixedPoint(y), top);
-            this.Canvas.lineTo(ToFixedPoint(y), bottom);
-            this.Canvas.stroke();
-
+            if (y!=left)
+            {
+                this.Canvas.strokeStyle = item.LineColor;
+                if (g_JSChartResource.FrameYLineDash)
+                {
+                    this.Canvas.save();
+                    this.Canvas.setLineDash(g_JSChartResource.FrameYLineDash);   //虚线
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(ToFixedPoint(y),top);
+                    this.Canvas.lineTo(ToFixedPoint(y),bottom);
+                    this.Canvas.stroke();
+                    this.Canvas.restore();
+                }
+                else
+                {
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(ToFixedPoint(y), top);
+                    this.Canvas.lineTo(ToFixedPoint(y), bottom);
+                    this.Canvas.stroke();
+                }
+            }
+            
             //坐标信息 左边 间距小于10 不画坐标
             if (item.Message[0] != null && borderTop > 10) 
             {

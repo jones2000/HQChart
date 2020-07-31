@@ -7843,27 +7843,42 @@ function AverageWidthFrame()
             var item=this.HorizontalInfo[i];
             var y=this.GetYFromData(item.Value);
             if (y!=null && Math.abs(y-yPrev)<this.MinYDistance) continue;  //两个坐标在近了 就不画了
-
-            this.Canvas.strokeStyle=item.LineColor;
-
-            if (item.LineType==2)
+            
+            if (y!=bottom)
             {
-                this.Canvas.save();
-                this.Canvas.setLineDash([5,5]);   //虚线
-                this.Canvas.beginPath();
-                this.Canvas.moveTo(left,ToFixedPoint(y));
-                this.Canvas.lineTo(right,ToFixedPoint(y));
-                this.Canvas.stroke();
-                this.Canvas.restore();
+                this.Canvas.strokeStyle=item.LineColor;
+                if (item.LineType==2)
+                {
+                    this.Canvas.save();
+                    this.Canvas.setLineDash([5,5]);   //虚线
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(left,ToFixedPoint(y));
+                    this.Canvas.lineTo(right,ToFixedPoint(y));
+                    this.Canvas.stroke();
+                    this.Canvas.restore();
+                }
+                else
+                {
+                    if (g_JSChartResource.FrameYLineDash)
+                    {
+                        this.Canvas.save();
+                        this.Canvas.setLineDash(g_JSChartResource.FrameYLineDash);   //虚线
+                        this.Canvas.beginPath();
+                        this.Canvas.moveTo(left,ToFixedPoint(y));
+                        this.Canvas.lineTo(right,ToFixedPoint(y));
+                        this.Canvas.stroke();
+                        this.Canvas.restore();
+                    }
+                    else
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.moveTo(left,ToFixedPoint(y));
+                        this.Canvas.lineTo(right,ToFixedPoint(y));
+                        this.Canvas.stroke();
+                    }
+                }
             }
-            else
-            {
-                this.Canvas.beginPath();
-                this.Canvas.moveTo(left,ToFixedPoint(y));
-                this.Canvas.lineTo(right,ToFixedPoint(y));
-                this.Canvas.stroke();
-            }
-
+            
             if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
             else if (y <= top + 2) this.Canvas.textBaseline = 'top';
             else this.Canvas.textBaseline = "middle";
@@ -9855,6 +9870,8 @@ function KLineHScreenFrame()
         var bottom=this.ChartBorder.GetBottom();
         var borderTop=this.ChartBorder.Top;
         var borderBottom=this.ChartBorder.Bottom;
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
 
         var yPrev=null; //上一个坐标y的值
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
@@ -9868,12 +9885,28 @@ function KLineHScreenFrame()
             var y=this.GetYFromData(item.Value);
             if (y!=null && Math.abs(y-yPrev)<this.MinYDistance) continue;  //两个坐标在近了 就不画了
 
-            this.Canvas.strokeStyle=item.LineColor;
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(ToFixedPoint(y),top);
-            this.Canvas.lineTo(ToFixedPoint(y),bottom);
-            this.Canvas.stroke();
-
+            if (y!=left)
+            {
+                this.Canvas.strokeStyle=item.LineColor;
+                if (g_JSChartResource.FrameYLineDash)
+                {
+                    this.Canvas.save();
+                    this.Canvas.setLineDash(g_JSChartResource.FrameYLineDash);   //虚线
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(ToFixedPoint(y),top);
+                    this.Canvas.lineTo(ToFixedPoint(y),bottom);
+                    this.Canvas.stroke();
+                    this.Canvas.restore();
+                }
+                else
+                {
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(ToFixedPoint(y),top);
+                    this.Canvas.lineTo(ToFixedPoint(y),bottom);
+                    this.Canvas.stroke();
+                }
+            }
+            
             //坐标信息 左边 间距小于10 不画坐标
             if (item.Message[0]!=null && isDrawLeft)
             {
@@ -28680,6 +28713,7 @@ function JSChartResource()
     this.FrameBorderPen="rgb(225,236,242)";         //边框颜色
     this.FrameSplitPen="rgb(225,236,242)";          //刻度分割线
     this.FrameDotSplitPen='rgb(105,105,105)';       //分割虚线
+    this.FrameYLineDash= null; //[5*GetDevicePixelRatio(), 5*GetDevicePixelRatio()];                     //Y轴线段虚线点间距,填null 就是实线
     this.FrameSplitTextColor="rgb(117,125,129)";    //刻度文字颜色
     this.FrameSplitTextFont=14*GetDevicePixelRatio() +"px 微软雅黑";            //坐标刻度文字字体
     this.FrameTitleBGColor="rgb(246,251,253)";  //标题栏背景色
