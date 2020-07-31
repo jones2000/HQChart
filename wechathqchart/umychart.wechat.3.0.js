@@ -2544,7 +2544,8 @@ function AverageWidthFrame()
         var titleHeight = this.ChartBorder.TitleHeight;
 
         this.Canvas.save();
-        this.Canvas.setLineDash([2, 2]);   //虚线
+        if(g_JSChartResource.FrameYLineDash)
+            this.Canvas.setLineDash(g_JSChartResource.FrameYLineDash);   //虚线
 
         var yPrev = null; //上一个坐标y的值
         for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
@@ -2552,6 +2553,7 @@ function AverageWidthFrame()
             var item = this.HorizontalInfo[i];
             var y = this.GetYFromData(item.Value);
             if (y != null && yPrev != null && Math.abs(y - yPrev) <this.MinYDistance) continue;  //两个坐标在近了 就不画了
+            if (bottom==y) continue;    //和底部线段重叠了就不绘制
 
             this.Canvas.strokeStyle = item.LineColor;
             this.Canvas.beginPath();
@@ -3708,60 +3710,63 @@ function KLineHScreenFrame()
         return this.ChartBorder.GetLeftEx() + width;
     }
 
-  //画Y轴
-  this.DrawHorizontal = function () {
-    var top = this.ChartBorder.GetTop();
-    var bottom = this.ChartBorder.GetBottom();
-    var borderTop = this.ChartBorder.Top;
-    var borderBottom = this.ChartBorder.Bottom;
-
-    var yPrev = null; //上一个坐标y的值
-    for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从左往右画分割线
+    //画Y轴
+    this.DrawHorizontal = function () 
     {
-      var item = this.HorizontalInfo[i];
-      var y = this.GetYFromData(item.Value);
-      if (y != null && Math.abs(y - yPrev) < 15) continue;  //两个坐标在近了 就不画了
+        var top = this.ChartBorder.GetTop();
+        var bottom = this.ChartBorder.GetBottom();
+        var borderTop = this.ChartBorder.Top;
+        var borderBottom = this.ChartBorder.Bottom;
 
-      this.Canvas.strokeStyle = item.LineColor;
-      this.Canvas.beginPath();
-      this.Canvas.moveTo(ToFixedPoint(y), top);
-      this.Canvas.lineTo(ToFixedPoint(y), bottom);
-      this.Canvas.stroke();
+        var yPrev = null; //上一个坐标y的值
+        for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从左往右画分割线
+        {
+            var item = this.HorizontalInfo[i];
+            var y = this.GetYFromData(item.Value);
+            if (y != null && Math.abs(y - yPrev) < 15) continue;  //两个坐标在近了 就不画了
 
-      //坐标信息 左边 间距小于10 不画坐标
-      if (item.Message[0] != null && borderTop > 10) {
-        if (item.Font != null) this.Canvas.font = item.Font;
+            this.Canvas.strokeStyle = item.LineColor;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(ToFixedPoint(y), top);
+            this.Canvas.lineTo(ToFixedPoint(y), bottom);
+            this.Canvas.stroke();
 
-        this.Canvas.fillStyle = item.TextColor;
-        this.Canvas.textAlign = "right";
-        this.Canvas.textBaseline = "middle";
+            //坐标信息 左边 间距小于10 不画坐标
+            if (item.Message[0] != null && borderTop > 10) 
+            {
+                if (item.Font != null) this.Canvas.font = item.Font;
 
-        var xText = y, yText = top;
-        this.Canvas.save();
-        this.Canvas.translate(xText, yText);
-        this.Canvas.rotate(90 * Math.PI / 180);
-        this.Canvas.fillText(item.Message[0], -2, 0);
-        this.Canvas.restore();
-      }
+                this.Canvas.fillStyle = item.TextColor;
+                this.Canvas.textAlign = "right";
+                this.Canvas.textBaseline = "middle";
 
-      //坐标信息 右边 间距小于10 不画坐标
-      if (item.Message[1] != null && borderBottom > 10) {
-        if (item.Font != null) this.Canvas.font = item.Font;
+                var xText = y, yText = top;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(item.Message[0], -2, 0);
+                this.Canvas.restore();
+            }
 
-        this.Canvas.fillStyle = item.TextColor;
-        this.Canvas.textAlign = "left";
-        this.Canvas.textBaseline = "middle";
-        var xText = y, yText = bottom;
-        this.Canvas.save();
-        this.Canvas.translate(xText, yText);
-        this.Canvas.rotate(90 * Math.PI / 180);
-        this.Canvas.fillText(item.Message[1], 2, 0);
-        this.Canvas.restore();
-      }
+            //坐标信息 右边 间距小于10 不画坐标
+            if (item.Message[1] != null && borderBottom > 10) 
+            {
+                if (item.Font != null) this.Canvas.font = item.Font;
 
-      yPrev = y;
+                this.Canvas.fillStyle = item.TextColor;
+                this.Canvas.textAlign = "left";
+                this.Canvas.textBaseline = "middle";
+                var xText = y, yText = bottom;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(item.Message[1], 2, 0);
+                this.Canvas.restore();
+            }
+
+            yPrev = y;
+        }
     }
-  }
 
     this.GetXFromIndex = function (index) 
     {
