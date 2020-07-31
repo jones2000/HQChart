@@ -4239,6 +4239,7 @@ function JSChart(divElement)
         if (option.Windows && option.Windows.length>0) windowsCount+=option.Windows.length; //指标窗口从第3个窗口开始
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
         if (option.DisableMouse==true) chart.DisableMouse=option.DisableMouse;
+        if (option.ScriptError) chart.ScriptErrorCallback=option.ScriptError;       //指标执行错误回调
 
         if (option.Minute)   //分钟走势图属性设置
         {
@@ -61218,9 +61219,9 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
         if (data.outdata && data.outdata.name) this.Name=data.outdata.name;
 
-        this.Arguments=[];
-        if (data.outdata.args)
+        if (data.outdata.args)  //外部修改参数
         {
+            this.Arguments=[];
             for(var i in data.outdata.args)
             {
                 var item= data.outdata.args[i];
@@ -61259,8 +61260,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
             var event=hqChart.GetIndexEvent();  //指标计算完成回调
             if (event)
             {
-                var self=param.Self;
-                var data={ OutVar:self.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData, 
+                var data={ OutVar:this.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData, 
                         Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
                 event.Callback(event,data,this);
             }
