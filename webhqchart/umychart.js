@@ -17744,6 +17744,7 @@ function BackgroundPaint()
             }
         }
 
+        //JSConsole.Chart.Log('[BackgroundPaint::GetShowData]  aryData ', aryData);
         return aryData;
     }
 
@@ -17795,13 +17796,14 @@ function BackgroundPaint()
         var xLeft=null, xRight=null;
         var isMinutePeriod=ChartData.IsMinutePeriod(this.Period,true);
         var bSingleDate=false;
+        //JSConsole.Chart.Log('[BackgroundPaint::GetBGCoordinate]  item ', item);
         if (isMinutePeriod)
         {
-            if (item.Start.Date==item.End.Date && item.Start.Time==item.End.Time) bSingleDate=true;
+            if (item.Start && item.End && item.Start.Date==item.End.Date && item.Start.Time==item.End.Time) bSingleDate=true;
         }
         else
         {
-            if (item.Start.Date==item.End.Date) bSingleDate=true;
+            if (item.Start && item.End && item.Start.Date==item.End.Date) bSingleDate=true;
         }
 
         if (bSingleDate)
