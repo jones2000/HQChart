@@ -45,7 +45,7 @@ class HQChartData(IHQData) :
             aryAmount.append(item[7])
 
         cacheData["date"]=aryDate
-        # cacheData["Time"]=aryTime
+        # cacheData["time"]=aryTime
         cacheData["yclose"]=aryYClose
         cacheData["open"]=aryOpen
         cacheData["high"]=aryHigh
@@ -79,6 +79,15 @@ class HQChartData(IHQData) :
         data={"type": 0, "data":455555555.99}
         return data
 
+    # 历史所有的流通股 
+    def GetHisCapital(self,symbol, period, right, kcount,jobID):
+        pyCacheData=[]
+        for i in range(kcount) :    # 生成流通股数据
+            pyCacheData.append(8976549.994+i)
+
+        data={"type": 1, "data":pyCacheData}
+        return data
+
     # 大盘数据
     def GetIndex(self, symbol, varName, period,right, kcount,jobID):
         if (varName==u'INDEXA') :   # 大盘成交额
@@ -107,7 +116,7 @@ class HQChartData(IHQData) :
 
 class HQResultTest():
     def __init__(self):
-        self.Result = []
+        self.Result = []    # 保存所有的执行结果
         self.IsOutLog=True  # 是否输出日志
     
      # 执行成功回调
@@ -128,11 +137,13 @@ class HQResultTest():
 def TestSingleStock() :
     runConfig={
         "Script":'''
-        T2:MA(C,10);
-        T3:FINANCE(1);
-        T4:DYNAINFO(5);
-        T5:INDEXA;
-        T6:INDEXC;
+        KF:=(O-REF(C,1))/REF(C,1)*100;
+ZF:=(C-REF(C,1))/REF(C,1)*100;
+限幅:=KF<3.82 AND KF>-3.82; 
+ZT:=C>1.1*REF(C,1)-0.01 AND C<1.1*REF(C,1)+0.01 AND C=H; 
+一字:=C>1.1*REF(C,1)-0.01 AND C<1.1*REF(C,1)+0.01 AND H=O AND L=H; 
+去一:=NOT(一字);
+XG:限幅 AND 去一 AND BARSSINCE(C<>O AND BARSCOUNT(CLOSE)<>1)>30 AND O<>HHV(H,2); 
         ''',
     # 脚本参数
         "Args":[ { "Name": 'N1', "Value": 5 },{ "Name": 'N2', "Value": 10 },{ "Name": 'N3', "Value": 15 } ],
@@ -147,7 +158,7 @@ def TestSingleStock() :
     jsConfig = json.dumps(runConfig)    # 运行配置项
     hqData=HQChartData()    # 实例化数据类
     result=HQResultTest()   # 实例计算结果接收类
-    result.IsOutLog=False
+    result.IsOutLog=True
 
     start = time.process_time()
 

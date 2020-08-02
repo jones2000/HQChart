@@ -1,3 +1,9 @@
+import sys
+import os
+curPath = os.path.abspath(os.path.dirname(__file__))
+rootPath = os.path.split(curPath)[0]
+sys.path.append(rootPath)
+
 import HQChartPy2
 import platform
 
@@ -30,6 +36,10 @@ class IHQData(object):
     def GetCapital(self,symbol, period, right, kcount,jobID):
         pass
 
+    # 历史所有的流通股本 数组 array
+    def GetHisCapital(self,symbol, period, right, kcount,jobID):
+        pass
+
     def GetDataByNumber(self, symbol,funcName,id, period,right,kcount, jobID):
         if (funcName==u'FINANCE') : # 财务数据
             return self.GetFinance(symbol,id, period,right,kcount, jobID)
@@ -41,6 +51,8 @@ class IHQData(object):
     def GetDataByName(self, symbol,funcName,period,right,kcount, jobID) :
         if (funcName==u"CAPITAL"):
             return self.GetCapital(symbol,period,right,kcount, jobID)
+        elif (funcName==u"GetHisCapital"):
+            return self.GetHisCapital(symbol,period,right,kcount, jobID)
         elif (funcName in (u"INDEXA", u"INDEXC", u"INDEXH", u"INDEXL", u"INDEXO",u"INDEXV", u"INDEXADV", u"INDEXDEC")) : # 大盘数据 其他的大盘数据也在这里
             return self.GetIndex(symbol,funcName,period,right,kcount, jobID)
         else :
