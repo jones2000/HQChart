@@ -268,6 +268,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 1. [HQChart(C++)指标计算引擎-介绍](https://blog.csdn.net/jones2000/article/details/107464517) <br>
 2. [HQChart(C++)指标计算引擎-安装](https://blog.csdn.net/jones2000/article/details/107712259) <br>
 3. [HQChart(C++)指标计算引擎-py接口类FastHQChart介绍](https://blog.csdn.net/jones2000/article/details/107725170) <br>
+4. [HQChart(C++)指标计算引擎-py接口类IHQData K线数据对接](https://blog.csdn.net/jones2000/article/details/107728903) <br>
 
 # 5.VUE 行情项目
 [代码地址(vuehqchart)](/vuehqchart) <br>
