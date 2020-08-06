@@ -187,6 +187,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 53. [HQChart使用教程60-新版k线训练使用教程](https://blog.csdn.net/jones2000/article/details/105760924)<br>
 54. [HQChart使用教程61-画图工具接口使用教程](https://blog.csdn.net/jones2000/article/details/105835428)<br>
 55. [HQChart使用教程62-品种小数位数设置](https://blog.csdn.net/jones2000/article/details/106592730)<br>
+56. [HQChart使用教程64-前端自定义周期算法接口](https://blog.csdn.net/jones2000/article/details/107633707)<br>
 
 ## 小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
