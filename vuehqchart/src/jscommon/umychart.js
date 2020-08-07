@@ -263,7 +263,8 @@ function JSChart(divElement)
                 if (item.LeftTextPosition>0) chart.Frame.SubFrame[i].Frame.YTextPosition[0]=item.LeftTextPosition;
 
                 if (item.IsShowXLine==false) chart.Frame.SubFrame[i].Frame.IsShowXLine=item.IsShowXLine;
-
+                if (item.IsShowYLine==false) chart.Frame.SubFrame[i].Frame.IsShowYLine=item.IsShowYLine;
+                
                 if (item.YCoordinateType>0) chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=item.YCoordinateType;
                 if (item.IsYReverse==true) chart.Frame.SubFrame[0].Frame.CoordinateType=1;  //反转坐标
 
@@ -4052,6 +4053,7 @@ function AverageWidthFrame()
     this.XBottomOffset=g_JSChartResource.Frame.XBottomOffset;   //X轴文字显示向下偏移
     this.YTextPosition=[0,0],       //是坐标否强制画在内部 [0=左侧] [1=右侧] 1=OUT" , 2=INSIDE
     this.IsShowXLine=true;              //是否显示X轴刻度线
+    this.IsShowYLine=true;
 
     this.DrawDepthMapCallback;      //绘制深度图
 
@@ -4130,7 +4132,7 @@ function AverageWidthFrame()
             var y=this.GetYFromData(item.Value);
             if (y!=null && Math.abs(y-yPrev)<this.MinYDistance) continue;  //两个坐标在近了 就不画了
             
-            if (y!=bottom)
+            if (y!=bottom && this.IsShowYLine)
             {
                 this.Canvas.strokeStyle=item.LineColor;
                 if (item.LineType==2)
@@ -29132,6 +29134,7 @@ function KLineChartContainer(uielement)
                 if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
                 if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
                 if (item.IsShowXLine==false) this.Frame.SubFrame[i].Frame.IsShowXLine=false;
+                if (item.IsShowYLine==false) this.Frame.SubFrame[i].Frame.IsShowYLine=false;
 
                 var bindData=this.ChartPaint[0].Data;
                 this.BindIndexData(i,bindData);   //执行脚本
@@ -29253,6 +29256,7 @@ function KLineChartContainer(uielement)
             if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
             if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
             if (item.IsShowXLine==false) this.Frame.SubFrame[i].Frame.IsShowXLine=false;
+            if (item.IsShowYLine==false) this.Frame.SubFrame[i].Frame.IsShowYLine=false;
 
         }
 
