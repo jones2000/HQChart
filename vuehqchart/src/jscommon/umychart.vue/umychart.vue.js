@@ -3981,8 +3981,12 @@ function JSChart(divElement)
                 if (item.RightTextPosition>0) chart.Frame.SubFrame[i].Frame.YTextPosition[1]=item.RightTextPosition;
                 if (item.LeftTextPosition>0) chart.Frame.SubFrame[i].Frame.YTextPosition[0]=item.LeftTextPosition;
 
+                if (item.IsShowXLine==false) chart.Frame.SubFrame[i].Frame.IsShowXLine=item.IsShowXLine;
+
                 if (item.YCoordinateType>0) chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=item.YCoordinateType;
                 if (item.IsYReverse==true) chart.Frame.SubFrame[0].Frame.CoordinateType=1;  //反转坐标
+
+                
             }
         }
 
@@ -7766,6 +7770,7 @@ function AverageWidthFrame()
     this.IsShowYText=[true,true];       //是否显示Y轴坐标坐标 [0=左侧] [1=右侧]
     this.XBottomOffset=g_JSChartResource.Frame.XBottomOffset;   //X轴文字显示向下偏移
     this.YTextPosition=[0,0],       //是坐标否强制画在内部 [0=左侧] [1=右侧] 1=OUT" , 2=INSIDE
+    this.IsShowXLine=true;              //是否显示X轴刻度线
 
     this.DrawDepthMapCallback;      //绘制深度图
 
@@ -8008,7 +8013,7 @@ function AverageWidthFrame()
             if (x>right) break;
             if (xPrev!=null && Math.abs(x-xPrev)<this.MinXDistance) continue;
             
-            if (this.VerticalInfo[i].LineType>0)
+            if (this.VerticalInfo[i].LineType>0 && this.IsShowXLine)
             {
                 this.Canvas.strokeStyle=this.VerticalInfo[i].LineColor;
                 this.Canvas.beginPath();
@@ -32845,6 +32850,7 @@ function KLineChartContainer(uielement)
                 if (item.IsShowTitleArraw==false) this.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
                 if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
                 if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+                if (item.IsShowXLine==false) this.Frame.SubFrame[i].Frame.IsShowXLine=false;
 
                 var bindData=this.ChartPaint[0].Data;
                 this.BindIndexData(i,bindData);   //执行脚本
@@ -32965,6 +32971,7 @@ function KLineChartContainer(uielement)
             if (item.IsShowTitleArraw==false) this.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
             if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
             if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+            if (item.IsShowXLine==false) this.Frame.SubFrame[i].Frame.IsShowXLine=false;
 
         }
 
