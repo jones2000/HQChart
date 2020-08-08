@@ -8842,7 +8842,7 @@ function ChartData()
     }
 
     //拟合其他K线数据指标   
-    this.FitKLineIndex=function(kLineData, outVar, peirod, indexPeriod,)
+    this.FitKLineIndex=function(kLineData, outVar, peirod, indexPeriod)
     {
         var count=this.Data.length;         //原始K线数据
         var indexCount=kLineData.length;    //拟合K线数据
@@ -30123,52 +30123,77 @@ function KLineChartContainer(uielement)
             }
         }
 
-        if (ChartData.IsMinutePeriod(this.Period,true)) //分钟数据
+        if (this.IsApiPeriod)
         {
-            var aryFixedData=this.SourceData.GetMinuteFittingFinanceData(aryData);
-            for(let i in this.SourceData.Data)
+            var klineData=this.ChartPaint[0].Data;
+            var aryFixedData=null;
+            if (ChartData.IsMinutePeriod(this.Period,true)) //分钟数据
             {
-                var item=this.SourceData.Data[i];
-                item.FlowCapital=aryFixedData[i].Value;
+                aryFixedData=klineData.GetMinuteFittingFinanceData(aryData);
+            }
+            else if (ChartData.IsDayPeriod(this.Period,true)) //日线数据
+            {
+                aryFixedData=klineData.GetFittingFinanceData(aryData);
             }
 
-            var bindData=this.ChartPaint[0].Data;
-            var newBindData=new ChartData();
-            newBindData.Data=this.SourceData.Data;
-
-            if (ChartData.IsMinutePeriod(bindData.Period,false)) //周期数据
+            if (aryFixedData && klineData.Data && aryFixedData.length==klineData.Data.length)
             {
-                var periodData=newBindData.GetPeriodData(bindData.Period);  
-                newBindData.Data=periodData;
+                for(var i in klineData.Data)
+                {
+                    var item=klineData.Data[i];
+                    item.FlowCapital=aryFixedData[i].Value;
+                }
             }
-            bindData.Data=newBindData.Data;
         }
         else
         {
-            var aryFixedData=this.SourceData.GetFittingFinanceData(aryData);
-            for(let i in this.SourceData.Data)
+            if (ChartData.IsMinutePeriod(this.Period,true)) //分钟数据
             {
-                var item=this.SourceData.Data[i];
-                item.FlowCapital=aryFixedData[i].Value;
+                var aryFixedData=this.SourceData.GetMinuteFittingFinanceData(aryData);
+                for(let i in this.SourceData.Data)
+                {
+                    var item=this.SourceData.Data[i];
+                    item.FlowCapital=aryFixedData[i].Value;
+                }
+
+                var bindData=this.ChartPaint[0].Data;
+                var newBindData=new ChartData();
+                newBindData.Data=this.SourceData.Data;
+
+                if (ChartData.IsMinutePeriod(bindData.Period,false)) //周期数据
+                {
+                    var periodData=newBindData.GetPeriodData(bindData.Period);  
+                    newBindData.Data=periodData;
+                }
+                bindData.Data=newBindData.Data;
             }
-
-            var bindData=this.ChartPaint[0].Data;
-            var newBindData=new ChartData();
-            newBindData.Data=this.SourceData.Data;
-
-            if (bindData.Right>0)    //复权
+            else
             {
-                var rightData=newBindData.GetRightDate(bindData.Right);
-                newBindData.Data=rightData;
-            }
+                var aryFixedData=this.SourceData.GetFittingFinanceData(aryData);
+                for(let i in this.SourceData.Data)
+                {
+                    var item=this.SourceData.Data[i];
+                    item.FlowCapital=aryFixedData[i].Value;
+                }
 
-            if (ChartData.IsDayPeriod(bindData.Period,false)) //周期数据
-            {
-                var periodData=newBindData.GetPeriodData(bindData.Period);  
-                newBindData.Data=periodData;
-            }
+                var bindData=this.ChartPaint[0].Data;
+                var newBindData=new ChartData();
+                newBindData.Data=this.SourceData.Data;
 
-            bindData.Data=newBindData.Data;
+                if (bindData.Right>0)    //复权
+                {
+                    var rightData=newBindData.GetRightDate(bindData.Right);
+                    newBindData.Data=rightData;
+                }
+
+                if (ChartData.IsDayPeriod(bindData.Period,false)) //周期数据
+                {
+                    var periodData=newBindData.GetPeriodData(bindData.Period);  
+                    newBindData.Data=periodData;
+                }
+
+                bindData.Data=newBindData.Data;
+            }
         }
 
         this.FlowCapitalReady=true;

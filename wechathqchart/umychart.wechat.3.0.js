@@ -307,6 +307,7 @@ function JSChart(element)
                 if (!isNaN(item.Height)) chart.Frame.SubFrame[i].Height = item.Height;
                 if (item.IsShowBorder == false) chart.Frame.SubFrame[i].Frame.IsShowBorder = item.IsShowBorder;
                 if (item.IsShowXLine == false) chart.Frame.SubFrame[i].Frame.IsShowXLine = item.IsShowXLine;
+                if (item.IsShowYLine==false) chart.Frame.SubFrame[i].Frame.IsShowYLine=item.IsShowYLine;
                 if (item.XMessageAlign == 'bottom') chart.Frame.SubFrame[i].Frame.XMessageAlign = item.XMessageAlign;
                 if (item.IsShowTitle == false) chart.Frame.SubFrame[i].Frame.IsShowTitle = false;
                 if (item.UpdateTitleUICallback && chart.Frame.SubFrame[i].Frame.TitlePaint) chart.Frame.SubFrame[i].Frame.TitlePaint.UpdateUICallback = item.UpdateTitleUICallback;
@@ -2446,12 +2447,13 @@ function AverageWidthFrame()
     this.DistanceWidth = 10;
     this.MinXDistance = 30;       //X轴刻度最小间距
     this.MinYDistance=10;
-    this.IsShowXLine = true;      //是否显示X轴分割线
     this.XMessageAlign = 'top';   //X轴刻度文字上下对齐方式
     this.IsShowTitle = true;      //是否显示动态标题
     this.IsShowYText = [true, true];       //是否显示Y轴坐标坐标 [0=左侧] [1=右侧]
     this.XBottomOffset = g_JSChartResource.Frame.XBottomOffset;   //X轴文字显示向下偏移
     this.YTextPosition=[0,0],       //是坐标否强制画在内部 [0=左侧] [1=右侧] 1=OUT" , 2=INSIDE
+    this.IsShowXLine=true;              //是否显示X轴刻度线
+    this.IsShowYLine=true;
     
     this.DrawOtherChart;      //其他画法调用
 
@@ -2553,7 +2555,7 @@ function AverageWidthFrame()
             var item = this.HorizontalInfo[i];
             var y = this.GetYFromData(item.Value);
             if (y != null && yPrev != null && Math.abs(y - yPrev) <this.MinYDistance) continue;  //两个坐标在近了 就不画了
-            if (bottom!=y) //和底部线段重叠了就不绘制
+            if (bottom!=y && this.IsShowYLine) //和底部线段重叠了就不绘制
             {
                 this.Canvas.strokeStyle = item.LineColor;
                 this.Canvas.beginPath();
@@ -2592,24 +2594,29 @@ function AverageWidthFrame()
         this.Canvas.restore();
     }
 
-  this.GetXFromIndex = function (index) {
-    var count = this.XPointCount;
+    this.GetXFromIndex = function (index) 
+    {
+        var count = this.XPointCount;
 
-    if (count == 1) {
-      if (index == 0) return this.ChartBorder.GetLeft();
-      else return this.ChartBorder.GetRight();
+        if (count == 1) 
+        {
+            if (index == 0) return this.ChartBorder.GetLeft();
+            else return this.ChartBorder.GetRight();
+        }
+        else if (count <= 0) 
+        {
+            return this.ChartBorder.GetLeft();
+        }
+        else if (index >= count) 
+        {
+            return this.ChartBorder.GetRight();
+        }
+        else 
+        {
+            var offset = this.ChartBorder.GetLeft() + this.ChartBorder.GetWidth() * index / count;
+            return offset;
+        }
     }
-    else if (count <= 0) {
-      return this.ChartBorder.GetLeft();
-    }
-    else if (index >= count) {
-      return this.ChartBorder.GetRight();
-    }
-    else {
-      var offset = this.ChartBorder.GetLeft() + this.ChartBorder.GetWidth() * index / count;
-      return offset;
-    }
-  }
 
     //画X轴
     this.DrawVertical = function ()
