@@ -136,6 +136,8 @@ class HQResultTest():
 # 单股票指标
 def TestSingleStock() :
     runConfig={
+        # 系统指标名字
+        # "Name":"MA",
         "Script":'''
         KF:=(O-REF(C,1))/REF(C,1)*100;
 ZF:=(C-REF(C,1))/REF(C,1)*100;
@@ -146,7 +148,8 @@ ZT:=C>1.1*REF(C,1)-0.01 AND C<1.1*REF(C,1)+0.01 AND C=H;
 XG:限幅 AND 去一 AND BARSSINCE(C<>O AND BARSCOUNT(CLOSE)<>1)>30 AND O<>HHV(H,2); 
         ''',
     # 脚本参数
-        "Args":[ { "Name": 'N1', "Value": 5 },{ "Name": 'N2', "Value": 10 },{ "Name": 'N3', "Value": 15 } ],
+        # "Args":[ { "Name": 'N1', "Value": 5 },{ "Name": 'N2', "Value": 10 },{ "Name": 'N3', "Value": 15 } ],
+        "Args": [ { "Name":"M1", "Value":15 }, { "Name":"M2", "Value":20 }, { "Name":"M3", "Value":30} ],
         # 周期 复权
         "Period":0, "Right":0,
         "Symbol":"600000.sh",
@@ -173,6 +176,8 @@ XG:限幅 AND 去一 AND BARSSINCE(C<>O AND BARSCOUNT(CLOSE)<>1)>30 AND O<>HHV(H
 # 股票池
 def TestMultiStock() :
     runConfig={
+        # 系统指标名字
+        # "Name":"MA",
         # 执行的脚本
         "Script":'''
         JJ:=(HIGH+LOW+CLOSE)/3;
@@ -187,7 +192,8 @@ def TestMultiStock() :
         AA:((DDX+DDY+DDZ)/3);
         ''',
         # 脚本参数
-        "Args":[ { "Name": 'N1', "Value": 5 },{ "Name": 'N2', "Value": 10 },{ "Name": 'N3', "Value": 15 } ],
+        # "Args":[ { "Name": 'N1', "Value": 5 },{ "Name": 'N2', "Value": 10 },{ "Name": 'N3', "Value": 15 } ],
+        "Args": [ { "Name":"M1", "Value":15 }, { "Name":"M2", "Value":20 }, { "Name":"M3", "Value":30} ],
         # 周期 复权
         "Period":0, "Right":0,
         # 股票池
@@ -230,6 +236,9 @@ if __name__ == "__main__":
 
     key="FeArQfG7PG1WjRuzKH/JPlJCpF9zTKVg8gl1AqSoaIfMbmVGmc8BFRZGKFK2Foca2Icu1Q/uSsi+38T51oEHMmSRCfX3zkEZsicW6jLcXUnOXhvzE/E9mq8P0D25zO9Zti1Qxlo7cgMLZOCnpUDYOa9+w3+ecy3voiCV57c+V6o="
     FastHQChart.Initialization(key)
+
+    jsSystemIndex=json.dumps(FastHQChart.HQCHART_SYSTEM_INDEX)
+    FastHQChart.AddSystemIndex(jsSystemIndex)
 
     TestSingleStock()
 

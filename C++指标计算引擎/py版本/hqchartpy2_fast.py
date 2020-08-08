@@ -118,3 +118,31 @@ class FastHQChart :
 
         bResult=HQChartPy2.Run2(jsonConfig,callbackConfig)
         return bResult
+
+    @staticmethod
+    def AddSystemIndex(jsConfig):
+        return HQChartPy2.AddSystemIndex(jsConfig)
+
+    # 系统指标格式
+    HQCHART_SYSTEM_INDEX=[ 
+        { 
+        "Name":"MA", "Description":"均线",
+        "Script":
+        '''MA1:MA(CLOSE,M1);
+MA2:MA(CLOSE,M2);
+MA3:MA(CLOSE,M3);''',
+        "Args": [ { "Name":"M1", "Value":5 }, { "Name":"M2", "Value":10 }, { "Name":"M3", "Value":20} ]
+        },
+
+        {
+        "Name":"BOLL", "Description":"布林线",
+        "Script":
+        '''BOLL:MA(CLOSE,M);
+UB:BOLL+2*STD(CLOSE,M);
+LB:BOLL-2*STD(CLOSE,M);''',
+        "Args": [ { "Name":"M", "Value":20 }]
+        }
+        
+    ]
+
+
