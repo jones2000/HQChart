@@ -32142,11 +32142,13 @@ function KLineChartContainer(uielement)
     {
         var isChangeKLineDrawType=false;
         var isReload=false; //是否重新请求数据
-        if (option  )
+        var right=null; //复权
+        if (option)
         {
             if (option.KLine)
             {
                 if (IFrameSplitOperator.IsNumber(option.KLine.DrawType)) isChangeKLineDrawType=true;
+                if (IFrameSplitOperator.IsNumber(option.KLine.Right)) right=option.KLine.Right;
             }
 
             if (option.Reload==true) isReload=true;
@@ -32198,6 +32200,7 @@ function KLineChartContainer(uielement)
         }
 
         this.Period=period;
+        if (right!=null) this.Right=right;
         this.ReloadChartDrawPicture();   //切换周期了 清空画图工具
 
         if (isDataTypeChange==false && !this.IsApiPeriod)
@@ -32883,6 +32886,15 @@ function KLineChartContainer(uielement)
         if (count<=0) return;
         var currentLength=this.Frame.SubFrame.length;
 
+        var period=null, right=null;
+        if (option.KLine)
+        {
+            if (IFrameSplitOperator.IsNumber(option.KLine.Period) && option.KLine.Period!=this.Period) period=option.KLine.Period;  //周期
+            if (IFrameSplitOperator.IsNumber(option.KLine.Right) && option.KLine.Right!=this.Right) right=option.KLine.Right;       //复权
+        }
+
+        var bRefreshData= (period!=null || right!=null);
+
         //清空所有的指标图型
         for(var i=0;i<currentLength;++i)
         {
@@ -32930,7 +32942,7 @@ function KLineChartContainer(uielement)
             if (item.Script)    //自定义X轴绘制事件
             {
                 this.WindowIndex[i]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
-                this.BindIndexData(windowIndex,bindData);   //执行脚本
+                if (!bRefreshData) this.BindIndexData(windowIndex,bindData);   //执行脚本
             }
             else
             {
@@ -32940,7 +32952,7 @@ function KLineChartContainer(uielement)
                 {
                     this.WindowIndex[i]=indexItem.Create();
                     this.CreateWindowIndex(windowIndex);
-                    this.BindIndexData(windowIndex,bindData);
+                    if (!bRefreshData) this.BindIndexData(windowIndex,bindData);
                 }
                 else
                 {
@@ -32958,7 +32970,7 @@ function KLineChartContainer(uielement)
                         };
     
                         this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
-                        this.BindIndexData(windowIndex,bindData);   //执行脚本
+                        if (!bRefreshData) this.BindIndexData(windowIndex,bindData);   //执行脚本
                     }
                 }
             }
@@ -32987,11 +32999,20 @@ function KLineChartContainer(uielement)
             else item.XSplitOperator.ShowText=false;
         }
 
-        this.UpdataDataoffset();           //更新数据偏移
-        this.Frame.SetSizeChage(true);
-        this.ResetFrameXYSplit();
-        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Draw();
+        if (!bRefreshData)
+        {
+            this.UpdataDataoffset();           //更新数据偏移
+            this.Frame.SetSizeChage(true);
+            this.ResetFrameXYSplit();
+            this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+            this.Draw();
+        }
+        else
+        {
+            if (period!=null) this.ChangePeriod(period, option);
+            else if (right!=null) this.ChangeRight(right);
+        }
+       
     }
 
     this.RemoveIndexWindow=function(id)
