@@ -7907,9 +7907,11 @@ function KLineChartContainer(uielement)
     this.ChangePeriod = function (period, option) 
     {
         var isChangeKLineDrawType = false;
+        var right=null; //复权
         if (option && option.KLine) 
         {
             if (IFrameSplitOperator.IsNumber(option.KLine.DrawType)) isChangeKLineDrawType = true;
+            if (IFrameSplitOperator.IsNumber(option.KLine.Right)) right=option.KLine.Right;
         };
 
         if (this.Period == period) 
@@ -7955,6 +7957,7 @@ function KLineChartContainer(uielement)
         }
 
         this.Period = period;
+        if (right!=null) this.Right=right;
         if (isDataTypeChange == false && !this.IsApiPeriod) 
         {
             this.Update();
@@ -8253,6 +8256,15 @@ function KLineChartContainer(uielement)
         if (count <= 0) return;
         var currentLength = this.Frame.SubFrame.length;
 
+        var period=null, right=null;
+        if (option.KLine)
+        {
+            if (IFrameSplitOperator.IsNumber(option.KLine.Period) && option.KLine.Period!=this.Period) period=option.KLine.Period;  //周期
+            if (IFrameSplitOperator.IsNumber(option.KLine.Right) && option.KLine.Right!=this.Right) right=option.KLine.Right;       //复权
+        }
+
+        var bRefreshData= (period!=null || right!=null);
+
         //清空所有的指标图型
         for (var i = 0; i < currentLength; ++i) 
         {
@@ -8287,35 +8299,60 @@ function KLineChartContainer(uielement)
         for (var i = 0; i < count; ++i) 
         {
             var windowIndex = i;
-            var indexID = option.Windows[i].Index;
-            var indexItem = JSIndexMap.Get(indexID);
+            var item=option.Windows[i];
+            var frameItem=null;
+            if(option.Frame && option.Frame.length>i) frameItem=option.Frame[i];
             var titleIndex = windowIndex + 1;
             this.TitlePaint[titleIndex].Data = [];
             this.TitlePaint[titleIndex].Title = null;
-            if (indexItem) 
-            {
-                this.WindowIndex[i] = indexItem.Create();
-                this.CreateWindowIndex(windowIndex);
-                this.BindIndexData(windowIndex, bindData);
-            }
-            else 
-            {
-                var indexInfo = systemScript.Get(indexID);
-                if (indexInfo) 
-                {
-                    var args = indexInfo.Args;
-                    if (option.Windows[i].Args) args = option.Windows[i].Args;
-                    let indexData =
-                    {
-                        Name: indexInfo.Name, Script: indexInfo.Script, Args: args, ID: indexID,
-                        //扩展属性 可以是空
-                        KLineType: indexInfo.KLineType, YSpecificMaxMin: indexInfo.YSpecificMaxMin, YSplitScale: indexInfo.YSplitScale,
-                        FloatPrecision: indexInfo.FloatPrecision, Condition: indexInfo.Condition
-                    };
 
-                    this.WindowIndex[i] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
-                    this.BindIndexData(windowIndex, bindData);   //执行脚本
+            if (item.Script)    //自定义指标
+            {
+                this.WindowIndex[i]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
+                if (!bRefreshData) this.BindIndexData(windowIndex,bindData);   //执行脚本
+            }
+            else
+            {
+                var indexID = item.Index;
+                var indexItem = JSIndexMap.Get(indexID);
+                if (indexItem) 
+                {
+                    this.WindowIndex[i] = indexItem.Create();
+                    this.CreateWindowIndex(windowIndex);
+                    if (!bRefreshData) this.BindIndexData(windowIndex, bindData);
                 }
+                else 
+                {
+                    var indexInfo = systemScript.Get(indexID);
+                    if (indexInfo) 
+                    {
+                        var args = indexInfo.Args;
+                        if (option.Windows[i].Args) args = option.Windows[i].Args;
+                        let indexData =
+                        {
+                            Name: indexInfo.Name, Script: indexInfo.Script, Args: args, ID: indexID,
+                            //扩展属性 可以是空
+                            KLineType: indexInfo.KLineType, YSpecificMaxMin: indexInfo.YSpecificMaxMin, YSplitScale: indexInfo.YSplitScale,
+                            FloatPrecision: indexInfo.FloatPrecision, Condition: indexInfo.Condition
+                        };
+
+                        this.WindowIndex[i] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
+                        if (!bRefreshData) this.BindIndexData(windowIndex, bindData);   //执行脚本
+                    }
+                }
+            }
+
+            if (item.IndexParamSpace >= 0) this.Frame.SubFrame[i].Frame.IndexParamSpace = item.IndexParamSpace;
+
+            if (frameItem)
+            {
+                if (frameItem.SplitCount) this.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = frameItem.SplitCount;
+                if (frameItem.IsShowBorder == false) this.Frame.SubFrame[i].Frame.IsShowBorder = frameItem.IsShowBorder;
+                if (frameItem.IsShowXLine === false || frameItem.IsShowXLine ===true) this.Frame.SubFrame[i].Frame.IsShowXLine = frameItem.IsShowXLine;
+                if (frameItem.IsShowYLine===false ||frameItem.IsShowYLine===true) this.Frame.SubFrame[i].Frame.IsShowYLine=frameItem.IsShowYLine;
+                
+                if (frameItem.IsShowLeftText === false || item.IsShowLeftText === true) this.Frame.SubFrame[i].Frame.IsShowYText[0] = frameItem.IsShowLeftText;            //显示左边刻度
+                if (frameItem.IsShowRightText === false || item.IsShowRightText === true) this.Frame.SubFrame[i].Frame.IsShowYText[1] = frameItem.IsShowRightText;         //显示右边刻度 
             }
         }
 
@@ -8327,11 +8364,19 @@ function KLineChartContainer(uielement)
             else item.XSplitOperator.ShowText = false;
         }
 
-        this.UpdataDataoffset();           //更新数据偏移
-        this.Frame.SetSizeChage(true);
-        this.ResetFrameXYSplit();
-        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Draw();
+        if (!bRefreshData)
+        {
+            this.UpdataDataoffset();           //更新数据偏移
+            this.Frame.SetSizeChage(true);
+            this.ResetFrameXYSplit();
+            this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+            this.Draw();
+        }
+        else
+        {
+            if (period!=null) this.ChangePeriod(period, option);
+            else if (right!=null) this.ChangeRight(right);
+        }
     }
 
     this.CreateExtendChart = function (name, option)   //创建扩展图形

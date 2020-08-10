@@ -554,7 +554,10 @@ function FrameSplitKLinePriceY()
             var item = this.Custom[i];
             if (item.Type == 0)     //最新价格刻度
             {
-                var latestItem = this.GetLatestPrice(floatPrecision, item);
+                var dec=floatPrecision;
+                //外部设置小数位数
+                if (IFrameSplitOperator.IsNumber(item.FloatPrecision) && item.FloatPrecision>=0) dec=item.FloatPrecision;
+                var latestItem = this.GetLatestPrice(dec, item);
                 if (latestItem) this.Frame.CustomHorizontalInfo.push(latestItem);
             }
             else if (item.Type == 1)    //固定价格刻度

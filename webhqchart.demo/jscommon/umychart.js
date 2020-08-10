@@ -18857,7 +18857,10 @@ function FrameSplitKLinePriceY()
             var item=this.Custom[i];
             if (item.Type==0)
             {
-                var latestItem=this.GetLatestPrice(floatPrecision,item);
+                var dec=floatPrecision;
+                //外部设置小数位数
+                if (IFrameSplitOperator.IsNumber(item.FloatPrecision) && item.FloatPrecision>=0) dec=item.FloatPrecision;
+                var latestItem=this.GetLatestPrice(dec,item);
                 if (latestItem) this.Frame.CustomHorizontalInfo.push(latestItem);
             }
             else if (item.Type==1)
@@ -29216,6 +29219,8 @@ function KLineChartContainer(uielement)
         {
             var windowIndex=i;
             var item=option.Windows[i];
+            var frameItem=null;
+            if(option.Frame && option.Frame.length>i) frameItem=option.Frame[i];
             var titleIndex=windowIndex+1;
             this.TitlePaint[titleIndex].Data=[];
             this.TitlePaint[titleIndex].Title=null;
@@ -29267,8 +29272,25 @@ function KLineChartContainer(uielement)
             if (item.IsShowTitleArraw==false) this.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
             if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
             if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
-            if (item.IsShowXLine==false) this.Frame.SubFrame[i].Frame.IsShowXLine=false;
-            if (item.IsShowYLine==false) this.Frame.SubFrame[i].Frame.IsShowYLine=false;
+            
+
+            if (frameItem)
+            {
+                if (frameItem.SplitCount) this.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=frameItem.SplitCount;
+                if (frameItem.IsShowXLine===false || frameItem.IsShowXLine===true) this.Frame.SubFrame[i].Frame.IsShowXLine=frameItem.IsShowXLine;
+                if (frameItem.IsShowYLine===false || frameItem.IsShowYLine===true) this.Frame.SubFrame[i].Frame.IsShowYLine=frameItem.IsShowYLine;
+
+                if (frameItem.IsShowLeftText===false || frameItem.IsShowLeftText===true) 
+                {
+                    this.Frame.SubFrame[i].Frame.IsShowYText[0]=frameItem.IsShowLeftText;
+                    this.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=frameItem.IsShowLeftText;            //显示左边刻度
+                }
+                if (frameItem.IsShowRightText===false || frameItem.IsShowRightText===true) 
+                {
+                    this.Frame.SubFrame[i].Frame.IsShowYText[1]=frameItem.IsShowRightText;
+                    this.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=frameItem.IsShowRightText;         //显示右边刻度
+                }
+            }
 
         }
 
