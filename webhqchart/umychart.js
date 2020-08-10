@@ -29312,6 +29312,7 @@ function KLineChartContainer(uielement)
         }
         else
         {
+            this.Frame.SetSizeChage(true);
             if (period!=null) this.ChangePeriod(period, option);
             else if (right!=null) this.ChangeRight(right);
         }

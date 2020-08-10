@@ -33031,6 +33031,7 @@ function KLineChartContainer(uielement)
         }
         else
         {
+            this.Frame.SetSizeChage(true);
             if (period!=null) this.ChangePeriod(period, option);
             else if (right!=null) this.ChangeRight(right);
         }
@@ -49241,9 +49242,12 @@ function JSAlgorithm(errorHandler,symbolData)
 
     this.IF=function(data,trueData,falseData)
     {
-        let isNumber=typeof(data)=='number';
-        let isNumber2=typeof(trueData)=='number';
-        let isNumber3=typeof(falseData)=='number';
+        let isNumber=this.IsNumber(data);
+        let isNumber2=this.IsNumber(trueData);
+        let isNumber3=this.IsNumber(falseData);
+
+        var isArray2=Array.isArray(trueData);
+        var isArray3=Array.isArray(falseData);
         
         //单数值
         if (isNumber) 
@@ -49260,12 +49264,14 @@ function JSAlgorithm(errorHandler,symbolData)
             if (data[i])
             {
                 if (isNumber2) result[i]=trueData;
-                else result[i]=trueData[i];
+                else if (isArray2) result[i]=trueData[i];
+                else result[i]=null;
             }
             else
             {
                 if (isNumber3) result[i]=falseData;
-                else result[i]=falseData[i];
+                else if (isArray3) result[i]=falseData[i];
+                else result[i]=null;
             }
         }
 
@@ -58038,10 +58044,23 @@ function JSSymbolData(ast,option,jsExecute)
     this.REFDATE=function(data,date)
     {
         var result=null;
+        var findDate=null;
+        if (Array.isArray(date)) 
+        {
+            if (date.length>0) findDate=date[date.length-1];
+        }
+        else if (this.IsNumber(date))
+        {
+            findDate=date;
+        }
+
+        if (findDate==null) return null;
+        if (findDate<5000000) findDate+=19000000;
+
         var index=null;
         for(let i in this.Data.Data)   //查找日期对应的索引
         {
-            if (this.Data.Data[i].Date==date) 
+            if (this.Data.Data[i].Date==findDate) 
             {
                 index=parseInt(i);
                 break;
