@@ -17047,7 +17047,7 @@ function StockChip()
         this.Canvas.textBaseline='top';
         this.Canvas.fillStyle=this.InfoColor;
         var xOffset=10*GetDevicePixelRatio();
-        for(i=1;i<=showCount;++i)
+        for(var i=1;i<=showCount;++i)
         {
             var vol=perValue*i;
             var x=(vol/this.Data.MaxVol)*this.ClientRect.Width+this.ClientRect.Left;
