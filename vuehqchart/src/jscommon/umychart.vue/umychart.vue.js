@@ -4311,6 +4311,8 @@ function JSChart(divElement)
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom=item.Custom;
                 if (item.RightTextFormat>0) chart.Frame.SubFrame[i].Frame.YSplitOperator.RightTextFormat=item.RightTextFormat;
             }
+
+            chart.UpdateXShowText();
         }
 
         if (option.ExtendChart)
@@ -35693,6 +35695,25 @@ function MinuteChartContainer(uielement)
         return subFrame;
     }
 
+    this.UpdateXShowText=function()
+    {
+        var bLastFrame=true;
+        for(var i=this.Frame.SubFrame.length-1;i>=0;--i)
+        {
+            var item=this.Frame.SubFrame[i].Frame;
+
+            if (bLastFrame)
+            {
+                item.XSplitOperator.ShowText=true;
+                if (item.Heigh>0) bLastFrame=false;
+            }
+            else
+            {
+                item.XSplitOperator.ShowText=false;
+            }
+        }
+    }
+
     //删除某一个窗口的指标
     this.DeleteIndexPaint=function(windowIndex)
     {
@@ -35866,6 +35887,7 @@ function MinuteChartContainer(uielement)
             this.UpdataDataoffset();           //更新数据偏移
         }
 
+        this.UpdateXShowText();
         this.Frame.SetSizeChage(true);
         this.ResetFrameXYSplit();
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值

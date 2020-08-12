@@ -563,6 +563,8 @@ function JSChart(element)
                 if (item.Height >= 0) chart.Frame.SubFrame[i].Height = item.Height; 
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom = item.Custom;
             }
+
+            chart.UpdateXShowText();
         }
 
         if (option.MinuteTitle) 
@@ -9562,6 +9564,25 @@ function MinuteChartContainer(uielement)
             else subFrame.Height = 10;
 
             this.Frame.SubFrame[i] = subFrame;
+        }
+    }
+
+    this.UpdateXShowText=function()
+    {
+        var bLastFrame=true;
+        for(var i=this.Frame.SubFrame.length-1;i>=0;--i)
+        {
+            var item=this.Frame.SubFrame[i].Frame;
+
+            if (bLastFrame)
+            {
+                item.XSplitOperator.ShowText=true;
+                if (item.Heigh>0) bLastFrame=false;
+            }
+            else
+            {
+                item.XSplitOperator.ShowText=false;
+            }
         }
     }
 
