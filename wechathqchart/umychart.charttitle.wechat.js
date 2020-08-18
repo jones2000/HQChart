@@ -1065,7 +1065,8 @@ function DynamicChartTitlePainting()
         this.Canvas.font = this.Font;
 
         let textWidth = 10;
-        if (this.TitleBG && this.Title) {
+        if (this.TitleBG && this.Title) 
+        {
             textWidth = this.Canvas.measureText(this.Title).width + 2;
             let height = this.Frame.ChartBorder.TitleHeight;
             let top = this.Frame.ChartBorder.GetTop();
@@ -1113,6 +1114,7 @@ function DynamicChartTitlePainting()
             var item = this.Data[i];
             if (!item || !item.Data || !item.Data.Data) continue;
             if (item.Data.Data.length <= 0) continue;
+            if (!item.Name) continue;
 
             var indexName = '●' + item.Name;
             this.Canvas.fillStyle = item.Color;
@@ -1232,7 +1234,9 @@ function DynamicChartTitlePainting()
 
             this.Canvas.fillStyle = item.Color;
 
-            var text = item.Name + ":" + valueText;
+            var text;
+            if (item.Name) text = item.Name + ":" + valueText;
+            else text=valueText;
             var textWidth = this.Canvas.measureText(text).width + this.ParamSpace;    //后空2个像素
             this.Canvas.fillText(text, left, bottom, textWidth);
             left += textWidth;

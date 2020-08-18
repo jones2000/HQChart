@@ -11957,11 +11957,41 @@ function JSExecute(ast,option)
             //输出变量
             if (item.Type==Syntax.ExpressionStatement && item.Expression)
             {
-                if (item.Expression.Type==Syntax.AssignmentExpression && item.Expression.Operator==':' && item.Expression.Left)
+                if (item.Expression.Type==Syntax.AssignmentExpression)
                 {
-                    let assignmentItem=item.Expression;
-                    let varName=assignmentItem.Left.Name;
-                    let outVar=this.VarTable.get(varName);
+                    if (item.Expression.Operator==':' && item.Expression.Left)
+                    {
+                        let assignmentItem=item.Expression;
+                        let varName=assignmentItem.Left.Name;
+                        let outVar=this.VarTable.get(varName);
+                        var type=0;
+                        if (outVar && typeof(outVar)=='object' && outVar.__Type__=='Object')
+                        {
+                            type=1000;
+                        }
+                        else if (!this.IsSectionMode && !Array.isArray(outVar)) 
+                        {
+                            if (typeof(outVar)=='string') outVar=this.SingleDataToArrayData(parseFloat(outVar));
+                            else outVar=this.SingleDataToArrayData(outVar);
+                        }
+
+                        this.OutVarTable.push({Name:varName, Data:outVar,Type:type});
+                    }
+                }
+                else if (item.Expression.Type==Syntax.CallExpression)
+                {
+                    let callItem=item.Expression;
+                    if (this.Draw.IsDrawFunction(callItem.Callee.Name))
+                    {
+                        let draw=callItem.Draw;
+                        draw.Name=callItem.Callee.Name;
+                        this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
+                    }
+                }
+                else if (item.Expression.Type==Syntax.Identifier)
+                {
+                    let varName=item.Expression.Name;
+                    let outVar=this.ReadVariable(varName,item.Expression);
                     var type=0;
                     if (outVar && typeof(outVar)=='object' && outVar.__Type__=='Object')
                     {
@@ -11973,17 +12003,16 @@ function JSExecute(ast,option)
                         else outVar=this.SingleDataToArrayData(outVar);
                     }
 
-                    this.OutVarTable.push({Name:varName, Data:outVar,Type:type});
+                    varName="__temp_i_"+i+"__";
+                    this.OutVarTable.push({Name:varName, Data:outVar, Type:type, NoneName:true});
                 }
-                else if (item.Expression.Type==Syntax.CallExpression)
+                else if (item.Expression.Type==Syntax.BinaryExpression)
                 {
-                    let callItem=item.Expression;
-                    if (this.Draw.IsDrawFunction(callItem.Callee.Name))
-                    {
-                        let draw=callItem.Draw;
-                        draw.Name=callItem.Callee.Name;
-                        this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
-                    }
+                    var varName="__temp_b_"+i+"__";
+                    let outVar=item.Expression.Out;
+                    var type=0;
+                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                    this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
                 }
                 else if (item.Expression.Type==Syntax.SequenceExpression)
                 {
@@ -12001,6 +12030,7 @@ function JSExecute(ast,option)
                     let isExData=false;
                     let isDotLine=false;
                     let isOverlayLine=false;    //叠加线
+                    var isNoneName=false;
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -12029,6 +12059,15 @@ function JSExecute(ast,option)
                             else if (value.indexOf('NODRAW')==0) isShow=false;
                             else if (value.indexOf('EXDATA')==0) isExData=true; //扩展数据, 不显示再图形里面
                             else if (value.indexOf('LINEOVERLAY')==0) isOverlayLine=true;
+                            else 
+                            {
+                                varName=itemExpression.Name;
+                                let varValue=this.ReadVariable(varName,itemExpression);
+                                if (!Array.isArray(varValue)) varValue=this.SingleDataToArrayData(varValue); 
+                                varName="__temp_si_"+i+"__";
+                                isNoneName=true;
+                                this.VarTable.set(varName,varValue);            //放到变量表里
+                            }
                         }
                         else if(itemExpression.Type==Syntax.Literal)    //常量
                         {
@@ -12040,6 +12079,13 @@ function JSExecute(ast,option)
                         {
                             draw=itemExpression.Draw;
                             draw.Name=itemExpression.Callee.Name;
+                        }
+                        else if (itemExpression.Type==Syntax.BinaryExpression)
+                        {
+                            varName="__temp_sb_"+i+"__";
+                            let aryValue=itemExpression.Out;
+                            isNoneName=true;
+                            this.VarTable.set(varName,aryValue);
                         }
                     }
 
@@ -12094,6 +12140,7 @@ function JSExecute(ast,option)
                         if (isExData==true) value.IsExData = true;
                         if (isDotLine==true) value.IsDotLine=true;
                         if (isOverlayLine==true) value.IsOverlayLine=true;
+                        if (isNoneName==true) value.NoneName=true;
                         this.OutVarTable.push(value);
                     }
                     else if (draw)  //画图函数
@@ -12968,7 +13015,10 @@ function ScriptIndex(name,script,args,option)
         
         let titleIndex=windowIndex+1;
         line.Data.Data=varItem.Data;
-        hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
+        if (varItem.NoneName) 
+            hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,null,line.Color);
+        else
+            hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
 
         hqChart.ChartPaint.push(line);
     }

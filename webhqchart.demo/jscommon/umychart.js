@@ -21592,7 +21592,7 @@ function DynamicChartTitlePainting()
         for(var i in this.Data)
         {
             var item=this.Data[i];
-            if (!item || !item.Data || !item.Data.Data || !item.Name) continue;
+            if (!item || !item.Data || !item.Data.Data) continue;
 
             if (item.Data.Data.length<=0) continue;
 
@@ -21647,7 +21647,8 @@ function DynamicChartTitlePainting()
 
             this.Canvas.fillStyle=item.Color;
 
-            var text=item.Name+":"+valueText;
+            var text=valueText;
+            if (item.Name) text=item.Name+":"+valueText;
             var space=this.ParamSpace*GetDevicePixelRatio();
             var textWidth=this.Canvas.measureText(text).width+space;    //后空2个像素
             this.Canvas.fillText(text,left,bottom,textWidth);
@@ -30798,16 +30799,23 @@ function KLineChartContainer(uielement)
         bindData.Period=this.Period;
         bindData.Right=this.Right;
 
-        if (bindData.Right>0)    //复权
+        if (this.IsApiPeriod)
         {
-            var rightData=bindData.GetRightDate(bindData.Right);
-            bindData.Data=rightData;
-        }
 
-        if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
+        }
+        else
         {
-            var periodData=bindData.GetPeriodData(bindData.Period);
-            bindData.Data=periodData;
+            if (bindData.Right>0)    //复权
+            {
+                var rightData=bindData.GetRightDate(bindData.Right);
+                bindData.Data=rightData;
+            }
+
+            if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
+            {
+                var periodData=bindData.GetPeriodData(bindData.Period);
+                bindData.Data=periodData;
+            }
         }
 
         if (typeof(this.WindowIndex[index].ExecuteScript)=='function')

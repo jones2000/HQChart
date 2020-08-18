@@ -8864,16 +8864,23 @@ function KLineChartContainer(uielement)
         bindData.Period = this.Period;
         bindData.Right = this.Right;
 
-        if (bindData.Right > 0)    //复权
+        if (this.IsApiPeriod)
         {
-            var rightData = bindData.GetRightDate(bindData.Right);
-            bindData.Data = rightData;
-        }
 
-        if (ChartData.IsDayPeriod(bindData.Period, false) || ChartData.IsMinutePeriod(bindData.Period, false))   //周期数据
+        }
+        else
         {
-            var periodData = bindData.GetPeriodData(bindData.Period);
-            bindData.Data = periodData;
+            if (bindData.Right > 0)    //复权
+            {
+                var rightData = bindData.GetRightDate(bindData.Right);
+                bindData.Data = rightData;
+            }
+    
+            if (ChartData.IsDayPeriod(bindData.Period, false) || ChartData.IsMinutePeriod(bindData.Period, false))   //周期数据
+            {
+                var periodData = bindData.GetPeriodData(bindData.Period);
+                bindData.Data = periodData;
+            }
         }
 
         this.WindowIndex[index].BindData(this, index, bindData);
@@ -12141,7 +12148,7 @@ function ScriptIndex(name, script, args, option)
 
         let titleIndex = windowIndex + 1;
         line.Data.Data = varItem.Data;
-        hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(line.Data, varItem.Name, line.Color);
+        hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(line.Data, (varItem.NoneName==true? null: varItem.Name) , line.Color);
 
         hqChart.ChartPaint.push(line);
     }
