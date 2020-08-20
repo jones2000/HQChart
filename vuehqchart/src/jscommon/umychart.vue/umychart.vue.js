@@ -35709,11 +35709,12 @@ function MinuteChartContainer(uielement)
         for(var i=this.Frame.SubFrame.length-1;i>=0;--i)
         {
             var item=this.Frame.SubFrame[i].Frame;
+            var subFrame=this.Frame.SubFrame[i];
 
             if (bLastFrame)
             {
                 item.XSplitOperator.ShowText=true;
-                if (item.Heigh>0) bLastFrame=false;
+                if (subFrame.Height>0) bLastFrame=false;
             }
             else
             {
@@ -58802,6 +58803,14 @@ function JSExecute(ast,option)
                         draw.Name=callItem.Callee.Name;
                         this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
                     }
+                    else
+                    {
+                        let outVar=callItem.Out;
+                        varName=`__temp_c_${callItem.Callee.Name}_${i}__`;
+                        var type=0;
+                        if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                        this.OutVarTable.push({Name:varName, Data:outVar,Type:type,NoneName:true});
+                    }
                 }
                 else if (item.Expression.Type==Syntax.Identifier)
                 {
@@ -58890,10 +58899,20 @@ function JSExecute(ast,option)
                             varName=itemExpression.Value.toString();
                             this.VarTable.set(varName,aryValue);    //把常量放到变量表里
                         }
-                        else if (itemExpression.Type==Syntax.CallExpression && this.Draw.IsDrawFunction(itemExpression.Callee.Name))
+                        else if (itemExpression.Type==Syntax.CallExpression)
                         {
-                            draw=itemExpression.Draw;
-                            draw.Name=itemExpression.Callee.Name;
+                            if (this.Draw.IsDrawFunction(itemExpression.Callee.Name))
+                            {
+                                draw=itemExpression.Draw;
+                                draw.Name=itemExpression.Callee.Name;
+                            }
+                            else
+                            {
+                                let varValue=itemExpression.Out;
+                                varName=`__temp_sc_${itemExpression.Callee.Name}_${i}__`;
+                                isNoneName=true;
+                                this.VarTable.set(varName,varValue);
+                            }
                         }
                         else if (itemExpression.Type==Syntax.BinaryExpression)
                         {

@@ -9580,11 +9580,12 @@ function MinuteChartContainer(uielement)
         for(var i=this.Frame.SubFrame.length-1;i>=0;--i)
         {
             var item=this.Frame.SubFrame[i].Frame;
+            var subFrame=this.Frame.SubFrame[i];
 
             if (bLastFrame)
             {
                 item.XSplitOperator.ShowText=true;
-                if (item.Heigh>0) bLastFrame=false;
+                if (subFrame.Height>0) bLastFrame=false;
             }
             else
             {
