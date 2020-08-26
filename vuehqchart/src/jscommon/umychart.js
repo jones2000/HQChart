@@ -22223,10 +22223,8 @@ function IChartDrawPicture()
                 var yValue=this.Frame.GetYData(item.X);
 
                 var valueItem={ XValue:xValue, YValue:yValue };
-                var kline=data.Data[xValue];
-                valueItem.DateTime={ Date:kline.Date };
-                if (IFrameSplitOperator.IsNumber(kline.Time)) valueItem.DateTime.Time=kline.Time;
-
+                var minuteItem=data.Data[xValue];
+                valueItem.DateTime={ Date:minuteItem.Date ,Time:minuteItem.Time};
                 this.Value[i]=valueItem;
             }
         }
@@ -22898,7 +22896,13 @@ function ChartDrawPictureHorizontalLine()
             this.Canvas.translate(xText, yText);
             this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
             var yValue=this.Frame.GetYData(drawPoint[0].X);
-            this.Canvas.fillText(yValue.toFixed(2),0,0);
+            var text=yValue.toFixed(2);
+            if (this.Label)
+            {
+                if (this.Label.Position==0) text=this.Label.Text+yValue.toFixed(2);
+                else if (this.Label.Position==1) text=yValue.toFixed(2)+this.Label.Text;
+            }
+            this.Canvas.fillText(text,0,0);
         }
         else
         {
@@ -35092,6 +35096,7 @@ function MinuteChartHScreenContainer(uielement)
             var frame=new MinuteHScreenFrame();
             frame.Canvas=this.Canvas;
             frame.ChartBorder=border;
+            frame.Identify=i;
             if (i<2) frame.ChartBorder.TitleHeight=0;
             frame.XPointCount=243;
 
