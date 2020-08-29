@@ -11136,6 +11136,10 @@ function HistoryData()
     this.FlowCapital=0;   //流通股本
     this.Position=null;   //持仓量
 
+    //期货
+    this.YFClose=null;   //前结算价
+    this.FClose=null;    //结算价
+
     //指数才有的数据
     this.Stop;  //停牌家数
     this.Up;    //上涨
@@ -11157,7 +11161,10 @@ HistoryData.Copy=function(data)
     newData.Amount=data.Amount;
     newData.Time=data.Time;
     newData.FlowCapital=data.FlowCapital;
+
     newData.Position=data.Position;
+    newData.YFClose=data.YFClose;
+    newData.FClose=data.FClose;
 
     newData.Stop=data.Stop;
     newData.Up=data.Up;
@@ -11180,7 +11187,10 @@ HistoryData.CopyTo=function(dest,src)
     dest.Amount=src.Amount;
     dest.Time=src.Time;
     dest.FlowCapital=src.FlowCapital;
+
     dest.Position=src.Position;
+    dest.YFClose=src.YFClose;
+    dest.FClose=src.FClose;
 
     dest.Stop=src.Stop;
     dest.Up=src.Up;
@@ -11203,6 +11213,8 @@ HistoryData.CopyRight=function(data,seed)
     newData.Amount=data.Amount;
     newData.FlowCapital=data.FlowCapital;
     newData.Position=data.Position;
+    newData.YFClose=data.YFClose;
+    newData.FClose=data.FClose;
 
     return newData;
 }
@@ -11631,6 +11643,8 @@ function ChartData()
                     newData.Amount=minData.Amount;    
                     newData.FlowCapital=minData.FlowCapital;  
                     newData.Position=minData.Position;
+                    newData.YFClose=minData.YFClose;
+                    newData.FClose=minData.FClose;
                 }
                 else
                 {
@@ -11643,6 +11657,7 @@ function ChartData()
                     if (minData.Amount!=null) newData.Amount+=minData.Amount;
                     newData.Position=minData.Position;
                     newData.FlowCapital=minData.FlowCapital;  
+                    newData.FClose=minData.FClose;
                 }
 
                 if (i+1 < this.Data.length) //判断下一个数据是否是不同日期的
@@ -11694,6 +11709,8 @@ function ChartData()
                     newData.Amount=minData.Amount;    
                     newData.FlowCapital=minData.FlowCapital; 
                     newData.Position=minData.Position; 
+                    newData.YFClose=minData.YFClose; 
+                    newData.FClose=minData.FClose; 
                 }
                 else
                 {
@@ -11704,6 +11721,7 @@ function ChartData()
                     if (minData.Amount!=null) newData.Amount+=minData.Amount;   //null数据不相加
                     newData.Position=minData.Position;
                     newData.FlowCapital=minData.FlowCapital;  
+                    newData.FClose=minData.FClose; 
                 }
             }
         }
@@ -11798,6 +11816,8 @@ function ChartData()
                 newData.Amount=dayData.Amount;
                 newData.FlowCapital=dayData.FlowCapital;
                 newData.Position=dayData.Position; 
+                newData.YFClose=dayData.YFClose; 
+                newData.FClose=dayData.FClose; 
             }
             else
             {
@@ -11815,6 +11835,8 @@ function ChartData()
                     newData.Amount=dayData.Amount;
                     newData.FlowCapital=dayData.FlowCapital;
                     newData.Position=dayData.Position; 
+                    newData.YFClose=dayData.YFClose; 
+                    newData.FClose=dayData.FClose; 
                 }
                 else
                 {
@@ -11827,6 +11849,7 @@ function ChartData()
                     newData.Position=dayData.Position;
                     newData.FlowCapital=dayData.FlowCapital;
                     newData.Date=dayData.Date;
+                    newData.FClose=dayData.FClose; 
                 }
             }
         }
@@ -11868,6 +11891,8 @@ function ChartData()
                     newData.Amount=dayData.Amount;    
                     newData.FlowCapital=dayData.FlowCapital;  
                     newData.Position=dayData.Position;  
+                    newData.YFClose=dayData.YFClose; 
+                    newData.FClose=dayData.FClose; 
                 }
                 else
                 {
@@ -11877,7 +11902,8 @@ function ChartData()
                     newData.Vol+=dayData.Vol;
                     if (dayData.Amount!=null) newData.Amount+=dayData.Amount;
                     newData.Position=dayData.Position;
-                    newData.FlowCapital=dayData.FlowCapital;  
+                    newData.FlowCapital=dayData.FlowCapital;
+                    newData.FClose=dayData.FClose;  
                 }
             }
         }
@@ -19933,7 +19959,8 @@ function KLineTooltipPaint()
     this.DrawTooltipData=function(item)
     {
         //JSConsole.Chart.Log('[KLineTooltipPaint::DrawKLineData] ', item);
-
+        var upperSymbol;
+        if (this.HQChart.Symbol) upperSymbol=this.HQChart.Symbol.toUpperCase();
         var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
         var left=this.GetLeft()+2*GetDevicePixelRatio();
         var top=this.GetTop()+3*GetDevicePixelRatio();
@@ -20014,7 +20041,13 @@ function KLineTooltipPaint()
         this.Canvas.fillStyle=this.TitleColor;
         text=g_JSChartLocalization.GetText('Tooltip-Increase',this.LanguageID);
         this.Canvas.fillText(text, left,top);
-        if (item.YClose>0)
+        if (item.YFClose>0 && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+        {
+            var value=(item.Close-item.YFClose)/item.YFClose*100;
+            var color = this.KLineTitlePaint.GetColor(value, 0);
+            var text = value.toFixed(2)+'%';
+        }
+        else if (item.YClose>0)
         {
             var value=(item.Close-item.YClose)/item.YClose*100;
             var color = this.KLineTitlePaint.GetColor(value, 0);
@@ -25078,7 +25111,14 @@ function DynamicKLineTitlePainting()
         var text=g_JSChartLocalization.GetText('KTitle-Close',this.LanguageID)+item.Close.toFixed(defaultfloatPrecision);
         if (!this.DrawText(text,color,position)) return;
 
-        if (item.YClose>0)
+        if (item.YFClose>0 && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+        {
+            var value=(item.Close-item.YFClose)/item.YFClose*100;
+            var color = this.GetColor(value, 0);
+            var text = g_JSChartLocalization.GetText('KTitle-Increase',this.LanguageID) + value.toFixed(2)+'%';
+            if (!this.DrawText(text,color,position)) return;
+        }
+        else if (item.YClose>0)
         {
             var value=(item.Close-item.YClose)/item.YClose*100;
             var color = this.GetColor(value, 0);
@@ -35122,6 +35162,7 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
 
     var list = data.data;
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, position=8;
+    var fclose=9, yfclose=10;   //结算价, 前结算价
     for (var i = 0; i < list.length; ++i)
     {
         var item = new HistoryData();
@@ -35136,6 +35177,8 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
         item.Vol = jsData[vol];    //原始单位股
         item.Amount = jsData[amount];
         if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position=jsData[position];//期货持仓
+        if (IFrameSplitOperator.IsNumber(jsData[fclose])) item.FClose=jsData[fclose];       //期货结算价
+        if (IFrameSplitOperator.IsNumber(jsData[yfclose])) item.YFClose=jsData[yfclose];    //期货前结算价
 
         //if (isFutures && list[i].length>position) item.Position=list[i][position];  
 
