@@ -53682,6 +53682,40 @@ function JSAlgorithm(errorHandler,symbolData)
         }
     }
 
+    /*
+    统计连续满足条件的周期数.
+    用法: BARSLASTCOUNT(X),统计连续满足X条件的周期数.
+    例如: BARSLASTCOUNT(CLOSE>OPEN)表示统计连续收阳的周期数
+    */
+    this.BARSLASTCOUNT=function(data)
+    {
+        var result=null;
+        if (Array.isArray(data))
+        {
+            result=[];
+            if (data.length>0)
+            {
+                var count=0;
+                for(var i=data.length-1;i>=0;--i)
+                {
+                    count=0;
+                    for(var j=i;j>=0;--j)
+                    {
+                        if (data[j]) ++count;
+                        else break;
+                    }
+                    result[i]=count;
+                }
+            }
+        }
+        else
+        {
+            if (data) result=1;
+            else result=0;
+        }
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -53856,6 +53890,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.FLOOR(args[0]);
             case 'FRACPART':
                 return this.FRACPART(args[0]);
+            case 'BARSLASTCOUNT':
+                return this.BARSLASTCOUNT(args[0]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
