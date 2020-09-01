@@ -47,7 +47,10 @@ function JSChartResource()
     this.FrameYLineDash=[2, 2];                     //Y轴线段虚线点间距,填null 就是实线
     //this.FrameSplitTextFont = "14px PingFang-SC-Bold";//坐标刻度文字字体
     this.FrameTitleBGColor = "rgb(246,251,253)";      //标题栏背景色
-    this.Frame = { XBottomOffset: 0 };   //X轴文字向下偏移
+    this.Frame = { 
+        XBottomOffset: 0 ,  //X轴文字向下偏移
+        YTopOffset:2    //Y轴顶部文字向下偏移
+    };   
 
     this.FrameLatestPrice = 
     {
@@ -236,6 +239,7 @@ function JSChartResource()
         if (style.Frame) 
         {
             if (style.Frame.XBottomOffset) this.Frame.XBottomOffset = style.Frame.XBottomOffset;
+            if (style.Frame.YTopOffset) this.Frame.YTopOffset = style.Frame.YTopOffset;
         }
 
         if (style.FrameLatestPrice) 

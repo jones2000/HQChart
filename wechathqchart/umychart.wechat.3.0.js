@@ -2453,6 +2453,7 @@ function AverageWidthFrame()
     this.IsShowTitle = true;      //是否显示动态标题
     this.IsShowYText = [true, true];       //是否显示Y轴坐标坐标 [0=左侧] [1=右侧]
     this.XBottomOffset = g_JSChartResource.Frame.XBottomOffset;   //X轴文字显示向下偏移
+    this.YTextTopOffset=g_JSChartResource.Frame.YTopOffset;         //Y轴顶部文字向下偏移
     this.YTextPosition=[0,0],       //是坐标否强制画在内部 [0=左侧] [1=右侧] 1=OUT" , 2=INSIDE
     this.IsShowXLine=true;              //是否显示X轴刻度线
     this.IsShowYLine=true;
@@ -2510,11 +2511,22 @@ function AverageWidthFrame()
                     if (item.Font != null) this.Canvas.font = item.Font;
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.textAlign = "left";
-                    if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
-                    else if (y <= top + 2) this.Canvas.textBaseline = 'top';
-                    else this.Canvas.textBaseline = "middle";
-                    var textObj = { X: left, Y: y, Text: { BaseLine: this.Canvas.textBaseline, Font: this.Canvas.font, Value: item.Message[0] } };
-                    if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj)) this.Canvas.fillText(item.Message[0], left + 1, y);
+                    var yText=y;
+                    if (y >= bottom - 2) 
+                    {
+                        this.Canvas.textBaseline = 'bottom';
+                    }
+                    else if (y <= top + 2) 
+                    {
+                        this.Canvas.textBaseline = 'top';
+                        yText+=this.YTextTopOffset;
+                    }
+                    else 
+                    {
+                        this.Canvas.textBaseline = "middle";
+                    }
+                    var textObj = { X: left, Y: yText, Text: { BaseLine: this.Canvas.textBaseline, Font: this.Canvas.font, Value: item.Message[0] } };
+                    if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj)) this.Canvas.fillText(item.Message[0], left + 1, yText);
                 }
 
                 if (item.Message[1] != null && borderRight < 10 && this.IsShowYText[1] === true) 
@@ -2522,13 +2534,24 @@ function AverageWidthFrame()
                     if (item.Font != null) this.Canvas.font = item.Font;
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.textAlign = "right";
-                    if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
-                    else if (y <= top + 2) this.Canvas.textBaseline = 'top';
-                    else this.Canvas.textBaseline = "middle";
+                    var yText=y;
+                    if (y >= bottom - 2) 
+                    {
+                        this.Canvas.textBaseline = 'bottom';
+                    }
+                    else if (y <= top + 2) 
+                    {
+                        this.Canvas.textBaseline = 'top';
+                        yText+=this.YTextTopOffset;
+                    }
+                    else 
+                    {
+                        this.Canvas.textBaseline = "middle";
+                    }
                     var textWidth = this.Canvas.measureText(item.Message[1]).width;
-                    var textObj = { X: right - textWidth, Y: y, Text: { BaseLine: this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font: this.Canvas.font, Value: item.Message[1] } };
+                    var textObj = { X: right - textWidth, Y: yText, Text: { BaseLine: this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font: this.Canvas.font, Value: item.Message[1] } };
                     if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj))
-                        this.Canvas.fillText(item.Message[1], right - 1, y);
+                        this.Canvas.fillText(item.Message[1], right - 1, yText);
                 }
 
                 yPrev = y;
@@ -2565,19 +2588,29 @@ function AverageWidthFrame()
                 this.Canvas.lineTo(right, ToFixedPoint(y));
                 this.Canvas.stroke();
             }
-
-            if (y >= bottom - 2) this.Canvas.textBaseline = 'bottom';
-            else if (y <= top + 2) this.Canvas.textBaseline = 'top';
-            else this.Canvas.textBaseline = "middle";
+            var yText=y;
+            if (y >= bottom - 2) 
+            {
+                this.Canvas.textBaseline = 'bottom';
+            }
+            else if (y <= top + 2) 
+            {
+                this.Canvas.textBaseline = 'top';
+                yText+=this.YTextTopOffset;
+            }
+            else 
+            {
+                this.Canvas.textBaseline = "middle";
+            }
 
             //坐标信息 左边 间距小于10 不画坐标
             if (item.Message[0] != null && borderLeft > 10 && this.IsShowYText[0] === true) 
             {
                 if (item.Font != null) this.Canvas.font = item.Font;
-
+                
                 this.Canvas.fillStyle = item.TextColor;
                 this.Canvas.textAlign = "right";
-                this.Canvas.fillText(item.Message[0], left - 2, y);
+                this.Canvas.fillText(item.Message[0], left - 2, yText);
             }
 
             //坐标信息 右边 间距小于10 不画坐标
@@ -2587,7 +2620,7 @@ function AverageWidthFrame()
 
                 this.Canvas.fillStyle = item.TextColor;
                 this.Canvas.textAlign = "left";
-                this.Canvas.fillText(item.Message[1], right + 2, y);
+                this.Canvas.fillText(item.Message[1], right + 2, yText);
             }
 
             yPrev = y;
