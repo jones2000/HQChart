@@ -25605,6 +25605,7 @@ function JSChartResource()
         if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
         if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;
         if (style.TitleFont) this.TitleFont = style.TitleFont;
+        if (style.IndexTitleBGColor) this.IndexTitleBGColor=style.IndexTitleBGColor;
         if (style.UpTextColor) this.UpTextColor = style.UpTextColor;
         if (style.DownTextColor) this.DownTextColor = style.DownTextColor;
         if (style.UnchagneTextColor) this.UnchagneTextColor = style.UnchagneTextColor;

@@ -411,6 +411,7 @@ function JSChart(element)
 
             if (item.Modify != null) chart.Frame.SubFrame[i].Frame.ModifyIndex = item.Modify;
             if (item.Change != null) chart.Frame.SubFrame[i].Frame.ChangeIndex = item.Change;
+            if (item.IsDrawTitleBG==true)  chart.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
             if (typeof (item.UpdateUICallback) == 'function') chart.WindowIndex[i].UpdateUICallback = item.UpdateUICallback;
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight = item.TitleHeight;
             if (item.IsShowIndexName == false) chart.Frame.SubFrame[i].Frame.IsShowIndexName = false;
@@ -1180,6 +1181,7 @@ var JSCHART_EVENT_ID =
     RECV_STOP_AUTOUPDATE: 10,    //停止自动更新
     ON_TITLE_DRAW: 12,           //标题信息绘制事件
     RECV_MINUTE_DATA: 14,          //分时图数据到达
+    ON_CLICK_INDEXTITLE:15,       //点击指标标题事件
     RECV_KLINE_UPDATE_DATA: 16,   //K线日,分钟更新数据到达 
     ON_INDEXTITLE_DRAW: 19,       //指标标题重绘事件 
     ON_CUSTOM_VERTICAL_DRAW: 20,  //自定义X轴绘制事件 
@@ -1329,11 +1331,13 @@ function JSChartContainer(uielement)
 
         if (this.IsPhoneDragging(e)) 
         {
-            if (jsChart.TryClickLock) {
+            if (jsChart.TryClickLock || this.TryClickIndexTitle) 
+            {
                 var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
                 var x = touches[0].clientX;
                 var y = touches[0].clientY;
-                if (jsChart.TryClickLock(x, y)) return;
+                if (jsChart.TryClickLock && jsChart.TryClickLock(x, y)) return;
+                if (jsChart.TryClickIndexTitle && jsChart.TryClickIndexTitle(x, y)) return;
             }
 
             //长按2秒,十字光标
@@ -8378,6 +8382,7 @@ function KLineChartContainer(uielement)
             }
 
             if (item.IndexParamSpace >= 0) this.Frame.SubFrame[i].Frame.IndexParamSpace = item.IndexParamSpace;
+            if (item.IsDrawTitleBG==true)  this.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
 
             if (frameItem)
             {
@@ -8461,22 +8466,43 @@ function KLineChartContainer(uielement)
     }
   }
 
-  this.TryClickLock = function (x, y) {
-    for (let i in this.Frame.SubFrame) {
-      var item = this.Frame.SubFrame[i];
-      if (!item.Frame.IsLocked) continue;
-      if (!item.Frame.LockPaint) continue;
+    this.TryClickLock = function (x, y) 
+    {
+        for (let i in this.Frame.SubFrame) 
+        {
+            var item = this.Frame.SubFrame[i];
+            if (!item.Frame.IsLocked) continue;
+            if (!item.Frame.LockPaint) continue;
 
-      var tooltip = new TooltipData();
-      if (!item.Frame.LockPaint.GetTooltipData(x, y, tooltip)) continue;
+            var tooltip = new TooltipData();
+            if (!item.Frame.LockPaint.GetTooltipData(x, y, tooltip)) continue;
 
-      tooltip.HQChart = this;
-      if (tooltip.Data.Callback) tooltip.Data.Callback(tooltip);
-      return true;
+            tooltip.HQChart = this;
+            if (tooltip.Data.Callback) tooltip.Data.Callback(tooltip);
+            return true;
+        }
+       return false;
     }
 
-    return false;
-  }
+    this.TryClickIndexTitle=function(x,y)
+    {
+        for(var i in this.TitlePaint)
+        {
+            var item=this.TitlePaint[i];
+            if (!item.IsClickTitle) continue;
+            if (!item.IsClickTitle(x,y)) continue;
+
+            var data={ Point:{X:x, Y:y}, Title:item.Title, FrameID:item.Frame.Identify };
+            console.log('[KLineChartContainer::TryClickIndexTitle] click title ', data);
+
+            var event=this.GetEvent(JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE);
+            if (event && event.Callback) event.Callback(event,data,this);
+            
+            return true;
+        }
+
+        return false;
+    }
 
     this.StopAutoUpdate = function () 
     {
@@ -10964,11 +10990,13 @@ function KLineChartHScreenContainer(uielement) {
 
         if (this.IsPhoneDragging(e)) 
         {
-            if (jsChart.TryClickLock) {
+            if (jsChart.TryClickLock || this.TryClickIndexTitle) 
+            {
                 var touches = this.GetToucheData(e);
                 var x = touches[0].clientX;
                 var y = touches[0].clientY;
-                if (jsChart.TryClickLock(x, y)) return;
+                if (jsChart.TryClickLock && jsChart.TryClickLock(x, y)) return;
+                if (jsChart.TryClickIndexTitle && jsChart.TryClickIndexTitle(x, y)) return;
             }
 
             //长按2秒,十字光标
@@ -13987,7 +14015,7 @@ module.exports =
         MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
         JSCommonCoordinateData, JSCommonCoordinateData,
         FrameSplitKLineX, FrameSplitKLineX,
-        JSCHART_EVENT_ID:JSCHART_EVENT_ID,
+        JSCHART_EVENT_ID:JSCHART_EVENT_ID
     },
 };
 

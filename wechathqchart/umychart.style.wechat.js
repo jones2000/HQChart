@@ -12,7 +12,7 @@
 
 var BLACK_STYLE =    //黑色风格
 {
-    BGColor:'#071120',
+    BGColor:'rgb(0,0,0)',
     TooltipBGColor: "rgb(255, 255, 255)", //背景色
     TooltipAlpha: 0.92,                  //透明度
 
@@ -32,6 +32,7 @@ var BLACK_STYLE =    //黑色风格
 
     DefaultTextColor: "rgb(101,104,112)",
     DefaultTextFont: '14px 微软雅黑',
+    IndexTitleBGColor:'rgb(211,211,211)',
 
     DynamicTitleFont: '12px 微软雅黑', //指标动态标题字体
 

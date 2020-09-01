@@ -946,8 +946,24 @@ function DynamicChartTitlePainting()
     this.EraseRect;
     this.EraseColor = g_JSChartResource.BGColor;  //用来擦出的背景色
 
+    this.TitleRect;              //指标名字显示区域
+    this.IsDrawTitleBG=false;    //是否绘制指标名字背景色
+    this.BGColor=g_JSChartResource.IndexTitleBGColor;
+
     this.IsShowIndexName = true;     //是否显示指标名字
     this.ParamSpace = 2;           //参数显示的间距
+
+    this.IsClickTitle=function(x,y) //是否点击了指标标题
+    {
+        if (!this.TitleRect) return false;
+
+        if (x>this.TitleRect.Left && x<this.TitleRect.Left+this.TitleRect.Width && y>this.TitleRect.Top && y<this.TitleRect.Top+this.TitleRect.Height)
+        {
+            return true;
+        }
+
+        return false;
+    }
 
     this.FormatValue = function (value, item) 
     {
@@ -1039,7 +1055,9 @@ function DynamicChartTitlePainting()
 
     this.DrawTitle = function () 
     {
+        this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
         this.EraseRect = null;
+        this.TitleRect=null;
         this.SendUpdateUIMessage('DrawTitle');
         if (this.Frame.ChartBorder.TitleHeight < 5) return;
         if (this.Frame.IsShowTitle == false) return;
@@ -1088,9 +1106,16 @@ function DynamicChartTitlePainting()
 
         if (this.Title && this.IsShowIndexName) 
         {
-            this.Canvas.fillStyle = this.TitleColor;
             const metrics = this.Canvas.measureText(this.Title);
             textWidth = metrics.width + 2;
+            if (this.IsDrawTitleBG) //绘制指标名背景色
+            {
+                var spaceSize=1;
+                this.Canvas.fillStyle=this.BGColor;
+                this.TitleRect={Left:left, Top:this.Frame.ChartBorder.GetTop()+spaceSize, Width:textWidth, Height:this.Frame.ChartBorder.TitleHeight-(spaceSize*2)};    //保存下标题的坐标
+                this.Canvas.fillRect(this.TitleRect.Left,this.TitleRect.Top,this.TitleRect.Width,this.TitleRect.Height);
+            }
+            this.Canvas.fillStyle = this.TitleColor;
             this.Canvas.fillText(this.Title, left, bottom, textWidth);
             left += textWidth;
         }
@@ -1144,6 +1169,7 @@ function DynamicChartTitlePainting()
 
     this.Draw = function () 
     {
+        this.TitleRect=null;
         this.SendUpdateUIMessage('Draw');
 
         if (this.CursorIndex == null) return;
@@ -1389,9 +1415,18 @@ function DynamicChartTitlePainting()
 
         if (this.Title && this.IsShowIndexName) 
         {
-            this.Canvas.fillStyle = this.TitleColor;
             const metrics = this.Canvas.measureText(this.Title);
             textWidth = metrics.width + 2;
+            if (this.IsDrawTitleBG)
+            {
+                var spaceSize=1;
+                this.Canvas.fillStyle=this.BGColor;
+                this.TitleRect= {Left:this.Frame.ChartBorder.GetRightTitle(),Top:this.Frame.ChartBorder.GetTop(),Width:this.Frame.ChartBorder.TitleHeight ,Height:textWidth};   //保存下标题的坐标
+                let drawRect={Left:left, Top:-this.Frame.ChartBorder.TitleHeight+spaceSize, Width:textWidth, Height:this.Frame.ChartBorder.TitleHeight-(spaceSize*2)};
+                this.Canvas.fillRect(drawRect.Left,drawRect.Top,drawRect.Width,drawRect.Height);
+            }
+
+            this.Canvas.fillStyle = this.TitleColor;
             this.Canvas.fillText(this.Title, left, bottom, textWidth);
             left += textWidth;
         }
