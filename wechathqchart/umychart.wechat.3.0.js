@@ -123,7 +123,7 @@ function JSCanvasElement()
 
     //获取画布
     this.GetContext = function () 
-	{
+	  {
         var canvas;
         if (this.CanvasNode && this.CanvasNode.node) 
         {
@@ -138,6 +138,8 @@ function JSCanvasElement()
             const dpr = wx.getSystemInfoSync().pixelRatio;
             node.width = width * dpr;
             node.height = height * dpr;
+            canvas.restore();
+            canvas.save();
             canvas.scale(dpr, dpr);
             canvas.draw = (bDraw, callback) => { if (callback) callback(); };
             canvas.DomNode = node;
@@ -156,12 +158,11 @@ function JSCanvasElement()
                 return { width: width };
             }
 			
-			canvas.fillText_backup=canvas.fillText;	//uniapp fillText 填了最大长度就会失真, 所以去掉
-			canvas.fillText=function(text,x,y,maxWidth)
-			{
-				canvas.fillText_backup(text,x,y);
-			}
-			
+            canvas.fillText_backup=canvas.fillText;	//uniapp fillText 填了最大长度就会失真, 所以去掉
+            canvas.fillText=function(text,x,y,maxWidth)
+            {
+                canvas.fillText_backup(text,x,y);
+            }
         }
 
         return canvas;

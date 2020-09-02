@@ -42442,15 +42442,15 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-BU', {Time:6,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-HC', {Time:6,Decimal:0}],
         [MARKET_SUFFIX_NAME.SHFE + '-SP', {Time:6,Decimal:0,Name:"纸浆"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-WR', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-WR', {Time:0,Decimal:0,Name:"线材"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0,Name:"白银"}],
         [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2,Name:"黄金"}],
         [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:5,Decimal:1}],
         [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:5,Decimal:1}],
        
         //郑州期货交易所
         [MARKET_SUFFIX_NAME.CZCE + '-CF', {Time:6,Decimal:0,Name:"棉花"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-SR', {Time:6,Decimal:0,Name:"油菜籽"}],
+        [MARKET_SUFFIX_NAME.CZCE + '-SR', {Time:6,Decimal:0,Name:"白糖"}],
         [MARKET_SUFFIX_NAME.CZCE + '-MA', {Time:6,Decimal:0,Name:"甲醇"}],
         [MARKET_SUFFIX_NAME.CZCE + '-ZC', {Time:6,Decimal:1,Name:'动力煤'}],
         [MARKET_SUFFIX_NAME.CZCE + '-TA', {Time:6,Decimal:0,Name:"精对苯二甲酸(PTA)"}],
