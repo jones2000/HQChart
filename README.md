@@ -192,6 +192,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## 小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
 2. [HQChart小程序教程2-如何使用新版2D画布创建一个K线图](https://blog.csdn.net/jones2000/article/details/105632095)<br>
+3. [HQChart小程序教程3-新版2D单画布如何切换K线图和分时图](https://blog.csdn.net/jones2000/article/details/108378355)<br>
 
 ## uni-app教程
 1. [HQChart使用教程35-如何在uni-app创建K线图(h5)](https://blog.csdn.net/jones2000/article/details/101039026) <br>
