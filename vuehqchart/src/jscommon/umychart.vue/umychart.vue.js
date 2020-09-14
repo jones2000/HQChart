@@ -12741,7 +12741,8 @@ function ChartData()
         return true;
     }
 
-    this.CoverTo=function(data, curPeriod, changePeriod) //把数据用data, 日期时间不变, curPeriod=当前周期  changePeriod=需要转换周期
+    //跨周期转化
+    this.ConverPeriod=function(data, curPeriod, changePeriod) //把数据用data, 日期时间不变, curPeriod=当前周期  changePeriod=需要转换周期
     {
         var result=[];
         var tempItem=null;
@@ -12790,7 +12791,7 @@ function ChartData()
             result.push(newItem);
         }
 
-        JSConsole.Chart.Log('[ChartData::CoverTo] result', result);
+        JSConsole.Chart.Log('[ChartData::ConverPeriod] result', result);
         return result;
     }
 
@@ -47445,7 +47446,7 @@ var Character =
             (cp >= 0x41 && cp <= 0x5A) ||
             (cp >= 0x61 && cp <= 0x7A) ||
             (cp >= 0x30 && cp <= 0x39) ||
-            (cp === 0x5C) ||
+            (cp === 0x5C) || (cp===0x23) ||
             ((cp >= 0x80) && Regex.NonAsciiIdentifierPart.test(Character.FromCodePoint(cp)));
     },
 
@@ -47477,6 +47478,69 @@ TOKEN_NAME[7 /* Punctuator */] = 'Punctuator';
 TOKEN_NAME[8 /* StringLiteral */] = 'String';
 TOKEN_NAME[9 /* RegularExpression */] = 'RegularExpression';
 TOKEN_NAME[10 /* Template */] = 'Template';
+
+//公共方法
+function JSComplierHelper()
+{
+    
+}
+
+JSComplierHelper.GetPeriodInfo=function(obj)
+{
+    const PERIOD_LIST=
+    [
+        {Name:'MIN1', Period:4, Order:1},
+        {Name:'MIN5', Period:5, Order:2},
+        {Name:'MIN15', Period:6, Order:3},
+        {Name:'MIN30', Period:7, Order:4},
+        {Name:'MIN60', Period:8, Order:5},
+
+        {Name:'DAY',    Period:0, Order:1000},
+        {Name:'WEEK',   Period:1, Order:1001},
+        {Name:'MONTH',  Period:2, Order:1002},
+        {Name:"SEASON", Period:9, Order:1003},
+        {Name:"YEAR",   Period:3, Order:1004}
+    ];
+
+    if (obj.Name)
+    {
+        for(var i in PERIOD_LIST)
+        {
+            if (obj.Name && PERIOD_LIST[i].Name==obj.Name) 
+                return PERIOD_LIST[i];
+        }
+
+        return null;
+    }
+
+    if (IFrameSplitOperator.IsNumber(obj.PeriodID))
+    {
+        for(var i in PERIOD_LIST)
+        {
+            if (PERIOD_LIST[i].Period==obj.PeriodID)
+                return PERIOD_LIST[i];
+        }
+
+        return null;
+    }
+
+    return null;
+}
+
+JSComplierHelper.GetConvertValueName=function(funcName)
+{
+    var valueName;
+    if (funcName=='COVER_C') valueName='CLOSE';
+    else if (funcName=='COVER_O') valueName="OPEN";
+    else if (funcName=='COVER_H') valueName="HIGH";
+    else if (funcName=='COVER_L') valueName="LOW";
+    else if (funcName=='COVER_A') valueName="AMOUNT";
+    else if (funcName=='COVER_V') valueName="VOL";
+
+    return valueName;
+}
+        
+
 
 //编译异常, 错误类
 function ErrorHandler()
@@ -48021,13 +48085,12 @@ var Syntax = {
 };
 
 
-function Node()
+function Node(ErrorHandler)
 {
     this.IsNeedIndexData=false;         //是否需要大盘数据
     this.IsNeedLatestIndexData=false;   //是否需要下载最新大盘数据
     this.IsNeedLatestData=false;        //是否需要最新的个股行情数据
     this.IsNeedSymbolData=false;        //是否需要下载股票数据
-    this.IsNeedSymbolDayData=false;     //跨周期是否下载日线数据
     this.IsNeedFinanceData=new Set();   //需要下载的财务数据
     this.IsNeedMarginData=new Set();
     this.IsNeedNewsAnalysisData=new Set();      //新闻统计数据
@@ -48043,6 +48106,9 @@ function Node()
 
     this.ExecuteIndex=[];       //执行调用指标
     this.OtherSymbolData=[];    //其他股票数据 key=股票代码(小写)
+    this.PeriodSymbolData=[];   //跨周期数据 { Period:, VarName: }
+
+    this.ErrorHandler=ErrorHandler;
 
     this.GetDataJobList=function()  //下载数据任务列表
     {
@@ -48050,7 +48116,6 @@ function Node()
         if (this.IsNeedSymbolData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA});
         if (this.IsNeedIndexData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_DATA});
         if (this.IsNeedLatestData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA});
-        if (this.IsNeedSymbolDayData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DAY_DATA});
         if (this.IsNeedLatestIndexData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_LATEST_INDEX_DATA});
 
         //涨跌停家数统计
@@ -48128,6 +48193,12 @@ function Node()
             jobs.push(item);
         }
 
+        for(var i in this.PeriodSymbolData)
+        {
+            var item=this.PeriodSymbolData[i];
+            jobs.push(item);
+        }
+
         return jobs;
     }
 
@@ -48183,6 +48254,38 @@ function Node()
             var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA, IsSelfSymbol:true, FunctionName:varName };
             if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
             this.NeedBlockIncreaseData.push(item);  
+            return;
+        }
+
+        if (varName.indexOf('#')>0)
+        {
+            var aryWrods = varName.split('#');
+            if (aryWrods.length!=2)
+            {
+                var errorMessage=`${varName}, 跨周期语法错误, 变量名#周期`;
+                this.ThrowUnexpectedToken(token,errorMessage);
+            }
+            else
+            {
+                const VAR_NAME=["C", "CLOSE", "O","OPEN", "H","HIGH", "L", "LOW", "AMOUNT", "AMO", "VOL", "V" , "VOLINSTK"];
+                if (VAR_NAME.indexOf(aryWrods[0])<0)
+                {
+                    var errorMessage=`${varName}, 跨周期语法错误, 数据只支持'OPEN,HIGH,LOW,CLOSE,VOL,AMOUNT,VOLINSTK'`;
+                    this.ThrowUnexpectedToken(token,errorMessage);
+                }
+
+                const VAR_PERIOD_NAME=["MIN1","MIN5","MIN15","MIN30","MIN60","DAY","WEEK","MONTH","SEASON","YEAR"];
+                if (VAR_PERIOD_NAME.indexOf(aryWrods[1])<0)
+                {
+                    var errorMessage=`${varName}, 跨周期语法错误， 周期只支持'MIN1,MIN5,MIN15,MIN30,MIN60,DAY,WEEK,MONTH,SEASON,YEAR'`;
+                    this.ThrowUnexpectedToken(token,errorMessage);
+                }
+
+                var item={ID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_PERIOD_DATA, VarName:varName, ValueName:aryWrods[0], PeriodName:aryWrods[1] };
+                if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+                this.PeriodSymbolData.push(item);
+            }
+
             return;
         }
 
@@ -48277,8 +48380,17 @@ function Node()
         if (callee.Name=='COVER_C' || callee.Name=='COVER_O' || callee.Name=='COVER_H' || callee.Name=='COVER_L' || callee.Name=='COVER_A' || callee.Name=='COVER_V')   //跨周期函数
         {
             var periodName=args[0].Value;
-            if (periodName=='DAY' || periodName=='WEEK' || periodName=='YEAR' || periodName=='MONTH')
-            this.IsNeedSymbolDayData=true;
+            const VAR_PERIOD_NAME=["MIN1","MIN5","MIN15","MIN30","MIN60","DAY","WEEK","MONTH","SEASON","YEAR"];
+            if (VAR_PERIOD_NAME.indexOf(periodName)<0)
+            {
+                var errorMessage=`${callee.Name}, 跨周期函数错误， 周期只支持'MIN1,MIN5,MIN15,MIN30,MIN60,DAY,WEEK,MONTH,SEASON,YEAR'`;
+                this.ThrowUnexpectedToken(token,errorMessage);
+            }
+
+            var valueName=JSComplierHelper.GetConvertValueName(callee.Name);
+            var item={ID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_PERIOD_DATA, FunctionName:callee.Name, ValueName:valueName, PeriodName:periodName };
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+            this.PeriodSymbolData.push(item);
             return;
         }
 
@@ -48386,6 +48498,32 @@ function Node()
     {
         return { Type:Syntax.MemberExpression, Computed:false, Object:object, Property:property };
     }
+
+    ////////////////////////////////////////////////////////////////
+    this.ThrowUnexpectedToken=function(token,message)
+    {
+        throw this.UnexpectedTokenError(token,message);
+    }
+
+    this.UnexpectedTokenError=function(token,message)
+    {
+        let msg=message || Messages.UnexpectedToken;
+        let value='ILLEGAL';
+        if (token)
+        {
+            if (!message) { }
+            value=token.Value;
+        }
+
+        msg=msg.replace("%0",value);
+        if (token && typeof(token.LineNumber)=='number')
+        {
+            let index=token.Start;
+            let line=token.LineNumber;
+            let column=-1
+            return this.ErrorHandler.CreateError(index,line,column,msg);
+        }
+    }
 }
 
 
@@ -48394,7 +48532,7 @@ function JSParser(code)
 {
     this.ErrorHandler=new ErrorHandler();
     this.Scanner=new Scanner(code, this.ErrorHandler);
-    this.Node=new Node();   //节点创建
+    this.Node=new Node(this.ErrorHandler);   //节点创建
 
     this.LookAhead={Type:2, Value:'', LineNumber:this.Scanner.LineNumber, LineStart:0, Start:0, End:0 };
     this.HasLineTerminator=false;
@@ -53429,86 +53567,6 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
-
-    
-
-    ////////////////////////////////////////////////////////////////////////
-    //  跨周期函数COVER_C(), COVER_O(), COVER_H(), COVER_L(), COVER_A(), COVER_V()
-    this.CoverPeriod=function(name, periodName,n)
-    {
-        var periodInfo=this.GetPeriodInfo({Name:periodName});
-        if (!periodInfo) return null;
-
-        var curPeriodInfo=this.GetPeriodInfo({PeriodID:this.SymbolData.Data.Period});
-        if (!curPeriodInfo) return null;
-
-        if (curPeriodInfo.Order>periodInfo.Order) return null;   //只能小周期转大周期
-
-        var result;
-        if (curPeriodInfo.Period==periodInfo.Period) 
-        {
-            result=this.SymbolData.Data;
-        }
-        else
-        {
-            var hisData;
-            if (ChartData.IsMinutePeriod(curPeriodInfo.Period,true) && ChartData.IsDayPeriod(periodInfo.Period,true))
-            {
-                if (periodInfo.Period==0) hisData=this.SymbolData.DayData.Data; //日线直接用
-                else hisData=this.SymbolData.DayData.GetPeriodData(periodInfo.Period);  //分钟数据不复权 直接算周期就可以了
-            }
-            else
-            {
-                var bindData=new ChartData();
-                bindData.Data=this.SymbolData.SourceData.Data;
-                bindData.Period=this.SymbolData.Period;
-                bindData.Right=this.SymbolData.Right;
-
-                if (ChartData.IsDayPeriod(periodInfo.Period,true) && bindData.Right>0) //日线数据才复权
-                {
-                    var rightData=bindData.GetRightData(bindData.Right);
-                    bindData.Data=rightData;
-                }
-
-                hisData=bindData.GetPeriodData(periodInfo.Period);
-            }
-
-            var data=this.SymbolData.Data.CoverTo(hisData, curPeriodInfo.Period, periodInfo.Period);
-            result=new ChartData();
-            result.Data=data;
-        }
-
-        if (IFrameSplitOperator.IsPlusNumber(n))
-        {
-            var refResult=new ChartData();
-            var data=result.GetRef(n);
-            refResult.Data=data;
-            result=refResult;
-        }
-
-        var upperSymbol=this.SymbolData.Symbol.toUpperCase();
-
-        switch(name)
-        {
-            case 'COVER_C':
-                return result.GetClose();
-            case 'COVER_O':
-                return result.GetOpen();
-            case 'COVER_H':
-                return result.GetHigh();
-            case 'COVER_L':
-                return result.GetLow();
-            case 'COVER_A':
-                return result.GetAmount();
-            case 'COVER_V':
-                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) 
-                    return result.GetVol(100);
-                return result.GetVol();
-            default:
-                return null;
-        }
-    }
-
     this.MOD=function(data, data2)
     {
         var result=[];
@@ -53879,14 +53937,6 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.DTPRICE(args[0], args[1]);
             case 'ZTPRICE':
                 return this.ZTPRICE(args[0], args[1]);
-            case 'COVER_C':
-            case 'COVER_O':
-            case 'COVER_H':
-            case 'COVER_L':
-            case 'COVER_A':
-            case 'COVER_V':
-                if (args.length==2) return this.CoverPeriod(name,args[0],args[1]);
-                return this.CoverPeriod(name,args[0]);
             case 'MOD':
                 return this.MOD(args[0],args[1]);
             case 'POW':
@@ -53948,48 +53998,6 @@ function JSAlgorithm(errorHandler,symbolData)
         return this.ErrorHandler.ThrowError(marker.Index,marker.Line,marker.Column,msg);
        
     }
-}
-
-
-JSAlgorithm.prototype.GetPeriodInfo=function(obj)    //{Name:周期名字  PeriodID:周期ID}
-{
-    const PERIOD_LIST=
-    [
-        {Name:'MIN1', Period:4, Order:1},
-        {Name:'MIN5', Period:5, Order:2},
-        {Name:'MIN15', Period:6, Order:3},
-        {Name:'MIN30', Period:7, Order:4},
-        {Name:'MIN60', Period:8, Order:5},
-
-        {Name:'DAY', Period:0, Order:1000},
-        {Name:'WEEK', Period:1, Order:1001},
-        {Name:'MONTH', Period:2, Order:1002},
-        {Name:"YEAR", Period:3, Order:1003}
-    ];
-
-    if (obj.Name)
-    {
-        for(var i in PERIOD_LIST)
-        {
-            if (obj.Name && PERIOD_LIST[i].Name==obj.Name) 
-                return PERIOD_LIST[i];
-        }
-
-        return null;
-    }
-
-    if (IFrameSplitOperator.IsNumber(obj.PeriodID))
-    {
-        for(var i in PERIOD_LIST)
-        {
-            if (PERIOD_LIST[i].Period==obj.PeriodID)
-                return PERIOD_LIST[i];
-        }
-
-        return null;
-    }
-
-    return null;
 }
 
 //是否有是有效的数字
@@ -54898,7 +54906,8 @@ function JSSymbolData(ast,option,jsExecute)
     this.Symbol='600000.sh';
     this.Name;
     this.Data=null;             //个股数据
-    this.DayData=null;          //日线数据
+    this.PeriodData=new Map();  //跨周期数据 {Key=period, value=[histroydata]}
+    this.IsApiPeriod=false;     //是否是后台api周期数据
     this.SourceData=null;       //不复权的个股数据
     this.MarketValue=null;      //总市值
     this.Period=0;              //周期
@@ -54975,6 +54984,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.DayCount>0) this.DayCount=option.DayCount;
         if (option.Arguments) this.Arguments=option.Arguments;
         if (option.KLineRange) this.KLineDateTimeRange=option.KLineRange;
+        if (option.IsApiPeriod) this.IsApiPeriod=option.IsApiPeriod;
     }
 
     this.RecvError=function(request)
@@ -56218,50 +56228,312 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
-    this.GetSymbolDayData=function()
+    this.GetSymbolPeriodData=function(job)
     {
-        //分钟周期才需要下载日线
-        if (this.DataType!=HQ_DATA_TYPE.KLINE_ID || !ChartData.IsMinutePeriod(this.Period,true) || this.DayData)
-            return this.Execute.RunNextJob();
-        
-        var self=this;
-        JSNetwork.HttpRequest({
-            url: self.KLineApiUrl,
-            data:
+        var periodID=JSComplierHelper.GetPeriodInfo({ Name:job.PeriodName }).Period;
+        var periodInfo={ PeriodID:periodID, PeriodName:job.PeriodName };
+        //同周期不请求
+        if (periodID==this.Period) this.Execute.RunNextJob(); 
+        if (this.IsApiPeriod)
+        {
+            if (this.PeriodData.has(job.PeriodName)) return this.Execute.RunNextJob();
+        }
+        else
+        {
+            if (ChartData.IsDayPeriod(periodID,true)) 
             {
-                "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
-                "symbol": self.Symbol,
-                "start": -1,
-                "count": self.MaxRequestDataCount
-            },
-            type:"post",
-            dataType: "json",
-            async:true, 
-            success: function (recvData)
-            {
-                self.RecvSymbolDayData(recvData);
-                self.Execute.RunNextJob();
-            },
-            error: function(request)
-            {
-                self.RecvError(request);
+                if (ChartData.IsDayPeriod(this.Period,true)) return this.Execute.RunNextJob();
+                periodInfo={PeriodID:0, PeriodName:'DAY' };
             }
-        });
+            else if (ChartData.IsMinutePeriod(periodID,true))
+            {
+                if (ChartData.IsMinutePeriod(this.Period,true)) return this.Execute.RunNextJob();
+                periodInfo={ PeriodID:4, PeriodName:"MIN1" };
+            } 
+            else
+            {
+                return this.Execute.RunNextJob();
+            }
+        }
+
+        var self=this;
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'JSSymbolData::GetSymbolPeriodData',
+                Explain:"跨周期数据",
+                Request:
+                { 
+                    Data: 
+                    {
+                        "field": [ 'symbol','name', job.ValueName ],
+                        "period":job.PeriodName,
+                        "symbol": self.Symbol,
+                    } 
+                },
+                Self:this,
+                PreventDefault:false
+            };
+
+            this.NetworkFilter(obj, function(data) 
+            { 
+                self.RecvSymbolPeriodData(data, periodInfo);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        if (ChartData.IsMinutePeriod(periodID,true))
+        {
+            JSNetwork.HttpRequest({
+                url: this.MinuteKLineApiUrl,
+                data:
+                {
+                    "field": ["name","symbol","yclose","open","price","high","low","vol"],
+                    "symbol": self.Symbol,
+                    "start": -1,
+                    "count": self.MaxRequestMinuteDayCount
+                },
+                type:"post",
+                dataType: "json",
+                async:true,
+                success: function (data)
+                {
+                    self.RecvSymbolPeriodData(data,periodInfo);
+                    self.Execute.RunNextJob();
+                },
+                error: function(request)
+                {
+                    self.RecvError(request);
+                }
+            });
+        }
+        else if (ChartData.IsDayPeriod(PeriodID,true))
+        {
+            JSNetwork.HttpRequest({
+                url: self.KLineApiUrl,
+                data:
+                {
+                    "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
+                    "symbol": self.Symbol,
+                    "start": -1,
+                    "count": self.MaxRequestDataCount
+                },
+                type:"post",
+                dataType: "json",
+                async:true,
+                success: function (data)
+                {
+                    self.RecvSymbolPeriodData(data, periodInfo);
+                    self.Execute.RunNextJob();
+                },
+                error: function(request)
+                {
+                    self.RecvError(request);
+                }
+            });
+        }
+        else
+        {
+            return this.Execute.RunNextJob();
+        }
+
     }
 
-    this.RecvSymbolDayData=function(data)
+    this.RecvSymbolPeriodData=function(data, periodInfo)
     {
-        JSConsole.Complier.Log('[JSSymbolData::RecvSymbolDayData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvSymbolPeriodData] data, periodInfo ' , data, periodInfo);
 
-        let hisData=this.JsonDataToHistoryData(data);
-        var dayData=new ChartData();
-        dayData.DataType=0; /*日线数据 */
-        dayData.Data=hisData;   //保存原始数据 不复权
-        
-        dayData.Right=this.Right;
-        dayData.Period=this.Period;
+        if (ChartData.IsDayPeriod(periodInfo.PeriodID,true)) 
+        {
+            var hisData=this.JsonDataToHistoryData(data);
+            var dayData=new ChartData();
+            dayData.DataType=0;     //日线数据
+            dayData.Data=hisData;   //保存原始数据 不复权
+            dayData.Right=0;
+            dayData.Period=periodInfo.PeriodID;
+            this.PeriodData.set(periodInfo.PeriodName, dayData);
+        }
+        else if (ChartData.IsMinutePeriod(periodInfo.PeriodID,true))
+        {
+            var hisData=this.JsonDataToMinuteHistoryData(data);
+            var minData=new ChartData();
+            minData.DataType=1;     //分钟线数据
+            minData.Data=hisData;
+            minData.Right=0;
+            minData.Period=periodInfo.PeriodID;
+            this.PeriodData.set(periodInfo.PeriodName, minData);
+        }
+    }
 
-        this.DayData=dayData;
+    this.GetSymbolPeriodCacheData=function(valueName,periodName)
+    {
+        var periodInfo=JSComplierHelper.GetPeriodInfo({Name:periodName});
+        if (this.Period==periodInfo.Period)
+            return this.GetSymbolCacheData(valueName);
+
+        var hisData=null;
+        if (this.IsApiPeriod)
+        {
+            if (!this.PeriodData.has(periodName)) return null;
+            hisData=this.PeriodData.get(periodName);
+        }
+        else
+        {
+            var curPeriodInfo=JSComplierHelper.GetPeriodInfo({PeriodID:this.Period});
+            if (!curPeriodInfo) return null;
+
+            if (curPeriodInfo.Order>periodInfo.Order) return null;   //只能小周期转大周期
+
+            if (ChartData.IsDayPeriod(periodInfo.Period,true) && ChartData.IsMinutePeriod(this.Period,true))
+            {
+                var dayData=this.PeriodData.get('DAY'); //日线
+                if (periodInfo.Period==0) hisData=dayData;
+                else hisData=dayData.GetPeriodData(periodInfo.Period);  //日线周期
+            }
+            else
+            {
+                var bindData=new ChartData();
+                bindData.Data=this.SourceData.Data;
+                bindData.Period=this.Period;
+                bindData.Right=this.Right;
+
+                if (ChartData.IsDayPeriod(periodInfo.Period,true) && bindData.Right>0) //日线数据才复权
+                {
+                    var rightData=bindData.GetRightData(bindData.Right);
+                    bindData.Data=rightData;
+                }
+
+                hisData=bindData.GetPeriodData(periodInfo.Period);
+            }
+        }
+
+        var data=this.Data.ConverPeriod(hisData, this.Period, periodInfo.Period);
+        var result=new ChartData();
+        result.Data=data;
+
+        var upperSymbol=this.Symbol.toUpperCase();
+        switch(valueName)
+        {
+            case 'C':
+            case "CLOSE":
+                return result.GetClose();
+            case 'O':
+            case "OPEN":
+                return result.GetOpen();
+            case 'H':
+            case "HIGH":
+                return result.GetHigh();
+            case 'L':
+            case "LOW":
+                return result.GetLow();
+            case 'AMO':
+            case "AMOUNT":
+                return result.GetAmount();
+            case 'V':
+            case "VOL":
+                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) 
+                    return result.GetVol(100);
+                return result.GetVol();
+            case "VOLINSTK":
+                return result.GetPosition();
+            default:
+                return null;
+        }
+    }
+
+    this.GetSymbolPeriodCacheData2=function(valueName,periodName,n)
+    {
+        var periodInfo=JSComplierHelper.GetPeriodInfo({Name:periodName});
+        if (!periodInfo) return null;
+
+        var curPeriodInfo=JSComplierHelper.GetPeriodInfo({PeriodID:this.Period});
+        if (!curPeriodInfo) return null;
+
+        if (curPeriodInfo.Order>periodInfo.Order) return null;   //只能小周期转大周期
+
+        var result;
+        if (curPeriodInfo.Period==periodInfo.Period) 
+        {
+            result=this.Data;
+        }
+        else
+        {
+            var hisData;
+            if (this.IsApiPeriod)
+            {
+                if (!this.PeriodData.has(periodName)) return null;
+                hisData=this.PeriodData.get(periodName);
+            }
+            else
+            {
+                if (ChartData.IsMinutePeriod(curPeriodInfo.Period,true) && ChartData.IsDayPeriod(periodInfo.Period,true))
+                {
+                    var dayData=this.PeriodData.get('DAY'); //日线
+                    if (periodInfo.Period==0) hisData=dayData;
+                    else hisData=dayData.GetPeriodData(periodInfo.Period);  //日线周期
+                }
+                else
+                {
+                    var bindData=new ChartData();
+                    bindData.Data=this.SourceData.Data;
+                    bindData.Period=this.Period;
+                    bindData.Right=this.Right;
+
+                    if (ChartData.IsDayPeriod(periodInfo.Period,true) && bindData.Right>0) //日线数据才复权
+                    {
+                        var rightData=bindData.GetRightData(bindData.Right);
+                        bindData.Data=rightData;
+                    }
+
+                    hisData=bindData.GetPeriodData(periodInfo.Period);
+                }
+            }
+
+            var data=this.Data.ConverPeriod(hisData, this.Period, periodInfo.Period);
+            var result=new ChartData();
+            result.Data=data;
+        }
+
+        if (IFrameSplitOperator.IsPlusNumber(n))
+        {
+            var refResult=new ChartData();
+            var data=result.GetRef(n);
+            refResult.Data=data;
+            result=refResult;
+        }
+
+        var upperSymbol=this.Symbol.toUpperCase();
+
+        switch(valueName)
+        {
+            case 'C':
+            case "CLOSE":
+                return result.GetClose();
+            case 'O':
+            case "OPEN":
+                return result.GetOpen();
+            case 'H':
+            case "HIGH":
+                return result.GetHigh();
+            case 'L':
+            case "LOW":
+                return result.GetLow();
+            case 'AMO':
+            case "AMOUNT":
+                return result.GetAmount();
+            case 'V':
+            case "VOL":
+                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) 
+                    return result.GetVol(100);
+                return result.GetVol();
+            case "VOLINSTK":
+                return result.GetPosition();
+            default:
+                return null;
+        }
     }
 
     this.GetCurrBarsCount=function()
@@ -58614,6 +58886,7 @@ JSSymbolData.prototype.IsDivideNumber=function(value)
     return true;
 }
 
+
 JSSymbolData.prototype.JsonDataToFinance=function(data)
 {
     var financeData;
@@ -58668,9 +58941,9 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_INDEX_INCREASE_DATA:4, //涨跌股票个数统计数据
     JOB_DOWNLOAD_VOLR_DATA:5,           //5日量比均量下载量比数据
     JOB_DOWNLOAD_GROUP_DATA:6,          //所属行业|地区|概念
-    JOB_DOWNLOAD_SYMBOL_DAY_DATA:7,     //股票日线数据
     JOB_DOWNLOAD_LATEST_INDEX_DATA:8,   //下载最新大盘数据
     JOB_DOWNLOAD_OTHER_SYMBOL_DATA:9,   //下载其他股票的K线数据
+    JOB_DOWNLOAD_SYMBOL_PERIOD_DATA:10, //下载周期数据
 
     //财务函数
     JOB_DOWNLOAD_TOTAL_EQUITY_DATA:100,          //总股本（万股）
@@ -58999,8 +59272,8 @@ function JSExecute(ast,option)
         {
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA:
                 return this.SymbolData.GetSymbolData();
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DAY_DATA:
-                return this.SymbolData.GetSymbolDayData();
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_PERIOD_DATA:
+                return this.SymbolData.GetSymbolPeriodData(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_DATA:
                 return this.SymbolData.GetIndexData();
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_LATEST_INDEX_DATA:
@@ -59189,6 +59462,12 @@ function JSExecute(ast,option)
         if (g_JSComplierResource.IsCustomVariant(name)) return this.ReadCustomVariant(name,node); //读取自定义变量
 
         if (this.VarTable.has(name)) return this.VarTable.get(name);
+
+        if (name.indexOf('#')>0)
+        {
+            var aryPeriod=name.split('#');
+            return this.SymbolData.GetSymbolPeriodCacheData(aryPeriod[0],aryPeriod[1]);
+        }
 
         this.ThrowUnexpectedNode(node, '变量'+name+'不存在');
         return null;
@@ -59704,6 +59983,16 @@ function JSExecute(ast,option)
             case 'AMO':
                 node.Out=this.SymbolData.GetOtherSymolCacheData(funcName, args);
                 break;
+
+            case 'COVER_C':
+            case 'COVER_O':
+            case 'COVER_H':
+            case 'COVER_L':
+            case 'COVER_A':
+            case 'COVER_V':
+                if (args.length==2) return this.SymbolData.GetSymbolPeriodCacheData2(JSComplierHelper.GetConvertValueName(funcName),args[0],args[1]);
+                return this.SymbolData.GetSymbolPeriodCacheData(JSComplierHelper.GetConvertValueName(funcName),args[0]);
+
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node, this.SymbolData);
                 break;
@@ -60158,7 +60447,8 @@ function ScriptIndex(name,script,args,option)
             MaxRequestMinuteDayCount:hqChart.MaxRequestMinuteDayCount,
             Arguments:this.Arguments,
             Condition:this.Condition,
-            IsBeforeData:hqChart.IsBeforeData
+            IsBeforeData:hqChart.IsBeforeData,
+            IsApiPeriod:hqChart.IsApiPeriod,
         };
 
         if (hqDataType===HQ_DATA_TYPE.HISTORY_MINUTE_ID) option.TrateDate=hqChart.TradeDate;

@@ -9022,7 +9022,8 @@ function ChartData()
         return true;
     }
 
-    this.CoverTo=function(data, curPeriod, changePeriod) //把数据用data, 日期时间不变, curPeriod=当前周期  changePeriod=需要转换周期
+    //跨周期转化
+    this.ConverPeriod=function(data, curPeriod, changePeriod) //把数据用data, 日期时间不变, curPeriod=当前周期  changePeriod=需要转换周期
     {
         var result=[];
         var tempItem=null;
@@ -9071,7 +9072,7 @@ function ChartData()
             result.push(newItem);
         }
 
-        JSConsole.Chart.Log('[ChartData::CoverTo] result', result);
+        JSConsole.Chart.Log('[ChartData::ConverPeriod] result', result);
         return result;
     }
 
