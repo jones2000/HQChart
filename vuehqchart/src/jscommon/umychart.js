@@ -21759,6 +21759,63 @@ function DynamicChartTitlePainting()
 
     this.IsKLineFrame=false;    //是否是K线框架标题
 
+    //动态标题
+    this.OutName=null;
+
+    this.SetDynamicOutName=function(outName, args)
+    {
+        if (!this.OutName) this.OutName=new Map();
+        else this.OutName.clear();
+
+        var mapArgs=new Map();
+        for(var i in args)
+        {
+            var item=args[i];
+            mapArgs.set(`{${item.Name}}`, item);
+        }
+
+        for(var i in outName)
+        {
+            var item=outName[i];
+            var aryFond = item.DynamicName.match(/{\w*}/i);
+            if (!aryFond || aryFond.length<=0) 
+            {
+                this.OutName.set(item.Name, item.DynamicName);
+            }
+            else
+            {
+                var dyName=item.DynamicName;
+                var bFind=true;
+                for(var j=0;j<aryFond.length;++j)
+                {
+                    var findItem=aryFond[j];
+                    if (mapArgs.has(findItem))
+                    {
+                        var value=mapArgs.get(findItem).Value;
+                        dyName=dyName.replace(findItem,value.toString());
+                    }
+                    else
+                    {
+                        bFind=false;
+                        break;
+                    }
+                }
+
+                if (bFind) this.OutName.set(item.Name, dyName);
+            }
+        }
+
+        
+    }
+
+    this.GetDynamicOutName=function(outName)
+    {
+        if (!this.OutName || this.OutName.size<=0) return null;
+        if (!this.OutName.has(outName)) return null;
+
+        return this.OutName.get(outName);
+    }
+
     this.IsClickTitle=function(x,y) //是否点击了指标标题
     {
         if (!this.TitleRect) return false;
@@ -21930,7 +21987,12 @@ function DynamicChartTitlePainting()
             this.Canvas.fillStyle=item.Color;
 
             var text=valueText;
-            if (item.Name) text=item.Name+":"+valueText;
+            if (item.Name) 
+            {
+                var dyTitle=this.GetDynamicOutName(item.Name);
+                if (dyTitle) text=dyTitle+":"+valueText;
+                else text=item.Name+":"+valueText;
+            }
             var space=this.ParamSpace*GetDevicePixelRatio();
             var textWidth=this.Canvas.measureText(text).width+space;    //后空2个像素
             this.Canvas.fillText(text,left,bottom,textWidth);
@@ -29181,14 +29243,7 @@ function KLineChartContainer(uielement)
             {
                 if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
             }
-            let indexData = 
-            { 
-                Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
-                //扩展属性 可以是空
-                KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition, StringFormat:indexInfo.StringFormat
-            };
-
+            let indexData = indexInfo;
             if (option)
             {
                 if (option.FloatPrecision>=0) indexData.FloatPrecision=option.FloatPrecision;
@@ -29505,7 +29560,8 @@ function KLineChartContainer(uielement)
                     Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:item.Index,
                     //扩展属性 可以是空
                     KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                    FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
+                    FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
+                    OutName:indexInfo.OutName
                 };
     
                 this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
@@ -29634,7 +29690,8 @@ function KLineChartContainer(uielement)
                             Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:indexID ,
                             //扩展属性 可以是空
                             KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition
+                            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
+                            OutName:indexInfo.OutName
                         };
     
                         this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
@@ -32418,7 +32475,8 @@ function MinuteChartContainer(uielement)
             Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
             //扩展属性 可以是空
             KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,StringFormat:indexInfo.StringFormat
+            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,StringFormat:indexInfo.StringFormat,
+            OutName:indexInfo.OutName
         };
 
         if (option)
@@ -33476,7 +33534,8 @@ function MinuteChartContainer(uielement)
         switch(name)
         {
             case 'MinuteTooltip':
-                chart=new MinuteTooltipPaint();
+                if (option.Create && typeof(option.Create)=='function') chart=option.Create();
+                else chart=new MinuteTooltipPaint();
                 chart.Canvas=this.Canvas;
                 chart.ChartBorder=this.Frame.ChartBorder;
                 chart.ChartFrame=this.Frame;
@@ -41246,6 +41305,19 @@ var MARKET_SUFFIX_NAME=
         {
             return this.GetLMEMarketStatus(upperSymbol);
         }
+        else if (this.IsChinaFutures(upperSymbol))  //国内期货
+        {
+            if(day == 6 || day== 0) return 0;   //周末
+
+            //21:00-2:30
+            if(time>=2100) return 2;
+            if (time<=240) return 2;
+
+            //8:55-11:30, 13:00-15:00
+            if(time>=830 && time<=1510) return 2;
+
+            return 1;
+        }
         else    //9:30 - 15:40
         {
             if(day == 6 || day== 0) return 0;   //周末
@@ -42452,8 +42524,9 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-WR', {Time:0,Decimal:0,Name:"线材"}],
         [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0,Name:"白银"}],
         [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2,Name:"黄金"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:5,Decimal:1}],
-        [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:5,Decimal:1}],
+        [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:6,Decimal:1,Name:'中质含硫原油'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-LU', {Time:6,Decimal:0,Name:'低硫燃料油'}],
        
         //郑州期货交易所
         [MARKET_SUFFIX_NAME.CZCE + '-CF', {Time:6,Decimal:0,Name:"棉花"}],
@@ -42483,11 +42556,11 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CZCE + '-SM', {Time:0,Decimal:0}],
 
         //中期所 
-        [MARKET_SUFFIX_NAME.CFFEX + '-TF', {Time:1,Decimal:3}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-TS', {Time:1,Decimal:3}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IH', {Time:2,Decimal:1}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IC', {Time:2,Decimal:1}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IF', {Time:2,Decimal:1}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-TF', {Time:1,Decimal:3,Name:"二债"}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-TS', {Time:1,Decimal:3,Name:"五债"}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IH', {Time:2,Decimal:1,Name:'上证股指期货'}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IC', {Time:2,Decimal:1,Name:'中证股指期货'}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IF', {Time:2,Decimal:1,Name:'沪深股指期货'}],
     ]);
 
     this.MAP_ONEWORD=new Map([
@@ -42503,7 +42576,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.DCE + '-J', {Time:6,Decimal:1,Name:'焦炭'}],
         [MARKET_SUFFIX_NAME.DCE + '-I', {Time:6,Decimal:1,Name:"铁矿"}],
         //中期所 
-        [MARKET_SUFFIX_NAME.CFFEX + '-T', {Time:1,Decimal:3}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-T', {Time:1,Decimal:3,Name:"十债"}],
     ]);
 
     //添加新品种

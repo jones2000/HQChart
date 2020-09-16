@@ -13093,6 +13093,7 @@ function ScriptIndex(name,script,args,option)
     this.YSpecificMaxMin=null;  //最大最小值
     this.YSplitScale=null;      //固定刻度
     this.Condition=null;        //限制条件
+    this.OutName=null;          //动态输出指标名字
 
     //指标上锁配置信息
     this.IsLocked=false;    //是否锁住指标
@@ -13119,6 +13120,7 @@ function ScriptIndex(name,script,args,option)
         if (option.Condition) this.Condition=option.Condition;
         if (option.TitleFont) this.TitleFont=option.TitleFont;
         if (option.IsShortTitle) this.IsShortTitle=option.IsShortTitle;
+        if (option.OutName) this.OutName=option.OutName;
     }
 
     if (option && option.Lock) 
@@ -14079,7 +14081,14 @@ function ScriptIndex(name,script,args,option)
             {
                 if (this.StringFormat>0) titlePaint.Data[i].StringFormat=this.StringFormat;
                 if (this.FloatPrecision>=0) titlePaint.Data[i].FloatPrecision=this.FloatPrecision;
+
+                if (this.OutName && this.OutName.length>0 && this.Arguments && this.Arguments.length>0)
+                {
+                    titlePaint.SetDynamicOutName(this.OutName,this.Arguments);
+                }
             }
+
+            
         }
 
         let titleIndex=windowIndex+1;

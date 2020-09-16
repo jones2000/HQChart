@@ -518,6 +518,7 @@ function JSChart(element)
 
         var windowsCount = 2;
         if (option.Windows && option.Windows.length > 0) windowsCount += option.Windows.length; //指标窗口从第3个窗口开始
+        if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
 
         if (option.Info && option.Info.length > 0) chart.SetMinuteInfo(option.Info, false);
         if (option.SplashTitle) chart.SplashTitle = option.SplashTitle; //设置提示信息内容
@@ -1223,6 +1224,7 @@ function JSChartContainer(uielement)
     this.UIElement = uielement;
     this.MouseDrag;
     this.DragMode = 1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+    this.EnableScrollUpDown=false;                    //是否可以上下滚动图形(手机端才有)
 
     this.TouchTimer = null;         //触屏定时器
     this.LastDrawStatus;            //最后一次画的状态
@@ -8196,14 +8198,7 @@ function KLineChartContainer(uielement)
             {
                 if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
             }
-            let indexData = 
-            { 
-                Name: indexInfo.Name, Script: indexInfo.Script, Args: indexInfo.Args, ID: indexName,
-                //扩展属性 可以是空
-                KLineType: indexInfo.KLineType, YSpecificMaxMin: indexInfo.YSpecificMaxMin, YSplitScale: indexInfo.YSplitScale,
-                FloatPrecision: indexInfo.FloatPrecision, StringFormat: indexInfo.StringFormat
-            };
-
+            let indexData = indexInfo;
             if (option) 
             {
                 if (option.FloatPrecision >= 0) indexData.FloatPrecision = option.FloatPrecision;
@@ -8373,7 +8368,8 @@ function KLineChartContainer(uielement)
                             Name: indexInfo.Name, Script: indexInfo.Script, Args: args, ID: indexID,
                             //扩展属性 可以是空
                             KLineType: indexInfo.KLineType, YSpecificMaxMin: indexInfo.YSpecificMaxMin, YSplitScale: indexInfo.YSplitScale,
-                            FloatPrecision: indexInfo.FloatPrecision, Condition: indexInfo.Condition
+                            FloatPrecision: indexInfo.FloatPrecision, Condition: indexInfo.Condition,
+                            OutName:indexInfo.OutName
                         };
 
                         this.WindowIndex[i] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
@@ -9478,58 +9474,91 @@ function MinuteChartContainer(uielement)
     this.MinuteApiUrl = g_JSChartResource.Domain + "/API/Stock";
     this.HistoryMinuteApiUrl = g_JSChartResource.Domain + "/API/StockMinuteData";   //历史分钟数据
 
-  //手机拖拽
-  this.ontouchstart = function (e) {
-    this.IsOnTouch = true;
-    var jsChart = this;
-    if (jsChart.DragMode == 0) return;
+    //手机拖拽
+    this.ontouchstart = function (e) 
+    {
+        this.IsOnTouch = true;
+        var jsChart = this;
+        if (jsChart.DragMode == 0) return;
 
-    if (this.IsPhoneDragging(e)) {
-      if (jsChart.TryClickLock) {
+        if (this.IsPhoneDragging(e)) 
+        {
+            if (jsChart.TryClickLock) 
+            {
+                var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
+                var x = touches[0].clientX;
+                var y = touches[0].clientY;
+                if (jsChart.TryClickLock(x, y)) return;
+            }
+
+            //长按2秒,十字光标
+            if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
+
+            var drag =
+            {
+              "Click": {},
+              "LastMove": {},  //最后移动的位置
+            };
+
+            var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
+
+            drag.Click.X = touches[0].clientX;
+            drag.Click.Y = touches[0].clientY;
+            drag.LastMove.X = touches[0].clientX;
+            drag.LastMove.Y = touches[0].clientY;
+
+            var T_ShowCorssCursor=()=>
+            {
+                if (this.ChartCorssCursor.IsShow === true)    //移动十字光标
+                {
+                    var x = drag.Click.X;
+                    var y = drag.Click.Y;
+                    if (jsChart.IsForceLandscape) y = jsChart.UIElement.Height - drag.Click.Y;    //强制横屏Y计算
+                    jsChart.OnMouseMove(x, y, e);
+                }
+            }
+
+            if (this.EnableScrollUpDown==true)
+            {
+                this.TouchTimer=setTimeout(()=>
+                {
+                    this.MouseDrag=null;
+                    T_ShowCorssCursor();
+                }, 800);
+            }
+
+            this.MouseDrag=drag;
+            if (this.EnableScrollUpDown==false)
+                T_ShowCorssCursor();
+        }
+    }
+
+    this.ontouchmove = function (e) 
+    {
+        var jsChart = this;
+        var drag = jsChart.MouseDrag;
         var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
-        var x = touches[0].clientX;
-        var y = touches[0].clientY;
-        if (jsChart.TryClickLock(x, y)) return;
-      }
+        if (this.ChartCorssCursor.IsShow === true && this.IsPhoneDragging(e)) 
+        {
+            if (drag == null) 
+            {
+                var x = touches[0].clientX;
+                var y = touches[0].clientY;
+                jsChart.OnMouseMove(x, y, e);
+            }
+        }
 
-      //长按2秒,十字光标
-      if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
+        if (drag!=null)
+        {
+            //TODO:上下滚动
+            if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
 
-      var drag =
-      {
-        "Click": {},
-        "LastMove": {},  //最后移动的位置
-      };
-
-      var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
-
-      drag.Click.X = touches[0].clientX;
-      drag.Click.Y = touches[0].clientY;
-      drag.LastMove.X = touches[0].clientX;
-      drag.LastMove.Y = touches[0].clientY;
-
-      if (this.ChartCorssCursor.IsShow === true)    //移动十字光标
-      {
-        var x = drag.Click.X;
-        var y = drag.Click.Y;
-        if (jsChart.IsForceLandscape) y = jsChart.UIElement.Height - drag.Click.Y;    //强制横屏Y计算
-        jsChart.OnMouseMove(x, y, e);
-      }
+            this.MouseDrag=null;
+            var x = touches[0].clientX;
+            var y = touches[0].clientY;
+            this.OnMouseMove(x,y,e);
+        }
     }
-  }
-
-  this.ontouchmove = function (e) {
-    var jsChart = this;
-    var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
-    if (this.ChartCorssCursor.IsShow === true && this.IsPhoneDragging(e)) {
-      var drag = jsChart.MouseDrag;
-      if (drag == null) {
-        var x = touches[0].clientX;
-        var y = touches[0].clientY;
-        jsChart.OnMouseMove(x, y, e);
-      }
-    }
-  }
 
     //创建
     //windowCount 窗口个数
@@ -12058,6 +12087,7 @@ function ScriptIndex(name, script, args, option)
     this.InstructionType;       //五彩K线, 交易指标
     this.YSpecificMaxMin = null;  //最大最小值
     this.YSplitScale = null;      //固定刻度
+    this.OutName=null;          //动态输出指标名字
    
     //指标上锁配置信息
     this.IsLocked = false;    //是否锁住指标
@@ -12078,6 +12108,7 @@ function ScriptIndex(name, script, args, option)
         if (option.InstructionType) this.InstructionType = option.InstructionType;
         if (option.YSpecificMaxMin) this.YSpecificMaxMin = option.YSpecificMaxMin;
         if (option.YSplitScale) this.YSplitScale = option.YSplitScale;
+        if (option.OutName) this.OutName=option.OutName;
     }
 
     if (option && option.Lock) 
@@ -12715,6 +12746,10 @@ function ScriptIndex(name, script, args, option)
             {
                 if (this.StringFormat > 0) titlePaint.Data[i].StringFormat = this.StringFormat;
                 if (this.FloatPrecision >= 0) titlePaint.Data[i].FloatPrecision = this.FloatPrecision;
+                if (this.OutName && this.OutName.length>0 && this.Arguments && this.Arguments.length>0)
+                {
+                    titlePaint.SetDynamicOutName(this.OutName,this.Arguments);
+                }
             }
         }
 

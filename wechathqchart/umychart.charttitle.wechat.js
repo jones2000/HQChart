@@ -952,6 +952,59 @@ function DynamicChartTitlePainting()
 
     this.IsShowIndexName = true;     //是否显示指标名字
     this.ParamSpace = 2;           //参数显示的间距
+    this.OutName=null;              //动态标题
+
+    this.SetDynamicOutName=function(outName, args)
+    {
+        if (!this.OutName) this.OutName=new Map();
+        else this.OutName.clear();
+
+        var mapArgs=new Map();
+        for(var i in args)
+        {
+            var item=args[i];
+            mapArgs.set(`{${item.Name}}`, item);
+        }
+
+        for(var i in outName)
+        {
+            var item=outName[i];
+            var aryFond = item.DynamicName.match(/{\w*}/i);
+            if (!aryFond || aryFond.length<=0) 
+            {
+                this.OutName.set(item.Name, item.DynamicName);
+            }
+            else
+            {
+                var dyName=item.DynamicName;
+                var bFind=true;
+                for(var j=0;j<aryFond.length;++j)
+                {
+                    var findItem=aryFond[j];
+                    if (mapArgs.has(findItem))
+                    {
+                        var value=mapArgs.get(findItem).Value;
+                        dyName=dyName.replace(findItem,value.toString());
+                    }
+                    else
+                    {
+                        bFind=false;
+                        break;
+                    }
+                }
+
+                if (bFind) this.OutName.set(item.Name, dyName);
+            }
+        }
+    }
+
+    this.GetDynamicOutName=function(outName)
+    {
+        if (!this.OutName || this.OutName.size<=0) return null;
+        if (!this.OutName.has(outName)) return null;
+
+        return this.OutName.get(outName);
+    }
 
     this.IsClickTitle=function(x,y) //是否点击了指标标题
     {
@@ -1141,7 +1194,11 @@ function DynamicChartTitlePainting()
             if (item.Data.Data.length <= 0) continue;
             if (!item.Name) continue;
 
-            var indexName = '●' + item.Name;
+            var indexName;
+            var dyTitle=this.GetDynamicOutName(item.Name);
+            if (dyTitle) indexName='●' +dyTitle;
+            else indexName = '●' + item.Name;
+
             this.Canvas.fillStyle = item.Color;
             textWidth = this.Canvas.measureText(indexName).width + this.ParamSpace;
             if (left + textWidth >= right) break;
@@ -1261,8 +1318,16 @@ function DynamicChartTitlePainting()
             this.Canvas.fillStyle = item.Color;
 
             var text;
-            if (item.Name) text = item.Name + ":" + valueText;
-            else text=valueText;
+            if (item.Name) 
+            {
+                var dyTitle=this.GetDynamicOutName(item.Name);
+                if (dyTitle) text=dyTitle+ ":" + valueText;
+                else text = item.Name + ":" + valueText;
+            }
+            else 
+            {
+                text=valueText;
+            }
             var textWidth = this.Canvas.measureText(text).width + this.ParamSpace;    //后空2个像素
             this.Canvas.fillText(text, left, bottom, textWidth);
             left += textWidth;

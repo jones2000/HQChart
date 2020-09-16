@@ -15,6 +15,7 @@
     指标数据脚本 系统内置指标都写在这里
     Name：指标名字
     Description：指标描述信息
+    Args:参数 { Name:名字, Value=值 }
     IsMainIndex：是否是主图指标 true=主图指标 false=副图指标
     KLineType:K线设置 -1=主图不显示K线(只在主图有效) 0=在副图显示K线 1=在副图显示K线(收盘价线) 2=在副图显示K线(美国线)
     InstructionType: 1=专家指示  2=五彩K线
@@ -23,6 +24,7 @@
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
     StringFormat: 1=带单位万/亿 2=原始格式
     Condition: 限制条件 { Symbol:'Index'/'Stock'(只支持指数/股票),Period:[](支持的周期), Include:[](指定支持的股票,代码全部大写包括后缀)}
+    OutName:动态输出变量名字 [{Name:原始变量名, DynamicName:动态名字格式}] 如 {Name:"MA1", DynamicName:"MA{M1}"};
 */
 
 //周期条件枚举
@@ -185,6 +187,7 @@ JSIndexScript.prototype.MA=function()
     {
         Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
         Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" }],
         Script: //脚本
 'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -201,6 +204,7 @@ JSIndexScript.prototype.MA4=function()
     {
         Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
         Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20},{ Name:'M4', Value:60} ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" } ],
         Script: //脚本
 'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -218,6 +222,7 @@ JSIndexScript.prototype.MA5=function()
     {
         Name:'MA', Description:'均线', IsMainIndex:true, StringFormat:2,
         Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} ,{ Name:'M4', Value:60} ,{ Name:'M5', Value:0}],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" },{Name:'MA5',DynamicName:"MA{M5}" } ],
         Script: //脚本
 'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -240,6 +245,8 @@ JSIndexScript.prototype.MA6=function()
             { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} , { Name:'M4', Value:60} ,
             { Name:'M5', Value:0},{ Name:'M6', Value:0}
         ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" },
+        {Name:'MA5',DynamicName:"MA{M5}" } ,{ Name:'MA6',DynamicName:"MA{M6}" } ],
         Script: //脚本
 'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -263,6 +270,8 @@ JSIndexScript.prototype.MA7=function()
             { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20}, { Name:'M4', Value:60},
             { Name:'M5', Value:0},{ Name:'M6', Value:0} ,{ Name:'M7', Value:0 } 
         ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" },
+        {Name:'MA5',DynamicName:"MA{M5}" } ,{ Name:'MA6',DynamicName:"MA{M6}" } ,{ Name:'MA7',DynamicName:"MA{M7}" }],
         Script: //脚本
 'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -287,6 +296,8 @@ JSIndexScript.prototype.MA8=function()
             { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20}, { Name:'M4', Value:60},
             { Name:'M5', Value:0},{ Name:'M6', Value:0} ,{ Name:'M7', Value:0 } ,{ Name:'M8', Value:0 } 
         ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" },
+        {Name:'MA5',DynamicName:"MA{M5}" } ,{ Name:'MA6',DynamicName:"MA{M6}" } ,{ Name:'MA7',DynamicName:"MA{M7}" },{ Name:'MA8',DynamicName:"MA{M8}" }],
         Script: //脚本
 'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -486,6 +497,7 @@ JSIndexScript.prototype.VOL=function()
     {
         Name:'VOL', Description:'成交量', IsMainIndex:false,FloatPrecision:0,
         Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10} ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" }],
         Script: //脚本
 'VOL:VOL,VOLSTICK;\n\
 MA1:MA(VOL,M1);\n\
