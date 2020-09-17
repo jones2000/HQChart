@@ -259,6 +259,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 ## 高级应用实战教程（付费文章）
 1. [HQChart实战教程19 - PC端分时图定制tooltip](https://blog.csdn.net/jones2000/article/details/108633991)<br>
+2. [HQChart实战教程20 - PC端K线图定制tooltip](https://blog.csdn.net/jones2000/article/details/108639960)<br>
 
 
 
