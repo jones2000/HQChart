@@ -303,6 +303,19 @@ var MARKET_SUFFIX_NAME=
         {
             return this.GetNYMEXMarketStatus(upperSymbol);
         }
+        else if (this.IsChinaFutures(upperSymbol))  //国内期货
+        {
+            if(day == 6 || day== 0) return 0;   //周末
+
+            //21:00-2:30
+            if(time>=2100) return 2;
+            if (time<=240) return 2;
+
+            //8:55-11:30, 13:00-15:00
+            if(time>=830 && time<=1510) return 2;
+
+            return 1;
+        }
         else    //9:30 - 15:40
         {
             if (day == 6 || day == 0) return 0;   //周末
@@ -1250,6 +1263,11 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-WR', { Time: 0, Decimal: 0 }],
         [MARKET_SUFFIX_NAME.SHFE + '-AG', { Time: 5, Decimal: 0 }],
         [MARKET_SUFFIX_NAME.SHFE + '-AU', { Time: 5, Decimal: 2 }],
+        //上期能源
+        [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:6,Decimal:1,Name:'中质含硫原油'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-LU', {Time:6,Decimal:0,Name:'低硫燃料油'}],
+
         //郑州期货交易所
         [MARKET_SUFFIX_NAME.CZCE + '-CF', { Time: 3, Decimal: 0 }],
         [MARKET_SUFFIX_NAME.CZCE + '-SR', { Time: 3, Decimal: 0 }],
@@ -1276,12 +1294,13 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CZCE + '-LR', { Time: 0, Decimal: 0 }],
         [MARKET_SUFFIX_NAME.CZCE + '-SF', { Time: 0, Decimal: 0 }],
         [MARKET_SUFFIX_NAME.CZCE + '-SM', { Time: 0, Decimal: 0 }],
-        //中期所 
-        [MARKET_SUFFIX_NAME.CFFEX + '-TF', { Time: 1, Decimal: 3 }],
-        [MARKET_SUFFIX_NAME.CFFEX + '-TS', { Time: 1, Decimal: 3 }],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IH', { Time: 2, Decimal: 1 }],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IC', { Time: 2, Decimal: 1 }],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IF', { Time: 2, Decimal: 1 }],
+        
+        //中期所
+        [MARKET_SUFFIX_NAME.CFFEX + '-TF', {Time:1,Decimal:3,Name:"二债"}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-TS', {Time:1,Decimal:3,Name:"五债"}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IH', {Time:2,Decimal:1,Name:'上证股指期货'}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IC', {Time:2,Decimal:1,Name:'中证股指期货'}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IF', {Time:2,Decimal:1,Name:'沪深股指期货'}],
     ]);
 
     const MAP_ONEWORD = new Map([
@@ -1297,7 +1316,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.DCE + '-J', {Time:6,Decimal:1,Name:'焦炭'}],
         [MARKET_SUFFIX_NAME.DCE + '-I', {Time:6,Decimal:1,Name:"铁矿"}],
         //中期所 
-        [MARKET_SUFFIX_NAME.CFFEX + '-T', { Time: 1, Decimal: 3 }],
+        [MARKET_SUFFIX_NAME.CFFEX + '-T', { Time: 1, Decimal: 3, Name:"十债"}],
     ]);
 
     this.GetData = function (upperSymbol) 
