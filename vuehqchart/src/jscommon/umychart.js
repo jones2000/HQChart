@@ -397,9 +397,11 @@ function JSChart(divElement)
         {
             var item=option.OverlayIndex[i];
             if (item.Windows>=chart.Frame.SubFrame.length) continue;
-            var obj={ WindowIndex:item.Windows,IndexName: item.Index, ShowRightText:item.ShowRightText };
-            if (item.Args) obj.Args=item.Args;
-            if (item.API) obj.API=item.API;
+
+            var itemString = JSON.stringify(item);
+            var obj = JSON.parse(itemString);
+            if (item.Index) obj.IndexName=item.Index;
+            if (item.Windows>=0) obj.WindowIndex=item.Windows;
             chart.CreateOverlayWindowsIndex(obj);
         }
 
@@ -3800,6 +3802,14 @@ function JSChartContainer(uielement)
     {
         if (IFrameSplitOperator.IsBool(option.IsLockScreen)) this.ChartDrawOption.IsLockScreen=option.IsLockScreen;
         if (IFrameSplitOperator.IsNumber(option.Zoom) && option.Zoom>=0)  this.ChartDrawOption.Zoom=option.Zoom;
+    }
+
+    //是否显示十字光标的十字线
+    this.EnableShowCorssCursorLine=function(bShow)
+    {
+        if (!this.ChartCorssCursor) return;
+
+        this.ChartCorssCursor.IsShowCorss=bShow;
     }
 }
 
@@ -14292,58 +14302,72 @@ function ChartBand()
         var y2 = 0;
         var firstlinePoints = [];
         var secondlinePoints = [];
-        var lIndex = 0;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        for(var i=this.Data.DataOffset,j=0; i<this.Data.Data.length && j<xPointCount;++i, ++j, xOffset+=(dataWidth+distanceWidth))
         {
-            var value=this.Data.Data[i];
-            if (value==null || value.Value==null || value.Value2 == null) continue;
-            x=this.ChartFrame.GetXFromIndex(j);
-            y=this.ChartFrame.GetYFromData(value.Value);
-            y2 = this.ChartFrame.GetYFromData(value.Value2);
-            firstlinePoints[lIndex] = {x:x,y:y};
-            secondlinePoints[lIndex] = {x:x,y:y2};
-            lIndex++;
-        }
-        if (firstlinePoints.length > 1)
-        {
-            this.Canvas.save();
-            this.Canvas.beginPath();
-            for (var i = 0; i < firstlinePoints.length; ++i)
+            firstlinePoints = [];
+            secondlinePoints = [];
+            for(;i<this.Data.Data.length && j<xPointCount;++i, ++j, xOffset+=(dataWidth+distanceWidth))
             {
-                if (i == 0)
-                    this.Canvas.moveTo(firstlinePoints[i].x, firstlinePoints[i].y);
-                else
-                    this.Canvas.lineTo(firstlinePoints[i].x, firstlinePoints[i].y);
-            }  
-            for (var j = secondlinePoints.length-1; j >= 0; --j)
-            {
-                this.Canvas.lineTo(secondlinePoints[j].x, secondlinePoints[j].y);
-            }  
-            this.Canvas.closePath();
-            this.Canvas.clip();
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(firstlinePoints[0].x, this.ChartBorder.GetBottom());
-            for (var i = 0; i < firstlinePoints.length; ++i)
-            {
-                this.Canvas.lineTo(firstlinePoints[i].x, firstlinePoints[i].y);
+                var value=this.Data.Data[i];
+                if (value==null || value.Value==null || value.Value2 == null) break;
+                x=this.ChartFrame.GetXFromIndex(j);
+                y=this.ChartFrame.GetYFromData(value.Value);
+                y2 = this.ChartFrame.GetYFromData(value.Value2);
+                firstlinePoints.push({x:x,y:y});
+                secondlinePoints.push({x:x,y:y2});
             }
-            this.Canvas.lineTo(firstlinePoints[firstlinePoints.length-1].x, this.ChartBorder.GetBottom());
-            this.Canvas.closePath();
-            this.Canvas.fillStyle = this.FirstColor;
-            this.Canvas.fill();
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(secondlinePoints[0].x, this.ChartBorder.GetBottom());
-            for (var i = 0; i < secondlinePoints.length; ++i)
+
+            if (firstlinePoints.length>1 && secondlinePoints.length>1)
             {
-                this.Canvas.lineTo(secondlinePoints[i].x, secondlinePoints[i].y);
+                this.DrawBand(firstlinePoints, secondlinePoints);
             }
-            this.Canvas.lineTo(secondlinePoints[secondlinePoints.length-1].x, this.ChartBorder.GetBottom());
-            this.Canvas.closePath();
-            this.Canvas.fillStyle = this.SecondColor;
-            this.Canvas.fill();
-            this.Canvas.restore();
         }
     }
+
+    this.DrawBand=function(aryFrist, arySecond)
+    {
+        this.Canvas.save();
+        this.Canvas.beginPath();
+        for(var i=0;i<aryFrist.length;++i)
+        {
+            if (i == 0)
+                this.Canvas.moveTo(aryFrist[i].x, aryFrist[i].y);
+            else
+                this.Canvas.lineTo(aryFrist[i].x, aryFrist[i].y);
+        }
+
+        for (var i = arySecond.length-1; i >= 0; --i)
+        {
+            this.Canvas.lineTo(arySecond[i].x, arySecond[i].y);
+        }  
+        this.Canvas.closePath();
+        this.Canvas.clip();
+
+        this.Canvas.moveTo(aryFrist[0].x, this.ChartBorder.GetBottom());
+        for (var i = 0; i < aryFrist.length; ++i)
+        {
+            this.Canvas.lineTo(aryFrist[i].x, aryFrist[i].y);
+        }
+        this.Canvas.lineTo(aryFrist[aryFrist.length-1].x, this.ChartBorder.GetBottom());
+        this.Canvas.closePath();
+        this.Canvas.fillStyle = this.FirstColor;
+        this.Canvas.fill();
+
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(arySecond[0].x, this.ChartBorder.GetBottom());
+        for (var i = 0; i < arySecond.length; ++i)
+        {
+            this.Canvas.lineTo(arySecond[i].x, arySecond[i].y);
+        }
+        this.Canvas.lineTo(arySecond[arySecond.length-1].x, this.ChartBorder.GetBottom());
+        this.Canvas.closePath();
+        this.Canvas.fillStyle = this.SecondColor;
+        this.Canvas.fill();
+        
+        this.Canvas.restore();
+    }
+
+
     this.GetMaxMin=function()
     {
         var xPointCount=this.ChartFrame.XPointCount;
@@ -29333,6 +29357,11 @@ function KLineChartContainer(uielement)
         {
             apiItem=obj.API;
         }
+        else if (obj.Script)    //动态执行脚本
+        {
+            indexInfo={ Script:obj.Script, ID:obj.indexName, Name:obj.indexName};
+            if (obj.Name) indexInfo.Name=obj.Name;
+        }
         else
         {
             let scriptData = new JSIndexScript();
@@ -29376,13 +29405,7 @@ function KLineChartContainer(uielement)
         }
         else if (indexInfo)
         {
-            let indexData = 
-            { 
-                Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName , 
-                //扩展属性 可以是空
-                KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
-            };
+            let indexData = indexInfo;
             if (obj.Args) indexData.Args=obj.Args;  //外部可以设置参数
 
             var scriptIndex=new OverlayScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
