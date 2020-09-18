@@ -261,6 +261,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 1. [HQChart实战教程19 - PC端分时图定制tooltip](https://blog.csdn.net/jones2000/article/details/108633991)<br>
 2. [HQChart实战教程20 - PC端K线图定制tooltip](https://blog.csdn.net/jones2000/article/details/108639960)<br>
 3. [HQChart实战教程21 - unapp app端分时图定制tooltip](https://blog.csdn.net/jones2000/article/details/108657043)<br>
+4. [HQChart实战教程21 - uniapp app端K线图定制tooltip](https://blog.csdn.net/jones2000/article/details/108674679)<br>
 
 
 
