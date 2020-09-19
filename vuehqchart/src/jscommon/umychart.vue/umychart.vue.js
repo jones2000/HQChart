@@ -61625,6 +61625,9 @@ function OverlayScriptIndex(name,script,args,option)
                     case 'DRAWCHANNEL':
                         this.CreateChannel(hqChart,windowIndex,item,i);
                         break;
+                    case 'DRAWTEXT_LINE':
+                        this.CreateTextLine(hqChart,windowIndex,item,i);
+                        break;
 
                     case 'MULTI_LINE':
                         this.CreateMultiLine(hqChart,windowIndex,item,i);
@@ -62033,6 +62036,27 @@ function OverlayScriptIndex(name,script,args,option)
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
         frame.ChartPaint.push(chart);
+    }
+
+    this.CreateTextLine=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartTextLine();
+        chart.Canvas=hqChart.Canvas;
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            chart.Text=drawData.Text;
+            chart.Line=drawData.Line;
+            chart.Price=drawData.Price;
+        }
+
+        hqChart.ChartPaint.push(chart);
     }
 
     //创建图标
