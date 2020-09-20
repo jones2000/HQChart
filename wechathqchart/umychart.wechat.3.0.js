@@ -2788,7 +2788,7 @@ function AverageWidthFrame()
                     var textLeft = y - textHeight / 2 - 1;
                     this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
                     this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[0], Color: item.TextColor, XOffset: 1, YOffset: 2 });
-                    if (item.LineType != -1) this.DrawDotLine(bgTop + textWidth, bottom, y, item.LineColor);
+                    this.DrawLine(bgTop + textWidth, bottom, y, item.LineColor,item.LineType);
                 }
                 else
                 {
@@ -2797,7 +2797,7 @@ function AverageWidthFrame()
                     this.Canvas.fillRect(textLeft, bgTop, textWidth, textHeight);
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.fillText(item.Message[0], textLeft + 1, y);
-                    if (item.LineType != -1) this.DrawDotLine(textLeft + textWidth, right, y, item.LineColor);
+                    this.DrawLine(textLeft + textWidth, right, y, item.LineColor,item.LineType);
                 }
             }
             else 
@@ -2813,7 +2813,7 @@ function AverageWidthFrame()
                     var textLeft = y - textHeight / 2 - 1 ;
                     this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
                     this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[0], Color: item.TextColor, XOffset: 1, YOffset: 2 });
-                    if (item.LineType != -1) this.DrawDotLine(bgTop + textWidth, bottom, y, item.LineColor);
+                    this.DrawLine(bgTop + textWidth, bottom, y, item.LineColor,item.LineType);
                 }
                 else
                 {
@@ -2821,8 +2821,7 @@ function AverageWidthFrame()
                     this.Canvas.fillRect(left - textWidth, bgTop, textWidth, textHeight);
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.fillText(item.Message[0], left - 1, y);
-
-                    if (item.LineType != -1) this.DrawDotLine(left, right, y, item.LineColor);
+                    this.DrawLine(left, right, y, item.LineColor,item.LineType);
                 }
             }
         }
@@ -2844,7 +2843,7 @@ function AverageWidthFrame()
                     var textLeft = y - textHeight / 2 - 1;
                     this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
                     this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[1], Color: item.TextColor, XOffset: 1, YOffset: 2 });
-                    if (item.LineType != -1) this.DrawDotLine(top, bgTop, y, item.LineColor);
+                    this.DrawLine(top, bgTop, y, item.LineColor,item.LineType);
                 }
                 else
                 {
@@ -2853,7 +2852,7 @@ function AverageWidthFrame()
                     this.Canvas.fillRect(textLeft, bgTop, textWidth, textHeight);
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.fillText(item.Message[1], textLeft + 1, y);
-                    if (item.LineType != -1) this.DrawDotLine(left, textLeft, y, item.LineColor);
+                    this.DrawLine(left, textLeft, y, item.LineColor,item.LineType);
                 }
                
             }
@@ -2870,7 +2869,7 @@ function AverageWidthFrame()
                     var textLeft = y - textHeight / 2 - 1 ;
                     this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
                     this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[1], Color: item.TextColor, XOffset: 1 , YOffset: 2 });
-                    if (item.LineType != -1) this.DrawDotLine(top, bgTop, y, item.LineColor);
+                    this.DrawLine(top, bgTop, y, item.LineColor,item.LineType);
                 }
                 else
                 {
@@ -2878,9 +2877,35 @@ function AverageWidthFrame()
                     this.Canvas.fillRect(right, bgTop, textWidth, textHeight);
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.fillText(item.Message[1], right + 1, y);
-                    if (item.LineType != -1) this.DrawDotLine(left, right, y, item.LineColor);
+                    this.DrawLine(left, right, y, item.LineColor,item.LineType);
                 }
             }
+        }
+    }
+
+    this.DrawLine=function(left, right, y, color, lineType)
+    {
+        if (lineType==-1) return;
+
+        if (lineType==0)
+        {
+            this.Canvas.strokeStyle = color;
+            this.Canvas.beginPath();
+            if (this.IsHScreen) 
+            {
+                this.Canvas.moveTo(ToFixedPoint(y), left);
+                this.Canvas.lineTo(ToFixedPoint(y), right);
+            }
+            else
+            {
+                this.Canvas.moveTo(left, ToFixedPoint(y));
+                this.Canvas.lineTo(right, ToFixedPoint(y));
+            }
+            this.Canvas.stroke();
+        }
+        else
+        {
+            this.DrawDotLine(left, right, y, color);
         }
     }
 

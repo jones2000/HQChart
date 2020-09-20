@@ -8395,7 +8395,7 @@ function AverageWidthFrame()
                     var textLeft=y-textHeight/2-1*pixelTatio;
                     this.Canvas.fillRect(textLeft,bgTop,textHeight,textWidth);
                     this.DrawHScreenText({X:y, Y:bgTop}, {Text:item.Message[0], Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
-                    if (item.LineType!=-1) this.DrawDotLine(bgTop+textWidth,bottom,y,item.LineColor);
+                    this.DrawLine(bgTop+textWidth,bottom,y,item.LineColor,item.LineType);
                 }
                 else
                 {
@@ -8404,7 +8404,7 @@ function AverageWidthFrame()
                     this.Canvas.fillRect(textLeft,bgTop,textWidth,textHeight);
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.fillText(item.Message[0], textLeft + 1*pixelTatio, y);
-                    if (item.LineType!=-1) this.DrawDotLine(textLeft+textWidth,right,y,item.LineColor);
+                    this.DrawLine(textLeft+textWidth,right,y,item.LineColor,item.LineType);
                 }
             }
             else
@@ -8420,7 +8420,7 @@ function AverageWidthFrame()
                     var textLeft=y-textHeight/2-1*pixelTatio;
                     this.Canvas.fillRect(textLeft,bgTop,textHeight,textWidth);
                     this.DrawHScreenText({X:y, Y:bgTop}, {Text:item.Message[0], Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
-                    if (item.LineType!=-1) this.DrawDotLine(bgTop+textWidth,bottom,y,item.LineColor);
+                    this.DrawLine(bgTop+textWidth,bottom,y,item.LineColor,item.LineType);
                 }
                 else
                 {
@@ -8428,7 +8428,7 @@ function AverageWidthFrame()
                     this.Canvas.fillRect(left-textWidth,bgTop,textWidth,textHeight);
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.fillText(item.Message[0], left - 1*pixelTatio, y);
-                    if (item.LineType!=-1) this.DrawDotLine(left,right,y,item.LineColor);
+                    this.DrawLine(left,right,y,item.LineColor,item.LineType);
                 }
             }
         }
@@ -8450,7 +8450,7 @@ function AverageWidthFrame()
                     var textLeft=y-textHeight/2-1*pixelTatio;
                     this.Canvas.fillRect(textLeft,bgTop,textHeight,textWidth);
                     this.DrawHScreenText({X:y, Y:bgTop}, {Text:item.Message[1], Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
-                    if (item.LineType!=-1) this.DrawDotLine(top,bgTop,y,item.LineColor);
+                    this.DrawLine(top,bgTop,y,item.LineColor,item.LineType);
                 }
                 else
                 {
@@ -8459,7 +8459,7 @@ function AverageWidthFrame()
                     this.Canvas.fillRect(textLeft,bgTop,textWidth,textHeight);  //文本背景区域
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.fillText(item.Message[1], textLeft + 1*pixelTatio, y);
-                    if (item.LineType!=-1) this.DrawDotLine(left,textLeft,y,item.LineColor);    //虚线
+                    this.DrawLine(left,textLeft,y,item.LineColor,item.LineType);
                 }
             }
             else
@@ -8475,7 +8475,7 @@ function AverageWidthFrame()
                     var textLeft=y-textHeight/2-1*pixelTatio;
                     this.Canvas.fillRect(textLeft,bgTop,textHeight,textWidth);
                     this.DrawHScreenText({X:y, Y:bgTop}, {Text:item.Message[1], Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
-                    if (item.LineType!=-1) this.DrawDotLine(top,bgTop,y,item.LineColor);
+                    this.DrawLine(top,bgTop,y,item.LineColor,item.LineType);
                 }
                 else
                 {
@@ -8483,7 +8483,7 @@ function AverageWidthFrame()
                     this.Canvas.fillRect(right,bgTop,textWidth,textHeight);
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.fillText(item.Message[1], right + 1*pixelTatio, y);
-                    if (item.LineType!=-1) this.DrawDotLine(left,right,y,item.LineColor);
+                    this.DrawLine(left,right,y,item.LineColor,item.LineType);
                 }
             }
         }
@@ -8508,6 +8508,32 @@ function AverageWidthFrame()
         }
         this.Canvas.stroke();
         this.Canvas.restore();
+    }
+
+    this.DrawLine=function(left,right,y, color,lineType)
+    {
+        if (lineType==-1) return;
+
+        if (lineType==0)
+        {
+            this.Canvas.strokeStyle=color;
+            this.Canvas.beginPath();
+            if (this.IsHScreen)
+            {
+                this.Canvas.moveTo(ToFixedPoint(y),left);
+                this.Canvas.lineTo(ToFixedPoint(y),right);
+            }
+            else
+            {
+                this.Canvas.moveTo(left,ToFixedPoint(y));
+                this.Canvas.lineTo(right,ToFixedPoint(y));
+            }
+            this.Canvas.stroke();
+        }
+        else
+        {
+            this.DrawDotLine(left,right,y, color);
+        }
     }
 
     this.DrawHScreenText=function(center,data)
@@ -22911,12 +22937,14 @@ function FrameSplitKLinePriceY()
         info.Type=0;
         info.Value=latestItem.Close;
         info.TextColor=g_JSChartResource.FrameLatestPrice.TextColor;
+        info.LineType=2;    //虚线
         if (option.Position=='left') info.Message[0]=latestItem.Close.toFixed(floatPrecision);
         else info.Message[1]=latestItem.Close.toFixed(floatPrecision);
         if (latestItem.Close>latestItem.Open) info.LineColor=g_JSChartResource.FrameLatestPrice.UpBarColor;
         else if (latestItem.Close<latestItem.Open) info.LineColor=g_JSChartResource.FrameLatestPrice.DownBarColor;
         else info.LineColor=g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
 
+        if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
         if (option.IsShowLine==false) info.LineType=-1;
 
         return info;
@@ -22949,6 +22977,7 @@ function FrameSplitKLinePriceY()
             info.TextColor=item.TextColor;
             info.LineColor=item.Color;
             info.LineType=2;    //虚线
+            if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
             if (option.IsShowLine==false) info.LineType=-1;
 
             info.Value=item.Value;
@@ -23163,6 +23192,7 @@ function FrameSplitY()
             info.TextColor=item.TextColor;
             info.LineColor=item.Color;
             info.LineType=2;    //虚线
+            if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
             if (option.IsShowLine==false) info.LineType=-1;
 
             info.Value=item.Value;
@@ -23447,12 +23477,14 @@ function FrameSplitMinutePriceY()
         info.Type=0;
         info.Value=price;
         info.TextColor=g_JSChartResource.FrameLatestPrice.TextColor;
+        info.LineType=2;    //虚线
         if (option.Position=='left') info.Message[0]=price.toFixed(floatPrecision);
         else info.Message[1]=price.toFixed(floatPrecision);
         if (price>this.YClose) info.LineColor=g_JSChartResource.FrameLatestPrice.UpBarColor;
         else if (price<this.YClose) info.LineColor=g_JSChartResource.FrameLatestPrice.DownBarColor;
         else info.LineColor=g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
 
+        if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
         if (option.IsShowLine==false) info.LineType=-1;
 
         return info;
@@ -23469,6 +23501,7 @@ function FrameSplitMinutePriceY()
             info.TextColor=item.TextColor;
             info.LineColor=item.Color;
             info.LineType=2;    //虚线
+            if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
             if (option.IsShowLine==false) info.LineType=-1;
 
             if (IFrameSplitOperator.IsNumber(item.Increase)) //涨幅计算价格
