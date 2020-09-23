@@ -53922,6 +53922,30 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    //取整.
+    //用法: INTPART(A)返回沿A绝对值减小方向最接近的整数
+    //例如:INTPART(12.3)求得12,INTPART(-3.5)求得-3
+    this.INTPART=function(data)
+    {
+        var result=null;
+        if (Array.isArray(data))
+        {
+            result=[];
+            for(var i in data)
+            {
+                var item=data[i];
+                if (this.IsNumber(item)) result[i]=parseInt(item);
+                else result[i]=null;
+            }
+        }
+        else if (this.IsNumber(data))
+        {
+            result=parseInt(data);
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -54090,6 +54114,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.FRACPART(args[0]);
             case 'BARSLASTCOUNT':
                 return this.BARSLASTCOUNT(args[0]);
+            case 'INTPART':
+                return this.INTPART(args[0]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
@@ -58925,6 +58951,23 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
+    this.TIME=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for(let i in this.Data.Data)
+        {
+            var item=this.Data.Data[i];
+            if (this.IsNumber(item.Time))
+                result[i]=item.Time;
+            else
+                result[i]=0;
+        }
+
+        return result;
+    }
+
     //星期 1-7
     this.WEEK=function()
     {
@@ -59341,7 +59384,7 @@ function JSExecute(ast,option)
         ['VOLINSTK',null],  //持仓量
 
         //日期类
-        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],
+        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],["TIME",null],
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
@@ -59553,6 +59596,8 @@ function JSExecute(ast,option)
             case 'GNBLOCK':
                 return this.SymbolData.GetConcept();
 
+            case "TIME":
+                return this.SymbolData.TIME();
             case 'DATE':
                 return this.SymbolData.DATE();
             case 'YEAR':
