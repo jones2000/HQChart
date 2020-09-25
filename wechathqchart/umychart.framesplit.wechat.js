@@ -1094,6 +1094,7 @@ function FrameSplitMinutePriceY()
             var distanceValue = Math.max(Math.abs(this.YClose - max), Math.abs(this.YClose - min));
             max = this.YClose + distanceValue;
             min = this.YClose - distanceValue;
+            if (min<0) min=range.Min;
         }
 
         var showCount = this.SplitCount;

@@ -23626,6 +23626,7 @@ function FrameSplitMinutePriceY()
         for(var i=0;i<showCount;++i)
         {
             var price=min+(distance*i);
+            if (this.YClose && price==this.YClose) continue;
             var coordinate=new CoordinateInfo();
             coordinate.Value=price;
             var strPrice=price.toFixed(defaultfloatPrecision);  //价格刻度字符串
@@ -23646,10 +23647,22 @@ function FrameSplitMinutePriceY()
             this.Frame.HorizontalInfo.push(coordinate);
         }
 
-        if (this.YClose>min && this.YClose<max)
+        if (this.YClose>min && this.YClose<max) //前收盘线
         {
             var coordinate=new CoordinateInfo();
             coordinate.Value=this.YClose;
+            coordinate.LineType=2;//中间的线画虚线
+            if (g_JSChartResource.FrameDotSplitPen) coordinate.LineColor=g_JSChartResource.FrameDotSplitPen;
+
+            var strPrice=this.YClose.toFixed(defaultfloatPrecision);  //价格刻度字符串
+            if (this.IsShowLeftText) coordinate.Message[0]=strPrice;
+
+            if (this.IsShowRightText) 
+            {
+                if (this.RightTextFormat==1) coordinate.Message[1]=strPrice;
+                else coordinate.Message[1]='0.00%'; //百分比
+            }
+
             this.Frame.HorizontalInfo.push(coordinate);
         }
 
