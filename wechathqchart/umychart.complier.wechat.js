@@ -8201,6 +8201,14 @@ function JSExecute(ast,option)
                     if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
                     this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
                 }
+                else if (item.Expression.Type==Syntax.LogicalExpression)    //逻辑语句 如 T1 AND T2 
+                {
+                    var varName="__temp_l_"+i+"__";
+                    let outVar=item.Expression.Out;
+                    var type=0;
+                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                    this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
+                }
                 else if (item.Expression.Type==Syntax.SequenceExpression)
                 {
                     let varName;

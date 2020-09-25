@@ -4314,7 +4314,7 @@ function JSChart(divElement)
             if (option.MinuteLine.IsDrawAreaPrice==false) chart.ChartPaint[0].IsDrawArea=false;
             if (option.MinuteLine.IsShowLead==false) chart.IsShowLead=false;
             if (option.MinuteLine.IsShowAveragePrice==false) chart.ChartPaint[1].IsShow=false;
-            if (option.MinuteLine.SplitType===1) chart.Frame.SubFrame[0].Frame.YSplitOperator.SplitType=option.MinuteLine.SplitType;
+            if (option.MinuteLine.SplitType>0) chart.Frame.SubFrame[0].Frame.YSplitOperator.SplitType=option.MinuteLine.SplitType;
         }
 
         if(option.MinuteTitle)
@@ -23380,7 +23380,7 @@ function FrameSplitMinutePriceY()
     this.OverlayChartPaint;
     this.SplitCount=7;
     this.Symbol;
-    this.SplitType=0;                   //0=默认根据最大最小值分割 1=涨跌停分割
+    this.SplitType=0;                   //0=默认根据最大最小值分割 1=涨跌停分割 2=数据最大最大值分割
     this.LimitPrice;
     this.Custom;
     this.RightTextFormat=0;           //右边刻度显示模式 0=百分比  1=价格
@@ -23394,6 +23394,10 @@ function FrameSplitMinutePriceY()
         var range=this.GetMaxMin();
 
         if (this.Symbol && MARKET_SUFFIX_NAME.IsUSA(this.Symbol.toUpperCase()))
+        {
+            this.USASplit(range);
+        }
+        else if (this.SplitType==2)
         {
             this.USASplit(range);
         }
@@ -23561,6 +23565,7 @@ function FrameSplitMinutePriceY()
             var spacePrice=5*pixelTatio*(max-min)/height;
             max+=spacePrice;
             min-=spacePrice;
+            if (min<0) min=range.Min;
         }
 
         var showCount=this.SplitCount;
@@ -23625,6 +23630,7 @@ function FrameSplitMinutePriceY()
             var distanceValue=Math.max(Math.abs(this.YClose-max),Math.abs(this.YClose-min));
             max=this.YClose+distanceValue;
             min=this.YClose-distanceValue;
+            if (min<0) min=range.Min;
         }
 
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
@@ -59721,6 +59727,14 @@ function JSExecute(ast,option)
                 else if (item.Expression.Type==Syntax.BinaryExpression)
                 {
                     var varName="__temp_b_"+i+"__";
+                    let outVar=item.Expression.Out;
+                    var type=0;
+                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                    this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
+                }
+                else if (item.Expression.Type==Syntax.LogicalExpression)    //逻辑语句 如 T1 AND T2 
+                {
+                    var varName="__temp_l_"+i+"__";
                     let outVar=item.Expression.Out;
                     var type=0;
                     if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
