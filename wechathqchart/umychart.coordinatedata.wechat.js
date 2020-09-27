@@ -969,7 +969,7 @@ function MinuteCoordinateData()
 //期货不同品种 交易时间数据 
 function FuturesTimeData()
 {
-    const TIME_SPLIT=
+    this.TIME_SPLIT=
     [
         {
             Name:'9:00-10:15,10:30-11:30,13:30-15:00',
@@ -1236,7 +1236,7 @@ function FuturesTimeData()
         }
     ];
 
-    const MAP_TWOWORDS = new Map([
+    this.MAP_TWOWORDS = new Map([
         //大连商品交易所
         [MARKET_SUFFIX_NAME.DCE + '-JD', {Time:0,Decimal:0,Name:"鸡蛋"}],
         [MARKET_SUFFIX_NAME.DCE + '-FB', {Time:0,Decimal:2,Name:"纤板"}],
@@ -1303,7 +1303,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CFFEX + '-IF', {Time:2,Decimal:1,Name:'沪深股指期货'}],
     ]);
 
-    const MAP_ONEWORD = new Map([
+    this.MAP_ONEWORD = new Map([
         //大连商品交易所
         [MARKET_SUFFIX_NAME.DCE + '-C', {Time:6,Decimal:0,Name:"玉米"}],
         [MARKET_SUFFIX_NAME.DCE + '-L', {Time:6,Decimal:0,Name:"乙烯"}],
@@ -1346,14 +1346,14 @@ function FuturesTimeData()
             twoWordsName = MARKET_SUFFIX_NAME.CZCE + '-' + twoWords;
         }
 
-        if (MAP_TWOWORDS.has(twoWordsName)) 
+        if (this.MAP_TWOWORDS.has(twoWordsName)) 
         {
-            return MAP_TWOWORDS.get(twoWordsName);
+            return this.MAP_TWOWORDS.get(twoWordsName);
         }
 
-        if (MAP_ONEWORD.has(oneWordName)) 
+        if (this.MAP_ONEWORD.has(oneWordName)) 
         {
-            return MAP_ONEWORD.get(oneWordName);
+            return this.MAP_ONEWORD.get(oneWordName);
         }
 
         return null;
@@ -1364,7 +1364,7 @@ function FuturesTimeData()
         var data = this.GetData(upperSymbol);
         if (!data) return null;
 
-        return TIME_SPLIT[data.Time];
+        return this.TIME_SPLIT[data.Time];
     }
 
     this.GetDecimal = function (upperSymbol)    //期货价格小数位数
@@ -1373,6 +1373,23 @@ function FuturesTimeData()
         if (!data) return 2;
 
         return data.Decimal;
+    }
+
+    //添加新品种
+    this.AddNewFutures=function(obj)    //{ Suffix:后缀, Symbol:品种代码, Time:交易时间段, Decimal:小数位数, Name:名字 }
+    {
+        if (!obj) return;
+
+        var key=obj.Suffix+'-'+obj.Symbol;
+        var item={ Time:obj.Time, Decimal:obj.Decimal, Name:obj.Name };
+        if (obj.Symbol.length==1)
+        {
+            this.MAP_ONEWORD.set(key, item);
+        }
+        else if (obj.Symbol.length==2)
+        {
+            this.MAP_TWOWORDS.set(key, item);
+        }
     }
 }
 
@@ -1512,8 +1529,9 @@ module.exports =
         MinuteCoordinateData: g_MinuteCoordinateData,
         MinuteTimeStringData: g_MinuteTimeStringData,
         MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
-        GetfloatPrecision: GetfloatPrecision,
+        GetfloatPrecision: GetfloatPrecision
     },
 
     JSCommonCoordinateData_MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
+    JSCommonCoordinateData_Global_FuturesTimeData: g_FuturesTimeData,
 };

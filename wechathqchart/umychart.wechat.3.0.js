@@ -33,7 +33,8 @@ import {
 import 
 { 
     JSCommonCoordinateData as JSCommonCoordinateData,
-    JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME 
+    JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME ,
+    JSCommonCoordinateData_Global_FuturesTimeData as g_FuturesTimeData,
 } from "./umychart.coordinatedata.wechat.js";
 
 import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达信编译器
@@ -1170,6 +1171,11 @@ JSChart.GetResource = function ()  //获取颜色配置 (设置配必须啊在JS
 JSChart.GetKLineZoom = function () //K线缩放配置
 {
     return ZOOM_SEED;
+}
+
+JSChart.GetChinaFuturesTimeData=function()  //获取国内期货交易时间配置
+{
+    return g_FuturesTimeData;
 }
 
 var JSCHART_EVENT_ID =

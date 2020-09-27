@@ -4756,10 +4756,10 @@ function JSChart(divElement)
             this.JSChartContainer.ChangeIndex(windowIndex,indexName,option);
     }
 
-    this.ChangeScriptIndex=function(windowIndex,indexData)
+    this.ChangeScriptIndex=function(windowIndex,indexData,option)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeScriptIndex)=='function')
-            this.JSChartContainer.ChangeScriptIndex(windowIndex,indexData);
+            this.JSChartContainer.ChangeScriptIndex(windowIndex,indexData,option);
     }
 
     this.ChangePyScriptIndex=function(windowIndex, indexData)   //切换py指标
@@ -32956,10 +32956,27 @@ function KLineChartContainer(uielement)
     }
 
     //切换成 脚本指标
-    this.ChangeScriptIndex=function(windowIndex,indexData)
+    this.ChangeScriptIndex=function(windowIndex,indexData,option)
     {
         this.DeleteIndexPaint(windowIndex);
         this.WindowIndex[windowIndex]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+
+        if (option)
+        {
+            var window=option.Window;
+            if (option.Window && this.Frame.SubFrame[windowIndex] && this.Frame.SubFrame[windowIndex].Frame)
+            {
+                var frame=this.Frame.SubFrame[windowIndex].Frame;
+                if (IFrameSplitOperator.IsBool(window.Modify)) frame.ModifyIndex=window.Modify;
+                if (IFrameSplitOperator.IsBool(window.Change)) frame.ChangeIndex=window.Change;
+                if (IFrameSplitOperator.IsBool(window.Close)) frame.CloseIndex=window.Close;
+                if (IFrameSplitOperator.IsBool(window.Overlay)) frame.OverlayIndex=window.Overlay;
+                //工具栏变 先刷新工具栏
+                frame.SizeChange=true;
+                frame.ToolbarRect=null; //清空工具栏缓存
+                this.Draw();
+            }
+        }
 
         var bindData=this.ChartPaint[0].Data;
         this.BindIndexData(windowIndex,bindData);   //执行脚本
@@ -33016,7 +33033,7 @@ function KLineChartContainer(uielement)
                 if (option.IsShortTitle) indexData.IsShortTitle=option.IsShortTitle;
             }
             
-            return this.ChangeScriptIndex(windowIndex, indexData);
+            return this.ChangeScriptIndex(windowIndex, indexData,option);
         }
 
         //主图指标
@@ -36208,7 +36225,7 @@ function MinuteChartContainer(uielement)
     }
 
     //切换成 脚本指标
-    this.ChangeScriptIndex=function(windowIndex,indexData)
+    this.ChangeScriptIndex=function(windowIndex,indexData,option)
     {
         this.DeleteIndexPaint(windowIndex);
         this.WindowIndex[windowIndex]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
@@ -36248,7 +36265,7 @@ function MinuteChartContainer(uielement)
             if (option.Args) indexData.Args=option.Args;
         }
         
-        return this.ChangeScriptIndex(windowIndex, indexData);
+        return this.ChangeScriptIndex(windowIndex, indexData,option);
     }
 
     //设置指标窗口个数
