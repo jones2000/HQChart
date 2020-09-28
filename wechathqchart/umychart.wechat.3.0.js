@@ -64,6 +64,7 @@ import {
     JSCommonChartPaint_ChartRadar as ChartRadar,
     JSCommonChartPaint_ChartCorssCursor as ChartCorssCursor,
     JSCommonChartPaint_ChartBuySell as ChartBuySell,
+    JSCommonChartPaint_ChartMACD as ChartMACD,
 } from "./umychart.chartpaint.wechat.js";
 
 //扩展画法图形库
@@ -4706,6 +4707,7 @@ function ChartVolStick()
     this.HistoryData;               //历史数据
     this.KLineDrawType = 0;
     this.ClassName = 'ChartVolStick';
+    this.MinBarWidth=g_JSChartResource.MinKLineBarWidth; //最小的柱子宽度
 
     this.Draw = function () 
     {
@@ -4723,7 +4725,7 @@ function ChartVolStick()
 
         var yBottom = this.ChartFrame.GetYFromData(0);
 
-        if (dataWidth >= 4) 
+        if (dataWidth >= this.MinBarWidth) 
         {
             yBottom = ToFixedRect(yBottom);
             for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
@@ -4800,7 +4802,7 @@ function ChartVolStick()
 
         var yBottom = this.ChartFrame.GetYFromData(0);
 
-        if (dataWidth >= 4) 
+        if (dataWidth >= this.MinBarWidth) 
         {
             yBottom = ToFixedRect(yBottom);
             for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
@@ -5473,110 +5475,6 @@ function ChartOverlayMinutePriceLine() {
 
     return range;
   }
-}
-
-//MACD森林线 支持横屏
-function ChartMACD() 
-{
-    this.newMethod = IChartPainting;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.ClassName ='ChartMACD';
-    this.UpColor = g_JSChartResource.UpBarColor;
-    this.DownColor = g_JSChartResource.DownBarColor;
-    this.LineWidth=1;
-
-    this.Draw = function () 
-    {
-        if (this.NotSupportMessage) 
-        {
-            this.DrawNotSupportmessage();
-            return;
-        }
-
-        if (this.ChartFrame.IsHScreen === true) 
-        {
-            this.HScreenDraw();
-            return;
-        }
-
-        var dataWidth = this.ChartFrame.DataWidth;
-        var distanceWidth = this.ChartFrame.DistanceWidth;
-        var chartright = this.ChartBorder.GetRight();
-        var xPointCount = this.ChartFrame.XPointCount;
-
-        var lineWidth=this.LineWidth;
-        if (this.LineWidth==50) lineWidth=dataWidth;
-        else if (lineWidth>dataWidth) lineWidth=dataWidth;
-
-        this.Canvas.save();
-        this.Canvas.lineWidth=lineWidth;
-
-        var bFirstPoint = true;
-        var drawCount = 0;
-        var yBottom = this.ChartFrame.GetYFromData(0);
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
-        {
-            var value = this.Data.Data[i];
-            if (value == null) continue;
-
-            var x = this.ChartFrame.GetXFromIndex(j);
-            var y = this.ChartFrame.GetYFromData(value);
-
-            if (x > chartright) break;
-
-            var xFix = parseInt(x.toString()) + 0.5;    //毛边修正
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(xFix, yBottom);
-            this.Canvas.lineTo(xFix, y);
-
-            if (value >= 0) this.Canvas.strokeStyle = this.UpColor;
-            else this.Canvas.strokeStyle = this.DownColor;
-            this.Canvas.stroke();
-            this.Canvas.closePath();
-        }
-
-        this.Canvas.restore();
-    }
-
-    this.HScreenDraw = function () 
-    {
-        var dataWidth = this.ChartFrame.DataWidth;
-        var distanceWidth = this.ChartFrame.DistanceWidth;
-        var chartright = this.ChartBorder.GetBottom();
-        var xPointCount = this.ChartFrame.XPointCount;
-        var yBottom = this.ChartFrame.GetYFromData(0);
-
-        var lineWidth=this.LineWidth;
-        if (this.LineWidth==50) lineWidth=dataWidth;
-        else if (lineWidth>dataWidth) lineWidth=dataWidth;
-
-        this.Canvas.save();
-        this.Canvas.lineWidth=lineWidth;
-
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
-        {
-            var value = this.Data.Data[i];
-            if (value == null) continue;
-
-            var x = this.ChartFrame.GetXFromIndex(j);
-            var y = this.ChartFrame.GetYFromData(value);
-
-            if (x > chartright) break;
-
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(yBottom, ToFixedPoint(x));
-            this.Canvas.lineTo(y, ToFixedPoint(x));
-
-            if (value >= 0) this.Canvas.strokeStyle = this.UpColor;
-            else this.Canvas.strokeStyle = this.DownColor;
-            this.Canvas.stroke();
-            this.Canvas.closePath();
-        }
-
-        this.Canvas.restore();
-    }
 }
 
 //基础图形的XY坐标互换柱子

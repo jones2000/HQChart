@@ -173,6 +173,8 @@ function ChartKLine()
     this.PtMax;     //最大值的位置
     this.PtMin;     //最小值的位置
 
+    this.MinBarWidth=g_JSChartResource.MinKLineBarWidth; //最小的柱子宽度
+
     this.DrawAKLine = function ()  //美国线
     {
         var isHScreen = (this.ChartFrame.IsHScreen === true);
@@ -232,7 +234,7 @@ function ChartKLine()
 
             this.Canvas.stroke();
 
-            if (dataWidth >= 4) {
+            if (dataWidth >= this.MinBarWidth) {
                 this.Canvas.beginPath();    //开盘
                 if (isHScreen) {
                     this.Canvas.moveTo(ToFixedPoint(yOpen), left);
@@ -445,7 +447,7 @@ function ChartKLine()
 
             if (data.Open < data.Close)       //阳线
             {
-                if (dataWidth >= 4) 
+                if (dataWidth >= this.MinBarWidth) 
                 {
                     this.Canvas.strokeStyle = upColor;
                     if (data.High > data.Close)   //上影线
@@ -548,7 +550,7 @@ function ChartKLine()
             }
             else if (data.Open > data.Close)  //阴线
             {
-                if (dataWidth >= 4) 
+                if (dataWidth >= this.MinBarWidth) 
                 {
                     this.Canvas.strokeStyle = downColor;
                     if (data.High > data.Close)   //上影线
@@ -626,7 +628,7 @@ function ChartKLine()
             }
             else // 平线
             {
-                if (dataWidth >= 4) 
+                if (dataWidth >= this.MinBarWidth) 
                 {
                     this.Canvas.strokeStyle = unchagneColor;
                     this.Canvas.beginPath();
@@ -1508,7 +1510,8 @@ function ChartStickLine()
     this.ClassName ='ChartStickLine';
     this.Color = "rgb(255,193,37)";   //线段颜色
     this.LineWidth = 2;               //线段宽度
-    this.BarType = 0; //柱子类型 0=实心 1=空心
+    this.BarType = 0;                 //柱子类型 0=实心 1=空心
+    this.MinBarWidth=g_JSChartResource.MinKLineBarWidth; //最小的柱子宽度
 
     this.Draw = function () 
     {
@@ -1535,7 +1538,7 @@ function ChartStickLine()
 
         if (this.LineWidth==50)
         {
-            if (dataWidth >= 4) 
+            if (dataWidth >= this.MinBarWidth) 
             {
                 bFillKLine = true;
                 this.Canvas.fillStyle = this.Color;
@@ -3013,6 +3016,110 @@ function ChartBuySell()
     }
 }
 
+//MACD森林线 支持横屏
+function ChartMACD() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName ='ChartMACD';
+    this.UpColor = g_JSChartResource.UpBarColor;
+    this.DownColor = g_JSChartResource.DownBarColor;
+    this.LineWidth=1;
+
+    this.Draw = function () 
+    {
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (this.ChartFrame.IsHScreen === true) 
+        {
+            this.HScreenDraw();
+            return;
+        }
+
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        var xPointCount = this.ChartFrame.XPointCount;
+
+        var lineWidth=this.LineWidth;
+        if (this.LineWidth==50) lineWidth=dataWidth;
+        else if (lineWidth>dataWidth) lineWidth=dataWidth;
+
+        this.Canvas.save();
+        this.Canvas.lineWidth=lineWidth;
+
+        var bFirstPoint = true;
+        var drawCount = 0;
+        var yBottom = this.ChartFrame.GetYFromData(0);
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(value);
+
+            if (x > chartright) break;
+
+            var xFix = parseInt(x.toString()) + 0.5;    //毛边修正
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(xFix, yBottom);
+            this.Canvas.lineTo(xFix, y);
+
+            if (value >= 0) this.Canvas.strokeStyle = this.UpColor;
+            else this.Canvas.strokeStyle = this.DownColor;
+            this.Canvas.stroke();
+            this.Canvas.closePath();
+        }
+
+        this.Canvas.restore();
+    }
+
+    this.HScreenDraw = function () 
+    {
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+        var yBottom = this.ChartFrame.GetYFromData(0);
+
+        var lineWidth=this.LineWidth;
+        if (this.LineWidth==50) lineWidth=dataWidth;
+        else if (lineWidth>dataWidth) lineWidth=dataWidth;
+
+        this.Canvas.save();
+        this.Canvas.lineWidth=lineWidth;
+
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(value);
+
+            if (x > chartright) break;
+
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(yBottom, ToFixedPoint(x));
+            this.Canvas.lineTo(y, ToFixedPoint(x));
+
+            if (value >= 0) this.Canvas.strokeStyle = this.UpColor;
+            else this.Canvas.strokeStyle = this.DownColor;
+            this.Canvas.stroke();
+            this.Canvas.closePath();
+        }
+
+        this.Canvas.restore();
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // 其他图形
 //
@@ -4105,12 +4212,13 @@ module.exports =
         ChartMultiLine: ChartMultiLine,
         ChartBuySell: ChartBuySell,
         ChartMultiBar: ChartMultiBar,
+        ChartMACD:ChartMACD,
 
         ChartPie: ChartPie,
         ChartCircle: ChartCircle,
         ChartChinaMap: ChartChinaMap,
         ChartRadar: ChartRadar, 
-
+    
         ChartCorssCursor: ChartCorssCursor, //十字光标 
     },
 
@@ -4135,5 +4243,6 @@ module.exports =
     JSCommonChartPaint_ChartMultiLine: ChartMultiLine,
     JSCommonChartPaint_ChartMultiBar: ChartMultiBar,
     JSCommonChartPaint_ChartBuySell: ChartBuySell,
+    JSCommonChartPaint_ChartMACD: ChartMACD,
     JSCommonChartPaint_ChartCorssCursor: ChartCorssCursor,
 };

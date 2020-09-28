@@ -17,11 +17,12 @@ function JSChartResource()
 
     this.SelectRectBGColor = "rgba(1,130,212,0.06)"; //背景色
     //   this.SelectRectAlpha=0.06;                  //透明度
-    this.BGColor = 'rgb(255,255,255)';          //背景色
+    this.BGColor = 'rgb(255,255,255)';              //背景色
 
     this.UpBarColor = "rgb(238,21,21)";
     this.DownBarColor = "rgb(25,158,0)";
     this.UnchagneBarColor = "rgb(0,0,0)";
+    this.MinKLineBarWidth=4;                        //最小的柱子宽度 比这个还小就画直线 
 
     this.Minute = {};
     this.Minute.VolBarColor = "rgb(238,127,9)";
