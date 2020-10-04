@@ -5167,7 +5167,7 @@ var JSCHART_EVENT_ID=
     ON_FINISH_DRAWPICTURE:18,    //完成画图工具    
     ON_INDEXTITLE_DRAW:19,       //指标标题重绘事件
     ON_CUSTOM_VERTICAL_DRAW:20,  //自定义X轴绘制事件
-    RECV_KLINE_MANUAL_UPDATE_DATA:21, //手动更新K线事件
+    RECV_KLINE_MANUAL_UPDATE_DATA:21 //手动更新K线事件
 }
 
 var JSCHART_OPERATOR_ID=
@@ -5409,7 +5409,16 @@ function JSChartContainer(uielement)
                 drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
                 this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
                 this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                this.OnSelectChartPicture(drawPictrueData.ChartDrawPicture);    //选中画图工具事件
+                var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
+                if (event && event.Callback)
+                {
+                    var sendData={ DrawPicture: drawPictrueData.ChartDrawPicture };
+                    event.Callback(event,sendData,this);
+                }
+                else
+                {
+                    this.OnSelectChartPicture(drawPictrueData.ChartDrawPicture);    //选中画图工具事件
+                }
             }
         }
 
@@ -35457,6 +35466,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
     var list = data.data;
     var aryDayData=new Array();
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position=9;
+    var yClose=0;
     for (var i = 0; i < list.length; ++i)
     {
         var item = new HistoryData();
@@ -35471,6 +35481,9 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
         item.Amount = jsData[amount];
         item.Time=jsData[time];
         if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position=jsData[position]; //期货持仓
+
+        if (item.YClose<=0 && yClose>0) item.YClose=yClose;
+        if (item.Close>0) yClose=item.Close;
 
        // if (isNaN(item.Open) || item.Open<=0) continue; //停牌的数据剔除
 
@@ -42755,7 +42768,13 @@ function KLineSelectRectDialog(divElement)
         var showData=
         { 
             Open:0,Close:0,High:0,Low:0, YClose:0,
-            Vol:0, Amount:0, Date:{Start:0,End:0}, Count:0,
+            Vol:0, Amount:0, 
+            Date:
+            { 
+                Start:{Time:null, Date:null },
+                End:{ Time:null, Date:null }
+            }, 
+            Count:0,
             KLine:{ Up:0,Down:0,Unchanged:0 }    //阳线|阴线|平线
         }
 
@@ -42764,14 +42783,16 @@ function KLineSelectRectDialog(divElement)
             var item=hqData.Data[i];
             if (i==start) 
             {
-                showData.Date.Start=item.Date;
+                showData.Date.Start.Date=item.Date;
+                showData.Date.Start.Time=item.Time;
                 showData.Open=item.Open;
                 showData.High=item.High;
                 showData.Low=item.Low;
                 showData.YClose=item.YClose;
             }
 
-            showData.Date.End=item.Date;
+            showData.Date.End.Date=item.Date;
+            showData.Date.End.Time=item.Time;
             showData.Close=item.Close;
             showData.Vol+=item.Vol;
             showData.Amount+=item.Amount;
@@ -42792,9 +42813,14 @@ function KLineSelectRectDialog(divElement)
 
         // JSConsole.Chart.Log('[KLineSelectRectDialog::BindData]', showData);
         var defaultfloatPrecision=GetfloatPrecision(this.SelectData.Symbol);
-        var startDate = showData.Date.Start.toString().substring(0,4) + "/" + showData.Date.Start.toString().substring(4,6) + "/" +  showData.Date.Start.toString().substring(6,8);
-        var endDate = showData.Date.End.toString().substring(0,4) +  "/" + showData.Date.End.toString().substring(4,6) +  "/" + showData.Date.End.toString().substring(6,8);
-
+        var startDate=IFrameSplitOperator.FormatDateString(showData.Date.Start.Date);
+        var endDate=IFrameSplitOperator.FormatDateString(showData.Date.End.Date);
+        if (ChartData.IsMinutePeriod(this.HQChart.Period))
+        {
+            startDate+=' '+IFrameSplitOperator.FormatTimeString(showData.Date.Start.Time,"HH:MM");
+            endDate+=" "+IFrameSplitOperator.FormatTimeString(showData.Date.End.Time,"HH:MM");
+        }
+       
         var startLeftClass="",startRightClass="",endLeftClass="",endRightClass="";
         if(start<=0) startLeftClass = "BtnBackground";
         if(start >= end) {
@@ -44178,6 +44204,7 @@ function KLineSelectRightMenu(divElement)
                 click: function () 
                 {
                     JSConsole.Chart.Log('[KLineSelectRightMenu::click] 区间统计');
+                    rightMenu.Hide();
                     var dialog=new KLineSelectRectDialog(divElement);
                     dialog.DoModal(event);
                 }

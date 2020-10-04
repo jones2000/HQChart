@@ -6101,7 +6101,7 @@ function HQDateStringFormat()
 
     this.Operator = function () 
     {
-        if (!this.Value) return false;
+        if (!IFrameSplitOperator.IsNumber(this.Value) || this.Value<0) return false;
         if (!this.Data) return false;
 
         var index = this.Value;
