@@ -65,6 +65,7 @@ import {
     JSCommonChartPaint_ChartCorssCursor as ChartCorssCursor,
     JSCommonChartPaint_ChartBuySell as ChartBuySell,
     JSCommonChartPaint_ChartMACD as ChartMACD,
+    JSCommonChartPaint_ChartSplashPaint as ChartSplashPaint,
 } from "./umychart.chartpaint.wechat.js";
 
 //扩展画法图形库
@@ -875,6 +876,13 @@ function JSChart(element)
         if (option.IsAutoUpdate == true || option.IsAutoUpate == true) chart.IsAutoUpdate = true;
         if (option.AutoUpdateFrequency > 0) chart.AutoUpdateFrequency = option.AutoUpdateFrequency;
 
+        //注册事件
+        for(var i in option.EventCallback)
+        {
+            var item=option.EventCallback[i];
+            chart.AddEventCallback(item);
+        }
+
         //设置股票代码
         if (!option.Symbol) return false;
         chart.Draw();
@@ -1194,6 +1202,7 @@ var JSCHART_EVENT_ID =
     RECV_KLINE_UPDATE_DATA: 16,   //K线日,分钟更新数据到达 
     ON_INDEXTITLE_DRAW: 19,       //指标标题重绘事件 
     ON_CUSTOM_VERTICAL_DRAW: 20,  //自定义X轴绘制事件 
+    ON_ENABLE_SPLASH_DRAW:22,          //开启/关闭过场动画事件
 }
 
 var JSCHART_OPERATOR_ID =
@@ -1291,6 +1300,7 @@ function JSChartContainer(uielement)
     
     this.GetIndexEvent = function () { return this.GetEvent(JSCHART_EVENT_ID.RECV_INDEX_DATA); }    //接收指标数据
     this.GetBarrageEvent=function() { return this.GetEvent(JSCHART_EVENT_ID.BARRAGE_PLAY_END);}     //获取弹幕事件
+    this.GetEnableSplashEvent=function() { return this.GetEvent(JSCHART_EVENT_ID.ON_ENABLE_SPLASH_DRAW); }  //开启/关闭文字提示信息事件
 
     //判断是单个手指
     this.IsPhoneDragging = function (e) 
@@ -5998,53 +6008,7 @@ function ChartLock() {
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// 等待提示
-function ChartSplashPaint() {
-  this.newMethod = IChartPainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
 
-  this.Font = g_JSChartResource.DefaultTextFont;            //字体
-  this.TextColor = g_JSChartResource.DefaultTextColor;      //文本颜色
-  this.IsEnableSplash = false;
-  this.SplashTitle = '数据加载中.....';
-
-  this.Draw = function () {
-    if (!this.IsEnableSplash) return;
-
-    if (this.Frame.IsHScreen === true) {
-      this.HScreenDraw();
-      return;
-    }
-
-    var xCenter = (this.Frame.ChartBorder.GetLeft() + this.Frame.ChartBorder.GetRight()) / 2;
-    var yCenter = (this.Frame.ChartBorder.GetTop() + this.Frame.ChartBorder.GetBottom()) / 2;
-    this.Canvas.textAlign = 'center';
-    this.Canvas.textBaseline = 'middle';
-    this.Canvas.fillStyle = this.TextColor;
-    this.Canvas.font = this.Font;
-    this.Canvas.fillText(this.SplashTitle, xCenter, yCenter);
-  }
-
-  this.HScreenDraw = function () //横屏
-  {
-    var xCenter = (this.Frame.ChartBorder.GetLeft() + this.Frame.ChartBorder.GetRight()) / 2;
-    var yCenter = (this.Frame.ChartBorder.GetTop() + this.Frame.ChartBorder.GetBottom()) / 2;
-
-    this.Canvas.save();
-    this.Canvas.translate(xCenter, yCenter);
-    this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
-
-    this.Canvas.textAlign = 'center';
-    this.Canvas.textBaseline = 'middle';
-    this.Canvas.fillStyle = this.TextColor;
-    this.Canvas.font = this.Font;
-    this.Canvas.fillText(this.SplashTitle, 0, 0);
-
-    this.Canvas.restore();
-  }
-}
 
 /////////////////////////////////////////////////////////////////////////////////
 //
@@ -6950,6 +6914,7 @@ function KLineChartContainer(uielement)
         this.ChartSplashPaint = new ChartSplashPaint();
         this.ChartSplashPaint.Canvas = this.Canvas;
         this.ChartSplashPaint.SplashTitle = this.SplashTitle;
+        this.ChartSplashPaint.HQChart=this;
 
         //创建框架容器
         this.Frame = new HQTradeFrame();
@@ -7280,7 +7245,7 @@ function KLineChartContainer(uielement)
     this.RequestHistoryData = function () 
     {
         var self = this;
-        this.ChartSplashPaint.IsEnableSplash = true;
+        this.ChartSplashPaint.EnableSplash(true);
         this.ResetDragDownload();
         this.Draw();
 
@@ -7298,7 +7263,7 @@ function KLineChartContainer(uielement)
                 PreventDefault: false
             };
             this.NetworkFilter(obj, function (data) {
-                self.ChartSplashPaint.IsEnableSplash = false;
+                self.ChartSplashPaint.EnableSplash(false);
                 self.RecvHistoryData(data);
                 self.AutoUpdateEvent(true);
                 self.AutoUpdate();
@@ -7319,7 +7284,7 @@ function KLineChartContainer(uielement)
         method: 'POST',
         dataType: 'json',
         success: function (data) {
-            self.ChartSplashPaint.IsEnableSplash = false;
+            self.ChartSplashPaint.EnableSplash(false);
             self.RecvHistoryData(data);
             self.AutoUpdateEvent(true);
             self.AutoUpdate();
@@ -7407,7 +7372,7 @@ function KLineChartContainer(uielement)
     this.ReqeustHistoryMinuteData = function () 
     {
         var self = this;
-        this.ChartSplashPaint.IsEnableSplash = true;
+        this.ChartSplashPaint.EnableSplash(true);
         this.ResetDragDownload();
 
         if (this.NetworkFilter)
@@ -7427,7 +7392,7 @@ function KLineChartContainer(uielement)
                 PreventDefault: false
             };
             this.NetworkFilter(obj, function (data) {
-                self.ChartSplashPaint.IsEnableSplash = false;
+                self.ChartSplashPaint.EnableSplash(false);
                 self.RecvMinuteHistoryData(data);
                 self.AutoUpdateEvent(true);
                 self.AutoUpdate();
@@ -7448,7 +7413,7 @@ function KLineChartContainer(uielement)
             dataType: "json",
             success: function (data) 
             {
-                self.ChartSplashPaint.IsEnableSplash = false;
+                self.ChartSplashPaint.EnableSplash(false);
                 self.RecvMinuteHistoryData(data);
                 self.AutoUpdateEvent(true);
                 self.AutoUpdate();
@@ -9506,6 +9471,7 @@ function MinuteChartContainer(uielement)
         this.ChartSplashPaint = new ChartSplashPaint();
         this.ChartSplashPaint.Canvas = this.Canvas;
         this.ChartSplashPaint.SplashTitle = this.SplashTitle;
+        this.ChartSplashPaint.HQChart=this;
 
         //创建框架容器
         this.Frame = new HQTradeFrame();
@@ -9745,7 +9711,7 @@ function MinuteChartContainer(uielement)
   //切换股票代码
   this.ChangeSymbol = function (symbol) {
     this.Symbol = symbol;
-    this.ChartSplashPaint.IsEnableSplash = true;
+    this.ChartSplashPaint.EnableSplash(true);
     this.RequestData();
   }
 
@@ -9809,7 +9775,7 @@ function MinuteChartContainer(uielement)
     this.RequestHistoryMinuteData = function ()     //请求历史分钟数据
     {
         var self = this;
-        this.ChartSplashPaint.IsEnableSplash = true;
+        this.ChartSplashPaint.EnableSplash(true);
         this.Draw();
 
         if (this.NetworkFilter) 
@@ -9823,7 +9789,7 @@ function MinuteChartContainer(uielement)
                 PreventDefault: false
             };
             this.NetworkFilter(obj, function (data) {
-                self.ChartSplashPaint.IsEnableSplash = false;
+                self.ChartSplashPaint.EnableSplash(false);
                 self.RecvHistoryMinuteData(data);
             });
 
@@ -9840,7 +9806,7 @@ function MinuteChartContainer(uielement)
         method: "post",
         dataType: "json",
         success: function (data) {
-            self.ChartSplashPaint.IsEnableSplash = false;
+            self.ChartSplashPaint.EnableSplash(false);
             self.RecvHistoryMinuteData(data);
         }
         });
@@ -9965,7 +9931,7 @@ function MinuteChartContainer(uielement)
             };
             this.NetworkFilter(obj, function (data) 
             {
-                self.ChartSplashPaint.IsEnableSplash = false;
+                self.ChartSplashPaint.EnableSplash(false);
                 self.RecvMinuteData(data);
             });
 
@@ -9983,7 +9949,7 @@ function MinuteChartContainer(uielement)
             method: "post",
             dataType: "json",
             success: function (data) {
-                self.ChartSplashPaint.IsEnableSplash = false;
+                self.ChartSplashPaint.EnableSplash(false);
                 self.RecvMinuteData(data);
             }
         });
@@ -10703,11 +10669,11 @@ function HistoryMinuteChartContainer(uielement) {
       method: "get",
       dataType: "json",
       success: function (data) {
-        self.ChartSplashPaint.IsEnableSplash = false;
+        self.ChartSplashPaint.EnableSplash(false);
         self.RecvHistoryMinuteData(data);
       },
       error: function (reqeust) {
-        self.ChartSplashPaint.IsEnableSplash = false;
+        self.ChartSplashPaint.EnableSplash(false);
         self.RecvHistoryMinuteError(reqeust);
       }
     });
@@ -10850,7 +10816,7 @@ function CustomKLineChartContainer(uielement) {
 
   this.RequestHistoryData = function () {
     var self = this;
-    this.ChartSplashPaint.IsEnableSplash = true;
+    this.ChartSplashPaint.EnableSplash(true);
     this.Draw();
     wx.request({
       url: this.CustomKLineApiUrl,
@@ -10864,7 +10830,7 @@ function CustomKLineChartContainer(uielement) {
       dataType: "json",
       async: true,
       success: function (data) {
-        self.ChartSplashPaint.IsEnableSplash = false;
+        self.ChartSplashPaint.EnableSplash(false);
         self.RecvHistoryData(data);
       }
     });
@@ -11164,6 +11130,7 @@ function KLineChartHScreenContainer(uielement) {
     //创建等待提示
     this.ChartSplashPaint = new ChartSplashPaint();
     this.ChartSplashPaint.Canvas = this.Canvas;
+    this.ChartSplashPaint.HQChart=this;
 
     //创建框架容器
     this.Frame = new HQTradeHScreenFrame();

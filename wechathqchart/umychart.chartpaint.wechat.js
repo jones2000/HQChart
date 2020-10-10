@@ -3120,6 +3120,72 @@ function ChartMACD()
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// 等待提示
+function ChartSplashPaint() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+  
+    this.Font = g_JSChartResource.DefaultTextFont;            //字体
+    this.TextColor = g_JSChartResource.DefaultTextColor;      //文本颜色
+    this.IsEnableSplash = false;
+    this.SplashTitle = '数据加载中.....';
+    this.HQChart;
+
+    this.EnableSplash=function(bEnable)
+    {
+        this.IsEnableSplash=bEnable;
+        if (this.HQChart)
+        {
+            var event=this.HQChart.GetEnableSplashEvent();
+            if (event)
+            {
+                var data={ Enable:bEnable };
+                event.Callback(event,data,this);
+            }
+        }
+    }
+  
+    this.Draw = function () 
+    {
+        if (!this.IsEnableSplash) return;
+    
+        if (this.Frame.IsHScreen === true) 
+        {
+            this.HScreenDraw();
+            return;
+        }
+  
+        var xCenter = (this.Frame.ChartBorder.GetLeft() + this.Frame.ChartBorder.GetRight()) / 2;
+        var yCenter = (this.Frame.ChartBorder.GetTop() + this.Frame.ChartBorder.GetBottom()) / 2;
+        this.Canvas.textAlign = 'center';
+        this.Canvas.textBaseline = 'middle';
+        this.Canvas.fillStyle = this.TextColor;
+        this.Canvas.font = this.Font;
+        this.Canvas.fillText(this.SplashTitle, xCenter, yCenter);
+    }
+  
+    this.HScreenDraw = function () //横屏
+    {
+        var xCenter = (this.Frame.ChartBorder.GetLeft() + this.Frame.ChartBorder.GetRight()) / 2;
+        var yCenter = (this.Frame.ChartBorder.GetTop() + this.Frame.ChartBorder.GetBottom()) / 2;
+    
+        this.Canvas.save();
+        this.Canvas.translate(xCenter, yCenter);
+        this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
+    
+        this.Canvas.textAlign = 'center';
+        this.Canvas.textBaseline = 'middle';
+        this.Canvas.fillStyle = this.TextColor;
+        this.Canvas.font = this.Font;
+        this.Canvas.fillText(this.SplashTitle, 0, 0);
+    
+        this.Canvas.restore();
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // 其他图形
 //
@@ -4213,7 +4279,7 @@ module.exports =
         ChartBuySell: ChartBuySell,
         ChartMultiBar: ChartMultiBar,
         ChartMACD:ChartMACD,
-
+        ChartSplashPaint:ChartSplashPaint,
         ChartPie: ChartPie,
         ChartCircle: ChartCircle,
         ChartChinaMap: ChartChinaMap,
@@ -4245,4 +4311,5 @@ module.exports =
     JSCommonChartPaint_ChartBuySell: ChartBuySell,
     JSCommonChartPaint_ChartMACD: ChartMACD,
     JSCommonChartPaint_ChartCorssCursor: ChartCorssCursor,
+    JSCommonChartPaint_ChartSplashPaint:ChartSplashPaint,
 };
