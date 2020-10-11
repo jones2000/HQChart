@@ -33032,6 +33032,45 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
+    this.SetFrameToolbar=function(windowIndex,window)
+    {
+        if (!window || !this.Frame.SubFrame[windowIndex] || !this.Frame.SubFrame[windowIndex].Frame) return;
+
+        var frame=this.Frame.SubFrame[windowIndex].Frame;
+        var bChanged=false;
+        if (IFrameSplitOperator.IsBool(window.Modify)) 
+        {
+            frame.ModifyIndex=window.Modify;
+            bChanged=true;
+        }
+
+        if (IFrameSplitOperator.IsBool(window.Change)) 
+        {
+            frame.ChangeIndex=window.Change;
+            bChanged=true;
+        }
+
+        if (IFrameSplitOperator.IsBool(window.Close)) 
+        {
+            frame.CloseIndex=window.Close;
+            bChanged=true;
+        }
+
+        if (IFrameSplitOperator.IsBool(window.Overlay)) 
+        {
+            frame.OverlayIndex=window.Overlay;
+            bChanged=true;
+        }
+
+        //工具栏变 先刷新工具栏
+        if (bChanged)
+        {
+            frame.SizeChange=true;
+            frame.ToolbarRect=null; //清空工具栏缓存
+            frame.DrawToolbar();
+        }
+    }
+
     //切换成 脚本指标
     this.ChangeScriptIndex=function(windowIndex,indexData,option)
     {
@@ -33040,19 +33079,7 @@ function KLineChartContainer(uielement)
 
         if (option)
         {
-            var window=option.Window;
-            if (option.Window && this.Frame.SubFrame[windowIndex] && this.Frame.SubFrame[windowIndex].Frame)
-            {
-                var frame=this.Frame.SubFrame[windowIndex].Frame;
-                if (IFrameSplitOperator.IsBool(window.Modify)) frame.ModifyIndex=window.Modify;
-                if (IFrameSplitOperator.IsBool(window.Change)) frame.ChangeIndex=window.Change;
-                if (IFrameSplitOperator.IsBool(window.Close)) frame.CloseIndex=window.Close;
-                if (IFrameSplitOperator.IsBool(window.Overlay)) frame.OverlayIndex=window.Overlay;
-                //工具栏变 先刷新工具栏
-                frame.SizeChange=true;
-                frame.ToolbarRect=null; //清空工具栏缓存
-                this.Draw();
-            }
+            if (option.Window) this.SetFrameToolbar(windowIndex,option.Window);
         }
 
         var bindData=this.ChartPaint[0].Data;
@@ -33070,6 +33097,11 @@ function KLineChartContainer(uielement)
         //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
         var apiItem=indexData.API;
         this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,indexData);
+
+        if (indexData)
+        {
+            if (indexData.Window) this.SetFrameToolbar(windowIndex,indexData.Window);
+        }
 
         var bindData=this.ChartPaint[0].Data;
         this.BindIndexData(windowIndex,bindData);   //执行脚本
