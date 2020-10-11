@@ -12402,8 +12402,11 @@ function ScriptIndex(name, script, args, option)
     chartText.Name = varItem.Name;
     chartText.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
     chartText.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+    chartText.TextAlign="center";
     if (varItem.Color) chartText.Color = this.GetColor(varItem.Color);
     else chartText.Color = this.GetDefaultColor(id);
+    if (varItem.IsDrawAbove) chartText.Direction=1;
+    else chartText.Direction=2;
 
     let titleIndex = windowIndex + 1;
     chartText.Data.Data = varItem.Draw.DrawData.Value;

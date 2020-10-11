@@ -1067,6 +1067,23 @@ function ChartSingleText()
             {
                 text = this.Text[i];
                 if (!text) continue;
+                if (isHScreen)
+                {
+                    if (this.Name=='DRAWNUMBER')
+                    {
+                        if (this.Direction==1) y+=4;
+                        else if (this.Direction==2) y-=4;
+                    }
+                }
+                else
+                {
+                    if (this.Name=='DRAWNUMBER')
+                    {
+                        if (this.Direction==1) y-=4;
+                        else if (this.Direction==2) y+=4;
+                    }
+                }
+               
                 this.DrawText(text, x, y, isHScreen);
             }
             else 

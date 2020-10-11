@@ -7248,7 +7248,11 @@ function JSDraw(errorHandler,symbolData)
         let result={DrawData:drawData, DrawType:'DRAWNUMBER'};
         let isNumber=typeof(data2)=='number';
         let text;
-        if (isNumber) text=data2.toFixed(2);
+        if (isNumber) 
+        {
+            if (IFrameSplitOperator.IsInteger(data2)) text=data2.toString();
+            else text=data2.toFixed(2);
+        }
 
         for(let i in condition)
         {
@@ -12406,6 +12410,9 @@ function JSExecute(ast,option)
                     let isDotLine=false;
                     let isOverlayLine=false;    //叠加线
                     var isNoneName=false;
+                    //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
+                    //DRAWNUMBER(CLOSE>OPEN,HIGH,CLOSE),DRAWABOVE;
+                    var isDrawAbove=false;      
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -12425,10 +12432,11 @@ function JSExecute(ast,option)
                             if (value==='COLORSTICK') colorStick=true;
                             else if (value==='POINTDOT') pointDot=true;
                             else if (value==='CIRCLEDOT') circleDot=true;
-                            else if (value=='DOTLINE') isDotLine=true;
+                            else if (value==='DOTLINE') isDotLine=true;
                             else if (value==='LINESTICK') lineStick=true;
                             else if (value==='STICK') stick=true;
                             else if (value==='VOLSTICK') volStick=true;
+                            else if (value==="DRAWABOVE") isDrawAbove=true;
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
                             else if (value.indexOf('NODRAW')==0) isShow=false;
@@ -12533,6 +12541,7 @@ function JSExecute(ast,option)
                         var outVar={Name:draw.Name, Draw:draw, Type:1};
                         if (color) outVar.Color=color;
                         if (lineWidth) outVar.LineWidth=lineWidth;
+                        if (isDrawAbove) outVar.IsDrawAbove=true;
                         this.OutVarTable.push(outVar);
                     }
                     else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
@@ -13746,8 +13755,11 @@ function ScriptIndex(name,script,args,option)
         chartText.Name=varItem.Name;
         chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.TextAlign="center";
         if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
         else chartText.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawAbove) chartText.Direction=1;
+        else chartText.Direction=2;
 
         let titleIndex=windowIndex+1;
         chartText.Data.Data=varItem.Draw.DrawData.Value;
@@ -14723,8 +14735,11 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
+        chart.TextAlign="center";
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawAbove) chart.Direction=1;
+        else chart.Direction=2;
 
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Draw.DrawData.Value;

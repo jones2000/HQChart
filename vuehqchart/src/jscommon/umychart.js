@@ -13119,6 +13119,11 @@ function ChartSingleText()
             {
                 var text=this.Text[i];
                 if (!text) continue;
+                if (this.Name=='DRAWNUMBER')
+                {
+                    if (this.Direction==1) y-=4*pixelTatio;
+                    else if (this.Direction==2) y+=4*pixelTatio;
+                }
                 this.DrawText(text,x,y,isHScreen);
             }
             else

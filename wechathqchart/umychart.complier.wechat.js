@@ -2308,7 +2308,107 @@ function JSAlgorithm(errorHandler, symbolData)
         }
 
         return result;
-        
+    }
+
+    //引用若干周期前的数据(未作平滑处理).
+    //用法: REFV(X,A),引用A周期前的X值.A可以是变量.
+    //平滑处理:当引用不到数据时进行的操作.
+    //例如: REFV(CLOSE,BARSCOUNT(C)-1)表示第二根K线的收盘价.
+    this.REFV=function(data,n)
+    {
+        let result=[];
+        if (typeof(n)=='number')
+        {
+            if (data.length<=0) return result;
+            if (n>=data.length) return result;
+
+            result=data.slice(0,data.length-n);
+
+            for(let i=0;i<n;++i)    //不作平滑处理
+                result.unshift(null);
+        }
+        else    //n 为数组的情况
+        {
+            for(let i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                if (i>=n.length) continue;
+                var value=n[i];
+                if (value>=0 && value<=i) result[i]=data[i-value];
+            }
+        }
+
+        return result; 
+    }
+
+    //属于未来函数,引用若干周期后的数据(平滑处理).
+    //用法: REFX(X,A),引用A周期后的X值.A可以是变量.
+    //平滑处理:当引用不到数据时进行的操作.此函数中,平滑时使用上一个周期的引用值.
+    //例如: TT:=IF(C>O,1,2);
+    //      REFX(CLOSE,TT);表示阳线引用下一周期的收盘价,阴线引用日后第二周期的收盘价.
+    this.REFX=function(data,n)
+    {
+        let result=[];
+        if (typeof(n)=='number')
+        {
+            if (data.length<=0) return result;
+            if (n>=data.length) return result;
+
+            result=data.slice(n,data.length);
+
+            //平滑处理
+            var lastData=data[data.length-1];
+            for(let i=0;i<n;++i)
+                result.push(lastData);
+        }
+        else    //n 为数组的情况
+        {
+            var dataCount=data.length;
+            for(let i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                if (i>=n.length) continue;
+                var value=n[i];
+                if (value>=0 && value+i<dataCount) result[i]=data[i+value];
+                else if (i) result[i]=result[i-1];
+                else result[i]=data[i];
+            }
+        }
+
+        return result; 
+    }
+
+    //属于未来函数,引用若干周期后的数据(未作平滑处理).
+    //用法:REFXV(X,A),引用A周期后的X值.A可以是变量.
+    //平滑处理:当引用不到数据时进行的操作.
+    //例如: REFXV(CLOSE,1)表示下一周期的收盘价,在日线上就是明天收盘价
+    this.REFXV=function(data,n)
+    {
+        let result=[];
+        if (typeof(n)=='number')
+        {
+            if (data.length<=0) return result;
+            if (n>=data.length) return result;
+
+            result=data.slice(n,data.length);
+
+            //平滑处理
+            for(let i=0;i<n;++i)
+                result.push(null);
+        }
+        else    //n 为数组的情况
+        {
+            var dataCount=data.length;
+            for(let i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                if (i>=n.length) continue;
+                var value=n[i];
+                if (value>=0 && value+i<dataCount) result[i]=data[i+value];
+            }
+        }
+
+        return result; 
     }
 
     this.MAX=function(data,data2)
@@ -5113,6 +5213,12 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.MIN(args[0], args[1]);
             case 'REF':
                 return this.REF(args[0], args[1]);
+            case "REFV":
+                return this.REFV(args[0], args[1]);
+            case 'REFX':
+                return this.REFX(args[0], args[1]);
+            case "REFXV":
+                return this.REFXV(args[0], args[1]);
             case 'ABS':
                 return this.ABS(args[0]);
             case 'MA':
@@ -5288,6 +5394,13 @@ JSAlgorithm.prototype.IsNumber=function(value)
 
     return true;
 }
+
+//是否是整形
+JSAlgorithm.prototype.IsInteger=function(x) 
+{
+    return (typeof x === 'number') && (x % 1 === 0);
+}
+
 
 //是否有是有效的除数
 JSAlgorithm.prototype.IsDivideNumber=function(value)
@@ -5622,7 +5735,11 @@ function JSDraw(errorHandler, symbolData)
 
         let isNumber = typeof (data2) == 'number';
         let text;
-        if (isNumber) text=data2.toFixed(2);
+        if (isNumber) 
+        { 
+            if (this.IsInteger(data2)) text=data2.toString();
+            else text=data2.toFixed(2);
+        }
 
         for (let i in condition) 
         {
@@ -5781,6 +5898,12 @@ JSDraw.prototype.IsNumber = function (value)
     if (isNaN(value)) return false;
 
     return true;
+}
+
+//是否是整形
+JSDraw.prototype.IsInteger=function(x) 
+{
+    return (typeof x === 'number') && (x % 1 === 0);
 }
 
 JSDraw.prototype.IsDrawFunction=function(name)
@@ -8226,6 +8349,9 @@ function JSExecute(ast,option)
                     let isDotLine = false;
                     let isOverlayLine = false;    //叠加线
                     let isNoneName=false;
+                    //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
+                    //DRAWNUMBER(CLOSE>OPEN,HIGH,CLOSE),DRAWABOVE;
+                    var isDrawAbove=false;  
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -8249,6 +8375,7 @@ function JSExecute(ast,option)
                             else if (value==='LINESTICK') lineStick=true;
                             else if (value==='STICK') stick=true;
                             else if (value==='VOLSTICK') volStick=true;
+                            else if (value==="DRAWABOVE") isDrawAbove=true;
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
                             else if (value.indexOf('NODRAW') == 0) isShow = false;
@@ -8350,6 +8477,7 @@ function JSExecute(ast,option)
                         var outVar = { Name: draw.Name, Draw: draw, Type: 1 };
                         if (color) outVar.Color = color;
                         if (lineWidth) outVar.LineWidth = lineWidth;
+                        if (isDrawAbove) outVar.IsDrawAbove=true;
                         this.OutVarTable.push(outVar);
                     }
                     else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子

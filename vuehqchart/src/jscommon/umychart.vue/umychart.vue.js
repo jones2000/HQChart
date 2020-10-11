@@ -158,7 +158,7 @@ function JSIndexScript()
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
             ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],['量比',this.VOLRate],
-            ['平均K线',this.HeikinAshi], ["ADL", this.ADL],
+            ['平均K线',this.HeikinAshi], ["ADL", this.ADL],["SQJZ", this.SQJZ],
             ['VOL-TDX',this.VOL_TDX],
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
@@ -3705,6 +3705,36 @@ JSIndexScript.prototype.VWAP = function ()
 "PRICE:=(H+L+C)/3;\n\
 T2:=VOL*PRICE;\n\
 VWAP:SUM(T2,0)/SUM(VOL,0);"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SQJZ = function () 
+{
+    let data =
+    {
+        Name: '神奇九转', Description: '神奇九转', IsMainIndex: true,
+        Script: //脚本
+"B:=C<REF(C,4);\n\
+N:=CURRBARSCOUNT;\n\
+B1:=(N=6 AND REFXV(COUNT(B,6),5)=6) OR (N=7 AND REFXV(COUNT(B,7),6)=7) OR (N=8 AND REFXV(COUNT(B,8),7)=8) OR (N>=9 AND REFXV(COUNT(B,9),8)=9);\n\
+DRAWNUMBER(B1 AND REF(B,1)=0,L,1),COLORMAGENTA;\n\
+B2:=(N=5 AND REFXV(COUNT(B,6),4)=6) OR (N=6 AND REFXV(COUNT(B,7),5)=7) OR (N=7 AND REFXV(COUNT(B,8),6)=8) OR (N>=8 AND REFXV(COUNT(B,9),7)=9);\n\
+DRAWNUMBER(B2 AND REF(B,2)=0,L,2),COLORMAGENTA;\n\
+B8:=(N=1 AND COUNT(B,8)=8) OR (N>=2 AND REFXV(COUNT(B,9),1)=9);\n\
+DRAWNUMBER(B8 AND REF(B,8)=0,L,8),COLORMAGENTA;\n\
+B9:=(N>=1 AND COUNT(B,9)=9);\n\
+DRAWNUMBER(B9 AND REF(B,9)=0,L,9),COLORBROWN;\n\
+S:=C>REF(C,4);\n\
+S1:=(N=6 AND REFXV(COUNT(S,6),5)=6) OR (N=7 AND REFXV(COUNT(S,7),6)=7) OR (N=8 AND REFXV(COUNT(S,8),7)=8) OR (N>=9 AND REFXV(COUNT(S,9),8)=9);\n\
+DRAWNUMBER(S1 AND REF(S,1)=0,H,1),COLORMAGENTA,DRAWABOVE;\n\
+S2:=(N=5 AND REFXV(COUNT(S,6),4)=6) OR (N=6 AND REFXV(COUNT(S,7),5)=7) OR (N=7 AND REFXV(COUNT(S,8),6)=8) OR (N>=8 AND REFXV(COUNT(S,9),7)=9);\n\
+DRAWNUMBER(S2 AND REF(S,2)=0,H,2),COLORMAGENTA,DRAWABOVE;\n\
+S8:=(N=1 AND COUNT(S,8)=8) OR (N>=2 AND REFXV(COUNT(S,9),1)=9);\n\
+DRAWNUMBER(S8 AND REF(S,8)=0,H,8),COLORMAGENTA,DRAWABOVE;\n\
+S9:=(N>=1 AND COUNT(S,9)=9);\n\
+DRAWNUMBER(S9 AND REF(S,9)=0,H,9),COLORGREEN,DRAWABOVE;"
     };
 
     return data;
@@ -16850,6 +16880,11 @@ function ChartSingleText()
             {
                 var text=this.Text[i];
                 if (!text) continue;
+                if (this.Name=='DRAWNUMBER')
+                {
+                    if (this.Direction==1) y-=4*pixelTatio;
+                    else if (this.Direction==2) y+=4*pixelTatio;
+                }
                 this.DrawText(text,x,y,isHScreen);
             }
             else
@@ -54759,7 +54794,11 @@ function JSDraw(errorHandler,symbolData)
         let result={DrawData:drawData, DrawType:'DRAWNUMBER'};
         let isNumber=typeof(data2)=='number';
         let text;
-        if (isNumber) text=data2.toFixed(2);
+        if (isNumber) 
+        {
+            if (IFrameSplitOperator.IsInteger(data2)) text=data2.toString();
+            else text=data2.toFixed(2);
+        }
 
         for(let i in condition)
         {
@@ -59917,6 +59956,9 @@ function JSExecute(ast,option)
                     let isDotLine=false;
                     let isOverlayLine=false;    //叠加线
                     var isNoneName=false;
+                    //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
+                    //DRAWNUMBER(CLOSE>OPEN,HIGH,CLOSE),DRAWABOVE;
+                    var isDrawAbove=false;      
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -59936,10 +59978,11 @@ function JSExecute(ast,option)
                             if (value==='COLORSTICK') colorStick=true;
                             else if (value==='POINTDOT') pointDot=true;
                             else if (value==='CIRCLEDOT') circleDot=true;
-                            else if (value=='DOTLINE') isDotLine=true;
+                            else if (value==='DOTLINE') isDotLine=true;
                             else if (value==='LINESTICK') lineStick=true;
                             else if (value==='STICK') stick=true;
                             else if (value==='VOLSTICK') volStick=true;
+                            else if (value==="DRAWABOVE") isDrawAbove=true;
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
                             else if (value.indexOf('NODRAW')==0) isShow=false;
@@ -60044,6 +60087,7 @@ function JSExecute(ast,option)
                         var outVar={Name:draw.Name, Draw:draw, Type:1};
                         if (color) outVar.Color=color;
                         if (lineWidth) outVar.LineWidth=lineWidth;
+                        if (isDrawAbove) outVar.IsDrawAbove=true;
                         this.OutVarTable.push(outVar);
                     }
                     else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
@@ -61257,8 +61301,11 @@ function ScriptIndex(name,script,args,option)
         chartText.Name=varItem.Name;
         chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.TextAlign="center";
         if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
         else chartText.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawAbove) chartText.Direction=1;
+        else chartText.Direction=2;
 
         let titleIndex=windowIndex+1;
         chartText.Data.Data=varItem.Draw.DrawData.Value;
@@ -62234,8 +62281,11 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
+        chart.TextAlign="center";
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawAbove) chart.Direction=1;
+        else chart.Direction=2;
 
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Draw.DrawData.Value;

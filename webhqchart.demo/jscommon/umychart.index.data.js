@@ -102,7 +102,7 @@ function JSIndexScript()
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
             ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],['量比',this.VOLRate],
-            ['平均K线',this.HeikinAshi], ["ADL", this.ADL],
+            ['平均K线',this.HeikinAshi], ["ADL", this.ADL],["SQJZ", this.SQJZ],
             ['VOL-TDX',this.VOL_TDX],
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
@@ -3649,6 +3649,36 @@ JSIndexScript.prototype.VWAP = function ()
 "PRICE:=(H+L+C)/3;\n\
 T2:=VOL*PRICE;\n\
 VWAP:SUM(T2,0)/SUM(VOL,0);"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SQJZ = function () 
+{
+    let data =
+    {
+        Name: '神奇九转', Description: '神奇九转', IsMainIndex: true,
+        Script: //脚本
+"B:=C<REF(C,4);\n\
+N:=CURRBARSCOUNT;\n\
+B1:=(N=6 AND REFXV(COUNT(B,6),5)=6) OR (N=7 AND REFXV(COUNT(B,7),6)=7) OR (N=8 AND REFXV(COUNT(B,8),7)=8) OR (N>=9 AND REFXV(COUNT(B,9),8)=9);\n\
+DRAWNUMBER(B1 AND REF(B,1)=0,L,1),COLORMAGENTA;\n\
+B2:=(N=5 AND REFXV(COUNT(B,6),4)=6) OR (N=6 AND REFXV(COUNT(B,7),5)=7) OR (N=7 AND REFXV(COUNT(B,8),6)=8) OR (N>=8 AND REFXV(COUNT(B,9),7)=9);\n\
+DRAWNUMBER(B2 AND REF(B,2)=0,L,2),COLORMAGENTA;\n\
+B8:=(N=1 AND COUNT(B,8)=8) OR (N>=2 AND REFXV(COUNT(B,9),1)=9);\n\
+DRAWNUMBER(B8 AND REF(B,8)=0,L,8),COLORMAGENTA;\n\
+B9:=(N>=1 AND COUNT(B,9)=9);\n\
+DRAWNUMBER(B9 AND REF(B,9)=0,L,9),COLORBROWN;\n\
+S:=C>REF(C,4);\n\
+S1:=(N=6 AND REFXV(COUNT(S,6),5)=6) OR (N=7 AND REFXV(COUNT(S,7),6)=7) OR (N=8 AND REFXV(COUNT(S,8),7)=8) OR (N>=9 AND REFXV(COUNT(S,9),8)=9);\n\
+DRAWNUMBER(S1 AND REF(S,1)=0,H,1),COLORMAGENTA,DRAWABOVE;\n\
+S2:=(N=5 AND REFXV(COUNT(S,6),4)=6) OR (N=6 AND REFXV(COUNT(S,7),5)=7) OR (N=7 AND REFXV(COUNT(S,8),6)=8) OR (N>=8 AND REFXV(COUNT(S,9),7)=9);\n\
+DRAWNUMBER(S2 AND REF(S,2)=0,H,2),COLORMAGENTA,DRAWABOVE;\n\
+S8:=(N=1 AND COUNT(S,8)=8) OR (N>=2 AND REFXV(COUNT(S,9),1)=9);\n\
+DRAWNUMBER(S8 AND REF(S,8)=0,H,8),COLORMAGENTA,DRAWABOVE;\n\
+S9:=(N>=1 AND COUNT(S,9)=9);\n\
+DRAWNUMBER(S9 AND REF(S,9)=0,H,9),COLORGREEN,DRAWABOVE;"
     };
 
     return data;
