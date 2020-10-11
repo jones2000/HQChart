@@ -189,6 +189,8 @@ var Character =
             (cp >= 0x41 && cp <= 0x5A) ||
             (cp >= 0x61 && cp <= 0x7A) ||
             (cp === 0x5C) ||
+            //【】
+            (cp===0x3010 || cp===0x3011) ||
             ((cp >= 0x80) && Regex.NonAsciiIdentifierStart.test(Character.FromCodePoint(cp)));
     },
 
@@ -199,6 +201,8 @@ var Character =
             (cp >= 0x61 && cp <= 0x7A) ||
             (cp >= 0x30 && cp <= 0x39) ||
             (cp === 0x5C) || (cp===0x23) ||
+            //【】
+            (cp===0x3010 || cp===0x3011) ||
             ((cp >= 0x80) && Regex.NonAsciiIdentifierPart.test(Character.FromCodePoint(cp)));
     },
 
@@ -3537,7 +3541,7 @@ function JSAlgorithm(errorHandler,symbolData)
                 }
                 else
                 {
-                    for(j=nMax=(i-n+2);j<=i;++j)
+                    for(j=nMax=(i-n+1);j<=i;++j)
                     {
                         nMax=data[j]<data[nMax]?nMax:j;
                     }
@@ -5871,42 +5875,75 @@ function JSAlgorithm(errorHandler,symbolData)
     {
         var result=[];
         if (!Array.isArray(data)) return result;
-        if (n<1) n=data.length;
-
-        var nMax=null;  //最大值索引
-        for(var i=0;i<data.length;++i)
+        if (Array.isArray(n))
         {
-            result[i]=null;
-            if (this.IsNumber(data[i])) 
+            for(var i=0;i<n.length;++i)
             {
-                nMax=i;
-                break;
-            }
-        }
+                result[i]=null;
+                var period=n[i];
+                if (!this.IsNumber(period)) continue;
 
-        var j=0;
-        for(i=nMax+1;i<data.length && j<n ;++i,++j) //求第1个最大值
-        {
-            if (data[i]>=data[nMax]) nMax=i;
-            if(n==data.length) result[i]=(i-nMax);
-        }
+                var start=i-period;
+                if (start<0) start=0;
+                var nMax=null;
+                var j=start;
+                for(; j<data.length;++j)
+                {
+                    if (this.IsNumber(data[j]))
+                    {
+                        nMax=j;
+                        break;
+                    }
+                }
 
-        for(;i<data.length;++i)
-        {
-            if (i-nMax<n)
-            {
-                if (data[i]>=data[nMax]) nMax=i;
-            }
-            else
-            {
-                nMax=i-n+1;
-                for(j=nMax;j<=i;++j)    //计算区间最大值
+                for(var k=0; j<data.length && k<period;++k, ++j)
                 {
                     if (data[j]>=data[nMax]) nMax=j;
                 }
+
+                if (nMax!=null)
+                    result[i]=(i-nMax);
+            }
+        }
+        else
+        {
+            if (n<1) n=data.length;
+
+            var nMax=null;  //最大值索引
+            for(var i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                if (this.IsNumber(data[i])) 
+                {
+                    nMax=i;
+                    break;
+                }
             }
 
-            result[i]=i-nMax;
+            var j=0;
+            for(i=nMax+1;i<data.length && j<n ;++i,++j) //求第1个最大值
+            {
+                if (data[i]>=data[nMax]) nMax=i;
+                if(n==data.length) result[i]=(i-nMax);
+            }
+
+            for(;i<data.length;++i)
+            {
+                if (i-nMax<n)
+                {
+                    if (data[i]>=data[nMax]) nMax=i;
+                }
+                else
+                {
+                    nMax=i-n+1;
+                    for(j=nMax;j<=i;++j)    //计算区间最大值
+                    {
+                        if (data[j]>=data[nMax]) nMax=j;
+                    }
+                }
+
+                result[i]=i-nMax;
+            }
         }
 
         return result;
@@ -5921,42 +5958,76 @@ function JSAlgorithm(errorHandler,symbolData)
     {
         var result=[];
         if (!Array.isArray(data)) return result;
-        if (n<1) n=data.length;
 
-        var nMin=null;  //最小值索引
-        for(var i=0;i<data.length;++i)
+        if (Array.isArray(n))
         {
-            result[i]=null;
-            if (this.IsNumber(data[i])) 
+            for(var i=0;i<n.length;++i)
             {
-                nMin=i;
-                break;
-            }
-        }
+                result[i]=null;
+                var period=n[i];
+                if (!this.IsNumber(period)) continue;
 
-        var j=0;
-        for(i=nMin+1;i<data.length && j<n ;++i,++j) //求第1个最大值
-        {
-            if (data[i]<=data[nMin]) nMin=i;
-            if(n==data.length) result[i]=(i-nMin);
-        }
+                var start=i-period;
+                if (start<0) start=0;
+                var nMin=null;
+                var j=start;
+                for(; j<data.length;++j)
+                {
+                    if (this.IsNumber(data[j]))
+                    {
+                        nMin=j;
+                        break;
+                    }
+                }
 
-        for(;i<data.length;++i)
-        {
-            if (i-nMin<n)
-            {
-                if (data[i]<=data[nMin]) nMin=i;
-            }
-            else
-            {
-                nMin=i-n+1;
-                for(j=nMin;j<=i;++j)    //计算区间最小值
+                for(var k=0; j<data.length && k<period;++k, ++j)
                 {
                     if (data[j]<=data[nMin]) nMin=j;
                 }
+
+                if (nMin!=null)
+                    result[i]=(i-nMin);
+            }
+        }
+        else
+        {
+            if (n<1) n=data.length;
+
+            var nMin=null;  //最小值索引
+            for(var i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                if (this.IsNumber(data[i])) 
+                {
+                    nMin=i;
+                    break;
+                }
             }
 
-            result[i]=i-nMin;
+            var j=0;
+            for(i=nMin+1;i<data.length && j<n ;++i,++j) //求第1个最大值
+            {
+                if (data[i]<=data[nMin]) nMin=i;
+                if(n==data.length) result[i]=(i-nMin);
+            }
+
+            for(;i<data.length;++i)
+            {
+                if (i-nMin<n)
+                {
+                    if (data[i]<=data[nMin]) nMin=i;
+                }
+                else
+                {
+                    nMin=i-n+1;
+                    for(j=nMin;j<=i;++j)    //计算区间最小值
+                    {
+                        if (data[j]<=data[nMin]) nMin=j;
+                    }
+                }
+
+                result[i]=i-nMin;
+            }
         }
 
         return result;
@@ -6209,36 +6280,58 @@ function JSAlgorithm(errorHandler,symbolData)
         var dataCount=condition.length;
         if (!this.IsNumber(dataCount) || dataCount<=0) return result;
 
-        for(var i=0;i<dataCount;++i)    //初始化0
+        if (Array.isArray(n))
         {
-            result[i]=0;
-        }
-
-        for(var pos=0;pos<dataCount;++pos)
-        {
-            if (this.IsNumber(condition[pos])) break;
-        }
-        if (pos==dataCount) return result;
-
-        var num=Math.min(dataCount-pos,Math.max(n,1));
-
-        for(var i=dataCount-1,j=0;i>=0;--i)
-        {
-            var value=condition[i];
-            if (this.IsNumber(value) && value)
+            for(var i=0;i<dataCount;++i)    //初始化0
             {
-                for(j=i;j>i-num;--j)
+                result[i]=0;
+            }
+
+            for(var i=0;i<dataCount;++i)
+            {
+                var value=condition[i];
+                var period=n[i];
+                if (this.IsNumber(value) && value && this.IsNumber(period))
                 {
-                    result[j]=1;
+                    for(var j=i,k=0; j>=0 && k<period; --j,++k)
+                    {
+                        result[j]=1;
+                    }
                 }
             }
         }
-
-        if (condition[i]) 
+        else
         {
-            for(j=i;j>=pos;--j) result[j]=1;
+            for(var i=0;i<dataCount;++i)    //初始化0
+            {
+                result[i]=0;
+            }
+    
+            for(var pos=0;pos<dataCount;++pos)
+            {
+                if (this.IsNumber(condition[pos])) break;
+            }
+            if (pos==dataCount) return result;
+    
+            var num=Math.min(dataCount-pos,Math.max(n,1));
+    
+            for(var i=dataCount-1,j=0;i>=0;--i)
+            {
+                var value=condition[i];
+                if (this.IsNumber(value) && value)
+                {
+                    for(j=i;j>i-num;--j)
+                    {
+                        result[j]=1;
+                    }
+                }
+            }
+    
+            if (condition[i]) 
+            {
+                for(j=i;j>=pos;--j) result[j]=1;
+            }
         }
-
         return result;
     }
 
@@ -7006,6 +7099,31 @@ function JSDraw(errorHandler,symbolData)
                     bFirstPoint=bSecondPont=false;
                     lineCache={Start:{ },End:{ }};
                 }  
+            }
+        }
+
+        if (expand==1) //右延长线
+        {
+            var x2=null;
+            for(var i=drawData.length-1;i>=0;--i)
+            {
+                if (this.IsNumber(drawData[i]))
+                {
+                    x2=i;
+                    break;
+                }
+            }
+            //y3=(y1-y2)*(x3-x1)/(x2-x1)
+            if (x2!=null && x2-1>=0)
+            {
+                var x1=x2-1;
+                for(var i=x2+1;i<drawData.length;++i)
+                {
+                    var y1=drawData[x1];
+                    var y2=drawData[x2];
+                    var y3=(y1-y2)*(i-x1)/(x2-x1);
+                    drawData[i]=y1-y3;
+                }
             }
         }
 

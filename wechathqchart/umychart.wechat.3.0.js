@@ -1935,57 +1935,69 @@ function JSChartContainer(uielement)
       this.Frame.ResetXYSplit();
   }
 
-  this.UpdateFrameMaxMin = function () {
-    var frameMaxMinData = new Array();
+    this.UpdateFrameMaxMin = function () 
+    {
+        var frameMaxMinData = new Array();
+        var chartPaint = new Array();
 
-    var chartPaint = new Array();
-
-    for (var i in this.ChartPaint) {
-      chartPaint.push(this.ChartPaint[i]);
-    }
-    for (var i in this.OverlayChartPaint) {
-      chartPaint.push(this.OverlayChartPaint[i]);
-    }
-
-    for (var i in chartPaint) {
-      var paint = chartPaint[i];
-      var range = paint.GetMaxMin();
-      if (range == null || range.Max == null || range.Min == null) continue;
-      var frameItem = null;
-      for (var j in frameMaxMinData) {
-        if (frameMaxMinData[j].Frame == paint.ChartFrame) {
-          frameItem = frameMaxMinData[j];
-          break;
+        for (var i in this.ChartPaint) 
+        {
+            var item=this.ChartPaint[i];
+            if (item.IsShow==false) continue;   //隐藏的图形不计算
+            chartPaint.push(item);
         }
-      }
+        for (var i in this.OverlayChartPaint) 
+        {
+            chartPaint.push(this.OverlayChartPaint[i]);
+        }
 
-      if (frameItem) {
-        if (frameItem.Range.Max < range.Max) frameItem.Range.Max = range.Max;
-        if (frameItem.Range.Min > range.Min) frameItem.Range.Min = range.Min;
-      }
-      else {
-        frameItem = {};
-        frameItem.Frame = paint.ChartFrame;
-        frameItem.Range = range;
-        frameMaxMinData.push(frameItem);
-      }
-    }
+        for (var i in chartPaint) 
+        {
+            var paint = chartPaint[i];
+            var range = paint.GetMaxMin();
+            if (range == null || range.Max == null || range.Min == null) continue;
+            var frameItem = null;
+            for (var j in frameMaxMinData) 
+            {
+                if (frameMaxMinData[j].Frame == paint.ChartFrame) 
+                {
+                    frameItem = frameMaxMinData[j];
+                    break;
+                }
+            }
 
-    for (var i in frameMaxMinData) {
-      var item = frameMaxMinData[i];
-      if (!item.Frame || !item.Range) continue;
-      if (item.Range.Max == null || item.Range.Min == null) continue;
-      if (item.Frame.YSpecificMaxMin) {
-        item.Frame.HorizontalMax = item.Frame.YSpecificMaxMin.Max;
-        item.Frame.HorizontalMin = item.Frame.YSpecificMaxMin.Min;
-      }
-      else {
-        item.Frame.HorizontalMax = item.Range.Max;
-        item.Frame.HorizontalMin = item.Range.Min;
-      }
-      item.Frame.XYSplit = true;
+            if (frameItem) 
+            {
+                if (frameItem.Range.Max < range.Max) frameItem.Range.Max = range.Max;
+                if (frameItem.Range.Min > range.Min) frameItem.Range.Min = range.Min;
+            }
+            else 
+            {
+                frameItem = {};
+                frameItem.Frame = paint.ChartFrame;
+                frameItem.Range = range;
+                frameMaxMinData.push(frameItem);
+            }
+        }
+
+        for (var i in frameMaxMinData) 
+        {
+            var item = frameMaxMinData[i];
+            if (!item.Frame || !item.Range) continue;
+            if (item.Range.Max == null || item.Range.Min == null) continue;
+            if (item.Frame.YSpecificMaxMin) 
+            {
+                item.Frame.HorizontalMax = item.Frame.YSpecificMaxMin.Max;
+                item.Frame.HorizontalMin = item.Frame.YSpecificMaxMin.Min;
+            }
+            else 
+            {
+                item.Frame.HorizontalMax = item.Range.Max;
+                item.Frame.HorizontalMin = item.Range.Min;
+            }
+            item.Frame.XYSplit = true;
+        }
     }
-  }
 
   this.DataMoveLeft = function () {
     var data = null;
@@ -12126,7 +12138,7 @@ function ScriptIndex(name, script, args, option)
         line.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
         if (varItem.Color) line.Color = this.GetColor(varItem.Color);
         else line.Color = this.GetDefaultColor(id);
-
+        if (varItem.IsShow==false) line.IsShow=false;
         if (varItem.LineWidth) 
         {
             let width = parseInt(varItem.LineWidth.replace("LINETHICK", ""));

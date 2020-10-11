@@ -158,7 +158,8 @@ function JSIndexScript()
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
             ['SCR',this.SCR],['ASR',this.ASR],['SAR',this.SAR],['TJCJL',this.TJCJL],['量比',this.VOLRate],
-            ['平均K线',this.HeikinAshi], ["ADL", this.ADL],["SQJZ", this.SQJZ],
+            ['平均K线',this.HeikinAshi], ["ADL", this.ADL],["SQJZ", this.SQJZ],["XT", this.XT],["CFJT", this.CFJT],["CYX",this.CYX],
+            ["WAVE",this.WAVE],
             ['VOL-TDX',this.VOL_TDX],
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
@@ -3714,7 +3715,7 @@ JSIndexScript.prototype.SQJZ = function ()
 {
     let data =
     {
-        Name: '神奇九转', Description: '神奇九转', IsMainIndex: true,
+        Name: 'SQJZ', Description: '神奇九转', IsMainIndex: true,
         Script: //脚本
 "B:=C<REF(C,4);\n\
 N:=CURRBARSCOUNT;\n\
@@ -3740,9 +3741,100 @@ DRAWNUMBER(S9 AND REF(S,9)=0,H,9),COLORGREEN,DRAWABOVE;"
     return data;
 }
 
+JSIndexScript.prototype.XT = function () 
+{
+    let data =
+    {
+        Name: 'XT', Description: '箱体', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 10 }],
+        Script: //脚本
+"【箱顶】:PEAK(CLOSE,N,1)*0.98;\n\
+【箱底】:TROUGH(CLOSE,N,1)*1.02;\n\
+【箱高】:100*(【箱顶】-【箱底】)/【箱底】,NODRAW;"
+    };
 
+    return data;
+}
 
+JSIndexScript.prototype.CFJT = function () 
+{
+    let data =
+    {
+        Name: 'CFJT', Description: '财富阶梯', IsMainIndex: true,
+        Script: //脚本
+"突破:=REF(EMA(C,14),1);\n\
+A1X:=(EMA(C,10)-突破)/突破*100;\n\
+多方:=IF(A1X>=0,REF(EMA(C,10),BARSLAST(CROSS(A1X,0))+1),DRAWNULL);\n\
+空方:=IF(A1X<0,REF(EMA(C,10),BARSLAST(CROSS(0,A1X))+1),DRAWNULL);\n\
+STICKLINE(A1X>=0,多方,突破,110,0),COLORRED;\n\
+STICKLINE(A1X<0,空方,突破,110,0),COLORGREEN;"
+    };
 
+    return data;
+}
+
+JSIndexScript.prototype.CYX = function () 
+{
+    let data =
+    {
+        Name: 'CYX', Description: '撑压线', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 7 }],
+        Script: //脚本
+"Z1:=STRCAT(HYBLOCK,' ');\n\
+Z2:=STRCAT(Z1,DYBLOCK);\n\
+Z3:=STRCAT(Z2,' ');\n\
+DRAWTEXT_FIX(ISLASTBAR,0,0,0,STRCAT(Z3,GNBLOCK)),COLOR00C0C0;\n\
+A1:=REF(H,N)=HHV(H,2*N+1);\n\
+B1:=FILTER(A1,N);\n\
+C1:=BACKSET(B1,N+1);\n\
+D1:=FILTER(C1,N);\n\
+A2:=REF(L,N)=LLV(L,2*N+1);\n\
+B2:=FILTER(A2,N);\n\
+C2:=BACKSET(B2,N+1);\n\
+D2:=FILTER(C2,N);\n\
+E1:=(REF(LLV(L,2*N),1)+REF(HHV(H,2*N),1))/2;\n\
+E2:=(H+L)/2;\n\
+H1:=(D1 AND NOT(D2 AND E1>=E2)) OR ISLASTBAR OR BARSCOUNT(C)=1;\n\
+L1:=(D2 AND NOT(D1 AND E1<E2));\n\
+H2:=D1 AND NOT(D2 AND E1>=E2);\n\
+X1:=REF(BARSLAST(H1),1)+1;\n\
+F1:=BACKSET(H1 AND COUNT(L1,X1)>0,LLVBARS(IF(L1,L,10000),X1));\n\
+G1:=F1>REF(F1,1);\n\
+I1:=BACKSET(G1,2);\n\
+LD:=I1>REF(I1,1);\n\
+L2:=LD OR ISLASTBAR OR BARSCOUNT(C)=1;\n\
+X2:=REF(BARSLAST(L2),1)+1;\n\
+F2:=BACKSET(L2 AND COUNT(H2,X2)>0,HHVBARS(IF(H2,H,0),X2));\n\
+G2:=F2>REF(F2,1);\n\
+I2:=BACKSET(G2,2);\n\
+HD:=I2>REF(I2,1);\n\
+R1:=BACKSET(ISLASTBAR,BARSLAST(HD)+1);\n\
+S1:=R1>REF(R1,1);\n\
+T1:=BACKSET(ISLASTBAR,BARSLAST(LD)+1);\n\
+U1:=T1>REF(T1,1);\n\
+R2:=BACKSET(S1,REF(BARSLAST(HD),1)+2);\n\
+S2:=R2>REF(R2,1);\n\
+T2:=BACKSET(U1,REF(BARSLAST(LD),1)+2);\n\
+U2:=T2>REF(T2,1);\n\
+DRAWLINE(S2,H,S1,H,1),LINETHICK2,COLORRED;\n\
+DRAWLINE(U2,L,U1,L,1),LINETHICK2,COLORGREEN;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.WAVE = function () 
+{
+    let data =
+    {
+        Name: 'WAVE', Description: '波浪分析', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+"ZIG(3,N);"
+    };
+
+    return data;
+}
 
 JSIndexScript.prototype.TEST = function () 
 {
@@ -47735,6 +47827,8 @@ var Character =
             (cp >= 0x41 && cp <= 0x5A) ||
             (cp >= 0x61 && cp <= 0x7A) ||
             (cp === 0x5C) ||
+            //【】
+            (cp===0x3010 || cp===0x3011) ||
             ((cp >= 0x80) && Regex.NonAsciiIdentifierStart.test(Character.FromCodePoint(cp)));
     },
 
@@ -47745,6 +47839,8 @@ var Character =
             (cp >= 0x61 && cp <= 0x7A) ||
             (cp >= 0x30 && cp <= 0x39) ||
             (cp === 0x5C) || (cp===0x23) ||
+            //【】
+            (cp===0x3010 || cp===0x3011) ||
             ((cp >= 0x80) && Regex.NonAsciiIdentifierPart.test(Character.FromCodePoint(cp)));
     },
 
@@ -51083,7 +51179,7 @@ function JSAlgorithm(errorHandler,symbolData)
                 }
                 else
                 {
-                    for(j=nMax=(i-n+2);j<=i;++j)
+                    for(j=nMax=(i-n+1);j<=i;++j)
                     {
                         nMax=data[j]<data[nMax]?nMax:j;
                     }
@@ -53417,42 +53513,75 @@ function JSAlgorithm(errorHandler,symbolData)
     {
         var result=[];
         if (!Array.isArray(data)) return result;
-        if (n<1) n=data.length;
-
-        var nMax=null;  //最大值索引
-        for(var i=0;i<data.length;++i)
+        if (Array.isArray(n))
         {
-            result[i]=null;
-            if (this.IsNumber(data[i])) 
+            for(var i=0;i<n.length;++i)
             {
-                nMax=i;
-                break;
-            }
-        }
+                result[i]=null;
+                var period=n[i];
+                if (!this.IsNumber(period)) continue;
 
-        var j=0;
-        for(i=nMax+1;i<data.length && j<n ;++i,++j) //求第1个最大值
-        {
-            if (data[i]>=data[nMax]) nMax=i;
-            if(n==data.length) result[i]=(i-nMax);
-        }
+                var start=i-period;
+                if (start<0) start=0;
+                var nMax=null;
+                var j=start;
+                for(; j<data.length;++j)
+                {
+                    if (this.IsNumber(data[j]))
+                    {
+                        nMax=j;
+                        break;
+                    }
+                }
 
-        for(;i<data.length;++i)
-        {
-            if (i-nMax<n)
-            {
-                if (data[i]>=data[nMax]) nMax=i;
-            }
-            else
-            {
-                nMax=i-n+1;
-                for(j=nMax;j<=i;++j)    //计算区间最大值
+                for(var k=0; j<data.length && k<period;++k, ++j)
                 {
                     if (data[j]>=data[nMax]) nMax=j;
                 }
+
+                if (nMax!=null)
+                    result[i]=(i-nMax);
+            }
+        }
+        else
+        {
+            if (n<1) n=data.length;
+
+            var nMax=null;  //最大值索引
+            for(var i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                if (this.IsNumber(data[i])) 
+                {
+                    nMax=i;
+                    break;
+                }
             }
 
-            result[i]=i-nMax;
+            var j=0;
+            for(i=nMax+1;i<data.length && j<n ;++i,++j) //求第1个最大值
+            {
+                if (data[i]>=data[nMax]) nMax=i;
+                if(n==data.length) result[i]=(i-nMax);
+            }
+
+            for(;i<data.length;++i)
+            {
+                if (i-nMax<n)
+                {
+                    if (data[i]>=data[nMax]) nMax=i;
+                }
+                else
+                {
+                    nMax=i-n+1;
+                    for(j=nMax;j<=i;++j)    //计算区间最大值
+                    {
+                        if (data[j]>=data[nMax]) nMax=j;
+                    }
+                }
+
+                result[i]=i-nMax;
+            }
         }
 
         return result;
@@ -53467,42 +53596,76 @@ function JSAlgorithm(errorHandler,symbolData)
     {
         var result=[];
         if (!Array.isArray(data)) return result;
-        if (n<1) n=data.length;
 
-        var nMin=null;  //最小值索引
-        for(var i=0;i<data.length;++i)
+        if (Array.isArray(n))
         {
-            result[i]=null;
-            if (this.IsNumber(data[i])) 
+            for(var i=0;i<n.length;++i)
             {
-                nMin=i;
-                break;
-            }
-        }
+                result[i]=null;
+                var period=n[i];
+                if (!this.IsNumber(period)) continue;
 
-        var j=0;
-        for(i=nMin+1;i<data.length && j<n ;++i,++j) //求第1个最大值
-        {
-            if (data[i]<=data[nMin]) nMin=i;
-            if(n==data.length) result[i]=(i-nMin);
-        }
+                var start=i-period;
+                if (start<0) start=0;
+                var nMin=null;
+                var j=start;
+                for(; j<data.length;++j)
+                {
+                    if (this.IsNumber(data[j]))
+                    {
+                        nMin=j;
+                        break;
+                    }
+                }
 
-        for(;i<data.length;++i)
-        {
-            if (i-nMin<n)
-            {
-                if (data[i]<=data[nMin]) nMin=i;
-            }
-            else
-            {
-                nMin=i-n+1;
-                for(j=nMin;j<=i;++j)    //计算区间最小值
+                for(var k=0; j<data.length && k<period;++k, ++j)
                 {
                     if (data[j]<=data[nMin]) nMin=j;
                 }
+
+                if (nMin!=null)
+                    result[i]=(i-nMin);
+            }
+        }
+        else
+        {
+            if (n<1) n=data.length;
+
+            var nMin=null;  //最小值索引
+            for(var i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                if (this.IsNumber(data[i])) 
+                {
+                    nMin=i;
+                    break;
+                }
             }
 
-            result[i]=i-nMin;
+            var j=0;
+            for(i=nMin+1;i<data.length && j<n ;++i,++j) //求第1个最大值
+            {
+                if (data[i]<=data[nMin]) nMin=i;
+                if(n==data.length) result[i]=(i-nMin);
+            }
+
+            for(;i<data.length;++i)
+            {
+                if (i-nMin<n)
+                {
+                    if (data[i]<=data[nMin]) nMin=i;
+                }
+                else
+                {
+                    nMin=i-n+1;
+                    for(j=nMin;j<=i;++j)    //计算区间最小值
+                    {
+                        if (data[j]<=data[nMin]) nMin=j;
+                    }
+                }
+
+                result[i]=i-nMin;
+            }
         }
 
         return result;
@@ -53755,36 +53918,58 @@ function JSAlgorithm(errorHandler,symbolData)
         var dataCount=condition.length;
         if (!this.IsNumber(dataCount) || dataCount<=0) return result;
 
-        for(var i=0;i<dataCount;++i)    //初始化0
+        if (Array.isArray(n))
         {
-            result[i]=0;
-        }
-
-        for(var pos=0;pos<dataCount;++pos)
-        {
-            if (this.IsNumber(condition[pos])) break;
-        }
-        if (pos==dataCount) return result;
-
-        var num=Math.min(dataCount-pos,Math.max(n,1));
-
-        for(var i=dataCount-1,j=0;i>=0;--i)
-        {
-            var value=condition[i];
-            if (this.IsNumber(value) && value)
+            for(var i=0;i<dataCount;++i)    //初始化0
             {
-                for(j=i;j>i-num;--j)
+                result[i]=0;
+            }
+
+            for(var i=0;i<dataCount;++i)
+            {
+                var value=condition[i];
+                var period=n[i];
+                if (this.IsNumber(value) && value && this.IsNumber(period))
                 {
-                    result[j]=1;
+                    for(var j=i,k=0; j>=0 && k<period; --j,++k)
+                    {
+                        result[j]=1;
+                    }
                 }
             }
         }
-
-        if (condition[i]) 
+        else
         {
-            for(j=i;j>=pos;--j) result[j]=1;
+            for(var i=0;i<dataCount;++i)    //初始化0
+            {
+                result[i]=0;
+            }
+    
+            for(var pos=0;pos<dataCount;++pos)
+            {
+                if (this.IsNumber(condition[pos])) break;
+            }
+            if (pos==dataCount) return result;
+    
+            var num=Math.min(dataCount-pos,Math.max(n,1));
+    
+            for(var i=dataCount-1,j=0;i>=0;--i)
+            {
+                var value=condition[i];
+                if (this.IsNumber(value) && value)
+                {
+                    for(j=i;j>i-num;--j)
+                    {
+                        result[j]=1;
+                    }
+                }
+            }
+    
+            if (condition[i]) 
+            {
+                for(j=i;j>=pos;--j) result[j]=1;
+            }
         }
-
         return result;
     }
 
@@ -54552,6 +54737,31 @@ function JSDraw(errorHandler,symbolData)
                     bFirstPoint=bSecondPont=false;
                     lineCache={Start:{ },End:{ }};
                 }  
+            }
+        }
+
+        if (expand==1) //右延长线
+        {
+            var x2=null;
+            for(var i=drawData.length-1;i>=0;--i)
+            {
+                if (this.IsNumber(drawData[i]))
+                {
+                    x2=i;
+                    break;
+                }
+            }
+            //y3=(y1-y2)*(x3-x1)/(x2-x1)
+            if (x2!=null && x2-1>=0)
+            {
+                var x1=x2-1;
+                for(var i=x2+1;i<drawData.length;++i)
+                {
+                    var y1=drawData[x1];
+                    var y2=drawData[x2];
+                    var y3=(y1-y2)*(i-x1)/(x2-x1);
+                    drawData[i]=y1-y3;
+                }
             }
         }
 
