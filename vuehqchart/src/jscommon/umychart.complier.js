@@ -9210,7 +9210,7 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             });
         }
-        else if (ChartData.IsDayPeriod(PeriodID,true))
+        else if (ChartData.IsDayPeriod(periodID,true))
         {
             JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
@@ -9277,8 +9277,13 @@ function JSSymbolData(ast,option,jsExecute)
         var hisData=null;
         if (this.IsApiPeriod)
         {
+            var curPeriodInfo=JSComplierHelper.GetPeriodInfo({PeriodID:this.Period});
+            if (!curPeriodInfo) return null;
+            if (curPeriodInfo.Order>periodInfo.Order) return null;   //只能小周期转大周期
+
             if (!this.PeriodData.has(periodName)) return null;
             hisData=this.PeriodData.get(periodName);
+            hisData=hisData.Data;
         }
         else
         {

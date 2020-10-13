@@ -5700,6 +5700,22 @@ function JSDraw(errorHandler, symbolData)
         return result;
     }
 
+    this.DRAWTEXT_FIX=function(condition,x,y,type,text)
+    {
+        let result={Position:null, DrawType:'DRAWTEXT_FIX',Text:text};
+        if (condition.length<=0) return result;
+
+        for(var i in condition)
+        {
+            if (isNaN(condition[i]) || !condition[i]) continue;
+
+            result.Position={X:x, Y:y, Type:type};
+            return result;
+        }
+
+        return result;
+    }
+
     //direction 文字Y轴位置 0=middle 1=价格的顶部 2=价格的底部
     //offset 文字Y轴偏移
     this.SUPERDRAWTEXT = function (condition, price, text, direction, offset) 
@@ -6185,7 +6201,7 @@ JSDraw.prototype.IsInteger=function(x)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT', 'DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWICON','DRAWRECTREL']);
+    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT', "DRAWTEXT_FIX", 'DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWICON','DRAWRECTREL']);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -6467,6 +6483,7 @@ function JSSymbolData(ast,option,jsExecute)
             {
                 var item = industry[i];
                 groupData.Industry.push({ Name: item.name, Symbol: item.symbol });
+                break;  //就存一个1级分类
             }
         }
 
@@ -8865,6 +8882,10 @@ function JSExecute(ast,option)
             case 'SUPERDRAWTEXT':
                 node.Draw = this.Draw.SUPERDRAWTEXT(args[0], args[1], args[2], args[3], args[4]);
                 node.Out = [];
+                break;
+            case 'DRAWTEXT_FIX':
+                node.Draw=this.Draw.DRAWTEXT_FIX(args[0],args[1],args[2],args[3],args[4]);
+                node.Out=[];
                 break;
             case 'DRAWICON':
                 node.Draw = this.Draw.DRAWICON(args[0], args[1], args[2]);

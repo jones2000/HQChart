@@ -1486,8 +1486,9 @@ var JSCHART_EVENT_ID=
     ON_FINISH_DRAWPICTURE:18,    //完成画图工具    
     ON_INDEXTITLE_DRAW:19,       //指标标题重绘事件
     ON_CUSTOM_VERTICAL_DRAW:20,  //自定义X轴绘制事件
-    RECV_KLINE_MANUAL_UPDATE_DATA:21, //手动更新K线事件
-    ON_ENABLE_SPLASH_DRAW:22           //开启/关闭过场动画事件
+    RECV_KLINE_MANUAL_UPDATE_DATA:21,   //手动更新K线事件
+    ON_ENABLE_SPLASH_DRAW:22,           //开启/关闭过场动画事件
+    ON_CLICK_CHART_PAINT:23          //点击图形
 }
 
 var JSCHART_OPERATOR_ID=
@@ -1584,7 +1585,8 @@ function JSChartContainer(uielement)
     this.PressTime=500;
 
     this.NetworkFilter;         //网络请求回调 function(data, callback);
-    this.LastMouseStatus={}
+    this.LastMouseStatus={ }
+    this.ClickDownPoint;        //鼠标点击坐标 {X, Y}, 鼠标放开以后清空为null
 
     //设置事件回调
     //{event:事件id, callback:回调函数}
@@ -1674,6 +1676,8 @@ function JSChartContainer(uielement)
 
     this.UIOnMouseDown=function(e)
     {
+        this.ClickDownPoint={ X:e.clientX, Y:e.clientY };
+
         if(this.DragMode==0) return;
 
         var pixelTatio = GetDevicePixelRatio();
@@ -1891,11 +1895,56 @@ function JSChartContainer(uielement)
                 }
             }
         }
+        else
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_CHART_PAINT);
+            if (event && event.Callback)
+            {
+                if (this.ClickDownPoint.X==e.clientX && this.ClickDownPoint.Y==e.clientY)
+                {
+                    var pixelTatio = GetDevicePixelRatio();
+                    var x = e.clientX-uielement.getBoundingClientRect().left*pixelTatio;
+                    var y = e.clientY-uielement.getBoundingClientRect().top*pixelTatio;
+
+                    var toolTip=new TooltipData();
+                    var stock=null;
+                    for(var i in this.ChartPaint)
+                    {
+                        var item=this.ChartPaint[i];
+                        if (item.GetTooltipData(x,y,toolTip))
+                        {
+                            stock={ Symbol:this.Symbol, Name:this.Name };
+                            break;
+                        }
+                    }
+
+                    if (!toolTip.Data)
+                    {
+                        for(var i in this.OverlayChartPaint)
+                        {
+                            var item=this.OverlayChartPaint[i];
+                            if (item.GetTooltipData(x,y,toolTip))
+                            {
+                                stock={ Symbol:toolTip.ChartPaint.Symbol, Name:toolTip.ChartPaint.Title };
+                                break;
+                            }
+                        }
+                    }
+
+                    if (toolTip.Data)
+                    {
+                        var data= { X:e.clientX, Y:e.clientY, Stock: stock, Tooltip:toolTip };
+                        event.Callback(event, data, this);
+                    }
+                }
+            }
+        }
 
         //清空数据
         JSConsole.Chart.Log('[KLineChartContainer::document.onmouseup]',e);
         this.UIElement.style.cursor="default";
         this.MouseDrag=null;
+        this.ClickDownPoint=null;
         this.IsOnTouch=false;
         if (bClearDrawPicture===true) this.CurrentChartDrawPicture=null;
     }
@@ -41634,7 +41683,7 @@ function MinuteTimeStringData()
         throw {Name:'MinuteTimeStringData::GetET', Error:'not implement'};
     }
 
-    this.GetSHSZ=function() //动态创建
+    this.GetSHSZ=function(upperSymbol) //动态创建
     {
         if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
         return this.SHSZ;
@@ -41830,7 +41879,7 @@ function MinuteTimeStringData()
         if (!symbol) return this.SHSZ;
 
         var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
-        if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) return this.GetSHSZ();
+        if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) return this.GetSHSZ(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK();
         if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);

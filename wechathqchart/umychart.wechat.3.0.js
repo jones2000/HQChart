@@ -12218,7 +12218,8 @@ function ScriptIndex(name, script, args, option)
         else chartText.Color = this.GetDefaultColor(id);
 
         let titleIndex = windowIndex + 1;
-        chartText.Data.Data = varItem.Draw.DrawData;
+        if (varItem.Draw.Position) chartText.Position=varItem.Draw.Position;    //赋值坐标
+        if (varItem.Draw.DrawData) chartText.Data.Data = varItem.Draw.DrawData;
         chartText.Text = varItem.Draw.Text;
         if (varItem.Draw.Direction > 0) chartText.Direction = varItem.Draw.Direction;
         if (varItem.Draw.YOffset > 0) chartText.YOffset = varItem.Draw.YOffset;
@@ -12592,6 +12593,7 @@ function ScriptIndex(name, script, args, option)
                     break;
                 case 'DRAWTEXT':
                 case 'SUPERDRAWTEXT':
+                case 'DRAWTEXT_FIX':
                     this.CreateText(hqChart, windowIndex, item, i);
                     break;
                 case 'DRAWLINE':
