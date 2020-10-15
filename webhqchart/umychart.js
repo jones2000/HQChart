@@ -268,7 +268,7 @@ function JSChart(divElement)
                 if (item.YCoordinateType>0) chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=item.YCoordinateType;
                 if (item.IsYReverse==true) chart.Frame.SubFrame[0].Frame.CoordinateType=1;  //反转坐标
 
-                
+                if (item.DefaultYMaxMin) chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultYMaxMin=item.DefaultYMaxMin;
             }
         }
 
@@ -9144,7 +9144,7 @@ function ChartData()
 
                 if (isMimToMin)  //都是分钟数据
                 {
-                    if (periodItem.Date==item.Date && periodItem.Time>=item.Time)
+                    if ( (periodItem.Date>item.Date) || (periodItem.Date==item.Date && periodItem.Time>=item.Time) )
                     {
                         tempItem=periodItem;
                         break;
@@ -9170,7 +9170,7 @@ function ChartData()
             else newItem=new HistoryData();
             
             newItem.Date=item.Date;
-            if (isMimToMin && isMinToDay) newItem.Time=item.Time;
+            if (isMimToMin || isMinToDay) newItem.Time=item.Time;
             result.push(newItem);
         }
 
@@ -19038,12 +19038,30 @@ function FrameSplitKLinePriceY()
     this.Custom=[]; //[{Type:0}];   定制刻度 0=显示最后的价格刻度
     this.SplitType=0;       //0=自动分割  1=固定分割
 
+    this.DefaultYMaxMin;    //{ Max:null, Min:null };    //指定最大,最小, Y轴范围必须比最大值大， 比最小值小
+
     this.Operator=function()
     {
         var splitData={};
         splitData.Max=this.Frame.HorizontalMax;
         splitData.Min=this.Frame.HorizontalMin;
         splitData.Count=this.SplitCount;
+        if (this.DefaultYMaxMin)    //指定最小的Y轴范围
+        {
+            var range=this.DefaultYMaxMin;
+            if (IFrameSplitOperator.IsNumber(range.Max))
+            {
+                if (splitData.Min>range.Max) splitData.Min=range.Max;
+                else if (splitData.Max<range.Max) splitData.Max=range.Max;
+            }
+
+            if (IFrameSplitOperator.IsNumber(range.Min))
+            {
+                if (splitData.Max<range.Min) splitData.Max=range.Min;
+                else if (splitData.Min>range.Min) splitData.Min=range.Min;
+            }
+        }
+
         splitData.Interval=(splitData.Max-splitData.Min)/(splitData.Count-1);
         var pixelTatio = GetDevicePixelRatio();             //获取设备的分辨率
         var width=this.Frame.ChartBorder.GetChartWidth();   //画布的宽度
@@ -19373,6 +19391,7 @@ function FrameSplitY()
     this.FLOATPRECISION_RANGE=[1,0.1,0.01,0.001,0.0001];
     this.SplitType=0;       //0=自动分割  1=固定分割
     this.Custom=[];         //[{Type:0}]; 定制刻度
+    this.DefaultYMaxMin;    //{ Max:null, Min:null };    //指定最大,最小, Y轴范围必须比最大值大， 比最小值小
 
     this.GetFloatPrecision=function(value,floatPrecision)
     {
@@ -19391,6 +19410,23 @@ function FrameSplitY()
         var splitData={};
         splitData.Max=this.Frame.HorizontalMax;
         splitData.Min=this.Frame.HorizontalMin;
+        
+        if (this.DefaultYMaxMin)    //指定最小的Y轴范围
+        {
+            var range=this.DefaultYMaxMin;
+            if (IFrameSplitOperator.IsNumber(range.Max))
+            {
+                if (splitData.Min>range.Max) splitData.Min=range.Max;
+                else if (splitData.Max<range.Max) splitData.Max=range.Max;
+            }
+
+            if (IFrameSplitOperator.IsNumber(range.Min))
+            {
+                if (splitData.Max<range.Min) splitData.Max=range.Min;
+                else if (splitData.Min>range.Min) splitData.Min=range.Min;
+            }
+        }
+
         if(this.Frame.YSpecificMaxMin)
         {
             splitData.Count=this.Frame.YSpecificMaxMin.Count;

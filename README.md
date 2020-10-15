@@ -12,6 +12,9 @@ HQChart是第1个基于国内传统PC股票客户端软件(C++)移植到js/py平
 js版本的K线图形库支持原生js,VUE, uniapp,小程序. <br>
 麦语法(分析家语法)指标执行器支持js, nodejs, py. 其中py的**FastHQChart**版本是由c++底层开发,通过cpython来对接py, 能高效的完成指标执行. 可以应用于回测, 选股等.<br>
 
+源码地址:[https://github.com/jones2000/HQChart](https://github.com/jones2000/HQChart)<br>
+镜像地址:[https://gitee.com/jones2000/HQChart](https://gitee.com/jones2000/HQChart)<br>
+
 如果你觉得我们的行情模块对你有帮助， 请给我们点下star. (●ˇ∀ˇ●) <br>
 
 **教程列表和demo效果图在下面,下拉页面就可以看到!!!!!!!!!!!!**
