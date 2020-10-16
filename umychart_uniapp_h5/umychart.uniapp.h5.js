@@ -8912,8 +8912,8 @@ function MinuteFrame()
     //X坐标转x轴数值
     this.GetXData=function(x)
     {
-    var count=this.XPointCount-1;
-    if (count<0) count=0;
+        var count=this.XPointCount-1;
+        if (count<0) count=0;
 
         if (x<=this.ChartBorder.GetLeft()) return 0;
         if (x>=this.ChartBorder.GetRight()) return count;
@@ -9016,10 +9016,13 @@ function MinuteHScreenFrame()
     //X坐标转x轴数值
     this.GetXData=function(y)
     {
-        if (y<=this.ChartBorder.GetTop()) return 0;
-		if (y>=this.ChartBorder.GetBottom()) return this.XPointCount;
+        var count=this.XPointCount-1;
+        if (count<0) count=0;
 
-		return (y-this.ChartBorder.GetTop())*(this.XPointCount*1.0/this.ChartBorder.GetHeight());
+        if (y<=this.ChartBorder.GetTop()) return 0;
+		if (y>=this.ChartBorder.GetBottom()) return count;
+
+		return (y-this.ChartBorder.GetTop())*(count*1.0/this.ChartBorder.GetHeight());
     }
 
     this.GetXFromIndex=function(index)

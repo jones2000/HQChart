@@ -1566,39 +1566,34 @@ function JSChartContainer(uielement)
         if (this.Frame.DrawCustomHorizontal) this.Frame.DrawCustomHorizontal();
         if (this.ChartInfoPaint) this.ChartInfoPaint.Draw();
         this.Frame.DrawLock();
-
-        var eventTitleDraw = this.GetEvent(JSCHART_EVENT_ID.ON_TITLE_DRAW);
-        var eventIndexTitleDraw = this.GetEvent(JSCHART_EVENT_ID.ON_INDEXTITLE_DRAW);
-        for (var i in this.TitlePaint)  //标题
+    
+        var bOnTouchDraw=drawType == 'DrawDynamicInfo' || this.IsOnTouch;
+        if (bOnTouchDraw)
         {
-            var item = this.TitlePaint[i];
-            if (!item.IsDynamic) continue;
-
-            if (item.ClassName == 'DynamicChartTitlePainting') item.OnDrawEvent = eventIndexTitleDraw
-            else item.OnDrawEvent = eventTitleDraw;
-
-            if (typeof (item.DrawTitle) == 'function') item.DrawTitle();
-        }
-
-        if (drawType == 'DrawDynamicInfo' || this.IsOnTouch)
-        {
-            var self = this;
             if (self.ChartCorssCursor) //十字光标
             {
                 self.ChartCorssCursor.LastPoint = self.LastPoint;
                 self.ChartCorssCursor.CursorIndex = self.CursorIndex;
                 self.ChartCorssCursor.Draw();
             }
+        }
 
-            for (var i in self.TitlePaint) //标题
-            {
-                var item = self.TitlePaint[i];
-                if (!item.IsDynamic) continue;
+        var eventTitleDraw = this.GetEvent(JSCHART_EVENT_ID.ON_TITLE_DRAW);
+        var eventIndexTitleDraw = this.GetEvent(JSCHART_EVENT_ID.ON_INDEXTITLE_DRAW);
+        for (var i in self.TitlePaint) //标题
+        {
+            var item = self.TitlePaint[i];
+            if (!item.IsDynamic) continue;
 
-                item.CursorIndex = self.CursorIndex;
-                item.Draw();
-            }
+            if (item.ClassName == 'DynamicChartTitlePainting') item.OnDrawEvent = eventIndexTitleDraw
+            else item.OnDrawEvent = eventTitleDraw;
 
+            item.CursorIndex = self.CursorIndex;
+            if (item.FullDraw) item.FullDraw();
+        }
+
+        if (bOnTouchDraw)
+        {
             for (var i in this.ExtendChartPaint)    //动态扩展图形   在动态标题以后画
             {
                 var item = this.ExtendChartPaint[i];
@@ -3107,7 +3102,8 @@ function MinuteHScreenFrame()
         if (y <= this.ChartBorder.GetTop()) return 0;
         if (y >= this.ChartBorder.GetBottom()) return this.XPointCount;
 
-        return (y - this.ChartBorder.GetTop()) * (this.XPointCount * 1.0 / this.ChartBorder.GetHeight());
+        var count=this.XPointCount-1;
+        return (y - this.ChartBorder.GetTop()) * (count * 1.0 / this.ChartBorder.GetHeight());
     }
 
     this.GetXFromIndex = function (index) 
