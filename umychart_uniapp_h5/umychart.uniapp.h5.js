@@ -5703,50 +5703,14 @@ function JSChartContainer(uielement)
                     this.SelectRectRightMenu.DoModal(e);
                 }
             }
+            else
+            {
+                this.TryClickPaintEvent(e);
+            }
         }
         else
         {
-            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_CHART_PAINT);
-            if (event && event.Callback)
-            {
-                if (this.ClickDownPoint.X==e.clientX && this.ClickDownPoint.Y==e.clientY)
-                {
-                    var pixelTatio = GetDevicePixelRatio();
-                    var x = e.clientX-uielement.getBoundingClientRect().left*pixelTatio;
-                    var y = e.clientY-uielement.getBoundingClientRect().top*pixelTatio;
-
-                    var toolTip=new TooltipData();
-                    var stock=null;
-                    for(var i in this.ChartPaint)
-                    {
-                        var item=this.ChartPaint[i];
-                        if (item.GetTooltipData(x,y,toolTip))
-                        {
-                            stock={ Symbol:this.Symbol, Name:this.Name };
-                            break;
-                        }
-                    }
-
-                    if (!toolTip.Data)
-                    {
-                        for(var i in this.OverlayChartPaint)
-                        {
-                            var item=this.OverlayChartPaint[i];
-                            if (item.GetTooltipData(x,y,toolTip))
-                            {
-                                stock={ Symbol:toolTip.ChartPaint.Symbol, Name:toolTip.ChartPaint.Title };
-                                break;
-                            }
-                        }
-                    }
-
-                    if (toolTip.Data)
-                    {
-                        var data= { X:e.clientX, Y:e.clientY, Stock: stock, Tooltip:toolTip };
-                        event.Callback(event, data, this);
-                    }
-                }
-            }
+            this.TryClickPaintEvent(e);
         }
 
         //清空数据
@@ -5756,6 +5720,54 @@ function JSChartContainer(uielement)
         this.ClickDownPoint=null;
         this.IsOnTouch=false;
         if (bClearDrawPicture===true) this.CurrentChartDrawPicture=null;
+    }
+
+    this.TryClickPaintEvent=function(e)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_CHART_PAINT);
+        if (event && event.Callback)
+        {
+            if (this.ClickDownPoint.X==e.clientX && this.ClickDownPoint.Y==e.clientY)
+            {
+                var pixelTatio = GetDevicePixelRatio();
+                var x = (e.clientX-uielement.getBoundingClientRect().left)*pixelTatio;
+                var y = (e.clientY-uielement.getBoundingClientRect().top)*pixelTatio;
+
+                var toolTip=new TooltipData();
+                var stock=null;
+                for(var i in this.ChartPaint)
+                {
+                    var item=this.ChartPaint[i];
+                    if (item.GetTooltipData(x,y,toolTip))
+                    {
+                        stock={ Symbol:this.Symbol, Name:this.Name };
+                        break;
+                    }
+                }
+
+                if (!toolTip.Data)
+                {
+                    for(var i in this.OverlayChartPaint)
+                    {
+                        var item=this.OverlayChartPaint[i];
+                        if (item.GetTooltipData(x,y,toolTip))
+                        {
+                            stock={ Symbol:toolTip.ChartPaint.Symbol, Name:toolTip.ChartPaint.Title };
+                            break;
+                        }
+                    }
+                }
+
+                if (toolTip.Data)
+                {
+                    var data= { X:e.clientX, Y:e.clientY, Stock: stock, Tooltip:toolTip };
+                    event.Callback(event, data, this);
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
 
@@ -37087,6 +37099,8 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.StringFormatX.IsBeforeData=this.IsBeforeData;
 
         if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) this.TitlePaint[0].IsShowDate=false;
+
+        if (data.stock[0].IsHistoryMinute==true) this.TitlePaint[0].IsShowDate=true;
 
         var chartInfo=this.GetChartMinuteInfo();
         if (chartInfo) chartInfo.SourceData=this.SourceData;    //数据绑定到信息地雷上
