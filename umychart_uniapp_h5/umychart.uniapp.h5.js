@@ -5273,6 +5273,18 @@ JSChart.RemovePeriodCallback=function(obj) //添加自定义周期方法 { Perio
     g_DataPlus.RemovePeriodCallback(obj);
 }
 
+//注册一个新的画图工具 {Name:中文名字, ClassName:类名, Create:function()}
+JSChart.RegisterDrawPicture=function(obj)  
+{
+    return IChartDrawPicture.RegisterDrawPicture(obj);
+}
+
+//注册一个新图标 {Name:, Text: , Color:, Family:}
+JSChart.RegisterDrawPictureIonFont=function(obj)
+{
+    return IChartDrawPicture.RegisterIonFont(obj);
+}
+
 var JSCHART_EVENT_ID=
 {
     RECV_KLINE_MATCH:1, //接收到形态匹配
@@ -26791,39 +26803,93 @@ IChartDrawPicture.ColorToRGBA=function(color,opacity)
     return "rgba(" + parseInt("0x" + color.slice(1, 3)) + "," + parseInt("0x" + color.slice(3, 5)) + "," + parseInt("0x" + color.slice(5, 7)) + "," + opacity + ")";
 }
 
-IChartDrawPicture.CreateChartDrawPrictrue=function(obj)    //创建画图工具
+IChartDrawPicture.ArrayDrawPricture=
+[
+    { Name:"线段", ClassName:'ChartDrawPictureLine',  Create:function() { return new ChartDrawPictureLine(); } },
+    { Name:"射线", ClassName:'ChartDrawPictureHaflLine',  Create:function() { return new ChartDrawPictureHaflLine(); } },
+    { Name:"水平线", ClassName:'ChartDrawPictureHorizontalLine',  Create:function() { return new ChartDrawPictureHorizontalLine(); }},
+    { Name:"趋势线", ClassName:'ChartDrawPictureTrendLine',  Create:function() { return new ChartDrawPictureTrendLine(); }},
+    { Name:"矩形", ClassName:'ChartDrawPictureRect', Create:function() { return new ChartDrawPictureRect(); }},
+    { Name:"圆弧线", ClassName:'ChartDrawPictureArc',  Create:function() { return new ChartDrawPictureArc(); }},
+    { Name:"M头W底", ClassName:'ChartDrawPictureWaveMW',  Create:function() { return new ChartDrawPictureWaveMW(); }},
+    { Name:"平行线", ClassName:'ChartDrawPictureParallelLines',  Create:function() { return new ChartDrawPictureParallelLines(); }},
+    { Name:"平行通道", ClassName:'ChartDrawPictureParallelChannel',  Create:function() { return new ChartDrawPictureParallelChannel(); }},
+    { Name:"价格通道线", ClassName:'ChartDrawPicturePriceChannel',  Create:function() { return new ChartDrawPicturePriceChannel(); }},
+    { Name:"文本", ClassName:'ChartDrawPictureText', Create:function() { return new ChartDrawPictureText(); }},
+    { Name:"江恩角度线", ClassName:'ChartDrawPictureGannFan',  Create:function() { return new ChartDrawPictureGannFan(); }},
+    { Name:"阻速线", ClassName:'ChartDrawPictureResistanceLine',  Create:function() { return new ChartDrawPictureResistanceLine(); }},
+    { Name:"黄金分割", ClassName:'ChartDrawPictureGoldenSection',  Create:function() { return new ChartDrawPictureGoldenSection(); }},
+    { Name:"百分比线", ClassName:'ChartDrawPicturePercentage',  Create:function() { return new ChartDrawPicturePercentage(); }},
+    { Name:"波段线", ClassName:'ChartDrawPictureWaveBand',  Create:function() { return new ChartDrawPictureWaveBand(); }},
+    { Name:"三角形", ClassName:'ChartDrawPictureTriangle',  Create:function() { return new ChartDrawPictureTriangle(); }},
+    { Name:"对称角度", ClassName:'ChartDrawPictureSymmetryAngle',  Create:function() { return new ChartDrawPictureSymmetryAngle(); }},
+    { Name:"圆", ClassName:'ChartDrawPictureCircle',  Create:function() { return new ChartDrawPictureCircle(); }},
+    { Name:"平行四边形", ClassName:'ChartDrawPictureQuadrangle',  Create:function() { return new ChartDrawPictureQuadrangle(); }},
+    { Name:"斐波那契周期线", ClassName:'ChartDrawPictureFibonacci',  Create:function() { return new ChartDrawPictureFibonacci(); }},
+    { ClassName:'ChartDrawPictureIconFont',  Create:function() { return new ChartDrawPictureIconFont(); }}
+];
+
+IChartDrawPicture.MapIonFont=new Map(
+[
+    ["icon-arrow_up", { Text:'\ue683', Color:'#318757', Family:"iconfont"}],
+    ["icon-arrow_down", { Text:'\ue681', Color:'#db563e', Family:"iconfont"}],
+    ["icon-arrow_right", { Text:'\ue680', Color:'#318757', Family:"iconfont"}],
+    ["icon-arrow_left", { Text:'\ue682', Color:'#318757', Family:"iconfont"}]
+]);
+
+IChartDrawPicture.GetDrawPictureByName=function(value)
 {
-    const MAP_CREATE=new Map(
-    [
-        ['ChartDrawPictureLine', { Create:function() { return new ChartDrawPictureLine(); }}],
-        ['ChartDrawPictureHaflLine', { Create:function() { return new ChartDrawPictureHaflLine(); }}],
-        ['ChartDrawPictureHorizontalLine', { Create:function() { return new ChartDrawPictureHorizontalLine(); }}],
-        ['ChartDrawPictureTrendLine', { Create:function() { return new ChartDrawPictureTrendLine(); }}],
-        ['ChartDrawPictureRect', { Create:function() { return new ChartDrawPictureRect(); }}],
-        ['ChartDrawPictureArc', { Create:function() { return new ChartDrawPictureArc(); }}],
-        ['ChartDrawPictureWaveMW', { Create:function() { return new ChartDrawPictureWaveMW(); }}],
-        ['ChartDrawPictureParallelLines', { Create:function() { return new ChartDrawPictureParallelLines(); }}],
-        ['ChartDrawPictureParallelChannel', { Create:function() { return new ChartDrawPictureParallelChannel(); }}],
-        ['ChartDrawPicturePriceChannel', { Create:function() { return new ChartDrawPicturePriceChannel(); }}],
-        ['ChartDrawPictureText', { Create:function() { return new ChartDrawPictureText(); }}],
-        ['ChartDrawPictureGannFan', { Create:function() { return new ChartDrawPictureGannFan(); }}],
-        ['ChartDrawPictureResistanceLine', { Create:function() { return new ChartDrawPictureResistanceLine(); }}],
-        ['ChartDrawPictureGoldenSection', { Create:function() { return new ChartDrawPictureGoldenSection(); }}],
-        ['ChartDrawPicturePercentage', { Create:function() { return new ChartDrawPicturePercentage(); }}],
-        ['ChartDrawPictureWaveBand', { Create:function() { return new ChartDrawPictureWaveBand(); }}],
-        ['ChartDrawPictureTriangle', { Create:function() { return new ChartDrawPictureTriangle(); }}],
-        ['ChartDrawPictureSymmetryAngle', { Create:function() { return new ChartDrawPictureSymmetryAngle(); }}],
-        ['ChartDrawPictureCircle', { Create:function() { return new ChartDrawPictureCircle(); }}],
-        ['ChartDrawPictureQuadrangle', { Create:function() { return new ChartDrawPictureQuadrangle(); }}],
-        ['ChartDrawPictureFibonacci', { Create:function() { return new ChartDrawPictureFibonacci(); }}],
-        ['ChartDrawPictureIconFont', { Create:function() { return new ChartDrawPictureIconFont(); }}]
-    ]);
+    for(var i in IChartDrawPicture.ArrayDrawPricture)
+    {
+        var item=IChartDrawPicture.ArrayDrawPricture[i];
+        if (item.Name==value) return item;
+    }
 
-    if (!MAP_CREATE.has(obj.ClassName)) return null;
+    return null;
+}
 
-    var item=MAP_CREATE.get(obj.ClassName);
+IChartDrawPicture.GetDrawPictureByClassName=function(value)
+{
+    for(var i in IChartDrawPicture.ArrayDrawPricture)
+    {
+        var item=IChartDrawPicture.ArrayDrawPricture[i];
+        if (item.ClassName==value) return item;
+    }
+
+    return null;
+}
+
+//注册一个新的画图工具 {Name:中文名字, ClassName:类名, Create:function()}
+IChartDrawPicture.RegisterDrawPicture=function(obj)  
+{
+    if (!obj.Name || !obj.ClassName || !obj.Create) return false;
+
+    var item={ Name:obj.Name, ClassName:obj.ClassName, Create:obj.Create };
+    IChartDrawPicture.ArrayDrawPricture.push(item);
+
+    JSConsole.Chart.Log('[IChartDrawPicture.RegisterDrawPicture] registered new draw picture class. item=',item);
+    return true;
+}
+
+//注册一个新图标 {Name:, Text: , Color:, Family:}
+IChartDrawPicture.RegisterIonFont=function(obj)
+{
+    if (!obj.Name || !obj.Text || !obj.Family) return false;
+
+    var isOverwirte=IChartDrawPicture.MapIonFont.has(obj.Name);
+    IChartDrawPicture.MapIonFont.set(obj.Name, obj);
+
+    JSConsole.Chart.Log('[IChartDrawPicture.RegisterIonFont] registered new icon font, obj=, isOverwirte=',obj, isOverwirte);
+    return true;
+}
+
+IChartDrawPicture.CreateChartDrawPicture=function(obj)    //创建画图工具
+{
+    var item=IChartDrawPicture.GetDrawPictureByClassName(obj.ClassName);
+    if (!item) return null;
+
     var chartDraw=item.Create();
-    
+
     if (obj.Period>=0) chartDraw.Period=obj.Period;
     if (obj.Guid) chartDraw.Guid=obj.Guid;
     if (obj.Symbol) chartDraw.Symbol=obj.Symbol;
@@ -26836,6 +26902,10 @@ IChartDrawPicture.CreateChartDrawPrictrue=function(obj)    //创建画图工具
 
     return chartDraw;
 }
+
+
+
+
 
 
 //画图工具-线段
@@ -34769,97 +34839,27 @@ function KLineChartContainer(uielement)
     this.CreateChartDrawPicture=function(name, option, callback)
     {
         var drawPicture=null;
-        switch(name)
+        var item=IChartDrawPicture.GetDrawPictureByName(name);
+        if (item)
         {
-            case "线段":
-                drawPicture=new ChartDrawPictureLine();
-                break;
-            case "射线":
-                drawPicture=new ChartDrawPictureHaflLine();
-                break;
-            case '水平线':
-                drawPicture=new ChartDrawPictureHorizontalLine();
-                break;
-            case '趋势线':
-                drawPicture=new ChartDrawPictureTrendLine();
-                break;
-            case "矩形":
-                drawPicture=new ChartDrawPictureRect();
-                break;
-            case "圆弧线":
-                drawPicture=new ChartDrawPictureArc();
-                break;
-            case 'M头W底':
-                drawPicture=new ChartDrawPictureWaveMW();
-                break;
-            case '平行线':
-                drawPicture=new ChartDrawPictureParallelLines();
-                break;
-            case '平行通道':
-                drawPicture=new ChartDrawPictureParallelChannel();
-                break;
-            case '价格通道线':
-                drawPicture=new ChartDrawPicturePriceChannel();
-                break;
-            case '文本':
-                drawPicture=new ChartDrawPictureText();
-                drawPicture.HQChart=this;
-                break;
-            case '江恩角度线':
-                drawPicture=new ChartDrawPictureGannFan();
-                break;
-            case '阻速线':
-                drawPicture=new ChartDrawPictureResistanceLine()
-                break;
-            case '黄金分割':
-                drawPicture=new ChartDrawPictureGoldenSection()
-                break;
-            case '百分比线':
-                drawPicture=new ChartDrawPicturePercentage();
-                break;
-            case '波段线':
-                drawPicture=new ChartDrawPictureWaveBand();
-                break;
-            case '三角形':
-                drawPicture=new ChartDrawPictureTriangle();
-                break;
-            case '对称角度':
-                drawPicture=new ChartDrawPictureSymmetryAngle();
-                break;
-            case '圆':
-                drawPicture=new ChartDrawPictureCircle();
-                break;
-            case '平行四边形':
-                drawPicture=new ChartDrawPictureQuadrangle();
-                break;
-            case '斐波那契周期线':
-                drawPicture=new ChartDrawPictureFibonacci();
-                break;
-            default:
-                {
-                    //iconfont 图标
-                    const ICONFONT_LIST=new Map(
-                        [
-                            ["icon-arrow_up", { Text:'\ue683', Color:'#318757'}],
-                            ["icon-arrow_down", { Text:'\ue681', Color:'#db563e'}],
-                            ["icon-arrow_right", { Text:'\ue680', Color:'#318757'}],
-                            ["icon-arrow_left", { Text:'\ue682', Color:'#318757'}],
-                        ]
-                    );
-
-                    if (ICONFONT_LIST.has(name))
-                    {
-                        var item=ICONFONT_LIST.get(name);
-                        drawPicture=new ChartDrawPictureIconFont();
-                        drawPicture.FontOption.Family='iconfont';
-                        drawPicture.Text=item.Text;
-                        if (item.Color) drawPicture.LineColor=item.Color;
-                        break;
-                    }
-                }
-                return false;
+            drawPicture=item.Create();
+            if (drawPicture.ClassName=='ChartDrawPictureText') drawPicture.HQChart=this;
         }
 
+        if (!drawPicture)    //iconfont图标
+        {
+            if (IChartDrawPicture.MapIonFont.has(name))
+            {
+                var iconItem=IChartDrawPicture.MapIonFont.get(name);
+                drawPicture=new ChartDrawPictureIconFont();
+                drawPicture.FontOption.Family=iconItem.Family
+                drawPicture.Text=iconItem.Text;
+                if (iconItem.Color) drawPicture.LineColor=iconItem.Color;
+            }
+        }
+
+        if (!drawPicture) return false;
+        
         drawPicture.Canvas=this.Canvas;
         drawPicture.Status=0;
         drawPicture.Symbol=this.Symbol;
@@ -34945,7 +34945,7 @@ function KLineChartContainer(uielement)
             var item=this.ChartDrawStorageCache[i];
             if (item.FrameID<0 || !this.Frame.SubFrame || this.Frame.SubFrame.length<item.FrameID) continue;
 
-            var drawPicture=IChartDrawPicture.CreateChartDrawPrictrue(item);
+            var drawPicture=IChartDrawPicture.CreateChartDrawPicture(item);
             if (!drawPicture) continue;
 
             drawPicture.Canvas=this.Canvas;
@@ -37803,7 +37803,7 @@ function MinuteChartContainer(uielement)
             var item=this.ChartDrawStorageCache[i];
             if (item.FrameID<0 || !this.Frame.SubFrame || this.Frame.SubFrame.length<item.FrameID) continue;
 
-            var drawPicture=IChartDrawPicture.CreateChartDrawPrictrue(item);
+            var drawPicture=IChartDrawPicture.CreateChartDrawPicture(item);
             if (!drawPicture) continue;
 
             drawPicture.Canvas=this.Canvas;
