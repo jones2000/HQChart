@@ -206,6 +206,24 @@ function JSChartResource()
         TextBGColor: 'rgba(255,255,255,0.8)'
     };
 
+    //单图标指标ChartSingleText -> DRAWICON
+    this.DRAWICON=
+    {
+        Text:
+        {
+            MaxSize:50,  //字体最大
+            MinSize:20,  //字体最小
+    
+            Zoom:
+            {
+                Type:2,    //0=放大(K线宽度*Value) 1=放大(K线+间距)*Value 2=(K线+间距)+2*Value;
+                Value:1
+            },
+
+            FontName:'Arial'    //字体
+        }
+    }
+
     // //自定义风格
     this.SetStyle = function (style) 
     {
@@ -279,6 +297,19 @@ function JSChartResource()
             if (style.TooltipPaint.BorderColor) this.TooltipPaint.BorderColor = style.TooltipPaint.BorderColor;
             if (style.TooltipPaint.TitleColor) this.TooltipPaint.TitleColor = style.TooltipPaint.TitleColor;
             if (style.TooltipPaint.TitleFont) this.TooltipPaint.TitleFont = style.TooltipPaint.TitleFont;
+        }
+
+        if (style.DRAWICON) 
+        {
+            if (style.DRAWICON.Text)
+            {
+                var item=style.DRAWICON.Text;
+                if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWICON.Text.MaxSize=item.MaxSize;
+                if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWICON.Text.MinSize=item.MinSize;
+                if (item.Zoom) this.DRAWICON.Text.Zoom=item.Zoom;
+                if (item.FontName) this.DRAWICON.Text.FontName=item.FontName;
+            }
+            
         }
     }
 

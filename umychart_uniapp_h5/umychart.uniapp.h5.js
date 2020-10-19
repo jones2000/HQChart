@@ -13455,10 +13455,36 @@ function IChartPainting()
         return range;
     }
 
-    this.GetDynamicFont=function(dataWidth) //根据宽度自动获取对应字体
+    this.GetDynamicFont=function(dataWidth, distanceWidth,  maxSize, minSize, zoom, fontname)    //根据宽度自动获取对应字体
     {
         var pixelTatio = GetDevicePixelRatio();
-        var font;   
+        maxSize*=pixelTatio;
+        minSize*=pixelTatio;
+
+        var fontSize=(dataWidth+distanceWidth);
+        if (zoom)
+        {
+            if (zoom.Type==0) 
+            {
+                if (zoom.Value>0) fontSize=(dataWidth*zoom.Value);
+            }
+            else if (zoom.Type==1)
+            {
+                if (zoom.Value>0) fontSize=(dataWidth+distanceWidth)*zoom.Value;
+            }
+            else if (zoom.Type==2)
+            {
+                if (IFrameSplitOperator.IsNumber(zoom.Value)) 
+                    fontSize=(dataWidth+distanceWidth) + (2*zoom.Value)*pixelTatio;
+            }
+        }
+
+        if (fontSize<minSize) fontSize=minSize;
+        else if (fontSize>maxSize) fontSize=maxSize;
+
+        var font=`${fontSize.toFixed(0)}px ${fontname}` ;
+
+        /*
         if (dataWidth < 5) font =4*pixelTatio + 'px Arial';           //字体根据数据宽度动态调整
         else if (dataWidth < 7) font = 6*pixelTatio +'px Arial';
         else if (dataWidth < 9) font = 8*pixelTatio +'px Arial';
@@ -13466,6 +13492,7 @@ function IChartPainting()
         else if (dataWidth < 13) font =12*pixelTatio +'px Arial';
         else if (dataWidth < 15) font =14*pixelTatio + 'px Arial';
         else font =16*pixelTatio + 'px Arial';
+        */
         
         return font;
     }
@@ -13492,6 +13519,38 @@ function IChartPainting()
             this.Canvas.fillStyle=color;
         }
     }
+
+    this.GetDynamicIconSize=function(dataWidth, distanceWidth, maxSize, minSize, zoom)
+    {
+        var pixelTatio = GetDevicePixelRatio();
+        maxSize*=pixelTatio;
+        minSize*=pixelTatio;
+
+        var iconSize=(dataWidth+distanceWidth)-2*pixelTatio;
+
+        if (zoom)
+        {
+            if (zoom.Type==0) 
+            {
+                if (zoom.Value>0) iconSize=(dataWidth*zoom.Value);
+            }
+            else if (zoom.Type==1)
+            {
+                if (zoom.Value>0) iconSize=(dataWidth+distanceWidth)*zoom.Value;
+            }
+            else if (zoom.Type==2)
+            {
+                if (IFrameSplitOperator.IsNumber(zoom.Value)) 
+                    iconSize=(dataWidth+distanceWidth) + (2*zoom.Value)*pixelTatio;
+            }
+        }
+
+        if (iconSize<minSize) iconSize=minSize;
+        else if (iconSize>maxSize) iconSize=maxSize;
+
+        return iconSize;
+    }
+
 }
 
 
@@ -16886,6 +16945,18 @@ function ChartSingleText()
     this.Position;          //指定输出位置
 
     this.IconFont;          //Iconfont
+    this.IconSize=
+    { 
+        Max: g_JSChartResource.DRAWICON.Icon.MaxSize, Min:g_JSChartResource.DRAWICON.Icon.MinSize, //图标的最大最小值
+        Zoom:{ Type:g_JSChartResource.DRAWICON.Icon.Zoom.Type , Value:g_JSChartResource.DRAWICON.Icon.Zoom.Value } //放大倍数
+    };  
+
+    this.TextSize=
+    {
+        Max: g_JSChartResource.DRAWICON.Text.MaxSize, Min:g_JSChartResource.DRAWICON.Text.MinSize, //字体的最大最小值
+        Zoom:{ Type:g_JSChartResource.DRAWICON.Text.Zoom.Type , Value:g_JSChartResource.DRAWICON.Text.Zoom.Value }, //放大倍数
+        FontName:g_JSChartResource.DRAWICON.Text.FontName
+    }
 
     this.Draw=function()
     {
@@ -16931,16 +17002,12 @@ function ChartSingleText()
             this.Color=this.IconFont.Color;
             this.Text=this.IconFont.Text;
 
-            var iconSize=dataWidth;
-            var minIconSize=12*pixelTatio;
-            var maxIconSize=24*pixelTatio;
-            if (iconSize<minIconSize) iconSize=minIconSize;
-            else if (iconSize>maxIconSize) iconSize=maxIconSize;
+            var iconSize=this.GetDynamicIconSize(dataWidth,distanceWidth,this.IconSize.Max,this.IconSize.Min,this.IconSize.Zoom);
             this.Canvas.font=iconSize+'px '+this.IconFont.Family;
         }
         else
         {
-            this.TextFont=this.GetDynamicFont(dataWidth*2*pixelTatio);
+            this.TextFont=this.GetDynamicFont(dataWidth,distanceWidth,this.TextSize.Max,this.TextSize.Min,this.TextSize.Zoom,this.TextSize.FontName);
             this.Canvas.font=this.TextFont;
         }
 
@@ -19237,6 +19304,9 @@ function ChartMultiSVGIcon()
 
     this.ClassName="ChartMultiSVGIcon";
     this.Icon;  //[ {Index:, Value:, Symbol:, Color:, Baseline:} ]
+    this.IconSize={ Max: g_JSChartResource.DRAWICON.Icon.MaxSize, Min:g_JSChartResource.DRAWICON.Icon.MinSize ,    //图标的最大最小值
+        Zoom:{ Type:g_JSChartResource.DRAWICON.Icon.Zoom.Type , Value:g_JSChartResource.DRAWICON.Icon.Zoom.Value } //放大倍数
+    }; 
     this.Family;
     this.Color=g_JSChartResource.DefaultTextColor;
     this.IsHScreen=false;
@@ -19260,8 +19330,7 @@ function ChartMultiSVGIcon()
             right=this.ChartBorder.GetBottom();
         }
 
-        var fontSize=(this.DataWidth+this.DistanceWidth)-2;
-        if (fontSize<8) fontSize=8;
+        var fontSize=this.GetDynamicIconSize(this.DataWidth,this.DistanceWidth,this.IconSize.Max,this.IconSize.Min,this.IconSize.Zoom);
         this.Canvas.font=fontSize+'px '+this.Family;
 
         for(var i in this.Icon)
@@ -29745,6 +29814,37 @@ function JSChartResource()
         TextBGColor:'rgba(255,255,255,0.8)'
     }
 
+    //多图标指标ChartMultiSVGIcon -> MULTI_SVGICON
+    //单图标指标ChartSingleText -> DRAWICON
+    this.DRAWICON=
+    {
+        Icon:
+        {
+            MaxSize:24,  //图标最大
+            MinSize:12,  //图标最小
+    
+            Zoom:
+            {
+                Type:1,    //0=放大(K线宽度*Value) 1=放大(K线+间距)*Value 2=(K线+间距)+2*Value;
+                Value:1
+            }
+        },
+       
+        Text:
+        {
+            MaxSize:50,  //字体最大
+            MinSize:12,  //字体最小
+    
+            Zoom:
+            {
+                Type:1,    //0=放大(K线宽度*Value) 1=放大(K线+间距)*Value 2=(K线+间距)+2*Value;
+                Value:1
+            },
+
+            FontName:'Arial'    //字体
+        }
+    }
+
     //自定义风格
     this.SetStyle=function(style)
     {
@@ -29836,6 +29936,27 @@ function JSChartResource()
         {
             if (style.Title.TradeIndexColor) this.Title.TradeIndexColor=style.Title.TradeIndexColor;
             if (style.Title.ColorIndexColor) this.Title.ColorIndexColor=style.Title.ColorIndexColor;
+        }
+
+        if (style.DRAWICON) 
+        {
+            if (style.DRAWICON.Icon)
+            {
+                var item=style.DRAWICON.Icon;
+                if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWICON.Icon.MaxSize=item.MaxSize;
+                if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWICON.Icon.MinSize=item.MinSize;
+                if (item.Zoom) this.DRAWICON.Icon.Zoom=item.Zoom;
+            }
+
+            if (style.DRAWICON.Text)
+            {
+                var item=style.DRAWICON.Text;
+                if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWICON.Text.MaxSize=item.MaxSize;
+                if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWICON.Text.MinSize=item.MinSize;
+                if (item.Zoom) this.DRAWICON.Text.Zoom=item.Zoom;
+                if (item.FontName) this.DRAWICON.Text.FontName=item.FontName;
+            }
+            
         }
     }
 }

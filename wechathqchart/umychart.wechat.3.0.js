@@ -1589,6 +1589,16 @@ function JSChartContainer(uielement)
             else item.OnDrawEvent = eventTitleDraw;
 
             item.CursorIndex = self.CursorIndex;
+            if (!bOnTouchDraw)  //手势离开屏幕 去最后一个数据
+            {
+                if (this.ChartPaint[0] && this.ChartPaint[0].Data && this.ChartPaint[0].Data.Data)
+                {
+                    var hisData=this.ChartPaint[0].Data;
+                    var dataCount=hisData.Data.length;
+                    if (dataCount>0) item.CursorIndex=((dataCount-1)-hisData.DataOffset);
+                }
+            }
+
             if (item.FullDraw) item.FullDraw();
         }
 

@@ -999,7 +999,7 @@ function DynamicChartTitlePainting()
     this.IsShowIndexName = true;     //是否显示指标名字
     this.ParamSpace = 2;             //参数显示的间距
     this.OutName=null;               //动态标题
-    this.IsFullDraw=true;       //手势离开屏幕以后是否显示最后的价格
+    this.IsFullDraw=true;            //手势离开屏幕以后是否显示最后的价格
 
     this.SetDynamicOutName=function(outName, args)
     {

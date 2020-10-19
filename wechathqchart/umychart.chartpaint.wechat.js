@@ -126,6 +126,33 @@ function IChartPainting()
         return font;
     }
 
+    this.GetDynamicFontEx=function(dataWidth, distanceWidth,  maxSize, minSize, zoom, fontname)    //根据宽度自动获取对应字体
+    {
+        var fontSize=(dataWidth+distanceWidth);
+        if (zoom)
+        {
+            if (zoom.Type==0) 
+            {
+                if (zoom.Value>0) fontSize=(dataWidth*zoom.Value);
+            }
+            else if (zoom.Type==1)
+            {
+                if (zoom.Value>0) fontSize=(dataWidth+distanceWidth)*zoom.Value;
+            }
+            else if (zoom.Type==2)
+            {
+                if (IFrameSplitOperator.IsNumber(zoom.Value)) 
+                    fontSize=(dataWidth+distanceWidth) + (2*zoom.Value);
+            }
+        }
+
+        if (fontSize<minSize) fontSize=minSize;
+        else if (fontSize>maxSize) fontSize=maxSize;
+
+        var font=`${fontSize.toFixed(0)}px ${fontname}` ;
+        return font;
+    }
+
     this.SetFillStyle = function (color, x0, y0, x1, y1) 
     {
         if (Array.isArray(color)) 
@@ -976,6 +1003,13 @@ function ChartSingleText()
     this.YOffset = 0;
     this.Position;          //指定输出位置
 
+    this.TextSize=
+    {
+        Max: g_JSChartResource.DRAWICON.Text.MaxSize, Min:g_JSChartResource.DRAWICON.Text.MinSize, //字体的最大最小值
+        Zoom:{ Type:g_JSChartResource.DRAWICON.Text.Zoom.Type , Value:g_JSChartResource.DRAWICON.Text.Zoom.Value }, //放大倍数
+        FontName:g_JSChartResource.DRAWICON.Text.FontName
+    }
+
     this.Draw = function () 
     {
         if (!this.IsShow) return;
@@ -1013,7 +1047,7 @@ function ChartSingleText()
         if (this.Direction == 1) this.Canvas.textBaseline = 'bottom';
         else if (this.Direction == 2) this.Canvas.textBaseline = 'top';
         else this.Canvas.textBaseline = 'middle';
-        this.TextFont = this.GetDynamicFont(dataWidth);
+        this.TextFont = this.GetDynamicFontEx(dataWidth,distanceWidth,this.TextSize.Max,this.TextSize.Min,this.TextSize.Zoom,this.TextSize.FontName);
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
         {
             var value = this.Data.Data[i];
