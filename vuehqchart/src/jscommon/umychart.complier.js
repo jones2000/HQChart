@@ -9295,7 +9295,7 @@ function JSSymbolData(ast,option,jsExecute)
             if (ChartData.IsDayPeriod(periodInfo.Period,true) && ChartData.IsMinutePeriod(this.Period,true))
             {
                 var dayData=this.PeriodData.get('DAY'); //日线
-                if (periodInfo.Period==0) hisData=dayData;
+                if (periodInfo.Period==0) hisData=dayData.Data;
                 else hisData=dayData.GetPeriodData(periodInfo.Period);  //日线周期
             }
             else

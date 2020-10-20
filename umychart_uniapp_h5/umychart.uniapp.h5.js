@@ -9468,7 +9468,7 @@ function KLineFrame()
         {
             if (index>=0)
             {
-                var offset=this.ChartBorder.GetLeft()+2+this.DistanceWidth/2+this.DataWidth/2;
+                var offset=this.ChartBorder.GetLeft()+g_JSChartResource.FrameLeftMargin+this.DistanceWidth/2+this.DataWidth/2;
                 for(var i=1;i<=index;++i)
                 {
                     offset+=this.DistanceWidth+this.DataWidth;
@@ -9476,9 +9476,9 @@ function KLineFrame()
             }
             else
             {
-                var offset=this.ChartBorder.GetLeft()+g_JSChartResource.FrameLeftMargin+this.DistanceWidth/2+this.DataWidth/2;
+                var offset=this.ChartBorder.GetLeft()-(this.DistanceWidth/2+this.DataWidth+this.DistanceWidth);
                 var absIndex=Math.abs(index);
-                for(var i=0;i<absIndex;++i)
+                for(var i=1;i<absIndex;++i)
                 {
                     offset-=(this.DistanceWidth+this.DataWidth);
                 }
@@ -9499,28 +9499,61 @@ function KLineFrame()
         return offset;
     }
 
-    //X坐标转x轴数值
-    this.GetXData=function(x)
+    //X坐标转x轴数值 isLimit=是否限制在当前屏坐标下
+    this.GetXData=function(x,isLimit)
     {
-        if (x<=this.ChartBorder.GetLeft()) return 0;
-        if (x>=this.ChartBorder.GetRight()) return this.XPointCount-1;
-        
-        var left=this.ChartBorder.GetLeft()+g_JSChartResource.FrameLeftMargin;
-        var right=this.ChartBorder.GetRight()-g_JSChartResource.FrameRightMargin;
         var distanceWidth=this.DistanceWidth;
         var dataWidth=this.DataWidth;
+        var left=this.ChartBorder.GetLeft()+g_JSChartResource.FrameLeftMargin;
 
-        var index=0;
-        var xPoint=left+distanceWidth/2+dataWidth+distanceWidth;
-        while(xPoint<right && index<10000 && index+1<this.XPointCount)  //自己算x的数值
+        if (isLimit==false)
         {
-            if (xPoint>x) break;
-            xPoint+=(dataWidth+distanceWidth);
-            ++index;
-        }
+            if (x<this.ChartBorder.GetLeft())
+            {
+                var index=-1;
+                var xPoint=this.ChartBorder.GetLeft()-(distanceWidth/2+dataWidth+distanceWidth);
+                while(index>-10000)
+                {
+                    if (xPoint<=x) 
+                        break;
+                    xPoint-=(dataWidth+distanceWidth);
+                    --index;
+                }
+    
+                return index;
+            }
+            else
+            {
+                var index=0;
+                var xPoint=left+distanceWidth/2+dataWidth+distanceWidth;
+                while(index<10000)  //自己算x的数值
+                {
+                    if (xPoint>=x) break;
+                    xPoint+=(dataWidth+distanceWidth);
+                    ++index;
+                }
 
-        //var test=(x-this.ChartBorder.GetLeft())*(this.XPointCount*1.0/this.ChartBorder.GetWidth());
-        return index;
+                return index;
+            }
+        }
+        else
+        {
+            if (x<=this.ChartBorder.GetLeft()) return 0;
+            if (x>=this.ChartBorder.GetRight()) return this.XPointCount-1;
+            
+            var right=this.ChartBorder.GetRight()-g_JSChartResource.FrameRightMargin;
+            var index=0;
+            var xPoint=left+distanceWidth/2+dataWidth+distanceWidth;
+            while(xPoint<right && index<10000 && index+1<this.XPointCount)  //自己算x的数值
+            {
+                if (xPoint>=x) break;
+                xPoint+=(dataWidth+distanceWidth);
+                ++index;
+            }
+
+            //var test=(x-this.ChartBorder.GetLeft())*(this.XPointCount*1.0/this.ChartBorder.GetWidth());
+            return index;
+        }
     }
 
     //计算数据宽度
@@ -26438,7 +26471,8 @@ function IChartDrawPicture()
             for(var i in this.Point)
             {
                 var item=this.Point[i];
-                var xValue=parseInt(this.Frame.GetXData(item.X))+data.DataOffset;
+                var xValue=parseInt(this.Frame.GetXData(item.X,false))+data.DataOffset;
+                if (xValue<0) xValue=0;
                 var yValue=this.Frame.GetYData(item.Y);
 
                 var valueItem={ XValue:xValue, YValue:yValue };
@@ -26518,7 +26552,7 @@ function IChartDrawPicture()
             }
             else
             {
-                pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset);
+                pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset, false);
                 pt.Y=this.Frame.GetYFromData(item.YValue);
             }
             this.Point[i]=pt;
@@ -26851,7 +26885,8 @@ function IChartDrawPicture()
         { 
             ClassName:this.ClassName, 
             Symbol:this.Symbol, Guid:this.Guid, Period:this.Period,Value:[] ,
-            FrameID:this.Frame.Identify, LineColor:this.LineColor, AreaColor:this.AreaColor
+            FrameID:this.Frame.Identify, LineColor:this.LineColor, AreaColor:this.AreaColor,
+            LineWidth:this.LineWidth
         };
         for(var i in this.Value)
         {
@@ -26869,6 +26904,22 @@ function IChartDrawPicture()
 
 IChartDrawPicture.ColorToRGBA=function(color,opacity)
 {
+    var reg = /^(rgb|RGB)/;
+    if (reg.test(color)) 
+    {
+        var strHex = "#";
+        var colorArr = color.replace(/(?:\(|\)|rgb|RGB)*/g, "").split(",");    // 把RGB的3个数值变成数组
+        // 转成16进制
+        for (var i = 0; i < colorArr.length; i++) 
+        {
+            var hex = Number(colorArr[i]).toString(16);
+            if (hex === "0")  hex += hex;
+            strHex += hex;
+        }
+
+        color=strHex;
+    }
+    
     return "rgba(" + parseInt("0x" + color.slice(1, 3)) + "," + parseInt("0x" + color.slice(3, 5)) + "," + parseInt("0x" + color.slice(5, 7)) + "," + opacity + ")";
 }
 
@@ -26968,6 +27019,7 @@ IChartDrawPicture.CreateChartDrawPicture=function(obj)    //创建画图工具
     if (obj.AreaColor) chartDraw.AreaColor=obj.AreaColor;
     if (obj.FontOption) chartDraw.FontOption=obj.FontOption;
     if (obj.Label) chartDraw.Label=obj.Label;
+    if (obj.LineWidth>0) chartDraw.LineWidth=obj.LineWidth;
 
     return chartDraw;
 }
@@ -27601,7 +27653,7 @@ function ChartDrawPictureWaveMW()
     delete this.newMethod;
 
     this.ClassName='ChartDrawPictureWaveMW';
-    this.PointCount=2;
+    this.PointCount=5;
     this.IsPointIn=this.IsPointIn_XYValue_Line;
 
     this.Draw=function()
@@ -57112,7 +57164,7 @@ function JSSymbolData(ast,option,jsExecute)
             if (ChartData.IsDayPeriod(periodInfo.Period,true) && ChartData.IsMinutePeriod(this.Period,true))
             {
                 var dayData=this.PeriodData.get('DAY'); //日线
-                if (periodInfo.Period==0) hisData=dayData;
+                if (periodInfo.Period==0) hisData=dayData.Data;
                 else hisData=dayData.GetPeriodData(periodInfo.Period);  //日线周期
             }
             else
