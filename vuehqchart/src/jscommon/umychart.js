@@ -4677,7 +4677,7 @@ function AverageWidthFrame()
     }
 
     //Y坐标转y轴数值
-    this.GetYData=function(y)
+    this.GetYData=function(y,isLimit)
     {
         if (this.Logarithmic && this.GetYLogarithmicFromData)
         {
@@ -4686,17 +4686,31 @@ function AverageWidthFrame()
 
         if (this.CoordinateType==1) //反转坐标
         {
-            if (y<this.ChartBorder.GetTopEx()) return this.HorizontalMin;
-            if (y>this.ChartBorder.GetBottomEx()) return this.HorizontalMax;
-
-            return (y-this.ChartBorder.GetTopEx())/this.ChartBorder.GetHeightEx()*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+            if (isLimit==false)
+            {
+                return (y-this.ChartBorder.GetTopEx())/this.ChartBorder.GetHeightEx()*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+            }
+            else
+            {
+                if (y<this.ChartBorder.GetTopEx()) return this.HorizontalMin;
+                if (y>this.ChartBorder.GetBottomEx()) return this.HorizontalMax;
+    
+                return (y-this.ChartBorder.GetTopEx())/this.ChartBorder.GetHeightEx()*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+            }
         }
         else
         {
-            if (y<this.ChartBorder.GetTopEx()) return this.HorizontalMax;
-            if (y>this.ChartBorder.GetBottomEx()) return this.HorizontalMin;
-
-            return (this.ChartBorder.GetBottomEx()-y)/this.ChartBorder.GetHeightEx()*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+            if (isLimit==false)
+            {
+                return (this.ChartBorder.GetBottomEx()-y)/this.ChartBorder.GetHeightEx()*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+            }
+            else
+            {
+                if (y<this.ChartBorder.GetTopEx()) return this.HorizontalMax;
+                if (y>this.ChartBorder.GetBottomEx()) return this.HorizontalMin;
+    
+                return (this.ChartBorder.GetBottomEx()-y)/this.ChartBorder.GetHeightEx()*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+            }
         }
     }
 
@@ -22664,7 +22678,7 @@ function IChartDrawPicture()
                 var item=this.Point[i];
                 var xValue=parseInt(this.Frame.GetXData(item.X,false))+data.DataOffset;
                 if (xValue<0) xValue=0;
-                var yValue=this.Frame.GetYData(item.Y);
+                var yValue=this.Frame.GetYData(item.Y,false);
 
                 var valueItem={ XValue:xValue, YValue:yValue };
                 var kline=data.Data[xValue];
@@ -22744,7 +22758,7 @@ function IChartDrawPicture()
             else
             {
                 pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset, false);
-                pt.Y=this.Frame.GetYFromData(item.YValue);
+                pt.Y=this.Frame.GetYFromData(item.YValue,false);
             }
             this.Point[i]=pt;
         }
