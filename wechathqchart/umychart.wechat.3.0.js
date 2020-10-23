@@ -12220,6 +12220,8 @@ function ScriptIndex(name, script, args, option)
         chartText.Name = varItem.Name;
         chartText.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chartText.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
+        
         if (varItem.Color) chartText.Color = this.GetColor(varItem.Color);
         else chartText.Color = this.GetDefaultColor(id);
 

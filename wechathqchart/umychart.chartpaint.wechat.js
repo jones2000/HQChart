@@ -128,6 +128,12 @@ function IChartPainting()
 
     this.GetDynamicFontEx=function(dataWidth, distanceWidth,  maxSize, minSize, zoom, fontname)    //根据宽度自动获取对应字体
     {
+        if (maxSize==minSize)
+        {
+            var font=`${maxSize.toFixed(0)}px ${fontname}` ;
+            return font;
+        }
+
         var fontSize=(dataWidth+distanceWidth);
         if (zoom)
         {
@@ -1008,6 +1014,19 @@ function ChartSingleText()
         Max: g_JSChartResource.DRAWICON.Text.MaxSize, Min:g_JSChartResource.DRAWICON.Text.MinSize, //字体的最大最小值
         Zoom:{ Type:g_JSChartResource.DRAWICON.Text.Zoom.Type , Value:g_JSChartResource.DRAWICON.Text.Zoom.Value }, //放大倍数
         FontName:g_JSChartResource.DRAWICON.Text.FontName
+    }
+
+    this.ReloadResource=function(resource)
+    {
+        if (this.Name=="DRAWTEXT")
+        {
+            this.TextSize=
+            {
+                Max: g_JSChartResource.DRAWTEXT.MaxSize, Min:g_JSChartResource.DRAWTEXT.MinSize, //字体的最大最小值
+                Zoom:{ Type:g_JSChartResource.DRAWTEXT.Zoom.Type , Value:g_JSChartResource.DRAWTEXT.Zoom.Value }, //放大倍数
+                FontName:g_JSChartResource.DRAWTEXT.FontName
+            }
+        }
     }
 
     this.Draw = function () 

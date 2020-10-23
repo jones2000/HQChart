@@ -13604,7 +13604,7 @@ function ScriptIndex(name,script,args,option)
     }
 
     //创建文本
-    this.CreateText=function(hqChart,windowIndex,varItem,id)
+    this.CreateText=function(hqChart,windowIndex,varItem,id,resource)
     {
         let chartText=new ChartSingleText();
         chartText.Canvas=hqChart.Canvas;
@@ -13612,6 +13612,8 @@ function ScriptIndex(name,script,args,option)
         chartText.Name=varItem.Name;
         chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
+
         if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
         else chartText.Color=this.GetDefaultColor(id);
 
@@ -14599,7 +14601,7 @@ function OverlayScriptIndex(name,script,args,option)
     }
 
     //创建文本
-    this.CreateText=function(hqChart,windowIndex,varItem,id)
+    this.CreateText=function(hqChart,windowIndex,varItem,id, drawName)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
@@ -14610,6 +14612,8 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
+        chart.ReloadResource();
+
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
 

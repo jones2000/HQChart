@@ -224,6 +224,20 @@ function JSChartResource()
         }
     }
 
+    this.DRAWTEXT=
+    {
+        MaxSize:18,  //字体最大
+        MinSize:18,  //字体最小
+
+        Zoom:
+        {
+            Type:1,    //0=放大(K线宽度*Value) 1=放大(K线+间距)*Value 2=(K线+间距)+2*Value;
+            Value:1
+        },
+
+        FontName:'微软雅黑'    //字体
+    }
+
     // //自定义风格
     this.SetStyle = function (style) 
     {
@@ -309,7 +323,15 @@ function JSChartResource()
                 if (item.Zoom) this.DRAWICON.Text.Zoom=item.Zoom;
                 if (item.FontName) this.DRAWICON.Text.FontName=item.FontName;
             }
-            
+        }
+
+        if (style.DRAWTEXT)
+        {
+            var item=style.DRAWTEXT;
+            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWICON.MaxSize=item.MaxSize;
+            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWICON.MinSize=item.MinSize;
+            if (item.Zoom) this.DRAWICON.Zoom=item.Zoom;
+            if (item.FontName) this.DRAWICON.FontName=item.FontName;
         }
     }
 

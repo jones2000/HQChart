@@ -194,6 +194,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 57. [HQChart使用教程65-设置指标输出动态变量名](https://blog.csdn.net/jones2000/article/details/108675254)<br>
 58. [HQChart使用教程66-自定义数据下载文字提示效果](https://blog.csdn.net/jones2000/article/details/109007027)<br>
 59. [HQChart使用教程67-鼠标点击K线柱子监听事件](https://blog.csdn.net/jones2000/article/details/109119390)<br>
+60. [HQChart使用教程68-配置DRAWTEXT, DRAWICON字体大小](https://blog.csdn.net/jones2000/article/details/109244069)<br>
 
 ## 小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>

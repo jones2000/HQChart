@@ -5314,11 +5314,18 @@ var JSCHART_EVENT_ID=
 
 var JSCHART_OPERATOR_ID=
 {
-    OP_SCROLL_LEFT:1,
-    OP_SCROLL_RIGHT:2,
+    OP_SCROLL_LEFT:1,   //往左移动
+    OP_SCROLL_RIGHT:2,  //往右移动
     OP_ZOOM_OUT:3,  //缩小
     OP_ZOOM_IN:4,   //放大
-    OP_GOTO_HOME:5, //第1页数据
+    OP_GOTO_HOME:5, //最新一天数据
+    OP_GOTO_END:6,  //第1天的数据
+
+    OP_LEFT_ZOOM_OUT:7,   //左边缩小
+    OP_LEFT_ZOOM_IN:8,    //左右放大
+
+    OP_RIGHT_ZOOM_OUT:9,  //右边缩小
+    OP_RIGHT_ZOOM_IN:10   //右边放大
 }
 
 var JSCHART_DRAG_ID=
@@ -8756,6 +8763,8 @@ function MinuteFrame()
     delete this.newMethod;
 
     this.ClassName="MinuteFrame";
+    this.DataWidth=1*GetDevicePixelRatio();
+    this.DistanceWidth=1*GetDevicePixelRatio();
     this.MinuteCount=243;   //每天的分钟个数
     this.IsBeforeData=false;    //是否显示集合竞价
     this.BeforeBGColor=g_JSChartResource.Minute.BeforeBGColor;  //集合竞价背景
@@ -13508,6 +13517,12 @@ function IChartPainting()
         maxSize*=pixelTatio;
         minSize*=pixelTatio;
 
+        if (maxSize==minSize)   //固定大小
+        {
+            var font=`${maxSize.toFixed(0)}px ${fontname}` ;
+            return font;
+        }
+
         var fontSize=(dataWidth+distanceWidth);
         if (zoom)
         {
@@ -13572,6 +13587,8 @@ function IChartPainting()
         var pixelTatio = GetDevicePixelRatio();
         maxSize*=pixelTatio;
         minSize*=pixelTatio;
+
+        if (maxSize==minSize) return maxSize;
 
         var iconSize=(dataWidth+distanceWidth)-2*pixelTatio;
 
@@ -17003,6 +17020,19 @@ function ChartSingleText()
         Max: g_JSChartResource.DRAWICON.Text.MaxSize, Min:g_JSChartResource.DRAWICON.Text.MinSize, //字体的最大最小值
         Zoom:{ Type:g_JSChartResource.DRAWICON.Text.Zoom.Type , Value:g_JSChartResource.DRAWICON.Text.Zoom.Value }, //放大倍数
         FontName:g_JSChartResource.DRAWICON.Text.FontName
+    }
+
+    this.ReloadResource=function(resource)
+    {
+        if (this.Name=="DRAWTEXT")
+        {
+            this.TextSize=
+            {
+                Max: g_JSChartResource.DRAWTEXT.MaxSize, Min:g_JSChartResource.DRAWTEXT.MinSize, //字体的最大最小值
+                Zoom:{ Type:g_JSChartResource.DRAWTEXT.Zoom.Type , Value:g_JSChartResource.DRAWTEXT.Zoom.Value }, //放大倍数
+                FontName:g_JSChartResource.DRAWTEXT.FontName
+            }
+        }
     }
 
     this.Draw=function()
@@ -29911,6 +29941,20 @@ function JSChartResource()
         }
     }
 
+    this.DRAWTEXT=
+    {
+        MaxSize:30,  //字体最大
+        MinSize:20,  //字体最小
+
+        Zoom:
+        {
+            Type:1,    //0=放大(K线宽度*Value) 1=放大(K线+间距)*Value 2=(K线+间距)+2*Value;
+            Value:1
+        },
+
+        FontName:'微软雅黑'    //字体
+    }
+
     //自定义风格
     this.SetStyle=function(style)
     {
@@ -30022,7 +30066,15 @@ function JSChartResource()
                 if (item.Zoom) this.DRAWICON.Text.Zoom=item.Zoom;
                 if (item.FontName) this.DRAWICON.Text.FontName=item.FontName;
             }
-            
+        }
+
+        if (style.DRAWTEXT)
+        {
+            var item=style.DRAWTEXT;
+            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWICON.MaxSize=item.MaxSize;
+            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWICON.MinSize=item.MinSize;
+            if (item.Zoom) this.DRAWICON.Zoom=item.Zoom;
+            if (item.FontName) this.DRAWICON.FontName=item.FontName;
         }
     }
 }
@@ -31325,22 +31377,11 @@ function KLineChartContainer(uielement)
         }
         else if (id===JSCHART_OPERATOR_ID.OP_GOTO_HOME)
         {
-            var hisData=null;
-            if (!this.Frame.Data) hisData=this.Frame.Data;
-            else hisData=this.Frame.SubFrame[0].Frame.Data;
+            var hisData=this.ChartOperator_Temp_GetHistroyData();;
             if (!hisData) return;  //数据还没有到达
 
-            var showCount=this.PageSize;
-            var pageSize = this.GetMaxMinPageSize();
-            if (pageSize.Max < showCount) showCount = pageSize.Max;
-            else if (pageSize.Min>showCount) showCount=pageSize.Min;
-
-            for(var i in this.Frame.SubFrame)   //设置一屏显示的数据个数
-            {
-                var item =this.Frame.SubFrame[i].Frame;
-                item.XPointCount=showCount;
-            }
-
+            var showCount=this.Frame.SubFrame[0].Frame.XPointCount; //获取一屏显示的数据个数
+            showCount-=this.RightSpaceCount;
             var index=hisData.Data.length-showCount;
             hisData.DataOffset=index;
             this.CursorIndex=0;
@@ -31350,12 +31391,141 @@ function KLineChartContainer(uielement)
 
             JSConsole.Chart.Log(`[KLineChartContainer::ChartOperator] OP_GOTO_HOME, dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${showCount}`);
 
-            this.UpdataDataoffset();           //更新数据偏移
-            this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-            this.Frame.SetSizeChage(true);
-            this.Draw();
-            this.UpdatePointByCursorIndex();   //更新十字光标位子
+            this.ChartOperator_Temp_Update();
         }
+        else if (id===JSCHART_OPERATOR_ID.OP_GOTO_END)
+        {
+            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            if (!hisData) return;  //数据还没有到达
+
+            hisData.DataOffset=0;
+            this.CursorIndex=0;
+
+            this.LastPoint.X=null;
+            this.LastPoint.Y=null;
+
+            JSConsole.Chart.Log(`[KLineChartContainer::ChartOperator] OP_GOTO_END `);
+
+            this.ChartOperator_Temp_Update();
+        }
+        else if (id==JSCHART_OPERATOR_ID.OP_LEFT_ZOOM_IN || id==JSCHART_OPERATOR_ID.OP_LEFT_ZOOM_OUT)　//{ Step：增加/减少数量 } 左边增加/减少显示个数
+        {
+            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            if (!hisData) return;  //数据还没有到达
+
+            var dataCount=hisData.Data.length;
+            var showCount=this.Frame.SubFrame[0].Frame.XPointCount; //获取一屏显示的数据个数
+            var dataOffset=hisData.DataOffset;
+
+            if (id==JSCHART_OPERATOR_ID.OP_LEFT_ZOOM_IN)    //增加
+            {
+                if (IFrameSplitOperator.IsNumber(obj.Step))
+                {
+                    if (showCount>=dataCount) return;
+                    var step=obj.Step;
+                    if (step>dataOffset) step=dataOffset;
+                    if (showCount+step>dataCount) step=dataCount-showCount;
+                    if (step<=0) return;
+
+                    showCount+=step;
+                    hisData.DataOffset-=step;
+                }
+            }
+            else if (id==JSCHART_OPERATOR_ID.OP_LEFT_ZOOM_OUT)  //减少
+            {
+                var pageSize = this.GetMaxMinPageSize();
+                var minShowCount=pageSize.Min;
+                if (IFrameSplitOperator.IsNumber(obj.Step))
+                {
+                    if (showCount<minShowCount) return;
+                    var step=obj.Step;
+                    if (showCount-step<minShowCount) step=showCount-minShowCount;
+                    if (step<=0) return;
+
+                    showCount-=step;
+                    hisData.DataOffset-=step;
+                }
+            }
+            
+            for(var i in this.Frame.SubFrame)   //设置一屏显示的数据个数
+            {
+                var item =this.Frame.SubFrame[i].Frame;
+                item.XPointCount=showCount;
+            }
+
+            if (hisData.DataOffset<0) hisData.DataOffset=0;
+            this.ChartOperator_Temp_Update();
+        }
+        else if (id==JSCHART_OPERATOR_ID.OP_RIGHT_ZOOM_IN || id==JSCHART_OPERATOR_ID.OP_RIGHT_ZOOM_OUT)　//{ Step：增加/减少数量 , ShowCount:显示个数 } 右边增加/减少显示个数
+        {
+            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            if (!hisData) return;  //数据还没有到达
+
+            var dataCount=hisData.Data.length;
+            var showCount=this.Frame.SubFrame[0].Frame.XPointCount; //获取一屏显示的数据个数
+            var dataOffset=hisData.DataOffset;
+
+            if (id==JSCHART_OPERATOR_ID.OP_RIGHT_ZOOM_IN)   //增加
+            {
+                if (IFrameSplitOperator.IsNumber(obj.Step))
+                {
+                    if (showCount>=dataCount) return;
+                    var endPos=dataOffset+showCount;
+                    var rightCount=dataCount-endPos;
+                    if (rightCount<=0) return;
+
+                    var step=obj.Step;
+                    if (step>rightCount) step=rightCount;
+                    if (step<=0) return;
+
+                    showCount+=step;
+                }
+            }
+            else if (id==JSCHART_OPERATOR_ID.OP_RIGHT_ZOOM_OUT) //减少
+            {
+                var pageSize = this.GetMaxMinPageSize();
+                var minShowCount=pageSize.Min;
+                if (IFrameSplitOperator.IsNumber(obj.Step))
+                {
+                    if (showCount<minShowCount) return;
+                    var step=obj.Step;
+                    if (step>showCount) step=showCount;
+                    if (showCount-step<minShowCount) step=showCount-minShowCount;
+                    if (step<=0) return;
+
+                    showCount-=step;
+                }
+            }
+
+            for(var i in this.Frame.SubFrame)   //设置一屏显示的数据个数
+            {
+                var item =this.Frame.SubFrame[i].Frame;
+                item.XPointCount=showCount;
+            }
+
+            if (hisData.DataOffset<0) hisData.DataOffset=0;
+            this.ChartOperator_Temp_Update();
+        }
+    }
+
+    //内部函数
+    this.ChartOperator_Temp_GetHistroyData=function()
+    {
+        var hisData=null;
+        if (!this.Frame.Data) hisData=this.Frame.Data;
+        else hisData=this.Frame.SubFrame[0].Frame.Data;
+        if (!hisData) return null;  //数据还没有到达
+
+        return hisData;
+    }
+
+    this.ChartOperator_Temp_Update=function()
+    {
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+        this.UpdatePointByCursorIndex();   //更新十字光标位子
     }
 
     this.OnWheel=function(e)
@@ -61487,7 +61657,7 @@ function ScriptIndex(name,script,args,option)
     }
 
     //创建文本
-    this.CreateText=function(hqChart,windowIndex,varItem,id)
+    this.CreateText=function(hqChart,windowIndex,varItem,id,resource)
     {
         let chartText=new ChartSingleText();
         chartText.Canvas=hqChart.Canvas;
@@ -61495,6 +61665,8 @@ function ScriptIndex(name,script,args,option)
         chartText.Name=varItem.Name;
         chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
+
         if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
         else chartText.Color=this.GetDefaultColor(id);
 
@@ -62482,7 +62654,7 @@ function OverlayScriptIndex(name,script,args,option)
     }
 
     //创建文本
-    this.CreateText=function(hqChart,windowIndex,varItem,id)
+    this.CreateText=function(hqChart,windowIndex,varItem,id, drawName)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
@@ -62493,6 +62665,8 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
+        chart.ReloadResource();
+
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
 
