@@ -273,6 +273,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 5. [HQChart实战教程22 - PC端定制区间选择菜单](https://blog.csdn.net/jones2000/article/details/108907629)<br>
 6. [HQChart实战教程23 - 点击K线显示历史分钟走势图](https://blog.csdn.net/jones2000/article/details/109127873)<br>
 7. [HQChart实战教程24 - 自定义K线画图工具设置框（线段类）](https://blog.csdn.net/jones2000/article/details/109217719)<br>
+8. [HQChart实战教程25 - 自定义K线画图工具设置框（文字类）](https://blog.csdn.net/jones2000/article/details/109267078)<br>
 
 
 

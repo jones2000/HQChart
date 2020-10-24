@@ -3875,7 +3875,7 @@ if (!JSConsole)
 }
 
 
-function JSChart(divElement)
+function JSChart(divElement, bOffscreen)
 {
     this.DivElement=divElement;
     this.DivToolElement=null;           //工具条
@@ -3890,6 +3890,10 @@ function JSChart(divElement)
     if(!divElement.hasChildNodes("canvas")){
         divElement.appendChild(this.CanvasElement);
     }
+
+    //离屏
+    this.OffscreenCanvasElement;
+    if (bOffscreen==true) this.OffscreenCanvasElement=document.createElement("canvas");
 
     //改参数div
     this.ModifyIndexDialog=new ModifyIndexDialog(divElement);
@@ -3914,6 +3918,12 @@ function JSChart(divElement)
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         this.CanvasElement.height*=pixelTatio;
         this.CanvasElement.width*=pixelTatio;
+
+        if (this.OffscreenCanvasElement)
+        {
+            this.OffscreenCanvasElement.height=this.CanvasElement.height;
+            this.OffscreenCanvasElement.width=this.CanvasElement.width;
+        }
 
         JSConsole.Chart.Log(`[JSChart::OnSize] devicePixelRatio=${window.devicePixelRatio}, height=${this.CanvasElement.height}, width=${this.CanvasElement.width}`);
 
@@ -3959,7 +3969,7 @@ function JSChart(divElement)
     {
         var chart=null;
         if (option.Type==="历史K线图横屏") chart=new KLineChartHScreenContainer(this.CanvasElement);
-        else chart=new KLineChartContainer(this.CanvasElement);
+        else chart=new KLineChartContainer(this.CanvasElement,this.OffscreenCanvasElement);
 
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
 
@@ -5383,7 +5393,7 @@ var JSCHART_DRAG_ID=
 /*
     图形控件
 */
-function JSChartContainer(uielement)
+function JSChartContainer(uielement, OffscreenElement)
 {
     this.ClassName='JSChartContainer';
     var _self = this;
@@ -5404,7 +5414,19 @@ function JSChartContainer(uielement)
     this.ChartCorssCursor;                          //十字光标
     this.IsClickShowCorssCursor=false;              //手势点击显示十字光标
     this.ChartSplashPaint=null;                     //等待提示
-    this.Canvas=uielement.getContext("2d");         //画布
+    if (OffscreenElement) 
+    {
+        this.Canvas=OffscreenElement.getContext("2d");
+        this.OffscreenCanvasElement=OffscreenElement;
+
+        this.ShowCanvas=uielement.getContext("2d");
+    }
+    else
+    {
+        this.Canvas=uielement.getContext("2d");         //画布
+        this.ShowCanvas=null;
+    }
+    
     this.UIElement=uielement;
     this.MouseDrag;
     this.DragMode=1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择 3(CLICK_TOUCH_MODE_ID)=长按十字光标显示保留/点击十字光标消失 (使用TouchStatus)
@@ -6418,6 +6440,8 @@ function JSChartContainer(uielement)
             this.CurrentChartDrawPicture.Draw();
         }
 
+        this.OffscreenToShowCanvas();
+
         //发送图形状态给外部
         if (this.mapEvent.has(JSCHART_EVENT_ID.CHART_STATUS))
         {
@@ -6429,6 +6453,14 @@ function JSChartContainer(uielement)
         }
 
         ++this.TouchDrawCount;
+    }
+
+    this.OffscreenToShowCanvas=function()
+    {
+        if (!this.ShowCanvas) return;
+
+        this.ShowCanvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
+        this.ShowCanvas.drawImage(this.OffscreenCanvasElement,0,0);
     }
 
     //画动态信息
@@ -6459,6 +6491,7 @@ function JSChartContainer(uielement)
         }
 
         if (isErase) this.Canvas.putImageData(this.Frame.ScreenImageData,0,0);
+
 
         for(var i in this.ExtendChartPaint)    //动态扩展图形
         {
@@ -6532,6 +6565,8 @@ function JSChartContainer(uielement)
         {
             this.CurrentChartDrawPicture.Draw();
         }
+
+        this.OffscreenToShowCanvas();
 
         ++this.TouchDrawCount;
     }
@@ -28249,6 +28284,15 @@ function ChartDrawPictureText()
     this.SettingMenu;
     this.HQChart;
 
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (option.LineColor) this.LineColor=option.LineColor;
+        if (option.Text) this.Text=option.Text;
+        if (option.FontOption) this.FontOption=option.FontOption;
+    }
+
     this.Draw=function(textFont)
     {
         this.TextRect=null;
@@ -31217,11 +31261,11 @@ HQIndexFormula.STICKLINE=function(data,price1,price2)
 //  this.ChartPaint[0] K线画法 这个不要修改
 //
 //
-function KLineChartContainer(uielement)
+function KLineChartContainer(uielement,OffscreenElement)
 {
     var _self =this;
     this.newMethod=JSChartContainer;   //派生
-    this.newMethod(uielement);
+    this.newMethod(uielement,OffscreenElement);
     delete this.newMethod;
 
     this.ClassName='KLineChartContainer';
