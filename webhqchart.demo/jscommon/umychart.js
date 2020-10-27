@@ -13401,7 +13401,7 @@ function ChartSingleText()
         else
         {
             var x=this.ChartBorder.GetLeft()+this.ChartBorder.GetWidth()*this.Position.X;
-            var y=this.ChartBorder.GetTopEx()+this.ChartBorder.GetHeight()*this.Position.Y;
+            var y=this.ChartBorder.GetTopEx()+this.ChartBorder.GetHeightEx()*this.Position.Y;
         }
 
         if (isHScreen) 
@@ -13412,11 +13412,34 @@ function ChartSingleText()
         }
 
         this.Canvas.fillStyle=this.Color;
-        if (this.Position.Type==0) this.Canvas.textAlign='left';
-        else if (this.Position.Type==2) this.Canvas.textAlign='center';
-        else this.Canvas.textAlign='right';
-        this.DrawText(this.Text,x,y,isHScreen);
 
+        //TYPE:0为左对齐,1为右对齐.
+        if (this.Position.Type==0) this.Canvas.textAlign='left';
+        else if (this.Position.Type==1) this.Canvas.textAlign='right';
+        else this.Canvas.textAlign='center';
+
+        if (this.Direction==1) this.Canvas.textBaseline='bottom';
+        else if (this.Direction==2) this.Canvas.textBaseline='top';
+        else this.Canvas.textBaseline='middle';
+
+        if (Array.isArray(this.Text))
+        {
+            if (!this.Data || !this.Data.Data) return;
+            var xPointCount=this.ChartFrame.XPointCount;
+            for(var i=this.Data.DataOffset,j=0; i<this.Data.Data.length && j<xPointCount; ++i,++j)
+            {
+                var text=this.Text[i];
+                if (text)
+                {
+                    this.DrawText(text,x,y,isHScreen);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            this.DrawText(this.Text,x,y,isHScreen);
+        }
     }
 
     this.DrawText=function(text,x,y,isHScreen)

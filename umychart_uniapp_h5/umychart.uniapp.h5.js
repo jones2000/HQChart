@@ -17210,7 +17210,7 @@ function ChartSingleText()
         else
         {
             var x=this.ChartBorder.GetLeft()+this.ChartBorder.GetWidth()*this.Position.X;
-            var y=this.ChartBorder.GetTopEx()+this.ChartBorder.GetHeight()*this.Position.Y;
+            var y=this.ChartBorder.GetTopEx()+this.ChartBorder.GetHeightEx()*this.Position.Y;
         }
 
         if (isHScreen) 
@@ -17221,11 +17221,34 @@ function ChartSingleText()
         }
 
         this.Canvas.fillStyle=this.Color;
-        if (this.Position.Type==0) this.Canvas.textAlign='left';
-        else if (this.Position.Type==2) this.Canvas.textAlign='center';
-        else this.Canvas.textAlign='right';
-        this.DrawText(this.Text,x,y,isHScreen);
 
+        //TYPE:0为左对齐,1为右对齐.
+        if (this.Position.Type==0) this.Canvas.textAlign='left';
+        else if (this.Position.Type==1) this.Canvas.textAlign='right';
+        else this.Canvas.textAlign='center';
+
+        if (this.Direction==1) this.Canvas.textBaseline='bottom';
+        else if (this.Direction==2) this.Canvas.textBaseline='top';
+        else this.Canvas.textBaseline='middle';
+
+        if (Array.isArray(this.Text))
+        {
+            if (!this.Data || !this.Data.Data) return;
+            var xPointCount=this.ChartFrame.XPointCount;
+            for(var i=this.Data.DataOffset,j=0; i<this.Data.Data.length && j<xPointCount; ++i,++j)
+            {
+                var text=this.Text[i];
+                if (text)
+                {
+                    this.DrawText(text,x,y,isHScreen);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            this.DrawText(this.Text,x,y,isHScreen);
+        }
     }
 
     this.DrawText=function(text,x,y,isHScreen)
@@ -55495,6 +55518,70 @@ function JSDraw(errorHandler,symbolData)
     }
 
     /*
+    固定位置显示数字.
+    用法: DRAWNUMBER_FIX(COND,X,Y,TYPE,NUMBER),当COND条件满足时,在当前指标窗口内(X,Y)位置书写数字NUMBER,X,Y为书写点在窗口中相对于左上角的百分比,TYPE:0为左对齐,1为右对齐.
+    例如: DRAWNUMBER_FIX(CURRBARSCOUNT=1 AND CLOSE/OPEN>1.08,0.5,0.5,0,C)表示最后一个交易日实体阳线大于8%时在窗口中间位置显示收盘价.
+    */
+    this.DRAWNUMBER_FIX=function(condition,x,y,align,data)
+    {
+        var drawData={ Value:[], Text:[],  };
+        var result={ DrawData:drawData, DrawType:'DRAWNUMBER_FIX', Position:{ X:x, Y:y, Type:align } };
+        var isNumber=IFrameSplitOperator.IsNumber(data);
+
+        if (Array.isArray(condition))
+        {
+            for(var i in condition)
+            {
+                drawData.Text[i]=null;
+                drawData.Value[i]=null;
+                if (!condition[i]) continue;
+
+                if (isNumber) 
+                {
+                    drawData.Text[i]=this.RemoveZero(data.toFixed(2));
+                    drawData.Value[i]=data;
+                }
+                else 
+                {
+                    if (i>=data.length || !IFrameSplitOperator.IsNumber(data[i])) continue;
+
+                    var item=data[i];
+                    drawData.Text[i]=this.RemoveZero(item.toFixed(2));
+                    drawData.Value[i]=item;
+                }
+            }
+        }
+        else
+        {
+            if(!condition)
+            {
+                
+            }
+            else
+            {
+                for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+                {
+                    if (isNumber) 
+                    {
+                        drawData.Text[i]=this.RemoveZero(data.toFixed(2));
+                        drawData.Value[i]=data;
+                    } 
+                    else
+                    {
+                        if (i>=data.length || !IFrameSplitOperator.IsNumber(data[i])) continue;
+
+                        var item=data[i];
+                        drawData.Text[i]=this.RemoveZero(item.toFixed(2));
+                        drawData.Value[i]=item;
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /*
     在图形上绘制小图标.
     用法:
     DRAWICON(COND,PRICE,TYPE),当COND条件满足时,在PRICE位置画TYPE号图标(TYPE为1--41).
@@ -55872,12 +55959,36 @@ JSDraw.prototype.IsDrawFunction=function(name)
     let setFunctionName=new Set(
     [
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
-        'POLYLINE','DRAWNUMBER','DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',
+        'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',
         'DRAWOVERLAYLINE',"FILLRGN"
     ]);
     if (setFunctionName.has(name)) return true;
 
     return false;
+}
+
+JSDraw.prototype.RemoveZero = function (strValue)
+{
+    while(strValue.length>0)
+    {
+        var index=strValue.length-1;
+        var ch=strValue[index];
+        if (ch=="0")
+        {
+            strValue=strValue.substr(0,index);
+        }
+        else if (ch==".")
+        {
+            strValue=strValue.substr(0,index);
+            break;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return strValue;
 }
 
 //http://www.newone.com.cn/helpcontroller/index?code=zszy_pc
@@ -60942,6 +61053,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWNUMBER(args[0],args[1],args[2]);
                 node.Out=node.Draw.DrawData.Value;
                 break;
+            case "DRAWNUMBER_FIX":
+                node.Draw=this.Draw.DRAWNUMBER_FIX(args[0],args[1],args[2],args[3],args[4]);
+                node.Out=node.Draw.DrawData.Value;
+                break;
             case "DRAWCHANNEL":
                 node.Draw=this.Draw.DRAWCHANNEL(args[0],args[1],args[2],args[3],args[4],args[5],args[6]);
                 node.Out=[];
@@ -61983,6 +62098,8 @@ function ScriptIndex(name,script,args,option)
         if (varItem.IsDrawAbove) chartText.Direction=1;
         else chartText.Direction=2;
 
+        if (varItem.Draw.Position) chartText.Position=varItem.Draw.Position;    //赋值坐标
+
         let titleIndex=windowIndex+1;
         chartText.Data.Data=varItem.Draw.DrawData.Value;
         chartText.Text=varItem.Draw.DrawData.Text;
@@ -62308,6 +62425,7 @@ function ScriptIndex(name,script,args,option)
                         this.CreateTextLine(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWNUMBER':
+                    case "DRAWNUMBER_FIX":
                         this.CreateNumberText(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWICON':
@@ -62548,6 +62666,7 @@ function OverlayScriptIndex(name,script,args,option)
                         this.CreatePolyLine(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWNUMBER':
+                    case "DRAWNUMBER_FIX":    
                         this.CreateNumberText(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWICON':
@@ -62964,6 +63083,8 @@ function OverlayScriptIndex(name,script,args,option)
         else chart.Color=this.GetDefaultColor(id);
         if (varItem.IsDrawAbove) chart.Direction=1;
         else chart.Direction=2;
+
+        if (varItem.Draw.Position) chart.Position=varItem.Draw.Position;    //赋值坐标
 
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Draw.DrawData.Value;
