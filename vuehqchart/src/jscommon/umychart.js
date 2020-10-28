@@ -5563,6 +5563,8 @@ function KLineFrame()
 
     this.DrawToolbar=function()
     {
+        if (!$) return;
+        
         if (!this.ChartBorder.UIElement) return;
 
         var divToolbar=document.getElementById(this.ToolbarID);
