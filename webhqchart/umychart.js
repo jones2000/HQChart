@@ -6765,7 +6765,7 @@ function KLineHScreenFrame()
         if (index < 0) index = 0;
 	    if (index > this.xPointCount - 1) index = this.xPointCount - 1;
 
-        var offset=this.ChartBorder.GetTop()+2+this.DistanceWidth/2+this.DataWidth/2;
+        var offset=this.ChartBorder.GetTop()+ g_JSChartResource.FrameLeftMargin + this.DistanceWidth/2+this.DataWidth/2;
         for(var i=1;i<=index;++i)
         {
             offset+=this.DistanceWidth+this.DataWidth;
@@ -13397,20 +13397,13 @@ function ChartSingleText()
         var isHScreen=(this.ChartFrame.IsHScreen===true)
         if (isHScreen)
         {
-            var x=this.ChartBorder.GetLeft()+this.ChartBorder.GetWidthEx()*this.Position.Y;
-            var y=this.ChartBorder.GetTop()+this.ChartBorder.GetHeight()*this.Position.X;
+            var y=this.ChartBorder.GetRightEx()-this.ChartBorder.GetWidthEx()*this.Position.Y;
+            var x=this.ChartBorder.GetTop()+this.ChartBorder.GetHeight()*this.Position.X;
         }
         else
         {
             var x=this.ChartBorder.GetLeft()+this.ChartBorder.GetWidth()*this.Position.X;
             var y=this.ChartBorder.GetTopEx()+this.ChartBorder.GetHeightEx()*this.Position.Y;
-        }
-
-        if (isHScreen) 
-        {
-            chartright=this.ChartBorder.GetBottom();
-            top=this.ChartBorder.GetRightEx();
-            bottom=this.ChartBorder.GetLeftEx();
         }
 
         this.Canvas.fillStyle=this.Color;

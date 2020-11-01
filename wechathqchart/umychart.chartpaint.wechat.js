@@ -1159,8 +1159,8 @@ function ChartSingleText()
         var isHScreen=(this.ChartFrame.IsHScreen===true)
         if (isHScreen)
         {
-            var x=this.ChartBorder.GetLeft()+this.ChartBorder.GetWidthEx()*this.Position.Y;
-            var y=this.ChartBorder.GetTop()+this.ChartBorder.GetHeight()*this.Position.X;
+            var y=this.ChartBorder.GetRightEx()-this.ChartBorder.GetWidthEx()*this.Position.Y;
+            var x=this.ChartBorder.GetTop()+this.ChartBorder.GetHeight()*this.Position.X;
         }
         else
         {
@@ -1168,24 +1168,23 @@ function ChartSingleText()
             var y=this.ChartBorder.GetTopEx()+this.ChartBorder.GetHeight()*this.Position.Y;
         }
 
-        if (isHScreen) 
-        {
-            chartright=this.ChartBorder.GetBottom();
-            top=this.ChartBorder.GetRightEx();
-            bottom=this.ChartBorder.GetLeftEx();
-        }
-
         this.Canvas.fillStyle=this.Color;
-        if (this.Position.Type==0) this.Canvas.textAlign='left';
-        else if (this.Position.Type==2) this.Canvas.textAlign='center';
-        else this.Canvas.textAlign='right';
-        this.DrawText(this.Text,x,y,isHScreen);
 
+        //TYPE:0为左对齐,1为右对齐.
+        if (this.Position.Type==0) this.Canvas.textAlign='left';
+        else if (this.Position.Type==1) this.Canvas.textAlign='right';
+        else this.Canvas.textAlign='center';
+
+        if (this.Direction==1) this.Canvas.textBaseline='bottom';
+        else if (this.Direction==2) this.Canvas.textBaseline='top';
+        else this.Canvas.textBaseline='middle';
+
+        this.DrawText(this.Text,x,y,isHScreen);
     }
 
     this.DrawText = function (text, x, y, isHScreen) 
     {
-        if (isHScreen) 
+       if (isHScreen) 
         {
             this.Canvas.save();
             this.Canvas.translate(y, x);
@@ -1193,7 +1192,7 @@ function ChartSingleText()
             this.Canvas.fillText(text, 0, 0);
             this.Canvas.restore();
         }
-        else 
+        else
         {
             this.Canvas.fillText(text, x, y);
         }

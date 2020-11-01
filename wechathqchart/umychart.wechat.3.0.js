@@ -3900,7 +3900,7 @@ function KLineHScreenFrame()
         if (index < 0) index = 0;
         if (index > this.xPointCount - 1) index = this.xPointCount - 1;
 
-        var offset = this.ChartBorder.GetTop() + 2 + this.DistanceWidth / 2 + this.DataWidth / 2;
+        var offset = this.ChartBorder.GetTop() + g_JSChartResource.FrameLeftMargin + this.DistanceWidth / 2 + this.DataWidth / 2;
         for (var i = 1; i <= index; ++i) 
         {
             offset += this.DistanceWidth + this.DataWidth;
@@ -3969,7 +3969,21 @@ function KLineHScreenFrame()
         if (y <= this.ChartBorder.GetTop()) return 0;
         if (y >= this.ChartBorder.GetBottom()) return this.XPointCount-1;
 
-        return (y - this.ChartBorder.GetTop()) * (this.XPointCount * 1.0 / this.ChartBorder.GetHeight());
+        var distanceWidth=this.DistanceWidth;
+        var dataWidth=this.DataWidth;
+        var left=this.ChartBorder.GetTop()+g_JSChartResource.FrameLeftMargin;
+        var right=this.ChartBorder.GetBottom()-g_JSChartResource.FrameRightMargin;
+
+        var index=0;
+        var xPoint=left+distanceWidth/2+dataWidth+distanceWidth;
+        while(xPoint<right && index<10000 && index+1<this.XPointCount)  //自己算x的数值
+        {
+            if (xPoint>=y) break;
+            xPoint+=(dataWidth+distanceWidth);
+            ++index;
+        }
+
+        return index;
     }
 
 }

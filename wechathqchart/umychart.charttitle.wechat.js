@@ -210,7 +210,7 @@ function DynamicKLineTitlePainting()
         }
 
         this.SpaceWidth = this.Canvas.measureText(' ').width;
-        var index = Math.abs(this.CursorIndex);
+        var index = this.CursorIndex;
         index = parseInt(index.toFixed(0));
         var dataIndex = this.Data.DataOffset + index;
         if (dataIndex >= this.Data.Data.length) dataIndex=-1;
@@ -513,7 +513,7 @@ function DynamicKLineTitlePainting()
         }
         
         this.SpaceWidth = this.Canvas.measureText(' ').width;
-        var index = Math.abs(this.CursorIndex - 0.5);
+        var index = this.CursorIndex;
         index = parseInt(index.toFixed(0));
         var dataIndex = this.Data.DataOffset + index;
         if (dataIndex >= this.Data.Data.length) dataIndex = this.Data.Data.length - 1;
@@ -1336,7 +1336,8 @@ function DynamicChartTitlePainting()
                 }
                 else 
                 {
-                    var index = Math.abs(this.CursorIndex - 0.5);
+                    var index = this.CursorIndex - 0.5;
+                    if (index<0) index=0;
                     index = parseInt(index.toFixed(0));
                     if (item.Data.DataOffset + index >= item.Data.Data.length) continue;
     
