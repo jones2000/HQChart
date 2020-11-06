@@ -28357,6 +28357,15 @@ function ChartDrawPictureIconFont()
     this.TextRect=null;         //文字区域
     this.SettingMenu;
 
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (option.LineColor) this.LineColor=option.LineColor;
+        if (option.FontOption.Size>0) this.FontOption.Size=option.FontOption.Size;
+    }
+
     this.Draw=function()
     {
         this.TextRect=null;
