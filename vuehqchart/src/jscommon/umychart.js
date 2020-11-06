@@ -24547,6 +24547,7 @@ function ChartDrawPictureIconFont()
     this.FontOption={ Family:'iconfont', Size:24};    //Weight(bold 粗体), Style(italic)
     this.TextRect=null;         //文字区域
     this.SettingMenu;
+    this.Angle=0;   //旋转角度
 
 
     this.SetOption=function(option)
@@ -24555,6 +24556,7 @@ function ChartDrawPictureIconFont()
 
         if (option.LineColor) this.LineColor=option.LineColor;
         if (option.FontOption.Size>0) this.FontOption.Size=option.FontOption.Size;
+        if (IFrameSplitOperator.IsNumber(option.Angle)) this.Angle=option.Angle;
     }
 
     this.Draw=function()
@@ -24572,8 +24574,9 @@ function ChartDrawPictureIconFont()
 
         this.Canvas.fillStyle=this.LineColor;
         this.Canvas.textAlign="center";
-        this.Canvas.textBaseline="bottom";
+        this.Canvas.textBaseline="middle";
         this.Canvas.font=font;
+
         if (isHScreen)
         {
             this.Canvas.translate(drawPoint[0].X, drawPoint[0].Y);
@@ -24582,7 +24585,16 @@ function ChartDrawPictureIconFont()
         }
         else
         {
-            this.Canvas.fillText(this.Text,drawPoint[0].X,drawPoint[0].Y);
+            if (this.Angle!=0)
+            {
+                this.Canvas.translate(drawPoint[0].X, drawPoint[0].Y);
+                this.Canvas.rotate(this.Angle*(Math.PI / 180));
+                this.Canvas.fillText(this.Text,0,0);
+            }
+            else
+            {
+                this.Canvas.fillText(this.Text,drawPoint[0].X,drawPoint[0].Y);
+            }
         }
         
         var textWidth=this.Canvas.measureText(this.Text).width;
