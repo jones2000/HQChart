@@ -5522,6 +5522,7 @@ function JSChartContainer(uielement, OffscreenElement)
     uielement.oncontextmenu=(e)=> { return this.UIOnContextMenu(e); }
     uielement.ondblclick=(e)=>{ this.UIOnDblClick(e); }
     uielement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
+    uielement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
 
     this.UIOnMouseMove=function(e)
     {
@@ -5805,6 +5806,12 @@ function JSChartContainer(uielement, OffscreenElement)
         this.ClickDownPoint=null;
         this.IsOnTouch=false;
         if (bClearDrawPicture===true) this.CurrentChartDrawPicture=null;
+    }
+
+    this.UIOnMounseOut=function(e)
+    {
+        JSConsole.Chart.Log('[KLineChartContainer::UIOnMounseOut]',e);
+        this.UIOnMouseMove(e);
     }
 
     this.TryClickPaintEvent=function(e)
