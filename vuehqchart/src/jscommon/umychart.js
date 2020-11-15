@@ -9545,6 +9545,81 @@ function ChartData()
         }
         return result;
     }
+
+    this.GetAPIDataIndex=function(date,time)
+    {
+        var result=[];
+        if (date && time)
+        {
+
+        }
+        else if (date)
+        {
+            var count=this.Data.length;         //原始K线数据
+            var indexCount=date.length;         //拟合数据
+            var firstItem=ChartData.GetKLineDataTime(this.Data[0]);
+
+            var indexStart=indexCount;  //拟合数据的起始位置
+            for(var i=0;i<indexCount;++i)
+            {
+                var item=date[i];
+    
+               if (item>=firstItem.Date)
+                {
+                    indexStart = i;
+                    break;
+                }
+            }
+
+            for(var i=0, j=indexStart; i<count; )
+            {
+                var item=this.Data[i];
+                if (j>=indexCount)
+                {
+                    var fitItem={ KDate:item.Date, KIndex:i, Index:-1 };
+                    result[i]=fitItem;
+                    ++i;
+                    continue;
+                }
+
+                var destDate=date[j];
+               if (destDate == item.Date)
+                {
+                    var fitItem={ KDate:item.Date, KIndex:i, Index:j, Data:destDate };
+                    result[i]=fitItem;
+                    ++i;
+                }
+                else 
+                {
+                    if (j+1<indexCount)
+                    {
+                        var nextDestDate=date[j+1];
+                        if ( destDate<=item.Date && nextDestDate>item.Date )
+                        {
+                            var fitItem={ KDate:item.Date, KIndex:i, Index:j, Data:destDate };
+                            result[i]=fitItem;
+                            ++i;
+                        }
+                        else if (nextDestDate <= item.Date )
+                        {
+                            ++j;
+                        }
+                        else
+                        {
+                            var fitItem={ KDate:item.Date, KIndex:i, Index:-1 };
+                            result[i]=fitItem;
+                            ++i;
+                        }
+                    }
+                    else
+                    {
+                        ++j;
+                    }
+                }
+            }
+        }
+        return result;
+    }
 }
 
 
@@ -13267,6 +13342,19 @@ function ChartSingleText()
                 Zoom:{ Type:g_JSChartResource.DRAWTEXT.Zoom.Type , Value:g_JSChartResource.DRAWTEXT.Zoom.Value }, //放大倍数
                 FontName:g_JSChartResource.DRAWTEXT.FontName
             }
+        }
+    }
+
+    this.SuperGetMaxMin=this.GetMaxMin;
+    this.GetMaxMin=function()
+    {
+        if ( this.Name=="DRAWTEXT_FIX" || this.Name=='DRAWNUMBER_FIX')  //固定位置的 没有大小值
+        {
+            return { Min:null,Max:null };
+        }
+        else
+        {
+            return this.SuperGetMaxMin();
         }
     }
 
@@ -19253,6 +19341,30 @@ IFrameSplitOperator.IsString=function(value)
 {
     if (value && typeof(value)=='string') return true;
     return false;
+}
+
+IFrameSplitOperator.RemoveZero=function(strValue)
+{
+    while(strValue.length>0)
+    {
+        var index=strValue.length-1;
+        var ch=strValue[index];
+        if (ch=="0")
+        {
+            strValue=strValue.substr(0,index);
+        }
+        else if (ch==".")
+        {
+            strValue=strValue.substr(0,index);
+            break;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return strValue;
 }
 
 function FrameSplitKLinePriceY()
