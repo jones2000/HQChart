@@ -4445,7 +4445,11 @@ function JSChart(divElement, bOffscreen)
         {
             if (option.MinuteLine.IsDrawAreaPrice==false) chart.ChartPaint[0].IsDrawArea=false;
             if (option.MinuteLine.IsShowLead==false) chart.IsShowLead=false;
-            if (option.MinuteLine.IsShowAveragePrice==false) chart.ChartPaint[1].IsShow=false;
+            if (option.MinuteLine.IsShowAveragePrice==false) 
+            {
+                chart.ChartPaint[1].IsShow=false;
+                chart.TitlePaint[0].IsShowAveragePrice=false;   //标题栏均线也不显示
+            }
             if (option.MinuteLine.SplitType>0) chart.Frame.SubFrame[0].Frame.YSplitOperator.SplitType=option.MinuteLine.SplitType;
         }
 
@@ -6673,7 +6677,11 @@ function JSChartContainer(uielement, OffscreenElement)
             case 37: //left
                 if (this.CursorIndex<=0.99999)
                 {
-                    if (!this.DataMoveLeft()) break;
+                    if (!this.DataMoveLeft()) 
+                    {   //左移数据到头了 触发下载新数据
+                        if (this.DragDownloadData) this.DragDownloadData();
+                        break;
+                    }
                     this.UpdataDataoffset();
                     this.UpdatePointByCursorIndex();
                     this.UpdateFrameMaxMin();
@@ -25910,6 +25918,7 @@ function DynamicMinuteTitlePainting()
     this.YClose;
     this.IsShowDate=false;  //标题是否显示日期
     this.IsShowName=true;   //标题是否显示股票名字
+    this.IsShowAveragePrice=true;   //是否显示均线价格
     this.OverlayChartPaint; //叠加画法
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.LastShowData;  //保存最后显示的数据 给tooltip用
@@ -25998,7 +26007,7 @@ function DynamicMinuteTitlePainting()
         var upperSymbol=this.Symbol.toUpperCase();
         if (MARKET_SUFFIX_NAME.IsET(upperSymbol) && !MARKET_SUFFIX_NAME.IsETShowAvPrice(upperSymbol)) isShowAvPrice=false;
 
-        if (item.AvPrice && isShowAvPrice)
+        if (item.AvPrice && isShowAvPrice && this.IsShowAveragePrice)
         {
             var color=this.GetColor(item.AvPrice,this.YClose);
             var text=g_JSChartLocalization.GetText('MTitle-AvPrice',this.LanguageID)+item.AvPrice.toFixed(defaultfloatPrecision);
