@@ -7720,6 +7720,89 @@ function JSDraw(errorHandler,symbolData)
         return result;
     }
 
+    //函数:FILLRGN,根据条件用RGN颜色填充区域
+    //用法：FILLRGN(PRICE1,PRICE2,COND1,COLOR1,COND2,COLOR2...),填充PRICE1到PRICE2之间的区域，当COND1条件满足时,用COLOR1颜色，当COND2条件满足时,用COLOR2颜色，否则不填充，从COLOR1之后的参数均可以省略，最多可以有15组条件。
+    //例如：FILLRGN(CLOSE,OPEN,CLOSE>OPEN,RGB(255,0,0),CLOSE<OPEN,RGB(0,255,0))表示填充开盘价和收盘价之间的区域，阳线时用红色，阴线时用绿色，平盘不绘制。
+    this.FILLRGN2=function(args)
+    {
+        let drawData=[];
+        let result={DrawData:drawData, DrawType:'FILLRGN2'};
+        if (args.length<4) return result;
+
+
+        var price=args[0];
+        var price2=args[1];
+        var condition=[];
+        for(var i=2;i<args.length && i+1<args.length;i+=2)
+        {
+            condition.push({Cond:args[i], Color:args[i+1]});
+        }
+
+        for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+        {
+            drawData[i]=null;
+
+            var drawItem={ Value:null, Value2:null, Color:null };
+
+            for(var j in condition)
+            {
+                var item=condition[j];
+                if (Array.isArray(item.Cond))
+                {
+                    if (i<item.Cond.length && item.Cond[i])
+                    {
+                        drawItem.Color=item.Color;
+                        break;
+                    }
+                }
+                else 
+                {
+                    if (this.IsNumber(item.Cond) && item.Cond)  //单数值条件
+                    {
+                        drawItem.Color=item.Color;
+                        break;
+                    }
+                }
+            }
+
+            if (!drawItem.Color) continue;
+
+            if (Array.isArray(price))
+            {
+                if (i>=price.length) continue;
+                if (!this.IsNumber(price[i])) continue;
+                drawItem.Value=price[i];
+            }
+            else if (this.IsNumber(price))
+            {
+                drawItem.Value=price;
+            }
+            else
+            {
+                continue;
+            }
+
+            if (Array.isArray(price2))
+            {
+                if (i>=price2.length) continue;
+                if (!this.IsNumber(price2[i])) continue;
+                drawItem.Value2=price2[i];
+            }
+            else if　(this.IsNumber(price2))
+            {
+                drawItem.Value2=price2;
+            }
+            else
+            {
+                continue;
+            }
+             
+            drawData[i]=drawItem;
+        }
+
+        return result;
+    }
+
     //填充背景.
     //用法: DRAWGBK(COND,COLOR1,COLOR2,colorAngle)  colorAngle=渐近色角度
     //例如: DRAWGBK(O>C,RGB(0,255,0),RGB(255,0,0),0);
@@ -7860,7 +7943,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
     [
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
         'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',
-        'DRAWOVERLAYLINE',"FILLRGN"
+        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2"
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -12933,7 +13016,8 @@ function JSExecute(ast,option)
                 node.Out=[];
                 break;
             case "FILLRGN":
-                node.Draw=this.Draw.FILLRGN(args[0],args[1],args[2]);
+                if (args.length>=4) node.Draw=this.Draw.FILLRGN2(args);
+                else node.Draw=this.Draw.FILLRGN(args[0],args[1],args[2]);
                 node.Out=[];
                 break;
             case 'DRAWKLINE':
@@ -13907,6 +13991,18 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateFillRGN2=function(hqChart,windowIndex,varItem,id)
+    {
+        let chart=new ChartFillRGN();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.Data.Data=varItem.Draw.DrawData;
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建K线图
     this.CreateKLine=function(hqChart,windowIndex,varItem,id)
     {
@@ -14307,6 +14403,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case "FILLRGN":
                         this.CreateFillRGN(hqChart,windowIndex,item,i);
+                        break;
+                    case "FILLRGN2":
+                        this.CreateFillRGN2(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWKLINE':
                         this.CreateKLine(hqChart,windowIndex,item,i);
@@ -15540,6 +15639,52 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                                 drawData[j]=value;
                             }
                             outItem.Draw.DrawData=drawData;
+                        }
+                        break;
+                    case "PARTLINE":
+                        {
+                            var drawData=[];
+                            for(var j=0;j<aryDataIndex.length;++j)
+                            {
+                                drawData[j]={Value:null, RGB:null};
+                                var indexItem=aryDataIndex[j];
+                                var index=indexItem.Index;
+                                if (index<0) continue;
+
+                                var color=draw.Color[index];
+                                if (!IFrameSplitOperator.IsString(color)) continue;
+                                var value=draw.Price[index];
+                                if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+                                drawData[j].Value=value;
+                                drawData[j].RGB=color;
+                            }
+
+                            outItem.Draw.DrawData=drawData;
+                        }
+                        break;
+                    case "FILLRGN":
+                        {
+                            var drawData=[];
+                            for(var j=0;j<aryDataIndex.length;++j)
+                            {
+                                drawData[j]=null;
+                                var indexItem=aryDataIndex[j];
+                                var index=indexItem.Index;
+                                if (index<0) continue;
+
+                                var color=draw.Color[index];
+                                if (!IFrameSplitOperator.IsString(color)) continue;
+                                var value=draw.Price[index];
+                                if (!IFrameSplitOperator.IsNumber(value)) continue;
+                                var value2=draw.Price2[index];
+                                if (!IFrameSplitOperator.IsNumber(value2)) continue;
+
+                                drawData[j]={ Value:value, Value2:value2, Color:color };
+                            }
+
+                            outItem.Draw.DrawData=drawData;
+                            outItem.Draw.DrawType="FILLRGN2";
                         }
                         break;
                     default:

@@ -9559,7 +9559,76 @@ function ChartData()
         var result=[];
         if (date && time)
         {
+            var count=this.Data.length;         //原始K线数据
+            var indexCount=date.length;         //拟合数据
+            var firstItem=ChartData.GetKLineDataTime(this.Data[0]);
+            var indexStart=indexCount;  //拟合数据的起始位置
 
+            var indexStart=indexCount;  //拟合数据的起始位置
+            for(var i=0;i<indexCount;++i)
+            {
+                var itemDate=date[i];
+                var itemTime=time[i];
+    
+               if (itemDate>firstItem.Date || (itemDate == firstItem.Date && itemTime >= firstItem.Time))
+                {
+                    indexStart = i;
+                    break;
+                }
+            }
+
+            for(var i=0, j=indexStart; i<count; )
+            {
+                var item=this.Data[i];
+                if (j>=indexCount)
+                {
+                    var fitItem={ KDate:item.Date, KTime:item.Time, KIndex:i, Index:-1 };
+                    result[i]=fitItem;
+                    ++i;
+                    continue;
+                }
+
+                var itemDate=date[j];
+                var itemTime=time[j];
+                if (itemDate == item.Date && itemTime == item.Time)
+                {
+                    var fitItem={ KDate:item.Date, KTime:item.Time, KIndex:i, Index:j, Data:itemDate, Time:itemTime };
+                    result[i]=fitItem;
+                    ++i;
+                }
+                else
+                {
+                    if (j+1<indexCount)
+                    {
+                        var nextItemDate=date[j+1];
+                        var nextItemTime=time[j+1];
+
+                        if ( (itemDate<item.Date && nextItemDate>item.Date) || 
+                            (itemDate == item.Date && itemTime < item.Time && nextItemDate == item.Date && nextItemTime > item.Time) ||
+                            (itemDate == item.Date && itemTime < item.Time && nextItemDate > item.Date) ||
+                            (itemDate < item.Date && nextItemDate == item.Date && nextItemTime > item.Time) )
+                        {
+                            var fitItem={ KDate:item.Date, KTime:item.Time, KIndex:i, Index:j, Data:itemDate, Time:itemTime };
+                            result[i]=fitItem;
+                            ++i;
+                        }
+                        else if (nextItemDate < item.Date || (nextItemDate == item.Date && nextItemTime <= item.Time) )
+                        {
+                            ++j;
+                        }
+                        else
+                        {
+                            var fitItem={ KDate:item.Date, KTime:item.Time, KIndex:i, Index:-1 };
+                            result[i]=fitItem;
+                            ++i;
+                        }
+                    }
+                    else
+                    {
+                        ++j;
+                    }
+                }
+            }
         }
         else if (date)
         {
@@ -9572,7 +9641,7 @@ function ChartData()
             {
                 var item=date[i];
     
-               if (item>=firstItem.Date)
+                if (item>=firstItem.Date)
                 {
                     indexStart = i;
                     break;
@@ -9591,7 +9660,7 @@ function ChartData()
                 }
 
                 var destDate=date[j];
-               if (destDate == item.Date)
+                if (destDate == item.Date)
                 {
                     var fitItem={ KDate:item.Date, KIndex:i, Index:j, Data:destDate };
                     result[i]=fitItem;
@@ -14934,6 +15003,102 @@ function ChartLineArea()
 
         return range;
     }
+}
+
+// 线段围成的面积图 TODO:横屏还不支持 
+function ChartFillRGN()
+{
+    this.newMethod=ChartLineArea;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    this.IsDrawFirst = true;    //面积图在K线前面画,否则回挡住K线的
+
+    this.ClassName="ChartFillRGN";
+
+    this.Draw=function()
+    {
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var x = 0, y = 0, y2 = 0;
+        var aryPoint=[];    //点坐标
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            if (value==null || value.Value==null || value.Value2 == null || !value.Color) continue;
+
+            x=this.ChartFrame.GetXFromIndex(j);
+            y=this.ChartFrame.GetYFromData(value.Value);
+            y2 = this.ChartFrame.GetYFromData(value.Value2);
+
+            aryPoint.push({ Line:{ X:x, Y:y }, Line2:{ X:x, Y:y2 }, Color:value.Color });
+        }
+
+        var firstPoint=true;
+        var pointCount=0;
+        var aryLine2=[];
+        var color=null;
+        for(var i in aryPoint)
+        {
+            var item=aryPoint[i];
+            if (color && item.Color!=color)
+            {
+                if (pointCount>0)
+                {
+                    for(var j=aryLine2.length-1; j>=0; --j)
+                    {
+                        var item2=aryLine2[j];
+                        this.Canvas.lineTo(item2.Line2.X, item2.Line2.Y);
+                    }
+                    this.Canvas.closePath();
+                    this.Canvas.fillStyle = color;
+                    this.Canvas.fill();
+                }
+
+                firstPoint=true;
+                pointCount=0;
+                aryLine2=[];
+                color=null;
+            }
+
+            if (firstPoint)
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(item.Line.X, item.Line.Y);
+                firstPoint=false;
+                color=item.Color;
+            }
+            else
+            {
+                this.Canvas.lineTo(item.Line.X, item.Line.Y);
+            }
+
+            aryLine2.push(item);
+            ++pointCount;
+        }
+
+        if (pointCount>0)
+        {
+            for(var j=aryLine2.length-1; j>=0; --j)
+            {
+                var item2=aryLine2[j];
+                this.Canvas.lineTo(item2.Line2.X, item2.Line2.Y);
+            }
+            this.Canvas.closePath();
+            this.Canvas.fillStyle = color;
+            this.Canvas.fill();
+        }
+    }
+
 }
 
 // 通道面积图 支持横屏

@@ -13412,7 +13412,76 @@ function ChartData()
         var result=[];
         if (date && time)
         {
+            var count=this.Data.length;         //原始K线数据
+            var indexCount=date.length;         //拟合数据
+            var firstItem=ChartData.GetKLineDataTime(this.Data[0]);
+            var indexStart=indexCount;  //拟合数据的起始位置
 
+            var indexStart=indexCount;  //拟合数据的起始位置
+            for(var i=0;i<indexCount;++i)
+            {
+                var itemDate=date[i];
+                var itemTime=time[i];
+    
+               if (itemDate>firstItem.Date || (itemDate == firstItem.Date && itemTime >= firstItem.Time))
+                {
+                    indexStart = i;
+                    break;
+                }
+            }
+
+            for(var i=0, j=indexStart; i<count; )
+            {
+                var item=this.Data[i];
+                if (j>=indexCount)
+                {
+                    var fitItem={ KDate:item.Date, KTime:item.Time, KIndex:i, Index:-1 };
+                    result[i]=fitItem;
+                    ++i;
+                    continue;
+                }
+
+                var itemDate=date[j];
+                var itemTime=time[j];
+                if (itemDate == item.Date && itemTime == item.Time)
+                {
+                    var fitItem={ KDate:item.Date, KTime:item.Time, KIndex:i, Index:j, Data:itemDate, Time:itemTime };
+                    result[i]=fitItem;
+                    ++i;
+                }
+                else
+                {
+                    if (j+1<indexCount)
+                    {
+                        var nextItemDate=date[j+1];
+                        var nextItemTime=time[j+1];
+
+                        if ( (itemDate<item.Date && nextItemDate>item.Date) || 
+                            (itemDate == item.Date && itemTime < item.Time && nextItemDate == item.Date && nextItemTime > item.Time) ||
+                            (itemDate == item.Date && itemTime < item.Time && nextItemDate > item.Date) ||
+                            (itemDate < item.Date && nextItemDate == item.Date && nextItemTime > item.Time) )
+                        {
+                            var fitItem={ KDate:item.Date, KTime:item.Time, KIndex:i, Index:j, Data:itemDate, Time:itemTime };
+                            result[i]=fitItem;
+                            ++i;
+                        }
+                        else if (nextItemDate < item.Date || (nextItemDate == item.Date && nextItemTime <= item.Time) )
+                        {
+                            ++j;
+                        }
+                        else
+                        {
+                            var fitItem={ KDate:item.Date, KTime:item.Time, KIndex:i, Index:-1 };
+                            result[i]=fitItem;
+                            ++i;
+                        }
+                    }
+                    else
+                    {
+                        ++j;
+                    }
+                }
+            }
         }
         else if (date)
         {
@@ -13425,7 +13494,7 @@ function ChartData()
             {
                 var item=date[i];
     
-               if (item>=firstItem.Date)
+                if (item>=firstItem.Date)
                 {
                     indexStart = i;
                     break;
@@ -13444,7 +13513,7 @@ function ChartData()
                 }
 
                 var destDate=date[j];
-               if (destDate == item.Date)
+                if (destDate == item.Date)
                 {
                     var fitItem={ KDate:item.Date, KIndex:i, Index:j, Data:destDate };
                     result[i]=fitItem;
@@ -18787,6 +18856,102 @@ function ChartLineArea()
 
         return range;
     }
+}
+
+// 线段围成的面积图 TODO:横屏还不支持 
+function ChartFillRGN()
+{
+    this.newMethod=ChartLineArea;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    this.IsDrawFirst = true;    //面积图在K线前面画,否则回挡住K线的
+
+    this.ClassName="ChartFillRGN";
+
+    this.Draw=function()
+    {
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var x = 0, y = 0, y2 = 0;
+        var aryPoint=[];    //点坐标
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            if (value==null || value.Value==null || value.Value2 == null || !value.Color) continue;
+
+            x=this.ChartFrame.GetXFromIndex(j);
+            y=this.ChartFrame.GetYFromData(value.Value);
+            y2 = this.ChartFrame.GetYFromData(value.Value2);
+
+            aryPoint.push({ Line:{ X:x, Y:y }, Line2:{ X:x, Y:y2 }, Color:value.Color });
+        }
+
+        var firstPoint=true;
+        var pointCount=0;
+        var aryLine2=[];
+        var color=null;
+        for(var i in aryPoint)
+        {
+            var item=aryPoint[i];
+            if (color && item.Color!=color)
+            {
+                if (pointCount>0)
+                {
+                    for(var j=aryLine2.length-1; j>=0; --j)
+                    {
+                        var item2=aryLine2[j];
+                        this.Canvas.lineTo(item2.Line2.X, item2.Line2.Y);
+                    }
+                    this.Canvas.closePath();
+                    this.Canvas.fillStyle = color;
+                    this.Canvas.fill();
+                }
+
+                firstPoint=true;
+                pointCount=0;
+                aryLine2=[];
+                color=null;
+            }
+
+            if (firstPoint)
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(item.Line.X, item.Line.Y);
+                firstPoint=false;
+                color=item.Color;
+            }
+            else
+            {
+                this.Canvas.lineTo(item.Line.X, item.Line.Y);
+            }
+
+            aryLine2.push(item);
+            ++pointCount;
+        }
+
+        if (pointCount>0)
+        {
+            for(var j=aryLine2.length-1; j>=0; --j)
+            {
+                var item2=aryLine2[j];
+                this.Canvas.lineTo(item2.Line2.X, item2.Line2.Y);
+            }
+            this.Canvas.closePath();
+            this.Canvas.fillStyle = color;
+            this.Canvas.fill();
+        }
+    }
+
 }
 
 // 通道面积图 支持横屏
@@ -56028,6 +56193,89 @@ function JSDraw(errorHandler,symbolData)
         return result;
     }
 
+    //函数:FILLRGN,根据条件用RGN颜色填充区域
+    //用法：FILLRGN(PRICE1,PRICE2,COND1,COLOR1,COND2,COLOR2...),填充PRICE1到PRICE2之间的区域，当COND1条件满足时,用COLOR1颜色，当COND2条件满足时,用COLOR2颜色，否则不填充，从COLOR1之后的参数均可以省略，最多可以有15组条件。
+    //例如：FILLRGN(CLOSE,OPEN,CLOSE>OPEN,RGB(255,0,0),CLOSE<OPEN,RGB(0,255,0))表示填充开盘价和收盘价之间的区域，阳线时用红色，阴线时用绿色，平盘不绘制。
+    this.FILLRGN2=function(args)
+    {
+        let drawData=[];
+        let result={DrawData:drawData, DrawType:'FILLRGN2'};
+        if (args.length<4) return result;
+
+
+        var price=args[0];
+        var price2=args[1];
+        var condition=[];
+        for(var i=2;i<args.length && i+1<args.length;i+=2)
+        {
+            condition.push({Cond:args[i], Color:args[i+1]});
+        }
+
+        for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+        {
+            drawData[i]=null;
+
+            var drawItem={ Value:null, Value2:null, Color:null };
+
+            for(var j in condition)
+            {
+                var item=condition[j];
+                if (Array.isArray(item.Cond))
+                {
+                    if (i<item.Cond.length && item.Cond[i])
+                    {
+                        drawItem.Color=item.Color;
+                        break;
+                    }
+                }
+                else 
+                {
+                    if (this.IsNumber(item.Cond) && item.Cond)  //单数值条件
+                    {
+                        drawItem.Color=item.Color;
+                        break;
+                    }
+                }
+            }
+
+            if (!drawItem.Color) continue;
+
+            if (Array.isArray(price))
+            {
+                if (i>=price.length) continue;
+                if (!this.IsNumber(price[i])) continue;
+                drawItem.Value=price[i];
+            }
+            else if (this.IsNumber(price))
+            {
+                drawItem.Value=price;
+            }
+            else
+            {
+                continue;
+            }
+
+            if (Array.isArray(price2))
+            {
+                if (i>=price2.length) continue;
+                if (!this.IsNumber(price2[i])) continue;
+                drawItem.Value2=price2[i];
+            }
+            else if　(this.IsNumber(price2))
+            {
+                drawItem.Value2=price2;
+            }
+            else
+            {
+                continue;
+            }
+             
+            drawData[i]=drawItem;
+        }
+
+        return result;
+    }
+
     //填充背景.
     //用法: DRAWGBK(COND,COLOR1,COLOR2,colorAngle)  colorAngle=渐近色角度
     //例如: DRAWGBK(O>C,RGB(0,255,0),RGB(255,0,0),0);
@@ -56168,7 +56416,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
     [
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
         'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',
-        'DRAWOVERLAYLINE',"FILLRGN"
+        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2"
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -61241,7 +61489,8 @@ function JSExecute(ast,option)
                 node.Out=[];
                 break;
             case "FILLRGN":
-                node.Draw=this.Draw.FILLRGN(args[0],args[1],args[2]);
+                if (args.length>=4) node.Draw=this.Draw.FILLRGN2(args);
+                else node.Draw=this.Draw.FILLRGN(args[0],args[1],args[2]);
                 node.Out=[];
                 break;
             case 'DRAWKLINE':
@@ -62215,6 +62464,18 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateFillRGN2=function(hqChart,windowIndex,varItem,id)
+    {
+        let chart=new ChartFillRGN();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.Data.Data=varItem.Draw.DrawData;
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建K线图
     this.CreateKLine=function(hqChart,windowIndex,varItem,id)
     {
@@ -62615,6 +62876,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case "FILLRGN":
                         this.CreateFillRGN(hqChart,windowIndex,item,i);
+                        break;
+                    case "FILLRGN2":
+                        this.CreateFillRGN2(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWKLINE':
                         this.CreateKLine(hqChart,windowIndex,item,i);
@@ -63848,6 +64112,52 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                                 drawData[j]=value;
                             }
                             outItem.Draw.DrawData=drawData;
+                        }
+                        break;
+                    case "PARTLINE":
+                        {
+                            var drawData=[];
+                            for(var j=0;j<aryDataIndex.length;++j)
+                            {
+                                drawData[j]={Value:null, RGB:null};
+                                var indexItem=aryDataIndex[j];
+                                var index=indexItem.Index;
+                                if (index<0) continue;
+
+                                var color=draw.Color[index];
+                                if (!IFrameSplitOperator.IsString(color)) continue;
+                                var value=draw.Price[index];
+                                if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+                                drawData[j].Value=value;
+                                drawData[j].RGB=color;
+                            }
+
+                            outItem.Draw.DrawData=drawData;
+                        }
+                        break;
+                    case "FILLRGN":
+                        {
+                            var drawData=[];
+                            for(var j=0;j<aryDataIndex.length;++j)
+                            {
+                                drawData[j]=null;
+                                var indexItem=aryDataIndex[j];
+                                var index=indexItem.Index;
+                                if (index<0) continue;
+
+                                var color=draw.Color[index];
+                                if (!IFrameSplitOperator.IsString(color)) continue;
+                                var value=draw.Price[index];
+                                if (!IFrameSplitOperator.IsNumber(value)) continue;
+                                var value2=draw.Price2[index];
+                                if (!IFrameSplitOperator.IsNumber(value2)) continue;
+
+                                drawData[j]={ Value:value, Value2:value2, Color:color };
+                            }
+
+                            outItem.Draw.DrawData=drawData;
+                            outItem.Draw.DrawType="FILLRGN2";
                         }
                         break;
                     default:
