@@ -22,8 +22,8 @@
         </div>
 
         <!-- k线图 -->
-        <div class="klineWrap" id="kline" ref='divkline' v-show='KLine.IsShow'></div>
-        <div class="klineWrap" id="kline" ref='divkminute' v-show='Minute.IsShow'></div>
+        <div class="klineWrap" ref='divkline' v-show='KLine.IsShow'></div>
+        <div class="klineWrap" ref='divkminute' v-show='Minute.IsShow'></div>
 
         <!-- k线图指标 -->
         <div class="indexWrap" ref='divindex' v-show="Index.IsShow">
@@ -39,8 +39,6 @@
 
 <script>
 import HQChart from 'hqchart'
-import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
-import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
 
 import sha256 from "js-sha256"
 import moment from 'moment'
@@ -48,9 +46,86 @@ import $ from 'jquery'
 
 var JSCommon=HQChart.Chart;
 
-const API_KEY = 'e623cde183dd55841a2515d18488be48';
-const SECRET_KEY = '03f2cf1a6c5c426ad9957cfb8e5ceb0a';
+const API_KEY = 'cdd08f367a7d6f5d231ccf476f87f75d';
+const SECRET_KEY = '099a304283d7d0dae08b31754f2ae1e7';
 
+var index = [{  
+    ID:"61c8915d-c456-6ea8-2260-85sd3s6fg5sd",                //指标
+    Name:'顶部背离',              //指标名称
+    Description:'顶部背离',     //描述信息
+    Args: null,                 //指标参数
+    IsMainIndex: true,
+    Script:                 //指标脚本
+        "A:=MA(C,17)+ABS(MA(C,17)-REF(MA(C,17),1));\n\
+        B:=MA(C,17)+MA(C,17)-REF(MA(C,17),1);\n\
+        分水岭:=IF(MA(C,17)<B,B,MA(C,17)),COLORFF00FF,LINETHICK1;\n\
+        PMA:=分水岭;\n\
+        DD:=分水岭<REF(分水岭,1);\n\
+        操作线:=分水岭-(EMA(C,3)-分水岭),COLOR00FFFF,LINETHICK1;\n\
+        S:=(PMA>操作线);\n\
+        PM:MA(C,5),COLORYELLOW,LINETHICK2;\n\
+        IF(PM>REF(PM,1),PM,DRAWNULL),COLORRED,LINETHICK3;\n\
+        IF(PM=REF(PM,1),PM,DRAWNULL),COLORRED,LINETHICK3;\n\
+        IF(PM<REF(PM,1),PM,DRAWNULL),COLORFF9900,LINETHICK3;\n\
+        DRAWTEXT(CROSS(操作线,分水岭),操作线*1.05,'背离预警!'),COLORRED;\n\
+        DRAWICON(CROSS(操作线,分水岭),操作线*1.045,8);\n\
+        LC:=REF(C,1);\n\
+        RSI1:=SMA(MAX(C-LC,0),6,1)/SMA(ABS(C-LC),6,1)*100;\n\
+        RSI2:=SMA(MAX(C-LC,0),12,1)/SMA(ABS(C-LC),12,1)*100;\n\
+        C0:=BARSLAST(REF(CROSS(RSI2,RSI1),1));\n\
+        D0:=REF(C,C0+1)<C AND REF(RSI1,C0+1)>RSI1 AND CROSS(RSI2,RSI1);\n\
+        DRAWTEXT(D0>0,H*1.006,'R顶背离'),COLOR00FF00;\n\
+        DIF:=EMA(CLOSE,12)-EMA(CLOSE,26);\n\
+        DEA:=EMA(DIF,9);\n\
+        MACD:=(DIF-DEA)*2;\n\
+        C1:=BARSLAST(REF(CROSS(DEA,DIF),1));\n\
+        D1:=REF(C,C1+1)<C AND REF(DIF,C1+1)>DIF AND CROSS(DEA,DIF);\n\
+        DRAWTEXT(D1>0,H*1.006,'M顶背离'),COLORFFD700;\n\
+        RSV:=(C-LLV(LOW,9))/(HHV(HIGH,9)-LLV(LOW,9))*100;\n\
+        K:=SMA(RSV,3,1);\n\
+        D:=SMA(K,3,1);\n\
+        J:=3*K-2*D;\n\
+        C2:=BARSLAST(REF(CROSS(D,K),1));\n\
+        D2:=REF(C,C2+1)<C AND REF(K,C2+1)>K AND CROSS(D,K);\n\
+        DRAWTEXT(D2>0,H*1.006,'K顶背离'),COLORFF00FF;"
+},{  
+    ID:"61c8915d-c456-6ea8-2260-5sd22df5a3s1",                //指标
+    Name:'高低区间',              //指标名称
+    Description:'高低区间',     //描述信息
+    Args: null,                 //指标参数
+    Script:                 //指标脚本
+        "STICKLINE(C>0,0,20,5,0),COLOR000080;\n\
+        STICKLINE(C>0,20,50,5,0),COLOR143CDC;\n\
+        STICKLINE(C>0,50,80,5,0),COLOR228B22;\n\
+        STICKLINE(C>0,80,100,5,0),COLOR006400;\n\
+        VAR2:=(H+L+C*2)/4;\n\
+        VAR3:=EMA(VAR2,7);\n\
+        VAR4:=STD(VAR2,7);\n\
+        VAR5:=(VAR2-VAR3)*100/VAR4;\n\
+        VAR6:=EMA(VAR5,3);\n\
+        快线:(EMA(VAR6,5)+100)/2-3,COLORYELLOW,LINETHICK2 ;\n\
+        慢线:HHV(快线,3),COLORBLUE,LINETHICK2;\n\
+        STICKLINE(快线>=100,100,快线,1,0),COLOR00FFFF;\n\
+        STICKLINE(慢线<0,0,慢线,1,0),COLORFF00FF;\n\
+        0,COLORRED,LINETHICK1;\n\
+        100,COLOR00FFFF,LINETHICK1;\n\
+        STICKLINE(C>0,20,20,2,0),COLOR00FF00;\n\
+        STICKLINE(C>0,80,80,2,0),COLORFFFF00;\n\
+        STICKLINE(C>0,50,50,2,0),COLORFFFF00;\n\
+        A:=BARSCOUNT(C);\n\
+        B:=REFX(A,11);\n\
+        DRAWTEXT(B-A=10,84,'警示区'),COLORFFFFFF;\n\
+        DRAWTEXT(B-A=10,59,'强势区'),COLORFFFFFF;\n\
+        DRAWTEXT(B-A=6,46,'强弱分界线'),COLOR00FFFF;\n\
+        DRAWTEXT(B-A=10,4,'关注区'),COLORFFFFFF;\n\
+        DRAWTEXT(B-A=10,29,'弱势区'),COLORFFFFFF;\n\
+        DRAWTEXT(B-A=10,103,'分叉卖'),COLORGREEN;\n\
+        DRAWTEXT(B-A=10,-12,'合并买'),COLORRED;\n\
+        130,COLORGRAY,POINTDOT;\n\
+        -30,COLORGRAY,POINTDOT;\n\
+        50,COLORYELLOW,POINTDOT;"
+}]
+JSCommon.JSIndexScript.AddIndex(index);
 
 function DefaultData() {}
 
@@ -64,7 +139,6 @@ DefaultData.GetKlineOption = function()
         [
             { Index: "均线", Modify:false, Change:false },
             { Index: "VOL", Modify:false, Change:false },
-            { Index: "RSI", Modify:false, Change:false },
         ],
         //Symbol: '600000.sh',
         IsAutoUpdate: true,
@@ -106,7 +180,7 @@ DefaultData.GetKlineOption = function()
         //子框架设置
         Frame: 
         [
-            { SplitCount: 3, IsShowLeftText:false, Custom:[{Type:0}] },
+            { SplitCount: 3, IsShowLeftText:false, Custom:[{Type:0}] ,SplitType:1 },
             { SplitCount: 3, IsShowLeftText:false, },
             { SplitCount: 3, IsShowLeftText:false, },
         ],
@@ -144,7 +218,7 @@ DefaultData.GetKMinuteOption = function()
         {
             DragMode: 1, //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
             Right: 1, //复权 0 不复权 1 前复权 2 后复权
-            Period: 4, //周期 0 日线 1 周线 2 月线 3 年线
+            Period: 4, //周期 0 日线 1 周线 2 月线 3 年线 4 1分钟线
             MaxReqeustDataCount: 1000, //日线数据最近1000天
             MaxRequestMinuteDayCount: 15,    //分钟数据最近15天
             PageSize: 30, //一屏显示多少数据
@@ -168,7 +242,7 @@ DefaultData.GetKMinuteOption = function()
         //子框架设置
         Frame: 
         [
-            { SplitCount: 3, IsShowLeftText:false, Custom:[{Type:0}] },
+            { SplitCount: 3, IsShowLeftText:false, Custom:[{Type:0}] ,SplitType:1 },    //SplitType：0=自动分割 1=个数分割个数固定分割
             { SplitCount: 3, IsShowLeftText:false, },
             { SplitCount: 3, IsShowLeftText:false, },
         ],
@@ -202,8 +276,10 @@ DefaultData.GetIndexMenu=function() //指标菜单配置
 {
     var data=   //ID=指标ID Name=菜单显示的名字  WindowIndex=切换指标对应的窗口索引
     [
+        {Name:'顶部背离', ID:'61c8915d-c456-6ea8-2260-85sd3s6fg5sd', WindowIndex:0 },
+        {Name:'高低区间', ID:'61c8915d-c456-6ea8-2260-5sd22df5a3s1', WindowIndex:1 },
         {Name:'KDJ', ID:'KDJ', WindowIndex:1 },
-        {Name:'MACD', ID:'MACD', WindowIndex:2 },
+        {Name:'MACD', ID:'MACD', WindowIndex:1 },
         {Name:'RSI', ID:'RSI', WindowIndex:1 },
         {Name:'BOLL', ID:'BOLL', WindowIndex:0 },
         {Name:'VOL', ID:'VOL', WindowIndex:1 },
@@ -326,7 +402,7 @@ export default
             if (this.KLine.JSChart) this.KLine.JSChart.ChangeIndex(item.WindowIndex,item.ID );
         },
 
-        ChangePeriod(item)
+        ChangePeriod(item)  // 切换周期
         {
             this.Period.SelItem=item;
             if (item.Name=='分时')
@@ -394,7 +470,7 @@ export default
             switch(data.Name) 
             {
                 case 'KLineChartContainer::ReqeustHistoryMinuteData':   //分钟全量数据下载
-                    this.ReqeustHistoryMinuteData(data,callback, { PageSize:500 });
+                    this.ReqeustHistoryMinuteData(data,callback, { PageSize:100 });
                     break;
                 case 'KLineChartContainer::RequestMinuteRealtimeData':  //分钟实时数据更新
                     this.RequestMinuteRealtimeData(data,callback);
@@ -620,7 +696,7 @@ export default
                 var item=data[i];
                 var aryItem = item.split('|');
                 var date=parseInt(aryItem[0]/1000000);
-                var time=parseInt(aryItem[0]%1000000);
+                var time=parseInt(aryItem[0]%1000000/100);
                 var open = parseFloat(aryItem[1]);
                 var high = parseFloat(aryItem[2]);
                 var low = parseFloat(aryItem[3]);

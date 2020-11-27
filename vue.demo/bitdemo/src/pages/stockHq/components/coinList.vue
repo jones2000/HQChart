@@ -64,11 +64,11 @@ DefaultData.BitList=function()
         { Name:'以太币', Symbol:"ETH/BTC", FloatPrecision:8, Vol:{Text:'', Value:null}, Price:{Text:'', Value:null } },
         { Name:'莱特币', Symbol:"LTC/BTC", FloatPrecision:8, Vol:{Text:'', Value:null}, Price:{Text:'', Value:null }},
 
-        { Name:'比特币', Symbol:"BTC/KRW", FloatPrecision:0, Vol:{Text:'', Value:null}, Price:{Text:'', Value:null }},
-        { Name:'瑞波币', Symbol:"XRP/KRW", FloatPrecision:0, Vol:{Text:'', Value:null}, Price:{Text:'', Value:null }},
+        { Name:'比特币', Symbol:"BTC/USDT", FloatPrecision:0, Vol:{Text:'', Value:null}, Price:{Text:'', Value:null }},
+        { Name:'瑞波币', Symbol:"XRP/USDT", FloatPrecision:0, Vol:{Text:'', Value:null}, Price:{Text:'', Value:null }},
 
-        { Name:'TMTG', Symbol:"TMTG/KRW", FloatPrecision:2, Vol:{Text:'', Value:null}, Price:{Text:'', Value:null } },
-        { Name:'LBXC', Symbol:"LBXC/KRW", FloatPrecision:2, Vol:{Text:'', Value:null}, Price:{Text:'', Value:null } },
+        { Name:'TMTG', Symbol:"TMTG/USDT", FloatPrecision:2, Vol:{Text:'', Value:null}, Price:{Text:'', Value:null } },
+        { Name:'LBXC', Symbol:"LBXC/USDT", FloatPrecision:2, Vol:{Text:'', Value:null}, Price:{Text:'', Value:null } },
     ];
 
     return data;
@@ -103,7 +103,7 @@ export default
         LoadMarketData() 
         {
             $.ajax({
-                url: 'https://api2.coinzeus.io/ticker/publicSignV2',
+                url: 'https://bit.zealink.com/ticker/publicSignV2',
                 type: 'post',
                 success: (res) => { this.RecvMarketData(res); }
             })
@@ -128,7 +128,7 @@ export default
                 item.Price.Text=dataItem.nowPrice
 
                 item.Vol.Value=parseFloat(dataItem.tradingValue24);
-                var unit = item.Symbol.split('/')[1] === 'BTC' ? 'BTC' : '韩元';
+                var unit = item.Symbol.split('/')[1] === 'BTC' ? 'BTC' : 'USDT';
                 item.Vol.Text=numberFormat(dataItem.tradingValue24) + unit
             }  
         }
