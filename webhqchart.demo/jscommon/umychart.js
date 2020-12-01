@@ -13136,8 +13136,28 @@ function ChartStickLine()
 
     this.ClassName='ChartStickLine';    //类名
     this.Color="rgb(255,193,37)";               //线段颜色
-    this.LineWidth=2*GetDevicePixelRatio();     //线段宽度
-    this.BarType=0; //柱子类型 0=实心 1=空心
+    this.BarType=0;                     //柱子类型 0=实心 1=空心 -1=画虚线空心柱
+    this.LineDotted=[3,3];              //虚线设置
+    this.Width=0;                       //柱子宽度 0=1 3,50=k线宽度 101=K线宽度+间距宽度
+
+    this.SetEmptyBar=function()         //设置空心柱子
+    {
+        if (this.BarType!=1 && this.BarType!=-1) return false;
+
+        this.Canvas.lineWidth=GetDevicePixelRatio();
+        this.Canvas.strokeStyle=this.Color;
+        if (this.BarType==-1)   //虚线
+        {
+            this.Canvas.setLineDash(this.LineDotted);   //虚线
+        }
+
+        return true;
+    }
+
+    this.IsEmptyBar=function()
+    {
+        return (this.BarType==1 || this.BarType==-1);
+    }
 
     this.Draw=function()
     {
@@ -13153,6 +13173,7 @@ function ChartStickLine()
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetRight();
+        var zoomIndex=this.ChartFrame.ZoomIndex;
         if (isHScreen) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
         var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
@@ -13161,11 +13182,17 @@ function ChartStickLine()
         this.Canvas.save();
         var bFillBar=false;
         var bFillKLine=false;
-        if (this.LineWidth==50) //宽度==50 跟K线宽度保持一致
+
+        if(this.Width==0)
+        {
+            this.SetEmptyBar();
+        }
+        else if (this.Width==3 || this.Width==50)   //3和50 K线宽度
         {
             if (dataWidth>=4)
             {
                 bFillKLine=true; 
+                this.SetEmptyBar();
                 this.Canvas.fillStyle=this.Color; 
                 this.Canvas.strokeStyle=this.Color;
             }
@@ -13175,19 +13202,27 @@ function ChartStickLine()
                 this.Canvas.strokeStyle=this.Color;
             }  
         }
-        else if (this.LineWidth<100)
+        else if (this.Width==101)
         {
-            var LineWidth=this.LineWidth;
-            if (dataWidth<=4) LineWidth=GetDevicePixelRatio();
-            else if (dataWidth<LineWidth) LineWidth=parseInt(dataWidth);
-            this.Canvas.lineWidth=LineWidth;
+            var lineWidth=dataWidth+distanceWidth+1*GetDevicePixelRatio();
+            this.Canvas.lineWidth=lineWidth;
             this.Canvas.strokeStyle=this.Color;
+        }
+        else if (this.Width<=3)
+        {
+            var minWidth=2*GetDevicePixelRatio();
+            var barWidth=dataWidth*(this.Width/3);
+            if (barWidth<minWidth) barWidth=minWidth;
+            this.SetEmptyBar();
+            this.Canvas.fillStyle=this.Color;
+            bFillBar=true;
         }
         else
         {
-            bFillBar=true;
+            var barWidth=this.Width*GetDevicePixelRatio()+dataWidth;
+            this.SetEmptyBar();
             this.Canvas.fillStyle=this.Color;
-            var fixedWidth=2*GetDevicePixelRatio();
+            bFillBar=true;
         }
 
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
@@ -13209,31 +13244,50 @@ function ChartStickLine()
             {
                 if (isHScreen)
                 {
-                    var left=xOffset-fixedWidth;
-                    this.Canvas.fillRect(Math.min(y,y2),left,Math.abs(y-y2),dataWidth+distanceWidth+fixedWidth*2);
+                    var left=x-barWidth/2;
+                    var width=barWidth;
+                    if (this.IsEmptyBar()) //空心
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedPoint(Math.min(y,y2)),ToFixedPoint(left),ToFixedRect(Math.abs(y-y2)),ToFixedRect(width));
+                        this.Canvas.stroke();
+                    }
+                    else
+                    {
+                        this.Canvas.fillRect(ToFixedRect(Math.min(y,y2)),ToFixedRect(left),ToFixedRect(Math.abs(y-y2)),ToFixedRect(width));
+                    }
                 }
                 else
                 {
-                    var left=xOffset-fixedWidth;
-                    var barWidth=dataWidth+distanceWidth+fixedWidth*2;
-                    if (left+barWidth>chartright) barWidth=chartright-left; //不要超过右边框子
-                    this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(barWidth),ToFixedRect(Math.abs(y-y2)));
+                    var left=x-barWidth/2;
+                    var width=barWidth;
+                    if (left+width>chartright) width=chartright-left; //不要超过右边框子
+                    if (this.IsEmptyBar()) //空心
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
+                        this.Canvas.stroke();
+                    }
+                    else
+                    {
+                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
+                    }
                 }
             }
             else if (bFillKLine)
             {
-                if (this.BarType==1)    //实心
+                if (this.IsEmptyBar())    //空心
                 {
                     if (isHScreen)
                     {
                         this.Canvas.beginPath();
-                        this.Canvas.fillRect(ToFixedRect(Math.min(y,y2)),ToFixedRect(xOffset),ToFixedRect(Math.abs(y-y2)),ToFixedRect(dataWidth));
+                        this.Canvas.rect(ToFixedPoint(Math.min(y,y2)),ToFixedPoint(xOffset),ToFixedRect(Math.abs(y-y2)),ToFixedRect(dataWidth));
                         this.Canvas.stroke();
                     }
                     else
                     {
                         this.Canvas.beginPath();
-                        this.Canvas.rect(ToFixedRect(xOffset),ToFixedRect(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
+                        this.Canvas.rect(ToFixedPoint(xOffset),ToFixedPoint(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
                         this.Canvas.stroke();
                     }
                 }
@@ -14888,7 +14942,7 @@ function ChartBand()
     }
 }
 
-// 线段围成的面积图 TODO:横屏还不支持 
+// 线段围成的面积图 支持横屏
 function ChartLineArea()
 {
     this.newMethod=IChartPainting;   //派生
@@ -14898,9 +14952,12 @@ function ChartLineArea()
 
     this.ClassName="ChartLineArea";
     this.Color='rgb(56,67,99)';
+    this.IsHScreen=false;
 
     this.Draw=function()
     {
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+
         if (this.NotSupportMessage)
         {
             this.DrawNotSupportmessage();
@@ -14924,7 +14981,10 @@ function ChartLineArea()
             y=this.ChartFrame.GetYFromData(value.Value);
             y2 = this.ChartFrame.GetYFromData(value.Value2);
 
-            aryPoint[i]={ Line:{ X:x, Y:y }, Line2:{ X:x, Y:y2 }};
+            if (this.IsHScreen)
+                aryPoint[i]={ Line:{ X:y, Y:x }, Line2:{ X:y2, Y:x }};
+            else
+                aryPoint[i]={ Line:{ X:x, Y:y }, Line2:{ X:x, Y:y2 }};
         }
 
         this.Canvas.fillStyle = this.Color;
@@ -15005,44 +15065,19 @@ function ChartLineArea()
     }
 }
 
-// 线段围成的面积图 TODO:横屏还不支持 
+// 线段围成的面积图 支持横屏
 function ChartFillRGN()
 {
     this.newMethod=ChartLineArea;   //派生
     this.newMethod();
     delete this.newMethod;
     this.IsDrawFirst = true;    //面积图在K线前面画,否则回挡住K线的
+    this.IsHScreen=false;
 
     this.ClassName="ChartFillRGN";
 
-    this.Draw=function()
+    this.DrawRGB=function(aryPoint)
     {
-        if (this.NotSupportMessage)
-        {
-            this.DrawNotSupportmessage();
-            return;
-        }
-
-        if (!this.Data || !this.Data.Data) return;
-
-        var dataWidth=this.ChartFrame.DataWidth;
-        var distanceWidth=this.ChartFrame.DistanceWidth;
-        var xPointCount=this.ChartFrame.XPointCount;
-        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
-        var x = 0, y = 0, y2 = 0;
-        var aryPoint=[];    //点坐标
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
-        {
-            var value=this.Data.Data[i];
-            if (value==null || value.Value==null || value.Value2 == null || !value.Color) continue;
-
-            x=this.ChartFrame.GetXFromIndex(j);
-            y=this.ChartFrame.GetYFromData(value.Value);
-            y2 = this.ChartFrame.GetYFromData(value.Value2);
-
-            aryPoint.push({ Line:{ X:x, Y:y }, Line2:{ X:x, Y:y2 }, Color:value.Color });
-        }
-
         var firstPoint=true;
         var pointCount=0;
         var aryLine2=[];
@@ -15050,7 +15085,7 @@ function ChartFillRGN()
         for(var i in aryPoint)
         {
             var item=aryPoint[i];
-            if (color && item.Color!=color)
+            if (!item || (color && item.Color!=color) )
             {
                 if (pointCount>0)
                 {
@@ -15070,6 +15105,8 @@ function ChartFillRGN()
                 color=null;
             }
 
+            if (!item) continue;
+
             if (firstPoint)
             {
                 this.Canvas.beginPath();
@@ -15079,7 +15116,7 @@ function ChartFillRGN()
             }
             else
             {
-                this.Canvas.lineTo(item.Line.X, item.Line.Y);
+               this.Canvas.lineTo(item.Line.X, item.Line.Y);
             }
 
             aryLine2.push(item);
@@ -15099,6 +15136,220 @@ function ChartFillRGN()
         }
     }
 
+    this.Draw=function()
+    {
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var x = 0, y = 0, y2 = 0;
+        var aryPoint=[];    //点坐标
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            aryPoint[i]=null;
+            if (value==null || value.Value==null || value.Value2 == null || !value.Color) continue;
+
+            x=this.ChartFrame.GetXFromIndex(j);
+            y=this.ChartFrame.GetYFromData(value.Value);
+            y2 = this.ChartFrame.GetYFromData(value.Value2);
+
+            if (this.IsHScreen)
+                aryPoint[i]={ Line:{ X:y, Y:x }, Line2:{ X:y2, Y:x }, Color:value.Color };
+            else
+                aryPoint[i]={ Line:{ X:x, Y:y }, Line2:{ X:x, Y:y2 }, Color:value.Color };
+        }
+
+        this.DrawRGB(aryPoint);
+    }
+}
+
+//线段围城的顶部或底部面积图 TODO:支持横屏
+function ChartFillBGRGN()
+{
+    this.newMethod=ChartFillRGN;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    this.IsDrawFirst = true;    //面积图在K线前面画,否则回挡住K线的
+    this.IsHScreen=false;
+
+    this.ClassName="ChartFillBGRGN";
+
+
+    this.DrawVerticalRGN=function()
+    {
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
+
+        var y=top, y2=bottom;
+
+        var aryPoint=[];    //点坐标
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            aryPoint[i]=null;
+            if (!value || !value.Color) continue;
+
+            x=this.ChartFrame.GetXFromIndex(j);
+
+            if (this.IsHScreen)
+                aryPoint[i]={ Line:{ X:y, Y:x }, Line2:{ X:y2, Y:x }, Color:value.Color };
+            else
+                aryPoint[i]={ Line:{ X:x, Y:y }, Line2:{ X:x, Y:y2 }, Color:value.Color };
+        }
+
+        this.DrawRGB(aryPoint);
+    }
+
+    this.Draw=function()
+    {
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        if (this.Name=="FILLVERTICALRGN")
+        {
+            this.DrawVerticalRGN();
+            return;
+        }
+
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
+        var x = 0, y = 0, y2 = top;
+        if (this.Name=="FILLBOTTOMRGN")  y2=bottom;
+
+        var aryPoint=[];    //点坐标
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            aryPoint[i]=null;
+            if (value==null || value.Value==null || !value.Color) continue;
+
+            x=this.ChartFrame.GetXFromIndex(j);
+            y=this.ChartFrame.GetYFromData(value.Value);
+
+            if (this.IsHScreen)
+                aryPoint[i]={ Line:{ X:y, Y:x }, Line2:{ X:y2, Y:x }, Color:value.Color };
+            else
+                aryPoint[i]={ Line:{ X:x, Y:y }, Line2:{ X:x, Y:y2 }, Color:value.Color };
+        }
+
+        this.DrawRGB(aryPoint);
+    }
+
+    this.DrawRGB=function(aryPoint)
+    {
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var halfWidth=(distanceWidth+dataWidth)/2;
+        var firstPoint=true;
+        var pointCount=0;
+        var aryLine2=[];
+        var color=null;
+        for(var i in aryPoint)
+        {
+            var item=aryPoint[i];
+            if (!item || (color && item.Color!=color) )
+            {
+                if (pointCount>0)
+                {
+                    for(var j=aryLine2.length-1; j>=0; --j)
+                    {
+                        var item2=aryLine2[j];
+                        this.Canvas.lineTo(item2.Line2.X+halfWidth, item2.Line2.Y);
+                        this.Canvas.lineTo(item2.Line2.X-halfWidth, item2.Line2.Y);
+                    }
+                    this.Canvas.closePath();
+                    this.Canvas.fillStyle = color;
+                    this.Canvas.fill();
+                }
+
+                firstPoint=true;
+                pointCount=0;
+                aryLine2=[];
+                color=null;
+            }
+
+            if (!item) continue;
+
+            if (firstPoint)
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(item.Line.X-halfWidth, item.Line.Y);
+                this.Canvas.lineTo(item.Line.X+halfWidth, item.Line.Y);
+                firstPoint=false;
+                color=item.Color;
+            }
+            else
+            {
+                this.Canvas.lineTo(item.Line.X-halfWidth, item.Line.Y);
+                this.Canvas.lineTo(item.Line.X+halfWidth, item.Line.Y);
+            }
+
+            aryLine2.push(item);
+            ++pointCount;
+        }
+
+        if (pointCount>0)
+        {
+            for(var j=aryLine2.length-1; j>=0; --j)
+            {
+                var item2=aryLine2[j];
+                this.Canvas.lineTo(item2.Line2.X+halfWidth, item2.Line2.Y);
+                this.Canvas.lineTo(item2.Line2.X-halfWidth, item2.Line2.Y);
+            }
+            this.Canvas.closePath();
+            this.Canvas.fillStyle = color;
+            this.Canvas.fill();
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var range={};
+        range.Min=null;
+        range.Max=null;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=this.Data.Data[i];
+            if (!value || value.Value==null ) continue;
+
+            var value=value.Value;
+
+            if (range.Max==null)  range.Max = value;
+            else if (range.Max < value) range.Max = value;
+            
+            if (range.Min==null) range.Min = value;
+            else if (range.Min > value) range.Min = value; 
+        }
+
+        return range;
+    }
 }
 
 // 通道面积图 支持横屏

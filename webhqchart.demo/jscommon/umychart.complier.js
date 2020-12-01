@@ -95,7 +95,7 @@ var g_JSComplierResource=
             [42,{Symbol:'📌'}], [43,{Symbol:'💎'}], [44,{Symbol:'🥇'}],[45,{Symbol:'🥈'}],[46,{Symbol:'🥉'}],[47,{Symbol:'🏅'}]
         ]);
 
-        var icon=mapIcon.get(type);
+        var icon=mapIcon.get(id);
         return icon;
     },
 
@@ -7042,8 +7042,7 @@ function JSDraw(errorHandler,symbolData)
     {
         let drawData=[];
         let result={DrawData:drawData, DrawType:'STICKLINE',Width:width, Type:type};
-        if (result.Width<0) result.Width=50;    //<0的宽度 使用K线宽度
-        if (result.Type<0) result.Type=1;
+        if (result.Width<0) result.Width=3;    //<0的宽度 使用K线宽度
 
         if(condition.length<=0) return result;
 
@@ -7803,6 +7802,118 @@ function JSDraw(errorHandler,symbolData)
         return result;
     }
 
+    //函数:FILLTOPRGN / FILLBOTTOMRGN 根据条件填充顶部或底部区域
+    //用法 FILLTOPRGN(PRICE, COND1, COLOR, COND2, COLOR2)
+    this.FILLBGRGN=function(type,args)
+    {
+        let drawData=[];
+        let result={DrawData:drawData, DrawType:(type==1 ?'FILLTOPRGN':"FILLBOTTOMRGN")};
+        if (args.length<3) return result;
+
+        var price=args[0];
+        var condition=[];
+        for(var i=1;i<args.length && i+1<args.length;i+=2)
+        {
+            condition.push({Cond:args[i], Color:args[i+1]});
+        }
+
+        for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+        {
+            drawData[i]=null;
+            var drawItem={ Value:null, Color:null };
+
+            for(var j in condition)
+            {
+                var item=condition[j];
+                if (Array.isArray(item.Cond))
+                {
+                    if (i<item.Cond.length && item.Cond[i])
+                    {
+                        drawItem.Color=item.Color;
+                        break;
+                    }
+                }
+                else 
+                {
+                    if (this.IsNumber(item.Cond) && item.Cond)  //单数值条件
+                    {
+                        drawItem.Color=item.Color;
+                        break;
+                    }
+                }
+            }
+
+            if (!drawItem.Color) continue;
+
+            if (Array.isArray(price))
+            {
+                if (i>=price.length) continue;
+                if (!this.IsNumber(price[i])) continue;
+                drawItem.Value=price[i];
+            }
+            else if (this.IsNumber(price))
+            {
+                drawItem.Value=price;
+            }
+            else
+            {
+                continue;
+            }
+
+            drawData[i]=drawItem;
+        }
+
+        return result;
+    }
+
+    //函数:FILLVERTICALRGN 根据条件填充顶部到底部区域
+    //用法 FILLVERTICALRGN(COND1, COLOR, COND2, COLOR2)
+    this.FILLVERTICALRGN=function(args)
+    {
+        let drawData=[];
+        let result={DrawData:drawData, DrawType:"FILLVERTICALRGN"};
+        if (args.length<2) return result;
+
+        var condition=[];
+        for(var i=0;i<args.length && i+1<args.length;i+=2)
+        {
+            condition.push({Cond:args[i], Color:args[i+1]});
+        }
+
+        for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+        {
+            drawData[i]=null;
+            var drawItem={ Color:null };
+
+            for(var j in condition)
+            {
+                var item=condition[j];
+                if (Array.isArray(item.Cond))
+                {
+                    if (i<item.Cond.length && item.Cond[i])
+                    {
+                        drawItem.Color=item.Color;
+                        break;
+                    }
+                }
+                else 
+                {
+                    if (this.IsNumber(item.Cond) && item.Cond)  //单数值条件
+                    {
+                        drawItem.Color=item.Color;
+                        break;
+                    }
+                }
+            }
+
+            if (!drawItem.Color) continue;
+
+            drawData[i]=drawItem;
+        }
+
+        return result;
+    }
+
     //填充背景.
     //用法: DRAWGBK(COND,COLOR1,COLOR2,colorAngle)  colorAngle=渐近色角度
     //例如: DRAWGBK(O>C,RGB(0,255,0),RGB(255,0,0),0);
@@ -7943,7 +8054,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
     [
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
         'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',
-        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2"
+        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN"
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -13020,6 +13131,18 @@ function JSExecute(ast,option)
                 else node.Draw=this.Draw.FILLRGN(args[0],args[1],args[2]);
                 node.Out=[];
                 break;
+            case "FILLTOPRGN":
+                node.Draw=this.Draw.FILLBGRGN(1, args);
+                node.Out=[];
+                break;
+            case "FILLBOTTOMRGN":
+                node.Draw=this.Draw.FILLBGRGN(0, args);
+                node.Out=[];
+                break;
+            case "FILLVERTICALRGN":
+                node.Draw=this.Draw.FILLVERTICALRGN(args);
+                node.Out=[];
+                break;
             case 'DRAWKLINE':
                 node.Draw=this.Draw.DRAWKLINE(args[0],args[1],args[2],args[3]);
                 node.Out=[];
@@ -13781,8 +13904,8 @@ function ScriptIndex(name,script,args,option)
     {
         let bar=new ChartStickLine();
         bar.Canvas=hqChart.Canvas;
-        if (varItem.Draw.Width>0) bar.LineWidth=varItem.Draw.Width;
-        else bar.LineWidth=1;
+        if (varItem.Draw.Width>0) bar.Width=varItem.Draw.Width;
+        else bar.Width=0;
 
         bar.Name=varItem.Name;
         bar.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
@@ -13994,6 +14117,18 @@ function ScriptIndex(name,script,args,option)
     this.CreateFillRGN2=function(hqChart,windowIndex,varItem,id)
     {
         let chart=new ChartFillRGN();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.Data.Data=varItem.Draw.DrawData;
+
+        hqChart.ChartPaint.push(chart);
+    }
+
+    this.CreateFillBGRGN=function(hqChart,windowIndex,varItem,id)
+    {
+        let chart=new ChartFillBGRGN();
         chart.Canvas=hqChart.Canvas;
         chart.Name=varItem.Name;
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
@@ -14407,6 +14542,12 @@ function ScriptIndex(name,script,args,option)
                     case "FILLRGN2":
                         this.CreateFillRGN2(hqChart,windowIndex,item,i);
                         break;
+                    case "FILLTOPRGN":
+                    case "FILLBOTTOMRGN":
+                    case "FILLVERTICALRGN":
+                        this.CreateFillBGRGN(hqChart,windowIndex,item,i);
+                        break;
+                   
                     case 'DRAWKLINE':
                         this.CreateKLine(hqChart,windowIndex,item,i);
                         break;
@@ -14797,8 +14938,8 @@ function OverlayScriptIndex(name,script,args,option)
         var frame=overlayIndex.Frame;
         let chart=new ChartStickLine();
         chart.Canvas=hqChart.Canvas;
-        if (varItem.Draw.Width>0) chart.LineWidth=varItem.Draw.Width;
-        else chart.LineWidth=1;
+        if (varItem.Draw.Width>0) chart.Width=varItem.Draw.Width;
+        else chart.Width=1;
 
         chart.Name=varItem.Name;
         chart.ChartBorder=frame.Frame.ChartBorder;
@@ -15458,6 +15599,10 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     if (indexItem.Index<0) outItem.Data[j]=null;
                     else outItem.Data[j]=item.Data[indexItem.Index];
                 }
+
+                if (outItem.Name && outItem.Name.indexOf("@NODRAW@")>=0)
+                    outItem.Name=outItem.Name.replace("@NODRAW@","");
+
             }
             else if (item.Type==1)  //绘图函数
             {
@@ -15728,7 +15873,10 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                         outItem.Type=6;
                         break;
                     case "NODRAW":  //不画该线
-                        value.IsShow = false;
+                        outItem.IsShow = false;
+                        break;
+                    case "NONE_OUT_NAME":   //不显示标题
+                        outItem.NoneName=true;
                         break;
                 }
                 
