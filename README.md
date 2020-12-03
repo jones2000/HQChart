@@ -218,6 +218,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 5. [HQChart使用教程29-走势图如何对接第3方数据4-异动提示信息](https://blog.csdn.net/jones2000/article/details/100516071) <br>
 6. [HQChart使用教程29-走势图如何对接第3方数据5-指标数据](https://blog.csdn.net/jones2000/article/details/102426337) <br>
 7. [HQChart使用教程29-走势图如何对接第3方数据6-websocket分钟数据](https://blog.csdn.net/jones2000/article/details/102568258) <br>
+8. [HQChart使用教程29-走势图如何对接第3方数据7-叠加股票最新分时数据](https://blog.csdn.net/jones2000/article/details/110525351) <br>
 
 ## 第3方数据前端接入教程(K线图)
 1. [HQChart使用教程30-K线图如何对接第3方数据1](https://blog.csdn.net/jones2000/article/details/100181279) <br>
