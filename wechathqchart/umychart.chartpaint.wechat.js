@@ -291,7 +291,7 @@ function ChartKLine()
                 this.Canvas.stroke();
             }
 
-            if (this.Data.DataType == 0 && this.Data.Period === 0) //信息地雷
+            if (this.Data.DataType == 0 && ChartData.IsDayPeriod(this.Data.Period,true)) //信息地雷
             {
                 var infoItem = { X: x, Xleft: left, XRight: right, YMax: yHigh, YMin: yLow, DayData: data, Index: j };
                 this.DrawInfoDiv(infoItem);
@@ -729,7 +729,7 @@ function ChartKLine()
                 }
             }
 
-            if (this.Data.DataType == 0 && this.Data.Period === 0) //信息地雷
+            if (this.Data.DataType == 0 && ChartData.IsDayPeriod(this.Data.Period,true)) //信息地雷
             {
                 var infoItem = { X: x, Xleft: left, XRight: right, YMax: yHigh, YMin: yLow, DayData: data, Index: j };
                 this.DrawInfoDiv(infoItem);

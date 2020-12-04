@@ -7892,7 +7892,7 @@ function KLineChartContainer(uielement)
         
         var isDataTypeChange = false;
         var isDataTypeChange = false;
-        if (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_START) 
+        if (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END) 
         {
             if (this.SourceData.DataType != 0) isDataTypeChange = true;
         }
@@ -8814,29 +8814,75 @@ function KLineChartContainer(uielement)
     }
   }
 
-  //更新信息地雷
-  this.UpdataChartInfo = function () {
-    //TODO: 根据K线数据日期来做map, 不在K线上的合并到下一个k线日期里面
-    var mapInfoData = new Map();
-    for (var i in this.ChartInfo) {
-      var infoData = this.ChartInfo[i].Data;
-      for (var j in infoData) {
-        var item = infoData[j];
-        if (mapInfoData.has(item.Date.toString())) {
-          mapInfoData.get(item.Date.toString()).Data.push(item);
+    //更新信息地雷
+    this.UpdataChartInfo = function () 
+    {
+        //TODO: 根据K线数据日期来做map, 不在K线上的合并到下一个k线日期里面
+        var mapInfoData = new Map();
+        if (this.Period==0) //日线数据 根据日期
+        {
+            for (var i in this.ChartInfo) 
+            {
+                var infoData = this.ChartInfo[i].Data;
+                for (var j in infoData)
+                {
+                    var item = infoData[j];
+                    if (mapInfoData.has(item.Date.toString())) 
+                        mapInfoData.get(item.Date.toString()).Data.push(item);
+                    else 
+                        mapInfoData.set(item.Date.toString(), { Data: new Array(item) });
+                }
+            }
         }
-        else {
+        else if (ChartData.IsDayPeriod(this.Period,false))
+        {
+            mapInfoData=new Map();
+            var hisData=this.ChartPaint[0].Data;
+            if (hisData && hisData.Data && hisData.Data.length>0)
+            {
+                var fristKItem=hisData.Data[0];
+                var aryInfo=[];
+                for(var i in this.ChartInfo)
+                {
+                    var infoItem=this.ChartInfo[i];
+                    for(var j in infoItem.Data)
+                    {
+                        var item=infoItem.Data[j];
+                        if (item.Date>=fristKItem.Date) //在K线范围内的才显示
+                            aryInfo.push(item);
+                    }
+                }
+                aryInfo.sort(function(a,b) { return a.Date-b.Date });   //排序
 
-          mapInfoData.set(item.Date.toString(), { Data: new Array(item) });
+                for(var i=0;i<hisData.Data.length;)
+                {
+                    var kItem=hisData.Data[i];  //K线数据
+                    if (aryInfo.length<=0) break;
+
+                    var infoItem=aryInfo[0];
+                    if (kItem.Date<infoItem.Date) 
+                    {
+                        ++i;
+                        continue;
+                    }
+
+                    //信息地雷日期<K线上的日期 就是属于这个K线上的
+                    if (mapInfoData.has(kItem.Date.toString()))
+                        mapInfoData.get(kItem.Date.toString()).Data.push(infoItem);
+                    else
+                        mapInfoData.set(kItem.Date.toString(),{Data:new Array(infoItem)});
+
+                    aryInfo.shift();
+                    //JSConsole.Chart.Log('[KLineChartContainer::UpdataChartInfo]',item);
+                }
+            }
         }
-      }
+
+        var klinePaint = this.ChartPaint[0];
+        klinePaint.InfoData = mapInfoData;
+        var titlePaint = this.TitlePaint[0];
+        if (titlePaint) titlePaint.InfoData = mapInfoData;
     }
-
-    var klinePaint = this.ChartPaint[0];
-    klinePaint.InfoData = mapInfoData;
-    var titlePaint = this.TitlePaint[0];
-    if (titlePaint) titlePaint.InfoData = mapInfoData;
-  }
 
     //更新窗口指标
     this.UpdateWindowIndex = function (index) 

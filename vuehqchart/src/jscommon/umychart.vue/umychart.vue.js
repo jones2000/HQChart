@@ -19027,6 +19027,7 @@ function ChartFillRGN()
     }
 }
 
+//线段围城的顶部或底部面积图 TODO:支持横屏
 function ChartFillBGRGN()
 {
     this.newMethod=ChartFillRGN;   //派生
@@ -19036,7 +19037,36 @@ function ChartFillBGRGN()
     this.IsHScreen=false;
 
     this.ClassName="ChartFillBGRGN";
-    this.IsTopBG=true;
+
+
+    this.DrawVerticalRGN=function()
+    {
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
+
+        var y=top, y2=bottom;
+
+        var aryPoint=[];    //点坐标
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            aryPoint[i]=null;
+            if (!value || !value.Color) continue;
+
+            x=this.ChartFrame.GetXFromIndex(j);
+
+            if (this.IsHScreen)
+                aryPoint[i]={ Line:{ X:y, Y:x }, Line2:{ X:y2, Y:x }, Color:value.Color };
+            else
+                aryPoint[i]={ Line:{ X:x, Y:y }, Line2:{ X:x, Y:y2 }, Color:value.Color };
+        }
+
+        this.DrawRGB(aryPoint);
+    }
 
     this.Draw=function()
     {
@@ -19050,6 +19080,12 @@ function ChartFillBGRGN()
 
         if (!this.Data || !this.Data.Data) return;
 
+        if (this.Name=="FILLVERTICALRGN")
+        {
+            this.DrawVerticalRGN();
+            return;
+        }
+
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var xPointCount=this.ChartFrame.XPointCount;
@@ -19057,11 +19093,8 @@ function ChartFillBGRGN()
         var top=this.ChartBorder.GetTopEx();
         var bottom=this.ChartBorder.GetBottomEx();
         var x = 0, y = 0, y2 = top;
-        if (this.Name=="FILLBOTTOMRGN") 
-        {
-            y2=bottom;
-            this.IsTopBG=false;
-        }
+        if (this.Name=="FILLBOTTOMRGN")  y2=bottom;
+
         var aryPoint=[];    //点坐标
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
@@ -36072,7 +36105,6 @@ function KLineChartContainer(uielement,OffscreenElement)
                     }
                     else
                     {
-
                         mapInfoData.set(item.Date.toString(),{Data:new Array(item)});
                     }
                 }
@@ -36082,42 +36114,48 @@ function KLineChartContainer(uielement,OffscreenElement)
         {
             mapInfoData=new Map();
             var hisData=this.ChartPaint[0].Data;
-            //增加一个临时数据索引
-            for(var i in this.ChartInfo)
+            if (hisData && hisData.Data && hisData.Data.length>0)
             {
-                this.ChartInfo[i].TempID=this.ChartInfo[i].Data.length-1;   
-            }
-
-            for(var i=0;i<hisData.Data.length;++i)
-            {
-                var kItem=hisData.Data[i];  //K线数据
-                for(var j in this.ChartInfo)
+                var fristKItem=hisData.Data[0];
+                var aryInfo=[];
+                for(var i in this.ChartInfo)
                 {
-                    var info=this.ChartInfo[j];
-                    var infoData=info.Data;
-                    for(; info.TempID>=0; --info.TempID)    //信息地雷是倒叙排的
+                    var infoItem=this.ChartInfo[i];
+                    for(var j in infoItem.Data)
                     {
-                        var infoItem=infoData[info.TempID];
-                        if (infoItem.Date>kItem.Date) break;
-                        
-                        //信息地雷日期<K线上的日期 就是属于这个K线上的
-                        if (mapInfoData.has(kItem.Date.toString()))
-                        {
-                            mapInfoData.get(kItem.Date.toString()).Data.push(infoItem);
-                        }
-                        else
-                        {
-                            mapInfoData.set(kItem.Date.toString(),{Data:new Array(infoItem)});
-                        }
+                        var item=infoItem.Data[j];
+                        if (item.Date>=fristKItem.Date) //在K线范围内的才显示
+                            aryInfo.push(item);
                     }
                 }
-                //JSConsole.Chart.Log('[KLineChartContainer::UpdataChartInfo]',item);
-            }
+                aryInfo.sort(function(a,b) { return a.Date-b.Date });   //排序
 
-            //清空临时变量
-            for(var i in this.ChartInfo)
-            {
-                delete this.ChartInfo[i].TempID;
+                for(var i=0;i<hisData.Data.length;)
+                {
+                    var kItem=hisData.Data[i];  //K线数据
+
+                    if (aryInfo.length<=0) 
+                        break;
+
+                    var infoItem=aryInfo[0];
+                    if (kItem.Date<infoItem.Date) 
+                    {
+                        ++i;
+                        continue;
+                    }
+                    
+                    if (mapInfoData.has(kItem.Date.toString())) //信息地雷日期<K线上的日期 就是属于这个K线上的
+                    {
+                        mapInfoData.get(kItem.Date.toString()).Data.push(infoItem);
+                    }
+                    else
+                    {
+                        mapInfoData.set(kItem.Date.toString(),{Data:new Array(infoItem)});
+                    }
+
+                    aryInfo.shift();
+                    //JSConsole.Chart.Log('[KLineChartContainer::UpdataChartInfo]',item);
+                }
             }
         }
             
@@ -56557,6 +56595,54 @@ function JSDraw(errorHandler,symbolData)
         return result;
     }
 
+    //函数:FILLVERTICALRGN 根据条件填充顶部到底部区域
+    //用法 FILLVERTICALRGN(COND1, COLOR, COND2, COLOR2)
+    this.FILLVERTICALRGN=function(args)
+    {
+        let drawData=[];
+        let result={DrawData:drawData, DrawType:"FILLVERTICALRGN"};
+        if (args.length<2) return result;
+
+        var condition=[];
+        for(var i=0;i<args.length && i+1<args.length;i+=2)
+        {
+            condition.push({Cond:args[i], Color:args[i+1]});
+        }
+
+        for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+        {
+            drawData[i]=null;
+            var drawItem={ Color:null };
+
+            for(var j in condition)
+            {
+                var item=condition[j];
+                if (Array.isArray(item.Cond))
+                {
+                    if (i<item.Cond.length && item.Cond[i])
+                    {
+                        drawItem.Color=item.Color;
+                        break;
+                    }
+                }
+                else 
+                {
+                    if (this.IsNumber(item.Cond) && item.Cond)  //单数值条件
+                    {
+                        drawItem.Color=item.Color;
+                        break;
+                    }
+                }
+            }
+
+            if (!drawItem.Color) continue;
+
+            drawData[i]=drawItem;
+        }
+
+        return result;
+    }
+
     //填充背景.
     //用法: DRAWGBK(COND,COLOR1,COLOR2,colorAngle)  colorAngle=渐近色角度
     //例如: DRAWGBK(O>C,RGB(0,255,0),RGB(255,0,0),0);
@@ -56697,7 +56783,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
     [
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
         'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',
-        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN"
+        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN"
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -61782,6 +61868,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.FILLBGRGN(0, args);
                 node.Out=[];
                 break;
+            case "FILLVERTICALRGN":
+                node.Draw=this.Draw.FILLVERTICALRGN(args);
+                node.Out=[];
+                break;
             case 'DRAWKLINE':
                 node.Draw=this.Draw.DRAWKLINE(args[0],args[1],args[2],args[3]);
                 node.Out=[];
@@ -63183,8 +63273,10 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case "FILLTOPRGN":
                     case "FILLBOTTOMRGN":
+                    case "FILLVERTICALRGN":
                         this.CreateFillBGRGN(hqChart,windowIndex,item,i);
                         break;
+                   
                     case 'DRAWKLINE':
                         this.CreateKLine(hqChart,windowIndex,item,i);
                         break;

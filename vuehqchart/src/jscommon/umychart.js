@@ -32252,7 +32252,6 @@ function KLineChartContainer(uielement,OffscreenElement)
                     }
                     else
                     {
-
                         mapInfoData.set(item.Date.toString(),{Data:new Array(item)});
                     }
                 }
@@ -32262,42 +32261,48 @@ function KLineChartContainer(uielement,OffscreenElement)
         {
             mapInfoData=new Map();
             var hisData=this.ChartPaint[0].Data;
-            //增加一个临时数据索引
-            for(var i in this.ChartInfo)
+            if (hisData && hisData.Data && hisData.Data.length>0)
             {
-                this.ChartInfo[i].TempID=this.ChartInfo[i].Data.length-1;   
-            }
-
-            for(var i=0;i<hisData.Data.length;++i)
-            {
-                var kItem=hisData.Data[i];  //K线数据
-                for(var j in this.ChartInfo)
+                var fristKItem=hisData.Data[0];
+                var aryInfo=[];
+                for(var i in this.ChartInfo)
                 {
-                    var info=this.ChartInfo[j];
-                    var infoData=info.Data;
-                    for(; info.TempID>=0; --info.TempID)    //信息地雷是倒叙排的
+                    var infoItem=this.ChartInfo[i];
+                    for(var j in infoItem.Data)
                     {
-                        var infoItem=infoData[info.TempID];
-                        if (infoItem.Date>kItem.Date) break;
-                        
-                        //信息地雷日期<K线上的日期 就是属于这个K线上的
-                        if (mapInfoData.has(kItem.Date.toString()))
-                        {
-                            mapInfoData.get(kItem.Date.toString()).Data.push(infoItem);
-                        }
-                        else
-                        {
-                            mapInfoData.set(kItem.Date.toString(),{Data:new Array(infoItem)});
-                        }
+                        var item=infoItem.Data[j];
+                        if (item.Date>=fristKItem.Date) //在K线范围内的才显示
+                            aryInfo.push(item);
                     }
                 }
-                //JSConsole.Chart.Log('[KLineChartContainer::UpdataChartInfo]',item);
-            }
+                aryInfo.sort(function(a,b) { return a.Date-b.Date });   //排序
 
-            //清空临时变量
-            for(var i in this.ChartInfo)
-            {
-                delete this.ChartInfo[i].TempID;
+                for(var i=0;i<hisData.Data.length;)
+                {
+                    var kItem=hisData.Data[i];  //K线数据
+
+                    if (aryInfo.length<=0) 
+                        break;
+
+                    var infoItem=aryInfo[0];
+                    if (kItem.Date<infoItem.Date) 
+                    {
+                        ++i;
+                        continue;
+                    }
+                    
+                    if (mapInfoData.has(kItem.Date.toString())) //信息地雷日期<K线上的日期 就是属于这个K线上的
+                    {
+                        mapInfoData.get(kItem.Date.toString()).Data.push(infoItem);
+                    }
+                    else
+                    {
+                        mapInfoData.set(kItem.Date.toString(),{Data:new Array(infoItem)});
+                    }
+
+                    aryInfo.shift();
+                    //JSConsole.Chart.Log('[KLineChartContainer::UpdataChartInfo]',item);
+                }
             }
         }
             
