@@ -32824,6 +32824,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         var page=this.Page.Day;
         if (page.Enable==false || (page.Enable==true && page.Finish==true))  //分页下载 这些数据迁移到分页下载完以后下载
         {
+            this.ReqeustKLineInfoData();            //请求信息地雷
             this.RequestFlowCapitalData();          //请求流通股本数据 (主数据下载完再下载)
             this.RequestOverlayHistoryData();       //请求叠加数据 (主数据下载完再下载)
             this.CreateChartDrawPictureByStorage(); //创建画图工具
@@ -34020,7 +34021,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.AutoUpdateEvent(false,'KLineChartContainer::ChangePeriod');                //切换周期先停止更新
             this.ResetOverlaySymbolStatus();
             this.RequestHistoryData();                  //请求日线数据
-            this.ReqeustKLineInfoData();
+            //this.ReqeustKLineInfoData();
         }
         else if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period))
         {
@@ -35251,7 +35252,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (ChartData.IsDayPeriod(this.Period,true))
         {
             this.RequestHistoryData();                  //请求日线数据
-            this.ReqeustKLineInfoData();
+            //this.ReqeustKLineInfoData();
         }
         else if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period))
         {

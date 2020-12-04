@@ -7379,6 +7379,7 @@ function KLineChartContainer(uielement)
         }
 
         //请求叠加数据 (主数据下载完再下载))
+        this.ReqeustKLineInfoData();
         this.RequestOverlayHistoryData();
 
         //刷新画图
@@ -7937,7 +7938,7 @@ function KLineChartContainer(uielement)
             this.CancelAutoUpdate();                    //先停止更新
             this.AutoUpdateEvent(false);
             this.RequestHistoryData();                  //请求日线数据
-            this.ReqeustKLineInfoData();
+            //this.ReqeustKLineInfoData();
         }
         else if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period))
         {
@@ -7970,7 +7971,7 @@ function KLineChartContainer(uielement)
                 this.CancelAutoUpdate();                    //先停止更新
                 this.AutoUpdateEvent(false);
                 this.RequestHistoryData();                  //请求日线数据
-                this.ReqeustKLineInfoData();
+                //this.ReqeustKLineInfoData();
             }
             else if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period)) 
             {
@@ -8526,7 +8527,7 @@ function KLineChartContainer(uielement)
         if (ChartData.IsDayPeriod(this.Period, true)) 
         {
             this.RequestHistoryData();                  //请求日线数据
-            this.ReqeustKLineInfoData();
+            //this.ReqeustKLineInfoData();
         }
         else if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period))
         {
