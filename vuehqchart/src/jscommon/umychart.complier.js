@@ -6401,7 +6401,95 @@ function JSAlgorithm(errorHandler,symbolData)
     //用法: STRCAT('多头','开仓')将两个字符串'多头','开仓'相加成一个字符串'多头开仓'
     this.STRCAT=function(str1, str2)
     {
-        var result=str1+str2;
+        var result=[];
+        if (IFrameSplitOperator.IsString(str1) && IFrameSplitOperator.IsString(str2))
+            result=str1+str2;
+        return result;
+    }
+
+    //VARCAT(A,B):将两个字符串A,B相加成一个字符串C.
+    //用法: DRAWTEXT(CLOSE>OPEN,LOW,VARCAT('多头',VAR2STR(C,2))) 将两个字符串相加成一个字符串并按条件显示出来
+    this.VARCAT=function(data,data2)
+    {
+        var result=[];
+        if (Array.isArray(data) && Array.isArray(data2))
+        {
+            var nCount=Math.max(data.length, data2.length);
+            var strValue="";
+            for(var i=0;i<nCount;++i)
+            {
+                result[i]=null;
+                strValue="";
+                if (i<data.length)
+                {
+                    var item=data[i];
+                    if (IFrameSplitOperator.IsString(item)) 
+                        strValue+=item;
+                }
+
+                if (i<data2.length)
+                {
+                    var item=data2[i];
+                    if (IFrameSplitOperator.IsString(item)) 
+                        strValue+=item;
+                }
+
+                if (strValue!="")
+                    result[i]=strValue;
+            }
+        }
+        else if (IFrameSplitOperator.IsString(data) && Array.isArray(data2))
+        {
+            for(var i=0;i<data2.length;++i)
+            {
+                result[i]=null;
+                var item=data2[i];
+                if (IFrameSplitOperator.IsString(item))
+                {
+                    result[i]=data+item;
+                }
+            }            
+        }
+        else if (Array.isArray(data) && IFrameSplitOperator.IsString(data2))
+        {
+            for(var i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                var item=data[i];
+                if (IFrameSplitOperator.IsString(item))
+                {
+                    result[i]=item+data2;
+                }
+            }          
+        }
+        else if (IFrameSplitOperator.IsString(data) && IFrameSplitOperator.IsString(data2))
+        {
+            result=data+data2;
+        }
+
+        return result;
+    }
+
+    //STRSPACE(A):字符串附带一空格
+    this.STRSPACE=function(data)
+    {
+        var result=[];
+        if (Array.isArray(data))
+        {
+            for(var i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                var item=data[i];
+                if (IFrameSplitOperator.IsString(item))
+                    result[i]=item+' ';
+            }
+        }
+        else
+        {
+            if (IFrameSplitOperator.IsString(data))
+                result=data+" ";
+        }
+
         return result;
     }
 
@@ -6425,6 +6513,30 @@ function JSAlgorithm(errorHandler,symbolData)
         else
         {
             if (this.IsNumber(data)) 
+                result=data.toFixed(n);
+        }
+
+        return result;
+    }
+
+    //VAR2STR(A,N):取A的每一个值转为字符串,小数位数N.
+    //用法: VAR2STR(C,3)表示取收盘价,以3位小数转为字符串
+    this.VAR2STR=function(data,n)
+    {
+        var result=[];
+        if (Array.isArray(data))
+        {
+            for(var i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                var item=data[i];
+                if (this.IsNumber(item))
+                    result[i]=item.toFixed(n);
+            }
+        }
+        else
+        {
+            if (this.IsNumber(data))
                 result=data.toFixed(n);
         }
 
@@ -6821,6 +6933,12 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.STRCAT(args[0], args[1]);
             case 'CON2STR':
                 return this.CON2STR(args[0], args[1]);
+            case "VAR2STR":
+                return this.VAR2STR(args[0], args[1]);
+            case "VARCAT":
+                return this.VARCAT(args[0], args[1]);
+            case "STRSPACE":
+                return this.STRSPACE(args[0]);
             case 'DTPRICE':
                 return this.DTPRICE(args[0], args[1]);
             case 'ZTPRICE':
@@ -6946,26 +7064,45 @@ function JSDraw(errorHandler,symbolData)
     {
         let drawData=[];
         let result={DrawData:drawData, DrawType:'DRAWTEXT',Text:text};
-        if (condition.length<=0) return result;
 
-        var IsNumber=typeof(price)=="number";
-
-        for(var i in condition)
+        if (Array.isArray(condition))
         {
-            drawData[i]=null;
+            if (condition.length<=0) return result;
 
-            if (isNaN(condition[i]) || !condition[i]) continue;
-
-            if (IsNumber) 
+            var IsNumber=this.IsNumber(price);
+    
+            for(var i in condition)
             {
-                drawData[i]=price;
-            }
-            else 
-            {
-                if (this.IsNumber(price[i])) drawData[i]=price[i];
+                drawData[i]=null;
+    
+                if (isNaN(condition[i]) || !condition[i]) continue;
+    
+                if (IsNumber) 
+                {
+                    drawData[i]=price;
+                }
+                else 
+                {
+                    if (this.IsNumber(price[i])) drawData[i]=price[i];
+                }
             }
         }
-
+        else if (this.IsNumber(condition) && condition)
+        {
+            var IsNumber=this.IsNumber(price);
+            for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+            {
+                if (IsNumber) 
+                {
+                    drawData[i]=price;
+                }
+                else 
+                {
+                    if (this.IsNumber(price[i])) drawData[i]=price[i];
+                }
+            }
+        }
+        
         return result;
     }
 
