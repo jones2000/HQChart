@@ -236,6 +236,7 @@ function JSChart(divElement, bOffscreen)
             if (option.CorssCursorInfo.PressTime) chart.PressTime=option.CorssCursorInfo.PressTime; //长按显示十字光标的时间
             if (option.CorssCursorInfo.HPenType>0) chart.ChartCorssCursor.HPenType=option.CorssCursorInfo.HPenType;
             if (option.CorssCursorInfo.VPenType>0) chart.ChartCorssCursor.VPenType=option.CorssCursorInfo.VPenType;
+            if (option.CorssCursorInfo.DateFormatType>0) chart.ChartCorssCursor.StringFormatX.DateFormatType=option.CorssCursorInfo.DateFormatType;
         }
 
         //保存十字光标文字高度
@@ -646,8 +647,10 @@ function JSChart(divElement, bOffscreen)
 
         if(option.MinuteTitle)
         {
-            if(option.MinuteTitle.IsShowName==false) chart.TitlePaint[0].IsShowName=false;
-            if(option.MinuteTitle.IsShowDate===false || option.MinuteTitle.IsShowDate===true) chart.TitlePaint[0].IsShowDate=option.MinuteTitle.IsShowDate;
+            var item=option.MinuteTitle;
+            if(IFrameSplitOperator.IsBool(item.IsShowName)) chart.TitlePaint[0].IsShowName=item.IsShowName;
+            if(IFrameSplitOperator.IsBool(item.IsShowDate)) chart.TitlePaint[0].IsShowDate=item.IsShowDate;
+            if(IFrameSplitOperator.IsBool(item.IsShowTime)) chart.TitlePaint[0].IsShowTime=item.IsShowTime;
             //if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
         }
 
@@ -4677,6 +4680,7 @@ function AverageWidthFrame()
         var right=this.ChartBorder.GetRight();
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         //JSConsole.Chart.Log('[AverageWidthFrame.DrawVertical] bottom',bottom);
+        if (this.ChartBorder.Bottom<=5*GetDevicePixelRatio()) return;   //高度不够 不显示
 
         var xPrev=null; //上一个坐标x的值
         var textRightPrev=null; //上一次刻度输出右边x坐标
@@ -5034,6 +5038,30 @@ function MinuteFrame()
         this.DrawVertical();
 
         if (this.SizeChange==true) this.DrawToolbar();  //大小变动才画工具条
+    }
+
+    //画边框
+    this.SuperDrawBorder=this.DrawBorder;
+    this.DrawBorder=function()
+    {
+        if (!this.IsShowBorder) return;
+        this.SuperDrawBorder();
+
+        if (this.Identify==1)   //走势图和成交量中间用粗线分割开
+        {
+            var left=ToFixedPoint(this.ChartBorder.GetLeft());
+            var top=ToFixedPoint(this.ChartBorder.GetTop());
+            var right=ToFixedPoint(this.ChartBorder.GetRight());
+    
+            this.Canvas.strokeStyle=this.PenBorder;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(left,top);
+            this.Canvas.lineTo(right,top);
+            this.Canvas.save();
+            this.Canvas.lineWidth=2 * GetDevicePixelRatio();
+            this.Canvas.stroke();
+            this.Canvas.restore();
+        }
     }
 
     this.DrawToolbar=function()
@@ -5578,7 +5606,7 @@ function KLineFrame()
 
     this.DrawToolbar=function()
     {
-        if (!$) return;
+        if (typeof($)=="undefined") return;
         
         if (!this.ChartBorder.UIElement) return;
 
@@ -19611,7 +19639,7 @@ IFrameSplitOperator.NumberToString=function(value)
     return value.toString();
 }
 
-IFrameSplitOperator.FormatDateString=function(value,format)
+IFrameSplitOperator.FormatDateString=function(value,format, languageID)
 {
     var year=parseInt(value/10000);
     var month=parseInt(value/100)%100;
@@ -19621,6 +19649,14 @@ IFrameSplitOperator.FormatDateString=function(value,format)
     {
         case 'MM-DD':
             return IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
+        case "YYYY/MM/DD":
+            return year.toString() + '/' + IFrameSplitOperator.NumberToString(month) + '/' + IFrameSplitOperator.NumberToString(day);
+        case "YYYY/MM/DD/W":
+            {
+                var date=new Date(year,month-1,day);
+                var week=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],languageID);
+                return year.toString() + '/' + IFrameSplitOperator.NumberToString(month) + '/' + IFrameSplitOperator.NumberToString(day)+"/"+ week.toString();
+            }
         default:
             return year.toString() + '-' + IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
     }
@@ -19684,25 +19720,33 @@ IFrameSplitOperator.FormatReportDateString=function(value)
     return year.toString()+ monthText;
 }
 
-IFrameSplitOperator.FormatDateTimeString=function(value,isShowDate)
+IFrameSplitOperator.FormatDateTimeString=function(value,isShowDate,isShowTime)
 {
     var aryValue=value.split(' ');
     if (aryValue.length<2) return "";
-    var time=parseInt(aryValue[1]);
-    var minute=time%100;
-    var hour=parseInt(time/100);
-    var text=(hour<10? ('0'+hour.toString()):hour.toString()) + ':' + (minute<10?('0'+minute.toString()):minute.toString());
+    var result="";
 
-    if (isShowDate==true)
+    if (isShowDate)
     {
         var date=parseInt(aryValue[0]);
         var year=parseInt(date/10000);
         var month=parseInt(date%10000/100);
         var day=date%100;
-        text=year.toString() +'-'+ (month<10? ('0'+month.toString()) :month.toString()) +'-'+ (day<10? ('0'+day.toString()):day.toString()) +" " +text;
+        var text=year.toString() +'-'+ (month<10? ('0'+month.toString()) :month.toString()) +'-'+ (day<10? ('0'+day.toString()):day.toString());
+        result+=text;
     }
 
-    return text;
+    if (isShowTime)
+    {
+        var time=parseInt(aryValue[1]);
+        var minute=time%100;
+        var hour=parseInt(time/100);
+        var text=(hour<10? ('0'+hour.toString()):hour.toString()) + ':' + (minute<10?('0'+minute.toString()):minute.toString());
+        if (result.length>0) result+=" ";
+        result+=text;
+    }
+    
+    return result;
 }
 
 //字段颜色格式化
@@ -21792,6 +21836,9 @@ function HQDateStringFormat()
     this.newMethod();
     delete this.newMethod;
 
+    this.DateFormatType=0;  //0=YYYY-MM-DD 1=YYYY/MM/DD  2=YYYY/MM/DD/W
+    this.LanguageID=0;
+
     this.Operator=function()
     {
         if (!IFrameSplitOperator.IsNumber(this.Value)) return false;
@@ -21801,7 +21848,10 @@ function HQDateStringFormat()
         index=parseInt(index.toFixed(0));
         if (this.Data.DataOffset+index>=this.Data.Data.length) return false;
         var currentData = this.Data.Data[this.Data.DataOffset+index];
-        this.Text=IFrameSplitOperator.FormatDateString(currentData.Date);
+        var dateFormatString="YYYY-MM-DD";
+        if (this.DateFormatType==1) dateFormatString="YYYY/MM/DD";
+        else if (this.DateFormatType==2) dateFormatString="YYYY/MM/DD/W";
+        this.Text=IFrameSplitOperator.FormatDateString(currentData.Date, dateFormatString,this.LanguageID);
         if (ChartData.IsMinutePeriod(this.Data.Period,true) ) // 分钟周期
         {
             var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
@@ -22524,6 +22574,7 @@ function DynamicMinuteTitlePainting()
     this.SpaceWidth=1*GetDevicePixelRatio();
     this.YClose;
     this.IsShowDate=false;  //标题是否显示日期
+    this.IsShowTime=true;   //标题是否显示时间
     this.IsShowName=true;   //标题是否显示股票名字
     this.IsShowAveragePrice=true;   //是否显示均线价格
     this.OverlayChartPaint; //叠加画法
@@ -22581,9 +22632,12 @@ function DynamicMinuteTitlePainting()
             if (!this.DrawText(this.Name,this.NameColor,position)) return;
         }
 
-        var text=IFrameSplitOperator.FormatDateTimeString(item.DateTime,this.IsShowDate);
-        if (!this.DrawText(text,this.DateTimeColor,position)) return;
-
+        if (this.IsShowDate || this.IsShowTime)
+        {
+            var text=IFrameSplitOperator.FormatDateTimeString(item.DateTime,this.IsShowDate, this.IsShowTime);
+            if (!this.DrawText(text,this.DateTimeColor,position)) return;
+        }
+        
         var close=item.Close;
         var increase=item.Increase;
         var vol=item.Vol;
@@ -28405,6 +28459,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.ChartCorssCursor=new ChartCorssCursor();
         this.ChartCorssCursor.Canvas=this.Canvas;
         this.ChartCorssCursor.StringFormatX=g_DivTooltipDataForamt.Create("CorssCursor_XStringFormat");
+        this.ChartCorssCursor.StringFormatX.LanguageID=this.LanguageID;
         this.ChartCorssCursor.StringFormatY=g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
         this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
         this.ChartCorssCursor.StringFormatY.ExtendChartPaint=this.ExtendChartPaint;

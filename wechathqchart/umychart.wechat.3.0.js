@@ -12276,7 +12276,7 @@ function ScriptIndex(name, script, args, option)
     {
         let chartText = new ChartSingleText();
         chartText.Canvas = hqChart.Canvas;
-        chartText.TextAlign='center';
+        chartText.TextAlign='left';
 
         chartText.Name = varItem.Name;
         chartText.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;

@@ -15773,6 +15773,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     case "DRAWTEXT":
                         {
                             var drawData=[];
+                            var aryText=[];
                             for(var j=0;j<aryDataIndex.length;++j)
                             {
                                 drawData[j]=null;
@@ -15781,13 +15782,22 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                                 if (index<0) continue;
                                 
                                 var price=draw.Price[index];
-                                if ( !IFrameSplitOperator.IsNumber(price)) continue;
+                                if ( IFrameSplitOperator.IsNumber(price))
+                                {
+                                    drawData[j]=price;
+                                }
 
-                                drawData[j]=price;
+                                if (Array.isArray(draw.Text))    //字符串数组
+                                {
+                                    var item=draw.Text[index];
+                                    if (IFrameSplitOperator.IsString(item)) aryText[j]=item;
+                                }
                             }
 
+                            if (Array.isArray(draw.Text))  outItem.Draw.Text=aryText;
+                            else outItem.Draw.Text=draw.Text;
+
                             outItem.Draw.DrawData=drawData;
-                            outItem.Draw.Text=draw.Text;
                         }
                         break;
                     case "DRAWNUMBER":
