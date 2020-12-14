@@ -4089,6 +4089,7 @@ function JSChart(divElement, bOffscreen)
                 if (item.IsYReverse==true) chart.Frame.SubFrame[0].Frame.CoordinateType=1;  //反转坐标
 
                 if (item.DefaultYMaxMin) chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultYMaxMin=item.DefaultYMaxMin;
+                if (IFrameSplitOperator.IsBool(item.EnableRemoveZero)) chart.Frame.SubFrame[i].Frame.YSplitOperator.EnableRemoveZero=item.EnableRemoveZero;
             }
         }
 
@@ -24014,6 +24015,7 @@ function FrameSplitY()
     this.SplitType=0;       //0=自动分割  1=固定分割
     this.Custom=[];         //[{Type:0}]; 定制刻度
     this.DefaultYMaxMin;    //{ Max:null, Min:null };    //指定最大,最小, Y轴范围必须比最大值大， 比最小值小
+    this.EnableRemoveZero=true;
 
     this.GetFloatPrecision=function(value,floatPrecision)
     {
@@ -24141,7 +24143,7 @@ function FrameSplitY()
 
         this.CustomCoordinate();
         if (this.SplitType!=1) this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo,(splitData.Max>0 && splitData.Min<0));
-        this.RemoveZero(this.Frame.HorizontalInfo);
+        if (this.EnableRemoveZero) this.RemoveZero(this.Frame.HorizontalInfo);
         this.Frame.HorizontalMax=splitData.Max;
         this.Frame.HorizontalMin=splitData.Min;
 
@@ -30189,7 +30191,7 @@ function SplitData()
         [4,		5,		0.5,	0.05],
         [5,		10,		0.5,	0.05],
 
-        [10,		12,		10,	2],
+        [10,		20,		10,	2],
         [20,		40,		20,	5],
         [40,		50,		40,	2],
         [50,		100,	50,	10],
