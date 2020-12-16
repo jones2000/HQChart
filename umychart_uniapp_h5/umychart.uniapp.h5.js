@@ -4090,6 +4090,7 @@ function JSChart(divElement, bOffscreen)
 
                 if (item.DefaultYMaxMin) chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultYMaxMin=item.DefaultYMaxMin;
                 if (IFrameSplitOperator.IsBool(item.EnableRemoveZero)) chart.Frame.SubFrame[i].Frame.YSplitOperator.EnableRemoveZero=item.EnableRemoveZero;
+                if (IFrameSplitOperator.IsPlusNumber(item.MinYDistance)) chart.Frame.SubFrame[i].Frame.MinYDistance=item.MinYDistance;
             }
         }
 
@@ -8216,7 +8217,7 @@ function AverageWidthFrame()
     this.DataWidth=50*GetDevicePixelRatio();
     this.DistanceWidth=10*GetDevicePixelRatio();
     this.MinXDistance = 30*GetDevicePixelRatio();       //X轴刻度最小间距
-    this.MinYDistance=10*GetDevicePixelRatio();         //Y轴刻度最小间距
+    this.MinYDistance=12*GetDevicePixelRatio();         //Y轴刻度最小间距
     this.CoordinateType=0;  //坐标类型 0=普通坐标 1=反转坐标
     this.IsShowYText=[true,true];       //是否显示Y轴坐标坐标 [0=左侧] [1=右侧]
     this.XBottomOffset=g_JSChartResource.Frame.XBottomOffset;   //X轴文字显示向下偏移
