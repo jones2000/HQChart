@@ -8,6 +8,26 @@ import HQChartPy2
 import platform
 
 
+
+##############################################################
+#   周期
+#
+#
+#################################################################
+class PERIOD_ID:
+    DAY_ID=0
+    WEEK_ID=1
+    MONTH_ID=2
+    YEAR_ID=3
+    QUARTER_ID=9
+    TWO_WEEK_ID=21
+    MIN1_ID=4
+    MIN5_ID=5
+    MIN15_ID=6
+    MIN30_ID=7
+    MIN60_ID=8
+    TICK_ID=10	#分笔
+
 ############################################################################################
 # IHQData 数据接口类
 #
@@ -18,6 +38,9 @@ class IHQData(object):
 
     # K线数据
     def GetKLineData(self, symbol, period, right, jobID):
+        pass
+
+    def GetKLineData2(self, symbol,kdataInfo, jobID):
         pass
 
     # FINANCE()  财务数据 数组
@@ -48,6 +71,9 @@ class IHQData(object):
         else :
             return False
 
+    def GetDataByNumbers(self, symbol,funcName,args, period,right,kcount, jobID):
+        pass
+
     def GetDataByName(self, symbol,funcName,period,right,kcount, jobID) :
         if (funcName==u"CAPITAL"):
             return self.GetCapital(symbol,period,right,kcount, jobID)
@@ -75,7 +101,7 @@ class FastHQChart :
         authorize=HQChartPy2.GetAuthorizeInfo()
 
         print("*******************************************************************************************")
-        print("*  欢迎使用HQChart c++ 技术指标计算引擎")
+        print("*  欢迎使用HQChart.Py C++ 技术指标计算引擎")
         log="*  版本号:{0}.{1}".format(int(dllVersion/100000), (dllVersion%100000))
         print(log)
         log="*  授权信息:{0}".format(authorize)
@@ -89,9 +115,12 @@ class FastHQChart :
     def Run(jsonConfig, hqData, proSuccess=None,procFailed=None):
         callbackConfig={};
         callbackConfig['GetKLineData']=hqData.GetKLineData
+        callbackConfig['GetKLineData2']=hqData.GetKLineData2
         callbackConfig['GetDataByNumber']=hqData.GetDataByNumber
+        callbackConfig['GetDataByNumbers']=hqData.GetDataByNumbers
         callbackConfig['GetDataByName']=hqData.GetDataByName
         callbackConfig['GetDataByString']=hqData.GetDataByString
+        
 
         # 计算结果返回
         if (proSuccess) :
@@ -100,23 +129,6 @@ class FastHQChart :
             callbackConfig['Failed']=procFailed
 
         bResult=HQChartPy2.Run(jsonConfig,callbackConfig)
-        return bResult
-
-    @staticmethod
-    def Run2(jsonConfig, hqData, proSuccess=None,procFailed=None):
-        callbackConfig={};
-        callbackConfig['GetKLineData']=hqData.GetKLineData
-        callbackConfig['GetDataByNumber']=hqData.GetDataByNumber
-        callbackConfig['GetDataByName']=hqData.GetDataByName
-        callbackConfig['GetDataByString']=hqData.GetDataByString
-
-        # 计算结果返回
-        if (proSuccess) :
-            callbackConfig['Success']=proSuccess
-        if (procFailed) :
-            callbackConfig['Failed']=procFailed
-
-        bResult=HQChartPy2.Run2(jsonConfig,callbackConfig)
         return bResult
 
     @staticmethod
