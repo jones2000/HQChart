@@ -8551,8 +8551,9 @@ function ChartData()
 
             for(; index>=0; --index)
             {
-                if(yClose!=this.Data[index].Close)
-                    seed *= yClose/this.Data[index].Close;
+                var value=this.Data[index].Close;
+                if(yClose!=value && value!=0)
+                    seed *= yClose/value;
 
                 result[index]=HistoryData.CopyRight(this.Data[index],seed);
 
@@ -8967,6 +8968,92 @@ function ChartData()
             }
             result[i]=item;
 
+            ++i;
+        }
+
+        return result;
+    }
+
+    //日线拟合交易数据, 不做平滑处理
+    this.GetFittingTradeData=function(tradeData, nullValue)
+    {
+        var result=[];
+
+        for(var i=0,j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+
+            if (j+1<tradeData.length)
+            {
+                if (tradeData[j].Date<date && tradeData[j+1].Date<=date)
+                {
+                    ++j;
+                    continue;
+                }
+            }
+
+            var item=new SingleData();
+            item.Date=date;
+            item.Value=nullValue;
+            item.FinanceDate=null;
+            if (j<tradeData.length)
+            {
+                var tradeItem=tradeData[j];
+                if (this.Period==0) //日线完全匹配
+                {
+                    if (tradeItem.Date==item.Date)
+                    {
+                        item.Value=tradeItem.Value;
+                        item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                    }
+                }
+                else    //其他日线周期
+                {
+                    item.Value=tradeItem.Value;
+                    item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                }
+            }
+           
+            result[i]=item;
+            ++i;
+        }
+
+        return result;
+    }
+
+    this.GetMinuteFittingTradeData=function(tradeData, nullValue)
+    {
+        var result=[];
+        for(var i=0,j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+            var time=this.Data[i].Time;
+
+            if (j+1<tradeData.length)
+            {
+                if (tradeData[j].Date<date && tradeData[j+1].Date<=date)
+                {
+                    ++j;
+                    continue;
+                }
+            }
+
+            var item=new SingleData();
+            item.Date=date;
+            item.FinanceDate=null;
+            item.Time=time;
+            item.Value=nullValue;
+            if (j<tradeData.length)
+            {
+                var tradeItem=tradeData[j];
+                if (tradeItem.Date==item.Date)  //完全匹配
+                {
+                    item.Value=tradeItem.Value;
+                    item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                }
+            }
+
+            result[i]=item;
             ++i;
         }
 
@@ -15201,6 +15288,206 @@ function ChartFillRGN()
         }
 
         this.DrawRGB(aryPoint);
+    }
+}
+
+function ChartFLOATRGN()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    this.IsDrawFirst = false;    //面积图在K线前面画,否则回挡住K线的
+
+    this.ClassName="ChartFLOATRGN";
+    this.Color='rgb(56,67,99)';
+    this.IsHScreen=false;
+
+    this.Draw=function()
+    {
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+
+        var x = 0, y = 0, y2 = 0;
+        var aryPoint=[];    //点坐标
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var item=this.Data.Data[i];
+            aryPoint[i]=null;
+            if (!item || !IFrameSplitOperator.IsNumber(item.Value)|| !IFrameSplitOperator.IsNumber(item.Value2) || !item.Color) continue;
+
+            x=this.ChartFrame.GetXFromIndex(j);
+            y=this.ChartFrame.GetYFromData(item.Value);
+
+            if (this.IsHScreen)
+                aryPoint[i]={ Line:{ X:y, Y:x }, Line2:{ X:y2, Y:x }, Color:item.Color };
+            else
+                aryPoint[i]={ Line:{ X:x, Y:y }, Line2:{ X:x, Y:y-item.Value2*GetDevicePixelRatio() }, Color:item.Color };
+        }
+
+        //计算左右位置的点
+        var preItem=null;
+        for(var i in aryPoint)
+        {
+            var item=aryPoint[i];
+            if (preItem && item)
+            {
+                var xWidth=(item.Line.X-preItem.Line.X);
+                x=preItem.Line.X+xWidth/2;
+                y=preItem.Line.Y+(item.Line.Y-preItem.Line.Y)/2;
+                y2=preItem.Line2.Y+(item.Line2.Y-preItem.Line2.Y)/2;
+                preItem.RightLine={X:x, Y:y};
+                preItem.RightLine2={X:x, Y:y2};
+                item.LeftLine={X:x, Y:y};
+                item.LeftLine2={X:x, Y:y2};
+            }
+
+            preItem=item;  //上一个点
+        }
+
+        this.DrawRGB(aryPoint);
+    }
+
+    this.DrawRGB=function(aryPoint)
+    {
+        var firstPoint=true;
+        var pointCount=0;
+        var aryLine2=[];
+        var color=null;
+
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
+
+        this.Canvas.save();
+        this.Canvas.beginPath();
+        this.Canvas.rect(left,top,(right-left),(bottom-top));
+        this.Canvas.clip();
+
+        for(var i in aryPoint)
+        {
+            var item=aryPoint[i];
+            if (!item || (color && item.Color!=color) )
+            {
+                if (pointCount>0)
+                {
+                    var lastItem=aryLine2[aryLine2.length-1];
+                    var firstItem=aryLine2[0];
+                    if (lastItem.RightLine)
+                    {
+                        this.Canvas.lineTo(lastItem.RightLine.X, lastItem.RightLine.Y);
+                        this.Canvas.lineTo(lastItem.RightLine2.X, lastItem.RightLine2.Y);
+                    }
+
+                    for(var j=aryLine2.length-1; j>=0; --j)
+                    {
+                        var item2=aryLine2[j];
+                        this.Canvas.lineTo(item2.Line2.X, item2.Line2.Y);
+                    }
+
+                    if (firstItem.LeftLine2)
+                    {
+                        this.Canvas.lineTo(firstItem.LeftLine2.X, firstItem.LeftLine2.Y);
+                    }
+                    
+                    this.Canvas.closePath();
+                    this.Canvas.fillStyle = color;
+                    this.Canvas.fill();
+                }
+
+                firstPoint=true;
+                pointCount=0;
+                aryLine2=[];
+                color=null;
+            }
+
+            if (!item) continue;
+
+            if (firstPoint)
+            {
+                this.Canvas.beginPath();
+                if (item.LeftLine)
+                {
+                    this.Canvas.moveTo(item.LeftLine.X, item.LeftLine.Y);
+                    this.Canvas.lineTo(item.Line.X, item.Line.Y);
+                }
+                else 
+                {
+                    this.Canvas.moveTo(item.Line.X, item.Line.Y);
+                }
+                firstPoint=false;
+                color=item.Color;
+            }
+            else
+            {
+                this.Canvas.lineTo(item.Line.X, item.Line.Y);
+            }
+
+            aryLine2.push(item);
+            ++pointCount;
+        }
+
+        if (pointCount>0)
+        {
+            var lastItem=aryLine2[aryLine2.length-1];
+            var firstItem=aryLine2[0];
+            if (lastItem.RightLine)
+            {
+                this.Canvas.lineTo(lastItem.RightLine.X, lastItem.RightLine.Y);
+                this.Canvas.lineTo(lastItem.RightLine2.X, lastItem.RightLine2.Y);
+            }
+
+            for(var j=aryLine2.length-1; j>=0; --j)
+            {
+                var item2=aryLine2[j];
+                this.Canvas.lineTo(item2.Line2.X, item2.Line2.Y);
+            }
+
+            if (firstItem.LeftLine2)
+            {
+                this.Canvas.lineTo(firstItem.LeftLine2.X, firstItem.LeftLine2.Y);
+            }
+            
+            this.Canvas.closePath();
+            this.Canvas.fillStyle = color;
+            this.Canvas.fill();
+        }
+
+        this.Canvas.restore();
+    }
+
+    this.GetMaxMin=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var range={};
+        range.Min=null;
+        range.Max=null;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var item=this.Data.Data[i];
+            if (!item || !IFrameSplitOperator.IsNumber(item.Value)) continue;
+            var value=item.Value;
+            
+            if (range.Max==null) range.Max = value;
+            else if (range.Max < value) range.Max = value;
+            
+            if (range.Min==null) range.Min = value;
+            else if (range.Min > value) range.Min = value; 
+        }
+
+        return range;
     }
 }
 
