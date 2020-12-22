@@ -15,6 +15,7 @@ var MARKET_SUFFIX_NAME=
 {
     SH:'.SH',
     SZ:'.SZ',
+    SHSZ_C_Index:'.CI',     //自定义指数
     SHO:'.SHO',          //上海交易所 股票期权
     HK:'.HK',
     FHK: '.FHK',         //港股期货 
@@ -120,6 +121,14 @@ var MARKET_SUFFIX_NAME=
         return find == pos;
     },
 
+    //自定义指数
+    IsSHSZCustomIndex:function(upperSymbol)
+    {
+        var pos = upperSymbol.length - this.SHSZ_C_Index.length;
+        var find = upperSymbol.indexOf(this.SHSZ_C_Index);
+        return find == pos;
+    },
+
     IsSHO: function (upperSymbol) 
     {
         var pos = upperSymbol.length - this.SHO.length;
@@ -174,7 +183,7 @@ var MARKET_SUFFIX_NAME=
 
     IsSHSZ: function (upperSymbol)            //是否是沪深的股票
     {
-        return this.IsSZ(upperSymbol) || this.IsSH(upperSymbol);
+        return this.IsSZ(upperSymbol) || this.IsSH(upperSymbol) || this.IsSHSZCustomIndex(upperSymbol);
     },
 
     IsSHSZFund: function (upperSymbol)        //是否是交易所基金
@@ -209,7 +218,7 @@ var MARKET_SUFFIX_NAME=
         {
             if (upperSymbol.charAt(0) == '3' && upperSymbol.charAt(1) == '9') return true;
         }
-        else if (upperSymbol.indexOf('.CI') > 0)  //自定义指数
+        else if (this.IsSHSZCustomIndex(upperSymbol))  //自定义指数
         {
             return true;
         }
@@ -542,7 +551,7 @@ function MinuteTimeStringData()
         if (!symbol) return this.SHSZ;
 
         var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
-        if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) return this.GetSHSZ();
+        if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol) || MARKET_SUFFIX_NAME.IsSHSZIndex(upperSymbol)) return this.GetSHSZ();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK();
         if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
         {

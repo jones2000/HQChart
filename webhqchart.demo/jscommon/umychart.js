@@ -2966,7 +2966,7 @@ function JSChartContainer(uielement, OffscreenElement)
     this.IsKLineContainer=function()
     {
         if (this.ClassName=='KLineChartContainer' || this.ClassName=='KLineChartHScreenContainer' ||
-            this.ClassName=="KLineTrainChartContainer") return true;
+            this.ClassName=="KLineTrainChartContainer" || this.ClassName=="CustomKLineChartContainer" ) return true;
 
         return false;
     }
@@ -15291,6 +15291,9 @@ function ChartFillRGN()
     }
 }
 
+//支持横屏
+//用法:FLOATRGN(PRICE,WIDTH,COND1,COLOR1,COND2,COLOR2...),以PRICE为基础填充宽度为WIDTH像素的区域,WIDTH为负则向下填充,当COND1条件满足时,用COLOR1颜色,当COND2条件满足时,用COLOR2颜色,否则不填充,从COND1之后的参数均可以省略,最多可以有10组条件
+//例如:FLOATRGN(CLOSE,VOL/HHV(VOL,10)*15,CLOSE>OPEN,RGB(255,0,0),1,RGB(0,255,0)) 表示沿收盘价填充宽度为成交量的区域,区域最大宽度为15像素,阳线时用红色,阴线时用绿色。
 function ChartFLOATRGN()
 {
     this.newMethod=IChartPainting;   //派生
@@ -15331,7 +15334,7 @@ function ChartFLOATRGN()
             y=this.ChartFrame.GetYFromData(item.Value);
 
             if (this.IsHScreen)
-                aryPoint[i]={ Line:{ X:y, Y:x }, Line2:{ X:y2, Y:x }, Color:item.Color };
+                aryPoint[i]={ Line:{ X:y, Y:x }, Line2:{ X:y+item.Value2*GetDevicePixelRatio(), Y:x }, Color:item.Color };
             else
                 aryPoint[i]={ Line:{ X:x, Y:y }, Line2:{ X:x, Y:y-item.Value2*GetDevicePixelRatio() }, Color:item.Color };
         }
@@ -15343,14 +15346,29 @@ function ChartFLOATRGN()
             var item=aryPoint[i];
             if (preItem && item)
             {
-                var xWidth=(item.Line.X-preItem.Line.X);
-                x=preItem.Line.X+xWidth/2;
-                y=preItem.Line.Y+(item.Line.Y-preItem.Line.Y)/2;
-                y2=preItem.Line2.Y+(item.Line2.Y-preItem.Line2.Y)/2;
-                preItem.RightLine={X:x, Y:y};
-                preItem.RightLine2={X:x, Y:y2};
-                item.LeftLine={X:x, Y:y};
-                item.LeftLine2={X:x, Y:y2};
+                if (this.IsHScreen)
+                {
+                    var xWidth=(item.Line.Y-preItem.Line.Y);
+                    x=preItem.Line.Y+xWidth/2;
+                    y=preItem.Line.X+(item.Line.X-preItem.Line.X)/2;
+                    y2=preItem.Line2.X+(item.Line2.X-preItem.Line2.X)/2;
+
+                    preItem.RightLine={X:y, Y:x};
+                    preItem.RightLine2={X:y2, Y:x};
+                    item.LeftLine={X:y, Y:x};
+                    item.LeftLine2={X:y2, Y:x};
+                }
+                else
+                {
+                    var xWidth=(item.Line.X-preItem.Line.X);
+                    x=preItem.Line.X+xWidth/2;
+                    y=preItem.Line.Y+(item.Line.Y-preItem.Line.Y)/2;
+                    y2=preItem.Line2.Y+(item.Line2.Y-preItem.Line2.Y)/2;
+                    preItem.RightLine={X:x, Y:y};
+                    preItem.RightLine2={X:x, Y:y2};
+                    item.LeftLine={X:x, Y:y};
+                    item.LeftLine2={X:x, Y:y2};
+                }
             }
 
             preItem=item;  //上一个点
@@ -15366,10 +15384,21 @@ function ChartFLOATRGN()
         var aryLine2=[];
         var color=null;
 
-        var left=this.ChartBorder.GetLeft();
-        var right=this.ChartBorder.GetRight();
-        var top=this.ChartBorder.GetTopEx();
-        var bottom=this.ChartBorder.GetBottomEx();
+        if (this.IsHScreen)
+        {
+            var left=this.ChartBorder.GetLeftEx();
+            var right=this.ChartBorder.GetRightEx();
+            var top=this.ChartBorder.GetTop();
+            var bottom=this.ChartBorder.GetBottom();
+        }
+        else
+        {
+            var left=this.ChartBorder.GetLeft();
+            var right=this.ChartBorder.GetRight();
+            var top=this.ChartBorder.GetTopEx();
+            var bottom=this.ChartBorder.GetBottomEx();
+        }
+        
 
         this.Canvas.save();
         this.Canvas.beginPath();
@@ -42608,6 +42637,8 @@ var MARKET_SUFFIX_NAME=
 {
     SH:'.SH',
     SZ:'.SZ',
+    SHSZ_C_Index:'.CI',     //自定义指数
+
     SHO:'.SHO',          //上海交易所 股票期权
     HK:'.HK',            //港股
     FHK:'.FHK',          //港股期货            
@@ -42721,6 +42752,14 @@ var MARKET_SUFFIX_NAME=
         return find == pos;
     },
 
+    //自定义指数
+    IsSHSZCustomIndex:function(upperSymbol)
+    {
+        var pos = upperSymbol.length - this.SHSZ_C_Index.length;
+        var find = upperSymbol.indexOf(this.SHSZ_C_Index);
+        return find == pos;
+    },
+
     IsSHO: function(upperSymbol)
     {
         var pos = upperSymbol.length - this.SHO.length;
@@ -42777,7 +42816,7 @@ var MARKET_SUFFIX_NAME=
 
     IsSHSZ:function(upperSymbol)            //是否是沪深的股票
     {
-        return this.IsSZ(upperSymbol)|| this.IsSH(upperSymbol);
+        return this.IsSZ(upperSymbol)|| this.IsSH(upperSymbol) || this.IsSHSZCustomIndex(upperSymbol);
     },
 
     IsSHSZFund:function(upperSymbol)        //是否是交易所基金
@@ -42811,7 +42850,7 @@ var MARKET_SUFFIX_NAME=
         {
             if (upperSymbol.charAt(0)=='3' && upperSymbol.charAt(1)=='9') return true;
         }
-        else if (upperSymbol.indexOf('.CI')>0)  //自定义指数
+        else if (this.IsSHSZCustomIndex(upperSymbol))  //自定义指数
         {
             return true;
         }
