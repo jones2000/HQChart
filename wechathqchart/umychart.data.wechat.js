@@ -1307,6 +1307,91 @@ function ChartData()
         //console.log('[ChartData::MergeMinuteData] ', this.Data, data);
         return true;
     }
+
+    //日线拟合交易数据, 不做平滑处理
+    this.GetFittingTradeData=function(tradeData, nullValue)
+    {
+        var result=[];
+        for(var i=0,j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+
+            if (j+1<tradeData.length)
+            {
+                if (tradeData[j].Date<date && tradeData[j+1].Date<=date)
+                {
+                    ++j;
+                    continue;
+                }
+            }
+
+            var item=new SingleData();
+            item.Date=date;
+            item.Value=nullValue;
+            item.FinanceDate=null;
+            if (j<tradeData.length)
+            {
+                var tradeItem=tradeData[j];
+                if (this.Period==0) //日线完全匹配
+                {
+                    if (tradeItem.Date==item.Date)
+                    {
+                        item.Value=tradeItem.Value;
+                        item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                    }
+                }
+                else    //其他日线周期
+                {
+                    item.Value=tradeItem.Value;
+                    item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                }
+            }
+           
+            result[i]=item;
+            ++i;
+        }
+
+        return result;
+    }
+
+    this.GetMinuteFittingTradeData=function(tradeData, nullValue)
+    {
+        var result=[];
+        for(var i=0,j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+            var time=this.Data[i].Time;
+
+            if (j+1<tradeData.length)
+            {
+                if (tradeData[j].Date<date && tradeData[j+1].Date<=date)
+                {
+                    ++j;
+                    continue;
+                }
+            }
+
+            var item=new SingleData();
+            item.Date=date;
+            item.FinanceDate=null;
+            item.Time=time;
+            item.Value=nullValue;
+            if (j<tradeData.length)
+            {
+                var tradeItem=tradeData[j];
+                if (tradeItem.Date==item.Date)  //完全匹配
+                {
+                    item.Value=tradeItem.Value;
+                    item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                }
+            }
+
+            result[i]=item;
+            ++i;
+        }
+
+        return result;
+    }
 }
 
 ChartData.GetFirday=function(value)
