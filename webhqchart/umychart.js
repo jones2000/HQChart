@@ -34,9 +34,11 @@ function JSChart(divElement, bOffscreen)
     this.CanvasElement.id=Guid();
     this.CanvasElement.setAttribute("tabindex",0);
     if (this.CanvasElement.style) this.CanvasElement.style.outline='none';
-    if(!divElement.hasChildNodes("canvas")){
-        divElement.appendChild(this.CanvasElement);
+    if(divElement.hasChildNodes())
+    {
+        JSConsole.Chart.Log("[JSChart::JSChart] divElement hasChildNodes", divElement.childNodes);
     }
+    divElement.appendChild(this.CanvasElement);
 
     //离屏
     this.OffscreenCanvasElement;
@@ -1519,7 +1521,9 @@ var JSCHART_EVENT_ID=
     ON_CUSTOM_VERTICAL_DRAW:20,  //自定义X轴绘制事件
     RECV_KLINE_MANUAL_UPDATE_DATA:21,   //手动更新K线事件
     ON_ENABLE_SPLASH_DRAW:22,           //开启/关闭过场动画事件
-    ON_CLICK_CHART_PAINT:23          //点击图形
+    ON_CLICK_CHART_PAINT:23,             //点击图形
+
+    ON_DRAW_MINUTE_LAST_POINT:24        //分时图绘制回调事件, 返回最后一个点的坐标
 }
 
 var JSCHART_OPERATOR_ID=
@@ -14055,6 +14059,7 @@ function ChartMinutePriceLine()
 
         var bFirstPoint=true;
         var ptFirst={}; //第1个点
+        var ptLast={};  //最后一个点
         var drawCount=0;
         for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
         {
@@ -14088,6 +14093,10 @@ function ChartMinutePriceLine()
                 if (isHScreen) this.Canvas.lineTo(y,x);
                 else this.Canvas.lineTo(x,y);
             }
+
+            ptLast.X=x;
+            ptLast.Y=y;
+            ptLast.Price=value;
 
             ++drawCount;
 
@@ -14135,6 +14144,16 @@ function ChartMinutePriceLine()
                 }
 
                 this.Canvas.fill();
+            }
+        }
+
+        if (this.HQChart)
+        {
+            var event=this.HQChart.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_MINUTE_LAST_POINT);
+            if (event)
+            {
+                var data={ LastPoint:{X:ptLast.X, Y:ptLast.Y}, Price:ptLast.Price };
+                event.Callback(event,data,this);
             }
         }
     }
@@ -34047,6 +34066,7 @@ function MinuteChartContainer(uielement)
         minuteLine.Name="Minute-Line";
         minuteLine.Color=g_JSChartResource.Minute.PriceColor;
         minuteLine.AreaColor=g_JSChartResource.Minute.AreaPriceColor;
+        minuteLine.HQChart=this;
 
         this.ChartPaint[0]=minuteLine;
 

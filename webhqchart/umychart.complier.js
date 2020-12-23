@@ -6818,6 +6818,79 @@ function JSAlgorithm(errorHandler,symbolData)
         }
     }
 
+    //当前值是近多少周期内的最大值.
+    //用法: TOPRANGE(X):X是近多少周期内X的最大值
+    //例如: TOPRANGE(HIGH)表示当前最高价是近多少周期内最高价的最大值
+    this.TOPRANGE=function(data)
+    {
+        var result=[];
+
+        if (Array.isArray(data))
+        {
+            var count=data.length;
+            for(var i=count-1; i>=0;--i)
+            {
+                result[i]=0;
+                var item=data[i];
+                if (!this.IsNumber(item)) continue;
+
+                var value=0;
+                for(var j=i-1;j>=0;--j)
+                {
+                    if (data[j]>item)
+                    {
+                        break;
+                    }
+                    ++value;
+                }
+
+                result[i]=value;
+
+            }
+        }
+
+        return result;
+    }
+
+    //当前值是近多少周期内的最小值.
+    //用法:LOWRANGE(X):X是近多少周期内X的最小值
+    //例如:LOWRANGE(LOW)表示当前最低价是近多少周期内最低价的最小值
+    this.LOWRANGE=function(data)
+    {
+        var result=[];
+
+        if (Array.isArray(data))
+        {
+            var count=data.length;
+            for(var i=count-1; i>=0;--i)
+            {
+                result[i]=0;
+                var item=data[i];
+                if (!this.IsNumber(item)) continue;
+
+                var value=0;
+                for(var j=i-1;j>=0;--j)
+                {
+                    if (data[j]<item)
+                    {
+                        break;
+                    }
+                    ++value;
+                }
+
+                result[i]=value;
+
+            }
+        }
+
+        return result;
+    }
+
+    this.FINDLOW=function(data,n,m,t)
+    {
+
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -6996,6 +7069,18 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.INTPART(args[0]);
             case "CONST":
                 return this.CONST(args[0]);
+            case "TOPRANGE":
+                return this.TOPRANGE(args[0]);
+            case "LOWRANGE":
+                return this.LOWRANGE(args[0]);
+            case "FINDLOW":
+                return this.FINDLOW(args[0],args[1],args[2],args[3]);
+            case "FINDHIGHBARS":
+                return this.FINDHIGHBARS(args[0],args[1],args[2],args[3]);
+            case "FINDLOW":
+                return this.FINDLOW(args[0],args[1],args[2],args[3]);
+            case "FINDLOW":
+                return this.FINDLOWBARS(args[0],args[1],args[2],args[3]);
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0],Math.atan);
@@ -8399,7 +8484,6 @@ function JSSymbolData(ast,option,jsExecute)
     this.LatestData;            //最新行情
     this.IndexData;             //大盘指数
     this.LatestIndexData;       //最新大盘数据
-    this.FinanceData=new Map(); //财务数据
     this.MarginData=new Map();  //融资融券
     this.HKToSHSZData=new Map();    //北上资金
     this.NewsAnalysisData=new Map();    //新闻统计

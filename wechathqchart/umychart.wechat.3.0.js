@@ -123,6 +123,7 @@ function JSCanvasElement()
     this.WebGLCanvas;
     this.IsUniApp=false;
     this.CanvasNode=null;
+    this.ComponentObject=null;  //在自定义组件下，当前组件实例的this，表示在这个自定义组件下查找拥有 canvas-id 的 canvas ，如果省略则不在任何自定义组件内查找
 
     //获取画布
     this.GetContext = function () 
@@ -149,7 +150,10 @@ function JSCanvasElement()
         }
         else 
         {
-            canvas=wx.createCanvasContext(this.ID);
+            if (this.ComponentObject)   //小程序自定义组件
+                canvas=wx.createCanvasContext(this.ID,this.ComponentObject);
+            else
+                canvas=wx.createCanvasContext(this.ID);
         }
 
         if (this.IsUniApp)
@@ -9288,8 +9292,7 @@ KLineChartContainer.JsonDataToRealtimeData = function (data)
     item.YClose = data.stock[0].yclose;
     item.High = data.stock[0].high;
     item.Low = data.stock[0].low;
-    if (isSHSZ) item.Vol = data.stock[0].vol / 100; //原始单位股
-    else data.stock[0].vol;
+    item.Vol=data.stock[0].vol;    //单位股
     item.Amount = data.stock[0].amount;
     item.Close = data.stock[0].price;
     if (IFrameSplitOperator.IsNumber(data.stock[0].position)) item.Position = data.stock[0].position; //持仓量
@@ -9316,8 +9319,7 @@ KLineChartContainer.JsonDataToMinuteRealtimeData = function (data)
         item.Open = jsData.open;
         item.High = jsData.high;
         item.Low = jsData.low;
-        if (isSHSZ) item.Vol = jsData.vol / 100; //沪深股票原始单位股
-        else item.Vol = jsData.vol;
+        item.Vol = jsData.vol; //单位股
         item.Amount = jsData.amount;
         if (jsData.date > 0) item.Date = jsData.date;
         else item.Date = date;
