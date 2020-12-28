@@ -52069,96 +52069,126 @@ function JSAlgorithm(errorHandler,symbolData)
         return result; 
     }
 
-    this.MAX=function(data,data2)
+    //求最大值.
+    //用法:MAX(A,B,C,D ..... ) 返回A,B,C,D ..... 中的较大值 
+    //例如: MAX(CLOSE-OPEN,0)表示若收盘价大于开盘价返回它们的差值,否则返回0
+    this.MAX=function(args, node)
     {
-        let isNumber=typeof(data)=='number';
-        let isNumber2=typeof(data2)=='number';
+        if (args.length==0) this.ThrowUnexpectedNode(node,'MAX() Error: 参数个数不能为0');
+        if (args.length==1) return args[0];
 
-        //单数值
-        if (isNumber && isNumber2) return Math.max(data,data2);
-
-        //都是数组
-        let result=[];
-        if (!isNumber && !isNumber2)
+        var aryData=[], aryNumber=[];
+        for(var i in args)
         {
-            let count=Math.max(data.length, data2.length);
-            for(let i=0;i<count;++i)
-            {
-                result[i]=null; //初始化
+            var item=args[i];
+            if (IFrameSplitOperator.IsNumber(item)) aryNumber.push(item);
+            else if (Array.isArray(item)) aryData.push(item);
+        }
 
-                if (i<data.length && i<data2.length)
+        var maxNumber=null;
+        if (aryNumber.length>0)
+        {
+            maxNumber=aryNumber[0];
+            for(var i=1; i<aryNumber.length; ++i)
+            {
+                maxNumber=Math.max(maxNumber,aryNumber[i]);
+            }
+        }
+
+        var maxAryData=null;
+        if (aryData.length>0)
+        {
+            maxAryData=aryData[0].slice(0);
+            for(var i=1;i<aryData.length;++i)
+            {
+                var dataItem=aryData[i];
+                for(var j in dataItem)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=Math.max(data[i], data2[i]);
+                    var maxItem=maxAryData[j];
+                    var item=dataItem[j];
+                    if (!IFrameSplitOperator.IsNumber(maxItem)) continue;
+                    if (!IFrameSplitOperator.IsNumber(item))
+                    {
+                        maxAryData[j]=null;
+                        continue;
+                    }
+                        
+                    maxAryData[j]=Math.max(maxItem,item);
                 }
             }
-
-            return result;
         }
 
-        if (isNumber)   //单数据-数组
+        if (maxAryData==null && maxNumber!=null) return maxNumber;
+        if (maxAryData && maxNumber==null) return maxAryData;
+
+        for(var i in maxAryData)
         {
-            for(let i in data2)
-            {
-                result[i]=null;
-                if ( !isNaN(data) && !isNaN(data2[i]) ) result[i]=Math.max(data, data2[i]);
-            }
+            if (!IFrameSplitOperator.IsNumber(maxAryData[i])) continue;
+            maxAryData[i]=Math.max(maxAryData[i],maxNumber);
         }
-        else            //数组-单数据
-        {
-            for(let i in data)
-            {
-                result[i]=null;
-                if ( !isNaN(data[i]) && !isNaN(data2) ) result[i]=Math.max(data[i], data2);
-            }
-        }
-
-        return result;
+        
+        return maxAryData;
     }
 
-    this.MIN=function(data,data2)
+    //求最小值.
+    //用法:MIN(A,B, C, D .....)返回A,B, C ,D ......中的较小值
+    //例如:MIN(CLOSE,OPEN)返回开盘价和收盘价中的较小值
+    this.MIN=function(args, node)
     {
-        let isNumber=typeof(data)=='number';
-        let isNumber2=typeof(data2)=='number';
+        if (args.length==0) this.ThrowUnexpectedNode(node,'MIN() Error: 参数个数不能为0');
+        if (args.length==1) return args[0];
 
-        //单数值
-        if (isNumber && isNumber2) return Math.min(data,data2);
-
-        //都是数组
-        let result=[];
-        if (!isNumber && !isNumber2)
+        var aryData=[], aryNumber=[];
+        for(var i in args)
         {
-            let count=Math.max(data.length, data2.length);
-            for(let i=0;i<count;++i)
-            {
-                result[i]=null; //初始化
+            var item=args[i];
+            if (IFrameSplitOperator.IsNumber(item)) aryNumber.push(item);
+            else if (Array.isArray(item)) aryData.push(item);
+        }
 
-                if (i<data.length && i<data2.length)
+        var minNumber=null;
+        if (aryNumber.length>0)
+        {
+            minNumber=aryNumber[0];
+            for(var i=1; i<aryNumber.length; ++i)
+            {
+                minNumber=Math.min(minNumber,aryNumber[i]);
+            }
+        }
+
+        var minAryData=null;
+        if (aryData.length>0)
+        {
+            minAryData=aryData[0].slice(0);
+            for(var i=1;i<aryData.length;++i)
+            {
+                var dataItem=aryData[i];
+                for(var j in dataItem)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=Math.min(data[i], data2[i]);
+                    var minItem=minAryData[j];
+                    var item=dataItem[j];
+                    if (!IFrameSplitOperator.IsNumber(minItem)) continue;
+                    if (!IFrameSplitOperator.IsNumber(item))
+                    {
+                        minAryData[j]=null;
+                        continue;
+                    }
+                        
+                    minAryData[j]=Math.min(minItem,item);
                 }
             }
-
-            return result;
         }
 
-        if (isNumber)   //单数据-数组
+        if (minAryData==null && minNumber!=null) return minNumber;
+        if (minAryData && minNumber==null) return minAryData;
+
+        for(var i in minAryData)
         {
-            for(let i in data2)
-            {
-                result[i]=null;
-                if ( !isNaN(data) && !isNaN(data2[i]) ) result[i]=Math.min(data, data2[i]);
-            }
+            if (!IFrameSplitOperator.IsNumber(minAryData[i])) continue;
+            minAryData[i]=Math.min(minAryData[i],minNumber);
         }
-        else            //数组-单数据
-        {
-            for(let i in data)
-            {
-                result[i]=null;
-                if ( !isNaN(data[i]) && !isNaN(data2) ) result[i]=Math.min(data[i], data2);
-            }
-        }
-
-        return result;
+        
+        return minAryData;
     }
 
     //取正数
@@ -56348,9 +56378,12 @@ function JSAlgorithm(errorHandler,symbolData)
         switch(name)
         {
             case 'MAX':
-                return this.MAX(args[0], args[1]);
+            case "MAX6":
+                return this.MAX(args,node);
+            
             case 'MIN':
-                return this.MIN(args[0], args[1]);
+            case "MIN6":
+                return this.MIN(args,node);
             case 'REF':
                 return this.REF(args[0], args[1]);
             case "REFV":

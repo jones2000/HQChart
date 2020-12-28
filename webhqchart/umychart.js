@@ -12476,6 +12476,7 @@ function ChartLine()
         
         this.Canvas.save();
         if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
+        if (this.IsDotLine) this.Canvas.setLineDash(g_JSChartResource.DOTLINE.LineDash); //画虚线
         var bFirstPoint=true;
         var drawCount=0;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
@@ -12528,7 +12529,7 @@ function ChartLine()
         this.Canvas.save();
         if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
         this.Canvas.strokeStyle=this.Color;
-        if (this.IsDotLine) this.Canvas.setLineDash([3,5]); //画虚线
+        if (this.IsDotLine) this.Canvas.setLineDash(g_JSChartResource.DOTLINE.LineDash); //画虚线
 
         var bFirstPoint=true;
         var drawCount=0;
@@ -12906,6 +12907,85 @@ function ChartPartLine()
         }
 
         return range;
+    }
+}
+
+//斜率线 DRAWSL()
+function ChartSlopeLine()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartSlopeLine';     //类名
+    this.Color="rgb(255,193,37)";        //线段颜色
+    this.IsDotLine=false;
+    this.LineWidth;
+    this.Option;    //[ { Slope:slope, Length:len, Direct:direct } ]
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        this.Canvas.save();
+        this.Canvas.strokeStyle=this.Color;
+        if (this.IsDotLine) this.Canvas.setLineDash(g_JSChartResource.DOTLINE.LineDash); //画虚线
+        
+        var left=this.ChartBorder.GetLeft();
+        var top=this.ChartBorder.GetTopEx();
+        var right=this.ChartBorder.GetRight();
+        var bottom=this.ChartBorder.GetBottom();
+
+        var chartright=this.ChartBorder.GetRight();
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        this.Canvas.beginPath();
+        this.Canvas.rect(left,top,(right-left),(bottom-top));
+        this.Canvas.clip();
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue; 
+            var option=this.Option[i];
+            if (!option) continue;
+           
+            var x=this.ChartFrame.GetXFromIndex(j);
+            var y=this.ChartFrame.GetYFromData(value);
+            var z=option.Length*g_JSChartResource.DRAWSL.PixelWidth;
+            if (x>chartright) break;
+
+            var x2=Math.sqrt((z*z)/(1+option.Slope*option.Slope));
+            var y2=x2*option.Slope;
+
+            this.Canvas.beginPath();
+            if (option.Direct==2)
+            {
+                this.Canvas.moveTo(x-x2,y+y2);
+                this.Canvas.lineTo(x+x2,y-y2);
+            }
+            else if (option.Direct==1)
+            {
+                this.Canvas.moveTo(x,y);
+                this.Canvas.lineTo(x-x2,y+y2);
+            }
+            else
+            {
+                this.Canvas.moveTo(x,y);
+                this.Canvas.lineTo(x+x2,y-y2);
+            }
+            
+            this.Canvas.stroke();
+        }
+
+        this.Canvas.restore();
     }
 }
 
@@ -16410,7 +16490,8 @@ function ChartMultiLine()
     delete this.newMethod;
     
     this.ClassName="ChartMultiLine";
-    this.Lines=[];   // [ {Point:[ {Index, Value }, ], Color: }, ] 
+    this.Lines=[];   // [ {Point:[ {Index, Value }, ], Color:  }, ] 
+    this.LineDash;
     this.IsHScreen=false;
 
     this.Draw=function()
@@ -16449,11 +16530,14 @@ function ChartMultiLine()
             if (drawPoints.Point.length>=2) drawLines.push(drawPoints)
         }
 
+        this.Canvas.save();
+        if (this.LineDash) this.Canvas.setLineDash(this.LineDash);
         for(var i in drawLines)
         {
             var item=drawLines[i];
             this.DrawLine(item);
         }
+        this.Canvas.restore();
     }
 
     this.DrawLine=function(line)
@@ -27307,6 +27391,17 @@ function JSChartResource()
         FontName:'微软雅黑'    //字体
     }
 
+    //虚线配置
+    this.DOTLINE=
+    {
+        LineDash:[3,5]  //虚线配置
+    }
+
+    this.DRAWSL=
+    {
+        PixelWidth:15   //1个像素点宽度
+    }
+
     //自定义风格
     this.SetStyle=function(style)
     {
@@ -27428,6 +27523,9 @@ function JSChartResource()
             if (item.Zoom) this.DRAWICON.Zoom=item.Zoom;
             if (item.FontName) this.DRAWICON.FontName=item.FontName;
         }
+
+        if (style.DOTLINE) this.DOTLINE=style.DOTLINE;
+        if (style.DRAWSL) this.DOTLINE=style.DRAWSL;
     }
 }
 
