@@ -22219,7 +22219,23 @@ function ChartCorssCursor()
                 this.Canvas.textAlign="left";
                 this.Canvas.textBaseline="middle";
                 this.Canvas.fillStyle=this.TextColor;
-                this.Canvas.fillText(text,0,this.TextHeight/2,textWidth);
+                this.Canvas.fillText(text,2,this.TextHeight/2,textWidth);
+
+                this.Canvas.restore();
+            }
+            else if (y+textWidth/2>=bottom)
+            {
+                var xText=left;
+                var yText=y;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
+
+                this.Canvas.fillRect(-textWidth,0,textWidth,this.TextHeight);
+                this.Canvas.textAlign="right";
+                this.Canvas.textBaseline="middle";
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(text,-2,this.TextHeight/2,textWidth);
 
                 this.Canvas.restore();
             }
@@ -25717,7 +25733,7 @@ function ChartDrawPictureIconFont()
         if (!option) return;
 
         if (option.LineColor) this.LineColor=option.LineColor;
-        if (option.FontOption.Size>0) this.FontOption.Size=option.FontOption.Size;
+        if (option.FontOption && option.FontOption.Size>0) this.FontOption.Size=option.FontOption.Size;
         if (IFrameSplitOperator.IsNumber(option.Angle)) this.Angle=option.Angle;
     }
 
@@ -40231,6 +40247,11 @@ function ModifyIndexDialog(divElement)
                 function(event)
                 {
                     var value = parseInt($(this).val());                            //获取当前操作的input属性值，转化为整型
+                    if (!IFrameSplitOperator.IsNumber(value)) 
+                    {
+                        alert("参数不能为空");
+                        return;
+                    }
                     var chart=self.HQChart;
                     var identify=self.Identify;
                     var paramIndex=event.data.ParamIndex;
@@ -40249,6 +40270,11 @@ function ModifyIndexDialog(divElement)
                 function(event)
                 {
                     var value = parseInt($(this).val());                            //获取当前操作的input属性值，转化为整型
+                    if (!IFrameSplitOperator.IsNumber(value)) 
+                    {
+                        alert("参数不能为空");
+                        return;
+                    }
                     var chart=self.HQChart;
                     var identify=self.Identify;
                     var paramIndex=event.data.ParamIndex;

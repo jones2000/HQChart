@@ -244,6 +244,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 20. [HQChart使用教程30-K线图如何对接第3方数据20-信息地雷公告数据](https://blog.csdn.net/jones2000/article/details/105876161)<br>
 21. [HQChart使用教程30-K线图如何对接第3方数据21-跨周期函数数据](https://blog.csdn.net/jones2000/article/details/109063625)<br>
 22. [HQChart使用教程30-K线图如何对接第3方数据22-FINVALUE函数数据](https://blog.csdn.net/jones2000/article/details/111387095)<br>
+23. [HQChart使用教程30-K线图如何对接第3方数据23-FINANCE函数数据](https://blog.csdn.net/jones2000/article/details/111999910)<br>
 
 
 ## 实战教程

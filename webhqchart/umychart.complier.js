@@ -6881,6 +6881,8 @@ function JSAlgorithm(errorHandler,symbolData)
     //例如: TOPRANGE(HIGH)表示当前最高价是近多少周期内最高价的最大值
     this.TOPRANGE=function(data)
     {
+        if (this.IsNumber(data)) return 0;
+        
         var result=[];
 
         if (Array.isArray(data))
@@ -6915,6 +6917,8 @@ function JSAlgorithm(errorHandler,symbolData)
     //例如:LOWRANGE(LOW)表示当前最低价是近多少周期内最低价的最小值
     this.LOWRANGE=function(data)
     {
+        if (this.IsNumber(data)) return 0;
+
         var result=[];
 
         if (Array.isArray(data))
