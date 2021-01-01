@@ -55,8 +55,12 @@ class IHQData(object):
     def GetIndex(self, symbol, varName, period,right, kcount,jobID):
         pass
 
-    # CAPITAL 最新流通股本 单值
+    # CAPITAL 最新流通股本(手)
     def GetCapital(self,symbol, period, right, kcount,jobID):
+        pass
+
+    # TOTALCAPITAL  当前总股本(手)
+    def GetTotalCapital(self,symbol, period, right, kcount,jobID):
         pass
 
     # 历史所有的流通股本 数组 array
@@ -79,13 +83,15 @@ class IHQData(object):
             return self.GetCapital(symbol,period,right,kcount, jobID)
         elif (funcName==u"GetHisCapital"):
             return self.GetHisCapital(symbol,period,right,kcount, jobID)
+        elif (funcName==u'TOTALCAPITAL'):
+            return self.GetTotalCapital(symbol,period,right,kcount, jobID)
         elif (funcName in (u"INDEXA", u"INDEXC", u"INDEXH", u"INDEXL", u"INDEXO",u"INDEXV", u"INDEXADV", u"INDEXDEC")) : # 大盘数据 其他的大盘数据也在这里
             return self.GetIndex(symbol,funcName,period,right,kcount, jobID)
         else :
-            return false
+            return False
 
     def GetDataByString(self, symbol,funcName,period,right,kcount, jobID):
-        return false
+        return False
 
 
 class FastHQChart :
@@ -113,7 +119,7 @@ class FastHQChart :
 
     @staticmethod
     def Run(jsonConfig, hqData, proSuccess=None,procFailed=None):
-        callbackConfig={};
+        callbackConfig={}
         callbackConfig['GetKLineData']=hqData.GetKLineData
         callbackConfig['GetKLineData2']=hqData.GetKLineData2
         callbackConfig['GetDataByNumber']=hqData.GetDataByNumber
