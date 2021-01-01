@@ -291,12 +291,16 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 5. [如何(c++,js)写一个传统的K线图和走势图4-K线图](https://blog.csdn.net/jones2000/article/details/85235463) <br>
 6. [如何(c++,js)写一个传统的K线图和走势图5-移动筹码图](https://blog.csdn.net/jones2000/article/details/85356163) <br>
 
-## HQChart指标引擎 - (FastHQChart)py教程
+## HQChartPy2介绍（py版本指标引擎）
 1. [HQChart(C++)指标计算引擎-介绍](https://blog.csdn.net/jones2000/article/details/107464517) <br>
 2. [HQChart(C++)指标计算引擎-安装](https://blog.csdn.net/jones2000/article/details/107712259) <br>
 3. [HQChart(C++)指标计算引擎-py接口类FastHQChart介绍](https://blog.csdn.net/jones2000/article/details/107725170) <br>
 4. [HQChart(C++)指标计算引擎-py接口类IHQData K线数据对接](https://blog.csdn.net/jones2000/article/details/107728903) <br>
 5. [HQChart(C++)指标计算引擎-系统指标](https://blog.csdn.net/jones2000/article/details/108015606) <br>
+
+## HQChartPy2数据对接教程 (以tushare数据为例子)
+1. [hqchartPy2数据对接教程1-K线数据](https://blog.csdn.net/jones2000/article/details/112060412)<br>
+2. [hqchartPy2数据对接教程2-股本数据,筹码分布函数](https://blog.csdn.net/jones2000/article/details/112060761)<br>
 
 # 5.VUE 行情项目
 [代码地址(vuehqchart)](/vuehqchart) <br>
