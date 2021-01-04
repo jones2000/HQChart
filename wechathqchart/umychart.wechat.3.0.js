@@ -66,6 +66,7 @@ import {
     JSCommonChartPaint_ChartBuySell as ChartBuySell,
     JSCommonChartPaint_ChartMACD as ChartMACD,
     JSCommonChartPaint_ChartSplashPaint as ChartSplashPaint,
+    JSCommonChartPaint_ChartBackground as ChartBackground,
 } from "./umychart.chartpaint.wechat.js";
 
 //扩展画法图形库
@@ -12538,6 +12539,25 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateBackgroud=function(hqChart,windowIndex,varItem,id)
+    {
+        let chart=new ChartBackground();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            chart.Color=drawData.Color;
+            chart.ColorAngle=drawData.Angle;
+
+            if (drawData.Data) chart.Data.Data=drawData.Data;
+        }
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateMultiText = function (hqChart, windowIndex, varItem, i)
     {
         let chart = new ChartMultiText();
@@ -12692,6 +12712,10 @@ function ScriptIndex(name, script, args, option)
                     break;
                 case 'DRAWRECTREL':
                     this.CreateRectangle(hqChart, windowIndex, item, i);
+                    break;
+                case 'DRAWGBK':
+                case "DRAWGBK2":
+                    this.CreateBackgroud(hqChart,windowIndex,item,i);
                     break;
 
                 //第3方指标定制

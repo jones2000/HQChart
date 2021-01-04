@@ -19922,6 +19922,7 @@ function ChartBackground()
     this.ClassName="ChartBackground";
     this.Color=null;
     this.ColorAngle=0;  //0 竖向 1 横向
+    this.IsDrawFirst = true;    //面积图在K线前面画,否则回挡住K线的
 
     this.Draw=function()
     {
@@ -19956,11 +19957,115 @@ function ChartBackground()
             return;
         }
 
+        if (this.Name=="DRAWGBK2")
+        {
+            this.DrawRegion();
+            return;
+        }
+
         var left=this.ChartBorder.GetLeft();
         var top=this.ChartBorder.GetTopEx();
         var width=this.ChartBorder.GetWidth();
         var height=this.ChartBorder.GetHeightEx();
         this.Canvas.fillRect(left, top,width, height);
+    }
+
+    this.DrawRegion=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
+
+        var aryPoint=[];    //点坐标
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            aryPoint[i]=null;
+            if (!IFrameSplitOperator.IsNumber(value) || value<=0) continue;
+
+            var x=this.ChartFrame.GetXFromIndex(j);
+            var y=this.ChartFrame.GetYFromData(value.Value);
+
+            if (this.IsHScreen)
+                aryPoint[i]={ Line:{ X:bottom, Y:x }, Line2:{ X:bottom, Y:x } };
+            else
+                aryPoint[i]={ Line:{ X:x, Y:top }, Line2:{ X:x, Y:bottom } };
+        }
+
+        this.DrawBG(aryPoint);
+    }
+
+    this.DrawBG=function(aryPoint)
+    {
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var halfWidth=(distanceWidth+dataWidth)/2;
+        var firstPoint=true;
+        var pointCount=0;
+        var aryLine2=[];
+        var color=null;
+        for(var i in aryPoint)
+        {
+            var item=aryPoint[i];
+            if (!item || (color && item.Color!=color) )
+            {
+                if (pointCount>0)
+                {
+                    for(var j=aryLine2.length-1; j>=0; --j)
+                    {
+                        var item2=aryLine2[j];
+                        this.Canvas.lineTo(item2.Line2.X+halfWidth, item2.Line2.Y);
+                        this.Canvas.lineTo(item2.Line2.X-halfWidth, item2.Line2.Y);
+                    }
+                    this.Canvas.closePath();
+                    this.Canvas.fill();
+                }
+
+                firstPoint=true;
+                pointCount=0;
+                aryLine2=[];
+                color=null;
+            }
+
+            if (!item) continue;
+
+            if (firstPoint)
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(item.Line.X-halfWidth, item.Line.Y);
+                this.Canvas.lineTo(item.Line.X+halfWidth, item.Line.Y);
+                firstPoint=false;
+                color=item.Color;
+            }
+            else
+            {
+                this.Canvas.lineTo(item.Line.X-halfWidth, item.Line.Y);
+                this.Canvas.lineTo(item.Line.X+halfWidth, item.Line.Y);
+            }
+
+            aryLine2.push(item);
+            ++pointCount;
+        }
+
+        if (pointCount>0)
+        {
+            for(var j=aryLine2.length-1; j>=0; --j)
+            {
+                var item2=aryLine2[j];
+                this.Canvas.lineTo(item2.Line2.X+halfWidth, item2.Line2.Y);
+                this.Canvas.lineTo(item2.Line2.X-halfWidth, item2.Line2.Y);
+            }
+            this.Canvas.closePath();
+            this.Canvas.fill();
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        return { Min:null, Max:null };
     }
 }
 
@@ -57998,6 +58103,36 @@ function JSDraw(errorHandler,symbolData)
         return result;
     }
 
+    this.DRAWGBK2=function(condition, color, color2, colorAngle)
+    {
+        let drawData={ Color:[],  Angle:colorAngle };
+        if (color) drawData.Color.push(color);
+        if (color2) drawData.Color.push(color2);
+
+        let result={DrawData:null, DrawType:'DRAWGBK2'};
+        if (Array.isArray(condition))
+        {
+            drawData.Data=[];
+            for(var i in condition)
+            {
+                var item=condition[i];
+                drawData.Data[i]=item ? 1:0;
+            }
+
+            result.DrawData=drawData;
+        }
+        else
+        {
+            if (condition) 
+            {
+                result.DrawData=drawData;
+                result.DrawType="DRAWGBK";
+            }
+        }
+
+        return result;
+    }
+
     //画文字 及线段
     this.DRAWTEXT_LINE=function(condition, price, text, textcolor, fontSize, linetype, linecolor)
     {
@@ -58171,7 +58306,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
     [
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
         'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',
-        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL"
+        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2"
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -63365,12 +63500,19 @@ function JSExecute(ast,option)
             case 'RGB':
                 node.Out=this.Draw.RGB(args[0],args[1],args[2]);
                 break;
+            case "RGBA":
+                node.Out=this.Draw.RGBA(args[0],args[1],args[2],args[3]);
+                break;
             case 'PARTLINE':
                 node.Draw=this.Draw.PARTLINE(args);
                 node.Out=[];
                 break;
             case 'DRAWGBK':
                 node.Draw=this.Draw.DRAWGBK(args[0],args[1],args[2],args[3]);
+                node.Out=[];
+                break;
+            case 'DRAWGBK2':
+                node.Draw=this.Draw.DRAWGBK2(args[0],args[1],args[2],args[3]);
                 node.Out=[];
                 break;
             case 'DRAWTEXT_LINE':
@@ -64446,6 +64588,8 @@ function ScriptIndex(name,script,args,option)
             var drawData=varItem.Draw.DrawData;
             chart.Color=drawData.Color;
             chart.ColorAngle=drawData.Angle;
+
+            if (drawData.Data) chart.Data.Data=drawData.Data;
         }
 
         hqChart.ChartPaint.push(chart);
@@ -64815,6 +64959,7 @@ function ScriptIndex(name,script,args,option)
                         this.CreatePolyLine(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWGBK':
+                    case "DRAWGBK2":
                         this.CreateBackgroud(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWTEXT_LINE':
@@ -65727,6 +65872,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
         //数据类型
         let hqDataType=HQ_DATA_TYPE.KLINE_ID;   //默认K线
+        var dateRange=null;
         if (hqChart.ClassName==='MinuteChartContainer' || hqChart.ClassName==='MinuteChartHScreenContainer') 
         {
             if (hqChart.DayCount>1) hqDataType=HQ_DATA_TYPE.MULTIDAY_MINUTE_ID; //多日分钟
@@ -65735,6 +65881,10 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         else if (hqChart.ClassName==='HistoryMinuteChartContainer') 
         {
             hqDataType=HQ_DATA_TYPE.HISTORY_MINUTE_ID;   //历史分钟
+        }
+        else 
+        {
+            dateRange=hisData.GetDateRange();
         }
 
         var args=[];
@@ -65755,6 +65905,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
             indexname:this.ID,  symbol: hqChart.Symbol, script:this.Script, args:args,
             period:hqChart.Period, right:hqChart.Right, hqdatatype: hqDataType
         };
+
+        if (dateRange) postData.DateRange=dateRange;
 
         if (requestCount)
         {

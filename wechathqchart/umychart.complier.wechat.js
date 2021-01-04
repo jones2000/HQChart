@@ -6366,6 +6366,66 @@ function JSDraw(errorHandler, symbolData)
         return result;
     }
 
+    //填充背景.
+    //用法: DRAWGBK(COND,COLOR1,COLOR2,colorAngle)  colorAngle=渐近色角度
+    //例如: DRAWGBK(O>C,RGB(0,255,0),RGB(255,0,0),0);
+    this.DRAWGBK=function(condition, color, color2, colorAngle)
+    {
+        let drawData={ Color:[],  Angle:colorAngle };
+        if (color) drawData.Color.push(color);
+        if (color2) drawData.Color.push(color2);
+
+        let result={DrawData:null, DrawType:'DRAWGBK'};
+        if (Array.isArray(condition))
+        {
+            for(var i in condition)
+            {
+                var item=condition[i];
+                if (item) 
+                {
+                    result.DrawData=drawData;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            if (condition) result.DrawData=drawData;
+        }
+
+        return result;
+    }
+
+    this.DRAWGBK2=function(condition, color, color2, colorAngle)
+    {
+        let drawData={ Color:[],  Angle:colorAngle };
+        if (color) drawData.Color.push(color);
+        if (color2) drawData.Color.push(color2);
+
+        let result={DrawData:null, DrawType:'DRAWGBK2'};
+        if (Array.isArray(condition))
+        {
+            drawData.Data=[];
+            for(var i in condition)
+            {
+                var item=condition[i];
+                drawData.Data[i]=item ? 1:0;
+            }
+
+            result.DrawData=drawData;
+        }
+        else
+        {
+            if (condition) 
+            {
+                result.DrawData=drawData;
+                result.DrawType="DRAWGBK";
+            }
+        }
+
+        return result;
+    }
+
     this.RGB = function (r, g, b) 
     {
         var rgb = `rgb(${r},${g},${b})`;
@@ -6430,7 +6490,7 @@ JSDraw.prototype.IsInteger=function(x)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT', "DRAWTEXT_FIX", 'DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWICON','DRAWRECTREL']);
+    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT', "DRAWTEXT_FIX", 'DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWICON','DRAWRECTREL', "DRAWGBK", "DRAWGBK2"]);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -9119,9 +9179,20 @@ function JSExecute(ast,option)
             case 'RGB':
                 node.Out = this.Draw.RGB(args[0], args[1], args[2]);
                 break;
+            case 'RGBA':
+                node.Out = this.Draw.RGBA(args[0], args[1], args[2],args[3]);
+                break;
             case 'DRAWRECTREL':
                 node.Draw = this.Draw.DRAWRECTREL(args[0], args[1], args[2], args[3], args[4]);
                 node.Out = [];
+                break;
+            case 'DRAWGBK':
+                node.Draw=this.Draw.DRAWGBK(args[0],args[1],args[2],args[3]);
+                node.Out=[];
+                break;
+            case 'DRAWGBK2':
+                node.Draw=this.Draw.DRAWGBK2(args[0],args[1],args[2],args[3]);
+                node.Out=[];
                 break;
             case 'CODELIKE':
                 node.Out=this.SymbolData.CODELIKE(args[0]);

@@ -3292,6 +3292,163 @@ function ChartSplashPaint()
     }
 }
 
+//填充背景 TODO:横屏
+function ChartBackground()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartBackground";
+    this.Color=null;
+    this.ColorAngle=0;  //0 竖向 1 横向
+    this.IsDrawFirst = true;    //面积图在K线前面画,否则回挡住K线的
+
+    this.Draw=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Color) return;
+        if (this.Color.length<=0) return;
+
+        if (this.Color.length==2)
+        {
+            if (this.ColorAngle==0)
+            {
+                var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                var ptEnd={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetBottomEx() };
+            }
+            else
+            {
+                var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                var ptEnd={ X:this.ChartBorder.GetRight(), Y:this.ChartBorder.GetTopEx() };
+            }
+
+            let gradient = this.Canvas.createLinearGradient(ptStart.X,ptStart.Y, ptEnd.X,ptEnd.Y);
+            gradient.addColorStop(0, this.Color[0]);
+            gradient.addColorStop(1, this.Color[1]);
+            this.Canvas.fillStyle=gradient;
+        }
+        else if (this.Color.length==1)
+        {
+            this.Canvas.fillStyle=this.Color[0];
+        }
+        else
+        {
+            return;
+        }
+
+        if (this.Name=="DRAWGBK2")
+        {
+            this.DrawRegion();
+            return;
+        }
+
+        var left=this.ChartBorder.GetLeft();
+        var top=this.ChartBorder.GetTopEx();
+        var width=this.ChartBorder.GetWidth();
+        var height=this.ChartBorder.GetHeightEx();
+        this.Canvas.fillRect(left, top,width, height);
+    }
+
+    this.DrawRegion=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
+
+        var aryPoint=[];    //点坐标
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            aryPoint[i]=null;
+            if (!IFrameSplitOperator.IsNumber(value) || value<=0) continue;
+
+            var x=this.ChartFrame.GetXFromIndex(j);
+            var y=this.ChartFrame.GetYFromData(value.Value);
+
+            if (this.IsHScreen)
+                aryPoint[i]={ Line:{ X:bottom, Y:x }, Line2:{ X:bottom, Y:x } };
+            else
+                aryPoint[i]={ Line:{ X:x, Y:top }, Line2:{ X:x, Y:bottom } };
+        }
+
+        this.DrawBG(aryPoint);
+    }
+
+    this.DrawBG=function(aryPoint)
+    {
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var halfWidth=(distanceWidth+dataWidth)/2;
+        var firstPoint=true;
+        var pointCount=0;
+        var aryLine2=[];
+        var color=null;
+        for(var i in aryPoint)
+        {
+            var item=aryPoint[i];
+            if (!item || (color && item.Color!=color) )
+            {
+                if (pointCount>0)
+                {
+                    for(var j=aryLine2.length-1; j>=0; --j)
+                    {
+                        var item2=aryLine2[j];
+                        this.Canvas.lineTo(item2.Line2.X+halfWidth, item2.Line2.Y);
+                        this.Canvas.lineTo(item2.Line2.X-halfWidth, item2.Line2.Y);
+                    }
+                    this.Canvas.closePath();
+                    this.Canvas.fill();
+                }
+
+                firstPoint=true;
+                pointCount=0;
+                aryLine2=[];
+                color=null;
+            }
+
+            if (!item) continue;
+
+            if (firstPoint)
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(item.Line.X-halfWidth, item.Line.Y);
+                this.Canvas.lineTo(item.Line.X+halfWidth, item.Line.Y);
+                firstPoint=false;
+                color=item.Color;
+            }
+            else
+            {
+                this.Canvas.lineTo(item.Line.X-halfWidth, item.Line.Y);
+                this.Canvas.lineTo(item.Line.X+halfWidth, item.Line.Y);
+            }
+
+            aryLine2.push(item);
+            ++pointCount;
+        }
+
+        if (pointCount>0)
+        {
+            for(var j=aryLine2.length-1; j>=0; --j)
+            {
+                var item2=aryLine2[j];
+                this.Canvas.lineTo(item2.Line2.X+halfWidth, item2.Line2.Y);
+                this.Canvas.lineTo(item2.Line2.X-halfWidth, item2.Line2.Y);
+            }
+            this.Canvas.closePath();
+            this.Canvas.fill();
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        return { Min:null, Max:null };
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // 其他图形
 //
@@ -4382,6 +4539,7 @@ module.exports =
         ChartRectangle: ChartRectangle,
         ChartMultiText: ChartMultiText,
         ChartMultiLine: ChartMultiLine,
+        ChartBackground:ChartBackground,
         ChartBuySell: ChartBuySell,
         ChartMultiBar: ChartMultiBar,
         ChartMACD:ChartMACD,
@@ -4404,6 +4562,7 @@ module.exports =
     JSCommonChartPaint_ChartStick: ChartStick,
     JSCommonChartPaint_ChartLineStick: ChartLineStick,
     JSCommonChartPaint_ChartStickLine: ChartStickLine,
+    JSCommonChartPaint_ChartBackground:ChartBackground,
     JSCommonChartPaint_ChartOverlayKLine: ChartOverlayKLine,
     JSCommonChartPaint_ChartPie: ChartPie,
     JSCommonChartPaint_ChartCircle: ChartCircle,
