@@ -26,6 +26,13 @@ class TushareHQChartData(IHQData) :
 
     # 获取其他K线数据
     def GetKLineData2(self, symbol, period, right, callInfo, kdataInfo, jobID) :
+        if (callInfo.find('$')>0) :
+            if (symbol.find(".")<=0) :
+                if (symbol[:3]=='600' or symbol[:3]=="688") :
+                    symbol+=".SH"
+                elif (symbol[:3]=="000" or symbol[:2]=="30") :
+                    symbol+=".SZ"
+
         return self.GetKLineAPIData(symbol, period, right, kdataInfo["StartDate"], kdataInfo["EndDate"])
         
     # 获取K线API数据
