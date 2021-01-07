@@ -40,7 +40,7 @@ class IHQData(object):
     def GetKLineData(self, symbol, period, right, jobID):
         pass
 
-    def GetKLineData2(self, symbol,kdataInfo, jobID):
+    def GetKLineData2(self, symbol, period, right, callInfo, kdataInfo, jobID):
         pass
 
     # FINANCE()  财务数据 数组
@@ -63,7 +63,7 @@ class IHQData(object):
     def GetTotalCapital(self,symbol, period, right, kcount,jobID):
         pass
 
-    # 历史所有的流通股本 数组 array
+    # 历史所有的流通股本 时间序列
     def GetHisCapital(self,symbol, period, right, kcount,jobID):
         pass
 
@@ -93,18 +93,32 @@ class IHQData(object):
     def GetDataByString(self, symbol,funcName,period,right,kcount, jobID):
         return False
 
+    # 系统指标
+    def GetIndexScript(self,name,callInfo, jobID):
+        pass
+
 
 class FastHQChart :
-     # 初始化
+    DllVersion=0
+    Authorize=None  # 授权信息
+
+    @staticmethod
+    def GetVersion():
+        version=FastHQChart.DllVersion
+        return "{0}.{1}".format(int(version/100000), (version%100000))
+
+    # 初始化
     @staticmethod 
     # key= 授权码
     def Initialization(Key=None) :
         # 加载dll
         strOS = platform.system()
         dllVersion=HQChartPy2.GetVersion()
+        FastHQChart.DllVersion=dllVersion
         if (Key) :
             HQChartPy2.LoadAuthorizeInfo(Key)
         authorize=HQChartPy2.GetAuthorizeInfo()
+        FastHQChart.Authorize=authorize
 
         print("*******************************************************************************************")
         print("*  欢迎使用HQChart.Py C++ 技术指标计算引擎")
@@ -126,6 +140,7 @@ class FastHQChart :
         callbackConfig['GetDataByNumbers']=hqData.GetDataByNumbers
         callbackConfig['GetDataByName']=hqData.GetDataByName
         callbackConfig['GetDataByString']=hqData.GetDataByString
+        callbackConfig["GetIndexScript"]=hqData.GetIndexScript
         
 
         # 计算结果返回
@@ -136,31 +151,5 @@ class FastHQChart :
 
         bResult=HQChartPy2.Run(jsonConfig,callbackConfig)
         return bResult
-
-    @staticmethod
-    def AddSystemIndex(jsConfig):
-        return HQChartPy2.AddSystemIndex(jsConfig)
-
-    # 系统指标格式
-    HQCHART_SYSTEM_INDEX=[ 
-        { 
-        "Name":"MA", "Description":"均线",
-        "Script":
-        '''MA1:MA(CLOSE,M1);
-MA2:MA(CLOSE,M2);
-MA3:MA(CLOSE,M3);''',
-        "Args": [ { "Name":"M1", "Value":5 }, { "Name":"M2", "Value":10 }, { "Name":"M3", "Value":20} ]
-        },
-
-        {
-        "Name":"BOLL", "Description":"布林线",
-        "Script":
-        '''BOLL:MA(CLOSE,M);
-UB:BOLL+2*STD(CLOSE,M);
-LB:BOLL-2*STD(CLOSE,M);''',
-        "Args": [ { "Name":"M", "Value":20 }]
-        }
-        
-    ]
 
 
