@@ -497,6 +497,15 @@ function DynamicKLineTitlePainting()
     {
         if (!this.OnDrawEvent || !this.OnDrawEvent.Callback) return;
         var data = { Draw: drawData, Name: this.ClassName, Explain: explain };
+        if (this.Data && this.Data.Data)
+        {
+            var index = this.CursorIndex;
+            index = parseInt(index.toFixed(0));
+            var dataIndex = this.Data.DataOffset + index;
+            var dataCount=this.Data.Data.length;
+            data.DataIndex=dataIndex;
+            data.DataCount=dataCount;
+        }
         this.OnDrawEvent.Callback(this.OnDrawEvent, data, this);
     }
 

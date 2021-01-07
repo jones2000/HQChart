@@ -12728,6 +12728,9 @@ function ScriptIndex(name, script, args, option)
                 case 'MULTI_BAR':
                     this.CreateMultiBar(hqChart, windowIndex, item, i);
                     break;
+                case "KLINE_BG":
+                    this.CreateBackgroud(hqChart,windowIndex,item,i);
+                    break;
                 }
             }
             else if (item.Type == 2) 
@@ -13068,10 +13071,95 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
                     outVarItem.Draw = drawItem;
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=="KLINE_BG")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData={ Color:draw.Color, Angle:draw.Angle };
+                    drawItem.DrawData.Data=this.FittingKLineBG(draw.DrawData, hqChart);
+
+                    outVarItem.Draw=drawItem;
+                    outVarItem.Name=draw.DrawType;
+                    result.push(outVarItem);
+                }
             }
         }
 
         return result;
+    }
+
+    this.FittingKLineBG=function(data, hqChart)
+    {
+        var kData=hqChart.ChartPaint[0].Data;   //K线
+        var result=[];
+        if (ChartData.IsDayPeriod(hqChart.Period,true))  //日线
+        {
+            var bFill=false;
+            for(var i=0,j=0;i<kData.Data.length;)
+            {
+                result[i]=0;
+                var kItem=kData.Data[i];
+                if (j>=data.length) 
+                {
+                    ++i;
+                    continue;
+                }
+                var dataItem=data[j];
+
+                if (dataItem.Date<kItem.Date)
+                {
+                    ++j;
+                }
+                else if (dataItem.Date>kItem.Date)
+                {
+                    ++i;
+                }
+                else
+                {
+                    bFill=true;
+                    result[i]=1;
+                    ++j;
+                    ++i;
+                }
+            }
+
+            if (bFill) return result;
+        }
+        else if (ChartData.IsMinutePeriod(hqChart.Period,true)) //分钟线
+        {
+            var bFill=false;
+            for(var i=0,j=0;i<kData.Data.length;)
+            {
+                result[i]=0;
+                var kItem=kData.Data[i];
+                if (j>=data.length) 
+                {
+                    ++i;
+                    continue;
+                }
+                var dataItem=data[j];
+
+                if (dataItem.Date<kItem.Date || (dataItem.Date==kItem.Date && dataItem.Time<kItem.Time))
+                {
+                    ++j;
+                }
+                else if (dataItem.Date>kItem.Date || (dataItem.Date==kItem.Date && dataItem.Time>kItem.Time))
+                {
+                    ++i;
+                }
+                else
+                {
+                    bFill=true;
+                    result[i]=1;
+                    ++j;
+                    ++i;
+                }
+            }
+
+            if (bFill) return result;
+        }
+        
+        return null;
     }
 
     this.FittingArray = function (sourceData, date, time, hqChart, arrayType)  //arrayType 0=单值数组 1=结构体
