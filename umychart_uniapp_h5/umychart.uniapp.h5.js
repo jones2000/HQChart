@@ -4093,6 +4093,7 @@ function JSChart(divElement, bOffscreen)
                 if (item.DefaultYMaxMin) chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultYMaxMin=item.DefaultYMaxMin;
                 if (IFrameSplitOperator.IsBool(item.EnableRemoveZero)) chart.Frame.SubFrame[i].Frame.YSplitOperator.EnableRemoveZero=item.EnableRemoveZero;
                 if (IFrameSplitOperator.IsPlusNumber(item.MinYDistance)) chart.Frame.SubFrame[i].Frame.MinYDistance=item.MinYDistance;
+                if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
             }
         }
 
@@ -4422,6 +4423,7 @@ function JSChart(divElement, bOffscreen)
                 if (item.Height>=0) chart.Frame.SubFrame[i].Height = item.Height;
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom=item.Custom;
                 if (item.RightTextFormat>0) chart.Frame.SubFrame[i].Frame.YSplitOperator.RightTextFormat=item.RightTextFormat;
+                if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
             }
 
             chart.UpdateXShowText();
@@ -8054,8 +8056,9 @@ function IChartFramePainting()
     this.IsShowTitleArraw=true;        //是否显示指标信息上涨下跌箭头
     this.IsShowIndexName=true;         //是否显示指标名字
     this.IndexParamSpace=2;            //指标参数数值显示间距
-    
 
+    this.BorderLine=null;               //1=上 2=下 4=左 8=右 
+    
     this.Draw=function()
     {
         this.DrawFrame();
@@ -8080,9 +8083,44 @@ function IChartFramePainting()
         var height=bottom-top;
 
         //JSConsole.Chart.Log('[IChartFramePainting.DrawBorder] bottom',bottom);
+        if (this.BorderLine==null)
+        {
+            this.Canvas.strokeStyle=this.PenBorder;
+            this.Canvas.strokeRect(left,top,width,height);
+        }
+        else if (IFrameSplitOperator.IsPlusNumber(this.BorderLine)) //单独绘制每个边框
+        {
+            this.Canvas.strokeStyle=this.PenBorder;
+            this.Canvas.beginPath();
+            
+            if ((this.BorderLine&1)>0) //上
+            {
+                this.Canvas.moveTo(left,top);
+                this.Canvas.lineTo(right,top);
+            }
 
-        this.Canvas.strokeStyle=this.PenBorder;
-        this.Canvas.strokeRect(left,top,width,height);
+            if ((this.BorderLine&2)>0)  //下
+            {
+                this.Canvas.moveTo(left,bottom);
+                this.Canvas.lineTo(right,bottom);
+            }
+
+            if ((this.BorderLine&4)>0)  //左
+            {
+                this.Canvas.moveTo(left,top);
+                this.Canvas.lineTo(left,bottom);
+            }
+
+            if ((this.BorderLine&8)>0)    //右
+            {
+                this.Canvas.moveTo(right,top);
+                this.Canvas.lineTo(right,bottom);
+            }
+              
+            this.Canvas.stroke();
+        }
+
+        
     }
 
     //画标题背景色
@@ -19957,7 +19995,7 @@ function ChartBackground()
             return;
         }
 
-        if (this.Name=="DRAWGBK2")
+        if (this.Name=="DRAWGBK2" || this.Name=="KLINE_BG")
         {
             this.DrawRegion();
             return;
@@ -65014,6 +65052,9 @@ function ScriptIndex(name,script,args,option)
                     case "COLOR_KLINE":
                         this.CreateColorKLine(hqChart,windowIndex,item,i);
                         break;
+                    case "KLINE_BG":
+                        this.CreateBackgroud(hqChart,windowIndex,item,i);
+                        break;
                 }
             }
             else if (item.Type==2)
@@ -66610,10 +66651,97 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=="KLINE_BG")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData={ };
+                    drawItem.DrawData.Color=draw.Color;
+                    drawItem.DrawData.Angle=draw.Angle;
+                    drawItem.DrawData.Data=this.FittingKLineBG(draw.DrawData, hqChart);
+
+                    outVarItem.Draw=drawItem;
+                    outVarItem.Name=draw.DrawType;
+                    result.push(outVarItem);
+                }
             }
         }
 
         return result;
+    }
+
+    this.FittingKLineBG=function(data, hqChart)
+    {
+        var kData=hqChart.ChartPaint[0].Data;   //K线
+        var result=[];
+        if (ChartData.IsDayPeriod(hqChart.Period,true))  //日线
+        {
+            var bFill=false;
+            for(var i=0,j=0;i<kData.Data.length;)
+            {
+                result[i]=0;
+                var kItem=kData.Data[i];
+                if (j>=data.length) 
+                {
+                    ++i;
+                    continue;
+                }
+                var dataItem=data[j];
+
+                if (dataItem.Date<kItem.Date)
+                {
+                    ++j;
+                }
+                else if (dataItem.Date>kItem.Date)
+                {
+                    ++i;
+                }
+                else
+                {
+                    bFill=true;
+                    result[i]=1;
+                    ++j;
+                    ++i;
+                }
+            }
+
+            if (bFill) return result;
+        }
+        else if (ChartData.IsMinutePeriod(hqChart.Period,true)) //分钟线
+        {
+            var bFill=false;
+            for(var i=0,j=0;i<kData.Data.length;)
+            {
+                result[i]=0;
+                var kItem=kData.Data[i];
+                if (j>=data.length) 
+                {
+                    ++i;
+                    continue;
+                }
+                var dataItem=data[j];
+
+                if (dataItem.Date<kItem.Date || (dataItem.Date==kItem.Date && dataItem.Time<kItem.Time))
+                {
+                    ++j;
+                }
+                else if (dataItem.Date>kItem.Date || (dataItem.Date==kItem.Date && dataItem.Time>kItem.Time))
+                {
+                    ++i;
+                }
+                else
+                {
+                    bFill=true;
+                    result[i]=1;
+                    ++j;
+                    ++i;
+                }
+            }
+
+            if (bFill) return result;
+        }
+        
+        return null;
     }
 
     this.FittingMinuteData=function(jsonData, hqChart)

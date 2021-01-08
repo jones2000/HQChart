@@ -327,6 +327,7 @@ function JSChart(element)
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom = item.Custom;
                 if (IFrameSplitOperator.IsNumber(item.SplitType)) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType = item.SplitType;
                 if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) chart.Frame.SubFrame[i].Frame.YSplitOperator.FloatPrecision = item.FloatPrecision;   //强制指定小数位数(主图有效)
+                if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
             }
         }
 
@@ -573,6 +574,7 @@ function JSChart(element)
                 if (item.IsShowRightText === false || item.IsShowRightText===true) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度
                 if (item.Height >= 0) chart.Frame.SubFrame[i].Height = item.Height; 
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom = item.Custom;
+                if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
             }
 
             chart.UpdateXShowText();
@@ -2382,29 +2384,67 @@ function IChartFramePainting()
     this.IsLocked = false;               //是否上锁
     this.LockPaint = null;
 
-  this.Draw = function () {
-    this.DrawFrame();
-    this.DrawBorder();
+    this.BorderLine=null;               //1=上 2=下 4=左 8=右
 
-    this.SizeChange = false;
-    this.XYSplit = false;
-  }
+    this.Draw = function () 
+    {
+        this.DrawFrame();
+        this.DrawBorder();
 
-  this.DrawFrame = function () { }
+        this.SizeChange = false;
+        this.XYSplit = false;
+    }
 
-  //画边框
-  this.DrawBorder = function () {
-    if (!this.IsShowBorder) return;
+    this.DrawFrame = function () { }
 
-    var left = ToFixedPoint(this.ChartBorder.GetLeft());
-    var top = ToFixedPoint(this.ChartBorder.GetTop());
-    var right = ToFixedPoint(this.ChartBorder.GetRight());
-    var bottom = ToFixedPoint(this.ChartBorder.GetBottom());
-    var width = right - left;
-    var height = bottom - top;
-    this.Canvas.strokeStyle = this.PenBorder;
-    this.Canvas.strokeRect(left, top, width, height);
-  }
+    //画边框
+    this.DrawBorder = function () 
+    {
+        if (!this.IsShowBorder) return;
+
+        var left = ToFixedPoint(this.ChartBorder.GetLeft());
+        var top = ToFixedPoint(this.ChartBorder.GetTop());
+        var right = ToFixedPoint(this.ChartBorder.GetRight());
+        var bottom = ToFixedPoint(this.ChartBorder.GetBottom());
+        var width = right - left;
+        var height = bottom - top;
+        if (this.BorderLine==null)
+        {
+            this.Canvas.strokeStyle = this.PenBorder;
+            this.Canvas.strokeRect(left, top, width, height);
+        }
+        else if (IFrameSplitOperator.IsNumber(this.BorderLine))
+        {
+            this.Canvas.strokeStyle=this.PenBorder;
+            this.Canvas.beginPath();
+            
+            if ((this.BorderLine&1)>0) //上
+            {
+                this.Canvas.moveTo(left,top);
+                this.Canvas.lineTo(right,top);
+            }
+
+            if ((this.BorderLine&2)>0)  //下
+            {
+                this.Canvas.moveTo(left,bottom);
+                this.Canvas.lineTo(right,bottom);
+            }
+
+            if ((this.BorderLine&4)>0)  //左
+            {
+                this.Canvas.moveTo(left,top);
+                this.Canvas.lineTo(left,bottom);
+            }
+
+            if ((this.BorderLine&8)>0)    //右
+            {
+                this.Canvas.moveTo(right,top);
+                this.Canvas.lineTo(right,bottom);
+            }
+              
+            this.Canvas.stroke();
+        }
+    }
 
   //画标题背景色
   this.DrawTitleBG = function () {
