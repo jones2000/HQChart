@@ -4013,6 +4013,11 @@ function JSChart(divElement, bOffscreen)
             if (item.BIT==true) chart.EnableFlowCapital.BIT=item.BIT;
         }
 
+        if (IFrameSplitOperator.IsBool(option.EnableBorderDrag))
+        {
+            chart.EnableBorderDrag=option.EnableBorderDrag;
+        }
+
         if (option.Page)
         {
             if (option.Page.Day && option.Page.Day.Enable==true) chart.Page.Day.Enable=true;
@@ -4443,6 +4448,11 @@ function JSChart(divElement, bOffscreen)
         }
 
         if (option.SplashTitle) chart.ChartSplashPaint.SplashTitle=option.SplashTitle;
+
+        if (IFrameSplitOperator.IsBool(option.EnableBorderDrag))
+        {
+            chart.EnableBorderDrag=option.EnableBorderDrag;
+        }
 
         this.AdjustChartBorder(chart);
 
@@ -5445,6 +5455,8 @@ function JSChartContainer(uielement, OffscreenElement)
     this.UIElement=uielement;
     this.MouseDrag;
     this.DragMode=1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择 3(CLICK_TOUCH_MODE_ID)=长按十字光标显示保留/点击十字光标消失 (使用TouchStatus)
+    this.EnableBorderDrag=true;                     //是否可以拖拽边框调整指标框高度
+    this.BorderDrag;    //{ Index:, }
     this.TouchStatus={ CorssCursorShow:false },     //十字光标是否显示
     this.DragTimer;
     this.EnableScrollUpDown=false;                  //是否可以上下滚动图形(手机端才有)
@@ -5549,6 +5561,7 @@ function JSChartContainer(uielement, OffscreenElement)
         //加载数据中,禁用鼠标事件
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
         if (this.DisableMouse==true) return;
+        if (this.BorderDrag) return;
 
         //保存最后一次鼠标移动信息
         var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
@@ -5587,15 +5600,13 @@ function JSChartContainer(uielement, OffscreenElement)
     this.UIOnMouseDown=function(e)
     {
         this.ClickDownPoint={ X:e.clientX, Y:e.clientY };
-
-        if(this.DragMode==0) return;
-
-        var pixelTatio = GetDevicePixelRatio();
         this.IsOnTouch=true;
+        this.BorderDrag=null;
 
         if (this.TryClickLock)
         {
             //JSConsole.Chart.Log('[uielement.onmousedown] left, top ',e.clientX, e.clientY, this.getBoundingClientRect().left,this.getBoundingClientRect().top);
+            var pixelTatio = GetDevicePixelRatio();
             var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
             var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
             if (this.TryClickLock(x,y)) return;
@@ -5604,6 +5615,22 @@ function JSChartContainer(uielement, OffscreenElement)
         this.HideSelectRect();
         if (this.SelectRectRightMenu) this.SelectRectRightMenu.Hide();
         if (this.ChartPictureMenu) this.ChartPictureMenu.Hide();
+
+        if (this.EnableBorderDrag && this.Frame)
+        {
+            var pixelTatio = GetDevicePixelRatio();
+            var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+            var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+            var dragBorder=this.Frame.PtInFrameBorder(x,y);
+            if (dragBorder && dragBorder.Index>=0)
+            {
+                this.UIElement.style.cursor="n-resize";
+                this.BorderDrag={ Index:dragBorder.Index, }
+                JSConsole.Chart.Log("[JSChartContainer::UIOnMouseDown] DragBorder ",dragBorder);
+            }
+        }
+
+        if(this.DragMode==0) return;
 
         var drag=
         {
@@ -5618,7 +5645,12 @@ function JSChartContainer(uielement, OffscreenElement)
 
         this.MouseDrag=drag;
         this.SelectChartDrawPicture=null;
-        if (this.CurrentChartDrawPicture)  //画图工具模式
+
+        if (this.BorderDrag)
+        {
+
+        }
+        else if (this.CurrentChartDrawPicture)  //画图工具模式
         {
             var drawPicture=this.CurrentChartDrawPicture;
             if (drawPicture.Status==2)
@@ -5664,13 +5696,24 @@ function JSChartContainer(uielement, OffscreenElement)
     {
         //加载数据中,禁用鼠标事件
         if (this.ChartSplashPaint && this.IsEnableSplash == true) return;
-
+        
         var drag=this.MouseDrag;
         if (!drag) return;
 
         var moveSetp=Math.abs(drag.LastMove.X-e.clientX);
 
-        if (this.CurrentChartDrawPicture)
+        if (this.BorderDrag && this.BorderDrag.Index>=0)
+        {
+            if(Math.abs(drag.LastMove.Y-e.clientY)<5) return;
+
+            var yMove=e.clientY-drag.LastMove.Y;
+
+            this.OnMoveFromeBorder(this.BorderDrag.Index, yMove);
+
+            drag.LastMove.X=e.clientX;
+            drag.LastMove.Y=e.clientY;
+        }
+        else if (this.CurrentChartDrawPicture)
         {
             var drawPicture=this.CurrentChartDrawPicture;
             if (drawPicture.Status==1 || drawPicture.Status==2)
@@ -5820,6 +5863,8 @@ function JSChartContainer(uielement, OffscreenElement)
         this.MouseDrag=null;
         this.ClickDownPoint=null;
         this.IsOnTouch=false;
+        if (this.BorderDrag && this.BorderDrag.Index>=0) this.Frame.SaveSubFrameHeightRate();   //拖拽指标窗口高度以后保存
+        this.BorderDrag=null;
         if (bClearDrawPicture===true) this.CurrentChartDrawPicture=null;
     }
 
@@ -6658,6 +6703,16 @@ function JSChartContainer(uielement, OffscreenElement)
         this.LastPoint.Y=y;
         this.CursorIndex=this.Frame.GetXData(x);
 
+        if (this.EnableBorderDrag && this.Frame)
+        {
+            var dragBorder=this.Frame.PtInFrameBorder(x,y);
+            if (dragBorder && dragBorder.Index>=0)
+            {
+                this.UIElement.style.cursor="n-resize";
+                return;
+            }
+        }
+
         var bDrawPicture=false; //是否正在画图
         if (this.CurrentChartDrawPicture)
         {
@@ -6820,6 +6875,17 @@ function JSChartContainer(uielement, OffscreenElement)
     this.OnDoubleClick=function(x,y,e)
     {
         //JSConsole.Chart.Log(e);
+    }
+
+    this.OnMoveFromeBorder=function(index, yMove)
+    {
+        if (!this.Frame) return;
+
+        if (!this.Frame.OnMoveFromeBorder(index,yMove)) return ;
+
+        //this.Frame.SetSizeChage(true);
+        this.Frame.ReDrawToolbar();
+        this.Draw();
     }
 
     this.IsKLineContainer=function()
@@ -8136,7 +8202,7 @@ function IChartFramePainting()
         {
             this.Canvas.strokeStyle=this.PenBorder;
             this.Canvas.beginPath();
-            
+
             if ((this.BorderLine&1)>0) //上
             {
                 this.Canvas.moveTo(left,top);
@@ -8913,6 +8979,7 @@ function MinuteFrame()
     this.CustomHorizontalInfo=[];
     this.RightFrame=null;   //右侧多重坐标
     this.ToolbarID=Guid();  //工具条Div id
+    this.ReDrawToolbar=false;
 
     this.ModifyIndex=true;      //是否显示'改参数'菜单
     this.ChangeIndex=true;      //是否显示'换指标'菜单
@@ -8934,7 +9001,11 @@ function MinuteFrame()
         this.DrawHorizontal();
         this.DrawVertical();
 
-        if (this.SizeChange==true) this.DrawToolbar();  //大小变动才画工具条
+        if (this.SizeChange==true || this.ReDrawToolbar==true) 
+        {
+            this.DrawToolbar();  //大小变动才画工具条
+            this.ReDrawToolbar=false;
+        }
     }
 
     //画边框
@@ -8967,7 +9038,7 @@ function MinuteFrame()
         if (!this.ChartBorder.UIElement) return;
 
         var divToolbar=document.getElementById(this.ToolbarID);
-        if (divToolbar && this.SizeChange==false) return;
+        if (divToolbar && this.SizeChange==false && this.ReDrawToolbar==false) return;
 
         if (!divToolbar)
         {
@@ -9488,6 +9559,7 @@ function KLineFrame()
     this.ModifyIndexEvent;   //改参数 点击事件
     this.ChangeIndexEvent;   //换指标 点击事件
     this.ToolbarRect=null;   //保存工具条的位置
+    this.ReDrawToolbar=false;
 
     this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
 
@@ -9508,7 +9580,7 @@ function KLineFrame()
         if (!this.ChartBorder.UIElement) return;
 
         var divToolbar=document.getElementById(this.ToolbarID);
-        if (divToolbar && this.SizeChange==false) return;
+        if (divToolbar && this.SizeChange==false && this.ReDrawToolbar==false)  return;
 
         if (!divToolbar)
         {
@@ -9649,7 +9721,11 @@ function KLineFrame()
         this.DrawHorizontal();
         this.DrawVertical();
 
-        if (this.SizeChange==true) this.DrawToolbar();  //大小变动才画工具条
+        if (this.SizeChange==true || this.ReDrawToolbar==true) 
+        {
+            this.DrawToolbar();  //大小变动才画工具条
+            this.ReDrawToolbar=false;
+        }
     }
 
     //isLimit 是否限制在当前屏坐标下
@@ -11107,6 +11183,68 @@ function HQTradeFrame()
     this.Data;                              //主数据
     this.Position;                          //画布的位置
     this.SizeChange=true;
+    this.MinSubFrameHeight=g_JSChartResource.DragSubFrameBorder.MinFrameHeight;
+    this.DragBorderHeight=g_JSChartResource.DragSubFrameBorder.TopBorderHeight; //拖拽边框高度
+
+    this.OnMoveFromeBorder=function(index, yMove)
+    {
+        if (this.SubFrame.length<=0) return false;
+
+        var topFrame=this.SubFrame[index];
+        var bottomFrame=null;
+        for(var i=index+1;i<this.SubFrame.length;++i)
+        {
+            var item=this.SubFrame[i];
+            if (item.Height>0)
+            {
+                bottomFrame=item;
+                break;
+            }
+        }
+
+        if (!topFrame || !bottomFrame) return false;
+
+        var bottomBackup=topFrame.Frame.ChartBorder.Bottom;
+        var topBackup=bottomFrame.Frame.ChartBorder.Top;
+
+        topFrame.Frame.ChartBorder.Bottom-=yMove;
+        bottomFrame.Frame.ChartBorder.Top+=yMove;
+
+        var height=topFrame.Frame.ChartBorder.GetHeightEx();
+        var height2=bottomFrame.Frame.ChartBorder.GetHeightEx();
+        
+        //缩小的时候 小于最小高度 不处理
+        if ((height<this.MinSubFrameHeight && yMove<0) || (height2<this.MinSubFrameHeight && yMove>0)) 
+        {
+            topFrame.Frame.ChartBorder.Bottom=bottomBackup;
+            bottomFrame.Frame.ChartBorder.Top=topBackup;
+            return false;
+        }
+        
+        return true;
+    }
+
+    this.ReDrawToolbar=function()
+    {
+        for(var i in this.SubFrame)
+        {
+            this.SubFrame[i].Frame.ReDrawToolbar=true;
+        }
+    }
+
+    //保存高度比例
+    this.SaveSubFrameHeightRate=function()
+    {
+        var height=this.ChartBorder.GetHeight();
+
+        for(var i in this.SubFrame)
+        {
+            var item=this.SubFrame[i];
+            var subHeight=item.Frame.ChartBorder.GetHeight();
+            var rate=(subHeight/height)*100;
+            item.Height=rate;
+        }
+    }
 
     this.CalculateChartBorder=function()    //计算每个子框架的边框信息
     {
@@ -11465,6 +11603,28 @@ function HQTradeFrame()
         }
     }
 
+    //鼠标是否在边框上
+    this.PtInFrameBorder=function(x,y)
+    {
+        var height=this.DragBorderHeight;
+        for(var i=0;i<this.SubFrame.length-1;++i)
+        {
+            var item=this.SubFrame[i];
+            if (item.Frame.Heigh<=0) continue;
+            var bottom=item.Frame.ChartBorder.GetBottom();
+            var left=item.Frame.ChartBorder.GetLeft();
+            var right=item.Frame.ChartBorder.GetRight();
+
+            item.Frame.Canvas.beginPath();
+            item.Frame.Canvas.rect(left,bottom-height/2,(right-left),height);
+            if (item.Frame.Canvas.isPointInPath(x,y))
+            {
+                return { Index:i, Bottom:true };
+            }
+        }
+
+        return null;
+    }
 }
 
 //行情框架横屏
@@ -31192,6 +31352,11 @@ function JSChartResource()
     this.FrameLeftMargin=2;
     this.FrameRightMargin=2;
 
+    this.DragSubFrameBorder= {
+        TopBorderHeight:6*GetDevicePixelRatio(), //拖拽边框高度
+        MinFrameHeight:50*GetDevicePixelRatio() //指标窗口最小高度
+    },
+
     //叠加指标框架
     this.OverlayFrame={
         BolderPen:'rgb(190,190,190)',                    //指标边框线
@@ -31549,6 +31714,8 @@ function JSChartResource()
 
         if (style.DOTLINE) this.DOTLINE=style.DOTLINE;
         if (style.DRAWSL) this.DOTLINE=style.DRAWSL;
+
+        if (style.DragSubFrameBorder) this.DragSubFrameBorder=style.DragSubFrameBorder;
     }
 }
 
