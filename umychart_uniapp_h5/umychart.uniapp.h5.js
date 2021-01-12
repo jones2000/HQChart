@@ -20110,7 +20110,7 @@ function ChartChannel()
     }
 }
 
-//填充背景 TODO:横屏
+//填充背景 支持横屏
 function ChartBackground()
 {
     this.newMethod=IChartPainting;   //派生
@@ -20128,19 +20128,37 @@ function ChartBackground()
         if (!this.Color) return;
         if (this.Color.length<=0) return;
 
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+
         if (this.Color.length==2)
         {
-            if (this.ColorAngle==0)
+            if (this.IsHScreen)
             {
-                var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
-                var ptEnd={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetBottomEx() };
+                if (this.ColorAngle==0)
+                {
+                    var ptStart={ X:this.ChartBorder.GetRight(), Y:this.ChartBorder.GetTopEx() };
+                    var ptEnd={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                }
+                else
+                {
+                    var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                    var ptEnd={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetBottomEx() };
+                }
             }
             else
             {
-                var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
-                var ptEnd={ X:this.ChartBorder.GetRight(), Y:this.ChartBorder.GetTopEx() };
+                if (this.ColorAngle==0)
+                {
+                    var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                    var ptEnd={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetBottomEx() };
+                }
+                else
+                {
+                    var ptStart={ X:this.ChartBorder.GetLeft(), Y:this.ChartBorder.GetTopEx() };
+                    var ptEnd={ X:this.ChartBorder.GetRight(), Y:this.ChartBorder.GetTopEx() };
+                }
             }
-
+            
             let gradient = this.Canvas.createLinearGradient(ptStart.X,ptStart.Y, ptEnd.X,ptEnd.Y);
             gradient.addColorStop(0, this.Color[0]);
             gradient.addColorStop(1, this.Color[1]);
@@ -20161,10 +20179,20 @@ function ChartBackground()
             return;
         }
 
-        var left=this.ChartBorder.GetLeft();
-        var top=this.ChartBorder.GetTopEx();
-        var width=this.ChartBorder.GetWidth();
-        var height=this.ChartBorder.GetHeightEx();
+        if (this.IsHScreen)
+        {
+            var left=this.ChartBorder.GetLeftEx();
+            var top=this.ChartBorder.GetTop();
+            var width=this.ChartBorder.GetWidthEx();
+            var height=this.ChartBorder.GetHeight();
+        }
+        else
+        {
+            var left=this.ChartBorder.GetLeft();
+            var top=this.ChartBorder.GetTopEx();
+            var width=this.ChartBorder.GetWidth();
+            var height=this.ChartBorder.GetHeightEx();
+        }
         this.Canvas.fillRect(left, top,width, height);
     }
 
@@ -20176,6 +20204,11 @@ function ChartBackground()
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var top=this.ChartBorder.GetTopEx();
         var bottom=this.ChartBorder.GetBottomEx();
+        if (this.IsHScreen)
+        {
+            top=this.ChartBorder.GetRightEx();
+            bottom=this.ChartBorder.GetLeftEx();
+        }
 
         var aryPoint=[];    //点坐标
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
@@ -20188,7 +20221,7 @@ function ChartBackground()
             var y=this.ChartFrame.GetYFromData(value.Value);
 
             if (this.IsHScreen)
-                aryPoint[i]={ Line:{ X:bottom, Y:x }, Line2:{ X:bottom, Y:x } };
+                aryPoint[i]={ Line:{ X:bottom, Y:x }, Line2:{ X:top, Y:x } };
             else
                 aryPoint[i]={ Line:{ X:x, Y:top }, Line2:{ X:x, Y:bottom } };
         }
@@ -20215,8 +20248,16 @@ function ChartBackground()
                     for(var j=aryLine2.length-1; j>=0; --j)
                     {
                         var item2=aryLine2[j];
-                        this.Canvas.lineTo(item2.Line2.X+halfWidth, item2.Line2.Y);
-                        this.Canvas.lineTo(item2.Line2.X-halfWidth, item2.Line2.Y);
+                        if (this.IsHScreen)
+                        {
+                            this.Canvas.lineTo(item2.Line2.X, item2.Line2.Y+halfWidth);
+                            this.Canvas.lineTo(item2.Line2.X, item2.Line2.Y-halfWidth);
+                        }
+                        else
+                        {
+                            this.Canvas.lineTo(item2.Line2.X+halfWidth, item2.Line2.Y);
+                            this.Canvas.lineTo(item2.Line2.X-halfWidth, item2.Line2.Y);
+                        }
                     }
                     this.Canvas.closePath();
                     this.Canvas.fill();
@@ -20233,15 +20274,31 @@ function ChartBackground()
             if (firstPoint)
             {
                 this.Canvas.beginPath();
-                this.Canvas.moveTo(item.Line.X-halfWidth, item.Line.Y);
-                this.Canvas.lineTo(item.Line.X+halfWidth, item.Line.Y);
+                if (this.IsHScreen)
+                {
+                    this.Canvas.moveTo(item.Line.X, item.Line.Y-halfWidth);
+                    this.Canvas.lineTo(item.Line.X, item.Line.Y+halfWidth);
+                }
+                else
+                {
+                    this.Canvas.moveTo(item.Line.X-halfWidth, item.Line.Y);
+                    this.Canvas.lineTo(item.Line.X+halfWidth, item.Line.Y);
+                }
                 firstPoint=false;
                 color=item.Color;
             }
             else
             {
-                this.Canvas.lineTo(item.Line.X-halfWidth, item.Line.Y);
-                this.Canvas.lineTo(item.Line.X+halfWidth, item.Line.Y);
+                if (this.IsHScreen)
+                {
+                    this.Canvas.lineTo(item.Line.X, item.Line.Y-halfWidth);
+                    this.Canvas.lineTo(item.Line.X, item.Line.Y+halfWidth);
+                }
+                else
+                {
+                    this.Canvas.lineTo(item.Line.X-halfWidth, item.Line.Y);
+                    this.Canvas.lineTo(item.Line.X+halfWidth, item.Line.Y);
+                }
             }
 
             aryLine2.push(item);
@@ -20253,8 +20310,16 @@ function ChartBackground()
             for(var j=aryLine2.length-1; j>=0; --j)
             {
                 var item2=aryLine2[j];
-                this.Canvas.lineTo(item2.Line2.X+halfWidth, item2.Line2.Y);
-                this.Canvas.lineTo(item2.Line2.X-halfWidth, item2.Line2.Y);
+                if (this.IsHScreen)
+                {
+                    this.Canvas.lineTo(item2.Line2.X, item2.Line2.Y+halfWidth);
+                    this.Canvas.lineTo(item2.Line2.X, item2.Line2.Y-halfWidth);
+                }
+                else
+                {
+                    this.Canvas.lineTo(item2.Line2.X+halfWidth, item2.Line2.Y);
+                    this.Canvas.lineTo(item2.Line2.X-halfWidth, item2.Line2.Y);
+                }
             }
             this.Canvas.closePath();
             this.Canvas.fill();
