@@ -6,6 +6,7 @@ sys.path.append(rootPath)
 
 import HQChartPy2
 import platform
+import datetime
 
 
 
@@ -97,6 +98,18 @@ class IHQData(object):
     def GetIndexScript(self,name,callInfo, jobID):
         pass
 
+    # 星期五
+    @staticmethod 
+    def GetFirday(value) :
+        date = datetime.datetime.strptime(str(value), '%Y%m%d')
+        day=date.weekday()
+        if day==4 : 
+            return value
+
+        date+=datetime.timedelta(days=4-day)
+        fridayDate= date.year*10000+date.month*100+date.day
+        return fridayDate
+
 
 class FastHQChart :
     DllVersion=0
@@ -121,7 +134,7 @@ class FastHQChart :
         FastHQChart.Authorize=authorize
 
         print("*******************************************************************************************")
-        print("*  欢迎使用HQChart.Py C++ 技术指标计算引擎")
+        print("*  欢迎使用HQChartPy2 C++ 技术指标计算引擎")
         log="*  版本号:{0}.{1}".format(int(dllVersion/100000), (dllVersion%100000))
         print(log)
         log="*  授权信息:{0}".format(authorize)
