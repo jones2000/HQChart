@@ -61,14 +61,24 @@ class TushareHQChartData(IHQData) :
         elif (period==8):
             freq="60MIN"
 
-        try :
-            print("[TushareHQChartData::GetKLineAPIData] ts.pro_bar(ts_code={0}, adj={1}, start_date={2}, end_date={3}, freq={4})".format(symbol, fq, startDate, endDate, freq))
-            df = ts.pro_bar(ts_code=symbol, adj=fq, start_date=str(startDate), end_date=str(endDate),freq=freq)
-            # df = self.TusharePro.daily(ts_code=symbol, start_date='20200101', end_date='20201231')
-            
-        except Exception as e:
-            print('[TushareHQChartData::GetKLineAPIData] Error. throw exception {0},'.format(e))
-            return { "error":str(e) }
+       
+         # 指数
+        if (IHQData.IsSHSZIndex(symbol)) :
+            fq=None
+            try:
+                print("[TushareHQChartData::GetKLineAPIData] 指数 ts.pro_bar(ts_code={0}, adj={1}, start_date={2}, end_date={3}, freq={4}, asset='I')".format(symbol, fq, startDate, endDate, freq))
+                df = ts.pro_bar(ts_code=symbol, adj=fq, start_date=str(startDate), end_date=str(endDate),freq=freq, asset='I')
+            except Exception as e:
+                print('[TushareHQChartData::GetKLineAPIData] Error. throw exception {0},'.format(e))
+                return { "error":str(e) }
+        else :
+            try :
+                print("[TushareHQChartData::GetKLineAPIData] 股票 ts.pro_bar(ts_code={0}, adj={1}, start_date={2}, end_date={3}, freq={4})".format(symbol, fq, startDate, endDate, freq))
+                df = ts.pro_bar(ts_code=symbol, adj=fq, start_date=str(startDate), end_date=str(endDate),freq=freq)
+                # df = self.TusharePro.daily(ts_code=symbol, start_date='20200101', end_date='20201231')
+            except Exception as e:
+                print('[TushareHQChartData::GetKLineAPIData] Error. throw exception {0},'.format(e))
+                return { "error":str(e) }
 
         df=df.sort_index(ascending=False) # 数据要降序排
         print(df)

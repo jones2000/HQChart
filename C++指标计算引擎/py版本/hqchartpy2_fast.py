@@ -52,10 +52,6 @@ class IHQData(object):
     def GetDynainfo(self, symbol, id, period,right, kcount,jobID):
         pass
 
-    # INDEXA, INDEXC .... 获取指数数据 数组
-    def GetIndex(self, symbol, varName, period,right, kcount,jobID):
-        pass
-
     # CAPITAL 最新流通股本(手)
     def GetCapital(self,symbol, period, right, kcount,jobID):
         pass
@@ -86,8 +82,6 @@ class IHQData(object):
             return self.GetHisCapital(symbol,period,right,kcount, jobID)
         elif (funcName==u'TOTALCAPITAL'):
             return self.GetTotalCapital(symbol,period,right,kcount, jobID)
-        elif (funcName in (u"INDEXA", u"INDEXC", u"INDEXH", u"INDEXL", u"INDEXO",u"INDEXV", u"INDEXADV", u"INDEXDEC")) : # 大盘数据 其他的大盘数据也在这里
-            return self.GetIndex(symbol,funcName,period,right,kcount, jobID)
         else :
             return False
 
@@ -109,6 +103,22 @@ class IHQData(object):
         date+=datetime.timedelta(days=4-day)
         fridayDate= date.year*10000+date.month*100+date.day
         return fridayDate
+
+    # 是否是沪深指数
+    @staticmethod
+    def IsSHSZIndex(symbol) :
+        upperSymbol=symbol.upper()
+        if (upperSymbol.find('.SH')>0) :
+            upperSymbol=upperSymbol.replace('.SH','')
+            if (upperSymbol[0]=='0' or int(upperSymbol)<=3000) :
+                return True
+        elif (upperSymbol.find('.SZ')>0) :
+            upperSymbol=upperSymbol.replace('.SZ','')
+            if (upperSymbol[0]=='3' or upperSymbol[1]=='9') :
+                return True
+        
+        return False
+
 
 
 class FastHQChart :
