@@ -73,6 +73,8 @@ class IHQData(object):
             return False
 
     def GetDataByNumbers(self, symbol,funcName,args, period,right,kcount, jobID):
+        if (funcName==u"GPJYVALUE") :
+            return self.GetGPJYValue(symbol, args, period, right, kcount, jobID)
         pass
 
     def GetDataByName(self, symbol,funcName,period,right,kcount, jobID) :
@@ -87,6 +89,11 @@ class IHQData(object):
 
     def GetDataByString(self, symbol,funcName,period,right,kcount, jobID):
         return False
+
+    # 引用股票交易类数据.
+    # GPJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据,TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
+    def GetGPJYValue(self, symbol,args,period, right, kcount ,jobID):
+        pass
 
     # 系统指标
     def GetIndexScript(self,name,callInfo, jobID):
@@ -114,7 +121,7 @@ class IHQData(object):
                 return True
         elif (upperSymbol.find('.SZ')>0) :
             upperSymbol=upperSymbol.replace('.SZ','')
-            if (upperSymbol[0]=='3' or upperSymbol[1]=='9') :
+            if (upperSymbol[0]=='3' and upperSymbol[1]=='9') :
                 return True
         
         return False

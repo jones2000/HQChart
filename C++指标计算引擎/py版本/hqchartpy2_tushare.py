@@ -265,6 +265,100 @@ class TushareHQChartData(IHQData) :
         elif (id==10) : # DYNAINFO(10)  总金额 即时行情数据
             return self.GetDailyDataLatest(symbol,"amount")
 
+    # 引用股票交易类数据.
+    # GPJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据,TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
+    def GetGPJYValue(self, symbol,args,period, right, kcount ,jobID):
+        if (args[0]==1) :
+            return self.GetHolderNumber(symbol, args)
+        elif (args[0] in (3,11,12,13)) :
+            return self.GetMarginDetail(symbol,args)
+        elif (args[0]==4) :
+            return self.GetBlockTrade(symbol, args)
+        pass
+
+    # 股东人数
+    def GetHolderNumber(self, symbol,args) :
+        df=self.TusharePro.stk_holdernumber(ts_code=symbol,start_date=str(self.StartDate), end_date=str(self.EndDate))
+        df=df.sort_index(ascending=False) # 数据要降序排
+        print(df)
+
+        aryDate=df["end_date"] # 截止日期
+        aryDate[aryDate == ''] = 0
+        aryDate = aryDate.astype(np.int).tolist()
+        aryData=df['holder_num'].tolist()
+
+        result={"type": 2}  # 类型2 根据'date'自动合并到K线数据上
+        if (args[2]==0) :
+            result["type"]=4    # 类型3 根据'date'自动合并到K线数据上 不做平滑处理
+        result["data"]=aryData
+        result["date"]=aryDate
+        return result
+
+    # 融资融券
+    # 3--融资融券1 融资余额(万元) 融券余量(股)
+    # 11--融资融券2 融资买入额(万元) 融资偿还额(万元)
+    # 12--融资融券3 融券卖出量(股) 融券偿还量(股)
+    # 13--融资融券4 融资净买入(万元) 融券净卖出(股)
+
+    def GetMarginDetail(self, symbol, args) :
+        df=self.TusharePro.margin_detail(ts_code=symbol,start_date=str(self.StartDate), end_date=str(self.EndDate))
+        df=df.sort_index(ascending=False) # 数据要降序排
+        print(df)
+
+        aryDate=df["trade_date"] # 截止日期
+        aryDate[aryDate == ''] = 0
+        aryDate = aryDate.astype(np.int).tolist()
+
+        if (args[0]==3) :
+            if (args[1]==2) : # 融券余量(股)
+                aryData=np.multiply(df['rqyl'],100).tolist()
+            else : # 融资余额(万元)
+                aryData=np.divide(df['rzye'], 10000).tolist()
+        elif (args[0]==11) :
+            if (args[1]==2) : # 融资偿还额(万元)
+                aryData=np.divide(df['rzche'],10000).tolist()
+            else : # 融资买入额(万元)
+                aryData=np.divide(df['rzmre'], 10000).tolist()
+        elif (args[0]==12) :
+            if (args[1]==2) : # 融券偿还量(股)
+                aryData=np.multiply(df['rqchl'],100).tolist()
+            else : # 融券卖出量(股)
+                aryData=np.multiply(df['rqmcl'], 100).tolist()
+        elif (args[0]==13) :
+            if (args[1]==2) : # 融券净卖出(股) 融券卖出-融券偿还
+                aryData=np.subtract(df['rqmcl'],df["rqchl"]).tolist()
+            else : # 融资净买入(万元)  融资买入-融资偿还
+                aryData=np.subtract(df['rzmre'], df['rzche']).tolist() 
+        
+        result={"type": 2}  # 类型2 根据'date'自动合并到K线数据上
+        if (args[2]==0) :
+            result["type"]=4    # 类型3 根据'date'自动合并到K线数据上 不做平滑处理
+        result["data"]=aryData
+        result["date"]=aryDate
+        return result
+    
+    # 大宗交易
+    def GetBlockTrade(self, symbol, args) :
+        df=self.TusharePro.block_trade(ts_code=symbol,start_date=str(self.StartDate), end_date=str(self.EndDate))
+        df=df.sort_index(ascending=False) # 数据要降序排
+        print(df)
+
+        aryDate=df["trade_date"] # 截止日期
+        aryDate[aryDate == ''] = 0
+        aryDate = aryDate.astype(np.int).tolist()
+
+        if (args[1]==2) : # 成交额(万元)
+            aryData=np.divide(df['amount'],10000).tolist()
+        else : # 成交均价(元)
+            aryData=df['price'].tolist()
+        
+        result={"type": 2}  # 类型2 根据'date'自动合并到K线数据上
+        if (args[2]==0) :
+            result["type"]=4    # 类型3 根据'date'自动合并到K线数据上 不做平滑处理
+        result["data"]=aryData
+        result["date"]=aryDate
+        return result
+
     # 系统指标
     def GetIndexScript(self,name,callInfo, jobID):
         indexScript={
@@ -321,17 +415,18 @@ def TestSingleStock() :
         # "Name":"MA",
         "Script":'''
         //CALCSTOCKINDEX('SH600036', 'KDJ', 3);
-        STKINDI('sz300059','KDJ.T1#WEEK',9,4,4);
+        //STKINDI('sz300059','KDJ.T1#WEEK',9,4,4);
         MA(C,M1);
-        T2:C#WEEK;
+        GPJYVALUE(1,1,0);
+        //T2:C#WEEK;
         //T2:MA(C,M2);
         //T3:MA(C,M3);
         //T4:COST(10);
         //T5:TOTALCAPITAL;
         //T6:CAPITAL;
-        T9:DYNAINFO(8);
-        T7:FINANCE(18);
-        T8:FINANCE(40);
+        //T9:DYNAINFO(8);
+        //T7:FINANCE(18);
+        //T8:FINANCE(40);
         ''',
         # 脚本参数
         "Args": [ { "Name":"M1", "Value":15 }, { "Name":"M2", "Value":20 }, { "Name":"M3", "Value":30} ],
@@ -358,4 +453,4 @@ def TestSingleStock() :
 
 
 
-# TestSingleStock()
+TestSingleStock()
