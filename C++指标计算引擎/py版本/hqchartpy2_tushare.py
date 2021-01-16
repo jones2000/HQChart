@@ -221,7 +221,7 @@ class TushareHQChartData(IHQData) :
         elif (id==17) : # FINANCE(17) 资本公积金,上市公司最近一期财报数据
             return self.GetBalanceSheetLatest(symbol,"capital_rese_ps")
         elif (id==18) : # FINANCE(18)  每股公积金,上市公司最近一期财报数据
-            return self.GetBalanceSheetLatest(symbol, "surplus_rese_ps")
+            return self.GetBalanceSheetLatest(symbol, "cap_rese")
         elif (id==40) : # FINANCE(40)  流通市值
             return self.GetDailyBasicDataLatest(symbol,"circ_mv")
         elif (id==43) : # FINANCE(43)  净利润同比增长率,上市公司最近一期财报数据
@@ -299,7 +299,6 @@ class TushareHQChartData(IHQData) :
     # 11--融资融券2 融资买入额(万元) 融资偿还额(万元)
     # 12--融资融券3 融券卖出量(股) 融券偿还量(股)
     # 13--融资融券4 融资净买入(万元) 融券净卖出(股)
-
     def GetMarginDetail(self, symbol, args) :
         df=self.TusharePro.margin_detail(ts_code=symbol,start_date=str(self.StartDate), end_date=str(self.EndDate))
         df=df.sort_index(ascending=False) # 数据要降序排
@@ -361,17 +360,20 @@ class TushareHQChartData(IHQData) :
 
     # 系统指标
     def GetIndexScript(self,name,callInfo, jobID):
-        indexScript={
-        # 系统指标名字
-        "Name":name,
-        "Script":'''
-        T1:MA(C,M1);
-        T2:MA(C,M2);
-        T3:MA(C,M3);
-        ''',
-        # 脚本参数
-        "Args": [ { "Name":"M1", "Value":15 }, { "Name":"M2", "Value":20 }, { "Name":"M3", "Value":30} ]
-        }
+        print("[TushareHQChartData::GetIndexScript] name={0},callInfo={1}".format(name, callInfo))
+        if (name==u"KDJ") :
+            indexScript={
+                # 系统指标名字
+                "Name":name,
+                "Script":'''
+                RSV:=(CLOSE-LLV(LOW,N))/(HHV(HIGH,N)-LLV(LOW,N))*100;
+                K:SMA(RSV,M1,1);
+                D:SMA(K,M2,1);
+                J:3*K-2*D;
+                ''',
+                # 脚本参数
+                "Args": [ { "Name":"N", "Value":9 }, { "Name":"M1", "Value":3 }, { "Name":"M2", "Value":3} ]
+            }
 
         return indexScript
         
@@ -404,11 +406,12 @@ class HQResultTest():
         print(log)
 
 
-
 def TestSingleStock() :
     # 授权码
-    key="oTjOc1CNCuxtcAqs6+/FHeKmYcPpFv+M9y7seNd6eBTE9tq1El9mGLi7bj6gtMf3RpWtGJ0K7Tu2wbEBUjunGb5mgGskWii4vlUK+5XFr7fI/nDysxdWOebKqJ+RLif0MptDIGdQP8nbyw1osZdXJuWpb4RYYNrzeXtbQVDI2UNnuJUm8DpGs/SgKrw9l+Q2QT/hMnJ6/MMsjMpsgHmV5iHWQTzzAU2QXnX5rtMuAISFKcLlbPzKF809lexHbtqXqoPxQfJkqh0YzTyJOZLhkvZ+Sm5vIu4EhJjIQBTLrX229t8rIvwKwLZ/UEuewSQFgq2QkpBQMPlBU/HVy5h7WQ=="
-    FastHQChart.Initialization(key)
+    HQCHARTPY2_KEY="oTjOc1CNCuxtcAqs6+/FHeKmYcPpFv+M9y7seNd6eBTE9tq1El9mGLi7bj6gtMf3RpWtGJ0K7Tu2wbEBUjunGb5mgGskWii4vlUK+5XFr7fI/nDysxdWOebKqJ+RLif0MptDIGdQP8nbyw1osZdXJuWpb4RYYNrzeXtbQVDI2UNnuJUm8DpGs/SgKrw9l+Q2QT/hMnJ6/MMsjMpsgHmV5iHWQTzzAU2QXnX5rtMuAISFKcLlbPzKF809lexHbtqXqoPxQfJkqh0YzTyJOZLhkvZ+Sm5vIu4EhJjIQBTLrX229t8rIvwKwLZ/UEuewSQFgq2QkpBQMPlBU/HVy5h7WQ=="
+    TUSHARE_TOKEN="836dcc340f026bd41b378d702d5e11950df18c1750b18ec18dc4ea09"
+
+    FastHQChart.Initialization(HQCHARTPY2_KEY)
 
     runConfig={
         # 系统指标名字
@@ -425,7 +428,7 @@ def TestSingleStock() :
         //T5:TOTALCAPITAL;
         //T6:CAPITAL;
         //T9:DYNAINFO(8);
-        //T7:FINANCE(18);
+        T7:FINANCE(18);
         //T8:FINANCE(40);
         ''',
         # 脚本参数
@@ -439,7 +442,7 @@ def TestSingleStock() :
     }
 
     jsConfig = json.dumps(runConfig)    # 运行配置项
-    hqData=TushareHQChartData("836dcc340f026bd41b378d702d5e11950df18c1750b18ec18dc4ea09",startDate=20200421, endDate=20201231)    # 实例化数据类
+    hqData=TushareHQChartData(TUSHARE_TOKEN,startDate=20200421, endDate=20201231)    # 实例化数据类
     result=HQResultTest()   # 实例计算结果接收类
 
     start = time.process_time()
