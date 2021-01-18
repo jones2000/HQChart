@@ -3751,7 +3751,7 @@ function JSChartContainer(uielement, OffscreenElement)
         this.ReloadFrame(option.Resource);
         this.ReloadChartCorssCursor(option,option.Resource);
 
-        if (option.Update) this.Update( {UpdateCursorIndexType:2} );       //是否立即更新并重绘
+        if (option.Update && this.Update) this.Update( {UpdateCursorIndexType:2} );       //是否立即更新并重绘
         else if (option.Draw==true) this.Draw(); //是否立即重绘
     }
 
@@ -9124,6 +9124,16 @@ function ChartData()
         {
             var date=this.Data[i].Date;
 
+            if (j<financeData.length)
+            {
+                var fDate=financeData[j].Date;
+                if (date<fDate)
+                {
+                    ++i;
+                    continue;
+                }
+            }
+            
             if (j+1<financeData.length)
             {
                 if (financeData[j].Date<date && financeData[j+1].Date<=date)
@@ -9193,19 +9203,34 @@ function ChartData()
     }
 
     //日线拟合交易数据, 不做平滑处理
-    this.GetFittingTradeData=function(tradeData, nullValue)
+    this.GetFittingTradeData=function(tradeData, nullValue, bExactMatch)
     {
         var result=[];
+        var bMatch=false;
 
         for(var i=0,j=0;i<this.Data.length;)
         {
             var date=this.Data[i].Date;
+
+            if (j<tradeData.length)
+            {
+                if (tradeData[j].Date>date)
+                {
+                    var item=new SingleData();
+                    item.Date=date;
+                    item.Value=nullValue;
+                    result[i]=item;
+                    ++i;
+                    continue;
+                }
+            }
 
             if (j+1<tradeData.length)
             {
                 if (tradeData[j].Date<date && tradeData[j+1].Date<=date)
                 {
                     ++j;
+                    bMatch=false;
                     continue;
                 }
             }
@@ -9217,18 +9242,23 @@ function ChartData()
             if (j<tradeData.length)
             {
                 var tradeItem=tradeData[j];
-                if (this.Period==0) //日线完全匹配
+                if (this.Period==0 && bExactMatch===true) //日线完全匹配
                 {
                     if (tradeItem.Date==item.Date)
                     {
                         item.Value=tradeItem.Value;
                         item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                        bMatch=true;
                     }
                 }
                 else    //其他日线周期
                 {
-                    item.Value=tradeItem.Value;
-                    item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                    if (bMatch==false)
+                    {
+                        item.Value=tradeItem.Value;
+                        item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                        bMatch=true;
+                    }
                 }
             }
            

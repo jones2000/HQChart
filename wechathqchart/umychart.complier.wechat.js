@@ -16,7 +16,29 @@ import { JSCommonData } from "./umychart.data.wechat.js";     //行情数据结�
 var g_JSComplierResource=
 {
     Domain : "https://opensource.zealink.com",               //API域名
-    CacheDomain : "https://opensourcecache.zealink.com"      //缓存域名
+    CacheDomain : "https://opensourcecache.zealink.com",     //缓存域名
+
+    CustomFunction: //定制函数
+    {
+        Data:new Map()  //自定义函数 key=函数名, Value:{ID:函数名, Callback: }
+    },
+
+    CustomVariant:  //自定义变量
+    {
+        Data:new Map()  //自定义函数 key=变量名, Value:{ Name:变量名, Description:描述信息 }
+    },
+
+    IsCustomFunction:function(name)
+    {
+        if (g_JSComplierResource.CustomFunction.Data.has(name)) return true;
+        return false;
+    },
+
+    IsCustomVariant:function(name)
+    {
+        if (g_JSComplierResource.CustomVariant.Data.has(name)) return true;
+        return false;
+    }
 }
 
 var Messages = {
@@ -796,10 +818,27 @@ function Node()
             this.FunctionData.push(item);
             return;
         }
+
+        if (g_JSComplierResource.IsCustomVariant(varName)) //自定义函数
+        {
+            var item={ VariantName:varName, ID:JS_EXECUTE_JOB_ID.JOB_CUSTOM_VARIANT_DATA };
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+            this.FunctionData.push(item);
+            return;
+        }
     }
 
     this.VerifySymbolFunction = function (callee, args, token)
     {
+         //自定义函数 可以覆盖系统内置函数
+         if (g_JSComplierResource.IsCustomFunction(callee.Name)) 
+         {
+             var item={FunctionName:callee.Name, ID:JS_EXECUTE_JOB_ID.JOB_CUSTOM_FUNCTION_DATA, Args:args}
+             if (token) item.Token={ Index:token.Start, Line:token.LineNumber};
+             this.FunctionData.push(item);
+             return;
+         }
+
         if (callee.Name=='DYNAINFO') 
         {
             this.IsNeedLatestData=true;
@@ -5839,6 +5878,33 @@ function JSAlgorithm(errorHandler, symbolData)
         }
     }
 
+    //调用自定义函数 返回数据格式{Out:输出数据, Draw:绘图数据(可选)}
+    this.CallCustomFunction=function(name, args, symbolData, node)
+    {
+        var functionInfo=g_JSComplierResource.CustomFunction.Data.get(name);
+        var dwonloadData=symbolData.GetStockCacheData({ CustomName:name, Node:node });
+        if (!functionInfo.Invoke)
+            return { Out: dwonloadData }
+
+        console.log('[JSAlgorithm::CallCustomFunction] call custom function functionInfo=',functionInfo);
+
+        var self=this;
+        var obj=
+        {
+            Name:name,
+            Args:args,
+            Symbol:symbolData.Symbol, Period:symbolData.Period, Right:symbolData.Right, 
+            KData:symbolData.Data,  //K线数据
+            DownloadData:dwonloadData,
+            ThrowError:function(error)
+            {
+                self.ThrowUnexpectedNode(node, error);
+            }
+        };
+
+        return functionInfo.Invoke(obj);
+    }
+
     this.ThrowUnexpectedNode=function(node,message)
     {
         let marker=node.Marker;
@@ -7769,6 +7835,85 @@ function JSSymbolData(ast,option,jsExecute)
         apiDownload.Download();
     }
 
+    //自定义变量数据下载
+    this.GetCustomVariantData=function(jobItem)
+    {
+        var key=jobItem.VariantName;
+        if (this.StockData.has(key)) return this.Execute.RunNextJob();
+
+        var variantInfo=g_JSComplierResource.CustomVariant.Data.get(key);
+        var self=this;
+        if (this.NetworkFilter)
+        {
+            var dateRange=this.Data.GetDateRange();
+            var obj=
+            {
+                Name:'JSSymbolData::GetCustomVariantData', //类名::函数名
+                Explain:'自定义变量数据下载',
+                JobID:jobItem.ID,
+                Request:{ Url:"www.121287.com", Type:'POST', Data:{ VariantName:jobItem.VariantName, symbol: this.Symbol, daterange:dateRange } },
+                Self:this,
+                VariantInfo:variantInfo,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(recvData) 
+            { 
+                if (recvData.Error) self.AddStockValueError(key,recvData.Error);
+                else self.RecvStockValue(recvData.Data,jobItem,key,recvData.DataType);
+                self.Execute.RunNextJob();
+            });
+        }
+        else
+        {
+            this.AddStockValueError(key, `自定义变量${key}下载失败`);
+            this.Execute.RunNextJob();
+        }
+    }
+
+    this.GetCustomFunctionData=function(jobItem)
+    { 
+        var key=jobItem.FunctionName;
+        var functionInfo=g_JSComplierResource.CustomFunction.Data.get(key);
+        if (!functionInfo.IsDownload) return this.Execute.RunNextJob();
+        if (this.StockData.has(key)) return this.Execute.RunNextJob();  //一个函数只能缓存一个数据, 保存多个外部自己保存
+
+        var self=this;
+        if (this.NetworkFilter)
+        {
+            var dateRange=this.Data.GetDateRange();
+            var obj=
+            {
+                Name:'JSSymbolData::GetCustomFunctionData', //类名::函数名
+                Explain:'自定义函数数据下载',
+                JobID:jobItem.ID,
+                Request:
+                { 
+                    Url:"www.121287.com", Type:'POST', 
+                    Data:
+                    { 
+                        FunctionName:jobItem.FunctionName, 
+                        symbol: this.Symbol, daterange:dateRange,
+                        JobItem:jobItem //函数编译信息
+                    } 
+                },
+                Self:this,
+                FunctionInfo:functionInfo,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(recvData) 
+            { 
+                if (recvData.Error) self.AddStockValueError(key,recvData.Error);
+                else self.RecvStockValue(recvData.Data,jobItem,key,recvData.DataType);
+                self.Execute.RunNextJob();
+            });
+        }
+        else
+        {
+            this.AddStockValueError(key, `自定义函数${key}下载失败`);
+            this.Execute.RunNextJob();
+        }
+    }
+
     this.RecvStockValue=function(recvData,jobItem,key,dataType)
     {
         if (!recvData)
@@ -7815,14 +7960,14 @@ function JSSymbolData(ast,option,jsExecute)
         {
             this.StockData.set(key,{ Data:recvData.Value });
         }
-        else if (dataType==2)
+        else if (dataType==2)   //数据不做平滑处理
         {
             var kdata=this.Data;   //K线
                 var aryFittingData;
                 if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))
-                    aryFittingData=kdata.GetFittingTradeData(recvData, 0);        //数据和主图K线拟合
+                    aryFittingData=kdata.GetFittingTradeData(recvData, 0, false);        //数据和主图K线拟合
                 else if (JSCommonData.ChartData.IsMinutePeriod(this.Period,true))
-                    aryFittingData=kdata.GetMinuteFittingTradeData(recvData, 0);  //数据和主图K线拟合
+                    aryFittingData=kdata.GetMinuteFittingTradeData(recvData, 0, false);  //数据和主图K线拟合
                 else 
                     return;
         
@@ -7846,6 +7991,8 @@ function JSSymbolData(ast,option,jsExecute)
             key=this.GetStockDataKey({FunctionName:obj.FunctionName}, obj.Args);
         else if (obj.VariantName)
             key=obj.VariantName;
+        else if (obj.CustomName)
+            key=obj.CustomName;  //自定义名字
         else
             return null;
 
@@ -8478,6 +8625,9 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_GPJYVALUE:304,                 //引用股票交易类数据 GPJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据,TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
     JOB_DOWNLOAD_VARIANT:305,                   //CAPITAL , TOTALCAPITAL, EXCHANGE
 
+    JOB_CUSTOM_FUNCTION_DATA:6000,       //自定义函数
+    JOB_CUSTOM_VARIANT_DATA:6001,        //自定义变量
+
     JOB_DOWNLOAD_MARGIN_BALANCE: 1000,           //融资融券余额
     JOB_DOWNLOAD_MARGIN_RATE: 1001,              //融资占比
 
@@ -8647,6 +8797,12 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VARIANT:    //CAPITAL, TOTALCAPITAL 
                 return this.SymbolData.GetVariantData(jobItem);
 
+            case JS_EXECUTE_JOB_ID.JOB_CUSTOM_VARIANT_DATA:
+                return this.SymbolData.GetCustomVariantData(jobItem);
+
+            case JS_EXECUTE_JOB_ID.JOB_CUSTOM_FUNCTION_DATA:
+                return this.SymbolData.GetCustomFunctionData(jobItem);  
+
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BUY_BALANCE:       //买入信息-融资余额
@@ -8750,6 +8906,11 @@ function JSExecute(ast,option)
         }
     }
 
+    this.ReadCustomVariant=function(name,node)
+    {
+        return this.SymbolData.GetStockCacheData({ VariantName:name, Node:node });
+    }
+
     //读取变量
     this.ReadVariable=function(name,node)
     {
@@ -8765,6 +8926,8 @@ function JSExecute(ast,option)
 
             return data;
         }
+
+        if (g_JSComplierResource.IsCustomVariant(name)) return this.ReadCustomVariant(name,node); //读取自定义变量
 
         if (this.VarTable.has(name)) return this.VarTable.get(name);
 
@@ -9124,7 +9287,21 @@ function JSExecute(ast,option)
             args.push(value);
         }
 
-        if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitCallExpression]' , funcName, '(', args.toString() ,')');
+        //if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitCallExpression]' , funcName, '(', args.toString() ,')');
+        if (g_JSComplierResource.IsCustomFunction(funcName))    //自定义函数 
+        {
+            var data=this.Algorithm.CallCustomFunction(funcName, args, this.SymbolData, node);
+            node.Out=[];
+            node.Draw=null;
+
+            if (data)
+            {
+                if (data.Out) node.Out=data.Out;
+                if (data.Draw) node.Draw=data.Draw;
+            }
+
+            return node.Out;
+        }
 
         switch(funcName)
         {
@@ -9500,6 +9677,22 @@ JSComplier.SetDomain = function (domain, cacheDomain)
 {
     if (domain) g_JSComplierResource.Domain = domain;
     if (cacheDomain) g_JSComplierResource.CacheDomain = cacheDomain;
+}
+
+JSComplier.AddFunction=function(obj)    //添加函数 { Name:函数名, Description:描述信息, IsDownload:是否需要下载数据, Invoke:函数执行(可选) }
+{
+    if (!obj || !obj.Name) return;
+
+    var ID=obj.Name.toUpperCase();
+    g_JSComplierResource.CustomFunction.Data.set(ID, obj);
+}
+
+JSComplier.AddVariant=function(obj) //{ Name:变量名, Description:描述信息 }
+{
+    if (!obj || !obj.Name) return;
+
+    var ID=obj.Name.toUpperCase();
+    g_JSComplierResource.CustomVariant.Data.set(ID, obj);
 }
 
 
