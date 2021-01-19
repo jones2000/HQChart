@@ -41,6 +41,19 @@ function JSChartResource()
     this.CloseLineColor = 'rgb(0,191,255)';
     this.CloseLineAreaColor = ['rgba(0,191,255,0.8)', 'rgba(0,191,255,0.2)'];
 
+    this.Title = {
+        TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
+        ColorIndexColor:'rgb(112,128,144)',  //五彩K线颜色
+
+        VolColor:"rgb(43,54,69)",       //标题成交量
+        AmountColor:"rgb(43,54,69)",    //成交金额 
+        DateTimeColor:"rgb(43,54,69)",  //时间,日期  
+        SettingColor:"rgb(43,54,69)",   //周期,复权
+        NameColor:"rgb(43,54,69)" ,     //股票名称
+        TurnoverRateColor:'rgb(43,54,69)',       //换手率
+        PositionColor:"rgb(43,54,69)"       //持仓
+    };
+
     this.FrameBorderPen = "rgb(225,236,242)";
     this.FrameSplitPen = "rgb(225,236,242)";          //分割线
     this.FrameSplitTextColor = "rgb(51,51,51)";     //刻度文字颜色
@@ -311,6 +324,20 @@ function JSChartResource()
             if (style.TooltipPaint.BorderColor) this.TooltipPaint.BorderColor = style.TooltipPaint.BorderColor;
             if (style.TooltipPaint.TitleColor) this.TooltipPaint.TitleColor = style.TooltipPaint.TitleColor;
             if (style.TooltipPaint.TitleFont) this.TooltipPaint.TitleFont = style.TooltipPaint.TitleFont;
+        }
+
+        if (style.Title)
+        {
+            if (style.Title.TradeIndexColor) this.Title.TradeIndexColor=style.Title.TradeIndexColor;
+            if (style.Title.ColorIndexColor) this.Title.ColorIndexColor=style.Title.ColorIndexColor;
+
+            if (style.Title.VolColor) this.Title.VolColor=style.Title.VolColor;
+            if (style.Title.AmountColor) this.Title.AmountColor=style.Title.AmountColor;
+            if (style.Title.DateTimeColor) this.Title.DateTimeColor=style.Title.DateTimeColor;
+            if (style.Title.NameColor) this.Title.NameColor=style.Title.NameColor;
+            if (style.Title.SettingColor) this.Title.SettingColor=style.Title.SettingColor;
+            if (style.Title.TurnoverRateColor) this.Title.TurnoverRateColor=style.Title.TurnoverRateColor;
+            if (style.Title.PositionColor) this.Title.PositionColor=style.Title.PositionColor;
         }
 
         if (style.DRAWICON) 

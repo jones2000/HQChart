@@ -23292,10 +23292,13 @@ function DynamicKLineTitlePainting()
     this.DownColor=g_JSChartResource.DownTextColor;
     this.UnchagneColor=g_JSChartResource.UnchagneTextColor;
 
-    this.VolColor=g_JSChartResource.DefaultTextColor;
-    this.AmountColor=g_JSChartResource.DefaultTextColor;
-    this.DateTimeColor=g_JSChartResource.DefaultTextColor;
-    this.NameColor = g_JSChartResource.DefaultTextColor;
+    this.VolColor=g_JSChartResource.Title.VolColor;
+    this.AmountColor=g_JSChartResource.Title.AmountColor;
+    this.DateTimeColor=g_JSChartResource.Title.DateTimeColor;
+    this.NameColor = g_JSChartResource.Title.NameColor;
+    this.SettingColor=g_JSChartResource.Title.SettingColor;   //周期 复权
+    this.TurnoverRateColor=g_JSChartResource.Title.TurnoverRateColor;   //换手率
+    this.PositionColor=g_JSChartResource.Title.PositionColor;   //持仓
 
     this.Symbol;
     this.Name;
@@ -23319,10 +23322,13 @@ function DynamicKLineTitlePainting()
         this.DownColor=g_JSChartResource.DownTextColor;
         this.UnchagneColor=g_JSChartResource.UnchagneTextColor;
 
-        this.VolColor=g_JSChartResource.DefaultTextColor;
-        this.AmountColor=g_JSChartResource.DefaultTextColor;
-        this.DateTimeColor=g_JSChartResource.DefaultTextColor;
-        this.NameColor = g_JSChartResource.DefaultTextColor;
+        this.VolColor=g_JSChartResource.Title.VolColor;
+        this.AmountColor=g_JSChartResource.Title.AmountColor;
+        this.DateTimeColor=g_JSChartResource.Title.DateTimeColor;
+        this.NameColor = g_JSChartResource.Title.NameColor;
+        this.SettingColor=g_JSChartResource.Title.SettingColor;
+        this.TurnoverRateColor=g_JSChartResource.Title.TurnoverRateColor;   //换手率
+        this.PositionColor=g_JSChartResource.Title.PositionColor;   //持仓
     }
 
     this.GetCurrentKLineData=function() //获取当天鼠标位置所在的K线数据
@@ -23372,12 +23378,11 @@ function DynamicKLineTitlePainting()
 
         if (this.IsShowName)
         {
-            if (!this.DrawText(this.Name,this.UnchagneColor,position)) return;
+            if (!this.DrawText(this.Name,this.NameColor,position)) return;
         }
 
         if (this.IsShowSettingInfo)
         {
-            this.Canvas.fillStyle=this.NameColor;
             var periodName='';
             if (this.Data.Period>CUSTOM_MINUTE_PERIOD_START && this.Data.Period<=CUSTOM_MINUTE_PERIOD_END) 
                 periodName=(this.Data.Period-CUSTOM_MINUTE_PERIOD_START)+g_JSChartLocalization.GetText('自定义分钟',this.LanguageID);
@@ -23391,12 +23396,11 @@ function DynamicKLineTitlePainting()
             var text="("+periodName+" "+rightName+")";
             var isStock=MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol); //是否是指数
             if(item.Time!=null || !isStock)  text="("+periodName+")";           //分钟K线 指数 没有复权
-            if (!this.DrawText(text,this.NameColor,position)) return;
+            if (!this.DrawText(text,this.SettingColor,position)) return;
         }
 
         if (this.IsShowDateTime)    //是否显示日期
         {
-            this.Canvas.fillStyle=this.DateTimeColor;
             var text=IFrameSplitOperator.FormatDateString(item.Date);
             if (!this.DrawText(text,this.DateTimeColor,position)) return;
         }
@@ -23456,13 +23460,13 @@ function DynamicKLineTitlePainting()
         {
             var value=item.Vol/item.FlowCapital*100;    //成交量/流通A股*100
             var text=g_JSChartLocalization.GetText('KTitle-Exchange',this.LanguageID)+IFrameSplitOperator.FormatValueString(value,2,this.LanguageID)+'%';
-            if (!this.DrawText(text,this.AmountColor,position)) return;
+            if (!this.DrawText(text,this.TurnoverRateColor,position)) return;
         }
 
         if (MARKET_SUFFIX_NAME.IsFutures(upperSymbol) && IFrameSplitOperator.IsNumber(item.Position))  //持仓量
         {
             var text=g_JSChartLocalization.GetText('KTitle-Position',this.LanguageID)+item.Position;
-            if (!this.DrawText(text,this.AmountColor,position)) return;
+            if (!this.DrawText(text,this.PositionColor,position)) return;
         }
 
 
@@ -27554,7 +27558,15 @@ function JSChartResource()
 
     this.Title={
         TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
-        ColorIndexColor:'rgb(112,128,144)'  //五彩K线颜色
+        ColorIndexColor:'rgb(112,128,144)',  //五彩K线颜色
+
+        VolColor:"rgb(43,54,69)",       //标题成交量
+        AmountColor:"rgb(43,54,69)",    //成交金额 
+        DateTimeColor:"rgb(43,54,69)",  //时间,日期  
+        SettingColor:"rgb(43,54,69)",   //周期,复权
+        NameColor:"rgb(43,54,69)" ,     //股票名称
+        TurnoverRateColor:'rgb(43,54,69)',       //换手率
+        PositionColor:"rgb(43,54,69)"       //持仓
     };
 
     this.UpTextColor="rgb(238,21,21)";      //上涨文字颜色
@@ -27923,6 +27935,14 @@ function JSChartResource()
         {
             if (style.Title.TradeIndexColor) this.Title.TradeIndexColor=style.Title.TradeIndexColor;
             if (style.Title.ColorIndexColor) this.Title.ColorIndexColor=style.Title.ColorIndexColor;
+
+            if (style.Title.VolColor) this.Title.VolColor=style.Title.VolColor;
+            if (style.Title.AmountColor) this.Title.AmountColor=style.Title.AmountColor;
+            if (style.Title.DateTimeColor) this.Title.DateTimeColor=style.Title.DateTimeColor;
+            if (style.Title.NameColor) this.Title.NameColor=style.Title.NameColor;
+            if (style.Title.SettingColor) this.Title.SettingColor=style.Title.SettingColor;
+            if (style.Title.TurnoverRateColor) this.Title.TurnoverRateColor=style.Title.TurnoverRateColor;
+            if (style.Title.PositionColor) this.Title.PositionColor=style.Title.PositionColor;
         }
 
         if (style.DRAWICON) 

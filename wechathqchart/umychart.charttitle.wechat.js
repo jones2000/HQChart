@@ -83,10 +83,12 @@ function DynamicKLineTitlePainting()
     this.DownColor = g_JSChartResource.DownTextColor;
     this.UnchagneColor = g_JSChartResource.UnchagneTextColor;
 
-    this.VolColor = g_JSChartResource.DefaultTextColor;
-    this.AmountColor = g_JSChartResource.DefaultTextColor;
-    this.DateTimeColor = g_JSChartResource.DefaultTextColor;
-    this.NameColor = g_JSChartResource.DefaultTextColor;
+    this.VolColor=g_JSChartResource.Title.VolColor;
+    this.AmountColor=g_JSChartResource.Title.AmountColor;
+    this.DateTimeColor=g_JSChartResource.Title.DateTimeColor;
+    this.NameColor = g_JSChartResource.Title.NameColor;
+    this.SettingColor=g_JSChartResource.Title.SettingColor;   //周期 复权
+    this.PositionColor=g_JSChartResource.Title.PositionColor;   //持仓
 
     this.Symbol;
     this.UpperSymbol;
@@ -278,7 +280,7 @@ function DynamicKLineTitlePainting()
             var rightName = this.GetRightName(this.Data.Right);
             var text = "(" + periodName + ")";
             if (rightName) text = "(" + periodName + " " + rightName + ")";
-            if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
+            if (!this.DrawKLineText(text, this.SettingColor, position)) return;
         }
     }
 
@@ -310,7 +312,7 @@ function DynamicKLineTitlePainting()
             var rightName = this.GetRightName(this.Data.Right);
             var text = "(" + periodName + ")";
             if (rightName) text = "(" + periodName + " " + rightName + ")";
-            if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
+            if (!this.DrawKLineText(text, this.SettingColor, position)) return;
         }
     }
 
@@ -376,7 +378,7 @@ function DynamicKLineTitlePainting()
         }
         else if (ChartData.IsSecondPeriod(this.Period) && item.Time)
         {
-            this.Canvas.fillStyle = this.DateTimeColor;
+            this.Canvas.fillStyle = this.SettingColor;
             var text = IFrameSplitOperator.FormatTimeString(item.Time, 'HH:MM:SS');
             this.Canvas.fillText(text, left, bottom, itemWidth);
         }
@@ -440,7 +442,7 @@ function DynamicKLineTitlePainting()
             var rightName = this.GetRightName(this.Data.Right);
             var text = "(" + periodName + ")";
             if (rightName) text = "(" + periodName + " " + rightName + ")";
-            if (!this.DrawKLineText(text, this.DateTimeColor, position, bDrawTitle==true)) return;
+            if (!this.DrawKLineText(text, this.SettingColor, position, bDrawTitle==true)) return;
         }
 
         var text = IFrameSplitOperator.FormatDateString(item.Date); //日期
@@ -489,7 +491,7 @@ function DynamicKLineTitlePainting()
         if (MARKET_SUFFIX_NAME.IsChinaFutures(this.UpperSymbol) && IFrameSplitOperator.IsNumber(item.Position))
         {
             var text = g_JSChartLocalization.GetText('KTitle-Position', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Position, 2);
-            if (!this.DrawKLineText(text, this.VolColor, position)) return;
+            if (!this.DrawKLineText(text, this.PositionColor, position)) return;
         }
     }
 
