@@ -165,7 +165,6 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 28. [HQChart使用教程28-如何创建系统指标](https://blog.csdn.net/jones2000/article/details/100103486) <br>
 29. [HQChart使用教程31-走势图异动数据设置](https://blog.csdn.net/jones2000/article/details/100191957) <br>
 30. [HQChart使用教程32-如何K线图显示自定义SVG矢量图标](https://blog.csdn.net/jones2000/article/details/100613634) <br>
-32. [HQChart使用教程34-如何在麦语法中自定义函数](https://blog.csdn.net/jones2000/article/details/100734839) <br>
 33. [HQChart使用教程39-指标中如何绘制文本分割线](https://blog.csdn.net/jones2000/article/details/101487482) <br>
 34. [HQChart使用教程40-如何自定义分钟周期或日线周期K线](https://blog.csdn.net/jones2000/article/details/101722958) <br>
 35. [HQChart使用教程41-分钟K线设置拖拽自动下载历史数据](https://blog.csdn.net/jones2000/article/details/102471720) <br>
@@ -246,6 +245,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 23. [HQChart使用教程30-K线图如何对接第3方数据23-FINANCE函数数据](https://blog.csdn.net/jones2000/article/details/111999910)<br>
 24. [HQChart使用教程30-K线图如何对接第3方数据24-如何填充K线背景色](https://blog.csdn.net/jones2000/article/details/112342980)<br>
 25. [HQChart使用教程30-K线图如何对接第3方数据25-指标脚本自定义变量](https://blog.csdn.net/jones2000/article/details/112755911)<br>
+26. [HQChart使用教程30-K线图如何对接第3方数据26-指标脚本自定义函数](https://blog.csdn.net/jones2000/article/details/112809781)<br>
 
 
 ## 实战教程
