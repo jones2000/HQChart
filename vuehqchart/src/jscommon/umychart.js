@@ -6396,7 +6396,8 @@ function KLineFrame()
                 var moveOffset=(this.XPointCount-xPointCount)+1;
                 var leftOffset=parseInt(cursorIndex.Index/this.XPointCount*moveOffset);
                 var rightOffset=moveOffset-leftOffset;
-                var dataOffset=this.Data.DataOffset+leftOffset;
+                var offset=this.Data.DataOffset+leftOffset;
+                if (offset<dataCount) dataOffset=this.Data.DataOffset+leftOffset;
             }
 
             this.XPointCount=xPointCount;
@@ -22909,12 +22910,16 @@ function HistoryDataStringFormat()
     this.DownColor=g_JSChartResource.DownTextColor;
     this.UnchagneColor=g_JSChartResource.UnchagneTextColor;
 
-    this.VolColor=g_JSChartResource.DefaultTextColor;
-    this.AmountColor=g_JSChartResource.DefaultTextColor;
+    this.VolColor=g_JSChartResource.Title.VolColor;
+    this.AmountColor=g_JSChartResource.Title.AmountColor;
+    this.TurnoverRateColor=g_JSChartResource.Title.TurnoverRateColor;
+    this.PositionColor=g_JSChartResource.Title.PositionColor;
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-    this.LineCount=0;    //一共几行
-    this.Width=157;     //宽度
-    this.Height=25*5;     //高度
+    this.LineCount=0;                   //一共几行
+    this.LineHeight=g_JSChartResource.PCTooltip.LineHeight;                 //单行高度
+    this.Width=157;                     //宽度
+    this.Height=this.LineHeight*5;      //高度
+    
 
     this.Operator=function()
     {
@@ -22964,14 +22969,14 @@ function HistoryDataStringFormat()
         {
             var value=data.Vol/data.FlowCapital*100;
             strText+= "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Exchange',this.LanguageID)+"</span>" +
-                "<span class='tooltip-num' style='color:"+this.AmountColor+";'>"+value.toFixed(2)+'%'+"</span><br/>";
+                "<span class='tooltip-num' style='color:"+this.TurnoverRateColor+";'>"+value.toFixed(2)+'%'+"</span><br/>";
             ++this.LineCount;
         }
 
         if (MARKET_SUFFIX_NAME.IsFutures(upperSymbol) && IFrameSplitOperator.IsNumber(data.Position))
         {
             strText+= "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Position',this.LanguageID)+"</span>" +
-                "<span class='tooltip-num' style='color:"+this.VolColor+";'>"+data.Position+"</span><br/>";
+                "<span class='tooltip-num' style='color:"+this.PositionColor+";'>"+data.Position+"</span><br/>";
             ++this.LineCount;
         }
 
@@ -22985,7 +22990,7 @@ function HistoryDataStringFormat()
 
         this.Text=strText;
 
-        this.Height=this.LineCount*25;
+        this.Height=this.LineCount*this.LineHeight;
         return true;
     }
 
@@ -27772,6 +27777,10 @@ function JSChartResource()
         TitleFont:13*GetDevicePixelRatio() +'px 微软雅黑'   //字体
     };
 
+    this.PCTooltip= {
+        LineHeight:25   //单行高度
+    };
+
     //弹幕
     this.Barrage= {
         Font:16*GetDevicePixelRatio() +'px 微软雅黑',   //字体
@@ -29466,6 +29475,8 @@ function KLineChartContainer(uielement,OffscreenElement)
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
                 if (this.Frame.ZoomUp(cursorIndex))
                 {
+                    JSConsole.Chart.Log("[KLineChartContainer::OnWheel] cursorIndex ",cursorIndex)
+
                     this.CursorIndex=cursorIndex.Index;
                     this.UpdatePointByCursorIndex();
                     this.UpdataDataoffset();
@@ -33026,7 +33037,8 @@ function KLineChartContainer(uielement,OffscreenElement)
                 for(var i in klineData.Data)
                 {
                     var item=klineData.Data[i];
-                    item.FlowCapital=aryFixedData[i].Value;
+                    if (aryFixedData[i] && IFrameSplitOperator.IsNumber(aryFixedData[i].Value))
+                        item.FlowCapital=aryFixedData[i].Value;
                 }
             }
         }
@@ -33038,7 +33050,8 @@ function KLineChartContainer(uielement,OffscreenElement)
                 for(let i in this.SourceData.Data)
                 {
                     var item=this.SourceData.Data[i];
-                    item.FlowCapital=aryFixedData[i].Value;
+                    if (aryFixedData[i] && IFrameSplitOperator.IsNumber(aryFixedData[i].Value))
+                        item.FlowCapital=aryFixedData[i].Value;
                 }
 
                 var bindData=this.ChartPaint[0].Data;
@@ -33058,7 +33071,8 @@ function KLineChartContainer(uielement,OffscreenElement)
                 for(let i in this.SourceData.Data)
                 {
                     var item=this.SourceData.Data[i];
-                    item.FlowCapital=aryFixedData[i].Value;
+                    if (aryFixedData[i] && IFrameSplitOperator.IsNumber(aryFixedData[i].Value))
+                        item.FlowCapital=aryFixedData[i].Value;
                 }
 
                 var bindData=this.ChartPaint[0].Data;
