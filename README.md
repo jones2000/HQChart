@@ -276,6 +276,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 2. [HQChart实战教程30-A股日K线数据对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/113101342)<br>
 3. [HQChart实战教程31-A股分钟K线数据对接-Vue版本](https://blog.csdn.net/jones2000/article/details/113101407)<br>
 4. [HQChart实战教程32-A股分钟K线数据对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/113101448)<br>
+5. [HQChart实战教程23-A股分时图数据对接-Vue版本](https://blog.csdn.net/jones2000/article/details/113226866)<br>
 
 ## 高级应用实战教程（付费文章）
 1. [HQChart实战教程19 - PC端分时图定制tooltip](https://blog.csdn.net/jones2000/article/details/108633991)<br>
