@@ -347,19 +347,20 @@ function ErrorHandler()
         return error;
     }
 
-    this.CreateError=function(index, line, col, description)
+    this.CreateError=function(index, line, col, description, word)
     {
         let msg='Line ' + line + ': ' + description;
         let error=this.ConstructError(msg,col);
         error.Index=index;
         error.LineNumber=line;
         error.Description=description;
+        error.Word=word;    //错误单词
         return error;
     }
 
-    this.ThrowError=function(index, line, col, description)
+    this.ThrowError=function(index, line, col, description, word)
     {
-        let error=this.CreateError(index,line,col,description);
+        let error=this.CreateError(index,line,col,description,word);
         throw error;
     }
 
@@ -757,10 +758,10 @@ function Scanner(code, ErrorHandler)
         return comments;
     }
 
-    this.ThrowUnecpectedToken=function(message)
+    this.ThrowUnecpectedToken=function(message,word)
     {
         if (!message) message = Messages.UnexpectedTokenIllegal;
-	    return this.ErrorHandler.ThrowError(this.Index, this.LineNumber, this.Index - this.LineStart + 1, message);
+	    return this.ErrorHandler.ThrowError(this.Index, this.LineNumber, this.Index - this.LineStart + 1, message, word);
     }
 
 }
@@ -7555,7 +7556,7 @@ function JSAlgorithm(errorHandler,symbolData)
             case "RAND":
                 return this.RAND(args[0]);
             default:
-                this.ThrowUnexpectedNode(node,'函数'+name+'不存在');
+                this.ThrowUnexpectedNode(node,'函数'+name+'不存在', name);
         }
     }
 
@@ -7586,12 +7587,12 @@ function JSAlgorithm(errorHandler,symbolData)
         return functionInfo.Invoke(obj);
     }
 
-    this.ThrowUnexpectedNode=function(node,message)
+    this.ThrowUnexpectedNode=function(node,message,word)
     {
         let marker=node.Marker;
         let msg=message || "执行异常";
        
-        return this.ErrorHandler.ThrowError(marker.Index,marker.Line,marker.Column,msg);
+        return this.ErrorHandler.ThrowError(marker.Index,marker.Line,marker.Column,msg,word);
        
     }
 }
@@ -13723,7 +13724,7 @@ function JSExecute(ast,option)
             return this.SymbolData.GetSymbolPeriodCacheData(aryPeriod[0],aryPeriod[1]);
         }
 
-        this.ThrowUnexpectedNode(node, '变量'+name+'不存在');
+        this.ThrowUnexpectedNode(node, '变量'+name+'不存在', name);
         return null;
     }
 
@@ -14494,12 +14495,12 @@ function JSExecute(ast,option)
         }
     }
 
-    this.ThrowUnexpectedNode=function(node,message)
+    this.ThrowUnexpectedNode=function(node,message,word)
     {
         let marker=node.Marker;
         let msg=message || "执行异常";
        
-        return this.ErrorHandler.ThrowError(marker.Index,marker.Line,marker.Column,msg);
+        return this.ErrorHandler.ThrowError(marker.Index,marker.Line,marker.Column,msg, word);
        
     }
 
@@ -14523,6 +14524,7 @@ function JSExplainer(ast,option)
     this.AST=ast;
     this.ErrorHandler=new ErrorHandler();
     this.ErrorCallback;             //执行错误回调
+    this.UpdateUICallback;
     this.CallbackParam;
     this.JobList=[];                //执行的任务队列
     this.VarTable=new Map();        //变量表
@@ -14581,13 +14583,18 @@ function JSExplainer(ast,option)
         {                       
             let data=this.RunAST();//执行脚本
             JSConsole.Complier.Log('[JSExplainer.Run] explain finish', data);
+            if (this.UpdateUICallback) //回调发送结果, 可以支持异步
+            {
+                JSConsole.Complier.Log('[JSExplainer.Run] invoke UpdateUICallback.');
+                this.UpdateUICallback(data);
+            }
         }
         catch(error)
         {
             JSConsole.Complier.Log('[JSExplainer.Run] throw error ', error);
             if (this.ErrorCallback) 
             {
-                this.ErrorCallback(error, this.CallbackParam);
+                this.ErrorCallback(error, this.OutVarTable);
             }
         }
     }
@@ -14620,7 +14627,7 @@ function JSExplainer(ast,option)
                         let assignmentItem=item.Expression;
                         let varName=assignmentItem.Left.Name;
                         let outVar=`赋值${varName}: ${this.VarTable.get(varName)}`;
-                        this.OutVarTable.push({ Name:varName, Data:outVar,Type:0});
+                        this.OutVarTable.push({ Name:varName, Data:outVar,Type:0, IsOut:false });
                     }
                 }
                 else if (item.Expression.Type==Syntax.CallExpression)
@@ -15245,6 +15252,30 @@ function JSExplainer(ast,option)
         return 1;
     }
 
+    this.SymbolPeriodExplain=function(valueName,period)
+    {
+        const mapStockDataName=new Map(
+        [
+            ['CLOSE',"收盘价"],["C","收盘价"],['VOL',"成交量"],['V',"成交量"], ['OPEN',"开盘价"], ['O',"开盘价"], 
+            ['HIGH',"最高价"],['H',"最高价"], ['LOW',"最低价"],['L',"最低价"],['AMOUNT',"成交金额"],['AMO',"成交金额"], 
+            ['VOLINSTK',"持仓量"]
+        ]);
+        //MIN1,MIN5,MIN15,MIN30,MIN60,DAY,WEEK,MONTH,SEASON,YEAR
+        const mapPeriodName=new Map(
+        [
+            ["MIN1","1分钟"], ["MIN5", "5分钟"], ["MIN15", "15分钟"], ["MIN30","30分钟"],["MIN60","60分钟"],
+            ["DAY","日"],["WEEK","周"], ["MONTH", "月"], ['SEASON',"季"], ["YEAR", "年"]
+        ]);
+
+        var dataName=valueName;
+        if (mapStockDataName.has(valueName)) dataName=mapStockDataName.get(valueName);
+
+        var periodName=period;
+        if (mapPeriodName.has(period)) periodName=mapPeriodName.get(period);
+
+        return `${dataName}[取${periodName}数据]`;
+    }
+
     this.GetOtherSymbolExplain=function(obj, node)
     {
         const mapStockDataName=new Map(
@@ -15411,7 +15442,7 @@ function JSExplainer(ast,option)
                 if (node.Operator=='-') 
                 {
                     let value=this.GetNodeValue(node.Argument);
-                    return this.Algorithm.Subtract(0,value);
+                    return '-'+value;
                 }
                 return node.Argument.Value;
             case Syntax.Identifier:
@@ -15443,13 +15474,12 @@ function JSExplainer(ast,option)
         if (name.indexOf('#')>0)
         {
             var aryPeriod=name.split('#');
-            return this.SymbolData.GetSymbolPeriodCacheData(aryPeriod[0],aryPeriod[1]);
+            return this.SymbolPeriodExplain(aryPeriod[0],aryPeriod[1]);
         }
 
-        this.ThrowUnexpectedNode(node, '变量'+name+'不存在');
-        return null;
+        //this.ThrowUnexpectedNode(node, '变量'+name+'不存在');
+        return name;
     }
-
 
     this.ThrowUnexpectedNode=function(node,message)
     {

@@ -5724,13 +5724,14 @@ function KLineFrame()
     {
         if (typeof($)=="undefined") return;
         
-        if (!this.ChartBorder.UIElement) return;
+        if (!this.ChartBorder.UIElement || !this.ChartBorder.UIElement.parentNode) return;
 
         var divToolbar=document.getElementById(this.ToolbarID);
         if (divToolbar && this.SizeChange==false && this.ReDrawToolbar==false)  return;
 
         if (!divToolbar)
         {
+            
             divToolbar=document.createElement("div");
             divToolbar.className='klineframe-toolbar';
             divToolbar.id=this.ToolbarID;
@@ -17027,7 +17028,7 @@ function ChartMultiText()
     delete this.newMethod;
 
     this.ClassName="ChartMultiText";
-    this.Texts=[];  //[ {Index:, Value:, Text:, Color:, Font: , Baseline:} ]
+    this.Texts=[];  //[ {Index:, Value:, Text:, Color:, Font: , Baseline:, Line:{ Color:, Dash:[虚线点], KData:"H/L", Offset:[5,10], Width:线粗细 }} ]
     this.Font=g_JSChartResource.DefaultTextFont;
     this.Color=g_JSChartResource.DefaultTextColor;
     this.IsHScreen=false;   //是否横屏
@@ -17095,6 +17096,36 @@ function ChartMultiText()
                 else
                 {
                     this.Canvas.fillText(item.Text, x, y);
+                }
+
+                if (item.Line)
+                {
+                    var kItem=this.Data.Data[item.Index];
+                    var price=item.Line.KData=="H"? kItem.High:kItem.Low;
+                    var yPrice=this.ChartFrame.GetYFromData(price);
+                    var yText=y;
+                    if (Array.isArray(item.Line.Offset) && item.Line.Offset.length==2)
+                    {
+                        if (yText>yPrice) //文字在下方
+                        {
+                            yText-=item.Line.Offset[1];
+                            yPrice+=item.Line.Offset[0]
+                        }
+                        else if (yText<yPrice)
+                        {
+                            yText+=item.Line.Offset[1];
+                            yPrice-=item.Line.Offset[0]
+                        }
+                    }
+                    this.Canvas.save();
+                    if (item.Line.Dash) this.Canvas.setLineDash(item.Line.Dash);    //虚线
+                    if (item.Line.Width>0) this.Canvas.lineWidth=item.Line.Width;   //线宽
+                    this.Canvas.strokeStyle = item.Line.Color;
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(ToFixedPoint(x),yText);
+                    this.Canvas.lineTo(ToFixedPoint(x),yPrice);
+                    this.Canvas.stroke();
+                    this.Canvas.restore();
                 }
             }
         }
