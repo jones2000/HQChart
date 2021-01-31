@@ -28,10 +28,16 @@ class TushareHQChartData(IHQData) :
     def GetKLineData2(self, symbol, period, right, callInfo, kdataInfo, jobID) :
         if (callInfo.find('$')>0) :
             if (symbol.find(".")<=0) :
-                if (symbol[:3]=='600' or symbol[:3]=="688") :
-                    symbol+=".SH"
-                elif (symbol[:3]=="000" or symbol[:2]=="30") :
-                    symbol+=".SZ"
+                if (symbol.find("SH")==0) :
+                    symbol=symbol[2:]+".SH"
+                elif (symbol.find("SZ")==0) :
+                    symbol=symbol[2:]+".SZ"
+                else :
+                    if (symbol[:3]=='600' or symbol[:3]=="688") :
+                        symbol+=".SH"
+                    elif (symbol[:3]=="000" or symbol[:2]=="30") :
+                        symbol+=".SZ"
+                
 
         return self.GetKLineAPIData(symbol, period, right, kdataInfo["StartDate"], kdataInfo["EndDate"])
         
@@ -419,8 +425,15 @@ def TestSingleStock() :
         "Script":'''
         //CALCSTOCKINDEX('SH600036', 'KDJ', 3);
         //STKINDI('sz300059','KDJ.T1#WEEK',9,4,4);
-        MA(C,M1);
-        GPJYVALUE(1,1,0);
+        //MA(C,M1);
+        K:KDJ.K;
+        D:KDJ.D;
+        J:KDJ.J;
+
+        K:KDJ.K#WEEK;
+        D:KDJ.D#WEEK;
+        J:KDJ.J#WEEK;
+        //GPJYVALUE(1,1,0);
         //T2:C#WEEK;
         //T2:MA(C,M2);
         //T3:MA(C,M3);
@@ -428,7 +441,7 @@ def TestSingleStock() :
         //T5:TOTALCAPITAL;
         //T6:CAPITAL;
         //T9:DYNAINFO(8);
-        T7:FINANCE(18);
+        //T7:FINANCE(18);
         //T8:FINANCE(40);
         ''',
         # 脚本参数
