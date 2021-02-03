@@ -10,6 +10,9 @@
     分析家语法编译器
 */
 
+//日志
+import { JSConsole } from "./umychart.console.wechat.js"
+
 import { JSCommonData } from "./umychart.data.wechat.js";     //行情数据结构体 及涉及到的行情算法(复权,周期等)  
 
 
@@ -5886,7 +5889,7 @@ function JSAlgorithm(errorHandler, symbolData)
         if (!functionInfo.Invoke)
             return { Out: dwonloadData }
 
-        console.log('[JSAlgorithm::CallCustomFunction] call custom function functionInfo=',functionInfo);
+        JSConsole.Complier.Log('[JSAlgorithm::CallCustomFunction] call custom function functionInfo=',functionInfo);
 
         var self=this;
         var obj=
@@ -6673,7 +6676,7 @@ function JSSymbolData(ast,option,jsExecute)
             YClose:stock.yclose,Price:stock.price, Open:stock.open, High:stock.high, Low:stock.low, Vol:stock.vol, Amount:stock.amount, 
             Increase:stock.increase, Exchangerate:stock.exchangerate, Amplitude:stock.amplitude};
 
-        console.log('[JSSymbolData::RecvLatestData]', this.LatestData);
+        JSConsole.Complier.Log('[JSSymbolData::RecvLatestData]', this.LatestData);
     }
 
     this.GetLatestCacheData=function(dataname)
@@ -6743,7 +6746,7 @@ function JSSymbolData(ast,option,jsExecute)
         var item = { AvgVol5: avgVol5, Date: date };
         this.ExtendData.set(key, item);
 
-        console.log('[JSSymbolData::RecvVolRateData]', item);
+        JSConsole.Complier.Log('[JSSymbolData::RecvVolRateData]', item);
     }
 
     this.GetVolRateCacheData = function (node) 
@@ -6927,7 +6930,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.RecvIndexHistroyData=function(recvData)
     {
         let data = recvData.data;
-        console.log('[JSSymbolData::RecvIndexHistroyData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvIndexHistroyData] recv data' , data);
 
         let hisData=this.JsonDataToHistoryData(data);
         this.IndexData = new JSCommonData.ChartData();
@@ -6947,7 +6950,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.RecvIndexMinuteHistroyData = function (recvData)
     {
         let data = recvData.data;
-        console.log('[JSSymbolData::RecvIndexMinuteHistroyData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvIndexMinuteHistroyData] recv data' , data);
 
         let hisData=this.JsonDataToMinuteHistoryData(data);
         this.IndexData = new JSCommonData.ChartData();
@@ -6998,7 +7001,7 @@ function JSSymbolData(ast,option,jsExecute)
         symbol = symbol.replace('.CI', '.ci');
         var self = this;
         var apiUrl = g_JSComplierResource.CacheDomain + '/cache/analyze/increaseanalyze/' + symbol + '.json';
-        console.log('[JSSymbolData::GetIndexIncreaseData] Get url=', apiUrl);
+        JSConsole.Complier.Log('[JSSymbolData::GetIndexIncreaseData] Get url=', apiUrl);
         wx.request({
             url: apiUrl,
             method: "GET",
@@ -7017,7 +7020,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvMinuteIncreaseData = function (recvData, key) 
     {
-        console.log('[JSSymbolData::RecvMinuteIncreaseData] recv data', recvData);
+        JSConsole.Complier.Log('[JSSymbolData::RecvMinuteIncreaseData] recv data', recvData);
         var data=recvData.data;
         if (!data.minute) return;
         var minuteData = data.minute;
@@ -7125,7 +7128,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.RecvHistroyData=function(recvData)
     {
         let data=recvData.data;
-        console.log('[JSSymbolData::RecvHistroyData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvHistroyData] recv data' , data);
 
         let hisData=this.JsonDataToHistoryData(data);
         this.Data=new JSCommonData.ChartData();
@@ -7152,7 +7155,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.RecvMinuteHistroyData = function (recvData)
     {
         let data = recvData.data;
-        console.log('[JSSymbolData::RecvMinuteHistroyData] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvMinuteHistroyData] recv data' , data);
 
         let hisData=this.JsonDataToMinuteHistoryData(data);
         this.Data = new JSCommonData.ChartData();
@@ -7174,7 +7177,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.RecvMinuteData = function (recvData) 
     {
         let data = recvData.data;
-        console.log('[JSSymbolData::RecvMinuteData] recv data', data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvMinuteData] recv data', data);
 
         var aryMinuteData = this.JsonDataToMinuteData(data);
         this.Data = new JSCommonData.ChartData();
@@ -7255,7 +7258,7 @@ function JSSymbolData(ast,option,jsExecute)
     {
         if (this.MarginData.has(jobID)) return this.Execute.RunNextJob();
 
-        console.log('[JSSymbolData::GetMarginData] jobID=', jobID);
+        JSConsole.Complier.Log('[JSSymbolData::GetMarginData] jobID=', jobID);
         var self = this;
         let fieldList = ["name", "date", "symbol"];
 
@@ -7305,7 +7308,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.RecvMarginData = function (recvData, jobID) 
     {
         var data = recvData.data;
-        //console.log(data);
+        //JSConsole.Complier.Log(data);
         if (!data.stock || data.stock.length != 1) return;
 
         let stock = data.stock[0];
@@ -7489,7 +7492,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvNewsAnalysisDataError = function (recvData, jobID) 
     {
-        console.log('[JSSymbolData::RecvNewsAnalysisDataError] request error.', recvData.statusCode);
+        JSConsole.Complier.Log('[JSSymbolData::RecvNewsAnalysisDataError] request error.', recvData.statusCode);
 
         //没有新闻使用0数据填充
         var aryData = [];
@@ -7512,7 +7515,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (!data.data || !data.date) return;
         if (data.data.length <= 0 || data.data.length != data.date.length) return;
 
-        console.log('[JSSymbolData::RecvNewsAnalysisData] jobID', jobID, data.update);
+        JSConsole.Complier.Log('[JSSymbolData::RecvNewsAnalysisData] jobID', jobID, data.update);
         if (jobID == JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE || jobID == JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_NEWS_ANALYSIS_HOLDERCHANGE2) 
         {
             var aryData = [], aryData2 = [];
@@ -8760,7 +8763,7 @@ function JSExecute(ast,option)
 
     this.Execute=function()
     {
-        console.log('[JSExecute::Execute] JobList', this.JobList);
+        JSConsole.Complier.Log('[JSExecute::Execute] JobList', this.JobList);
         this.RunNextJob();
     }
 
@@ -9220,7 +9223,7 @@ function JSExecute(ast,option)
             }
         }
 
-        console.log('[JSExecute::Run]', this.VarTable);
+        JSConsole.Complier.Log('[JSExecute::Run]', this.VarTable);
 
         return this.OutVarTable;
     }
@@ -9228,11 +9231,11 @@ function JSExecute(ast,option)
     this.Run=function()
     {                        
         let data=this.RunAST();//执行脚本
-        console.log('[JSComplier.Run] execute finish', data);
+        JSConsole.Complier.Log('[JSComplier.Run] execute finish', data);
         
         if (this.UpdateUICallback) 
         {
-            console.log('[JSComplier.Run] invoke UpdateUICallback.');
+            JSConsole.Complier.Log('[JSComplier.Run] invoke UpdateUICallback.');
             this.UpdateUICallback(data,this.CallbackParam);
         }
     }
@@ -9287,7 +9290,7 @@ function JSExecute(ast,option)
             args.push(value);
         }
 
-        //if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitCallExpression]' , funcName, '(', args.toString() ,')');
+        //if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitCallExpression]' , funcName, '(', args.toString() ,')');
         if (g_JSComplierResource.IsCustomFunction(funcName))    //自定义函数 
         {
             var data=this.Algorithm.CallCustomFunction(funcName, args, this.SymbolData, node);
@@ -9434,7 +9437,7 @@ function JSExecute(ast,option)
         else if (right.Type == Syntax.MemberExpression)
             value = this.ReadMemberVariable(right);
 
-        if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitAssignmentExpression]' , varName, ' = ',value);
+        if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitAssignmentExpression]' , varName, ' = ',value);
         this.VarTable.set(varName,value);
     }
 
@@ -9464,7 +9467,7 @@ function JSExecute(ast,option)
                     let leftValue=this.GetNodeValue(value.Left);
                     let rightValue=this.GetNodeValue(value.Right);
 
-                    if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitBinaryExpression] BinaryExpression',value , leftValue, rightValue);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitBinaryExpression] BinaryExpression',value , leftValue, rightValue);
                     value.Out=null; //保存中间值
 
                     switch(value.Operator)
@@ -9503,14 +9506,14 @@ function JSExecute(ast,option)
                             break;
                     }
 
-                    if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitBinaryExpression] BinaryExpression',value);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitBinaryExpression] BinaryExpression',value);
                 }
                 else if (value.Type==Syntax.LogicalExpression)
                 {
                     let leftValue=this.GetNodeValue(value.Left);
                     let rightValue=this.GetNodeValue(value.Right);
 
-                    if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitBinaryExpression] LogicalExpression',value , leftValue, rightValue);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitBinaryExpression] LogicalExpression',value , leftValue, rightValue);
                     value.Out=null; //保存中间值
 
                     switch(value.Operator)
@@ -9525,7 +9528,7 @@ function JSExecute(ast,option)
                             break;
                     }
 
-                    if (JS_EXECUTE_DEBUG_LOG) console.log('[JSExecute::VisitBinaryExpression] LogicalExpression',value);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitBinaryExpression] LogicalExpression',value);
                 }
                 
                 node=temp;
@@ -9587,7 +9590,7 @@ function JSComplier()
 //词法分析
 JSComplier.Tokenize=function(code)
 {
-    console.log('[JSComplier.Tokenize]', code);
+    JSConsole.Complier.Log('[JSComplier.Tokenize]', code);
     let tokenizer=new Tokenizer(code);
     let tokens=[];
     try
@@ -9611,7 +9614,7 @@ JSComplier.Tokenize=function(code)
 //语法解析 生成抽象语法树(Abstract Syntax Tree)
 JSComplier.Parse=function(code)
 {
-    console.log('[JSComplier.Parse]',code);
+    JSConsole.Complier.Log('[JSComplier.Parse]',code);
 
     let parser=new JSParser(code);
     parser.Initialize();
@@ -9643,17 +9646,17 @@ JSComplier.Execute=function(code,option,errorCallback)
     {
         try
         {
-            console.log('[JSComplier.Execute]',code,option);
+            JSConsole.Complier.Log('[JSComplier.Execute]',code,option);
 
-            console.log('[JSComplier.Execute] parser .....');
+            JSConsole.Complier.Log('[JSComplier.Execute] parser .....');
             let parser=new JSParser(code);
             parser.Initialize();
             let program=parser.ParseScript(); 
             
             let ast=program;
-            console.log('[JSComplier.Execute] parser finish.', ast);
+            JSConsole.Complier.Log('[JSComplier.Execute] parser finish.', ast);
 
-            console.log('[JSComplier.Execute] execute .....');
+            JSConsole.Complier.Log('[JSComplier.Execute] execute .....');
             let execute=new JSExecute(ast,option);
             execute.JobList=parser.Node.GetDataJobList();
             execute.JobList.push({ID:JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT});
@@ -9662,7 +9665,7 @@ JSComplier.Execute=function(code,option,errorCallback)
 
         }catch(error)
         {
-            console.log(error);
+            JSConsole.Complier.Log(error);
 
             if (errorCallback) errorCallback(error);
         }
@@ -9670,7 +9673,7 @@ JSComplier.Execute=function(code,option,errorCallback)
 
     asyncExecute();
 
-    console.log('[JSComplier.Execute] async execute.');
+    JSConsole.Complier.Log('[JSComplier.Execute] async execute.');
 }
 
 JSComplier.SetDomain = function (domain, cacheDomain) 
@@ -10455,11 +10458,11 @@ var code1='VARHIGH:IF(VAR1<=REF(HH,-1),REF(H,BARSLAST(VAR1>=REF(HH,1))),DRAWNULL
 var code2='VAR1=((SMA(MAX((CLOSE - LC),0),3,1) / SMA(ABS((CLOSE - LC)),3,1)) * 100);';
 var code3='mm1=1-2*-9+20;';
 
-console.log(code1+code2)
+JSConsole.Complier.Log(code1+code2)
 var tokens=JSComplier.Tokenize(code1+code2);
 var ast=JSComplier.Parse(code2+code1);
 
-console.log(ast);
+JSConsole.Complier.Log(ast);
 */
 
 

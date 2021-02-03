@@ -2425,8 +2425,16 @@ function ChartMultiText()
                     if (item.Line.Width>0) this.Canvas.lineWidth=item.Line.Width;   //线宽
                     this.Canvas.strokeStyle = item.Line.Color;
                     this.Canvas.beginPath();
-                    this.Canvas.moveTo(ToFixedPoint(x),yText);
-                    this.Canvas.lineTo(ToFixedPoint(x),yPrice);
+                    if (this.IsHScreen) 
+                    {
+                        this.Canvas.moveTo(yText,ToFixedPoint(x));
+                        this.Canvas.lineTo(yPrice,ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x),yText);
+                        this.Canvas.lineTo(ToFixedPoint(x),yPrice);
+                    }
                     this.Canvas.stroke();
                     this.Canvas.restore();
                 }
@@ -3169,6 +3177,72 @@ function ChartBuySell()
         }
     }
 }
+
+//分钟成交量
+function ChartMinuteVolumBar() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+  
+    this.UpColor = g_JSChartResource.UpBarColor;
+    this.DownColor = g_JSChartResource.DownBarColor;
+    this.CustomColor=g_JSChartResource.Minute.VolBarColor;
+    this.YClose;    //前收盘
+  
+    this.Draw = function () 
+    {
+        var isHScreen = (this.ChartFrame.IsHScreen === true)
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+        var yBottom = this.ChartFrame.GetYFromData(0);
+        var yPrice = this.YClose; //上一分钟的价格
+
+        if (this.CustomColor) this.Canvas.strokeStyle=this.CustomColor;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var item = this.Data.Data[i];
+            if (!item || !item.Vol) continue;
+    
+            var y = this.ChartFrame.GetYFromData(item.Vol);
+            var x = this.ChartFrame.GetXFromIndex(i);
+            if (x > chartright) break;
+            //价格>=上一分钟价格 红色 否则绿色
+            if (!this.CustomColor) this.Canvas.strokeStyle = item.Close >= yPrice ? this.UpColor : this.DownColor;
+            this.Canvas.beginPath();
+            if (isHScreen) 
+            {
+                this.Canvas.moveTo(y, ToFixedPoint(x));
+                this.Canvas.lineTo(yBottom, ToFixedPoint(x));
+            }
+            else 
+            {
+                this.Canvas.moveTo(ToFixedPoint(x), y);
+                this.Canvas.lineTo(ToFixedPoint(x), yBottom);
+            }
+            this.Canvas.stroke();
+            yPrice = item.Close;
+        }
+    }
+  
+    this.GetMaxMin = function () 
+    {
+        var xPointCount = this.ChartFrame.XPointCount;
+        var range = {};
+        range.Min = 0;
+        range.Max = null;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var item = this.Data.Data[i];
+            if (!item || !item.Vol) continue;
+            if (range.Max == null) range.Max = item.Vol;
+            if (range.Max < item.Vol) range.Max = item.Vol;
+        }
+    
+        return range;
+    }
+  }
 
 //MACD森林线 支持横屏
 function ChartMACD() 
@@ -4657,6 +4731,7 @@ module.exports =
         ChartBuySell: ChartBuySell,
         ChartMultiBar: ChartMultiBar,
         ChartMACD:ChartMACD,
+        ChartMinuteVolumBar:ChartMinuteVolumBar,
         ChartSplashPaint:ChartSplashPaint,
         ChartPie: ChartPie,
         ChartCircle: ChartCircle,
@@ -4677,6 +4752,7 @@ module.exports =
     JSCommonChartPaint_ChartLineStick: ChartLineStick,
     JSCommonChartPaint_ChartStickLine: ChartStickLine,
     JSCommonChartPaint_ChartBackground:ChartBackground,
+    JSCommonChartPaint_ChartMinuteVolumBar:ChartMinuteVolumBar,
     JSCommonChartPaint_ChartOverlayKLine: ChartOverlayKLine,
     JSCommonChartPaint_ChartPie: ChartPie,
     JSCommonChartPaint_ChartCircle: ChartCircle,

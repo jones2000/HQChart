@@ -24,7 +24,7 @@ var BLACK_STYLE =    //黑色风格
     UnchagneBarColor: "rgb(199,199,199)",
 
     Minute: {
-      VolBarColor: "rgb(255,236,0)",
+      VolBarColor: null,
       PriceColor: "rgb(25,180,231)",
       AvPriceColor: "rgb(255,236,0)",
     },

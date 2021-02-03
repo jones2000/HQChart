@@ -335,6 +335,11 @@ var MARKET_SUFFIX_NAME=
 
     },
 
+    GetDefaultDecimal:function(symbol)
+    {
+        return 2;
+    },
+    
     GetFHKDecimal: function (symbol)  //港股指数期货 小数位数
     {
         return 0;
@@ -1519,6 +1524,9 @@ function GetfloatPrecision(symbol)  //获取小数位数
     if (!symbol) return defaultfloatPrecision;
     var upperSymbol = symbol.toUpperCase();
 
+    //全部由外部控制
+    if (typeof(MARKET_SUFFIX_NAME.GetCustomDecimal)=='function') return MARKET_SUFFIX_NAME.GetCustomDecimal(upperSymbol);
+
     if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision = 3;    //基金3位小数
     else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetSHODecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision = g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
@@ -1526,6 +1534,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetBITDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetETDecimal(upperSymbol); 
+    else defaultfloatPrecision=MARKET_SUFFIX_NAME.GetDefaultDecimal(upperSymbol);
 
     return defaultfloatPrecision;
 }

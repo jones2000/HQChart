@@ -1236,6 +1236,14 @@ function Node(ErrorHandler)
 
     }
 
+    this.VerifyMemberVariable=function(object,property,token)
+    {
+        var item={ ID:JS_EXECUTE_JOB_ID.JOB_EXECUTE_INDEX,  Member:{Object:object, Property:property} };
+        if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+        this.ExecuteIndex.push(item);
+        return;
+    }
+
     this.ExpressionStatement=function(expression)
     {
         return { Type:Syntax.ExpressionStatement, Expression:expression };
@@ -1272,6 +1280,12 @@ function Node(ErrorHandler)
         return { Type:Syntax.Identifier, Name:name};
     }
 
+    //成员变量, 不需要检测
+    this.MemberIdentifier=function(name, token)
+    {
+        return { Type:Syntax.Identifier, Name:name};
+    }
+
     this.AssignmentExpression=function (operator, left, right) 
     {
         return { Type:Syntax.AssignmentExpression, Operator:operator, Left:left, Right:right };
@@ -1294,8 +1308,9 @@ function Node(ErrorHandler)
         return { Type:Syntax.CallExpression, Callee:callee, Arguments:args };
     }
 
-    this.StaticMemberExpression=function(object, property)
+    this.StaticMemberExpression=function(object, property,token)
     {
+        this.VerifyMemberVariable(object,property, token);
         return { Type:Syntax.MemberExpression, Computed:false, Object:object, Property:property };
     }
 
@@ -1763,8 +1778,8 @@ function JSParser(code)
                 this.Context.IsBindingElement = false;
                 this.Context.IsAssignmentTarget = true;
                 this.Expect('.');
-                const property = this.ParseIdentifierName();
-                expr = this.Finalize(this.StartNode(startToken), this.Node.StaticMemberExpression(expr, property));
+                const property = this.ParseMemberIdentifierName();
+                expr = this.Finalize(this.StartNode(startToken), this.Node.StaticMemberExpression(expr, property,startToken));
 
             }
             else if (this.Match('('))
@@ -1813,6 +1828,18 @@ function JSParser(code)
         }
 
         return this.Finalize(node, this.Node.Identifier(token.Value, token));
+    }
+
+    this.ParseMemberIdentifierName=function()
+    {
+        const node = this.CreateNode();
+        const token = this.NextToken();
+        if (!this.IsIdentifierName(token)) 
+        {
+            this.ThrowUnexpectedToken(token);
+        }
+
+        return this.Finalize(node, this.Node.MemberIdentifier(token.Value, token));
     }
 
     // https://tc39.github.io/ecma262/#sec-left-hand-side-expressions
@@ -7327,6 +7354,273 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    this.ROUND=function(data)
+    {
+        if (this.IsNumber(data))
+        {
+            return Math.round(data);
+        }
+        
+        var result=[];
+        if (Array.isArray(data))
+        {
+            for(var i in data)
+            {
+                var item=data[i];
+                if (this.IsNumber(item)) 
+                    result[i]=Math.round(item);
+                else
+                    result[i]=null;
+            }
+        }
+
+        return result;
+    }
+
+    this.ROUND2=function(data,n)
+    {
+        var ROUND2_SEED=
+        [
+            1,10,100,1000,
+            10000,
+            100000,
+            1000000,
+            10000000,
+            100000000,
+            1000000000,
+            10000000000,
+            100000000000,
+            1000000000000
+        ];
+        var decimal=0;
+        if (this.IsNumber(n)) decimal=parseInt(n);
+        if (n<0) decimal=0;
+        else if (n>=ROUND2_SEED.length) decimal=ROUND2_SEED.length-1;
+
+        if (this.IsNumber(data))
+        {
+            return Math.round(data*ROUND2_SEED[decimal])/ROUND2_SEED[decimal];
+        }
+
+        var result=[];
+        if (Array.isArray(data))
+        {
+            for(var i in data)
+            {
+                var item=data[i];
+                if (this.IsNumber(item))
+                {
+                    result[i]=Math.round(item*ROUND2_SEED[decimal])/ROUND2_SEED[decimal];
+                }
+                else
+                {
+                    result[i]=null;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /* 文华
+    TRMA(X,N)： 求X在N个周期的三角移动平均值。
+
+    算法：三角移动平均线公式，是采用算数移动平均，并且对第一个移动平均线再一次应用算数移动平均。
+    TRMA(X,N) 算法如下
+    ma_half= MA(X,N/2)
+    trma=MA(ma_half,N/2)
+
+    注：
+    1、N包含当前k线。
+    2、当N为有效值，但当前的k线数不足N根，函数返回空值。
+    3、N为0或空值的情况下，函数返回空值。
+
+    例1：
+    TRMA5:TRMA(CLOSE,5);//计算5个周期内收盘价的三角移动平均。(N不能被2整除)
+    //TRMA(CLOSE,5)=MA(MA(CLOSE,(5+1)/2)),(5+1)/2);
+    例2:
+    TRMA10:TRMA(CLOSE,10);// 计算10个周期内收盘价的三角移动平均。(N能被2整除)
+    TRMA(CLOSE,10)=MA(MA(CLOSE,10/2),(10/2)+1));
+    */
+
+    this.TRMA=function(data,n)
+    {
+        if (!this.IsNumber(n) || n<=0) return [];
+        n=parseInt(n);
+        var nFalf=0,nFalf2=0;
+        if (n%2==0) 
+        {
+            nFalf=parseInt(n/2);
+            nFalf2=nFalf+1;
+        }
+        else 
+        {
+            nFalf=parseInt((n+1)/2);
+            nFalf2=nFalf;
+        }
+
+        var maFalf=this.MA(data,nFalf);
+        var result=this.MA(maFalf,nFalf2);
+        return result;
+    }
+
+    //VALUEWHEN(COND,X) 
+    //当COND条件成立时,取X的当前值,否则取VALUEWHEN的上个值.
+    this.VALUEWHEN=function(cond,data)
+    {
+        if (Array.isArray(cond))
+        {
+            var result=[];
+            if (Array.isArray(data))
+            {
+                var preValue=null;
+                for(var i in cond)
+                {
+                    if (i>=data.length)
+                    {
+                        result[i]=preValue;
+                        continue;
+                    }
+
+                    var item=data[i];
+                    if (cond[i])
+                    {
+                        result[i]=item;
+                        preValue=item;
+                    }
+                    else
+                    {
+                        result[i]=preValue;
+                    }
+                }
+            }
+            else
+            {
+                var preValue=null;
+                for(var i in cond)
+                {
+                    if (cond[i]) 
+                    {
+                        result[i]=data;
+                        preValue=data;
+                    }
+                    else
+                    {
+                        result[i]=preValue;
+                    }
+                }
+            }
+
+            return result;
+        }
+        else
+        {
+            return cond? 1:0;
+        }
+    }
+
+    /*
+    HARMEAN(X,N) 求X在N个周期内的调和平均值。
+
+    算法举例：HARMEAN(X,5)=1/[(1/X1+1/X2+1/X3+1/X4+1/X5)/5]
+
+    注：
+    1、N包含当前k线。
+    2、调和平均值与倒数的简单平均值互为倒数。
+    3、当N为有效值，但当前的k线数不足N根，函数返回空值。
+    4、N为0或空值的情况下，函数返回空值。
+    5、X为0或空值的情况下，函数返回空值。
+    6、N可以为变量。
+
+    例：HM5:=HARMEAN(C,5);//求5周期收盘价的调和平均值。
+    */
+    this.HARMEAN=function(data, n)
+    {
+        var result=[];
+
+        if (Array.isArray(data))
+        {
+            if (Array.isArray(n))
+            {
+                for(var i=0;i<data.length;++i)
+                {
+                    if (i>=n.length) 
+                    {
+                        result[i]=null;
+                        continue;
+                    }
+
+                    var count=parseInt(n[i]);
+                    if (count<=0 || count>i) 
+                    {
+                        result[i]=null;
+                        continue;
+                    }
+
+                    var sum=0;
+                    for(var j=0;j<count;++j)
+                    {
+                        var item=data[i-j];
+                        if (!this.IsNumber(item) || item==0)
+                        {
+                            sum=null;
+                            break;
+                        }
+
+                        sum+=1/item;
+                    }
+
+                    if (sum==null)
+                    {
+                        result[i]=null;
+                    }
+                    else
+                    {
+                        result[i]=1/(sum/count);
+                    }
+                }
+            }
+            else if (this.IsNumber(n))
+            {
+                n=parseInt(n);
+                if (n<=0) return result;
+
+                for(var i=0;i<data.length;++i)
+                {
+                    if (n>i) 
+                    {
+                        result[i]=null;
+                        continue;
+                    }
+
+                    var sum=0;
+                    for(var j=0;j<n;++j)
+                    {
+                        var item=data[i-j];
+                        if (!this.IsNumber(item) || item==0)
+                        {
+                            sum=null;
+                            break;
+                        }
+
+                        sum+=1/item;
+                    }
+
+                    if (sum==null)
+                    {
+                        result[i]=null;
+                    }
+                    else
+                    {
+                        result[i]=1/(sum/n);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -7531,6 +7825,16 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.AMA(args[0], args[1]);
             case "TMA":
                 return this.TMA(args[0],args[1],args[2]);
+            case "ROUND":
+                return this.ROUND(args[0]);
+            case "ROUND2":
+                return this.ROUND2(args[0],args[1]);
+            case "TRMA":
+                return this.TRMA(args[0],args[1]);
+            case "VALUEWHEN":
+                return this.VALUEWHEN(args[0],args[1]);
+            case "HARMEAN":
+                return this.HARMEAN(args[0],args[1]);
           
             //三角函数
             case 'ATAN':
@@ -10482,10 +10786,25 @@ function JSSymbolData(ast,option,jsExecute)
             case 'AMOUNT':
             case 'AMO':
                 return this.Data.GetAmount();
-            case 'VOLINSTK':
+
+            case "OPI":         //文华 持仓量
+            case 'VOLINSTK':    //通达信 持仓量
                 return this.Data.GetPosition();
-            case "ZSTJJ":
+
+            
+            case "ZSTJJ":      //均价
                 return this.Data.GetAvPrice();
+            
+            case "SETTLE":  //文华 结算价
+            case "QHJSJ":   //通达信 结算价
+                return this.Data.GetSettlementPrice();  //结算价
+
+            case "ISEQUAL": //平盘
+                return this.Data.GetIsEqual();
+            case "ISUP":    //收阳
+                return this.Data.GetIsUp();
+            case "ISDOWN":  //收阴
+                return this.Data.GetIsDown();
         }
     }
 
@@ -12563,11 +12882,99 @@ function JSSymbolData(ast,option,jsExecute)
         return key;
     }
 
+    //TMP2:=KDJ.K#WEEK;
+    this.CallMemberScriptIndex=function(job)
+    {
+        if (job.Member.Object.Type!=Syntax.Identifier ||job.Member.Property.Type!=Syntax.Identifier)
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallMemberScriptIndex() Error: 参数错误`);
+        }
+
+        var objName=job.Member.Object.Name;
+        var PropertyName=job.Member.Property.Name;
+        if (PropertyName=="" || PropertyName==null)
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallMemberScriptIndex() Error: ${objName}.${PropertyName} 指标输出变量错误`);
+        }
+        
+        if (this.Execute.VarTable.has(objName))
+        {
+            var memberValue=this.Execute.VarTable.get(objName);
+            if (memberValue.hasOwnProperty(PropertyName))
+            {
+                JSConsole.Complier.Log(`[JSSymbolData::CallMemberScriptIndex] index data ${objName}.${PropertyName} in cache.`);
+                return this.Execute.RunNextJob();
+            }
+        }
+            
+        var callInfo=objName+"."+PropertyName;
+        var indexInfo={ Job:job, PeriodID:this.Period , Symbol:this.Symbol };
+        if (!this.ReadIndexFunctionValue(callInfo,indexInfo))     //读取指标
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallMemberScriptIndex() Error: '${callInfo}' ${indexInfo.Error}`);
+        }
+
+        var systemIndex=new JSIndexScript();
+        var systemItem=systemIndex.Get(indexInfo.Name);
+        if (!systemItem)
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallMemberScriptIndex() Error: '${callInfo}' ${indexInfo.Name} 指标不存在`);
+        }
+
+        if (Array.isArray(systemItem.Args) && systemItem.Args.length>0)
+        {
+            indexInfo.Args=[];
+            for(var i in systemItem.Args)    //复制参数
+            {
+                var item=systemItem.Args[i];
+                indexInfo.Args.push({Value:item.Value, Name:item.Name});
+            }
+        }
+
+        JSConsole.Complier.Log('[JSSymbolData::CallMemberScriptIndex] call script index', indexInfo);
+
+        var dateTimeRange=this.Data.GetDateRange();
+
+        var option=
+        {
+            HQDataType:this.DataType,
+            Symbol:indexInfo.Symbol,
+            Name:'',
+            Right:this.Right,           //复权
+            Period:indexInfo.PeriodID,  //周期
+            Data:null,
+            SourceData:null,
+            Callback:(outVar,job, symbolData)=> { 
+                this.RecvMemberScriptIndexData(outVar,job,symbolData);
+                this.Execute.RunNextJob();
+            },
+            CallbackParam:indexInfo,
+            Async:true,
+            MaxRequestDataCount:this.MaxRequestDataCount+30*2,
+            MaxRequestMinuteDayCount:this.MaxRequestMinuteDayCount+2,
+            Arguments:indexInfo.Args,
+            //Condition:this.Condition,
+            IsBeforeData:this.IsBeforeData,
+            NetworkFilter:this.NetworkFilter,
+            KLineRange:dateTimeRange    //K线数据范围
+        };
+
+        //执行脚本
+        var run=JSComplier.Execute(systemItem.Script,option,(error, indexInfo)=>{this.ExecuteScriptIndexError(error,indexInfo)});
+        
+    }
+
     //脚本调用
     //STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
     //1=股票代码 2=指标名字.输出变量#周期, 3....参数
     this.CallScriptIndex=function(job)
     {
+        if (job.Member) return this.CallMemberScriptIndex(job);
+
         if (!job.Args || !(job.Args.length>=2)) 
         {
             var token=job.Token;
@@ -12641,6 +13048,32 @@ function JSSymbolData(ast,option,jsExecute)
 
         //执行脚本
         var run=JSComplier.Execute(indexInfo.SytemIndex.Script,option,(error, indexInfo)=>{this.ExecuteScriptIndexError(error,indexInfo)});
+    }
+
+    this.RecvMemberScriptIndexData=function(outVar,indexInfo,symbolData)
+    {
+        JSConsole.Complier.Log('[JSSymbolData::RecvMemberScriptIndexData] ', outVar, indexInfo, symbolData);
+        var kLine=symbolData.Data.Data;
+        var aryOutVar=outVar;
+        var data=this.Data.FitKLineIndex(kLine,aryOutVar,this.Period,indexInfo.PeriodID);
+
+        var member=indexInfo.Job.Member;
+        var objName=member.Object.Name;
+        var propertyName=member.Property.Name;
+
+        var memberValue={};
+        if (this.Execute.VarTable.has(objName))
+            memberValue=this.Execute.VarTable.get(objName);
+        else
+            this.Execute.VarTable.set(objName, memberValue);
+
+        //保存所有的指标数据, 下面用到了就可以不用算了
+        for(var i in data)
+        {
+            var key=outVar[i].Name;
+            if (indexInfo.Period) key+='#'+indexInfo.Period;    //带周期的变量
+            memberValue[key]=data[i].Data;
+        }
     }
 
     this.RecvScriptIndexData=function(outVar,indexInfo,symbolData)
@@ -13324,7 +13757,11 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_SECTION_F_39:20039,    //profityoy 利润同比%（数值乘以100）
 
     JOB_DOWNLOAD_CUSTOM_API_DATA:30000,     //自定义数据
-    JOB_EXECUTE_INDEX:30010,                //调用其他脚本指标
+
+    //调用其他脚本指标 
+    //KDJ.K , KDJ.K#WEEK
+    //STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
+    JOB_EXECUTE_INDEX:30010,                
 
     JOB_RUN_SCRIPT:10000, //执行脚本
 
@@ -13447,8 +13884,10 @@ function JSExecute(ast,option)
         ['CLOSE',null],['VOL',null],['OPEN',null],['HIGH',null],['LOW',null],['AMOUNT',null],
         ['C',null],['V',null],['O',null],['H',null],['L',null],['AMO',null], 
         ['VOLR',null],      //量比
-        ['VOLINSTK',null],  //持仓量
+        ['VOLINSTK',null], ["OPI",null],    //持仓量
+        ["QHJSJ",null], ["SETTLE",null],    //结算价
         ["ZSTJJ",null],     //分时图均价线,对于分时图周期指标有效.
+        ["ISEQUAL",null], ["ISUP",null],["ISDOWN"], //ISUP=收阳 ISEQUAL=平盘 ISDOWN=收阴
 
         //日期类
         ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],["TIME",null],
@@ -13622,8 +14061,14 @@ function JSExecute(ast,option)
             case 'L':
             case 'AMOUNT':
             case 'AMO':
+            case "OPI":
             case 'VOLINSTK':
+            case "SETTLE":
+            case "QHJSJ":
             case "ZSTJJ":
+            case "ISEQUAL": //平盘
+            case "ISUP":    //收阳
+            case "ISDOWN":  //收阴
                 return this.SymbolData.GetSymbolCacheData(name);
             case 'VOLR':
                 return this.SymbolData.GetVolRateCacheData(node);
@@ -14536,7 +14981,7 @@ function JSExplainer(ast,option)
         //个股数据
         ['CLOSE',"收盘价"],['VOL',"成交量"],['OPEN',"开盘价"],['HIGH',"最高价"],['LOW',"最低价"],['AMOUNT',"成交量"],
         ['C',"收盘价"],['V',"成交量"],['O',"开盘价"],['H',"最高价"],['L',"最低价"],['AMO',"成交量"], 
-        ['VOLR',"量比"], ['VOLINSTK',"持仓量"],  ["ZSTJJ","均价"],     
+        ['VOLR',"量比"], ['VOLINSTK',"持仓量"], ["OPI","持仓量"] ["ZSTJJ","均价"], ["QHJSJ","结算价"], ["SETTLE", "结算价"],
 
         //日期类
         ['DATE',"日期"],['YEAR',"年份"],['MONTH',"月份"],['PERIOD', "周期"],['WEEK',"星期"],["TIME","时间"],

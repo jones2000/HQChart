@@ -10,6 +10,9 @@
     封装图形控件 (微信小程序版本)
 */
 
+//日志
+import { JSConsole } from "./umychart.console.wechat.js"
+
 //行情数据结构体 及涉及到的行情算法(复权,周期等) 
 import {
     JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
@@ -67,6 +70,7 @@ import {
     JSCommonChartPaint_ChartMACD as ChartMACD,
     JSCommonChartPaint_ChartSplashPaint as ChartSplashPaint,
     JSCommonChartPaint_ChartBackground as ChartBackground,
+    JSCommonChartPaint_ChartMinuteVolumBar as ChartMinuteVolumBar,
 } from "./umychart.chartpaint.wechat.js";
 
 //扩展画法图形库
@@ -138,7 +142,7 @@ function JSCanvasElement()
             var node = this.CanvasNode.node;
             node._height = height;
             node._width = width;
-            console.log("[JSCanvasElement::GetContext] create by getContext('2d')");
+            JSConsole.Chart.Log("[JSCanvasElement::GetContext] create by getContext('2d')");
             canvas = node.getContext('2d');
             const dpr = wx.getSystemInfoSync().pixelRatio;
             node.width = width * dpr;
@@ -159,7 +163,7 @@ function JSCanvasElement()
 
         if (this.IsUniApp)
         {
-            console.log('[JSCanvasElement::GetContext] measureText() => JSUniAppCanvasHelper.MeasureText()');
+            JSConsole.Chart.Log('[JSCanvasElement::GetContext] measureText() => JSUniAppCanvasHelper.MeasureText()');
             canvas.measureText = function (text) //uniapp 计算宽度需要自己计算
             {
                 var width = JSCommonUniApp.JSUniAppCanvasHelper.MeasureText(text, canvas);
@@ -181,7 +185,7 @@ function JSCanvasElement()
         var self=this;
         const query = wx.createSelectorQuery();
         query.select(id).node().exec((res) => {
-            console.log('[JSCanvasElement::GetWebGLCanvas] res ', res)
+            JSConsole.Chart.Log('[JSCanvasElement::GetWebGLCanvas] res ', res)
             self.WebGLCanvas = res[0].node;
         })
     }
@@ -196,7 +200,7 @@ function JSChart(element)
     {
         if (this.JSChartContainer && typeof (this.JSChartContainer.AddEventCallback) == 'function') 
         {
-            console.log('[JSChart:AddEventCallback] ', obj);
+            JSConsole.Chart.Log('[JSChart:AddEventCallback] ', obj);
             this.JSChartContainer.AddEventCallback(obj);
         }
     }
@@ -844,7 +848,7 @@ function JSChart(element)
     //根据option内容绘制图形
     this.SetOption = function (option) 
     {
-        console.log('[JSChart::SetOption]', option)
+        JSConsole.Chart.Log('[JSChart::SetOption]', option)
         var chart = null;
         switch (option.Type) 
         {
@@ -960,7 +964,7 @@ function JSChart(element)
     this.ChangeIndexTemplate = function (option) 
     {
         if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeIndexTemplate) == 'function') {
-            console.log('[JSChart:ChangeIndexTemplate] ', option);
+            JSConsole.Chart.Log('[JSChart:ChangeIndexTemplate] ', option);
             this.JSChartContainer.ChangeIndexTemplate(option);
         }
     }
@@ -996,7 +1000,7 @@ function JSChart(element)
   //设置强制横屏
   this.ForceLandscape = function (bForceLandscape) {
     if (this.JSChartContainer) {
-      console.log("[JSChart::ForceLandscape] bForceLandscape=" + bForceLandscape);
+      JSConsole.Chart.Log("[JSChart::ForceLandscape] bForceLandscape=" + bForceLandscape);
       this.JSChartContainer.IsForceLandscape = bForceLandscape;
     }
   }
@@ -1006,7 +1010,7 @@ function JSChart(element)
     {
         if (this.JSChartContainer && typeof (this.JSChartContainer.LockIndex) == 'function') 
         {
-            console.log('[JSChart:LockIndex] lockData', lockData);
+            JSConsole.Chart.Log('[JSChart:LockIndex] lockData', lockData);
             this.JSChartContainer.LockIndex(lockData);
         }
     }
@@ -1016,7 +1020,7 @@ function JSChart(element)
     {
         if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeTradeDate) == 'function') 
         {
-            console.log('[JSChart:ChangeTradeDate] date', tradeDate);
+            JSConsole.Chart.Log('[JSChart:ChangeTradeDate] date', tradeDate);
             this.JSChartContainer.ChangeTradeDate(tradeDate);
         }
     }
@@ -1026,7 +1030,7 @@ function JSChart(element)
     {
         if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeDayCount) == 'function') 
         {
-            console.log('[JSChart:ChangeDayCount] count', count);
+            JSConsole.Chart.Log('[JSChart:ChangeDayCount] count', count);
             this.JSChartContainer.ChangeDayCount(count);
         }
     }
@@ -1034,7 +1038,7 @@ function JSChart(element)
     this.StopAutoUpdate = function () 
     {
         if (this.JSChartContainer && typeof (this.JSChartContainer.StopAutoUpdate) == 'function') {
-            console.log("[JSChart::StopAutoUpdate] Stop.");
+            JSConsole.Chart.Log("[JSChart::StopAutoUpdate] Stop.");
             this.JSChartContainer.StopAutoUpdate();
         }
     }
@@ -1151,7 +1155,7 @@ function JSChart(element)
 
 //初始化
 JSChart.Init = function (uielement) {
-  console.log('[JSChart.Init] uielement', uielement);
+  JSConsole.Chart.Log('[JSChart.Init] uielement', uielement);
   var jsChartControl = new JSChart(uielement);
   jsChartControl.OnSize();
 
@@ -1312,7 +1316,7 @@ function JSChartContainer(uielement)
     //判断是单个手指
     this.IsPhoneDragging = function (e) 
     {
-        // console.log(e);
+        // JSConsole.Chart.Log(e);
         var changed = e.changedTouches.length;
         var touching = e.touches.length;
 
@@ -1509,7 +1513,7 @@ function JSChartContainer(uielement)
     this.ontouchend = function (e) 
     {
         this.IsOnTouch = false;
-        console.log('[JSChartContainer:ontouchend] IsOnTouch=' + this.IsOnTouch +' LastDrawStatus=' + this.LastDrawStatus);
+        JSConsole.Chart.Log('[JSChartContainer:ontouchend] IsOnTouch=' + this.IsOnTouch +' LastDrawStatus=' + this.LastDrawStatus);
         if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
         this.Draw();//手放开 重新绘制  
     }
@@ -1726,17 +1730,17 @@ function JSChartContainer(uielement)
         {
             ++this.LastDrawID;
             //坑!!.画图是异步, 保存当前屏图放在回调里面
-            //console.log('[JSChartContainer:Draw][ID=' + this.UIElement.ID + '] draw and save snapshot. DrawID=' + this.LastDrawID + ' .....');
+            //JSConsole.Chart.Log('[JSChartContainer:Draw][ID=' + this.UIElement.ID + '] draw and save snapshot. DrawID=' + this.LastDrawID + ' .....');
             var lastDrawID=this.LastDrawID;
             this.Canvas.draw(false, function () 
             {
                 //if (lastDrawID == self.LastDrawID) 
                 self.Frame.Snapshot(self.SnapshotType);  //只保存最后一次的截图
-                //console.log('[JSChartContainer:Draw] finish. DrawID('+ lastDrawID +','+ self.LastDrawID +')');
+                //JSConsole.Chart.Log('[JSChartContainer:Draw] finish. DrawID('+ lastDrawID +','+ self.LastDrawID +')');
             });
         }
 
-        //console.log('[JSChartContainer:Draw][ID=' + this.UIElement.ID + '] draw dynamic info ......');
+        //JSConsole.Chart.Log('[JSChartContainer:Draw][ID=' + this.UIElement.ID + '] draw dynamic info ......');
         //动态标题都不画了(Canvas.draw 异步画的,如果下面再画会被截屏进去) 只有数据移动的时候在画
     }
 
@@ -1769,13 +1773,13 @@ function JSChartContainer(uielement)
             if (this.Frame.ScreenImagePath == null) return;
             if (self.Canvas && self.Canvas.DomNode) //新版本2D画布
             {
-                //console.log("[DrawDynamicInfo] ScreenImagePath ", this.Frame.ScreenImagePath);
+                //JSConsole.Chart.Log("[DrawDynamicInfo] ScreenImagePath ", this.Frame.ScreenImagePath);
                 if (!this.TempImage) this.TempImage= self.Canvas.DomNode.createImage();  //新版本的必须要装成image类 比较坑
                 this.TempImage.src = this.Frame.ScreenImagePath;
-                //console.log("[DrawDynamicInfo] tempImage ", this.TempImage);
+                //JSConsole.Chart.Log("[DrawDynamicInfo] tempImage ", this.TempImage);
                 this.TempImage.onload=()=>
                 {
-                    //console.log("[DrawDynamicInfo] onload ", self.TempImage);
+                    //JSConsole.Chart.Log("[DrawDynamicInfo] onload ", self.TempImage);
                     self.Canvas.clearRect(0, 0, width, height);
                     self.Canvas.drawImage(self.TempImage, 0, 0, width, height);
                     self.DrawDynamicChart(false);
@@ -1825,9 +1829,9 @@ function JSChartContainer(uielement)
         }
 
         this.LastDrawStatus = 'DrawDynamicInfo';
-        console.log('[JSChartContainer:DrawDynamicChart][ID=' + this.UIElement.ID + '] draw .....');
+        JSConsole.Chart.Log('[JSChartContainer:DrawDynamicChart][ID=' + this.UIElement.ID + '] draw .....');
         self.Canvas.draw(bReserve, function () {
-            console.log('[JSChartContainer:DrawDynamicChart] finish.');
+            JSConsole.Chart.Log('[JSChartContainer:DrawDynamicChart] finish.');
         });
     }
 
@@ -1852,7 +1856,7 @@ function JSChartContainer(uielement)
 
     this.StartAnimation = function (option) 
     {
-        console.log('[JSChartContainer::StartAnimation] ', this.UIElement.WebGLCanvas);
+        JSConsole.Chart.Log('[JSChartContainer::StartAnimation] ', this.UIElement.WebGLCanvas);
         if (!this.UIElement.WebGLCanvas) return;
 
         var bCreated = false; //是否已经创建了弹幕画法
@@ -1922,7 +1926,7 @@ function JSChartContainer(uielement)
 
 
   this.OnDoubleClick = function (x, y, e) {
-    //console.log(e);
+    //JSConsole.Chart.Log(e);
   }
 
     this.UpdatePointByCursorIndex = function () 
@@ -2141,7 +2145,7 @@ function JSChartContainer(uielement)
 
     var index = parseInt(frame.GetXData(x));
 
-    //console.log('x='+ x +' date='+data.Data[data.DataOffset+index].Date);
+    //JSConsole.Chart.Log('x='+ x +' date='+data.Data[data.DataOffset+index].Date);
     return data.DataOffset + index;
   }
 
@@ -2149,7 +2153,7 @@ function JSChartContainer(uielement)
     let width = this.UIElement.Width;
     let height = this.UIElement.Height;;
 
-    console.log('[JSChartContainer::SaveToImage]', this.UIElement);
+    JSConsole.Chart.Log('[JSChartContainer::SaveToImage]', this.UIElement);
 
     wx.canvasToTempFilePath({
       x: 0,
@@ -3346,7 +3350,7 @@ function KLineFrame()
 
     this.DrawFrame = function () 
     {
-        //console.log('[KLineFrame::DrawFrame]', this.SizeChange);
+        //JSConsole.Chart.Log('[KLineFrame::DrawFrame]', this.SizeChange);
         this.SplitXYCoordinate();
         if (this.SizeChange == true) this.CalculateDataWidth();
         if (this.DrawOtherChart) this.DrawOtherChart();
@@ -3523,7 +3527,7 @@ function KLineFrame()
                 this.DistanceWidth = ZOOM_SEED[i][1];
                 this.TrimKLineDataWidth(width);
 
-                console.log(`[KLineFrame::CalculateDataWidth] ZoomIndex=${this.ZoomIndex} DataWidth=${this.DataWidth} DistanceWidth=${this.DistanceWidth}` );
+                JSConsole.Chart.Log(`[KLineFrame::CalculateDataWidth] ZoomIndex=${this.ZoomIndex} DataWidth=${this.DataWidth} DistanceWidth=${this.DistanceWidth}` );
                 return;
             }
         }
@@ -4176,7 +4180,7 @@ function HQTradeFrame()
         var width = this.ChartBorder.GetChartWidth();
         var height = this.ChartBorder.GetChartHeight();
 
-        //console.log('[HQTradeFrame::SnapshotImageData][ID=' + this.ChartBorder.UIElement.ID + '] invoke canvasToTempFilePath' + '(width=' + width + ',height=' + height + ')' + ' SnapshotStatus='+ this.SnapshotStatus);
+        //JSConsole.Chart.Log('[HQTradeFrame::SnapshotImageData][ID=' + this.ChartBorder.UIElement.ID + '] invoke canvasToTempFilePath' + '(width=' + width + ',height=' + height + ')' + ' SnapshotStatus='+ this.SnapshotStatus);
         //if (this.SnapshotStatus==1) return;
 
         ++this.SnapshotID;
@@ -4194,7 +4198,7 @@ function HQTradeFrame()
                     self.ScreenImagePath = res.tempFilePath;
                     self.SnapshotStatus = 0;
                     self.CurrentSnapshotID = id;
-                    console.log(`[HQTradeFrame::SnapshotImagePath] SnapshotID(${self.SnapshotID}, ${self.CurrentSnapshotID}), Path=${res.tempFilePath}`);
+                    JSConsole.Chart.Log(`[HQTradeFrame::SnapshotImagePath] SnapshotID(${self.SnapshotID}, ${self.CurrentSnapshotID}), Path=${res.tempFilePath}`);
                 }
             })
         }
@@ -4210,7 +4214,7 @@ function HQTradeFrame()
                     self.ScreenImagePath = res.tempFilePath;
                     self.SnapshotStatus = 0;
                     self.CurrentSnapshotID = id;
-                    //console.log('[HQTradeFrame::SnapshotImagePath] SnapshotID(' + self.SnapshotID + ',' + self.CurrentSnapshotID + ') Path ='+ res.tempFilePath);
+                    //JSConsole.Chart.Log('[HQTradeFrame::SnapshotImagePath] SnapshotID(' + self.SnapshotID + ',' + self.CurrentSnapshotID + ') Path ='+ res.tempFilePath);
                 }
             })
         }
@@ -4222,7 +4226,7 @@ function HQTradeFrame()
         var width = this.ChartBorder.GetChartWidth();
         var height = this.ChartBorder.GetChartHeight();
 
-        console.log(`[HQTradeFrame::SnapshotImageData][ID=${this.ChartBorder.UIElement.ID} invoke canvasGetImageData(${width}, ${height}) SnapshotStatus=${this.SnapshotStatus}`);
+        JSConsole.Chart.Log(`[HQTradeFrame::SnapshotImageData][ID=${this.ChartBorder.UIElement.ID} invoke canvasGetImageData(${width}, ${height}) SnapshotStatus=${this.SnapshotStatus}`);
         ++this.SnapshotID;
         var id = this.SnapshotID;
         this.SnapshotStatus = 1;
@@ -4238,7 +4242,7 @@ function HQTradeFrame()
                 self.ScreenImageData = res.data;
                 self.SnapshotStatus = 0;
                 self.CurrentSnapshotID = id;
-                console.log(`[HQTradeFrame::SnapshotImageData] SnapshotID=${self.SnapshotID}, CurrentSnapshotID=${self.CurrentSnapshotID}, size=${res.data.length}`);
+                JSConsole.Chart.Log(`[HQTradeFrame::SnapshotImageData] SnapshotID=${self.SnapshotID}, CurrentSnapshotID=${self.CurrentSnapshotID}, size=${res.data.length}`);
             }
         })
     }
@@ -4528,7 +4532,7 @@ function SimpleChartFrame() {
     var width = this.ChartBorder.GetChartWidth();
     var height = this.ChartBorder.GetChartHeight();
 
-    console.log('[SimpleChartFrame::Snapshot][ID=' + this.ChartBorder.UIElement.ID + '] invoke canvasToTempFilePath' + '(width=' + width + ',height=' + height + ')');
+    JSConsole.Chart.Log('[SimpleChartFrame::Snapshot][ID=' + this.ChartBorder.UIElement.ID + '] invoke canvasToTempFilePath' + '(width=' + width + ',height=' + height + ')');
 
     wx.canvasToTempFilePath({
       x: 0,
@@ -4538,7 +4542,7 @@ function SimpleChartFrame() {
       canvasId: this.ChartBorder.UIElement.ID,
       success: function (res) {
         self.ScreenImagePath = res.tempFilePath;
-        console.log(res.tempFilePath)
+        JSConsole.Chart.Log(res.tempFilePath)
       }
     })
   }
@@ -4678,7 +4682,7 @@ function Rotate90SimpleChartFrame() {
 
         if (xPrevTextRight != null && xPrevTextRight > xTextLeft) continue;
 
-        //console.log('[AverageWidthFrame::DrawVertical]', this.Canvas.fillStyle,x, yText);
+        //JSConsole.Chart.Log('[AverageWidthFrame::DrawVertical]', this.Canvas.fillStyle,x, yText);
 
         this.Canvas.fillText(item.Message[0], x, yText);
         xPrevTextRight = xTextRight;
@@ -4721,67 +4725,6 @@ var ZOOM_SEED = //0=柱子宽度  1=间距
     //[0.6,0.12],	[0.5,0.1],	[0.4,0.08],
     //[0.3,0.06],	[0.2,0.04],	[0.1,0.02]
 ];
-
-
-
-//分钟成交量
-function ChartMinuteVolumBar() {
-  this.newMethod = IChartPainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
-
-  this.UpColor = g_JSChartResource.UpBarColor;
-  this.DownColor = g_JSChartResource.DownBarColor;
-  this.YClose;    //前收盘
-
-  this.Draw = function () {
-    var isHScreen = (this.ChartFrame.IsHScreen === true)
-    var chartright = this.ChartBorder.GetRight();
-    if (isHScreen) chartright = this.ChartBorder.GetBottom();
-    var xPointCount = this.ChartFrame.XPointCount;
-    var yBottom = this.ChartFrame.GetYFromData(0);
-    var yPrice = this.YClose; //上一分钟的价格
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var item = this.Data.Data[i];
-      if (!item || !item.Vol) continue;
-
-      var y = this.ChartFrame.GetYFromData(item.Vol);
-      var x = this.ChartFrame.GetXFromIndex(i);
-      if (x > chartright) break;
-      //价格>=上一分钟价格 红色 否则绿色
-      this.Canvas.strokeStyle = item.Close >= yPrice ? this.UpColor : this.DownColor;
-      this.Canvas.beginPath();
-      if (isHScreen) {
-        this.Canvas.moveTo(y, ToFixedPoint(x));
-        this.Canvas.lineTo(yBottom, ToFixedPoint(x));
-      }
-      else {
-        this.Canvas.moveTo(ToFixedPoint(x), y);
-        this.Canvas.lineTo(ToFixedPoint(x), yBottom);
-      }
-      this.Canvas.stroke();
-      yPrice = item.Close;
-    }
-  }
-
-  this.GetMaxMin = function () {
-    var xPointCount = this.ChartFrame.XPointCount;
-    var range = {};
-    range.Min = 0;
-    range.Max = null;
-    for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-      var item = this.Data.Data[i];
-      if (!item || !item.Vol) continue;
-      if (range.Max == null) range.Max = item.Vol;
-      if (range.Max < item.Vol) range.Max = item.Vol;
-    }
-
-    return range;
-  }
-}
-
-
-
 
 
 //通达信语法 VOLSTICK 支持横屏
@@ -5596,7 +5539,7 @@ function ChartXYSubBar() {
       {
         subBarWidth = dataWidth / barCount;
         subBarOffset = subBarWidth * this.BarID;
-        //console.log('[ChartXYSubBar::Draw] ', subBarWidth, this.BarID, subBarOffset);
+        //JSConsole.Chart.Log('[ChartXYSubBar::Draw] ', subBarWidth, this.BarID, subBarOffset);
       }
 
       xMiddle = ToFixedRect(xMiddle);   //调整为整数
@@ -5683,7 +5626,7 @@ function ChartSubBar() {
       {
         subBarWidth = dataWidth / barCount;
         subBarOffset = subBarWidth * this.BarID;
-        //console.log('[ChartSubBar::Draw] ', subBarWidth, this.BarID, subBarOffset);
+        //JSConsole.Chart.Log('[ChartSubBar::Draw] ', subBarWidth, this.BarID, subBarOffset);
       }
 
       yBottom = ToFixedRect(yBottom);   //调整为整数
@@ -6391,7 +6334,7 @@ function ChartDrawPictureLine() {
 
       this.Canvas.beginPath();
       this.Canvas.arc(pt.X, pt.Y, 5, 0, 360);
-      //console.log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
+      //JSConsole.Chart.Log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
       if (this.Canvas.isPointInPath(x, y))
         return i;
 
@@ -6489,7 +6432,7 @@ function ChartDrawPictureHaflLine() {
 
       this.Canvas.beginPath();
       this.Canvas.arc(pt.X, pt.Y, 5, 0, 360);
-      //console.log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
+      //JSConsole.Chart.Log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
       if (this.Canvas.isPointInPath(x, y))
         return i;
 
@@ -6553,7 +6496,7 @@ function ChartDrawPictureRect() {
 
       this.Canvas.beginPath();
       this.Canvas.arc(pt.X, pt.Y, 5, 0, 360);
-      //console.log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
+      //JSConsole.Chart.Log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
       if (this.Canvas.isPointInPath(x, y))
         return i;
 
@@ -6704,7 +6647,7 @@ function ChartDrawPictureArc() {
 
       this.Canvas.beginPath();
       this.Canvas.arc(pt.X, pt.Y, 5, 0, 360);
-      //console.log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
+      //JSConsole.Chart.Log('['+i+']'+'x='+x+' y='+y+' dataX='+pt.X+" dataY="+pt.Y);
       if (this.Canvas.isPointInPath(x, y))
         return i;
 
@@ -6967,7 +6910,7 @@ function KLineChartContainer(uielement)
             this.LastPoint.X = null;
             this.LastPoint.Y = null;
 
-            console.log(`[KLineChartContainer::ChartOperator] OP_GOTO_HOME, dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${showCount}`);
+            JSConsole.Chart.Log(`[KLineChartContainer::ChartOperator] OP_GOTO_HOME, dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${showCount}`);
 
             this.UpdataDataoffset();           //更新数据偏移
             this.UpdateFrameMaxMin();          //调整坐标最大 最小值
@@ -7215,7 +7158,7 @@ function KLineChartContainer(uielement)
         if (lastDataCount > 0 && hisData.Data.length > lastDataCount) 
         {
             newDataCount = hisData.Data.length - lastDataCount;
-            console.log(`[KLineChartContainer::UpdateMainData]  [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}]`);
+            JSConsole.Chart.Log(`[KLineChartContainer::UpdateMainData]  [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}]`);
         }
 
         this.ChartPaint[0].Data = hisData;
@@ -7623,7 +7566,7 @@ function KLineChartContainer(uielement)
         var data=recvdata.data;
         if (!data || !data.stock || !data.stock[0] || this.Symbol != data.stock[0].symbol) 
         {
-            console.log('[KLineChartContainer::RecvRealtimeData] recvdata error', recvdata);
+            JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] recvdata error', recvdata);
             return;
         }
         
@@ -7633,7 +7576,7 @@ function KLineChartContainer(uielement)
 
         if (item.Date == realtimeData.Date)   //实时行情数据更新
         {
-            //console.log('[KLineChartContainer::RecvRealtimeData] update kline by minute data', realtimeData);
+            //JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] update kline by minute data', realtimeData);
             item.Close = realtimeData.Close;
             item.High = realtimeData.High;
             item.Low = realtimeData.Low;
@@ -7642,7 +7585,7 @@ function KLineChartContainer(uielement)
         }
         else if (item.Date < realtimeData.Date)   //新增加数据
         {
-            console.log('[KLineChartContainer::RecvRealtimeData] insert kline by minute data', realtimeData);
+            JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] insert kline by minute data', realtimeData);
             var newItem = new HistoryData();
             newItem.YClose = realtimeData.YClose;
             newItem.Open = realtimeData.Open;
@@ -7762,7 +7705,7 @@ function KLineChartContainer(uielement)
         {
             var item = aryLimit[i];
             this.SourceDataLimit.set(item.Period, item.MaxCount); //每个周期缓存数据最大个数 key=周期 value=最大个数 
-            console.log(`[KLineChartContainer::SetSourceDatatLimit] Period=${item.Period}, MaxCount=${item.MaxCount}`);
+            JSConsole.Chart.Log(`[KLineChartContainer::SetSourceDatatLimit] Period=${item.Period}, MaxCount=${item.MaxCount}`);
         }
     } 
 
@@ -7792,7 +7735,7 @@ function KLineChartContainer(uielement)
         {
             if (dataOffset < 0) dataOffset = 0;
             frameHisdata.DataOffset = dataOffset;
-            console.log(`[KLineChartContainer::ReduceSourceData] remove data ${removeCount}, dataOffset=${dataOffset}`);
+            JSConsole.Chart.Log(`[KLineChartContainer::ReduceSourceData] remove data ${removeCount}, dataOffset=${dataOffset}`);
         }
     }      
 
@@ -7813,7 +7756,7 @@ function KLineChartContainer(uielement)
         var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
         var lastSourceDataCount = this.SourceData.Data.length;
         if (!this.SourceData.MergeMinuteData(realtimeData)) return;
-        console.log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by 1 minute data [${lastSourceDataCount}->${this.SourceData.Data.length}]`);
+        JSConsole.Chart.Log(`[KLineChartContainer::RecvMinuteRealtimeData] update kline by 1 minute data [${lastSourceDataCount}->${this.SourceData.Data.length}]`);
 
         var bindData = new ChartData();
         bindData.Data = this.SourceData.Data;
@@ -7866,7 +7809,7 @@ function KLineChartContainer(uielement)
 
         if (!this.SourceData.MergeMinuteData(aryMinuteData)) return;
 
-        console.log(`[KLineChartContainer::RecvMinuteRealtimeDataV2] update kline by 1 minute data [${lastDataCount}->${this.SourceData.Data.length}]`);
+        JSConsole.Chart.Log(`[KLineChartContainer::RecvMinuteRealtimeDataV2] update kline by 1 minute data [${lastDataCount}->${this.SourceData.Data.length}]`);
 
         var bindData = new ChartData();
         bindData.Data = this.SourceData.Data;
@@ -8464,7 +8407,7 @@ function KLineChartContainer(uielement)
             if (!item.IsClickTitle(x,y)) continue;
 
             var data={ Point:{X:x, Y:y}, Title:item.Title, FrameID:item.Frame.Identify };
-            console.log('[KLineChartContainer::TryClickIndexTitle] click title ', data);
+            JSConsole.Chart.Log('[KLineChartContainer::TryClickIndexTitle] click title ', data);
 
             var event=this.GetEvent(JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE);
             if (event && event.Callback) event.Callback(event,data,this);
@@ -8814,7 +8757,7 @@ function KLineChartContainer(uielement)
     var drawPicture = this.CurrentChartDrawPicture;
     if (!drawPicture) return false;
 
-    //console.log("xStep="+xStep+" yStep="+yStep);
+    //JSConsole.Chart.Log("xStep="+xStep+" yStep="+yStep);
     drawPicture.Move(xStep, yStep);
 
     return true;
@@ -9035,7 +8978,7 @@ function KLineChartContainer(uielement)
         let width = this.Frame.ChartBorder.GetWidth();
         let barWidth = (ZOOM_SEED[ZOOM_SEED.length - 1][0] + ZOOM_SEED[ZOOM_SEED.length - 1][1]);
         let pageSize = parseInt(width / barWidth) - 8;
-        console.log(`[KLineChartContainer::GetMaxPageSize] width=${width} barWidth=${barWidth} pageSize=${pageSize}`);
+        JSConsole.Chart.Log(`[KLineChartContainer::GetMaxPageSize] width=${width} barWidth=${barWidth} pageSize=${pageSize}`);
         return pageSize
     }
 
@@ -9050,7 +8993,7 @@ function KLineChartContainer(uielement)
 
         if (ChartData.IsMinutePeriod(this.Period, true)) //下载分钟数据
         {
-            console.log(`[KLineChartContainer.DragDownloadData] Minute:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
+            JSConsole.Chart.Log(`[KLineChartContainer.DragDownloadData] Minute:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
             if (!this.DragDownload.Minute.Enable) return;
             if (this.DragDownload.Minute.IsEnd) return; //全部下载完了
             if (this.DragDownload.Minute.Status != 0) return;
@@ -9058,7 +9001,7 @@ function KLineChartContainer(uielement)
         }
         else if (ChartData.IsDayPeriod(this.Period, true)) // 下载日线
         {
-            console.log(`[KLineChartContainer.DragDownloadData] Day:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
+            JSConsole.Chart.Log(`[KLineChartContainer.DragDownloadData] Day:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
             if (!this.DragDownload.Day.Enable) return;
             if (this.DragDownload.Day.IsEnd) return; //全部下载完了
             if (this.DragDownload.Day.Status != 0) return;
@@ -9941,7 +9884,7 @@ function MinuteChartContainer(uielement)
         var data = recvdata.data;
         if (data.code!=0) 
         {
-            console.log('[MinuteChartContainer::RecvHistoryMinuteData] failed.',data);
+            JSConsole.Chart.Log('[MinuteChartContainer::RecvHistoryMinuteData] failed.',data);
             return;
         }
         this.DayData = MinuteChartContainer.JsonDataToMinuteDataArray(data);;
@@ -10612,7 +10555,7 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
                 item.Close = data.stock[0].open;
                 item.High = item.Low = data.stock[0].open;
                 item.AvPrice = data.stock[0].open;
-                console.log('[MinuteChartContainer::JsonDataToMinuteData] first minute data is empty.', data.stock[0].symbol, jsData);
+                JSConsole.Chart.Log('[MinuteChartContainer::JsonDataToMinuteData] first minute data is empty.', data.stock[0].symbol, jsData);
             }
         }
 
@@ -11708,7 +11651,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
 
     this.RestartTrain = function (option)  // { Symbol:, Period:周期, Right:复权, Train:{ DataCount:, DateTime: } }
     {
-        console.log('[KLineTrainChartContainer::RestartTrain] option ', option);
+        JSConsole.Chart.Log('[KLineTrainChartContainer::RestartTrain] option ', option);
 
         this.TrainInfo = { Start: {}, End: {} };
         this.BuySellData = [];
@@ -12887,7 +12830,7 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
 
     this.ExecuteScript = function (hqChart, windowIndex, hisData) 
     {
-        console.log('[APIScriptIndex::ExecuteScript] name, Arguments ', this.Name, this.Arguments);
+        JSConsole.Chart.Log('[APIScriptIndex::ExecuteScript] name, Arguments ', this.Name, this.Arguments);
 
         //数据类型
         let hqDataType = HQ_DATA_TYPE.KLINE_ID;   //默认K线
@@ -12961,7 +12904,7 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
     this.RecvAPIData = function (recvData, hqChart, windowIndex, hisData) 
     {
         var data=recvData.data;
-        console.log('[APIScriptIndex::RecvAPIData] recv data ', this.Name, data);
+        JSConsole.Chart.Log('[APIScriptIndex::RecvAPIData] recv data ', this.Name, data);
         if (data.code != 0) return;
 
         if (data.outdata && data.outdata.name) this.Name = data.outdata.name;
@@ -12979,7 +12922,7 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
         if (this.HQDataType == HQ_DATA_TYPE.KLINE_ID) 
         {
             this.OutVar = this.FittingData(data.outdata, hqChart);
-            console.log('[APIScriptIndex::RecvAPIData] conver to OutVar ', this.OutVar);
+            JSConsole.Chart.Log('[APIScriptIndex::RecvAPIData] conver to OutVar ', this.OutVar);
         }
         else 
         {
@@ -13894,7 +13837,7 @@ function CustonIndexHeatIndex() {
     let data = recvData.data;
     if (data.data == null || data.data.length < 0) return;
 
-    //console.log(recvData.data);
+    //JSConsole.Chart.Log(recvData.data);
     let aryData = new Array();
     for (let i in data.data) {
       let item = data.data[i];
@@ -14100,7 +14043,7 @@ function BenfordIndex() {
   }
 
   this.RecvData = function (recvData, param) {
-    console.log(recvData);
+    JSConsole.Chart.Log(recvData);
     if (recvData.data.stock == null || recvData.data.stock.length <= 0) return;
 
     var aryData = this.JsonDataToMapSingleData(recvData.data);

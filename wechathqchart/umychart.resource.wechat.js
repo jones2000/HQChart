@@ -25,7 +25,7 @@ function JSChartResource()
     this.MinKLineBarWidth=4;                        //最小的柱子宽度 比这个还小就画直线 
 
     this.Minute = {};
-    this.Minute.VolBarColor = "rgb(238,127,9)";
+    this.Minute.VolBarColor = null;
     this.Minute.PriceColor = "rgb(50,171,205)";
     this.Minute.AreaPriceColor = 'rgba(50,171,205,0.1)';
     this.Minute.AvPriceColor = "rgb(238,127,9)";

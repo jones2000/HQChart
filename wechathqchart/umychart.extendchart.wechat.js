@@ -9,6 +9,8 @@
 
     图形扩展画法
 */ 
+//日志
+import { JSConsole } from "./umychart.console.wechat.js"
 
 //行情数据结构体 及涉及到的行情算法(复权,周期等) 
 import 
@@ -551,7 +553,7 @@ function BarrageList()
             }
         }
 
-        console.log(`[BarrageList::CacluatePlayLine] LineCount=${this.PlayList.length} Height=${this.Height}`)
+        JSConsole.Chart.Log(`[BarrageList::CacluatePlayLine] LineCount=${this.PlayList.length} Height=${this.Height}`)
     }
 
     //添加弹幕
