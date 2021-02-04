@@ -482,19 +482,28 @@ function FrameSplitKLinePriceY()
         if (JSCommonCoordinateData.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数
         if (this.FloatPrecision != null) defaultfloatPrecision = this.FloatPrecision;
 
-        switch (this.CoordinateType)
+        var bFilter=true;
+        if (FrameSplitKLinePriceY.SplitCustom)
         {
-            case 1:
-                this.SplitPercentage(splitData, defaultfloatPrecision);
-                break;
-            default:
-                if (this.SplitType == 1) this.SplitFixed(splitData, defaultfloatPrecision);
-                else this.SplitDefault(splitData, defaultfloatPrecision);
-                this.CustomCoordinate(defaultfloatPrecision);
-                break;
+            FrameSplitKLinePriceY.SplitCustom(this,splitData,defaultfloatPrecision);    //自定义分割
+            bFilter=false;
+        }
+        else
+        {
+            switch (this.CoordinateType)
+            {
+                case 1:
+                    this.SplitPercentage(splitData, defaultfloatPrecision);
+                    break;
+                default:
+                    if (this.SplitType == 1) this.SplitFixed(splitData, defaultfloatPrecision);
+                    else this.SplitDefault(splitData, defaultfloatPrecision);
+                    this.CustomCoordinate(defaultfloatPrecision);
+                    break;
+            }
         }
 
-        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, false);
+        if (bFilter) this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, false);
         this.Frame.HorizontalMax = splitData.Max;
         this.Frame.HorizontalMin = splitData.Min;
     }

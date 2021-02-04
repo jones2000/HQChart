@@ -21112,6 +21112,11 @@ function FrameSplitKLinePriceY()
         {
             this.SplitTickData(splitData,defaultfloatPrecision);
         }
+        else if (FrameSplitKLinePriceY.SplitCustom)
+        {
+            FrameSplitKLinePriceY.SplitCustom(this,splitData,defaultfloatPrecision);    //自定义分割
+            bFilter=false;
+        }
         else
         {
             switch(this.CoordinateType)
@@ -25097,8 +25102,8 @@ IChartDrawPicture.MapIonFont=new Map(
 [
     ["icon-arrow_up", { Text:'\ue683', Color:'#318757', Family:"iconfont"}],
     ["icon-arrow_down", { Text:'\ue681', Color:'#db563e', Family:"iconfont"}],
-    ["icon-arrow_right", { Text:'\ue680', Color:'#318757', Family:"iconfont"}],
-    ["icon-arrow_left", { Text:'\ue682', Color:'#318757', Family:"iconfont"}]
+    ["icon-arrow_right", {  Text:'\ue682', Color:'#318757', Family:"iconfont"}],
+    ["icon-arrow_left", {  Text:'\ue680',Color:'#318757', Family:"iconfont"}]
 ]);
 
 IChartDrawPicture.GetDrawPictureByName=function(value)
@@ -36357,8 +36362,8 @@ function MinuteChartContainer(uielement)
                         [
                             ["icon-arrow_up", { Text:'\ue683', Color:'#318757'}],
                             ["icon-arrow_down", { Text:'\ue681', Color:'#db563e'}],
-                            ["icon-arrow_right", { Text:'\ue680', Color:'#318757'}],
-                            ["icon-arrow_left", { Text:'\ue682', Color:'#318757'}],
+                            ["icon-arrow_right", { Text:'\ue682', Color:'#318757'}],
+                            ["icon-arrow_left", { Text:'\ue680', Color:'#318757'}],
                         ]
                     );
 

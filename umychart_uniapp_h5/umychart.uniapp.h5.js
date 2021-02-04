@@ -24921,6 +24921,11 @@ function FrameSplitKLinePriceY()
         {
             this.SplitTickData(splitData,defaultfloatPrecision);
         }
+        else if (FrameSplitKLinePriceY.SplitCustom)
+        {
+            FrameSplitKLinePriceY.SplitCustom(this,splitData,defaultfloatPrecision);    //自定义分割
+            bFilter=false;
+        }
         else
         {
             switch(this.CoordinateType)
@@ -28906,8 +28911,8 @@ IChartDrawPicture.MapIonFont=new Map(
 [
     ["icon-arrow_up", { Text:'\ue683', Color:'#318757', Family:"iconfont"}],
     ["icon-arrow_down", { Text:'\ue681', Color:'#db563e', Family:"iconfont"}],
-    ["icon-arrow_right", { Text:'\ue680', Color:'#318757', Family:"iconfont"}],
-    ["icon-arrow_left", { Text:'\ue682', Color:'#318757', Family:"iconfont"}]
+    ["icon-arrow_right", {  Text:'\ue682', Color:'#318757', Family:"iconfont"}],
+    ["icon-arrow_left", {  Text:'\ue680',Color:'#318757', Family:"iconfont"}]
 ]);
 
 IChartDrawPicture.GetDrawPictureByName=function(value)
@@ -40166,8 +40171,8 @@ function MinuteChartContainer(uielement)
                         [
                             ["icon-arrow_up", { Text:'\ue683', Color:'#318757'}],
                             ["icon-arrow_down", { Text:'\ue681', Color:'#db563e'}],
-                            ["icon-arrow_right", { Text:'\ue680', Color:'#318757'}],
-                            ["icon-arrow_left", { Text:'\ue682', Color:'#318757'}],
+                            ["icon-arrow_right", { Text:'\ue682', Color:'#318757'}],
+                            ["icon-arrow_left", { Text:'\ue680', Color:'#318757'}],
                         ]
                     );
 
@@ -65145,7 +65150,7 @@ function JSExplainer(ast,option)
         //个股数据
         ['CLOSE',"收盘价"],['VOL',"成交量"],['OPEN',"开盘价"],['HIGH',"最高价"],['LOW',"最低价"],['AMOUNT',"成交量"],
         ['C',"收盘价"],['V',"成交量"],['O',"开盘价"],['H',"最高价"],['L',"最低价"],['AMO',"成交量"], 
-        ['VOLR',"量比"], ['VOLINSTK',"持仓量"], ["OPI","持仓量"] ["ZSTJJ","均价"], ["QHJSJ","结算价"], ["SETTLE", "结算价"],
+        ['VOLR',"量比"], ['VOLINSTK',"持仓量"], ["OPI","持仓量"], ["ZSTJJ","均价"], ["QHJSJ","结算价"], ["SETTLE", "结算价"],
 
         //日期类
         ['DATE',"日期"],['YEAR',"年份"],['MONTH',"月份"],['PERIOD', "周期"],['WEEK',"星期"],["TIME","时间"],
@@ -70268,6 +70273,8 @@ export default  {
     ChartData:ChartData,
     MARKET_SUFFIX_NAME:MARKET_SUFFIX_NAME,      //判断股票属性
     IFrameSplitOperator:IFrameSplitOperator,    //格式化字符串方法
+    FrameSplitKLinePriceY:FrameSplitKLinePriceY,
+    FrameSplitKLineX:FrameSplitKLineX,
     JSKLineInfoMap:JSKLineInfoMap,
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,          //可以订阅的事件类型
     JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,    //图形控制类型

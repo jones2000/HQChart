@@ -14130,8 +14130,9 @@ module.exports =
         DataPlus: DataPlus,
         KLineTooltipPaint: KLineTooltipPaint,
         MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
-        JSCommonCoordinateData, JSCommonCoordinateData,
-        FrameSplitKLineX, FrameSplitKLineX,
+        JSCommonCoordinateData:JSCommonCoordinateData,
+        FrameSplitKLineX:FrameSplitKLineX,
+        FrameSplitKLinePriceY:FrameSplitKLinePriceY,
         JSCHART_EVENT_ID:JSCHART_EVENT_ID
     },
 };
