@@ -4,21 +4,16 @@ from flask_cors import CORS
 from flask_socketio import SocketIO,emit,disconnect
 
 from hqchartpy2_fast import FastHQChart
+from hqchartpy2_pandas import HQChartPy2Helper
 from hqchartpy2_tushare import TushareHQChartData,HQResultTest 
+from hqchartpy2_tushare_config import HQCHART_AUTHORIZATION_KEY,TUSHARE_AUTHORIZATION_KEY
 
 import json
 import time
 import numpy as np 
 import pandas as pd
-import tushare as ts
 import datetime
 import uuid
-
-
-# hqchartpy2授权码
-HQCHART_AUTHORIZATION_KEY="oTjOc1CNCuxtcAqs6+/FHeKmYcPpFv+M9y7seNd6eBTE9tq1El9mGLi7bj6gtMf3RpWtGJ0K7Tu2wbEBUjunGb5mgGskWii4vlUK+5XFr7fI/nDysxdWOebKqJ+RLif0MptDIGdQP8nbyw1osZdXJuWpb4RYYNrzeXtbQVDI2UNnuJUm8DpGs/SgKrw9l+Q2QT/hMnJ6/MMsjMpsgHmV5iHWQTzzAU2QXnX5rtMuAISFKcLlbPzKF809lexHbtqXqoPxQfJkqh0YzTyJOZLhkvZ+Sm5vIu4EhJjIQBTLrX229t8rIvwKwLZ/UEuewSQFgq2QkpBQMPlBU/HVy5h7WQ=="
-# tushare授权码
-TUSHARE_AUTHORIZATION_KEY="836dcc340f026bd41b378d702d5e11950df18c1750b18ec18dc4ea09"
 
 
 TEST_CODE=''' 
@@ -134,6 +129,8 @@ ID:{3}
 
     if (res):
         jsonData=result.Result[0]["Data"]
+        df=HQChartPy2Helper.JsonDataToPandas(jsonData)  # 指标数据转pandas
+        print(df)
         responseData=json.loads(jsonData)
         responseData["Code"]=0          # 成功
         responseData['Tick']=elapsed    # 耗时
@@ -154,7 +151,7 @@ class HQSelectResult():
      # 执行成功回调
     def RunSuccess(self, symbol, jsData, jobID):
         self.Result.append({"Symbol":symbol, "Data":jsData})  # 保存结果
-        log="{0} success".format(symbol)
+        log="[HQSelectResult::RunSuccess] {0} success".format(symbol)
         print (log)
         sendData={ "Symbol":symbol, "Data":jsData, "JobID":jobID ,"Success":True }
         emit('HQChartPy_SelectResult', sendData )
@@ -162,7 +159,7 @@ class HQSelectResult():
 
     # 执行失败回调
     def RunFailed(self, code, symbol, error,jobID) :
-        log="{0}\n{1} failed\n{2}".format(code, symbol,error)
+        log="[HQSelectResult::RunFailed] {0}\n{1} failed\n{2}".format(code, symbol,error)
         self.Error.append(error)
         print(log)
         sendData={ "Symbol":symbol, "Error":error, "JobID":jobID ,"Success":False }
