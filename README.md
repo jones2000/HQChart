@@ -316,6 +316,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 3. [hqchartPy2数据对接教程3-FINANCE数据](https://blog.csdn.net/jones2000/article/details/112095070)<br>
 4. [hqchartPy2数据对接教程4-DYNAINFO函数](https://blog.csdn.net/jones2000/article/details/112334485)<br>
 5. [hqchartPy2数据对接教程5-引用指定股票数据函数](https://blog.csdn.net/jones2000/article/details/112335307)<br>
+6. [hqchartPy2指标选股-KDJ选股](hqchartPy2指标选股 - KDJ选股)<br>
 
 # 5.VUE 行情项目
 [代码地址(vuehqchart)](/vuehqchart) <br>
