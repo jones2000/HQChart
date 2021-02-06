@@ -5465,7 +5465,14 @@ function JSChartContainer(uielement, OffscreenElement)
     this.NetworkFilter;         //网络请求回调 function(data, callback);
     this.LastMouseStatus={ }
     this.ClickDownPoint;        //鼠标点击坐标 {X, Y}, 鼠标放开以后清空为null
+    this.IsDestroy=false;        //是否已经销毁了
 
+    this.ChartDestory=function()    //销毁
+    {
+        this.IsDestroy=true;
+        this.StopAutoUpdata();
+    }
+    
     //设置事件回调
     //{event:事件id, callback:回调函数}
     this.AddEventCallback=function(object)

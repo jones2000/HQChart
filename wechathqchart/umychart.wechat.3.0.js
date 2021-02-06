@@ -896,10 +896,12 @@ function JSChart(element)
 
         //设置股票代码
         if (!option.Symbol) return false;
+        this.JSChartContainer = chart;
+
         chart.Draw();
         chart.ChangeSymbol(option.Symbol);
 
-        this.JSChartContainer = chart;
+        
         this.JSChartContainer.Draw();
     }
 
@@ -1286,7 +1288,14 @@ function JSChartContainer(uielement)
 
     //事件回调
     this.mapEvent = new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
-    this.NetworkFilter;         //网络请求回调 function(data, callback);
+    this.NetworkFilter;          //网络请求回调 function(data, callback);
+    this.IsDestroy=false;        //是否已经销毁了
+
+    this.ChartDestory=function()    //销毁
+    {
+        this.IsDestroy=true;
+        this.StopAutoUpdata();
+    }
 
     this.AddEventCallback = function (object) //设置事件回调 {event:事件id, callback:回调函数}
     {
