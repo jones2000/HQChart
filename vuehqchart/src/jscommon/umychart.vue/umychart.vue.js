@@ -163,6 +163,10 @@ function JSIndexScript()
             ['VOL-TDX',this.VOL_TDX],
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
+            //通达信特色指标
+            ["散户线", this.ShareholderCount],["NXTS", this.NXTS],["FKX", this.FKX],["两融资金", this.Margin4],
+            ["ZSDB",this.ZSDB],
+
             ['CJL2', this.CJL],  //期货持仓量
             ['ASI', this.ASI],['DC', this.DC],['DEMA', this.DEMA],["VWAP", this.VWAP],
 
@@ -2094,18 +2098,19 @@ JSIndexScript.prototype.TJCJL = function ()
         Args: [],
         Script: //脚本
 '总手:VOL,NODRAW;\n\
+DRAWTEXT_FIX(ISLASTBAR,0,0,0,"说明: 红色柱为吸货量,绿色为出货量,黄色为天量,蓝色为地量"),COLORGRAY;\n\
 ZZ:=IF(REF(C,1)>REF(O,1) AND O>REF(C,1)*1.014 AND C<O*1.02,1,3);\n\
 V5:=MA(V,5);\n\
 V12:=MA(V,12);\n\
 V34:=MA(V,34);\n\
 C6:=MA(C,6);\n\
-STICKLINE(VOL,0,VOL,10,0),COLORLIGRAY;\n\
-STICKLINE(CROSS(C,C6) AND V>V5*1.2 AND V>V12*1.2 AND ZZ>2 AND C>H*0.975,0,VOL,10,0),COLORRED;\n\
-STICKLINE(CROSS(C6,C) AND V>V5*1.2 AND V>V12*1.2,0,VOL,10,0),COLORGREEN;\n\
-STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05,0,VOL,10,0),COLORYELLOW;\n\
-STICKLINE(VOL<MA(VOL,5)/2 AND V<V12/2,0,VOL,10,0),COLORBLUE;\n\
-STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05 AND CROSS(C,C6) AND V>V5*1.2 AND V>V12*1.2 AND ZZ>2 AND C>H*0.975,VOL*0.5,0,10,0),COLORRED;\n\
-STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05 AND CROSS(C6,C) AND V>V5*1.2 AND V>V12*1.2,VOL*0.5,0,10,0),COLORRED;'
+STICKLINE(VOL,0,VOL,3,0),COLORLIGRAY;\n\
+STICKLINE(CROSS(C,C6) AND V>V5*1.2 AND V>V12*1.2 AND ZZ>2 AND C>H*0.975,0,VOL,3,0),COLORRED;\n\
+STICKLINE(CROSS(C6,C) AND V>V5*1.2 AND V>V12*1.2,0,VOL,3,0),COLORGREEN;\n\
+STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05,0,VOL,3,0),COLORYELLOW;\n\
+STICKLINE(VOL<MA(VOL,5)/2 AND V<V12/2,0,VOL,3,0),COLORBLUE;\n\
+STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05 AND CROSS(C,C6) AND V>V5*1.2 AND V>V12*1.2 AND ZZ>2 AND C>H*0.975,VOL*0.5,0,3,0),COLORRED;\n\
+STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05 AND CROSS(C6,C) AND V>V5*1.2 AND V>V12*1.2,VOL*0.5,0,3,0),COLORRED;'
 
     };
 
@@ -3836,6 +3841,94 @@ JSIndexScript.prototype.WAVE = function ()
     return data;
 }
 
+JSIndexScript.prototype.ShareholderCount=function()
+{
+    let data =
+    {
+        Name: '散户线', Description: '散户线', IsMainIndex: false,
+        Script: //脚本
+"GPJYVALUE(1,1,1);"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.NXTS=function()
+{
+    let data =
+    {
+        Name: 'NXTS', Description: '牛熊天数', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 20 }],
+        Script: //脚本
+"Z:=ZIG(C,N);\n\
+高点:=Z>REF(Z,1) AND Z>REFX(Z,1);\n\
+低点:=Z<REF(Z,1) AND Z<REFX(Z,1);\n\
+NG:=BARSLAST(高点);\n\
+ND:=BARSLAST(低点);\n\
+D0:=DATETODAY(DATE)-DATETODAY(REF(DATE,BARSSINCE(C)));\n\
+DG:=DATETODAY(DATE)-DATETODAY(REF(DATE,NG));\n\
+DD:=DATETODAY(DATE)-DATETODAY(REF(DATE,ND));\n\
+N1:=(NG>ND OR COUNT(高点,0)=0) AND ND>0 AND (HHV(C,ND)-REF(C,ND))/REF(C,ND)>(N/100);\n\
+N2:=NG<ND AND NG>0 AND (LLV(C,NG)-REF(C,NG))/REF(C,NG)>=-(N/100);\n\
+N3:=NG<ND AND NG=0;\n\
+N4:=COUNT(低点 OR 高点,0)=0 AND (HHV(C,0)-REF(C,BARSSINCE(C)))/REF(C,BARSSINCE(C))>(N/100);\n\
+N5:=COUNT(低点,0)=0 AND NG>0 AND (LLV(C,NG)-REF(C,NG))/REF(C,NG)>=-(N/100);\n\
+N6:=COUNT(低点,0)=0 AND NG=0;\n\
+X1:=(NG<ND OR COUNT(低点,0)=0) AND NG>0 AND (LLV(C,NG)-REF(C,NG))/REF(C,NG)<-(N/100);\n\
+X2:=NG>ND AND ND>0 AND (HHV(C,ND)-REF(C,ND))/REF(C,ND)<=(N/100);\n\
+X3:=NG>ND AND ND=0;\n\
+X4:=COUNT(高点 OR 低点,0)=0 AND (LLV(C,0)-REF(C,BARSSINCE(C)))/REF(C,BARSSINCE(C))<-(N/100);\n\
+X5:=COUNT(高点,0)=0 AND ND>0 AND (HHV(C,ND)-REF(C,ND))/REF(C,ND)<=(N/100);\n\
+X6:=COUNT(高点,0)=0 AND ND=0;\n\
+牛市天数:IF(N4 OR N5 OR N6,D0,IF(N1 OR N2 OR N3,DD,0)),COLORRED;\n\
+熊市天数:IF(X4 OR X5 OR X6,D0,IF(X1 OR X2 OR X3,DG,0)),COLORGREEN;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.FKX=function()
+{
+    let data =
+    {
+        Name: 'FKX', Description: '反K线', IsMainIndex: false,
+        Script: //脚本
+"DRAWKLINE(-LOW, -OPEN, -HIGH, -CLOSE);"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.Margin4=function()
+{
+    let data =
+    {
+        Name: '两融资金', Description: '两融资金', IsMainIndex: false,
+        Script: //脚本
+"TMPV:=IF(FINANCE(3)==0,REF(SCJYVALUE(1,1,1),1),REF(GPJYVALUE(3,1,1),1));\n\
+TMPV1:=IF(FINANCE(3)==0,SCJYVALUE(1,1,0),GPJYVALUE(3,1,0));\n\
+两融:IF(TMPV==0 OR TMPV1==0,DRAWNULL,IF(FINANCE(3)==0,(SCJYVALUE(1,1,1)-REF(SCJYVALUE(1,1,1),1))/10000-(SCJYVALUE(1,2,1)-REF(SCJYVALUE(1,2,1),1))/10000,((GPJYVALUE(3,1,1)-REF(GPJYVALUE(3,1,1),1))-((GPJYVALUE(3,2,1)*C/10000-(REF(GPJYVALUE(3,2,1),1)*REF(C,1)/10000)))))),NODRAW;\n\
+STICKLINE(两融>0,0,两融,2,0),COLORRED;\n\
+STICKLINE(两融<0,0,两融,2,0),COLORCYAN;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ZSDB=function()
+{
+    let data =
+    {
+        Name: 'ZSDB', Description: '指数对比(副图,需下载日线)', IsMainIndex: false,
+        Script: //脚本
+"A:=REF(INDEXC,1);\n\
+指数涨幅:IF(A>0,(INDEXC-A)*100/A,0),NODRAW;\n\
+DRAWKLINE(INDEXH,INDEXO,INDEXL,INDEXC);"
+    };
+
+    return data;
+}
+
 JSIndexScript.prototype.TEST = function () 
 {
     let data =
@@ -5106,6 +5199,14 @@ function JSChart(divElement, bOffscreen)
             this.JSChartContainer.StopAutoUpdate();
     }
 
+    this.ChartDestory=function()
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestory) == 'function') 
+        {
+            this.JSChartContainer.ChartDestory();
+        }
+    }
+
     //设置深度图数据 depthData=[ {ID:深度图ID, Data:数据},]   bDraw=是否立即重绘
     this.SetDepthMapData=function(depthData, bDraw)
     {
@@ -5514,9 +5615,9 @@ function JSChartContainer(uielement, OffscreenElement)
     this.ChartDestory=function()    //销毁
     {
         this.IsDestroy=true;
-        this.StopAutoUpdata();
+        this.StopAutoUpdate();
     }
-    
+
     //设置事件回调
     //{event:事件id, callback:回调函数}
     this.AddEventCallback=function(object)
@@ -51342,6 +51443,14 @@ function Node(ErrorHandler)
             return;
         }
 
+        if (callee.Name=="SCJYVALUE")
+        {
+            var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SCJYVALUE, Args:args,  FunctionName:callee.Name };
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+            this.FunctionData.push(item);
+            return;
+        }
+
         if (callee.Name==='MARGIN')
         {
             let jobID=JS_EXECUTE_JOB_ID.GetMarginJobID(args[0].Value);
@@ -57841,6 +57950,82 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    //指定日期到1990.12.19的天数.
+    //用法: DATETODAY(date)
+    //DATETODAY(date).返回date到1990.12.19的天数.有效日期为(901219-1341231)
+    //例如: DATETODAY(901219)返回0.
+    this.DATETODAY=function(data)
+    {
+        var result=[];
+        var startDate=new Date('1990-12-19')
+        var startValue=19901219;
+        var ONE_DAY=1000 * 60 * 60 * 24
+        if (Array.isArray(data))
+        {
+            for(var i in data)
+            {
+                result[i]=null;
+                var item=data[i];
+                if (!this.IsNumber(item)) continue;
+                var value=item+19000000;
+                if (value<startValue) continue;
+                var year=parseInt(value/10000);
+                var month=parseInt((value%10000)/100);
+                var day=parseInt(value%100);
+                var dateItem=new Date(`${year}-${month}-${day}`);
+                result[i]=Math.round((dateItem-startDate)/ONE_DAY);
+            }
+        }
+        else if (this.IsNumber(data))
+        {
+            var value=data+19000000;
+            if (value>=startValue)
+            {
+                var year=parseInt(value/10000);
+                var month=parseInt((value%10000)/100);
+                var day=parseInt(value%100);
+                var dateItem=new Date(`${year}-${month}-${day}`);
+                return Math.round((dateItem-dateItem)/ONE_DAY);
+            }
+        }
+
+        return result;
+    }
+
+    //求1990.12.19后第若干天的日期.
+    //用法:DAYTODATE(N)
+    //DAYTODATE(N).返回1990.12.19后第N天的日期.有效天数为(0-20000)
+    //例如:DAYTODATE(0)返回901219.
+    this.DAYTODATE=function(data)
+    {
+        var startDate=new Date('1990-12-19')
+        var result=[];
+
+        if (Array.isArray(data))
+        {
+            for(var i in data)
+            {
+                result[i]=null;
+                var item=data[i];
+                if (!this.IsNumber(item)) continue;
+                startDate.setDate(startDate.getDate()+item);
+                var value=startDate.getFullYear()*10000+(startDate.getMonth()+1)*100+startDate.getDate();
+                value-=19000000;
+                result[i]=value;
+                startDate.setDate(startDate.getDate()-item);
+            }
+        }
+        else if (this.IsNumber(data))
+        {
+            startDate.setDate(startDate.getDate()+data);
+            var value=startDate.getFullYear()*10000+(startDate.getMonth()+1)*100+startDate.getDate();
+            value-=19000000;
+            return value;
+        }
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -58055,6 +58240,10 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.VALUEWHEN(args[0],args[1]);
             case "HARMEAN":
                 return this.HARMEAN(args[0],args[1]);
+            case "DATETODAY":
+                return this.DATETODAY(args[0]);
+            case "DAYTODATE":
+                return this.DAYTODATE(args[0]);
           
             //三角函数
             case 'ATAN':
@@ -62403,6 +62592,57 @@ function JSSymbolData(ast,option,jsExecute)
         apiDownload.Download();
     }
 
+    this.GetSCJYValue=function(jobItem)
+    {
+        var aryArgs=this.JobArgumentsToArray(jobItem, 3);
+        var key=this.GetStockDataKey(jobItem,aryArgs);
+        if (this.StockData.has(key)) return this.Execute.RunNextJob();
+
+        var self=this;
+        //TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
+        var dataType=aryArgs[2]==1?0:2;
+        if (this.NetworkFilter)
+        {
+            var dateRange=this.Data.GetDateRange();
+            var obj=
+            {
+                Name:'JSSymbolData::GetSCJYValue', //类名::
+                Explain:'股票交易类数据SCJYVALUE(ID,N,TYPE)',
+                JobID:jobItem.ID,
+                Request:{ Url:self.StockHistoryDayApiUrl, Type:'POST', Data:{ Args:aryArgs, symbol: this.Symbol, daterange:dateRange } },
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(recvData) 
+            { 
+                self.RecvStockValue(recvData,jobItem,key,dataType);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        var apiDownload=new DownloadSCJYValue( 
+            {
+                Job:jobItem, 
+                Symbol:this.Symbol, 
+                Url:this.StockHistoryDayApiUrl,
+                Args:aryArgs,
+                DataKey:key,
+                Callback:function(recvData, jobItem, key) 
+                { 
+                    self.RecvStockValue(recvData, jobItem, key,dataType);
+                    self.Execute.RunNextJob();
+                },
+                ErrorCallback:function(strError)
+                {
+                    self.AddStockValueError(key,strError);
+                }
+            });
+
+        apiDownload.Download();
+    }
+
     this.GetVariantData=function(jobItem)
     {
         var key=jobItem.VariantName;
@@ -63896,6 +64136,8 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_FINANCE:303,                   //FINANCE(ID) 基础财务数据
     JOB_DOWNLOAD_GPJYVALUE:304,                 //引用股票交易类数据 GPJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据,TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
     JOB_DOWNLOAD_VARIANT:305,                   //CAPITAL , TOTALCAPITAL, EXCHANGE
+    JOB_DOWNLOAD_SCJYVALUE:306,                 //引用市场总的交易类数据.SCJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据,TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
+    
     
    
     JOB_DOWNLOAD_MARGIN_BALANCE:1000,           //融资融券余额
@@ -64138,7 +64380,9 @@ function JSExecute(ast,option)
         ['DYBLOCK',null],   //所属地域板块
         ['GNBLOCK',null],    //所属概念
 
-        ['DRAWNULL',null]
+        ['DRAWNULL',null],
+
+        ["MACHINEDATE",null],["MACHINETIME",null],["MACHINEWEEK",null]
 
     ]);   
 
@@ -64244,6 +64488,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetFinance(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GPJYVALUE:
                 return this.SymbolData.GetGPJYValue(jobItem);
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SCJYVALUE:
+                return this.SymbolData.GetSCJYValue(jobItem);
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VARIANT:    //CAPITAL, TOTALCAPITAL 
                 return this.SymbolData.GetVariantData(jobItem);
@@ -64355,6 +64601,22 @@ function JSExecute(ast,option)
 
             case "TQFLAG":
                 return this.SymbolData.Right;
+
+            case "MACHINEDATE":
+                {
+                    var now=new Date();
+                    return (now.getFullYear()*10000+(now.getMonth()*1)*100+now.getDate())-19000000;
+                }
+            case "MACHINETIME":
+                {
+                    var now=new Date();
+                    return now.getHours()*10000+(now.getMinutes()*1)*100+now.getSeconds();
+                }
+            case "MACHINEWEEK":
+                {
+                    var now=new Date();
+                    return now.getDay();
+                }
         }
     }
 
@@ -64939,6 +65201,9 @@ function JSExecute(ast,option)
                 node.Out=this.SymbolData.GetStockCacheData( {FunctionName:funcName, Args:args, ArgCount:3, Node:node } );
                 break;
             case "GPJYVALUE":
+                node.Out=this.SymbolData.GetStockCacheData( {FunctionName:funcName, Args:args, ArgCount:3, Node:node } );
+                break;
+            case "SCJYVALUE":
                 node.Out=this.SymbolData.GetStockCacheData( {FunctionName:funcName, Args:args, ArgCount:3, Node:node } );
                 break;
             case "MARGIN":
@@ -69668,6 +69933,9 @@ function DownloadFinanceData(obj)
             case "EXCHANGE": //换手率
                 this.DownloadHistoryData(id);
                 break;
+            case 3:
+                this.GetSymbolType(id);
+                break;
 
             case 9:     //FINANCE(9)  资产负债率
             case 18:    //FINANCE(18)  每股公积金
@@ -69693,6 +69961,16 @@ function DownloadFinanceData(obj)
                 this.DownloadRealtimeData(id);
                 break;
         }
+    }
+
+    //FINANCE(3) 沪深品种类型
+    //0:指数,1:A股主板,2:中小板,3:创业板,4:科创板,5:B股,6:债券,7:基金,8:权证,9:其它,10:非沪深品种
+    this.GetSymbolType=function(id)
+    {
+        var value=1;
+        if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) value=0;
+        var data={ Date:null, Value:value };
+        this.RecvCallback(data,this.Job, this.DataKey);
     }
 
     //最新一期数据
@@ -70048,6 +70326,153 @@ function DownloadGPJYValue(obj)
                     return { Date:date, Value:item.blocktrading.price };
                 else
                     return { Date:date, Value:item.blocktrading.amount };
+            default:
+                return null;
+        }
+    }
+}
+
+
+
+/*
+引用市场总的交易类数据.如果指标支持云数据函数,则不需要[专业财务数据]下载.
+SCJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据,TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
+
+市场交易类数据函数，数据编号如下:
+1--融资融券       沪深融资余额(万元) 沪深融券余额(万元)
+2--陆股通资金流入 沪股通流入金额(亿元) 深股通流入金额(亿元)
+3--沪深涨停股个数 涨停股个数  曾涨停股个数 [注：该指标展示20160926日之后的数据]
+4--沪深跌停股个数 跌停股个数  曾跌停股个数
+5--上证50股指期货  净持仓(手)[注：该指标展示20171009日之后的数据]
+6--沪深300股指期货 净持仓(手) [注：该指标展示20171009日之后的数据]
+7--中证500股指期货 净持仓(手) [注：该指标展示20171009日之后的数据]
+8--ETF基金规模数据 ETF基金规模(亿) ETF净申赎(亿)
+9--每周新增投资者 新增投资者(万户)
+10--增减持统计    增持额(万元)  减持额(万元)[注：部分公司公告滞后,造成每天查看的数据可能会不一样] 
+11--大宗交易      溢价的大宗交易额(万元) 折价的大宗交易额(万元)
+12--限售解禁      限售解禁计划额(亿元)  限售解禁股份实际上市金额(亿元)[注：该指标展示201802月之后的数据;部分股票的解禁日期延后，造成不同日期提取的某天的计划额可能不同]
+13--分红          市场总分红额(亿元)[注：除权派息日的A股市场总分红额] 
+14--募资          市场总募资额(亿元)[注：发行日期/除权日期的首发、配股和增发的总募资额] 
+15--打板资金    封板成功资金(亿元) 封板失败资金(亿元) [注：该指标展示20160926日之后的数据]
+*/
+function DownloadSCJYValue(obj)
+{
+    this.Url=obj.Url;
+    //this.RealtimeUrl=obj.RealtimeUrl;
+    this.Job=obj.Job;
+    this.Symbol=obj.Symbol;
+    this.Args=obj.Args;
+    this.DataKey=obj.DataKey;
+    this.RecvCallback=obj.Callback;
+    this.ErrorCallback=obj.ErrorCallback;
+    
+    this.Download=function()
+    {
+        var self=this;
+        var query=this.GetQueryCondtion();
+        if (!query)
+        {
+            message=`${this.Job.FunctionName}(${this.Args[0]}, ${this.Args[1]}, ${this.Args[2]}) can't support.`;
+            this.ErrorCallback(message);
+            self.RecvCallback(null, self.Job, self.DataKey, true);
+            return;
+        }
+
+        //请求数据
+        JSNetwork.HttpRequest({
+            url: this.Url,
+            data:
+            {
+                "field": query.Field,
+                "symbol": query.Symbol,
+                "condition":query.Cond ,
+                "start": 0,
+                "end": 2000
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (recvData)
+            {
+                var data=self.ToHQChartData(recvData);
+                if (data) //排序
+                    data.sort(function (a, b) { return (a.Date - b.Date) });
+
+                self.RecvCallback(data, self.Job, self.DataKey);
+            }
+        });
+
+    }
+
+    this.GetQueryCondtion=function()
+    {
+        var day=new Date();
+        var endDate=day.getFullYear()*10000+(day.getMonth()+1)*100+day.getDate();
+        day.setDate(day.getDate()-100); //取最近1000条数据
+        var startDate=day.getFullYear()*10000+(day.getMonth()+1)*100+day.getDate()
+        var id=this.Args[0];
+        switch(id)
+        {
+            case 1:
+                var data=
+                {
+                    Symbol:["CNA.ci"],
+                    Field:["margin"], 
+                    Cond:
+                    [
+                        {"item":["date","int32","gte",startDate.toString(),"lte",endDate.toString()]}, 
+                        {"item":["margin","doc","exists","true"]}
+                    ]
+                }
+                return data;
+        }
+    }
+
+    this.ToHQChartData=function(recvData)
+    {
+        if (!recvData.stock || recvData.stock.length!=1) return null;
+
+        var aryData=[];
+        var setDate=new Set();  //有重复数据 去掉
+        var stock=recvData.stock[0];
+        var id=this.Args[0];
+        var subID=this.Args[1];
+        for(var i in stock.stockday)
+        {
+            var item=stock.stockday[i];
+
+            var hqchartItem=this.ToHQChartItemData(item,id,subID);
+            if (hqchartItem && !setDate.has(hqchartItem.Date)) 
+            {
+                aryData.push(hqchartItem);
+                setDate.add(hqchartItem.Date);
+            }
+        }
+
+        return aryData;
+    }
+
+    this.ToHQChartItemData=function(item, id, subID)
+    {
+        if (!item) return null;
+        var date=item.date;
+        var subItem=null;
+        switch(id)
+        {
+            case 1:
+                if (!item.margin) return null;
+                subItem=item.margin;
+                if (subID==1)
+                {
+                    if (!subItem.buy || !IFrameSplitOperator.IsNumber(subItem.buy.balance)) return null;
+                    return { Date:date, Value:subItem.buy.balance }
+                }
+                else
+                {
+                    if (!IFrameSplitOperator.IsNumber(subItem.sell.balance)) return null;
+                    return { Date:date, Value:subItem.sell.balance }
+                }
+                
             default:
                 return null;
         }

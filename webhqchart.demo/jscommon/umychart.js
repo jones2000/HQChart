@@ -1253,6 +1253,14 @@ function JSChart(divElement, bOffscreen)
             this.JSChartContainer.StopAutoUpdate();
     }
 
+    this.ChartDestory=function()
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestory) == 'function') 
+        {
+            this.JSChartContainer.ChartDestory();
+        }
+    }
+
     //设置深度图数据 depthData=[ {ID:深度图ID, Data:数据},]   bDraw=是否立即重绘
     this.SetDepthMapData=function(depthData, bDraw)
     {
@@ -1661,9 +1669,9 @@ function JSChartContainer(uielement, OffscreenElement)
     this.ChartDestory=function()    //销毁
     {
         this.IsDestroy=true;
-        this.StopAutoUpdata();
+        this.StopAutoUpdate();
     }
-    
+
     //设置事件回调
     //{event:事件id, callback:回调函数}
     this.AddEventCallback=function(object)

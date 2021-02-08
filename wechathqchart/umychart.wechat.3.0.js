@@ -1046,6 +1046,14 @@ function JSChart(element)
     }
     this.StopAutoUpdata = this.StopAutoUpdate;
 
+    this.ChartDestory=function()
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestory) == 'function') {
+            JSConsole.Chart.Log("[JSChart::ChartDestory]");
+            this.JSChartContainer.ChartDestory();
+        }
+    }
+
     this.CreateSimpleChart = function (option) 
     {
         var chart = new SimlpleChartContainer(this.CanvasElement);
@@ -1294,7 +1302,7 @@ function JSChartContainer(uielement)
     this.ChartDestory=function()    //销毁
     {
         this.IsDestroy=true;
-        this.StopAutoUpdata();
+        this.StopAutoUpdate();
     }
 
     this.AddEventCallback = function (object) //设置事件回调 {event:事件id, callback:回调函数}

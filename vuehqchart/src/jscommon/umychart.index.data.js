@@ -107,6 +107,10 @@ function JSIndexScript()
             ['VOL-TDX',this.VOL_TDX],
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
 
+            //通达信特色指标
+            ["散户线", this.ShareholderCount],["NXTS", this.NXTS],["FKX", this.FKX],["两融资金", this.Margin4],
+            ["ZSDB",this.ZSDB],
+
             ['CJL2', this.CJL],  //期货持仓量
             ['ASI', this.ASI],['DC', this.DC],['DEMA', this.DEMA],["VWAP", this.VWAP],
 
@@ -2038,18 +2042,19 @@ JSIndexScript.prototype.TJCJL = function ()
         Args: [],
         Script: //脚本
 '总手:VOL,NODRAW;\n\
+DRAWTEXT_FIX(ISLASTBAR,0,0,0,"说明: 红色柱为吸货量,绿色为出货量,黄色为天量,蓝色为地量"),COLORGRAY;\n\
 ZZ:=IF(REF(C,1)>REF(O,1) AND O>REF(C,1)*1.014 AND C<O*1.02,1,3);\n\
 V5:=MA(V,5);\n\
 V12:=MA(V,12);\n\
 V34:=MA(V,34);\n\
 C6:=MA(C,6);\n\
-STICKLINE(VOL,0,VOL,10,0),COLORLIGRAY;\n\
-STICKLINE(CROSS(C,C6) AND V>V5*1.2 AND V>V12*1.2 AND ZZ>2 AND C>H*0.975,0,VOL,10,0),COLORRED;\n\
-STICKLINE(CROSS(C6,C) AND V>V5*1.2 AND V>V12*1.2,0,VOL,10,0),COLORGREEN;\n\
-STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05,0,VOL,10,0),COLORYELLOW;\n\
-STICKLINE(VOL<MA(VOL,5)/2 AND V<V12/2,0,VOL,10,0),COLORBLUE;\n\
-STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05 AND CROSS(C,C6) AND V>V5*1.2 AND V>V12*1.2 AND ZZ>2 AND C>H*0.975,VOL*0.5,0,10,0),COLORRED;\n\
-STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05 AND CROSS(C6,C) AND V>V5*1.2 AND V>V12*1.2,VOL*0.5,0,10,0),COLORRED;'
+STICKLINE(VOL,0,VOL,3,0),COLORLIGRAY;\n\
+STICKLINE(CROSS(C,C6) AND V>V5*1.2 AND V>V12*1.2 AND ZZ>2 AND C>H*0.975,0,VOL,3,0),COLORRED;\n\
+STICKLINE(CROSS(C6,C) AND V>V5*1.2 AND V>V12*1.2,0,VOL,3,0),COLORGREEN;\n\
+STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05,0,VOL,3,0),COLORYELLOW;\n\
+STICKLINE(VOL<MA(VOL,5)/2 AND V<V12/2,0,VOL,3,0),COLORBLUE;\n\
+STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05 AND CROSS(C,C6) AND V>V5*1.2 AND V>V12*1.2 AND ZZ>2 AND C>H*0.975,VOL*0.5,0,3,0),COLORRED;\n\
+STICKLINE(VOL>MA(VOL,5)*2 AND V>V34*3 AND C<REF(C,1)*1.05 AND CROSS(C6,C) AND V>V5*1.2 AND V>V12*1.2,VOL*0.5,0,3,0),COLORRED;'
 
     };
 
@@ -3775,6 +3780,94 @@ JSIndexScript.prototype.WAVE = function ()
         Args: [{ Name: 'N', Value: 5 }],
         Script: //脚本
 "ZIG(3,N);"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ShareholderCount=function()
+{
+    let data =
+    {
+        Name: '散户线', Description: '散户线', IsMainIndex: false,
+        Script: //脚本
+"GPJYVALUE(1,1,1);"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.NXTS=function()
+{
+    let data =
+    {
+        Name: 'NXTS', Description: '牛熊天数', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 20 }],
+        Script: //脚本
+"Z:=ZIG(C,N);\n\
+高点:=Z>REF(Z,1) AND Z>REFX(Z,1);\n\
+低点:=Z<REF(Z,1) AND Z<REFX(Z,1);\n\
+NG:=BARSLAST(高点);\n\
+ND:=BARSLAST(低点);\n\
+D0:=DATETODAY(DATE)-DATETODAY(REF(DATE,BARSSINCE(C)));\n\
+DG:=DATETODAY(DATE)-DATETODAY(REF(DATE,NG));\n\
+DD:=DATETODAY(DATE)-DATETODAY(REF(DATE,ND));\n\
+N1:=(NG>ND OR COUNT(高点,0)=0) AND ND>0 AND (HHV(C,ND)-REF(C,ND))/REF(C,ND)>(N/100);\n\
+N2:=NG<ND AND NG>0 AND (LLV(C,NG)-REF(C,NG))/REF(C,NG)>=-(N/100);\n\
+N3:=NG<ND AND NG=0;\n\
+N4:=COUNT(低点 OR 高点,0)=0 AND (HHV(C,0)-REF(C,BARSSINCE(C)))/REF(C,BARSSINCE(C))>(N/100);\n\
+N5:=COUNT(低点,0)=0 AND NG>0 AND (LLV(C,NG)-REF(C,NG))/REF(C,NG)>=-(N/100);\n\
+N6:=COUNT(低点,0)=0 AND NG=0;\n\
+X1:=(NG<ND OR COUNT(低点,0)=0) AND NG>0 AND (LLV(C,NG)-REF(C,NG))/REF(C,NG)<-(N/100);\n\
+X2:=NG>ND AND ND>0 AND (HHV(C,ND)-REF(C,ND))/REF(C,ND)<=(N/100);\n\
+X3:=NG>ND AND ND=0;\n\
+X4:=COUNT(高点 OR 低点,0)=0 AND (LLV(C,0)-REF(C,BARSSINCE(C)))/REF(C,BARSSINCE(C))<-(N/100);\n\
+X5:=COUNT(高点,0)=0 AND ND>0 AND (HHV(C,ND)-REF(C,ND))/REF(C,ND)<=(N/100);\n\
+X6:=COUNT(高点,0)=0 AND ND=0;\n\
+牛市天数:IF(N4 OR N5 OR N6,D0,IF(N1 OR N2 OR N3,DD,0)),COLORRED;\n\
+熊市天数:IF(X4 OR X5 OR X6,D0,IF(X1 OR X2 OR X3,DG,0)),COLORGREEN;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.FKX=function()
+{
+    let data =
+    {
+        Name: 'FKX', Description: '反K线', IsMainIndex: false,
+        Script: //脚本
+"DRAWKLINE(-LOW, -OPEN, -HIGH, -CLOSE);"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.Margin4=function()
+{
+    let data =
+    {
+        Name: '两融资金', Description: '两融资金', IsMainIndex: false,
+        Script: //脚本
+"TMPV:=IF(FINANCE(3)==0,REF(SCJYVALUE(1,1,1),1),REF(GPJYVALUE(3,1,1),1));\n\
+TMPV1:=IF(FINANCE(3)==0,SCJYVALUE(1,1,0),GPJYVALUE(3,1,0));\n\
+两融:IF(TMPV==0 OR TMPV1==0,DRAWNULL,IF(FINANCE(3)==0,(SCJYVALUE(1,1,1)-REF(SCJYVALUE(1,1,1),1))/10000-(SCJYVALUE(1,2,1)-REF(SCJYVALUE(1,2,1),1))/10000,((GPJYVALUE(3,1,1)-REF(GPJYVALUE(3,1,1),1))-((GPJYVALUE(3,2,1)*C/10000-(REF(GPJYVALUE(3,2,1),1)*REF(C,1)/10000)))))),NODRAW;\n\
+STICKLINE(两融>0,0,两融,2,0),COLORRED;\n\
+STICKLINE(两融<0,0,两融,2,0),COLORCYAN;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ZSDB=function()
+{
+    let data =
+    {
+        Name: 'ZSDB', Description: '指数对比(副图,需下载日线)', IsMainIndex: false,
+        Script: //脚本
+"A:=REF(INDEXC,1);\n\
+指数涨幅:IF(A>0,(INDEXC-A)*100/A,0),NODRAW;\n\
+DRAWKLINE(INDEXH,INDEXO,INDEXL,INDEXC);"
     };
 
     return data;
