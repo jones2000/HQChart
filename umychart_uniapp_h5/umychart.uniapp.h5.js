@@ -50324,7 +50324,9 @@ var g_JSComplierResource=
 
     CustomDrawIcon:
     {
-        Data:new Map()  //自定义图标 key=id value={ID:, Text:, Color, Family: }
+        Data:new Map()  //自定义图标 key=id 
+                        //value={ID:, Text:, Color, Family: }   //svg
+                        //value={ ID:1, Symbol:'↑', Color:'rgb(238,44,44)' } //文字
     },
 
     CustomFunction: //定制函数
@@ -50343,7 +50345,10 @@ var g_JSComplierResource=
         if (g_JSComplierResource.CustomDrawIcon.Data.has(id))
         {
             const iconfont=g_JSComplierResource.CustomDrawIcon.Data.get(id);
-            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:iconfont.Family, IconFont:true, ID:id };
+            if (iconfont.Symbol)    //文字
+                icon={ Symbol:iconfont.Symbol, Color:iconfont.Color, IconFont:false, ID:id };
+            else    //SVG图标
+                icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:iconfont.Family, IconFont:true, ID:id };
             return icon;
         }
 
