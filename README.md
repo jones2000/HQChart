@@ -192,7 +192,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 57. [HQChart使用教程65-设置指标输出动态变量名](https://blog.csdn.net/jones2000/article/details/108675254)<br>
 58. [HQChart使用教程66-自定义数据下载文字提示效果](https://blog.csdn.net/jones2000/article/details/109007027)<br>
 59. [HQChart使用教程67-鼠标点击K线柱子监听事件](https://blog.csdn.net/jones2000/article/details/109119390)<br>
-60. [HQChart使用教程68-配置DRAWTEXT, DRAWICON字体大小](https://blog.csdn.net/jones2000/article/details/109244069)<br>
+60. [HQChart使用教程68-配置DRAWTEXT,DRAWICON,DRAWNUMBER字体大小](https://blog.csdn.net/jones2000/article/details/109244069)<br>
 61. [HQChart使用教程69-获取指定股票的K线数据](https://blog.csdn.net/jones2000/article/details/111736960)<br>
 62. [HQChart使用教程70-通达信指标翻译](https://blog.csdn.net/jones2000/article/details/112998609)<br>
 63. [HQChart使用教程71-如何自定义Y轴刻度线](https://blog.csdn.net/jones2000/article/details/113666565)<br>

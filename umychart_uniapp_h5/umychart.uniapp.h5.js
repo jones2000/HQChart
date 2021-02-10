@@ -18145,6 +18145,15 @@ function ChartSingleText()
                 FontName:g_JSChartResource.DRAWTEXT.FontName
             }
         }
+        else if (this.Name=="DRAWNUMBER")
+        {
+            this.TextSize=
+            {
+                Max: g_JSChartResource.DRAWNUMBER.MaxSize, Min:g_JSChartResource.DRAWNUMBER.MinSize, //字体的最大最小值
+                Zoom:{ Type:g_JSChartResource.DRAWNUMBER.Zoom.Type , Value:g_JSChartResource.DRAWNUMBER.Zoom.Value }, //放大倍数
+                FontName:g_JSChartResource.DRAWNUMBER.FontName
+            }
+        }
     }
 
     this.SuperGetMaxMin=this.GetMaxMin;
@@ -32025,6 +32034,20 @@ function JSChartResource()
         FontName:'微软雅黑'    //字体
     }
 
+    this.DRAWNUMBER=
+    {
+        MaxSize:30,  //字体最大
+        MinSize:20,  //字体最小
+
+        Zoom:
+        {
+            Type:1,    //0=放大(K线宽度*Value) 1=放大(K线+间距)*Value 2=(K线+间距)+2*Value;
+            Value:1
+        },
+
+        FontName:'微软雅黑'    //字体
+    }
+
     //虚线配置
     this.DOTLINE=
     {
@@ -32165,6 +32188,15 @@ function JSChartResource()
             if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWICON.MinSize=item.MinSize;
             if (item.Zoom) this.DRAWICON.Zoom=item.Zoom;
             if (item.FontName) this.DRAWICON.FontName=item.FontName;
+        }
+
+        if (style.DRAWNUMBER)
+        {
+            var item=style.DRAWNUMBER;
+            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWNUMBER.Text.MaxSize=item.MaxSize;
+            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.Text.MinSize=item.MinSize;
+            if (item.Zoom) this.DRAWNUMBER.Text.Zoom=item.Zoom;
+            if (item.FontName) this.DRAWNUMBER.Text.FontName=item.FontName;
         }
 
         if (style.DOTLINE) this.DOTLINE=style.DOTLINE;
@@ -67250,7 +67282,9 @@ function ScriptIndex(name,script,args,option)
         chartText.Name=varItem.Name;
         chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
         chartText.TextAlign="center";
+        
         if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
         else chartText.Color=this.GetDefaultColor(id);
         if (varItem.IsDrawAbove) chartText.Direction=1;
@@ -68255,6 +68289,8 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
+        chart.ReloadResource();
+
         chart.TextAlign="center";
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);

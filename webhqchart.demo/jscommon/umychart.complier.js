@@ -16973,7 +16973,9 @@ function ScriptIndex(name,script,args,option)
         chartText.Name=varItem.Name;
         chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
         chartText.TextAlign="center";
+        
         if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
         else chartText.Color=this.GetDefaultColor(id);
         if (varItem.IsDrawAbove) chartText.Direction=1;
@@ -17978,6 +17980,8 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
+        chart.ReloadResource();
+
         chart.TextAlign="center";
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);

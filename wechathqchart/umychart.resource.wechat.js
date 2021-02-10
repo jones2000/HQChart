@@ -251,6 +251,20 @@ function JSChartResource()
         FontName:'微软雅黑'    //字体
     }
 
+    this.DRAWNUMBER=
+    {
+        MaxSize:18,  //字体最大
+        MinSize:18,  //字体最小
+
+        Zoom:
+        {
+            Type:1,    //0=放大(K线宽度*Value) 1=放大(K线+间距)*Value 2=(K线+间距)+2*Value;
+            Value:1
+        },
+
+        FontName:'微软雅黑'    //字体
+    }
+
     // //自定义风格
     this.SetStyle = function (style) 
     {
@@ -359,6 +373,15 @@ function JSChartResource()
             if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWICON.MinSize=item.MinSize;
             if (item.Zoom) this.DRAWICON.Zoom=item.Zoom;
             if (item.FontName) this.DRAWICON.FontName=item.FontName;
+        }
+
+        if (style.DRAWNUMBER)
+        {
+            var item=style.DRAWNUMBER;
+            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWNUMBER.Text.MaxSize=item.MaxSize;
+            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.Text.MinSize=item.MinSize;
+            if (item.Zoom) this.DRAWNUMBER.Text.Zoom=item.Zoom;
+            if (item.FontName) this.DRAWNUMBER.Text.FontName=item.FontName;
         }
     }
 

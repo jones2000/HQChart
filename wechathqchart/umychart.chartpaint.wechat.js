@@ -1046,6 +1046,15 @@ function ChartSingleText()
                 FontName:g_JSChartResource.DRAWTEXT.FontName
             }
         }
+        else if (this.Name=="DRAWNUMBER")
+        {
+            this.TextSize=
+            {
+                Max: g_JSChartResource.DRAWNUMBER.MaxSize, Min:g_JSChartResource.DRAWNUMBER.MinSize, //字体的最大最小值
+                Zoom:{ Type:g_JSChartResource.DRAWNUMBER.Zoom.Type , Value:g_JSChartResource.DRAWNUMBER.Zoom.Value }, //放大倍数
+                FontName:g_JSChartResource.DRAWNUMBER.FontName
+            }
+        }
     }
 
     this.Draw = function () 
