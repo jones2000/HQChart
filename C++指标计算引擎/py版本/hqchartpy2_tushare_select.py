@@ -4,7 +4,7 @@
 from hqchartpy2_fast import FastHQChart,PERIOD_ID
 from hqchartpy2_pandas import HQChartPy2Helper
 from hqchartpy2_tushare import TushareHQChartData,HQResultTest 
-from hqchartpy2_tushare_config import HQCHART_AUTHORIZATION_KEY,TUSHARE_AUTHORIZATION_KEY
+from hqchartpy2_tushare_config import TushareConfig
 
 import json
 import time
@@ -47,7 +47,7 @@ class TushareSelect :
 
     def Run(self, config):
         jsConfig = json.dumps(config)    # 运行配置项
-        hqData=TushareHQChartData(TUSHARE_AUTHORIZATION_KEY,startDate=config["StartDate"], endDate=config["EndDate"])
+        hqData=TushareHQChartData(TushareConfig.TUSHARE_AUTHORIZATION_KEY,startDate=config["StartDate"], endDate=config["EndDate"])
         result=HQSelectResult()   # 实例计算结果接收类
 
         start = time.process_time()
@@ -59,7 +59,7 @@ class TushareSelect :
 TushareSelect::Run() 
 Success:{4},
 ID:{3}
-执行时间:{0},
+执行时间:{0}s,
 K线返回:{6}-{7},
 股票个数:{1}, 
 脚本:
@@ -108,8 +108,11 @@ CSI_300 = [
 
 
 if __name__ == '__main__':
+    if (TushareConfig.HQCHART_AUTHORIZATION_KEY==None) :
+        TushareConfig.HQCHART_AUTHORIZATION_KEY=FastHQChart.GetTrialAuthorize(mac="A4-B1-C1-4B-4D-7B") # 请求试用账户, 把mac地址改成你本机的mac地址
+
     # 初始化HQChartPy2
-    FastHQChart.Initialization(HQCHART_AUTHORIZATION_KEY)
+    FastHQChart.Initialization(TushareConfig.HQCHART_AUTHORIZATION_KEY)
 
     # 通达信指标脚本
     script='''
@@ -122,17 +125,18 @@ J:3*K-2*D;
     args=[ { "Name":"N", "Value":9 }, { "Name":"M1", "Value":3 }, { "Name":"M2", "Value":3} ]
 
     period=PERIOD_ID.DAY_ID
-    right=0 # 0=不复权 1=前复权 2=后复权
+    right=1 # 0=不复权 1=前复权 2=后复权
 
     # K线范围
     newDate=datetime.datetime.now()
     endDate=newDate.year*10000+newDate.month*100+newDate.day
-    delta=datetime.timedelta(days=365)
+    delta=datetime.timedelta(days=60)
     newDate=newDate-delta
     startDate=newDate.year*10000+newDate.month*100+newDate.day
 
     jobID=str(uuid.uuid1())
-    symbols=CSI_300
+    symbols=CSI_300 # 沪深300成分股
+    # symbols=["600004.sh"]
 
     runConfig={
         "Script":script,
@@ -152,4 +156,5 @@ J:3*K-2*D;
 
     print("筛选KDJ超买信号: (K<10) & (D<20) & (J<0)")
     data=result.dfResult[(result.dfResult.K<10) & (result.dfResult.D<20) & (result.dfResult.J<0)]
+
     print(data)

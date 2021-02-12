@@ -6,7 +6,7 @@ from flask_socketio import SocketIO,emit,disconnect
 from hqchartpy2_fast import FastHQChart
 from hqchartpy2_pandas import HQChartPy2Helper
 from hqchartpy2_tushare import TushareHQChartData,HQResultTest 
-from hqchartpy2_tushare_config import HQCHART_AUTHORIZATION_KEY,TUSHARE_AUTHORIZATION_KEY
+from hqchartpy2_tushare_config import TushareConfig
 
 import json
 import time
@@ -106,7 +106,7 @@ def HQChartPy_Run():
         }
 
     jsConfig = json.dumps(runConfig)    # 运行配置项
-    hqData=TushareHQChartData(TUSHARE_AUTHORIZATION_KEY,startDate=startDate, endDate=endDate)    # 实例化数据类
+    hqData=TushareHQChartData(TushareConfig.TUSHARE_AUTHORIZATION_KEY,startDate=startDate, endDate=endDate)    # 实例化数据类
     result=HQResultTest()   # 实例计算结果接收类
 
     start = time.process_time()
@@ -188,7 +188,7 @@ def SelectRun(message):
     script=runConfig["Script"]
 
     jsConfig = json.dumps(runConfig)    # 运行配置项
-    hqData=TushareHQChartData(TUSHARE_AUTHORIZATION_KEY,startDate=startDate, endDate=endDate)
+    hqData=TushareHQChartData(TushareConfig.TUSHARE_AUTHORIZATION_KEY,startDate=startDate, endDate=endDate)
     result=HQSelectResult()   # 实例计算结果接收类
 
     start = time.process_time()
@@ -221,9 +221,10 @@ def SelectOnDisconnect():
     print('Client disconnected')
 
 if __name__ == '__main__':
-    # 请求试用账户, 把mac地址改成你本机的mac地址
-    HQCHART_AUTHORIZATION_KEY=FastHQChart.GetTrialAuthorize(mac="A4-B1-C1-4B-4D-7B")
-    FastHQChart.Initialization(HQCHART_AUTHORIZATION_KEY)
+    if (TushareConfig.HQCHART_AUTHORIZATION_KEY==None) :
+        # 请求试用账户, 把mac地址改成你本机的mac地址
+        TushareConfig.HQCHART_AUTHORIZATION_KEY=FastHQChart.GetTrialAuthorize(mac="A4-B1-C1-4B-4D-7B")
+    FastHQChart.Initialization(TushareConfig.HQCHART_AUTHORIZATION_KEY)
     # app.run(host='127.0.0.1', port=8712, debug=True)
     socketio.run(app,debug=True, host="127.0.0.1", port=8712)
 

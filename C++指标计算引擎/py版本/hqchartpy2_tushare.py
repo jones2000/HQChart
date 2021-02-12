@@ -13,7 +13,7 @@ import pandas as pd
 import tushare as ts
 import datetime
 
-from hqchartpy2_tushare_config import HQCHART_AUTHORIZATION_KEY,TUSHARE_AUTHORIZATION_KEY
+from hqchartpy2_tushare_config import TushareConfig
 
 
 class TushareHQChartData(IHQData) :
@@ -458,11 +458,11 @@ class HQResultTest():
 
 
 def TestSingleStock() :
-    # 授权码
-    HQCHARTPY2_KEY=HQCHART_AUTHORIZATION_KEY
-    TUSHARE_TOKEN=TUSHARE_AUTHORIZATION_KEY
+    TUSHARE_TOKEN=TushareConfig.TUSHARE_AUTHORIZATION_KEY
+    if (TushareConfig.HQCHART_AUTHORIZATION_KEY==None) :
+        TushareConfig.HQCHART_AUTHORIZATION_KEY=FastHQChart.GetTrialAuthorize(mac="A4-B1-C1-4B-4D-7B") # 请求试用账户, 把mac地址改成你本机的mac地址
 
-    FastHQChart.Initialization(HQCHARTPY2_KEY)
+    FastHQChart.Initialization(TushareConfig.HQCHART_AUTHORIZATION_KEY)
 
     runConfig={
         # 系统指标名字
@@ -513,5 +513,4 @@ def TestSingleStock() :
 
 
 
-
-TestSingleStock()
+# TestSingleStock()
