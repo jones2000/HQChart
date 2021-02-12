@@ -221,6 +221,8 @@ def SelectOnDisconnect():
     print('Client disconnected')
 
 if __name__ == '__main__':
+    # 请求试用账户, 把mac地址改成你本机的mac地址
+    HQCHART_AUTHORIZATION_KEY=FastHQChart.GetTrialAuthorize(mac="A4-B1-C1-4B-4D-7B")
     FastHQChart.Initialization(HQCHART_AUTHORIZATION_KEY)
     # app.run(host='127.0.0.1', port=8712, debug=True)
     socketio.run(app,debug=True, host="127.0.0.1", port=8712)

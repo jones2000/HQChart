@@ -7,6 +7,8 @@ sys.path.append(rootPath)
 import HQChartPy2
 import platform
 import datetime
+import requests     # 网络数据下载
+import json
 
 
 
@@ -182,4 +184,33 @@ class FastHQChart :
         bResult=HQChartPy2.Run(jsonConfig,callbackConfig)
         return bResult
 
+    # 获取试用注册码
+    @staticmethod
+    def GetTrialAuthorize(mac, url="http://py2.hqchart.cn:8712/api/v1/CreateAuthorize"):
 
+        headers = {
+            "Content-Type": "application/json; charset=UTF-8"
+        }
+
+        postData = { "MAC":mac, "Version":"hqchartPy" }
+        print('[FastHQChart::GetTrialAuthorize] 获取试用账户',url, postData)
+
+        try:
+            response=requests.post(url,data=json.dumps(postData),headers=headers)
+            if (response.status_code!=200) :
+                print("获取测试账户请求失败, {0}".format(response.text))
+                return None
+            jsonData=response.json()
+            if (jsonData['code']==0) :
+                if ('message' in jsonData.keys()):
+                    if (jsonData['message']!=None) :
+                        print(jsonData['message'])
+                return jsonData['key']
+        except requests.exceptions.HTTPError as http_err:
+            print("获取测试账户请求异常,{0}".format(http_err))
+        except Exception as err:
+            print("获取测试账户请求异常,{0}".format(err))
+        except :
+            print("获取测试账户请求异常")
+
+        return None

@@ -275,6 +275,24 @@ class TushareHQChartData(IHQData) :
 
     # 引用股票交易类数据.
     # GPJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据,TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
+    # 股票交易类数据函数，数据编号如下:
+    # 1--股东人数 股东户数(户)
+    # 2--龙虎榜   买入总计(万元) 卖出总计(万元)[注：该指标展示最近一年的数据]
+    # 3--融资融券1 融资余额(万元) 融券余量(股)
+    # 4--大宗交易 成交均价(元) 成交额(万元)
+    # 5--增减持   成交均价(元) 变动股数(股)
+    # 6--陆股通持股量  持股数量(股) 持股占比
+    # 7--陆股通市场成交净额  陆股通市场净买入(万元)[注：官方只公布了每日的前十名数据]
+    # 8--龙虎榜机构(卖方)数据  卖方机构个数 机构卖出金额(万元)
+    # 9--龙虎榜机构(买方)数据  买方机构个数 机构买入金额(万元)
+    # 10--近3月机构调研情况  近3月机构调研次数 近3月调研机构数量
+    # 11--融资融券2 融资买入额(万元) 融资偿还额(万元)
+    # 12--融资融券3 融券卖出量(股) 融券偿还量(股)
+    # 13--融资融券4 融资净买入(万元) 融券净卖出(股)
+    # 14--暂无,原 发行价 指标移至 股票的单个数据(非序列)
+    # 15--涨跌停 涨跌停状态 封单金额(万元)[注：涨停取2,曾涨停取1,跌停取-2,曾跌停取-1;跌停和曾跌停时,封单金额取负值]
+    # 16--总市值 总市值(万元)
+
     def GetGPJYValue(self, symbol,args,period, right, kcount ,jobID):
         if (args[0]==1) :
             return self.GetHolderNumber(symbol, args)
@@ -282,6 +300,8 @@ class TushareHQChartData(IHQData) :
             return self.GetMarginDetail(symbol,args)
         elif (args[0]==4) :
             return self.GetBlockTrade(symbol, args)
+        elif (args[0]==6):
+            return self.GetHKHold(symbol,args)
         pass
 
     # 股东人数
@@ -359,6 +379,29 @@ class TushareHQChartData(IHQData) :
         else : # 成交均价(元)
             aryData=df['price'].tolist()
         
+        result={"type": 2}  # 类型2 根据'date'自动合并到K线数据上
+        if (args[2]==0) :
+            result["type"]=4    # 类型3 根据'date'自动合并到K线数据上 不做平滑处理
+        result["data"]=aryData
+        result["date"]=aryDate
+        return result
+
+    # 沪深港股通持股明细
+    def GetHKHold(self,symbol,args):
+        df=self.TusharePro.hk_hold(ts_code=symbol,start_date=str(self.StartDate), end_date=str(self.EndDate))
+        print(df)
+        df=df.sort_index(ascending=False) # 数据要降序排
+        print(df)
+
+        aryDate=df["trade_date"] # 日期
+        aryDate[aryDate == ''] = 0
+        aryDate = aryDate.astype(np.int).tolist()
+
+        if (args[1]==2) :   # 持股占比
+            aryData=df['ratio'].tolist()
+        else:   # 持股数量(股)
+            aryData=df['vol'].tolist()
+
         result={"type": 2}  # 类型2 根据'date'自动合并到K线数据上
         if (args[2]==0) :
             result["type"]=4    # 类型3 根据'date'自动合并到K线数据上 不做平滑处理
