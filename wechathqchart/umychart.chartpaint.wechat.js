@@ -1159,7 +1159,7 @@ function ChartSingleText()
                 {
                     if (this.Name=='DRAWNUMBER')
                     {
-                        if (this.Direction==1) y+=4;
+                        if (this.Direction==1) y+=g_JSChartResource.DRAWABOVE.YOffset;
                         else if (this.Direction==2) y-=4;
                     }
                 }
@@ -1167,7 +1167,7 @@ function ChartSingleText()
                 {
                     if (this.Name=='DRAWNUMBER')
                     {
-                        if (this.Direction==1) y-=4;
+                        if (this.Direction==1) y-=g_JSChartResource.DRAWABOVE.YOffset;
                         else if (this.Direction==2) y+=4;
                     }
                 }

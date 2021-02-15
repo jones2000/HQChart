@@ -265,6 +265,11 @@ function JSChartResource()
         FontName:'微软雅黑'    //字体
     }
 
+    this.DRAWABOVE=
+    {
+        YOffset:0   //y坐标向上偏移
+    }
+
     // //自定义风格
     this.SetStyle = function (style) 
     {
@@ -382,6 +387,12 @@ function JSChartResource()
             if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.Text.MinSize=item.MinSize;
             if (item.Zoom) this.DRAWNUMBER.Text.Zoom=item.Zoom;
             if (item.FontName) this.DRAWNUMBER.Text.FontName=item.FontName;
+        }
+
+        if (style.DRAWABOVE)
+        {
+            var item=style.DRAWABOVE;
+            if (IFrameSplitOperator.IsNumber(item.YOffset)) this.DRAWNUMBER.YOffset=item.YOffset;
         }
     }
 

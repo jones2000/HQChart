@@ -6323,7 +6323,7 @@ function JSDraw(errorHandler, symbolData)
     {
         let drawData = { Value: new Array(), Text: new Array() };
         let result = { DrawData: drawData, DrawType: 'DRAWNUMBER' };
-
+        var isArrayData=Array.isArray(data);
         let isNumber = typeof (data2) == 'number';
         let text;
         if (isNumber) 
@@ -6336,22 +6336,43 @@ function JSDraw(errorHandler, symbolData)
         {
             drawData.Value[i] = null;
             if (!condition[i]) continue;
-            if (i >= data.length || !this.IsNumber(data[i])) continue;
+            if (isArrayData)
+            {
+                if (i >= data.length || !this.IsNumber(data[i])) continue;
 
-            if (isNumber) 
-            {
-                drawData.Value[i] = data[i];
-                drawData.Text[i] = text;
+                if (isNumber) 
+                {
+                    drawData.Value[i] = data[i];
+                    drawData.Text[i] = text;
+                }
+                else 
+                {
+                    if (i >= data2.length || !data2[i]) continue;
+                    drawData.Value[i] = data[i];
+                    if (typeof(data2[i])=='number')
+                        drawData.Text[i] = data2[i].toFixed(2);
+                    else
+                        drawData.Text[i] = data2[i].toString();
+                }
             }
-            else 
+            else if (this.IsNumber(data))
             {
-                if (i >= data2.length || !data2[i]) continue;
-                drawData.Value[i] = data[i];
-                if (typeof(data2[i])=='number')
-                    drawData.Text[i] = data2[i].toFixed(2);
+                if (isNumber)
+                {
+                    drawData.Value[i]=data;
+                    drawData.Text[i]=text;
+                }
                 else
-                    drawData.Text[i] = data2[i].toString();
+                {
+                    if (i>=data2.length || !data2[i]) continue;
+                    drawData.Value[i]=data;
+                    if (this.IsNumber(data2[i]))
+                        drawData.Text[i] = data2[i].toFixed(2);
+                    else
+                        drawData.Text[i] = data2[i].toString();
+                }       
             }
+            
         }
 
         return result;
@@ -9069,6 +9090,7 @@ function JSExecute(ast,option)
                     let isDotLine = false;
                     let isOverlayLine = false;    //叠加线
                     let isNoneName=false;
+                    var isShowTitle=true;
                     //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
                     //DRAWNUMBER(CLOSE>OPEN,HIGH,CLOSE),DRAWABOVE;
                     var isDrawAbove=false;  
@@ -9101,6 +9123,7 @@ function JSExecute(ast,option)
                             else if (value.indexOf('NODRAW') == 0) isShow = false;
                             else if (value.indexOf('EXDATA') == 0) isExData = true; //扩展数据, 不显示再图形里面
                             else if (value.indexOf('LINEOVERLAY') == 0) isOverlayLine = true;
+                            else if (value.indexOf("NOTEXT")==0 || value.indexOf("NOTITLE")==0) isShowTitle=false; //标题不显示
                             else
                             {
                                 varName=itemExpression.Name;
@@ -9190,6 +9213,7 @@ function JSExecute(ast,option)
                         if (isDotLine == true) value.IsDotLine = true;
                         if (isOverlayLine == true) value.IsOverlayLine = true;
                         if (isNoneName==true) value.NoneName=true;
+                        if (isShowTitle==false) value.IsShowTitle=false;
                         this.OutVarTable.push(value);
                     }
                     else if (draw)
@@ -9217,6 +9241,7 @@ function JSExecute(ast,option)
                         if (isExData == true) value.IsExData = true;
                         if (isDotLine == true) value.IsDotLine = true;
                         if (isOverlayLine == true) value.IsOverlayLine = true;
+                        if (isShowTitle==false) value.IsShowTitle=false;
                         this.OutVarTable.push(value);
                     }
                 }

@@ -8577,6 +8577,7 @@ function JSDraw(errorHandler,symbolData)
         let drawData={ Value:new Array(), Text:new Array() };
         let result={DrawData:drawData, DrawType:'DRAWNUMBER'};
         let isNumber=typeof(data2)=='number';
+        var isArrayData=Array.isArray(data);
         let text;
         if (isNumber) 
         {
@@ -8588,22 +8589,55 @@ function JSDraw(errorHandler,symbolData)
         {
             drawData.Value[i]=null;
             if (!condition[i]) continue;
-            if (i>=data.length || !this.IsNumber(data[i])) continue;
 
-            if (isNumber)
+            if (isArrayData)
             {
-                drawData.Value[i]=data[i];
-                drawData.Text[i]=text;
-            }
-            else
-            {
-                if (i>=data2.length || !data2[i]) continue;
-                drawData.Value[i]=data[i];
-                if (typeof(data2[i])=='number')
-                    drawData.Text[i] = data2[i].toFixed(2);
+                if (i>=data.length || !this.IsNumber(data[i])) continue;
+
+                if (isNumber)
+                {
+                    drawData.Value[i]=data[i];
+                    drawData.Text[i]=text;
+                }
                 else
-                    drawData.Text[i] = data2[i].toString();
+                {
+                    if (i>=data2.length || !data2[i]) continue;
+                    drawData.Value[i]=data[i];
+                    if (this.IsNumber(data2[i]))
+                    {
+                        if (IFrameSplitOperator.IsInteger(data2[i])) drawData.Text[i]=data2[i].toString();
+                        else drawData.Text[i] = data2[i].toFixed(2);
+                    }
+                    else
+                    {
+                        drawData.Text[i] = data2[i].toString();
+                    }
+                } 
             }
+            else if (this.IsNumber(data))
+            {
+                if (isNumber)
+                {
+                    drawData.Value[i]=data;
+                    drawData.Text[i]=text;
+                }
+                else
+                {
+                    if (i>=data2.length || !data2[i]) continue;
+                    drawData.Value[i]=data;
+                    if (this.IsNumber(data2[i]))
+                    {
+                        if (IFrameSplitOperator.IsInteger(data2[i])) drawData.Text[i]=data2[i].toString();
+                        else drawData.Text[i] = data2[i].toFixed(2);
+                    }
+                    else
+                    {
+                        drawData.Text[i] = data2[i].toString();
+                    }
+                        
+                }       
+            }
+            
         }
 
         return result;
@@ -14484,6 +14518,7 @@ function JSExecute(ast,option)
                     let isDotLine=false;
                     let isOverlayLine=false;    //叠加线
                     var isNoneName=false;
+                    var isShowTitle=true;
                     //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
                     //DRAWNUMBER(CLOSE>OPEN,HIGH,CLOSE),DRAWABOVE;
                     var isDrawAbove=false;      
@@ -14516,6 +14551,7 @@ function JSExecute(ast,option)
                             else if (value.indexOf('NODRAW')==0) isShow=false;
                             else if (value.indexOf('EXDATA')==0) isExData=true; //扩展数据, 不显示再图形里面
                             else if (value.indexOf('LINEOVERLAY')==0) isOverlayLine=true;
+                            else if (value.indexOf("NOTEXT")==0 || value.indexOf("NOTITLE")==0) isShowTitle=false; //标题不显示
                             else 
                             {
                                 varName=itemExpression.Name;
@@ -14608,6 +14644,7 @@ function JSExecute(ast,option)
                         if (isDotLine==true) value.IsDotLine=true;
                         if (isOverlayLine==true) value.IsOverlayLine=true;
                         if (isNoneName==true) value.NoneName=true;
+                        if (isShowTitle==false) value.IsShowTitle=false;
                         this.OutVarTable.push(value);
                     }
                     else if (draw)  //画图函数
@@ -14636,6 +14673,7 @@ function JSExecute(ast,option)
                         if (isExData==true) value.IsExData = true;
                         if (isDotLine==true) value.IsDotLine=true;
                         if (isOverlayLine==true) value.IsOverlayLine=true;
+                        if (isShowTitle==false) value.IsShowTitle=false;
                         this.OutVarTable.push(value);
                     }
                 }
@@ -16570,11 +16608,22 @@ function ScriptIndex(name,script,args,option)
         
         let titleIndex=windowIndex+1;
         line.Data.Data=varItem.Data;
-        if (varItem.NoneName) 
-            hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,null,line.Color);
-        else
-            hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
+        if (varItem.IsShowTitle===false)    //NOTEXT 不绘制标题
+        {
 
+        }
+        else if (IFrameSplitOperator.IsString(varItem.Name) && varItem.Name.indexOf("NOTEXT")==0) //标题中包含NOTEXT不绘制标题
+        {
+
+        }
+        else
+        {
+            if (varItem.NoneName) 
+                hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,null,line.Color);
+            else
+                hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
+        }
+        
         hqChart.ChartPaint.push(line);
     }
 
@@ -17002,13 +17051,15 @@ function ScriptIndex(name,script,args,option)
         chartText.Name=varItem.Name;
         chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
-
+        chartText.Direction=2;
+        if (varItem.IsDrawAbove) chartText.Direction=1;
         let titleIndex=windowIndex+1;
         chartText.Data.Data=varItem.Draw.DrawData;
         var icon=varItem.Draw.Icon;
         if (icon.IconFont==true)
         {
             chartText.IconFont={ Family:icon.Family, Text:icon.Symbol, Color:icon.Color };
+            if (varItem.Color) chartText.IconFont.Color=this.GetColor(varItem.Color);
         }
         else
         {
@@ -18659,6 +18710,9 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     case "NONE_OUT_NAME":   //不显示标题
                         outItem.NoneName=true;
                         break;
+                    case "NOTEXT":  //不显示标题
+                        outItem.IsShowTitle=false;
+                        break;
                 }
                 
                
@@ -18857,7 +18911,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                 outVarItem.Data=this.FittingArray(item.data,date,time,hqChart);
 
                 if (item.color) outVarItem.Color=item.color;
-                if (item.linewidth>=1) outVarItem.LineWidth=item.linewidth; 
+                if (item.linewidth) outVarItem.LineWidth=item.linewidth; 
                 if (item.isshow==false) outVarItem.IsShow = false;
                 if (item.isexdata==true) outVarItem.IsExData = true;
 

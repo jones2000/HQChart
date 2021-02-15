@@ -12222,8 +12222,17 @@ function ScriptIndex(name, script, args, option)
 
         let titleIndex = windowIndex + 1;
         line.Data.Data = varItem.Data;
-        hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(line.Data, (varItem.NoneName==true? null: varItem.Name) , line.Color);
-
+        if (varItem.IsShowTitle===false)    //NOTEXT 不绘制标题
+        {
+        }
+        else if (IFrameSplitOperator.IsString(varItem.Name) && varItem.Name.indexOf("NOTEXT")==0) //标题中包含NOTEXT不绘制标题
+        {
+        }
+        else
+        {
+            hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(line.Data, (varItem.NoneName==true? null: varItem.Name) , line.Color);
+        }
+        
         hqChart.ChartPaint.push(line);
     }
 
