@@ -293,10 +293,12 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 6. [HQChart实战教程23 - 点击K线显示历史分钟走势图](https://blog.csdn.net/jones2000/article/details/109127873)<br>
 7. [HQChart实战教程24 - 自定义K线画图工具设置框（线段类）](https://blog.csdn.net/jones2000/article/details/109217719)<br>
 8. [HQChart实战教程25 - 自定义K线画图工具设置框（文字类）](https://blog.csdn.net/jones2000/article/details/109267078)<br>
-9. [HQChart实战教程26 - K线画图工具增加自定义图标](https://blog.csdn.net/jones2000/article/details/109529224)<br>
-10. [HQChart实战教程27 - 走势图最后一个数据增加动画点](https://blog.csdn.net/jones2000/article/details/111599341)<br>
-11. [HQChart实战教程28 - 动态切换颜色风格](https://blog.csdn.net/jones2000/article/details/112563596)<br>
-12. [HQChart实战教程29-指标参数保存到本地缓存](https://blog.csdn.net/jones2000/article/details/113349967)<br>
+9. [HQChart实战教程30 - 配置K线画图](https://blog.csdn.net/jones2000/article/details/113819121)<br>
+10. [HQChart实战教程26 - K线画图工具增加自定义图标](https://blog.csdn.net/jones2000/article/details/109529224)<br>
+11. [HQChart实战教程27 - 走势图最后一个数据增加动画点](https://blog.csdn.net/jones2000/article/details/111599341)<br>
+12. [HQChart实战教程28 - 动态切换颜色风格](https://blog.csdn.net/jones2000/article/details/112563596)<br>
+13. [HQChart实战教程29 - 指标参数保存到本地缓存](https://blog.csdn.net/jones2000/article/details/113349967)<br>
+
 
 
 
