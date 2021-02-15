@@ -11599,7 +11599,7 @@ function HQTradeFrame()
                 overlayItem.Frame.DataWidth=item.Frame.DataWidth;
                 overlayItem.Frame.DistanceWidth=item.Frame.DistanceWidth;
                 overlayItem.Frame.XPointCount=item.Frame.XPointCount;
-                if (overlayItem.ChartPaint.length>0 && overlayItem.Frame.IsShow) 
+                if (overlayItem.ChartPaint.length>0 && overlayItem.Frame) 
                 {
                     overlayItem.Frame.RightOffset=rightOffset;
                     overlayItem.Frame.Draw();
@@ -68682,6 +68682,7 @@ function OverlayScriptIndex(name,script,args,option)
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Lines=varItem.Draw.DrawData; 
+        if (varItem.Draw.LineDash) chart.LineDash=varItem.Draw.LineDash;
         frame.ChartPaint.push(chart);
     }
 
@@ -69501,7 +69502,6 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=this.FittingMultiText(draw.DrawData,date,time,hqChart);
                     outVarItem.Draw=drawItem;
-
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType=='MULTI_SVGICON')

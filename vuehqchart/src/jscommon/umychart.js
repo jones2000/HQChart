@@ -7653,7 +7653,7 @@ function HQTradeFrame()
                 overlayItem.Frame.DataWidth=item.Frame.DataWidth;
                 overlayItem.Frame.DistanceWidth=item.Frame.DistanceWidth;
                 overlayItem.Frame.XPointCount=item.Frame.XPointCount;
-                if (overlayItem.ChartPaint.length>0 && overlayItem.Frame.IsShow) 
+                if (overlayItem.ChartPaint.length>0 && overlayItem.Frame) 
                 {
                     overlayItem.Frame.RightOffset=rightOffset;
                     overlayItem.Frame.Draw();
