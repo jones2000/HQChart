@@ -47005,7 +47005,7 @@ function KLineRightMenu(divElement)
 
     this.Hide=function () {
         var _self = this;
-
+        if (typeof($)=="undefined") return;
         $("#topMenu_" + _self.ID).hide();
         $("[id^='childMenu_" + _self.ID + "']").hide();
     }
@@ -54824,22 +54824,34 @@ function JSAlgorithm(errorHandler,symbolData)
             if (n>data.length) return result;
             if (n<=0) n=data.length-1;
 
-            var min=null;
-            for(var i=n;i<data.length;++i,++j)
+            var nMin=0;
+            for(nMin=0;nMin<data.length;++nMin)
             {
-                if(min==null || i<n+min)    //最小值是否在当前周期里面
+                if (this.IsNumber(data[nMin])) break;
+            }
+
+            if (nMin<data.length) result[nMin]=data[nMin];
+            for(var i=nMin+1,j=2;i<data.length && j<n;++i,++j)
+            {
+                if (data[i]<=data[nMin]) nMin=i;
+                result[i]=data[nMin];
+            }
+
+            for(;i<data.length;++i)
+            {
+                if (i-nMin<n) 
                 {
-                    min=data[i]>data[min]?min:i;
+                    nMin=data[i]>data[nMin]?nMin:i;
                 }
                 else
                 {
-                    for(var j=(min=i-n+1)+1;j<=i;++j)
+                    for(j=nMin=(i-n+1);j<=i;++j)
                     {
-                        if(data[j]<data[min])
-                            min = j;
+                        nMin=data[j]>data[nMin]?nMin:j;
                     }
                 }
-                result[i] = data[min];
+
+                result[i]=data[nMin];
             }
         }
 
@@ -55182,6 +55194,53 @@ function JSAlgorithm(errorHandler,symbolData)
            Slope = Sxy / Sxx;
            Const = Ey - Ex*Slope;
            result[i] = Slope * num + Const;
+        }
+
+        return result;
+    }
+
+    //TSMA(X,N)：求X在N个周期内的时间序列三角移动平均
+    //TSMA(a,n) 算法如下：
+    //ysum=a[i]+a[i-1]+...+a[i-n+1]
+    //xsum=i+i-1+..+i-n+1
+    //xxsum=i*i+(i-1)*(i-1)+...+(i-n+1)*(i-n+1)
+    //xysum=i*a[i]+(i-1)*a[i-1]+...+(i-n+1)*a[i-n+1]
+    //k=(xysum -(ysum/n)*xsum)/(xxsum- xsum/n * xsum) //斜率
+    //b= ysum/n - k*xsum/n
+    //forcast[i]=k*i+b //线性回归
+    //tsma[i] = forcast[i]+k  //线性回归+斜率
+    this.TSMA=function(data,n)
+    {
+        var result=[];
+        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
+        var num = n;
+        var datanum = data.length;
+        if (num < 1 || num >= datanum)
+            return result;
+        var Ex = 0, Ey = 0, Sxy = 0, Sxx = 0, Const, Slope;
+        var i, j,x;
+        for(j = 0; j < datanum && !this.IsNumber(data[j]); ++j)
+        {
+            result[j] = null;
+        }
+        for(i = j+num-1; i < datanum; ++i)
+        {
+           Ex = Ey = Sxy = Sxx = 0;
+           for(j = 0, x=num; j < num && j <= i; ++j, --x)
+           {
+               Ex += x;
+               Ey += data[i - j];
+           }
+           Ex /= num;
+           Ey /= num;
+           for(j = 0, x=num; j < num && j <= i; ++j,--x)
+           {
+               Sxy += (x-Ex)*(data[i-j]-Ey);
+               Sxx += (x-Ex)*(x-Ex);
+           }
+           Slope = Sxy / Sxx;
+           Const = Ey - Ex*Slope;
+           result[i] = (Slope * num + Const) + Slope;
         }
 
         return result;
@@ -58929,6 +58988,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.PWINNER(args[0],args[1],node);
             case 'FORCAST':
                 return this.FORCAST(args[0], args[1]);
+            case "TSMA":
+                return this.TSMA(args[0], args[1]);
             case 'STDP':
                 return this.STDP(args[0], args[1]);
             case 'VAR':
@@ -66833,6 +66894,8 @@ function JSExplainer(ast,option)
                 return `${args[0]}的${args[1]}日数据偏差平方和`;
             case "FORCAST":
                 return `${args[0]}的${args[1]}日线性回归预测值`;
+            case "TSMA":
+                return `${args[0]}在${args[1]}个周期内的时间序列三角移动平均`;
             case "SLOPE":
                 return `${args[0]}的${args[1]}日线性回归斜率`;
             case "STD":

@@ -43059,7 +43059,7 @@ function KLineRightMenu(divElement)
 
     this.Hide=function () {
         var _self = this;
-
+        if (typeof($)=="undefined") return;
         $("#topMenu_" + _self.ID).hide();
         $("[id^='childMenu_" + _self.ID + "']").hide();
     }
