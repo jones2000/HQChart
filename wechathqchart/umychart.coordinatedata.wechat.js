@@ -392,6 +392,7 @@ function MinuteTimeStringData()
     this.USA = null;        //美股交易时间
     this.FTSE = null;         //富时中国
     this.FHK = null;          //港股指数期货
+    this.BIT=null;          //数字货币
 
     this.Initialize = function ()  //初始化 默认只初始化沪深的 其他市场动态生成
     {
@@ -449,6 +450,12 @@ function MinuteTimeStringData()
     {
         if (!this.FHK) this.FHK = this.CreateFHKData();
         return this.FHK;
+    }
+
+    this.GetBIT=function(upperSymbol)
+    {
+        if (!this.BIT) this.BIT=this.CreateBITData();
+        return this.BIT;
     }
 
     this.CreateSHSZData = function () 
@@ -536,6 +543,18 @@ function MinuteTimeStringData()
         return this.CreateTimeData(TIME_SPLIT);
     }
 
+    this.CreateBITData=function()
+    {
+        //数字货币 7:00 - 6:59
+        const TIME_SPLIT=           
+        [
+            { Start:600, End:2359 },
+            { Start:0,  End:559 },
+        ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
     this.CreateTimeData = function (timeSplit) 
     {
         var data = [];
@@ -567,6 +586,7 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) return this.GetFTSE();
         if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) return this.GetFHK();
         if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) return this.GetET(upperSymbol);
+        if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) return this.GetBIT(upperSymbol);
 
         if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol))    //纽约期货交易所
         {
@@ -861,6 +881,8 @@ function MinuteCoordinateData()
                 data = this.GetETData(upperSymbol, width);
             else if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol, width))
                 return data = this.GetNYMEXData(upperSymbol, width);
+            else if ((MARKET_SUFFIX_NAME.IsBIT(upperSymbol,width)))
+                data=this.GetBITData(upperSymbol,width);
         }
 
         //console.log('[MiuteCoordinateData]', width);
@@ -964,6 +986,11 @@ function MinuteCoordinateData()
     this.GetETData = function (upperSymbol, width) 
     {
         throw { Name: 'MinuteCoordinateData::GetETData', Error: 'not implement' };
+    }
+
+    this.GetBITData=function(upperSymbol,width)
+    {
+        throw { Name: 'MinuteCoordinateData::GetBITData', Error: 'not implement' };
     }
 
     this.GetUSAData = function (upperSymbol, width) 

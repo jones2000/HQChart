@@ -706,6 +706,7 @@ function DynamicMinuteTitlePainting()
     this.LastShowData;  //保存最后显示的数据 给tooltip用
     this.ClassName ='DynamicMinuteTitlePainting';
     this.SpaceWidth = 2;
+    this.IsShowAveragePrice=true;   //是否显示均线价格
 
     this.GetCurrentKLineData = function () //获取当天鼠标位置所在的K线数据
     {
@@ -884,7 +885,7 @@ function DynamicMinuteTitlePainting()
             if (!this.DrawMinuteText(text, color, position)) return;
         }
 
-        if (IFrameSplitOperator.IsNumber(item.AvPrice))
+        if (IFrameSplitOperator.IsNumber(item.AvPrice) && this.IsShowAveragePrice==true)
         {
             var color = this.GetColor(item.AvPrice, this.YClose);
             var text = g_JSChartLocalization.GetText('MTitle-AvPrice', this.LanguageID) + item.AvPrice.toFixed(defaultfloatPrecision);

@@ -325,6 +325,7 @@ function MinuteTooltipPaint()
     delete this.newMethod;
 
     this.ClassName = 'MinuteTooltipPaint';
+    this.IsShowAveragePrice=true;
 
     this.GetTop = function () 
     {
@@ -379,7 +380,7 @@ function MinuteTooltipPaint()
         this.Canvas.fillStyle = color;
         this.Canvas.fillText(text, left + labelWidth, top);
 
-        if (IFrameSplitOperator.IsNumber(item.AvPrice))
+        if (IFrameSplitOperator.IsNumber(item.AvPrice) && this.IsShowAveragePrice==true)
         {
             top += this.LineHeight;
             this.Canvas.fillStyle = this.TitleColor;

@@ -4604,6 +4604,12 @@ function JSChart(divElement, bOffscreen)
             {
                 chart.ChartPaint[1].IsShow=false;
                 chart.TitlePaint[0].IsShowAveragePrice=false;   //标题栏均线也不显示
+                for(var i in chart.ExtendChartPaint)
+                {
+                    var item=chart.ExtendChartPaint[i];
+                    if (item.ClassName=="MinuteTooltipPaint")
+                        item.IsShowAveragePrice=false;
+                }
             }
             if (option.MinuteLine.SplitType>0) chart.Frame.SubFrame[0].Frame.YSplitOperator.SplitType=option.MinuteLine.SplitType;
         }
@@ -22676,6 +22682,7 @@ function MinuteTooltipPaint()
     this.Left=1*GetDevicePixelRatio();
     this.Top=1*GetDevicePixelRatio();
     this.YClose;
+    this.IsShowAveragePrice=true;   //是否显示均价
 
     this.GetTop=function()
     {
@@ -22752,7 +22759,7 @@ function MinuteTooltipPaint()
         else if (MARKET_SUFFIX_NAME.IsET(upperSymbol) && !MARKET_SUFFIX_NAME.IsETShowAvPrice(upperSymbol)) isShowAvPrice=false;
 
         //均价
-        if (isShowAvPrice && IFrameSplitOperator.IsNumber(item.AvPrice))   
+        if (isShowAvPrice && IFrameSplitOperator.IsNumber(item.AvPrice) && this.IsShowAveragePrice)   
         {
             top+=this.LineHeight;
             this.Canvas.fillStyle=this.TitleColor;

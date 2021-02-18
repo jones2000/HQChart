@@ -622,7 +622,16 @@ function JSChart(element)
         if (option.MinuteLine) 
         {
             if (option.MinuteLine.IsDrawAreaPrice == false) chart.ChartPaint[0].IsDrawArea = false;
-            if (option.MinuteLine.IsShowAveragePrice == false) chart.ChartPaint[1].IsShow = false;
+            if (option.MinuteLine.IsShowAveragePrice == false) 
+            {
+                chart.ChartPaint[1].IsShow = false;
+                chart.TitlePaint[0].IsShowAveragePrice=false;   //标题栏均线也不显示
+                for(var i in chart.ExtendChartPaint)
+                {
+                    var item=chart.ExtendChartPaint[i];
+                    if (item.ClassName=="MinuteTooltipPaint") item.IsShowAveragePrice=false;
+                }
+            }
         }
 
         let scriptData = new JSCommonIndexScript.JSIndexScript();
