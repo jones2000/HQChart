@@ -9,6 +9,8 @@
 
     图形扩展画法
 */ 
+//日志
+import { JSConsole } from "./umychart.console.wechat.js"
 
 //行情数据结构体 及涉及到的行情算法(复权,周期等) 
 import 
@@ -134,6 +136,12 @@ function KLineTooltipPaint()
         if (defaultfloatPrecision >= 5) maxText = ` 擎: ${99.99.toFixed(defaultfloatPrecision)} `;  //小数位数太多了
         this.Width = this.Canvas.measureText(maxText).width;
         this.Height = this.LineHeight * lineCount + 2 * 2;
+        if (klineData && klineData.High>0)
+        {
+            maxText=` 擎: ${klineData.High.toFixed(defaultfloatPrecision)} `;
+            var textWidth=this.Canvas.measureText(maxText).width;
+            if (textWidth>this.Width) this.Width=textWidth;
+        }
 
         this.DrawBG();
         this.DrawTooltipData(klineData);
@@ -317,6 +325,7 @@ function MinuteTooltipPaint()
     delete this.newMethod;
 
     this.ClassName = 'MinuteTooltipPaint';
+    this.IsShowAveragePrice=true;
 
     this.GetTop = function () 
     {
@@ -371,7 +380,7 @@ function MinuteTooltipPaint()
         this.Canvas.fillStyle = color;
         this.Canvas.fillText(text, left + labelWidth, top);
 
-        if (IFrameSplitOperator.IsNumber(item.AvPrice))
+        if (IFrameSplitOperator.IsNumber(item.AvPrice) && this.IsShowAveragePrice==true)
         {
             top += this.LineHeight;
             this.Canvas.fillStyle = this.TitleColor;
@@ -545,7 +554,7 @@ function BarrageList()
             }
         }
 
-        console.log(`[BarrageList::CacluatePlayLine] LineCount=${this.PlayList.length} Height=${this.Height}`)
+        JSConsole.Chart.Log(`[BarrageList::CacluatePlayLine] LineCount=${this.PlayList.length} Height=${this.Height}`)
     }
 
     //添加弹幕

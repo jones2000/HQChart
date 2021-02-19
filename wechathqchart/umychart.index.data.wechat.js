@@ -13,6 +13,7 @@
 /*
     指标数据脚本 系统内置指标都写在这里
     Name：指标名字
+    Args:参数 { Name:名字, Value=值 }
     Description：指标描述信息
     IsMainIndex：是否是主图指标 true=主图指标 false=副图指标
     KLineType:K线设置 -1=主图不显示K线(只在主图有效) 0=在副图显示K线 1=在副图显示K线(收盘价线) 2=在副图显示K线(美国线)
@@ -21,6 +22,7 @@
     StringFormat: 1=带单位万/亿 2=原始格式  缺省=1
     YSplitScale:  Y固定刻度 [1,8,10]
     YSpecificMaxMin: 固定Y轴最大最小值 { Max: 9, Min: 0, Count: 3 };
+    OutName:动态输出变量名字 [{Name:原始变量名, DynamicName:动态名字格式}] 如 {Name:"MA1", DynamicName:"MA{M1}"};
 */
 
 //周期条件枚举
@@ -92,7 +94,8 @@ function JSIndexScript()
             ['ALLIGAT', this.ALLIGAT], ['ZX', this.ZX], ['XS', this.XS], ['XS2', this.XS2],
             ['SG-XDT', this.SG_XDT], ['SG-SMX', this.SG_SMX], ['SG-LB', this.SG_LB], ['SG-PF', this.SG_PF],
             ['RAD', this.RAD], ['SHT', this.SHT], ['ZLJC', this.ZLJC], ['ZLMM', this.ZLMM], ['SLZT', this.SLZT],
-            ['ADVOL', this.ADVOL], ['CYC', this.CYC], ['CYS', this.CYS], ['CYQKL', this.CYQKL],
+            ['ADVOL', this.ADVOL], ['CYC', this.CYC], ['CYS', this.CYS], ['CYQKL', this.CYQKL],["SQJZ", this.SQJZ],["XT", this.XT],["CFJT", this.CFJT],
+            ["CYX",this.CYX],["WAVE",this.WAVE],
             ['SCR', this.SCR], ['ASR', this.ASR], ['SAR', this.SAR], ['TJCJL', this.TJCJL], ['量比', this.VOLRate],
 
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
@@ -164,6 +167,7 @@ JSIndexScript.prototype.MA=function()
     {
         Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat:2,
         Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" }],
         Script: //脚本
 'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -179,6 +183,7 @@ JSIndexScript.prototype.MA4 = function () {
     {
         Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2,
         Args: [{ Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 }],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" } ],
         Script: //脚本
             'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -195,6 +200,7 @@ JSIndexScript.prototype.MA5 = function () {
     {
         Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2,
         Args: [{ Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 }, { Name: 'M5', Value: 0 }],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" },{Name:'MA5',DynamicName:"MA{M5}" } ],
         Script: //脚本
             'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -216,6 +222,11 @@ JSIndexScript.prototype.MA6 = function () {
                 { Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 },
                 { Name: 'M5', Value: 0 }, { Name: 'M6', Value: 0 }
             ],
+        OutName:
+            [ 
+                {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" },
+                {Name:'MA5',DynamicName:"MA{M5}" } ,{ Name:'MA6',DynamicName:"MA{M6}" } 
+            ],
         Script: //脚本
             'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -234,10 +245,15 @@ JSIndexScript.prototype.MA7 = function () {
     {
         Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2,
         Args:
-            [
-                { Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 },
-                { Name: 'M5', Value: 0 }, { Name: 'M6', Value: 0 }, { Name: 'M7', Value: 0 }
-            ],
+        [
+            { Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 },
+            { Name: 'M5', Value: 0 }, { Name: 'M6', Value: 0 }, { Name: 'M7', Value: 0 }
+        ],
+        OutName:
+        [ 
+            {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" },
+            {Name:'MA5',DynamicName:"MA{M5}" } ,{ Name:'MA6',DynamicName:"MA{M6}" } ,{ Name:'MA7',DynamicName:"MA{M7}" }
+        ],
         Script: //脚本
             'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -257,10 +273,15 @@ JSIndexScript.prototype.MA8 = function () {
     {
         Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2,
         Args:
-            [
-                { Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 },
-                { Name: 'M5', Value: 0 }, { Name: 'M6', Value: 0 }, { Name: 'M7', Value: 0 }, { Name: 'M8', Value: 0 }
-            ],
+        [
+            { Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 },
+            { Name: 'M5', Value: 0 }, { Name: 'M6', Value: 0 }, { Name: 'M7', Value: 0 }, { Name: 'M8', Value: 0 }
+        ],
+        OutName:
+        [ 
+            {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" },
+            {Name:'MA5',DynamicName:"MA{M5}" } ,{ Name:'MA6',DynamicName:"MA{M6}" } ,{ Name:'MA7',DynamicName:"MA{M7}" },{ Name:'MA8',DynamicName:"MA{M8}" }
+        ],
         Script: //脚本
             'MA1:MA(CLOSE,M1);\n\
 MA2:MA(CLOSE,M2);\n\
@@ -3056,7 +3077,8 @@ JSIndexScript.prototype.TEST = function ()
                 //'T1:INDEXC;'+
                 //'T2:=HYBLOCK;'
 
-                'T:XMA(C,8);'
+                'T1: TIME;'+
+                'C > O;'
         };
 
     return data;
@@ -3338,6 +3360,131 @@ JSIndexScript.prototype.CJL = function ()
         Script: //脚本
             "成交量:VOL,VOLSTICK;\n\
 持仓量:VOLINSTK,LINEOVERLAY;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.SQJZ = function () 
+{
+    let data =
+    {
+        Name: 'SQJZ', Description: '神奇九转', IsMainIndex: true,
+        Script: //脚本
+"B:=C<REF(C,4);\n\
+N:=CURRBARSCOUNT;\n\
+B1:=(N=6 AND REFXV(COUNT(B,6),5)=6) OR (N=7 AND REFXV(COUNT(B,7),6)=7) OR (N=8 AND REFXV(COUNT(B,8),7)=8) OR (N>=9 AND REFXV(COUNT(B,9),8)=9);\n\
+DRAWNUMBER(B1 AND REF(B,1)=0,L,1),COLORMAGENTA;\n\
+B2:=(N=5 AND REFXV(COUNT(B,6),4)=6) OR (N=6 AND REFXV(COUNT(B,7),5)=7) OR (N=7 AND REFXV(COUNT(B,8),6)=8) OR (N>=8 AND REFXV(COUNT(B,9),7)=9);\n\
+DRAWNUMBER(B2 AND REF(B,2)=0,L,2),COLORMAGENTA;\n\
+B8:=(N=1 AND COUNT(B,8)=8) OR (N>=2 AND REFXV(COUNT(B,9),1)=9);\n\
+DRAWNUMBER(B8 AND REF(B,8)=0,L,8),COLORMAGENTA;\n\
+B9:=(N>=1 AND COUNT(B,9)=9);\n\
+DRAWNUMBER(B9 AND REF(B,9)=0,L,9),COLORBROWN;\n\
+S:=C>REF(C,4);\n\
+S1:=(N=6 AND REFXV(COUNT(S,6),5)=6) OR (N=7 AND REFXV(COUNT(S,7),6)=7) OR (N=8 AND REFXV(COUNT(S,8),7)=8) OR (N>=9 AND REFXV(COUNT(S,9),8)=9);\n\
+DRAWNUMBER(S1 AND REF(S,1)=0,H,1),COLORMAGENTA,DRAWABOVE;\n\
+S2:=(N=5 AND REFXV(COUNT(S,6),4)=6) OR (N=6 AND REFXV(COUNT(S,7),5)=7) OR (N=7 AND REFXV(COUNT(S,8),6)=8) OR (N>=8 AND REFXV(COUNT(S,9),7)=9);\n\
+DRAWNUMBER(S2 AND REF(S,2)=0,H,2),COLORMAGENTA,DRAWABOVE;\n\
+S8:=(N=1 AND COUNT(S,8)=8) OR (N>=2 AND REFXV(COUNT(S,9),1)=9);\n\
+DRAWNUMBER(S8 AND REF(S,8)=0,H,8),COLORMAGENTA,DRAWABOVE;\n\
+S9:=(N>=1 AND COUNT(S,9)=9);\n\
+DRAWNUMBER(S9 AND REF(S,9)=0,H,9),COLORGREEN,DRAWABOVE;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.XT = function () 
+{
+    let data =
+    {
+        Name: 'XT', Description: '箱体', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 10 }],
+        Script: //脚本
+"【箱顶】:PEAK(CLOSE,N,1)*0.98;\n\
+【箱底】:TROUGH(CLOSE,N,1)*1.02;\n\
+【箱高】:100*(【箱顶】-【箱底】)/【箱底】,NODRAW;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CFJT = function () 
+{
+    let data =
+    {
+        Name: 'CFJT', Description: '财富阶梯', IsMainIndex: true,
+        Script: //脚本
+"突破:=REF(EMA(C,14),1);\n\
+A1X:=(EMA(C,10)-突破)/突破*100;\n\
+多方:=IF(A1X>=0,REF(EMA(C,10),BARSLAST(CROSS(A1X,0))+1),DRAWNULL);\n\
+空方:=IF(A1X<0,REF(EMA(C,10),BARSLAST(CROSS(0,A1X))+1),DRAWNULL);\n\
+STICKLINE(A1X>=0,多方,突破,110,0),COLORRED;\n\
+STICKLINE(A1X<0,空方,突破,110,0),COLORGREEN;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CYX = function () 
+{
+    let data =
+    {
+        Name: 'CYX', Description: '撑压线', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 7 }],
+        Script: //脚本
+"Z1:=STRCAT(HYBLOCK,' ');\n\
+Z2:=STRCAT(Z1,DYBLOCK);\n\
+Z3:=STRCAT(Z2,' ');\n\
+DRAWTEXT_FIX(ISLASTBAR,0,0,0,STRCAT(Z3,GNBLOCK)),COLOR00C0C0;\n\
+A1:=REF(H,N)=HHV(H,2*N+1);\n\
+B1:=FILTER(A1,N);\n\
+C1:=BACKSET(B1,N+1);\n\
+D1:=FILTER(C1,N);\n\
+A2:=REF(L,N)=LLV(L,2*N+1);\n\
+B2:=FILTER(A2,N);\n\
+C2:=BACKSET(B2,N+1);\n\
+D2:=FILTER(C2,N);\n\
+E1:=(REF(LLV(L,2*N),1)+REF(HHV(H,2*N),1))/2;\n\
+E2:=(H+L)/2;\n\
+H1:=(D1 AND NOT(D2 AND E1>=E2)) OR ISLASTBAR OR BARSCOUNT(C)=1;\n\
+L1:=(D2 AND NOT(D1 AND E1<E2));\n\
+H2:=D1 AND NOT(D2 AND E1>=E2);\n\
+X1:=REF(BARSLAST(H1),1)+1;\n\
+F1:=BACKSET(H1 AND COUNT(L1,X1)>0,LLVBARS(IF(L1,L,10000),X1));\n\
+G1:=F1>REF(F1,1);\n\
+I1:=BACKSET(G1,2);\n\
+LD:=I1>REF(I1,1);\n\
+L2:=LD OR ISLASTBAR OR BARSCOUNT(C)=1;\n\
+X2:=REF(BARSLAST(L2),1)+1;\n\
+F2:=BACKSET(L2 AND COUNT(H2,X2)>0,HHVBARS(IF(H2,H,0),X2));\n\
+G2:=F2>REF(F2,1);\n\
+I2:=BACKSET(G2,2);\n\
+HD:=I2>REF(I2,1);\n\
+R1:=BACKSET(ISLASTBAR,BARSLAST(HD)+1);\n\
+S1:=R1>REF(R1,1);\n\
+T1:=BACKSET(ISLASTBAR,BARSLAST(LD)+1);\n\
+U1:=T1>REF(T1,1);\n\
+R2:=BACKSET(S1,REF(BARSLAST(HD),1)+2);\n\
+S2:=R2>REF(R2,1);\n\
+T2:=BACKSET(U1,REF(BARSLAST(LD),1)+2);\n\
+U2:=T2>REF(T2,1);\n\
+DRAWLINE(S2,H,S1,H,1),LINETHICK2,COLORRED;\n\
+DRAWLINE(U2,L,U1,L,1),LINETHICK2,COLORGREEN;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.WAVE = function () 
+{
+    let data =
+    {
+        Name: 'WAVE', Description: '波浪分析', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 5 }],
+        Script: //脚本
+"ZIG(3,N);"
     };
 
     return data;

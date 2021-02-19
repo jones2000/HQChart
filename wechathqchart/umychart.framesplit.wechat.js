@@ -482,19 +482,28 @@ function FrameSplitKLinePriceY()
         if (JSCommonCoordinateData.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数
         if (this.FloatPrecision != null) defaultfloatPrecision = this.FloatPrecision;
 
-        switch (this.CoordinateType)
+        var bFilter=true;
+        if (FrameSplitKLinePriceY.SplitCustom)
         {
-            case 1:
-                this.SplitPercentage(splitData, defaultfloatPrecision);
-                break;
-            default:
-                if (this.SplitType == 1) this.SplitFixed(splitData, defaultfloatPrecision);
-                else this.SplitDefault(splitData, defaultfloatPrecision);
-                this.CustomCoordinate(defaultfloatPrecision);
-                break;
+            FrameSplitKLinePriceY.SplitCustom(this,splitData,defaultfloatPrecision);    //自定义分割
+            bFilter=false;
+        }
+        else
+        {
+            switch (this.CoordinateType)
+            {
+                case 1:
+                    this.SplitPercentage(splitData, defaultfloatPrecision);
+                    break;
+                default:
+                    if (this.SplitType == 1) this.SplitFixed(splitData, defaultfloatPrecision);
+                    else this.SplitDefault(splitData, defaultfloatPrecision);
+                    this.CustomCoordinate(defaultfloatPrecision);
+                    break;
+            }
         }
 
-        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, false);
+        if (bFilter) this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, false);
         this.Frame.HorizontalMax = splitData.Max;
         this.Frame.HorizontalMin = splitData.Min;
     }
@@ -576,11 +585,14 @@ function FrameSplitKLinePriceY()
         info.Type = 0;
         info.Value = latestItem.Close;
         info.TextColor = g_JSChartResource.FrameLatestPrice.TextColor;
+        info.LineType = 2;    //虚线
         if (option.Position == 'left') info.Message[0] = latestItem.Close.toFixed(floatPrecision);
         else info.Message[1] = latestItem.Close.toFixed(floatPrecision);
         if (latestItem.Close > latestItem.Open) info.LineColor = g_JSChartResource.FrameLatestPrice.UpBarColor;
         else if (latestItem.Close < latestItem.Open) info.LineColor = g_JSChartResource.FrameLatestPrice.DownBarColor;
         else info.LineColor = g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
+
+        if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
         if (option.IsShowLine == false) info.LineType = -1;
 
         return info;
@@ -611,6 +623,7 @@ function FrameSplitKLinePriceY()
             info.TextColor = item.TextColor;
             info.LineColor = item.Color;
             info.LineType = 2;    //虚线
+            if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
             if (option.IsShowLine == false) info.LineType = -1;
 
             info.Value = item.Value;
@@ -1090,6 +1103,7 @@ function FrameSplitMinutePriceY()
             var distanceValue = Math.max(Math.abs(this.YClose - max), Math.abs(this.YClose - min));
             max = this.YClose + distanceValue;
             min = this.YClose - distanceValue;
+            if (min<0) min=range.Min;
         }
 
         var showCount = this.SplitCount;
@@ -1155,12 +1169,14 @@ function FrameSplitMinutePriceY()
         info.Type = 0;
         info.Value = price;
         info.TextColor = g_JSChartResource.FrameLatestPrice.TextColor;
+        info.LineType = 2;    //虚线
         if (option.Position == 'left') info.Message[0] = price.toFixed(floatPrecision);
         else info.Message[1] = price.toFixed(floatPrecision);
         if (price > this.YClose) info.LineColor = g_JSChartResource.FrameLatestPrice.UpBarColor;
         else if (price < this.YClose) info.LineColor = g_JSChartResource.FrameLatestPrice.DownBarColor;
         else info.LineColor = g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
 
+        if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
         if (option.IsShowLine == false) info.LineType = -1;
 
         return info;
@@ -1177,6 +1193,7 @@ function FrameSplitMinutePriceY()
             info.TextColor = item.TextColor;
             info.LineColor = item.Color;
             info.LineType = 2;    //虚线
+            if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
             if (option.IsShowLine == false) info.LineType = -1;
 
             if (IFrameSplitOperator.IsNumber(item.Increase)) //涨幅计算价格
@@ -1331,7 +1348,7 @@ function SplitData() {
         [4, 5, 4, 0.05],
         [5, 10, 5, 0.05],
 
-        [10, 12, 10, 2],
+        [10, 20, 10, 2],
         [20, 40, 20, 5],
         [40, 50, 40, 2],
         [50, 100, 50, 10],

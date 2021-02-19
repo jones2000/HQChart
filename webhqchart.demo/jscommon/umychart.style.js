@@ -39,11 +39,12 @@ var BLACK_STYLE=
 
     Minute: 
     {
-        VolBarColor: "rgb(255,236,0)",
+        VolBarColor: null,
         PriceColor: "rgb(25,180,231)",
         AreaPriceColor:"rgba(63,158,255,.3)",
         AvPriceColor: "rgb(255,236,0)",
         PositionColor:'rgb(218,165,32)', 
+        VolTitleColor:"rgb(190,190,190)"
     },
 
 
@@ -55,6 +56,20 @@ var BLACK_STYLE=
     DownTextColor: "rgb(25,158,0)",
     UnchagneTextColor: "rgb(101,104,112)",
     CloseLineColor: 'rgb(178,34,34)',
+
+    Title:
+    {
+        TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
+        ColorIndexColor:'rgb(112,128,144)',  //五彩K线颜色
+
+        VolColor:"rgb(101,104,112)",       //标题成交量
+        AmountColor:"rgb(101,104,112)",    //成交金额 
+        DateTimeColor:"rgb(101,104,112)",  //时间,日期  
+        SettingColor:"rgb(101,104,112)",   //周期,复权
+        NameColor:"rgb(101,104,112)" ,     //股票名称
+        TurnoverRateColor:'rgb(101,104,112)',       //换手率
+        PositionColor:"rgb(101,104,112)"       //持仓
+    },
 
     FrameBorderPen: "rgba(236,236,236,0.13)",     //边框
     FrameSplitPen: "rgba(236,236,236,0.13)",          //分割线

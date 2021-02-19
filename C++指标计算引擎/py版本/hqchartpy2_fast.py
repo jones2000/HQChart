@@ -6,7 +6,30 @@ sys.path.append(rootPath)
 
 import HQChartPy2
 import platform
+import datetime
+import requests     # 网络数据下载
+import json
 
+
+
+##############################################################
+#   周期
+#
+#
+#################################################################
+class PERIOD_ID:
+    DAY_ID=0
+    WEEK_ID=1
+    MONTH_ID=2
+    YEAR_ID=3
+    QUARTER_ID=9
+    TWO_WEEK_ID=21
+    MIN1_ID=4
+    MIN5_ID=5
+    MIN15_ID=6
+    MIN30_ID=7
+    MIN60_ID=8
+    TICK_ID=10	#分笔
 
 ############################################################################################
 # IHQData 数据接口类
@@ -20,6 +43,9 @@ class IHQData(object):
     def GetKLineData(self, symbol, period, right, jobID):
         pass
 
+    def GetKLineData2(self, symbol, period, right, callInfo, kdataInfo, jobID):
+        pass
+
     # FINANCE()  财务数据 数组
     def GetFinance(self, symbol, id, period,right,kcount,jobID) :
         pass
@@ -28,15 +54,15 @@ class IHQData(object):
     def GetDynainfo(self, symbol, id, period,right, kcount,jobID):
         pass
 
-    # INDEXA, INDEXC .... 获取指数数据 数组
-    def GetIndex(self, symbol, varName, period,right, kcount,jobID):
-        pass
-
-    # CAPITAL 最新流通股本 单值
+    # CAPITAL 最新流通股本(手)
     def GetCapital(self,symbol, period, right, kcount,jobID):
         pass
 
-    # 历史所有的流通股本 数组 array
+    # TOTALCAPITAL  当前总股本(手)
+    def GetTotalCapital(self,symbol, period, right, kcount,jobID):
+        pass
+
+    # 历史所有的流通股本 时间序列
     def GetHisCapital(self,symbol, period, right, kcount,jobID):
         pass
 
@@ -48,34 +74,86 @@ class IHQData(object):
         else :
             return False
 
+    def GetDataByNumbers(self, symbol,funcName,args, period,right,kcount, jobID):
+        if (funcName==u"GPJYVALUE") :
+            return self.GetGPJYValue(symbol, args, period, right, kcount, jobID)
+        pass
+
     def GetDataByName(self, symbol,funcName,period,right,kcount, jobID) :
         if (funcName==u"CAPITAL"):
             return self.GetCapital(symbol,period,right,kcount, jobID)
         elif (funcName==u"GetHisCapital"):
             return self.GetHisCapital(symbol,period,right,kcount, jobID)
-        elif (funcName in (u"INDEXA", u"INDEXC", u"INDEXH", u"INDEXL", u"INDEXO",u"INDEXV", u"INDEXADV", u"INDEXDEC")) : # 大盘数据 其他的大盘数据也在这里
-            return self.GetIndex(symbol,funcName,period,right,kcount, jobID)
+        elif (funcName==u'TOTALCAPITAL'):
+            return self.GetTotalCapital(symbol,period,right,kcount, jobID)
         else :
-            return false
+            return False
 
     def GetDataByString(self, symbol,funcName,period,right,kcount, jobID):
-        return false
+        return False
+
+    # 引用股票交易类数据.
+    # GPJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据,TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
+    def GetGPJYValue(self, symbol,args,period, right, kcount ,jobID):
+        pass
+
+    # 系统指标
+    def GetIndexScript(self,name,callInfo, jobID):
+        pass
+
+    # 星期五
+    @staticmethod 
+    def GetFirday(value) :
+        date = datetime.datetime.strptime(str(value), '%Y%m%d')
+        day=date.weekday()
+        if day==4 : 
+            return value
+
+        date+=datetime.timedelta(days=4-day)
+        fridayDate= date.year*10000+date.month*100+date.day
+        return fridayDate
+
+    # 是否是沪深指数
+    @staticmethod
+    def IsSHSZIndex(symbol) :
+        upperSymbol=symbol.upper()
+        if (upperSymbol.find('.SH')>0) :
+            upperSymbol=upperSymbol.replace('.SH','')
+            if (upperSymbol[0]=='0' or int(upperSymbol)<=3000) :
+                return True
+        elif (upperSymbol.find('.SZ')>0) :
+            upperSymbol=upperSymbol.replace('.SZ','')
+            if (upperSymbol[0]=='3' and upperSymbol[1]=='9') :
+                return True
+        
+        return False
+
 
 
 class FastHQChart :
-     # 初始化
+    DllVersion=0
+    Authorize=None  # 授权信息
+
+    @staticmethod
+    def GetVersion():
+        version=FastHQChart.DllVersion
+        return "{0}.{1}".format(int(version/100000), (version%100000))
+
+    # 初始化
     @staticmethod 
     # key= 授权码
     def Initialization(Key=None) :
         # 加载dll
         strOS = platform.system()
         dllVersion=HQChartPy2.GetVersion()
+        FastHQChart.DllVersion=dllVersion
         if (Key) :
             HQChartPy2.LoadAuthorizeInfo(Key)
         authorize=HQChartPy2.GetAuthorizeInfo()
+        FastHQChart.Authorize=authorize
 
         print("*******************************************************************************************")
-        print("*  欢迎使用HQChart c++ 技术指标计算引擎")
+        print("*  欢迎使用HQChartPy2 C++ 技术指标计算引擎")
         log="*  版本号:{0}.{1}".format(int(dllVersion/100000), (dllVersion%100000))
         print(log)
         log="*  授权信息:{0}".format(authorize)
@@ -87,11 +165,15 @@ class FastHQChart :
 
     @staticmethod
     def Run(jsonConfig, hqData, proSuccess=None,procFailed=None):
-        callbackConfig={};
+        callbackConfig={}
         callbackConfig['GetKLineData']=hqData.GetKLineData
+        callbackConfig['GetKLineData2']=hqData.GetKLineData2
         callbackConfig['GetDataByNumber']=hqData.GetDataByNumber
+        callbackConfig['GetDataByNumbers']=hqData.GetDataByNumbers
         callbackConfig['GetDataByName']=hqData.GetDataByName
         callbackConfig['GetDataByString']=hqData.GetDataByString
+        callbackConfig["GetIndexScript"]=hqData.GetIndexScript
+        
 
         # 计算结果返回
         if (proSuccess) :
@@ -102,47 +184,33 @@ class FastHQChart :
         bResult=HQChartPy2.Run(jsonConfig,callbackConfig)
         return bResult
 
+    # 获取试用注册码
     @staticmethod
-    def Run2(jsonConfig, hqData, proSuccess=None,procFailed=None):
-        callbackConfig={};
-        callbackConfig['GetKLineData']=hqData.GetKLineData
-        callbackConfig['GetDataByNumber']=hqData.GetDataByNumber
-        callbackConfig['GetDataByName']=hqData.GetDataByName
-        callbackConfig['GetDataByString']=hqData.GetDataByString
+    def GetTrialAuthorize(mac, url="http://py2.hqchart.cn:8712/api/v1/CreateAuthorize"):
 
-        # 计算结果返回
-        if (proSuccess) :
-            callbackConfig['Success']=proSuccess
-        if (procFailed) :
-            callbackConfig['Failed']=procFailed
-
-        bResult=HQChartPy2.Run2(jsonConfig,callbackConfig)
-        return bResult
-
-    @staticmethod
-    def AddSystemIndex(jsConfig):
-        return HQChartPy2.AddSystemIndex(jsConfig)
-
-    # 系统指标格式
-    HQCHART_SYSTEM_INDEX=[ 
-        { 
-        "Name":"MA", "Description":"均线",
-        "Script":
-        '''MA1:MA(CLOSE,M1);
-MA2:MA(CLOSE,M2);
-MA3:MA(CLOSE,M3);''',
-        "Args": [ { "Name":"M1", "Value":5 }, { "Name":"M2", "Value":10 }, { "Name":"M3", "Value":20} ]
-        },
-
-        {
-        "Name":"BOLL", "Description":"布林线",
-        "Script":
-        '''BOLL:MA(CLOSE,M);
-UB:BOLL+2*STD(CLOSE,M);
-LB:BOLL-2*STD(CLOSE,M);''',
-        "Args": [ { "Name":"M", "Value":20 }]
+        headers = {
+            "Content-Type": "application/json; charset=UTF-8"
         }
-        
-    ]
 
+        postData = { "MAC":mac, "Version":"hqchartPy" }
+        print('[FastHQChart::GetTrialAuthorize] 获取试用账户',url, postData)
 
+        try:
+            response=requests.post(url,data=json.dumps(postData),headers=headers)
+            if (response.status_code!=200) :
+                print("获取测试账户请求失败, {0}".format(response.text))
+                return None
+            jsonData=response.json()
+            if (jsonData['code']==0) :
+                if ('message' in jsonData.keys()):
+                    if (jsonData['message']!=None) :
+                        print(jsonData['message'])
+                return jsonData['key']
+        except requests.exceptions.HTTPError as http_err:
+            print("获取测试账户请求异常,{0}".format(http_err))
+        except Exception as err:
+            print("获取测试账户请求异常,{0}".format(err))
+        except :
+            print("获取测试账户请求异常")
+
+        return None

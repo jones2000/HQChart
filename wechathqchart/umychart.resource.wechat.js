@@ -17,28 +17,42 @@ function JSChartResource()
 
     this.SelectRectBGColor = "rgba(1,130,212,0.06)"; //背景色
     //   this.SelectRectAlpha=0.06;                  //透明度
-    this.BGColor = 'rgb(255,255,255)';          //背景色
+    this.BGColor = 'rgb(255,255,255)';              //背景色
 
     this.UpBarColor = "rgb(238,21,21)";
     this.DownBarColor = "rgb(25,158,0)";
     this.UnchagneBarColor = "rgb(0,0,0)";
+    this.MinKLineBarWidth=4;                        //最小的柱子宽度 比这个还小就画直线 
 
     this.Minute = {};
-    this.Minute.VolBarColor = "rgb(238,127,9)";
+    this.Minute.VolBarColor = null;
     this.Minute.PriceColor = "rgb(50,171,205)";
     this.Minute.AreaPriceColor = 'rgba(50,171,205,0.1)';
     this.Minute.AvPriceColor = "rgb(238,127,9)";
 
     this.DefaultTextColor = "rgb(43,54,69)";
     this.DefaultTextFont = '14px 微软雅黑';
-
-    this.DynamicTitleFont = '12px 微软雅黑'; //指标动态标题字体
+    this.IndexTitleBGColor='rgb(217,219,220)';     //指标名字背景色
+    this.DynamicTitleFont = '12px 微软雅黑';        //指标动态标题字体
 
     this.UpTextColor = "rgb(238,21,21)";
     this.DownTextColor = "rgb(25,158,0)";
     this.UnchagneTextColor = "rgb(0,0,0)";
     this.CloseLineColor = 'rgb(0,191,255)';
     this.CloseLineAreaColor = ['rgba(0,191,255,0.8)', 'rgba(0,191,255,0.2)'];
+
+    this.Title = {
+        TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
+        ColorIndexColor:'rgb(112,128,144)',  //五彩K线颜色
+
+        VolColor:"rgb(43,54,69)",       //标题成交量
+        AmountColor:"rgb(43,54,69)",    //成交金额 
+        DateTimeColor:"rgb(43,54,69)",  //时间,日期  
+        SettingColor:"rgb(43,54,69)",   //周期,复权
+        NameColor:"rgb(43,54,69)" ,     //股票名称
+        TurnoverRateColor:'rgb(43,54,69)',       //换手率
+        PositionColor:"rgb(43,54,69)"       //持仓
+    };
 
     this.FrameBorderPen = "rgb(225,236,242)";
     this.FrameSplitPen = "rgb(225,236,242)";          //分割线
@@ -47,7 +61,10 @@ function JSChartResource()
     this.FrameYLineDash=[2, 2];                     //Y轴线段虚线点间距,填null 就是实线
     //this.FrameSplitTextFont = "14px PingFang-SC-Bold";//坐标刻度文字字体
     this.FrameTitleBGColor = "rgb(246,251,253)";      //标题栏背景色
-    this.Frame = { XBottomOffset: 0 };   //X轴文字向下偏移
+    this.Frame = { 
+        XBottomOffset: 0 ,  //X轴文字向下偏移
+        YTopOffset:2    //Y轴顶部文字向下偏移
+    };   
 
     this.FrameLatestPrice = 
     {
@@ -202,6 +219,57 @@ function JSChartResource()
         TextBGColor: 'rgba(255,255,255,0.8)'
     };
 
+    //单图标指标ChartSingleText -> DRAWICON
+    this.DRAWICON=
+    {
+        Text:
+        {
+            MaxSize:50,  //字体最大
+            MinSize:20,  //字体最小
+    
+            Zoom:
+            {
+                Type:2,    //0=放大(K线宽度*Value) 1=放大(K线+间距)*Value 2=(K线+间距)+2*Value;
+                Value:1
+            },
+
+            FontName:'Arial'    //字体
+        }
+    }
+
+    this.DRAWTEXT=
+    {
+        MaxSize:18,  //字体最大
+        MinSize:18,  //字体最小
+
+        Zoom:
+        {
+            Type:1,    //0=放大(K线宽度*Value) 1=放大(K线+间距)*Value 2=(K线+间距)+2*Value;
+            Value:1
+        },
+
+        FontName:'微软雅黑'    //字体
+    }
+
+    this.DRAWNUMBER=
+    {
+        MaxSize:18,  //字体最大
+        MinSize:18,  //字体最小
+
+        Zoom:
+        {
+            Type:1,    //0=放大(K线宽度*Value) 1=放大(K线+间距)*Value 2=(K线+间距)+2*Value;
+            Value:1
+        },
+
+        FontName:'微软雅黑'    //字体
+    }
+
+    this.DRAWABOVE=
+    {
+        YOffset:0   //y坐标向上偏移
+    }
+
     // //自定义风格
     this.SetStyle = function (style) 
     {
@@ -222,6 +290,7 @@ function JSChartResource()
         if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
         if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;
         if (style.DynamicTitleFont) this.DynamicTitleFont = style.DynamicTitleFont;
+        if (style.IndexTitleBGColor) this.IndexTitleBGColor=style.IndexTitleBGColor;
         if (style.UpTextColor) this.UpTextColor = style.UpTextColor;
         if (style.DownTextColor) this.DownTextColor = style.DownTextColor;
         if (style.UnchagneTextColor) this.UnchagneTextColor = style.UnchagneTextColor;
@@ -236,6 +305,7 @@ function JSChartResource()
         if (style.Frame) 
         {
             if (style.Frame.XBottomOffset) this.Frame.XBottomOffset = style.Frame.XBottomOffset;
+            if (style.Frame.YTopOffset) this.Frame.YTopOffset = style.Frame.YTopOffset;
         }
 
         if (style.FrameLatestPrice) 
@@ -273,6 +343,56 @@ function JSChartResource()
             if (style.TooltipPaint.BorderColor) this.TooltipPaint.BorderColor = style.TooltipPaint.BorderColor;
             if (style.TooltipPaint.TitleColor) this.TooltipPaint.TitleColor = style.TooltipPaint.TitleColor;
             if (style.TooltipPaint.TitleFont) this.TooltipPaint.TitleFont = style.TooltipPaint.TitleFont;
+        }
+
+        if (style.Title)
+        {
+            if (style.Title.TradeIndexColor) this.Title.TradeIndexColor=style.Title.TradeIndexColor;
+            if (style.Title.ColorIndexColor) this.Title.ColorIndexColor=style.Title.ColorIndexColor;
+
+            if (style.Title.VolColor) this.Title.VolColor=style.Title.VolColor;
+            if (style.Title.AmountColor) this.Title.AmountColor=style.Title.AmountColor;
+            if (style.Title.DateTimeColor) this.Title.DateTimeColor=style.Title.DateTimeColor;
+            if (style.Title.NameColor) this.Title.NameColor=style.Title.NameColor;
+            if (style.Title.SettingColor) this.Title.SettingColor=style.Title.SettingColor;
+            if (style.Title.TurnoverRateColor) this.Title.TurnoverRateColor=style.Title.TurnoverRateColor;
+            if (style.Title.PositionColor) this.Title.PositionColor=style.Title.PositionColor;
+        }
+
+        if (style.DRAWICON) 
+        {
+            if (style.DRAWICON.Text)
+            {
+                var item=style.DRAWICON.Text;
+                if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWICON.Text.MaxSize=item.MaxSize;
+                if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWICON.Text.MinSize=item.MinSize;
+                if (item.Zoom) this.DRAWICON.Text.Zoom=item.Zoom;
+                if (item.FontName) this.DRAWICON.Text.FontName=item.FontName;
+            }
+        }
+
+        if (style.DRAWTEXT)
+        {
+            var item=style.DRAWTEXT;
+            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWICON.MaxSize=item.MaxSize;
+            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWICON.MinSize=item.MinSize;
+            if (item.Zoom) this.DRAWICON.Zoom=item.Zoom;
+            if (item.FontName) this.DRAWICON.FontName=item.FontName;
+        }
+
+        if (style.DRAWNUMBER)
+        {
+            var item=style.DRAWNUMBER;
+            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWNUMBER.Text.MaxSize=item.MaxSize;
+            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.Text.MinSize=item.MinSize;
+            if (item.Zoom) this.DRAWNUMBER.Text.Zoom=item.Zoom;
+            if (item.FontName) this.DRAWNUMBER.Text.FontName=item.FontName;
+        }
+
+        if (style.DRAWABOVE)
+        {
+            var item=style.DRAWABOVE;
+            if (IFrameSplitOperator.IsNumber(item.YOffset)) this.DRAWNUMBER.YOffset=item.YOffset;
         }
     }
 

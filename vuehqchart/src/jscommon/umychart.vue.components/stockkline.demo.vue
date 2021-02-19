@@ -813,7 +813,9 @@ export default
                 for(var i=0;i<2 && i<aryIndex.length;++i)
                 {
                     var item=aryIndex[i];
-                    var index=this.KLine.IndexBar.Menu.indexOf(item.ID);
+                    var index=-1;
+                    if (item.ID) index=this.KLine.IndexBar.Menu.indexOf(item.ID);
+                    else if (item.Name) index=this.KLine.IndexBar.Menu.indexOf(item.Name);
                     if (index>=0) this.KLine.IndexBar.Selected.push(index);
                 }
             }

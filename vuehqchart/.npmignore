@@ -12,3 +12,4 @@ src\jscommon\*.js
 src\jscommon\*.html
 src\jscommon\*.json
 src\pages
+dist

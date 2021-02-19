@@ -1,5 +1,5 @@
 
-from hqchartpy2_fast import FastHQChart,IHQData
+from hqchartpy2_fast import FastHQChart,IHQData,PERIOD_ID
 import json
 import time
 
@@ -15,7 +15,7 @@ class HQChartData(IHQData) :
         kdataFile="../data/kdata/0/{0}.json".format(symbol)    # 日线数据作为测试数据
         with open(kdataFile,encoding='utf-8') as f:
             kData = json.load(f)
-            kData['data']=kData['data'][0:500]
+            #kData['data']=kData['data'][0:500]
 
         dataCount=len(kData['data'])
         name=kData['name']
@@ -23,6 +23,8 @@ class HQChartData(IHQData) :
         cacheData={}
         cacheData['count']=dataCount    # 数据个数
         cacheData['name']=name          # 股票名称
+        cacheData['period']=PERIOD_ID.DAY_ID # 日K
+        cacheData['right']=0    # 不复权
 
         aryDate=[]
         aryClose=[]
@@ -64,12 +66,19 @@ class HQChartData(IHQData) :
         return cacheData
 
     def GetFinance(self,symbol, id, period,right,kcount,jobID) :
-        pyCacheData=[]
-        for i in range(kcount) :    # 生成财务数据
-            pyCacheData.append(8976549.994+i)
 
-        data={"type": 1, "data":pyCacheData}
-        return data
+        if (id==7) :
+            pyCacheData=[18653471415, 18653471415,21618279922,21618279922,28103763899, 28103763899,28103763899,28103763899]  # 数据
+            pyCacheDate=[20170519, 20170830,20170906, 20180428,20180830, 20190326,20190824,20200425]  # 日期
+            data={"type": 2, "date":pyCacheDate, "data":pyCacheData}
+            return data
+        else :
+            pyCacheData=[]
+            for i in range(kcount) :    # 生成财务数据
+                pyCacheData.append(8976549.994+i)
+
+            data={"type": 1, "data":pyCacheData}
+            return data
 
     def GetDynainfo(self,symbol, id,period,right, kcount,jobID):
         data={"type": 0, "data":5}
@@ -139,19 +148,14 @@ def TestSingleStock() :
         # 系统指标名字
         # "Name":"MA",
         "Script":'''
-        KF:=(O-REF(C,1))/REF(C,1)*100;
-ZF:=(C-REF(C,1))/REF(C,1)*100;
-限幅:=KF<3.82 AND KF>-3.82; 
-ZT:=C>1.1*REF(C,1)-0.01 AND C<1.1*REF(C,1)+0.01 AND C=H; 
-一字:=C>1.1*REF(C,1)-0.01 AND C<1.1*REF(C,1)+0.01 AND H=O AND L=H; 
-去一:=NOT(一字);
-XG:限幅 AND 去一 AND BARSSINCE(C<>O AND BARSCOUNT(CLOSE)<>1)>30 AND O<>HHV(H,2); 
+       T2:FINANCE(7); 
+       T3:FINONE(1,2,3);
         ''',
     # 脚本参数
         # "Args":[ { "Name": 'N1', "Value": 5 },{ "Name": 'N2', "Value": 10 },{ "Name": 'N3', "Value": 15 } ],
         "Args": [ { "Name":"M1", "Value":15 }, { "Name":"M2", "Value":20 }, { "Name":"M3", "Value":30} ],
         # 周期 复权
-        "Period":0, "Right":0,
+        "Period":1, "Right":0,
         "Symbol":"600000.sh",
 
         #jobID (可选)
@@ -198,18 +202,14 @@ def TestMultiStock() :
         "Period":0, "Right":0,
         # 股票池
         "Symbol":["600000.sh","600007.sh","000001.sz","600039.sh"],
-        # 并行计算加速模式
-        "Mode":{ "Thread":False, "MinRunCount":1000, "Count":5 },
         # 输出数据个数 如果只需要最后几个数据可以填几个的个数, 数据从最后开始返回的, 如1=返回最后1个数据 2=返回最后2个数组,  -1=返回所有的数据
         "OutCount":1,
-        # 单个股票执行完是否立即清空缓存, 更具K线个数配置, 不清空缓存到占用很多内存
-        "ClearCache":True
     }
 
     # 批量执行的股票
-    for i in range(3700) :
+    #for i in range(3700) :
         # runConfig["Symbol"].append("600000.sh")
-        runConfig["Symbol"].append("000421.sz")
+    #    runConfig["Symbol"].append("000421.sz")
 
     jsConfig = json.dumps(runConfig)    # 运行配置项
     hqData=HQChartData()    # 实例化数据类
@@ -226,7 +226,7 @@ def TestMultiStock() :
     # print(log)
 
     start = time.process_time()
-    res=FastHQChart.Run2(jsConfig,hqData,proSuccess=result.RunSuccess, procFailed=result.RunFailed)
+    res=FastHQChart.Run(jsConfig,hqData,proSuccess=result.RunSuccess, procFailed=result.RunFailed)
     elapsed = (time.process_time() - start)
     log="执行指标 Time used:{0}, 股票个数:{1}".format(elapsed, len(runConfig['Symbol']))
     print(log)
@@ -234,7 +234,7 @@ def TestMultiStock() :
 
 if __name__ == "__main__":
 
-    key="FeArQfG7PG1WjRuzKH/JPlJCpF9zTKVg8gl1AqSoaIfMbmVGmc8BFRZGKFK2Foca2Icu1Q/uSsi+38T51oEHMmSRCfX3zkEZsicW6jLcXUnOXhvzE/E9mq8P0D25zO9Zti1Qxlo7cgMLZOCnpUDYOa9+w3+ecy3voiCV57c+V6o="
+    key="oTjOc1CNCuxtcAqs6+/FHeKmYcPpFv+M9y7seNd6eBTE9tq1El9mGLi7bj6gtMf3RpWtGJ0K7Tu2wbEBUjunGb5mgGskWii4vlUK+5XFr7fI/nDysxdWOebKqJ+RLif0MptDIGdQP8nbyw1osZdXJuWpb4RYYNrzeXtbQVDI2UNnuJUm8DpGs/SgKrw9l+Q2QT/hMnJ6/MMsjMpsgHmV5iHWQTzzAU2QXnX5rtMuAISFKcLlbPzKF809lexHbtqXqoPxQfJkqh0YzTyJOZLhkvZ+Sm5vIu4EhJjIQBTLrX229t8rIvwKwLZ/UEuewSQFgq2QkpBQMPlBU/HVy5h7WQ=="
     FastHQChart.Initialization(key)
 
     jsSystemIndex=json.dumps(FastHQChart.HQCHART_SYSTEM_INDEX)
@@ -244,4 +244,3 @@ if __name__ == "__main__":
 
     TestMultiStock()
 
-    TestMultiStock()

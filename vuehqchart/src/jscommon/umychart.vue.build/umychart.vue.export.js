@@ -20,6 +20,8 @@ export default {
     HistoryData:HistoryData,    //K线数据结构
     MARKET_SUFFIX_NAME:MARKET_SUFFIX_NAME,  // 判断股票属性
     IFrameSplitOperator:IFrameSplitOperator,//格式化字符串方法
+    FrameSplitKLinePriceY:FrameSplitKLinePriceY,
+    FrameSplitKLineX:FrameSplitKLineX,
     JSKLineInfoMap:JSKLineInfoMap,
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,      //可以订阅的事件类型
     JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,    //图形控制类型

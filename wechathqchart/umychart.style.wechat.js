@@ -12,7 +12,7 @@
 
 var BLACK_STYLE =    //黑色风格
 {
-    BGColor:'#071120',
+    BGColor:'rgb(0,0,0)',
     TooltipBGColor: "rgb(255, 255, 255)", //背景色
     TooltipAlpha: 0.92,                  //透明度
 
@@ -24,7 +24,7 @@ var BLACK_STYLE =    //黑色风格
     UnchagneBarColor: "rgb(199,199,199)",
 
     Minute: {
-      VolBarColor: "rgb(255,236,0)",
+      VolBarColor: null,
       PriceColor: "rgb(25,180,231)",
       AvPriceColor: "rgb(255,236,0)",
     },
@@ -32,6 +32,7 @@ var BLACK_STYLE =    //黑色风格
 
     DefaultTextColor: "rgb(101,104,112)",
     DefaultTextFont: '14px 微软雅黑',
+    IndexTitleBGColor:'rgb(211,211,211)',
 
     DynamicTitleFont: '12px 微软雅黑', //指标动态标题字体
 
@@ -40,6 +41,20 @@ var BLACK_STYLE =    //黑色风格
     DownTextColor: "rgb(25,158,0)",
     UnchagneTextColor: "rgb(101,104,112)",
     CloseLineColor: 'rgb(178,34,34)',
+
+    Title:
+    {
+        TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
+        ColorIndexColor:'rgb(112,128,144)',  //五彩K线颜色
+
+        VolColor:"rgb(101,104,112)",       //标题成交量
+        AmountColor:"rgb(101,104,112)",    //成交金额 
+        DateTimeColor:"rgb(101,104,112)",  //时间,日期  
+        SettingColor:"rgb(101,104,112)",   //周期,复权
+        NameColor:"rgb(101,104,112)" ,     //股票名称
+        TurnoverRateColor:'rgb(101,104,112)',       //换手率
+        PositionColor:"rgb(101,104,112)"       //持仓
+    },
 
     FrameBorderPen: "rgba(236,236,236,0.13)",     //边框
     FrameSplitPen: "rgba(236,236,236,0.13)",          //分割线
