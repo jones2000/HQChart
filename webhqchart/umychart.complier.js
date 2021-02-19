@@ -19062,6 +19062,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=this.FittingMultiText(draw.DrawData,date,time,hqChart);
+                    this.GetKLineData(drawItem.DrawData, hqChart);
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }
@@ -19071,6 +19072,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData={ Icon:this.FittingMultiText(draw.DrawData.Icon,date,time,hqChart), Family:draw.DrawData.Family };
+                    this.GetKLineData(drawItem.DrawData.Icon, hqChart);
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);
@@ -19111,6 +19113,34 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         }
 
         return result;
+    }
+
+    // h, high, low l.
+    this.GetKLineData=function(data,hqChart)
+    {
+        if (!data) return;
+        if (!Array.isArray(data)) return;
+        var kData=hqChart.ChartPaint[0].Data;   //K线
+
+        for(var i in data)
+        {
+            var item=data[i];
+            if (!IFrameSplitOperator.IsString(item.Value)) continue;
+            if (item.Index<0 || item.Index>=kData.Data.length) continue;
+            var valueName=item.Value.toUpperCase();
+            var kItem=kData.Data[item.Index];
+            switch(valueName)
+            {
+                case "HIGH":
+                case "H":
+                    item.Value=kItem.High;
+                    break;
+                case "L":
+                case "LOW":
+                    item.Value=kItem.Low;
+                    break;
+            }
+        }
     }
 
     this.FittingKLineBG=function(data, hqChart)

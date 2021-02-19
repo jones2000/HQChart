@@ -3149,24 +3149,37 @@ function JSAlgorithm(errorHandler, symbolData)
         }
         else 
         {
-            if (n > data.length) return result;
-            if (n <= 0) n = data.length - 1;
+            if (n>data.length) return result;
+            if (n<=0) n=data.length-1;
 
-            var min = null;
-            for (var i = n; i < data.length; ++i, ++j) 
+            var nMin=0;
+            for(nMin=0;nMin<data.length;++nMin)
             {
-                if (min == null || i < n + min)    //最小值是否在当前周期里面
+                if (this.IsNumber(data[nMin])) break;
+            }
+
+            if (nMin<data.length) result[nMin]=data[nMin];
+            for(var i=nMin+1,j=2;i<data.length && j<n;++i,++j)
+            {
+                if (data[i]<=data[nMin]) nMin=i;
+                result[i]=data[nMin];
+            }
+
+            for(;i<data.length;++i)
+            {
+                if (i-nMin<n) 
                 {
-                    min = data[i] > data[min] ? min : i;
+                    nMin=data[i]>data[nMin]?nMin:i;
                 }
-                else 
+                else
                 {
-                    for (var j = (min = i - n + 1) + 1; j <= i; ++j) 
+                    for(j=nMin=(i-n+1);j<=i;++j)
                     {
-                        if (data[j] < data[min]) min = j;
+                        nMin=data[j]>data[nMin]?nMin:j;
                     }
                 }
-                result[i] = data[min];
+
+                result[i]=data[nMin];
             }
         }
 

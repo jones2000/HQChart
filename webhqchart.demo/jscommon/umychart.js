@@ -6943,13 +6943,21 @@ function KLineHScreenFrame()
         return;
     }
 
-    this.GetYFromData=function(value)
+    this.GetYFromData=function(value,isLimit)
     {
-        if(value<=this.HorizontalMin) return this.ChartBorder.GetLeftEx();
-        if(value>=this.HorizontalMax) return this.ChartBorder.GetRightEx();
-
-        var width=this.ChartBorder.GetWidthEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
-        return this.ChartBorder.GetLeftEx()+width;
+        if (isLimit===false)
+        {
+            var width=this.ChartBorder.GetWidthEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
+            return this.ChartBorder.GetLeftEx()+width;
+        }
+        else
+        {
+            if(value<=this.HorizontalMin) return this.ChartBorder.GetLeftEx();
+            if(value>=this.HorizontalMax) return this.ChartBorder.GetRightEx();
+    
+            var width=this.ChartBorder.GetWidthEx()*(value-this.HorizontalMin)/(this.HorizontalMax-this.HorizontalMin);
+            return this.ChartBorder.GetLeftEx()+width;
+        }
     }
 
     //画Y轴
@@ -19662,9 +19670,11 @@ function DrawToolsButton()
         const TOOL_LIST =
             [
                 [
-                    { HTML: { Title: '尺子', IClass: 'iconfont icon-draw_line', ID: 'icon-ruler' }, Name: '尺子' },
                     { HTML: { Title: '线段', IClass: 'iconfont icon-draw_line', ID: 'icon-segment' }, Name: '线段' },
+                    { HTML: { Title: '尺子', IClass: 'iconfont icon-ruler', ID: 'icon_ruler' }, Name: '尺子' },
                     { HTML: { Title: '射线', IClass: 'iconfont icon-draw_rays', ID: 'icon-beam' }, Name: '射线' },
+                    { HTML: { Title: '标价线', IClass: 'iconfont icon-draw_rays', ID: 'icon-price-line' }, Name: '标价线' },
+                    { HTML: { Title: '垂直线', IClass: 'iconfont icon-draw_rays', ID: 'icon-vertical-line' }, Name: '垂直线' },
                     { HTML: { Title: '箭头', IClass: 'iconfont icon-draw_rays', ID: 'icon-beam2' }, Name: '箭头' },
                     { HTML: { Title: '趋势线', IClass: 'iconfont icon-draw_trendline', ID: 'icon-trendline' }, Name: '趋势线' },
                     { HTML: { Title: '水平线', IClass: 'iconfont icon-draw_hline', ID: 'icon-hline' }, Name: '水平线' },
@@ -19695,9 +19705,9 @@ function DrawToolsButton()
                     { HTML: { Title: '黄金分割', IClass: 'iconfont icon-draw_goldensection', ID: 'icon-goldensection' }, Name: '黄金分割' },
                     { HTML: { Title: '百分比线', IClass: 'iconfont icon-draw_percentage', ID: 'icon-percentage' }, Name: '百分比线' },
                     { HTML: { Title: '波段线', IClass: 'iconfont icon-draw_waveband', ID: 'icon-waveband' }, Name: '波段线' },
-                    { HTML: { Title: '线形回归线', IClass: 'iconfont icon-draw_waveband', ID: 'icon-waveband2' }, Name: '线形回归线' },
-                    { HTML: { Title: '线形回归带', IClass: 'iconfont icon-draw_waveband', ID: 'icon-waveband3' }, Name: '线形回归带' },
-                    { HTML: { Title: '延长线形回归带', IClass: 'iconfont icon-draw_waveband', ID: 'icon-waveband5' }, Name: '延长线形回归带' },
+                    { HTML: { Title: '线形回归线', IClass: 'iconfont icon-linear_3', ID: 'icon-waveband2' }, Name: '线形回归线' },
+                    { HTML: { Title: '线形回归带', IClass: 'iconfont icon-linear_1', ID: 'icon-waveband3' }, Name: '线形回归带' },
+                    { HTML: { Title: '延长线形回归带', IClass: 'iconfont icon-linear_2', ID: 'icon-waveband5' }, Name: '延长线形回归带' },
                 ],
                 [{ HTML: { Title: '全部删除', IClass: 'iconfont icon-recycle_bin', ID: 'icon-delete' }, Name: '全部删除' }]
             ];
@@ -25350,6 +25360,8 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"线形回归带", ClassName:"ChartDrawLinearRegression", Create:function() { return new ChartDrawLinearRegression({ IsShowMaxMinLine:true }); } },
     { Name:"延长线形回归带", ClassName:"ChartDrawLinearRegression", Create:function() { return new ChartDrawLinearRegression({ IsShowMaxMinLine:true, IsShowExtendLine:true }); } },
     { Name:"尺子", ClassName:"ChartDrawRuler", Create:function() { return new ChartDrawRuler(); } },
+    { Name:"标价线", ClassName:"ChartDrawPriceLine", Create:function() { return new ChartDrawPriceLine(); } },
+    { Name:"垂直线", ClassName:"ChartDrawVerticalLine", Create:function() { return new ChartDrawVerticalLine(); } },
     { ClassName:'ChartDrawPictureIconFont',  Create:function() { return new ChartDrawPictureIconFont(); }}
     
 ];
@@ -28114,6 +28126,7 @@ function ChartDrawRuler()
     this.PointCount=2;
     this.IsPointIn=this.IsPointIn_XYValue_Line;
     this.TitleColor=g_JSChartResource.ChartDrawRuler.TitleColor;
+    this.IsHScreen=false;
 
     this.Draw=function()
     {
@@ -28121,6 +28134,7 @@ function ChartDrawRuler()
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
         if (!drawPoint) return;
         if (drawPoint.length!=2) return;
+        this.IsHScreen=this.Frame.IsHScreen;
 
         this.ClipFrame();
 
@@ -28151,8 +28165,6 @@ function ChartDrawRuler()
         this.DrawPoint(drawPoint);  //画点
 
         //绘制信息
-        var xText=ptStart.X;
-        var yText=ptStart.Y;
         this.Canvas.textBaseline='bottom';
         this.Canvas.textAlign='left';
         if (this.TitleColor)
@@ -28169,8 +28181,22 @@ function ChartDrawRuler()
         {
             this.Canvas.fillStyle=g_JSChartResource.UnchagneTextColor;
         }
+
+        var offset=3*GetDevicePixelRatio();
+        var xText=ptStart.X
+        var yText=ptStart.Y
+        if (this.IsHScreen)
+        {
+            this.Canvas.translate(xText+offset,yText+offset);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(title,0,0);
+        }
+        else
+        {
+            this.Canvas.fillText(title,xText+offset,yText-offset);
+        }
         
-        this.Canvas.fillText(title,xText,yText);
+        
         this.Canvas.restore();
     }
 
@@ -28216,6 +28242,153 @@ function ChartDrawRuler()
         return result;
     }
 
+}
+
+//画图工具-标价线 支持横屏
+function ChartDrawPriceLine()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawPriceLine';
+    this.PointCount=1;
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.IsHScreen=false;
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        var drawPoint=this.CalculateDrawPoint( { IsCheckX:false, IsCheckY:true } );
+        if (!drawPoint) return;
+        if (drawPoint.length!=1) return;
+
+        this.IsHScreen=this.Frame.IsHScreen;
+        var ptStart=drawPoint[0];
+        var chartBorder=this.Frame.ChartBorder;
+        if (this.IsHScreen)
+        {
+            var left=chartBorder.GetLeftEx();
+            var right=chartBorder.GetRightEx();
+            if (ptStart.X<left || ptStart.X>right) return;
+
+            var bottom=chartBorder.GetBottom();
+            var ptEnd={X:ptStart.X, Y:bottom};
+            var price=this.Frame.GetYData(ptStart.X, false);
+        }
+        else
+        {
+            var bottom=chartBorder.GetBottomEx();
+            var top=chartBorder.GetTopEx();
+            if (ptStart.Y<top || ptStart.Y>bottom) return;
+
+            var right=chartBorder.GetRight();
+            var ptEnd={X:right, Y:ptStart.Y};
+            var price=this.Frame.GetYData(ptStart.Y, false);
+        }
+        
+        
+
+        this.ClipFrame();
+       
+        this.SetLineWidth();
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptStart.X,ptStart.Y);
+        this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
+        this.Canvas.stroke();
+        this.RestoreLineWidth();
+
+        var line={Start:ptStart, End:ptEnd};
+        this.LinePoint.push(line);
+        
+        this.DrawPoint(drawPoint);  //画点
+        
+        this.Canvas.textBaseline='bottom';
+        this.Canvas.textAlign='left';
+        this.Canvas.fillStyle=this.LineColor;
+        var offset=2*GetDevicePixelRatio();
+        var xText=ptStart.X;
+        var yText=ptStart.Y;
+        if (this.IsHScreen)
+        {
+            this.Canvas.translate(xText+offset,yText+offset);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(price.toFixed(2),0,0);
+        }
+        else
+        {
+            this.Canvas.fillText(price.toFixed(2),xText+offset,yText-offset);
+        }
+        
+        this.Canvas.restore();
+    }
+}
+
+//画图工具-竖线 支持横屏
+function ChartDrawVerticalLine()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawVerticalLine';
+    this.PointCount=1;
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.IsHScreen=false;
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        if (!this.Frame || !this.Frame.Data) return;
+        var data=this.Frame.Data;
+        var drawPoint=this.CalculateDrawPoint( { IsCheckX:true, IsCheckY:true } );
+        if (!drawPoint) return;
+        if (drawPoint.length!=1) return;
+
+        this.IsHScreen=this.Frame.IsHScreen;
+        var pt=drawPoint[0];
+
+        var chartBorder=this.Frame.ChartBorder;
+        if (this.IsHScreen)
+        {
+            var xValue=Math.round(this.Frame.GetXData(pt.Y,false))+data.DataOffset;
+            if (xValue<0) xValue=0;
+            else if (xValue>=data.Data.length) xValue=data.Data.length-1;
+            var yLine=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+            var left=chartBorder.GetLeftEx();
+            var right=chartBorder.GetRightEx();
+            var ptStart={ X:left, Y:yLine };
+            var ptEnd={ X:right, Y:yLine };
+        }
+        else
+        {
+            var xValue=Math.round(this.Frame.GetXData(pt.X,false))+data.DataOffset;
+            if (xValue<0) xValue=0;
+            else if (xValue>=data.Data.length) xValue=data.Data.length-1;
+            var xLine=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+            var top=chartBorder.GetTopEx();
+            var bottom=chartBorder.GetBottomEx();
+            var ptStart={ X:xLine, Y:top };
+            var ptEnd={ X:xLine, Y:bottom };
+        }
+        
+        this.ClipFrame();
+       
+        this.SetLineWidth();
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptStart.X,ptStart.Y);
+        this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
+        this.Canvas.stroke();
+        this.RestoreLineWidth();
+
+        var line={Start:ptStart, End:ptEnd};
+        this.LinePoint.push(line);
+        
+        if (this.Status==10) this.DrawPoint(drawPoint);  //画点 
+        this.Canvas.restore();
+    }
 }
 
 function ChartDrawStorage()
@@ -37125,6 +37298,12 @@ function MinuteChartContainer(uielement)
                 break;
             case "尺子":
                 drawPicture=new ChartDrawRuler();
+                break;
+            case "标价线":
+                drawPicture=new ChartDrawPriceLine();
+                break;
+            case "垂直线":
+                drawPicture=new ChartDrawVerticalLine();
                 break;
             case "线形回归线":
                 drawPicture=new ChartDrawLinearRegression();
