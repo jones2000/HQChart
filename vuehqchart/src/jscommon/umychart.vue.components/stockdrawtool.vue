@@ -68,7 +68,8 @@
 </template>
 
 <script>
-    import "../umychart.resource/font/brushSymbol.js";
+    import '../umychart.resource/font/fontSymbol.js'
+    // import "../umychart.resource/font/brushSymbol.js";
     import "../umychart.resource/font/fontSymbol.css";
 
     import Vue from "vue";
@@ -86,56 +87,64 @@
         ClickName: "",
         DisabledTip: true,
         ToolList1: [
-            { name: "线段", icon: "#icon-xianduan" },
-            { name: "射线", icon: "#icon-shexian" },
-            { name: "趋势线", icon: "#icon-qushixian" },
-            { name: "水平线", icon: "#icon-shuipingxian" },
-            { name: "平行线", icon: "#icon-pinghangxian" },
-            { name: "平行通道", icon: "#icon-pinghangtongdao" },
-            { name: "价格通道线", icon: "#icon-jiagetongdaoxian" },
-            { name: "M头W底", icon: "#icon-MtouWdi" }
+            { name: "尺子", icon: "#icon-ruler" },
+            { name: "线段", icon: "#icon-draw_line" },
+            { name: "射线", icon: "#icon-draw_rays" },
+            { name: "箭头", icon: "#icon-arrow_up" },
+            { name: "标价线", icon: "#icon-price_line" },
+            { name: "趋势线", icon: "#icon-draw_trendline" },
+            { name: "水平线", icon: "#icon-draw_hline" },
+            { name: "垂直线", icon: "#icon-vertical_line" },
+            { name: "平行线", icon: "#icon-draw_parallel_lines" },
+            { name: "平行通道", icon: "#icon-draw_parallelchannel" },
+            { name: "价格通道线", icon: "#icon-draw_pricechannel" },
+            { name: "M头W底", icon: "#icon-draw_wavemw" }
         ],
         ToolList2: [
-            { name: "圆弧线", icon: "#icon-yuanhuxian" },
-            { name: "矩形", icon: "#icon-juxing" },
-            { name: "平行四边形", icon: "#icon-pinghangsibianxing" },
-            { name: "三角形", icon: "#icon-sanjiaoxing" },
-            { name: "圆", icon: "#icon-yuan" },
-            { name: "对称角度", icon: "#icon-duichengjiaodu" }
+            { name: "圆弧线", icon: "#icon-draw_arc" },
+            { name: "矩形", icon: "#icon-rectangle" },
+            { name: "平行四边形", icon: "#icon-draw_quadrangle" },
+            { name: "三角形", icon: "#icon-draw_triangle" },
+            { name: "圆", icon: "#icon-draw_circle" },
+            { name: "对称角线", icon: "#icon-draw_symangle" }
         ],
 
         ToolList3: [
-            { name: "江恩角度线", icon: "#icon-jiangenjiaoduxian" },
-            { name: "斐波那契周期线", icon: "#icon-feibonaqizhouxian" },
-            { name: "阻速线", icon: "#icon-zusuxian" },
-            { name: "黄金分割", icon: "#icon-huangjinfenge" },
-            { name: "百分比线", icon: "#icon-baifenbixian" },
-            { name: "波段线", icon: "#icon-boduanxian" }
+            { name: "江恩角度线", icon: "#icon-draw_gannfan" },
+            { name: "斐波那契周期线", icon: "#icon-draw_fibonacci" },
+            { name: "阻速线", icon: "#icon-draw_resline" },
+            { name: "黄金分割", icon: "#icon-draw_goldensection" },
+            { name: "百分比线", icon: "#icon-draw_percentage" },
+            { name: "波段线", icon: "#icon-draw_waveband" },
+            { name: "线形回归线", icon: "#icon-linear_3" },
+            { name: "线形回归带", icon: "#icon-linear_1" },
+            { name: "延长线形回归带", icon: "#icon-linear_2" }
+            
         ],
 
         ToolList4: [
-            { name: "文本", icon: "#icon-wenben", tip: "文本" },
+            { name: "文本", icon: "#icon-draw_text", tip: "文本" },
             {
             name: "icon-arrow_up",
-            icon: "#icon-xiangshangjiantou",
+            icon: "#icon-arrow_up",
             tip: "向上箭头"
             },
             {
             name: "icon-arrow_down",
-            icon: "#icon-xiangxiajiantou",
+            icon: "#icon-arrow_down",
             tip: "向下箭头"
             },
             {
             name: "icon-arrow_right",
-            icon: "#icon-xiangyoujiantou",
+            icon: "#icon-arrow_right",
             tip: "向右箭头"
             },
             {
             name: "icon-arrow_left",
-            icon: "#icon-xiangzuojiantou",
+            icon: "#icon-arrow_left",
             tip: "向左箭头"
             },
-            { name: "全部删除", icon: "#icon-shanchu", tip: "全部删除" }
+            { name: "全部删除", icon: "#icon-recycle_bin", tip: "全部删除" }
         ]
         };
     },
@@ -248,7 +257,7 @@
 <style lang="less" type="text/scss">
     #toolBox {
     width: 115px;
-    height: 516px;
+    height: 650px;
     border: 1px solid #dadada;
     position: absolute;
     z-index: 999;
