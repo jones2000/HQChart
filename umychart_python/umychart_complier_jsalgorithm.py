@@ -784,7 +784,7 @@ class JSAlgorithm() :
 
         # 单数值比较
         if isNumber and isNumber2 :
-            return  max(data,data2)
+            return  min(data,data2)
 
         # 都是数组比较
         result=[]
