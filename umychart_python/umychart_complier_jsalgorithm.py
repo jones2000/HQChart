@@ -317,7 +317,7 @@ class JSAlgorithm() :
 
         # 单数值比较
         if isNumber and isNumber2 :
-            return  1 if data>=data2 else 0
+            return  1 if data<data2 else 0
 
         # 都是数组比较
         if not isNumber and not isNumber2 :
@@ -354,7 +354,7 @@ class JSAlgorithm() :
 
         # 单数值比较
         if isNumber and isNumber2 :
-            return  1 if data>=data2 else 0
+            return  1 if data<=data2 else 0
 
         # 都是数组比较
         if not isNumber and not isNumber2 :
@@ -391,7 +391,7 @@ class JSAlgorithm() :
 
         # 单数值比较
         if isNumber and isNumber2 :
-            return  1 if data>=data2 else 0
+            return  1 if data==data2 else 0
 
         # 都是数组比较
         if not isNumber and not isNumber2 :
@@ -428,7 +428,7 @@ class JSAlgorithm() :
 
         # 单数值比较
         if isNumber and isNumber2 :
-            return  1 if data>=data2 else 0
+            return  1 if data!=data2 else 0
 
         # 都是数组比较
         if not isNumber and not isNumber2 :
@@ -471,7 +471,7 @@ class JSAlgorithm() :
 
         # 单数值比较
         if isNumber and isNumber2 :
-            return  1 if data>=data2 else 0
+            return  1 if data and data2 else 0
 
         # 都是数组比较
         result=[]
@@ -509,7 +509,7 @@ class JSAlgorithm() :
 
         # 单数值比较
         if isNumber and isNumber2 :
-            return  1 if data>=data2 else 0
+            return  1 if data or data2 else 0
 
         # 都是数组比较
         result=[]
