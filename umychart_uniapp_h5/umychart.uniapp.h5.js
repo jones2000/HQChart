@@ -23584,6 +23584,7 @@ function DrawToolsButton()
                     { HTML: { Title: '平行通道', IClass: 'iconfont icon-draw_parallelchannel', ID: 'icon-parallelchannel' }, Name: '平行通道' },
                     { HTML: { Title: '价格通道线', IClass: 'iconfont icon-draw_pricechannel', ID: 'icon-pricechannel' }, Name: '价格通道线' },
                     { HTML: { Title: 'M头W底', IClass: 'iconfont icon-draw_wavemw', ID: 'icon-wavemw' }, Name: 'M头W底' },
+                    { HTML: { Title: '波浪尺', IClass: 'iconfont icon-draw_wavemw', ID: 'icon-wave-ruler' }, Name: '波浪尺' },
                 ],
                 [
                     { HTML: { Title: '圆弧', IClass: 'iconfont icon-draw_arc', ID: 'icon-arc' }, Name: '圆弧线' },
@@ -29264,6 +29265,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"尺子", ClassName:"ChartDrawRuler", Create:function() { return new ChartDrawRuler(); } },
     { Name:"标价线", ClassName:"ChartDrawPriceLine", Create:function() { return new ChartDrawPriceLine(); } },
     { Name:"垂直线", ClassName:"ChartDrawVerticalLine", Create:function() { return new ChartDrawVerticalLine(); } },
+    { Name:"波浪尺", ClassName:"ChartDrawWaveRuler", Create:function() { return new ChartDrawWaveRuler(); } },
     { ClassName:'ChartDrawPictureIconFont',  Create:function() { return new ChartDrawPictureIconFont(); }}
     
 ];
@@ -32026,6 +32028,7 @@ function ChartDrawRuler()
 
     this.ClassName='ChartDrawRuler';
     this.PointCount=2;
+    this.Font=16*GetDevicePixelRatio() +"px 微软雅黑";
     this.IsPointIn=this.IsPointIn_XYValue_Line;
     this.TitleColor=g_JSChartResource.ChartDrawRuler.TitleColor;
     this.IsHScreen=false;
@@ -32069,6 +32072,7 @@ function ChartDrawRuler()
         //绘制信息
         this.Canvas.textBaseline='bottom';
         this.Canvas.textAlign='left';
+        this.Canvas.font=this.Font;
         if (this.TitleColor)
         {
             this.Canvas.fillStyle=this.TitleColor;
@@ -32154,6 +32158,7 @@ function ChartDrawPriceLine()
     delete this.newMethod;
 
     this.ClassName='ChartDrawPriceLine';
+    this.Font=16*GetDevicePixelRatio() +"px 微软雅黑";
     this.PointCount=1;
     this.IsPointIn=this.IsPointIn_XYValue_Line;
     this.IsHScreen=false;
@@ -32209,6 +32214,7 @@ function ChartDrawPriceLine()
         this.Canvas.textBaseline='bottom';
         this.Canvas.textAlign='left';
         this.Canvas.fillStyle=this.LineColor;
+        this.Canvas.font=this.Font;
         var offset=2*GetDevicePixelRatio();
         var xText=ptStart.X;
         var yText=ptStart.Y;
@@ -32290,6 +32296,154 @@ function ChartDrawVerticalLine()
         
         if (this.Status==10) this.DrawPoint(drawPoint);  //画点 
         this.Canvas.restore();
+    }
+}
+
+//画图工具-波浪尺
+function ChartDrawWaveRuler()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawWaveRuler';
+    this.PointCount=3;
+    this.Font=16*GetDevicePixelRatio() +"px 微软雅黑";
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.LastPoint;
+    this.LinePoint;
+    this.ScaleRuler=g_JSChartResource.ChartDrawWaveRuler.ScaleRuler;
+    this.RulerWidth=g_JSChartResource.ChartDrawWaveRuler.RulerWidth;;       //刻度尺长度
+    this.RulerLineWidth=g_JSChartResource.ChartDrawWaveRuler.RulerLineWidth;
+    this.MaxScaleRuler=g_JSChartResource.ChartDrawWaveRuler.MaxScaleRuler;   //尺子最大的高度比
+    this.Font=g_JSChartResource.ChartDrawWaveRuler.MaxScaleRuler;
+    this.IsHScreen=false;
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
+        if (!drawPoint) return;
+
+        this.IsHScreen=this.Frame.IsHScreen;
+        this.CalculateLines(drawPoint);
+
+        this.ClipFrame();
+        this.SetLineWidth();
+
+        for(var i in this.LinePoint)
+        {
+            var item=this.LinePoint[i];
+            this.DrawLine(item.Start,item.End);
+        }
+
+        //绘制波浪信息
+        if (drawPoint.length==3) this.DrawWaveRuler(drawPoint);
+        
+        this.RestoreLineWidth();
+       
+        this.DrawPoint(drawPoint); //画点
+        this.Canvas.restore();
+    }
+
+    this.SetLastPoint=function(obj)
+    {
+        this.LastPoint={X:obj.X,Y:obj.Y};
+    }
+
+    this.CalculateLines=function(points)
+    {
+        if (this.PointStatus==2 && this.LastPoint)
+        {
+            var pt=new Point();
+            pt.X=this.LastPoint.X;
+            pt.Y=this.LastPoint.Y;
+            points[2]=pt;
+        }
+
+        if (points.length==2)
+        {
+            var linePoint=
+            { 
+                Start:{X:points[0].X,Y:points[0].Y}, 
+                End:{X:points[1].X,Y:points[1].Y}
+            };
+            this.LinePoint.push(linePoint);
+        }
+        else if (points.length==3)
+        {
+            var linePoint=
+            { 
+                Start:{X:points[0].X,Y:points[0].Y}, 
+                End:{X:points[1].X,Y:points[1].Y}
+            };
+            this.LinePoint.push(linePoint);
+
+            linePoint=
+            { 
+                Start:{X:points[1].X,Y:points[1].Y}, 
+                End:{X:points[2].X,Y:points[2].Y}
+            };
+           
+            this.LinePoint.push(linePoint);
+        }
+    }
+
+    this.DrawWaveRuler=function(points)
+    {
+        var ptBottom=points[1];
+        var ptStart=points[0];
+        var ptEnd=points[2];
+
+        this.Canvas.lineWidth=this.RulerLineWidth*GetDevicePixelRatio();
+        this.Canvas.textBaseline='middle';
+        this.Canvas.textAlign='left';
+        this.Canvas.fillStyle=this.LineColor;
+        this.Canvas.font=this.Font;
+        var rulerWidth=this.RulerWidth*GetDevicePixelRatio();//刻度线长度
+
+        if (this.IsHScreen)
+        {
+            var rulerHeight=ptStart.X-ptBottom.X;
+            var ptExtendBottom={ X:ptEnd.X-this.MaxScaleRuler*rulerHeight, Y:ptEnd.Y};
+            this.DrawLine(ptEnd,ptExtendBottom);
+            this.LinePoint.push({Start:ptEnd, End:ptExtendBottom});
+            var y=ptEnd.Y-rulerWidth/2, y2=ptEnd.Y+rulerWidth/2;
+        }
+        else
+        {
+            var rulerHeight=ptStart.Y-ptBottom.Y;
+            var ptExtendBottom={ X:ptEnd.X, Y:ptEnd.Y-this.MaxScaleRuler*rulerHeight };
+            this.DrawLine(ptEnd,ptExtendBottom);
+            this.LinePoint.push({Start:ptEnd, End:ptExtendBottom});
+            var x=ptEnd.X-rulerWidth/2, x2=ptEnd.X+rulerWidth/2;
+        }
+
+        var textOffset=4*GetDevicePixelRatio();
+        for(var i in this.ScaleRuler)
+        {
+            var item=this.ScaleRuler[i];
+            if (this.IsHScreen)
+            {
+                var x=ptEnd.X - item.Value*rulerHeight;
+                var price=this.Frame.GetYData(x, false);
+                this.DrawLine({X:x, Y:y}, {X:x, Y:y2});
+                var text=`${price.toFixed(2)}  ${item.Text? item.Text: item.Value.toFixed(3)}`;
+                this.Canvas.save();
+                this.Canvas.translate(x,ptEnd.Y);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(text,textOffset,0);
+                this.Canvas.restore();
+            }
+            else
+            {
+                var y=ptEnd.Y - item.Value*rulerHeight;
+                var price=this.Frame.GetYData(y, false);
+                this.DrawLine({X:x, Y:y}, {X:x2, Y:y});
+                var text=`${price.toFixed(2)}  ${item.Text? item.Text: item.Value.toFixed(3)}`;
+                this.Canvas.fillText(text,x2+textOffset,y);
+            }
+        }
     }
 }
 
@@ -32869,10 +33023,24 @@ function JSChartResource()
         TextBGColor:'rgba(255,255,255,0.8)'
     }
 
-    //画图工具尺子
+    //画图工具-尺子
     this.ChartDrawRuler=
     {
         TitleColor:null,    //K线信息标题颜色, (可选,不填使用涨跌颜色)
+    }
+
+    //画图工具-波浪尺
+    this.ChartDrawWaveRuler=
+    {
+        RulerWidth:10,          //刻度尺长度
+        RulerLineWidth:1,       //刻度线粗细
+        MaxScaleRuler:2,       //尺子最大的高度比
+        Font:14*GetDevicePixelRatio() +"px 微软雅黑",
+        ScaleRuler:
+        [
+            { Value:0.3, Text:"0.30" }, { Value:0.5, Text:"0.50" } , { Value:1, Text:"1.00" },
+            { Value:1.3, Text:"1.30" }, { Value:1.5, Text:"1.50" } , { Value:2, Text:"2.00" } 
+        ]
     }
 
     //多图标指标ChartMultiSVGIcon -> MULTI_SVGICON
@@ -41206,6 +41374,9 @@ function MinuteChartContainer(uielement)
                 break;
             case "垂直线":
                 drawPicture=new ChartDrawVerticalLine();
+                break;
+            case "波浪尺":
+                drawPicture=new ChartDrawWaveRuler();
                 break;
             case "线形回归线":
                 drawPicture=new ChartDrawLinearRegression();
