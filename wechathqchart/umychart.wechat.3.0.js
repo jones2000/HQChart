@@ -2687,9 +2687,6 @@ function AverageWidthFrame()
         var titleHeight = this.ChartBorder.TitleHeight;
 
         this.Canvas.save();
-        if(g_JSChartResource.FrameYLineDash)
-            this.Canvas.setLineDash(g_JSChartResource.FrameYLineDash);   //虚线
-
         var yPrev = null; //上一个坐标y的值
         for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
         {
@@ -2698,11 +2695,36 @@ function AverageWidthFrame()
             if (y != null && yPrev != null && Math.abs(y - yPrev) <this.MinYDistance) continue;  //两个坐标在近了 就不画了
             if (bottom!=y && this.IsShowYLine) //和底部线段重叠了就不绘制
             {
-                this.Canvas.strokeStyle = item.LineColor;
-                this.Canvas.beginPath();
-                this.Canvas.moveTo(left, ToFixedPoint(y));
-                this.Canvas.lineTo(right, ToFixedPoint(y));
-                this.Canvas.stroke();
+                if (item.LineType==2)
+                {
+                    this.Canvas.strokeStyle = item.LineColor;
+                    this.Canvas.setLineDash([5,5]);
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(left, ToFixedPoint(y));
+                    this.Canvas.lineTo(right, ToFixedPoint(y));
+                    this.Canvas.stroke();
+                    this.Canvas.setLineDash([]);
+                }
+                else if (item.LineType>0)
+                {
+                    this.Canvas.strokeStyle = item.LineColor;
+                    if(g_JSChartResource.FrameYLineDash)
+                    {
+                        this.Canvas.setLineDash(g_JSChartResource.FrameYLineDash);   //虚线
+                        this.Canvas.beginPath();
+                        this.Canvas.moveTo(left, ToFixedPoint(y));
+                        this.Canvas.lineTo(right, ToFixedPoint(y));
+                        this.Canvas.stroke();
+                        this.Canvas.setLineDash([]);
+                    }
+                    else
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.moveTo(left, ToFixedPoint(y));
+                        this.Canvas.lineTo(right, ToFixedPoint(y));
+                        this.Canvas.stroke();
+                    }
+                }
             }
             var yText=y;
             if (y >= bottom - 2) 
@@ -2789,14 +2811,41 @@ function AverageWidthFrame()
             var x = this.GetXFromIndex(this.VerticalInfo[i].Value);
             if (x > right) break;
             if (xPrev != null && Math.abs(x - xPrev) < this.MinXDistance) continue;
-
-            if (this.IsShowXLine && this.VerticalInfo[i].LineType > 0) 
+            var item=this.VerticalInfo[i];
+            if (this.IsShowXLine && item.LineType > 0) 
             {
-                this.Canvas.strokeStyle = this.VerticalInfo[i].LineColor;
-                this.Canvas.beginPath();
-                this.Canvas.moveTo(ToFixedPoint(x), top);
-                this.Canvas.lineTo(ToFixedPoint(x), bottom);
-                this.Canvas.stroke();
+                if (item.LineType==2)
+                {
+                    this.Canvas.strokeStyle = item.LineColor;
+                    this.Canvas.setLineDash([5,5]);
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(ToFixedPoint(x), top);
+                    this.Canvas.lineTo(ToFixedPoint(x), bottom);
+                    this.Canvas.stroke();
+                    this.Canvas.setLineDash([]);
+                }
+                else if (item.LineType>0)
+                {
+                    if(g_JSChartResource.FrameXLineDash)
+                    {
+                        this.Canvas.strokeStyle = item.LineColor;
+                        this.Canvas.beginPath();
+                        this.Canvas.setLineDash(g_JSChartResource.FrameXLineDash);
+                        this.Canvas.moveTo(ToFixedPoint(x), top);
+                        this.Canvas.lineTo(ToFixedPoint(x), bottom);
+                        this.Canvas.stroke();
+                        this.Canvas.setLineDash([]);
+                    }
+                    else
+                    {
+                        this.Canvas.strokeStyle = item.LineColor;
+                        this.Canvas.beginPath();
+                        this.Canvas.moveTo(ToFixedPoint(x), top);
+                        this.Canvas.lineTo(ToFixedPoint(x), bottom);
+                        this.Canvas.stroke();
+                    }
+                }
+                
             }
 
             if (this.VerticalInfo[i].Message[0] != null && this.ChartBorder.Bottom > 5) 
@@ -3915,23 +3964,35 @@ function KLineHScreenFrame()
 
             if (y!=left)
             {
-                this.Canvas.strokeStyle = item.LineColor;
-                if (g_JSChartResource.FrameYLineDash)
+                if (item.LineType==2)
                 {
-                    this.Canvas.save();
-                    this.Canvas.setLineDash(g_JSChartResource.FrameYLineDash);   //虚线
+                    this.Canvas.strokeStyle = item.LineColor;
+                    this.Canvas.setLineDash([5,5]);   //虚线
                     this.Canvas.beginPath();
                     this.Canvas.moveTo(ToFixedPoint(y),top);
                     this.Canvas.lineTo(ToFixedPoint(y),bottom);
                     this.Canvas.stroke();
-                    this.Canvas.restore();
+                    this.Canvas.setLineDash([]);
                 }
-                else
+                else if (item.LineType>0)
                 {
-                    this.Canvas.beginPath();
-                    this.Canvas.moveTo(ToFixedPoint(y), top);
-                    this.Canvas.lineTo(ToFixedPoint(y), bottom);
-                    this.Canvas.stroke();
+                    this.Canvas.strokeStyle = item.LineColor;
+                    if (g_JSChartResource.FrameYLineDash)
+                    {
+                        this.Canvas.setLineDash(g_JSChartResource.FrameYLineDash);   //虚线
+                        this.Canvas.beginPath();
+                        this.Canvas.moveTo(ToFixedPoint(y),top);
+                        this.Canvas.lineTo(ToFixedPoint(y),bottom);
+                        this.Canvas.stroke();
+                        this.Canvas.setLineDash([]);
+                    }
+                    else
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.moveTo(ToFixedPoint(y), top);
+                        this.Canvas.lineTo(ToFixedPoint(y), bottom);
+                        this.Canvas.stroke();
+                    }
                 }
             }
             
@@ -3986,50 +4047,79 @@ function KLineHScreenFrame()
         return offset;
     }
 
-  //画X轴
-  this.DrawVertical = function () {
-    var left = this.ChartBorder.GetLeft();
-    var right = this.ChartBorder.GetRightTitle();
-    var bottom = this.ChartBorder.GetBottom();
+    //画X轴
+    this.DrawVertical = function () 
+    {
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRightTitle();
+        var bottom = this.ChartBorder.GetBottom();
 
-    var xPrev = null; //上一个坐标x的值
-    for (var i in this.VerticalInfo) {
-      var x = this.GetXFromIndex(this.VerticalInfo[i].Value);
-      if (x >= bottom) break;
-      if (xPrev != null && Math.abs(x - xPrev) < 80) continue;
+        var xPrev = null; //上一个坐标x的值
+        for (var i in this.VerticalInfo) 
+        {
+            var x = this.GetXFromIndex(this.VerticalInfo[i].Value);
+            if (x >= bottom) break;
+            if (xPrev != null && Math.abs(x - xPrev) < 80) continue;
+            var item=this.VerticalInfo[i];
+            if (item.LineType==2)
+            {
+                this.Canvas.setLineDash([5,5]);
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(left, ToFixedPoint(x));
+                this.Canvas.lineTo(right, ToFixedPoint(x));
+                this.Canvas.stroke();
+                this.Canvas.setLineDash([]);
+            }
+            else if (item.LineType>0)
+            {
+                this.Canvas.strokeStyle = item.LineColor;
+                if (g_JSChartResource.FrameXLineDash)
+                {
+                    this.Canvas.setLineDash(g_JSChartResource.FrameXLineDash);
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(left, ToFixedPoint(x));
+                    this.Canvas.lineTo(right, ToFixedPoint(x));
+                    this.Canvas.stroke();
+                    this.Canvas.setLineDash([]);
+                }
+                else
+                {
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(left, ToFixedPoint(x));
+                    this.Canvas.lineTo(right, ToFixedPoint(x));
+                    this.Canvas.stroke();
+                }
+            }
 
-      this.Canvas.strokeStyle = this.VerticalInfo[i].LineColor;
-      this.Canvas.beginPath();
-      this.Canvas.moveTo(left, ToFixedPoint(x));
-      this.Canvas.lineTo(right, ToFixedPoint(x));
-      this.Canvas.stroke();
+            if (this.VerticalInfo[i].Message[0] != null) 
+            {
+                if (this.VerticalInfo[i].Font != null)
+                this.Canvas.font = this.VerticalInfo[i].Font;
 
-      if (this.VerticalInfo[i].Message[0] != null) {
-        if (this.VerticalInfo[i].Font != null)
-          this.Canvas.font = this.VerticalInfo[i].Font;
+                this.Canvas.fillStyle = this.VerticalInfo[i].TextColor;
+                var testWidth = this.Canvas.measureText(this.VerticalInfo[i].Message[0]).width;
+                if (x < testWidth / 2) 
+                {
+                    this.Canvas.textAlign = "left";
+                    this.Canvas.textBaseline = "top";
+                }
+                else
+                {
+                    this.Canvas.textAlign = "center";
+                    this.Canvas.textBaseline = "top";
+                }
 
-        this.Canvas.fillStyle = this.VerticalInfo[i].TextColor;
-        var testWidth = this.Canvas.measureText(this.VerticalInfo[i].Message[0]).width;
-        if (x < testWidth / 2) {
-          this.Canvas.textAlign = "left";
-          this.Canvas.textBaseline = "top";
+                var xText = left, yText = x;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(this.VerticalInfo[i].Message[0], 0, 0);
+                this.Canvas.restore();
+            }
+
+            xPrev = x;
         }
-        else {
-          this.Canvas.textAlign = "center";
-          this.Canvas.textBaseline = "top";
-        }
-
-        var xText = left, yText = x;
-        this.Canvas.save();
-        this.Canvas.translate(xText, yText);
-        this.Canvas.rotate(90 * Math.PI / 180);
-        this.Canvas.fillText(this.VerticalInfo[i].Message[0], 0, 0);
-        this.Canvas.restore();
-      }
-
-      xPrev = x;
     }
-  }
 
     //Y坐标转y轴数值
     this.GetYData = function (x) 

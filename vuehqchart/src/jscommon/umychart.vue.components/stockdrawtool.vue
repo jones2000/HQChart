@@ -98,7 +98,9 @@
             { name: "平行线", icon: "#icon-draw_parallel_lines" },
             { name: "平行通道", icon: "#icon-draw_parallelchannel" },
             { name: "价格通道线", icon: "#icon-draw_pricechannel" },
-            { name: "M头W底", icon: "#icon-draw_wavemw" }
+            { name: "M头W底", icon: "#icon-draw_wavemw" },
+            { name: "波浪尺", icon: "#icon-waveruler" },
+            { name: "箱型线", icon: "#icon-draw_box" }
         ],
         ToolList2: [
             { name: "圆弧线", icon: "#icon-draw_arc" },
@@ -256,7 +258,7 @@
 
 <style lang="less" type="text/scss">
     #toolBox {
-    width: 115px;
+    width: 145px;
     height: 650px;
     border: 1px solid #dadada;
     position: absolute;
@@ -298,11 +300,12 @@
         }
         }
         .line-style {
-        width: 87px;
-        height: 1px;
-        display: block;
-        background: #e3e7ea;
-        margin: 10px 14px;
+          width: 100px;
+          height: 1px;
+          display: block;
+          background: #e3e7ea;
+          margin: 10px calc(50% - 50px);
+          /* margin-left: ; */
         }
     }
     }

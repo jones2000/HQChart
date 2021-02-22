@@ -59,6 +59,7 @@ function JSChartResource()
     this.FrameSplitTextColor = "rgb(51,51,51)";     //刻度文字颜色
     this.FrameSplitTextFont = "12px 微软雅黑";        //坐标刻度文字字体
     this.FrameYLineDash=[2, 2];                     //Y轴线段虚线点间距,填null 就是实线
+    this.FrameXLineDash=null;                      //X轴线段虚线点间距,填null 就是实线
     //this.FrameSplitTextFont = "14px PingFang-SC-Bold";//坐标刻度文字字体
     this.FrameTitleBGColor = "rgb(246,251,253)";      //标题栏背景色
     this.Frame = { 
