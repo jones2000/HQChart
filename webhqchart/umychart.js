@@ -7232,7 +7232,7 @@ function KLineHScreenFrame()
                 this.Canvas.save();
                 this.Canvas.translate(xText, yText);
                 this.Canvas.rotate(90 * Math.PI / 180);
-                this.Canvas.fillText(this.VerticalInfo[i].Message[0], 0, 0);
+                this.Canvas.fillText(this.VerticalInfo[i].Message[0], 0, this.XBottomOffset);
                 this.Canvas.restore();
             }
 
@@ -17695,6 +17695,83 @@ function ChartMultiSVGIcon()
                     this.Canvas.restore();
                 }
             }
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        var end=start+xPointCount;
+
+        for(var i in this.Icon)
+        {
+            var item=this.Icon[i];
+            if (item.Index>=start && item.Index<end)
+            {
+                if (range.Max==null) range.Max=item.Value;
+                else if (range.Max<item.Value) range.Max=item.Value;
+                if (range.Min==null) range.Min=item.Value;
+                else if (range.Min>item.Value) range.Min=item.Value;
+            }
+        }
+
+        return range;
+    }
+}
+
+// 多dom节点
+function ChartMultiHtmlDom()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartMultiHtmlDom";
+    this.Texts=[];  //[ {Index:, Value:, Text: ] Text=dom内容
+    this.IsHScreen=false;   //是否横屏
+    this.DrawCallback;  //function(op, obj)  op:1=开始 2=结束 3=绘制单个数据
+
+    this.Draw=function()
+    {
+        if (this.DrawCallback) this.DrawCallback(1, {Self:this} );
+
+        this.DrawDom();
+
+        if (this.DrawCallback) this.DrawCallback(2, {Self:this} );
+    }
+
+    this.DrawDom=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Data || this.Data.length<=0) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var xPointCount=this.ChartFrame.XPointCount;
+        var offset=this.Data.DataOffset;
+        
+        for(var i in this.Texts)
+        {
+            var item=this.Texts[i];
+
+            if (!item.Text) continue;
+            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
+
+            var index=item.Index-offset;
+            var kItem=this.Data.Data[item.Index];   //K线数据
+            var obj={ KData:kItem, Item:item, IsShow:false, Self:this };
+            if (index>=0 && index<xPointCount)
+            {
+                var x=this.ChartFrame.GetXFromIndex(index);
+                var y=this.ChartFrame.GetYFromData(item.Value);
+
+                obj.X=x;
+                obj.Y=y;
+                obj.IsShow=true;
+            }
+
+            if (this.DrawCallback) this.DrawCallback(3, obj);
         }
     }
 
@@ -28430,6 +28507,7 @@ function ChartDrawVerticalLine()
             if (xValue<0) xValue=0;
             else if (xValue>=data.Data.length) xValue=data.Data.length-1;
             var yLine=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+            yLine=ToFixedPoint2(this.LineWidth,yLine);
             var left=chartBorder.GetLeftEx();
             var right=chartBorder.GetRightEx();
             var ptStart={ X:left, Y:yLine };
@@ -28441,6 +28519,7 @@ function ChartDrawVerticalLine()
             if (xValue<0) xValue=0;
             else if (xValue>=data.Data.length) xValue=data.Data.length-1;
             var xLine=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+            xLine=ToFixedPoint2(this.LineWidth,xLine);
             var top=chartBorder.GetTopEx();
             var bottom=chartBorder.GetBottomEx();
             var ptStart={ X:xLine, Y:top };

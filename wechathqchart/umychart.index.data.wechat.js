@@ -463,9 +463,10 @@ JSIndexScript.prototype.VOL=function()
     {
         Name: 'VOL', Description: '成交量', IsMainIndex: false, FloatPrecision: 0,
         Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10} ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" }],
         Script: //脚本
             'VOLUME:=VOL;\n\
-成交量:VOL,VOLSTICK;\n\
+VOL:VOL,VOLSTICK;\n\
 MA1:MA(VOLUME,M1);\n\
 MA2:MA(VOLUME,M2);'
 
@@ -3073,12 +3074,13 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                //'VAR2:WEEK;'+
-                //'T1:INDEXC;'+
-                //'T2:=HYBLOCK;'
-
-                'T1: TIME;'+
-                'C > O;'
+                "DIF:EMA(CLOSE,12)-EMA(CLOSE,26);\n\
+                NOTEXTT:DIF;\n\
+                DEA:EMA(DIF,9),NOTEXT;\n\
+                MACD:(DIF-DEA)*2,COLORSTICK;\n\
+                STICKLINE(MACD>0,0,MACD,2.5,1),COLORRED;\n\
+                STICKLINE(MACD<0,0,MACD,2.5,0),COLORFFFF00;\n\
+                DRAWNUMBER(MACD>0 AND C=H,0,C),DRAWABOVE,COLORLIBLUE;"
         };
 
     return data;

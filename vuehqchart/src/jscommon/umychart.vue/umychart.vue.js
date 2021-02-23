@@ -11178,7 +11178,7 @@ function KLineHScreenFrame()
                 this.Canvas.save();
                 this.Canvas.translate(xText, yText);
                 this.Canvas.rotate(90 * Math.PI / 180);
-                this.Canvas.fillText(this.VerticalInfo[i].Message[0], 0, 0);
+                this.Canvas.fillText(this.VerticalInfo[i].Message[0], 0, this.XBottomOffset);
                 this.Canvas.restore();
             }
 
@@ -21641,6 +21641,83 @@ function ChartMultiSVGIcon()
                     this.Canvas.restore();
                 }
             }
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        var end=start+xPointCount;
+
+        for(var i in this.Icon)
+        {
+            var item=this.Icon[i];
+            if (item.Index>=start && item.Index<end)
+            {
+                if (range.Max==null) range.Max=item.Value;
+                else if (range.Max<item.Value) range.Max=item.Value;
+                if (range.Min==null) range.Min=item.Value;
+                else if (range.Min>item.Value) range.Min=item.Value;
+            }
+        }
+
+        return range;
+    }
+}
+
+// 多dom节点
+function ChartMultiHtmlDom()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartMultiHtmlDom";
+    this.Texts=[];  //[ {Index:, Value:, Text: ] Text=dom内容
+    this.IsHScreen=false;   //是否横屏
+    this.DrawCallback;  //function(op, obj)  op:1=开始 2=结束 3=绘制单个数据
+
+    this.Draw=function()
+    {
+        if (this.DrawCallback) this.DrawCallback(1, {Self:this} );
+
+        this.DrawDom();
+
+        if (this.DrawCallback) this.DrawCallback(2, {Self:this} );
+    }
+
+    this.DrawDom=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Data || this.Data.length<=0) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var xPointCount=this.ChartFrame.XPointCount;
+        var offset=this.Data.DataOffset;
+        
+        for(var i in this.Texts)
+        {
+            var item=this.Texts[i];
+
+            if (!item.Text) continue;
+            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
+
+            var index=item.Index-offset;
+            var kItem=this.Data.Data[item.Index];   //K线数据
+            var obj={ KData:kItem, Item:item, IsShow:false, Self:this };
+            if (index>=0 && index<xPointCount)
+            {
+                var x=this.ChartFrame.GetXFromIndex(index);
+                var y=this.ChartFrame.GetYFromData(item.Value);
+
+                obj.X=x;
+                obj.Y=y;
+                obj.IsShow=true;
+            }
+
+            if (this.DrawCallback) this.DrawCallback(3, obj);
         }
     }
 
@@ -32376,6 +32453,7 @@ function ChartDrawVerticalLine()
             if (xValue<0) xValue=0;
             else if (xValue>=data.Data.length) xValue=data.Data.length-1;
             var yLine=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+            yLine=ToFixedPoint2(this.LineWidth,yLine);
             var left=chartBorder.GetLeftEx();
             var right=chartBorder.GetRightEx();
             var ptStart={ X:left, Y:yLine };
@@ -32387,6 +32465,7 @@ function ChartDrawVerticalLine()
             if (xValue<0) xValue=0;
             else if (xValue>=data.Data.length) xValue=data.Data.length-1;
             var xLine=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+            xLine=ToFixedPoint2(this.LineWidth,xLine);
             var top=chartBorder.GetTopEx();
             var bottom=chartBorder.GetBottomEx();
             var ptStart={ X:xLine, Y:top };
@@ -68983,6 +69062,20 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateMulitHtmlDom=function(hqChart,windowIndex,varItem,i)
+    {
+        let chart=new ChartMultiHtmlDom();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Texts=varItem.Draw.DrawData;
+        chart.DrawCallback= varItem.Draw.Callback;
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateColorKLine=function(hqChart,windowIndex,varItem,i)
     {
         let chart=new ChartColorKline();
@@ -69224,6 +69317,9 @@ function ScriptIndex(name,script,args,option)
                     case 'MULTI_SVGICON':
                         this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
                         break;
+                    case "MULTI_HTMLDOM":
+                        this.CreateMulitHtmlDom(hqChart,windowIndex,item,i);
+                        break;
                     case "COLOR_KLINE":
                         this.CreateColorKLine(hqChart,windowIndex,item,i);
                         break;
@@ -69462,6 +69558,9 @@ function OverlayScriptIndex(name,script,args,option)
                         break;
                     case 'MULTI_SVGICON':
                         this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
+                        break;
+                    case "MULTI_HTMLDOM":
+                        this.CreateMulitHtmlDom(hqChart,windowIndex,item,i);
                         break;
                 }
             }
@@ -70039,6 +70138,23 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Family=varItem.Draw.DrawData.Family;
         chart.Icon= varItem.Draw.DrawData.Icon;
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateMulitHtmlDom=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMultiHtmlDom();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Texts=varItem.Draw.DrawData;
+        chart.DrawCallback= varItem.Draw.Callback;
         frame.ChartPaint.push(chart);
     }
 
@@ -70820,6 +70936,18 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData={ Icon:this.FittingMultiText(draw.DrawData.Icon,date,time,hqChart), Family:draw.DrawData.Family };
                     this.GetKLineData(drawItem.DrawData.Icon, hqChart);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="MULTI_HTMLDOM")    //外部自己创建dom
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.Callback=draw.Callback;
+                    drawItem.DrawData=this.FittingMultiText(draw.DrawData,date,time,hqChart);
+                    this.GetKLineData(drawItem.DrawData, hqChart);
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);
