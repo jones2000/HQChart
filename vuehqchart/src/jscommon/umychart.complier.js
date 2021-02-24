@@ -276,10 +276,24 @@ JSComplierHelper.GetPeriodInfo=function(obj)
         {Name:'MIN60', Period:8, Order:5},
 
         {Name:'DAY',    Period:0, Order:1000},
-        {Name:'WEEK',   Period:1, Order:1001},
-        {Name:'MONTH',  Period:2, Order:1002},
-        {Name:"SEASON", Period:9, Order:1003},
-        {Name:"YEAR",   Period:3, Order:1004}
+        {Name:'DAY2',    Period:40002, Order:1002},
+        {Name:'DAY3',    Period:40003, Order:1003},
+        {Name:'DAY4',    Period:40004, Order:1004},
+        {Name:'WEEK',   Period:1, Order:1005},
+
+        {Name:'DAY6',    Period:40006, Order:1006},
+        {Name:'DAY7',    Period:40007, Order:1007},
+        {Name:'DAY8',    Period:40008, Order:1008},
+        {Name:'DAY9',    Period:40009, Order:1009},
+
+        {Name:'DAY11',    Period:40011, Order:1011},
+        {Name:'DAY12',    Period:40012, Order:1012},
+        {Name:'DAY13',    Period:40013, Order:1013},
+        {Name:'DAY14',    Period:40014, Order:1014},
+
+        {Name:'MONTH',  Period:2, Order:1030},
+        {Name:"SEASON", Period:9, Order:1090},
+        {Name:"YEAR",   Period:3, Order:1365}
     ];
 
     if (obj.Name)
@@ -1036,7 +1050,11 @@ function Node(ErrorHandler)
                     this.ThrowUnexpectedToken(token,errorMessage);
                 }
 
-                const VAR_PERIOD_NAME=["MIN1","MIN5","MIN15","MIN30","MIN60","DAY","WEEK","MONTH","SEASON","YEAR"];
+                const VAR_PERIOD_NAME=
+                [
+                    "MIN1","MIN5","MIN15","MIN30","MIN60","DAY","WEEK","MONTH","SEASON","YEAR",
+                    "MULTIDAY","DAY2","DAY3","DAY4","DAY6","DAY7","DAY8","DAY9","DAY11","DAY12","DAY13","DAY14","DAY15"
+                ];
                 if (VAR_PERIOD_NAME.indexOf(aryWrods[1])<0)
                 {
                     var errorMessage=`${varName}, 跨周期语法错误， 周期只支持'MIN1,MIN5,MIN15,MIN30,MIN60,DAY,WEEK,MONTH,SEASON,YEAR'`;
