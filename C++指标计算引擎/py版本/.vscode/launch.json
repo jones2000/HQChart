@@ -8,7 +8,7 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceRoot}\\test_hqchartpy2.py",
+            "program": "${workspaceRoot}\\hqchartpy2_tushare_test.py",
             "console": "integratedTerminal"
         }
     ]

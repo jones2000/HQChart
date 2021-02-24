@@ -15,7 +15,11 @@ import datetime
 
 from hqchartpy2_tushare_config import TushareConfig
 
-
+##########################################################################################
+## TushareHQChartData 全部使用Tushare数据接口
+##
+##
+##########################################################################################
 class TushareHQChartData(IHQData) :
     def __init__(self, token, startDate, endDate):
         ts.set_token(token) 
@@ -409,28 +413,277 @@ class TushareHQChartData(IHQData) :
         result["date"]=aryDate
         return result
 
-    # 系统指标
-    def GetIndexScript(self,name,callInfo, jobID):
-        print("[TushareHQChartData::GetIndexScript] name={0},callInfo={1}".format(name, callInfo))
-        if (name==u"KDJ") :
-            indexScript={
-                # 系统指标名字
-                "Name":name,
-                "Script":'''
-                RSV:=(CLOSE-LLV(LOW,N))/(HHV(HIGH,N)-LLV(LOW,N))*100;
-                K:SMA(RSV,M1,1);
-                D:SMA(K,M2,1);
-                J:3*K-2*D;
-                ''',
-                # 脚本参数
-                "Args": [ { "Name":"N", "Value":9 }, { "Name":"M1", "Value":3 }, { "Name":"M2", "Value":3} ]
-            }
+# 历史K线数据
+class HistoryData() :
+    def __init__(self) :
+        self.Date=None
+        self.YClose=None
+        self.Open=None
+        self.Close=None
+        self.High=None
+        self.Low=None
+        self.Vol=None
+        self.Amount=None
+        self.Time=None
+        self.FlowCapital=0   # 流通股本
 
-        return indexScript
+        # 指数才有的数据
+        self.Stop=None  # 停牌家数
+        self.Up =None   # 上涨
+        self.Down=None  # 下跌
+        self.Unchanged=None # 平盘
         
+####################################################################################################################
+## TushareKLocalHQChartData K线使用文件读取, 其他全部使用Tushare数据接口
+##
+##
+####################################################################################################################           
+class TushareKLocalHQChartData(TushareHQChartData) :
+    def __init__(self, token, startDate, endDate, cachePath):  
+        TushareHQChartData.__init__(self, token, startDate, endDate)
+        self.CachePath=cachePath  # K线缓存目录 /Day/日线 /Minute/分钟  
+    
+    # 获取K线API数据
+    # right 复权 0=不复权 1=前复权 2=后复权
+    # period 周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 9=季线
+    # TODO: 分钟的没做
+    def GetKLineAPIData(self, symbol, period, right, startDate, endDate) :
+        filePath='{0}/day/{1}.csv'.format(self.CachePath,symbol)
+        klineData=pd.read_csv(filePath)
+        isSHSZIndex=IHQData.IsSHSZIndex(symbol) # 是否是指数
+
+        aryDate=[]
+        aryClose=[]
+        aryYClose=[]
+        aryOpen=[]
+        aryHigh=[]
+        aryLow=[]
+        aryVol=[]
+        aryAmount=[]
+
+        aryDate=list(klineData["date"])
+        aryClose=list(klineData["close"])
+        aryYClose=list(klineData["yclose"])
+        aryOpen=list(klineData["open"])
+        aryHigh=list(klineData["high"])
+        aryLow=list(klineData["low"])
+        aryVol=list(klineData["vol"])
+        aryAmount=list(klineData["amount"])
+       
+        # 复权 0=不复权 1=前复权 2=后复权
+        if (isSHSZIndex==False and right in (1,2)) :
+            self.CalculateRightDayData(right,aryDate,aryYClose,aryOpen,aryHigh,aryLow,aryClose)
+
+        # 周期
+        if (period in (1,2,3,9) or (period>=40001 and period<50000)) :
+            periodData=self.CalcuatePeriodDayData(period,aryDate,aryYClose,aryOpen,aryHigh,aryLow,aryClose, aryVol, aryVol)
+            aryDate=periodData["date"]
+            aryYClose=periodData["yclose"]
+            aryOpen=periodData["open"]
+            aryHigh=periodData["high"]
+            aryLow=periodData["low"]
+            aryClose=periodData["close"]
+            aryVol=periodData["vol"]
+            aryAmount=periodData["amount"]
+
+        cacheData={}
+        cacheData['count']=len(aryDate)    # 数据个数
+        cacheData['name']=symbol            # 股票名称
+        cacheData['period']=period          # 周期
+        cacheData['right']=right            # 复权
+
+        cacheData["date"]=aryDate
+        cacheData["yclose"]=aryYClose
+        cacheData["open"]=aryOpen
+        cacheData["high"]=aryHigh
+        cacheData["low"]=aryLow
+        cacheData["close"]=aryClose
+        cacheData["vol"]=aryVol
+        cacheData["amount"]=aryAmount
+
+        start=startDate
+        end=endDate
+        if (cacheData['count']>0):
+            start=aryDate[0]
+            end=aryDate[-1]
+
+        log="[TushareKLocalHQChartData::GetKLineAPIData] K线:{0} - period={1} right={2} count={3} date=[{4}, {5}]".format(symbol,period,right, cacheData['count'], start, end)
+        print(log)
+
+        return cacheData
+
+    # 计算复权 0=不复权 1=前复权 2=后复权
+    # Note:如果有复权因子,可以直接用复权因子算(财汇,万德等数据商的数据库都有)
+    def CalculateRightDayData(self, right, aryDate, aryYClose,aryOpen,aryHigh, aryLow, aryClose) :
+        if (right==0):
+            return
+        count=len(aryDate)
+        if (count<=0):
+            return
+
+        if right==1 :
+            index=count-1
+            seed=1      #复权系数
+            yClose=aryYClose[index]
+
+            for i in range(index-1,-1,-1):
+                index=i
+                value=aryClose[index]
+                if yClose != value : 
+                    break
+
+                yClose=aryYClose[index]
+
+            for i in range(index,-1,-1) :
+                index=i
+                if yClose!=aryClose[index] :
+                    seed *= yClose/aryClose[index]
+
+                yClose=aryYClose[index]
+
+                aryOpen[index]=aryOpen[index]*seed
+                aryHigh[index]=aryHigh[index]*seed
+                aryLow[index]=aryLow[index]*seed
+                aryClose[index]=aryClose[index]*seed
+                aryYClose[index]=aryYClose[index]*seed
+
+        elif right==2 :
+            index=0
+            seed=1
+            close=aryClose[index]
+
+            for i in range(count) :
+                index=i
+                if close!=aryYClose[index]:
+                    break
+
+                close=aryClose[index]
+
+            for i in range(index, count) :
+                index=i
+                if close!=aryYClose[index] :
+                    seed *= close/aryYClose[index]
+
+                close=aryClose[index]
+
+                aryOpen[index]=aryOpen[index]*seed
+                aryHigh[index]=aryHigh[index]*seed
+                aryLow[index]=aryLow[index]*seed
+                aryClose[index]=aryClose[index]*seed
+                aryYClose[index]=aryYClose[index]*seed
+
+    # 计算周期
+    def CalcuatePeriodDayData(self,period, aryDate, aryYClose,aryOpen,aryHigh, aryLow, aryClose, aryVol, aryAmount) :
+        # 新的周期数据
+        aryDate2=[]
+        aryYClose2=[]
+        aryOpen2=[]
+        aryHigh2=[]
+        aryLow2=[]
+        aryClose2=[]
+        aryVol2=[]
+        aryAmount2=[]
         
-           
-        
+        startDate=0
+        newData=None
+        count=len(aryDate)
+        dayCount=0
+        for i in range(count) :
+            isNewData=False
+            date=aryDate[i]
+            if period==1 : # 周线
+                fridayDate=IHQData.GetFirday(date)
+                if  fridayDate!=startDate :
+                    isNewData=True
+                    startDate=fridayDate
+               
+            elif period==2 : # 月线
+                if int(date/100)!=int(startDate/100) :
+                    isNewData=True
+                    startDate=date
+            elif period==3 : # 年线
+                if int(date/10000)!=int(startDate/10000) :
+                    isNewData=True
+                    startDate=date
+            elif (period>=40001 and period<50000):
+                dayPeriod=period-40000
+                if (dayCount>=dayPeriod) :
+                    dayCount=0
+
+                if (dayCount==0) :
+                    isNewData=True
+                    startDate=date
+
+                dayCount+=1
+
+            yClose=aryYClose[i]
+            open=aryOpen[i]
+            high=aryHigh[i]
+            low=aryLow[i]
+            close=aryClose[i]
+            vol=aryVol[i]
+            amount=aryAmount[i]
+                  
+            if isNewData :
+                if (newData!=None):
+                    aryYClose2.append(newData.YClose)
+                    aryOpen2.append(newData.Open)
+                    aryHigh2.append(newData.High)
+                    aryLow2.append(newData.Low)
+                    aryClose2.append(newData.Close)
+                    aryVol2.append(newData.Vol)
+                    aryAmount2.append(newData.Amount)
+                    aryDate2.append(newData.Date)
+
+                newData=HistoryData()
+                newData.Date=date
+
+                if open==None or close==None:
+                    continue
+
+                newData.Open=open
+                newData.High=high
+                newData.Low=low
+                newData.YClose=yClose
+                newData.Close=close
+                newData.Vol=vol
+                newData.Amount=amount
+            else :
+                if newData==None : 
+                    continue
+                if open==None or close==None :
+                    continue
+
+                if newData.Open==None or newData.Close==None :
+                    newData.Open=open
+                    newData.High=high
+                    newData.Low=low
+                    newData.YClose=yClose
+                    newData.Close=close
+                    newData.Vol=vol
+                    newData.Amount=amount
+                else :
+                    if newData.High<high :
+                        newData.High=high
+                    if newData.Low>low :
+                        newData.Low=low
+
+                    newData.Close=close
+                    newData.Vol+=vol
+                    newData.Amount+=amount
+                    newData.Date=date
+         
+        if (newData!=None):
+            aryYClose2.append(newData.YClose)
+            aryOpen2.append(newData.Open)
+            aryHigh2.append(newData.High)
+            aryLow2.append(newData.Low)
+            aryClose2.append(newData.Close)
+            aryVol2.append(newData.Vol)
+            aryAmount2.append(newData.Amount)
+            aryDate2.append(newData.Date)
+
+        return { "date": aryDate2, "yclose":aryYClose2, "open":aryOpen2, "high":aryHigh2, "low":aryLow2, "close":aryClose2, "vol":aryVol2, "amount":aryAmount2 }
 
 #####################################################################################################################
 ## 指标计算数据结果
