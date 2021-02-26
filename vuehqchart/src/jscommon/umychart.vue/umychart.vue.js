@@ -4080,6 +4080,7 @@ function JSChart(divElement, bOffscreen)
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
         if (option.DisableMouse==true) chart.DisableMouse=option.DisableMouse;
         if (option.TouchMoveMinAngle) chart.TouchMoveMinAngle=option.TouchMoveMinAngle;
+        if (option.EnableZoomUpDown) chart.EnableZoomUpDown=option.EnableZoomUpDown;
 
         if (option.KLine)   //k线图的属性设置
         {
@@ -6386,6 +6387,8 @@ function JSChartContainer(uielement, OffscreenElement)
             var phonePinch=this.PhonePinch;
             if (!phonePinch) return;
 
+            if (this.EnableZoomUpDown && this.EnableZoomUpDown.Touch===false) return;
+
             var yHeight=Math.abs(touches[0].pageY-touches[1].pageY);
             var yLastHeight=Math.abs(phonePinch.Last.Y-phonePinch.Last.Y2);
             var yStep=yHeight-yLastHeight;
@@ -6962,6 +6965,7 @@ function JSChartContainer(uielement, OffscreenElement)
                 }
                 break;
             case 38:    //up
+                if (this.EnableZoomUpDown && this.EnableZoomUpDown.Keyboard===false) break;
                 var cursorIndex={ ZoomType:this.ZoomType };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
                 if (!this.Frame.ZoomUp(cursorIndex)) break;
@@ -6973,6 +6977,7 @@ function JSChartContainer(uielement, OffscreenElement)
                 this.ShowTooltipByKeyDown();
                 break;
             case 40:    //down
+                if (this.EnableZoomUpDown && this.EnableZoomUpDown.Keyboard===false) break;
                 var cursorIndex={ ZoomType:this.ZoomType };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
                 if (!this.Frame.ZoomDown(cursorIndex)) break;
@@ -25325,7 +25330,7 @@ function FrameSplitKLinePriceY()
     this.newMethod=IFrameSplitOperator;   //派生
     this.newMethod();
     delete this.newMethod;
-    this.CoordinateType=0;  //坐标类型 0=普通坐标  1=百分比坐标 (右边坐标刻度) 2=对数对标
+    this.CoordinateType=0;  //坐标类型 0=普通坐标  1=百分比坐标 (右边坐标刻度) 2=对数对标 3=等比坐标
     this.Symbol;
     this.Data;              //K线数据 (计算百分比坐标)
     this.FrameSplitData2;                //坐标轴分割方法(计算百分比刻度)
@@ -25385,7 +25390,12 @@ function FrameSplitKLinePriceY()
             switch(this.CoordinateType)
             {
                 case 1:
-                    this.SplitPercentage(splitData,defaultfloatPrecision);
+                    if (!this.SplitPercentage(splitData,defaultfloatPrecision))
+                        this.SplitDefault(splitData,defaultfloatPrecision);
+                    break;
+                case 3: //等比坐标 +10%/-10% 涨幅分割
+                    if (!this.SplitIncrease(splitData,defaultfloatPrecision))
+                        this.SplitDefault(splitData,defaultfloatPrecision);
                     break;
                 case 2: //对数坐标
                     if (this.SplitLogarithmic(splitData,defaultfloatPrecision))
@@ -25437,6 +25447,8 @@ function FrameSplitKLinePriceY()
     this.SplitPercentage=function(splitData,floatPrecision)    //百分比坐标
     {
         var firstOpenPrice=this.GetFirstOpenPrice();
+        if (!IFrameSplitOperator.IsNumber(firstOpenPrice)) return false;
+
         splitData.Max=(splitData.Max-firstOpenPrice)/firstOpenPrice;
         splitData.Min=(splitData.Min-firstOpenPrice)/firstOpenPrice;
         splitData.Interval=(splitData.Max-splitData.Min)/(splitData.Count-1);
@@ -25454,6 +25466,40 @@ function FrameSplitKLinePriceY()
 
         splitData.Min=(1+splitData.Min)*firstOpenPrice; //最大最小值调整
         splitData.Max=(1+splitData.Max)*firstOpenPrice;
+        return true;
+    }
+
+    //等比坐标 当前屏最后第2根K线的收盘加为基准, 上下涨幅10%分割
+    this.SplitIncrease=function(splitData,floatPrecision)    
+    {
+        var basePrice=this.GetLast2ndClose();
+        if (!IFrameSplitOperator.IsNumber(basePrice)) return false;
+        this.IntegerCoordinateSplit(splitData);
+        this.Frame.HorizontalInfo=[];
+
+        var aryHorizontal=[];
+        for(var price=basePrice; price<splitData.Max; price=price*1.1)
+        {
+            var item= new CoordinateInfo();
+            item.Value=price;
+            var text=price.toFixed(floatPrecision);
+            if (this.IsShowLeftText) item.Message[0]=text;  
+            if (this.IsShowRightText) item.Message[1]=text;
+            aryHorizontal.push(item);
+        }
+
+        for(var price=basePrice*0.9;price>splitData.Min; price=price*0.9)
+        {
+            var item= new CoordinateInfo();
+            item.Value=price;
+            var text=price.toFixed(floatPrecision);
+            if (this.IsShowLeftText) item.Message[0]=text;  
+            if (this.IsShowRightText) item.Message[1]=text;
+            aryHorizontal.push(item);
+        }
+
+        this.Frame.HorizontalInfo=aryHorizontal;
+        return true;
     }
 
     this.SplitLogarithmic=function(splitData,floatPrecision) //对数坐标
@@ -25625,6 +25671,30 @@ function FrameSplitKLinePriceY()
         }
 
         return null;
+    }
+
+    this.GetLast2ndClose=function() //获取最后第2根K线收盘加
+    {
+        if (!this.Data) return null;
+        if (this.Data.Data.length<=0) return null;
+
+        var xPointCount=this.Frame.XPointCount;
+        var endIndex=this.Data.DataOffset+xPointCount-1;
+        if (endIndex>=this.Data.Data.length) endIndex=this.Data.Data.length-1;
+        var price=null;
+        for(var i=endIndex, count=0; i>=0 && i<this.Data.Data.length; --i)
+        {
+            var data=this.Data.Data[i];
+            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+            if (count==0) price=data.Open;
+            else if (count==1) price=data.Close;
+
+            ++count;
+            if (count>=2) break;
+        }
+
+        return price;
     }
 
     this.CustomFixedCoordinate=function(option)    //固定坐标刻度
@@ -34813,7 +34883,8 @@ function KLineChartContainer(uielement,OffscreenElement)
     this.KLineDrawType=0;
     this.ScriptErrorCallback;           //脚本执行错误回调
     this.FlowCapitalReady=false;        //流通股本是否下载完成
-    this.EnableFlowCapital={};             //强制现在流通股 { BIT:数据货币true/false, }
+    this.EnableFlowCapital={};          //强制现在流通股 { BIT:数据货币true/false, }
+    this.EnableZoomUpDown=null;         //是否手势/键盘/鼠标允许缩放{ Touch:true/false, Mouse:true/false, Keyboard:true/false, Wheel:true/false }
     this.ChartDrawStorage=new ChartDrawStorage();
     this.ChartDrawStorageCache=null;    //首次需要创建的画图工具数据
     this.RightSpaceCount=0;             //右侧空白个数
@@ -35160,9 +35231,12 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (!IFrameSplitOperator.IsObjectExist(e.wheelDelta))
             wheelValue=e.deltaY* -0.01;
         
+        var enableZoomUpDown=true;  //是否允许缩放
+        if (this.EnableZoomUpDown && this.EnableZoomUpDown.Wheel===false) enableZoomUpDown=false;
+        
         if (this.SourceData && this.SourceData.Data)
         {
-            if (isInClient && wheelValue<0)       //缩小
+            if (isInClient && wheelValue<0 && enableZoomUpDown)       //缩小
             {
                 var cursorIndex={ ZoomType:this.ZoomType };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
@@ -35175,7 +35249,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                     this.Draw();
                 }
             }
-            else if (isInClient && wheelValue>0)  //放大
+            else if (isInClient && wheelValue>0 && enableZoomUpDown)  //放大
             {
                 var cursorIndex={ ZoomType:this.ZoomType };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
@@ -37612,7 +37686,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         }
         else
         {
-            if (obj.Type>=0 && obj.Type<=2) this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=obj.Type;
+            if (obj.Type>=0 && obj.Type<=3) this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=obj.Type;
             if (obj.IsReverse===true) this.Frame.SubFrame[0].Frame.CoordinateType=1;
             else if (obj.IsReverse==false) this.Frame.SubFrame[0].Frame.CoordinateType=0;
         }
@@ -48263,6 +48337,10 @@ function KLineRightMenu(divElement)
             {
                 text: "对数坐标",
                 click: function () { chart.ChangeCoordinateType( {Type:2} ); }
+            },
+            {
+                text: "等比坐标",
+                click: function () { chart.ChangeCoordinateType( {Type:3} ); }
             }
         ];
 
@@ -52102,15 +52180,18 @@ JSComplierHelper.GetPeriodInfo=function(obj)
         {Name:'MIN60', Period:8, Order:5},
 
         {Name:'DAY',    Period:0, Order:1000},
+        {Name:'MULTIDAY',    Period:40002, Order:1002},
         {Name:'DAY2',    Period:40002, Order:1002},
         {Name:'DAY3',    Period:40003, Order:1003},
         {Name:'DAY4',    Period:40004, Order:1004},
+        {Name:'DAY5',    Period:40005, Order:1005},
         {Name:'WEEK',   Period:1, Order:1005},
 
         {Name:'DAY6',    Period:40006, Order:1006},
         {Name:'DAY7',    Period:40007, Order:1007},
         {Name:'DAY8',    Period:40008, Order:1008},
         {Name:'DAY9',    Period:40009, Order:1009},
+        {Name:'DAY10',    Period:40009, Order:1010},
 
         {Name:'DAY11',    Period:40011, Order:1011},
         {Name:'DAY12',    Period:40012, Order:1012},
@@ -52879,7 +52960,8 @@ function Node(ErrorHandler)
                 const VAR_PERIOD_NAME=
                 [
                     "MIN1","MIN5","MIN15","MIN30","MIN60","DAY","WEEK","MONTH","SEASON","YEAR",
-                    "MULTIDAY","DAY2","DAY3","DAY4","DAY6","DAY7","DAY8","DAY9","DAY11","DAY12","DAY13","DAY14","DAY15"
+                    "MULTIDAY","DAY2","DAY3","DAY4","DAY5","DAY6","DAY7","DAY8","DAY9","DAY10",
+                    "DAY11","DAY12","DAY13","DAY14","DAY15"
                 ];
                 if (VAR_PERIOD_NAME.indexOf(aryWrods[1])<0)
                 {
@@ -64871,7 +64953,11 @@ function JSSymbolData(ast,option,jsExecute)
 
         const PERIOD_MAP=new Map([
             ["DAY",0 ], ["WEEK", 1 ], ["MONTH",2 ], ["SEASON",9 ], ["YEAR", 3],
-            ["MIN1", 4],["MIN5", 5 ],["MIN15", 6 ],["MIN30",7 ], ["MIN60", 8 ]
+            ["MIN1", 4],["MIN5", 5 ],["MIN15", 6 ],["MIN30",7 ], ["MIN60", 8 ],
+
+            ["DAY2", 40002],["MULTIDAY",40002],["DAY3", 40003],["DAY4", 40004],["DAY5",40005],
+            ["DAY6", 40006],["DAY7", 40007],["DAY8", 40008],["DAY9", 40009],["DAY10",40010]
+            ["DAY11", 40011],["DAY12", 40012],["DAY13", 40013],["DAY14", 40014],["DAY15", 40015],
         ]);
 
         if (result.Period)
@@ -72504,4 +72590,7 @@ export default {
     HQChartStyle:HQChartStyle,              //预定义全局的配色 黑
 
     JSConsole:JSConsole,    //日志输出
+
+    KLineTooltipPaint:KLineTooltipPaint,    //K线tooltip
+    MinuteTooltipPaint:MinuteTooltipPaint,  //走势图tooltip
 }

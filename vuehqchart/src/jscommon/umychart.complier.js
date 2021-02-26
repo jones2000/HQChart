@@ -276,15 +276,18 @@ JSComplierHelper.GetPeriodInfo=function(obj)
         {Name:'MIN60', Period:8, Order:5},
 
         {Name:'DAY',    Period:0, Order:1000},
+        {Name:'MULTIDAY',    Period:40002, Order:1002},
         {Name:'DAY2',    Period:40002, Order:1002},
         {Name:'DAY3',    Period:40003, Order:1003},
         {Name:'DAY4',    Period:40004, Order:1004},
+        {Name:'DAY5',    Period:40005, Order:1005},
         {Name:'WEEK',   Period:1, Order:1005},
 
         {Name:'DAY6',    Period:40006, Order:1006},
         {Name:'DAY7',    Period:40007, Order:1007},
         {Name:'DAY8',    Period:40008, Order:1008},
         {Name:'DAY9',    Period:40009, Order:1009},
+        {Name:'DAY10',    Period:40009, Order:1010},
 
         {Name:'DAY11',    Period:40011, Order:1011},
         {Name:'DAY12',    Period:40012, Order:1012},
@@ -1053,7 +1056,8 @@ function Node(ErrorHandler)
                 const VAR_PERIOD_NAME=
                 [
                     "MIN1","MIN5","MIN15","MIN30","MIN60","DAY","WEEK","MONTH","SEASON","YEAR",
-                    "MULTIDAY","DAY2","DAY3","DAY4","DAY6","DAY7","DAY8","DAY9","DAY11","DAY12","DAY13","DAY14","DAY15"
+                    "MULTIDAY","DAY2","DAY3","DAY4","DAY5","DAY6","DAY7","DAY8","DAY9","DAY10",
+                    "DAY11","DAY12","DAY13","DAY14","DAY15"
                 ];
                 if (VAR_PERIOD_NAME.indexOf(aryWrods[1])<0)
                 {
@@ -13045,7 +13049,11 @@ function JSSymbolData(ast,option,jsExecute)
 
         const PERIOD_MAP=new Map([
             ["DAY",0 ], ["WEEK", 1 ], ["MONTH",2 ], ["SEASON",9 ], ["YEAR", 3],
-            ["MIN1", 4],["MIN5", 5 ],["MIN15", 6 ],["MIN30",7 ], ["MIN60", 8 ]
+            ["MIN1", 4],["MIN5", 5 ],["MIN15", 6 ],["MIN30",7 ], ["MIN60", 8 ],
+
+            ["DAY2", 40002],["MULTIDAY",40002],["DAY3", 40003],["DAY4", 40004],["DAY5",40005],
+            ["DAY6", 40006],["DAY7", 40007],["DAY8", 40008],["DAY9", 40009],["DAY10",40010]
+            ["DAY11", 40011],["DAY12", 40012],["DAY13", 40013],["DAY14", 40014],["DAY15", 40015],
         ]);
 
         if (result.Period)
