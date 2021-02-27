@@ -2476,6 +2476,88 @@ function ChartMultiText()
     }
 }
 
+// 多dom节点
+function ChartMultiHtmlDom()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartMultiHtmlDom";
+    this.Texts=[];  //[ {Index:, Value:, Text: ] Text=dom内容
+    this.IsHScreen=false;   //是否横屏
+    this.DrawCallback;  //function(op, obj)  op:1=开始 2=结束 3=绘制单个数据
+    this.DrawItem=[];
+
+    this.Draw=function()
+    {
+        this.DrawItem=[];
+        if (this.DrawCallback) this.DrawCallback(1, {Self:this} );
+
+        this.DrawDom();
+        
+        if (this.DrawCallback) this.DrawCallback(2, { Self:this, Draw:this.DrawItem } );
+    }
+
+    this.DrawDom=function()
+    {
+        if (!this.IsShow) return;
+        if (!this.Data || this.Data.length<=0) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var xPointCount=this.ChartFrame.XPointCount;
+        var offset=this.Data.DataOffset;
+        
+        for(var i in this.Texts)
+        {
+            var item=this.Texts[i];
+
+            if (!item.Text) continue;
+            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
+
+            var index=item.Index-offset;
+            var kItem=this.Data.Data[item.Index];   //K线数据
+            var obj={ KData:kItem, Item:item, IsShow:false, Self:this };
+            if (index>=0 && index<xPointCount)
+            {
+                var x=this.ChartFrame.GetXFromIndex(index);
+                var y=this.ChartFrame.GetYFromData(item.Value);
+
+                obj.X=x;
+                obj.Y=y;
+                obj.IsShow=true;
+            }
+
+            this.DrawItem.push(obj);
+
+            if (this.DrawCallback) this.DrawCallback(3, obj);
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        var end=start+xPointCount;
+
+        for(var i in this.Texts)
+        {
+            var item=this.Texts[i];
+            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
+            if (item.Index>=start && item.Index<end)
+            {
+                if (range.Max==null) range.Max=item.Value;
+                else if (range.Max<item.Value) range.Max=item.Value;
+                if (range.Min==null) range.Min=item.Value;
+                else if (range.Min>item.Value) range.Min=item.Value;
+            }
+        }
+
+        return range;
+    }
+}
+
 // 线段集合  支持横屏
 function ChartMultiLine() 
 {
@@ -4735,6 +4817,7 @@ module.exports =
         ChartMinuteInfo: ChartMinuteInfo,
         ChartRectangle: ChartRectangle,
         ChartMultiText: ChartMultiText,
+        ChartMultiHtmlDom:ChartMultiHtmlDom,
         ChartMultiLine: ChartMultiLine,
         ChartBackground:ChartBackground,
         ChartBuySell: ChartBuySell,
@@ -4771,6 +4854,7 @@ module.exports =
     JSCommonChartPaint_ChartRectangle: ChartRectangle,
     JSCommonChartPaint_ChartMultiText: ChartMultiText,
     JSCommonChartPaint_ChartMultiLine: ChartMultiLine,
+    JSCommonChartPaint_ChartMultiHtmlDom: ChartMultiHtmlDom,
     JSCommonChartPaint_ChartMultiBar: ChartMultiBar,
     JSCommonChartPaint_ChartBuySell: ChartBuySell,
     JSCommonChartPaint_ChartMACD: ChartMACD,

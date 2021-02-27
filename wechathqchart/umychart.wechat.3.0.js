@@ -71,6 +71,7 @@ import {
     JSCommonChartPaint_ChartSplashPaint as ChartSplashPaint,
     JSCommonChartPaint_ChartBackground as ChartBackground,
     JSCommonChartPaint_ChartMinuteVolumBar as ChartMinuteVolumBar,
+    JSCommonChartPaint_ChartMultiHtmlDom as ChartMultiHtmlDom,
 } from "./umychart.chartpaint.wechat.js";
 
 //扩展画法图形库
@@ -12692,6 +12693,20 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateMulitHtmlDom=function(hqChart,windowIndex,varItem,i)
+    {
+        let chart=new ChartMultiHtmlDom();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Texts=varItem.Draw.DrawData;
+        chart.DrawCallback= varItem.Draw.Callback;
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateMultiLine = function (hqChart, windowIndex, varItem, i) 
     {
         let chart = new ChartMultiLine();
@@ -12842,6 +12857,9 @@ function ScriptIndex(name, script, args, option)
                 //第3方指标定制
                 case 'MULTI_TEXT':
                     this.CreateMultiText(hqChart, windowIndex, item, i);
+                    break;
+                case "MULTI_HTMLDOM":
+                    this.CreateMulitHtmlDom(hqChart,windowIndex,item,i);
                     break;
                 case 'MULTI_LINE':
                     this.CreateMultiLine(hqChart, windowIndex, item, i);
@@ -13189,7 +13207,19 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
                     drawItem.Name = draw.Name;
                     drawItem.DrawType = draw.DrawType;
                     drawItem.DrawData = this.FittingMultiText(draw.DrawData, date, time, hqChart);
+                    this.GetKLineData(drawItem.DrawData, hqChart);
                     outVarItem.Draw = drawItem;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="MULTI_HTMLDOM")    //外部自己创建dom
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.Callback=draw.Callback;
+                    drawItem.DrawData=this.FittingMultiText(draw.DrawData,date,time,hqChart);
+                    this.GetKLineData(drawItem.DrawData, hqChart);
+                    outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType=="KLINE_BG")
@@ -13207,6 +13237,35 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
         }
 
         return result;
+    }
+
+    // h, high, low l.
+    this.GetKLineData=function(data,hqChart)
+    {
+        if (!data) return;
+        if (!Array.isArray(data)) return;
+        var kData=hqChart.ChartPaint[0].Data;   //K线
+
+        for(var i in data)
+        {
+            var item=data[i];
+            if (!IFrameSplitOperator.IsString(item.Value)) continue;
+            if(!IFrameSplitOperator.IsNumber(item.Index)) continue;
+            if (item.Index<0 || item.Index>=kData.Data.length) continue;
+            var valueName=item.Value.toUpperCase();
+            var kItem=kData.Data[item.Index];
+            switch(valueName)
+            {
+                case "HIGH":
+                case "H":
+                    item.Value=kItem.High;
+                    break;
+                case "L":
+                case "LOW":
+                    item.Value=kItem.Low;
+                    break;
+            }
+        }
     }
 
     this.FittingKLineBG=function(data, hqChart)

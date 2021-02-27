@@ -5584,6 +5584,7 @@ function JSChartContainer(uielement, OffscreenElement)
     this.Tooltip.className='jschart-tooltip';
     this.Tooltip.style.background=g_JSChartResource.TooltipBGColor;
     this.Tooltip.style.opacity=g_JSChartResource.TooltipAlpha;
+    this.Tooltip.style["pointer-events"]="none";
     this.Tooltip.id=Guid();
     uielement.parentNode.appendChild(this.Tooltip);
     this.IsShowTooltip=true;    //是否显示K线tooltip
@@ -7116,7 +7117,11 @@ function JSChartContainer(uielement, OffscreenElement)
                 this.Tooltip.style.left = (left-width) + "px";
             else
                 this.Tooltip.style.left = left + "px";
-            this.Tooltip.style.top = (top + xMove)+ "px";
+            
+            if (top+xMove+textHeight>this.UIElement.getBoundingClientRect().height-5)
+                this.Tooltip.style.top = (top-textHeight)+ "px";
+            else this.Tooltip.style.top = (top + xMove)+ "px";
+            
             this.Tooltip.className='jschart-tooltip';
             this.Tooltip.innerHTML=format.Text;
             this.Tooltip.style.display = "block";
@@ -21683,14 +21688,16 @@ function ChartMultiHtmlDom()
     this.Texts=[];  //[ {Index:, Value:, Text: ] Text=dom内容
     this.IsHScreen=false;   //是否横屏
     this.DrawCallback;  //function(op, obj)  op:1=开始 2=结束 3=绘制单个数据
+    this.DrawItem=[];
 
     this.Draw=function()
     {
+        this.DrawItem=[];
         if (this.DrawCallback) this.DrawCallback(1, {Self:this} );
 
         this.DrawDom();
 
-        if (this.DrawCallback) this.DrawCallback(2, {Self:this} );
+        if (this.DrawCallback) this.DrawCallback(2, { Self:this, DrawItem:this.DrawItem } );
     }
 
     this.DrawDom=function()
@@ -21722,6 +21729,7 @@ function ChartMultiHtmlDom()
                 obj.IsShow=true;
             }
 
+            this.DrawItem.push(obj);
             if (this.DrawCallback) this.DrawCallback(3, obj);
         }
     }
@@ -21733,9 +21741,10 @@ function ChartMultiHtmlDom()
         var start=this.Data.DataOffset;
         var end=start+xPointCount;
 
-        for(var i in this.Icon)
+        for(var i in this.Texts)
         {
-            var item=this.Icon[i];
+            var item=this.Texts[i];
+            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
             if (item.Index>=start && item.Index<end)
             {
                 if (range.Max==null) range.Max=item.Value;
@@ -25330,7 +25339,7 @@ function FrameSplitKLinePriceY()
     this.newMethod=IFrameSplitOperator;   //派生
     this.newMethod();
     delete this.newMethod;
-    this.CoordinateType=0;  //坐标类型 0=普通坐标  1=百分比坐标 (右边坐标刻度) 2=对数对标 3=等比坐标
+    this.CoordinateType=0;  //坐标类型 0=普通坐标  1=百分比坐标 (右边坐标刻度) 2=对数对标 3=等比坐标 4=等分坐标 5=黄金分割
     this.Symbol;
     this.Data;              //K线数据 (计算百分比坐标)
     this.FrameSplitData2;                //坐标轴分割方法(计算百分比刻度)
@@ -25396,6 +25405,16 @@ function FrameSplitKLinePriceY()
                 case 3: //等比坐标 +10%/-10% 涨幅分割
                     if (!this.SplitIncrease(splitData,defaultfloatPrecision))
                         this.SplitDefault(splitData,defaultfloatPrecision);
+                    else
+                        bFilter=false;
+                    break;
+                case 4: //等分坐标
+                    this.SplitAverage(splitData,defaultfloatPrecision);
+                    bFilter=false;
+                    break;
+                case 5: //黄金分割
+                    this.SplitGoldenSection(splitData,defaultfloatPrecision);
+                    bFilter=false;
                     break;
                 case 2: //对数坐标
                     if (this.SplitLogarithmic(splitData,defaultfloatPrecision))
@@ -25477,8 +25496,9 @@ function FrameSplitKLinePriceY()
         this.IntegerCoordinateSplit(splitData);
         this.Frame.HorizontalInfo=[];
 
+        var increase=g_JSChartResource.FrameSplitIncrease.Increase;
         var aryHorizontal=[];
-        for(var price=basePrice; price<splitData.Max; price=price*1.1)
+        for(var price=basePrice; price<splitData.Max; price=price*(1+increase))
         {
             var item= new CoordinateInfo();
             item.Value=price;
@@ -25488,7 +25508,7 @@ function FrameSplitKLinePriceY()
             aryHorizontal.push(item);
         }
 
-        for(var price=basePrice*0.9;price>splitData.Min; price=price*0.9)
+        for(var price=basePrice*0.9;price>splitData.Min; price=price*(1-increase))
         {
             var item= new CoordinateInfo();
             item.Value=price;
@@ -25502,9 +25522,54 @@ function FrameSplitKLinePriceY()
         return true;
     }
 
+    //等分坐标：以画面显示的最高价、最低价为基准，对这个区域N等分，显示分割的数值线
+    this.SplitAverage=function(splitData,floatPrecision)
+    {
+        var max=splitData.Max;
+        var min=splitData.Min;
+        //this.IntegerCoordinateSplit(splitData);
+        this.Frame.HorizontalInfo=[];
+        var count=g_JSChartResource.FrameSplitAverage.Count;
+        var interval=(max-min)/count;
+
+        for(var i=0;i<=count;++i)
+        {
+            var item=new CoordinateInfo();
+            item.Value=min+interval*i;
+            var text=item.Value.toFixed(floatPrecision);
+            if (this.IsShowLeftText)  item.Message[0]=text;
+            if (this.IsShowRightText)   item.Message[1]=text;
+
+            this.Frame.HorizontalInfo[i]=item;
+        }
+    }
+
+    this.SplitGoldenSection=function(splitData,floatPrecision)
+    {
+        var max=splitData.Max;
+        var min=splitData.Min;
+        //this.IntegerCoordinateSplit(splitData);
+        this.Frame.HorizontalInfo=[];
+
+        var aryHorizontal=[];
+        var GOLDEN_ARRAY=g_JSChartResource.FrameGoldenSection.Golden;
+        for(var i in GOLDEN_ARRAY)
+        {
+            var value=(max-min)*GOLDEN_ARRAY[i]+min;
+            item=new CoordinateInfo();
+            item.Value=value;
+            var text=value.toFixed(floatPrecision);
+            if (this.IsShowLeftText)  item.Message[0]=text;
+            if (this.IsShowRightText)   item.Message[1]=text;
+            aryHorizontal.push(item);
+        }
+
+        this.Frame.HorizontalInfo=aryHorizontal;
+    }
+
     this.SplitLogarithmic=function(splitData,floatPrecision) //对数坐标
     {
-        var minInterval=g_JSChartResource.FromeLogarithmic.MinInterval;       //最小间距
+        var minInterval=g_JSChartResource.FrameLogarithmic.MinInterval;       //最小间距
         var firstOpenPrice=this.GetFirstOpenPrice();    //获取当前屏第1个K线的开盘价
         if (!IFrameSplitOperator.IsNumber(firstOpenPrice)) return false;
         var height=this.ChartBorder.GetHeightEx();
@@ -25558,7 +25623,7 @@ function FrameSplitKLinePriceY()
         this.Frame.HorizontalInfo=[];
         var item=new CoordinateInfo();
         item.Value=firstOpenPrice;
-        item.Font=g_JSChartResource.FromeLogarithmic.OpenPriceFont;
+        item.Font=g_JSChartResource.FrameLogarithmic.OpenPriceFont;
         var strText=item.Value.toFixed(floatPrecision);
         if (this.IsShowLeftText) item.Message[0]=strText;     //左边价格坐标      
         if (this.IsShowRightText) item.Message[1]=strText;    //右边价格坐标 
@@ -33302,10 +33367,26 @@ function JSChartResource()
     };
 
     //对数坐标
-    this.FromeLogarithmic= {
+    this.FrameLogarithmic= {
         OpenPriceFont: "bold "+14*GetDevicePixelRatio() +"px 微软雅黑",     //开盘价刻度文字字体
         MinInterval: 45*GetDevicePixelRatio()       //刻度最小间距
     };  
+
+    //等比坐标
+    this.FrameSplitIncrease= { 
+        Increase:0.1    //涨幅
+    };
+
+    //等分坐标
+    this.FrameSplitAverage= { 
+        Count:4     //分割个数
+    };
+
+    //黄金分割坐标
+    this.FrameGoldenSection=
+    {
+        Golden:[0, 0.191, 0.382, 0.5, 0.618, 0.809, 1]
+    };
 
     //Y轴最新价格刻度颜色
     this.FrameLatestPrice = {
@@ -37653,7 +37734,7 @@ function KLineChartContainer(uielement,OffscreenElement)
     }
 
     //修改坐标类型 
-    //{ Type:  0=普通坐标  1=百分比坐标 (右边坐标刻度) 2=对数对标 , IsReverse:是否反转坐标 }
+    //{ Type:  0=普通坐标  1=百分比坐标 (右边坐标刻度) 2=对数对标 3=等比坐标, IsReverse:是否反转坐标 }
     this.ChangeCoordinateType=function(obj) 
     {
         if (!this.Frame && !this.Frame.SubFrame) return;
@@ -37686,7 +37767,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         }
         else
         {
-            if (obj.Type>=0 && obj.Type<=3) this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=obj.Type;
+            if (obj.Type>=0 && obj.Type<=5) this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=obj.Type;
             if (obj.IsReverse===true) this.Frame.SubFrame[0].Frame.CoordinateType=1;
             else if (obj.IsReverse==false) this.Frame.SubFrame[0].Frame.CoordinateType=0;
         }
@@ -48341,6 +48422,14 @@ function KLineRightMenu(divElement)
             {
                 text: "等比坐标",
                 click: function () { chart.ChangeCoordinateType( {Type:3} ); }
+            },
+            {
+                text: "等分坐标",
+                click: function () { chart.ChangeCoordinateType( {Type:4} ); }
+            },
+            {
+                text: "黄金分割",
+                click: function () { chart.ChangeCoordinateType( {Type:5} ); }
             }
         ];
 
@@ -48355,6 +48444,9 @@ function KLineRightMenu(divElement)
             if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==1) data[1].selected=true;  //百分比
             else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==0) data[0].selected=true; //普通坐标
             else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==2) data[3].selected=true; //对数
+            else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==3) data[4].selected=true; //等比坐标
+            else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==4) data[5].selected=true; //等分坐标
+            else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==5) data[6].selected=true; //黄金分割
         }
 
         return data;
