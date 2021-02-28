@@ -29546,6 +29546,8 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"垂直线", ClassName:"ChartDrawVerticalLine", Create:function() { return new ChartDrawVerticalLine(); } },
     { Name:"波浪尺", ClassName:"ChartDrawWaveRuler", Create:function() { return new ChartDrawWaveRuler(); } },
     { Name:"箱型线", ClassName:"ChartDrawBox", Create:function() { return new ChartDrawBox(); } },
+    { Name:"2点画图例子", ClassName:"ChartDrawTwoPointDemo", Create:function() { return new ChartDrawTwoPointDemo(); } },
+    { Name:"3点画图例子", ClassName:"ChartDrawThreePointDemo", Create:function() { return new ChartDrawThreePointDemo(); } },
     { ClassName:'ChartDrawPictureIconFont',  Create:function() { return new ChartDrawPictureIconFont(); }}
     
 ];
@@ -32948,6 +32950,235 @@ function ChartDrawBox()
         }   
     }
 
+}
+
+function ChartDrawTwoPointDemo()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawTwoPointDemo';
+    this.PointCount=2;
+    this.Font=16*GetDevicePixelRatio() +"px 微软雅黑";
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.IsHScreen=false;
+    this.PointInfo=[];  //保存点及点对应K线的信息
+
+    this.PointToValue_Backup=this.PointToValue;
+    this.PointToValue=function()
+    {
+        this.OnFinish();
+        this.PointToValue_Backup();
+    }
+
+    //移动或创建完成
+    this.OnFinish=function()
+    {
+        for(var i in this.PointInfo)
+        {
+            var item=this.PointInfo[i];
+            if (!item || !item.Point || !IFrameSplitOperator.IsNumber(item.Point.Y2)) continue;
+            this.Point[i].Y=this.PointInfo[i].Point.Y2; //点Y轴坐标调整
+        }
+    }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        this.PointInfo=[];
+        var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
+        if (!drawPoint) return;
+
+        this.IsHScreen=this.Frame.IsHScreen;
+        //this.CalculateLines(drawPoint);
+
+        this.ClipFrame();
+        this.SetLineWidth();
+
+        var ptStart=drawPoint[0];
+        var ptEnd=drawPoint[1]
+        this.CalculatePointInfo(drawPoint); 
+        if (this.Status==10)    //绘制完成
+        {
+            this.DrawEx();
+        }
+        else    //绘制中只画连线
+        {
+            for(var i=1;i<drawPoint.length;++i)
+            {
+                this.DrawLine(drawPoint[i-1],drawPoint[i]);
+            }
+        }
+
+        this.RestoreLineWidth();
+        this.DrawPoint(drawPoint); //画点
+        this.Canvas.restore();
+    }
+
+    //计算点信息及K线信息
+    this.CalculatePointInfo=function(drawPoint)
+    {
+        if (!this.Frame || !this.Frame.Data) return;
+        var kPoint=this.PointToKLine(drawPoint);
+
+        //3个点
+        if (this.PointCount==3 && this.PointStatus==2 && this.LastPoint)
+        {
+            var pt=new Point();
+            pt.X=this.LastPoint.X;
+            pt.Y=this.LastPoint.Y;
+            drawPoint[2]=pt;
+        }
+
+        var data=this.Frame.Data;
+        for(var i in kPoint)
+        {
+            var item=kPoint[i];
+            var pt=drawPoint[i];
+            var kItem=data.Data[item.XValue];
+            var obj={ KItem: kItem, Data:item, Point:{ X:pt.X, Y:pt.Y } };
+            this.PointInfo.push(obj);
+        }
+
+        this.CalculateYPoint();
+
+        JSConsole.Chart.Log('[ChartDrawTwoPointDemo::CalculateLines] kPoint', this.PointInfo);
+    }
+
+    //计算需要调整的Y轴坐标
+    this.CalculateYPoint=function()
+    {
+        var ptStart=this.PointInfo[0];
+        var yStart=this.Frame.GetYFromData(ptStart.KItem.Low,false);
+        ptStart.Point.Y2=yStart;
+
+        var ptEnd=this.PointInfo[1];
+        var yEnd=this.Frame.GetYFromData(ptEnd.KItem.High,false);
+        ptEnd.Point.Y2=yEnd;
+    }
+
+    this.DrawEx=function()
+    {
+        //起始点 结束点信息
+        var startInfo=this.PointInfo[0];
+        var endInfo=this.PointInfo[1];
+
+        //K线边框信息
+        var chartBorder=this.Frame.ChartBorder;
+        var frameRight=chartBorder.GetRight();  //最右边
+
+        var ptStart={X:startInfo.Point.X, Y:startInfo.Point.Y2 };
+        var ptEnd={X:endInfo.Point.X, Y:endInfo.Point.Y2 };
+
+        this.DrawLine(ptStart,ptEnd);
+        this.LinePoint.push({Start:ptStart, End:ptEnd});
+
+        this.Canvas.setLineDash([5,5]);
+        //this.Canvas.lineWidth=2;
+        var topPrice=endInfo.KItem.YClose*0.09+endInfo.KItem.High;    //结束点最高价+涨幅6% 画竖线
+        var y=this.Frame.GetYFromData(topPrice,false);
+        this.DrawLine({X:this.ToFixedPoint(ptEnd.X), Y:ptEnd.Y}, {X:this.ToFixedPoint(ptEnd.X), Y:y});
+
+        this.Canvas.textAlign="right";
+        this.Canvas.textBaseline = 'center';
+        this.Canvas.fillStyle='rgb(33,45,100)';
+
+        for(var i=3;i>0;--i)
+        {
+            var price=endInfo.KItem.YClose*(0.03*i)+endInfo.KItem.High;     //%2涨幅一档画线
+            var y=this.Frame.GetYFromData(price,false);
+            y=this.ToFixedPoint(y);
+
+            //线段
+            this.DrawLine({X:ptEnd.X, Y:y}, {X:ptEnd.X+100, Y:y});
+
+            //文字
+            this.Canvas.fillText(price.toFixed(2), ptEnd.X-5, y);
+        }
+        this.Canvas.setLineDash([]);
+    }
+
+    //防止竖线或横线模糊调整坐标
+    this.ToFixedPoint=function(value,width)
+    {
+        if (!IFrameSplitOperator.IsNumber(width)) width=this.LineWidth;
+        return ToFixedPoint2(width, value)
+    }
+}
+
+function ChartDrawThreePointDemo()
+{
+    this.newMethod=ChartDrawTwoPointDemo;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawThreePointDemo';
+    this.PointCount=3;
+
+    this.SetLastPoint=function(obj)
+    {
+        this.LastPoint={X:obj.X,Y:obj.Y};
+    }
+
+    //计算需要调整的Y轴坐标
+    this.CalculateYPoint=function()
+    {
+        var y;
+        for(var i in this.PointInfo)
+        {
+            var item=this.PointInfo[i];
+            if (i==0 || i==2) y=this.Frame.GetYFromData(item.KItem.Low,false);
+            else y=this.Frame.GetYFromData(item.KItem.High,false);
+            item.Point.Y2=y;
+        }
+    }
+
+    this.DrawEx=function()
+    {
+        //起始点 结束点信息
+        var startInfo=this.PointInfo[0];
+        var secondInfo=this.PointInfo[1];
+        var endInfo=this.PointInfo[2];
+
+        //K线边框信息
+        var chartBorder=this.Frame.ChartBorder;
+        var frameRight=chartBorder.GetRight();  //右边
+        var frameLeft=chartBorder.GetLeft();    //左边
+
+        var ptStart={ X:startInfo.Point.X, Y:startInfo.Point.Y2 };
+        var ptSecond={ X:secondInfo.Point.X, Y:secondInfo.Point.Y2};
+        var ptEnd={ X:endInfo.Point.X, Y:endInfo.Point.Y2 };
+
+        this.DrawLine(ptStart,ptSecond);
+        this.DrawLine(ptSecond,ptEnd);
+        this.LinePoint.push({Start:ptStart, End:ptSecond});
+        this.LinePoint.push({Start:ptSecond, End:ptEnd});
+
+        this.Canvas.setLineDash([5,5]);
+        //this.Canvas.lineWidth=2;
+        var topPrice=endInfo.KItem.YClose*0.09+endInfo.KItem.High;    //结束点最高价+涨幅6% 画竖线
+        var y=this.Frame.GetYFromData(topPrice,false);
+        this.DrawLine({X:this.ToFixedPoint(ptEnd.X), Y:ptEnd.Y}, {X:this.ToFixedPoint(ptEnd.X), Y:y});
+
+        this.Canvas.textAlign="right";
+        this.Canvas.textBaseline = 'center';
+        this.Canvas.fillStyle='rgb(33,45,100)';
+
+        for(var i=3;i>0;--i)
+        {
+            var price=endInfo.KItem.YClose*(0.03*i)+endInfo.KItem.High;     //%2涨幅一档画线
+            var y=this.Frame.GetYFromData(price,false);
+            y=this.ToFixedPoint(y);
+
+            //线段
+            this.DrawLine({X:ptEnd.X, Y:y}, {X:ptEnd.X+100, Y:y});
+
+            //文字
+            this.Canvas.fillText(price.toFixed(2), ptEnd.X-5, y);
+        }
+        this.Canvas.setLineDash([]);
+    }
 }
 
 function ChartDrawStorage()
@@ -41931,6 +42162,12 @@ function MinuteChartContainer(uielement)
                 break;
             case 'M头W底':
                 drawPicture=new ChartDrawPictureWaveMW();
+                break;
+            case "2点画图例子":
+                drawPicture=new ChartDrawTwoPointDemo();
+                break;
+            case "3点画图例子":
+                drawPicture=new ChartDrawThreePointDemo();
                 break;
             default:
                 {
