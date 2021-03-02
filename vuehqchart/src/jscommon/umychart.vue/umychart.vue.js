@@ -4621,6 +4621,7 @@ function JSChart(divElement, bOffscreen)
             if(IFrameSplitOperator.IsBool(item.IsShowName)) chart.TitlePaint[0].IsShowName=item.IsShowName;
             if(IFrameSplitOperator.IsBool(item.IsShowDate)) chart.TitlePaint[0].IsShowDate=item.IsShowDate;
             if(IFrameSplitOperator.IsBool(item.IsShowTime)) chart.TitlePaint[0].IsShowTime=item.IsShowTime;
+            if(IFrameSplitOperator.IsBool(item.IsTitleShowLatestData)) chart.IsTitleShowLatestData=item.IsTitleShowLatestData;
             //if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
         }
 
@@ -5574,6 +5575,7 @@ function JSChartContainer(uielement, OffscreenElement)
     this.LastPoint=new Point();     //鼠标位置
     this.IsForceLandscape=false;    //是否强制横屏
     this.CorssCursorTouchEnd = false;   //手离开屏幕自动隐藏十字光标
+    this.IsTitleShowLatestData=false;     //十字/手势不在K线图上,标题显示最新一个数据
     this.StepPixel=4;                   //移动一个数据需要的像素
     this.ZoomStepPixel=5;               //放大缩小手势需要的最小像素
     this.TouchMoveMinAngle=70;          //左右移动最小角度
@@ -6471,7 +6473,7 @@ function JSChartContainer(uielement, OffscreenElement)
         var x = point.X-this.UIElement.getBoundingClientRect().left*pixelTatio;
         var y = point.Y-this.UIElement.getBoundingClientRect().top*pixelTatio;
         if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID) this.TouchStatus.CorssCursorShow=true;    //十字显示
-        this.OnMouseMove(x,y,e);
+        this.OnMouseMove(x,y,e,true);
     }
 
     this.DrawEmpty=function()
@@ -6590,6 +6592,8 @@ function JSChartContainer(uielement, OffscreenElement)
             }
         }
 
+        var drawStatus=this.GetDrawStatus();
+        drawStatus.DrawName="Draw";
         var eventTitleDraw=this.GetEventCallback(JSCHART_EVENT_ID.ON_TITLE_DRAW);
         var eventIndexTitleDraw=this.GetEventCallback(JSCHART_EVENT_ID.ON_INDEXTITLE_DRAW);
         for(var i in this.TitlePaint)
@@ -6606,6 +6610,8 @@ function JSChartContainer(uielement, OffscreenElement)
                 item.OnDrawEvent.FunctionName='Draw';
                 item.OnDrawEvent.PointPosition=null;
             }
+
+            item.DrawStatus=drawStatus;
             item.Draw();
         }
 
@@ -6659,6 +6665,21 @@ function JSChartContainer(uielement, OffscreenElement)
         this.ShowCanvas.drawImage(this.OffscreenCanvasElement,0,0);
     }
 
+    this.GetDrawStatus=function()
+    {
+        var status=
+        {
+            Point:{ X:this.LastPoint.X, Y:this.LastPoint.Y }, 
+            IsOnTouch:this.IsOnTouch,
+            CorssCursorTouchEnd:this.CorssCursorTouchEnd,
+            IsTitleShowLatestData:this.IsTitleShowLatestData,
+            IsMinuteChart:(this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer") ? true:false
+        };
+
+        status.FrameID=this.Frame.PtInFrame(this.LastPoint.X, this.LastPoint.Y);
+
+        return status;
+    }
     //画动态信息
     this.DrawDynamicInfo=function(option)
     {
@@ -6720,6 +6741,8 @@ function JSChartContainer(uielement, OffscreenElement)
             ptPosition=this.Frame.PtInFrame(option.Point.X, option.Point.Y);
         }
 
+        var drawStatus=this.GetDrawStatus();
+        drawStatus.DrawName="DrawDynamicInfo";
         for(var i in this.TitlePaint)
         {
             var item=this.TitlePaint[i];
@@ -6731,6 +6754,7 @@ function JSChartContainer(uielement, OffscreenElement)
                 item.OnDrawEvent.FunctionName='DrawDynamicInfo';
                 item.OnDrawEvent.PointPosition=ptPosition;
             }
+            item.DrawStatus=drawStatus;
             item.Draw();
         }
 
@@ -6826,11 +6850,14 @@ function JSChartContainer(uielement, OffscreenElement)
         this.DrawDynamicInfo();
     }
 
-    this.OnMouseMove=function(x,y,e)
+    this.OnMouseMove=function(x,y,e, isPhone)
     {
         this.LastPoint.X=x;
         this.LastPoint.Y=y;
-        this.CursorIndex=this.Frame.GetXData(x);
+        var frameID=this.Frame.PtInFrame(x,y);
+        if (IFrameSplitOperator.IsNumber(frameID) && frameID>=0)    //在K线内部移动,调整K线索引
+            this.CursorIndex=this.Frame.GetXData(x);
+
 
         if (this.EnableBorderDrag && this.Frame)
         {
@@ -6867,7 +6894,7 @@ function JSChartContainer(uielement, OffscreenElement)
             }
         }
 
-        var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y} };
+        var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y}, IsPhone:isPhone===true };
         this.DrawDynamicInfo(option);
 
         if (this.IsShowTooltip && bDrawPicture==false)
@@ -6899,8 +6926,17 @@ function JSChartContainer(uielement, OffscreenElement)
 
             if (toolTip.Data)
             {
-                var xTooltip = e.clientX-this.UIElement.getBoundingClientRect().left;
-                var yTooltip = e.clientY-this.UIElement.getBoundingClientRect().top;
+                if (isPhone===true)
+                {
+                    var touche=e.touches[0];
+                    var xTooltip = touche.clientX-this.UIElement.getBoundingClientRect().left;
+                    var yTooltip = touche.clientY-this.UIElement.getBoundingClientRect().top;
+                }
+                else
+                {
+                    var xTooltip = e.clientX-this.UIElement.getBoundingClientRect().left;
+                    var yTooltip = e.clientY-this.UIElement.getBoundingClientRect().top;
+                }
                 this.ShowTooltip(xTooltip,yTooltip,toolTip);
             }
             else
@@ -12874,6 +12910,14 @@ function ChartData()
                         startDate=dayData.Date;
                     }
                     break;
+                case 22://半年:
+                    var halfYear=ChartData.GetHalfYear(dayData.Date);
+                    if (halfYear!=startDate)
+                    {
+                        isNewData=true;
+                        startDate=halfYear;
+                    }
+                    break;
                 case 9: //季线
                     var now=ChartData.GetQuarter(dayData.Date);
                     now=parseInt(dayData.Date/10000)*10+now;
@@ -13029,9 +13073,11 @@ function ChartData()
             }
         }
 
-
-        if (period==1 || period==2 || period==3 || period==9 || period==21 || (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)) return this.GetDayPeriodData(period);
-        if (period==5 || period==6 || period==7 || period==8 || period==11 || period==12 || (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
+        //if (period==1 || period==2 || period==3 || period==9 || period==21 || period==22 || (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)) 
+        if (ChartData.IsDayPeriod(period,false)) return this.GetDayPeriodData(period);
+        
+        //if (period==5 || period==6 || period==7 || period==8 || period==11 || period==12 || (period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
+        if (ChartData.IsMinutePeriod(period,false)) return this.GetMinutePeriodData(period);
     }
 
     //复权  0 不复权 1 前复权 2 后复权
@@ -14062,7 +14108,7 @@ function ChartData()
                         var nextDestItem=ChartData.GetKLineDataTime(kLineData[j+1]);
                         if ( destItem.Date<=item.Date && nextDestItem.Date>item.Date )
                         {
-                            var fitItem={ Date:item.Date, Time:item.Time, Index:j, Data2:destItem.Date, Time2:destItem.Time };
+                            var fitItem={ Date:item.Date, Time:item.Time, Index:j+1, Data2:nextDestItem.Date, Time2:nextDestItem.Time };
                             aryFixDataID[i]=fitItem;
                             ++i;
                         }
@@ -14101,7 +14147,7 @@ function ChartData()
                             (destItem.Date == item.Date && destItem.Time < item.Time && nextDestItem.Date > item.Date) ||
                             (destItem.Date < item.Date && nextDestItem.Date == item.Date && nextDestItem.Time > item.Time) )
                         {
-                            var fitItem={ Date:item.Date, Time:item.Time, Index:j, Data2:destItem.Date, Time2:destItem.Time };
+                            var fitItem={ Date:item.Date, Time:item.Time, Index:j+1, Data2:nextDestItem.Date, Time2:nextDestItem.Time };
                             aryFixDataID[i]=fitItem;
                             ++i;
                         }
@@ -14541,11 +14587,19 @@ ChartData.GetQuarter=function(value)
     else return 0;
 }
 
-//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线 21=双周 [40001-50000) 自定义日线 (isIncludeBase 是否包含基础日线周期)
+ChartData.GetHalfYear=function(value)
+{
+    var year=parseInt(value/10000);
+    var day=value%10000;
+    if (day<=630) return year*10000+630;
+    return year*10000+1231;
+}
+
+//是否是日线周期  0=日线 1=周线 2=月线 3=年线 9=季线 21=双周 22=半年 [40001-50000) 自定义日线 (isIncludeBase 是否包含基础日线周期)
 var CUSTOM_DAY_PERIOD_START=40000, CUSTOM_DAY_PERIOD_END=49999;
 ChartData.IsDayPeriod=function(period, isIncludeBase)
 {
-    if (period==1 || period==2 || period==3 || period==9 || period==21) return true;
+    if (period==1 || period==2 || period==3 || period==9 || period==21 || period==22) return true;
     if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END) return true;
     if (period==0 && isIncludeBase==true) return true;
 
@@ -14583,7 +14637,7 @@ ChartData.GetPeriodName=function(period)
 {
     var mapName=new Map(
     [
-        [0, '日线'],[1, '周线'],[2, '月线'],[3, '年线'],[9, '季线'], [21,'双周'],
+        [0, '日线'],[1, '周线'],[2, '月线'],[3, '年线'],[9, '季线'], [21,'双周'],[22,"半年"],
         [4, '1分'], [5, '5分'], [6, '15分'],[7, '30分'],[8, '60分'],[11, '2小时'],[12, '4小时'],
         [10, '分笔']
     ]);
@@ -27935,6 +27989,7 @@ function IChartTitlePainting()
     this.Title;                         //固定标题(可以为空)
     this.TitleColor=g_JSChartResource.DefaultTextColor;
     this.ClassName='IChartTitlePainting';
+    this.DrawStatus;
 
     this.ReloadResource=function()
     {
@@ -28261,6 +28316,15 @@ function DynamicMinuteTitlePainting()
         return item;
     }
 
+    this.GetLatestKLineData=function()  //获取最新一个K线数据
+    {
+        if (!this.Data || !this.Data.Data) return null;
+        var count=this.Data.Data.length;
+        if (count<=0) return null;
+
+        return this.Data.Data[count-1];
+    }
+
     this.DrawItem=function(item)
     {
         var isHScreen=this.Frame.IsHScreen===true;
@@ -28378,13 +28442,30 @@ function DynamicMinuteTitlePainting()
         this.Canvas.font=this.Font;
         this.SpaceWidth = this.Canvas.measureText('0').width;
 
-        //var index=Math.abs(this.CursorIndex-0.5);
-        var index=this.CursorIndex;
-        index=parseInt(index.toFixed(0));
-        var dataIndex=index+this.Data.DataOffset;
-        if (dataIndex>=this.Data.Data.length) dataIndex=this.Data.Data.length-1;
+        var isShowLastData=false;
+        if (this.DrawStatus && this.DrawStatus.IsTitleShowLatestData)
+        {
+            var status=this.DrawStatus;
+            if (!IFrameSplitOperator.IsNumber(status.FrameID) || status.FrameID<0)
+                isShowLastData=true;
+            else if (status.CorssCursorTouchEnd && status.IsOnTouch==false)
+                isShowLastData=true;
+        }
 
-        var item=this.Data.Data[dataIndex];
+        if (isShowLastData)
+        {
+            var item=this.GetLatestKLineData();
+        }
+        else
+        {
+            //var index=Math.abs(this.CursorIndex-0.5);
+            var index=this.CursorIndex;
+            index=parseInt(index.toFixed(0));
+            var dataIndex=index+this.Data.DataOffset;
+            if (dataIndex>=this.Data.Data.length) dataIndex=this.Data.Data.length-1;
+            var item=this.Data.Data[dataIndex];
+        }
+        
         this.LastShowData=item;
 
         this.Canvas.save();
@@ -28559,6 +28640,21 @@ function DynamicChartTitlePainting()
         return text;
     }
 
+    this.IsShowLastData=function()
+    {
+        var isShowLastData=false;
+        if (this.DrawStatus && this.DrawStatus.IsTitleShowLatestData)
+        {
+            var status=this.DrawStatus;
+            if (!IFrameSplitOperator.IsNumber(status.FrameID) || status.FrameID<0)
+                isShowLastData=true;
+            else if (status.CorssCursorTouchEnd && status.IsOnTouch==false)
+                isShowLastData=true;
+        }
+
+        return isShowLastData;
+    }
+
     this.Draw=function()
     {
         this.IsKLineFrame= this.Frame.ClassName=='KLineFrame' || this.Frame.ClassName=='KLineHScreenFrame';
@@ -28603,13 +28699,15 @@ function DynamicChartTitlePainting()
             left+=textWidth;
         }
 
+        var isShowLastData=this.IsShowLastData();
         var lockRect=this.Frame.GetLockRect();
         if (lockRect)   //指标上锁区域不显示动态标题
         {
-            var index=Math.abs(this.CursorIndex-0.5);
+            var index=Math.abs(this.CursorIndex);
             if (this.IsKLineFrame) index=this.CursorIndex;
             var x=this.Frame.GetXFromIndex(index.toFixed(0));
             if (x>=lockRect.Left) return;
+            if (isShowLastData) return;
         }
 
         for(var i in this.Data)
@@ -28628,13 +28726,20 @@ function DynamicChartTitlePainting()
             }
             else
             {
-                var index=Math.abs(this.CursorIndex-0.5);
-                index=parseInt(index.toFixed(0));
-                if (this.IsKLineFrame) index=this.CursorIndex;
-                var dataIndex=item.Data.DataOffset+index;
-                if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
-                if (dataIndex<0) continue;
-                //if (item.Data.DataOffset+index>=item.Data.Data.length) continue;
+                if (isShowLastData)
+                {
+                    var dataIndex=item.Data.Data.length-1;  //显示最后一个数据
+                }
+                else
+                {
+                    var index=Math.abs(this.CursorIndex);
+                    index=parseInt(index.toFixed(0));
+                    if (this.IsKLineFrame) index=this.CursorIndex;
+                    var dataIndex=item.Data.DataOffset+index;
+                    if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
+                    if (dataIndex<0) continue;
+                    //if (item.Data.DataOffset+index>=item.Data.Data.length) continue;
+                }
 
                 value=item.Data.Data[dataIndex];
                 if (value==null) continue;
@@ -34138,6 +34243,7 @@ function JSChartLocalization()
         ['周线', {CN:'周线', EN:'1W'}],
         ['双周', {CN:'双周', EN:"2W"}],
         ['月线', {CN:'月线', EN:'1M'}],
+        ["半年", {CN:'半年', EN:'HY'}],
         ['年线', {CN:'年线', EN:'1Y'}],
         ['1分', {CN:'1分', EN:'1Min'}],
         ['5分', {CN:'5分', EN:'5Min'}],
@@ -48215,6 +48321,10 @@ function KLineRightMenu(divElement)
                 click: function () { chart.ChangePeriod(9); }
             },
             {
+                text: "半年",Value:22,
+                click: function () { chart.ChangePeriod(22); }
+            },
+            {
                 text: "年线",Value:3,
                 click: function () { chart.ChangePeriod(3); }
             },
@@ -52263,9 +52373,62 @@ var g_JSComplierResource=
     {  
         Family:'iconfont', 
         Data:new Map([
-            [1, { Text:'\ue625', Color:'rgb(255,106,106)'}],    //向上箭头
-            [2, { Text:'\ue68b', Color:'rgb(46,139,87)'}],      //向下箭头
-            [11,{ Text:'\ue624', Color:'rgb(245,159,40)'}],     //点赞
+            [1, { Text:'\ue660', Color:'rgb(243,28,15)'}],    //向上箭头
+            [2, { Text:'\ue661', Color:'rgb(87,247,41)'}],    //向下箭头
+            [3, { Text:'\ue662', Color:'rgb(237,153,0)'}],
+            [4, { Text:'\ue663', Color:'rgb(237,153,0)'}],  
+            [5, { Text:'\ue664', Color:'rgb(237,153,0)'}],  
+            [6, { Text:'\ue665', Color:'rgb(140,57,208)'}],  
+            [7, { Text:'\ue666', Color:'rgb(246,135,37)'}],  
+            [8, { Text:'\ue667', Color:'rgb(85,231,56)'}],  
+            [9, { Text:'\ue668', Color:'rgb(227,61,41)'}], 
+
+            [10, { Text:'\ue669', Color:'rgb(216,78,48)'}], 
+            [11, { Text:'\ue66a', Color:'rgb(249,187,0)'}],    //点赞
+            [12, { Text:'\ue66b', Color:'rgb(249,187,0)'}], 
+            [13, { Text:'\ue66c', Color:'rgb(216,42,0)'}], 
+            [14, { Text:'\ue66d', Color:'rgb(58,90,236)'}], 
+            [15, { Text:'\ue66e', Color:'rgb(227,149,0)'}], 
+            [16, { Text:'\ue66f', Color:'rgb(208,82,78)'}], 
+            [17, { Text:'\ue670', Color:'rgb(234,114,26)'}], 
+            [18, { Text:'\ue671', Color:'rgb(116,25,255)'}], 
+            [19, { Text:'\ue672', Color:'rgb(102,9,11)'}], 
+
+            [20, { Text:'\ue673', Color:'rgb(127,125,137)'}],
+            [21, { Text:'\ue674', Color:'rgb(110,188,255)'}],
+            [22, { Text:'\ue675', Color:'rgb(238,79,51)'}],
+            [23, { Text:'\ue676', Color:'rgb(244,71,0)'}],
+            [24, { Text:'\ue677', Color:'rgb(102,183,248)'}],
+            [25, { Text:'\ue678', Color:'rgb(234,88,231)'}],
+            [26, { Text:'\ue679', Color:'rgb(242,171,0)'}],
+            [27, { Text:'\ue67a', Color:'rgb(87,247,168)'}],
+            [28, { Text:'\ue67b', Color:'rgb(97,204,113)'}],
+            [29, { Text:'\ue67c', Color:'rgb(84,115,193)'}],
+
+            [30, { Text:'\ue67d', Color:'rgb(141,51,255)'}],
+            [31, { Text:'\ue67e', Color:'rgb(200,126,24)'}],
+            [32, { Text:'\ue67f', Color:'rgb(195,41,32)'}],
+            [33, { Text:'\ue68f', Color:'rgb(215,85,194)'}],
+            [34, { Text:'\ue690', Color:'rgb(250,222,105)'}],
+            [35, { Text:'\ue691', Color:'rgb(112,249,224)'}],
+            [36, { Text:'\ue692', Color:'rgb(217,107,98)'}],
+            [37, { Text:'\ue693', Color:'rgb(114,231,17)'}],
+            [38, { Text:'\ue694', Color:'rgb(238,31,25)'}],
+            [39, { Text:'\ue695', Color:'rgb(92,247,113)'}],
+
+            [40, { Text:'\ue696', Color:'rgb(175,175,175)'}],
+            [41, { Text:'\ue697', Color:'rgb(252,228,23)'}],
+            [42, { Text:'\ue698', Color:'rgb(88,195,235)'}],
+            [43, { Text:'\ue699', Color:'rgb(55,74,94)'}],
+            [44, { Text:'\ue69a', Color:'rgb(248,175,33)'}],
+            [45, { Text:'\ue69b', Color:'rgb(194,180,112)'}],
+            [46, { Text:'\ue69c', Color:'rgb(50,153,28)'}],
+            [47, { Text:'\ue69d', Color:'rgb(17,65,152)'}],
+            [48, { Text:'\ue69e', Color:'rgb(194,55,26)'}],
+            [49, { Text:'\ue69f', Color:'rgb(243,0,0)'}],
+
+            /*
+            [11,{ Text:'\ue624', Color:'rgb(245,159,40)'}],     
             [12,{ Text:'\ue600', Color:'rgb(245,159,40)'}],
             [13,{Text:'\ue70f',Color:'rgb(209,37,35)'}, ],      //B
             [14,{Text:'\ue64c',Color:'rgb(127,209,59)'} ],      //S
@@ -52275,6 +52438,7 @@ var g_JSComplierResource=
             [38,{Text:'\ue68d',Color:'rgb(238,44,44)'} ],       //▲
             [39,{Text:'\ue68e',Color:'rgb(0,139,69)'} ],        //▼
             [46,{Text:'\ue64d',Color:'rgb(51,51,51)'} ],        //message
+            */
         ])
     },
 
@@ -52520,7 +52684,8 @@ JSComplierHelper.GetPeriodInfo=function(obj)
         {Name:'DAY7',    Period:40007, Order:1007},
         {Name:'DAY8',    Period:40008, Order:1008},
         {Name:'DAY9',    Period:40009, Order:1009},
-        {Name:'DAY10',    Period:40009, Order:1010},
+        {Name:'DAY10',   Period:40009, Order:1010},
+        {Name:"WEEK2",   Period:21,    Order:1010},
 
         {Name:'DAY11',    Period:40011, Order:1011},
         {Name:'DAY12',    Period:40012, Order:1012},
@@ -52529,6 +52694,7 @@ JSComplierHelper.GetPeriodInfo=function(obj)
 
         {Name:'MONTH',  Period:2, Order:1030},
         {Name:"SEASON", Period:9, Order:1090},
+        {Name:"HALFYEAR", Period:22, Order:1180},
         {Name:"YEAR",   Period:3, Order:1365}
     ];
 
@@ -53288,7 +53454,7 @@ function Node(ErrorHandler)
 
                 const VAR_PERIOD_NAME=
                 [
-                    "MIN1","MIN5","MIN15","MIN30","MIN60","DAY","WEEK","MONTH","SEASON","YEAR",
+                    "MIN1","MIN5","MIN15","MIN30","MIN60","DAY","WEEK","MONTH","SEASON","YEAR","HALFYEAR","WEEK2",
                     "MULTIDAY","DAY2","DAY3","DAY4","DAY5","DAY6","DAY7","DAY8","DAY9","DAY10",
                     "DAY11","DAY12","DAY13","DAY14","DAY15"
                 ];
@@ -65281,11 +65447,11 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         const PERIOD_MAP=new Map([
-            ["DAY",0 ], ["WEEK", 1 ], ["MONTH",2 ], ["SEASON",9 ], ["YEAR", 3],
-            ["MIN1", 4],["MIN5", 5 ],["MIN15", 6 ],["MIN30",7 ], ["MIN60", 8 ],
+            ["DAY",0 ], ["WEEK", 1 ], ["MONTH",2 ], ["SEASON",9 ], ["YEAR", 3], ["HALFYEAR",22], ["WEEK2",21],
+            ["MIN1", 4], ["MIN5", 5 ], ["MIN15", 6 ], ["MIN30",7 ], ["MIN60", 8 ],
 
             ["DAY2", 40002],["MULTIDAY",40002],["DAY3", 40003],["DAY4", 40004],["DAY5",40005],
-            ["DAY6", 40006],["DAY7", 40007],["DAY8", 40008],["DAY9", 40009],["DAY10",40010]
+            ["DAY6", 40006],["DAY7", 40007],["DAY8", 40008],["DAY9", 40009],["DAY10",40010],
             ["DAY11", 40011],["DAY12", 40012],["DAY13", 40013],["DAY14", 40014],["DAY15", 40015],
         ]);
 
@@ -68238,7 +68404,7 @@ function JSExplainer(ast,option)
         const mapPeriodName=new Map(
         [
             ["MIN1","1分钟"], ["MIN5", "5分钟"], ["MIN15", "15分钟"], ["MIN30","30分钟"],["MIN60","60分钟"],
-            ["DAY","日"],["WEEK","周"], ["MONTH", "月"], ['SEASON',"季"], ["YEAR", "年"]
+            ["DAY","日"],["WEEK","周"], ["MONTH", "月"], ['SEASON',"季"], ["YEAR", "年"],["WEEK2","双周"], ["HALFYEAR", "半年"]
         ]);
 
         var dataName=valueName;
@@ -71434,6 +71600,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         {
             var item=data[i];
             if (!IFrameSplitOperator.IsString(item.Value)) continue;
+            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
             if (item.Index<0 || item.Index>=kData.Data.length) continue;
             var valueName=item.Value.toUpperCase();
             var kItem=kData.Data[item.Index];

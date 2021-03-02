@@ -130,8 +130,8 @@ DefaultData.GetMinuteOption=function()
         Frame: //子框架设置,刻度小数位数设置
         [
             { SplitCount: 5, StringFormat: 0 },
-            { SplitCount: 3, StringFormat: 0 },
-            { SplitCount: 3, StringFormat: 0 }
+            { SplitCount: 5, StringFormat: 0 },
+            { SplitCount: 5, StringFormat: 0 }
         ],
     };
 
@@ -152,12 +152,14 @@ DefaultData.GetKLineOption=function()
         IsAutoUpdate: true, //是自动更新数据
         IsShowRightMenu: false, //右键菜单
 
+        CorssCursorInfo:{ DateFormatType:2 },
+
         KLine: 
         {
             DragMode: 1, //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
             Right: 1, //复权 0 不复权 1 前复权 2 后复权
             Period: 0, //周期 0 日线 1 周线 2 月线 3 年线
-            MaxReqeustDataCount: 1000, //日线数据最近1000天
+            MaxReqeustDataCount: 3000, //日线数据最近1000天
             MaxRequestMinuteDayCount: 15,    //分钟数据最近15天
             PageSize: 50, //一屏显示多少数据 
             IsShowTooltip: true, //是否显示K线提示信息
@@ -180,10 +182,10 @@ DefaultData.GetKLineOption=function()
 
         Frame: //子框架设置
         [
-            { SplitCount: 3, StringFormat: 0, IsShowLeftText: false },
-            { SplitCount: 3, StringFormat: 0, IsShowLeftText: false },
-            { SplitCount: 3, StringFormat: 0, IsShowLeftText: false },
-            { SplitCount: 3, StringFormat: 0, IsShowLeftText: false }
+            { SplitCount: 5, StringFormat: 0, IsShowLeftText: false },
+            { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true, MinYDistance:20 },
+            { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true},
+            { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true}
         ]
     };
 
@@ -199,6 +201,8 @@ DefaultData.GetPeriodData=function(name)
                     ["周线",{Value:1,KLineShow:true,MinuteShow:false}],
                     ["月线",{Value:2,KLineShow:true,MinuteShow:false}],
                     ["年线",{Value:3,KLineShow:true,MinuteShow:false}],
+                    ["双周",{Value:21,KLineShow:true,MinuteShow:false}],
+                    ["半年",{Value:22,KLineShow:true,MinuteShow:false}],
                     ["1分钟",{Value:4,KLineShow:true,MinuteShow:false}],
                     ["5分钟",{Value:5,KLineShow:true,MinuteShow:false}],
                     ["15分钟",{Value:6,KLineShow:true,MinuteShow:false}],
@@ -216,7 +220,8 @@ DefaultData.GetPeriodMenu=function()
     [
         '分时', '五日', 
         '日线', '周线', '月线', '年线', 
-        '1分钟', '5分钟', '15分钟', '30分钟', '60分钟'
+        '1分钟', '5分钟', '15分钟', '30分钟', '60分钟',
+        "双周",  "半年"
     ];
 
     return data;
