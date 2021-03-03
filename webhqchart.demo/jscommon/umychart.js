@@ -1526,6 +1526,27 @@ JSChart.RegisterDrawPictureIonFont=function(obj)
     return IChartDrawPicture.RegisterIonFont(obj);
 }
 
+JSChart.GetInternalTimeData=function(name)  //内置品种交易时间
+{
+    switch(name)
+    {
+        case "NYMEXTimeData":
+            return g_NYMEXTimeData;
+        case "COMEXTimeData":
+            return g_COMEXTimeData;
+        case "NYBOTTimeData":
+            return g_NYBOTTimeData;
+        case "CBOTTimeData":
+            return g_CBOTTimeData;
+        case "LMETimeData":
+            return g_LMETimeData;
+        case "FuturesTimeData":
+            return g_FuturesTimeData;
+        default:
+            return null;
+    }
+}
+
 var JSCHART_EVENT_ID=
 {
     RECV_KLINE_MATCH:1, //接收到形态匹配

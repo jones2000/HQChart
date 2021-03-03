@@ -38,6 +38,10 @@ import
     JSCommonCoordinateData as JSCommonCoordinateData,
     JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME ,
     JSCommonCoordinateData_Global_FuturesTimeData as g_FuturesTimeData,
+    JSCommonCoordinateData_Global_NYMEXTimeData as g_NYMEXTimeData,
+    JSCommonCoordinateData_Global_COMEXTimeData as g_COMEXTimeData,
+    JSCommonCoordinateData_Global_NYBOTTimeData as g_NYBOTTimeData,
+    JSCommonCoordinateData_Global_LMETimeData as g_LMETimeData,
 } from "./umychart.coordinatedata.wechat.js";
 
 import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达信编译器
@@ -1217,6 +1221,27 @@ JSChart.GetKLineZoom = function () //K线缩放配置
 JSChart.GetChinaFuturesTimeData=function()  //获取国内期货交易时间配置
 {
     return g_FuturesTimeData;
+}
+
+JSChart.GetInternalTimeData=function(name)  //内置品种交易时间
+{
+    switch(name)
+    {
+        case "NYMEXTimeData":
+            return g_NYMEXTimeData;
+        case "COMEXTimeData":
+            return g_COMEXTimeData;
+        case "NYBOTTimeData":
+            return g_NYBOTTimeData;
+        case "CBOTTimeData":
+            return g_CBOTTimeData;
+        case "LMETimeData":
+            return g_LMETimeData;
+        case "FuturesTimeData":
+            return g_FuturesTimeData;
+        default:
+            return null;
+    }
 }
 
 var JSCHART_EVENT_ID =
