@@ -501,9 +501,17 @@ function DynamicKLineTitlePainting()
         var data = { Draw: drawData, Name: this.ClassName, Explain: explain };
         if (this.Data && this.Data.Data)
         {
-            var index = this.CursorIndex;
-            index = parseInt(index.toFixed(0));
-            var dataIndex = this.Data.DataOffset + index;
+            if (IFrameSplitOperator.IsNumber(this.CursorIndex))
+            {
+                var index = this.CursorIndex;
+                index = parseInt(index.toFixed(0));
+                var dataIndex = this.Data.DataOffset + index;
+            }
+            else
+            {
+                dataIndex=this.Data.Data.length-1;
+            }
+            
             var dataCount=this.Data.Data.length;
             data.DataIndex=dataIndex;
             data.DataCount=dataCount;

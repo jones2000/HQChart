@@ -10195,20 +10195,10 @@ function MinuteChartContainer(uielement)
         this.Name = data.data.stock[0].name;
         var yClose = data.data.stock[0].yclose;
         var upperSymbol = this.Symbol.toUpperCase();
-        var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) || MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol);
+        var isFutures = MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
         if (data.data.stock[0].yclearing && isFutures) yClose = data.data.stock[0].yclearing; //期货使用前结算价
         var extendData = { High: data.data.stock[0].high, Low: data.data.stock[0].low };
         this.BindMainData(sourceData, yClose, extendData);
-
-        if (this.Frame.SubFrame.length > 2) 
-        {
-            var bindData = new ChartData();
-            bindData.Data = aryMinuteData;
-            for (var i = 2; i < this.Frame.SubFrame.length; ++i) 
-            {
-                this.BindIndexData(i, bindData);
-            }
-        }
 
         for (let i in this.Frame.SubFrame)  //把股票代码设置到X轴刻度类里
         {
@@ -10217,6 +10207,17 @@ function MinuteChartContainer(uielement)
             item.Frame.XSplitOperator.DayCount = 1;
             item.Frame.XSplitOperator.Operator();   //调整X轴个数
             item.Frame.YSplitOperator.Symbol = this.Symbol;
+        }
+
+        //计算指标
+        if (this.Frame.SubFrame.length > 2) 
+        {
+            var bindData = new ChartData();
+            bindData.Data = aryMinuteData;
+            for (var i = 2; i < this.Frame.SubFrame.length; ++i) 
+            {
+                this.BindIndexData(i, bindData);
+            }
         }
 
         this.ChartCorssCursor.StringFormatY.Symbol = this.Symbol;

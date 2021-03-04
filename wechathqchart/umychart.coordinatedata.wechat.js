@@ -10,6 +10,18 @@
     各个品种分钟走势图坐标信息
 */
 
+function GetLocalTime(i)    //得到标准时区的时间的函数
+{
+    if (typeof i !== 'number') return;
+    var d = new Date();
+    //得到1970年一月一日到现在的秒数
+    var len = d.getTime();
+    //本地时间与GMT时间的时间偏移差
+    var offset = d.getTimezoneOffset() * 60000;
+    //得到现在的格林尼治时间
+    var utcTime = len + offset;
+    return new Date(utcTime + 3600000 * i);
+}
 
 var MARKET_SUFFIX_NAME=
 {
@@ -641,6 +653,34 @@ function MinuteTimeStringData()
             if (!splitData) return null;
             return this.GetFutures(splitData);
         }
+
+        if (MARKET_SUFFIX_NAME.IsCOMEX(upperSymbol))    //纽约期货交易所
+        {
+            var splitData = g_COMEXTimeData.GetSplitData(upperSymbol);
+            if (!splitData) return null;
+            return this.GetFutures(splitData);
+        }
+
+        if (MARKET_SUFFIX_NAME.IsNYBOT(upperSymbol))    //纽约期货交易所
+        {
+            var splitData = g_NYBOTTimeData.GetSplitData(upperSymbol);
+            if (!splitData) return null;
+            return this.GetFutures(splitData);
+        }
+
+        if (MARKET_SUFFIX_NAME.IsCBOT(upperSymbol))    //芝商所
+        {
+            var splitData = g_CBOTTimeData.GetSplitData(upperSymbol);
+            if (!splitData) return null;
+            return this.GetFutures(splitData);
+        }
+
+        if (MARKET_SUFFIX_NAME.IsLME(upperSymbol))    //伦敦LME
+        {
+            var splitData = g_LMETimeData.GetSplitData(upperSymbol);
+            if (!splitData) return null;
+            return this.GetFutures(splitData);
+        }
     }
 }
 
@@ -917,7 +957,7 @@ function MinuteCoordinateData()
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
                 data = HK_MINUTE_X_COORDINATE;
             else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
-                return this.GetFuturesData(upperSymbol,width);
+                return this.GetChinatFuturesData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
                 data = this.GetUSAData(upperSymbol, width);
             else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol, width))
@@ -928,6 +968,14 @@ function MinuteCoordinateData()
                 data = this.GetETData(upperSymbol, width);
             else if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol, width))
                 return data = this.GetNYMEXData(upperSymbol, width);
+            else if (MARKET_SUFFIX_NAME.IsCOMEX(upperSymbol,width))
+                return  data=this.GetCOMEXData(upperSymbol,width);
+             else if (MARKET_SUFFIX_NAME.IsNYBOT(upperSymbol,width))
+                return  data=this.GetNYBOTData(upperSymbol,width);
+             else if (MARKET_SUFFIX_NAME.IsCBOT(upperSymbol,width))
+                return  data=this.GetCBOTData(upperSymbol,width);
+             else if (MARKET_SUFFIX_NAME.IsLME(upperSymbol,width))
+                return  data=this.GetLMEData(upperSymbol,width);
             else if ((MARKET_SUFFIX_NAME.IsBIT(upperSymbol,width)))
                 data=this.GetBITData(upperSymbol,width);
         }
@@ -943,9 +991,9 @@ function MinuteCoordinateData()
         return result;
     }
 
-    this.GetFuturesData = function (upperSymbol,width)
+    this.GetFuturesData = function (upperSymbol,width,timeData)
     {
-        var splitData = g_FuturesTimeData.GetSplitData(upperSymbol);
+        var splitData = timeData.GetSplitData(upperSymbol);
         if (!splitData) return null;
         var stringData = g_MinuteTimeStringData.GetFutures(splitData);
         if (!stringData) return null;
@@ -984,38 +1032,34 @@ function MinuteCoordinateData()
         return result;
     }
 
-    this.GetNYMEXData = function (upperSymbol, width) 
+    this.GetChinatFuturesData=function(upperSymbol,width)
     {
-        var splitData = g_NYMEXTimeData.GetSplitData(upperSymbol);
-        if (!splitData) return null;
-        var stringData = g_MinuteTimeStringData.GetFutures(splitData);
-        if (!stringData) return null;
-        var result = { Count: stringData.length };
-        var coordinate = null;
-        var minWidth = 200, simpleWidth = 480;
+        return this.GetFuturesData(upperSymbol,width, g_FuturesTimeData);
+    }
 
-        if (width < minWidth) coordinate = splitData.Coordinate.Min;
-        else if (width < simpleWidth) coordinate = splitData.Coordinate.Simple;
-        else coordinate = splitData.Coordinate.Full;
+    this.GetNYMEXData=function(upperSymbol,width)
+    {
+        return this.GetFuturesData(upperSymbol,width, g_NYMEXTimeData);
+    }
 
-        var data = [];
-        for (var i = 0; i < stringData.length; ++i) 
-        {
-            var value = stringData[i];
-            for (var j = 0; j < coordinate.length; ++j) 
-            {
-                var coordinateItem = coordinate[j];
-                if (value == coordinateItem.Value) 
-                {
-                    var item = [i, 0, 'RGB(200,200,200)', coordinateItem.Text];
-                    data.push(item);
-                    break;
-                }
-            }
-        }
+    this.GetCOMEXData=function(upperSymbol,width)
+    {
+        return this.GetFuturesData(upperSymbol,width, g_COMEXTimeData);
+    }
 
-        result.Data = data;
-        return result;
+    this.GetNYBOTData=function(upperSymbol,width)
+    {
+        return this.GetFuturesData(upperSymbol,width, g_NYBOTTimeData);
+    }
+
+    this.GetCBOTData=function(upperSymbol,width)
+    {
+        return this.GetFuturesData(upperSymbol,width, g_CBOTTimeData);
+    }
+
+    this.GetLMEData=function(upperSymbol,width)
+    {
+        return this.GetFuturesData(upperSymbol,width, g_LMETimeData);
     }
 
     this.GetFTSEData = function (upperSymbol, width) 
