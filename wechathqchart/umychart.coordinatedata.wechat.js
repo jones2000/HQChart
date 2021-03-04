@@ -2375,4 +2375,5 @@ module.exports =
     JSCommonCoordinateData_Global_COMEXTimeData: g_COMEXTimeData,
     JSCommonCoordinateData_Global_NYBOTTimeData: g_NYBOTTimeData,
     JSCommonCoordinateData_Global_LMETimeData: g_LMETimeData,
+    JSCommonCoordinateData_Global_CBOTTimeData: g_CBOTTimeData,
 };

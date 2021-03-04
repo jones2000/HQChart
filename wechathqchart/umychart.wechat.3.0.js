@@ -42,6 +42,7 @@ import
     JSCommonCoordinateData_Global_COMEXTimeData as g_COMEXTimeData,
     JSCommonCoordinateData_Global_NYBOTTimeData as g_NYBOTTimeData,
     JSCommonCoordinateData_Global_LMETimeData as g_LMETimeData,
+    JSCommonCoordinateData_Global_CBOTTimeData as g_CBOTTimeData,
 } from "./umychart.coordinatedata.wechat.js";
 
 import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达信编译器
@@ -1227,17 +1228,17 @@ JSChart.GetInternalTimeData=function(name)  //内置品种交易时间
 {
     switch(name)
     {
-        case "NYMEXTimeData":
-            return g_NYMEXTimeData;
-        case "COMEXTimeData":
+        case "NYMEXTimeData":   //纽约商业交易所
+            return g_NYMEXTimeData; 
+        case "COMEXTimeData":   //纽约商品交易所
             return g_COMEXTimeData;
-        case "NYBOTTimeData":
+        case "NYBOTTimeData":   //纽约期货交易所
             return g_NYBOTTimeData;
-        case "CBOTTimeData":
+        case "CBOTTimeData":    //芝加哥期货交易所
             return g_CBOTTimeData;
-        case "LMETimeData":
+        case "LMETimeData":     //伦敦金属交易所
             return g_LMETimeData;
-        case "FuturesTimeData":
+        case "FuturesTimeData": //国内期货
             return g_FuturesTimeData;
         default:
             return null;
