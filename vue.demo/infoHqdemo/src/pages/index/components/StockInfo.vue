@@ -110,16 +110,11 @@
 
 <script>
   import $ from 'jquery'
-  // import JSCommon from '../../../jscommon/umychart.vue/umychart.vue.js'
-  // import JSCommonStock from '../../../jscommon/umychart.vue/umychart.stock.vue.js'
-  // import SearchSymbol from '../../../jscommon/umychart.vue.components/searchsymbol.vue'
-  // import '../../../jscommon/umychart.resource/font/fontSymbol.js'
-  // import '../../../jscommon/umychart.resource/font/fontSymbol.css'
   import moment from "moment"
 
   import HQChart from 'hqchart'
-  import JSCommon from 'hqchart/src/jscommon/umychart.vue/umychart.vue.js'
-  import JSCommonStock from 'hqchart/src/jscommon/umychart.vue/umychart.stock.vue.js'
+  var JSCommon = HQChart.Chart;
+  var JSCommonStock = HQChart.Stock;
   import 'hqchart/src/jscommon/umychart.resource/font/fontSymbol.js'
   import 'hqchart/src/jscommon/umychart.resource/font/fontSymbol.css'
   import SearchSymbol from '../../../components/searchsymbol.vue'

@@ -197,7 +197,7 @@ import $ from 'jquery'
 import HQChart from 'hqchart'
 import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
 import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
-import JSCommonStock from 'hqchart/src/jscommon/umychart.vue/umychart.stock.vue.js'
+var JSCommonStock = HQChart.Stock;
 import StringFormat from 'hqchart/src/jscommon/umychart.vue/stockstringformat.js'
 import Stockdrawtool from '../../../components/stockdrawtool.vue'
 

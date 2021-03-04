@@ -42,7 +42,8 @@
 </template>
 
 <script>
-    import JSCommonStock from 'hqchart/src/jscommon/umychart.vue/umychart.stock.vue.js'
+    import HQChart from 'hqchart'
+    var JSCommonStock = HQChart.Stock;
     import Vue from "vue";
     import ElementUI from "element-ui";
     import "../../node_modules/element-ui/lib/theme-default/index.css"
