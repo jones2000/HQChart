@@ -8043,6 +8043,28 @@ function JSChartContainer(uielement, OffscreenElement)
 
         this.ChartCorssCursor.IsShowCorss=bShow;
     }
+
+    //获取扩展画法
+    this.GetExtendChartByClassName=function(name)
+    {
+        for(var i in this.ExtendChartPaint)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.ClassName==name) return { Index:i, Chart:item };
+        }
+
+        return null
+    }
+
+    //删除扩展画法
+    this.DeleteExtendChart=function(data)
+    {
+        if (data.Index>=this.ExtendChartPaint.length) return;
+        if (this.ExtendChartPaint[data.Index]!=data.Chart) return;
+
+        if (typeof(data.Chart.Clear)=='function') data.Chart.Clear();
+        this.ExtendChartPaint.splice(data.Index,1);
+    }
 }
 
 function GetDevicePixelRatio()
@@ -8159,6 +8181,7 @@ function ToFixedRect(value)
     // A double bitwise not.
     //rounded = ~~ (0.5 + somenum);
     // Finally, a left bitwise shift.
+    value*=GetDevicePixelRatio();
     var rounded;
     return rounded = (0.5 + value) << 0;
 }
@@ -32546,6 +32569,12 @@ function ChartDrawRuler()
             }
         }
 
+        if (!IFrameSplitOperator.IsPlusNumber(yClose))  //前收盘无效， 取上一个交易日的收盘价
+        {
+            var index=startPoint.XValue-1;
+            if (index>=0 && index<data.length) yClose=data[index].Close;
+        }
+
         var result={ YClose:yClose, Open:open, High:high, Low:low, Close:close, Count:count };
         if (IFrameSplitOperator.IsPlusNumber(yClose)) 
         {
@@ -38502,26 +38531,6 @@ function KLineChartContainer(uielement,OffscreenElement)
         }
     }
 
-    this.GetExtendChartByClassName=function(name)
-    {
-        for(var i in this.ExtendChartPaint)
-        {
-            var item=this.ExtendChartPaint[i];
-            if (item.ClassName==name) return { Index:i, Chart:item };
-        }
-
-        return null
-    }
-
-    this.DeleteExtendChart=function(data)
-    {
-        if (data.Index>=this.ExtendChartPaint.length) return;
-        if (this.ExtendChartPaint[data.Index]!=data.Chart) return;
-
-        if (typeof(data.Chart.Clear)=='function') data.Chart.Clear();
-        this.ExtendChartPaint.splice(data.Index,1);
-    }
-
     //锁|解锁指标 { Index:指标名字,IsLocked:是否要锁上,Callback:回调 }
     this.LockIndex=function(lockData)
     {
@@ -38580,7 +38589,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         return false;
     }
 
-    this.SetSizeChage=function(bChanged)
+    this.SetSizeChange=function(bChanged)
     {
         this.Frame.SetSizeChage(bChanged);
         for(var i in this.ExtendChartPaint)
@@ -38589,6 +38598,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             item.SizeChange=bChanged;
         }
     }
+    this.SetSizeChage=this.SetSizeChange;   //单词拼错了， 还没替换完
 
     this.Update=function(option) //option: { UpdateCursorIndexType:更新十字光标方式 }
     {
@@ -40704,6 +40714,13 @@ function MinuteChartContainer(uielement)
                     this.DrawDynamicInfo();
                 }
                 break;
+            case 46:    //del
+                if (!this.SelectChartDrawPicture) break;
+                var drawPicture=this.SelectChartDrawPicture;
+                JSConsole.Chart.Log(drawPicture,"drawPicturedrawPicturedrawPicture")
+                this.SelectChartDrawPicture=null;
+                this.ClearChartDrawPicture(drawPicture);    //删除选中的画图工具
+                break;
             default:
                 return;
         }
@@ -42143,6 +42160,17 @@ function MinuteChartContainer(uielement)
                 chart.SetOption(option);
                 this.ExtendChartPaint.push(chart);
                 return chart;
+            case '画图工具':
+                chart=new DrawToolsButton();
+                chart.Canvas=this.Canvas;
+                chart.ChartBorder=this.Frame.ChartBorder;
+                chart.ChartFrame=this.Frame;
+                chart.HQChart=this;
+                chart.Left=this.Frame.ChartBorder.Right;    //左边间距使用当前框架间距
+                chart.SetOption(option);
+                this.ExtendChartPaint.push(chart);
+                this.Frame.ChartBorder.Right+=chart.Width;  //创建筹码需要增加右边的间距
+                return chart;
             default:
                 return null;
         }
@@ -42240,86 +42268,26 @@ function MinuteChartContainer(uielement)
     this.CreateChartDrawPicture=function(name, option, callback)
     {
         var drawPicture=null;
-        switch(name)
+        var item=IChartDrawPicture.GetDrawPictureByName(name);
+        if (item)
         {
-            case "线段":
-                drawPicture=new ChartDrawPictureLine();
-                break;
-            case "射线":
-                drawPicture=new ChartDrawPictureHaflLine();
-                break;
-            case "尺子":
-                drawPicture=new ChartDrawRuler();
-                break;
-            case "标价线":
-                drawPicture=new ChartDrawPriceLine();
-                break;
-            case "垂直线":
-                drawPicture=new ChartDrawVerticalLine();
-                break;
-            case "波浪尺":
-                drawPicture=new ChartDrawWaveRuler();
-                break;
-            case "箱型线":
-                drawPicture=new ChartDrawBox();
-                break;
-            case "线形回归线":
-                drawPicture=new ChartDrawLinearRegression();
-                break;
-            case "线形回归带":
-                drawPicture=new ChartDrawLinearRegression({ IsShowMaxMinLine:true });
-                break;
-            case "延长线形回归带":
-                drawPicture=new ChartDrawLinearRegression({ IsShowMaxMinLine:true, IsShowExtendLine:true });
-                break;
-            case "箭头":
-                drawPicture=new ChartDrawArrowLine();
-                break;
-            case '水平线':
-                drawPicture=new ChartDrawPictureHorizontalLine();
-                break;
-            case '趋势线':
-                drawPicture=new ChartDrawPictureTrendLine();
-                break;
-            case "矩形":
-                drawPicture=new ChartDrawPictureRect();
-                break;
-            case "圆弧线":
-                drawPicture=new ChartDrawPictureArc();
-                break;
-            case 'M头W底':
-                drawPicture=new ChartDrawPictureWaveMW();
-                break;
-            case "2点画图例子":
-                drawPicture=new ChartDrawTwoPointDemo();
-                break;
-            case "3点画图例子":
-                drawPicture=new ChartDrawThreePointDemo();
-                break;
-            default:
-                {
-                    //iconfont 图标
-                    const ICONFONT_LIST=new Map(
-                        [
-                            ["icon-arrow_up", { Text:'\ue683', Color:'#318757'}],
-                            ["icon-arrow_down", { Text:'\ue681', Color:'#db563e'}],
-                            ["icon-arrow_right", { Text:'\ue682', Color:'#318757'}],
-                            ["icon-arrow_left", { Text:'\ue680', Color:'#318757'}],
-                        ]
-                    );
-
-                    if (ICONFONT_LIST.has(name))
-                    {
-                        var item=ICONFONT_LIST.get(name);
-                        drawPicture=new ChartDrawPictureIconFont();
-                        drawPicture.FontOption.Family='iconfont';
-                        drawPicture.Text=item.Text;
-                        if (item.Color) drawPicture.LineColor=item.Color;
-                        break;
-                    }
-                }
-                return false;
+            drawPicture=item.Create();
+            if (drawPicture.ClassName=='ChartDrawPictureText') drawPicture.HQChart=this;
         }
+
+        if (!drawPicture)    //iconfont图标
+        {
+            if (IChartDrawPicture.MapIonFont.has(name))
+            {
+                var iconItem=IChartDrawPicture.MapIonFont.get(name);
+                drawPicture=new ChartDrawPictureIconFont();
+                drawPicture.FontOption.Family=iconItem.Family
+                drawPicture.Text=iconItem.Text;
+                if (iconItem.Color) drawPicture.LineColor=iconItem.Color;
+            }
+        }
+
+        if (!drawPicture) return false;
 
         drawPicture.Canvas=this.Canvas;
         drawPicture.Status=0;
@@ -42373,6 +42341,17 @@ function MinuteChartContainer(uielement)
 
         this.ChartDrawStorageCache=null;    //清空缓存
     }
+
+    this.SetSizeChange=function(bChanged)
+    {
+        this.Frame.SetSizeChage(bChanged);
+        for(var i in this.ExtendChartPaint)
+        {
+            var item=this.ExtendChartPaint[i];
+            item.SizeChange=bChanged;
+        }
+    }
+    this.SetSizeChage=this.SetSizeChange;
 }
 
 // 分钟走势图数据 带盘前数据
@@ -48824,7 +48803,7 @@ function KLineRightMenu(divElement)
                         }
                         chart.DeleteExtendChart(drawTools); 
                         chart.Frame.ChartBorder.Right-=toolsWidth;
-                        chart.SetSizeChage(true);
+                        chart.SetSizeChange(true);
                         chart.Draw();
                     }
                 }
@@ -48838,7 +48817,7 @@ function KLineRightMenu(divElement)
                     click: function () {
                         var option={Name:'画图工具', Top:chart.Frame.ChartBorder.Top };
                         var extendChart=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
-                        chart.SetSizeChage(true);
+                        chart.SetSizeChange(true);
                         chart.Draw();
                     }
                 }
@@ -48865,7 +48844,7 @@ function KLineRightMenu(divElement)
                         }
                         chart.DeleteExtendChart(StockChip); 
                         chart.Frame.ChartBorder.Right-=chipWidth;
-                        chart.SetSizeChage(true);
+                        chart.SetSizeChange(true);
                         chart.Draw();
                     }
                     
@@ -48880,7 +48859,7 @@ function KLineRightMenu(divElement)
                     click: function () {  
                         var option={Name:'筹码分布', ShowType:1, Width:230 };
                         var extendChart=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
-                        chart.SetSizeChage(true);
+                        chart.SetSizeChange(true);
                         chart.Draw();
                     }
                 }
@@ -49168,7 +49147,8 @@ function MinuteRightMenu(divElement)
             {
                 text: "副图指标切换",
                 children: this.GetIndex(chart)
-            }
+            },
+            
         ];
 
         var symbol=chart.Symbol;
@@ -49176,6 +49156,8 @@ function MinuteRightMenu(divElement)
         {
             dataList.push({text:'集合竞价',children: this.GetShowBeforeData(chart)});
         }
+
+        dataList.push({text:"工具", children:this.GetTools(chart)});
 
         var identify=event.data.FrameID;
         JSConsole.Chart.Log('[MinuteRightMenu::DoModal]',identify);
@@ -49322,6 +49304,46 @@ function MinuteRightMenu(divElement)
 
         var count=chart.Frame.SubFrame.length-1;
         if ((count-1)>=0 && (count-1)<data.length) data[count-1].selected=true;  //选中
+
+        return data;
+    }
+
+    //工具
+    this.GetTools=function(chart)
+    {
+        var data=[];
+        var drawTools=chart.GetExtendChartByClassName('DrawToolsButton');
+        if (drawTools)
+        {
+            data.push(
+                {
+                    text: "关闭画图工具",
+                    click: function () 
+                    { 
+                        var toolsWidth=drawTools.Chart.Width;
+                        var toolsIndex=parseInt(drawTools.Index);
+                        chart.DeleteExtendChart(drawTools); 
+                        chart.Frame.ChartBorder.Right-=toolsWidth;
+                        chart.SetSizeChange(true);
+                        chart.Draw();
+                    }
+                }
+            );
+        }
+        else
+        {
+            data.push(
+                {
+                    text: "画图工具",
+                    click: function () {
+                        var option={Name:'画图工具', Top:chart.Frame.ChartBorder.Top };
+                        var extendChart=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
+                        chart.SetSizeChange(true);
+                        chart.Draw();
+                    }
+                }
+            );
+        }
 
         return data;
     }
