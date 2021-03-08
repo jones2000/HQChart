@@ -8225,7 +8225,7 @@ function ToFixedRect(value)
     // A double bitwise not.
     //rounded = ~~ (0.5 + somenum);
     // Finally, a left bitwise shift.
-    value*=GetDevicePixelRatio();
+    //value*=GetDevicePixelRatio();
     var rounded;
     return rounded = (0.5 + value) << 0;
 }
