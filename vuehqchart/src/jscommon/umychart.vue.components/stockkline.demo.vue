@@ -467,7 +467,9 @@ export default
                 Timer:null  //定时器
             },
             MoveInterval:null,
-            IsShowBeforeData:true  //显示
+            IsShowBeforeData:true,  //显示
+
+            ColorStyle:new Map()   //风格
         }
 
         return data;
@@ -509,6 +511,12 @@ export default
         if (this.KLineOption) this.SetDefaultKLineOption(this.KLineOption);
         if (this.MinuteOption) this.SetDefaultMinuteOption(this.MinuteOption);
         if (this.TradeInfoTabWidth>0) this.TradeInfoTab.Width=this.TradeInfoTabWidth;
+
+        //保存配色
+        var resource=JSCommon.JSChart.GetResource();
+        this.ColorStyle.set("white",JSON.parse(JSON.stringify(resource)));
+        resource=JSCommon.HQChartStyle.GetStyleConfig(JSCommon.STYLE_TYPE_ID.BLACK_ID);
+        this.ColorStyle.set("block",JSON.parse(JSON.stringify(resource)));
     },
 
     mounted:function()
@@ -778,6 +786,27 @@ export default
 
             this.UpateMenuStatus();
             
+        },
+
+        //风格切换
+        ChangeStyle(styleName)
+        {
+            var style=this.ColorStyle.get(styleName);
+            if (!style) return;
+
+            JSCommon.JSChart.SetStyle(style);  //设置全局颜色配置
+            this.$refs.kline.style.backgroundColor=style.BGColor;   //修改div背景色
+            if (this.KLine.JSChart) this.KLine.JSChart.ReloadResource({ Resource:null, Draw:true , Update:true });  //动态更新颜色配置
+            if (this.Minute.JSChart) this.Minute.JSChart.ReloadResource({ Resource:null, Draw:true , Update:true });  //动态更新颜色配置
+
+            //K线 div背景色
+            var clrBG="rgb(255,255,255)";
+            if (styleName=="block") clrBG="rgb(0,0,0)";
+            var divMinute=this.$refs.minute;
+            divMinute.style.backgroundColor=clrBG;
+
+            var divKline=this.$refs.kline;
+            divKline.style.backgroundColor=clrBG;
         },
 
         //更新菜单 

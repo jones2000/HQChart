@@ -14164,6 +14164,8 @@ function ChartStickLine()
 
         this.Canvas.lineWidth=GetDevicePixelRatio();
         this.Canvas.strokeStyle=this.Color;
+        var emptyBGColor=g_JSChartResource.EmptyBarBGColor;
+        if (emptyBGColor) this.Canvas.fillStyle=emptyBGColor;
         if (this.BarType==-1)   //虚线
         {
             this.Canvas.setLineDash(this.LineDotted);   //虚线
@@ -14200,6 +14202,7 @@ function ChartStickLine()
         this.Canvas.save();
         var bFillBar=false;
         var bFillKLine=false;
+        var emptyBGColor=g_JSChartResource.EmptyBarBGColor;
 
         if(this.Width==0)
         {
@@ -14211,7 +14214,7 @@ function ChartStickLine()
             {
                 bFillKLine=true; 
                 this.SetEmptyBar();
-                this.Canvas.fillStyle=this.Color; 
+                if (!this.IsEmptyBar()) this.Canvas.fillStyle=this.Color; 
                 this.Canvas.strokeStyle=this.Color;
             }
             else    //太细了 画竖线
@@ -14232,14 +14235,14 @@ function ChartStickLine()
             var barWidth=dataWidth*(this.Width/3);
             if (barWidth<minWidth) barWidth=minWidth;
             this.SetEmptyBar();
-            this.Canvas.fillStyle=this.Color;
+            if (!this.IsEmptyBar()) this.Canvas.fillStyle=this.Color;
             bFillBar=true;
         }
         else
         {
             var barWidth=this.Width*GetDevicePixelRatio()+dataWidth;
             this.SetEmptyBar();
-            this.Canvas.fillStyle=this.Color;
+            if (!this.IsEmptyBar()) this.Canvas.fillStyle=this.Color;
             bFillBar=true;
         }
 
@@ -14282,6 +14285,9 @@ function ChartStickLine()
                     if (left+width>chartright) width=chartright-left; //不要超过右边框子
                     if (this.IsEmptyBar()) //空心
                     {
+                        if (emptyBGColor)
+                            this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
+
                         this.Canvas.beginPath();
                         this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
                         this.Canvas.stroke();
@@ -14304,6 +14310,9 @@ function ChartStickLine()
                     }
                     else
                     {
+                        if (emptyBGColor)
+                            this.Canvas.fillRect(ToFixedRect(xOffset),ToFixedRect(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
+
                         this.Canvas.beginPath();
                         this.Canvas.rect(ToFixedPoint(xOffset),ToFixedPoint(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
                         this.Canvas.stroke();
@@ -29758,6 +29767,7 @@ function JSChartResource()
     this.UpBarColor="rgb(238,21,21)";   //上涨柱子颜色
     this.DownBarColor="rgb(25,158,0)";  //下跌柱子颜色
     this.UnchagneBarColor="rgb(0,0,0)"; //平盘柱子颜色
+    this.EmptyBarBGColor="rgb(255,255,255)";  //空心柱子背景色
 
     this.Minute={};
     this.Minute.VolBarColor=null;                       //分时图成交量柱子颜色 默认不用, 设置了柱子就不是红绿了
@@ -30135,6 +30145,7 @@ function JSChartResource()
         if (style.UpBarColor) this.UpBarColor = style.UpBarColor;
         if (style.DownBarColor) this.DownBarColor = style.DownBarColor;
         if (style.UnchagneBarColor) this.UnchagneBarColor = style.UnchagneBarColor;
+        if (style.EmptyBarBGColor) this.EmptyBarBGColor=style.EmptyBarBGColor;
         if (style.Minute) 
         {
             if (style.Minute.VolBarColor) this.Minute.VolBarColor = style.Minute.VolBarColor;
@@ -30264,10 +30275,10 @@ function JSChartResource()
         if (style.DRAWNUMBER)
         {
             var item=style.DRAWNUMBER;
-            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWNUMBER.Text.MaxSize=item.MaxSize;
-            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.Text.MinSize=item.MinSize;
-            if (item.Zoom) this.DRAWNUMBER.Text.Zoom=item.Zoom;
-            if (item.FontName) this.DRAWNUMBER.Text.FontName=item.FontName;
+            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWNUMBER.MaxSize=item.MaxSize;
+            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.MinSize=item.MinSize;
+            if (item.Zoom) this.DRAWNUMBER.Zoom=item.Zoom;
+            if (item.FontName) this.DRAWNUMBER.FontName=item.FontName;
             if (IFrameSplitOperator.IsNumber(item.YOffset)) this.DRAWNUMBER.YOffset=item.YOffset;
         }
 

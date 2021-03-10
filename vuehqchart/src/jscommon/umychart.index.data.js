@@ -106,6 +106,7 @@ function JSIndexScript()
             ["WAVE",this.WAVE],
             ['VOL-TDX',this.VOL_TDX],
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
+            ['神奇九转', this.NineTurns],
 
             //通达信特色指标
             ["散户线", this.ShareholderCount],["NXTS", this.NXTS],["FKX", this.FKX],["两融资金", this.Margin4],
@@ -3872,6 +3873,69 @@ DRAWKLINE(INDEXH,INDEXO,INDEXL,INDEXC);"
 
     return data;
 }
+
+JSIndexScript.prototype.NineTurns=function()
+{
+    let data =
+    {
+        Name: '神奇九转', Description: '九转指标', IsMainIndex: true,
+        Script: //脚本
+"A1:=C>REF(C,4);\n\
+A2:=C<REF(C,4);\n\
+T1:=A2 AND REF(A1,1);\n\
+T2:=A2 AND REF(T1,1);\n\
+T3:=A2 AND REF(T2,1);\n\
+T4:=A2 AND REF(T3,1);\n\
+T5:=A2 AND REF(T4,1);\n\
+T6:=A2 AND REF(T5,1);\n\
+T7:=A2 AND REF(T6,1);\n\
+T8:=A2 AND REF(T7,1);\n\
+T9:=A2 AND REF(T8,1);\n\
+T10:=A2 AND REF(T9,1);\n\
+T11:=A2 AND REF(T10,1);\n\
+T12:=A2 AND REF(T11,1);\n\
+T13:=A2 AND REF(T12,1);\n\
+T14:=A2 AND REF(T13,1);\n\
+DRAWTEXT(T1,L*0.98,'1'),COLORGREEN;\n\
+DRAWTEXT(T2,L*0.98,'2'),COLORGREEN;\n\
+DRAWTEXT(T3,L*0.98,'3'),COLORGREEN;\n\
+DRAWTEXT(T4,L*0.98,'4'),COLORGREEN;\n\
+DRAWTEXT(T5,L*0.98,'5'),COLORGREEN;\n\
+DRAWTEXT(T6,L*0.98,'6'),COLORGREEN;\n\
+DRAWTEXT(T7,L*0.98,'7'),COLORGREEN;\n\
+DRAWTEXT(T8,L*0.98,'8'),COLORGREEN;\n\
+DRAWTEXT(T9,L*0.98,'9'),COLORBLUE;\n\
+B1:=C<REF(C,4);\n\
+B2:=C>REF(C,4);\n\
+D1:=B2 AND REF(B1,1);\n\
+D2:=B2 AND REF(D1,1);\n\
+D3:=B2 AND REF(D2,1);\n\
+D4:=B2 AND REF(D3,1);\n\
+D5:=B2 AND REF(D4,1);\n\
+D6:=B2 AND REF(D5,1);\n\
+D7:=B2 AND REF(D6,1);\n\
+D8:=B2 AND REF(D7,1);\n\
+D9:=B2 AND REF(D8,1);\n\
+D10:=B2 AND REF(D9,1);\n\
+D11:=B2 AND REF(D10,1);\n\
+D12:=B2 AND REF(D11,1);\n\
+D13:=B2 AND REF(D12,1);\n\
+D14:=B2 AND REF(D13,1);\n\
+DRAWTEXT(D1,H*1.010,'1'),COLORBLUE;\n\
+DRAWTEXT(D2,H*1.010,'2'),COLORBLUE;\n\
+DRAWTEXT(D3,H*1.010,'3'),COLORBLUE;\n\
+DRAWTEXT(D4,H*1.010,'4'),COLORBLUE;\n\
+DRAWTEXT(D5,H*1.010,'5'),COLORBLUE;\n\
+DRAWTEXT(D6,H*1.010,'6'),COLORBLUE;\n\
+DRAWTEXT(D7,H*1.010,'7'),COLORBLUE;\n\
+DRAWTEXT(D8,H*1.010,'8'),COLORBLUE;\n\
+DRAWTEXT(D9,H*1.010,'9'),COLORGREEN;"
+    };
+
+    return data;
+}
+
+
 
 JSIndexScript.prototype.TEST = function () 
 {

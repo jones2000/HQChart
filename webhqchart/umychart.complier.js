@@ -13797,6 +13797,23 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
+    this.DAY=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for(let i in this.Data.Data)
+        {
+            var item=this.Data.Data[i];
+            if (this.IsNumber(item.Date))
+                result[i]=parseInt(item.Date%100);
+            else
+                result[i]=null;
+        }
+
+        return result;
+    }
+
     this.MONTH=function()
     {
         var result=[];
@@ -14213,7 +14230,7 @@ function JSExecute(ast,option)
         ["ISEQUAL",null], ["ISUP",null],["ISDOWN"], //ISUP=收阳 ISEQUAL=平盘 ISDOWN=收阴
 
         //日期类
-        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],["TIME",null],
+        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],["TIME",null],["DAY",null],
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
@@ -14448,6 +14465,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.MONTH();
             case 'WEEK':
                 return this.SymbolData.WEEK();
+            case "DAY":
+                return this.SymbolData.DAY();
             case 'PERIOD':
                 return this.SymbolData.PERIOD();
             case 'FROMOPEN':

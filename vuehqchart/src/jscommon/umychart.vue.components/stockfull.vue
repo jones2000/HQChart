@@ -264,6 +264,12 @@ export default
             console.log('[StockFull::OnChangePeriod] ',name);
             this.UpdateUIPosition();
         },
+
+        OnChangeStyle(styleName)
+        {
+            console.log('[StockFull::OnChangeStyle] ',styleName);
+            this.$refs.stockkline.ChangeStyle(styleName);
+        },
     }
 }
 

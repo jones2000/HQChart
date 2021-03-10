@@ -36,6 +36,7 @@ var BLACK_STYLE=
     UpBarColor: "rgb(238,21,21)",   //上涨
     DownBarColor: "rgb(25,158,0)",  //下跌
     UnchagneBarColor: "rgb(228,228,228)", //平盘
+    EmptyBarBGColor:'rgb(0,0,0)',   //空心柱子背景色
 
     Minute: 
     {

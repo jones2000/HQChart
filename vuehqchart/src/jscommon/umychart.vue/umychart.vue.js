@@ -162,6 +162,7 @@ function JSIndexScript()
             ["WAVE",this.WAVE],
             ['VOL-TDX',this.VOL_TDX],
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
+            ['神奇九转', this.NineTurns],
 
             //通达信特色指标
             ["散户线", this.ShareholderCount],["NXTS", this.NXTS],["FKX", this.FKX],["两融资金", this.Margin4],
@@ -3928,6 +3929,69 @@ DRAWKLINE(INDEXH,INDEXO,INDEXL,INDEXC);"
 
     return data;
 }
+
+JSIndexScript.prototype.NineTurns=function()
+{
+    let data =
+    {
+        Name: '神奇九转', Description: '九转指标', IsMainIndex: true,
+        Script: //脚本
+"A1:=C>REF(C,4);\n\
+A2:=C<REF(C,4);\n\
+T1:=A2 AND REF(A1,1);\n\
+T2:=A2 AND REF(T1,1);\n\
+T3:=A2 AND REF(T2,1);\n\
+T4:=A2 AND REF(T3,1);\n\
+T5:=A2 AND REF(T4,1);\n\
+T6:=A2 AND REF(T5,1);\n\
+T7:=A2 AND REF(T6,1);\n\
+T8:=A2 AND REF(T7,1);\n\
+T9:=A2 AND REF(T8,1);\n\
+T10:=A2 AND REF(T9,1);\n\
+T11:=A2 AND REF(T10,1);\n\
+T12:=A2 AND REF(T11,1);\n\
+T13:=A2 AND REF(T12,1);\n\
+T14:=A2 AND REF(T13,1);\n\
+DRAWTEXT(T1,L*0.98,'1'),COLORGREEN;\n\
+DRAWTEXT(T2,L*0.98,'2'),COLORGREEN;\n\
+DRAWTEXT(T3,L*0.98,'3'),COLORGREEN;\n\
+DRAWTEXT(T4,L*0.98,'4'),COLORGREEN;\n\
+DRAWTEXT(T5,L*0.98,'5'),COLORGREEN;\n\
+DRAWTEXT(T6,L*0.98,'6'),COLORGREEN;\n\
+DRAWTEXT(T7,L*0.98,'7'),COLORGREEN;\n\
+DRAWTEXT(T8,L*0.98,'8'),COLORGREEN;\n\
+DRAWTEXT(T9,L*0.98,'9'),COLORBLUE;\n\
+B1:=C<REF(C,4);\n\
+B2:=C>REF(C,4);\n\
+D1:=B2 AND REF(B1,1);\n\
+D2:=B2 AND REF(D1,1);\n\
+D3:=B2 AND REF(D2,1);\n\
+D4:=B2 AND REF(D3,1);\n\
+D5:=B2 AND REF(D4,1);\n\
+D6:=B2 AND REF(D5,1);\n\
+D7:=B2 AND REF(D6,1);\n\
+D8:=B2 AND REF(D7,1);\n\
+D9:=B2 AND REF(D8,1);\n\
+D10:=B2 AND REF(D9,1);\n\
+D11:=B2 AND REF(D10,1);\n\
+D12:=B2 AND REF(D11,1);\n\
+D13:=B2 AND REF(D12,1);\n\
+D14:=B2 AND REF(D13,1);\n\
+DRAWTEXT(D1,H*1.010,'1'),COLORBLUE;\n\
+DRAWTEXT(D2,H*1.010,'2'),COLORBLUE;\n\
+DRAWTEXT(D3,H*1.010,'3'),COLORBLUE;\n\
+DRAWTEXT(D4,H*1.010,'4'),COLORBLUE;\n\
+DRAWTEXT(D5,H*1.010,'5'),COLORBLUE;\n\
+DRAWTEXT(D6,H*1.010,'6'),COLORBLUE;\n\
+DRAWTEXT(D7,H*1.010,'7'),COLORBLUE;\n\
+DRAWTEXT(D8,H*1.010,'8'),COLORBLUE;\n\
+DRAWTEXT(D9,H*1.010,'9'),COLORGREEN;"
+    };
+
+    return data;
+}
+
+
 
 JSIndexScript.prototype.TEST = function () 
 {
@@ -18110,6 +18174,8 @@ function ChartStickLine()
 
         this.Canvas.lineWidth=GetDevicePixelRatio();
         this.Canvas.strokeStyle=this.Color;
+        var emptyBGColor=g_JSChartResource.EmptyBarBGColor;
+        if (emptyBGColor) this.Canvas.fillStyle=emptyBGColor;
         if (this.BarType==-1)   //虚线
         {
             this.Canvas.setLineDash(this.LineDotted);   //虚线
@@ -18146,6 +18212,7 @@ function ChartStickLine()
         this.Canvas.save();
         var bFillBar=false;
         var bFillKLine=false;
+        var emptyBGColor=g_JSChartResource.EmptyBarBGColor;
 
         if(this.Width==0)
         {
@@ -18157,7 +18224,7 @@ function ChartStickLine()
             {
                 bFillKLine=true; 
                 this.SetEmptyBar();
-                this.Canvas.fillStyle=this.Color; 
+                if (!this.IsEmptyBar()) this.Canvas.fillStyle=this.Color; 
                 this.Canvas.strokeStyle=this.Color;
             }
             else    //太细了 画竖线
@@ -18178,14 +18245,14 @@ function ChartStickLine()
             var barWidth=dataWidth*(this.Width/3);
             if (barWidth<minWidth) barWidth=minWidth;
             this.SetEmptyBar();
-            this.Canvas.fillStyle=this.Color;
+            if (!this.IsEmptyBar()) this.Canvas.fillStyle=this.Color;
             bFillBar=true;
         }
         else
         {
             var barWidth=this.Width*GetDevicePixelRatio()+dataWidth;
             this.SetEmptyBar();
-            this.Canvas.fillStyle=this.Color;
+            if (!this.IsEmptyBar()) this.Canvas.fillStyle=this.Color;
             bFillBar=true;
         }
 
@@ -18228,6 +18295,9 @@ function ChartStickLine()
                     if (left+width>chartright) width=chartright-left; //不要超过右边框子
                     if (this.IsEmptyBar()) //空心
                     {
+                        if (emptyBGColor)
+                            this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
+
                         this.Canvas.beginPath();
                         this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
                         this.Canvas.stroke();
@@ -18250,6 +18320,9 @@ function ChartStickLine()
                     }
                     else
                     {
+                        if (emptyBGColor)
+                            this.Canvas.fillRect(ToFixedRect(xOffset),ToFixedRect(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
+
                         this.Canvas.beginPath();
                         this.Canvas.rect(ToFixedPoint(xOffset),ToFixedPoint(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
                         this.Canvas.stroke();
@@ -33704,6 +33777,7 @@ function JSChartResource()
     this.UpBarColor="rgb(238,21,21)";   //上涨柱子颜色
     this.DownBarColor="rgb(25,158,0)";  //下跌柱子颜色
     this.UnchagneBarColor="rgb(0,0,0)"; //平盘柱子颜色
+    this.EmptyBarBGColor="rgb(255,255,255)";  //空心柱子背景色
 
     this.Minute={};
     this.Minute.VolBarColor=null;                       //分时图成交量柱子颜色 默认不用, 设置了柱子就不是红绿了
@@ -34081,6 +34155,7 @@ function JSChartResource()
         if (style.UpBarColor) this.UpBarColor = style.UpBarColor;
         if (style.DownBarColor) this.DownBarColor = style.DownBarColor;
         if (style.UnchagneBarColor) this.UnchagneBarColor = style.UnchagneBarColor;
+        if (style.EmptyBarBGColor) this.EmptyBarBGColor=style.EmptyBarBGColor;
         if (style.Minute) 
         {
             if (style.Minute.VolBarColor) this.Minute.VolBarColor = style.Minute.VolBarColor;
@@ -34210,10 +34285,10 @@ function JSChartResource()
         if (style.DRAWNUMBER)
         {
             var item=style.DRAWNUMBER;
-            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWNUMBER.Text.MaxSize=item.MaxSize;
-            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.Text.MinSize=item.MinSize;
-            if (item.Zoom) this.DRAWNUMBER.Text.Zoom=item.Zoom;
-            if (item.FontName) this.DRAWNUMBER.Text.FontName=item.FontName;
+            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWNUMBER.MaxSize=item.MaxSize;
+            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.MinSize=item.MinSize;
+            if (item.Zoom) this.DRAWNUMBER.Zoom=item.Zoom;
+            if (item.FontName) this.DRAWNUMBER.FontName=item.FontName;
             if (IFrameSplitOperator.IsNumber(item.YOffset)) this.DRAWNUMBER.YOffset=item.YOffset;
         }
 
@@ -66183,6 +66258,23 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
+    this.DAY=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for(let i in this.Data.Data)
+        {
+            var item=this.Data.Data[i];
+            if (this.IsNumber(item.Date))
+                result[i]=parseInt(item.Date%100);
+            else
+                result[i]=null;
+        }
+
+        return result;
+    }
+
     this.MONTH=function()
     {
         var result=[];
@@ -66599,7 +66691,7 @@ function JSExecute(ast,option)
         ["ISEQUAL",null], ["ISUP",null],["ISDOWN"], //ISUP=收阳 ISEQUAL=平盘 ISDOWN=收阴
 
         //日期类
-        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],["TIME",null],
+        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],["TIME",null],["DAY",null],
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
@@ -66834,6 +66926,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.MONTH();
             case 'WEEK':
                 return this.SymbolData.WEEK();
+            case "DAY":
+                return this.SymbolData.DAY();
             case 'PERIOD':
                 return this.SymbolData.PERIOD();
             case 'FROMOPEN':
@@ -72899,6 +72993,7 @@ var BLACK_STYLE=
     UpBarColor: "rgb(238,21,21)",   //上涨
     DownBarColor: "rgb(25,158,0)",  //下跌
     UnchagneBarColor: "rgb(228,228,228)", //平盘
+    EmptyBarBGColor:'rgb(0,0,0)',   //空心柱子背景色
 
     Minute: 
     {
