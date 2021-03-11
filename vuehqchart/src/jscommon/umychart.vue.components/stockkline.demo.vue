@@ -1,5 +1,5 @@
 <template>
-    <div class="stockkline" ref='stockkline'>
+    <div class="stockkline" ref='stockkline' :class='{blackStyle: isBlackStyle}'>
         <!-- 周期工具条  !-->
         <div class='periodbar' ref='divperiodbar'>
             <div class="preiod">
@@ -41,7 +41,7 @@
           
         </div>
         <div class="brushTool" v-if="DrawTool.IsShow">
-            <Stockdrawtool @CurrentIcon = "CurrentIcon" @IsShowBrushTool="isShowBrushTool" :topheight="topheight" :totalheight="totalheight"></Stockdrawtool>
+            <Stockdrawtool ref='stockdrawtool' @CurrentIcon = "CurrentIcon" @IsShowBrushTool="isShowBrushTool" :topheight="topheight" :totalheight="totalheight"></Stockdrawtool>
         </div>   
         <!-- 走势图 和 K线图  !-->
         <div class='divchart' :id='ID' ref='divchart' style="width:100%;height:100%">
@@ -469,11 +469,20 @@ export default
             MoveInterval:null,
             IsShowBeforeData:true,  //显示
 
-            ColorStyle:new Map()   //风格
+            ColorStyle:new Map(),   //风格
+            isBlackStyle: false
         }
 
         return data;
     },
+
+    // watch: {
+    //   isBlackStyle: function(newValue){
+    //     if(newValue && this.DrawTool.IsShow){
+          
+    //     }
+    //   }
+    // },
 
     created:function()
     {
@@ -516,7 +525,7 @@ export default
         var resource=JSCommon.JSChart.GetResource();
         this.ColorStyle.set("white",JSON.parse(JSON.stringify(resource)));
         resource=JSCommon.HQChartStyle.GetStyleConfig(JSCommon.STYLE_TYPE_ID.BLACK_ID);
-        this.ColorStyle.set("block",JSON.parse(JSON.stringify(resource)));
+        this.ColorStyle.set("black",JSON.parse(JSON.stringify(resource)));
     },
 
     mounted:function()
@@ -790,7 +799,8 @@ export default
 
         //风格切换
         ChangeStyle(styleName)
-        {
+        {   
+            this.isBlackStyle = 'black' === styleName;
             var style=this.ColorStyle.get(styleName);
             if (!style) return;
 
@@ -801,7 +811,7 @@ export default
 
             //K线 div背景色
             var clrBG="rgb(255,255,255)";
-            if (styleName=="block") clrBG="rgb(0,0,0)";
+            if (styleName=="black") clrBG="rgb(0,0,0)";
             var divMinute=this.$refs.minute;
             divMinute.style.backgroundColor=clrBG;
 
@@ -1235,6 +1245,11 @@ export default
                             //获取到工具的名称：线段
                             //this.KLine.JSChart.JSChartContainer.CreateChartDrawPicture('名称')
                             this.DrawTool.IsShow = true;
+                            this.$nextTick(() => {
+                              var styleName = this.isBlackStyle ? 'black': 'white';
+                              this.$refs.stockdrawtool.ChangeStyle(styleName);
+                            });
+                            
                         }
                         break;
                 }
@@ -1662,6 +1677,81 @@ a
     .iconfont {
         font-size: 13px;
     }
+}
+
+.blackStyle{
+  width: 100%;
+  .periodbar{
+    background-color: #2c3133;
+    .item{
+      color: #dde2e7;
+    }
+    .item.active{
+        color: #ffffff;
+        background-color: #ff8800;
+    }
+  }
+  .chartbar{
+    border-bottom: 1px solid #3d4042;
+    background-color: #191d1e;
+
+    .menuWrap .item {
+      .menuTwo{
+        border: 1px solid #191d20;
+        border-top: none;
+        background-color: #2f3438;
+
+        >li{
+          color: #dde2e7;
+          &:hover{
+            color: #ff8800;
+          }
+        }
+      }
+
+      .menuOne{
+        &:hover{
+          border-color: #191d20;
+          &>span,
+          &>.iconfont{
+            color: #ff8800;
+          }
+        }
+
+        &.light:hover,
+        &.light{
+          background-color: #2f3438;
+          border-color: #191d20;
+        }
+
+        &.light>span,
+        &.light>.iconfont{
+          color: #ff8800;
+        }
+
+        >span,
+        >.iconfont{
+          color: #dde2e7;
+        }
+      }
+    }
+    
+
+    
+  }
+
+  .indexbar{
+    background-color: #191d1e;
+
+    span{
+      color: #9ca7b3;
+
+      &.active{
+        color: #ff8800;
+        background-color: transparent;
+      }
+    }
+  }
 }
 
 </style>

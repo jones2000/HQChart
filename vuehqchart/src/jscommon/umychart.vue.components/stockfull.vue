@@ -3,7 +3,7 @@
   !-->
 
 <template>
-    <div id="stockfull" ref='stockfull' style="width:100%;height:100%">
+    <div id="stockfull" ref='stockfull' style="width:100%;height:100%" :class='{blackStyle: isBlackStyle}'>
         <!--  股票最新信息 !-->
         <div ref='divstockinfo'>
             <StockInfo ref='stockinfo' IsShareStock=1 :DefaultSymbol=this.DefaultSymbol></StockInfo>
@@ -60,7 +60,8 @@ export default
                     IsShow:true,
                 },
                 
-            }
+            },
+            isBlackStyle: false
         }
     }, 
     
@@ -268,7 +269,10 @@ export default
         OnChangeStyle(styleName)
         {
             console.log('[StockFull::OnChangeStyle] ',styleName);
+            this.$refs.stockinfo.ChangeStyle(styleName);
             this.$refs.stockkline.ChangeStyle(styleName);
+            this.$refs.tradeinfo.ChangeStyle(styleName);
+            this.isBlackStyle = 'black' === styleName;
         },
     }
 }
@@ -276,7 +280,7 @@ export default
 
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 
 * 
 {
@@ -321,6 +325,30 @@ export default
 {
     color: #fff;
     background-color: #125fd9;
+}
+
+#stockfull.blackStyle{
+  width: 100%;
+
+  .divtradeinfotab{
+    background-color: #191d1e;
+    box-sizing: border-box;
+    border: 1px solid #3d4042;
+    border-right: none;
+    border-bottom: none;
+    span{
+      color: #9ca7b3;
+      &:hover{
+        color: #f39800;
+        background-color: transparent;
+      }
+      &.active{
+        color: #f39800;
+        background-color: transparent;
+      }
+    }
+  }
+
 }
 
 

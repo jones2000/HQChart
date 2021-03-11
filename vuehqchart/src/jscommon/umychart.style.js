@@ -202,6 +202,13 @@ var BLACK_STYLE=
         PointColor:'rgb(38,113,254)',
         LineColor:'rgb(120,167,255)',
         TextBGColor:'rgba(255,255,255,1)'
+    },
+
+    //筹码分布图
+    StockChip:
+    {
+        InfoColor:'rgb(255,255,255)', //文字颜色
+        DayInfoColor:'rgb(0,0,0)' //周期颜色内文字颜色
     }
     
 };

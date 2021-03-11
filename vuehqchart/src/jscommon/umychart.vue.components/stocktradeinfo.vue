@@ -1,5 +1,5 @@
 <template>
-    <div class="tradeinfo" ref="tradeinfo">
+    <div class="tradeinfo" ref="tradeinfo" :class='{blackStyle: isBlackStyle}'>
         <div class="firstLine" ref="bookWrap">
             <p>
                 <span>
@@ -460,7 +460,9 @@ export default {
         JSStock: null //数据请求控制器
       },
       DealPriceData:DefaultData.GetDealPriceData(),
-      MoreDealLink:''
+      MoreDealLink:'',
+
+      isBlackStyle: false
     };
 
     return data;
@@ -556,6 +558,10 @@ export default {
     //设置外部共享的股票数据类
     SetJSStock: function(jsStock) {
       this.JSStock = jsStock;
+    },
+
+    ChangeStyle(styleName){
+      this.isBlackStyle = 'black' === styleName;
     },
 
     //窗口变化UI自适应调整
@@ -1351,5 +1357,82 @@ ul {
     }  
   }
   
+}
+
+.blackStyle{
+  width: 100%;
+  .tradeinfo{
+    background-color: #191d1e;
+    border: 1px solid #3d4042;
+
+    .firstLine,
+    .sellFive,
+    .buyFive{
+      border-bottom: 1px solid #3d4042;
+    }
+
+    .firstLine>p>span,
+    .sellFive>div>p>span,
+    .buyFive>div>p>span,
+    .detailList>div>p>span,
+    .dealpricelist table td
+    {
+      color: #9ca7b3;
+    }
+
+    .dealpricelist table tr>td:last-child{
+      color: #dde2e7;
+    }
+
+    .sellFive>div:nth-of-type(3)>p>span,
+    .buyFive>div:nth-of-type(3)>p>span{
+      color: #06e2d6;
+    }
+
+    .detailList>div:nth-of-type(3)>p>span{
+      color: #dde2e7;
+    }
+
+    .capitalList {
+      .tabTop{
+        border-bottom: 1px solid #3d4042;
+        span{
+          border-right: 1px solid #3d4042;
+          color: #9ca7b3;
+
+          &.active{
+            background-color: transparent;
+            color: #f39700;
+          }
+        }
+      }
+      .mainFlow{
+        border-bottom: 1px solid #3d4042;
+        >p>span{
+          color: #9ca7b3;
+        }
+      }
+      .orderList{
+        border-bottom: 1px solid #3d4042;
+        td{
+          color: #9ca7b3;
+          &:nth-of-type(2),
+          &:nth-of-type(3){
+            color: #dde2e7;
+          }
+        }
+      }
+      .netValueWrap > .charWrap {
+          border: 1px solid #3d4042;
+          .middleLine{
+            background-color: #3d4042;
+          }
+      }
+      .netValueWrap .xLabels span{
+        color: #9ca7b3;
+      }
+    }
+    
+  }
 }
 </style>

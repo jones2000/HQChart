@@ -3,7 +3,7 @@
   !-->
 
 <template>
-    <div class="draw-box" v-if="IsShowBrushTool" id="toolBox">
+    <div class="draw-box" v-if="IsShowBrushTool" id="toolBox" :class='{blackStyle: isBlackStyle}'>
         <ul>
         <!-- 关闭 -->
         <li class="closeBtn">
@@ -15,7 +15,7 @@
             @mouseover="ToolBoxMove"
             ></span>
             <svg class="symbolIkcon icon-close" aria-hidden="true" @click="CloseBtn">
-            <use xlink:href="#icon-guanbi"></use>
+              <use xlink:href="#icon-guanbi"></use>
             </svg>
         </li>
         <!-- 图标 -->
@@ -147,7 +147,8 @@
             tip: "向左箭头"
             },
             { name: "全部删除", icon: "#icon-recycle_bin", tip: "全部删除" }
-        ]
+        ],
+        isBlackStyle: false
         };
     },
     props: {
@@ -158,7 +159,12 @@
         this.ToolBoxHandle();
     },
     methods: {
-        ToolBoxHandle() {
+      //风格切换
+      ChangeStyle(styleName){
+        // debugger
+        this.isBlackStyle = 'black' === styleName;
+      },
+      ToolBoxHandle() {
         this.DisabledTip = true;
         ///用以获取滚动条的距离
         let getStyle = function(obj, name) {
@@ -308,5 +314,22 @@
           /* margin-left: ; */
         }
     }
+    }
+
+    #toolBox.blackStyle{
+      background-color: #2f363b;
+	    border: solid 1px #181c1f;
+
+      .closeBtn .move-area{
+        background: #2f363b;  
+      }
+      .closeBtn .icon-close{
+        color: #9ca7b3;
+      }
+
+      .line-style{
+        background: #202427;
+      }
+      
     }
 </style>

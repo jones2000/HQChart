@@ -7854,12 +7854,22 @@ function JSChartContainer(uielement, OffscreenElement)
         }
     }
 
+    this.ReloadExtendChartPaintResource=function(resource)  //扩展画法重新加载配置
+    {
+        for(var i in this.ExtendChartPaint)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.ReloadResource) item.ReloadResource(resource);
+        }
+    }
+
     this.ReloadResource=function(option)
     {
         this.ReloadBorder(option);
         this.ReloadTiltePaintResource(option.Resource);
         this.ReloadChartPaint(option.Resource);
         this.ReloadFrame(option.Resource);
+        this.ReloadExtendChartPaintResource(option.Resource);
         this.ReloadChartCorssCursor(option,option.Resource);
 
         if (option.Update && this.Update) this.Update( {UpdateCursorIndexType:2} );       //是否立即更新并重绘
@@ -23234,8 +23244,8 @@ function StockChip()
     this.IsDynamic=true;
     this.ClientRect={};
     this.Font=g_JSChartResource.TitleFont;
-    this.InfoColor='rgb(0,0,0)';
-    this.DayInfoColor='rgb(255,255,255)';
+    this.InfoColor=g_JSChartResource.StockChip.InfoColor;
+    this.DayInfoColor=g_JSChartResource.StockChip.DayInfoColor;
     this.LineHeight=16;
     this.Left=50*this.PixelRatio;         //左边间距
     this.IsShowX=false;  //是否显示X刻度 成交量
@@ -23261,6 +23271,14 @@ function StockChip()
         if (option.Width>100) this.Width=option.Width*GetDevicePixelRatio();
         if (option.CalculateType>0) this.CalculateType=option.CalculateType;
         if (IFrameSplitOperator.IsNumber(option.PriceZoom)) this.PriceZoom=option.PriceZoom;
+    }
+
+    this.ReloadResource=function(resource)
+    {
+        this.PenBorder=g_JSChartResource.FrameBorderPen;
+        this.Font=g_JSChartResource.TitleFont;
+        this.InfoColor=g_JSChartResource.StockChip.InfoColor;
+        this.DayInfoColor=g_JSChartResource.StockChip.DayInfoColor;
     }
     
     this.Draw=function()
@@ -23353,7 +23371,7 @@ function StockChip()
             var item=this.Data.DayChip[i];
             var rate=0;
             if (this.Data.ChipInfo && this.Data.ChipInfo.Vol>0) rate=item.Vol/this.Data.ChipInfo.Vol*100;
-            text=item.Day+'周期'+(this.ShowType==1?'前':'内')+'成本'+rate.toFixed(2)+'%';
+            text=item.Day+'周期'+(this.ShowType==1?'前':'内')+'成本'+(IFrameSplitOperator.IsNumber(rate)? (rate.toFixed(2)+'%'):"--.--%");
             if (i==0) textWidth=this.Canvas.measureText(text).width+8;
             this.Canvas.fillStyle=item.Color;
             this.Canvas.fillRect(right-textWidth,bottom-lineHeight,textWidth,lineHeight);
@@ -34146,6 +34164,13 @@ function JSChartResource()
         PixelWidth:15   //1个像素点宽度
     }
 
+    //筹码分布图
+    this.StockChip=
+    {
+        InfoColor:'rgb(0,0,0)', //文字颜色
+        DayInfoColor:'rgb(255,255,255)' //周期颜色内文字颜色
+    }
+
     //自定义风格
     this.SetStyle=function(style)
     {
@@ -34302,6 +34327,13 @@ function JSChartResource()
         if (style.DRAWSL) this.DOTLINE=style.DRAWSL;
 
         if (style.DragSubFrameBorder) this.DragSubFrameBorder=style.DragSubFrameBorder;
+
+        if (style.StockChip)
+        {
+            var item=style.StockChip;
+            if (item.InfoColor) this.StockChip.InfoColor=item.InfoColor;
+            if (item.DayInfoColor) this.StockChip.DayInfoColor=item.DayInfoColor;
+        }
     }
 }
 
@@ -73192,6 +73224,13 @@ var BLACK_STYLE=
         PointColor:'rgb(38,113,254)',
         LineColor:'rgb(120,167,255)',
         TextBGColor:'rgba(255,255,255,1)'
+    },
+
+    //筹码分布图
+    StockChip:
+    {
+        InfoColor:'rgb(255,255,255)', //文字颜色
+        DayInfoColor:'rgb(0,0,0)' //周期颜色内文字颜色
     }
     
 };

@@ -1,5 +1,5 @@
 <template>
-    <div id="stockinfo" class="topWrap clearfix" ref='stockinfo'>
+    <div id="stockinfo" class="topWrap clearfix" :class='{blackStyle: isBlackStyle}' ref='stockinfo'>
         <div class="stockInfo" :style='CellStyle[0]'>
             <p class="stockName">
                 <span class='nameText'>{{StockData.Name.Text}}</span>
@@ -163,7 +163,9 @@
                     SearchSymbol: false,
                     IconStyle: true
                 },
-                IsStockStar:false
+                IsStockStar:false,
+
+                isBlackStyle: false
             }
 
             return data;
@@ -430,6 +432,10 @@
                 this.OnSize();
             },
 
+            ChangeStyle(styleName){
+              this.isBlackStyle = 'black' === styleName;
+            },
+
             OnSize: function ()   //动态调整UI
             {
                 var stockInfo = this.$refs.stockinfo;
@@ -659,5 +665,21 @@
 
     .topWrap .otherInfo li {
         flex-grow: 1;
+    }
+
+    .blackStyle.topWrap{
+      background-color: #191d1e;
+
+      .nameText,
+      .codeInfo .code{
+        color: #fff;
+      }
+
+      .otherInfo > div{
+        color: #9ca7b3;
+        >span{
+          color: #dde2e7;
+        }
+      }
     }
 </style>
