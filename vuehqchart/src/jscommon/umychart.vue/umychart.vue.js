@@ -60767,37 +60767,70 @@ function JSDraw(errorHandler,symbolData)
         let result={DrawData:drawData, DrawType:'STICKLINE',Width:width, Type:type};
         if (result.Width<0) result.Width=3;    //<0的宽度 使用K线宽度
 
-        if(condition.length<=0) return result;
-
         var IsNumber=typeof(data)=="number";
         var IsNumber2=typeof(data2)=="number";
-   
-        for(var i in condition)
+
+        if (Array.isArray(condition))   //数组
         {
-            drawData[i]=null;
-
-            if (isNaN(condition[i]) || !condition[i]) continue;
-
-            if (IsNumber && IsNumber2)
+            if(condition.length<=0) return result;
+            for(var i in condition)
             {
-                drawData[i]={Value:data,Value2:data2};
-            }
-            else if (IsNumber && !IsNumber2)
-            {
-                if (isNaN(data2[i])) continue;
-                drawData[i]={Value:data,Value2:data2[i]};
-            }
-            else if (!IsNumber && IsNumber2)
-            {
-                if (isNaN(data[i])) continue;
-                drawData[i]={Value:data[i],Value2:data2};
-            }
-            else
-            {
-                if (isNaN(data[i]) || isNaN(data2[i])) continue;
-                drawData[i]={Value:data[i],Value2:data2[i]};
+                drawData[i]=null;
+    
+                if (isNaN(condition[i]) || !condition[i]) continue;
+    
+                if (IsNumber && IsNumber2)
+                {
+                    drawData[i]={Value:data,Value2:data2};
+                }
+                else if (IsNumber && !IsNumber2)
+                {
+                    if (isNaN(data2[i])) continue;
+                    drawData[i]={Value:data,Value2:data2[i]};
+                }
+                else if (!IsNumber && IsNumber2)
+                {
+                    if (isNaN(data[i])) continue;
+                    drawData[i]={Value:data[i],Value2:data2};
+                }
+                else
+                {
+                    if (isNaN(data[i]) || isNaN(data2[i])) continue;
+                    drawData[i]={Value:data[i],Value2:data2[i]};
+                }
             }
         }
+        else    //单值
+        {
+            if(!condition) return result;
+
+            for(var i=0;i<this.SymbolData.Data.Data.length;++i) //以K线长度为数据长度
+            {
+                drawData[i]=null;
+
+                if (IsNumber && IsNumber2)
+                {
+                    drawData[i]={Value:data,Value2:data2};
+                }
+                else if (IsNumber && !IsNumber2)
+                {
+                    if (!IFrameSplitOperator.IsNumber(data2[i])) continue;
+                    drawData[i]={Value:data,Value2:data2[i]};
+                }
+                else if (!IsNumber && IsNumber2)
+                {
+                    if (!IFrameSplitOperator.IsNumber(data[i])) continue;
+                    drawData[i]={Value:data[i],Value2:data2};
+                }
+                else
+                {
+                    if (!IFrameSplitOperator.IsNumber(data[i]) || !IFrameSplitOperator.IsNumber(data2[i])) continue;
+                    drawData[i]={Value:data[i],Value2:data2[i]};
+                }
+            }
+        }
+   
+        
 
         return result;
     }

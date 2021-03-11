@@ -1,6 +1,9 @@
 <template>
     <div id="app2" >
-        <p style="text-align:center">个股行情整体测试页面v1.0 代码地址: https://github.com/jones2000/HQChart</p>
+        <span>HQChart测试页面v1.0</span> 
+        <a href="https://github.com/jones2000/HQChart">代码地址: https://github.com/jones2000/HQChart</a>
+        <span v-on:click="OnChangeStyle('block')">黑色风格</span>
+        <span v-on:click="OnChangeStyle('white')">白色风格</span>
         <!--
         <a v-on:click="OnChangeSymbol('002230.sz')">科大讯飞</a>
         <a v-on:click="OnChangeSymbol('600016.sh')">民生银行</a>
@@ -106,6 +109,11 @@ export default
             var r = window.location.search.substr(1).match(reg);
             if (r != null) return decodeURI(r[2]);
             return null;
+        },
+
+        OnChangeStyle(styleName)
+        {
+            this.$refs.stockfull.OnChangeStyle(styleName);
         }
     }
 }
