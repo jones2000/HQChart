@@ -476,6 +476,11 @@ function FrameSplitKLinePriceY()
         splitData.Max = this.Frame.HorizontalMax;
         splitData.Min = this.Frame.HorizontalMin;
         splitData.Count = this.SplitCount;
+        if (splitData.Max==splitData.Min)   //如果一样上下扩大下
+		{
+			splitData.Max+=splitData.Max*0.01;
+			splitData.Min-=splitData.Min*0.01
+		}
         splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
 
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);

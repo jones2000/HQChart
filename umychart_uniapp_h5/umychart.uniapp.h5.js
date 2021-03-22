@@ -18574,7 +18574,6 @@ function ChartSingleText()
             {
                 var yPrice=y;
 
-                this.Canvas.save(); 
                 this.Canvas.setLineDash([5,10]);
                 this.Canvas.strokeStyle=this.Color;
                 this.Canvas.beginPath();
@@ -18610,7 +18609,7 @@ function ChartSingleText()
                     this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(y));
                 }
                 this.Canvas.stroke();
-                this.Canvas.restore();
+                this.Canvas.setLineDash([]);
             }
 
             if (isArrayText)
@@ -18634,6 +18633,11 @@ function ChartSingleText()
                         if (this.IconFont) y+=this.IconSize.YOffset*pixelTatio;
                         else y+=this.TextSize.YOffset*pixelTatio;
                     }
+                }
+                else if (this.Name=="DRAWTEXT")
+                {
+                    if (this.Direction==1) y-=g_JSChartResource.DRAWABOVE.YOffset*pixelTatio;
+                    else if (this.Direction==2) y+=this.TextSize.YOffset*pixelTatio;
                 }
                 //JSConsole.Chart.Log('[ChartSingleText::Draw] ',this.Direction,this.Text)
                 this.DrawText(this.Text,x,y,isHScreen);
@@ -22830,13 +22834,13 @@ function KLineTooltipPaint()
         this.Canvas.fillText(text, left,top);
 
         var period=this.HQChart.Period;
-        if (ChartData.IsMinutePeriod(period,true) && item.Time)
+        if (ChartData.IsMinutePeriod(period,true) && IFrameSplitOperator.IsNumber(item.Time))
         {
             top+=this.LineHeight;  
             text=IFrameSplitOperator.FormatTimeString(item.Time);
             this.Canvas.fillText(text, left,top);
         }
-        else if (ChartData.IsSecondPeriod(period) && item.Time)
+        else if (ChartData.IsSecondPeriod(period) && IFrameSplitOperator.IsNumber(item.Time))
         {
             top+=this.LineHeight;  
             text=IFrameSplitOperator.FormatTimeString(item.Time,'HH:MM:SS');
@@ -28220,12 +28224,12 @@ function DynamicKLineTitlePainting()
             if (!this.DrawText(text,this.DateTimeColor,position)) return;
         }
 
-        if (ChartData.IsMinutePeriod(this.Period,true) && item.Time)
+        if (ChartData.IsMinutePeriod(this.Period,true) && IFrameSplitOperator.IsNumber(item.Time))
         {
             var text=IFrameSplitOperator.FormatTimeString(item.Time);
             if (!this.DrawText(text,this.DateTimeColor,position)) return;
         }
-        else if (ChartData.IsSecondPeriod(this.Period) && item.Time)
+        else if (ChartData.IsSecondPeriod(this.Period) && IFrameSplitOperator.IsNumber(item.Time))
         {
             var text=IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS");
             if (!this.DrawText(text,this.DateTimeColor,position)) return;
@@ -67165,7 +67169,9 @@ function JSExecute(ast,option)
                     var isShowTitle=true;
                     //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
                     //DRAWNUMBER(CLOSE>OPEN,HIGH,CLOSE),DRAWABOVE;
-                    var isDrawAbove=false;      
+                    var isDrawAbove=false;
+                    var isDrawCenter=false;   
+                    var isDrawBelow=false;
                     for(let j in item.Expression.Expression)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -67190,6 +67196,8 @@ function JSExecute(ast,option)
                             else if (value==='STICK') stick=true;
                             else if (value==='VOLSTICK') volStick=true;
                             else if (value==="DRAWABOVE") isDrawAbove=true;
+                            else if (value==="DRAWCENTER") isDrawCenter=true;
+                            else if (value=="DRAWBELOW") isDrawBelow=true;
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
                             else if (value.indexOf('NODRAW')==0) isShow=false;
@@ -67298,6 +67306,8 @@ function JSExecute(ast,option)
                         if (isDotLine==true) outVar.IsDotLine=true;
                         if (lineWidth) outVar.LineWidth=lineWidth;
                         if (isDrawAbove) outVar.IsDrawAbove=true;
+                        if (isDrawCenter) outVar.IsDrawCenter=true;
+                        if (isDrawBelow) outVar.IsDrawBelow=true;
                         this.OutVarTable.push(outVar);
                     }
                     else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
@@ -69336,6 +69346,9 @@ function ScriptIndex(name,script,args,option)
 
         if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
         else chartText.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawCenter===true) chartText.TextAlign='center';
+        if (varItem.IsDrawAbove===true) chartText.Direction=1;
+        if (varItem.IsDrawBelow===true) chartText.Direction=2;
 
         let titleIndex=windowIndex+1;
         if (varItem.Draw.Position) chartText.Position=varItem.Draw.Position;    //赋值坐标
@@ -69344,6 +69357,7 @@ function ScriptIndex(name,script,args,option)
         if (varItem.Draw.Direction>0) chartText.Direction=varItem.Draw.Direction;
         if (varItem.Draw.YOffset>0) chartText.YOffset=varItem.Draw.YOffset;
         if (varItem.Draw.TextAlign) chartText.TextAlign=varItem.Draw.TextAlign;
+        
 
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 

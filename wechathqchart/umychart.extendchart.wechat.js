@@ -206,13 +206,13 @@ function KLineTooltipPaint()
         this.Canvas.fillStyle = this.TitleColor;
         this.Canvas.fillText(text, left, top);
         var period = this.HQChart.Period;
-        if (ChartData.IsMinutePeriod(period, true) && item.Time)
+        if (ChartData.IsMinutePeriod(period, true) && IFrameSplitOperator.IsNumber(item.Time))
         {
             top += this.LineHeight;
             text = this.HQChart.FormatTimeString(item.Time);
             this.Canvas.fillText(text, left, top);
         }
-        else if (ChartData.IsSecondPeriod(period) && item.Time)
+        else if (ChartData.IsSecondPeriod(period) && IFrameSplitOperator.IsNumber(item.Time))
         {
             top += this.LineHeight;
             text = this.HQChart.FormatTimeString(item.Time,"HH:MM:SS");

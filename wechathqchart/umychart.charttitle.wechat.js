@@ -449,12 +449,12 @@ function DynamicKLineTitlePainting()
         if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
 
         //时间
-        if (ChartData.IsMinutePeriod(this.Period, true) && item.Time)
+        if (ChartData.IsMinutePeriod(this.Period, true) && IFrameSplitOperator.IsNumber(item.Time))
         {
             var text = IFrameSplitOperator.FormatTimeString(item.Time);
             if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
         }
-        else if (ChartData.IsSecondPeriod(this.Period) && item.Time)
+        else if (ChartData.IsSecondPeriod(this.Period) && IFrameSplitOperator.IsNumber(item.Time))
         {
             var text = IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS");
             if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
