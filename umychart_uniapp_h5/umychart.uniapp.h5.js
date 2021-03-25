@@ -6803,7 +6803,16 @@ function JSChartContainer(uielement, OffscreenElement)
         {
             var item=this.ExtendChartPaint[i];
             if (item.IsCallbackDraw) continue;
-            if (item.ClassName=='KLineTooltipPaint' && option && option.Tooltip==false) continue;
+            if (item.ClassName=='KLineTooltipPaint' && option)
+            {
+                if (option.Tooltip==false) continue;
+                if (option.Point) item.LatestPoint=option.Point;
+            }
+            else if (item.ClassName=="MinuteTooltipPaint" && option)
+            {
+                if (option.Point) item.LatestPoint=option.Point;
+            }
+
             if (item.IsDynamic && item.DrawAfterTitle===true) item.Draw();
         }
 
@@ -10639,6 +10648,7 @@ function KLineFrame()
             //xPointCount=maxDataCount;
             //this.XPointCount=xPointCount;
             this.Data.DataOffset=0;
+            this.XPointCount=xPointCount;
             isShowAll=true;
             JSConsole.Chart.Log(`[KLineFrame::ZoomUp] Show all data. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount}`);
         }
@@ -22715,10 +22725,12 @@ function KLineTooltipPaint()
     this.BorderColor=g_JSChartResource.TooltipPaint.BorderColor;    //边框颜色
     this.BGColor=g_JSChartResource.TooltipPaint.BGColor;            //背景色
     this.TitleColor=g_JSChartResource.TooltipPaint.TitleColor;      //标题颜色
+    this.LatestPoint;               //手势位置
+    this.ShowPosition=0;            //显示位置 0=左 1=右
 
     this.Left=1*GetDevicePixelRatio();
-    this.Top=5*GetDevicePixelRatio();;
-
+    this.Top=5*GetDevicePixelRatio();
+    
     this.Width=50;
     this.Height=100;
     this.LineHeight=15*GetDevicePixelRatio(); //行高
@@ -22732,14 +22744,32 @@ function KLineTooltipPaint()
 
     this.GetLeft=function()
     {
-        if (this.IsHScreen) return this.ChartBorder.GetRightEx()-this.Height-this.Top;
-        return this.ChartBorder.GetLeft()+this.Left;
+        if (this.IsHScreen) 
+        {
+            return this.ChartBorder.GetRightEx()-this.Height-this.Top;
+        }
+        else
+        {
+            if (this.ShowPosition==0)
+                return this.ChartBorder.GetLeft()+this.Left;
+            else 
+                return this.ChartBorder.GetRight()-this.Width-this.Left;
+        }
     }
 
     this.GetTop=function()
     {
-        if (this.IsHScreen) return this.ChartBorder.GetTop();
-        return this.ChartBorder.GetTopEx()+this.Top;
+        if (this.IsHScreen) 
+        {
+            if (this.ShowPosition==0)
+                return this.ChartBorder.GetTop()+this.Left;
+            else
+                return this.ChartBorder.GetBottom()-this.Width-this.Left;
+        }
+        else
+        {
+            return this.ChartBorder.GetTopEx()+this.Top;
+        }
     }
 
     this.IsEnableDraw=function()
@@ -22797,9 +22827,32 @@ function KLineTooltipPaint()
             if (textWidth>this.Width) this.Width=textWidth;
         }
 
+        this.CalculateShowPosition();
         this.DrawBG();
         this.DrawTooltipData(klineData);
         this.DrawBorder();
+    }
+
+    //判断显示位置
+    this.CalculateShowPosition=function()
+    {
+        this.ShowPosition=0;
+        if (!this.LatestPoint) return;
+
+        if(this.IsHScreen)
+        {
+            var top=this.ChartBorder.GetTop();
+            var height=this.ChartBorder.GetHeight();
+            var yCenter=top+height/2;
+            if (this.LatestPoint.Y<yCenter) this.ShowPosition=1;
+        }
+        else
+        {
+            var left=this.ChartBorder.GetLeft();
+            var width=this.ChartBorder.GetWidth();
+            var xCenter=left+width/2;
+            if (this.LatestPoint.X<xCenter) this.ShowPosition=1;
+        }
     }
 
     this.DrawTooltipData=function(item)
@@ -22992,8 +23045,32 @@ function MinuteTooltipPaint()
 
     this.GetTop=function()
     {
-        if (this.IsHScreen) return this.ChartBorder.GetTop();
-        return this.ChartBorder.GetTop()+this.Top;
+        if (this.IsHScreen) 
+        {
+            if (this.ShowPosition==0)
+                return this.ChartBorder.GetTop()+this.Left;
+            else
+                return this.ChartBorder.GetBottom()-this.Width-this.Left;
+        }
+        else
+        {
+            return this.ChartBorder.GetTop()+this.Top;
+        }
+    }
+
+    this.GetLeft=function()
+    {
+        if (this.IsHScreen) 
+        {
+            return this.ChartBorder.GetRight()-this.Height-this.Top;
+        }
+        else
+        {
+            if (this.ShowPosition==0)
+                return this.ChartBorder.GetLeft()+this.Left;
+            else 
+                return this.ChartBorder.GetRight()-this.Width-this.Left;
+        }
     }
 
     this.DrawTooltipData=function(item)
@@ -25507,6 +25584,13 @@ function FrameSplitKLinePriceY()
         splitData.Max=this.Frame.HorizontalMax;
         splitData.Min=this.Frame.HorizontalMin;
         splitData.Count=this.SplitCount;
+
+        if (splitData.Max==splitData.Min)   //如果一样上下扩大下
+		{
+			splitData.Max+=splitData.Max*0.01;
+			splitData.Min-=splitData.Min*0.01
+		}
+        
         if (this.DefaultYMaxMin)    //指定最小的Y轴范围
         {
             var range=this.DefaultYMaxMin;
@@ -43384,13 +43468,15 @@ function KLineChartHScreenContainer(uielement)
 
     this.ClassName='KLineChartHScreenContainer';
 
-    this.OnMouseMove=function(x,y,e)
+    this.OnMouseMove=function(x,y,e,isPhone)
     {
         this.LastPoint.X=x;
         this.LastPoint.Y=y;
         this.CursorIndex=this.Frame.GetXData(y);
 
-        this.DrawDynamicInfo();
+        var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y}, IsPhone:isPhone===true };
+
+        this.DrawDynamicInfo(option);
     }
 
     uielement.onmousedown=function(e)   //鼠标拖拽
@@ -43900,13 +43986,14 @@ function MinuteChartHScreenContainer(uielement)
 
     this.ClassName='MinuteChartHScreenContainer';
 
-    this.OnMouseMove=function(x,y,e)
+    this.OnMouseMove=function(x,y,e,isPhone)
     {
         this.LastPoint.X=x;
         this.LastPoint.Y=y;
         this.CursorIndex=this.Frame.GetXData(y);
 
-        this.DrawDynamicInfo();
+        var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y}, IsPhone:isPhone===true };
+        this.DrawDynamicInfo(option);
     }
 
      //创建

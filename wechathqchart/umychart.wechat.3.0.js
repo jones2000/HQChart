@@ -1678,6 +1678,7 @@ function JSChartContainer(uielement)
             {
                 var item = this.ExtendChartPaint[i];
                 if (item.IsCallbackDraw) continue;
+                item.LatestPoint={ X:this.LastPoint.X, Y:this.LastPoint.Y };
                 if (item.IsDynamic && item.DrawAfterTitle) item.Draw();
             }
         }
