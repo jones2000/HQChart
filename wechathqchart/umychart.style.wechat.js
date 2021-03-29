@@ -160,7 +160,29 @@ var BLACK_STYLE =    //黑色风格
         TitleColor: 'rgb(210,210,210)',         //标题颜色
         TitleFont:'13px 微软雅黑'               //字体
     },
-    
+
+    //深度图
+    DepthChart:
+    {
+        BidColor: { Line:"rgb(82,176,123)", Area:"rgba(82,176,123,0.5)"},  //卖
+        AskColor: { Line:"rgb(207,76,89)", Area:"rgb(207,76,89, 0.5)"},   //买
+        LineWidth:4
+    },
+
+    DepthCorss:
+    {
+        BidColor: { Line:"rgb(82,176,123)" },  //卖
+        AskColor: { Line:"rgb(207,76,89)" },   //买
+        LineWidth:2,    //线段宽度
+        LineDash:[3,3],
+        Tooltip:
+        { 
+            BGColor:'rgba(54,54,54, 0.8)', TextColor:"rgb(203,215,224)",
+            Border:{ Top:5, Left:20, Bottom:5, Center: 5},
+            Font:"14px 微软雅黑",
+            LineHeight:16   //单行高度
+        }
+    }
 };
 
 
@@ -245,25 +267,26 @@ var WHITE_STYLE=    //白色风格
         }
     },
 
-    Index: {      //指标线段颜色
-      LineColor: [
-        "rgb(255,189,09)",
-        "rgb(22,198,255)",
-        "rgb(174,35,161)",
-        "rgb(236,105,65)",
-        "rgb(68,114,196)",
-        "rgb(229,0,79)",
-        "rgb(0,128,255)",
-        "rgb(252,96,154)",
-        "rgb(42,230,215)",
-        "rgb(24,71,178)",
-
-      ],
-      NotSupport: { Font: "14px 微软雅黑", TextColor: "rgb(52,52,52)" }
+    Index: 
+    {      //指标线段颜色
+        LineColor: 
+        [
+            "rgb(255,189,09)",
+            "rgb(22,198,255)",
+            "rgb(174,35,161)",
+            "rgb(236,105,65)",
+            "rgb(68,114,196)",
+            "rgb(229,0,79)",
+            "rgb(0,128,255)",
+            "rgb(252,96,154)",
+            "rgb(42,230,215)",
+            "rgb(24,71,178)",
+        ],
+        NotSupport: { Font: "14px 微软雅黑", TextColor: "rgb(52,52,52)" }
     },
 
     ColorArray:       //自定义指标默认颜色
-      [
+    [
         "rgb(255,174,0)",
         "rgb(25,199,255)",
         "rgb(175,95,162)",
@@ -274,13 +297,14 @@ var WHITE_STYLE=    //白色风格
         "rgb(252,96,154)",
         "rgb(42,230,215)",
         "rgb(24,71,178)",
-      ],
+    ],
+
     //画图工具
     DrawPicture:
-      {
+    {
         LineColor: "rgb(30,144,255)",
         PointColor: "rgb(105,105,105)",
-      },  
+    },
 }
 
 var STYLE_TYPE_ID=

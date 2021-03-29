@@ -10,6 +10,7 @@
     全局配置颜色
 */
 
+
 function JSChartResource() 
 {
     this.TooltipBGColor = "rgb(255, 255, 255)"; //背景色
@@ -271,6 +272,29 @@ function JSChartResource()
         YOffset:0   //y坐标向上偏移
     }
 
+    //深度图
+    this.DepthChart=
+    {
+        BidColor: { Line:"rgb(82,176,123)", Area:"rgba(82,176,123,0.8)"},  //卖
+        AskColor: { Line:"rgb(207,76,89)", Area:"rgb(207,76,89, 0.8)"},   //买
+        LineWidth:4
+    }
+
+    this.DepthCorss=
+    {
+        BidColor: { Line:"rgb(82,176,123)" },  //卖
+        AskColor: { Line:"rgb(207,76,89)" },   //买
+        LineWidth:2,    //线段宽度
+        LineDash:[3,3],
+        Tooltip:
+        { 
+            BGColor:'rgba(236,240,245, 0.8)', TextColor:"rgb(130,140,151)",
+            Border:{ Top:5, Left:20, Bottom:5, Center: 5},
+            Font:"14px 微软雅黑",
+            LineHeight:16   //单行高度
+        }
+    }
+
     // //自定义风格
     this.SetStyle = function (style) 
     {
@@ -384,8 +408,8 @@ function JSChartResource()
         if (style.DRAWNUMBER)
         {
             var item=style.DRAWNUMBER;
-            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWNUMBER.Text.MaxSize=item.MaxSize;
-            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.Text.MinSize=item.MinSize;
+            if (this.IsPlusNumber(item.MaxSize)) this.DRAWNUMBER.Text.MaxSize=item.MaxSize;
+            if (this.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.Text.MinSize=item.MinSize;
             if (item.Zoom) this.DRAWNUMBER.Text.Zoom=item.Zoom;
             if (item.FontName) this.DRAWNUMBER.Text.FontName=item.FontName;
         }
@@ -393,10 +417,76 @@ function JSChartResource()
         if (style.DRAWABOVE)
         {
             var item=style.DRAWABOVE;
-            if (IFrameSplitOperator.IsNumber(item.YOffset)) this.DRAWNUMBER.YOffset=item.YOffset;
+            if (this.IsNumber(item.YOffset)) this.DRAWABOVE.YOffset=item.YOffset;
+        }
+
+        if (style.DepthChart)
+        {
+            var item=style.DepthChart;
+            if (item.BidColor)
+            {
+                if (item.BidColor.Line) this.DepthChart.BidColor.Line=item.BidColor.Line;
+                if (item.BidColor.Area) this.DepthChart.BidColor.Area=item.BidColor.Area;
+            }
+            if (item.AskColor)
+            {
+                if (item.AskColor.Line) this.DepthChart.AskColor.Line=item.AskColor.Line;
+                if (item.AskColor.Area) this.DepthChart.AskColor.Area=item.AskColor.Area;
+            }
+
+            if (item.LineWidth) this.DepthChart.LineWidth=item.LineWidth;
+        }
+
+        if (style.DepthCorss)
+        {
+            var item=style.DepthCorss;
+            if (item.BidColor)
+            {
+                if (item.BidColor.Line) this.DepthCorss.BidColor.Line=item.BidColor.Line;
+            }
+
+            if (item.AskColor)
+            {
+                if (item.AskColor.Line) this.DepthCorss.AskColor.Line=item.AskColor.Line;
+            }
+
+            if (item.LineWidth) this.DepthCorss.LineWidth=item.LineWidth;
+            if (item.LineDash) this.DepthCorss.LineDash=item.LineDash;
+
+            if (item.Tooltip)
+            {
+                var tooltip=item.Tooltip;
+                if (tooltip.BGColor) this.DepthCorss.Tooltip.BGColor=tooltip.BGColor;
+                if (tooltip.TextColor) this.DepthCorss.Tooltip.TextColor=tooltip.TextColor;
+                if (tooltip.Font) this.DepthCorss.Tooltip.Font=tooltip.Font;
+                if (tooltip.LineHeight) this.DepthCorss.Tooltip.LineHeight=tooltip.LineHeight;
+
+                var border=tooltip.Border;
+                if (this.IsNumber(border.Top)) this.DepthCorss.Tooltip.Border.Top=border.Top;
+                if (this.IsNumber(border.Left)) this.DepthCorss.Tooltip.Border.Left=border.Left;
+                if (this.IsNumber(border.Bottom)) this.DepthCorss.Tooltip.Border.Bottom=border.Bottom;
+                if (this.IsNumber(border.Center)) this.DepthCorss.Tooltip.Border.Center=border.Center;
+            }
         }
     }
 
+    
+    this.IsNumber=function(value)
+    {
+        if (value==null) return false;
+        if (isNaN(value)) return false;
+
+        return true;
+    }
+
+    //判断是否是正数
+    this.IsPlusNumber=function(value)
+    {
+        if (value==null) return false;
+        if (isNaN(value)) return false;
+
+        return value>0;
+    }
 }
 
 var g_JSChartResource = new JSChartResource();

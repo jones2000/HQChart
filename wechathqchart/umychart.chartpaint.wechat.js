@@ -4858,17 +4858,18 @@ function ChartCorssCursor()
 
         if (this.IsShowCorss)   //十字线
         {
-            this.Canvas.save();
-            this.Canvas.strokeStyle = this.HPenColor;
-            if (this.HPenType == 0) this.Canvas.setLineDash([3, 2]);   //虚线
-            //this.Canvas.lineWidth=0.5
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(left, ToFixedPoint(y));
-            this.Canvas.lineTo(right, ToFixedPoint(y));
-            this.Canvas.stroke();
-            this.Canvas.restore();
-
-
+            if (this.HPenType==1 || this.HPenType==0)
+            {
+                this.Canvas.strokeStyle = this.HPenColor;
+                if (this.HPenType == 0) this.Canvas.setLineDash([3, 2]);   //虚线
+                //this.Canvas.lineWidth=0.5
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(left, ToFixedPoint(y));
+                this.Canvas.lineTo(right, ToFixedPoint(y));
+                this.Canvas.stroke();
+                this.Canvas.setLineDash([]);
+            }
+            
             this.Canvas.save();
             this.Canvas.strokeStyle = this.VPenColor;
             if (this.VPenType == 0) 
@@ -5220,7 +5221,308 @@ function ChartCorssCursor()
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//深度图十字光标
+function DepthChartCorssCursor()
+{
+    this.Frame;
+    this.Canvas;                            //画布
+    this.Data;
+    this.Symbol;
+    this.HQChart;
 
+    this.HPenType=0;  //水平线样式 0=虚线 1=实线
+    this.VPenType=0;  //垂直线颜色 0=虚线 1=实线
+    this.LineDash=g_JSChartResource.DepthCorss.LineDash;
+
+    this.AskColor=g_JSChartResource.DepthCorss.AskColor.Line;   //卖
+    this.BidColor=g_JSChartResource.DepthCorss.BidColor.Line;   //买
+    this.LineWidth=g_JSChartResource.DepthCorss.LineWidth;
+
+    this.IsShowTooltip=true;
+    this.Tooltip=
+    { 
+        LineHeight:g_JSChartResource.DepthCorss.Tooltip.LineHeight, 
+        Border:
+        { 
+            Top:g_JSChartResource.DepthCorss.Tooltip.Border.Top, 
+            Left:g_JSChartResource.DepthCorss.Tooltip.Border.Left, 
+            Bottom:g_JSChartResource.DepthCorss.Tooltip.Border.Bottom, 
+            Center: g_JSChartResource.DepthCorss.Tooltip.Border.Center
+        },
+        Font:g_JSChartResource.DepthCorss.Tooltip.Font,
+        TextColor:g_JSChartResource.DepthCorss.Tooltip.TextColor,
+        BGColor:g_JSChartResource.DepthCorss.Tooltip.BGColor
+    };    // Width: Height:
+
+    this.Font=g_JSChartResource.CorssCursorTextFont;            //字体
+    this.TextColor=g_JSChartResource.CorssCursorTextColor;      //文本颜色
+    this.TextBGColor=g_JSChartResource.CorssCursorBGColor;      //文本背景色
+    this.TextHeight=20;                                         //文本字体高度
+    this.LastPoint;
+
+    this.PointX;
+    this.PointY;
+
+    this.StringFormatX;
+    this.StringFormatY;
+
+    this.IsShowCorss=true;  //是否显示十字光标
+    this.IsShow=true;
+
+    this.GetVol=function(price, isAsk)
+    {
+        if (!this.Data) return null;
+        var aryData=isAsk? this.Data.Asks:this.Data.Bids;
+        if (!aryData || !Array.isArray(aryData) || aryData.length<=0) return null;
+
+        for(var i in aryData)
+        {
+            var item=aryData[i];
+            if (item.Price==price) return item.Vol;
+        }
+
+        return null;
+    }
+
+    this.Draw=function()
+    {
+        this.Status=0;
+        if (!this.LastPoint) return;
+        if (!this.Data) return;
+        if (!this.IsShow) return;
+
+        var x=this.LastPoint.X;
+        var y=this.LastPoint.Y;
+
+        var isInClient=false;
+        var rtClient = new Rect(this.Frame.ChartBorder.GetLeft(), this.Frame.ChartBorder.GetTop(), this.Frame.ChartBorder.GetWidth(), this.Frame.ChartBorder.GetHeight());
+        isInClient = rtClient.IsPointIn(x, y);
+       
+        this.PointY=null;
+        this.PointY==null;
+
+        if (!isInClient) return;
+
+        if (this.Frame.IsHScreen===true)
+        {
+            return;
+        }
+
+        var left=this.Frame.ChartBorder.GetLeft();
+        var right=this.Frame.ChartBorder.GetRight();
+        var top=this.Frame.ChartBorder.GetTopTitle();
+        var bottom=this.Frame.ChartBorder.GetBottom();
+        var rightWidth=this.Frame.ChartBorder.Right;
+        var chartRight=this.Frame.ChartBorder.GetChartWidth();
+
+        var xValue=this.Frame.GetXData(x);
+        var xInfo=this.Frame.GetXFromPrice(xValue); //调整价格到有数据的点上
+
+        if (!xInfo) return;
+
+        var yVol=this.GetVol(xInfo.Price, xInfo.IsAsk);
+        y=this.Frame.GetYFromData(yVol);    //调整Y轴, 让它在线段上
+
+        xInfo.Vol=yVol;
+        xInfo.Y=y;
+        
+        this.PointY=[[left,y],[right,y]];
+        this.PointX=[[x,top],[x,bottom]];
+
+        if (this.IsShowCorss)
+        {
+            if (xInfo.IsAsk) this.Canvas.strokeStyle=this.AskColor;
+            else this.Canvas.strokeStyle=this.BidColor;
+            var lineWidthBackup=this.Canvas.lineWidth;
+            this.Canvas.lineWidth=this.LineWidth;
+            var lineWidth=this.Canvas.lineWidth;
+
+            if (this.HPenType==1 || this.HPenType==0)   //0=实线 1=虚线
+            {
+                if (this.HPenType==0) this.Canvas.setLineDash(this.LineDash);   //虚线
+                var yFix=ToFixedPoint(y);
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(left,yFix);
+                this.Canvas.lineTo(right,yFix);
+                this.Canvas.stroke();
+                if (this.HPenType==0) this.Canvas.setLineDash([]);
+            }
+            
+            if (this.VPenType==0) this.Canvas.setLineDash(this.LineDash);   //虚线
+            var xFix=ToFixedPoint(xInfo.X);
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(xFix,top);
+            this.Canvas.lineTo(xFix,bottom);
+            this.Canvas.stroke();
+            if (this.VPenType==0) this.Canvas.setLineDash([]);
+
+            this.Canvas.lineWidth=lineWidthBackup;
+        }
+
+        if (this.HQChart)
+        {
+            //JSCHART_EVENT_ID.ON_DRAW_DEPTH_TOOLTIP
+            var event=this.HQChart.GetEvent(25);
+            if (event)
+            {
+                event.Callback(event,xInfo,this);
+            }
+        }
+
+        if (this.IsShowTooltip) this.DrawTooltip(xInfo);
+    }
+
+    this.DrawTooltip=function(data)
+    {
+        var price=data.Price;
+        var vol=data.Vol;
+        var border=this.Tooltip.Border;
+        this.Canvas.font=this.Tooltip.Font;
+        var floatPrecision=2;
+        if (this.Symbol) floatPrecision=JSCommonCoordinateData.GetfloatPrecision(this.Symbol);//价格小数位数
+        var maxText='擎擎: 9999.99亿 ';
+        if (floatPrecision>=5) maxText=`擎擎: ${99.99.toFixed(floatPrecision)} `;  //小数位数太多了
+        this.Tooltip.Width=this.Canvas.measureText(maxText).width+border.Left;
+        this.Tooltip.Height=this.Tooltip.LineHeight*4+border.Top+border.Bottom+border.Center;
+
+        var chartRight=this.Frame.ChartBorder.GetRight();
+        var chartTop=this.Frame.ChartBorder.GetTop();
+        
+        var left=data.X+2;
+        var top=data.Y-this.Tooltip.Height-2;
+        if (left+this.Tooltip.Width>=chartRight) left=data.X-this.Tooltip.Width-2;
+        if (top<chartTop) top=data.Y+2;
+
+        this.Canvas.fillStyle=this.Tooltip.BGColor;
+        this.Canvas.fillRect(left,top,this.Tooltip.Width,this.Tooltip.Height);
+
+        var x=border.Left+left;
+        var y=border.Top+top;
+
+        this.Canvas.textBaseline="top";
+        this.Canvas.textAlign="left";
+        this.Canvas.fillStyle=this.Tooltip.TextColor;
+        this.Canvas.fillText("委托价",x,y);
+        y+=this.Tooltip.LineHeight;
+        this.Canvas.fillText(data.Price.toFixed(floatPrecision),x,y);
+        y+=this.Tooltip.LineHeight;
+        y+=border.Center;
+
+        this.Canvas.fillText("累计",x,y);
+        y+=this.Tooltip.LineHeight;
+        this.Canvas.fillText(data.Vol.toFixed(4),x,y);
+    }
+}
+
+//深度图
+function ChartOrderbookDepth()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartOrderbookDepth";
+    this.Data=null;
+
+    this.AskColor={ Line:g_JSChartResource.DepthChart.AskColor.Line, Area:g_JSChartResource.DepthChart.AskColor.Area }      //卖
+    this.BidColor={ Line:g_JSChartResource.DepthChart.BidColor.Line, Area:g_JSChartResource.DepthChart.BidColor.Area }      //买
+    this.LineWidth=g_JSChartResource.DepthChart.LineWidth;
+
+    this.Draw=function()
+    {
+        if (!this.Data) return;
+
+        var lineWidthBackup=this.Canvas.lineWidth;
+        this.Canvas.lineWidth=this.LineWidth;
+        this.DrawArea(this.Data.Bids, this.BidColor.Line, this.BidColor.Area, true);
+        this.DrawArea(this.Data.Asks, this.AskColor.Line, this.AskColor.Area, false);
+        this.Canvas.lineWidth=lineWidthBackup;
+    }
+
+    this.DrawArea=function(aryData, colorLine, colorArea, isLeft)
+    {
+        var xRange=this.ChartFrame.VerticalRange;
+        var aryPoint=[];
+        for(var i in aryData)
+        {
+            var item=aryData[i];
+            if (isLeft)
+            {
+                if (item.Price<xRange.Min) break;
+            }
+            else
+            {
+                if (item.Price>xRange.Max) break;
+            }
+
+            var x=this.ChartFrame.GetXFromIndex(item.Price);
+            var y=this.ChartFrame.GetYFromData(item.Vol);
+            aryPoint.push({X:x,Y:y});
+        }
+        if (aryPoint.length<=1) return;
+
+        var left=this.ChartBorder.GetLeft();
+        var bottom=this.ChartBorder.GetBottom();
+        var right=this.ChartBorder.GetRight();
+
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(aryPoint[0].X, bottom);
+        for(var i in aryPoint)
+        {
+            var item=aryPoint[i];
+            this.Canvas.lineTo(item.X,item.Y);
+        }
+
+        this.Canvas.lineTo(isLeft?left:right,aryPoint[aryPoint.length-1].Y);
+        this.Canvas.lineTo(isLeft?left:right,bottom);
+        this.Canvas.lineTo(aryPoint[0].X,bottom);
+        this.Canvas.closePath();
+        this.Canvas.fillStyle = colorArea;
+        this.Canvas.fill();
+
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(aryPoint[0].X, bottom);
+        for(var i in aryPoint)
+        {
+            var item=aryPoint[i];
+            this.Canvas.lineTo(item.X,item.Y);
+        }
+        this.Canvas.lineTo(isLeft?left:right,aryPoint[aryPoint.length-1].Y);
+        this.Canvas.strokeStyle=colorLine;
+        this.Canvas.stroke();
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null, XMin:null, XMax:null };
+        var xRange=this.ChartFrame.VerticalRange;
+
+        for(var i in this.Data.Asks)
+        {
+            var item=this.Data.Asks[i];
+            if (item.Price>xRange.Max) break;
+            
+            if (range.XMin==null || range.XMin>item.Price) range.XMin=item.Price;
+            if (range.XMax==null || range.XMax<item.Price) range.XMax=item.Price;
+            if (range.Min==null || range.Min>item.Vol) range.Min=item.Vol;
+            if (range.Max==null || range.Max<item.Vol) range.Max=item.Vol;
+        }
+
+        for(var i in this.Data.Bids)
+        {
+            var item=this.Data.Bids[i];
+            if (item.Price<xRange.Min) break;
+
+            if (range.XMin==null || range.XMin>item.Price) range.XMin=item.Price;
+            if (range.XMax==null || range.XMax<item.Price) range.XMax=item.Price;
+            if (range.Min==null || range.Min>item.Vol) range.Min=item.Vol;
+            if (range.Max==null || range.Max<item.Vol) range.Max=item.Vol;
+        }
+
+        return range;
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // 公共函数
@@ -5273,6 +5575,8 @@ module.exports =
         ChartRadar: ChartRadar, 
     
         ChartCorssCursor: ChartCorssCursor, //十字光标 
+        DepthChartCorssCursor:DepthChartCorssCursor,
+        ChartOrderbookDepth:ChartOrderbookDepth,
     },
 
     //单个类导出
@@ -5304,5 +5608,7 @@ module.exports =
     JSCommonChartPaint_ChartBuySell: ChartBuySell,
     JSCommonChartPaint_ChartMACD: ChartMACD,
     JSCommonChartPaint_ChartCorssCursor: ChartCorssCursor,
+    JSCommonChartPaint_DepthChartCorssCursor:DepthChartCorssCursor,
+    JSCommonChartPaint_ChartOrderbookDepth:ChartOrderbookDepth,
     JSCommonChartPaint_ChartSplashPaint:ChartSplashPaint,
 };

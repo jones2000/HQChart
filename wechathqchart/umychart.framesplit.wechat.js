@@ -684,6 +684,7 @@ function FrameSplitY()
     this.FloatPrecision = 2;                  //坐标小数位数(默认2)
     this.FLOATPRECISION_RANGE = [1, 0.1, 0.01, 0.001, 0.0001];
     this.IgnoreYValue = null;                 //在这个数组里的数字不显示在刻度上 
+    this.LineType=null;     //线段样式
 
     this.IsShowYZero = true;
     this.IntegerSplitData = null;
@@ -720,6 +721,7 @@ function FrameSplitY()
                 var value = this.Frame.YSplitScale[i];
                 var coordinate = new CoordinateInfo();
                 coordinate.Value = value;
+                if (IFrameSplitOperator.IsNumber(this.LineType)) coordinate.LineType=this.LineType;
 
                 var absValue = Math.abs(value);
                 var floatPrecision = this.FloatPrecision;   //数据比小数位数还小, 调整小数位数
@@ -747,8 +749,10 @@ function FrameSplitY()
         {
             for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) 
             {
-                this.Frame.HorizontalInfo[i] = new CoordinateInfo();
-                this.Frame.HorizontalInfo[i].Value = value;
+                var coordinate=new CoordinateInfo();
+                this.Frame.HorizontalInfo[i] = coordinate;
+                coordinate.Value=value;
+                if (IFrameSplitOperator.IsNumber(this.LineType)) coordinate.LineType=this.LineType;
 
                 if (this.StringFormat == 1)   //手机端格式 如果有万,亿单位了 去掉小数
                 {
@@ -1312,6 +1316,60 @@ function FrameSplitXData()
     }
 }
 
+//深度图X轴价格信息
+function FrameSplitXDepth()
+{
+    this.newMethod=IFrameSplitOperator;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ShowText=true;                 //是否显示坐标信息
+    this.SplitCount=3;
+    this.Symbol;
+    this.LineType=3;
+
+    this.Operator=function()
+    {
+        var xRange=this.Frame.VerticalRange;
+        if (!xRange) return;
+        this.Frame.VerticalInfo=[];
+
+        var floatPrecision=2;
+        if (this.Symbol) floatPrecision=JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
+        var xMax=xRange.Max;
+        var xMin=xRange.Min;
+        if (xRange.Bid)
+        {
+            var interval=(xRange.Bid.Max-xMin)/this.SplitCount;
+            for(var i=0;i<this.SplitCount;++i)
+            {
+                var info= new CoordinateInfo();
+                info.Value=xMin+(interval*i);
+                if (IFrameSplitOperator.IsNumber(this.LineType)) info.LineType=this.LineType;
+                if (this.ShowText) info.Message[0]=info.Value.toFixed(floatPrecision);
+                this.Frame.VerticalInfo.push(info);
+            }
+        }
+
+        var info=new CoordinateInfo();
+        info.Value=xRange.Center;
+        this.Frame.VerticalInfo.push(info);
+
+        if (xRange.Ask)
+        {
+            var interval=(xMax-xRange.Ask.Min)/this.SplitCount;
+            for(var i=1;i<=this.SplitCount;++i)
+            {
+                var info= new CoordinateInfo();
+                info.Value=xRange.Ask.Min+(interval*i);
+                if (IFrameSplitOperator.IsNumber(this.LineType)) info.LineType=this.LineType;
+                if (this.ShowText) info.Message[0]=info.Value.toFixed(floatPrecision);
+                this.Frame.VerticalInfo.push(info);
+            }
+        }
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //  数据分割
 //  [0]=Start起始 [1]=End结束 [2]=FixInterval修正的间隔 [3]=Increase
@@ -1610,6 +1668,7 @@ module.exports =
         FrameSplitXData: FrameSplitXData,
         SplitData: SplitData,
         PriceSplitData: PriceSplitData,
+        FrameSplitXDepth:FrameSplitXDepth,
     },
 
     JSCommonSplit_CoordinateInfo: CoordinateInfo,
@@ -1622,4 +1681,5 @@ module.exports =
     JSCommonSplit_FrameSplitXData: FrameSplitXData,
     JSCommonSplit_SplitData: SplitData,
     JSCommonSplit_PriceSplitData: PriceSplitData,
+    JSCommonSplit_FrameSplitXDepth:FrameSplitXDepth,
 };
