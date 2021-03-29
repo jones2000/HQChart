@@ -1345,6 +1345,7 @@ function FrameSplitXDepth()
             {
                 var info= new CoordinateInfo();
                 info.Value=xMin+(interval*i);
+                if (info.Value<=0) continue;
                 if (IFrameSplitOperator.IsNumber(this.LineType)) info.LineType=this.LineType;
                 if (this.ShowText) info.Message[0]=info.Value.toFixed(floatPrecision);
                 this.Frame.VerticalInfo.push(info);

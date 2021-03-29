@@ -953,6 +953,7 @@ function JSChart(divElement, bOffscreen)
 
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
         if (IFrameSplitOperator.IsPlusNumber(option.MaxVolRate)) chart.MaxVolRate=option.MaxVolRate;
+        if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
 
         chart.Create(option.Listener);  
 
@@ -23407,6 +23408,8 @@ function FrameSplitXDepth()
             {
                 var info= new CoordinateInfo();
                 info.Value=xMin+(interval*i);
+                if (info.Value<=0) continue;
+                
                 if (IFrameSplitOperator.IsNumber(this.LineType)) info.LineType=this.LineType;
                 if (this.ShowText) info.Message[0]=info.Value.toFixed(floatPrecision);
                 this.Frame.VerticalInfo.push(info);
@@ -30964,7 +30967,7 @@ function JSChartResource()
     this.DepthChart=
     {
         BidColor: { Line:"rgb(82,176,123)", Area:"rgba(82,176,123,0.8)"},  //卖
-        AskColor: { Line:"rgb(207,76,89)", Area:"rgb(207,76,89, 0.8)"},   //买
+        AskColor: { Line:"rgb(207,76,89)", Area:"rgba(207,76,89, 0.8)"},   //买
         LineWidth:4
     }
 

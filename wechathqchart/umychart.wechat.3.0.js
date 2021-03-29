@@ -275,7 +275,7 @@ function JSChart(element)
 
         if (option.SourceDatatLimit) chart.SetSourceDatatLimit(option.SourceDatatLimit);
         if (option.EnableZoomUpDown) chart.EnableZoomUpDown=option.EnableZoomUpDown;
-
+        if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
         //创建子窗口
         chart.Create(option.Windows.length);
 
@@ -877,6 +877,7 @@ function JSChart(element)
 
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
         if (IFrameSplitOperator.IsPlusNumber(option.MaxVolRate)) chart.MaxVolRate=option.MaxVolRate;
+        if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
 
         chart.Create(option.Listener);  
 
@@ -1611,10 +1612,11 @@ function JSChartContainer(uielement)
             var xHeight = Math.abs(touches[0].pageX - touches[1].pageX);
             var xLastHeight = Math.abs(phonePinch.Last.X - phonePinch.Last.X2);
             var xStep = xHeight - xLastHeight;
-            if (Math.abs(yStep) < 5 && Math.abs(xStep) < 5) return;
+            var minStep=this.ZoomStepPixel;
+            if (Math.abs(yStep) < minStep && Math.abs(xStep) < minStep) return;
 
             var step = yStep;
-            if (Math.abs(yStep) < 5) step = xStep;
+            if (Math.abs(yStep) < minStep) step = xStep;
 
             if (step > 0)    //放大
             {
@@ -11874,10 +11876,11 @@ function DepthChartContainer(uielement)
             var xHeight = Math.abs(touches[0].pageX - touches[1].pageX);
             var xLastHeight = Math.abs(phonePinch.Last.X - phonePinch.Last.X2);
             var xStep = xHeight - xLastHeight;
-            if (Math.abs(yStep) < 5 && Math.abs(xStep) < 5) return;
+            var minStep=this.ZoomStepPixel;
+            if (Math.abs(yStep) <minStep  && Math.abs(xStep) < minStep) return;
 
             var step = yStep;
-            if (Math.abs(yStep) < 5) step = xStep;
+            if (Math.abs(yStep) < minStep) step = xStep;
 
             if (step>0)    //放大
             {

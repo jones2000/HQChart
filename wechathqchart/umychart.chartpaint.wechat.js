@@ -5334,7 +5334,7 @@ function DepthChartCorssCursor()
         {
             if (xInfo.IsAsk) this.Canvas.strokeStyle=this.AskColor;
             else this.Canvas.strokeStyle=this.BidColor;
-            var lineWidthBackup=this.Canvas.lineWidth;
+            this.Canvas.save();
             this.Canvas.lineWidth=this.LineWidth;
             var lineWidth=this.Canvas.lineWidth;
 
@@ -5357,7 +5357,7 @@ function DepthChartCorssCursor()
             this.Canvas.stroke();
             if (this.VPenType==0) this.Canvas.setLineDash([]);
 
-            this.Canvas.lineWidth=lineWidthBackup;
+            this.Canvas.restore();
         }
 
         if (this.HQChart)
@@ -5433,11 +5433,11 @@ function ChartOrderbookDepth()
     {
         if (!this.Data) return;
 
-        var lineWidthBackup=this.Canvas.lineWidth;
+        this.Canvas.save();
         this.Canvas.lineWidth=this.LineWidth;
         this.DrawArea(this.Data.Bids, this.BidColor.Line, this.BidColor.Area, true);
         this.DrawArea(this.Data.Asks, this.AskColor.Line, this.AskColor.Area, false);
-        this.Canvas.lineWidth=lineWidthBackup;
+        this.Canvas.restore();
     }
 
     this.DrawArea=function(aryData, colorLine, colorArea, isLeft)
