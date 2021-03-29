@@ -12361,7 +12361,7 @@ function DepthChartFrame()
     this.ClassName="DepthChartFrame";
 
     //X轴价格 最大,最小
-    this.VerticalRange={ Max:null, Min:null, Center:null, MaxDiffer:null, Differ:null, Step:0.05 };
+    this.VerticalRange={ Max:88, Min:8, Center:null, MaxDiffer:null, Differ:null, Step:0.05 };
     this.AskPrice;
     this.BidPrice;
     this.MinZoom=0.05;  //最小缩放
@@ -45337,6 +45337,7 @@ function DepthChartContainer(uielement)
         aryAskPrice.sort((a,b)=> { return a-b; });
         aryBidPrice.sort((a,b)=> { return a-b; });
 
+        var range={ Max:88, Min:8 };
         if (aryAskPrice.length>1 && aryBidPrice.length>1)
         {
             var askMin=aryAskPrice[0], askMax=aryAskPrice[aryAskPrice.length-1];
@@ -45347,7 +45348,7 @@ function DepthChartContainer(uielement)
 
             var ask={Min:askMin, Max:askMin+difference};
             var bid={Max:bidMax, Min:bidMax-difference};
-            var range={ Max:ask.Max, Min:bid.Min };
+            range={ Max:ask.Max, Min:bid.Min };
         }
 
         this.Frame.SetPriceList(aryAskPrice,aryBidPrice);

@@ -165,7 +165,7 @@ var BLACK_STYLE =    //黑色风格
     DepthChart:
     {
         BidColor: { Line:"rgb(82,176,123)", Area:"rgba(82,176,123,0.5)"},  //卖
-        AskColor: { Line:"rgb(207,76,89)", Area:"rgb(207,76,89, 0.5)"},   //买
+        AskColor: { Line:"rgb(207,76,89)", Area:"rgba(207,76,89, 0.5)"},   //买
         LineWidth:4
     },
 

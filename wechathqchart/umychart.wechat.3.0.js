@@ -891,7 +891,8 @@ function JSChart(element)
             if (IFrameSplitOperator.IsNumber(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
             else option.Border.Bottom=chart.Frame.ChartBorder.Bottom;
         }
-
+        if (option.IsFullDraw == true) chart.IsFullDraw = option.IsFullDraw;
+        
         if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
 
         if (option.CorssCursorInfo)

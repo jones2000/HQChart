@@ -276,7 +276,7 @@ function JSChartResource()
     this.DepthChart=
     {
         BidColor: { Line:"rgb(82,176,123)", Area:"rgba(82,176,123,0.8)"},  //卖
-        AskColor: { Line:"rgb(207,76,89)", Area:"rgb(207,76,89, 0.8)"},   //买
+        AskColor: { Line:"rgb(207,76,89)", Area:"rgba(207,76,89, 0.8)"},   //买
         LineWidth:4
     }
 
