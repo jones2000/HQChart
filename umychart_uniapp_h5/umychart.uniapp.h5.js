@@ -24447,6 +24447,7 @@ function DrawToolsButton()
                     { HTML: { Title: '箭头', IClass: 'iconfont icon-draw_rays', ID: 'icon-beam2' }, Name: '箭头' },
                     { HTML: { Title: '趋势线', IClass: 'iconfont icon-draw_trendline', ID: 'icon-trendline' }, Name: '趋势线' },
                     { HTML: { Title: '水平线', IClass: 'iconfont icon-draw_hline', ID: 'icon-hline' }, Name: '水平线' },
+                    { HTML: { Title: '水平线段', IClass: 'iconfont icon-draw_hline', ID: 'icon-hlineseg' }, Name: '水平线段' },
                     { HTML: { Title: '平行线', IClass: 'iconfont icon-draw_parallel_lines', ID: 'icon-parallellines' }, Name: '平行线' },
                     { HTML: { Title: '平行通道', IClass: 'iconfont icon-draw_parallelchannel', ID: 'icon-parallelchannel' }, Name: '平行通道' },
                     { HTML: { Title: '价格通道线', IClass: 'iconfont icon-draw_pricechannel', ID: 'icon-pricechannel' }, Name: '价格通道线' },
@@ -30590,6 +30591,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"箱型线", ClassName:"ChartDrawBox", Create:function() { return new ChartDrawBox(); } },
     { Name:"2点画图例子", ClassName:"ChartDrawTwoPointDemo", Create:function() { return new ChartDrawTwoPointDemo(); } },
     { Name:"3点画图例子", ClassName:"ChartDrawThreePointDemo", Create:function() { return new ChartDrawThreePointDemo(); } },
+    { Name:"水平线段", ClassName:"ChartDrawHLineSegment", Create:function() { return new ChartDrawHLineSegment();} },
     { ClassName:'ChartDrawPictureIconFont',  Create:function() { return new ChartDrawPictureIconFont(); }}
     
 ];
@@ -34226,6 +34228,129 @@ function ChartDrawThreePointDemo()
             this.Canvas.fillText(price.toFixed(2), ptEnd.X-5, y);
         }
         this.Canvas.setLineDash([]);
+    }
+}
+
+//画图工具-水平线段
+function ChartDrawHLineSegment()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawHLineSegment';
+    this.PointCount=2;
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.ChartBorder;
+
+    this.PointToValue_Backup=this.PointToValue;
+    this.PointToValue=function()
+    {
+        //拖拽完成 把点移动到线段头尾
+        if (this.Frame.IsHScreen)
+        {
+            this.Point[1].X=this.Point[0].X;
+        }
+        else
+        {
+            this.Point[1].Y=this.Point[0].Y;
+        }
+        
+        this.PointToValue_Backup();
+    }
+
+    this.Draw=function()
+    {
+        this.IsHScreen=this.Frame.IsHScreen;
+        this.LinePoint=[];
+        var drawPoint=this.CalculateDrawPoint( { IsCheckX:false, IsCheckY:true} );
+        if (!drawPoint || drawPoint.length!=2) return;
+
+        this.ClipFrame();
+        this.ChartBorder=this.Frame.ChartBorder;
+        
+        this.SetLineWidth();
+        this.Canvas.strokeStyle=this.LineColor;
+        var ptStart=drawPoint[0];
+        var ptEnd=drawPoint[1];
+
+        if (this.Status==10)    //0=开始画 1=完成第1个点  2=完成第2个点 3=完成第3个点  10=完成 20=移动)
+        {
+            this.DrawLine(ptStart,ptEnd,false);
+        }  
+        else
+        {
+            //var kPoint=this.PointToKLine([ptStart,ptEnd]);
+            this.DrawVerticalLine(ptStart,ptEnd);
+        }                            
+        
+        this.RestoreLineWidth();
+
+        var line={ Start:ptStart, End:ptEnd };
+        this.LinePoint.push(line);
+        
+        this.DrawPoint(drawPoint);  //画点
+        this.Canvas.restore();
+    }
+
+    this.DrawVerticalLine=function(ptStart, ptEnd)
+    {
+        var data=this.Frame.Data;
+        if (this.IsHScreen)
+        {
+            var left=this.ChartBorder.GetLeft();
+            var right=this.ChartBorder.GetRight();
+            var xValue=Math.round(this.Frame.GetXData(ptStart.Y,false))+data.DataOffset;
+            if (xValue<0) xValue=0;
+            else if (xValue>=data.Data.length) xValue=data.Data.length-1;
+            var yStart=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+
+            xValue=Math.round(this.Frame.GetXData(ptEnd.Y,false))+data.DataOffset;
+            if (xValue<0) xValue=0;
+            else if (xValue>=data.Data.length) xValue=data.Data.length-1;
+            var yEnd=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(left,yStart);
+            this.Canvas.lineTo(right,yStart);
+    
+            this.Canvas.moveTo(left,yEnd);
+            this.Canvas.lineTo(right,yEnd);
+            this.Canvas.stroke();
+
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(ptStart.X,yStart);
+            this.Canvas.lineTo(ptStart.X,yEnd);
+            this.Canvas.stroke();
+        }
+        else
+        {
+            var top=this.ChartBorder.GetTopEx();
+            var bottom=this.ChartBorder.GetBottomEx();
+            
+            var xValue=Math.round(this.Frame.GetXData(ptStart.X,false))+data.DataOffset;
+            if (xValue<0) xValue=0;
+            else if (xValue>=data.Data.length) xValue=data.Data.length-1;
+            var xStart=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+    
+            xValue=Math.round(this.Frame.GetXData(ptEnd.X,false))+data.DataOffset;
+            if (xValue<0) xValue=0;
+            else if (xValue>=data.Data.length) xValue=data.Data.length-1;
+            var xEnd=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+    
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(xStart,top);
+            this.Canvas.lineTo(xStart,bottom);
+    
+            this.Canvas.moveTo(xEnd,top);
+            this.Canvas.lineTo(xEnd,bottom);
+            this.Canvas.stroke();
+    
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(xStart,ptStart.Y);
+            this.Canvas.lineTo(xEnd,ptStart.Y);
+            this.Canvas.stroke();
+        }
     }
 }
 
