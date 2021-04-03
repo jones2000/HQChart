@@ -18550,6 +18550,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         {
             if (hqChart.DayCount>1) hqDataType=HQ_DATA_TYPE.MULTIDAY_MINUTE_ID; //多日分钟
             else hqDataType=HQ_DATA_TYPE.MINUTE_ID;                             //分钟数据
+
+            dateRange=hisData.GetDateRange();
         }
         else if (hqChart.ClassName==='HistoryMinuteChartContainer') 
         {
@@ -18641,6 +18643,16 @@ function APIScriptIndex(name,script,args,option, isOverlay)
             this.OutVar=this.ConvertToLocalData(data,hqChart);
             JSConsole.Complier.Log('[APIScriptIndex::RecvAPIData2] conver to OutVar ', this.OutVar);
         }
+        else if (this.HQDataType==HQ_DATA_TYPE.MINUTE_ID)
+        {
+            this.OutVar=this.ConvertToLocalData(data,hqChart);
+            JSConsole.Complier.Log('[APIScriptIndex::RecvAPIData2] conver to OutVar ', this.OutVar);
+        }
+        else if (this.HQDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID)
+        {
+            this.OutVar=this.ConvertToLocalData(data,hqChart);
+            JSConsole.Complier.Log('[APIScriptIndex::RecvAPIData2] conver to OutVar ', this.OutVar);
+        }
 
         this.BindData(hqChart,windowIndex,hisData);
         
@@ -18663,11 +18675,19 @@ function APIScriptIndex(name,script,args,option, isOverlay)
     this.ConvertToLocalData=function(jsonData, hqChart)
     {
         var outVar=jsonData.OutVar;
-        var kdata=hqChart.ChartPaint[0].Data;
-        if (ChartData.IsDayPeriod(jsonData.Period,true))
-            var aryDataIndex=kdata.GetAPIDataIndex(jsonData.Date);
-        else
+        if (hqChart.ClassName=="MinuteChartContainer" || hqchart.ClassName=="MinuteChartHScreenContainer")
+        {
+            var kdata=hqChart.SourceData;
             var aryDataIndex=kdata.GetAPIDataIndex(jsonData.Date,jsonData.Time);
+        }
+        else
+        { 
+            var kdata=hqChart.ChartPaint[0].Data;
+            if (ChartData.IsDayPeriod(jsonData.Period,true))
+                var aryDataIndex=kdata.GetAPIDataIndex(jsonData.Date);
+            else
+                var aryDataIndex=kdata.GetAPIDataIndex(jsonData.Date,jsonData.Time);
+        }
 
         var localOutVar=[];
         for(var i in outVar)
@@ -19543,6 +19563,7 @@ function ScriptIndexConsole(obj)
     this.ErrorCallback;     //执行错误回调
     this.FinishCallback;    //执行完成回调
     this.IsSectionMode=false;   //截面报表模式
+    this.NetworkFilter;         //数据接口
 
     if (obj)
     {
@@ -19553,6 +19574,7 @@ function ScriptIndexConsole(obj)
         if (obj.ErrorCallback) this.ErrorCallback=obj.ErrorCallback;
         if (obj.FinishCallback) this.FinishCallback=obj.FinishCallback;
         if (obj.IsSectionMode) this.IsSectionMode=obj.IsSectionMode;
+        if (obj.NetworkFilter) this.NetworkFilter=obj.NetworkFilter;
     }
 
     //执行脚本
@@ -19579,6 +19601,7 @@ function ScriptIndexConsole(obj)
             Arguments:this.Arguments,
             IsSectionMode:this.IsSectionMode,
             ClassName:'ScriptIndexConsole',
+            NetworkFilter:this.NetworkFilter,
         };
 
         if (obj.HQDataType===HQ_DATA_TYPE.HISTORY_MINUTE_ID) option.TrateDate=obj.Request.TradeDate;

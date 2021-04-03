@@ -5864,8 +5864,9 @@ function JSChartContainer(uielement, OffscreenElement)
 
     this.UIOnDblClick=function(e)
     {
-        var x = e.clientX-this.UIElement.getBoundingClientRect().left;
-        var y = e.clientY-this.UIElement.getBoundingClientRect().top;
+        var pixelTatio = GetDevicePixelRatio();
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
         this.OnDoubleClick(x,y,e);
     }
 
@@ -49066,6 +49067,28 @@ function MinuteDialog(divElement)
     this.TradeDate;
     this.HistoryData;
 
+    //显示窗口
+    this.Show=function(left,top,width,height)
+    {
+        var div=document.getElementById(this.ID);
+        if (!div) return false;
+
+        var findDiv=div.getElementsByClassName("minute-hqchart");
+        if (!findDiv || findDiv.length!=1) return false;
+        var klineDiv=findDiv[0];
+
+        if (IFrameSplitOperator.IsNumber(width)) div.style.width=width+"px";
+        if (IFrameSplitOperator.IsNumber(height)) div.style.height=height+"px";
+        if (IFrameSplitOperator.IsNumber(left)) div.style.left=left+"px";
+        if (IFrameSplitOperator.IsNumber(top)) div.style.top=top+"px";
+
+        div.style.display='block';
+
+        var klineWdith=klineDiv.offsetWidth;
+        var klineTop=klineDiv.offsetTop;
+        klineDiv.style.width=klineWdith+"px";
+        klineDiv.style.height=(height-klineTop-5)+"px";
+    }
 
     this.Create=function()
     {
@@ -49136,7 +49159,8 @@ function MinuteDialog(divElement)
         var left=event.clientX;
         var top=event.clientY+10;
 
-        dialog.Show(500,100,600,500);
+        var pixelTatio=GetDevicePixelRatio();
+        dialog.Show(500/pixelTatio,100/pixelTatio,600,500);
         dialog.JSChart.OnSize();
 
         this.BindClose(chart);
@@ -72534,6 +72558,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         {
             if (hqChart.DayCount>1) hqDataType=HQ_DATA_TYPE.MULTIDAY_MINUTE_ID; //多日分钟
             else hqDataType=HQ_DATA_TYPE.MINUTE_ID;                             //分钟数据
+
+            dateRange=hisData.GetDateRange();
         }
         else if (hqChart.ClassName==='HistoryMinuteChartContainer') 
         {
@@ -72625,6 +72651,16 @@ function APIScriptIndex(name,script,args,option, isOverlay)
             this.OutVar=this.ConvertToLocalData(data,hqChart);
             JSConsole.Complier.Log('[APIScriptIndex::RecvAPIData2] conver to OutVar ', this.OutVar);
         }
+        else if (this.HQDataType==HQ_DATA_TYPE.MINUTE_ID)
+        {
+            this.OutVar=this.ConvertToLocalData(data,hqChart);
+            JSConsole.Complier.Log('[APIScriptIndex::RecvAPIData2] conver to OutVar ', this.OutVar);
+        }
+        else if (this.HQDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID)
+        {
+            this.OutVar=this.ConvertToLocalData(data,hqChart);
+            JSConsole.Complier.Log('[APIScriptIndex::RecvAPIData2] conver to OutVar ', this.OutVar);
+        }
 
         this.BindData(hqChart,windowIndex,hisData);
         
@@ -72647,11 +72683,19 @@ function APIScriptIndex(name,script,args,option, isOverlay)
     this.ConvertToLocalData=function(jsonData, hqChart)
     {
         var outVar=jsonData.OutVar;
-        var kdata=hqChart.ChartPaint[0].Data;
-        if (ChartData.IsDayPeriod(jsonData.Period,true))
-            var aryDataIndex=kdata.GetAPIDataIndex(jsonData.Date);
-        else
+        if (hqChart.ClassName=="MinuteChartContainer" || hqchart.ClassName=="MinuteChartHScreenContainer")
+        {
+            var kdata=hqChart.SourceData;
             var aryDataIndex=kdata.GetAPIDataIndex(jsonData.Date,jsonData.Time);
+        }
+        else
+        { 
+            var kdata=hqChart.ChartPaint[0].Data;
+            if (ChartData.IsDayPeriod(jsonData.Period,true))
+                var aryDataIndex=kdata.GetAPIDataIndex(jsonData.Date);
+            else
+                var aryDataIndex=kdata.GetAPIDataIndex(jsonData.Date,jsonData.Time);
+        }
 
         var localOutVar=[];
         for(var i in outVar)
@@ -73527,6 +73571,7 @@ function ScriptIndexConsole(obj)
     this.ErrorCallback;     //执行错误回调
     this.FinishCallback;    //执行完成回调
     this.IsSectionMode=false;   //截面报表模式
+    this.NetworkFilter;         //数据接口
 
     if (obj)
     {
@@ -73537,6 +73582,7 @@ function ScriptIndexConsole(obj)
         if (obj.ErrorCallback) this.ErrorCallback=obj.ErrorCallback;
         if (obj.FinishCallback) this.FinishCallback=obj.FinishCallback;
         if (obj.IsSectionMode) this.IsSectionMode=obj.IsSectionMode;
+        if (obj.NetworkFilter) this.NetworkFilter=obj.NetworkFilter;
     }
 
     //执行脚本
@@ -73563,6 +73609,7 @@ function ScriptIndexConsole(obj)
             Arguments:this.Arguments,
             IsSectionMode:this.IsSectionMode,
             ClassName:'ScriptIndexConsole',
+            NetworkFilter:this.NetworkFilter,
         };
 
         if (obj.HQDataType===HQ_DATA_TYPE.HISTORY_MINUTE_ID) option.TrateDate=obj.Request.TradeDate;
