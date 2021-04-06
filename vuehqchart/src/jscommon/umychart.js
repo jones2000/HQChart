@@ -11134,6 +11134,12 @@ function IChartPainting()
 
     }
 
+    this.IsMinuteFrame=function()
+    {
+        var isMinute=(this.ChartFrame.ClassName=="MinuteFrame" || this.ChartFrame.ClassName=="MinuteHScreenFrame");
+        return isMinute
+    }
+
     this.DrawNotSupportmessage=function()
     {
         this.Canvas.font=this.MessageFont;
@@ -13542,6 +13548,7 @@ function ChartLine()
     this.DrawStraightLine=function()
     {
         var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var isMinute=this.IsMinuteFrame();
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
@@ -13575,12 +13582,18 @@ function ChartLine()
                 continue;
             }
 
-            var left=xOffset;
-            var right=xOffset+dataWidth;
-            if (right>chartright) break;
-            var x=left+(right-left)/2;
-
-            //var x=this.ChartFrame.GetXFromIndex(j);
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+            
             var y=this.GetYFromData(value);
 
             if (x>chartright) break;
@@ -16079,6 +16092,7 @@ function ChartMACD()
             return;
         }
 
+        var isMinute=this.IsMinuteFrame();
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
@@ -16103,11 +16117,17 @@ function ChartMACD()
             var value=this.Data.Data[i];
             if (value==null) continue;
 
-            var left=xOffset;
-            var right=xOffset+dataWidth;
-            if (right>chartright) break;
-            var x=left+(right-left)/2;
-            //var x=this.ChartFrame.GetXFromIndex(j);
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
             var y=this.ChartFrame.GetYFromData(value);
 
             if (x>chartright) break;

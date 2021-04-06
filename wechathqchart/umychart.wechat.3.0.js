@@ -2495,7 +2495,7 @@ function IChartFramePainting()
 {
     this.HorizontalInfo = new Array();    //Y轴
     this.VerticalInfo = new Array();      //X轴
-
+    this.ClassName='IChartFramePainting';
     this.Canvas;                        //画布
 
     this.Identify;                      //窗口标识
@@ -2640,31 +2640,30 @@ function IChartFramePainting()
 
 
 //空框架只画边框
-function NoneFrame() {
-  this.newMethod = IChartFramePainting;   //派生
-  this.newMethod();
-  delete this.newMethod;
+function NoneFrame() 
+{
+    this.newMethod = IChartFramePainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    this.ClassName='NoneFrame';
 
-  this.Snapshot = function () {
+    this.Snapshot = function () { }
 
-  }
+    this.DrawInsideHorizontal = function () { }
 
-  this.DrawInsideHorizontal = function () {
+    this.SetSizeChage = function (sizeChange) 
+    {
+        this.SizeChange = sizeChange;
 
-  }
-
-  this.SetSizeChage = function (sizeChange) {
-    this.SizeChange = sizeChange;
-
-    //画布的位置
-    this.Position =
-      {
-        X: this.ChartBorder.UIElement.offsetLeft,
-        Y: this.ChartBorder.UIElement.offsetTop,
-        W: this.ChartBorder.UIElement.clientWidth,
-        H: this.ChartBorder.UIElement.clientHeight
-      };
-  }
+        //画布的位置
+        this.Position =
+        {
+            X: this.ChartBorder.UIElement.offsetLeft,
+            Y: this.ChartBorder.UIElement.offsetTop,
+            W: this.ChartBorder.UIElement.clientWidth,
+            H: this.ChartBorder.UIElement.clientHeight
+        };
+    }
 }
 
 function AverageWidthFrame() 
@@ -2672,6 +2671,7 @@ function AverageWidthFrame()
     this.newMethod = IChartFramePainting;   //派生
     this.newMethod();
     delete this.newMethod;
+    this.ClassName='AverageWidthFrame';
 
     this.DataWidth = 50;
     this.DistanceWidth = 10;
@@ -3275,6 +3275,7 @@ function MinuteFrame()
     this.newMethod = AverageWidthFrame;   //派生
     this.newMethod();
     delete this.newMethod;
+    this.ClassName='MinuteFrame';
 
     this.MinXDistance = 10;
     this.CustomHorizontalInfo = [];
@@ -3351,6 +3352,7 @@ function MinuteHScreenFrame()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='MinuteHScreenFrame';
     this.IsHScreen = true;        //是否是横屏
 
     //画标题背景色
@@ -3560,6 +3562,7 @@ function KLineFrame()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='KLineFrame';
     this.ToolbarID = Guid();  //工具条Div id
     this.ModifyIndex = true;  //是否显示'改参数'菜单
     this.ChangeIndex = true;  //是否显示'换指标'菜单
@@ -4002,6 +4005,7 @@ function KLineHScreenFrame()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='KLineHScreenFrame';
     this.IsHScreen = true;        //是否是横屏
 
     this.DrawInsideHorizontal = function () 
@@ -4315,6 +4319,7 @@ function SubFrameItem()
 //行情框架
 function HQTradeFrame() 
 {
+    this.ClassName='HQTradeFrame';
     this.SubFrame = new Array();              //SubFrameItem 数组
     this.SizeChange = true;                   //大小是否改变
     this.ChartBorder;
@@ -4327,6 +4332,7 @@ function HQTradeFrame()
     this.SnapshotID=0;
     this.CurrentSnapshotID=0;
     this.SnapshotStatus=0;                  //0空闲 1工作
+    
 
     this.CalculateChartBorder = function ()    //计算每个子框架的边框信息
     {
@@ -4623,6 +4629,7 @@ function HQTradeHScreenFrame() {
   this.newMethod();
   delete this.newMethod;
 
+  this.ClassName='HQTradeHScreenFrame';
   this.IsHScreen = true;        //是否是横屏
 
   this.CalculateChartBorder = function ()    //计算每个子框架的边框信息
