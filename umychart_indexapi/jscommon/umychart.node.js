@@ -15088,6 +15088,12 @@ function IChartPainting()
 
     }
 
+    this.IsMinuteFrame=function()
+    {
+        var isMinute=(this.ChartFrame.ClassName=="MinuteFrame" || this.ChartFrame.ClassName=="MinuteHScreenFrame");
+        return isMinute
+    }
+
     this.DrawNotSupportmessage=function()
     {
         this.Canvas.font=this.MessageFont;
@@ -15273,6 +15279,8 @@ var ZOOM_SEED=  //0=柱子宽度  1=间距
 
     [3,3],
     [3,1], [2,1], [1,1], [1,0],
+
+    //[0.5,0],[0.4,0],[0.3,0],[0.2,0],[0.1,0]
 ];
 
 
@@ -17494,10 +17502,13 @@ function ChartLine()
     this.DrawStraightLine=function()
     {
         var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var isMinute=this.IsMinuteFrame();
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
         var chartright=this.ChartBorder.GetRight();
         if (bHScreen) chartright=this.ChartBorder.GetBottom();
+        if (bHScreen) xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
         var xPointCount=this.ChartFrame.XPointCount;
         var lockRect=this.GetLockRect();
         if (lockRect)
@@ -17513,7 +17524,8 @@ function ChartLine()
 
         var bFirstPoint=true;
         var drawCount=0;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        //for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
             if (value==null) 
@@ -17524,7 +17536,18 @@ function ChartLine()
                 continue;
             }
 
-            var x=this.ChartFrame.GetXFromIndex(j);
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+            
             var y=this.GetYFromData(value);
 
             if (x>chartright) break;
@@ -18186,7 +18209,7 @@ function ChartVolStick()
 
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
-        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
         var chartright=this.ChartBorder.GetRight();
         var xPointCount=this.ChartFrame.XPointCount;
         var lockRect=this.GetLockRect();
@@ -18853,8 +18876,10 @@ function ChartSingleText()
         if (!this.Data || !this.Data.Data) return;
 
         var isHScreen=(this.ChartFrame.IsHScreen===true)
+        var isMinute=this.IsMinuteFrame();
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
         var chartright=this.ChartBorder.GetRight();
         var top=this.ChartBorder.GetTopEx();
         var bottom=this.ChartBorder.GetBottomEx();
@@ -18863,6 +18888,7 @@ function ChartSingleText()
             chartright=this.ChartBorder.GetBottom();
             top=this.ChartBorder.GetRightEx();
             bottom=this.ChartBorder.GetLeftEx();
+            xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
         }
         var xPointCount=this.ChartFrame.XPointCount;
 
@@ -18887,12 +18913,24 @@ function ChartSingleText()
             this.Canvas.font=this.TextFont;
         }
 
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        //for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
             if (value==null) continue;
 
-            var x=this.ChartFrame.GetXFromIndex(j);
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+            
             var y=this.ChartFrame.GetYFromData(value);
 
             if (x>chartright) break;
@@ -20015,8 +20053,10 @@ function ChartMACD()
             return;
         }
 
+        var isMinute=this.IsMinuteFrame();
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
         var chartright=this.ChartBorder.GetRight();
         var xPointCount=this.ChartFrame.XPointCount;
         var lockRect=this.GetLockRect();
@@ -20032,12 +20072,23 @@ function ChartMACD()
         
         var backupLineWidth=this.Canvas.lineWidth;
         this.Canvas.lineWidth=lineWidth;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        //for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
             if (value==null) continue;
 
-            var x=this.ChartFrame.GetXFromIndex(j);
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
             var y=this.ChartFrame.GetYFromData(value);
 
             if (x>chartright) break;
@@ -24437,10 +24488,12 @@ function DrawToolsButton()
                     { HTML: { Title: '趋势线', IClass: 'iconfont icon-draw_trendline', ID: 'icon-trendline' }, Name: '趋势线' },
                     { HTML: { Title: '水平线', IClass: 'iconfont icon-draw_hline', ID: 'icon-hline' }, Name: '水平线' },
                     { HTML: { Title: '水平线段', IClass: 'iconfont icon-draw_hline', ID: 'icon-hlineseg' }, Name: '水平线段' },
+                    { HTML: { Title: '平行射线', IClass: 'iconfont icon-draw_hline', ID: 'icon-rayslineseg' }, Name: '平行射线' },
                     { HTML: { Title: '平行线', IClass: 'iconfont icon-draw_parallel_lines', ID: 'icon-parallellines' }, Name: '平行线' },
                     { HTML: { Title: '平行通道', IClass: 'iconfont icon-draw_parallelchannel', ID: 'icon-parallelchannel' }, Name: '平行通道' },
                     { HTML: { Title: '价格通道线', IClass: 'iconfont icon-draw_pricechannel', ID: 'icon-pricechannel' }, Name: '价格通道线' },
                     { HTML: { Title: 'M头W底', IClass: 'iconfont icon-draw_wavemw', ID: 'icon-wavemw' }, Name: 'M头W底' },
+                    { HTML: { Title: '头肩型', IClass: 'iconfont icon-draw_wavemw', ID: 'icon-Head-Shoulders' }, Name: '头肩型' },
                     { HTML: { Title: '波浪尺', IClass: 'iconfont icon-waveruler', ID: 'icon-wave-ruler' }, Name: '波浪尺' },
                     { HTML: { Title: '箱型线', IClass: 'iconfont icon-draw_box', ID: 'icon-drawbox' }, Name: '箱型线' },
                 ],
@@ -30556,6 +30609,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"矩形", ClassName:'ChartDrawPictureRect', Create:function() { return new ChartDrawPictureRect(); }},
     { Name:"圆弧线", ClassName:'ChartDrawPictureArc',  Create:function() { return new ChartDrawPictureArc(); }},
     { Name:"M头W底", ClassName:'ChartDrawPictureWaveMW',  Create:function() { return new ChartDrawPictureWaveMW(); }},
+    { Name:"头肩型", ClassName:"ChartDrawHeadShouldersBT", Create:function() { return new ChartDrawHeadShouldersBT(); }},
     { Name:"平行线", ClassName:'ChartDrawPictureParallelLines',  Create:function() { return new ChartDrawPictureParallelLines(); }},
     { Name:"平行通道", ClassName:'ChartDrawPictureParallelChannel',  Create:function() { return new ChartDrawPictureParallelChannel(); }},
     { Name:"价格通道线", ClassName:'ChartDrawPicturePriceChannel',  Create:function() { return new ChartDrawPicturePriceChannel(); }},
@@ -30581,6 +30635,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"2点画图例子", ClassName:"ChartDrawTwoPointDemo", Create:function() { return new ChartDrawTwoPointDemo(); } },
     { Name:"3点画图例子", ClassName:"ChartDrawThreePointDemo", Create:function() { return new ChartDrawThreePointDemo(); } },
     { Name:"水平线段", ClassName:"ChartDrawHLineSegment", Create:function() { return new ChartDrawHLineSegment();} },
+    { Name:"平行射线", ClassName:"ChartDrawParallelRaysLines", Create:function() { return new ChartDrawParallelRaysLines();}},
     { ClassName:'ChartDrawPictureIconFont',  Create:function() { return new ChartDrawPictureIconFont(); }}
     
 ];
@@ -31329,7 +31384,7 @@ function ChartDrawPictureArc()
 
 }
 
-//M头W底
+//M头W底 支持横屏
 function ChartDrawPictureWaveMW()
 {
     this.newMethod=IChartDrawPicture;   //派生
@@ -31339,9 +31394,11 @@ function ChartDrawPictureWaveMW()
     this.ClassName='ChartDrawPictureWaveMW';
     this.PointCount=5;
     this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.IsHScreen=false;
 
     this.Draw=function()
     {
+        this.IsHScreen=this.Frame.IsHScreen;
         this.LinePoint=[];
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint) return;
@@ -31378,11 +31435,22 @@ function ChartDrawPictureWaveMW()
             this.LinePoint.push(line);
     
             var xMove=points[1].X-points[0].X;
+            var yMove=points[1].Y-points[0].Y;
             line={Start:new Point(), End:new Point()};
-            line.Start.Y=points[1].Y;
-            line.Start.X=points[1].X;
-            line.End.Y=points[0].Y;
-            line.End.X=points[1].X+xMove;
+            if (this.IsHScreen)
+            {   
+                line.Start.Y=points[1].Y;
+                line.Start.X=points[1].X;
+                line.End.Y=points[1].Y+yMove;
+                line.End.X=points[0].X;
+            }
+            else
+            {
+                line.Start.Y=points[1].Y;
+                line.Start.X=points[1].X;
+                line.End.Y=points[0].Y;
+                line.End.X=points[1].X+xMove;
+            }
             this.LinePoint.push(line);
 
             var ptStart=line.End;
@@ -31391,10 +31459,20 @@ function ChartDrawPictureWaveMW()
             newPt.Y=ptStart.Y;
             this.Point[2]=newPt;
             line={Start:new Point(), End:new Point()};
-            line.Start.Y=ptStart.Y;
-            line.Start.X=ptStart.X;
-            line.End.Y=points[1].Y;
-            line.End.X=ptStart.X+xMove;
+            if (this.IsHScreen)
+            {
+                line.Start.Y=ptStart.Y;
+                line.Start.X=ptStart.X;
+                line.End.Y=ptStart.Y+yMove;
+                line.End.X=points[1].X;
+            }
+            else
+            {
+                line.Start.Y=ptStart.Y;
+                line.Start.X=ptStart.X;
+                line.End.Y=points[1].Y;
+                line.End.X=ptStart.X+xMove;
+            }
             this.LinePoint.push(line);
 
             var ptStart=line.End;
@@ -31403,10 +31481,20 @@ function ChartDrawPictureWaveMW()
             newPt.Y=ptStart.Y;
             this.Point[3]=newPt;
             line={Start:new Point(), End:new Point()};
-            line.Start.Y=ptStart.Y;
-            line.Start.X=ptStart.X;
-            line.End.Y=points[0].Y;
-            line.End.X=ptStart.X+xMove;
+            if (this.IsHScreen)
+            {
+                line.Start.Y=ptStart.Y;
+                line.Start.X=ptStart.X;
+                line.End.Y=ptStart.Y+yMove;
+                line.End.X=points[0].X;
+            }
+            else
+            {
+                line.Start.Y=ptStart.Y;
+                line.Start.X=ptStart.X;
+                line.End.Y=points[0].Y;
+                line.End.X=ptStart.X+xMove;
+            }
             this.LinePoint.push(line);
 
             var ptStart=line.End;
@@ -31447,6 +31535,111 @@ function ChartDrawPictureWaveMW()
             line.End.X=points[4].X;
             this.LinePoint.push(line);
         }
+    }
+}
+
+//头肩 头肩顶(Head and shoulders top)以及头肩底(Head and shoulders bottom)两种形态
+//支持横屏
+function ChartDrawHeadShouldersBT()
+{
+    this.newMethod=ChartDrawPictureWaveMW;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawHeadShouldersBT';
+
+    this.CalculateLines_Backup=this.CalculateLines;
+    this.CalculateLines=function(points)
+    {
+        if (!this.Frame) return;
+        if (points.length<2) return;
+
+        if (this.Status==2)
+        {
+            var line={Start:new Point(), End:new Point()};
+            line.Start.Y=points[0].Y;
+            line.Start.X=points[0].X;
+            line.End.Y=points[1].Y;
+            line.End.X=points[1].X;
+            this.LinePoint.push(line);
+    
+            var xMove=points[1].X-points[0].X;
+            var yMove=points[1].Y-points[0].Y;
+            line={Start:new Point(), End:new Point()};
+            if (this.IsHScreen)
+            {
+                line.Start.Y=points[1].Y;
+                line.Start.X=points[1].X;
+
+                line.End.Y=points[1].Y+yMove;
+                line.End.X=points[0].X-xMove;
+            }
+            else
+            {
+                line.Start.Y=points[1].Y;
+                line.Start.X=points[1].X;
+                line.End.Y=points[0].Y-yMove;
+                line.End.X=points[1].X+xMove;
+            }
+            this.LinePoint.push(line);
+
+            var ptStart=line.End;
+            var newPt=new Point();
+            newPt.X=ptStart.X;
+            newPt.Y=ptStart.Y;
+            this.Point[2]=newPt;
+            line={Start:new Point(), End:new Point()};
+            if (this.IsHScreen)
+            {
+                line.Start.Y=ptStart.Y;
+                line.Start.X=ptStart.X;
+                line.End.Y=ptStart.Y+yMove;
+                line.End.X=points[1].X; 
+            }
+            else
+            {
+                line.Start.Y=ptStart.Y;
+                line.Start.X=ptStart.X;
+                line.End.Y=points[1].Y;
+                line.End.X=ptStart.X+xMove;
+            }
+            this.LinePoint.push(line);
+
+            var ptStart=line.End;
+            var newPt=new Point();
+            newPt.X=ptStart.X;
+            newPt.Y=ptStart.Y;
+            this.Point[3]=newPt;
+            line={Start:new Point(), End:new Point()};
+            if (this.IsHScreen)
+            {
+                line.Start.Y=ptStart.Y;
+                line.Start.X=ptStart.X;
+                line.End.Y=ptStart.Y+yMove;
+                line.End.X=points[0].X;
+            }
+            else
+            {
+                line.Start.Y=ptStart.Y;
+                line.Start.X=ptStart.X;
+                line.End.Y=points[0].Y;
+                line.End.X=ptStart.X+xMove;
+            }
+            this.LinePoint.push(line);
+
+            var ptStart=line.End;
+            var newPt=new Point();
+            newPt.X=ptStart.X;
+            newPt.Y=ptStart.Y;
+            this.Point[4]=newPt;
+
+            this.PointCount=this.Point.length;
+        }
+        else
+        {
+            return this.CalculateLines_Backup(points);
+        }
+
     }
 }
 
@@ -31536,6 +31729,55 @@ function ChartDrawPictureParallelLines()
             ptEnd.Y=points[1].Y+yMove;
             linePoint=this.CalculateExtendLinePoint(ptStart,ptEnd);
             this.LinePoint.push(linePoint);
+        }
+    }
+}
+
+//平行射线
+function ChartDrawParallelRaysLines()
+{
+    this.newMethod=ChartDrawPictureParallelLines;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawParallelRaysLines';
+
+    this.DrawArea=function()
+    {
+    }
+
+    this.CalculateLines=function(points)
+    {
+        if (this.PointStatus==2 && this.LastPoint)
+        {
+            var pt=new Point();
+            pt.X=this.LastPoint.X;
+            pt.Y=this.LastPoint.Y;
+            points[2]=pt;
+        }
+
+        if (points.length==2)
+        {
+            var endPoint=this.CalculateExtendLineEndPoint([points[0],points[1]]);
+            this.LinePoint.push({ Start:points[0], End:endPoint });
+        }
+        else if (points.length==3)
+        {
+            var endPoint=this.CalculateExtendLineEndPoint([points[0],points[1]]);
+            this.LinePoint.push({ Start:points[0], End:endPoint });
+
+            //计算平行线
+            var xMove=points[2].X-points[1].X;
+            var yMove=points[2].Y-points[1].Y;
+
+            var ptStart=new Point();
+            var ptEnd=new Point();
+            ptStart.X=points[0].X+xMove;
+            ptStart.Y=points[0].Y+yMove;
+            ptEnd.X=points[1].X+xMove;
+            ptEnd.Y=points[1].Y+yMove;
+            endPoint=this.CalculateExtendLineEndPoint([ptStart,ptEnd]);
+            this.LinePoint.push({ Start:points[2], End:endPoint });
         }
     }
 }
@@ -39406,6 +39648,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                             FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
                             OutName:indexInfo.OutName
                         };
+                        if (item.TitleFont) indexData.TitleFont=item.TitleFont;
     
                         this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
                         if (!bRefreshData) this.BindIndexData(windowIndex,bindData);   //执行脚本
@@ -39418,6 +39661,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             if (item.Close!=null) this.Frame.SubFrame[i].Frame.CloseIndex=item.Close;
             if (item.Overlay!=null) chart.Frame.SubFrame[i].Frame.OverlayIndex=item.Overlay;
             if (item.IsDrawTitleBG==true)  this.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+            
 
             if (IFrameSplitOperator.IsNumber(item.TitleHeight)) this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
             else item.TitleHeight=this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
