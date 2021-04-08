@@ -302,6 +302,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 1. [HQChart实战教程36-A股后台指标对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/114991081)<br>
 ### 新浪接口对接
 1. [HQChart实战教程37-新浪分钟K线数据对接-js版本](https://blog.csdn.net/jones2000/article/details/115388377)<br>
+2. [HQChart实战教程38-新浪期货数据对接-js版本](https://blog.csdn.net/jones2000/article/details/115408971)>br>
 
 ## 高级应用实战教程（付费文章）
 1. [HQChart实战教程19 - PC端分时图定制tooltip](https://blog.csdn.net/jones2000/article/details/108633991)<br>
