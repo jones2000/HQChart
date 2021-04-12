@@ -101,6 +101,7 @@
             { name: "平行通道", icon: "#icon-draw_parallelchannel" },
             { name: "价格通道线", icon: "#icon-draw_pricechannel" },
             { name: "M头W底", icon: "#icon-draw_wavemw" },
+            { name:"头肩型", icon:"#icon-draw_wavemw" },
             { name: "波浪尺", icon: "#icon-waveruler" },
             { name: "箱型线", icon: "#icon-draw_box" }
         ],

@@ -6901,6 +6901,11 @@ function KLineChartContainer(uielement)
                 this.ResetFrameXYSplit();
                 this.Draw();
             }
+            else
+            {
+                if (id===JSCHART_OPERATOR_ID.OP_SCROLL_RIGHT && this.DragDownloadData) 
+                    this.DragDownloadData();
+            }
         }
         else if (id === JSCHART_OPERATOR_ID.OP_ZOOM_IN || id === JSCHART_OPERATOR_ID.OP_ZOOM_OUT)       //缩放
         {

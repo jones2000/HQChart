@@ -14795,7 +14795,7 @@ function JSExecute(ast,option)
                     {
                         let outVar=this.VarTable.get(varName);
                         if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                        let value={Name:varName, Data:outVar, Radius:2, Type:3};
+                        let value={Name:varName, Data:outVar, Radius:g_JSChartResource.POINTDOT.Radius, Type:3};
                         if (color) value.Color=color;
                         if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
@@ -14804,7 +14804,7 @@ function JSExecute(ast,option)
                     {
                         let outVar=this.VarTable.get(varName);
                         if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                        let value={Name:varName, Data:outVar, Radius:1.3, Type:3};
+                        let value={Name:varName, Data:outVar, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3};
                         if (color) value.Color=color;
                         if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
@@ -14832,6 +14832,14 @@ function JSExecute(ast,option)
                         if (color) value.Color=color;
                         this.OutVarTable.push(value);
                     }
+                    else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
+                    {
+                        let outVar=this.VarTable.get(varName);
+                        let value={Name:varName, Data:outVar, Color:color, Type:2};
+                        if (lineWidth) value.LineWidth=lineWidth;
+                        if (color) value.Color=color;
+                        this.OutVarTable.push(value);
+                    }
                     else if (varName && color) 
                     {
                         let outVar=this.VarTable.get(varName);
@@ -14856,13 +14864,6 @@ function JSExecute(ast,option)
                         if (isDrawCenter) outVar.IsDrawCenter=true;
                         if (isDrawBelow) outVar.IsDrawBelow=true;
                         this.OutVarTable.push(outVar);
-                    }
-                    else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
-                    {
-                        let outVar=this.VarTable.get(varName);
-                        let value={Name:varName, Data:outVar, Color:color, Type:2};
-                        if (lineWidth) value.LineWidth=lineWidth;
-                        this.OutVarTable.push(value);
                     }
                     else if (varName)
                     {
@@ -15627,13 +15628,13 @@ function JSExplainer(ast,option)
                     if (pointDot && varName)   //圆点
                     {
                         outValue+=",画小圆点线";
-                        let value={Name:varName, Data:outValue, Radius:2, Type:3};
+                        let value={Name:varName, Data:outValue, Radius:g_JSChartResource.POINTDOT.Radius, Type:3};
                         this.OutVarTable.push(value);
                     }
                     else if (circleDot && varName)  //圆点
                     {
                         outValue+=",画小圆圈线";
-                        let value={Name:varName, Data:outValue, Radius:1.3, Type:3};
+                        let value={Name:varName, Data:outValue, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3};
                         this.OutVarTable.push(value);
                     }
                     else if (lineStick && varName)  //LINESTICK  同时画出柱状线和指标线
@@ -16928,7 +16929,9 @@ function ScriptIndex(name,script,args,option)
 
         let titleIndex=windowIndex+1;
         chartMACD.Data.Data=varItem.Data;
-        hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chartMACD.Data,varItem.Name,this.GetDefaultColor(id));
+        var clrTitle=this.GetDefaultColor(id);
+        if (varItem.Color) clrTitle=this.GetColor(varItem.Color);
+        hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chartMACD.Data,varItem.Name,clrTitle);
 
         hqChart.ChartPaint.push(chartMACD);
     }
@@ -18051,7 +18054,9 @@ function OverlayScriptIndex(name,script,args,option)
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
         var titlePaint=hqChart.TitlePaint[titleIndex];
-        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,this.GetDefaultColor(id));
+        var clrTitle=this.GetDefaultColor(id);
+        if (varItem.Color) clrTitle=this.GetColor(varItem.Color);
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,clrTitle);
 
         frame.ChartPaint.push(chart);
     }
@@ -18965,11 +18970,11 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                         outItem.Type=2; //画上下柱子
                         break;
                     case "POINTDOT":
-                        outItem.Radius=2;
+                        outItem.Radius=g_JSChartResource.POINTDOT.Radius;
                         outItem.Type=3;
                         break;
                     case "CIRCLEDOT":
-                        outItem.Radius=1.3;
+                        outItem.Radius=g_JSChartResource.CIRCLEDOT.Radius;
                         outItem.Type=3;
                         break;
                     case "DOTLINE":

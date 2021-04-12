@@ -4363,6 +4363,7 @@ function JSChart(divElement, bOffscreen)
             else item.TitleHeight=chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
             if (item.IsShowTitleArraw==false) chart.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
             if (item.IsShowIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowIndexName=false;
+            if (item.IsShowOverlayIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowOverlayIndexName=false;
             if (item.IndexParamSpace>=0) chart.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
         }
         
@@ -8490,6 +8491,7 @@ function IChartFramePainting()
     this.IsShowBorder = true;          //是否显示边框
     this.IsShowTitleArraw=true;        //是否显示指标信息上涨下跌箭头
     this.IsShowIndexName=true;         //是否显示指标名字
+    this.IsShowOverlayIndexName=true;  //是否显示叠加指标名字
     this.IndexParamSpace=2;            //指标参数数值显示间距
 
     this.BorderLine=null;               //1=上 2=下 4=左 8=右 
@@ -29451,6 +29453,7 @@ function DynamicChartTitlePainting()
     this.IsShowTradeIndexTitle=true;
 
     this.OverlayIndex=new Map();   //叠加指标 key=Identify value={ Data:数据, Title:标题, Identify:标识}
+    this.IsShowOverlayIndexName=true;  //是否显示叠加指标名字
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.TitleRect;              //指标名字显示区域
     this.IsDrawTitleBG=false;    //是否绘制指标名字背景色
@@ -29597,6 +29600,7 @@ function DynamicChartTitlePainting()
         this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
         this.IsShowUpDownArrow=this.Frame.IsShowTitleArraw;
         this.IsShowIndexName=this.Frame.IsShowIndexName;
+        this.IsShowOverlayIndexName=this.Frame.IsShowOverlayIndexName;
         this.ParamSpace=this.Frame.IndexParamSpace;
         this.TitleRect=null;
         if (this.CursorIndex==null ) return;
@@ -29774,7 +29778,7 @@ function DynamicChartTitlePainting()
         {
             left+=spaceWidth;
             var overlayItem=item[1];
-            if (overlayItem.Title)
+            if (overlayItem.Title && this.IsShowOverlayIndexName)
             {
                 this.Canvas.fillStyle=this.TitleColor;
                 var textWidth=this.Canvas.measureText(overlayItem.Title).width+2;
@@ -39531,6 +39535,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                 else item.TitleHeight=this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
                 if (item.IsShowTitleArraw==false) this.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
                 if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
+                if (item.IsShowOverlayIndexName==false) this.Frame.SubFrame[i].Frame.IsShowOverlayIndexName=false;
                 if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
                 if (item.IsShowXLine==false) this.Frame.SubFrame[i].Frame.IsShowXLine=false;
                 if (item.IsShowYLine==false) this.Frame.SubFrame[i].Frame.IsShowYLine=false;

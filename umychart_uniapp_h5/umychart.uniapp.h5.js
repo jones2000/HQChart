@@ -5605,10 +5605,11 @@ var JSCHART_EVENT_ID=
     ON_CUSTOM_VERTICAL_DRAW:20,  //自定义X轴绘制事件
     RECV_KLINE_MANUAL_UPDATE_DATA:21,   //手动更新K线事件
     ON_ENABLE_SPLASH_DRAW:22,           //开启/关闭过场动画事件
-    ON_CLICK_CHART_PAINT:23,             //点击图形
+    ON_CLICK_CHART_PAINT:23,            //点击图形
 
     ON_DRAW_MINUTE_LAST_POINT:24,        //分时图绘制回调事件, 返回最后一个点的坐标
-    ON_DRAW_DEPTH_TOOLTIP:25             //绘制深度图tooltip事件
+    ON_DRAW_DEPTH_TOOLTIP:25,            //绘制深度图tooltip事件
+    ON_CLICK:26                          //点击事件
 }
 
 var JSCHART_OPERATOR_ID=
@@ -6094,6 +6095,7 @@ function JSChartContainer(uielement, OffscreenElement)
         else
         {
             this.TryClickPaintEvent(e);
+            this.ClickEvent(e);
         }
 
         //清空数据
@@ -6111,6 +6113,38 @@ function JSChartContainer(uielement, OffscreenElement)
     {
         JSConsole.Chart.Log('[KLineChartContainer::UIOnMounseOut]',e);
         this.UIOnMouseMove(e);
+    }
+
+    //点击事件
+    this.ClickEvent=function(e) 
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK);
+        if (!event || !event.Callback) return false;
+        if (this.ClickDownPoint.X!=e.clientX || this.ClickDownPoint.Y!=e.clientY) return false;
+        var pixelTatio = GetDevicePixelRatio();
+        var x=(e.clientX-uielement.getBoundingClientRect().left)*pixelTatio;
+        var y=(e.clientY-uielement.getBoundingClientRect().top)*pixelTatio;
+        var data= { X:e.clientX, Y:e.clientY, FrameID:-1 };
+    
+        var isInClient=false;
+        this.Canvas.beginPath();
+        this.Canvas.rect(this.Frame.ChartBorder.GetLeft(),this.Frame.ChartBorder.GetTop(),this.Frame.ChartBorder.GetWidth(),this.Frame.ChartBorder.GetHeight());
+        isInClient=this.Canvas.isPointInPath(x,y);
+        if (isInClient)
+        {
+            var yValueExtend={};
+            var yValue=this.Frame.GetYData(y,yValueExtend);
+
+            if (IFrameSplitOperator.IsNumber(yValueExtend.FrameID) && yValueExtend.FrameID>=0)
+            {
+                var xValue=this.Frame.GetXData(x);
+                data.FrameID=yValueExtend.FrameID;
+                data.Data={ X:xValue, Y:yValue } ;
+            }
+        }
+        
+        event.Callback(event, data, this);
+        return true;
     }
 
     this.TryClickPaintEvent=function(e)
@@ -35294,6 +35328,16 @@ function JSChartResource()
         PixelWidth:15   //1个像素点宽度
     }
 
+    this.CIRCLEDOT=
+    {
+        Radius:1.3*GetDevicePixelRatio()
+    }
+
+    this.POINTDOT=
+    {
+        Radius:2*GetDevicePixelRatio()
+    }
+
     //筹码分布图
     this.StockChip=
     {
@@ -35535,6 +35579,18 @@ function JSChartResource()
                 if (IFrameSplitOperator.IsNumber(border.Bottom)) this.DepthCorss.Tooltip.Border.Bottom=border.Bottom;
                 if (IFrameSplitOperator.IsNumber(border.Center)) this.DepthCorss.Tooltip.Border.Center=border.Center;
             }
+        }
+
+        if (style.CIRCLEDOT)
+        {
+            var item=style.CIRCLEDOT;
+            if (IFrameSplitOperator.IsNumber(item.Radius)) this.CIRCLEDOT.Radius=item.Radius;
+        }
+
+        if (style.POINTDOT)
+        {
+            var item=style.POINTDOT;
+            if (IFrameSplitOperator.IsNumber(item.Radius)) this.POINTDOT.Radius=item.Radius;
         }
     }
 }
@@ -36821,6 +36877,11 @@ function KLineChartContainer(uielement,OffscreenElement)
                 this.ResetFrameXYSplit();
                 this.Draw();
             }
+            else
+            {
+                if (id===JSCHART_OPERATOR_ID.OP_SCROLL_RIGHT && this.DragDownloadData) 
+                    this.DragDownloadData();
+            }
         }
         else if (id===JSCHART_OPERATOR_ID.OP_ZOOM_IN || id===JSCHART_OPERATOR_ID.OP_ZOOM_OUT)       //缩放
         {
@@ -37609,6 +37670,22 @@ function KLineChartContainer(uielement,OffscreenElement)
         });
     }
 
+    this.BindAllOverlayIndexData=function(hisData)
+    {
+        if (!this.Frame || !this.Frame.SubFrame) return;
+
+        //叠加指标
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
+        {
+            var item=this.Frame.SubFrame[i];
+            for(var j in item.OverlayIndex)
+            {
+                var overlayItem=item.OverlayIndex[j];
+                this.BindOverlayIndexData(overlayItem,i,hisData)
+            }
+        }
+    }
+
     this.RecvHistoryData=function(data)
     {
         var aryDayData=KLineChartContainer.JsonDataToHistoryData(data);
@@ -37683,17 +37760,8 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.UpdatePointByCursorIndex(2);   //取消十字光标
         this.Draw();
         
-
         //叠加指标
-        for(var i=0;i<this.Frame.SubFrame.length;++i)
-        {
-            var item=this.Frame.SubFrame[i];
-            for(var j in item.OverlayIndex)
-            {
-                var overlayItem=item.OverlayIndex[j];
-                this.BindOverlayIndexData(overlayItem,i,bindData)
-            }
-        }
+        this.BindAllOverlayIndexData(bindData);
 
         if (this.mapEvent.has(JSCHART_EVENT_ID.RECV_HISTROY_DATA))
         {
@@ -37958,15 +38026,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();
 
         //叠加指标
-        for(var i=0;i<this.Frame.SubFrame.length;++i)
-        {
-            var item=this.Frame.SubFrame[i];
-            for(var j in item.OverlayIndex)
-            {
-                var overlayItem=item.OverlayIndex[j];
-                this.BindOverlayIndexData(overlayItem,i,bindData)
-            }
-        }
+        this.BindAllOverlayIndexData(bindData);
 
         if (this.mapEvent.has(JSCHART_EVENT_ID.RECV_HISTROY_DATA))
         {
@@ -38232,6 +38292,9 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();
 
         this.SendKLineUpdateEvent(bindData);
+
+        //叠加指标计算
+        this.BindAllOverlayIndexData(bindData);
     }
 
     this.UpdateOverlayRealtimeData=function(data)
@@ -38444,6 +38507,9 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();
 
         this.SendKLineUpdateEvent(bindData);
+
+        //更新叠加指标
+        this.BindAllOverlayIndexData(bindData);
     }
 
     this.RecvMinuteRealtimeData=function(data)
@@ -38501,6 +38567,9 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();
 
         this.SendKLineUpdateEvent(bindData);
+
+        //更新叠加指标
+        this.BindAllOverlayIndexData(bindData);
     }
 
     //更新当天的全量分钟数据
@@ -69008,7 +69077,7 @@ function JSExecute(ast,option)
                     {
                         let outVar=this.VarTable.get(varName);
                         if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                        let value={Name:varName, Data:outVar, Radius:2, Type:3};
+                        let value={Name:varName, Data:outVar, Radius:g_JSChartResource.POINTDOT.Radius, Type:3};
                         if (color) value.Color=color;
                         if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
@@ -69017,7 +69086,7 @@ function JSExecute(ast,option)
                     {
                         let outVar=this.VarTable.get(varName);
                         if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                        let value={Name:varName, Data:outVar, Radius:1.3, Type:3};
+                        let value={Name:varName, Data:outVar, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3};
                         if (color) value.Color=color;
                         if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
@@ -69045,6 +69114,14 @@ function JSExecute(ast,option)
                         if (color) value.Color=color;
                         this.OutVarTable.push(value);
                     }
+                    else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
+                    {
+                        let outVar=this.VarTable.get(varName);
+                        let value={Name:varName, Data:outVar, Color:color, Type:2};
+                        if (lineWidth) value.LineWidth=lineWidth;
+                        if (color) value.Color=color;
+                        this.OutVarTable.push(value);
+                    }
                     else if (varName && color) 
                     {
                         let outVar=this.VarTable.get(varName);
@@ -69069,13 +69146,6 @@ function JSExecute(ast,option)
                         if (isDrawCenter) outVar.IsDrawCenter=true;
                         if (isDrawBelow) outVar.IsDrawBelow=true;
                         this.OutVarTable.push(outVar);
-                    }
-                    else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
-                    {
-                        let outVar=this.VarTable.get(varName);
-                        let value={Name:varName, Data:outVar, Color:color, Type:2};
-                        if (lineWidth) value.LineWidth=lineWidth;
-                        this.OutVarTable.push(value);
                     }
                     else if (varName)
                     {
@@ -69840,13 +69910,13 @@ function JSExplainer(ast,option)
                     if (pointDot && varName)   //圆点
                     {
                         outValue+=",画小圆点线";
-                        let value={Name:varName, Data:outValue, Radius:2, Type:3};
+                        let value={Name:varName, Data:outValue, Radius:g_JSChartResource.POINTDOT.Radius, Type:3};
                         this.OutVarTable.push(value);
                     }
                     else if (circleDot && varName)  //圆点
                     {
                         outValue+=",画小圆圈线";
-                        let value={Name:varName, Data:outValue, Radius:1.3, Type:3};
+                        let value={Name:varName, Data:outValue, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3};
                         this.OutVarTable.push(value);
                     }
                     else if (lineStick && varName)  //LINESTICK  同时画出柱状线和指标线
@@ -71141,7 +71211,9 @@ function ScriptIndex(name,script,args,option)
 
         let titleIndex=windowIndex+1;
         chartMACD.Data.Data=varItem.Data;
-        hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chartMACD.Data,varItem.Name,this.GetDefaultColor(id));
+        var clrTitle=this.GetDefaultColor(id);
+        if (varItem.Color) clrTitle=this.GetColor(varItem.Color);
+        hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chartMACD.Data,varItem.Name,clrTitle);
 
         hqChart.ChartPaint.push(chartMACD);
     }
@@ -72264,7 +72336,9 @@ function OverlayScriptIndex(name,script,args,option)
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
         var titlePaint=hqChart.TitlePaint[titleIndex];
-        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,this.GetDefaultColor(id));
+        var clrTitle=this.GetDefaultColor(id);
+        if (varItem.Color) clrTitle=this.GetColor(varItem.Color);
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,clrTitle);
 
         frame.ChartPaint.push(chart);
     }
@@ -73178,11 +73252,11 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                         outItem.Type=2; //画上下柱子
                         break;
                     case "POINTDOT":
-                        outItem.Radius=2;
+                        outItem.Radius=g_JSChartResource.POINTDOT.Radius;
                         outItem.Type=3;
                         break;
                     case "CIRCLEDOT":
-                        outItem.Radius=1.3;
+                        outItem.Radius=g_JSChartResource.CIRCLEDOT.Radius;
                         outItem.Type=3;
                         break;
                     case "DOTLINE":

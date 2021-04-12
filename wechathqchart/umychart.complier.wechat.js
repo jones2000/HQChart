@@ -12,8 +12,13 @@
 
 //日志
 import { JSConsole } from "./umychart.console.wechat.js"
-
 import { JSCommonData } from "./umychart.data.wechat.js";     //行情数据结构体 及涉及到的行情算法(复权,周期等)  
+//配色资源
+import {
+    JSCommonResource_Global_JSChartResource as g_JSChartResource,
+    JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
+    JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
+} from './umychart.resource.wechat.js'
 
 
 var g_JSComplierResource=
@@ -9213,7 +9218,7 @@ function JSExecute(ast,option)
                     if (pointDot && varName)   //圆点
                     {
                         let outVar=this.VarTable.get(varName);
-                        let value={Name:varName, Data:outVar, Radius:2, Type:3};
+                        let value={Name:varName, Data:outVar, Radius:g_JSChartResource.POINTDOT.Radius, Type:3};
                         if (color) value.Color=color;
                         if (lineWidth) value.LineWidth = lineWidth;
                         this.OutVarTable.push(value);
@@ -9221,7 +9226,7 @@ function JSExecute(ast,option)
                     else if (circleDot && varName)  //圆点
                     {
                         let outVar=this.VarTable.get(varName);
-                        let value={Name:varName, Data:outVar, Radius:1.3, Type:3};
+                        let value={Name:varName, Data:outVar, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3};
                         if (color) value.Color=color;
                         if (lineWidth) value.LineWidth = lineWidth;
                         this.OutVarTable.push(value);
@@ -9249,6 +9254,14 @@ function JSExecute(ast,option)
                         if (color) value.Color=color;
                         this.OutVarTable.push(value);
                     }
+                    else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
+                    {
+                        let outVar=this.VarTable.get(varName);
+                        let value={Name:varName, Data:outVar, Color:color, Type:2};
+                        if (lineWidth) value.LineWidth=lineWidth;
+                        if (color) value.Color=color;
+                        this.OutVarTable.push(value);
+                    }
                     else if (varName && color) 
                     {
                         let outVar=this.VarTable.get(varName);
@@ -9269,13 +9282,6 @@ function JSExecute(ast,option)
                         if (lineWidth) outVar.LineWidth = lineWidth;
                         if (isDrawAbove) outVar.IsDrawAbove=true;
                         this.OutVarTable.push(outVar);
-                    }
-                    else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
-                    {
-                        let outVar=this.VarTable.get(varName);
-                        let value={Name:varName, Data:outVar, Color:color, Type:2};
-                        if (lineWidth) value.LineWidth=lineWidth;
-                        this.OutVarTable.push(value);
                     }
                     else if (varName) 
                     {

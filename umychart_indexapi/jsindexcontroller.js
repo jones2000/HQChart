@@ -150,7 +150,8 @@ function JSIndexController(req,res,next)
                 Args:this.Args,
                 Script:this.Script,
                 ErrorCallback:function(error) { self.ExecuteError(error); },
-                FinishCallback:function(data, jsExectute) { self.ExecuteFinish(data, jsExectute); }
+                FinishCallback:function(data, jsExectute) { self.ExecuteFinish(data, jsExectute); },
+                NetworkFilter:function(data, callback) { self.NetworkFilter(data,callback); }
             }
 
             var indexConsole=new HQChart.ScriptIndexConsole(obj);
@@ -174,6 +175,11 @@ function JSIndexController(req,res,next)
         }
 
         return next();
+    }
+
+    this.NetworkFilter=function(data,callback)
+    {
+        console.log("[NetworkFilter] data", data);
     }
 
     //执行脚本返回数据

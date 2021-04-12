@@ -434,7 +434,9 @@ function ScriptIndex(name, script, args, option)
 
         let titleIndex = windowIndex + 1;
         chartMACD.Data.Data = varItem.Data;
-        hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(chartMACD.Data, varItem.Name, this.GetDefaultColor(id));
+        var clrTitle=this.GetDefaultColor(id);
+        if (varItem.Color) clrTitle= this.GetColor(varItem.Color);
+        hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(chartMACD.Data, varItem.Name, clrTitle);
 
         hqChart.ChartPaint.push(chartMACD);
     }

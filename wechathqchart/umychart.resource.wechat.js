@@ -272,6 +272,16 @@ function JSChartResource()
         YOffset:0   //y坐标向上偏移
     }
 
+    this.CIRCLEDOT=
+    {
+        Radius:1.3
+    }
+
+    this.POINTDOT=
+    {
+        Radius:2
+    }
+
     //深度图
     this.DepthChart=
     {
@@ -467,6 +477,18 @@ function JSChartResource()
                 if (this.IsNumber(border.Bottom)) this.DepthCorss.Tooltip.Border.Bottom=border.Bottom;
                 if (this.IsNumber(border.Center)) this.DepthCorss.Tooltip.Border.Center=border.Center;
             }
+        }
+
+        if (style.CIRCLEDOT)
+        {
+            var item=style.CIRCLEDOT;
+            if (this.IsNumber(item.Radius)) this.CIRCLEDOT.Radius=item.Radius;
+        }
+
+        if (style.POINTDOT)
+        {
+            var item=style.POINTDOT;
+            if (this.IsNumber(item.Radius)) this.POINTDOT.Radius=item.Radius;
         }
     }
 
