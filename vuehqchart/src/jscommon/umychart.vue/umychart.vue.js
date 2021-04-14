@@ -24579,13 +24579,13 @@ function DrawToolsButton()
                     { HTML: { Title: '箭头', IClass: 'iconfont icon-draw_rays', ID: 'icon-beam2' }, Name: '箭头' },
                     { HTML: { Title: '趋势线', IClass: 'iconfont icon-draw_trendline', ID: 'icon-trendline' }, Name: '趋势线' },
                     { HTML: { Title: '水平线', IClass: 'iconfont icon-draw_hline', ID: 'icon-hline' }, Name: '水平线' },
-                    { HTML: { Title: '水平线段', IClass: 'iconfont icon-draw_hline', ID: 'icon-hlineseg' }, Name: '水平线段' },
-                    { HTML: { Title: '平行射线', IClass: 'iconfont icon-draw_hline', ID: 'icon-rayslineseg' }, Name: '平行射线' },
+                    { HTML: { Title: '水平线段', IClass: 'iconfont icon-draw_hlinesegment', ID: 'icon-hlineseg' }, Name: '水平线段' },
+                    { HTML: { Title: '平行射线', IClass: 'iconfont icon-draw_p_rays_lines', ID: 'icon-rayslineseg' }, Name: '平行射线' },
                     { HTML: { Title: '平行线', IClass: 'iconfont icon-draw_parallel_lines', ID: 'icon-parallellines' }, Name: '平行线' },
                     { HTML: { Title: '平行通道', IClass: 'iconfont icon-draw_parallelchannel', ID: 'icon-parallelchannel' }, Name: '平行通道' },
                     { HTML: { Title: '价格通道线', IClass: 'iconfont icon-draw_pricechannel', ID: 'icon-pricechannel' }, Name: '价格通道线' },
                     { HTML: { Title: 'M头W底', IClass: 'iconfont icon-draw_wavemw', ID: 'icon-wavemw' }, Name: 'M头W底' },
-                    { HTML: { Title: '头肩型', IClass: 'iconfont icon-draw_wavemw', ID: 'icon-Head-Shoulders' }, Name: '头肩型' },
+                    { HTML: { Title: '头肩型', IClass: 'iconfont icon-draw_head_shoulders_bt', ID: 'icon-Head-Shoulders' }, Name: '头肩型' },
                     { HTML: { Title: '波浪尺', IClass: 'iconfont icon-waveruler', ID: 'icon-wave-ruler' }, Name: '波浪尺' },
                     { HTML: { Title: '箱型线', IClass: 'iconfont icon-draw_box', ID: 'icon-drawbox' }, Name: '箱型线' },
                 ],
@@ -37013,7 +37013,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                     if (step<=0) return;
 
                     showCount-=step;
-                    hisData.DataOffset-=step;
+                    hisData.DataOffset+=step;
                 }
             }
             
@@ -58880,27 +58880,44 @@ function JSAlgorithm(errorHandler,symbolData)
     this.BARSSINCEN=function(data,n)
     {
         var result=[];
-        var day=null;
-        for(let i=0;i<data.length;++i)
+        if (this.IsNumber(n) && Array.isArray(data))
         {
-            result[i]=null;
-            if (day==null)
-            {
-                if (data[i]) day=0;
-            }
-            else
-            {
-                if (data[i]) 
-                {
-                    if (day+1<n) ++day;
-                }
-                else 
-                {
-                    day=null;
-                }
-            }
+            var nPeriod=n;
+            if (nPeriod<1) nPeriod=data.length;
+            var i=this.GetFirstVaildIndex(data);
+            if (i>=data.length) return result;
+            var j=0;
+            if (i <= nPeriod - 1) j = nPeriod - 1;
+	        else j = i;
 
-            if (day) result[i]=day;
+            result[j] = j - i;
+
+            for (; j < data.length; ++j)
+            {
+                if (this.IsNumber(result[j - 1]))
+                {
+                    if (result[j - 1] + 1 < nPeriod)
+                    {
+                        result[j] = result[j - 1] + 1;
+                    }
+                    else
+                    {
+                        for (var k = j - nPeriod+1; k <= j; ++k)
+                        {
+                            if (!(Math.abs(data[k]) < 0.000001))
+                            {
+                                result[j] = j - k;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (!(Math.abs(data[j]) < 0.000001))
+                        result[j] = 0;
+                }
+            }
         }
 
         return result;

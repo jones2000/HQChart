@@ -3767,27 +3767,45 @@ function JSAlgorithm(errorHandler, symbolData)
     */
     this.BARSSINCEN = function (data, n) 
     {
-        var result = [];
-        var day = null;
-        for (let i = 0; i < data.length; ++i) 
+        var result=[];
+        if (this.IsNumber(n) && Array.isArray(data))
         {
-            result[i] = null;
-            if (day == null) 
-            {
-                if (data[i]) day = 0;
-            }
-            else 
-            {
-                if (data[i]) 
-                {
-                    if (day + 1 < n)++day;
-                }
-                else {
-                    day = null;
-                }
-            }
+            var nPeriod=n;
+            if (nPeriod<1) nPeriod=data.length;
+            var i=this.GetFirstVaildIndex(data);
+            if (i>=data.length) return result;
+            var j=0;
+            if (i <= nPeriod - 1) j = nPeriod - 1;
+	        else j = i;
 
-            if (day) result[i] = day;
+            result[j] = j - i;
+
+            for (; j < data.length; ++j)
+            {
+                if (this.IsNumber(result[j - 1]))
+                {
+                    if (result[j - 1] + 1 < nPeriod)
+                    {
+                        result[j] = result[j - 1] + 1;
+                    }
+                    else
+                    {
+                        for (var k = j - nPeriod+1; k <= j; ++k)
+                        {
+                            if (!(Math.abs(data[k]) < 0.000001))
+                            {
+                                result[j] = j - k;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (!(Math.abs(data[j]) < 0.000001))
+                        result[j] = 0;
+                }
+            }
         }
 
         return result;
