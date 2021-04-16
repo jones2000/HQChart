@@ -73744,7 +73744,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         
         for(var i in outVar)
         {
-            item=outVar[i];
+            var item=outVar[i];
             var outVarItem={Name:item.name,Type:item.type}
             if (item.data)
             {

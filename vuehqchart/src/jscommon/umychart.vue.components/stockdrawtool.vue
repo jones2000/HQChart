@@ -68,6 +68,7 @@
 </template>
 
 <script>
+    //字体图标项目名称：H5 Stock
     import '../umychart.resource/font/fontSymbol.js'
     // import "../umychart.resource/font/brushSymbol.js";
     import "../umychart.resource/font/fontSymbol.css";
@@ -94,14 +95,14 @@
             { name: "标价线", icon: "#icon-price_line" },
             { name: "趋势线", icon: "#icon-draw_trendline" },
             { name: "水平线", icon: "#icon-draw_hline" },
-            { name: "水平线段", icon: "#icon-draw_hline" },
+            { name: "水平线段", icon: "#icon-draw_hlinesegment" },
             { name: "垂直线", icon: "#icon-vertical_line" },
             { name: "平行线", icon: "#icon-draw_parallel_lines" },
-            { name: "平行射线", icon: "#icon-draw_parallel_lines" },
+            { name: "平行射线", icon: "#icon-draw_p_rays_lines" },
             { name: "平行通道", icon: "#icon-draw_parallelchannel" },
             { name: "价格通道线", icon: "#icon-draw_pricechannel" },
             { name: "M头W底", icon: "#icon-draw_wavemw" },
-            { name:"头肩型", icon:"#icon-draw_wavemw" },
+            { name:"头肩型", icon:"#icon-draw_head_shoulders_bt" }, 
             { name: "波浪尺", icon: "#icon-waveruler" },
             { name: "箱型线", icon: "#icon-draw_box" }
         ],
