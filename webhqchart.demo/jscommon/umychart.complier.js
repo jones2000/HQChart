@@ -12623,7 +12623,11 @@ function JSSymbolData(ast,option,jsExecute)
                 Name:'JSSymbolData::GetCustomVariantData', //类名::函数名
                 Explain:'自定义变量数据下载',
                 JobID:jobItem.ID,
-                Request:{ Url:"www.121287.com", Type:'POST', Data:{ VariantName:jobItem.VariantName, symbol: this.Symbol, daterange:dateRange } },
+                Request:
+                { 
+                    Url:"www.121287.com", Type:'POST', 
+                    Data:{ VariantName:jobItem.VariantName, symbol: this.Symbol, daterange:dateRange, period:this.Period } 
+                },
                 Self:this,
                 VariantInfo:variantInfo,
                 PreventDefault:false

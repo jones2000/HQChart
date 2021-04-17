@@ -1080,6 +1080,62 @@ function ChartData()
         return result;
     }
 
+    //财务数据拟合到分钟数据上 返回 SingleData 数组
+    this.GetMinuteFittingFinanceData=function(financeData)
+    {
+        var result=[];
+        if (!Array.isArray(financeData) || financeData.length<=0) return result;
+
+        var i=0;
+        var firstItem=financeData[0];
+        for(i=0;i<this.Data.length;++i)
+        {
+            var date=this.Data[i].Date;
+            var time=this.Data[i].Time;
+            if (date>firstItem.Date || (date==firstItem.Date && time>=firstItem.Time))
+            {
+                break;
+            }    
+        }
+
+        for(var j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+            var time=this.Data[i].Time;
+
+            if (j+1<financeData.length)
+            {
+                if ((financeData[j].Date<date && financeData[j+1].Date<=date) ||
+                    (financeData[j].Date==date && financeData[j].Time<time && financeData[j+1].Time<=time) )
+                {
+                    ++j;
+                    continue;
+                }
+            }
+
+            var item=new SingleData();
+            item.Date=date;
+            item.Time=time;
+            if (j<financeData.length)
+            {
+                item.Value=financeData[j].Value;
+                item.FinanceDate=financeData[j].Date;   //财务日期 调试用
+                item.FinanceTime=financeData[j].Time;   //财务日期 调试用
+            }
+            else
+            {
+                item.Value=null;
+                item.FinanceDate=null;
+                item.FinanceTime=null;
+            }
+            result[i]=item;
+
+            ++i;
+        }
+
+        return result;
+    }
+
     //市值计算 financeData.Value 是股数
     this.GetFittingMarketValueData = function (financeData) 
     {
@@ -1413,19 +1469,37 @@ function ChartData()
         return result;
     }
 
-    this.GetMinuteFittingTradeData=function(tradeData, nullValue)
+    this.GetMinuteFittingTradeData=function(tradeData, nullValue,bExactMatch)
     {
         var result=[];
+        var bMatch=false;
+
         for(var i=0,j=0;i<this.Data.length;)
         {
             var date=this.Data[i].Date;
             var time=this.Data[i].Time;
 
+            if (j<tradeData.length)
+            {
+                if (tradeData[j].Date>date || (tradeData[j].Date==date && tradeData[j].Time>time))
+                {
+                    var item=new SingleData();
+                    item.Date=date;
+                    item.Time=time;
+                    item.Value=nullValue;
+                    result[i]=item;
+                    ++i;
+                    continue;
+                }
+            }
+
             if (j+1<tradeData.length)
             {
-                if (tradeData[j].Date<date && tradeData[j+1].Date<=date)
+                if ( (tradeData[j].Date<date && tradeData[j+1].Date<=date) || 
+                    (tradeData[j].Date==date && tradeData[j].Time<time && tradeData[j+1].Time<=time) )
                 {
                     ++j;
+                    bMatch=false;
                     continue;
                 }
             }
@@ -1438,10 +1512,25 @@ function ChartData()
             if (j<tradeData.length)
             {
                 var tradeItem=tradeData[j];
-                if (tradeItem.Date==item.Date)  //完全匹配
+                if (this.Period==4 && bExactMatch===true) //1分钟线完全匹配
                 {
-                    item.Value=tradeItem.Value;
-                    item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                    if (tradeItem.Date==item.Date && tradeItem.Time==item.Time)  //完全匹配
+                    {
+                        item.Value=tradeItem.Value;
+                        item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                        item.FinanceTime=tradeItem.Time;
+                        bMatch=true;
+                    }
+                }
+                else    //其他日线周期
+                {
+                    if (bMatch==false)
+                    {
+                        item.Value=tradeItem.Value;
+                        item.FinanceDate=tradeItem.Date;   //财务日期 调试用
+                        item.FinanceTime=tradeItem.Time;
+                        bMatch=true;
+                    }
                 }
             }
 
@@ -1451,6 +1540,7 @@ function ChartData()
 
         return result;
     }
+
 }
 
 ChartData.IsNumber=function(value)
