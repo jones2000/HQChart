@@ -1645,12 +1645,15 @@ var JSCHART_EVENT_ID=
     ON_CUSTOM_VERTICAL_DRAW:20,  //自定义X轴绘制事件
     RECV_KLINE_MANUAL_UPDATE_DATA:21,   //手动更新K线事件
     ON_ENABLE_SPLASH_DRAW:22,           //开启/关闭过场动画事件
+
     ON_CLICK_CHART_PAINT:23,            //点击图形
 
     ON_DRAW_MINUTE_LAST_POINT:24,        //分时图绘制回调事件, 返回最后一个点的坐标
     ON_DRAW_DEPTH_TOOLTIP:25,            //绘制深度图tooltip事件
     ON_CLICK:26,                         //点击事件
     ON_PHONE_TOUCH:27,                   //手势点击事件 包含 TouchStart 和 TouchEnd
+
+    ON_CLICKUP_CHART_PAINT:28           //点击图形鼠标抬起
 }
 
 var JSCHART_OPERATOR_ID=
@@ -1723,6 +1726,7 @@ function JSChartContainer(uielement, OffscreenElement)
     this.TouchStatus={ CorssCursorShow:false },     //十字光标是否显示
     this.DragTimer;
     this.EnableScrollUpDown=false;                  //是否可以上下滚动图形(手机端才有)
+    this.ClickChartTimer=null;                      //点击图形定时器,解决双击和单击K线事件
 
     this.CursorIndex=0;             //十字光标X轴索引
     this.LastPoint=new Point();     //鼠标位置
@@ -1772,7 +1776,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
     this.NetworkFilter;         //网络请求回调 function(data, callback);
     this.LastMouseStatus={ }
-    this.ClickDownPoint;        //鼠标点击坐标 {X, Y}, 鼠标放开以后清空为null
+    this.ClickDownPoint;         //鼠标点击坐标 {X, Y}, 鼠标放开以后清空为null
     this.IsDestroy=false;        //是否已经销毁了
 
     this.ChartDestory=function()    //销毁
@@ -1968,6 +1972,22 @@ function JSChartContainer(uielement, OffscreenElement)
                     this.OnSelectChartPicture(drawPictrueData.ChartDrawPicture);    //选中画图工具事件
                 }
             }
+            else
+            {
+                if (this.ClickChartTimer!=null)
+                {
+                    clearTimeout(this.ClickChartTimer);
+                    this.ClickChartTimer=null;
+                }
+                
+                var self=this;
+                var ptClick={ X:this.ClickDownPoint.X, Y:this.ClickDownPoint.Y };
+                this.ClickChartTimer = setTimeout(function() 
+                {
+                    self.TryClickPaintEvent(JSCHART_EVENT_ID.ON_CLICK_CHART_PAINT,ptClick,e);
+                }, 250);
+                
+            }
         }
 
         document.onmousemove=(e)=>{ this.DocOnMouseMove(e); }
@@ -2131,12 +2151,12 @@ function JSChartContainer(uielement, OffscreenElement)
             }
             else
             {
-                this.TryClickPaintEvent(e);
+                this.TryClickPaintEvent(JSCHART_EVENT_ID.ON_CLICKUP_CHART_PAINT,this.ClickDownPoint,e);
             }
         }
         else
         {
-            this.TryClickPaintEvent(e);
+            this.TryClickPaintEvent(JSCHART_EVENT_ID.ON_CLICKUP_CHART_PAINT,this.ClickDownPoint,e);
             this.ClickEvent(e);
         }
 
@@ -2189,12 +2209,12 @@ function JSChartContainer(uielement, OffscreenElement)
         return true;
     }
 
-    this.TryClickPaintEvent=function(e)
+    this.TryClickPaintEvent=function(eventID, ptClick, e)
     {
-        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_CHART_PAINT);
+        var event=this.GetEventCallback(eventID);
         if (event && event.Callback)
         {
-            if (this.ClickDownPoint.X==e.clientX && this.ClickDownPoint.Y==e.clientY)
+            if (ptClick.X==e.clientX && ptClick.Y==e.clientY)
             {
                 var pixelTatio = GetDevicePixelRatio();
                 var x = (e.clientX-uielement.getBoundingClientRect().left)*pixelTatio;
@@ -12400,6 +12420,7 @@ function ChartKLine()
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var bottom=this.ChartBorder.GetBottom();
+        var top=this.ChartBorder.GetTop();
 
         var infoData=this.InfoData.get(item.DayData.Date.toString());
         if (!infoData || infoData.Data.length<=0) return;
@@ -12414,6 +12435,8 @@ function ChartKLine()
         var text='', title='';
         var mapImage=new Map();
         var iconTop=item.YMax+1*pixelTatio;
+        var iconBottom=item.YMin+1*pixelTatio+iconSize;
+        var drawTop=true;
         var yOffset=0;
         for(var i in infoData.Data)
         {
@@ -12452,12 +12475,23 @@ function ChartKLine()
                     }
                     else
                     {
-
-                        this.Canvas.fillText(icon.Text,item.XCenter,iconTop,iconSize);
-                        var iconRect=new Rect(item.XCenter-iconSize/2,iconTop-iconSize,iconSize,iconSize);
-                        var infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:item.XCenter, Y:iconTop} };
-                        mapImage.set(infoItem.InfoType,infoCache);
-                        iconTop-=iconSize;
+                        if (drawTop)
+                        {
+                            this.Canvas.fillText(icon.Text,item.XCenter,iconTop,iconSize);
+                            var iconRect=new Rect(item.XCenter-iconSize/2,iconTop-iconSize,iconSize,iconSize);
+                            var infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:item.XCenter, Y:iconTop} };
+                            mapImage.set(infoItem.InfoType,infoCache);
+                            iconTop-=iconSize;
+                            if (iconTop-iconSize<top ) drawTop=false;
+                        }
+                        else    //上面显示不下,就显示在下面
+                        {
+                            this.Canvas.fillText(icon.Text,item.XCenter,iconBottom,iconSize);
+                            var iconRect=new Rect(item.XCenter-iconSize/2,iconBottom-iconSize,iconSize,iconSize);
+                            var infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:item.XCenter, Y:iconBottom} };
+                            mapImage.set(infoItem.InfoType,infoCache);
+                            iconBottom+=iconSize;
+                        }
                     }
                 }
             }
@@ -37324,6 +37358,12 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (event)
         {
+            if (this.ClickChartTimer!=null) //清空单击定时器
+            {
+                clearTimeout(this.ClickChartTimer);
+                this.ClickChartTimer=null;
+            }
+            
             var data={ Tooltip:tooltip, Stock:{Symbol:this.Symbol, Name:this.Name } }
             event.Callback(event,data,this);
         }
