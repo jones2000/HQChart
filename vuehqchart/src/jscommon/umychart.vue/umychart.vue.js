@@ -5659,7 +5659,8 @@ var JSCHART_EVENT_ID=
 
     ON_DRAW_MINUTE_LAST_POINT:24,        //分时图绘制回调事件, 返回最后一个点的坐标
     ON_DRAW_DEPTH_TOOLTIP:25,            //绘制深度图tooltip事件
-    ON_CLICK:26                          //点击事件
+    ON_CLICK:26,                         //点击事件
+    ON_PHONE_TOUCH:27,                   //手势点击事件 包含 TouchStart 和 TouchEnd
 }
 
 var JSCHART_OPERATOR_ID=
@@ -5725,6 +5726,7 @@ function JSChartContainer(uielement, OffscreenElement)
     
     this.UIElement=uielement;
     this.MouseDrag;
+    this.PhoneTouchInfo;    //手机手势信息
     this.DragMode=1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择 3(CLICK_TOUCH_MODE_ID)=长按十字光标显示保留/点击十字光标消失 (使用TouchStatus)
     this.EnableBorderDrag=true;                     //是否可以拖拽边框调整指标框高度
     this.BorderDrag;    //{ Index:, }
@@ -6387,6 +6389,7 @@ function JSChartContainer(uielement, OffscreenElement)
             drag.LastMove.Y=touches[0].clientY;
 
             this.MouseDrag=drag;
+            this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
             if (this.SelectChartDrawPicture) this.SelectChartDrawPicture.IsSelected=false;
             this.SelectChartDrawPicture=null;
             var isDrawPictrue=false;
@@ -6463,7 +6466,9 @@ function JSChartContainer(uielement, OffscreenElement)
             else if (this.IsClickShowCorssCursor)
             {
                 this.MoveCorssCursor(drag.Click,e);
-            }    
+            }
+            
+            this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchStart"}, e);
         }
         else if (this.IsPhonePinching(e))
         {
@@ -6576,6 +6581,9 @@ function JSChartContainer(uielement, OffscreenElement)
                     drag.LastMove.Y=touches[0].clientY;
                 }
             }
+
+            this.PhoneTouchInfo.End.X=touches[0].clientX;
+            this.PhoneTouchInfo.End.Y=touches[0].clientY;
         }
         else if (this.IsPhonePinching(e))
         {
@@ -6658,8 +6666,54 @@ function JSChartContainer(uielement, OffscreenElement)
         this.IsOnTouch = false;
         if (bClearDrawPicture===true) this.CurrentChartDrawPicture=null;
         this.StopDragTimer();
+        this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchEnd"}, e);
         this.OnTouchFinished();
         this.TouchDrawCount=0;
+    }
+
+    //手势事件
+    this.TouchEvent=function(obj,e)
+    {
+        var eventID=obj.EventID;
+        var event=this.GetEventCallback(eventID);
+        if (!event || !event.Callback) return false;
+        var drag=this.PhoneTouchInfo
+        if (!drag || !drag.Start || !drag.End ) return false;
+        var pixelTatio = GetDevicePixelRatio();
+        var clientX=drag.End.X/pixelTatio;
+        var clientY=drag.End.Y/pixelTatio;
+        var x=drag.End.X-this.UIElement.getBoundingClientRect().left*pixelTatio;
+        var y=drag.End.Y-this.UIElement.getBoundingClientRect().top*pixelTatio;
+        var data= 
+        { 
+            X:clientX, Y:clientY, FrameID:-1, FunctionName:obj.FunctionName,
+            Drag:
+            { 
+                Start:{ X:drag.Start.X/pixelTatio, Y:drag.Start.Y/pixelTatio }, 
+                End:{ X:drag.End.X/pixelTatio, Y:drag.End.Y/pixelTatio } 
+            } 
+        };
+
+        var isInClient=false;
+        this.Canvas.beginPath();
+        this.Canvas.rect(this.Frame.ChartBorder.GetLeft(),this.Frame.ChartBorder.GetTop(),this.Frame.ChartBorder.GetWidth(),this.Frame.ChartBorder.GetHeight());
+        isInClient=this.Canvas.isPointInPath(x,y);
+
+        if (isInClient)
+        {
+            var yValueExtend={};
+            var yValue=this.Frame.GetYData(y,yValueExtend);
+
+            if (IFrameSplitOperator.IsNumber(yValueExtend.FrameID) && yValueExtend.FrameID>=0)
+            {
+                var xValue=this.Frame.GetXData(x);
+                data.FrameID=yValueExtend.FrameID;
+                data.Data={ X:xValue, Y:yValue } ;
+            }
+        }
+
+        event.Callback(event, data, this);
+        return true;
     }
 
     this.MoveCorssCursor=function(point,e)
