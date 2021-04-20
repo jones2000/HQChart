@@ -73020,7 +73020,7 @@ function OverlayScriptIndex(name,script,args,option)
             chart.Price=drawData.Price;
         }
 
-        hqChart.ChartPaint.push(chart);
+        frame.ChartPaint.push(chart);
     }
 
     //创建图标
