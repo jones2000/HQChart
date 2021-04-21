@@ -39216,6 +39216,7 @@ function MinuteChartContainer(uielement)
             this.UpdateHistoryMinuteUI();
             this.RecvMinuteDataEvent();
             this.RequestOverlayMinuteData();    //请求叠加数据 (主数据下载完再下载)
+            this.BindAllOverlayIndexData(this.SourceData);
             this.AutoUpdate();
             return;
         }

@@ -1334,7 +1334,8 @@ var JSCHART_EVENT_ID =
     ON_CUSTOM_VERTICAL_DRAW: 20,  //自定义X轴绘制事件 
     ON_ENABLE_SPLASH_DRAW:22,          //开启/关闭过场动画事件
 
-    ON_DRAW_DEPTH_TOOLTIP:25             //绘制深度图tooltip事件
+    ON_DRAW_DEPTH_TOOLTIP:25,             //绘制深度图tooltip事件
+    ON_PHONE_TOUCH:27,                   //手势点击事件 包含 TouchStart 和 TouchEnd
 }
 
 var JSCHART_OPERATOR_ID =
@@ -1372,6 +1373,7 @@ function JSChartContainer(uielement)
     this.UIElement = uielement;
     this.MouseDrag;
     this.DragMode = 1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+    this.PhoneTouchInfo;                              //手机手势信息 {Start:起始点, End:结束点}
     this.EnableScrollUpDown=false;                    //是否可以上下滚动图形(手机端才有)
 
     this.TouchTimer = null;         //触屏定时器
@@ -1539,12 +1541,16 @@ function JSChartContainer(uielement)
 
             if (jsChart.DragMode == 1) jsChart.MouseDrag = drag;
 
+            this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
+
             if (jsChart.IsClickShowCorssCursor) 
             {
                 var x = drag.Click.X;
                 var y = drag.Click.Y;
                 jsChart.OnMouseMove(x, y, e,true);
             }
+
+            this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchStart"}, e);
         }
         else if (this.IsPhonePinching(e)) 
         {
@@ -1598,6 +1604,9 @@ function JSChartContainer(uielement)
                     drag.LastMove.Y = touches[0].clientY;
                 }
             }
+
+            this.PhoneTouchInfo.End.X=touches[0].clientX;
+            this.PhoneTouchInfo.End.Y=touches[0].clientY;
         }
         else if (this.IsPhonePinching(e))
         {
@@ -1652,7 +1661,53 @@ function JSChartContainer(uielement)
         this.IsOnTouch = false;
         JSConsole.Chart.Log('[JSChartContainer:ontouchend] IsOnTouch=' + this.IsOnTouch +' LastDrawStatus=' + this.LastDrawStatus);
         if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
+        this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchEnd"}, e);
         this.Draw();//手放开 重新绘制  
+    }
+
+    this.TouchEvent=function(obj,e)
+    {
+        var eventID=obj.EventID;
+        var event=this.GetEvent(eventID);
+        if (!event || !event.Callback) return false;
+
+        var drag=this.PhoneTouchInfo
+        if (!drag || !drag.Start || !drag.End ) return false;
+
+        var clientX=drag.End.X;
+        var clientY=drag.End.Y;
+        var x=drag.End.X;
+        var y=drag.End.Y;
+
+        var data= 
+        { 
+            X:clientX, Y:clientY, FrameID:-1, FunctionName:obj.FunctionName,
+            Drag:
+            { 
+                Start:{ X:drag.Start.X, Y:drag.Start.Y }, 
+                End:{ X:drag.End.X, Y:drag.End.Y } 
+            } 
+        };
+
+        var isInClient=false;
+        var rtClient = new Rect(this.Frame.ChartBorder.GetLeft(), this.Frame.ChartBorder.GetTop(), this.Frame.ChartBorder.GetWidth(), this.Frame.ChartBorder.GetHeight());
+        isInClient = rtClient.IsPointIn(x, y);
+
+        if (isInClient)
+        {
+            var yValueExtend={};
+            var yValue=this.Frame.GetYData(y,yValueExtend);
+
+            if (IFrameSplitOperator.IsNumber(yValueExtend.FrameID) && yValueExtend.FrameID>=0)
+            {
+                var xValue=this.Frame.GetXData(x);
+                data.FrameID=yValueExtend.FrameID;
+                data.Data={ X:xValue, Y:yValue } ;
+            }
+        }
+
+        event.Callback(event, data, this);
+        return true;
     }
 
     this.FullDraw=function(drawType)

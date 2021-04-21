@@ -17,6 +17,10 @@ HQChart是第1个基于国内传统PC股票客户端软件(C++)移植到js/py平
 源码地址:[https://github.com/jones2000/HQChart](https://github.com/jones2000/HQChart)<br>
 镜像地址:[https://gitee.com/jones2000/HQChart](https://gitee.com/jones2000/HQChart)<br>
 
+uniapp 版本:
+新版插件 ：[https://ext.dcloud.net.cn/plugin?id=4591](https://ext.dcloud.net.cn/plugin?id=4591)<br>
+老版本手动导入插件 : [https://ext.dcloud.net.cn/plugin?id=790](https://ext.dcloud.net.cn/plugin?id=790)<br>
+
 如果你觉得我们的行情模块对你有帮助， 请给我们点下star. (●ˇ∀ˇ●) <br>
 
 py版本的麦语法指标计算引擎，已单独迁移到[https://github.com/jones2000/hqchartPy2](https://github.com/jones2000/hqchartPy2),
