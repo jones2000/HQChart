@@ -24714,6 +24714,7 @@ function DrawToolsButton()
                     { HTML: { Title: 'M头W底', IClass: 'iconfont icon-draw_wavemw', ID: 'icon-wavemw' }, Name: 'M头W底' },
                     { HTML: { Title: '头肩型', IClass: 'iconfont icon-draw_head_shoulders_bt', ID: 'icon-Head-Shoulders' }, Name: '头肩型' },
                     { HTML: { Title: '波浪尺', IClass: 'iconfont icon-waveruler', ID: 'icon-wave-ruler' }, Name: '波浪尺' },
+                    { HTML: { Title: 'AB波浪尺', IClass: 'iconfont icon-waveruler', ID: 'icon-wave-ruler' }, Name: 'AB波浪尺' },
                     { HTML: { Title: '箱型线', IClass: 'iconfont icon-draw_box', ID: 'icon-drawbox' }, Name: '箱型线' },
                 ],
                 [
@@ -30852,6 +30853,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"标价线", ClassName:"ChartDrawPriceLine", Create:function() { return new ChartDrawPriceLine(); } },
     { Name:"垂直线", ClassName:"ChartDrawVerticalLine", Create:function() { return new ChartDrawVerticalLine(); } },
     { Name:"波浪尺", ClassName:"ChartDrawWaveRuler", Create:function() { return new ChartDrawWaveRuler(); } },
+    { Name:"AB波浪尺", ClassName:"ChartDrawWaveRuler2Point", Create:function() { return new ChartDrawWaveRuler2Point(); }},
     { Name:"箱型线", ClassName:"ChartDrawBox", Create:function() { return new ChartDrawBox(); } },
     { Name:"2点画图例子", ClassName:"ChartDrawTwoPointDemo", Create:function() { return new ChartDrawTwoPointDemo(); } },
     { Name:"3点画图例子", ClassName:"ChartDrawThreePointDemo", Create:function() { return new ChartDrawThreePointDemo(); } },
@@ -34234,6 +34236,143 @@ function ChartDrawWaveRuler()
     }
 }
 
+//画图工具-波浪尺 2个点的
+function ChartDrawWaveRuler2Point()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawWaveRuler2Point';
+    this.PointCount=2;
+    this.Font=14*GetDevicePixelRatio() +"px 微软雅黑";
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.PointRate=[ 510, 517, 511.4];
+    this.LinePoint;
+    this.CPoint;
+    this.ScaleRuler=g_JSChartResource.ChartDrawWaveRuler2Point.ScaleRuler;
+    this.RulerWidth=g_JSChartResource.ChartDrawWaveRuler2Point.RulerWidth;;       //刻度尺长度
+    this.RulerLineWidth=g_JSChartResource.ChartDrawWaveRuler2Point.RulerLineWidth;
+    this.MaxScaleRuler=g_JSChartResource.ChartDrawWaveRuler2Point.MaxScaleRuler;   //尺子最大的高度比
+    this.Font=g_JSChartResource.ChartDrawWaveRuler2Point.MaxScaleRuler;
+    this.IsHScreen=false;
+    this.Super_SetOption=this.SetOption;    //父类函数
+
+    this.SetOption=function(option)
+    {
+        if (this.Super_SetOption) this.Super_SetOption(option);
+        if (option)
+        {
+            if (option.PointRate) this.PointRate=option.PointRate;
+        }
+    }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
+        if (!drawPoint) return;
+
+        this.IsHScreen=this.Frame.IsHScreen;
+        this.CalculateLines(drawPoint);
+
+        this.ClipFrame();
+        this.SetLineWidth();
+
+        for(var i in this.LinePoint)
+        {
+            var item=this.LinePoint[i];
+            this.DrawLine(item.Start,item.End);
+        }
+
+        var points=[drawPoint[0],drawPoint[1],this.CPoint];
+        this.DrawWaveRuler(points);
+        
+        this.RestoreLineWidth();
+       
+        this.DrawPoint(drawPoint); //画点
+        this.Canvas.restore();
+    }
+
+    this.CalculateLines=function(points)
+    {
+        var firstLine=
+        { 
+            Start:{ X:points[0].X,Y:points[0].Y }, 
+            End:{ X:points[1].X,Y:points[1].Y }
+        };
+        this.LinePoint.push(firstLine);
+
+        var a=points[0].Y;
+        var b=points[1].Y;
+
+        var width=this.PointRate[1]-this.PointRate[0];
+        var offset=this.PointRate[2]-this.PointRate[0];
+
+        var c=a-((a-b)*offset)/width;
+
+        this.CPoint={ X:points[1].X, Y:c };
+    }
+
+    this.DrawWaveRuler=function(points)
+    {
+        var ptBottom=points[1];
+        var ptStart=points[0];
+        var ptEnd=points[2];
+
+        var lineWidth=this.RulerLineWidth*GetDevicePixelRatio();
+        this.Canvas.lineWidth=lineWidth;
+        this.Canvas.textBaseline='middle';
+        this.Canvas.textAlign='left';
+        this.Canvas.fillStyle=this.LineColor;
+        this.Canvas.font=this.Font;
+        var rulerWidth=this.RulerWidth*GetDevicePixelRatio();//刻度线长度
+
+        if (this.IsHScreen)
+        {
+            var rulerHeight=ptStart.X-ptBottom.X;
+            var ptExtendBottom={ X:ptEnd.X-this.MaxScaleRuler*rulerHeight, Y:ptEnd.Y};
+            this.DrawLine(ptEnd,ptExtendBottom);
+            this.LinePoint.push({Start:ptEnd, End:ptExtendBottom});
+            var y=ptEnd.Y-rulerWidth/2, y2=ptEnd.Y+rulerWidth/2;
+        }
+        else
+        {
+            var rulerHeight=ptStart.Y-ptBottom.Y;
+            var ptExtendBottom={ X:ToFixedPoint2(lineWidth,ptEnd.X), Y:ptEnd.Y-this.MaxScaleRuler*rulerHeight };
+            this.DrawLine({X:ToFixedPoint2(lineWidth,ptEnd.X), Y:ptEnd.Y},ptExtendBottom);
+            this.LinePoint.push({Start:ptEnd, End:ptExtendBottom});
+            var x=ptEnd.X, x2=ptEnd.X+rulerWidth;
+        }
+
+        var textOffset=4*GetDevicePixelRatio();
+        for(var i in this.ScaleRuler)
+        {
+            var item=this.ScaleRuler[i];
+            if (this.IsHScreen)
+            {
+                var x=ptEnd.X - item.Value*rulerHeight;
+                var price=this.Frame.GetYData(x, false);
+                this.DrawLine({X:x, Y:y}, {X:x, Y:y2});
+                var text=`${price.toFixed(2)}  ${item.Text? item.Text: item.Value.toFixed(3)}`;
+                this.Canvas.save();
+                this.Canvas.translate(x,ptEnd.Y);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(text,textOffset,0);
+                this.Canvas.restore();
+            }
+            else
+            {
+                var y=ptEnd.Y - item.Value*rulerHeight;
+                var price=this.Frame.GetYData(y, false);
+                this.DrawLine({X:x, Y:ToFixedPoint2(lineWidth,y)}, {X:x2, Y:ToFixedPoint2(lineWidth,y)});
+                var text=`${price.toFixed(2)}  ${item.Text? item.Text: item.Value.toFixed(3)}`;
+                this.Canvas.fillText(text,x2+textOffset,y);
+            }
+        }
+    }
+}
+
 //画图工具-箱型线 支持横屏
 function ChartDrawBox()
 {
@@ -35417,6 +35556,19 @@ function JSChartResource()
         [
             {Value:0, Text:"0.0%"}, { Value:0.382, Text:"38.2%" }, { Value:0.618, Text:"61.8%" } ,{ Value:1, Text:"100%"},
             { Value:1.618, Text:"161.8%" }, { Value:2.0, Text:"200%" }
+        ]
+    }
+
+    this.ChartDrawWaveRuler2Point=
+    {
+        RulerWidth:20,          //刻度尺长度
+        RulerLineWidth:1,       //刻度线粗细
+        MaxScaleRuler:2,        //尺子最大的高度比
+        Font:14*GetDevicePixelRatio() +"px 微软雅黑",
+        ScaleRuler:
+        [
+            {Value:0, Text:"base"},  { Value:0.618, Text:"61.8%" } ,{ Value:1, Text:"100%"},
+            { Value:1.618, Text:"161.8%" }
         ]
     }
 
@@ -37916,7 +38068,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         var page=this.Page.Day;
         if (page.Enable==false || (page.Enable==true && page.Finish==true))  //分页下载 这些数据迁移到分页下载完以后下载
         {
-            this.ReqeustKLineInfoData();            //请求信息地雷
+            this.ReqeustKLineInfoData({ FunctionName:"RecvHistoryData" });            //请求信息地雷
             this.RequestFlowCapitalData();          //请求流通股本数据 (主数据下载完再下载)
             this.RequestOverlayHistoryData();       //请求叠加数据 (主数据下载完再下载)
             this.CreateChartDrawPictureByStorage(); //创建画图工具
@@ -40279,7 +40431,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             }
         }
 
-        this.ReqeustKLineInfoData();
+        this.ReqeustKLineInfoData( {FunctionName:"Update"} );
         
         this.CreateChartDrawPictureByStorage(); //创建画图工具
         
@@ -40390,18 +40542,26 @@ function KLineChartContainer(uielement,OffscreenElement)
         } 
     }
 
-    this.ReqeustKLineInfoData=function()
+    this.ReqeustKLineInfoData=function(obj)
     {
-        if (this.ChartPaint.length>0)
+        if (obj && obj.FunctionName=="RecvDragDayData") //增量更新
         {
-            var klinePaint=this.ChartPaint[0];
-            klinePaint.InfoData=new Map();
+            obj.Update=true;
+        }
+        else
+        {
+            if (this.ChartPaint.length>0)
+            {
+                var klinePaint=this.ChartPaint[0];
+                klinePaint.InfoData=new Map();
+            }
+            obj.Update=false;
         }
 
         //信息地雷信息
         for(var i in this.ChartInfo)
         {
-            this.ChartInfo[i].RequestData(this);
+            this.ChartInfo[i].RequestData(this,obj);
         }
     }
 
@@ -40418,7 +40578,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.ChartInfo.push(item);
         }
 
-        if (bUpdate==true) this.ReqeustKLineInfoData();
+        if (bUpdate==true) this.ReqeustKLineInfoData({ FunctionName:"SetKLineInfo" });
     }
 
     //添加信息地雷
@@ -41697,7 +41857,10 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.UpdateChartDrawXValue();       //更新画图工具X轴索引
-        this.Draw();    
+        this.Draw();   
+        
+        //更新信息地雷
+        this.ReqeustKLineInfoData( { FunctionName:"RecvDragDayData", StartDate:firstData.Date } );
     }
 
     this.SetCustomVerical=function(windowId, data)
@@ -48414,7 +48577,7 @@ function IKLineInfo()
         return obj;
     }
 
-    this.NetworkFilter=function(hqChart)
+    this.NetworkFilter=function(hqChart,callInfo)
     {
         if (!hqChart.NetworkFilter) return false;
 
@@ -48434,6 +48597,17 @@ function IKLineInfo()
             HQChart:hqChart,
             PreventDefault:false
         };
+
+        if (callInfo) 
+        {
+            if (callInfo.Update==true) 
+            {
+                obj.Update={ Start:{ Date: callInfo.StartDate } };
+                param.Update={ Start:{ Date: callInfo.StartDate } };
+            }
+
+            obj.CallFunctionName=callInfo.FunctionName; //内部调用函数名
+        }
 
         hqChart.NetworkFilter(obj, function(data) 
         { 
@@ -48457,7 +48631,7 @@ function InvestorInfo()
 
     this.ClassName='InvestorInfo';
     this.Explain='互动易'
-    this.RequestData=function(hqChart)
+    this.RequestData=function(hqChart, obj)
     {
         var self = this;
         var param=
@@ -48466,7 +48640,7 @@ function InvestorInfo()
         };
 
         this.Data=[];
-        if (this.NetworkFilter(hqChart)) return; //已被上层替换,不调用默认的网络请求
+        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
         var postData=
         {
@@ -48513,7 +48687,7 @@ function InvestorInfo()
 }
 
 
-//公告
+//公告 支持增量更新
 function AnnouncementInfo()
 {
     this.newMethod=IKLineInfo;   //派生
@@ -48524,7 +48698,7 @@ function AnnouncementInfo()
     this.Explain='公告';
     this.ApiType=1; //0=读API 1=读OSS缓存文件
 
-    this.RequestData=function(hqChart)
+    this.RequestData=function(hqChart,obj)
     {
         var self = this;
         var param=
@@ -48532,9 +48706,16 @@ function AnnouncementInfo()
             HQChart:hqChart,
         };
 
-        this.Data=[];
+        if (obj && obj.Update===true)   //更新模式 不清内存数据
+        {
 
-        if (this.NetworkFilter(hqChart)) return; //已被上层替换,不调用默认的网络请求
+        }
+        else
+        {
+            this.Data=[];
+        }
+
+        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
 
         if (this.ApiType==1)    //取缓存文件
         {
@@ -48587,6 +48768,7 @@ function AnnouncementInfo()
     {
         if (recvData.report.length<=0) return;
 
+        var aryReport=[];
         for(var i in recvData.report)
         {
             var item=recvData.report[i];
@@ -48622,7 +48804,16 @@ function AnnouncementInfo()
                 break;
             }
 
-            this.Data.push(infoData);
+            aryReport.push(infoData);
+        }
+
+        if (recvData.Update===true && this.Data.length<=0)
+        {
+            //TODO:增量去重更新
+        }
+        else
+        {
+            this.Data=aryReport;
         }
 
         param.HQChart.UpdataChartInfo();
@@ -48647,7 +48838,7 @@ function PforecastInfo()
 
     this.ClassName='PforecastInfo';
 
-    this.RequestData=function(hqChart)
+    this.RequestData=function(hqChart,obj)
     {
         var self = this;
         var param=
@@ -48724,7 +48915,7 @@ function ResearchInfo()
 
     this.ClassName='ResearchInfo';
 
-    this.RequestData=function(hqChart)
+    this.RequestData=function(hqChart,obj)
     {
         var self = this;
         var param=
@@ -48788,7 +48979,7 @@ function BlockTrading()
 
     this.ClassName='BlockTrading';
 
-    this.RequestData=function(hqChart)
+    this.RequestData=function(hqChart,obj)
     {
         var self = this;
         var param=
@@ -48870,7 +49061,7 @@ function TradeDetail()
 
     this.ClassName='TradeDetail';
 
-    this.RequestData=function(hqChart)
+    this.RequestData=function(hqChart, obj)
     {
         var self = this;
         var param=

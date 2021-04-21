@@ -104,6 +104,7 @@
             { name: "M头W底", icon: "#icon-draw_wavemw" },
             { name:"头肩型", icon:"#icon-draw_head_shoulders_bt" }, 
             { name: "波浪尺", icon: "#icon-waveruler" },
+            { name: "AB波浪尺", icon: "#icon-waveruler" },
             { name: "箱型线", icon: "#icon-draw_box" }
         ],
         ToolList2: [
