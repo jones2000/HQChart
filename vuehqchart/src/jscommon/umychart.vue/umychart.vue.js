@@ -48851,9 +48851,9 @@ function AnnouncementInfo()
             aryReport.push(infoData);
         }
 
-        if (recvData.Update===true && this.Data.length<=0)
+        if (recvData.Update===true && this.Data.length>0)
         {
-            //TODO:增量去重更新
+            this.UpdateData(aryReport);
         }
         else
         {
@@ -48862,6 +48862,33 @@ function AnnouncementInfo()
 
         param.HQChart.UpdataChartInfo();
         param.HQChart.Draw();
+    }
+
+
+    this.UpdateData=function(aryData)
+    {
+        if (!aryData || aryData.length<=0) return;
+
+        var setKeys=new Set();  //通过 日期+类型+标题去重
+        for(var i in this.Data)
+        {
+            var item=this.Data[i];
+            var strKey=`${item.Date}-${item.InfoType}-${item.Title}`;
+            setKeys.add(strKey);
+        }
+
+        var count=0;
+        for(var i in aryData)
+        {
+            var item=aryData[i];
+            var strKey=`${item.Date}-${item.InfoType}-${item.Title}`;
+            if (setKeys.has(strKey)) continue;
+
+            this.Data.push(item);
+            ++count;
+        }
+
+        JSConsole.Chart.Log(`[AnnouncementInfo::UpdateData] add new count=${count}`);
     }
 
     this.RecvError=function(http,e,param)
