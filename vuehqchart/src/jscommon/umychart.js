@@ -18464,9 +18464,12 @@ function ChartMultiHtmlDom()
     this.IsHScreen=false;   //是否横屏
     this.DrawCallback;  //function(op, obj)  op:1=开始 2=结束 3=绘制单个数据
     this.DrawItem=[];
+    this.EnableDraw=true;   //是否允许绘制
 
     this.Draw=function()
     {
+        if (!this.EnableDraw) return;
+
         this.DrawItem=[];
         if (this.DrawCallback) this.DrawCallback(1, {Self:this} );
 
