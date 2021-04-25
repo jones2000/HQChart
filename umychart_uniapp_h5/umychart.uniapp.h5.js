@@ -40601,6 +40601,12 @@ function KLineChartContainer(uielement,OffscreenElement)
             for(var i=0;i<this.Frame.SubFrame.length;++i)
             {
                 this.DeleteIndexPaint(i);
+                var item=this.Frame.SubFrame[i];
+                for(var j in item.OverlayIndex) //清空叠加指标
+                {
+                    var overlayItem=item.OverlayIndex[j];
+                    overlayItem.ChartPaint=[];
+                }
             }
         }
 
