@@ -5710,6 +5710,7 @@ function JSChartContainer(uielement, OffscreenElement)
     this.ChartDrawOption={ IsLockScreen:false, Zoom:5 };   //画图工具设置 { IsLockScreen://是否锁住屏幕, Zoom: //线段|点放大倍数 }
     this.CurrentChartDrawPicture=null;              //当前的画图工具
     this.SelectChartDrawPicture=null;               //当前选中的画图
+    this.EnableShowCorssCursor={ DrawPicture:true };  //DrawPicture=画图是否显示十字光标
     this.ChartPictureMenu;                          //画图工具 单个图形设置菜单
     this.ChartCorssCursor;                          //十字光标
     this.IsClickShowCorssCursor=false;              //手势点击显示十字光标
@@ -5733,6 +5734,7 @@ function JSChartContainer(uielement, OffscreenElement)
     this.DragMode=1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择 3(CLICK_TOUCH_MODE_ID)=长按十字光标显示保留/点击十字光标消失 (使用TouchStatus)
     this.EnableBorderDrag=true;                     //是否可以拖拽边框调整指标框高度
     this.BorderDrag;    //{ Index:, }
+    this.YDrag;         //{Index: }                 //y轴拖拽放大缩小
     this.TouchStatus={ CorssCursorShow:false },     //十字光标是否显示
     this.DragTimer;
     this.EnableScrollUpDown=false;                  //是否可以上下滚动图形(手机端才有)
@@ -5788,6 +5790,8 @@ function JSChartContainer(uielement, OffscreenElement)
     this.LastMouseStatus={ }
     this.ClickDownPoint;         //鼠标点击坐标 {X, Y}, 鼠标放开以后清空为null
     this.IsDestroy=false;        //是否已经销毁了
+
+    this.EnableYDrag=false;   //是否可以拖拽Y轴,放大缩小Y轴最大最小值
 
     this.ChartDestory=function()    //销毁
     {
@@ -5848,6 +5852,7 @@ function JSChartContainer(uielement, OffscreenElement)
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
         if (this.DisableMouse==true) return;
         if (this.BorderDrag) return;
+        if (this.YDrag) return;
 
         //保存最后一次鼠标移动信息
         var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
@@ -5889,6 +5894,7 @@ function JSChartContainer(uielement, OffscreenElement)
         this.ClickDownPoint={ X:e.clientX, Y:e.clientY };
         this.IsOnTouch=true;
         this.BorderDrag=null;
+        this.YDrag=null;
 
         if (this.TryClickLock)
         {
@@ -5912,8 +5918,22 @@ function JSChartContainer(uielement, OffscreenElement)
             if (dragBorder && dragBorder.Index>=0)
             {
                 this.UIElement.style.cursor="n-resize";
-                this.BorderDrag={ Index:dragBorder.Index, }
+                this.BorderDrag={ Index:dragBorder.Index };
                 JSConsole.Chart.Log("[JSChartContainer::UIOnMouseDown] DragBorder ",dragBorder);
+            }
+        }
+
+        if (this.EnableYDrag && this.Frame && this.Frame.PtInFrameY)
+        {
+            var pixelTatio = GetDevicePixelRatio();
+            var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+            var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+            var dragY=this.Frame.PtInFrameY(x,y);
+            if (dragY && dragY.Index>=0)
+            {
+                this.UIElement.style.cursor="n-resize";
+                this.YDrag={ Index:dragY.Index };
+                JSConsole.Chart.Log("[JSChartContainer::UIOnMouseDown] dragY ",dragY);
             }
         }
 
@@ -5934,6 +5954,10 @@ function JSChartContainer(uielement, OffscreenElement)
         this.SelectChartDrawPicture=null;
 
         if (this.BorderDrag)
+        {
+
+        }
+        else if (this.YDrag)
         {
 
         }
@@ -6021,6 +6045,17 @@ function JSChartContainer(uielement, OffscreenElement)
             var yMove=e.clientY-drag.LastMove.Y;
 
             this.OnMoveFromeBorder(this.BorderDrag.Index, yMove);
+
+            drag.LastMove.X=e.clientX;
+            drag.LastMove.Y=e.clientY;
+        }
+        else if (this.YDrag && this.YDrag.Index>=0)
+        {
+            if(Math.abs(drag.LastMove.Y-e.clientY)<5) return;
+
+            var yMove=e.clientY-drag.LastMove.Y;
+
+            this.OnZoomUpDownFrameY(this.YDrag.Index, yMove);
 
             drag.LastMove.X=e.clientX;
             drag.LastMove.Y=e.clientY;
@@ -6178,6 +6213,7 @@ function JSChartContainer(uielement, OffscreenElement)
         this.IsOnTouch=false;
         if (this.BorderDrag && this.BorderDrag.Index>=0) this.Frame.SaveSubFrameHeightRate();   //拖拽指标窗口高度以后保存
         this.BorderDrag=null;
+        this.YDrag=null;
         if (bClearDrawPicture===true) this.CurrentChartDrawPicture=null;
     }
 
@@ -7002,6 +7038,10 @@ function JSChartContainer(uielement, OffscreenElement)
             {
                 this.ChartCorssCursor.Draw();
             }
+            else if (this.IsOnTouch===true && (this.CurrentChartDrawPicture && this.EnableShowCorssCursor && this.EnableShowCorssCursor.DrawPicture==true))
+            {
+                this.ChartCorssCursor.Draw();
+            }
         }
 
         var ptPosition=null;    //鼠标位置 null 无效 -1 在外面 >=0 对应的指标窗口中ID
@@ -7332,6 +7372,16 @@ function JSChartContainer(uielement, OffscreenElement)
 
         //this.Frame.SetSizeChage(true);
         this.Frame.ReDrawToolbar();
+        this.Draw();
+    }
+
+    this.OnZoomUpDownFrameY=function(index, yMove)
+    {
+        if (!this.Frame) return;
+
+        if (!this.Frame.OnZoomUpDownFrameY(index,yMove)) return ;
+
+        this.Frame.SetSizeChage(true);
         this.Draw();
     }
 
@@ -12021,6 +12071,33 @@ function HQTradeFrame()
         }
     }
 
+    this.OnZoomUpDownFrameY=function(index, yMove)
+    {
+        if (this.SubFrame.length<=0) return false;
+        if (!this.SubFrame[index]) return false;
+
+        var frame=this.SubFrame[index].Frame;
+        var maxValue=frame.HorizontalMax;
+        var minValue=frame.HorizontalMin;
+
+        var splitOper=frame.YSplitOperator;
+        var defaultYMaxMin=splitOper.DefaultYMaxMin;
+        var step=0.01;
+        if (yMove) step*=-1;
+        if (IFrameSplitOperator.IsNumber(defaultYMaxMin.Max) && IFrameSplitOperator.IsNumber(defaultYMaxMin.Min))
+        {
+            splitOper.DefaultYMaxMin={ Max:defaultYMaxMin.Max+step, Min:defaultYMaxMin.Min-step };
+        }
+        else
+        {
+            splitOper.DefaultYMaxMin={ Max:maxValue+step, Min:minValue-step };
+        }
+
+        frame.XYSplit=true;
+
+        return true;
+    }
+
     //保存高度比例
     this.SaveSubFrameHeightRate=function()
     {
@@ -12423,7 +12500,28 @@ function HQTradeFrame()
                 return { Index:i, Bottom:true };
             }
         }
+        return null;
+    }
 
+    this.PtInFrameY=function(x,y)
+    {
+        for(var i=0;i<this.SubFrame.length;++i)
+        {
+            var item=this.SubFrame[i];
+            if (item.Frame.Heigh<=0) continue;
+            var bottom=item.Frame.ChartBorder.GetBottom();
+            var top=item.Frame.ChartBorder.GetTopEx();
+            var left=item.Frame.ChartBorder.GetLeft();
+            var right=item.Frame.ChartBorder.GetRight();
+            var rightWidth=item.Frame.ChartBorder.Right;
+
+            item.Frame.Canvas.beginPath();
+            item.Frame.Canvas.rect(right,top,rightWidth,(bottom-top));
+            if (item.Frame.Canvas.isPointInPath(x,y))
+            {
+                return { Index:i, Right:true };
+            }
+        }
         return null;
     }
 }
@@ -22496,6 +22594,8 @@ function ChartMultiHtmlDom()
         this.IsHScreen=(this.ChartFrame.IsHScreen===true);
         var xPointCount=this.ChartFrame.XPointCount;
         var offset=this.Data.DataOffset;
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
         
         for(var i in this.Texts)
         {
@@ -22510,7 +22610,19 @@ function ChartMultiHtmlDom()
             if (index>=0 && index<xPointCount)
             {
                 var x=this.ChartFrame.GetXFromIndex(index);
-                var y=this.ChartFrame.GetYFromData(item.Value);
+                if (item.Value=="Top")
+                {
+                    var y=top;
+                }
+                else if (item.Value=="Bottom")
+                {
+                    var y=bottom;
+                }
+                else
+                {
+                    var y=this.ChartFrame.GetYFromData(item.Value);
+                }
+                
 
                 obj.X=x;
                 obj.Y=y;
@@ -37097,6 +37209,7 @@ function KLineChartContainer(uielement,OffscreenElement)
     this.OverlayIndexFrameWidth=60;     //叠加指标框架宽度
     this.ZoomType=0;                    //缩放模式 0=最右边固定缩放, 1=十字光标两边缩放
     this.KLineSize=null;                //{ DataWidth:, }
+    this.EnableYDrag=false;
 
     this.Page= { 
         Day:{ Enable:false, Index:0, Finish:false },    //日线
@@ -41781,6 +41894,9 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Frame.SetSizeChage(true);
         this.UpdateChartDrawXValue();      //更新画图工具X轴索引
         this.Draw();
+
+        //叠加指标计算
+        this.BindAllOverlayIndexData(bindData);
     }
 
     this.RequestDragDayData=function()
@@ -41908,6 +42024,9 @@ function KLineChartContainer(uielement,OffscreenElement)
         
         //更新信息地雷
         this.ReqeustKLineInfoData( { FunctionName:"RecvDragDayData", StartDate:firstData.Date } );
+
+        //叠加指标计算
+        this.BindAllOverlayIndexData(bindData);
     }
 
     this.SetCustomVerical=function(windowId, data)
@@ -48618,7 +48737,8 @@ function IKLineInfo()
         { 
             Symbol:hqChart.Symbol ,
             MaxReqeustDataCount: hqChart.MaxReqeustDataCount,            //日线数据个数
-            MaxRequestMinuteDayCount:hqChart.MaxRequestMinuteDayCount    //分钟数据请求的天数
+            MaxRequestMinuteDayCount:hqChart.MaxRequestMinuteDayCount,    //分钟数据请求的天数
+            Period:hqChart.Period       //周期
         };
         
         return obj;
