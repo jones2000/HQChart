@@ -5944,15 +5944,21 @@ function JSChartContainer(uielement, OffscreenElement)
             {
                 if (dragY.Left && this.EnableYDrag.Left)
                 {
-                    this.UIElement.style.cursor="n-resize";
-                    this.YDrag=dragY;
-                    JSConsole.Chart.Log("[JSChartContainer::UIOnMouseDown] dragY ",dragY);
+                    if (this.Frame.IsEnableDragY(dragY.Index))
+                    {
+                        this.UIElement.style.cursor="n-resize";
+                        this.YDrag=dragY;
+                        JSConsole.Chart.Log("[JSChartContainer::UIOnMouseDown] dragY ",dragY);
+                    }
                 }
                 else if (dragY.Right && this.EnableYDrag.Right)
                 {
-                    this.UIElement.style.cursor="n-resize";
-                    this.YDrag=dragY;
-                    JSConsole.Chart.Log("[JSChartContainer::UIOnMouseDown] dragY ",dragY);
+                    if (this.Frame.IsEnableDragY(dragY.Index))
+                    {
+                        this.UIElement.style.cursor="n-resize";
+                        this.YDrag=dragY;
+                        JSConsole.Chart.Log("[JSChartContainer::UIOnMouseDown] dragY ",dragY);
+                    }
                 }
             }
         }
@@ -7695,10 +7701,44 @@ function JSChartContainer(uielement, OffscreenElement)
             }
             else
             {
-                frameItem={};
+                frameItem={ OverlayFrame:[] };
                 frameItem.Frame=paint.ChartFrame;
                 frameItem.Range=range;
                 frameMaxMinData.push(frameItem);
+            }
+        }
+
+        var mapFrame=new Map();
+        for(var i in frameMaxMinData)
+        {
+            var item=frameMaxMinData[i];
+            mapFrame.set(item.Frame.Identify,item);
+        }
+
+        //叠加坐标Y轴使用主图指标， 最大最小值
+        for(var i in this.Frame.SubFrame)
+        {
+            var subFrame=this.Frame.SubFrame[i];
+            for(var j in subFrame.OverlayIndex)
+            {
+                var overlayItem=subFrame.OverlayIndex[j];
+                var overlayFrame=overlayItem.Frame;
+                if (overlayFrame.IsShareY!=true) continue;
+                if (!overlayFrame.MainFrame) continue;
+                if (!mapFrame.has(overlayFrame.MainFrame.Identify)) continue;
+
+                var frameItem=mapFrame.get(overlayFrame.MainFrame.Identify);
+                if (!frameItem) continue;
+                frameItem.OverlayFrame.push(overlayFrame);
+                for(var k in overlayItem.ChartPaint)
+                {
+                    var paint=overlayItem.ChartPaint[k];
+                    var range=paint.GetMaxMin();
+                    if (range==null || range.Max==null || range.Min==null) continue;
+
+                    if (frameItem.Range.Max<range.Max) frameItem.Range.Max=range.Max;
+                    if (frameItem.Range.Min>range.Min) frameItem.Range.Min=range.Min;
+                }
             }
         }
 
@@ -7718,15 +7758,23 @@ function JSChartContainer(uielement, OffscreenElement)
                 item.Frame.HorizontalMin=item.Range.Min;
             }
             item.Frame.XYSplit=true;
+
+            for(var j in item.OverlayFrame)
+            {
+                item.OverlayFrame[j].XYSplit=true;
+            }
         }
 
-        //更新子坐标
+        
+
+        //更新独立子坐标
         for(var i in this.Frame.SubFrame)
         {
             var subFrame=this.Frame.SubFrame[i];
             for(var j in subFrame.OverlayIndex)
             {
                 var overlayItem=subFrame.OverlayIndex[j];
+                if (overlayItem.Frame.IsShareY===true) continue;
                 overlayItem.UpdateFrameMaxMin();
             }
         }
@@ -12591,6 +12639,17 @@ function HQTradeFrame()
         return null;
     }
 
+    this.IsEnableDragY=function(index)
+    {
+        if (!this.SubFrame) return false;
+        var item=this.SubFrame[index];
+        if (!item || !item.Frame || !item.Frame.YSplitOperator) return false;
+        var split=item.Frame.YSplitOperator;
+        if (typeof(split.IsEnableDragY)!='function') return false;
+
+        return split.IsEnableDragY();
+    }
+
     this.PtInFrameY=function(x,y)
     {
         for(var i=0;i<this.SubFrame.length;++i)
@@ -16594,7 +16653,7 @@ function ChartKLine()
         var text=ptTop.Value.toFixed(defaultfloatPrecision);
         if (ptTop.Align=='left') text='←'+text;
         else text=text+'→';
-        if (ptTop.Y>top)
+        if (ptTop.Y>(top-2))
         {
             this.Canvas.fillText(text,left,ptTop.Y);
             this.ChartFrame.ChartKLine.Max={X:left, Y:ptTop.Y, Text: { BaseLine:'bottom'}};
@@ -16617,7 +16676,7 @@ function ChartKLine()
         var text=ptMin.Value.toFixed(defaultfloatPrecision);
         if (ptBottom.Align=='left') text='←'+text;
         else  text=text+'→';
-        if (ptBottom.Y<bottom)
+        if (ptBottom.Y<(bottom+1))
         {
             this.Canvas.fillText(text,left,ptBottom.Y);
             this.ChartFrame.ChartKLine.Min={X:left, Y:ptBottom.Y, Text:{ BaseLine:'top'}};
@@ -26589,6 +26648,11 @@ function FrameSplitKLinePriceY()
     this.FixedYMaxMin;      //{ Max, Min} 固定Y轴最大最小值
     this.LastMaxMin;        //当前显示的最高最低范围
 
+    this.IsEnableDragY=function()
+    {
+        return this.CoordinateType==0 || this.CoordinateType==1;
+    }
+
     this.Operator=function()
     {
         var splitData={};
@@ -26696,6 +26760,16 @@ function FrameSplitKLinePriceY()
         this.Frame.HorizontalMin=splitData.Min;
 
         JSConsole.Chart.Log(`[FrameSplitKLinePriceY::Operator] fixed . Max=${splitData.Max} Min=${splitData.Min} Count=${splitData.Count}`);
+
+        if (this.GetEventCallback)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE);
+            if (event && event.Callback)
+            {
+                var data={ID:this.Frame.Identify, Frame:this.Frame };
+                event.Callback(event,data,this);
+            }
+        }
     }
 
     this.SplitTickData=function(splitData,floatPrecision)
@@ -27085,6 +27159,11 @@ function FrameSplitY()
     this.LineType=null;     //线段样式
     this.IgnoreYValue = null;                 //在这个数组里的数字不显示在刻度上 
     this.FixedYMaxMin;      //{ Max, Min} 固定Y轴最大最小值
+
+    this.IsEnableDragY=function()
+    {
+        return true;
+    }
 
     this.GetFloatPrecision=function(value,floatPrecision)
     {
@@ -27527,6 +27606,11 @@ function FrameSplitMinutePriceY()
     this.Custom;
     this.RightTextFormat=0;           //右边刻度显示模式 0=百分比  1=价格
 
+    this.IsEnableDragY=function()
+    {
+        return false;
+    }
+
     this.Operator=function()
     {
         this.Frame.HorizontalInfo=[];
@@ -27549,6 +27633,16 @@ function FrameSplitMinutePriceY()
         }
 
         this.CustomCoordinate();
+
+        if (this.GetEventCallback)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE);
+            if (event && event.Callback)
+            {
+                var data={ID:this.Frame.Identify, Frame:this.Frame };
+                event.Callback(event,data,this);
+            }
+        }
     }
 
     this.CustomCoordinate=function()    //自定义刻度
@@ -37856,6 +37950,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                 frame.YSplitOperator=new FrameSplitKLinePriceY();
                 frame.YSplitOperator.FrameSplitData=this.FrameSplitData.get('price');
                 frame.YSplitOperator.FrameSplitData2=this.FrameSplitData.get('double');
+                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
                 border.BottomSpace=12*pixelTatio;  //主图上下留空间
                 border.TopSpace=12*pixelTatio;
@@ -42996,6 +43091,7 @@ function MinuteChartContainer(uielement)
             {
                 frame.YSplitOperator=new FrameSplitMinutePriceY();
                 frame.YSplitOperator.FrameSplitData=this.FrameSplitData.get('price');
+                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             }
             else
             {
@@ -46050,6 +46146,7 @@ function KLineChartHScreenContainer(uielement)
             {
                 frame.YSplitOperator=new FrameSplitKLinePriceY();
                 frame.YSplitOperator.FrameSplitData=this.FrameSplitData.get('price');
+                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 //主图上下间距
                 var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
                 border.TopSpace=12*pixelTatio;
@@ -46184,12 +46281,14 @@ function MinuteChartHScreenContainer(uielement)
             {
                 frame.YSplitOperator=new FrameSplitMinutePriceY();
                 frame.YSplitOperator.FrameSplitData=this.FrameSplitData.get('price');
+                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             }
             else
             {
                 frame.YSplitOperator=new FrameSplitY();
                 frame.YSplitOperator.LanguageID=this.LanguageID;
                 frame.YSplitOperator.FrameSplitData=this.FrameSplitData.get('double');
+                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             }
 
             frame.YSplitOperator.Frame=frame;
@@ -47066,6 +47165,7 @@ function BaseIndex(name)
     this.Script=null;   //通达信脚本
     
     this.OverlayIndex=null; //叠加指标{ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame }
+    this.GetEventCallback;  //事件回调函数
 
     //默认创建都是线段
     this.Create=function(hqChart,windowIndex)
