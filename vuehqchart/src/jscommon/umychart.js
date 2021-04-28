@@ -48899,6 +48899,10 @@ var MARKET_SUFFIX_NAME=
                 if (upperSymbol.charAt(1)=='0' && upperSymbol.charAt(2)=='2') return true;  //002 中小板
                 if (upperSymbol.charAt(1)!='7' && upperSymbol.charAt(1)!='8') return true;
             } 
+            else if (upperSymbol.charAt(0)=='3')
+            {
+                if (upperSymbol.charAt(1)=='0' && upperSymbol.charAt(2)=='0') return true;    //创业板 300XXX.sz
+            }
         }
 
         return false;
