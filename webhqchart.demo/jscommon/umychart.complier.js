@@ -19312,6 +19312,10 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=this.FittingMultiLine(draw.DrawData,date,time,hqChart);
+                    for(var k in drawItem.DrawData)
+                    {
+                        this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
+                    }
                     outVarItem.Draw=drawItem;
                     if (draw.LineDash) drawItem.LineDash=draw.LineDash;
                     if (draw.Arrow) drawItem.Arrow=draw.Arrow;
@@ -19572,6 +19576,11 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=this.FittingMultiLine(draw.DrawData,date,time,hqChart);
+                    for(var k in drawItem.DrawData)
+                    {
+                        this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
+                    }
+                    
                     outVarItem.Draw=drawItem;
                     if (draw.LineDash) drawItem.LineDash=draw.LineDash;
                     if (draw.Arrow) drawItem.Arrow=draw.Arrow;

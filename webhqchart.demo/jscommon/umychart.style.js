@@ -45,7 +45,8 @@ var BLACK_STYLE=
         AreaPriceColor:"rgba(63,158,255,.3)",
         AvPriceColor: "rgb(255,236,0)",
         PositionColor:'rgb(218,165,32)', 
-        VolTitleColor:"rgb(190,190,190)"
+        VolTitleColor:"rgb(190,190,190)",
+        BeforeBGColor:"rgba(105,105,105,0.5)"
     },
 
 
