@@ -577,6 +577,14 @@ function JSChart(divElement, bOffscreen)
             if (option.DrawTool.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawTool.StorageKey);
         }
 
+        if (option.BeforeOpen)  //集合竞价
+        {
+            var item=option.BeforeOpen;
+
+            if (IFrameSplitOperator.IsBool(item.IsShow)) chart.IsShowBeforeData=item.IsShow;
+            if (IFrameSplitOperator.IsNumber(item.Width)) chart.ExtendWidth.Left=item.Width;
+        }
+
         chart.Create(windowsCount,option.Listener);                            //创建子窗口
 
         if (option.CorssCursorInfo)
@@ -1664,7 +1672,8 @@ var JSCHART_EVENT_ID=
 
     ON_CLICKUP_CHART_PAINT:28,           //点击图形鼠标抬起
 
-    ON_SPLIT_YCOORDINATE:29             //分割Y轴及格式化刻度文字
+    ON_SPLIT_YCOORDINATE:29,             //分割Y轴及格式化刻度文字
+    ON_DBCLICK:30
 }
 
 var JSCHART_OPERATOR_ID=
@@ -3381,6 +3390,40 @@ function JSChartContainer(uielement, OffscreenElement)
     this.OnDoubleClick=function(x,y,e)
     {
         //JSConsole.Chart.Log(e);
+    }
+
+    this.PtInClient=function(x,y)
+    {
+        this.Canvas.beginPath();
+        if (this.Frame.IsHScreen===true)
+        {
+            var border=this.Frame.ChartBorder.GetHScreenBorder();
+            this.Canvas.rect(border.Left,border.TopEx,border.Right-border.Left,border.BottomEx-border.TopEx);
+        }
+        else
+        {
+            var border=this.Frame.ChartBorder.GetBorder();
+            this.Canvas.rect(border.LeftEx,border.Top,border.RightEx-border.LeftEx,border.Bottom-border.Top);
+        }
+
+        if (this.Canvas.isPointInPath(x,y)) return 1;
+
+        if (this.Frame.ChartBorder.LeftExtendWidth>10)
+        {
+            this.Canvas.beginPath();
+            if (this.Frame.IsHScreen===true)
+            {
+                this.Canvas.rect(border.Left,border.Top,border.Right-border.Left,border.TopEx-border.Top);
+            }
+            else
+            {
+                this.Canvas.rect(border.Left,border.Top,border.LeftEx-border.Left,border.Bottom-border.Top);
+            }
+    
+            if (this.Canvas.isPointInPath(x,y)) return 2;
+        }
+        
+        return -1;
     }
 
     this.OnMoveFromeBorder=function(index, yMove)
@@ -14193,8 +14236,8 @@ function ChartMinuteVolumBar()
 
     this.ClassName='ChartMinuteVolumBar';    //类名
 
-    this.UpColor = g_JSChartResource.UpBarColor;
-    this.DownColor = g_JSChartResource.DownBarColor;
+    this.UpColor = g_JSChartResource.UpBarColor;            //上涨
+    this.DownColor = g_JSChartResource.DownBarColor;        //下跌
     this.UnchangeColor=g_JSChartResource.UnchagneBarColor;  //平盘
 
     this.CustomColor=g_JSChartResource.Minute.VolBarColor;   //自定义颜色
@@ -39571,6 +39614,43 @@ function MinuteChartContainer(uielement)
         JSConsole.Chart.Log('[MinuteChartContainer::OnWheel]',e);
     }
 
+    this.OnDoubleClick=function(x,y,e)
+    {
+        JSConsole.Chart.Log("[MinuteChartContainer::OnDoubleClick]", e);
+
+        this.DBClickEvent(e);
+    }
+
+    this.DBClickEvent=function(e)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DBCLICK);
+        if (!event || !event.Callback) return false;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var x=(e.clientX-uielement.getBoundingClientRect().left)*pixelTatio;
+        var y=(e.clientY-uielement.getBoundingClientRect().top)*pixelTatio;
+        var data= { X:e.clientX, Y:e.clientY, FrameID:-1 , ClientPos:-1 };
+
+        var clientPos=this.PtInClient(x,y);
+        data.ClientPos=clientPos;
+
+        if (clientPos>0)
+        {
+            var yValueExtend={};
+            var yValue=this.Frame.GetYData(y,yValueExtend);
+
+            if (IFrameSplitOperator.IsNumber(yValueExtend.FrameID) && yValueExtend.FrameID>=0)
+            {
+                var xValue=this.Frame.GetXData(x);
+                data.FrameID=yValueExtend.FrameID;
+                data.Data={ X:xValue, Y:yValue } ;
+            }
+        }
+
+        event.Callback(event, data, this);
+        return true;
+    }
+
     this.UpdatePointByCursorIndex=function()
     {
         this.LastPoint.X=this.Frame.GetXFromIndex(this.CursorIndex);
@@ -40144,9 +40224,20 @@ function MinuteChartContainer(uielement)
         this.Draw();
     }
 
-    this.ShowBeforeData=function(isShow)
+    this.ShowBeforeData=function(isShow, option)
     {
-        if (this.IsShowBeforeData==isShow) return;
+        var optionChanged=false;    //配置修改
+        if (option && option.BeforeOpen)
+        {
+            var item=option.BeforeOpen;
+            if (IFrameSplitOperator.IsNumber(item.Left) && this.ExtendWidth.Left!=item.Left)
+            {
+                this.ExtendWidth.Left=item.Left;
+                optionChanged=true;
+            }
+        }
+
+        if (this.IsShowBeforeData==isShow && !optionChanged) return;
 
         this.IsShowBeforeData=isShow;
         this.RequestData();
