@@ -277,7 +277,7 @@ function DynamicKLineTitlePainting()
         if (this.IsShowSettingInfo && this.Data.Period != null && this.Data.Right != null) 
         {
             var periodName = this.GetPeriodName(this.Data.Period);
-            var rightName = this.GetRightName(this.Data.Right);
+            var rightName = this.GetRightName(this.Data.Right,this.Data.Period);
             var text = "(" + periodName + ")";
             if (rightName) text = "(" + periodName + " " + rightName + ")";
             if (!this.DrawKLineText(text, this.SettingColor, position)) return;
@@ -309,7 +309,7 @@ function DynamicKLineTitlePainting()
         if (this.IsShowSettingInfo && this.Data.Period != null && this.Data.Right != null) 
         {
             var periodName = this.GetPeriodName(this.Data.Period);
-            var rightName = this.GetRightName(this.Data.Right);
+            var rightName = this.GetRightName(this.Data.Right,this.Data.Period);
             var text = "(" + periodName + ")";
             if (rightName) text = "(" + periodName + " " + rightName + ")";
             if (!this.DrawKLineText(text, this.SettingColor, position)) return;
@@ -439,7 +439,7 @@ function DynamicKLineTitlePainting()
         if (this.IsShowSettingInfo) //周期 复权信息
         {
             var periodName = this.GetPeriodName(this.Data.Period);
-            var rightName = this.GetRightName(this.Data.Right);
+            var rightName = this.GetRightName(this.Data.Right,this.Data.Period);
             var text = "(" + periodName + ")";
             if (rightName) text = "(" + periodName + " " + rightName + ")";
             if (!this.DrawKLineText(text, this.SettingColor, position, bDrawTitle==true)) return;

@@ -15,8 +15,8 @@ if (!JSConsole)
 {
     var JSConsole=
     { 
-        Chart:{ Log:console.log },      //图形日志
-        Complier:{ Log:console.log }    //编译器日志
+        Chart:{ Log:console.log, Warn:console.warn },      //图形日志
+        Complier:{ Log:console.log, Warn:console.warn }    //编译器日志
     };
 }
 

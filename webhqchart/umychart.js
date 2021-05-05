@@ -16,8 +16,8 @@ if (!JSConsole)
 {
     var JSConsole=
     { 
-        Chart:{ Log:console.log },      //图形日志
-        Complier:{ Log:console.log }    //编译器日志
+        Chart:{ Log:console.log, Warn:console.warn },      //图形日志
+        Complier:{ Log:console.log, Warn:console.warn }    //编译器日志
     };
 }
 
@@ -1899,6 +1899,29 @@ function JSChartContainer(uielement, OffscreenElement)
         this.OnDoubleClick(x,y,e);
     }
 
+    //是否在拖拽Y轴上
+    this.TryYDrag=function(x,y)
+    {
+        if (!this.EnableYDrag) return null;
+        if (!this.EnableYDrag.Left && !this.EnableYDrag.Right) return null;
+        if (!this.Frame || !this.Frame.PtInFrameY) return null;
+
+        var dragY=this.Frame.PtInFrameY(x,y);
+        if (!dragY || dragY.Index<0) return null;
+
+        if (dragY.Left && this.EnableYDrag.Left && this.Frame.IsEnableDragY(dragY.Index))
+        {
+            return dragY;
+        }
+
+        if (dragY.Right && this.EnableYDrag.Right && this.Frame.IsEnableDragY(dragY.Index))
+        {
+            return dragY;
+        }
+
+        return null;
+    }
+
     this.UIOnMouseDown=function(e)
     {
         this.ClickDownPoint={ X:e.clientX, Y:e.clientY };
@@ -1906,12 +1929,13 @@ function JSChartContainer(uielement, OffscreenElement)
         this.BorderDrag=null;
         this.YDrag=null;
 
+        var pixelTatio = GetDevicePixelRatio();
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+
         if (this.TryClickLock)
         {
             //JSConsole.Chart.Log('[uielement.onmousedown] left, top ',e.clientX, e.clientY, this.getBoundingClientRect().left,this.getBoundingClientRect().top);
-            var pixelTatio = GetDevicePixelRatio();
-            var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-            var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
             if (this.TryClickLock(x,y)) return;
         }
 
@@ -1921,9 +1945,6 @@ function JSChartContainer(uielement, OffscreenElement)
 
         if (this.EnableBorderDrag && this.Frame)
         {
-            var pixelTatio = GetDevicePixelRatio();
-            var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-            var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
             var dragBorder=this.Frame.PtInFrameBorder(x,y);
             if (dragBorder && dragBorder.Index>=0)
             {
@@ -1933,33 +1954,13 @@ function JSChartContainer(uielement, OffscreenElement)
             }
         }
 
-        if (this.EnableYDrag && (this.EnableYDrag.Left || this.EnableYDrag.Right) && this.Frame && this.Frame.PtInFrameY)
+        //拖拽Y轴缩放
+        var dragY=this.TryYDrag(x,y);
+        if (dragY)
         {
-            var pixelTatio = GetDevicePixelRatio();
-            var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-            var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
-            var dragY=this.Frame.PtInFrameY(x,y);
-            if (dragY && dragY.Index>=0)
-            {
-                if (dragY.Left && this.EnableYDrag.Left)
-                {
-                    if (this.Frame.IsEnableDragY(dragY.Index))
-                    {
-                        this.UIElement.style.cursor="n-resize";
-                        this.YDrag=dragY;
-                        JSConsole.Chart.Log("[JSChartContainer::UIOnMouseDown] dragY ",dragY);
-                    }
-                }
-                else if (dragY.Right && this.EnableYDrag.Right)
-                {
-                    if (this.Frame.IsEnableDragY(dragY.Index))
-                    {
-                        this.UIElement.style.cursor="n-resize";
-                        this.YDrag=dragY;
-                        JSConsole.Chart.Log("[JSChartContainer::UIOnMouseDown] dragY ",dragY);
-                    }
-                }
-            }
+            this.UIElement.style.cursor=dragY.Position==0 ? "n-resize":"row-resize";
+            this.YDrag=dragY;
+            JSConsole.Chart.Log("[JSChartContainer::UIOnMouseDown] dragY ",dragY);
         }
 
         if(this.DragMode==0) return;
@@ -2001,7 +2002,6 @@ function JSChartContainer(uielement, OffscreenElement)
         else    //是否在画图工具上
         {
             var drawPictrueData={};
-            var pixelTatio = GetDevicePixelRatio(); //鼠标移动坐标是原始坐标 需要乘以放大倍速
             drawPictrueData.X=(e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
             drawPictrueData.Y=(e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
             if (this.GetChartDrawPictureByPoint(drawPictrueData))
@@ -2080,9 +2080,9 @@ function JSChartContainer(uielement, OffscreenElement)
 
             var yMove=e.clientY-drag.LastMove.Y;
 
-            this.UIElement.style.cursor="n-resize";
+            //this.UIElement.style.cursor="n-resize";
 
-            JSConsole.Chart.Log("[DocOnMouseMove] ",this.YDrag,yMove);
+            JSConsole.Chart.Log("[JSChartContainer::DocOnMouseMove] ",this.YDrag,yMove);
             this.OnZoomUpDownFrameY(this.YDrag, yMove);
 
             drag.LastMove.X=e.clientX;
@@ -3200,18 +3200,28 @@ function JSChartContainer(uielement, OffscreenElement)
     {
         this.LastPoint.X=x;
         this.LastPoint.Y=y;
+        var mouseStatus=null;   //鼠标状态
         var frameID=this.Frame.PtInFrame(x,y);
         if (IFrameSplitOperator.IsNumber(frameID) && frameID>=0)    //在K线内部移动,调整K线索引
             this.CursorIndex=this.Frame.GetXData(x);
-
 
         if (this.EnableBorderDrag && this.Frame)
         {
             var dragBorder=this.Frame.PtInFrameBorder(x,y);
             if (dragBorder && dragBorder.Index>=0)
             {
-                this.UIElement.style.cursor="n-resize";
-                return;
+                mouseStatus={ Cursor:"n-resize", Name:"DragBorder"};
+                JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] drag border ",dragBorder);
+            }
+        }
+
+        if (this.EnableYDrag && this.Frame && !mouseStatus)
+        {
+            var dragY=this.TryYDrag(x,y);
+            if (dragY)
+            {
+                mouseStatus={ Cursor:dragY.Position==0 ? "n-resize":"row-resize", Name:"DragY"};
+                JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] drag y ",dragY);
             }
         }
 
@@ -3242,6 +3252,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
         var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y}, IsPhone:isPhone===true };
         this.DrawDynamicInfo(option);
+        if (mouseStatus) this.UIElement.style.cursor=mouseStatus.Cursor;
 
         if (this.IsShowTooltip && bDrawPicture==false)
         {
@@ -8490,6 +8501,12 @@ function HQTradeFrame()
             var step=yMove>0 ? -moveStep:moveStep;
             newFixedYMaxMin.Min+=step;
         }
+        else if (obj.Position==0)
+        {
+            var step=yMove>0 ? moveStep:-moveStep;
+            newFixedYMaxMin.Max+=step;
+            newFixedYMaxMin.Min-=step;
+        }
         else
         {
             return false;
@@ -8950,11 +8967,29 @@ function HQTradeFrame()
             if (item.Frame.Heigh<=0) continue;
             var rightWidth=item.Frame.ChartBorder.Right;
 
-            var bottom=item.Frame.ChartBorder.GetBottom();
-            var top=item.Frame.ChartBorder.GetTopEx();
-            var left=item.Frame.ChartBorder.GetLeft();
-            var right=item.Frame.ChartBorder.GetRight();
-            var center=top+(bottom-top)/2;
+            var border=item.Frame.ChartBorder.GetBorder();
+            var bottom=border.Bottom;
+            var top=border.TopTitle;
+            var left=border.Left;
+            var right=border.Right;
+
+            var maxTopHegith=30;
+            var barHegith=(bottom-top);
+            if (barHegith/3>maxTopHegith)
+            {
+                var barTop=top+maxTopHegith;
+                var barBottom=bottom-maxTopHegith;
+            }
+            else
+            {
+                var internal=barHegith/3;
+                var barTop=top+internal;
+                var barBottom=bottom-internal;
+            }
+
+            var position=0;
+            if (y<barTop) position=1;
+            else if (y>barBottom) position=2;
 
             if (rightWidth>=10)
             {
@@ -8962,7 +8997,7 @@ function HQTradeFrame()
                 item.Frame.Canvas.rect(right,top,rightWidth,(bottom-top));
                 if (item.Frame.Canvas.isPointInPath(x,y))
                 {
-                    return { Index:i, Right:true, Left:false , Position:y<center? 1:2 };    //Position 1=上面 2 下面 0=中间(TODO)
+                    return { Index:i, Right:true, Left:false , Position:position };    //Position 1=上面 2 下面 0=中间(TODO)
                 }
             }
 
@@ -40479,6 +40514,12 @@ function MinuteChartContainer(uielement)
 
     this.RecvMinuteData=function(data)
     {
+        if (!data) 
+        {
+            JSConsole.Chart.Warn("[MinuteChartContainer::RecvMinuteData] recv data is null");
+            return;
+        }
+
         if (this.IsBeforeData) 
         {
             var aryMinuteData=MinuteChartContainer.JsonDataToMinuteData(data);
