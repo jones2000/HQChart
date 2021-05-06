@@ -46,7 +46,11 @@ var BLACK_STYLE=
         AvPriceColor: "rgb(255,236,0)",
         PositionColor:'rgb(218,165,32)', 
         VolTitleColor:"rgb(190,190,190)",
-        BeforeBGColor:"rgba(105,105,105,0.5)"
+        Before:
+        {
+            BGColor:"rgba(105,105,105,0.5)",
+            AvPriceColor:'rgb(248,248,255)'     //均线
+        }
     },
 
 

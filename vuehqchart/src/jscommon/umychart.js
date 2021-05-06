@@ -5778,7 +5778,7 @@ function MinuteFrame()
     this.DataWidth=1*GetDevicePixelRatio();
     this.DistanceWidth=1*GetDevicePixelRatio();
     this.MinuteCount=243;   //每天的分钟个数
-    this.BeforeBGColor=g_JSChartResource.Minute.BeforeBGColor;  //集合竞价背景
+    this.BeforeBGColor=g_JSChartResource.Minute.Before.BGColor;  //集合竞价背景
     this.CustomHorizontalInfo=[];
     this.RightFrame=null;   //右侧多重坐标
     this.ToolbarID=Guid();  //工具条Div id
@@ -9494,8 +9494,9 @@ function BeforeOpenData()
     this.Time;
     this.Date;
     this.Price;     //匹配的价格
+    this.AvPrice;   //均价
     this.Vol=[];    //[0]=匹配量 [1]=未匹配量
-    this.ColorID;   //0=红 1=绿      
+    this.ColorID;   //0=平盘 1=红 2=绿  3 ...自定义颜色     
 }
 
 //单指标数据
@@ -14276,9 +14277,11 @@ function ChartMinuteVolumBar()
     this.UnchangeColor=g_JSChartResource.UnchagneBarColor;  //平盘
 
     this.CustomColor=g_JSChartResource.Minute.VolBarColor;   //自定义颜色
+
     this.YClose;    //前收盘
     this.Symbol;
     this.BeforeOpenData;
+    this.BeforeVolColor=g_JSChartResource.Minute.Before.VolColor;
 
     this.Draw=function()
     {
@@ -14373,7 +14376,7 @@ function ChartMinuteVolumBar()
                 if (item.Price) yPrice=item.Price;
             }
         }
-        else if (this.BeforeOpenData.Ver==2.0)
+        else if (this.BeforeOpenData.Ver==2.0 || this.BeforeOpenData.Ver==3.0)
         {
             var range={ Max: this.BeforeOpenData.VolMax, Min:this.BeforeOpenData.VolMin }
             
@@ -14437,9 +14440,16 @@ function ChartMinuteVolumBar()
                 return this.UpColor;
             case 2:
                 return this.DownColor;
-            default:
-                return this.UnchangeColor;
         }
+
+        if (this.BeforeVolColor && Array.isArray(this.BeforeVolColor))
+        {
+            var index=id-3;
+            if (index>=0 && index<this.BeforeVolColor.length)
+                return this.BeforeVolColor[index];
+        }
+
+        return this.UnchangeColor;
     }
 
     this.GetMaxMin=function()
@@ -16383,7 +16393,8 @@ function ChartMinutePriceLine()
     this.DownColor=g_JSChartResource.DownBarColor;
 
     this.BeforeOpenData;    //盘前数据 Data:[] 数据, TotalCount:一共的数据个数
-    this.BeforeLineColor=g_JSChartResource.Minute.BeforeLineColor;
+    this.BeforeLineColor=g_JSChartResource.Minute.Before.LineColor;
+    this.BeforeAvPriceColor=g_JSChartResource.Minute.Before.AvPriceColor;
 
     this.AfterCloseData;    //盘后数据
 
@@ -16578,6 +16589,41 @@ function ChartMinutePriceLine()
         var bFirstPoint=true;
         var drawCount=0;
         var beforeInfo={ TotalCount:this.BeforeOpenData.TotalCount };
+        if (this.BeforeOpenData.Ver==3.0)   //均线
+        {
+            for(var i in this.BeforeOpenData.Data)
+            {
+                var item=this.BeforeOpenData.Data[i];
+                if (!item || !IFrameSplitOperator.IsNumber(item.AvPrice)) continue;
+    
+                var x=this.ChartFrame.GetLeftExtendXFromIndex(i,beforeInfo);
+                var y=this.ChartFrame.GetLeftExtendYFromData(item.AvPrice);
+    
+                if (bFirstPoint)
+                {
+                    this.Canvas.strokeStyle=this.BeforeAvPriceColor;
+                    this.Canvas.beginPath();
+                    if (isHScreen) this.Canvas.moveTo(y,x);
+                    else this.Canvas.moveTo(x,y);
+                    bFirstPoint=false;
+                }
+                else
+                {
+                    if (isHScreen) this.Canvas.lineTo(y,x);
+                    else this.Canvas.lineTo(x,y);
+                }
+    
+                ++drawCount;
+            }
+    
+            if (drawCount>0)
+            {
+                this.Canvas.stroke();
+            }
+        }
+
+        var bFirstPoint=true;
+        var drawCount=0;
         for(var i in this.BeforeOpenData.Data)
         {
             var item=this.BeforeOpenData.Data[i];
@@ -16630,13 +16676,24 @@ function ChartMinutePriceLine()
             {
                 var item=this.BeforeOpenData.Data[i];
                 if (!item) continue;
-                if (!IFrameSplitOperator.IsNumber(item.Price)) continue;
-
-                if (range.Max==null) range.Max=item.Price;
-                if (range.Min==null) range.Min=item.Price;
-
-                if (range.Max<item.Price) range.Max=item.Price;
-                if (range.Min>item.Price) range.Min=item.Price;
+                if (IFrameSplitOperator.IsNumber(item.Price))
+                {
+                    if (range.Max==null) range.Max=item.Price;
+                    if (range.Min==null) range.Min=item.Price;
+    
+                    if (range.Max<item.Price) range.Max=item.Price;
+                    if (range.Min>item.Price) range.Min=item.Price;
+                }
+                
+                //集合竞价均线统计
+                if (this.BeforeOpenData.Ver==3.0 && IFrameSplitOperator.IsNumber(item.AvPrice))
+                {
+                    if (range.Max==null) range.Max=item.AvPrice;
+                    if (range.Min==null) range.Min=item.AvPrice;
+    
+                    if (range.Max<item.AvPrice) range.Max=item.AvPrice;
+                    if (range.Min>item.AvPrice) range.Min=item.AvPrice;
+                }
             }
         }
         
@@ -32362,10 +32419,16 @@ function JSChartResource()
     this.Minute.PriceColor="rgb(50,171,205)";           //分时图价格线颜色
     this.Minute.AreaPriceColor='rgba(50,171,205,0.1)';  //价格的面积图
     this.Minute.AvPriceColor="rgb(238,127,9)";          //分时图均价线颜色
-    this.Minute.BeforeBGColor='rgba(240,240,240,0.7)';  //分钟 集合竞价背景
     this.Minute.PositionColor='rgb(218,165,32)';        //持仓量线段颜色
     this.Minute.FrameSplitTextColor=null;   //刻度文字颜色 (缺省使用 this.FrameSplitTextColor)
-    this.Minute.BeforeLineColor="rgb(50,171,205)";         //集合竞价线段颜色
+    
+    this.Minute.Before=
+    {
+        BGColor:'rgba(240,240,240,0.7)',    //分钟 集合竞价背景
+        LineColor:"rgb(50,171,205)",        //集合竞价线段颜色
+        VolColor:["rgb(192,192,0)"],        //成交量其他的颜色 colorID=3 开始
+        AvPriceColor:'rgb(190,190,190)'     //均线
+    };
 
     this.DefaultTextColor="rgb(43,54,69)";                          //图形中默认的字体颜色
     this.DefaultTextFont=14*GetDevicePixelRatio() +'px 微软雅黑';    //图形中默认的字体
@@ -32796,7 +32859,14 @@ function JSChartResource()
             if (style.Minute.AreaPriceColor) this.Minute.AreaPriceColor = style.Minute.AreaPriceColor;
             if (style.Minute.PositionColor) this.Minute.PositionColor = style.Minute.PositionColor;
             if (style.Minute.FrameSplitTextColor) this.Minute.FrameSplitTextColor = style.Minute.FrameSplitTextColor;
-            if (style.Minute.BeforeBGColor) this.Minute.BeforeBGColor = style.Minute.BeforeBGColor;
+            if (style.Minute.Before)
+            {
+                var item=style.Minute.Before;
+                if (item.BGColor) this.Minute.Before.BGColor=item.BGColor;
+                if (item.LineColor) this.Minute.Before.LineColor=item.LineColor;
+                if (item.VolColor) this.Minute.Before.VolColor=item.VolColor;
+                if (item.AvPriceColor) this.Minute.Before.AvPriceColor=item.AvPriceColor;
+            }
         }
 
         if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
@@ -41547,6 +41617,31 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
             item.DateTime=date.toString()+" "+item.Time.toString();
 
             var totalVol=item.Vol[0]+item.Vol[1];
+            if (IFrameSplitOperator.IsNumber(jsData[5])) totalVol=jsData[5];
+            if (totalVol>max) max=totalVol;
+    
+            beforeOpenData.Data.push(item);
+        }
+
+        beforeOpenData.VolMax=max;
+        beforeOpenData.VolMin=0;
+    }
+    else if (beforeOpenData.Ver==3.0)
+    {
+        var max=0;
+        for(var i in stockData.before)
+        {
+            var item=new BeforeOpenData();
+            var jsData=stockData.before[i];
+            item.Time=jsData[0];
+            item.Date=date;
+            item.Price=jsData[1];
+            item.AvPrice=jsData[2]; //均价
+            item.Vol[0]=jsData[3];  //匹配量
+            item.ColorID=jsData[4]; //柱子颜色ID
+            item.DateTime=date.toString()+" "+item.Time.toString();
+
+            var totalVol=item.Vol[0];
             if (IFrameSplitOperator.IsNumber(jsData[5])) totalVol=jsData[5];
             if (totalVol>max) max=totalVol;
     
