@@ -1415,12 +1415,12 @@ function JSChart(divElement, bOffscreen)
     }
 
     //集合竞价显示/隐藏
-    this.ShowCallCationData=function(obj, option)
+    this.ShowCallAuctionData=function(obj, option)
     {
-        if(this.JSChartContainer && typeof(this.JSChartContainer.ShowCallCationData)=='function')
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ShowCallAuctionData)=='function')
         {
-            JSConsole.Chart.Log('[JSChart:ShowCallCationData] obj, option ', obj, option);
-            this.JSChartContainer.ShowCallCationData(obj, option);
+            JSConsole.Chart.Log('[JSChart:ShowCallAuctionData] obj, option ', obj, option);
+            this.JSChartContainer.ShowCallAuctionData(obj, option);
         }
     }
 
@@ -3121,6 +3121,15 @@ function JSChartContainer(uielement, OffscreenElement)
                 item.OnDrawEvent.PointPosition=ptPosition;
             }
             item.DrawStatus=drawStatus;
+
+            if (item.ClassName=="DynamicMinuteTitlePainting")
+            {
+                if (option && IFrameSplitOperator.IsNumber(option.ClientPos) && option.Point)
+                    item.PointInfo={ ClientPos:option.ClientPos, Point:{ X:option.Point.X, Y:option.Point.Y }};
+                else 
+                    item.PointInfo=null;
+            }
+            
             item.Draw();
         }
 
@@ -3286,7 +3295,8 @@ function JSChartContainer(uielement, OffscreenElement)
             }
         }
 
-        var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y}, IsPhone:isPhone===true };
+        var clientPos=this.PtInClient(x,y);
+        var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y}, IsPhone:isPhone===true, ClientPos:clientPos };
         this.DrawDynamicInfo(option);
         if (mouseStatus) this.UIElement.style.cursor=mouseStatus.Cursor;
 
@@ -4963,6 +4973,12 @@ function IChartFramePainting()
         return null;
     }
 
+    this.GetBorder=function()
+    {
+        if (this.IsHScreen) return this.ChartBorder.GetHScreenBorder();
+        else return this.ChartBorder.GetBorder();
+    }
+
     this.Draw=function()
     {
         this.Buttons=[];
@@ -6586,6 +6602,72 @@ function MinuteHScreenFrame()
         }
     }
 
+    this.DrawInsideClientHorizontal=function()
+    {
+        var border=this.GetBorder();
+        var left=border.Left;
+        var right=border.Right;
+        var bottom=border.BottomEx;
+        var top=border.TopEx;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var yPrev = null; //上一个坐标y的值
+        var yInsideText=null;
+        for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
+        {
+            var item = this.HorizontalInfo[i];
+            if (!item || !item.Message[2] || !item.Message[3]) continue;
+            var y = this.GetYFromData(item.Value);
+            if (y != null && yPrev!=null && Math.abs(y - yPrev) < this.MinYDistance) continue;  //两个坐标在近了 就不画了
+
+            if (y >= right - 2) 
+            {
+                this.Canvas.textBaseline = 'top';
+                y = right;
+            }
+            else if (y <= left + 2) 
+            {
+                this.Canvas.textBaseline = 'bottom';
+                y=left;
+                if (y != null && Math.abs(y - yPrev) < 2*this.MinYDistance) continue;  //两个坐标在近了 就不画了
+            }
+            else 
+            {
+                this.Canvas.textBaseline = "middle";
+            }
+
+            if (item.Message[2]) 
+            {
+                if (item.Font != null) this.Canvas.font = item.Font;
+                this.Canvas.fillStyle = item.TextColor;
+                this.Canvas.textAlign = "left";
+
+                var xText=y,yText=top;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(item.Message[2], 2, 0);
+                this.Canvas.restore();
+            }
+
+            if (item.Message[3])
+            {
+                if (item.Font != null) this.Canvas.font = item.Font;
+                this.Canvas.fillStyle = item.TextColor;
+                this.Canvas.textAlign = "right";
+
+                var xText=y,yText=bottom;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(item.Message[3], -2, 0);
+                this.Canvas.restore();
+                
+            }
+            yPrev = y;
+        }
+    }
+
     //画X轴
     this.DrawVertical=function()
     {
@@ -6646,6 +6728,8 @@ function MinuteHScreenFrame()
     this.DrawInsideHorizontal = function () 
     {
         if (this.IsShowYText[0]===false && this.IsShowYText[1]===false) return;
+
+        this.DrawInsideClientHorizontal();
 
         var border=this.ChartBorder.GetHScreenBorder();
         var left = border.Left;
@@ -27103,6 +27187,7 @@ function DynamicMinuteTitlePainting()
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.LastShowData;  //保存最后显示的数据 给tooltip用
     this.OnDrawEvent;
+    this.PointInfo=null;
 
     this.GetCurrentKLineData=function() //获取当天鼠标位置所在的K线数据
     {
@@ -27133,7 +27218,7 @@ function DynamicMinuteTitlePainting()
     this.DrawItem=function(item)
     {
         var isHScreen=this.Frame.IsHScreen===true;
-        var border=this.Frame.ChartBorder.GetBorder();
+        var border=this.Frame.GetBorder();
         var left=border.Left;
         var bottom=border.Top-this.Frame.ChartBorder.Top/2;
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
@@ -27141,7 +27226,6 @@ function DynamicMinuteTitlePainting()
         if (isHScreen)
         {
             if (this.Frame.ChartBorder.Right<5) return;
-            border=this.Frame.ChartBorder.GetHScreenBorder();
             var left=2;
             var bottom=this.Frame.ChartBorder.Right/2;    //上下居中显示
             var xText=border.ChartWidth;
@@ -27234,10 +27318,118 @@ function DynamicMinuteTitlePainting()
         }
     }
 
+    this.DrawCallAuction=function() //集合竞价标题
+    {
+        var isHScreen=this.Frame.IsHScreen===true;
+        var border=this.Frame.GetBorder();
+
+        var left=border.Left;
+        var bottom=border.Top-this.Frame.ChartBorder.Top/2;
+        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
+        var bDraw=true;
+        if (isHScreen) 
+        {
+            var left=2;
+            var bottom=this.Frame.ChartBorder.Right/2;    //上下居中显示
+            var xText=border.ChartWidth;
+            var yText=border.Top;
+            this.Canvas.translate(xText, yText);
+            this.Canvas.rotate(90 * Math.PI / 180);
+        }
+        else
+        {
+            if (this.Frame.ChartBorder.Top<5) bDraw=false;
+        }
+
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="middle";
+        this.Canvas.font=this.Font;
+        var position = { Left: left, Bottom: bottom, IsHScreen: isHScreen };
+        if(bDraw && this.IsShowName)
+        {
+            if (!this.DrawText(this.Name,this.NameColor,position)) return;
+        }
+
+        var strTime;
+        if (this.PointInfo.ClientPos==2)
+        {
+            if (!this.BeforeOpenData) return;
+
+            var index=this.Frame.GetLeftExtendXData(isHScreen?this.PointInfo.Point.Y:this.PointInfo.Point.X, this.BeforeOpenData);
+            index=parseInt(index.toFixed(0));
+            var callbackData={Explain:"BeforeOpen", Data:null, DataIndex:index, DataTotalCount:this.BeforeOpenData.TotalCount };
+            if (index>=this.BeforeOpenData.Data.length) 
+            {
+                this.OnDrawCallAuctionEventCallback(callbackData);
+                return false;
+            }
+    
+            var item=this.BeforeOpenData.Data[index];
+            var time=item.Time;
+            if (this.BeforeOpenData.Ver==1.0) strTime=IFrameSplitOperator.FormatTimeString(time,"HH:MM");
+            else strTime=IFrameSplitOperator.FormatTimeString(time,"HH:MM:SS");
+
+            callbackData.Data=item;
+        }
+        else if (this.PointInfo.ClientPos==3)
+        {
+            if (!this.AfterCloseData) return;
+
+            var index=this.Frame.GetRightExtendXData(isHScreen?this.PointInfo.Point.Y:this.PointInfo.Point.X, this.AfterCloseData);
+            index=parseInt(index.toFixed(0));
+            var callbackData={ Explain:"AfterClose", Data:null, DataIndex:index, DataTotalCount:this.AfterCloseData.TotalCount };
+            if (index>=this.AfterCloseData.Data.length) 
+            {
+                this.OnDrawCallAuctionEventCallback(callbackData);
+                return false;
+            }
+    
+            var item=this.AfterCloseData.Data[index];
+            var time=item.Time;
+            if (this.AfterCloseData.Ver==1.0) strTime=IFrameSplitOperator.FormatTimeString(time,"HH:MM");
+            else strTime=IFrameSplitOperator.FormatTimeString(time,"HH:MM:SS");
+
+            callbackData.Data=item;
+        }
+        else
+        {
+            return;
+        }
+
+        if (bDraw && this.IsShowTime && strTime )
+        {
+            if (!this.DrawText(strTime,this.DateTimeColor,position)) return;
+        }
+
+        if (bDraw && item && IFrameSplitOperator.IsNumber(item.Price))
+        {
+            var color=this.GetColor(item.Price,this.YClose);
+            var text=g_JSChartLocalization.GetText('MTitle-Close',this.LanguageID)+item.Price.toFixed(defaultfloatPrecision);
+            if (!this.DrawText(text,color,position)) return;
+        }
+
+        this.OnDrawCallAuctionEventCallback(callbackData);
+    }
+
+    this.OnDrawCallAuctionEventCallback=function(drawData)
+    {
+        if (!this.OnDrawEvent || !this.OnDrawEvent.Callback) return;
+        var data={ Draw: drawData, Name:this.ClassName };
+        this.OnDrawEvent.Callback(this.OnDrawEvent,data,this);
+    }
+
     this.Draw=function()
     {
         this.LastShowData=null;
         if (!this.IsShow) return;
+        if (this.PointInfo && (this.PointInfo.ClientPos==2 || this.PointInfo.ClientPos==3))
+        {   //集合竞价区域
+            this.Canvas.save();
+            this.DrawCallAuction();
+            this.Canvas.restore();
+            return;
+        }
+
         if (this.CursorIndex==null || !this.Data || !this.Data.Data || this.Data.Data.length<=0) 
         {
             this.OnDrawEventCallback(null);
@@ -33381,6 +33573,7 @@ function JSChartResource()
                 if (item.LineColor) this.Minute.Before.LineColor=item.LineColor;
                 if (item.VolColor) this.Minute.Before.VolColor=item.VolColor;
                 if (item.AvPriceColor) this.Minute.Before.AvPriceColor=item.AvPriceColor;
+                if (item.CloseIcon) this.Minute.Before.CloseIcon=item.CloseIcon;
             }
         }
 
@@ -39930,7 +40123,7 @@ function MinuteChartContainer(uielement)
     this.ClickFrameButton=function(button)
     {
         if (button.ID==JSCHART_BUTTON_ID.CLOSE_BEFOREOPEN_ID)
-            this.ShowCallCationData({Left:false, Right:false});
+            this.ShowCallAuctionData({Left:false, Right:false});
     }
 
     //手势
@@ -40864,11 +41057,11 @@ function MinuteChartContainer(uielement)
 
     this.ShowBeforeData=function(isShow, option)
     {
-        this.ShowCallCationData({Left:isShow}, option);
+        this.ShowCallAuctionData({Left:isShow}, option);
     }
 
     //集合竞价设置 obj={ Left:, Right: }
-    this.ShowCallCationData=function(obj, option)
+    this.ShowCallAuctionData=function(obj, option)
     {
         if (!obj) return;
 
@@ -41619,6 +41812,8 @@ function MinuteChartContainer(uielement)
         this.TitlePaint[0].Symbol=this.Symbol;
         this.TitlePaint[0].Name=this.Name;
         this.TitlePaint[0].YClose=yClose;
+        this.TitlePaint[0].BeforeOpenData=this.BeforeOpenData;
+        this.TitlePaint[0].AfterCloseData=this.AfterCloseData;
 
         if (this.ChartCorssCursor && this.ChartCorssCursor.StringFormatY)
         {
@@ -43664,7 +43859,8 @@ function MinuteChartHScreenContainer(uielement)
         this.LastPoint.Y=y;
         this.CursorIndex=this.Frame.GetXData(y);
 
-        var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y}, IsPhone:isPhone===true };
+        var clientPos=this.PtInClient(x,y);
+        var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y}, IsPhone:isPhone===true,ClientPos:clientPos };
         this.DrawDynamicInfo(option);
     }
 
