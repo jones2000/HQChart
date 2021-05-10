@@ -19,6 +19,7 @@ import
 import {
     JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
     JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
+    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
 } from "./umychart.data.wechat.js";
 
 import { JSCommonCoordinateData as JSCommonCoordinateData } from "./umychart.coordinatedata.wechat.js";
@@ -50,6 +51,7 @@ function IFrameSplitOperator()
     this.IsShowLeftText = true;           //显示左边刻度 
     this.IsShowRightText = true;          //显示右边刻度
     this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+    this.GetEventCallback;              //事件回调
 
     //////////////////////
     // data.Min data.Max data.Interval data.Count
@@ -511,6 +513,16 @@ function FrameSplitKLinePriceY()
         if (bFilter) this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, false);
         this.Frame.HorizontalMax = splitData.Max;
         this.Frame.HorizontalMin = splitData.Min;
+
+        if (this.GetEventCallback)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE);
+            if (event && event.Callback)
+            {
+                var data={ID:this.Frame.Identify, Frame:this.Frame };
+                event.Callback(event,data,this);
+            }
+        }
     }
 
     this.SplitDefault = function (splitData, floatPrecision)       //默认坐标
@@ -792,6 +804,16 @@ function FrameSplitY()
         this.RemoveZero(this.Frame.HorizontalInfo);
         this.Frame.HorizontalMax = splitData.Max;
         this.Frame.HorizontalMin = splitData.Min;
+
+        if (this.GetEventCallback)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE);
+            if (event && event.Callback)
+            {
+                var data={ID:this.Frame.Identify, Frame:this.Frame };
+                event.Callback(event,data,this);
+            }
+        }
     }
 
     this.FilterIgnoreYValue = function () 
@@ -1057,6 +1079,16 @@ function FrameSplitMinutePriceY()
 
         this.DefaultSplit(range);
         this.CustomCoordinate();
+
+        if (this.GetEventCallback)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE);
+            if (event && event.Callback)
+            {
+                var data={ID:this.Frame.Identify, Frame:this.Frame };
+                event.Callback(event,data,this);
+            }
+        }
     }
 
     this.GetMaxMin = function ()   //计算图中所有的数据的最大最小值

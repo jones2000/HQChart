@@ -25,6 +25,7 @@ import {
     JSCommon_CUSTOM_SECOND_PERIOD_END as CUSTOM_SECOND_PERIOD_END,
     JSCommon_Rect as Rect,
     JSCommon_DataPlus as DataPlus,
+    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
 } from "./umychart.data.wechat.js";
 
 import {
@@ -1317,27 +1318,6 @@ JSChart.GetInternalTimeData=function(name)  //内置品种交易时间
     }
 }
 
-var JSCHART_EVENT_ID =
-{
-    RECV_INDEX_DATA: 2,  //接收指标数据
-    RECV_HISTROY_DATA: 3,//接收到历史数据
-    RECV_TRAIN_MOVE_STEP: 4,    //接收K线训练,移动一次K线
-    CHART_STATUS: 5,            //每次Draw() 以后会调用
-    BARRAGE_PLAY_END: 6,        //单个弹幕播放完成
-    RECV_START_AUTOUPDATE: 9,    //开始自动更新
-    RECV_STOP_AUTOUPDATE: 10,    //停止自动更新
-    ON_TITLE_DRAW: 12,           //标题信息绘制事件
-    RECV_MINUTE_DATA: 14,          //分时图数据到达
-    ON_CLICK_INDEXTITLE:15,       //点击指标标题事件
-    RECV_KLINE_UPDATE_DATA: 16,   //K线日,分钟更新数据到达 
-    ON_INDEXTITLE_DRAW: 19,       //指标标题重绘事件 
-    ON_CUSTOM_VERTICAL_DRAW: 20,  //自定义X轴绘制事件 
-    ON_ENABLE_SPLASH_DRAW:22,          //开启/关闭过场动画事件
-
-    ON_DRAW_DEPTH_TOOLTIP:25,             //绘制深度图tooltip事件
-    ON_PHONE_TOUCH:27,                   //手势点击事件 包含 TouchStart 和 TouchEnd
-}
-
 var JSCHART_OPERATOR_ID =
 {
     OP_SCROLL_LEFT: 1,
@@ -1438,6 +1418,8 @@ function JSChartContainer(uielement)
         var item = this.mapEvent.get(eventId);
         return item;
     }
+
+    this.GetEventCallback=this.GetEvent;
     
     this.GetIndexEvent = function () { return this.GetEvent(JSCHART_EVENT_ID.RECV_INDEX_DATA); }    //接收指标数据
     this.GetBarrageEvent=function() { return this.GetEvent(JSCHART_EVENT_ID.BARRAGE_PLAY_END);}     //获取弹幕事件
@@ -2457,93 +2439,142 @@ function SelectRectData() {
 }
 
 //边框信息
-function ChartBorder() {
-  this.UIElement;
+function ChartBorder() 
+{
+    this.UIElement;
 
-  //四周间距
-  this.Left = 50;
-  this.Right = 80;
-  this.Top = 50;
-  this.Bottom = 50;
-  this.TitleHeight = 15;    //标题高度
-  //上下间距
-  this.TopSpace = 0;
-  this.BottomSpace = 0;
+    //四周间距
+    this.Left = 50;
+    this.Right = 80;
+    this.Top = 50;
+    this.Bottom = 50;
+    this.TitleHeight = 15;    //标题高度
+    //上下间距
+    this.TopSpace = 0;
+    this.BottomSpace = 0;
 
-  this.GetChartWidth = function () {
-    return this.UIElement.Width;
-  }
+    this.LeftExtendWidth=0;      //左边扩展图形宽度
+    this.RightExtendWidth=0;
 
-  this.GetChartHeight = function () {
-    return this.UIElement.Height;
-  }
+    this.GetBorder=function()
+    {
+        var data=
+        { 
+            Left:this.Left, 
+            LeftEx:this.Left+this.LeftExtendWidth,
+            Right:this.UIElement.width-this.Right,
+            RightEx:this.UIElement.width-this.Right-this.RightExtendWidth,
 
-  this.GetLeft = function () {
-    return this.Left;
-  }
+            Top:this.Top,
+            TopEx:this.Top+this.TitleHeight+this.TopSpace,
+            TopTitle:this.Top+this.TitleHeight,
+            Bottom:this.UIElement.height-this.Bottom,
+            BottomEx:this.UIElement.height-this.Bottom-this.BottomSpace,
 
-  this.GetRight = function () {
-    return this.UIElement.Width - this.Right;
-  }
+            ChartWidth:this.UIElement.width,
+            ChartHeight:this.UIElement.height
+        };
 
-  this.GetTop = function () {
-    return this.Top;
-  }
+        return data;
+    }
 
-  this.GetTopEx = function ()    //去掉标题,上面间距
-  {
-    return this.Top + this.TitleHeight + this.TopSpace;
-  }
+    this.GetHScreenBorder=function()
+    {
+        var data=
+        {
+            Left:this.Left,
+            LeftEx:this.Left+this.BottomSpace,
 
-  this.GetTopTitle = function () //去掉标题
-  {
-    return this.Top + this.TitleHeight;
-  }
+            Right:this.UIElement.width-this.Right,
+            RightEx:this.UIElement.width-this.Right-this.TitleHeight- this.TopSpace,
+            RightTitle:this.UIElement.width-this.Right-this.TitleHeight,
 
-  this.GetBottom = function () {
-    return this.UIElement.Height - this.Bottom;
-  }
+            Top:this.Top,
+            TopEx:this.Top+this.LeftExtendWidth,
+            Bottom:this.UIElement.height-this.Bottom,
+            BottomEx:this.UIElement.height-this.Bottom-this.RightExtendWidth,
 
-  this.GetBottomEx = function () {
-    return this.UIElement.Height - this.Bottom - this.BottomSpace;
-  }
+            ChartWidth:this.UIElement.width,
+            ChartHeight:this.UIElement.height
+        };
 
-  this.GetWidth = function () {
-    return this.UIElement.Width - this.Left - this.Right;
-  }
+        return data;
+    }
 
-  this.GetHeight = function () {
-    return this.UIElement.Height - this.Top - this.Bottom;
-  }
+    this.GetChartWidth = function () {
+        return this.UIElement.Width;
+    }
 
-  this.GetHeightEx = function () //去掉标题的高度 上下间距
-  {
-    return this.UIElement.Height - this.Top - this.Bottom - this.TitleHeight - this.TopSpace - this.BottomSpace;
-  }
+    this.GetChartHeight = function () {
+        return this.UIElement.Height;
+    }
 
-  this.GetRightEx = function ()  //横屏去掉标题高度的 上面间距
-  {
-    return this.UIElement.Width - this.Right - this.TitleHeight - this.TopSpace;
-  }
+    this.GetLeft = function () {
+        return this.Left;
+    }
 
-  this.GetWidthEx = function ()  //横屏去掉标题宽度 上下间距
-  {
-    return this.UIElement.Width - this.Left - this.Right - this.TitleHeight - this.TopSpace - this.BottomSpace;
-  }
+    this.GetRight = function () {
+        return this.UIElement.Width - this.Right;
+    }
 
-  this.GetLeftEx = function () //横屏
-  {
-    return this.Left + this.BottomSpace;
-  }
+    this.GetTop = function () {
+        return this.Top;
+    }
 
-  this.GetRightTitle = function ()//横屏
-  {
-    return this.UIElement.Width - this.Right - this.TitleHeight;
-  }
+    this.GetTopEx = function ()    //去掉标题,上面间距
+    {
+        return this.Top + this.TitleHeight + this.TopSpace;
+    }
 
-  this.GetTitleHeight = function () {
-    return this.TitleHeight;
-  }
+    this.GetTopTitle = function () //去掉标题
+    {
+        return this.Top + this.TitleHeight;
+    }
+
+    this.GetBottom = function () {
+        return this.UIElement.Height - this.Bottom;
+    }
+
+    this.GetBottomEx = function () {
+        return this.UIElement.Height - this.Bottom - this.BottomSpace;
+    }
+
+    this.GetWidth = function () {
+        return this.UIElement.Width - this.Left - this.Right;
+    }
+
+    this.GetHeight = function () {
+        return this.UIElement.Height - this.Top - this.Bottom;
+    }
+
+    this.GetHeightEx = function () //去掉标题的高度 上下间距
+    {
+        return this.UIElement.Height - this.Top - this.Bottom - this.TitleHeight - this.TopSpace - this.BottomSpace;
+    }
+
+    this.GetRightEx = function ()  //横屏去掉标题高度的 上面间距
+    {
+        return this.UIElement.Width - this.Right - this.TitleHeight - this.TopSpace;
+    }
+
+    this.GetWidthEx = function ()  //横屏去掉标题宽度 上下间距
+    {
+        return this.UIElement.Width - this.Left - this.Right - this.TitleHeight - this.TopSpace - this.BottomSpace;
+    }
+
+    this.GetLeftEx = function () //横屏
+    {
+        return this.Left + this.BottomSpace;
+    }
+
+    this.GetRightTitle = function ()//横屏
+    {
+        return this.UIElement.Width - this.Right - this.TitleHeight;
+    }
+
+    this.GetTitleHeight = function () {
+        return this.TitleHeight;
+    }
 }
 
 function IChartFramePainting() 
@@ -7081,6 +7112,7 @@ function KLineChartContainer(uielement)
                 frame.YSplitOperator = new FrameSplitKLinePriceY();
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
                 frame.YSplitOperator.FrameSplitData2 = this.FrameSplitData.get('double');
+                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 border.BottomSpace = 12;  //主图上下留空间
                 border.TopSpace = 12;
             }
@@ -7089,6 +7121,7 @@ function KLineChartContainer(uielement)
                 frame.YSplitOperator = new FrameSplitY();
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
                 frame.YSplitOperator.LanguageID = this.LanguageID;
+                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             }
 
             frame.YSplitOperator.Frame = frame;
@@ -9674,6 +9707,7 @@ function MinuteChartContainer(uielement)
             var frame = new MinuteFrame();
             frame.Canvas = this.Canvas;
             frame.ChartBorder = border;
+            frame.Identify=i;
             if (i < 2) frame.ChartBorder.TitleHeight = 0;
             frame.XPointCount = 243;
 
@@ -9685,12 +9719,14 @@ function MinuteChartContainer(uielement)
             {
                 frame.YSplitOperator = new FrameSplitMinutePriceY();
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
+                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             }
             else 
             {
                 frame.YSplitOperator = new FrameSplitY();
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
                 frame.YSplitOperator.LanguageID = this.LanguageID;
+                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             }
 
             frame.YSplitOperator.Frame = frame;

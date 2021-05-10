@@ -1683,6 +1683,29 @@ function ToFixedRect(value)
     return rounded = (0.5 + value) << 0;
 }
 
+var JSCHART_EVENT_ID =
+{
+    RECV_INDEX_DATA: 2,  //接收指标数据
+    RECV_HISTROY_DATA: 3,//接收到历史数据
+    RECV_TRAIN_MOVE_STEP: 4,    //接收K线训练,移动一次K线
+    CHART_STATUS: 5,            //每次Draw() 以后会调用
+    BARRAGE_PLAY_END: 6,        //单个弹幕播放完成
+    RECV_START_AUTOUPDATE: 9,    //开始自动更新
+    RECV_STOP_AUTOUPDATE: 10,    //停止自动更新
+    ON_TITLE_DRAW: 12,           //标题信息绘制事件
+    RECV_MINUTE_DATA: 14,          //分时图数据到达
+    ON_CLICK_INDEXTITLE:15,       //点击指标标题事件
+    RECV_KLINE_UPDATE_DATA: 16,   //K线日,分钟更新数据到达 
+    ON_INDEXTITLE_DRAW: 19,       //指标标题重绘事件 
+    ON_CUSTOM_VERTICAL_DRAW: 20,  //自定义X轴绘制事件 
+    ON_ENABLE_SPLASH_DRAW:22,          //开启/关闭过场动画事件
+
+    ON_DRAW_DEPTH_TOOLTIP:25,             //绘制深度图tooltip事件
+    ON_PHONE_TOUCH:27,                   //手势点击事件 包含 TouchStart 和 TouchEnd
+
+    ON_SPLIT_YCOORDINATE:29,             //分割Y轴及格式化刻度文字
+}
+
 
 //导出统一使用JSCommon命名空间名
 module.exports =
@@ -1695,6 +1718,7 @@ module.exports =
         MinuteData: MinuteData,
         Rect: Rect,
         DataPlus: DataPlus,
+        JSCHART_EVENT_ID:JSCHART_EVENT_ID,
     },
 
     //单个类导出
@@ -1713,4 +1737,5 @@ module.exports =
     JSCommon_Guid: Guid,
     JSCommon_ToFixedPoint: ToFixedPoint,
     JSCommon_ToFixedRect: ToFixedRect,
+    JSCommon_JSCHART_EVENT_ID:JSCHART_EVENT_ID,
 };
