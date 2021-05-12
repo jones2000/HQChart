@@ -23,7 +23,7 @@
     "moment": "^2.24.0",
     "promise-polyfill": "^6.0.2",
     "qs": "^6.5.0",
-    "swiper": "^3.4.2",
+    "swiper": "^6.5.1",
     "vue": "^2.1.8",
     "vue-mobile-calendar": "^3.2.0",
     "vue-router": "^2.8.1",
