@@ -23832,6 +23832,7 @@ function ChartMultiHtmlDom()
     this.DrawCallback;  //function(op, obj)  op:1=开始 2=结束 3=绘制单个数据
     this.DrawItem=[];
     this.EnableDraw=true;   //是否允许绘制
+    this.HQChart;
 
     this.Draw=function()
     {
@@ -23855,7 +23856,18 @@ function ChartMultiHtmlDom()
         var offset=this.Data.DataOffset;
         var top=this.ChartBorder.GetTopEx();
         var bottom=this.ChartBorder.GetBottomEx();
+        var pixelTatio = GetDevicePixelRatio();
+        if (this.HQChart)
+        {
+            var elementLeft=this.HQChart.UIElement.getBoundingClientRect().left;
+            var elementTop=this.HQChart.UIElement.getBoundingClientRect().top;
+        }
+        else
+        {
+            var elementLeft=null,elementTop=null;
+        }
         
+
         for(var i in this.Texts)
         {
             var item=this.Texts[i];
@@ -23883,8 +23895,9 @@ function ChartMultiHtmlDom()
                 }
                 
 
-                obj.X=x;
-                obj.Y=y;
+                obj.X=x/pixelTatio;
+                obj.Y=y/pixelTatio;
+                obj.UIElement={Left:elementLeft, Top:elementTop};
                 obj.IsShow=true;
             }
 
@@ -74361,6 +74374,7 @@ function ScriptIndex(name,script,args,option)
         chart.Name=varItem.Name;
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.HQChart=hqChart;
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Texts=varItem.Draw.DrawData;
@@ -75445,6 +75459,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
+        chart.HQChart=hqChart;
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Texts=varItem.Draw.DrawData;

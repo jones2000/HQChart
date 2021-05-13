@@ -9741,7 +9741,7 @@ JSComplier.Execute=function(code,option,errorCallback)
     {
         try
         {
-            JSConsole.Complier.Log('[JSComplier.Execute]',code,option);
+            JSConsole.Complier.Log('[JSComplier.Execute] code ',code);
 
             JSConsole.Complier.Log('[JSComplier.Execute] parser .....');
             let parser=new JSParser(code);

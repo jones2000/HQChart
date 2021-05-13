@@ -17411,6 +17411,7 @@ function ScriptIndex(name,script,args,option)
         chart.Name=varItem.Name;
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.HQChart=hqChart;
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Texts=varItem.Draw.DrawData;
@@ -18495,6 +18496,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
+        chart.HQChart=hqChart;
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Texts=varItem.Draw.DrawData;

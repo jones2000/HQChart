@@ -19866,6 +19866,7 @@ function ChartMultiHtmlDom()
     this.DrawCallback;  //function(op, obj)  op:1=开始 2=结束 3=绘制单个数据
     this.DrawItem=[];
     this.EnableDraw=true;   //是否允许绘制
+    this.HQChart;
 
     this.Draw=function()
     {
@@ -19889,7 +19890,18 @@ function ChartMultiHtmlDom()
         var offset=this.Data.DataOffset;
         var top=this.ChartBorder.GetTopEx();
         var bottom=this.ChartBorder.GetBottomEx();
+        var pixelTatio = GetDevicePixelRatio();
+        if (this.HQChart)
+        {
+            var elementLeft=this.HQChart.UIElement.getBoundingClientRect().left;
+            var elementTop=this.HQChart.UIElement.getBoundingClientRect().top;
+        }
+        else
+        {
+            var elementLeft=null,elementTop=null;
+        }
         
+
         for(var i in this.Texts)
         {
             var item=this.Texts[i];
@@ -19917,8 +19929,9 @@ function ChartMultiHtmlDom()
                 }
                 
 
-                obj.X=x;
-                obj.Y=y;
+                obj.X=x/pixelTatio;
+                obj.Y=y/pixelTatio;
+                obj.UIElement={Left:elementLeft, Top:elementTop};
                 obj.IsShow=true;
             }
 
