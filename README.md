@@ -120,8 +120,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![走势图2](/小程序行情模块用例/image/hqchart_minute3.png)
 * 支持指数领先指标(2019-7-15  新加功能)  <br>
 ![领先指标](/小程序行情模块用例/image/hqchart_kline_lock3.png)
-* 支持信息地雷 <br>
-![信息地雷](/小程序行情模块用例/image/hqchart_minute_info.png)
+* 支持信息标识 <br>
+![信息标识](/小程序行情模块用例/image/hqchart_minute_info.png)
 * 支持涨停坐标 <br>
 
 
@@ -262,7 +262,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 17. [HQChart使用教程30-K线图如何对接第3方数据17-分钟K叠加股票](https://blog.csdn.net/jones2000/article/details/102887690) <br>
 18. [HQChart使用教程30-K线图如何对接第3方数据18-如何绘制自定义柱子](https://blog.csdn.net/jones2000/article/details/104417736)<br>
 19. [HQChart使用教程30-K线图如何对接第3方数据19-如何绘制彩色K线柱](https://blog.csdn.net/jones2000/article/details/104859784)<br>
-20. [HQChart使用教程30-K线图如何对接第3方数据20-信息地雷公告数据](https://blog.csdn.net/jones2000/article/details/105876161)<br>
+20. [HQChart使用教程30-K线图如何对接第3方数据20-信息公告数据](https://blog.csdn.net/jones2000/article/details/105876161)<br>
 21. [HQChart使用教程30-K线图如何对接第3方数据21-跨周期函数数据](https://blog.csdn.net/jones2000/article/details/109063625)<br>
 22. [HQChart使用教程30-K线图如何对接第3方数据22-FINVALUE函数数据](https://blog.csdn.net/jones2000/article/details/111387095)<br>
 23. [HQChart使用教程30-K线图如何对接第3方数据23-FINANCE函数数据](https://blog.csdn.net/jones2000/article/details/111999910)<br>
