@@ -24784,6 +24784,11 @@ function FrameSplitMinutePriceY()
     this.Custom;
     this.RightTextFormat=0;           //右边刻度显示模式 0=百分比  1=价格
 
+    this.BeforeOpenData;
+    this.IsBeforeData=false;
+    this.AfterCloseData;
+    this.IsAfterData=false;
+
     this.IsEnableDragY=function()
     {
         return false;
@@ -24957,6 +24962,60 @@ function FrameSplitMinutePriceY()
         {
             if (max<this.High) max=this.High;
             if (min>this.Low) min=this.Low;
+        }
+
+        if (this.IsAfterData && this.AfterCloseData)
+        {
+            for(var i in this.AfterCloseData.Data)
+            {
+                var item=this.AfterCloseData.Data[i];
+                if (!item) continue;
+                if (IFrameSplitOperator.IsNumber(item.Price))
+                {
+                    if (max==null) max=item.Price;
+                    if (min==null) min=item.Price;
+    
+                    if (max<item.Price) max=item.Price;
+                    if (min>item.Price) min=item.Price;
+                }
+                
+                //集合竞价均线统计
+                if (this.AfterCloseData.Ver==3.0 && IFrameSplitOperator.IsNumber(item.AvPrice))
+                {
+                    if (max==null) max=item.AvPrice;
+                    if (min==null) min=item.AvPrice;
+    
+                    if (max<item.AvPrice) max=item.AvPrice;
+                    if (min>item.AvPrice) min=item.AvPrice;
+                }
+            }
+        }
+
+        if (this.IsBeforeData && this.BeforeOpenData)
+        {
+            for(var i in this.BeforeOpenData.Data)
+            {
+                var item=this.BeforeOpenData.Data[i];
+                if (!item) continue;
+                if (IFrameSplitOperator.IsNumber(item.Price))
+                {
+                    if (max==null) max=item.Price;
+                    if (min==null) min=item.Price;
+    
+                    if (max<item.Price) max=item.Price;
+                    if (min>item.Price) min=item.Price;
+                }
+                
+                //集合竞价均线统计
+                if (this.BeforeOpenData.Ver==3.0 && IFrameSplitOperator.IsNumber(item.AvPrice))
+                {
+                    if (max==null) max=item.AvPrice;
+                    if (min==null) min=item.AvPrice;
+    
+                    if (max<item.AvPrice) max=item.AvPrice;
+                    if (min>item.AvPrice) min=item.AvPrice;
+                }
+            }
         }
 
         return { Max:max, Min:min };
@@ -27364,6 +27423,7 @@ function DynamicMinuteTitlePainting()
         }
 
         var strTime;
+        var dataVersion=1;
         if (this.PointInfo.ClientPos==2)
         {
             if (!this.BeforeOpenData) return;
@@ -27382,6 +27442,7 @@ function DynamicMinuteTitlePainting()
             if (this.BeforeOpenData.Ver==1.0) strTime=IFrameSplitOperator.FormatTimeString(time,"HH:MM");
             else strTime=IFrameSplitOperator.FormatTimeString(time,"HH:MM:SS");
 
+            dataVersion=this.BeforeOpenData.Ver;
             callbackData.Data=item;
         }
         else if (this.PointInfo.ClientPos==3)
@@ -27401,7 +27462,7 @@ function DynamicMinuteTitlePainting()
             var time=item.Time;
             if (this.AfterCloseData.Ver==1.0) strTime=IFrameSplitOperator.FormatTimeString(time,"HH:MM");
             else strTime=IFrameSplitOperator.FormatTimeString(time,"HH:MM:SS");
-
+            dataVersion=this.AfterCloseData.Ver;
             callbackData.Data=item;
         }
         else
@@ -27414,11 +27475,45 @@ function DynamicMinuteTitlePainting()
             if (!this.DrawText(strTime,this.DateTimeColor,position)) return;
         }
 
+        //匹配价
         if (bDraw && item && IFrameSplitOperator.IsNumber(item.Price))
         {
             var color=this.GetColor(item.Price,this.YClose);
-            var text=g_JSChartLocalization.GetText('MTitle-Close',this.LanguageID)+item.Price.toFixed(defaultfloatPrecision);
+            var text=g_JSChartLocalization.GetText('MTitle-AC-Price',this.LanguageID)+item.Price.toFixed(defaultfloatPrecision);
             if (!this.DrawText(text,color,position)) return;
+        }
+
+        //竞价涨幅
+        if (bDraw && item && IFrameSplitOperator.IsPlusNumber(this.YClose) && IFrameSplitOperator.IsNumber(item.Price))
+        {
+            var value=(item.Price-this.YClose)/this.YClose*100;
+            var color=this.GetColor(value,0);
+            var text=g_JSChartLocalization.GetText('MTitle-AC-Increase',this.LanguageID)+value.toFixed(2)+"%";
+            if (!this.DrawText(text,color,position)) return;
+        }
+
+        if (dataVersion==3.0)
+        {
+            if (bDraw && item && IFrameSplitOperator.IsNumber(item.AvPrice))
+            {
+                var color=this.GetColor(item.Price,this.YClose);
+                var text=g_JSChartLocalization.GetText('MTitle-AC-AvPrice',this.LanguageID)+item.AvPrice.toFixed(defaultfloatPrecision);
+                if (!this.DrawText(text,color,position)) return;
+            }
+        }
+
+        //匹配量
+        if (bDraw && IFrameSplitOperator.IsNumber(item.Vol[0]))
+        {
+            var text=g_JSChartLocalization.GetText('MTitle-AC-Vol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Vol[0],2);
+            if (!this.DrawText(text,this.VolColor,position)) return;
+        }
+        
+        //未匹配量
+        if (bDraw && IFrameSplitOperator.IsNumber(item.Vol[1]))
+        {
+            var text=g_JSChartLocalization.GetText('MTitle-AC-NotMatchVol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Vol[1],2);
+            if (!this.DrawText(text,this.VolColor,position)) return;
         }
 
         this.OnDrawCallAuctionEventCallback(callbackData);
@@ -33847,6 +33942,12 @@ function JSChartLocalization()
         ['KTitle-Position', {CN:'持:', EN:'P:'}],
         
         //走势图动态标题
+        ['MTitle-AC-Price', {CN:'匹配价:', EN:'C:'}],
+        ['MTitle-AC-AvPrice', {CN:'匹配均价:', EN:'C:'}],
+        ['MTitle-AC-Increase', {CN:'竞价涨幅:', EN:'I:'}],
+        ['MTitle-AC-Vol', {CN:'匹配量:', EN:'V:'}],
+        ['MTitle-AC-NotMatchVol', {CN:'未匹配量:', EN:'NV:'}],
+
         ['MTitle-Close', {CN:'价:', EN:'C:'}],
         ['MTitle-AvPrice', {CN:'均:', EN:'AC:'}],
         ['MTitle-Increase', {CN:'幅:', EN:'I:'}],
@@ -41232,6 +41333,8 @@ function MinuteChartContainer(uielement)
             item.Frame.XSplitOperator.IsBeforeData=this.IsBeforeData;
             item.Frame.XSplitOperator.IsAfterData=this.IsAfterData;
             item.Frame.YSplitOperator.Symbol=this.Symbol;
+            item.Frame.YSplitOperator.IsBeforeData=this.IsBeforeData;
+            item.Frame.YSplitOperator.IsAfterData=this.IsAfterData;
 
             for(var j in item.OverlayIndex) //子坐标X轴个数同步
             {
@@ -41797,6 +41900,10 @@ function MinuteChartContainer(uielement)
         this.Frame.SubFrame[0].Frame.YSplitOperator.AverageData=bindData;
         this.Frame.SubFrame[0].Frame.YSplitOperator.OverlayChartPaint=this.OverlayChartPaint;
         this.Frame.SubFrame[0].Frame.YSplitOperator.LimitPrice=this.LimitPrice;
+        this.Frame.SubFrame[0].Frame.YSplitOperator.BeforeOpenData=this.BeforeOpenData;
+        this.Frame.SubFrame[0].Frame.YSplitOperator.IsBeforeData=this.IsBeforeData;
+        this.Frame.SubFrame[0].Frame.YSplitOperator.AfterCloseData=this.AfterCloseData;
+        this.Frame.SubFrame[0].Frame.YSplitOperator.IsAfterData=this.IsAfterData;
         if (extendData)
         {
             this.Frame.SubFrame[0].Frame.YSplitOperator.High=extendData.High;
@@ -42478,6 +42585,31 @@ MinuteChartContainer.JsonDataToAfterCloseData=function(data)
             item.DateTime=date.toString()+" "+item.Time.toString();
 
             var totalVol=item.Vol[0]+item.Vol[1];
+            if (IFrameSplitOperator.IsNumber(jsData[5])) totalVol=jsData[5];
+            if (totalVol>max) max=totalVol;
+    
+            afterCloseData.Data.push(item);
+        }
+
+        afterCloseData.VolMax=max;
+        afterCloseData.VolMin=0;
+    }
+    else if (afterCloseData.Ver==3.0)
+    {
+        var max=0;
+        for(var i in stockData.after)
+        {
+            var item=new AfterCloseData();
+            var jsData=stockData.after[i];
+            item.Time=jsData[0];
+            item.Date=date;
+            item.Price=jsData[1];
+            item.AvPrice=jsData[2]; //均价
+            item.Vol[0]=jsData[3];  //匹配量
+            item.ColorID=jsData[4]; //柱子颜色ID
+            item.DateTime=date.toString()+" "+item.Time.toString();
+
+            var totalVol=item.Vol[0];
             if (IFrameSplitOperator.IsNumber(jsData[5])) totalVol=jsData[5];
             if (totalVol>max) max=totalVol;
     
