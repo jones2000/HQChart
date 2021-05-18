@@ -693,6 +693,7 @@ function FrameSplitY()
     this.newMethod = IFrameSplitOperator;   //派生
     this.newMethod();
     delete this.newMethod;
+    this.SplitType=0;                         //0=自动分割  1=固定分割
     this.FloatPrecision = 2;                  //坐标小数位数(默认2)
     this.FLOATPRECISION_RANGE = [1, 0.1, 0.01, 0.001, 0.0001];
     this.IgnoreYValue = null;                 //在这个数组里的数字不显示在刻度上 
@@ -710,6 +711,11 @@ function FrameSplitY()
         {
             splitData.Count = this.Frame.YSpecificMaxMin.Count;
             splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
+        }
+        else if (this.SplitType==1)
+        {
+            splitData.Count=this.SplitCount;
+            splitData.Interval=(splitData.Max-splitData.Min)/(splitData.Count-1);
         }
         else 
         {

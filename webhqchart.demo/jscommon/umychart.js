@@ -562,6 +562,7 @@ function JSChart(divElement, bOffscreen)
         if (option.Minute)   //分钟走势图属性设置
         {
             if (option.Minute.IsShowTooltip==false) chart.IsShowTooltip=false;
+            if (option.Minute.DragMode>=0) chart.DragMode=option.Minute.DragMode;
         }
 
         if (option.Language)
@@ -1796,6 +1797,7 @@ function JSChartContainer(uielement, OffscreenElement)
     this.SelectRect=document.createElement("div");
     this.SelectRect.className="jschart-selectrect";
     this.SelectRect.style.background=g_JSChartResource.SelectRectBGColor;
+    this.SelectRect.style["pointer-events"]="none";
     //this.SelectRect.style.opacity=g_JSChartResource.SelectRectAlpha;
     this.SelectRect.id=Guid();
     this.SelectRect.oncontextmenu=function() { return false; }; //屏蔽选中区域系统右键菜单
@@ -2179,6 +2181,8 @@ function JSChartContainer(uielement, OffscreenElement)
 
             if (moveSetp<5 && yMoveSetp<5) return;
 
+            this.UIElement.style.cursor="default";
+
             var x=drag.Click.X-uielement.getBoundingClientRect().left;
             var y=drag.Click.Y-uielement.getBoundingClientRect().top;
             var x2=e.clientX-uielement.getBoundingClientRect().left;
@@ -2187,6 +2191,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
             drag.LastMove.X=e.clientX;
             drag.LastMove.Y=e.clientY;
+
         }
     }
 
@@ -2217,12 +2222,17 @@ function JSChartContainer(uielement, OffscreenElement)
         else if (this.DragMode==2)  //区间选择
         {
             var drag=this.MouseDrag;
+            drag.LastMove.X=e.clientX;
+            drag.LastMove.Y=e.clientY;
 
             var selectData=new SelectRectData();
+            var pixelTatio = GetDevicePixelRatio();
             //区间起始位置 结束位子
-            selectData.XStart=drag.Click.X-uielement.getBoundingClientRect().left;
-            selectData.XEnd=drag.LastMove.X-uielement.getBoundingClientRect().left;
-            selectData.JSChartContainer=this.JSChartContainer;
+            selectData.XStart=(drag.Click.X-uielement.getBoundingClientRect().left)*pixelTatio;
+            selectData.YStart=(drag.Click.Y-uielement.getBoundingClientRect().top)*pixelTatio;
+            selectData.XEnd=(drag.LastMove.X-uielement.getBoundingClientRect().left)*pixelTatio;
+            selectData.YEnd=(drag.LastMove.Y-uielement.getBoundingClientRect().top)*pixelTatio;
+            selectData.JSChartContainer=this;
             selectData.Stock={Symbol:this.Symbol, Name:this.Name};
 
             if (this.GetSelectRectData(selectData))
@@ -3716,8 +3726,10 @@ function JSChartContainer(uielement, OffscreenElement)
         var left = x;
         var top = y;
 
-        var borderRight=this.Frame.ChartBorder.GetRight();
-        var borderLeft=this.Frame.ChartBorder.GetLeft();
+        var border=this.Frame.ChartBorder.GetBorder();
+
+        var borderRight=border.Right;
+        var borderLeft=border.Left;
 
         if (x>borderRight) x=borderRight;
         if (x2>borderRight) x2=borderRight;
@@ -4056,6 +4068,9 @@ function JSChartContainer(uielement, OffscreenElement)
     {
         if (Math.abs(selectData.XStart-selectData.XEnd)<5) return false;
 
+        var startClientPos=this.PtInClient(selectData.XStart, selectData.YStart);
+        var endClientPos=this.PtInClient(selectData.XEnd, selectData.YEnd);
+        
         var data=null;
         if (this.Frame.Data)
             data=this.Frame.Data;
@@ -4751,7 +4766,9 @@ function SelectRectData()
     this.End;   //数据结束位置
 
     this.XStart;//X坐标起始位置
+    this.YStart;
     this.XEnd;  //X位置结束为止
+    this.YEnd;
 }
 
 //坐标信息
@@ -4783,6 +4800,8 @@ function ChartBorder()
     this.LeftExtendWidth=0;      //左边扩展图形宽度
     this.RightExtendWidth=0;
 
+    this.MultiDayMinute={ Count:1, Left:0, Right:0 }  // { Count:天数, Left:, Right: }
+
     this.GetBorder=function()
     {
         var data=
@@ -4801,6 +4820,23 @@ function ChartBorder()
             ChartWidth:this.UIElement.width,
             ChartHeight:this.UIElement.height
         };
+
+        if (this.MultiDayMinute && this.MultiDayMinute.Count>1 && ( this.MultiDayMinute.Left>0 || this.MultiDayMinute.Right>0 ))
+        {
+            var frameWidth=this.UIElement.width-this.Left-this.Right;   //坐标框子宽度
+            var dayWidth=frameWidth/this.DayCount;   // 每天的框子的宽度
+
+            var dayBorder=[];
+            for(var i=0;i<this.DayCount;++i)
+            {
+                var item={ Left:this.Left+dayWidth*i, Right:this.Left+dayWidth*(i+1) };
+                item.LeftEx=item.Left+MultiDayMinute.Left;
+                item.RightEx=item.Right-MultiDayMinute.Right;
+                dayBorder.push(item);
+            }
+
+            data.DayBorder=dayBorder;
+        }
 
         return data;
     }
@@ -5954,6 +5990,7 @@ function MinuteFrame()
     this.RightFrame=null;   //右侧多重坐标
     this.ToolbarID=Guid();  //工具条Div id
     this.ReDrawToolbar=false;
+    this.DayCount=1;        //显示天数
 
     this.ModifyIndex=true;      //是否显示'改参数'菜单
     this.ChangeIndex=true;      //是否显示'换指标'菜单
@@ -9375,6 +9412,36 @@ function HQTradeFrame()
  
         }
         return null;
+    }
+
+    this.SetDayCount=function(dayCount)
+    {
+        this.ChartBorder.MultiDayMinute.Count=dayCount;
+        for(var i=0;i<this.SubFrame.length;++i)
+        {
+            var item=this.SubFrame[i];
+            if (!item.Frame) continue;
+
+            item.Frame.DayCount=dayCount;
+            item.Frame.ChartBorder.MultiDayMinute.Count=dayCount;
+        }
+    }
+
+    //设置多日分时宽度
+    this.MulitDayMinuteWidth=function(obj)
+    {
+        if (!obj) return;
+        if (IFrameSplitOperator.IsNumber(obj.Left)) this.ChartBorder.MultiDayMinute.Left=obj.Left;
+        if (IFrameSplitOperator.IsNumber(obj.Right)) this.ChartBorder.MultiDayMinute.Right=obj.Right;
+
+        for(var i=0;i<this.SubFrame.length;++i)
+        {
+            var item=this.SubFrame[i];
+            if (!item.Frame) continue;
+
+            if (IFrameSplitOperator.IsNumber(obj.Left)) item.Frame.ChartBorder.MultiDayMinute.Left=obj.Left;
+            if (IFrameSplitOperator.IsNumber(obj.Right)) item.Frame.ChartBorder.MultiDayMinute.Right=obj.Right;
+        }
     }
 }
 
@@ -16834,6 +16901,7 @@ function ChartMinutePriceLine()
     this.BeforeOpenData;    //盘前数据 Data:[] 数据, TotalCount:一共的数据个数
     this.BeforeLineColor=g_JSChartResource.Minute.Before.LineColor;
     this.BeforeAvPriceColor=g_JSChartResource.Minute.Before.AvPriceColor;
+    this.BeforePoint={ Color:g_JSChartResource.Minute.Before.Point.Color, Radius:g_JSChartResource.Minute.Before.Point.Radius };
 
     this.AfterCloseData;    //盘后数据
 
@@ -17065,6 +17133,7 @@ function ChartMinutePriceLine()
 
         var bFirstPoint=true;
         var drawCount=0;
+        var aryPoint=[];
         for(var i in this.BeforeOpenData.Data)
         {
             var item=this.BeforeOpenData.Data[i];
@@ -17080,11 +17149,15 @@ function ChartMinutePriceLine()
                 if (isHScreen) this.Canvas.moveTo(y,x);
                 else this.Canvas.moveTo(x,y);
                 bFirstPoint=false;
+
+                aryPoint.push({X:x, Y:y });
             }
             else
             {
                 if (isHScreen) this.Canvas.lineTo(y,x);
                 else this.Canvas.lineTo(x,y);
+
+                aryPoint.push({X:x, Y:y });
             }
 
             ++drawCount;
@@ -17093,6 +17166,21 @@ function ChartMinutePriceLine()
         if (drawCount>0)
         {
             this.Canvas.stroke();
+        }
+
+        if (this.BeforeOpenData.Ver==2.0 && this.BeforePoint.Radius>0)
+        {
+            this.Canvas.fillStyle=this.BeforePoint.Color;
+            for(var i in aryPoint)
+            {
+                var item=aryPoint[i];
+
+                this.Canvas.beginPath();
+                if (isHScreen)  this.Canvas.arc(item.Y, item.X, this.BeforePoint.Radius, 0, 2 * Math.PI);
+                else  this.Canvas.arc(item.X, item.Y, this.BeforePoint.Radius, 0, 2 * Math.PI);
+                this.Canvas.fill();
+            }
+            
         }
     }
 
@@ -17108,6 +17196,7 @@ function ChartMinutePriceLine()
 
         var bFirstPoint=true;
         var drawCount=0;
+        var aryPoint=[];
         for(var i in this.AfterCloseData.Data)
         {
             var item=this.AfterCloseData.Data[i];
@@ -17123,11 +17212,15 @@ function ChartMinutePriceLine()
                 if (isHScreen) this.Canvas.moveTo(y,x);
                 else this.Canvas.moveTo(x,y);
                 bFirstPoint=false;
+
+                aryPoint.push({X:x, Y:y });
             }
             else
             {
                 if (isHScreen) this.Canvas.lineTo(y,x);
                 else this.Canvas.lineTo(x,y);
+
+                aryPoint.push({X:x, Y:y });
             }
 
             ++drawCount;
@@ -17136,6 +17229,21 @@ function ChartMinutePriceLine()
         if (drawCount>0)
         {
             this.Canvas.stroke();
+        }
+
+        if (this.AfterCloseData.Ver==2.0 && this.BeforePoint.Radius>0)
+        {
+            this.Canvas.fillStyle=this.BeforePoint.Color;
+            for(var i in aryPoint)
+            {
+                var item=aryPoint[i];
+
+                this.Canvas.beginPath();
+                if (isHScreen) this.Canvas.arc(item.Y, item.X, this.BeforePoint.Radius, 0, 2 * Math.PI);
+                else this.Canvas.arc(item.X, item.Y, this.BeforePoint.Radius, 0, 2 * Math.PI);
+                this.Canvas.fill();
+            }
+            
         }
     }
 
@@ -33236,6 +33344,7 @@ function JSChartResource()
         LineColor:"rgb(50,171,205)",        //集合竞价线段颜色
         VolColor:["rgb(192,192,0)"],        //成交量其他的颜色 colorID=3 开始
         AvPriceColor:'rgb(190,190,190)',    //均线
+        Point:{ Color:"rgb(65,105,225)", Radius:2*GetDevicePixelRatio() },
         CloseIcon:
         { 
             Family:'iconfont', 
@@ -33682,6 +33791,11 @@ function JSChartResource()
                 if (item.VolColor) this.Minute.Before.VolColor=item.VolColor;
                 if (item.AvPriceColor) this.Minute.Before.AvPriceColor=item.AvPriceColor;
                 if (item.CloseIcon) this.Minute.Before.CloseIcon=item.CloseIcon;
+                if (item.Point) 
+                {
+                    if (item.Point.Color)  this.Minute.Before.Point.Color=item.Point.Color;
+                    if (item.Point.Radius)  this.Minute.Before.Point.Radius=item.Point.Radius;
+                }
             }
         }
 
@@ -39634,7 +39748,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             {
                 Name:'KLineChartContainer::RequestDragMinuteData', //类名::函数
                 Explain:'拖拽1分钟K线数据下载',
-                Request:{ Url:this.DragMinuteKLineApiUrl,  Type:'POST' , Data: postData  }, 
+                Request:{ Url:this.DragMinuteKLineApiUrl,  Type:'POST' , Data: postData, Period:this.Period  }, 
                 DragDownload:download,
                 Self:this,
                 PreventDefault:false
@@ -39763,7 +39877,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             {
                 Name:'KLineChartContainer::RequestDragDayData', //类名::函数
                 Explain:'拖拽日K数据下载',
-                Request:{ Url:this.DragKLineApiUrl,  Type:'POST' , Data: postData  }, 
+                Request:{ Url:this.DragKLineApiUrl,  Type:'POST' , Data: postData, Period:this.Period, Right:this.Right }, 
                 DragDownload:download,
                 Self:this,
                 PreventDefault:false
@@ -40642,6 +40756,7 @@ function MinuteChartContainer(uielement)
         this.Frame.ChartBorder.Top=25;
         this.Frame.ChartBorder.Left=50;
         this.Frame.ChartBorder.Bottom=20;
+        this.Frame.ChartBorder.DayCount=1;
         this.Frame.Canvas=this.Canvas;
         this.ChartCorssCursor.Frame=this.Frame; //十字光标绑定框架
         this.ChartSplashPaint.Frame = this.Frame;
@@ -41307,6 +41422,7 @@ function MinuteChartContainer(uielement)
 
         this.SourceData=sourceData;
         this.TradeDate=this.DayData[0].Date;
+        this.Frame.SetDayCount(this.DayData.length);
 
         this.BindMainData(sourceData,this.DayData[0].YClose);
         var upperSymbol=this.Symbol.toUpperCase();
@@ -41508,6 +41624,7 @@ function MinuteChartContainer(uielement)
         sourceData.Data=aryMinuteData;
 
         this.TradeDate=data.stock[0].date;
+        this.Frame.SetDayCount(1);  //单日数据
 
         this.SourceData=sourceData;
         this.Symbol=data.stock[0].symbol;
@@ -42470,6 +42587,53 @@ function MinuteChartContainer(uielement)
         }
     }
     this.SetSizeChage=this.SetSizeChange;
+
+    //根据X坐标获取数据索引
+    this.GetDataIndexByPoint=function(x)
+    {
+        var frame=this.Frame;
+        if (this.Frame.SubFrame && this.Frame.SubFrame.length>0) frame=this.Frame.SubFrame[0].Frame;
+        if (!frame) return;
+
+        var value=frame.GetXData(x);
+        var index=parseInt(value.toFixed(0));
+
+        return index;
+    }
+
+    //获取主数据
+    this.GetSelectRectData=function(selectData)
+    {
+        if (Math.abs(selectData.XStart-selectData.XEnd)<5) return false;
+
+        var startClientPos=this.PtInClient(selectData.XStart, selectData.YStart);
+        var endClientPos=this.PtInClient(selectData.XEnd, selectData.YEnd);
+
+        selectData.StartClientPos=startClientPos;
+        selectData.EndClientPos=endClientPos;
+        
+        var data=this.SourceData;
+        if (!data) return false;
+
+        var start=this.GetDataIndexByPoint(selectData.XStart);
+        var end=this.GetDataIndexByPoint(selectData.XEnd);
+
+        if (Math.abs(start-end)<2) return false;
+
+        selectData.Data=data;
+        if (start>end)
+        {
+            selectData.Start=end;
+            selectData.End=start;
+        }
+        else
+        {
+            selectData.Start=start;
+            selectData.End=end;
+        }
+
+        return true;
+    }
 }
 
 //盘前数据

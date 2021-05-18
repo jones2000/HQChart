@@ -9152,7 +9152,7 @@ function KLineChartContainer(uielement)
             "enddate": firstItem.Date,
             "endtime": firstItem.Time,
             "count": self.MaxRequestMinuteDayCount,
-            "first": { date: firstItem.Date, time: firstItem.Time }
+            "first": { date: firstItem.Date, time: firstItem.Time },
         };
 
         if (this.NetworkFilter) {
@@ -9160,7 +9160,7 @@ function KLineChartContainer(uielement)
             {
                 Name: 'KLineChartContainer::RequestDragMinuteData', //类名::函数
                 Explain: '拖拽1分钟K线数据下载',
-                Request: { Url: this.DragMinuteKLineApiUrl, Type: 'POST', Data: postData },
+                Request: { Url: this.DragMinuteKLineApiUrl, Type: 'POST', Data: postData, Period:this.Period },
                 DragDownload: download,
                 Self: this,
                 PreventDefault: false
@@ -9257,7 +9257,7 @@ function KLineChartContainer(uielement)
             {
                 Name: 'KLineChartContainer::RequestDragDayData', //类名::函数
                 Explain: '拖拽日K数据下载',
-                Request: { Url: this.DragKLineApiUrl, Type: 'POST', Data: postData },
+                Request: { Url: this.DragKLineApiUrl, Type: 'POST', Data: postData , Period:this.Period, Right:this.Right },
                 DragDownload: download,
                 Self: this,
                 PreventDefault: false
@@ -9291,6 +9291,12 @@ function KLineChartContainer(uielement)
     {
         var data = recvdata.data;
         var aryDayData = KLineChartContainer.JsonDataToHistoryData(data);
+        if (!aryDayData || aryDayData.length<=0)
+        {
+            this.DragDownload.Day.IsEnd=true;   //下完了
+            return;
+        }
+        
         var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
 
         for (var i in aryDayData)    //数据往前插
