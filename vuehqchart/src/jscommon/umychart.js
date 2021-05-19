@@ -27587,7 +27587,9 @@ function DynamicMinuteTitlePainting()
         if (bDraw && item && IFrameSplitOperator.IsNumber(item.Price))
         {
             var color=this.GetColor(item.Price,this.YClose);
-            var text=g_JSChartLocalization.GetText('MTitle-AC-Price',this.LanguageID)+item.Price.toFixed(defaultfloatPrecision);
+            var filedName='MTitle-AC-Price';
+            if (this.BeforeOpenData && this.BeforeOpenData.Ver==1.0) filedName="MTitle-Close";
+            var text=g_JSChartLocalization.GetText(filedName,this.LanguageID)+item.Price.toFixed(defaultfloatPrecision);
             if (!this.DrawText(text,color,position)) return;
         }
 
@@ -27596,7 +27598,9 @@ function DynamicMinuteTitlePainting()
         {
             var value=(item.Price-this.YClose)/this.YClose*100;
             var color=this.GetColor(value,0);
-            var text=g_JSChartLocalization.GetText('MTitle-AC-Increase',this.LanguageID)+value.toFixed(2)+"%";
+            var filedName='MTitle-AC-Increase';
+            if (this.BeforeOpenData && this.BeforeOpenData.Ver==1.0) filedName="MTitle-Increase";
+            var text=g_JSChartLocalization.GetText(filedName,this.LanguageID)+value.toFixed(2)+"%";
             if (!this.DrawText(text,color,position)) return;
         }
 
@@ -27613,7 +27617,9 @@ function DynamicMinuteTitlePainting()
         //匹配量
         if (bDraw && IFrameSplitOperator.IsNumber(item.Vol[0]))
         {
-            var text=g_JSChartLocalization.GetText('MTitle-AC-Vol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Vol[0],2);
+            var filedName='MTitle-AC-Vol';
+            if (this.BeforeOpenData && this.BeforeOpenData.Ver==1.0) filedName="MTitle-Vol";
+            var text=g_JSChartLocalization.GetText(filedName,this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Vol[0],2);
             if (!this.DrawText(text,this.VolColor,position)) return;
         }
         
