@@ -3980,7 +3980,7 @@ function ChartVolStick()
                 }
 
                 //高度调整为整数
-                var height = ToFixedRect(yBottom - y);
+                var height = ToFixedRect(Math.abs(yBottom - y)>=1 ? yBottom - y : 1);
                 y = yBottom - height;
                 if (bUp && (this.KLineDrawType == 1 || this.KLineDrawType == 2 || this.KLineDrawType == 3)) //空心柱子
                 {

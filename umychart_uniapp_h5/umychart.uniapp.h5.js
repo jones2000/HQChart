@@ -19806,7 +19806,7 @@ function ChartVolStick()
                     this.Canvas.fillStyle=this.DownColor;
                 }
                 
-                var height=ToFixedRect(yBottom-y);//高度调整为整数
+                var height=ToFixedRect(Math.abs(yBottom-y)>=1?yBottom-y:1);//高度调整为整数, 如果小于1, 统一使用1
                 y=yBottom-height;
                 if (bUp && (this.KLineDrawType==1 || this.KLineDrawType==2 || this.KLineDrawType==3)) //空心柱子
                 {
