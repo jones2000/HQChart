@@ -9497,7 +9497,7 @@ function JSDraw(errorHandler,symbolData)
     this.DRAWRECTREL=function(left, top, right,bottom, color)
     {
         
-        let drawData={ Rect:{Left:left, Top:top, Right:right, Bottom:bottom }, Color:color };
+        let drawData={ Rect:{Left:Math.min(left,right), Top:Math.min(top,bottom), Right:Math.max(right,left), Bottom:Math.max(bottom,top) }, Color:color };
         if (color==0) drawData.Color=null;
         let result={DrawData:drawData, DrawType:'DRAWRECTREL'};
 
