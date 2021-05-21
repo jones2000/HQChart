@@ -347,6 +347,7 @@ function JSChart(element)
                 if (IFrameSplitOperator.IsNumber(item.SplitType)) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType = item.SplitType;
                 if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) chart.Frame.SubFrame[i].Frame.YSplitOperator.FloatPrecision = item.FloatPrecision;   //强制指定小数位数(主图有效)
                 if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
+                if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
             }
         }
 
@@ -594,6 +595,7 @@ function JSChart(element)
                 if (item.Height >= 0) chart.Frame.SubFrame[i].Height = item.Height; 
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom = item.Custom;
                 if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
+                if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
             }
 
             chart.UpdateXShowText();
@@ -2771,9 +2773,11 @@ function AverageWidthFrame()
     this.YTextPosition=[0,0],       //是坐标否强制画在内部 [0=左侧] [1=右侧] 1=OUT" , 2=INSIDE
     this.IsShowXLine=true;              //是否显示X轴刻度线
     this.IsShowYLine=true;
+    this.YTextBaseline=0;  //0=居中 1=上部 (目前就支持内部刻度)
+
     this.ShortYLineLength=5;
     this.ShortXLineLength=5;
-    
+   
     this.DrawOtherChart;      //其他画法调用
 
     this.DrawFrame = function () 
@@ -2839,7 +2843,8 @@ function AverageWidthFrame()
                     }
                     else 
                     {
-                        this.Canvas.textBaseline = "middle";
+                        if (this.YTextBaseline==1) this.Canvas.textBaseline = "bottom";
+                        else this.Canvas.textBaseline = "middle";
                     }
                     var textObj = { X: left, Y: yText, Text: { BaseLine: this.Canvas.textBaseline, Font: this.Canvas.font, Value: item.Message[0] } };
                     if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj)) this.Canvas.fillText(item.Message[0], left + 1, yText);
@@ -2862,7 +2867,8 @@ function AverageWidthFrame()
                     }
                     else 
                     {
-                        this.Canvas.textBaseline = "middle";
+                        if (this.YTextBaseline==1) this.Canvas.textBaseline = "bottom";
+                        else this.Canvas.textBaseline = "middle";
                     }
                     var textWidth = this.Canvas.measureText(item.Message[1]).width;
                     var textObj = { X: right - textWidth, Y: yText, Text: { BaseLine: this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font: this.Canvas.font, Value: item.Message[1] } };
