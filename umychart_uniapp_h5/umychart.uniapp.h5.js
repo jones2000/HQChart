@@ -4256,6 +4256,7 @@ function JSChart(divElement, bOffscreen)
 
                 if (item.IsShowXLine==false) chart.Frame.SubFrame[i].Frame.IsShowXLine=item.IsShowXLine;
                 if (item.IsShowYLine==false) chart.Frame.SubFrame[i].Frame.IsShowYLine=item.IsShowYLine;
+                if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
                 
                 if (item.YCoordinateType>0) chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=item.YCoordinateType;
                 if (item.IsYReverse==true) chart.Frame.SubFrame[0].Frame.CoordinateType=1;  //反转坐标
@@ -4619,6 +4620,7 @@ function JSChart(divElement, bOffscreen)
                 if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
                 if (IFrameSplitOperator.IsBool(item.EnableRemoveZero)) chart.Frame.SubFrame[i].Frame.YSplitOperator.EnableRemoveZero=item.EnableRemoveZero;
                 if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) chart.Frame.SubFrame[i].Frame.YSplitOperator.FloatPrecision=item.FloatPrecision;
+                if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
             }
 
             chart.UpdateXShowText();
@@ -9221,6 +9223,7 @@ function AverageWidthFrame()
     this.IsShowXLine=true;              //是否显示X轴刻度线
     this.IsShowYLine=true;
     this.YInsideOffset=0;
+    this.YTextBaseline=0;  //0=居中 1=上部 (目前就支持内部刻度)
 
     this.ShortYLineLength=5;
     this.ShortXLineLength=5;
@@ -9523,7 +9526,8 @@ function AverageWidthFrame()
                     }
                     else 
                     {
-                        this.Canvas.textBaseline = "middle";
+                        if (this.YTextBaseline==1) this.Canvas.textBaseline = "bottom";
+                        else this.Canvas.textBaseline = "middle";
                     }
 
                     var textObj={ X:left, Y:yText, Text:{ BaseLine:this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font:this.Canvas.font, Value:item.Message[0]}} ;
@@ -9556,7 +9560,8 @@ function AverageWidthFrame()
                     }
                     else 
                     {
-                        this.Canvas.textBaseline = "middle";
+                        if (this.YTextBaseline==1) this.Canvas.textBaseline = "bottom";
+                        else this.Canvas.textBaseline = "middle";
                     }
                     var textWidth = this.Canvas.measureText(item.Message[1]).width;
                     var textObj={ X:right-textWidth, Y:yText, Text:{ BaseLine:this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font:this.Canvas.font, Value:item.Message[1]}} ;
@@ -29414,8 +29419,8 @@ function FrameSplitMinutePriceY()
             }
         }
 
-        if (IFrameSplitOperator.IsNumber(range.Max)) max=range.Max;
-        if (IFrameSplitOperator.IsNumber(range.Min)) min=range.Min;
+        if (IFrameSplitOperator.IsNumber(range.Max) && max<range.Max) max=range.Max;
+        if (IFrameSplitOperator.IsNumber(range.Min) && min>range.Min) min=range.Min;
 
         return { Max:max, Min:min };
     }
@@ -38462,6 +38467,7 @@ function JSChartLocalization()
         ['MTitle-AC-Vol', {CN:'匹配量:', EN:'V:'}],
         ['MTitle-AC-NotMatchVol', {CN:'未匹配量:', EN:'NV:'}],
 
+        //走势图标题
         ['MTitle-Close', {CN:'价:', EN:'C:'}],
         ['MTitle-AvPrice', {CN:'均:', EN:'AC:'}],
         ['MTitle-Increase', {CN:'幅:', EN:'I:'}],
