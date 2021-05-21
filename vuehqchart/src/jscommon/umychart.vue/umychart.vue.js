@@ -78975,4 +78975,6 @@ export default {
 
     ChartDrawTwoPointDemo:ChartDrawTwoPointDemo,        //画图工具2个点例子
     ChartDrawThreePointDemo:ChartDrawThreePointDemo,    //画图工具3个点例子
+
+    CoordinateInfo:CoordinateInfo,
 }

@@ -78936,5 +78936,7 @@ export default  {
 
     KLineTooltipPaint:KLineTooltipPaint,    //K线tooltip
     MinuteTooltipPaint:MinuteTooltipPaint,  //走势图tooltip
+
+    CoordinateInfo:CoordinateInfo,
 }
 
