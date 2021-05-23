@@ -17513,7 +17513,22 @@ function ChartMinutePriceLine()
         for(var i in callAutionData.Data)
         {
             var item=callAutionData.Data[i];
-            if (!item || !IFrameSplitOperator.IsNumber(item.Price)) continue;
+            if (!item || !IFrameSplitOperator.IsNumber(item.Price)) 
+            {
+                if (i==0 && isBeforeOpen && IFrameSplitOperator.IsNumber(this.YClose))
+                {
+                    var x=this.ChartFrame.GetLeftExtendXFromIndex(i,callAutionData);
+                    var y=this.ChartFrame.GetLeftExtendYFromData(this.YClose);
+
+                    this.Canvas.strokeStyle=this.BeforeLineColor;
+                    this.Canvas.beginPath();
+                    if (isHScreen) this.Canvas.moveTo(y,x);
+                    else this.Canvas.moveTo(x,y);
+                    bFirstPoint=false;
+                }
+
+                continue;
+            }
 
             if (isBeforeOpen)
             {
@@ -25768,6 +25783,59 @@ function FrameSplitXDepth()
     }
 }
 
+//把X位置调整到有数据上面
+function CallAcutionXOperator()
+{
+    this.Frame;
+    this.Value;
+    this.Point;
+    this.ClientPos;
+    this.BeforOpeneData;
+    this.AfterCloseData;
+    this.X;
+
+    this.Operator=function()
+    {
+        if (this.ClientPos==2)
+        {
+            return this.GetBeforeOpenXIndex();
+        }
+
+        return false;
+    }
+
+    this.GetBeforeOpenXIndex=function()
+    {
+        if (!IFrameSplitOperator.IsNumber(this.Value)) return false;
+        if (!this.BeforeOpenData || !this.BeforeOpenData.Data) return false;
+
+        var index=this.Frame.GetLeftExtendXData(this.Value, this.BeforeOpenData);
+        index=parseInt(index.toFixed(0));
+
+        if (index<0) index=0;
+        else if (index>=this.BeforeOpenData.Data.length) index=this.BeforeOpenData.Data.length-1;
+
+        var item=this.BeforeOpenData.Data[index];
+        if (IFrameSplitOperator.IsNumber(item.Price)) return false;
+
+        var findIndex=-1;
+        for(var i=index-1; i>=0; --i)
+        {
+            var item=this.BeforeOpenData.Data[i];
+            if (IFrameSplitOperator.IsNumber(item.Price))
+            {
+                findIndex=i;
+                break;
+            }
+        }
+
+        if (findIndex<0) return false;
+
+        this.X=this.Frame.GetLeftExtendXFromIndex(findIndex, this.BeforeOpenData);  //调整X轴坐标
+
+        return true;
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //十字光标
@@ -25803,6 +25871,7 @@ function ChartCorssCursor()
     this.IsShow=true;
     this.IsShowClose=false;     //Y轴始终显示收盘价
     this.ClientPos=-1;
+    this.CallAcutionXOperator;
 
     //内部使用
     this.Close=null;     //收盘价格
@@ -25945,6 +26014,18 @@ function ChartCorssCursor()
         {
             var yPoint = this.GetMinuteCloseYPoint(this.CursorIndex);
             if (yPoint != null) y=yPoint;
+        }
+
+        if (this.CallAcutionXOperator)
+        {
+            this.CallAcutionXOperator.Value=x;
+            this.CallAcutionXOperator.Point={X:x, Y:y};
+            this.CallAcutionXOperator.ClientPos=clientPos;
+
+            if (this.CallAcutionXOperator.Operator())
+            {
+                x=this.CallAcutionXOperator.X;
+            }
         }
 
         this.PointY=[[left,y],[right,y]];
@@ -36234,7 +36315,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (!this.Frame.Data) frameHisdata=this.Frame.Data;
         else if (this.Frame.SubFrame && this.Frame.SubFrame[0]) frameHisdata=this.Frame.SubFrame[0].Frame.Data;
         if (!frameHisdata) return;
-        //var xPointCount=this.Frame.SubFrame[0].Frame.XPointCount;   //当前一屏能显示的数据个数
+        var xPointCount=this.Frame.SubFrame[0].Frame.XPointCount;   //当前一屏能显示的数据个数
 
         var newDataCount=0;
         if (lastDataCount>0 && hisData.Data.length>lastDataCount)
@@ -36245,7 +36326,8 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         this.ChartPaint[0].Data=hisData;
         this.ChartPaint[0].Symbol=this.Symbol;
-        this.ChartPaint[0].Data.DataOffset=frameHisdata.DataOffset+newDataCount;    //加上数据增加的个数
+        if (hisData.Data.length>xPointCount) //不满一屏的, 不需要调整索引
+            this.ChartPaint[0].Data.DataOffset=frameHisdata.DataOffset+newDataCount;    //加上数据增加的个数
         for(var i in this.Frame.SubFrame)
         {
             var item =this.Frame.SubFrame[i].Frame;
@@ -37095,7 +37177,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         else if (item.Date<realtimeData.Date)   //新增加数据
         {
             JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] insert kline by realtime data',realtimeData);
-
+            
             var newItem =new HistoryData();
             newItem.YClose=realtimeData.YClose;
             newItem.Open=realtimeData.Open;
@@ -37106,6 +37188,10 @@ function KLineChartContainer(uielement,OffscreenElement)
             newItem.Amount=realtimeData.Amount;
             newItem.Date=realtimeData.Date;
             newItem.Position=realtimeData.Position;
+
+            if (!IFrameSplitOperator.IsNumber(newItem.YClose) && this.SourceData.Data.length>0)
+                newItem.YClose=this.SourceData.Data[this.SourceData.Data.length-1].YClose;
+
             this.SourceData.Data.push(newItem);
         }
         else
@@ -41202,6 +41288,7 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.StringFormatX=new HQMinuteTimeStringFormat();
         this.ChartCorssCursor.StringFormatY=new HQPriceStringFormat();
         this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
+        this.ChartCorssCursor.CallAcutionXOperator=new CallAcutionXOperator();
 
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
@@ -41235,6 +41322,7 @@ function MinuteChartContainer(uielement)
 
         this.ChartCorssCursor.StringFormatX.Frame=this.Frame.SubFrame[0].Frame;
         this.ChartCorssCursor.StringFormatY.Frame=this.Frame;
+        this.ChartCorssCursor.CallAcutionXOperator.Frame=this.Frame.SubFrame[0].Frame;
 
         var bRegisterKeydown=true;
         var bRegisterWheel=true;
@@ -42545,6 +42633,8 @@ function MinuteChartContainer(uielement)
             item.Frame.YSplitOperator.IsAfterData=this.IsAfterData;
         }
 
+        
+
         if(MARKET_SUFFIX_NAME.IsShowMinutePostionLine(upperSymbol))  
             this.BindOverlayPositionData(minuteData,yClose);    //期货,期权 持仓量
         else 
@@ -42571,6 +42661,9 @@ function MinuteChartContainer(uielement)
 
             this.ChartCorssCursor.StringFormatX.MultiDayBeforeOpenData=this.IsShowMultiDayBeforeData?this.MultiDayBeforeOpenData:null;
             this.ChartCorssCursor.StringFormatX.MultiDayAfterCloseData=this.IsShowMultiDayAfterData?this.MultiDayAfterCloseData:null;
+
+            this.ChartCorssCursor.CallAcutionXOperator.BeforeOpenData=this.BeforeOpenData;
+            this.ChartCorssCursor.CallAcutionXOperator.AfterCloseData=this.AfterCloseData;
         }
            
         if (this.ExtendChartPaint[0])

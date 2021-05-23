@@ -7288,6 +7288,7 @@ function KLineChartContainer(uielement)
         else if (this.Frame.SubFrame && this.Frame.SubFrame[0]) frameHisdata = this.Frame.SubFrame[0].Frame.Data;
         if (!frameHisdata) return;
 
+        var xPointCount=this.Frame.SubFrame[0].Frame.XPointCount;   //当前一屏能显示的数据个数
         var newDataCount = 0;
         if (lastDataCount > 0 && hisData.Data.length > lastDataCount) 
         {
@@ -7297,7 +7298,8 @@ function KLineChartContainer(uielement)
 
         this.ChartPaint[0].Data = hisData;
         this.ChartPaint[0].Symbol = this.Symbol;
-        this.ChartPaint[0].Data.DataOffset = frameHisdata.DataOffset + newDataCount;    //加上数据增加的个数
+        if (hisData.Data.length>xPointCount) //不满一屏的, 不需要调整索引
+            this.ChartPaint[0].Data.DataOffset = frameHisdata.DataOffset + newDataCount;    //加上数据增加的个数
         for (var i in this.Frame.SubFrame) 
         {
             var item = this.Frame.SubFrame[i].Frame;
@@ -7729,6 +7731,10 @@ function KLineChartContainer(uielement)
             newItem.Vol = realtimeData.Vol;
             newItem.Amount = realtimeData.Amount;
             newItem.Date = realtimeData.Date;
+            //没有前收盘就用上一个数据的收盘价
+            if (!IFrameSplitOperator.IsNumber(newItem.YClose) && this.SourceData.Data.length>0)
+                newItem.YClose=this.SourceData.Data[this.SourceData.Data.length-1].YClose;
+
             this.SourceData.Data.push(newItem);
         }
         else 
