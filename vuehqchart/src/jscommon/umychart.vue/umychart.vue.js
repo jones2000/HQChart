@@ -54950,7 +54950,7 @@ function MinuteRightMenu(divElement)
             [
                 {
                     text: "隐藏",
-                    click: function () { chart.ShowBeforeData(false); },
+                    click: function () { chart.ShowCallAuctionData( { Left:false, MultiDay:{ Left:false }} ); },
                 }
             ];
             
@@ -54962,7 +54962,7 @@ function MinuteRightMenu(divElement)
             [
                 {
                     text: "显示",
-                    click: function () { chart.ShowBeforeData(true); },
+                    click: function () { chart.ShowCallAuctionData({Left:true, MultiDay:{ Left:true }}); },
                 }
             ];
 
