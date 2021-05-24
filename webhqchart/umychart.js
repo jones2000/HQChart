@@ -17283,7 +17283,6 @@ function ChartMinutePriceLine()
                 else this.Canvas.moveTo(x,y);
                 bFirstPoint=false;
                 ptFirst={X:x,Y:y};
-                preColor=this.Color;
             }
             else
             {
@@ -17614,10 +17613,11 @@ function ChartMinutePriceLine()
         var data=this.Data;
 
         var bFirstPoint=true;
-        var ptFirst={}; //第1个点
         var ptLast={};  //最后一个点
         var drawCount=0;
         var preColor=null;
+        this.Canvas.save();
+
         for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
         {
             var value=null;
@@ -17657,6 +17657,9 @@ function ChartMinutePriceLine()
             if (bFirstPoint)
             {
                 this.Canvas.strokeStyle=colorItem.Color;
+                if (IFrameSplitOperator.IsNumber(colorItem.LineWidth))
+                    this.Canvas.lineWidth=colorItem.LineWidth;
+
                 this.Canvas.beginPath();
                 if (isHScreen) this.Canvas.moveTo(y,x);
                 else this.Canvas.moveTo(x,y);
@@ -17681,6 +17684,8 @@ function ChartMinutePriceLine()
         {
             this.Canvas.stroke();
         }
+
+        this.Canvas.restore();
     }
 
     this.GetMaxMin=function()
