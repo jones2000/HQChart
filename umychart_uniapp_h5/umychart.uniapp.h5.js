@@ -14193,8 +14193,8 @@ function MinuteData()
     this.AvPrice;       //均价
     this.Lead=null;     //领先指标
     this.Time;          //时间
-    this.Date;          //日期
-    this.Position=null;  //持仓量
+    this.Date;              //日期
+    this.Position=null;     //持仓量
 }
 
 //盘前集合竞价
@@ -21197,6 +21197,9 @@ function ChartMinutePriceLine()
     this.MultiDayBeforeOpenData;    //多日分时图 盘前数据 数组 1天一个
     this.MultiDayAfterCloseData;    //多日分时图 盘后数据 数组 1天一个
 
+    this.ColorLineData;     //自定义价格线分段颜色
+    this.Source;            //原始分钟数据
+
     this.Draw=function()
     {
         if (this.NotSupportMessage)
@@ -21246,6 +21249,7 @@ function ChartMinutePriceLine()
                 else this.Canvas.moveTo(x,y);
                 bFirstPoint=false;
                 ptFirst={X:x,Y:y};
+                preColor=this.Color;
             }
             else
             {
@@ -21306,6 +21310,7 @@ function ChartMinutePriceLine()
             }
         }
 
+        this.DrawColorLine();
         this.DrawAfterClose();      //收盘集合竞价
         this.DrawMultiDayAfterClose();
 
@@ -21546,6 +21551,101 @@ function ChartMinutePriceLine()
                 this.Canvas.fill();
             }
             
+        }
+    }
+
+    this.FindColorLineItem=function(minuteItem)
+    {
+        if (!minuteItem || !this.ColorLineData) return null;
+
+        for(var i in this.ColorLineData)
+        {
+            var item=this.ColorLineData[i];
+            if (item.Date==minuteItem.Date && (minuteItem.Time>=item.Start && minuteItem.Time<=item.End))
+            {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
+    this.DrawColorLine=function()
+    {
+        if (!this.ColorLineData|| !this.Source || !this.Data) return;
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var border=this.ChartBorder.GetBorder();
+        var xPointCount=this.ChartFrame.XPointCount;
+        var minuteCount=this.ChartFrame.MinuteCount;
+        var data=this.Data;
+
+        var bFirstPoint=true;
+        var ptFirst={}; //第1个点
+        var ptLast={};  //最后一个点
+        var drawCount=0;
+        var preColor=null;
+        for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=null;
+            value=data.Data[i];
+            var item=this.Source.Data[i];
+            if (!value || !item) continue;
+
+            var colorItem=this.FindColorLineItem(item);
+            if (!colorItem)
+            {
+                if (drawCount>0)
+                {
+                    this.Canvas.stroke();
+                    bFirstPoint=true;
+                }
+                continue;
+            }
+
+            if (preColor && preColor!=colorItem.Color)
+            {
+                this.Canvas.stroke();
+                bFirstPoint=true;
+
+                /*
+                this.Canvas.strokeStyle=colorItem.Color;
+                this.Canvas.beginPath();
+                if (isHScreen) this.Canvas.moveTo(ptLast.Y,ptLast.X);
+                else this.Canvas.moveTo(ptLast.X,ptLast.Y);
+                bFirstPoint=false;
+                preColor=colorItem.Color;
+                */
+            }
+
+            var x=this.ChartFrame.GetXFromIndex(j);
+            var y=this.ChartFrame.GetYFromData(value);
+
+            if (bFirstPoint)
+            {
+                this.Canvas.strokeStyle=colorItem.Color;
+                this.Canvas.beginPath();
+                if (isHScreen) this.Canvas.moveTo(y,x);
+                else this.Canvas.moveTo(x,y);
+                bFirstPoint=false;
+                ptFirst={X:x,Y:y};
+                preColor=colorItem.Color;
+            }
+            else
+            {
+                if (isHScreen) this.Canvas.lineTo(y,x);
+                else this.Canvas.lineTo(x,y);
+            }
+
+            ptLast.X=x;
+            ptLast.Y=y;
+            ptLast.Price=value;
+
+            ++drawCount;
+        }
+
+        if (drawCount>0)
+        {
+            this.Canvas.stroke();
         }
     }
 
@@ -28145,6 +28245,15 @@ IFrameSplitOperator.IsString=function(value)
     return false;
 }
 
+//是否是非空的数组
+IFrameSplitOperator.IsNonEmptyArray=function(ary)
+{
+    if (!ary) return;
+    if (!Array.isArray(ary)) return;
+
+    return ary.length>0;
+}
+
 IFrameSplitOperator.RemoveZero=function(strValue)
 {
     while(strValue.length>0)
@@ -29791,8 +29900,13 @@ function CallAcutionXOperator()
         else if (index>=this.BeforeOpenData.Data.length) index=this.BeforeOpenData.Data.length-1;
 
         var item=this.BeforeOpenData.Data[index];
-        this.Item=item;
-        if (IFrameSplitOperator.IsNumber(item.Price)) return false;
+        if (IFrameSplitOperator.IsNumber(item.Price)) 
+        {
+            this.Item=item;
+            this.X=this.Value;
+            this.DataIndex=index;
+            return true;
+        }
 
         var findIndex=-1;
         for(var i=index-1; i>=0; --i)
@@ -29801,13 +29915,14 @@ function CallAcutionXOperator()
             if (IFrameSplitOperator.IsNumber(item.Price))
             {
                 findIndex=i;
-                this.Item=item;
+                
                 break;
             }
         }
 
         if (findIndex<0) return false;
 
+        this.Item=item;
         this.DataIndex=findIndex;
         this.X=this.Frame.GetLeftExtendXFromIndex(findIndex, this.BeforeOpenData);  //调整X轴坐标
         return true;
@@ -29825,8 +29940,13 @@ function CallAcutionXOperator()
         else if (index>=this.AfterCloseData.Data.length) index=this.AfterCloseData.Data.length-1;
 
         var item=this.AfterCloseData.Data[index];
-        this.Item=item;
-        if (IFrameSplitOperator.IsNumber(item.Price)) return false;
+        if (IFrameSplitOperator.IsNumber(item.Price)) 
+        {
+            this.Item=item;
+            this.X=this.Value;
+            this.DataIndex=index;
+            return true;
+        }
 
         var findIndex=-1;
         for(var i=index-1; i>=0; --i)
@@ -29835,13 +29955,13 @@ function CallAcutionXOperator()
             if (IFrameSplitOperator.IsNumber(item.Price))
             {
                 findIndex=i;
-                this.Item=item;
                 break;
             }
         }
 
         if (findIndex<0) return false;
 
+        this.Item=item;
         this.DataIndex=findIndex;
         this.X=this.Frame.GetRightExtendXFromIndex(findIndex, this.AfterCloseData);  //调整X轴坐标
         return true;
@@ -44889,6 +45009,8 @@ function MinuteChartContainer(uielement)
     this.MinuteApiUrl=g_JSChartResource.Domain+"/API/Stock";
     this.HistoryMinuteApiUrl=g_JSChartResource.Domain+'/API/StockMinuteData';  //历史分钟数据
 
+    this.ColorLineData;    //主图价格线颜色自定义配置
+
     //集合竞价设置 obj={ Left:true/false, Right:true/false, MultiDay:{Left:, Right:} }
     this.SetCallCationDataBorder=function(obj)
     {
@@ -46012,6 +46134,7 @@ function MinuteChartContainer(uielement)
     this.RecvHistoryMinuteData=function(data)
     {
         this.DayData=MinuteChartContainer.JsonDataToMinuteDataArray(data);
+        this.ColorLineData=MinuteChartContainer.JsonDataToHistoryMinuteLineColorData(data);
         this.MultiDayBeforeOpenData=MinuteChartContainer.JosnDataToBeforeOpenDataArray(data);
         this.MultiDayAfterCloseData=MinuteChartContainer.JosnDataToAfterCloseDataArray(data);
         this.Symbol=data.symbol;
@@ -46203,6 +46326,33 @@ function MinuteChartContainer(uielement)
         event.Callback(event,data,this);
     }
 
+    this.UpdateLineColorData=function(data, date)
+    {
+        if (!this.ColorLineData) 
+        {
+            this.ColorLineData=data;
+            return;
+        }
+
+
+        //移除当前的
+        var aryColorLineData=this.ColorLineData.filter(function(item, index, arr)
+        {
+            return item.Date!=date;
+        });
+
+        if (IFrameSplitOperator.IsNonEmptyArray(data))
+        {
+            for(var i in data)
+            {
+                aryColorLineData.push(data[i]);
+            }
+        }
+
+
+        this.ColorLineData=aryColorLineData;
+    }
+
     this.RecvMinuteData=function(data)
     {
         if (!data) 
@@ -46212,6 +46362,7 @@ function MinuteChartContainer(uielement)
         }
 
         var aryMinuteData=MinuteChartContainer.JsonDataToMinuteData(data);
+        var aryColorData=MinuteChartContainer.JsonDataToMinuteLineColorData(data);
         this.BeforeOpenData=null;
         this.AfterCloseData=null;
 
@@ -46229,6 +46380,7 @@ function MinuteChartContainer(uielement)
             
         if (this.DayCount>1)    //多日走势图
         {
+            this.UpdateLineColorData(aryColorData,data.stock[0].date);
             this.UpdateLatestMinuteData(aryMinuteData,data.stock[0].date);
             this.UpdateHistoryMinuteUI();
             this.RecvMinuteDataEvent();
@@ -46241,6 +46393,8 @@ function MinuteChartContainer(uielement)
         //原始数据
         var sourceData=new ChartData();
         sourceData.Data=aryMinuteData;
+
+        this.ColorLineData=aryColorData;
 
         this.TradeDate=data.stock[0].date;
         this.Frame.SetDayCount(1);  //单日数据
@@ -46607,6 +46761,8 @@ function MinuteChartContainer(uielement)
         this.ChartPaint[0].AfterCloseData=this.AfterCloseData;
         this.ChartPaint[0].MultiDayBeforeOpenData=this.IsShowMultiDayBeforeData?this.MultiDayBeforeOpenData:null;
         this.ChartPaint[0].MultiDayAfterCloseData=this.IsShowMultiDayAfterData?this.MultiDayAfterCloseData:null;
+        this.ChartPaint[0].ColorLineData=this.ColorLineData;    //自定义分段颜色
+        this.ChartPaint[0].Source=minuteData;
 
         if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol) && this.DayCount==1 && this.IsShowLead)  //指数显示领先指标
         {
@@ -47444,7 +47600,7 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
     var preAvPrice=data.stock[0].yclose;    //前一个均价
     var yClose=data.stock[0].yclose;
     if (isFutures && data.stock[0].yclearing) yClose=preClose=preAvPrice=data.stock[0].yclearing;  //期货使用昨结算价
-    
+
     var date=data.stock[0].date;    //默认使用外部日期, 但跨天的 走势图使用内部的日期
     for(var i in data.stock[0].minute)
     {
@@ -47463,16 +47619,6 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         item.Date=date;
         item.Time=jsData.time;
         if (isFutures || isSHO) item.Position=jsData.position;  //期货 期权有持仓
-
-        if (i==0) 
-        {
-            item.IsFristData=true;
-            //if(isSHSZ) 
-            //{
-            //    item.DateTime=data.stock[0].date.toString() + " 0925"; //沪深股票 第1个数据 写死9：25
-            //    item.Time=925;
-            //}
-        }
         
         item.Increase=jsData.increase;
         item.Risefall=jsData.risefall;
@@ -47516,6 +47662,30 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
     }
 
     return aryMinuteData;
+}
+
+MinuteChartContainer.JsonDataToMinuteLineColorData=function(data)
+{
+    if (!data || !data.stock[0]) return null;
+    var stockItem=data.stock[0];
+    if (!stockItem.linecolor || !IFrameSplitOperator.IsNonEmptyArray(stockItem.linecolor.data)) return null;
+
+    var aryLineColor=[];
+    for(var i in stockItem.linecolor.data)
+    {
+        var item=stockItem.linecolor.data[i];
+        if (!IFrameSplitOperator.IsNumber(item.type) || !IFrameSplitOperator.IsNumber(item.date) || !IFrameSplitOperator.IsNumber(item.start) ||
+            !IFrameSplitOperator.IsNumber(item.end) || !item.color) continue;
+        
+        if (item.start>=item.end) continue;
+
+        var newItem={ Type:item.type, Date:item.date, Start:item.start, End:item.end, Color:item.color };
+        if (IFrameSplitOperator.IsPlusNumber(item.linewidth)) newItem.LineWidth=item.linewidth;
+
+        aryLineColor.push(newItem);
+    }
+
+    return aryLineColor;
 }
 
 //多日日线数据API 转化成array[];
@@ -47565,15 +47735,6 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
 
             if (item.Close && yClose) item.Increase = (item.Close - yClose)/yClose*100;
             else item.Increase=null;
-            if (j==0)      //第1个数据 写死9：25
-            {
-                //if (isSHSZ) 
-                //{
-                //    item.DateTime=date.toString()+" 0925";
-                //    item.Time=925;
-                //}
-                item.IsFristData=true;
-            }
 
             //价格是0的 都用空
             if (item.Open<=0) item.Open=null;
@@ -47605,6 +47766,35 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
     }
 
     return result;
+}
+
+MinuteChartContainer.JsonDataToHistoryMinuteLineColorData=function(data)
+{
+    if (!data) return null;
+
+    var aryLineColor=[];
+    for(var i in data.data)
+    {
+        var dayData=data.data[i];
+        if (!dayData.linecolor) continue;
+
+        for(var j in dayData.linecolor.data)
+        {
+            var item=dayData.linecolor.data[j];
+
+            if (!IFrameSplitOperator.IsNumber(item.type) || !IFrameSplitOperator.IsNumber(item.date) || !IFrameSplitOperator.IsNumber(item.start) ||
+            !IFrameSplitOperator.IsNumber(item.end) || !item.color) continue;
+        
+            if (item.start>=item.end) continue;
+
+            var newItem={ Type:item.type, Date:item.date, Start:item.start, End:item.end, Color:item.color };
+            if (IFrameSplitOperator.IsPlusNumber(item.linewidth)) newItem.LineWidth=item.linewidth;
+
+            aryLineColor.push(newItem);
+        }
+    }
+
+    return aryLineColor.length>0? aryLineColor : null;
 }
 
 
