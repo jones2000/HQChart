@@ -20720,7 +20720,7 @@ function ChartText()
 
 /*
     文字输出 支持横屏
-    数组不为null的数据中输出 this.Text文本
+    数组(Data)不为null的数据中输出 this.Text文本
 */
 function ChartSingleText()
 {
@@ -20783,10 +20783,66 @@ function ChartSingleText()
         {
             return { Min:null,Max:null };
         }
+        else if (this.Name=="DRAWTEXTREL" || this.Name=="DRAWTEXTABS")
+        {
+            return { Min:null,Max:null };
+        }
         else
         {
             return this.SuperGetMaxMin();
         }
+    }
+
+    this.DrawRectText=function()
+    {
+        if (!this.DrawData) return;
+        var isHScreen=(this.ChartFrame.IsHScreen===true)
+        var border=this.ChartFrame.GetBorder();
+        
+
+        if (this.Name=="DRAWTEXTREL")
+        {
+            if (isHScreen)
+            {
+                var height=border.RightTitle-border.LeftEx;
+                var width=border.BottomEx-border.TopEx;
+                var x=this.DrawData.Point.X/1000*width+border.TopEx;
+                var y=border.RightTitle-this.DrawData.Point.Y/1000*width;
+            }
+            else
+            {
+                var width=border.RightEx-border.LeftEx;
+                var height=border.BottomEx-border.TopTitle;
+                var x=this.DrawData.Point.X/1000*width+border.LeftEx;
+                var y=this.DrawData.Point.Y/1000*height+border.TopTitle;
+            }
+            
+        }
+        else if (this.Name=="DRAWTEXTABS")
+        {
+            if (isHScreen)
+            {
+                var x=this.DrawData.Point.X+border.TopEx;
+                var y=border.RightTitle-this.DrawData.Point.Y;
+            }
+            else
+            {
+                var x=this.DrawData.Point.X+border.LeftEx;
+                var y=this.DrawData.Point.Y+border.TopTitle;
+            }
+        }
+        else
+        {
+            return;
+        }
+
+        if (this.Direction==1) this.Canvas.textBaseline='bottom';
+        else if (this.Direction==2) this.Canvas.textBaseline='top';
+        else this.Canvas.textBaseline='middle';
+        this.Canvas.textAlign='left';
+        this.Canvas.font=this.TextFont;
+        this.Canvas.fillStyle=this.Color;
+        this.DrawText(this.DrawData.Text,x,y,isHScreen);
     }
 
     this.Draw=function()
@@ -20796,6 +20852,12 @@ function ChartSingleText()
         if (this.NotSupportMessage)
         {
             this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (this.Name=="DRAWTEXTREL" || this.Name=="DRAWTEXTABS")
+        {
+            this.DrawRectText();
             return;
         }
 
@@ -21951,7 +22013,7 @@ function ChartMinuteInfo()
 
         this.YClose=this.ChartMinutePrice.YClose;
 
-        var data=this.ChartMinutePrice.Data;
+        var data=this.ChartMinutePrice.Source;
 
         for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
         {
@@ -67809,6 +67871,36 @@ function JSDraw(errorHandler,symbolData)
         return result;
     }
 
+    //DRAWTEXTREL(X,Y,TEXT),在图形窗口(X,Y)坐标位置书写文字TEXT，坐标单位是窗口沿水平和垂直方向的1/1000，X、Y取值范围是0—999,超出范围则可能显示在图形窗口外。
+    //例如：DRAWTEXTREL(500,500,'注意')表示在图形中间位置显示'注意'字样。
+    this.DRAWTEXTREL=function(x, y, text)
+    {
+        let drawData={ Point:{X:x, Y:y} };
+        if (IFrameSplitOperator.IsString(text))
+            drawData.Text=text;
+        else if (IFrameSplitOperator.IsNonEmptyArray(text)) 
+            drawData.Text=text[0];
+        
+        let result={DrawData:drawData, DrawType:'DRAWTEXTREL'};
+
+        return result;
+    }
+
+    //DRAWTEXTABS(X,Y,TEXT),在图形窗口(X,Y)坐标位置书写文字TEXT，坐标单位是像素,图形窗口左上角坐标为(0,0)。
+    //例如：DRAWTEXTABS(0,0,'注意')表示在图形最左上角位置显示'注意'字样。
+    this.DRAWTEXTABS=function(x, y, text)
+    {
+        let drawData={ Point:{X:x, Y:y} };
+        if (IFrameSplitOperator.IsString(text))
+            drawData.Text=text;
+        else if (IFrameSplitOperator.IsNonEmptyArray(text)) 
+            drawData.Text=text[0];
+        
+        let result={DrawData:drawData, DrawType:'DRAWTEXTABS'};
+
+        return result;
+    }
+
     //画百分比叠加线
     this.DRAWOVERLAYLINE=function(data, mainData, title)
     {
@@ -67931,7 +68023,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
     let setFunctionName=new Set(
     [
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
-        'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',
+        'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',"DRAWTEXTABS","DRAWTEXTREL",
         'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2"
     ]);
     if (setFunctionName.has(name)) return true;
@@ -73423,6 +73515,14 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWRECTREL(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=[];
                 break;
+            case "DRAWTEXTREL":
+                node.Draw=this.Draw.DRAWTEXTREL(args[0],args[1],args[2]);
+                node.Out=[];
+                break;
+            case "DRAWTEXTABS":
+                node.Draw=this.Draw.DRAWTEXTABS(args[0],args[1],args[2]);
+                node.Out=[];
+                break;
             case "DRAWOVERLAYLINE":
                 node.Draw=this.Draw.DRAWOVERLAYLINE(args[0],args[1],args[2]);
                 node.Out=node.Draw.DrawData.Data;
@@ -74489,7 +74589,7 @@ function JSExplainer(ast,option)
         let setFunctionName=new Set(
         [
             "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
-            'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',
+            'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',"DRAWTEXTABS",
             'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2"
         ]);
         if (setFunctionName.has(name)) return true;
@@ -75577,6 +75677,27 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chartText);
     }
 
+    this.CreateDrawText=function(hqChart,windowIndex,varItem,id)
+    {
+        let chartText=new ChartSingleText();
+        chartText.Canvas=hqChart.Canvas;
+        chartText.Name=varItem.Name;
+        chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
+        
+        if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
+        else chartText.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawAbove) chartText.Direction=1;
+        else chartText.Direction=0;
+
+        let titleIndex=windowIndex+1;
+        chartText.DrawData=varItem.Draw.DrawData;
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+
+        hqChart.ChartPaint.push(chartText);
+    }
+
     //创建图标
     this.CreateIcon=function(hqChart,windowIndex,varItem,id)
     {
@@ -75946,6 +76067,10 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWRECTREL':
                         this.CreateRectangle(hqChart,windowIndex,item,i);
+                        break;
+                    case "DRAWTEXTABS":
+                    case "DRAWTEXTREL":
+                        this.CreateDrawText(hqChart,windowIndex,item,i);
                         break;
                     case "DRAWOVERLAYLINE":
                         this.CreateScriptOverlayLine(hqChart,windowIndex,item,i);

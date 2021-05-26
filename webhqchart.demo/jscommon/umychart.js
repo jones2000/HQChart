@@ -16710,7 +16710,7 @@ function ChartText()
 
 /*
     文字输出 支持横屏
-    数组不为null的数据中输出 this.Text文本
+    数组(Data)不为null的数据中输出 this.Text文本
 */
 function ChartSingleText()
 {
@@ -16773,10 +16773,66 @@ function ChartSingleText()
         {
             return { Min:null,Max:null };
         }
+        else if (this.Name=="DRAWTEXTREL" || this.Name=="DRAWTEXTABS")
+        {
+            return { Min:null,Max:null };
+        }
         else
         {
             return this.SuperGetMaxMin();
         }
+    }
+
+    this.DrawRectText=function()
+    {
+        if (!this.DrawData) return;
+        var isHScreen=(this.ChartFrame.IsHScreen===true)
+        var border=this.ChartFrame.GetBorder();
+        
+
+        if (this.Name=="DRAWTEXTREL")
+        {
+            if (isHScreen)
+            {
+                var height=border.RightTitle-border.LeftEx;
+                var width=border.BottomEx-border.TopEx;
+                var x=this.DrawData.Point.X/1000*width+border.TopEx;
+                var y=border.RightTitle-this.DrawData.Point.Y/1000*width;
+            }
+            else
+            {
+                var width=border.RightEx-border.LeftEx;
+                var height=border.BottomEx-border.TopTitle;
+                var x=this.DrawData.Point.X/1000*width+border.LeftEx;
+                var y=this.DrawData.Point.Y/1000*height+border.TopTitle;
+            }
+            
+        }
+        else if (this.Name=="DRAWTEXTABS")
+        {
+            if (isHScreen)
+            {
+                var x=this.DrawData.Point.X+border.TopEx;
+                var y=border.RightTitle-this.DrawData.Point.Y;
+            }
+            else
+            {
+                var x=this.DrawData.Point.X+border.LeftEx;
+                var y=this.DrawData.Point.Y+border.TopTitle;
+            }
+        }
+        else
+        {
+            return;
+        }
+
+        if (this.Direction==1) this.Canvas.textBaseline='bottom';
+        else if (this.Direction==2) this.Canvas.textBaseline='top';
+        else this.Canvas.textBaseline='middle';
+        this.Canvas.textAlign='left';
+        this.Canvas.font=this.TextFont;
+        this.Canvas.fillStyle=this.Color;
+        this.DrawText(this.DrawData.Text,x,y,isHScreen);
     }
 
     this.Draw=function()
@@ -16786,6 +16842,12 @@ function ChartSingleText()
         if (this.NotSupportMessage)
         {
             this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (this.Name=="DRAWTEXTREL" || this.Name=="DRAWTEXTABS")
+        {
+            this.DrawRectText();
             return;
         }
 
@@ -17941,7 +18003,7 @@ function ChartMinuteInfo()
 
         this.YClose=this.ChartMinutePrice.YClose;
 
-        var data=this.ChartMinutePrice.Data;
+        var data=this.ChartMinutePrice.Source;
 
         for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
         {
