@@ -43535,6 +43535,18 @@ function MinuteChartContainer(uielement)
 
         return true;
     }
+
+    this.Super_UpdateFrameMaxMin=this.UpdateFrameMaxMin;
+    this.UpdateFrameMaxMin=function()
+    {
+        this.Super_UpdateFrameMaxMin();
+
+        if (this.DayCount==1)   //集合竞价多坐标,Y轴强制都计算
+        {
+            var subFrame=this.Frame.SubFrame[1];
+            if (subFrame.Frame) subFrame.Frame.XYSplit=true;
+        }
+    }
 }
 
 //盘前数据
