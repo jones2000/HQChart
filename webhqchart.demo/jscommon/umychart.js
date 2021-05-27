@@ -25091,6 +25091,7 @@ function FrameSplitY()
     this.LeftFrameBeforeSplitY=function(count)
     {
         if (this.IsShowLeftText==false) return;
+        if (this.Frame.Identify!=1) return;
 
         //2.0数据格式Y轴单独
         if (this.IsBeforeData==true && this.BeforeOpenData && (this.BeforeOpenData.Ver==2.0 || this.BeforeOpenData.Ver==3.0) )
@@ -25110,6 +25111,7 @@ function FrameSplitY()
     this.LeftFrameAfterSplitY=function(count)
     {
         if (this.IsShowRightText==false) return;
+        if (this.Frame.Identify!=1) return;
 
         //2.0数据格式Y轴单独
         if (this.IsAfterData==true && this.AfterCloseData && (this.AfterCloseData.Ver==2.0 || this.AfterCloseData.Ver==3.0) )
