@@ -15493,7 +15493,16 @@ function JSExplainer(ast,option)
     this.Run=function()
     { 
         try
-        {                       
+        {  
+            this.OutVarTable=[];
+            this.VarTable=new Map();
+            JSConsole.Complier.Log('[JSExecute::JSExplainer] Load Arguments', this.Arguments);
+            for(let i in this.Arguments)    //预定义的变量
+            {
+                let item =this.Arguments[i];
+                this.VarTable.set(item.Name,item.Value);
+            }
+
             let data=this.RunAST();//执行脚本
             JSConsole.Complier.Log('[JSExplainer.Run] explain finish', data);
             if (this.UpdateUICallback) //回调发送结果, 可以支持异步
@@ -16392,7 +16401,7 @@ function JSExplainer(ast,option)
             return this.SymbolPeriodExplain(aryPeriod[0],aryPeriod[1]);
         }
 
-        //this.ThrowUnexpectedNode(node, '变量'+name+'不存在');
+        this.ThrowUnexpectedNode(node, '变量'+name+'不存在');
         return name;
     }
 

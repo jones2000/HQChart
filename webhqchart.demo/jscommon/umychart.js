@@ -17676,6 +17676,7 @@ function ChartMinutePriceLine()
 
         var bFirstPoint=true;
         var ptLast={};  //最后一个点
+        var ptFirst={};
         var drawCount=0;
         var preColor=null;
         this.Canvas.save();
