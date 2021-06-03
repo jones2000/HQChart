@@ -29155,7 +29155,7 @@ function FrameSplitY()
             if (isAfterData)  var intervalRight=(this.AfterCloseData.VolMax-this.AfterCloseData.VolMin)/(count-1);
 
             var aryHorizontalInfo=[];
-            for(var i=0;i<=count;++i)
+            for(var i=0;i<count;++i)
             {
                 var item=new CoordinateInfo();
                 var yValue=intervalY*i;
@@ -29205,7 +29205,7 @@ function FrameSplitY()
         {
             var intervalY=(splitData.Max-splitData.Min)/(count-1);
             var aryHorizontalInfo=[];
-            for(var i=0;i<=count;++i)
+            for(var i=0;i<count;++i)
             {
                 var item=new CoordinateInfo();
                 var yValue=intervalY*i;
@@ -46580,6 +46580,7 @@ function MinuteChartContainer(uielement)
         this.ColorLineData=MinuteChartContainer.JsonDataToHistoryMinuteLineColorData(data);
         this.MultiDayBeforeOpenData=MinuteChartContainer.JosnDataToBeforeOpenDataArray(data);
         this.MultiDayAfterCloseData=MinuteChartContainer.JosnDataToAfterCloseDataArray(data);
+        this.CaclutateCallCationYRange();
         this.Symbol=data.symbol;
         this.Name=data.name;
         this.SetCallCationDataBorder( 
@@ -46595,6 +46596,52 @@ function MinuteChartContainer(uielement)
         this.BindAllOverlayIndexData(this.SourceData);
 
         this.AutoUpdate();
+    }
+
+    this.CaclutateCallCationYRange=function()
+    {
+        //多日集合竞价Y轴统一成交量
+        if (IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData))
+        {
+            var range={ Max:null, Min:null };
+            for(var i in this.MultiDayAfterCloseData)
+            {
+                var item=this.MultiDayAfterCloseData[i];
+                if (range.Max==null) range.Max=item.VolMax;
+                else if (range.Max<item.VolMax) range.Max=item.VolMax;
+
+                if (range.Min==null) range.Min=item.VolMin;
+                else if (range.Min>item.VolMin) range.Min=item.VolMin;
+            }
+
+            for(var i in this.MultiDayAfterCloseData)
+            {
+                var item=this.MultiDayAfterCloseData[i];
+                item.VolMax=range.Max;
+                item.VolMin=range.Min;
+            }
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData))
+        {
+            var range={ Max:null, Min:null };
+            for(var i in this.MultiDayBeforeOpenData)
+            {
+                var item=this.MultiDayBeforeOpenData[i];
+                if (range.Max==null) range.Max=item.VolMax;
+                else if (range.Max<item.VolMax) range.Max=item.VolMax;
+
+                if (range.Min==null) range.Min=item.VolMin;
+                else if (range.Min>item.VolMin) range.Min=item.VolMin;
+            }
+
+            for(var i in this.MultiDayBeforeOpenData)
+            {
+                var item=this.MultiDayBeforeOpenData[i];
+                item.VolMax=range.Max;
+                item.VolMin=range.Min;
+            }
+        }
     }
 
     this.UpdateHistoryMinuteUI=function()
@@ -46796,6 +46843,25 @@ function MinuteChartContainer(uielement)
         this.ColorLineData=aryColorLineData;
     }
 
+    this.UpdateCallCationData=function(beforeOpenData,afterCloseData)
+    {
+        if (beforeOpenData && IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData))
+        {
+            var lastItem=this.MultiDayBeforeOpenData[this.MultiDayBeforeOpenData.length-1];
+            if (lastItem.Date==beforeOpenData.Date)
+                this.MultiDayBeforeOpenData[this.MultiDayBeforeOpenData.length-1]=beforeOpenData;
+        }
+
+        if (afterCloseData && IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData))
+        {
+            var lastItem=this.MultiDayAfterCloseData[this.MultiDayBeforeOpenData.length-1];
+            if (lastItem.Date==afterCloseData.Date)
+                this.MultiDayAfterCloseData[this.MultiDayAfterCloseData.length-1]=afterCloseData;
+        }
+
+        this.CaclutateCallCationYRange();
+    }
+
     this.RecvMinuteData=function(data)
     {
         if (!data) 
@@ -46808,21 +46874,15 @@ function MinuteChartContainer(uielement)
         var aryColorData=MinuteChartContainer.JsonDataToMinuteLineColorData(data);
         this.BeforeOpenData=null;
         this.AfterCloseData=null;
+        var beforeOpenData=MinuteChartContainer.JsonDataToBeforeOpenData(data);
+        var afterCloseData=MinuteChartContainer.JsonDataToAfterCloseData(data);
 
-        if (this.IsBeforeData) 
-        {
-            var beforeOpenData=MinuteChartContainer.JsonDataToBeforeOpenData(data);
-            this.BeforeOpenData=beforeOpenData;
-        }
-
-        if (this.IsAfterData)
-        {
-            var afterCloseData=MinuteChartContainer.JsonDataToAfterCloseData(data);
-            this.AfterCloseData=afterCloseData;
-        }
+        if (this.IsBeforeData) this.BeforeOpenData=beforeOpenData;
+        if (this.IsAfterData) this.AfterCloseData=afterCloseData;
             
         if (this.DayCount>1)    //多日走势图
         {
+            this.UpdateCallCationData(beforeOpenData,afterCloseData);
             this.UpdateLineColorData(aryColorData,data.stock[0].date);
             this.UpdateLatestMinuteData(aryMinuteData,data.stock[0].date);
             this.UpdateHistoryMinuteUI();
@@ -47906,7 +47966,7 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var stockData=data.stock[0];
     var date=stockData.date;                //日期
-    var beforeOpenData={ Data:[], TotalCount:15, Ver:1.0 };
+    var beforeOpenData={ Data:[], TotalCount:15, Ver:1.0, Date:date };
     if (stockData.beforeinfo)
     {
         if (IFrameSplitOperator.IsNumber(stockData.beforeinfo.totalcount)) beforeOpenData.TotalCount=stockData.beforeinfo.totalcount;
@@ -47992,7 +48052,7 @@ MinuteChartContainer.JsonDataToAfterCloseData=function(data)
     var date=stockData.date;                //日期
     if (!stockData.afterinfo) return null;
 
-    var afterCloseData={ Data:[], TotalCount:3*60, Ver:2.0 };
+    var afterCloseData={ Data:[], TotalCount:3*60, Ver:2.0, Date:date };
     var item=stockData.afterinfo;
     if (IFrameSplitOperator.IsNumber(item.totalcount)) afterCloseData.TotalCount=item.totalcount;
     if (IFrameSplitOperator.IsNumber(item.ver)) afterCloseData.Ver=item.ver;
@@ -49857,7 +49917,7 @@ function DepthChartContainer(uielement)
     this.OnTouchStart=function(e)
     {
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
-        
+
         this.IsOnTouch=true;
         this.TouchDrawCount=0;
         this.PhonePinch=null;
