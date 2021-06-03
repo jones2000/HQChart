@@ -265,7 +265,7 @@ function JSChart(element)
             if (option.KLine.DataWidth>=1) chart.KLineSize={ DataWidth:option.KLine.DataWidth };
         }
 
-        if (option.SplashTitle) chart.SplashTitle = option.SplashTitle; //设置提示信息内容
+        if (option.SplashTitle) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
         if (!option.Windows || option.Windows.length <= 0) return null;
 
         if (option.Language) 
@@ -550,7 +550,7 @@ function JSChart(element)
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
 
         if (option.Info && option.Info.length > 0) chart.SetMinuteInfo(option.Info, false);
-        if (option.SplashTitle) chart.SplashTitle = option.SplashTitle; //设置提示信息内容
+        if (option.SplashTitle) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
 
         if (option.Language) 
         {
@@ -1244,14 +1244,23 @@ function JSChart(element)
     if (this.JSChartContainer) this.JSChartContainer.ontouchmove(e);
   }
 
-  this.OnTouchEnd = function (e) {
-    if (this.JSChartContainer) this.JSChartContainer.ontouchend(e);
-  }
+    this.OnTouchEnd = function (e) 
+    {
+        if (this.JSChartContainer) this.JSChartContainer.ontouchend(e);
+    }
 
-  this.SaveToImage = function (callback) {
-    if (this.JSChartContainer && typeof (this.JSChartContainer.SaveToImage) == 'function')
-      this.JSChartContainer.SaveToImage(callback);
-  }
+    this.SaveToImage = function (callback) 
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.SaveToImage) == 'function')
+            this.JSChartContainer.SaveToImage(callback);
+    }
+
+    this.EnableSplashScreen=function(option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.EnableSplashScreen)=='function')
+            this.JSChartContainer.EnableSplashScreen(option);
+    }
+
 }
 
 //初始化
@@ -1350,7 +1359,7 @@ function JSChartContainer(uielement)
     this.ChartCorssCursor;                            //十字光标
     this.IsClickShowCorssCursor = false;              //手势点击显示十字光标
     this.ChartSplashPaint = null;                     //等待提示
-    this.SplashTitle = '数据加载中';
+    this.LoadDataSplashTitle = '数据加载中';
     this.Canvas = uielement.GetContext("2d");         //画布
     this.UIElement = uielement;
     this.MouseDrag;
@@ -1474,6 +1483,8 @@ function JSChartContainer(uielement)
     //手机拖拽
     this.ontouchstart = function (e) 
     {
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
         var jsChart = this;
         //if (jsChart.DragMode == 0) return;
 
@@ -1549,6 +1560,8 @@ function JSChartContainer(uielement)
 
     this.ontouchmove = function (e) 
     {
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
         var jsChart = this;
         var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
 
@@ -1589,8 +1602,11 @@ function JSChartContainer(uielement)
                 }
             }
 
-            this.PhoneTouchInfo.End.X=touches[0].clientX;
-            this.PhoneTouchInfo.End.Y=touches[0].clientY;
+            if (this.PhoneTouchInfo)
+            {
+                this.PhoneTouchInfo.End.X=touches[0].clientX;
+                this.PhoneTouchInfo.End.Y=touches[0].clientY;
+            }
         }
         else if (this.IsPhonePinching(e))
         {
@@ -1642,6 +1658,8 @@ function JSChartContainer(uielement)
 
     this.ontouchend = function (e) 
     {
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
         this.IsOnTouch = false;
         JSConsole.Chart.Log('[JSChartContainer:ontouchend] IsOnTouch=' + this.IsOnTouch +' LastDrawStatus=' + this.LastDrawStatus);
         if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
@@ -2326,24 +2344,38 @@ function JSChartContainer(uielement)
     return data.DataOffset + index;
   }
 
-  this.SaveToImage = function (callback) {
-    let width = this.UIElement.Width;
-    let height = this.UIElement.Height;;
+    this.SaveToImage = function (callback) 
+    {
+        let width = this.UIElement.Width;
+        let height = this.UIElement.Height;;
+        JSConsole.Chart.Log('[JSChartContainer::SaveToImage]', this.UIElement);
 
-    JSConsole.Chart.Log('[JSChartContainer::SaveToImage]', this.UIElement);
+        wx.canvasToTempFilePath({
+            x: 0,
+            y: 0,
+            width: width,
+            height: height,
+            canvasId: this.UIElement.ID,
+            success: function (res) 
+            {
+                let data = { ImagePath: res.tempFilePath, Width: width, Height: height };
+                if (typeof (callback) == 'function') callback(data);
+            }
+        })
+    }
 
-    wx.canvasToTempFilePath({
-      x: 0,
-      y: 0,
-      width: width,
-      height: height,
-      canvasId: this.UIElement.ID,
-      success: function (res) {
-        let data = { ImagePath: res.tempFilePath, Width: width, Height: height };
-        if (typeof (callback) == 'function') callback(data);
-      }
-    })
-  }
+    //全屏提示信息 { Title:提示信息, Draw:false/true 是否立即重绘, }
+    this.EnableSplashScreen=function(option)
+    {
+        if (!this.ChartSplashPaint) return;
+        if (!option) return;
+
+        if (IFrameSplitOperator.IsString(option.Title)) this.ChartSplashPaint.SetTitle(option.Title);
+        this.ChartSplashPaint.EnableSplash(true);
+
+        if (option.Draw===false) return;
+        this.Draw();
+    }
 }
 
 function ToFixed(number, precision) 
@@ -6941,7 +6973,7 @@ function KLineChartContainer(uielement)
     this.MaxRequestMinuteDayCount = 5;    //分钟数据请求的天数
     this.PageSize = 200;                  //每页数据个数
     this.KLineDrawType = 0;               //0=K线 1=收盘价线 2=美国线
-    this.SplashTitle = '下载历史数据';
+    this.LoadDataSplashTitle = '下载历史数据';
     this.IsAutoUpdate = false;                    //是否自动更新行情数据
     this.AutoUpdateFrequency = 30000;             //30秒更新一次数据
     this.AutoUpdateTimer;                         //自动定时器
@@ -7067,7 +7099,7 @@ function KLineChartContainer(uielement)
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
         this.ChartSplashPaint.Canvas = this.Canvas;
-        this.ChartSplashPaint.SplashTitle = this.SplashTitle;
+        this.ChartSplashPaint.SplashTitle = this.LoadDataSplashTitle;
         this.ChartSplashPaint.HQChart=this;
 
         //创建框架容器
@@ -7403,6 +7435,7 @@ function KLineChartContainer(uielement)
     this.RequestHistoryData = function () 
     {
         var self = this;
+        this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
         this.ChartSplashPaint.EnableSplash(true);
         this.ResetDragDownload();
         this.Draw();
@@ -7531,8 +7564,10 @@ function KLineChartContainer(uielement)
     this.ReqeustHistoryMinuteData = function () 
     {
         var self = this;
+        this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
         this.ChartSplashPaint.EnableSplash(true);
         this.ResetDragDownload();
+        this.Draw();
 
         if (this.NetworkFilter)
         {
@@ -9502,8 +9537,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
         item.Close = list[i][close];
         item.High = list[i][high];
         item.Low = list[i][low];
-        if (isSHSZ) item.Vol = list[i][vol] / 100;    //原始单位股
-        else item.Vol = list[i][vol];    //原始单位股
+        item.Vol = list[i][vol];    //原始单位股
         item.Amount = list[i][amount];
         item.Time = list[i][time];
         if (IFrameSplitOperator.IsNumber(list[i][position])) item.Position = list[i][position]; //期货持仓
@@ -9572,7 +9606,7 @@ function MinuteChartContainer(uielement)
     this.AutoUpdateFrequency = 30000;             //30秒更新一次数据
     this.AutoUpdateTimer;                         //更新定时器
     this.TradeDate = 0;                           //行情交易日期
-    this.SplashTitle = '下载分钟数据';
+    this.LoadDataSplashTitle = '下载分钟数据';
     this.UpdateUICallback;                    //数据到达回调
 
     this.DayCount = 1;                       //显示几天的数据
@@ -9584,6 +9618,8 @@ function MinuteChartContainer(uielement)
     //手机拖拽
     this.ontouchstart = function (e) 
     {
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
         this.IsOnTouch = true;
         var jsChart = this;
         if (jsChart.DragMode == 0) return;
@@ -9642,6 +9678,8 @@ function MinuteChartContainer(uielement)
 
     this.ontouchmove = function (e) 
     {
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
         var jsChart = this;
         var drag = jsChart.MouseDrag;
         var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
@@ -9683,7 +9721,7 @@ function MinuteChartContainer(uielement)
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
         this.ChartSplashPaint.Canvas = this.Canvas;
-        this.ChartSplashPaint.SplashTitle = this.SplashTitle;
+        this.ChartSplashPaint.SplashTitle = this.LoadDataSplashTitle;
         this.ChartSplashPaint.HQChart=this;
 
         //创建框架容器
@@ -9924,19 +9962,22 @@ function MinuteChartContainer(uielement)
         return this.ChangeScriptIndex(windowIndex, indexData);
     }
 
-  //切换股票代码
-  this.ChangeSymbol = function (symbol) {
-    this.Symbol = symbol;
-    this.ChartSplashPaint.EnableSplash(true);
-    this.RequestData();
-  }
+    //切换股票代码
+    this.ChangeSymbol = function (symbol) 
+    {
+        this.Symbol = symbol;
+        this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
+        this.ChartSplashPaint.EnableSplash(true);
+        this.RequestData();
+    }
 
-  this.ChangeDayCount = function (count) {
-    if (count < 0 || count > 10) return;
-    this.DayCount = count;
+    this.ChangeDayCount = function (count) 
+    {
+        if (count < 0 || count > 10) return;
+        this.DayCount = count;
 
-    this.RequestData();
-  }
+        this.RequestData();
+    }
 
     //叠加股票 只支持日线数据
     this.OverlaySymbol = function (symbol,option) 
@@ -9991,6 +10032,7 @@ function MinuteChartContainer(uielement)
     this.RequestHistoryMinuteData = function ()     //请求历史分钟数据
     {
         var self = this;
+        this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
         this.ChartSplashPaint.EnableSplash(true);
         this.Draw();
 
@@ -11025,7 +11067,7 @@ function CustomKLineChartContainer(uielement) {
 
   this.ClassName = 'CustomKLineChartContainer';
   this.ChangeRight = null;  //没有复权设置
-  this.SplashTitle = '计算指数数据';
+  this.LoadDataSplashTitle = '计算指数数据';
 
   this.CustomKLineApiUrl = g_JSChartResource.Domain + "/API/IndexCalculate";  //自定义指数计算地址
   this.CustomStock;   //成分
@@ -11033,6 +11075,7 @@ function CustomKLineChartContainer(uielement) {
 
   this.RequestHistoryData = function () {
     var self = this;
+    this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
     this.ChartSplashPaint.EnableSplash(true);
     this.Draw();
     wx.request({
@@ -11106,24 +11149,28 @@ function CustomKLineChartContainer(uielement) {
 ////////////////////////////////////////////////////////////////////////////////
 //  K线横屏显示
 //
-function KLineChartHScreenContainer(uielement) {
-  this.newMethod = KLineChartContainer;   //派生
-  this.newMethod(uielement);
-  delete this.newMethod;
+function KLineChartHScreenContainer(uielement) 
+{
+    this.newMethod = KLineChartContainer;   //派生
+    this.newMethod(uielement);
+    delete this.newMethod;
 
-  this.ClassName = 'KLineChartHScreenContainer';
+    this.ClassName = 'KLineChartHScreenContainer';
 
-  this.OnMouseMove = function (x, y, e) {
-    this.LastPoint.X = x;
-    this.LastPoint.Y = y;
-    this.CursorIndex = this.Frame.GetXData(y);
+    this.OnMouseMove = function (x, y, e) 
+    {
+        this.LastPoint.X = x;
+        this.LastPoint.Y = y;
+        this.CursorIndex = this.Frame.GetXData(y);
 
-    this.DrawDynamicInfo();
-  }
+        this.DrawDynamicInfo();
+    }
 
-  //手机拖拽
-  this.ontouchstart = function (e) 
-  {
+    //手机拖拽
+    this.ontouchstart = function (e) 
+    {
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
         var jsChart = this;
         if (jsChart.DragMode == 0) return;
 
@@ -11184,6 +11231,8 @@ function KLineChartHScreenContainer(uielement) {
 
     this.ontouchmove = function (e) 
     {
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
         var jsChart = this;
         var touches = this.GetToucheData(e);
 
@@ -11477,7 +11526,7 @@ function MinuteChartHScreenContainer(uielement) {
     //创建等待提示
     this.ChartSplashPaint = new ChartSplashPaint();
     this.ChartSplashPaint.Canvas = this.Canvas;
-    this.ChartSplashPaint.SplashTitle = this.SplashTitle;
+    this.ChartSplashPaint.SplashTitle = this.LoadDataSplashTitle;
 
     //创建框架容器
     this.Frame = new HQTradeHScreenFrame();
@@ -12044,6 +12093,7 @@ function DepthChartContainer(uielement)
         this.MapAsk=new Map();
         this.Frame.VerticalRange.Differ=null;
 
+        this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
         this.ChartSplashPaint.EnableSplash(true);
         this.Draw();
 

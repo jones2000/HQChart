@@ -1,12 +1,12 @@
 <template>
     <div id="app2" >
-        <div style="height:300px; width:500px;">
+        <div style="height:300px; width:100%;">
             <StockChart ref='hqchart' DefaultSymbol='000001.sz' :DefaultOption=this.Option />
         </div>
-        <div style="height:300px; width:500px;">
+        <div style="height:300px; width:80%;">
             <StockChart ref='hqchart2' DefaultSymbol='000001.sz' :DefaultOption=this.Option2 />
         </div>
-        <div style="height:300px; width:500px;">
+        <div style="height:300px; width:70%;">
             <StockChart ref='hqchart3' DefaultSymbol='000001.sz' :DefaultOption=this.Option3 />
         </div>
          <div style="height:300px; width:500px;">
@@ -66,11 +66,11 @@ export default
 
     created:function()
     {
-        
     },
 
     mounted:function()
     {
+        window.onresize = ()=> { this.OnSize() }
         this.OnSize();
     },
 

@@ -16092,6 +16092,10 @@ function JSExplainer(ast,option)
                 return `自定色[${args[0]},${args[1]},${args[2]}]`;
             case "DRAWBAND":
                 return '画带状线';
+            case "DRAWRECTREL":
+                return "相对位置上画矩形.";
+            case "DRAWGBK":
+                return "填充背景";
         }
     }
 

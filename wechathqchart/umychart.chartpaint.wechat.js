@@ -3513,6 +3513,11 @@ function ChartSplashPaint()
             }
         }
     }
+
+    this.SetTitle=function(title)
+    {
+        this.SplashTitle=title;
+    }
   
     this.Draw = function () 
     {
