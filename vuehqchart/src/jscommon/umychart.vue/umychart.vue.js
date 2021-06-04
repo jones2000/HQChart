@@ -19354,24 +19354,6 @@ function ChartMinuteVolumBar()
         range.Min=0;
         range.Max=null;
 
-        if (this.ChartBorder.LeftExtendWidth>10 && this.BeforeOpenData && this.BeforeOpenData.Ver==1.0)
-        {
-            for(var i in this.BeforeOpenData.Data)
-            {
-                var item=this.BeforeOpenData.Data[i];
-                if (!item || !item.Vol) continue;
-                if (IFrameSplitOperator.IsNumber(item.Vol[0]))
-                {
-                    var vol=item.Vol[0]+item.Vol[0];
-                    if (range.Max==null) range.Max=vol;
-                    if (range.Min==null) range.Min=vol;
-    
-                    if (range.Max<vol) range.Max=vol;
-                    if (range.Min>vol) range.Min=vol;
-                }
-            }
-        }
-
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var item = this.Data.Data[i];
@@ -27977,9 +27959,14 @@ function IFrameSplitOperator()
 
         if (data.Interval==splitItem.FixInterval) return true;
 
+        var fixMax=data.Max, fixMin=data.Min;
+
+        var maxValue=data.Max/splitItem.FixInterval;
+        var minValue=data.Min/splitItem.FixInterval;
         //调整到整数倍数,不能整除的 +1
-        var fixMax=parseInt((data.Max/(splitItem.FixInterval)+0.5).toFixed(0))*splitItem.FixInterval;
-        var fixMin=parseInt((data.Min/(splitItem.FixInterval)-0.5).toFixed(0))*splitItem.FixInterval;
+        if (IFrameSplitOperator.IsFloat(maxValue)) fixMax=Math.ceil(maxValue)*splitItem.FixInterval;
+        if (IFrameSplitOperator.IsFloat(minValue)) fixMin=Math.ceil(minValue)*splitItem.FixInterval;
+
         if (data.Min==0) fixMin=0;  //最小值是0 不用调整了.
         if (fixMin<0 && data.Min>0) fixMin=0;   //都是正数的, 最小值最小调整为0
 
@@ -28420,6 +28407,15 @@ IFrameSplitOperator.IsNonEmptyArray=function(ary)
     if (!Array.isArray(ary)) return;
 
     return ary.length>0;
+}
+
+IFrameSplitOperator.IsFloat=function(value)
+{
+    if (value===undefined) return false;
+    if (value==null) return false;
+    if (isNaN(value)) return false;
+
+    return value!=parseInt(value);
 }
 
 IFrameSplitOperator.RemoveZero=function(strValue)

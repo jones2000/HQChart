@@ -60,12 +60,14 @@ function IFrameSplitOperator()
     {
         var splitItem = this.FrameSplitData.Find(data.Interval);
         if (!splitItem) return false;
-
         if (data.Interval == splitItem.Interval) return true;
 
+        var fixMax=data.Max, fixMin=data.Min;
+        var maxValue=data.Max/splitItem.FixInterval;
+        var minValue=data.Min/splitItem.FixInterval;
         //调整到整数倍数,不能整除的 +1
-        var fixMax = parseInt((data.Max / (splitItem.FixInterval) + 0.5).toFixed(0)) * splitItem.FixInterval;
-        var fixMin = parseInt((data.Min / (splitItem.FixInterval) - 0.5).toFixed(0)) * splitItem.FixInterval;
+        if (IFrameSplitOperator.IsFloat(maxValue)) fixMax=Math.ceil(maxValue)*splitItem.FixInterval;
+        if (IFrameSplitOperator.IsFloat(minValue)) fixMin=Math.ceil(minValue)*splitItem.FixInterval;
         if (data.Min == 0) fixMin = 0;  //最小值是0 不用调整了.
         if (fixMin < 0 && data.Min > 0) fixMin = 0;   //都是正数的, 最小值最小调整为0
 
@@ -456,6 +458,24 @@ IFrameSplitOperator.IsString=function(value)
     return false;
 }
 
+IFrameSplitOperator.IsFloat=function(value)
+{
+    if (value===undefined) return false;
+    if (value==null) return false;
+    if (isNaN(value)) return false;
+
+    return value!=parseInt(value);
+}
+
+//是否是非空的数组
+IFrameSplitOperator.IsNonEmptyArray=function(ary)
+{
+    if (!ary) return;
+    if (!Array.isArray(ary)) return;
+
+    return ary.length>0;
+}
+
 //K线Y轴分割
 function FrameSplitKLinePriceY() 
 {
@@ -662,12 +682,14 @@ function FrameSplitKLinePriceY()
     {
         var splitItem = this.FrameSplitData2.Find(data.Interval);
         if (!splitItem) return false;
-
         if (data.Interval == splitItem.FixInterval) return true;
 
+        var fixMax=data.Max, fixMin=data.Min;
+        var maxValue=data.Max/splitItem.FixInterval;
+        var minValue=data.Min/splitItem.FixInterval;
         //调整到整数倍数,不能整除的 +1
-        var fixMax = parseInt((data.Max / (splitItem.FixInterval) + 0.5).toFixed(0)) * splitItem.FixInterval;
-        var fixMin = parseInt((data.Min / (splitItem.FixInterval) - 0.5).toFixed(0)) * splitItem.FixInterval;
+        if (IFrameSplitOperator.IsFloat(maxValue)) fixMax=Math.ceil(maxValue)*splitItem.FixInterval;
+        if (IFrameSplitOperator.IsFloat(minValue)) fixMin=Math.ceil(minValue)*splitItem.FixInterval;
         if (data.Min == 0) fixMin = 0;  //最小值是0 不用调整了.
         if (fixMin < 0 && data.Min > 0) fixMin = 0;   //都是正数的, 最小值最小调整为0
 
