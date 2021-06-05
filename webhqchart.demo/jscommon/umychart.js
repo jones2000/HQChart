@@ -23955,7 +23955,7 @@ function IFrameSplitOperator()
         var minValue=data.Min/splitItem.FixInterval;
         //调整到整数倍数,不能整除的 +1
         if (IFrameSplitOperator.IsFloat(maxValue)) fixMax=Math.ceil(maxValue)*splitItem.FixInterval;
-        if (IFrameSplitOperator.IsFloat(minValue)) fixMin=Math.ceil(minValue)*splitItem.FixInterval;
+        if (IFrameSplitOperator.IsFloat(minValue)) fixMin=parseInt(minValue)*splitItem.FixInterval;
 
         if (data.Min==0) fixMin=0;  //最小值是0 不用调整了.
         if (fixMin<0 && data.Min>0) fixMin=0;   //都是正数的, 最小值最小调整为0
