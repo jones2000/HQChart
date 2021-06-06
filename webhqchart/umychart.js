@@ -300,6 +300,7 @@ function JSChart(divElement, bOffscreen)
                 if (IFrameSplitOperator.IsBool(item.EnableRemoveZero)) chart.Frame.SubFrame[i].Frame.YSplitOperator.EnableRemoveZero=item.EnableRemoveZero;
                 if (IFrameSplitOperator.IsPlusNumber(item.MinYDistance)) chart.Frame.SubFrame[i].Frame.MinYDistance=item.MinYDistance;
                 if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
+                if (IFrameSplitOperator.IsBool(item.IsShowIndexTitle)) chart.Frame.SubFrame[i].Frame.IsShowIndexTitle=item.IsShowIndexTitle;
             }
         }
 
@@ -5051,6 +5052,7 @@ function IChartFramePainting()
     this.IsShowIndexName=true;         //是否显示指标名字
     this.IsShowOverlayIndexName=true;  //是否显示叠加指标名字
     this.IndexParamSpace=2;            //指标参数数值显示间距
+    this.IsShowIndexTitle=true;        //显示整个指标标题信息
 
     this.BorderLine=null;               //1=上 2=下 4=左 8=右
     this.Buttons=[];                    //按钮事件 
@@ -23954,8 +23956,8 @@ function IFrameSplitOperator()
         var maxValue=data.Max/splitItem.FixInterval;
         var minValue=data.Min/splitItem.FixInterval;
         //调整到整数倍数,不能整除的 +1
-        if (IFrameSplitOperator.IsFloat(maxValue)) fixMax=Math.ceil(maxValue)*splitItem.FixInterval;
-        if (IFrameSplitOperator.IsFloat(minValue)) fixMin=parseInt(minValue)*splitItem.FixInterval;
+        if (IFrameSplitOperator.IsFloat(maxValue)) fixMax=parseInt((maxValue+0.5).toFixed(0))*splitItem.FixInterval;
+        if (IFrameSplitOperator.IsFloat(minValue)) fixMin=parseInt((minValue-0.5).toFixed(0))*splitItem.FixInterval;
 
         if (data.Min==0) fixMin=0;  //最小值是0 不用调整了.
         if (fixMin<0 && data.Min>0) fixMin=0;   //都是正数的, 最小值最小调整为0
@@ -28079,6 +28081,7 @@ function IChartTitlePainting()
     this.TitleColor=g_JSChartResource.DefaultTextColor;
     this.ClassName='IChartTitlePainting';
     this.DrawStatus;
+    this.GetEventCallback;
 
     this.ReloadResource=function()
     {
@@ -28813,13 +28816,14 @@ function DynamicChartTitlePainting()
     this.ClassName='DynamicChartTitlePainting';
 
     this.IsDynamic=true;
-    this.Data=new Array();
+    this.Data=[];
     this.Explain;
 
     this.ColorIndex;    //五彩K线名字 {Name:'名字'}
     this.IsShowColorIndexTitle=true;
     this.IsShowUpDownArrow=true;   //指标数据是否显示 上涨下跌箭头
     this.IsShowIndexName=true;     //是否显示指标名字
+    this.IsShowIndexTitle=true;    //是否显示指标标题信息
 
     this.TradeIndex;    //专家系统名字{Name:'名字', Param:'参数'}
     this.IsShowTradeIndexTitle=true;
@@ -28993,6 +28997,28 @@ function DynamicChartTitlePainting()
         return isShowLastData;
     }
 
+    this.OnDrawTitleEvent=function()
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_INDEXTITLE_DRAW);
+        if (!event) return;
+        
+        var data={ Index:null, Data:this.Data ,Title:this.Title, FrameID:this.Frame.Identify, OverlayIndex:this.OverlayIndex };
+        if (IFrameSplitOperator.IsNumber(this.CursorIndex))
+        {
+            var index=Math.abs(this.CursorIndex);
+            index=parseInt(index.toFixed(0));
+            data.Index=index;   //当前屏数据索引
+        }
+
+        var border=this.Frame.GetBorder();
+        data.Left=border.LeftEx;
+        data.Top=border.Top;
+        data.Right=border.RightEx;
+
+        event.Callback(event,data,this);
+        
+    }
+
     this.Draw=function()
     {
         this.IsKLineFrame= this.Frame.ClassName=='KLineFrame' || this.Frame.ClassName=='KLineHScreenFrame';
@@ -29002,6 +29028,10 @@ function DynamicChartTitlePainting()
         this.IsShowOverlayIndexName=this.Frame.IsShowOverlayIndexName;
         this.ParamSpace=this.Frame.IndexParamSpace;
         this.TitleRect=null;
+
+        this.OnDrawTitleEvent();
+
+        if (this.Frame.IsShowIndexTitle==false) return;
         if (this.CursorIndex==null ) return;
         if (!this.Data) return;
         if (this.Frame.ChartBorder.TitleHeight<5) return;
@@ -36699,6 +36729,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             titlePaint.Frame=this.Frame.SubFrame[i].Frame;
             titlePaint.Canvas=this.Canvas;
             titlePaint.LanguageID=this.LanguageID;
+            titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
 
             this.TitlePaint.push(titlePaint);
         }
@@ -39140,6 +39171,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                 titlePaint.Frame=this.Frame.SubFrame[i].Frame;
                 titlePaint.Canvas=this.Canvas;
                 titlePaint.LanguageID=this.LanguageID;
+                titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 this.TitlePaint[i+1]=titlePaint;
             }
 
@@ -39249,6 +39281,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                 titlePaint.Frame=this.Frame.SubFrame[i].Frame;
                 titlePaint.Canvas=this.Canvas;
                 titlePaint.LanguageID=this.LanguageID;
+                titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 this.TitlePaint[i+1]=titlePaint;
             } 
         }
@@ -41939,7 +41972,7 @@ function MinuteChartContainer(uielement)
             titlePaint.Frame=this.Frame.SubFrame[i].Frame;
             titlePaint.Canvas=this.Canvas;
             titlePaint.LanguageID=this.LanguageID;
-
+            titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             this.TitlePaint.push(titlePaint);
         }
 
@@ -42263,6 +42296,7 @@ function MinuteChartContainer(uielement)
                 titlePaint.Frame=this.Frame.SubFrame[i].Frame;
                 titlePaint.Canvas=this.Canvas;
                 titlePaint.LanguageID=this.LanguageID;
+                titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 this.TitlePaint[i+1]=titlePaint;
             }
 
@@ -45596,6 +45630,7 @@ function KLineChartHScreenContainer(uielement)
             titlePaint.Frame=this.Frame.SubFrame[i].Frame;
             titlePaint.Canvas=this.Canvas;
             titlePaint.LanguageID=this.LanguageID;
+            titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             this.TitlePaint.push(titlePaint);
         }
 
@@ -45732,6 +45767,7 @@ function MinuteChartHScreenContainer(uielement)
             titlePaint.Frame=this.Frame.SubFrame[i].Frame;
             titlePaint.Canvas=this.Canvas;
             titlePaint.LanguageID=this.LanguageID;
+            titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             this.TitlePaint.push(titlePaint);
         }
         
