@@ -9122,7 +9122,7 @@ function IChartFramePainting()
     {
         if (this.ChartBorder.TitleHeight<=0) return;
 
-        var border=this.ChartBorder.GetBorder();
+        var border=this.GetBorder();
 
         var left=ToFixedPoint(border.Left);
         var top=ToFixedPoint(border.Top);
@@ -9133,6 +9133,14 @@ function IChartFramePainting()
 
         this.Canvas.fillStyle=this.TitleBGColor;
         this.Canvas.fillRect(left,top,width,height);
+
+        if (this.ChartBorder.TopSpace>=5)
+        {
+            this.Canvas.strokeStyle=this.PenBorder;
+            this.Canvas.moveTo(left,ToFixedPoint(border.TopTitle));
+            this.Canvas.lineTo(right,ToFixedPoint(border.TopTitle));
+            this.Canvas.stroke();
+        }
     }
 
     this.DrawLock=function()
@@ -9658,9 +9666,10 @@ function AverageWidthFrame()
     //画X轴
     this.DrawVertical=function()
     {
-        var top=this.ChartBorder.GetTopTitle();
-        var bottom=this.ChartBorder.GetBottom();
-        var right=this.ChartBorder.GetRight();
+        var border=this.GetBorder();
+        var top=border.TopTitle;
+        var bottom=border.Bottom;
+        var right=border.RightEx;
         var pixelRatio = GetDevicePixelRatio(); //获取设备的分辨率
         //JSConsole.Chart.Log('[AverageWidthFrame.DrawVertical] bottom',bottom);
         if (this.ChartBorder.Bottom<=5*GetDevicePixelRatio()) return;   //高度不够 不显示
@@ -40750,8 +40759,8 @@ function KLineChartContainer(uielement,OffscreenElement)
                 frame.YSplitOperator.FrameSplitData2=this.FrameSplitData.get('double');
                 frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
-                border.BottomSpace=12*pixelTatio;  //主图上下留空间
-                border.TopSpace=12*pixelTatio;
+                border.BottomSpace=15*pixelTatio;  //主图上下留空间
+                border.TopSpace=15*pixelTatio;
             }
             else
             {
@@ -67314,18 +67323,51 @@ function JSDraw(errorHandler,symbolData)
     */
     this.DRAWBAND=function(data,color,data2,color2)
     {
-        let drawData=[];
-        let result={DrawData:drawData, DrawType:'DRAWBAND', Color:[color.toLowerCase(),color2.toLowerCase()]};  //颜色使用小写字符串
-        let count=Math.max(data.length, data2.length);
-
-        for(let i=0;i<count;++i)
+        var drawData=[];
+        var result={DrawData:drawData, DrawType:'DRAWBAND', Color:[color.toLowerCase(),color2.toLowerCase()]};  //颜色使用小写字符串
+        var isNumber=IFrameSplitOperator.IsNumber(data);
+        var isNumber2=IFrameSplitOperator.IsNumber(data2);
+        if (!isNumber && !isNumber2)
         {
-            let item={Value:null, Value2:null};
-            if (i<data.length) item.Value=data[i];
-            if (i<data2.length) item.Value2=data2[i];
-
-            drawData.push(item);
+            var count=Math.max(data.length, data2.length);
+            for(var i=0;i<count;++i)
+            {
+                var item={Value:null, Value2:null};
+                if (i<data.length) item.Value=data[i];
+                if (i<data2.length) item.Value2=data2[i];
+                drawData.push(item);
+            }
         }
+        else if (isNumber && !isNumber2)
+        {
+            var count=data2.length;
+            for(var i=0;i<count;++i)
+            {
+                var item={Value:data, Value2:null};
+                if (i<data2.length) item.Value2=data2[i];
+                drawData.push(item);
+            }
+        }
+        else if (!isNumber && isNumber2)
+        {
+            var count=data.length;
+            for(var i=0;i<count;++i)
+            {
+                var item={Value:null, Value2:data2};
+                if (i<data.length) item.Value=data[i];
+                drawData.push(item);
+            }
+        }
+        else if (isNumber && isNumber2)
+        {
+            var count=this.SymbolData.Data.Data.length;
+            for(var i=0;i<count;++i)
+            {
+                var item={Value:data, Value2:data2};
+                drawData.push(item);
+            }
+        }
+        
 
         return result;
     }

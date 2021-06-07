@@ -8491,18 +8491,51 @@ function JSDraw(errorHandler,symbolData)
     */
     this.DRAWBAND=function(data,color,data2,color2)
     {
-        let drawData=[];
-        let result={DrawData:drawData, DrawType:'DRAWBAND', Color:[color.toLowerCase(),color2.toLowerCase()]};  //颜色使用小写字符串
-        let count=Math.max(data.length, data2.length);
-
-        for(let i=0;i<count;++i)
+        var drawData=[];
+        var result={DrawData:drawData, DrawType:'DRAWBAND', Color:[color.toLowerCase(),color2.toLowerCase()]};  //颜色使用小写字符串
+        var isNumber=IFrameSplitOperator.IsNumber(data);
+        var isNumber2=IFrameSplitOperator.IsNumber(data2);
+        if (!isNumber && !isNumber2)
         {
-            let item={Value:null, Value2:null};
-            if (i<data.length) item.Value=data[i];
-            if (i<data2.length) item.Value2=data2[i];
-
-            drawData.push(item);
+            var count=Math.max(data.length, data2.length);
+            for(var i=0;i<count;++i)
+            {
+                var item={Value:null, Value2:null};
+                if (i<data.length) item.Value=data[i];
+                if (i<data2.length) item.Value2=data2[i];
+                drawData.push(item);
+            }
         }
+        else if (isNumber && !isNumber2)
+        {
+            var count=data2.length;
+            for(var i=0;i<count;++i)
+            {
+                var item={Value:data, Value2:null};
+                if (i<data2.length) item.Value2=data2[i];
+                drawData.push(item);
+            }
+        }
+        else if (!isNumber && isNumber2)
+        {
+            var count=data.length;
+            for(var i=0;i<count;++i)
+            {
+                var item={Value:null, Value2:data2};
+                if (i<data.length) item.Value=data[i];
+                drawData.push(item);
+            }
+        }
+        else if (isNumber && isNumber2)
+        {
+            var count=this.SymbolData.Data.Data.length;
+            for(var i=0;i<count;++i)
+            {
+                var item={Value:data, Value2:data2};
+                drawData.push(item);
+            }
+        }
+        
 
         return result;
     }

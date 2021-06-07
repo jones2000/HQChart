@@ -5156,7 +5156,7 @@ function IChartFramePainting()
     {
         if (this.ChartBorder.TitleHeight<=0) return;
 
-        var border=this.ChartBorder.GetBorder();
+        var border=this.GetBorder();
 
         var left=ToFixedPoint(border.Left);
         var top=ToFixedPoint(border.Top);
@@ -5167,6 +5167,14 @@ function IChartFramePainting()
 
         this.Canvas.fillStyle=this.TitleBGColor;
         this.Canvas.fillRect(left,top,width,height);
+
+        if (this.ChartBorder.TopSpace>=5)
+        {
+            this.Canvas.strokeStyle=this.PenBorder;
+            this.Canvas.moveTo(left,ToFixedPoint(border.TopTitle));
+            this.Canvas.lineTo(right,ToFixedPoint(border.TopTitle));
+            this.Canvas.stroke();
+        }
     }
 
     this.DrawLock=function()
@@ -5692,9 +5700,10 @@ function AverageWidthFrame()
     //画X轴
     this.DrawVertical=function()
     {
-        var top=this.ChartBorder.GetTopTitle();
-        var bottom=this.ChartBorder.GetBottom();
-        var right=this.ChartBorder.GetRight();
+        var border=this.GetBorder();
+        var top=border.TopTitle;
+        var bottom=border.Bottom;
+        var right=border.RightEx;
         var pixelRatio = GetDevicePixelRatio(); //获取设备的分辨率
         //JSConsole.Chart.Log('[AverageWidthFrame.DrawVertical] bottom',bottom);
         if (this.ChartBorder.Bottom<=5*GetDevicePixelRatio()) return;   //高度不够 不显示
@@ -36784,8 +36793,8 @@ function KLineChartContainer(uielement,OffscreenElement)
                 frame.YSplitOperator.FrameSplitData2=this.FrameSplitData.get('double');
                 frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
-                border.BottomSpace=12*pixelTatio;  //主图上下留空间
-                border.TopSpace=12*pixelTatio;
+                border.BottomSpace=15*pixelTatio;  //主图上下留空间
+                border.TopSpace=15*pixelTatio;
             }
             else
             {
