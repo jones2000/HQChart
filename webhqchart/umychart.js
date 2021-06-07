@@ -29010,10 +29010,11 @@ function DynamicChartTitlePainting()
             data.Index=index;   //当前屏数据索引
         }
 
+        var pixelTatio = GetDevicePixelRatio();
         var border=this.Frame.GetBorder();
-        data.Left=border.LeftEx;
-        data.Top=border.Top;
-        data.Right=border.RightEx;
+        data.Left=border.LeftEx/pixelTatio;
+        data.Top=border.Top/pixelTatio;
+        data.Right=border.RightEx/pixelTatio;
 
         event.Callback(event,data,this);
         
@@ -39213,6 +39214,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                 if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
                 if (item.IsShowXLine==false) this.Frame.SubFrame[i].Frame.IsShowXLine=false;
                 if (item.IsShowYLine==false) this.Frame.SubFrame[i].Frame.IsShowYLine=false;
+                if (IFrameSplitOperator.IsBool(item.IsShowIndexTitle)) this.Frame.SubFrame[i].Frame.IsShowIndexTitle=item.IsShowIndexTitle;
 
                 var bindData=this.ChartPaint[0].Data;
                 this.BindIndexData(i,bindData);   //执行脚本
