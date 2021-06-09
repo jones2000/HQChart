@@ -5680,6 +5680,7 @@ function ChartMinutePriceLine()
         }
 
         if (!this.IsShow) return;
+        if (!this.Data) return;
 
         var isHScreen = (this.ChartFrame.IsHScreen === true);
         var dataWidth = this.ChartFrame.DataWidth;
@@ -7435,6 +7436,7 @@ function KLineChartContainer(uielement)
     this.RequestHistoryData = function () 
     {
         var self = this;
+        this.CancelAutoUpdate();
         this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
         this.ChartSplashPaint.EnableSplash(true);
         this.ResetDragDownload();
@@ -7564,6 +7566,7 @@ function KLineChartContainer(uielement)
     this.ReqeustHistoryMinuteData = function () 
     {
         var self = this;
+        this.CancelAutoUpdate();
         this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
         this.ChartSplashPaint.EnableSplash(true);
         this.ResetDragDownload();
@@ -9121,6 +9124,7 @@ function KLineChartContainer(uielement)
         this.CancelAutoUpdate();
         if (!this.IsAutoUpdate) return;
         if (!this.Symbol) return;
+        if (this.IsDestroy) return;
 
         var self = this;
         var marketStatus = MARKET_SUFFIX_NAME.GetMarketStatus(this.Symbol);
@@ -9966,6 +9970,7 @@ function MinuteChartContainer(uielement)
     this.ChangeSymbol = function (symbol) 
     {
         this.Symbol = symbol;
+        this.CancelAutoUpdate();    //先停止定时器
         this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
         this.ChartSplashPaint.EnableSplash(true);
         this.RequestData();
@@ -9975,7 +9980,7 @@ function MinuteChartContainer(uielement)
     {
         if (count < 0 || count > 10) return;
         this.DayCount = count;
-
+        this.CancelAutoUpdate();    //先停止定时器
         this.RequestData();
     }
 
@@ -10477,6 +10482,7 @@ function MinuteChartContainer(uielement)
         this.CancelAutoUpdate();
         if (!this.IsAutoUpdate) return;
         if (!this.Symbol) return;
+        if (this.IsDestroy) return;
 
         var self = this;
         var marketStatus = MARKET_SUFFIX_NAME.GetMarketStatus(this.Symbol);
@@ -10736,6 +10742,11 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
         item.DateTime = date.toString() + " " + jsData.time.toString();
         item.Date = data.stock[0].date;
         item.Time = jsData.time;
+        if (8<jsData.length && jsData[8]>0) 
+        {
+            item.Date=jsData[8];    //日期
+            item.DateTime=item.Date.toString()+" "+jsData[0].toString();
+        }
         if (isFutures || isSHO) item.Position = jsData.position;  //期货 期权有持仓
 
         if (i == 0)      //第1个数据 写死9：25
@@ -10791,7 +10802,8 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
             item.Open = jsData[1];
             item.High = jsData[3];
             item.Low = jsData[4];
-            item.Vol = jsData[5] / 100; //原始单位股
+            if(isSHSZ) item.Vol = jsData[5] / 100; //原始单位股
+            else item.Vol = jsData[5];
             item.Amount = jsData[6];
 
             if (7 < jsData.length && jsData[7] > 0) 
@@ -10814,6 +10826,11 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
             item.DateTime = date.toString() + " " + jsData[0].toString();
             item.Date = date;
             item.Time = jsData[0];
+            if (8<jsData.length && jsData[8]>0) 
+            {
+                item.Date=jsData[8];    //日期
+                item.DateTime=item.Date.toString()+" "+jsData[0].toString();
+            }
             if ((isFutures || isSHO) && 9 < jsData.length) item.Position = jsData[9];  //持仓
 
             if (j == 0 )      
@@ -12275,6 +12292,7 @@ function DepthChartContainer(uielement)
         this.CancelAutoUpdate();
         if (!this.IsAutoUpdate) return;
         if (!this.Symbol) return;
+        if (this.IsDestroy) return;
 
         var self = this;
         var marketStatus=MARKET_SUFFIX_NAME.GetMarketStatus(this.Symbol);

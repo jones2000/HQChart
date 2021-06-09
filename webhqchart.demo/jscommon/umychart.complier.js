@@ -10182,14 +10182,22 @@ function JSSymbolData(ast,option,jsExecute)
         {
             if (this.NetworkFilter)
             {
+                var dateRange=this.Data.GetDateRange();
                 var obj=
                 {
                     Name:'JSSymbolData::GetIndexData', //类名::
                     Explain:'大盘数据',
                     Period:self.Period,
-                    Request:{ Url:self.KLineApiUrl,  Type:'POST' ,
-                        Data: { field:[ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
-                            symbol: '000001.sh', start: -1 , count: self.MaxRequestDataCount+500 } },
+                    Request:
+                    { 
+                        Url:self.KLineApiUrl,  Type:'POST' ,
+                        Data: 
+                        { 
+                            field:[ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
+                            indexSymbol:"000001.sh", symbol: this.Symbol, period:this.Period,
+                            dateRange:dateRange 
+                        } 
+                    },
                     Self:this,
                     PreventDefault:false
                 };
@@ -10229,14 +10237,20 @@ function JSSymbolData(ast,option,jsExecute)
         {
             if (this.NetworkFilter)
             {
+                var dateRange=this.Data.GetDateRange();
                 var obj=
                 {
                     Name:'JSSymbolData::GetIndexData', //类名::
                     Explain:'大盘数据',
                     Period:self.Period,
                     Request:{ Url:self.MinuteKLineApiUrl,  Type:'POST' ,
-                        Data: { field:["name","symbol","yclose","open","price","high","low","vol"],
-                            symbol: '000001.sh', start: -1 , count: self.MaxRequestDataCount+5 } },
+                        Data: 
+                        { 
+                            field:["name","symbol","yclose","open","price","high","low","vol"],
+                            indexSymbol:"000001.sh", symbol: this.Symbol, period:this.Period,
+                            dateRange:dateRange 
+                        } 
+                    },
                     Self:this,
                     PreventDefault:false
                 };
@@ -10284,13 +10298,21 @@ function JSSymbolData(ast,option,jsExecute)
         this.IndexData.DataType=0; /*日线数据 */
         this.IndexData.Data=hisData;
 
-        var aryOverlayData=this.SourceData.GetOverlayData(this.IndexData.Data);      //和主图数据拟合以后的数据
-        this.IndexData.Data=aryOverlayData;
-
-        if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
+        if (this.IsApiPeriod==true)
         {
-            let periodData=this.IndexData.GetPeriodData(this.Period);
-            this.IndexData.Data=periodData;
+            this.IndexData.Period=this.Period;
+            this.IndexData.Data=this.Data.FixKData(hisData,this.Period);
+        }
+        else
+        {
+            var aryOverlayData=this.SourceData.GetOverlayData(this.IndexData.Data);      //和主图数据拟合以后的数据
+            this.IndexData.Data=aryOverlayData;
+    
+            if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
+            {
+                let periodData=this.IndexData.GetPeriodData(this.Period);
+                this.IndexData.Data=periodData;
+            }
         }
     }
 
@@ -10303,10 +10325,18 @@ function JSSymbolData(ast,option,jsExecute)
         this.IndexData.DataType=1; /*分钟线数据 */
         this.IndexData.Data=hisData;
 
-        if (ChartData.IsMinutePeriod(this.Period,false))   //周期数据
+        if (this.IsApiPeriod==true)
         {
-            let periodData=this.IndexData.GetPeriodData(this.Period);
-            this.IndexData.Data=periodData;
+            this.IndexData.Period=this.Period;
+            this.IndexData.Data=this.Data.FixKData(hisData,this.Period);
+        }
+        else
+        {
+            if (ChartData.IsMinutePeriod(this.Period,false))   //周期数据
+            {
+                let periodData=this.IndexData.GetPeriodData(this.Period);
+                this.IndexData.Data=periodData;
+            }
         }
     }
 

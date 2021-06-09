@@ -42449,40 +42449,44 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (isChangeKLineDrawType) this.ChangeKLineDrawType(option.KLine.DrawType,false);   //切换K线类型, 不重绘
 
-        var isDataTypeChange=false;
-        if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)
+        var isDataTypeChange=true;
+        if (this.SourceData)
         {
-            if (this.SourceData.DataType!=0) isDataTypeChange=true;
-        }
-        else if ((period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END) || 
-                    (period>CUSTOM_SECOND_PERIOD_START && period<=CUSTOM_SECOND_PERIOD_END))
-        {
-            if (this.SourceData.DataType!=1) isDataTypeChange=true;
-        }
-        else
-        {
-            switch(period)
+            var isDataTypeChange=false;
+            if (period>CUSTOM_DAY_PERIOD_START && period<=CUSTOM_DAY_PERIOD_END)
             {
-                case 0:     //日线
-                case 1:     //周
-                case 2:     //月
-                case 3:     //年
-                case 9:     //季线
-                case 21:    //双周
-                    if (this.SourceData.DataType!=0) isDataTypeChange=true;
-                    break;
-                case 4:     //1分钟
-                case 5:     //5分钟
-                case 6:     //15分钟
-                case 7:     //30分钟
-                case 8:     //60分钟
-                case 11:    //2小时
-                case 12:    //4小时
-                    if (this.SourceData.DataType!=1) isDataTypeChange=true;
-                    break;
-                case 10:    //分笔线
-                    if (this.SourceData.DataType!=2) isDataTypeChange=true;
-                    break;
+                if (this.SourceData.DataType!=0) isDataTypeChange=true;
+            }
+            else if ((period>CUSTOM_MINUTE_PERIOD_START && period<=CUSTOM_MINUTE_PERIOD_END) || 
+                        (period>CUSTOM_SECOND_PERIOD_START && period<=CUSTOM_SECOND_PERIOD_END))
+            {
+                if (this.SourceData.DataType!=1) isDataTypeChange=true;
+            }
+            else
+            {
+                switch(period)
+                {
+                    case 0:     //日线
+                    case 1:     //周
+                    case 2:     //月
+                    case 3:     //年
+                    case 9:     //季线
+                    case 21:    //双周
+                        if (this.SourceData.DataType!=0) isDataTypeChange=true;
+                        break;
+                    case 4:     //1分钟
+                    case 5:     //5分钟
+                    case 6:     //15分钟
+                    case 7:     //30分钟
+                    case 8:     //60分钟
+                    case 11:    //2小时
+                    case 12:    //4小时
+                        if (this.SourceData.DataType!=1) isDataTypeChange=true;
+                        break;
+                    case 10:    //分笔线
+                        if (this.SourceData.DataType!=2) isDataTypeChange=true;
+                        break;
+                }
             }
         }
 
@@ -45933,6 +45937,7 @@ function MinuteChartContainer(uielement)
         this.Frame.ChartBorder=new ChartBorder();
         this.Frame.ChartBorder.UIElement=this.UIElement;
         this.Frame.ChartBorder.Top=25;
+        this.Frame.ChartBorder.TitleHeight=0;
         this.Frame.ChartBorder.Left=50;
         this.Frame.ChartBorder.Bottom=20;
         this.Frame.Canvas=this.Canvas;
@@ -48184,6 +48189,11 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         item.Date=date;
         item.Time=jsData.time;
         if (isFutures || isSHO) item.Position=jsData.position;  //期货 期权有持仓
+        if (8<jsData.length && jsData[8]>0) 
+        {
+            item.Date=jsData[8];    //日期
+            item.DateTime=item.Date.toString()+" "+jsData[0].toString();
+        }
         
         item.Increase=jsData.increase;
         item.Risefall=jsData.risefall;
@@ -48287,7 +48297,11 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
             item.DateTime=date.toString()+" "+jsData[0].toString();
             item.Date=date;
             item.Time=jsData[0];
-            if (8<jsData.length && jsData[8]>0) item.Date=jsData[8];    //日期
+            if (8<jsData.length && jsData[8]>0) 
+            {
+                item.Date=jsData[8];    //日期
+                item.DateTime=item.Date.toString()+" "+jsData[0].toString();
+            }
             if ((isFutures || isSHO) && 9<jsData.length) item.Position=jsData[9];  //持仓
             
             if (!item.Close)    //当前没有价格 使用上一个价格填充
@@ -57608,7 +57622,7 @@ function FuturesTimeData()
             }
         },
         {
-            Name:'21:00-1:00,9:00-10:15,10:30-11:30,13:30-15:00',
+            Name:'21:00-1:00,9:01-10:15,10:31-11:30,13:31-15:00',
             Data:
             [   
                 { Start: 2100, End: 2359 },
@@ -57646,7 +57660,7 @@ function FuturesTimeData()
             }
         },
         {
-            Name:'21:00-2:30,9:00-10:15,10:30-11:30,13:30-15:00',
+            Name:'21:00-2:30,9:01-10:15,10:31-11:30,13:31-15:00',
             Data:
             [
                 { Start: 2100, End: 2359 },
@@ -57684,13 +57698,87 @@ function FuturesTimeData()
             }
         },
         {
-            Name:'21:00-23:00,9:00-10:15,10:30-11:30,13:30-15:00',
+            Name:'21:00-23:00,9:01-10:15,10:30-11:30,13:31-15:00',
             Data:
             [
                 { Start: 2100, End: 2300 },
                 { Start: 901, End: 1015 },
                 { Start: 1031, End: 1130 },
                 { Start: 1331, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1331, Text: '13:30' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1331, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 2100, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
+        {
+
+            Name:'9:00-11:30,13:00-15:00',
+            Data:
+            [
+                { Start: 900, End: 1130 },
+                { Start: 1300, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 900, Text: '9:00' },
+                    { Value: 1300, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
+        {
+            Name:'21:00-23:00,9:00-10:15,10:30-11:30,13:30-15:00',
+            Data:
+            [
+                { Start: 2100, End: 2300 },
+                { Start: 900, End: 1015 },
+                { Start: 1030, End: 1130 },
+                { Start: 1330, End: 1500 }
             ],
             Coordinate:
             {
@@ -57735,23 +57823,23 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.DCE + '-RR', {Time:6,Decimal:0,Name:'梗米'}],
 
         //上期所
-        [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0}],
-        [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0}],
-        [MARKET_SUFFIX_NAME.SHFE + '-NI', {Time:4,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0,Name:"铜"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0,Name:"铝"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-NI', {Time:4,Decimal:0,Name:"镍"}],
         [MARKET_SUFFIX_NAME.SHFE + '-SN', {Time:4,Decimal:0}],
-        [MARKET_SUFFIX_NAME.SHFE + '-ZN', {Time:4,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-ZN', {Time:4,Decimal:0,Name:"沪锌"}],
         [MARKET_SUFFIX_NAME.SHFE + '-PB', {Time:4,Decimal:0}],
-        [MARKET_SUFFIX_NAME.SHFE + '-RU', {Time:6,Decimal:0}],
-        [MARKET_SUFFIX_NAME.SHFE + '-FU', {Time:6,Decimal:0}],
-        [MARKET_SUFFIX_NAME.SHFE + '-RB', {Time:6,Decimal:0}],
-        [MARKET_SUFFIX_NAME.SHFE + '-BU', {Time:6,Decimal:0}],
-        [MARKET_SUFFIX_NAME.SHFE + '-HC', {Time:6,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-RU', {Time:6,Decimal:0,Name:"天然橡胶"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-FU', {Time:6,Decimal:0,Name:"燃料油"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-RB', {Time:6,Decimal:0,Name:"螺纹钢"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-BU', {Time:6,Decimal:0,}],
+        [MARKET_SUFFIX_NAME.SHFE + '-HC', {Time:6,Decimal:0,Name:"热轧卷板"}],
         [MARKET_SUFFIX_NAME.SHFE + '-SP', {Time:6,Decimal:0,Name:"纸浆"}],
         [MARKET_SUFFIX_NAME.SHFE + '-WR', {Time:0,Decimal:0,Name:"线材"}],
         [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0,Name:"白银"}],
         [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2,Name:"黄金"}],
         [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:6,Decimal:1,Name:'中质含硫原油'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:5,Decimal:1,Name:'中质含硫原油'}],
         [MARKET_SUFFIX_NAME.SHFE + '-LU', {Time:6,Decimal:0,Name:'低硫燃料油'}],
        
         //郑州期货交易所
@@ -57780,6 +57868,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CZCE + '-LR', {Time:0,Decimal:0}],
         [MARKET_SUFFIX_NAME.CZCE + '-SF', {Time:0,Decimal:0}],
         [MARKET_SUFFIX_NAME.CZCE + '-SM', {Time:0,Decimal:0}],
+        [MARKET_SUFFIX_NAME.CZCE + '-CJ', {Time:0,Decimal:2, Name:"红枣"}],
 
         //中期所 
         [MARKET_SUFFIX_NAME.CFFEX + '-TF', {Time:1,Decimal:3,Name:"二债"}],
@@ -69014,14 +69103,22 @@ function JSSymbolData(ast,option,jsExecute)
         {
             if (this.NetworkFilter)
             {
+                var dateRange=this.Data.GetDateRange();
                 var obj=
                 {
                     Name:'JSSymbolData::GetIndexData', //类名::
                     Explain:'大盘数据',
                     Period:self.Period,
-                    Request:{ Url:self.KLineApiUrl,  Type:'POST' ,
-                        Data: { field:[ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
-                            symbol: '000001.sh', start: -1 , count: self.MaxRequestDataCount+500 } },
+                    Request:
+                    { 
+                        Url:self.KLineApiUrl,  Type:'POST' ,
+                        Data: 
+                        { 
+                            field:[ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
+                            indexSymbol:"000001.sh", symbol: this.Symbol, period:this.Period,
+                            dateRange:dateRange 
+                        } 
+                    },
                     Self:this,
                     PreventDefault:false
                 };
@@ -69061,14 +69158,20 @@ function JSSymbolData(ast,option,jsExecute)
         {
             if (this.NetworkFilter)
             {
+                var dateRange=this.Data.GetDateRange();
                 var obj=
                 {
                     Name:'JSSymbolData::GetIndexData', //类名::
                     Explain:'大盘数据',
                     Period:self.Period,
                     Request:{ Url:self.MinuteKLineApiUrl,  Type:'POST' ,
-                        Data: { field:["name","symbol","yclose","open","price","high","low","vol"],
-                            symbol: '000001.sh', start: -1 , count: self.MaxRequestDataCount+5 } },
+                        Data: 
+                        { 
+                            field:["name","symbol","yclose","open","price","high","low","vol"],
+                            indexSymbol:"000001.sh", symbol: this.Symbol, period:this.Period,
+                            dateRange:dateRange 
+                        } 
+                    },
                     Self:this,
                     PreventDefault:false
                 };
@@ -69116,13 +69219,21 @@ function JSSymbolData(ast,option,jsExecute)
         this.IndexData.DataType=0; /*日线数据 */
         this.IndexData.Data=hisData;
 
-        var aryOverlayData=this.SourceData.GetOverlayData(this.IndexData.Data);      //和主图数据拟合以后的数据
-        this.IndexData.Data=aryOverlayData;
-
-        if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
+        if (this.IsApiPeriod==true)
         {
-            let periodData=this.IndexData.GetPeriodData(this.Period);
-            this.IndexData.Data=periodData;
+            this.IndexData.Period=this.Period;
+            this.IndexData.Data=this.Data.FixKData(hisData,this.Period);
+        }
+        else
+        {
+            var aryOverlayData=this.SourceData.GetOverlayData(this.IndexData.Data);      //和主图数据拟合以后的数据
+            this.IndexData.Data=aryOverlayData;
+    
+            if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
+            {
+                let periodData=this.IndexData.GetPeriodData(this.Period);
+                this.IndexData.Data=periodData;
+            }
         }
     }
 
@@ -69135,10 +69246,18 @@ function JSSymbolData(ast,option,jsExecute)
         this.IndexData.DataType=1; /*分钟线数据 */
         this.IndexData.Data=hisData;
 
-        if (ChartData.IsMinutePeriod(this.Period,false))   //周期数据
+        if (this.IsApiPeriod==true)
         {
-            let periodData=this.IndexData.GetPeriodData(this.Period);
-            this.IndexData.Data=periodData;
+            this.IndexData.Period=this.Period;
+            this.IndexData.Data=this.Data.FixKData(hisData,this.Period);
+        }
+        else
+        {
+            if (ChartData.IsMinutePeriod(this.Period,false))   //周期数据
+            {
+                let periodData=this.IndexData.GetPeriodData(this.Period);
+                this.IndexData.Data=periodData;
+            }
         }
     }
 
