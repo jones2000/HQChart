@@ -4115,7 +4115,7 @@ function JSChart(divElement, bOffscreen)
     {
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
 
-        for(let i in chart.Frame.SubFrame)
+        for(var i=0;i<chart.Frame.SubFrame.length;++i)
         {
             chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight*=pixelTatio;
         }
@@ -4273,7 +4273,7 @@ function JSChart(divElement, bOffscreen)
 
         if (option.Frame)
         {
-            for(var i in option.Frame)
+            for(var i=0;i<option.Frame.length;++i)
             {
                 var item=option.Frame[i];
                 if (!chart.Frame.SubFrame[i]) continue;
@@ -4332,7 +4332,7 @@ function JSChart(divElement, bOffscreen)
         
         if (option.Overlay)
         {
-            for(var i in option.Overlay)
+            for(var i=0;i<option.Overlay.length;++i)
             {
                 var item=option.Overlay[i];
                 chart.OverlaySymbol(item.Symbol,item);
@@ -4341,7 +4341,7 @@ function JSChart(divElement, bOffscreen)
 
         if (option.ExtendChart)
         {
-            for(var i in option.ExtendChart)
+            for(var i=0;i<option.ExtendChart.length;++i)
             {
                 var item=option.ExtendChart[i];
                 chart.CreateExtendChart(item.Name, item);
@@ -4373,7 +4373,7 @@ function JSChart(divElement, bOffscreen)
             }
         }
 
-        for(var i in option.Windows)
+        for(var i=0;i<option.Windows.length;++i)
         {
             var item=option.Windows[i];
             if (item.Script)
@@ -4435,19 +4435,24 @@ function JSChart(divElement, bOffscreen)
         
         //叠加指标宽度
         if (option.OverlayIndexFrameWidth>40) chart.OverlayIndexFrameWidth=option.OverlayIndexFrameWidth;
+
         //叠加指标
-        for (var i in option.OverlayIndex)
+        if (IFrameSplitOperator.IsNonEmptyArray(option.OverlayIndex))
         {
-            var item=option.OverlayIndex[i];
-            if (item.Windows>=chart.Frame.SubFrame.length) continue;
-
-            var itemString = JSON.stringify(item);
-            var obj = JSON.parse(itemString);
-            if (item.Index) obj.IndexName=item.Index;
-            if (item.Windows>=0) obj.WindowIndex=item.Windows;
-            chart.CreateOverlayWindowsIndex(obj);
+            for(var i=0;i<option.OverlayIndex.length;++i)
+            {
+                var item=option.OverlayIndex[i];
+                if (item.Windows>=chart.Frame.SubFrame.length) continue;
+    
+                var itemString = JSON.stringify(item);
+                var obj = JSON.parse(itemString);
+                if (item.Index) obj.IndexName=item.Index;
+                if (item.Windows>=0) obj.WindowIndex=item.Windows;
+                chart.CreateOverlayWindowsIndex(obj);
+            }
+    
         }
-
+        
         this.AdjustTitleHeight(chart);
 
         return chart;
@@ -4502,7 +4507,7 @@ function JSChart(divElement, bOffscreen)
 
         if (option.Frame)
         {
-            for(var i in option.Frame)
+            for(var i=0;i<option.Frame.length;++i)
             {
                 var item=option.Frame[i];
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
@@ -4518,7 +4523,7 @@ function JSChart(divElement, bOffscreen)
 
         //创建子窗口的指标
         let scriptData = new JSIndexScript();
-        for(var i in option.Windows)
+        for(var i=0;i<option.Windows.length;++i)
         {
             var item=option.Windows[i];
             if (item.Script)
@@ -4644,7 +4649,7 @@ function JSChart(divElement, bOffscreen)
 
         if (option.Frame)
         {
-            for(var i in option.Frame)
+            for(var i=0;i<option.Frame.length;++i)
             {
                 var item=option.Frame[i];
                 if (!chart.Frame.SubFrame[i]) continue;
@@ -4675,7 +4680,7 @@ function JSChart(divElement, bOffscreen)
 
         if (option.ExtendChart)
         {
-            for(var i in option.ExtendChart)
+            for(var i=0;i<option.ExtendChart.length;++i)
             {
                 var item=option.ExtendChart[i];
                 chart.CreateExtendChart(item.Name, item);
@@ -4685,7 +4690,7 @@ function JSChart(divElement, bOffscreen)
         //叠加股票
         if (option.Overlay)
         {
-            for(var i in option.Overlay)
+            for(var i=0;i<option.Overlay.length;++i)
             {
                 var item=option.Overlay[i];
                 chart.OverlaySymbol(item.Symbol,item);
@@ -4700,7 +4705,7 @@ function JSChart(divElement, bOffscreen)
             {
                 chart.ChartPaint[1].IsShow=false;
                 chart.TitlePaint[0].IsShowAveragePrice=false;   //标题栏均线也不显示
-                for(var i in chart.ExtendChartPaint)
+                for(var i=0;i<chart.ExtendChartPaint.length;++i)
                 {
                     var item=chart.ExtendChartPaint[i];
                     if (item.ClassName=="MinuteTooltipPaint")
@@ -4724,61 +4729,68 @@ function JSChart(divElement, bOffscreen)
         if (option.IsShowBeforeData===true) chart.IsShowBeforeData=option.IsShowBeforeData;
 
         //分钟数据指标从第3个指标窗口设置
-        let scriptData = new JSIndexScript();
-        for(var i in option.Windows)
+        if (IFrameSplitOperator.IsNonEmptyArray(option.Windows))
         {
-            var index=2+parseInt(i);
-            var item=option.Windows[i];
-            if (item.Script)
+            let scriptData = new JSIndexScript();
+            for(var i=0;i<option.Windows.length;++i)
             {
-                chart.WindowIndex[index]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
-            }
-            else if (item.API)  //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
-            {
-                var apiItem=item.API;
-                chart.WindowIndex[index]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,item);
-            }
-            else
-            {
-                var indexItem=JSIndexMap.Get(item.Index);
-                if (indexItem)
+                var index=2+i;
+                var item=option.Windows[i];
+                if (item.Script)
                 {
-                    chart.WindowIndex[index]=indexItem.Create();       //创建子窗口的指标
-                    chart.CreateWindowIndex(index);
+                    chart.WindowIndex[index]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
+                }
+                else if (item.API)  //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
+                {
+                    var apiItem=item.API;
+                    chart.WindowIndex[index]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,item);
                 }
                 else
                 {
-                    let indexInfo = scriptData.Get(item.Index);
-                    if (!indexInfo) continue;
-                    indexInfo.ID=item.Index;
-                    var args=indexInfo.Args;
-                    if (item.Args) args=item.Args;
-                    chart.WindowIndex[index] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
-                    if (item.StringFormat>0) chart.WindowIndex[index].StringFormat=item.StringFormat;
-                    if (item.FloatPrecision>=0) chart.WindowIndex[index].FloatPrecision=item.FloatPrecision;
+                    var indexItem=JSIndexMap.Get(item.Index);
+                    if (indexItem)
+                    {
+                        chart.WindowIndex[index]=indexItem.Create();       //创建子窗口的指标
+                        chart.CreateWindowIndex(index);
+                    }
+                    else
+                    {
+                        let indexInfo = scriptData.Get(item.Index);
+                        if (!indexInfo) continue;
+                        indexInfo.ID=item.Index;
+                        var args=indexInfo.Args;
+                        if (item.Args) args=item.Args;
+                        chart.WindowIndex[index] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
+                        if (item.StringFormat>0) chart.WindowIndex[index].StringFormat=item.StringFormat;
+                        if (item.FloatPrecision>=0) chart.WindowIndex[index].FloatPrecision=item.FloatPrecision;
+                    }
                 }
-            }
 
-            if (item.Modify!=null) chart.Frame.SubFrame[index].Frame.ModifyIndex=item.Modify;
-            if (item.Change!=null) chart.Frame.SubFrame[index].Frame.ChangeIndex=item.Change;
-            if (item.Close!=null) chart.Frame.SubFrame[index].Frame.CloseIndex=item.Close;
-            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+                if (item.Modify!=null) chart.Frame.SubFrame[index].Frame.ModifyIndex=item.Modify;
+                if (item.Change!=null) chart.Frame.SubFrame[index].Frame.ChangeIndex=item.Change;
+                if (item.Close!=null) chart.Frame.SubFrame[index].Frame.CloseIndex=item.Close;
+                if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+            }
         }
+
         this.AdjustTitleHeight(chart);
 
         //叠加指标
-        for (var i in option.OverlayIndex)
+        if (IFrameSplitOperator.IsNonEmptyArray(option.OverlayIndex))
         {
-            var item=option.OverlayIndex[i];
-            if (item.Windows>=chart.Frame.SubFrame.length) continue;
-
-            var itemString = JSON.stringify(item);
-            var obj = JSON.parse(itemString);
-            if (item.Index) obj.IndexName=item.Index;
-            if (item.Windows>=0) obj.WindowIndex=item.Windows;
-            chart.CreateOverlayWindowsIndex(obj);
+            for(var i=0;i<option.OverlayIndex.length;++i)
+            {
+                var item=option.OverlayIndex[i];
+                if (item.Windows>=chart.Frame.SubFrame.length) continue;
+    
+                var itemString = JSON.stringify(item);
+                var obj = JSON.parse(itemString);
+                if (item.Index) obj.IndexName=item.Index;
+                if (item.Windows>=0) obj.WindowIndex=item.Windows;
+                chart.CreateOverlayWindowsIndex(obj);
+            }
         }
-
+        
         return chart;
     }
 
@@ -4912,7 +4924,7 @@ function JSChart(divElement, bOffscreen)
 
         if (option.Frame)
         {
-            for(var i in option.Frame)
+            for(var i=0;i<option.Frame.length;++i)
             {
                 var item=option.Frame[i];
                 if (!chart.Frame.SubFrame[i]) continue;
@@ -4944,46 +4956,49 @@ function JSChart(divElement, bOffscreen)
 
         if (option.ExtendChart)
         {
-            for(var i in option.ExtendChart)
+            for(var i=0;i<option.ExtendChart.length;++i)
             {
                 var item=option.ExtendChart[i];
                 chart.CreateExtendChart(item.Name, item);
             }
         }
 
-        //创建子窗口的指标
-        let scriptData = new JSIndexScript();
-        for(var i in option.Windows)
+        if (IFrameSplitOperator.IsNonEmptyArray(option.Windows))
         {
-            var item=option.Windows[i];
-            if (item.Script)
+            //创建子窗口的指标
+            let scriptData = new JSIndexScript();
+            for(var i=0;i<option.Windows.length;++i)
             {
-                chart.WindowIndex[i]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
-            }
-            else
-            {
-                let indexItem=JSIndexMap.Get(item.Index);
-                if (indexItem)
+                var item=option.Windows[i];
+                if (item.Script)
                 {
-                    chart.WindowIndex[i]=indexItem.Create();
-                    chart.CreateWindowIndex(i);
+                    chart.WindowIndex[i]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
                 }
                 else
                 {
-                    let indexInfo = scriptData.Get(item.Index);
-                    if (!indexInfo) continue;
+                    let indexItem=JSIndexMap.Get(item.Index);
+                    if (indexItem)
+                    {
+                        chart.WindowIndex[i]=indexItem.Create();
+                        chart.CreateWindowIndex(i);
+                    }
+                    else
+                    {
+                        let indexInfo = scriptData.Get(item.Index);
+                        if (!indexInfo) continue;
 
-                    if (item.Lock) indexInfo.Lock=item.Lock;
-                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                        if (item.Lock) indexInfo.Lock=item.Lock;
+                        chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                    }
+
                 }
 
+                if (item.Modify!=null) chart.Frame.SubFrame[i].Frame.ModifyIndex=item.Modify;
+                if (item.Change!=null) chart.Frame.SubFrame[i].Frame.ChangeIndex=item.Change;
+                if (item.Close!=null) chart.Frame.SubFrame[i].Frame.CloseIndex=item.Close;
+
+                if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
             }
-
-            if (item.Modify!=null) chart.Frame.SubFrame[i].Frame.ModifyIndex=item.Modify;
-            if (item.Change!=null) chart.Frame.SubFrame[i].Frame.ChangeIndex=item.Change;
-            if (item.Close!=null) chart.Frame.SubFrame[i].Frame.CloseIndex=item.Close;
-
-            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
         }
 
         this.AdjustTitleHeight(chart);
@@ -5099,11 +5114,15 @@ function JSChart(divElement, bOffscreen)
         if (option.IsAutoUpdate!=null) chart.IsAutoUpdate=option.IsAutoUpdate;
         if (option.AutoUpdateFrequency>0) chart.AutoUpdateFrequency=option.AutoUpdateFrequency;
         //注册事件
-        for(var i in option.EventCallback)
+        if (option.EventCallback)
         {
-            var item=option.EventCallback[i];
-            chart.AddEventCallback(item);
+            for(var i=0;i<option.EventCallback.length;++i)
+            {
+                var item=option.EventCallback[i];
+                chart.AddEventCallback(item);
+            }
         }
+        
 
         //设置股票代码
         if (!option.Symbol) 
@@ -9070,7 +9089,7 @@ function IChartFramePainting()
 
     this.PtInButtons=function(x,y) //坐标是否在按钮上
     {
-        for(var i in this.Buttons)
+        for(var i=0;i<this.Buttons.length;++i)
         {
             var item=this.Buttons[i];
             if (!item.Rect) continue;

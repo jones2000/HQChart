@@ -830,6 +830,12 @@ function JSChart(element)
             }
         }
 
+        if (option.KLine)
+        {
+            if (option.KLine.ShowKLine == false) chart.ChartPaint[0].IsShow = false;
+            if (option.KLine.IsShowMaxMinPrice == false) chart.ChartPaint[0].IsShowMaxMinPrice = false;
+        }
+
         //股票名称 日期 周期都不显示
         chart.TitlePaint[0].IsShowName = false;
         chart.TitlePaint[0].IsShowSettingInfo = false;
@@ -10108,7 +10114,7 @@ function MinuteChartContainer(uielement)
         this.TradeDate = this.DayData[0].Date;
 
         this.BindMainData(sourceData, this.DayData[0].YClose);
-        if (MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol)) this.ChartPaint[1].Data = null;   //期货均线暂时不用
+        //if (MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol)) this.ChartPaint[1].Data = null;   //期货均线暂时不用
 
         if (this.Frame.SubFrame.length > 2) 
         {
