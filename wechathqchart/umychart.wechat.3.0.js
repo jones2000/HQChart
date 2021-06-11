@@ -83,6 +83,7 @@ import {
     JSCommonChartPaint_ChartBand as ChartBand,
     JSCommonChartPaint_DepthChartCorssCursor as DepthChartCorssCursor,
     JSCommonChartPaint_ChartOrderbookDepth as ChartOrderbookDepth,
+    JSCommonChartPaint_ChartMinutePriceLine as ChartMinutePriceLine,
 } from "./umychart.chartpaint.wechat.js";
 
 //扩展画法图形库
@@ -2862,6 +2863,7 @@ function AverageWidthFrame()
             for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
             {
                 var item = this.HorizontalInfo[i];
+                if (!item) continue;
                 var y = this.GetYFromData(item.Value);
                 if (y != null && yPrev !=null && Math.abs(y - yPrev) < this.MinYDistance) continue;  //两个坐标在近了 就不画了
 
@@ -5668,146 +5670,7 @@ function ChartStraightArea() {
   }
 }
 
-//分钟线
-function ChartMinutePriceLine() 
-{
-    this.newMethod = ChartLine;   //派生
-    this.newMethod();
-    delete this.newMethod;
 
-    this.YClose;
-    this.IsDrawArea = true;    //是否画价格面积图
-    this.AreaColor = 'rgba(0,191,255,0.1)';
-
-    this.Draw = function () 
-    {
-        if (this.NotSupportMessage) 
-        {
-            this.DrawNotSupportmessage();
-            return;
-        }
-
-        if (!this.IsShow) return;
-        if (!this.Data) return;
-
-        var isHScreen = (this.ChartFrame.IsHScreen === true);
-        var dataWidth = this.ChartFrame.DataWidth;
-        var distanceWidth = this.ChartFrame.DistanceWidth;
-        var chartright = this.ChartBorder.GetRight();
-        if (isHScreen === true) chartright = this.ChartBorder.GetBottom();
-        var xPointCount = this.ChartFrame.XPointCount;
-        var minuteCount = this.ChartFrame.MinuteCount;
-        var bottom = this.ChartBorder.GetBottomEx();
-        var left = this.ChartBorder.GetLeftEx();
-
-        var bFirstPoint = true;
-        var ptFirst = {}; //第1个点
-        var drawCount = 0;
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
-        {
-            var value = this.Data.Data[i];
-            if (value == null) continue;
-
-            var x = this.ChartFrame.GetXFromIndex(j);
-            var y = this.ChartFrame.GetYFromData(value);
-
-            if (bFirstPoint) 
-            {
-                this.Canvas.strokeStyle = this.Color;
-                this.Canvas.beginPath();
-                if (isHScreen) this.Canvas.moveTo(y, x);
-                else this.Canvas.moveTo(x, y);
-                bFirstPoint = false;
-                ptFirst = { X: x, Y: y };
-            }
-            else 
-            {
-                if (isHScreen) this.Canvas.lineTo(y, x);
-                else this.Canvas.lineTo(x, y);
-            }
-
-            ++drawCount;
-
-            if (drawCount >= minuteCount) //上一天的数据和这天地数据线段要断开
-            {
-                bFirstPoint = true;
-                this.Canvas.stroke();
-                if (this.IsDrawArea)   //画面积
-                {
-                    if (isHScreen) 
-                    {
-                        this.Canvas.lineTo(left, x);
-                        this.Canvas.lineTo(left, ptFirst.X);
-                        this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRightEx(), bottom, this.ChartBorder.GetLeftEx(), bottom);
-                    }
-                    else 
-                    {
-                        this.Canvas.lineTo(x, bottom);
-                        this.Canvas.lineTo(ptFirst.X, bottom);
-                        this.SetFillStyle(this.AreaColor, left, this.ChartBorder.GetTopEx(), left, bottom);
-                    }
-                    this.Canvas.fill();
-                }
-                drawCount = 0;
-            }
-        }
-
-        if (drawCount > 0) 
-        {
-            this.Canvas.stroke();
-            if (this.IsDrawArea)   //画面积
-            {
-                if (isHScreen) 
-                {
-                    this.Canvas.lineTo(left, x);
-                    this.Canvas.lineTo(left, ptFirst.X);
-                    this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRightEx(), bottom, this.ChartBorder.GetLeftEx(), bottom);
-                }
-                else 
-                {
-                    this.Canvas.lineTo(x, bottom);
-                    this.Canvas.lineTo(ptFirst.X, bottom);
-                    this.SetFillStyle(this.AreaColor, left, this.ChartBorder.GetTopEx(), left, bottom);
-                }
-                this.Canvas.fill();
-            }
-        }
-    }
-
-    this.GetMaxMin = function () 
-    {
-        var xPointCount = this.ChartFrame.XPointCount;
-        var range = {};
-        if (this.YClose == null) return range;
-
-        range.Min = this.YClose;
-        range.Max = this.YClose;
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
-        {
-            var value = this.Data.Data[i];
-            if (!value) continue;
-
-            if (range.Max == null) range.Max = value;
-            if (range.Min == null) range.Min = value;
-
-            if (range.Max < value) range.Max = value;
-            if (range.Min > value) range.Min = value;
-        }
-
-        if (range.Max == this.YClose && range.Min == this.YClose) 
-        {
-            range.Max = this.YClose + this.YClose * 0.1;
-            range.Min = this.YClose - this.YClose * 0.1;
-            return range;
-        }
-
-        var distance = Math.max(Math.abs(this.YClose - range.Max), Math.abs(this.YClose - range.Min));
-        range.Max = this.YClose + distance;
-        range.Min = this.YClose - distance;
-
-        return range;
-    }
-}
 
 //分钟线叠加 支持横屏
 function ChartOverlayMinutePriceLine() {
@@ -8067,40 +7930,43 @@ function KLineChartContainer(uielement)
 
         if (isChangeKLineDrawType) this.ChangeKLineDrawType(option.KLine.DrawType, false);   //切换K线类型, 不重绘
         
-        var isDataTypeChange = false;
-        var isDataTypeChange = false;
-        if (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END) 
+        var isDataTypeChange = true;
+        if (this.SourceData)
         {
-            if (this.SourceData.DataType != 0) isDataTypeChange = true;
-        }
-        else if ((period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END) || 
-                    (period > CUSTOM_SECOND_PERIOD_START && period <= CUSTOM_SECOND_PERIOD_END)) 
-        {
-            if (this.SourceData.DataType != 1) isDataTypeChange = true;
-        }
-        else
-        {
-            switch (period) 
+            var isDataTypeChange=false;
+            if (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END) 
             {
-            case 0:     //日线
-            case 1:     //周
-            case 2:     //月
-            case 3:     //年
-            case 21:    //双周
                 if (this.SourceData.DataType != 0) isDataTypeChange = true;
-                break;
-            case 4:     //1分钟
-            case 5:     //5分钟
-            case 6:     //15分钟
-            case 7:     //30分钟
-            case 8:     //60分钟
-            case 11:    //2小时
-            case 12:    //4小时
+            }
+            else if ((period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END) || 
+                        (period > CUSTOM_SECOND_PERIOD_START && period <= CUSTOM_SECOND_PERIOD_END)) 
+            {
                 if (this.SourceData.DataType != 1) isDataTypeChange = true;
-                break;
+            }
+            else
+            {
+                switch (period) 
+                {
+                case 0:     //日线
+                case 1:     //周
+                case 2:     //月
+                case 3:     //年
+                case 21:    //双周
+                    if (this.SourceData.DataType != 0) isDataTypeChange = true;
+                    break;
+                case 4:     //1分钟
+                case 5:     //5分钟
+                case 6:     //15分钟
+                case 7:     //30分钟
+                case 8:     //60分钟
+                case 11:    //2小时
+                case 12:    //4小时
+                    if (this.SourceData.DataType != 1) isDataTypeChange = true;
+                    break;
+                }
             }
         }
-
+        
         this.Period = period;
         if (right!=null) this.Right=right;
         if (isDataTypeChange == false && !this.IsApiPeriod) 
@@ -9624,6 +9490,9 @@ function MinuteChartContainer(uielement)
     this.DayCount = 1;                       //显示几天的数据
     this.DayData;                            //多日分钟数据
 
+    this.LastMovePoint;
+    this.DrawMoveTimer=null;
+
     this.MinuteApiUrl = g_JSChartResource.Domain + "/API/Stock";
     this.HistoryMinuteApiUrl = g_JSChartResource.Domain + "/API/StockMinuteData";   //历史分钟数据
 
@@ -9697,11 +9566,19 @@ function MinuteChartContainer(uielement)
         var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
         if (this.ChartCorssCursor.IsShow === true && this.IsPhoneDragging(e)) 
         {
+            var x = touches[0].clientX;
+            var y = touches[0].clientY;
+            this.LastMovePoint={ X:x, Y:y };
             if (drag == null) 
             {
-                var x = touches[0].clientX;
-                var y = touches[0].clientY;
-                jsChart.OnMouseMove(x, y, e);
+                if (this.DrawMoveTimer) 
+                    return;
+                this.DrawMoveTimer=setTimeout(()=>
+                {
+                    if (!this.LastMovePoint) return;
+                    this.OnMouseMove(this.LastMovePoint.X, this.LastMovePoint.Y, e);
+                    this.DrawMoveTimer=null;
+                }, 30);
             }
         }
 
@@ -9715,6 +9592,27 @@ function MinuteChartContainer(uielement)
             var y = touches[0].clientY;
             this.OnMouseMove(x,y,e);
         }
+    }
+
+    this.ontouchend = function (e) 
+    {
+        this.LastMovePoint=null;
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
+        this.IsOnTouch = false;
+        JSConsole.Chart.Log('[MinuteChartContainer:ontouchend] IsOnTouch=' + this.IsOnTouch +' LastDrawStatus=' + this.LastDrawStatus);
+        if (this.TouchTimer != null) 
+        {
+            clearTimeout(this.TouchTimer);
+            this.TouchTimer=null;
+        }
+        if (this.DrawMoveTimer!=null) 
+        {
+            clearTimeout(this.DrawMoveTimer);
+            this.DrawMoveTimer=null;
+        }
+        this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchEnd"}, e);
+        this.Draw();//手放开 重新绘制  
     }
 
     //创建

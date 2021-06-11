@@ -5301,6 +5301,147 @@ function ChartCorssCursor()
     }
 }
 
+//分钟线
+function ChartMinutePriceLine() 
+{
+    this.newMethod = ChartLine;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.YClose;
+    this.IsDrawArea = true;    //是否画价格面积图
+    this.AreaColor = 'rgba(0,191,255,0.1)';
+
+    this.Draw = function () 
+    {
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.IsShow) return;
+        if (!this.Data) return;
+
+        var isHScreen = (this.ChartFrame.IsHScreen === true);
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen === true) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+        var minuteCount = this.ChartFrame.MinuteCount;
+        var bottom = this.ChartBorder.GetBottomEx();
+        var left = this.ChartBorder.GetLeftEx();
+
+        var bFirstPoint = true;
+        var ptFirst = {}; //第1个点
+        var drawCount = 0;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(value);
+
+            if (bFirstPoint) 
+            {
+                this.Canvas.strokeStyle = this.Color;
+                this.Canvas.beginPath();
+                if (isHScreen) this.Canvas.moveTo(y, x);
+                else this.Canvas.moveTo(x, y);
+                bFirstPoint = false;
+                ptFirst = { X: x, Y: y };
+            }
+            else 
+            {
+                if (isHScreen) this.Canvas.lineTo(y, x);
+                else this.Canvas.lineTo(x, y);
+            }
+
+            ++drawCount;
+
+            if (drawCount >= minuteCount) //上一天的数据和这天地数据线段要断开
+            {
+                bFirstPoint = true;
+                this.Canvas.stroke();
+                if (this.IsDrawArea)   //画面积
+                {
+                    if (isHScreen) 
+                    {
+                        this.Canvas.lineTo(left, x);
+                        this.Canvas.lineTo(left, ptFirst.X);
+                        this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRightEx(), bottom, this.ChartBorder.GetLeftEx(), bottom);
+                    }
+                    else 
+                    {
+                        this.Canvas.lineTo(x, bottom);
+                        this.Canvas.lineTo(ptFirst.X, bottom);
+                        this.SetFillStyle(this.AreaColor, left, this.ChartBorder.GetTopEx(), left, bottom);
+                    }
+                    this.Canvas.fill();
+                }
+                drawCount = 0;
+            }
+        }
+
+        if (drawCount > 0) 
+        {
+            this.Canvas.stroke();
+            if (this.IsDrawArea)   //画面积
+            {
+                if (isHScreen) 
+                {
+                    this.Canvas.lineTo(left, x);
+                    this.Canvas.lineTo(left, ptFirst.X);
+                    this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRightEx(), bottom, this.ChartBorder.GetLeftEx(), bottom);
+                }
+                else 
+                {
+                    this.Canvas.lineTo(x, bottom);
+                    this.Canvas.lineTo(ptFirst.X, bottom);
+                    this.SetFillStyle(this.AreaColor, left, this.ChartBorder.GetTopEx(), left, bottom);
+                }
+                this.Canvas.fill();
+            }
+        }
+    }
+
+    this.GetMaxMin = function () 
+    {
+        var xPointCount = this.ChartFrame.XPointCount;
+        var range = {};
+        if (this.YClose == null) return range;
+
+        range.Min = this.YClose;
+        range.Max = this.YClose;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (!value) continue;
+
+            if (range.Max == null) range.Max = value;
+            if (range.Min == null) range.Min = value;
+
+            if (range.Max < value) range.Max = value;
+            if (range.Min > value) range.Min = value;
+        }
+
+        if (range.Max == this.YClose && range.Min == this.YClose) 
+        {
+            range.Max = this.YClose + this.YClose * 0.1;
+            range.Min = this.YClose - this.YClose * 0.1;
+            return range;
+        }
+
+        var distance = Math.max(Math.abs(this.YClose - range.Max), Math.abs(this.YClose - range.Min));
+        range.Max = this.YClose + distance;
+        range.Min = this.YClose - distance;
+
+        return range;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //深度图十字光标
 function DepthChartCorssCursor()
@@ -5644,6 +5785,7 @@ module.exports =
         ChartBuySell: ChartBuySell,
         ChartMultiBar: ChartMultiBar,
         ChartMACD:ChartMACD,
+        ChartMinutePriceLine:ChartMinutePriceLine,
         ChartLock:ChartLock,
         ChartVolStick:ChartVolStick,
         ChartBand:ChartBand,
@@ -5675,6 +5817,7 @@ module.exports =
     JSCommonChartPaint_ChartLock:ChartLock,
     JSCommonChartPaint_ChartVolStick:ChartVolStick,
     JSCommonChartPaint_ChartBand:ChartBand,
+    JSCommonChartPaint_ChartMinutePriceLine:ChartMinutePriceLine,
     JSCommonChartPaint_ChartPie: ChartPie,
     JSCommonChartPaint_ChartCircle: ChartCircle,
     JSCommonChartPaint_ChartChinaMap: ChartChinaMap,
