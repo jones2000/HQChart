@@ -4622,6 +4622,7 @@ function JSChart(divElement, bOffscreen)
             if (option.CorssCursorInfo.IsShowCorss===false) chart.ChartCorssCursor.IsShowCorss=option.CorssCursorInfo.IsShowCorss;
             if (option.CorssCursorInfo.RightTextFormat>0) chart.ChartCorssCursor.TextFormat.Right=option.CorssCursorInfo.RightTextFormat;
             if (option.CorssCursorInfo.IsOnlyDrawMinute == true) chart.ChartCorssCursor.IsOnlyDrawMinute = option.CorssCursorInfo.IsOnlyDrawMinute;    //Y轴显示收盘价
+            if (IFrameSplitOperator.IsBool(option.CorssCursorInfo.IsFixXLastTime)) chart.ChartCorssCursor.IsFixXLastTime=option.CorssCursorInfo.IsFixXLastTime;
         }
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
@@ -30399,6 +30400,7 @@ function ChartCorssCursor()
     this.CursorIndex;
     this.IsOnlyDrawKLine=false;                                 //是否只能画在K线上 (手机端)
     this.IsOnlyDrawMinute=false;                                //是否只能画在走势图价格线上
+    this.IsFixXLastTime=false;                                  //是否修正X轴,超出当前时间的,X轴调整到当前最后的时间.
 
     this.PointX;
     this.PointY;
@@ -30460,6 +30462,23 @@ function ChartCorssCursor()
         this.Close=close;
         var yPoint = this.Frame.GetYFromData(this.Close);
         return yPoint;
+    }
+
+    this.FixMinuteLastTimeXPoint=function(index)
+    {
+        if (!IFrameSplitOperator.IsNumber(index)) return null;
+        index=parseInt(index);
+        if (!this.StringFormatX.Data) return null;
+        var data = this.StringFormatX.Data;
+        if (!data.Data || data.Data.length <= 0) return null;
+        var dataIndex = data.DataOffset + index;
+        if (dataIndex<data.Data.length) return null;
+
+        dataIndex=data.Data.length - 1;
+        dataIndex-=data.DataOffset;
+        var xPoint=this.Frame.GetXFromIndex(dataIndex);
+
+        return { X:xPoint, Index:dataIndex };
     }
 
     //返回 -1=不在客户区  1=在主区域  2=左边扩展  3=右边扩展
@@ -30566,6 +30585,16 @@ function ChartCorssCursor()
             if (this.CallAcutionXOperator.Operator())
             {
                 x=this.CallAcutionXOperator.X;
+            }
+        }
+
+        if (this.IsFixXLastTime)
+        {
+            var value=this.FixMinuteLastTimeXPoint(this.CursorIndex)
+            if (value)
+            {
+                x=value.X;
+                this.CursorIndex=value.Index;
             }
         }
 

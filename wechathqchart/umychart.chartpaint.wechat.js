@@ -4850,6 +4850,7 @@ function ChartCorssCursor()
     this.ShowTextMode = { Left: 1, Right: 1, Bottom: 1 }; //0=不显示  1=显示在框架外 2=显示在框架内
     this.IsShowCorss = true;    //是否显示十字光标
     this.IsShowClose = false;     //Y轴始终显示收盘价
+    this.IsFixXLastTime=false;    //是否修正X轴,超出当前时间的,X轴调整到当前最后的时间.
 
     //内部使用
     this.Close = null;     //收盘价格
@@ -4869,6 +4870,23 @@ function ChartCorssCursor()
         this.Close = klineData.Close;
         var yPoint = this.Frame.GetYFromData(this.Close);
         return yPoint;
+    }
+
+    this.FixMinuteLastTimeXPoint=function(index)
+    {
+        if (!IFrameSplitOperator.IsNumber(index)) return null;
+        index=parseInt(index);
+        if (!this.StringFormatX.Data) return null;
+        var data = this.StringFormatX.Data;
+        if (!data.Data || data.Data.length <= 0) return null;
+        var dataIndex = data.DataOffset + index;
+        if (dataIndex<data.Data.length) return null;
+
+        dataIndex=data.Data.length - 1;
+        dataIndex-=data.DataOffset;
+        var xPoint=this.Frame.GetXFromIndex(dataIndex);
+
+        return { X:xPoint, Index:dataIndex };
     }
 
     this.Draw = function () 
@@ -4903,6 +4921,16 @@ function ChartCorssCursor()
         {
             var yPoint = this.GetCloseYPoint(this.CursorIndex);
             if (yPoint != null) y = yPoint;
+        }
+
+        if (this.IsFixXLastTime)
+        {
+            var value=this.FixMinuteLastTimeXPoint(this.CursorIndex)
+            if (value)
+            {
+                x=value.X;
+                this.CursorIndex=value.Index;
+            }
         }
 
         this.PointY = [[left, y], [right, y]];
