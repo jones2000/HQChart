@@ -278,6 +278,7 @@ function JSChart(element)
         if (option.SourceDatatLimit) chart.SetSourceDatatLimit(option.SourceDatatLimit);
         if (option.EnableZoomUpDown) chart.EnableZoomUpDown=option.EnableZoomUpDown;
         if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
+        if (IFrameSplitOperator.IsNumber(option.DrawMoveWaitTime)) chart.DrawMoveWaitTime=option.DrawMoveWaitTime;
         //创建子窗口
         chart.Create(option.Windows.length);
 
@@ -552,6 +553,7 @@ function JSChart(element)
 
         if (option.Info && option.Info.length > 0) chart.SetMinuteInfo(option.Info, false);
         if (option.SplashTitle) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
+        if (IFrameSplitOperator.IsNumber(option.DrawMoveWaitTime)) chart.DrawMoveWaitTime=option.DrawMoveWaitTime;
 
         if (option.Language) 
         {
@@ -1412,6 +1414,11 @@ function JSChartContainer(uielement)
     this.NetworkFilter;          //网络请求回调 function(data, callback);
     this.IsDestroy=false;        //是否已经销毁了
 
+    //手势移动 十字光标
+    this.LastMovePoint;
+    this.DrawMoveTimer=null;
+    this.DrawMoveWaitTime=60;
+
     this.ChartDestory=function()    //销毁
     {
         this.IsDestroy=true;
@@ -1487,6 +1494,24 @@ function JSChartContainer(uielement)
         }
 
         return touches;
+    }
+
+    this.ClearDrawMoveTimer=function()
+    {
+        if (this.DrawMoveTimer != null) 
+        {
+            clearTimeout(this.DrawMoveTimer);
+            this.DrawMoveTimer=null;
+        }
+    }
+
+    this.ClearTouchTimer=function()
+    {
+        if (this.TouchTimer != null) 
+        {
+            clearTimeout(this.TouchTimer);
+            this.TouchTimer=null;
+        }
     }
 
     //手机拖拽
@@ -1581,7 +1606,15 @@ function JSChartContainer(uielement)
             {
                 var x = touches[0].clientX;
                 var y = touches[0].clientY;
-                jsChart.OnMouseMove(x, y, e);
+                this.LastMovePoint={ X:x, Y:y };
+                if (this.DrawMoveTimer) return;
+                this.DrawMoveTimer=setTimeout(()=>
+                {
+                    if (!this.LastMovePoint) return;
+                    this.OnMouseMove(this.LastMovePoint.X, this.LastMovePoint.Y, e);
+                    this.DrawMoveTimer=null;
+                }, this.DrawMoveWaitTime);
+
             }
             else 
             {
@@ -1670,8 +1703,10 @@ function JSChartContainer(uielement)
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
         this.IsOnTouch = false;
+        this.LastMovePoint=null;
         JSConsole.Chart.Log('[JSChartContainer:ontouchend] IsOnTouch=' + this.IsOnTouch +' LastDrawStatus=' + this.LastDrawStatus);
-        if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
+        this.ClearDrawMoveTimer();
+        this.ClearTouchTimer();
         this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchEnd"}, e);
         this.Draw();//手放开 重新绘制  
     }
@@ -9490,9 +9525,6 @@ function MinuteChartContainer(uielement)
     this.DayCount = 1;                       //显示几天的数据
     this.DayData;                            //多日分钟数据
 
-    this.LastMovePoint;
-    this.DrawMoveTimer=null;
-
     this.MinuteApiUrl = g_JSChartResource.Domain + "/API/Stock";
     this.HistoryMinuteApiUrl = g_JSChartResource.Domain + "/API/StockMinuteData";   //历史分钟数据
 
@@ -9516,7 +9548,7 @@ function MinuteChartContainer(uielement)
             }
 
             //长按2秒,十字光标
-            if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
+            this.ClearTouchTimer();
 
             var drag =
             {
@@ -9566,53 +9598,32 @@ function MinuteChartContainer(uielement)
         var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
         if (this.ChartCorssCursor.IsShow === true && this.IsPhoneDragging(e)) 
         {
-            var x = touches[0].clientX;
-            var y = touches[0].clientY;
-            this.LastMovePoint={ X:x, Y:y };
             if (drag == null) 
             {
-                if (this.DrawMoveTimer) 
-                    return;
+                var x = touches[0].clientX;
+                var y = touches[0].clientY;
+                this.LastMovePoint={ X:x, Y:y };
+
+                if (this.DrawMoveTimer) return;
                 this.DrawMoveTimer=setTimeout(()=>
                 {
                     if (!this.LastMovePoint) return;
                     this.OnMouseMove(this.LastMovePoint.X, this.LastMovePoint.Y, e);
                     this.DrawMoveTimer=null;
-                }, 30);
+                }, this.DrawMoveWaitTime);
             }
         }
 
         if (drag!=null)
         {
             //TODO:上下滚动
-            if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
+            this.ClearTouchTimer();
 
             this.MouseDrag=null;
             var x = touches[0].clientX;
             var y = touches[0].clientY;
             this.OnMouseMove(x,y,e);
         }
-    }
-
-    this.ontouchend = function (e) 
-    {
-        this.LastMovePoint=null;
-        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
-
-        this.IsOnTouch = false;
-        JSConsole.Chart.Log('[MinuteChartContainer:ontouchend] IsOnTouch=' + this.IsOnTouch +' LastDrawStatus=' + this.LastDrawStatus);
-        if (this.TouchTimer != null) 
-        {
-            clearTimeout(this.TouchTimer);
-            this.TouchTimer=null;
-        }
-        if (this.DrawMoveTimer!=null) 
-        {
-            clearTimeout(this.DrawMoveTimer);
-            this.DrawMoveTimer=null;
-        }
-        this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchEnd"}, e);
-        this.Draw();//手放开 重新绘制  
     }
 
     //创建
