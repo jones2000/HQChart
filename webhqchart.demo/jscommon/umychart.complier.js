@@ -9639,6 +9639,91 @@ function JSDraw(errorHandler,symbolData)
         
         return result;
     }
+
+    //含义:在图形上绘制垂直线。
+    //用法:
+    //VERTLINE(COND,TYPE),当COND条件满足时,沿垂直方向绘制TYPE类型的线段,TYPE=0表示实线，1表示虚线'---'，2表示点线'...'，3表示点划线'-.-.-'，4表示点点划线'-..-..-'。
+    //例如：VERTLINE(HIGH>=HHV(HIGH,20),1)表示在创20天新高画垂直虚线。
+
+    this.VERTLINE=function(condition, type)
+    {
+        let drawData={ Data:[], LineType:type };
+        let result={ DrawData:drawData, DrawType:'VERTLINE' };
+        if (Array.isArray(condition))
+        {
+            for(var i=0;i<condition.length;++i)
+            {
+                var item=condition[i];
+                if (item) drawData.Data[i]=1;
+                else drawData.Data[i]=0;
+            }
+        }
+        else
+        {
+
+        }
+
+        return result;
+    }
+
+    //含义:在图形上绘制水平线。
+    //用法:
+    //HORLINE(COND,PRICE,TYPE,EXTEND),当COND条件满足时,在PRICE位置沿水平方向绘制TYPE类型的线段,TYPE=0表示实线，1表示虚线'---'，2表示点线'...'，3表示点划线'-.-.-'，4表示点点划线'-..-..-'。EXTEND=1 表示向左延长，=2表示向右延长，=3表示左右延长。
+    //例如：HORLINE(HIGH>=HHV(HIGH,20),HIGH,1,2)表示在创20天新高时画水平虚线向右延伸。
+    this.HORLINE=function(condition, data, type, extend)
+    {
+        let drawData={ Data:[], LineType:type, Extend:extend };
+        let result={ DrawData:drawData, DrawType:'HORLINE' };
+        if (Array.isArray(condition) && Array.isArray(data))
+        {
+            for(var i=0;i<condition.length;++i)
+            {
+                var item=condition[i];
+                drawData.Data[i]=null;
+                if (!item) continue;
+                if (i>=data.length) continue;
+                var value=data[i];
+                if (IFrameSplitOperator.IsNumber(value)) drawData.Data[i]=value;
+            }
+        }
+        else if (Array.isArray(condition) && IFrameSplitOperator.IsNumber(data))
+        {
+            for(var i=0;i<condition.length;++i)
+            {
+                var item=condition[i];
+                drawData.Data[i]=null;
+                if (!item) continue;
+                drawData.Data[i]=data;
+            }
+        }
+        else if (IFrameSplitOperator.IsNumber(condition) && condition)
+        {
+            if (this.SymbolData && this.SymbolData.Data && this.SymbolData.Data.Data)
+            {
+                if (Array.isArray(data))
+                {
+                    var count=this.SymbolData.Data.Data.length;
+                    for(var i=0; i<count; ++i)
+                    {
+                        drawData.Data[i]=null;
+                        if (i>=data.length) continue;
+                        var value=data[i];
+                        if (IFrameSplitOperator.IsNumber(value)) drawData.Data[i]=value;
+                    }
+                }
+                else if (IFrameSplitOperator.IsNumber(data))
+                {
+                    var count=this.SymbolData.Data.Data.length;
+                    for(var i=0; i<count; ++i)
+                    {
+                        drawData.Data[i]=data;
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
 }
 
 
@@ -9690,7 +9775,8 @@ JSDraw.prototype.IsDrawFunction=function(name)
     [
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE','DRAWKLINE_IF','PLOYLINE',
         'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',"DRAWTEXTABS","DRAWTEXTREL",
-        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2"
+        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2",
+        "VERTLINE","HORLINE"
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -15227,6 +15313,14 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWSL(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=[];
                 break;
+            case "VERTLINE":
+                node.Draw=this.Draw.VERTLINE(args[0],args[1]);
+                node.Out=node.Draw.DrawData.Data;
+                break;
+            case "HORLINE":
+                node.Draw=this.Draw.HORLINE(args[0],args[1],args[2],args[3]);
+                node.Out=node.Draw.DrawData.Data;
+                break;
             case 'CODELIKE':
                 node.Out=this.SymbolData.CODELIKE(args[0]);
                 break;
@@ -17322,6 +17416,87 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(line);
     }
 
+    this.CreateChartVericaltLine=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartVericaltLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+
+        this.SetChartLineDash(chart,varItem.Draw.DrawData);
+        chart.Data.Data=varItem.Draw.DrawData.Data;
+
+        hqChart.ChartPaint.push(chart);
+    }
+
+    this.SetChartLineDash=function(chart, option)
+    {
+        if (IFrameSplitOperator.IsNumber(option.LineType))
+        {
+            var lineType=option.LineType;
+            var pixelRatio=GetDevicePixelRatio();
+            switch(lineType)
+            {
+                case 1:
+                    chart.LineType=[10*pixelRatio,10*pixelRatio];
+                    break;
+                case 2:
+                    chart.LineType=[0,10*pixelRatio];
+                    chart.LineCap="square";
+                    break;
+                case 3:
+                    chart.LineType=[10*pixelRatio, 3*pixelRatio, 3*pixelRatio, 3*pixelRatio];
+                    break;
+                case 4:
+                    chart.LineType=[10*pixelRatio, 3*pixelRatio, 3*pixelRatio, 3*pixelRatio,3*pixelRatio,3*pixelRatio];
+                    break;
+            }
+        }
+        else if (IFrameSplitOperator.IsString(option.LineType))
+        {
+            var aryString=option.LineType.split(',');
+            var aryLinType=[];
+            for(var i=0;i<aryString.length;++i)
+            {
+                aryLinType.push(parseInt(aryString[i]));
+            }
+            chart.LineType=aryLinType;
+        }
+    }
+
+    this.CreateChartHorizontalLine=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartHorizontalLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+
+        this.SetChartLineDash(chart,varItem.Draw.DrawData);
+        chart.ExtendType=varItem.Draw.DrawData.Extend;
+        chart.Data.Data=varItem.Draw.DrawData.Data;
+
+        hqChart.ChartPaint.push(chart);
+    }
+
+
     this.CreateBackgroud=function(hqChart,windowIndex,varItem,id)
     {
         let chart=new ChartBackground();
@@ -17786,6 +17961,12 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case "DRAWSL":
                         this.CreateChartSlopeLine(hqChart,windowIndex,item,i);
+                        break;
+                    case "VERTLINE":
+                        this.CreateChartVericaltLine(hqChart,windowIndex,item,i);
+                        break;
+                    case "HORLINE":
+                        this.CreateChartHorizontalLine(hqChart,windowIndex,item,i);
                         break;
                     case 'MULTI_LINE':
                         this.CreateMultiLine(hqChart,windowIndex,item,i);

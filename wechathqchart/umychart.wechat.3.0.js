@@ -9352,7 +9352,7 @@ KLineChartContainer.JsonDataToHistoryData = function (data)
         item.Amount = jsData[amount];
         if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position = jsData[position];//期货持仓
 
-        if (isNaN(item.Open) || item.Open <= 0) continue; //停牌的数据剔除
+        if (!IFrameSplitOperator.IsNumber(item.Open)) continue; 
 
         aryDayData.push(item);
     }
@@ -9407,20 +9407,20 @@ KLineChartContainer.JsonDataToMinuteRealtimeData = function (data)
         item.YClose = preClose;
         if (IFrameSplitOperator.IsNumber(jsData.position)) item.Position = jsData.position; //持仓量
 
-        if (!item.Close) //当前没有价格 使用上一个价格填充
+        if (!IFrameSplitOperator.IsNumber(item.Close)) //当前没有价格 使用上一个价格填充
         {
             item.Close = preClose;
             item.Open = item.High = item.Low = item.Close;
         }
 
         //价格是0的 都用空
-        if (item.Open <= 0) item.Open = null;
-        if (item.Close <= 0) item.Close = null;
-        if (item.High <= 0) item.High = null;
-        if (item.Low <= 0) item.Low = null;
+        if (!IFrameSplitOperator.IsNumber(item.Open)) item.Open = null;
+        if (!IFrameSplitOperator.IsNumber(item.Close)) item.Close = null;
+        if (!IFrameSplitOperator.IsNumber(item.High)) item.High = null;
+        if (!IFrameSplitOperator.IsNumber(item.Low)) item.Low = null;
 
         //上次价格
-        if (jsData.price > 0) preClose = jsData.price;
+        if (IFrameSplitOperator.IsNumber(jsData.price)) preClose = jsData.price;
 
         aryMinuteData[i] = item;
     }
@@ -9440,60 +9440,23 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
 
     var list = data.data;
     var aryDayData = new Array();
-    var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position = 9;;
+    var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position = 9;
     for (var i = 0; i < list.length; ++i) 
     {
         var item = new HistoryData();
-        item.Date = list[i][date];
-        item.Open = list[i][open];
-        item.YClose = list[i][yclose];
-        item.Close = list[i][close];
-        item.High = list[i][high];
-        item.Low = list[i][low];
-        item.Vol = list[i][vol];    //原始单位股
-        item.Amount = list[i][amount];
-        item.Time = list[i][time];
-        if (IFrameSplitOperator.IsNumber(list[i][position])) item.Position = list[i][position]; //期货持仓
+        var jsData=list[i];
+        item.Date = jsData[date];
+        item.Open = jsData[open];
+        item.YClose = jsData[yclose];
+        item.Close = jsData[close];
+        item.High = jsData[high];
+        item.Low = jsData[low];
+        item.Vol = jsData[vol];    //原始单位股
+        item.Amount = jsData[amount];
+        item.Time = jsData[time];
+        if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position = jsData[position]; //期货持仓
 
         aryDayData.push(item);
-    }
-
-    // 无效数据处理
-    for (var i = 0; i < aryDayData.length; ++i) 
-    {
-        var minData = aryDayData[i];
-        if (minData == null) coninue;
-        if (isNaN(minData.Open) || minData.Open <= 0 || isNaN(minData.High) || minData.High <= 0 || isNaN(minData.Low) || minData.Low <= 0
-        || isNaN(minData.Close) || minData.Close <= 0 ) 
-        {
-            if (i == 0) 
-            {
-                if (minData.YClose > 0) 
-                {
-                    minData.Open = minData.YClose;
-                    minData.High = minData.YClose;
-                    minData.Low = minData.YClose;
-                    minData.Close = minData.YClose;
-                }
-            }
-            else // 用前一个有效数据填充
-            {
-                for (var j = i - 1; j >= 0; --j) 
-                {
-                    var minData2 = aryDayData[j];
-                    if (minData2 == null) coninue;
-                    if (minData2.Open > 0 && minData2.High > 0 && minData2.Low > 0 && minData2.Close > 0) 
-                    {
-                        if (minData.YClose <= 0) minData.YClose = minData2.Close;
-                        minData.Open = minData2.Open;
-                        minData.High = minData2.High;
-                        minData.Low = minData2.Low;
-                        minData.Close = minData2.Close;
-                        break;
-                    }
-                }
-            }
-        }
     }
 
     return aryDayData;
