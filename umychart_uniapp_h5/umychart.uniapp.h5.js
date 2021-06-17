@@ -5216,6 +5216,12 @@ function JSChart(divElement, bOffscreen)
             this.JSChartContainer.AddIndexWindow(indexName,option);
     }
 
+    this.RemoveIndexWindow=function(id)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.RemoveIndexWindow)=='function')
+            this.JSChartContainer.RemoveIndexWindow(id);
+    }
+
     this.ChangeScriptIndex=function(windowIndex,indexData,option)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeScriptIndex)=='function')
@@ -7231,7 +7237,7 @@ function JSChartContainer(uielement, OffscreenElement)
     {
         var bCreated=false; //是否已经创建了弹幕画法
         var barrageData=null;
-        for(var i in this.ExtendChartPaint)
+        for(var i=0;i<this.ExtendChartPaint.length;++i)
         {
             var item=this.ExtendChartPaint[i];
             if (item.ClassName==='BarragePaint')
@@ -7336,7 +7342,7 @@ function JSChartContainer(uielement, OffscreenElement)
         if (this.IsShowTooltip && bDrawPicture==false)
         {
             var toolTip=new TooltipData();
-            for(var i in this.ChartPaint)
+            for(var i=0;i<this.ChartPaint.length;++i)
             {
                 var item=this.ChartPaint[i];
                 if (item.GetTooltipData(x,y,toolTip))
@@ -7350,7 +7356,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
             if (!toolTip.Data)
             {
-                for(var i in this.OverlayChartPaint)
+                for(var i=0;i<this.OverlayChartPaint.length;++i)
                 {
                     var item=this.OverlayChartPaint[i];
                     if (item.GetTooltipData(x,y,toolTip))
@@ -7497,7 +7503,7 @@ function JSChartContainer(uielement, OffscreenElement)
             var border=this.Frame.ChartBorder.GetBorder();
             if (border.DayBorder)   //多日分时+多日集合竞价
             {
-                for(var i in border.DayBorder)
+                for(var i=0;i<border.DayBorder.length;++i)
                 {
                     var client=border.DayBorder[i];
                     this.Canvas.beginPath();
@@ -7565,6 +7571,7 @@ function JSChartContainer(uielement, OffscreenElement)
         if (!this.Frame.OnMoveFromeBorder(index,yMove)) return ;
 
         //this.Frame.SetSizeChage(true);
+        this.Frame.SetFrameBorderSizeChange();
         this.Frame.ReDrawToolbar();
         this.Draw();
     }
@@ -7768,7 +7775,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
     this.HideTooltip=function()
     {
-        this.Tooltip.style.display = "none";
+        if (this.Tooltip.style.display!="none") this.Tooltip.style.display = "none";
     }
 
     this.ShowSelectRect=function(x,y,x2,y2)
@@ -7835,18 +7842,19 @@ function JSChartContainer(uielement, OffscreenElement)
 
         var chartPaint=new Array();
 
-        for(var i in this.ChartPaint)
+        for(var i=0;i<this.ChartPaint.length;++i)
         {
             var item=this.ChartPaint[i];
             if (item.IsShow==false) continue;   //隐藏的图形不计算
             chartPaint.push(this.ChartPaint[i]);
         }
-        for(var i in this.OverlayChartPaint)
+
+        for(var i=0;i<this.OverlayChartPaint.length;++i)
         {
             chartPaint.push(this.OverlayChartPaint[i]);
         }
 
-        for(var i in chartPaint)
+        for(var i=0;i<chartPaint.length;++i)
         {
             var paint=chartPaint[i];
             var range=paint.GetMaxMin();
@@ -7876,17 +7884,17 @@ function JSChartContainer(uielement, OffscreenElement)
         }
 
         var mapFrame=new Map();
-        for(var i in frameMaxMinData)
+        for(var i=0;i<frameMaxMinData.length;++i)
         {
             var item=frameMaxMinData[i];
             mapFrame.set(item.Frame.Identify,item);
         }
 
         //叠加坐标Y轴使用主图指标， 最大最小值
-        for(var i in this.Frame.SubFrame)
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
         {
             var subFrame=this.Frame.SubFrame[i];
-            for(var j in subFrame.OverlayIndex)
+            for(var j=0;j<subFrame.OverlayIndex.length;++j)
             {
                 var overlayItem=subFrame.OverlayIndex[j];
                 var overlayFrame=overlayItem.Frame;
@@ -7909,7 +7917,7 @@ function JSChartContainer(uielement, OffscreenElement)
             }
         }
 
-        for(var i in frameMaxMinData)
+        for(var i=0;i<frameMaxMinData.length;++i)
         {
             var item=frameMaxMinData[i];
             if (!item.Frame || !item.Range) continue;
@@ -7935,10 +7943,10 @@ function JSChartContainer(uielement, OffscreenElement)
         
 
         //更新独立子坐标
-        for(var i in this.Frame.SubFrame)
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
         {
             var subFrame=this.Frame.SubFrame[i];
-            for(var j in subFrame.OverlayIndex)
+            for(var j=0;j<subFrame.OverlayIndex.length;++j)
             {
                 var overlayItem=subFrame.OverlayIndex[j];
                 if (overlayItem.Frame.IsShareY===true) continue;
@@ -13277,6 +13285,19 @@ function HQTradeFrame()
         for(var i in this.SubFrame)
         {
             this.SubFrame[i].Frame.ReDrawToolbar=true;
+        }
+    }
+
+    this.SetFrameBorderSizeChange=function()
+    {
+        var firstFrame=this.SubFrame[0];
+        if (!firstFrame || !firstFrame.Frame) return;
+
+        var splitOper=firstFrame.Frame.YSplitOperator;  
+        if (!splitOper) return;
+        if (splitOper.CoordinateType==2) //对数坐标 需要重新计算Y轴分割
+        {
+            firstFrame.Frame.XYSplit=true;
         }
     }
 
@@ -44359,7 +44380,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         bindData.Right=this.Right;
         bindData.DataType=0;
 
-        if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(data.symbol))    //复权数据 ,A股才有有复权
+        if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(data.symbol) && !this.IsApiPeriod)    //复权数据 ,A股才有有复权
         {
             var rightData=bindData.GetRightDate(bindData.Right);
             bindData.Data=rightData;

@@ -4121,6 +4121,239 @@ function ChartVolStick()
     }
 }
 
+function ChartText() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+  
+    this.TextFont = "14px 微软雅黑";
+  
+    this.Draw = function () 
+    {
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+  
+        if (!this.Data || !this.Data.Data) return;
+    
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        var xPointCount = this.ChartFrame.XPointCount;
+  
+        for (var i in this.Data.Data) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+    
+            var price = value.Value;
+            var position = value.Position;
+    
+            if (position == 'Left') {
+            var x = this.ChartFrame.GetXFromIndex(0);
+            var y = this.ChartFrame.GetYFromData(price);
+    
+            if (x > chartright) continue;
+    
+            this.Canvas.textAlign = 'left';
+            this.Canvas.textBaseline = 'middle';
+            this.Canvas.fillStyle = value.Color;
+            this.Canvas.font = this.TextFont;
+            this.Canvas.fillText(value.Message, x, y);
+            }
+        }
+    }
+  
+    this.GetMaxMin = function () 
+    {
+        var xPointCount = this.ChartFrame.XPointCount;
+        var range = {};
+        range.Min = null;
+        range.Max = null;
+    
+        if (!this.Data || !this.Data.Data) return range;
+    
+        for (var i in this.Data.Data) 
+        {
+            var data = this.Data.Data[i];
+            if (data == null || isNaN(data.Value)) continue;
+    
+            var value = data.Value;
+    
+            if (range.Max == null) range.Max = value;
+            if (range.Min == null) range.Min = value;
+    
+            if (range.Max < value) range.Max = value;
+            if (range.Min > value) range.Min = value;
+        }
+    
+        return range;
+    }
+}
+
+/*  水平面积 只有1个数据
+    Data 数据结构 
+    Value, Value2  区间最大最小值
+    Color=面积的颜色
+    Title=标题 TitleColor=标题颜色
+    支持横屏
+*/
+function ChartStraightArea() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+  
+    this.Color = "rgb(255,193,37)";   //线段颜色
+    this.Font = '11px 微软雅黑';
+  
+    this.Draw = function () 
+    {
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+  
+        if (!this.Data || !this.Data.Data) return;
+  
+        if (this.ChartFrame.IsHScreen === true) 
+        {
+            this.HScreenDraw();
+            return;
+        }
+  
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        var bottom = this.ChartBorder.GetBottom();
+        var left = this.ChartBorder.GetLeft();
+        var xPointCount = this.ChartFrame.XPointCount;
+  
+        var xRight = this.ChartFrame.GetXFromIndex(xPointCount - 1);
+  
+        //画背景
+        for (let i in this.Data.Data) 
+        {
+            let item = this.Data.Data[i];
+            if (item == null || isNaN(item.Value) || isNaN(item.Value2)) continue;
+            if (item.Color == null) continue;
+    
+            let valueMax = Math.max(item.Value, item.Value2);
+            let valueMin = Math.min(item.Value, item.Value2);
+    
+            let yTop = this.ChartFrame.GetYFromData(valueMax);
+            let yBottom = this.ChartFrame.GetYFromData(valueMin);
+    
+            this.Canvas.fillStyle = item.Color;
+            this.Canvas.fillRect(ToFixedRect(left), ToFixedRect(yTop), ToFixedRect(xRight - left), ToFixedRect(yBottom - yTop));
+        }
+  
+        for (let i in this.Data.Data)
+        {
+            let item = this.Data.Data[i];
+            if (item == null || isNaN(item.Value) || isNaN(item.Value2)) continue;
+            if (item.Color == null) continue;
+    
+            let valueMax = Math.max(item.Value, item.Value2);
+            let valueMin = Math.min(item.Value, item.Value2);
+    
+            let yTop = this.ChartFrame.GetYFromData(valueMax);
+            let yBottom = this.ChartFrame.GetYFromData(valueMin);
+    
+            if (item.Title && item.TitleColor) 
+            {
+                let x = xRight;
+                if (item.Align == 'left') 
+                {
+                    this.Canvas.textAlign = 'left';
+                    x = left;
+                }
+                else 
+                {
+                    this.Canvas.textAlign = 'right';
+                    x = xRight;
+                }
+        
+                this.Canvas.textBaseline = 'middle';
+                this.Canvas.fillStyle = item.TitleColor;
+                this.Canvas.font = this.Font;
+                let y = yTop + (yBottom - yTop) / 2;
+                this.Canvas.fillText(item.Title, x, y);
+            }
+        }
+    }
+  
+    this.HScreenDraw = function () 
+    {
+        var bottom = this.ChartBorder.GetBottom();
+        var top = this.ChartBorder.GetTop();
+        var height = this.ChartBorder.GetHeight();
+  
+        for (let i in this.Data.Data) 
+        {
+            let item = this.Data.Data[i];
+            if (item == null || isNaN(item.Value) || isNaN(item.Value2)) continue;
+            if (item.Color == null) continue;
+    
+            let valueMax = Math.max(item.Value, item.Value2);
+            let valueMin = Math.min(item.Value, item.Value2);
+    
+            var yTop = this.ChartFrame.GetYFromData(valueMax);
+            var yBottom = this.ChartFrame.GetYFromData(valueMin);
+    
+            this.Canvas.fillStyle = item.Color;
+            this.Canvas.fillRect(ToFixedRect(yBottom), ToFixedRect(top), ToFixedRect(yTop - yBottom), ToFixedRect(height));
+    
+            if (item.Title && item.TitleColor) 
+            {
+                var xText = yTop + (yBottom - yTop) / 2;
+                var yText = bottom;
+                this.Canvas.save();
+                this.Canvas.translate(xText, yText);
+                this.Canvas.rotate(90 * Math.PI / 180);
+        
+                this.Canvas.textAlign = 'right';
+                this.Canvas.textBaseline = 'middle';
+                this.Canvas.fillStyle = item.TitleColor;
+                this.Canvas.font = this.Font;
+                this.Canvas.fillText(item.Title, 0, -2);
+        
+                this.Canvas.restore();
+            }
+        }
+    }
+  
+    this.GetMaxMin = function () 
+    {
+        var xPointCount = this.ChartFrame.XPointCount;
+        var range = {};
+        range.Min = null;
+        range.Max = null;
+    
+        if (!this.Data || !this.Data.Data) return range;
+  
+        for (let i in this.Data.Data) 
+        {
+            let item = this.Data.Data[i];
+            if (item == null || isNaN(item.Value) || isNaN(item.Value2)) continue;
+    
+            let valueMax = Math.max(item.Value, item.Value2);
+            let valueMin = Math.min(item.Value, item.Value2);
+    
+            if (range.Max == null) range.Max = valueMax;
+            if (range.Min == null) range.Min = valueMin;
+    
+            if (range.Max < valueMax) range.Max = valueMax;
+            if (range.Min > valueMin) range.Min = valueMin;
+        }
+        return range;
+    }
+}
+
 // 面积图
 function ChartBand() {
     this.newMethod = IChartPainting;   //派生
@@ -5790,6 +6023,8 @@ module.exports =
         ChartVolStick:ChartVolStick,
         ChartBand:ChartBand,
         ChartMinuteVolumBar:ChartMinuteVolumBar,
+        ChartText:ChartText,
+        ChartStraightArea:ChartStraightArea,
         ChartSplashPaint:ChartSplashPaint,
         ChartPie: ChartPie,
         ChartCircle: ChartCircle,
@@ -5830,6 +6065,8 @@ module.exports =
     JSCommonChartPaint_ChartMultiBar: ChartMultiBar,
     JSCommonChartPaint_ChartBuySell: ChartBuySell,
     JSCommonChartPaint_ChartMACD: ChartMACD,
+    JSCommonChartPaint_ChartText:ChartText,
+    JSCommonChartPaint_ChartStraightArea:ChartStraightArea,
     JSCommonChartPaint_ChartCorssCursor: ChartCorssCursor,
     JSCommonChartPaint_DepthChartCorssCursor:DepthChartCorssCursor,
     JSCommonChartPaint_ChartOrderbookDepth:ChartOrderbookDepth,
