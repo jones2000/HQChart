@@ -23339,6 +23339,176 @@ function DrawToolsButton()
 }
 
 
+//窗口分割
+function FrameSplitPaint()
+{
+    this.newMethod=IExtendChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='FrameSplitPaint';
+    this.LineColor='rgb(255,0,0)';
+    this.TextColor="rgb(255,0,0)";
+    this.LineWidth=2;
+    this.Font='bold '+18*GetDevicePixelRatio() +"px 微软雅黑";
+    this.TextTopOffset=10*GetDevicePixelRatio();
+
+    //设置参数接口
+    this.SetOption=function(option)
+    {
+        if (option)
+        {
+            if (option.LineColor) this.LineColor=option.LineColor;
+            if (option.TextColor) this.TextColor=option.TextColor;
+            if (option.Font) this.Font=option.Font;
+            if (IFrameSplitOperator.IsNumber(option.LineWidth)) this.LineWidth=option.LineWidth;
+            if (IFrameSplitOperator.IsNumber(option.TextTopOffset)) this.TextTopOffset=option.TextTopOffset;
+        }
+    }
+
+    this.Draw=function()
+    {
+        if (!this.HQChart) return;
+        if (this.HQChart.Period!=0 && this.HQChart.Period!=1) return;
+
+        if (!this.HQChart.ChartPaint[0]) return;
+        var data=this.HQChart.ChartPaint[0].Data;
+        if (!data) return;
+        this.Data=data;
+        if (!this.ChartFrame || !this.ChartFrame.SubFrame) return;
+        var subFrame=this.ChartFrame.SubFrame[0].Frame;
+        if (!subFrame) return;
+
+        var isHScreen=(subFrame.IsHScreen===true);
+        var dataWidth=subFrame.DataWidth;
+        var distanceWidth=subFrame.DistanceWidth;
+        var xPointCount=subFrame.XPointCount;
+
+        var lineWidth=this.LineWidth * GetDevicePixelRatio();
+
+        if (isHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.BottomEx;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            var drawHeight=border.ChartHeight-border.TopTitle-5*GetDevicePixelRatio();
+        }
+
+        this.Canvas.save();
+        this.Canvas.lineWidth=lineWidth;
+        this.Canvas.font=this.Font;
+        this.Canvas.textAlign='center';
+        this.Canvas.textBaseline='top';
+        var preQuarter={ Left:border.LeftEx, Top:ToFixedPoint2(lineWidth,border.TopTitle), Height:drawHeight, LineWidth:lineWidth };
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var item=this.Data.Data[i];
+            if (!item) continue;
+            
+            var dateInfo=this.GetQuarter(item.Date);
+            if (!dateInfo) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+            var x=left+(right-left)/2;
+
+
+            if (!preQuarter.DateInfo)
+            {
+                preQuarter.DateInfo=dateInfo;
+                preQuarter.Right=x;
+            }
+            else
+            {
+                preDateInfo=preQuarter.DateInfo;
+                if (preDateInfo.Year!=dateInfo.Year || preDateInfo.Quarter!=dateInfo.Quarter)
+                {
+                    preQuarter.Right=x;
+                    this.DrawQuarter(preQuarter);
+
+                    preQuarter.Left=x;
+                    preQuarter.Right=null;
+                    preQuarter.DateInfo=dateInfo;
+                }
+                else
+                {
+                    preQuarter.Right=x;
+                }
+            }
+        }
+
+        this.DrawQuarter(preQuarter);
+
+        this.Canvas.restore();
+    }
+
+    this.DrawQuarter=function(quarterInfo)
+    {
+        if (!IFrameSplitOperator.IsNumber(quarterInfo.Left) || !IFrameSplitOperator.IsNumber(quarterInfo.Right)) return;
+
+        var left=ToFixedPoint2(quarterInfo.LineWidth,quarterInfo.Left);
+        var right=ToFixedPoint2(quarterInfo.LineWidth,quarterInfo.Right);
+        var drawWidth=right-left;
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.strokeRect(left, quarterInfo.Top, drawWidth, quarterInfo.Height);
+
+        var date=quarterInfo.DateInfo;
+        var text=`${date.Year%100}年${date.Quarter}季度`;
+        var textWidth = this.Canvas.measureText(text).width;
+        if (textWidth<(drawWidth+5))
+        {
+            var x=left+drawWidth/2;
+            var y=quarterInfo.Top+this.TextTopOffset;
+            this.Canvas.fillStyle=this.TextColor;
+            this.Canvas.fillText(text,x,y);
+        }
+    }
+
+    this.GetQuarter=function(date)
+    {
+        if (!IFrameSplitOperator.IsNumber(date)) return null;
+
+        var year=parseInt(date/10000);
+        var month=parseInt((date%10000)/100);
+
+        switch(month)
+        {
+            case 1:
+            case 2:
+            case 3:
+                var quarter=1;
+                break;
+            case 4:
+            case 5:
+            case 6:
+                var quarter=2;
+                break;
+            case 7:
+            case 8:
+            case 9:
+                var quarter=3;
+                break;
+            case 10:
+            case 11:
+            case 12:
+                var quarter=4;
+                break;
+            default:
+                return null;
+        }
+
+        return { Year:year, Month:month, Quarter:quarter };
+    }
+}
+
+
 //深度图 支持横屏
 /*
     数据格式:
@@ -39890,6 +40060,15 @@ function KLineChartContainer(uielement,OffscreenElement)
                 return chart;
             case '背景图':
                 chart=new BackgroundPaint();
+                chart.Canvas=this.Canvas;
+                chart.ChartBorder=this.Frame.ChartBorder;
+                chart.ChartFrame=this.Frame;
+                chart.HQChart=this;
+                chart.SetOption(option);
+                this.ExtendChartPaint.push(chart);
+                return chart;
+            case "FrameSplitPaint": //框架分割
+                chart=new FrameSplitPaint();
                 chart.Canvas=this.Canvas;
                 chart.ChartBorder=this.Frame.ChartBorder;
                 chart.ChartFrame=this.Frame;
