@@ -27600,7 +27600,7 @@ function FrameSplitPaint()
             }
             else
             {
-                preDateInfo=preQuarter.DateInfo;
+                var preDateInfo=preQuarter.DateInfo;
                 if (preDateInfo.Year!=dateInfo.Year || preDateInfo.Quarter!=dateInfo.Quarter)
                 {
                     preQuarter.Right=x;
