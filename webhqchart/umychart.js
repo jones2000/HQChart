@@ -5013,6 +5013,8 @@ function CoordinateInfo()
     this.Font=g_JSChartResource.FrameSplitTextFont;             //字体
     this.LineColor=g_JSChartResource.FrameSplitPen;             //线段颜色
     this.LineType=1;                                            //线段类型 -1 不画线段 2 虚线 8,9=集合竞价坐标
+    this.ExtendData;                                            //扩展属性
+                                                                //百分比 { PriceColor:, PercentageColor:, SplitColor:, Font: }
 }
 
 
@@ -5654,12 +5656,17 @@ function AverageWidthFrame()
                 {
                     if (this.MultiTextFormat==1)    //显示1行 格式:价格/百分比
                     {
+                        if (item.ExtendData)
+                        {
+                            if (item.ExtendData.Font) this.Canvas.font=item.ExtendData.Font;
+                        }
+                            
                         var textData=
                         { 
                             Text:
                             [ 
                                 {Text:item.Message[1][0], Width:this.Canvas.measureText(item.Message[1][0]).width },
-                                {Text:item.Message[1][1], Width:this.Canvas.measureText(item.Message[1][1]).width} 
+                                {Text:item.Message[1][1], Width:this.Canvas.measureText(item.Message[1][1]).width } 
                             ],
                             X:xText+2,
                             Y:yText,
@@ -5713,15 +5720,25 @@ function AverageWidthFrame()
             var message=item.Item;
 
             this.Canvas.textBaseline=message.TextBaseline;
-            if (message.Font) this.Canvas.font=message.Font;
+            if (message.ExtendData && message.ExtendData.Font) this.Canvas.font=message.ExtendData.Font;
+            else if (message.Font) this.Canvas.font=message.Font;
+
+            if (message.ExtendData && message.ExtendData.PercentageColor) this.Canvas.fillStyle=message.ExtendData.PercentageColor;
+            else this.Canvas.fillStyle=message.TextColor;
 
             this.Canvas.textAlign="right";
             var x=item.X+maxWidth[1];
             this.Canvas.fillText(item.Text[1].Text,x,item.Y);
 
+            if (message.ExtendData && message.ExtendData.SplitColor) this.Canvas.fillStyle=message.ExtendData.SplitColor;
+            else this.Canvas.fillStyle=message.TextColor;
+
             this.Canvas.textAlign="left";
             var splitWidth=this.Canvas.measureText('/').width;
             this.Canvas.fillText('/',x,item.Y);
+
+            if (message.ExtendData && message.ExtendData.PriceColor) this.Canvas.fillStyle=message.ExtendData.PriceColor;
+            else this.Canvas.fillStyle=message.TextColor;
 
             this.Canvas.textAlign="right";
             var x=item.X+maxWidth[1]+maxWidth[0]+splitWidth;
@@ -25323,20 +25340,29 @@ function FrameSplitKLinePriceY()
         splitData.Interval=(splitData.Max-splitData.Min)/(splitData.Count-1);
         if (!isFixedMaxMin) this.IntegerCoordinateSplit2(splitData);
 
+        var textData;
+        if (g_JSChartResource.Frame && g_JSChartResource.Frame.PercentageText)
+        {
+            var item=g_JSChartResource.Frame.PercentageText;
+            textColor={PriceColor:item.PriceColor, PercentageColor:item.PercentageColor, SplitColor:item.SplitColor, Font:item.Font };
+        }   
+
         var aryHorizontal=[];
         for(var value=0;value<=splitData.Max; value+=splitData.Interval)
         {
             var price=(value+1)*firstOpenPrice;
             var item=new CoordinateInfo();
             item.Value=price;
-            if (this.IsShowLeftText) item.Message[0]=price.toFixed(floatPrecision);     //左边价格坐标      
+            if (this.IsShowLeftText) item.Message[0]=price.toFixed(floatPrecision);     //左边价格坐标  
+            
             if (this.IsShowRightText) 
             {
                 var strPrice=price.toFixed(floatPrecision);
                 var text=(value*100).toFixed(2);    //右边百分比
                 text=IFrameSplitOperator.RemoveZero(text);
                 text+='%';
-                item.Message[1]=[text,strPrice];  
+                item.Message[1]=[text,strPrice];
+                item.ExtendData=textColor;
             }
             aryHorizontal.push(item);
         }
@@ -25354,6 +25380,7 @@ function FrameSplitKLinePriceY()
                 text=IFrameSplitOperator.RemoveZero(text);
                 text+='%';
                 item.Message[1]=[text,strPrice];  
+                item.ExtendData=textColor;
             }
             aryHorizontal.push(item);
         }
@@ -35362,6 +35389,14 @@ function JSChartResource()
         YTopOffset:2*GetDevicePixelRatio()      //Y轴顶部文字向下偏移
     };
 
+    //百分比坐标文字颜色
+    this.Frame.PercentageText= { 
+        PriceColor:'rgb(117,125,129)', 
+        PercentageColor:"rgb(117,125,129)", 
+        SplitColor:"rgb(117,125,129)",
+        Font:14*GetDevicePixelRatio() +"px 微软雅黑"
+    };
+
     //对数坐标
     this.FrameLogarithmic= {
         OpenPriceFont: "bold "+14*GetDevicePixelRatio() +"px 微软雅黑",     //开盘价刻度文字字体
@@ -35790,6 +35825,14 @@ function JSChartResource()
         {
             if (style.Frame.XBottomOffset) this.Frame.XBottomOffset=style.Frame.XBottomOffset;
             if (style.Frame.YTopOffset) this.Frame.YTopOffset=style.Frame.YTopOffset;
+            if (style.Frame.PercentageText)
+            {
+                var item=style.Frame.PercentageText;
+                if (item.PriceColor) this.Frame.PercentageText.PriceColor=item.PriceColor;
+                if (item.PercentageColor) this.Frame.PercentageText.PercentageColor=item.PercentageColor;
+                if (item.SplitColor) this.Frame.PercentageText.SplitColor=item.SplitColor;
+                if (item.Font) this.Frame.PercentageText.Font=item.Font;
+            }
         }
 
         if (style.FrameLatestPrice) 

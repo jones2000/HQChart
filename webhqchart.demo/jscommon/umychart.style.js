@@ -83,7 +83,19 @@ var BLACK_STYLE=
     FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
     FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
 
-    Frame:{ XBottomOffset:1*GetDevicePixelRatio() },   //X轴文字向下偏移
+    Frame:
+    { 
+        XBottomOffset:1*GetDevicePixelRatio(), //X轴文字向下偏移
+       
+        PercentageText:      //百分比坐标文字颜色
+        { 
+            PriceColor:'rgb(101,104,112)', 
+            PercentageColor:"rgb(101,104,112)", 
+            SplitColor:"rgb(101,104,112)",
+            Font:14*GetDevicePixelRatio() +"px 微软雅黑"
+        }
+    },   
+
 
     FrameLatestPrice : {
         TextColor:'rgb(255,255,255)',   //最新价格文字颜色
