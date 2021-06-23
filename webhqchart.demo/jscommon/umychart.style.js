@@ -208,7 +208,10 @@ var BLACK_STYLE=
         BGColor:'rgba(20,20,20,0.8)',    //背景色
         BorderColor:'rgb(210,210,210)',     //边框颜色
         TitleColor:'rgb(210,210,210)',       //标题颜色
-        TitleFont:13*GetDevicePixelRatio() +'px 微软雅黑'   //字体
+        TitleFont:13*GetDevicePixelRatio() +'px 微软雅黑',   //字体
+        DateTimeColor:'rgb(210,210,210)',
+        VolColor:"rgb(210,210,210)",       //标题成交量
+        AmountColor:"rgb(210,210,210)",    //成交金额
     },
 
     //走势图 信息地雷
