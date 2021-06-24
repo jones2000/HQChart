@@ -12923,6 +12923,8 @@ function JSSymbolData(ast,option,jsExecute)
                 aryFittingData=kdata.GetFittingTradeData(recvData, 0);        //数据和主图K线拟合
             else if (ChartData.IsMinutePeriod(this.Period,true))
                 aryFittingData=kdata.GetMinuteFittingTradeData(recvData, 0);  //数据和主图K线拟合
+            else if (ChartData.IsTickPeriod(this.Period))
+                aryFittingData=kdata.GetMinuteFittingTradeData(recvData, 0);  //数据和主图K线拟合
             else 
                 return;
     

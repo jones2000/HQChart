@@ -10530,6 +10530,8 @@ function HistoryData()
     this.Up;    //上涨
     this.Down;  //下跌
     this.Unchanged; //平盘
+
+    this.ExtendData;    //扩展数据
 }
 
 //数据复制
@@ -14111,7 +14113,15 @@ function ChartKLine()
 
         if (ChartData.IsTickPeriod(this.Period))    //分笔图
         {
-            this.DrawTick();
+            this.Canvas.save();
+            this.ClipClient(this.ChartFrame.IsHScreen);
+
+            if (this.DrawType==1)
+                this.DrawCloseLine();
+            else
+                this.DrawTick();
+
+            this.Canvas.restore();
             return;
         }
 
@@ -25289,7 +25299,7 @@ function FrameSplitKLinePriceY()
     this.Period;            //周期
     this.KLineChart;
     this.Custom=[]; //[{Type:0}];   定制刻度 0=显示最后的价格刻度
-    this.SplitType=0;       //0=自动分割  1=固定分割
+    this.SplitType=0;       //0=自动分割  1=固定分割 2=分笔图价格分割
 
     this.DefaultYMaxMin;    //{ Max:null, Min:null };    //指定最大,最小, Y轴范围必须比最大值大， 比最小值小
     this.FixedYMaxMin;      //{ Max, Min} 固定Y轴最大最小值
@@ -25349,9 +25359,12 @@ function FrameSplitKLinePriceY()
         this.Frame.Logarithmic=null;
         this.Frame.MultiTextFormat=0;
         var bFilter=true;   //是否需要通过高度过滤刻度
+        splitData.IsFixedMaxMin=isFixedMaxMin;
+        splitData.IsFilter=bFilter;
         if (ChartData.IsTickPeriod(this.Period))
         {
             this.SplitTickData(splitData,defaultfloatPrecision);
+            bFilter=splitData.IsFilter;
         }
         else if (FrameSplitKLinePriceY.SplitCustom)
         {
@@ -25430,6 +25443,33 @@ function FrameSplitKLinePriceY()
     }
 
     this.SplitTickData=function(splitData,floatPrecision)
+    {
+        switch(this.CoordinateType)
+        {
+            case 1: //百分比
+                if (!this.SplitPercentage(splitData,floatPrecision,splitData.IsFixedMaxMin))
+                {
+                    this.SplitDefault(splitData,floatPrecision,splitData.IsFixedMaxMin);
+                }
+                else
+                {
+                    this.Frame.MultiTextFormat=this.PercentageTextFormat;
+                    splitData.IsFilter=false;
+                }
+                break;
+            default:
+                if (this.SplitType==3) 
+                {
+                    this.SplitTickPrice(splitData,floatPrecision);
+                }
+                else 
+                {
+                    this.SplitDefault(splitData, floatPrecision, splitData.IsFixedMaxMin);
+                }
+        }
+    }
+
+    this.SplitTickPrice=function(splitData,floatPrecision)
     {
         var aryPrice=this.KLineChart.GetAllPrice();
 
@@ -25756,7 +25796,10 @@ function FrameSplitKLinePriceY()
             var data=this.Data.Data[i];
             if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
 
-            return data.Open;
+            if (ChartData.IsTickPeriod(this.Period)) 
+                return data.YClose;
+            else
+                return data.Open;
         }
 
         return null;
@@ -26402,6 +26445,7 @@ function FrameSplitKLineX()
         if (FrameSplitKLineX.SplitCustom) FrameSplitKLineX.SplitCustom(this);   //自定义分割
         else if (ChartData.IsMinutePeriod(this.Period, true)) this.SplitDateTime();
         else if (ChartData.IsSecondPeriod(this.Period)) this.SplitSecond();
+        else if (ChartData.IsTickPeriod(this.Period)) this.SplitSecond();
         else this.SplitDate();
 
         if (this.GetEventCallback)
@@ -28691,11 +28735,12 @@ function HistoryDataStringFormat()
         var date=new Date(parseInt(data.Date/10000),(data.Date/100%100-1),data.Date%100);
         var strDate=IFrameSplitOperator.FormatDateString(data.Date);
         var title2=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],this.LanguageID);
+        var isTickPeriod=ChartData.IsTickPeriod(this.Value.ChartPaint.Data.Period);
         if (ChartData.IsMinutePeriod(this.Value.ChartPaint.Data.Period,true)) // 分钟周期
         {
             title2=IFrameSplitOperator.FormatTimeString(data.Time);
         }
-        else if (ChartData.IsSecondPeriod(this.Value.ChartPaint.Data.Period))
+        else if (ChartData.IsSecondPeriod(this.Value.ChartPaint.Data.Period) || isTickPeriod)
         {
             title2=IFrameSplitOperator.FormatTimeString(data.Time,'HH:MM:SS');
         }
@@ -28704,47 +28749,63 @@ function HistoryDataStringFormat()
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
         var increase=null;
         if (data.YClose>0) increase=(data.Close-data.YClose)/data.YClose*100;
-        var strText=
+        if (isTickPeriod)
+        {
+            var strText=
             "<span class='tooltip-title'>"+strDate+"&nbsp&nbsp"+title2+"</span>"+
-            "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Open',this.LanguageID)+"</span>"+
+            "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Price',this.LanguageID)+"</span>"+
             "<span class='tooltip-num' style='color:"+this.GetColor(data.Open,data.YClose)+";'>"+data.Open.toFixed(defaultfloatPrecision)+"</span><br/>"+
-            "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-High',this.LanguageID)+"</span>"+
-            "<span class='tooltip-num' style='color:"+this.GetColor(data.High,data.YClose)+";'>"+data.High.toFixed(defaultfloatPrecision)+"</span><br/>"+
-            "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Low',this.LanguageID)+"</span>"+
-            "<span class='tooltip-num' style='color:"+this.GetColor(data.Low,data.YClose)+";'>"+data.Low.toFixed(defaultfloatPrecision)+"</span><br/>"+
-            "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Close',this.LanguageID)+"</span>"+
-            "<span class='tooltip-num' style='color:"+this.GetColor(data.Close,data.YClose)+";'>"+data.Close.toFixed(defaultfloatPrecision)+"</span><br/>"+
-            //"<span style='color:"+this.YClose+";font:微软雅黑;font-size:12px'>&nbsp;前收: "+IFrameSplitOperator.FormatValueString(data.YClose,2)+"</span><br/>"+
-            "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Vol',this.LanguageID)+"</span>"+
-            "<span class='tooltip-num' style='color:"+this.VolColor+";'>"+IFrameSplitOperator.FormatValueString(data.Vol,2,this.LanguageID)+"</span><br/>"+
-            "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Amount',this.LanguageID)+"</span>"+
-            "<span class='tooltip-num' style='color:"+this.AmountColor+";'>"+IFrameSplitOperator.FormatValueString(data.Amount,2,this.LanguageID)+"</span><br/>"+
             "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Increase',this.LanguageID)+"</span>"+
             (increase==null? "<span class='tooltip-num' style='color:"+this.GetColor(0,0)+";'>"+'--'+"</span><br/>" :
             "<span class='tooltip-num' style='color:"+this.GetColor(increase,0)+";'>"+increase.toFixed(2)+'%'+"</span><br/>");
 
-        this.LineCount=8;
-        if(MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && data.FlowCapital>0)  //换手率
-        {
-            var value=data.Vol/data.FlowCapital*100;
-            strText+= "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Exchange',this.LanguageID)+"</span>" +
-                "<span class='tooltip-num' style='color:"+this.TurnoverRateColor+";'>"+value.toFixed(2)+'%'+"</span><br/>";
-            ++this.LineCount;
+            this.LineCount=4;
         }
-
-        if (MARKET_SUFFIX_NAME.IsFutures(upperSymbol) && IFrameSplitOperator.IsNumber(data.Position))
+        else
         {
-            strText+= "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Position',this.LanguageID)+"</span>" +
-                "<span class='tooltip-num' style='color:"+this.PositionColor+";'>"+data.Position+"</span><br/>";
-            ++this.LineCount;
-        }
+            var strText=
+                "<span class='tooltip-title'>"+strDate+"&nbsp&nbsp"+title2+"</span>"+
+                "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Open',this.LanguageID)+"</span>"+
+                "<span class='tooltip-num' style='color:"+this.GetColor(data.Open,data.YClose)+";'>"+data.Open.toFixed(defaultfloatPrecision)+"</span><br/>"+
+                "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-High',this.LanguageID)+"</span>"+
+                "<span class='tooltip-num' style='color:"+this.GetColor(data.High,data.YClose)+";'>"+data.High.toFixed(defaultfloatPrecision)+"</span><br/>"+
+                "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Low',this.LanguageID)+"</span>"+
+                "<span class='tooltip-num' style='color:"+this.GetColor(data.Low,data.YClose)+";'>"+data.Low.toFixed(defaultfloatPrecision)+"</span><br/>"+
+                "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Close',this.LanguageID)+"</span>"+
+                "<span class='tooltip-num' style='color:"+this.GetColor(data.Close,data.YClose)+";'>"+data.Close.toFixed(defaultfloatPrecision)+"</span><br/>"+
+                //"<span style='color:"+this.YClose+";font:微软雅黑;font-size:12px'>&nbsp;前收: "+IFrameSplitOperator.FormatValueString(data.YClose,2)+"</span><br/>"+
+                "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Vol',this.LanguageID)+"</span>"+
+                "<span class='tooltip-num' style='color:"+this.VolColor+";'>"+IFrameSplitOperator.FormatValueString(data.Vol,2,this.LanguageID)+"</span><br/>"+
+                "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Amount',this.LanguageID)+"</span>"+
+                "<span class='tooltip-num' style='color:"+this.AmountColor+";'>"+IFrameSplitOperator.FormatValueString(data.Amount,2,this.LanguageID)+"</span><br/>"+
+                "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Increase',this.LanguageID)+"</span>"+
+                (increase==null? "<span class='tooltip-num' style='color:"+this.GetColor(0,0)+";'>"+'--'+"</span><br/>" :
+                "<span class='tooltip-num' style='color:"+this.GetColor(increase,0)+";'>"+increase.toFixed(2)+'%'+"</span><br/>");
 
-        //叠加股票
-        if (this.Value.ChartPaint.Name=="Overlay-KLine")
-        {
-            var title="<span style='color:rgb(0,0,0);font:微软雅黑;font-size:12px;text-align:center;display: block;'>"+this.Value.ChartPaint.Title+"</span>";
-            strText=title+strText;
-            ++this.LineCount;
+            this.LineCount=8;
+
+            if(MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && data.FlowCapital>0)  //换手率
+            {
+                var value=data.Vol/data.FlowCapital*100;
+                strText+= "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Exchange',this.LanguageID)+"</span>" +
+                    "<span class='tooltip-num' style='color:"+this.TurnoverRateColor+";'>"+value.toFixed(2)+'%'+"</span><br/>";
+                ++this.LineCount;
+            }
+
+            if (MARKET_SUFFIX_NAME.IsFutures(upperSymbol) && IFrameSplitOperator.IsNumber(data.Position))
+            {
+                strText+= "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Position',this.LanguageID)+"</span>" +
+                    "<span class='tooltip-num' style='color:"+this.PositionColor+";'>"+data.Position+"</span><br/>";
+                ++this.LineCount;
+            }
+
+            //叠加股票
+            if (this.Value.ChartPaint.Name=="Overlay-KLine")
+            {
+                var title="<span style='color:rgb(0,0,0);font:微软雅黑;font-size:12px;text-align:center;display: block;'>"+this.Value.ChartPaint.Title+"</span>";
+                strText=title+strText;
+                ++this.LineCount;
+            }
         }
 
         this.Text=strText;
@@ -29191,6 +29252,8 @@ function DynamicKLineTitlePainting()
             if (!this.DrawText(text,this.DateTimeColor,position)) return;
         }
 
+        var isTickPeriod=ChartData.IsTickPeriod(this.Period);
+
         if (ChartData.IsMinutePeriod(this.Period,true) && IFrameSplitOperator.IsNumber(item.Time))
         {
             var text=IFrameSplitOperator.FormatTimeString(item.Time);
@@ -29200,6 +29263,28 @@ function DynamicKLineTitlePainting()
         {
             var text=IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS");
             if (!this.DrawText(text,this.DateTimeColor,position)) return;
+        }
+        else if (isTickPeriod)
+        {
+            var text=IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS");
+            if (!this.DrawText(text,this.DateTimeColor,position)) return;
+        }
+
+        if (isTickPeriod)
+        {
+            var color=this.GetColor(item.Open,item.YClose);
+            var text=g_JSChartLocalization.GetText('KTitle-Price',this.LanguageID)+item.Open.toFixed(defaultfloatPrecision);
+            if (!this.DrawText(text,color,position)) return;
+
+            if (item.YClose>0)
+            {
+                var value=(item.Close-item.YClose)/item.YClose*100;
+                var color = this.GetColor(value, 0);
+                var text = g_JSChartLocalization.GetText('KTitle-Increase',this.LanguageID) + value.toFixed(2)+'%';
+                if (!this.DrawText(text,color,position)) return;
+            }
+
+            return;
         }
 
         var color=this.GetColor(item.Open,item.YClose);
@@ -29254,7 +29339,6 @@ function DynamicKLineTitlePainting()
             var text=g_JSChartLocalization.GetText('KTitle-Position',this.LanguageID)+item.Position;
             if (!this.DrawText(text,this.PositionColor,position)) return;
         }
-
 
         //叠加股票的名字
         for(var i in this.OverlayChartPaint)
@@ -36200,6 +36284,7 @@ function JSChartLocalization()
         ['DivTooltip-Amount', {CN:'金额:', EN:'Amount:'}],
         ['DivTooltip-Exchange', {CN:'换手:', EN:'Exchange:'}],
         ['DivTooltip-Position', {CN:'持仓:', EN:'Position:'}],
+        ['DivTooltip-Price', {CN:'价格:', EN:'Open:'}],
 
         //K线动态标题
         ['KTitle-Open', {CN:'开:', EN:'O:'}],
@@ -36211,6 +36296,7 @@ function JSChartLocalization()
         ['KTitle-Amount', {CN:'额:', EN:'A:'}],
         ['KTitle-Exchange', {CN:'换:', EN:'E:'}],
         ['KTitle-Position', {CN:'持:', EN:'P:'}],
+        ['KTitle-Price', {CN:'价:', EN:'Price:'}],
         
         //走势图动态标题
         ['MTitle-AC-Price', {CN:'匹配价:', EN:'C:'}],
@@ -39261,21 +39347,6 @@ function KLineChartContainer(uielement,OffscreenElement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        /*
-        $.ajax({
-            url: self.TickApiUrl,
-            data:{"symbol":self.Symbol},
-            type:"post",
-            dataType: "json",
-            async:true,
-            success: function (data)
-            {
-                self.ChartSplashPaint.IsEnableSplash=false;
-                self.RecvTickData(data);
-                self.AutoUpdate();
-            }
-        });
-        */
         JSNetwork.HttpRequest({
             url: cacheUrl,
             data:{"symbol":self.Symbol},
@@ -39300,7 +39371,10 @@ function KLineChartContainer(uielement,OffscreenElement)
 
     this.RecvTickData=function(data)
     {
-        var aryDayData=KLineChartContainer.JsonDataToTickData(data);
+        if (data.ver==2.0) 
+            var aryDayData=KLineChartContainer.JsonDataToTickDataV2(data);
+        else
+            var aryDayData=KLineChartContainer.JsonDataToTickData(data);
 
         //原始数据
         var sourceData=new ChartData();
@@ -39376,7 +39450,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.NetworkFilter(obj, function(data) 
             { 
                 self.ChartSplashPaint.EnableSplash(false);
-                self.RecvTickData(data);
+                self.RecvTickRealtimeData(data);
                 self.AutoUpdate();
             });
 
@@ -39400,7 +39474,10 @@ function KLineChartContainer(uielement,OffscreenElement)
 
     this.RecvTickRealtimeData=function(data)
     {
-        var aryDayData=KLineChartContainer.JsonDataToTickData(data);    //增量数据
+        if (data.ver==2.0)
+            var aryDayData=KLineChartContainer.JsonDataToTickDataV2(data);    //增量数据
+        else
+            var aryDayData=KLineChartContainer.JsonDataToTickData(data);    //增量数据
         if (!aryDayData || aryDayData.length<=0) return;
 
         //更新原始数据
@@ -42428,38 +42505,6 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
 
 KLineChartContainer.JsonDataToTickData=function(data)
 {
-    /* 历史分笔数据格式
-    var aryDayData=[];
-    if (!data.deal || !data.day) return aryDayData;
-    var time=data.deal.time;
-    if (!time) return aryDayData;
-
-    var date=data.date;
-    var amount=data.deal.amount;
-    var flag=data.deal.flag;
-    var price=data.deal.price;
-    var vol=data.deal.vol;
-    var yClose=data.day.yclose;
-    for(var i in time)
-    {
-        var item = new HistoryData();
-
-        item.Date = date;
-        item.Low=item.High=item.Close=item.Open = price[i];
-        item.YClose = yClose;
-        item.Vol = vol[i];    //原始单位股
-        item.Amount = amount[i];
-        item.Flag=flag[i];
-        item.Time=time[i];
-        if (isNaN(item.Open) || item.Open<=0) continue; //停牌的数据剔除
-
-        yClose=item.Close;
-        aryDayData.push(item);
-    }
-
-    return aryDayData;
-    */
-
    var aryDayData=[];
    if (!data.detail) return aryDayData;
 
@@ -42479,7 +42524,7 @@ KLineChartContainer.JsonDataToTickData=function(data)
        item.Amount = tick[3];
        item.Flag=tick[4];
       
-       if (isNaN(item.Open) || item.Open<=0) continue; //停牌的数据剔除
+       if (!IFrameSplitOperator.IsNumber(item.Open)) continue; //停牌的数据剔除
 
        yClose=item.Close;
        aryDayData.push(item);
@@ -42487,6 +42532,30 @@ KLineChartContainer.JsonDataToTickData=function(data)
 
    return aryDayData;
 }
+
+KLineChartContainer.JsonDataToTickDataV2=function(data)
+{
+   var aryDayData=[];
+   if (!IFrameSplitOperator.IsNonEmptyArray(data.data)) return aryDayData;
+
+   for(var i=0;i<data.data.length;++i)
+   {
+       var item = new HistoryData();
+       var tick=data.data[i];   //[ date, time, yClose, price, extendData]
+       if (!tick) continue;
+
+       item.Date = tick[0];
+       item.Time=tick[1];
+       item.YClose = tick[2];
+       item.Low=item.High=item.Close=item.Open = tick[3];
+       aryDayData.push(item);
+
+       if (tick[4]) item.ExtendData=tick[4];
+   }
+
+   return aryDayData;
+}
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
