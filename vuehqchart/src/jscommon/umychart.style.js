@@ -252,6 +252,15 @@ var BLACK_STYLE=
             Font:14*GetDevicePixelRatio() +"px 微软雅黑",
             LineHeight:16   //单行高度
         }
+    },
+
+    //区间选择
+    RectSelect:
+    {
+        LineColor:"rgb(115,83,64)",          //竖线  
+        LineWidth:1*GetDevicePixelRatio(),
+        LineDotted:[3,3], 
+        AreaColor:"rgba(26,13,7,0.5)",     //面积
     }
     
 };
