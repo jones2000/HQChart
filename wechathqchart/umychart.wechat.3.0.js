@@ -124,6 +124,12 @@ import
     JSCommonSplit_SplitData as SplitData,
     JSCommonSplit_PriceSplitData as PriceSplitData,
     JSCommonSplit_FrameSplitXDepth as FrameSplitXDepth,
+
+    JSCommonFormat_IChangeStringFormat as IChangeStringFormat,
+    JSCommonFormat_HQPriceStringFormat as HQPriceStringFormat,
+    JSCommonFormat_HQDateStringFormat as HQDateStringFormat,
+    JSCommonFormat_HQMinuteTimeStringFormat as HQMinuteTimeStringFormat,
+    JSCommonFormat_Global_DataFormat as g_DivTooltipDataForamt,
 } from './umychart.framesplit.wechat.js'
 
 import
@@ -657,6 +663,8 @@ function JSChart(element)
                     if (item.ClassName=="MinuteTooltipPaint") item.IsShowAveragePrice=false;
                 }
             }
+
+            if (option.MinuteLine.SplitType>0) chart.Frame.SubFrame[0].Frame.YSplitOperator.SplitType=option.MinuteLine.SplitType;
         }
 
         let scriptData = new JSCommonIndexScript.JSIndexScript();
@@ -1356,6 +1364,11 @@ JSChart.GetInternalTimeData=function(name)  //内置品种交易时间
         default:
             return null;
     }
+}
+
+JSChart.GetDivTooltipDataFormat=function()  //div tooltip数据格式化
+{
+    return g_DivTooltipDataForamt;
 }
 
 var JSCHART_OPERATOR_ID =
@@ -5967,132 +5980,6 @@ function ChartBar() {
   }
 }
 
-
-
-
-
-
-/////////////////////////////////////////////////////////////////////////////////
-//
-function IChangeStringFormat() {
-  this.Data;
-  this.Value;     //数据
-  this.Text;      //输出字符串
-
-  this.Operator = function () {
-    return false;
-  }
-}
-
-
-function HQPriceStringFormat() 
-{
-    this.newMethod = IChangeStringFormat;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.Symbol;
-    this.FrameID;
-    this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-    this.PercentageText;    //百分比
-    this.RValue;            //右边值
-    this.RText;
-
-    this.Operator = function () 
-    {
-        this.RText = null;
-        if (IFrameSplitOperator.IsString(this.RValue)) this.RText = this.RValue;
-        if (!this.Value) return false;
-
-        var defaultfloatPrecision = 2;     //价格小数位数 
-        if (this.FrameID == 0)    //第1个窗口显示原始价格
-        {
-            var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
-            this.Text = this.Value.toFixed(defaultfloatPrecision);
-        }
-        else 
-        {
-            this.Text = IFrameSplitOperator.FormatValueString(this.Value, defaultfloatPrecision, this.LanguageID);
-        }
-
-        return true;
-    }
-}
-
-function HQDateStringFormat() 
-{
-    this.newMethod = IChangeStringFormat;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.DateFormatType=0;  //0=YYYY-MM-DD 1=YYYY/MM/DD  2=YYYY/MM/DD/W 3=DD/MM/YYYY
-    this.LanguageID=0;
-
-    this.Operator = function () 
-    {
-        if (!IFrameSplitOperator.IsNumber(this.Value) || this.Value<0) return false;
-        if (!this.Data) return false;
-
-        var index = this.Value;
-        index = parseInt(index.toFixed(0));
-        if (this.Data.DataOffset + index >= this.Data.Data.length) return false;
-
-        var currentData = this.Data.Data[this.Data.DataOffset + index];
-        var date = currentData.Date;
-        var dateFormatString="YYYY-MM-DD";
-        if (this.DateFormatType==1) dateFormatString="YYYY/MM/DD";
-        else if (this.DateFormatType==2) dateFormatString="YYYY/MM/DD/W";
-        else if (this.DateFormatType==3) dateFormatString="DD/MM/YYYY";
-        this.Text = IFrameSplitOperator.FormatDateString(date,dateFormatString,this.LanguageID);
-        if (ChartData.IsMinutePeriod(this.Data.Period, true)) // 分钟周期
-        {
-            var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
-            this.Text = this.Text + " " + time;
-        }
-        else if (ChartData.IsSecondPeriod(this.Data.Period))
-        {
-            var time = IFrameSplitOperator.FormatTimeString(currentData.Time,"HH:MM:SS");
-            this.Text = this.Text + " " + time;
-        }
-
-        return true;
-    }
-}
-
-function HQMinuteTimeStringFormat() 
-{
-    this.newMethod = IChangeStringFormat;   //派生
-    this.newMethod();
-    delete this.newMethod;
-
-    this.Frame;
-    this.Symbol;
-
-    this.Operator = function () 
-    {
-        if (this.Value == null || isNaN(this.Value)) return false;
-
-        var index = Math.abs(this.Value);
-        index = parseInt(index.toFixed(0));
-        var showIndex = index;
-        if (this.Frame && this.Frame.MinuteCount) showIndex = index % this.Frame.MinuteCount;
-
-        var timeStringData = JSCommonCoordinateData.MinuteTimeStringData;
-        var timeData = timeStringData.GetTimeData(this.Symbol);
-        if (!timeData) return false;
-
-        if (showIndex < 0) showIndex = 0;
-        else if (showIndex > timeData.length) showIndex = timeData.length - 1;
-        if (this.Frame && index >= this.Frame.XPointCount)
-        showIndex = timeData.length - 1;
-
-        var time = timeData[showIndex];
-        this.Text = IFrameSplitOperator.FormatTimeString(time);
-        return true;
-    }
-}
-
-
 /*
     画图工具
 */
@@ -6881,9 +6768,9 @@ function KLineChartContainer(uielement)
         //创建十字光标
         this.ChartCorssCursor = new ChartCorssCursor();
         this.ChartCorssCursor.Canvas = this.Canvas;
-        this.ChartCorssCursor.StringFormatX = new HQDateStringFormat();
+        this.ChartCorssCursor.StringFormatX = g_DivTooltipDataForamt.Create("CorssCursor_XStringFormat");
         this.ChartCorssCursor.StringFormatX.LanguageID=this.LanguageID;
-        this.ChartCorssCursor.StringFormatY = new HQPriceStringFormat();
+        this.ChartCorssCursor.StringFormatY = g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
         this.ChartCorssCursor.StringFormatY.LanguageID = this.LanguageID;
 
         //创建等待提示
@@ -9972,6 +9859,8 @@ function MinuteChartContainer(uielement)
         this.Symbol = data.symbol;
         this.Name = data.name;
 
+        this.CaclutateLimitPrice(this.DayData[0].YClose, data.data[0].limitprice); //计算涨停价格
+
         this.UpdateHistoryMinuteUI();
         this.RecvMinuteDataEvent();
         this.RequestOverlayHistoryMinuteData();
@@ -9979,6 +9868,34 @@ function MinuteChartContainer(uielement)
         if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistoryMinuteData', this);
 
         this.AutoUpdate();
+    }
+
+    this.CaclutateLimitPrice=function(yClose, limitData)
+    {
+        this.LimitPrice=null;
+        //var limitData=data.stock[0].limitprice;
+        if (limitData && limitData.max>0 && limitData.min>0)    //API里带涨停价格 直接使用
+        {
+            this.LimitPrice={ Max:limitData.max, Min:limitData.min };
+            return;
+        }
+        
+        var range=MARKET_SUFFIX_NAME.GetLimitPriceRange(this.Symbol, this.Name);   //通过规则获取涨停价格
+        if (!range) 
+        {
+            JSConsole.Chart.Log(`[MinuteChartContainer::CaclutateLimitPrice] ${this.Symbol} no limit price.`)
+            return;
+        }
+
+        //var yClose=data.stock[0].yclose;
+        if (yClose<=0) return;
+        this.LimitPrice={ Max:yClose*(1+range.Max), Min:yClose*(1+range.Min) };
+
+        JSConsole.Chart.Log(`[MinuteChartContainer::CaclutateLimitPrice] ${this.Symbol} yClose:${yClose} max:${this.LimitPrice.Max} min:${this.LimitPrice.Min}`);
+
+        this.LimitPrice.Max=parseFloat(this.LimitPrice.Max.toFixed(2));
+        this.LimitPrice.Min=parseFloat(this.LimitPrice.Min.toFixed(2));
+        JSConsole.Chart.Log(`[MinuteChartContainer::CaclutateLimitPrice] ${this.Symbol} tofixed(2) max:${this.LimitPrice.Max} min:${this.LimitPrice.Min}`);
     }
 
     this.UpdateHistoryMinuteUI = function () 
@@ -10131,6 +10048,7 @@ function MinuteChartContainer(uielement)
         var upperSymbol = this.Symbol.toUpperCase();
         var isFutures = MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
         if (data.data.stock[0].yclearing && isFutures) yClose = data.data.stock[0].yclearing; //期货使用前结算价
+        this.CaclutateLimitPrice(yClose, data.stock[0].limitprice); //计算涨停价格
         var extendData = { High: data.data.stock[0].high, Low: data.data.stock[0].low };
         this.BindMainData(sourceData, yClose, extendData);
 
@@ -10433,6 +10351,7 @@ function MinuteChartContainer(uielement)
 
         this.Frame.SubFrame[0].Frame.YSplitOperator.AverageData = bindData;
         this.Frame.SubFrame[0].Frame.YSplitOperator.OverlayChartPaint = this.OverlayChartPaint;
+        this.Frame.SubFrame[0].Frame.YSplitOperator.LimitPrice=this.LimitPrice;
         if (extendData) 
         {
             this.Frame.SubFrame[0].Frame.YSplitOperator.High = extendData.High;
@@ -11308,8 +11227,10 @@ function KLineChartHScreenContainer(uielement)
     //创建十字光标
     this.ChartCorssCursor = new ChartCorssCursor();
     this.ChartCorssCursor.Canvas = this.Canvas;
-    this.ChartCorssCursor.StringFormatX = new HQDateStringFormat();
-    this.ChartCorssCursor.StringFormatY = new HQPriceStringFormat();
+    this.ChartCorssCursor.StringFormatX = g_DivTooltipDataForamt.Create("CorssCursor_XStringFormat");
+    this.ChartCorssCursor.StringFormatX.LanguageID=this.LanguageID;
+    this.ChartCorssCursor.StringFormatY = g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
+    this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
 
     //创建等待提示
     this.ChartSplashPaint = new ChartSplashPaint();

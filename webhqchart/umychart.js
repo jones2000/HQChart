@@ -22669,7 +22669,9 @@ function KLineTooltipPaint()
         text=g_JSChartLocalization.GetText('Tooltip-Vol',this.LanguageID);
         this.Canvas.fillStyle=this.TitleColor;
         this.Canvas.fillText(text, left,top);
-        var text=IFrameSplitOperator.FromatIntegerString(item.Vol,2,this.LanguageID);
+        var vol=item.Vol;
+        if (upperSymbol && MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) vol/=100; //A股统一转成手
+        var text=IFrameSplitOperator.FromatIntegerString(vol,2,this.LanguageID);
         this.Canvas.fillStyle=this.VolColor;
         this.Canvas.fillText(text,left+labelWidth,top);
 
@@ -27026,7 +27028,7 @@ function FrameSplitMinutePriceY()
     this.SplitCount=7;
     this.Symbol;
     this.SplitType=0;                   //0=默认根据最大最小值分割 1=涨跌停分割 2=数据最大最大值分割
-    this.LimitPrice;
+    this.LimitPrice;                    //{Max: Min:} 涨跌停价
     this.Custom;
     this.RightTextFormat=0;           //右边刻度显示模式 0=百分比  1=价格
 
@@ -29306,6 +29308,8 @@ function HistoryDataStringFormat()
         }
         else
         {
+            var vol=data.Vol;
+            if (upperSymbol && MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) vol/=100; //A股统一转成手
             var strText=
                 "<span class='tooltip-title'>"+strDate+"&nbsp&nbsp"+title2+"</span>"+
                 "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Open',this.LanguageID)+"</span>"+
@@ -29318,7 +29322,7 @@ function HistoryDataStringFormat()
                 "<span class='tooltip-num' style='color:"+this.GetColor(data.Close,data.YClose)+";'>"+data.Close.toFixed(defaultfloatPrecision)+"</span><br/>"+
                 //"<span style='color:"+this.YClose+";font:微软雅黑;font-size:12px'>&nbsp;前收: "+IFrameSplitOperator.FormatValueString(data.YClose,2)+"</span><br/>"+
                 "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Vol',this.LanguageID)+"</span>"+
-                "<span class='tooltip-num' style='color:"+this.VolColor+";'>"+IFrameSplitOperator.FormatValueString(data.Vol,2,this.LanguageID)+"</span><br/>"+
+                "<span class='tooltip-num' style='color:"+this.VolColor+";'>"+IFrameSplitOperator.FormatValueString(vol,2,this.LanguageID)+"</span><br/>"+
                 "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Amount',this.LanguageID)+"</span>"+
                 "<span class='tooltip-num' style='color:"+this.AmountColor+";'>"+IFrameSplitOperator.FormatValueString(data.Amount,2,this.LanguageID)+"</span><br/>"+
                 "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Increase',this.LanguageID)+"</span>"+
@@ -29861,7 +29865,9 @@ function DynamicKLineTitlePainting()
             if (!this.DrawText(text,color,position)) return;
         }
 
-        var text=g_JSChartLocalization.GetText('KTitle-Vol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Vol,2,this.LanguageID);
+        var vol=item.Vol;
+        if (upperSymbol && MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) vol/=100;   //A股原始单位股, 转成股
+        var text=g_JSChartLocalization.GetText('KTitle-Vol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(vol,2,this.LanguageID);
         if (!this.DrawText(text,this.VolColor,position)) return;
 
         if (IFrameSplitOperator.IsNumber(item.Amount))
@@ -47336,6 +47342,7 @@ function KLineChartHScreenContainer(uielement)
         this.ChartCorssCursor=new ChartCorssCursor();
         this.ChartCorssCursor.Canvas=this.Canvas;
         this.ChartCorssCursor.StringFormatX=g_DivTooltipDataForamt.Create("CorssCursor_XStringFormat");
+        this.ChartCorssCursor.StringFormatX.LanguageID=this.LanguageID;
         this.ChartCorssCursor.StringFormatY=g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
         this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
         this.ChartCorssCursor.StringFormatY.ExtendChartPaint=this.ExtendChartPaint;

@@ -438,7 +438,18 @@ var MARKET_SUFFIX_NAME=
     GetNYMEXMarketStatus: function (symbol) 
     {
         return g_NYMEXTimeData.GetMarketStatus(symbol);
-    }
+    },
+
+    GetLimitPriceRange:function(symbol, name) //涨停范围
+    {
+        if (!this.IsSHSZStockA(symbol)) return null;
+        if (this.IsSHStockSTAR(symbol)) return {Max:0.2 , Min:-0.2};    //科创板 [20%- -20%]
+        
+        if (!name) return null;
+        if (name.indexOf('ST')>=0) return { Max:0.05, Min:-0.05 }; //ST 股票 [5% - -5%]
+        
+        return {Max:0.1 , Min:-0.1}; //[10% - -10%]
+    },
 }
 
 
