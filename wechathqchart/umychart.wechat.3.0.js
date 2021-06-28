@@ -316,6 +316,7 @@ function JSChart(element)
         if (option.IsFullDraw == true) chart.IsFullDraw = option.IsFullDraw;
         if (option.CorssCursorInfo) 
         {
+            var item=option.CorssCursorInfo;
             if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left = option.CorssCursorInfo.Left;
             if (!isNaN(option.CorssCursorInfo.Right)) chart.ChartCorssCursor.ShowTextMode.Right = option.CorssCursorInfo.Right;
             if (!isNaN(option.CorssCursorInfo.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom = option.CorssCursorInfo.Bottom;
@@ -323,6 +324,7 @@ function JSChart(element)
             if (option.CorssCursorInfo.IsShowClose == true) chart.ChartCorssCursor.IsShowClose = option.CorssCursorInfo.IsShowClose;    //Y轴显示收盘价
             if (IFrameSplitOperator.IsNumber(option.CorssCursorInfo.HPenType)) chart.ChartCorssCursor.HPenType = option.CorssCursorInfo.HPenType;
             if (option.CorssCursorInfo.VPenType > 0) chart.ChartCorssCursor.VPenType = option.CorssCursorInfo.VPenType;
+            if (IFrameSplitOperator.IsNumber(item.DateFormatType)) chart.ChartCorssCursor.StringFormatX.DateFormatType=item.DateFormatType;
         }
 
         if (typeof (option.UpdateUICallback) == 'function') //数据到达回调
@@ -6023,6 +6025,9 @@ function HQDateStringFormat()
     this.newMethod();
     delete this.newMethod;
 
+    this.DateFormatType=0;  //0=YYYY-MM-DD 1=YYYY/MM/DD  2=YYYY/MM/DD/W 3=DD/MM/YYYY
+    this.LanguageID=0;
+
     this.Operator = function () 
     {
         if (!IFrameSplitOperator.IsNumber(this.Value) || this.Value<0) return false;
@@ -6034,7 +6039,11 @@ function HQDateStringFormat()
 
         var currentData = this.Data.Data[this.Data.DataOffset + index];
         var date = currentData.Date;
-        this.Text = IFrameSplitOperator.FormatDateString(date);
+        var dateFormatString="YYYY-MM-DD";
+        if (this.DateFormatType==1) dateFormatString="YYYY/MM/DD";
+        else if (this.DateFormatType==2) dateFormatString="YYYY/MM/DD/W";
+        else if (this.DateFormatType==3) dateFormatString="DD/MM/YYYY";
+        this.Text = IFrameSplitOperator.FormatDateString(date,dateFormatString,this.LanguageID);
         if (ChartData.IsMinutePeriod(this.Data.Period, true)) // 分钟周期
         {
             var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
@@ -6873,6 +6882,7 @@ function KLineChartContainer(uielement)
         this.ChartCorssCursor = new ChartCorssCursor();
         this.ChartCorssCursor.Canvas = this.Canvas;
         this.ChartCorssCursor.StringFormatX = new HQDateStringFormat();
+        this.ChartCorssCursor.StringFormatX.LanguageID=this.LanguageID;
         this.ChartCorssCursor.StringFormatY = new HQPriceStringFormat();
         this.ChartCorssCursor.StringFormatY.LanguageID = this.LanguageID;
 

@@ -32,10 +32,6 @@
     </div>
 </template>
 
-
-
-
-
 <script>
     import JSCommonStock from "../umychart.vue/umychart.stock.vue.js"
     import StringFormat from '../umychart.vue/stockstringformat.js'
@@ -137,6 +133,11 @@
                 this.KLinePageData = data;
                 console.log('[historydayline::DefaultDateType]data:',data);
                 this.GetSomeDatesData();
+            },
+            'Pagination.PageSize': function(val){
+                var startIndex = (this.Pagination.CurrentPage - 1) * val;
+                var endIndex = this.Pagination.CurrentPage * val;
+                this.PageData = this.SomeDatesDay.slice(startIndex,endIndex);
             }
         },
 
@@ -178,6 +179,7 @@
                 console.log(`每页 ${val} 条`);
             },
             handleCurrentChange(val) {
+                this.Pagination.CurrentPage = val
                 this.PaginationTotalData(val);
             },
             PaginationTotalData(page){

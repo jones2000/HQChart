@@ -14,6 +14,7 @@ import
 {
     JSCommonResource_Global_JSChartResource as g_JSChartResource,
     JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
+    JSCommonResource_Global_JSChartLocalization as  g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
 import {
@@ -24,6 +25,8 @@ import {
 
 import { JSCommonCoordinateData as JSCommonCoordinateData } from "./umychart.coordinatedata.wechat.js";
 var MARKET_SUFFIX_NAME = JSCommonCoordinateData.MARKET_SUFFIX_NAME;
+
+var WEEK_NAME=["日","一","二","三","四","五","六"];
 
 //坐标信息
 function CoordinateInfo() 
@@ -301,7 +304,7 @@ IFrameSplitOperator.NumberToString=function(value)
     return value.toString();
 }
 
-IFrameSplitOperator.FormatDateString=function(value,format)
+IFrameSplitOperator.FormatDateString=function(value,format,languageID)
 {
     var year=parseInt(value/10000);
     var month=parseInt(value/100)%100;
@@ -311,6 +314,16 @@ IFrameSplitOperator.FormatDateString=function(value,format)
     {
         case 'MM-DD':
             return IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
+        case "YYYY/MM/DD":
+            return year.toString() + '/' + IFrameSplitOperator.NumberToString(month) + '/' + IFrameSplitOperator.NumberToString(day);
+        case "YYYY/MM/DD/W":
+            {
+                var date=new Date(year,month-1,day);
+                var week=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],languageID);
+                return year.toString() + '/' + IFrameSplitOperator.NumberToString(month) + '/' + IFrameSplitOperator.NumberToString(day)+"/"+ week.toString();
+            }
+        case "DD/MM/YYYY":
+            return IFrameSplitOperator.NumberToString(day) + '/' + IFrameSplitOperator.NumberToString(month) + '/' + year.toString();
         default:
             return year.toString() + '-' + IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
     }

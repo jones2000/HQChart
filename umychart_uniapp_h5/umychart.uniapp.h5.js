@@ -9826,7 +9826,7 @@ function AverageWidthFrame()
             if (message.ExtendData && message.ExtendData.Font) this.Canvas.font=message.ExtendData.Font;
             else if (message.Font) this.Canvas.font=message.Font;
 
-            if (message.ExtendData && message.ExtendData.PercentageColor) this.Canvas.fillStyle=message.ExtendData.PercentageColor;
+            if (message.ExtendData && message.ExtendData.PriceColor) this.Canvas.fillStyle=message.ExtendData.PriceColor;
             else this.Canvas.fillStyle=message.TextColor;
 
             this.Canvas.textAlign="right";
@@ -9839,8 +9839,8 @@ function AverageWidthFrame()
             this.Canvas.textAlign="left";
             var splitWidth=this.Canvas.measureText('/').width;
             this.Canvas.fillText('/',x,item.Y);
-
-            if (message.ExtendData && message.ExtendData.PriceColor) this.Canvas.fillStyle=message.ExtendData.PriceColor;
+            
+            if (message.ExtendData && message.ExtendData.PercentageColor) this.Canvas.fillStyle=message.ExtendData.PercentageColor;
             else this.Canvas.fillStyle=message.TextColor;
 
             this.Canvas.textAlign="right";
@@ -29529,6 +29529,8 @@ IFrameSplitOperator.FormatDateString=function(value,format, languageID)
                 var week=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],languageID);
                 return year.toString() + '/' + IFrameSplitOperator.NumberToString(month) + '/' + IFrameSplitOperator.NumberToString(day)+"/"+ week.toString();
             }
+        case "DD/MM/YYYY":
+            return IFrameSplitOperator.NumberToString(day) + '/' + IFrameSplitOperator.NumberToString(month) + '/' + year.toString();
         default:
             return year.toString() + '-' + IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
     }
@@ -32980,7 +32982,7 @@ function HQDateStringFormat()
     this.newMethod();
     delete this.newMethod;
 
-    this.DateFormatType=0;  //0=YYYY-MM-DD 1=YYYY/MM/DD  2=YYYY/MM/DD/W
+    this.DateFormatType=0;  //0=YYYY-MM-DD 1=YYYY/MM/DD  2=YYYY/MM/DD/W 3=DD/MM/YYYY
     this.LanguageID=0;
 
     this.Operator=function()
@@ -32995,6 +32997,7 @@ function HQDateStringFormat()
         var dateFormatString="YYYY-MM-DD";
         if (this.DateFormatType==1) dateFormatString="YYYY/MM/DD";
         else if (this.DateFormatType==2) dateFormatString="YYYY/MM/DD/W";
+        else if (this.DateFormatType==3) dateFormatString="DD/MM/YYYY";
         this.Text=IFrameSplitOperator.FormatDateString(currentData.Date, dateFormatString,this.LanguageID);
         if (ChartData.IsMinutePeriod(this.Data.Period,true) ) // 分钟周期
         {
@@ -55863,7 +55866,7 @@ function KLineSelectRectDialog(divElement)
         }
         else if (ChartData.IsSecondPeriod(this.HQChart.Period) || ChartData.IsTickPeriod(this.HQChart.Period))
         {
-            startDate+=' '+IFrameSplitOperator.FormatTimeString(showData.Date.Start.Time,"HH:MM");
+            startDate+=' '+IFrameSplitOperator.FormatTimeString(showData.Date.Start.Time,"HH:MM:SS");
             endDate+=" "+IFrameSplitOperator.FormatTimeString(showData.Date.End.Time,"HH:MM:SS");
         }
        

@@ -71,12 +71,17 @@
     },
     watch: {
         DefaultSymbol(newV) {
-        this.Symbol = newV;
-        this.GetDealCountData();
+            this.Symbol = newV;
+            this.GetDealCountData();
         },
         DefaultDate(newV) {
-        this.Date = newV;
-        this.GetDealCountData();
+            this.Date = newV;
+            this.GetDealCountData();
+        },
+        'Pagination.PageSize': function(value){
+            var start = value * (this.Pagination.CurrentPage - 1);
+            var end = value * this.Pagination.CurrentPage;
+            this.PriceList = this.DataList.slice(start, end);
         }
     },
     created() {
@@ -86,6 +91,7 @@
     },
     mounted: function() {
         this.PriceList = this.DataList.slice(0, this.Pagination.PageSize);
+        // console.log('this.PriceList::',this.PriceList)
         this.OnSize();
     },
 
@@ -158,34 +164,39 @@
         },
 
         OnSize() {
-        let divstockdealcount = this.$refs.divstockdealcount;
-        let tableContent = this.$refs.tableContent;
-        var paginationWrap = this.$refs.paginationWrap;
-        let width = divstockdealcount.clientWidth;
-        let height = divstockdealcount.clientHeight;
-        if (height <= 0) return;
-        let lineHeight = 20; //占比高度
-        let borderHeight = 1;
-        let mainHight =
-            height - lineHeight - borderHeight - paginationWrap.offsetHeight;
-        let mainWdith = width + "px";
-        let tdHeight = 23;
-        let everyTableCount = Math.floor(
-            (mainHight - tdHeight - borderHeight) / tdHeight
-        );
-        if (everyTableCount <= 0) {
-            everyTableCount = 1;
-        }
-        this.UpdateDataShow(everyTableCount);
-        tableContent.style.height = mainHight + "px";
+            let divstockdealcount = this.$refs.divstockdealcount;
+            let tableContent = this.$refs.tableContent;
+            var paginationWrap = this.$refs.paginationWrap;
+            let width = divstockdealcount.clientWidth;
+            let height = divstockdealcount.clientHeight;
+            console.log('stockdealcount::',height);
+            if (height <= 0) return;
+            let lineHeight = 20; //占比高度
+            let borderHeight = 1;
+            let mainHight =
+                height - lineHeight - borderHeight - paginationWrap.offsetHeight;
+            let mainWdith = width + "px";
+            let tdHeight = 23;
+            let everyTableCount = Math.floor(
+                (mainHight - tdHeight - borderHeight) / tdHeight
+            );
+            if (everyTableCount <= 0) {
+                everyTableCount = 1;
+            }
+            this.UpdateDataShow(everyTableCount);
+            tableContent.style.height = mainHight + "px";
         },
         UpdateDataShow(count) {
-        this.Pagination.PageSize = count;
+            this.Pagination.PageSize = count;
         },
         handleCurrentChange(val) {
-        var start = this.Pagination.PageSize * (val - 1);
-        var end = this.Pagination.PageSize * val;
-        this.PriceList = this.DataList.slice(start, end);
+            this.Pagination.CurrentPage = val;
+            this.changePageData()
+        },
+        changePageData(){
+            var start = this.Pagination.PageSize * (this.Pagination.CurrentPage - 1);
+            var end = this.Pagination.PageSize * this.Pagination.CurrentPage;
+            this.PriceList = this.DataList.slice(start, end);
         }
     }
     };
