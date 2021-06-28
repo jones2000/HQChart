@@ -4976,6 +4976,72 @@ function JSChartContainer(uielement, OffscreenElement)
 
         this.BindIndexData(index,bindData);     //执行脚本
     }
+
+    //区间选择
+    this.GetRectSelectPaint=function()
+    {
+        for(var i=0;i<this.ExtendChartPaint.length;++i)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.ClassName=="RectSelectPaint")
+                return item;
+        }
+
+        return null;
+    }
+
+    this.SetRectSelectData=function(kItem)
+    {
+        var paint=this.GetRectSelectPaint();
+        if (!paint) return false;
+
+        if (paint.GetPointCount()==2) return false;
+
+        return paint.SetPoint(kItem);
+    }
+
+    this.MoveRectSelectPoint=function(obj)
+    {
+        var paint=this.GetRectSelectPaint();
+        if (!paint) return false;
+
+        if (!this.ChartPaint[0] || !this.ChartPaint[0].Data) return false;
+        var kData=this.ChartPaint[0].Data;
+
+        if (!this.Frame.SubFrame[0]) return false;
+        var subFrame=this.Frame.SubFrame[0].Frame;
+        if (!subFrame) false;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var x=(obj.X-uielement.getBoundingClientRect().left)*pixelTatio;
+        var index=subFrame.GetXData(x);
+        index=parseInt(index.toFixed(0));
+        var dataIndex=index+kData.DataOffset;
+        if (dataIndex>=kData.Data.length) dataIndex=kData.Data.length-1;
+
+        var item = kData.Data[dataIndex];
+        JSConsole.Chart.Log("[KLineChartContainer::MoveRectSelectPoint] point, item", obj.PointIndex, item);
+
+        if (!paint.SetPoint(item,{ Index: obj.PointIndex })) return false;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAG_SELECT_RECT);
+        if (event)
+        {
+            var selectData=paint.GetSelectRectData();
+            var data={ X:obj.X, Y:obj.Y, SelectData:selectData, RectSelectPaint:paint };
+            event.Callback(event,data,this);
+        }
+
+        return true;
+    }
+
+    this.ClearRectSelect=function(bEnforce)
+    {
+        var paint=this.GetRectSelectPaint();
+        if (!paint) return false;
+        if (bEnforce) paint.PreventClose=false;
+        return paint.ClearPoint();
+    }
 }
 
 function GetDevicePixelRatio()
@@ -38701,71 +38767,6 @@ function KLineChartContainer(uielement,OffscreenElement)
         
 
         this.Draw();
-    }
-
-    this.GetRectSelectPaint=function()
-    {
-        for(var i=0;i<this.ExtendChartPaint.length;++i)
-        {
-            var item=this.ExtendChartPaint[i];
-            if (item.ClassName=="RectSelectPaint")
-                return item;
-        }
-
-        return null;
-    }
-
-    this.SetRectSelectData=function(kItem)
-    {
-        var paint=this.GetRectSelectPaint();
-        if (!paint) return false;
-
-        if (paint.GetPointCount()==2) return false;
-
-        return paint.SetPoint(kItem);
-    }
-
-    this.MoveRectSelectPoint=function(obj)
-    {
-        var paint=this.GetRectSelectPaint();
-        if (!paint) return false;
-
-        if (!this.ChartPaint[0] || !this.ChartPaint[0].Data) return false;
-        var kData=this.ChartPaint[0].Data;
-
-        if (!this.Frame.SubFrame[0]) return false;
-        var subFrame=this.Frame.SubFrame[0].Frame;
-        if (!subFrame) false;
-
-        var pixelTatio = GetDevicePixelRatio();
-        var x=(obj.X-uielement.getBoundingClientRect().left)*pixelTatio;
-        var index=subFrame.GetXData(x);
-        index=parseInt(index.toFixed(0));
-        var dataIndex=index+kData.DataOffset;
-        if (dataIndex>=kData.Data.length) dataIndex=kData.Data.length-1;
-
-        var item = kData.Data[dataIndex];
-        JSConsole.Chart.Log("[KLineChartContainer::MoveRectSelectPoint] point, item", obj.PointIndex, item);
-
-        if (!paint.SetPoint(item,{ Index: obj.PointIndex })) return false;
-
-        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAG_SELECT_RECT);
-        if (event)
-        {
-            var selectData=paint.GetSelectRectData();
-            var data={ X:obj.X, Y:obj.Y, SelectData:selectData, RectSelectPaint:paint };
-            event.Callback(event,data,this);
-        }
-
-        return true;
-    }
-
-    this.ClearRectSelect=function(bEnforce)
-    {
-        var paint=this.GetRectSelectPaint();
-        if (!paint) return false;
-        if (bEnforce) paint.PreventClose=false;
-        return paint.ClearPoint();
     }
 
     //创建指定窗口指标
