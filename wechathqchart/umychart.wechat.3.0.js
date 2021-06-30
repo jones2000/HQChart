@@ -236,6 +236,8 @@ function JSChart(element)
             if (IFrameSplitOperator.IsNumber(option.Height)) this.CanvasElement.Height=option.Height;
         }
 
+        if (option && option.Redraw==false) return;
+
         if (this.JSChartContainer)
         {
             if (option && option.Type==1 && this.JSChartContainer.OnSize)
@@ -996,6 +998,8 @@ function JSChart(element)
         }
 
         if (!chart) return false;
+
+        if (option.OnCreatedCallback) option.OnCreatedCallback(chart);
 
         //是否自动更新
         if (option.IsAutoUpdate == true || option.IsAutoUpate == true) chart.IsAutoUpdate = true;

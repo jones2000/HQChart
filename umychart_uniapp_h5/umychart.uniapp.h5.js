@@ -4015,7 +4015,7 @@ function JSChart(divElement, bOffscreen)
     this.ChangeIndexDialog=new ChangeIndexDialog(divElement);
     this.MinuteDialog=new MinuteDialog(divElement);
 
-    this.OnSize=function(option) //{ Type:1 新版本OnSize }
+    this.OnSize=function(option) //{ Type:1 新版本OnSize  Redraw:是否重绘 }
     {
         //画布大小通过div获取
         var height=parseInt(this.DivElement.style.height.replace("px",""));
@@ -4041,6 +4041,8 @@ function JSChart(divElement, bOffscreen)
         }
 
         JSConsole.Chart.Log(`[JSChart::OnSize] devicePixelRatio=${window.devicePixelRatio}, height=${this.CanvasElement.height}, width=${this.CanvasElement.width}`);
+
+        if (option && option.Redraw==false) return;
 
         if (this.JSChartContainer)
         {
@@ -5073,6 +5075,8 @@ function JSChart(divElement, bOffscreen)
         }
 
         if (!chart) return false;
+
+        if (option.OnCreatedCallback) option.OnCreatedCallback(chart);
 
         //是否自动更新
         if (option.IsAutoUpdate!=null) chart.IsAutoUpdate=option.IsAutoUpdate;
@@ -13811,13 +13815,13 @@ function HQTradeFrame()
         var height=this.ChartBorder.GetHeight();
         var totalHeight=0;
 
-        for(var i in this.SubFrame)
+        for(var i=0; i<this.SubFrame.length; ++i)
         {
             var item=this.SubFrame[i];
             totalHeight+=item.Height;
         }
 
-        for(var i in this.SubFrame)
+        for(var i=0; i<this.SubFrame.length; ++i)
         {
             var item=this.SubFrame[i];
             item.Frame.ChartBorder.Top=top;
@@ -42299,6 +42303,8 @@ function KLineChartContainer(uielement,OffscreenElement)
                 }
             }
         }
+
+        if (!isInClient) return;
 
         if(e.preventDefault) e.preventDefault();
         else e.returnValue = false;
