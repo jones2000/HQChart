@@ -467,7 +467,8 @@ IFrameSplitOperator.IsBool=function(value)
 
 IFrameSplitOperator.IsString=function(value)
 {
-    if (value && typeof(value)=='string') return true;
+    var type=typeof(value);
+    if (type=='string') return true;
     return false;
 }
 

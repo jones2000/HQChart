@@ -17676,7 +17676,7 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
-    this.CreateMultiBar=function(hqChart,windowIndex,varItem,i)
+    this.CreateMultiBar=function(hqChart,windowIndex,varItem,id)
     {
         let chart=new ChartMultiBar();
         chart.Canvas=hqChart.Canvas;
@@ -17686,6 +17686,13 @@ function ScriptIndex(name,script,args,option)
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Bars=varItem.Draw.DrawData; 
+
+        var titleIndex=windowIndex+1;
+        var titleData=new DynamicTitleData({ KData:chart.Data, BarData:chart.Bars },varItem.Name,null);
+        titleData.IsShow=false;
+        titleData.DataType="MULTI_BAR";
+        hqChart.TitlePaint[titleIndex].Data[id]=titleData;
+
         hqChart.ChartPaint.push(chart);
     }
 
@@ -18759,7 +18766,7 @@ function OverlayScriptIndex(name,script,args,option)
         frame.ChartPaint.push(chart);
     }
 
-    this.CreateMultiBar=function(hqChart,windowIndex,varItem,i)
+    this.CreateMultiBar=function(hqChart,windowIndex,varItem,id)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
@@ -18772,6 +18779,14 @@ function OverlayScriptIndex(name,script,args,option)
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Bars=varItem.Draw.DrawData; 
+
+        var titleIndex=windowIndex+1;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        var titleData=new DynamicTitleData({ KData:chart.Data, BarData:chart.Bars },varItem.Name,null);
+        titleData.IsShow=false;
+        titleData.DataType="MULTI_BAR";
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+
         frame.ChartPaint.push(chart);
     }
 

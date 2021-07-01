@@ -34378,6 +34378,7 @@ function DynamicTitleData(data,name,color)
     this.DataType;      //数据类型
     this.StringFormat=STRING_FORMAT_TYPE.DEFAULT;   //字符串格式
     this.FloatPrecision=2;                          //小数位数
+    this.IsShow=true;   //是否显示
 }
 
 function DynamicChartTitlePainting()
@@ -34659,6 +34660,7 @@ function DynamicChartTitlePainting()
             if (!item || !item.Data || !item.Data.Data) continue;
 
             if (item.Data.Data.length<=0) continue;
+            if (item.IsShow===false) continue;
 
             var value=null;
             var valueText=null;
@@ -78331,7 +78333,7 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
-    this.CreateMultiBar=function(hqChart,windowIndex,varItem,i)
+    this.CreateMultiBar=function(hqChart,windowIndex,varItem,id)
     {
         let chart=new ChartMultiBar();
         chart.Canvas=hqChart.Canvas;
@@ -78341,6 +78343,13 @@ function ScriptIndex(name,script,args,option)
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Bars=varItem.Draw.DrawData; 
+
+        var titleIndex=windowIndex+1;
+        var titleData=new DynamicTitleData({ KData:chart.Data, BarData:chart.Bars },varItem.Name,null);
+        titleData.IsShow=false;
+        titleData.DataType="MULTI_BAR";
+        hqChart.TitlePaint[titleIndex].Data[id]=titleData;
+
         hqChart.ChartPaint.push(chart);
     }
 
@@ -79414,7 +79423,7 @@ function OverlayScriptIndex(name,script,args,option)
         frame.ChartPaint.push(chart);
     }
 
-    this.CreateMultiBar=function(hqChart,windowIndex,varItem,i)
+    this.CreateMultiBar=function(hqChart,windowIndex,varItem,id)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
@@ -79427,6 +79436,14 @@ function OverlayScriptIndex(name,script,args,option)
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Bars=varItem.Draw.DrawData; 
+
+        var titleIndex=windowIndex+1;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        var titleData=new DynamicTitleData({ KData:chart.Data, BarData:chart.Bars },varItem.Name,null);
+        titleData.IsShow=false;
+        titleData.DataType="MULTI_BAR";
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+
         frame.ChartPaint.push(chart);
     }
 

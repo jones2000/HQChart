@@ -276,7 +276,7 @@ function JSChart(element)
             if (option.KLine.DataWidth>=1) chart.KLineSize={ DataWidth:option.KLine.DataWidth };
         }
 
-        if (option.SplashTitle) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
+        if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
         if (!option.Windows || option.Windows.length <= 0) return null;
 
         if (option.Language) 
@@ -564,7 +564,7 @@ function JSChart(element)
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
 
         if (option.Info && option.Info.length > 0) chart.SetMinuteInfo(option.Info, false);
-        if (option.SplashTitle) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
+        if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
         if (IFrameSplitOperator.IsNumber(option.DrawMoveWaitTime)) chart.DrawMoveWaitTime=option.DrawMoveWaitTime;
 
         if (option.Language) 

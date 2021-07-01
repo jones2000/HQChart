@@ -25787,7 +25787,8 @@ IFrameSplitOperator.IsBool=function(value)
 
 IFrameSplitOperator.IsString=function(value)
 {
-    if (value && typeof(value)=='string') return true;
+    var type=typeof(value);
+    if (type=='string') return true;
     return false;
 }
 
@@ -30412,6 +30413,7 @@ function DynamicTitleData(data,name,color)
     this.DataType;      //数据类型
     this.StringFormat=STRING_FORMAT_TYPE.DEFAULT;   //字符串格式
     this.FloatPrecision=2;                          //小数位数
+    this.IsShow=true;   //是否显示
 }
 
 function DynamicChartTitlePainting()
@@ -30693,6 +30695,7 @@ function DynamicChartTitlePainting()
             if (!item || !item.Data || !item.Data.Data) continue;
 
             if (item.Data.Data.length<=0) continue;
+            if (item.IsShow===false) continue;
 
             var value=null;
             var valueText=null;
