@@ -29753,7 +29753,8 @@ IFrameSplitOperator.IsBool=function(value)
 
 IFrameSplitOperator.IsString=function(value)
 {
-    if (value && typeof(value)=='string') return true;
+    var type=typeof(value);
+    if (type=='string') return true;
     return false;
 }
 
@@ -49048,9 +49049,11 @@ function MinuteChartContainer(uielement)
             this.ChartPaint[0].LeadData=bindLeadData;
             this.ChartPaint[0].IsShowLead=true;
         }
+
+        var firstFrame=this.Frame.SubFrame[0].Frame;
        
-        this.Frame.SubFrame[0].Frame.YSplitOperator.YClose=yClose;
-        this.Frame.SubFrame[0].Frame.YSplitOperator.Data=bindData;
+        firstFrame.YSplitOperator.YClose=yClose;
+        firstFrame.YSplitOperator.Data=bindData;
         this.Frame.Data=this.ChartPaint[0].Data;
         this.Frame.SourceData=minuteData;
 
@@ -49069,15 +49072,20 @@ function MinuteChartContainer(uielement)
         if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol))    //外汇没有均线
             this.ChartPaint[1].Data=null;
 
-        this.Frame.SubFrame[0].Frame.YSplitOperator.AverageData=bindData;
-        this.Frame.SubFrame[0].Frame.YSplitOperator.OverlayChartPaint=this.OverlayChartPaint;
-        this.Frame.SubFrame[0].Frame.YSplitOperator.LimitPrice=this.LimitPrice;
-        this.Frame.SubFrame[0].Frame.YSplitOperator.MultiDayBeforeOpenData=multiBeforeOpenData;
-        this.Frame.SubFrame[0].Frame.YSplitOperator.MultiDayAfterCloseData=multiAfterCloseData;
+        firstFrame.YSplitOperator.AverageData=bindData;
+        firstFrame.YSplitOperator.OverlayChartPaint=this.OverlayChartPaint;
+        firstFrame.YSplitOperator.LimitPrice=this.LimitPrice;
+        firstFrame.YSplitOperator.MultiDayBeforeOpenData=multiBeforeOpenData;
+        firstFrame.YSplitOperator.MultiDayAfterCloseData=multiAfterCloseData;
         if (extendData)
         {
-            this.Frame.SubFrame[0].Frame.YSplitOperator.High=extendData.High;
-            this.Frame.SubFrame[0].Frame.YSplitOperator.Low=extendData.Low;
+            firstFrame.YSplitOperator.High=extendData.High;
+            firstFrame.YSplitOperator.Low=extendData.Low;
+        }
+        else
+        {
+            firstFrame.YSplitOperator.High=null;
+            firstFrame.YSplitOperator.Low=null;
         }
 
         //成交量
