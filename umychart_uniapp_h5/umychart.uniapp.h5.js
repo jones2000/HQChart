@@ -8905,6 +8905,17 @@ function JSChartContainer(uielement, OffscreenElement)
             if (IFrameSplitOperator.IsBool(option.IsShowXLine)) subFrame.Frame.IsShowXLine=option.IsShowXLine;
             if (IFrameSplitOperator.IsBool(option.IsShowYLine)) subFrame.Frame.IsShowYLine=option.IsShowYLine;
             if (IFrameSplitOperator.IsBool(option.IsShowIndexTitle)) subFrame.Frame.IsShowIndexTitle=option.IsShowIndexTitle;
+
+            if (IFrameSplitOperator.IsBool(option.IsShowLeftText)) 
+            {
+                subFrame.Frame.IsShowYText[0]=option.IsShowLeftText;
+                subFrame.Frame.YSplitOperator.IsShowLeftText=option.IsShowLeftText;            //显示左边刻度
+            }
+            if (IFrameSplitOperator.IsBool(option.IsShowRightText)) 
+            {
+                subFrame.Frame.IsShowYText[1]=option.IsShowRightText;
+                subFrame.Frame.YSplitOperator.IsShowRightText=option.IsShowRightText;         //显示右边刻度
+            }
         }
 
         //最后一个显示X轴坐标
@@ -44904,6 +44915,7 @@ function KLineChartContainer(uielement,OffscreenElement)
     
                 this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
 
+                var subFrame=this.Frame.SubFrame[i];
                 if (item.Modify!=null) this.Frame.SubFrame[i].Frame.ModifyIndex=item.Modify;
                 if (item.Change!=null) this.Frame.SubFrame[i].Frame.ChangeIndex=item.Change;
                 if (item.Close!=null) this.Frame.SubFrame[i].Frame.CloseIndex=item.Close;
@@ -44919,6 +44931,17 @@ function KLineChartContainer(uielement,OffscreenElement)
                 if (item.IsShowXLine==false) this.Frame.SubFrame[i].Frame.IsShowXLine=false;
                 if (item.IsShowYLine==false) this.Frame.SubFrame[i].Frame.IsShowYLine=false;
                 if (IFrameSplitOperator.IsBool(item.IsShowIndexTitle)) this.Frame.SubFrame[i].Frame.IsShowIndexTitle=item.IsShowIndexTitle;
+
+                if (IFrameSplitOperator.IsBool(item.IsShowLeftText)) 
+                {
+                    subFrame.Frame.IsShowYText[0]=item.IsShowLeftText;
+                    subFrame.Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
+                }
+                if (IFrameSplitOperator.IsBool(item.IsShowRightText)) 
+                {
+                    subFrame.Frame.IsShowYText[1]=item.IsShowRightText;
+                    subFrame.Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度
+                }
 
                 var bindData=this.ChartPaint[0].Data;
                 this.BindIndexData(i,bindData);   //执行脚本
