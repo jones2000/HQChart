@@ -113,6 +113,7 @@ DefaultData.GetMinuteOption=function()
 
         IsShowRightMenu: false,         //右键菜单
         IsShowCorssCursorInfo: true,    //是否显示十字光标的刻度信息
+        EnableSelectRect:true,
 
         Border: //边框
         {
@@ -153,6 +154,10 @@ DefaultData.GetKLineOption=function()
         IsShowRightMenu: false, //右键菜单
 
         CorssCursorInfo:{ DateFormatType:2 },
+
+        EnableYDrag:{ Right:true },
+
+        DragDownload: { Day:{ Enable:true } , Minute:{ Enable:true }}, 
 
         KLine: 
         {
@@ -674,6 +679,7 @@ export default
             if (this.Minute.JSChart) this.Minute.JSChart.OnSize();
 
             var divKline=this.$refs.kline;
+            //chartWidth=50000;
             divKline.style.width=chartWidth+'px';
             divKline.style.height=chartHeight+'px';
             if (this.KLine.JSChart) this.KLine.JSChart.OnSize({Type:1});
