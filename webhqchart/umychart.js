@@ -1759,7 +1759,8 @@ var JSCHART_EVENT_ID=
     ON_SPLIT_XCOORDINATE:31,             //分割X轴及格式化刻度文字
 
     ON_KEYDOWN_SELECT_RECT:32,           //键盘空格区间选择完成事件
-    ON_DRAG_SELECT_RECT:33               //区间选择区域变动
+    ON_DRAG_SELECT_RECT:33,              //区间选择区域变动
+    ON_DRAG_SELECT_RECT_MOUSEUP:34       //区间选择区域变动鼠标松开
 }
 
 var JSCHART_OPERATOR_ID=
@@ -2386,7 +2387,7 @@ function JSChartContainer(uielement, OffscreenElement)
         }
         else if (isDragSelectRect)  //区间选择拖动范围
         {
-
+            if (this.OnDragSelectRectMouseUp) this.OnDragSelectRectMouseUp(e);
         }
         else if (IsMinuteChart)
         {
@@ -4960,6 +4961,7 @@ function JSChartContainer(uielement, OffscreenElement)
                 if (item.IsDrawTitleBG==true)  subFrame.Frame.IsDrawTitleBG=item.IsDrawTitleBG;
             }
             
+            if (IFrameSplitOperator.IsNumber(option.SplitCount)) subFrame.Frame.YSplitOperator.SplitCount=option.SplitCount;
             if (IFrameSplitOperator.IsNumber(option.TitleHeight)) subFrame.Frame.ChartBorder.TitleHeight=option.TitleHeight;
             if (IFrameSplitOperator.IsBool(option.IsShowTitleArraw)) subFrame.Frame.IsShowTitleArraw=option.IsShowTitleArraw;
             if (IFrameSplitOperator.IsBool(option.IsShowIndexName)) subFrame.Frame.IsShowIndexName=option.IsShowIndexName;
@@ -38781,6 +38783,29 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.CursorIndex=0;
     }
 
+    this.OnDragSelectRectMouseUp=function(e)
+    {
+        var paint=this.GetRectSelectPaint();
+        if (!paint) return;
+        
+        var selectData=paint.GetSelectRectData();
+        if (!selectData) return;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var corssCursor=this.ChartCorssCursor;  //十字光标
+        e.data=
+        {
+            Chart:this,
+            X:corssCursor.LastPoint.X/pixelTatio,
+            Y:corssCursor.LastPoint.Y/pixelTatio,
+            SelectData:selectData,          //区间选择的数据
+            RectSelectPaint:paint           //区间选择背景
+        };
+
+        if (this.SelectRectRightMenu)
+            this.SelectRectRightMenu.DoModal(e);
+    }
+
     this.ShowSelectData=function(selectData)
     {
         this.HideSelectRect();
@@ -43473,6 +43498,49 @@ function MinuteChartContainer(uielement)
         {
             this.TryClickPaintEvent(JSCHART_EVENT_ID.ON_CLICKUP_CHART_PAINT,this.ClickDownPoint,e);
         }
+    }
+
+    this.OnDragSelectRectMouseUp=function(e)
+    {
+        var paint=this.GetRectSelectPaint();
+        if (!paint) return;
+        
+        var selectData=paint.GetSelectRectData();
+        if (!selectData) return;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var corssCursor=this.ChartCorssCursor;  //十字光标
+        var x=corssCursor.LastPoint.X/pixelTatio;
+        var y=corssCursor.LastPoint.Y/pixelTatio;
+        
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAG_SELECT_RECT_MOUSEUP);
+        if (event)
+        {
+            var data=
+            { 
+                X:x,
+                Y:y,
+                SelectData:selectData,   //区间选择的数据
+                RectSelectPaint:paint    //区间选择背景
+            };
+            event.Callback(event,data,this);
+        }
+
+        if (this.SelectRectDialog)
+        {
+            e.data=
+            {
+                Chart:this,
+                X:x,
+                Y:y,
+                SelectData:selectData,          //区间选择的数据
+                RectSelectPaint:paint           //区间选择背景
+            };
+
+            this.SelectRectDialog.DoModal(e);
+        }
+            
     }
 
     this.UpdateSelectRect=function(start,end)

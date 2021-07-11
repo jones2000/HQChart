@@ -10573,6 +10573,14 @@ module.exports =
 {
     JSCommonComplier:
     {
-        JSComplier: JSComplier
-    }
+        JSComplier: JSComplier,
+    },
+
+     //单个类导出
+     JSCommonComplier_ErrorHandler: ErrorHandler,
+     JSCommonComplier_JSComplier:JSComplier,
+     JSCommonComplier_JSParser:JSParser,
+     JSCommonComplier_Syntax:Syntax,
+     JS_EXECUTE_JOB_ID:JS_EXECUTE_JOB_ID,
+     g_JSComplierResource:g_JSComplierResource,
 };

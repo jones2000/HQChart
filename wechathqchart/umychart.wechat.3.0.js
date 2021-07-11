@@ -2483,6 +2483,7 @@ function JSChartContainer(uielement)
                 if (item.IsDrawTitleBG==true)  subFrame.Frame.IsDrawTitleBG=item.IsDrawTitleBG;
             }
             
+            if (IFrameSplitOperator.IsNumber(option.SplitCount)) subFrame.Frame.YSplitOperator.SplitCount=option.SplitCount;
             if (IFrameSplitOperator.IsNumber(option.TitleHeight)) subFrame.Frame.ChartBorder.TitleHeight=option.TitleHeight;
             if (IFrameSplitOperator.IsBool(option.IsShowTitleArraw)) subFrame.Frame.IsShowTitleArraw=option.IsShowTitleArraw;
             if (IFrameSplitOperator.IsBool(option.IsShowIndexName)) subFrame.Frame.IsShowIndexName=option.IsShowIndexName;
@@ -2491,6 +2492,9 @@ function JSChartContainer(uielement)
             if (IFrameSplitOperator.IsBool(option.IsShowXLine)) subFrame.Frame.IsShowXLine=option.IsShowXLine;
             if (IFrameSplitOperator.IsBool(option.IsShowYLine)) subFrame.Frame.IsShowYLine=option.IsShowYLine;
             if (IFrameSplitOperator.IsBool(option.IsShowIndexTitle)) subFrame.Frame.IsShowIndexTitle=option.IsShowIndexTitle;
+
+            if (IFrameSplitOperator.IsBool(option.IsShowLeftText)) subFrame.Frame.IsShowYText[0] = option.IsShowLeftText;         //显示左边刻度
+            if (IFrameSplitOperator.IsBool(option.IsShowRightText)) subFrame.Frame.IsShowYText[1] = option.IsShowRightText;       //显示右边刻度 
         }
 
         //最后一个显示X轴坐标
