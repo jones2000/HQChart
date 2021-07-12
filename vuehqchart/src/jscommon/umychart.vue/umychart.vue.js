@@ -47560,7 +47560,10 @@ function MinuteChartContainer(uielement)
         if (!paint) return;
 
         var data=this.SourceData;
+        if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.Data)) return;
+        var count=data.Data.length;
         var startItem=data.Data[start];
+        if (end>=count) end=count-1;
         var endItem=data.Data[end];
 
         JSConsole.Chart.Log('[MinuteChartContainer::UpdateSelectRect]',startItem,endItem);
@@ -50126,6 +50129,7 @@ function MinuteChartContainer(uielement)
         
         var data=this.SourceData;
         if (!data) return false;
+        if (!IFrameSplitOperator.IsNonEmptyArray(data.Data)) return false;
 
         var start=this.GetDataIndexByPoint(selectData.XStart);
         var end=this.GetDataIndexByPoint(selectData.XEnd);
@@ -50143,6 +50147,9 @@ function MinuteChartContainer(uielement)
             selectData.Start=start;
             selectData.End=end;
         }
+
+        var count=data.Data.length;
+        if (selectData.End>=count) selectData.End=count-1;
 
         return true;
     }
