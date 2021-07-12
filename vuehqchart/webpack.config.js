@@ -39,12 +39,7 @@ module.exports = (options = {}) => ({
     rules: [
       {
         test: /\.vue$/,
-        loader: 'vue-loader',
-        options: {
-          loaders: {
-            'scss': 'style-loader!css-loader!sass-loader'
-          }
-        }
+        loader: 'vue-loader'
       },
       {
         test: /\.less$/,
@@ -62,10 +57,6 @@ module.exports = (options = {}) => ({
       {
         test: /\.css$/,
         use: ['style-loader', 'css-loader', 'postcss-loader']
-      },
-      {
-        test: /\.scss$/,
-        loaders: ["style", "css", "sass"]
       },
       {
         test: /\.(png|jpg|jpeg|gif|eot|ttf|woff|woff2|svg|svgz)(\?.+)?$/,

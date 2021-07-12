@@ -46560,6 +46560,42 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();
     }
 
+    this.GetOverlayIndexByIdentify=function(identify)
+    {
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            var item=this.Frame.SubFrame[i];
+            if (!IFrameSplitOperator.IsNonEmptyArray(item.OverlayIndex)) continue;
+
+            for(var j=0; j<item.OverlayIndex.length; ++j)
+            {
+                var overlayItem=item.OverlayIndex[j];
+                if (overlayItem.Identify===identify)
+                    return { OverlayItem:overlayItem, WindowIndex:i };
+            }
+        }
+
+        return null;
+    }
+
+    //更新叠加指标
+    this.UpdateOverlayIndex=function(identify)
+    {
+        var overlayIndex=this.GetOverlayIndexByIdentify(identify)
+
+        if (overlayIndex==null) 
+        {
+            console.warn(`[KLineChartContainer::UpdateOverlayIndex] can't find overlay index. [identify=${identify}]`);
+            return;
+        }
+
+        if (!this.ChartPaint[0]) return;
+        var kData=this.ChartPaint[0].Data;
+        if (!kData) return;
+
+        this.BindOverlayIndexData(overlayIndex.OverlayItem, overlayIndex.WindowIndex, kData);
+    }
+
     //修改参数指标
     this.ChangeWindowIndexParam=function(index)
     {
