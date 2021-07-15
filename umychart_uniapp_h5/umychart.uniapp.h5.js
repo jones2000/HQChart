@@ -5726,7 +5726,9 @@ var JSCHART_EVENT_ID=
 
     ON_KEYDOWN_SELECT_RECT:32,           //键盘空格区间选择完成事件
     ON_DRAG_SELECT_RECT:33,              //区间选择区域变动
-    ON_DRAG_SELECT_RECT_MOUSEUP:34       //区间选择区域变动鼠标松开
+    ON_DRAG_SELECT_RECT_MOUSEUP:34,      //区间选择区域变动鼠标松开
+
+    ON_DRAW_KLINE_LAST_POINT:35          //K线图绘制回调事件,返回最后一个点的坐标
 }
 
 var JSCHART_OPERATOR_ID=
@@ -17303,6 +17305,7 @@ function IChartPainting()
     this.MessageColor=g_JSChartResource.Index.NotSupport.TextColor;
     this.IsDrawFirst=false;
     this.IsShow=true;
+    this.GetEventCallback;
 
     this.Draw=function()
     {
@@ -17743,6 +17746,7 @@ function ChartKLine()
         this.Canvas.beginPath();
         this.Canvas.strokeStyle=this.CloseLineColor;
         if (IFrameSplitOperator.IsNumber(this.CloseLineWidth)) this.Canvas.lineWidth=this.CloseLineWidth;
+        var ptLast=null;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var data=this.Data.Data[i];
@@ -17772,6 +17776,22 @@ function ChartKLine()
             {
                 if (isHScreen) this.Canvas.lineTo(yClose,x);
                 else this.Canvas.lineTo(x,yClose);
+            }
+
+            if (i==this.Data.Data.length-1)
+            {
+                ptLast={ X:x, Y:yClose, KItem:data };
+            }
+        }
+
+        if (this.GetEventCallback)  //通知外部绘制最后一个点
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_KLINE_LAST_POINT);
+            if (event)
+            {
+                if (ptLast) var data={ LastPoint:{ X:ptLast.X, Y:ptLast.Y }, KItem:ptLast.KItem };
+                else var data={ LastPoint:null, KItem:null };
+                event.Callback(event,data,this);
             }
         }
 
@@ -22209,9 +22229,9 @@ function ChartMinutePriceLine()
         this.DrawAfterClose();      //收盘集合竞价
         this.DrawMultiDayAfterClose();
 
-        if (this.HQChart)
+        if (this.GetEventCallback)
         {
-            var event=this.HQChart.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_MINUTE_LAST_POINT);
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_MINUTE_LAST_POINT);
             if (event)
             {
                 var data={ LastPoint:{X:ptLast.X, Y:ptLast.Y}, Price:ptLast.Price };
@@ -42590,6 +42610,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         kline.ChartFrame=this.Frame.SubFrame[0].Frame;
         kline.Name="Main-KLine";
         kline.DrawType=this.KLineDrawType;
+        kline.GetEventCallback=(id)=>{ return this.GetEventCallback(id); };
 
         this.ChartPaint[0]=kline;
 
@@ -44190,6 +44211,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             var aryDayData=KLineChartContainer.JsonDataToTickData(data);    //增量数据
         if (!aryDayData || aryDayData.length<=0) return;
 
+        var redraw=false;   //强制重绘
+        if (data.redraw==true) redraw=true;
         //更新原始数据
         var source=this.SourceData.Data;
         var lastDataCount=this.SourceData.Data.length;  //上一个的数据长度
@@ -44203,7 +44226,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             source.push(item);
             ++newCount;
         }
-        if (newCount<=0) return;
+        if (newCount<=0 && redraw==false) return;
 
         //显示的数据
         var bindData=new ChartData();
@@ -48305,7 +48328,7 @@ function MinuteChartContainer(uielement)
         minuteLine.Name="Minute-Line";
         minuteLine.Color=g_JSChartResource.Minute.PriceColor;
         minuteLine.AreaColor=g_JSChartResource.Minute.AreaPriceColor;
-        minuteLine.HQChart=this;
+        minuteLine.GetEventCallback=(id)=>{ return this.GetEventCallback(id); };
 
         this.ChartPaint[0]=minuteLine;
 

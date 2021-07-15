@@ -1008,8 +1008,8 @@
   }
 </script>
 
-<style scoped lang="scss">
-  $border: 1px solid #e1ecf2;
+<style scoped lang="less">
+  @border: 1px solid #e1ecf2;
 
   * {
       font: 14px/normal "Microsoft Yahei";
@@ -1330,11 +1330,11 @@
       margin-top: 25px;
       margin-left: 10px;
       margin-right: 10px;
-      border: $border;
+      border: @border;
 
       .firstLine {
           line-height: 39px;
-          border-bottom: $border;
+          border-bottom: @border;
           padding-left: 10px;
           display: flex;
           flex-direction: row;
@@ -1352,7 +1352,7 @@
 
       .buyFive,
       .sellFive {
-          border-bottom: $border;
+          border-bottom: @border;
           padding: 3px 0;
 
           >li {

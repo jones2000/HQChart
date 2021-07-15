@@ -203,7 +203,7 @@
 </script>
 
 
-<style lang="less" type="text/scss">
+<style lang="less">
 .divstockdealcount {
   height: 100%;
   border-top: none;
