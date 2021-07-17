@@ -18454,6 +18454,11 @@ function ChartKLine()
         if (ptMax.X==null || ptMax.Y==null || ptMax.Value==null) return;
         if (ptMin.X==null || ptMin.Y==null || ptMin.Value==null) return;
 
+        var leftArrow=g_JSChartResource.KLine.MaxMin.LeftArrow;
+        var rightArrow=g_JSChartResource.KLine.MaxMin.RightArrow;
+        var highYOffset=g_JSChartResource.KLine.MaxMin.HighYOffset;
+        var lowYOffset=g_JSChartResource.KLine.MaxMin.LowYOffset;
+
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
         this.Canvas.font=this.TextFont;
         this.Canvas.fillStyle=this.TextColor;
@@ -18474,9 +18479,10 @@ function ChartKLine()
         
         this.Canvas.textAlign=ptTop.Align;
         var left=ptTop.Align=='left'?ptTop.X:ptTop.X;
+        if (IFrameSplitOperator.IsNumber(highYOffset)) ptTop.Y+=highYOffset;
         var text=ptTop.Value.toFixed(defaultfloatPrecision);
-        if (ptTop.Align=='left') text='←'+text;
-        else text=text+'→';
+        if (ptTop.Align=='left') text=leftArrow+text;
+        else text=text+rightArrow;
         if (ptTop.Y>(top-2))
         {
             this.Canvas.fillText(text,left,ptTop.Y);
@@ -18497,9 +18503,10 @@ function ChartKLine()
         this.Canvas.textAlign=ptBottom.Align;
         
         var left=ptBottom.Align=='left'?ptBottom.X:ptBottom.X;
+        if (IFrameSplitOperator.IsNumber(lowYOffset)) ptBottom.Y+=lowYOffset;
         var text=ptMin.Value.toFixed(defaultfloatPrecision);
-        if (ptBottom.Align=='left') text='←'+text;
-        else  text=text+'→';
+        if (ptBottom.Align=='left') text=leftArrow+text;
+        else  text=text+rightArrow;
         if (ptBottom.Y<(bottom+1))
         {
             this.Canvas.fillText(text,left,ptBottom.Y);
@@ -40345,7 +40352,7 @@ function JSChartResource()
     this.PyIndexDomain='https://py.zealink.com';                //py指标计算域名
 
     this.KLine={
-            MaxMin: {Font:12*GetDevicePixelRatio() +'px 微软雅黑',Color:'rgb(43,54,69)'},   //K线最大最小值显示
+            MaxMin: {Font:12*GetDevicePixelRatio() +'px 微软雅黑',Color:'rgb(43,54,69)', RightArrow:"→", LeftArrow:"←", HighYOffset:0, LowYOffset:0},   //K线最大最小值显示
             Info:  //信息地雷
             {
                 Investor:
@@ -82561,7 +82568,7 @@ var BLACK_STYLE=
 
     KLine:
     {
-        MaxMin: { Font: 12*GetDevicePixelRatio() +'px 微软雅黑', Color: 'rgb(255,250,240)' },   //K线最大最小值显示
+        MaxMin: { Font: 12*GetDevicePixelRatio() +'px 微软雅黑', Color: 'rgb(255,250,240)', RightArrow:"→", LeftArrow:"←", HighYOffset:0, LowYOffset:0 },   //K线最大最小值显示
         Info:  //信息地雷
         {
             Investor:
