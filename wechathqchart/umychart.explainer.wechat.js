@@ -65,9 +65,23 @@ function JSExplainer(ast,option)
         ['STKNAME',"品种名称"],   //品种名称
         ["TQFLAG","当前复权状态"],    //TQFLAG  当前的复权状态,0:无复权 1:前复权 2:后复权 
 
-        ['HYBLOCK',"所属行业(字串)"],   //所属行业板块
-        ['DYBLOCK',"所属地域(字串)"],   //所属地域板块
-        ['GNBLOCK',"所属概念(字串)"],        //所属概念
+        ['HYBLOCK',"所属行业"],   //所属行业板块
+        ['DYBLOCK',"所属地域"],   //所属地域板块
+        ['GNBLOCK',"所属概念"],   //所属概念
+        ["FGBLOCK","所属风格板块"],  
+        ["ZSBLOCK","所属指数板块"], 
+        ["ZHBLOCK",'所属组合板块'],   
+        ["ZDBLOCK",'所属自定义板块'], 
+        ["HYZSCODE","所属行业的板块指数代码"],  
+
+        ["GNBLOCKNUM","所属概念板块的个数"],    
+        ["FGBLOCKNUM","所属风格板块的个数"],    
+        ["ZSBLOCKNUM","所属指数板块的个数"],
+        ["ZHBLOCKNUM","所属组合板块的个数"],
+        ["ZDBLOCKNUM","所属自定义板块的个数"],
+
+        ["HYSYL","指数市盈率或个股所属行业的市盈率"],
+        ["HYSJL","指数市净率或个股所属行业的市净率"],
 
         ['DRAWNULL',"无效数据"]
 
@@ -624,6 +638,9 @@ function JSExplainer(ast,option)
                 return `位于价格${args[0]}和${args[1]}间的成本`;
             case "PPART":
                 return `${args[0]}日前那部分成本占总成本的比例`;
+
+            case "INBLOCK":
+                return `${args[0]}属于某板块`;
 
             case "PEAK":
             case "PEAKBARS":

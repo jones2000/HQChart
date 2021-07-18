@@ -803,6 +803,7 @@ function ScriptIndex(name, script, args, option)
         {
             let item = this.OutVar[i];
             if (item.IsExData === true) continue; //扩展数据不显示图形
+            if (item.Type==1000 || item.Type==1001) continue;      //数据集合, 字符串
 
             if (item.Type == 0) 
             {

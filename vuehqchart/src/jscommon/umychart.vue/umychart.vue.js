@@ -62447,14 +62447,15 @@ function Node(ErrorHandler)
                 this.IsNeedSymbolExData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA);
         }
 
-        if (varName=='HYBLOCK' || varName=='DYBLOCK' || varName=='GNBLOCK')
-        {
-            if (!this.IsNeedSymbolExData.has(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA))
-                this.IsNeedSymbolExData.add(JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA);
-        }
-
         //CAPITAL流通股本(手), EXCHANGE 换手率, TOTALCAPITAL 总股本(手)
-        let setVariantName=new Set(["CAPITAL","TOTALCAPITAL","EXCHANGE"]);
+        let setVariantName=new Set(
+        [
+            "CAPITAL","TOTALCAPITAL","EXCHANGE",
+            "HYBLOCK","DYBLOCK","GNBLOCK","FGBLOCK","ZSBLOCK","ZHBLOCK","ZDBLOCK","HYZSCODE",
+            "GNBLOCKNUM","FGBLOCKNUM","ZSBLOCKNUM","ZHBLOCKNUM","ZDBLOCKNUM",
+            "HYSYL","HYSJL"
+        ]);
+
         if (setVariantName.has(varName))
         {
             var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VARIANT, VariantName:varName };
@@ -62625,6 +62626,14 @@ function Node(ErrorHandler)
         {
             //下载流通股
             var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FINANCE, Args:[7],  FunctionName:"FINANCE", FunctionName2:callee.Name };
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+            this.FunctionData.push(item);
+            return;
+        }
+
+        if (callee.Name=="INBLOCK")
+        {
+            var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VARIANT, VariantName:"INBLOCK" }; //下载所有板块
             if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
             this.FunctionData.push(item);
             return;
@@ -71551,98 +71560,6 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
-    this.GetGroupData=function(job)
-    {
-        var key=job.ID.toString()+'-Group-'+this.Symbol;
-        if (this.ExtendData.has(key)) return this.Execute.RunNextJob();
-
-        var self=this;
-
-        if (this.NetworkFilter)
-        {
-            var obj=
-            {
-                Name:'JSSymbolData::GetGroupData', //类名::
-                Explain:'HYBLOCK|DYBLOCK',
-                Request:{ Url:self.RealtimeApiUrl,  Type:'POST' ,
-                    Data: { symbol:[this.Symbol], field: ["name","symbol","industry", 'concept','region'] } }, 
-                Self:this,
-                PreventDefault:false
-            };
-            this.NetworkFilter(obj, function(data) 
-            { 
-                self.RecvGroupData(data,key);
-                self.Execute.RunNextJob();
-            });
-
-            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
-        }
-
-        
-        JSNetwork.HttpRequest({
-            url: self.RealtimeApiUrl,
-            data:
-            {
-                "field": ["name","symbol","industry", 'concept','region'],
-                "symbol": [this.Symbol]
-            },
-            type:"post",
-            dataType: "json",
-            async:true, 
-            success: function (recvData)
-            {
-                self.RecvGroupData(recvData,key);
-                self.Execute.RunNextJob();
-            },
-            error: function(request)
-            {
-                self.RecvError(request);
-            }
-        });
-    }
-
-    this.RecvGroupData=function(data,key)
-    {
-        if (!data.stock) return;
-        if (data.stock.length!=1) return;
-        var stock=data.stock[0];
-        var industry=stock.industry;
-        var concept=stock.concept;
-        var region=stock.region;
-
-        var groupData={Industry:[],Concept:[], Region:[] };
-        if (industry)
-        {
-            for(var i in industry)
-            {
-                var item=industry[i];
-                groupData.Industry.push({Name:item.name, Symbol:item.symbol});
-            }
-        }
-
-        if (concept)
-        {
-            for(var i in concept)
-            {
-                var item=concept[i];
-                groupData.Concept.push({Name:item.name, Symbol:item.symbol});
-            }
-        }
-
-        if (region)
-        {
-            for(var i in region)
-            {
-                var item=region[i];
-                groupData.Region.push({Name:item.name, Symbol:item.symbol});
-            }
-        }
-
-
-        this.ExtendData.set(key,groupData);
-    }
-
-
     //获取大盘指数数据
     this.GetIndexData=function()
     {
@@ -74141,12 +74058,6 @@ function JSSymbolData(ast,option,jsExecute)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        var callback=function(recvData, jobItem, key) 
-        { 
-            self.RecvStockValue(recvData, jobItem, key,0);
-            self.Execute.RunNextJob();
-        };
-
         var errorCallback=function(strError)
         {
             self.AddStockValueError(key,strError);
@@ -74155,6 +74066,12 @@ function JSSymbolData(ast,option,jsExecute)
         var apiDownload;
         if (jobItem.VariantName=="CAPITAL" || jobItem.VariantName=="TOTALCAPITAL" || jobItem.VariantName=="EXCHANGE")
         {
+            var callback=function(recvData, jobItem, key) 
+            { 
+                self.RecvStockValue(recvData, jobItem, key,0);
+                self.Execute.RunNextJob();
+            };
+
             apiDownload=new DownloadFinanceData( 
             {
                 Job:jobItem, 
@@ -74166,6 +74083,40 @@ function JSSymbolData(ast,option,jsExecute)
                 Callback:callback,
                 ErrorCallback:errorCallback
             });
+        }
+        else if (jobItem.VariantName=="HYBLOCK" || jobItem.VariantName=="DYBLOCK" || jobItem.VariantName=="GNBLOCK")
+        {
+            var callback=function(recvData, jobItem, key, dataType) 
+            { 
+                self.RecvStockValue(recvData, jobItem, key, dataType);
+                self.Execute.RunNextJob();
+            };
+
+            apiDownload=new DownloadGroupData(
+            {
+                Job:jobItem, 
+                Symbol:this.Symbol, 
+                Url:this.StockHistoryDayApiUrl, 
+                RealtimeUrl:this.RealtimeApiUrl,
+                Args:[jobItem.VariantName],
+                DataKey:key,
+                Callback:callback,
+                ErrorCallback:errorCallback
+            });
+        }
+        else if (jobItem.VariantName=="INBLOCK")
+        {
+            var errorMessage=`${jobItem.VariantName}, 请对接外部数据.`;
+            this.AddStockValueError(key,errorMessage);
+            this.Execute.RunNextJob();
+            return;
+        }
+        else
+        {
+            var errorMessage=`不支持变量${jobItem.VariantName}, 请对接外部数据.`;
+            this.AddStockValueError(key,errorMessage);
+            this.Execute.RunNextJob();
+            return;
         }
 
         apiDownload.Download();
@@ -74343,6 +74294,20 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (data.Error) this.Execute.ThrowUnexpectedNode(obj.Node, data.Error);
         return data.Data;
+    }
+
+    this.IsInBlock=function(blockName, node)
+    {
+        var data=this.GetStockCacheData({ VariantName:"INBLOCK", Node:node });
+        if (!data) return 0;
+        var aryBlock=data.split('|');
+        for(var i=0; i<aryBlock.length; ++i)
+        {
+            var item=aryBlock[i];
+            if (item==blockName) return 1;
+        }
+
+        return 0;
     }
 
     this.JobArgumentsToArray=function(job, lCount)
@@ -75329,63 +75294,6 @@ function JSSymbolData(ast,option,jsExecute)
         return this.Name;
     }
 
-    this.GetIndustry=function()
-    {
-        var key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA.toString()+'-Group-'+this.Symbol;
-        if (!this.ExtendData.has(key)) return '';
-
-        var group=this.ExtendData.get(key);
-        if (!group.Industry || group.Industry.length<=0) return '';
-
-        var result='';
-        for(var i in group.Industry)
-        {
-            var item=group.Industry[i];
-            if (result.length>0) result+=' ';
-            result+=item.Name;
-        }
-
-        return result;
-    }
-    
-    this.GetRegion=function()
-    {
-        var key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA.toString()+'-Group-'+this.Symbol;
-        if (!this.ExtendData.has(key)) return '';
-
-        var group=this.ExtendData.get(key);
-        if (!group.Region || group.Region.length<=0) return '';
-
-        var result='';
-        for(var i in group.Region)
-        {
-            var item=group.Region[i];
-            if (result.length>0) result+=' ';
-            result+=item.Name;
-        }
-
-        return result;
-    }
-
-    this.GetConcept=function()
-    {
-        var key=JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA.toString()+'-Group-'+this.Symbol;
-        if (!this.ExtendData.has(key)) return '';
-
-        var group=this.ExtendData.get(key);
-        if (!group.Concept || group.Concept.length<=0) return '';
-
-        var result='';
-        for(var i in group.Concept)
-        {
-            var item=group.Concept[i];
-            if (result.length>0) result+=' ';
-            result+=item.Name;
-        }
-
-        return result;
-    }
-   
     this.DATE=function()
     {
         var result=[];
@@ -75624,7 +75532,6 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_SYMBOL_LATEST_DATA:3,  //最新的股票行情数据
     JOB_DOWNLOAD_INDEX_INCREASE_DATA:4, //涨跌股票个数统计数据
     JOB_DOWNLOAD_VOLR_DATA:5,           //5日量比均量下载量比数据
-    JOB_DOWNLOAD_GROUP_DATA:6,          //所属行业|地区|概念
     JOB_DOWNLOAD_LATEST_INDEX_DATA:8,   //下载最新大盘数据
     JOB_DOWNLOAD_OTHER_SYMBOL_DATA:9,   //下载其他股票的K线数据
     JOB_DOWNLOAD_SYMBOL_PERIOD_DATA:10, //下载周期数据
@@ -75876,7 +75783,21 @@ function JSExecute(ast,option)
 
         ['HYBLOCK',null],   //所属行业板块
         ['DYBLOCK',null],   //所属地域板块
-        ['GNBLOCK',null],    //所属概念
+        ['GNBLOCK',null],   //所属概念
+        ["FGBLOCK",null],   //所属风格板块
+        ["ZSBLOCK",null],   //所属指数板块
+        ["ZHBLOCK",null],   //所属组合板块
+        ["ZDBLOCK",null],   //所属自定义板块
+        ["HYZSCODE",null],  
+
+        ["GNBLOCKNUM",null],    //所属概念板块的个数
+        ["FGBLOCKNUM",null],    //所属风格板块的个数
+        ["ZSBLOCKNUM",null],    //所属指数板块的个数
+        ["ZHBLOCKNUM",null],    //所属组合板块的个数
+        ["ZDBLOCKNUM",null],    //所属自定义板块的个数
+
+        ["HYSYL",null],         //指数市盈率或个股所属行业的市盈率
+        ["HYSJL",null],         //指数市净率或个股所属行业的市净率
 
         ['DRAWNULL',null],
 
@@ -75939,8 +75860,6 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetLatestData();
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA:  //量比
                 return this.SymbolData.GetVolRateData(jobItem);
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GROUP_DATA:
-                return this.SymbolData.GetGroupData(jobItem);   //行业|概念|地区
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_OTHER_SYMBOL_DATA:  //指定股票数据
                 return this.SymbolData.GetOtherSymbolData(jobItem);
@@ -76058,9 +75977,28 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetIsLastBar();
             case "BARSTATUS":
                 return this.SymbolData.GetBarStatus();
+
             case "TOTALCAPITAL":
             case 'CAPITAL':
             case 'EXCHANGE':
+
+            case "HYBLOCK":
+            case "DYBLOCK":
+            case "GNBLOCK":
+            case "FGBLOCK":
+            case "ZSBLOCK":
+            case "ZHBLOCK":
+            case "ZDBLOCK":
+            case "HYZSCODE":
+
+            case "GNBLOCKNUM":
+            case "FGBLOCKNUM":
+            case "ZSBLOCKNUM":
+            case "ZHBLOCKNUM":
+            case "ZDBLOCKNUM":
+
+            case "HYSYL":
+            case "HYSJL":
                 return this.SymbolData.GetStockCacheData({ VariantName:name, Node:node });
             case 'SETCODE':
                 return this.SymbolData.SETCODE();
@@ -76068,12 +76006,6 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetSymbol();
             case 'STKNAME':
                 return this.SymbolData.GetName();
-            case 'HYBLOCK':
-                return this.SymbolData.GetIndustry();
-            case 'DYBLOCK':
-                return this.SymbolData.GetRegion();
-            case 'GNBLOCK':
-                return this.SymbolData.GetConcept();
 
             case "TIME":
                 return this.SymbolData.TIME();
@@ -76215,7 +76147,20 @@ function JSExecute(ast,option)
                         }
                         else if (!this.IsSectionMode && !Array.isArray(outVar)) 
                         {
-                            if (typeof(outVar)=='string') outVar=this.SingleDataToArrayData(parseFloat(outVar));
+                            if (typeof(outVar)=='string') 
+                            {
+                                var floatValue=parseFloat(outVar);
+                                if (IFrameSplitOperator.IsNumber(floatValue))
+                                {
+                                    outVar=this.SingleDataToArrayData(floatValue);
+                                }
+                                else
+                                {
+                                    outVar=this.SingleDataToArrayData(outVar);
+                                    type=1001;
+                                }
+                                    
+                            }
                             else outVar=this.SingleDataToArrayData(outVar);
                         }
 
@@ -76769,6 +76714,9 @@ function JSExecute(ast,option)
             case 'AMO':
                 node.Out=this.SymbolData.GetOtherSymolCacheData( {FunctionName:funcName, Args:args} );
                 break;
+            case "INBLOCK":
+                node.Out=this.SymbolData.IsInBlock(args[0],node);
+                break;
 
             case 'COVER_C':
             case 'COVER_O':
@@ -77019,9 +76967,23 @@ function JSExplainer(ast,option)
         ['STKNAME',"品种名称"],   //品种名称
         ["TQFLAG","当前复权状态"],    //TQFLAG  当前的复权状态,0:无复权 1:前复权 2:后复权 
 
-        ['HYBLOCK',"所属行业(字串)"],   //所属行业板块
-        ['DYBLOCK',"所属地域(字串)"],   //所属地域板块
-        ['GNBLOCK',"所属概念(字串)"],        //所属概念
+        ['HYBLOCK',"所属行业"],   //所属行业板块
+        ['DYBLOCK',"所属地域"],   //所属地域板块
+        ['GNBLOCK',"所属概念"],   //所属概念
+        ["FGBLOCK","所属风格板块"],  
+        ["ZSBLOCK","所属指数板块"], 
+        ["ZHBLOCK",'所属组合板块'],   
+        ["ZDBLOCK",'所属自定义板块'], 
+        ["HYZSCODE","所属行业的板块指数代码"],  
+
+        ["GNBLOCKNUM","所属概念板块的个数"],    
+        ["FGBLOCKNUM","所属风格板块的个数"],    
+        ["ZSBLOCKNUM","所属指数板块的个数"],
+        ["ZHBLOCKNUM","所属组合板块的个数"],
+        ["ZDBLOCKNUM","所属自定义板块的个数"],
+
+        ["HYSYL","指数市盈率或个股所属行业的市盈率"],
+        ["HYSJL","指数市净率或个股所属行业的市净率"],
 
         ['DRAWNULL',"无效数据"]
 
@@ -77578,6 +77540,9 @@ function JSExplainer(ast,option)
                 return `位于价格${args[0]}和${args[1]}间的成本`;
             case "PPART":
                 return `${args[0]}日前那部分成本占总成本的比例`;
+                
+            case "INBLOCK":
+                return `${args[0]}属于某板块`;
 
             case "PEAK":
             case "PEAKBARS":
@@ -79275,7 +79240,7 @@ function ScriptIndex(name,script,args,option)
         {
             let item=this.OutVar[i];
             if (item.IsExData===true) continue; //扩展数据不显示图形
-            if (item.Type==1000) continue;      //数据集合
+            if (item.Type==1000 || item.Type==1001) continue;      //数据集合, 字符串
 
             if (item.Type==0)  
             {
@@ -82440,6 +82405,105 @@ function DownloadSCJYValue(obj)
             default:
                 return null;
         }
+    }
+}
+
+function DownloadGroupData(obj)
+{
+    this.Url=obj.Url;
+    this.RealtimeUrl=obj.RealtimeUrl;
+    this.Job=obj.Job;
+    this.Symbol=obj.Symbol;
+    this.Args=obj.Args;
+    this.DataKey=obj.DataKey;
+    this.RecvCallback=obj.Callback;
+    this.ErrorCallback=obj.ErrorCallback;
+
+    this.Download=function()
+    {
+        var varName=this.Args[0];
+        switch(varName)
+        {
+            case "HYBLOCK":
+            case "DYBLOCK":
+            case "GNBLOCK":
+                this.DownloadGroupName(varName);
+                break;
+        }
+    }
+
+    this.DownloadGroupName=function(blockType)
+    {
+        var self=this;
+        var field=["name","symbol"];
+        if (blockType=="HYBLOCK") field.push("industry");
+        else if (blockType=="DYBLOCK") field.push("region");
+        else if (blockType=="GNBLOCK") field.push("concept");
+
+        JSNetwork.HttpRequest({
+            url: self.RealtimeUrl,
+            data:
+            {
+                "field": field,
+                "symbol": [this.Symbol]
+            },
+            type:"post",
+            dataType: "json",
+            async:true, 
+            success: function (recvData)
+            {
+                var data=self.RecvGroupName(recvData);
+                self.RecvCallback(data, self.Job, self.DataKey, 1);
+            },
+            error: function(request)
+            {
+                self.ErrorCallback(request);
+            }
+        });
+    }
+
+    this.RecvGroupName=function(recvData)
+    {
+        if (!recvData.stock || recvData.stock.length!=1) return null;
+        var stock=recvData.stock[0];
+        var varName=this.Args[0];
+        var value=null;
+        if (varName=="HYBLOCK")
+        {
+            var industry=stock.industry;
+            if (!industry) return null;
+            var value;
+            for(var i in industry)
+            {
+                var item=industry[i];
+                value=item.name;
+            }
+        }
+        else if (varName=="DYBLOCK")
+        {
+            var region=stock.region;
+            if (!region) return null;
+            for(var i in region)
+            {
+                var item=region[i];
+                value=item.name;
+            }
+        }
+        else if (varName=="GNBLOCK")
+        {
+            var concept=stock.concept;
+            if (!concept) return null;
+            value="";
+            for(var i in concept)
+            {
+                var item=concept[i];
+                if (value.length>0) value+=' ';
+                value+=item.name;
+            }
+            
+        }
+
+        return { Value:value };
     }
 }
 
