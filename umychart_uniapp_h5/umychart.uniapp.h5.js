@@ -74007,7 +74007,17 @@ function JSSymbolData(ast,option,jsExecute)
             };
             this.NetworkFilter(obj, function(recvData) 
             { 
-                self.RecvStockValue(recvData,jobItem,key,0);
+                if (recvData.Error) 
+                {
+                    self.AddStockValueError(key,recvData.Error);
+                }
+                else
+                {
+                    var dataType=0;
+                    if (IFrameSplitOperator.IsNumber(recvData.DataType)) dataType=recvData.DataType;
+                    self.RecvStockValue(recvData.Data,jobItem,key,dataType);
+                }
+               
                 self.Execute.RunNextJob();
             });
 
