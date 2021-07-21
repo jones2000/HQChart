@@ -893,9 +893,15 @@ function ChartKLine()
         if (ptMax.X == null || ptMax.Y == null || ptMax.Value == null) return;
         if (ptMin.X == null || ptMin.Y == null || ptMin.Value == null) return;
 
+        var leftArrow=g_JSChartResource.KLine.MaxMin.LeftArrow;
+        var rightArrow=g_JSChartResource.KLine.MaxMin.RightArrow;
+        var highYOffset=g_JSChartResource.KLine.MaxMin.HighYOffset;
+        var lowYOffset=g_JSChartResource.KLine.MaxMin.LowYOffset;
+
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
         var xText = ptMax.Y;
         var yText = ptMax.X;
+        if (IFrameSplitOperator.IsNumber(highYOffset)) xText+=highYOffset;
         this.Canvas.save();
         this.Canvas.translate(xText, yText);
         this.Canvas.rotate(90 * Math.PI / 180);
@@ -905,14 +911,15 @@ function ChartKLine()
         this.Canvas.textAlign = ptMax.Align;
         this.Canvas.textBaseline = 'bottom';
         var text = ptMax.Value.toFixed(defaultfloatPrecision);
-        if (ptMax.Align == 'left') text = '←' + text;
-        else text = text + '→';
+        if (ptMax.Align == 'left') text = leftArrow + text;
+        else text = text + rightArrow;
         this.Canvas.fillText(text, 0, 0);
         this.Canvas.restore();
 
 
         var xText = ptMin.Y;
         var yText = ptMin.X;
+        if (IFrameSplitOperator.IsNumber(lowYOffset)) xText+=lowYOffset;
         this.Canvas.save();
         this.Canvas.translate(xText, yText);
         this.Canvas.rotate(90 * Math.PI / 180);
@@ -922,8 +929,8 @@ function ChartKLine()
         this.Canvas.textAlign = ptMin.Align;
         this.Canvas.textBaseline = 'top';
         var text = ptMin.Value.toFixed(defaultfloatPrecision);
-        if (ptMin.Align == 'left') text = '←' + text;
-        else text = text + '→';
+        if (ptMin.Align == 'left') text = leftArrow + text;
+        else text = text + rightArrow;
         this.Canvas.fillText(text, 0, 0);
         this.Canvas.restore();
     }
