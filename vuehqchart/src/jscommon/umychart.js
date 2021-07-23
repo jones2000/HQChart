@@ -206,7 +206,7 @@ function JSChart(divElement, bOffscreen)
             if (option.DrawTool.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawTool.StorageKey);
         }
 
-        if (option.StepPixel>0) chart.StepPixel=option.StepPixel;
+        if (IFrameSplitOperator.IsNumber(option.StepPixel)) chart.StepPixel=option.StepPixel;
         if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
         if (option.IsApiPeriod==true) chart.IsApiPeriod=option.IsApiPeriod;
 
@@ -1850,7 +1850,7 @@ function JSChartContainer(uielement, OffscreenElement)
     this.IsForceLandscape=false;    //是否强制横屏
     this.CorssCursorTouchEnd = false;   //手离开屏幕自动隐藏十字光标
     this.IsTitleShowLatestData=false;     //十字/手势不在K线图上,标题显示最新一个数据
-    this.StepPixel=4;                   //移动一个数据需要的像素
+    this.StepPixel=4;                   //移动一个数据需要的像素 0=自动模式(根据K线宽度+间距)
     this.ZoomStepPixel=5;               //放大缩小手势需要的最小像素
     this.TouchMoveMinAngle=70;          //左右移动最小角度
     this.EnableAnimation=false;         //是否开启动画
@@ -2343,6 +2343,9 @@ function JSChartContainer(uielement, OffscreenElement)
             else
             {
                 this.UIElement.style.cursor="pointer";
+                var oneStepWidth=this.GetMoveOneStepWidth();
+                if (moveSetp<oneStepWidth) return;
+
                 if(this.DataMove(moveSetp,isLeft))
                 {
                     this.UpdataDataoffset();
@@ -2879,6 +2882,9 @@ function JSChartContainer(uielement, OffscreenElement)
 
                     var isLeft=true;
                     if (drag.LastMove.X<touches[0].clientX) isLeft=false;//右移数据
+
+                    var oneStepWidth=this.GetMoveOneStepWidth();
+                    if (moveSetp<oneStepWidth) return;
 
                     if(this.DataMove(moveSetp,isLeft))
                     {
@@ -4259,10 +4265,26 @@ function JSChartContainer(uielement, OffscreenElement)
 
     }
 
+    this.GetMoveOneStepWidth=function()
+    {
+        if (IFrameSplitOperator.IsPlusNumber(this.StepPixel)) return this.StepPixel;
+        
+        var pixelRatio=GetDevicePixelRatio();
+        var mainFrame=this.Frame.SubFrame[0].Frame;
+        var dataWidth=mainFrame.DataWidth;
+        var distanceWidth=mainFrame.DistanceWidth;
+        var oneStepWidth=this.StepPixel;
+        var oneStepWidth=(dataWidth+distanceWidth)/pixelRatio;
+        if (oneStepWidth<1) oneStepWidth=1;
+
+        return oneStepWidth;
+    }
+
     this.DataMove=function(step,isLeft)
     {
+        var oneStepWidth=this.GetMoveOneStepWidth();
         var moveStep=step;
-        step=parseInt(step/this.StepPixel);  //除以4个像素
+        step=parseInt(step/oneStepWidth);  //除以4个像素
         if (step<=0) return false;
 
         var data=null;
@@ -4279,7 +4301,11 @@ function JSChartContainer(uielement, OffscreenElement)
         {
             var fristFrame=this.Frame.SubFrame[0].Frame;
             if (fristFrame.DataWidth<=1 || fristFrame.DistanceWidth<=1) //K线在缩放很小的时候 移动加速
-                step=moveStep*this.StepPixel;
+            {
+                if (IFrameSplitOperator.IsPlusNumber(this.StepPixel))
+                    step=moveStep*this.StepPixel;
+            }
+               
         }
 
         if (isLeft) //-->
@@ -38407,7 +38433,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             var isLeft=(id===JSCHART_OPERATOR_ID.OP_SCROLL_LEFT ? true:false);
             var step=1;
             if (obj.Step>0) step=obj.Step;
-            if(this.DataMove(step*this.StepPixel,isLeft))    //每次移动一个数据
+            var oneStepWidth=this.GetMoveOneStepWidth();
+            if(this.DataMove(step*oneStepWidth,isLeft))    //每次移动一个数据
             {
                 this.UpdataDataoffset();
                 this.UpdatePointByCursorIndex();
@@ -47659,6 +47686,9 @@ function KLineChartHScreenContainer(uielement)
             {
                 if (moveSetp<5) return;
 
+                var oneStepWidth=this.JSChartContainer.GetMoveOneStepWidth();
+                if (moveSetp<oneStepWidth) return;
+
                 var isLeft=true;
                 if (drag.LastMove.Y<e.clientY) isLeft=false;//右移数据
 
@@ -47900,6 +47930,9 @@ function KLineChartHScreenContainer(uielement)
                 else if (this.DragMode==1 || isMoveCorssCursor==false)  //数据左右拖拽
                 {
                     if (moveSetp<5) return;
+
+                    var oneStepWidth=this.GetMoveOneStepWidth();
+                    if (moveSetp<oneStepWidth) return;
 
                     var isLeft=true;
                     if (drag.LastMove.Y<touches[0].clientY) isLeft=false;//右移数据
