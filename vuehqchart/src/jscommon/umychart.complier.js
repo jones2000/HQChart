@@ -16230,6 +16230,9 @@ function JSExplainer(ast,option)
                 return "相对位置上画矩形.";
             case "DRAWGBK":
                 return "填充背景";
+
+            default:
+                this.ThrowUnexpectedNode(node,`函数${funcName}不存在`);
         }
     }
 

@@ -3564,6 +3564,8 @@ function MinuteFrame()
     delete this.newMethod;
     this.ClassName='MinuteFrame';
 
+    this.DataWidth=1;
+    this.DistanceWidth=1;
     this.MinXDistance = 10;
     this.CustomHorizontalInfo = [];
 

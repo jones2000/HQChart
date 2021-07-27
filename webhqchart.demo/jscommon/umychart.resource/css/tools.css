@@ -867,6 +867,7 @@ td.context-menu {
     position:relative;
     display: none;
     z-index: 9;
+    user-select:none;
 }
 
 /*tooltip的内层样式*/
@@ -912,6 +913,7 @@ td.context-menu {
     background: rgba(255,255,255,0.92);
     box-sizing: border-box;
     display: none;
+    user-select:none;
 }
 .total-list{
     color: #f39800;
