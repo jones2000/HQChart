@@ -8985,6 +8985,8 @@ function JSChartContainer(uielement, OffscreenElement)
 
         var index=this.Frame.SubFrame.length;
         var subFrame=this.CreateSubFrameItem(index);
+        var pixelRatio=GetDevicePixelRatio();
+        subFrame.Frame.ChartBorder.TitleHeight*=pixelRatio;
         this.Frame.SubFrame[index]=subFrame;
         var titlePaint=new DynamicChartTitlePainting();
         titlePaint.Frame=this.Frame.SubFrame[index].Frame;
@@ -45451,9 +45453,11 @@ function KLineChartContainer(uielement,OffscreenElement)
         else
         {
             //创建新的指标窗口
+            var pixelRatio=GetDevicePixelRatio();
             for(var i=currentLength;i<count;++i)
             {
                 var subFrame=this.CreateSubFrameItem(i);
+                subFrame.Frame.ChartBorder.TitleHeight*=pixelRatio;
                 this.Frame.SubFrame[i]=subFrame;
                 var titlePaint=new DynamicChartTitlePainting();
                 titlePaint.Frame=this.Frame.SubFrame[i].Frame;
@@ -47117,15 +47121,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (!this.MinuteDialog && !event) return;
 
         var tooltip=new TooltipData();
-        for(var i in this.ChartPaint)
-        {
-            var item=this.ChartPaint[i];
-            if (item.GetTooltipData(x,y,tooltip))
-            {
-                break;
-            }
-        }
-
+        if (!this.PtInChartPaintTooltip(x,y,tooltip)) return;
         if (!tooltip.Data) return;
 
         if (event)
@@ -80827,7 +80823,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
     this.ConvertToLocalData=function(jsonData, hqChart)
     {
         var outVar=jsonData.OutVar;
-        if (hqChart.ClassName=="MinuteChartContainer" || hqchart.ClassName=="MinuteChartHScreenContainer")
+        if (hqChart.ClassName=="MinuteChartContainer" || hqChart.ClassName=="MinuteChartHScreenContainer")
         {
             var kdata=hqChart.SourceData;
             var aryDataIndex=kdata.GetAPIDataIndex(jsonData.Date,jsonData.Time);
