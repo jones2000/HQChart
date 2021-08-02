@@ -17111,6 +17111,7 @@ function ChartVolStick()
         var xPointCount=this.ChartFrame.XPointCount;
         var lockRect=this.GetLockRect();
         if (lockRect) chartright=lockRect.Left;
+        var isMinute=this.IsMinuteFrame();
 
         var yBottom=this.ChartFrame.GetYFromData(0);
 
@@ -17163,7 +17164,17 @@ function ChartVolStick()
                 if (value==null || kItem==null) continue;
 
                 var y=this.ChartFrame.GetYFromData(value);
-                var x=this.ChartFrame.GetXFromIndex(j);
+                if (isMinute)
+                {
+                    var x=this.ChartFrame.GetXFromIndex(j);
+                }
+                else
+                {
+                    var left=xOffset;
+                    var right=xOffset+dataWidth;
+                    var x=left+(right-left)/2;
+                }
+
                 if (x>chartright) break;
 
                 if (kItem.Close>=kItem.Open)
@@ -27355,6 +27366,7 @@ function FrameSplitKLineX()
                 var info= new CoordinateInfo();
                 info.Value=infoData.Value;
                 if (this.ShowText) info.Message[0]=infoData.Text;
+                if (info.Value==0) info.LineType=-1;    //第1个分割线不画
                 this.Frame.VerticalInfo.push(info);
                 textDistance=0;
                 barDistance=0;
@@ -27440,10 +27452,8 @@ function FrameSplitKLineX()
 
             lastYear=year;
             lastMonth=month;
-            if (this.ShowText)
-            {
-                info.Message[0]=text;
-            }
+            if (this.ShowText) info.Message[0]=text;
+            if (info.Value==0) info.LineType=-1;    //第1个分割线不画
 
             this.Frame.VerticalInfo.push(info);
             distance=0;
@@ -27486,10 +27496,8 @@ function FrameSplitKLineX()
                 text=IFrameSplitOperator.FormatDateString(this.Frame.Data.Data[index].Date,'MM-DD');
             }
 
-            if (this.ShowText)
-            {
-                info.Message[0]=text;
-            }
+            if (this.ShowText) info.Message[0]=text;
+            if (info.Value==0) info.LineType=-1;    //第1个分割线不画
 
             this.Frame.VerticalInfo.push(info);
             distance=0;
@@ -30085,7 +30093,7 @@ function KLineTradeDataStringFormat()
     this.newMethod();
     delete this.newMethod;
 
-    this.Width=100;
+    this.Width=120;
     this.Operator=function()
     {
         var data=this.Value.Data;

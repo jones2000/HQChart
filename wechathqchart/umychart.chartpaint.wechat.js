@@ -3970,11 +3970,11 @@ function ChartVolStick()
         var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + 2.0;
         var chartright = this.ChartBorder.GetRight();
         var xPointCount = this.ChartFrame.XPointCount;
-
         var yBottom = this.ChartFrame.GetYFromData(0);
+        var isMinute=this.IsMinuteFrame();
 
         if (dataWidth >= this.MinBarWidth) 
-        {
+        {   //只有K线, 分时图dataWidth=1
             yBottom = ToFixedRect(yBottom);
             for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
             {
@@ -4023,7 +4023,18 @@ function ChartVolStick()
                 if (value == null || kItem == null) continue;
 
                 var y = this.ChartFrame.GetYFromData(value);
-                var x = this.ChartFrame.GetXFromIndex(j);
+
+                if (isMinute)
+                {
+                    var x=this.ChartFrame.GetXFromIndex(j);
+                }
+                else
+                {
+                    var left=xOffset;
+                    var right=xOffset+dataWidth;
+                    var x=left+(right-left)/2;
+                }
+
                 if (x > chartright) break;
 
                 if (kItem.Close > kItem.Open)

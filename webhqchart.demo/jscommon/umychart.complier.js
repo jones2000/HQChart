@@ -16230,6 +16230,12 @@ function JSExplainer(ast,option)
                 return "相对位置上画矩形.";
             case "DRAWGBK":
                 return "填充背景";
+            case "STICKLINE":
+                var barType="";
+                if (args[4]==-1) barType="虚线空心柱";
+                else if (args[4]==0) barType="实心柱";
+                else barType="实线空心柱";
+                return `当满足条件${args[0]}时, 在${args[1]}和${args[2]}位置之间画柱状线,宽度为${args[3]},${barType}`;
 
             default:
                 this.ThrowUnexpectedNode(node,`函数${funcName}不存在`);

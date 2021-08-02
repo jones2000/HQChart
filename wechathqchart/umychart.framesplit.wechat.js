@@ -941,6 +941,7 @@ function FrameSplitKLineX()
                 var info = new CoordinateInfo();
                 info.Value = infoData.Value;
                 if (this.ShowText) info.Message[0] = infoData.Text;
+                if (info.Value==0) info.LineType=-1;    //第1个分割线不画
                 this.Frame.VerticalInfo.push(info);
                 textDistance = 0;
                 if (i == 0) textDistance = -(this.MinTextDistance / 2);
@@ -1022,10 +1023,8 @@ function FrameSplitKLineX()
             lastYear = year;
             lastMonth = month;
 
-            if (this.ShowText) 
-            {
-                info.Message[0] = text;
-            }
+            if (this.ShowText)  info.Message[0] = text;
+            if (info.Value==0) info.LineType=-1;    //第1个分割线不画
 
             this.Frame.VerticalInfo.push(info);
             distance = 0;
@@ -1067,10 +1066,8 @@ function FrameSplitKLineX()
                 text = IFrameSplitOperator.FormatDateString(this.Frame.Data.Data[index].Date, 'MM-DD');
             }
 
-            if (this.ShowText) 
-            {
-                info.Message[0] = text;
-            }
+            if (this.ShowText)  info.Message[0] = text;
+            if (info.Value==0) info.LineType=-1;    //第1个分割线不画
 
             this.Frame.VerticalInfo.push(info);
             distance = 0;
