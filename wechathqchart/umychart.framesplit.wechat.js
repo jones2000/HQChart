@@ -581,10 +581,15 @@ function FrameSplitKLinePriceY()
         splitData.Interval = (splitData.Max - splitData.Min) / (splitData.Count - 1);
         this.IntegerCoordinateSplit2(splitData);
 
+        var maxValue=(1 + splitData.Max) * firstOpenPrice;
+        var minValue=(1 + splitData.Min) * firstOpenPrice; 
+
         this.Frame.HorizontalInfo = [];
         for (var i = 0, value = splitData.Min; i < splitData.Count; ++i, value += splitData.Interval) 
         {
             var price = (value + 1) * firstOpenPrice;
+            if (price<minValue || price>maxValue) continue;
+
             this.Frame.HorizontalInfo[i] = new CoordinateInfo();
             this.Frame.HorizontalInfo[i].Value = price;
             if (this.IsShowLeftText) this.Frame.HorizontalInfo[i].Message[0] = price.toFixed(floatPrecision);   //左边价格坐标      
