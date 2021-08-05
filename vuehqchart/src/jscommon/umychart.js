@@ -19103,7 +19103,7 @@ function ChartMinutePriceLine()
             this.Canvas.closePath();
             if (this.Canvas.isPointInPath(x,y))
             {
-                tooltip.Data={ Index:index, Start:{ Index:start, Item:this.Source.Data[start] }, End:{ Index:end, Value:this.Source.Data[end]} };
+                tooltip.Data={ Index:index, Start:{ Index:start, Item:data.Data[start] }, End:{ Index:end, Value:data.Data[end]} };
                 tooltip.ChartPaint=this;
                 tooltip.Type=5; //走势图线
                 return true;
@@ -26677,7 +26677,7 @@ function FrameSplitKLinePriceY()
         {
             var price=(value+1)*firstOpenPrice;
             if (price<minValue || price>maxValue) continue;
-            
+
             var item=new CoordinateInfo();
             item.Value=price;
             if (this.IsShowLeftText) item.Message[0]=price.toFixed(floatPrecision);   //左边价格坐标      
@@ -36937,33 +36937,33 @@ function JSChartResource()
             {
                 Investor:
                 {
-                    ApiUrl:'https://opensource.zealink.com/API/NewsInteract', //互动易
+                    ApiUrl:'/API/NewsInteract', //互动易
                     IconFont: { Family:'iconfont', Text:'\ue631' , HScreenText:'\ue684', Color:'#1c65db'} //SVG 文本
                 },
                 Announcement:                                           //公告
                 {
-                    ApiUrl:'https://opensource.zealink.com/API/ReportList',
+                    ApiUrl:'/API/ReportList',
                     IconFont: { Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' },  //SVG 文本
                     IconFont2: { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' }, //SVG 文本 //季报
                 },
                 Pforecast:  //业绩预告
                 {
-                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
+                    ApiUrl:'/API/StockHistoryDay',
                     IconFont: { Family:'iconfont', Text:'\ue62e', HScreenText:'\ue687', Color:'#986cad' } //SVG 文本
                 },
                 Research:   //调研
                 {
-                    ApiUrl:'https://opensource.zealink.com/API/InvestorRelationsList',
+                    ApiUrl:'/API/InvestorRelationsList',
                     IconFont: { Family:'iconfont', Text:'\ue632', HScreenText:'\ue688', Color:'#19b1b7' } //SVG 文本
                 },
                 BlockTrading:   //大宗交易
                 {
-                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
+                    ApiUrl:'/API/StockHistoryDay',
                     IconFont: { Family:'iconfont', Text:'\ue630', HScreenText:'\ue689', Color:'#f39f7c' } //SVG 文本
                 },
                 TradeDetail:    //龙虎榜
                 {
-                    ApiUrl:'https://opensource.zealink.com/API/StockHistoryDay',
+                    ApiUrl:'/API/StockHistoryDay',
                     IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' } //SVG 文本
                 },
 
@@ -40930,6 +40930,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                         (period>CUSTOM_SECOND_PERIOD_START && period<=CUSTOM_SECOND_PERIOD_END))
             {
                 if (this.SourceData.DataType!=1) isDataTypeChange=true;
+                else if (ChartData.IsSecondPeriod(period)) isDataTypeChange=true;
             }
             else
             {
@@ -51447,8 +51448,9 @@ function InvestorInfo()
         };
 
         //请求数据
+        var url=g_JSChartResource.Domain+g_JSChartResource.KLine.Info.Investor.ApiUrl;
         JSNetwork.HttpRequest({
-            url: g_JSChartResource.KLine.Info.Investor.ApiUrl,
+            url: url,
             data:postData,
             type:"post",
             dataType: "json",
@@ -51533,8 +51535,9 @@ function AnnouncementInfo()
         else    //取api
         {
             //请求数据
+            var url=g_JSChartResource.Domain+g_JSChartResource.KLine.Info.Announcement.ApiUrl;
             JSNetwork.HttpRequest({
-                url: g_JSChartResource.KLine.Info.Announcement.ApiUrl,
+                url: url,
                 data:
                 {
                     "filed": ["title","releasedate","symbol","id"],
@@ -51670,9 +51673,10 @@ function PforecastInfo()
 
         this.Data=[];
 
+        var url=g_JSChartResource.Domain+g_JSChartResource.KLine.Info.Pforecast.ApiUrl;
         //请求数据
         JSNetwork.HttpRequest({
-            url: g_JSChartResource.KLine.Info.Pforecast.ApiUrl,
+            url: url,
             data:
             {
                 "field": ["pforecast.type","pforecast.reportdate","fweek"],
@@ -51746,10 +51750,10 @@ function ResearchInfo()
         };
 
         this.Data=[];
-
+        var url=g_JSChartResource.Domain+g_JSChartResource.KLine.Info.Research.ApiUrl;
         //请求数据
         JSNetwork.HttpRequest({
-            url: g_JSChartResource.KLine.Info.Research.ApiUrl,
+            url: url,
             data:
             {
                 "filed": ["releasedate","researchdate","level","symbol","id",'type'],
@@ -51810,10 +51814,11 @@ function BlockTrading()
         };
 
         this.Data=[];
+        var url=g_JSChartResource.Domain+g_JSChartResource.KLine.Info.BlockTrading.ApiUrl;
 
         //请求数据
         JSNetwork.HttpRequest({
-            url: g_JSChartResource.KLine.Info.BlockTrading.ApiUrl,
+            url: url,
             data:
             {
                 "field": ["blocktrading.price","blocktrading.vol","blocktrading.premium","fweek","price"],
@@ -51892,10 +51897,11 @@ function TradeDetail()
         };
 
         this.Data=[];
+        var url=g_JSChartResource.Domain+g_JSChartResource.KLine.Info.TradeDetail.ApiUrl;
 
         //请求数据
         JSNetwork.HttpRequest({
-            url: g_JSChartResource.KLine.Info.TradeDetail.ApiUrl,
+            url: url,
             data:
             {
                 "field": ["tradedetail.typeexplain","tradedetail.type","fweek"],
