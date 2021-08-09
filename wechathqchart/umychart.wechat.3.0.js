@@ -294,10 +294,14 @@ function JSChart(element)
 
         if (option.Border) 
         {
+            var item=option.Border;
             if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left = option.Border.Left;
             if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right = option.Border.Right;
             if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top = option.Border.Top;
             if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom = option.Border.Bottom;
+
+            if (item.AutoLeft) chart.Frame.AutoLeftBorder=item.AutoLeft;
+            if (item.AutoRight) chart.Frame.AutoRightBorder=item.AutoRight;
         }
 
         if (option.KLine) 
@@ -592,10 +596,14 @@ function JSChart(element)
 
         if (option.Border) 
         {
+            var item=option.Border;
             if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left = option.Border.Left;
             if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right = option.Border.Right;
             if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top = option.Border.Top;
             if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom = option.Border.Bottom;
+
+            if (item.AutoLeft) chart.Frame.AutoLeftBorder=item.AutoLeft;
+            if (item.AutoRight) chart.Frame.AutoRightBorder=item.AutoRight;
         }
 
         if (option.Frame) 
@@ -2870,22 +2878,26 @@ function IChartFramePainting()
         }
     }
 
-  //画标题背景色
-  this.DrawTitleBG = function () {
-    /* 指标信息背景色不画,画了感觉框架变小了
-    if (this.ChartBorder.TitleHeight<=0) return;
+    //左右刻度文字宽度
+    this.GetScaleTextWidth=function() { }
 
-    var left=ToFixedPoint(this.ChartBorder.GetLeft());
-    var top=ToFixedPoint(this.ChartBorder.GetTop());
-    var right=ToFixedPoint(this.ChartBorder.GetRight());
-    var bottom=ToFixedPoint(this.ChartBorder.GetTopEx());
-    var width=right-left;
-    var height=bottom-top;
+    //画标题背景色
+    this.DrawTitleBG = function () 
+    {
+        /* 指标信息背景色不画,画了感觉框架变小了
+        if (this.ChartBorder.TitleHeight<=0) return;
 
-    this.Canvas.fillStyle=this.TitleBGColor;
-    this.Canvas.fillRect(left,top,width,height);
-    */
-  }
+        var left=ToFixedPoint(this.ChartBorder.GetLeft());
+        var top=ToFixedPoint(this.ChartBorder.GetTop());
+        var right=ToFixedPoint(this.ChartBorder.GetRight());
+        var bottom=ToFixedPoint(this.ChartBorder.GetTopEx());
+        var width=right-left;
+        var height=bottom-top;
+
+        this.Canvas.fillStyle=this.TitleBGColor;
+        this.Canvas.fillRect(left,top,width,height);
+        */
+    }
 
   this.DrawLock = function () {
     if (this.IsLocked) {
@@ -3554,6 +3566,52 @@ function AverageWidthFrame()
         this.Canvas.rotate(90 * Math.PI / 180);
         this.Canvas.fillText(data.Text, data.XOffset, data.YOffset);
         this.Canvas.restore();
+    }
+
+    this.GetScaleTextWidth=function()
+    {
+        var border=this.ChartBorder.GetBorder();
+        if (this.IsHScreen)
+        {
+            var borderTop = this.ChartBorder.Top;
+            var borderBottom = this.ChartBorder.Bottom;
+            var isDrawLeft=borderTop>10 && this.IsShowYText[0]===true;
+            var isDrawRight=borderBottom>10 && this.IsShowYText[1]===true;
+        }
+        else
+        {
+            var borderRight=this.ChartBorder.Right;
+            var borderLeft=this.ChartBorder.Left;
+            var isDrawLeft=borderLeft>10 && this.IsShowYText[0]===true;
+            var isDrawRight=borderRight>10 && this.IsShowYText[1]===true;
+        }
+        
+        var width={ Left:null, Right:null };
+        if (!isDrawRight && !isDrawLeft) return width;
+
+        for(var i=0;i<this.HorizontalInfo.length;++i)
+        {
+            var textWidth=null;
+            var item=this.HorizontalInfo[i];
+            if (!item) continue;
+            if (item.Font!=null) this.Canvas.font=item.Font;
+
+            if (item.Message[0]!=null && isDrawLeft)
+            {
+                textWidth=this.Canvas.measureText(item.Message[0]).width;
+                if (width.Left==null || width.Left<textWidth)
+                    width.Left=textWidth;
+            }
+
+            if (item.Message[1]!=null && isDrawRight)
+            {
+                textWidth=this.Canvas.measureText(item.Message[1]).width;
+                if (width.Right==null || width.Right<textWidth)
+                    width.Right=textWidth;
+            }
+        }
+
+        return { TextWidth:width };
     }
 }
 
@@ -4621,7 +4679,8 @@ function HQTradeFrame()
     this.SnapshotID=0;
     this.CurrentSnapshotID=0;
     this.SnapshotStatus=0;                  //0空闲 1工作
-    
+    this.AutoLeftBorder=null;   //{ Blank:10 留白宽度, MinWidth:最小宽度 }
+    this.AutoRightBorder=null;  //{ Blank:10 留白宽度, MinWidth:最小宽度 } 
 
     this.CalculateChartBorder = function ()    //计算每个子框架的边框信息
     {
@@ -4650,9 +4709,99 @@ function HQTradeFrame()
 
     }
 
+    this.GetScaleTextWidth=function()
+    {
+        var width={ Left:null, Right:null };
+        for(var i in this.SubFrame)
+        {
+            var item=this.SubFrame[i];
+            if (item.Height<=0) continue;
+            var frame=item.Frame;
+            if (!frame) continue;
+            if (!frame.XSplitOperator) continue; 
+            
+            var maxValue=frame.HorizontalMax;   //最大最小要还原
+            var minValue=frame.HorizontalMin;
+
+            frame.YSplitOperator.Operator();
+            var value=frame.GetScaleTextWidth();
+
+            frame.HorizontalMax=maxValue;
+            frame.HorizontalMin=minValue;
+
+            if (value && value.TextWidth)
+            {
+                var widthItem=value.TextWidth;
+                if (IFrameSplitOperator.IsNumber(widthItem.Left))
+                {
+                    if (width.Left==null || width.Left<widthItem.Left) width.Left=widthItem.Left;
+                }
+
+                if (IFrameSplitOperator.IsNumber(widthItem.Right))
+                {
+                    if (width.Right==null || width.Right<widthItem.Right) width.Right=widthItem.Right;
+                }
+            }
+        }
+
+        return width;
+    }
+
+    this.IsFrameXYSplit=function()
+    {
+        for(var i in this.SubFrame)
+        {
+            if (this.SubFrame[i].Frame.XYSplit) return true;
+        }
+        return false;
+    }
+
     this.Draw = function () 
     {
         if (this.SizeChange === true) this.CalculateChartBorder();
+
+        if ((this.AutoLeftBorder || this.AutoRightBorder) &&this.IsFrameXYSplit())
+        {
+            var textWidth=this.GetScaleTextWidth();
+
+            if (IFrameSplitOperator.IsNumber(textWidth.Left) && this.AutoLeftBorder)
+            {
+                var blank=0;
+                if (IFrameSplitOperator.IsNumber(this.AutoLeftBorder.Blank)) blank=this.AutoLeftBorder.Blank;
+                var value=textWidth.Left+blank;
+                if (IFrameSplitOperator.IsNumber(this.AutoLeftBorder.MinWidth))
+                {
+                    if (this.AutoLeftBorder.MinWidth>value) value=this.AutoLeftBorder.MinWidth;
+                }
+                if (this.IsHScreen) this.ChartBorder.Top=value;
+                else this.ChartBorder.Left=value;
+                for(var i=0; i<this.SubFrame.length; ++i)
+                {
+                    var item=this.SubFrame[i];
+                    if (this.IsHScreen) item.Frame.ChartBorder.Top=value;
+                    else item.Frame.ChartBorder.Left=value;
+                }
+            }
+
+            if (IFrameSplitOperator.IsNumber(textWidth.Right) && this.AutoRightBorder)
+            {
+                var blank=0;
+                if (IFrameSplitOperator.IsNumber(this.AutoRightBorder.Blank)) blank=this.AutoRightBorder.Blank;
+                var value=textWidth.Right+blank;
+                if (IFrameSplitOperator.IsNumber(this.AutoRightBorder.MinWidth))
+                {
+                    if (this.AutoRightBorder.MinWidth>value) value=this.AutoRightBorder.MinWidth;
+                }
+                if (this.IsHScreen) this.ChartBorder.Bottom=value;
+                else this.ChartBorder.Right=value;
+                for(var i=0; i<this.SubFrame.length; ++i)
+                {
+                    var item=this.SubFrame[i];
+                    if (this.IsHScreen) item.Frame.ChartBorder.Bottom=value;
+                    else item.Frame.ChartBorder.Right=value;
+                }
+            }
+        }
 
         for (var i in this.SubFrame) 
         {
