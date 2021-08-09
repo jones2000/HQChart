@@ -11111,7 +11111,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (this.Right>0)    //复权
         {
-            let rightData=this.Data.GetRightDate(this.Right);
+            let rightData=this.Data.GetRightData(this.Right);
             this.Data.Data=rightData;
         }
 
@@ -15988,10 +15988,10 @@ function JSExplainer(ast,option)
             case "LLV":
                 return `${args[1]}日内${args[0]}的最低值`;
             case "HHVBARS":
-                if (arg[1]==0) return `历史${args[0]}新高距今天数`;
+                if (args[1]==0) return `历史${args[0]}新高距今天数`;
                 return `${args[1]}日内${args[0]}新高距今天数`;
             case "LLVBARS":
-                if (arg[1]==0) return `历史${args[0]}新低距今天数`;
+                if (args[1]==0) return `历史${args[0]}新低距今天数`;
                 return `${args[1]}日内${args[0]}新低距今天数`;
             case "HOD":
                 return `${args[1]}日内${args[0]}的高值名次`;

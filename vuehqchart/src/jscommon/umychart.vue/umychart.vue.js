@@ -14952,6 +14952,9 @@ function HistoryData()
     this.Unchanged; //平盘
 
     this.ExtendData;    //扩展数据
+
+    this.BFactor;   //前复权
+    this.AFactor;   //后复权
 }
 
 //数据复制
@@ -15849,10 +15852,22 @@ function ChartData()
     }
 
     //复权  0 不复权 1 前复权 2 后复权
-    this.GetRightDate=function(right)
+    this.GetRightData=function(right, option)
     {
         var result=[];
         if (this.Data.length<=0) return result;
+
+        if (option && option.AlgorithmType==1)  //使用复权因子计算
+        {
+            for(var i=0;i<this.Data.length;++i)
+            {
+                var item=this.Data[index];
+                var seed=(right==1?item.BFactor:item.AFactor);
+                result[index]=HistoryData.CopyRight(item,seed);
+            }
+
+            return result;
+        }
 
         if (right==1)
         {
@@ -15908,7 +15923,7 @@ function ChartData()
         return result;
     }
 
-    this.GetRightData=this.GetRightDate;
+    this.GetRightDate=this.GetRightData;
 
     //叠加数据和主数据拟合,去掉主数据没有日期的数据
     this.GetOverlayData=function(overlayData, bApiPeriod)
@@ -42655,6 +42670,7 @@ function KLineChartContainer(uielement,OffscreenElement)
     this.Period=0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 9=季线 10=分笔线 11=120分钟 12=240分钟
     this.IsApiPeriod=false;             //使用API计算周期
     this.Right=0;                       //复权 0 不复权 1 前复权 2 后复权
+    this.RightFormula=0                 //复权公式 0=简单复权, 1=复权因子复权
     this.SourceData;                    //原始的历史数据
     this.MaxReqeustDataCount=3000;      //数据个数
     this.MaxRequestMinuteDayCount=5;    //分钟数据请求的天数
@@ -47734,6 +47750,7 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
     var list = data.data;
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, position=8;
     var fclose=9, yfclose=10;   //结算价, 前结算价
+    var bfactor=11, afactor=12; //前, 后复权因子
     for (var i = 0; i < list.length; ++i)
     {
         var item = new HistoryData();
@@ -47750,6 +47767,9 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
         if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position=jsData[position];//期货持仓
         if (IFrameSplitOperator.IsNumber(jsData[fclose])) item.FClose=jsData[fclose];       //期货结算价
         if (IFrameSplitOperator.IsNumber(jsData[yfclose])) item.YFClose=jsData[yfclose];    //期货前结算价
+
+        if (IFrameSplitOperator.IsNumber(jsData[bfactor])) item.BFactor=jsData[bfactor];    //前复权因子
+        if (IFrameSplitOperator.IsNumber(jsData[afactor])) item.AFactor=jsData[afactor];    //后复权因子
 
         if (!IFrameSplitOperator.IsNumber(item.Open)) continue;
 
@@ -47788,6 +47808,9 @@ KLineChartContainer.JsonDataToRealtimeData=function(data, symbol)
     item.Amount=stock.amount;
     item.Close=stock.price;
     if (IFrameSplitOperator.IsNumber(stock.position)) item.Position=stock.position; //持仓量
+
+    if (IFrameSplitOperator.IsNumber(stock.bfactor)) item.BFactor=stock.bfactor;    //前复权因子
+    if (IFrameSplitOperator.IsNumber(stock.afactor)) item.AFactor=stock.afactor;    //后复权因子
     return item;
 }
 
@@ -73101,7 +73124,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (this.Right>0)    //复权
         {
-            let rightData=this.Data.GetRightDate(this.Right);
+            let rightData=this.Data.GetRightData(this.Right);
             this.Data.Data=rightData;
         }
 
@@ -77978,10 +78001,10 @@ function JSExplainer(ast,option)
             case "LLV":
                 return `${args[1]}日内${args[0]}的最低值`;
             case "HHVBARS":
-                if (arg[1]==0) return `历史${args[0]}新高距今天数`;
+                if (args[1]==0) return `历史${args[0]}新高距今天数`;
                 return `${args[1]}日内${args[0]}新高距今天数`;
             case "LLVBARS":
-                if (arg[1]==0) return `历史${args[0]}新低距今天数`;
+                if (args[1]==0) return `历史${args[0]}新低距今天数`;
                 return `${args[1]}日内${args[0]}新低距今天数`;
             case "HOD":
                 return `${args[1]}日内${args[0]}的高值名次`;
