@@ -10781,11 +10781,9 @@ function AverageWidthFrame()
             var isDrawRight=borderRight>10 && this.IsShowYText[1]===true && this.YTextPosition[1]!=2;
         }
        
+        if (!isDrawRight && !isDrawLeft) return null;
 
         var width={ Left:null, Right:null };
-        if (!isDrawRight && !isDrawLeft) return width;
-
-
         for(var i=0;i<this.HorizontalInfo.length;++i)
         {
             var textWidth=null;
@@ -13168,6 +13166,44 @@ function OverlayKLineFrame()
         this.Canvas.restore();
     }
 
+    this.GetScaleTextWidth=function()
+    {
+        if (!this.IsShow) return null;
+
+        var border=this.ChartBorder.GetBorder();
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+        if (this.IsHScreen)
+        {
+            var borderBottom=this.ChartBorder.Bottom;
+            var isDrawRight=borderBottom>10*pixelTatio && this.IsShowYText[1]===true && this.YTextPosition[1]!=2;
+        }
+        else
+        {
+            var borderRight=this.ChartBorder.Right;
+            var isDrawRight=borderRight>10 && this.IsShowYText[1]===true && this.YTextPosition[1]!=2;
+        }
+        
+        if (!isDrawRight) return null;
+
+        var width={ Left:null, Right:0 };
+        for(var i=0;i<this.HorizontalInfo.length;++i)
+        {
+            var textWidth=null;
+            var item=this.HorizontalInfo[i];
+            if (!item) continue;
+
+            if (item.Message[1]!=null && isDrawRight)
+            {
+                if (item.Font!=null) this.Canvas.font=item.Font;
+
+                textWidth=this.Canvas.measureText(item.Message[1]).width;
+                if (width.Right<textWidth) width.Right=textWidth;
+            }
+        }
+
+        return { TextWidth:width };
+    }
+
     //分割x,y轴坐标信息
     this.SplitXYCoordinate=function()
     {
@@ -13931,10 +13967,10 @@ function HQTradeFrame()
     this.MinSubFrameHeight=g_JSChartResource.DragSubFrameBorder.MinFrameHeight;
     this.DragBorderHeight=g_JSChartResource.DragSubFrameBorder.TopBorderHeight; //拖拽边框高度
 
-    this.AutoLeftBorder=null;   //{ Blank:10 留白宽度, MinWidth:最小宽度 }
-    this.AutoRightBorder=null;  //{ Blank:10 留白宽度, MinWidth:最小宽度 } 
-
-    this.GetExtendChartRightWidth;
+    this.AutoLeftBorder=null;       //{ Blank:10 留白宽度, MinWidth:最小宽度 }
+    this.AutoRightBorder=null;      //{ Blank:10 留白宽度, MinWidth:最小宽度 } 
+    this.OverlayBlankWidth=40;
+    this.AuotRightWidth;            //右边主坐标刻度宽度
 
     this.OnMoveFromeBorder=function(index, yMove)
     {
@@ -14248,8 +14284,9 @@ function HQTradeFrame()
 
     this.GetScaleTextWidth=function()
     {
-        var width={ Left:null, Right:null };
-        for(var i in this.SubFrame)
+        var width={ Left:null, Right:null, OverlayRight:0 };
+        var aryOverlayWidth=[];// 叠加坐标
+        for(var i=0; i<this.SubFrame.length; ++i)
         {
             var item=this.SubFrame[i];
             if (item.Height<=0) continue;
@@ -14279,6 +14316,66 @@ function HQTradeFrame()
                     if (width.Right==null || width.Right<widthItem.Right) width.Right=widthItem.Right;
                 }
             }
+
+            //右侧叠加指标
+            if (IFrameSplitOperator.IsNonEmptyArray(item.OverlayIndex))
+            {
+                for(var j=0, k=0; j<item.OverlayIndex.length; ++j)
+                {
+                    var overlayItem=item.OverlayIndex[j];
+                    if (!overlayItem.Frame) continue;
+                    var value=overlayItem.Frame.GetScaleTextWidth();
+                    overlayItem.RightWidth={ Index:-1, Width:0 }; 
+                    if (!value || !value.TextWidth) continue;
+                    var widthItem=value.TextWidth;
+                    if (!IFrameSplitOperator.IsNumber(widthItem.Right)) continue;
+
+                    overlayItem.RightWidth.Index=k;
+                    overlayItem.RightWidth.Width=widthItem.Right;
+                    
+                    if (aryOverlayWidth[k])
+                    {
+                        aryOverlayWidth[k][i]=overlayItem.RightWidth;
+                    }
+                    else
+                    {
+                        aryOverlayWidth[k]=[];
+                        aryOverlayWidth[k][i]=overlayItem.RightWidth;
+                    }
+
+                    ++k;
+                }
+            }
+        }
+
+        var overlayWidth=[];
+        for(var i=0; i<aryOverlayWidth.length; ++i)
+        {
+            var colItem=aryOverlayWidth[i];
+            var max=0;
+            for(var j=0; j<colItem.length; ++j)
+            {
+                if (!colItem[j]) continue;
+                var item=colItem[j].Width;
+                if (max<item) max=item;
+            }
+
+            if (max>0) max+=this.OverlayBlankWidth
+
+            for(var j=0; j<colItem.length; ++j)
+            {
+                if (!colItem[j]) continue;
+                colItem[j].Width=max;
+            }
+
+            overlayWidth[i]=max;
+        }
+
+        for(var i=0;i<overlayWidth.length;++i)
+        {
+            var value=overlayWidth[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+            width.OverlayRight+=value;
         }
 
         return width;
@@ -14300,10 +14397,11 @@ function HQTradeFrame()
             this.CalculateChartBorder();
         }
 
-        if ((this.AutoLeftBorder || this.AutoRightBorder) &&this.IsFrameXYSplit())
+        if ((this.AutoLeftBorder || this.AutoRightBorder) && this.IsFrameXYSplit())
         {
+            this.AutoRightOverlayWidth=[];
             var textWidth=this.GetScaleTextWidth();
-
+            var bSizeChange=false;
             if (IFrameSplitOperator.IsNumber(textWidth.Left) && this.AutoLeftBorder)
             {
                 var blank=0;
@@ -14315,6 +14413,7 @@ function HQTradeFrame()
                 }
                 if (this.IsHScreen) this.ChartBorder.Top=value;
                 else this.ChartBorder.Left=value;
+
                 for(var i=0; i<this.SubFrame.length; ++i)
                 {
                     var item=this.SubFrame[i];
@@ -14333,21 +14432,41 @@ function HQTradeFrame()
                     if (this.AutoRightBorder.MinWidth>value) value=this.AutoRightBorder.MinWidth;
                 }
 
+                this.AuotRightWidth=value;
+                if (IFrameSplitOperator.IsPlusNumber(textWidth.OverlayRight))
+                {
+                    value+=this.OverlayBlankWidth;
+                    this.AuotRightWidth=value;
+                    value+=textWidth.OverlayRight;
+                }
+
                 if (this.GetExtendChartRightWidth)
                 {
                     var extendWidth=this.GetExtendChartRightWidth();
                     value+=extendWidth;
                 }
 
-                if (this.IsHScreen) this.ChartBorder.Bottom=value;
-                else  this.ChartBorder.Right=value;
+                if (this.IsHScreen) 
+                {
+                    if (this.ChartBorder.Bottom!=value) bSizeChange=true;
+                    this.ChartBorder.Bottom=value;
+                }
+                else  
+                {
+                    if (this.ChartBorder.Right!=value) bSizeChange=true;
+                    this.ChartBorder.Right=value;
+                }
                 for(var i=0; i<this.SubFrame.length; ++i)
                 {
                     var item=this.SubFrame[i];
                     if (this.IsHScreen) item.Frame.ChartBorder.Bottom=value;
                     else item.Frame.ChartBorder.Right=value;
+
+                    item.Frame.ReDrawToolbar=true;
                 }
             }
+
+            this.SetSizeChage(true);
         }
 
         for(var i in this.SubFrame)
@@ -14357,20 +14476,43 @@ function HQTradeFrame()
 
             item.Frame.Draw();
 
-            var rightOffset=item.Interval;
-            if (item.Frame.RightTextMaxWidth>rightOffset) rightOffset=item.Frame.RightTextMaxWidth;
-            for(var j in item.OverlayIndex)
+            if (this.AutoRightBorder)
             {
-                var overlayItem=item.OverlayIndex[j];
-                //把主坐标部分设置给子坐标下来
-                overlayItem.Frame.DataWidth=item.Frame.DataWidth;
-                overlayItem.Frame.DistanceWidth=item.Frame.DistanceWidth;
-                overlayItem.Frame.XPointCount=item.Frame.XPointCount;
-                if (overlayItem.ChartPaint.length>0 && overlayItem.Frame) 
+                var rightOffset=this.AuotRightWidth;
+
+                for(var j=0; j<item.OverlayIndex.length; ++j)
                 {
-                    overlayItem.Frame.RightOffset=rightOffset;
-                    overlayItem.Frame.Draw();
-                    rightOffset+=item.Interval;
+                    var overlayItem=item.OverlayIndex[j];
+                    //把主坐标部分设置给子坐标下来
+                    overlayItem.Frame.DataWidth=item.Frame.DataWidth;
+                    overlayItem.Frame.DistanceWidth=item.Frame.DistanceWidth;
+                    overlayItem.Frame.XPointCount=item.Frame.XPointCount;
+                    if (overlayItem.ChartPaint.length>0 && overlayItem.Frame) 
+                    {
+                        overlayItem.Frame.RightOffset=rightOffset;
+                        overlayItem.Frame.Draw();
+                        rightOffset+=overlayItem.RightWidth.Width;
+                    }
+                }
+
+            }
+            else
+            {
+                var rightOffset=item.Interval;
+                if (item.Frame.RightTextMaxWidth>rightOffset) rightOffset=item.Frame.RightTextMaxWidth;
+                for(var j in item.OverlayIndex)
+                {
+                    var overlayItem=item.OverlayIndex[j];
+                    //把主坐标部分设置给子坐标下来
+                    overlayItem.Frame.DataWidth=item.Frame.DataWidth;
+                    overlayItem.Frame.DistanceWidth=item.Frame.DistanceWidth;
+                    overlayItem.Frame.XPointCount=item.Frame.XPointCount;
+                    if (overlayItem.ChartPaint.length>0 && overlayItem.Frame) 
+                    {
+                        overlayItem.Frame.RightOffset=rightOffset;
+                        overlayItem.Frame.Draw();
+                        if (overlayItem.Frame.IsShow) rightOffset+=item.Interval;
+                    }
                 }
             }
         }
@@ -33250,14 +33392,18 @@ function ChartCorssCursor()
         if (yValueExtend.FrameID>=0)
         {
             var frame=this.Frame.SubFrame[yValueExtend.FrameID];
+            var isAutoRightBorder=false;
+            if (this.Frame.AutoRightBorder) isAutoRightBorder=true;
             var overlayLeft=right;
+            if (isAutoRightBorder) overlayLeft=right+this.Frame.AuotRightWidth;
             this.Canvas.font=this.Font;
             for(var i in frame.OverlayIndex)
             {
                 var item=frame.OverlayIndex[i];
                 if (item.Frame.IsShow===false) continue;
 
-                overlayLeft+=frame.Interval;
+                if (!isAutoRightBorder) overlayLeft+=frame.Interval;
+
                 if (overlayLeft+30>chartRight) break;
                 var yValue=item.Frame.GetYData(y);
 
@@ -33274,6 +33420,8 @@ function ChartCorssCursor()
                 this.Canvas.textBaseline="middle";
                 this.Canvas.fillStyle=this.TextColor;
                 this.Canvas.fillText(text,overlayLeft+4,y,textWidth);
+
+                if (isAutoRightBorder) overlayLeft+=item.RightWidth.Width;
             }
         }
 
@@ -45769,6 +45917,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (titlePaint.OverlayIndex.has(identify))
             titlePaint.OverlayIndex.delete(identify);
 
+        this.Frame.ResetXYSplit(true);
         this.Draw();
     }
     
