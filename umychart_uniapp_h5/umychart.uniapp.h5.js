@@ -23422,7 +23422,7 @@ function ChartMinutePriceLine()
         var end=Math.ceil(index);
         var start=Math.floor(index);
 
-        if (end>=data.Data.Length || start>=data.Data.Length) return false;
+        if (end>=data.Data.length || start>=data.Data.length) return false;
 
         var lineWidth=5;
         if (end==start)
@@ -23580,7 +23580,7 @@ function ChartOverlayMinutePriceLine()
         var end=Math.ceil(index);
         var start=Math.floor(index);
 
-        if (end>=data.Data.Length || start>=data.Data.Length) return false;
+        if (end>=data.Data.length || start>=data.Data.length) return false;
 
         var lineWidth=5;
         if (end==start)
@@ -35003,6 +35003,20 @@ function DynamicKLineTitlePainting()
             data.DataIndex=dataIndex;
             data.DataCount=dataCount;
         }
+
+        //叠加股票
+        if (IFrameSplitOperator.IsNonEmptyArray(this.OverlayChartPaint))
+        {
+            data.OverlayStock=[];
+            for(var i=0; i<this.OverlayChartPaint.length; ++i)
+            {
+                var item=this.OverlayChartPaint[i];
+                if (!item.Symbol || !item.Title) continue;
+            
+                data.OverlayStock.push({ Symbol:item.Symbol, Name:item.Title });
+            }
+        }
+        
 
         this.OnDrawEvent.Callback(this.OnDrawEvent,data,this);
     }
@@ -78299,221 +78313,172 @@ function JSExplainer(ast,option)
         return node.Out;
     }
 
+    this.FUNCTION_INFO_LIST=new Map(
+        [
+            ["REF",     { Name:"REF", Param:{ Count:2 }, ToString:function(args) { return `${args[1]}日前的${args[0]}`; } } ],
+            ["REFX",    { Name:"REFX", Param:{ Count:2 }, ToString:function(args) { return `${args[1]}日后的${args[0]}`; } } ],
+            ["REFV",    { Name:"REFV", Param:{ Count:2 }, ToString:function(args) { return `${args[1]}日前的(未作平滑处理)${args[0]}`; } } ],
+            ["REFXV",   { Name:"REFXV", Param:{ Count:2 }, ToString:function(args) { return `${args[1]}日后的(未作平滑处理)${args[0]}`; } } ],
+
+            ["REFDATE", { Name:"REFDATE", Param:{ Count:2 }, ToString:function(args) { return `${args[1]}日${args[0]}`; } } ],
+            ["COUNT",   { Name:"COUNT", Param:{ Count:2 }, ToString:function(args) { return `统计${args[1]}日中满足${args[0]}的天数`; } } ],
+            ["BARSLASTCOUNT", { Name:"BARSLASTCOUNT", Param:{ Count:1 }, ToString:function(args) { return `条件${args[0]}连续成立次数`; } } ],
+            ["BARSCOUNT",   { Name:"BARSCOUNT", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}有效数据周期数`; } } ],
+            ["BARSLAST",    { Name:"BARSLAST", Param:{ Count:1 }, ToString:function(args) { return `上次${args[0]}不为0距今天数`; } } ],
+            ["BARSNEXT",    { Name:"BARSNEXT", Param:{ Count:1 }, ToString:function(args) { return `下次${args[0]}不为0距今天数`; } } ],
+            ["BARSSINCEN",  { Name:"BARSSINCEN", Param:{ Count:2 }, ToString:function(args) { return `在${args[1]}周期内首次${args[0]}距今天数`; } } ],
+            ["BARSSINCE",   { Name:"BARSSINCE", Param:{ Count:1 }, ToString:function(args) { return `首次${args[0]}距今天数`; } } ],
+            ["HHV", { Name:"HHV", Param:{ Count:2 }, ToString:function(args) { return `${args[1]}日内${args[0]}的最高值`; } } ],
+            ["LLV", { Name:"LLV", Param:{ Count:2 }, ToString:function(args) { return `${args[1]}日内${args[0]}的最低值`; } } ],
+
+            ["HOD", { Name:"HOD", Param:{ Count:2 }, ToString:function(args) { return `${args[1]}日内${args[0]}的高值名次`; } } ],
+            ["LOD", { Name:"LOD", Param:{ Count:2 }, ToString:function(args) { return `${args[1]}日内${args[0]}的低值名次`; } } ],
+            ["REVERSE", { Name:"REVERSE", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的相反数`; } } ],
+            ["FILTER", { Name:"FILTER", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日过滤`; } } ],
+            ["FILTERX", { Name:"FILTERX", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日反向过滤`; } } ],
+            ["SUMBARS", { Name:"SUMBARS", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}累加至${args[1]}的天数`; } } ],
+            ["MA", { Name:"MA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日简单移动平均`; } } ],
+            ["SMA", { Name:"SMA", Param:{ Count:3 }, ToString:function(args) { return `${args[0]}的${args[1]}日[${args[2]}日权重]移动平均`; } } ],
+            ["MEMA", { Name:"MEMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日平滑移动平均`; } } ],
+            ["EMA", { Name:"EMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日指数移动平均`; } } ],
+            ["EXPMA", { Name:"EXPMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日指数移动平均`; } } ],
+            ["WMA", { Name:"WMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日加权移动平均`; } } ],
+            ["DMA", { Name:"DMA", Param:{ Count:2 }, ToString:function(args) { return `以${args[1]}为权重${args[0]}的动态移动平均`; } } ],
+            ["XMA", { Name:"XMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日偏移移动平均`; } } ],
+
+            ["RANGE", { Name:"RANGE", Param:{ Count:3 }, ToString:function(args) { return `${args[0]}位于${args[1]}和${args[2]}之间`; } } ],
+            ["CONST", { Name:"CONST", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的最后一日值`; } } ],
+            ["TOPRANGE", { Name:"TOPRANGE", Param:{ Count:1 }, ToString:function(args) { return `当前值是近${args[0]}周期的最大值`; } } ],
+            ["LOWRANGE", { Name:"LOWRANGE", Param:{ Count:1 }, ToString:function(args) { return `当前值是近${args[0]}周期的最小值`; } } ],
+            ["FINDHIGH", { Name:"FINDHIGH", Param:{ Count:4 }, ToString:function(args) { return `${args[0]}在${args[1]}日前的${args[2]}天内第${args[3]}个最高价`; } } ],
+            ["FINDHIGHBARS", { Name:"FINDHIGHBARS", Param:{ Count:4 }, ToString:function(args) { return `${args[0]}在${args[1]}日前的${args[2]}天内第${args[3]}个最高价到当前周期的周期数`; } } ],
+            ["FINDLOW", { Name:"FINDLOW", Param:{ Count:4 }, ToString:function(args) { return `${args[0]}在${args[1]}日前的${args[2]}天内第${args[3]}个最低价`; } } ],
+            ["FINDLOWBARS", { Name:"FINDLOWBARS", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}在${args[1]}日前的${args[2]}天内第${args[3]}个最低价到当前周期的周期数`; } } ],
+            ["SUM", { Name:"SUM", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}${args[1]}日累加`; } } ],
+            ["MULAR", { Name:"MULAR", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}和${args[1]}日累乘`; } } ],
+            ["AMA", { Name:"AMA", Param:{ Count:2 }, ToString:function(args) { return `以${args[1]}为权重${args[0]}的自适应均线`; } } ],
+            ["TMA", { Name:"TMA", Param:{ Count:3 }, ToString:function(args) { return `${args[0]}的${args[1]}日[${args[2]}日权重]移动平均`; } } ],
+            ["CROSS", { Name:"CROSS", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}上穿${args[1]}`; } } ],
+            ["LONGCROSS", { Name:"LONGCROSS", Param:{ Count:3 }, ToString:function(args) { return `${args[0]}小于${args[1]}保持${args[2]}个交易日后交叉上穿`; } } ],
+            ["UPNDAY", { Name:"UPNDAY", Param:{ Count:2 }, ToString:function(args) { return `最近${args[1]}日${args[0]}连涨`; } } ],
+            ["DOWNNDAY", { Name:"DOWNNDAY", Param:{ Count:2 }, ToString:function(args) { return `最近${args[1]}日${args[0]}连跌`; } } ],
+            ["NDAY", { Name:"NDAY", Param:{ Count:3 }, ToString:function(args) { return `最近${args[2]}日${args[0]}一直大于${args[1]}`; } } ],
+            ["EXIST", { Name:"EXIST", Param:{ Count:2 }, ToString:function(args) { return `最近${args[1]}日存在${args[0]}`; } } ],
+            ["EXISTR", { Name:"EXISTR", Param:{ Count:3 }, ToString:function(args) { return `从前${args[1]}日到前${args[2]}日存在${args[0]}`; } } ],
+            ["EVERY", { Name:"EVERY", Param:{ Count:2 }, ToString:function(args) { return `最近${args[1]}日一直存在${args[0]}`; } } ],
+            ["LAST", { Name:"LAST", Param:{ Count:3 }, ToString:function(args) { return `从前${args[1]}日到前${args[2]}日持续${args[0]}`; } } ],
+            ["NOT", { Name:"NOT", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}取反`; } } ],
+            ["IF", { Name:"IF", Param:{ Count:3 }, ToString:function(args) { return `如果${args[0]},返回${args[1]},否则返回${args[2]}`; } } ],
+            ["IFF", { Name:"IFF", Param:{ Count:3 }, ToString:function(args) { return `如果${args[0]},返回${args[1]},否则返回${args[2]}`; } } ],
+            ["IFN", { Name:"IFN", Param:{ Count:3 }, ToString:function(args) { return `如果${args[0]},返回${args[1]},否则返回${args[2]}`; } } ],
+
+            ["MAX", { Name:"MAX", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}和${args[1]}的较大值`; } } ],
+            ["MIN", { Name:"MIN", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}和${args[1]}的较小值`; } } ],
+            ["ACOS", { Name:"ACOS", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的反余弦`; } } ],
+            ["ASIN", { Name:"ASIN", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的反正弦`; } } ],
+            ["ATAN", { Name:"ATAN", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的反正切`; } } ],
+            ["COS", { Name:"COS", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的余弦`; } } ],
+            ["SIN", { Name:"SIN", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的正弦`; } } ],
+            ["TAN", { Name:"TAN", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的正切`; } } ],
+            ["EXP", { Name:"EXP", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的指数`; } } ],
+            ["LN", { Name:"LN", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的自然对数`; } } ],
+            ["LOG", { Name:"LOG", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的对数`; } } ],
+            ["SQRT", { Name:"SQRT", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的开方`; } } ],
+            ["ABS", { Name:"ABS", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的绝对值`; } } ],
+            ["POW", { Name:"POW", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}乘幂`; } } ],
+            ["CEILING", { Name:"CEILING", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的向上舍入`; } } ],
+            ["FLOOR", { Name:"FLOOR", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的向上舍入`; } } ],
+            ["INTPART", { Name:"INTPART", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的整数部分`; } } ],
+            ["BETWEEN", { Name:"BETWEEN", Param:{ Count:3 }, ToString:function(args) { return `${args[0]}位于${args[1]}和${args[2]}之间`; } } ],
+            ["FRACPART", { Name:"FRACPART", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的小数部分`; } } ],
+            ["ROUND", { Name:"ROUND", Param:{ Count:1 }, ToString:function(args) { return `对${args[0]}(进行)四舍五入`; } } ],
+            ["ROUND2", { Name:"ROUND2", Param:{ Count:2 }, ToString:function(args) { return `对${args[0]}(进行)四舍五入`; } } ],
+            ["SIGN", { Name:"SIGN", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}的符号`; } } ],
+            ["MOD", { Name:"MOD", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}关于${args[1]}的模`; } } ],
+            ["RAND", { Name:"RAND", Param:{ Count:1 }, ToString:function(args) { return `随机正整数`; } } ],
+
+            ["AVEDEV", { Name:"AVEDEV", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日平均绝对偏差`; } } ],
+            ["DEVSQ", { Name:"DEVSQ", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日数据偏差平方和`; } } ],
+            ["FORCAST", { Name:"FORCAST", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日线性回归预测值`; } } ],
+            ["TSMA", { Name:"TSMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}在${args[1]}个周期内的时间序列三角移动平均`; } } ],
+            ["SLOPE", { Name:"SLOPE", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日线性回归斜率`; } } ],
+            ["STD", { Name:"STD", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日估算标准差`; } } ],
+            ["STDP", { Name:"STDP", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日总体标准差`; } } ],
+            ["STDDEV", { Name:"STDDEV", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日标准偏差`; } } ],
+            ["VAR", { Name:"VAR", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日估算样本方差`; } } ],
+            ["VARP", { Name:"VARP", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日总体样本方差`; } } ],
+            ["COVAR", { Name:"COVAR", Param:{ Count:3 }, ToString:function(args) { return `${args[0]}和${args[1]}的${args[2]}周期的协方差`; } } ],
+            ["RELATE", { Name:"RELATE", Param:{ Count:3 }, ToString:function(args) { return `${args[0]}和${args[1]}的${args[0]}周期的相关系数`; } } ],
+            ["BETA", { Name:"BETA", Param:{ Count:1 }, ToString:function(args) { return `β(Beta)系数`; } } ],
+            ["BETAEX", { Name:"BETAEX", Param:{ Count:3 }, ToString:function(args) { return `${args[0]}和${args[1]}的${args[2]}周期的相关放大系数`; } } ],
+
+            ["COST", { Name:"COST", Param:{ Count:1 }, ToString:function(args) { return `获利盘为${args[0]}%的成本分布`; } } ],
+            ["WINNER", { Name:"WINNER", Param:{ Count:1 }, ToString:function(args) { return `以${args[0]}计算的获利盘比例`; } } ],
+            ["LWINNER", { Name:"LWINNER", Param:{ Count:2 }, ToString:function(args) { return `最近${args[0]}日那部分成本以${args[1]}价格卖出的获利盘比例`; } } ],
+            ["PWINNER", { Name:"PWINNER", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}日前那部分成本以${args[1]}价格卖出的获利盘比例`; } } ],
+            ["COSTEX", { Name:"COSTEX", Param:{ Count:2 }, ToString:function(args) { return `位于价格${args[0]}和${args[1]}间的成本`; } } ],
+            ["PPART", { Name:"PPART", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}日前那部分成本占总成本的比例`; } } ],
+
+            ["SAR", { Name:"SAR", Param:{ Count:3 }, ToString:function(args) { return `步长为${args[1]}极限值为${args[0]}的${args[2]}日抛物转向`; } } ],
+            ["SARTURN", { Name:"SARTURN", Param:{ Count:3 }, ToString:function(args) { return `步长为${args[1]}极限值为${args[0]}的${args[2]}日抛物转向点`; } } ],
+
+            //字符串函数
+            ["CON2STR", { Name:"CON2STR", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}转为字符串`; } } ],
+            ["VAR2STR", { Name:"VAR2STR", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}转为字符串`; } } ],
+            ["STR2CON", { Name:"STR2CON", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}转为数字`; } } ],
+            ["STRLEN", { Name:"STRLEN", Param:{ Count:1 }, ToString:function(args) { return `得到${args[0]}字符串长度`; } } ],
+            ["STRCAT", { Name:"STRCAT", Param:{ Count:2 }, ToString:function(args) { return `字符串相加`; } } ],
+            ["VARCAT", { Name:"VARCAT", Param:{ Count:2 }, ToString:function(args) { return `字符串相加`; } } ],
+            ["STRSPACE", { Name:"STRSPACE", Param:{ Count:1 }, ToString:function(args) { return `字符串${args[0]}加一空格`; } } ],
+            ["SUBSTR", { Name:"SUBSTR", Param:{ Count:3 }, ToString:function(args) { return `字符串${args[0]}中取一部分`; } } ],
+            ["STRCMP", { Name:"STRCMP", Param:{ Count:2 }, ToString:function(args) { return `字符串${args[0]}和字符串${args[1]}比较`; } } ],
+            ["FINDSTR", { Name:"FINDSTR", Param:{ Count:2 }, ToString:function(args) { return `字符串${args[0]}中查找字符串${args[1]}`; } } ],
+            ["NAMEINCLUD", { Name:"NAMEINCLUD", Param:{ Count:1 }, ToString:function(args) { return `查找品种名称中包含${args[0]}`; } } ],
+            ["CODELIKE", { Name:"CODELIKE", Param:{ Count:1 }, ToString:function(args) { return `查找品种名称中包含${args[0]}`; } } ],
+            ["INBLOCK", { Name:"AVEDEV", Param:{ Count:1 }, ToString:function(args) { return `属于${args[0]}板块`; } } ],
+            
+
+            [
+                "HHVBARS", 
+                { 
+                    Name:"HHVBARS", Param:{ Count:2 }, 
+                    ToString:function(args) 
+                    { 
+                        if (args[1]==0) return `历史${args[0]}新高距今天数`;
+                        return `${args[1]}日内${args[0]}新高距今天数`;
+                    } 
+                } 
+            ],
+
+            [
+                "LLVBARS", 
+                { 
+                    Name:"LLVBARS", Param:{ Count:2 }, 
+                    ToString:function(args) 
+                    { 
+                        if (args[1]==0) return `历史${args[0]}新低距今天数`;
+                        return `${args[1]}日内${args[0]}新低距今天数`; 
+                    } 
+                } 
+            ]
+        ]
+    );
+
     this.CallFunctionExplain=function(funcName, args, node)
     {
+        if (this.FUNCTION_INFO_LIST.has(funcName))
+        {
+            var item=this.FUNCTION_INFO_LIST.get(funcName);
+            if (item.Param.Count!=args.length)
+                this.ThrowUnexpectedNode(node,`函数${funcName}参数个数不正确. 需要${item.Param.Count}个参数`);
+            return item.ToString(args);
+        }
+
         switch(funcName)
         {
-            case "REF":
-                return `${args[1]}日前的${args[0]}`;
-            case "REFX":
-                return `${args[1]}日后的${args[0]}`;
-            case "REFV":
-                return `${args[1]}日前的(未作平滑处理)${args[0]}`;
-            case "REFXV":
-                return `${args[1]}日后的(未作平滑处理)${args[0]}`;
-
-            case "REFDATE":
-                return `${args[1]}日${args[0]}`;
-            case "COUNT":
-                return `统计${args[1]}日中满足${args[0]}的天数`;
-            case "BARSLASTCOUNT":
-                return `条件${args[0]}连续成立次数`;
-            case "BARSCOUNT":
-                return `${args[0]}有效数据周期数`;
-            case "BARSLAST":
-                return `上次${args[0]}不为0距今天数`;
-            case "BARSNEXT":
-                return `下次${args[0]}不为0距今天数`;
-            case "BARSSINCEN":
-                return `在${args[1]}周期内首次${args[0]}距今天数`;
-            case "BARSSINCE":
-                return `首次${args[0]}距今天数`;
-            case "HHV":
-                return `${args[1]}日内${args[0]}的最高值`;
-            case "LLV":
-                return `${args[1]}日内${args[0]}的最低值`;
-            case "HHVBARS":
-                if (args[1]==0) return `历史${args[0]}新高距今天数`;
-                return `${args[1]}日内${args[0]}新高距今天数`;
-            case "LLVBARS":
-                if (args[1]==0) return `历史${args[0]}新低距今天数`;
-                return `${args[1]}日内${args[0]}新低距今天数`;
-            case "HOD":
-                return `${args[1]}日内${args[0]}的高值名次`;
-            case "LOD":
-                return `${args[1]}日内${args[0]}的低值名次`;
-            case "REVERSE":
-                return `${args[0]}的相反数`;
             case "CALCSTOCKINDEX":
                 return `引用${args[0]}的${args[1]}指标第${args[2]}个输出值`;
-            case "FILTER":
-                return `${args[0]}的${args[1]}日过滤`;
-            case "FILTERX":
-                return `${args[0]}的${args[1]}日反向过滤`;
-            case "SUMBARS":
-                return `${args[0]}累加至${args[1]}的天数`;
-            case "MA":
-                return `${args[0]}的${args[1]}日简单移动平均`;
-            case "SMA":
-                return `${args[0]}的${args[1]}日[${args[2]}日权重]移动平均`;
-            case "MEMA":
-                return `${args[0]}的${args[1]}日平滑移动平均`;
-            case "EMA":
-            case "EXPMA":
-                return `${args[0]}的${args[1]}日指数移动平均`;
-            case "EXPMEMA":
-                return `${args[0]}的${args[1]}日指数平滑移动平均`;
-            case "WMA":
-                return `${args[0]}的${args[1]}日加权移动平均`;
-            case "DMA":
-                return `以${args[1]}为权重${args[0]}的动态移动平均`;
-            case "XMA":
-                return `${args[0]}的${args[1]}日偏移移动平均`;
-            case "RANGE":
-                return `${args[0]}位于${args[1]}和${args[2]}之间`;
-            case "CONST":
-                return `${args[0]}的最后一日值`;
-            case "TOPRANGE":
-                return `当前值是近${args[0]}周期的最大值`;
-            case "LOWRANGE":
-                return `当前值是近${args[0]}周期的最小值`;
-            case "FINDHIGH":
-                return `${args[0]}在${args[1]}日前的${args[2]}天内第${args[3]}个最高价`;
-            case "FINDHIGHBARS":
-                return `${args[0]}在${args[1]}日前的${args[2]}天内第${args[3]}个最高价到当前周期的周期数`;
-            case "FINDLOW":
-                return `${args[0]}在${args[1]}日前的${args[2]}天内第${args[3]}个最低价`;
-            case "FINDLOWBARS":
-                return `${args[0]}在${args[1]}日前的${args[2]}天内第${args[3]}个最低价到当前周期的周期数`;
-            case "SUM":
-                return `${args[0]}${args[1]}日累加`;
-            case "MULAR":
-                return `${args[0]}和${args[1]}日累乘`;
-            case "AMA":
-                return `以${args[1]}为权重${args[0]}的自适应均线`;
-            case "TMA":
-                return `${args[0]}的${args[1]}日[${args[2]}日权重]移动平均`;
-
-            case "CROSS":
-                return `${args[0]}上穿${args[1]}`;
-            case "LONGCROSS":
-                return `${args[0]}小于${args[1]}保持${args[2]}个交易日后交叉上穿`;
-            case "UPNDAY":
-                return `最近${args[1]}日${args[0]}连涨`;
-            case "DOWNNDAY":
-                return `最近${args[1]}日${args[0]}连跌`;
-            case "NDAY":
-                return `最近${args[2]}日${args[0]}一直大于${args[1]}`;
-            case "EXIST":
-                return `最近${args[1]}日存在${args[0]}`;
-            case "EXISTR":
-                return `从前${args[1]}日到前${args[2]}日存在${args[0]}`;
-            case "EVERY":
-                return `最近${args[1]}日一直存在${args[0]}`;
-            case "LAST":
-                return `从前${args[1]}日到前${args[2]}日持续${args[0]}`;
-            case "NOT":
-                return `${args[0]}取反`;
             
-            case "IF":
-            case "IFF":
-                return `如果${args[0]},返回${args[1]},否则返回${args[2]}`;
-            case "IFN":
-                return `如果${args[0]},返回${args[1]},否则返回${args[2]}`;
-
-            case "MAX":
-                return `${args[0]}和${args[1]}的较大值`;
-            case "MIN":
-                return `${args[0]}和${args[1]}的较小值`;
-            case "ACOS":
-                return `${args[0]}的反余弦`;
-            case "ASIN":
-                return `${args[0]}的反正弦`;
-            case "ATAN":
-                return `${args[0]}的反正切`;
-            case "COS":
-                return `${args[0]}的余弦`;
-            case "SIN":
-                return `${args[0]}的正弦`;
-            case "TAN":
-                return `${args[0]}的正切`;
-            case "EXP":
-                return `${args[0]}的指数`;
-            case "LN":
-                return `${args[0]}的自然对数`;
-            case "LOG":
-                return `${args[0]}的对数`;
-            case "SQRT":
-                return `${args[0]}的开方`;
-            case "ABS":
-                return `${args[0]}的绝对值`;
-            case "POW":
-                return `${args[0]}的${args[1]}乘幂`;
-            case "CEILING":
-                return `${args[0]}的向上舍入`;
-            case "FLOOR":
-                return `${args[0]}的向下舍入`;
-            case "INTPART":
-                return `${args[0]}的整数部分`;
-            case "BETWEEN":
-                return `${args[0]}位于${args[1]}和${args[2]}之间`;
-            case "FRACPART":
-                return `${args[0]}的小数部分`;
-            case "ROUND":
-            case "ROUND2":
-                return `对${args[0]}(进行)四舍五入`;
-            case "SIGN":
-                return `${args[0]}的符号`;
-            case "MOD":
-                return `${args[0]}关于${args[1]}的模`;
-            case "RAND":
-                return '随机正整数';
-
-            case "AVEDEV":
-                return `${args[0]}的${args[1]}日平均绝对偏差`;
-            case "DEVSQ":
-                return `${args[0]}的${args[1]}日数据偏差平方和`;
-            case "FORCAST":
-                return `${args[0]}的${args[1]}日线性回归预测值`;
-            case "TSMA":
-                return `${args[0]}在${args[1]}个周期内的时间序列三角移动平均`;
-            case "SLOPE":
-                return `${args[0]}的${args[1]}日线性回归斜率`;
-            case "STD":
-                return `${args[0]}的${args[1]}日估算标准差`;
-            case "STDP":
-                return `${args[0]}的${args[1]}日总体标准差`;
-            case "STDDEV":
-                return `${args[0]}的${args[1]}日标准偏差`;
-            case "VAR":
-                return `${args[0]}的${args[1]}日估算样本方差`;
-            case "VARP":
-                return `${args[0]}的${args[1]}日总体样本方差`;
-            case "COVAR":
-                return `${args[0]}和${args[1]}的${args[2]}周期的协方差`;
-            case "RELATE":
-                return `${args[0]}和${args[1]}的${args[0]}周期的相关系数`;
-            case "BETA":
-                return 'β(Beta)系数';
-            case "BETAEX":
-                return `${args[0]}和${args[1]}的${args[2]}周期的相关放大系数`;
-            
-            case "COST":
-                return `获利盘为${args[0]}%的成本分布`;
-            case "WINNER":
-                return `以${args[0]}计算的获利盘比例`;
-            case "LWINNER":
-                return `最近${args[0]}日那部分成本以${args[1]}价格卖出的获利盘比例`;
-            case "PWINNER":
-                return `${args[0]}日前那部分成本以${args[1]}价格卖出的获利盘比例`;
-            case "COSTEX":
-                return `位于价格${args[0]}和${args[1]}间的成本`;
-            case "PPART":
-                return `${args[0]}日前那部分成本占总成本的比例`;
-                
-            case "INBLOCK":
-                return `${args[0]}属于某板块`;
-
             case "PEAK":
             case "PEAKBARS":
             case "ZIG":
@@ -78521,11 +78486,6 @@ function JSExplainer(ast,option)
             case "TROUGH":
             case "TROUGHBARS":
                 return this.GetZIGExplain(funcName,args);
-
-            case "SAR":
-                return `步长为${args[1]}极限值为${args[0]}的${args[2]}日抛物转向`;
-            case "SARTURN":
-                return `步长为${args[1]}极限值为${args[0]}的${args[2]}日抛物转向点`;
 
             case "FINANCE":
                 return this.GetFinanceExplain(args);

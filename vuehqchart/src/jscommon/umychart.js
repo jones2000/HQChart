@@ -19456,7 +19456,7 @@ function ChartMinutePriceLine()
         var end=Math.ceil(index);
         var start=Math.floor(index);
 
-        if (end>=data.Data.Length || start>=data.Data.Length) return false;
+        if (end>=data.Data.length || start>=data.Data.length) return false;
 
         var lineWidth=5;
         if (end==start)
@@ -19614,7 +19614,7 @@ function ChartOverlayMinutePriceLine()
         var end=Math.ceil(index);
         var start=Math.floor(index);
 
-        if (end>=data.Data.Length || start>=data.Data.Length) return false;
+        if (end>=data.Data.length || start>=data.Data.length) return false;
 
         var lineWidth=5;
         if (end==start)
@@ -31037,6 +31037,20 @@ function DynamicKLineTitlePainting()
             data.DataIndex=dataIndex;
             data.DataCount=dataCount;
         }
+
+        //叠加股票
+        if (IFrameSplitOperator.IsNonEmptyArray(this.OverlayChartPaint))
+        {
+            data.OverlayStock=[];
+            for(var i=0; i<this.OverlayChartPaint.length; ++i)
+            {
+                var item=this.OverlayChartPaint[i];
+                if (!item.Symbol || !item.Title) continue;
+            
+                data.OverlayStock.push({ Symbol:item.Symbol, Name:item.Title });
+            }
+        }
+        
 
         this.OnDrawEvent.Callback(this.OnDrawEvent,data,this);
     }
