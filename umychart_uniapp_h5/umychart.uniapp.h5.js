@@ -10492,6 +10492,32 @@ function AverageWidthFrame()
 		return (x-this.ChartBorder.GetLeft())*(this.XPointCount*1.0/this.ChartBorder.GetWidth());
     }
 
+    //字体外部设置好
+    this.GetCustomItemTextInfo=function(item, bLeft,pixelTatio)
+    {
+        var text=bLeft?item.Message[0]:item.Message[1];
+        var aryText=[];
+        var width=0;
+        if (Array.isArray(text))
+        {
+            for(var i=0;i<text.length;++i)
+            {
+                var value=this.Canvas.measureText(text[i].Text).width;
+                if (value>width) width=value;
+                aryText.push({Text:text[i].Text, Width:value+2*pixelTatio});
+            }
+
+            if (width>0) width+=2*pixelTatio;
+        }
+        else
+        {
+            width=this.Canvas.measureText(text).width+2*pixelTatio;
+            aryText.push( {Text:text, Width:width} );
+        }
+        
+        return  { MaxWidth:width, Text:aryText };
+    }
+
     this.DrawCustomItem=function(item) //显示自定义刻度
     {
         //if (this.IsHScreen===true) return;  //横屏不画
@@ -10587,29 +10613,39 @@ function AverageWidthFrame()
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.textAlign = "left";
                 this.Canvas.textBaseline = "middle";
-                var textWidth = this.Canvas.measureText(item.Message[1]).width+2*pixelTatio;
+                var textInfo=this.GetCustomItemTextInfo(item,false,pixelTatio);
+                var textWidth=textInfo.MaxWidth;
                 var fontHeight=this.GetFontHeight();
                 textHeight=fontHeight>defaultTextHeight? fontHeight:defaultTextHeight;
                 var bgColor=item.LineColor;
                 var rgb=this.RGBToStruct(item.LineColor);
                 if (rgb) bgColor=`rgba(${rgb.R}, ${rgb.G}, ${rgb.B}, ${g_JSChartResource.FrameLatestPrice.BGAlpha})`;   //内部刻度 背景增加透明度
-                this.Canvas.fillStyle=bgColor;
-                if (this.IsHScreen)
+                
+                var yText=y;
+                for(var i=0;i<textInfo.Text.length;++i)
                 {
-                    var bgTop=bottom-textWidth;
-                    var textLeft=y-textHeight/2-1*pixelTatio;
-                    this.Canvas.fillRect(textLeft,bgTop,textHeight,textWidth);
-                    this.DrawHScreenText({X:y, Y:bgTop}, {Text:item.Message[1], Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
-                    this.DrawLine(top,bgTop,y,item.LineColor,item.LineType);
-                }
-                else
-                {
-                    var bgTop=y-textHeight/2-1*pixelTatio;
-                    var textLeft=right-textWidth;
-                    this.Canvas.fillRect(textLeft,bgTop,textWidth,textHeight);  //文本背景区域
-                    this.Canvas.fillStyle = item.TextColor;
-                    this.Canvas.fillText(item.Message[1], textLeft + 1*pixelTatio, y);
-                    this.DrawLine(left,textLeft,y,item.LineColor,item.LineType);
+                    var itemText=textInfo.Text[i];
+                    if (this.IsHScreen)
+                    {
+                        var bgTop=bottom-itemText.Width;
+                        var textLeft=yText-textHeight/2-1*pixelTatio;
+                        this.Canvas.fillStyle=bgColor;
+                        this.Canvas.fillRect(textLeft,bgTop,textHeight,textWidth);
+                        this.DrawHScreenText({X:yText, Y:bgTop}, {Text:itemText.Text, Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
+                        if (i==0) this.DrawLine(top,bgTop,yText,item.LineColor,item.LineType);
+                        yText-=textHeight+1*pixelTatio;
+                    }
+                    else
+                    {
+                        var bgTop=yText-textHeight/2-1*pixelTatio;
+                        var textLeft=right-itemText.Width;
+                        this.Canvas.fillStyle=bgColor;
+                        this.Canvas.fillRect(textLeft,bgTop,textWidth,textHeight);  //文本背景区域
+                        this.Canvas.fillStyle = item.TextColor;
+                        this.Canvas.fillText(itemText.Text, textLeft + 1*pixelTatio, yText);
+                        if (i==0) this.DrawLine(left,textLeft,yText,item.LineColor,item.LineType);
+                        yText+=textHeight+1*pixelTatio;
+                    }
                 }
             }
             else
@@ -10617,25 +10653,37 @@ function AverageWidthFrame()
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.textAlign = "left";
                 this.Canvas.textBaseline = "middle";
-                var textWidth = this.Canvas.measureText(item.Message[1]).width+2*pixelTatio;
+                var textInfo=this.GetCustomItemTextInfo(item,false,pixelTatio);
+                var textWidth=textInfo.MaxWidth;
                 var fontHeight=this.GetFontHeight();
                 textHeight=fontHeight>defaultTextHeight? fontHeight:defaultTextHeight;
-                this.Canvas.fillStyle=item.LineColor;
-                if (this.IsHScreen)
+                
+                var yText=y;
+                for(var i=0;i<textInfo.Text.length;++i)
                 {
-                    var bgTop=bottom;
-                    var textLeft=y-textHeight/2-1*pixelTatio;
-                    this.Canvas.fillRect(textLeft,bgTop,textHeight,textWidth);
-                    this.DrawHScreenText({X:y, Y:bgTop}, {Text:item.Message[1], Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
-                    this.DrawLine(top,bgTop,y,item.LineColor,item.LineType);
-                }
-                else
-                {
-                    var bgTop=y-textHeight/2-1*pixelTatio;
-                    this.Canvas.fillRect(right,bgTop,textWidth,textHeight);
-                    this.Canvas.fillStyle = item.TextColor;
-                    this.Canvas.fillText(item.Message[1], right + 1*pixelTatio, y);
-                    this.DrawLine(left,right,y,item.LineColor,item.LineType);
+                    var itemText=textInfo.Text[i];
+                    if (this.IsHScreen)
+                    {
+                        var bgTop=bottom;
+                        bgTop+=(textWidth-itemText.Width);
+                        var textLeft=yText-textHeight/2-1*pixelTatio;
+                        this.Canvas.fillStyle=item.LineColor;
+                        this.Canvas.fillRect(textLeft,bgTop,textHeight,itemText.Width);
+                        this.DrawHScreenText({X:yText, Y:bgTop}, {Text:itemText.Text, Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
+                        if (i==0)  this.DrawLine(top,bgTop,yText,item.LineColor,item.LineType);
+                        yText-=textHeight+1*pixelTatio;
+                    }
+                    else
+                    {
+                        var bgTop=yText-textHeight/2-1*pixelTatio;
+                        this.Canvas.fillStyle=item.LineColor;
+                        var textLeft=right+textWidth-itemText.Width;
+                        this.Canvas.fillRect(textLeft,bgTop,itemText.Width,textHeight);
+                        this.Canvas.fillStyle = item.TextColor;
+                        this.Canvas.fillText(itemText.Text, textLeft + 1*pixelTatio, yText);
+                        if (i==0) this.DrawLine(left,right,yText,item.LineColor,item.LineType);
+                        yText+=textHeight+1*pixelTatio;
+                    }
                 }
             }
         }
@@ -10740,6 +10788,7 @@ function AverageWidthFrame()
         if (!isDrawRight && !isDrawLeft) return null;
 
         var width={ Left:null, Right:null };
+        var rightExtendWidth=0;
         for(var i=0;i<this.HorizontalInfo.length;++i)
         {
             var textWidth=null;
@@ -10767,8 +10816,14 @@ function AverageWidthFrame()
                         if (item.ExtendData)
                         {
                             if (item.ExtendData.Font) this.Canvas.font=item.ExtendData.Font;
-                            var outText=`${item.Message[1][0]}/${item.Message[1][1]}`;
-                            textWidth=this.Canvas.measureText(outText).width;
+                            var width1=this.Canvas.measureText(item.Message[1][0]).width;
+                            var width2=this.Canvas.measureText(item.Message[1][1]).width;
+                            var width3=this.Canvas.measureText('/').width;
+                            textWidth=width1+width3;
+
+                            if (rightExtendWidth<width2) rightExtendWidth=width2;
+
+                            //JSConsole.Chart.Log(`[ChartData::GetScaleTextWidth] ${item.Message[1][1]}/${item.Message[1][0]} ${textWidth}, ${rightExtendWidth}`);
                         }
                     }
                     else if (this.MultiTextFormat==2)   //显示2行
@@ -10792,6 +10847,8 @@ function AverageWidthFrame()
             }
         }
 
+        if (IFrameSplitOperator.IsNumber(width.Right)) width.Right+=rightExtendWidth;
+        
         return { TextWidth:width };
     }
 }
@@ -27907,6 +27964,7 @@ function StockChip()
     this.PriceZoom=100;     //价格放大倍数
 
     this.ButtonID=Guid();  //工具条Div id
+    this.NotSupportMessage="不支持筹码图";
 
     this.DAY_COLOR=
     [
@@ -27943,6 +28001,22 @@ function StockChip()
         var width=right-left;
         var height=bottom-top;
         this.ClientRect={Left:left,Top:top,Width:width,Height:height};
+
+        if (ChartData.IsTickPeriod(this.HQChart.Period))    //分笔图没有筹码
+        {
+            this.Canvas.font=this.Font;
+            this.Canvas.fillStyle=this.InfoColor;
+
+            var x=left+width/2;
+            var y=top+height/2;
+
+            this.Canvas.textAlign="center";
+            this.Canvas.textBaseline="middle";
+            this.Canvas.fillText(this.NotSupportMessage,x,y);
+
+            this.DrawBorder();
+            return;
+        }
 
         if (this.CalculateChip())
         {
@@ -31436,8 +31510,23 @@ function FrameSplitY()
         var splitData={};
         splitData.Max=this.Frame.HorizontalMax;
         splitData.Min=this.Frame.HorizontalMin;
+
+        if (splitData.Max==splitData.Min)   //如果一样上下扩大下
+		{
+            if (splitData.Max==0)
+            {
+                splitData.Max=1;
+                splitData.Min=-1;
+            }
+            else
+            {
+                splitData.Max+=splitData.Max*0.01;
+                splitData.Min-=splitData.Min*0.01;
+            }
+		}
         
-        var isFixedMaxMin=(this.FixedYMaxMin && IFrameSplitOperator.IsNumber(this.FixedYMaxMin.Max) && IFrameSplitOperator.IsNumber(this.FixedYMaxMin.Min));
+        var isFixedMaxMin=false;
+        if (this.FixedYMaxMin && IFrameSplitOperator.IsNumber(this.FixedYMaxMin.Max) && IFrameSplitOperator.IsNumber(this.FixedYMaxMin.Min)) isFixedMaxMin=true;
         if (isFixedMaxMin)
         {
             splitData.Max=this.FixedYMaxMin.Max;

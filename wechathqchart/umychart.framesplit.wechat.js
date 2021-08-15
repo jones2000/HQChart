@@ -748,6 +748,21 @@ function FrameSplitY()
         var splitData = {};
         splitData.Max = this.Frame.HorizontalMax;
         splitData.Min = this.Frame.HorizontalMin;
+
+        if (splitData.Max==splitData.Min)   //如果一样上下扩大下
+		{
+            if (splitData.Max==0)
+            {
+                splitData.Max=1;
+                splitData.Min=-1;
+            }
+            else
+            {
+                splitData.Max+=splitData.Max*0.01;
+                splitData.Min-=splitData.Min*0.01;
+            }
+        }
+        
         if (this.Frame.YSpecificMaxMin) 
         {
             splitData.Count = this.Frame.YSpecificMaxMin.Count;
