@@ -80810,10 +80810,10 @@ function OverlayScriptIndex(name,script,args,option)
         if (varItem.LineWidth) 
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
-            if (!isNaN(width) && width>0) line.LineWidth=width;
+            if (!isNaN(width) && width>0) chart.LineWidth=width;
         }
 
-        if (varItem.IsShow==false) line.IsShow=false;
+        if (varItem.IsShow==false) chart.IsShow=false;
         
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
