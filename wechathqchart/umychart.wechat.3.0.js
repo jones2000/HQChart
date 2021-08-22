@@ -1805,6 +1805,16 @@ function JSChartContainer(uielement)
         var self = this;
         this.Canvas.clearRect(0, 0, this.UIElement.Width, this.UIElement.Height);
 
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)  //动画
+        {
+            this.Frame.ClearCoordinateText();
+            this.Frame.Draw();  //框架 
+            this.ChartSplashPaint.Draw();
+            this.LastDrawStatus = 'FullDraw';
+            this.Canvas.draw();
+            return;
+        }
+
         this.Frame.SetDrawOtherChart(() => 
         {
             for (var i in this.ExtendChartPaint) 
@@ -1820,15 +1830,6 @@ function JSChartContainer(uielement)
         {
             var eventCVericalDraw = this.GetEvent(JSCHART_EVENT_ID.ON_CUSTOM_VERTICAL_DRAW);
             this.Frame.DrawCustomVertical(eventCVericalDraw);
-        }
-
-        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)  //动画
-        {
-            this.Frame.DrawInsideHorizontal();
-            this.ChartSplashPaint.Draw();
-            this.LastDrawStatus = 'FullDraw';
-            this.Canvas.draw();
-            return;
         }
 
         for (var i in this.ChartPaint) //图形
@@ -2828,6 +2829,27 @@ function IChartFramePainting()
     }
 
     this.DrawFrame = function () { }
+
+    this.ClearCoordinateText=function(option)
+    {
+        if (IFrameSplitOperator.IsNonEmptyArray(this.HorizontalInfo))
+        {
+            for(var i=0;i<this.HorizontalInfo.length;++i)
+            {
+                var item=this.HorizontalInfo[i];
+                item.Message[0]=item.Message[1]=null;
+            }
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(this.VerticalInfo))
+        {
+            for(var i=0;i<this.VerticalInfo.length;++i)
+            {
+                var item=this.VerticalInfo[i];
+                item.Message[0]=item.Message[1]=null;
+            }
+        }
+    }
 
     //画边框
     this.DrawBorder = function () 
@@ -5058,6 +5080,17 @@ function HQTradeFrame()
         if (!item || !item.Frame) return null;
 
         return item.Frame.XPointCount;
+    }
+
+    this.ClearCoordinateText=function(option) //清空X，Y轴刻度文字， 线段保留
+    {
+        for(var i=0;i<this.SubFrame.length;++i)
+        {
+            var item=this.SubFrame[i];
+            if (!item.Frame) continue;
+
+            item.Frame.ClearCoordinateText(option);
+        }
     }
 }
 

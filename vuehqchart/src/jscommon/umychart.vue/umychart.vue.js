@@ -7227,6 +7227,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)
         {
+            this.Frame.ClearCoordinateText();
             this.Frame.Draw();
             this.ChartSplashPaint.Draw();
             return;
@@ -9849,6 +9850,27 @@ function IChartFramePainting()
     }
 
     this.DrawFrame=function() { }
+
+    this.ClearCoordinateText=function(option)
+    {
+        if (IFrameSplitOperator.IsNonEmptyArray(this.HorizontalInfo))
+        {
+            for(var i=0;i<this.HorizontalInfo.length;++i)
+            {
+                var item=this.HorizontalInfo[i];
+                item.Message[0]=item.Message[1]=null;
+            }
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(this.VerticalInfo))
+        {
+            for(var i=0;i<this.VerticalInfo.length;++i)
+            {
+                var item=this.VerticalInfo[i];
+                item.Message[0]=item.Message[1]=null;
+            }
+        }
+    }
 
     //画边框
     this.DrawBorder=function()
@@ -14486,6 +14508,17 @@ function HQTradeFrame()
                 var splitOper=item.Frame.YSplitOperator;
                 if (splitOper.EnableZoomUpDown==true) splitOper.FixedYMaxMin=null;
             }
+        }
+    }
+
+    this.ClearCoordinateText=function(option) //清空X，Y轴刻度文字， 线段保留
+    {
+        for(var i=0;i<this.SubFrame.length;++i)
+        {
+            var item=this.SubFrame[i];
+            if (!item.Frame) continue;
+
+            item.Frame.ClearCoordinateText(option);
         }
     }
 

@@ -115,6 +115,8 @@ DefaultData.GetMinuteOption=function()
         IsShowCorssCursorInfo: true,    //是否显示十字光标的刻度信息
         EnableSelectRect:true,
 
+        EnableZoomIndexWindow:true,
+
         Border: //边框
         {
             Left: 60, //左边间距
@@ -158,6 +160,8 @@ DefaultData.GetKLineOption=function()
         EnableYDrag:{ Right:true },
 
         DragDownload: { Day:{ Enable:true } , Minute:{ Enable:true }}, 
+
+        EnableZoomIndexWindow:true,
 
         KLine: 
         {
