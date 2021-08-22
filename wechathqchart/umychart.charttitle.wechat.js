@@ -1181,6 +1181,8 @@ function DynamicChartTitlePainting()
         this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
         if (this.Frame.ChartBorder.TitleHeight < 5) return;
         if (this.Frame.IsShowTitle == false) return;
+        if (this.Frame.IsMinSize) return;
+        
         this.IsShowIndexName = this.Frame.IsShowIndexName;
         this.ParamSpace = this.Frame.IndexParamSpace;
 

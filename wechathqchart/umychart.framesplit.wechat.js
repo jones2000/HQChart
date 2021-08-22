@@ -890,27 +890,25 @@ function FrameSplitY()
     this.IntegerCoordinateSplit2 = function (data) //整数分割
     {
         if (this.IntegerSplitData == null) this.IntegerSplitData = new IntegerSplitData();
-        //最大最小调整为整数
-        if (data.Max > 0) data.Max = parseInt(data.Max + 0.5);
-        else if (data.Max < 0) data.Max = parseInt(data.Max - 0.5);
-        if (data.Min > 0) data.Min = parseInt(data.Min - 0.5);
-        else if (data.Min < 0) data.Min = parseInt(data.Min + 0.5);
-
-        data.Interval = (data.Max - data.Min) / (data.Count - 1);
         var splitItem = this.IntegerSplitData.Find(data.Interval);
         if (!splitItem) return false;
+        if (data.Interval == splitItem.FixInterval) return true;
 
-        if (data.Interval == splitItem.Interval) return true;
+        var fixMax=data.Max, fixMin=data.Min;
+        var maxValue=data.Max/splitItem.FixInterval;
+        var minValue=data.Min/splitItem.FixInterval;
+        //调整到整数倍数,不能整除的 +1
+        if (IFrameSplitOperator.IsFloat(maxValue)) fixMax=parseInt((maxValue+0.5).toFixed(0))*splitItem.FixInterval;
+        if (IFrameSplitOperator.IsFloat(minValue)) fixMin=parseInt((minValue-0.5).toFixed(0))*splitItem.FixInterval;
+        if (data.Min == 0) fixMin = 0;  //最小值是0 不用调整了.
+        if (fixMin < 0 && data.Min > 0) fixMin = 0;   //都是正数的, 最小值最小调整为0
 
-        var fixMax = parseInt((data.Max / (splitItem.FixInterval) + 0.5).toFixed(0)) * splitItem.FixInterval + 0.5;
-        var fixMin = parseInt((data.Min / (splitItem.FixInterval) - 0.5).toFixed(0)) * splitItem.FixInterval;
-        if (data.Min == 0) fixMin = 0;
-        if (fixMin < 0 && data.Min > 0) fixMin = 0;
         var count = 0;
         for (var i = fixMin; (i - fixMax) < 0.00000001; i += splitItem.FixInterval) 
         {
             ++count;
         }
+
         data.Interval = splitItem.FixInterval;
         data.Max = fixMax;
         data.Min = fixMin;

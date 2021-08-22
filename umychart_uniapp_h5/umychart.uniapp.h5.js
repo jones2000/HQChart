@@ -10422,6 +10422,7 @@ function AverageWidthFrame()
     this.DrawInsideHorizontal = function () 
     {
         if (this.IsHScreen===true) return;  //横屏不画
+        if (this.IsMinSize) return;
         if (this.IsShowYText[0]===false && this.IsShowYText[1]===false) return;
 
         this.DrawInsideClientHorizontal();
@@ -11655,6 +11656,7 @@ function MinuteFrame()
 
     this.DrawCustomHorizontal=function()    //Y轴刻度定制显示
     {
+        if (this.IsMinSize) return;
         for(var i in this.CustomHorizontalInfo)
         {
             var item=this.CustomHorizontalInfo[i];
@@ -12199,6 +12201,7 @@ function MinuteHScreenFrame()
     //Y刻度画在左边内部
     this.DrawInsideHorizontal = function () 
     {
+        if (this.IsMinSize) return;
         if (this.IsShowYText[0]===false && this.IsShowYText[1]===false) return;
 
         this.DrawInsideClientHorizontal();
@@ -13286,6 +13289,7 @@ function KLineFrame()
 
     this.DrawCustomHorizontal=function()    //Y轴刻度定制显示
     {
+        if (this.IsMinSize) return;
         for(var i in this.CustomHorizontalInfo)
         {
             var item=this.CustomHorizontalInfo[i];
@@ -13721,6 +13725,7 @@ function KLineHScreenFrame()
     //Y刻度画在左边内部
     this.DrawInsideHorizontal = function () 
     {
+        if (this.IsMinSize) return;
         if (this.IsShowYText[0]===false && this.IsShowYText[1]===false) return;
 
         var left = this.ChartBorder.GetLeft();

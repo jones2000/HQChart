@@ -1706,6 +1706,59 @@ var JSCHART_EVENT_ID =
     ON_SPLIT_YCOORDINATE:29,             //分割Y轴及格式化刻度文字
 }
 
+function PhoneDBClick()
+{
+    this.Start=[];
+
+    this.Clear=function()
+    {
+        this.Start=[];
+    }
+
+    this.AddTouchStart=function(x, y, time)
+    {
+        if (this.Start.length>0)
+        {
+            var item=this.Start[this.Start.length-1];
+            var spanTime=time-item.Time;
+            if (spanTime>0 && spanTime<300)
+            {
+                this.Start.push({ X:x, Y:y, Time:time });
+            }
+            else
+            {
+                this.Start=[];
+            }
+        }
+        else
+        {
+            this.Start.push({ X:x, Y:y, Time:time });
+        }
+    }
+
+    this.IsVaildDBClick=function()
+    {
+        if (this.Start.length==2) return true;
+
+        return false;
+    }
+
+    this.AddTouchEnd=function(time)
+    {
+        if (this.Start.length<=0) return;
+
+        var item=this.Start[this.Start.length-1];
+        var spanTime=time-item.Time;
+        if (spanTime>=0 && spanTime<150)
+        {
+            
+        }
+        else
+        {
+            this.Start=[];
+        }
+    }
+}
 
 //导出统一使用JSCommon命名空间名
 module.exports =
@@ -1719,6 +1772,7 @@ module.exports =
         Rect: Rect,
         DataPlus: DataPlus,
         JSCHART_EVENT_ID:JSCHART_EVENT_ID,
+        PhoneDBClick:PhoneDBClick,
     },
 
     //单个类导出
@@ -1738,4 +1792,5 @@ module.exports =
     JSCommon_ToFixedPoint: ToFixedPoint,
     JSCommon_ToFixedRect: ToFixedRect,
     JSCommon_JSCHART_EVENT_ID:JSCHART_EVENT_ID,
+    JSCommon_PhoneDBClick:PhoneDBClick,
 };

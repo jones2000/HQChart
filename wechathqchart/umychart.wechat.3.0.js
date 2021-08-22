@@ -26,6 +26,7 @@ import {
     JSCommon_Rect as Rect,
     JSCommon_DataPlus as DataPlus,
     JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
+    JSCommon_PhoneDBClick as PhoneDBClick,
 } from "./umychart.data.wechat.js";
 
 import {
@@ -277,6 +278,7 @@ function JSChart(element)
         }
 
         if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
+        if (IFrameSplitOperator.IsBool(option.EnableZoomIndexWindow)) chart.EnableZoomIndexWindow=option.EnableZoomIndexWindow; //双击缩放附图
         if (!option.Windows || option.Windows.length <= 0) return null;
 
         if (option.Language) 
@@ -570,6 +572,7 @@ function JSChart(element)
 
         if (option.Info && option.Info.length > 0) chart.SetMinuteInfo(option.Info, false);
         if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
+        if (IFrameSplitOperator.IsBool(option.EnableZoomIndexWindow)) chart.EnableZoomIndexWindow=option.EnableZoomIndexWindow; //双击缩放附图
         if (IFrameSplitOperator.IsNumber(option.DrawMoveWaitTime)) chart.DrawMoveWaitTime=option.DrawMoveWaitTime;
 
         if (option.Language) 
@@ -1463,6 +1466,10 @@ function JSChartContainer(uielement)
     this.DrawMoveTimer=null;
     this.DrawMoveWaitTime=60;
 
+    //双击缩放附图窗口
+    this.EnableZoomIndexWindow=false;               //是否支持双击缩放附图窗口
+    this.PhoneDBClick=new PhoneDBClick();
+
     this.ChartDestory=function()    //销毁
     {
         this.IsDestroy=true;
@@ -1616,6 +1623,12 @@ function JSChartContainer(uielement)
 
             this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
 
+            if (this.EnableZoomIndexWindow)
+            {
+                this.PhoneDBClick.AddTouchStart(touches[0].clientX, touches[0].clientY, Date.now());
+                JSConsole.Chart.Log("[JSChartContainer::OnTouchStart] PhoneDBClick ", this.PhoneDBClick);
+            }
+
             if (jsChart.IsClickShowCorssCursor) 
             {
                 var x = drag.Click.X;
@@ -1746,6 +1759,17 @@ function JSChartContainer(uielement)
     {
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
+        if (this.EnableZoomIndexWindow)
+        {
+            var time=Date.now();
+            this.PhoneDBClick.AddTouchEnd(time);
+            if (this.PhoneDBClick.IsVaildDBClick())
+            {
+                this.OnTouchDBClick(this.PhoneDBClick.Start);
+                this.PhoneDBClick.Clear();
+            }
+        }
+
         this.IsOnTouch = false;
         this.LastMovePoint=null;
         JSConsole.Chart.Log('[JSChartContainer:ontouchend] IsOnTouch=' + this.IsOnTouch +' LastDrawStatus=' + this.LastDrawStatus);
@@ -1753,6 +1777,33 @@ function JSChartContainer(uielement)
         this.ClearTouchTimer();
         this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchEnd"}, e);
         this.Draw();//手放开 重新绘制  
+    }
+
+    this.OnTouchDBClick=function(points)
+    {
+        var x=points[0].X, y=points[0].Y;
+        JSConsole.Chart.Log('[JSChartContainer:OnTouchDBClick] Phone dbclick', x, y);
+
+        var frameId=this.Frame.PtInFrame(x,y);
+        JSConsole.Chart.Log("[JSChartContainer::OnTouchDBClick] frameId",frameId);
+        if (frameId>=this.Frame.ZoomStartWindowIndex)
+        {
+            if (this.ZoomIndexWindow(frameId, {X:x, Y:y}))
+            {
+                this.Frame.SetSizeChage(true);
+                this.Draw();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    this.ZoomIndexWindow=function(frameID, option)   //最大化/最小化指标窗口 
+    {
+        if (frameID<0 || frameID>=this.Frame.SubFrame.length) return false;
+
+        return this.Frame.ZoomIndexWindow(frameID, option);
     }
 
     this.TouchEvent=function(obj,e)
@@ -2818,6 +2869,7 @@ function IChartFramePainting()
     this.LockPaint = null;
 
     this.BorderLine=null;               //1=上 2=下 4=左 8=右
+    this.IsMinSize=false;               //窗口是否最小化
 
     this.Draw = function () 
     {
@@ -2855,6 +2907,7 @@ function IChartFramePainting()
     this.DrawBorder = function () 
     {
         if (!this.IsShowBorder) return;
+        if (this.IsMinSize) return;
 
         var left = ToFixedPoint(this.ChartBorder.GetLeft());
         var top = ToFixedPoint(this.ChartBorder.GetTop());
@@ -3033,6 +3086,7 @@ function AverageWidthFrame()
     this.DrawInsideHorizontal = function () 
     {
         if (this.IsHScreen === true) return;  //横屏不画
+        if (this.IsMinSize) return;
         if (this.IsShowYText[0] === false && this.IsShowYText[1] === false) return;
 
         var left = this.ChartBorder.GetLeft();
@@ -3651,6 +3705,8 @@ function MinuteFrame()
 
     this.DrawFrame = function () 
     {
+        if (this.IsMinSize) return;
+
         this.SplitXYCoordinate();
 
         this.DrawTitleBG();
@@ -3701,6 +3757,7 @@ function MinuteFrame()
 
     this.DrawCustomHorizontal = function ()    //Y轴刻度定制显示
     {
+        if (this.IsMinSize) return;
         for (var i in this.CustomHorizontalInfo) 
         {
             var item = this.CustomHorizontalInfo[i];
@@ -3948,7 +4005,8 @@ function KLineFrame()
 
     this.DrawFrame = function () 
     {
-        //JSConsole.Chart.Log('[KLineFrame::DrawFrame]', this.SizeChange);
+         if (this.IsMinSize) return;
+
         this.SplitXYCoordinate();
         if (this.SizeChange == true) this.CalculateDataWidth();
         if (this.DrawOtherChart) this.DrawOtherChart();
@@ -3994,6 +4052,7 @@ function KLineFrame()
 
     this.DrawCustomHorizontal = function ()    //Y轴刻度定制显示
     {
+        if (this.IsMinSize) return;
         for (var i in this.CustomHorizontalInfo) 
         {
             var item = this.CustomHorizontalInfo[i];
@@ -4379,6 +4438,7 @@ function KLineHScreenFrame()
 
     this.DrawInsideHorizontal = function () 
     {
+        if (this.IsMinSize) return;
         if (this.IsShowYText[0] === false && this.IsShowYText[1] === false) return;
 
         var left = this.ChartBorder.GetLeft();
@@ -4704,6 +4764,9 @@ function HQTradeFrame()
     this.AutoLeftBorder=null;   //{ Blank:10 留白宽度, MinWidth:最小宽度 }
     this.AutoRightBorder=null;  //{ Blank:10 留白宽度, MinWidth:最小宽度 } 
 
+    this.ZoomWindowsInfo=null;      //附图指标缩放,备份信息
+    this.ZoomStartWindowIndex=1;    //允许缩放窗口起始位置
+
     this.CalculateChartBorder = function ()    //计算每个子框架的边框信息
     {
         if (this.SubFrame.length <= 0) return;
@@ -4728,7 +4791,6 @@ function HQTradeFrame()
             item.Frame.ChartBorder.Bottom = this.ChartBorder.GetChartHeight() - frameHeight;
             top = frameHeight;
         }
-
     }
 
     this.GetScaleTextWidth=function()
@@ -5018,6 +5080,27 @@ function HQTradeFrame()
 
     this.GetYFromData = function (value) { return this.SubFrame[0].Frame.GetYFromData(value); }
 
+    this.PtInFrame=function(x,y)    //鼠标哪个指标窗口
+    {
+        for(var i=0; i<this.SubFrame.length; ++i)
+        {
+            var item=this.SubFrame[i];
+            var left=item.Frame.ChartBorder.GetLeft();
+            var top=item.Frame.ChartBorder.GetTop();
+            var width=item.Frame.ChartBorder.GetWidth();
+            var height=item.Frame.ChartBorder.GetHeight();
+
+            var rtClient = new Rect(left, top, width, height);
+            var isInClient = rtClient.IsPointIn(x, y);
+            if (isInClient)
+            {
+                return i;   //转成整形
+            }
+        }
+
+        return -1;
+    }
+
     this.ZoomUp = function (cursorIndex) 
     {
         var result = this.SubFrame[0].Frame.ZoomUp(cursorIndex);
@@ -5090,6 +5173,65 @@ function HQTradeFrame()
             if (!item.Frame) continue;
 
             item.Frame.ClearCoordinateText(option);
+        }
+    }
+
+    this.RestoreIndexWindows=function()
+    {
+        if (!this.ZoomWindowsInfo) return false;
+
+        var subFrame=this.SubFrame[this.ZoomWindowsInfo.FrameID];
+        for(var i=this.ZoomStartWindowIndex;i<this.ZoomWindowsInfo.Data.length; ++i)
+        {
+            var restoreItem=this.ZoomWindowsInfo.Data[i];
+            var frameItem=this.SubFrame[i];
+            frameItem.Height=restoreItem.Height;
+            frameItem.Frame.IsMinSize=false;
+            frameItem.Frame.XSplitOperator.ShowText=restoreItem.ShowXText;
+            frameItem.Frame.XYSplit=true;
+        }
+
+        this.ZoomWindowsInfo=null;
+        return true;
+    }
+
+    this.ZoomIndexWindow=function(frameID, option)
+    {
+        var subFrame=this.SubFrame[frameID];
+        if (!subFrame) return false;
+        if (this.ZoomWindowsInfo)   //还原
+        {
+            return this.RestoreIndexWindows();
+        }
+        else    //放大
+        {
+            var zoomInfo={ FrameID:frameID, Data:[] };    //备份下放大前各个窗口的高度
+            for(var i=0; i<this.SubFrame.length; ++i)
+            {
+                var item=this.SubFrame[i];
+                zoomInfo.Data[i]={ Height:item.Height, ShowXText:item.Frame.XSplitOperator.ShowText };
+            }
+            this.ZoomWindowsInfo=zoomInfo;
+
+            var totalHeight=0;
+            for(var i=this.ZoomStartWindowIndex;i<this.SubFrame.length;++i)
+            {
+                var item=this.SubFrame[i];
+                var frame=item.Frame;
+                frame.XYSplit=true;
+                totalHeight+=item.Height;
+                
+                if (i!=frameID)
+                {
+                    item.Height=0;
+                    frame.IsMinSize=true;  //最小化
+                    frame.XSplitOperator.ShowText=false;
+                }
+            }
+            subFrame.Height=totalHeight;
+            subFrame.Frame.XSplitOperator.ShowText=true;
+
+            return true;
         }
     }
 }
@@ -9540,6 +9682,12 @@ function MinuteChartContainer(uielement)
                 }
             }
 
+            if (this.EnableZoomIndexWindow)
+            {
+                this.PhoneDBClick.AddTouchStart(touches[0].clientX, touches[0].clientY, Date.now());
+                JSConsole.Chart.Log("[MinuteChartContainer::OnTouchStart] PhoneDBClick ", this.PhoneDBClick);
+            }
+
             if (this.EnableScrollUpDown==true)
             {
                 this.TouchTimer=setTimeout(()=>
@@ -9619,6 +9767,7 @@ function MinuteChartContainer(uielement)
         this.Frame.ChartBorder.Left = 50;
         this.Frame.ChartBorder.Bottom = 20;
         this.Frame.Canvas = this.Canvas;
+        this.Frame.ZoomStartWindowIndex=2;
         this.ChartCorssCursor.Frame = this.Frame; //十字光标绑定框架
         this.ChartSplashPaint.Frame = this.Frame;
 

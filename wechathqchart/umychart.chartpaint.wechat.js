@@ -1079,7 +1079,7 @@ function ChartSingleText()
 
     this.Draw = function () 
     {
-        if (!this.IsShow) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
 
         if (this.NotSupportMessage) 
         {
@@ -1263,9 +1263,9 @@ function ChartLine()
 
     this.Draw = function () 
     {
-        if (!this.IsShow) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
         if (this.NotSupportMessage)
-         {
+        {
             this.DrawNotSupportmessage();
             return;
         }
@@ -1494,7 +1494,7 @@ function ChartPointDot()
 
     this.Draw = function () 
     {
-        if (!this.IsShow) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
 
         if (this.NotSupportMessage) 
         {
@@ -1547,6 +1547,7 @@ function ChartStick()
 
     this.DrawLine = function () 
     {
+        if (this.ChartFrame.IsMinSize) return;
         if (!this.Data || !this.Data.Data) return;
 
         var isHScreen = (this.ChartFrame.IsHScreen === true);
@@ -1657,7 +1658,7 @@ function ChartLineStick()
 
     this.Draw = function () 
     {
-        if (!this.IsShow) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
 
         if (this.NotSupportMessage) 
         {
@@ -1685,6 +1686,7 @@ function ChartStickLine()
 
     this.Draw = function () 
     {
+        if (this.ChartFrame.IsMinSize) return;
         if (this.NotSupportMessage) 
         {
             this.DrawNotSupportmessage();
@@ -1857,7 +1859,7 @@ function ChartRectangle()
 
     this.Draw = function ()
     {
-        if (!this.IsShow) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
         if (!this.Color || !this.Rect) return;
         if (this.Color.length <= 0) return;
 
@@ -2385,7 +2387,7 @@ function ChartMultiText()
 
     this.Draw = function () 
     {
-        if (!this.IsShow) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
         if (!this.Data || this.Data.length <= 0) return;
         if (!this.Texts) return;
 
@@ -2537,7 +2539,7 @@ function ChartMultiHtmlDom()
 
     this.DrawDom=function()
     {
-        if (!this.IsShow) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
         if (!this.Data || this.Data.length<=0) return;
 
         this.IsHScreen=(this.ChartFrame.IsHScreen===true);
@@ -2606,7 +2608,7 @@ function ChartMultiLine()
 
     this.Draw = function () 
     {
-        if (!this.IsShow) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
         if (!this.Data || this.Data.length <= 0) return;
 
         this.IsHScreen = (this.ChartFrame.IsHScreen === true);
@@ -2702,7 +2704,7 @@ function ChartMultiBar()
 
     this.Draw = function () 
     {
-        if (!this.IsShow) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
         if (!this.Data || this.Data.length <= 0) return;
 
         this.IsHScreen = (this.ChartFrame.IsHScreen === true);
@@ -3385,6 +3387,7 @@ function ChartMACD()
 
     this.Draw = function () 
     {
+        if (this.ChartFrame.IsMinSize) return;
         if (this.NotSupportMessage) 
         {
             this.DrawNotSupportmessage();
@@ -3586,7 +3589,7 @@ function ChartBackground()
 
     this.Draw=function()
     {
-        if (!this.IsShow) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
         if (!this.Color) return;
         if (this.Color.length<=0) return;
         this.IsHScreen=(this.ChartFrame.IsHScreen===true);
@@ -3814,7 +3817,7 @@ function ChartLock()
     this.Draw = function () 
     {
         this.LockRect = null;
-  
+        if (this.ChartFrame.IsMinSize) return;
         if (this.NotSupportMessage) 
         {
             this.DrawNotSupportmessage();
@@ -3959,6 +3962,7 @@ function ChartVolStick()
 
     this.Draw = function () 
     {
+        if (this.ChartFrame.IsMinSize) return;
         if (this.ChartFrame.IsHScreen === true) 
         {
             this.HScreenDraw();
@@ -4156,6 +4160,7 @@ function ChartText()
   
     this.Draw = function () 
     {
+        if (this.ChartFrame.IsMinSize) return;
         if (this.NotSupportMessage) 
         {
             this.DrawNotSupportmessage();
@@ -4237,6 +4242,7 @@ function ChartStraightArea()
   
     this.Draw = function () 
     {
+        if (this.ChartFrame.IsMinSize) return;
         if (this.NotSupportMessage) 
         {
             this.DrawNotSupportmessage();
@@ -4389,93 +4395,106 @@ function ChartBand() {
     this.FirstColor = g_JSChartResource.Index.LineColor[0];
     this.SecondColor = g_JSChartResource.Index.LineColor[1];
   
-    this.Draw = function () {
-      if (this.NotSupportMessage) {
-        this.DrawNotSupportmessage();
-        return;
-      }
+    this.Draw = function ()
+    {
+        if (this.ChartFrame.IsMinSize) return;
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
   
-      var dataWidth = this.ChartFrame.DataWidth;
-      var distanceWidth = this.ChartFrame.DistanceWidth;
-      var xPointCount = this.ChartFrame.XPointCount;
-      var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + 2.0;
-      var x = 0;
-      var y = 0;
-      var y2 = 0;
-      var firstlinePoints = [];
-      var secondlinePoints = [];
-      var lIndex = 0;
-      for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) {
-        var value = this.Data.Data[i];
-        if (value == null || value.Value == null || value.Value2 == null) continue;
-        x = this.ChartFrame.GetXFromIndex(j);
-        y = this.ChartFrame.GetYFromData(value.Value);
-        y2 = this.ChartFrame.GetYFromData(value.Value2);
-        firstlinePoints[lIndex] = { x: x, y: y };
-        secondlinePoints[lIndex] = { x: x, y: y2 };
-        lIndex++;
-      }
-      if (firstlinePoints.length > 1) {
-        this.Canvas.save();
-        this.Canvas.beginPath();
-        for (var i = 0; i < firstlinePoints.length; ++i) {
-          if (i == 0)
-            this.Canvas.moveTo(firstlinePoints[i].x, firstlinePoints[i].y);
-          else
-            this.Canvas.lineTo(firstlinePoints[i].x, firstlinePoints[i].y);
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var xPointCount = this.ChartFrame.XPointCount;
+        var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + 2.0;
+        var x = 0;
+        var y = 0;
+        var y2 = 0;
+        var firstlinePoints = [];
+        var secondlinePoints = [];
+        var lIndex = 0;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null || value.Value == null || value.Value2 == null) continue;
+            x = this.ChartFrame.GetXFromIndex(j);
+            y = this.ChartFrame.GetYFromData(value.Value);
+            y2 = this.ChartFrame.GetYFromData(value.Value2);
+            firstlinePoints[lIndex] = { x: x, y: y };
+            secondlinePoints[lIndex] = { x: x, y: y2 };
+            lIndex++;
         }
-        for (var j = secondlinePoints.length - 1; j >= 0; --j) {
-          this.Canvas.lineTo(secondlinePoints[j].x, secondlinePoints[j].y);
+
+        if (firstlinePoints.length > 1) 
+        {
+            this.Canvas.save();
+            this.Canvas.beginPath();
+            for (var i = 0; i < firstlinePoints.length; ++i) 
+            {
+                if (i == 0)
+                    this.Canvas.moveTo(firstlinePoints[i].x, firstlinePoints[i].y);
+                else
+                    this.Canvas.lineTo(firstlinePoints[i].x, firstlinePoints[i].y);
+            }
+            for (var j = secondlinePoints.length - 1; j >= 0; --j) 
+            {
+                this.Canvas.lineTo(secondlinePoints[j].x, secondlinePoints[j].y);
+            }
+            this.Canvas.closePath();
+            this.Canvas.strokeStyle = "rgba(255,255,255,0)";
+            this.Canvas.stroke();
+            this.Canvas.clip();
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(firstlinePoints[0].x, this.ChartBorder.GetBottom());
+            for (var i = 0; i < firstlinePoints.length; ++i) 
+            {
+                this.Canvas.lineTo(firstlinePoints[i].x, firstlinePoints[i].y);
+            }
+            this.Canvas.lineTo(firstlinePoints[firstlinePoints.length - 1].x, this.ChartBorder.GetBottom());
+            this.Canvas.closePath();
+            this.Canvas.fillStyle = this.FirstColor;
+            this.Canvas.fill();
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(secondlinePoints[0].x, this.ChartBorder.GetBottom());
+            for (var i = 0; i < secondlinePoints.length; ++i) 
+            {
+                this.Canvas.lineTo(secondlinePoints[i].x, secondlinePoints[i].y);
+            }
+            this.Canvas.lineTo(secondlinePoints[secondlinePoints.length - 1].x, this.ChartBorder.GetBottom());
+            this.Canvas.closePath();
+            this.Canvas.fillStyle = this.SecondColor;
+            this.Canvas.fill();
+            this.Canvas.restore();
         }
-        this.Canvas.closePath();
-        this.Canvas.strokeStyle = "rgba(255,255,255,0)";
-        this.Canvas.stroke();
-        this.Canvas.clip();
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(firstlinePoints[0].x, this.ChartBorder.GetBottom());
-        for (var i = 0; i < firstlinePoints.length; ++i) {
-          this.Canvas.lineTo(firstlinePoints[i].x, firstlinePoints[i].y);
-        }
-        this.Canvas.lineTo(firstlinePoints[firstlinePoints.length - 1].x, this.ChartBorder.GetBottom());
-        this.Canvas.closePath();
-        this.Canvas.fillStyle = this.FirstColor;
-        this.Canvas.fill();
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(secondlinePoints[0].x, this.ChartBorder.GetBottom());
-        for (var i = 0; i < secondlinePoints.length; ++i) {
-          this.Canvas.lineTo(secondlinePoints[i].x, secondlinePoints[i].y);
-        }
-        this.Canvas.lineTo(secondlinePoints[secondlinePoints.length - 1].x, this.ChartBorder.GetBottom());
-        this.Canvas.closePath();
-        this.Canvas.fillStyle = this.SecondColor;
-        this.Canvas.fill();
-        this.Canvas.restore();
-      }
     }
-    this.GetMaxMin = function () {
-      var xPointCount = this.ChartFrame.XPointCount;
-      var range = {};
-      range.Min = null;
-      range.Max = null;
-      for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) {
-        var value = this.Data.Data[i];
-        if (value == null || value.Value == null || value.Value2 == null) continue;
-        var maxData = value.Value > value.Value2 ? value.Value : value.Value2;
-        var minData = value.Value < value.Value2 ? value.Value : value.Value2;
-        if (range.Max == null)
-          range.Max = maxData;
-        else if (range.Max < maxData)
-          range.Max = maxData;
-  
-        if (range.Min == null)
-          range.Min = minData;
-        else if (range.Min > minData)
-          range.Min = minData;
-      }
-  
-      return range;
+
+    this.GetMaxMin = function () 
+    {
+        var xPointCount = this.ChartFrame.XPointCount;
+        var range = {};
+        range.Min = null;
+        range.Max = null;
+
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null || value.Value == null || value.Value2 == null) continue;
+            var maxData = value.Value > value.Value2 ? value.Value : value.Value2;
+            var minData = value.Value < value.Value2 ? value.Value : value.Value2;
+            if (range.Max == null)
+            range.Max = maxData;
+            else if (range.Max < maxData)
+            range.Max = maxData;
+    
+            if (range.Min == null)
+            range.Min = minData;
+            else if (range.Min > minData)
+            range.Min = minData;
+        }
+        return range;
     }
-  }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // 其他图形
