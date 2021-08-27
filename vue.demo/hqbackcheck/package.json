@@ -33,7 +33,7 @@
     "css-loader": "^0.27.0",
     "file-loader": "^0.10.1",
     "html-webpack-plugin": "^2.24.1",
-    "node-sass": "^4.11.0",
+    "node-sass": "^4.13.1",
     "postcss-loader": "^1.3.3",
     "rimraf": "^2.5.4",
     "sass-loader": "^7.1.0",
