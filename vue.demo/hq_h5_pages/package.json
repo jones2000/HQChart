@@ -11,7 +11,6 @@
   "dependencies": {
     "axios": "^0.16.2",
     "element-ui": "^2.10.1",
-    "hqchart": "^1.1.7772",
     "html2canvas": "^1.0.0-rc.5",
     "jquery": "^3.4.0",
     "promise-polyfill": "^6.0.2",
@@ -30,6 +29,7 @@
     "babel-preset-vue-app": "^1.2.0",
     "css-loader": "^0.27.0",
     "file-loader": "^0.10.1",
+    "hqchart": "^1.1.10300",
     "html-webpack-plugin": "^2.24.1",
     "less": "^3.10.3",
     "less-loader": "^5.0.0",
