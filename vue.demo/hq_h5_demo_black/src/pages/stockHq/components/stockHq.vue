@@ -348,6 +348,7 @@
             this.IsIndex = this.IsSHSZIndex();  //初始判断是否是指数
 
             this.JSStock = JSCommonStock.JSStockInit();
+            this.JSStock.AutoUpateTimeout=1000*60;
             this.InitalStock();
             this.JSStock.RequestData();
 
