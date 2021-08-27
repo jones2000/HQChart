@@ -5170,6 +5170,15 @@ function JSChart(divElement, bOffscreen)
             this.DivElement.JSChart=this;   //div中保存一份
             this.JSChartContainer.Draw();
         }
+
+        if (IFrameSplitOperator.IsBool(option.CheckLatestVerion) && option.CheckLatestVerion==false)
+        {
+
+        }
+        else
+        {
+            if (chart && typeof(chart.GetLatestVersion)=='function') chart.GetLatestVersion();
+        }
     }
 
     this.CreateSimpleChart=function(option)
@@ -5985,6 +5994,49 @@ function JSChartContainer(uielement, OffscreenElement)
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();
+
+        if (this.GetLatestVersionTimer!=null) 
+        {
+            clearTimeout(this.GetLatestVersionTimer);
+            this.GetLatestVersionTimer=null;
+        }
+    }
+
+
+    this.GetLatestVersionTimer=null;    //获取最新版本
+    this.GetLatestVersion=function()
+    {
+        var waittimer=1000*60*3.5;
+        var value="aHR0cHM6Ly9ocWNoYXJ0LnplYWxpbmsuY29tL2FwaS9HZXRWZXJzaW9u";
+        JSConsole.Chart.Log("[JSChartContainer::GetLatestVersion] wait for get hqchart latest version. ",waittimer);
+        this.GetLatestVersionTimer = setTimeout(()=>
+        {
+            var width=0, height=0;
+            if (this.Frame && this.Frame.ChartBorder)
+            {
+                width=this.Frame.ChartBorder.GetChartWidth();
+                height=this.Frame.ChartBorder.GetChartHeight();
+            }
+            
+            var url=`${atob(value)}?width=${width}&height=${height}&type=h5`;
+
+            JSNetwork.HttpRequest({
+                url: url,
+                type:"get",
+                dataType: "json",
+                async:true,
+                success:function(data)
+                {
+                    JSConsole.Chart.Log("[JSChartContainer::GetLatestVersion] hqchart latest version. ",data);
+                    //TODO:判断是否是最新版本
+                },
+                error:function(request, textStatus, errorThrown)
+                {
+                    JSConsole.Chart.Log("[JSChartContainer::GetLatestVersion] Get HQChart latest version failed.", request);
+                }
+            });
+
+        }, waittimer);
     }
 
     //设置事件回调
@@ -63027,6 +63079,7 @@ function GetLocalTime(i)    //得到标准时区的时间的函数
     var utcTime = len + offset;
     return new Date(utcTime + 3600000 * i);
 }
+
 
 
 

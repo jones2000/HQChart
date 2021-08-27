@@ -119,10 +119,13 @@ DefaultData.GetMinuteOption=function()
 
         Border: //边框
         {
-            Left: 60, //左边间距
-            Right: 60, //右边间距
+            Left: 40, //左边间距
+            Right: 40, //右边间距
             Top: 25,
-            Bottom: 20
+            Bottom: 20,
+
+            AutoLeft:{ Blank:10, MinWidth:40 },
+            AutoRight:{ Blank:10, MinWidth:40 },
         },
 
         KLineTitle: //标题设置
@@ -161,8 +164,9 @@ DefaultData.GetKLineOption=function()
 
         DragDownload: { Day:{ Enable:true } , Minute:{ Enable:true }}, 
 
-        EnableZoomIndexWindow:true,
+        StepPixel:0,
 
+        EnableZoomIndexWindow:true,
         KLine: 
         {
             DragMode: 1, //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
@@ -186,12 +190,23 @@ DefaultData.GetKLineOption=function()
         {
             Left: 1, //左边间距
             Right: 60, //右边间距
-            Top: 25
+            Top: 25,
+
+            AutoRight:{ Blank:10, MinWidth:30 }
         },
 
         Frame: //子框架设置
         [
-            { SplitCount: 5, StringFormat: 0, IsShowLeftText: false },
+            { 
+                SplitCount: 5, StringFormat: 0, IsShowLeftText: false , 
+                Custom:
+                [
+                    { 
+                        Type:0,
+                        Position:'right',LineType:1, DateTime:"HH:MM"
+                    }
+                ]
+            },
             { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true, MinYDistance:20 },
             { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true},
             { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true}
@@ -212,6 +227,7 @@ DefaultData.GetPeriodData=function(name)
                     ["年线",{Value:3,KLineShow:true,MinuteShow:false}],
                     ["双周",{Value:21,KLineShow:true,MinuteShow:false}],
                     ["半年",{Value:22,KLineShow:true,MinuteShow:false}],
+                    ["分笔",{Value:10,KLineShow:true,MinuteShow:false}],
                     ["1分钟",{Value:4,KLineShow:true,MinuteShow:false}],
                     ["5分钟",{Value:5,KLineShow:true,MinuteShow:false}],
                     ["15分钟",{Value:6,KLineShow:true,MinuteShow:false}],
@@ -228,7 +244,7 @@ DefaultData.GetPeriodMenu=function()
     const data=
     [
         '分时', '五日', 
-        '日线', '周线', '月线', '年线', 
+        '日线', '周线', '月线', '年线', "分笔",
         '1分钟', '5分钟', '15分钟', '30分钟', '60分钟',
         "双周",  "半年"
     ];
@@ -754,6 +770,11 @@ export default
             }
             else
             {
+                if (period==10) //分笔图
+                {
+
+                }
+                
                 this.KLine.JSChart.ChangePeriod(period);
             }
         },

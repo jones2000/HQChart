@@ -1031,8 +1031,12 @@ function JSChart(element)
         chart.Draw();
         chart.ChangeSymbol(option.Symbol);
 
-        
         this.JSChartContainer.Draw();
+
+        if (!IFrameSplitOperator.IsBool(option.CheckLatestVerion) || !(option.CheckLatestVerion==false))
+        {
+            if (chart && this.CanvasElement.IsUniApp && typeof(chart.GetLatestVersion)=='function') chart.GetLatestVersion();
+        }
     }
 
     //切换股票代码接口
@@ -1474,6 +1478,47 @@ function JSChartContainer(uielement)
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();
+
+        if (this.GetLatestVersionTimer!=null) 
+        {
+            clearTimeout(this.GetLatestVersionTimer);
+            this.GetLatestVersionTimer=null;
+        }
+    }
+
+    this.GetLatestVersionTimer=null;    //获取最新版本
+    this.GetLatestVersion=function()
+    {
+        var waittimer=1000*60*3.5;
+        var value="aHR0cHM6Ly9ocWNoYXJ0LnplYWxpbmsuY29tL2FwaS9HZXRWZXJzaW9u";
+
+        this.GetLatestVersionTimer = setTimeout(()=>
+        {
+            var width=0, height=0;
+            if (this.Frame && this.Frame.ChartBorder)
+            {
+                width=this.Frame.ChartBorder.GetChartWidth();
+                height=this.Frame.ChartBorder.GetChartHeight();
+            }
+            
+            var url=`${atob(value)}?width=${width}&height=${height}&type=uniapp`;
+
+            wx.request({
+                url: url,
+                method:"get",
+                dataType: "json",
+                async:true,
+                success:function(data)
+                {
+                    //TODO:判断是否是最新版本
+                },
+                fail:function(request, textStatus, errorThrown)
+                {
+                    JSConsole.Chart.Log("[JSChartContainer::GetLatestVersion] Get HQChart latest version failed.", request);
+                }
+            });
+
+        }, waittimer);
     }
 
     this.AddEventCallback = function (object) //设置事件回调 {event:事件id, callback:回调函数}
