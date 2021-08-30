@@ -245,7 +245,7 @@
 </script>
 
 
-<style lang="scss" type="text/scss">
+<style lang="less">
     #toolBox {
     width: 115px;
     height: 516px;

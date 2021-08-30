@@ -566,9 +566,7 @@
   }
 </script>
 
-<style scoped lang="scss">
-  $border: 1px solid #e1ecf2;
-  
+<style scoped lang="less">
   #stockinfo{
       display: flex;
       flex-direction: column;

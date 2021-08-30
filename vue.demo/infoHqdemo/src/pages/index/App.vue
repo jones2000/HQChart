@@ -188,7 +188,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="less">
 * {
   font: 14px / normal "Microsoft Yahei";
   padding: 0;
