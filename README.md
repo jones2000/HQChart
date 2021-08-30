@@ -59,9 +59,13 @@ npm install hqchart <br>
 VUE 例子:[demo-vue.md](/教程/demo-vue.md) <br>
 React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
+# 本地调试
+内置测试数据不支持跨域，如果要在本地chrome调试代码，参看教程[解决Chrome本地调试跨域](https://jones2000.blog.csdn.net/article/details/120008624),或者用vue配置代理
+
 # 声明
   本项目只提供行情图形库及麦语法脚本执行器.<br>
   页面中所有的行情数据都来自互联网或测试假数据, 不能确保数据的正确性, 仅供开发调试使用. 任何行情数据问题都与本项目无关. 请自行去交易所购买正版行情。
+
 
 # HQChart 3.0
 * 分网页版本 及 微信小程序版本 <br>
