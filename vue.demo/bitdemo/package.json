@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "ali-oss": "^4.16.0",
-    "axios": "^0.16.2",
+    "axios": "^0.21.1",
     "dayjs": "^1.8.15",
     "echarts": "^4.2.1",
     "element-ui": "^2.10.1",
