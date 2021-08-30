@@ -12,7 +12,7 @@
     "axios": "^0.16.2",
     "element-ui": "^1.4.13",
     "jquery": "^3.4.0",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.21",
     "moment": "^2.19.1",
     "promise-polyfill": "^6.0.2",
     "vue": "^2.1.8",
