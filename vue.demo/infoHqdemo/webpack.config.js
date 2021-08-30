@@ -35,8 +35,7 @@ module.exports = (options = {}) => ({
         loader: 'vue-loader',
         options: {
             loaders: {
-                scss: 'style-loader!css-loader!sass-loader',
-                sass: 'style-loader!css-loader!sass-loader?indentedSyntax',
+              less: 'style-loader!css-loader!less-loader'
             },
         },
       },

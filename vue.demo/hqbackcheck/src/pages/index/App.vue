@@ -736,24 +736,17 @@ INDEXCLOSE:INDEXC,EXDATA;    //取指数的收盘价 回测的时候计算BATE�
     }
 </script>
 
-<style lang='scss' scoped>
+<style lang='less' scoped>
 * {margin: 0;padding: 0;}
-$border: 1px solid #e9e9e9;
-$contentPadding: 0 4%;
+@border: 1px solid #e9e9e9;
+@contentPadding: 0 4%;
 .PriceUp{
     color: rgb(212,63,62);
 }
 .PriceDown{
     color: rgb(81,171,92);
 }
-@mixin afterline(){
-    content: '';
-    height: 2px;
-    border-radius: 2px;
-    background-color: #fff;
-    position: absolute;
-    bottom: -2px;
-}
+
 #app2{
     font: 14px 'Microsoft Yahei';
     position: relative;
@@ -771,7 +764,7 @@ $contentPadding: 0 4%;
         font-size: 16px;
         font-weight: bold;
         text-align: center;
-        border-bottom: $border;
+        border-bottom: @border;
     }
     .backCheckWrap,.hqWrap{
         position: absolute;
@@ -788,8 +781,8 @@ $contentPadding: 0 4%;
             .klineTab{
                 height: 32px;
                 padding-top: 7px;
-                border-bottom: $border;
-                border-top: $border;
+                border-bottom: @border;
+                border-top: @border;
                 /* box-shadow: 0 2px 10px #e9e9e9; */
                 white-space: nowrap;
                 overflow: hidden;
@@ -801,7 +794,12 @@ $contentPadding: 0 4%;
                     position: relative;
                 }
                 .timeInterval::after{
-                    @include afterline();
+                    content: '';
+                    height: 2px;
+                    border-radius: 2px;
+                    background-color: #fff;
+                    position: absolute;
+                    bottom: -2px;
                     width: 100%;
                     left: 0;
                 }
@@ -864,7 +862,7 @@ $contentPadding: 0 4%;
                 }
             }
             .countCheck{
-                padding: $contentPadding;
+                padding: @contentPadding;
                 padding-bottom: 21px;
                 font-size: 12px;
                 >div{
@@ -894,11 +892,11 @@ $contentPadding: 0 4%;
                         >span:last-child{
                             text-align: right;
                         }
-                        border-bottom: $border;
+                        border-bottom: @border;
                     }
                     .successRate{
                         line-height: 30px;
-                        border-bottom: $border;
+                        border-bottom: @border;
                         >span:last-child{
                             float: right;
                         }
@@ -938,9 +936,9 @@ $contentPadding: 0 4%;
             .profitCoefficient{
                 display: flex;
                 flex-direction: row;
-                border-top: $border;
-                border-bottom: $border;
-                padding: $contentPadding;
+                border-top: @border;
+                border-bottom: @border;
+                padding: @contentPadding;
                 font-size: 15px;
                 .excessReturn,.coefficient,.maxBack{
                     width: 32.6%;
@@ -950,7 +948,7 @@ $contentPadding: 0 4%;
                     }
                 }
                 .excessReturn,.coefficient{
-                    border-right: $border;
+                    border-right: @border;
                 }
             }
 
@@ -961,7 +959,7 @@ $contentPadding: 0 4%;
         right: 0;
         width: 70%;
         padding-left: 5px;
-        border-left: $border;
+        border-left: @border;
         box-sizing: border-box;
         .indexTools{
             width: 100%;

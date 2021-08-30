@@ -1603,9 +1603,7 @@ export default
 </script>
 
 
-<style lang="scss">
-$border: 1px solid #e1ecf2;
-
+<style lang="less">
 .stockkline 
 {
     width:100%;
@@ -2021,7 +2019,7 @@ $border: 1px solid #e1ecf2;
 }
 
 </style>
-<style lang="scss">
+<style lang="less">
 .historyLine{
     .el-table__header-wrapper thead div,
     .el-table th{

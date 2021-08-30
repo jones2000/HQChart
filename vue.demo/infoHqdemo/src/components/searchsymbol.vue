@@ -168,7 +168,7 @@
 </script>
 
 
-<style lang="scss">
+<style lang="less">
 .symbolWrap {
   position: relative;
   .Select {
