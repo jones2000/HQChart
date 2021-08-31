@@ -3177,8 +3177,9 @@ function JSChartContainer(uielement, OffscreenElement)
 
     this.OnTouchDBClick=function(points)
     {
-        var x=points[0].X, y=points[0].Y;
-        JSConsole.Chart.Log('[KLineChartContainer:OnTouchDBClick] Phone dbclick', x, y);
+        var pt=this.PointAbsoluteToRelative(points[0].X, points[0].Y, true);
+        var x=pt.X, y=pt.Y;
+        JSConsole.Chart.Log(`[KLineChartContainer:OnTouchDBClick] Phone dbclick absolute [${x},${y}], soruce [${points[0].X},${points[0].Y}]`);
 
         var frameId=this.Frame.PtInFrame(x,y);
         JSConsole.Chart.Log("[KLineChartContainer::OnTouchDBClick] frameId",frameId);
@@ -7337,6 +7338,8 @@ function MinuteFrame()
 
     this.DrawToolbar=function()
     {
+        if (typeof($)=="undefined") return;
+        
         if (this.Identify<2) return;
         if (!this.ChartBorder.UIElement) return;
 

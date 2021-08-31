@@ -11304,6 +11304,8 @@ function MinuteFrame()
 
     this.DrawToolbar=function()
     {
+        if (typeof($)=="undefined") return;
+        
         if (this.Identify<2) return;
         if (!this.ChartBorder.UIElement) return;
 
