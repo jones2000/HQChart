@@ -11349,7 +11349,7 @@ function MinuteFrame()
     this.DrawToolbar=function()
     {
         if (typeof($)=="undefined") return;
-        
+
         if (this.Identify<2) return;
         if (!this.ChartBorder.UIElement) return;
 
@@ -22584,12 +22584,20 @@ function ChartStickLine()
         var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
         if (isHScreen) xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+2.0;
 
+        var isMinute=this.IsMinuteFrame();
+        
         this.Canvas.save();
         var bFillBar=false;
         var bFillKLine=false;
         var emptyBGColor=g_JSChartResource.EmptyBarBGColor;
 
-        if(this.Width==0)
+        if (isMinute)
+        {
+            if (this.Width>1) this.Canvas.lineWidth=2*GetDevicePixelRatio();
+            else this.Canvas.lineWidth=GetDevicePixelRatio();
+            this.Canvas.strokeStyle=this.Color;
+        }
+        else if(this.Width==0)
         {
             this.SetEmptyBar();
         }
