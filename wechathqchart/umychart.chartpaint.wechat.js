@@ -1704,11 +1704,19 @@ function ChartStickLine()
         var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + 2.0;
         if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
 
+        var isMinute=this.IsMinuteFrame();
+
         this.Canvas.save();
         var bFillBar = false;
         var bFillKLine = false;
 
-        if (this.LineWidth==50)
+        if (isMinute)
+        {
+            if (this.LineWidth>1) this.Canvas.lineWidth=2;
+            else this.Canvas.lineWidth=1;
+            this.Canvas.strokeStyle=this.Color;
+        }
+        else if (this.LineWidth==50)
         {
             if (dataWidth >= this.MinBarWidth) 
             {
