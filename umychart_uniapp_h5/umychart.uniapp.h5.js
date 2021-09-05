@@ -4130,6 +4130,7 @@ function JSChart(divElement, bOffscreen)
             if (option.KLine.RightSpaceCount>0) chart.RightSpaceCount=option.KLine.RightSpaceCount;
             if (option.KLine.ZoomType>0) chart.ZoomType=option.KLine.ZoomType;
             if (option.KLine.DataWidth>=1) chart.KLineSize={ DataWidth:option.KLine.DataWidth };
+            if (IFrameSplitOperator.IsNumber(option.KLine.RightFormula)) chart=RightFormula=option.KLine.RightFormula;
         }
 
         if (option.EnableFlowCapital)
@@ -44745,7 +44746,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (bindData.Right>0 && !this.IsApiPeriod)    //复权
         {
-            var rightData=bindData.GetRightDate(bindData.Right);
+            var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula } );
             bindData.Data=rightData;
         }
 
@@ -44881,7 +44882,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (bindData.Right>0 && bindData.Period<=3)    //复权(日线数据才复权)
         {
-            var rightData=bindData.GetRightDate(bindData.Right);
+            var rightData=bindData.GetRightData(bindData.Right,{ AlgorithmType: this.RightFormula });
             bindData.Data=rightData;
         }
 
@@ -45161,7 +45162,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,false))    //复权(日线数据才复权)
         {
-            var rightData=bindData.GetRightDate(bindData.Right);
+            var rightData=bindData.GetRightData(bindData.Right,{ AlgorithmType: this.RightFormula });
             bindData.Data=rightData;
         }
 
@@ -45303,7 +45304,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true) && MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && !this.IsApiPeriod)    //复权(A股日线数据才复权)
         {
-            var rightData=bindData.GetRightDate(bindData.Right);
+            var rightData=bindData.GetRightData(bindData.Right,{ AlgorithmType: this.RightFormula });
             bindData.Data=rightData;
         }
 
@@ -45389,7 +45390,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
             if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(data.symbol) && !this.IsApiPeriod)    //复权数据 ,A股才有有复权
             {
-                var rightData=bindData.GetRightDate(bindData.Right);
+                var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
                 bindData.Data=rightData;
             }
 
@@ -45521,7 +45522,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true) && !this.IsApiPeriod)    //复权(日线数据才复权)
         {
-            var rightData=bindData.GetRightDate(bindData.Right);
+            var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data=rightData;
         }
 
@@ -45580,7 +45581,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true) && !this.IsApiPeriod)    //复权(日线数据才复权)
         {
-            var rightData=bindData.GetRightDate(bindData.Right);
+            var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data=rightData;
         }
 
@@ -47135,7 +47136,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
         {
-            var rightData=bindData.GetRightDate(bindData.Right);
+            var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data=rightData;
         }
 
@@ -47196,7 +47197,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
                 if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(item.Symbol))       //复权数据
                 {
-                    var rightData=bindData.GetRightDate(bindData.Right);
+                    var rightData=bindData.GetRightData(bindData.Right,{ AlgorithmType: this.RightFormula });
                     bindData.Data=rightData;
                 }
 
@@ -47549,7 +47550,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(data.symbol) && !this.IsApiPeriod)    //复权数据 ,A股才有有复权
         {
-            var rightData=bindData.GetRightDate(bindData.Right);
+            var rightData=bindData.GetRightData(bindData.Right,{ AlgorithmType: this.RightFormula });
             bindData.Data=rightData;
         }
 
@@ -47870,7 +47871,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
                 if (bindData.Right>0)    //复权
                 {
-                    var rightData=newBindData.GetRightDate(bindData.Right);
+                    var rightData=newBindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
                     newBindData.Data=rightData;
                 }
 
@@ -48217,7 +48218,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         {
             if (bindData.Right>0)    //复权
             {
-                var rightData=bindData.GetRightDate(bindData.Right);
+                var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
                 bindData.Data=rightData;
             }
 
@@ -52647,7 +52648,7 @@ function CustomKLineChartContainer(uielement)
 
         if (bindData.Right>0)    //复权
         {
-            var rightData=bindData.GetRightDate(bindData.Right);
+            var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data=rightData;
         }
 
@@ -53015,7 +53016,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
 
             if (bindData.Right>0)    //复权
             {
-                var rightData=newBindData.GetRightDate(bindData.Right);
+                var rightData=newBindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
                 newBindData.Data=rightData;
             }
 
@@ -59603,7 +59604,7 @@ function KLineRightMenu(divElement)
 
     this.GetOverlayIndex=function(chart, windowsIndex)
     {
-        if (windowsIndex>=chart.Frame.SubFrame.length) return [];
+        if (windowsIndex>=chart.Frame.SubFrame.length || windowsIndex<0) return [];
 
         var result=[];
         var item=chart.Frame.SubFrame[windowsIndex];
@@ -79037,6 +79038,7 @@ function JSExplainer(ast,option)
             ["MEMA", { Name:"MEMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日平滑移动平均`; } } ],
             ["EMA", { Name:"EMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日指数移动平均`; } } ],
             ["EXPMA", { Name:"EXPMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日指数移动平均`; } } ],
+            ["EXPMEMA", { Name:"EXPMEMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日指数平滑移动平均`; } }],
             ["WMA", { Name:"WMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日加权移动平均`; } } ],
             ["DMA", { Name:"DMA", Param:{ Count:2 }, ToString:function(args) { return `以${args[1]}为权重${args[0]}的动态移动平均`; } } ],
             ["XMA", { Name:"XMA", Param:{ Count:2 }, ToString:function(args) { return `${args[0]}的${args[1]}日偏移移动平均`; } } ],
