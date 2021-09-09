@@ -4446,6 +4446,11 @@ function JSChart(divElement, bOffscreen)
             if (item.IsShowIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowIndexName=false;
             if (item.IsShowOverlayIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowOverlayIndexName=false;
             if (item.IndexParamSpace>=0) chart.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+            if (item.OverlayIndexType)
+            {
+                if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.Position)) chart.Frame.SubFrame[i].Frame.OverlayIndexType.Position=item.OverlayIndexType.Position;
+                if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.LineSpace)) chart.Frame.SubFrame[i].Frame.OverlayIndexType.LineSpace=item.OverlayIndexType.LineSpace;
+            }
         }
         
         //叠加指标宽度
@@ -7282,7 +7287,7 @@ function JSChartContainer(uielement, OffscreenElement)
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)
         {
             this.Frame.ClearCoordinateText();
-            this.Frame.Draw();
+            this.Frame.Draw( { IsEnableSplash:this.ChartSplashPaint.IsEnableSplash} );
             this.ChartSplashPaint.Draw();
             return;
         }
@@ -9281,6 +9286,12 @@ function JSChartContainer(uielement, OffscreenElement)
                 if (item.Close!=null) subFrame.Frame.CloseIndex=item.Close;
                 if (item.Overlay!=null) subFrame.Frame.OverlayIndex=item.Overlay;
                 if (item.IsDrawTitleBG==true)  subFrame.Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+
+                if (item.OverlayIndexType)
+                {
+                    if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.Position)) subFrame.Frame.OverlayIndexType.Position=item.OverlayIndexType.Position;
+                    if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.LineSpace)) subFrame.Frame.OverlayIndexType.LineSpace=item.OverlayIndexType.LineSpace;
+                }
             }
             
             if (IFrameSplitOperator.IsNumber(option.SplitCount)) subFrame.Frame.YSplitOperator.SplitCount=option.SplitCount;
@@ -9857,6 +9868,7 @@ function IChartFramePainting()
     this.IsShowTitleArraw=true;        //是否显示指标信息上涨下跌箭头
     this.IsShowIndexName=true;         //是否显示指标名字
     this.IsShowOverlayIndexName=true;  //是否显示叠加指标名字
+    this.OverlayIndexType= { Position:0, LineSpace:5 };
     this.IndexParamSpace=2;            //指标参数数值显示间距
     this.IsShowIndexTitle=true;        //显示整个指标标题信息
     this.IsDrawTitleBottomLine=false;
@@ -9912,7 +9924,7 @@ function IChartFramePainting()
             for(var i=0;i<this.HorizontalInfo.length;++i)
             {
                 var item=this.HorizontalInfo[i];
-                item.Message[0]=item.Message[1]=null;
+                if (item && item.Message && Array.isArray(item.Message)) item.Message[0]=item.Message[1]=null;
             }
         }
 
@@ -9921,7 +9933,7 @@ function IChartFramePainting()
             for(var i=0;i<this.VerticalInfo.length;++i)
             {
                 var item=this.VerticalInfo[i];
-                item.Message[0]=item.Message[1]=null;
+                if (item && item.Message && Array.isArray(item.Message)) item.Message[0]=item.Message[1]=null;
             }
         }
     }
@@ -13810,11 +13822,21 @@ function KLineHScreenFrame()
                 this.Canvas.fillStyle=item.TextColor;
                 this.Canvas.textAlign="left";
                 this.Canvas.textBaseline="middle";
+                var text;
+                if (Array.isArray(item.Message[1])) //横屏只支持单行
+                {
+                    text=item.Message[1][0];
+                }
+                else
+                {
+                    text=item.Message[1];
+                }
+
                 var xText=y,yText=bottom;
                 this.Canvas.save();
                 this.Canvas.translate(xText, yText);
                 this.Canvas.rotate(90 * Math.PI / 180);
-                this.Canvas.fillText(item.Message[1], 2, 0);
+                this.Canvas.fillText(text, 2, 0);
                 this.Canvas.restore();
             }
 
@@ -14280,6 +14302,11 @@ function OverlayKLineHScreenFrame()
         this.Canvas.lineTo(ToFixedPoint(right),ToFixedPoint(bottom));
         this.Canvas.stroke();
         */
+    }
+
+    this.GetScaleTextWidth=function()
+    {
+        return { TextWidth:0 };
     }
 }
 
@@ -14884,14 +14911,16 @@ function HQTradeFrame()
         return false;
     }
 
-    this.Draw=function()
+    this.Draw=function(option)
     {
         if (this.SizeChange===true) 
         {
             this.CalculateChartBorder();
         }
 
-        if ((this.AutoLeftBorder || this.AutoRightBorder) && this.IsFrameXYSplit())
+        var isSplash=false; //是否过场动画
+        if (option && option.IsEnableSplash===true) isSplash=true;
+        if (isSplash==false && (this.AutoLeftBorder || this.AutoRightBorder) && this.IsFrameXYSplit())
         {
             this.AutoRightOverlayWidth=[];
             var textWidth=this.GetScaleTextWidth();
@@ -36119,8 +36148,11 @@ function DynamicChartTitlePainting()
     this.TradeIndex;    //专家系统名字{Name:'名字', Param:'参数'}
     this.IsShowTradeIndexTitle=true;
 
-    this.OverlayIndex=new Map();   //叠加指标 key=Identify value={ Data:数据, Title:标题, Identify:标识}
-    this.IsShowOverlayIndexName=true;  //是否显示叠加指标名字
+    this.OverlayIndex=new Map();        //叠加指标 key=Identify value={ Data:数据, Title:标题, Identify:标识}
+    this.IsShowOverlayIndexName=true;   //是否显示叠加指标名字
+    this.OverlayIndexType={ Position:0, LineSpace:5, BGColor:g_JSChartResource.OverlayIndexTitleBGColor };        //Position 0=主图指标后面显示 1=叠加指标单行显示
+                                                                                               //LineSpace 行间距
+
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.TitleRect;              //指标名字显示区域
     this.IsDrawTitleBG=false;    //是否绘制指标名字背景色
@@ -36129,10 +36161,18 @@ function DynamicChartTitlePainting()
     this.ParamSpace=2;           //参数显示的间距
 
     this.IsKLineFrame=false;    //是否是K线框架标题
+    
 
     //动态标题
     this.OutName=null;
     this.OutValue=null;
+
+    this.ReloadResource=function()
+    {
+        this.Font=g_JSChartResource.TitleFont;
+        this.TitleColor=g_JSChartResource.DefaultTextColor;
+        this.OverlayIndexType.BGColor=g_JSChartResource.OverlayIndexTitleBGColor;
+    }
 
     this.SetDynamicOutName=function(outName, args)
     {
@@ -36320,6 +36360,8 @@ function DynamicChartTitlePainting()
         this.IsShowUpDownArrow=this.Frame.IsShowTitleArraw;
         this.IsShowIndexName=this.Frame.IsShowIndexName;
         this.IsShowOverlayIndexName=this.Frame.IsShowOverlayIndexName;
+        this.OverlayIndexType.Position=this.Frame.OverlayIndexType.Position;
+        this.OverlayIndexType.LineSpace=this.Frame.OverlayIndexType.LineSpace;
         this.ParamSpace=this.Frame.IndexParamSpace;
         this.TitleRect=null;
 
@@ -36454,6 +36496,8 @@ function DynamicChartTitlePainting()
             }
             var space=this.ParamSpace*GetDevicePixelRatio();
             var textWidth=this.Canvas.measureText(text).width+space;    //后空2个像素
+            if ((left+textWidth)>right) break;
+
             this.Canvas.fillText(text,left,bottom,textWidth);
             left+=textWidth;
         }
@@ -36488,7 +36532,116 @@ function DynamicChartTitlePainting()
             left+=textWidth;
         }
 
-        this.DrawOverlayIndex(left+10*GetDevicePixelRatio());   //间距都空点 和主指标区分开
+        if (this.OverlayIndexType.Position==1) this.DrawOverlayIndexSingleLine();
+        else this.DrawOverlayIndex(left+10*GetDevicePixelRatio());   //间距都空点 和主指标区分开
+    }
+
+    this.DrawOverlayIndexSingleLine=function()   //叠加指标单行显示
+    {
+        var pixelRatio=GetDevicePixelRatio();
+        var border=this.Frame.GetBorder();
+        if (this.Frame.IsHScreen===true) 
+        {
+            var left=1;
+            var top=2*pixelRatio;
+            var right=this.Frame.ChartBorder.GetHeight();
+            var bottom=this.Frame.ChartBorder.GetWidthEx();
+        }
+        else
+        {
+            var top=border.TopTitle+2*pixelRatio;
+            var left=border.Left+1;
+            var right=border.Right;
+            var bottom=border.Bottom;
+        }
+        
+
+        var lineSpace=this.OverlayIndexType.LineSpace*pixelRatio; 
+        var x=left, y=top;
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="top";
+        var fontHeight=GetFontHeight(this.Canvas,this.Font,"擎");
+        for(item of this.OverlayIndex)
+        {
+            var overlayItem=item[1];
+            x=left;
+            if (overlayItem.Title && this.IsShowOverlayIndexName)
+            {
+                
+                var textWidth=this.Canvas.measureText(overlayItem.Title).width+2;
+                if ((x+textWidth)<right) 
+                {
+                    if (this.OverlayIndexType.BGColor)
+                    {
+                        this.Canvas.fillStyle=this.OverlayIndexType.BGColor;
+                        var rtBG={Left:x, Top:y, Width:textWidth, Height: fontHeight+lineSpace };    //保存下标题的坐标
+                        this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+                    } 
+
+                    this.Canvas.fillStyle=this.TitleColor;
+                    this.Canvas.fillText(overlayItem.Title,x,y,textWidth);
+                }
+                x+=textWidth;
+            }
+
+            for(var i=0; i<overlayItem.Data.length; ++i)
+            {
+                var item=overlayItem.Data[i];
+                if (!item || !item.Data || !item.Data.Data || !item.Name) continue;
+                if (item.Data.Data.length<=0) continue;
+
+                var value=null;
+                var valueText=null;
+                if (item.DataType=="StraightLine")  //直线只有1个数据
+                {
+                    value=item.Data.Data[0];
+                    valueText=this.FormatValue(value,item);
+                }
+                else
+                {
+                    var index=Math.abs(this.CursorIndex-0.5);
+                    index=parseInt(index.toFixed(0));
+                    if (this.IsKLineFrame) index=this.CursorIndex;
+                    var dataIndex=item.Data.DataOffset+index;
+                    if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
+                    if (dataIndex<0) continue;
+
+                    value=item.Data.Data[dataIndex];
+                    if (value==null) continue;
+
+                    if (item.DataType=="HistoryData-Vol")
+                    {
+                        value=value.Vol;
+                        valueText=this.FormatValue(value,item);
+                    }
+                    else if (item.DataType=="MultiReport")
+                    {
+                        valueText=this.FormatMultiReport(value,item);
+                    }
+                    else
+                    {
+                        valueText=this.FormatValue(value,item);
+                    }
+                }
+
+                var text=item.Name+":"+valueText;
+                var textWidth=this.Canvas.measureText(text).width+2;    //后空2个像素
+                if ((x+textWidth)>right) break;
+                if (this.OverlayIndexType.BGColor)
+                {
+                    this.Canvas.fillStyle=this.OverlayIndexType.BGColor;
+                    var rtBG={Left:x, Top:y, Width:textWidth, Height: fontHeight+lineSpace };    //保存下标题的坐标
+                    this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+                }
+
+                this.Canvas.fillStyle=item.Color;
+                this.Canvas.fillText(text,x,y,textWidth);
+                x+=textWidth;
+            }
+
+            y+=fontHeight+lineSpace;
+            if ((y+fontHeight+lineSpace)>=bottom) break;
+        }
     }
 
     this.DrawOverlayIndex=function(left)    //叠加指标标题
@@ -36660,6 +36813,8 @@ function DynamicChartTitlePainting()
 
             var text=item.Name+":"+valueText;
             var textWidth=this.Canvas.measureText(text).width+2;    //后空2个像素
+            if ((left+textWidth)>right) break;
+
             this.Canvas.fillText(text,left,bottom,textWidth);
             left+=textWidth;
         }
@@ -36676,7 +36831,8 @@ function DynamicChartTitlePainting()
             }
         }
 
-        this.DrawOverlayIndex(left+5*GetDevicePixelRatio());   //间距都空点 和主指标区分开
+        if (this.OverlayIndexType.Position==1) this.DrawOverlayIndexSingleLine();
+        else this.DrawOverlayIndex(left+5*GetDevicePixelRatio());   //间距都空点 和主指标区分开
     }
 
     this.OnDrawEventCallback=function(drawData)
@@ -41875,6 +42031,7 @@ function JSChartResource()
     this.DefaultTextFont=14*GetDevicePixelRatio() +'px 微软雅黑';    //图形中默认的字体
     this.TitleFont=13*GetDevicePixelRatio() +'px 微软雅黑';          //指标显示,tooltip显示字体
     this.IndexTitleBGColor='rgb(217,219,220)';                      //指标名字背景色
+    this.OverlayIndexTitleBGColor='rgba(255,255,255,0.7)';
 
     this.Title={
         TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
@@ -42342,6 +42499,7 @@ function JSChartResource()
         if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;
         if (style.TitleFont) this.TitleFont = style.TitleFont;
         if (style.IndexTitleBGColor) this.IndexTitleBGColor=style.IndexTitleBGColor;
+        if (style.OverlayIndexTitleBGColor) this.OverlayIndexTitleBGColor=style.OverlayIndexTitleBGColor;
         if (style.UpTextColor) this.UpTextColor = style.UpTextColor;
         if (style.DownTextColor) this.DownTextColor = style.DownTextColor;
         if (style.UnchagneTextColor) this.UnchagneTextColor = style.UnchagneTextColor;
@@ -46752,6 +46910,12 @@ function KLineChartContainer(uielement,OffscreenElement)
                 {
                     subFrame.Frame.IsShowYText[1]=item.IsShowRightText;
                     subFrame.Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度
+                }
+
+                if (item.OverlayIndexType)
+                {
+                    if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.Position)) subFrame.Frame.OverlayIndexType.Position=item.OverlayIndexType.Position;
+                    if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.LineSpace)) subFrame.Frame.OverlayIndexType.LineSpace=item.OverlayIndexType.LineSpace;
                 }
 
                 var bindData=this.ChartPaint[0].Data;
@@ -53588,6 +53752,7 @@ function KLineChartHScreenContainer(uielement)
             {
                 frame.YSplitOperator=new FrameSplitKLinePriceY();
                 frame.YSplitOperator.FrameSplitData=this.FrameSplitData.get('price');
+                frame.YSplitOperator.FrameSplitData2=this.FrameSplitData.get('double');
                 frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 //主图上下间距
                 var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
@@ -84281,6 +84446,7 @@ var BLACK_STYLE=
     FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
     FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
     FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
+    OverlayIndexTitleBGColor:'rgba(0,0,0,0.7)', //叠加指标背景色
 
     Frame:
     { 

@@ -82,6 +82,7 @@ var BLACK_STYLE=
     FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
     FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
     FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
+    OverlayIndexTitleBGColor:'rgba(0,0,0,0.7)', //叠加指标背景色
 
     Frame:
     { 
