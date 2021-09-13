@@ -313,6 +313,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 1. [HQChart实战教程36-数字货币币安对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/114468807)<br>
 2. [HQChart实战教程41-新浪+腾讯A股数据源对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/117139756)<br>
 3. [HQChart实战教程42-新浪期货数据源对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/117757956)<br>
+4. [股票分时图例子](https://download.csdn.net/download/jones2000/22589484)<br>
 
 ## httpA股数据对接教程(付费文章)
 ### 日K线
