@@ -13093,7 +13093,9 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
                     drawItem.DrawType = draw.DrawType;
                     drawItem.DrawData = this.FittingMultiLine(draw.DrawData, date, time, hqChart);
                     outVarItem.Draw = drawItem;
-
+                    if (draw.LineDash) drawItem.LineDash=draw.LineDash;
+                    //if (draw.Arrow) drawItem.Arrow=draw.Arrow;
+                    if (IFrameSplitOperator.IsNumber(draw.LineWidth)) drawItem.LineWidth=draw.LineWidth;
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType == 'MULTI_BAR') 

@@ -16696,6 +16696,7 @@ function ScriptIndex(name,script,args,option)
     this.newMethod(name);
     delete this.newMethod;
 
+    this.ClassName="ScriptIndex";
     this.Script=script;
     this.Arguments=[];
     this.OutVar=[];
@@ -16751,6 +16752,22 @@ function ScriptIndex(name,script,args,option)
     }
 
     if (args) this.Arguments=args;
+
+    this.CopyTo=function(dest)   //赋值到新实例出来
+    {
+        dest.FloatPrecision=this.FloatPrecision;
+        dest.StringFormat=this.StringFormat;
+        dest.KLineType=this.KLineType;
+        dest.InstructionType=this.InstructionType;
+        dest.Condition=this.Condition;
+        dest.TitleFont=this.TitleFont;
+        dest.IsShortTitle=this.IsShortTitle;
+        dest.OutName=this.OutName;
+
+        dest.Arguments=this.Arguments;
+        dest.Script=this.Script;
+        dest.Name=this.Name;
+    }
 
     this.SetLock=function(lockData)
     {
@@ -17595,6 +17612,7 @@ function ScriptIndex(name,script,args,option)
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Lines=varItem.Draw.DrawData; 
         if (varItem.Draw.LineDash) chart.LineDash=varItem.Draw.LineDash;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
         if(varItem.Draw.Arrow)  //箭头配置
         {
             var item=varItem.Draw.Arrow;
@@ -18059,6 +18077,7 @@ function OverlayScriptIndex(name,script,args,option)
     this.newMethod(name,script,args,option);
     delete this.newMethod;
 
+    this.ClassName="OverlayScriptIndex";
     //叠加指标
     this.OverlayIndex=null; // { IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame }
 
@@ -18148,6 +18167,12 @@ function OverlayScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWTEXT_LINE':
                         this.CreateTextLine(hqChart,windowIndex,item,i);
+                        break;
+                    case "VERTLINE":
+                        this.CreateChartVericaltLine(hqChart,windowIndex,item,i);
+                        break;
+                    case "HORLINE":
+                        this.CreateChartHorizontalLine(hqChart,windowIndex,item,i);
                         break;
 
                     case 'MULTI_LINE':
@@ -18685,6 +18710,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Lines=varItem.Draw.DrawData; 
         if (varItem.Draw.LineDash) chart.LineDash=varItem.Draw.LineDash;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
         if(varItem.Draw.Arrow)  //箭头配置
         {
             var item=varItem.Draw.Arrow;
@@ -18772,6 +18798,61 @@ function OverlayScriptIndex(name,script,args,option)
         frame.ChartPaint.push(chart);
     }
 
+    this.CreateChartVericaltLine=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartVericaltLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.HQChart=hqChart;
+
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+
+        this.SetChartLineDash(chart,varItem.Draw.DrawData);
+        chart.Data.Data=varItem.Draw.DrawData.Data;
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateChartHorizontalLine=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartHorizontalLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.HQChart=hqChart;
+
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+
+        this.SetChartLineDash(chart,varItem.Draw.DrawData);
+        chart.ExtendType=varItem.Draw.DrawData.Extend;
+        chart.Data.Data=varItem.Draw.DrawData.Data;
+
+       frame.ChartPaint.push(chart);
+    }
+
     //创建K线
     this.CreateSelfKLine=function(hqChart,windowIndex,hisData)
     {
@@ -18822,17 +18903,28 @@ function APIScriptIndex(name,script,args,option, isOverlay)
     this.newMethod(name,script,args,option);
     delete this.newMethod;
 
+    this.ClassName="APIScriptIndex";
     this.IsOverlayIndex=(isOverlay==true);  //是否是叠加指标
     this.ApiUrl;    //指标执行api地址
     this.HQDataType;
     this.Version=1; //1=默认数据格式  1=新的.net数据格式
 
-    if (option.API) 
+    if (option && option.API) 
     {
         if (option.API.Url) this.ApiUrl=option.API.Url;
         if (option.API.Name) this.Name=this.ID=option.API.Name;
         if (option.API.ID) this.ID=option.API.ID;
         if (option.API.Version>0) this.Version=option.API.Version;
+    }
+
+    this.Super_CopyTo=this.CopyTo;  //父类方法
+    this.CopyTo=function(dest)      //赋值到新实例出来
+    {
+        this.Super_CopyTo(dest);
+
+        dest.ApiUrl=this.ApiUrl;
+        dest.Version=this.Version;
+        dest.IsOverlayIndex=this.IsOverlayIndex;
     }
 
     this.ExecuteScript=function(hqChart,windowIndex,hisData)
@@ -19589,6 +19681,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     outVarItem.Draw=drawItem;
                     if (draw.LineDash) drawItem.LineDash=draw.LineDash;
                     if (draw.Arrow) drawItem.Arrow=draw.Arrow;
+                    if (IFrameSplitOperator.IsNumber(draw.LineWidth)) drawItem.LineWidth=draw.LineWidth;
 
                     result.push(outVarItem);
                 }

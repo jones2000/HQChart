@@ -2613,6 +2613,8 @@ function ChartMultiLine()
 
     this.Lines = [];   // [ {Point:[ {Index, Value }, ], Color: }, ] 
     this.IsHScreen = false;
+    this.LineWidth=1;
+    this.LineDash;
 
     this.Draw = function () 
     {
@@ -2645,11 +2647,17 @@ function ChartMultiLine()
             if (drawPoints.Point.length >= 2) drawLines.push(drawPoints)
         }
 
+        this.Canvas.save();
         for (var i in drawLines) 
         {
+            if (this.LineDash) this.Canvas.setLineDash(this.LineDash);
+            if (IFrameSplitOperator.IsPlusNumber(this.LineWidth)) this.Canvas.lineWidth=this.LineWidth;
+            else this.Canvas.lineWidth=1;
+
             var item = drawLines[i];
             this.DrawLine(item);
         }
+        this.Canvas.restore();
     }
 
     this.DrawLine = function (line) 

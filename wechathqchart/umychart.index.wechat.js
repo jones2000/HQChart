@@ -713,6 +713,10 @@ function ScriptIndex(name, script, args, option)
 
         chart.Data = hqChart.ChartPaint[0].Data;//绑定K线
         chart.Lines = varItem.Draw.DrawData;
+
+        if (varItem.Draw.LineDash) chart.LineDash=varItem.Draw.LineDash;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
+        
         hqChart.ChartPaint.push(chart);
     }
 
