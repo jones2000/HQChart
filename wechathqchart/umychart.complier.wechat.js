@@ -741,8 +741,8 @@ function Node()
     this.IsNeedBlockIncreaseData = new Set();     //是否需要市场涨跌股票数据统计
     this.IsNeedSymbolExData = new Set();          //下载股票行情的其他数据
 
-    this.FunctionData=[];                       //{ID:,  Args:,  FunctionName: }
-                                                //FINVALUE(ID),FINONE(ID,Y,MMDD), FINANCE(ID)
+    this.FunctionData=[];   //{ID:,  Args:,  FunctionName: } FINVALUE(ID),FINONE(ID,Y,MMDD), FINANCE(ID)
+    this.Dynainfo=[];       //{ID:,  Args:,  FunctionName: }  DYNAINFO()
 
     this.IsAPIData = []       //加载API数据
 
@@ -751,7 +751,13 @@ function Node()
         let jobs=[];
         if (this.IsNeedSymbolData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA});
         if (this.IsNeedIndexData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_DATA});
-        if (this.IsNeedLatestData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA});
+
+        //最新的个股行情数据
+        for(var i=0;i<this.Dynainfo.length;++i)
+        {
+            var item=this.Dynainfo[i];
+            jobs.push(item);
+        }
 
         //涨跌停家数统计
         for (var blockSymbol of this.IsNeedBlockIncreaseData) 
@@ -843,17 +849,18 @@ function Node()
     this.VerifySymbolFunction = function (callee, args, token)
     {
          //自定义函数 可以覆盖系统内置函数
-         if (g_JSComplierResource.IsCustomFunction(callee.Name)) 
-         {
-             var item={FunctionName:callee.Name, ID:JS_EXECUTE_JOB_ID.JOB_CUSTOM_FUNCTION_DATA, Args:args}
-             if (token) item.Token={ Index:token.Start, Line:token.LineNumber};
-             this.FunctionData.push(item);
-             return;
-         }
+        if (g_JSComplierResource.IsCustomFunction(callee.Name)) 
+        {
+            var item={FunctionName:callee.Name, ID:JS_EXECUTE_JOB_ID.JOB_CUSTOM_FUNCTION_DATA, Args:args}
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber};
+            this.FunctionData.push(item);
+            return;
+        }
 
         if (callee.Name=='DYNAINFO') 
         {
-            this.IsNeedLatestData=true;
+            var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA, Args:args,  FunctionName:callee.Name };
+            this.Dynainfo.push(item);
             return;
         }
 
@@ -6713,7 +6720,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.MaxReqeustDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
 
-    this.LatestData;            //最新行情
+    this.LatestData=new Map();            //最新行情
     this.IndexData;             //大盘指数
     this.MarginData = new Map();  //融资融券
     this.NewsAnalysisData = new Map();    //新闻统计
@@ -6749,10 +6756,19 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.NetworkFilter) this.NetworkFilter = option.NetworkFilter;
     }
 
-    //最新行情
-    this.GetLatestData=function()
+    this.GetLatestDataKey=function(key)
     {
-        if (this.LatestData) return this.Execute.RunNextJob();
+        var key=`DYNAINFO-${key}`;
+        return key;
+    }
+
+    //最新行情
+    this.GetLatestData=function(jobItem)
+    {
+        var aryArgs=this.JobArgumentsToArray(jobItem, 1);
+        var lID=aryArgs[0];
+        var key=this.GetLatestDataKey(lID);
+        if (this.LatestData.has(key)) return this.Execute.RunNextJob();
 
         var self=this;
         wx.request({
@@ -6779,45 +6795,64 @@ function JSSymbolData(ast,option,jsExecute)
     this.RecvLatestData = function (recvData)
     {
         let data=recvData.data;
-        if (!data.stock || data.stock.length!=1) return;
+        if (data.ver==2.0) 
+        {
+            this.RecvLatestDataVer2(data);
+            return;
+        }
 
+        if (!data.stock || data.stock.length!=1) return;
         let stock=data.stock[0];
+        if (!stock) return;
+
+        if (IFrameSplitOperator.IsNumber(stock.yclose)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.YCLOSE,stock.yclose);
+        if (IFrameSplitOperator.IsNumber(stock.open)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.OPEN,stock.open);
+        if (IFrameSplitOperator.IsNumber(stock.high)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.HIGH,stock.high);
+        if (IFrameSplitOperator.IsNumber(stock.low)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.LOW,stock.low);
+        if (IFrameSplitOperator.IsNumber(stock.price)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.CLOSE,stock.price);
+        if (IFrameSplitOperator.IsNumber(stock.vol)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.VOL,stock.vol);
+        if (IFrameSplitOperator.IsNumber(stock.amount)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.AMOUNT,stock.amount);
+        if (IFrameSplitOperator.IsNumber(stock.increase)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.INCREASE,stock.increase);
+        if (IFrameSplitOperator.IsNumber(stock.exchangerate)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.EXCHANGERATE,stock.exchangerate);
+        if (IFrameSplitOperator.IsNumber(stock.amplitude)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.AMPLITUDE,stock.amplitude);
+
+        /*
         this.LatestData={ Symbol:stock.symbol, Name:stock.name, Date:stock.date, Time:stock.time,
             YClose:stock.yclose,Price:stock.price, Open:stock.open, High:stock.high, Low:stock.low, Vol:stock.vol, Amount:stock.amount, 
             Increase:stock.increase, Exchangerate:stock.exchangerate, Amplitude:stock.amplitude};
+        */
 
-        JSConsole.Complier.Log('[JSSymbolData::RecvLatestData]', this.LatestData);
+        JSConsole.Complier.Log('[JSSymbolData::RecvLatestData] symbol, LatestData', stock.symbol, this.LatestData);
+    }
+
+    //data:[{ id:, value: }]
+    this.RecvLatestDataVer2=function(recvData)
+    {
+        let data=recvData.data;
+        if (!IFrameSplitOperator.IsNonEmptyArray(data.data)) return;
+
+        var symbol=data.symbol;
+        for(var i=0;i<data.data.length;++i)
+        {
+            var item=data.data[i];
+            if (!item) continue;
+            if (!IFrameSplitOperator.IsNumber(item.id)) continue;
+            if (IFrameSplitOperator.IsNumber(item.value) || IFrameSplitOperator.IsString(item.value))
+            {
+                JSConsole.Complier.Log(`[JSSymbolData::RecvLatestDataVer2] symbol=${symbol} DYNAINFO(${item.id})=${item.value}.`);
+                this.LatestData.set(item.id, item.value);
+            }
+                
+        }
+
+        JSConsole.Complier.Log('[JSSymbolData::RecvLatestDataVer2]', this.LatestData);
     }
 
     this.GetLatestCacheData=function(dataname)
     {
-        if (!this.LatestData) return  null;
+        if (this.LatestData && this.LatestData.has(dataname)) return this.LatestData.get(dataname);
 
-        switch(dataname)
-        {
-            case DYNAINFO_ARGUMENT_ID.YCLOSE:
-                return this.LatestData.YClose;
-            case DYNAINFO_ARGUMENT_ID.OPEN:
-                return this.LatestData.Open;
-            case DYNAINFO_ARGUMENT_ID.HIGH:
-                return this.LatestData.High;
-            case DYNAINFO_ARGUMENT_ID.LOW:
-                return this.LatestData.Low;
-            case DYNAINFO_ARGUMENT_ID.VOL:
-                return this.LatestData.Vol;
-            case DYNAINFO_ARGUMENT_ID.AMOUNT:
-                return this.LatestData.Amount;
-            case DYNAINFO_ARGUMENT_ID.INCREASE:
-                return this.LatestData.Increase;
-            case DYNAINFO_ARGUMENT_ID.EXCHANGERATE:
-                return this.LatestData.Exchangerate;
-            case DYNAINFO_ARGUMENT_ID.AMPLITUDE:
-                return this.LatestData.Amplitude;
-            case DYNAINFO_ARGUMENT_ID.CLOSE:
-                return this.LatestData.Price;
-            default:
-                return null;
-        }
+        return null;
     }
 
     this.GetVolRateData = function (job, node) {
@@ -8813,7 +8848,7 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA:
                 return this.SymbolData.GetIndexIncreaseData(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA:
-                return this.SymbolData.GetLatestData();
+                return this.SymbolData.GetLatestData(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA:  //量比
                 return this.SymbolData.GetVolRateData(jobItem);
 

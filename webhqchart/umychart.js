@@ -8742,6 +8742,11 @@ function OverlayMinuteFrame()
         this.XYSplit=false;
     }
 
+    this.GetScaleTextWidth=function()
+    {
+        return { TextWidth:0 };
+    }
+
     //分割x,y轴坐标信息
     this.SplitXYCoordinate=function()
     {
