@@ -3214,30 +3214,37 @@ function JSAlgorithm(errorHandler, symbolData)
     {
         var result=[];
 
-        var total=0;
-        var averageData=[]; //平均值
-        for(var i=n-1;i<data.length;++i)
+        var nStart=this.GetFirstVaildIndex(data);
+        if (!IFrameSplitOperator.IsNumber(n)) return result;
+        if(nStart+n>data.length || n<1) return result;
+
+        var i=nStart, j=0, bFirst=true, dTotal=0, dAvg=0;
+        for(i+=n-1;i<data.length;++i)
         {
-            total=0;
-            for(var j=0;j<n;++j)
+            dTotal = 0;
+            if(bFirst)
             {
-                total+=data[i-j];
+                bFirst = false;
+                for(j=i-n+1;j<=i;++j)
+                {
+                    dAvg += data[j];
+                }
+                    
+                dAvg /= n;
+            }
+            else
+            {
+                dAvg += (data[i]-data[i-n])/n;
             }
 
-            averageData[i]=total/n;
-        }
-
-        for(var i=n-1;i<data.length;++i)
-        {
-            total=0;
-            for(var j=0;j<n;++j)
+            for(j=i-n+1;j<=i;++j)
             {
-                total+=Math.pow((data[i-j]-averageData[i]),2);
+                dTotal += (data[j]-dAvg)*(data[j]-dAvg);
             }
+			
 
-            result[i]=Math.sqrt(total/n);
+		    result[i] = Math.sqrt(dTotal/(n-1));
         }
-
 
         return result;
     }
@@ -3543,34 +3550,38 @@ function JSAlgorithm(errorHandler, symbolData)
     this.STDP=function(data,n)
     {
         var result=[];
-        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
-        var num = n;
-        var datanum = data.length;
-        if (num < 1 || num >= datanum)
-            return result;
-        var i = 0, j = 0;
-        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        var nStart=this.GetFirstVaildIndex(data);
+        if (!IFrameSplitOperator.IsNumber(n)) return result;
+        if(nStart+n>data.length || n<1) return result;
+
+        var i=nStart, j=0, bFirst=true, dTotal=0, dAvg=0;
+        for(i+=n-1;i<data.length;++i)
         {
-            result[i] = null;
+            dTotal = 0;
+            if(bFirst)
+            {
+                bFirst = false;
+                for(j=i-n+1;j<=i;++j)
+                {
+                    dAvg += data[j];
+                }
+                    
+                dAvg /= n;
+            }
+            else
+            {
+                dAvg += (data[i]-data[i-n])/n;
+            }
+
+            for(j=i-n+1;j<=i;++j)
+            {
+                dTotal += (data[j]-dAvg)*(data[j]-dAvg);
+            }
+
+		    result[i] = Math.sqrt(dTotal/n);
         }
-        var SigmaPowerX = 0, SigmaX = 0, MidResult;
-        for (; i < datanum && j < num; ++i, ++j)
-        {
-            SigmaPowerX += data[i] * data[i];
-            SigmaX += data[i];
-        }
-        if (j == num)
-        {
-            MidResult = num*SigmaPowerX - SigmaX*SigmaX;
-            result[i-1] = Math.sqrt(MidResult) / num;
-        }
-        for(; i < datanum; ++i)
-        {
-            SigmaPowerX += data[i]*data[i] - data[i-num]*data[i-num];
-            SigmaX += data[i] - data[i-num];
-            MidResult = num*SigmaPowerX - SigmaX*SigmaX;
-            result[i] = Math.sqrt(MidResult) / num;
-        }
+
+        return result;
     }
 
     //VAR 估算样本方差

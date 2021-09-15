@@ -112,6 +112,16 @@ var BLACK_STYLE=
     CorssCursorHPenColor: "rgb(130,130,130)",           //十字光标线段颜色
     CorssCursorVPenColor: "rgb(130,130,130)",           //十字光标线段颜色
 
+    CorssCursor:
+    { 
+        RightButton : 
+        { 
+            BGColor:'rgb(43,54,69)', 
+            PenColor:'rgb(255,255,255)',
+            Icon: { Text:'\ue6a3', Color:'rgb(255,255,255)', Family:"iconfont", Size:18 }
+        } 
+    },
+
     KLine:
     {
         MaxMin: { Font: 12*GetDevicePixelRatio() +'px 微软雅黑', Color: 'rgb(255,250,240)', RightArrow:"→", LeftArrow:"←", HighYOffset:0, LowYOffset:0 },   //K线最大最小值显示

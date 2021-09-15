@@ -1904,7 +1904,7 @@ function JSChartContainer(uielement)
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)  //动画
         {
             this.Frame.ClearCoordinateText();
-            this.Frame.Draw();  //框架 
+            this.Frame.Draw({ IsEnableSplash:this.ChartSplashPaint.IsEnableSplash});  //框架 
             this.ChartSplashPaint.Draw();
             this.LastDrawStatus = 'FullDraw';
             this.Canvas.draw();
@@ -4885,11 +4885,13 @@ function HQTradeFrame()
         return false;
     }
 
-    this.Draw = function () 
+    this.Draw = function (option) 
     {
         if (this.SizeChange === true) this.CalculateChartBorder();
 
-        if ((this.AutoLeftBorder || this.AutoRightBorder) &&this.IsFrameXYSplit())
+        var isSplash=false; //是否过场动画
+        if (option && option.IsEnableSplash===true) isSplash=true;
+        if (isSplash==false && (this.AutoLeftBorder || this.AutoRightBorder) &&this.IsFrameXYSplit())
         {
             var textWidth=this.GetScaleTextWidth();
 
