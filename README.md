@@ -424,7 +424,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![QQ群](/小程序行情模块用例/image/qqcode.png)
 
 # 商务
-定制开发,数据购买，合作等商务事宜请联系 QQ:1586140774 
+定制开发,合作等商务事宜请联系 QQ:22047567 
 
 # 奖项
 ![GVP](/小程序行情模块用例/image/gvp.jpg)
