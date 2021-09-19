@@ -6118,6 +6118,7 @@ function JSChartContainer(uielement, OffscreenElement)
     uielement.ondblclick=(e)=>{ this.UIOnDblClick(e); }
     uielement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
     uielement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
+    uielement.onmouseleave=(e)=>{ this.UIOnMouseleave(e); }
 
     this.UIOnMouseMove=function(e)
     {
@@ -6329,6 +6330,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
         drag.Click.X=e.clientX;
         drag.Click.Y=e.clientY;
+        drag.Click.IsInFrameBottom=this.Frame.PtInFrameBottom(x,y);   //是否点击在X轴上
         drag.LastMove.X=e.clientX;
         drag.LastMove.Y=e.clientY;
 
@@ -6531,7 +6533,6 @@ function JSChartContainer(uielement, OffscreenElement)
         {
             var isLeft=true;
             if (drag.LastMove.X<e.clientX) isLeft=false;//右移数据
-
             if (this.RectSelectDrag && this.RectSelectDrag.Index>=0)
             {
                 var obj={ X:e.clientX, Y:e.clientY, PointIndex:this.RectSelectDrag.Index, Name:"MoveRectSelectLine" };
@@ -6539,16 +6540,29 @@ function JSChartContainer(uielement, OffscreenElement)
             }
             else
             {
-                this.UIElement.style.cursor="pointer";
+                var cursorStatus="pointer";
+                if (drag.Click.IsInFrameBottom)  cursorStatus="ew-resize";
                 var oneStepWidth=this.GetMoveOneStepWidth();
                 if (moveSetp<oneStepWidth)
                 {
+                    this.UIElement.style.cursor=cursorStatus;
                     if (bNeedDraw) this.Draw();
                     return;
                 }
                 else
                 {
-                    if(this.DataMove(moveSetp,isLeft))
+                    if (drag.Click && drag.Click.IsInFrameBottom)
+                    {
+                       
+                        if (this.XCoordinateZoom(moveSetp,isLeft))
+                        {
+                            this.UpdataDataoffset();
+                            this.UpdateFrameMaxMin();
+                            this.ResetFrameXYSplit();
+                            bNeedDraw=true;
+                        }
+                    }
+                    else if(this.DataMove(moveSetp,isLeft))
                     {
                         this.UpdataDataoffset();
                         //this.UpdatePointByCursorIndex(); //推拽数据的时候不需要把鼠标位置更新到K线上
@@ -6561,6 +6575,7 @@ function JSChartContainer(uielement, OffscreenElement)
                         if (this.DragDownloadData) this.DragDownloadData();
                     }
                 }
+                this.UIElement.style.cursor=cursorStatus;
             }
             drag.LastMove.X=e.clientX;
         }
@@ -6683,6 +6698,12 @@ function JSChartContainer(uielement, OffscreenElement)
     {
         JSConsole.Chart.Log('[KLineChartContainer::UIOnMounseOut]',e);
         this.UIOnMouseMove(e);
+    }
+
+    this.UIOnMouseleave=function(e)
+    {
+        JSConsole.Chart.Log('[KLineChartContainer::UIOnMouseleave]',e);
+        //this.UIOnMouseMove(e);
     }
 
     //点击事件
@@ -7846,6 +7867,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
         var clientPos=this.PtInClient(x,y);
         var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y}, IsPhone:isPhone===true, ClientPos:clientPos };
+        if (e && (e.type=="mouseout" || e.type=="mouseleave")) option.Corss=false; //鼠标移开,不显示十字光标
         this.DrawDynamicInfo(option);
         if (mouseStatus) this.UIElement.style.cursor=mouseStatus.Cursor;
 
@@ -8692,6 +8714,16 @@ function JSChartContainer(uielement, OffscreenElement)
 
             return true;
         }
+    }
+
+    this.XCoordinateZoom=function(step, isMoveLeft)
+    {
+        var oneStepWidth=this.GetMoveOneStepWidth();
+        var moveStep=step;
+        step=parseInt(step/oneStepWidth);  //除以4个像素
+        if (step<=0) return false;
+
+        return this.Frame.XCoordinateZoom(isMoveLeft);
     }
 
     //获取鼠标在当前子窗口id
@@ -9553,6 +9585,9 @@ function JSChartContainer(uielement, OffscreenElement)
         var titlePaint=this.TitlePaint[windowsIndex];
         if (titlePaint.OverlayIndex.has(identify))
             titlePaint.OverlayIndex.delete(identify);
+
+        if (titlePaint.OverlayDynamicTitle.has(identify))
+            titlePaint.OverlayDynamicTitle.delete(identify);
 
         return true;
     }
@@ -13627,6 +13662,56 @@ function KLineFrame()
         return true;
     }
 
+    this.XCoordinateZoom=function(isMoveLeft)
+    {
+        var oldXPointCount=this.XPointCount;
+        if (isMoveLeft) //放大
+        {
+            if (this.ZoomIndex<=0) return false;
+            if (this.Data.DataOffset<0) return false;
+            var zoomIndex=this.ZoomIndex-1;
+            var xPointCount=this.CalculateCount(zoomIndex);
+            var dataCount=this.Data.Data.length;
+            var moveOffset=oldXPointCount-xPointCount;
+            if (moveOffset<=0) return false;
+
+            this.Data.DataOffset+=moveOffset;
+        }
+        else    //缩小
+        {
+            if (this.ZoomIndex+1>=ZOOM_SEED.length) return false;
+            if (this.Data.DataOffset<0) return false;
+            var zoomIndex=this.ZoomIndex+1;
+            var xPointCount=this.CalculateCount(zoomIndex);
+
+            var moveOffset=xPointCount-oldXPointCount;
+            if (moveOffset>this.Data.DataOffset) 
+            {
+                moveOffset=this.Data.DataOffset;
+                xPointCount=this.Data.DataOffset+oldXPointCount;
+            }
+    
+            this.Data.DataOffset-=moveOffset;
+        }
+        
+        
+        //JSConsole.Chart.Log(`[KLineFrame::XCoordinateZoom] old (XPointCount=${oldXPointCount} ZoomIndex=${this.ZoomIndex})  DataCount= ${this.Data.Data.length} `);
+
+        this.XPointCount=xPointCount;
+        this.ZoomIndex=zoomIndex;
+        this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
+        this.DistanceWidth = ZOOM_SEED[this.ZoomIndex][1];
+        var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
+        this.TrimKLineDataWidth(width);
+        
+        this.LastCalculateStatus.XPointCount=this.XPointCount;
+
+        return true;
+        //var lastCursorIndex=this.Data.DataOffset + cursorIndex.Index;
+
+        
+    }
+
     this.ZoomDown=function(cursorIndex) //缩小
     {
         if (this.ZoomIndex+1>=ZOOM_SEED.length) return false;
@@ -15559,6 +15644,20 @@ function HQTradeFrame()
         return null
     }
 
+    //是否在X轴坐标上
+    this.PtInFrameBottom=function(x,y)
+    {
+        var left=this.ChartBorder.GetLeft();
+        var top=this.ChartBorder.GetBottom();
+        var width=this.ChartBorder.GetWidth();
+        var height=this.ChartBorder.Bottom;
+        
+        this.Canvas.beginPath();
+        this.Canvas.rect(left,top,width,height);
+        if (this.Canvas.isPointInPath(x,y)) return true;
+        return false;
+    }
+
     this.GetXFromIndex=function(index)
     {
         return this.SubFrame[0].Frame.GetXFromIndex(index);
@@ -15579,6 +15678,13 @@ function HQTradeFrame()
     this.ZoomDown=function(cursorIndex)
     {
         var result=this.SubFrame[0].Frame.ZoomDown(cursorIndex);
+        this.UpdateAllFrame();
+        return result;
+    }
+
+    this.XCoordinateZoom=function(step, isMoveLeft)
+    {
+        var result=this.SubFrame[0].Frame.XCoordinateZoom(step, isMoveLeft);
         this.UpdateAllFrame();
         return result;
     }
@@ -19222,20 +19328,11 @@ function ChartKLine()
 
             if (i==this.Data.Data.length-1)
             {
-                ptLast={ X:x, Y:yClose, KItem:data };
+                ptLast={ X:x, Y:yClose, XLeft:left, XRight:right, KItem:data, ChartRight:chartright };
             }
         }
 
-        if (this.GetEventCallback)  //通知外部绘制最后一个点
-        {
-            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_KLINE_LAST_POINT);
-            if (event)
-            {
-                if (ptLast) var data={ LastPoint:{ X:ptLast.X, Y:ptLast.Y }, KItem:ptLast.KItem };
-                else var data={ LastPoint:null, KItem:null };
-                event.Callback(event,data,this);
-            }
-        }
+        this.DrawLastPointEvent(ptLast);  //通知外部绘制最后一个点
 
         if (bFirstPoint) return;
 
@@ -19353,6 +19450,7 @@ function ChartKLine()
         this.ShowRange.End=this.ShowRange.Start;
         this.ShowRange.DataCount=0;
         this.ShowRange.ShowCount=xPointCount;
+        var ptLast=null;
 
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth),++this.ShowRange.DataCount)
         {
@@ -19444,7 +19542,14 @@ function ChartKLine()
                 var infoItem={Xleft:left,XRight:right, XCenter:x, YMax:yHigh, YMin:yLow, DayData:data, Index:j};
                 this.DrawInfo(infoItem);
             }
+
+            if (i==this.Data.Data.length-1)
+            {
+                ptLast={ X:x, Y:yClose, XLeft:left, XRight:right, KItem:data, ChartRight:chartright };
+            }
         }
+
+        this.DrawLastPointEvent(ptLast);  //通知外部绘制最后一个点
 
         this.PtMax=ptMax;
         this.PtMin=ptMin;
@@ -20479,6 +20584,22 @@ function ChartKLine()
 
         return aryPrice;
     }
+
+    this.DrawLastPointEvent=function(ptLast)
+    {
+        if (!this.GetEventCallback)  return;
+        
+        //通知外部绘制最后一个点
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_KLINE_LAST_POINT);
+        if (event)
+        {
+            var kWidth={ Data: this.ChartFrame.DataWidth, Distance:this.ChartFrame.DistanceWidth };
+            if (ptLast) var data={ LastPoint:{ X:ptLast.X, Y:ptLast.Y, XLeft:ptLast.XLeft, XRight:ptLast.XRight }, KItem:ptLast.KItem, DrawType:this.DrawType, KWidth:kWidth, ChartRight:ptLast.ChartRight };
+            else var data={ LastPoint:null, KItem:null, KWidth:kWidth };
+            event.Callback(event,data,this);
+        }
+    }
+    
 }
 
 function ChartColorKline()
@@ -36579,8 +36700,9 @@ function DynamicChartTitlePainting()
     
 
     //动态标题
-    this.OutName=null;
-    this.OutValue=null;
+    //动态标题
+    this.DynamicTitle={ OutName:null, OutValue:null };
+    this.OverlayDynamicTitle=new Map();  //key , value={ OutName, OutValue }
 
     this.ReloadResource=function()
     {
@@ -36589,18 +36711,13 @@ function DynamicChartTitlePainting()
         this.OverlayIndexType.BGColor=g_JSChartResource.OverlayIndexTitleBGColor;
     }
 
-    this.SetDynamicOutName=function(outName, args)
+    this.SetDynamicTitleData=function(outName, args, data)
     {
-        if (!this.OutName) 
-        {
-            this.OutName=new Map();
-            this.OutValue=new Map();
-        }
-        else 
-        {
-            this.OutName.clear();
-            this.OutValue.clear();
-        }
+        if (!data.OutName) data.OutName=new Map();
+        else data.OutName.clear();
+
+        if (!data.OutValue) data.OutValue=new Map();
+        else data.OutValue.clear();
 
         var mapArgs=new Map();
         for(var i in args)
@@ -36617,7 +36734,7 @@ function DynamicChartTitlePainting()
                 var aryFond = item.DynamicName.match(/{\w*}/i);
                 if (!aryFond || aryFond.length<=0) 
                 {
-                    this.OutName.set(item.Name, item.DynamicName);
+                    data.OutName.set(item.Name, item.DynamicName);
                 }
                 else
                 {
@@ -36638,33 +36755,68 @@ function DynamicChartTitlePainting()
                         }
                     }
     
-                    if (bFind) this.OutName.set(item.Name, dyName);
+                    if (bFind) data.OutName.set(item.Name, dyName);
                 }
     
             }
 
             if (item.DynamicValue)
             {
-                this.OutValue.set(item.Name, item.DynamicValue);
+                data.OutValue.set(item.Name, item.DynamicValue);
             }
         }
-            
     }
 
-    this.GetDynamicOutName=function(outName)
+    this.SetDynamicTitle=function(outName, args, overlayID)
     {
-        if (!this.OutName || this.OutName.size<=0) return null;
-        if (!this.OutName.has(outName)) return null;
+        if (IFrameSplitOperator.IsString(overlayID))
+        {
+            var dynamicTitle=null;
+            if (this.OverlayDynamicTitle.has(overlayID)) 
+            {
+                dynamicTitle=this.OverlayDynamicTitle.get(overlayID);
+            }
+            else
+            {
+                dynamicTitle={ OutName:null, OutValue:null };
+                this.OverlayDynamicTitle.set(overlayID, dynamicTitle);
+            }
 
-        return this.OutName.get(outName);
+            this.SetDynamicTitleData(outName, args, dynamicTitle); 
+        }
+        else
+        {
+            this.SetDynamicTitleData(outName, args, this.DynamicTitle);    
+        }
     }
 
-    this.GetGetDynamicOutValue=function(outName, value)
+    this.GetDynamicOutName=function(key, overlayID)
     {
-        if (!this.OutValue || this.OutValue.size<=0) return null;
-        if (!this.OutValue.has(outName)) return null;
+        if (IFrameSplitOperator.IsString(overlayID))
+        {
+            if (!this.OverlayDynamicTitle.has(overlayID)) return null;
+            var dynamicTitle=this.OverlayDynamicTitle.get(overlayID);
+            var outName=dynamicTitle.OutName;
+        }
+        else
+        {
+            var outName=this.DynamicTitle.OutName;
+        }
 
-        var strFormat=this.OutValue.get(outName);
+        if (!outName || outName.size<=0) return null;
+        if (!outName.has(key)) return null;
+
+        return outName.get(key);
+    }
+
+    this.GetDynamicOutValue=function(key, value)
+    {
+        var outValue=this.DynamicTitle.OutValue;
+
+        if (!outValue || outValue.size<=0) return null;
+        if (!outValue.has(key)) return null;
+
+        var strFormat=outValue.get(key);
         strFormat=strFormat.replace('{Value}',value);
         return strFormat;
     }
@@ -36892,7 +37044,7 @@ function DynamicChartTitlePainting()
                     valueText=this.FormatValue(value,item);
                     if (item.Name) 
                     {
-                        var dyValue=this.GetGetDynamicOutValue(item.Name, valueText);
+                        var dyValue=this.GetDynamicOutValue(item.Name, valueText);
                         if (dyValue) valueText=dyValue;
                     }
 
@@ -36979,6 +37131,7 @@ function DynamicChartTitlePainting()
         for(item of this.OverlayIndex)
         {
             var overlayItem=item[1];
+            var overlayID=item[0];
             x=left;
             if (overlayItem.Title && this.IsShowOverlayIndexName)
             {
@@ -37039,7 +37192,14 @@ function DynamicChartTitlePainting()
                     }
                 }
 
-                var text=item.Name+":"+valueText;
+                var text=valueText;
+                if (item.Name) 
+                {
+                    var dyTitle=this.GetDynamicOutName(item.Name,overlayID);
+                    if (dyTitle) text=dyTitle+":"+valueText;
+                    else text=item.Name+":"+valueText;
+                }
+
                 var textWidth=this.Canvas.measureText(text).width+2;    //后空2个像素
                 if ((x+textWidth)>right) break;
                 if (this.OverlayIndexType.BGColor)
@@ -81835,11 +81995,9 @@ function ScriptIndex(name,script,args,option)
 
                 if (this.OutName && this.OutName.length>0 && this.Arguments && this.Arguments.length>0)
                 {
-                    titlePaint.SetDynamicOutName(this.OutName,this.Arguments);
+                    titlePaint.SetDynamicTitle(this.OutName,this.Arguments);
                 }
             }
-
-            
         }
 
         let titleIndex=windowIndex+1;
@@ -81975,6 +82133,10 @@ function OverlayScriptIndex(name,script,args,option)
         var titlePaint=hqChart.TitlePaint[titleIndex];
         titlePaint.OverlayIndex.set(this.OverlayIndex.Identify,titleInfo);
         this.OverlayIndex.Frame.Frame.Title=titleInfo.Title;    //给子框架设置标题
+        if (this.OutName && this.OutName.length>0 && this.Arguments && this.Arguments.length>0)
+        {
+            titlePaint.SetDynamicTitle(this.OutName,this.Arguments, this.OverlayIndex.Identify);
+        }
 
         for(var i in this.OutVar)
         {

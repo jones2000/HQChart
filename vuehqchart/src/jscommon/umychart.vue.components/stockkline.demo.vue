@@ -1483,16 +1483,18 @@ a
     .divchart{
         position: relative;
         .bottomToolForChart{
-            width: 50%;
-            height: 80px;
+            width: 400px;
+            // width: 50%;
+            height: 60px;
             position: absolute;
-            bottom: 0;
-            left: 25%;
+            bottom: 20px;
+            left: 50%;
             display: flex;
             flex-direction: row;
             justify-content: center;
             align-items: center;
             z-index: 999;
+            transform: translateX(-50%);
             .iconBg{
                 width: 28px;
                 height: 28px;
