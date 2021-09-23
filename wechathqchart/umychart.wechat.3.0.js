@@ -2763,17 +2763,17 @@ function ChartBorder()
         { 
             Left:this.Left, 
             LeftEx:this.Left+this.LeftExtendWidth,
-            Right:this.UIElement.width-this.Right,
-            RightEx:this.UIElement.width-this.Right-this.RightExtendWidth,
+            Right:this.UIElement.Width-this.Right,
+            RightEx:this.UIElement.Width-this.Right-this.RightExtendWidth,
 
             Top:this.Top,
             TopEx:this.Top+this.TitleHeight+this.TopSpace,
             TopTitle:this.Top+this.TitleHeight,
-            Bottom:this.UIElement.height-this.Bottom,
-            BottomEx:this.UIElement.height-this.Bottom-this.BottomSpace,
+            Bottom:this.UIElement.Height-this.Bottom,
+            BottomEx:this.UIElement.Height-this.Bottom-this.BottomSpace,
 
-            ChartWidth:this.UIElement.width,
-            ChartHeight:this.UIElement.height
+            ChartWidth:this.UIElement.Width,
+            ChartHeight:this.UIElement.Height
         };
 
         return data;
@@ -2786,17 +2786,17 @@ function ChartBorder()
             Left:this.Left,
             LeftEx:this.Left+this.BottomSpace,
 
-            Right:this.UIElement.width-this.Right,
-            RightEx:this.UIElement.width-this.Right-this.TitleHeight- this.TopSpace,
-            RightTitle:this.UIElement.width-this.Right-this.TitleHeight,
+            Right:this.UIElement.Width-this.Right,
+            RightEx:this.UIElement.Width-this.Right-this.TitleHeight- this.TopSpace,
+            RightTitle:this.UIElement.Width-this.Right-this.TitleHeight,
 
             Top:this.Top,
             TopEx:this.Top+this.LeftExtendWidth,
-            Bottom:this.UIElement.height-this.Bottom,
-            BottomEx:this.UIElement.height-this.Bottom-this.RightExtendWidth,
+            Bottom:this.UIElement.Height-this.Bottom,
+            BottomEx:this.UIElement.Height-this.Bottom-this.RightExtendWidth,
 
-            ChartWidth:this.UIElement.width,
-            ChartHeight:this.UIElement.height
+            ChartWidth:this.UIElement.Width,
+            ChartHeight:this.UIElement.Height
         };
 
         return data;
@@ -2926,6 +2926,12 @@ function IChartFramePainting()
     }
 
     this.DrawFrame = function () { }
+
+    this.GetBorder=function()
+    {
+        if (this.IsHScreen) return this.ChartBorder.GetHScreenBorder();
+        else return this.ChartBorder.GetBorder();
+    }
 
     this.ClearCoordinateText=function(option)
     {
@@ -7182,6 +7188,7 @@ function KLineChartContainer(uielement)
             titlePaint.Frame = this.Frame.SubFrame[i].Frame;
             titlePaint.Canvas = this.Canvas;
             titlePaint.LanguageID = this.LanguageID;
+            titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             this.Frame.SubFrame[i].Frame.TitlePaint = titlePaint;
             this.TitlePaint.push(titlePaint);
         }
@@ -8481,6 +8488,7 @@ function KLineChartContainer(uielement)
                 titlePaint.Frame = this.Frame.SubFrame[i].Frame;
                 titlePaint.Canvas = this.Canvas;
                 titlePaint.LanguageID = this.LanguageID;
+                titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 this.TitlePaint[i + 1] = titlePaint;
             }
         }
@@ -9828,7 +9836,7 @@ function MinuteChartContainer(uielement)
             titlePaint.Frame = this.Frame.SubFrame[i].Frame;
             titlePaint.Canvas = this.Canvas;
             titlePaint.LanguageID = this.LanguageID;
-
+            titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             this.TitlePaint.push(titlePaint);
         }
 
@@ -11608,47 +11616,48 @@ function KLineChartHScreenContainer(uielement)
     }
   }
 
-  //创建
-  //windowCount 窗口个数
-  this.Create = function (windowCount) {
-    this.UIElement.JSChartContainer = this;
+    //创建 windowCount 窗口个数
+    this.Create = function (windowCount) 
+    {
+        this.UIElement.JSChartContainer = this;
 
-    //创建十字光标
-    this.ChartCorssCursor = new ChartCorssCursor();
-    this.ChartCorssCursor.Canvas = this.Canvas;
-    this.ChartCorssCursor.StringFormatX = g_DivTooltipDataForamt.Create("CorssCursor_XStringFormat");
-    this.ChartCorssCursor.StringFormatX.LanguageID=this.LanguageID;
-    this.ChartCorssCursor.StringFormatY = g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
-    this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
+        //创建十字光标
+        this.ChartCorssCursor = new ChartCorssCursor();
+        this.ChartCorssCursor.Canvas = this.Canvas;
+        this.ChartCorssCursor.StringFormatX = g_DivTooltipDataForamt.Create("CorssCursor_XStringFormat");
+        this.ChartCorssCursor.StringFormatX.LanguageID=this.LanguageID;
+        this.ChartCorssCursor.StringFormatY = g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
+        this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
 
-    //创建等待提示
-    this.ChartSplashPaint = new ChartSplashPaint();
-    this.ChartSplashPaint.Canvas = this.Canvas;
-    this.ChartSplashPaint.HQChart=this;
+        //创建等待提示
+        this.ChartSplashPaint = new ChartSplashPaint();
+        this.ChartSplashPaint.Canvas = this.Canvas;
+        this.ChartSplashPaint.HQChart=this;
 
-    //创建框架容器
-    this.Frame = new HQTradeHScreenFrame();
-    this.Frame.ChartBorder = new ChartBorder();
-    this.Frame.ChartBorder.UIElement = this.UIElement;
-    this.Frame.ChartBorder.Top = 30;
-    this.Frame.ChartBorder.Left = 5;
-    this.Frame.ChartBorder.Bottom = 20;
-    this.Frame.Canvas = this.Canvas;
-    this.ChartCorssCursor.Frame = this.Frame; //十字光标绑定框架
-    this.ChartSplashPaint.Frame = this.Frame;
+        //创建框架容器
+        this.Frame = new HQTradeHScreenFrame();
+        this.Frame.ChartBorder = new ChartBorder();
+        this.Frame.ChartBorder.UIElement = this.UIElement;
+        this.Frame.ChartBorder.Top = 30;
+        this.Frame.ChartBorder.Left = 5;
+        this.Frame.ChartBorder.Bottom = 20;
+        this.Frame.Canvas = this.Canvas;
+        this.ChartCorssCursor.Frame = this.Frame; //十字光标绑定框架
+        this.ChartSplashPaint.Frame = this.Frame;
 
-    this.CreateChildWindow(windowCount);
-    this.CreateMainKLine();
+        this.CreateChildWindow(windowCount);
+        this.CreateMainKLine();
 
-    //子窗口动态标题
-    for (var i in this.Frame.SubFrame) {
-      var titlePaint = new DynamicChartTitlePainting();
-      titlePaint.Frame = this.Frame.SubFrame[i].Frame;
-      titlePaint.Canvas = this.Canvas;
-
-      this.TitlePaint.push(titlePaint);
+        //子窗口动态标题
+        for (var i in this.Frame.SubFrame) 
+        {
+            var titlePaint = new DynamicChartTitlePainting();
+            titlePaint.Frame = this.Frame.SubFrame[i].Frame;
+            titlePaint.Canvas = this.Canvas;
+            titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+            this.TitlePaint.push(titlePaint);
+        }
     }
-  }
 
     //创建子窗口
     this.CreateChildWindow = function (windowCount) 
@@ -11733,47 +11742,48 @@ function MinuteChartHScreenContainer(uielement) {
     this.DrawDynamicInfo();
   }
 
-  //创建
-  //windowCount 窗口个数
-  this.Create = function (windowCount) {
-    this.UIElement.JSChartContainer = this;
+    //创建 windowCount 窗口个数
+    this.Create = function (windowCount) 
+    {
+        this.UIElement.JSChartContainer = this;
 
-    //创建十字光标
-    this.ChartCorssCursor = new ChartCorssCursor();
-    this.ChartCorssCursor.Canvas = this.Canvas;
-    this.ChartCorssCursor.StringFormatX = new HQMinuteTimeStringFormat();
-    this.ChartCorssCursor.StringFormatY = new HQPriceStringFormat();
+        //创建十字光标
+        this.ChartCorssCursor = new ChartCorssCursor();
+        this.ChartCorssCursor.Canvas = this.Canvas;
+        this.ChartCorssCursor.StringFormatX = new HQMinuteTimeStringFormat();
+        this.ChartCorssCursor.StringFormatY = new HQPriceStringFormat();
 
-    //创建等待提示
-    this.ChartSplashPaint = new ChartSplashPaint();
-    this.ChartSplashPaint.Canvas = this.Canvas;
-    this.ChartSplashPaint.SplashTitle = this.LoadDataSplashTitle;
+        //创建等待提示
+        this.ChartSplashPaint = new ChartSplashPaint();
+        this.ChartSplashPaint.Canvas = this.Canvas;
+        this.ChartSplashPaint.SplashTitle = this.LoadDataSplashTitle;
 
-    //创建框架容器
-    this.Frame = new HQTradeHScreenFrame();
-    this.Frame.ChartBorder = new ChartBorder();
-    this.Frame.ChartBorder.UIElement = this.UIElement;
-    this.Frame.ChartBorder.Top = 25;
-    this.Frame.ChartBorder.Left = 50;
-    this.Frame.ChartBorder.Bottom = 20;
-    this.Frame.Canvas = this.Canvas;
-    this.ChartCorssCursor.Frame = this.Frame; //十字光标绑定框架
-    this.ChartSplashPaint.Frame = this.Frame;
+        //创建框架容器
+        this.Frame = new HQTradeHScreenFrame();
+        this.Frame.ChartBorder = new ChartBorder();
+        this.Frame.ChartBorder.UIElement = this.UIElement;
+        this.Frame.ChartBorder.Top = 25;
+        this.Frame.ChartBorder.Left = 50;
+        this.Frame.ChartBorder.Bottom = 20;
+        this.Frame.Canvas = this.Canvas;
+        this.ChartCorssCursor.Frame = this.Frame; //十字光标绑定框架
+        this.ChartSplashPaint.Frame = this.Frame;
 
-    this.CreateChildWindow(windowCount);
-    this.CreateMainKLine();
+        this.CreateChildWindow(windowCount);
+        this.CreateMainKLine();
 
-    //子窗口动态标题
-    for (var i in this.Frame.SubFrame) {
-      var titlePaint = new DynamicChartTitlePainting();
-      titlePaint.Frame = this.Frame.SubFrame[i].Frame;
-      titlePaint.Canvas = this.Canvas;
+        //子窗口动态标题
+        for (var i in this.Frame.SubFrame) 
+        {
+            var titlePaint = new DynamicChartTitlePainting();
+            titlePaint.Frame = this.Frame.SubFrame[i].Frame;
+            titlePaint.Canvas = this.Canvas;
+            titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+            this.TitlePaint.push(titlePaint);
+        }
 
-      this.TitlePaint.push(titlePaint);
+        this.ChartCorssCursor.StringFormatX.Frame = this.Frame.SubFrame[0].Frame;
     }
-
-    this.ChartCorssCursor.StringFormatX.Frame = this.Frame.SubFrame[0].Frame;
-  }
 
   //创建子窗口
   this.CreateChildWindow = function (windowCount) {

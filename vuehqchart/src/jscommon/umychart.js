@@ -3828,6 +3828,12 @@ function JSChartContainer(uielement, OffscreenElement)
                 JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] cross cursor button ", crossButton);
             }
         }
+
+        if (this.Frame.PtInFrameBottom(x,y))
+        {
+            mouseStatus={ Cursor:"ew-resize", Name:"FrameButtom"};
+            JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] frame bottom ");
+        }
         
 
         var bDrawPicture=false; //是否正在画图

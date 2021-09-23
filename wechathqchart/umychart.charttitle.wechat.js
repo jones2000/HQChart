@@ -27,6 +27,7 @@ import
     JSCommon_CUSTOM_MINUTE_PERIOD_END as CUSTOM_MINUTE_PERIOD_END,
     JSCommon_CUSTOM_SECOND_PERIOD_START as CUSTOM_SECOND_PERIOD_START,
     JSCommon_CUSTOM_SECOND_PERIOD_END as CUSTOM_SECOND_PERIOD_END,
+    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
 } from "./umychart.data.wechat.js";
 
 import 
@@ -61,6 +62,7 @@ function IChartTitlePainting()
     this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.UpdateUICallback;              //通知外面更新标题(老接口废弃)
     this.OnDrawEvent;                   //外部事件通知
+    this.GetEventCallback;              //事件回调,新的版本同意都用这个
 }
 
 var PERIOD_NAME = ["日线", "周线", "月线", "年线", "1分", "5分", "15分", "30分", "60分", "季线", "分笔", "2小时", "4小时", "", ""];
@@ -1178,11 +1180,13 @@ function DynamicChartTitlePainting()
     {
         this.EraseRect = null;
         this.TitleRect=null;
-        this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
+        if (this.Frame.IsMinSize) return;
+
+        this.OnDrawTitleEvent();
+
         if (this.Frame.ChartBorder.TitleHeight < 5) return;
         if (this.Frame.IsShowTitle == false) return;
-        if (this.Frame.IsMinSize) return;
-        
+        this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
         this.IsShowIndexName = this.Frame.IsShowIndexName;
         this.ParamSpace = this.Frame.IndexParamSpace;
 
@@ -1440,6 +1444,27 @@ function DynamicChartTitlePainting()
                 }
             }
         }
+    }
+
+    this.OnDrawTitleEvent=function()
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_INDEXTITLE_DRAW);
+        if (!event) return;
+        
+        var data={ Index:null, Data:this.Data ,Title:this.Title, FrameID:this.Frame.Identify };
+        if (IFrameSplitOperator.IsNumber(this.CursorIndex))
+        {
+            var index=Math.abs(this.CursorIndex);
+            index=parseInt(index.toFixed(0));
+            data.Index=index;   //当前屏数据索引
+        }
+
+        var border=this.Frame.GetBorder();
+        data.Left=border.LeftEx;
+        data.Top=border.Top;
+        data.Right=border.RightEx;
+
+        event.Callback(event,data,this);
     }
 }
 

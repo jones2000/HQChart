@@ -7794,6 +7794,12 @@ function JSChartContainer(uielement, OffscreenElement)
                 JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] cross cursor button ", crossButton);
             }
         }
+
+        if (this.Frame.PtInFrameBottom(x,y))
+        {
+            mouseStatus={ Cursor:"ew-resize", Name:"FrameButtom"};
+            JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] frame bottom ");
+        }
         
 
         var bDrawPicture=false; //是否正在画图
@@ -70715,6 +70721,46 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    //FINDSTR(A,B):在字符串A中查找字符串B,如果找到返回1,否则返回0.
+    //用法: FINDSTR('多头开仓','开仓')在字符串'多头开仓'中查找字符串'开仓',返回1
+    this.FINDSTR=function(data, data2)
+    {
+        var result=[];
+        var str, str2;
+        if (IFrameSplitOperator.IsNumber(data)) str=data.toString();
+        else str=data;
+        if (IFrameSplitOperator.IsNumber(data2)) str2=data2.toString();
+        else str2=data2;
+
+        if (IFrameSplitOperator.IsString(str) && IFrameSplitOperator.IsString(str2))
+        {
+            if (str.indexOf(str2)>=0) return 1;
+            else return 0;
+        }
+        else if (Array.isArray(data) && IFrameSplitOperator.IsString(str2))
+        {
+            for(var i=0;i<data.length;++i)
+            {
+                var item=data[i];
+                if (IFrameSplitOperator.IsString(item)) 
+                {
+                    result[i]=item.indexOf(str2)>=0?1:0;
+                }
+                else if (IFrameSplitOperator.IsNumber(item))
+                {
+                    str=item.toString();
+                    result[i]=str.indexOf(str2)>=0?1:0;
+                }
+                else
+                {
+                    result[i]=0;
+                }
+            }
+        }
+
+        return result;
+    }
+
     //STRSPACE(A):字符串附带一空格
     this.STRSPACE=function(data)
     {
@@ -71978,6 +72024,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.VARCAT(args[0], args[1]);
             case "STRSPACE":
                 return this.STRSPACE(args[0]);
+            case "FINDSTR":
+                return this.FINDSTR(args[0], args[1]);
             case 'DTPRICE':
                 return this.DTPRICE(args[0], args[1]);
             case 'ZTPRICE':
