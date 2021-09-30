@@ -226,6 +226,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 73. [HQChart使用教程81-自定义指标窗口高度](https://jones2000.blog.csdn.net/article/details/118652171)<br>
 74. [HQChart使用教程82-动态修改叠加指标参数](https://jones2000.blog.csdn.net/article/details/118681399)<br>
 75. [HQChart使用教程83-K线图最高最低价显示配置](https://jones2000.blog.csdn.net/article/details/118856130)<br>
+76. [HQChart使用教程84-十字光标右侧按钮事件](https://jones2000.blog.csdn.net/article/details/120562697)<br>
 
 ## 小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
@@ -349,7 +350,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 13. [HQChart实战教程29 - 指标参数保存到本地缓存](https://blog.csdn.net/jones2000/article/details/113349967)<br>
 14. [HQChart实战教程39 - K线图键盘事件重载](https://blog.csdn.net/jones2000/article/details/115921430)<br>
 15. [HQChart实战教程43 - K线面积图最后一个数据增加动画点](https://jones2000.blog.csdn.net/article/details/118774299)<br>
-16. [HQChart实战教程44-多指标窗口动态增长高度](https://jones2000.blog.csdn.net/article/details/119188383)<br>
+16. [HQChart实战教程44 - 多指标窗口动态增长高度](https://jones2000.blog.csdn.net/article/details/119188383)<br>
+17. [HQChart实战教程46-十字光标右侧按钮点击增加刻度线](HQChart实战教程46-十字光标右侧按钮点击增加刻度线)<br>
 
 
 

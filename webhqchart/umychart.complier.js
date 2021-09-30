@@ -10846,6 +10846,34 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.ExtendData.has(upKey) && this.ExtendData.has(downKey)) return this.Execute.RunNextJob();
 
         var self=this;
+
+        if (this.NetworkFilter)
+        {
+            var dataType={Type: this.DataType};
+            if (this.DataType===HQ_DATA_TYPE.KLINE_ID) dataType.Period=this.Period;
+            var dateRange=this.Data.GetDateRange();
+            var obj=
+            {
+                Name:'JSSymbolData::GetIndexIncreaseData', //类名::
+                Explain:'涨停家数统计',
+                DateRange:dateRange,
+                DataType:dataType,
+                Request:{ Url:'www.121287.com',  Type:'POST' ,
+                    Data: { symbol:this.Symbol, blocksymbol:blockSymbol, field: ["up", "down"] } }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                if (this.DataType===HQ_DATA_TYPE.KLINE_ID) this.RecvHistoryIncreaseDataV2(data, {UpKey:upKey,DownKey:downKey});
+                else this.RecvMinuteIncreaseDataV2(data, {UpKey:upKey,DownKey:downKey});
+                
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         if (this.DataType===HQ_DATA_TYPE.MINUTE_ID || this.DataType===HQ_DATA_TYPE.MULTIDAY_MINUTE_ID)  //走势图数据
         {
             var apiUrl=g_JSComplierResource.CacheDomain+'/cache/analyze/increaseanalyze/'+blockSymbol+'.json';
@@ -10898,6 +10926,43 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
+
+    //格式{ ver：2.0 data:[{date, time, up, down}, .....]}
+    this.RecvHistoryIncreaseDataV2=function(data,key)
+    {
+        JSConsole.Complier.Log('[JSSymbolData::RecvHistoryIncreaseData] recv data, key' , data,key);
+
+        var upData=[],downData=[];
+        for(var i in data.data)
+        {
+            var item=data.data[i];
+            let upItem=new SingleData();
+            let downItem=new SingleData();
+            var date=item[0];
+            var time=null;
+            upItem.Date=date;
+            downItem.Date=date;
+            if (ChartData.IsMinutePeriod(this.Period,true) && IFrameSplitOperator.IsNumber(item[1])) 
+            {
+                time=item[1];
+                upItem.Time=time;
+                downItem.Time=time;
+            }
+            
+            upItem.Value=item[2];
+            upData[i]=upItem;
+            
+            downItem.Value=item[3];
+            downData[i]=downItem;
+        }
+
+        var upFixedData=this.Data.GetFittingData2(upData,0);
+        var downFixedData=this.Data.GetFittingData2(downData,0);
+
+        this.ExtendData.set(key.UpKey,upFixedData);
+        this.ExtendData.set(key.DownKey,downFixedData);
+    }
+
     this.RecvHistoryIncreaseData=function(data,key)
     {
         JSConsole.Complier.Log('[JSSymbolData::RecvHistoryIncreaseData] recv data' , data);
@@ -10925,6 +10990,11 @@ function JSSymbolData(ast,option,jsExecute)
 
         this.ExtendData.set(key.UpKey,upFixedData);
         this.ExtendData.set(key.DownKey,downFixedData);
+    }
+
+    this.RecvMinuteIncreaseDataV2=function(data, key)
+    {
+        JSConsole.Complier.Log('[JSSymbolData::RecvMinuteIncreaseDataV2] recv data, key' , data, key);
     }
 
     this.RecvMinuteIncreaseData=function(data,key)

@@ -23322,6 +23322,13 @@ function ChartSingleText()
         YOffset:g_JSChartResource.DRAWICON.Text.YOffset
     }
 
+    this.Font=
+    {
+        DRAWTEXT_FIX:g_JSChartResource.DRAWTEXT_FIX.Font,
+        DRAWNUMBER_FIX: g_JSChartResource.DRAWNUMBER_FIX.Font
+    }
+    
+
     this.ReloadResource=function(resource)
     {
         if (this.Name=="DRAWTEXT")
@@ -23343,6 +23350,14 @@ function ChartSingleText()
                 FontName:g_JSChartResource.DRAWNUMBER.FontName,
                 YOffset:g_JSChartResource.DRAWNUMBER.YOffset
             }
+        }
+        else if (this.Name=="DRAWTEXT_FIX") 
+        {
+            this.Font.DRAWTEXT_FIX=g_JSChartResource.DRAWTEXT_FIX.Font;
+        }
+        else if (this.Name=="DRAWNUMBER_FIX") 
+        {
+            this.Font.DRAWNUMBER_FIX=g_JSChartResource.DRAWNUMBER_FIX.Font;
         }
     }
 
@@ -23593,6 +23608,9 @@ function ChartSingleText()
         }
 
         this.Canvas.fillStyle=this.Color;
+
+        if (this.Name=="DRAWTEXT_FIX") this.Canvas.font=this.Font.DRAWTEXT_FIX;
+        else if (this.Name=="DRAWNUMBER_FIX") this.Canvas.font=this.Font.DRAWNUMBER_FIX;
 
         //TYPE:0为左对齐,1为右对齐.
         if (this.Position.Type==0) this.Canvas.textAlign='left';
@@ -43075,6 +43093,9 @@ function JSChartResource()
         YOffset:0   //y坐标向上偏移
     }
 
+    this.DRAWTEXT_FIX={ Font:14*GetDevicePixelRatio() +'px 微软雅黑' }
+    this.DRAWNUMBER_FIX={ Font:14*GetDevicePixelRatio() +'px 微软雅黑' }
+
     //虚线配置
     this.DOTLINE=
     {
@@ -43307,6 +43328,18 @@ function JSChartResource()
             if (item.Zoom) this.DRAWTEXT.Zoom=item.Zoom;
             if (item.FontName) this.DRAWTEXT.FontName=item.FontName;
             if (IFrameSplitOperator.IsNumber(item.YOffset)) this.DRAWTEXT.YOffset=item.YOffset;
+        }
+
+        if (style.DRAWTEXT_FIX)
+        {
+            var item=style.DRAWTEXT_FIX;
+            if (item.Font) this.DRAWTEXT_FIX.Font=item.Font;
+        }
+
+        if (style.DRAWNUMBER_FIX)
+        {
+            var item=style.DRAWNUMBER_FIX;
+            if (item.Font) this.DRAWNUMBER_FIX.Font=item.Font;
         }
 
         if (style.DRAWNUMBER)
@@ -46140,10 +46173,26 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (this.IsOnTouch==true) return;   //正在操作中不更新数据
         var realtimeData=KLineChartContainer.JsonDataToRealtimeData(data,this.Symbol);
         if (!realtimeData) return;
+
         var item=this.SourceData.Data[this.SourceData.Data.length-1];   //最新的一条数据
         var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
 
-        if (item.Date==realtimeData.Date)   //实时行情数据更新
+        if (this.SourceData.Data.length==0) //第1条数据
+        {
+            var newItem =new HistoryData();
+            newItem.YClose=realtimeData.YClose;
+            newItem.Open=realtimeData.Open;
+            newItem.Close=realtimeData.Close;
+            newItem.High=realtimeData.High;
+            newItem.Low=realtimeData.Low;
+            newItem.Vol=realtimeData.Vol;
+            newItem.Amount=realtimeData.Amount;
+            newItem.Date=realtimeData.Date;
+            newItem.Position=realtimeData.Position;
+
+            this.SourceData.Data.push(newItem);
+        }
+        else if (item.Date==realtimeData.Date)   //实时行情数据更新
         {
             JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] update kline by realtime data',realtimeData);
 
@@ -46152,6 +46201,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             item.Low=realtimeData.Low;
             item.Vol=realtimeData.Vol;
             item.Amount=realtimeData.Amount;
+            item.Open=realtimeData.Open;
             item.Position=realtimeData.Position;
         }
         else if (item.Date<realtimeData.Date)   //新增加数据
@@ -49989,6 +50039,39 @@ function MinuteChartContainer(uielement)
             };
 
             this.Frame.SetMultiDayMinuteWidth(DayMinuteWidth);
+        }
+    }
+
+    this.ReloadChartPaint=function(resource)
+    {
+        for(var i=0; i<this.ChartPaint.length; ++i)
+        {
+            var item=this.ChartPaint[i];
+            if (!item) continue;
+            if (item.ReloadResource) item.ReloadResource(resource);
+
+            if (i==0)
+            {
+                if (item.Name=="Minute-Line")
+                {
+                    item.Color=g_JSChartResource.Minute.PriceColor;
+                    item.AreaColor=g_JSChartResource.Minute.AreaPriceColor;
+                }
+            }
+            else if (i==1)
+            {
+                if (item.Name=="Minute-Average-Line")
+                {
+                    item.Color=g_JSChartResource.Minute.AvPriceColor;
+                }
+            }
+            else if (i==2)
+            {
+                if (item.Name=="Minute-Vol-Bar")
+                {
+                    item.Color=g_JSChartResource.Minute.VolBarColor;
+                }
+            }
         }
     }
 
@@ -74775,6 +74858,34 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.ExtendData.has(upKey) && this.ExtendData.has(downKey)) return this.Execute.RunNextJob();
 
         var self=this;
+
+        if (this.NetworkFilter)
+        {
+            var dataType={Type: this.DataType};
+            if (this.DataType===HQ_DATA_TYPE.KLINE_ID) dataType.Period=this.Period;
+            var dateRange=this.Data.GetDateRange();
+            var obj=
+            {
+                Name:'JSSymbolData::GetIndexIncreaseData', //类名::
+                Explain:'涨停家数统计',
+                DateRange:dateRange,
+                DataType:dataType,
+                Request:{ Url:'www.121287.com',  Type:'POST' ,
+                    Data: { symbol:this.Symbol, blocksymbol:blockSymbol, field: ["up", "down"] } }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                if (this.DataType===HQ_DATA_TYPE.KLINE_ID) this.RecvHistoryIncreaseDataV2(data, {UpKey:upKey,DownKey:downKey});
+                else this.RecvMinuteIncreaseDataV2(data, {UpKey:upKey,DownKey:downKey});
+                
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         if (this.DataType===HQ_DATA_TYPE.MINUTE_ID || this.DataType===HQ_DATA_TYPE.MULTIDAY_MINUTE_ID)  //走势图数据
         {
             var apiUrl=g_JSComplierResource.CacheDomain+'/cache/analyze/increaseanalyze/'+blockSymbol+'.json';
@@ -74827,6 +74938,43 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
+
+    //格式{ ver：2.0 data:[{date, time, up, down}, .....]}
+    this.RecvHistoryIncreaseDataV2=function(data,key)
+    {
+        JSConsole.Complier.Log('[JSSymbolData::RecvHistoryIncreaseData] recv data, key' , data,key);
+
+        var upData=[],downData=[];
+        for(var i in data.data)
+        {
+            var item=data.data[i];
+            let upItem=new SingleData();
+            let downItem=new SingleData();
+            var date=item[0];
+            var time=null;
+            upItem.Date=date;
+            downItem.Date=date;
+            if (ChartData.IsMinutePeriod(this.Period,true) && IFrameSplitOperator.IsNumber(item[1])) 
+            {
+                time=item[1];
+                upItem.Time=time;
+                downItem.Time=time;
+            }
+            
+            upItem.Value=item[2];
+            upData[i]=upItem;
+            
+            downItem.Value=item[3];
+            downData[i]=downItem;
+        }
+
+        var upFixedData=this.Data.GetFittingData2(upData,0);
+        var downFixedData=this.Data.GetFittingData2(downData,0);
+
+        this.ExtendData.set(key.UpKey,upFixedData);
+        this.ExtendData.set(key.DownKey,downFixedData);
+    }
+
     this.RecvHistoryIncreaseData=function(data,key)
     {
         JSConsole.Complier.Log('[JSSymbolData::RecvHistoryIncreaseData] recv data' , data);
@@ -74854,6 +75002,11 @@ function JSSymbolData(ast,option,jsExecute)
 
         this.ExtendData.set(key.UpKey,upFixedData);
         this.ExtendData.set(key.DownKey,downFixedData);
+    }
+
+    this.RecvMinuteIncreaseDataV2=function(data, key)
+    {
+        JSConsole.Complier.Log('[JSSymbolData::RecvMinuteIncreaseDataV2] recv data, key' , data, key);
     }
 
     this.RecvMinuteIncreaseData=function(data,key)

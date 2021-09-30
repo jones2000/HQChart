@@ -2009,6 +2009,8 @@ function JSChartContainer(uielement)
 
     this.Draw = function () 
     {
+        if (this.IsDestroy) return;
+        
         if (this.IsFullDraw)
         {
             this.FullDraw('Draw');
