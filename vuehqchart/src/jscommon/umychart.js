@@ -29217,7 +29217,7 @@ function FrameSplitMinutePriceY()
 
             if (IFrameSplitOperator.IsNumber(item.Increase)) //涨幅计算价格
             {
-                if (!IFrameSplitOperator.IsNumber(this.YClose)) conintue;
+                if (!IFrameSplitOperator.IsNumber(this.YClose)) continue;
                 info.Value=this.YClose*(1+item.Increase);
             }
             else 
@@ -40669,6 +40669,39 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Page.Minute.Index=0;
     }
 
+    this.AddCustomKLine=function(kline, option)
+    {
+        var klineChart=this.ChartPaint[0];
+        if (!klineChart) return;
+
+        if (!kline) return;
+
+        if (!klineChart.CustomKLine) klineChart.CustomKLine=new Map();
+
+        if (Array.isArray(kline))
+        {
+            for(var i=0;i<kline.length;++i)
+            {
+                var item=kline[i];
+                klineChart.CustomKLine.set(item.Key, item.Data);
+            }
+        }
+        else if (kline)
+        {
+            klineChart.CustomKLine.set(kline.Key, kline.Data);
+        }
+        
+        if (option && option.Draw==true) this.Draw();
+    }
+
+    this.ClearCustomKLine=function()
+    {
+        var klineChart=this.ChartPaint[0];
+        if (!klineChart) return;
+
+        klineChart.ClearCustomKLine();
+    }
+
     this.StopAutoUpdate=function()
     {
         this.CancelAutoUpdate();
@@ -42938,7 +42971,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.ReloadChartDrawPicture();   //切换周期了 清空画图工具
         this.ClearRectSelect(true);
         this.Frame.ClearUpDonwFrameYData();
-        this.ChartPaint[0].ClearCustomKLine();
+        this.ClearCustomKLine();
 
         if (isDataTypeChange==false && !this.IsApiPeriod)
         {
@@ -44193,7 +44226,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.CancelAutoUpdate();    //先停止定时器
         this.AutoUpdateEvent(false,'KLineChartContainer::ChangeSymbol');
         this.ClearRectSelect(true);
-        this.ChartPaint[0].ClearCustomKLine();
+        this.ClearCustomKLine();
         this.Symbol=symbol;
         if (!symbol)
         {

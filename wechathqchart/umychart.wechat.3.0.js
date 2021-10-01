@@ -7075,6 +7075,39 @@ function KLineChartContainer(uielement)
         this.DragDownload.Minute.isEnd=false;
     }
 
+    this.AddCustomKLine=function(kline, option)
+    {
+        var klineChart=this.ChartPaint[0];
+        if (!klineChart) return;
+        if (!kline) return;
+
+        if (!klineChart.CustomKLine) klineChart.CustomKLine=new Map();
+
+        if (Array.isArray(kline))
+        {
+            for(var i=0;i<kline.length;++i)
+            {
+                var item=kline[i];
+                klineChart.CustomKLine.set(item.Key, item.Data);
+            }
+        }
+        else if (kline)
+        {
+            klineChart.CustomKLine.set(kline.Key, kline.Data);
+        }
+        
+        if (option && option.Draw==true) this.Draw();
+    }
+
+    this.ClearCustomKLine=function()
+    {
+        var klineChart=this.ChartPaint[0];
+        if (!klineChart) return;
+
+        klineChart.ClearCustomKLine();
+    }
+
+
     this.ChartOperator = function (obj) //图形控制函数 {ID:JSCHART_OPERATOR_ID, ...参数 }
     {
         var id = obj.ID;
@@ -8165,6 +8198,7 @@ function KLineChartContainer(uielement)
         
         this.Period = period;
         if (right!=null) this.Right=right;
+        this.ClearCustomKLine();
         if (isDataTypeChange == false && !this.IsApiPeriod) 
         {
             this.Update();
@@ -8794,6 +8828,7 @@ function KLineChartContainer(uielement)
     {
         this.CancelAutoUpdate();    //先停止更新
         this.AutoUpdateEvent(false);
+        this.ClearCustomKLine();
         this.Symbol = symbol;
         if (IsIndexSymbol(symbol)) this.Right = 0;    //指数没有复权
 

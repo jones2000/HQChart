@@ -1395,7 +1395,7 @@ function FrameSplitMinutePriceY()
 
             if (IFrameSplitOperator.IsNumber(item.Increase)) //涨幅计算价格
             {
-                if (!IFrameSplitOperator.IsNumber(this.YClose)) conintue;
+                if (!IFrameSplitOperator.IsNumber(this.YClose)) continue;
                 info.Value = this.YClose * (1 + item.Increase);
             }
             else 

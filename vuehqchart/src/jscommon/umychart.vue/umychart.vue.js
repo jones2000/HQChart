@@ -33227,7 +33227,7 @@ function FrameSplitMinutePriceY()
 
             if (IFrameSplitOperator.IsNumber(item.Increase)) //涨幅计算价格
             {
-                if (!IFrameSplitOperator.IsNumber(this.YClose)) conintue;
+                if (!IFrameSplitOperator.IsNumber(this.YClose)) continue;
                 info.Value=this.YClose*(1+item.Increase);
             }
             else 
@@ -44679,6 +44679,39 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Page.Minute.Index=0;
     }
 
+    this.AddCustomKLine=function(kline, option)
+    {
+        var klineChart=this.ChartPaint[0];
+        if (!klineChart) return;
+
+        if (!kline) return;
+
+        if (!klineChart.CustomKLine) klineChart.CustomKLine=new Map();
+
+        if (Array.isArray(kline))
+        {
+            for(var i=0;i<kline.length;++i)
+            {
+                var item=kline[i];
+                klineChart.CustomKLine.set(item.Key, item.Data);
+            }
+        }
+        else if (kline)
+        {
+            klineChart.CustomKLine.set(kline.Key, kline.Data);
+        }
+        
+        if (option && option.Draw==true) this.Draw();
+    }
+
+    this.ClearCustomKLine=function()
+    {
+        var klineChart=this.ChartPaint[0];
+        if (!klineChart) return;
+
+        klineChart.ClearCustomKLine();
+    }
+
     this.StopAutoUpdate=function()
     {
         this.CancelAutoUpdate();
@@ -46948,7 +46981,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.ReloadChartDrawPicture();   //切换周期了 清空画图工具
         this.ClearRectSelect(true);
         this.Frame.ClearUpDonwFrameYData();
-        this.ChartPaint[0].ClearCustomKLine();
+        this.ClearCustomKLine();
 
         if (isDataTypeChange==false && !this.IsApiPeriod)
         {
@@ -48203,7 +48236,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.CancelAutoUpdate();    //先停止定时器
         this.AutoUpdateEvent(false,'KLineChartContainer::ChangeSymbol');
         this.ClearRectSelect(true);
-        this.ChartPaint[0].ClearCustomKLine();
+        this.ClearCustomKLine();
         this.Symbol=symbol;
         if (!symbol)
         {
@@ -67791,15 +67824,14 @@ function JSAlgorithm(errorHandler,symbolData)
         }
         else
         {
-            if (n>data.length) return result;
-            if (n<=0) n=data.length-1;
+            if (!IFrameSplitOperator.IsNonEmptyArray(data)) return result;
+            if (n<=0) n=data.length;
+            else if (n>data.length) n=data.length;
 
-            var nMax=0;
-            for(nMax=0;nMax<data.length;++nMax)
-            {
-                if (this.IsNumber(data[nMax])) break;
-            }
+            var nStart=this.GetFirstVaildIndex(data);
+            if (nStart>=data.length) return result;
 
+            var nMax=nStart;
             if (nMax<data.length) result[nMax]=data[nMax];
             for(var i=nMax+1,j=2;i<data.length && j<n;++i,++j)
             {
@@ -67867,15 +67899,14 @@ function JSAlgorithm(errorHandler,symbolData)
         }
         else
         {
-            if (n>data.length) return result;
-            if (n<=0) n=data.length-1;
+            if (!IFrameSplitOperator.IsNonEmptyArray(data)) return result;
+            if (n<=0) n=data.length;
+            else if (n>data.length) n=data.length;
 
-            var nMin=0;
-            for(nMin=0;nMin<data.length;++nMin)
-            {
-                if (this.IsNumber(data[nMin])) break;
-            }
+            var nStart=this.GetFirstVaildIndex(data);
+            if (nStart>=data.length) return result;
 
+            var nMin=nStart;
             if (nMin<data.length) result[nMin]=data[nMin];
             for(var i=nMin+1,j=2;i<data.length && j<n;++i,++j)
             {

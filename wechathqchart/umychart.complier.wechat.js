@@ -3097,15 +3097,14 @@ function JSAlgorithm(errorHandler, symbolData)
         }
         else 
         {
-            if (n > data.length) return result;
-            if (n <= 0) n = data.length - 1;
+            if (!IFrameSplitOperator.IsNonEmptyArray(data)) return result;
+            if (n<=0) n=data.length;
+            else if (n>data.length) n=data.length;
 
-            var nMax = 0;
-            for (nMax = 0; nMax < data.length; ++nMax) 
-            {
-                if (this.IsNumber(data[nMax])) break;
-            }
+            var nStart=this.GetFirstVaildIndex(data);
+            if (nStart>=data.length) return result;
 
+            var nMax = nStart;
             if (nMax < data.length) result[nMax] = data[nMax];
             for (var i = nMax + 1, j = 2; i < data.length && j < n; ++i, ++j) 
             {
@@ -3173,15 +3172,13 @@ function JSAlgorithm(errorHandler, symbolData)
         }
         else 
         {
-            if (n>data.length) return result;
-            if (n<=0) n=data.length-1;
+            if (!IFrameSplitOperator.IsNonEmptyArray(data)) return result;
+            if (n<=0) n=data.length;
+            else if (n>data.length) n=data.length;
+            var nStart=this.GetFirstVaildIndex(data);
+            if (nStart>=data.length) return result;
 
-            var nMin=0;
-            for(nMin=0;nMin<data.length;++nMin)
-            {
-                if (this.IsNumber(data[nMin])) break;
-            }
-
+            var nMin=nStart;
             if (nMin<data.length) result[nMin]=data[nMin];
             for(var i=nMin+1,j=2;i<data.length && j<n;++i,++j)
             {
