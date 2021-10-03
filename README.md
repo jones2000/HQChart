@@ -316,6 +316,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 3. [HQChart实战教程42-新浪期货数据源对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/117757956)<br>
 4. [股票当日分时图例子,使用东方财富网页数据](https://download.csdn.net/download/jones2000/22589484)<br>
 5. [股票5日分时图例子,使用东方财富网页数据](https://download.csdn.net/download/jones2000/22761465)<br>
+5. [股票日K线图,使用东方财富网页数据](https://download.csdn.net/download/jones2000/27232461)<br>
 
 ## httpA股数据对接教程(付费文章)
 ### 日K线
