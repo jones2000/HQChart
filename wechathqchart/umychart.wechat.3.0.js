@@ -285,6 +285,7 @@ function JSChart(element)
         {
             if (option.Language === 'CN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
             else if (option.Language === 'EN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
+            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
         }
 
         if (option.SourceDatatLimit) chart.SetSourceDatatLimit(option.SourceDatatLimit);
@@ -579,6 +580,7 @@ function JSChart(element)
         {
             if (option.Language === 'CN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
             else if (option.Language === 'EN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
+            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
         }
 
         chart.Create(windowsCount);                            //创建子窗口
@@ -7099,12 +7101,14 @@ function KLineChartContainer(uielement)
         if (option && option.Draw==true) this.Draw();
     }
 
-    this.ClearCustomKLine=function()
+    this.ClearCustomKLine=function(option)
     {
         var klineChart=this.ChartPaint[0];
         if (!klineChart) return;
 
         klineChart.ClearCustomKLine();
+        
+        if (option && option.Draw==true) this.Draw();
     }
 
 

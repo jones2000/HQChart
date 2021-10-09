@@ -227,6 +227,8 @@ function DynamicKLineTitlePainting()
         var item = this.Data.Data[dataIndex];
         this.OnDrawEventCallback(item, 'DynamicKLineTitlePainting::FullDraw');
 
+        //console.log('[FullDraw]', item);
+
         if (this.Frame.IsHScreen === true) 
         {
             this.Canvas.save();
@@ -451,9 +453,10 @@ function DynamicKLineTitlePainting()
         if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
 
         //时间
+        //console.log(`[DrawSingleLine] ${this.Period} ${item.Time} ${item.Date}`);
         if (ChartData.IsMinutePeriod(this.Period, true) && IFrameSplitOperator.IsNumber(item.Time))
         {
-            var text = IFrameSplitOperator.FormatTimeString(item.Time);
+            var text = IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM");
             if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
         }
         else if (ChartData.IsSecondPeriod(this.Period) && IFrameSplitOperator.IsNumber(item.Time))

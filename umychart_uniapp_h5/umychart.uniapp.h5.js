@@ -4160,6 +4160,7 @@ function JSChart(divElement, bOffscreen)
         {
             if (option.Language==='CN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
             else if(option.Language==='EN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
+            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
         }
 
         if (option.SourceDatatLimit) chart.SetSourceDatatLimit(option.SourceDatatLimit);
@@ -4574,6 +4575,7 @@ function JSChart(divElement, bOffscreen)
         {
             if (option.Language==='CN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
             else if(option.Language==='EN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
+            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
         }
 
         if (option.Info && option.Info.length>0) chart.SetMinuteInfo(option.Info,false);
@@ -8933,6 +8935,9 @@ function JSChartContainer(uielement, OffscreenElement)
                 break;
             case 'CN':
                 languageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+                break;
+            case "TC":
+                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
                 break;
             default:
                 console.warn(`[JSChartContainer::SetLanguage] language=${language} error`);
@@ -17137,9 +17142,9 @@ function ChartData()
         {
             for(var i=0;i<this.Data.length;++i)
             {
-                var item=this.Data[index];
+                var item=this.Data[i];
                 var seed=(right==1?item.BFactor:item.AFactor);
-                result[index]=HistoryData.CopyRight(item,seed);
+                result[i]=HistoryData.CopyRight(item,seed);
             }
 
             return result;
@@ -31572,6 +31577,17 @@ IFrameSplitOperator.FormatValueString=function(value, floatPrecision,languageID)
         else 
             return (value/1000000000000).toFixed(floatPrecision)+"T";
     }
+    else if (languageID===JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID)  //繁体
+    {
+        if (absValue < 10000)
+            return value.toFixed(floatPrecision);
+        else if (absValue < 100000000)
+            return (value/10000).toFixed(floatPrecision)+"萬";
+        else if (absValue < 1000000000000)
+            return (value/100000000).toFixed(floatPrecision)+"億";
+        else
+            return (value/1000000000000).toFixed(floatPrecision)+"萬億";
+    }
     else
     {
         if (absValue < 10000)
@@ -43451,114 +43467,115 @@ var g_JSChartResource=new JSChartResource();
 //
 var JSCHART_LANGUAGE_ID=
 {
-    LANGUAGE_CHINESE_ID:0,
-    LANGUAGE_ENGLISH_ID:1
+    LANGUAGE_CHINESE_ID:0,  //简体中文 CN
+    LANGUAGE_ENGLISH_ID:1,  //英文 EN
+    LANGUAGE_TRADITIONAL_CHINESE_ID:2,  //繁体中文 TC
 };
 
 function JSChartLocalization()
 {
     this.TextResource=new Map([
         //内部tooltip
-        ['Tooltip-Open', {CN:'开:', EN:'O:'}],
-        ['Tooltip-High', {CN:'高:', EN:'H:'}],
-        ['Tooltip-Low', {CN:'低:', EN:'L:'}],
-        ['Tooltip-Close', {CN:'收:', EN:'C:'}],
-        ['Tooltip-Increase', {CN:'幅:', EN:'I:'}],
-        ['Tooltip-Vol', {CN:'量:', EN:'V:'}],
-        ['Tooltip-Amount', {CN:'额:', EN:'A:'}],
-        ['Tooltip-AvPrice', {CN:'均:', EN:'AP:'}],
-        ['Tooltip-Price', {CN:'价:', EN:'P:'}],
-        ['Tooltip-Exchange', {CN:'换:', EN:'E:'}],
-        ['Tooltip-Position',{CN:'持:', EN:'P:'}],
+        ['Tooltip-Open', {CN:'开:', EN:'O:', TC:'開'}],
+        ['Tooltip-High', {CN:'高:', EN:'H:', TC:'高'}],
+        ['Tooltip-Low', {CN:'低:', EN:'L:', TC:'低'}],
+        ['Tooltip-Close', {CN:'收:', EN:'C:', TC:'收'}],
+        ['Tooltip-Increase', {CN:'幅:', EN:'I:', TC:'幅'}],
+        ['Tooltip-Vol', {CN:'量:', EN:'V:', TC:'量'}],
+        ['Tooltip-Amount', {CN:'额:', EN:'A:', TC:'額'}],
+        ['Tooltip-AvPrice', {CN:'均:', EN:'AP:', TC:'均'}],
+        ['Tooltip-Price', {CN:'价:', EN:'P:', TC:'價'}],
+        ['Tooltip-Exchange', {CN:'换:', EN:'E:', TC:'換'}],
+        ['Tooltip-Position',{CN:'持:', EN:'P:', TC:'持'}],
 
-        ['DivTooltip-Open', {CN:'开盘:', EN:'Open:'}],
-        ['DivTooltip-High', {CN:'最高:', EN:'High:'}],
-        ['DivTooltip-Low', {CN:'最低:', EN:'Low:'}],
-        ['DivTooltip-Close', {CN:'收盘:', EN:'Close:'}],
-        ['DivTooltip-Increase', {CN:'涨幅:', EN:'Increase:'}],
-        ['DivTooltip-Vol', {CN:'数量:', EN:'Volume:'}],
-        ['DivTooltip-Amount', {CN:'金额:', EN:'Amount:'}],
-        ['DivTooltip-Exchange', {CN:'换手:', EN:'Exchange:'}],
-        ['DivTooltip-Position', {CN:'持仓:', EN:'Position:'}],
-        ['DivTooltip-Price', {CN:'价格:', EN:'Open:'}],
+        ['DivTooltip-Open', {CN:'开盘:', EN:'Open:', TC:'開盤'}],
+        ['DivTooltip-High', {CN:'最高:', EN:'High:', TC:'最高'}],
+        ['DivTooltip-Low', {CN:'最低:', EN:'Low:', TC:'最低'}],
+        ['DivTooltip-Close', {CN:'收盘:', EN:'Close:', TC:'收盤'}],
+        ['DivTooltip-Increase', {CN:'涨幅:', EN:'Increase:', TC:'漲幅'}],
+        ['DivTooltip-Vol', {CN:'数量:', EN:'Volume:', TC:'數量'}],
+        ['DivTooltip-Amount', {CN:'金额:', EN:'Amount:', TC:'金額'}],
+        ['DivTooltip-Exchange', {CN:'换手:', EN:'Exchange:', TC:'換手'}],
+        ['DivTooltip-Position', {CN:'持仓:', EN:'Position:', TC:'持倉'}],
+        ['DivTooltip-Price', {CN:'价格:', EN:'Open:', TC:'價格'}],
 
         //K线动态标题
-        ['KTitle-Open', {CN:'开:', EN:'O:'}],
-        ['KTitle-High', {CN:'高:', EN:'H:'}],
-        ['KTitle-Low', {CN:'低:', EN:'L:'}],
-        ['KTitle-Close', {CN:'收:', EN:'C:'}],
-        ['KTitle-Increase', {CN:'幅:', EN:'I:'}],
-        ['KTitle-Vol', {CN:'量:', EN:'V:'}],
-        ['KTitle-Amount', {CN:'额:', EN:'A:'}],
-        ['KTitle-Exchange', {CN:'换:', EN:'E:'}],
-        ['KTitle-Position', {CN:'持:', EN:'P:'}],
-        ['KTitle-Price', {CN:'价:', EN:'Price:'}],
+        ['KTitle-Open', {CN:'开:', EN:'O:', TC:'開'}],
+        ['KTitle-High', {CN:'高:', EN:'H:', TC:'高'}],
+        ['KTitle-Low', {CN:'低:', EN:'L:', TC:'低'}],
+        ['KTitle-Close', {CN:'收:', EN:'C:', TC:'收'}],
+        ['KTitle-Increase', {CN:'幅:', EN:'I:', TC:'幅'}],
+        ['KTitle-Vol', {CN:'量:', EN:'V:', TC:'量'}],
+        ['KTitle-Amount', {CN:'额:', EN:'A:', TC:'額'}],
+        ['KTitle-Exchange', {CN:'换:', EN:'E:', TC:'換'}],
+        ['KTitle-Position', {CN:'持:', EN:'P:', TC:'持'}],
+        ['KTitle-Price', {CN:'价:', EN:'Price:', TC:'價'}],
         
         //走势图动态标题
-        ['MTitle-AC-Price', {CN:'匹配价:', EN:'C:'}],
-        ['MTitle-AC-AvPrice', {CN:'匹配均价:', EN:'C:'}],
-        ['MTitle-AC-Increase', {CN:'竞价涨幅:', EN:'I:'}],
-        ['MTitle-AC-Vol', {CN:'匹配量:', EN:'V:'}],
-        ['MTitle-AC-NotMatchVol', {CN:'未匹配量:', EN:'NV:'}],
+        ['MTitle-AC-Price', {CN:'匹配价:', EN:'C:', TC:'匹配價'}],
+        ['MTitle-AC-AvPrice', {CN:'匹配均价:', EN:'C:', TC:'匹配均價'}],
+        ['MTitle-AC-Increase', {CN:'竞价涨幅:', EN:'I:', TC:'競價漲幅'}],
+        ['MTitle-AC-Vol', {CN:'匹配量:', EN:'V:', TC:'匹配量'}],
+        ['MTitle-AC-NotMatchVol', {CN:'未匹配量:', EN:'NV:', TC:'未匹配量'}],
 
         //走势图标题
-        ['MTitle-Close', {CN:'价:', EN:'C:'}],
-        ['MTitle-AvPrice', {CN:'均:', EN:'AC:'}],
-        ['MTitle-Increase', {CN:'幅:', EN:'I:'}],
-        ['MTitle-Vol', {CN:'量:', EN:'V:'}],
-        ['MTitle-Amount', {CN:'额:', EN:'A:'}],
-        ['MTitle-Position', {CN:'持:', EN:'P:'}],
+        ['MTitle-Close', {CN:'价:', EN:'C:', TC:'價'}],
+        ['MTitle-AvPrice', {CN:'均:', EN:'AC:', TC:'均'}],
+        ['MTitle-Increase', {CN:'幅:', EN:'I:', TC:'幅'}],
+        ['MTitle-Vol', {CN:'量:', EN:'V:', TC:'量'}],
+        ['MTitle-Amount', {CN:'额:', EN:'A:', TC:'額'}],
+        ['MTitle-Position', {CN:'持:', EN:'P:', TC:'持'}],
 
         //周期
-        ['日线', {CN:'日线', EN:'1D'}],
-        ['周线', {CN:'周线', EN:'1W'}],
-        ['双周', {CN:'双周', EN:"2W"}],
-        ['月线', {CN:'月线', EN:'1M'}],
-        ["半年", {CN:'半年', EN:'HY'}],
-        ['年线', {CN:'年线', EN:'1Y'}],
-        ['1分', {CN:'1分', EN:'1Min'}],
-        ['5分', {CN:'5分', EN:'5Min'}],
-        ['15分', {CN:'15分', EN:'15Min'}],
-        ['30分', {CN:'30分', EN:'30Min'}],
-        ['60分', {CN:'60分', EN:'60Min'}],
-        ['季线', {CN:'季线', EN:'1Q'}],
-        ['分笔', {CN:'分笔', EN:'Tick'}],
-        ['2小时', {CN:'2小时', EN:'2H'}],
-        ['4小时', {CN:'4小时', EN:'4H'}],
+        ['日线', {CN:'日线', EN:'1D', TC:'日綫'}],
+        ['周线', {CN:'周线', EN:'1W', TC:'周綫'}],
+        ['双周', {CN:'双周', EN:"2W", TC:'雙周'}],
+        ['月线', {CN:'月线', EN:'1M', TC:'月綫'}],
+        ["半年", {CN:'半年', EN:'HY', TC:'半年'}],
+        ['年线', {CN:'年线', EN:'1Y', TC:'年綫'}],
+        ['1分', {CN:'1分', EN:'1Min', TC:'1分'}],
+        ['5分', {CN:'5分', EN:'5Min', TC:'5分'}],
+        ['15分', {CN:'15分', EN:'15Min', TC:'15分'}],
+        ['30分', {CN:'30分', EN:'30Min', TC:'30分'}],
+        ['60分', {CN:'60分', EN:'60Min', TC:'60分'}],
+        ['季线', {CN:'季线', EN:'1Q', TC:'季綫'}],
+        ['分笔', {CN:'分笔', EN:'Tick', TC:'分筆'}],
+        ['2小时', {CN:'2小时', EN:'2H', TC:'2小時'}],
+        ['4小时', {CN:'4小时', EN:'4H', TC:'4小時'}],
 
         //复权
-        ['不复权', {CN:'不复权', EN:'No Right'}],
-        ['前复权', {CN:'前复权', EN:'Pro Right'}],
-        ['后复权', {CN:'后复权', EN:'Post Right'}],
+        ['不复权', {CN:'不复权', EN:'No Right', TC:'不復權'}],
+        ['前复权', {CN:'前复权', EN:'Pro Right', TC:'前復權'}],
+        ['后复权', {CN:'后复权', EN:'Post Right', TC:'后復權'}],
 
         //week
-        ['日', {CN:'日', EN:'Sun.'}],
-        ['一', {CN:'一', EN:'Mon.'}],
-        ['二', {CN:'二', EN:'Tues.'}],
-        ['三', {CN:'三', EN:'Wed.'}],
-        ['四', {CN:'四', EN:'Thur.'}],
-        ['五', {CN:'五', EN:'Fri.'}],
-        ['六', {CN:'六', EN:'Sat.'}],
+        ['日', {CN:'日', EN:'Sun.', TC:'日'}],
+        ['一', {CN:'一', EN:'Mon.', TC:'壹'}],
+        ['二', {CN:'二', EN:'Tues.', TC:'貳'}],
+        ['三', {CN:'三', EN:'Wed.', TC:'叁'}],
+        ['四', {CN:'四', EN:'Thur.', TC:'肆'}],
+        ['五', {CN:'五', EN:'Fri.', TC:'伍'}],
+        ['六', {CN:'六', EN:'Sat.', TC:'陸'}],
 
-        ['1月', {CN:'1月', EN:'Jan'}],
-        ['2月', {CN:'2月', EN:'Feb'}],
-        ['3月', {CN:'3月', EN:'Mar'}],
-        ['4月', {CN:'4月', EN:'Apr'}],
-        ['5月', {CN:'5月', EN:'May'}],
-        ['6月', {CN:'6月', EN:'Jun'}],
-        ['7月', {CN:'7月', EN:'Jul'}],
-        ['8月', {CN:'8月', EN:'Aug'}],
-        ['9月', {CN:'9月', EN:'Sept'}],
-        ['10月', {CN:'10月', EN:'Oct'}],
-        ['11月', {CN:'11月', EN:'Nov'}],
-        ['12月', {CN:'12月', EN:'Dec'}],
+        ['1月', {CN:'1月', EN:'Jan', TC:'1月'}],
+        ['2月', {CN:'2月', EN:'Feb', TC:'2月'}],
+        ['3月', {CN:'3月', EN:'Mar', TC:'3月'}],
+        ['4月', {CN:'4月', EN:'Apr', TC:'4月'}],
+        ['5月', {CN:'5月', EN:'May', TC:'5月'}],
+        ['6月', {CN:'6月', EN:'Jun', TC:'6月'}],
+        ['7月', {CN:'7月', EN:'Jul', TC:'7月'}],
+        ['8月', {CN:'8月', EN:'Aug', TC:'8月'}],
+        ['9月', {CN:'9月', EN:'Sept', TC:'9月'}],
+        ['10月', {CN:'10月', EN:'Oct', TC:'10月'}],
+        ['11月', {CN:'11月', EN:'Nov', TC:'11月'}],
+        ['12月', {CN:'12月', EN:'Dec', TC:'12月'}],
 
-        ['自定义分钟', {CN:'分', EN:'Min'}],
-        ['自定义日线', {CN:'日', EN:'D'}],
-        ['自定义秒', {CN:'秒', EN:'S'}],
+        ['自定义分钟', {CN:'分', EN:'Min', TC:'分'}],
+        ['自定义日线', {CN:'日', EN:'D', TC:'日'}],
+        ['自定义秒', {CN:'秒', EN:'S', TC:'秒'}],
 
-        ["MVol-Vol", {CN:"成交量", EN:"Volume"} ],
-        ["MVol-Position", {CN:"持仓量", EN:"Position"} ]
+        ["MVol-Vol", {CN:"成交量", EN:"Volume", TC:'成交量'} ],
+        ["MVol-Position", {CN:"持仓量", EN:"Position", TC:'持倉量'} ]
 
     ]);
 
@@ -43573,6 +43590,8 @@ function JSChartLocalization()
                 return item.CN;
             case JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID:
                 return item.EN;
+            case JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID:
+                return item.TC;
             default:
                 return item.CN;
         }
@@ -44660,12 +44679,14 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (option && option.Draw==true) this.Draw();
     }
 
-    this.ClearCustomKLine=function()
+    this.ClearCustomKLine=function(option)
     {
         var klineChart=this.ChartPaint[0];
         if (!klineChart) return;
 
         klineChart.ClearCustomKLine();
+
+        if (option && option.Draw==true) this.Draw();
     }
 
     this.StopAutoUpdate=function()
