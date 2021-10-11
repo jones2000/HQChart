@@ -164,7 +164,7 @@ function JSChart(divElement, bOffscreen)
             if (option.KLine.RightSpaceCount>0) chart.RightSpaceCount=option.KLine.RightSpaceCount;
             if (option.KLine.ZoomType>0) chart.ZoomType=option.KLine.ZoomType;
             if (option.KLine.DataWidth>=1) chart.KLineSize={ DataWidth:option.KLine.DataWidth };
-            if (IFrameSplitOperator.IsNumber(option.KLine.RightFormula)) chart=RightFormula=option.KLine.RightFormula;
+            if (IFrameSplitOperator.IsNumber(option.KLine.RightFormula)) chart.RightFormula=option.KLine.RightFormula;
         }
 
         if (option.EnableFlowCapital)
@@ -12276,7 +12276,10 @@ function HistoryData()
 HistoryData.Copy=function(data)
 {
     var newData=new HistoryData();
+
     newData.Date=data.Date;
+    if (IFrameSplitOperator.IsNumber(data.Time)) newData.Time=data.Time;
+
     newData.YClose=data.YClose;
     newData.Open=data.Open;
     newData.Close=data.Close;
@@ -12284,17 +12287,21 @@ HistoryData.Copy=function(data)
     newData.Low=data.Low;
     newData.Vol=data.Vol;
     newData.Amount=data.Amount;
-    newData.Time=data.Time;
-    newData.FlowCapital=data.FlowCapital;
+    
+    if (IFrameSplitOperator.IsNumber(data.FlowCapital)) newData.FlowCapital=data.FlowCapital;
+    if (IFrameSplitOperator.IsNumber(data.Position)) newData.Position=data.Position;
+    if (IFrameSplitOperator.IsNumber(data.YFClose)) newData.YFClose=data.YFClose;
+    if (IFrameSplitOperator.IsNumber(data.FClose)) newData.FClose=data.FClose;
 
-    newData.Position=data.Position;
-    newData.YFClose=data.YFClose;
-    newData.FClose=data.FClose;
+    //指数涨停家数
+    if (IFrameSplitOperator.IsNumber(data.Stop)) newData.Stop=data.Stop;
+    if (IFrameSplitOperator.IsNumber(data.Up)) newData.Up=data.Up;
+    if (IFrameSplitOperator.IsNumber(data.Down)) newData.Down=data.Down;
+    if (IFrameSplitOperator.IsNumber(data.Unchanged)) newData.Unchanged=data.Unchanged;
 
-    newData.Stop=data.Stop;
-    newData.Up=data.Up;
-    newData.Down=data.Down;
-    newData.Unchanged=data.Unchanged;
+    //复权因子
+    if (IFrameSplitOperator.IsNumber(data.BFactor)) newData.BFactor=data.BFactor;
+    if (IFrameSplitOperator.IsNumber(data.AFactor)) newData.AFactor=data.AFactor;
 
     return newData;
 }
@@ -12303,6 +12310,8 @@ HistoryData.Copy=function(data)
 HistoryData.CopyTo=function(dest,src)
 {
     dest.Date=src.Date;
+    if (IFrameSplitOperator.IsNumber(src.Time)) dest.Time=src.Time;
+
     dest.YClose=src.YClose;
     dest.Open=src.Open;
     dest.Close=src.Close;
@@ -12310,17 +12319,19 @@ HistoryData.CopyTo=function(dest,src)
     dest.Low=src.Low;
     dest.Vol=src.Vol;
     dest.Amount=src.Amount;
-    dest.Time=src.Time;
-    dest.FlowCapital=src.FlowCapital;
+    
+    if (IFrameSplitOperator.IsNumber(src.FlowCapital)) dest.FlowCapital=src.FlowCapital;
+    if (IFrameSplitOperator.IsNumber(src.Position)) dest.Position=src.Position;
+    if (IFrameSplitOperator.IsNumber(src.YFClose)) dest.YFClose=src.YFClose;
+    if (IFrameSplitOperator.IsNumber(src.FClose)) dest.FClose=src.FClose;
 
-    dest.Position=src.Position;
-    dest.YFClose=src.YFClose;
-    dest.FClose=src.FClose;
+    if (IFrameSplitOperator.IsNumber(src.Stop)) dest.Stop=src.Stop;
+    if (IFrameSplitOperator.IsNumber(src.Up)) dest.Up=src.Up;
+    if (IFrameSplitOperator.IsNumber(src.Down)) dest.Down=src.Down;
+    if (IFrameSplitOperator.IsNumber(src.Unchanged)) dest.Unchanged=src.Unchanged;
 
-    dest.Stop=src.Stop;
-    dest.Up=src.Up;
-    dest.Down=src.Down;
-    dest.Unchanged=src.Unchanged;
+    if (IFrameSplitOperator.IsNumber(src.BFactor)) dest.BFactor=src.BFactor;
+    if (IFrameSplitOperator.IsNumber(src.AFactor)) dest.AFactor=src.AFactor;
 }
 
 //数据复权拷贝
@@ -42268,44 +42279,20 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (this.SourceData.Data.length==0) //第1条数据
         {
             var newItem =new HistoryData();
-            newItem.YClose=realtimeData.YClose;
-            newItem.Open=realtimeData.Open;
-            newItem.Close=realtimeData.Close;
-            newItem.High=realtimeData.High;
-            newItem.Low=realtimeData.Low;
-            newItem.Vol=realtimeData.Vol;
-            newItem.Amount=realtimeData.Amount;
-            newItem.Date=realtimeData.Date;
-            newItem.Position=realtimeData.Position;
-
+            HistoryData.CopyTo(newItem,realtimeData);
             this.SourceData.Data.push(newItem);
         }
         else if (item.Date==realtimeData.Date)   //实时行情数据更新
         {
             JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] update kline by realtime data',realtimeData);
-
-            item.Close=realtimeData.Close;
-            item.High=realtimeData.High;
-            item.Low=realtimeData.Low;
-            item.Vol=realtimeData.Vol;
-            item.Amount=realtimeData.Amount;
-            item.Open=realtimeData.Open;
-            item.Position=realtimeData.Position;
+            HistoryData.CopyTo(item,realtimeData);
         }
         else if (item.Date<realtimeData.Date)   //新增加数据
         {
             JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] insert kline by realtime data',realtimeData);
             
             var newItem =new HistoryData();
-            newItem.YClose=realtimeData.YClose;
-            newItem.Open=realtimeData.Open;
-            newItem.Close=realtimeData.Close;
-            newItem.High=realtimeData.High;
-            newItem.Low=realtimeData.Low;
-            newItem.Vol=realtimeData.Vol;
-            newItem.Amount=realtimeData.Amount;
-            newItem.Date=realtimeData.Date;
-            newItem.Position=realtimeData.Position;
+            HistoryData.CopyTo(newItem,realtimeData);
 
             if (!IFrameSplitOperator.IsNumber(newItem.YClose) && this.SourceData.Data.length>0)
                 newItem.YClose=this.SourceData.Data[this.SourceData.Data.length-1].YClose;

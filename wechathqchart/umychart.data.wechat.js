@@ -25,6 +25,13 @@ function Guid()
     return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
 }
 
+function IsPlusNumber(value)
+{
+    if (value==null) return false;
+    if (isNaN(value)) return false;
+    return value>0;
+}
+
 //历史K线数据
 function HistoryData()
 {
@@ -45,6 +52,11 @@ function HistoryData()
     this.Up;    //上涨
     this.Down;  //下跌
     this.Unchanged; //平盘
+
+    this.ExtendData;    //扩展数据
+
+    this.BFactor;   //前复权
+    this.AFactor;   //后复权
 }
 
 //数据复制
@@ -52,6 +64,7 @@ HistoryData.Copy=function(data)
 {
     var newData=new HistoryData();
     newData.Date=data.Date;
+    if (IsPlusNumber(data.Time)) newData.Time=data.Time;
     newData.YClose=data.YClose;
     newData.Open=data.Open;
     newData.Close=data.Close;
@@ -59,15 +72,19 @@ HistoryData.Copy=function(data)
     newData.Low=data.Low;
     newData.Vol=data.Vol;
     newData.Amount=data.Amount;
-    newData.Time=data.Time;
-    newData.FlowCapital = data.FlowCapital;
-    newData.Position = data.Position;
+    
+    if (IsPlusNumber(data.FlowCapital)) newData.FlowCapital = data.FlowCapital;
+    if (IsPlusNumber(data.Position)) newData.Position = data.Position;
 
     //指数才有的数据
-    newData.Stop = data.Stop;
-    newData.Up = data.Up;
-    newData.Down = data.Down;
-    newData.Unchanged = data.Unchanged;
+    if (IsPlusNumber(data.Stop)) newData.Stop = data.Stop;
+    if (IsPlusNumber(data.Up)) newData.Up = data.Up;
+    if (IsPlusNumber(data.Down)) newData.Down = data.Down;
+    if (IsPlusNumber(data.Unchanged)) newData.Unchanged = data.Unchanged;
+
+    //复权因子
+    if (IsPlusNumber(data.BFactor)) newData.BFactor = data.BFactor;
+    if (IsPlusNumber(data.AFactor)) newData.AFactor = data.AFactor;
 
     return newData;
 }
@@ -83,13 +100,18 @@ HistoryData.CopyTo = function (dest, src)
     dest.Low = src.Low;
     dest.Vol = src.Vol;
     dest.Amount = src.Amount;
-    dest.Time = src.Time;
-    dest.FlowCapital = src.FlowCapital;
+    if (IsPlusNumber(src.Time))  dest.Time = src.Time;
+    if (IsPlusNumber(src.FlowCapital)) dest.FlowCapital = src.FlowCapital;
 
-    dest.Stop = src.Stop;
-    dest.Up = src.Up;
-    dest.Down = src.Down;
-    dest.Unchanged = src.Unchanged;
+     //指数才有的数据
+    if (IsPlusNumber(src.Stop)) dest.Stop = src.Stop;
+    if (IsPlusNumber(src.Up)) dest.Up = src.Up;
+    if (IsPlusNumber(src.Down)) dest.Down = src.Down;
+    if (IsPlusNumber(src.Unchanged)) dest.Unchanged = src.Unchanged;
+
+     //复权因子
+     if (IsPlusNumber(src.BFactor)) dest.BFactor = src.BFactor;
+     if (IsPlusNumber(src.AFactor)) dest.AFactor = src.AFactor;
 }
 
 //数据复权拷贝
@@ -788,11 +810,23 @@ function ChartData()
         if (period == 5 || period == 6 || period == 7 || period == 8 || period == 11 || period == 12 ||(period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
     }
 
-    //复权  0 不复权 1 前复权 2 后复权
-    this.GetRightDate=function(right)
+    //复权  0 不复权 1 前复权 2 后复权 option={ AlgorithmType:1 复权系数模式 }
+    this.GetRightData=function(right, option)
     {
         var result=[];
         if (this.Data.length<=0) return result;
+
+        if (option && option.AlgorithmType==1)  //使用复权因子计算
+        {
+            for(var i=0;i<this.Data.length;++i)
+            {
+                var item=this.Data[i];
+                var seed=(right==1?item.BFactor:item.AFactor);
+                result[i]=HistoryData.CopyRight(item,seed);
+            }
+
+            return result;
+        }
 
         if (right==1)
         {
@@ -846,6 +880,8 @@ function ChartData()
 
         return result;
     }
+
+    this.GetRightDate=this.GetRightData;
 
     //叠加数据和主数据拟合,去掉主数据没有日期的数据
     this.GetOverlayData=function(overlayData)

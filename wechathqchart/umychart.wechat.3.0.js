@@ -275,6 +275,7 @@ function JSChart(element)
             if (option.KLine.DrawType) chart.KLineDrawType = option.KLine.DrawType;
             if (option.KLine.RightSpaceCount >= 0) chart.RightSpaceCount = option.KLine.RightSpaceCount;
             if (option.KLine.DataWidth>=1) chart.KLineSize={ DataWidth:option.KLine.DataWidth };
+            if (IFrameSplitOperator.IsNumber(option.KLine.RightFormula)) chart.RightFormula=option.KLine.RightFormula;
         }
 
         if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
@@ -7034,6 +7035,7 @@ function KLineChartContainer(uielement)
     this.Symbol;
     this.Name;
     this.Period = 0;                      //周期 0=日线 1=周线 2=月线 3=年线 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 9=季线 10=分笔线 11=120分钟 12=240分钟
+    this.RightFormula=0                   //复权公式 0=简单复权, 1=复权因子复权
     this.IsApiPeriod = false;             //使用API计算周期
     this.Right = 0;                       //复权 0 不复权 1 前复权 2 后复权
     this.SourceData;                      //原始的历史数据
@@ -7612,7 +7614,7 @@ function KLineChartContainer(uielement)
 
         if (bindData.Right > 0 && !this.IsApiPeriod)    //复权
         {
-            var rightData = bindData.GetRightDate(bindData.Right);
+            var rightData = bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data = rightData;
         }
 
@@ -7842,37 +7844,32 @@ function KLineChartContainer(uielement)
     {
         if (this.IsOnTouch == true) return;   //正在操作中不更新数据
         var data=recvdata.data;
-        if (!data || !data.stock || !data.stock[0] || this.Symbol != data.stock[0].symbol) 
+        var realtimeData = KLineChartContainer.JsonDataToRealtimeData(data, this.Symbol);
+        if (!realtimeData) 
         {
             JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] recvdata error', recvdata);
             return;
         }
-        
-        var realtimeData = KLineChartContainer.JsonDataToRealtimeData(data);
         var item = this.SourceData.Data[this.SourceData.Data.length - 1];   //最新的一条数据
         var lastDataCount = this.GetHistoryDataCount();                     //保存下上一次的数据个数
 
-        if (item.Date == realtimeData.Date)   //实时行情数据更新
+        if (this.SourceData.Data.length==0) //第1条数据
         {
-            //JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] update kline by minute data', realtimeData);
-            item.Close = realtimeData.Close;
-            item.High = realtimeData.High;
-            item.Low = realtimeData.Low;
-            item.Vol = realtimeData.Vol;
-            item.Amount = realtimeData.Amount;
+            var newItem =new HistoryData();
+            HistoryData.CopyTo(newItem, realtimeData);
+            this.SourceData.Data.push(newItem);
+        }
+        else if (item.Date == realtimeData.Date)   //实时行情数据更新
+        {
+            JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] update kline by minute data', realtimeData);
+            HistoryData.CopyTo(item, realtimeData);
         }
         else if (item.Date < realtimeData.Date)   //新增加数据
         {
             JSConsole.Chart.Log('[KLineChartContainer::RecvRealtimeData] insert kline by minute data', realtimeData);
             var newItem = new HistoryData();
-            newItem.YClose = realtimeData.YClose;
-            newItem.Open = realtimeData.Open;
-            newItem.Close = realtimeData.Close;
-            newItem.High = realtimeData.High;
-            newItem.Low = realtimeData.Low;
-            newItem.Vol = realtimeData.Vol;
-            newItem.Amount = realtimeData.Amount;
-            newItem.Date = realtimeData.Date;
+            HistoryData.CopyTo(newItem, realtimeData);
+
             //没有前收盘就用上一个数据的收盘价
             if (!IFrameSplitOperator.IsNumber(newItem.YClose) && this.SourceData.Data.length>0)
                 newItem.YClose=this.SourceData.Data[this.SourceData.Data.length-1].YClose;
@@ -7893,7 +7890,7 @@ function KLineChartContainer(uielement)
 
         if (bindData.Right > 0 && ChartData.IsDayPeriod(bindData.Period,true) && !this.IsApiPeriod)    //复权(日线数据才复权)
         {
-            var rightData = bindData.GetRightDate(bindData.Right);
+            var rightData = bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data = rightData;
         }
 
@@ -8049,7 +8046,7 @@ function KLineChartContainer(uielement)
 
         if (bindData.Right > 0 && ChartData.IsDayPeriod(bindData.Period,true) && !this.IsApiPeriod)    //复权(日线数据才复权)
         {
-            var rightData = bindData.GetRightDate(bindData.Right);
+            var rightData = bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data = rightData;
         }
 
@@ -8102,7 +8099,7 @@ function KLineChartContainer(uielement)
 
         if (bindData.Right > 0 && ChartData.IsDayPeriod(bindData.Period, true) && !this.IsApiPeriod)    //复权(日线数据才复权)
         {
-            var rightData = bindData.GetRightDate(bindData.Right);
+            var rightData = bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data = rightData;
         }
 
@@ -8766,7 +8763,7 @@ function KLineChartContainer(uielement)
 
         if (bindData.Right > 0 && ChartData.IsDayPeriod(bindData.Period, true))    //复权(日线数据才复权)
         {
-            var rightData = bindData.GetRightDate(bindData.Right);
+            var rightData = bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data = rightData;
         }
 
@@ -8780,8 +8777,19 @@ function KLineChartContainer(uielement)
         this.BindMainData(bindData, this.PageSize);
         if (this.AfterBindMainData) this.AfterBindMainData("Update");
 
-        for (var i = 0; i < this.Frame.SubFrame.length; ++i) {
+        var firstSubFrame=null;
+        for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
+        {
+            if (i==0) firstSubFrame=this.Frame.SubFrame[i].Frame;
             this.BindIndexData(i, bindData);
+        }
+
+        //绑定K线数据到Y轴分割
+        if (firstSubFrame && firstSubFrame.YSplitOperator)  
+        {
+            firstSubFrame.YSplitOperator.Symbol=this.Symbol;
+            firstSubFrame.YSplitOperator.Data=this.ChartPaint[0].Data;          //K线数据
+            firstSubFrame.YSplitOperator.Period=this.Period;                    //周期
         }
 
         //叠加数据周期调整
@@ -8800,7 +8808,7 @@ function KLineChartContainer(uielement)
 
                 if (bindData.Right > 0 && !IsIndexSymbol(this.OverlayChartPaint[0].Symbol))       //复权数据
                 {
-                    var rightData = bindData.GetRightDate(bindData.Right);
+                    var rightData = bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
                     bindData.Data = rightData;
                 }
 
@@ -8999,7 +9007,7 @@ function KLineChartContainer(uielement)
 
         if (bindData.Right > 0 && !IsIndexSymbol(data.symbol))    //复权数据 ,指数没有复权)
         {
-            var rightData = bindData.GetRightDate(bindData.Right);
+            var rightData = bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data = rightData;
         }
 
@@ -9219,7 +9227,7 @@ function KLineChartContainer(uielement)
         {
             if (bindData.Right > 0)    //复权
             {
-                var rightData = bindData.GetRightDate(bindData.Right);
+                var rightData = bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
                 bindData.Data = rightData;
             }
     
@@ -9579,6 +9587,8 @@ KLineChartContainer.JsonDataToHistoryData = function (data)
     isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
 
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, position = 8;
+    var fclose=9, yfclose=10;   //结算价, 前结算价
+    var bfactor=11, afactor=12; //前, 后复权因子
     for (var i = 0; i < list.length; ++i) 
     {
         var item = new HistoryData();
@@ -9591,8 +9601,14 @@ KLineChartContainer.JsonDataToHistoryData = function (data)
         item.Low = jsData[low];
         item.Vol = jsData[vol];    //原始单位股
         item.Amount = jsData[amount];
-        if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position = jsData[position];//期货持仓
 
+        //可选配置
+        if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position = jsData[position];//期货持仓
+        if (IFrameSplitOperator.IsNumber(jsData[fclose])) item.FClose=jsData[fclose];       //期货结算价
+        if (IFrameSplitOperator.IsNumber(jsData[yfclose])) item.YFClose=jsData[yfclose];    //期货前结算价
+
+        if (IFrameSplitOperator.IsNumber(jsData[bfactor])) item.BFactor=jsData[bfactor];    //前复权因子
+        if (IFrameSplitOperator.IsNumber(jsData[afactor])) item.AFactor=jsData[afactor];    //后复权因子
         if (!IFrameSplitOperator.IsNumber(item.Open)) continue; 
 
         aryDayData.push(item);
@@ -9601,22 +9617,39 @@ KLineChartContainer.JsonDataToHistoryData = function (data)
     return aryDayData;
 }
 
-KLineChartContainer.JsonDataToRealtimeData = function (data) 
+KLineChartContainer.JsonDataToRealtimeData = function (data, symbol) 
 {
-    var symbol = data.stock[0].symbol;
+    if (!data) return null;
+    if (!IFrameSplitOperator.IsNonEmptyArray(data.stock)) return null;
+
+    var stock=null;
+    for(var i=0;i<data.stock.length;++i)
+    {
+        var item=data.stock[i];
+        if (item && item.symbol==symbol)
+        {
+            stock=item;
+            break;
+        }
+    }
+    if (!stock) return null;
+
     var upperSymbol = symbol.toUpperCase();
     var isSHSZ = MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
 
     var item = new HistoryData();
-    item.Date = data.stock[0].date;
-    item.Open = data.stock[0].open;
-    item.YClose = data.stock[0].yclose;
-    item.High = data.stock[0].high;
-    item.Low = data.stock[0].low;
-    item.Vol=data.stock[0].vol;    //单位股
-    item.Amount = data.stock[0].amount;
-    item.Close = data.stock[0].price;
-    if (IFrameSplitOperator.IsNumber(data.stock[0].position)) item.Position = data.stock[0].position; //持仓量
+    item.Date = stock.date;
+    item.Open = stock.open;
+    item.YClose = stock.yclose;
+    item.High = stock.high;
+    item.Low = stock.low;
+    item.Vol=stock.vol;    //单位股
+    item.Amount = stock.amount;
+    item.Close = stock.price;
+
+    if (IFrameSplitOperator.IsNumber(stock.position)) item.Position = stock.position; //持仓量
+    if (IFrameSplitOperator.IsNumber(stock.bfactor)) item.BFactor=stock.bfactor;    //前复权因子
+    if (IFrameSplitOperator.IsNumber(stock.afactor)) item.AFactor=stock.afactor;    //后复权因子
     return item;
 }
 
