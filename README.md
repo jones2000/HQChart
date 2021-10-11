@@ -227,6 +227,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 74. [HQChart使用教程82-动态修改叠加指标参数](https://jones2000.blog.csdn.net/article/details/118681399)<br>
 75. [HQChart使用教程83-K线图最高最低价显示配置](https://jones2000.blog.csdn.net/article/details/118856130)<br>
 76. [HQChart使用教程84-十字光标右侧按钮事件](https://jones2000.blog.csdn.net/article/details/120562697)<br>
+77. [HQChart使用教程85-股票复权计算](https://jones2000.blog.csdn.net/article/details/120700837)<br>
 
 ## 小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
