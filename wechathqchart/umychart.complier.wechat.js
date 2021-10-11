@@ -2976,13 +2976,13 @@ function JSAlgorithm(errorHandler, symbolData)
     {
         var result = [];
         var i = 0;
-        for (; i < data.length && !this.isNumber(data[i]); ++i) 
+        for (; i < data.length && !this.IsNumber(data[i]); ++i) 
         {
             result[i] = null;
         }
         for (; i < data.length; ++i) 
         {
-            if (!this.isNumber(data[i]))
+            if (!this.IsNumber(data[i]))
                 result[i] = null;
             else
                 result[i] = 0 - data[i];
