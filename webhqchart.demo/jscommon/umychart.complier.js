@@ -3606,12 +3606,18 @@ function JSAlgorithm(errorHandler,symbolData)
      */
     this.REVERSE=function(data)
     {
+        if (this.IsNumber(data))
+        {
+            return 0-data;
+        }
+
         var result = [];
         var i = 0;
         for (; i<data.length && !this.IsNumber(data[i]); ++i)
         {
             result[i] = null;
         }
+
         for (; i < data.length; ++i)
         {
             if (!this.IsNumber(data[i]))
@@ -6956,17 +6962,37 @@ function JSAlgorithm(errorHandler,symbolData)
     this.POW=function(data, n)
     {
         var result=[];
-        if (!IFrameSplitOperator.IsNumber(n)) return result;
-
-        let isNumber=typeof(data)=='number';
-       
-        if (isNumber) return Math.pow(data,n);
-
-        for(var i in data)
+        if (Array.isArray(data) && Array.isArray(n))
         {
-            var item=data[i];
-            if (this.IsNumber(item)) result[i]=Math.pow(item,n);
-            else result[i]=null;
+            for(var i=0;i<data.length;++i)
+            {
+                var value=data[i];
+                var value2=n[i];
+                if (this.IsNumber(value) && this.IsNumber(value2)) result[i]=Math.pow(value,value2);
+                else result[i]=null;
+            }
+        }
+        else if (IFrameSplitOperator.IsNumber(data) && Array.isArray(n))
+        {
+            for(var i=0;i<n.length;++i)
+            {
+                var item=n[i];
+                if (this.IsNumber(item)) result[i]=Math.pow(data,item);
+                else result[i]=null;
+            }
+        }
+        else if (IFrameSplitOperator.IsNumber(data) && IFrameSplitOperator.IsNumber(n))
+        {
+            return Math.pow(data,n);
+        }
+        else if (Array.isArray(data) && IFrameSplitOperator.IsNumber(n))
+        {
+            for(var i=0; i<data.length;++i)
+            {
+                var item=data[i];
+                if (this.IsNumber(item)) result[i]=Math.pow(item,n);
+                else result[i]=null;
+            }
         }
         
         return result;

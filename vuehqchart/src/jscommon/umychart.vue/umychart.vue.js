@@ -16381,6 +16381,7 @@ function MinuteData()
     this.Time;          //时间
     this.Date;              //日期
     this.Position=null;     //持仓量
+    this.YClearing;         //昨结算价
 }
 
 //盘前集合竞价
@@ -23988,10 +23989,12 @@ function ChartMinutePriceLine()
         var ptFirst={}; //第1个点
         var ptLast={};  //最后一个点
         var drawCount=0;
+        var pointCount=0;
         for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
         {
             var value=null;
             value=data.Data[i];
+            ++pointCount;
             if (value==null) continue;
 
             var x=this.ChartFrame.GetXFromIndex(j);
@@ -24018,7 +24021,7 @@ function ChartMinutePriceLine()
 
             ++drawCount;
 
-            if (drawCount>=minuteCount) //上一天的数据和这天地数据线段要断开
+            if (pointCount>=minuteCount) //上一天的数据和这天地数据线段要断开
             {
                 bFirstPoint=true;
                 this.Canvas.stroke();
@@ -24039,6 +24042,7 @@ function ChartMinutePriceLine()
                     
                     this.Canvas.fill();
                 }
+                pointCount=0;
                 drawCount=0;
             }
         }
@@ -51630,9 +51634,13 @@ function MinuteChartContainer(uielement)
         this.SourceData=sourceData;
         this.TradeDate=this.DayData[0].Date;
         this.Frame.SetDayCount(this.DayData.length);
-
-        this.BindMainData(sourceData,this.DayData[0].YClose);
         var upperSymbol=this.Symbol.toUpperCase();
+
+        var yClose=this.DayData[0].YClose;
+        var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
+        if (IFrameSplitOperator.IsNumber(this.DayData[0].YClearing) && isFutures) yClose=this.DayData[0].YClearing; //期货使用前结算价
+        this.BindMainData(sourceData,yClose);
+        
          //外汇 均线暂时不用
         if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) this.ChartPaint[1].Data=null;  
 
@@ -53202,9 +53210,11 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
         var minuteData=[];
         var dayData=data.data[i];
         var date=dayData.date;
-        var yClose=dayData.yclose;  //前收盘 计算涨幅
-        var preClose=yClose;        //前一个数据价格
-        var preAvPrice=null;           //上一个均价
+        var yClose=dayData.yclose;          //前收盘 计算涨幅
+        var preClose=yClose;                //前一个数据价格
+        var preAvPrice=null;                //上一个均价
+        var yClearing=dayData.yclearing;    //昨结算价
+
         //var preAvPrice=data.stock[0].yclose;    //前一个均价
         for(var j in dayData.minute)
         {
@@ -53265,6 +53275,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
         newData.YClose=yClose;
         newData.Close=dayData.close;
         newData.Date=date;
+        if (IFrameSplitOperator.IsNumber(yClearing)) newData.YClearing=yClearing;
 
         result.push(newData);
     }
@@ -62487,7 +62498,7 @@ function MinuteCoordinateData()
             else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol))
                 data=this.GetSHOData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
-                data = HK_MINUTE_X_COORDINATE;
+                data=this.GetHKData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
                 return this.GetChinatFuturesData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
@@ -62530,6 +62541,12 @@ function MinuteCoordinateData()
     {
         var result=USA_MINUTE_X_COORDINATE;
 
+        return result;
+    }
+
+    this.GetHKData=function(upperSymbol,width)
+    {
+        var result=HK_MINUTE_X_COORDINATE;
         return result;
     }
 
@@ -62796,6 +62813,8 @@ function FuturesTimeData()
                 ]
             }
         },
+
+        //ID=4 21:00-1:00,9:01-10:15,10:31-11:30,13:31-15:00
         {
             Name:'21:00-1:00,9:01-10:15,10:31-11:30,13:31-15:00',
             Data:
@@ -62834,6 +62853,8 @@ function FuturesTimeData()
                 ]
             }
         },
+
+        //ID=5 21:00-2:30,9:01-10:15,10:31-11:30,13:31-15:00
         {
             Name:'21:00-2:30,9:01-10:15,10:31-11:30,13:31-15:00',
             Data:
@@ -62872,6 +62893,8 @@ function FuturesTimeData()
                 ]
             }
         },
+
+        //ID:6 21:00-23:00,9:01-10:15,10:30-11:30,13:31-15:00
         {
             Name:'21:00-23:00,9:01-10:15,10:30-11:30,13:31-15:00',
             Data:
@@ -62981,6 +63004,47 @@ function FuturesTimeData()
                     { Value: 1500, Text: '15:00' },
                 ]
             }
+        },
+
+        //ID=9 9:01-10:15,10:31-11:30,13:31-15:00
+        {
+            Name:'9:01-10:15,10:31-11:30,13:31-15:00',
+            Data:
+            [
+                //9:01-10:15,10:31-11:30,13:31-15:00
+                { Start: 901, End: 1015 },
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 901, Text: '9:00' },
+                    { Value: 930, Text: '9:30' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
         }
     ];
 
@@ -63001,21 +63065,25 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0,Name:"铜"}],
         [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0,Name:"铝"}],
         [MARKET_SUFFIX_NAME.SHFE + '-NI', {Time:4,Decimal:0,Name:"镍"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-SN', {Time:4,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-SN', {Time:4,Decimal:0,Name:'沪锡'}],
         [MARKET_SUFFIX_NAME.SHFE + '-ZN', {Time:4,Decimal:0,Name:"沪锌"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-PB', {Time:4,Decimal:0}],
+        [MARKET_SUFFIX_NAME.SHFE + '-PB', {Time:4,Decimal:0,Name:'沪铅'}],
         [MARKET_SUFFIX_NAME.SHFE + '-RU', {Time:6,Decimal:0,Name:"天然橡胶"}],
         [MARKET_SUFFIX_NAME.SHFE + '-FU', {Time:6,Decimal:0,Name:"燃料油"}],
         [MARKET_SUFFIX_NAME.SHFE + '-RB', {Time:6,Decimal:0,Name:"螺纹钢"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-BU', {Time:6,Decimal:0,}],
+        [MARKET_SUFFIX_NAME.SHFE + '-BU', {Time:6,Decimal:0,Name:'石油沥青'}],
         [MARKET_SUFFIX_NAME.SHFE + '-HC', {Time:6,Decimal:0,Name:"热轧卷板"}],
         [MARKET_SUFFIX_NAME.SHFE + '-SP', {Time:6,Decimal:0,Name:"纸浆"}],
         [MARKET_SUFFIX_NAME.SHFE + '-WR', {Time:0,Decimal:0,Name:"线材"}],
         [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0,Name:"白银"}],
         [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2,Name:"黄金"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-SS', {Time:4,Decimal:0,Name:'不锈钢'}],
+
+        //上期所-能源
         [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:5,Decimal:1,Name:'中质含硫原油'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-LU', {Time:6,Decimal:0,Name:'低硫燃料油'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:5,Decimal:1,Name:'原油'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-LU', {Time:6,Decimal:0,Name:'低硫燃油'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-BC', {Time:4,Decimal:0,Name:'国际铜'}],
        
         //郑州期货交易所
         [MARKET_SUFFIX_NAME.CZCE + '-CF', {Time:6,Decimal:0,Name:"棉花"}],
@@ -67703,12 +67771,18 @@ function JSAlgorithm(errorHandler,symbolData)
      */
     this.REVERSE=function(data)
     {
+        if (this.IsNumber(data))
+        {
+            return 0-data;
+        }
+
         var result = [];
         var i = 0;
         for (; i<data.length && !this.IsNumber(data[i]); ++i)
         {
             result[i] = null;
         }
+
         for (; i < data.length; ++i)
         {
             if (!this.IsNumber(data[i]))
@@ -71053,17 +71127,37 @@ function JSAlgorithm(errorHandler,symbolData)
     this.POW=function(data, n)
     {
         var result=[];
-        if (!IFrameSplitOperator.IsNumber(n)) return result;
-
-        let isNumber=typeof(data)=='number';
-       
-        if (isNumber) return Math.pow(data,n);
-
-        for(var i in data)
+        if (Array.isArray(data) && Array.isArray(n))
         {
-            var item=data[i];
-            if (this.IsNumber(item)) result[i]=Math.pow(item,n);
-            else result[i]=null;
+            for(var i=0;i<data.length;++i)
+            {
+                var value=data[i];
+                var value2=n[i];
+                if (this.IsNumber(value) && this.IsNumber(value2)) result[i]=Math.pow(value,value2);
+                else result[i]=null;
+            }
+        }
+        else if (IFrameSplitOperator.IsNumber(data) && Array.isArray(n))
+        {
+            for(var i=0;i<n.length;++i)
+            {
+                var item=n[i];
+                if (this.IsNumber(item)) result[i]=Math.pow(data,item);
+                else result[i]=null;
+            }
+        }
+        else if (IFrameSplitOperator.IsNumber(data) && IFrameSplitOperator.IsNumber(n))
+        {
+            return Math.pow(data,n);
+        }
+        else if (Array.isArray(data) && IFrameSplitOperator.IsNumber(n))
+        {
+            for(var i=0; i<data.length;++i)
+            {
+                var item=data[i];
+                if (this.IsNumber(item)) result[i]=Math.pow(item,n);
+                else result[i]=null;
+            }
         }
         
         return result;

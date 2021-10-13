@@ -2974,6 +2974,11 @@ function JSAlgorithm(errorHandler, symbolData)
      */
     this.REVERSE = function (data) 
     {
+        if (this.IsNumber(data))
+        {
+            return 0-data;
+        }
+        
         var result = [];
         var i = 0;
         for (; i < data.length && !this.IsNumber(data[i]); ++i) 
@@ -5800,6 +5805,45 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    this.POW=function(data, n)
+    {
+        var result=[];
+        if (Array.isArray(data) && Array.isArray(n))
+        {
+            for(var i=0;i<data.length;++i)
+            {
+                var value=data[i];
+                var value2=n[i];
+                if (this.IsNumber(value) && this.IsNumber(value2)) result[i]=Math.pow(value,value2);
+                else result[i]=null;
+            }
+        }
+        else if (this.IsNumber(data) && Array.isArray(n))
+        {
+            for(var i=0;i<n.length;++i)
+            {
+                var item=n[i];
+                if (this.IsNumber(item)) result[i]=Math.pow(data,item);
+                else result[i]=null;
+            }
+        }
+        else if (this.IsNumber(data) && this.IsNumber(n))
+        {
+            return Math.pow(data,n);
+        }
+        else if (Array.isArray(data) && this.IsNumber(n))
+        {
+            for(var i=0; i<data.length;++i)
+            {
+                var item=data[i];
+                if (this.IsNumber(item)) result[i]=Math.pow(item,n);
+                else result[i]=null;
+            }
+        }
+        
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node)
     {
@@ -5960,6 +6004,10 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.BARSLASTCOUNT(args[0]);
             case 'INTPART':
                 return this.INTPART(args[0]);
+
+            case 'POW':
+                return this.POW(args[0],args[1]);
+
             //三角函数
             case 'ATAN':
                 return this.Trigonometric(args[0], Math.atan);
