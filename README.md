@@ -23,6 +23,8 @@ uniapp 版本:
 
 [HQChart用户使用协议](/用户协议.txt) <br>
 
+第3放数据对接案例[https://github.com/jones2000/HQChart-Super](https://github.com/jones2000/HQChart-Super)<br>
+
 如果你觉得我们的行情模块对你有帮助， 请给我们点下star. (●ˇ∀ˇ●) <br>
 
 py版本的麦语法指标计算引擎，已单独迁移到[https://github.com/jones2000/hqchartPy2](https://github.com/jones2000/hqchartPy2),

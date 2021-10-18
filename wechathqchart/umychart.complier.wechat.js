@@ -3417,34 +3417,58 @@ function JSAlgorithm(errorHandler, symbolData)
     //DEVSQ(X，N) 　返回数据偏差平方和。
     this.DEVSQ=function(data,n)
     {
+        if (this.IsNumber(data) && this.IsNumber(n))
+            return 0;
+
         var result=[];
-        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
-        var num = n;
-        var datanum = data.length;
-        var i = 0, j = 0, k = 0;
-        var E = 0, DEV = 0;
-        for(i = 0; i < datanum && !this.isNumber(data[i]); ++i)
+        if (Array.isArray(data))
         {
-            result[i] = null;
+            var num = null;
+            if (Array.isArray(n))   //取最后一个有效数
+            {
+               for(var i=n.length-1;i>=0;--i)
+               {
+                   if (this.IsNumber(n[i]))
+                   {
+                        num = parseInt(n[i]);
+                        break;
+                   }
+               }
+            }
+            else
+            {
+                num = parseInt(n);
+            }
+
+            if (!this.IsNumber(num)) return result;
+            
+            var datanum = data.length;
+            var i = 0, j = 0, k = 0;
+            var E = 0, DEV = 0;
+            for(i = 0; i < datanum && !this.IsNumber(data[i]); ++i)
+            {
+                result[i] = null;
+            }
+            if (num < 1 || i+num>datanum) return result;
+            for(E=0; i < datanum && j < num; ++i,++j)
+                E += data[i]/num;
+            if (j == num)
+            {
+                DEV = 0;
+                for(i--; k < num; k++)
+                    DEV += (data[i-k]-E) * (data[i-k]-E);
+                result[i] = DEV;
+                i++;
+            }
+            for(; i < datanum; ++i)
+            {
+                E += (data[i] - data[i-num]) / num;
+                for(DEV=0, k = 0; k < num; ++k)
+                    DEV += (data[i-k]-E) * (data[i-k]-E);
+                result[i] = DEV;
+            }
         }
-        if (num < 1 || i+num>datanum) return result;
-        for(E=0; i < datanum && j < num; ++i,++j)
-            E += data[i]/num;
-        if (j == num)
-        {
-            DEV = 0;
-            for(i--; k < num; k++)
-                DEV += (data[i-k]-E) * (data[i-k]-E);
-            result[i] = DEV;
-            i++;
-        }
-        for(; i < datanum; ++i)
-        {
-            E += (data[i] - data[i-num]) / num;
-            for(DEV=0, k = 0; k < num; ++k)
-                DEV += (data[i-k]-E) * (data[i-k]-E);
-            result[i] = DEV;
-        }
+        
         return result;
     }
 
@@ -3590,27 +3614,52 @@ function JSAlgorithm(errorHandler, symbolData)
     //VAR(X，N)　 返回估算样本方差。
     this.VAR=function(data,n)
     {
+        if (this.IsNumber(data) && this.IsNumber(n)) return 0;
+
         var result=[];
-        if (typeof(n)!='number') n=parseInt(n); //字符串的转成数值型
-        var num = n;
-        var datanum = data.length;
-        if (num <= 1 || num >= datanum)
-            return result;
-        var i, j;
-        for (i = 0; i < datanum && !this.IsNumber(data[i]); ++i)
+        if (Array.isArray(data) && this.IsNumber(n))
         {
-            result[i] = null;
-        }
-        var SigmaPowerX, SigmaX;
-        for (j = 0, i = i+num-1; i < datanum; ++i)
-        {
-            SigmaPowerX = SigmaX = 0;
-            for(j=0; j < num && j <= i; ++j)
+            var num = parseInt(n);
+            var datanum = data.length;
+            if (num <= 0 || num >= datanum) return result;
+
+            var i, j;
+            for(i = 0; i < datanum && !this.IsNumber(data[i]); ++i)
             {
-                SigmaPowerX += data[i-j] * data[i-j];
-                SigmaX += data[i-j];
+                result[i] = null;
             }
-            result[i] = (num*SigmaPowerX - SigmaX*SigmaX) / num * (num -1);
+            var SigmaPowerX, SigmaX;
+            for (j = 0, i = i+num-1; i < datanum; ++i)
+            {
+                SigmaPowerX = SigmaX = 0;
+                for(j=0; j < num && j <= i; ++j)
+                {
+                    SigmaPowerX += data[i-j] * data[i-j];
+                    SigmaX += data[i-j];
+                }
+                result[i] = (num*SigmaPowerX - SigmaX*SigmaX) / num * (num -1);
+            }
+        }
+        else if (Array.isArray(data) && Array.isArray(n))
+        {
+            var start=this.GetFirstVaildIndex(data);
+
+            for(var i=start; i<data.length; ++i)
+            {
+                var SigmaPowerX = SigmaX = 0;
+                if (!this.IsNumber(n[i])) continue;
+                var num=parseInt(n[i]);
+
+                if (num <= 0 || i-(num-1)<0) continue;
+
+                for (var j = 0; j<num; ++j)
+                {
+                    SigmaPowerX += data[i-j] * data[i-j];
+                    SigmaX += data[i-j];
+                }
+
+                result[i] = (num*SigmaPowerX - SigmaX*SigmaX) / num * (num -1);
+            }
         }
 
         return result;
@@ -4982,6 +5031,8 @@ function JSAlgorithm(errorHandler, symbolData)
     */
     this.COVAR = function (data, data2, n) 
     {
+        if (this.IsNumber(data) || this.IsNumber(data2)) return 0;
+
         var result = [];
         if (n < 1) n = 1;
 

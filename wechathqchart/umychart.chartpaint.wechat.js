@@ -5808,9 +5808,11 @@ function ChartMinutePriceLine()
         var bFirstPoint = true;
         var ptFirst = {}; //第1个点
         var drawCount = 0;
+        var pointCount=0;
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
         {
             var value = this.Data.Data[i];
+            ++pointCount;
             if (value == null) continue;
 
             var x = this.ChartFrame.GetXFromIndex(j);
@@ -5833,7 +5835,7 @@ function ChartMinutePriceLine()
 
             ++drawCount;
 
-            if (drawCount >= minuteCount) //上一天的数据和这天地数据线段要断开
+            if (pointCount >= minuteCount) //上一天的数据和这天地数据线段要断开
             {
                 bFirstPoint = true;
                 this.Canvas.stroke();
@@ -5854,6 +5856,7 @@ function ChartMinutePriceLine()
                     this.Canvas.fill();
                 }
                 drawCount = 0;
+                pointCount=0;
             }
         }
 

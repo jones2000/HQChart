@@ -190,17 +190,10 @@ function DynamicKLineTitlePainting()
 
     this.GetRightName = function (rightID, periodID)
     {
-        //分钟K线没有复权
-        if (ChartData.IsMinutePeriod(periodID, true) || ChartData.IsSecondPeriod(periodID))
-            return null;
+        if (!MARKET_SUFFIX_NAME.IsEnableRight(periodID, this.Symbol)) return null;
 
-        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.UpperSymbol))   //A股有复权
-        {
-            var rightName = RIGHT_NAME[rightID];
-            return rightName
-        }
-
-        return null;
+        var rightName = RIGHT_NAME[rightID];
+        return rightName
     }
 
     this.FullDraw=function()

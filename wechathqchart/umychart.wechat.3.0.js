@@ -8224,7 +8224,7 @@ function KLineChartContainer(uielement)
     //复权切换
     this.ChangeRight = function (right) 
     {
-        if (IsIndexSymbol(this.Symbol)) return; //指数没有复权
+        if (!MARKET_SUFFIX_NAME.IsEnableRight(this.Period,this.Symbol)) return;
 
         if (right < 0 || right > 2) return;
 
@@ -10379,8 +10379,12 @@ function MinuteChartContainer(uielement)
 
         this.SourceData = sourceData;
         this.TradeDate = this.DayData[0].Date;
-
-        this.BindMainData(sourceData, this.DayData[0].YClose);
+        
+        var upperSymbol=this.Symbol.toUpperCase();
+        var yClose=this.DayData[0].YClose;
+        var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
+        if (IFrameSplitOperator.IsNumber(this.DayData[0].YClearing) && isFutures) yClose=this.DayData[0].YClearing; //期货使用前结算价
+        this.BindMainData(sourceData, yClose);
         //if (MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol)) this.ChartPaint[1].Data = null;   //期货均线暂时不用
 
         if (this.Frame.SubFrame.length > 2) 
@@ -11076,6 +11080,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
         var date = dayData.date;
         var yClose = dayData.yclose;        //前收盘 计算涨幅
         var preClose = yClose;              //前一个数据价格
+        var yClearing=dayData.yclearing;    //昨结算价
         var preAvPrice=null;                //前一个均价
         for (var j in dayData.minute) 
         {
@@ -11139,7 +11144,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
         newData.YClose = yClose;
         newData.Close = dayData.close;
         newData.Date = date;
-
+        if (IFrameSplitOperator.IsNumber(yClearing)) newData.YClearing=yClearing;
         result.push(newData);
     }
 
