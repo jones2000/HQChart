@@ -45,6 +45,8 @@ import
     JSCommonCoordinateData_Global_NYBOTTimeData as g_NYBOTTimeData,
     JSCommonCoordinateData_Global_LMETimeData as g_LMETimeData,
     JSCommonCoordinateData_Global_CBOTTimeData as g_CBOTTimeData,
+    JSCommonCoordinateData_Global_TOCOMTimeData as g_TOCOMTimeData,
+    JSCommonCoordinateData_Global_IPETimeData as g_IPETimeData,
 } from "./umychart.coordinatedata.wechat.js";
 
 import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达信编译器
@@ -1358,6 +1360,16 @@ JSChart.GetResource = function ()  //获取颜色配置 (设置配必须啊在JS
     return g_JSChartResource;
 }
 
+JSChart.GetMinuteTimeStringData=function()
+{
+    return JSCommonCoordinateData.MinuteTimeStringData;
+}
+
+JSChart.GetMinuteCoordinateData=function()
+{
+    return JSCommonCoordinateData.MinuteCoordinateData;
+}
+
 JSChart.GetKLineZoom = function () //K线缩放配置
 {
     return ZOOM_SEED;
@@ -1384,6 +1396,10 @@ JSChart.GetInternalTimeData=function(name)  //内置品种交易时间
             return g_LMETimeData;
         case "FuturesTimeData": //国内期货
             return g_FuturesTimeData;
+        case "TOCOMTimeData":   //东京商品交易所（TOCOM
+            return g_TOCOMTimeData;
+        case "IPETimeData":
+            return g_IPETimeData;   //美国洲际交易所
         default:
             return null;
     }
@@ -10823,6 +10839,12 @@ function MinuteChartContainer(uielement)
         bindData = new ChartData();
         bindData.Data = minuteData.GetMinuteAvPrice();
         this.ChartPaint[1].Data = bindData;
+
+        var upperSymbol=this.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol))    //外汇没有均线
+            this.ChartPaint[1].Data=null;
+        else if (MARKET_SUFFIX_NAME.IsShowAvPrice && !MARKET_SUFFIX_NAME.IsShowAvPrice(upperSymbol))    //外部控制是否显示均线
+            this.ChartPaint[1].Data=null;
 
         this.Frame.SubFrame[0].Frame.YSplitOperator.AverageData = bindData;
         this.Frame.SubFrame[0].Frame.YSplitOperator.OverlayChartPaint = this.OverlayChartPaint;

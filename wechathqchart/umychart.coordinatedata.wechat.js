@@ -42,6 +42,8 @@ var MARKET_SUFFIX_NAME=
     BIT: '.BIT',         //数字货币 如比特币
     BIZ: '.BIZ',         //数字货币
 
+    FOREX:'.FOREX',      //外汇 (Foreign Exchange)
+
     NYMEX: '.NYMEX',      //纽约商品期货交易所(New York Mercantile Exchange)
     COMEX: ".COMEX",      //纽约商品期货交易所(New York Mercantile Exchange)
     NYBOT: ".NYBOT",      //美國紐約商品交易所
@@ -103,6 +105,12 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.IPE)>0;
+    },
+
+    IsForeignExchange(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.FOREX) > 0;
     },
 
     IsFTSE: function (upperSymbol) 
@@ -308,6 +316,10 @@ var MARKET_SUFFIX_NAME=
         {
             return 2;
         }
+        else if (this.IsForeignExchange(upperSymbol))   //外汇24小时
+        {
+            return 2;
+        }
         else if (this.IsFTSE(upperSymbol))  //富时中国 9:00-16:30 17:00-04:45
         {
             if (day == 6 || day == 0) return 0;   //周末
@@ -385,6 +397,11 @@ var MARKET_SUFFIX_NAME=
     GetFTSEDecimal: function (symbol) //富时中国A50期货 小数位数
     {
         return 0;
+    },
+
+    GetForeignExchangeDecimal:function(symbol)
+    {
+        return 4;
     },
 
     GetBITDecimal: function (symbol) 
@@ -564,6 +581,12 @@ function MinuteTimeStringData()
         return this.BIT;
     }
 
+    this.GetForeignExchange=function()
+    {
+        if (!this.ForeEx) this.ForeEx=this.CreateForeignExchangeData();
+        return this.ForeEx;
+    }
+
     this.CreateSHSZData = function () 
     {
         const TIME_SPLIT =
@@ -649,6 +672,18 @@ function MinuteTimeStringData()
         return this.CreateTimeData(TIME_SPLIT);
     }
 
+    this.CreateForeignExchangeData=function()
+    {
+         //外汇 7:00 - 6:59
+         const TIME_SPLIT=           
+         [
+             { Start:600, End:2359 },
+             { Start:0,  End:559 },
+         ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
     this.CreateBITData=function()
     {
         //数字货币 7:00 - 6:59
@@ -682,13 +717,16 @@ function MinuteTimeStringData()
 
         var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
         if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol) || MARKET_SUFFIX_NAME.IsSHSZIndex(upperSymbol)) return this.GetSHSZ();
+        if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK();
+        if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
         if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
         {
             var splitData = g_FuturesTimeData.GetSplitData(upperSymbol);
             if (!splitData) return null;
             return this.GetFutures(splitData);
         }
+        if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) return this.GetForeignExchange();
         if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) return this.GetFTSE();
         if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) return this.GetFHK();
         if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) return this.GetET(upperSymbol);
@@ -1068,6 +1106,52 @@ function MinuteCoordinateData()
         }
     };
 
+    //外汇
+    const FOREX_MINUTE_X_COORDINATE=
+    {
+        Full:   //完整模式
+        [
+            [0, 1, "RGB(200,200,200)", "06:00"],
+            [120, 1, "RGB(200,200,200)", "08:00"],
+            [240, 1, "RGB(200,200,200)", "10:00"],
+            [360, 1, "RGB(200,200,200)", "12:00"],
+            [480, 0, "RGB(200,200,200)", "14:00"],
+            [600, 1, "RGB(200,200,200)", "16:00"],
+            [720, 1, "RGB(200,200,200)", "18:00"],
+            [840, 1, "RGB(200,200,200)", "20:00"],
+            [960, 1, "RGB(200,200,200)", "22:00"],
+            [1080, 1, "RGB(200,200,200)", "0:00"],
+            [1200, 1, "RGB(200,200,200)", "02:00"],
+            [1320, 1, "RGB(200,200,200)", "04:00"],
+        ],
+        Simple: //简洁模式
+        [
+            [0, 1, "RGB(200,200,200)", "06:00"],
+            [240, 1, "RGB(200,200,200)", "10:00"],
+            [480, 0, "RGB(200,200,200)", "14:00"],
+            [720, 1, "RGB(200,200,200)", "18:00"],
+            [960, 1, "RGB(200,200,200)", "22:00"],
+            [1200, 1, "RGB(200,200,200)", "02:00"],
+        ],
+        Min:   //最小模式     
+        [
+            [0, 1, "RGB(200,200,200)", "06:00"],
+            [480, 0, "RGB(200,200,200)", "14:00"],
+            [960, 1, "RGB(200,200,200)", "22:00"],
+        ],
+
+        Count: 1440,
+        MiddleCount: 600,
+
+        GetData: function (width) 
+        {
+            if (width < 200) return this.Min;
+            else if (width < 450) return this.Simple;
+
+            return this.Full;
+        }
+    }
+
     this.GetCoordinateData = function (symbol, width) 
     {
         var data = null;
@@ -1092,6 +1176,8 @@ function MinuteCoordinateData()
                 data = this.GetFTSEData(upperSymbol, width);
             else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol, width))
                 data = this.GetFHKData(upperSymbol, width);
+            else if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol))
+                data=this.GetForeignExchangeData(upperSymbol);
             else if (MARKET_SUFFIX_NAME.IsET(upperSymbol))
                 data = this.GetETData(upperSymbol, width);
             else if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol, width))
@@ -1226,6 +1312,12 @@ function MinuteCoordinateData()
     {
         var result = FHK_MINUTE_X_COORDINATE;
         return result
+    }
+
+    this.GetForeignExchangeData=function(upperSymbol,width)
+    {
+        var result=FOREX_MINUTE_X_COORDINATE;  
+        return result;
     }
 
     this.GetETData = function (upperSymbol, width) 
@@ -3175,6 +3267,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision = g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
     else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetForeignExchangeDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetBITDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetETDecimal(upperSymbol); 
     else if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol)) defaultfloatPrecision=g_NYMEXTimeData.GetDecimal(upperSymbol);
@@ -3206,4 +3299,6 @@ module.exports =
     JSCommonCoordinateData_Global_NYBOTTimeData: g_NYBOTTimeData,
     JSCommonCoordinateData_Global_LMETimeData: g_LMETimeData,
     JSCommonCoordinateData_Global_CBOTTimeData: g_CBOTTimeData,
+    JSCommonCoordinateData_Global_TOCOMTimeData: g_TOCOMTimeData,
+    JSCommonCoordinateData_Global_IPETimeData: g_IPETimeData,
 };
