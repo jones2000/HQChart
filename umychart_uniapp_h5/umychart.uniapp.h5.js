@@ -7733,17 +7733,20 @@ function JSChartContainer(uielement, OffscreenElement)
         if (this.PtInChartPaintTooltip(x,y, toolTip))
             return toolTip;
 
-        for(var i=0;i<this.Frame.SubFrame.length;++i)
+        if (IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame))
         {
-            var subFrame=this.Frame.SubFrame[i];
-            for(var j=0;j<subFrame.OverlayIndex.length;++j)
+            for(var i=0;i<this.Frame.SubFrame.length;++i)
             {
-                var overlayItem=subFrame.OverlayIndex[j];
-                for(var k=0;k<overlayItem.ChartPaint.length;++k)
+                var subFrame=this.Frame.SubFrame[i];
+                for(var j=0;j<subFrame.OverlayIndex.length;++j)
                 {
-                    var item=overlayItem.ChartPaint[k];
-                    if (item.GetTooltipData(x,y,toolTip))
-                        return toolTip;
+                    var overlayItem=subFrame.OverlayIndex[j];
+                    for(var k=0;k<overlayItem.ChartPaint.length;++k)
+                    {
+                        var item=overlayItem.ChartPaint[k];
+                        if (item.GetTooltipData(x,y,toolTip))
+                            return toolTip;
+                    }
                 }
             }
         }
@@ -33928,6 +33931,7 @@ function CallAcutionXOperator()
 //十字光标
 function ChartCorssCursor()
 {
+    this.ClassName="ChartCorssCursor";
     this.Frame;
     this.Canvas;                            //画布
 
@@ -34925,6 +34929,8 @@ function DepthChartCorssCursor()
     this.BidColor=g_JSChartResource.DepthCorss.BidColor.Line;   //买
     this.LineWidth=g_JSChartResource.DepthCorss.LineWidth;
 
+    this.ClassName="DepthChartCorssCursor";
+
     this.Tooltip=
     { 
         LineHeight:g_JSChartResource.DepthCorss.Tooltip.LineHeight, 
@@ -35099,6 +35105,11 @@ function DepthChartCorssCursor()
         this.Canvas.fillText("累计",x,y);
         y+=this.Tooltip.LineHeight*pixel;
         this.Canvas.fillText(data.Vol.toFixed(4),x,y);
+    }
+
+    this.PtInButton=function(x,y)
+    {
+        return null;
     }
 }
 ////////////////////////////////////////////////////////////////////////////////
