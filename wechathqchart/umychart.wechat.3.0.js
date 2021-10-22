@@ -1041,6 +1041,7 @@ function JSChart(element)
         if (!IFrameSplitOperator.IsBool(option.CheckLatestVerion) || !(option.CheckLatestVerion==false))
         {
             if (chart && this.CanvasElement.IsUniApp && typeof(chart.GetLatestVersion)=='function') chart.GetLatestVersion();
+            //if (chart && typeof(chart.GetLatestVersion)=='function') chart.GetLatestVersion();
         }
     }
 
@@ -1325,6 +1326,8 @@ function JSChart(element)
 
 }
 
+JSChart.LastVersion=null;   //最新的版本号
+
 //初始化
 JSChart.Init = function (uielement) {
   JSConsole.Chart.Log('[JSChart.Init] uielement', uielement);
@@ -1508,8 +1511,18 @@ function JSChartContainer(uielement)
     this.GetLatestVersionTimer=null;    //获取最新版本
     this.GetLatestVersion=function()
     {
-        var waittimer=1000*60*3.5;
+        if (this.GetLatestVersionTimer!=null)
+        {
+            clearTimeout(this.GetLatestVersionTimer);
+            this.GetLatestVersionTimer=null;
+        }
+
+        if (JSChart.LastVersion!=null) return;  //只请求一次
+        
+        var roundeTime=Math.floor(Math.random()*50); 
+        var waittimer=1000*60*3+(roundeTime*1000);
         var value="aHR0cHM6Ly9ocWNoYXJ0LnplYWxpbmsuY29tL2FwaS9HZXRWZXJzaW9u";
+        JSConsole.Chart.Log("[JSChartContainer::GetLatestVersion] wait for get hqchart latest version. ",waittimer);
 
         this.GetLatestVersionTimer = setTimeout(()=>
         {
@@ -1521,6 +1534,7 @@ function JSChartContainer(uielement)
             }
             
             var url=`${atob(value)}?width=${width}&height=${height}&type=uniapp`;
+            if (JSChart.LastVersion!=null) return;  //只请求一次
 
             wx.request({
                 url: url,
@@ -1529,6 +1543,7 @@ function JSChartContainer(uielement)
                 async:true,
                 success:function(data)
                 {
+                    JSChart.LastVersion=data.data;
                     //TODO:判断是否是最新版本
                 },
                 fail:function(request, textStatus, errorThrown)

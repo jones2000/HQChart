@@ -5149,7 +5149,7 @@ function JSChart(divElement, bOffscreen)
         {
 
         }
-        else
+        else if (JSChart.LastVersion==null)
         {
             if (chart && typeof(chart.GetLatestVersion)=='function') chart.GetLatestVersion();
         }
@@ -5615,6 +5615,8 @@ function JSChart(divElement, bOffscreen)
     }
 }
 
+JSChart.LastVersion=null;   //最新的版本号
+
 //初始化
 JSChart.Init=function(divElement)
 {
@@ -6006,7 +6008,14 @@ function JSChartContainer(uielement, OffscreenElement)
     this.GetLatestVersionTimer=null;    //获取最新版本
     this.GetLatestVersion=function()
     {
-        var waittimer=1000*60*3.5;
+        if (this.GetLatestVersionTimer!=null)
+        {
+            clearTimeout(this.GetLatestVersionTimer);
+            this.GetLatestVersionTimer=null;
+        }
+
+        var roundeTime=Math.floor(Math.random()*50); 
+        var waittimer=1000*60*3+(roundeTime*1000);
         var value="aHR0cHM6Ly9ocWNoYXJ0LnplYWxpbmsuY29tL2FwaS9HZXRWZXJzaW9u";
         JSConsole.Chart.Log("[JSChartContainer::GetLatestVersion] wait for get hqchart latest version. ",waittimer);
         this.GetLatestVersionTimer = setTimeout(()=>
@@ -6020,6 +6029,8 @@ function JSChartContainer(uielement, OffscreenElement)
             
             var url=`${atob(value)}?width=${width}&height=${height}&type=h5`;
 
+            if (JSChart.LastVersion!=null) return;  //只请求一次
+
             JSNetwork.HttpRequest({
                 url: url,
                 type:"get",
@@ -6028,14 +6039,13 @@ function JSChartContainer(uielement, OffscreenElement)
                 success:function(data)
                 {
                     JSConsole.Chart.Log("[JSChartContainer::GetLatestVersion] hqchart latest version. ",data);
-                    //TODO:判断是否是最新版本
+                    JSChart.LastVersion=data;
                 },
                 error:function(request, textStatus, errorThrown)
                 {
                     JSConsole.Chart.Log("[JSChartContainer::GetLatestVersion] Get HQChart latest version failed.", request);
                 }
             });
-
         }, waittimer);
     }
 
@@ -63699,7 +63709,7 @@ function CBOTTimeData()
     this.newMethod();
     delete this.newMethod;
 
-    //夏令时间
+    //标准时间
     this.TIME_SPLIT=
     [
         //ID=0 8:00-2:20
@@ -63985,7 +63995,7 @@ function CBOTTimeData()
         }
     ]
 
-    //标准时间
+    //夏令时间
     this.TIME_SPLIT2=
     [
         //ID=0 9:00-3:20
