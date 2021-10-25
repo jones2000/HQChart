@@ -312,6 +312,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 4. [HQChart实战教程13-火币网ws数据对接K线（uniapp)](https://blog.csdn.net/jones2000/article/details/105804461)<br>
 5. [HQChart实战教程15-火币网ws数据对接拖拽下载历史K线图](https://blog.csdn.net/jones2000/article/details/106205584)<br>
 6. [HQChart实战教程16-K线图风格配色篇-仿火币网H5配色](https://blog.csdn.net/jones2000/article/details/106226272)<br>
+7. [HQChart实战教程47-火币网ws数据对接深度图](https://jones2000.blog.csdn.net/article/details/120950486)<br>
 
 ## 源码收费
 1. [HQChart实战教程36-数字货币币安对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/114468807)<br>
