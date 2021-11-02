@@ -7550,14 +7550,14 @@ function KLineChartContainer(uielement)
         return paint;
     }
 
-    this.AutoUpdateEvent = function (bStart)   //自定更新事件, 是给websocket使用
+    this.AutoUpdateEvent = function (bStart, explain)   //自定更新事件, 是给websocket使用
     {
         var eventID = bStart ? JSCHART_EVENT_ID.RECV_START_AUTOUPDATE : JSCHART_EVENT_ID.RECV_STOP_AUTOUPDATE;
         if (!this.mapEvent.has(eventID)) return;
 
         var self = this;
         var event = this.mapEvent.get(eventID);
-        var data = { Stock: { Symbol: this.Symbol, Name: this.Name, Right: this.Right, Period: this.Period } };
+        var data = { Stock: { Symbol: this.Symbol, Name: this.Name, Right: this.Right, Period: this.Period }, Explain:explain };
         if (bStart) 
         {
             data.Callback = function (data) //数据到达更新回调
@@ -7587,7 +7587,12 @@ function KLineChartContainer(uielement)
                 Explain: '日K数据',
                 Request: {
                     Url: self.KLineApiUrl, Type: 'POST',
-                    Data: { symbol: self.Symbol, count: self.MaxReqeustDataCount, field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"] }
+                    Data: 
+                    { 
+                        symbol: self.Symbol, count: self.MaxReqeustDataCount, field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"] ,
+                        period:this.Period,
+                        right:this.Right
+                    }
                 },
                 Self: this,
                 PreventDefault: false
@@ -7595,7 +7600,7 @@ function KLineChartContainer(uielement)
             this.NetworkFilter(obj, function (data) {
                 self.ChartSplashPaint.EnableSplash(false);
                 self.RecvHistoryData(data);
-                self.AutoUpdateEvent(true);
+                self.AutoUpdateEvent(true, "KLineChartContainer::RequestHistoryData");
                 self.AutoUpdate();
             });
 
@@ -7616,7 +7621,7 @@ function KLineChartContainer(uielement)
         success: function (data) {
             self.ChartSplashPaint.EnableSplash(false);
             self.RecvHistoryData(data);
-            self.AutoUpdateEvent(true);
+            self.AutoUpdateEvent(true,"KLineChartContainer::RequestHistoryData");
             self.AutoUpdate();
         }
         });
@@ -7719,7 +7724,9 @@ function KLineChartContainer(uielement)
                 {
                     Url: self.MinuteKLineApiUrl, Type: 'POST', Data: {
                         symbol: self.Symbol, count: self.MaxRequestMinuteDayCount,
-                        field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"]
+                        field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"],
+                        period:this.Period,
+                        right:this.Right
                     }
                 },
                 Self: this,
@@ -7728,7 +7735,7 @@ function KLineChartContainer(uielement)
             this.NetworkFilter(obj, function (data) {
                 self.ChartSplashPaint.EnableSplash(false);
                 self.RecvMinuteHistoryData(data);
-                self.AutoUpdateEvent(true);
+                self.AutoUpdateEvent(true,"KLineChartContainer::ReqeustHistoryMinuteData");
                 self.AutoUpdate();
             });
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
@@ -7749,7 +7756,7 @@ function KLineChartContainer(uielement)
             {
                 self.ChartSplashPaint.EnableSplash(false);
                 self.RecvMinuteHistoryData(data);
-                self.AutoUpdateEvent(true);
+                self.AutoUpdateEvent(true,"KLineChartContainer::ReqeustHistoryMinuteData");
                 self.AutoUpdate();
             }
         });
@@ -7839,7 +7846,9 @@ function KLineChartContainer(uielement)
                 {
                     Url: self.RealtimeApiUrl, Data: {
                         symbol: [self.Symbol],
-                        field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol", "amount", "date", "time"]
+                        field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol", "amount", "date", "time"],
+                        period:this.Period,
+                        right:this.Right
                     }, Type: 'POST'
                 },
                 Self: this,
@@ -7976,7 +7985,9 @@ function KLineChartContainer(uielement)
                 Request: {
                     Url: self.RealtimeApiUrl, Data: {
                         symbol: [self.Symbol],
-                        field: ["name", "symbol", "price", "yclose", "minutecount", "minute", "date", "time"]
+                        field: ["name", "symbol", "price", "yclose", "minutecount", "minute", "date", "time"],
+                        period:this.Period,
+                        right:this.Right
                     }, Type: 'POST'
                 },
                 Self: this,
@@ -8240,14 +8251,14 @@ function KLineChartContainer(uielement)
         if (ChartData.IsDayPeriod(this.Period, true)) 
         {
             this.CancelAutoUpdate();                    //先停止更新
-            this.AutoUpdateEvent(false);
+            this.AutoUpdateEvent(false,"KLineChartContainer::ChangePeriod");
             this.RequestHistoryData();                  //请求日线数据
             //this.ReqeustKLineInfoData();
         }
         else if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period))
         {
             this.CancelAutoUpdate();                    //先停止更新
-            this.AutoUpdateEvent(false);
+            this.AutoUpdateEvent(false,"KLineChartContainer::ChangePeriod");
             this.ReqeustHistoryMinuteData();            //请求分钟数据
         }
     }
@@ -8273,14 +8284,14 @@ function KLineChartContainer(uielement)
             if (ChartData.IsDayPeriod(this.Period, true)) 
             {
                 this.CancelAutoUpdate();                    //先停止更新
-                this.AutoUpdateEvent(false);
+                this.AutoUpdateEvent(false,"KLineChartContainer::ChangeRight");
                 this.RequestHistoryData();                  //请求日线数据
                 //this.ReqeustKLineInfoData();
             }
             else if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period)) 
             {
                 this.CancelAutoUpdate();                    //先停止更新
-                this.AutoUpdateEvent(false);
+                this.AutoUpdateEvent(false,"KLineChartContainer::ChangeRight");
                 this.ReqeustHistoryMinuteData();            //请求分钟数据
             }
         }
@@ -8777,7 +8788,7 @@ function KLineChartContainer(uielement)
     {
         this.IsAutoUpdate = false;
         this.CancelAutoUpdate();
-        this.AutoUpdateEvent(false);
+        this.AutoUpdateEvent(false,"KLineChartContainer::StopAutoUpdate");
     }
 
     this.Update = function () 
@@ -8870,7 +8881,7 @@ function KLineChartContainer(uielement)
     this.ChangeSymbol = function (symbol) 
     {
         this.CancelAutoUpdate();    //先停止更新
-        this.AutoUpdateEvent(false);
+        this.AutoUpdateEvent(false,"KLineChartContainer::ChangeSymbol");
         this.ClearCustomKLine();
         this.Symbol = symbol;
         if (IsIndexSymbol(symbol)) this.Right = 0;    //指数没有复权

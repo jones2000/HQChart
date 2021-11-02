@@ -4561,17 +4561,84 @@ function JSAlgorithm(errorHandler,symbolData)
 
     this.TFILTER=function(data,data2,n)
     {
-        n=parseInt(n);
-
         var result=[];
+        if (!this.IsNumber(n)) return result;
+        if (!Array.isArray(data) || !Array.isArray(data2)) return result;
+        var nFlag=parseInt(n);
 
-        let isNumber=typeof(data)=='number';
-        let isNumber2=typeof(range)=='number';
-
-        let count=Math.max(data.length, data2.length);
-        for(let i=0;i<count;++i)
+        if (nFlag==0)
         {
+            var nEnable=1;
+            for(var i=0;i<data.length;++i)
+            {
+                if (nEnable==1)
+                {
+                    var item=data[i];
+                    result[i]=item;
+                    if (this.IsNumber(item) && item) nEnable=0;
+                }
+                else
+                {
+                    result[i]=0;
+                }
 
+                var item2=data2[i];
+                if (this.IsNumber(item2) && item2) nEnable=1;
+            }
+
+            nEnable=1;
+            for(var i=0;i<data.length;++i)
+            {
+                if (nEnable && result[i]==0)
+                {
+                    var item=data2[i];
+                    result[i]=item;
+                    if (this.IsNumber(item) && item) nEnable=1;
+                }
+
+                var item=data[i];
+                if (this.IsNumber(item) && item) nEnable=1;
+            }
+        }
+        else if (nFlag==1)
+        {
+            var nEnable=1;
+            for(var i=0;i<data.length;++i)
+            {
+                if (nEnable==1)
+                {
+                    var item=data[i];
+                    result[i]=item;
+                    if (this.IsNumber(item) && item) nEnable=0;
+                }
+                else
+                {
+                    result[i]=0;
+                }
+
+                var item=data2[i];
+                if (this.IsNumber(item) && item) nEnable=1;
+            }
+        }
+        else if (nFlag==2)
+        {
+            var nEnable=1;
+            for(var i=0;i<data.length;++i)
+            {
+                if (nEnable==1)
+                {
+                    var item=data2[i];
+                    result[i]=item;
+                    if (this.IsNumber(item) && item) nEnable=0;
+                }
+                else
+                {
+                    result[i]=0;
+                }
+
+                var item=data[i];
+                if (this.IsNumber(item) && item) nEnable=1;
+            }
         }
 
         return result;
@@ -11346,16 +11413,23 @@ function JSSymbolData(ast,option,jsExecute)
         this.SourceData=new ChartData;
         this.SourceData.Data=hisData;
 
-        if (this.Right>0)    //复权
+        if (this.IsApiPeriod)   //后台周期 前端不处理
         {
-            let rightData=this.Data.GetRightData(this.Right);
-            this.Data.Data=rightData;
-        }
 
-        if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
+        }
+        else
         {
-            let periodData=this.Data.GetPeriodData(this.Period);
-            this.Data.Data=periodData;
+            if (this.Right>0)    //复权
+            {
+                let rightData=this.Data.GetRightData(this.Right);
+                this.Data.Data=rightData;
+            }
+    
+            if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
+            {
+                let periodData=this.Data.GetPeriodData(this.Period);
+                this.Data.Data=periodData;
+            }
         }
 
         this.Data.Right=this.Right;
@@ -11374,10 +11448,17 @@ function JSSymbolData(ast,option,jsExecute)
         this.SourceData=new ChartData;
         this.SourceData.Data=hisData;
 
-        if (ChartData.IsMinutePeriod(this.Period,false))   //周期数据
+        if (this.IsApiPeriod)   //后台周期 前端不处理
         {
-            let periodData=this.Data.GetPeriodData(this.Period);
-            this.Data.Data=periodData;
+
+        }
+        else
+        {
+            if (ChartData.IsMinutePeriod(this.Period,false))   //周期数据
+            {
+                let periodData=this.Data.GetPeriodData(this.Period);
+                this.Data.Data=periodData;
+            }
         }
 
         this.Data.Period=this.Period;
@@ -17703,6 +17784,31 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateLineMultiData=function(hqChart,windowIndex,varItem,id)
+    {
+        let chart=new ChartLineMultiData();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            chart.Color=drawData.Color;
+            if (drawData.PointColor)  chart.PointColor=drawData.PointColor;
+            if (IFrameSplitOperator.IsPlusNumber(drawData.PointRadius)) chart.PointRadius=drawData.PointRadius;
+            if (IFrameSplitOperator.IsPlusNumber(drawData.LineWidth)) chart.LineWidth=drawData.LineWidth;
+            if (drawData.Data) chart.Data.Data=drawData.Data;
+        }
+
+        let titleIndex=windowIndex+1;
+        var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color); //标题
+        titleData.DataType="MULTI_POINT_LINE";
+        hqChart.TitlePaint[titleIndex].Data[id]=titleData;
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateTextLine=function(hqChart,windowIndex,varItem,id)
     {
         let chart=new ChartTextLine();
@@ -18183,6 +18289,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case "KLINE_BG":
                         this.CreateBackgroud(hqChart,windowIndex,item,i);
+                        break;
+                    case "MULTI_POINT_LINE":
+                        this.CreateLineMultiData(hqChart,windowIndex,item,i);
                         break;
                 }
             }
@@ -19993,10 +20102,26 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.DrawData={ };
                     drawItem.DrawData.Color=draw.Color;
                     drawItem.DrawData.Angle=draw.Angle;
-                    drawItem.DrawData.Data=this.FittingKLineBG(draw.DrawData, hqChart);
+                    if (draw.Ver==2.0) drawItem.DrawData.Data=this.FittingKLineBG_V2(draw.DrawData, hqChart);
+                    else drawItem.DrawData.Data=this.FittingKLineBG(draw.DrawData, hqChart);
 
                     outVarItem.Draw=drawItem;
                     outVarItem.Name=draw.DrawType;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=='MULTI_POINT_LINE')
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData={ };
+                    drawItem.DrawData.Color=draw.Color;
+                    drawItem.DrawData.PointRadius=draw.PointRadius;
+                    drawItem.DrawData.PointColor=draw.PointColor;
+                    drawItem.DrawData.LineWidth=draw.LineWidth;
+                    drawItem.DrawData.Data=this.FittingMultiPointLine(draw.DrawData, hqChart);
+
+                    outVarItem.Draw=drawItem;
+                    //outVarItem.Name=draw.DrawType;
                     result.push(outVarItem);
                 }
             }
@@ -20107,6 +20232,72 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     result[i]=1;
                     ++j;
                     ++i;
+                }
+            }
+
+            if (bFill) return result;
+        }
+        
+        return null;
+    }
+
+    this.FittingKLineBG_V2=function(data, hqChart)  //2.0版本通过  [{ Start:, End: }, .....]来填充背景色
+    {
+        var kData=hqChart.ChartPaint[0].Data;   //K线
+        var result=[];
+        if (ChartData.IsDayPeriod(hqChart.Period,true))  //日线
+        {
+            var bFill=false;
+            for(var i=0,j=0;i<kData.Data.length;++i)
+            {
+                result[i]=0;
+                var kItem=kData.Data[i];
+                var date=kItem.Date;
+                for(j=0;j<data.length;++j)
+                {
+                    var rangeItem=data[j];
+                    if (date>=rangeItem.Start.Date && date<=rangeItem.End.Date)
+                    {
+                        result[i]=1;
+                        bFill=true;
+                        break;
+                    }
+
+                }
+            }
+
+            if (bFill) return result;
+        }
+        else if (ChartData.IsMinutePeriod(hqChart.Period,true)) //分钟线
+        {
+            var aryRange=[];
+            for(var i=0;i<data.length;++i)
+            {
+                var item=data[i];
+                var startDatetime=item.Start.Date*10000;
+                if (IFrameSplitOperator.IsNumber(item.Start.Time)) startDatetime+=item.Start.Time;
+                var endDatetime=item.End.Date*10000;
+                if (IFrameSplitOperator.IsNumber(item.End.Time)) endDatetime+=item.End.Time;
+
+                aryRange.push({ Start:startDatetime , End:endDatetime});
+            }
+
+            var bFill=false;
+            for(var i=0,j=0;i<kData.Data.length; ++i)
+            {
+                result[i]=0;
+                var kItem=kData.Data[i];
+
+                var date=kItem.Date*10000+kItem.Time;
+                for(j=0;j<aryRange.length;++j)
+                {
+                    var rangeItem=aryRange[j];
+                    if (date>=rangeItem.Start && date<=rangeItem.End)
+                    {
+                        result[i]=1;
+                        bFill=true;
+                        break;
+                    }
                 }
             }
 
@@ -20248,6 +20439,83 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         bindData.Data=aryFittingData;
         var result=bindData.GetValue();
         return result;
+    }
+
+    this.FittingMultiPointLine=function(data, hqChart)
+    {
+        var period=hqChart.Period;              //周期
+        var arySrouceData=data.Data;
+        var aryData=[];
+        if (ChartData.IsDayPeriod(period,true))  //日线
+        {
+            //arySrouceData.sort((a,b)=> { return a.Date-b.Date});
+            var firstItem=arySrouceData[0];
+            var kdata=hqChart.ChartPaint[0].Data;   //K线
+            var firstKItem=kdata.Data[0];
+            var kIndex=0, dataIndex=0;
+            if (firstItem.Date>firstKItem.Date)
+            {
+                var preIndex=0;
+                for(kIndex=0;kIndex<kdata.Data.length;++kIndex)
+                {
+                    var kItem=kdata.Data[kIndex];
+                    if (kItem.Date==firstItem.Date) 
+                        break;
+                    if (kItem.Date>firstItem.Date)
+                    {
+                        kIndex=preIndex;
+                        break;
+                    }
+                    preIndex=kIndex;
+                }
+            }
+            else
+            {
+                for(dataIndex=0;dataIndex<arySrouceData.length;++dataIndex)
+                {
+                    var item=arySrouceData[dataIndex];
+                    if (item.Date>=firstKItem.Date) 
+                        break;
+                }
+            }
+            
+            var preItem=null;
+            for(var i=kIndex, j=dataIndex; i<kdata.Data.length && j<arySrouceData.length; )
+            {
+                var kItem=kdata.Data[i];
+                var item=arySrouceData[j];
+                if (item.Date<=kItem.Date)
+                {
+                    if (!aryData[i]) aryData[i]=[];
+                    aryData[i].push({Date:item.Date, Value:item.Value, Data:item.Data, KDate:kItem.Date, Type:1 });
+                    preItem=item;
+                    ++j;
+                }
+                else
+                {
+                    if (preItem && !aryData[i]) aryData[i]={ Date:preItem.Date, Value:preItem.Value , Type: 0 };
+                    ++i;
+                }
+            }
+
+            if (preItem)
+            {
+                for( ;i<kdata.Data.length; ++i) //补齐最后的数据
+                {
+                    if (!aryData[i]) aryData[i]={ Date:preItem.Date, Value:preItem.Value , Type: 0 };
+                }
+            }
+            
+
+           
+            return aryData;
+        }
+        else if (ChartData.IsMinutePeriod(period,true)) //分钟线
+        {
+            var kdata=hqChart.ChartPaint[0].Data;   //K线
+            
+            return aryData;
+        }
     }
 
 }
