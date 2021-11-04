@@ -122,6 +122,16 @@ var BLACK_STYLE=
         } 
     },
 
+    //订单流配置
+    OrderFlow:
+    { 
+        UpColor:{BG:'rgb(223,191,180)', Border:"rgb(196,84,86)" },          //阳线
+        DownColor:{ BG:"rgb(176,212,184)", Border:'rgb(66,94,74)' },        //阴线
+        UnchagneColor: {BG:"rgb(216,221,177)", Border:"rgb(209,172,129)"},  //平盘
+        Text:{ Color: "rgb(248,248,255)" , Family:'Arial', FontMaxSize:16, MaxValue:"8888" },  //文字
+        Line:{ UpDownColor: "rgb(220,220,220)", MiddleColor:"rgb(211,211,211)" }  //最大, 最低,中间 竖线
+    },
+
     KLine:
     {
         MaxMin: { Font: 12*GetDevicePixelRatio() +'px 微软雅黑', Color: 'rgb(255,250,240)', RightArrow:"→", LeftArrow:"←", HighYOffset:0, LowYOffset:0 },   //K线最大最小值显示

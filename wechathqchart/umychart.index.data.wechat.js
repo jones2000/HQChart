@@ -3074,22 +3074,9 @@ JSIndexScript.prototype.TEST = function ()
             Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
             Args: [{ Name: 'N', Value: 10 }],
             Script: //脚本
-                "买入压力:=H-REF(C,1)+(C-L);\n\
-                卖出压力:=REF(C,1)-L+(H-C);\n\
-                K1:=买入压力/(买入压力+卖出压力)/10;\n\
-                K2:=卖出压力/(买入压力+卖出压力)/10;\n\
-                A01:=(2*C+O+L+H)/5;\n\
-                A02:=(WINNER((A01 * 1.04)) * 100);\n\
-                套牢角度:=57.2958*ATAN(A02-REF(A02,1));\n\
-                A03:=(WINNER((A01 * 0.96)) * 100);\n\
-                盈利筹码:A03;\n\
-                A04:=A03;\n\
-                A08:=A02-A03;\n\
-                A06:=(100 - A02);\n\
-                套牢筹码:=A06;\n\
-                STICKLINE( 1,0,A04, 2,0),COLOR0000FF;\n\
-                STICKLINE( 1, 100,A02, 2,0),COLOR00FF00;\n\
-                STICKLINE( 1,A04,(100-A06), 2,0),COLORYELLOW;"
+                "T2:KDJ.J;"+
+                "T3:DEVSQ(C,INTPART(C));"+
+                "T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
         };
 
     return data;
@@ -3507,7 +3494,9 @@ module.exports =
     JSCommonIndexScript:
     {
         JSIndexScript: JSIndexScript
-    }
+    },
+
+    JSCommon_JSIndexScript:JSIndexScript,
 };
 
 

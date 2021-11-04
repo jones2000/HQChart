@@ -13649,7 +13649,7 @@ function KLineFrame()
     this.XCoordinateZoom=function(isMoveLeft)
     {
         var oldXPointCount=this.XPointCount;
-        if (isMoveLeft) //放大
+        if (isMoveLeft) //放大  右边固定
         {
             if (this.ZoomIndex<=0) return false;
             if (this.Data.DataOffset<0) return false;
@@ -13658,8 +13658,8 @@ function KLineFrame()
             var dataCount=this.Data.Data.length;
             var moveOffset=oldXPointCount-xPointCount;
             if (moveOffset<=0) return false;
-
             this.Data.DataOffset+=moveOffset;
+            if (this.Data.DataOffset>dataCount) this.Data.DataOffset=0;
         }
         else    //缩小
         {
@@ -13669,13 +13669,8 @@ function KLineFrame()
             var xPointCount=this.CalculateCount(zoomIndex);
 
             var moveOffset=xPointCount-oldXPointCount;
-            if (moveOffset>this.Data.DataOffset) 
-            {
-                moveOffset=this.Data.DataOffset;
-                xPointCount=this.Data.DataOffset+oldXPointCount;
-            }
-    
             this.Data.DataOffset-=moveOffset;
+            if (this.Data.DataOffset<0) this.Data.DataOffset=0;
         }
         
         
@@ -19139,6 +19134,11 @@ function ChartKLine()
         Text:{ Color: g_JSChartResource.OrderFlow.Text.Color , Family:g_JSChartResource.OrderFlow.Text.Family, FontMaxSize:g_JSChartResource.OrderFlow.Text.FontMaxSize, MaxValue:g_JSChartResource.OrderFlow.Text.MaxValue },
         Line:{ UpDownColor: g_JSChartResource.OrderFlow.Line.UpDownColor, MiddleColor:g_JSChartResource.OrderFlow.Line.MiddleColor }
     }
+
+    //显示每个订单项的周期, 大周期订单太多不 不显示
+    //默认这几个周期是显示的 4=1分钟 5=5分钟 6=15分钟 7=30分钟
+    this.ShowOrdersPeriod=new Set([4,5,6,7]);
+    this.IsShowOrders=false;
     
     this.ReloadResource=function(resource)
     {
@@ -19152,6 +19152,12 @@ function ChartKLine()
         this.UpColor=g_JSChartResource.UpBarColor;
         this.DownColor=g_JSChartResource.DownBarColor;
         this.UnchagneColor=g_JSChartResource.UnchagneBarColor;          //平盘
+
+        this.OrderFlow.UpColor={BG:g_JSChartResource.OrderFlow.UpColor.BG, Border:g_JSChartResource.OrderFlow.UpColor.Border };
+        this.OrderFlow.DownColor={ BG:g_JSChartResource.OrderFlow.DownColor.BG, Border:g_JSChartResource.OrderFlow.DownColor.Border };
+        this.OrderFlow.UnchagneColor= { BG:g_JSChartResource.OrderFlow.UnchagneColor.BG, Border:g_JSChartResource.OrderFlow.UnchagneColor.Border };
+        this.OrderFlow.Text={ Color: g_JSChartResource.OrderFlow.Text.Color , Family:g_JSChartResource.OrderFlow.Text.Family, FontMaxSize:g_JSChartResource.OrderFlow.Text.FontMaxSize, MaxValue:g_JSChartResource.OrderFlow.Text.MaxValue };
+        this.OrderFlow.Line={ UpDownColor: g_JSChartResource.OrderFlow.Line.UpDownColor, MiddleColor:g_JSChartResource.OrderFlow.Line.MiddleColor };
     }
 
     this.ClearCustomKLine=function()
@@ -20118,6 +20124,7 @@ function ChartKLine()
         this.TradeIconTooltipRect=[];
         this.PtMax={X:null,Y:null,Value:null,Align:'left'}; //清空最大
         this.PtMin={X:null,Y:null,Value:null,Align:'left'}; //清空最小
+        this.IsShowOrders=false;
 
         this.ChartFrame.ChartKLine={Max:null, Min:null };   //保存K线上 显示最大最小值坐标
 
@@ -20681,6 +20688,7 @@ function ChartKLine()
             return;
         }
 
+        this.IsShowOrders=this.ShowOrdersPeriod.has(this.Period);
         if (isHScreen) 
         {
             var border=this.ChartBorder.GetHScreenBorder();
@@ -20814,7 +20822,7 @@ function ChartKLine()
                 var text=null;
                 if (IFrameSplitOperator.IsString(item.Ask.Text)) text=item.Ask.Text;
                 else if (IFrameSplitOperator.IsNumber(item.Ask.Value)) text=item.Ask.Value.toString();
-                if (text)
+                if (text && this.IsShowOrders)
                 {
                     if (item.Ask.Color) this.Canvas.fillStyle=item.Ask.Color;
                     else this.Canvas.fillStyle=this.OrderFlow.Text.Color;
@@ -20846,7 +20854,7 @@ function ChartKLine()
                 var text=null;
                 if (IFrameSplitOperator.IsString(item.Bid.Text)) text=item.Bid.Text;
                 else if (IFrameSplitOperator.IsNumber(item.Bid.Value)) text=item.Bid.Value.toString();
-                if (text)
+                if (text && this.IsShowOrders)
                 {
                     if (item.Bid.Color) this.Canvas.fillStyle=item.Bid.Color;
                     else this.Canvas.fillStyle=this.OrderFlow.Text.Color;
@@ -20905,7 +20913,7 @@ function ChartKLine()
         //var fontHeight=this.Canvas.measureText("擎").width+2;
         var textFont=this.GetDynamicOrderFlowFont(cellHeight, xKLine.DataWidth);
         //上下文字
-        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.High))
+        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.High) && this.IsShowOrders)
         {
             for(var i=0;i<orderFlow.High.length;++i)
             {
@@ -20935,7 +20943,7 @@ function ChartKLine()
             }
         }
 
-        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.Low))
+        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.Low) && this.IsShowOrders)
         {
             for(var i=0;i<orderFlow.Low.length;++i)
             {
@@ -20977,9 +20985,10 @@ function ChartKLine()
     {
         var fontSize=parseInt(cellHeight)-2;
         if (fontSize>this.OrderFlow.Text.FontMaxSize) fontSize=this.OrderFlow.Text.FontMaxSize;
+        else if (fontSize<=0) fontSize=1;
         var font=this.FormatFontString(fontSize, this.OrderFlow.Text.Family, fontOption);
 
-        for(var i=fontSize; i>5; i-=2)
+        for(var i=fontSize; i>0; i-=2)
         {
             var font=this.FormatFontString(i, this.OrderFlow.Text.Family, fontOption);
             this.Canvas.font=font;
@@ -44026,7 +44035,7 @@ function JSChartResource()
 
         if (style.OrderFlow)
         {
-            item=OrderFlow;
+            item=style.OrderFlow;
             if (item.UpColor) this.OrderFlow.UpColor=item.UpColor;
             if (item.DownColor) this.OrderFlow.DownColor=item.DownColor;
             if (item.UnchagneColor) this.OrderFlow.UnchagneColor=item.UnchagneColor;
@@ -65634,8 +65643,8 @@ var Character =
             (cp >= 0x41 && cp <= 0x5A) ||
             (cp >= 0x61 && cp <= 0x7A) ||
             (cp === 0x5C) ||
-            //【】
-            (cp===0x3010 || cp===0x3011) ||
+            //【】▲▼
+            (cp===0x3010 || cp===0x3011 || cp===0x25B2 || cp===0x25BC) ||
             ((cp >= 0x80) && Regex.NonAsciiIdentifierStart.test(Character.FromCodePoint(cp)));
     },
 
@@ -65646,8 +65655,8 @@ var Character =
             (cp >= 0x61 && cp <= 0x7A) ||
             (cp >= 0x30 && cp <= 0x39) ||
             (cp === 0x5C) || (cp===0x23) ||
-            //【】
-            (cp===0x3010 || cp===0x3011) ||
+            //【】▲▼
+            (cp===0x3010 || cp===0x3011 || cp===0x25B2 || cp===0x25BC) ||
             ((cp >= 0x80) && Regex.NonAsciiIdentifierPart.test(Character.FromCodePoint(cp)));
     },
 
@@ -81205,6 +81214,8 @@ function JSExecute(ast,option)
                 return node.Out;
             case Syntax.CallExpression:
                 return this.VisitCallExpression(node);
+            case Syntax.MemberExpression:
+                return this.ReadMemberVariable(node);
             default:
                 this.ThrowUnexpectedNode(node);
         }
@@ -87187,6 +87198,16 @@ var BLACK_STYLE=
             PenColor:'rgb(255,255,255)',
             Icon: { Text:'\ue6a3', Color:'rgb(255,255,255)', Family:"iconfont", Size:18 }
         } 
+    },
+
+    //订单流配置
+    OrderFlow:
+    { 
+        UpColor:{BG:'rgb(223,191,180)', Border:"rgb(196,84,86)" },          //阳线
+        DownColor:{ BG:"rgb(176,212,184)", Border:'rgb(66,94,74)' },        //阴线
+        UnchagneColor: {BG:"rgb(216,221,177)", Border:"rgb(209,172,129)"},  //平盘
+        Text:{ Color: "rgb(248,248,255)" , Family:'Arial', FontMaxSize:16, MaxValue:"8888" },  //文字
+        Line:{ UpDownColor: "rgb(220,220,220)", MiddleColor:"rgb(211,211,211)" }  //最大, 最低,中间 竖线
     },
 
     KLine:

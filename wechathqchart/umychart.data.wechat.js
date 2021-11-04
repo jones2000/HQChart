@@ -1440,6 +1440,161 @@ function ChartData()
         return true;
     }
 
+    //拟合其他K线数据指标   
+    this.FitKLineIndex=function(kLineData, outVar, peirod, indexPeriod)
+    {
+        var count=this.Data.length;         //原始K线数据
+        var indexCount=kLineData.length;    //拟合K线数据
+        var isMinutePeriod=[ChartData.IsMinutePeriod(peirod,true), ChartData.IsMinutePeriod(indexPeriod,true) ]; //0=原始K线 1=需要拟合的K线
+        var isDayPeriod=[ChartData.IsDayPeriod(peirod,true), ChartData.IsDayPeriod(indexPeriod,true)  ];   //0=原始K线 1=需要拟合的K线
+        var firstItem=ChartData.GetKLineDataTime(this.Data[0]);
+
+        //计算拟合以后的数据索引
+        var aryFixDataID=[];
+        var indexStart=indexCount;
+        for(var i=0;i<indexCount;++i)
+        {
+            var item=ChartData.GetKLineDataTime(kLineData[i]);
+
+            if ( (isDayPeriod[0] && isDayPeriod[1]) || (isMinutePeriod[0] && isDayPeriod[1]) )   //日线(拟合) => 日线(原始)    日线(拟合 => 分钟(原始)
+            {
+                if (item.Date>=firstItem.Date)
+                {
+                    indexStart = i;
+                    break;
+                }
+            }
+            else if (isMinutePeriod[0] && isMinutePeriod[1]) //分钟(拟合 => 分钟(原始)
+            {
+                if (item.Date>firstItem.Date)
+                {
+                    indexStart = i;
+                    break;
+                }
+
+                if (item.Date == firstItem.Date && item.Time >= firstItem.Time )
+                {
+                    indexStart = i;
+                    break;
+                }
+            }
+        }
+
+        for(var i=0, j=indexStart; i<count; )
+        {
+            var item=ChartData.GetKLineDataTime(this.Data[i]);
+            if (j>=indexCount)
+            {
+                var fitItem={ Date:item.Date, Time:item.Time, Index:-1 };
+                aryFixDataID[i]=fitItem;
+                ++i;
+                continue;
+            }
+
+            var destItem=ChartData.GetKLineDataTime(kLineData[j]);
+            if ( (isDayPeriod[0] && isDayPeriod[1]) || (isMinutePeriod[0] && isDayPeriod[1]) )  //日线(拟合) => 日线(原始)    日线(拟合 => 分钟(原始)
+            {
+                if (destItem.Date == item.Date)
+                {
+                    var fitItem={ Date:item.Date, Time:item.Time, Index:j, Data2:destItem.Date, Time2:destItem.Time };
+                    aryFixDataID[i]=fitItem;
+                    ++i;
+                }
+                else 
+                {
+                    if (j+1<indexCount)
+                    {
+                        var nextDestItem=ChartData.GetKLineDataTime(kLineData[j+1]);
+                        if ( destItem.Date<=item.Date && nextDestItem.Date>item.Date )
+                        {
+                            var fitItem={ Date:item.Date, Time:item.Time, Index:j+1, Data2:nextDestItem.Date, Time2:nextDestItem.Time };
+                            aryFixDataID[i]=fitItem;
+                            ++i;
+                        }
+                        else if (nextDestItem.Date <= item.Date )
+                        {
+                            ++j;
+                        }
+                        else
+                        {
+                            var fitItem={ Date:item.Date, Time:item.Time, Index:-1 };
+                            aryFixDataID[i]=fitItem;
+                            ++i;
+                        }
+                    }
+                    else
+                    {
+                        ++j;
+                    }
+                }
+            }
+            else if (isMinutePeriod[0] && isMinutePeriod[1])    //分钟(拟合 => 分钟(原始)
+            {
+                if (destItem.Date == item.Date && destItem.Time == item.Time)
+                {
+                    var fitItem={ Date:item.Date, Time:item.Time, Index:j, Data2:destItem.Date, Time2:destItem.Time };
+                    aryFixDataID[i]=fitItem;
+                    ++i;
+                }
+                else
+                {
+                    if (j+1<indexCount)
+                    {
+                        var nextDestItem=ChartData.GetKLineDataTime(kLineData[j+1]);
+                        if ( (destItem.Date<item.Date && nextDestItem.Date>item.Date) || 
+                            (destItem.Date == item.Date && destItem.Time < item.Time && nextDestItem.Date == item.Date && nextDestItem.Time > item.Time) ||
+                            (destItem.Date == item.Date && destItem.Time < item.Time && nextDestItem.Date > item.Date) ||
+                            (destItem.Date < item.Date && nextDestItem.Date == item.Date && nextDestItem.Time > item.Time) )
+                        {
+                            var fitItem={ Date:item.Date, Time:item.Time, Index:j+1, Data2:nextDestItem.Date, Time2:nextDestItem.Time };
+                            aryFixDataID[i]=fitItem;
+                            ++i;
+                        }
+                        else if (nextDestItem.Date < item.Date || (nextDestItem.Date == item.Date && nextDestItem.Time <= item.Time) )
+                        {
+                            ++j;
+                        }
+                        else
+                        {
+                            var fitItem={ Date:item.Date, Time:item.Time, Index:-1 };
+                            aryFixDataID[i]=fitItem;
+                            ++i;
+                        }
+                    }
+                    else
+                    {
+                        ++j;
+                    }
+                }
+            }
+        }
+
+        //拟合数据
+        var result=[];
+        for(var i in outVar)
+        {
+            var item=outVar[i];
+            if (Array.isArray(item.Data)) 
+            {
+                var data=[];
+                result[i]={ Data:data, Name:item.Name } ;
+                for(var j=0;j<aryFixDataID.length;++j)
+                {
+                    var dataItem=aryFixDataID[j];
+                    data[j]=null;
+                    if ( dataItem && dataItem.Index>=0 && dataItem.Index<item.Data.length )
+                        data[j]=item.Data[dataItem.Index];
+                }
+            }
+            else 
+            {
+                result[i]={ Data:item.Data, Name:item.Name} ;
+            }
+        }
+
+        return result;
+    }
+
     //日线拟合交易数据, 不做平滑处理
     this.GetFittingTradeData=function(tradeData, nullValue, bExactMatch)
     {
@@ -1585,6 +1740,19 @@ ChartData.IsNumber=function(value)
     if (isNaN(value)) return false;
 
     return true;
+}
+
+ChartData.DateTimeToNumber=function(kItem)
+{
+    return kItem.Date*10000+kItem.Time;
+}
+
+ChartData.GetKLineDataTime=function(kLineItem)   //获取K线的 日期和时间 如果时间没有就用0
+{
+    var result={ Date:kLineItem.Date, Time:0 };
+    if (ChartData.IsNumber(kLineItem.Time)) result.Time=kLineItem.Time;
+
+    return result;
 }
 
 ChartData.GetFirday=function(value)

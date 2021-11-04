@@ -25,6 +25,11 @@ import
     JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
 } from './umychart.framesplit.wechat.js'
 
+import
+{
+    JSCommon_JSIndexScript as JSIndexScript,
+} from './umychart.index.data.wechat.js'
+
 
 var g_JSComplierResource=
 {
@@ -150,8 +155,8 @@ var Character =
             (cp >= 0x41 && cp <= 0x5A) ||
             (cp >= 0x61 && cp <= 0x7A) ||
             (cp === 0x5C) ||
-            //【】
-            (cp===0x3010 || cp===0x3011) ||
+            //【】▲▼
+            (cp===0x3010 || cp===0x3011 || cp===0x25B2 || cp===0x25BC) ||
             ((cp >= 0x80) && Regex.NonAsciiIdentifierStart.test(Character.FromCodePoint(cp)));
     },
 
@@ -161,9 +166,9 @@ var Character =
             (cp >= 0x41 && cp <= 0x5A) ||
             (cp >= 0x61 && cp <= 0x7A) ||
             (cp >= 0x30 && cp <= 0x39) ||
-            (cp === 0x5C) ||
-            //【】
-            (cp===0x3010 || cp===0x3011) ||
+            (cp === 0x5C) || (cp===0x23) ||
+            //【】▲▼
+            (cp===0x3010 || cp===0x3011 || cp===0x25B2 || cp===0x25BC) ||
             ((cp >= 0x80) && Regex.NonAsciiIdentifierPart.test(Character.FromCodePoint(cp)));
     },
 
@@ -746,6 +751,11 @@ function Node()
 
     this.IsAPIData = []       //加载API数据
 
+    this.ExecuteIndex=[];       //执行调用指标
+    this.OtherSymbolData=[];    //其他股票数据 key=股票代码(小写)
+    this.PeriodSymbolData=[];   //跨周期数据 { Period:, VarName: }
+    this.ErrorHandler=ErrorHandler;
+
     this.GetDataJobList=function()  //下载数据任务列表
     {
         let jobs=[];
@@ -780,6 +790,12 @@ function Node()
         for (var i in this.IsAPIData) 
         {
             var item = this.IsAPIData[i];
+            jobs.push(item);
+        }
+
+        for(var i in this.ExecuteIndex)
+        {
+            var item=this.ExecuteIndex[i];
             jobs.push(item);
         }
 
@@ -991,6 +1007,12 @@ function Node()
         return { Type:Syntax.AssignmentExpression, Operator:operator, Left:left, Right:right };
     }
 
+    //成员变量, 不需要检测
+    this.MemberIdentifier=function(name, token)
+    {
+        return { Type:Syntax.Identifier, Name:name};
+    }
+
     this.UnaryExpression=function(operator, argument) 
     {
         return { Type:Syntax.UnaryExpression, Operator:operator, Argument:argument, Prefix:true };
@@ -1008,9 +1030,18 @@ function Node()
         return { Type:Syntax.CallExpression, Callee:callee, Arguments:args };
     }
 
-    this.StaticMemberExpression = function (object, property) 
+    this.StaticMemberExpression = function (object, property,token) 
     {
+        this.VerifyMemberVariable(object,property, token);
         return { Type: Syntax.MemberExpression, Computed: false, Object: object, Property: property };
+    }
+
+    this.VerifyMemberVariable=function(object,property,token)
+    {
+        var item={ ID:JS_EXECUTE_JOB_ID.JOB_EXECUTE_INDEX,  Member:{Object:object, Property:property} };
+        if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+        this.ExecuteIndex.push(item);
+        return;
     }
 }
 
@@ -1441,8 +1472,8 @@ function JSParser(code)
                 this.Context.IsBindingElement = false;
                 this.Context.IsAssignmentTarget = true;
                 this.Expect('.');
-                const property = this.ParseIdentifierName();
-                expr = this.Finalize(this.StartNode(startToken), this.Node.StaticMemberExpression(expr, property));
+                const property = this.ParseMemberIdentifierName();
+                expr = this.Finalize(this.StartNode(startToken), this.Node.StaticMemberExpression(expr, property,startToken));
             }
             else if (this.Match('('))
             {
@@ -1490,6 +1521,18 @@ function JSParser(code)
         }
 
         return this.Finalize(node, this.Node.Identifier(token.Value, token));
+    }
+
+    this.ParseMemberIdentifierName=function()
+    {
+        const node = this.CreateNode();
+        const token = this.NextToken();
+        if (!this.IsIdentifierName(token)) 
+        {
+            this.ThrowUnexpectedToken(token);
+        }
+
+        return this.Finalize(node, this.Node.MemberIdentifier(token.Value, token));
     }
 
     // https://tc39.github.io/ecma262/#sec-left-hand-side-expressions
@@ -8445,6 +8488,267 @@ function JSSymbolData(ast,option,jsExecute)
         var result = bindData.GetValue();
         return result;
     }
+
+    //MA.MA1#WEEK
+    this.ReadIndexFunctionValue=function(item, result)  //返回 {Period:周期, Out:输出变量, Error:, Name:脚本名字 }
+    {
+        var indexParam={};
+        if (typeof(item)=== 'object')
+        {
+            if (!this.ReadArgumentValue(item,indexParam))
+            {
+                result.Error=indexParam.Error;
+                return false;
+            }
+        }
+        else
+        {
+            indexParam.Value=item;
+        }
+        
+        var pos=indexParam.Value.indexOf("\.");
+        if (pos!=-1)
+        {
+            result.Name=indexParam.Value.slice(0, pos);     //名字
+            var pos2=indexParam.Value.indexOf('#', pos+1);
+            if (pos2!=-1)
+            {
+                result.Out=indexParam.Value.slice(pos+1, pos2); //输出变量
+                result.Period=indexParam.Value.slice(pos2+1);     //周期
+            }
+            else
+            {
+                result.Out=indexParam.Value.slice(pos+1);
+            }
+        }
+        else
+        {
+            var pos2=indexParam.Value.indexOf('#');
+            if (pos2!=-1)
+            {
+                result.Name=indexParam.Value.slice(0,pos2);
+                result.Period=indexParam.Value.slice(pos2+1);     //周期
+            }
+            else
+            {
+                result.Name=indexParam.Value;
+            }
+        }
+
+        const PERIOD_MAP=new Map([
+            ["DAY",0 ], ["WEEK", 1 ], ["MONTH",2 ], ["SEASON",9 ], ["YEAR", 3], ["HALFYEAR",22], ["WEEK2",21],
+            ["MIN1", 4], ["MIN5", 5 ], ["MIN15", 6 ], ["MIN30",7 ], ["MIN60", 8 ],
+
+            ["DAY2", 40002],["MULTIDAY",40002],["DAY3", 40003],["DAY4", 40004],["DAY5",40005],
+            ["DAY6", 40006],["DAY7", 40007],["DAY8", 40008],["DAY9", 40009],["DAY10",40010],
+            ["DAY11", 40011],["DAY12", 40012],["DAY13", 40013],["DAY14", 40014],["DAY15", 40015],
+        ]);
+
+        if (result.Period)
+        {
+            if (!PERIOD_MAP.has(result.Period))
+            {
+                result.Error=`${result.Period}, 周期错误`;
+                return false;
+            }
+            result.PeriodID=PERIOD_MAP.get(result.Period);
+        }
+        return true;
+    }
+
+    //TMP2:=KDJ.K#WEEK;
+    this.CallMemberScriptIndex=function(job)
+    {
+        if (job.Member.Object.Type!=Syntax.Identifier ||job.Member.Property.Type!=Syntax.Identifier)
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallMemberScriptIndex() Error: 参数错误`);
+        }
+
+        var objName=job.Member.Object.Name;
+        var PropertyName=job.Member.Property.Name;
+        if (PropertyName=="" || PropertyName==null)
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallMemberScriptIndex() Error: ${objName}.${PropertyName} 指标输出变量错误`);
+        }
+        
+        if (this.Execute.VarTable.has(objName))
+        {
+            var memberValue=this.Execute.VarTable.get(objName);
+            if (memberValue.hasOwnProperty(PropertyName))
+            {
+                JSConsole.Complier.Log(`[JSSymbolData::CallMemberScriptIndex] index data ${objName}.${PropertyName} in cache.`);
+                return this.Execute.RunNextJob();
+            }
+        }
+            
+        var callInfo=objName+"."+PropertyName;
+        var indexInfo={ Job:job, PeriodID:this.Period , Symbol:this.Symbol };
+        if (!this.ReadIndexFunctionValue(callInfo,indexInfo))     //读取指标
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallMemberScriptIndex() Error: '${callInfo}' ${indexInfo.Error}`);
+        }
+
+        var systemIndex=new JSIndexScript();
+        var systemItem=systemIndex.Get(indexInfo.Name);
+        if (!systemItem)
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallMemberScriptIndex() Error: '${callInfo}' ${indexInfo.Name} 指标不存在`);
+        }
+
+        if (Array.isArray(systemItem.Args) && systemItem.Args.length>0)
+        {
+            indexInfo.Args=[];
+            for(var i in systemItem.Args)    //复制参数
+            {
+                var item=systemItem.Args[i];
+                indexInfo.Args.push({Value:item.Value, Name:item.Name});
+            }
+        }
+
+        JSConsole.Complier.Log('[JSSymbolData::CallMemberScriptIndex] call script index', indexInfo);
+
+        var dateTimeRange=this.Data.GetDateRange();
+
+        var option=
+        {
+            HQDataType:this.DataType,
+            Symbol:indexInfo.Symbol,
+            Name:'',
+            Right:this.Right,           //复权
+            Period:indexInfo.PeriodID,  //周期
+            Data:null,
+            SourceData:null,
+            Callback:(outVar,job, symbolData)=> { 
+                this.RecvMemberScriptIndexData(outVar,job,symbolData);
+                this.Execute.RunNextJob();
+            },
+            CallbackParam:indexInfo,
+            Async:true,
+            MaxRequestDataCount:this.MaxRequestDataCount+30*2,
+            MaxRequestMinuteDayCount:this.MaxRequestMinuteDayCount+2,
+            Arguments:indexInfo.Args,
+            //Condition:this.Condition,
+            IsBeforeData:this.IsBeforeData,
+            NetworkFilter:this.NetworkFilter,
+            KLineRange:dateTimeRange    //K线数据范围
+        };
+
+        //执行脚本
+        var run=JSComplier.Execute(systemItem.Script,option,(error, indexInfo)=>{this.ExecuteScriptIndexError(error,indexInfo)});
+        
+    }
+
+    //脚本调用
+    //STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
+    //1=股票代码 2=指标名字.输出变量#周期, 3....参数
+    this.CallScriptIndex=function(job)
+    {
+        if (job.Member) return this.CallMemberScriptIndex(job);
+
+        if (!job.Args || !(job.Args.length>=2)) 
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() Error: ${job.FunctionName} 参数错误`);
+        }
+
+        var indexInfo={ Job:job, PeriodID:this.Period };
+        if (!this.ReadSymbolArgumentValue(job.Args[0],indexInfo))  //读取代码
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() Error: ${indexInfo.Error}`);
+        }
+
+        if (!this.ReadIndexFunctionValue(job.Args[1],indexInfo))     //读取指标
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() Error: ${indexInfo.Error}`);
+        }
+
+        var systemIndex=new JSIndexScript();
+        var systemItem=systemIndex.Get(indexInfo.Name);
+        if (!systemItem)
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() ${indexInfo.Name} 指标不存在`);
+        }
+
+        indexInfo.SytemIndex=systemItem;    //系统指标
+        if (!this.ReadIndexArgumentValue(job.Args,indexInfo))
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() ${indexInfo.Name} 指标参数错误 : ${indexInfo.Error} `);
+        }
+
+        JSConsole.Complier.Log('[JSSymbolData::CallScriptIndex] call script index', indexInfo);
+        var DateTimeRange=null;
+        if (this.Data && this.Data.Data.length>0)
+        {
+            var start=this.Data.Data[0];
+            var end=this.Data.Data[this.Data.Data.length-1];
+            DateTimeRange=
+            {
+                Start:{Date:start.Date, Time: start.Time},
+                End:{Date:end.Date, Time: end.Time},
+            }
+        }
+
+        var option=
+        {
+            HQDataType:this.DataType,
+            Symbol:indexInfo.Symbol,
+            Name:'',
+            Right:this.Right,           //复权
+            Period:indexInfo.PeriodID,  //周期
+            Data:null,
+            SourceData:null,
+            Callback:(outVar,job, symbolData)=> { 
+                this.RecvScriptIndexData(outVar,job,symbolData);
+                this.Execute.RunNextJob();
+            },
+            CallbackParam:indexInfo,
+            Async:true,
+            MaxRequestDataCount:this.MaxRequestDataCount+30*2,
+            MaxRequestMinuteDayCount:this.MaxRequestMinuteDayCount+2,
+            Arguments:indexInfo.Args,
+            //Condition:this.Condition,
+            IsBeforeData:this.IsBeforeData,
+            NetworkFilter:this.NetworkFilter,
+            KLineRange:DateTimeRange    //K线数据范围
+        };
+
+        //执行脚本
+        var run=JSComplier.Execute(indexInfo.SytemIndex.Script,option,(error, indexInfo)=>{this.ExecuteScriptIndexError(error,indexInfo)});
+    }
+
+    this.RecvMemberScriptIndexData=function(outVar,indexInfo,symbolData)
+    {
+        JSConsole.Complier.Log('[JSSymbolData::RecvMemberScriptIndexData] ', outVar, indexInfo, symbolData);
+        var kLine=symbolData.Data.Data;
+        var aryOutVar=outVar;
+        var data=this.Data.FitKLineIndex(kLine,aryOutVar,this.Period,indexInfo.PeriodID);
+
+        var member=indexInfo.Job.Member;
+        var objName=member.Object.Name;
+        var propertyName=member.Property.Name;
+
+        var memberValue={};
+        if (this.Execute.VarTable.has(objName))
+            memberValue=this.Execute.VarTable.get(objName);
+        else
+            this.Execute.VarTable.set(objName, memberValue);
+
+        //保存所有的指标数据, 下面用到了就可以不用算了
+        for(var i in data)
+        {
+            var key=outVar[i].Name;
+            if (indexInfo.Period) key+='#'+indexInfo.Period;    //带周期的变量
+            memberValue[key]=data[i].Data;
+        }
+    }
    
     this.JsonDataToHistoryData=function(data)
     {
@@ -8861,6 +9165,11 @@ var JS_EXECUTE_JOB_ID=
 
     JOB_DOWNLOAD_CUSTOM_API_DATA: 30000,    //自定义数据
 
+    //调用其他脚本指标 
+    //KDJ.K , KDJ.K#WEEK
+    //STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
+    JOB_EXECUTE_INDEX:30010,  
+
     JOB_RUN_SCRIPT:10000, //执行脚本
 
     //融资融券
@@ -9045,6 +9354,8 @@ function JSExecute(ast,option)
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CUSTOM_API_DATA:
                 return this.SymbolData.DownloadCustomAPIData(jobItem);
+            case JS_EXECUTE_JOB_ID.JOB_EXECUTE_INDEX:
+                return this.SymbolData.CallScriptIndex(jobItem);
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
@@ -9479,7 +9790,16 @@ function JSExecute(ast,option)
         if (this.UpdateUICallback) 
         {
             JSConsole.Complier.Log('[JSComplier.Run] invoke UpdateUICallback.');
-            this.UpdateUICallback(data,this.CallbackParam);
+            if (this.CallbackParam && this.CallbackParam.Job && this.CallbackParam.Job.ID==JS_EXECUTE_JOB_ID.JOB_EXECUTE_INDEX)
+            {
+                this.UpdateUICallback(data,this.CallbackParam, this.SymbolData);
+            }
+            else
+            {
+                if (this.CallbackParam && this.CallbackParam.Self && this.CallbackParam.Self.ClassName==='ScriptIndexConsole') this.CallbackParam.JSExecute=this;
+                this.UpdateUICallback(data,this.CallbackParam);
+            }
+            
         }
     }
 
@@ -9806,6 +10126,8 @@ function JSExecute(ast,option)
                 return node.Out;
             case Syntax.CallExpression:
                 return this.VisitCallExpression(node);
+            case Syntax.MemberExpression:
+                return this.ReadMemberVariable(node);
             default:
                 this.ThrowUnexpectedNode(node);
         }

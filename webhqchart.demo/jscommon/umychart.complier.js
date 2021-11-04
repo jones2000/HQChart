@@ -267,8 +267,8 @@ var Character =
             (cp >= 0x41 && cp <= 0x5A) ||
             (cp >= 0x61 && cp <= 0x7A) ||
             (cp === 0x5C) ||
-            //【】
-            (cp===0x3010 || cp===0x3011) ||
+            //【】▲▼
+            (cp===0x3010 || cp===0x3011 || cp===0x25B2 || cp===0x25BC) ||
             ((cp >= 0x80) && Regex.NonAsciiIdentifierStart.test(Character.FromCodePoint(cp)));
     },
 
@@ -279,8 +279,8 @@ var Character =
             (cp >= 0x61 && cp <= 0x7A) ||
             (cp >= 0x30 && cp <= 0x39) ||
             (cp === 0x5C) || (cp===0x23) ||
-            //【】
-            (cp===0x3010 || cp===0x3011) ||
+            //【】▲▼
+            (cp===0x3010 || cp===0x3011 || cp===0x25B2 || cp===0x25BC) ||
             ((cp >= 0x80) && Regex.NonAsciiIdentifierPart.test(Character.FromCodePoint(cp)));
     },
 
@@ -15838,6 +15838,8 @@ function JSExecute(ast,option)
                 return node.Out;
             case Syntax.CallExpression:
                 return this.VisitCallExpression(node);
+            case Syntax.MemberExpression:
+                return this.ReadMemberVariable(node);
             default:
                 this.ThrowUnexpectedNode(node);
         }
