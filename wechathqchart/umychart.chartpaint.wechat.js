@@ -532,6 +532,11 @@ function ChartKLine()
     {
         if (dataWidth >= this.MinBarWidth) 
         {
+            if (drawType==3)
+            {
+                if ((dataWidth%2)!=0) dataWidth-=1;
+            }
+
             this.Canvas.strokeStyle = upColor;
             if (data.High > data.Close)   //上影线
             {
@@ -543,8 +548,17 @@ function ChartKLine()
                 }
                 else 
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
-                    this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(this.DrawType == 3 ? Math.min(yClose, yOpen) : yClose));
+                    if (drawType==3)
+                    {
+                        var xFixed=left+dataWidth/2;
+                        this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(Math.min(yClose,yOpen)));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yClose));
+                    }
                 }
                 this.Canvas.stroke();
                 y = yClose;
@@ -608,8 +622,17 @@ function ChartKLine()
                 }
                 else 
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(this.DrawType == 3 ? Math.max(yClose, yOpen) : y));
-                    this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yLow));
+                    if (drawType==3)
+                    {
+                        var xFixed=left+dataWidth/2;
+                        this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(Math.max(yClose,yOpen)));
+                        this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(yLow));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(x), ToFixedPoint(yLow));
+                    }
                 }
                 this.Canvas.stroke();
             }

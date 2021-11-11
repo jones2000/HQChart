@@ -4349,6 +4349,16 @@ function KLineFrame()
             return;
         }
 
+        while(true)
+        {
+            if((this.DistanceWidth + this.DataWidth) * this.XPointCount + this.DistanceWidth > width)
+            {
+                this.DistanceWidth -= 0.01;
+                break;
+            }
+            this.DistanceWidth += 0.01;
+        }
+        /*
         if (zoom[0]<4) //最后2个缩放,调整间距不调整数据宽度, 数据都是画竖线的
         {
             while (true) 
@@ -4373,6 +4383,7 @@ function KLineFrame()
                 this.DataWidth += 0.01;
             }
         }
+        */
     }
 
     this.IsOverlayMaxMin = function (obj) //当前坐标信息 是否覆盖最大 最小值输出
@@ -5862,9 +5873,9 @@ var ZOOM_SEED = //0=柱子宽度  1=间距
     [40, 9], [36, 9],
     [32, 8], [28, 8],
     [24, 7], [20, 7],
-    [18, 6], [16, 6],
-    [14, 5], [12, 5],
-    [8, 4],  [4, 4], [3, 3],
+    [18, 6], [17, 6],
+    [15, 5], [13, 5],
+    [9, 4],  [5, 4], [3, 3],
     [3, 1],  [2,1], [1,1], [1,0]
     /*
     [49, 10], [46, 9], [43, 8],

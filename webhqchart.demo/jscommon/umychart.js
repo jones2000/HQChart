@@ -1303,6 +1303,12 @@ function JSChart(divElement, bOffscreen)
             this.JSChartContainer.AddIndexWindow(indexName,option);
     }
 
+    this.AddScriptIndexWindow=function(indexInfo, option)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.AddScriptIndexWindow)=='function')
+            this.JSChartContainer.AddScriptIndexWindow(indexInfo,option);
+    }
+
     this.RemoveIndexWindow=function(id)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.RemoveIndexWindow)=='function')
@@ -5424,16 +5430,8 @@ function JSChartContainer(uielement, OffscreenElement)
 
     }
 
-    //增加一个指标窗口
-    this.AddIndexWindow=function(indexName,option)
+    this.AddNewSubFrame=function(option)
     {
-        //查找系统指标
-        let scriptData = new JSIndexScript();
-        let indexInfo = scriptData.Get(indexName);
-        if (!indexInfo) return;
-
-        this.RemoveMinSizeWindows();    //清空隐藏的指标
-
         var index=this.Frame.SubFrame.length;
         var subFrame=this.CreateSubFrameItem(index);
         var pixelRatio=GetDevicePixelRatio();
@@ -5463,6 +5461,20 @@ function JSChartContainer(uielement, OffscreenElement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Draw();
 
+        return index;
+    }
+
+    //增加一个指标窗口
+    this.AddIndexWindow=function(indexName,option)
+    {
+        //查找系统指标
+        let scriptData = new JSIndexScript();
+        let indexInfo = scriptData.Get(indexName);
+        if (!indexInfo) return;
+
+        this.RemoveMinSizeWindows();    //清空隐藏的指标
+        var index=this.AddNewSubFrame(option);
+
         var indexData = 
         { 
             Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
@@ -5478,6 +5490,34 @@ function JSChartContainer(uielement, OffscreenElement)
             if (option.StringFormat>0) indexData.StringFormat=option.StringFormat;
             if (option.Args) indexData.Args=option.Args;
         }
+
+        this.WindowIndex[index] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args,indexData);    //脚本执行
+        if (this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer")
+            var bindData=this.SourceData;
+        else 
+            var bindData=this.ChartPaint[0].Data;
+
+        this.BindIndexData(index,bindData);     //执行脚本
+    }
+
+    //增加一个自定义指标窗口
+    this.AddScriptIndexWindow=function(indexInfo, option)
+    {
+        if (!indexInfo || !indexInfo.Script || !indexInfo.Name) return;
+
+        this.RemoveMinSizeWindows();    //清空隐藏的指标
+        var index=this.AddNewSubFrame(option);
+
+        var indexData = 
+        { 
+            Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexInfo.Name ,
+            //扩展属性 可以是空
+            KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
+            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,StringFormat:indexInfo.StringFormat,
+            OutName:indexInfo.OutName
+        };
+
+        if (indexInfo.ID) indexData.ID=indexInfo.ID;
 
         this.WindowIndex[index] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args,indexData);    //脚本执行
         if (this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer")
@@ -12822,6 +12862,25 @@ function ChartData()
         return range;
     }
 
+    this.GetDateList=function()
+    {
+        if (!this.Data || this.Data.length<=0) return null;
+        var aryDate=[];
+        var setDate=new Set();
+        for(var i=0;i<this.Data.length; ++i)
+        {
+            var item=this.Data[i];
+            if (!IFrameSplitOperator.IsNumber(item.Date)) continue;
+
+            if (setDate.has(item.Date)) continue;
+
+            setDate.add(item.Date);
+            aryDate.push(item.Date);
+        }
+
+        return aryDate;
+    }
+
     //计算分钟
     this.GetMinutePeriodData=function(period)
     {
@@ -15100,8 +15159,8 @@ var ZOOM_SEED=  //0=柱子宽度  1=间距
     [32,8],     [28,8],	
     [24,7],     [20,7], 
     [18,6],     [16,6],
-    [14,5],     [12,5],
-    [8,4], [6,4], [4,4], 
+    [15,5],     [13,5],
+    [9,4], [7,4], [5,4], 
 
     [3,3],
     [3,1], [2,1], [1,1], [1,0],
@@ -15166,13 +15225,12 @@ function ChartKLine()
         DownColor:{ BG:g_JSChartResource.OrderFlow.DownColor.BG, Border:g_JSChartResource.OrderFlow.DownColor.Border },
         UnchagneColor: { BG:g_JSChartResource.OrderFlow.UnchagneColor.BG, Border:g_JSChartResource.OrderFlow.UnchagneColor.Border },
         Text:{ Color: g_JSChartResource.OrderFlow.Text.Color , Family:g_JSChartResource.OrderFlow.Text.Family, FontMaxSize:g_JSChartResource.OrderFlow.Text.FontMaxSize, MaxValue:g_JSChartResource.OrderFlow.Text.MaxValue },
-        Line:{ UpDownColor: g_JSChartResource.OrderFlow.Line.UpDownColor, MiddleColor:g_JSChartResource.OrderFlow.Line.MiddleColor }
+        Line:{ UpDownColor: g_JSChartResource.OrderFlow.Line.UpDownColor, MiddleColor:g_JSChartResource.OrderFlow.Line.MiddleColor },
+
+        ShowType:0  //显示类型 0, 1
     }
 
-    //显示每个订单项的周期, 大周期订单太多不 不显示
-    //默认这几个周期是显示的 4=1分钟 5=5分钟 6=15分钟 7=30分钟
-    this.ShowOrdersPeriod=new Set([4,5,6,7]);
-    this.IsShowOrders=false;
+    this.IsShowOrderText=false;
     
     this.ReloadResource=function(resource)
     {
@@ -15626,6 +15684,11 @@ function ChartKLine()
     {
         if (dataWidth>=4)
         {
+            if (drawType==3)
+            {
+                if ((dataWidth%2)!=0) dataWidth-=1;
+            }
+
             this.Canvas.strokeStyle=upColor;
             if (data.High>data.Close)   //上影线
             {
@@ -15637,8 +15700,18 @@ function ChartKLine()
                 }
                 else
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(drawType==3?Math.min(yClose,yOpen):yClose));
+                    if (drawType==3)
+                    {
+                        var xFixed=left+dataWidth/2;
+                        this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(Math.min(yClose,yOpen)));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yClose));
+                    }
+                    
                 }
                 this.Canvas.stroke();
                 y=yClose;
@@ -15700,8 +15773,18 @@ function ChartKLine()
                 }
                 else
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(drawType==3?Math.max(yClose,yOpen):y));
-                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                    if (drawType==3)
+                    {
+                        var xFixed=left+dataWidth/2;
+                        this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(Math.max(yClose,yOpen)));
+                        this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(yLow));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                    }
+                    
                 }
                 this.Canvas.stroke();
             }
@@ -16153,12 +16236,12 @@ function ChartKLine()
 
     this.Draw=function()
     {
+        this.IsShowOrderText=false;
         this.TooltipRect=[];
         this.InfoTooltipRect=[];
         this.TradeIconTooltipRect=[];
         this.PtMax={X:null,Y:null,Value:null,Align:'left'}; //清空最大
         this.PtMin={X:null,Y:null,Value:null,Align:'left'}; //清空最小
-        this.IsShowOrders=false;
 
         this.ChartFrame.ChartKLine={Max:null, Min:null };   //保存K线上 显示最大最小值坐标
 
@@ -16716,13 +16799,6 @@ function ChartKLine()
         var chartright=border.RightEx;
         var xPointCount=this.ChartFrame.XPointCount;
 
-        if (dataWidth<4) 
-        {
-            this.DrawKBar();
-            return;
-        }
-
-        this.IsShowOrders=this.ShowOrdersPeriod.has(this.Period);
         if (isHScreen) 
         {
             var border=this.ChartBorder.GetHScreenBorder();
@@ -16814,7 +16890,7 @@ function ChartKLine()
         }
     }
 
-    this.DrawOrderFlowBar=function(orderFlow, kItem, xKLine, yKline, barWidth, barColor,isHScreen)
+    this.DrawOrderFlowBar=function(orderFlow, kItem, xKLine, yKline, isHScreen)
     {
         var top=Math.min(yKline.Open, yKline.Close)
         var bottom=Math.max(yKline.Open, yKline.Close);
@@ -16822,14 +16898,29 @@ function ChartKLine()
         var cellHeight=0;
         if (orderFlow && IFrameSplitOperator.IsNumber(orderFlow.PriceOffset)) cellHeight=this.GetPriceYOffset(orderFlow.PriceOffset);
         var textFont=this.GetDynamicOrderFlowFont(cellHeight, xKLine.DataWidth/2);
+        this.IsShowOrderText=(cellHeight>5 && xKLine.DataWidth>10);
 
         var kColor;
         if (kItem.Open<kItem.Close) kColor=this.OrderFlow.UpColor;
         else if (kItem.Open>kItem.Close) kColor=this.OrderFlow.DownColor;
         else kColor=this.OrderFlow.UnchagneColor;
 
-        this.Canvas.fillStyle=kColor.BG;
-        this.Canvas.fillRect(ToFixedRect(xKLine.Left),ToFixedRect(top-cellHeight/2),ToFixedRect(xKLine.DataWidth),ToFixedRect(barHeight+cellHeight));
+        var isSmallKLine=(xKLine.DataWidth<4);
+
+        if (isSmallKLine)
+        {
+            this.Canvas.strokeStyle=kColor.Border;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(ToFixedPoint(xKLine.Center),top-cellHeight/2);
+            this.Canvas.lineTo(ToFixedPoint(xKLine.Center),bottom+cellHeight/2);
+            this.Canvas.stroke();
+        }
+        else
+        {
+            this.Canvas.fillStyle=kColor.BG;
+            this.Canvas.fillRect(ToFixedRect(xKLine.Left),ToFixedRect(top-cellHeight/2),ToFixedRect(xKLine.DataWidth),ToFixedRect(barHeight+cellHeight));
+        }
+        
         
         this.Canvas.textBaseline='middle';
         this.Canvas.textAlign='center';
@@ -16856,7 +16947,7 @@ function ChartKLine()
                 var text=null;
                 if (IFrameSplitOperator.IsString(item.Ask.Text)) text=item.Ask.Text;
                 else if (IFrameSplitOperator.IsNumber(item.Ask.Value)) text=item.Ask.Value.toString();
-                if (text && this.IsShowOrders)
+                if (text && this.IsShowOrderText)
                 {
                     if (item.Ask.Color) this.Canvas.fillStyle=item.Ask.Color;
                     else this.Canvas.fillStyle=this.OrderFlow.Text.Color;
@@ -16888,7 +16979,7 @@ function ChartKLine()
                 var text=null;
                 if (IFrameSplitOperator.IsString(item.Bid.Text)) text=item.Bid.Text;
                 else if (IFrameSplitOperator.IsNumber(item.Bid.Value)) text=item.Bid.Value.toString();
-                if (text && this.IsShowOrders)
+                if (text && this.IsShowOrderText)
                 {
                     if (item.Bid.Color) this.Canvas.fillStyle=item.Bid.Color;
                     else this.Canvas.fillStyle=this.OrderFlow.Text.Color;
@@ -16929,7 +17020,7 @@ function ChartKLine()
             }
         }
 
-        if (Math.abs(yKline.Open-yKline.Close)>1)
+        if (!isSmallKLine && Math.abs(yKline.Open-yKline.Close)>1)  //K线中间竖线
         {
             this.Canvas.strokeStyle=this.OrderFlow.Line.MiddleColor;
             this.Canvas.beginPath();
@@ -16939,15 +17030,19 @@ function ChartKLine()
         }
 
         //K线边框
-        this.Canvas.beginPath();
-        this.Canvas.strokeStyle=kColor.Border;
-        this.Canvas.rect(ToFixedPoint(xKLine.Left),ToFixedPoint(top-cellHeight/2),ToFixedRect(xKLine.DataWidth),ToFixedRect(barHeight+cellHeight));
-        this.Canvas.stroke();
+        if (!isSmallKLine)
+        {
+            this.Canvas.beginPath();
+            this.Canvas.strokeStyle=kColor.Border;
+            this.Canvas.rect(ToFixedPoint(xKLine.Left),ToFixedPoint(top-cellHeight/2),ToFixedRect(xKLine.DataWidth),ToFixedRect(barHeight+cellHeight));
+            this.Canvas.stroke();
+        }
+        
 
         //var fontHeight=this.Canvas.measureText("擎").width+2;
         var textFont=this.GetDynamicOrderFlowFont(cellHeight, xKLine.DataWidth);
         //上下文字
-        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.High) && this.IsShowOrders)
+        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.High) && this.IsShowOrderText)
         {
             for(var i=0;i<orderFlow.High.length;++i)
             {
@@ -16977,7 +17072,7 @@ function ChartKLine()
             }
         }
 
-        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.Low) && this.IsShowOrders)
+        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.Low) && this.IsShowOrderText)
         {
             for(var i=0;i<orderFlow.Low.length;++i)
             {
@@ -41811,6 +41906,8 @@ function KLineChartContainer(uielement,OffscreenElement)
         frame.XSplitOperator.ChartBorder=border;
         frame.XSplitOperator.ShowText=false;
         frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
+        frame.XSplitOperator.Symbol=this.Symbol;
+        frame.XSplitOperator.Period=this.Period;
 
         //K线数据绑定
         var xPointCouont=this.Frame.SubFrame[0].Frame.XPointCount;
@@ -47097,6 +47194,7 @@ function MinuteChartContainer(uielement)
                 }
     
                 this.MouseDrag=drag;
+                this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
                 this.SelectChartDrawPicture=null;
     
                 if (this.EnableScrollUpDown==false)
@@ -47108,6 +47206,8 @@ function MinuteChartContainer(uielement)
                 this.PhoneDBClick.AddTouchStart(touches[0].clientX, touches[0].clientY, Date.now());
                 JSConsole.Chart.Log("[MinuteChartContainer::OnTouchStart] PhoneDBClick ", this.PhoneDBClick);
             }
+
+            this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchStart"}, e);
         }
     }
 
@@ -47181,6 +47281,12 @@ function MinuteChartContainer(uielement)
                     this.OnMouseMove(x,y,e);
                 }
             }
+
+            if (this.PhoneTouchInfo)
+            {
+                this.PhoneTouchInfo.End.X=touches[0].clientX;
+                this.PhoneTouchInfo.End.Y=touches[0].clientY;
+            }
         }
 
         if (this.EnableScrollUpDown==false)
@@ -47237,6 +47343,7 @@ function MinuteChartContainer(uielement)
 
         this.IsOnTouch = false;
         this.StopDragTimer();
+        this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchEnd"}, e);
         this.OnTouchFinished();
         this.TouchDrawCount=0;
     }
@@ -47627,6 +47734,7 @@ function MinuteChartContainer(uielement)
         frame.ChartBorder=border;
         frame.Identify=id;                   //窗口序号
         frame.XPointCount=243;
+        
 
         if (id>=2)
         {
@@ -47649,6 +47757,15 @@ function MinuteChartContainer(uielement)
         frame.XSplitOperator.ShowText=false;
         frame.XSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        frame.XSplitOperator.Symbol=this.Symbol;
+
+        if (this.DayCount>1)
+        {
+            frame.XSplitOperator.DayCount=this.DayData.length;
+            frame.XSplitOperator.DayData=this.DayData;
+            frame.DayCount=this.DayData.length;
+        }
+        
 
         //K线数据绑定
         var xPointCouont=this.Frame.SubFrame[0].Frame.XPointCount;
