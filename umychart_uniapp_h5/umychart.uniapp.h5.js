@@ -19849,6 +19849,7 @@ function ChartKLine()
     {
         if (dataWidth>=4)
         {
+            if ((dataWidth%2)!=0) dataWidth-=1;
             this.Canvas.strokeStyle=unchagneColor;
             this.Canvas.beginPath();
             if (data.High>data.Close)   //上影线
@@ -19860,8 +19861,9 @@ function ChartKLine()
                 }
                 else
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),y);
-                    this.Canvas.lineTo(ToFixedPoint(x),yOpen);
+                    var xFixed=ToFixedPoint(left+dataWidth/2);
+                    this.Canvas.moveTo(xFixed,y);
+                    this.Canvas.lineTo(xFixed,yOpen);
                 }
                 y=yOpen;
             }
@@ -19878,7 +19880,7 @@ function ChartKLine()
             else
             {
                 this.Canvas.moveTo(ToFixedPoint(left),ToFixedPoint(y));
-                this.Canvas.lineTo(ToFixedPoint(right),ToFixedPoint(y));
+                this.Canvas.lineTo(ToFixedPoint(left+dataWidth),ToFixedPoint(y));
             }
 
             if (data.Open>data.Low) //下影线
@@ -19890,8 +19892,9 @@ function ChartKLine()
                 }
                 else
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                    var xFixed=ToFixedPoint(left+dataWidth/2);
+                    this.Canvas.moveTo(xFixed,ToFixedPoint(y));
+                    this.Canvas.lineTo(xFixed,ToFixedPoint(yLow));
                 }
             }
 
