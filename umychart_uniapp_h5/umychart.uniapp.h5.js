@@ -5067,6 +5067,8 @@ function JSChart(divElement, bOffscreen)
 
             if (item.IsShowXLine==false) chart.Frame.IsShowXLine=item.IsShowXLine;
             if (item.IsShowYLine==false) chart.Frame.IsShowYLine=item.IsShowYLine;
+
+            if (IFrameSplitOperator.IsNumber(item.XSplitCount)) chart.Frame.XSplitOperator.SplitCount=item.XSplitCount; //X轴刻度个数 半边的
         }
 
         return chart;

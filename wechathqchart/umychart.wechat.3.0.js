@@ -970,6 +970,8 @@ function JSChart(element)
 
             if (item.IsShowXLine==false) chart.Frame.IsShowXLine=item.IsShowXLine;
             if (item.IsShowYLine==false) chart.Frame.IsShowYLine=item.IsShowYLine;
+
+            if (IFrameSplitOperator.IsNumber(item.XSplitCount)) chart.Frame.XSplitOperator.SplitCount=item.XSplitCount;
         }
 
         return chart;
