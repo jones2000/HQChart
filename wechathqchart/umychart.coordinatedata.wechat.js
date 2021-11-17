@@ -28,6 +28,8 @@ var MARKET_SUFFIX_NAME=
     SH:'.SH',
     SZ:'.SZ',
     SHSZ_C_Index:'.CI',     //自定义指数
+    BJ:".BJ",               //北交所 BeiJing stock exchange
+
     SHO:'.SHO',          //上海交易所 股票期权
     HK:'.HK',
     FHK: '.FHK',         //港股期货 
@@ -154,6 +156,13 @@ var MARKET_SUFFIX_NAME=
         return find == pos;
     },
 
+    IsBJ:function(upperSymbol)
+    {
+        var pos = upperSymbol.length - this.BJ.length;
+        var find = upperSymbol.indexOf(this.BJ);
+        return find == pos;
+    },
+
     //自定义指数
     IsSHSZCustomIndex:function(upperSymbol)
     {
@@ -276,6 +285,19 @@ var MARKET_SUFFIX_NAME=
                 if (upperSymbol.charAt(1) != '7' && upperSymbol.charAt(1) != '8') return true;
             }
         }
+
+        return false;
+    },
+
+    IsBJStock:function(symbol)  //北交所股票
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (!this.IsBJ(upperSymbol)) return false;
+
+        var value=upperSymbol.charAt(0);
+
+        if (value=='4' || value=='8') return true;
 
         return false;
     },
@@ -493,7 +515,7 @@ var MARKET_SUFFIX_NAME=
 
     IsEnableRight:function(period, symbol)    //是否支持复权
     {
-        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol)) return false;
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) || !MARKET_SUFFIX_NAME.IsBJStock(symbol)) return false;
 
         //内置日线线支持复权,其他不支持复权
         var CUSTOM_DAY_PERIOD_START = 40000, CUSTOM_DAY_PERIOD_END = 49999;
@@ -532,6 +554,12 @@ function MinuteTimeStringData()
     {
         if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
         return this.SHSZ;
+    }
+
+    this.GetBJ=function(upperSymbol)
+    {
+        if (!this.BJ) this.BJ=this.CreateBJData();
+        return this.BJ;
     }
 
     this.GetSHO = function () 
@@ -717,6 +745,7 @@ function MinuteTimeStringData()
 
         var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
         if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol) || MARKET_SUFFIX_NAME.IsSHSZIndex(upperSymbol)) return this.GetSHSZ();
+        if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) return this.GetBJ(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK();
         if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
@@ -1164,6 +1193,8 @@ function MinuteCoordinateData()
             var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
             if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol))
                 data = this.GetSHSZData(upperSymbol, width); 
+            else if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol))
+                data=this.GetBJData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol))
                 data = this.GetSHOData(upperSymbol, width);
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
@@ -1206,6 +1237,12 @@ function MinuteCoordinateData()
     this.GetSHSZData = function (upperSymbol, width) 
     {
         var result = SHZE_MINUTE_X_COORDINATE;
+        return result;
+    }
+
+    this.GetBJData=function(upperSymbol,width)
+    {
+        var result=SHZE_MINUTE_X_COORDINATE;
         return result;
     }
 

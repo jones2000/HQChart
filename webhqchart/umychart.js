@@ -6571,6 +6571,7 @@ function AverageWidthFrame()
     this.XBottomOffset=g_JSChartResource.Frame.XBottomOffset;   //X轴文字显示向下偏移
     this.YTextTopOffset=g_JSChartResource.Frame.YTopOffset;         //Y轴顶部文字向下偏移
     this.YTextPosition=[0,0],       //是坐标否强制画在内部 [0=左侧] [1=右侧] 1=OUT" , 2=INSIDE
+    this.YTextPadding=[g_JSChartResource.Frame.YTextPadding[0], g_JSChartResource.Frame.YTextPadding[1]],        //Y轴文字和边框间距 [0=左侧] [1=右侧]
     this.IsShowXLine=true;              //是否显示X轴刻度线
     this.IsShowYLine=true;
     this.YInsideOffset=0;
@@ -6731,7 +6732,7 @@ function AverageWidthFrame()
                 if (item.Font!=null) this.Canvas.font=item.Font;
 
                 this.Canvas.textAlign="right";
-                this.Canvas.fillText(item.Message[0],left-2,yText);
+                this.Canvas.fillText(item.Message[0],left-this.YTextPadding[0],yText);
             }
 
             //坐标信息 右边 间距小于10 不画坐标
@@ -6777,18 +6778,18 @@ function AverageWidthFrame()
                     }
                     else if (this.MultiTextFormat==2)   //显示2行
                     {
-                        this.Canvas.fillText(item.Message[1][0],xText+2,yText);
+                        this.Canvas.fillText(item.Message[1][0],xText+this.YTextPadding[1],yText);
                         var lineHeight=this.Canvas.measureText('M').width;
-                        if (itemHeight>lineHeight*2) this.Canvas.fillText(item.Message[1][1],xText+2,yText+lineHeight);
+                        if (itemHeight>lineHeight*2) this.Canvas.fillText(item.Message[1][1],xText+this.YTextPadding[1],yText+lineHeight);
                     }
                     else    //显示第1行
                     {
-                        this.Canvas.fillText(item.Message[1][0],xText+2,yText);
+                        this.Canvas.fillText(item.Message[1][0],xText+this.YTextPadding[1],yText);
                     }
                 }
                 else
                 {
-                    this.Canvas.fillText(item.Message[1],xText+2,yText);
+                    this.Canvas.fillText(item.Message[1],xText+this.YTextPadding[1],yText);
                 }
                 
             }
@@ -7628,6 +7629,9 @@ function AverageWidthFrame()
         }
 
         if (IFrameSplitOperator.IsNumber(width.Right)) width.Right+=rightExtendWidth;
+
+        if (IFrameSplitOperator.IsNumber(width.Left)) width.Left+=this.YTextPadding[0];
+        if (IFrameSplitOperator.IsNumber(width.Right)) width.Right+=this.YTextPadding[1];
         
         return { TextWidth:width };
     }
@@ -39459,7 +39463,8 @@ function JSChartResource()
     this.FrameTitleBGColor="rgb(246,251,253)";  //标题栏背景色
     this.Frame={ 
         XBottomOffset:1*GetDevicePixelRatio(),  //X轴文字向下偏移
-        YTopOffset:2*GetDevicePixelRatio()      //Y轴顶部文字向下偏移
+        YTopOffset:2*GetDevicePixelRatio(),      //Y轴顶部文字向下偏移
+        YTextPadding:[2,2]
     };
 
     //百分比坐标文字颜色
@@ -58150,6 +58155,7 @@ var MARKET_SUFFIX_NAME=
     SH:'.SH',
     SZ:'.SZ',
     SHSZ_C_Index:'.CI',     //自定义指数
+    BJ:".BJ",               //北交所 BeiJing stock exchange
 
     SHO:'.SHO',          //上海交易所 股票期权
     HK:'.HK',            //港股
@@ -58275,6 +58281,13 @@ var MARKET_SUFFIX_NAME=
     {
         var pos = upperSymbol.length - this.SZ.length;
         var find = upperSymbol.indexOf(this.SZ);
+        return find == pos;
+    },
+
+    IsBJ:function(upperSymbol)
+    {
+        var pos = upperSymbol.length - this.BJ.length;
+        var find = upperSymbol.indexOf(this.BJ);
         return find == pos;
     },
 
@@ -58406,6 +58419,19 @@ var MARKET_SUFFIX_NAME=
                 if (upperSymbol.charAt(1)=='0' && upperSymbol.charAt(2)=='0') return true;    //创业板 300XXX.sz
             }
         }
+
+        return false;
+    },
+
+    IsBJStock:function(symbol)  //北交所股票
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (!this.IsBJ(upperSymbol)) return false;
+
+        var value=upperSymbol.charAt(0);
+
+        if (value=='4' || value=='8') return true;
 
         return false;
     },
@@ -58668,7 +58694,7 @@ var MARKET_SUFFIX_NAME=
 
     IsEnableRight:function(period, symbol)    //是否支持复权
     {
-        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol)) return false;
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) || !MARKET_SUFFIX_NAME.IsBJStock(symbol)) return false;
         if (ChartData.IsTickPeriod(period)) return false;                    //分笔没有复权
         if (ChartData.IsMinutePeriod(period,true)) return false;             //内置分钟K线不支持复权
 
@@ -58681,6 +58707,7 @@ var MARKET_SUFFIX_NAME=
 function MinuteTimeStringData() 
 {
     this.SHSZ = null;       //上海深证交易所时间
+    this.BJ=null;
     this.SHO=null;          //上海股票期权交易时间
     this.HK = null;         //香港交易所时间
     this.Futures=new Map(); //期货交易时间 key=时间名称 Value=数据
@@ -58705,6 +58732,12 @@ function MinuteTimeStringData()
     {
         if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
         return this.SHSZ;
+    }
+
+    this.GetBJ=function(upperSymbol)
+    {
+        if (!this.BJ) this.BJ=this.CreateBJData();
+        return this.BJ;
     }
 
     this.GetSHO=function()
@@ -58761,6 +58794,18 @@ function MinuteTimeStringData()
     }
 
     this.CreateSHSZData = function () 
+    {
+        const TIME_SPLIT =
+            [
+                { Start: 925, End: 925 },
+                { Start: 930, End: 1130 },
+                { Start: 1300, End: 1500 }
+            ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateBJData=function()
     {
         const TIME_SPLIT =
             [
@@ -58898,6 +58943,7 @@ function MinuteTimeStringData()
 
         var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
         if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) return this.GetSHSZ(upperSymbol);
+        if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) return this.GetBJ(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK();
         if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
@@ -59333,6 +59379,8 @@ function MinuteCoordinateData()
             var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
             if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol) || MARKET_SUFFIX_NAME.IsSHSZIndex(upperSymbol))
                 data = this.GetSHSZData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol))
+                data=this.GetBJData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol))
                 data=this.GetSHOData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
@@ -59379,10 +59427,15 @@ function MinuteCoordinateData()
         return result;
     }
 
+    this.GetBJData=function(upperSymbol,width)
+    {
+        var result=SHZE_MINUTE_X_COORDINATE;
+        return result;
+    }
+
     this.GetUSAData=function(upperSymbol,width)
     {
         var result=USA_MINUTE_X_COORDINATE;
-
         return result;
     }
 

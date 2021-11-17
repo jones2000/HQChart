@@ -65,7 +65,8 @@ function JSChartResource()
     this.FrameTitleBGColor = "rgb(246,251,253)";      //标题栏背景色
     this.Frame = { 
         XBottomOffset: 0 ,  //X轴文字向下偏移
-        YTopOffset:2    //Y轴顶部文字向下偏移
+        YTopOffset:2,    //Y轴顶部文字向下偏移
+        YTextPadding:[2,2]
     };   
 
     this.FrameLatestPrice = 

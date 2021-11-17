@@ -3139,6 +3139,7 @@ function AverageWidthFrame()
     this.XBottomOffset = g_JSChartResource.Frame.XBottomOffset;   //X轴文字显示向下偏移
     this.YTextTopOffset=g_JSChartResource.Frame.YTopOffset;         //Y轴顶部文字向下偏移
     this.YTextPosition=[0,0],       //是坐标否强制画在内部 [0=左侧] [1=右侧] 1=OUT" , 2=INSIDE
+    this.YTextPadding=[g_JSChartResource.Frame.YTextPadding[0], g_JSChartResource.Frame.YTextPadding[1]],        //Y轴文字和边框间距 [0=左侧] [1=右侧]
     this.IsShowXLine=true;              //是否显示X轴刻度线
     this.IsShowYLine=true;
     this.YTextBaseline=0;  //0=居中 1=上部 (目前就支持内部刻度)
@@ -3331,7 +3332,7 @@ function AverageWidthFrame()
                 if (item.Font != null) this.Canvas.font = item.Font;
                 
                 this.Canvas.textAlign = "right";
-                this.Canvas.fillText(item.Message[0], left - 2, yText);
+                this.Canvas.fillText(item.Message[0], left - this.YTextPadding[0], yText);
             }
 
             //坐标信息 右边 间距小于10 不画坐标
@@ -3352,7 +3353,7 @@ function AverageWidthFrame()
                 }
 
                 this.Canvas.textAlign = "left";
-                this.Canvas.fillText(item.Message[1], xText + 2, yText);
+                this.Canvas.fillText(item.Message[1], xText + this.YTextPadding[1], yText);
             }
 
             yPrev = y;
@@ -3774,6 +3775,9 @@ function AverageWidthFrame()
             }
         }
 
+        if (IFrameSplitOperator.IsNumber(width.Left)) width.Left+=this.YTextPadding[0];
+        if (IFrameSplitOperator.IsNumber(width.Right)) width.Right+=this.YTextPadding[1];
+        
         return { TextWidth:width };
     }
 }
