@@ -21,6 +21,7 @@ import
 import 
 {
     JSCommonResource_Global_JSChartResource as g_JSChartResource,
+    JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
 import 
@@ -6126,13 +6127,15 @@ function DepthChartCorssCursor()
         this.Canvas.textBaseline="top";
         this.Canvas.textAlign="left";
         this.Canvas.fillStyle=this.Tooltip.TextColor;
-        this.Canvas.fillText("委托价",x,y);
+        var text=g_JSChartLocalization.GetText('Depth-Price',this.HQChart.LanguageID);
+        this.Canvas.fillText(text,x,y);
         y+=this.Tooltip.LineHeight;
         this.Canvas.fillText(data.Price.toFixed(floatPrecision),x,y);
         y+=this.Tooltip.LineHeight;
         y+=border.Center;
 
-        this.Canvas.fillText("累计",x,y);
+        var text=g_JSChartLocalization.GetText('Depth-Sum',this.HQChart.LanguageID);
+        this.Canvas.fillText(text,x,y);
         y+=this.Tooltip.LineHeight;
         this.Canvas.fillText(data.Vol.toFixed(4),x,y);
     }

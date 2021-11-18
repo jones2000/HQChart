@@ -925,6 +925,13 @@ function JSChart(element)
         if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
         if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
 
+        if (option.Language) 
+        {
+            if (option.Language === 'CN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+            else if (option.Language === 'EN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
+            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
+        }
+
         chart.Create(option.Listener);  
 
         if (option.Border)

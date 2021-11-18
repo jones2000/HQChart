@@ -5020,6 +5020,13 @@ function JSChart(divElement, bOffscreen)
         if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
         if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle=option.SplashTitle;
 
+        if (option.Language)
+        {
+            if (option.Language==='CN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+            else if(option.Language==='EN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
+            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
+        }
+        
         chart.Create(option.Listener);  
 
         if (option.Border)
@@ -35554,6 +35561,7 @@ function DepthChartCorssCursor()
 
     this.IsShowCorss=true;  //是否显示十字光标
     this.IsShow=true;
+    //this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;    //多语言
 
     this.GetVol=function(price, isAsk)
     {
@@ -35690,13 +35698,15 @@ function DepthChartCorssCursor()
         this.Canvas.textBaseline="top";
         this.Canvas.textAlign="left";
         this.Canvas.fillStyle=this.Tooltip.TextColor;
-        this.Canvas.fillText("委托价",x,y);
+        var text=g_JSChartLocalization.GetText('Depth-Price',this.HQChart.LanguageID);
+        this.Canvas.fillText(text,x,y);
         y+=this.Tooltip.LineHeight*pixel;
         this.Canvas.fillText(data.Price.toFixed(floatPrecision),x,y);
         y+=this.Tooltip.LineHeight*pixel;
         y+=border.Center*pixel;
 
-        this.Canvas.fillText("累计",x,y);
+        var text=g_JSChartLocalization.GetText('Depth-Sum',this.HQChart.LanguageID);
+        this.Canvas.fillText(text,x,y);
         y+=this.Tooltip.LineHeight*pixel;
         this.Canvas.fillText(data.Vol.toFixed(4),x,y);
     }
@@ -44268,7 +44278,11 @@ function JSChartLocalization()
         ['自定义秒', {CN:'秒', EN:'S', TC:'秒'}],
 
         ["MVol-Vol", {CN:"成交量", EN:"Volume", TC:'成交量'} ],
-        ["MVol-Position", {CN:"持仓量", EN:"Position", TC:'持倉量'} ]
+        ["MVol-Position", {CN:"持仓量", EN:"Position", TC:'持倉量'} ],
+
+        //深度图
+        ["Depth-Price", {CN:"委托价", EN:"Price", TC:'委托價'}],
+        ["Depth-Sum", {CN:"累计", EN:"Sum", TC:'累計'}]
 
     ]);
 

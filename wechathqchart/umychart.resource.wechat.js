@@ -606,6 +606,10 @@ function JSChartLocalization()
         ['自定义日线', {CN:'日', EN:'D', TC:'日'}],
         ['自定义秒', {CN:'秒', EN:'S', TC:'秒'}],
 
+        //深度图
+        ["Depth-Price", {CN:"委托价", EN:"Price", TC:'委托價'}],
+        ["Depth-Sum", {CN:"累计", EN:"Sum", TC:'累計'}]
+
     ]);
 
     this.GetText = function (key, language) 
