@@ -923,6 +923,7 @@ function JSChart(element)
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
         if (IFrameSplitOperator.IsPlusNumber(option.MaxVolRate)) chart.MaxVolRate=option.MaxVolRate;
         if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
+        if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
 
         chart.Create(option.Listener);  
 
@@ -12299,6 +12300,7 @@ function DepthChartContainer(uielement)
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
         this.ChartSplashPaint.Canvas = this.Canvas;
+        this.ChartSplashPaint.SplashTitle = this.LoadDataSplashTitle;
 
         //创建框架
         this.Frame=new DepthChartFrame();

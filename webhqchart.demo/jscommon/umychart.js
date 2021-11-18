@@ -1052,6 +1052,7 @@ function JSChart(divElement, bOffscreen)
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
         if (IFrameSplitOperator.IsPlusNumber(option.MaxVolRate)) chart.MaxVolRate=option.MaxVolRate;
         if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
+        if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle=option.SplashTitle;
 
         chart.Create(option.Listener);  
 
@@ -51603,6 +51604,7 @@ function DepthChartContainer(uielement)
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
         this.ChartSplashPaint.Canvas = this.Canvas;
+        this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
 
         //创建框架
         this.Frame=new DepthChartFrame();
