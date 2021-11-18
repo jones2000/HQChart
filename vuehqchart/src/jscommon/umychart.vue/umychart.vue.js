@@ -47638,6 +47638,28 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.BindAllOverlayIndexData(bindData);
     }
 
+
+    this.ClearIndexPaint=function()
+    {
+        //清空指标
+        if (this.Frame && this.Frame.SubFrame)
+        {
+            for(var i=0;i<this.Frame.SubFrame.length;++i)
+            {
+                this.DeleteIndexPaint(i);
+                var item=this.Frame.SubFrame[i];
+                if (IFrameSplitOperator.IsNonEmptyArray(item.OverlayIndex))
+                {
+                    for(var j=0; j<item.OverlayIndex.length; ++j ) //清空叠加指标
+                    {
+                        var overlayItem=item.OverlayIndex[j];
+                        overlayItem.ChartPaint=[];
+                    }
+                }
+            }
+        }
+    }
+
     //周期切换
     this.ChangePeriod=function(period,option)
     {
@@ -47718,6 +47740,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             return;
         }
 
+        this.ClearIndexPaint();
+
         if (ChartData.IsDayPeriod(this.Period,true))
         {
             this.CancelAutoUpdate();                    //先停止定时器
@@ -47766,6 +47790,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             {
                 this.CancelAutoUpdate();                    //先停止定时器
                 this.AutoUpdateEvent(false,'KLineChartContainer::ChangeRight');                //切换复权先停止更新
+                this.ClearIndexPaint();
                 this.ResetOverlaySymbolStatus();
                 this.RequestHistoryData();                  //请求日线数据
             }
@@ -47773,6 +47798,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             {
                 this.CancelAutoUpdate();                    //先停止定时器
                 this.AutoUpdateEvent(false,'KLineChartContainer::ChangeRight');                //切换复权先停止更新
+                this.ClearIndexPaint();
                 this.ResetOverlaySymbolStatus();
                 this.ReqeustHistoryMinuteData();            //请求分钟数据
             }  
@@ -49008,21 +49034,8 @@ function KLineChartContainer(uielement,OffscreenElement)
        
         if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol)) this.Right=0;    //指数没有复权
 
-        //清空指标
-        if (this.Frame && this.Frame.SubFrame)
-        {
-            for(var i=0;i<this.Frame.SubFrame.length;++i)
-            {
-                this.DeleteIndexPaint(i);
-                var item=this.Frame.SubFrame[i];
-                for(var j in item.OverlayIndex) //清空叠加指标
-                {
-                    var overlayItem=item.OverlayIndex[j];
-                    overlayItem.ChartPaint=[];
-                }
-            }
-        }
-
+        this.ClearIndexPaint(); //清空指标
+        
         if (option)
         {
             if (option.Windows && Array.isArray(option.Windows) && option.Windows.length>0)
@@ -62708,7 +62721,7 @@ var MARKET_SUFFIX_NAME=
 
     IsEnableRight:function(period, symbol)    //是否支持复权
     {
-        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) || !MARKET_SUFFIX_NAME.IsBJStock(symbol)) return false;
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol)) return false;
         if (ChartData.IsTickPeriod(period)) return false;                    //分笔没有复权
         if (ChartData.IsMinutePeriod(period,true)) return false;             //内置分钟K线不支持复权
 

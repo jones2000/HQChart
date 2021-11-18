@@ -515,7 +515,7 @@ var MARKET_SUFFIX_NAME=
 
     IsEnableRight:function(period, symbol)    //是否支持复权
     {
-        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) || !MARKET_SUFFIX_NAME.IsBJStock(symbol)) return false;
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol)) return false;
 
         //内置日线线支持复权,其他不支持复权
         var CUSTOM_DAY_PERIOD_START = 40000, CUSTOM_DAY_PERIOD_END = 49999;
