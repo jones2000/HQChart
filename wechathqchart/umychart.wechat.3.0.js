@@ -1388,6 +1388,14 @@ JSChart.GetKLineZoom = function () //K线缩放配置
     return ZOOM_SEED;
 }
 
+JSChart.SetUSATimeType=function(type)    //设置 0=标准时间 1=夏令时间 3=美国时间
+{
+    g_NYMEXTimeData.TimeType=type;
+    g_COMEXTimeData.TimeType=type;
+    g_NYBOTTimeData.TimeType=type;
+    g_CBOTTimeData.TimeType=type;
+}
+
 JSChart.GetChinaFuturesTimeData=function()  //获取国内期货交易时间配置
 {
     return g_FuturesTimeData;

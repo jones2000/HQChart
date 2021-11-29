@@ -21,6 +21,7 @@ import {
     JSCommonChartPaint_IChartPainting as IChartPainting, 
     JSCommonChartPaint_ChartSingleText as ChartSingleText, 
     JSCommonChartPaint_ChartKLine as ChartKLine,
+    JSCommonChartPaint_ChartColorKline as ChartColorKline,
     JSCommonChartPaint_ChartLine as ChartLine,
     JSCommonChartPaint_ChartSubLine as ChartSubLine,
     JSCommonChartPaint_ChartPointDot as ChartPointDot, 
@@ -413,6 +414,22 @@ function ScriptIndex(name, script, args, option)
         if (varItem.Draw.YOffset > 0) chartText.YOffset = varItem.Draw.YOffset;
         if (varItem.Draw.TextAlign) chartText.TextAlign = varItem.Draw.TextAlign;
 
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chartText.Direction=1;
+            else if (varItem.DrawVAlign==1) chartText.Direction=0;
+            else if (varItem.DrawVAlign==2) chartText.Direction=2;
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
+
+        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
         hqChart.ChartPaint.push(chartText);
     }
@@ -581,22 +598,38 @@ function ScriptIndex(name, script, args, option)
     hqChart.ChartPaint.push(line);
   }
 
-  //创建K线图
-  this.CreateKLine = function (hqChart, windowIndex, varItem, id) {
-    let chart = new ChartKLine();
-    chart.Canvas = hqChart.Canvas;
-    chart.Name = varItem.Name;
-    chart.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-    chart.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+    //创建K线图
+    this.CreateKLine = function (hqChart, windowIndex, varItem, id) 
+    {
+        let chart = new ChartKLine();
+        chart.Canvas = hqChart.Canvas;
+        chart.Name = varItem.Name;
+        chart.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
 
-    chart.Data.Data = varItem.Draw.DrawData;
-    chart.IsShowMaxMinPrice = false;
+        chart.Data.Data = varItem.Draw.DrawData;
+        chart.IsShowMaxMinPrice = false;
 
-    if (varItem.Color)  //如果设置了颜色,使用外面设置的颜色
-      chart.UnchagneColor = chart.DownColor = chart.UpColor = this.GetColor(varItem.Color);
+        if (varItem.Color)  //如果设置了颜色,使用外面设置的颜色
+        chart.UnchagneColor = chart.DownColor = chart.UpColor = this.GetColor(varItem.Color);
 
-    hqChart.ChartPaint.push(chart);
-  }
+        hqChart.ChartPaint.push(chart);
+    }
+
+    this.CreateDrawColorKLine=function(hqChart,windowIndex,varItem,i)
+    {
+        let chart=new ChartColorKline();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.DrawName="DRAWCOLORKLINE";
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+        if (IFrameSplitOperator.IsBool(varItem.Draw.IsEmptyBar)) chart.IsEmptyBar=varItem.Draw.IsEmptyBar;
+        if (varItem.Draw.Color) chart.Color=varItem.Draw.Color;
+        hqChart.ChartPaint.push(chart);
+    }
 
   this.CreateNumberText = function (hqChart, windowIndex, varItem, id) {
     let chartText = new ChartSingleText();
@@ -622,26 +655,41 @@ function ScriptIndex(name, script, args, option)
   }
 
   //创建图标
-  this.CreateIcon = function (hqChart, windowIndex, varItem, id) {
-    let chartText = new ChartSingleText();
-    chartText.Canvas = hqChart.Canvas;
-    chartText.TextAlign = 'center';
+    this.CreateIcon = function (hqChart, windowIndex, varItem, id) 
+    {
+        let chartText = new ChartSingleText();
+        chartText.Canvas = hqChart.Canvas;
+        chartText.TextAlign = 'center';
 
-    chartText.Name = varItem.Name;
-    chartText.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-    chartText.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.Name = varItem.Name;
+        chartText.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chartText.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
 
-    let titleIndex = windowIndex + 1;
-    chartText.Data.Data = varItem.Draw.DrawData;
-    chartText.Text = varItem.Draw.Icon.Symbol;
-    if (varItem.Color) chartText.Color = this.GetColor(varItem.Color);
-    else if (varItem.Draw.Icon.Color) chartText.Color = varItem.Draw.Icon.Color;
-    else chartText.Color = 'rgb(0,0,0)';
+        let titleIndex = windowIndex + 1;
+        chartText.Data.Data = varItem.Draw.DrawData;
+        chartText.Text = varItem.Draw.Icon.Symbol;
+        if (varItem.Color) chartText.Color = this.GetColor(varItem.Color);
+        else if (varItem.Draw.Icon.Color) chartText.Color = varItem.Draw.Icon.Color;
+        else chartText.Color = 'rgb(0,0,0)';
 
-    //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chartText.Direction=1;
+            else if (varItem.DrawVAlign==1) chartText.Direction=0;
+            else if (varItem.DrawVAlign==2) chartText.Direction=2;
+        }
 
-    hqChart.ChartPaint.push(chartText);
-  }
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
+
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+
+        hqChart.ChartPaint.push(chartText);
+    }
 
     this.CreateRectangle = function (hqChart, windowIndex, varItem, i) 
     {
@@ -833,7 +881,11 @@ function ScriptIndex(name, script, args, option)
                     this.CreateBand(hqChart, windowIndex, item, i);
                     break;
                 case 'DRAWKLINE':
+                case "DRAWKLINE1":
                     this.CreateKLine(hqChart, windowIndex, item, i);
+                    break;
+                case "DRAWCOLORKLINE":
+                    this.CreateDrawColorKLine(hqChart,windowIndex,item,i);
                     break;
                 case 'DRAWKLINE_IF':
                     this.CreateKLine(hqChart, windowIndex, item, i);
@@ -846,6 +898,9 @@ function ScriptIndex(name, script, args, option)
                     break;
                 case 'DRAWICON':
                     this.CreateIcon(hqChart, windowIndex, item, i);
+                    break;
+                case "ICON":
+                    this.CreateIcon(hqChart,windowIndex,item,i);
                     break;
                 case 'DRAWRECTREL':
                     this.CreateRectangle(hqChart, windowIndex, item, i);
@@ -936,6 +991,17 @@ function ScriptIndex(name, script, args, option)
     
     this.GetColor = function (colorName)    //获取颜色
     {
+        if (colorName.indexOf("RGB(")==0) return colorName.toLowerCase();
+        if (colorName.indexOf('rgb('==0)) return colorName;
+        if (colorName.indexOf("RGBA(")==0) return colorName.toLowerCase();
+        if (colorName.indexOf("rgba(")) return colorName;
+
+        var color=JSCommonComplier.JSComplier.ColorVarToRGB(colorName);
+        if (color) return color;
+
+        return 'rgb(30,144,255)';
+
+        /*
         let COLOR_MAP = new Map([
             ['COLORBLACK', 'rgb(0,0,0)'],
             ['COLORBLUE', 'rgb(18,95,216)'],
@@ -962,6 +1028,7 @@ function ScriptIndex(name, script, args, option)
         //例如：MA5：MA(CLOSE，5)，COLOR00FFFF　表示纯红色与纯绿色的混合色：COLOR808000表示淡蓝色和淡绿色的混合色。
         if (colorName.indexOf('COLOR') == 0) return '#' + colorName.substr(5);
         return 'rgb(30,144,255)';
+        */
     }
 }
 

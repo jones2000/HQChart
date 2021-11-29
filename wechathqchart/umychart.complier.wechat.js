@@ -56,7 +56,27 @@ var g_JSComplierResource=
     {
         if (g_JSComplierResource.CustomVariant.Data.has(name)) return true;
         return false;
-    }
+    },
+
+    GetDrawTextIcon:function(id)
+    {
+        //图标对应的字符代码
+        let mapIcon=new Map(
+        [
+            [1,{Symbol:'↑',Color:'rgb(238,44,44)'} ],[2,{Symbol:'↓',Color:'rgb(0,139,69)'} ],
+            [3,{Symbol:'😧'} ],[4,{Symbol:'😨'} ],[5,{Symbol:'😁'} ],[6,{Symbol:'😱'} ],
+            [7,{Symbol:'B',Color:'rgb(238,44,44)'} ],[8,{Symbol:'S',Color:'rgb(0,139,69)'} ],
+            [9,{Symbol:'💰'} ],[10,{Symbol:'📪'} ],[11,{Symbol:'👆'} ],[12,{Symbol:'👇'} ],
+            [13,{Symbol:'B',Color:'rgb(178,34,34)'}, ],[14,{Symbol:'S',Color:'rgb(0,139,69)'} ],
+            [36,{Symbol:'Χ',Color:'rgb(238,44,44)'} ],[37,{Symbol:'X',Color:'rgb(0,139,69)'} ],
+            [38,{Symbol:'▲',Color:'rgb(238,44,44)'} ],[39,{Symbol:'▼',Color:'rgb(0,139,69)'} ],
+            [40,{Symbol:'◉',Color:'rgb(238,44,44)'}], [41,{Symbol:'◈',Color:'rgb(238,44,44)'}],
+            [42,{Symbol:'📌'}], [43,{Symbol:'💎'}], [44,{Symbol:'🥇'}],[45,{Symbol:'🥈'}],[46,{Symbol:'🥉'}],[47,{Symbol:'🏅'}]
+        ]);
+
+        var icon=mapIcon.get(id);
+        return icon;
+    },
 }
 
 var Messages = {
@@ -3182,6 +3202,29 @@ function JSAlgorithm(errorHandler, symbolData)
     }
 
     /*
+    HV(X,N)：求X在N个周期内（不包含当前k线）的最高值。
+
+    注：
+    1、若N为0则从第一个有效值开始算起(不包含当前K线)；
+    2、当N为有效值，但当前的k线数不足N根，按照实际的根数计算，第一根k线返回空值；
+    3、N为空值时，返回空值。
+    4、N可以是变量。
+
+    例1：
+    HH:HV(H,10);//求前10根k线的最高点。
+    例2：
+    N:=BARSLAST(DATE<>REF(DATE,1))+1;
+    ZH:VALUEWHEN(DATE<>REF(DATE,1),HV(H,N));//在分钟周期上，求昨天最高价。
+    例3：
+    HV(H,5) 和 REF(HHV(H,5),1) 的结果是一样的，用HV编写更加方便。
+    */
+   this.HV=function(data,n)
+   {
+       var result=this.HHV(data,n);
+       return this.REF(result,1);
+   }
+
+    /*
     LLV 最低值
     求最低值。
     用法：　LLV(X，N)　求N周期内X最低值，N=0则从第一个有效值开始。
@@ -3253,6 +3296,29 @@ function JSAlgorithm(errorHandler, symbolData)
         }
 
         return result;
+    }
+
+    /*
+    LV(X,N) 求X在N个周期内的最小值（不包含当前k线）
+
+    注：
+    1、若N为0则从第一个有效值开始算起;
+    2、当N为有效值，但当前的k线数不足N根，按照实际的根数计算;
+    3、N为空值时，返回空值。
+    4、N可以是变量。
+
+    例1：
+    LL:LV(L,10);//求前面10根k线的最低点。（不包含当前k线）
+    例2：
+    N:=BARSLAST(DATE<>REF(DATE,1))+1;//分钟周期，日内k线根数
+    ZL:VALUEWHEN(DATE<>REF(DATE,1),LV(L,N));//在分钟周期上，求昨天最低价。
+    例3：
+    LV(L,5) 和 REF(LLV(L,5),1) 的结果是一样的，用LV编写更加方便。
+    */
+    this.LV=function(data,n)
+    {
+        var result=this.LLV(data,n);
+        return this.REF(result,1);
     }
 
     this.STD=function(data,n)
@@ -3376,6 +3442,21 @@ function JSAlgorithm(errorHandler, symbolData)
 
         return result;
     }
+
+    /*
+    CROSSDOWN(A,B)：表示当A从上方向下穿B，成立返回1(Yes)，否则返回0(No)
+
+    注：1、CROSSDOWN(A,B)等同于CROSS(B,A)，CROSSDOWN(A,B)编写更利于理解
+
+    例1：
+    MA5:=MA(C,5);
+    MA10:=MA(C,10);
+    CROSSDOWN(MA5,MA10)//MA5下穿MA10
+    */
+   this.CROSSDOWN=function(data,data2)
+   {
+       return this.CROSS(data2,data);
+   }
 
     //累乘
     this.MULAR=function(data,n)
@@ -3815,23 +3896,49 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+    过滤连续出现的信号.
+    用法:TFILTER(买入条件,卖出条件,N);过滤掉买入(卖出)信号发出后,下一个反向信号发出前的所有买入(卖出)信号.
+
+    N=1表示仅对买入信号过滤;
+    N=2表示仅对卖出信号过滤;
+    N=0表示对买入和卖出信号都过滤,返回1,2表示买入或卖出条件成立;
+    同一K线上只能有一个信号;
+
+    例如:
+    ENTERLONG:TFILTER(买入,卖出,1);
+    EXITLONG:TFILTER(买入,卖出,2);
+
+    TFILTER(D,K,1) 等价于 D AND COUNT(D, BARSLAST(K)) == 1
+    TFILTER(D,K,2) 等价于 K AND COUNT(K, BARSLAST(D)) == 1
+    TFILTER(D,K,0) 需要做个判断，如果满足  D AND COUNT(D, BARSLAST(K)) == 1 则返回1，如果满足  K AND COUNT(K, BARSLAST(D)) == 1 则返回2
+    */
     this.TFILTER=function(data,data2,n)
     {
-        n=parseInt(n);
-
-        var result=[];
-
-        let isNumber=typeof(data)=='number';
-        let isNumber2=typeof(range)=='number';
-
-        let count=Math.max(data.length, data2.length);
-        for(let i=0;i<count;++i)
+        if (!this.IsNumber(n)) return [];
+        if (n==1)
         {
-
+            return this.And(data,this.EQ(this.COUNT(data,this.BARSLAST(data2)),1));
         }
+        else if (n==2)
+        {
+            return this.And(data2,this.EQ(this.COUNT(data2,this.BARSLAST(data)),1));
+        }
+        else if (n==0)
+        {
+            var result=this.And(data2,this.EQ(this.COUNT(data2,this.BARSLAST(data)),1));
+            var value=this.And(data2,this.EQ(this.COUNT(data2,this.BARSLAST(data)),1));
+            
+            for(var i=0; i<result.length; ++i)
+            {
+                var item=value[i];
+                if (item>0) result[i]=2;
+            }
 
-
-        return result;
+            return result;
+        }
+        
+        return [];
     }
 
     /*
@@ -5955,6 +6062,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.REFX(args[0], args[1]);
             case "REFXV":
                 return this.REFXV(args[0], args[1]);
+            case "REFX1":   //文华函数
+                return this.REFX(args[0], args[1]);
             case 'ABS':
                 return this.ABS(args[0]);
             case 'MA':
@@ -5975,16 +6084,22 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.COUNT(args[0], args[1]);
             case 'LLV':
                 return this.LLV(args[0], args[1]);
+            case "LV":
+                return this.LV(args[0], args[1]);
             case 'LLVBARS':
                 return this.LLVBARS(args[0], args[1]);
             case 'HHV':
                 return this.HHV(args[0], args[1]);
+            case "HV":
+                return this.HV(args[0], args[1]);
             case 'HHVBARS':
                 return this.HHVBARS(args[0], args[1]);
             case 'MULAR':
                 return this.MULAR(args[0], args[1]);
             case 'CROSS':
                 return this.CROSS(args[0], args[1]);
+            case "CROSSDOWN":
+                return this.CROSSDOWN(args[0], args[1]);
             case 'LONGCROSS':
                 return this.LONGCROSS(args[0], args[1], args[2]);
             case 'AVEDEV':
@@ -5993,6 +6108,7 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.STD(args[0], args[1]);
             case 'IF':
             case 'IFF':
+            case "IFELSE":
                 return this.IF(args[0], args[1], args[2]);
             case 'IFN':
                 return this.IFN(args[0], args[1], args[2]);
@@ -6524,6 +6640,54 @@ function JSDraw(errorHandler, symbolData)
     }
 
     /*
+    DRAWCOLORKLINE 绘制K线
+    用法：
+    DRAWCOLORKLINE(Cond,Color,Empty);
+    满足Cond条件时，按照Color颜色绘制K线，根据Empty标志判断是空心还是实心。COLOR代表颜色，Empty非0为空心。
+
+    注：
+    不支持将该函数定义为变量，即不支持下面的写法：
+    A:DRAWCOLORKLINE(Cond,Color,Empty);
+
+    例：
+    DRAWCOLORKLINE(C>O,COLORBLUE,0);//收盘价大于开盘价，用蓝色绘制实心K线
+    */
+   this.DRAWCOLORKLINE=function(condition, color, empty)
+   {
+       let drawData=[];
+       let result={ DrawData:drawData, DrawType:'DRAWCOLORKLINE', IsEmptyBar:!(empty==0), Color:color }; 
+
+       if (Array.isArray(condition))   //数组
+       {
+           for(var i=0; i<condition.length && i<this.SymbolData.Data.Data.length; ++i)
+           {
+               drawData[i]=null;
+               var condItem=condition[i];
+               if (!condItem) continue;
+               var kItem=this.SymbolData.Data.Data[i];
+               if (!kItem) continue;
+
+               drawData[i]={Open:kItem.Open,High:kItem.High, Low:kItem.Low, Close:kItem.Close};
+           }
+       }
+       else
+       {
+           if (condition)
+           {
+               for(var i=0;i<this.SymbolData.Data.Data.length;++i) //以K线长度为数据长度
+               {
+                   drawData[i]=null;
+                   var kItem=this.SymbolData.Data.Data[i];
+                   if (!kItem) continue;
+                   drawData[i]={Open:kItem.Open,High:kItem.High, Low:kItem.Low, Close:kItem.Close };
+               }
+           }
+       }
+
+       return result;
+   }
+
+    /*
     PLOYLINE 折线段
     在图形上绘制折线段。
     用法：　PLOYLINE(COND，PRICE)，当COND条件满足时，以PRICE位置为顶点画折线连接。
@@ -6667,18 +6831,13 @@ function JSDraw(errorHandler, symbolData)
     */
     this.DRAWICON = function (condition, data, type) 
     {
-        //图标对应的字符代码
-        let mapIcon = new Map([
-            [1, { Symbol: '↑', Color: 'rgb(238,44,44)' }], [2, { Symbol: '↓', Color: 'rgb(0,139,69)' }],
-            [3, { Symbol: '😧' }], [4, { Symbol: '😨' }], [5, { Symbol: '😁' }], [6, { Symbol: '😱' }],
-            [7, { Symbol: '◼', Color: 'rgb(238,44,44)' }], [8, { Symbol: '◆', Color: 'rgb(0,139,69)' }],
-            [9, { Symbol: '💰' }], [10, { Symbol: '📪' }], [11, { Symbol: '👆' }], [12, { Symbol: '👇' }],
-            [13, { Symbol: 'B', Color: 'rgb(178,34,34)' },], [14, { Symbol: 'S', Color: 'rgb(0,139,69)' }],
-            [36, { Symbol: 'Χ', Color: 'rgb(238,44,44)' }], [37, { Symbol: 'X', Color: 'rgb(0,139,69)' }],
-            [38, { Symbol: '▲', Color: 'rgb(238,44,44)' }], [39, { Symbol: '▼', Color: 'rgb(0,139,69)' }],
-        ]);
+        if (IFrameSplitOperator.IsString(type)) //把ICO1=>1
+        {
+            var value=type.replace('ICO',"");
+            type=parseInt(value);
+        } 
 
-        let icon = mapIcon.get(type);
+        let icon =  g_JSComplierResource.GetDrawTextIcon(type);
         if (!icon) icon = { Symbol: '●', Color: 'rgb(0,139,69)'};
         let drawData = [];
         let result = { DrawData: drawData, DrawType: 'DRAWICON', Icon: icon };
@@ -6722,6 +6881,50 @@ function JSDraw(errorHandler, symbolData)
 
         return result;
     }
+
+     /*
+    ICON：在k线图上，显示小图标。
+
+    用法：ICON(TYPE,ICON);
+    当TYPE为1，则在K线最高价位置显示图标ICON，当TYPE为0，则在最低价位置显示
+    图标ICON。
+
+    注：
+    1、该函数与判断条件连用，如：COND,ICON(TYPE,ICON);
+    2、该函数支持在函数后设置垂直对齐方式：VALIGN0（上对齐）、VALIGN1（中对齐）、VALIGN2（下对齐）
+    即可以写为如下格式：
+    CLOSE<OPEN,ICON(1,'阴'),VALIGN0;
+
+    例1：
+    CLOSE>OPEN,ICON(1,'ICO1');//表示K线收盘大于开盘时，在最高价上显示图标1。
+    写完“ICON(1,” 以后，点击插入图标按钮，再单击选中的图标插入到函数中，图标用
+    'ICO1'~'ICO105'表示
+    */
+   this.ICON=function(position, type)
+   {
+       if (IFrameSplitOperator.IsString(type)) //把ICO1=>1
+       {
+           var value=type.replace('ICO',"");
+           type=parseInt(value);
+       } 
+
+       var icon=g_JSComplierResource.GetDrawTextIcon(type);
+       if (!icon) icon={ Symbol: '●', Color: 'rgb(0,139,69)'};
+
+       let drawData=[];
+       let result={DrawData:drawData, DrawType:'ICON',Icon:icon};
+
+       for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+       {
+           var kItem=this.SymbolData.Data.Data[i];
+           if (!kItem) continue;
+
+           if (position==0) drawData[i]=kItem.Low;
+           else if (position==1) drawData[i]=kItem.High;
+       }
+
+       return result;
+   }
 
     // 相对位置上画矩形.
     //用法: DRAWRECTREL(LEFT,TOP,RIGHT,BOTTOM,COLOR),以图形窗口(LEFT,TOP)为左上角,(RIGHT,BOTTOM)为右下角绘制矩形,坐标单位是窗口沿水平和垂直方向的1/1000,取值范围是0—999,超出范围则可能显示在图形窗口外,矩形中间填充颜色COLOR,COLOR为0表示不填充.
@@ -6868,7 +7071,12 @@ JSDraw.prototype.IsInteger=function(x)
 
 JSDraw.prototype.IsDrawFunction=function(name)
 {
-    let setFunctionName = new Set(["STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT', "DRAWTEXT_FIX", 'DRAWLINE', 'DRAWBAND', 'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWICON','DRAWRECTREL', "DRAWGBK", "DRAWGBK2"]);
+    let setFunctionName = new Set(
+    [
+        "STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT', "DRAWTEXT_FIX", 'DRAWLINE', 'DRAWBAND', "DRAWKLINE1","DRAWCOLORKLINE",
+        'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWICON',"ICON",
+        'DRAWRECTREL', "DRAWGBK", "DRAWGBK2"
+    ]);
     if (setFunctionName.has(name)) return true;
 
     return false;
@@ -7468,6 +7676,22 @@ function JSSymbolData(ast,option,jsExecute)
         let result=[];
         for(let i=lCount-1;i>=0;--i)
             result.push(i);
+
+        return result;
+    }
+
+    //BARPOS 返回从第一根K线开始到当前的周期数。
+    //注：
+    //1、BARPOS返回本地已有的K线根数，从本机上存在的数据开始算起。
+    //2、本机已有的第一根K线上返回值为1。
+    this.GetBarPos=function()
+    {
+        let result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        let lCount=this.Data.Data.length;
+        for(let i=0;i<lCount;++i)
+            result.push(i+1);   
 
         return result;
     }
@@ -9241,6 +9465,8 @@ function JSExecute(ast,option)
 
         ['CURRBARSCOUNT', null], //到最后交易日的周期数
         ['ISLASTBAR', null],     //判断是否为最后一个周期
+
+        ["BARPOS", null],   //返回从第一根K线开始到当前的周期数
         
         ["TOTALCAPITAL",null],  //总股本
         ['CAPITAL', null],   //流通股本（手）
@@ -9267,7 +9493,8 @@ function JSExecute(ast,option)
         ["HYSYL",null],         //指数市盈率或个股所属行业的市盈率
         ["HYSJL",null],         //指数市净率或个股所属行业的市净率
 
-        ['DRAWNULL', null]   
+        ['DRAWNULL', null],
+        ["NULL",null], 
     ]);   
 
     this.SymbolData=new JSSymbolData(this.AST,option,this);
@@ -9395,6 +9622,8 @@ function JSExecute(ast,option)
 
             case 'CURRBARSCOUNT':
                 return this.SymbolData.GetCurrBarsCount();
+            case "BARPOS":
+                return this.SymbolData.GetBarPos();
             case 'ISLASTBAR':
                 return this.SymbolData.GetIsLastBar();
             case "TOTALCAPITAL":
@@ -9441,6 +9670,7 @@ function JSExecute(ast,option)
                 return this.SymbolData.PERIOD();
 
             case 'DRAWNULL':
+            case "NULL":
                 return this.SymbolData.GetDrawNull();
         }
     }
@@ -9469,6 +9699,12 @@ function JSExecute(ast,option)
         if (g_JSComplierResource.IsCustomVariant(name)) return this.ReadCustomVariant(name,node); //读取自定义变量
 
         if (this.VarTable.has(name)) return this.VarTable.get(name);
+
+        if (name.indexOf("COLOR")==0)
+        {
+            var colorValue=JSComplier.ColorVarToRGB(name);
+            if (colorValue) return colorValue;
+        }
 
         this.ThrowUnexpectedNode(node, '变量'+name+'不存在');
         return null;
@@ -9622,18 +9858,25 @@ function JSExecute(ast,option)
                     //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
                     //DRAWNUMBER(CLOSE>OPEN,HIGH,CLOSE),DRAWABOVE;
                     var isDrawAbove=false;  
-                    for(let j in item.Expression.Expression)
+                    //VALIGN0,VALIGN1,VALIGN2 设置文字垂直对齐方式（上中下）
+                    //ALIGN0,ALIGN1,ALIGN2 设置文字水平对齐方式（左中右）
+                    var drawAlign=-1, drawVAlign=-1;
+                    var fontSize=-1;
+                    for(let j=0 ; j<item.Expression.Expression.length; ++j)
                     {
                         let itemExpression=item.Expression.Expression[j];
                         if (itemExpression.Type==Syntax.AssignmentExpression && itemExpression.Operator==':' && itemExpression.Left)
                         {
-                            varName = itemExpression.Left.Name;
-                            let varValue = this.VarTable.get(varName);
-                            if (!Array.isArray(varValue)) 
+                            if (j==0)
                             {
-                                varValue = this.SingleDataToArrayData(varValue);
-                                this.VarTable.set(varName, varValue);            //把常量放到变量表里
-                            } 
+                                varName = itemExpression.Left.Name;
+                                let varValue = this.VarTable.get(varName);
+                                if (!Array.isArray(varValue)) 
+                                {
+                                    varValue = this.SingleDataToArrayData(varValue);
+                                    this.VarTable.set(varName, varValue);            //把常量放到变量表里
+                                } 
+                            }
                         }
                         else if (itemExpression.Type==Syntax.Identifier)
                         {
@@ -9648,47 +9891,100 @@ function JSExecute(ast,option)
                             else if (value==="DRAWABOVE") isDrawAbove=true;
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
+
+                            else if (value=="ALIGN0") drawAlign=0;
+                            else if (value=="ALIGN1") drawAlign=1;
+                            else if (value=="ALIGN2") drawAlign=2;
+                           
+                            else if (value=="VALIGN0") drawVAlign=0;
+                            else if (value=="VALIGN1") drawVAlign=1;
+                            else if (value=="VALIGN2") drawVAlign=2;
+
                             else if (value.indexOf('NODRAW') == 0) isShow = false;
                             else if (value.indexOf('EXDATA') == 0) isExData = true; //扩展数据, 不显示再图形里面
                             else if (value.indexOf('LINEOVERLAY') == 0) isOverlayLine = true;
                             else if (value.indexOf("NOTEXT")==0 || value.indexOf("NOTITLE")==0) isShowTitle=false; //标题不显示
+                            else if (value.indexOf("FONTSIZE")==0)
+                            {
+                                var strFontSize=value.replace("FONTSIZE","");
+                                fontSize=parseInt(strFontSize);
+                            }
                             else
                             {
-                                varName=itemExpression.Name;
-                                let varValue=this.ReadVariable(varName,itemExpression);
-                                if (!Array.isArray(varValue)) varValue=this.SingleDataToArrayData(varValue); 
-                                varName="__temp_si_"+i+"__";
-                                isNoneName=true;
-                                this.VarTable.set(varName,varValue);            //放到变量表里
+                                if (j==0)
+                                {
+                                    varName=itemExpression.Name;
+                                    let varValue=this.ReadVariable(varName,itemExpression);
+                                    if (!Array.isArray(varValue)) varValue=this.SingleDataToArrayData(varValue); 
+                                    varName="__temp_si_"+i+"__";
+                                    isNoneName=true;
+                                    this.VarTable.set(varName,varValue);            //放到变量表里
+                                }
                             }
                         }
                         else if (itemExpression.Type == Syntax.Literal)    //常量
                         {
-                            let aryValue = this.SingleDataToArrayData(itemExpression.Value);
-                            varName = itemExpression.Value.toString();
-                            this.VarTable.set(varName, aryValue);    //把常量放到变量表里
+                            if (j==0)
+                            {
+                                let aryValue = this.SingleDataToArrayData(itemExpression.Value);
+                                varName = itemExpression.Value.toString();
+                                this.VarTable.set(varName, aryValue);    //把常量放到变量表里
+                            }
                         }
                         else if (itemExpression.Type==Syntax.CallExpression)
                         {
-                            if (this.Draw.IsDrawFunction(itemExpression.Callee.Name))
+                            if (j==0)
                             {
-                                draw=itemExpression.Draw;
-                                draw.Name=itemExpression.Callee.Name;
+                                if (this.Draw.IsDrawFunction(itemExpression.Callee.Name))
+                                {
+                                    draw=itemExpression.Draw;
+                                    draw.Name=itemExpression.Callee.Name;
+                                }
+                                else
+                                {
+                                    let varValue=itemExpression.Out;
+                                    varName=`__temp_sc_${itemExpression.Callee.Name}_${i}__`;
+                                    isNoneName=true;
+                                    this.VarTable.set(varName,varValue);
+                                }
                             }
                             else
                             {
-                                let varValue=itemExpression.Out;
-                                varName=`__temp_sc_${itemExpression.Callee.Name}_${i}__`;
-                                isNoneName=true;
-                                this.VarTable.set(varName,varValue);
+                                if (itemExpression.Callee.Name=="RGB" || itemExpression.Callee.Name=="RGBA")
+                                {
+                                    color=itemExpression.Out;
+                                }
+                                else if (itemExpression.Callee.Name=="SOUND")
+                                {
+                                    var event=this.GetSoundEvent();
+                                    if (event)
+                                    {
+
+                                    }
+                                    varName=null;
+                                }
+                                else if (itemExpression.Callee.Name=="ICON")
+                                {
+                                    let drawCond=this.VarTable.get(varName);
+                                    if (drawCond)
+                                    {
+                                        draw=this.GetOutIconData(drawCond,itemExpression.Draw);
+                                        if (draw) draw.Name=itemExpression.Callee.Name;
+                                    }
+
+                                    varName=null;
+                                }
                             }
                         }
                         else if (itemExpression.Type==Syntax.BinaryExpression)
                         {
-                            varName="__temp_sb_"+i+"__";
-                            let aryValue=itemExpression.Out;
-                            isNoneName=true;
-                            this.VarTable.set(varName,aryValue);
+                            if (j==0)
+                            {
+                                varName="__temp_sb_"+i+"__";
+                                let aryValue=itemExpression.Out;
+                                isNoneName=true;
+                                this.VarTable.set(varName,aryValue);
+                            }
                         }
                     }
 
@@ -9752,12 +10048,15 @@ function JSExecute(ast,option)
                         if (isShowTitle==false) value.IsShowTitle=false;
                         this.OutVarTable.push(value);
                     }
-                    else if (draw)
+                    else if (draw)  //绘图函数
                     {
                         var outVar = { Name: draw.Name, Draw: draw, Type: 1 };
                         if (color) outVar.Color = color;
                         if (lineWidth) outVar.LineWidth = lineWidth;
                         if (isDrawAbove) outVar.IsDrawAbove=true;
+                        if (drawAlign>=0) outVar.DrawAlign=drawAlign;
+                        if (drawVAlign>=0) outVar.DrawVAlign=drawVAlign;
+                        if (fontSize>0) outVar.DrawFontSize=fontSize;
                         this.OutVarTable.push(outVar);
                     }
                     else if (varName) 
@@ -9780,6 +10079,30 @@ function JSExecute(ast,option)
         JSConsole.Complier.Log('[JSExecute::Run]', this.VarTable);
 
         return this.OutVarTable;
+    }
+
+    this.GetOutIconData=function(cond, iconDraw)
+    {
+        if (Array.isArray(cond))
+        {
+            for(var i=0; i<cond.length && i<iconDraw.DrawData.length; ++i)
+            {
+                var item=cond[i];
+                if (item<=0) iconDraw.DrawData[i]=null;
+            }
+
+            return iconDraw;
+        }
+
+        if (cond) return iconDraw;
+
+        return null;
+    }
+
+    this.GetSoundEvent=function()
+    {
+        if (!this.GetEventCallback) return null;
+        return this.GetEventCallback(JSCHART_EVENT_ID.ON_PLAY_SOUND);
     }
 
     this.Run=function()
@@ -9894,6 +10217,10 @@ function JSExecute(ast,option)
                 node.Draw = this.Draw.DRAWICON(args[0], args[1], args[2]);
                 node.Out = [];
                 break;
+            case "ICON":
+                node.Draw=this.Draw.ICON(args[0],args[1]);
+                node.Out=[];
+                break;
             case 'DRAWLINE':
                 node.Draw=this.Draw.DRAWLINE(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=node.Draw.DrawData;
@@ -9903,12 +10230,17 @@ function JSExecute(ast,option)
                 node.Out=[];
                 break;
             case 'DRAWKLINE':
+            case "DRAWKLINE1":
                 node.Draw = this.Draw.DRAWKLINE(args[0], args[1], args[2], args[3]);
                 node.Out = [];
                 break;
             case 'DRAWKLINE_IF':
                 node.Draw = this.Draw.DRAWKLINE_IF(args[0], args[1], args[2], args[3], args[4]);
                 node.Out = [];
+                break;
+            case "DRAWCOLORKLINE":
+                node.Draw=this.Draw.DRAWCOLORKLINE(args[0],args[1],args[2]);
+                node.Out=[];
                 break;
             case 'PLOYLINE':
             case 'POLYLINE':
@@ -10189,6 +10521,49 @@ JSComplier.Parse=function(code)
     let program=parser.ParseScript();
     let ast=program;
     return ast;
+}
+
+//颜色转rgb
+JSComplier.ColorVarToRGB=function(colorName)
+{
+    let COLOR_MAP=new Map(
+    [
+        ['COLORBLACK','rgb(0,0,0)'],
+        ['COLORBLUE','rgb(18,95,216)'],
+        ['COLORGREEN','rgb(25,158,0)'],
+        ['COLORCYAN','rgb(0,255,198)'],
+        ['COLORRED','rgb(238,21,21)'],
+        ['COLORMAGENTA','rgb(255,0,222)'],
+        ['COLORBROWN','rgb(149,94,15)'],
+        ['COLORLIGRAY','rgb(218,218,218)'],      //画淡灰色
+        ['COLORGRAY','rgb(133,133,133)'],        //画深灰色
+        ['COLORLIBLUE','rgb(94,204,255)'],       //淡蓝色
+        ['COLORLIGREEN','rgb(183,255,190)'],      //淡绿色
+        ['COLORLICYAN','rgb(154,255,242)'],      //淡青色
+        ['COLORLIRED','rgb(255,172,172)'],       //淡红色
+        ['COLORLIMAGENTA','rgb(255,145,241)'],   //淡洋红色
+        ['COLORWHITE','rgb(255,255,255)'],       //白色
+        ['COLORYELLOW','rgb(255,198,0)']
+    ]);
+
+    if (COLOR_MAP.has(colorName)) return COLOR_MAP.get(colorName);
+
+    //COLOR 自定义色
+    //格式为COLOR+“BBGGRR”：BB、GG、RR表示蓝色、绿色和红色的分量，每种颜色的取值范围是00-FF，采用了16进制。
+    //例如：MA5:MA(CLOSE,5)，COLOR00FFFF表示纯红色与纯绿色的混合色：COLOR808000表示淡蓝色和淡绿色的混合色。
+    if (colorName.indexOf('COLOR')!=0) return null;
+
+    var strColor=colorName.substr(5);
+    if (strColor.length!=6) return null;
+
+    var value=strColor.substr(0,2);
+    var b=parseInt(value,16);
+    value=strColor.substr(2,2);
+    var g=parseInt(value,16);
+    value=strColor.substr(4,2);
+    var r=parseInt(value,16);
+    
+    return `rgb(${r},${g},${b})`;
 }
 
 /*

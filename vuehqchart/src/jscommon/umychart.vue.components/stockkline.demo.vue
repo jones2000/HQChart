@@ -181,6 +181,8 @@ DefaultData.GetKLineOption=function()
             DataWidth:10,
         },
 
+        IsDrawPictureXY:true,
+
         KLineTitle: //标题设置
         {
             
