@@ -4580,7 +4580,9 @@ function JSChartContainer(uielement, OffscreenElement)
                 var frameItem=mapFrame.get(overlayFrame.MainFrame.Identify);
                 if (!frameItem) continue;
                 frameItem.OverlayFrame.push(overlayFrame);
-                for(var k in overlayItem.ChartPaint)
+                if (overlayFrame.IsCalculateYMaxMin===false) continue;  //叠加坐标Y轴不调整
+
+                for(var k=0; k<overlayItem.ChartPaint.length; ++k)
                 {
                     var paint=overlayItem.ChartPaint[k];
                     var range=paint.GetMaxMin();
@@ -9150,6 +9152,7 @@ function OverlayMinuteFrame()
     this.ClassName="OverlayMinuteFrame";
     this.IsShow=true;               //坐标是否显示
     this.IsShareY=false;            //使用和主框架公用Y轴
+    this.IsCalculateYMaxMin=true;   //是否计算Y最大最小值
 
     this.Draw=function()
     {
@@ -10237,6 +10240,7 @@ function OverlayKLineFrame()
 
     this.MainFrame=null;    //主框架
     this.IsShareY=false;    //使用和主框架公用Y轴
+    this.IsCalculateYMaxMin=true;   //是否计算Y最大最小值
     this.RightOffset=50;
     this.PenBorder=g_JSChartResource.OverlayFrame.BolderPen; //'rgb(0,0,0)'
     this.IsShow=true;   //坐标是否显示
@@ -10893,6 +10897,7 @@ function OverlayKLineHScreenFrame()
     this.ClassName='OverlayKLineHScreenFrame';
     this.MainFrame=null;    //主框架
     this.IsShareY=false;    //使用和主框架公用Y轴
+    this.IsCalculateYMaxMin=true;   //是否计算Y最大最小值
     this.RightOffset=50;
     this.PenBorder=g_JSChartResource.OverlayFrame.BolderPen; //'rgb(0,0,0)'
     this.IsShow=true;   //坐标是否显示
@@ -23938,7 +23943,7 @@ function ChartMultiLine()
             var drawPoints={ Point:[], Color:line.Color };
             var drawArrowPoints={ Start:[], End:[] };
             if (line.BGColor) drawPoints.BGColor=line.BGColor;
-            for(var j in line.Point)
+            for(var j=0; j<line.Point.length; ++j)
             {
                 var point=line.Point[j];
                 if (!IFrameSplitOperator.IsNumber(point.Index)) continue;
@@ -23947,7 +23952,7 @@ function ChartMultiLine()
                 if (index>=0 && index<xPointCount)
                 {
                     var x=this.ChartFrame.GetXFromIndex(index);
-                    var y=this.ChartFrame.GetYFromData(point.Value);
+                    var y=this.ChartFrame.GetYFromData(point.Value, false);
                     var pointItem={X:x, Y:y, End:false};
                     drawPoints.Point.push(pointItem);
 
@@ -44888,6 +44893,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (obj.ShowRightText===true) frame.IsShow=true;
         else if (obj.ShowRightText===false) frame.IsShow=false;
         if (obj.IsShareY===true) frame.IsShareY=true;
+        if (IFrameSplitOperator.IsBool(obj.IsCalculateYMaxMin)) frame.IsCalculateYMaxMin=obj.IsCalculateYMaxMin;   //是否计算Y最大最小值
 
         frame.YSplitOperator=new FrameSplitY();
         frame.YSplitOperator.LanguageID=this.LanguageID;
@@ -49999,6 +50005,7 @@ function MinuteChartContainer(uielement)
         if (obj.ShowRightText===true) frame.IsShow=true;
         else if (obj.ShowRightText===false) frame.IsShow=false;
         if (obj.IsShareY===true) frame.IsShareY=true;
+        if (IFrameSplitOperator.IsBool(obj.IsCalculateYMaxMin)) frame.IsCalculateYMaxMin=obj.IsCalculateYMaxMin;   //是否计算Y最大最小值
 
         frame.YSplitOperator=new FrameSplitY();
         frame.YSplitOperator.LanguageID=this.LanguageID;
