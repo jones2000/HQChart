@@ -10921,8 +10921,9 @@ function MinuteChartContainer(uielement)
         var upperSymbol=this.Symbol.toUpperCase();
         var bFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol);
         var bSHO = MARKET_SUFFIX_NAME.IsSHO(upperSymbol);
+        var bSZO = MARKET_SUFFIX_NAME.IsSZO(upperSymbol);            //深证股票期权
 
-        if (bFutures || bSHO)
+        if (bFutures || bSHO || bSZO)
         {
             this.ChartPaint[3].Data.Data = minuteData.GetPosition();
         }
@@ -11073,6 +11074,7 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
     var isSHSZ = MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
     var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) || MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol);
     var isSHO = MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
+    var isSZO = MARKET_SUFFIX_NAME.IsSZO(upperSymbol);            //深证股票期权
 
     var preClose = data.stock[0].yclose;      //前一个数据价格
     var preAvPrice = data.stock[0].yclose;    //前一个均价
@@ -11116,7 +11118,7 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
             item.Date=jsData[8];    //日期
             item.DateTime=item.Date.toString()+" "+jsData[0].toString();
         }
-        if (isFutures || isSHO) item.Position = jsData.position;  //期货 期权有持仓
+        if (isFutures || isSHO || isSZO) item.Position = jsData.position;  //期货 期权有持仓
 
         if (i == 0)      //第1个数据 写死9：25
         {
@@ -11153,6 +11155,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
     var isSHSZ = MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
     var isFutures = MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) || MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol);
     var isSHO = MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
+    var isSZO = MARKET_SUFFIX_NAME.IsSZO(upperSymbol);            //深证股票期权
     var result = [];
     for (var i in data.data) 
     {
@@ -11201,7 +11204,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
                 item.Date=jsData[8];    //日期
                 item.DateTime=item.Date.toString()+" "+jsData[0].toString();
             }
-            if ((isFutures || isSHO) && 9 < jsData.length) item.Position = jsData[9];  //持仓
+            if ((isFutures || isSHO || isSZO) && 9 < jsData.length) item.Position = jsData[9];  //持仓
 
             if (j == 0 )      
             {

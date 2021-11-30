@@ -31,6 +31,7 @@ var MARKET_SUFFIX_NAME=
     BJ:".BJ",               //北交所 BeiJing stock exchange
 
     SHO:'.SHO',          //上海交易所 股票期权
+    SZO:".SZO",          //深证交易所 股票期权
     HK:'.HK',
     FHK: '.FHK',         //港股期货 
     SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange)
@@ -175,6 +176,13 @@ var MARKET_SUFFIX_NAME=
     {
         var pos = upperSymbol.length - this.SHO.length;
         var find = upperSymbol.indexOf(this.SHO);
+        return find == pos;
+    },
+
+    IsSZO: function(upperSymbol)
+    {
+        var pos = upperSymbol.length - this.SZO.length;
+        var find = upperSymbol.indexOf(this.SZO);
         return find == pos;
     },
 
@@ -746,7 +754,7 @@ function MinuteTimeStringData()
         var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
         if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol) || MARKET_SUFFIX_NAME.IsSHSZIndex(upperSymbol)) return this.GetSHSZ();
         if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) return this.GetBJ(upperSymbol);
-        if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) return this.GetSHO();
+        if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK();
         if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
         if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
@@ -1195,7 +1203,7 @@ function MinuteCoordinateData()
                 data = this.GetSHSZData(upperSymbol, width); 
             else if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol))
                 data=this.GetBJData(upperSymbol,width);
-            else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol))
+            else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol))
                 data = this.GetSHOData(upperSymbol, width);
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
                 data=this.GetHKData(upperSymbol,width);
@@ -3300,7 +3308,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
     if (typeof(MARKET_SUFFIX_NAME.GetCustomDecimal)=='function') return MARKET_SUFFIX_NAME.GetCustomDecimal(upperSymbol);
 
     if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision = 3;    //基金3位小数
-    else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetSHODecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetSHODecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision = g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
     else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision = MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);

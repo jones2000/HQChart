@@ -685,7 +685,8 @@ function ScriptIndex(name, script, args, option)
             else if (varItem.DrawAlign==1) chartText.TextAlign="center";
             else if (varItem.DrawAlign==2) chartText.TextAlign='right';
         }
-
+        
+        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
         hqChart.ChartPaint.push(chartText);

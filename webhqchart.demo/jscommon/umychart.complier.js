@@ -18350,6 +18350,8 @@ function ScriptIndex(name,script,args,option)
             else if (icon.Color) chartText.Color=icon.Color;
             else chartText.Color='rgb(0,0,0)';
         }
+
+        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
         
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 

@@ -24652,7 +24652,8 @@ function ChartSingleText()
             this.Color=this.IconFont.Color;
             this.Text=this.IconFont.Text;
 
-            var iconSize=this.GetDynamicIconSize(dataWidth,distanceWidth,this.IconSize.Max,this.IconSize.Min,this.IconSize.Zoom);
+            if (this.FixedFontSize>0) var iconSize=this.FixedFontSize;
+            else var iconSize=this.GetDynamicIconSize(dataWidth,distanceWidth,this.IconSize.Max,this.IconSize.Min,this.IconSize.Zoom);
             this.Canvas.font=iconSize+'px '+this.IconFont.Family;
         }
         else
@@ -54545,7 +54546,8 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
     var upperSymbol=symbol.toUpperCase();
     var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
     var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //国内期货, 纽约期货交易所
-    var isSHO=MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
+    var isSHO=MARKET_SUFFIX_NAME.IsSHO(upperSymbol);            //上海股票期权
+    var isSZO=MARKET_SUFFIX_NAME.IsSZO(upperSymbol);            //深证股票期权
     var aryMinuteData=new Array();
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var preAvPrice=data.stock[0].yclose;    //前一个均价
@@ -54569,7 +54571,7 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         item.DateTime=date.toString()+" "+jsData.time.toString();
         item.Date=date;
         item.Time=jsData.time;
-        if (isFutures || isSHO) item.Position=jsData.position;  //期货 期权有持仓
+        if (isFutures || isSHO || isSZO) item.Position=jsData.position;  //期货 期权有持仓
         if (8<jsData.length && jsData[8]>0) 
         {
             item.Date=jsData[8];    //日期
@@ -54651,6 +54653,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
     var upperSymbol=symbol.toUpperCase();
     var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
     var isSHO=MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
+    var isSZO=MARKET_SUFFIX_NAME.IsSZO(upperSymbol);            //深证股票期权
     var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //国内期货, 纽约期货交易所
     var result=[];
     for(var i in data.data)
@@ -54685,7 +54688,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
                 item.Date=jsData[8];    //日期
                 item.DateTime=item.Date.toString()+" "+jsData[0].toString();
             }
-            if ((isFutures || isSHO) && 9<jsData.length) item.Position=jsData[9];  //持仓
+            if ((isFutures || isSHO || isSZO) && 9<jsData.length) item.Position=jsData[9];  //持仓
             
             if (!item.Close)    //当前没有价格 使用上一个价格填充
             {
@@ -62825,6 +62828,7 @@ var MARKET_SUFFIX_NAME=
     BJ:".BJ",               //北交所 BeiJing stock exchange
 
     SHO:'.SHO',          //上海交易所 股票期权
+    SZO:".SZO",          //深证交易所 股票期权
     HK:'.HK',            //港股
     FHK:'.FHK',          //港股期货            
     SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange)
@@ -62973,6 +62977,13 @@ var MARKET_SUFFIX_NAME=
         return find == pos;
     },
 
+    IsSZO: function(upperSymbol)
+    {
+        var pos = upperSymbol.length - this.SZO.length;
+        var find = upperSymbol.indexOf(this.SZO);
+        return find == pos;
+    },
+
     IsHK: function (upperSymbol)
     {
         var pos = upperSymbol.length - this.HK.length;
@@ -63010,7 +63021,7 @@ var MARKET_SUFFIX_NAME=
 
     IsChinaFutures:function(upperSymbol)   //是否是国内期货 /期权
     {
-        return this.IsSHO(upperSymbol) || this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol);
+        return this.IsSHO(upperSymbol) || this.IsSZO(upperSymbol) || this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol);
     },
 
     IsFutures:function(upperSymbol) //是否是期货 包含国外的
@@ -63347,7 +63358,7 @@ var MARKET_SUFFIX_NAME=
 
     IsShowMinutePostionLine:function(upperSymbol)    //分时图 成交量图中是否显示持仓线
     {
-        if(MARKET_SUFFIX_NAME.IsFutures(upperSymbol) || MARKET_SUFFIX_NAME.IsSHO(upperSymbol))  return true;
+        if(MARKET_SUFFIX_NAME.IsFutures(upperSymbol) || MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol))  return true;
 
         return false;
     },
@@ -63611,7 +63622,7 @@ function MinuteTimeStringData()
         var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
         if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) return this.GetSHSZ(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) return this.GetBJ(upperSymbol);
-        if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) return this.GetSHO();
+        if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK();
         if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
         if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
@@ -64048,7 +64059,7 @@ function MinuteCoordinateData()
                 data = this.GetSHSZData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol))
                 data=this.GetBJData(upperSymbol,width);
-            else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol))
+            else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol))
                 data=this.GetSHOData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
                 data=this.GetHKData(upperSymbol,width);
@@ -66158,7 +66169,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
     if (typeof(MARKET_SUFFIX_NAME.GetCustomDecimal)=='function') return MARKET_SUFFIX_NAME.GetCustomDecimal(upperSymbol);
 
     if (MARKET_SUFFIX_NAME.IsSHSZFund(upperSymbol)) defaultfloatPrecision=3;    //基金3位小数
-    else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetSHODecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetSHODecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) defaultfloatPrecision=g_FuturesTimeData.GetDecimal(upperSymbol);  //期货小数位数读配置
     else if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFHKDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetFTSEDecimal(upperSymbol);
@@ -84600,6 +84611,8 @@ function ScriptIndex(name,script,args,option)
             else if (icon.Color) chartText.Color=icon.Color;
             else chartText.Color='rgb(0,0,0)';
         }
+
+        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
         
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
