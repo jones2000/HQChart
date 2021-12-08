@@ -5237,8 +5237,9 @@ function ChartStraightArea()
     }
 }
 
-// 面积图
-function ChartBand() {
+// DRAWBAND 面积图 支持横屏
+function ChartBand() 
+{
     this.newMethod = IChartPainting;   //派生
     this.newMethod();
     delete this.newMethod;
@@ -5255,7 +5256,8 @@ function ChartBand() {
             this.DrawNotSupportmessage();
             return;
         }
-  
+
+        var isHScreen=this.ChartFrame.IsHScreen;
         var dataWidth = this.ChartFrame.DataWidth;
         var distanceWidth = this.ChartFrame.DistanceWidth;
         var xPointCount = this.ChartFrame.XPointCount;
@@ -5273,8 +5275,18 @@ function ChartBand() {
             x = this.ChartFrame.GetXFromIndex(j);
             y = this.ChartFrame.GetYFromData(value.Value);
             y2 = this.ChartFrame.GetYFromData(value.Value2);
-            firstlinePoints[lIndex] = { x: x, y: y };
-            secondlinePoints[lIndex] = { x: x, y: y2 };
+
+            if (isHScreen)
+            {
+                firstlinePoints[lIndex] = { x: y, y: x };
+                secondlinePoints[lIndex] = { x: y2, y: x };
+            }
+            else
+            {
+                firstlinePoints[lIndex] = { x: x, y: y };
+                secondlinePoints[lIndex] = { x: x, y: y2 };
+            }
+            
             lIndex++;
         }
 
