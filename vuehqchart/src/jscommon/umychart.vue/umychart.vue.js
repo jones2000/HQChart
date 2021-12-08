@@ -48823,6 +48823,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         for(var i=0;i<this.WindowIndex.length;++i)
         {
             var item=this.WindowIndex[i];
+            if (!item) continue;
             if (item.IsUsePageData===true) this.BindIndexData(i,bindData);   //执行脚本
         }
     }
@@ -84035,7 +84036,7 @@ function ScriptIndex(name,script,args,option)
             if (hqChart.ChartPaint[0]) 
             {
                 var item=hqChart.ChartPaint[0];
-                option.DrawInfo={Start:item.DrawKRange.Start, End:item.DrawKRange.End };
+                if (item && item.DrawKRange) option.DrawInfo={Start:item.DrawKRange.Start, End:item.DrawKRange.End };
             }
         }
 

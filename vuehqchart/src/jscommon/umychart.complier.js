@@ -17632,7 +17632,7 @@ function ScriptIndex(name,script,args,option)
             if (hqChart.ChartPaint[0]) 
             {
                 var item=hqChart.ChartPaint[0];
-                option.DrawInfo={Start:item.DrawKRange.Start, End:item.DrawKRange.End };
+                if (item && item.DrawKRange) option.DrawInfo={Start:item.DrawKRange.Start, End:item.DrawKRange.End };
             }
         }
 

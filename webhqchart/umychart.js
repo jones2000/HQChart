@@ -44813,6 +44813,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         for(var i=0;i<this.WindowIndex.length;++i)
         {
             var item=this.WindowIndex[i];
+            if (!item) continue;
             if (item.IsUsePageData===true) this.BindIndexData(i,bindData);   //执行脚本
         }
     }
