@@ -10308,7 +10308,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.ThrowSFPeirod=new Set();       //重新获取数据
 
     this.NetworkFilter;                 //网络请求回调 function(data, callback);
-    
+    this.DrawInfo;
     
    
     //使用option初始化
@@ -10340,6 +10340,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.Arguments) this.Arguments=option.Arguments;
         if (option.KLineRange) this.KLineDateTimeRange=option.KLineRange;
         if (option.IsApiPeriod) this.IsApiPeriod=option.IsApiPeriod;
+        if (option.DrawInfo) this.DrawInfo=option.DrawInfo;
     }
 
     this.RecvError=function(request)
@@ -14632,6 +14633,68 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
+    /*
+    飞狐函数 SYSPARAM
+    SYSPARAM(1)画面上光标位置(K线序号)
+    SYSPARAM(2)主图可见K线最初位置
+    SYSPARAM(3)主图可见K线最后位置，注意：该函数仅K线图形分析且打开十字光标时有效,否则返回值不确定
+    SYSPARAM(4)主图可见K线最高价，注意：该函数仅K线图形分析且打开十字光标时有效,否则返回值不确定
+    SYSPARAM(5)主图可见K线最低价，注意：该函数仅K线图形分析且打开十字光标时有效,否则返回值不确定
+    SYSPARAM(6)画面上光标数值，注意：该函数仅K线图形分析且打开十字光标时有效,否则返回值不确定
+    */
+    this.SysParam=function(id, jsExec)
+    {
+        if (!this.DrawInfo) return [];
+
+        if (id==2)
+        {
+            jsExec.IsUsePageData=true;
+            if (IFrameSplitOperator.IsNumber(this.DrawInfo.Start)) 
+                return this.DrawInfo.Start+1;
+        }
+        else if (id==3)
+        {
+            jsExec.IsUsePageData=true;
+            if (IFrameSplitOperator.IsNumber(this.DrawInfo.End)) 
+                return this.DrawInfo.End+1;
+        }
+        else if (id==4)
+        {
+            jsExec.IsUsePageData=true;
+            if (!IFrameSplitOperator.IsNumber(this.DrawInfo.End) ||!IFrameSplitOperator.IsNumber(this.DrawInfo.Start)) return [];
+            if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return [];
+
+            var high=null;
+            for(var i=this.DrawInfo.Start; i<=this.DrawInfo.End && i<this.Data.Data.length; ++i)
+            {
+                var item=this.Data.Data[i];
+                if (!IFrameSplitOperator.IsNumber(item.High)) continue;
+                if (high==null) high=item.High;
+                else if(high<item.High) high=item.High;
+            }
+
+            return high;
+        }
+        else if (id==5)
+        {
+            jsExec.IsUsePageData=true;
+            if (!IFrameSplitOperator.IsNumber(this.DrawInfo.End) ||!IFrameSplitOperator.IsNumber(this.DrawInfo.Start)) return [];
+            if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return [];
+
+            var low=null;
+            for(var i=this.DrawInfo.Start;i<=this.DrawInfo.End && i<this.Data.Data.length;++i)
+            {
+                var item=this.Data.Data[i];
+                if (!IFrameSplitOperator.IsNumber(item.Low)) continue;
+                if (low==null) low=item.Low;
+                else if(low>item.Low) low=item.Low;
+            }
+
+            return low;
+        }
+
+        return [];
+    }
 }
 
 //是否有是有效的数字
@@ -14919,6 +14982,7 @@ function JSExecute(ast,option)
     this.Arguments=[];
     this.ErrorCallback;             //执行错误回调
     this.GetEventCallback;
+    this.IsUsePageData=false;
 
     //脚本自动变量表, 只读
     this.ConstVarTable=new Map([
@@ -15720,6 +15784,7 @@ function JSExecute(ast,option)
                 else
                 {
                     if (this.CallbackParam && this.CallbackParam.Self && this.CallbackParam.Self.ClassName==='ScriptIndexConsole') this.CallbackParam.JSExecute=this;
+                    if (this.IsUsePageData==true) this.CallbackParam.Self.IsUsePageData=true;
                     this.UpdateUICallback(data,this.CallbackParam);
                 }
             }
@@ -16027,6 +16092,9 @@ function JSExecute(ast,option)
             case 'COVER_V':
                 if (args.length==2) return this.SymbolData.GetSymbolPeriodCacheData2(JSComplierHelper.GetConvertValueName(funcName),args[0],args[1]);
                 return this.SymbolData.GetSymbolPeriodCacheData(JSComplierHelper.GetConvertValueName(funcName),args[0]);
+
+            case "SYSPARAM":
+                return this.SymbolData.SysParam(args[0], this);
 
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node, this.SymbolData);
@@ -17443,6 +17511,7 @@ function ScriptIndex(name,script,args,option)
     this.LockMinWidth=null;
     this.TitleFont=g_JSChartResource.TitleFont;     //标题字体
     this.IsShortTitle=false;                        //是否显示指标参数
+    this.IsUsePageData=false;                       //是否使用了K线界面数据                       
 
     if (option)
     {
@@ -17555,7 +17624,17 @@ function ScriptIndex(name,script,args,option)
             Condition:this.Condition,
             IsBeforeData:hqChart.IsBeforeData,
             IsApiPeriod:hqChart.IsApiPeriod,
+            DrawInfo:null
         };
+
+        if (hqChart)    //当前屏K线信息
+        {
+            if (hqChart.ChartPaint[0]) 
+            {
+                var item=hqChart.ChartPaint[0];
+                option.DrawInfo={Start:item.DrawKRange.Start, End:item.DrawKRange.End };
+            }
+        }
 
         if (hqDataType===HQ_DATA_TYPE.HISTORY_MINUTE_ID) option.TrateDate=hqChart.TradeDate;
         if (hqDataType===HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) option.DayCount=hqChart.DayCount;
@@ -19733,6 +19812,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         if (option.API.Name) this.Name=this.ID=option.API.Name;
         if (option.API.ID) this.ID=option.API.ID;
         if (option.API.Version>0) this.Version=option.API.Version;
+        if (option.API.IsUsePageData===true) this.IsUsePageData=option.API.IsUsePageData;
     }
 
     this.Super_CopyTo=this.CopyTo;  //父类方法

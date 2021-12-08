@@ -220,8 +220,16 @@ var BLACK_STYLE=
 
     DrawPicture:  //画图工具
     {
-        LineColor: "rgb(30,144,255)",
-        PointColor: "rgb(105,105,105)",
+        LineColor: 
+        [
+            "rgb(255,255,0)"
+        ],
+
+        PointColor: 
+        [
+            "rgb(228,228,228)",
+            "rgb(192,192,192)"
+        ],
     },
 
     TooltipPaint : 
