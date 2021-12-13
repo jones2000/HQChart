@@ -357,7 +357,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 14. [HQChart实战教程39 - K线图键盘事件重载](https://blog.csdn.net/jones2000/article/details/115921430)<br>
 15. [HQChart实战教程43 - K线面积图最后一个数据增加动画点](https://jones2000.blog.csdn.net/article/details/118774299)<br>
 16. [HQChart实战教程44 - 多指标窗口动态增长高度](https://jones2000.blog.csdn.net/article/details/119188383)<br>
-17. [HQChart实战教程46-十字光标右侧按钮点击增加刻度线](https://jones2000.blog.csdn.net/article/details/120563461)<br>
+17. [HQChart实战教程46 - 十字光标右侧按钮点击增加刻度线](https://jones2000.blog.csdn.net/article/details/120563461)<br>
+18. [HQChart实战教程48 - 远程指标获取当前屏K线的范围](https://jones2000.blog.csdn.net/article/details/121913369)<br>
 
 
 

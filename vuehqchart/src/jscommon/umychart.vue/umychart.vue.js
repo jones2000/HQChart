@@ -48826,6 +48826,18 @@ function KLineChartContainer(uielement,OffscreenElement)
             if (!item) continue;
             if (item.IsUsePageData===true) this.BindIndexData(i,bindData);   //执行脚本
         }
+
+        //叠加指标
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
+        {
+            var item=this.Frame.SubFrame[i];
+            for(var j=0; j<item.OverlayIndex.length; ++j)
+            {
+                var overlayItem=item.OverlayIndex[j];
+                if (overlayItem && overlayItem.Script && overlayItem.Script.IsUsePageData==true)
+                    this.BindOverlayIndexData(overlayItem,i,bindData);
+            }
+        }
     }
 
     //切换api指标
@@ -64774,7 +64786,204 @@ function FuturesTimeData()
                     { Value: 1500, Text: '15:00' },
                 ]
             }
-        }
+        },
+
+        //ID=10 21:00-1:00,9:01-10:15,10:31-11:30,13:31-15:00
+        {
+            Name:'21:01-1:00,9:01-10:15,10:31-11:30,13:31-15:00',
+            Data:
+            [   
+                { Start: 2101, End: 2359 },
+                { Start: 0, End: 100 },
+                { Start: 901, End: 1015 },
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 2101, Text: '21:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1031, Text: '10:30' },
+                    { Value: 1331, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 2101, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1031, Text: '10:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 2101, Text: '21:00' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
+
+        //ID:11 21:01-23:00,9:01-10:15,10:30-11:30,13:31-15:00
+        {
+            Name:'21:01-23:00,9:01-10:15,10:30-11:30,13:31-15:00',
+            Data:
+            [
+                { Start: 2101, End: 2300 },
+                { Start: 901, End: 1015 },
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 2101, Text: '21:00' },
+                    { Value: 2200, Text: '22:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1331, Text: '13:30' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 2101, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1331, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 2101, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
+
+        //ID=12 21:01-2:30,9:01-10:15,10:31-11:30,13:31-15:00
+        {
+            Name:'21:01-2:30,9:01-10:15,10:31-11:30,13:31-15:00',
+            Data:
+            [
+                { Start: 2101, End: 2359 },
+                { Start: 0, End: 230 },
+                { Start: 901, End: 1015 },
+                { Start: 1031, End: 1130 },
+                { Start: 1331, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 2101, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 100, Text: '1:00' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1031, Text: '10:30' },
+                    { Value: 1331, Text: '13:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 2101, Text: '21:00' },
+                    { Value: 2300, Text: '23:00' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 2101, Text: '21:00' },
+                    { Value: 901, Text: '9:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
+
+        //ID=13 9:31-11:30,13:01-15:15
+        {
+
+            Name:'9:30-11:30,13:01-15:15',
+            Data:
+            [
+                { Start: 931, End: 1130 },
+                { Start: 1301, End: 1515 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 931, Text: '9:30' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1301, Text: '13:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1515, Text: '15:15' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 931, Text: '9:30' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1301, Text: '13:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1515, Text: '15:15' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 931, Text: '9:30' },
+                    { Value: 1301, Text: '13:00' },
+                    { Value: 1515, Text: '15:15' },
+                ]
+            }
+        },
+
+         //ID=14 '9:31-11:30,13:01-15:00'
+        {
+            Name:'9:31-11:30,13:01-15:00',
+            Data:
+            [
+                { Start: 931, End: 1130 },
+                { Start: 1301, End: 1500 }
+            ],
+            Coordinate:
+            {
+                Full://完整模式
+                [
+                    { Value: 931, Text: '9:30' },
+                    { Value: 1000, Text: '10:00' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1301, Text: '13:00' },
+                    { Value: 1330, Text: '13:30' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1430, Text: '14:30' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Simple: //简洁模式
+                [
+                    { Value: 931, Text: '9:30' },
+                    { Value: 1030, Text: '10:30' },
+                    { Value: 1301, Text: '13:00' },
+                    { Value: 1400, Text: '14:00' },
+                    { Value: 1500, Text: '15:00' },
+                ],
+                Min:   //最小模式  
+                [
+                    { Value: 931, Text: '9:30' },
+                    { Value: 1301, Text: '13:00' },
+                    { Value: 1500, Text: '15:00' },
+                ]
+            }
+        },
     ];
 
     this.MAP_TWOWORDS=new Map([
