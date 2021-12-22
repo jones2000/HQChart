@@ -7121,7 +7121,7 @@ function KLineChartContainer(uielement)
 
     this.DragDownload = {
         Day: { Enable: false, IsEnd: false, Status: 0 },      //日线数据拖拽下载(暂不支持) Status: 0空闲 1 下载中
-        Minute: { Enable: false, IsEnd: false, status: 0 }    //分钟数据拖拽下载
+        Minute: { Enable: false, IsEnd: false, Status: 0 }    //分钟数据拖拽下载
     };
 
     this.KLineApiUrl = g_JSChartResource.Domain + "/API/KLine2";                        //历史K线api地址
@@ -7140,7 +7140,7 @@ function KLineChartContainer(uielement)
         this.DragDownload.Day.IsEnd=false;
         
         this.DragDownload.Minute.Status = 0;
-        this.DragDownload.Minute.isEnd=false;
+        this.DragDownload.Minute.IsEnd=false;
     }
 
     this.AddCustomKLine=function(kline, option)
@@ -9403,9 +9403,9 @@ function KLineChartContainer(uielement)
         if (!data) return false;
         if (data.DataOffset > 0) return;
 
-        if (ChartData.IsMinutePeriod(this.Period, true)) //下载分钟数据
+        if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period)) //下载分钟数据
         {
-            JSConsole.Chart.Log(`[KLineChartContainer.DragDownloadData] Minute:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
+            JSConsole.Chart.Log(`[KLineChartContainer.DragDownloadData] Minute:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}, Period=${this.Period}]`);
             if (!this.DragDownload.Minute.Enable) return;
             if (this.DragDownload.Minute.IsEnd) return; //全部下载完了
             if (this.DragDownload.Minute.Status != 0) return;
@@ -9443,8 +9443,8 @@ function KLineChartContainer(uielement)
             var obj =
             {
                 Name: 'KLineChartContainer::RequestDragMinuteData', //类名::函数
-                Explain: '拖拽1分钟K线数据下载',
-                Request: { Url: this.DragMinuteKLineApiUrl, Type: 'POST', Data: postData, Period:this.Period },
+                Explain: '拖拽分钟|秒K线数据下载',
+                Request: { Url: this.DragMinuteKLineApiUrl, Type: 'POST', Data: postData, Period:this.Period, Right:this.Right },
                 DragDownload: download,
                 Self: this,
                 PreventDefault: false

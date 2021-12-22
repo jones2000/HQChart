@@ -42095,8 +42095,9 @@ function KLineChartContainer(uielement,OffscreenElement)
     };  //分页下载 Enable:是否分页下载 Index:已下载到第几页 Finish：是否所有分页完成  
 
     this.DragDownload= { 
-        Day:{ Enable:false, IsEnd:false, Status:0 },      //日线数据拖拽下载 Status: 0空闲 1 下载中
-        Minute: { Enable:false, IsEnd:false, status:0 }   //分钟数据拖拽下载
+        Day:{ Enable:false, IsEnd:false, Status:0 },        //日线数据拖拽下载 Status: 0空闲 1 下载中
+        Minute: { Enable:false, IsEnd:false, Status:0 },    //分钟/秒数据拖拽下载
+        Tick: { Enable:false, IsEnd:false, Status:0 }       //分笔
     };
 
     //自动更新设置
@@ -42127,6 +42128,9 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         this.DragDownload.Minute.Status=0;
         this.DragDownload.Minute.IsEnd=false;
+
+        this.DragDownload.Tick.Status=0;
+        this.DragDownload.Tick.IsEnd=false;
     }
 
     this.ResetPage=function()   //重置分页下载
@@ -47005,9 +47009,9 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (!data) return false;
         if (data.DataOffset>0) return;
 
-        if (ChartData.IsMinutePeriod(this.Period,true)) //下载分钟数据
+        if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period)) //下载分钟/秒数据
         {
-            JSConsole.Chart.Log(`[KLineChartContainer.DragDownloadData] Minute:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
+            JSConsole.Chart.Log(`[KLineChartContainer.DragDownloadData] Minute:[Enable=${this.DragDownload.Minute.Enable}, IsEnd=${this.DragDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}, Period=${this.Period}]`);
             if (!this.DragDownload.Minute.Enable) return;
             if (this.DragDownload.Minute.IsEnd) return; //全部下载完了
             if (this.DragDownload.Minute.Status!=0) return;
@@ -47021,6 +47025,20 @@ function KLineChartContainer(uielement,OffscreenElement)
             if (this.DragDownload.Day.Status!=0) return;
             this.RequestDragDayData();
         }
+        else if(ChartData.IsTickPeriod(this.Period))
+        {
+            JSConsole.Chart.Log(`[KLineChartContainer.DragDownloadData] Tick:[Enable=${this.DragDownload.Tick.Enable}, IsEnd=${this.DragDownload.Tick.IsEnd}, Status=${this.DragDownload.Tick.Status}]`);
+            if (!this.DragDownload.Tick.Enable) return;
+            if (this.DragDownload.Tick.IsEnd) return; //全部下载完了
+            if (this.DragDownload.Tick.Status!=0) return;
+            this.RequestDragTickData(); 
+        }
+    }
+
+    //TODO: 
+    this.RequestDragTickData=function()
+    {
+        JSConsole.Chart.Log(`[KLineChartContainer.RequestDragTickData] not finished.`);
     }
 
     this.RequestDragMinuteData=function()
@@ -47046,8 +47064,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             var obj=
             {
                 Name:'KLineChartContainer::RequestDragMinuteData', //类名::函数
-                Explain:'拖拽1分钟K线数据下载',
-                Request:{ Url:this.DragMinuteKLineApiUrl,  Type:'POST' , Data: postData, Period:this.Period  }, 
+                Explain:'拖拽分钟|秒K线数据下载',
+                Request:{ Url:this.DragMinuteKLineApiUrl,  Type:'POST' , Data: postData, Period:this.Period, Right:this.Right  }, 
                 DragDownload:download,
                 Self:this,
                 PreventDefault:false
