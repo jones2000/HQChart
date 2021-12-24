@@ -4408,7 +4408,9 @@ function JSChart(divElement, bOffscreen)
             if (item.IsShowTitleArraw==false) chart.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
             if (item.IsShowIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowIndexName=false;
             if (item.IsShowOverlayIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowOverlayIndexName=false;
-            if (item.IndexParamSpace>=0) chart.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+            if (IFrameSplitOperator.IsNumber(item.IndexParamSpace)) chart.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+            if (IFrameSplitOperator.IsNumber(item.IndexTitleSpace)) chart.Frame.SubFrame[i].Frame.IndexTitleSpace=item.IndexTitleSpace;
+            
             if (item.OverlayIndexType)
             {
                 if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.Position)) chart.Frame.SubFrame[i].Frame.OverlayIndexType.Position=item.OverlayIndexType.Position;
@@ -4723,6 +4725,7 @@ function JSChart(divElement, bOffscreen)
             if(IFrameSplitOperator.IsBool(item.IsShowDate)) chart.TitlePaint[0].IsShowDate=item.IsShowDate;
             if(IFrameSplitOperator.IsBool(item.IsShowTime)) chart.TitlePaint[0].IsShowTime=item.IsShowTime;
             if(IFrameSplitOperator.IsBool(item.IsTitleShowLatestData)) chart.IsTitleShowLatestData=item.IsTitleShowLatestData;
+            if(IFrameSplitOperator.IsBool(item.IsAlwaysShowLastData)) chart.TitlePaint[0].IsAlwaysShowLastData=item.IsAlwaysShowLastData;
             //if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
         }
 
@@ -10311,6 +10314,7 @@ function IChartFramePainting()
     this.IsShowOverlayIndexName=true;  //是否显示叠加指标名字
     this.OverlayIndexType= { Position:0, LineSpace:5 };
     this.IndexParamSpace=2;            //指标参数数值显示间距
+    this.IndexTitleSpace=0;            //指标标题和参数值之间的间距
     this.IsShowIndexTitle=true;        //显示整个指标标题信息
     this.IsDrawTitleBottomLine=false;
 
@@ -18377,6 +18381,12 @@ function ChartData()
 
     this.MergeMinuteData=function(data) //合并数据
     {
+        if (!this.Data || this.Data.length<=0)
+        {
+            this.Data=data;
+            return true;
+        }
+
         var sourceFirstItem=this.Data[0];
         var firstItemID=0;
         var firstItem=null;
@@ -37455,6 +37465,7 @@ function DynamicMinuteTitlePainting()
     this.LastShowData;  //保存最后显示的数据 给tooltip用
     this.OnDrawEvent;
     this.PointInfo=null;
+    this.IsAlwaysShowLastData=false;    //始终显示最后一个数据
 
     this.MultiDayBeforeOpenData;    //多日分时图 盘前数据
     this.MultiDayAfterCloseData;    //多日分时图 收盘数据
@@ -37485,7 +37496,7 @@ function DynamicMinuteTitlePainting()
         return this.Data.Data[count-1];
     }
 
-    this.DrawItem=function(item)
+    this.DrawItem=function(item, isLastOne)    //isLastOne 是否是最后一个数据
     {
         var isHScreen=this.Frame.IsHScreen===true;
         var border=this.Frame.GetBorder();
@@ -37574,6 +37585,15 @@ function DynamicMinuteTitlePainting()
         {
             var text=g_JSChartLocalization.GetText('MTitle-Position',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Position,2);
             if (!this.DrawText(text,this.VolColor,position)) return;
+        }
+
+        if (isLastOne)  //显示数据最后的更新时间
+        {
+            if (this.Data && this.Data.UpdateTime && IFrameSplitOperator.IsNumber(this.Data.UpdateTime.Date) && IFrameSplitOperator.IsNumber(this.Data.UpdateTime.Time))
+            {
+                var text=g_JSChartLocalization.GetText('MTitle-UpdateTime',this.LanguageID)+IFrameSplitOperator.FormatTimeString(this.Data.UpdateTime.Time, "HH:MM:SS");
+                if (!this.DrawText(text,this.DateTimeColor,position)) return;
+            }
         }
 
         //叠加股票的名字
@@ -37830,9 +37850,11 @@ function DynamicMinuteTitlePainting()
                 isShowLastData=true;
         }
 
+        var isLastOne=false;
         if (isShowLastData)
         {
             var item=this.GetLatestKLineData();
+            isLastOne=true;
         }
         else
         {
@@ -37842,13 +37864,25 @@ function DynamicMinuteTitlePainting()
             var dataIndex=index+this.Data.DataOffset;
             if (dataIndex>=this.Data.Data.length) dataIndex=this.Data.Data.length-1;
             var item=this.Data.Data[dataIndex];
+
+            if (dataIndex==this.Data.Data.length-1) isLastOne=true;
         }
         
         this.LastShowData=item;
 
         this.Canvas.save();
         this.OnDrawEventCallback(item);
-        this.DrawItem(item);
+
+        if (this.IsAlwaysShowLastData) 
+        {
+            var lastItem=this.GetLatestKLineData();
+            this.DrawItem(lastItem, true);
+        }
+        else
+        {
+            this.DrawItem(item,isLastOne);
+        }
+        
         this.Canvas.restore();
     }
 }
@@ -37906,6 +37940,8 @@ function DynamicChartTitlePainting()
     this.BGColor=g_JSChartResource.IndexTitleBGColor;
     this.OnDrawEvent;
     this.ParamSpace=2;           //参数显示的间距
+    this.TitleSpace=2;              //指标名字和参数之间的间距
+    this.TitleColor=g_JSChartResource.IndexTitleColor;   //指标名字颜色
 
     this.IsKLineFrame=false;    //是否是K线框架标题
     
@@ -38169,6 +38205,7 @@ function DynamicChartTitlePainting()
         this.OverlayIndexType.Position=this.Frame.OverlayIndexType.Position;
         this.OverlayIndexType.LineSpace=this.Frame.OverlayIndexType.LineSpace;
         this.ParamSpace=this.Frame.IndexParamSpace;
+        this.TitleSpace=this.Frame.IndexTitleSpace;
         this.TitleRect=null;
 
         this.OnDrawTitleEvent();
@@ -38208,6 +38245,7 @@ function DynamicChartTitlePainting()
             this.Canvas.fillStyle=this.TitleColor;
             this.Canvas.fillText(this.Title,left,bottom,textWidth);
             left+=textWidth;
+            left+=this.TitleSpace;
         }
 
         var isShowLastData=this.IsShowLastData();
@@ -44137,6 +44175,7 @@ function JSChartResource()
     this.DefaultTextFont=14*GetDevicePixelRatio() +'px 微软雅黑';    //图形中默认的字体
     this.TitleFont=13*GetDevicePixelRatio() +'px 微软雅黑';          //指标显示,tooltip显示字体
     this.IndexTitleBGColor='rgb(217,219,220)';                      //指标名字背景色
+    this.IndexTitleColor="rgb(43,54,69)";                           //指标名字颜色
     this.OverlayIndexTitleBGColor='rgba(255,255,255,0.7)';
 
     this.Title={
@@ -44643,6 +44682,7 @@ function JSChartResource()
         if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;
         if (style.TitleFont) this.TitleFont = style.TitleFont;
         if (style.IndexTitleBGColor) this.IndexTitleBGColor=style.IndexTitleBGColor;
+        if (style.IndexTitleColor) this.IndexTitleColor=style.IndexTitleColor;
         if (style.OverlayIndexTitleBGColor) this.OverlayIndexTitleBGColor=style.OverlayIndexTitleBGColor;
         if (style.UpTextColor) this.UpTextColor = style.UpTextColor;
         if (style.DownTextColor) this.DownTextColor = style.DownTextColor;
@@ -44971,6 +45011,7 @@ function JSChartLocalization()
         ['MTitle-Vol', {CN:'量:', EN:'V:', TC:'量'}],
         ['MTitle-Amount', {CN:'额:', EN:'A:', TC:'額'}],
         ['MTitle-Position', {CN:'持:', EN:'P:', TC:'持'}],
+        ["MTitle-UpdateTime", {CN:"更新:", EN:"Update:", TC:"更新:"}],
 
         //周期
         ['日线', {CN:'日线', EN:'1D', TC:'日綫'}],
@@ -49202,7 +49243,9 @@ function KLineChartContainer(uielement,OffscreenElement)
                 if (item.IsShowTitleArraw==false) this.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
                 if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
                 if (item.IsShowOverlayIndexName==false) this.Frame.SubFrame[i].Frame.IsShowOverlayIndexName=false;
-                if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+                if (IFrameSplitOperator.IsNumber(item.IndexParamSpace)) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+                if (IFrameSplitOperator.IsNumber(item.IndexTitleSpace)) this.Frame.SubFrame[i].Frame.IndexTitleSpace=item.IndexTitleSpace;
+                
                 if (item.IsShowXLine==false) this.Frame.SubFrame[i].Frame.IsShowXLine=false;
                 if (item.IsShowYLine==false) this.Frame.SubFrame[i].Frame.IsShowYLine=false;
                 if (IFrameSplitOperator.IsBool(item.IsShowIndexTitle)) this.Frame.SubFrame[i].Frame.IsShowIndexTitle=item.IsShowIndexTitle;
@@ -49344,9 +49387,9 @@ function KLineChartContainer(uielement,OffscreenElement)
             else item.TitleHeight=this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
             if (item.IsShowTitleArraw==false) this.Frame.SubFrame[i].Frame.IsShowTitleArraw=false;
             if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
-            if (item.IndexParamSpace>=0) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+            if (IFrameSplitOperator.IsNumber(item.IndexParamSpace)) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
+            if (IFrameSplitOperator.IsNumber(item.IndexTitleSpace)) this.Frame.SubFrame[i].Frame.IndexTitleSpace=item.IndexTitleSpace;
             
-
             if (frameItem)
             {
                 if (frameItem.SplitCount) this.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=frameItem.SplitCount;
@@ -53126,6 +53169,7 @@ function MinuteChartContainer(uielement)
         this.ColorLineData=MinuteChartContainer.JsonDataToHistoryMinuteLineColorData(data);
         this.MultiDayBeforeOpenData=MinuteChartContainer.JosnDataToBeforeOpenDataArray(data);
         this.MultiDayAfterCloseData=MinuteChartContainer.JosnDataToAfterCloseDataArray(data);
+        var updateTime=MinuteChartContainer.JsonDataToHistoryMinuteLastUpdateTime(data);
         this.CaclutateCallCationYRange();
         this.Symbol=data.symbol;
         this.Name=data.name;
@@ -53135,7 +53179,7 @@ function MinuteChartContainer(uielement)
             MultiDay:{ Left:this.IsShowMultiDayBeforeData, Right:this.IsShowMultiDayAfterData } 
         } );
         this.CaclutateLimitPrice(this.DayData[0].YClose, data.data[0].limitprice); //计算涨停价格
-        this.UpdateHistoryMinuteUI();
+        this.UpdateHistoryMinuteUI(updateTime);
         this.RecvMinuteDataEvent();
         this.RequestOverlayHistoryMinuteData();
 
@@ -53191,13 +53235,14 @@ function MinuteChartContainer(uielement)
         }
     }
 
-    this.UpdateHistoryMinuteUI=function()
+    this.UpdateHistoryMinuteUI=function(updateTime)
     {
         var allMinuteData=this.HistoryMinuteDataToArray(this.DayData);
 
         //原始数据
         var sourceData=new ChartData();
         sourceData.Data=allMinuteData;
+        sourceData.UpdateTime=updateTime;
 
         this.SourceData=sourceData;
         this.TradeDate=this.DayData[0].Date;
@@ -53427,6 +53472,7 @@ function MinuteChartContainer(uielement)
         this.AfterCloseData=null;
         var beforeOpenData=MinuteChartContainer.JsonDataToBeforeOpenData(data);
         var afterCloseData=MinuteChartContainer.JsonDataToAfterCloseData(data);
+        var updateTime=MinuteChartContainer.JsonDataToMinuteLastUpdateTime(data);   //数据最后的更新时间
 
         if (this.IsBeforeData) this.BeforeOpenData=beforeOpenData;
         if (this.IsAfterData) this.AfterCloseData=afterCloseData;
@@ -53436,7 +53482,7 @@ function MinuteChartContainer(uielement)
             this.UpdateCallCationData(beforeOpenData,afterCloseData);
             this.UpdateLineColorData(aryColorData,data.stock[0].date);
             this.UpdateLatestMinuteData(aryMinuteData,data.stock[0].date);
-            this.UpdateHistoryMinuteUI();
+            this.UpdateHistoryMinuteUI(updateTime);
             this.RecvMinuteDataEvent();
             this.RequestOverlayMinuteData();    //请求叠加数据 (主数据下载完再下载)
             this.BindAllOverlayIndexData(this.SourceData);
@@ -53448,6 +53494,7 @@ function MinuteChartContainer(uielement)
         //原始数据
         var sourceData=new ChartData();
         sourceData.Data=aryMinuteData;
+        sourceData.UpdateTime=updateTime;
 
         this.ColorLineData=aryColorData;
 
@@ -54770,6 +54817,25 @@ MinuteChartContainer.JsonDataToMinuteLineColorData=function(data)
     }
 
     return aryLineColor;
+}
+
+//获取最后的数据更新时间
+MinuteChartContainer.JsonDataToMinuteLastUpdateTime=function(data)
+{
+    if (!data || !data.stock[0]) return null;
+    var stock=data.stock[0];
+    if (!IFrameSplitOperator.IsNumber(stock.date) || !IFrameSplitOperator.IsNumber(stock.time)) return null;
+    return { Date:stock.date, Time:stock.time };
+}
+
+MinuteChartContainer.JsonDataToHistoryMinuteLastUpdateTime=function(data)
+{
+    if (!data || !data.updatetime) return null;
+    var item=data.updatetime;
+
+    if (!IFrameSplitOperator.IsNumber(item.date) || !IFrameSplitOperator.IsNumber(item.time)) return null;
+
+    return { Date:item.date, Time:item.time };
 }
 
 //多日日线数据API 转化成array[];
@@ -88894,6 +88960,7 @@ var BLACK_STYLE=
     DefaultTextColor: "rgb(101,104,112)",
     DefaultTextFont: 14*GetDevicePixelRatio() +'px 微软雅黑',
     TitleFont: 13*GetDevicePixelRatio() +'px 微软雅黑',    //标题字体(动态标题 K线及指标的动态信息字体)
+    IndexTitleColor:"rgb(101,104,112)",                           //指标名字颜色
 
     UpTextColor: "rgb(238,21,21)",
     DownTextColor: "rgb(25,158,0)",

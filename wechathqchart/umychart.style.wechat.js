@@ -33,6 +33,7 @@ var BLACK_STYLE =    //黑色风格
     DefaultTextColor: "rgb(101,104,112)",
     DefaultTextFont: '14px 微软雅黑',
     IndexTitleBGColor:'rgb(211,211,211)',
+    IndexTitleColor:"rgb(101,104,112)",
 
     DynamicTitleFont: '12px 微软雅黑', //指标动态标题字体
 

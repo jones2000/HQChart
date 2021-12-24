@@ -34,6 +34,7 @@ function JSChartResource()
     this.DefaultTextColor = "rgb(43,54,69)";
     this.DefaultTextFont = '14px 微软雅黑';
     this.IndexTitleBGColor='rgb(217,219,220)';     //指标名字背景色
+    this.IndexTitleColor="rgb(43,54,69)";
     this.DynamicTitleFont = '12px 微软雅黑';        //指标动态标题字体
 
     this.UpTextColor = "rgb(238,21,21)";
@@ -327,6 +328,7 @@ function JSChartResource()
         if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;
         if (style.DynamicTitleFont) this.DynamicTitleFont = style.DynamicTitleFont;
         if (style.IndexTitleBGColor) this.IndexTitleBGColor=style.IndexTitleBGColor;
+        if (style.IndexTitleColor) this.IndexTitleColor=style.IndexTitleColor;
         if (style.UpTextColor) this.UpTextColor = style.UpTextColor;
         if (style.DownTextColor) this.DownTextColor = style.DownTextColor;
         if (style.UnchagneTextColor) this.UnchagneTextColor = style.UnchagneTextColor;

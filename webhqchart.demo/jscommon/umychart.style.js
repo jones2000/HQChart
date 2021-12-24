@@ -57,6 +57,7 @@ var BLACK_STYLE=
     DefaultTextColor: "rgb(101,104,112)",
     DefaultTextFont: 14*GetDevicePixelRatio() +'px 微软雅黑',
     TitleFont: 13*GetDevicePixelRatio() +'px 微软雅黑',    //标题字体(动态标题 K线及指标的动态信息字体)
+    IndexTitleColor:"rgb(101,104,112)",                           //指标名字颜色
 
     UpTextColor: "rgb(238,21,21)",
     DownTextColor: "rgb(25,158,0)",

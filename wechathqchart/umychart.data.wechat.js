@@ -1355,6 +1355,12 @@ function ChartData()
 
     this.MergeMinuteData = function (data) //合并数据
     {
+        if (!this.Data || this.Data.length<=0)
+        {
+            this.Data=data;
+            return true;
+        }
+        
         var sourceFirstItem = this.Data[0];
         var firstItemID = 0;
         var firstItem = null;

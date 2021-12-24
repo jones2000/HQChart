@@ -1013,10 +1013,12 @@ function DynamicChartTitlePainting()
 
     this.TitleRect;              //指标名字显示区域
     this.IsDrawTitleBG=false;    //是否绘制指标名字背景色
-    this.BGColor=g_JSChartResource.IndexTitleBGColor;
+    this.BGColor=g_JSChartResource.IndexTitleBGColor;   //指标名字背景颜色
+    this.TitleColor = g_JSChartResource.IndexTitleColor;   //指标名字颜色
 
     this.IsShowIndexName = true;     //是否显示指标名字
     this.ParamSpace = 2;             //参数显示的间距
+    this.TitleSpace=2;              //指标名字和参数之间的间距
     this.OutName=null;               //动态标题
     this.IsFullDraw=true;            //手势离开屏幕以后是否显示最后的价格
 
@@ -1185,6 +1187,7 @@ function DynamicChartTitlePainting()
         this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
         this.IsShowIndexName = this.Frame.IsShowIndexName;
         this.ParamSpace = this.Frame.IndexParamSpace;
+        this.TitleSpace=this.Frame.IndexTitleSpace;
 
         if (this.Frame.IsHScreen === true) 
         {
@@ -1239,6 +1242,7 @@ function DynamicChartTitlePainting()
 
         this.IsShowIndexName = this.Frame.IsShowIndexName;
         this.ParamSpace = this.Frame.IndexParamSpace;
+        this.TitleSpace=this.Frame.IndexTitleSpace;
 
         if (this.Frame.IsHScreen === true) 
         {
@@ -1327,6 +1331,7 @@ function DynamicChartTitlePainting()
                 this.Canvas.fillText(this.Title, left, bottom, textWidth);
             }
             left += textWidth;
+            left+=this.TitleSpace;
         }
 
         if (this.Text && this.Text.length > 0) 

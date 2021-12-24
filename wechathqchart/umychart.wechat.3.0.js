@@ -471,6 +471,7 @@ function JSChart(element)
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight = item.TitleHeight;
             if (item.IsShowIndexName == false) chart.Frame.SubFrame[i].Frame.IsShowIndexName = false;
             if (item.IndexParamSpace >= 0) chart.Frame.SubFrame[i].Frame.IndexParamSpace = item.IndexParamSpace;
+            if (item.IndexTitleSpace >= 0) chart.Frame.SubFrame[i].Frame.IndexTitleSpace = item.IndexTitleSpace;
         }
 
         return chart;
@@ -2649,6 +2650,7 @@ function JSChartContainer(uielement)
             if (IFrameSplitOperator.IsBool(option.IsShowIndexName)) subFrame.Frame.IsShowIndexName=option.IsShowIndexName;
             if (IFrameSplitOperator.IsBool(option.IsShowOverlayIndexName)) subFrame.Frame.IsShowOverlayIndexName=option.IsShowOverlayIndexName;
             if (IFrameSplitOperator.IsNumber(option.IndexParamSpace)) subFrame.Frame.IndexParamSpace=option.IndexParamSpace;
+            if (IFrameSplitOperator.IsNumber(option.IndexTitleSpace)) subFrame.Frame.IndexTitleSpace=option.IndexTitleSpace;
             if (IFrameSplitOperator.IsBool(option.IsShowXLine)) subFrame.Frame.IsShowXLine=option.IsShowXLine;
             if (IFrameSplitOperator.IsBool(option.IsShowYLine)) subFrame.Frame.IsShowYLine=option.IsShowYLine;
             if (IFrameSplitOperator.IsBool(option.IsShowIndexTitle)) subFrame.Frame.IsShowTitle=option.IsShowIndexTitle;
@@ -2962,6 +2964,7 @@ function IChartFramePainting()
     this.IsShowBorder = true;            //是否显示边框
     this.IsShowIndexName = true;         //是否显示指标名字
     this.IndexParamSpace = 2;            //指标参数数值显示间距
+    this.IndexTitleSpace=0;             //指标标题到参数之间的间距
 
     //上锁信息
     this.IsLocked = false;               //是否上锁
@@ -8654,7 +8657,9 @@ function KLineChartContainer(uielement)
                 }
             }
 
-            if (item.IndexParamSpace >= 0) this.Frame.SubFrame[i].Frame.IndexParamSpace = item.IndexParamSpace;
+            if (IFrameSplitOperator.IsNumber(item.IndexParamSpace)) this.Frame.SubFrame[i].Frame.IndexParamSpace = item.IndexParamSpace;
+            if (IFrameSplitOperator.IsNumber(item.IndexTitleSpace)) this.Frame.SubFrame[i].Frame.IndexTitleSpace = item.IndexTitleSpace;
+            
             if (item.IsDrawTitleBG==true)  this.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
 
             if (frameItem)
