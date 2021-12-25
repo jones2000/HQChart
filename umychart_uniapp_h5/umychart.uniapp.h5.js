@@ -46804,7 +46804,12 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (lastDataCount>0 && hisData.Data.length>lastDataCount)
         {
             newDataCount=hisData.Data.length-lastDataCount;
-            JSConsole.Chart.Log(`[KLineChartContainer::UpdateMainData]  [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}]`);
+            JSConsole.Chart.Log(`[KLineChartContainer::UpdateMainData]  [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}], [Pagesize=${xPointCount}]`);
+        }
+        else if (lastDataCount==0 && hisData.Data.length>xPointCount)   //历史数据为空,当前收到数据大于一屏的数据,显示最新数据
+        {
+            newDataCount=hisData.Data.length-xPointCount;
+            JSConsole.Chart.Log(`[KLineChartContainer::UpdateMainData] history data is empty. [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}], [Pagesize=${xPointCount}]`);
         }
 
         this.ChartPaint[0].Data=hisData;

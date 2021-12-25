@@ -48,6 +48,8 @@ import {
     JSCommonChartPaint_ChartLock as ChartLock,
     JSCommonChartPaint_ChartVolStick as ChartVolStick,
     JSCommonChartPaint_ChartBand as ChartBand,
+    JSCommonChartPaint_ChartLineMultiData as ChartLineMultiData,
+    JSCommonChartPaint_ChartStraightLine as ChartStraightLine,
 } from "./umychart.chartpaint.wechat.js";
 
 import 
@@ -1033,7 +1035,491 @@ function ScriptIndex(name, script, args, option)
     }
 }
 
+var HQ_DATA_TYPE =
+{
+    KLINE_ID: 0,         //K线
+    MINUTE_ID: 2,        //当日走势图
+    HISTORY_MINUTE_ID: 3,//历史分钟走势图
+    MULTIDAY_MINUTE_ID: 4,//多日走势图
+};
 
+
+function APIScriptIndex(name, script, args, option)     //后台执行指标
+{
+    this.newMethod = ScriptIndex;   //派生
+    this.newMethod(name, script, args, option);
+    delete this.newMethod;
+
+    this.ApiUrl;    //指标执行api地址
+    this.HQDataType;
+
+    if (option.API) 
+    {
+        if (option.API.Url) this.ApiUrl = option.API.Url;
+        if (option.API.Name) this.Name = this.ID = option.API.Name;
+        if (option.API.ID) this.ID = option.API.ID;
+    }
+
+    this.ExecuteScript = function (hqChart, windowIndex, hisData) 
+    {
+        JSConsole.Chart.Log('[APIScriptIndex::ExecuteScript] name, Arguments ', this.Name, this.Arguments);
+
+        //数据类型
+        let hqDataType = HQ_DATA_TYPE.KLINE_ID;   //默认K线
+        if (hqChart.ClassName === 'MinuteChartContainer' || hqChart.ClassName === 'MinuteChartHScreenContainer') 
+        {
+            if (hqChart.DayCount > 1) hqDataType = HQ_DATA_TYPE.MULTIDAY_MINUTE_ID; //多日分钟
+            else hqDataType = HQ_DATA_TYPE.MINUTE_ID;                             //分钟数据
+        }
+        else if (hqChart.ClassName === 'HistoryMinuteChartContainer') 
+        {
+            hqDataType = HQ_DATA_TYPE.HISTORY_MINUTE_ID;   //历史分钟
+        }
+
+        var args = [];
+        if (this.Arguments) 
+        {
+            for (var i in this.Arguments) 
+            {
+                var item = this.Arguments[i];
+                args.push({ name: item.Name, value: item.Value });
+            }
+        }
+
+        var requestCount = hqChart.GetRequestDataCount();
+        var self = this;
+        var postData =
+        {
+            indexname: this.ID, symbol: hqChart.Symbol, script: this.Script, args: args,
+            period: hqChart.Period, right: hqChart.Right, maxdatacount: requestCount.MaxRequestDataCount, maxminutedaycount: requestCount.MaxRequestMinuteDayCount, hqdatatype: hqDataType
+        };
+        if (hqDataType == HQ_DATA_TYPE.MULTIDAY_MINUTE_ID || hqDataType == HQ_DATA_TYPE.MINUTE_ID) postData.daycount = hqChart.DayCount;
+        this.HQDataType = hqDataType;
+
+        if (hqChart.NetworkFilter) 
+        {
+            var obj =
+            {
+                Name: 'APIScriptIndex::ExecuteScript', //类名::
+                Explain: '指标计算',
+                Request: { Url: self.ApiUrl, Type: 'POST', Data: postData },
+                Self: this,
+                HQChart: hqChart,
+                PreventDefault: false
+            };
+
+            hqChart.NetworkFilter(obj, function (data) 
+            {
+                self.RecvAPIData(data, hqChart, windowIndex, hisData);
+            });
+
+            if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        wx.request({
+            url: self.ApiUrl,
+            data: postData,
+            method: 'POST',
+            dataType: "json",
+            async: true,
+            success: function (recvData) 
+            {
+                self.RecvAPIData(recvData, hqChart, windowIndex, hisData);
+            },
+            error: function (request) 
+            {
+                self.RecvError(request);
+            }
+        });
+    }
+
+    this.RecvAPIData = function (recvData, hqChart, windowIndex, hisData) 
+    {
+        var data=recvData.data;
+        JSConsole.Chart.Log('[APIScriptIndex::RecvAPIData] recv data ', this.Name, data);
+        if (data.code != 0) return;
+
+        if (data.outdata && data.outdata.name) this.Name = data.outdata.name;
+
+        if (data.outdata.args)  //外部修改显示参数
+        {
+            this.Arguments = [];
+            for (var i in data.outdata.args) 
+            {
+                var item = data.outdata.args[i];
+                this.Arguments.push({ Name: item.name, Value: item.value });
+            }
+        }
+
+        if (this.HQDataType == HQ_DATA_TYPE.KLINE_ID) 
+        {
+            this.OutVar = this.FittingData(data.outdata, hqChart);
+            JSConsole.Chart.Log('[APIScriptIndex::RecvAPIData] conver to OutVar ', this.OutVar);
+        }
+        else 
+        {
+            this.OutVar = this.FittingMinuteData(data.outdata, hqChart);   //走势图数据
+        }
+        this.BindData(hqChart, windowIndex, hisData);
+
+        if (this.IsLocked == false) //不上锁
+        {
+            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
+        }
+        else    //上锁
+        {
+            let lockData = 
+            {
+                IsLocked: true, Callback: this.LockCallback, IndexName: this.Name, ID: this.LockID,
+                BG: this.LockBG, Text: this.LockText, TextColor: this.LockTextColor, Font: this.LockFont, Count: this.LockCount, MinWidth: this.LockMinWidth
+            };
+            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
+        }
+
+        hqChart.UpdataDataoffset();           //更新数据偏移
+        hqChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        hqChart.Draw();
+
+        if (hqChart.GetIndexEvent) 
+        {
+            var event = hqChart.GetIndexEvent();  //指标计算完成回调
+            if (event) 
+            {
+                var data = 
+                {
+                    OutVar: this.OutVar, WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData,
+                    Stock: { Symbol: hqChart.Symbol, Name: hqChart.Name }
+                };
+                event.Callback(event, data, this);
+            }
+        }
+    }
+
+    this.FittingData = function (jsonData, hqChart) 
+    {
+        var outVar = jsonData.outvar;
+        var date = jsonData.date;
+        var time = jsonData.time;
+        var kdata = hqChart.ChartPaint[0].Data;
+
+        //把数据拟合到kdata上
+        var result = [];
+
+        for (var i in outVar) 
+        {
+            var item = outVar[i];
+            var indexData = [];
+            var outVarItem = { Name: item.name, Type: item.type };
+            if (item.color) outVarItem.Color = item.color;
+            if (item.data) 
+            {
+                outVarItem.Data = this.FittingArray(item.data, date, time, hqChart);
+
+                if (item.color) outVarItem.Color = item.color;
+                if (item.linewidth >= 1) outVarItem.LineWidth = item.linewidth;
+                if (item.isshow == false) outVarItem.IsShow = false;
+                if (item.isexdata == true) outVarItem.IsExData = true;
+
+                result.push(outVarItem);
+            }
+            else if (item.Draw) 
+            {
+                var draw = item.Draw;
+                var drawItem = {};
+                if (draw.DrawType == 'DRAWICON')  //图标
+                {
+                    drawItem.Icon = draw.Icon;
+                    drawItem.Name = draw.Name;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingArray(draw.DrawData, date, time, hqChart);
+                    outVarItem.Draw = drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType == 'DRAWTEXT') //文本
+                {
+                    drawItem.Text = draw.Text;
+                    drawItem.Name = draw.Name;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingArray(draw.DrawData, date, time, hqChart);
+                    outVarItem.Draw = drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType == 'STICKLINE')    //柱子
+                {
+                    drawItem.Name = draw.Name;
+                    drawItem.Type = draw.Type;
+                    drawItem.Width = draw.Width;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingArray(draw.DrawData, date, time, hqChart, 1);
+                    outVarItem.Draw = drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType == 'MULTI_LINE') 
+                {
+                    drawItem.Text = draw.Text;
+                    drawItem.Name = draw.Name;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingMultiLine(draw.DrawData, date, time, hqChart);
+                    outVarItem.Draw = drawItem;
+                    if (draw.LineDash) drawItem.LineDash=draw.LineDash;
+                    //if (draw.Arrow) drawItem.Arrow=draw.Arrow;
+                    if (IFrameSplitOperator.IsNumber(draw.LineWidth)) drawItem.LineWidth=draw.LineWidth;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType == 'MULTI_BAR') 
+                {
+                    drawItem.Text = draw.Text;
+                    drawItem.Name = draw.Name;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingMultiLine(draw.DrawData, date, time, hqChart);
+                    outVarItem.Draw = drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType == 'MULTI_TEXT')
+                {
+                    drawItem.Text = draw.Text;
+                    drawItem.Name = draw.Name;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingMultiText(draw.DrawData, date, time, hqChart);
+                    this.GetKLineData(drawItem.DrawData, hqChart);
+                    outVarItem.Draw = drawItem;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="MULTI_HTMLDOM")    //外部自己创建dom
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.Callback=draw.Callback;
+                    drawItem.DrawData=this.FittingMultiText(draw.DrawData,date,time,hqChart);
+                    this.GetKLineData(drawItem.DrawData, hqChart);
+                    outVarItem.Draw=drawItem;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="KLINE_BG")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData={ Color:draw.Color, Angle:draw.Angle };
+                    drawItem.DrawData.Data=this.FittingKLineBG(draw.DrawData, hqChart);
+
+                    outVarItem.Draw=drawItem;
+                    outVarItem.Name=draw.DrawType;
+                    result.push(outVarItem);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    // h, high, low l.
+    this.GetKLineData=function(data,hqChart)
+    {
+        if (!data) return;
+        if (!Array.isArray(data)) return;
+        var kData=hqChart.ChartPaint[0].Data;   //K线
+
+        for(var i in data)
+        {
+            var item=data[i];
+            if (!IFrameSplitOperator.IsString(item.Value)) continue;
+            if(!IFrameSplitOperator.IsNumber(item.Index)) continue;
+            if (item.Index<0 || item.Index>=kData.Data.length) continue;
+            var valueName=item.Value.toUpperCase();
+            var kItem=kData.Data[item.Index];
+            switch(valueName)
+            {
+                case "HIGH":
+                case "H":
+                    item.Value=kItem.High;
+                    break;
+                case "L":
+                case "LOW":
+                    item.Value=kItem.Low;
+                    break;
+            }
+        }
+    }
+
+    this.FittingKLineBG=function(data, hqChart)
+    {
+        var kData=hqChart.ChartPaint[0].Data;   //K线
+        var result=[];
+        if (ChartData.IsDayPeriod(hqChart.Period,true))  //日线
+        {
+            var bFill=false;
+            for(var i=0,j=0;i<kData.Data.length;)
+            {
+                result[i]=0;
+                var kItem=kData.Data[i];
+                if (j>=data.length) 
+                {
+                    ++i;
+                    continue;
+                }
+                var dataItem=data[j];
+
+                if (dataItem.Date<kItem.Date)
+                {
+                    ++j;
+                }
+                else if (dataItem.Date>kItem.Date)
+                {
+                    ++i;
+                }
+                else
+                {
+                    bFill=true;
+                    result[i]=1;
+                    ++j;
+                    ++i;
+                }
+            }
+
+            if (bFill) return result;
+        }
+        else if (ChartData.IsMinutePeriod(hqChart.Period,true)) //分钟线
+        {
+            var bFill=false;
+            for(var i=0,j=0;i<kData.Data.length;)
+            {
+                result[i]=0;
+                var kItem=kData.Data[i];
+                if (j>=data.length) 
+                {
+                    ++i;
+                    continue;
+                }
+                var dataItem=data[j];
+
+                if (dataItem.Date<kItem.Date || (dataItem.Date==kItem.Date && dataItem.Time<kItem.Time))
+                {
+                    ++j;
+                }
+                else if (dataItem.Date>kItem.Date || (dataItem.Date==kItem.Date && dataItem.Time>kItem.Time))
+                {
+                    ++i;
+                }
+                else
+                {
+                    bFill=true;
+                    result[i]=1;
+                    ++j;
+                    ++i;
+                }
+            }
+
+            if (bFill) return result;
+        }
+        
+        return null;
+    }
+
+    this.FittingArray = function (sourceData, date, time, hqChart, arrayType)  //arrayType 0=单值数组 1=结构体
+    {
+        var kdata = hqChart.ChartPaint[0].Data;   //K线
+
+        var arySingleData = [];
+        for (var i in sourceData) 
+        {
+            var value = sourceData[i];
+            var indexItem = new SingleData(); //单列指标数据
+            indexItem.Date = date[i];
+            if (time && i < time.length) indexItem.Time = time[i];
+            indexItem.Value = value;
+            arySingleData.push(indexItem);
+        }
+
+        var aryFittingData;
+        if (ChartData.IsDayPeriod(hqChart.Period,true))
+            aryFittingData = kdata.GetFittingData(arySingleData);        //数据和主图K线拟合
+        else
+            aryFittingData = kdata.GetMinuteFittingData(arySingleData);  //数据和主图K线拟合
+
+        var bindData = new ChartData();
+        bindData.Data = aryFittingData;
+        var result;
+        if (arrayType == 1) result = bindData.GetObject();
+        else result = bindData.GetValue();
+        return result;
+    }
+
+    this.FittingMultiLine = function (sourceData, date, time, hqChart) 
+    {
+        var kdata = hqChart.ChartPaint[0].Data;   //K线
+
+        if (ChartData.IsDayPeriod(hqChart.Period, true))  //日线
+        {
+            var aryPoint = [];
+            for (var i in sourceData) 
+            {
+                var item = sourceData[i];
+                for (var j in item.Point) 
+                {
+                    var point = item.Point[j];
+                    aryPoint.push(point);
+                }
+            }
+
+            aryPoint.sort(function (a, b) { return a.Date - b.Date; });
+            kdata.GetDateIndex(aryPoint);
+            return sourceData;
+        } 
+        else if (ChartData.IsMinutePeriod(hqChart.Period, true)) //分钟线
+        {
+            var aryPoint = [];
+            for (var i in sourceData) 
+            {
+                var item = sourceData[i];
+                for (var j in item.Point) 
+                {
+                    var point = item.Point[j];
+                    aryPoint.push(point);
+                }
+            }
+
+            aryPoint.sort(function (a, b) {
+                if (a.Date == b.Date) return a.Time - b.Time;
+                return a.Date - b.Date;
+            });
+
+            kdata.GetDateTimeIndex(aryPoint);
+            return sourceData;
+        }
+
+        return null;
+    }
+
+    this.FittingMultiText = function (sourceData, date, time, hqChart) 
+    {
+        var kdata = hqChart.ChartPaint[0].Data;   //K线
+
+        if (ChartData.IsDayPeriod(hqChart.Period, true))  //日线
+        {
+            sourceData.sort(function (a, b) { return a.Date - b.Date; });
+            kdata.GetDateIndex(sourceData);
+            return sourceData;
+        }
+        else if (ChartData.IsMinutePeriod(hqChart.Period, true)) //分钟线
+        {
+            sourceData.sort(function (a, b) {
+                if (a.Date == b.Date) return a.Time - b.Time;
+                return a.Date - b.Date;
+            }
+            );
+
+            kdata.GetDateTimeIndex(sourceData);
+            return sourceData;
+        }
+
+        return null;
+    }
+}
 
 
 
@@ -1178,10 +1664,12 @@ module.exports =
         IndexInfo: IndexInfo,
         BaseIndex: BaseIndex,
         ScriptIndex:ScriptIndex,
+        APIScriptIndex:APIScriptIndex,
     },
 
     //单个类导出
     JSCommonIndex_IndexInfo: IndexInfo,
     JSCommonIndex_BaseIndex: BaseIndex,
     JSCommonIndex_ScriptIndex:ScriptIndex,
+    JSCommonIndex_APIScriptIndex:APIScriptIndex,
 };

@@ -5360,6 +5360,260 @@ function ChartBand()
     }
 }
 
+//分钟线叠加 支持横屏
+function ChartOverlayMinutePriceLine() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+  
+    this.Color = "rgb(65,105,225)";
+    this.MainData;                  //主图数据
+    this.MainYClose;                //主图股票的前收盘价
+  
+    this.Name = "ChartOverlayMinutePriceLine";
+    this.Title;
+    this.Symbol;                    //叠加的股票代码
+    this.YClose;                    //叠加的股票前收盘
+  
+    this.Draw = function () 
+    {
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+  
+        var isHScreen = (this.ChartFrame.IsHScreen === true);
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen === true) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+        var minuteCount = this.ChartFrame.MinuteCount;
+  
+        var bFirstPoint = true;
+        var drawCount = 0;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i].Close;
+            if (value == null) continue;
+            var showValue = value / this.YClose * this.MainYClose;
+    
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(showValue);
+  
+            if (bFirstPoint) 
+            {
+                this.Canvas.strokeStyle = this.Color;
+                this.Canvas.beginPath();
+                if (isHScreen) this.Canvas.moveTo(y, x);
+                else this.Canvas.moveTo(x, y);
+                bFirstPoint = false;
+            }
+            else 
+            {
+                if (isHScreen) this.Canvas.lineTo(y, x);
+                else this.Canvas.lineTo(x, y);
+            }
+  
+            ++drawCount;
+  
+            if (drawCount >= minuteCount) //上一天的数据和这天地数据线段要断开
+            {
+            bFirstPoint = true;
+            this.Canvas.stroke();
+            drawCount = 0;
+            }
+        }
+  
+        if (drawCount > 0) this.Canvas.stroke();
+    }
+  
+    this.GetMaxMin = function () 
+    {
+        var xPointCount = this.ChartFrame.XPointCount;
+        var range = {};
+        if (this.YClose == null) return range;
+    
+        range.Min = this.MainYClose;
+        range.Max = this.MainYClose;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i].Close;
+            if (value == null) continue;
+            var value = value / this.YClose * this.MainYClose;
+            if (range.Max == null) range.Max = value;
+            if (range.Min == null) range.Min = value;
+    
+            if (range.Max < value) range.Max = value;
+            if (range.Min > value) range.Min = value;
+        }
+    
+        if (range.Max == this.MainYClose && range.Min == this.MainYClose) 
+        {
+            range.Max = this.MainYClose + this.MainYClose * 0.1;
+            range.Min = this.MainYClose - this.MainYClose * 0.1;
+            return range;
+        }
+  
+        var distance = Math.max(Math.abs(this.MainYClose - range.Max), Math.abs(this.MainYClose - range.Min));
+        range.Max = this.MainYClose + distance;
+        range.Min = this.MainYClose - distance;
+  
+        return range;
+    }
+}
+
+//线段 多数据(一个X点有多条Y数据) 支持横屏
+function ChartLineMultiData() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+  
+    this.Color = "rgb(255,193,37)"; //线段颜色
+  
+    this.Draw = function () 
+    {
+        if (this.NotSupportMessage) 
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+  
+        if (!this.Data || !this.Data.Data) return;
+  
+        var isHScreen = (this.ChartFrame.IsHScreen === true);
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen) chartright = this.ChartBorder.GetBottom();
+        var xPointCount = this.ChartFrame.XPointCount;
+  
+        var bFirstPoint = true;
+        var drawCount = 0;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var aryValue = this.Data.Data[i];
+            if (aryValue == null) continue;
+    
+            var x = this.ChartFrame.GetXFromIndex(j);
+            if (x > chartright) break;
+  
+            for (var index in aryValue) 
+            {
+                var value = aryValue[index].Value;
+                var y = this.ChartFrame.GetYFromData(value);
+  
+                if (bFirstPoint) 
+                {
+                    this.Canvas.strokeStyle = this.Color;
+                    this.Canvas.beginPath();
+                    if (isHScreen) this.Canvas.moveTo(y, x);
+                    else this.Canvas.moveTo(x, y);
+                    bFirstPoint = false;
+                }
+                else 
+                {
+                    if (isHScreen) this.Canvas.lineTo(y, x);
+                    else this.Canvas.lineTo(x, y);
+                }
+  
+                ++drawCount;
+            }
+        }
+  
+        if (drawCount > 0) this.Canvas.stroke();
+    }
+  
+    this.GetMaxMin = function () 
+    {
+        var xPointCount = this.ChartFrame.XPointCount;
+        var range = {};
+        range.Min = null;
+        range.Max = null;
+  
+        if (!this.Data || !this.Data.Data) return range;
+  
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var aryValue = this.Data.Data[i];
+            if (aryValue == null) continue;
+    
+            for (var index in aryValue) 
+            {
+                var value = aryValue[index].Value;
+                if (range.Max == null) range.Max = value;
+                if (range.Min == null) range.Min = value;
+        
+                if (range.Max < value) range.Max = value;
+                if (range.Min > value) range.Min = value;
+            }
+        }
+         return range;
+    }
+}
+
+//直线 水平直线 只有1个数据 支持横屏
+function ChartStraightLine() 
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+  
+    this.Color = "rgb(255,193,37)";   //线段颜色
+  
+    this.Draw = function () 
+    {
+        if (!this.Data || !this.Data.Data) return;
+        if (this.Data.Data.length != 1) return;
+    
+        var isHScreen = this.ChartFrame.IsHScreen;
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        if (isHScreen) chartright = this.ChartBorder.GetTop();
+        var xPointCount = this.ChartFrame.XPointCount;
+    
+        var yValue = this.Data.Data[0];
+        var y = this.ChartFrame.GetYFromData(yValue);
+        var xLeft = this.ChartFrame.GetXFromIndex(0);
+        var xRight = this.ChartFrame.GetXFromIndex(xPointCount - 1);
+    
+        var yFix = parseInt(y.toString()) + 0.5;
+        this.Canvas.beginPath();
+        if (isHScreen) 
+        {
+            this.Canvas.moveTo(yFix, xLeft);
+            this.Canvas.lineTo(yFix, xRight);
+        }
+        else 
+        {
+            this.Canvas.moveTo(xLeft, yFix);
+            this.Canvas.lineTo(xRight, yFix);
+        }
+        this.Canvas.strokeStyle = this.Color;
+        this.Canvas.stroke();
+    }
+  
+    this.GetMaxMin = function () 
+    {
+        var xPointCount = this.ChartFrame.XPointCount;
+        var range = {};
+        range.Min = null;
+        range.Max = null;
+    
+        if (!this.Data || !this.Data.Data) return range;
+        if (this.Data.Data.length != 1) return range;
+    
+        range.Min = this.Data.Data[0];
+        range.Max = this.Data.Data[0];
+    
+        return range;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // 其他图形
 //
@@ -6938,6 +7192,9 @@ module.exports =
         ChartBand:ChartBand,
         ChartMinuteVolumBar:ChartMinuteVolumBar,
         ChartText:ChartText,
+        ChartOverlayMinutePriceLine:ChartOverlayMinutePriceLine,
+        ChartLineMultiData:ChartLineMultiData,
+        ChartStraightLine:ChartStraightLine,
         ChartStraightArea:ChartStraightArea,
         ChartSplashPaint:ChartSplashPaint,
         ChartPie: ChartPie,
@@ -6968,6 +7225,9 @@ module.exports =
     JSCommonChartPaint_ChartVolStick:ChartVolStick,
     JSCommonChartPaint_ChartBand:ChartBand,
     JSCommonChartPaint_ChartMinutePriceLine:ChartMinutePriceLine,
+    JSCommonChartPaint_ChartOverlayMinutePriceLine:ChartOverlayMinutePriceLine,
+    JSCommonChartPaint_ChartLineMultiData:ChartLineMultiData,
+    JSCommonChartPaint_ChartStraightLine:ChartStraightLine,
     JSCommonChartPaint_ChartPie: ChartPie,
     JSCommonChartPaint_ChartCircle: ChartCircle,
     JSCommonChartPaint_ChartChinaMap: ChartChinaMap,
