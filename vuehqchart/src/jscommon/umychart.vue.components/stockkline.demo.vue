@@ -116,6 +116,7 @@ DefaultData.GetMinuteOption=function()
         EnableSelectRect:true,
 
         EnableZoomIndexWindow:true,
+        IsDrawPictureXY:true,
 
         Border: //边框
         {
@@ -128,9 +129,9 @@ DefaultData.GetMinuteOption=function()
             AutoRight:{ Blank:10, MinWidth:40 },
         },
 
-        KLineTitle: //标题设置
+        MinuteTitle: //标题设置
         {
-            
+            IsTitleShowLatestData:true,
         },
 
         Frame: //子框架设置,刻度小数位数设置

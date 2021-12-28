@@ -55723,6 +55723,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
             for(let i in this.SourceData.Data)
             {
                 var item=this.SourceData.Data[i];
+                if (!aryFixedData[i]) continue;
                 item.FlowCapital=aryFixedData[i].Value;
             }
 
@@ -55741,6 +55742,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
             for(let i in this.KLineSourceData.Data)
             {
                 var item=this.KLineSourceData.Data[i];
+                if (!aryFixedData[i]) continue;
                 item.FlowCapital=aryFixedData[i].Value;
             }
         }
@@ -55750,6 +55752,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
             for(let i in this.SourceData.Data)
             {
                 var item=this.SourceData.Data[i];
+                if (!aryFixedData[i]) continue;
                 item.FlowCapital=aryFixedData[i].Value;
             }
 
@@ -55775,6 +55778,7 @@ function KLineTrainChartContainer(uielement, bHScreen)
             for(let i in this.KLineSourceData.Data)
             {
                 var item=this.KLineSourceData.Data[i];
+                if (!aryFixedData[i]) continue;
                 item.FlowCapital=aryFixedData[i].Value;
             }
         }

@@ -388,11 +388,13 @@ function JSChart(element)
 
         if (option.KLineTitle) 
         {
+            var item=option.KLineTitle;
             if (option.KLineTitle.IsShowName == false) chart.TitlePaint[0].IsShowName = false;
             if (option.KLineTitle.IsShowSettingInfo == false) chart.TitlePaint[0].IsShowSettingInfo = false;
             if (option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
             if (option.KLineTitle.UpdateUICallback) chart.TitlePaint[0].UpdateUICallback = option.KLineTitle.UpdateUICallback
             if (option.KLineTitle.LineCount > 1) chart.TitlePaint[0].LineCount = option.KLineTitle.LineCount;
+            if (IFrameSplitOperator.IsNumber(item.TextSpace)) chart.TitlePaint[0].TextSpace=item.TextSpace;
         }
 
         //叠加股票 只支持叠加1个股票
@@ -641,10 +643,12 @@ function JSChart(element)
 
         if (option.MinuteTitle) 
         {
+            var item=option.MinuteTitle;
             if (option.MinuteTitle.IsShowName == false) chart.TitlePaint[0].IsShowName = false;
             if (option.MinuteTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
             if (option.MinuteTitle.UpdateUICallback) chart.TitlePaint[0].UpdateUICallback = option.MinuteTitle.UpdateUICallback
             if (option.MinuteTitle.LineCount > 1) chart.TitlePaint[0].LineCount = option.MinuteTitle.LineCount;
+            if (IFrameSplitOperator.IsNumber(item.TextSpace)) chart.TitlePaint[0].TextSpace=item.TextSpace;
         }
 
         if (typeof (option.UpdateUICallback) == 'function') //数据到达回调

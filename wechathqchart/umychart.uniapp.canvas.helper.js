@@ -31,28 +31,40 @@ JSUniAppCanvasHelper.MeasureText=function(text, canvas)
 		if (/[a-zA-Z]/.test(item)) 
 		{
 			width += 7;
-		} else if (/[0-9]/.test(item)) 
+		} 
+		else if (/[0-9]/.test(item)) 
 		{
 			width += 5.5;
-		} else if (/\./.test(item)) 
+		} 
+		else if (/\./.test(item)) 
 		{
 			width += 2.7;
-		} else if (/-/.test(item)) 
+		} 
+		else if (/-/.test(item)) 
 		{
 			width += 3.25;
-		} else if (/[\u4e00-\u9fa5]/.test(item)) 
+		} 
+		else if (/[\u4e00-\u9fa5]/.test(item)) 
 		{
 			width += 10;
-		} else if (/\(|\)/.test(item)) 
+		} 
+		else if (/\(|\)/.test(item)) 
 		{
 			width += 3.73;
-		} else if (/\s/.test(item)) 
+		} 
+		else if (/\s/.test(item)) 
 		{
 			width += 2.5;
-		} else if (/%/.test(item)) 
+		} 
+		else if (/%/.test(item)) 
 		{
 			width += 8;
-		} else 
+		}
+		else if (/:/.test(item))
+		{
+			width += 3.25;
+		} 
+		else 
 		{
 			width += 10;
 		}

@@ -79,6 +79,7 @@ function DynamicKLineTitlePainting()
     this.IsShow = true;       //是否显示
     this.LineCount = 1;         //默认显示1行
     this.SpaceWidth = 1;        //空格宽度  
+    this.TextSpace=-1;           //文字之间的间距
     this.Period;                //周期  
 
     this.UpColor = g_JSChartResource.UpTextColor;
@@ -206,7 +207,9 @@ function DynamicKLineTitlePainting()
             return;
         }
 
-        this.SpaceWidth = this.Canvas.measureText(' ').width;
+        if (this.TextSpace>=0) this.SpaceWidth=this.TextSpace;
+        else  this.SpaceWidth = this.Canvas.measureText(' ').width;
+
         var index = this.CursorIndex;
         index = parseInt(index.toFixed(0));
         var dataIndex = this.Data.DataOffset + index;
@@ -935,6 +938,9 @@ function DynamicMinuteTitlePainting()
             return;
         }
 
+        if (this.TextSpace>=0) this.SpaceWidth=this.TextSpace;
+        else  this.SpaceWidth = this.Canvas.measureText(' ').width;
+        
         var index = this.CursorIndex;
         index = parseInt(index.toFixed(0));
         var dataIndex = index + this.Data.DataOffset;
