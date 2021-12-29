@@ -15821,6 +15821,7 @@ function ChartKLine()
         var bFirstPoint=true;
         this.Canvas.beginPath();
         this.Canvas.strokeStyle=this.CloseLineColor;
+        if (IFrameSplitOperator.IsNumber(this.CloseLineWidth)) this.Canvas.lineWidth=this.CloseLineWidth;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var data=this.Data.Data[i];
@@ -18120,6 +18121,7 @@ function ChartOverlayKLine()
     this.CustomDrawType=null;       //图形类型
     this.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
     this.IsDelete=false;            //是否已经删除
+    this.CloseLineWidth=g_JSChartResource.CloseLineWidth;
 
     this.SetOption=function(option)
     {
@@ -18473,6 +18475,7 @@ function ChartOverlayKLine()
         var firstOverlayOpen=null;
         var bFirstPoint=true;
         this.Canvas.strokeStyle=this.Color;
+        if (IFrameSplitOperator.IsNumber(this.CloseLineWidth)) this.Canvas.lineWidth=this.CloseLineWidth;
         this.Canvas.beginPath();
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
@@ -40230,7 +40233,7 @@ function JSChartResource()
     this.UnchagneTextColor="rgb(0,0,0)";    //平盘文字颜色 
     this.CloseLineColor='rgb(0,191,255)';   //收盘价线颜色
     this.CloseLineAreaColor=['rgba(0,191,255,0.8)','rgba(0,191,255,0.2)'];  //收盘价面积图颜色
-    this.CloseLineWidth=2;  //收盘价面积图颜色线段宽度
+    this.CloseLineWidth=2;  //收盘价面积|收盘价|叠加的收盘价线段宽度
 
     this.FrameBorderPen="rgb(225,236,242)";         //边框颜色
     this.FrameSplitPen="rgb(225,236,242)";          //刻度分割线
@@ -53314,6 +53317,7 @@ function BaseIndex(name)
     
     this.OverlayIndex=null; //叠加指标{ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame }
     this.GetEventCallback;  //事件回调函数
+    this.Status=0;  //0=空闲 1=计算
 
     //默认创建都是线段
     this.Create=function(hqChart,windowIndex)

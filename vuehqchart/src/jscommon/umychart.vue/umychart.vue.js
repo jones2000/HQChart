@@ -19831,6 +19831,7 @@ function ChartKLine()
         var bFirstPoint=true;
         this.Canvas.beginPath();
         this.Canvas.strokeStyle=this.CloseLineColor;
+        if (IFrameSplitOperator.IsNumber(this.CloseLineWidth)) this.Canvas.lineWidth=this.CloseLineWidth;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var data=this.Data.Data[i];
@@ -22130,6 +22131,7 @@ function ChartOverlayKLine()
     this.CustomDrawType=null;       //图形类型
     this.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
     this.IsDelete=false;            //是否已经删除
+    this.CloseLineWidth=g_JSChartResource.CloseLineWidth;
 
     this.SetOption=function(option)
     {
@@ -22483,6 +22485,7 @@ function ChartOverlayKLine()
         var firstOverlayOpen=null;
         var bFirstPoint=true;
         this.Canvas.strokeStyle=this.Color;
+        if (IFrameSplitOperator.IsNumber(this.CloseLineWidth)) this.Canvas.lineWidth=this.CloseLineWidth;
         this.Canvas.beginPath();
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
@@ -44240,7 +44243,7 @@ function JSChartResource()
     this.UnchagneTextColor="rgb(0,0,0)";    //平盘文字颜色 
     this.CloseLineColor='rgb(0,191,255)';   //收盘价线颜色
     this.CloseLineAreaColor=['rgba(0,191,255,0.8)','rgba(0,191,255,0.2)'];  //收盘价面积图颜色
-    this.CloseLineWidth=2;  //收盘价面积图颜色线段宽度
+    this.CloseLineWidth=2;  //收盘价面积|收盘价|叠加的收盘价线段宽度
 
     this.FrameBorderPen="rgb(225,236,242)";         //边框颜色
     this.FrameSplitPen="rgb(225,236,242)";          //刻度分割线
@@ -57324,6 +57327,7 @@ function BaseIndex(name)
     
     this.OverlayIndex=null; //叠加指标{ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame }
     this.GetEventCallback;  //事件回调函数
+    this.Status=0;  //0=空闲 1=计算
 
     //默认创建都是线段
     this.Create=function(hqChart,windowIndex)
@@ -81689,6 +81693,7 @@ function JSExecute(ast,option)
     this.ErrorCallback;             //执行错误回调
     this.GetEventCallback;
     this.IsUsePageData=false;
+    this.IndexCtrl;
 
     //脚本自动变量表, 只读
     this.ConstVarTable=new Map([
@@ -81774,6 +81779,7 @@ function JSExecute(ast,option)
         }
         if (option.Arguments) this.Arguments=option.Arguments;
         if (option.IsSectionMode) this.IsSectionMode=option.IsSectionMode;
+        if (option.Self) this.IndexCtrl=option.Self;
     }
 
     this.Execute=function()
@@ -82479,6 +82485,7 @@ function JSExecute(ast,option)
         {                       
             let data=this.RunAST();//执行脚本
             JSConsole.Complier.Log('[JSComplier.Run] execute finish', data);
+            if (this.IndexCtrl) this.IndexCtrl.Status=0;
         
             if (this.UpdateUICallback) 
             {
@@ -82507,6 +82514,7 @@ function JSExecute(ast,option)
             }
             else if (this.ErrorCallback) 
             {
+                if (this.IndexCtrl) this.IndexCtrl.Status=0;
                 this.ErrorCallback(error, this.CallbackParam);
             }
         }
@@ -84034,6 +84042,7 @@ JSComplier.Execute=function(code,option,errorCallback)
     {
         try
         {
+            if (option.Self) option.Self.Status=1;
             JSConsole.Complier.Log('[JSComplier.Execute]',code,option);
 
             JSConsole.Complier.Log('[JSComplier.Execute] parser .....');
@@ -84044,6 +84053,7 @@ JSComplier.Execute=function(code,option,errorCallback)
             let ast=program;
             JSConsole.Complier.Log('[JSComplier.Execute] parser finish.', ast);
 
+            if (option.Self) option.Self.Status=2;
             JSConsole.Complier.Log('[JSComplier.Execute] execute .....');
             let execute=new JSExecute(ast,option);
             execute.ErrorCallback=errorCallback;        //执行错误回调
@@ -84051,12 +84061,14 @@ JSComplier.Execute=function(code,option,errorCallback)
             if (option.ClassName=='ScriptIndexConsole') execute.JobList.unshift({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA});
             execute.JobList.push({ID:JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT});
 
+            if (option.Self) option.Self.Status=3;
             let result=execute.Execute();
-
+            
         }catch(error)
         {
             JSConsole.Complier.Log(error);
             if (errorCallback) errorCallback(error, option.CallbackParam);
+            if (option.Self) option.Self.Status=0;
         }
     }
 
@@ -84330,7 +84342,8 @@ function ScriptIndex(name,script,args,option)
             Condition:this.Condition,
             IsBeforeData:hqChart.IsBeforeData,
             IsApiPeriod:hqChart.IsApiPeriod,
-            DrawInfo:null
+            DrawInfo:null,
+            Self:this,
         };
 
         if (hqChart)    //当前屏K线信息
