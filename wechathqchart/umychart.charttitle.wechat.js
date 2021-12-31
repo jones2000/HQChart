@@ -1408,6 +1408,7 @@ function DynamicChartTitlePainting()
                     text=valueText;
                 }
                 textWidth = this.Canvas.measureText(text).width + this.ParamSpace;    //后空2个像素
+                if (textWidth+left>right) break;    //画不下了就不画了
                 this.Canvas.fillText(text, left, bottom, textWidth);
                 left += textWidth;
             }

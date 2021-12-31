@@ -44164,7 +44164,10 @@ function KLineChartContainer(uielement,OffscreenElement)
             if (!item.Symbol) continue;
             if (!item.MainData) continue;   //等待主图股票数据未下载完
             if (item.Status!=OVERLAY_STATUS_ID.STATUS_FINISHED_ID) continue;
-            var realtimeData=KLineChartContainer.JsonDataToMinuteRealtimeData(data,item.Symbol);  //获取叠加股票的最新数据
+            if (data.ver==2.0) 
+                var realtimeData=KLineChartContainer.JsonDataToMinuteRealtimeDataV2(data,item.Symbol);  //获取叠加股票的最新数据
+            else 
+                var realtimeData=KLineChartContainer.JsonDataToMinuteRealtimeData(data,item.Symbol);  //获取叠加股票的最新数据
             if (!realtimeData) continue;
             var sourceData=item.SourceData; //叠加股票的所有数据
             if (!sourceData.MergeMinuteData(realtimeData)) return;
@@ -47519,6 +47522,61 @@ KLineChartContainer.JsonDataToMinuteRealtimeData=function(data,symbol)
         if (IFrameSplitOperator.IsNumber(jsData.price)) preClose=jsData.price;
 
         aryMinuteData[i]=item;
+    }
+
+    return aryMinuteData;
+}
+
+//分钟K线叠加数据增量更新v2版本
+KLineChartContainer.JsonDataToMinuteRealtimeDataV2=function(data,symbol)
+{
+    if (!data || !data.overlay || !symbol) return null;
+
+    var overlayData=null;
+    for(var i=0;i<data.overlay.length;++i) //overlay={ symbol:, name:, data:[] }
+    {
+        var item=data.overlay[i];
+        if (item.symbol==symbol)
+        {
+            overlayData=item;
+            break;
+        }
+    }
+
+    if (!overlayData) return null;
+
+    var upperSymbol=symbol.toUpperCase();
+    var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+    var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //是否是期货
+
+    var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position=9, orderFlow=20;
+    var yClose=null; 
+    
+    for (var i = 0; i < overlayData.data.length; ++i)
+    {
+        var item = new HistoryData();
+        var jsData=overlayData.data[i];
+        item.Date = jsData[date];
+        item.Open = jsData[open];
+        item.YClose = jsData[yclose];
+        item.Close = jsData[close];
+        item.High = jsData[high];
+        item.Low = jsData[low];
+        item.Vol = jsData[vol];    //股
+        item.Amount = jsData[amount];
+        item.Time=jsData[time];
+        if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position=jsData[position]; //期货持仓
+
+        if (!IFrameSplitOperator.IsNumber(item.YClose))
+        {
+            if (IFrameSplitOperator.IsNumber(yClose)) item.YClose=yClose;
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Close)) yClose=item.Close;
+
+        if (jsData[orderFlow]) item.OrderFlow=jsData[orderFlow];
+
+        aryMinuteData.push(item);
     }
 
     return aryMinuteData;
