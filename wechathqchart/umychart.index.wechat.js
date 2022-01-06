@@ -995,9 +995,9 @@ function ScriptIndex(name, script, args, option)
     this.GetColor = function (colorName)    //获取颜色
     {
         if (colorName.indexOf("RGB(")==0) return colorName.toLowerCase();
-        if (colorName.indexOf('rgb('==0)) return colorName;
+        if (colorName.indexOf('rgb(')==0)return colorName;
         if (colorName.indexOf("RGBA(")==0) return colorName.toLowerCase();
-        if (colorName.indexOf("rgba(")) return colorName;
+        if (colorName.indexOf("rgba(")==0) return colorName;
 
         var color=JSCommonComplier.JSComplier.ColorVarToRGB(colorName);
         if (color) return color;
