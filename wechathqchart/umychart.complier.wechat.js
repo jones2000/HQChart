@@ -947,7 +947,7 @@ function Node()
             return;
         }
 
-        if (callee.Name == 'COST' || callee.Name == 'WINNER')   //筹码都需要换手率
+        if (callee.Name == 'COST' || callee.Name == 'WINNER' || callee.Name=='PWINNER')   //筹码都需要换手率
         {
             //下载流通股
             var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FINANCE, Args:[7],  FunctionName:"FINANCE", FunctionName2:callee.Name };
@@ -3896,6 +3896,49 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    //用法:BETWEEN(A,B,C)表示A处于B和C之间时返回1,否则返回0 
+    //例如:BETWEEN(CLOSE,MA(CLOSE,20),MA(CLOSE,10))表示收盘价介于10日均线和20日均线之间
+    this.BETWEEN=function(condition, data, data2)
+    {
+        var result=[];
+        var isNumber=typeof(condition)=='number';
+        var isNumber2=typeof(data)=='number';
+        var isNumber3=typeof(data2)=='number';
+
+        if (isNumber && isNumber2 && isNumber3)   //单数值
+        {
+            return (condition>=data && condition<=data2) ? 1 : 0;
+        }
+
+        for(var i in condition)
+        {
+            result[i]=0;
+            var item=condition[i];
+            var left=null, right=null;
+
+            if (isNumber2) left=data;
+            else if (i<data.length-1) left=data[i];
+            
+            if (isNumber3) right=data2;
+            else if (i<data2.length-1) right=data2[i];
+
+            if (left==null || right==null) continue;
+
+            if (left>right)
+            {
+                if (item>=right && item<=left) 
+                    result[i]=1;
+            }
+            else
+            {
+                if (item<=right && item>=left) 
+                    result[i]=1;
+            }
+        }
+
+        return result;
+    }
+
     /*
     过滤连续出现的信号.
     用法:TFILTER(买入条件,卖出条件,N);过滤掉买入(卖出)信号发出后,下一个反向信号发出前的所有买入(卖出)信号.
@@ -6006,6 +6049,794 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    //用法:CONST(A),取A最后的值为常量.
+    //例如:CONST(INDEXC),表示取大盘现价
+    this.CONST=function(data)
+    {
+        if (Array.isArray(data))
+        {
+            var count=data.length;
+            if (count>0) return data[count-1];
+            return null;
+        }
+        else
+        {
+            return data;
+        }
+    }
+
+    //当前值是近多少周期内的最大值.
+    //用法: TOPRANGE(X):X是近多少周期内X的最大值
+    //例如: TOPRANGE(HIGH)表示当前最高价是近多少周期内最高价的最大值
+    this.TOPRANGE=function(data)
+    {
+        if (this.IsNumber(data)) return 0;
+        
+        var result=[];
+
+        if (Array.isArray(data))
+        {
+            var count=data.length;
+            for(var i=count-1; i>=0;--i)
+            {
+                result[i]=0;
+                var item=data[i];
+                if (!this.IsNumber(item)) continue;
+
+                var value=0;
+                for(var j=i-1;j>=0;--j)
+                {
+                    if (data[j]>item)
+                    {
+                        break;
+                    }
+                    ++value;
+                }
+
+                result[i]=value;
+
+            }
+        }
+
+        return result;
+    }
+
+    //当前值是近多少周期内的最小值.
+    //用法:LOWRANGE(X):X是近多少周期内X的最小值
+    //例如:LOWRANGE(LOW)表示当前最低价是近多少周期内最低价的最小值
+    this.LOWRANGE=function(data)
+    {
+        if (this.IsNumber(data)) return 0;
+
+        var result=[];
+
+        if (Array.isArray(data))
+        {
+            var count=data.length;
+            for(var i=count-1; i>=0;--i)
+            {
+                result[i]=0;
+                var item=data[i];
+                if (!this.IsNumber(item)) continue;
+
+                var value=0;
+                for(var j=i-1;j>=0;--j)
+                {
+                    if (data[j]<item)
+                    {
+                        break;
+                    }
+                    ++value;
+                }
+
+                result[i]=value;
+
+            }
+        }
+
+        return result;
+    }
+
+    //N周期前的M周期内的第T个最小值.
+    //用法:FINDLOW(VAR,N,M,T):VAR在N日前的M天内第T个最低价
+    this.FINDLOW=function(data,n,m,t)
+    {
+        if (this.IsNumber(data)) return data;
+        
+        var result=[];
+        if (Array.isArray(data))
+        {
+            var count=data.length;
+            for(var i=count-1;i>=0;--i)
+            {
+                result[i]=null;
+                var aryValue=[];
+                for(var j=n;j<m;++j)
+                {
+                    var index=i-j;
+                    if (index<0) break;
+                    var item=data[index];
+                    if (this.IsNumber(item)) aryValue.push(item);
+                }
+
+                if (aryValue.length>0)
+                {
+                    aryValue.sort(function(a,b) { return a-b;});
+                    var index=t-1;
+                    if (index<0) index=0;
+                    else if (index>=aryValue.length) index=aryValue.length-1;
+                    result[i]=aryValue[index];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    //N周期前的M周期内的第T个最大值.
+    //用法:FINDHIGH(VAR,N,M,T):VAR在N日前的M天内第T个最高价
+    this.FINDHIGH=function(data,n,m,t)
+    {
+        if (this.IsNumber(data)) return data;
+        
+        var result=[];
+        if (Array.isArray(data))
+        {
+            var count=data.length;
+            for(var i=count-1;i>=0;--i)
+            {
+                result[i]=null;
+                var aryValue=[];
+                for(var j=n;j<m;++j)
+                {
+                    var index=i-j;
+                    if (index<0) break;
+                    var item=data[index];
+                    if (this.IsNumber(item)) aryValue.push(item);
+                }
+
+                if (aryValue.length>0)
+                {
+                    aryValue.sort(function(a,b) { return b-a;});
+                    var index=t-1;
+                    if (index<0) index=0;
+                    else if (index>=aryValue.length) index=aryValue.length-1;
+                    result[i]=aryValue[index];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    //N周期前的M周期内的第T个最大值到当前周期的周期数.
+    //用法:FINDHIGHBARS(VAR,N,M,T):VAR在N日前的M天内第T个最高价到当前周期的周期数
+    this.FINDHIGHBARS=function(data, n, m, t)
+    {
+        if (this.IsNumber(data)) return (m-n-t);
+        
+        var result=[];
+        if (Array.isArray(data))
+        {
+            var count=data.length;
+            for(var i=count-1;i>=0;--i)
+            {
+                result[i]=null;
+                var aryValue=[];
+                for(var j=n;j<m;++j)
+                {
+                    var index=i-j;
+                    if (index<0) break;
+                    var item=data[index];
+                    if (this.IsNumber(item)) aryValue.push({ Value:item, Period:j });
+                }
+
+                if (aryValue.length>0)
+                {
+                    aryValue.sort(function(a,b) { return b.Value-a.Value;});
+                    var index=t-1;
+                    if (index<0) index=0;
+                    else if (index>=aryValue.length) index=aryValue.length-1;
+                    result[i]=aryValue[index].Period;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    //N周期前的M周期内的第T个最小值到当前周期的周期数.
+    //用法:FINDLOWBARS(VAR,N,M,T):VAR在N日前的M天内第T个最低价到当前周期的周期数.
+    this.FINDLOWBARS=function(data, n, m, t)
+    {
+        if (this.IsNumber(data)) return (m-n-t);
+        
+        var result=[];
+        if (Array.isArray(data))
+        {
+            var count=data.length;
+            for(var i=count-1;i>=0;--i)
+            {
+                result[i]=null;
+                var aryValue=[];
+                for(var j=n;j<m;++j)
+                {
+                    var index=i-j;
+                    if (index<0) break;
+                    var item=data[index];
+                    if (this.IsNumber(item)) aryValue.push({ Value:item, Period:j });
+                }
+
+                if (aryValue.length>0)
+                {
+                    aryValue.sort(function(a,b) { return a.Value-b.Value;});
+                    var index=t-1;
+                    if (index<0) index=0;
+                    else if (index>=aryValue.length) index=aryValue.length-1;
+                    result[i]=aryValue[index].Period;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    //求高值名次.
+    //用法:HOD(X,N):求当前X数据是N周期内的第几个高值,N=0则从第一个有效值开始.
+    //例如:HOD(HIGH,20)返回是20日的第几个高价
+    this.HOD=function(data, n)
+    {
+        var result=[];
+        if (IFrameSplitOperator.IsNumber(data)) return 1;
+
+        if (Array.isArray(data))
+        {
+            var count=data.length;
+            for(var i=count-1;i>=0;--i)
+            {
+                var value=data[i];
+                if (!IFrameSplitOperator.IsNumber(value)) continue;
+                if (Array.isArray(n)) var subCount=parseInt(n[i]);
+                else var subCount=parseInt(n);
+                if (n<=0) subCount=i;
+                var index=1;
+                for(var j=i-1, k=1; j>=0 && k<subCount; --j, ++k)
+                {
+                    var item=data[j];
+                    if (IFrameSplitOperator.IsNumber(item) && item>value) ++index;
+                }
+
+                result[i]=index;
+            }
+        }
+
+        return result;
+    }
+
+    //求低值名次.
+    //用法:LOD(X,N):求当前X数据是N周期内的第几个低值,N=0则从第一个有效值开始.
+    //例如:LOD(LOW,20)返回是20日的第几个低价
+    this.LOD=function(data, n)
+    {
+        var result=[];
+        if (IFrameSplitOperator.IsNumber(data)) return 1;
+
+        if (Array.isArray(data))
+        {
+            var count=data.length;
+            for(var i=count-1;i>=0;--i)
+            {
+                var value=data[i];
+                if (!IFrameSplitOperator.IsNumber(value)) continue;
+                if (Array.isArray(n)) var subCount=parseInt(n[i]);
+                else var subCount=parseInt(n);
+                if (n<=0) subCount=i;
+                var index=1;
+                for(var j=i-1, k=1; j>=0 && k<subCount; --j, ++k)
+                {
+                    var item=data[j];
+                    if (IFrameSplitOperator.IsNumber(item) && item<value) ++index;
+                }
+
+                result[i]=index;
+            }
+        }
+
+        return result;
+    }
+
+    //属于未来函数,下一次条件成立到当前的周期数.
+    //用法:BARSNEXT(X):下一次X不为0到现在的天数
+    //例如:BARSNEXT(CLOSE/REF(CLOSE,1)>=1.1)表示下一个涨停板到当前的周期数
+    this.BARSNEXT=function(data)
+    {
+        if (!Array.isArray(data)) return 0;
+
+        var result=[];
+
+        for(var i=0;i<data.length;++i)
+        {
+            result[i]=0;
+            for(var j=i, k=0;j<data.length;++j, ++k)
+            {
+                var item=data[j];
+                if (item>0) 
+                {
+                    result[i]=k;
+                    break;
+                }
+            }
+        }
+
+
+        return result;
+    }
+
+    //取随机数.
+    //用法:RAND(N),返回一个范围在1-N的随机整数
+    this.RAND=function(n)
+    {
+        if (Array.isArray(n))
+        {
+            var result=[];
+            for(var i in n)
+            {
+                result[i]=null;
+                var item=n[i];
+                var value=parseInt(item);
+                if (value<=0) continue;
+
+                result[i]=Math.ceil(Math.random()*value);
+            }
+
+            return result;
+        }
+        else
+        {
+            var value=parseInt(n);
+            if (value<=0) return null;
+
+            var stockData= this.SymbolData.Data;
+            var count=stockData.Data.length;
+            var result=[];
+            for(var i=0;i<count;++i)
+            {
+                result[i]=Math.ceil(Math.random()*value);
+            }
+            
+            return result;
+        }
+    }
+
+    //求自适应均线值.
+    //用法:AMA(X,A),A为自适应系数,必须小于1.
+    //算法:Y=Y'+A*(X-Y').初值为X
+    this.AMA=function(data,n)
+    {
+        var result=[];
+        var period;
+        if (Array.isArray(n))
+        {
+            //取最新的一个数据做为自适应系数
+            for(var i=data.length-1;i>=0;--i)
+            {
+                if (this.IsNumber(n[i]))
+                {
+                    period=n[i];
+                    break;
+                }
+            }
+        }
+        else 
+        {
+            period=n;
+        }
+        
+        if (this.IsNumber(period))
+        {
+            if (period>1) return result;
+            var index=0;
+            var value=0;
+            for(index;index<data.length;++index)
+            {
+                result[index]=null;
+                if (this.IsNumber(data[index]))
+                {
+                    value=data[index];
+                    result[index]=value;
+                    break;
+                }
+            }
+
+            for(var i=index+1;i<data.length;++i)
+            {
+                var item=data[i];
+                result[i]=result[i-1]+period*(item-result[i-1]);
+            }
+        }
+        
+        return result;
+    }
+
+
+     //返回移动平均
+    //用法:TMA(X,A,B),A和B必须小于1,算法	Y=(A*Y'+B*X),其中Y'表示上一周期Y值.初值为X
+    this.TMA=function(data, a, b)
+    {
+        var result=[];
+        if (this.IsNumber(a) && a<=1 && this.IsNumber(b) && b<1)
+        {
+            var bFirstFind=false;
+            var proValue;   //上一个值
+            for(var i in data)
+            {
+                result[i]=null;
+                if (bFirstFind==false)
+                {
+                    var item=data[i];
+                    if (this.IsNumber(item))
+                    {
+                        result[i]=item;
+                        proValue=result[i];
+                        bFirstFind=true;
+                    }
+                }
+                else
+                {
+                    var item=data[i];
+                    if (!this.IsNumber(item)) continue;
+                    result[i]=a*result[i-1]+b*item;
+                    proValue=result[i];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    this.ROUND=function(data)
+    {
+        if (this.IsNumber(data))
+        {
+            return Math.round(data);
+        }
+        
+        var result=[];
+        if (Array.isArray(data))
+        {
+            for(var i in data)
+            {
+                var item=data[i];
+                if (this.IsNumber(item)) 
+                    result[i]=Math.round(item);
+                else
+                    result[i]=null;
+            }
+        }
+
+        return result;
+    }
+
+    this.ROUND2=function(data,n)
+    {
+        var ROUND2_SEED=
+        [
+            1,10,100,1000,
+            10000,
+            100000,
+            1000000,
+            10000000,
+            100000000,
+            1000000000,
+            10000000000,
+            100000000000,
+            1000000000000
+        ];
+        var decimal=0;
+        if (this.IsNumber(n)) decimal=parseInt(n);
+        if (n<0) decimal=0;
+        else if (n>=ROUND2_SEED.length) decimal=ROUND2_SEED.length-1;
+
+        if (this.IsNumber(data))
+        {
+            return Math.round(data*ROUND2_SEED[decimal])/ROUND2_SEED[decimal];
+        }
+
+        var result=[];
+        if (Array.isArray(data))
+        {
+            for(var i in data)
+            {
+                var item=data[i];
+                if (this.IsNumber(item))
+                {
+                    result[i]=Math.round(item*ROUND2_SEED[decimal])/ROUND2_SEED[decimal];
+                }
+                else
+                {
+                    result[i]=null;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /* 文华
+    TRMA(X,N)： 求X在N个周期的三角移动平均值。
+
+    算法：三角移动平均线公式，是采用算数移动平均，并且对第一个移动平均线再一次应用算数移动平均。
+    TRMA(X,N) 算法如下
+    ma_half= MA(X,N/2)
+    trma=MA(ma_half,N/2)
+
+    注：
+    1、N包含当前k线。
+    2、当N为有效值，但当前的k线数不足N根，函数返回空值。
+    3、N为0或空值的情况下，函数返回空值。
+
+    例1：
+    TRMA5:TRMA(CLOSE,5);//计算5个周期内收盘价的三角移动平均。(N不能被2整除)
+    //TRMA(CLOSE,5)=MA(MA(CLOSE,(5+1)/2)),(5+1)/2);
+    例2:
+    TRMA10:TRMA(CLOSE,10);// 计算10个周期内收盘价的三角移动平均。(N能被2整除)
+    TRMA(CLOSE,10)=MA(MA(CLOSE,10/2),(10/2)+1));
+    */
+
+   this.TRMA=function(data,n)
+   {
+       if (!this.IsNumber(n) || n<=0) return [];
+       n=parseInt(n);
+       var nFalf=0,nFalf2=0;
+       if (n%2==0) 
+       {
+           nFalf=parseInt(n/2);
+           nFalf2=nFalf+1;
+       }
+       else 
+       {
+           nFalf=parseInt((n+1)/2);
+           nFalf2=nFalf;
+       }
+
+       var maFalf=this.MA(data,nFalf);
+       var result=this.MA(maFalf,nFalf2);
+       return result;
+    }
+
+    //VALUEWHEN(COND,X) 
+    //当COND条件成立时,取X的当前值,否则取VALUEWHEN的上个值.
+    this.VALUEWHEN=function(cond,data)
+    {
+        if (Array.isArray(cond))
+        {
+            var result=[];
+            if (Array.isArray(data))
+            {
+                var preValue=null;
+                for(var i in cond)
+                {
+                    if (i>=data.length)
+                    {
+                        result[i]=preValue;
+                        continue;
+                    }
+
+                    var item=data[i];
+                    if (cond[i])
+                    {
+                        result[i]=item;
+                        preValue=item;
+                    }
+                    else
+                    {
+                        result[i]=preValue;
+                    }
+                }
+            }
+            else
+            {
+                var preValue=null;
+                for(var i in cond)
+                {
+                    if (cond[i]) 
+                    {
+                        result[i]=data;
+                        preValue=data;
+                    }
+                    else
+                    {
+                        result[i]=preValue;
+                    }
+                }
+            }
+
+            return result;
+        }
+        else
+        {
+            return cond? 1:0;
+        }
+    }
+
+    /*
+    HARMEAN(X,N) 求X在N个周期内的调和平均值。
+
+    算法举例：HARMEAN(X,5)=1/[(1/X1+1/X2+1/X3+1/X4+1/X5)/5]
+
+    注：
+    1、N包含当前k线。
+    2、调和平均值与倒数的简单平均值互为倒数。
+    3、当N为有效值，但当前的k线数不足N根，函数返回空值。
+    4、N为0或空值的情况下，函数返回空值。
+    5、X为0或空值的情况下，函数返回空值。
+    6、N可以为变量。
+
+    例：HM5:=HARMEAN(C,5);//求5周期收盘价的调和平均值。
+    */
+    this.HARMEAN=function(data, n)
+    {
+        var result=[];
+
+        if (Array.isArray(data))
+        {
+            if (Array.isArray(n))
+            {
+                for(var i=0;i<data.length;++i)
+                {
+                    if (i>=n.length) 
+                    {
+                        result[i]=null;
+                        continue;
+                    }
+
+                    var count=parseInt(n[i]);
+                    if (count<=0 || count>i) 
+                    {
+                        result[i]=null;
+                        continue;
+                    }
+
+                    var sum=0;
+                    for(var j=0;j<count;++j)
+                    {
+                        var item=data[i-j];
+                        if (!this.IsNumber(item) || item==0)
+                        {
+                            sum=null;
+                            break;
+                        }
+
+                        sum+=1/item;
+                    }
+
+                    if (sum==null)
+                    {
+                        result[i]=null;
+                    }
+                    else
+                    {
+                        result[i]=1/(sum/count);
+                    }
+                }
+            }
+            else if (this.IsNumber(n))
+            {
+                n=parseInt(n);
+                if (n<=0) return result;
+
+                for(var i=0;i<data.length;++i)
+                {
+                    if (n>i) 
+                    {
+                        result[i]=null;
+                        continue;
+                    }
+
+                    var sum=0;
+                    for(var j=0;j<n;++j)
+                    {
+                        var item=data[i-j];
+                        if (!this.IsNumber(item) || item==0)
+                        {
+                            sum=null;
+                            break;
+                        }
+
+                        sum+=1/item;
+                    }
+
+                    if (sum==null)
+                    {
+                        result[i]=null;
+                    }
+                    else
+                    {
+                        result[i]=1/(sum/n);
+                    }
+                    }
+                }
+            }
+
+        return result;
+    }
+
+    //指定日期到1990.12.19的天数.
+    //用法: DATETODAY(date)
+    //DATETODAY(date).返回date到1990.12.19的天数.有效日期为(901219-1341231)
+    //例如: DATETODAY(901219)返回0.
+    this.DATETODAY=function(data)
+    {
+        var result=[];
+        var startDate=new Date('1990-12-19')
+        var startValue=19901219;
+        var ONE_DAY=1000 * 60 * 60 * 24
+        if (Array.isArray(data))
+        {
+            for(var i in data)
+            {
+                result[i]=null;
+                var item=data[i];
+                if (!this.IsNumber(item)) continue;
+                var value=item+19000000;
+                if (value<startValue) continue;
+                var year=parseInt(value/10000);
+                var month=parseInt((value%10000)/100);
+                var day=parseInt(value%100);
+                var dateItem=new Date(`${year}-${month}-${day}`);
+                result[i]=Math.round((dateItem-startDate)/ONE_DAY);
+            }
+        }
+        else if (this.IsNumber(data))
+        {
+            var value=data+19000000;
+            if (value>=startValue)
+            {
+                var year=parseInt(value/10000);
+                var month=parseInt((value%10000)/100);
+                var day=parseInt(value%100);
+                var dateItem=new Date(`${year}-${month}-${day}`);
+                return Math.round((dateItem-dateItem)/ONE_DAY);
+            }
+        }
+
+        return result;
+    }
+
+    //求1990.12.19后第若干天的日期.
+    //用法:DAYTODATE(N)
+    //DAYTODATE(N).返回1990.12.19后第N天的日期.有效天数为(0-20000)
+    //例如:DAYTODATE(0)返回901219.
+    this.DAYTODATE=function(data)
+    {
+        var startDate=new Date('1990-12-19')
+        var result=[];
+
+        if (Array.isArray(data))
+        {
+            for(var i in data)
+            {
+                result[i]=null;
+                var item=data[i];
+                if (!this.IsNumber(item)) continue;
+                startDate.setDate(startDate.getDate()+item);
+                var value=startDate.getFullYear()*10000+(startDate.getMonth()+1)*100+startDate.getDate();
+                value-=19000000;
+                result[i]=value;
+                startDate.setDate(startDate.getDate()-item);
+            }
+        }
+        else if (this.IsNumber(data))
+        {
+            startDate.setDate(startDate.getDate()+data);
+            var value=startDate.getFullYear()*10000+(startDate.getMonth()+1)*100+startDate.getDate();
+            value-=19000000;
+            return value;
+        }
+
+        return result;
+    }
+
     this.POW=function(data, n)
     {
         var result=[];
@@ -6042,6 +6873,45 @@ function JSAlgorithm(errorHandler, symbolData)
             }
         }
         
+        return result;
+    }
+
+    this.CEILING=function(data)
+    {
+        let isNumber=typeof(data)=='number';
+        if (isNumber) return parseInt(data);
+
+        var result=[];
+        for(var i in data)
+        {
+            var item=data[i];
+            if (this.IsNumber(item)) result[i]=parseInt(item);
+            else result[i]=null;
+        }
+
+        return result;
+    }
+
+    this.FLOOR=function(data)
+    {
+        let isNumber=typeof(data)=='number';
+        if (isNumber) return parseInt((data-1));
+
+        var result=[];
+        for(var i in data)
+        {
+            var item=data[i];
+            if (this.IsNumber(item)) result[i]=parseInt((item-1));
+            else result[i]=null;
+        }
+
+        return result;
+    }
+
+
+    this.PWINNER=function(n, data, node)
+    {
+        var result=[];
         return result;
     }
 
@@ -6154,6 +7024,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.COST(args[0], node);
             case 'WINNER':
                 return this.WINNER(args[0], node);
+            case "PWINNER":
+                return this.PWINNER(args[0],args[1],node);
             case 'UPNDAY':
                 return this.UPNDAY(args[0], args[1]);
             case 'DOWNNDAY':
@@ -6215,8 +7087,54 @@ function JSAlgorithm(errorHandler, symbolData)
             case 'INTPART':
                 return this.INTPART(args[0]);
 
+            case "CONST":
+                return this.CONST(args[0]);
+            case "TOPRANGE":
+                return this.TOPRANGE(args[0]);
+            case "LOWRANGE":
+                return this.LOWRANGE(args[0]);
+            case "FINDLOW":
+                return this.FINDLOW(args[0],args[1],args[2],args[3]);
+            case "FINDLOWBARS":
+                return this.FINDLOWBARS(args[0],args[1],args[2],args[3]);
+            case "FINDHIGH":
+                return this.FINDHIGH(args[0],args[1],args[2],args[3]);
+            case "FINDHIGHBARS":
+                return this.FINDHIGHBARS(args[0],args[1],args[2],args[3]);
+            case "BARSNEXT":
+                return this.BARSNEXT(args[0]);
+
+            case "HOD":
+                return this.HOD(args[0], args[1]);
+            case "LOD":
+                return this.LOD(args[0], args[1]);
+            case "AMA":
+                return this.AMA(args[0], args[1]);
+            case "TMA":
+                return this.TMA(args[0],args[1],args[2]);
+            case "ROUND":
+                return this.ROUND(args[0]);
+            case "ROUND2":
+                return this.ROUND2(args[0],args[1]);
+            case "TRMA":
+                return this.TRMA(args[0],args[1]);
+            case "VALUEWHEN":
+                return this.VALUEWHEN(args[0],args[1]);
+            case "HARMEAN":
+                return this.HARMEAN(args[0],args[1]);
+            case "DATETODAY":
+                return this.DATETODAY(args[0]);
+            case "DAYTODATE":
+                return this.DAYTODATE(args[0]);
+
             case 'POW':
                 return this.POW(args[0],args[1]);
+            case 'CEILING':
+                return this.CEILING(args[0]);
+            case 'FLOOR':
+                return this.FLOOR(args[0]);
+            case "BETWEEN":
+                return this.BETWEEN(args[0], args[1],args[2]);
 
             //三角函数
             case 'ATAN':
