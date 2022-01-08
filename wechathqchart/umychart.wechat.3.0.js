@@ -4493,6 +4493,11 @@ function KLineFrame()
         {
             this.XPointCount = xPointCount;
             this.Data.DataOffset = lastDataIndex - (this.XPointCount - rightSpaceCount) + 1;
+            if (this.Data.DataOffset<0)  
+            {
+                JSConsole.Chart.Log(`[KLineFrame::ZoomDown] this.Data.DataOffset=${this.Data.DataOffset}, reset this.Data.DataOffset=0`);
+                this.Data.DataOffset=0;
+            }
         }
 
         this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];
@@ -4537,6 +4542,12 @@ function KLineFrame()
         {
             this.XPointCount = xPointCount;
             this.Data.DataOffset = lastDataIndex - (this.XPointCount - rightSpaceCount) + 1;
+            if (this.Data.DataOffset<0) 
+            {
+                JSConsole.Chart.Log(`[KLineFrame::ZoomDown] this.Data.DataOffset=${this.Data.DataOffset}, reset this.Data.DataOffset=0`);
+                this.Data.DataOffset=0;
+            }
+               
         }
 
         this.DataWidth = ZOOM_SEED[this.ZoomIndex][0];

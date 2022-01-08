@@ -35,6 +35,8 @@ import
     JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME
 } from "./umychart.coordinatedata.wechat.js";
 
+import { JSConsole } from "./umychart.console.wechat.js";
+
 //配色
 function JSChartPaintResource() 
 {
