@@ -288,6 +288,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 28. [HQChart使用教程30-K线图如何对接第3方数据28-大盘数据](https://blog.csdn.net/jones2000/article/details/117712105)<br>
 29. [HQChart使用教程30-K线图如何对接第3方数据29-板块字符串函数数据](https://jones2000.blog.csdn.net/article/details/118887416)<br>
 30. [HQChart使用教程30-K线图如何对接第3方数据30-即时行情数据DYNAINFO](https://jones2000.blog.csdn.net/article/details/120276612)<br>
+31. [HQChart使用教程30-K线图如何对接第3方数据31-获取指定品种的K线数据](https://blog.csdn.net/jones2000/article/details/122391707)<br>
 
 
 ## 实战教程
