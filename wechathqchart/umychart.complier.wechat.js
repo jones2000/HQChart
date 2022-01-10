@@ -30,6 +30,11 @@ import
     JSCommon_JSIndexScript as JSIndexScript,
 } from './umychart.index.data.wechat.js'
 
+import {
+    JSCommon_HQ_DATA_TYPE as HQ_DATA_TYPE,
+    JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
+    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
+} from "./umychart.data.wechat.js";
 
 var g_JSComplierResource=
 {
@@ -831,6 +836,12 @@ function Node()
             jobs.push(item);
         }
 
+        for(var i in this.OtherSymbolData)
+        {
+            var item=this.OtherSymbolData[i];
+            jobs.push(item);
+        }
+
         return jobs;
     }
 
@@ -985,6 +996,33 @@ function Node()
             this.IsAPIData.push(item);
             return;
         }
+
+        let setStockDataName=new Set(['CLOSE',"C",'VOL','V','OPEN','O','HIGH','H','LOW','L','AMOUNT','AMO','VOLINSTK']);
+        if (setStockDataName.has(callee.Name)) 
+        {
+            var item= { Name:callee.Name, ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_OTHER_SYMBOL_DATA,Args:args };
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber};
+
+            this.OtherSymbolData.push(item);
+            return;
+        }
+    }
+
+    this.VerifySymbolLiteral=function(value,token)
+    {
+        if (IFrameSplitOperator.IsString(value))
+        {
+            if (value.indexOf('$')>0)
+            {
+                var aryValue=value.split('$');
+                if (aryValue.length!=2) return;
+
+                var item= { Literal:value, ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_OTHER_SYMBOL_DATA };
+                if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+    
+                this.OtherSymbolData.push(item);
+            }
+        }
     }
 
     this.ExpressionStatement=function(expression)
@@ -1010,8 +1048,9 @@ function Node()
         return { Type:type, Operator:operator, Left:left, Right:right };
     }
 
-    this.Literal=function(value,raw)
+    this.Literal=function(value,raw,token)
     {
+        this.VerifySymbolLiteral(value, token);
         return { Type:Syntax.Literal, Value:value, Raw:raw };
     }
 
@@ -1603,7 +1642,7 @@ function JSParser(code)
                 this.Context.IsBindingElement=false;
                 token=this.NextToken();
                 raw=this.GetTokenRaw(token);
-                expr=this.Finalize(node, this.Node.Literal(token.Value,raw));
+                expr=this.Finalize(node, this.Node.Literal(token.Value,raw,token));
                 break;
             case 7:/* Punctuator */
                 switch(this.LookAhead.Value)
@@ -8043,6 +8082,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.MarginData = new Map();  //融资融券
     this.NewsAnalysisData = new Map();    //新闻统计
     this.ExtendData = new Map();          //其他的扩展数据
+    this.OtherSymbolData=new Map();       //其他股票信息 key=symbol value=[historydata]
 
     //股票数据缓存 key=函数名(参数)  { Data: value=拟合的数据 , Error: } 
     //FinValue(id)
@@ -8239,6 +8279,326 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         return result;
+    }
+
+    this.GetOtherSymbolParam=function(name)
+    {
+        var args=name.split("$");
+        var setStockDataName=new Set(['CLOSE',"C",'VOL','V','OPEN','O','HIGH','H','LOW','L','AMOUNT','AMO','VOLINSTK']);
+        if (!setStockDataName.has(args[1])) return null;
+        
+        var symbol=args[0];
+        if (symbol.length==6)
+        {
+            if (symbol[0]=="6" || symbol[0]=="5" || symbol[0]=="8" || symbol[0]=="9")
+                symbol+=".SH";
+            else if (symbol[0]=='0' || symbol[0]=='1' || symbol[0]=='2' || symbol[0]=='3')
+                symbol+='.SZ';
+        }
+        else if (symbol.indexOf("SZ")==0)
+        {
+            symbol=symbol.substr(2)+".SZ";
+        }
+        else if (symbol.indexOf("SH")==0)
+        {
+            symbol=symbol.substr(2)+".SH";
+        }
+        else if (symbol.indexOf("_")>0)
+        {
+            var arySymbol=symbol.split("_");
+            symbol=`${arySymbol[1]}.${arySymbol[0]}`;
+        }
+        else 
+            return null;
+
+        return { Symbol:symbol.toLowerCase(), DataName:args[1] };
+        
+    }
+
+    //获取其他股票数据
+    this.GetOtherSymbolData=function(job)
+    {
+        var symbol=this.Symbol;
+        if (job.Literal)
+        {
+            var args=this.GetOtherSymbolParam(job.Literal.toUpperCase());
+            if (!args)
+            {
+                var token=job.Token;
+                this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`${job.Literal} Error.`);
+            }
+
+            symbol=args.Symbol;
+        }
+        else
+        {
+            var args=job.Args;
+            if (args.length>0)
+            {
+                var item=args[0];
+                if (item.Type==Syntax.Literal) 
+                {
+                    symbol=item.Value;
+                }
+                else if (item.Type==Syntax.Identifier)  //变量 !!只支持默认的变量值
+                {
+                    var isFind=false;
+                    for(var j in this.Arguments)
+                    {
+                        const argItem=this.Arguments[j];
+                        if (argItem.Name==item.Name)
+                        {
+                            symbol=argItem.Value;
+                            isFind=true;
+                            break;
+                        }
+                    }
+    
+                    if (!isFind) 
+                    {
+                        var token=job.Token;
+                        this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`${job.FunctionName}() Error: can't read ${item.Name}`);
+                    }
+                }
+            }
+        }
+       
+
+        job.Symbol=symbol.toLowerCase();
+        if (job.Symbol==this.Symbol) return this.Execute.RunNextJob();
+        if (this.OtherSymbolData.has(job.Symbol)) return this.Execute.RunNextJob();
+
+        var self=this;
+        if (this.DataType==HQ_DATA_TYPE.KLINE_ID && ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
+        {
+            if (this.NetworkFilter)
+            {
+                var dateRange=this.Data.GetDateRange();
+                var obj=
+                {
+                    Name:'JSSymbolData::GetOtherSymbolData', //类名::函数名
+                    Explain:'指定个股数据',
+                    Request:
+                    { 
+                        Data: 
+                        { 
+                            symbol:job.Symbol,
+                            right:self.Right,
+                            period:self.Period,
+                            dateRange:dateRange
+                        } 
+                    },
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvOtherSymbolKData(data,job);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
+            wx.request({
+                url: self.KLineApiUrl,
+                data:
+                {
+                    "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
+                    "symbol": job.Symbol,
+                    "start": -1,
+                    "count": self.MaxRequestDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
+                },
+                method: "POST",
+                dataType: "json",
+                async:true, 
+                success: function (recvData)
+                {
+                    self.RecvOtherSymbolKDayData(recvData,job);
+                    self.Execute.RunNextJob();
+                },
+                error: function(request)
+                {
+                    self.RecvError(request);
+                }
+            });
+        }
+        else  if (ChartData.IsMinutePeriod(this.Period, true) || this.DataType==HQ_DATA_TYPE.MINUTE_ID || this.DataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID)          //请求分钟数据
+        {
+            if (this.NetworkFilter)
+            {
+                var dateRange=this.Data.GetDateRange();
+                var obj=
+                {
+                    Name:'JSSymbolData::GetOtherSymbolData', //类名::函数名
+                    Explain:'指定个股数据',
+                    Request:
+                    { 
+                        Data: 
+                        { 
+                            symbol:job.Symbol,
+                            right:self.Right,
+                            period:self.Period,
+                            dateRange:dateRange
+                        } 
+                    },
+                    Self:this,
+                    PreventDefault:false
+                };
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvOtherSymbolKData(data,job);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
+            wx.request({
+                url: self.MinuteKLineApiUrl,
+                data:
+                {
+                    "field": ["name","symbol","yclose","open","price","high","low","vol"],
+                    "symbol": job.Symbol,
+                    "start": -1,
+                    "count": self.MaxRequestMinuteDayCount+5
+                },
+                method: "POST",
+                dataType: "json",
+                async:true,
+                success: function (data)
+                {
+                    self.RecvOtherSymbolKMinuteData(data,job);
+                    self.Execute.RunNextJob();
+                },
+                error: function(request)
+                {
+                    self.RecvError(request);
+                }
+            });
+        }
+    }
+
+    //第3方数据对接
+    this.RecvOtherSymbolKData=function(recvData,job)
+    {
+        var data=recvData.data;
+        JSConsole.Complier.Log('[JSSymbolData::RecvOtherSymbolKData] recv data' , data);
+
+        var kData=new ChartData();
+        var hisData=null;
+        var period=this.Period;
+        if (this.DataType==HQ_DATA_TYPE.KLINE_ID && ChartData.IsDayPeriod(this.Period,true))    //日线数据 
+        {
+            hisData=this.JsonDataToHistoryData(data);
+            kData.DataType=0; 
+        }
+        else    //分钟线数据
+        {
+            hisData=this.JsonDataToMinuteHistoryData(data);
+            kData.DataType=1; 
+            //走势图使用1分钟K线模式
+            if (this.DataType==HQ_DATA_TYPE.MINUTE_ID || this.DataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) 
+                period=4;
+        }
+        
+        kData.Period=this.Period;
+        kData.Right=this.Right;
+
+        kData.Data=this.Data.FixKData(hisData,period);
+        this.OtherSymbolData.set(job.Symbol, kData);
+    }
+
+    this.RecvOtherSymbolKDayData=function(recvData,job)
+    {
+        var data=recvData.data;
+        JSConsole.Complier.Log('[JSSymbolData::RecvOtherSymbolKDayData] recv data' , data);
+
+        let hisData=this.JsonDataToHistoryData(data);
+        var kData=new ChartData();
+        kData.DataType=0; //日线数据 
+        kData.Data=hisData;
+
+        var aryOverlayData=this.SourceData.GetOverlayData(kData.Data);      //和主图数据拟合以后的数据
+        kData.Data=aryOverlayData;
+
+        if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
+        {
+            let periodData=kData.GetPeriodData(this.Period);
+            kData.Data=periodData;
+        }
+
+        this.OtherSymbolData.set(job.Symbol, kData);
+    }
+
+    this.RecvOtherSymbolKMinuteData=function(recvData, job)
+    {
+        var data=recvData.data;
+        JSConsole.Complier.Log('[JSSymbolData::RecvOtherSymbolKMinuteData] recv data' , data);
+
+        let hisData=this.JsonDataToMinuteHistoryData(data);
+        var kData=new ChartData();
+        kData.DataType=1; /*分钟线数据 */
+        kData.Data=hisData;
+
+        if (ChartData.IsMinutePeriod(this.Period,false))   //周期数据
+        {
+            let periodData=kData.GetPeriodData(this.Period);
+            kData.Data=periodData;
+        }
+
+        this.OtherSymbolData.set(job.Symbol, kData);
+    }
+
+    this.GetOtherSymolCacheData=function(obj)
+    {
+        var symbol,dataName;
+        if (obj.FunctionName)
+        {
+            dataName=obj.FunctionName;
+            var args=obj.Args;
+            if (args.length<=0) return this.GetSymbolCacheData(dataName);
+            symbol=args[0].toString().toLowerCase();
+        }
+        else if (obj.Literal)
+        {
+            var args=this.GetOtherSymbolParam(obj.Literal.toUpperCase());
+            if (!args) return [];
+            symbol=args.Symbol;
+            dataName=args.DataName;
+        }
+        
+        if (symbol==this.Symbol) return this.GetSymbolCacheData(dataName);
+        if (!this.OtherSymbolData.has(symbol)) return [];
+
+        var kData=this.OtherSymbolData.get(symbol);
+        var upperSymbol=symbol.toUpperCase();
+
+        switch(dataName)
+        {
+            case 'CLOSE':
+            case 'C':
+                return kData.GetClose();
+            case 'VOL':
+            case 'V':
+                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) 
+                    return kData.GetVol(100);   //A股的 把股转成手
+                return kData.GetVol();
+            case 'OPEN':
+            case 'O':
+                return kData.GetOpen();
+            case 'HIGH':
+            case 'H':
+                return kData.GetHigh();
+            case 'LOW':
+            case 'L':
+                return kData.GetLow();
+            case 'AMOUNT':
+            case 'AMO':
+                return kData.GetAmount();
+            case 'VOLINSTK':
+                return kData.GetPosition();
+        }
     }
 
     //获取大盘指数数据
@@ -10268,6 +10628,7 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_SYMBOL_LATEST_DATA:3,  //最新的股票行情数据
     JOB_DOWNLOAD_INDEX_INCREASE_DATA: 4, //涨跌股票个数统计数据
     JOB_DOWNLOAD_VOLR_DATA: 5,           //5日量比均量下载量比数据
+    JOB_DOWNLOAD_OTHER_SYMBOL_DATA:9,   //下载其他股票的K线数据
 
     JOB_DOWNLOAD_FINVALUE:301,                  //引用专业财务数据 FINVALUE(ID),ID为数据编号
     JOB_DOWNLOAD_FINONE:302,                    //引用指定年和月日的某类型的财务数据 FINONE(ID,Y,MMDD),ID为数据编号,Y和MMDD表示年和月日.
@@ -10454,6 +10815,9 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetLatestData(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VOLR_DATA:  //量比
                 return this.SymbolData.GetVolRateData(jobItem);
+
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_OTHER_SYMBOL_DATA:  //指定股票数据
+                return this.SymbolData.GetOtherSymbolData(jobItem);
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FINONE:
                 return this.SymbolData.GetFinOne(jobItem);
@@ -10737,6 +11101,15 @@ function JSExecute(ast,option)
                     }
 
                     varName="__temp_i_"+i+"__";
+                    this.OutVarTable.push({Name:varName, Data:outVar, Type:type, NoneName:true});
+                }
+                else if (item.Expression.Type==Syntax.Literal)  //常量
+                {
+                    let outVar=item.Expression.Value;
+                    if (IFrameSplitOperator.IsString(outVar) && outVar.indexOf("$")>0)
+                        outVar=this.SymbolData.GetOtherSymolCacheData({ Literal:outVar });
+                    varName="__temp_li_"+i+"__";
+                    var type=0;
                     this.OutVarTable.push({Name:varName, Data:outVar, Type:type, NoneName:true});
                 }
                 else if (item.Expression.Type==Syntax.BinaryExpression)
@@ -11221,6 +11594,20 @@ function JSExecute(ast,option)
             case 'LOADAPIDATA':
                 node.Out = this.SymbolData.GetCustomApiData(args);
                 break;
+            case 'CLOSE':
+            case 'C':
+            case 'VOL':
+            case 'V':
+            case 'OPEN':
+            case 'O':
+            case 'HIGH':
+            case 'H':
+            case 'LOW':
+            case 'L':
+            case 'AMOUNT':
+            case 'AMO':
+                node.Out=this.SymbolData.GetOtherSymolCacheData( {FunctionName:funcName, Args:args} );
+                break;
             case "INBLOCK":
                 node.Out=this.SymbolData.IsInBlock(args[0],node);
                 break;
@@ -11247,7 +11634,11 @@ function JSExecute(ast,option)
         else if (right.Type==Syntax.CallExpression)
             value=this.VisitCallExpression(right);
         else if (right.Type==Syntax.Literal)
+        {
             value=right.Value;
+            if (IFrameSplitOperator.IsString(value) && right.Value.indexOf("$")>0)
+                value=this.SymbolData.GetOtherSymolCacheData( {Literal:value} );
+        }
         else if (right.Type==Syntax.Identifier) //右值是变量
             value=this.ReadVariable(right.Name,right);
         else if (right.Type == Syntax.MemberExpression)

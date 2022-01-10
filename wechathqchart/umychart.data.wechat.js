@@ -1916,6 +1916,14 @@ var JSCHART_EVENT_ID =
     ON_SPLIT_YCOORDINATE:29,             //分割Y轴及格式化刻度文字
 }
 
+var HQ_DATA_TYPE=
+{
+    KLINE_ID:0,         //K线
+    MINUTE_ID:2,        //当日走势图
+    HISTORY_MINUTE_ID:3,//历史分钟走势图
+    MULTIDAY_MINUTE_ID:4,//多日走势图
+};
+
 function PhoneDBClick()
 {
     this.Start=[];
@@ -1983,6 +1991,7 @@ module.exports =
         DataPlus: DataPlus,
         JSCHART_EVENT_ID:JSCHART_EVENT_ID,
         PhoneDBClick:PhoneDBClick,
+        HQ_DATA_TYPE:HQ_DATA_TYPE,
     },
 
     //单个类导出
@@ -2003,4 +2012,5 @@ module.exports =
     JSCommon_ToFixedRect: ToFixedRect,
     JSCommon_JSCHART_EVENT_ID:JSCHART_EVENT_ID,
     JSCommon_PhoneDBClick:PhoneDBClick,
+    JSCommon_HQ_DATA_TYPE:HQ_DATA_TYPE,
 };
