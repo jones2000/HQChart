@@ -16,6 +16,9 @@ import {
 
 import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达信编译器
 
+//日志
+import { JSConsole } from "./umychart.console.wechat.js"
+
 //图形库
 import {
     JSCommonChartPaint_IChartPainting as IChartPainting, 

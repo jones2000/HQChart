@@ -10881,7 +10881,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.OtherSymbolData.has(job.Symbol)) return this.Execute.RunNextJob();
 
         var self=this;
-        if (this.DataType==HQ_DATA_TYPE.KLINE_ID &&　ChartData.IsDayPeriod(this.Period,true))     //请求日线数据 9=季线
+        if (this.DataType==HQ_DATA_TYPE.KLINE_ID && ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
         {
             if (this.NetworkFilter)
             {
@@ -10994,7 +10994,7 @@ function JSSymbolData(ast,option,jsExecute)
     //第3方数据对接
     this.RecvOtherSymbolKData=function(data,job)
     {
-        JSConsole.Complier.Log('[JSSymbolData::RecvOtherSymbolKDayData2] recv data' , data);
+        JSConsole.Complier.Log('[JSSymbolData::RecvOtherSymbolKData] recv data' , data);
 
         var kData=new ChartData();
         var hisData=null;

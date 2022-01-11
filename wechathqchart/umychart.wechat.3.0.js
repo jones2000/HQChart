@@ -1121,6 +1121,18 @@ function JSChart(element)
             this.JSChartContainer.AddIndexWindow(indexName,option);
     }
 
+    this.AddScriptIndexWindow=function(indexInfo, option)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.AddScriptIndexWindow)=='function')
+            this.JSChartContainer.AddScriptIndexWindow(indexInfo,option);
+    }
+
+    this.AddAPIIndexWindow=function(indexData, option)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.AddAPIIndexWindow)=='function')
+            this.JSChartContainer.AddAPIIndexWindow(indexData,option);
+    }
+
     //删除一个指标窗口
     this.RemoveIndexWindow=function(id)
     {
@@ -2626,14 +2638,8 @@ function JSChartContainer(uielement)
         this.Draw();
     }
 
-     //增加一个指标窗口
-    this.AddIndexWindow=function(indexName,option)
+    this.AddNewSubFrame=function(option)
     {
-        //查找系统指标
-        let scriptData = new JSCommonIndexScript.JSIndexScript();
-        let indexInfo = scriptData.Get(indexName);
-        if (!indexInfo) return;
-
         var index=this.Frame.SubFrame.length;
         var subFrame=this.CreateSubFrameItem(index);
         this.Frame.SubFrame[index]=subFrame;
@@ -2682,6 +2688,19 @@ function JSChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Draw();
 
+        return index;
+    }
+
+     //增加一个指标窗口
+    this.AddIndexWindow=function(indexName,option)
+    {
+        //查找系统指标
+        let scriptData = new JSCommonIndexScript.JSIndexScript();
+        let indexInfo = scriptData.Get(indexName);
+        if (!indexInfo) return;
+
+        var index=this.AddNewSubFrame(option);
+
         var indexData = 
         { 
             Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
@@ -2699,6 +2718,39 @@ function JSChartContainer(uielement)
         }
 
         this.WindowIndex[index] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args,indexData);    //脚本执行
+        if (this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer")
+            var bindData=this.SourceData;
+        else 
+            var bindData=this.ChartPaint[0].Data;
+
+        this.BindIndexData(index,bindData);     //执行脚本
+    }
+
+    //增加一个自定义指标窗口
+    this.AddScriptIndexWindow=function(indexInfo, option)
+    {
+        if (!indexInfo || !indexInfo.Script || !indexInfo.Name) return;
+
+        var index=this.AddNewSubFrame(option);
+
+        this.WindowIndex[index] =  new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo)
+        if (this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer")
+            var bindData=this.SourceData;
+        else 
+            var bindData=this.ChartPaint[0].Data;
+
+        this.BindIndexData(index,bindData);     //执行脚本
+    }
+
+    //增加一个远程指标窗口
+    this.AddAPIIndexWindow=function(indexInfo, option)
+    {
+        if (!indexInfo.API) return;
+       
+        var apiItem = indexInfo.API;
+        var index=this.AddNewSubFrame(option);
+        this.WindowIndex[index] = new APIScriptIndex(apiItem.Name, apiItem.Script, apiItem.Args, indexInfo);
+
         if (this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer")
             var bindData=this.SourceData;
         else 
@@ -7172,6 +7224,7 @@ function KLineChartContainer(uielement)
         frame.XSplitOperator.Frame = frame;
         frame.XSplitOperator.ChartBorder = border;
         frame.XSplitOperator.ShowText = false;
+        frame.XSplitOperator.Period=this.Period;
 
         //K线数据绑定
         var xPointCouont = this.Frame.SubFrame[0].Frame.XPointCount;

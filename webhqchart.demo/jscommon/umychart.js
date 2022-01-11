@@ -1324,6 +1324,12 @@ function JSChart(divElement, bOffscreen)
             this.JSChartContainer.AddScriptIndexWindow(indexInfo,option);
     }
 
+    this.AddAPIIndexWindow=function(indexData, option)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.AddAPIIndexWindow)=='function')
+            this.JSChartContainer.AddAPIIndexWindow(indexData,option);
+    }
+
     this.RemoveIndexWindow=function(id)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.RemoveIndexWindow)=='function')
@@ -5557,6 +5563,24 @@ function JSChartContainer(uielement, OffscreenElement)
         }
 
         this.WindowIndex[index] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args,indexData);    //脚本执行
+        if (this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer")
+            var bindData=this.SourceData;
+        else 
+            var bindData=this.ChartPaint[0].Data;
+
+        this.BindIndexData(index,bindData);     //执行脚本
+    }
+
+    this.AddAPIIndexWindow=function(indexData, option)
+    {
+        if (!indexData.API) return;
+
+        this.RemoveMinSizeWindows();    //清空隐藏的指标
+        var index=this.AddNewSubFrame(option);
+
+        //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
+        var apiItem=indexData.API;
+        this.WindowIndex[index]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,indexData);
         if (this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer")
             var bindData=this.SourceData;
         else 
