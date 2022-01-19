@@ -16,6 +16,7 @@ import
     JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
     JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
     JSCommon_Rect as Rect,
+    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
 } from "./umychart.data.wechat.js";
 
 import 
@@ -65,6 +66,7 @@ function IChartPainting()
 
     this.IsDrawFirst = false;             //是否比K线先画
     this.IsShow = true;                   //是否显示
+    this.GetEventCallback;
 
     this.Draw = function () { }
 
@@ -371,7 +373,9 @@ function ChartKLine()
         var firstPoint = null;
         this.Canvas.beginPath();
         this.Canvas.strokeStyle = this.CloseLineColor;
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) {
+        var ptLast=null;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        {
             var data = this.Data.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
 
@@ -381,52 +385,69 @@ function ChartKLine()
             var x = left + (right - left) / 2;
             var yClose = this.ChartFrame.GetYFromData(data.Close);
 
-            if (bFirstPoint) {
-                if (isHScreen) {
+            if (bFirstPoint) 
+            {
+                if (isHScreen) 
+                {
                     this.Canvas.moveTo(yClose, x);
                     firstPoint = { X: yClose, Y: x };
                 }
-                else {
+                else
+                {
                     this.Canvas.moveTo(x, yClose);
                     firstPoint = { X: x, Y: yClose };
                 }
                 bFirstPoint = false;
             }
-            else {
+            else 
+            {
                 if (isHScreen) this.Canvas.lineTo(yClose, x);
                 else this.Canvas.lineTo(x, yClose);
             }
+
+            if (i==this.Data.Data.length-1)
+            {
+                ptLast={ X:x, Y:yClose, XLeft:left, XRight:right, KItem:data, ChartRight:chartright };
+            }
         }
+
+        this.DrawLastPointEvent(ptLast);  //通知外部绘制最后一个点
 
         if (bFirstPoint) return;
 
         this.Canvas.stroke();
         //画面积
-        if (isHScreen) {
+        if (isHScreen) 
+        {
             this.Canvas.lineTo(this.ChartBorder.GetLeft(), x);
             this.Canvas.lineTo(this.ChartBorder.GetLeft(), firstPoint.Y);
         }
-        else {
+        else 
+        {
             this.Canvas.lineTo(x, this.ChartBorder.GetBottom());
             this.Canvas.lineTo(firstPoint.X, this.ChartBorder.GetBottom());
         }
         this.Canvas.closePath();
 
-        if (Array.isArray(this.CloseLineAreaColor)) {
-            if (isHScreen) {
+        if (Array.isArray(this.CloseLineAreaColor)) 
+        {
+            if (isHScreen) 
+            {
                 let gradient = this.Canvas.createLinearGradient(this.ChartBorder.GetRightEx(), this.ChartBorder.GetTop(), this.ChartBorder.GetLeft(), this.ChartBorder.GetTop());
                 gradient.addColorStop(0, this.CloseLineAreaColor[0]);
                 gradient.addColorStop(1, this.CloseLineAreaColor[1]);
                 this.Canvas.fillStyle = gradient;
             }
-            else {
+            else 
+            {
                 let gradient = this.Canvas.createLinearGradient(firstPoint.X, this.ChartBorder.GetTopEx(), firstPoint.X, this.ChartBorder.GetBottom());
                 gradient.addColorStop(0, this.CloseLineAreaColor[0]);
                 gradient.addColorStop(1, this.CloseLineAreaColor[1]);
                 this.Canvas.fillStyle = gradient;
             }
         }
-        else {
+        else 
+        {
             this.Canvas.fillStyle = this.CloseLineAreaColor;
         }
         this.Canvas.fill();
@@ -442,7 +463,8 @@ function ChartKLine()
         var xPointCount = this.ChartFrame.XPointCount;
         var border=this.ChartBorder.GetBorder();
         
-        if (isHScreen) {
+        if (isHScreen) 
+        {
             xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
             chartright = this.ChartBorder.GetBottom();
         }
@@ -453,6 +475,7 @@ function ChartKLine()
         var upColor = this.UpColor;
         var downColor = this.DownColor;
         var unchagneColor = this.UnchagneColor;
+        var ptLast=null;
 
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
         {
@@ -530,8 +553,14 @@ function ChartKLine()
                 var infoItem = { X: x, Xleft: left, XRight: right, YMax: yHigh, YMin: yLow, DayData: data, Index: j };
                 this.DrawInfoDiv(infoItem);
             }
+
+            if (i==this.Data.Data.length-1)
+            {
+                ptLast={ X:x, Y:yClose, XLeft:left, XRight:right, KItem:data, ChartRight:chartright };
+            }
         }
 
+        this.DrawLastPointEvent(ptLast);  //通知外部绘制最后一个点
         this.PtMax = ptMax;
         this.PtMin = ptMin;
     }
@@ -1239,6 +1268,21 @@ function ChartKLine()
         }
         
         return range;
+    }
+
+    this.DrawLastPointEvent=function(ptLast)
+    {
+        if (!this.GetEventCallback)  return;
+        
+        //通知外部绘制最后一个点
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_KLINE_LAST_POINT);
+        if (event)
+        {
+            var kWidth={ Data: this.ChartFrame.DataWidth, Distance:this.ChartFrame.DistanceWidth };
+            if (ptLast) var data={ LastPoint:{ X:ptLast.X, Y:ptLast.Y, XLeft:ptLast.XLeft, XRight:ptLast.XRight }, KItem:ptLast.KItem, DrawType:this.DrawType, KWidth:kWidth, ChartRight:ptLast.ChartRight };
+            else var data={ LastPoint:null, KItem:null, KWidth:kWidth };
+            event.Callback(event,data,this);
+        }
     }
 }
 

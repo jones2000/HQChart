@@ -7255,6 +7255,7 @@ function KLineChartContainer(uielement)
         kline.ChartFrame = this.Frame.SubFrame[0].Frame;
         kline.Name = "Main-KLine";
         kline.DrawType = this.KLineDrawType;
+        kline.GetEventCallback=(id)=>{ return this.GetEventCallback(id); };
 
         this.ChartPaint[0] = kline;
 

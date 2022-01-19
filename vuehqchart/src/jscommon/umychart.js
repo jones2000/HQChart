@@ -599,6 +599,7 @@ function JSChart(divElement, bOffscreen)
         if (IFrameSplitOperator.IsBool(option.EnableSelectRect)) chart.EnableSelectRect=option.EnableSelectRect; //是否启用区间选择
         if (IFrameSplitOperator.IsBool(option.EnableZoomIndexWindow)) chart.EnableZoomIndexWindow=option.EnableZoomIndexWindow;
         if (IFrameSplitOperator.IsBool(option.IsDrawPictureXY)) chart.IsDrawPictureXY=option.IsDrawPictureXY;
+        if (IFrameSplitOperator.IsBool(option.EnableNewIndex)) chart.EnableNewIndex=option.EnableNewIndex;
 
         chart.SelectRectDialog=new MinuteSelectRectDialog(this.DivElement);
         
@@ -3940,6 +3941,7 @@ function JSChartContainer(uielement, OffscreenElement)
         var clientPos=this.PtInClient(x,y);
         var option={ ParentFunction:'OnMouseMove', Point:{X:x, Y:y}, IsPhone:isPhone===true, ClientPos:clientPos };
         if (e && (e.type=="mouseout" || e.type=="mouseleave")) option.Corss=false; //鼠标移开,不显示十字光标
+        if (this.SetCorssCursorIndex) this.SetCorssCursorIndex(option);
         this.DrawDynamicInfo(option);
         if (mouseStatus) this.UIElement.style.cursor=mouseStatus.Cursor;
 
@@ -8553,6 +8555,365 @@ function MinuteFrame()
         return (x-left)*(count*1.0/width);
     }
 
+
+    this.MoveXIndexLeft=function(step, obj)
+    {
+        JSConsole.Chart.Log("[MinuteFrame::MoveXIndexLeft] obj ", obj);
+        if (obj.DataType==2)  //多日数据
+        {
+            var dayIndex=obj.IndexData.DayIndex;
+            var dataIndex=obj.IndexData.DataIndex-step;
+            var itemIndex=-1;
+            if (obj.IndexData.Type==20) itemIndex=0;
+            else if (obj.IndexData.Type==10) itemIndex=1;
+            else if (obj.IndexData.Type==30) itemIndex=2;
+            else return false;
+
+            for(var i=dayIndex, j=itemIndex; i>=0; --i)
+            {
+                dayItem=obj.Data[i];
+                for(; j>=0; --j)
+                {
+                    var dataItem=dayItem[j];
+                    if (!dataItem.DayItem || !dataItem.DayItem.Data) continue;
+
+                    if (dataIndex==null) dataIndex=dataItem.DayItem.Data.length-1;
+                    for(; dataIndex>=0;--dataIndex)
+                    {
+                        var item=dataItem.DayItem.Data[dataIndex];
+                        if (!item) continue;
+                        if (dataItem.Type==10)
+                        {
+                            var cursorIndex=this.MinuteCount*i+dataIndex;
+                            obj.Point.X=this.GetXFromIndex(cursorIndex);
+                            obj.Point.Y=this.GetYFromData(item.Close);
+                            obj.IndexData.CursorIndex=cursorIndex;
+                            obj.IndexData.DayIndex=i;
+                            obj.IndexData.DataIndex=dataIndex;
+                            obj.IndexData.Type=dataItem.Type;
+                            return true;
+                        }
+                        else if (dataItem.Type==20)
+                        {
+                            if (!IFrameSplitOperator.IsNumber(item.Price)) continue;
+                            obj.Point.X=this.GetLeftExtendXFromIndex(dataIndex,dataItem.DayItem);
+                            obj.Point.Y=this.GetLeftExtendYFromData(item.Price);
+                            obj.IndexData.CursorIndex=-1;
+                            obj.IndexData.DayIndex=i;
+                            obj.IndexData.DataIndex=dataIndex;
+                            obj.IndexData.Type=dataItem.Type;
+                            return true;
+                        }
+                        else if (dataItem.Type==30)
+                        {
+                            if (!IFrameSplitOperator.IsNumber(item.Price)) continue;
+                            obj.Point.X=this.GetRightExtendXFromIndex(dataIndex,dataItem.DayItem);
+                            obj.Point.Y=this.GetRightExtendYFromData(item.Price);
+                            obj.IndexData.CursorIndex=-1;
+                            obj.IndexData.DayIndex=i;
+                            obj.IndexData.DataIndex=dataIndex;
+                            obj.IndexData.Type=dataItem.Type;
+                            return true;
+                        }
+                    }
+                    
+                    dataIndex=null;
+                }
+
+                j=2;
+            }
+
+
+            return false;
+        }
+        else if (obj.DataType==1)   //单日
+        {
+            var dayIndex=obj.IndexData.DayIndex;
+            var dataIndex=obj.IndexData.DataIndex-step;
+            var itemIndex=-1;
+            if (obj.IndexData.Type==2) itemIndex=0;
+            else if (obj.IndexData.Type==1) itemIndex=1;
+            else if (obj.IndexData.Type==3) itemIndex=2;
+            else return false;
+
+            for(var i=itemIndex; i>=0; --i)
+            {
+                var dataItem=obj.Data[i];
+                if (!dataItem || !dataItem.DayItem || !dataItem.DayItem.Data) continue;
+
+                if (dataIndex==null) dataIndex=dataItem.DayItem.Data.length-1;
+                for(; dataIndex>=0;--dataIndex)
+                {
+                    var item=dataItem.DayItem.Data[dataIndex];
+                    if (!item) continue;
+                    if (dataItem.Type==1)
+                    {
+                        var cursorIndex=dataIndex;
+                        obj.Point.X=this.GetXFromIndex(cursorIndex);
+                        obj.Point.Y=this.GetYFromData(item.Close);
+                        obj.IndexData.CursorIndex=cursorIndex;
+                        obj.IndexData.DayIndex=0;
+                        obj.IndexData.DataIndex=dataIndex;
+                        obj.IndexData.Type=dataItem.Type;
+                        return true;
+                    }
+                    else if (dataItem.Type==2)
+                    {
+                        if (!IFrameSplitOperator.IsNumber(item.Price)) continue;
+                        obj.Point.X=this.GetLeftExtendXFromIndex(dataIndex,dataItem.DayItem);
+                        obj.Point.Y=this.GetLeftExtendYFromData(item.Price);
+                        obj.IndexData.CursorIndex=-1;
+                        obj.IndexData.DayIndex=0;
+                        obj.IndexData.DataIndex=dataIndex;
+                        obj.IndexData.Type=dataItem.Type;
+                        return true;
+                    }
+                    else if (dataItem.Type==3)
+                    {
+                        if (!IFrameSplitOperator.IsNumber(item.Price)) continue;
+                        obj.Point.X=this.GetRightExtendXFromIndex(dataIndex,dataItem.DayItem);
+                        obj.Point.Y=this.GetRightExtendYFromData(item.Price);
+                        obj.IndexData.CursorIndex=-1;
+                        obj.IndexData.DayIndex=0;
+                        obj.IndexData.DataIndex=dataIndex;
+                        obj.IndexData.Type=dataItem.Type;
+                        return true;
+                    }
+                }
+                
+                dataIndex=null;
+            }
+        }
+    }
+
+    this.MoveXIndexRight=function(step, obj)
+    {
+        JSConsole.Chart.Log("[MinuteFrame::MoveXIndexRight] obj ", obj);
+        if (obj.DataType==2)  //多日数据
+        {
+            var dayIndex=obj.IndexData.DayIndex;
+            var dataIndex=obj.IndexData.DataIndex+step;
+            var itemIndex=-1;
+            if (obj.IndexData.Type==20) itemIndex=0;
+            else if (obj.IndexData.Type==10) itemIndex=1;
+            else if (obj.IndexData.Type==30) itemIndex=2;
+            else return false;
+
+            for(var i=dayIndex, j=itemIndex; i<obj.Data.length; ++i)
+            {
+                dayItem=obj.Data[i];
+                for(; j<3; ++j)
+                {
+                    var dataItem=dayItem[j];
+                    if (!dataItem.DayItem || !dataItem.DayItem.Data) continue;
+
+                    if (dataIndex==null) dataIndex=0;
+                    for(; dataIndex<dataItem.DayItem.Data.length;++dataIndex)
+                    {
+                        var item=dataItem.DayItem.Data[dataIndex];
+                        if (!item) continue;
+                        if (dataItem.Type==10)
+                        {
+                            var cursorIndex=this.MinuteCount*i+dataIndex;
+                            obj.Point.X=this.GetXFromIndex(cursorIndex);
+                            obj.Point.Y=this.GetYFromData(item.Close);
+                            obj.IndexData.CursorIndex=cursorIndex;
+                            obj.IndexData.DayIndex=i;
+                            obj.IndexData.DataIndex=dataIndex;
+                            obj.IndexData.Type=dataItem.Type;
+                            return true;
+                        }
+                        else if (dataItem.Type==20)
+                        {
+                            if (!IFrameSplitOperator.IsNumber(item.Price)) continue;
+                            obj.Point.X=this.GetLeftExtendXFromIndex(dataIndex,dataItem.DayItem);
+                            obj.Point.Y=this.GetLeftExtendYFromData(item.Price);
+                            obj.IndexData.CursorIndex=-1;
+                            obj.IndexData.DayIndex=i;
+                            obj.IndexData.DataIndex=dataIndex;
+                            obj.IndexData.Type=dataItem.Type;
+                            return true;
+                        }
+                        else if (dataItem.Type==30)
+                        {
+                            if (!IFrameSplitOperator.IsNumber(item.Price)) continue;
+                            obj.Point.X=this.GetRightExtendXFromIndex(dataIndex,dataItem.DayItem);
+                            obj.Point.Y=this.GetRightExtendYFromData(item.Price);
+                            obj.IndexData.CursorIndex=-1;
+                            obj.IndexData.DayIndex=i;
+                            obj.IndexData.DataIndex=dataIndex;
+                            obj.IndexData.Type=dataItem.Type;
+                            return true;
+                        }
+                    }
+                    
+                    dataIndex=null;
+                }
+
+                j=0;
+            }
+
+
+            return false;
+        }
+        else if (obj.DataType==1)   //单日
+        {
+            var dayIndex=obj.IndexData.DayIndex;
+            var dataIndex=obj.IndexData.DataIndex+step;
+            var itemIndex=-1;
+            if (obj.IndexData.Type==2) itemIndex=0;
+            else if (obj.IndexData.Type==1) itemIndex=1;
+            else if (obj.IndexData.Type==3) itemIndex=2;
+            else return false;
+
+            for(var i=itemIndex; i<obj.Data.length; ++i)
+            {
+                var dataItem=obj.Data[i];
+                if (!dataItem.DayItem || !dataItem.DayItem.Data) continue;
+
+                if (dataIndex==null) dataIndex=0;
+                for(; dataIndex<dataItem.DayItem.Data.length;++dataIndex)
+                {
+                    var item=dataItem.DayItem.Data[dataIndex];
+                    if (!item) continue;
+                    if (dataItem.Type==1)
+                    {
+                        var cursorIndex=dataIndex;
+                        obj.Point.X=this.GetXFromIndex(cursorIndex);
+                        obj.Point.Y=this.GetYFromData(item.Close);
+                        obj.IndexData.CursorIndex=cursorIndex;
+                        obj.IndexData.DayIndex=0;
+                        obj.IndexData.DataIndex=dataIndex;
+                        obj.IndexData.Type=dataItem.Type;
+                        return true;
+                    }
+                    else if (dataItem.Type==2)
+                    {
+                        if (!IFrameSplitOperator.IsNumber(item.Price)) continue;
+                        obj.Point.X=this.GetLeftExtendXFromIndex(dataIndex,dataItem.DayItem);
+                        obj.Point.Y=this.GetLeftExtendYFromData(item.Price);
+                        obj.IndexData.CursorIndex=-1;
+                        obj.IndexData.DayIndex=0;
+                        obj.IndexData.DataIndex=dataIndex;
+                        obj.IndexData.Type=dataItem.Type;
+                        return true;
+                    }
+                    else if (dataItem.Type==3)
+                    {
+                        if (!IFrameSplitOperator.IsNumber(item.Price)) continue;
+                        obj.Point.X=this.GetRightExtendXFromIndex(dataIndex,dataItem.DayItem);
+                        obj.Point.Y=this.GetRightExtendYFromData(item.Price);
+                        obj.IndexData.CursorIndex=-1;
+                        obj.IndexData.DayIndex=0;
+                        obj.IndexData.DataIndex=dataIndex;
+                        obj.IndexData.Type=dataItem.Type;
+                        return true;
+                    }
+                }
+                
+                dataIndex=null;
+            }
+        }
+    }
+
+    //获取有效数据
+    this.GetLeftExtendXValidData=function(x, obj)
+    {
+        var border=this.ChartBorder.GetBorder();
+        if (border.DayBorder)
+        {
+            var indexData=this.GetLeftExtendXData(x, obj.Data);
+            var index=parseInt(indexData.DataIndex.toFixed(0));
+            var dayData=obj.Data[indexData.DayIndex];
+            
+            if (index>=0 && index<dayData.Data.length)
+            {
+                var item=dayData.Data[index];
+                if (IFrameSplitOperator.IsNumber(item.Price)) 
+                {
+                    obj.IndexData.DataIndex=index;
+                    return true;
+                }
+            }
+
+            if (index<0) index=0;
+            else if (index>=dayData.Data.length) index=dayData.Data.length-1;
+
+            var findIndex=-1;
+            for(var i=index; i>=0; --i)
+            {
+                var item=dayData.Data[i];
+                if (IFrameSplitOperator.IsNumber(item.Price))
+                {
+                    findIndex=i;
+                    break;
+                }
+            }
+    
+            if (findIndex<0) return false;
+    
+            obj.IndexData.DataIndex=findIndex;
+            obj.IndexData.Point.X=this.GetLeftExtendXFromIndex(findIndex, dayData);  //调整X轴坐标
+
+            JSConsole.Chart.Log(`[MinuteFrame::GetLeftExtendXValidData] DayIndex:${obj.IndexData.DayIndex}, Type:${obj.IndexData.Type}, x:${x}=>${obj.IndexData.Point.X}, index:${index}=>${findIndex}`);
+            return true;
+        }
+        else
+        {
+            var index=this.GetLeftExtendXData(x, obj.Data);
+            index=parseInt(index.toFixed(0));
+
+            if (index>=0 && index<obj.Data.Data.length)
+            {
+                var item=obj.Data.Data[index];
+                if (IFrameSplitOperator.IsNumber(item.Price)) 
+                {
+                    obj.IndexData.DataIndex=index;
+                    return true;
+                }
+            }
+
+            if (index<0) index=0;
+            else if (index>=obj.Data.Data.length) index=obj.Data.Data.length-1;
+
+            var findIndex=-1;
+            for(var i=index; i>=0; --i)
+            {
+                var item=obj.Data.Data[i];
+                if (IFrameSplitOperator.IsNumber(item.Price))
+                {
+                    findIndex=i;
+                    break;
+                }
+            }
+
+            if (findIndex<0)
+            {
+                for(var i=index+1; i<obj.Data.Data.length;++i)
+                {
+                    var item=obj.Data.Data[i];
+                    if (IFrameSplitOperator.IsNumber(item.Price))
+                    {
+                        findIndex=i;
+                        break;
+                    }
+                }
+            }
+
+            if (findIndex<0) return false;
+
+            obj.IndexData.DataIndex=findIndex;
+            obj.IndexData.Point.X=this.GetLeftExtendXFromIndex(findIndex, obj.Data);  //调整X轴坐标
+            JSConsole.Chart.Log(`[MinuteFrame::GetLeftExtendXValidData] DayIndex:${obj.IndexData.DayIndex}, Type:${obj.IndexData.Type}, x:${x}=>${obj.IndexData.Point.X}, index:${index}=>${findIndex}`);
+            return true;
+        }
+    }
+
+    this.GetRightExtendXValidData=function(x, obj)
+    {
+
+    }
+    
     this.GetLeftExtendYFromData=function(value,isLimit,obj)
     {
         if (!obj || !obj.Range) return this.GetYFromData(value,isLimit);
@@ -31022,12 +31383,13 @@ function CallAcutionXOperator()
 
     this.GetMultiDayBeforeOpenXIndex=function()
     {
-        if (!this.MultiDayBeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData)) return;
+        if (!this.MultiDayBeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData)) return false;
         var dayIndex=this.ClientPos-200;
-        if (dayIndex<0 || dayIndex>=this.MultiDayBeforeOpenData.length) return;
+        if (dayIndex<0 || dayIndex>=this.MultiDayBeforeOpenData.length) return false;
 
         var dayData=this.MultiDayBeforeOpenData[dayIndex];
         var indexData=this.Frame.GetLeftExtendXData(this.Value, this.MultiDayBeforeOpenData);
+        if (!indexData || !IFrameSplitOperator.IsNumber(indexData.DataIndex)) return false;
         var index=parseInt(indexData.DataIndex.toFixed(0));
         var dayIndex=indexData.DayIndex;
 
@@ -47794,6 +48156,9 @@ function MinuteChartContainer(uielement)
     this.EnableSelectRect=false;    //是否可以区间选择
     this.SelectRectDialog=null;     //区间选择对话框
 
+    this.CorssCursorIndex={ DayIndex:-1, DataIndex:-1, Point:{X:-1, Y:-1} ,Type:-1 };
+    this.EnableNewIndex=false  //是否使用新的索引版本
+
     //集合竞价设置 obj={ Left:true/false, Right:true/false, MultiDay:{Left:, Right:} }
     this.SetCallCationDataBorder=function(obj)
     {
@@ -48057,6 +48422,345 @@ function MinuteChartContainer(uielement)
         }
 
         return true;
+    }
+
+    this.GetLastCursorIndex=function(obj)
+    {
+        if (obj.DataType==1)
+        {
+            for(var i=obj.Data.length-1;i>=0;--i)
+            {
+                var item=obj.Data[i];
+                if (!item || !item.DayItem || !item.DayItem.Data) continue;
+
+                obj.IndexData.DayIndex=0;
+                obj.IndexData.DataIndex=item.DayItem.Data.length-1;
+                obj.IndexData.Type=item.Type;
+                return;
+            }
+        }
+        else if (obj.DataType==2)
+        {
+            for(var i=obj.Data.length-1;i>=0;--i)
+            {
+                var dayItem=obj.Data[i];
+                for(var j=dayItem.length-1;j>=0;--j)
+                {
+                    var item=dayItem[j];
+                    if (!item || !item.DayItem || !item.DayItem.Data) continue;
+
+                    obj.IndexData.DayIndex=i;
+                    obj.IndexData.DataIndex=item.DayItem.Data.length-1;
+                    obj.IndexData.Type=item.Type;
+                    return;
+                }
+            }
+        }
+    }
+
+    this.GetFirstCursorIndex=function(obj)
+    {
+        if (obj.DataType==1)
+        {
+            for(var i=0;i<obj.Data.length;++i)
+            {
+                var item=obj.Data[i];
+                if (!item || !item.DayItem || !item.DayItem.Data) continue;
+
+                obj.IndexData.DayIndex=0;
+                obj.IndexData.DataIndex=0;
+                obj.IndexData.Type=item.Type;
+                return;
+            }
+        }
+        else if (obj.DataType==2)
+        {
+            for(var i=0;i<obj.Data.length;++i)
+            {
+                var dayItem=obj.Data[i];
+                for(var j=0;j<dayItem.length;++j)
+                {
+                    var item=dayItem[j];
+                    if (!item || !item.DayItem || !item.DayItem.Data) continue;
+
+                    obj.IndexData.DayIndex=i;
+                    obj.IndexData.DataIndex=0;
+                    obj.IndexData.Type=item.Type;
+                    return;
+                }
+            }
+        }
+    }
+
+    this.MoveCorssCursorIndex=function(option)
+    {
+        if (!this.EnableNewIndex) return false;
+
+        if (!this.Frame.SubFrame[0] || !this.Frame.SubFrame[0].Frame) return false;
+        var frame=this.Frame.SubFrame[0].Frame;
+        if (this.CorssCursorIndex.Type==1 || this.CorssCursorIndex.Type==2 || this.CorssCursorIndex.Type==3 || this.CorssCursorIndex.Type==-1)
+        {
+            var aryData=[];
+            var dayItem=null;
+            if (this.BeforeOpenData && this.IsShowBeforeData) dayItem=this.BeforeOpenData;
+            aryData.push({DayItem:dayItem, Type:2});
+
+            var dayItem=null;
+            if (this.SourceData) dayItem=this.SourceData;
+            aryData.push({DayItem:dayItem, Type:1});
+
+            var dayItem=null;
+            if (this.AfterCloseData && this.IsShowAfterData) dayItem=this.AfterCloseData;
+            aryData.push({DayItem:dayItem, Type:3});
+
+            var obj={ DataType:1, Data: aryData, IndexData:this.CorssCursorIndex, Point:{ X:null, Y:null }};
+            var step=1;
+            if (option.IsMoveLeft) 
+            {
+                if (this.CorssCursorIndex.DayIndex<0 && this.CorssCursorIndex.DataIndex<0) 
+                {
+                    this.GetLastCursorIndex(obj);
+                    step=0;
+                }
+
+                if (frame.MoveXIndexLeft(step, obj))
+                {
+                    this.LastPoint.X=obj.Point.X;
+                    this.LastPoint.Y=obj.Point.Y;
+                    if (this.CorssCursorIndex.Type==1) this.CursorIndex=this.CorssCursorIndex.CursorIndex;
+                    var option={ ParentFunction:'MoveCorssCursorIndex', Point:{X:obj.Point.X, Y:obj.Point.Y}, IsPhone:false, ClientPos:this.CorssCursorIndex.Type };
+                    this.DrawDynamicInfo(option);
+                }
+            }
+            else
+            {
+                if (this.CorssCursorIndex.DayIndex<0 && this.CorssCursorIndex.DataIndex<0) 
+                {
+                    this.GetFirstCursorIndex(obj);
+                    step=0;
+                }
+                
+                if (frame.MoveXIndexRight(step, obj))
+                {
+                    this.LastPoint.X=obj.Point.X;
+                    this.LastPoint.Y=obj.Point.Y;
+                    if (this.CorssCursorIndex.Type==1) this.CursorIndex=this.CorssCursorIndex.CursorIndex;
+                    var option={ ParentFunction:'MoveCorssCursorIndex', Point:{X:obj.Point.X, Y:obj.Point.Y}, IsPhone:false, ClientPos:this.CorssCursorIndex.Type };
+                    this.DrawDynamicInfo(option);
+                }
+            }
+        }
+        else if (this.CorssCursorIndex.Type==10 || this.CorssCursorIndex.Type==20 || this.CorssCursorIndex.Type==30 || this.CorssCursorIndex.Type==-2 )
+        {
+            var aryData=[];
+            for(var i=0;i<this.DayData.length;++i)
+            {
+                var item=[];
+                var dayItem=null;
+                if (this.MultiDayBeforeOpenData && this.IsShowMultiDayBeforeData) dayItem=this.MultiDayBeforeOpenData[i];
+                item.push({DayItem:dayItem, Type:20});
+
+                //倒序排的
+                var dayItem=null;
+                if (this.DayData) dayItem=this.DayData[this.DayData.length-1-i];
+                item.push({DayItem:dayItem, Type:10});
+                
+                var dayItem=null;
+                if (this.MultiDayAfterCloseData && this.IsShowMultiDayAfterData) dayItem=this.MultiDayAfterCloseData[i];
+                item.push({DayItem:dayItem, Type:30});
+
+                aryData.push(item);  
+            }
+
+            var obj={ DataType:2, Data: aryData, IndexData:this.CorssCursorIndex, Point:{ X:null, Y:null }};
+            var step=1;
+            if (option.IsMoveLeft) 
+            {
+                if (this.CorssCursorIndex.DayIndex<0 && this.CorssCursorIndex.DataIndex<0) 
+                {
+                    this.GetLastCursorIndex(obj);
+                    step=0;
+                }
+                
+                if (frame.MoveXIndexLeft(step, obj))
+                {
+                    this.LastPoint.X=obj.Point.X;
+                    this.LastPoint.Y=obj.Point.Y;
+                    if (this.CorssCursorIndex.Type==10) this.CursorIndex=this.CorssCursorIndex.CursorIndex;
+                    var option={ ParentFunction:'MoveCorssCursorIndex', Point:{X:obj.Point.X, Y:obj.Point.Y}, IsPhone:false, ClientPos:null };
+                    if (this.CorssCursorIndex.Type==10) option.ClientPos=1;
+                    else if (this.CorssCursorIndex.Type==20) option.ClientPos=this.CorssCursorIndex.DayIndex+200;
+                    else if (this.CorssCursorIndex.Type==30) option.ClientPos=this.CorssCursorIndex.DayIndex+300;
+                    this.DrawDynamicInfo(option);
+                }
+            }
+            else
+            {
+                if (this.CorssCursorIndex.DayIndex<0 && this.CorssCursorIndex.DataIndex<0) 
+                {
+                    this.GetFirstCursorIndex(obj);
+                    step=0;
+                }
+
+                if (frame.MoveXIndexRight(step, obj))
+                {
+                    this.LastPoint.X=obj.Point.X;
+                    this.LastPoint.Y=obj.Point.Y;
+                    if (this.CorssCursorIndex.Type==10) this.CursorIndex=this.CorssCursorIndex.CursorIndex;
+                    var option={ ParentFunction:'MoveCorssCursorIndex', Point:{X:obj.Point.X, Y:obj.Point.Y}, IsPhone:false, ClientPos:null };
+                    if (this.CorssCursorIndex.Type==10) option.ClientPos=1;
+                    else if (this.CorssCursorIndex.Type==20) option.ClientPos=this.CorssCursorIndex.DayIndex+200;
+                    else if (this.CorssCursorIndex.Type==30) option.ClientPos=this.CorssCursorIndex.DayIndex+300;
+                    this.DrawDynamicInfo(option);
+                }
+            }
+        }
+    }
+
+    this.SetCorssCursorIndex=function(option)
+    {
+        if (!this.EnableNewIndex) return;
+
+        JSConsole.Chart.Log("[MinuteChartContainer::SetCorssCursorIndex] option ", option);
+        if (option.ParentFunction=="OnMouseMove")
+        {
+            this.CorssCursorIndex.Point.X=option.Point.X;
+            this.CorssCursorIndex.Point.Y=option.Point.Y;
+
+            var clientPos=this.PtInClient_V2(option.Point.X,option.Point.Y);
+            JSConsole.Chart.Log("[MinuteChartContainer::SetCorssCursorIndex] clientPos ", clientPos);
+            if (clientPos<=0)
+            {
+                this.CorssCursorIndex={ DayIndex:-1, DataIndex:-1, Point:{X:-1, Y:-1}, Type:clientPos };
+                return;
+            }
+
+            if (!this.Frame.SubFrame[0] || !this.Frame.SubFrame[0].Frame)
+            {
+                this.CorssCursorIndex={ DayIndex:-1, DataIndex:-1, Point:{X:-1, Y:-1}, Type:-1 };
+                return;
+            }
+
+            var frame=this.Frame.SubFrame[0].Frame;
+            if (clientPos==1 || clientPos==2 || clientPos==3)
+            {
+                this.CorssCursorIndex.DayIndex=0;
+                this.CorssCursorIndex.Type=clientPos;
+                if (clientPos==2) 
+                {
+                    frame.GetLeftExtendXValidData(option.Point.X,{ Data: this.BeforeOpenData, IndexData: this.CorssCursorIndex });  
+                }
+                else if (clientPos==3) 
+                {
+                    frame.GetRightExtendXValidData(option.Point.X,{ Data: this.AfterCloseData, IndexData: this.CorssCursorIndex });
+                }
+                else if (clientPos==1) 
+                {
+                    var value=frame.GetXData(option.Point.X);
+                    this.CorssCursorIndex.DataIndex=parseInt(value.toFixed(0));
+                }
+            }
+            else if (clientPos>=100 && clientPos<=199)
+            {
+                this.CorssCursorIndex.DayIndex=clientPos-100;
+                this.CorssCursorIndex.Type=10;
+                var value=frame.GetXData(option.Point.X);
+                var index=parseInt(value.toFixed(0));
+                this.CorssCursorIndex.DataIndex=index%frame.MinuteCount;
+            }
+            else if (clientPos>=200 && clientPos<=299)
+            {
+                this.CorssCursorIndex.DayIndex=clientPos-200;
+                this.CorssCursorIndex.Type=20;
+                frame.GetLeftExtendXValidData(option.Point.X,{ Data: this.MultiDayBeforeOpenData, IndexData: this.CorssCursorIndex });               
+            }
+            else if (clientPos>=300 && clientPos<=399)
+            {
+                this.CorssCursorIndex.DayIndex=clientPos-300;
+                this.CorssCursorIndex.Type=30;
+                frame.GetRightExtendXValidData(option.Point.X,{ Data: this.MultiDayAfterOpenData, IndexData: this.CorssCursorIndex });
+            }
+
+            this.LastPoint.X=this.CorssCursorIndex.Point.X;
+            option.Point.X=this.CorssCursorIndex.Point.X;
+        }
+    }
+
+    // 100-199=多日分时主图  200-299=盘前  300-399=盘后  1=主图 2=盘前 3=盘后
+    this.PtInClient_V2=function(x,y)
+    {
+        this.Canvas.beginPath();
+        if (this.Frame.IsHScreen===true)
+        {
+            var border=this.Frame.ChartBorder.GetHScreenBorder();
+            this.Canvas.rect(border.Left,border.TopEx,border.Right-border.Left,border.BottomEx-border.TopEx);
+        }
+        else
+        {
+            var border=this.Frame.ChartBorder.GetBorder();
+            if (border.DayBorder)   //多日分时+多日集合竞价
+            {
+                for(var i=0;i<border.DayBorder.length;++i)
+                {
+                    var client=border.DayBorder[i];
+                    this.Canvas.beginPath();
+                    this.Canvas.rect(client.LeftEx,border.TopEx,client.RightEx-client.LeftEx,border.BottomEx-border.TopEx);
+                    if (this.Canvas.isPointInPath(x,y)) return 100+i;
+
+                    //盘前
+                    this.Canvas.beginPath();
+                    this.Canvas.rect(client.Left,border.TopEx,client.LeftEx-client.Left,border.BottomEx-border.TopEx);
+                    if (this.Canvas.isPointInPath(x,y)) 
+                        return 200+i;
+
+                    //盘后
+                    this.Canvas.beginPath();
+                    this.Canvas.rect(client.RightEx,border.TopEx,client.Right-client.RightEx,border.BottomEx-border.TopEx);
+                    if (this.Canvas.isPointInPath(x,y)) 
+                        return 300+i;
+                }
+
+                return -2;
+            }
+
+            this.Canvas.rect(border.LeftEx,border.Top,border.RightEx-border.LeftEx,border.Bottom-border.Top);
+        }
+
+        if (this.Canvas.isPointInPath(x,y)) return 1;
+
+        if (this.Frame.ChartBorder.LeftExtendWidth>10)
+        {
+            this.Canvas.beginPath();
+            if (this.Frame.IsHScreen===true)
+            {
+                this.Canvas.rect(border.Left,border.Top,border.Right-border.Left,border.TopEx-border.Top);
+            }
+            else
+            {
+                this.Canvas.rect(border.Left,border.Top,border.LeftEx-border.Left,border.Bottom-border.Top);
+            }
+    
+            if (this.Canvas.isPointInPath(x,y)) 
+                return 2;
+        }
+
+        if (this.Frame.ChartBorder.RightExtendWidth>10)
+        {
+            this.Canvas.beginPath();
+            if (this.Frame.IsHScreen===true)
+            {
+                this.Canvas.rect(border.Left,border.BottomEx,border.Right-border.Left,border.Bottom-border.BottomEx);
+            }
+            else
+            {
+                this.Canvas.rect(border.RightEx,border.Top,border.Right-border.RightEx,border.Bottom-border.Top);
+            }
+    
+            if (this.Canvas.isPointInPath(x,y)) 
+                return 3;
+        }
+
+        return -1;
     }
 
 
@@ -48323,47 +49027,61 @@ function MinuteChartContainer(uielement)
         switch(keyID)
         {
             case 37: //left
-                this.CursorIndex=parseInt(this.CursorIndex);
-                if (this.CursorIndex<=0.99999)
+                if (this.EnableNewIndex)
                 {
-                    if (!this.DataMoveLeft()) break;
-                    this.UpdataDataoffset();
-                    this.UpdatePointByCursorIndex();
-                    this.UpdateFrameMaxMin();
-                    this.Draw();
+                    this.MoveCorssCursorIndex({IsMoveLeft:true});
                 }
                 else
                 {
-                    --this.CursorIndex;
-                    this.UpdatePointByCursorIndex();
-                    this.DrawDynamicInfo();
+                    this.CursorIndex=parseInt(this.CursorIndex);
+                    if (this.CursorIndex<=0.99999)
+                    {
+                        if (!this.DataMoveLeft()) break;
+                        this.UpdataDataoffset();
+                        this.UpdatePointByCursorIndex();
+                        this.UpdateFrameMaxMin();
+                        this.Draw();
+                    }
+                    else
+                    {
+                        --this.CursorIndex;
+                        this.UpdatePointByCursorIndex();
+                        this.DrawDynamicInfo();
+                    }
                 }
                 break;
             case 39: //right
-                var xPointcount=0;
-                if (this.Frame.XPointCount) xPointcount=this.Frame.XPointCount;
-                else xPointcount=this.Frame.SubFrame[0].Frame.XPointCount;
-                this.CursorIndex=parseInt(this.CursorIndex);
-                if (this.CursorIndex+1>=xPointcount)
+                if (this.EnableNewIndex)
                 {
-                    if (!this.DataMoveRight()) break;
-                    this.UpdataDataoffset();
-                    this.UpdatePointByCursorIndex();
-                    this.UpdateFrameMaxMin();
-                    this.Draw();
+                    this.MoveCorssCursorIndex({IsMoveLeft:false});
                 }
                 else
                 {
-                    //判断是否在最后一个数据上
-                    var data=null;
-                    if (this.Frame.Data) data=this.Frame.Data;
-                    else data=this.Frame.SubFrame[0].Frame.Data;
-                    if (!data) break;
-                    if (this.CursorIndex+data.DataOffset+1>=data.Data.length) break;
-
-                    ++this.CursorIndex;
-                    this.UpdatePointByCursorIndex();
-                    this.DrawDynamicInfo();
+                    var xPointcount=0;
+                    if (this.Frame.XPointCount) xPointcount=this.Frame.XPointCount;
+                    else xPointcount=this.Frame.SubFrame[0].Frame.XPointCount;
+                    this.CursorIndex=parseInt(this.CursorIndex);
+                    if (this.CursorIndex+1>=xPointcount)
+                    {
+                        if (!this.DataMoveRight()) break;
+                        this.UpdataDataoffset();
+                        this.UpdatePointByCursorIndex();
+                        this.UpdateFrameMaxMin();
+                        this.Draw();
+                    }
+                    else
+                    {
+                        //判断是否在最后一个数据上
+                        var data=null;
+                        if (this.Frame.Data) data=this.Frame.Data;
+                        else data=this.Frame.SubFrame[0].Frame.Data;
+                        if (!data) break;
+                        if (this.CursorIndex+data.DataOffset+1>=data.Data.length) break;
+    
+                        ++this.CursorIndex;
+                        this.UpdatePointByCursorIndex();
+                        this.DrawDynamicInfo();
+                    }
                 }
                 break;
             case 46:    //del
