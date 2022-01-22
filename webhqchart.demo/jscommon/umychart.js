@@ -411,6 +411,7 @@ function JSChart(divElement, bOffscreen)
                 if (indexItem)
                 {
                     chart.WindowIndex[i]=indexItem.Create();
+                    if (chart.WindowIndex[i].SetArgs) chart.WindowIndex[i].SetArgs(item.Args);
                     chart.CreateWindowIndex(i);
                 }
                 else
@@ -1864,6 +1865,8 @@ var JSCHART_EVENT_ID=
     ON_CLICK_CROSSCURSOR_RIGHT:36,        //十字光标右边按钮
 
     ON_PLAY_SOUND:37,                     //播放声音 { Name:, Data: }
+
+    ON_CALCULATE_INDEX_OX:38,              //创建OX指标回调
 }
 
 var JSCHART_OPERATOR_ID=
@@ -8571,7 +8574,7 @@ function MinuteFrame()
 
             for(var i=dayIndex, j=itemIndex; i>=0; --i)
             {
-                dayItem=obj.Data[i];
+                var dayItem=obj.Data[i];
                 for(; j>=0; --j)
                 {
                     var dataItem=dayItem[j];
@@ -8701,7 +8704,7 @@ function MinuteFrame()
 
             for(var i=dayIndex, j=itemIndex; i<obj.Data.length; ++i)
             {
-                dayItem=obj.Data[i];
+                var dayItem=obj.Data[i];
                 for(; j<3; ++j)
                 {
                     var dataItem=dayItem[j];
@@ -25026,6 +25029,135 @@ function ChartMultiHtmlDom()
     }
 }
 
+// OX图
+
+function ChartOX()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartOX";
+    this.Font;
+    this.Family=g_JSChartResource.ChartOX.Family;
+    this.Color=[g_JSChartResource.ChartOX.Up.Color, g_JSChartResource.ChartOX.Down.Color];
+    this.Text=[g_JSChartResource.ChartOX.Up.Text, g_JSChartResource.ChartOX.Down.Text];
+    this.IsHScreen=false;   //是否横屏
+    this.IconSize=g_JSChartResource.ChartOX.IconSize;
+    this.SquareSize=10;
+    this.OXData=null;   //{ Data:[ { Type: 0/1, Data:[ price, price ] } ], Max:, Min: }
+    this.SquareLineColor='rgb(119,136,153)';
+
+    //计算每个单元格的大小
+    this.CalcualteSquare=function()
+    {
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
+
+        this.SquareSize=(bottom-top)/(this.OXData.Max-this.OXData.Min)*this.OXData.BlockSize;
+
+        var fontSize=parseInt(this.SquareSize);
+        this.Font=`${fontSize}px ${this.Family}`;
+    }
+
+
+    this.DrawSquares=function()
+    {
+        this.Canvas.beginPath();
+        this.Canvas.strokeStyle=this.SquareLineColor;
+
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
+        for(var price=this.OXData.StartPrice; price<this.OXData.Max; price+=this.OXData.BlockSize)
+        {
+            var y=this.ChartFrame.GetYFromData(price);
+
+            this.Canvas.moveTo(left,ToFixedPoint(y));
+            this.Canvas.lineTo(right,ToFixedPoint(y));
+        }
+
+        for(var price=this.OXData.StartPrice; price>this.OXData.Min; price-=this.OXData.BlockSize)
+        {
+            var y=this.ChartFrame.GetYFromData(price);
+
+            this.Canvas.moveTo(left,ToFixedPoint(y));
+            this.Canvas.lineTo(right,ToFixedPoint(y));
+        }
+
+        var xStart=left+g_JSChartResource.FrameLeftMargin;
+
+        for(var i=xStart;i<right; i+=this.SquareSize)
+        {
+            this.Canvas.moveTo(ToFixedPoint(i),top);
+            this.Canvas.lineTo(ToFixedPoint(i),bottom);
+        }
+
+        this.Canvas.stroke();
+    }
+
+    this.Draw=function()
+    {
+        if (this.ChartFrame.IsMinSize) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.OXData || !this.OXData.Data) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        this.CalcualteSquare();
+        this.DrawSquares();
+
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var xOffset=left+g_JSChartResource.FrameLeftMargin;
+
+        this.Canvas.textBaseline='middle';
+        this.Canvas.textAlign='center';
+        this.Canvas.font=this.Font;
+
+        for(var i=0;i<this.OXData.Data.length;++i, xOffset+=this.SquareSize)
+        {
+            if (xOffset>right) break;
+
+            var item=this.OXData.Data[i];
+            this.Canvas.fillStyle=this.Color[item.Type];
+            var text=this.Text[item.Type];
+            var preY=null;
+            for(var j=0; j<item.Data.length; ++j)
+            {
+                var value=item.Data[j];
+                var y=this.ChartFrame.GetYFromData(value+this.OXData.BlockSize/2);
+
+                //if (preY!=null && Math.abs(y-preY)<this.IconSize) continue; //重叠了就不画了
+
+                this.Canvas.fillText(text,xOffset+this.SquareSize/2,y);
+                preY=y;
+            }
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+
+        if (this.OXData)
+        {
+            if (IFrameSplitOperator.IsNumber(this.OXData.Max)) range.Max=this.OXData.Max;
+            if (IFrameSplitOperator.IsNumber(this.OXData.Min)) range.Min=this.OXData.Min;
+        }
+
+        return range;
+    }
+}
+
 //锁  支持横屏
 function ChartLock()
 {
@@ -40856,6 +40988,14 @@ function JSChartResource()
         IsShowPoint:false //是否始终显示点
     };
 
+    this.ChartOX=
+    {
+        Family:'iconfont', 
+        Up:{Color:'rgb(178,34,34)', Text:"\ue697" },
+        Down:{Color:"rgb(0,206,209)", Text:"\ue68c" },
+        IconSize:14
+    };
+
     this.KLineTrain = {
         Font:'bold 14px arial',
         LastDataIcon: {Color:'rgb(0,0,205)',Text:'⬇'},
@@ -41548,6 +41688,8 @@ JSIndexMap.Get=function(id)
         ["能图-点位研判",   {IsMainIndex:false,  Create:function(){ return new LighterIndex3()},   Name:'点位研判'  }],  //废弃
 
         ['CJL',  { IsMainIndex:false,  Create:function(){ return new JSIndex_CJL(); }  } ],    //期货指标
+
+        ["OX", { IsMainIndex:false, Create:function() { return new JSIndex_OX(); } } ]
     ]
     );
 
@@ -54230,6 +54372,240 @@ function BaseIndex(name)
     this.GetOutData=function()
     {
         return null;
+    }
+}
+
+function JSIndex_OX()
+{
+    this.newMethod=BaseIndex;   //派生
+    this.newMethod('OX');
+    delete this.newMethod;
+
+    this.ClassName="JSIndex_OX";
+    this.IsUsePageData=true;
+
+    this.Arguments=
+    [
+        { Name:'BlockSize', Value:0.05},
+        { Name:"Reversal", Value:3 }
+    ];
+
+    this.SetArgs=function(args)
+    {
+        if (!args || !IFrameSplitOperator.IsNonEmptyArray(args)) return;
+
+        for(var i=0;i<args.length;++i)
+        {
+            var item=args[i];
+            if (item.Name=="BlockSize") this.SetParamValue(item.Name,item.Value);
+            else if (item.Name=="Reversal") this.SetParamValue(item.Name,item.Value);
+        }
+    }
+
+    this.SetParamValue=function(name, value)
+    {
+        for(var i=0;i<this.Arguments.length;++i)
+        {
+            var item=this.Arguments[i];
+            if (item.Name==name) item.Value=value;
+        }
+    }
+
+    this.GetParamValue=function(name)
+    {
+        for(var i=0;i<this.Arguments.length;++i)
+        {
+            var item=this.Arguments[i];
+            if (item.Name==name) return item.Value;
+        }
+    }
+
+    this.RequestData=function(hqChart,windowIndex,hisData)
+    {
+        this.BindData(hqChart,windowIndex,hisData);
+
+        hqChart.UpdataDataoffset();           //更新数据偏移
+        hqChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        hqChart.Draw();
+
+        return true;
+    }
+
+    this.CreatePaints=function(hqChart,windowIndex)
+    {
+        var frame=null;
+        var isOverlay=this.IsOverlay();
+        if (isOverlay) 
+        {
+            frame=this.OverlayIndex.Frame.Frame;
+            this.OverlayIndex.Frame.ChartPaint=[];    //清空
+        }
+        else 
+        {
+            frame=hqChart.Frame.SubFrame[windowIndex].Frame;
+            hqChart.DeleteIndexPaint(windowIndex);  //清空
+        }
+        
+        var aryPaint=[];
+        var paint=new ChartOX();
+        paint.Canvas=hqChart.Canvas;
+        paint.Name=this.Name+"-0";
+        paint.ChartBorder=frame.ChartBorder;
+        paint.ChartFrame=frame
+
+        if (isOverlay) this.OverlayIndex.Frame.ChartPaint.push(paint);
+        else hqChart.ChartPaint.push(paint);
+
+        aryPaint.push(paint);
+    
+        return aryPaint;
+    }
+
+    this.Calculate=function(hqChart, hisData)
+    {
+        if (!hqChart.ChartPaint[0]) return null;
+        var range=hqChart.ChartPaint[0].ShowRange;
+        if (!range) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(hisData.Data)) return null;
+
+        var max=null, min=null;
+        var startPrice=null;
+        for(var i=range.Start; i<=range.End && i<hisData.Data.length;++i)
+        {
+            var item=hisData.Data[i];
+            if (max==null)
+            {
+                if (IFrameSplitOperator.IsNumber(item.High)) max=item.High;
+            } 
+            else
+            {
+                if (IFrameSplitOperator.IsNumber(item.High) && max<item.High) max=item.High;
+            }
+
+
+            if (min==null)
+            {
+                if (IFrameSplitOperator.IsNumber(item.Low)) min=item.Low;
+            }
+            else
+            {
+                if (IFrameSplitOperator.IsNumber(item.Low) && min>item.Low) min=item.Low;
+            }
+
+            if (startPrice==null)
+            {
+                if (IFrameSplitOperator.IsNumber(item.High)) startPrice=item.High;
+            }
+        }
+
+        var blockSize=this.GetParamValue("BlockSize"), reversal=this.GetParamValue("Reversal");
+        var oxData={ Max:max+blockSize, Min:min-blockSize, StartPrice:startPrice, Data:[], BlockSize:blockSize };
+
+        var currentTrend=1;
+        var currentPrice=startPrice;
+       
+        var itemData={ Type:0, Data:[] };
+        for(var i=range.Start, j=0; i<=range.End && i<hisData.Data.length;++i)
+        {
+            var item=hisData.Data[i];
+            if (currentTrend==1)
+            {
+                if (item.High >= currentPrice + blockSize)
+                {
+                    var count=parseInt((item.High-currentPrice)/blockSize);
+                    for(j=0;j<count;++j)
+                    {
+                        currentPrice+=blockSize;
+                        itemData.Data.push(currentPrice);
+                    }
+                }
+                else
+                {
+                    if (item.Low <= currentPrice - (blockSize * reversal))
+                    {
+                        currentTrend=0;
+                        if (itemData && IFrameSplitOperator.IsNonEmptyArray(itemData.Data))
+                            oxData.Data.push(itemData);
+
+                        var itemData={ Type:1, Data:[] };
+                        var count=parseInt((currentPrice-item.Low)/blockSize);
+                        for(j=0;j<count;++j)
+                        {
+                            currentPrice-=blockSize;
+                            itemData.Data.push(currentPrice);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (item.Low <= currentPrice - blockSize)
+                {
+                    var count=parseInt((currentPrice-item.Low)/blockSize);
+                    for(j=0;j<count;++j)
+                    {
+                        currentPrice-=blockSize;
+                        itemData.Data.push(currentPrice);
+                    }
+                }
+                else
+                {
+                    if (item.High >= currentPrice + (blockSize*reversal))
+                    {
+                        currentTrend=1;
+                        if (itemData && IFrameSplitOperator.IsNonEmptyArray(itemData.Data))
+                            oxData.Data.push(itemData);
+
+                        var itemData={ Type:0, Data:[] };
+                        var count=parseInt((item.High-currentPrice)/blockSize);
+                        for(j=0;j<count;++j)
+                        {
+                            currentPrice+=blockSize;
+                            itemData.Data.push(currentPrice);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (itemData && IFrameSplitOperator.IsNonEmptyArray(itemData.Data))
+            oxData.Data.push(itemData);
+
+        return oxData;
+    }
+
+    this.BindData=function(hqChart,windowIndex,hisData)
+    {
+        var aryPaint=this.CreatePaints(hqChart,windowIndex);
+        var isOverlay=this.IsOverlay();
+
+        var event=hqChart.GetEventCallback(JSCHART_EVENT_ID.ON_CALCULATE_INDEX_OX)
+        if (event && event.Callback)
+        {
+            var eventData={ HQChart:hqChart, WidnowIndex:windowIndex, HisData:hisData, OXData:null };
+            event.Callback(event,eventData,this);
+            aryPaint[0].OXData=eventData.OXData;
+        }
+        else
+        {
+            aryPaint[0].OXData=this.Calculate(hqChart, hisData);
+        }
+        
+        var blockSize=this.GetParamValue("BlockSize"), reversal=this.GetParamValue("Reversal");
+        var title=`${this.Name} BlockSize=${blockSize} Reversal=${reversal}`;
+        var titleIndex=windowIndex+1;
+        if (isOverlay) 
+        {
+            var titlePaint=hqChart.TitlePaint[titleIndex];
+            var titleInfo={ Data:[], Title:'' };
+            titlePaint.OverlayIndex.set(this.OverlayIndex.Identify,titleInfo);
+        }
+        else  
+        {
+            hqChart.TitlePaint[titleIndex].Title =title;
+        }
+
+        return true;
     }
 }
 

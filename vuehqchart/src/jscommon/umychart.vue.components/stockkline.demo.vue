@@ -117,6 +117,7 @@ DefaultData.GetMinuteOption=function()
 
         EnableZoomIndexWindow:true,
         IsDrawPictureXY:true,
+        EnableNewIndex:true,
 
         Border: //边框
         {
