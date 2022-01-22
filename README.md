@@ -23,7 +23,9 @@ uniapp 版本:
 
 [HQChart用户使用协议](/用户协议.txt) <br>
 
-第3放数据对接案例[https://github.com/jones2000/HQChart-Super](https://github.com/jones2000/HQChart-Super)<br>
+第3放数据对接案例:<br>
+源码地址:[https://github.com/jones2000/HQChart-Super](https://github.com/jones2000/HQChart-Super)<br>
+镜像地址:[https://gitee.com/jones2000/HQChart-Super](https://gitee.com/jones2000/HQChart-Super)<br>
 
 如果你觉得我们的行情模块对你有帮助， 请给我们点下star. (●ˇ∀ˇ●) <br>
 
@@ -230,6 +232,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 75. [HQChart使用教程83-K线图最高最低价显示配置](https://jones2000.blog.csdn.net/article/details/118856130)<br>
 76. [HQChart使用教程84-十字光标右侧按钮事件](https://jones2000.blog.csdn.net/article/details/120562697)<br>
 77. [HQChart使用教程85-股票复权计算](https://jones2000.blog.csdn.net/article/details/120700837)<br>
+78. [HQChart使用教程86-技术指标OX图](https://jones2000.blog.csdn.net/article/details/122635700)<br>
 
 ## 小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>

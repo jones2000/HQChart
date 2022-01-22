@@ -29053,10 +29053,9 @@ function ChartOX()
     this.Color=[g_JSChartResource.ChartOX.Up.Color, g_JSChartResource.ChartOX.Down.Color];
     this.Text=[g_JSChartResource.ChartOX.Up.Text, g_JSChartResource.ChartOX.Down.Text];
     this.IsHScreen=false;   //是否横屏
-    this.IconSize=g_JSChartResource.ChartOX.IconSize;
     this.SquareSize=10;
     this.OXData=null;   //{ Data:[ { Type: 0/1, Data:[ price, price ] } ], Max:, Min: }
-    this.SquareLineColor='rgb(119,136,153)';
+    this.SquareLineColor=g_JSChartResource.ChartOX.SquareLineColor;
 
     //计算每个单元格的大小
     this.CalcualteSquare=function()
@@ -45003,7 +45002,7 @@ function JSChartResource()
         Family:'iconfont', 
         Up:{Color:'rgb(178,34,34)', Text:"\ue697" },
         Down:{Color:"rgb(0,206,209)", Text:"\ue68c" },
-        IconSize:14
+        SquareLineColor:'rgb(119,136,153)'
     };
 
     this.KLineTrain = {
@@ -45513,6 +45512,15 @@ function JSChartResource()
             if (item.UnchagneColor) this.OrderFlow.UnchagneColor=item.UnchagneColor;
             if (item.Text) this.OrderFlow.Text=item.Text;
             if (item.Line) this.OrderFlow.Line=item.Line;
+        }
+
+        if (style.ChartOX)
+        {
+            var item=style.ChartOX;
+            if (item.Family) this.ChartOX.Family=item.Family;
+            if (item.Up) this.ChartOX.Up=item.Up;
+            if (item.Down) this.ChartOX.Down=item.Down;
+            if (item.SquareLineColor) this.ChartOX.SquareLineColor=item.SquareLineColor;
         }
     }
 }
@@ -58393,10 +58401,10 @@ function JSIndex_OX()
 
     this.ClassName="JSIndex_OX";
     this.IsUsePageData=true;
+    this.BlockSize=0.5;
 
     this.Arguments=
     [
-        { Name:'BlockSize', Value:0.05},
         { Name:"Reversal", Value:3 }
     ];
 
@@ -58407,8 +58415,7 @@ function JSIndex_OX()
         for(var i=0;i<args.length;++i)
         {
             var item=args[i];
-            if (item.Name=="BlockSize") this.SetParamValue(item.Name,item.Value);
-            else if (item.Name=="Reversal") this.SetParamValue(item.Name,item.Value);
+            if (item.Name=="Reversal") this.SetParamValue(item.Name,item.Value);
         }
     }
 
@@ -58471,6 +58478,18 @@ function JSIndex_OX()
         return aryPaint;
     }
 
+    //根据最大最小值 调整格子价位
+    this.CalculateBlockSize=function(max, min)
+    {
+        var value=max-min;
+        if (value<1) return 0.05        //[0-1)=>0.05
+        else if (value<5) return 0.1;   //[1,5)=>0.1
+        else if (value<10) return 0.5;  //[5,10)=>0.5
+        else if (value<100) return 1;   //[10,100)=>1
+        else if (value<300) return 5;   //[100,300)=>5
+        else return 50;
+    }
+
     this.Calculate=function(hqChart, hisData)
     {
         if (!hqChart.ChartPaint[0]) return null;
@@ -58508,7 +58527,10 @@ function JSIndex_OX()
             }
         }
 
-        var blockSize=this.GetParamValue("BlockSize"), reversal=this.GetParamValue("Reversal");
+        var reversal=this.GetParamValue("Reversal");
+       
+        var blockSize=this.CalculateBlockSize(max, min);
+        this.BlockSize=blockSize;
         var oxData={ Max:max+blockSize, Min:min-blockSize, StartPrice:startPrice, Data:[], BlockSize:blockSize };
 
         var currentTrend=1;
@@ -58601,7 +58623,7 @@ function JSIndex_OX()
             aryPaint[0].OXData=this.Calculate(hqChart, hisData);
         }
         
-        var blockSize=this.GetParamValue("BlockSize"), reversal=this.GetParamValue("Reversal");
+        var blockSize=this.BlockSize, reversal=this.GetParamValue("Reversal");
         var title=`${this.Name} BlockSize=${blockSize} Reversal=${reversal}`;
         var titleIndex=windowIndex+1;
         if (isOverlay) 
