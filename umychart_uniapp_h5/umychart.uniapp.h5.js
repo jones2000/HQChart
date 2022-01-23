@@ -8434,6 +8434,28 @@ function JSChartContainer(uielement, OffscreenElement)
             this.Tooltip.innerHTML=format.Text;;
             this.Tooltip.style.display = "block";
         }
+        else if (toolTip.Type==5)
+        {
+            var left = x;
+            var top = y;
+
+            var format=g_DivTooltipDataForamt.Create('ChartOXDataStringFormat');
+            format.Value=toolTip;
+            format.Symbol=this.Symbol;
+            format.Period=this.Period;
+            format.LanguageID=this.LanguageID;
+            if (!format.Operator()) return;
+            var width=format.Width;
+
+            this.Tooltip.className='jchart-chartox-tooltip'; //OX指标数据
+            this.Tooltip.style.position = "absolute";
+            this.Tooltip.style.left = left + "px";
+            this.Tooltip.style.top = (top +xMove)+ "px";
+            this.Tooltip.style.width = width+"px";
+            this.Tooltip.style.height =null;
+            this.Tooltip.innerHTML=format.Text;;
+            this.Tooltip.style.display = "block";
+        }
     }
 
     this.HideTooltip=function()
@@ -29012,6 +29034,7 @@ function ChartOX()
     this.SquareSize=10;
     this.OXData=null;   //{ Data:[ { Type: 0/1, Data:[ price, price ] } ], Max:, Min: }
     this.SquareLineColor=g_JSChartResource.ChartOX.SquareLineColor;
+    this.TooltipData=[]; //{ Rect:, Data }
 
     //计算每个单元格的大小
     this.CalcualteSquare=function()
@@ -29064,6 +29087,7 @@ function ChartOX()
 
     this.Draw=function()
     {
+        this.TooltipData=[];
         if (this.ChartFrame.IsMinSize) return;
 
         this.IsHScreen=(this.ChartFrame.IsHScreen===true);
@@ -29095,18 +29119,50 @@ function ChartOX()
             var item=this.OXData.Data[i];
             this.Canvas.fillStyle=this.Color[item.Type];
             var text=this.Text[item.Type];
-            var preY=null;
+            var rt={ X:xOffset, Width:this.SquareSize };
+            var maxValue=null, minValue=null;
+            if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
             for(var j=0; j<item.Data.length; ++j)
             {
                 var value=item.Data[j];
                 var y=this.ChartFrame.GetYFromData(value+this.OXData.BlockSize/2);
-
-                //if (preY!=null && Math.abs(y-preY)<this.IconSize) continue; //重叠了就不画了
-
                 this.Canvas.fillText(text,xOffset+this.SquareSize/2,y);
                 preY=y;
+
+                if (maxValue==null) maxValue=value;
+                else if (maxValue<value) maxValue=value;
+
+                if (minValue==null) minValue=value;
+                else if (minValue>value) minValue=value;
+            }
+
+            rt.Y=this.ChartFrame.GetYFromData(maxValue+this.OXData.BlockSize);
+            rt.Height=this.ChartFrame.GetYFromData(minValue)-rt.Y;
+            var tooltipItem={ Data:item,  Rect:rt };
+            this.TooltipData.push(tooltipItem);
+        }
+    }
+
+    this.GetTooltipData=function(x,y,tooltip)
+    {
+        for(var i in this.TooltipData)
+        {
+            var item=this.TooltipData[i];
+            if (!item.Rect) continue;
+            var rect=item.Rect;
+            this.Canvas.beginPath();
+            this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
+            if (this.Canvas.isPointInPath(x,y))
+            {
+                JSConsole.Chart.Log('[ChartOX::GetTooltipData] item ', item);
+                tooltip.Data=item;
+                tooltip.ChartPaint=this;
+                tooltip.Type=5; //OX指标
+                return true;
             }
         }
+
+        return false;
     }
 
     this.GetMaxMin=function()
@@ -37591,6 +37647,50 @@ function IconDataStringFormat()
     }
 }
 
+//分时图异动信息格式化
+function ChartOXDataStringFormat()
+{
+    this.newMethod=IChangeStringFormat;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Width=200;
+    this.Period=0;
+    this.Operator=function()
+    {
+        var data=this.Value.Data;
+        if (!data || !data.Data) return false;
+
+        if (ChartData.IsDayPeriod(this.Period, true))
+        {
+            var strStartDate=IFrameSplitOperator.FormatDateString(data.Data.Start.Date);
+            var strEndDate=IFrameSplitOperator.FormatDateString(data.Data.End.Date);
+
+            var content=`<span class='tooltip-minuteinfo-content'>起始时间:${strStartDate}</span>`;
+            var content2=`<span class='tooltip-minuteinfo-content'>结束时间:${strEndDate}</span>`;
+
+            this.Text=content+"<br>"+content2;
+            return true;
+        }
+        else if (ChartData.IsMinutePeriod(this.Period, true))
+        {
+            var strStartDate=IFrameSplitOperator.FormatDateString(data.Data.Start.Date);
+            var strStartTime=IFrameSplitOperator.FormatTimeString(data.Data.Start.Time,"HH:MM");
+
+            var strEndDate=IFrameSplitOperator.FormatDateString(data.Data.End.Date);
+            var strEndTime=IFrameSplitOperator.FormatTimeString(data.Data.End.Time,"HH:MM");
+
+            var content=`<span class='tooltip-minuteinfo-content'>起始时间:${strStartDate} ${strStartTime}</span>`;
+            var content2=`<span class='tooltip-minuteinfo-content'>结束时间:${strEndDate} ${strEndTime}</span>`;
+
+            this.Text=content+"<br>"+content2;
+            return true;
+        }
+
+        return false;
+    }
+}
+
 function DivTooltipDataForamt()
 {
     this.DataMap=new Map(
@@ -37600,6 +37700,7 @@ function DivTooltipDataForamt()
             ["HistoryDataStringFormat",         { Create:function() { return new HistoryDataStringFormat(); }  }],
             ["KLineInfoDataStringFormat",       { Create:function() { return new KLineInfoDataStringFormat(); }  }],
             ["IconDataStringFormat",            { Create:function() { return new IconDataStringFormat(); } }],
+            ["ChartOXDataStringFormat",         { Create:function() { return new ChartOXDataStringFormat(); } }],
 
             ["CorssCursor_XStringFormat", { Create:function() { return new HQDateStringFormat(); } }],
             ["CorssCursor_YStringFormat", { Create:function() { return new HQPriceStringFormat(); } }]
@@ -58438,11 +58539,12 @@ function JSIndex_OX()
     this.CalculateBlockSize=function(max, min)
     {
         var value=max-min;
-        if (value<1) return 0.05        //[0-1)=>0.05
-        else if (value<5) return 0.1;   //[1,5)=>0.1
-        else if (value<10) return 0.5;  //[5,10)=>0.5
-        else if (value<100) return 1;   //[10,100)=>1
-        else if (value<300) return 5;   //[100,300)=>5
+        if (value<=5) return 0.25;   //[1,5]=>0.25
+        else if (value<=20) return 0.5;  //[5,20)=>0.5
+        else if (value<=100) return 1;   //[10,100]=>1
+        else if (value<=200) return 2;   //[100,200]=>2
+        else if (value<=500) return 5;   //[200,500]=>5
+        else if (value<=1000) return 10;   //[500,1000]=>10
         else return 50;
     }
 
@@ -58492,7 +58594,7 @@ function JSIndex_OX()
         var currentTrend=1;
         var currentPrice=startPrice;
        
-        var itemData={ Type:0, Data:[] };
+        var itemData={ Type:0, Data:[], Start:null, End:null };
         for(var i=range.Start, j=0; i<=range.End && i<hisData.Data.length;++i)
         {
             var item=hisData.Data[i];
@@ -58515,7 +58617,7 @@ function JSIndex_OX()
                         if (itemData && IFrameSplitOperator.IsNonEmptyArray(itemData.Data))
                             oxData.Data.push(itemData);
 
-                        var itemData={ Type:1, Data:[] };
+                        itemData={ Type:1, Data:[], Start:null, End:null };
                         var count=parseInt((currentPrice-item.Low)/blockSize);
                         for(j=0;j<count;++j)
                         {
@@ -58544,7 +58646,7 @@ function JSIndex_OX()
                         if (itemData && IFrameSplitOperator.IsNonEmptyArray(itemData.Data))
                             oxData.Data.push(itemData);
 
-                        var itemData={ Type:0, Data:[] };
+                        itemData={ Type:0, Data:[], Start:null, End:null };
                         var count=parseInt((item.High-currentPrice)/blockSize);
                         for(j=0;j<count;++j)
                         {
@@ -58554,6 +58656,9 @@ function JSIndex_OX()
                     }
                 }
             }
+
+            if (itemData.Start==null) itemData.Start=item;
+            itemData.End=item;
         }
 
         if (itemData && IFrameSplitOperator.IsNonEmptyArray(itemData.Data))

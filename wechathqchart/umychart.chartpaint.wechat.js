@@ -2617,6 +2617,7 @@ function ChartStickLine()
             var LineWidth = this.LineWidth;
             if (dataWidth <= 4) LineWidth = 1;
             else if (dataWidth < LineWidth) LineWidth = parseInt(dataWidth);
+            if (LineWidth<1) LineWidth=1;   //太小了用1
             this.Canvas.lineWidth = LineWidth;
             this.Canvas.strokeStyle = this.Color;
         }
