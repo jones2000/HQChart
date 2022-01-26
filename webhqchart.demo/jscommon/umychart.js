@@ -27505,6 +27505,8 @@ function DrawToolsButton()
                     { HTML: { Title: '波浪尺', IClass: 'iconfont icon-waveruler', ID: 'icon-wave-ruler' }, Name: '波浪尺' },
                     { HTML: { Title: 'AB波浪尺', IClass: 'iconfont icon-waveruler', ID: 'icon-wave-ruler' }, Name: 'AB波浪尺' },
                     { HTML: { Title: '箱型线', IClass: 'iconfont icon-draw_box', ID: 'icon-drawbox' }, Name: '箱型线' },
+                    { HTML: { Title: '涂鸦线段', IClass: 'iconfont icon-draw_line', ID: 'icon-segment' }, Name: '涂鸦线段' },
+
                 ],
                 [
                     { HTML: { Title: '圆弧', IClass: 'iconfont icon-draw_arc', ID: 'icon-arc' }, Name: '圆弧线' },
@@ -36189,7 +36191,10 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"3点画图例子", ClassName:"ChartDrawThreePointDemo", Create:function() { return new ChartDrawThreePointDemo(); } },
     { Name:"水平线段", ClassName:"ChartDrawHLineSegment", Create:function() { return new ChartDrawHLineSegment();} },
     { Name:"平行射线", ClassName:"ChartDrawParallelRaysLines", Create:function() { return new ChartDrawParallelRaysLines();}},
-    { ClassName:'ChartDrawPictureIconFont',  Create:function() { return new ChartDrawPictureIconFont(); }}
+    { ClassName:'ChartDrawPictureIconFont',  Create:function() { return new ChartDrawPictureIconFont(); }},
+
+    //涂鸦 不绑定K线坐标
+    { Name:"涂鸦线段", ClassName:'ChartDrawGraffitiLine',  Create:function() { return new ChartDrawGraffitiLine(); } },
     
 ];
 
@@ -36323,8 +36328,182 @@ function ChartDrawPictureLine()
         this.DrawPoint(drawPoint);  //画点
         this.Canvas.restore();
     }
+}
 
+//画图工具-涂鸦线段 Y轴关联数值， X轴不关联
+function ChartDrawGraffitiLine()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
+    this.ClassName='ChartDrawGraffitiLine';
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.GetXYCoordinate=null;
+    this.PointCount=2;                          //画点的个数
+
+    this.PointToValue=function()
+    {
+        if (!this.Frame) return false;
+
+        var isHScreen=this.Frame.IsHScreen;
+        if (isHScreen)
+        {
+            for(var i=0;i<this.Point.length;++i)
+            {
+                var item=this.Point[i];
+                var yValue=this.Frame.GetYData(item.X);
+                var valueItem={ XValue:item.Y, YValue:yValue };
+                this.Value[i]=valueItem;
+            }
+        }
+        else
+        {
+            for(var i=0;i<this.Point.length;++i)
+            {
+                var item=this.Point[i];
+                var yValue=this.Frame.GetYData(item.Y);
+                var valueItem={ XValue:item.X, YValue:yValue };
+                this.Value[i]=valueItem;
+            }
+        }
+
+        return true;
+    }
+
+    //Value => Point
+    this.ValueToPoint=function()
+    {
+        if (!this.Frame) return false;
+       
+        var isHScreen=this.Frame.IsHScreen;
+        this.Point=[];
+        for(var i in this.Value)
+        {
+            var item=this.Value[i];
+            var pt=new Point();
+            if (isHScreen)
+            {
+                pt.Y=item.XValue;
+                pt.X=this.Frame.GetYFromData(item.YValue);
+            }
+            else
+            {
+                pt.X=item.XValue;
+                pt.Y=this.Frame.GetYFromData(item.YValue,false);
+            }
+            this.Point[i]=pt;
+        }
+    }
+
+    this.UpdateXValue=function()    //通过datetime更新x的索引
+    {
+       
+    }
+
+    this.CalculateDrawPoint=function(option)
+    {
+        if (this.Status<2) return null;
+        if(!this.Point.length || !this.Frame) return null;
+
+        var drawPoint=[];
+        if (this.Status==10)
+        {
+            var isHScreen=this.Frame.IsHScreen;
+            for(var i in this.Value)
+            {
+                var item=this.Value[i];
+                var pt=new Point();
+                if (isHScreen)  //横屏X,Y对调
+                {
+                    pt.Y=item.XValue;
+                    pt.X=this.Frame.GetYFromData(item.YValue,false);
+                }
+                else
+                {
+                    pt.X=item.XValue;
+                    pt.Y=this.Frame.GetYFromData(item.YValue,false);
+                }
+                drawPoint.push(pt);
+            }
+        }
+        else
+        {
+            drawPoint=this.Point;
+        }
+
+        return drawPoint;
+    }
+
+     //坐标是否在点上 返回在第几个点上
+     this.IsPointInXYValue=function(x,y)
+     {
+         if (!this.Frame) return -1;
+         if (!this.Value) return -1;
+ 
+         var radius=5;
+         if (this.Option) radius+=this.Option.Zoom;
+         var isHScreen=this.Frame.IsHScreen;
+         radius*=GetDevicePixelRatio();
+         for(var i=0;i<this.Value.length; ++i)   //是否在点上
+         {
+             var item=this.Value[i];
+             var pt=new Point();
+             if (isHScreen)
+             {
+                 pt.Y=item.XValue;
+                 pt.X==this.Frame.GetYFromData(item.YValue);
+             }
+             else
+             {
+                 pt.X=item.XValue;
+                 pt.Y=this.Frame.GetYFromData(item.YValue);
+             }
+             this.Canvas.beginPath();
+             this.Canvas.arc(pt.X,pt.Y,radius,0,360);
+             if (this.Canvas.isPointInPath(x,y))  return i;
+         }
+ 
+         return -1;
+     }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        if (this.IsFrameMinSize()) return;
+
+        var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
+        if (!drawPoint) return;
+        if (drawPoint.length!=2) return;
+
+        this.ClipFrame();
+
+        var ptStart=drawPoint[0];
+        var ptEnd=drawPoint[1];
+
+        this.SetLineWidth();
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptStart.X,ptStart.Y);
+        this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
+        this.Canvas.stroke();
+        this.RestoreLineWidth();
+
+        /*
+        if (this.IsSelected)
+        {
+            this.Canvas.strokeStyle='rgba(255,0,0,0.5)';
+            this.Canvas.lineWidth=20 * GetDevicePixelRatio();
+            this.Canvas.stroke();
+        }
+        */
+
+        var line={Start:ptStart, End:ptEnd};
+        this.LinePoint.push(line);
+        
+        this.DrawPoint(drawPoint);  //画点
+        this.Canvas.restore();
+    }
 }
 
 //画图工具-箭头线

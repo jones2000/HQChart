@@ -119,6 +119,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![K线图](/小程序行情模块用例/image/hqchart_kline_area.png)
 * 支持深度图
 ![深度图](/小程序行情模块用例/image/depth_demo.png)
+* 支持ox图
+![ox图](/小程序行情模块用例/image/hqchart_ox.png)
 
 # 2. 走势图
 * 支持指标 <br>
