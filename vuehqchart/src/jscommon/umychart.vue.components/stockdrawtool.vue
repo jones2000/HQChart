@@ -105,7 +105,8 @@
             { name:"头肩型", icon:"#icon-draw_head_shoulders_bt" }, 
             { name: "波浪尺", icon: "#icon-waveruler" },
             { name: "AB波浪尺", icon: "#icon-waveruler" },
-            { name: "箱型线", icon: "#icon-draw_box" }
+            { name: "箱型线", icon: "#icon-draw_box" },
+            { name: "涂鸦线段", icon: "#icon-draw_line" },
         ],
         ToolList2: [
             { name: "圆弧线", icon: "#icon-draw_arc" },

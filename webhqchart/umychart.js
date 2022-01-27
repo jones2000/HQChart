@@ -3202,6 +3202,7 @@ function JSChartContainer(uielement, OffscreenElement)
                         this.UpdateFrameMaxMin();
                         this.ResetFrameXYSplit();
                         this.Draw();
+                        this.OnKLinePageChange("OnTouchMove");
                     }
                     else
                     {
@@ -25051,8 +25052,7 @@ function ChartMultiHtmlDom()
     }
 }
 
-// OX图
-
+// OX图 支持横屏
 function ChartOX()
 {
     this.newMethod=IChartPainting;   //派生
@@ -25073,8 +25073,19 @@ function ChartOX()
     //计算每个单元格的大小
     this.CalcualteSquare=function()
     {
-        var top=this.ChartBorder.GetTopEx();
-        var bottom=this.ChartBorder.GetBottomEx();
+        if (this.IsHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var top=border.LeftEx;
+            var bottom=border.RightEx;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var top=border.TopEx;
+            var bottom=border.BottomEx;
+        }
+        
 
         this.SquareSize=(bottom-top)/(this.OXData.Max-this.OXData.Min)*this.OXData.BlockSize;
 
@@ -25088,32 +25099,67 @@ function ChartOX()
         this.Canvas.beginPath();
         this.Canvas.strokeStyle=this.SquareLineColor;
 
-        var left=this.ChartBorder.GetLeft();
-        var right=this.ChartBorder.GetRight();
-        var top=this.ChartBorder.GetTopEx();
-        var bottom=this.ChartBorder.GetBottomEx();
+        if (this.IsHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var left=border.Top;
+            var right=border.Bottom;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var left=border.Left;
+            var right=border.Right;
+            var top=border.TopEx;
+            var bottom=border.BottomEx;
+        }
+        
         for(var price=this.OXData.StartPrice; price<this.OXData.Max; price+=this.OXData.BlockSize)
         {
             var y=this.ChartFrame.GetYFromData(price);
 
-            this.Canvas.moveTo(left,ToFixedPoint(y));
-            this.Canvas.lineTo(right,ToFixedPoint(y));
+            if (this.IsHScreen)
+            {
+                this.Canvas.moveTo(ToFixedPoint(y),border.Top);
+                this.Canvas.lineTo(ToFixedPoint(y), border.Bottom);
+            }
+            else
+            {
+                this.Canvas.moveTo(left,ToFixedPoint(y));
+                this.Canvas.lineTo(right,ToFixedPoint(y));
+            }
         }
 
         for(var price=this.OXData.StartPrice; price>this.OXData.Min; price-=this.OXData.BlockSize)
         {
             var y=this.ChartFrame.GetYFromData(price);
 
-            this.Canvas.moveTo(left,ToFixedPoint(y));
-            this.Canvas.lineTo(right,ToFixedPoint(y));
+            if (this.IsHScreen)
+            {
+                this.Canvas.moveTo(ToFixedPoint(y),border.Top);
+                this.Canvas.lineTo(ToFixedPoint(y), border.Bottom);
+            }
+            else
+            {
+                this.Canvas.moveTo(left,ToFixedPoint(y));
+                this.Canvas.lineTo(right,ToFixedPoint(y));
+            }
+            
         }
 
         var xStart=left+g_JSChartResource.FrameLeftMargin;
-
         for(var i=xStart;i<right; i+=this.SquareSize)
         {
-            this.Canvas.moveTo(ToFixedPoint(i),top);
-            this.Canvas.lineTo(ToFixedPoint(i),bottom);
+            if (this.IsHScreen)
+            {
+                this.Canvas.moveTo(border.LeftEx,ToFixedPoint(i));
+                this.Canvas.lineTo(border.RightEx,ToFixedPoint(i));
+            }
+            else
+            {
+                this.Canvas.moveTo(ToFixedPoint(i),top);
+                this.Canvas.lineTo(ToFixedPoint(i),bottom);
+            }
         }
 
         this.Canvas.stroke();
@@ -25138,42 +25184,69 @@ function ChartOX()
         this.CalcualteSquare();
         this.DrawSquares();
 
-        var left=this.ChartBorder.GetLeft();
-        var right=this.ChartBorder.GetRight();
-        var xOffset=left+g_JSChartResource.FrameLeftMargin;
-
-        this.Canvas.textBaseline='middle';
-        this.Canvas.textAlign='center';
-        this.Canvas.font=this.Font;
-
-        for(var i=0;i<this.OXData.Data.length;++i, xOffset+=this.SquareSize)
+        if (this.IsHScreen)
         {
-            if (xOffset>right) break;
+            var left=this.ChartBorder.GetTop();
+            var right=this.ChartBorder.GetBottom();
+            var xOffset=left+g_JSChartResource.FrameLeftMargin;
+            this.Canvas.textBaseline='middle';
+            this.Canvas.textAlign='center';
+            this.Canvas.font=this.Font;
 
-            var item=this.OXData.Data[i];
-            this.Canvas.fillStyle=this.Color[item.Type];
-            var text=this.Text[item.Type];
-            var rt={ X:xOffset, Width:this.SquareSize };
-            var maxValue=null, minValue=null;
-            if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
-            for(var j=0; j<item.Data.length; ++j)
+            for(var i=0;i<this.OXData.Data.length;++i, xOffset+=this.SquareSize)
             {
-                var value=item.Data[j];
-                var y=this.ChartFrame.GetYFromData(value+this.OXData.BlockSize/2);
-                this.Canvas.fillText(text,xOffset+this.SquareSize/2,y);
-                preY=y;
-
-                if (maxValue==null) maxValue=value;
-                else if (maxValue<value) maxValue=value;
-
-                if (minValue==null) minValue=value;
-                else if (minValue>value) minValue=value;
+                if (xOffset>right) break;
+    
+                var item=this.OXData.Data[i];
+                this.Canvas.fillStyle=this.Color[item.Type];
+                var text=this.Text[item.Type];
+                if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
+                for(var j=0; j<item.Data.length; ++j)
+                {
+                    var value=item.Data[j];
+                    var y=this.ChartFrame.GetYFromData(value+this.OXData.BlockSize/2);
+                    this.Canvas.fillText(text,y,xOffset+this.SquareSize/2);
+                }
             }
-
-            rt.Y=this.ChartFrame.GetYFromData(maxValue+this.OXData.BlockSize);
-            rt.Height=this.ChartFrame.GetYFromData(minValue)-rt.Y;
-            var tooltipItem={ Data:item,  Rect:rt };
-            this.TooltipData.push(tooltipItem);
+        }
+        else
+        {
+            var left=this.ChartBorder.GetLeft();
+            var right=this.ChartBorder.GetRight();
+            var xOffset=left+g_JSChartResource.FrameLeftMargin;
+    
+            this.Canvas.textBaseline='middle';
+            this.Canvas.textAlign='center';
+            this.Canvas.font=this.Font;
+    
+            for(var i=0;i<this.OXData.Data.length;++i, xOffset+=this.SquareSize)
+            {
+                if (xOffset>right) break;
+    
+                var item=this.OXData.Data[i];
+                this.Canvas.fillStyle=this.Color[item.Type];
+                var text=this.Text[item.Type];
+                var rt={ X:xOffset, Width:this.SquareSize };
+                var maxValue=null, minValue=null;
+                if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
+                for(var j=0; j<item.Data.length; ++j)
+                {
+                    var value=item.Data[j];
+                    var y=this.ChartFrame.GetYFromData(value+this.OXData.BlockSize/2);
+                    this.Canvas.fillText(text,xOffset+this.SquareSize/2,y);
+    
+                    if (maxValue==null) maxValue=value;
+                    else if (maxValue<value) maxValue=value;
+    
+                    if (minValue==null) minValue=value;
+                    else if (minValue>value) minValue=value;
+                }
+    
+                rt.Y=this.ChartFrame.GetYFromData(maxValue+this.OXData.BlockSize);
+                rt.Height=this.ChartFrame.GetYFromData(minValue)-rt.Y;
+                var tooltipItem={ Data:item,  Rect:rt };
+                this.TooltipData.push(tooltipItem);
+            }
         }
     }
 
@@ -53366,6 +53439,7 @@ function KLineChartHScreenContainer(uielement)
                         this.UpdateFrameMaxMin();
                         this.ResetFrameXYSplit();
                         this.Draw();
+                        this.OnKLinePageChange("OnTouchMove");
                     }
                     else
                     {
@@ -53400,6 +53474,7 @@ function KLineChartHScreenContainer(uielement)
                 this.UpdateFrameMaxMin();
                 this.Draw();
                 this.ShowTooltipByKeyDown();
+                this.OnKLinePageChange("OnTouchMove");
             }
             else        //缩小
             {
@@ -53412,6 +53487,7 @@ function KLineChartHScreenContainer(uielement)
                 this.UpdateFrameMaxMin();
                 this.Draw();
                 this.ShowTooltipByKeyDown();
+                this.OnKLinePageChange("OnTouchMove");
             }
 
             phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
