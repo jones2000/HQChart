@@ -2717,44 +2717,68 @@ function JSAlgorithm(errorHandler, symbolData)
 
     this.MA=function(data,dayCount)
     {
-        if (dayCount <= 0) return [];
-
-        let result = [];
-        if (!data || !data.length) return result;
+        let result=[];
+        if (dayCount<=0) return result;
         
-        for (var i = 0; i < data.length; ++i) 
+        if (!Array.isArray(dayCount))
         {
-            result[i] = null;
-            if (this.IsNumber(data[i])) break;
+            if (dayCount<=0) dayCount=1;
+            if (!data || !data.length) return result;
+            
+            for(var i=0;i<data.length;++i)
+            {
+                result[i]=null;
+                if (this.IsNumber(data[i])) break;
+            }
+
+            var data=data.slice(0); //复制一份数据出来
+            for(var days=0;i<data.length;++i,++days)
+            {
+                if (days<dayCount-1)
+                {
+                    result[i]=null;
+                    continue;
+                }
+
+                let preValue=data[i-(dayCount-1)];
+                let sum=0;
+                for(let j=dayCount-1;j>=0;--j)
+                {
+                    var value=data[i-j];
+                    if (!this.IsNumber(value)) 
+                    {
+                        value=preValue;  //空数据就取上一个数据
+                        data[i-j]=value; 
+                    }
+                    else 
+                    {
+                        preValue=value;
+                    }
+                    sum+=value;
+                }
+
+                result[i]=sum/dayCount;
+            }
         }
-
-        var data = data.slice(0); //复制一份数据出来 需要把data数据里的null数据用前一个数据覆盖
-        for (var days = 0; i < data.length; ++i, ++days) 
+        else
         {
-            if (days < dayCount - 1) 
+            for(var i=0;i<data.length;++i)
             {
-                result[i] = null;
-                continue;
-            }
-
-            let preValue = data[i - (dayCount - 1)];
-            let sum = 0;
-            for (let j = dayCount - 1; j >= 0; --j) 
-            {
-                var value = data[i - j];
-                if (!this.IsNumber(value)) 
+                result[i]=null;
+                if (i>=dayCount.length) continue;
+                var sumCount=dayCount[i];
+                if (!this.IsNumber(sumCount)) continue;
+                if (sumCount<=0) continue;
+                
+                var sum=0;
+                var count=0;
+                for(var j=i, k=0;j>=0 && k<sumCount;--j,++k)
                 {
-                    value = preValue;  //空数据就取上一个数据
-                    data[i - j] = value; 
+                    sum+=data[j];
+                    ++count;
                 }
-                else 
-                {
-                    preValue = value;
-                }
-                sum += value;
+                if (count>0) result[i]=sum/count;
             }
-
-            result[i] = sum / dayCount;
         }
 
         return result;
@@ -3524,24 +3548,42 @@ function JSAlgorithm(errorHandler, symbolData)
     this.SUM=function(data,n)
     {
         var result=[];
-        
-        if (n==0)
-        {
-            result[0]=data[0];
-    
-            for (var i=1; i<data.length; ++i)
+
+        if (!Array.isArray(n))
+        { 
+            if (n==0)
             {
-                result[i] = result[i-1]+data[i];
+                result[0]=data[0];
+        
+                for (var i=1; i<data.length; ++i)
+                {
+                    result[i] = result[i-1]+data[i];
+                }
+            }
+            else
+            {
+                for(var i=n-1,j=0;i<data.length;++i,++j)
+                {
+                    for(var k=0;k<n;++k)
+                    {
+                        if (k==0) result[i]=data[k+j];
+                        else result[i]+=data[k+j];
+                    }
+                }
             }
         }
         else
         {
-            for(var i=n-1,j=0;i<data.length;++i,++j)
+            for(var i=0;i<data.length;++i)
             {
-                for(var k=0;k<n;++k)
+                result[i]=null;
+                var totalCount=n[i];
+                if (!(totalCount>0)) continue;
+
+                for(var j=i, k=0 ;j>=0 && k<totalCount ;--j,++k)
                 {
-                    if (k==0) result[i]=data[k+j];
-                    else result[i]+=data[k+j];
+                    if (k==0) result[i]=data[j];
+                    else result[i]+=data[j];
                 }
             }
         }

@@ -11219,6 +11219,17 @@ function AverageWidthFrame()
                 }
             }
             
+            if (item.BG && item.BG.Color)
+            {
+                var bgItem=item.BG;
+                this.Canvas.fillStyle=bgItem.Color;
+                var xStart=this.GetXFromIndex(bgItem.Index.Start);
+                var xEnd=this.GetXFromIndex(bgItem.Index.End);
+                var bgHeight=this.ChartBorder.Bottom;
+                if (IFrameSplitOperator.IsNumber(bgItem.Height)) bgHeight=bgItem.Height;
+                var rtBG={Left:xStart, Width:xEnd-xStart, Top:border.Bottom, Height: bgHeight };
+                this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+            }
 
             if (this.VerticalInfo[i].Message[0]!=null)
             {
@@ -35402,7 +35413,12 @@ function FrameSplitMinuteX()
                 var info=new CoordinateInfo();
                 info.Value=j*minuteCount+minuteMiddleCount;
                 info.LineType=-1;    //线段不画
-                if (this.ShowText) info.Message[0]=IFrameSplitOperator.FormatDateString(this.DayData[i].Date, this.ShowFormate==0?'YYYY-MM-DD':'MM-DD');
+                if (this.ShowText) 
+                {
+                    info.Message[0]=IFrameSplitOperator.FormatDateString(this.DayData[i].Date, this.ShowFormate==0?'YYYY-MM-DD':'MM-DD');
+                    info.BG={ Index: { Start:j*minuteCount, End: (j+1)*minuteCount }, Date:this.DayData[i].Date };  //背景设置
+                    if (info.BG.Index.End>=this.Frame.XPointCount) info.BG.Index.End=this.Frame.XPointCount-1;
+                }
                 this.Frame.VerticalInfo.push(info);
 
                 var info=new CoordinateInfo();
