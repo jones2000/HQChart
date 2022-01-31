@@ -10746,7 +10746,7 @@ JSSymbolData.prototype.JsonDataToFinance = function (data)
         if (financeData)    //如果存在1天公布多个报告期数据 只取最新的一个公告期数据
         {
             if (financeData.Announcement.year < announcement.year)
-                financeData = { Date: item.date, Finance: finance, Announcement: announcement };
+                financeData = { Date: data.date, Finance: finance, Announcement: announcement };
         }
         else 
         {

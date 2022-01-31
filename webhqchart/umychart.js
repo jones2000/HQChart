@@ -31450,8 +31450,7 @@ function FrameSplitMinuteX()
                 if (this.ShowText) 
                 {
                     info.Message[0]=IFrameSplitOperator.FormatDateString(this.DayData[i].Date, this.ShowFormate==0?'YYYY-MM-DD':'MM-DD');
-                    info.BG={ Index: { Start:j*minuteCount, End: (j+1)*minuteCount }, Date:this.DayData[i].Date };  //背景设置
-                    if (info.BG.Index.End>=this.Frame.XPointCount) info.BG.Index.End=this.Frame.XPointCount-1;
+                    info.BG={ Index: { Start:j*minuteCount+1, End: (j+1)*minuteCount-1 }, Date:this.DayData[i].Date };  //背景设置
                 }
                 this.Frame.VerticalInfo.push(info);
 
