@@ -13391,7 +13391,7 @@ function ChartData()
     this.GetVol=function(unit)
     {
         var value=1;
-        if (IFrameSplitOperator.IsNumber(unit)>0) value=unit;
+        if (IFrameSplitOperator.IsNumber(unit)) value=unit;
         var result=new Array();
         for(var i in this.Data)
         {

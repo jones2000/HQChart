@@ -300,12 +300,14 @@ function ChartData()
         return result;
     }
 
-    this.GetVol=function()
+    this.GetVol=function(unit)
     {
-        var result=new Array();
+        var value=1;
+        if (ChartData.IsNumber(unit)) value=unit;
+        var result=[];
         for(var i in this.Data)
         {
-            result[i]=this.Data[i].Vol;
+            result[i]=this.Data[i].Vol/value;
         }
 
         return result;
