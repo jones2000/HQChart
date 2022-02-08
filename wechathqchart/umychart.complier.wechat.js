@@ -4770,8 +4770,8 @@ function JSAlgorithm(errorHandler, symbolData)
             dMaxPrice = Math.max(dMaxPrice,item.High);
         }
 
-        if (dMinPrice > 2000 || dMinPrice < 0 || dMaxPrice>2000 || dMinPrice < 0)
-            this.ThrowUnexpectedNode(node,'COST() 历史K线最大最小值错误, 超出(0,1000)范围');
+        if (dMinPrice > 5000 || dMinPrice < 0 || dMaxPrice>5000 || dMinPrice < 0)
+            this.ThrowUnexpectedNode(node,'COST() 历史K线最大最小值错误, 超出(0,5000)范围');
 
         var lMaxPrice = parseInt(dMaxPrice * 100 + 1);
         var lMinPrice = parseInt(dMinPrice * 100 - 1);
@@ -4875,8 +4875,8 @@ function JSAlgorithm(errorHandler, symbolData)
             dMaxPrice = Math.max(dMaxPrice,item.High);
         }
 
-        if (dMinPrice > 1000 || dMinPrice < 0 || dMaxPrice>1000 || dMinPrice < 0)
-            this.ThrowUnexpectedNode(node,'WINNER() 历史K线最大最小值错误, 超出(0,1000)范围');
+        if (dMinPrice > 5000 || dMinPrice < 0 || dMaxPrice>5000 || dMinPrice < 0)
+            this.ThrowUnexpectedNode(node,'WINNER() 历史K线最大最小值错误, 超出(0,5000)范围');
 
         var lMaxPrice = parseInt(dMaxPrice * 100 + 1);
 	    var lMinPrice = parseInt(dMinPrice * 100 - 1);

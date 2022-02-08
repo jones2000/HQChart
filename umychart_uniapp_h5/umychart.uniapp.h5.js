@@ -2,9 +2,9 @@
 //日志输出类
 var JSConsole=
 { 
-    Chart:{ Log:console.log },      //图形日志
-    Complier:{ Log:console.log },   //编译器日志
-    JSTable:{ Log:console.log }      //表格日志
+    Chart:{ Log:console.log, Warn:console.warn },      //图形日志
+    Complier:{ Log:console.log, Warn:console.warn},   //编译器日志
+    JSTable:{ Log:console.log, Warn:console.warn }      //表格日志
 };
 
 
@@ -13674,6 +13674,8 @@ function KLineFrame()
 
     this.Logarithmic=null; //{Up:上部 , Donw:下部 , OpenPrice:第一个开盘价}
 
+    this.CustomToolbar=[];  //自定义toolbar按钮 { ID:, Html:, Click }
+
     this.DrawToolbar=function()
     {
         if (typeof($)=="undefined") return;
@@ -13695,7 +13697,7 @@ function KLineFrame()
             this.ChartBorder.UIElement.parentNode.appendChild(divToolbar);
         }
 
-        if ((!this.ModifyIndex && !this.ChangeIndex && !this.OverlayIndex && !this.CloseIndex))
+        if (!this.ModifyIndex && !this.ChangeIndex && !this.OverlayIndex && !this.CloseIndex && !IFrameSplitOperator.IsNonEmptyArray(this.CustomToolbar))
         {
             if (divToolbar.style.display!='none')
                 divToolbar.style.display='none';
@@ -13735,6 +13737,15 @@ function KLineFrame()
         if (this.Identify!==0 && this.CloseIndex)  //第1个窗口不能关闭
         {
             spanIcon+=closeButton;
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(this.CustomToolbar))
+        {
+            for(var i=0;i<this.CustomToolbar.length;++i)
+            {
+                var item=this.CustomToolbar[i];
+                spanIcon+=item.Html;
+            }
         }
 
         //var scrollPos=GetScrollPosition();
@@ -13796,6 +13807,21 @@ function KLineFrame()
                 var id=event.data.Identify;
                 hqChart.RemoveIndexWindow(id);
             });
+
+
+        if (IFrameSplitOperator.IsNonEmptyArray(this.CustomToolbar))
+        {
+            for(var i=0;i<this.CustomToolbar.length;++i)
+            {
+                var item=this.CustomToolbar[i];
+                $("#"+item.ID).click(
+                {
+                    Chart:this.ChartBorder.UIElement.JSChartContainer,
+                    Identify:this.Identify,
+                    ID:item.ID
+                },item.Click);
+            }
+        }
 
         divToolbar.style.display = "block";
     }
@@ -16986,7 +17012,7 @@ function HistoryData()
     this.Vol;
     this.Amount;
     this.Time;      //mmhh 或者 mmhhss
-    this.FlowCapital=0;   //流通股本
+    this.FlowCapital=null;   //流通股本
     this.Position=null;   //持仓量
 
     //期货
@@ -17006,7 +17032,7 @@ function HistoryData()
 
     /*
     { 
-        PriceOffset: ,  
+        PriceOffset: 每个单元的价格间距,  
         High: [ { Price:, Value:, Text: Color ,Font:{ Weight:}}, ..... ], 
         Low:[ { Price:, Value:, Text: Color , Font:{ Weight:}}, ..... ] , 
         Order:  //订单信息
@@ -17015,7 +17041,8 @@ function HistoryData()
                 Price:,  
                 Ask:{ Color:, Value: , Text:, BG:, Font:{ Weight:} } 
                 Bid:{ Color:, Value:,  Text:, BG:, Font:{ Weight:} }, 
-                HBar:{ Color:, Width }  //横线柱子 Width K线宽度比值
+                //横线柱子 Width K线宽度比值, Height:高度 Type:0=长度由Width决定， 1=当收盘价小于Price后，线就不需要在继续延伸 2=当收盘价大于Price后，线就不需要在继续延伸了
+                HBar:{ Color:, Width, Height: 1, Type:0,1,2 }  
             }, 
             ........
         ] 
@@ -17357,7 +17384,7 @@ function ChartData()
     this.GetVol=function(unit)
     {
         var value=1;
-        if (IFrameSplitOperator.IsNumber(unit)>0) value=unit;
+        if (IFrameSplitOperator.IsNumber(unit)) value=unit;
         var result=new Array();
         for(var i in this.Data)
         {
@@ -18854,7 +18881,15 @@ function ChartData()
         if (bFind==true)    //第1个数据匹配,覆盖
         {
             var item=data[i];
-            if (j-1>0 && !item.YClose) item.YClose=this.Data[j-1].Close;   //前收盘如果没有就是上一记录的收盘
+            if (j-1>0)
+            {
+                var preItem=this.Data[j-1];
+                if (!item.YClose) item.YClose=preItem.Close;    //前收盘如果没有就是上一记录的收盘
+
+                //流通股使用上一个数据的
+                if (!IFrameSplitOperator.IsNumber(item.FlowCapital) && IFrameSplitOperator.IsNumber(preItem.FlowCapital)) 
+                    item.FlowCapital=preItem.FlowCapital;
+            }
             var newItem=HistoryData.Copy(item);
             this.Data[j]=newItem;
             ++j;
@@ -18870,7 +18905,17 @@ function ChartData()
             var item=data[i];
             if (j>=this.Data.length-1)
             {
-                if (j-1>0 && !item.YClose) item.YClose=this.Data[j-1].YClose;   //前收盘如果没有就是上一记录的收盘
+                if (j-1>0)
+                {
+                    var preItem=this.Data[j-1];
+                    if (!item.YClose) item.YClose=preItem.Close;    //前收盘如果没有就是上一记录的收盘
+
+                    //流通股使用上一个数据的
+                    if (!IFrameSplitOperator.IsNumber(item.FlowCapital) && IFrameSplitOperator.IsNumber(preItem.FlowCapital)) 
+                    item.FlowCapital=preItem.FlowCapital;
+                }
+                //if (j-1>0 && !item.YClose) item.YClose=this.Data[j-1].YClose;   //前收盘如果没有就是上一记录的收盘
+                //if (j-1>0 && !IFrameSplitOperator.IsNumber(item.FlowCapital) && IFrameSplitOperator.IsNumber(this.Data[j-1].FlowCapital)) item.FlowCapital=this.Data[j-1].FlowCapital;
                 var newItem=HistoryData.Copy(item);
                 this.Data[j]=newItem;
                 ++j;
@@ -19916,7 +19961,9 @@ function ChartKLine()
         Text:{ Color: g_JSChartResource.OrderFlow.Text.Color , Family:g_JSChartResource.OrderFlow.Text.Family, FontMaxSize:g_JSChartResource.OrderFlow.Text.FontMaxSize, MaxValue:g_JSChartResource.OrderFlow.Text.MaxValue },
         Line:{ UpDownColor: g_JSChartResource.OrderFlow.Line.UpDownColor, MiddleColor:g_JSChartResource.OrderFlow.Line.MiddleColor },
 
-        ShowType:0  //显示类型 0, 1
+        ShowType:0,  //显示类型 0, 1
+
+        AlwaysShowOrderText:g_JSChartResource.OrderFlow.AlwaysShowOrderText
     }
 
     this.IsShowOrderText=false;
@@ -21594,6 +21641,7 @@ function ChartKLine()
         if (orderFlow && IFrameSplitOperator.IsNumber(orderFlow.PriceOffset)) cellHeight=this.GetPriceYOffset(orderFlow.PriceOffset);
         var textFont=this.GetDynamicOrderFlowFont(cellHeight, xKLine.DataWidth/2);
         this.IsShowOrderText=(cellHeight>5 && xKLine.DataWidth>10);
+        if (this.OrderFlow.AlwaysShowOrderText) this.IsShowOrderText=true;
 
         var kColor;
         if (kItem.Open<kItem.Close) kColor=this.OrderFlow.UpColor;
@@ -21808,6 +21856,7 @@ function ChartKLine()
     this.GetDynamicOrderFlowFont=function(cellHeight, width, fontOption)
     {
         var fontSize=parseInt(cellHeight)-2;
+        if (cellHeight<5) fontSize=parseInt(cellHeight);    //高度太小了就不要上下间距了
         if (fontSize>this.OrderFlow.Text.FontMaxSize) fontSize=this.OrderFlow.Text.FontMaxSize;
         else if (fontSize<=0) fontSize=1;
         var font=this.FormatFontString(fontSize, this.OrderFlow.Text.Family, fontOption);
@@ -21851,17 +21900,53 @@ function ChartKLine()
 
         if (start<=end)
         {
-            var cellHeight=this.GetPriceYOffset(orderFlow.PriceOffset);
+            var chartright=this.ChartBorder.GetRight();
+            var xPointCount=this.ChartFrame.XPointCount;
+            var dataOffset=offset;
 
+            var cellHeight=this.GetPriceYOffset(orderFlow.PriceOffset);
             var xStart=this.ChartFrame.GetXFromIndex(start)-dataWidth/2;
+            
+            if (orderItem.HBar.Type==1)
+            {
+                for(var i=0, j=index+1; i<orderItem.HBar.Width && j<this.Data.Data.length ; ++i, ++j)
+                {
+                    var data=this.Data.Data[j];
+                    if (data.Close<orderItem.Price)
+                    {
+                        end=(j-1)-dataOffset;
+                        break;
+                    }
+                    
+                }
+            }
+            else if (orderItem.HBar.Type==2)
+            {
+                for(var i=0, j=index+1; i<orderItem.HBar.Width && j<this.Data.Data.length ; ++i, ++j)
+                {
+                    var data=this.Data.Data[j];
+                    if (data.Close>orderItem.Price)
+                    {
+                        end=(j-1)-dataOffset;
+                        break;
+                    }
+                        
+                }
+            }
+
+            if (end<0) return;
+
             var xEnd=this.ChartFrame.GetXFromIndex(end)+dataWidth/2;
             var yTop=yPrice-cellHeight/2;
+            var yHeight=cellHeight+0.5
+            if (IFrameSplitOperator.IsNumber(orderItem.HBar.Height)) 
+                yHeight=orderItem.HBar.Height*cellHeight+0.1;
 
             var fValue=orderItem.HBar.Width-parseInt(orderItem.HBar.Width);
             if (fValue>0.000001) xEnd+=(dataWidth+distanceWidth)*fValue;
     
             this.Canvas.fillStyle=orderItem.HBar.Color;
-            this.Canvas.fillRect(ToFixedRect(xStart),ToFixedRect(yTop),ToFixedRect(xEnd-xStart),ToFixedRect(cellHeight+0.5)); //高度适当加上,否则行间有空隙
+            this.Canvas.fillRect(ToFixedRect(xStart),ToFixedRect(yTop),ToFixedRect(xEnd-xStart),ToFixedRect(yHeight)); //高度适当加上,否则行间有空隙
         }
         
     }
@@ -30899,11 +30984,15 @@ function StockChip()
         this.Canvas.textAlign='left';
 
         var lineHeight=this.LineHeight*GetDevicePixelRatio();
-        var text='70%成本价'+ this.Data.Cast[1].MinPrice.toFixed(2)+'-'+this.Data.Cast[1].MaxPrice.toFixed(2)+'集中'+this.Data.Cast[1].Rate.toFixed(2)+'%';
+        var text='70%成本价 --.--';
+        if (IFrameSplitOperator.IsNonEmptyArray(this.Data.Cast))
+            text='70%成本价'+ this.Data.Cast[1].MinPrice.toFixed(2)+'-'+this.Data.Cast[1].MaxPrice.toFixed(2)+'集中'+this.Data.Cast[1].Rate.toFixed(2)+'%';
         this.Canvas.fillText(text,left,bottom);
         bottom-=lineHeight;
 
-        text='90%成本价'+ this.Data.Cast[0].MinPrice.toFixed(2)+'-'+this.Data.Cast[0].MaxPrice.toFixed(2)+'集中'+this.Data.Cast[0].Rate.toFixed(2)+'%';;
+        text='90%成本价 --.--';
+        if (IFrameSplitOperator.IsNonEmptyArray(this.Data.Cast))
+            text='90%成本价'+ this.Data.Cast[0].MinPrice.toFixed(2)+'-'+this.Data.Cast[0].MaxPrice.toFixed(2)+'集中'+this.Data.Cast[0].Rate.toFixed(2)+'%';;
         this.Canvas.fillText(text,left,bottom);
         bottom-=lineHeight;
 
@@ -31439,6 +31528,8 @@ function StockChip()
                 this.CalculateDistribute(aryChip, distributeData);
             }
         }
+
+        if (!distributeData) return false;
 
         this.Data={AllChip:aryChip, MaxVol:distributeData.MaxVol, MaxPrice:maxPrice, MinPrice:minPrice,SelectData:selData, DayChip:dayChip, YPrice:yPrice};
         return true;
@@ -45260,7 +45351,8 @@ function JSChartResource()
         DownColor:{ BG:"rgb(176,212,184)", Border:'rgb(66,94,74)' },        //阴线
         UnchagneColor: {BG:"rgb(216,221,177)", Border:"rgb(209,172,129)"},  //平盘
         Text:{ Color: "rgb(92,96,89)" , Family:'Arial', FontMaxSize:16, MaxValue:"8888" },  //文字
-        Line:{ UpDownColor: "rgb(0,0,0)", MiddleColor:"rgb(211,211,211)" }  //最大, 最低,中间 竖线
+        Line:{ UpDownColor: "rgb(0,0,0)", MiddleColor:"rgb(211,211,211)" },  //最大, 最低,中间 竖线
+        AlwaysShowOrderText:true,   //总是显示订单流文字
     };
 
     this.Index={};
@@ -73823,8 +73915,8 @@ function JSAlgorithm(errorHandler,symbolData)
             dMaxPrice = Math.max(dMaxPrice,item.High);
         }
 
-        if (dMinPrice > 1000 || dMinPrice < 0 || dMaxPrice>1000 || dMinPrice < 0)
-            this.ThrowUnexpectedNode(node,'WINNER() 历史K线最大最小值错误, 超出(0,1000)范围');
+        if (dMinPrice > 5000 || dMinPrice < 0 || dMaxPrice>5000 || dMinPrice < 0)
+            this.ThrowUnexpectedNode(node,'WINNER() 历史K线最大最小值错误, 超出(0,5000)范围');
 
         var lMaxPrice = parseInt(dMaxPrice * 100 + 1);
 	    var lMinPrice = parseInt(dMinPrice * 100 - 1);
@@ -73986,8 +74078,8 @@ function JSAlgorithm(errorHandler,symbolData)
             dMaxPrice = Math.max(dMaxPrice,item.High);
         }
 
-        if (dMinPrice > 1000 || dMinPrice < 0 || dMaxPrice>1000 || dMinPrice < 0)
-            this.ThrowUnexpectedNode(node,'COSTEX() 历史K线最大最小值错误, 超出(0,1000)范围');
+        if (dMinPrice > 5000 || dMinPrice < 0 || dMaxPrice>5000 || dMinPrice < 0)
+            this.ThrowUnexpectedNode(node,'COSTEX() 历史K线最大最小值错误, 超出(0,5000)范围');
 
         var lMaxPrice = parseInt(dMaxPrice * 100 + 1);
         var lMinPrice = parseInt(dMinPrice * 100 - 1);
@@ -74145,8 +74237,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 dMaxPrice = Math.max(dMaxPrice,item.High);
             }
 
-            if (dMinPrice > 1000 || dMinPrice < 0 || dMaxPrice>1000 || dMinPrice < 0)
-                this.ThrowUnexpectedNode(node,'LWINNER() 历史K线最大最小值错误, 超出(0,1000)范围');
+            if (dMinPrice > 5000 || dMinPrice < 0 || dMaxPrice>5000 || dMinPrice < 0)
+                this.ThrowUnexpectedNode(node,'LWINNER() 历史K线最大最小值错误, 超出(0,5000)范围');
 
             var lMaxPrice = parseInt(dMaxPrice * 100 + 1);
             var lMinPrice = parseInt(dMinPrice * 100 - 1);
