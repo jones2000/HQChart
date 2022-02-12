@@ -19954,7 +19954,7 @@ function ChartKLine()
 
     this.ClassName='ChartKLine';    //类名
     this.Symbol;        //股票代码
-    this.DrawType=0;    // 0=实心K线柱子  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图 5=订单流
+    this.DrawType=0;    // 0=实心K线柱子  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图 5=订单流 6=空心K线柱子2(全部空心)
     this.CloseLineColor=g_JSChartResource.CloseLineColor;
     this.CloseLineAreaColor=g_JSChartResource.CloseLineAreaColor;
     this.CloseLineWidth=g_JSChartResource.CloseLineWidth;
@@ -20464,9 +20464,10 @@ function ChartKLine()
 
     this.DrawKBar_Up=function(data, dataWidth, upColor, drawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen) //阳线
     {
+        var isEmptyBar=(drawType==3 || drawType==6);
         if (dataWidth>=4)
         {
-            if (drawType==3)
+            if (isEmptyBar)
             {
                 if ((dataWidth%2)!=0) dataWidth-=1;
             }
@@ -20482,7 +20483,7 @@ function ChartKLine()
                 }
                 else
                 {
-                    if (drawType==3)
+                    if (isEmptyBar)
                     {
                         var xFixed=left+dataWidth/2;
                         this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(y));
@@ -20512,7 +20513,7 @@ function ChartKLine()
                 }
                 else 
                 {
-                    if (drawType==3) //空心柱
+                    if (isEmptyBar) //空心柱
                     {
                         this.Canvas.beginPath();
                         this.Canvas.rect(ToFixedPoint(y),ToFixedPoint(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
@@ -20532,7 +20533,7 @@ function ChartKLine()
                 }
                 else 
                 {
-                    if (drawType==3) //空心柱
+                    if (isEmptyBar) //空心柱
                     {
                         this.Canvas.beginPath();
                         this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));
@@ -20555,7 +20556,7 @@ function ChartKLine()
                 }
                 else
                 {
-                    if (drawType==3)
+                    if (isEmptyBar)
                     {
                         var xFixed=left+dataWidth/2;
                         this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(Math.max(yClose,yOpen)));
@@ -20591,8 +20592,14 @@ function ChartKLine()
 
     this.DrawKBar_Down=function(data, dataWidth, downColor, drawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen) //阴线
     {
+        var isEmptyBar=(drawType==6);
         if (dataWidth>=4)
         {
+            if (isEmptyBar)
+            {
+                if ((dataWidth%2)!=0) dataWidth-=1;
+            }
+
             this.Canvas.strokeStyle=downColor;
             if (data.High>data.Close)   //上影线
             {
@@ -20604,8 +20611,17 @@ function ChartKLine()
                 }
                 else
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yOpen));
+                    if (isEmptyBar)
+                    {
+                        var xFixed=left+dataWidth/2;
+                        this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(Math.min(yClose,yOpen)));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yOpen));
+                    }
                 }
                 this.Canvas.stroke();
                 y=yOpen;
@@ -20623,8 +20639,24 @@ function ChartKLine()
             }
             else
             {
-                if (Math.abs(yClose-y)<1) this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
-                else this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,yClose)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(yClose-y)));
+                if (Math.abs(yClose-y)<1) 
+                {
+                    this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
+                }
+                else 
+                {
+                    if (isEmptyBar) //空心柱
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(Math.min(y,yClose)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(yClose-y)));
+                        this.Canvas.stroke();
+                    }
+                    else
+                    {
+                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,yClose)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(yClose-y)));
+                    }
+                   
+                }
             }
 
             if (data.Open>data.Low) //下影线
@@ -20637,8 +20669,17 @@ function ChartKLine()
                 }
                 else
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                    if (isEmptyBar)
+                    {
+                        var xFixed=left+dataWidth/2;
+                        this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(Math.max(yClose,yOpen)));
+                        this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(yLow));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
+                        this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                    }
                 }
                 this.Canvas.stroke();
             }
@@ -24237,7 +24278,14 @@ function ChartVolStick()
                    
                 var height=ToFixedRect(Math.abs(yBottom-y)>=1?yBottom-y:1);//高度调整为整数, 如果小于1, 统一使用1
                 y=yBottom-height;
-                if (bUp && (this.KLineDrawType==1 || this.KLineDrawType==2 || this.KLineDrawType==3)) //空心柱子
+                if (this.KLineDrawType==6)  //完全空心柱
+                {
+                    this.Canvas.strokeStyle=barColor.Color;
+                    this.Canvas.beginPath();
+                    this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(y),ToFixedRect(dataWidth),height);
+                    this.Canvas.stroke();
+                }
+                else if (bUp && (this.KLineDrawType==1 || this.KLineDrawType==2 || this.KLineDrawType==3)) //空心柱子
                 {
                     this.Canvas.strokeStyle=this.UpColor;
                     this.Canvas.beginPath();
@@ -63670,6 +63718,10 @@ function KLineRightMenu(divElement)
             {
                 text: "收盘面积",
                 click: function () { chart.ChangeKLineDrawType(4); }
+            },
+            {
+                text: "K线(空心阳线阴线)",
+                click: function () { chart.ChangeKLineDrawType(6);}
             }
         ];
 
@@ -63689,6 +63741,9 @@ function KLineRightMenu(divElement)
                 break;
             case 4:
                 data[4].selected=true;
+                break;
+            case 6:
+                data[5].selected=true;
                 break;
         }
         return data;
