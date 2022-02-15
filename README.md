@@ -367,6 +367,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 17. [HQChart实战教程46 - 十字光标右侧按钮点击增加刻度线](https://jones2000.blog.csdn.net/article/details/120563461)<br>
 18. [HQChart实战教程48 - 远程指标获取当前屏K线的范围](https://jones2000.blog.csdn.net/article/details/121913369)<br>
 19. [HQChart实战教程49 - 点击修改K线颜色及背景色](https://jones2000.blog.csdn.net/article/details/121938122)<br>
+20. [HQChart实战教程50-自定义指标栏工具按钮](https://blog.csdn.net/jones2000/article/details/122950050)<br>
 
 
 
