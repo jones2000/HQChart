@@ -4913,10 +4913,14 @@ function JSChart(divElement, bOffscreen)
 
         if (option.Border)
         {
+            var item=option.Border;
             if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left=option.Border.Left;
             if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right=option.Border.Right;
             if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
             if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
+
+            if (item.AutoLeft) chart.Frame.AutoLeftBorder=item.AutoLeft;
+            if (item.AutoRight) chart.Frame.AutoRightBorder=item.AutoRight;
         }
 
         this.AdjustChartBorder(chart);
