@@ -4123,6 +4123,8 @@ function ChartBuySell()
     this.BuyIcon = g_JSChartResource.KLineTrain.BuyIcon; //{Color:'rgb(0,0,205)',Text:'B'};
     this.SellIcon = g_JSChartResource.KLineTrain.SellIcon; //{Color:'rgb(0,0,205)',Text:'S'};
     this.BuySellData = new Map();   //Key=数据索引index Value:Data:[ { Op: 买/卖 0=buy 1=sell, Date:, Time, Price: Vol:}, ] 
+    this.LastDataDrawType=0;    //0=画在最后一个数据上 1=画在指定索引上
+    this.LastDataIndex=-1;
 
     this.AddTradeItem = function (tradeItem) 
     {
@@ -4170,7 +4172,17 @@ function ChartBuySell()
             if (value == null) continue;
             if (x > chartright) break;
 
-            if (i == this.Data.Data.length - 1) 
+            var bDrawLastData=false;
+            if (this.LastDataDrawType==1)
+            {
+                if (i==this.LastDataIndex) bDrawLastData=true;
+            }
+            else
+            {
+                if (i==this.Data.Data.length-1) bDrawLastData=true;
+            }
+
+            if (bDrawLastData) 
             {
                 var x = this.ChartFrame.GetXFromIndex(j);
                 var yHigh = this.ChartFrame.GetYFromData(value.High);

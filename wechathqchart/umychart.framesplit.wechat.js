@@ -31,12 +31,13 @@ var WEEK_NAME=["日","一","二","三","四","五","六"];
 //坐标信息
 function CoordinateInfo() 
 {
-    this.Value;                                                 //坐标数据
+    this.Value;                                                   //坐标数据
     this.Message = new Array();                                   //坐标输出文字信息
     this.TextColor = g_JSChartResource.FrameSplitTextColor        //文字颜色
     this.Font = g_JSChartResource.FrameSplitTextFont;             //字体
     this.LineColor = g_JSChartResource.FrameSplitPen;             //线段颜色
-    this.LineType = 1;                                            //线段类型 -1 不画线段
+    this.LineDash=null;                                           //当线段类型==2时 可以设置虚线样式
+    this.LineType = 1;                                            //线段类型 -1=不画线段,  2=虚线
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,7 +122,7 @@ function IFrameSplitOperator()
         if (keepZero)   //如果不存在0轴,增加一个0轴,刻度信息部显示
         {
             var bExsitZero = false;
-            for (var i = 0; i < data; ++i) 
+            for (var i = 0; i < data.length; ++i) 
             {
                 var item = data[i];
                 if (Math.abs(item.Value) < 0.00000001) 
