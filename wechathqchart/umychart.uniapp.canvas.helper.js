@@ -52,9 +52,9 @@ JSUniAppCanvasHelper.MeasureText=function(text, canvas)
 		{
 			width += 3.73;
 		} 
-		else if (/\s/.test(item)) 
+		else if (/\s/.test(item))   //空格
 		{
-			width += 2.5;
+			width += 3.25;
 		} 
 		else if (/%/.test(item)) 
 		{
