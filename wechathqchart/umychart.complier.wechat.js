@@ -8114,6 +8114,21 @@ function JSDraw(errorHandler, symbolData)
         var rgba = `rgba(${r},${g},${b},${a})`;
         return rgba;
     }
+
+    //该函数和DRAWTEXT连用
+    //{ Color:背景色, Border:边框颜色, Margin=[上,下,左, 右] }
+    this.BACKGROUND=function(color, borderColor, left, right, top, bottom)
+    {
+        var bg={ Margin:[0,1,1,1] };
+        if (color) bg.Color=color;
+        if (borderColor) bg.Border=borderColor;
+        if (IFrameSplitOperator.IsNumber(left)) bg.Margin[2]=left;
+        if (IFrameSplitOperator.IsNumber(right)) bg.Margin[3]=right;
+        if (IFrameSplitOperator.IsNumber(top)) bg.Margin[0]=top;
+        if (IFrameSplitOperator.IsNumber(bottom)) bg.Margin[1]=bottom;
+
+        return bg;
+    }
 }
 
 
@@ -11292,6 +11307,7 @@ function JSExecute(ast,option)
                     //ALIGN0,ALIGN1,ALIGN2 设置文字水平对齐方式（左中右）
                     var drawAlign=-1, drawVAlign=-1;
                     var fontSize=-1;
+                    var bgConfig=null;
                     for(let j=0 ; j<item.Expression.Expression.length; ++j)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -11404,6 +11420,11 @@ function JSExecute(ast,option)
 
                                     varName=null;
                                 }
+                                else if (itemExpression.Callee.Name=="BACKGROUND")
+                                {
+                                    bgConfig=itemExpression.Draw;
+                                    varName=null;
+                                }
                             }
                         }
                         else if (itemExpression.Type==Syntax.BinaryExpression)
@@ -11487,6 +11508,7 @@ function JSExecute(ast,option)
                         if (drawAlign>=0) outVar.DrawAlign=drawAlign;
                         if (drawVAlign>=0) outVar.DrawVAlign=drawVAlign;
                         if (fontSize>0) outVar.DrawFontSize=fontSize;
+                        if (bgConfig) outVar.Background=bgConfig;
                         this.OutVarTable.push(outVar);
                     }
                     else if (varName) 
@@ -11649,6 +11671,10 @@ function JSExecute(ast,option)
                 break;
             case "ICON":
                 node.Draw=this.Draw.ICON(args[0],args[1]);
+                node.Out=[];
+                break;
+            case "BACKGROUND":
+                node.Draw=this.Draw.BACKGROUND(args[0],args[1],args[2],args[3],args[4],args[5]);
                 node.Out=[];
                 break;
             case 'DRAWLINE':

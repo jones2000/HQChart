@@ -434,7 +434,7 @@ function ScriptIndex(name, script, args, option)
         }
 
         if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
-
+        if (varItem.Background) chartText.TextBG=varItem.Background;
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
         hqChart.ChartPaint.push(chartText);
     }

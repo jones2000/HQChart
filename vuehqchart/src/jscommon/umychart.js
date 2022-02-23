@@ -15916,6 +15916,11 @@ function IChartPainting()
         return iconSize;
     }
 
+    this.GetFontHeight=function(font)
+    {
+        return GetFontHeight(this.Canvas, font, "擎");
+    }
+
 }
 
 
@@ -21110,6 +21115,7 @@ function ChartSingleText()
     this.TextFont="14px 微软雅黑";           //线段宽度
     this.Text;
     this.TextAlign='left';
+    this.TextBG;            //{ Color:"rgb(0,0,92)", Border:"rgb(205,0,92)", Margin:[0,1,1,1],  }   // { Color:背景色, Border:边框颜色, Margin=[上,下,左, 右] }
     this.Direction=0;       //0=middle 1=bottom 2=top
     this.FixedFontSize=-1;  //固定字体大小
     this.YOffset=0;         //连线      
@@ -21282,9 +21288,22 @@ function ChartSingleText()
         var isArrayText=Array.isArray(this.Text);
         var pixelTatio = GetDevicePixelRatio();
         
-        if (this.Direction==1) this.Canvas.textBaseline='bottom';
-        else if (this.Direction==2) this.Canvas.textBaseline='top';
-        else this.Canvas.textBaseline='middle';
+        var drawTextInfo={ Text:{ }, Font:{ } };
+        if (this.Direction==1) 
+        {
+            this.Canvas.textBaseline='bottom';
+            drawTextInfo.Text={ Baseline: 'bottom'};
+        }
+        else if (this.Direction==2) 
+        {
+            this.Canvas.textBaseline='top';
+            drawTextInfo.Text={ Baseline: 'top'};
+        }
+        else 
+        {
+            this.Canvas.textBaseline='middle';
+            drawTextInfo.Text={ Baseline: 'middle'};
+        }
 
         if (this.IconFont)
         {
@@ -21304,8 +21323,8 @@ function ChartSingleText()
             this.Canvas.font=this.TextFont;
         }
 
+        drawTextInfo.Font={ Height:this.GetFontHeight(this.TextFont) };
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
-        //for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
             if (value==null) continue;
@@ -21328,6 +21347,11 @@ function ChartSingleText()
 
             this.Canvas.textAlign=this.TextAlign;
             this.Canvas.fillStyle=this.Color;
+
+            drawTextInfo.Text.Color=this.Color;
+            drawTextInfo.Text.Align=this.TextAlign;
+            drawTextInfo.X=x;
+            drawTextInfo.Y=y;
             
             if (this.YOffset>0 && this.Direction>0)
             {
@@ -21398,8 +21422,15 @@ function ChartSingleText()
                     if (this.Direction==1) y-=g_JSChartResource.DRAWABOVE.YOffset*pixelTatio;
                     else if (this.Direction==2) y+=this.TextSize.YOffset*pixelTatio;
                 }
-                //JSConsole.Chart.Log('[ChartSingleText::Draw] ',this.Direction,this.Text)
-                this.DrawText(this.Text,x,y,isHScreen);
+
+                if (this.Name=="DRAWTEXT")
+                {
+                    this.DrawTextV2(this.Text,drawTextInfo,isHScreen);
+                }
+                else
+                {
+                    this.DrawText(this.Text,x,y,isHScreen);
+                }
             }
         }
     }
@@ -21466,27 +21497,92 @@ function ChartSingleText()
         else
         {
             this.Canvas.fillText(text,x,y);
-            /*
-            var textWidth=this.Canvas.measureText(text).width;
-            var rectSize=textWidth*2;
-            var xRect,yRect;
-            if (this.Direction==1)  yRect=y-rectSize;   //底部
-            else if (this.Direction==2) yRect=y;    //顶部
-            else yRect=y-rectSize/2; //居中
-
-            if (this.TextAlign=='left') xRect=x;
-            else if (this.TextAlign=='right') xRect=x-rectSize;
-            else xRect=x-rectSize/2;
-
-            this.Canvas.fillStyle=this.Color;
-            this.Canvas.fillRect(xRect,yRect,rectSize,rectSize);
-
-            this.Canvas.fillStyle='rgb(255,255,255)';
-            this.Canvas.fillText(text,x,y);
-            */
-            
         }
     }
+
+    this.DrawTextV2=function(text, drawInfo, isHScreen)
+    {
+        var textWidth=this.Canvas.measureText(text).width;
+
+        if (isHScreen)
+        {
+            var x=drawInfo.Y;
+            var y=drawInfo.X;
+
+            if (drawInfo.Text.Align=="right") y=y-textWidth;
+            else if (drawInfo.Text.Align=="center") y=y-textWidth/2;
+
+            if (drawInfo.Text.Baseline=="top") x-=drawInfo.Font.Height;
+            else if (drawInfo.Text.Baseline=="middle") x-=drawInfo.Font.Height/2;
+
+            if (this.TextBG && (this.TextBG.Color || this.TextBG.Border))
+            {
+                var margin=this.TextBG.Margin;  //0=上 1=下 2=左 3=右
+                var xRect=x-margin[0];
+                var yRect=y-margin[2];
+                var bgWidth=textWidth+margin[2]+margin[3];
+                var bgHeight=drawInfo.Font.Height+margin[0]+margin[1];
+                if (this.TextBG.Color)
+                {
+                    this.Canvas.fillStyle=this.TextBG.Color;
+                    this.Canvas.fillRect(xRect,yRect,bgHeight,bgWidth);
+                }
+
+                if (this.TextBG.Border)
+                {
+                    this.Canvas.strokeStyle=this.TextBG.Border;
+                    this.Canvas.strokeRect(ToFixedPoint(xRect),ToFixedPoint(yRect),ToFixedRect(bgHeight),ToFixedRect(bgWidth));
+                }
+            }
+
+            this.Canvas.textBaseline="bottom";
+            this.Canvas.textAlign="left";
+            this.Canvas.fillStyle=drawInfo.Text.Color;
+
+            this.Canvas.save(); 
+            this.Canvas.translate(x, y);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(text,0,0);
+            this.Canvas.restore();
+        }
+        else
+        {
+            var x=drawInfo.X;
+            var y=drawInfo.Y;
+            if (drawInfo.Text.Align=="right") x=x-textWidth;
+            else if (drawInfo.Text.Align=="center") x=x-textWidth/2;
+
+            if (drawInfo.Text.Baseline=="top") y+=drawInfo.Font.Height;
+            else if (drawInfo.Text.Baseline=="middle") y+=drawInfo.Font.Height/2;
+
+            if (this.TextBG && (this.TextBG.Color || this.TextBG.Border))
+            {
+                var margin=this.TextBG.Margin;  //0=上 1=下 2=左 3=右
+                var xRect=x-margin[2];
+                var yRect=y-drawInfo.Font.Height-margin[1];
+                var bgWidth=textWidth+margin[2]+margin[3];
+                var bgHeight=drawInfo.Font.Height+margin[0]+margin[1];
+                if (this.TextBG.Color)
+                {
+                   
+                    this.Canvas.fillStyle=this.TextBG.Color;
+                    this.Canvas.fillRect(xRect,yRect,bgWidth,bgHeight);
+                }
+
+                if (this.TextBG.Border)
+                {
+                    this.Canvas.strokeStyle=this.TextBG.Border;
+                    this.Canvas.strokeRect(ToFixedPoint(xRect),ToFixedPoint(yRect),ToFixedRect(bgWidth),ToFixedRect(bgHeight));
+                }
+            }
+
+            this.Canvas.textBaseline="bottom";
+            this.Canvas.textAlign="left";
+            this.Canvas.fillStyle=drawInfo.Text.Color;
+            this.Canvas.fillText(text,x,y);
+        }
+    }
+    
 }
 
 //直线 水平直线 只有1个数据
