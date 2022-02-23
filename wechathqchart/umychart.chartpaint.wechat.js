@@ -2157,8 +2157,11 @@ function ChartSingleText()
                         else if (this.Direction==2) y+=4;
                     }
                 }
-               
-                this.DrawText(text, x, y, isHScreen);
+
+                if (this.Name=="DRAWTEXT") 
+                    this.DrawTextV2(text,drawTextInfo,isHScreen);
+                else
+                    this.DrawText(text, x, y, isHScreen);
             }
             else 
             {

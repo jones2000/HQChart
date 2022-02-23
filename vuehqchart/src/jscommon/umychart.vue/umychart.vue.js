@@ -25414,7 +25414,11 @@ function ChartSingleText()
                     if (this.Direction==1) y-=g_JSChartResource.DRAWABOVE.YOffset*pixelTatio;
                     else if (this.Direction==2) y+=this.TextSize.YOffset*pixelTatio;
                 }
-                this.DrawText(text,x,y,isHScreen);
+
+                if (this.Name=="DRAWTEXT")  
+                    this.DrawTextV2(text,drawTextInfo,isHScreen);
+                else 
+                    this.DrawText(text,x,y,isHScreen);
             }
             else
             {
@@ -31866,7 +31870,7 @@ function DrawToolsButton()
                     { HTML: { Title: '波浪尺', IClass: 'iconfont icon-waveruler', ID: 'icon-wave-ruler' }, Name: '波浪尺' },
                     { HTML: { Title: 'AB波浪尺', IClass: 'iconfont icon-waveruler', ID: 'icon-wave-ruler' }, Name: 'AB波浪尺' },
                     { HTML: { Title: '箱型线', IClass: 'iconfont icon-draw_box', ID: 'icon-drawbox' }, Name: '箱型线' },
-                    { HTML: { Title: '涂鸦线段', IClass: 'iconfont icon-draw_line', ID: 'icon-segment' }, Name: '涂鸦线段' },
+                    { HTML: { Title: '涂鸦线段', IClass: 'iconfont icon-draw_line', ID: 'icon-segment2' }, Name: '涂鸦线段' },
 
                 ],
                 [
