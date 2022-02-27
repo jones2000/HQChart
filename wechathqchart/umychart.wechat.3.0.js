@@ -1947,6 +1947,7 @@ function JSChartContainer(uielement)
         if (this.Frame.DrawCustomHorizontal) this.Frame.DrawCustomHorizontal();
         if (this.ChartInfoPaint) this.ChartInfoPaint.Draw();
         this.Frame.DrawLock();
+        this.Frame.DrawLogo();
     
         var bOnTouchDraw=drawType == 'DrawDynamicInfo' || this.IsOnTouch;
         if (bOnTouchDraw)
@@ -2090,6 +2091,7 @@ function JSChartContainer(uielement)
         if (this.Frame.DrawCustomHorizontal) this.Frame.DrawCustomHorizontal();
         if (this.ChartInfoPaint) this.ChartInfoPaint.Draw();
         this.Frame.DrawLock();
+        this.Frame.DrawLogo();
 
         var eventTitleDraw = this.GetEvent(JSCHART_EVENT_ID.ON_TITLE_DRAW);
         var eventIndexTitleDraw = this.GetEvent(JSCHART_EVENT_ID.ON_INDEXTITLE_DRAW);
@@ -2962,6 +2964,9 @@ function IChartFramePainting()
     this.BorderLine=null;               //1=上 2=下 4=左 8=右
     this.IsMinSize=false;               //窗口是否最小化
 
+    this.LogoTextColor=g_JSChartResource.FrameLogo.TextColor;
+    this.LogoTextFont=g_JSChartResource.FrameLogo.Font;
+
     this.Draw = function () 
     {
         this.DrawFrame();
@@ -3071,16 +3076,46 @@ function IChartFramePainting()
         */
     }
 
-  this.DrawLock = function () {
-    if (this.IsLocked) {
-      if (this.LockPaint == null) this.LockPaint = new ChartLock();
+    this.DrawLock = function () 
+    {
+        if (this.IsLocked) 
+        {
+            if (this.LockPaint == null) this.LockPaint = new ChartLock();
 
-      this.LockPaint.Canvas = this.Canvas;
-      this.LockPaint.ChartBorder = this.ChartBorder;
-      this.LockPaint.ChartFrame = this;
-      this.LockPaint.Draw();
+            this.LockPaint.Canvas = this.Canvas;
+            this.LockPaint.ChartBorder = this.ChartBorder;
+            this.LockPaint.ChartFrame = this;
+            this.LockPaint.Draw();
+        }
     }
-  }
+
+    this.DrawLogo=function()
+    {
+        var border=this.GetBorder();
+        var text=g_JSChartResource.FrameLogo.Text;
+        if (!text) return;
+
+        this.Canvas.fillStyle=this.LogoTextColor;
+        this.Canvas.font=this.LogoTextFont;
+        this.Canvas.textAlign = 'left';
+        this.Canvas.textBaseline = 'bottom';
+        if (this.IsHScreen)
+        {
+            var x=border.Left+5;
+            var y=border.Top+5;
+            this.Canvas.save();
+            this.Canvas.translate(x,y);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(text,0,0);
+            this.Canvas.restore();
+        }
+        else
+        {
+            var x=border.Left+5;
+            var y=border.Bottom-5;
+            this.Canvas.fillText(text,x,y);
+        }   
+    }
 
   //设施上锁
   this.SetLock = function (lockData) {
@@ -5066,6 +5101,19 @@ function HQTradeFrame()
         {
             var item = this.SubFrame[i];
             item.Frame.DrawLock();
+        }
+    }
+
+    this.DrawLogo=function()
+    {
+        for(var i=0;i<this.SubFrame.length;++i)
+        {
+            var item=this.SubFrame[i];
+            if (item.Frame.DrawLogo)
+            {
+                item.Frame.DrawLogo();
+                break;
+            }
         }
     }
 

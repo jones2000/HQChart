@@ -7463,6 +7463,7 @@ function JSChartContainer(uielement, OffscreenElement)
         if (this.Frame.DrawEx) this.Frame.DrawEx( {Symbol:this.Symbol} );
         if (this.ChartInfoPaint) this.ChartInfoPaint.Draw();
         this.Frame.DrawLock();
+        this.Frame.DrawLogo();
         this.Frame.Snapshot();
 
         for(var i=0;i<this.ExtendChartPaint.length;++i) //动态扩展图形
@@ -10392,6 +10393,9 @@ function IChartFramePainting()
 
     this.IsMinSize=false;               //窗口是否最小化
 
+    this.LogoTextColor=g_JSChartResource.FrameLogo.TextColor;
+    this.LogoTextFont=g_JSChartResource.FrameLogo.Font;
+
 
     this.PtInButtons=function(x,y) //坐标是否在按钮上
     {
@@ -10546,6 +10550,33 @@ function IChartFramePainting()
             this.LockPaint.ChartFrame=this;
             this.LockPaint.Draw(true);
         }
+    }
+
+    this.DrawLogo=function()
+    {
+        var border=this.GetBorder();
+        var text=g_JSChartResource.FrameLogo.Text;
+
+        this.Canvas.fillStyle=this.LogoTextColor;
+        this.Canvas.font=this.LogoTextFont;
+        this.Canvas.textAlign = 'left';
+        this.Canvas.textBaseline = 'bottom';
+        if (this.IsHScreen)
+        {
+            var x=border.Left+5;
+            var y=border.Top+5;
+            this.Canvas.save();
+            this.Canvas.translate(x,y);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(text,0,0);
+            this.Canvas.restore();
+        }
+        else
+        {
+            var x=border.Left+5;
+            var y=border.Bottom-5;
+            this.Canvas.fillText(text,x,y);
+        }   
     }
 
     this.CalculateLock=function()
@@ -16256,6 +16287,19 @@ function HQTradeFrame()
         {
             var item = this.SubFrame[i];
             item.Frame.DrawLock();
+        }
+    }
+
+    this.DrawLogo=function()
+    {
+        for(var i=0;i<this.SubFrame.length;++i)
+        {
+            var item=this.SubFrame[i];
+            if (item.Frame.DrawLogo)
+            {
+                item.Frame.DrawLogo();
+                break;
+            }
         }
     }
 
@@ -45375,6 +45419,13 @@ function JSChartResource()
         XBottomOffset:1*GetDevicePixelRatio(),  //X轴文字向下偏移
         YTopOffset:2*GetDevicePixelRatio(),      //Y轴顶部文字向下偏移
         YTextPadding:[2,2]
+    };
+
+    this.FrameLogo=
+    {
+        TextColor:'rgb(178,34,34)',
+        Font:"bold "+ 16*GetDevicePixelRatio() +"px 微软雅黑",
+        Text:"*仅学习使用*"     //请求不要修改声明, 任何修改声明产生的任何法律责任由修改者自行独立承担，与HQChart插件作者无关。
     };
 
     //百分比坐标文字颜色

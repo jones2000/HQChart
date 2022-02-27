@@ -68,7 +68,14 @@ function JSChartResource()
         XBottomOffset: 0 ,  //X轴文字向下偏移
         YTopOffset:2,    //Y轴顶部文字向下偏移
         YTextPadding:[2,2]
-    };   
+    };  
+    
+    this.FrameLogo=
+    {
+        TextColor:'rgb(178,34,34)',
+        Font:"bold 16px 微软雅黑",
+        Text:"*仅学习使用*"     //请求不要修改声明, 任何修改声明产生的任何法律责任由修改者自行独立承担，与HQChart插件作者无关。
+    };
 
     this.FrameLatestPrice = 
     {
