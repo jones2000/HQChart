@@ -22,6 +22,7 @@ uniapp 版本:
 老版本手动导入插件 : [https://ext.dcloud.net.cn/plugin?id=790](https://ext.dcloud.net.cn/plugin?id=790)<br>
 
 [HQChart用户使用协议](/用户协议.txt) <br>
+[HQChart商业使用说明及用户使用协议](https://blog.csdn.net/jones2000/article/details/123170153)<br>
 
 第3放数据对接案例:<br>
 源码地址:[https://github.com/jones2000/HQChart-Super](https://github.com/jones2000/HQChart-Super)<br>
