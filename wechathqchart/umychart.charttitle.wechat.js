@@ -207,9 +207,15 @@ function DynamicKLineTitlePainting()
             return;
         }
 
-        if (this.TextSpace>=0) this.SpaceWidth=this.TextSpace;
-        else  this.SpaceWidth = this.Canvas.measureText(' ').width;
-
+        if (this.TextSpace>=0) 
+		{
+			this.SpaceWidth=this.TextSpace;
+		}
+        else  
+		{
+			this.Canvas.font = this.Font;
+			this.SpaceWidth = this.Canvas.measureText(' ').width;
+		}
         var index = this.CursorIndex;
         index = parseInt(index.toFixed(0));
         var dataIndex = this.Data.DataOffset + index;
@@ -938,8 +944,15 @@ function DynamicMinuteTitlePainting()
             return;
         }
 
-        if (this.TextSpace>=0) this.SpaceWidth=this.TextSpace;
-        else  this.SpaceWidth = this.Canvas.measureText(' ').width;
+        if (this.TextSpace>=0) 
+		{
+			this.SpaceWidth=this.TextSpace;
+		}
+        else  
+		{
+			this.Canvas.font = this.Font;
+			this.SpaceWidth = this.Canvas.measureText(' ').width;
+		}
         
         var index = this.CursorIndex;
         index = parseInt(index.toFixed(0));
