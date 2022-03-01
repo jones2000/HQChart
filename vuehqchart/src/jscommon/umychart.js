@@ -6590,6 +6590,7 @@ function IChartFramePainting()
     {
         var border=this.GetBorder();
         var text=g_JSChartResource.FrameLogo.Text;
+        if (!IFrameSplitOperator.IsString(text)) return;
 
         this.Canvas.fillStyle=this.LogoTextColor;
         this.Canvas.font=this.LogoTextFont;
@@ -48347,6 +48348,16 @@ function KLineChartContainer(uielement,OffscreenElement)
             "first":{ date: firstItem.Date, time:firstItem.Time }
         };
 
+        if (IFrameSplitOperator.IsNonEmptyArray(this.OverlayChartPaint))
+        {
+            postData.overlay=[];
+            for(var i=0;i<this.OverlayChartPaint.length;++i)
+            {
+                var item=this.OverlayChartPaint[i];
+                postData.overlay.push({ symbol:item.Symbol });
+            }
+        }
+
         if (this.NetworkFilter)
         {
             var obj=
@@ -48440,6 +48451,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         //绑定数据
         this.UpdateMainData(bindData,lastDataCount);
+        this.UpdateOverlayDragMinuteData(data);
         this.BindInstructionIndexData(bindData);    //执行指示脚本
 
         for(var i=0; i<this.Frame.SubFrame.length; ++i)
@@ -48459,6 +48471,86 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.BindAllOverlayIndexData(bindData);
     }
 
+    this.UpdateOverlayDragMinuteData=function(data)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.OverlayChartPaint)) return;
+        var aryRecvOverlayData=data.overlay;
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryRecvOverlayData)) return;
+
+        for(var i=0;i<this.OverlayChartPaint.length; ++i)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (!item.Symbol) continue;
+
+            if (!item.MainData) continue;   //等待主图股票数据未下载完
+            if (item.Status!=OVERLAY_STATUS_ID.STATUS_FINISHED_ID) continue;
+
+            var findData=null;
+            for(var j=0;j<aryRecvOverlayData.length;++j)    //查找对应的叠加股票数据
+            {
+                var overlayItem=aryRecvOverlayData[j];
+                if (overlayItem.symbol==item.Symbol)
+                {
+                    findData=overlayItem;
+                    break;
+                }
+            }
+
+            if (!findData) continue;
+
+            var aryDayData=KLineChartContainer.JsonDataToMinuteHistoryData(findData);
+            var sourceData=item.SourceData; //叠加股票的所有数据
+
+            var firstData=sourceData.Data[0];
+            var endIndex=null;
+            for(var j=aryDayData.length-1;j>=0;--j)
+            {
+                var itemData=aryDayData[j];
+                if (firstData.Date>itemData.Date) 
+                {
+                    endIndex=j;
+                    break;
+                }
+                else if (firstData.Date==itemData.Date && firstData.Time>itemData.Time)
+                {
+                    endIndex=j;
+                    break;
+                }
+                else if (firstData.Date==itemData.Date && firstData.Time==itemData.Time)
+                {
+                    firstData.YClose=itemData.YClose;
+                    endIndex=j-1;
+                    break;
+                }
+            }
+
+            if (endIndex==null && endIndex<0) continue;
+            
+            for(var j=0; j<aryDayData.length && j<=endIndex;++j)    //数据往前插
+            {
+                var itemData=aryDayData[j];
+                sourceData.Data.splice(j,0,itemData);
+            }
+
+            var bindData=new ChartData();
+            bindData.Data=sourceData.Data;
+            bindData.Period=this.Period;
+            bindData.Right=this.Right;
+            bindData.DataType=0;
+
+            var aryOverlayData=this.SourceData.GetOverlayMinuteData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
+            bindData.Data=aryOverlayData;
+
+            if (ChartData.IsMinutePeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
+            {
+                var periodData=bindData.GetPeriodData(bindData.Period);
+                bindData.Data=periodData;
+            }
+
+            item.Data=bindData;
+        }
+    }
+
     this.RequestDragDayData=function()
     {
         var self=this;
@@ -48476,6 +48568,16 @@ function KLineChartContainer(uielement,OffscreenElement)
             "first":{ date: firstItem.Date }
         };
 
+        if (IFrameSplitOperator.IsNonEmptyArray(this.OverlayChartPaint))
+        {
+            postData.overlay=[];
+            for(var i=0;i<this.OverlayChartPaint.length;++i)
+            {
+                var item=this.OverlayChartPaint[i];
+                postData.overlay.push( { symbol:item.Symbol } );
+            }
+        }
+        
         if (this.NetworkFilter)
         {
             var obj=
@@ -48520,6 +48622,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (!aryDayData || aryDayData.length<=0)
         {
             this.DragDownload.Day.IsEnd=true;   //下完了
+            JSConsole.Chart.Log(`[KLineChartContainer.RecvDragDayData] ${this.Symbol} data end.`);
             return;
         }
         var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
@@ -48567,6 +48670,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         //绑定数据
         this.UpdateMainData(bindData,lastDataCount);
+        this.UpdateOverlayDragDayData(data);
         this.BindInstructionIndexData(bindData);    //执行指示脚本
 
         for(var i=0; i<this.Frame.SubFrame.length; ++i)
@@ -48587,6 +48691,88 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         //叠加指标计算
         this.BindAllOverlayIndexData(bindData);
+    }
+
+    //更新叠加数据
+    this.UpdateOverlayDragDayData=function(data)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.OverlayChartPaint)) return;
+        var aryRecvOverlayData=data.overlay;
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryRecvOverlayData)) return;
+
+        for(var i=0;i<this.OverlayChartPaint.length; ++i)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (!item.Symbol) continue;
+
+            if (!item.MainData) continue;   //等待主图股票数据未下载完
+            if (item.Status!=OVERLAY_STATUS_ID.STATUS_FINISHED_ID) continue;
+
+            var findData=null;
+            for(var j=0;j<aryRecvOverlayData.length;++j)    //查找对应的叠加股票数据
+            {
+                var overlayItem=aryRecvOverlayData[j];
+                if (overlayItem.symbol==item.Symbol)
+                {
+                    findData=overlayItem;
+                    break;
+                }
+            }
+
+            if (!findData) continue;
+
+            var aryDayData=KLineChartContainer.JsonDataToHistoryData(findData);
+            var sourceData=item.SourceData; //叠加股票的所有数据
+
+            var firstData=sourceData.Data[0];
+            var endIndex=null;
+            for(var j=aryDayData.length-1;j>=0;--j)
+            {
+                var itemData=aryDayData[j];
+                if (firstData.Date>itemData.Date) 
+                {
+                    endIndex=j;
+                    break;
+                }
+                else if (firstData.Date==itemData.Date)
+                {
+                    firstData.YClose=itemData.YClose;
+                    endIndex=j-1;
+                    break;
+                }
+            }
+
+            if (endIndex==null && endIndex<0) continue;
+            
+            for(var j=0; j<aryDayData.length && j<=endIndex;++j)    //数据往前插
+            {
+                var itemData=aryDayData[j];
+                sourceData.Data.splice(j,0,itemData);
+            }
+
+            var bindData=new ChartData();
+            bindData.Data=sourceData.Data;
+            bindData.Period=this.Period;
+            bindData.Right=this.Right;
+            bindData.DataType=0;
+
+            if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(findData.symbol) && !this.IsApiPeriod)    //复权数据 ,A股才有有复权
+            {
+                var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
+                bindData.Data=rightData;
+            }
+
+            var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
+            bindData.Data=aryOverlayData;
+
+            if (ChartData.IsDayPeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
+            {
+                var periodData=bindData.GetPeriodData(bindData.Period);
+                bindData.Data=periodData;
+            }
+
+            item.Data=bindData;
+        }
     }
 
     this.SetCustomVerical=function(windowId, data)

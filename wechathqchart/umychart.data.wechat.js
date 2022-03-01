@@ -1928,6 +1928,15 @@ var HQ_DATA_TYPE=
     MULTIDAY_MINUTE_ID:4,//多日走势图
 };
 
+//K线叠加 支持横屏
+var OVERLAY_STATUS_ID=
+{
+    STATUS_NONE_ID:0,           //空闲状态
+    STATUS_REQUESTDATA_ID:1,    //请求数据
+    STATUS_RECVDATA_ID:2,       //接收到数据
+    STATUS_FINISHED_ID:3,       //数据下载完成
+};
+
 function PhoneDBClick()
 {
     this.Start=[];
@@ -1996,6 +2005,7 @@ module.exports =
         JSCHART_EVENT_ID:JSCHART_EVENT_ID,
         PhoneDBClick:PhoneDBClick,
         HQ_DATA_TYPE:HQ_DATA_TYPE,
+        OVERLAY_STATUS_ID:OVERLAY_STATUS_ID,
     },
 
     //单个类导出
@@ -2017,4 +2027,5 @@ module.exports =
     JSCommon_JSCHART_EVENT_ID:JSCHART_EVENT_ID,
     JSCommon_PhoneDBClick:PhoneDBClick,
     JSCommon_HQ_DATA_TYPE:HQ_DATA_TYPE,
+    JSCommon_OVERLAY_STATUS_ID:OVERLAY_STATUS_ID,
 };

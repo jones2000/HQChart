@@ -17,6 +17,7 @@ import
     JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
     JSCommon_Rect as Rect,
     JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
+    JSCommon_OVERLAY_STATUS_ID as OVERLAY_STATUS_ID,
 } from "./umychart.data.wechat.js";
 
 import 
@@ -3004,7 +3005,8 @@ function ChartOverlayKLine()
     this.DrawType = 0;
     this.ClassName ='ChartOverlayKLine';
     this.CustomDrawType = null;       //图形类型
-
+    this.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
+    
     this.SetOption = function (option) 
     {
         if (!option) return;
