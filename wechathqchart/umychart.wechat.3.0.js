@@ -1873,14 +1873,29 @@ function JSChartContainer(uielement)
 
         if (isInClient)
         {
-            var yValueExtend={};
-            var yValue=this.Frame.GetYData(y,yValueExtend);
-
-            if (IFrameSplitOperator.IsNumber(yValueExtend.FrameID) && yValueExtend.FrameID>=0)
+            if (this.Frame && this.Frame.IsHScreen)
             {
-                var xValue=this.Frame.GetXData(x);
-                data.FrameID=yValueExtend.FrameID;
-                data.Data={ X:xValue, Y:yValue } ;
+                var yValueExtend={};
+                var yValue=this.Frame.GetYData(x,yValueExtend);
+
+                if (IFrameSplitOperator.IsNumber(yValueExtend.FrameID) && yValueExtend.FrameID>=0)
+                {
+                    var xValue=this.Frame.GetXData(y);
+                    data.FrameID=yValueExtend.FrameID;
+                    data.Data={ X:xValue, Y:yValue } ;
+                }
+            }
+            else
+            {
+                var yValueExtend={};
+                var yValue=this.Frame.GetYData(y,yValueExtend);
+    
+                if (IFrameSplitOperator.IsNumber(yValueExtend.FrameID) && yValueExtend.FrameID>=0)
+                {
+                    var xValue=this.Frame.GetXData(x);
+                    data.FrameID=yValueExtend.FrameID;
+                    data.Data={ X:xValue, Y:yValue } ;
+                }
             }
         }
 
@@ -5258,7 +5273,7 @@ function HQTradeFrame()
     this.GetYData = function (y, outObject) //outObject 可以保存返回的额外数据) 
     {
         var frame;
-        for (var i in this.SubFrame) 
+        for (var i=0; i<this.SubFrame.length; ++i) 
         {
             var item = this.SubFrame[i];
             var left = item.Frame.ChartBorder.GetLeft();
@@ -5484,25 +5499,28 @@ function HQTradeHScreenFrame() {
     }
   }
 
-  this.GetYData = function (x, outObject) {
-    var frame;
-    for (var i in this.SubFrame) {
-      var item = this.SubFrame[i];
-      var left = item.Frame.ChartBorder.GetLeftEx();
-      var top = item.Frame.ChartBorder.GetTop();
-      var width = item.Frame.ChartBorder.GetWidthEx();
-      var height = item.Frame.ChartBorder.GetHeight();
+    this.GetYData = function (x, outObject) 
+    {
+        var frame;
+        for (var i=0; i<this.SubFrame.length; ++i) 
+        {
+            var item = this.SubFrame[i];
+            var left = item.Frame.ChartBorder.GetLeftEx();
+            var top = item.Frame.ChartBorder.GetTop();
+            var width = item.Frame.ChartBorder.GetWidthEx();
+            var height = item.Frame.ChartBorder.GetHeight();
 
-      var rtItem = new Rect(left, top, width, height);
-      if (rtItem.IsPointIn(x, top)) {
-        frame = item.Frame;
-        if (outObject) outObject.FrameID = i;
-        break;
-      }
+            var rtItem = new Rect(left, top, width, height);
+            if (rtItem.IsPointIn(x, top)) 
+            {
+                frame = item.Frame;
+                if (outObject) outObject.FrameID = i;
+                break;
+            }
+        }
+
+        if (frame != null) return frame.GetYData(x);
     }
-
-    if (frame != null) return frame.GetYData(x);
-  }
 }
 
 //深度图框架
@@ -11582,6 +11600,8 @@ function KLineChartHScreenContainer(uielement)
             drag.LastMove.Y = touches[0].clientY;
 
             jsChart.MouseDrag = drag;
+            this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
+            this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchStart"}, e);
         }
         else if (this.IsPhonePinching(e)) 
         {
@@ -11635,6 +11655,12 @@ function KLineChartHScreenContainer(uielement)
                     drag.LastMove.X = touches[0].clientX;
                     drag.LastMove.Y = touches[0].clientY;
                 }
+            }
+
+            if (this.PhoneTouchInfo)
+            {
+                this.PhoneTouchInfo.End.X=touches[0].clientX;
+                this.PhoneTouchInfo.End.Y=touches[0].clientY;
             }
         }
         else if (this.IsPhonePinching(e)) 
@@ -11823,6 +11849,7 @@ function KLineChartHScreenContainer(uielement)
             {
                 frame.YSplitOperator = new FrameSplitKLinePriceY();
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
+                frame.YSplitOperator.FrameSplitData2 = this.FrameSplitData.get('double');
                 //主图上下间距
                 border.TopSpace = 12;
                 border.BottomSpace = 12;
