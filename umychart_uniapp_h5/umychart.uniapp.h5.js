@@ -25349,7 +25349,7 @@ function ChartSingleText()
             this.Canvas.font=this.TextFont;
         }
 
-        drawTextInfo.Font={ Height:this.GetFontHeight(this.TextFont) };
+        drawTextInfo.Font={ Height:this.GetFontHeight() };
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var value=this.Data.Data[i];

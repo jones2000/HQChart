@@ -7605,7 +7605,7 @@ function KLineChartContainer(uielement)
         }
 
         //请求叠加数据 (主数据下载完再下载))
-        this.ReqeustKLineInfoData();
+        this.ReqeustKLineInfoData({ FunctionName:"RecvHistoryData" });
         this.RequestOverlayHistoryData();
 
         //刷新画图
@@ -8792,7 +8792,7 @@ function KLineChartContainer(uielement)
             }
         }
 
-        this.ReqeustKLineInfoData();
+        this.ReqeustKLineInfoData({FunctionName:"Update"});
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
@@ -8828,18 +8828,26 @@ function KLineChartContainer(uielement)
         }
     }
 
-    this.ReqeustKLineInfoData = function () 
+    this.ReqeustKLineInfoData = function (obj) 
     {
-        if (this.ChartPaint.length > 0) 
+        if (obj && obj.FunctionName=="RecvDragDayData") //增量更新
         {
-            var klinePaint = this.ChartPaint[0];
-            klinePaint.InfoData = new Map();
+            obj.Update=true;
+        }
+        else
+        {
+            if (this.ChartPaint.length > 0) 
+            {
+                var klinePaint = this.ChartPaint[0];
+                klinePaint.InfoData = new Map();
+            }
+            obj.Update=false;
         }
 
         //信息地雷信息
         for (var i in this.ChartInfo) 
         {
-            this.ChartInfo[i].RequestData(this);
+            this.ChartInfo[i].RequestData(this,obj);
         }
     }
 
@@ -8856,7 +8864,7 @@ function KLineChartContainer(uielement)
             this.ChartInfo.push(item);
         }
 
-        if (bUpdate == true) this.ReqeustKLineInfoData();
+        if (bUpdate == true) this.ReqeustKLineInfoData({ FunctionName:"SetKLineInfo" });
     }
 
     this.SetPolicyInfo = function (aryPolicy, bUpdate) 
@@ -9494,7 +9502,7 @@ function KLineChartContainer(uielement)
         }
         
         var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
-
+        var firstData=this.SourceData.Data[0];
         for (var i in aryDayData)    //数据往前插
         {
             var item = aryDayData[i];
@@ -9533,6 +9541,9 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+
+        //更新信息地雷
+        this.ReqeustKLineInfoData( { FunctionName:"RecvDragDayData", StartDate:firstData.Date } );
     }
 
     //更新叠加数据
