@@ -19,6 +19,11 @@ import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达�
 //日志
 import { JSConsole } from "./umychart.console.wechat.js"
 
+import {
+    JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
+    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
+} from "./umychart.data.wechat.js";
+
 //图形库
 import {
     JSCommonChartPaint_IChartPainting as IChartPainting, 
