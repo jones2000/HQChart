@@ -12987,6 +12987,7 @@ module.exports =
     JSCommonComplier:
     {
         JSComplier: JSComplier,
+        g_JSComplierResource: g_JSComplierResource,
     },
 
      //单个类导出

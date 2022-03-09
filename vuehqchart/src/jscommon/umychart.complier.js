@@ -9387,7 +9387,7 @@ function JSDraw(errorHandler,symbolData)
         if (!icon) icon={Symbol:'🚩'};
 
         let drawData=[];
-        let result={DrawData:drawData, DrawType:'DRAWICON',Icon:icon};
+        let result={ DrawData:drawData, DrawType:'DRAWICON',Icon:icon, IconType:type };
         if (condition.length<=0) return result;
 
         var IsNumber=typeof(data)=="number";

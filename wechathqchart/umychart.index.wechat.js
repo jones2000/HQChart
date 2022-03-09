@@ -1237,6 +1237,9 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
                 if (draw.DrawType == 'DRAWICON')  //图标
                 {
                     drawItem.Icon = draw.Icon;
+                    //小程序不支持svg, 只能转文字
+                    if (IFrameSplitOperator.IsNumber(draw.IconType))
+                        drawItem.Icon=JSCommonComplier.g_JSComplierResource.GetDrawTextIcon(draw.IconType);
                     drawItem.Name = draw.Name;
                     drawItem.DrawType = draw.DrawType;
                     drawItem.DrawData = this.FittingArray(draw.DrawData, date, time, hqChart);
