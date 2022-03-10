@@ -194,6 +194,7 @@ function ScriptIndex(name, script, args, option)
     this.LockText = null;
     this.LockFont = null;
     this.LockCount = 10;
+    this.TitleFont=g_JSChartResource.DynamicTitleFont;     //标题字体
 
     if (option) 
     {
@@ -204,6 +205,7 @@ function ScriptIndex(name, script, args, option)
         if (option.InstructionType) this.InstructionType = option.InstructionType;
         if (option.YSpecificMaxMin) this.YSpecificMaxMin = option.YSpecificMaxMin;
         if (option.YSplitScale) this.YSplitScale = option.YSplitScale;
+        if (option.TitleFont) this.TitleFont=option.TitleFont;
         if (option.OutName) this.OutName=option.OutName;
     }
 
@@ -984,7 +986,8 @@ function ScriptIndex(name, script, args, option)
         }
 
         if (indexParam.length > 0) hqChart.TitlePaint[titleIndex].Title = this.Name + '(' + indexParam + ')';
-
+        if (this.TitleFont) hqChart.TitlePaint[titleIndex].Font=this.TitleFont;
+        
         if (hqChart.UpdateUICallback) hqChart.UpdateUICallback('ScriptIndex', this.OutVar,
             { WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData });  //通知上层回调
 

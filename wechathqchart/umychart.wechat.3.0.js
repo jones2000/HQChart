@@ -436,7 +436,7 @@ function JSChart(element)
             if (indexInfo) chart.TradeIndex = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
         }
 
-        for (var i in option.Windows) //创建子窗口的指标
+        for (var i=0; i<option.Windows.length; ++i) //创建子窗口的指标
         {
             var item = option.Windows[i];
             if (item.Script) 
@@ -465,6 +465,7 @@ function JSChart(element)
                     indexInfo.ID = item.Index;
                     var args = indexInfo.Args;
                     if (item.Args) args = item.Args;
+                    if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
                     chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args, indexInfo);    //脚本执行
                     if (item.StringFormat > 0) chart.WindowIndex[i].StringFormat = item.StringFormat;
                     if (item.FloatPrecision >= 0) chart.WindowIndex[i].FloatPrecision = item.FloatPrecision;
@@ -697,7 +698,7 @@ function JSChart(element)
         }
 
         let scriptData = new JSCommonIndexScript.JSIndexScript();
-        for (var i in option.Windows)   //分钟数据指标从第3个指标窗口设置
+        for (var i=0; i<option.Windows.length; ++i)   //分钟数据指标从第3个指标窗口设置
         {
             var item = option.Windows[i];
             if (item.Script) 
@@ -719,6 +720,7 @@ function JSChart(element)
                     var args = indexInfo.Args;
                     if (item.Args) args = item.Args;
                     if (item.Lock) indexInfo.Lock = item.Lock;
+                    if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
                     chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args, indexInfo);    //脚本执行
                     if (item.StringFormat > 0) chart.WindowIndex[2 + parseInt(i)].StringFormat = item.StringFormat;
                     if (item.FloatPrecision >= 0) chart.WindowIndex[2 + parseInt(i)].FloatPrecision = item.FloatPrecision;
