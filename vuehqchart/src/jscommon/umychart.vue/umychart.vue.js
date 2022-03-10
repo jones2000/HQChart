@@ -4673,7 +4673,7 @@ function JSChart(divElement, bOffscreen)
 
         if (option.IsShowRightMenu==true) chart.RightMenu=new MinuteRightMenu(this.DivElement);
 
-        if (option.DayCount>1) chart.DayCount=option.DayCount;
+        if (IFrameSplitOperator.IsNumber(option.DayCount)) chart.DayCount=option.DayCount;
 
         if (option.Border)
         {
@@ -4810,6 +4810,8 @@ function JSChart(divElement, bOffscreen)
                         indexInfo.ID=item.Index;
                         var args=indexInfo.Args;
                         if (item.Args) args=item.Args;
+                        if (item.IsShortTitle) indexInfo.IsShortTitle=item.IsShortTitle;
+                        if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
                         chart.WindowIndex[index] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
                         if (item.StringFormat>0) chart.WindowIndex[index].StringFormat=item.StringFormat;
                         if (item.FloatPrecision>=0) chart.WindowIndex[index].FloatPrecision=item.FloatPrecision;
@@ -39813,6 +39815,7 @@ function IChartDrawPicture()
     this.IsSelected=false;  //是否选中
     this.Option;
     this.EnableMove=true;   //是否可以移动
+    this.EnableSave=true;   //是否允许保存
 
     this.IsDrawFirst=false;
 
@@ -40463,9 +40466,10 @@ function IChartDrawPicture()
             ClassName:this.ClassName, 
             Symbol:this.Symbol, Guid:this.Guid, Period:this.Period,Value:[] ,
             FrameID:this.Frame.Identify, LineColor:this.LineColor, AreaColor:this.AreaColor,
-            LineWidth:this.LineWidth, Right:this.Right
+            LineWidth:this.LineWidth, Right:this.Right, EnableSave:this.EnableSave
         };
-        for(var i in this.Value)
+
+        for(var i=0; i<this.Value.length; ++i)
         {
             var item=this.Value[i];
             storageData.Value.push({ XValue:item.XValue, YValue:item.YValue, DateTime:item.DateTime });
@@ -40700,6 +40704,7 @@ IChartDrawPicture.CreateChartDrawPicture=function(obj)    //创建画图工具
     if (obj.Label) chartDraw.Label=obj.Label;
     if (obj.LineWidth>0) chartDraw.LineWidth=obj.LineWidth;
     if (obj.EnableMove===false) chartDraw.EnableMove=obj.EnableMove;
+    if (IFrameSplitOperator.IsBool(obj.EnableSave)) chartDraw.EnableSave=obj.EnableSave;
 
     return chartDraw;
 }
@@ -45133,10 +45138,13 @@ function ChartDrawStorage()
 
             for(var drawItem of value)
             {
+                if (drawItem[1] && drawItem[1].EnableSave===false) continue;
+
                 itemData.Value.push({Key:drawItem[0], Value:drawItem[1]});
             }
 
-            saveData.push(itemData)
+            if (IFrameSplitOperator.IsNonEmptyArray(itemData.Value))
+                saveData.push(itemData);
         }
 
         JSConsole.Chart.Log(`[ChartDrawStorage::Save] save to localStorage, key=${this.StorageKey}`);
@@ -54797,7 +54805,7 @@ function MinuteChartContainer(uielement)
     }
 
     //切换股票代码
-    this.ChangeSymbol=function(symbol)
+    this.ChangeSymbol=function(symbol,option)
     {
         this.CancelAutoUpdate();
         this.AutoUpdateEvent(false, "MinuteChartContainer::ChangeSymbol");
@@ -54805,16 +54813,21 @@ function MinuteChartContainer(uielement)
         this.ResetOverlaySymbolStatus();
         this.ReloadChartDrawPicture();
 
-        if (symbol) 
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNumber(option.DayCount)) this.DayCount=option.DayCount;
+        }
+
+        if (!symbol || this.DayCount<=0)
+        {
+            this.DrawEmpty();
+        }
+        else
         {
             this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
             this.ChartSplashPaint.EnableSplash(true);    //增加下载动画
             this.Draw();
             this.RequestData();
-        }
-        else
-        {
-            this.DrawEmpty();
         }
     }
 

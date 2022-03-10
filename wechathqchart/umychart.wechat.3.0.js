@@ -11662,6 +11662,10 @@ function KLineChartHScreenContainer(uielement)
                         jsChart.ResetFrameXYSplit();
                         jsChart.Draw();
                     }
+                    else
+                    {
+                        if (jsChart.DragDownloadData) jsChart.DragDownloadData();
+                    }
 
                     drag.LastMove.X = touches[0].clientX;
                     drag.LastMove.Y = touches[0].clientY;
