@@ -38581,17 +38581,73 @@ function DynamicMinuteTitlePainting()
         return item;
     }
 
-    this.GetLatestKLineData=function()  //获取最新一个K线数据
+    this.GetLatestKLineData=function(bCallAuction)  //获取最新一个K线数据 bCallAuction=是否包含集合竞价数据
     {
-        if (!this.Data || !this.Data.Data) return null;
-        var count=this.Data.Data.length;
-        if (count<=0) return null;
+        var beforeItem=null;
+        var beforeDataVer=1;
+        if (IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData))
+        {
+            var item=this.MultiDayBeforeOpenData[this.MultiDayBeforeOpenData.length-1];
+            if (item && IFrameSplitOperator.IsNonEmptyArray(item.Data))
+            {
+                beforeDataVer=item.Ver;
+                beforeItem=item.Data[item.Data.length-1];
+            }  
+        }
+        else if (this.BeforeOpenData && IFrameSplitOperator.IsNonEmptyArray(this.BeforeOpenData.Data))
+        {
+            beforeItem=this.BeforeOpenData.Data[this.BeforeOpenData.Data.length-1];
+            beforeDataVer=this.BeforeOpenData.Ver;
+        }
 
-        return this.Data.Data[count-1];
+        var afterItem=null;
+        var afterDataVer=1;
+        if (IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData))
+        {
+            var item=this.MultiDayAfterCloseData[this.MultiDayAfterCloseData.length-1];
+            if (item && IFrameSplitOperator.IsNonEmptyArray(item.Data))
+            {
+                afterDataVer=item.Ver;
+                afterItem=item.Data[item.Data.length-1];
+            }
+        }
+        else if (this.AfterOpenData && IFrameSplitOperator.IsNonEmptyArray(this.AfterOpenData.Data))
+        {
+            afterItem=this.AfterOpenData.Data[this.AfterOpenData.Data.length-1];
+            afterDataVer=this.AfterOpenData.Ver;
+        }
+
+        var dataItem=null;
+        if (this.Data && IFrameSplitOperator.IsNonEmptyArray(this.Data.Data))
+        {
+            var count=this.Data.Data.length;
+            dataItem=this.Data.Data[count-1];
+        }
+
+        if (!beforeItem && !afterItem && !dataItem) return null;
+
+        if (!bCallAuction) return dataItem;
+
+        if (!dataItem) return { Type:1 , Data:beforeItem ,Ver: beforeDataVer };
+
+        if (beforeItem && dataItem) //盘前数据
+        {
+            if (beforeItem.Date>dataItem.Date) return { Type:2, Data:beforeItem, Ver: beforeDataVer};
+        }
+
+        if (afterItem && dataItem)  //盘后数据
+        {
+            if (afterItem.Date>=dataItem.Date) return { Type:1, Data:afterItem, Ver:afterDataVer };
+        }
+
+
+        return { Type:0 ,Data:dataItem };
     }
 
     this.DrawItem=function(item, isLastOne)    //isLastOne 是否是最后一个数据
     {
+        if (!item) return;
+
         var isHScreen=this.Frame.IsHScreen===true;
         var border=this.Frame.GetBorder();
         var left=border.Left;
@@ -38666,18 +38722,18 @@ function DynamicMinuteTitlePainting()
             if (!this.DrawText(text,color,position)) return;
         }
 
-        var text=g_JSChartLocalization.GetText('MTitle-Vol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(vol,2);
+        var text=g_JSChartLocalization.GetText('MTitle-Vol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(vol,2,this.LanguageID);
         if (!this.DrawText(text,this.VolColor,position)) return;
 
         if (IFrameSplitOperator.IsNumber(amount))
         {
-            var text=g_JSChartLocalization.GetText('MTitle-Amount',this.LanguageID)+IFrameSplitOperator.FormatValueString(amount,2);
+            var text=g_JSChartLocalization.GetText('MTitle-Amount',this.LanguageID)+IFrameSplitOperator.FormatValueString(amount,2,this.LanguageID);
             if (!this.DrawText(text,this.AmountColor,position)) return;
         }
 
         if (IFrameSplitOperator.IsNumber(item.Position))
         {
-            var text=g_JSChartLocalization.GetText('MTitle-Position',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Position,2);
+            var text=g_JSChartLocalization.GetText('MTitle-Position',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Position,2,this.LanguageID);
             if (!this.DrawText(text,this.VolColor,position)) return;
         }
 
@@ -38928,6 +38984,13 @@ function DynamicMinuteTitlePainting()
         if (this.CursorIndex==null || !this.Data || !this.Data.Data || this.Data.Data.length<=0) 
         {
             this.OnDrawEventCallback(null);
+
+            if (this.IsAlwaysShowLastData) 
+            {
+                this.Canvas.save();
+                this.DrawLastDataItem();
+                this.Canvas.restore();
+            }
             return;
         }
 
@@ -38947,7 +39010,10 @@ function DynamicMinuteTitlePainting()
         var isLastOne=false;
         if (isShowLastData)
         {
-            var item=this.GetLatestKLineData();
+            var item=null;
+            var lastItem=this.GetLatestKLineData(false);
+            if (lastItem && lastItem.Type==0) item=lastItem.Data;
+
             isLastOne=true;
         }
         else
@@ -38969,8 +39035,7 @@ function DynamicMinuteTitlePainting()
 
         if (this.IsAlwaysShowLastData) 
         {
-            var lastItem=this.GetLatestKLineData();
-            this.DrawItem(lastItem, true);
+            this.DrawLastDataItem();
         }
         else
         {
@@ -38978,6 +39043,115 @@ function DynamicMinuteTitlePainting()
         }
         
         this.Canvas.restore();
+    }
+
+    this.DrawCallAuctionItem=function(callAuctionItem, isLastOne)
+    {
+        if (!callAuctionItem) return;
+
+        var item=callAuctionItem.Data;
+        var dataVersion=callAuctionItem.Ver;
+
+        var isHScreen=this.Frame.IsHScreen===true;
+        var border=this.Frame.GetBorder();
+
+        var left=border.Left;
+        var bottom=border.Top-this.Frame.ChartBorder.Top/2;
+        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
+        var bDraw=true;
+        if (isHScreen) 
+        {
+            var left=2;
+            var bottom=this.Frame.ChartBorder.Right/2;    //上下居中显示
+            var xText=border.ChartWidth;
+            var yText=border.Top;
+            this.Canvas.translate(xText, yText);
+            this.Canvas.rotate(90 * Math.PI / 180);
+        }
+        else
+        {
+            if (this.Frame.ChartBorder.Top<5) bDraw=false;
+        }
+
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="middle";
+        this.Canvas.font=this.Font;
+        var position = { Left: left, Bottom: bottom, IsHScreen: isHScreen };
+        if(bDraw && this.IsShowName)
+        {
+            if (!this.DrawText(this.Name,this.NameColor,position)) return;
+        }
+
+        var time=item.Time;
+        var strTime;
+        if (dataVersion==1.0) strTime=IFrameSplitOperator.FormatTimeString(time,"HH:MM");
+        else strTime=IFrameSplitOperator.FormatTimeString(time,"HH:MM:SS");
+        var strDate=IFrameSplitOperator.FormatDateString(item.Date);
+        strTime=`${strDate} ${strTime}`;
+        
+        if (bDraw && this.IsShowTime && strTime )
+        {
+            if (!this.DrawText(strTime,this.DateTimeColor,position)) return;
+        }
+
+        //匹配价
+        if (bDraw && item && IFrameSplitOperator.IsNumber(item.Price))
+        {
+            var color=this.GetColor(item.Price,this.YClose);
+            var filedName='MTitle-AC-Price';
+            if (this.BeforeOpenData && this.BeforeOpenData.Ver==1.0) filedName="MTitle-Close";
+            var text=g_JSChartLocalization.GetText(filedName,this.LanguageID)+item.Price.toFixed(defaultfloatPrecision);
+            if (!this.DrawText(text,color,position)) return;
+        }
+
+        //竞价涨幅
+        if (bDraw && item && IFrameSplitOperator.IsPlusNumber(this.YClose) && IFrameSplitOperator.IsNumber(item.Price))
+        {
+            var value=(item.Price-this.YClose)/this.YClose*100;
+            var color=this.GetColor(value,0);
+            var filedName='MTitle-AC-Increase';
+            if (this.BeforeOpenData && this.BeforeOpenData.Ver==1.0) filedName="MTitle-Increase";
+            var text=g_JSChartLocalization.GetText(filedName,this.LanguageID)+value.toFixed(2)+"%";
+            if (!this.DrawText(text,color,position)) return;
+        }
+
+        if (dataVersion==3.0)
+        {
+            if (bDraw && item && IFrameSplitOperator.IsNumber(item.AvPrice))
+            {
+                var color=this.GetColor(item.Price,this.YClose);
+                var text=g_JSChartLocalization.GetText('MTitle-AC-AvPrice',this.LanguageID)+item.AvPrice.toFixed(defaultfloatPrecision);
+                if (!this.DrawText(text,color,position)) return;
+            }
+        }
+
+        //匹配量
+        if (bDraw && IFrameSplitOperator.IsNumber(item.Vol[0]))
+        {
+            var filedName='MTitle-AC-Vol';
+            if (this.BeforeOpenData && this.BeforeOpenData.Ver==1.0) filedName="MTitle-Vol";
+            var text=g_JSChartLocalization.GetText(filedName,this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Vol[0],2);
+            if (!this.DrawText(text,this.VolColor,position)) return;
+        }
+        
+        //未匹配量
+        if (bDraw && IFrameSplitOperator.IsNumber(item.Vol[1]))
+        {
+            var text=g_JSChartLocalization.GetText('MTitle-AC-NotMatchVol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(item.Vol[1],2);
+            if (!this.DrawText(text,this.VolColor,position)) return;
+        }
+    }
+
+    this.DrawLastDataItem=function()
+    {
+        var lastItem=this.GetLatestKLineData(true);
+        if (lastItem)
+        {
+            if (lastItem.Type==0)
+                this.DrawItem(lastItem.Data, true);
+            else if (lastItem.Type==1 || lastItem.Type==2)
+                this.DrawCallAuctionItem(lastItem, true);
+        }
     }
 }
 
