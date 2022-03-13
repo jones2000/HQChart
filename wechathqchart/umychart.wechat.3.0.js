@@ -638,6 +638,8 @@ function JSChart(element)
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom = item.Custom;
                 if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
                 if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
+                if (IFrameSplitOperator.IsBool(item.IsShowXLine)) chart.Frame.SubFrame[i].Frame.IsShowXLine = item.IsShowXLine;
+                if (IFrameSplitOperator.IsBool(item.IsShowYLine)) chart.Frame.SubFrame[i].Frame.IsShowYLine=item.IsShowYLine;
             }
 
             chart.UpdateXShowText();

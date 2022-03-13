@@ -4721,6 +4721,8 @@ function JSChart(divElement, bOffscreen)
                 if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
                 if (IFrameSplitOperator.IsBool(item.EnableRemoveZero)) chart.Frame.SubFrame[i].Frame.YSplitOperator.EnableRemoveZero=item.EnableRemoveZero;
                 if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) chart.Frame.SubFrame[i].Frame.YSplitOperator.FloatPrecision=item.FloatPrecision;
+                if (IFrameSplitOperator.IsBool(item.IsShowXLine)) chart.Frame.SubFrame[i].Frame.IsShowXLine=item.IsShowXLine;
+                if (IFrameSplitOperator.IsBool(item.IsShowYLine)) chart.Frame.SubFrame[i].Frame.IsShowYLine=item.IsShowYLine;
                 if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
             }
 
@@ -5895,6 +5897,9 @@ var JSCHART_EVENT_ID=
     ON_PLAY_SOUND:37,                     //播放声音 { Name:, Data: }
 
     ON_CALCULATE_INDEX_OX:38,              //创建OX指标回调
+
+    ON_LOAD_DRAWPICTURE:39,                //加载画图工具
+    //ON_SAVE_DRAWPICTURE:40                 //画图工具存盘
 }
 
 var JSCHART_OPERATOR_ID=
@@ -45272,6 +45277,7 @@ function ChartDrawStorage()
 {
     this.DrawData=new Map();    //画图工具数据 key=symbol-Period, value=Map() Key:Guid, Value:{Guid, Symbol, Period, ClassName, Value}
     this.StorageKey;
+    this.GetEventCallback;      //事件回调
 
     this.Load=function(key)     //从本地读取画图工具
     {
@@ -52063,6 +52069,12 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (this.ChartDrawStorage)
         {
             this.ChartDrawStorageCache=this.ChartDrawStorage.GetDrawData( {Symbol:this.Symbol, Period:this.Period} );
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_LOAD_DRAWPICTURE);
+            if (event && event.Callback)
+            {
+                var sendData={ Symbol:this.Symbol, Period:this.Period, DrawStorage:this.ChartDrawStorage, ChartDrawStorageCache:this.ChartDrawStorageCache };
+                event.Callback(event,sendData,this);
+            }
         }
     }
 
