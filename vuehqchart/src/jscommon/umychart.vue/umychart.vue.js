@@ -4203,9 +4203,8 @@ function JSChart(divElement, bOffscreen)
 
         if (option.Language)
         {
-            if (option.Language==='CN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-            else if(option.Language==='EN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
-            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
+            var value=g_JSChartLocalization.GetLanguageID(option.Language);
+            if (IFrameSplitOperator.IsNumber(value)) chart.LanguageID=value;
         }
 
         if (option.SourceDatatLimit) chart.SetSourceDatatLimit(option.SourceDatatLimit);
@@ -4623,9 +4622,8 @@ function JSChart(divElement, bOffscreen)
 
         if (option.Language)
         {
-            if (option.Language==='CN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-            else if(option.Language==='EN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
-            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
+            var value=g_JSChartLocalization.GetLanguageID(option.Language);
+            if (IFrameSplitOperator.IsNumber(value)) chart.LanguageID=value;
         }
 
         if (option.Info && option.Info.length>0) chart.SetMinuteInfo(option.Info,false);
@@ -5091,9 +5089,8 @@ function JSChart(divElement, bOffscreen)
 
         if (option.Language)
         {
-            if (option.Language==='CN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-            else if(option.Language==='EN') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
-            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
+            var value=g_JSChartLocalization.GetLanguageID(option.Language);
+            if (IFrameSplitOperator.IsNumber(value)) chart.LanguageID=value;
         }
         
         chart.Create(option.Listener);  
@@ -9118,20 +9115,10 @@ function JSChartContainer(uielement, OffscreenElement)
 
     this.SetLanguage=function(language)
     {
-        var languageID=null;
-        switch(language)
+        var languageID=g_JSChartLocalization.GetLanguageID(language);
+        if (!IFrameSplitOperator.IsNumber(languageID))
         {
-            case 'EN':
-                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
-                break;
-            case 'CN':
-                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-                break;
-            case "TC":
-                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
-                break;
-            default:
-                console.warn(`[JSChartContainer::SetLanguage] language=${language} error`);
+            console.warn(`[JSChartContainer::SetLanguage] language=${language} error`);
                 return;
         }
 
@@ -9140,9 +9127,15 @@ function JSChartContainer(uielement, OffscreenElement)
         this.LanguageID=languageID;
         if (this.ChartCorssCursor && this.ChartCorssCursor.StringFormatY) this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
 
-        for(var i in this.TitlePaint)
+        for(var i=0; i<this.TitlePaint.length; ++i) //标题
         {
             var item=this.TitlePaint[i];
+            if (item) item.LanguageID=this.LanguageID;
+        }
+
+        for(var i=0;i<this.ExtendChartPaint.length;++i) //tooltip 等扩展图形
+        {
+            var item=this.ExtendChartPaint[i];
             if (item) item.LanguageID=this.LanguageID;
         }
 
@@ -46573,6 +46566,27 @@ function JSChartLocalization()
     this.SetTextResource=function(key,value)
     {
         this.TextResource.set(key,value)
+    }
+
+    this.GetLanguageID=function(languageName)
+    {
+        var languageID=null;
+        switch(languageName)
+        {
+            case 'EN':
+                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
+                break;
+            case 'CN':
+                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+                break;
+            case "TC":
+                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
+                break;
+            default:
+                break;
+        }
+
+        return languageID;
     }
 };
 

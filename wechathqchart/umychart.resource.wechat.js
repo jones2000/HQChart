@@ -643,6 +643,27 @@ function JSChartLocalization()
     {
         this.TextResource.set(key, value)
     }
+
+    this.GetLanguageID=function(languageName)
+    {
+        var languageID=null;
+        switch(languageName)
+        {
+            case 'EN':
+                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
+                break;
+            case 'CN':
+                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+                break;
+            case "TC":
+                languageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
+                break;
+            default:
+                break;
+        }
+
+        return languageID;
+    }
 };
 
 var g_JSChartLocalization = new JSChartLocalization();

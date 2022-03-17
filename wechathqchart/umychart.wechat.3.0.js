@@ -236,6 +236,16 @@ function JSChart(element)
         }
     }
 
+    //设置语言 'EN', 'CN'
+    this.SetLanguage=function(language)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.SetLanguage)=='function')
+        {
+            JSConsole.Chart.Log('[JSChart:SetLanguage] ', language);
+            this.JSChartContainer.SetLanguage(language);
+        }
+    }
+
     this.OnSize = function (option) 
     {
         if (option)
@@ -291,9 +301,8 @@ function JSChart(element)
 
         if (option.Language) 
         {
-            if (option.Language === 'CN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-            else if (option.Language === 'EN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
-            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
+            var value=g_JSChartLocalization.GetLanguageID(option.Language);
+            if (IFrameSplitOperator.IsNumber(value)) chart.LanguageID=value;
         }
 
         if (option.SourceDatatLimit) chart.SetSourceDatatLimit(option.SourceDatatLimit);
@@ -590,9 +599,8 @@ function JSChart(element)
 
         if (option.Language) 
         {
-            if (option.Language === 'CN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-            else if (option.Language === 'EN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
-            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
+            var value=g_JSChartLocalization.GetLanguageID(option.Language);
+            if (IFrameSplitOperator.IsNumber(value)) chart.LanguageID=value;
         }
 
         chart.Create(windowsCount);                            //创建子窗口
@@ -953,9 +961,8 @@ function JSChart(element)
 
         if (option.Language) 
         {
-            if (option.Language === 'CN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-            else if (option.Language === 'EN') chart.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID;
-            else if(option.Language==='TC') chart.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID;
+            var value=g_JSChartLocalization.GetLanguageID(option.Language);
+            if (IFrameSplitOperator.IsNumber(value)) chart.LanguageID=value;
         }
 
         chart.Create(option.Listener);  
@@ -2708,6 +2715,38 @@ function JSChartContainer(uielement)
             var bindData=this.ChartPaint[0].Data;
 
         this.BindIndexData(index,bindData);     //执行脚本
+    }
+
+    this.SetLanguage=function(language)
+    {
+        var languageID=g_JSChartLocalization.GetLanguageID(language);
+        if (!IFrameSplitOperator.IsNumber(languageID))
+        {
+            console.warn(`[JSChartContainer::SetLanguage] language=${language} error`);
+            return;
+        }
+
+        if (this.LanguageID==languageID) return;
+        
+        this.LanguageID=languageID;
+        if (this.ChartCorssCursor && this.ChartCorssCursor.StringFormatY) this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
+
+        for(var i=0; i<this.TitlePaint.length; ++i)
+        {
+            var item=this.TitlePaint[i];
+            if (item) item.LanguageID=this.LanguageID;
+        }
+
+        for(var i=0; i<this.ExtendChartPaint.length; ++i) //tooltip 等扩展图形
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item) item.LanguageID=this.LanguageID;
+        }
+
+        if (this.Frame && this.Frame.SetLanguage) this.Frame.SetLanguage(this.LanguageID);
+
+        this.Frame.SetSizeChage(true);
+        this.Draw();
     }
 
 }
@@ -5383,6 +5422,19 @@ function HQTradeFrame()
         for (let i in this.SubFrame) 
         {
             this.SubFrame[i].Frame.XYSplit = true;
+        }
+    }
+
+    this.SetLanguage=function(languageID)
+    {
+        for(let i in this.SubFrame)
+        {
+            var item=this.SubFrame[i];
+            if (item && item.Frame )
+            {
+                if (item.Frame.YSplitOperator) item.Frame.YSplitOperator.LanguageID=languageID;
+                if (item.Frame.XSplitOperator) item.Frame.XSplitOperator.LanguageID=languageID;
+            }
         }
     }
 
