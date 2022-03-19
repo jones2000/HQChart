@@ -326,6 +326,8 @@ IFrameSplitOperator.FormatDateString=function(value,format,languageID)
     {
         case 'MM-DD':
             return IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
+        case "YYYY-MM":
+            return `${year}-${IFrameSplitOperator.NumberToString(month)}`;
         case "YYYY/MM/DD":
             return year.toString() + '/' + IFrameSplitOperator.NumberToString(month) + '/' + IFrameSplitOperator.NumberToString(day);
         case "YYYY/MM/DD/W":
@@ -1072,7 +1074,8 @@ function FrameSplitKLineX()
         var xPointCount = this.Frame.XPointCount;
         var minDistance = 12;
         var isFirstYear = true;
-        for (var i = 0, index = xOffset, distance = minDistance; i < xPointCount && index < this.Frame.Data.Data.length; ++i, ++index) {
+        for (var i = 0, index = xOffset, distance = minDistance; i < xPointCount && index < this.Frame.Data.Data.length; ++i, ++index) 
+        {
             var year = parseInt(this.Frame.Data.Data[index].Date / 10000);
             //var month=parseInt(this.Frame.Data.Data[index].Date/100)%100;
             //var day=parseInt(this.Frame.Data.Data[index].Date%100);
@@ -1101,6 +1104,15 @@ function FrameSplitKLineX()
 
             this.Frame.VerticalInfo.push(info);
             distance = 0;
+        }
+
+        if (this.Frame.VerticalInfo.length==1)  //只有1个刻度, 就显示年+月
+        {
+            var item=this.Frame.VerticalInfo[0];
+            var index=item.Value+xOffset;
+            var kitem=this.Frame.Data.Data[index];
+            var text=IFrameSplitOperator.FormatDateString(kitem.Date,'YYYY-MM');
+            if (this.ShowText) item.Message[0]=text;
         }
     }
 

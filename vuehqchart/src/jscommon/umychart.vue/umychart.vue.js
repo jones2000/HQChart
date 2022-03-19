@@ -33874,6 +33874,8 @@ IFrameSplitOperator.FormatDateString=function(value,format, languageID)
     {
         case 'MM-DD':
             return IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
+        case "YYYY-MM":
+            return `${year}-${IFrameSplitOperator.NumberToString(month)}`;
         case "YYYY/MM/DD":
             return year.toString() + '/' + IFrameSplitOperator.NumberToString(month) + '/' + IFrameSplitOperator.NumberToString(day);
         case "YYYY/MM/DD/W":
@@ -35277,6 +35279,15 @@ function FrameSplitKLineX()
 
             this.Frame.VerticalInfo.push(info);
             distance=0;
+        }
+
+        if (this.Frame.VerticalInfo.length==1)  //只有1个刻度, 就显示年+月
+        {
+            var item=this.Frame.VerticalInfo[0];
+            var index=item.Value+xOffset;
+            var kitem=this.Frame.Data.Data[index];
+            var text=IFrameSplitOperator.FormatDateString(kitem.Date,'YYYY-MM');
+            if (this.ShowText) item.Message[0]=text;
         }
     }
 
@@ -45325,9 +45336,15 @@ function ChartDrawStorage()
         localStorage[this.StorageKey]=strData;
     }
 
+    this.GetItemKey=function(obj)   //生成每个画图工具的key
+    {
+        var strKey=`${obj.Symbol}-${obj.Period}`;
+        return strKey;
+    }
+
     this.SaveDrawData=function(drawPicture)   //保存一个画图工具
     {
-        var strKey=drawPicture.Symbol+'-'+drawPicture.Period;
+        var strKey=this.GetItemKey(drawPicture);
         var data=drawPicture.ExportStorageData();
         if (!data) return;
 
@@ -45351,7 +45368,7 @@ function ChartDrawStorage()
 
     this.DeleteDrawData=function(drawPicture)   //删除一个画图工具
     {
-        var strKey=drawPicture.Symbol+'-'+drawPicture.Period;
+        var strKey=this.GetItemKey(drawPicture);
         if (!this.DrawData.has(strKey))  return;
 
         var mapDraw=this.DrawData.get(strKey);
@@ -45370,7 +45387,7 @@ function ChartDrawStorage()
     this.GetDrawData=function(obj) //获取已有的画图工具数据{Symbol: , Period:, }
     {
         var data=[];
-        var strKey=obj.Symbol+'-'+obj.Period;
+        var strKey=this.GetItemKey(obj);
         if (!this.DrawData.has(strKey)) return data;
 
         var stockData=this.DrawData.get(strKey);
