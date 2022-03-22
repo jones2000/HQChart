@@ -1918,6 +1918,8 @@ var JSCHART_EVENT_ID =
     ON_SPLIT_YCOORDINATE:29,             //分割Y轴及格式化刻度文字
     
     ON_DRAW_KLINE_LAST_POINT:35,          //K线图绘制回调事件,返回最后一个点的坐标
+
+    ON_DRAW_COUNTDOWN:41,                 //K线倒计时
 }
 
 var HQ_DATA_TYPE=

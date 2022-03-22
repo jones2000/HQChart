@@ -664,7 +664,8 @@ function FrameSplitKLinePriceY()
 
         if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
         if (option.IsShowLine == false) info.LineType = -1;
-
+        if (option.CountDown===true) info.CountDown=true;   //倒计时设置
+        
         return info;
     }
 

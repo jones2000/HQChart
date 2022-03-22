@@ -3226,6 +3226,8 @@ function JSAlgorithm(errorHandler,symbolData)
         }
         else
         {
+            if (dayCount<=0) return result;
+            
             var offset=0;
             //取首个有效数据
             for(;offset<data.length;++offset)
@@ -10262,6 +10264,13 @@ function JSDraw(errorHandler,symbolData)
 
         return bg;
     }
+
+    //该函数和DRAWTEXT, DRAWICON连用
+    //{ color:线段颜色, data:位置, lineType:线段样式}
+    this.VLINE=function(color, data, lineWidth, lineType, dot)
+    {
+
+    }
 }
 
 
@@ -16026,6 +16035,10 @@ function JSExecute(ast,option)
                 break;
             case "BACKGROUND":
                 node.Draw=this.Draw.BACKGROUND(args[0],args[1],args[2],args[3],args[4],args[5]);
+                node.Out=[];
+                break;
+            case "VLINE":
+                node.Draw=this.Draw.VLine(args[0],args[1],args[2],args[3],args[4],args[5]);
                 node.Out=[];
                 break;
             case 'DRAWLINE':

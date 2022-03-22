@@ -100,6 +100,7 @@ function JSIndexScript()
 
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
             ['操盘BS点', this.FXG_BSPoint],
+            ['EMA', this.EMA3], ['EMA4', this.EMA4], ['EMA5', this.EMA5],['EMA6', this.EMA6],
 
             ['CJL2', this.CJL],  //期货持仓量
 
@@ -291,6 +292,99 @@ MA5:MA(CLOSE,M5);\n\
 MA6:MA(CLOSE,M6);\n\
 MA7:MA(CLOSE,M7);\n\
 MA8:MA(CLOSE,M8);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.EMA3=function()
+{
+    let data=
+    {
+        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2,
+        Args:
+        [ 
+            { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20}
+        ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" } ],
+        Script: //脚本
+'MA1:EMA(CLOSE,M1);\n\
+MA2:EMA(CLOSE,M2);\n\
+MA3:EMA(CLOSE,M3);'
+
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.EMA4=function()
+{
+    let data=
+    {
+        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2,
+        Args:
+        [ 
+            { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} , { Name:'M4', Value:60} 
+        ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" } ],
+        Script: //脚本
+'MA1:EMA(CLOSE,M1);\n\
+MA2:EMA(CLOSE,M2);\n\
+MA3:EMA(CLOSE,M3);\n\
+MA4:EMA(CLOSE,M4);'
+
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.EMA5=function()
+{
+    let data=
+    {
+        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2,
+        Args:
+        [ 
+            { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} , { Name:'M4', Value:60} ,
+            { Name:'M5', Value:0}
+        ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" },
+        {Name:'MA5',DynamicName:"MA{M5}" } ],
+        Script: //脚本
+'MA1:EMA(CLOSE,M1);\n\
+MA2:EMA(CLOSE,M2);\n\
+MA3:EMA(CLOSE,M3);\n\
+MA4:EMA(CLOSE,M4);\n\
+MA5:EMA(CLOSE,M5);'
+
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.EMA6=function()
+{
+    let data=
+    {
+        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2,
+        Args:
+        [ 
+            { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} , { Name:'M4', Value:60} ,
+            { Name:'M5', Value:0},{ Name:'M6', Value:0}
+        ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" },
+        {Name:'MA5',DynamicName:"MA{M5}" } ,{ Name:'MA6',DynamicName:"MA{M6}" } ],
+        Script: //脚本
+'MA1:EMA(CLOSE,M1);\n\
+MA2:EMA(CLOSE,M2);\n\
+MA3:EMA(CLOSE,M3);\n\
+MA4:EMA(CLOSE,M4);\n\
+MA5:EMA(CLOSE,M5);\n\
+MA6:EMA(CLOSE,M6);'
 
     };
 
@@ -3071,12 +3165,16 @@ JSIndexScript.prototype.TEST = function ()
 {
     let data =
         {
-            Name: 'TEST', Description: '测试脚本', IsMainIndex: false,
-            Args: [{ Name: 'N', Value: 10 }],
+            Name: 'TEST', Description: '测试脚本', IsMainIndex: true,
+            Args: [{ Name: 'M1', Value: 5 },{ Name: 'M2', Value: 10 },{ Name: 'M3', Value: 15 }],
+            /*
             Script: //脚本
-                "T2:KDJ.J;"+
-                "T3:DEVSQ(C,INTPART(C));"+
-                "T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
+                //"T2:KDJ.J;"+
+                "DRAWBAND(OPEN,RGB(0,224,224),CLOSE,RGB(255,96,96));"
+                //"T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
+                */
+            Script:
+            "T:EMA(C,5);"
         };
 
     return data;

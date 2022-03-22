@@ -3252,6 +3252,7 @@ function AverageWidthFrame()
     this.ShortXLineLength=5;
    
     this.DrawOtherChart;      //其他画法调用
+    this.GetEventCallback;    //事件回调
 
     this.DrawFrame = function () 
     {
@@ -3629,7 +3630,11 @@ function AverageWidthFrame()
     {
         //if (this.IsHScreen === true) return;  //横屏不画
         if (!item.Message[1] && !item.Message[0]) return;
-        if (item.Value > this.HorizontalMax || item.Value < this.HorizontalMin) return;
+        if (item.Value > this.HorizontalMax || item.Value < this.HorizontalMin) 
+        {
+            if (item.CountDown===true) this.SendDrawCountDownEvent( { IsShow:false } );
+            return;
+        }
 
         var left = this.ChartBorder.GetLeft();
         var right = this.ChartBorder.GetRight();
@@ -3652,7 +3657,7 @@ function AverageWidthFrame()
 
         if (item.Message[0]) 
         {
-            if (borderLeft < 10) 
+            if (borderLeft < 10)    //左边
             {
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.textAlign = "left";
@@ -3705,7 +3710,7 @@ function AverageWidthFrame()
                 }
             }
         }
-        else if (item.Message[1]) 
+        else if (item.Message[1])   //右边
         {
             if (borderRight < 10) 
             {
@@ -3733,8 +3738,21 @@ function AverageWidthFrame()
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.fillText(item.Message[1], textLeft + 1, y);
                     this.DrawLine(left, textLeft, y, item.LineColor,item.LineType);
+
+                    if (item.CountDown===true)
+                    {
+                        if (this.GetEventCallback)
+                        {
+                            var bgTop=y + textHeight / 2 + 1;
+                            var sendData=
+                            { 
+                                Top:bgTop, Right:right, Height:null, 
+                                IsShow:true, BGColor:bgColor, TextColor:item.TextColor, Position:"Right", IsInside:true
+                            };
+                            this.SendDrawCountDownEvent(sendData);
+                        }
+                    }
                 }
-               
             }
             else 
             {
@@ -3758,9 +3776,33 @@ function AverageWidthFrame()
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.fillText(item.Message[1], right + 1, y);
                     this.DrawLine(left, right, y, item.LineColor,item.LineType);
+
+                    if (item.CountDown===true)
+                    {
+                        if (this.GetEventCallback)
+                        {
+                            var bgTop=y + textHeight / 2 + 1;
+                            var sendData=
+                            { 
+                                Top:bgTop, Left:right, Right:this.ChartBorder.GetChartWidth(), Height:null, 
+                                IsShow:true, BGColor:item.LineColor, TextColor:item.TextColor, Position:"Right", IsInside:false
+                            };
+                            this.SendDrawCountDownEvent(sendData);
+                        }
+                    }
                 }
             }
         }
+    }
+
+    this.SendDrawCountDownEvent=function(sendData)
+    {
+        if (!this.GetEventCallback) return false;
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_COUNTDOWN);
+        if (!event || !event.Callback) return false;
+
+        event.Callback(event,sendData,this);
+        return true;
     }
 
     this.DrawLine=function(left, right, y, color, lineType)
@@ -7261,6 +7303,7 @@ function KLineChartContainer(uielement)
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
                 frame.YSplitOperator.FrameSplitData2 = this.FrameSplitData.get('double');
                 frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+                frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 border.BottomSpace = 12;  //主图上下留空间
                 border.TopSpace = 12;
             }
