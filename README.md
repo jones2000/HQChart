@@ -237,6 +237,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 77. [HQChart使用教程85-股票复权计算](https://jones2000.blog.csdn.net/article/details/120700837)<br>
 78. [HQChart使用教程86-技术指标OX图](https://jones2000.blog.csdn.net/article/details/122635700)<br>
 79. [HQChart使用教程87-HQChart在VUE插件模式下源码调试配置](https://blog.csdn.net/jones2000/article/details/122759837)<br>
+80. [HQChart使用教程88-DRAWTEXT添加背景色及边框](https://blog.csdn.net/jones2000/article/details/123132528)<br>
+81. [HQChart使用教程89-最后一根k线倒计时功能](https://jones2000.blog.csdn.net/article/details/123674077)<br>
 
 ## 小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
