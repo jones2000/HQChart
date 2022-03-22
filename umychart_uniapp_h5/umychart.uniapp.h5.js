@@ -11826,14 +11826,34 @@ function AverageWidthFrame()
                     }
                     else
                     {
-                        var bgTop=yText-textHeight/2-1*pixelTatio;
-                        var textLeft=right-itemText.Width;
-                        this.Canvas.fillStyle=bgColor;
-                        this.Canvas.fillRect(textLeft,bgTop,textWidth,textHeight);  //文本背景区域
-                        this.Canvas.fillStyle = item.TextColor;
-                        this.Canvas.fillText(itemText.Text, textLeft + 1*pixelTatio, yText);
-                        if (i==0) this.DrawLine(left,textLeft,yText,item.LineColor,item.LineType);
-                        yText+=textHeight+1*pixelTatio;
+                        if (itemText.Type===1)
+                        {
+                            if (this.GetEventCallback)
+                            {
+                                var bgTop=yText-textHeight/2-1*pixelTatio;
+                                var sendData=
+                                { 
+                                    Top:bgTop, Right:right, Height:null, 
+                                    IsShow:true, BGColor:item.LineColor, TextColor:item.TextColor, PixelTatio:pixelTatio, Position:"Right", IsInside:true
+                                };
+                                if (this.SendDrawCountDownEvent(sendData))
+                                {
+                                    if (IFrameSplitOperator.IsPlusNumber(sendData.Height))
+                                        yText+=textHeight+1*pixelTatio;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var bgTop=yText-textHeight/2-1*pixelTatio;
+                            var textLeft=right-itemText.Width;
+                            this.Canvas.fillStyle=bgColor;
+                            this.Canvas.fillRect(textLeft,bgTop,textWidth,textHeight);  //文本背景区域
+                            this.Canvas.fillStyle = item.TextColor;
+                            this.Canvas.fillText(itemText.Text, textLeft + 1*pixelTatio, yText);
+                            if (i==0) this.DrawLine(left,textLeft,yText,item.LineColor,item.LineType);
+                            yText+=textHeight+1*pixelTatio;
+                        }
                     }
                 }
             }
@@ -11873,7 +11893,7 @@ function AverageWidthFrame()
                                 var sendData=
                                 { 
                                     Top:bgTop, Left:right, Right:this.ChartBorder.GetChartWidth(), Height:null, 
-                                    IsShow:true, BGColor:item.LineColor, TextColor:item.TextColor, PixelTatio:pixelTatio 
+                                    IsShow:true, BGColor:item.LineColor, TextColor:item.TextColor, PixelTatio:pixelTatio, Position:"Right", IsInside:false
                                 };
                                 if (this.SendDrawCountDownEvent(sendData))
                                 {
