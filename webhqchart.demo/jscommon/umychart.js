@@ -21733,6 +21733,336 @@ function ChartSingleText()
     
 }
 
+
+function ChartDrawText()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawText';         //类名
+    this.Color="rgb(255,193,37)";           //线段颜色
+    this.TextFont="14px 微软雅黑";           //线段宽度
+    this.TextBaseline="middle";
+    this.TextAlign='left';
+    this.Text
+    this.TextBG;            //{ Color:"rgb(0,0,92)", Border:"rgb(205,0,92)", Margin:[0,1,1,1],  }   // { Color:背景色, Border:边框颜色, Margin=[上,下,左, 右] }
+    this.FixedFontSize=-1;  //固定字体大小
+    this.YOffset=0;         //连线  
+    this.FixedPosition=-1;  //固定位置输出 1顶部, 2底部    
+    this.VerticalLine;      //垂直线
+
+    this.TextSize=
+    {
+        Max: g_JSChartResource.DRAWICON.Text.MaxSize, Min:g_JSChartResource.DRAWICON.Text.MinSize, //字体的最大最小值
+        Zoom:{ Type:g_JSChartResource.DRAWICON.Text.Zoom.Type , Value:g_JSChartResource.DRAWICON.Text.Zoom.Value }, //放大倍数
+        FontName:g_JSChartResource.DRAWICON.Text.FontName,
+        YOffset:g_JSChartResource.DRAWICON.Text.YOffset
+    }
+
+    this.ReloadResource=function(resource)
+    {
+        this.TextSize=
+        {
+            Max: g_JSChartResource.DRAWTEXT.MaxSize, Min:g_JSChartResource.DRAWTEXT.MinSize, //字体的最大最小值
+            Zoom:{ Type:g_JSChartResource.DRAWTEXT.Zoom.Type , Value:g_JSChartResource.DRAWTEXT.Zoom.Value }, //放大倍数
+            FontName:g_JSChartResource.DRAWTEXT.FontName,
+            YOffset:g_JSChartResource.DRAWTEXT.YOffset
+        }
+    }
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        var isHScreen=(this.ChartFrame.IsHScreen===true)
+        var isMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var chartright=this.ChartBorder.GetRight();
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
+        if (isHScreen) 
+        {
+            chartright=this.ChartBorder.GetBottom();
+            top=this.ChartBorder.GetRightEx();
+            bottom=this.ChartBorder.GetLeftEx();
+            xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        var isArrayText=Array.isArray(this.Text);
+        var drawTextInfo={ Text:{ Color:this.Color, Align:this.TextAlign, Baseline:this.TextBaseline }, Font:{ } };
+        
+
+        if (this.FixedFontSize>0)  //固定字体大小模式
+            this.TextFont=`${this.FixedFontSize}px ${this.TextSize.FontName}`;
+        else    //动态字体大小
+            this.TextFont=this.GetDynamicFont(dataWidth,distanceWidth,this.TextSize.Max,this.TextSize.Min,this.TextSize.Zoom,this.TextSize.FontName);
+
+        this.Canvas.font=this.TextFont;
+        drawTextInfo.Font={ Height:this.GetFontHeight() };
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            if (value==null) continue;
+
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+            
+            var y;
+            if (this.FixedPosition===1)
+            {
+                y=top;
+            }
+            else if (this.FixedPosition===2)
+            {
+                y=bottom;
+            }
+            else
+            {
+                y=this.ChartFrame.GetYFromData(value);
+            }
+                
+            if (x>chartright) break;
+
+            drawTextInfo.X=x;
+            drawTextInfo.Y=y;
+            
+            if (isArrayText)
+            {
+                var text=this.Text[i];
+                if (!text) continue;
+                this.DrawText(text,drawTextInfo,isHScreen);
+            }
+            else
+            {
+                this.DrawText(this.Text,drawTextInfo,isHScreen);
+            }
+
+            this.DrawVerticalLine(i, drawTextInfo, isHScreen);
+        }
+    }
+
+    this.DrawText=function(text, drawInfo, isHScreen)
+    {
+        var textWidth=this.Canvas.measureText(text).width;
+
+        if (isHScreen)
+        {
+            var x=drawInfo.Y;
+            var y=drawInfo.X;
+
+            if (drawInfo.Text.Align=="right") y=y-textWidth;
+            else if (drawInfo.Text.Align=="center") y=y-textWidth/2;
+
+            if (drawInfo.Text.Baseline=="top") x-=drawInfo.Font.Height;
+            else if (drawInfo.Text.Baseline=="middle") x-=drawInfo.Font.Height/2;
+
+            if (this.TextBG && (this.TextBG.Color || this.TextBG.Border))
+            {
+                var margin=this.TextBG.Margin;  //0=上 1=下 2=左 3=右
+                var xRect=x-margin[0];
+                var yRect=y-margin[2];
+                var bgWidth=textWidth+margin[2]+margin[3];
+                var bgHeight=drawInfo.Font.Height+margin[0]+margin[1];
+                if (this.TextBG.Color)
+                {
+                    this.Canvas.fillStyle=this.TextBG.Color;
+                    this.Canvas.fillRect(xRect,yRect,bgHeight,bgWidth);
+                }
+
+                if (this.TextBG.Border)
+                {
+                    this.Canvas.strokeStyle=this.TextBG.Border;
+                    this.Canvas.strokeRect(ToFixedPoint(xRect),ToFixedPoint(yRect),ToFixedRect(bgHeight),ToFixedRect(bgWidth));
+                }
+
+                drawInfo.Rect={Bottom:xRect, Top:xRect+bgHeight };
+            }
+            else
+            {
+                var xRect=x;
+                var bgHeight=drawInfo.Font.Height;
+                drawInfo.Rect={Bottom:xRect, Top:xRect+bgHeight };
+            }
+
+            this.Canvas.textBaseline="bottom";
+            this.Canvas.textAlign="left";
+            this.Canvas.fillStyle=drawInfo.Text.Color;
+
+            this.Canvas.save(); 
+            this.Canvas.translate(x, y);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(text,0,0);
+            this.Canvas.restore();
+        }
+        else
+        {
+            var x=drawInfo.X;
+            var y=drawInfo.Y;
+            if (drawInfo.Text.Align=="right") x=x-textWidth;
+            else if (drawInfo.Text.Align=="center") x=x-textWidth/2;
+
+            if (drawInfo.Text.Baseline=="top") y+=drawInfo.Font.Height;
+            else if (drawInfo.Text.Baseline=="middle") y+=drawInfo.Font.Height/2;
+
+            if (this.TextBG && (this.TextBG.Color || this.TextBG.Border))
+            {
+                var margin=this.TextBG.Margin;  //0=上 1=下 2=左 3=右
+                var xRect=x-margin[2];
+                var yRect=y-drawInfo.Font.Height-margin[1];
+                var bgWidth=textWidth+margin[2]+margin[3];
+                var bgHeight=drawInfo.Font.Height+margin[0]+margin[1];
+                if (this.TextBG.Color)
+                {
+                   
+                    this.Canvas.fillStyle=this.TextBG.Color;
+                    this.Canvas.fillRect(xRect,yRect,bgWidth,bgHeight);
+                }
+
+                if (this.TextBG.Border)
+                {
+                    this.Canvas.strokeStyle=this.TextBG.Border;
+                    this.Canvas.strokeRect(ToFixedPoint(xRect),ToFixedPoint(yRect),ToFixedRect(bgWidth),ToFixedRect(bgHeight));
+                }
+
+                drawInfo.Rect={Top:yRect, Bottom:yRect+bgHeight };
+            }
+            else
+            {
+                var yRect=y-drawInfo.Font.Height;
+                var bgHeight=drawInfo.Font.Height;
+                drawInfo.Rect={Top:yRect, Bottom:yRect+bgHeight };
+            }
+
+            this.Canvas.textBaseline="bottom";
+            this.Canvas.textAlign="left";
+            this.Canvas.fillStyle=drawInfo.Text.Color;
+            this.Canvas.fillText(text,x,y);
+        }
+    }
+
+    //画连线
+    this.DrawVerticalLine=function(index, drawTextInfo, isHScreen)
+    {
+        if (!this.VerticalLine) return;
+
+        var item=this.VerticalLine.Data[index];
+        if (!item) return;
+        if (!IFrameSplitOperator.IsNumber(item.High)) return;
+        if (!IFrameSplitOperator.IsNumber(item.Low)) return;
+        var yHigh=this.ChartFrame.GetYFromData(item.High);
+        var yLow=this.ChartFrame.GetYFromData(item.Low);
+
+        var yLine, yLine2;
+        if (isHScreen)
+        {
+            if (drawTextInfo.Rect.Bottom>yHigh)
+            {
+                yLine=drawTextInfo.Rect.Bottom-1;
+                yLine2=yHigh+1;
+            }
+            else if (drawTextInfo.Rect.Top<yLow)
+            {
+                yLine=drawTextInfo.Rect.Top-1;
+                yLine2=yLow-1;
+            }
+            else
+            {
+                return;
+            }
+        }
+        else
+        { 
+            if (drawTextInfo.Rect.Bottom<yHigh)
+            {
+                yLine=drawTextInfo.Rect.Bottom+1;
+                yLine2=yHigh-1;
+            }
+            else if (drawTextInfo.Rect.Top>yLow)
+            {
+                yLine=drawTextInfo.Rect.Top-1;
+                yLine2=yLow+1;
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        this.Canvas.save(); 
+        var pixelTatio = GetDevicePixelRatio();
+        var xLine=drawTextInfo.X;
+        if (this.VerticalLine.LineType==1)
+        {
+            if (this.VerticalLine.LineDotted)
+                this.Canvas.setLineDash(this.VerticalLine.LineDotted);
+            else 
+                this.Canvas.setLineDash([5,10]);
+        }
+
+        if (IFrameSplitOperator.IsPlusNumber(this.VerticalLine.LineWidth))
+        {
+            this.Canvas.lineWidth=this.VerticalLine.LineWidth*pixelTatio;
+        }
+        
+        this.Canvas.strokeStyle=this.VerticalLine.Color;
+        this.Canvas.beginPath();
+        if (isHScreen)
+        {
+            this.Canvas.moveTo(ToFixedPoint(yLine),ToFixedPoint(xLine));
+            this.Canvas.lineTo(ToFixedPoint(yLine2),ToFixedPoint(xLine));
+        }
+        else
+        {
+            this.Canvas.moveTo(ToFixedPoint(xLine),ToFixedPoint(yLine));
+            this.Canvas.lineTo(ToFixedPoint(xLine),ToFixedPoint(yLine2));
+        }
+        this.Canvas.stroke();
+
+        this.Canvas.restore();
+    }
+}
+
+function ChartDrawNumber()
+{
+    this.newMethod=ChartDrawText;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawNumber';         //类名
+
+    this.ReloadResource=function(resource)
+    {
+        this.TextSize=
+        {
+            Max: g_JSChartResource.DRAWNUMBER.MaxSize, Min:g_JSChartResource.DRAWNUMBER.MinSize, //字体的最大最小值
+            Zoom:{ Type:g_JSChartResource.DRAWNUMBER.Zoom.Type , Value:g_JSChartResource.DRAWNUMBER.Zoom.Value }, //放大倍数
+            FontName:g_JSChartResource.DRAWNUMBER.FontName,
+            YOffset:g_JSChartResource.DRAWNUMBER.YOffset
+        }
+    }
+}
+
 //直线 水平直线 只有1个数据
 function ChartStraightLine()
 {

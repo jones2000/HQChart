@@ -8579,14 +8579,20 @@ function JSDraw(errorHandler,symbolData)
             if (condition.length<=0) return result;
 
             var IsNumber=this.IsNumber(price);
-    
+            var isFixedPosition=false;
+            if (price==="TOP"|| price==="BOTTOM")
+            {
+                result.FixedPosition=price;
+                isFixedPosition=true;
+            }
+            
             for(var i in condition)
             {
                 drawData[i]=null;
     
                 if (isNaN(condition[i]) || !condition[i]) continue;
     
-                if (IsNumber) 
+                if (IsNumber || isFixedPosition) 
                 {
                     drawData[i]=price;
                 }
@@ -8599,9 +8605,16 @@ function JSDraw(errorHandler,symbolData)
         else if (this.IsNumber(condition) && condition)
         {
             var IsNumber=this.IsNumber(price);
+            var isFixedPosition=false;
+            if (price==="TOP"|| price==="BOTTOM")
+            {
+                result.FixedPosition=price;
+                isFixedPosition=true;
+            }
+
             for(var i=0;i<this.SymbolData.Data.Data.length;++i)
             {
-                if (IsNumber) 
+                if (IsNumber || isFixedPosition) 
                 {
                     drawData[i]=price;
                 }
@@ -9210,76 +9223,94 @@ function JSDraw(errorHandler,symbolData)
     DRAWNUMBER(COND,PRICE,NUMBER),当COND条件满足时,在PRICE位置书写数字NUMBER.
     例如:
     DRAWNUMBER(CLOSE/OPEN>1.08,LOW,C)表示当日实体阳线大于8%时在最低价位置显示收盘价.
+    decimal=小数位数 默认2
     */
-    this.DRAWNUMBER=function(condition,data,data2)
+    this.DRAWNUMBER=function(condition,data,data2,decimal)
     {
-        let drawData={ Value:new Array(), Text:new Array() };
-        let result={DrawData:drawData, DrawType:'DRAWNUMBER'};
-        let isNumber=typeof(data2)=='number';
-        var isArrayData=Array.isArray(data);
-        let text;
-        if (isNumber) 
+        let drawData={ Value:[], Text:[] };
+        let result={ DrawData:drawData, DrawType:'DRAWNUMBER' };
+        var dec=2;  //小数位数
+        if (IFrameSplitOperator.IsNumber(decimal)) dec=decimal;
+
+        var priceData={ DataType:0, SingleValue:null, ArrayValue:null };    //SingleValue=单值 ArrayValue=数组    
+        if (Array.isArray(data))
         {
-            if (IFrameSplitOperator.IsInteger(data2)) text=data2.toString();
-            else text=data2.toFixed(2);
+            priceData.ArrayValue=data;
+            priceData.DataType=2;
+        } 
+        else 
+        {
+            if (data==="TOP"|| data==="BOTTOM") result.FixedPosition=data;
+            priceData.SingleValue=data;
+            priceData.DataType=1;
         }
 
-        for(let i in condition)
+        var numberData={  DataType:0, SingleValue:null,ArrayValue:null };
+        if (Array.isArray(data2)) 
         {
-            drawData.Value[i]=null;
-            if (!condition[i]) continue;
-
-            if (isArrayData)
+            numberData.ArrayValue=data2;
+            numberData.DataType=2;
+        }
+        else    
+        {   //单值
+            numberData.SingleValue=data2;
+            numberData.DataType=1;
+            if (IFrameSplitOperator.IsNumber(data2))
             {
-                if (i>=data.length || !this.IsNumber(data[i])) continue;
+                if (IFrameSplitOperator.IsInteger(data2)) numberData.SingleValue=data2.toString();
+                else text=data2.toFixed(dec);
+            }
+        }
 
-                if (isNumber)
-                {
-                    drawData.Value[i]=data[i];
-                    drawData.Text[i]=text;
-                }
-                else
-                {
-                    if (i>=data2.length || !data2[i]) continue;
-                    drawData.Value[i]=data[i];
-                    if (this.IsNumber(data2[i]))
-                    {
-                        if (IFrameSplitOperator.IsInteger(data2[i])) drawData.Text[i]=data2[i].toString();
-                        else drawData.Text[i] = data2[i].toFixed(2);
-                    }
-                    else
-                    {
-                        drawData.Text[i] = data2[i].toString();
-                    }
-                } 
-            }
-            else if (this.IsNumber(data))
+        if (Array.isArray(condition))
+        {
+            for(var i=0; i<condition.length; ++i)
             {
-                if (isNumber)
-                {
-                    drawData.Value[i]=data;
-                    drawData.Text[i]=text;
-                }
-                else
-                {
-                    if (i>=data2.length || !data2[i]) continue;
-                    drawData.Value[i]=data;
-                    if (this.IsNumber(data2[i]))
-                    {
-                        if (IFrameSplitOperator.IsInteger(data2[i])) drawData.Text[i]=data2[i].toString();
-                        else drawData.Text[i] = data2[i].toFixed(2);
-                    }
-                    else
-                    {
-                        drawData.Text[i] = data2[i].toString();
-                    }
-                        
-                }       
+                drawData.Value[i]=null;
+                if (!condition[i]) continue;
+
+                drawData.Value[i]=this.DRAWNUMBER_Temp_PriceItem(i,priceData);
+                drawData.Text[i]=this.DRAWNUMBER_Temp_NumberItem(i,numberData,dec);
             }
-            
+        }
+        else if (this.IsNumber(condition) && condition)
+        {
+            for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+            {
+                drawData.Value[i]=this.DRAWNUMBER_Temp_PriceItem(i,priceData);
+                drawData.Text[i]=this.DRAWNUMBER_Temp_NumberItem(i,numberData,dec);
+            }
         }
 
         return result;
+    }
+
+    this.DRAWNUMBER_Temp_PriceItem=function(index, priceData)
+    {
+        if (!priceData) return null;
+        if (priceData.DataType==1) return priceData.SingleValue;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(priceData.ArrayValue)) return null;
+
+        return priceData.ArrayValue[index];
+    }
+
+    this.DRAWNUMBER_Temp_NumberItem=function(index,numberData,decimal)
+    {
+        if (!numberData) return null;
+
+        if (numberData.DataType==1) return numberData.SingleValue;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(numberData.ArrayValue)) return null;
+
+        var value=numberData.ArrayValue[index];
+        if (this.IsNumber(value))
+        {
+            if (IFrameSplitOperator.IsInteger(value)) return value.toString();
+            else return value.toFixed(decimal);
+        }
+
+        return value.toString();
     }
 
     /*
@@ -10266,10 +10297,36 @@ function JSDraw(errorHandler,symbolData)
     }
 
     //该函数和DRAWTEXT, DRAWICON连用
-    //{ color:线段颜色, data:位置, lineType:线段样式}
-    this.VLINE=function(color, data, lineWidth, lineType, dot)
+    //{ color:线段颜色, lineWidth:宽度 lineType:线段样式0=直线 1=虚线}
+    this.CKLINE=function(color, lineWidth, lineType, lineDotted)
     {
+        var drawData={ Color:color, LineWidth: 1, LineType:0, LineDot:[3,3] };
+        if (IFrameSplitOperator.IsPlusNumber(lineWidth)) drawData.LineWidth=lineWidth;
+        if (IFrameSplitOperator.IsPlusNumber(lineType)) drawData.LineType=lineType;
+        if (lineDotted) 
+        {
+            let ary=lineDotted.split(',');
+            var dotted=[];
+            for(var i in ary)
+            {
+                var item=ary[i];
+                if (!item) continue;
+                var value=parseInt(ary[i]);
+                if (value<=0) continue;
+                dotted.push(value);
+            }
 
+            if (dotted.length>0) drawData.LineDotted=dotted;
+        }
+
+        drawData.Data=[];
+        for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+        {
+            var item=this.SymbolData.Data.Data[i];
+            drawData.Data[i]={ High:item.High, Low:item.Low };
+        }
+        
+        return drawData;
     }
 }
 
@@ -15634,6 +15691,7 @@ function JSExecute(ast,option)
                     var drawAlign=-1, drawVAlign=-1;
                     var fontSize=-1;
                     var bgConfig=null;    //背景设置
+                    var vLineConfig=null;
                     for(let j=0; j<item.Expression.Expression.length; ++j)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -15757,6 +15815,11 @@ function JSExecute(ast,option)
                                     bgConfig=itemExpression.Draw;
                                     varName=null;
                                 }
+                                else if (itemExpression.Callee.Name=="CKLINE")
+                                {
+                                    vLineConfig=itemExpression.Draw;
+                                    varName=null;
+                                }
                             }
                         }
                         else if (itemExpression.Type==Syntax.BinaryExpression)
@@ -15848,6 +15911,7 @@ function JSExecute(ast,option)
                         if (drawVAlign>=0) outVar.DrawVAlign=drawVAlign;
                         if (fontSize>0) outVar.DrawFontSize=fontSize;
                         if (bgConfig) outVar.Background=bgConfig;
+                        if (vLineConfig) outVar.VerticalLine=vLineConfig;
                         this.OutVarTable.push(outVar);
                     }
                     else if (varName)
@@ -16037,8 +16101,8 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.BACKGROUND(args[0],args[1],args[2],args[3],args[4],args[5]);
                 node.Out=[];
                 break;
-            case "VLINE":
-                node.Draw=this.Draw.VLine(args[0],args[1],args[2],args[3],args[4],args[5]);
+            case "CKLINE":
+                node.Draw=this.Draw.CKLINE(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=[];
                 break;
             case 'DRAWLINE':
@@ -16089,7 +16153,7 @@ function JSExecute(ast,option)
                 node.Out=node.Draw.DrawData;
                 break;
             case 'DRAWNUMBER':
-                node.Draw=this.Draw.DRAWNUMBER(args[0],args[1],args[2]);
+                node.Draw=this.Draw.DRAWNUMBER(args[0],args[1],args[2], args[3]);
                 node.Out=node.Draw.DrawData.Value;
                 break;
             case "DRAWNUMBER_FIX":
@@ -18051,6 +18115,103 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chartText);
     }
 
+    //DRAWNUMBER
+    this.CreateDrawNumber=function(hqChart,windowIndex,varItem,id)
+    {
+        var chartText=new ChartDrawNumber();
+        chartText.Canvas=hqChart.Canvas;
+        chartText.Name=varItem.Name;
+        chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
+
+        if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
+        else chartText.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawCenter===true) chartText.TextAlign='center';
+        if (varItem.IsDrawAbove===true) chartText.TextBaseline='bottom'
+        if (varItem.IsDrawBelow===true) chartText.TextBaseline='top';
+
+        chartText.Data.Data=varItem.Draw.DrawData.Value;
+        chartText.Text=varItem.Draw.DrawData.Text;
+        if (varItem.Draw.Direction>0) chartText.Direction=varItem.Draw.Direction;
+        if (varItem.Draw.YOffset>0) chartText.YOffset=varItem.Draw.YOffset;
+        if (varItem.Draw.TextAlign) chartText.TextAlign=varItem.Draw.TextAlign;
+
+        //指定输出位置
+        if (varItem.Draw.FixedPosition==="TOP") chartText.FixedPosition=1;
+        else if (varItem.Draw.FixedPosition==="BOTTOM") chartText.FixedPosition=2;
+
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chartText.TextBaseline='top';
+            else if (varItem.DrawVAlign==1) chartText.TextBaseline='middle';
+            else if (varItem.DrawVAlign==2) chartText.TextBaseline='bottom';
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
+
+        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        if (varItem.Background) chartText.TextBG=varItem.Background;
+        if (varItem.VerticalLine) chartText.VerticalLine=varItem.VerticalLine;
+        
+        let titleIndex=windowIndex+1;
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+        hqChart.ChartPaint.push(chartText);
+    }
+
+    //DRAWTEXT
+    this.CreateDrawTextV2=function(hqChart,windowIndex,varItem,id)
+    {
+        var chartText=new ChartDrawText();
+        chartText.Canvas=hqChart.Canvas;
+        chartText.Name=varItem.Name;
+        chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
+
+        if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
+        else chartText.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawCenter===true) chartText.TextAlign='center';
+        if (varItem.IsDrawAbove===true) chartText.TextBaseline='bottom'
+        if (varItem.IsDrawBelow===true) chartText.TextBaseline='top';
+
+        if (varItem.Draw.DrawData) chartText.Data.Data=varItem.Draw.DrawData;
+        chartText.Text=varItem.Draw.Text;
+        if (varItem.Draw.Direction>0) chartText.Direction=varItem.Draw.Direction;
+        if (varItem.Draw.YOffset>0) chartText.YOffset=varItem.Draw.YOffset;
+        if (varItem.Draw.TextAlign) chartText.TextAlign=varItem.Draw.TextAlign;
+        //指定输出位置
+        if (varItem.Draw.FixedPosition==="TOP") chartText.FixedPosition=1;
+        else if (varItem.Draw.FixedPosition==="BOTTOM") chartText.FixedPosition=2;
+
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chartText.TextBaseline='top';
+            else if (varItem.DrawVAlign==1) chartText.TextBaseline='middle';
+            else if (varItem.DrawVAlign==2) chartText.TextBaseline='bottom';
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
+
+        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        if (varItem.Background) chartText.TextBG=varItem.Background;
+        if (varItem.VerticalLine) chartText.VerticalLine=varItem.VerticalLine;
+        
+        let titleIndex=windowIndex+1;
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+        hqChart.ChartPaint.push(chartText);
+    }
+
     //COLORSTICK 
     this.CreateMACD=function(hqChart,windowIndex,varItem,id)
     {
@@ -18871,6 +19032,8 @@ function ScriptIndex(name,script,args,option)
                         this.CreateBar(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWTEXT':
+                        this.CreateDrawTextV2(hqChart,windowIndex,item,i);
+                        break;
                     case 'SUPERDRAWTEXT':
                         this.CreateText(hqChart,windowIndex,item,i);
                         break;
@@ -18915,6 +19078,8 @@ function ScriptIndex(name,script,args,option)
                         this.CreateTextLine(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWNUMBER':
+                        this.CreateDrawNumber(hqChart,windowIndex,item,i);
+                        break;
                     case "DRAWNUMBER_FIX":
                     case 'DRAWTEXT_FIX':
                         this.CreateNumberText(hqChart,windowIndex,item,i);

@@ -28,6 +28,8 @@ import {
 import {
     JSCommonChartPaint_IChartPainting as IChartPainting, 
     JSCommonChartPaint_ChartSingleText as ChartSingleText, 
+    JSCommonChartPaint_ChartDrawText as ChartDrawText,
+    JSCommonChartPaint_ChartDrawNumber as ChartDrawNumber,
     JSCommonChartPaint_ChartKLine as ChartKLine,
     JSCommonChartPaint_ChartColorKline as ChartColorKline,
     JSCommonChartPaint_ChartLine as ChartLine,
@@ -401,6 +403,101 @@ function ScriptIndex(name, script, args, option)
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
         hqChart.ChartPaint.push(bar);
+    }
+
+    //DRAWTEXT
+    this.CreateDrawTextV2=function(hqChart, windowIndex, varItem, id)
+    {
+        var chartText = new ChartDrawText();
+        chartText.Canvas = hqChart.Canvas;
+        chartText.TextAlign='left';
+
+        chartText.Name = varItem.Name;
+        chartText.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chartText.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
+        
+        if (varItem.Color) chartText.Color = this.GetColor(varItem.Color);
+        else chartText.Color = this.GetDefaultColor(id);
+
+        if (varItem.Draw.DrawData) chartText.Data.Data = varItem.Draw.DrawData;
+        chartText.Text = varItem.Draw.Text;
+        if (varItem.Draw.YOffset > 0) chartText.YOffset = varItem.Draw.YOffset;
+        if (varItem.Draw.TextAlign) chartText.TextAlign = varItem.Draw.TextAlign;
+
+         //指定输出位置
+         if (varItem.Draw.FixedPosition==="TOP") chartText.FixedPosition=1;
+         else if (varItem.Draw.FixedPosition==="BOTTOM") chartText.FixedPosition=2;
+
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chartText.Direction=1;
+            else if (varItem.DrawVAlign==1) chartText.Direction=0;
+            else if (varItem.DrawVAlign==2) chartText.Direction=2;
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
+
+        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        if (varItem.Background) chartText.TextBG=varItem.Background;
+        if (varItem.VerticalLine) chartText.VerticalLine=varItem.VerticalLine;
+        //var titleIndex = windowIndex + 1;
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+        hqChart.ChartPaint.push(chartText);
+    }
+
+    //DRAWNUMBER
+    this.CreateDrawNumber=function(hqChart,windowIndex,varItem,id)
+    {
+        var chartText=new ChartDrawNumber();
+        chartText.Canvas=hqChart.Canvas;
+        chartText.Name=varItem.Name;
+        chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
+
+        if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
+        else chartText.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawCenter===true) chartText.TextAlign='center';
+        if (varItem.IsDrawAbove===true) chartText.TextBaseline='bottom'
+        if (varItem.IsDrawBelow===true) chartText.TextBaseline='top';
+
+        chartText.Data.Data=varItem.Draw.DrawData.Value;
+        chartText.Text=varItem.Draw.DrawData.Text;
+        if (varItem.Draw.Direction>0) chartText.Direction=varItem.Draw.Direction;
+        if (varItem.Draw.YOffset>0) chartText.YOffset=varItem.Draw.YOffset;
+        if (varItem.Draw.TextAlign) chartText.TextAlign=varItem.Draw.TextAlign;
+
+        //指定输出位置
+        if (varItem.Draw.FixedPosition==="TOP") chartText.FixedPosition=1;
+        else if (varItem.Draw.FixedPosition==="BOTTOM") chartText.FixedPosition=2;
+
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chartText.TextBaseline='top';
+            else if (varItem.DrawVAlign==1) chartText.TextBaseline='middle';
+            else if (varItem.DrawVAlign==2) chartText.TextBaseline='bottom';
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
+
+        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        if (varItem.Background) chartText.TextBG=varItem.Background;
+        if (varItem.VerticalLine) chartText.VerticalLine=varItem.VerticalLine;
+        
+        //let titleIndex=windowIndex+1;
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+        hqChart.ChartPaint.push(chartText);
     }
 
     //创建文本
@@ -883,6 +980,8 @@ function ScriptIndex(name, script, args, option)
                     this.CreateBar(hqChart, windowIndex, item, i);
                     break;
                 case 'DRAWTEXT':
+                    this.CreateDrawTextV2(hqChart, windowIndex, item, i);
+                    break;
                 case 'SUPERDRAWTEXT':
                 case 'DRAWTEXT_FIX':
                     this.CreateText(hqChart, windowIndex, item, i);
@@ -907,7 +1006,7 @@ function ScriptIndex(name, script, args, option)
                     this.CreatePolyLine(hqChart, windowIndex, item, i);
                     break;
                 case 'DRAWNUMBER':
-                    this.CreateNumberText(hqChart, windowIndex, item, i);
+                    this.CreateDrawNumber(hqChart, windowIndex, item, i);
                     break;
                 case 'DRAWICON':
                     this.CreateIcon(hqChart, windowIndex, item, i);

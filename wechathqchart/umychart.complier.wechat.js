@@ -7467,13 +7467,19 @@ function JSDraw(errorHandler, symbolData)
         if (Array.isArray(condition))
         {
             var IsNumber=this.IsNumber(price);
-            for(var i in condition)
+            var isFixedPosition=false;
+            if (price==="TOP"|| price==="BOTTOM")
+            {
+                result.FixedPosition=price;
+                isFixedPosition=true;
+            }
+            for(var i=0; i<condition.length; ++i)
             {
                 drawData[i]=null;
     
                 if (isNaN(condition[i]) || !condition[i]) continue;
     
-                if (IsNumber) 
+                if (IsNumber || isFixedPosition) 
                 {
                     drawData[i]=price;
                 }
@@ -7486,14 +7492,25 @@ function JSDraw(errorHandler, symbolData)
         else if (this.IsNumber(condition) && condition)
         {
             var IsNumber=this.IsNumber(price);
+            var isFixedPosition=false;
+            if (price==="TOP"|| price==="BOTTOM")
+            {
+                result.FixedPosition=price;
+                isFixedPosition=true;
+            }
+
             for(var i=0;i<this.SymbolData.Data.Data.length;++i)
             {
-                if (IsNumber) drawData[i]=price;
-                else if (this.IsNumber(price[i])) drawData[i]=price[i];
+                if (IsNumber || isFixedPosition) 
+                {
+                    drawData[i]=price;
+                }
+                else 
+                {
+                    if (this.IsNumber(price[i])) drawData[i]=price[i];
+                }
             }
         }
-
-        
 
         return result;
     }
@@ -7900,63 +7917,92 @@ function JSDraw(errorHandler, symbolData)
     例如:
     DRAWNUMBER(CLOSE/OPEN>1.08,LOW,C)表示当日实体阳线大于8%时在最低价位置显示收盘价.
     */
-    this.DRAWNUMBER = function (condition, data, data2) 
+    this.DRAWNUMBER = function (condition, data, data2,decimal) 
     {
-        let drawData = { Value: new Array(), Text: new Array() };
-        let result = { DrawData: drawData, DrawType: 'DRAWNUMBER' };
-        var isArrayData=Array.isArray(data);
-        let isNumber = typeof (data2) == 'number';
-        let text;
-        if (isNumber) 
-        { 
-            if (this.IsInteger(data2)) text=data2.toString();
-            else text=data2.toFixed(2);
-        }
+        let drawData={ Value:[], Text:[] };
+        let result={ DrawData:drawData, DrawType:'DRAWNUMBER' };
+        var dec=2;  //小数位数
+        if (IFrameSplitOperator.IsNumber(decimal)) dec=decimal;
 
-        for (let i in condition) 
+        var priceData={ DataType:0, SingleValue:null, ArrayValue:null };    //SingleValue=单值 ArrayValue=数组    
+        if (Array.isArray(data))
         {
-            drawData.Value[i] = null;
-            if (!condition[i]) continue;
-            if (isArrayData)
-            {
-                if (i >= data.length || !this.IsNumber(data[i])) continue;
-
-                if (isNumber) 
-                {
-                    drawData.Value[i] = data[i];
-                    drawData.Text[i] = text;
-                }
-                else 
-                {
-                    if (i >= data2.length || !data2[i]) continue;
-                    drawData.Value[i] = data[i];
-                    if (typeof(data2[i])=='number')
-                        drawData.Text[i] = data2[i].toFixed(2);
-                    else
-                        drawData.Text[i] = data2[i].toString();
-                }
-            }
-            else if (this.IsNumber(data))
-            {
-                if (isNumber)
-                {
-                    drawData.Value[i]=data;
-                    drawData.Text[i]=text;
-                }
-                else
-                {
-                    if (i>=data2.length || !data2[i]) continue;
-                    drawData.Value[i]=data;
-                    if (this.IsNumber(data2[i]))
-                        drawData.Text[i] = data2[i].toFixed(2);
-                    else
-                        drawData.Text[i] = data2[i].toString();
-                }       
-            }
-            
+            priceData.ArrayValue=data;
+            priceData.DataType=2;
+        } 
+        else 
+        {
+            if (data==="TOP"|| data==="BOTTOM") result.FixedPosition=data;
+            priceData.SingleValue=data;
+            priceData.DataType=1;
         }
 
+        var numberData={  DataType:0, SingleValue:null,ArrayValue:null };
+        if (Array.isArray(data2)) 
+        {
+            numberData.ArrayValue=data2;
+            numberData.DataType=2;
+        }
+        else    
+        {   //单值
+            numberData.SingleValue=data2;
+            numberData.DataType=1;
+            if (IFrameSplitOperator.IsNumber(data2))
+            {
+                if (IFrameSplitOperator.IsInteger(data2)) numberData.SingleValue=data2.toString();
+                else text=data2.toFixed(dec);
+            }
+        }
+
+        if (Array.isArray(condition))
+        {
+            for(var i=0; i<condition.length; ++i)
+            {
+                drawData.Value[i]=null;
+                if (!condition[i]) continue;
+
+                drawData.Value[i]=this.DRAWNUMBER_Temp_PriceItem(i,priceData);
+                drawData.Text[i]=this.DRAWNUMBER_Temp_NumberItem(i,numberData,dec);
+            }
+        }
+        else if (this.IsNumber(condition) && condition)
+        {
+            for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+            {
+                drawData.Value[i]=this.DRAWNUMBER_Temp_PriceItem(i,priceData);
+                drawData.Text[i]=this.DRAWNUMBER_Temp_NumberItem(i,numberData,dec);
+            }
+        }
+        
         return result;
+    }
+
+    this.DRAWNUMBER_Temp_PriceItem=function(index, priceData)
+    {
+        if (!priceData) return null;
+        if (priceData.DataType==1) return priceData.SingleValue;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(priceData.ArrayValue)) return null;
+
+        return priceData.ArrayValue[index];
+    }
+
+    this.DRAWNUMBER_Temp_NumberItem=function(index,numberData,decimal)
+    {
+        if (!numberData) return null;
+
+        if (numberData.DataType==1) return numberData.SingleValue;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(numberData.ArrayValue)) return null;
+
+        var value=numberData.ArrayValue[index];
+        if (this.IsNumber(value))
+        {
+            if (IFrameSplitOperator.IsInteger(value)) return value.toString();
+            else return value.toFixed(decimal);
+        }
+
+        return value.toString();
     }
 
     /*
@@ -8169,6 +8215,39 @@ function JSDraw(errorHandler, symbolData)
         if (IFrameSplitOperator.IsNumber(bottom)) bg.Margin[1]=bottom;
 
         return bg;
+    }
+
+    //该函数和DRAWTEXT, DRAWNUMBER连用
+    //{ color:线段颜色, lineWidth:宽度 lineType:线段样式0=直线 1=虚线}
+    this.CKLINE=function(color, lineWidth, lineType, lineDotted)
+    {
+        var drawData={ Color:color, LineWidth: 1, LineType:0, LineDot:[3,3] };
+        if (IFrameSplitOperator.IsPlusNumber(lineWidth)) drawData.LineWidth=lineWidth;
+        if (IFrameSplitOperator.IsPlusNumber(lineType)) drawData.LineType=lineType;
+        if (lineDotted) 
+        {
+            let ary=lineDotted.split(',');
+            var dotted=[];
+            for(var i in ary)
+            {
+                var item=ary[i];
+                if (!item) continue;
+                var value=parseInt(ary[i]);
+                if (value<=0) continue;
+                dotted.push(value);
+            }
+
+            if (dotted.length>0) drawData.LineDotted=dotted;
+        }
+
+        drawData.Data=[];
+        for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+        {
+            var item=this.SymbolData.Data.Data[i];
+            drawData.Data[i]={ High:item.High, Low:item.Low };
+        }
+        
+        return drawData;
     }
 }
 
@@ -11349,6 +11428,7 @@ function JSExecute(ast,option)
                     var drawAlign=-1, drawVAlign=-1;
                     var fontSize=-1;
                     var bgConfig=null;
+                    var vLineConfig=null;
                     for(let j=0 ; j<item.Expression.Expression.length; ++j)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -11466,6 +11546,11 @@ function JSExecute(ast,option)
                                     bgConfig=itemExpression.Draw;
                                     varName=null;
                                 }
+                                else if (itemExpression.Callee.Name=="CKLINE")
+                                {
+                                    vLineConfig=itemExpression.Draw;
+                                    varName=null;
+                                }
                             }
                         }
                         else if (itemExpression.Type==Syntax.BinaryExpression)
@@ -11550,6 +11635,7 @@ function JSExecute(ast,option)
                         if (drawVAlign>=0) outVar.DrawVAlign=drawVAlign;
                         if (fontSize>0) outVar.DrawFontSize=fontSize;
                         if (bgConfig) outVar.Background=bgConfig;
+                        if (vLineConfig) outVar.VerticalLine=vLineConfig;
                         this.OutVarTable.push(outVar);
                     }
                     else if (varName) 
@@ -11718,6 +11804,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.BACKGROUND(args[0],args[1],args[2],args[3],args[4],args[5]);
                 node.Out=[];
                 break;
+            case "CKLINE":
+                node.Draw=this.Draw.CKLINE(args[0],args[1],args[2],args[3],args[4]);
+                node.Out=[];
+                break;
             case 'DRAWLINE':
                 node.Draw=this.Draw.DRAWLINE(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=node.Draw.DrawData;
@@ -11745,7 +11835,7 @@ function JSExecute(ast,option)
                 node.Out = node.Draw.DrawData;
                 break;
             case 'DRAWNUMBER':
-                node.Draw = this.Draw.DRAWNUMBER(args[0], args[1], args[2]);
+                node.Draw = this.Draw.DRAWNUMBER(args[0], args[1], args[2], args[3]);
                 node.Out = node.Draw.DrawData.Value;
                 break;
             case 'RGB':
