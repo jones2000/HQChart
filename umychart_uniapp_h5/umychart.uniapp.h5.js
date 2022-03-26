@@ -4215,6 +4215,7 @@ function JSChart(divElement, bOffscreen)
         if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle=option.SplashTitle;
         if (IFrameSplitOperator.IsBool(option.EnableZoomIndexWindow)) chart.EnableZoomIndexWindow=option.EnableZoomIndexWindow;
         if (IFrameSplitOperator.IsBool(option.IsDrawPictureXY)) chart.IsDrawPictureXY=option.IsDrawPictureXY;
+        if (IFrameSplitOperator.IsNumber(option.CtrlMoveStep)) chart.CtrlMoveStep=option.CtrlMoveStep;
 
         if (option.EnableYDrag)
         {
@@ -4344,7 +4345,7 @@ function JSChart(divElement, bOffscreen)
             if (item.RightButton)
             {
                 if (IFrameSplitOperator.IsBool(item.RightButton.Enable)) chart.ChartCorssCursor.RightButton.Enable=item.RightButton.Enable;
-            } 
+            }
         }
 
         //保存十字光标文字高度
@@ -8095,6 +8096,12 @@ function JSChartContainer(uielement, OffscreenElement)
         switch(keyID)
         {
             case 37: //left
+                if (e.ctrlKey && this.OnCustomKeyDown)
+                {
+                    if (this.OnCustomKeyDown(keyID, e))
+                        break;
+                }
+
                 if (this.CursorIndex<=0.99999)
                 {
                     if (!this.DataMoveLeft()) 
@@ -8118,6 +8125,12 @@ function JSChartContainer(uielement, OffscreenElement)
                 }
                 break;
             case 39: //right
+                if (e.ctrlKey && this.OnCustomKeyDown)
+                {
+                    if (this.OnCustomKeyDown(keyID, e))
+                        break;
+                }
+
                 var xPointcount=0;
                 if (this.Frame.XPointCount) xPointcount=this.Frame.XPointCount;
                 else xPointcount=this.Frame.SubFrame[0].Frame.XPointCount;
@@ -48074,7 +48087,8 @@ function KLineChartContainer(uielement,OffscreenElement)
     this.ChartDrawStorage=new ChartDrawStorage();
     this.ChartDrawStorageCache=null;    //首次需要创建的画图工具数据
     this.RightSpaceCount=0;             //右侧空白个数
-    this.SourceDataLimit=new Map();     //每个周期缓存数据最大个数 key=周期 value=最大个数    
+    this.SourceDataLimit=new Map();     //每个周期缓存数据最大个数 key=周期 value=最大个数 
+    this.CtrlMoveStep=5;                //Ctrl+(Left/Right) 移动数据个数  
 
     this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
     this.OverlayIndexFrameWidth=60;     //叠加指标框架宽度
@@ -48577,6 +48591,100 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (bRegisterKeydown) this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
         if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
+    }
+
+    this.OnCustomKeyDown=function(keyID, e) //自定义键盘事件
+    {
+        if (keyID==37 && e.ctrlKey) //Ctrl+Left
+        {
+            this.MoveCorssCursorLeft(this.CtrlMoveStep);
+            return true;
+        }
+        else if (keyID==39 && e.ctrlKey)    //Ctrl+Right
+        {
+            this.MoveCorssCursorRight(this.CtrlMoveStep);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    this.MoveCorssCursorLeft=function(step)
+    {
+        var data=null;
+        if (this.Frame.Data) data=this.Frame.Data;
+        else data=this.Frame.SubFrame[0].Frame.Data;
+        if (!data) return;
+
+        if (data.DataOffset<=0 && this.CursorIndex<=0) //数据到头了
+        {
+            if (this.DragDownloadData) this.DragDownloadData();
+            return;
+        }
+
+        if (this.CursorIndex-step<0)  //当前屏到头了
+        {
+            data.DataOffset-=step;
+            if (data.DataOffset<0) 
+            {
+                data.DataOffset=0;
+                this.CursorIndex=0;
+            }
+            this.UpdataDataoffset();
+            this.UpdatePointByCursorIndex();
+            this.UpdateFrameMaxMin();
+            this.Draw();
+            this.ShowTooltipByKeyDown();
+            this.OnKLinePageChange("keydown");
+            return;
+        }
+
+        this.CursorIndex-=step;
+        this.UpdatePointByCursorIndex();
+        this.DrawDynamicInfo();
+        this.ShowTooltipByKeyDown();
+    }
+
+    this.MoveCorssCursorRight=function(step)
+    {
+        var data=null;
+        if (this.Frame.Data) data=this.Frame.Data;
+        else data=this.Frame.SubFrame[0].Frame.Data;
+        if (!data) return;
+
+        var xPointcount=0;  //当前屏显示个数
+        if (this.Frame.XPointCount) xPointcount=this.Frame.XPointCount;
+        else xPointcount=this.Frame.SubFrame[0].Frame.XPointCount;
+
+        if (this.CursorIndex+data.DataOffset+1>=data.Data.length) return;   //最右边了
+
+        var bMoveEnd=false; //最后一个
+        if (this.CursorIndex+step+data.DataOffset+1>data.Data.length)   //数据不够步长
+        {
+            step=data.Data.length-1-data.DataOffset-this.CursorIndex;
+            bMoveEnd=true;
+        }
+
+        if (this.CursorIndex+step>=xPointcount) //当前屏最右边了
+        {
+            var lMoveStep=(this.CursorIndex+step)-(xPointcount-1);
+            data.DataOffset+=lMoveStep;
+            if (bMoveEnd) this.CursorIndex=xPointcount-1;
+            this.UpdataDataoffset();
+            this.UpdatePointByCursorIndex();
+            this.UpdateFrameMaxMin();
+            this.Draw();
+            this.ShowTooltipByKeyDown();
+            this.OnKLinePageChange("keydown");
+            return;
+        }
+
+        this.CursorIndex+=step;
+        this.UpdatePointByCursorIndex();
+        this.DrawDynamicInfo();
+        this.ShowTooltipByKeyDown();
     }
 
     //创建子窗口
