@@ -4234,6 +4234,35 @@ function JSChart(divElement, bOffscreen)
         chart.ChartCorssCursor.TextHeight*=pixelTatio;  //十字光标文本信息高度
     }
 
+    this.SetChartBorder=function(chart, option)
+    {
+        if (!option.Border) return;
+        
+        var item=option.Border;
+        if (IFrameSplitOperator.IsNumber(option.Border.Left)) chart.Frame.ChartBorder.Left=option.Border.Left;
+        else option.Border.Left=chart.Frame.ChartBorder.Left;
+        if (IFrameSplitOperator.IsNumber(option.Border.Right)) chart.Frame.ChartBorder.Right=option.Border.Right;
+        else option.Border.Right=chart.Frame.ChartBorder.Right;
+        if (IFrameSplitOperator.IsNumber(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
+        else option.Border.Top=chart.Frame.ChartBorder.Top;
+        if (IFrameSplitOperator.IsNumber(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
+        else option.Border.Bottom=chart.Frame.ChartBorder.Bottom;
+
+        if (item.AutoLeft) 
+        {
+            chart.Frame.AutoLeftBorder={ };
+            if (IFrameSplitOperator.IsNumber(item.AutoLeft.Blank)) chart.Frame.AutoLeftBorder.Blank=item.AutoLeft.Blank;
+            if (IFrameSplitOperator.IsNumber(item.AutoLeft.MinWidth)) chart.Frame.AutoLeftBorder.MinWidth=item.AutoLeft.MinWidth;
+        }
+        
+        if (item.AutoRight) 
+        {
+            chart.Frame.AutoRightBorder={ };
+            if (IFrameSplitOperator.IsNumber(item.AutoRight.Blank)) chart.Frame.AutoRightBorder.Blank=item.AutoRight.Blank;
+            if (IFrameSplitOperator.IsNumber(item.AutoRight.MinWidth)) chart.Frame.AutoRightBorder.MinWidth=item.AutoRight.MinWidth;
+        }
+    }
+
     //历史K线图
     this.CreateKLineChartContainer=function(option)
     {
@@ -4338,21 +4367,7 @@ function JSChart(divElement, bOffscreen)
         //创建子窗口
         chart.Create(option.Windows.length, option.Listener);
 
-        if (option.Border)
-        {
-            var item=option.Border;
-            if (IFrameSplitOperator.IsNumber(option.Border.Left)) chart.Frame.ChartBorder.Left=option.Border.Left;
-            else option.Border.Left=chart.Frame.ChartBorder.Left;
-            if (IFrameSplitOperator.IsNumber(option.Border.Right)) chart.Frame.ChartBorder.Right=option.Border.Right;
-            else option.Border.Right=chart.Frame.ChartBorder.Right;
-            if (IFrameSplitOperator.IsNumber(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
-            else option.Border.Top=chart.Frame.ChartBorder.Top;
-            if (IFrameSplitOperator.IsNumber(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
-            else option.Border.Bottom=chart.Frame.ChartBorder.Bottom;
-
-            if (item.AutoLeft) chart.Frame.AutoLeftBorder=item.AutoLeft;
-            if (item.AutoRight) chart.Frame.AutoRightBorder=item.AutoRight;
-        }
+        this.SetChartBorder(chart, option);
 
         this.AdjustChartBorder(chart);
 
@@ -4783,17 +4798,7 @@ function JSChart(divElement, bOffscreen)
 
         if (IFrameSplitOperator.IsNumber(option.DayCount)) chart.DayCount=option.DayCount;
 
-        if (option.Border)
-        {
-            var item=option.Border;
-            if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left=option.Border.Left;
-            if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right=option.Border.Right;
-            if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
-            if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
-
-            if (item.AutoLeft) chart.Frame.AutoLeftBorder=item.AutoLeft;
-            if (item.AutoRight) chart.Frame.AutoRightBorder=item.AutoRight;
-        }
+        this.SetChartBorder(chart, option);
 
         if (option.SplashTitle) chart.ChartSplashPaint.SplashTitle=option.SplashTitle;
 
@@ -5067,17 +5072,7 @@ function JSChart(divElement, bOffscreen)
         //创建子窗口
         chart.Create(option.Windows.length);
 
-        if (option.Border)
-        {
-            var item=option.Border;
-            if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left=option.Border.Left;
-            if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right=option.Border.Right;
-            if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
-            if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
-
-            if (item.AutoLeft) chart.Frame.AutoLeftBorder=item.AutoLeft;
-            if (item.AutoRight) chart.Frame.AutoRightBorder=item.AutoRight;
-        }
+        this.SetChartBorder(chart, option);
 
         this.AdjustChartBorder(chart);
 
@@ -55646,12 +55641,34 @@ function MinuteChartContainer(uielement)
         event.Callback(event,data,this);
     }
 
+    this.ClearIndexPaint=function()
+    {
+        //清空指标
+        if (this.Frame && this.Frame.SubFrame)
+        {
+            for(var i=2;i<this.Frame.SubFrame.length;++i)
+            {
+                if (i>=2) this.DeleteIndexPaint(i);
+                var item=this.Frame.SubFrame[i];
+                if (IFrameSplitOperator.IsNonEmptyArray(item.OverlayIndex))
+                {
+                    for(var j=0; j<item.OverlayIndex.length; ++j ) //清空叠加指标
+                    {
+                        var overlayItem=item.OverlayIndex[j];
+                        overlayItem.ChartPaint=[];
+                    }
+                }
+            }
+        }
+    }
+
     //切换股票代码
     this.ChangeSymbol=function(symbol,option)
     {
         this.CancelAutoUpdate();
         this.AutoUpdateEvent(false, "MinuteChartContainer::ChangeSymbol");
         this.Symbol=symbol;
+        this.ClearIndexPaint();             //清空指标
         this.ResetOverlaySymbolStatus();
         this.ReloadChartDrawPicture();
 
@@ -55689,7 +55706,7 @@ function MinuteChartContainer(uielement)
         {
             this.ReloadChartDrawPicture();
         }
-
+        this.ClearIndexPaint();             //清空指标
         this.ResetOverlaySymbolStatus();
         this.RequestData();
     }

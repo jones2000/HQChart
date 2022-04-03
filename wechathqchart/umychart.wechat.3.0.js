@@ -270,6 +270,35 @@ function JSChart(element)
         }
     }
 
+    this.SetChartBorder=function(chart, option)
+    {
+        if (!option.Border) return;
+        
+        var item=option.Border;
+        if (IFrameSplitOperator.IsNumber(option.Border.Left)) chart.Frame.ChartBorder.Left=option.Border.Left;
+        else option.Border.Left=chart.Frame.ChartBorder.Left;
+        if (IFrameSplitOperator.IsNumber(option.Border.Right)) chart.Frame.ChartBorder.Right=option.Border.Right;
+        else option.Border.Right=chart.Frame.ChartBorder.Right;
+        if (IFrameSplitOperator.IsNumber(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
+        else option.Border.Top=chart.Frame.ChartBorder.Top;
+        if (IFrameSplitOperator.IsNumber(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
+        else option.Border.Bottom=chart.Frame.ChartBorder.Bottom;
+
+        if (item.AutoLeft) 
+        {
+            chart.Frame.AutoLeftBorder={ };
+            if (IFrameSplitOperator.IsNumber(item.AutoLeft.Blank)) chart.Frame.AutoLeftBorder.Blank=item.AutoLeft.Blank;
+            if (IFrameSplitOperator.IsNumber(item.AutoLeft.MinWidth)) chart.Frame.AutoLeftBorder.MinWidth=item.AutoLeft.MinWidth;
+        }
+        
+        if (item.AutoRight) 
+        {
+            chart.Frame.AutoRightBorder={ };
+            if (IFrameSplitOperator.IsNumber(item.AutoRight.Blank)) chart.Frame.AutoRightBorder.Blank=item.AutoRight.Blank;
+            if (IFrameSplitOperator.IsNumber(item.AutoRight.MinWidth)) chart.Frame.AutoRightBorder.MinWidth=item.AutoRight.MinWidth;
+        }
+    }
+
     //历史K线图
     this.CreateKLineChartContainer = function (option) 
     {
@@ -312,18 +341,8 @@ function JSChart(element)
         //创建子窗口
         chart.Create(option.Windows.length);
 
-        if (option.Border) 
-        {
-            var item=option.Border;
-            if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left = option.Border.Left;
-            if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right = option.Border.Right;
-            if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top = option.Border.Top;
-            if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom = option.Border.Bottom;
-
-            if (item.AutoLeft) chart.Frame.AutoLeftBorder=item.AutoLeft;
-            if (item.AutoRight) chart.Frame.AutoRightBorder=item.AutoRight;
-        }
-
+        this.SetChartBorder(chart, option);
+    
         if (option.KLine) 
         {
             if (option.KLine.PageSize > 0) 
@@ -619,17 +638,7 @@ function JSChart(element)
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
         if (option.DayCount > 1) chart.DayCount = option.DayCount;
 
-        if (option.Border) 
-        {
-            var item=option.Border;
-            if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left = option.Border.Left;
-            if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right = option.Border.Right;
-            if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top = option.Border.Top;
-            if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom = option.Border.Bottom;
-
-            if (item.AutoLeft) chart.Frame.AutoLeftBorder=item.AutoLeft;
-            if (item.AutoRight) chart.Frame.AutoRightBorder=item.AutoRight;
-        }
+        this.SetChartBorder(chart, option);
 
         if (option.Frame) 
         {
@@ -848,17 +857,7 @@ function JSChart(element)
         //创建子窗口
         chart.Create(option.Windows.length);
 
-        if (option.Border) 
-        {
-            var item=option.Border;
-            if (!isNaN(option.Border.Left)) chart.Frame.ChartBorder.Left = option.Border.Left;
-            if (!isNaN(option.Border.Right)) chart.Frame.ChartBorder.Right = option.Border.Right;
-            if (!isNaN(option.Border.Top)) chart.Frame.ChartBorder.Top = option.Border.Top;
-            if (!isNaN(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom = option.Border.Bottom;
-
-            if (item.AutoLeft) chart.Frame.AutoLeftBorder=item.AutoLeft;
-            if (item.AutoRight) chart.Frame.AutoRightBorder=item.AutoRight;
-        }
+        this.SetChartBorder(chart, option);
 
         if (option.ExtendChart) //创建扩展画法
         {
