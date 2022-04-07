@@ -1920,6 +1920,7 @@ var JSCHART_EVENT_ID =
     ON_DRAW_KLINE_LAST_POINT:35,          //K线图绘制回调事件,返回最后一个点的坐标
 
     ON_DRAW_COUNTDOWN:41,                 //K线倒计时
+    ON_BIND_DRAWTEXT:42,                  //绑定DRAWTEXT回调
 }
 
 var HQ_DATA_TYPE=

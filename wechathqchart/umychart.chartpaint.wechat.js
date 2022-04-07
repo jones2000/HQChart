@@ -1967,6 +1967,83 @@ function ChartColorKline()
     }
 }
 
+function ChartDrawIcon()
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartDrawIcon";
+    this.IsHScreen=false;   //是否横屏
+    this.DrawCallback;      //function(op, obj)  op:1=开始 3=绘制单个数据 4=销毁
+    this.IsDestroy=false;   //是否已销毁
+    this.TextAlign = 'left';
+    this.TextBaseline="middle";
+    this.IconID;
+    this.Color;
+    this.FixedIconSize;
+    this.DrawItem=[];
+    this.Identify;
+
+    this.Draw=function()
+    {
+        this.DrawItem=[];
+        if (this.DrawCallback) this.DrawCallback(1, {Self:this} );
+
+        this.DrawAllText();
+        
+        if (this.DrawCallback) this.DrawCallback(2, { Self:this, Draw:this.DrawItem } );
+    }
+
+    this.DrawAllText=function()
+    {
+        var isHScreen = (this.ChartFrame.IsHScreen === true)
+        var dataWidth = this.ChartFrame.DataWidth;
+        var distanceWidth = this.ChartFrame.DistanceWidth;
+        var chartright = this.ChartBorder.GetRight();
+        var top = this.ChartBorder.GetTopEx();
+        var bottom = this.ChartBorder.GetBottomEx();
+        if (isHScreen) 
+        {
+            chartright = this.ChartBorder.GetBottom();
+            top = this.ChartBorder.GetRightEx();
+            bottom = this.ChartBorder.GetLeftEx();
+        }
+        var xPointCount = this.ChartFrame.XPointCount;
+        var isArrayText = Array.isArray(this.Text);
+
+        
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (value == null) continue;
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(value);
+            if (x > chartright) break;
+
+            var drawTextInfo=
+            { 
+                Text:
+                { 
+                    Color:this.Color,
+                    Align:this.TextAlign,
+                    Baseline:this.TextBaseline,
+                },
+                X:x, Y:y,
+                IconID:this.IconID
+            };
+
+            this.DrawItem.push(drawTextInfo);
+        }
+    }
+
+    this.OnDestroy=function()
+    {
+        this.IsDestroy=true;
+        if (this.DrawCallback) this.DrawCallback(4, { Self:this } );
+    }
+
+}
 
 /*
     文字输出 支持横屏
@@ -2174,7 +2251,6 @@ function ChartSingleText()
                 {
                     this.DrawText(this.Text, x, y, isHScreen);
                 }
-               
             }
         }
     }
@@ -2288,7 +2364,6 @@ function ChartSingleText()
                 var bgHeight=drawInfo.Font.Height+margin[0]+margin[1];
                 if (this.TextBG.Color)
                 {
-                   
                     this.Canvas.fillStyle=this.TextBG.Color;
                     this.Canvas.fillRect(xRect,yRect,bgWidth,bgHeight);
                 }
@@ -3896,8 +3971,9 @@ function ChartMultiHtmlDom()
     this.ClassName="ChartMultiHtmlDom";
     this.Texts=[];  //[ {Index:, Value:, Text: ] Text=dom内容
     this.IsHScreen=false;   //是否横屏
-    this.DrawCallback;  //function(op, obj)  op:1=开始 2=结束 3=绘制单个数据
+    this.DrawCallback;  //function(op, obj)  op:1=开始 2=结束 3=绘制单个数据 4=销毁
     this.DrawItem=[];
+    this.IsDestroy=false;   //是否已销毁
 
     this.Draw=function()
     {
@@ -3907,6 +3983,12 @@ function ChartMultiHtmlDom()
         this.DrawDom();
         
         if (this.DrawCallback) this.DrawCallback(2, { Self:this, Draw:this.DrawItem } );
+    }
+
+    this.OnDestroy=function()
+    {
+        this.IsDestroy=true;
+        if (this.DrawCallback) this.DrawCallback(4, { Self:this } );
     }
 
     this.DrawDom=function()
@@ -7719,6 +7801,7 @@ module.exports =
         ChartLine: ChartLine,
         ChartSubLine: ChartSubLine,
         ChartSingleText: ChartSingleText,
+        ChartDrawIcon:ChartDrawIcon,
         ChartDrawText:ChartDrawText,
         ChartDrawNumber:ChartDrawNumber,
         ChartPointDot: ChartPointDot,
@@ -7763,6 +7846,7 @@ module.exports =
     JSCommonChartPaint_ChartLine: ChartLine,
     JSCommonChartPaint_ChartSubLine: ChartSubLine,
     JSCommonChartPaint_ChartSingleText: ChartSingleText,
+    JSCommonChartPaint_ChartDrawIcon:ChartDrawIcon,
     JSCommonChartPaint_ChartDrawText:ChartDrawText,
     JSCommonChartPaint_ChartDrawNumber:ChartDrawNumber,
     JSCommonChartPaint_ChartPointDot: ChartPointDot,

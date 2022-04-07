@@ -8023,7 +8023,7 @@ function JSDraw(errorHandler, symbolData)
         let icon =  g_JSComplierResource.GetDrawTextIcon(type);
         if (!icon) icon = { Symbol: '●', Color: 'rgb(0,139,69)'};
         let drawData = [];
-        let result = { DrawData: drawData, DrawType: 'DRAWICON', Icon: icon };
+        let result = { DrawData: drawData, DrawType: 'DRAWICON', Icon: icon , IconID:type};
         if (condition.length <= 0) return result;
 
         var IsNumber = typeof (data) == "number";
@@ -8045,7 +8045,7 @@ function JSDraw(errorHandler, symbolData)
             }
             return result;
         }
-
+        
         for (var i in condition) 
         {
             drawData[i] = null;

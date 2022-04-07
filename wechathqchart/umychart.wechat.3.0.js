@@ -8204,6 +8204,17 @@ function KLineChartContainer(uielement)
         return false;
     }
 
+    this.ClearIndexPaint=function() //清空指标
+    {
+        if (this.Frame && this.Frame.SubFrame)
+        {
+            for(var i=0;i<this.Frame.SubFrame.length;++i)
+            {
+                this.DeleteIndexPaint(i, true);
+            }
+        }
+    }
+
     //周期切换
     this.ChangePeriod = function (period, option) 
     {
@@ -8271,6 +8282,7 @@ function KLineChartContainer(uielement)
 
         if (ChartData.IsDayPeriod(this.Period, true)) 
         {
+            this.ClearIndexPaint();
             this.CancelAutoUpdate();                    //先停止更新
             this.AutoUpdateEvent(false,"KLineChartContainer::ChangePeriod");
             this.RequestHistoryData();                  //请求日线数据
@@ -8278,6 +8290,7 @@ function KLineChartContainer(uielement)
         }
         else if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period))
         {
+            this.ClearIndexPaint();
             this.CancelAutoUpdate();                    //先停止更新
             this.AutoUpdateEvent(false,"KLineChartContainer::ChangePeriod");
             this.ReqeustHistoryMinuteData();            //请求分钟数据
@@ -8318,28 +8331,38 @@ function KLineChartContainer(uielement)
         }
     }
 
-  //删除某一个窗口的指标
-  this.DeleteIndexPaint = function (windowIndex) {
-    let paint = new Array();  //踢出当前窗口的指标画法
-    for (let i in this.ChartPaint) {
-      let item = this.ChartPaint[i];
+  //删除某一个窗口的指标 bCallDestory=是否调用图形销毁函数
+    this.DeleteIndexPaint = function (windowIndex, bCallDestroy) 
+    {
+        let paint = new Array();  //踢出当前窗口的指标画法
+        for (var i=0;i<this.ChartPaint.length; ++i) 
+        {
+            let item = this.ChartPaint[i];
+            if (i == 0 || item.ChartFrame != this.Frame.SubFrame[windowIndex].Frame)
+            {
+                paint.push(item);
+            }
+            else
+            {
+                if (bCallDestroy===true) 
+                {
+                    if (item && item.OnDestroy) item.OnDestroy();   //图形销毁
+                }
+            }
+        }
 
-      if (i == 0 || item.ChartFrame != this.Frame.SubFrame[windowIndex].Frame)
-        paint.push(item);
+        
+        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = null;          //清空指定最大最小值
+        this.Frame.SubFrame[windowIndex].Frame.IsLocked = false;                //解除上锁
+        this.Frame.SubFrame[windowIndex].Frame.YSplitScale = null;              //清空固定刻度
+
+        this.ChartPaint = paint;
+
+        //清空东条标题
+        var titleIndex = windowIndex + 1;
+        this.TitlePaint[titleIndex].Data = [];
+        this.TitlePaint[titleIndex].Title = null;
     }
-
-    
-    this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = null;          //清空指定最大最小值
-    this.Frame.SubFrame[windowIndex].Frame.IsLocked = false;                //解除上锁
-    this.Frame.SubFrame[windowIndex].Frame.YSplitScale = null;              //清空固定刻度
-
-    this.ChartPaint = paint;
-
-    //清空东条标题
-    var titleIndex = windowIndex + 1;
-    this.TitlePaint[titleIndex].Data = [];
-    this.TitlePaint[titleIndex].Title = null;
-  }
 
   
     this.ShowKLine = function (isShow) //显示隐藏主图K线
@@ -8412,7 +8435,7 @@ function KLineChartContainer(uielement)
     //切换成 脚本指标
     this.ChangeScriptIndex = function (windowIndex, indexData) 
     {
-        this.DeleteIndexPaint(windowIndex);
+        this.DeleteIndexPaint(windowIndex, true);
         this.WindowIndex[windowIndex] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
 
         var bindData = this.ChartPaint[0].Data;
@@ -8426,7 +8449,7 @@ function KLineChartContainer(uielement)
     //切换api指标
     this.ChangeAPIIndex = function (windowIndex, indexData) 
     {
-        this.DeleteIndexPaint(windowIndex);
+        this.DeleteIndexPaint(windowIndex, true);
         //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
         var apiItem = indexData.API;
         this.WindowIndex[windowIndex] = new APIScriptIndex(apiItem.Name, apiItem.Script, apiItem.Args, indexData);
@@ -8566,7 +8589,7 @@ function KLineChartContainer(uielement)
         //清空所有的指标图型
         for (var i = 0; i < currentLength; ++i) 
         {
-            this.DeleteIndexPaint(i);
+            this.DeleteIndexPaint(i, true);
             var frame = this.Frame.SubFrame[i];
             frame.YSpecificMaxMin = null;
             frame.IsLocked = false;
@@ -8691,7 +8714,7 @@ function KLineChartContainer(uielement)
         if (id>=this.Frame.SubFrame.length) return;
 
         var delFrame=this.Frame.SubFrame[id].Frame;
-        this.DeleteIndexPaint(id);
+        this.DeleteIndexPaint(id, true);
         this.Frame.SubFrame.splice(id,1);
         this.WindowIndex.splice(id,1);
         this.TitlePaint.splice(id+1,1); //删除对应的动态标题
@@ -8909,11 +8932,7 @@ function KLineChartContainer(uielement)
         this.Symbol = symbol;
         if (IsIndexSymbol(symbol)) this.Right = 0;    //指数没有复权
 
-        if (this.Frame && this.Frame.SubFrame) //清空指标
-        {
-            for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
-                this.DeleteIndexPaint(i);
-        }
+        this.ClearIndexPaint();
 
         if (ChartData.IsDayPeriod(this.Period, true)) 
         {
@@ -10006,8 +10025,11 @@ function MinuteChartContainer(uielement)
             }
 
             this.MouseDrag=drag;
+            this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
             if (this.EnableScrollUpDown==false)
                 T_ShowCorssCursor();
+
+            this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchStart"}, e);
         }
     }
 
@@ -10045,6 +10067,12 @@ function MinuteChartContainer(uielement)
             var x = touches[0].clientX;
             var y = touches[0].clientY;
             this.OnMouseMove(x,y,e);
+        }
+
+        if (this.PhoneTouchInfo)
+        {
+            this.PhoneTouchInfo.End.X=touches[0].clientX;
+            this.PhoneTouchInfo.End.Y=touches[0].clientY;
         }
     }
 
@@ -10229,15 +10257,24 @@ function MinuteChartContainer(uielement)
         }
     }
 
-    //删除某一个窗口的指标
-    this.DeleteIndexPaint = function (windowIndex) 
+    //删除某一个窗口的指标 bCallDestory=是否调用图形销毁函数
+    this.DeleteIndexPaint = function (windowIndex, bCallDestroy) 
     {
         let paint = new Array();
-        for (let i in this.ChartPaint)  //踢出当前窗口的指标画法
+        for (var i=0;i<this.ChartPaint.length;++i)  //踢出当前窗口的指标画法
         {
             let item = this.ChartPaint[i];
             if (i == 0 || item.ChartFrame != this.Frame.SubFrame[windowIndex].Frame)
+            {
                 paint.push(item);
+            }
+            else
+            {
+                if (bCallDestroy===true) 
+                {
+                    if (item && item.OnDestroy) item.OnDestroy();   //图形销毁
+                }
+            }
         }
 
         //清空指定最大最小值
@@ -10319,7 +10356,7 @@ function MinuteChartContainer(uielement)
     //切换成 脚本指标
     this.ChangeScriptIndex = function (windowIndex, indexData) 
     {
-        this.DeleteIndexPaint(windowIndex);
+        this.DeleteIndexPaint(windowIndex, true);
         this.WindowIndex[windowIndex] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
 
         var bindData = this.SourceData;
@@ -10368,7 +10405,7 @@ function MinuteChartContainer(uielement)
         if (id>=this.Frame.SubFrame.length) return;
 
         var delFrame=this.Frame.SubFrame[id].Frame;
-        this.DeleteIndexPaint(id);
+        this.DeleteIndexPaint(id, true);
         this.Frame.SubFrame.splice(id,1);
         this.WindowIndex.splice(id,1);
         this.TitlePaint.splice(id+1,1); //删除对应的动态标题
@@ -10388,6 +10425,17 @@ function MinuteChartContainer(uielement)
         this.Draw();
     }
 
+    this.ClearIndexPaint=function()
+    {
+        if (this.Frame && this.Frame.SubFrame)
+        {
+            for(var i=2;i<this.Frame.SubFrame.length;++i)
+            {
+                if (i>=2) this.DeleteIndexPaint(i, true);
+            }
+        }
+    }
+
     //切换股票代码
     this.ChangeSymbol = function (symbol) 
     {
@@ -10395,6 +10443,7 @@ function MinuteChartContainer(uielement)
         this.CancelAutoUpdate();    //先停止定时器
         this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
         this.ChartSplashPaint.EnableSplash(true);
+        this.ClearIndexPaint();
         this.RequestData();
     }
 
@@ -10403,6 +10452,7 @@ function MinuteChartContainer(uielement)
         if (count < 0 || count > 10) return;
         this.DayCount = count;
         this.CancelAutoUpdate();    //先停止定时器
+        this.ClearIndexPaint();
         this.RequestData();
     }
 

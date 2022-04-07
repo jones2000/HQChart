@@ -6001,8 +6001,9 @@ var JSCHART_EVENT_ID=
     ON_CALCULATE_INDEX_OX:38,              //创建OX指标回调
 
     ON_LOAD_DRAWPICTURE:39,                //加载画图工具
-    //ON_SAVE_DRAWPICTURE:40                 //画图工具存盘
-    ON_DRAW_COUNTDOWN:41                   //倒计时回调
+    //ON_SAVE_DRAWPICTURE:40               //画图工具存盘
+    ON_DRAW_COUNTDOWN:41,                  //倒计时回调
+    ON_BIND_DRAWTEXT:42
 }
 
 var JSCHART_OPERATOR_ID=
@@ -9871,7 +9872,7 @@ function JSChartContainer(uielement, OffscreenElement)
         return paint.ClearPoint();
     }
 
-    //删除叠加指标, 没有重回
+    //删除叠加指标, 没有重绘
     this.DeleteOverlayIndex=function(identify, windowIndex)
     {
         var findIndex=null;
@@ -9885,6 +9886,12 @@ function JSChartContainer(uielement, OffscreenElement)
                     var overlayItem=item.OverlayIndex[j];
                     if (overlayItem.Identify===identify)
                     {
+                        for(var k=0;k<overlayItem.ChartPaint.length;++k)    //图形销毁事件
+                        {
+                           var overlayChart=overlayItem.ChartPaint[k];
+                           if (overlayChart && overlayChart.OnDestroy) overlayChart.OnDestroy();
+                        }
+
                         item.OverlayIndex.splice(j, 1);
                         findIndex=windowIndex
                         break;
@@ -9902,6 +9909,12 @@ function JSChartContainer(uielement, OffscreenElement)
                     var overlayItem=item.OverlayIndex[j];
                     if (overlayItem.Identify===identify)
                     {
+                        for(var k=0;k<overlayItem.ChartPaint.length;++k)    //图形销毁事件
+                        {
+                           var overlayChart=overlayItem.ChartPaint[k];
+                           if (overlayChart && overlayChart.OnDestroy) overlayChart.OnDestroy();
+                        }
+
                         item.OverlayIndex.splice(j, 1);
                         findIndex=i;
                         break;
@@ -29751,14 +29764,16 @@ function ChartMultiHtmlDom()
     this.ClassName="ChartMultiHtmlDom";
     this.Texts=[];  //[ {Index:, Value:, Text: ] Text=dom内容
     this.IsHScreen=false;   //是否横屏
-    this.DrawCallback;  //function(op, obj)  op:1=开始 2=结束 3=绘制单个数据
+    this.DrawCallback;  //function(op, obj)  op:1=开始 2=结束 3=绘制单个数据 4=销毁
     this.DrawItem=[];
     this.EnableDraw=true;   //是否允许绘制
     this.HQChart;
+    this.IsDestroy=false;   //是否已销毁
 
     this.Draw=function()
     {
         if (!this.EnableDraw) return;
+        if (this.IsDestroy) return;
 
         this.DrawItem=[];
         if (this.DrawCallback) this.DrawCallback(1, {Self:this} );
@@ -29766,6 +29781,12 @@ function ChartMultiHtmlDom()
         this.DrawDom();
 
         if (this.DrawCallback) this.DrawCallback(2, { Self:this, DrawItem:this.DrawItem } );
+    }
+
+    this.OnDestroy=function()
+    {
+        this.IsDestroy=true;
+        if (this.DrawCallback) this.DrawCallback(4, { Self:this } );
     }
 
     this.DrawDom=function()
@@ -50549,17 +50570,29 @@ function KLineChartContainer(uielement,OffscreenElement)
         {
             for(var i=0;i<this.Frame.SubFrame.length;++i)
             {
-                this.DeleteIndexPaint(i);
+                this.DeleteIndexPaint(i, true);
                 var item=this.Frame.SubFrame[i];
                 if (IFrameSplitOperator.IsNonEmptyArray(item.OverlayIndex))
                 {
                     for(var j=0; j<item.OverlayIndex.length; ++j ) //清空叠加指标
                     {
                         var overlayItem=item.OverlayIndex[j];
+                        for(var k=0;k< overlayItem.ChartPaint.length;++k)
+                        {
+                            var overlayChart=overlayItem.ChartPaint[k];
+                            if (overlayChart && overlayChart.OnDestroy) overlayChart.OnDestroy();
+                        }
                         overlayItem.ChartPaint=[];
                     }
                 }
             }
+        }
+
+        //清空叠加标题
+        for(var i=1;i<this.TitlePaint.length;++i)
+        {
+            var item=this.TitlePaint[i];
+            item.OverlayIndex=new Map();
         }
     }
 
@@ -50797,8 +50830,8 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();
     }
 
-    //删除某一个窗口的指标
-    this.DeleteIndexPaint=function(windowIndex)
+    //删除某一个窗口的指标, bCallDestory=是否调用图形销毁函数
+    this.DeleteIndexPaint=function(windowIndex, bCallDestroy)
     {
         let paint=new Array();  //踢出当前窗口的指标画法
         for(let i in this.ChartPaint)
@@ -50806,7 +50839,16 @@ function KLineChartContainer(uielement,OffscreenElement)
             let item=this.ChartPaint[i];
 
             if (i==0 || item.ChartFrame!=this.Frame.SubFrame[windowIndex].Frame)
+            {
                 paint.push(item);
+            }
+            else
+            {
+                if (bCallDestroy===true)
+                {
+                    if (item && item.OnDestroy) item.OnDestroy();   //图形销毁
+                }
+            }
         }
         
         this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin=null;    //清空指定最大最小值
@@ -50943,7 +50985,7 @@ function KLineChartContainer(uielement,OffscreenElement)
     //切换成 脚本指标
     this.ChangeScriptIndex=function(windowIndex,indexData,option)
     {
-        this.DeleteIndexPaint(windowIndex);
+        this.DeleteIndexPaint(windowIndex, true);
         this.WindowIndex[windowIndex]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
 
         if (option)
@@ -50988,7 +51030,7 @@ function KLineChartContainer(uielement,OffscreenElement)
     //切换api指标
     this.ChangeAPIIndex=function(windowIndex,indexData)
     {
-        this.DeleteIndexPaint(windowIndex);
+        this.DeleteIndexPaint(windowIndex, true);
         //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
         var apiItem=indexData.API;
         this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,indexData);
@@ -55395,7 +55437,7 @@ function MinuteChartContainer(uielement)
     }
 
     //删除某一个窗口的指标
-    this.DeleteIndexPaint=function(windowIndex)
+    this.DeleteIndexPaint=function(windowIndex,bCallDestroy)
     {
         let paint=new Array();          //踢出当前窗口的指标画法
         for(let i in this.ChartPaint)
@@ -55403,7 +55445,16 @@ function MinuteChartContainer(uielement)
             let item=this.ChartPaint[i];
 
             if (i==0 || item.ChartFrame!=this.Frame.SubFrame[windowIndex].Frame)
+            {
                 paint.push(item);
+            }
+            else
+            {
+                if (bCallDestroy===true)
+                {
+                    if (item && item.OnDestroy) item.OnDestroy();   //图形销毁
+                }
+            }
         }
 
         //清空指定最大最小值
@@ -55474,7 +55525,7 @@ function MinuteChartContainer(uielement)
     //切换成 脚本指标
     this.ChangeScriptIndex=function(windowIndex,indexData,option)
     {
-        this.DeleteIndexPaint(windowIndex);
+        this.DeleteIndexPaint(windowIndex, true);
         this.WindowIndex[windowIndex]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
 
         var bindData=this.SourceData;
@@ -55646,19 +55697,31 @@ function MinuteChartContainer(uielement)
         //清空指标
         if (this.Frame && this.Frame.SubFrame)
         {
-            for(var i=2;i<this.Frame.SubFrame.length;++i)
+            for(var i=0;i<this.Frame.SubFrame.length;++i)
             {
-                if (i>=2) this.DeleteIndexPaint(i);
+                if (i>=2) this.DeleteIndexPaint(i, true);
                 var item=this.Frame.SubFrame[i];
                 if (IFrameSplitOperator.IsNonEmptyArray(item.OverlayIndex))
                 {
                     for(var j=0; j<item.OverlayIndex.length; ++j ) //清空叠加指标
                     {
                         var overlayItem=item.OverlayIndex[j];
+                        for(var k=0;k< overlayItem.ChartPaint.length;++k)
+                        {
+                            var overlayChart=overlayItem.ChartPaint[k];
+                            if (overlayChart && overlayChart.OnDestroy) overlayChart.OnDestroy();
+                        }
                         overlayItem.ChartPaint=[];
                     }
                 }
             }
+        }
+
+        //清空叠加标题
+        for(var i=1;i<this.TitlePaint.length;++i)
+        {
+            var item=this.TitlePaint[i];
+            item.OverlayIndex=new Map();
         }
     }
 
@@ -65753,6 +65816,14 @@ function MinuteRightMenu(divElement)
         }
 
         dataList.push({text:"工具", children:this.GetTools(chart)});
+
+        var identify=event.data.FrameID;
+        var overlayIndex=this.GetOverlayIndex(chart,identify);
+        if (overlayIndex && overlayIndex.length>0)
+        {
+            var delOverlayIndexMenu={ text:'删除叠加指标', children:this.GetDeleteOverlayIndex(chart,overlayIndex) }
+            dataList.splice(3,0,delOverlayIndexMenu);
+        }
 
         var identify=event.data.FrameID;
         JSConsole.Chart.Log('[MinuteRightMenu::DoModal]',identify);

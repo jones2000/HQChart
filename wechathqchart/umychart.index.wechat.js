@@ -22,12 +22,14 @@ import { JSConsole } from "./umychart.console.wechat.js"
 import {
     JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
     JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
+    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
 } from "./umychart.data.wechat.js";
 
 //图形库
 import {
     JSCommonChartPaint_IChartPainting as IChartPainting, 
     JSCommonChartPaint_ChartSingleText as ChartSingleText, 
+    JSCommonChartPaint_ChartDrawIcon as ChartDrawIcon,
     JSCommonChartPaint_ChartDrawText as ChartDrawText,
     JSCommonChartPaint_ChartDrawNumber as ChartDrawNumber,
     JSCommonChartPaint_ChartKLine as ChartKLine,
@@ -763,9 +765,57 @@ function ScriptIndex(name, script, args, option)
     hqChart.ChartPaint.push(chartText);
   }
 
-  //创建图标
+    this.CreateDrawIcon=function(hqChart, windowIndex, varItem, id, drawCallback)
+    {
+        var chart = new ChartDrawIcon();
+        chart.Canvas = hqChart.Canvas;
+        chart.TextAlign = 'center';
+        chart.Identify=id;
+        chart.DrawCallback=drawCallback;
+
+        chart.Name = varItem.Name;
+        chart.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data.Data = varItem.Draw.DrawData;
+        chart.IconID=varItem.Draw.IconID;
+        if (varItem.Color) chart.Color = this.GetColor(varItem.Color);
+        else chart.Color = 'rgb(0,0,0)';
+
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chart.TextBaseline="top";
+            else if (varItem.DrawVAlign==1) chart.TextBaseline="middle";
+            else if (varItem.DrawVAlign==2) chart.TextBaseline="bottom";
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chart.TextAlign="left";
+            else if (varItem.DrawAlign==1) chart.TextAlign="center";
+            else if (varItem.DrawAlign==2) chart.TextAlign='right';
+        }
+
+        if (varItem.DrawFontSize>0) chart.FixedIconSize=varItem.DrawFontSize;
+
+        hqChart.ChartPaint.push(chart);
+    }
+
+    //创建图标
     this.CreateIcon = function (hqChart, windowIndex, varItem, id) 
     {
+        var event=hqChart.GetEventCallback(JSCHART_EVENT_ID.ON_BIND_DRAWTEXT);
+        if (event && event.Callback)
+        {
+            var sendData={ ID:id, Data:varItem, Callback:null };
+            event.Callback(event, sendData,this);
+            if (sendData.Callback)
+            {
+                this.CreateDrawIcon(hqChart, windowIndex, varItem, id, sendData.Callback);
+                return;
+            }
+        }
+
         let chartText = new ChartSingleText();
         chartText.Canvas = hqChart.Canvas;
         chartText.TextAlign = 'center';
