@@ -5959,7 +5959,7 @@ var JSCHART_EVENT_ID=
     ON_LOAD_DRAWPICTURE:39,                //加载画图工具
     //ON_SAVE_DRAWPICTURE:40               //画图工具存盘
     ON_DRAW_COUNTDOWN:41,                  //倒计时回调
-    ON_BIND_DRAWTEXT:42
+    ON_BIND_DRAWICON:42                    //小程序用到,h5无效
 }
 
 var JSCHART_OPERATOR_ID=

@@ -804,10 +804,10 @@ function ScriptIndex(name, script, args, option)
     //创建图标
     this.CreateIcon = function (hqChart, windowIndex, varItem, id) 
     {
-        var event=hqChart.GetEventCallback(JSCHART_EVENT_ID.ON_BIND_DRAWTEXT);
+        var event=hqChart.GetEventCallback(JSCHART_EVENT_ID.ON_BIND_DRAWICON);
         if (event && event.Callback)
         {
-            var sendData={ ID:id, Data:varItem, Callback:null };
+            var sendData={ FrameID:windowIndex, ID:id, Data:varItem, Callback:null };
             event.Callback(event, sendData,this);
             if (sendData.Callback)
             {
@@ -1011,7 +1011,7 @@ function ScriptIndex(name, script, args, option)
             if (this.YSplitScale) hqChart.Frame.SubFrame[windowIndex].Frame.YSplitScale = this.YSplitScale;             //固定刻度
         }
 
-        for (let i in this.OutVar) 
+        for (var i=0 ;i<this.OutVar.length;++i ) 
         {
             let item = this.OutVar[i];
             if (item.IsExData === true) continue; //扩展数据不显示图形

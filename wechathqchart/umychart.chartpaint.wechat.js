@@ -1975,7 +1975,7 @@ function ChartDrawIcon()
 
     this.ClassName="ChartDrawIcon";
     this.IsHScreen=false;   //是否横屏
-    this.DrawCallback;      //function(op, obj)  op:1=开始 3=绘制单个数据 4=销毁
+    this.DrawCallback;      //function(op, obj)  op:1=开始 2=绘制 4=销毁
     this.IsDestroy=false;   //是否已销毁
     this.TextAlign = 'left';
     this.TextBaseline="middle";
