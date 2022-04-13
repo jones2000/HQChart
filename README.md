@@ -240,6 +240,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 80. [HQChart使用教程88-DRAWTEXT添加背景色及边框](https://blog.csdn.net/jones2000/article/details/123132528)<br>
 81. [HQChart使用教程89-最后一根k线倒计时功能](https://jones2000.blog.csdn.net/article/details/123674077)<br>
 82. [HQChart使用教程90-DRAWTEXT添加连线](https://blog.csdn.net/jones2000/article/details/123750892)<br>
+83. [HQChart使用教程91-如何在app中使用DRAWICON绘制图片](https://jones2000.blog.csdn.net/article/details/124140916)<br>
 
 ## 小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
@@ -376,6 +377,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 19. [HQChart实战教程49 - 点击修改K线颜色及背景色](https://jones2000.blog.csdn.net/article/details/121938122)<br>
 20. [HQChart实战教程50 - 自定义指标栏工具按钮](https://blog.csdn.net/jones2000/article/details/122950050)<br>
 21. [HQChart实战教程51 - 自定义指标列表](https://blog.csdn.net/jones2000/article/details/123538617)<br>
+22. [HQChart实战教程52-APP中使用DRAWICON绘制图标](https://jones2000.blog.csdn.net/article/details/124142225)<br>
 
 
 
