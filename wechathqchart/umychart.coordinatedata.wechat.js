@@ -55,7 +55,8 @@ var MARKET_SUFFIX_NAME=
     TOCOM:".TOCOM",      //东京商品交易所（TOCOM）
     IPE:".IPE",          //美国洲际交易所 （ICE EUROPE）
 
-    TW:".TW",            //台湾股票 //上午9：00——下午1：30
+    TW:".TW",            //台湾股票 9:00-13:30
+    JP:".JP",            //日本股票 9:00-11:30, 12:30-15:00
 
     ET: '.ET',           //其他未知的品种
 
@@ -199,6 +200,13 @@ var MARKET_SUFFIX_NAME=
     {
         var pos = upperSymbol.length - this.TW.length;
         var find = upperSymbol.indexOf(this.TW);
+        return find == pos;
+    },
+
+    IsJP:function(upperSymbol)
+    {
+        var pos = upperSymbol.length - this.JP.length;
+        var find = upperSymbol.indexOf(this.JP);
         return find == pos;
     },
 
@@ -391,6 +399,13 @@ var MARKET_SUFFIX_NAME=
             if(time<820) return 1;
             return 2;   
         }
+        else if (this.IsJP(upperSymbol))    //日本股票 9:00-11:30 12:30-15:00
+        {
+            if(day == 6 || day== 0) return 0;   //周末
+            if(time>1520) return 3;
+            if(time<830) return 1;
+            return 2;
+        }
         else if (this.IsNYMEX(upperSymbol)) 
         {
             return this.GetNYMEXMarketStatus(upperSymbol);
@@ -466,6 +481,11 @@ var MARKET_SUFFIX_NAME=
     },
 
     GetTWDecimal:function(symbol)
+    {
+        return 2;
+    },
+
+    GetJPDecimal:function(symbol)
     {
         return 2;
     },
@@ -572,7 +592,8 @@ function MinuteTimeStringData()
     this.FTSE = null;         //富时中国
     this.FHK = null;          //港股指数期货
     this.BIT=null;          //数字货币
-    this.TW=null;
+    this.TW=null;           //台湾股票
+    this.JP=null;           //日本股票
 
     this.Initialize = function ()  //初始化 默认只初始化沪深的 其他市场动态生成
     {
@@ -613,6 +634,12 @@ function MinuteTimeStringData()
     {
         if (this.TW) this.TW=this.CreateTWData();
         return this.TW;
+    }
+
+    this.GetJP=function(upperSymbol)
+    {
+        if (this.JP) this.JP=this.CreateJPData();
+        return this.JP;
     }
 
     this.GetFutures=function(splitData)
@@ -696,6 +723,17 @@ function MinuteTimeStringData()
             [
                 { Start: 900, End: 1330 }
             ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateJPData=function()
+    {
+        const TIME_SPLIT =
+        [
+            { Start: 900, End: 1130 },
+            { Start: 1230, End: 1500 }
+        ];
 
         return this.CreateTimeData(TIME_SPLIT);
     }
@@ -800,6 +838,7 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsTW(upperSymbol)) return this.GetTW(upperSymbol);
+        if (MARKET_SUFFIX_NAME.IsJP(upperSymbol)) return this.GetJP(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
         if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
         {
@@ -1296,6 +1335,8 @@ function MinuteCoordinateData()
                 data=this.GetHKData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsTW(upperSymbol))
                 data=this.GetTWData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsJP(upperSymbol))
+                data=this.GetJPData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
                 return this.GetChinatFuturesData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
@@ -1473,6 +1514,11 @@ function MinuteCoordinateData()
     {
         var result = SHO_MINUTE_X_COORDINATE;
         return result;
+    }
+
+    this.GetJPData=function(upperSymbol,width)
+    {
+        throw {Name:'MinuteCoordinateData::GetJPData', Error:'not implement'};
     }
 }
 
@@ -3417,6 +3463,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsIPE(upperSymbol)) defaultfloatPrecision=g_IPETimeData.GetDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetHKDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsTW(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetTWDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsJP(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetJPDecimal(upperSymbol);
     else defaultfloatPrecision=MARKET_SUFFIX_NAME.GetDefaultDecimal(upperSymbol);
 
     return defaultfloatPrecision;
