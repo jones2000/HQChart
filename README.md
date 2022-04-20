@@ -31,7 +31,7 @@ uniapp 版本:
 如果你觉得我们的行情模块对你有帮助， 请给我们点下star. (●ˇ∀ˇ●) <br>
 
 py版本的麦语法指标计算引擎，已单独迁移到[https://github.com/jones2000/hqchartPy2](https://github.com/jones2000/hqchartPy2),
-可以通过pip install hqchart来安装， 支持windows,和linux. 这个版本是用c++开发的，通过cpython来对接py，能高效的完成指标执行. 可以应用于回测, 选股等批量指标计算中。c++部分不开源，只开放了编译好的动态库，在py上直接调用就可以<br>
+支持windows,和linux. 这个版本是用c++开发的，通过cpython来对接py，能高效的完成指标执行. 可以应用于回测, 选股等批量指标计算中。社区版c++开源.<br>
 
 **教程列表和demo效果图在下面,下拉页面就可以看到!!!!!!!!!!!!**
 
@@ -267,6 +267,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 6. [HQChart使用教程29-走势图如何对接第3方数据5-指标数据](https://blog.csdn.net/jones2000/article/details/102426337) <br>
 7. [HQChart使用教程29-走势图如何对接第3方数据6-websocket分钟数据](https://blog.csdn.net/jones2000/article/details/102568258) <br>
 8. [HQChart使用教程29-走势图如何对接第3方数据7-叠加股票最新分时数据](https://blog.csdn.net/jones2000/article/details/110525351) <br>
+9. [HQChart使用教程29-走势图如何对接第3方数据8-量比数据](https://blog.csdn.net/jones2000/article/details/124286883)<br>
 
 ## 第3方数据前端接入教程(K线图)
 1. [HQChart使用教程30-K线图如何对接第3方数据1](https://blog.csdn.net/jones2000/article/details/100181279) <br>
