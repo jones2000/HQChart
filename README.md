@@ -241,6 +241,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 81. [HQChart使用教程89-最后一根k线倒计时功能](https://jones2000.blog.csdn.net/article/details/123674077)<br>
 82. [HQChart使用教程90-DRAWTEXT添加连线](https://blog.csdn.net/jones2000/article/details/123750892)<br>
 83. [HQChart使用教程91-如何在app中使用DRAWICON绘制图片](https://jones2000.blog.csdn.net/article/details/124140916)<br>
+84. [HQChart使用教程92-如何创建分笔明细表](https://blog.csdn.net/jones2000/article/details/124360747)<br>
 
 ## 小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
@@ -304,6 +305,10 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 32. [HQChart使用教程30-K线图如何对接第3方数据32-订单流](https://jones2000.blog.csdn.net/article/details/122888661)<br>
 33. [HQChart使用教程30-K线图如何对接第3方数据33-日线叠加品种拖拽下载历史数据](https://blog.csdn.net/jones2000/article/details/123211234)<br>
 34. [HQChart使用教程30-K线图如何对接第3方数据34-分钟K线叠加品种拖拽下载历史数据](https://blog.csdn.net/jones2000/article/details/123211941)<br>
+
+## 第3方数据前端接入教程(分笔明细)
+1. [HQChart使用教程93-分笔明细表对接第3方数据1-全量分笔明细数据](https://blog.csdn.net/jones2000/article/details/124362666)<br>
+2. [HQChart使用教程93-分笔明细表对接第3方数据2-增量分笔明细数据](https://jones2000.blog.csdn.net/article/details/124362858)<br>
 
 
 ## 实战教程
