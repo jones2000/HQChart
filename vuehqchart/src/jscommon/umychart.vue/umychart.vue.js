@@ -93932,8 +93932,8 @@ JSDealChartContainer.JsonDataToDealData=function(data)
         var dealItem={ Time:item[0], Price:item[1], Vol:item[2], BS:item[4], Amount:item[3] };
         dealItem.Source=item;
 
-        if (item[5]) dealItem.StrTime=item[4];
-        if (item[6]) dealItem.ID=item[4];
+        if (item[5]) dealItem.StrTime=item[5];
+        if (item[6]) dealItem.ID=item[6];
 
         result.push(dealItem);
     }
@@ -94313,6 +94313,10 @@ function ChartDealList()
             if (item.Type==DEAL_COLUMN_ID.TIME_ID)
             {
                 text=IFrameSplitOperator.FormatTimeString(data.Time,item.Foramt);
+            }
+            else if (item.Type==DEAL_COLUMN_ID.STRING_TIME_ID)
+            {
+                text=data.StrTime;
             }
             else if (item.Type==DEAL_COLUMN_ID.PRICE_ID)
             {
