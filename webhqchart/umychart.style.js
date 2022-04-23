@@ -291,6 +291,35 @@ var BLACK_STYLE=
         LineWidth:1*GetDevicePixelRatio(),
         LineDotted:[3,3], 
         AreaColor:"rgba(26,13,7,0.5)",     //面积
+    },
+
+    //成交明细
+    DealList:
+    {
+        BorderColor:'rgb(38,38,41)',    //边框线
+        Header:
+        {
+            Color:"RGB(245,245,245)",
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+            Font:{ Size:12, Name:"微软雅黑" }
+        },
+
+        Row:
+        {
+            Mergin:{ Top:2, Bottom:2 },
+            Font:{ Size:15, Name:"微软雅黑"},
+        },
+
+        FieldColor:
+        {
+            Vol:"rgb(192,192,0)",      //成交量
+            Time:"rgb(245,245,245)",   //时间
+            Deal:"rgb(111,128,112)"    //成交笔数
+        },
+
+        UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+        DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+        UnchagneTextColor:"rgb(228,228,228)"    //平盘文字颜色 
     }
     
 };

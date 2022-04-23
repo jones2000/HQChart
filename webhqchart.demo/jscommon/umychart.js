@@ -1900,7 +1900,9 @@ var JSCHART_EVENT_ID=
     ON_LOAD_DRAWPICTURE:39,                //加载画图工具
     //ON_SAVE_DRAWPICTURE:40               //画图工具存盘
     ON_DRAW_COUNTDOWN:41,                  //倒计时回调
-    ON_BIND_DRAWICON:42                    //小程序用到,h5无效
+    ON_BIND_DRAWICON:42,                   //小程序用到,h5无效
+
+    ON_DRAW_DEAL_VOL_COLOR:43              //成交明细 成交量颜色
 }
 
 var JSCHART_OPERATOR_ID=
@@ -30335,6 +30337,13 @@ IFrameSplitOperator.FormatTimeString=function(value, format)    //format hh:mm:s
         var second=value%100;
         return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
     }
+    else if (format=="hh:mm")
+    {
+        var hour=parseInt(value/10000);
+        var minute=parseInt((value%10000)/100);
+        var second=value%100;
+        return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute);
+    }
     else if (format=='HH:MM')
     {
         var hour=parseInt(value/100);
@@ -42567,6 +42576,36 @@ function JSChartResource()
         AreaColor:"rgba(234,234,234,0.5)",     //面积
     }
 
+
+    //成交明细
+    this.DealList=
+    {
+        BorderColor:'rgb(192,192,192)',    //边框线
+        Header:
+        {
+            Color:"RGB(60,60,60)",
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+            Font:{ Size:12, Name:"微软雅黑" }
+        },
+
+        Row:
+        {
+            Mergin:{ Top:2, Bottom:2 },
+            Font:{ Size:15, Name:"微软雅黑"},
+        },
+
+        FieldColor:
+        {
+            Vol:"rgb(90,90,90)",    //成交量
+            Time:"rgb(60,60,60)",   //时间
+            Deal:"rgb(90,90,90)"    //成交笔数
+        },
+
+        UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+        DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+        UnchagneTextColor:"rgb(0,0,0)"     //平盘文字颜色 
+    }
+
     //自定义风格
     this.SetStyle=function(style)
     {
@@ -42873,6 +42912,61 @@ function JSChartResource()
             if (item.Up) this.ChartOX.Up=item.Up;
             if (item.Down) this.ChartOX.Down=item.Down;
             if (item.SquareLineColor) this.ChartOX.SquareLineColor=item.SquareLineColor;
+        }
+
+        if (style.DealList)
+        {
+            var item=style.DealList;
+            if (item.BorderColor) this.DealList.BorderColor=item.BorderColor;
+            if (item.BorderColor) this.DealList.UpTextColor=item.UpTextColor;
+            if (item.BorderColor) this.DealList.DownTextColor=item.DownTextColor;
+            if (item.BorderColor) this.DealList.UnchagneTextColor=item.UnchagneTextColor;
+
+            if (item.Header)
+            {
+                var header=item.Header;
+                if (header.Color) this.DealList.Header.Color=header.Color;
+                if (header.Mergin)
+                {
+                    var mergin=header.Mergin;
+                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.DealList.Header.Mergin.Left=mergin.Left;
+                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.DealList.Header.Mergin.Left=mergin.Right;
+                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.DealList.Header.Mergin.Top=mergin.Top;
+                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.DealList.Header.Mergin.Bottom=mergin.Bottom;
+                }
+                if (header.Font)
+                {
+                    var font=header.Font;
+                    if (font.Name) this.DealList.Header.Font.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.DealList.Header.Font.Size=font.Size;
+                }
+            }
+
+            if (item.Row)
+            {
+                var row=item.Row;
+                if (row.Mergin)
+                {
+                    var mergin=row.Mergin;
+                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.DealList.Row.Mergin.Top=mergin.Top;
+                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.DealList.Row.Mergin.Bottom=mergin.Bottom;
+                }
+
+                if (row.Font)
+                {
+                    var font=row.Font;
+                    if (font.Name) this.DealList.Row.Font.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.DealList.Row.Font.Size=font.Size;
+                }
+            }
+
+            if (item.FieldColor)
+            {
+                var filed=item.FieldColor;
+                if (filed.Vol) this.DealList.FieldColor.Vol=filed.Vol;
+                if (filed.Time) this.DealList.FieldColor.Time=filed.Time;
+                if (filed.Deal) this.DealList.FieldColor.Deal=filed.Deal;
+            }
         }
     }
 }

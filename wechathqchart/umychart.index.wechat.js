@@ -263,7 +263,16 @@ function ScriptIndex(name, script, args, option)
         };
 
         let hqDataType = 0;   //默认K线
-        if (hqChart.ClassName === 'MinuteChartContainer') hqDataType = 2;   //分钟数据
+        if (hqChart.ClassName === 'MinuteChartContainer' || hqChart.ClassName==='MinuteChartHScreenContainer') 
+        {
+            if (hqChart.DayCount>1) hqDataType=HQ_DATA_TYPE.MULTIDAY_MINUTE_ID; //多日分钟
+            else hqDataType=HQ_DATA_TYPE.MINUTE_ID;          
+        }
+        else if (hqChart.ClassName==='HistoryMinuteChartContainer') 
+        {
+            hqDataType=HQ_DATA_TYPE.HISTORY_MINUTE_ID;   //历史分钟
+        }
+
         let option =
         {
             HQDataType: hqDataType,
@@ -277,6 +286,8 @@ function ScriptIndex(name, script, args, option)
             Arguments: this.Arguments
         };
 
+        if (hqDataType===HQ_DATA_TYPE.HISTORY_MINUTE_ID) option.TrateDate=hqChart.TradeDate;
+        if (hqDataType===HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) option.DayCount=hqChart.DayCount;
         if (hqChart.NetworkFilter) option.NetworkFilter = hqChart.NetworkFilter;
 
         let code = this.Script;

@@ -10740,12 +10740,41 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.ExtendData.has(volrKey)) return this.Execute.RunNextJob();
 
         var self=this;
+        var dayCount=30;
+        if (this.NetworkFilter)
+        {
+            var dateRange=this.Data.GetDateRange();
+            var dayCount=1;
+            if (this.DataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) dayCount=this.DayCount;
+            var obj=
+            {
+                Name:'JSSymbolData::GetVolRateData', //类名:: 函数
+                Explain:'分时量比数据(成交量)',
+                Request:
+                { 
+                    Url:self.KLineApiUrl,  Type:'POST' ,
+                    Data: { symbol:self.Symbol, dayCount:dayCount, field: ["name","symbol","vol"], period:0, right:0, dateRange:dateRange } 
+                }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(recvData) 
+            { 
+                self.RecvVolRateData(recvData,volrKey);
+                self.Execute.RunNextJob();
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
         JSNetwork.HttpRequest({
-            url: self.RealtimeApiUrl,
+            url: self.KLineApiUrl,
             data:
             {
-                "field": ["name","symbol","avgvol5", 'date'],
-                "symbol": [this.Symbol]
+                "field":  ["name","symbol","vol"],
+                "symbol": self.Symbol,
+                "start": -1,
+                "count": dayCount
             },
             type:"post",
             dataType: "json",
@@ -10764,13 +10793,54 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.RecvVolRateData=function(data,key)
     {
-        if (!data.stock || data.stock.length!=1) return;
-        var avgVol5=data.stock[0].avgvol5;
-        var date=data.stock[0].date;
-        var item={AvgVol5:avgVol5, Date:date};
-        this.ExtendData.set(key,item);
+        var sumVol=0,avgVol5=0;
+        var mapAvgVol5=new Map();
+        if (data.Ver==2.0)  // {Ver:2.0 , data:[ [日期,5日vol均值]] }
+        {
+            if (!IFrameSplitOperator.IsNonEmptyArray(data.data)) return;
+            for(var i=0;i<data.data.length;++i) 
+            {
+                var item=data.data[i];
+                if (!IFrameSplitOperator.IsNonEmptyArray(item)) continue;
+                if (item.length<2) continue;
+                if (IFrameSplitOperator.IsNumber(item[0]) && IFrameSplitOperator.IsPlusNumber(item[1]))
+                {
+                    mapAvgVol5.set(item[0],{ AvgVol5:item[1] } );
+                }
+            }
+        }
+        else
+        {
+            if (!IFrameSplitOperator.IsNonEmptyArray(data.data)) return;
 
-        JSConsole.Complier.Log('[JSSymbolData::RecvVolRateData]', item);
+            var minuteCount=241;
+            if (IFrameSplitOperator.IsNumber(data.minutecount)) minuteCount=data.minutecount;
+            for(var i=0,j=0,dayCount=0;i<data.data.length;++i)  //每天的5日成交均量
+            {
+                sumVol=0;
+                for(j=i,dayCount=0;j>=0 && dayCount<5;--j, ++dayCount)
+                {
+                    var item=data.data[j];
+                    if (IFrameSplitOperator.IsNumber(item[6])) 
+                        sumVol+=item[6];
+                }
+    
+                if (dayCount>0) 
+                {
+                    avgVol5=sumVol/dayCount/minuteCount;
+                    var item=data.data[i];
+                    mapAvgVol5.set(item[0],
+                        { 
+                            //for debug
+                            //Vol5:sumVol, MinuteCount:minuteCount,,Count:dayCount, 
+                            AvgVol5:avgVol5
+                        } );
+                }
+            }
+        }
+       
+        if (mapAvgVol5.size>0) this.ExtendData.set(key,mapAvgVol5);
+        JSConsole.Complier.Log('[JSSymbolData::RecvVolRateData]', mapAvgVol5);
     }
 
     this.GetVolRateCacheData=function(node)
@@ -10779,23 +10849,31 @@ function JSSymbolData(ast,option,jsExecute)
         if (!key || !this.ExtendData.has(key)) this.Execute.ThrowUnexpectedNode(node,'不支持VOLR');
 
         var result=[];
-        var value=this.ExtendData.get(key);
-        var avgVol5=value.AvgVol5/241;
-        var totalVol=0;
-        //5日成交总量只取了最新一天的,历史的暂时没有取,所以数据计算的时候只计算最新的一天, 其他都空
+        var mapAvgVol5=this.ExtendData.get(key);
+        var totalVol=0, preDate=0, avgVol5=null;
         for(var i=0, j=0;i<this.Data.Data.length;++i)
         {
             result[i]=null;
             var item=this.Data.Data[i];
-            var dateTime=item.DateTime; //日期加时间
-            if (!dateTime) continue;
-            var aryValue=dateTime.split(' ');
-            if (aryValue.length!=2) continue;
-            var date=parseInt(aryValue[0]);
-            if (date!=value.Date) continue;
+            if (preDate!=item.Date)
+            {
+                avgVol5=null;
+                j=0;
+                totalVol=0;
+
+                if (mapAvgVol5.has(item.Date)) 
+                {
+                    var volItem=mapAvgVol5.get(item.Date);
+                    avgVol5=volItem.AvgVol5;
+                }
+               
+                preDate=item.Date;
+            }
+
+            if (avgVol5==null) continue;
 
             totalVol+=item.Vol;
-            if (avgVol5>0) result[i]=totalVol/(j+1)/avgVol5*100;
+            result[i]=totalVol/(j+1)/avgVol5*100;
             ++j;
         }
 

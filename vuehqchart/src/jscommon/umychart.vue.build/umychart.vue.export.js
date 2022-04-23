@@ -44,4 +44,8 @@ export default {
     ChartDrawThreePointDemo:ChartDrawThreePointDemo,    //画图工具3个点例子
 
     CoordinateInfo:CoordinateInfo,
+
+    //成交明细
+    JSDealChart:JSDealChart,
+    DEAL_COLUMN_ID:DEAL_COLUMN_ID,
 }
