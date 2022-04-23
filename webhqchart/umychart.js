@@ -39498,7 +39498,7 @@ function ChartDrawPictureGoldenSection()
             if (i==0) text='Base '
             else text=(sectionData[i]*100).toFixed(2)+'% ';
 
-            var yValue=this.Frame.GetYData(line.Start.Y);
+            var yValue=this.Frame.GetYData(line.Start.X);
             text+=yValue.toFixed(2);
 
             line.Text=text;

@@ -43603,7 +43603,7 @@ function ChartDrawPictureGoldenSection()
             if (i==0) text='Base '
             else text=(sectionData[i]*100).toFixed(2)+'% ';
 
-            var yValue=this.Frame.GetYData(line.Start.Y);
+            var yValue=this.Frame.GetYData(line.Start.X);
             text+=yValue.toFixed(2);
 
             line.Text=text;
@@ -93687,6 +93687,13 @@ function JSDealChartContainer(uielement)
                 Self:this,
                 PreventDefault:false
             };
+
+            if (this.Data && IFrameSplitOperator.IsNonEmptyArray(this.Data.Data))
+            {
+                var lastItem=this.Data.Data[this.Data.Data.length-1];   //最后一条数据
+                obj.LastItem=lastItem;
+            }
+
             this.NetworkFilter(obj, function(data) 
             { 
                 self.RecvDealUpdateData(data);
