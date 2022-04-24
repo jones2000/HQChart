@@ -308,13 +308,16 @@ var BLACK_STYLE=
         {
             Mergin:{ Top:2, Bottom:2 },
             Font:{ Size:15, Name:"微软雅黑"},
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 }
         },
 
         FieldColor:
         {
             Vol:"rgb(192,192,0)",      //成交量
             Time:"rgb(245,245,245)",   //时间
-            Deal:"rgb(111,128,112)"    //成交笔数
+            Deal:"rgb(111,128,112)",    //成交笔数
+            Index:"rgb(245,245,245)",   //时间
+            BarTitle:'rgb(245,245,245)',   //柱子文字
         },
 
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色

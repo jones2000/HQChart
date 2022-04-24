@@ -42592,13 +42592,22 @@ function JSChartResource()
         {
             Mergin:{ Top:2, Bottom:2 },
             Font:{ Size:15, Name:"微软雅黑"},
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 }
         },
 
         FieldColor:
         {
             Vol:"rgb(90,90,90)",    //成交量
             Time:"rgb(60,60,60)",   //时间
-            Deal:"rgb(90,90,90)"    //成交笔数
+            Deal:"rgb(90,90,90)",   //成交笔数
+            Index:"rgb(60,60,60)",   //序号
+            BarTitle:'rgb(60,60,60)',   //柱子文字
+
+            Bar:
+            [
+                "rgb(255,0,0)", "rgb(34,139,34)", "rgb(119,136,153)","rgb(75,0,130)",
+                "rgb(65,105,225)","rgb(255,215,0)", 'rgb(255,0,255)', "rgb(128,128,0)"
+            ]  //柱子颜色
         },
 
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
@@ -42958,6 +42967,15 @@ function JSChartResource()
                     if (font.Name) this.DealList.Row.Font.Name=font.Name;
                     if (IFrameSplitOperator.IsNumber(font.Size)) this.DealList.Row.Font.Size=font.Size;
                 }
+
+                if (row.BarMergin)
+                {
+                    var mergin=row.BarMergin;
+                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.DealList.Row.BarMergin.Left=mergin.Left;
+                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.DealList.Row.BarMergin.Top=mergin.Top;
+                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.DealList.Row.BarMergin.Right=mergin.Right;
+                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.DealList.Row.BarMergin.Bottom=mergin.Bottom;
+                }
             }
 
             if (item.FieldColor)
@@ -42966,6 +42984,14 @@ function JSChartResource()
                 if (filed.Vol) this.DealList.FieldColor.Vol=filed.Vol;
                 if (filed.Time) this.DealList.FieldColor.Time=filed.Time;
                 if (filed.Deal) this.DealList.FieldColor.Deal=filed.Deal;
+                if (filed.Index) this.DealList.FieldColor.Index=filed.Index;
+                if (filed.BarTitle) this.DealList.FieldColor.BarTitle=filed.BarTitle;
+
+                if (IFrameSplitOperator.IsNonEmptyArray(filed.Bar))
+                {
+                    for(var i=0;i<filed.Bar.length;++i)
+                        this.DealList.FieldColor.Bar[i]=filed.Bar[i];
+                }
             }
         }
     }

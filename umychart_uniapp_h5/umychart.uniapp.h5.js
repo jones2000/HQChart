@@ -46653,13 +46653,22 @@ function JSChartResource()
         {
             Mergin:{ Top:2, Bottom:2 },
             Font:{ Size:15, Name:"微软雅黑"},
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 }
         },
 
         FieldColor:
         {
             Vol:"rgb(90,90,90)",    //成交量
             Time:"rgb(60,60,60)",   //时间
-            Deal:"rgb(90,90,90)"    //成交笔数
+            Deal:"rgb(90,90,90)",   //成交笔数
+            Index:"rgb(60,60,60)",   //序号
+            BarTitle:'rgb(60,60,60)',   //柱子文字
+
+            Bar:
+            [
+                "rgb(255,0,0)", "rgb(34,139,34)", "rgb(119,136,153)","rgb(75,0,130)",
+                "rgb(65,105,225)","rgb(255,215,0)", 'rgb(255,0,255)', "rgb(128,128,0)"
+            ]  //柱子颜色
         },
 
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
@@ -47019,6 +47028,15 @@ function JSChartResource()
                     if (font.Name) this.DealList.Row.Font.Name=font.Name;
                     if (IFrameSplitOperator.IsNumber(font.Size)) this.DealList.Row.Font.Size=font.Size;
                 }
+
+                if (row.BarMergin)
+                {
+                    var mergin=row.BarMergin;
+                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.DealList.Row.BarMergin.Left=mergin.Left;
+                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.DealList.Row.BarMergin.Top=mergin.Top;
+                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.DealList.Row.BarMergin.Right=mergin.Right;
+                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.DealList.Row.BarMergin.Bottom=mergin.Bottom;
+                }
             }
 
             if (item.FieldColor)
@@ -47027,6 +47045,14 @@ function JSChartResource()
                 if (filed.Vol) this.DealList.FieldColor.Vol=filed.Vol;
                 if (filed.Time) this.DealList.FieldColor.Time=filed.Time;
                 if (filed.Deal) this.DealList.FieldColor.Deal=filed.Deal;
+                if (filed.Index) this.DealList.FieldColor.Index=filed.Index;
+                if (filed.BarTitle) this.DealList.FieldColor.BarTitle=filed.BarTitle;
+
+                if (IFrameSplitOperator.IsNonEmptyArray(filed.Bar))
+                {
+                    for(var i=0;i<filed.Bar.length;++i)
+                        this.DealList.FieldColor.Bar[i]=filed.Bar[i];
+                }
             }
         }
     }
@@ -93186,13 +93212,16 @@ var BLACK_STYLE=
         {
             Mergin:{ Top:2, Bottom:2 },
             Font:{ Size:15, Name:"微软雅黑"},
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 }
         },
 
         FieldColor:
         {
             Vol:"rgb(192,192,0)",      //成交量
             Time:"rgb(245,245,245)",   //时间
-            Deal:"rgb(111,128,112)"    //成交笔数
+            Deal:"rgb(111,128,112)",    //成交笔数
+            Index:"rgb(245,245,245)",   //时间
+            BarTitle:'rgb(245,245,245)',   //柱子文字
         },
 
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
@@ -93665,17 +93694,25 @@ function JSDealChartContainer(uielement)
         var aryDeal=JSDealChartContainer.JsonDataToDealData(data);
         if (!IFrameSplitOperator.IsNonEmptyArray(aryDeal)) return;
 
-        var lUpdateCount=aryDeal.length;
-        if (!this.Data.Data) 
+        if (data.UpdateType===1)    //全量更新
         {
             this.Data.Data=aryDeal;
+            if (this.Data.DataOffset>=aryDeal.length) this.Data.DataOffset=0;
         }
         else
         {
-            for(var i=0;i<aryDeal.length;++i)
+            var lUpdateCount=aryDeal.length;
+            if (!this.Data.Data) 
             {
-                this.Data.Data.push(aryDeal[i]);
-                ++this.Data.DataOffset;
+                this.Data.Data=aryDeal;
+            }
+            else
+            {
+                for(var i=0;i<aryDeal.length;++i)
+                {
+                    this.Data.Data.push(aryDeal[i]);
+                    ++this.Data.DataOffset;
+                }
             }
         }
 
@@ -93963,6 +94000,9 @@ var DEAL_COLUMN_ID=
     BS_ID:4,
     UPDOWN_ID:5,        //涨跌
     STRING_TIME_ID:6,   //字符串时间
+    INDEX_ID:7,         //序号 从1开始
+    MULTI_BAR_ID:8,     //多颜色柱子 
+    CENTER_BAR_ID:9,    //中心柱子
 }
 
 function ChartDealList()
@@ -94004,6 +94044,13 @@ function ChartDealList()
     //表格内容配置
     this.ItemFontConfig={ Size:g_JSChartResource.DealList.Row.Font.Size, Name:g_JSChartResource.DealList.Row.Font.Name };
     this.RowMergin={ Top:g_JSChartResource.DealList.Row.Mergin.Top, Bottom:g_JSChartResource.DealList.Row.Mergin.Bottom };
+    this.BarMergin=
+    { 
+        Top:g_JSChartResource.DealList.Row.BarMergin.Top, 
+        Left:g_JSChartResource.DealList.Row.BarMergin.Left, 
+        Right:g_JSChartResource.DealList.Row.BarMergin.Right,
+        Bottom:g_JSChartResource.DealList.Row.BarMergin.Bottom
+    };
 
     //缓存
     this.HeaderFont=12*GetDevicePixelRatio() +"px 微软雅黑";
@@ -94075,6 +94122,12 @@ function ChartDealList()
             if (item.TextColor) colItem.TextColor=item.TextColor;
             if (item.MaxText) colItem.MaxText=item.MaxText;
 
+            if (item.Type==DEAL_COLUMN_ID.MULTI_BAR_ID || item.Type==DEAL_COLUMN_ID.CENTER_BAR_ID)
+            {
+                if (!IFrameSplitOperator.IsNumber(item.DataIndex)) continue;
+                colItem.DataIndex=item.DataIndex;   //柱子数据所在原始数据索引列
+            }
+
             this.Column.push(colItem);
         }
     }
@@ -94089,7 +94142,11 @@ function ChartDealList()
             { Type:DEAL_COLUMN_ID.BS_ID, Title:"", TextAlign:"right", Width:null,MaxText:"擎" },
             { Type:DEAL_COLUMN_ID.DEAL_ID, Title:"笔数", TextAlign:"right", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.Deal , MaxText:"8888"},
             { Type:DEAL_COLUMN_ID.UPDOWN_ID, Title:"涨跌", TextAlign:"right", Width:null,  MaxText:"-8888.88"},
-            { Type:DEAL_COLUMN_ID.STRING_TIME_ID, Title:"时间", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.Time, MaxText:"88:88:88" }
+            { Type:DEAL_COLUMN_ID.STRING_TIME_ID, Title:"时间", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.Time, MaxText:"88:88:88" },
+            { Type:DEAL_COLUMN_ID.INDEX_ID, Title:"序号", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.Index, MaxText:"88888" },
+
+            { Type:DEAL_COLUMN_ID.MULTI_BAR_ID, Title:"柱子", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.BarTitle, MaxText:"888888" },
+            { Type:DEAL_COLUMN_ID.CENTER_BAR_ID, Title:"柱子2", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.BarTitle, MaxText:"888888" }
         ];
 
         for(var i=0;i<DEFAULT_COLUMN.length;++i)
@@ -94258,14 +94315,14 @@ function ChartDealList()
             {
                 var dataItem=this.Data.Data[index];
 
-                this.DrawRow(dataItem, textLeft, textTop);
+                this.DrawRow(dataItem, textLeft, textTop, index);
 
                 textTop+=this.RowHeight;
             }
         }
     }
 
-    this.DrawRow=function(data, left, top)
+    this.DrawRow=function(data, left, top, dataIndex)
     {
         var tableLeft=left;
         for(var i=0;i<this.Column.length;++i)
@@ -94273,6 +94330,9 @@ function ChartDealList()
             var item=this.Column[i];
             var textColor=item.TextColor;
             var text=null;
+            var itemWidth=item.Width;
+            if (i==this.Column.length-1) itemWidth=this.TableWidth-(left-tableLeft)-this.HeaderMergin.Right-this.HeaderMergin.Left;
+
             if (item.Type==DEAL_COLUMN_ID.TIME_ID)
             {
                 text=IFrameSplitOperator.FormatTimeString(data.Time,item.Foramt);
@@ -94323,9 +94383,21 @@ function ChartDealList()
                     else textColor=this.UnchagneColor;
                 }
             }
-
-            var itemWidth=item.Width;
-            if (i==this.Column.length-1) itemWidth=this.TableWidth-(left-tableLeft)-this.HeaderMergin.Right-this.HeaderMergin.Left;
+            else if (item.Type==DEAL_COLUMN_ID.INDEX_ID)
+            {
+                text=(dataIndex+1).toString();
+            }
+            else if (item.Type==DEAL_COLUMN_ID.MULTI_BAR_ID)
+            {
+                var rtItem={Left:left, Top:top, Width:itemWidth, Height:this.RowHeight};
+                this.DrawMultiBar(item, data, rtItem);
+            }
+            else if (item.Type==DEAL_COLUMN_ID.CENTER_BAR_ID)
+            {
+                var rtItem={Left:left, Top:top, Width:itemWidth, Height:this.RowHeight};
+                this.DrawCenterBar(item, data, rtItem);
+            }
+ 
             var x=left;
             if (item.TextAlign=='center')
             {
@@ -94342,12 +94414,82 @@ function ChartDealList()
                 this.Canvas.textAlign="left";
             }
 
-
             this.Canvas.textBaseline="middle";
             this.Canvas.fillStyle=textColor;
             if (text) this.Canvas.fillText(text,x,top+this.RowHeight/2);
 
             left+=item.Width;
+        }
+    }
+
+    this.DrawMultiBar=function(colunmInfo, data, rtItem)
+    {
+        if (!data.Source || !IFrameSplitOperator.IsNonEmptyArray(data.Source)) return false;
+        var barData=data.Source[colunmInfo.DataIndex]; //{ Value:[0.4,0,2], Color:[0,1] };
+        if (!barData) return false;
+        if (!IFrameSplitOperator.IsNonEmptyArray(barData.Value)) return false;
+
+        var width=rtItem.Width-this.BarMergin.Left-this.BarMergin.Right;
+        var left=rtItem.Left+this.BarMergin.Left;
+        var top=rtItem.Top+this.RowMergin.Top+this.BarMergin.Top;
+        var height=rtItem.Height-this.RowMergin.Top-this.RowMergin.Bottom-this.BarMergin.Top-this.BarMergin.Bottom;
+        var right=left+width;
+        for(var i=0;i<barData.Value.length;++i)
+        {
+            var value=barData.Value[i];
+            if (value<=0) continue;
+            if (left>=right) break;
+
+            var barWidth=width*value;
+            if (barWidth<1) barWidth=1;
+            if (left+barWidth>right) barWidth=right-left;
+
+            var colorIndex=i;
+            if (IFrameSplitOperator.IsNonEmptyArray(barData.Color) && i<barData.Color.length) colorIndex= barData.Color[i];
+
+            this.Canvas.fillStyle=g_JSChartResource.DealList.FieldColor.Bar[colorIndex];
+            this.Canvas.fillRect(left,top,barWidth,height);
+
+            left+=barWidth;
+        }
+        return true;
+    }
+
+    this.DrawCenterBar=function(colunmInfo, data, rtItem)
+    {
+        if (!data.Source || !IFrameSplitOperator.IsNonEmptyArray(data.Source)) return false;
+        var barData=data.Source[colunmInfo.DataIndex]; //{ Value:[0.4,0,2], Color:[0,1] };
+        if (!barData) return false;
+        if (!IFrameSplitOperator.IsNonEmptyArray(barData.Value)) return false;
+
+        var width=(rtItem.Width-this.BarMergin.Left-this.BarMergin.Right)/2;
+        var left=rtItem.Left+this.BarMergin.Left;
+        var center=left+width;
+        var top=rtItem.Top+this.RowMergin.Top+this.BarMergin.Top;
+        var height=rtItem.Height-this.RowMergin.Top-this.RowMergin.Bottom-this.BarMergin.Top-this.BarMergin.Bottom;
+        var right=left+width;
+
+        for(var i=0;i<barData.Value.length && i<2;++i)
+        {
+            var value=barData.Value[i];
+            if (value<=0) continue;
+
+            if (value>1) value=1;
+            var barWidth=width*value;
+            if (barWidth<1) barWidth=1;
+
+            var colorIndex=i;
+            if (IFrameSplitOperator.IsNonEmptyArray(barData.Color) && i<barData.Color.length) colorIndex= barData.Color[i];
+            this.Canvas.fillStyle=g_JSChartResource.DealList.FieldColor.Bar[colorIndex];
+
+            if (i==0)  //左边
+            {
+                this.Canvas.fillRect(center,top,-barWidth,height);
+            }
+            else    //右边
+            {
+                this.Canvas.fillRect(center,top,barWidth,height);
+            }
         }
     }
 
