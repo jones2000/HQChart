@@ -5963,7 +5963,8 @@ var JSCHART_EVENT_ID=
     ON_DRAW_COUNTDOWN:41,                  //倒计时回调
     ON_BIND_DRAWICON:42,                   //小程序用到,h5无效
 
-    ON_DRAW_DEAL_VOL_COLOR:43              //成交明细 成交量颜色
+    ON_DRAW_DEAL_VOL_COLOR:43,              //成交明细 成交量颜色
+    ON_DRAW_DEAL_TEXT:44                    //成交明细 自定义字段
 }
 
 var JSCHART_OPERATOR_ID=
@@ -46664,6 +46665,8 @@ function JSChartResource()
             Index:"rgb(60,60,60)",   //序号
             BarTitle:'rgb(60,60,60)',   //柱子文字
 
+            Text:"rgb(60,60,60)",   //默认文本
+
             Bar:
             [
                 "rgb(255,0,0)", "rgb(34,139,34)", "rgb(119,136,153)","rgb(75,0,130)",
@@ -47047,6 +47050,7 @@ function JSChartResource()
                 if (filed.Deal) this.DealList.FieldColor.Deal=filed.Deal;
                 if (filed.Index) this.DealList.FieldColor.Index=filed.Index;
                 if (filed.BarTitle) this.DealList.FieldColor.BarTitle=filed.BarTitle;
+                if (filed.Text) this.DealList.FieldColor.Text=filed.Text;
 
                 if (IFrameSplitOperator.IsNonEmptyArray(filed.Bar))
                 {
@@ -93222,6 +93226,7 @@ var BLACK_STYLE=
             Deal:"rgb(111,128,112)",    //成交笔数
             Index:"rgb(245,245,245)",   //时间
             BarTitle:'rgb(245,245,245)',   //柱子文字
+            Text:"rgb(245,245,245)",   //默认文本
         },
 
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
@@ -94003,6 +94008,7 @@ var DEAL_COLUMN_ID=
     INDEX_ID:7,         //序号 从1开始
     MULTI_BAR_ID:8,     //多颜色柱子 
     CENTER_BAR_ID:9,    //中心柱子
+    CUSTOM_TEXT_ID:10   //自定义文本
 }
 
 function ChartDealList()
@@ -94146,7 +94152,9 @@ function ChartDealList()
             { Type:DEAL_COLUMN_ID.INDEX_ID, Title:"序号", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.Index, MaxText:"88888" },
 
             { Type:DEAL_COLUMN_ID.MULTI_BAR_ID, Title:"柱子", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.BarTitle, MaxText:"888888" },
-            { Type:DEAL_COLUMN_ID.CENTER_BAR_ID, Title:"柱子2", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.BarTitle, MaxText:"888888" }
+            { Type:DEAL_COLUMN_ID.CENTER_BAR_ID, Title:"柱子2", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.BarTitle, MaxText:"888888" },
+            { Type:DEAL_COLUMN_ID.CUSTOM_TEXT_ID, Title:"自定义", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.Text, MaxText:"擎擎擎擎擎" },
+            
         ];
 
         for(var i=0;i<DEFAULT_COLUMN.length;++i)
@@ -94322,7 +94330,7 @@ function ChartDealList()
         }
     }
 
-    this.DrawRow=function(data, left, top, dataIndex)
+    this.DrawRow=function(data, left, top, dataIndex, colIndex)
     {
         var tableLeft=left;
         for(var i=0;i<this.Column.length;++i)
@@ -94331,6 +94339,8 @@ function ChartDealList()
             var textColor=item.TextColor;
             var text=null;
             var itemWidth=item.Width;
+            var textAlign=item.TextAlign;
+
             if (i==this.Column.length-1) itemWidth=this.TableWidth-(left-tableLeft)-this.HeaderMergin.Right-this.HeaderMergin.Left;
 
             if (item.Type==DEAL_COLUMN_ID.TIME_ID)
@@ -94397,29 +94407,45 @@ function ChartDealList()
                 var rtItem={Left:left, Top:top, Width:itemWidth, Height:this.RowHeight};
                 this.DrawCenterBar(item, data, rtItem);
             }
+            else if (item.Type==DEAL_COLUMN_ID.CUSTOM_TEXT_ID)
+            {
+                var out={ Text:null, TextColor:null, TextAlign:null };    //输出
+                var rtItem={Left:left, Top:top, Width:itemWidth, Height:this.RowHeight};
+                if (this.DrawCustomText(item, data, rtItem, dataIndex, i, out))
+                {
+                    if (out.Text) text=out.Text;
+                    if (out.TextColor) textColor=out.TextColor;
+                    if (out.TextAlign) textAlign=out.TextAlign;
+                }
+            }
  
-            var x=left;
-            if (item.TextAlign=='center')
-            {
-                x=left+itemWidth/2;
-                this.Canvas.textAlign="center";
-            }
-            else if (item.TextAlign=='right')
-            {
-                x=left+itemWidth;
-                this.Canvas.textAlign="right";
-            }
-            else
-            {
-                this.Canvas.textAlign="left";
-            }
-
-            this.Canvas.textBaseline="middle";
-            this.Canvas.fillStyle=textColor;
-            if (text) this.Canvas.fillText(text,x,top+this.RowHeight/2);
+            this.DrawItemText(text, textColor, textAlign, left, top, itemWidth);
 
             left+=item.Width;
         }
+    }
+
+    this.DrawItemText=function(text, textColor, textAlign, left, top, width)
+    {
+        var x=left;
+        if (textAlign=='center')
+        {
+            x=left+width/2;
+            this.Canvas.textAlign="center";
+        }
+        else if (textAlign=='right')
+        {
+            x=left+width;
+            this.Canvas.textAlign="right";
+        }
+        else
+        {
+            this.Canvas.textAlign="left";
+        }
+
+        this.Canvas.textBaseline="middle";
+        this.Canvas.fillStyle=textColor;
+        if (text) this.Canvas.fillText(text,x,top+this.RowHeight/2);
     }
 
     this.DrawMultiBar=function(colunmInfo, data, rtItem)
@@ -94491,6 +94517,21 @@ function ChartDealList()
                 this.Canvas.fillRect(center,top,barWidth,height);
             }
         }
+    }
+
+    this.DrawCustomText=function(columnInfo, data, rtItem, dataIndex, colid, out)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_DEAL_TEXT);
+        if (!event || !event.Callback) return false;
+
+        var sendData={ Data:data, DataIndex:dataIndex, ColumnIndex:colid, ColumnInfo: columnInfo , Out:{ Text:null, TextColor:null,TextAlign:null } };
+        event.Callback(event,sendData,this);
+        if (!sendData.Out.Text) return false;
+
+        out.Text=sendData.Out.Text;
+        if (sendData.Out.TextColor) out.TextColor=sendData.Out.TextColor;
+        if (sendData.Out.TextAlign) out.TextAlign=sendData.Out.TextAlign;
+        return true;
     }
 
     this.GetVolColor=function(colunmInfo, data)

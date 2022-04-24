@@ -1902,7 +1902,8 @@ var JSCHART_EVENT_ID=
     ON_DRAW_COUNTDOWN:41,                  //倒计时回调
     ON_BIND_DRAWICON:42,                   //小程序用到,h5无效
 
-    ON_DRAW_DEAL_VOL_COLOR:43              //成交明细 成交量颜色
+    ON_DRAW_DEAL_VOL_COLOR:43,              //成交明细 成交量颜色
+    ON_DRAW_DEAL_TEXT:44                    //成交明细 自定义字段
 }
 
 var JSCHART_OPERATOR_ID=
@@ -42603,6 +42604,8 @@ function JSChartResource()
             Index:"rgb(60,60,60)",   //序号
             BarTitle:'rgb(60,60,60)',   //柱子文字
 
+            Text:"rgb(60,60,60)",   //默认文本
+
             Bar:
             [
                 "rgb(255,0,0)", "rgb(34,139,34)", "rgb(119,136,153)","rgb(75,0,130)",
@@ -42986,6 +42989,7 @@ function JSChartResource()
                 if (filed.Deal) this.DealList.FieldColor.Deal=filed.Deal;
                 if (filed.Index) this.DealList.FieldColor.Index=filed.Index;
                 if (filed.BarTitle) this.DealList.FieldColor.BarTitle=filed.BarTitle;
+                if (filed.Text) this.DealList.FieldColor.Text=filed.Text;
 
                 if (IFrameSplitOperator.IsNonEmptyArray(filed.Bar))
                 {

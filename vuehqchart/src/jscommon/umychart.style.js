@@ -318,6 +318,7 @@ var BLACK_STYLE=
             Deal:"rgb(111,128,112)",    //成交笔数
             Index:"rgb(245,245,245)",   //时间
             BarTitle:'rgb(245,245,245)',   //柱子文字
+            Text:"rgb(245,245,245)",   //默认文本
         },
 
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
