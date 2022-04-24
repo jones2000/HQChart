@@ -141,7 +141,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * 成交明细表, 支持键盘,滚轴翻页<br>
 ![成交明细表](/小程序行情模块用例/image/deal_list.png)
 * 分价表, 支持键盘,滚轴翻页<br>
-![分价表](/小程序行情模块用例/image/price.png)
+![分价表](/小程序行情模块用例/image/price_list.png)
 
 
 # 3. 网页demo  <br>
