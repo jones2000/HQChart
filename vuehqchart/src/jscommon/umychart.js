@@ -4851,7 +4851,7 @@ function JSChartContainer(uielement, OffscreenElement)
             if (fristFrame.DataWidth<=1 || fristFrame.DistanceWidth<=1) //K线在缩放很小的时候 移动加速
             {
                 if (IFrameSplitOperator.IsPlusNumber(this.StepPixel))
-                    step=moveStep*this.StepPixel;
+                    step=parseInt(moveStep)*this.StepPixel;
             }
                
         }
@@ -55111,6 +55111,8 @@ function KLineChartHScreenContainer(uielement)
 
             this.PhonePinch=phonePinch;
             this.SelectChartDrawPicture=null;
+
+            //if (this.ChartDrawOption.IsLockScreen) this.PhonePinch=null;    //锁屏禁止缩放
         }
 
         this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchStart"}, e);
@@ -55168,7 +55170,7 @@ function KLineChartHScreenContainer(uielement)
                     drag.LastMove.X=touches[0].clientX;
                     drag.LastMove.Y=touches[0].clientY;
                 }
-                if (isMoveCorssCursor)  //点击模式下 十字光标显示 左右移动十字光标
+                else if (isMoveCorssCursor)  //点击模式下 十字光标显示 左右移动十字光标
                 {
                     var mouseDrag=this.MouseDrag;
                     this.MouseDrag=null;

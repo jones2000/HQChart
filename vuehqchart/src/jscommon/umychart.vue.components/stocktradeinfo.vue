@@ -484,7 +484,7 @@ export default {
       // this.MoreDealLink = './stockdeallastest.demo.page.html?symbol=' + this.Symbol;
     }
 
-    this.MoreDealLink = './stockdeallastest.demo.page.html?symbol=' + this.Symbol;
+    this.MoreDealLink = this.GetDealListUrl();
 
     this.OnSize();
   },
@@ -495,6 +495,13 @@ export default {
   },
 
   methods: {
+
+    GetDealListUrl()
+    {
+        var url=`./stockdeallastest.demo.page.html?symbol=${this.Symbol}&style=${this.isBlackStyle?"black":"white"}`;
+        return url;
+    },
+
     ChangeCapitalFlowDay(index) {
       this.CapitalFlowDayIndex = index;
       this.CurrentDayCapitaData = this.CapitalFlow.Data[index];
@@ -562,6 +569,7 @@ export default {
 
     ChangeStyle(styleName){
       this.isBlackStyle = 'black' === styleName;
+      this.MoreDealLink = this.GetDealListUrl();
     },
 
     //窗口变化UI自适应调整
@@ -859,7 +867,7 @@ export default {
       else this.InitalCapitalFlow();
       if (!this.IsShareStock) this.JSStock.RequestData();
 
-      this.MoreDealLink = './stockdeallastest.demo.page.html?symbol=' + this.Symbol;
+      this.MoreDealLink = this.GetDealListUrl();
 
       //分价表是显示的状态,切换股票更新
       if (this.DealPrice.JSStock && this.DealPrice.IsShow) 
