@@ -83,6 +83,7 @@ function JSDealChart(divElement)
         //是否自动更新
         if (option.IsAutoUpdate!=null) chart.IsAutoUpdate=option.IsAutoUpdate;
         if (option.AutoUpdateFrequency>0) chart.AutoUpdateFrequency=option.AutoUpdateFrequency;
+        if (IFrameSplitOperator.IsBool(option.EnableFilter)) chart.EnableFilter=option.EnableFilter;
 
         //注册事件
         if (option.EventCallback)
@@ -126,6 +127,11 @@ function JSDealChart(divElement)
     this.SetColumn=function(aryColumn, option)
     {
         if (this.JSChartContainer) this.JSChartContainer.SetColumn(aryColumn,option);
+    }
+
+    this.EnableFilter=function(bEnable, option) //启动|关闭筛选
+    {
+        if (this.JSChartContainer) this.JSChartContainer.EnableFilter(bEnable, option);
     }
 
     //事件回调
@@ -172,8 +178,9 @@ function JSDealChartContainer(uielement)
     this.Symbol;
     this.Name;
     this.TradeDate;
-    this.DealData={ OffsetData:0, Data:[] };         //分笔数据
-    this.NetworkFilter;                             //数据回调接口
+    this.NetworkFilter;                                 //数据回调接口
+    this.Data={ DataOffset:0, Data:[] };                //分笔数据
+    this.SourceData={DataOffset:0, Data:[] };           //原始分笔数据
 
     //事件回调
     this.mapEvent=new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
@@ -193,6 +200,50 @@ function JSDealChartContainer(uielement)
         this.StopAutoUpdate();
     }
 
+    this.EnableFilterData=false;    //是否启动筛选
+
+    //筛选数据
+    this.FilterData=function(aryDeal)
+    {
+        if (!this.EnableFilterData) return aryDeal;
+
+        //过滤由外部处理
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FILTER_DEAL_DATA);
+        if (!event || !event.Callback) return aryDeal;
+
+        var sendData={ Data:aryDeal, Result:[] };  //{ Data:原始数据, Result:[] 过滤以后的数据 }
+        event.Callback(event,sendData,this);
+        
+        return sendData.Result;
+    }
+
+
+    this.EnableFilter=function(bEnable, option) //启动|关闭筛选
+    {
+        this.EnableFilterData=bEnable;
+
+        this.Data.Data=this.FilterData(this.SourceData.Data);
+        this.Data.DataOffset=0;
+
+        if (option)
+        {
+            if (option.GotoLastPage==true) this.GotoLastPage();
+            if (option.Redraw==true) this.Draw();
+        }
+    }
+
+    this.CloneArray=function(aryData)
+    {
+        var data=[];
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) return data;
+
+        for(var i=0;i<aryData.length;++i)
+        {
+            data.push(aryData[i]);
+        }
+
+        return data;
+    }
 
     //创建
     //windowCount 窗口个数
@@ -283,7 +334,8 @@ function JSDealChartContainer(uielement)
     this.ChangeSymbol=function(symbol, option)
     {
         this.Symbol=symbol;
-        this.DealData=null;
+        this.Data=null;
+        this.SourceData=null;
 
         var chart=this.ChartPaint[0];
         if (chart) chart.Data=null;
@@ -381,8 +433,9 @@ function JSDealChartContainer(uielement)
     this.RecvDealData=function(data)
     {
         var aryDeal=JSDealChartContainer.JsonDataToDealData(data);
-        this.Data={DataOffset:0,Data:aryDeal };
-
+        this.SourceData={ DataOffset:0, Data:aryDeal };
+        this.Data={ DataOffset:0, Data:this.FilterData(this.CloneArray(aryDeal)) };
+        
         this.Symbol=data.symbol;
         this.Name=data.name;
 
@@ -440,27 +493,39 @@ function JSDealChartContainer(uielement)
 
         if (data.UpdateType===1)    //全量更新
         {
-            this.Data.Data=aryDeal;
-            if (this.Data.DataOffset>=aryDeal.length) this.Data.DataOffset=0;
+            this.SourceData.Data=aryDeal;
+            this.Data.Data=this.FilterData(this.CloneArray(aryDeal));
+            if (this.Data.DataOffset>= this.Data.Data.length) this.Data.DataOffset=0;
         }
         else
         {
-            var lUpdateCount=aryDeal.length;
-            if (!this.Data.Data) 
-            {
-                this.Data.Data=aryDeal;
-            }
-            else
-            {
-                for(var i=0;i<aryDeal.length;++i)
-                {
-                    this.Data.Data.push(aryDeal[i]);
-                    ++this.Data.DataOffset;
-                }
-            }
+            this.AddDealData(this.SourceData, aryDeal);
+            this.AddDealData(this.Data,this.FilterData(aryDeal));
         }
 
         this.Draw();
+    }
+
+    this.AddDealData=function(dealData, aryNewData)
+    {
+        if (!dealData.Data) //原来是空的
+        {
+            dealData.Data=aryNewData;
+        }
+        else
+        {
+            var pageSize=0;
+            var chart=this.ChartPaint[0];
+            if (chart) pageSize=chart.GetPageSize();
+
+            for(var i=0;i<aryNewData.length;++i)
+            {
+                dealData.Data.push(aryNewData[i]);
+
+                if (dealData.DataOffset+pageSize<dealData.Data.length)
+                    ++dealData.DataOffset;
+            }
+        }
     }
 
     this.AutoUpdate=function(waitTime)  //waitTime 更新时间
@@ -628,6 +693,18 @@ function JSDealChartContainer(uielement)
         if (offset<0) offset=0;
         this.Data.DataOffset=offset;
         return true;
+    }
+
+    this.GotoLastPage=function()
+    {
+        var chart=this.ChartPaint[0];
+        if (!chart) return;
+
+        //显示最后一屏
+        var pageSize=chart.GetPageSize(true);
+        var offset=this.Data.Data.length-pageSize;
+        if (offset<0) offset=0;
+        this.Data.DataOffset=offset;
     }
 
     this.SetColumn=function(aryColunm, option)

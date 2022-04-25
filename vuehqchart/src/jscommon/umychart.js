@@ -1903,7 +1903,8 @@ var JSCHART_EVENT_ID=
     ON_BIND_DRAWICON:42,                   //小程序用到,h5无效
 
     ON_DRAW_DEAL_VOL_COLOR:43,              //成交明细 成交量颜色
-    ON_DRAW_DEAL_TEXT:44                    //成交明细 自定义字段
+    ON_DRAW_DEAL_TEXT:44,                   //成交明细 自定义字段
+    ON_FILTER_DEAL_DATA:45,                 //成交明细 数据过滤回调
 }
 
 var JSCHART_OPERATOR_ID=
