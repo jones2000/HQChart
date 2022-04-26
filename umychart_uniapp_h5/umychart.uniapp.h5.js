@@ -20431,12 +20431,14 @@ function ChartKLine()
             var border=this.ChartBorder.GetHScreenBorder();
             var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
             var chartright=border.BottomEx;
+            var borderLeft=border.TopEx;
         }
         else
         {
             var border=this.ChartBorder.GetBorder();
             var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
             var chartright=border.RightEx;
+            var borderLeft=border.LeftEx;
         }
         
 
@@ -20447,6 +20449,27 @@ function ChartKLine()
         this.Canvas.strokeStyle=this.CloseLineColor;
         if (IFrameSplitOperator.IsNumber(this.CloseLineWidth)) this.Canvas.lineWidth=this.CloseLineWidth;
         var ptLast=null;
+        if (this.Data.DataOffset>0) //把最左边的一个点连上
+        {
+            var data=this.Data.Data[this.Data.DataOffset-1];
+            if (data && IFrameSplitOperator.IsNumber(data.Close))
+            {
+                var x=borderLeft;
+                var yClose=this.GetYFromData(data.Close,false);
+                if (isHScreen) 
+                {
+                    this.Canvas.moveTo(yClose,x);
+                    firstPoint={ X:yClose, Y:x };
+                }
+                else 
+                {
+                    this.Canvas.moveTo(x,yClose);
+                    firstPoint={ X:x, Y:yClose };
+                }
+                bFirstPoint=false;
+            }
+        }
+
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var data=this.Data.Data[i];

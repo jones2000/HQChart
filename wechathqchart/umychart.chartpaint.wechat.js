@@ -386,17 +386,50 @@ function ChartKLine()
         var isHScreen = (this.ChartFrame.IsHScreen === true);
         var dataWidth = this.ChartFrame.DataWidth;
         var distanceWidth = this.ChartFrame.DistanceWidth;
-        var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + 2.0;
-        if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
-        var chartright = this.ChartBorder.GetRight();
-        if (isHScreen) chartright = this.ChartBorder.GetBottom();
         var xPointCount = this.ChartFrame.XPointCount;
+
+        if (isHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.BottomEx;
+            var borderLeft=border.TopEx;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            var borderLeft=border.LeftEx;
+        }
 
         var bFirstPoint = true;
         var firstPoint = null;
         this.Canvas.beginPath();
         this.Canvas.strokeStyle = this.CloseLineColor;
         var ptLast=null;
+
+        if (this.Data.DataOffset>0) //把最左边的一个点连上
+        {
+            var data=this.Data.Data[this.Data.DataOffset-1];
+            if (data && IFrameSplitOperator.IsNumber(data.Close))
+            {
+                var x=borderLeft;
+                var yClose=this.GetYFromData(data.Close,false);
+                if (isHScreen) 
+                {
+                    this.Canvas.moveTo(yClose,x);
+                    firstPoint={ X:yClose, Y:x };
+                }
+                else 
+                {
+                    this.Canvas.moveTo(x,yClose);
+                    firstPoint={ X:x, Y:yClose };
+                }
+                bFirstPoint=false;
+            }
+        }
+
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
         {
             var data = this.Data.Data[i];

@@ -49,22 +49,8 @@
             </div>
         </div>
         <div class="detailList" ref="detailList" v-show="IsShowTradeData">
-            <div>
-                <p v-for="(itemTrade,indexT) in TradeData" :key="indexT">
-                    <span>{{itemTrade.Time.Text}}</span>
-                </p>
-            </div>
-            <div>
-                <p v-for="(itemTrade,indexT) in TradeData" :key="indexT" :class="itemTrade.Price.Color">
-                    <span>{{itemTrade.Price.Text}}</span>
-                </p>
-            </div>
-            <div>
-                <p v-for="(itemTrade,indexT) in TradeData" :key="indexT">
-                    <span>{{itemTrade.Vol.Text}}&nbsp;<span :class="itemTrade.BS.Color">{{itemTrade.BS.Text}}</span></span>
-                </p>
-            </div>
-            <a :href="MoreDealLink" target='_blank' class="seeMoreDeal">点击查看更多分时成交</a>
+          <div id="deal" ref="deal"></div>
+          <a :href="MoreDealLink" target='_blank' class="seeMoreDeal">点击查看更多分时成交</a>
         </div>
         <div class="shorttermlist" ref='shorttermlist' v-show="ShortTerm.IsShow">
             <div>
@@ -149,6 +135,7 @@
 import $ from "jquery";
 import JSCommon from "../umychart.vue/umychart.vue.js";
 import JSCommonStock from "../umychart.vue/umychart.stock.vue.js";
+import '../../jscommon/umychart.resource/css/tools.css'
 
 //默认数据输出
 class DefaultData {
@@ -385,6 +372,40 @@ class DefaultData {
       }];
       return data;
   }
+
+  static GetDealOption(){ //成交明细option
+    return {
+      Type:'成交明细',   //创建图形类型
+                
+      Symbol:'600000.sh',
+      IsAutoUpdate:true,          //是自动更新数据
+      AutoUpdateFrequency:15000,   //数据更新频率
+
+      Column:
+      [
+          //{Type:JSCommon.DEAL_COLUMN_ID.STRING_TIME_ID }, //自定义时间格式
+          //{Type:JSCommon.DEAL_COLUMN_ID.INDEX_ID },
+          {Type:JSCommon.DEAL_COLUMN_ID.TIME_ID },
+          {Type:JSCommon.DEAL_COLUMN_ID.PRICE_ID },
+          {Type:JSCommon.DEAL_COLUMN_ID.VOL_ID },
+          {Type:JSCommon.DEAL_COLUMN_ID.BS_ID, },
+      ],
+
+      IsSingleTable:true,
+      IsShowHeader:false,
+
+      KeyDown:false,  //禁止键盘
+      Wheel:false,    //禁止滚轴
+      
+      Border: //边框
+      {
+          Left:1,         //左边间距
+          Right:1,       //右边间距
+          Bottom:1,      //底部间距
+          Top:1          //顶部间距
+      }
+    }
+  }
 }
 
 function CapticalFlowChartStyle() {}
@@ -408,7 +429,8 @@ export default {
   name: "StockTradeInfo",
   props: [
     "IsShareStock", //是否共享使用一个Stock类,
-    "DefaultSymbol"
+    "DefaultSymbol",
+    'DefaultAPIDomain'
   ],
 
   data() {
@@ -462,10 +484,37 @@ export default {
       DealPriceData:DefaultData.GetDealPriceData(),
       MoreDealLink:'',
 
-      isBlackStyle: false
+      isBlackStyle: false,
+
+      DealChart: null,
+      DealChartOption: null,
+      HQChartStyle:new Map(),
     };
 
     return data;
+  },
+
+  created() {
+    if (this.DefaultSymbol) this.Symbol = this.DefaultSymbol; //默认股票
+    if (this.DefaultAPIDomain) 
+    {
+        JSCommon.JSChart.SetDomain(this.DefaultAPIDomain.Domain,this.DefaultAPIDomain.CacheDomain);
+        JSCommon.JSComplier.SetDomain(this.DefaultAPIDomain.Domain,this.DefaultAPIDomain.CacheDomain);
+    }
+
+    //配色风格
+    //白色
+    var resource=JSCommon.JSChart.GetResource();
+    resource.DealList.BorderColor='rgba(0,0,0,0)'; //去掉边框
+    resource.BGColor='rgb(255,255,255)';
+    this.HQChartStyle.set(0, JSON.parse(JSON.stringify(resource)));
+
+    //黑色
+    resource=JSCommon.HQChartStyle.GetStyleConfig(JSCommon.STYLE_TYPE_ID.BLACK_ID);
+    resource.DealList.BorderColor='rgba(0,0,0,0)';  //去掉边框
+    resource.BGColor='rgb(0,0,0)';
+    this.HQChartStyle.set(1, JSON.parse(JSON.stringify(resource)));
+    
   },
 
   mounted() {
@@ -487,14 +536,159 @@ export default {
     this.MoreDealLink = this.GetDealListUrl();
 
     this.OnSize();
-  },
 
-  created() {
-    if (this.DefaultSymbol) this.Symbol = this.DefaultSymbol; //默认股票
+    //初始化成交明细图形
+    this.CreateDealJSChart()
     
   },
-
+  
   methods: {
+
+    //创建成交明细图
+    CreateDealJSChart()
+    {
+      if(this.DealChart) return;
+
+      const divDeal = this.$refs.deal
+      let chart = JSCommon.JSDealChart.Init(divDeal);   //把成交明细图绑定到一个Div上
+      this.DealChartOption = DefaultData.GetDealOption()
+      if(this.Symbol)
+      {
+        this.DealChartOption.Symbol = this.Symbol
+      }
+
+      if(this.isBlackStyle)
+      {
+        //黑色风格
+        JSCommon.JSChart.SetStyle(this.HQChartStyle.get(1));
+        divDeal.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+      }
+
+      // this.DealChartOption.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); };
+      // this.DealChartOption.EventCallback= 
+      // [ 
+      //     {   //根据大小单显示成交量颜色
+      //         event:JSCommon.JSCHART_EVENT_ID.ON_DRAW_DEAL_VOL_COLOR, 
+      //         callback:(event, data, obj)=>{ this.GetVolColor(event, data, obj); }  
+      //     },
+      //     {   //自定义内容
+      //         event:JSCommon.JSCHART_EVENT_ID.ON_DRAW_DEAL_TEXT, 
+      //         callback:(event, data, obj)=>{ this.GetCustomText(event, data, obj); }  
+      //     },
+      //     {   //过滤数据
+      //         event:JSCommon.JSCHART_EVENT_ID.ON_FILTER_DEAL_DATA, 
+      //         callback:(event, data, obj)=>{ this.OnFilterData(event, data, obj); }  
+      //     }
+      // ];
+
+      chart.SetOption(this.DealChartOption);  //设置配置
+      this.DealChart = chart
+     
+    },
+
+    NetworkFilter(data, callback)
+    {
+        console.log('[DealChart::NetworkFilter] data', data);
+        
+        // switch(data.Name)
+        // {
+        //     case 'JSDealChartContainer::RequestDealData':           //全量数据下载
+        //         this.RequestDealData(data, callback);
+        //         break;
+        //     case "JSDealChartContainer::RequestDealUpdateData":
+        //         this.RequestDealUpdateData(data, callback);
+        //         break;
+        // }
+    },
+
+    GetVolColor(event, data, obj){
+
+    },
+
+    GetCustomText(event, data, obj){
+
+    },
+
+    OnFilterData(event, data, obj){
+
+    },
+
+    RequestDealData(data, callback)
+    {
+        var symbol=data.Request.Data.symbol;
+        data.PreventDefault=true;
+        
+        // $.ajax({
+        //     url: this.ApiUrl,
+        //     data: { "field": ["symbol","name", "yclose", "deal"], "symbol": [symbol] },
+        //     type:"post",
+        //     dataType: "json",
+        //     async:true,
+        //     success: (recvdata)=>
+        //     {
+        //         this.RecvDealData(recvdata,callback);
+        //     },
+        //     error:(request)=>
+        //     {
+        //         //self.RecvError(request,RECV_DATA_TYPE.BASE_DATA);
+        //     }
+        // });
+    },
+
+    RecvDealData(data, callback)
+    {
+        var hqchartData=this.JsonToHQChartData(data);   
+        //console.log("[DealChart::RecvDealData] hqchartData=",hqchartData)
+        callback(hqchartData);
+    },
+    RequestDealUpdateData(data, callback)
+      {
+          data.PreventDefault=true;
+          var symbol=data.Request.Data.symbol;
+          var lastDeal=data.LastItem; //本地最后一条分笔数据, 增量从这条数据开始下载.
+          console.log("[DealChart::RequestDealUpdateData] lastDeal",lastDeal);
+
+          // $.ajax({
+          //     url: this.ApiUrl,
+          //     data: { "field": ["symbol","name", "yclose", "deal"], "symbol": [symbol] },
+          //     type:"post",
+          //     dataType: "json",
+          //     async:true,
+          //     success: (recvdata)=>
+          //     {
+          //         this.RecvDealUpdateData(recvdata,callback);
+          //     },
+          //     error:(request)=>
+          //     {
+          //         //self.RecvError(request,RECV_DATA_TYPE.BASE_DATA);
+          //     }
+          // });
+    },
+
+    RecvDealUpdateData(data, callback)
+    {
+        var hqchartData=this.JsonToHQChartData(data);   
+        hqchartData.UpdateType=1;   //覆盖更新
+        //console.log("[DealChart::RecvDealData] hqchartData=",hqchartData)
+        callback(hqchartData);
+    },
+
+    JsonToHQChartData(data)
+    {
+        var stock=data.stock[0];
+        var hqchartData={  detail:[], symbol:stock.symbol, name:stock.name, yclose: stock.yclose, UpdateType:1 };
+        for(var i=0;i<stock.deal.length;++i)
+        {
+            var item=stock.deal[i];
+
+            //0=时间 1=价格 2=成交量 3=成交金额 4=BS
+            var newItem=[ item.time, item.price, item.vol/100, item.amount, item.bs];
+
+            hqchartData.detail.push(newItem);
+        }
+
+        return hqchartData;
+    },
 
     GetDealListUrl()
     {
@@ -567,25 +761,42 @@ export default {
       this.JSStock = jsStock;
     },
 
-    ChangeStyle(styleName){
+    ChangeStyle(styleName)
+    {
       this.isBlackStyle = 'black' === styleName;
       this.MoreDealLink = this.GetDealListUrl();
+
+      var resource=this.HQChartStyle.get(this.isBlackStyle?1:0);
+      JSCommon.JSChart.SetStyle(resource);
+      var divDeal = this.$refs.deal;
+      divDeal.style.backgroundColor=resource.BGColor; //设置最外面的div背景
+      this.DealChart.ReloadResource({Redraw:true});   //动态刷新配色
     },
 
     //窗口变化UI自适应调整
     OnSize() {
+      this.$nextTick(() => {
         var tradeinfo = this.$refs.tradeinfo;
         var bookWrap = this.$refs.bookWrap;
         var sellFive = this.$refs.sellFive;
         var buyFive = this.$refs.buyFive;
         var dealpricelist = this.$refs.dealpricelist
         var detailList = this.$refs.detailList;
+        var deal = this.$refs.deal;
         var height = tradeinfo.clientHeight;
+        var width = tradeinfo.clientWidth;
 
         var dealpricelistHeight = height - bookWrap.offsetHeight - sellFive.offsetHeight - buyFive.offsetHeight;
         dealpricelist.style.height = dealpricelistHeight + 'px';
-        detailList.style.height = (height - 67 - 24* 10 - 3) + 'px';
-        
+        var detailListHeight = height - 67 - 24 * 10 - 3
+        var seeMoreDealHeight = 25
+        detailList.style.height = detailListHeight + 'px';
+        deal.style.height = (detailListHeight - seeMoreDealHeight) + 'px';
+        deal.style.width = width + 'px';
+        if(this.DealChart){
+          this.DealChart.OnSize()
+        }
+      })
     },
 
     RequestData: function() {
@@ -599,6 +810,8 @@ export default {
         let read = jsStock.GetStockRead(this.ID[2], this.UpdateBookRate); //获取一个读取数据类,并绑定id和更新数据方法
         var bookRate = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.BOOK_RATE) }; //委比
         var bookDiffer = { Value: read.Get(this.Symbol, JSCommonStock.STOCK_FIELD_NAME.BOOK_DIFFER) }; //委差
+
+        console.log('bookRate,bookDiffer:',bookRate,bookDiffer);
 
         if ( id != this.ID[2] || dataType != JSCommonStock.RECV_DATA_TYPE.DERIVATIVE_DATA ) return;
 
@@ -1146,7 +1359,6 @@ ul {
 
   .buyFive,
   .sellFive,
-  .detailList,
   .shorttermlist {
     border-bottom: @border;
     padding: 0 10px;
@@ -1162,6 +1374,7 @@ ul {
       height: 100%;
 
       p {
+        height: 24px;
         line-height: 24px;
       }
     }
@@ -1183,16 +1396,26 @@ ul {
       position: relative;
       width: 100%;
       overflow-y: hidden;
+
+      #deal{
+        position: relative;
+      }
+
       .seeMoreDeal{
         text-decoration: none;
         color: #317ef3;
         opacity: 0.7;
-        position: absolute;
-        right: 10px;
-        bottom: 5px;
+        width: 100%;
+        // position: absolute;
+        // right: 10px;
+        // bottom: 5px;
         display: inline-block;
-        padding: 2px 3px;
+        padding: 0 10px 0;
+        text-align: right;
+        height: 25px;
+        line-height: 25px;
         background-color: #fff;
+        box-sizing: border-box;
       }
       .seeMoreDeal:hover{
         opacity: 1;
@@ -1382,7 +1605,6 @@ ul {
     .firstLine>p>span,
     .sellFive>div>p>span,
     .buyFive>div>p>span,
-    .detailList>div>p>span,
     .dealpricelist table td
     {
       color: #9ca7b3;
@@ -1395,10 +1617,6 @@ ul {
     .sellFive>div:nth-of-type(3)>p>span,
     .buyFive>div:nth-of-type(3)>p>span{
       color: #06e2d6;
-    }
-
-    .detailList>div:nth-of-type(3)>p>span{
-      color: #dde2e7;
     }
 
     .capitalList {
