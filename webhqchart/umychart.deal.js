@@ -275,6 +275,12 @@ function JSDealChartContainer(uielement)
         chart.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartPaint[0]=chart;
 
+        if (option)
+        {
+            if (IFrameSplitOperator.IsBool(option.IsSingleTable)) chart.IsSingleTable=option.IsSingleTable;  //单表模式
+            if (IFrameSplitOperator.IsBool(option.IsShowHeader)) chart.IsShowHeader=option.IsShowHeader;    //是否显示表头
+        }
+
         var bRegisterKeydown=true;
         var bRegisterWheel=true;
 
@@ -842,6 +848,8 @@ function ChartDealList()
     this.YClose;    //昨收
     this.Open;      //开盘价
     this.Decimal=2; //小数位数
+    this.IsSingleTable=false;    //单表模式
+    this.IsShowHeader=true;    //是否显示表头
 
     this.SizeChange=true;
 
@@ -1035,15 +1043,19 @@ function ChartDealList()
 
         var clientWidth=this.RectClient.Right-this.RectClient.Left;
         this.TableCount=parseInt(clientWidth/sumWidth);
+        if (this.IsSingleTable) this.TableCount=1;
         this.TableWidth=clientWidth/this.TableCount;
 
         this.HeaderHeight=this.GetFontHeight(this.HeaderFont,"擎")+ this.HeaderMergin.Top+ this.HeaderMergin.Bottom;
+        if (!this.IsShowHeader) this.HeaderHeight=0;
         this.RowHeight=this.GetFontHeight(this.ItemFont,"擎")+ this.HeaderMergin.Top+ this.HeaderMergin.Bottom;
         this.RowCount=parseInt((this.RectClient.Bottom-this.RectClient.Top-this.HeaderHeight)/this.RowHeight);
     }
 
     this.DrawHeader=function()
     {
+        if (!this.IsShowHeader) return;
+
         var left=this.RectClient.Left+this.HeaderMergin.Left;
         var top=this.RectClient.Top;
         var y=top+this.HeaderMergin.Top+(this.HeaderHeight-this.HeaderMergin.Top-this.HeaderMergin.Bottom)/2;
@@ -1149,6 +1161,7 @@ function ChartDealList()
     this.DrawRow=function(data, left, top, dataIndex, colIndex)
     {
         var tableLeft=left;
+        var tableRight=left+this.TableWidth;
         for(var i=0;i<this.Column.length;++i)
         {
             var item=this.Column[i];
@@ -1156,6 +1169,8 @@ function ChartDealList()
             var text=null;
             var itemWidth=item.Width;
             var textAlign=item.TextAlign;
+
+            if (left+itemWidth>tableRight) break;
 
             if (i==this.Column.length-1) itemWidth=this.TableWidth-(left-tableLeft)-this.HeaderMergin.Right-this.HeaderMergin.Left;
 
