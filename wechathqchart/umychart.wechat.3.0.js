@@ -722,14 +722,19 @@ function JSChart(element)
             var item = option.Windows[i];
             if (item.Script) 
             {
-                chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
+                chart.WindowIndex[2+i] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
+            }
+            else if (item.API)  //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
+            {
+                var apiItem = item.API;
+                chart.WindowIndex[2+i] = new APIScriptIndex(apiItem.Name, apiItem.Script, apiItem.Args, item);
             }
             else 
             {
                 var indexItem = JSIndexMap.Get(item.Index);
                 if (indexItem) 
                 {
-                    chart.WindowIndex[2 + parseInt(i)] = indexItem.Create();       //创建子窗口的指标
+                    chart.WindowIndex[2+i] = indexItem.Create();       //创建子窗口的指标
                     chart.CreateWindowIndex(2 + parseInt(i));
                 }
                 else 
@@ -740,7 +745,7 @@ function JSChart(element)
                     if (item.Args) args = item.Args;
                     if (item.Lock) indexInfo.Lock = item.Lock;
                     if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
-                    chart.WindowIndex[2 + parseInt(i)] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args, indexInfo);    //脚本执行
+                    chart.WindowIndex[2+i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args, indexInfo);    //脚本执行
                     if (item.StringFormat > 0) chart.WindowIndex[2 + parseInt(i)].StringFormat = item.StringFormat;
                     if (item.FloatPrecision >= 0) chart.WindowIndex[2 + parseInt(i)].FloatPrecision = item.FloatPrecision;
                 }

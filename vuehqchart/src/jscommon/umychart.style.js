@@ -316,7 +316,7 @@ var BLACK_STYLE=
             Vol:"rgb(192,192,0)",      //成交量
             Time:"rgb(245,245,245)",   //时间
             Deal:"rgb(111,128,112)",    //成交笔数
-            Index:"rgb(245,245,245)",   //时间
+            Index:"rgb(245,245,245)",   //序号
             BarTitle:'rgb(245,245,245)',   //柱子文字
             Text:"rgb(245,245,245)",   //默认文本
         },
@@ -324,6 +324,50 @@ var BLACK_STYLE=
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
         DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
         UnchagneTextColor:"rgb(228,228,228)"    //平盘文字颜色 
+    },
+
+    //报价列表
+    Report:
+    {
+        BorderColor:'rgb(38,38,41)',    //边框线
+        SelectedColor:"rgb(49,48,56)",  //选中行
+        Header:
+        {
+            Color:"RGB(245,245,245)",
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+            Font:{ Size:12, Name:"微软雅黑" }
+        },
+
+        Item:
+        {
+            Mergin:{ Top:2, Bottom:2,Left:5, Right:5 },
+            Font:{ Size:15, Name:"微软雅黑"},
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 }
+        },
+
+        FieldColor:
+        {
+            Index:"rgb(245,245,245)",  //序号
+            Symbol:"rgb(255,255,255)",
+            Name:"rgb(255,255,255)",
+            Amount:"rgb(2,226,244)",    //成交金额
+            Vol:"rgb(192,192,0)",       //成交量
+            BarTitle:'rgb(245,245,245)',   //柱子文字
+            Text:"rgb(245,245,245)",    //默认文本
+        },
+
+        UpTextColor:"rgb(238,21,21)",           //上涨文字颜色
+        DownTextColor:"rgb(25,158,0)",          //下跌文字颜色
+        UnchagneTextColor:"rgb(228,228,228)",    //平盘文字颜色 
+
+        Tab:
+        {
+            Font:{ Size:12, Name:"微软雅黑" },
+            ScrollBarWidth:100,
+            ButtonColor:"rgb(13,12,15)",
+            BarColor:"rgb(48,48,48)",
+            BorderColor:'rgb(48,48,48)'
+        }
     }
     
 };

@@ -1905,6 +1905,11 @@ var JSCHART_EVENT_ID=
     ON_DRAW_DEAL_VOL_COLOR:43,              //成交明细 成交量颜色
     ON_DRAW_DEAL_TEXT:44,                   //成交明细 自定义字段
     ON_FILTER_DEAL_DATA:45,                 //成交明细 数据过滤回调
+
+    ON_FILTER_REPORT_DATA:46,               //报价列表 数据过滤回调
+    ON_CLICK_REPORT_ROW:47,                 //点击报价列表
+    ON_REPORT_MARKET_STATUS:48,             //报价列表交易状态
+    ON_DBCLICK_REPORT_ROW:49,               //双击报价列表
 }
 
 var JSCHART_OPERATOR_ID=
@@ -30302,6 +30307,8 @@ IFrameSplitOperator.FormatValueString=function(value, floatPrecision,languageID)
     {
         if (absValue < 10000)
             return value.toFixed(floatPrecision);
+        else if (absValue<1000000)
+            return (value/10000).toFixed(floatPrecision)+"万";
         else if (absValue < 100000000)
             return (value/10000).toFixed(floatPrecision)+"万";
         else if (absValue < 1000000000000)
@@ -42625,7 +42632,7 @@ function JSChartResource()
             Vol:"rgb(90,90,90)",    //成交量
             Time:"rgb(60,60,60)",   //时间
             Deal:"rgb(90,90,90)",   //成交笔数
-            Index:"rgb(60,60,60)",   //序号
+            Index:"rgb(60,60,60)",  //序号
             BarTitle:'rgb(60,60,60)',   //柱子文字
 
             Text:"rgb(60,60,60)",   //默认文本
@@ -42640,7 +42647,50 @@ function JSChartResource()
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
         DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
         UnchagneTextColor:"rgb(0,0,0)"     //平盘文字颜色 
-    }
+    },
+
+    //报价列表
+    this.Report=
+    {
+        BorderColor:'rgb(192,192,192)',    //边框线
+        SelectedColor:"rgb(180,240,240)",  //选中行
+        Header:
+        {
+            Color:"RGB(60,60,60)",
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+            Font:{ Size:12, Name:"微软雅黑" }
+        },
+
+        Item:
+        {
+            Mergin:{ Top:2, Bottom:2,Left:5, Right:5 },
+            Font:{ Size:15, Name:"微软雅黑"},
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 }
+        },
+
+        FieldColor:
+        {
+            Index:"rgb(60,60,60)",  //序号
+            Symbol:"rgb(60,60,60)",
+            Name:"rgb(60,60,60)",
+            Vol:"rgb(90,90,90)",    //成交量
+            Amount:"rgb(90,90,90)", //成交金额
+            Text:"rgb(60,60,60)",   //默认文本
+        },
+
+        UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+        DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+        UnchagneTextColor:"rgb(90,90,90)",     //平盘文字颜色 
+
+        Tab:
+        {
+            Font:{ Size:12, Name:"微软雅黑" },
+            ScrollBarWidth:100,
+            ButtonColor:"rgb(252,252,252)",
+            BarColor:"rgb(180,180,180)",
+            BorderColor:'rgb(180,180,180)'
+        }
+    },
 
     //自定义风格
     this.SetStyle=function(style)
@@ -42954,9 +43004,9 @@ function JSChartResource()
         {
             var item=style.DealList;
             if (item.BorderColor) this.DealList.BorderColor=item.BorderColor;
-            if (item.BorderColor) this.DealList.UpTextColor=item.UpTextColor;
-            if (item.BorderColor) this.DealList.DownTextColor=item.DownTextColor;
-            if (item.BorderColor) this.DealList.UnchagneTextColor=item.UnchagneTextColor;
+            if (item.UpTextColor) this.DealList.UpTextColor=item.UpTextColor;
+            if (item.DownTextColor) this.DealList.DownTextColor=item.DownTextColor;
+            if (item.UnchagneTextColor) this.DealList.UnchagneTextColor=item.UnchagneTextColor;
 
             if (item.Header)
             {
@@ -43020,6 +43070,99 @@ function JSChartResource()
                     for(var i=0;i<filed.Bar.length;++i)
                         this.DealList.FieldColor.Bar[i]=filed.Bar[i];
                 }
+            }
+        }
+
+        if (style.Report)
+        {
+            var item=style.Report;
+            if (item.BorderColor) this.Report.BorderColor=item.BorderColor;
+            if (item.UpTextColor) this.Report.UpTextColor=item.UpTextColor;
+            if (item.DownTextColor) this.Report.DownTextColor=item.DownTextColor;
+            if (item.UnchagneTextColor) this.Report.UnchagneTextColor=item.UnchagneTextColor;
+            if (item.BorderColor) this.Report.SelectedColor=item.SelectedColor;
+
+            if (item.Header)
+            {
+                var header=item.Header;
+                if (header.Color) this.Report.Header.Color=header.Color;
+                if (header.Mergin)
+                {
+                    var mergin=header.Mergin;
+                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.Header.Mergin.Left=mergin.Left;
+                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Header.Mergin.Left=mergin.Right;
+                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Header.Mergin.Top=mergin.Top;
+                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Header.Mergin.Bottom=mergin.Bottom;
+                }
+                if (header.Font)
+                {
+                    var font=header.Font;
+                    if (font.Name) this.Report.Header.Font.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Header.Font.Size=font.Size;
+                }
+            }
+
+            if (item.Item)
+            {
+                var row=item.Item;
+                if (row.Mergin)
+                {
+                    var mergin=row.Mergin;
+                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.Item.Mergin.Left=mergin.Left;
+                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Item.Mergin.Right=mergin.Right;
+                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Item.Mergin.Top=mergin.Top;
+                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Item.Mergin.Bottom=mergin.Bottom;
+                }
+
+                if (row.Font)
+                {
+                    var font=row.Font;
+                    if (font.Name) this.Report.Item.Font.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Item.Font.Size=font.Size;
+                }
+
+                if (row.BarMergin)
+                {
+                    var mergin=row.BarMergin;
+                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.Item.BarMergin.Left=mergin.Left;
+                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Item.BarMergin.Top=mergin.Top;
+                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Item.BarMergin.Right=mergin.Right;
+                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Item.BarMergin.Bottom=mergin.Bottom;
+                }
+            }
+
+            if (item.FieldColor)
+            {
+                var filed=item.FieldColor;
+                if (filed.Name) this.Report.FieldColor.Name=filed.Name;
+                if (filed.Symbol) this.Report.FieldColor.Symbol=filed.Symbol;
+                if (filed.Vol) this.Report.FieldColor.Vol=filed.Vol;
+                if (filed.Amount) this.Report.FieldColor.Amount=filed.Amount;
+                if (filed.Index) this.Report.FieldColor.Index=filed.Index;
+                if (filed.BarTitle) this.Report.FieldColor.BarTitle=filed.BarTitle;
+                if (filed.Text) this.Report.FieldColor.Text=filed.Text;
+
+                if (IFrameSplitOperator.IsNonEmptyArray(filed.Bar))
+                {
+                    for(var i=0;i<filed.Bar.length;++i)
+                        this.Report.FieldColor.Bar[i]=filed.Bar[i];
+                }
+            }
+
+            if (item.Tab)
+            {
+                var tab=item.Tab;
+                if (tab.Font)
+                {
+                    var font=tab.Font;
+                    if (font.Name) this.Report.Tab.Font.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Tab.Font.Size=font.Size;
+                }
+
+                if (IFrameSplitOperator.IsNumber(tab.ScrollBarWidth)) this.Report.Tab.ScrollBarWidth=tab.ScrollBarWidth;
+                if (tab.ButtonColor) this.Report.Tab.ButtonColor=tab.ButtonColor;
+                if (tab.BarColor) this.Report.Tab.BarColor=tab.BarColor;
+                if (tab.BorderColor) this.Report.Tab.BorderColor=tab.BorderColor;
             }
         }
     }

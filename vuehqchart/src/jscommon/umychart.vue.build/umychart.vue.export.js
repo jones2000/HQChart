@@ -48,4 +48,8 @@ export default {
     //成交明细
     JSDealChart:JSDealChart,
     DEAL_COLUMN_ID:DEAL_COLUMN_ID,
+
+    //报价列表
+    JSReportChart:JSReportChart,
+    REPORT_COLUMN_ID:REPORT_COLUMN_ID,
 }

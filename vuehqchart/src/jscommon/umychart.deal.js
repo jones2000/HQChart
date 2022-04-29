@@ -181,11 +181,13 @@ function JSDealChartContainer(uielement)
     this.NetworkFilter;                                 //数据回调接口
     this.Data={ DataOffset:0, Data:[] };                //分笔数据
     this.SourceData={DataOffset:0, Data:[] };           //原始分笔数据
+    this.IsShowLastPage=true;                           //显示最后一页
 
     //事件回调
     this.mapEvent=new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
 
     this.AutoUpdateTimer=null;
+    this.AutoUpdateFrequency=15000; //更新频率
 
     this.LoadDataSplashTitle="数据加载中";           //下载数据提示信息
     
@@ -277,8 +279,9 @@ function JSDealChartContainer(uielement)
 
         if (option)
         {
-            if (IFrameSplitOperator.IsBool(option.IsSingleTable)) chart.IsSingleTable=option.IsSingleTable;  //单表模式
-            if (IFrameSplitOperator.IsBool(option.IsShowHeader)) chart.IsShowHeader=option.IsShowHeader;    //是否显示表头
+            if (IFrameSplitOperator.IsBool(option.IsSingleTable)) chart.IsSingleTable=option.IsSingleTable;     //单表模式
+            if (IFrameSplitOperator.IsBool(option.IsShowHeader)) chart.IsShowHeader=option.IsShowHeader;        //是否显示表头
+            if (IFrameSplitOperator.IsBool(option.IsShowLastPage)) this.IsShowLastPage=option.IsShowLastPage;  //是否显示最后一页
         }
 
         var bRegisterKeydown=true;
@@ -451,12 +454,14 @@ function JSDealChartContainer(uielement)
         chart.YClose=data.yclose;
         chart.Open=data.open;
 
-        //显示最后一屏
-        var pageSize=chart.GetPageSize(true);
-        var offset=aryDeal.length-pageSize;
-        if (offset<0) offset=0;
-        this.Data.DataOffset=offset;
-
+        if (this.IsShowLastPage)    //显示最后一屏
+        {
+            var pageSize=chart.GetPageSize(true);
+            var offset=aryDeal.length-pageSize;
+            if (offset<0) offset=0;
+            this.Data.DataOffset=offset;
+        }
+        
         this.Draw();
     }
 
@@ -932,6 +937,8 @@ function ChartDealList()
                 item.TextColor=g_JSChartResource.DealList.FieldColor.Vol;
             else if (item.Type==DEAL_COLUMN_ID.DEAL_ID) 
                 item.TextColor=g_JSChartResource.DealList.FieldColor.Deal;
+            else if (item.Type==DEAL_COLUMN_ID.INDEX_ID) 
+                item.TextColor=g_JSChartResource.DealList.FieldColor.Index;
         }
     }
 

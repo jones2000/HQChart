@@ -47,7 +47,7 @@ export default
 
             TradeInfo:
             { 
-                Width:230, IsShow:true,
+                Width:250, IsShow:true,
                 Tab:
                 {
                     Menu:[ 
