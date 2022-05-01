@@ -603,6 +603,15 @@ function JSDealChartContainer(uielement)
         if (!this.Frame) return;
 
         this.SetSizeChange(true);
+
+        var chart=this.ChartPaint[0];
+        if (chart && this.Data.DataOffset>0 && IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) 
+        {
+            var pageSize=chart.GetPageSize(true);
+            if (pageSize+this.Data.DataOffset>=this.Data.Data.length)   //当前屏不能显示满，调整
+                this.GotoLastPage();
+        }
+
         this.Draw();
     }
 

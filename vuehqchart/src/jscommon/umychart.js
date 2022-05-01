@@ -1910,6 +1910,13 @@ var JSCHART_EVENT_ID=
     ON_CLICK_REPORT_ROW:47,                 //点击报价列表
     ON_REPORT_MARKET_STATUS:48,             //报价列表交易状态
     ON_DBCLICK_REPORT_ROW:49,               //双击报价列表
+    ON_RCLICK_REPORT_ROW:50,                //右键点击列表
+    ON_CLICK_REPORT_HEADER:51,              //单击表头
+    ON_RCLICK_REPORT_HEADER:52,             //右键点击表头
+    ON_REPORT_LOCAL_SORT:53,                //报价列表本地排序
+    ON_DRAW_REPORT_NAME_COLOR:54,           //报价列表股票名称列颜色
+    ON_DRAW_CUSTOM_TEXT:55,                 //报价列表自定义列
+    ON_CLICK_REPORT_TAB:56,                 //报价列表标签点击
 }
 
 var JSCHART_OPERATOR_ID=
@@ -42656,7 +42663,8 @@ function JSChartResource()
         SelectedColor:"rgb(180,240,240)",  //选中行
         Header:
         {
-            Color:"RGB(60,60,60)",
+            Color:"rgb(60,60,60)",
+            SortColor:"rgb(255,0,0)",
             Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
             Font:{ Size:12, Name:"微软雅黑" }
         },
@@ -42688,7 +42696,14 @@ function JSChartResource()
             ScrollBarWidth:100,
             ButtonColor:"rgb(252,252,252)",
             BarColor:"rgb(180,180,180)",
-            BorderColor:'rgb(180,180,180)'
+            BorderColor:'rgb(180,180,180)',
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+
+            TabTitleColor:'rgb(60,60,60)',
+            TabSelectedTitleColor:'rgb(0,0,0)',
+            TabSelectedBGColor:"rgb(252,252,252)",
+            TabMoveOnTitleColor:"rgb(0,0,0)",
+            TabBGColor:"rgb(220,220,220)"
         }
     },
 
@@ -43086,6 +43101,7 @@ function JSChartResource()
             {
                 var header=item.Header;
                 if (header.Color) this.Report.Header.Color=header.Color;
+                if (header.SortColor) this.Report.Header.SortColor=header.SortColor;
                 if (header.Mergin)
                 {
                     var mergin=header.Mergin;
@@ -43163,6 +43179,12 @@ function JSChartResource()
                 if (tab.ButtonColor) this.Report.Tab.ButtonColor=tab.ButtonColor;
                 if (tab.BarColor) this.Report.Tab.BarColor=tab.BarColor;
                 if (tab.BorderColor) this.Report.Tab.BorderColor=tab.BorderColor;
+
+                if (tab.TabTitleColor) this.Report.Tab.TabTitleColor=tab.TabTitleColor;
+                if (tab.TabSelectedTitleColor) this.Report.Tab.TabSelectedTitleColor=tab.TabSelectedTitleColor;
+                if (tab.TabSelectedBGColor) this.Report.Tab.TabSelectedBGColor=tab.TabSelectedBGColor;
+                if (tab.TabMoveOnTitleColor) this.Report.Tab.TabMoveOnTitleColor=tab.TabMoveOnTitleColor;
+                if (tab.TabBGColor) this.Report.Tab.TabBGColor=tab.TabBGColor;
             }
         }
     }

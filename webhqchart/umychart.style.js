@@ -334,6 +334,7 @@ var BLACK_STYLE=
         Header:
         {
             Color:"RGB(245,245,245)",
+            SortColor:"rgb(255,0,0)",
             Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
             Font:{ Size:12, Name:"微软雅黑" }
         },
@@ -366,7 +367,13 @@ var BLACK_STYLE=
             ScrollBarWidth:100,
             ButtonColor:"rgb(13,12,15)",
             BarColor:"rgb(48,48,48)",
-            BorderColor:'rgb(48,48,48)'
+            BorderColor:'rgb(48,48,48)',
+
+            TabTitleColor:'rgb(153,153,153)',
+            TabSelectedTitleColor:'rgb(255,255,255)',
+            TabSelectedBGColor:"rgb(13,12,15)",
+            TabMoveOnTitleColor:"rgb(255,255,255)",
+            TabBGColor:"rgb(28,28,31)"
         }
     }
     
