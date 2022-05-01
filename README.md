@@ -142,6 +142,13 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![成交明细表](/小程序行情模块用例/image/deal_list.png)
 * 分价表, 支持键盘,滚轴翻页<br>
 ![分价表](/小程序行情模块用例/image/price_list.png)
+* 报价列表  <br>
+1. 纯画布手动打造, 虚拟表格, 操作不卡顿。<br>
+2. 支持固定列, 键盘操作: PageUP/PageDown 翻页, Up/Down 移动当前选中股票, Left/Right 移动列, 滚轴上下翻页.<br>
+3. 支持Tab页切换板块，横向滚动轴<br>
+4. 支持配置列本地排序或远程排序<br>
+![报价列表](/小程序行情模块用例/image/hqchart_report.gif)
+
 
 
 # 3. 网页demo  <br>
