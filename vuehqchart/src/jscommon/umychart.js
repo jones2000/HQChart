@@ -42673,7 +42673,13 @@ function JSChartResource()
         {
             Mergin:{ Top:2, Bottom:2,Left:5, Right:5 },
             Font:{ Size:15, Name:"微软雅黑"},
-            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 }
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },
+        },
+
+        LimitBorder:
+        {
+            Color:"rgb(180,180,180)",
+            Mergin:{ Top:1, Bottom:1,Left:0, Right:0 },
         },
 
         FieldColor:
@@ -43144,6 +43150,20 @@ function JSChartResource()
                     if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Item.BarMergin.Top=mergin.Top;
                     if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Item.BarMergin.Right=mergin.Right;
                     if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Item.BarMergin.Bottom=mergin.Bottom;
+                }
+            }
+
+            if (item.LimitBorder)
+            {
+                var limit=item.LimitBorder;
+                if (limit.Color) this.Report.LimitBorder.Color=limit.Color;
+                if (limit.Mergin)
+                {
+                    var mergin=limit.Mergin;
+                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.LimitBorder.Mergin.Left=mergin.Left;
+                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.LimitBorder.Mergin.Top=mergin.Top;
+                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.LimitBorder.Mergin.Right=mergin.Right;
+                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.LimitBorder.Mergin.Bottom=mergin.Bottom;
                 }
             }
 

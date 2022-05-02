@@ -343,7 +343,13 @@ var BLACK_STYLE=
         {
             Mergin:{ Top:2, Bottom:2,Left:5, Right:5 },
             Font:{ Size:15, Name:"微软雅黑"},
-            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 }
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },
+        },
+
+        LimitBorder:
+        {
+            Color:"rgb(64,64,64)",
+            Mergin:{ Top:1, Bottom:1,Left:0, Right:0 },
         },
 
         FieldColor:

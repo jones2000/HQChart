@@ -185,6 +185,14 @@ function HQReportItem()
 
     this.AvPrice;   //均价
 
+    this.LimitHigh;       //涨停价
+    this.LimitLow;        //跌停价
+
+    this.VolIn;         //内盘
+    this.VolOut;        //外盘
+
+    this.DealNum;       //现量
+
     this.OutShares;     //流通股本
     this.TotalShares;   //总股本
 
@@ -667,7 +675,8 @@ function JSReportChartContainer(uielement)
     //读取单条股票json数据
     this.ReadStockJsonData=function(stock, item)
     {
-        //0=证券代码 1=股票名称 2=昨收 3=开 4=高 5=低 6=收 7=成交量 8=成交金额, 9=买价 10=买量 11=卖价 12=卖量 13=均价 14=流通股 15=总股本
+        //0=证券代码 1=股票名称 2=昨收 3=开 4=高 5=低 6=收 7=成交量 8=成交金额, 9=买价 10=买量 11=卖价 12=卖量 13=均价 14=流通股 15=总股本 16=涨停价 17=跌停价
+        //18=内盘 19=外盘 20=现量
 
         if (IFrameSplitOperator.IsString(item[1])) stock.Name=item[1];
         if (IFrameSplitOperator.IsNumber(item[2])) stock.YClose=item[2];
@@ -682,9 +691,14 @@ function JSReportChartContainer(uielement)
         if (IFrameSplitOperator.IsNumber(item[10])) stock.BuyVol=item[10];
         if (IFrameSplitOperator.IsNumber(item[11])) stock.SellPrice=item[11];
         if (IFrameSplitOperator.IsNumber(item[12])) stock.SellVol=item[12];
-        if (IFrameSplitOperator.IsNumber(item[13])) stock.AvPrice=item[13];
-        if (IFrameSplitOperator.IsNumber(item[14])) stock.OutShares=item[14];
-        if (IFrameSplitOperator.IsNumber(item[15])) stock.TotalShares=item[15];
+        if (IFrameSplitOperator.IsNumber(item[13])) stock.AvPrice=item[13];          //均价
+        if (IFrameSplitOperator.IsNumber(item[14])) stock.OutShares=item[14];        //流通股
+        if (IFrameSplitOperator.IsNumber(item[15])) stock.TotalShares=item[15];      //总股本
+        if (IFrameSplitOperator.IsNumber(item[16])) stock.LimitHigh=item[16];        //涨停价
+        if (IFrameSplitOperator.IsNumber(item[17])) stock.LimitLow=item[17];         //跌停价
+        if (IFrameSplitOperator.IsNumber(item[18])) stock.VolIn=item[18];            //内盘
+        if (IFrameSplitOperator.IsNumber(item[19])) stock.VolOut=item[19];           //外盘
+        if (IFrameSplitOperator.IsNumber(item[20])) stock.DealNum=item[20];          //现量
 
         if (item[30]) stock.ExtendData=item[30];    //30扩展数据
     }
@@ -1560,7 +1574,13 @@ var REPORT_COLUMN_ID=
 
     EXCHANGE_RATE_ID:21,        //换手率 成交量/流通股本
     AMPLITUDE_ID:22,            //振幅
-    
+
+    LIMIT_HIGH_ID:23,       //涨停价
+    LIMIT_LOW_ID:24,        //跌停价
+
+    VOL_IN_ID:25,
+    VOL_OUT_ID:26,
+
     CUSTOM_STRING_TEXT_ID:100,   //自定义字符串文本
     CUSTOM_NUMBER_TEXT_ID:101    //自定义数值型
 }
@@ -1625,6 +1645,15 @@ function ChartReport()
         Right:g_JSChartResource.Report.Item.BarMergin.Right,
         Bottom:g_JSChartResource.Report.Item.BarMergin.Bottom
     };
+
+    this.LimitBorderColor=g_JSChartResource.Report.LimitBorder.Color;
+    this.LimitMergin=
+    {
+        Top:g_JSChartResource.Report.LimitBorder.Mergin.Top, 
+        Left:g_JSChartResource.Report.LimitBorder.Mergin.Left, 
+        Right:g_JSChartResource.Report.LimitBorder.Mergin.Right,
+        Bottom:g_JSChartResource.Report.LimitBorder.Mergin.Bottom
+    }
 
     //缓存
     this.HeaderFont=12*GetDevicePixelRatio() +"px 微软雅黑";
@@ -1757,6 +1786,9 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.MARKET_VALUE_ID, Title:"总市值", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, Width:null, MaxText:"8888.8擎" },
 
             
+            { Type:REPORT_COLUMN_ID.VOL_IN_ID, Title:"内盘", TextAlign:"right", TextColor:g_JSChartResource.Report.DownTextColor, Width:null, MaxText:"8888.8擎" },
+            { Type:REPORT_COLUMN_ID.VOL_OUT_ID, Title:"外盘", TextAlign:"right", TextColor:g_JSChartResource.Report.UpTextColor, Width:null, MaxText:"8888.8擎" },
+
 
             { Type:REPORT_COLUMN_ID.BUY_VOL_ID, Title:"买量", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Vol, Width:null, MaxText:"8888.8擎" },
             { Type:REPORT_COLUMN_ID.SELL_VOL_ID, Title:"卖量", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Vol, Width:null, MaxText:"8888.8擎" },
@@ -2127,15 +2159,30 @@ function ChartReport()
         }
         else if (column.Type==REPORT_COLUMN_ID.OPEN_ID)
         {
-            if (stock) this.GetPriceDrawInfo(stock.Open, stock, data, drawInfo);
+            //如果行情开盘价为涨停价或跌停价,则对内容加灰框
+            if (stock) 
+            {
+                this.DrawLimitPriceBorder(stock.Open, stock, left, top, column.Width);
+                this.GetPriceDrawInfo(stock.Open, stock, data, drawInfo);
+            }
         }
         else if (column.Type==REPORT_COLUMN_ID.HIGH_ID)
         {
-            if (stock) this.GetPriceDrawInfo(stock.High, stock, data, drawInfo);
+            //如果行情最高价为涨停价,则对内容加灰框
+            if (stock) 
+            {
+                this.DrawLimitPriceBorder(stock.High, stock, left, top, column.Width);
+                this.GetPriceDrawInfo(stock.High, stock, data, drawInfo);
+            }
         }
         else if (column.Type==REPORT_COLUMN_ID.LOW_ID)
         {
-            if (stock) this.GetPriceDrawInfo(stock.Low, stock, data, drawInfo);
+            //如果行情最低价为跌停价,则对内容加灰框
+            if (stock) 
+            {
+                this.DrawLimitPriceBorder(stock.Low, stock, left, top, column.Width);
+                this.GetPriceDrawInfo(stock.Low, stock, data, drawInfo);
+            }
         }
         else if (column.Type==REPORT_COLUMN_ID.YCLOSE_ID)
         {
@@ -2172,6 +2219,14 @@ function ChartReport()
         else if (column.Type==REPORT_COLUMN_ID.VOL_ID)
         {
             if (stock && IFrameSplitOperator.IsNumber(stock.Vol)) drawInfo.Text=this.FormatVolString(stock.Vol);
+        }
+        else if (column.Type==REPORT_COLUMN_ID.VOL_IN_ID)
+        {
+            if (stock && IFrameSplitOperator.IsNumber(stock.VolIn)) drawInfo.Text=this.FormatVolString(stock.VolIn);
+        }
+        else if (column.Type==REPORT_COLUMN_ID.VOL_OUT_ID)
+        {
+            if (stock && IFrameSplitOperator.IsNumber(stock.VolOut)) drawInfo.Text=this.FormatVolString(stock.VolOut);
         }
         else if (column.Type==REPORT_COLUMN_ID.TOTAL_SHARES_ID)
         {
@@ -2233,6 +2288,32 @@ function ChartReport()
         }
 
         this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth);
+    }
+
+    this.DrawLimitPriceBorder=function(value, stock, left, top, itemWidth)
+    {
+        if (!IFrameSplitOperator.IsNumber(value) || !stock) return;
+
+        var bDraw=false;
+        if (IFrameSplitOperator.IsNumber(stock.LimitHigh))
+        {
+            if (value>=stock.LimitHigh) bDraw=true;
+        }
+
+        if (IFrameSplitOperator.IsNumber(stock.LimitLow))
+        {
+            if (value<=stock.LimitLow) bDraw=true;
+        }
+
+        if (!bDraw) return;
+
+        var x=left+this.ItemMergin.Left+this.LimitMergin.Left;
+        var width=itemWidth-this.ItemMergin.Left-this.ItemMergin.Right-this.LimitMergin.Left-this.LimitMergin.Right;
+        var y=top+this.ItemMergin.Top+this.LimitMergin.Top;
+        var height=this.RowHeight-this.ItemMergin.Top-this.ItemMergin.Bottom-this.LimitMergin.Top-this.LimitMergin.Bottom;
+
+        this.Canvas.strokeStyle=this.LimitBorderColor;
+        this.Canvas.strokeRect(ToFixedPoint(x),ToFixedPoint(y),ToFixedRect(width),ToFixedRect(height));
     }
 
     this.GetCustomStringDrawInfo=function(data, column, drawInfo)
@@ -2325,11 +2406,12 @@ function ChartReport()
         }
         else if (textAlign=='right')
         {
-            x=left+width;
+            x=left+width-2;
             this.Canvas.textAlign="right";
         }
         else
         {
+            x+=2;
             this.Canvas.textAlign="left";
         }
 
@@ -2706,6 +2788,7 @@ function ChartReportTab()
         if (this.Report.IsShowAllColumn) return;
 
         var left=left+this.TabWidth;
+        if (left+this.ScrollBarWidth*2>right) return;
 
         this.MaxPos=clolumCount;
         this.CurrentPos=columnOffset;
@@ -2758,7 +2841,8 @@ function ChartReportTab()
         var y=bottom-this.TabMergin.Bottom, x=0;
         var text;
         var itemWidth=0;
-        for(var i=0;i<this.TabList.length;++i)
+        var i=0;
+        for(i=0;i<this.TabList.length;++i)
         {
             var item=this.TabList[i];
             text=item.Title;
@@ -2768,7 +2852,9 @@ function ChartReportTab()
             var rtItem={Left:itemLeft, Top:top, Width:itemWidth+this.TabMergin.Left+this.TabMergin.Right, Height:tabHeight};
             rtItem.Right=rtItem.Left+rtItem.Width;
             rtItem.Bottom=rtItem.Top+rtItem.Height;
-            item.Rect=rtItem;
+            if (rtItem.Right>right) break;
+
+            
 
             var bgColor=this.TabBGColor;
             if (i==this.SelectedTabIndex) bgColor=this.TabSelectedBGColor
@@ -2782,8 +2868,15 @@ function ChartReportTab()
             this.Canvas.fillStyle=textColor;
             this.Canvas.fillText(text,x,y);
 
+            item.Rect=rtItem;
             itemLeft+=rtItem.Width+1;
             this.TabWidth+=rtItem.Width+1;
+        }
+
+        for(;i<this.TabList.length;++i)
+        {
+            var item=this.TabList[i];
+            item.Rect=null;
         }
     }
 
