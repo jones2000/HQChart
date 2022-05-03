@@ -1303,20 +1303,42 @@ function JSReportChartContainer(uielement)
     //点击标签
     this.OnClickTab=function(tabData, e)
     {
-        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_REPORT_TAB);
-        var redraw=false;
-        if (event && event.Callback)
-        {
-            var pixelTatio = GetDevicePixelRatio();
-            var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-            var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+        if (!tabData.Tab) return;
 
-            var sendData={ Data:tabData, IsSide:{X:x, Y:x}, e:e , Redraw:redraw };
-            event.Callback(event, sendData, this);
-            if (IFrameSplitOperator.IsBool(sendData.Redraw)) redraw=sendData.Redraw;
+        var redraw=false;
+        var pixelTatio = GetDevicePixelRatio();
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+
+        if (tabData.Tab.IsMenu)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_REPORT_TABMENU);
+            if (event && event.Callback)
+            {
+                redraw=true;
+                var rtItem=tabData.Rect;
+                var rtDOM={ Left: rtItem.Left/pixelTatio, Right:rtItem.Right/pixelTatio, Top:rtItem.Top/pixelTatio, Bottom:rtItem.Bottom/pixelTatio };
+
+                var sendData={ Data:tabData, IsSide:{X:x, Y:x}, Rect:rtDOM, e:e , Redraw:redraw };
+                event.Callback(event, sendData, this);
+                if (IFrameSplitOperator.IsBool(sendData.Redraw)) redraw=sendData.Redraw;
+            }
+
+            this.SetSelectedTab(tabData.Index); //选中tab
+        }
+        else
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_REPORT_TAB);
+            if (event && event.Callback)
+            {
+                var sendData={ Data:tabData, IsSide:{X:x, Y:x}, e:e , Redraw:redraw };
+                event.Callback(event, sendData, this);
+                if (IFrameSplitOperator.IsBool(sendData.Redraw)) redraw=sendData.Redraw;
+            }
+
+            this.SetSelectedTab(tabData.Index);
         }
 
-        this.SetSelectedTab(tabData.Index);
         if (redraw) this.Draw();
     }
 
@@ -2764,8 +2786,10 @@ function ChartReportTab()
             var item=aryTab[i];
             if (!item.Title) continue;
 
-            var tabItem={ Title:item.Title };
+            var tabItem={ Title:item.Title, IsMenu:false };
             if (item.ID) tabItem.ID=item.ID;
+            if (item.MenuID) tabItem.MenuID=item.MenuID;
+            if (IFrameSplitOperator.IsBool(item.IsMenu)) tabItem.IsMenu=item.IsMenu;
             this.TabList.push(tabItem);
         }
     }
@@ -2846,6 +2870,9 @@ function ChartReportTab()
         {
             var item=this.TabList[i];
             text=item.Title;
+
+            if (item.IsMenu) text+="▲";
+
             x=itemLeft+this.TabMergin.Left;
             itemWidth=this.Canvas.measureText(text).width;
 

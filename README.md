@@ -396,7 +396,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 19. [HQChart实战教程49 - 点击修改K线颜色及背景色](https://jones2000.blog.csdn.net/article/details/121938122)<br>
 20. [HQChart实战教程50 - 自定义指标栏工具按钮](https://blog.csdn.net/jones2000/article/details/122950050)<br>
 21. [HQChart实战教程51 - 自定义指标列表](https://blog.csdn.net/jones2000/article/details/123538617)<br>
-22. [HQChart实战教程52-APP中使用DRAWICON绘制图标](https://jones2000.blog.csdn.net/article/details/124142225)<br>
+22. [HQChart实战教程52 - APP中使用DRAWICON绘制图标](https://jones2000.blog.csdn.net/article/details/124142225)<br>
+23. [HQChart实战教程53 - 动调指定标识K线区间段背景颜色](https://blog.csdn.net/jones2000/article/details/124558493)<br>
 
 
 

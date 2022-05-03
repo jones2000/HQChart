@@ -5810,6 +5810,15 @@ function JSChart(divElement, bOffscreen)
             this.JSChartContainer.EnableSplashScreen(option);
         }
     }
+
+    this.Draw=function()
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.Draw)=='function')
+        {
+            JSConsole.Chart.Log('[JSChart:Draw] ');
+            this.JSChartContainer.Draw();
+        }
+    }
 }
 
 JSChart.LastVersion=null;   //最新的版本号
@@ -6022,6 +6031,7 @@ var JSCHART_EVENT_ID=
     ON_DRAW_REPORT_NAME_COLOR:54,           //报价列表股票名称列颜色
     ON_DRAW_CUSTOM_TEXT:55,                 //报价列表自定义列
     ON_CLICK_REPORT_TAB:56,                 //报价列表标签点击
+    ON_CLICK_REPORT_TABMENU:57,             //报价列表标签菜单点击
 }
 
 var JSCHART_OPERATOR_ID=
@@ -46768,17 +46778,17 @@ function JSChartResource()
         SelectedColor:"rgb(180,240,240)",  //选中行
         Header:
         {
-            Color:"rgb(60,60,60)",
-            SortColor:"rgb(255,0,0)",
-            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
-            Font:{ Size:12, Name:"微软雅黑" }
+            Color:"rgb(60,60,60)",      //表头文字颜色
+            SortColor:"rgb(255,0,0)",   //排序箭头颜色
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },    //表头四周间距
+            Font:{ Size:12, Name:"微软雅黑" }   //表头字体
         },
 
         Item:
         {
-            Mergin:{ Top:2, Bottom:2,Left:5, Right:5 },
+            Mergin:{ Top:2, Bottom:2,Left:5, Right:5 }, //单元格四周间距
             Font:{ Size:15, Name:"微软雅黑"},
-            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },//单元格字体
         },
 
         LimitBorder:
@@ -96277,20 +96287,42 @@ function JSReportChartContainer(uielement)
     //点击标签
     this.OnClickTab=function(tabData, e)
     {
-        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_REPORT_TAB);
-        var redraw=false;
-        if (event && event.Callback)
-        {
-            var pixelTatio = GetDevicePixelRatio();
-            var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-            var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+        if (!tabData.Tab) return;
 
-            var sendData={ Data:tabData, IsSide:{X:x, Y:x}, e:e , Redraw:redraw };
-            event.Callback(event, sendData, this);
-            if (IFrameSplitOperator.IsBool(sendData.Redraw)) redraw=sendData.Redraw;
+        var redraw=false;
+        var pixelTatio = GetDevicePixelRatio();
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+
+        if (tabData.Tab.IsMenu)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_REPORT_TABMENU);
+            if (event && event.Callback)
+            {
+                redraw=true;
+                var rtItem=tabData.Rect;
+                var rtDOM={ Left: rtItem.Left/pixelTatio, Right:rtItem.Right/pixelTatio, Top:rtItem.Top/pixelTatio, Bottom:rtItem.Bottom/pixelTatio };
+
+                var sendData={ Data:tabData, IsSide:{X:x, Y:x}, Rect:rtDOM, e:e , Redraw:redraw };
+                event.Callback(event, sendData, this);
+                if (IFrameSplitOperator.IsBool(sendData.Redraw)) redraw=sendData.Redraw;
+            }
+
+            this.SetSelectedTab(tabData.Index); //选中tab
+        }
+        else
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_REPORT_TAB);
+            if (event && event.Callback)
+            {
+                var sendData={ Data:tabData, IsSide:{X:x, Y:x}, e:e , Redraw:redraw };
+                event.Callback(event, sendData, this);
+                if (IFrameSplitOperator.IsBool(sendData.Redraw)) redraw=sendData.Redraw;
+            }
+
+            this.SetSelectedTab(tabData.Index);
         }
 
-        this.SetSelectedTab(tabData.Index);
         if (redraw) this.Draw();
     }
 
@@ -97738,8 +97770,10 @@ function ChartReportTab()
             var item=aryTab[i];
             if (!item.Title) continue;
 
-            var tabItem={ Title:item.Title };
+            var tabItem={ Title:item.Title, IsMenu:false };
             if (item.ID) tabItem.ID=item.ID;
+            if (item.MenuID) tabItem.MenuID=item.MenuID;
+            if (IFrameSplitOperator.IsBool(item.IsMenu)) tabItem.IsMenu=item.IsMenu;
             this.TabList.push(tabItem);
         }
     }
@@ -97820,6 +97854,9 @@ function ChartReportTab()
         {
             var item=this.TabList[i];
             text=item.Title;
+
+            if (item.IsMenu) text+="▲";
+
             x=itemLeft+this.TabMergin.Left;
             itemWidth=this.Canvas.measureText(text).width;
 

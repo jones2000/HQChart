@@ -1705,6 +1705,15 @@ function JSChart(divElement, bOffscreen)
             this.JSChartContainer.EnableSplashScreen(option);
         }
     }
+
+    this.Draw=function()
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.Draw)=='function')
+        {
+            JSConsole.Chart.Log('[JSChart:Draw] ');
+            this.JSChartContainer.Draw();
+        }
+    }
 }
 
 JSChart.LastVersion=null;   //最新的版本号
@@ -1917,6 +1926,7 @@ var JSCHART_EVENT_ID=
     ON_DRAW_REPORT_NAME_COLOR:54,           //报价列表股票名称列颜色
     ON_DRAW_CUSTOM_TEXT:55,                 //报价列表自定义列
     ON_CLICK_REPORT_TAB:56,                 //报价列表标签点击
+    ON_CLICK_REPORT_TABMENU:57,             //报价列表标签菜单点击
 }
 
 var JSCHART_OPERATOR_ID=
@@ -42663,17 +42673,17 @@ function JSChartResource()
         SelectedColor:"rgb(180,240,240)",  //选中行
         Header:
         {
-            Color:"rgb(60,60,60)",
-            SortColor:"rgb(255,0,0)",
-            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
-            Font:{ Size:12, Name:"微软雅黑" }
+            Color:"rgb(60,60,60)",      //表头文字颜色
+            SortColor:"rgb(255,0,0)",   //排序箭头颜色
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },    //表头四周间距
+            Font:{ Size:12, Name:"微软雅黑" }   //表头字体
         },
 
         Item:
         {
-            Mergin:{ Top:2, Bottom:2,Left:5, Right:5 },
+            Mergin:{ Top:2, Bottom:2,Left:5, Right:5 }, //单元格四周间距
             Font:{ Size:15, Name:"微软雅黑"},
-            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },//单元格字体
         },
 
         LimitBorder:
