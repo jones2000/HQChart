@@ -719,6 +719,7 @@ function JSChart(element)
         let scriptData = new JSCommonIndexScript.JSIndexScript();
         for (var i=0; i<option.Windows.length; ++i)   //分钟数据指标从第3个指标窗口设置
         {
+            var index=i+2;
             var item = option.Windows[i];
             if (item.Script) 
             {
@@ -735,7 +736,7 @@ function JSChart(element)
                 if (indexItem) 
                 {
                     chart.WindowIndex[2+i] = indexItem.Create();       //创建子窗口的指标
-                    chart.CreateWindowIndex(2 + parseInt(i));
+                    chart.CreateWindowIndex(index);
                 }
                 else 
                 {
@@ -746,12 +747,13 @@ function JSChart(element)
                     if (item.Lock) indexInfo.Lock = item.Lock;
                     if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
                     chart.WindowIndex[2+i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args, indexInfo);    //脚本执行
-                    if (item.StringFormat > 0) chart.WindowIndex[2 + parseInt(i)].StringFormat = item.StringFormat;
-                    if (item.FloatPrecision >= 0) chart.WindowIndex[2 + parseInt(i)].FloatPrecision = item.FloatPrecision;
+                    if (item.StringFormat > 0) chart.WindowIndex[index].StringFormat = item.StringFormat;
+                    if (item.FloatPrecision >= 0) chart.WindowIndex[index].FloatPrecision = item.FloatPrecision;
                 }
             }
 
-            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[2 + parseInt(i)].Frame.ChartBorder.TitleHeight = item.TitleHeight;   //指标标题高度
+            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight = item.TitleHeight;   //指标标题高度
+            if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[index].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
         }
 
         return chart;

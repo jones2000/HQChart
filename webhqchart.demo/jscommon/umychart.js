@@ -834,6 +834,7 @@ function JSChart(divElement, bOffscreen)
                 if (item.Change!=null) chart.Frame.SubFrame[index].Frame.ChangeIndex=item.Change;
                 if (item.Close!=null) chart.Frame.SubFrame[index].Frame.CloseIndex=item.Close;
                 if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+                if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[index].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
             }
         }
 
