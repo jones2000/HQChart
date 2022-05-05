@@ -1579,6 +1579,12 @@ ul {
   height: 100%;
   position: relative;
 
+  .firstLine,
+  .sellFive,
+  .buyFive{
+    box-sizing: border-box;
+  }
+
   .firstLine {
     width: 100%;
     border-bottom: @border;
@@ -1586,7 +1592,6 @@ ul {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    box-sizing: border-box;
 
     > p {
       flex-grow: 1;
@@ -1787,42 +1792,43 @@ ul {
     }
   }
   .dealpricelist{
-      overflow-y: auto;
-    .table{
-        border-collapse: collapse;
-        border-spacing: 0;
-        border: none;
-        tr>td{
-            width: 25%;
-            line-height: 22px;
-            box-sizing: border-box;
-        }
-        tr>td:nth-of-type(2),tr>td:last-child{
-            text-align: right;
-        }
-        tr>td:nth-of-type(2){
-            padding-right: 5px;
-        }
-        td>span{
-            vertical-align: middle;
-            display:inline-block;
-            height: 14px;
-            .buy,.sell,.none{
-                display: inline-block;
-                height: 14px;
-            }
-            .buy{
-                background-color: red;
-            }
-            .sell{
-                background-color: green;
-            }
-            .none{
-                background-color: #ccc;
-            }
-        }
+    box-sizing: border-box;
+      // overflow-y: auto;
+    // .table{
+    //     border-collapse: collapse;
+    //     border-spacing: 0;
+    //     border: none;
+    //     tr>td{
+    //         width: 25%;
+    //         line-height: 22px;
+    //         box-sizing: border-box;
+    //     }
+    //     tr>td:nth-of-type(2),tr>td:last-child{
+    //         text-align: right;
+    //     }
+    //     tr>td:nth-of-type(2){
+    //         padding-right: 5px;
+    //     }
+    //     td>span{
+    //         vertical-align: middle;
+    //         display:inline-block;
+    //         height: 14px;
+    //         .buy,.sell,.none{
+    //             display: inline-block;
+    //             height: 14px;
+    //         }
+    //         .buy{
+    //             background-color: red;
+    //         }
+    //         .sell{
+    //             background-color: green;
+    //         }
+    //         .none{
+    //             background-color: #ccc;
+    //         }
+    //     }
 
-    }  
+    // }  
   }
   
 }

@@ -4939,6 +4939,7 @@ function JSChart(divElement, bOffscreen)
                 if (item.Change!=null) chart.Frame.SubFrame[index].Frame.ChangeIndex=item.Change;
                 if (item.Close!=null) chart.Frame.SubFrame[index].Frame.CloseIndex=item.Close;
                 if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight=item.TitleHeight;
+                if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[index].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
             }
         }
 
@@ -95216,6 +95217,11 @@ function JSReportChartContainer(uielement)
     
     this.UIElement=uielement;
     this.LastPoint=new Point();     //鼠标位置
+    this.IsOnTouch=false;
+    this.TouchDrag;
+    this.TouchMoveMinAngle=70;          //左右移动最小角度
+    this.YStepPixel=5*GetDevicePixelRatio();
+    this.XStepPixel=10*GetDevicePixelRatio();          
 
     //拖拽滚动条
     this.DragXScroll=null;  //{Start:{x,y}, End:{x, y}}
@@ -95273,6 +95279,7 @@ function JSReportChartContainer(uielement)
             if (IFrameSplitOperator.IsNumber(option.FixedColumn)) chart.FixedColumn=option.FixedColumn;     //固定列
 
             if (IFrameSplitOperator.IsNumber(option.BorderLine)) this.Frame.BorderLine=option.BorderLine;   //边框
+            if (IFrameSplitOperator.IsBool(option.TabShow)) chart.Tab.IsShow=option.TabShow;
         }
 
         var bRegisterKeydown=true;
@@ -95296,12 +95303,19 @@ function JSReportChartContainer(uielement)
         if (bRegisterKeydown) this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
         if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
 
+        
         this.UIElement.ondblclick=(e)=>{ this.UIOnDblClick(e); }
         this.UIElement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
         this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
         this.UIElement.onmousemove=(e)=>{ this.UIOnMouseMove(e);}
         this.UIElement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
         this.UIElement.onmouseleave=(e)=>{ this.UIOnMouseleave(e); }
+        
+
+        //手机拖拽
+        this.UIElement.ontouchstart=(e)=> { this.OnTouchStart(e); } 
+        this.UIElement.ontouchmove=(e)=> {this.OnTouchMove(e); }
+        this.UIElement.ontouchend=(e)=> {this.OnTouchEnd(e); } 
     }
 
     this.Draw=function()
@@ -96020,6 +96034,190 @@ function JSReportChartContainer(uielement)
         this.DragXScroll=null;
     }
 
+    //判断是单个手指
+    this.IsPhoneDragging=function(e)
+    {
+        // JSConsole.Chart.Log(e);
+        var changed=e.changedTouches.length;
+        var touching=e.touches.length;
+
+        return changed==1 && touching==1;
+    }
+
+    this.GetToucheData=function(e)
+    {
+        var touches=[];
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
+        for(var i=0; i<e.touches.length; ++i)
+        {
+            var item=e.touches[i];
+            touches.push(
+            {
+                clientX:item.clientX*pixelTatio, clientY:item.clientY*pixelTatio, 
+                pageX:item.pageX*pixelTatio, pageY:item.pageY*pixelTatio
+            });
+            
+        }
+
+        return touches;
+    }
+
+    this.GetMoveAngle=function(pt,pt2)  //计算角度
+    {
+        var xMove=Math.abs(pt.X-pt2.X);
+        var yMove=Math.abs(pt.Y-pt2.Y);
+        var angle=Math.atan(xMove/yMove)*180/Math.PI;
+        return angle;
+    }
+
+    this.PreventTouchEvent=function(e)
+    {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+    }
+
+     //手势事件
+    this.OnTouchStart=function(e)
+    {
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+        this.IsOnTouch=true;
+
+        var reportChart=this.GetReportChart();
+        if (!reportChart) return;
+
+        if (this.IsPhoneDragging(e))
+        {
+            var drag= { "Click":{}, "LastMove":{}  }; //LastMove 最后移动的位置
+            var touches=this.GetToucheData(e);
+
+            drag.Click.X=touches[0].clientX;
+            drag.Click.Y=touches[0].clientY;
+            drag.LastMove.X=touches[0].clientX;
+            drag.LastMove.Y=touches[0].clientY;
+
+            if (reportChart.IsPtInBody(drag.Click.X,drag.Click.Y))
+            {
+                this.TouchDrag=drag;
+            }
+
+            this.TouchInfo={ Click:{X:touches[0].clientX, Y:touches[0].clientY } };
+            this.PreventTouchEvent(e);
+        }
+    }
+
+    this.OnTouchMove=function(e)
+    {
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
+        var reportChart=this.GetReportChart();
+        if (!reportChart) return;
+
+        var touches=this.GetToucheData(e);
+        
+        if (this.IsPhoneDragging(e))
+        {
+            var drag=this.TouchDrag;
+
+            this.TouchInfo.Move={ X:touches[0].clientX, Y:touches[0].clientY };
+
+            if (drag)
+            {
+                this.PreventTouchEvent(e);
+
+                var moveAngle=this.GetMoveAngle(drag.LastMove,{X:touches[0].clientX, Y:touches[0].clientY});
+                var moveLeftRight=Math.abs(drag.LastMove.X-touches[0].clientX);
+                var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
+
+                if (moveUpDown>0 && moveAngle<this.TouchMoveMinAngle)
+                {
+                    if (moveUpDown<5) return;
+
+                    var isUp=true;
+                    if (drag.LastMove.Y<touches[0].clientY) isUp=false;     //Down
+
+                    var oneStep=this.YStepPixel;
+                    if (oneStep<=0) oneStep=5;
+
+                    var step=parseInt(moveUpDown/oneStep); 
+                    if (step<=0) return;
+
+                    if (isUp) step*=-1;
+
+                    if (this.MoveYOffset(step))
+                    {
+                        this.Draw();
+                        this.DelayUpdateStockData();
+                    }
+
+                }
+                else if (moveLeftRight>0 && moveAngle>=this.TouchMoveMinAngle)
+                {
+                    if (moveLeftRight<5) return;
+
+                    var isLeft=true;
+                    if (drag.LastMove.X<touches[0].clientX) isLeft=false;//右移数据
+
+                    var oneStep=this.XStepPixel;
+                    if (oneStep<=0) oneStep=5;
+
+                    var step=parseInt(moveLeftRight/oneStep);  //除以4个像素
+                    if (step<=0) return;
+
+                    if (!isLeft) step*=-1;
+
+                    if (this.MoveXOffset(step))
+                    {
+                        this.Draw();
+                    }
+                }
+                else
+                {
+                    return;
+                }
+
+                drag.LastMove.X=touches[0].clientX;
+                drag.LastMove.Y=touches[0].clientY;
+            }
+
+        }
+    }
+
+    this.OnTouchEnd=function(e)
+    {
+        JSConsole.Chart.Log('[JSReportChartContainer:OnTouchEnd]',e);
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
+        this.OnTouchClick(this.TouchInfo, e);
+
+        this.IsOnTouch=false;
+        this.TouchDrag=null;
+        this.TouchInfo=null;
+    }
+
+    this.OnTouchClick=function(touchInfo, e)
+    {
+        if (!touchInfo || !touchInfo.Click) return;
+        if (touchInfo.Move) return;
+        var clickPoint=touchInfo.Click;
+        var reportChart=this.GetReportChart();
+        if (!reportChart) return;
+
+        var clickData=reportChart.OnMouseDown(clickPoint.X,clickPoint.Y,e);
+        if (!clickData) return;
+
+        if (clickData.Type==2)  //点击行
+        {
+            if (clickData.Redraw==true)
+                this.Draw();
+        }
+        else if (clickData.Type==3) //表头
+        {
+            this.OnClickHeader(clickData, e);
+        }
+
+        JSConsole.Chart.Log('[JSReportChartContainer:OnTouchClick] clickData', clickData);
+    }
+
     this.GetTabChart=function()
     {
         var chart=this.ChartPaint[0];
@@ -96042,7 +96240,6 @@ function JSReportChartContainer(uielement)
 
         var pageSize=chart.GetPageSize();
         if (pageSize>this.Data.Data.length) return false;
-
         if (this.Data.YOffset+pageSize>=this.Data.Data.length) return false;
 
         this.Data.YOffset+=pageSize;
@@ -96069,6 +96266,44 @@ function JSReportChartContainer(uielement)
         if (offset<0) offset=0;
         this.Data.YOffset=offset;
         return true;
+    }
+
+    this.MoveYOffset=function(setp)
+    {
+        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return false;
+        var chart=this.ChartPaint[0];
+        if (!chart) return false;
+
+        if (setp>0) //向下
+        {
+            var count=this.Data.Data.length;
+            var pageSize=chart.GetPageSize();
+            var offset=this.Data.YOffset;
+            if (pageSize>this.Data.Data.length) return false;
+            for(var i=0;i<setp;++i)
+            {
+                if (offset+pageSize+1>count) break;
+                ++offset;
+            }
+
+            this.Data.YOffset=offset;
+            return true;
+        }
+        else if (setp<0)   //向上
+        {
+            if (this.Data.YOffset<=0) return false;
+            setp=Math.abs(setp);
+            var offset=this.Data.YOffset;
+            for(var i=0;i<setp;++i)
+            {
+                if (offset-1<0) break;
+                --offset;
+            }
+            this.Data.YOffset=offset;
+            return true;
+        }
+
+        return false;
     }
 
     this.MoveSelectedRow=function(step)
@@ -96225,14 +96460,29 @@ function JSReportChartContainer(uielement)
         {
             var index=header.Index;
             var sortInfo={Field:this.SortInfo.Field, Sort:this.SortInfo.Sort };
+            var arySortType=header.Column.SortType;
             if (sortInfo.Field!=index)
             {
                 sortInfo.Field=index;
-                sortInfo.Sort=1;
+                sortInfo.Sort=arySortType[0]
             }
             else
             {
-                sortInfo.Sort=(this.SortInfo.Sort+1)%3;
+                if (arySortType.length==1) 
+                {
+                    sortInfo.Sort=arySortType[0];
+                }
+                else
+                {
+                    for(var i=0;i<arySortType.length;++i)
+                    {
+                        if (sortInfo.Sort==arySortType[i])
+                        {
+                            sortInfo.Sort=arySortType[(i+1)%arySortType.length];
+                            break;
+                        }
+                    }
+                }
             }
 
             if (header.Column.Sort==1 || header.Column.Sort==2)  
@@ -96664,9 +96914,10 @@ function ChartReport()
     //缓存
     this.HeaderFont=12*GetDevicePixelRatio() +"px 微软雅黑";
     this.ItemFont=15*GetDevicePixelRatio() +"px 微软雅黑";
-    this.RowCount=0;
-    this.HeaderHeight=0;
-    this.BottomToolbarHeight=30;  //底部工具条高度
+    this.RowCount=0;            //一屏显示行数
+    this.HeaderHeight=0;        //表头高度
+    this.RowHeight=0;           //行高度
+    this.BottomToolbarHeight=0;  //底部工具条高度
     this.IsShowAllColumn=false;   //是否已显示所有列
 
     this.Column=    //{ Type:列id, Title:标题, TextAlign:文字对齐方式, MaxText:文字最大宽度 , TextColor:文字颜色, Sort:0=不支持排序 1=本地排序 0=远程排序 }
@@ -96729,6 +96980,11 @@ function ChartReport()
             if (item.MaxText) colItem.MaxText=item.MaxText;
             if (item.ID) colItem.ID=item.ID;
             if (IFrameSplitOperator.IsNumber(item.Sort)) colItem.Sort=item.Sort;
+            if (item.Sort==1 || item.Sort==2)   //1本地排序 2=远程排序
+            {
+                colItem.SortType=[1,2];         //默认 降序 ，升序
+                if (IFrameSplitOperator.IsNonEmptyArray(item.SortType)) colItem.SortType=item.SortType.slice();
+            }
 
             if (item.Type==REPORT_COLUMN_ID.CUSTOM_STRING_TEXT_ID)
             {
@@ -96741,8 +96997,12 @@ function ChartReport()
                 colItem.DataIndex=item.DataIndex;   //数据在扩展数据索引列
                 colItem.Decimal=2;
                 colItem.FormatType=0;   //0=默认格式化 1=原始输出 2=科学计数 3=成交量格式化
-                if (IFrameSplitOperator.IsNumber(item.Decimal)) colItem.Decimal=item.Decimal;   //小数位数
-                if (IFrameSplitOperator.IsNumber(item.FormatType)) colItem.FormatType=item.FormatType;   //小数位数
+                colItem.ColorType=0;    //0=默认使用TextColor,  1=（>0涨,<0跌）2=(>昨收涨,<昨收跌)
+                colItem.IsDrawCallback=false;   //是否回调
+                if (IFrameSplitOperator.IsNumber(item.Decimal)) colItem.Decimal=item.Decimal;            //小数位数
+                if (IFrameSplitOperator.IsNumber(item.FormatType)) colItem.FormatType=item.FormatType;   //输出样式
+                if (IFrameSplitOperator.IsNumber(item.ColorType)) colItem.ColorType=item.ColorType;      //颜色属性
+                if (IFrameSplitOperator.IsBool(item.IsDrawCallback)) colItem.IsDrawCallback=item.IsDrawCallback;
             }
 
             this.Column.push(colItem);
@@ -96864,6 +97124,16 @@ function ChartReport()
 
     this.CalculateSize=function()   //计算大小
     {
+        if (this.Tab && this.Tab.IsShow)
+        {
+            this.Tab.CalculateSize();
+            this.BottomToolbarHeight=this.Tab.Height;
+        }
+        else
+        {
+            this.BottomToolbarHeight=0;
+        }
+
         this.UpdateCacheData();
 
         var pixelRatio=GetDevicePixelRatio();
@@ -96903,17 +97173,6 @@ function ChartReport()
         }
 
         this.IsShowAllColumn=(subWidth<reportWidth);
-
-        if (this.Tab)
-        {
-            this.Tab.CalculateSize();
-            this.BottomToolbarHeight=this.Tab.Height;
-        }
-        else
-        {
-            this.BottomToolbarHeight=0;
-        }
-
     }
 
     this.DrawHeader=function()
@@ -97345,6 +97604,13 @@ function ChartReport()
         var value=data.Stock.ExtendData[column.DataIndex];
         if (!IFrameSplitOperator.IsNumber(value)) return;
 
+        if (column.IsDrawCallback)  //外部处理输出格式
+        {
+            this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo);
+            return;
+        }
+
+        //格式化输出
         switch(column.FormatType)
         {
             case 1:
@@ -97361,7 +97627,21 @@ function ChartReport()
                 break;
         }  
 
-        this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo);
+        //颜色
+        switch(column.ColorType)
+        {
+            case 1:
+                drawInfo.TextColor=this.GetUpDownColor(value,0);
+                break;
+            case 2:
+                if (!IFrameSplitOperator.IsNumber(data.Stock.YClose))  
+                    drawInfo.TextColor=this.UnchagneColor;
+                else  
+                    drawInfo.TextColor=this.GetUpDownColor(value, data.Stock.YClose);
+                break;
+            default:
+                break;
+        }
     }
 
     this.GetPriceDrawInfo=function(price, stock, data, drawInfo)
@@ -97697,6 +97977,32 @@ function ChartReport()
         return this.PtInItem(x,y,top,bottom);
     }
 
+    this.IsPtInBody=function(x,y)
+    {
+        var top=this.RectClient.Top+this.HeaderHeight;
+        var left=this.RectClient.Left;
+        var right=this.RectClient.Right;
+        var bottom=this.RectClient.Bottom;
+
+        if (x>=left && x<=right && y>=top && y<=bottom) return true;
+
+        return false;
+    }
+
+    this.IsPtInHeader=function(x,y)
+    {
+        if (!this.IsShowHeader) return false;
+
+        var left=this.RectClient.Left;
+        var right=this.RectClient.Right;
+        var top=this.RectClient.Top;
+        var bottom=top+this.HeaderHeight;
+
+        if (x>=left && x<=right && y>=top && y<=bottom) return true;
+
+        return false;
+    }
+
     this.SendClickEvent=function(id, data)
     {
         var event=this.GetEventCallback(id);
@@ -97719,6 +98025,8 @@ function ChartReportTab()
     this.GetEventCallback;              //获取事件
 
     this.Report;
+
+    this.IsShow=true;                   //是否显示
 
     //Tab
     this.TabList=[];                //{ Title:标题, ID:, IsMenu: 是否菜单 }
