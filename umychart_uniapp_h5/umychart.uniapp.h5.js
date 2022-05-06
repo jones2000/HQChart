@@ -96050,6 +96050,8 @@ function JSReportChartContainer(uielement)
             drag.Click.Y=touches[0].clientY;
             drag.LastMove.X=touches[0].clientX;
             drag.LastMove.Y=touches[0].clientY;
+            drag.IsXMove=false;
+            drag.IsYMove=false;
 
             if (reportChart.IsPtInBody(drag.Click.X,drag.Click.Y))
             {
@@ -96059,6 +96061,55 @@ function JSReportChartContainer(uielement)
             this.TouchInfo={ Click:{X:touches[0].clientX, Y:touches[0].clientY } };
             this.PreventTouchEvent(e);
         }
+    }
+
+    this.OnDragYOffset=function(drag, touches, moveUpDown, e)
+    {
+        if (moveUpDown<5) return false
+
+        var isUp=true;
+        if (drag.LastMove.Y<touches[0].clientY) isUp=false;     //Down
+
+        var oneStep=this.YStepPixel;
+        if (oneStep<=0) oneStep=5;
+
+        var step=parseInt(moveUpDown/oneStep); 
+        if (step<=0) return false
+
+        if (isUp) step*=-1;
+
+        if (this.MoveYOffset(step))
+        {
+            drag.IsYMove=true;
+            this.Draw();
+            this.DelayUpdateStockData();
+        }
+
+        return true;
+    }
+
+    this.OnDragXOffset=function(drag, touches, moveLeftRight, e)
+    {
+        if (moveLeftRight<5) return false;
+
+        var isLeft=true;
+        if (drag.LastMove.X<touches[0].clientX) isLeft=false;//右移数据
+
+        var oneStep=this.XStepPixel;
+        if (oneStep<=0) oneStep=5;
+
+        var step=parseInt(moveLeftRight/oneStep);  //除以4个像素
+        if (step<=0) return false;
+
+        if (!isLeft) step*=-1;
+
+        if (this.MoveXOffset(step))
+        {
+            drag.IsXMove=true;
+            this.Draw();
+        }
+
+        return true;
     }
 
     this.OnTouchMove=function(e)
@@ -96084,47 +96135,22 @@ function JSReportChartContainer(uielement)
                 var moveLeftRight=Math.abs(drag.LastMove.X-touches[0].clientX);
                 var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
 
-                if (moveUpDown>0 && moveAngle<this.TouchMoveMinAngle)
+
+                if (drag.IsYMove==true)
                 {
-                    if (moveUpDown<5) return;
-
-                    var isUp=true;
-                    if (drag.LastMove.Y<touches[0].clientY) isUp=false;     //Down
-
-                    var oneStep=this.YStepPixel;
-                    if (oneStep<=0) oneStep=5;
-
-                    var step=parseInt(moveUpDown/oneStep); 
-                    if (step<=0) return;
-
-                    if (isUp) step*=-1;
-
-                    if (this.MoveYOffset(step))
-                    {
-                        this.Draw();
-                        this.DelayUpdateStockData();
-                    }
-
+                    if (!this.OnDragYOffset(drag, touches,moveUpDown, e)) return;
+                }
+                else if (drag.IsXMove==true)
+                {
+                    if (!this.OnDragXOffset(drag, touches,moveLeftRight, e)) return;
+                }
+                else if (moveUpDown>0 && moveAngle<this.TouchMoveMinAngle)
+                {
+                    if (!this.OnDragYOffset(drag, touches,moveUpDown, e)) return;
                 }
                 else if (moveLeftRight>0 && moveAngle>=this.TouchMoveMinAngle)
                 {
-                    if (moveLeftRight<5) return;
-
-                    var isLeft=true;
-                    if (drag.LastMove.X<touches[0].clientX) isLeft=false;//右移数据
-
-                    var oneStep=this.XStepPixel;
-                    if (oneStep<=0) oneStep=5;
-
-                    var step=parseInt(moveLeftRight/oneStep);  //除以4个像素
-                    if (step<=0) return;
-
-                    if (!isLeft) step*=-1;
-
-                    if (this.MoveXOffset(step))
-                    {
-                        this.Draw();
-                    }
+                    if (!this.OnDragXOffset(drag, touches,moveLeftRight, e)) return;
                 }
                 else
                 {
