@@ -6033,6 +6033,7 @@ var JSCHART_EVENT_ID=
     ON_DRAW_CUSTOM_TEXT:55,                 //报价列表自定义列
     ON_CLICK_REPORT_TAB:56,                 //报价列表标签点击
     ON_CLICK_REPORT_TABMENU:57,             //报价列表标签菜单点击
+    ON_DRAW_REPORT_FIXEDROW_TEXT:58         //报价列表固定行绘制
 }
 
 var JSCHART_OPERATOR_ID=
@@ -46781,15 +46782,23 @@ function JSChartResource()
         {
             Color:"rgb(60,60,60)",      //表头文字颜色
             SortColor:"rgb(255,0,0)",   //排序箭头颜色
-            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },    //表头四周间距
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2},    //表头四周间距
             Font:{ Size:12, Name:"微软雅黑" }   //表头字体
         },
 
         Item:
         {
-            Mergin:{ Top:2, Bottom:2,Left:5, Right:5 }, //单元格四周间距
+            Mergin:{ Top:2, Bottom:0,Left:5, Right:5 }, //单元格四周间距
             Font:{ Size:15, Name:"微软雅黑"},
             BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },//单元格字体
+            NameFont:{ Size:15, Name:"微软雅黑" },
+            SymbolFont:{ Size:12, Name:"微软雅黑" }
+        },
+
+        //固定行
+        FixedItem:
+        {
+            Font:{ Size:15, Name:"微软雅黑"},
         },
 
         LimitBorder:
@@ -47266,6 +47275,31 @@ function JSChartResource()
                     if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Item.BarMergin.Top=mergin.Top;
                     if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Item.BarMergin.Right=mergin.Right;
                     if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Item.BarMergin.Bottom=mergin.Bottom;
+                }
+
+                if (row.NameFont)
+                {
+                    var font=row.NameFont;
+                    if (font.Name) this.Report.Item.NameFont.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Item.NameFont.Size=font.Size;
+                }
+
+                if (row.SymbolFont)
+                {
+                    var font=row.SymbolFont;
+                    if (font.Name) this.Report.Item.SymbolFont.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Item.SymbolFont.Size=font.Size;
+                }
+            }
+
+            if (item.FixedItem)
+            {
+                var row=item.FixedItem;
+                if (row.Font)
+                {
+                    var font=row.Font;
+                    if (font.Name) this.Report.FixedItem.Font.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.FixedItem.Font.Size=font.Size;
                 }
             }
 
@@ -93197,177 +93231,196 @@ function GetDevicePixelRatio()
 */
 
 //黑色风格
-var BLACK_STYLE=
+
+function GetBlackStyle()
 {
-    BGColor:'rgb(0,0,0)', //背景色
-    TooltipBGColor: "rgb(255, 255, 255)", //背景色
-    TooltipAlpha: 0.92,                  //透明度
-
-    SelectRectBGColor: "rgba(1,130,212,0.06)", //背景色
-    //  SelectRectAlpha: 0.06;                  //透明度
-
-    //K线颜色
-    UpBarColor: "rgb(238,21,21)",   //上涨
-    DownBarColor: "rgb(25,158,0)",  //下跌
-    UnchagneBarColor: "rgb(228,228,228)", //平盘
-    EmptyBarBGColor:'rgb(0,0,0)',   //空心柱子背景色
-
-    Minute: 
+    var BLACK_STYLE=
     {
-        VolBarColor: null,
-        PriceColor: "rgb(25,180,231)",
-        AreaPriceColor:"rgba(63,158,255,.3)",
-        AvPriceColor: "rgb(255,236,0)",
-        PositionColor:'rgb(218,165,32)', 
-        VolTitleColor:"rgb(190,190,190)",
-        Before:
+        BGColor:'rgb(0,0,0)', //背景色
+        TooltipBGColor: "rgb(255, 255, 255)", //背景色
+        TooltipAlpha: 0.92,                  //透明度
+    
+        SelectRectBGColor: "rgba(1,130,212,0.06)", //背景色
+        //  SelectRectAlpha: 0.06;                  //透明度
+    
+        //K线颜色
+        UpBarColor: "rgb(238,21,21)",   //上涨
+        DownBarColor: "rgb(25,158,0)",  //下跌
+        UnchagneBarColor: "rgb(228,228,228)", //平盘
+        EmptyBarBGColor:'rgb(0,0,0)',   //空心柱子背景色
+    
+        Minute: 
         {
-            BGColor:"rgba(105,105,105,0.5)",
-            AvPriceColor:'rgb(248,248,255)'     //均线
-        }
-    },
-
-
-    DefaultTextColor: "rgb(101,104,112)",
-    DefaultTextFont: 14*GetDevicePixelRatio() +'px 微软雅黑',
-    TitleFont: 13*GetDevicePixelRatio() +'px 微软雅黑',    //标题字体(动态标题 K线及指标的动态信息字体)
-    IndexTitleColor:"rgb(101,104,112)",                           //指标名字颜色
-
-    UpTextColor: "rgb(238,21,21)",
-    DownTextColor: "rgb(25,158,0)",
-    UnchagneTextColor: "rgb(101,104,112)",
-    CloseLineColor: 'rgb(178,34,34)',
-
-    Title:
-    {
-        TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
-        ColorIndexColor:'rgb(112,128,144)',  //五彩K线颜色
-
-        VolColor:"rgb(101,104,112)",       //标题成交量
-        AmountColor:"rgb(101,104,112)",    //成交金额 
-        DateTimeColor:"rgb(101,104,112)",  //时间,日期  
-        SettingColor:"rgb(101,104,112)",   //周期,复权
-        NameColor:"rgb(101,104,112)" ,     //股票名称
-        TurnoverRateColor:'rgb(101,104,112)',       //换手率
-        PositionColor:"rgb(101,104,112)"       //持仓
-    },
-
-    FrameBorderPen: "rgba(236,236,236,0.13)",     //边框
-    FrameSplitPen: "rgba(236,236,236,0.13)",          //分割线
-    FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
-    FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
-    FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
-    OverlayIndexTitleBGColor:'rgba(0,0,0,0.7)', //叠加指标背景色
-
-    Frame:
-    { 
-        XBottomOffset:1*GetDevicePixelRatio(), //X轴文字向下偏移
-       
-        PercentageText:      //百分比坐标文字颜色
-        { 
-            PriceColor:'rgb(101,104,112)', 
-            PercentageColor:"rgb(101,104,112)", 
-            SplitColor:"rgb(101,104,112)",
-            Font:14*GetDevicePixelRatio() +"px 微软雅黑"
-        }
-    },   
-
-
-    FrameLatestPrice : {
-        TextColor:'rgb(255,255,255)',   //最新价格文字颜色
-        UpBarColor:"rgb(238,21,21)",    //上涨
-        DownBarColor:"rgb(25,158,0)",   //下跌
-        UnchagneBarColor:"rgb(190,190,190)",   //平盘
-        BGAlpha:0.6
-    },
-
-    CorssCursorBGColor: "rgb(43,54,69)",            //十字光标背景
-    CorssCursorTextColor: "rgb(255,255,255)",
-    CorssCursorTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",
-    CorssCursorHPenColor: "rgb(130,130,130)",           //十字光标线段颜色
-    CorssCursorVPenColor: "rgb(130,130,130)",           //十字光标线段颜色
-
-    CorssCursor:
-    { 
-        RightButton : 
-        { 
-            BGColor:'rgb(43,54,69)', 
-            PenColor:'rgb(255,255,255)',
-            Icon: { Text:'\ue6a3', Color:'rgb(255,255,255)', Family:"iconfont", Size:18 }
-        } 
-    },
-
-    //订单流配置
-    OrderFlow:
-    { 
-        UpColor:{BG:'rgb(223,191,180)', Border:"rgb(196,84,86)" },          //阳线
-        DownColor:{ BG:"rgb(176,212,184)", Border:'rgb(66,94,74)' },        //阴线
-        UnchagneColor: {BG:"rgb(216,221,177)", Border:"rgb(209,172,129)"},  //平盘
-        Text:{ Color: "rgb(248,248,255)" , Family:'Arial', FontMaxSize:16, MaxValue:"8888" },  //文字
-        Line:{ UpDownColor: "rgb(220,220,220)", MiddleColor:"rgb(211,211,211)" }  //最大, 最低,中间 竖线
-    },
-
-    KLine:
-    {
-        MaxMin: { Font: 12*GetDevicePixelRatio() +'px 微软雅黑', Color: 'rgb(255,250,240)', RightArrow:"→", LeftArrow:"←", HighYOffset:0, LowYOffset:0 },   //K线最大最小值显示
-        Info:  //信息地雷
-        {
-            Investor:
-                {
-                    ApiUrl:'/API/NewsInteract', //互动易
-                    IconFont: { Family:'iconfont', Text:'\ue631' , HScreenText:'\ue684', Color:'#1c65db'} //SVG 文本
-                },
-                Announcement:                                           //公告
-                {
-                    ApiUrl:'/API/ReportList',
-                    IconFont: { Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' }, //SVG 文本
-                    IconFont2: { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' } //SVG 文本 //季报
-                },
-                Pforecast:  //业绩预告
-                {
-                    ApiUrl:'/API/StockHistoryDay',
-                    IconFont: { Family:'iconfont', Text:'\ue62e', HScreenText:'\ue687', Color:'#986cad' } //SVG 文本
-                },
-                Research:   //调研
-                {
-                    ApiUrl:'/API/InvestorRelationsList',
-                    IconFont: { Family:'iconfont', Text:'\ue632', HScreenText:'\ue688', Color:'#19b1b7' } //SVG 文本
-                },
-                BlockTrading:   //大宗交易
-                {
-                    ApiUrl:'/API/StockHistoryDay',
-                    IconFont: { Family:'iconfont', Text:'\ue630', HScreenText:'\ue689', Color:'#f39f7c' } //SVG 文本
-                },
-                TradeDetail:    //龙虎榜
-                {
-                    ApiUrl:'/API/StockHistoryDay',
-                    IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' } //SVG 文本
-                }
-
+            VolBarColor: null,
+            PriceColor: "rgb(25,180,231)",
+            AreaPriceColor:"rgba(63,158,255,.3)",
+            AvPriceColor: "rgb(255,236,0)",
+            PositionColor:'rgb(218,165,32)', 
+            VolTitleColor:"rgb(190,190,190)",
+            Before:
+            {
+                BGColor:"rgba(105,105,105,0.5)",
+                AvPriceColor:'rgb(248,248,255)'     //均线
+            }
         },
-        NumIcon:
+    
+    
+        DefaultTextColor: "rgb(101,104,112)",
+        DefaultTextFont: 14*GetDevicePixelRatio() +'px 微软雅黑',
+        TitleFont: 13*GetDevicePixelRatio() +'px 微软雅黑',    //标题字体(动态标题 K线及指标的动态信息字体)
+        IndexTitleColor:"rgb(101,104,112)",                           //指标名字颜色
+    
+        UpTextColor: "rgb(238,21,21)",
+        DownTextColor: "rgb(25,158,0)",
+        UnchagneTextColor: "rgb(101,104,112)",
+        CloseLineColor: 'rgb(178,34,34)',
+    
+        Title:
         {
-            Color:'rgb(251,80,80)',Family:'iconfont',
-            Text:[  '\ue649',
-                    '\ue63b','\ue640','\ue63d','\ue63f','\ue645','\ue641','\ue647','\ue648','\ue646','\ue636',
-                    '\ue635','\ue637','\ue638','\ue639','\ue63a','\ue63c','\ue63e','\ue642','\ue644','\ue643'
-                ]
+            TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
+            ColorIndexColor:'rgb(112,128,144)',  //五彩K线颜色
+    
+            VolColor:"rgb(101,104,112)",       //标题成交量
+            AmountColor:"rgb(101,104,112)",    //成交金额 
+            DateTimeColor:"rgb(101,104,112)",  //时间,日期  
+            SettingColor:"rgb(101,104,112)",   //周期,复权
+            NameColor:"rgb(101,104,112)" ,     //股票名称
+            TurnoverRateColor:'rgb(101,104,112)',       //换手率
+            PositionColor:"rgb(101,104,112)"       //持仓
         },
-        TradeIcon:  //交易指标 图标
+    
+        FrameBorderPen: "rgba(236,236,236,0.13)",     //边框
+        FrameSplitPen: "rgba(236,236,236,0.13)",          //分割线
+        FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
+        FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
+        FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
+        OverlayIndexTitleBGColor:'rgba(0,0,0,0.7)', //叠加指标背景色
+    
+        Frame:
+        { 
+            XBottomOffset:1*GetDevicePixelRatio(), //X轴文字向下偏移
+           
+            PercentageText:      //百分比坐标文字颜色
+            { 
+                PriceColor:'rgb(101,104,112)', 
+                PercentageColor:"rgb(101,104,112)", 
+                SplitColor:"rgb(101,104,112)",
+                Font:14*GetDevicePixelRatio() +"px 微软雅黑"
+            }
+        },   
+    
+    
+        FrameLatestPrice : {
+            TextColor:'rgb(255,255,255)',   //最新价格文字颜色
+            UpBarColor:"rgb(238,21,21)",    //上涨
+            DownBarColor:"rgb(25,158,0)",   //下跌
+            UnchagneBarColor:"rgb(190,190,190)",   //平盘
+            BGAlpha:0.6
+        },
+    
+        CorssCursorBGColor: "rgb(43,54,69)",            //十字光标背景
+        CorssCursorTextColor: "rgb(255,255,255)",
+        CorssCursorTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",
+        CorssCursorHPenColor: "rgb(130,130,130)",           //十字光标线段颜色
+        CorssCursorVPenColor: "rgb(130,130,130)",           //十字光标线段颜色
+    
+        CorssCursor:
+        { 
+            RightButton : 
+            { 
+                BGColor:'rgb(43,54,69)', 
+                PenColor:'rgb(255,255,255)',
+                Icon: { Text:'\ue6a3', Color:'rgb(255,255,255)', Family:"iconfont", Size:18 }
+            } 
+        },
+    
+        //订单流配置
+        OrderFlow:
+        { 
+            UpColor:{BG:'rgb(223,191,180)', Border:"rgb(196,84,86)" },          //阳线
+            DownColor:{ BG:"rgb(176,212,184)", Border:'rgb(66,94,74)' },        //阴线
+            UnchagneColor: {BG:"rgb(216,221,177)", Border:"rgb(209,172,129)"},  //平盘
+            Text:{ Color: "rgb(248,248,255)" , Family:'Arial', FontMaxSize:16, MaxValue:"8888" },  //文字
+            Line:{ UpDownColor: "rgb(220,220,220)", MiddleColor:"rgb(211,211,211)" }  //最大, 最低,中间 竖线
+        },
+    
+        KLine:
         {
-            Family:'iconfont', 
-            Buy: { Color:'rgb(255,15,4)', Text:'\ue683', HScreenText:'\ue682'}, 
-            Sell: { Color:'rgb(64,122,22)', Text:'\ue681',HScreenText:'\ue680'},
-        }
-    },
-
-    Index: 
-    {      
-        LineColor:  //指标线段颜色
+            MaxMin: { Font: 12*GetDevicePixelRatio() +'px 微软雅黑', Color: 'rgb(255,250,240)', RightArrow:"→", LeftArrow:"←", HighYOffset:0, LowYOffset:0 },   //K线最大最小值显示
+            Info:  //信息地雷
+            {
+                Investor:
+                    {
+                        ApiUrl:'/API/NewsInteract', //互动易
+                        IconFont: { Family:'iconfont', Text:'\ue631' , HScreenText:'\ue684', Color:'#1c65db'} //SVG 文本
+                    },
+                    Announcement:                                           //公告
+                    {
+                        ApiUrl:'/API/ReportList',
+                        IconFont: { Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' }, //SVG 文本
+                        IconFont2: { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' } //SVG 文本 //季报
+                    },
+                    Pforecast:  //业绩预告
+                    {
+                        ApiUrl:'/API/StockHistoryDay',
+                        IconFont: { Family:'iconfont', Text:'\ue62e', HScreenText:'\ue687', Color:'#986cad' } //SVG 文本
+                    },
+                    Research:   //调研
+                    {
+                        ApiUrl:'/API/InvestorRelationsList',
+                        IconFont: { Family:'iconfont', Text:'\ue632', HScreenText:'\ue688', Color:'#19b1b7' } //SVG 文本
+                    },
+                    BlockTrading:   //大宗交易
+                    {
+                        ApiUrl:'/API/StockHistoryDay',
+                        IconFont: { Family:'iconfont', Text:'\ue630', HScreenText:'\ue689', Color:'#f39f7c' } //SVG 文本
+                    },
+                    TradeDetail:    //龙虎榜
+                    {
+                        ApiUrl:'/API/StockHistoryDay',
+                        IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' } //SVG 文本
+                    }
+    
+            },
+            NumIcon:
+            {
+                Color:'rgb(251,80,80)',Family:'iconfont',
+                Text:[  '\ue649',
+                        '\ue63b','\ue640','\ue63d','\ue63f','\ue645','\ue641','\ue647','\ue648','\ue646','\ue636',
+                        '\ue635','\ue637','\ue638','\ue639','\ue63a','\ue63c','\ue63e','\ue642','\ue644','\ue643'
+                    ]
+            },
+            TradeIcon:  //交易指标 图标
+            {
+                Family:'iconfont', 
+                Buy: { Color:'rgb(255,15,4)', Text:'\ue683', HScreenText:'\ue682'}, 
+                Sell: { Color:'rgb(64,122,22)', Text:'\ue681',HScreenText:'\ue680'},
+            }
+        },
+    
+        Index: 
+        {      
+            LineColor:  //指标线段颜色
+            [
+                "rgb(255,189,09)",
+                "rgb(22,198,255)",
+                "rgb(174,35,161)",
+                "rgb(236,105,65)",
+                "rgb(68,114,196)",
+                "rgb(229,0,79)",
+                "rgb(0,128,255)",
+                "rgb(252,96,154)",
+                "rgb(42,230,215)",
+                "rgb(24,71,178)",
+            ],
+            NotSupport: { Font: "14px 微软雅黑", TextColor: "rgb(52,52,52)" }
+        },
+          
+        ColorArray:       //自定义指标默认颜色
         [
-            "rgb(255,189,09)",
-            "rgb(22,198,255)",
-            "rgb(174,35,161)",
+            "rgb(255,174,0)",
+            "rgb(25,199,255)",
+            "rgb(175,95,162)",
             "rgb(236,105,65)",
             "rgb(68,114,196)",
             "rgb(229,0,79)",
@@ -93376,192 +93429,188 @@ var BLACK_STYLE=
             "rgb(42,230,215)",
             "rgb(24,71,178)",
         ],
-        NotSupport: { Font: "14px 微软雅黑", TextColor: "rgb(52,52,52)" }
-    },
-      
-    ColorArray:       //自定义指标默认颜色
-    [
-        "rgb(255,174,0)",
-        "rgb(25,199,255)",
-        "rgb(175,95,162)",
-        "rgb(236,105,65)",
-        "rgb(68,114,196)",
-        "rgb(229,0,79)",
-        "rgb(0,128,255)",
-        "rgb(252,96,154)",
-        "rgb(42,230,215)",
-        "rgb(24,71,178)",
-    ],
-
-    DrawPicture:  //画图工具
-    {
-        LineColor: 
-        [
-            "rgb(255,255,0)"
-        ],
-
-        PointColor: 
-        [
-            "rgb(228,228,228)",
-            "rgb(192,192,192)"
-        ],
-    },
-
-    TooltipPaint : 
-    {
-        BGColor:'rgba(20,20,20,0.8)',    //背景色
-        BorderColor:'rgb(210,210,210)',     //边框颜色
-        TitleColor:'rgb(210,210,210)',       //标题颜色
-        TitleFont:13*GetDevicePixelRatio() +'px 微软雅黑',   //字体
-        DateTimeColor:'rgb(210,210,210)',
-        VolColor:"rgb(210,210,210)",       //标题成交量
-        AmountColor:"rgb(210,210,210)",    //成交金额
-    },
-
-    //走势图 信息地雷
-    MinuteInfo:
-    {
-        TextColor: 'rgb(84,143,255)',
-        Font: 14*GetDevicePixelRatio() +'px 微软雅黑',
-        PointColor:'rgb(38,113,254)',
-        LineColor:'rgb(120,167,255)',
-        TextBGColor:'rgba(255,255,255,1)'
-    },
-
-    //筹码分布图
-    StockChip:
-    {
-        InfoColor:'rgb(255,255,255)', //文字颜色
-        DayInfoColor:'rgb(0,0,0)' //周期颜色内文字颜色
-    },
-
-    //深度图
-    DepthChart:
-    {
-        BidColor: { Line:"rgb(82,176,123)", Area:"rgba(82,176,123,0.5)"},  //卖
-        AskColor: { Line:"rgb(207,76,89)", Area:"rgba(207,76,89, 0.5)"},   //买
-        LineWidth:4
-    },
-
-    DepthCorss:
-    {
-        BidColor: { Line:"rgb(82,176,123)" },  //卖
-        AskColor: { Line:"rgb(207,76,89)" },   //买
-        LineWidth:2,    //线段宽度
-        LineDash:[3,3],
-        Tooltip:
-        { 
-            BGColor:'rgba(54,54,54, 0.8)', TextColor:"rgb(203,215,224)",
-            Border:{ Top:5, Left:20, Bottom:5, Center: 5},
-            Font:14*GetDevicePixelRatio() +"px 微软雅黑",
-            LineHeight:16   //单行高度
-        }
-    },
-
-    //区间选择
-    RectSelect:
-    {
-        LineColor:"rgb(115,83,64)",          //竖线  
-        LineWidth:1*GetDevicePixelRatio(),
-        LineDotted:[3,3], 
-        AreaColor:"rgba(26,13,7,0.5)",     //面积
-    },
-
-    //成交明细
-    DealList:
-    {
-        BorderColor:'rgb(38,38,41)',    //边框线
-        Header:
-        {
-            Color:"RGB(245,245,245)",
-            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
-            Font:{ Size:12, Name:"微软雅黑" }
-        },
-
-        Row:
-        {
-            Mergin:{ Top:2, Bottom:2 },
-            Font:{ Size:15, Name:"微软雅黑"},
-            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 }
-        },
-
-        FieldColor:
-        {
-            Vol:"rgb(192,192,0)",      //成交量
-            Time:"rgb(245,245,245)",   //时间
-            Deal:"rgb(111,128,112)",    //成交笔数
-            Index:"rgb(245,245,245)",   //序号
-            BarTitle:'rgb(245,245,245)',   //柱子文字
-            Text:"rgb(245,245,245)",   //默认文本
-        },
-
-        UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
-        DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
-        UnchagneTextColor:"rgb(228,228,228)"    //平盘文字颜色 
-    },
-
-    //报价列表
-    Report:
-    {
-        BorderColor:'rgb(38,38,41)',    //边框线
-        SelectedColor:"rgb(49,48,56)",  //选中行
-        Header:
-        {
-            Color:"RGB(245,245,245)",
-            SortColor:"rgb(255,0,0)",
-            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
-            Font:{ Size:12, Name:"微软雅黑" }
-        },
-
-        Item:
-        {
-            Mergin:{ Top:2, Bottom:2,Left:5, Right:5 },
-            Font:{ Size:15, Name:"微软雅黑"},
-            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },
-        },
-
-        LimitBorder:
-        {
-            Color:"rgb(64,64,64)",
-            Mergin:{ Top:1, Bottom:1,Left:0, Right:0 },
-        },
-
-        FieldColor:
-        {
-            Index:"rgb(245,245,245)",  //序号
-            Symbol:"rgb(255,255,255)",
-            Name:"rgb(255,255,255)",
-            Amount:"rgb(2,226,244)",    //成交金额
-            Vol:"rgb(192,192,0)",       //成交量
-            BarTitle:'rgb(245,245,245)',   //柱子文字
-            Text:"rgb(245,245,245)",    //默认文本
-        },
-
-        UpTextColor:"rgb(238,21,21)",           //上涨文字颜色
-        DownTextColor:"rgb(25,158,0)",          //下跌文字颜色
-        UnchagneTextColor:"rgb(228,228,228)",    //平盘文字颜色 
-
-        Tab:
-        {
-            Font:{ Size:12, Name:"微软雅黑" },
-            ScrollBarWidth:100,
-            ButtonColor:"rgb(13,12,15)",
-            BarColor:"rgb(48,48,48)",
-            BorderColor:'rgb(48,48,48)',
-
-            TabTitleColor:'rgb(153,153,153)',
-            TabSelectedTitleColor:'rgb(255,255,255)',
-            TabSelectedBGColor:"rgb(13,12,15)",
-            TabMoveOnTitleColor:"rgb(255,255,255)",
-            TabBGColor:"rgb(28,28,31)"
-        }
-    }
     
-};
+        DrawPicture:  //画图工具
+        {
+            LineColor: 
+            [
+                "rgb(255,255,0)"
+            ],
+    
+            PointColor: 
+            [
+                "rgb(228,228,228)",
+                "rgb(192,192,192)"
+            ],
+        },
+    
+        TooltipPaint : 
+        {
+            BGColor:'rgba(20,20,20,0.8)',    //背景色
+            BorderColor:'rgb(210,210,210)',     //边框颜色
+            TitleColor:'rgb(210,210,210)',       //标题颜色
+            TitleFont:13*GetDevicePixelRatio() +'px 微软雅黑',   //字体
+            DateTimeColor:'rgb(210,210,210)',
+            VolColor:"rgb(210,210,210)",       //标题成交量
+            AmountColor:"rgb(210,210,210)",    //成交金额
+        },
+    
+        //走势图 信息地雷
+        MinuteInfo:
+        {
+            TextColor: 'rgb(84,143,255)',
+            Font: 14*GetDevicePixelRatio() +'px 微软雅黑',
+            PointColor:'rgb(38,113,254)',
+            LineColor:'rgb(120,167,255)',
+            TextBGColor:'rgba(255,255,255,1)'
+        },
+    
+        //筹码分布图
+        StockChip:
+        {
+            InfoColor:'rgb(255,255,255)', //文字颜色
+            DayInfoColor:'rgb(0,0,0)' //周期颜色内文字颜色
+        },
+    
+        //深度图
+        DepthChart:
+        {
+            BidColor: { Line:"rgb(82,176,123)", Area:"rgba(82,176,123,0.5)"},  //卖
+            AskColor: { Line:"rgb(207,76,89)", Area:"rgba(207,76,89, 0.5)"},   //买
+            LineWidth:4
+        },
+    
+        DepthCorss:
+        {
+            BidColor: { Line:"rgb(82,176,123)" },  //卖
+            AskColor: { Line:"rgb(207,76,89)" },   //买
+            LineWidth:2,    //线段宽度
+            LineDash:[3,3],
+            Tooltip:
+            { 
+                BGColor:'rgba(54,54,54, 0.8)', TextColor:"rgb(203,215,224)",
+                Border:{ Top:5, Left:20, Bottom:5, Center: 5},
+                Font:14*GetDevicePixelRatio() +"px 微软雅黑",
+                LineHeight:16   //单行高度
+            }
+        },
+    
+        //区间选择
+        RectSelect:
+        {
+            LineColor:"rgb(115,83,64)",          //竖线  
+            LineWidth:1*GetDevicePixelRatio(),
+            LineDotted:[3,3], 
+            AreaColor:"rgba(26,13,7,0.5)",     //面积
+        },
+    
+        //成交明细
+        DealList:
+        {
+            BorderColor:'rgb(38,38,41)',    //边框线
+            Header:
+            {
+                Color:"RGB(245,245,245)",
+                Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+                Font:{ Size:12, Name:"微软雅黑" }
+            },
+    
+            Row:
+            {
+                Mergin:{ Top:2, Bottom:2 },
+                Font:{ Size:15, Name:"微软雅黑"},
+                BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 }
+            },
+    
+            FieldColor:
+            {
+                Vol:"rgb(192,192,0)",      //成交量
+                Time:"rgb(245,245,245)",   //时间
+                Deal:"rgb(111,128,112)",    //成交笔数
+                Index:"rgb(245,245,245)",   //序号
+                BarTitle:'rgb(245,245,245)',   //柱子文字
+                Text:"rgb(245,245,245)",   //默认文本
+            },
+    
+            UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+            DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+            UnchagneTextColor:"rgb(228,228,228)"    //平盘文字颜色 
+        },
+    
+        //报价列表
+        Report:
+        {
+            BorderColor:'rgb(38,38,41)',    //边框线
+            SelectedColor:"rgb(49,48,56)",  //选中行
+            Header:
+            {
+                Color:"RGB(245,245,245)",
+                SortColor:"rgb(255,0,0)",
+                Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+                Font:{ Size:12, Name:"微软雅黑" }
+            },
+    
+            Item:
+            {
+                Mergin:{ Top:2, Bottom:0,Left:5, Right:5 },
+                Font:{ Size:15, Name:"微软雅黑"},
+                BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },
+                NameFont:{ Size:14, Name:"微软雅黑" },
+                SymbolFont:{ Size:12, Name:"微软雅黑" }
+            },
+
+             //固定行
+            FixedItem:
+            {
+                Font:{ Size:15, Name:"微软雅黑"},
+            },
+    
+            LimitBorder:
+            {
+                Color:"rgb(64,64,64)",
+                Mergin:{ Top:1, Bottom:1,Left:0, Right:0 },
+            },
+    
+            FieldColor:
+            {
+                Index:"rgb(245,245,245)",  //序号
+                Symbol:"rgb(255,255,255)",
+                Name:"rgb(255,255,255)",
+                Amount:"rgb(2,226,244)",    //成交金额
+                Vol:"rgb(192,192,0)",       //成交量
+                BarTitle:'rgb(245,245,245)',   //柱子文字
+                Text:"rgb(245,245,245)",    //默认文本
+            },
+    
+            UpTextColor:"rgb(238,21,21)",           //上涨文字颜色
+            DownTextColor:"rgb(25,158,0)",          //下跌文字颜色
+            UnchagneTextColor:"rgb(228,228,228)",    //平盘文字颜色 
+    
+            Tab:
+            {
+                Font:{ Size:12, Name:"微软雅黑" },
+                ScrollBarWidth:100,
+                ButtonColor:"rgb(13,12,15)",
+                BarColor:"rgb(48,48,48)",
+                BorderColor:'rgb(48,48,48)',
+    
+                TabTitleColor:'rgb(153,153,153)',
+                TabSelectedTitleColor:'rgb(255,255,255)',
+                TabSelectedBGColor:"rgb(13,12,15)",
+                TabMoveOnTitleColor:"rgb(255,255,255)",
+                TabBGColor:"rgb(28,28,31)"
+            }
+        }
+        
+    };
+    
+    return BLACK_STYLE;
+}
 
 var STYLE_TYPE_ID=
 {
     BLACK_ID:1, //黑色风格
+    WHITE_ID:0, //白色风格
 }
 
 function HQChartStyle()
@@ -93571,13 +93620,15 @@ function HQChartStyle()
 
 HQChartStyle.GetStyleConfig=function(styleid)    //获取一个风格的配置变量
 {
-  switch (styleid)
-  {
-      case STYLE_TYPE_ID.BLACK_ID:
-          return BLACK_STYLE;
-      default:
-          return null;
-  }
+    switch (styleid)
+    {
+        case STYLE_TYPE_ID.BLACK_ID:
+            return GetBlackStyle();
+        case STYLE_TYPE_ID.WHITE_ID:
+            return new JSChartResource();
+        default:
+            return null;
+    }
 }
 
 
@@ -93866,6 +93917,7 @@ function JSDealChartContainer(uielement)
             if (IFrameSplitOperator.IsBool(option.IsSingleTable)) chart.IsSingleTable=option.IsSingleTable;     //单表模式
             if (IFrameSplitOperator.IsBool(option.IsShowHeader)) chart.IsShowHeader=option.IsShowHeader;        //是否显示表头
             if (IFrameSplitOperator.IsBool(option.IsShowLastPage)) this.IsShowLastPage=option.IsShowLastPage;  //是否显示最后一页
+            if (IFrameSplitOperator.IsNumber(option.BorderLine)) this.Frame.BorderLine=option.BorderLine;   //边框
         }
 
         var bRegisterKeydown=true;
@@ -94189,7 +94241,7 @@ function JSDealChartContainer(uielement)
         this.SetSizeChange(true);
 
         var chart=this.ChartPaint[0];
-        if (chart && this.Data.DataOffset>0 && IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) 
+        if (chart && this.Data && this.Data.DataOffset>0 && IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) 
         {
             var pageSize=chart.GetPageSize(true);
             if (pageSize+this.Data.DataOffset>=this.Data.Data.length)   //当前屏不能显示满，调整
@@ -94386,17 +94438,48 @@ function JSDealFrame()
 
     this.Draw=function(option)
     {
-        if (option && option.IsEnableSplash===true)
-        {
-            var left=ToFixedPoint(this.ChartBorder.GetLeft());
-            var top=ToFixedPoint(this.ChartBorder.GetTop());
-            var right=ToFixedPoint(this.ChartBorder.GetRight());
-            var bottom=ToFixedPoint(this.ChartBorder.GetBottom());
-            var width=right-left;
-            var height=bottom-top;
+        var left=ToFixedPoint(this.ChartBorder.GetLeft());
+        var top=ToFixedPoint(this.ChartBorder.GetTop());
+        var right=ToFixedPoint(this.ChartBorder.GetRight());
+        var bottom=ToFixedPoint(this.ChartBorder.GetBottom());
+        var width=right-left;
+        var height=bottom-top;
 
+        if (!IFrameSplitOperator.IsNumber(this.BorderLine))
+        {
             this.Canvas.strokeStyle=this.BorderColor;
             this.Canvas.strokeRect(left,top,width,height);
+        }
+        else
+        {
+            this.Canvas.strokeStyle=this.BorderColor;
+            this.Canvas.beginPath();
+
+            if ((this.BorderLine&1)>0) //上
+            {
+                this.Canvas.moveTo(left,top);
+                this.Canvas.lineTo(right,top);
+            }
+
+            if ((this.BorderLine&2)>0)  //下
+            {
+                this.Canvas.moveTo(left,bottom);
+                this.Canvas.lineTo(right,bottom);
+            }
+
+            if ((this.BorderLine&4)>0)  //左
+            {
+                this.Canvas.moveTo(left,top);
+                this.Canvas.lineTo(left,bottom);
+            }
+
+            if ((this.BorderLine&8)>0)    //右
+            {
+                this.Canvas.moveTo(right,top);
+                this.Canvas.lineTo(right,bottom);
+            }
+              
+            this.Canvas.stroke();
         }
     }
 
@@ -94705,21 +94788,13 @@ function ChartDealList()
 
         this.Canvas.strokeStyle=this.BorderColor;
         this.Canvas.beginPath();
-        this.Canvas.moveTo(left,top);
-        this.Canvas.lineTo(right,top);
 
-        this.Canvas.moveTo(left,top+this.HeaderHeight);
-        this.Canvas.lineTo(right,top+this.HeaderHeight);
-
-        this.Canvas.moveTo(left,bottom);
-        this.Canvas.lineTo(right,bottom);
-
-        this.Canvas.moveTo(left,top);
-        this.Canvas.lineTo(left,bottom);
-
-        this.Canvas.moveTo(right,top);
-        this.Canvas.lineTo(right,bottom);
-
+        if (this.IsShowHeader)
+        {
+            this.Canvas.moveTo(left,top+this.HeaderHeight);
+            this.Canvas.lineTo(right,top+this.HeaderHeight);
+        }
+        
         var tableLeft=ToFixedPoint(left+this.TableWidth);
         for(var i=1;i<this.TableCount;++i)
         {
@@ -95203,6 +95278,9 @@ function JSReportChartContainer(uielement)
     this.Data={ XOffset:0, YOffset:0, Data:[] };        //股票列表
     this.SourceData={ Data:[] } ; //原始股票顺序
     this.MapStockData=new Map();                        //原始股票数据
+    this.FixedRowData={ Data:[] };                      //顶部固定行 { Value:, Text:, Color:, TextAgiln: }
+
+    this.FixedRowData.Data=[ [null, {Value:11, Text:"11" }], [null, null, null, {Value:12, Text:"ddddd", Color:"rgb(45,200,4)"}]];
 
     this.SortInfo={ Field:-1, Sort:0 };                //排序信息 {Field:排序字段id, Sort:0 不排序 1升序 2降序 }
 
@@ -95232,6 +95310,21 @@ function JSReportChartContainer(uielement)
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();
+    }
+
+    //清空固定行数据
+    this.ClearFixedRowData=function()
+    {
+        this.FixedRowData.Data=[];
+    }
+
+    //设置固定行
+    this.SetFixedRowCount=function(value)
+    {
+        var chart=this.GetReportChart();
+        if (!chart) return;
+
+        chart.FixedRowCount=value;
     }
 
     //创建
@@ -95264,6 +95357,7 @@ function JSReportChartContainer(uielement)
         chart.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         chart.GetStockDataCallback=(symbol)=>{ return this.GetStockData(symbol);}
         chart.Data=this.Data;
+        chart.FixedRowData=this.FixedRowData;
         chart.SortInfo=this.SortInfo;
         chart.Tab=new ChartReportTab();
         chart.Tab.Frame=this.Frame;
@@ -95280,6 +95374,9 @@ function JSReportChartContainer(uielement)
 
             if (IFrameSplitOperator.IsNumber(option.BorderLine)) this.Frame.BorderLine=option.BorderLine;   //边框
             if (IFrameSplitOperator.IsBool(option.TabShow)) chart.Tab.IsShow=option.TabShow;
+            if (IFrameSplitOperator.IsNumber(option.FixedRowCount)) chart.FixedRowCount=option.FixedRowCount;   //固定行
+            if (IFrameSplitOperator.IsBool(option.ItemBorder)) chart.IsDrawBorder=option.ItemBorder;            //单元格边框
+            
         }
 
         var bRegisterKeydown=true;
@@ -96120,7 +96217,7 @@ function JSReportChartContainer(uielement)
         var step=parseInt(moveUpDown/oneStep); 
         if (step<=0) return false
 
-        if (isUp) step*=-1;
+        if (isUp==false) step*=-1;
 
         if (this.MoveYOffset(step))
         {
@@ -96863,6 +96960,8 @@ var REPORT_COLUMN_ID=
     VOL_IN_ID:25,
     VOL_OUT_ID:26,
 
+    SYMBOL_NAME_ID:27,
+
     CUSTOM_STRING_TEXT_ID:100,   //自定义字符串文本
     CUSTOM_NUMBER_TEXT_ID:101    //自定义数值型
 }
@@ -96878,14 +96977,17 @@ function ChartReport()
     this.GetEventCallback;              //获取事件
     this.GetStockDataCallback;          //获取股票数据
     this.Data;                          //数据 { XOffset:0, YOffset:0, Data:['600000.sh', '000001.sz'] }
+    this.FixedRowData;                      //固定行
     this.SortInfo;                      //排序信息 {Field:排序字段id, Sort:0 不排序 1升序 2降序 }    
     this.FixedColumn=2;                 //固定列
+    this.FixedRowCount=0;               //固定行         
     
     this.IsShowHeader=true;             //是否显示表头
     this.SizeChange=true;
 
     this.SelectedModel=0;               //选中模式 0=SelectedRow表示当前屏索引
-    this.SelectedRow=-1;                 //选中行ID
+    this.SelectedRow=-1;                //选中行ID
+    this.IsDrawBorder=1;                //是否绘制单元格边框
 
     this.ShowSymbol=[];                 //显示的股票列表 { Index:序号(排序用), Symbol:股票代码 }
 
@@ -96913,6 +97015,7 @@ function ChartReport()
 
     //表格内容配置
     this.ItemFontConfig={ Size:g_JSChartResource.Report.Item.Font.Size, Name:g_JSChartResource.Report.Item.Font.Name };
+    this.ItemFixedFontConfg={ Size:g_JSChartResource.Report.FixedItem.Font.Size, Name:g_JSChartResource.Report.FixedItem.Font.Name }; //固定行
     this.ItemMergin=
     { 
         Left:g_JSChartResource.Report.Item.Mergin.Left, 
@@ -96937,11 +97040,20 @@ function ChartReport()
         Bottom:g_JSChartResource.Report.LimitBorder.Mergin.Bottom
     }
 
+    //股票代码+股票名称
+    this.ItemSymbolFontConfig={Size:g_JSChartResource.Report.Item.SymbolFont.Size, Name:g_JSChartResource.Report.Item.SymbolFont.Name};
+    this.ItemNameFontConfg={Size:g_JSChartResource.Report.Item.NameFont.Size, Name:g_JSChartResource.Report.Item.NameFont.Name};
+
     //缓存
     this.HeaderFont=12*GetDevicePixelRatio() +"px 微软雅黑";
     this.ItemFont=15*GetDevicePixelRatio() +"px 微软雅黑";
+    this.ItemFixedFont=15*GetDevicePixelRatio() +"px 微软雅黑";
+    this.ItemSymbolFont=12*GetDevicePixelRatio() +"px 微软雅黑";
+    this.ItemNameFont=15*GetDevicePixelRatio() +"px 微软雅黑";
+    this.ItemNameHeight=0;
     this.RowCount=0;            //一屏显示行数
     this.HeaderHeight=0;        //表头高度
+    this.FixedRowHeight=0;      //固定行高度
     this.RowHeight=0;           //行高度
     this.BottomToolbarHeight=0;  //底部工具条高度
     this.IsShowAllColumn=false;   //是否已显示所有列
@@ -96962,11 +97074,13 @@ function ChartReport()
         this.DownColor=g_JSChartResource.Report.DownTextColor;
         this.UnchagneColor=g_JSChartResource.Report.UnchagneTextColor; 
     
-        this.BorderColor=g_JSChartResource.Report.BorderColor;    //边框线
+        this.BorderColor=g_JSChartResource.Report.BorderColor;          //边框线
+        this.SelectedColor=g_JSChartResource.Report.SelectedColor;      //选中行
 
         //表头配置
         this.HeaderFontConfig={ Size:g_JSChartResource.Report.Header.Font.Size, Name:g_JSChartResource.Report.Header.Font.Name };
         this.HeaderColor=g_JSChartResource.Report.Header.Color;
+        this.SortColor=g_JSChartResource.Report.Header.SortColor;      //排序箭头颜色
         this.HeaderMergin=
         { 
             Left:g_JSChartResource.Report.Header.Mergin.Left, 
@@ -96976,17 +97090,57 @@ function ChartReport()
         };
 
         //表格内容配置
-        this.ItemFontConfig={ Size:g_JSChartResource.Report.Row.Font.Size, Name:g_JSChartResource.Report.Row.Font.Name };
-        this.RowMergin={ Top:g_JSChartResource.Report.Row.Mergin.Top, Bottom:g_JSChartResource.Report.Row.Mergin.Bottom };
+        this.ItemFontConfig={ Size:g_JSChartResource.Report.Item.Font.Size, Name:g_JSChartResource.Report.Item.Font.Name };
+        this.ItemMergin=
+        { 
+            Left:g_JSChartResource.Report.Item.Mergin.Left, 
+            Right:g_JSChartResource.Report.Item.Mergin.Right, 
+            Top:g_JSChartResource.Report.Item.Mergin.Top, 
+            Bottom:g_JSChartResource.Report.Item.Mergin.Bottom 
+        };
+        this.BarMergin=
+        { 
+            Top:g_JSChartResource.Report.Item.BarMergin.Top, 
+            Left:g_JSChartResource.Report.Item.BarMergin.Left, 
+            Right:g_JSChartResource.Report.Item.BarMergin.Right,
+            Bottom:g_JSChartResource.Report.Item.BarMergin.Bottom
+        };
+
+        this.LimitBorderColor=g_JSChartResource.Report.LimitBorder.Color;
+        this.LimitMergin=
+        {
+            Top:g_JSChartResource.Report.LimitBorder.Mergin.Top, 
+            Left:g_JSChartResource.Report.LimitBorder.Mergin.Left, 
+            Right:g_JSChartResource.Report.LimitBorder.Mergin.Right,
+            Bottom:g_JSChartResource.Report.LimitBorder.Mergin.Bottom
+        }
 
         for(var i=0;i<this.Column.length;++i)
         {
             var item=this.Column[i];
             if (item.Type==REPORT_COLUMN_ID.INDEX_ID) 
-                item.TextColor=g_JSChartResource.DealList.FieldColor.Index;
+                item.TextColor=g_JSChartResource.Report.FieldColor.Index;
+            else if (item.Type==REPORT_COLUMN_ID.SYMBOL_ID) 
+                item.TextColor=g_JSChartResource.Report.FieldColor.Symbol;
+            else if (item.Type==REPORT_COLUMN_ID.NAME_ID) 
+                item.TextColor=g_JSChartResource.Report.FieldColor.Name;
             else if (item.Type==REPORT_COLUMN_ID.VOL_ID) 
-                item.TextColor=g_JSChartResource.DealList.FieldColor.Vol;
+                item.TextColor=g_JSChartResource.Report.FieldColor.Vol;
+            else if (item.Type==REPORT_COLUMN_ID.BUY_VOL_ID) 
+                item.TextColor=g_JSChartResource.Report.FieldColor.Vol;
+            else if (item.Type==REPORT_COLUMN_ID.SELL_VOL_ID) 
+                item.TextColor=g_JSChartResource.Report.FieldColor.Vol;
+            else if (item.Type==REPORT_COLUMN_ID.AMOUNT_ID) 
+                item.TextColor=g_JSChartResource.Report.FieldColor.Amount;
+            else if (item.Type==REPORT_COLUMN_ID.VOL_IN_ID) 
+                item.TextColor=g_JSChartResource.Report.DownTextColor;
+            else if (item.Type==REPORT_COLUMN_ID.VOL_OUT_ID) 
+                item.TextColor=g_JSChartResource.Report.UpTextColor;
+            else 
+                item.TextColor=g_JSChartResource.Report.FieldColor.Text;
         }
+
+        if (this.Tab) this.Tab.ReloadResource(resource);
     }
 
     this.SetColumn=function(aryColumn)
@@ -97055,6 +97209,7 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.INDEX_ID, Title:"序号", TextAlign:"center", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Index, MaxText:"8888"},
             { Type:REPORT_COLUMN_ID.SYMBOL_ID, Title:"代码", TextAlign:"left", Width:null,  TextColor:g_JSChartResource.Report.FieldColor.Symbol, MaxText:"888888"},
             { Type:REPORT_COLUMN_ID.NAME_ID, Title:"名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎" },
+            { Type:REPORT_COLUMN_ID.SYMBOL_NAME_ID, Title:"股票名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎"},
 
             { Type:REPORT_COLUMN_ID.INCREASE_ID, Title:"涨幅%", TextAlign:"right", Width:null, MaxText:"-888.88" },
             { Type:REPORT_COLUMN_ID.PRICE_ID, Title:"现价", TextAlign:"right", Width:null, MaxText:"8888.88" },
@@ -97165,14 +97320,41 @@ function ChartReport()
         var pixelRatio=GetDevicePixelRatio();
         this.HeaderFont=`${this.HeaderFontConfig.Size*pixelRatio}px ${ this.HeaderFontConfig.Name}`;
         this.ItemFont=`${this.ItemFontConfig.Size*pixelRatio}px ${ this.ItemFontConfig.Name}`;
+        this.ItemFixedFont=`${this.ItemFixedFontConfg.Size*pixelRatio}px ${ this.ItemFixedFontConfg.Name}`;
+        this.ItemSymbolFont=`${this.ItemSymbolFontConfig.Size*pixelRatio}px ${ this.ItemSymbolFontConfig.Name}`;
+        this.ItemNameFont=`${this.ItemNameFontConfg.Size*pixelRatio}px ${ this.ItemNameFontConfg.Name}`;
+
+        this.RowHeight=this.GetFontHeight(this.ItemFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
 
         this.Canvas.font=this.ItemFont;
         var itemWidth=0;
         for(var i=0;i<this.Column.length;++i)
         {
             var item=this.Column[i];
-            itemWidth=this.Canvas.measureText(item.MaxText).width;
-            item.Width=itemWidth+4+this.ItemMergin.Left+this.ItemMergin.Right;
+            if (item.Type==REPORT_COLUMN_ID.SYMBOL_NAME_ID)
+            {
+                this.Canvas.font=this.ItemNameFont;
+                var nameWidth=this.Canvas.measureText(item.MaxText).width;
+                var nameHeight=this.GetFontHeight(this.ItemNameFont,"擎");
+                this.ItemNameHeight=nameHeight;
+
+                this.Canvas.font=this.ItemSymbolFont;
+                var symbolWidth=this.Canvas.measureText(item.MaxText).width;
+                var symboHeight=this.GetFontHeight(this.ItemSymbolFont,"擎");
+
+                this.Canvas.font=this.ItemFont;
+
+                itemWidth=Math.max(nameWidth, symbolWidth);
+                item.Width=itemWidth+4+this.ItemMergin.Left+this.ItemMergin.Right;
+
+                var rowHeight=nameHeight+symboHeight+this.ItemMergin.Top+ this.ItemMergin.Bottom;
+                if (rowHeight>this.RowHeight) this.RowHeight=rowHeight;
+            }
+            else
+            {
+                itemWidth=this.Canvas.measureText(item.MaxText).width;
+                item.Width=itemWidth+4+this.ItemMergin.Left+this.ItemMergin.Right;
+            }
         }
 
         this.Canvas.font=this.HeaderFont;
@@ -97187,8 +97369,11 @@ function ChartReport()
 
         this.HeaderHeight=this.GetFontHeight(this.HeaderFont,"擎")+ this.HeaderMergin.Top+ this.HeaderMergin.Bottom;
         if (!this.IsShowHeader) this.HeaderHeight=0;
-        this.RowHeight=this.GetFontHeight(this.ItemFont,"擎")+ this.HeaderMergin.Top+ this.HeaderMergin.Bottom;
-        this.RowCount=parseInt((this.RectClient.Bottom-this.RectClient.Top-this.HeaderHeight)/this.RowHeight);
+        this.FixedRowHeight=this.GetFontHeight(this.ItemFixedFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
+        if (this.FixedRowCount<=0) this.FixedRowHeight=0;
+
+        
+        this.RowCount=parseInt((this.RectClient.Bottom-this.RectClient.Top-this.HeaderHeight-(this.FixedRowHeight*this.FixedRowCount))/this.RowHeight);
 
         var subWidth=0;
         var reportWidth=this.RectClient.Right-this.RectClient.Left;
@@ -97304,6 +97489,8 @@ function ChartReport()
 
     this.DrawBorder=function()
     {
+        if (!this.IsDrawBorder) return;
+
         var left=this.RectClient.Left;
         var right=this.RectClient.Right;
         var top=this.RectClient.Top;
@@ -97316,6 +97503,17 @@ function ChartReport()
         this.Canvas.lineTo(right,ToFixedPoint(top+this.HeaderHeight));
 
         var rowTop=top+this.HeaderHeight+this.RowHeight;
+        var rotBottom=rowTop;
+        for(var i=0;i<this.FixedRowCount;++i)
+        {
+            var drawTop=ToFixedPoint(rowTop);
+            this.Canvas.moveTo(left,drawTop);
+            this.Canvas.lineTo(right,drawTop);
+            rotBottom=rowTop;
+            rowTop+=this.FixedRowHeight;
+        }
+
+        var rowTop=top+this.HeaderHeight+this.RowHeight+this.FixedRowHeight*this.FixedRowCount;
         var rotBottom=rowTop;
         //横线
         for(var i=0;i<this.RowCount;++i)
@@ -97361,8 +97559,18 @@ function ChartReport()
         var top=this.RectClient.Top+this.HeaderHeight;
         var left=this.RectClient.Left;
         var rowWidth=this.RectClient.Right-this.RectClient.Left;
- 
+
+        //固定行
         var textTop=top;
+        this.Canvas.font=this.ItemFixedFont;
+        for(var i=0; i<this.FixedRowCount; ++i)
+        {
+            this.DrawFixedRow(textTop, i);
+            textTop+=this.FixedRowHeight;
+        }
+        
+
+        textTop=top+this.FixedRowHeight*this.FixedRowCount;
         this.Canvas.font=this.ItemFont;
         for(var i=this.Data.YOffset, j=0; i<this.Data.Data.length && j<this.RowCount ;++i, ++j)
         {
@@ -97391,6 +97599,58 @@ function ChartReport()
 
             textTop+=this.RowHeight;
         }
+    }
+
+
+    this.DrawFixedRow=function(top, dataIndex)
+    {
+        var left=this.RectClient.Left;
+        var chartRight=this.RectClient.Right;
+
+        for(var i=0;i<this.FixedColumn && i<this.Column.length;++i)
+        {
+            var item=this.Column[i];
+            this.DrawFixedItem(dataIndex, i, item, left, top);
+            left+=item.Width;
+
+            if (left>=chartRight) break;
+        }
+
+        for(var i=this.FixedColumn+this.Data.XOffset;i<this.Column.length;++i)
+        {
+            var item=this.Column[i];
+            this.DrawFixedItem(dataIndex, i, item, left, top);
+            left+=item.Width;
+
+            if (left>=chartRight) break;
+        }
+    }
+
+    this.DrawFixedItem=function(dataIndex, colIndex, column, left, top)
+    {
+        var x=left+this.ItemMergin.Left;
+        var textWidth=column.Width-this.ItemMergin.Left-this.ItemMergin.Right;
+        var drawInfo={ Text:null, TextColor:column.TextColor , TextAlign:column.TextAlign };
+
+        if (this.GetFixedRowTextDrawInfo(dataIndex, colIndex, column, drawInfo)) 
+        {
+            this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth);
+            return;
+        }
+
+        if (!this.FixedRowData || !IFrameSplitOperator.IsNonEmptyArray(this.FixedRowData.Data)) return;
+
+        var data=this.FixedRowData.Data;
+        var rowData=data[dataIndex];
+        if (!IFrameSplitOperator.IsNonEmptyArray(rowData)) return;
+        var itemData=rowData[colIndex];
+        if (!itemData || !itemData.Text) return;
+
+        drawInfo.Text=itemData.Text;
+        if (itemData.Color) drawInfo.TextColor=itemData.Color;
+        if (itemData.TextAlign) drawInfo.TextAlign=itemData.TextAlign;
+
+        this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth);
     }
 
     this.DrawRow=function(symbol, top, dataIndex)
@@ -97435,6 +97695,10 @@ function ChartReport()
         {
             if (stock && stock.Symbol) drawInfo.Text=stock.Symbol;
             else drawInfo.Text=data.Symbol;
+        }
+        else if (column.Type==REPORT_COLUMN_ID.SYMBOL_NAME_ID)
+        {
+            this.DrawSymbolName(data, column, left, top);
         }
         else if (column.Type==REPORT_COLUMN_ID.NAME_ID)
         {
@@ -97579,6 +97843,47 @@ function ChartReport()
         }
 
         this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth);
+    }
+
+    this.DrawSymbolName=function(data, column, left, top)
+    {
+        var stock=data.Stock;
+        var y=top+this.ItemMergin.Top+this.ItemNameHeight;
+        var textLeft=left+this.ItemMergin.Left;
+        var x=textLeft;
+        var width=column.Width-this.ItemMergin.Left-this.ItemMergin.Right;
+        var textAlign=column.TextAlign;
+        if (textAlign=='center')
+        {
+            x=textLeft+width/2;
+            this.Canvas.textAlign="center";
+        }
+        else if (textAlign=='right')
+        {
+            x=textLeft+width-2;
+            this.Canvas.textAlign="right";
+        }
+        else
+        {
+            x+=2;
+            this.Canvas.textAlign="left";
+        }
+
+        var textColor=this.GetNameColor(column,data.Symbol);
+        var text=stock.Name;
+        this.Canvas.textBaseline="ideographic";
+        this.Canvas.font=this.ItemNameFont;
+        this.Canvas.fillStyle=textColor
+        this.Canvas.fillText(text,x,y);
+
+        text=stock.Symbol;
+        this.Canvas.textBaseline="top";
+        this.Canvas.font=this.ItemSymbolFont;
+        this.Canvas.fillStyle=textColor;
+        this.Canvas.fillText(text,x,y);
+
+
+        this.Canvas.font=this.ItemFont; //还原字体
     }
 
     this.DrawLimitPriceBorder=function(value, stock, left, top, itemWidth)
@@ -97824,6 +98129,27 @@ function ChartReport()
         return true;
     }
 
+    this.GetFixedRowTextDrawInfo=function(rowIndex, colIndex, columnInfo, drawInfo)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_REPORT_FIXEDROW_TEXT);
+        if (!event || !event.Callback) return false;
+
+        var sendData=
+        { 
+            RowIndex:rowIndex, ColIndex:colIndex, Column:columnInfo, Data:this.FixedRowData,
+            Out:{ Text:null, TextColor:null, TextAlign:null } 
+        };
+
+        event.Callback(event,sendData,this);
+
+        if (sendData.Out.Text) drawInfo.Text=sendData.Out.Text;
+        if (sendData.Out.TextColor) drawInfo.TextColor=sendData.Out.TextColor;
+        if (sendData.Out.TextAlign) drawInfo.TextAlign=sendData.Out.TextAlign;
+
+        return true;
+        
+    }
+
     this.GetVolColor=function(colunmInfo, data)
     {
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_DEAL_VOL_COLOR);
@@ -97932,7 +98258,7 @@ function ChartReport()
         var right=this.RectClient.Right;
         var rowWidth=this.RectClient.Right-this.RectClient.Left;
  
-        var textTop=top;
+        var textTop=top+this.FixedRowHeight*this.FixedRowCount;
         this.Canvas.font=this.ItemFont;
         for(var i=this.Data.YOffset, j=0; i<this.Data.Data.length && j<this.RowCount ;++i, ++j)
         {
@@ -98067,13 +98393,7 @@ function ChartReportTab()
     this.ButtonColor=g_JSChartResource.Report.Tab.ButtonColor;
     this.BarColor=g_JSChartResource.Report.Tab.BarColor;
     this.BorderColor=g_JSChartResource.Report.Tab.BorderColor;
-    this.Mergin=
-    { 
-        Left:2, 
-        Right:2, 
-        Top:2, 
-        Bottom:2
-    };
+    this.Mergin={ Left:2, Right:2, Top:2, Bottom:2 };
 
     this.TabFontConfig={ Size:g_JSChartResource.Report.Tab.Font.Size, Name:g_JSChartResource.Report.Tab.Font.Name };
     this.TabFont;
@@ -98095,6 +98415,30 @@ function ChartReportTab()
     this.TabWidth=0;
 
     this.RectScroll={ Left:null, Right:null, Bar:null, Client:null };   //滚动条区域    
+
+    this.ReloadResource=function(resource)
+    {
+        //滚动条
+        this.ScrollBarWidth=g_JSChartResource.Report.Tab.ScrollBarWidth;
+        this.ButtonColor=g_JSChartResource.Report.Tab.ButtonColor;
+        this.BarColor=g_JSChartResource.Report.Tab.BarColor;
+        this.BorderColor=g_JSChartResource.Report.Tab.BorderColor;
+
+        //tab
+        this.TabFontConfig={ Size:g_JSChartResource.Report.Tab.Font.Size, Name:g_JSChartResource.Report.Tab.Font.Name };
+        this.TabTitleColor=g_JSChartResource.Report.Tab.TabTitleColor;
+        this.TabSelectedTitleColor=g_JSChartResource.Report.Tab.TabSelectedTitleColor;
+        this.TabSelectedBGColor=g_JSChartResource.Report.Tab.TabSelectedBGColor;
+        this.TabMoveOnTitleColor=g_JSChartResource.Report.Tab.TabMoveOnTitleColor;
+        this.TabBGColor=g_JSChartResource.Report.Tab.TabBGColor;
+        this.TabMergin=
+        { 
+            Top:g_JSChartResource.Report.Tab.Mergin.Top, 
+            Left:g_JSChartResource.Report.Tab.Mergin.Left, 
+            Right:g_JSChartResource.Report.Tab.Mergin.Right,
+            Bottom:g_JSChartResource.Report.Tab.Mergin.Bottom
+        };
+    }
 
     this.SetTabList=function(aryTab)
     {

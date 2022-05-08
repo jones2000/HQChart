@@ -1928,6 +1928,7 @@ var JSCHART_EVENT_ID=
     ON_DRAW_CUSTOM_TEXT:55,                 //报价列表自定义列
     ON_CLICK_REPORT_TAB:56,                 //报价列表标签点击
     ON_CLICK_REPORT_TABMENU:57,             //报价列表标签菜单点击
+    ON_DRAW_REPORT_FIXEDROW_TEXT:58         //报价列表固定行绘制
 }
 
 var JSCHART_OPERATOR_ID=
@@ -42676,15 +42677,23 @@ function JSChartResource()
         {
             Color:"rgb(60,60,60)",      //表头文字颜色
             SortColor:"rgb(255,0,0)",   //排序箭头颜色
-            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },    //表头四周间距
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2},    //表头四周间距
             Font:{ Size:12, Name:"微软雅黑" }   //表头字体
         },
 
         Item:
         {
-            Mergin:{ Top:2, Bottom:2,Left:5, Right:5 }, //单元格四周间距
+            Mergin:{ Top:2, Bottom:0,Left:5, Right:5 }, //单元格四周间距
             Font:{ Size:15, Name:"微软雅黑"},
             BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },//单元格字体
+            NameFont:{ Size:15, Name:"微软雅黑" },
+            SymbolFont:{ Size:12, Name:"微软雅黑" }
+        },
+
+        //固定行
+        FixedItem:
+        {
+            Font:{ Size:15, Name:"微软雅黑"},
         },
 
         LimitBorder:
@@ -43161,6 +43170,31 @@ function JSChartResource()
                     if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Item.BarMergin.Top=mergin.Top;
                     if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Item.BarMergin.Right=mergin.Right;
                     if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Item.BarMergin.Bottom=mergin.Bottom;
+                }
+
+                if (row.NameFont)
+                {
+                    var font=row.NameFont;
+                    if (font.Name) this.Report.Item.NameFont.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Item.NameFont.Size=font.Size;
+                }
+
+                if (row.SymbolFont)
+                {
+                    var font=row.SymbolFont;
+                    if (font.Name) this.Report.Item.SymbolFont.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Item.SymbolFont.Size=font.Size;
+                }
+            }
+
+            if (item.FixedItem)
+            {
+                var row=item.FixedItem;
+                if (row.Font)
+                {
+                    var font=row.Font;
+                    if (font.Name) this.Report.FixedItem.Font.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.FixedItem.Font.Size=font.Size;
                 }
             }
 

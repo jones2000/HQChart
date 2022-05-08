@@ -282,6 +282,7 @@ function JSDealChartContainer(uielement)
             if (IFrameSplitOperator.IsBool(option.IsSingleTable)) chart.IsSingleTable=option.IsSingleTable;     //单表模式
             if (IFrameSplitOperator.IsBool(option.IsShowHeader)) chart.IsShowHeader=option.IsShowHeader;        //是否显示表头
             if (IFrameSplitOperator.IsBool(option.IsShowLastPage)) this.IsShowLastPage=option.IsShowLastPage;  //是否显示最后一页
+            if (IFrameSplitOperator.IsNumber(option.BorderLine)) this.Frame.BorderLine=option.BorderLine;   //边框
         }
 
         var bRegisterKeydown=true;
@@ -605,7 +606,7 @@ function JSDealChartContainer(uielement)
         this.SetSizeChange(true);
 
         var chart=this.ChartPaint[0];
-        if (chart && this.Data.DataOffset>0 && IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) 
+        if (chart && this.Data && this.Data.DataOffset>0 && IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) 
         {
             var pageSize=chart.GetPageSize(true);
             if (pageSize+this.Data.DataOffset>=this.Data.Data.length)   //当前屏不能显示满，调整
@@ -802,17 +803,48 @@ function JSDealFrame()
 
     this.Draw=function(option)
     {
-        if (option && option.IsEnableSplash===true)
-        {
-            var left=ToFixedPoint(this.ChartBorder.GetLeft());
-            var top=ToFixedPoint(this.ChartBorder.GetTop());
-            var right=ToFixedPoint(this.ChartBorder.GetRight());
-            var bottom=ToFixedPoint(this.ChartBorder.GetBottom());
-            var width=right-left;
-            var height=bottom-top;
+        var left=ToFixedPoint(this.ChartBorder.GetLeft());
+        var top=ToFixedPoint(this.ChartBorder.GetTop());
+        var right=ToFixedPoint(this.ChartBorder.GetRight());
+        var bottom=ToFixedPoint(this.ChartBorder.GetBottom());
+        var width=right-left;
+        var height=bottom-top;
 
+        if (!IFrameSplitOperator.IsNumber(this.BorderLine))
+        {
             this.Canvas.strokeStyle=this.BorderColor;
             this.Canvas.strokeRect(left,top,width,height);
+        }
+        else
+        {
+            this.Canvas.strokeStyle=this.BorderColor;
+            this.Canvas.beginPath();
+
+            if ((this.BorderLine&1)>0) //上
+            {
+                this.Canvas.moveTo(left,top);
+                this.Canvas.lineTo(right,top);
+            }
+
+            if ((this.BorderLine&2)>0)  //下
+            {
+                this.Canvas.moveTo(left,bottom);
+                this.Canvas.lineTo(right,bottom);
+            }
+
+            if ((this.BorderLine&4)>0)  //左
+            {
+                this.Canvas.moveTo(left,top);
+                this.Canvas.lineTo(left,bottom);
+            }
+
+            if ((this.BorderLine&8)>0)    //右
+            {
+                this.Canvas.moveTo(right,top);
+                this.Canvas.lineTo(right,bottom);
+            }
+              
+            this.Canvas.stroke();
         }
     }
 
@@ -1121,21 +1153,13 @@ function ChartDealList()
 
         this.Canvas.strokeStyle=this.BorderColor;
         this.Canvas.beginPath();
-        this.Canvas.moveTo(left,top);
-        this.Canvas.lineTo(right,top);
 
-        this.Canvas.moveTo(left,top+this.HeaderHeight);
-        this.Canvas.lineTo(right,top+this.HeaderHeight);
-
-        this.Canvas.moveTo(left,bottom);
-        this.Canvas.lineTo(right,bottom);
-
-        this.Canvas.moveTo(left,top);
-        this.Canvas.lineTo(left,bottom);
-
-        this.Canvas.moveTo(right,top);
-        this.Canvas.lineTo(right,bottom);
-
+        if (this.IsShowHeader)
+        {
+            this.Canvas.moveTo(left,top+this.HeaderHeight);
+            this.Canvas.lineTo(right,top+this.HeaderHeight);
+        }
+        
         var tableLeft=ToFixedPoint(left+this.TableWidth);
         for(var i=1;i<this.TableCount;++i)
         {

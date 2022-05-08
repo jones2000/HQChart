@@ -9,269 +9,117 @@
 
     不同风格行情配置文件 (微信小程序版本)
 */
-
-var BLACK_STYLE =    //黑色风格
+function GetBlackStyle()
 {
-    BGColor:'rgb(0,0,0)',
-    TooltipBGColor: "rgb(255, 255, 255)", //背景色
-    TooltipAlpha: 0.92,                  //透明度
-
-    SelectRectBGColor: "rgba(1,130,212,0.06)", //背景色
-    //  SelectRectAlpha: 0.06;                  //透明度
-
-    UpBarColor: "rgb(238,21,21)",
-    DownBarColor: "rgb(25,158,0)",
-    UnchagneBarColor: "rgb(199,199,199)",
-
-    Minute: {
-      VolBarColor: null,
-      PriceColor: "rgb(25,180,231)",
-      AvPriceColor: "rgb(255,236,0)",
-    },
-
-
-    DefaultTextColor: "rgb(101,104,112)",
-    DefaultTextFont: '14px 微软雅黑',
-    IndexTitleBGColor:'rgb(211,211,211)',
-    IndexTitleColor:"rgb(101,104,112)",
-
-    DynamicTitleFont: '12px 微软雅黑', //指标动态标题字体
-
-
-    UpTextColor: "rgb(238,21,21)",
-    DownTextColor: "rgb(25,158,0)",
-    UnchagneTextColor: "rgb(101,104,112)",
-    CloseLineColor: 'rgb(178,34,34)',
-
-    Title:
+    var BLACK_STYLE =    //黑色风格
     {
-        TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
-        ColorIndexColor:'rgb(112,128,144)',  //五彩K线颜色
+        BGColor:'rgb(0,0,0)',
+        TooltipBGColor: "rgb(255, 255, 255)", //背景色
+        TooltipAlpha: 0.92,                  //透明度
 
-        VolColor:"rgb(101,104,112)",       //标题成交量
-        AmountColor:"rgb(101,104,112)",    //成交金额 
-        DateTimeColor:"rgb(101,104,112)",  //时间,日期  
-        SettingColor:"rgb(101,104,112)",   //周期,复权
-        NameColor:"rgb(101,104,112)" ,     //股票名称
-        TurnoverRateColor:'rgb(101,104,112)',       //换手率
-        PositionColor:"rgb(101,104,112)"       //持仓
-    },
+        SelectRectBGColor: "rgba(1,130,212,0.06)", //背景色
+        //  SelectRectAlpha: 0.06;                  //透明度
 
-    FrameBorderPen: "rgba(236,236,236,0.13)",     //边框
-    FrameSplitPen: "rgba(236,236,236,0.13)",          //分割线
-    FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
-    FrameSplitTextFont: "12px 微软雅黑",        //坐标刻度文字字体
-    FrameTitleBGColor: "rgb(246,251,253)",      //标题栏背景色
-    Frame: { XBottomOffset: 0 },   //X轴文字向下偏移
+        UpBarColor: "rgb(238,21,21)",
+        DownBarColor: "rgb(25,158,0)",
+        UnchagneBarColor: "rgb(199,199,199)",
 
-    FrameLatestPrice: {
-        TextColor: 'rgb(255,255,255)',   //最新价格文字颜色
-        UpBarColor: "rgb(238,21,21)",    //上涨
-        DownBarColor: "rgb(25,158,0)",   //下跌
-        UnchagneBarColor: "rgb(190,190,190)",   //平盘
-        BGAlpha: 0.6
-    },
+        Minute: {
+        VolBarColor: null,
+        PriceColor: "rgb(25,180,231)",
+        AvPriceColor: "rgb(255,236,0)",
+        },
 
-    CorssCursorBGColor: "rgb(43,54,69)",            //十字光标背景
-    CorssCursorTextColor: "rgb(255,255,255)",
-    CorssCursorTextFont: "12px 微软雅黑",
-    CorssCursorHPenColor: "rgb(130,130,130)",           //十字光标线段颜色
-    CorssCursorVPenColor: "rgb(130,130,130)",           //十字光标线段颜色
 
-    KLine:
-    {
-        MaxMin: { Font: '12px 微软雅黑', Color: 'rgb(111,111,111)', RightArrow:"→", LeftArrow:"←", HighYOffset:0, LowYOffset:0 },   //K线最大最小值显示
-        Info:  //信息地雷
+        DefaultTextColor: "rgb(101,104,112)",
+        DefaultTextFont: '14px 微软雅黑',
+        IndexTitleBGColor:'rgb(211,211,211)',
+        IndexTitleColor:"rgb(101,104,112)",
+
+        DynamicTitleFont: '12px 微软雅黑', //指标动态标题字体
+
+
+        UpTextColor: "rgb(238,21,21)",
+        DownTextColor: "rgb(25,158,0)",
+        UnchagneTextColor: "rgb(101,104,112)",
+        CloseLineColor: 'rgb(178,34,34)',
+
+        Title:
         {
-            Color: 'rgb(205,149,12)',
-            TextColor: '#afc0da',
-            TextBGColor: '#1a283e',
-            Investor:
-            {
-                ApiUrl: '/API/NewsInteract', //互动易
-            },
-            Announcement:                                           //公告
-            {
-                ApiUrl: '/API/ReportList',
-            },
-            Pforecast:  //业绩预告
-            {
-                ApiUrl: '/API/StockHistoryDay',
-            },
-            Research:   //调研
-            {
-                ApiUrl: '/API/InvestorRelationsList',
-            },
-            BlockTrading:   //大宗交易
-            {
-                ApiUrl: '/API/StockHistoryDay',
-            },
-            TradeDetail:    //龙虎榜
-            {
-                ApiUrl: '/API/StockHistoryDay',
-            },
-            Policy: //策略
-            {
-                ApiUrl: '/API/StockHistoryDay',
-            }
-        }
-    },
+            TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
+            ColorIndexColor:'rgb(112,128,144)',  //五彩K线颜色
 
-    Index: {      //指标线段颜色
-      LineColor: [
-        "rgb(255,189,09)",
-        "rgb(22,198,255)",
-        "rgb(174,35,161)",
-        "rgb(236,105,65)",
-        "rgb(68,114,196)",
-        "rgb(229,0,79)",
-        "rgb(0,128,255)",
-        "rgb(252,96,154)",
-        "rgb(42,230,215)",
-        "rgb(24,71,178)",
+            VolColor:"rgb(101,104,112)",       //标题成交量
+            AmountColor:"rgb(101,104,112)",    //成交金额 
+            DateTimeColor:"rgb(101,104,112)",  //时间,日期  
+            SettingColor:"rgb(101,104,112)",   //周期,复权
+            NameColor:"rgb(101,104,112)" ,     //股票名称
+            TurnoverRateColor:'rgb(101,104,112)',       //换手率
+            PositionColor:"rgb(101,104,112)"       //持仓
+        },
 
-      ],
-      NotSupport: { Font: "14px 微软雅黑", TextColor: "rgb(52,52,52)" }
-    },
-    
-    ColorArray:       //自定义指标默认颜色
-      [
-        "rgb(255,174,0)",
-        "rgb(25,199,255)",
-        "rgb(175,95,162)",
-        "rgb(236,105,65)",
-        "rgb(68,114,196)",
-        "rgb(229,0,79)",
-        "rgb(0,128,255)",
-        "rgb(252,96,154)",
-        "rgb(42,230,215)",
-        "rgb(24,71,178)",
-      ],
-    //画图工具
-    DrawPicture: 
-    {
-      LineColor: "rgb(30,144,255)",
-      PointColor: "rgb(105,105,105)",
-    },
+        FrameBorderPen: "rgba(236,236,236,0.13)",     //边框
+        FrameSplitPen: "rgba(236,236,236,0.13)",          //分割线
+        FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
+        FrameSplitTextFont: "12px 微软雅黑",        //坐标刻度文字字体
+        FrameTitleBGColor: "rgb(246,251,253)",      //标题栏背景色
+        Frame: { XBottomOffset: 0 },   //X轴文字向下偏移
 
-    TooltipPaint:   //Tooltip
-    {
-        BGColor: 'rgba(20,20,20,0.8)',          //背景色
-        BorderColor: 'rgb(210,210,210)',        //边框颜色
-        TitleColor: 'rgb(210,210,210)',         //标题颜色
-        TitleFont:'13px 微软雅黑'               //字体
-    },
+        FrameLatestPrice: {
+            TextColor: 'rgb(255,255,255)',   //最新价格文字颜色
+            UpBarColor: "rgb(238,21,21)",    //上涨
+            DownBarColor: "rgb(25,158,0)",   //下跌
+            UnchagneBarColor: "rgb(190,190,190)",   //平盘
+            BGAlpha: 0.6
+        },
 
-    //深度图
-    DepthChart:
-    {
-        BidColor: { Line:"rgb(82,176,123)", Area:"rgba(82,176,123,0.5)"},  //卖
-        AskColor: { Line:"rgb(207,76,89)", Area:"rgba(207,76,89, 0.5)"},   //买
-        LineWidth:4
-    },
+        CorssCursorBGColor: "rgb(43,54,69)",            //十字光标背景
+        CorssCursorTextColor: "rgb(255,255,255)",
+        CorssCursorTextFont: "12px 微软雅黑",
+        CorssCursorHPenColor: "rgb(130,130,130)",           //十字光标线段颜色
+        CorssCursorVPenColor: "rgb(130,130,130)",           //十字光标线段颜色
 
-    DepthCorss:
-    {
-        BidColor: { Line:"rgb(82,176,123)" },  //卖
-        AskColor: { Line:"rgb(207,76,89)" },   //买
-        LineWidth:2,    //线段宽度
-        LineDash:[3,3],
-        Tooltip:
-        { 
-            BGColor:'rgba(54,54,54, 0.8)', TextColor:"rgb(203,215,224)",
-            Border:{ Top:5, Left:20, Bottom:5, Center: 5},
-            Font:"14px 微软雅黑",
-            LineHeight:16   //单行高度
-        }
-    }
-};
-
-
-var WHITE_STYLE=    //白色风格
-{
-    BGColor:'rgb(255,255,255)',
-    TooltipBGColor: "rgb(255, 255, 255)", //背景色
-    TooltipAlpha: 0.92,                  //透明度
-
-    SelectRectBGColor:"rgba(1,130,212,0.06)", //背景色
-    //   this.SelectRectAlpha=0.06;                  //透明度
-
-    UpBarColor: "rgb(238,21,21)",
-    DownBarColor: "rgb(25,158,0)",
-    UnchagneBarColor: "rgb(0,0,0)",
-
-    Minute:
-    {
-        VolBarColor : "rgb(238,127,9)",
-        PriceColor : "rgb(50,171,205)",
-        AvPriceColor : "rgb(238,127,9)",
-    },
-
-    DefaultTextColor: "rgb(43,54,69)",
-    DefaultTextFont: '14px 微软雅黑',
-
-    DynamicTitleFont: '12px 微软雅黑', //指标动态标题字体
-
-
-    UpTextColor: "rgb(238,21,21)",
-    DownTextColor: "rgb(25,158,0)",
-    UnchagneTextColor: "rgb(0,0,0)",
-    CloseLineColor: 'rgb(178,34,34)',
-
-    FrameBorderPen: "rgb(225,236,242)",     //边框
-    FrameSplitPen: "rgb(225,236,242)",          //分割线
-    FrameSplitTextColor: "rgb(51,51,51)",     //刻度文字颜色
-    FrameSplitTextFont: "12px 微软雅黑",        //坐标刻度文字字体
-    FrameTitleBGColor: "rgb(246,251,253)",      //标题栏背景色
-
-    CorssCursorBGColor: "rgb(43,54,69)",            //十字光标背景
-    CorssCursorTextColor: "rgb(255,255,255)",
-    CorssCursorTextFont: "12px 微软雅黑",
-    CorssCursorPenColor: "rgb(130,130,130)",           //十字光标线段颜色
-
-    KLine:
-    {
-        MaxMin: { Font: '12px 微软雅黑', Color: 'rgb(111,111,111)' },   //K线最大最小值显示
-        Info:  //信息地雷
+        KLine:
         {
-            Color: 'rgb(205,149,12)',
-            TextColor: '#197de9',
-            TextBGColor: '#e1e4ef',
-            Investor:
+            MaxMin: { Font: '12px 微软雅黑', Color: 'rgb(111,111,111)', RightArrow:"→", LeftArrow:"←", HighYOffset:0, LowYOffset:0 },   //K线最大最小值显示
+            Info:  //信息地雷
             {
-                ApiUrl: '/API/NewsInteract', //互动易
-            },
-            Announcement:                                           //公告
-            {
-                ApiUrl: '/API/ReportList',
-            },
-            Pforecast:  //业绩预告
-            {
-                ApiUrl: '/API/StockHistoryDay',
-            },
-            Research:   //调研
-            {
-                ApiUrl: '/API/InvestorRelationsList',
-            },
-            BlockTrading:   //大宗交易
-            {
-                ApiUrl: '/API/StockHistoryDay',
-            },
-            TradeDetail:    //龙虎榜
-            {
-                ApiUrl: '/API/StockHistoryDay',
-            },
-            Policy: //策略
-            {
-                ApiUrl: '/API/StockHistoryDay',
+                Color: 'rgb(205,149,12)',
+                TextColor: '#afc0da',
+                TextBGColor: '#1a283e',
+                Investor:
+                {
+                    ApiUrl: '/API/NewsInteract', //互动易
+                },
+                Announcement:                                           //公告
+                {
+                    ApiUrl: '/API/ReportList',
+                },
+                Pforecast:  //业绩预告
+                {
+                    ApiUrl: '/API/StockHistoryDay',
+                },
+                Research:   //调研
+                {
+                    ApiUrl: '/API/InvestorRelationsList',
+                },
+                BlockTrading:   //大宗交易
+                {
+                    ApiUrl: '/API/StockHistoryDay',
+                },
+                TradeDetail:    //龙虎榜
+                {
+                    ApiUrl: '/API/StockHistoryDay',
+                },
+                Policy: //策略
+                {
+                    ApiUrl: '/API/StockHistoryDay',
+                }
             }
-        }
-    },
+        },
 
-    Index: 
-    {      //指标线段颜色
-        LineColor: 
-        [
+        Index: {      //指标线段颜色
+        LineColor: [
             "rgb(255,189,09)",
             "rgb(22,198,255)",
             "rgb(174,35,161)",
@@ -282,30 +130,190 @@ var WHITE_STYLE=    //白色风格
             "rgb(252,96,154)",
             "rgb(42,230,215)",
             "rgb(24,71,178)",
+
         ],
         NotSupport: { Font: "14px 微软雅黑", TextColor: "rgb(52,52,52)" }
-    },
-
-    ColorArray:       //自定义指标默认颜色
-    [
-        "rgb(255,174,0)",
-        "rgb(25,199,255)",
-        "rgb(175,95,162)",
-        "rgb(236,105,65)",
-        "rgb(68,114,196)",
-        "rgb(229,0,79)",
-        "rgb(0,128,255)",
-        "rgb(252,96,154)",
-        "rgb(42,230,215)",
-        "rgb(24,71,178)",
-    ],
-
-    //画图工具
-    DrawPicture:
-    {
+        },
+        
+        ColorArray:       //自定义指标默认颜色
+        [
+            "rgb(255,174,0)",
+            "rgb(25,199,255)",
+            "rgb(175,95,162)",
+            "rgb(236,105,65)",
+            "rgb(68,114,196)",
+            "rgb(229,0,79)",
+            "rgb(0,128,255)",
+            "rgb(252,96,154)",
+            "rgb(42,230,215)",
+            "rgb(24,71,178)",
+        ],
+        //画图工具
+        DrawPicture: 
+        {
         LineColor: "rgb(30,144,255)",
         PointColor: "rgb(105,105,105)",
-    },
+        },
+
+        TooltipPaint:   //Tooltip
+        {
+            BGColor: 'rgba(20,20,20,0.8)',          //背景色
+            BorderColor: 'rgb(210,210,210)',        //边框颜色
+            TitleColor: 'rgb(210,210,210)',         //标题颜色
+            TitleFont:'13px 微软雅黑'               //字体
+        },
+
+        //深度图
+        DepthChart:
+        {
+            BidColor: { Line:"rgb(82,176,123)", Area:"rgba(82,176,123,0.5)"},  //卖
+            AskColor: { Line:"rgb(207,76,89)", Area:"rgba(207,76,89, 0.5)"},   //买
+            LineWidth:4
+        },
+
+        DepthCorss:
+        {
+            BidColor: { Line:"rgb(82,176,123)" },  //卖
+            AskColor: { Line:"rgb(207,76,89)" },   //买
+            LineWidth:2,    //线段宽度
+            LineDash:[3,3],
+            Tooltip:
+            { 
+                BGColor:'rgba(54,54,54, 0.8)', TextColor:"rgb(203,215,224)",
+                Border:{ Top:5, Left:20, Bottom:5, Center: 5},
+                Font:"14px 微软雅黑",
+                LineHeight:16   //单行高度
+            }
+        }
+    };
+
+    return BLACK_STYLE;
+}
+
+function GetWhiteStyle()
+{
+    var WHITE_STYLE=    //白色风格
+    {
+        BGColor:'rgb(255,255,255)',
+        TooltipBGColor: "rgb(255, 255, 255)", //背景色
+        TooltipAlpha: 0.92,                  //透明度
+
+        SelectRectBGColor:"rgba(1,130,212,0.06)", //背景色
+        //   this.SelectRectAlpha=0.06;                  //透明度
+
+        UpBarColor: "rgb(238,21,21)",
+        DownBarColor: "rgb(25,158,0)",
+        UnchagneBarColor: "rgb(0,0,0)",
+
+        Minute:
+        {
+            VolBarColor : "rgb(238,127,9)",
+            PriceColor : "rgb(50,171,205)",
+            AvPriceColor : "rgb(238,127,9)",
+        },
+
+        DefaultTextColor: "rgb(43,54,69)",
+        DefaultTextFont: '14px 微软雅黑',
+
+        DynamicTitleFont: '12px 微软雅黑', //指标动态标题字体
+
+
+        UpTextColor: "rgb(238,21,21)",
+        DownTextColor: "rgb(25,158,0)",
+        UnchagneTextColor: "rgb(0,0,0)",
+        CloseLineColor: 'rgb(178,34,34)',
+
+        FrameBorderPen: "rgb(225,236,242)",     //边框
+        FrameSplitPen: "rgb(225,236,242)",          //分割线
+        FrameSplitTextColor: "rgb(51,51,51)",     //刻度文字颜色
+        FrameSplitTextFont: "12px 微软雅黑",        //坐标刻度文字字体
+        FrameTitleBGColor: "rgb(246,251,253)",      //标题栏背景色
+
+        CorssCursorBGColor: "rgb(43,54,69)",            //十字光标背景
+        CorssCursorTextColor: "rgb(255,255,255)",
+        CorssCursorTextFont: "12px 微软雅黑",
+        CorssCursorPenColor: "rgb(130,130,130)",           //十字光标线段颜色
+
+        KLine:
+        {
+            MaxMin: { Font: '12px 微软雅黑', Color: 'rgb(111,111,111)' },   //K线最大最小值显示
+            Info:  //信息地雷
+            {
+                Color: 'rgb(205,149,12)',
+                TextColor: '#197de9',
+                TextBGColor: '#e1e4ef',
+                Investor:
+                {
+                    ApiUrl: '/API/NewsInteract', //互动易
+                },
+                Announcement:                                           //公告
+                {
+                    ApiUrl: '/API/ReportList',
+                },
+                Pforecast:  //业绩预告
+                {
+                    ApiUrl: '/API/StockHistoryDay',
+                },
+                Research:   //调研
+                {
+                    ApiUrl: '/API/InvestorRelationsList',
+                },
+                BlockTrading:   //大宗交易
+                {
+                    ApiUrl: '/API/StockHistoryDay',
+                },
+                TradeDetail:    //龙虎榜
+                {
+                    ApiUrl: '/API/StockHistoryDay',
+                },
+                Policy: //策略
+                {
+                    ApiUrl: '/API/StockHistoryDay',
+                }
+            }
+        },
+
+        Index: 
+        {      //指标线段颜色
+            LineColor: 
+            [
+                "rgb(255,189,09)",
+                "rgb(22,198,255)",
+                "rgb(174,35,161)",
+                "rgb(236,105,65)",
+                "rgb(68,114,196)",
+                "rgb(229,0,79)",
+                "rgb(0,128,255)",
+                "rgb(252,96,154)",
+                "rgb(42,230,215)",
+                "rgb(24,71,178)",
+            ],
+            NotSupport: { Font: "14px 微软雅黑", TextColor: "rgb(52,52,52)" }
+        },
+
+        ColorArray:       //自定义指标默认颜色
+        [
+            "rgb(255,174,0)",
+            "rgb(25,199,255)",
+            "rgb(175,95,162)",
+            "rgb(236,105,65)",
+            "rgb(68,114,196)",
+            "rgb(229,0,79)",
+            "rgb(0,128,255)",
+            "rgb(252,96,154)",
+            "rgb(42,230,215)",
+            "rgb(24,71,178)",
+        ],
+
+        //画图工具
+        DrawPicture:
+        {
+            LineColor: "rgb(30,144,255)",
+            PointColor: "rgb(105,105,105)",
+        },
+    }
+
+    return WHITE_STYLE;
 }
 
 var STYLE_TYPE_ID=
@@ -320,11 +328,9 @@ function GetStyleConfig(styleid)    //获取一个风格的配置变量
   switch (styleid)
     {
         case STYLE_TYPE_ID.BLACK_ID:
-            return BLACK_STYLE;
-            break;
+            return GetBlackStyle();
         case STYLE_TYPE_ID.WHITE_ID:
-            return WHITE_STYLE;
-            break;  
+            return GetWhiteStyle();
         default:
             return null;
     }

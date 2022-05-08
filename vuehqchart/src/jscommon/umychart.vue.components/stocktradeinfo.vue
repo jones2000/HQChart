@@ -987,12 +987,12 @@ export default {
       var divDeal = this.$refs.deal;
       if(divDeal){
         divDeal.style.backgroundColor=resource.BGColor; //设置最外面的div背景
-        this.DealChart.ReloadResource({Redraw:true});   //动态刷新配色
+        if (this.DealChart) this.DealChart.ReloadResource({Redraw:true});   //动态刷新配色
       }
       var priceList = this.$refs.priceList;
       if(priceList){
         priceList.style.backgroundColor=resource.BGColor; //设置最外面的div背景
-        this.PriceListChart.ReloadResource({Redraw:true});   //动态刷新配色
+        if (this.PriceListChart) this.PriceListChart.ReloadResource({Redraw:true});   //动态刷新配色
       }
       
     },
