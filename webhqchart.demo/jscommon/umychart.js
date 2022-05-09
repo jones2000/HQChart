@@ -42686,7 +42686,7 @@ function JSChartResource()
             Mergin:{ Top:2, Bottom:0,Left:5, Right:5 }, //单元格四周间距
             Font:{ Size:15, Name:"微软雅黑"},
             BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },//单元格字体
-            NameFont:{ Size:15, Name:"微软雅黑" },
+            NameFont:{ Size:14, Name:"微软雅黑" },
             SymbolFont:{ Size:12, Name:"微软雅黑" }
         },
 
@@ -42730,6 +42730,14 @@ function JSChartResource()
             TabSelectedBGColor:"rgb(252,252,252)",
             TabMoveOnTitleColor:"rgb(0,0,0)",
             TabBGColor:"rgb(220,220,220)"
+        },
+
+        PageInfo:
+        {
+            Font:{ Size:15, Name:"微软雅黑"},
+            TextColor:"rgb(0,0,0)",
+            BGColor:"rgba(180,180,180,0.5)",
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
         }
     },
 
@@ -43250,6 +43258,29 @@ function JSChartResource()
                 if (tab.TabSelectedBGColor) this.Report.Tab.TabSelectedBGColor=tab.TabSelectedBGColor;
                 if (tab.TabMoveOnTitleColor) this.Report.Tab.TabMoveOnTitleColor=tab.TabMoveOnTitleColor;
                 if (tab.TabBGColor) this.Report.Tab.TabBGColor=tab.TabBGColor;
+            }
+
+            if (item.PageInfo)
+            {
+                var pageinfo=item.PageInfo;
+                if (pageinfo.Font)
+                {
+                    var font=pageinfo.Font;
+                    if (font.Name) this.Report.PageInfo.Font.Name=font.Name;
+                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.PageInfo.Font.Size=font.Size;
+                }
+
+                if (pageinfo.TextColor) this.Report.PageInfo.TextColor=pageinfo.TextColor;
+                if (pageinfo.BGColor) this.Report.PageInfo.BGColor=pageinfo.BGColor;
+
+                if (pageinfo.Mergin)
+                {
+                    var mergin=pageinfo.Mergin;
+                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.PageInfo.Mergin.Left=mergin.Left;
+                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.PageInfo.Mergin.Top=mergin.Top;
+                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.PageInfo.Mergin.Right=mergin.Right;
+                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.PageInfo.Mergin.Bottom=mergin.Bottom;
+                }
             }
         }
     }

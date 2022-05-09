@@ -391,6 +391,14 @@ function GetBlackStyle()
                 TabSelectedBGColor:"rgb(13,12,15)",
                 TabMoveOnTitleColor:"rgb(255,255,255)",
                 TabBGColor:"rgb(28,28,31)"
+            },
+
+            PageInfo:
+            {
+                Font:{ Size:15, Name:"微软雅黑"},
+                TextColor:"rgb(255,255,255)",
+                BGColor:"rgba(49,48,56,0.8)",
+                Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
             }
         }
         
