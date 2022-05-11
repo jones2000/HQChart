@@ -1,5 +1,6 @@
 //日志
 import { JSConsole } from "./umychart.console.wechat.js"
+import { JSCommonUniApp } from './umychart.uniapp.canvas.helper.js'
 
 function JSCanvasElement() 
 {

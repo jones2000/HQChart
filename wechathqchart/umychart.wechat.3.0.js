@@ -119,8 +119,6 @@ import{
     JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
-import { JSCommonUniApp } from './umychart.uniapp.canvas.helper.js'
-
 import 
 { 
     JSCommonSplit_CoordinateInfo as CoordinateInfo,
