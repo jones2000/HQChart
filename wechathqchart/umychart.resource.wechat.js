@@ -314,6 +314,63 @@ function JSChartResource()
         }
     }
 
+    //报价列表
+    this.Report=
+    {
+        BorderColor:'rgb(192,192,192)',    //边框线
+        SelectedColor:"rgb(180,240,240)",  //选中行
+        Header:
+        {
+            Color:"rgb(60,60,60)",      //表头文字颜色
+            SortColor:"rgb(255,0,0)",   //排序箭头颜色
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2},    //表头四周间距
+            Font:{ Size:12, Name:"微软雅黑" }   //表头字体
+        },
+
+        Item:
+        {
+            Mergin:{ Top:2, Bottom:0,Left:5, Right:5 }, //单元格四周间距
+            Font:{ Size:15, Name:"微软雅黑"},
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },//单元格字体
+            NameFont:{ Size:14, Name:"微软雅黑" },
+            SymbolFont:{ Size:12, Name:"微软雅黑" }
+        },
+
+        //固定行
+        FixedItem:
+        {
+            Font:{ Size:15, Name:"微软雅黑"},
+        },
+
+        LimitBorder:
+        {
+            Color:"rgb(180,180,180)",
+            Mergin:{ Top:1, Bottom:1,Left:0, Right:0 },
+        },
+
+        FieldColor:
+        {
+            Index:"rgb(60,60,60)",  //序号
+            Symbol:"rgb(60,60,60)",
+            Name:"rgb(60,60,60)",
+            Vol:"rgb(90,90,90)",    //成交量
+            Amount:"rgb(90,90,90)", //成交金额
+            Text:"rgb(60,60,60)",   //默认文本
+        },
+
+        UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+        DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+        UnchagneTextColor:"rgb(90,90,90)",     //平盘文字颜色 
+
+        PageInfo:
+        {
+            Font:{ Size:15, Name:"微软雅黑"},
+            TextColor:"rgb(0,0,0)",
+            BGColor:"rgba(180,180,180,0.5)",
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+        }
+    }
+
     // //自定义风格
     this.SetStyle = function (style) 
     {
@@ -500,6 +557,146 @@ function JSChartResource()
             var item=style.POINTDOT;
             if (this.IsNumber(item.Radius)) this.POINTDOT.Radius=item.Radius;
         }
+
+        if (style.Report)
+        {
+            var item=style.Report;
+            if (item.BorderColor) this.Report.BorderColor=item.BorderColor;
+            if (item.UpTextColor) this.Report.UpTextColor=item.UpTextColor;
+            if (item.DownTextColor) this.Report.DownTextColor=item.DownTextColor;
+            if (item.UnchagneTextColor) this.Report.UnchagneTextColor=item.UnchagneTextColor;
+            if (item.BorderColor) this.Report.SelectedColor=item.SelectedColor;
+
+            if (item.Header)
+            {
+                var header=item.Header;
+                if (header.Color) this.Report.Header.Color=header.Color;
+                if (header.SortColor) this.Report.Header.SortColor=header.SortColor;
+                if (header.Mergin)
+                {
+                    var mergin=header.Mergin;
+                    if (this.IsNumber(mergin.Left)) this.Report.Header.Mergin.Left=mergin.Left;
+                    if (this.IsNumber(mergin.Right)) this.Report.Header.Mergin.Left=mergin.Right;
+                    if (this.IsNumber(mergin.Top)) this.Report.Header.Mergin.Top=mergin.Top;
+                    if (this.IsNumber(mergin.Bottom)) this.Report.Header.Mergin.Bottom=mergin.Bottom;
+                }
+                if (header.Font)
+                {
+                    var font=header.Font;
+                    if (font.Name) this.Report.Header.Font.Name=font.Name;
+                    if (this.IsNumber(font.Size)) this.Report.Header.Font.Size=font.Size;
+                }
+            }
+
+            if (item.Item)
+            {
+                var row=item.Item;
+                if (row.Mergin)
+                {
+                    var mergin=row.Mergin;
+                    if (this.IsNumber(mergin.Left)) this.Report.Item.Mergin.Left=mergin.Left;
+                    if (this.IsNumber(mergin.Right)) this.Report.Item.Mergin.Right=mergin.Right;
+                    if (this.IsNumber(mergin.Top)) this.Report.Item.Mergin.Top=mergin.Top;
+                    if (this.IsNumber(mergin.Bottom)) this.Report.Item.Mergin.Bottom=mergin.Bottom;
+                }
+
+                if (row.Font)
+                {
+                    var font=row.Font;
+                    if (font.Name) this.Report.Item.Font.Name=font.Name;
+                    if (this.IsNumber(font.Size)) this.Report.Item.Font.Size=font.Size;
+                }
+
+                if (row.BarMergin)
+                {
+                    var mergin=row.BarMergin;
+                    if (this.IsNumber(mergin.Left)) this.Report.Item.BarMergin.Left=mergin.Left;
+                    if (this.IsNumber(mergin.Top)) this.Report.Item.BarMergin.Top=mergin.Top;
+                    if (this.IsNumber(mergin.Right)) this.Report.Item.BarMergin.Right=mergin.Right;
+                    if (this.IsNumber(mergin.Bottom)) this.Report.Item.BarMergin.Bottom=mergin.Bottom;
+                }
+
+                if (row.NameFont)
+                {
+                    var font=row.NameFont;
+                    if (font.Name) this.Report.Item.NameFont.Name=font.Name;
+                    if (this.IsNumber(font.Size)) this.Report.Item.NameFont.Size=font.Size;
+                }
+
+                if (row.SymbolFont)
+                {
+                    var font=row.SymbolFont;
+                    if (font.Name) this.Report.Item.SymbolFont.Name=font.Name;
+                    if (this.IsNumber(font.Size)) this.Report.Item.SymbolFont.Size=font.Size;
+                }
+            }
+
+            if (item.FixedItem)
+            {
+                var row=item.FixedItem;
+                if (row.Font)
+                {
+                    var font=row.Font;
+                    if (font.Name) this.Report.FixedItem.Font.Name=font.Name;
+                    if (this.IsNumber(font.Size)) this.Report.FixedItem.Font.Size=font.Size;
+                }
+            }
+
+            if (item.LimitBorder)
+            {
+                var limit=item.LimitBorder;
+                if (limit.Color) this.Report.LimitBorder.Color=limit.Color;
+                if (limit.Mergin)
+                {
+                    var mergin=limit.Mergin;
+                    if (this.IsNumber(mergin.Left)) this.Report.LimitBorder.Mergin.Left=mergin.Left;
+                    if (this.IsNumber(mergin.Top)) this.Report.LimitBorder.Mergin.Top=mergin.Top;
+                    if (this.IsNumber(mergin.Right)) this.Report.LimitBorder.Mergin.Right=mergin.Right;
+                    if (this.IsNumber(mergin.Bottom)) this.Report.LimitBorder.Mergin.Bottom=mergin.Bottom;
+                }
+            }
+
+            if (item.FieldColor)
+            {
+                var filed=item.FieldColor;
+                if (filed.Name) this.Report.FieldColor.Name=filed.Name;
+                if (filed.Symbol) this.Report.FieldColor.Symbol=filed.Symbol;
+                if (filed.Vol) this.Report.FieldColor.Vol=filed.Vol;
+                if (filed.Amount) this.Report.FieldColor.Amount=filed.Amount;
+                if (filed.Index) this.Report.FieldColor.Index=filed.Index;
+                if (filed.BarTitle) this.Report.FieldColor.BarTitle=filed.BarTitle;
+                if (filed.Text) this.Report.FieldColor.Text=filed.Text;
+
+                if (this.IsNonEmptyArray(filed.Bar))
+                {
+                    for(var i=0;i<filed.Bar.length;++i)
+                        this.Report.FieldColor.Bar[i]=filed.Bar[i];
+                }
+            }
+
+            if (item.PageInfo)
+            {
+                var pageinfo=item.PageInfo;
+                if (pageinfo.Font)
+                {
+                    var font=pageinfo.Font;
+                    if (font.Name) this.Report.PageInfo.Font.Name=font.Name;
+                    if (this.IsNumber(font.Size)) this.Report.PageInfo.Font.Size=font.Size;
+                }
+
+                if (pageinfo.TextColor) this.Report.PageInfo.TextColor=pageinfo.TextColor;
+                if (pageinfo.BGColor) this.Report.PageInfo.BGColor=pageinfo.BGColor;
+
+                if (pageinfo.Mergin)
+                {
+                    var mergin=pageinfo.Mergin;
+                    if (this.IsNumber(mergin.Left)) this.Report.PageInfo.Mergin.Left=mergin.Left;
+                    if (this.IsNumber(mergin.Top)) this.Report.PageInfo.Mergin.Top=mergin.Top;
+                    if (this.IsNumber(mergin.Right)) this.Report.PageInfo.Mergin.Right=mergin.Right;
+                    if (this.IsNumber(mergin.Bottom)) this.Report.PageInfo.Mergin.Bottom=mergin.Bottom;
+                }
+            }
+        }
     }
 
     
@@ -518,6 +715,15 @@ function JSChartResource()
         if (isNaN(value)) return false;
 
         return value>0;
+    }
+
+    //是否是非空的数组
+    this.IsNonEmptyArray=function(ary)
+    {
+        if (!ary) return;
+        if (!Array.isArray(ary)) return;
+
+        return ary.length>0;
     }
 }
 

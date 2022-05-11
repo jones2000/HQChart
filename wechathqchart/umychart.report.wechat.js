@@ -7,42 +7,112 @@
  
    jones_2000@163.com
 
-   封装股票列表控件 (H5版本)
+   封装股票列表控件 (小程序版本)
    不提供内置测试数据
 */
 
-function JSReportChart(divElement)
+//日志
+import { JSConsole } from "./umychart.console.wechat.js"
+
+//画布DOM
+import { JSCommonElement_JSCanvasElement as JSCanvasElement } from "./umychart.element.wechart.js";
+
+import{
+    JSCommonResource_Global_JSChartResource as g_JSChartResource,
+    JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
+    JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
+} from './umychart.resource.wechat.js'
+
+import 
+{ 
+    JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
+} from './umychart.framesplit.wechat.js'
+
+import 
+{ 
+    JSCommonCoordinateData_GetfloatPrecision as GetfloatPrecision,
+} from "./umychart.coordinatedata.wechat.js";
+
+
+//图形库
+import {
+    JSCommonChartPaint_ChartSplashPaint as ChartSplashPaint,
+    JSCommonChartPaint_GetFontHeight as GetFontHeight,
+} from "./umychart.chartpaint.wechat.js";
+
+
+//行情数据结构体 及涉及到的行情算法(复权,周期等) 
+import {
+    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
+    JSCommon_PhoneDBClick as PhoneDBClick,
+} from "./umychart.data.wechat.js";
+
+//边框信息
+function ChartBorder() 
 {
-    this.DivElement=divElement;
+    this.UIElement;
+
+    //四周间距
+    this.Left = 50;
+    this.Right = 80;
+    this.Top = 50;
+    this.Bottom = 50;
+
+    this.GetChartWidth = function () 
+    {
+        return this.UIElement.Width;
+    }
+
+    this.GetChartHeight = function () 
+    {
+        return this.UIElement.Height;
+    }
+
+    this.GetLeft = function () 
+    {
+        return this.Left;
+    }
+
+    this.GetRight = function () 
+    {
+        return this.UIElement.Width - this.Right;
+    }
+
+    this.GetTop = function () 
+    {
+        return this.Top;
+    }
+
+    this.GetBottom = function () 
+    {
+        return this.UIElement.Height - this.Bottom;
+    }
+
+    this.GetWidth = function () 
+    {
+        return this.UIElement.Width - this.Left - this.Right;
+    }
+
+    this.GetHeight = function () 
+    {
+        return this.UIElement.Height - this.Top - this.Bottom;
+    }
+}
+
+function JSReportChart(element)
+{
+    this.CanvasElement=element;
     this.JSChartContainer;              //表格控件
 
-     //h5 canvas
-     this.CanvasElement=document.createElement("canvas");
-     this.CanvasElement.className='jsreportlist-drawing';
-     this.CanvasElement.id=Guid();
-     this.CanvasElement.setAttribute("tabindex",0);
-     if (this.CanvasElement.style) this.CanvasElement.style.outline='none';
-     if(divElement.hasChildNodes())
-     {
-         JSConsole.Chart.Log("[JSReportChart::JSReportChart] divElement hasChildNodes", divElement.childNodes);
-     }
-     divElement.appendChild(this.CanvasElement);
-
-
-    this.OnSize=function()
+    this.OnSize=function(option)
     {
-        //画布大小通过div获取
-        var height=parseInt(this.DivElement.style.height.replace("px",""));
-        this.CanvasElement.height=height;
-        this.CanvasElement.width=parseInt(this.DivElement.style.width.replace("px",""));
-        this.CanvasElement.style.width=this.CanvasElement.width+'px';
-        this.CanvasElement.style.height=this.CanvasElement.height+'px';
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNumber(option.Width)) this.CanvasElement.Width=option.Width;
+            if (IFrameSplitOperator.IsNumber(option.Height)) this.CanvasElement.Height=option.Height;
+        }
 
-        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
-        this.CanvasElement.height*=pixelTatio;
-        this.CanvasElement.width*=pixelTatio;
-
-        JSConsole.Chart.Log(`[JSReportChart::OnSize] devicePixelRatio=${window.devicePixelRatio}, height=${this.CanvasElement.height}, width=${this.CanvasElement.width}`);
+        if (option && option.Redraw==false) return;
 
         if (this.JSChartContainer && this.JSChartContainer.OnSize)
         {
@@ -59,13 +129,12 @@ function JSReportChart(divElement)
         if (option.OnCreatedCallback) option.OnCreatedCallback(chart);
 
         this.JSChartContainer=chart;
-        this.DivElement.JSChart=this;   //div中保存一份
 
         if (option.Symbol) chart.Symbol=option.Symbol;
         if (option.Name) chart.Name=option.Name;
 
         var requestOption={ Callback:null };
-        if (chart.Symbol) requestOption.Callback=function(){ chart.RequestMemberListData(); };
+        if (chart.Symbol) requestOption.Callback=function() { chart.RequestMemberListData(); };
 
         chart.RequestStockListData(requestOption);   //下载码表     
     }
@@ -109,12 +178,6 @@ function JSReportChart(divElement)
         if (IFrameSplitOperator.IsNumber(option.Border.Right)) chart.Frame.ChartBorder.Right=option.Border.Right;
         if (IFrameSplitOperator.IsNumber(option.Border.Top)) chart.Frame.ChartBorder.Top=option.Border.Top;
         if (IFrameSplitOperator.IsNumber(option.Border.Bottom)) chart.Frame.ChartBorder.Bottom=option.Border.Bottom;
-
-        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
-        chart.Frame.ChartBorder.Left*=pixelTatio;
-        chart.Frame.ChartBorder.Right*=pixelTatio;
-        chart.Frame.ChartBorder.Top*=pixelTatio;
-        chart.Frame.ChartBorder.Bottom*=pixelTatio;
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -129,11 +192,6 @@ function JSReportChart(divElement)
     this.SetColumn=function(aryColumn, option)
     {
         if (this.JSChartContainer) this.JSChartContainer.SetColumn(aryColumn,option);
-    }
-
-    this.EnableFilter=function(bEnable, option) //启动|关闭筛选
-    {
-        if (this.JSChartContainer) this.JSChartContainer.EnableFilter(bEnable, option);
     }
 
     //事件回调
@@ -155,15 +213,48 @@ function JSReportChart(divElement)
             this.JSChartContainer.ReloadResource(option);
         }
     }
+
+    this.OnTouchStart = function (e) 
+    {
+        if (this.JSChartContainer) this.JSChartContainer.OnTouchStart(e);
+    }
+
+    this.OnTouchMove = function (e) 
+    {
+        if (this.JSChartContainer) this.JSChartContainer.OnTouchMove(e);
+    }
+
+    this.OnTouchEnd = function (e) 
+    {
+        if (this.JSChartContainer) this.JSChartContainer.OnTouchEnd(e);
+    }
 }
 
-
-JSReportChart.Init=function(divElement)
+JSReportChart.Init=function(uielement)
 {
-    var jsChartControl=new JSReportChart(divElement);
+    var jsChartControl=new JSReportChart(uielement);
     jsChartControl.OnSize();
 
     return jsChartControl;
+}
+
+//自定义风格
+JSReportChart.SetStyle = function (style) 
+{
+    if (style) g_JSChartResource.SetStyle(style);
+}
+
+//修正线段有毛刺
+function ToFixedPoint(value) 
+{
+    //return value;
+    return parseInt(value) + 0.5;
+}
+
+function ToFixedRect(value) 
+{
+    var rounded;
+    return rounded = (0.5 + value) << 0;
 }
 
 function HQReportItem()
@@ -199,6 +290,7 @@ function HQReportItem()
     this.ExtendData;    //扩展数据
 }
 
+
 function JSReportChartContainer(uielement)
 {
     this.ClassName='JSReportChartContainer';
@@ -209,7 +301,7 @@ function JSReportChartContainer(uielement)
 
     this.SplashTitle={ StockList:"下载码表中.....", MemberList:"下载成分中....." } ;
 
-    this.Canvas=uielement.getContext("2d");         //画布
+    this.Canvas=uielement.GetContext("2d");         //画布
     this.ShowCanvas=null;
 
     this.Symbol;    //板块代码
@@ -234,19 +326,18 @@ function JSReportChartContainer(uielement)
     this.DelayUpdateFrequency=500;  //延迟更新时间
     
     this.UIElement=uielement;
-    this.LastPoint=new Point();     //鼠标位置
+    this.LastPoint=null;     //鼠标位置
     this.IsOnTouch=false;
     this.TouchDrag;
     this.TouchMoveMinAngle=70;          //左右移动最小角度
-    this.YStepPixel=5*GetDevicePixelRatio();
-    this.XStepPixel=10*GetDevicePixelRatio();   
+    this.YStepPixel=5;
+    this.XStepPixel=10;
     
     this.PageUpDownCycle=true;  //翻页循环
     this.DragPageCycle=true;    //手机翻页循环
 
     //拖拽滚动条
     this.DragXScroll=null;  //{Start:{x,y}, End:{x, y}}
-
     this.IsDestroy=false;        //是否已经销毁了
 
     this.ChartDestory=function()    //销毁
@@ -303,11 +394,6 @@ function JSReportChartContainer(uielement)
         chart.Data=this.Data;
         chart.FixedRowData=this.FixedRowData;
         chart.SortInfo=this.SortInfo;
-        chart.Tab=new ChartReportTab();
-        chart.Tab.Frame=this.Frame;
-        chart.Tab.Canvas=this.Canvas;
-        chart.Tab.ChartBorder=this.Frame.ChartBorder;
-        chart.Tab.Report=chart;
         this.ChartPaint[0]=chart;
 
         //页脚
@@ -327,10 +413,8 @@ function JSReportChartContainer(uielement)
             if (IFrameSplitOperator.IsNumber(option.FixedColumn)) chart.FixedColumn=option.FixedColumn;     //固定列
 
             if (IFrameSplitOperator.IsNumber(option.BorderLine)) this.Frame.BorderLine=option.BorderLine;   //边框
-            if (IFrameSplitOperator.IsBool(option.TabShow)) chart.Tab.IsShow=option.TabShow;
             if (IFrameSplitOperator.IsNumber(option.FixedRowCount)) chart.FixedRowCount=option.FixedRowCount;   //固定行
             if (IFrameSplitOperator.IsBool(option.ItemBorder)) chart.IsDrawBorder=option.ItemBorder;            //单元格边框
-            if (IFrameSplitOperator.IsNumber(option.SelectedModel)) chart.SelectedModel=option.SelectedModel;
 
             if (IFrameSplitOperator.IsNonEmptyArray(option.FixedSymbol))
             {
@@ -346,51 +430,14 @@ function JSReportChartContainer(uielement)
                 }
             }
         }
-
-        var bRegisterKeydown=true;
-        var bRegisterWheel=true;
-
-        if (option)
-        {
-            if (option.KeyDown===false) 
-            {
-                bRegisterKeydown=false;
-                JSConsole.Chart.Log('[JSDealChartContainer::Create] not register keydown event.');
-            }
-
-            if (option.Wheel===false) 
-            {
-                bRegisterWheel=false;
-                JSConsole.Chart.Log('[JSDealChartContainer::Create] not register wheel event.');
-            }
-        }
-
-        if (bRegisterKeydown) this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
-        if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
-
-        
-        this.UIElement.ondblclick=(e)=>{ this.UIOnDblClick(e); }
-        this.UIElement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
-        this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
-        this.UIElement.onmousemove=(e)=>{ this.UIOnMouseMove(e);}
-        this.UIElement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
-        this.UIElement.onmouseleave=(e)=>{ this.UIOnMouseleave(e); }
-        
-
-        //手机拖拽
-        this.UIElement.ontouchstart=(e)=> { this.OnTouchStart(e); } 
-        this.UIElement.ontouchmove=(e)=> {this.OnTouchMove(e); }
-        this.UIElement.ontouchend=(e)=> {this.OnTouchEnd(e); } 
     }
 
     this.Draw=function()
     {
-        if (this.UIElement.width<=0 || this.UIElement.height<=0) return; 
+        if (this.UIElement.Width<=0 || this.UIElement.Height<=0) return; 
 
-        this.Canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
-        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
-        this.Canvas.lineWidth=pixelTatio;       //手机端需要根据分辨率比调整线段宽度
-
+        this.Canvas.clearRect(0,0,this.UIElement.Width,this.UIElement.Height);
+       
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)
         {
             this.Frame.Draw( { IsEnableSplash:this.ChartSplashPaint.IsEnableSplash} );
@@ -415,6 +462,8 @@ function JSReportChartContainer(uielement)
             if (!item.IsDrawFirst)
                 item.Draw();
         }
+
+        this.Canvas.draw(false);
     }
 
 
@@ -892,244 +941,6 @@ function JSReportChartContainer(uielement)
         }
     }
 
-
-    this.OnWheel=function(e)    //滚轴
-    {
-        JSConsole.Chart.Log('[JSReportChartContainer::OnWheel]',e);
-        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
-        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return;
-
-        var x = e.clientX-this.UIElement.getBoundingClientRect().left;
-        var y = e.clientY-this.UIElement.getBoundingClientRect().top;
-
-        var isInClient=false;
-        this.Canvas.beginPath();
-        this.Canvas.rect(this.Frame.ChartBorder.GetLeft(),this.Frame.ChartBorder.GetTop(),this.Frame.ChartBorder.GetWidth(),this.Frame.ChartBorder.GetHeight());
-        isInClient=this.Canvas.isPointInPath(x,y);
-        if (!isInClient) return;
-
-        var chart=this.ChartPaint[0];
-        if (!chart) return;
-
-        var wheelValue=e.wheelDelta;
-        if (!IFrameSplitOperator.IsObjectExist(e.wheelDelta))
-            wheelValue=e.deltaY* -0.01;
-
-        if (wheelValue<0)   //下一页
-        {
-            if (this.GotoNextPage(this.PageUpDownCycle)) 
-            {
-                this.Draw();
-                this.DelayUpdateStockData();
-            }
-        }
-        else if (wheelValue>0)  //上一页
-        {
-            if (this.GotoPreviousPage(this.PageUpDownCycle)) 
-            {
-                this.Draw();
-                this.DelayUpdateStockData();
-            }
-        }
-
-        if(e.preventDefault) e.preventDefault();
-        else e.returnValue = false;
-    }
-
-    this.OnKeyDown=function(e)
-    {
-        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
-        var reportChart=this.GetReportChart();
-        if (!reportChart) return;
-
-        var keyID = e.keyCode ? e.keyCode :e.which;
-        switch(keyID)
-        {
-            case 33:    //page up
-                if (this.GotoPreviousPage(this.PageUpDownCycle)) 
-                {
-                    this.Draw();
-                    this.DelayUpdateStockData();
-                }
-                break;
-            case 34:    //page down
-                if (this.GotoNextPage(this.PageUpDownCycle)) 
-                {
-                    this.Draw();
-                    this.DelayUpdateStockData();
-                }
-                break;
-            case 38:    //up
-                var result=this.MoveSelectedRow(-1);
-                if (result)
-                {
-                    if (result.Redraw) this.Draw();
-                    if (result.Update) this.DelayUpdateStockData();
-                }
-                break;
-            case 40:    //down
-                var result=this.MoveSelectedRow(1)
-                if (result)
-                {
-                    if (result.Redraw) this.Draw();
-                    if (result.Update) this.DelayUpdateStockData();
-                }
-                break;
-            case 37: //left
-                if (this.MoveXOffset(-1)) this.Draw();
-                break
-            case 39: //right
-                if (this.MoveXOffset(1)) this.Draw();
-                break;
-        }
-
-        //不让滚动条滚动
-        if(e.preventDefault) e.preventDefault();
-        else e.returnValue = false;
-    }
-
-    this.UIOnDblClick=function(e)
-    {
-        var pixelTatio = GetDevicePixelRatio();
-        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
-
-        var chart=this.ChartPaint[0];
-        if (chart) chart.OnDblClick(x,y,e);
-    }
-
-    this.UIOnMouseDown=function(e)
-    {
-        this.DragXScroll=null;
-
-        var pixelTatio = GetDevicePixelRatio();
-        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
-
-        var chart=this.ChartPaint[0];
-        if (chart) 
-        {
-            var clickData=chart.OnMouseDown(x,y,e);
-            if (!clickData) return;
-            if (e.button!=0) return;
-
-            if (clickData.Type==2 || clickData.Type==4)  //点击行|固定行
-            {
-                if (clickData.Redraw==true)
-                    this.Draw();
-            }
-            else if (clickData.Type==3) //表头
-            {
-                this.OnClickHeader(clickData, e);
-            }
-            else if (clickData.Type==1) //底部工具栏
-            {
-                var tabData=clickData.Tab;
-                if (tabData.Type==1)    //左按钮
-                {
-                    if (this.MoveXOffset(-1)) this.Draw();
-                }
-                else if (tabData.Type==2)   //右按钮
-                {
-                    if (this.MoveXOffset(1)) this.Draw();
-                }
-                else if (tabData.Type==3)   //滚动条
-                {
-                    this.DragXScroll={ Click:{X:x, Y:y}, LastMove:{X:x, Y:y} };
-                }
-                else if (tabData.Type==4)   //滚动条内部
-                {
-                    if (this.SetXOffset(tabData.Pos)) this.Draw();
-                }
-                else if (tabData.Type==5)   //标签
-                {
-                    this.OnClickTab(tabData, e);
-                }
-            }
-        }
-
-        document.onmousemove=(e)=>{ this.DocOnMouseMove(e); }
-        document.onmouseup=(e)=> { this.DocOnMouseUp(e); }
-    }
-
-    //去掉右键菜单
-    this.UIOnContextMenu=function(e)
-    {
-        e.preventDefault();
-    }
-
-    this.UIOnMouseMove=function(e)
-    {
-        var pixelTatio = GetDevicePixelRatio();
-        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
-
-        var tabChart=this.GetTabChart();
-        if (tabChart)
-        {
-            var tabData=tabChart.PtInTab(x,y);
-            if (tabData)
-            {
-                var index=tabData.Index;
-                if (tabChart.MoveOnTabIndex!=index)
-                {
-                    tabChart.MoveOnTabIndex=index;
-                    this.Draw();
-                }
-            }
-        }
-
-    }
-
-    this.UIOnMounseOut=function(e)
-    {
-        var tabChart=this.GetTabChart();
-        if (tabChart && tabChart.MoveOnTabIndex>=0)
-        {
-            tabChart.MoveOnTabIndex=-1;
-            this.Draw();
-        }
-    }
-
-    this.UIOnMouseleave=function(e)
-    {
-        var tabChart=this.GetTabChart();
-        if (tabChart && tabChart.MoveOnTabIndex>=0)
-        {
-            tabChart.MoveOnTabIndex=-1;
-            this.Draw();
-        }
-    }
-
-    this.DocOnMouseMove=function(e)
-    {
-        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
-
-        var pixelTatio = GetDevicePixelRatio();
-        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
-        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
-
-        if (this.DragXScroll)
-        {
-            var chart=this.ChartPaint[0];
-            if (!chart || !chart.Tab) return;
-
-            this.DragXScroll.LastMove.X=x;
-            this.DragXScroll.LastMove.Y=y;
-            var pos=chart.Tab.GetScrollPostionByPoint(x,y);
-            if (this.SetXOffset(pos)) this.Draw();
-        }
-    }
-
-    this.DocOnMouseUp=function(e)
-    {
-        //清空事件
-        document.onmousemove=null;
-        document.onmouseup=null;
-
-        this.DragXScroll=null;
-    }
-
     //判断是单个手指
     this.IsPhoneDragging=function(e)
     {
@@ -1143,16 +954,10 @@ function JSReportChartContainer(uielement)
     this.GetToucheData=function(e)
     {
         var touches=[];
-        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         for(var i=0; i<e.touches.length; ++i)
         {
             var item=e.touches[i];
-            touches.push(
-            {
-                clientX:item.clientX*pixelTatio, clientY:item.clientY*pixelTatio, 
-                pageX:item.pageX*pixelTatio, pageY:item.pageY*pixelTatio
-            });
-            
+            touches.push( {clientX: item.x, clientY: item.y, pageX: item.x, pageY: item.y });
         }
 
         return touches;
@@ -1168,8 +973,7 @@ function JSReportChartContainer(uielement)
 
     this.PreventTouchEvent=function(e)
     {
-        if (e.cancelable) e.preventDefault();
-        e.stopPropagation();
+        
     }
 
      //手势事件
@@ -1996,8 +1800,6 @@ function JSReportChartContainer(uielement)
     }
 }
 
-
-
 function JSReportFrame()
 {
     this.ChartBorder;
@@ -2074,7 +1876,7 @@ function JSReportFrame()
         this.Canvas.textAlign = 'right';
         this.Canvas.textBaseline = 'bottom';
        
-        var x=this.ChartBorder.GetRight()-30;
+        var x=this.ChartBorder.GetRight()-10;
         var y=this.ChartBorder.GetBottom()-5;
         this.Canvas.fillText(text,x,y); 
     }
@@ -2146,8 +1948,6 @@ function ChartReport()
 
     this.ShowSymbol=[];                 //显示的股票列表 { Index:序号(排序用), Symbol:股票代码 }
 
-    this.Tab;
-
     //涨跌颜色
     this.UpColor=g_JSChartResource.Report.UpTextColor;
     this.DownColor=g_JSChartResource.Report.DownTextColor;
@@ -2200,11 +2000,11 @@ function ChartReport()
     this.ItemNameFontConfg={Size:g_JSChartResource.Report.Item.NameFont.Size, Name:g_JSChartResource.Report.Item.NameFont.Name};
 
     //缓存
-    this.HeaderFont=12*GetDevicePixelRatio() +"px 微软雅黑";
-    this.ItemFont=15*GetDevicePixelRatio() +"px 微软雅黑";
-    this.ItemFixedFont=15*GetDevicePixelRatio() +"px 微软雅黑";
-    this.ItemSymbolFont=12*GetDevicePixelRatio() +"px 微软雅黑";
-    this.ItemNameFont=15*GetDevicePixelRatio() +"px 微软雅黑";
+    this.HeaderFont="12px 微软雅黑";
+    this.ItemFont="15px 微软雅黑";
+    this.ItemFixedFont="15px 微软雅黑";
+    this.ItemSymbolFont="12px 微软雅黑";
+    this.ItemNameFont="15px 微软雅黑";
     this.ItemNameHeight=0;
     this.RowCount=0;            //一屏显示行数
     this.HeaderHeight=0;        //表头高度
@@ -2344,19 +2144,6 @@ function ChartReport()
         }
     }
 
-    this.GetXScrollPos=function()
-    {
-        return this.Data.XOffset;
-    }
-
-    this.GetXScrollRange=function()
-    {
-        var maxOffset=this.Column.length-this.FixedColumn-3;
-        if (maxOffset<0) return 0;
-
-        return maxOffset;
-    }
-
     this.GetDefaultColunm=function(id)
     {
         var DEFAULT_COLUMN=
@@ -2481,24 +2268,14 @@ function ChartReport()
 
     this.CalculateSize=function()   //计算大小
     {
-        if (this.Tab && this.Tab.IsShow)
-        {
-            this.Tab.CalculateSize();
-            this.BottomToolbarHeight=this.Tab.Height;
-        }
-        else
-        {
-            this.BottomToolbarHeight=0;
-        }
-
+        this.BottomToolbarHeight=0;
         this.UpdateCacheData();
 
-        var pixelRatio=GetDevicePixelRatio();
-        this.HeaderFont=`${this.HeaderFontConfig.Size*pixelRatio}px ${ this.HeaderFontConfig.Name}`;
-        this.ItemFont=`${this.ItemFontConfig.Size*pixelRatio}px ${ this.ItemFontConfig.Name}`;
-        this.ItemFixedFont=`${this.ItemFixedFontConfg.Size*pixelRatio}px ${ this.ItemFixedFontConfg.Name}`;
-        this.ItemSymbolFont=`${this.ItemSymbolFontConfig.Size*pixelRatio}px ${ this.ItemSymbolFontConfig.Name}`;
-        this.ItemNameFont=`${this.ItemNameFontConfg.Size*pixelRatio}px ${ this.ItemNameFontConfg.Name}`;
+        this.HeaderFont=`${this.HeaderFontConfig.Size}px ${ this.HeaderFontConfig.Name}`;
+        this.ItemFont=`${this.ItemFontConfig.Size}px ${ this.ItemFontConfig.Name}`;
+        this.ItemFixedFont=`${this.ItemFixedFontConfg.Size}px ${ this.ItemFixedFontConfg.Name}`;
+        this.ItemSymbolFont=`${this.ItemSymbolFontConfig.Size}px ${ this.ItemSymbolFontConfig.Name}`;
+        this.ItemNameFont=`${this.ItemNameFontConfg.Size}px ${ this.ItemNameFontConfg.Name}`;
 
         this.RowHeight=this.GetFontHeight(this.ItemFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
 
@@ -3610,296 +3387,21 @@ function ChartReport()
             event.Callback(event,data,this);
         }
     }
-}
 
-//报价列表底部tab和横向滚动条
-function ChartReportTab()
-{
-    this.Canvas;                        //画布
-    this.ChartBorder;                   //边框信息
-    this.ChartFrame;                    //框架画法
-    this.Name;                          //名称
-    this.ClassName='ChartReportTab';       //类名
-    this.IsDrawFirst=false;
-    this.GetEventCallback;              //获取事件
-
-    this.Report;
-
-    this.IsShow=true;                   //是否显示
-
-    //Tab
-    this.TabList=[];                //{ Title:标题, ID:, IsMenu: 是否菜单 }
-    this.SelectedTabIndex=-1;
-    this.MoveOnTabIndex=-1;
-    
-    //滚动条信息
-    this.MaxPos=15;             //滚动条可移动长度
-    this.CurrentPos=15;         //当前滚动条移动位置
-    this.Step=1;                //滚动条移动步长
-    this.ScrollBarWidth=g_JSChartResource.Report.Tab.ScrollBarWidth;
-    this.ButtonColor=g_JSChartResource.Report.Tab.ButtonColor;
-    this.BarColor=g_JSChartResource.Report.Tab.BarColor;
-    this.BorderColor=g_JSChartResource.Report.Tab.BorderColor;
-    this.Mergin={ Left:2, Right:2, Top:2, Bottom:2 };
-
-    this.TabFontConfig={ Size:g_JSChartResource.Report.Tab.Font.Size, Name:g_JSChartResource.Report.Tab.Font.Name };
-    this.TabFont;
-    this.TabTitleColor=g_JSChartResource.Report.Tab.TabTitleColor;
-    this.TabSelectedTitleColor=g_JSChartResource.Report.Tab.TabSelectedTitleColor;
-    this.TabSelectedBGColor=g_JSChartResource.Report.Tab.TabSelectedBGColor;
-    this.TabMoveOnTitleColor=g_JSChartResource.Report.Tab.TabMoveOnTitleColor;
-    this.TabBGColor=g_JSChartResource.Report.Tab.TabBGColor;
-    this.TabMergin=
-    { 
-        Top:g_JSChartResource.Report.Tab.Mergin.Top, 
-        Left:g_JSChartResource.Report.Tab.Mergin.Left, 
-        Right:g_JSChartResource.Report.Tab.Mergin.Right,
-        Bottom:g_JSChartResource.Report.Tab.Mergin.Bottom
-    };
-
-    this.Height;
-    this.ButtonSize=25;
-    this.TabWidth=0;
-
-    this.RectScroll={ Left:null, Right:null, Bar:null, Client:null };   //滚动条区域    
-
-    this.ReloadResource=function(resource)
+    this.GetXScrollPos=function()
     {
-        //滚动条
-        this.ScrollBarWidth=g_JSChartResource.Report.Tab.ScrollBarWidth;
-        this.ButtonColor=g_JSChartResource.Report.Tab.ButtonColor;
-        this.BarColor=g_JSChartResource.Report.Tab.BarColor;
-        this.BorderColor=g_JSChartResource.Report.Tab.BorderColor;
-
-        //tab
-        this.TabFontConfig={ Size:g_JSChartResource.Report.Tab.Font.Size, Name:g_JSChartResource.Report.Tab.Font.Name };
-        this.TabTitleColor=g_JSChartResource.Report.Tab.TabTitleColor;
-        this.TabSelectedTitleColor=g_JSChartResource.Report.Tab.TabSelectedTitleColor;
-        this.TabSelectedBGColor=g_JSChartResource.Report.Tab.TabSelectedBGColor;
-        this.TabMoveOnTitleColor=g_JSChartResource.Report.Tab.TabMoveOnTitleColor;
-        this.TabBGColor=g_JSChartResource.Report.Tab.TabBGColor;
-        this.TabMergin=
-        { 
-            Top:g_JSChartResource.Report.Tab.Mergin.Top, 
-            Left:g_JSChartResource.Report.Tab.Mergin.Left, 
-            Right:g_JSChartResource.Report.Tab.Mergin.Right,
-            Bottom:g_JSChartResource.Report.Tab.Mergin.Bottom
-        };
+        return this.Data.XOffset;
     }
 
-    this.SetTabList=function(aryTab)
+    this.GetXScrollRange=function()
     {
-        this.TabList=[];
-        for(var i=0;i<aryTab.length;++i)
-        {
-            var item=aryTab[i];
-            if (!item.Title) continue;
+        var maxOffset=this.Column.length-this.FixedColumn-3;
+        if (maxOffset<0) return 0;
 
-            var tabItem={ Title:item.Title, IsMenu:false, FixedSymbol:[], FixedRowCount:0 };
-            if (item.ID) tabItem.ID=item.ID;
-            if (item.MenuID) tabItem.MenuID=item.MenuID;
-            if (IFrameSplitOperator.IsBool(item.IsMenu)) tabItem.IsMenu=item.IsMenu;
-            if (IFrameSplitOperator.IsNonEmptyArray(item.FixedSymbol))
-            {
-                for(var j=0;j<item.FixedSymbol.length;++j)
-                {
-                    var stockItem=item.FixedSymbol[j];
-                    if (!stockItem || !stockItem.Symbol) continue;
-                    tabItem.FixedSymbol.push(stockItem);
-                    ++tabItem.FixedRowCount;
-                }
-            }
-            this.TabList.push(tabItem);
-        }
-    }
-
-    this.CalculateSize=function()   //计算大小
-    {
-        var pixelRatio=GetDevicePixelRatio();
-        this.TabFont=`${this.TabFontConfig.Size*pixelRatio}px ${ this.TabFontConfig.Name}`;
-        this.Height=this.GetFontHeight(this.TabFont,"8")+ this.Mergin.Top+ this.Mergin.Bottom;
-        var buttonSize=Math.min(25, this.Height-this.Mergin.Top-this.Mergin.Bottom);
-        this.ButtonSize=buttonSize;
-    }
-
-    this.DrawScrollbar=function(left, top, right, bottom)
-    {
-        this.RectScroll={ Left:null, Right:null, Bar:null, Client:null };
-        var columnOffset = this.Report.GetXScrollPos();
-	    var clolumCount =this.Report.GetXScrollRange();
-	    if (clolumCount <= 0) return;
-        if (this.Report.IsShowAllColumn) return;
-
-        var left=left+this.TabWidth;
-        if (left+this.ScrollBarWidth*2>right) return;
-
-        this.MaxPos=clolumCount;
-        this.CurrentPos=columnOffset;
-
-        var buttonSize=this.ButtonSize;
-
-        var rtLeft={ Left:left+this.Mergin.Left, Top:bottom-buttonSize-this.Mergin.Bottom, Width:buttonSize, Height:buttonSize };
-        rtLeft.Right=rtLeft.Left+buttonSize;
-        rtLeft.Bottom=rtLeft.Top+buttonSize;
-
-        var rtRight={ Left:right-buttonSize-this.Mergin.Right, Top:rtLeft.Top, Width:buttonSize, Height:buttonSize };
-        rtRight.Right=rtRight.Left+buttonSize;
-        rtRight.Bottom=rtRight.Top+buttonSize;
-
-        this.Canvas.fillStyle=this.ButtonColor;
-        this.Canvas.fillRect(rtLeft.Left,rtLeft.Top,rtLeft.Width,rtLeft.Height);   
-        this.Canvas.fillRect(rtRight.Left,rtRight.Top,rtRight.Width,rtRight.Height); 
-
-        this.Canvas.strokeStyle=this.BorderColor;
-        this.Canvas.strokeRect(rtLeft.Left,rtLeft.Top,rtLeft.Width,rtLeft.Height);
-        this.Canvas.strokeRect(rtRight.Left,rtRight.Top,rtRight.Width,rtRight.Height);
-
-
-        var centerWidth = (rtRight.Left - 2) - (rtLeft.Right + 2);
-	    var value = centerWidth - this.ScrollBarWidth;
-	    var xOffset = (value * this.CurrentPos) / this.MaxPos;
-	    var x = rtLeft.Right + 2 + xOffset;
-
-        var rtBar = {Left:x, Top:rtLeft.Top, Width:this.ScrollBarWidth, Height: rtLeft.Height };
-        rtBar.Right=rtBar.Left+this.ScrollBarWidth;
-        rtBar.Bottom=rtLeft.Bottom;
-
-        this.Canvas.fillStyle=this.BarColor;
-        this.Canvas.fillRect(rtBar.Left,rtBar.Top,rtBar.Width,rtBar.Height);
-
-        this.RectScroll.Left=rtLeft;
-        this.RectScroll.Right=rtRight;
-        this.RectScroll.Bar=rtBar;
-        this.RectScroll.Client={ Left:rtLeft.Right, Right: rtRight.Left, Top:rtLeft.Top, Bottom:rtLeft.Bottom };
-    }
-
-    this.DrawTab=function(left, top, right, bottom)
-    {
-        this.TabWidth=0;
-        this.Canvas.font=this.TabFont;
-        this.Canvas.textBaseline="bottom";
-
-        var tabHeight=bottom-top;
-        var itemLeft=left+1;
-        var y=bottom-this.TabMergin.Bottom, x=0;
-        var text;
-        var itemWidth=0;
-        var i=0;
-        for(i=0;i<this.TabList.length;++i)
-        {
-            var item=this.TabList[i];
-            text=item.Title;
-
-            if (item.IsMenu) text+="▲";
-
-            x=itemLeft+this.TabMergin.Left;
-            itemWidth=this.Canvas.measureText(text).width;
-
-            var rtItem={Left:itemLeft, Top:top, Width:itemWidth+this.TabMergin.Left+this.TabMergin.Right, Height:tabHeight};
-            rtItem.Right=rtItem.Left+rtItem.Width;
-            rtItem.Bottom=rtItem.Top+rtItem.Height;
-            if (rtItem.Right>right) break;
-
-            
-
-            var bgColor=this.TabBGColor;
-            if (i==this.SelectedTabIndex) bgColor=this.TabSelectedBGColor
-            this.Canvas.fillStyle=bgColor;
-            this.Canvas.fillRect(rtItem.Left,rtItem.Top,rtItem.Width,rtItem.Height);  
-
-            this.Canvas.textAlign="left";
-            var textColor=this.TabTitleColor;
-            if (i==this.MoveOnTabIndex) textColor=this.TabMoveOnTitleColor;
-            if (i==this.SelectedTabIndex) textColor=this.TabSelectedTitleColor;
-            this.Canvas.fillStyle=textColor;
-            this.Canvas.fillText(text,x,y);
-
-            item.Rect=rtItem;
-            itemLeft+=rtItem.Width+1;
-            this.TabWidth+=rtItem.Width+1;
-        }
-
-        for(;i<this.TabList.length;++i)
-        {
-            var item=this.TabList[i];
-            item.Rect=null;
-        }
-    }
-
-    this.OnMouseDown=function(x,y, e)
-    {
-        var tab=this.PtInTab(x,y);
-        if (tab) return tab;
-        return this.PtInScroll(x,y);
-    }
-
-    // Type 1-4 滚动条
-    this.PtInScroll=function(x,y)
-    {
-        if (!this.RectScroll) return null;
-
-        if (this.RectScroll.Left)
-        {
-            var rtItem=this.RectScroll.Left;
-            if (x>=rtItem.Left && x<=rtItem.Right && y>=rtItem.Top && y<=rtItem.Bottom) return { Type: 1, Rect: rtItem };
-        }
-
-        if (this.RectScroll.Right)
-        {
-            var rtItem=this.RectScroll.Right;
-            if (x>=rtItem.Left && x<=rtItem.Right && y>=rtItem.Top && y<=rtItem.Bottom) return { Type: 2, Rect: rtItem };
-        }
-
-        if (this.RectScroll.Bar)
-        {
-            var rtItem=this.RectScroll.Bar;
-            if (x>=rtItem.Left && x<=rtItem.Right && y>=rtItem.Top && y<=rtItem.Bottom) return { Type: 3, Rect: rtItem };
-        }
-
-        if (this.RectScroll.Client)
-        {
-            var rtItem=this.RectScroll.Client;
-            if (x>=rtItem.Left && x<=rtItem.Right && y>=rtItem.Top && y<=rtItem.Bottom) 
-            {
-                return { Type: 4, Rect: rtItem , Pos: this.GetScrollPostionByPoint(x,y) };
-            }
-        }
-
-        return null;
-    }
-
-    // Type=5 标签 6=标签菜单
-    this.PtInTab=function(x,y)
-    {
-        for(var i=0;i<this.TabList.length;++i)
-        {
-            var item=this.TabList[i];
-            if (!item.Rect) continue;
-            var rtItem=item.Rect;
-            if (x>=rtItem.Left && x<=rtItem.Right && y>=rtItem.Top && y<=rtItem.Bottom) 
-            {
-                var result= { Type: 5, Rect: rtItem, Tab:item, Index:i };
-                if (item.IsMenu==true) result.Type==6;
-                return result;
-            }   
-        }
-
-        return null;
-    }
-
-    this.GetFontHeight=function(font,word)
-    {
-        return GetFontHeight(this.Canvas, font, word);
-    }
-
-    this.GetScrollPostionByPoint=function(x,y)
-    {
-        var rtItem=this.RectScroll.Client;
-        var value=rtItem.Right-rtItem.Left-this.ScrollBarWidth;
-        var pos =parseInt((this.MaxPos * (x - rtItem.Left)) / value);
-        return pos;
+        return maxOffset;
     }
 }
+
 
 
 //页脚信息
@@ -3954,8 +3456,7 @@ function ChartReportPageInfo()
 
         if (this.SizeChange)
         {
-            var pixelRatio=GetDevicePixelRatio();
-            this.Font=`${this.FontConfig.Size*pixelRatio}px ${ this.FontConfig.Name}`;
+            this.Font=`${this.FontConfig.Size}px ${ this.FontConfig.Name}`;
             this.TextHeight=GetFontHeight(this.Canvas, this.Font, "擎")+this.Mergin.Top+this.Mergin.Bottom;
         }
         
@@ -3982,3 +3483,18 @@ function ChartReportPageInfo()
         this.SizeChange=false;
     }
 }
+
+
+//导出统一使用JSCommon命名空间名
+module.exports =
+{
+    JSReport:
+    {
+        JSCanvasElement:JSCanvasElement,
+        JSReportChart: JSReportChart,
+        IFrameSplitOperator: IFrameSplitOperator,
+        JSCHART_EVENT_ID:JSCHART_EVENT_ID,
+        REPORT_COLUMN_ID:REPORT_COLUMN_ID,
+    },
+};
+

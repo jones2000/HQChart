@@ -3489,4 +3489,5 @@ module.exports =
     JSCommonCoordinateData_Global_CBOTTimeData: g_CBOTTimeData,
     JSCommonCoordinateData_Global_TOCOMTimeData: g_TOCOMTimeData,
     JSCommonCoordinateData_Global_IPETimeData: g_IPETimeData,
+    JSCommonCoordinateData_GetfloatPrecision: GetfloatPrecision,
 };

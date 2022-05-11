@@ -6033,7 +6033,9 @@ var JSCHART_EVENT_ID=
     ON_DRAW_CUSTOM_TEXT:55,                 //报价列表自定义列
     ON_CLICK_REPORT_TAB:56,                 //报价列表标签点击
     ON_CLICK_REPORT_TABMENU:57,             //报价列表标签菜单点击
-    ON_DRAW_REPORT_FIXEDROW_TEXT:58         //报价列表固定行绘制
+    ON_DRAW_REPORT_FIXEDROW_TEXT:58,        //报价列表固定行绘制
+    ON_CLICK_REPORT_FIXEDROW:59,            //点击报价列表点击固定行
+    ON_RCLICK_REPORT_FIXEDROW:60,           //点击报价列表右键点击固定行
 }
 
 var JSCHART_OPERATOR_ID=
@@ -95315,11 +95317,11 @@ function JSReportChartContainer(uielement)
     this.Name;      //板块名称
     this.NetworkFilter;                                 //数据回调接口
     this.Data={ XOffset:0, YOffset:0, Data:[] };        //股票列表
-    this.SourceData={ Data:[] } ; //原始股票顺序
+    this.SourceData={ Data:[] } ;                       //原始股票顺序(排序还原用)
     this.MapStockData=new Map();                        //原始股票数据
-    this.FixedRowData={ Data:[] };                      //顶部固定行 { Value:, Text:, Color:, TextAgiln: }
+    this.FixedRowData={ Data:[], Type:0, Symbol:[] };              //顶部固定行Data:[{ Value:, Text:, Color:, TextAgiln: }], Type:0=自定义数据, 1 =(股票数据) Symbol:[],
 
-    this.FixedRowData.Data=[ [null, {Value:11, Text:"11" }], [null, null, null, {Value:12, Text:"ddddd", Color:"rgb(45,200,4)"}]];
+    //this.FixedRowData.Data=[ [null, {Value:11, Text:"11" }], [null, null, null, {Value:12, Text:"ddddd", Color:"rgb(45,200,4)"}]];
 
     this.SortInfo={ Field:-1, Sort:0 };                //排序信息 {Field:排序字段id, Sort:0 不排序 1升序 2降序 }
 
@@ -95358,6 +95360,7 @@ function JSReportChartContainer(uielement)
     this.ClearFixedRowData=function()
     {
         this.FixedRowData.Data=[];
+        this.FixedRowData.Symbol=[];
     }
 
     //设置固定行
@@ -95421,7 +95424,6 @@ function JSReportChartContainer(uielement)
         
         if (option)
         {
-            if (IFrameSplitOperator.IsBool(option.IsSingleTable)) chart.IsSingleTable=option.IsSingleTable;  //单表模式
             if (IFrameSplitOperator.IsBool(option.IsShowHeader)) chart.IsShowHeader=option.IsShowHeader;    //是否显示表头
             if (IFrameSplitOperator.IsNumber(option.FixedColumn)) chart.FixedColumn=option.FixedColumn;     //固定列
 
@@ -95430,7 +95432,20 @@ function JSReportChartContainer(uielement)
             if (IFrameSplitOperator.IsNumber(option.FixedRowCount)) chart.FixedRowCount=option.FixedRowCount;   //固定行
             if (IFrameSplitOperator.IsBool(option.ItemBorder)) chart.IsDrawBorder=option.ItemBorder;            //单元格边框
             if (IFrameSplitOperator.IsNumber(option.SelectedModel)) chart.SelectedModel=option.SelectedModel;
-            
+
+            if (IFrameSplitOperator.IsNonEmptyArray(option.FixedSymbol))
+            {
+                chart.FixedRowCount=0;
+                this.FixedRowData.Type=1;
+                this.FixedRowData.Symbol=[];
+                var aryData=option.FixedSymbol;
+                for(var i=0; i<aryData.length; ++i)
+                {
+                    var item=aryData[i];
+                    this.FixedRowData.Symbol.push(item.Symbol);
+                    ++chart.FixedRowCount;
+                }
+            }
         }
 
         var bRegisterKeydown=true;
@@ -95513,7 +95528,11 @@ function JSReportChartContainer(uielement)
     this.ResetReportSelectStatus=function()
     {
         var chart=this.GetReportChart();
-        if (chart) chart.SelectedRow=-1;
+        if (chart)
+        {
+            chart.SelectedRow=-1;
+            chart.SelectedFixedRow=-1;
+        } 
     }
 
     this.ClearData=function()
@@ -95563,6 +95582,24 @@ function JSReportChartContainer(uielement)
             {
                 var chartTab=this.GetTabChart();
                 if (chartTab) chartTab.SelectedTabIndex=option.TabSelected;
+            }
+
+            if (Array.isArray(option.FixedSymbol))
+            {
+                var chart=this.GetReportChart();
+                if (chart)
+                {
+                    chart.FixedRowCount=0;
+                    this.FixedRowData.Type=1;
+                    this.FixedRowData.Symbol=[];
+                    var aryData=option.FixedSymbol;
+                    for(var i=0; i<aryData.length; ++i)
+                    {
+                        var item=aryData[i];
+                        this.FixedRowData.Symbol.push(item.Symbol);
+                        ++chart.FixedRowCount;
+                    }
+                }
             }
         }
 
@@ -96077,7 +96114,7 @@ function JSReportChartContainer(uielement)
             if (!clickData) return;
             if (e.button!=0) return;
 
-            if (clickData.Type==2)  //点击行
+            if (clickData.Type==2 || clickData.Type==4)  //点击行|固定行
             {
                 if (clickData.Redraw==true)
                     this.Draw();
@@ -96566,6 +96603,7 @@ function JSReportChartContainer(uielement)
                 selected+=step;
                 selected=selected%pageSize;
                 chart.SelectedRow=selected;
+                chart.SelectedFixedRow=-1;
                 result.Redraw=true;
                 return result;
             }
@@ -96579,6 +96617,7 @@ function JSReportChartContainer(uielement)
                 }
 
                 chart.SelectedRow=selected;
+                chart.SelectedFixedRow=-1;
                 result.Redraw=true;
                 return result;
             }
@@ -96972,6 +97011,18 @@ function JSReportChartContainer(uielement)
                 PreventDefault:false
             };
 
+            if (chart.FixedRowCount>0 && chart.FixedRowData.Type==1)
+            {
+                var arySymbol=[];
+                for(var i=0;i<chart.FixedRowData.Symbol.length;++i)
+                {
+                    var item=chart.FixedRowData.Symbol[i];
+                    if (item) arySymbol.push(item);
+                }
+
+                obj.Request.FixedSymbol=arySymbol;
+            }
+
             this.NetworkFilter(obj, function(data) 
             { 
                 self.RecvStockSortData(data);
@@ -97181,7 +97232,7 @@ function ChartReport()
     this.GetEventCallback;              //获取事件
     this.GetStockDataCallback;          //获取股票数据
     this.Data;                          //数据 { XOffset:0, YOffset:0, Data:['600000.sh', '000001.sz'] }
-    this.FixedRowData;                      //固定行
+    this.FixedRowData;                  //固定行
     this.SortInfo;                      //排序信息 {Field:排序字段id, Sort:0 不排序 1升序 2降序 }    
     this.FixedColumn=2;                 //固定列
     this.FixedRowCount=0;               //固定行         
@@ -97191,6 +97242,7 @@ function ChartReport()
 
     this.SelectedModel=0;               //选中模式 0=SelectedRow表示当前屏索引
     this.SelectedRow=-1;                //选中行ID
+    this.SelectedFixedRow=-1;           //选中固定行ID
     this.IsDrawBorder=1;                //是否绘制单元格边框
 
     this.ShowSymbol=[];                 //显示的股票列表 { Index:序号(排序用), Symbol:股票代码 }
@@ -97264,9 +97316,9 @@ function ChartReport()
 
     this.Column=    //{ Type:列id, Title:标题, TextAlign:文字对齐方式, MaxText:文字最大宽度 , TextColor:文字颜色, Sort:0=不支持排序 1=本地排序 0=远程排序 }
     [
-        { Type:REPORT_COLUMN_ID.INDEX_ID, Title:"序号", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.Index, MaxText:"8888"},
-        { Type:REPORT_COLUMN_ID.SYMBOL_ID, Title:"代码", TextAlign:"left", Width:null,  TextColor:g_JSChartResource.DealList.FieldColor.Symbol, MaxText:"888888"},
-        { Type:REPORT_COLUMN_ID.NAME_ID, Title:"名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.Name, MaxText:"擎擎擎擎" },
+        { Type:REPORT_COLUMN_ID.INDEX_ID, Title:"序号", TextAlign:"center", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Index, MaxText:"8888"},
+        { Type:REPORT_COLUMN_ID.SYMBOL_ID, Title:"代码", TextAlign:"left", Width:null,  TextColor:g_JSChartResource.Report.FieldColor.Symbol, MaxText:"888888"},
+        { Type:REPORT_COLUMN_ID.NAME_ID, Title:"名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎" },
         { Type:REPORT_COLUMN_ID.INCREASE_ID, Title:"涨幅%", TextAlign:"right", Width:null, MaxText:"-888.88" },
     ];
 
@@ -97416,16 +97468,16 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.SYMBOL_NAME_ID, Title:"股票名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎"},
 
             { Type:REPORT_COLUMN_ID.INCREASE_ID, Title:"涨幅%", TextAlign:"right", Width:null, MaxText:"-888.88" },
-            { Type:REPORT_COLUMN_ID.PRICE_ID, Title:"现价", TextAlign:"right", Width:null, MaxText:"8888.88" },
+            { Type:REPORT_COLUMN_ID.PRICE_ID, Title:"现价", TextAlign:"right", Width:null, MaxText:"88888.88" },
             { Type:REPORT_COLUMN_ID.UPDOWN_ID, Title:"涨跌", TextAlign:"right", Width:null, MaxText:"-888.88" },
             { Type:REPORT_COLUMN_ID.AMPLITUDE_ID, Title:"振幅%", TextAlign:"right", Width:null, MaxText:"888.88" },
-            { Type:REPORT_COLUMN_ID.BUY_PRICE_ID, Title:"买价", TextAlign:"right", Width:null, MaxText:"8888.88" },
-            { Type:REPORT_COLUMN_ID.SELL_PRICE_ID, Title:"卖价", TextAlign:"right", Width:null, MaxText:"8888.88" },
-            { Type:REPORT_COLUMN_ID.AVERAGE_PRICE_ID, Title:"均价", TextAlign:"right", Width:null, MaxText:"8888.8擎" },
-            { Type:REPORT_COLUMN_ID.OPEN_ID, Title:"今开", TextAlign:"right", Width:null, MaxText:"8888.88" },
-            { Type:REPORT_COLUMN_ID.HIGH_ID, Title:"最高", TextAlign:"right", Width:null, MaxText:"8888.88" },
-            { Type:REPORT_COLUMN_ID.LOW_ID, Title:"最低", TextAlign:"right",  Width:null, MaxText:"8888.88" },
-            { Type:REPORT_COLUMN_ID.YCLOSE_ID, Title:"昨收", TextAlign:"right",  Width:null, MaxText:"8888.88" },
+            { Type:REPORT_COLUMN_ID.BUY_PRICE_ID, Title:"买价", TextAlign:"right", Width:null, MaxText:"88888.88" },
+            { Type:REPORT_COLUMN_ID.SELL_PRICE_ID, Title:"卖价", TextAlign:"right", Width:null, MaxText:"88888.88" },
+            { Type:REPORT_COLUMN_ID.AVERAGE_PRICE_ID, Title:"均价", TextAlign:"right", Width:null, MaxText:"88888.88" },
+            { Type:REPORT_COLUMN_ID.OPEN_ID, Title:"今开", TextAlign:"right", Width:null, MaxText:"88888.88" },
+            { Type:REPORT_COLUMN_ID.HIGH_ID, Title:"最高", TextAlign:"right", Width:null, MaxText:"88888.88" },
+            { Type:REPORT_COLUMN_ID.LOW_ID, Title:"最低", TextAlign:"right",  Width:null, MaxText:"88888.88" },
+            { Type:REPORT_COLUMN_ID.YCLOSE_ID, Title:"昨收", TextAlign:"right",  Width:null, MaxText:"88888.88" },
 
             { Type:REPORT_COLUMN_ID.VOL_ID, Title:"总量", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Vol, Width:null, MaxText:"8888.8擎" },
             { Type:REPORT_COLUMN_ID.AMOUNT_ID, Title:"总金额", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Amount, Width:null, MaxText:"8888.8擎" },
@@ -97497,7 +97549,6 @@ function ChartReport()
         this.RectClient.Right=this.ChartBorder.GetRight();
         this.RectClient.Top=this.ChartBorder.GetTop();
         this.RectClient.Bottom=this.ChartBorder.GetBottom()-this.BottomToolbarHeight;
-        this.Decimal=GetfloatPrecision(this.Symbol);
     }
 
     this.GetPageSize=function(recalculate) //recalculate 是否重新计算
@@ -97793,7 +97844,17 @@ function ChartReport()
         this.Canvas.font=this.ItemFixedFont;
         for(var i=0; i<this.FixedRowCount; ++i)
         {
-            this.DrawFixedRow(textTop, i);
+            if (this.SelectedFixedRow==i)
+            {
+                this.Canvas.fillStyle=this.SelectedColor;;
+                this.Canvas.fillRect(left,textTop,rowWidth,this.FixedRowHeight);   
+            }
+
+            if (this.FixedRowData.Type==1)
+                this.DrawFixedSymbolRow(textTop,i);
+            else
+                this.DrawFixedRow(textTop, i);
+            
             textTop+=this.FixedRowHeight;
         }
         
@@ -97816,17 +97877,32 @@ function ChartReport()
 
             if (bFillRow)
             {
-                this.Canvas.fillStyle=this.SelectedColor;;
+                this.Canvas.fillStyle=this.SelectedColor;
                 this.Canvas.fillRect(left,textTop,rowWidth,this.RowHeight);   
             }
 
             
             this.DrawRow(symbol, textTop, i);
 
-            this.ShowSymbol.push( {Index:i, Symbol:symbol,} );
+            this.ShowSymbol.push( { Index:i, Symbol:symbol } );
 
             textTop+=this.RowHeight;
         }
+    }
+
+
+    this.DrawFixedSymbolRow=function(top, dataIndex)
+    { 
+        var left=this.RectClient.Left;
+        var chartRight=this.RectClient.Right;
+
+        if (!this.FixedRowData || !IFrameSplitOperator.IsNonEmptyArray(this.FixedRowData.Symbol)) return;
+        var symbol=this.FixedRowData.Symbol[dataIndex];
+        if (!symbol) return;
+
+        this.DrawRow(symbol, top, dataIndex, 1);
+
+        this.ShowSymbol.push( { Index:dataIndex, Symbol:symbol, RowType:1 } );
     }
 
 
@@ -97881,7 +97957,7 @@ function ChartReport()
         this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth);
     }
 
-    this.DrawRow=function(symbol, top, dataIndex)
+    this.DrawRow=function(symbol, top, dataIndex, rowType)  //rowType 0=表格行 1=顶部固定行
     {
         var left=this.RectClient.Left;
         var chartRight=this.RectClient.Right;
@@ -97892,7 +97968,7 @@ function ChartReport()
         for(var i=0;i<this.FixedColumn && i<this.Column.length;++i)
         {
             var item=this.Column[i];
-            this.DrawItem(dataIndex, data, item, left, top);
+            this.DrawItem(dataIndex, data, item, left, top, rowType);
             left+=item.Width;
 
             if (left>=chartRight) break;
@@ -97901,14 +97977,14 @@ function ChartReport()
         for(var i=this.FixedColumn+this.Data.XOffset;i<this.Column.length;++i)
         {
             var item=this.Column[i];
-            this.DrawItem(dataIndex, data, item, left, top);
+            this.DrawItem(dataIndex, data, item, left, top, rowType);
             left+=item.Width;
 
             if (left>=chartRight) break;
         }
     }
 
-    this.DrawItem=function(index, data, column, left, top)
+    this.DrawItem=function(index, data, column, left, top, rowType)
     {
         var itemWidth=column.Width;
         var x=left+this.ItemMergin.Left;
@@ -97917,6 +97993,7 @@ function ChartReport()
         var drawInfo={ Text:null, TextColor:column.TextColor , TextAlign:column.TextAlign };
         if (column.Type==REPORT_COLUMN_ID.INDEX_ID)
         {
+            if (rowType==1) return; //固定行序号空
             drawInfo.Text=(index+1).toString();
         }
         else if (column.Type==REPORT_COLUMN_ID.SYMBOL_ID)
@@ -97926,14 +98003,14 @@ function ChartReport()
         }
         else if (column.Type==REPORT_COLUMN_ID.SYMBOL_NAME_ID)
         {
-            this.DrawSymbolName(data, column, left, top);
+            this.DrawSymbolName(data, column, left, top, rowType);
         }
         else if (column.Type==REPORT_COLUMN_ID.NAME_ID)
         {
             if (stock && stock.Name) 
             {
                 drawInfo.Text=stock.Name;
-                drawInfo.TextColor=this.GetNameColor(column,data.Symbol);
+                drawInfo.TextColor=this.GetNameColor(column,data.Symbol, rowType);
             }
         }
         else if (column.Type==REPORT_COLUMN_ID.PRICE_ID)
@@ -98392,12 +98469,12 @@ function ChartReport()
     }
 
     //获取股票名称颜色
-    this.GetNameColor=function(colunmInfo, symbol)
+    this.GetNameColor=function(colunmInfo, symbol, rowType)
     {
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_REPORT_NAME_COLOR);
         if (event && event.Callback)
         {
-            var sendData={ Symbol:symbol, TextColor:null };
+            var sendData={ Symbol:symbol, TextColor:null, RowType:rowType };
             event.Callback(event,sendData,this);
             if (sendData.TextColor) return sendData.TextColor;
         }
@@ -98420,6 +98497,20 @@ function ChartReport()
             if (tab) return { Type:1, Tab: tab };   //顶部工具栏
         }
 
+        var row=this.PtInFixedBody(x,y)
+        if (row)
+        {
+            var bRedraw=true;
+            var eventID=JSCHART_EVENT_ID.ON_CLICK_REPORT_FIXEDROW;
+            if (e.button==2) eventID=JSCHART_EVENT_ID.ON_RCLICK_REPORT_FIXEDROW;
+            this.SendClickEvent(eventID, { Data:row, X:x, Y:y, e:e });
+
+            this.SelectedFixedRow=row.Index;
+            this.SelectedRow=-1;
+
+            return { Type:4, Redraw:bRedraw, Row:row };  //行
+        }
+
         var row=this.PtInBody(x,y);
         if (row)
         {
@@ -98428,11 +98519,13 @@ function ChartReport()
             {
                 if (this.SelectedRow==row.Index) bRedraw=false;
                 this.SelectedRow=row.Index;
+                this.SelectedFixedRow=-1;
             }
             else 
             {
                 if (this.SelectedRow==row.DataIndex) bRedraw=false;
                 this.SelectedRow=row.DataIndex;
+                this.SelectedFixedRow=-1;
             }
     
             var eventID=JSCHART_EVENT_ID.ON_CLICK_REPORT_ROW;
@@ -98487,7 +98580,6 @@ function ChartReport()
         var rowWidth=this.RectClient.Right-this.RectClient.Left;
  
         var textTop=top+this.FixedRowHeight*this.FixedRowCount;
-        this.Canvas.font=this.ItemFont;
         for(var i=this.Data.YOffset, j=0; i<this.Data.Data.length && j<this.RowCount ;++i, ++j)
         {
             var symbol=this.Data.Data[i];
@@ -98504,6 +98596,34 @@ function ChartReport()
         }
 
         return null;
+    }
+
+    this.PtInFixedBody=function(x,y)
+    {
+        if (this.FixedRowCount<=0) return null;
+
+        var top=this.RectClient.Top+this.HeaderHeight;
+        var left=this.RectClient.Left;
+        var right=this.RectClient.Right;
+        var rowWidth=this.RectClient.Right-this.RectClient.Left;
+
+        var textTop=top;
+        for(var i=0; i<this.FixedRowCount; ++i)
+        {
+            var rtRow={ Left:left, Top:textTop, Right:right, Bottom: textTop+this.FixedRowHeight };
+
+            if (x>=rtRow.Left && x<=rtRow.Right && y>=rtRow.Top && y<=rtRow.Bottom)
+            {
+                var data={ Rect:rtRow, Index:i};
+                data.Item=this.PtInItem(x,y, rtRow.Top, rtRow.Bottom);
+                return data;
+            }
+
+            textTop+=this.FixedRowHeight;
+        }
+
+        return null;
+
     }
 
     this.PtInItem=function(x,y, top, bottom)
@@ -98676,10 +98796,20 @@ function ChartReportTab()
             var item=aryTab[i];
             if (!item.Title) continue;
 
-            var tabItem={ Title:item.Title, IsMenu:false };
+            var tabItem={ Title:item.Title, IsMenu:false, FixedSymbol:[], FixedRowCount:0 };
             if (item.ID) tabItem.ID=item.ID;
             if (item.MenuID) tabItem.MenuID=item.MenuID;
             if (IFrameSplitOperator.IsBool(item.IsMenu)) tabItem.IsMenu=item.IsMenu;
+            if (IFrameSplitOperator.IsNonEmptyArray(item.FixedSymbol))
+            {
+                for(var j=0;j<item.FixedSymbol.length;++j)
+                {
+                    var stockItem=item.FixedSymbol[j];
+                    if (!stockItem || !stockItem.Symbol) continue;
+                    tabItem.FixedSymbol.push(stockItem);
+                    ++tabItem.FixedRowCount;
+                }
+            }
             this.TabList.push(tabItem);
         }
     }
@@ -98729,7 +98859,7 @@ function ChartReportTab()
         var centerWidth = (rtRight.Left - 2) - (rtLeft.Right + 2);
 	    var value = centerWidth - this.ScrollBarWidth;
 	    var xOffset = (value * this.CurrentPos) / this.MaxPos;
-	    x = rtLeft.Right + 2 + xOffset;
+	    var x = rtLeft.Right + 2 + xOffset;
 
         var rtBar = {Left:x, Top:rtLeft.Top, Width:this.ScrollBarWidth, Height: rtLeft.Height };
         rtBar.Right=rtBar.Left+this.ScrollBarWidth;

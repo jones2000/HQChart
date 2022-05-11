@@ -7914,4 +7914,5 @@ module.exports =
     JSCommonChartPaint_DepthChartCorssCursor:DepthChartCorssCursor,
     JSCommonChartPaint_ChartOrderbookDepth:ChartOrderbookDepth,
     JSCommonChartPaint_ChartSplashPaint:ChartSplashPaint,
+    JSCommonChartPaint_GetFontHeight:GetFontHeight,
 };

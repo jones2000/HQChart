@@ -1928,7 +1928,9 @@ var JSCHART_EVENT_ID=
     ON_DRAW_CUSTOM_TEXT:55,                 //报价列表自定义列
     ON_CLICK_REPORT_TAB:56,                 //报价列表标签点击
     ON_CLICK_REPORT_TABMENU:57,             //报价列表标签菜单点击
-    ON_DRAW_REPORT_FIXEDROW_TEXT:58         //报价列表固定行绘制
+    ON_DRAW_REPORT_FIXEDROW_TEXT:58,        //报价列表固定行绘制
+    ON_CLICK_REPORT_FIXEDROW:59,            //点击报价列表点击固定行
+    ON_RCLICK_REPORT_FIXEDROW:60,           //点击报价列表右键点击固定行
 }
 
 var JSCHART_OPERATOR_ID=
