@@ -166,6 +166,18 @@ JSReportChart.Init=function(divElement)
     return jsChartControl;
 }
 
+//自定义风格
+JSReportChart.SetStyle=function(option)
+{
+    if (option) g_JSChartResource.SetStyle(option);
+}
+
+//获取颜色配置 (设置配必须啊在JSChart.Init()之前)
+JSReportChart.GetResource=function()  
+{
+    return g_JSChartResource;
+}
+
 function HQReportItem()
 {
     this.Symbol;

@@ -244,6 +244,12 @@ JSReportChart.SetStyle = function (style)
     if (style) g_JSChartResource.SetStyle(style);
 }
 
+//获取颜色配置 (设置配必须啊在JSChart.Init()之前)
+JSReportChart.GetResource = function ()  
+{
+    return g_JSChartResource;
+}
+
 //修正线段有毛刺
 function ToFixedPoint(value) 
 {

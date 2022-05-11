@@ -324,7 +324,7 @@ function JSChartResource()
             Color:"rgb(60,60,60)",      //表头文字颜色
             SortColor:"rgb(255,0,0)",   //排序箭头颜色
             Mergin:{ Left:5, Right:5, Top:4, Bottom:2},    //表头四周间距
-            Font:{ Size:12, Name:"微软雅黑" }   //表头字体
+            Font:{ Size:15, Name:"微软雅黑" }   //表头字体
         },
 
         Item:
