@@ -193,7 +193,7 @@ function GetBlackStyle()
             SelectedColor:"rgb(49,48,56)",  //选中行
             Header:
             {
-                Color:"RGB(245,245,245)",
+                Color:"rgb(245,245,245)",
                 SortColor:"rgb(255,0,0)",
                 Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
                 Font:{ Size:15, Name:"微软雅黑" }

@@ -95212,6 +95212,14 @@ function JSReportChart(divElement)
             this.JSChartContainer.ReloadResource(option);
         }
     }
+
+    this.ChartDestory=function()
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestory) == 'function') 
+        {
+            this.JSChartContainer.ChartDestory();
+        }
+    }
 }
 
 
@@ -96209,19 +96217,28 @@ function JSReportChartContainer(uielement)
         return changed==1 && touching==1;
     }
 
-    this.GetToucheData=function(e)
+    this.GetTouchData=function(e)
     {
         var touches=[];
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         for(var i=0; i<e.touches.length; ++i)
         {
             var item=e.touches[i];
-            touches.push(
-            {
-                clientX:item.clientX*pixelTatio, clientY:item.clientY*pixelTatio, 
-                pageX:item.pageX*pixelTatio, pageY:item.pageY*pixelTatio
-            });
+            var toucheItem=
+            { 
+                clientX:item.clientX*pixelTatio,
+                clientY:item.clientY*pixelTatio, 
+
+                pageX:item.pageX*pixelTatio,
+                pageY:item.pageY*pixelTatio,
+
+                //内部相对坐标
+                InsideX:(item.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio,
+                InsideY:(item.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio
+            };
+
             
+            touches.push(toucheItem); 
         }
 
         return touches;
@@ -96252,22 +96269,25 @@ function JSReportChartContainer(uielement)
 
         if (this.IsPhoneDragging(e))
         {
-            var drag= { "Click":{}, "LastMove":{}  }; //LastMove 最后移动的位置
-            var touches=this.GetToucheData(e);
+            var drag= { "Click":{}, "LastMove":{}, "InsideClick":{}  }; //LastMove 最后移动的位置
+            var touches=this.GetTouchData(e);
 
             drag.Click.X=touches[0].clientX;
             drag.Click.Y=touches[0].clientY;
+            drag.InsideClick.X=touches[0].InsideX;
+            drag.InsideClick.Y=touches[0].InsideY;
             drag.LastMove.X=touches[0].clientX;
             drag.LastMove.Y=touches[0].clientY;
             drag.IsXMove=false;
             drag.IsYMove=false;
 
-            if (reportChart.IsPtInBody(drag.Click.X,drag.Click.Y))
+
+            if (reportChart.IsPtInBody(drag.InsideClick.X,drag.InsideClick.Y))
             {
                 this.TouchDrag=drag;
             }
 
-            this.TouchInfo={ Click:{X:touches[0].clientX, Y:touches[0].clientY } };
+            this.TouchInfo={ InsideClick:{ X:touches[0].InsideX, Y:touches[0].InsideY }, Click:{ X:touches[0].clientX, Y:touches[0].clientY } };
             this.PreventTouchEvent(e);
         }
     }
@@ -96328,7 +96348,7 @@ function JSReportChartContainer(uielement)
         var reportChart=this.GetReportChart();
         if (!reportChart) return;
 
-        var touches=this.GetToucheData(e);
+        var touches=this.GetTouchData(e);
         
         if (this.IsPhoneDragging(e))
         {
@@ -96392,7 +96412,7 @@ function JSReportChartContainer(uielement)
     {
         if (!touchInfo || !touchInfo.Click) return false;
         if (touchInfo.Move) return false;
-        var clickPoint=touchInfo.Click;
+        var clickPoint=touchInfo.InsideClick;
         var reportChart=this.GetReportChart();
         if (!reportChart) return false;
 

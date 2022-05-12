@@ -214,6 +214,15 @@ function JSReportChart(element)
         }
     }
 
+    this.ChartDestory=function()
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestory) == 'function') 
+        {
+            JSConsole.Chart.Log("[JSReportChart::ChartDestory]");
+            this.JSChartContainer.ChartDestory();
+        }
+    }
+
     this.OnTouchStart = function (e) 
     {
         if (this.JSChartContainer) this.JSChartContainer.OnTouchStart(e);
