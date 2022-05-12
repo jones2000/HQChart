@@ -95575,6 +95575,8 @@ function JSReportChartContainer(uielement)
                         this.FixedRowData.Symbol.push(item.Symbol);
                         ++chart.FixedRowCount;
                     }
+
+                    this.SetSizeChange(true);
                 }
             }
         }
@@ -96419,7 +96421,7 @@ function JSReportChartContainer(uielement)
         var clickData=reportChart.OnMouseDown(clickPoint.X,clickPoint.Y,e);
         if (!clickData) return false;
 
-        if (clickData.Type==2)  //点击行
+        if (clickData.Type==2 || clickData.Type==4)  //点击行
         {
             if (clickData.Redraw==true)
                 this.Draw();
@@ -97590,6 +97592,7 @@ function ChartReport()
         this.ItemNameFont=`${this.ItemNameFontConfg.Size*pixelRatio}px ${ this.ItemNameFontConfg.Name}`;
 
         this.RowHeight=this.GetFontHeight(this.ItemFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
+        this.FixedRowHeight=this.GetFontHeight(this.ItemFixedFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
 
         this.Canvas.font=this.ItemFont;
         var itemWidth=0;
@@ -97614,6 +97617,7 @@ function ChartReport()
 
                 var rowHeight=nameHeight+symboHeight+this.ItemMergin.Top+ this.ItemMergin.Bottom;
                 if (rowHeight>this.RowHeight) this.RowHeight=rowHeight;
+                if (rowHeight>this.FixedRowHeight) this.FixedRowHeight=rowHeight;
             }
             else
             {
@@ -97636,7 +97640,6 @@ function ChartReport()
 
         this.HeaderHeight=this.GetFontHeight(this.HeaderFont,"擎")+ this.HeaderMergin.Top+ this.HeaderMergin.Bottom;
         if (!this.IsShowHeader) this.HeaderHeight=0;
-        this.FixedRowHeight=this.GetFontHeight(this.ItemFixedFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
         if (this.FixedRowCount<=0) this.FixedRowHeight=0;
 
         
@@ -98138,9 +98141,11 @@ function ChartReport()
         this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth);
     }
 
-    this.DrawSymbolName=function(data, column, left, top)
+    this.DrawSymbolName=function(data, column, left, top, rowType)
     {
         var stock=data.Stock;
+        if (!stock) return;
+
         var y=top+this.ItemMergin.Top+this.ItemNameHeight;
         var textLeft=left+this.ItemMergin.Left;
         var x=textLeft;
@@ -98162,7 +98167,7 @@ function ChartReport()
             this.Canvas.textAlign="left";
         }
 
-        var textColor=this.GetNameColor(column,data.Symbol);
+        var textColor=this.GetNameColor(column,data.Symbol,rowType);
         var text=stock.Name;
         this.Canvas.textBaseline="ideographic";
         this.Canvas.font=this.ItemNameFont;
