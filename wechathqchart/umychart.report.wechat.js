@@ -149,6 +149,13 @@ function JSReportChart(element)
         if (IFrameSplitOperator.IsNonEmptyArray(option.Tab)) chart.SetTab(option.Tab);
         if (IFrameSplitOperator.IsNumber(option.TabSelected)) chart.SetSelectedTab(option.TabSelected);
 
+        if (option.SortInfo)
+        {
+            var item=option.SortInfo;
+            if (IFrameSplitOperator.IsNumber(item.Field)) chart.SortInfo.Field=item.Field;
+            if (IFrameSplitOperator.IsNumber(item.Sort)) chart.SortInfo.Sort=item.Sort;
+        }
+
         this.SetChartBorder(chart, option);
 
         //是否自动更新
@@ -566,6 +573,13 @@ function JSReportChartContainer(uielement)
                     this.SetSizeChange(true);
                 }
             }
+
+            if (option.SortInfo)
+            {
+                var item=option.SortInfo;
+                if (IFrameSplitOperator.IsNumber(item.Field)) this.SortInfo.Field=item.Field;
+                if (IFrameSplitOperator.IsNumber(item.Sort)) this.SortInfo.Sort=item.Sort;
+            }
         }
 
         this.RequestMemberListData();
@@ -588,6 +602,17 @@ function JSReportChartContainer(uielement)
                 Self:this,
                 PreventDefault:false
             };
+
+            if (this.SortInfo.Field>=0 && this.SortInfo.Sort>0)
+            {
+                var reportChart=this.GetReportChart();
+                if (reportChart)
+                {
+                    var column=reportChart.Column[this.SortInfo.Field];
+                    obj.Sort={ Column:column, Field:this.SortInfo.Field, Sort:this.SortInfo.Sort} ;
+                }
+            }
+
             this.NetworkFilter(obj, function(data) 
             { 
                 self.ChartSplashPaint.EnableSplash(false);
@@ -699,6 +724,33 @@ function JSReportChartContainer(uielement)
         this.Draw();
         
         this.UpdateStockData();
+    }
+
+    //更新股票数据
+    this.UpdateMapStockData=function(data)
+    {
+        if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.data)) return;
+        
+        //0=证券代码 1=股票名称
+        for(var i=0;i<data.data.length;++i)
+        {
+            var item=data.data[i];
+            var symbol=item[0];
+            var stock=null;
+            if (this.MapStockData.has(symbol))
+            {
+                stock=this.MapStockData.get(symbol);
+            }
+            else
+            {
+                stock=new HQReportItem();
+                this.MapStockData.set(symbol, stock);
+            }
+
+            stock.Symbol=this.GetSymbolNoSuffix(symbol);
+            stock.Name=item[1];
+            this.ReadStockJsonData(stock, item);
+        }
     }
 
     //获取个股数据
@@ -1722,7 +1774,7 @@ function JSReportChartContainer(uielement)
                     Data: 
                     { 
                         range:{ start:startIndex, end:endIndex }, 
-                        column:{ name: column.Title, type: column.Type, index:filedid }, 
+                        column:{ name: column.Title, type: column.Type, index:filedid , ID:column.ID}, 
                         sort:sortType, symbol:this.Symbol, name:this.Name,
                         pageSize:pageSize
                     } 
@@ -2847,7 +2899,15 @@ function ChartReport()
     this.DrawSymbolName=function(data, column, left, top, rowType)
     {
         var stock=data.Stock;
-        if (!stock) return;
+        var symbol=data.Symbol;
+        var name;
+        if (stock)
+        {
+            symbol=stock.Symbol;
+            name=stock.Name;
+        }
+
+        if (!symbol && !name) return;
 
         var y=top+this.ItemMergin.Top+this.ItemNameHeight;
         var textLeft=left+this.ItemMergin.Left;
@@ -2870,20 +2930,25 @@ function ChartReport()
             this.Canvas.textAlign="left";
         }
 
-        var textColor=this.GetNameColor(column,data.Symbol,rowType);
-        var text=stock.Name;
-        this.Canvas.textBaseline="ideographic";
-        this.Canvas.font=this.ItemNameFont;
-        this.Canvas.fillStyle=textColor
-        this.Canvas.fillText(text,x,y);
-
-        text=stock.Symbol;
-        this.Canvas.textBaseline="top";
-        this.Canvas.font=this.ItemSymbolFont;
-        this.Canvas.fillStyle=textColor;
-        this.Canvas.fillText(text,x,y);
-
-
+        var textColor=this.GetNameColor(column,symbol,rowType);
+        var text=name;
+        if (text)
+        {
+            this.Canvas.textBaseline="ideographic";
+            this.Canvas.font=this.ItemNameFont;
+            this.Canvas.fillStyle=textColor
+            this.Canvas.fillText(text,x,y);
+        }
+        
+        text=symbol;
+        if (text)
+        {
+            this.Canvas.textBaseline="top";
+            this.Canvas.font=this.ItemSymbolFont;
+            this.Canvas.fillStyle=textColor;
+            this.Canvas.fillText(text,x,y);
+        }
+        
         this.Canvas.font=this.ItemFont; //还原字体
     }
 
