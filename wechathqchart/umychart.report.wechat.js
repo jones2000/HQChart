@@ -919,7 +919,7 @@ function JSReportChartContainer(uielement)
 
     this.CancelAutoUpdate=function()    //关闭停止更新
     {
-        if (typeof (this.AutoUpdateTimer) == 'number') 
+        if (this.AutoUpdateTimer) 
         {
             clearTimeout(this.AutoUpdateTimer);
             this.AutoUpdateTimer = null;

@@ -7017,7 +7017,7 @@ function KLineChartContainer(uielement)
     this.LoadDataSplashTitle = '下载历史数据';
     this.IsAutoUpdate = false;                    //是否自动更新行情数据
     this.AutoUpdateFrequency = 30000;             //30秒更新一次数据
-    this.AutoUpdateTimer;                         //自动定时器
+    this.AutoUpdateTimer=null;                         //自动定时器
     this.RightSpaceCount=1;
     this.SourceDataLimit = new Map();     //每个周期缓存数据最大个数 key=周期 value=最大个数  
     this.IsZoomLockRight=false; 
@@ -9308,10 +9308,10 @@ function KLineChartContainer(uielement)
 
     this.CancelAutoUpdate=function()    //关闭停止更新
     {
-        if (typeof (this.AutoUpdateTimer) == 'number') 
+        if (this.AutoUpdateTimer) 
         {
             clearTimeout(this.AutoUpdateTimer);
-            this.AutoUpdateTimer = undefined;
+            this.AutoUpdateTimer = null;
         }
     }
 
@@ -9889,7 +9889,7 @@ function MinuteChartContainer(uielement)
     this.OverlaySourceData;                   //叠加的原始数据
     this.IsAutoUpdate = false;                    //是否自动更新行情数据
     this.AutoUpdateFrequency = 30000;             //30秒更新一次数据
-    this.AutoUpdateTimer;                         //更新定时器
+    this.AutoUpdateTimer=null;                         //更新定时器
     this.TradeDate = 0;                           //行情交易日期
     this.LoadDataSplashTitle = '下载分钟数据';
     this.UpdateUICallback;                    //数据到达回调
@@ -10913,10 +10913,10 @@ function MinuteChartContainer(uielement)
 
     this.CancelAutoUpdate = function ()    //关闭停止更新
     {
-        if (typeof (this.AutoUpdateTimer) == 'number') 
+        if (this.AutoUpdateTimer) 
         {
             clearTimeout(this.AutoUpdateTimer);
-            this.AutoUpdateTimer = undefined;
+            this.AutoUpdateTimer = null;
         }
     }
 
@@ -12626,7 +12626,7 @@ function DepthChartContainer(uielement)
 
     this.IsAutoUpdate=false;                    //是否自动更新行情数据
     this.AutoUpdateFrequency=30000;             //30秒更新一次数据
-    this.AutoUpdateTimer;
+    this.AutoUpdateTimer=null;
 
     this.DefaultZoom=0.8;       //默认显示80%的盘口 (0 - 1)
     this.MaxVolRate=1.1;
@@ -12981,10 +12981,10 @@ function DepthChartContainer(uielement)
 
     this.CancelAutoUpdate=function()    //关闭停止更新
     {
-        if (typeof (this.AutoUpdateTimer) == 'number') 
+        if (this.AutoUpdateTimer) 
         {
             clearTimeout(this.AutoUpdateTimer);
-            this.AutoUpdateTimer = undefined;
+            this.AutoUpdateTimer = null;
         }
     }
 
