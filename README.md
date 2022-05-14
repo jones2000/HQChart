@@ -381,7 +381,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 1. [HQChart实战教程37-新浪分钟K线数据对接-js版本](https://blog.csdn.net/jones2000/article/details/115388377)<br>
 2. [HQChart实战教程38-新浪期货数据对接-js版本](https://blog.csdn.net/jones2000/article/details/115408971)<br>
 
-## 高级应用实战教程（付费文章）
+## 高级应用实战教程(付费文章)
 1. [HQChart实战教程19 - PC端分时图定制tooltip](https://blog.csdn.net/jones2000/article/details/108633991)<br>
 2. [HQChart实战教程20 - PC端K线图定制tooltip](https://blog.csdn.net/jones2000/article/details/108639960)<br>
 3. [HQChart实战教程21 - unapp app端分时图定制tooltip](https://blog.csdn.net/jones2000/article/details/108657043)<br>
@@ -406,7 +406,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 22. [HQChart实战教程52 - APP中使用DRAWICON绘制图标](https://jones2000.blog.csdn.net/article/details/124142225)<br>
 23. [HQChart实战教程53 - 动调指定标识K线区间段背景颜色](https://blog.csdn.net/jones2000/article/details/124558493)<br>
 
-
+## HQChart报价列表高级应用教程(付费文章)
+1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>
 
 
 ## 设计文档:

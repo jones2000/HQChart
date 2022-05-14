@@ -1761,7 +1761,8 @@ function JSReportChartContainer(uielement)
         var self=this;
         var startIndex=this.Data.YOffset;
         var pageSize=chart.GetPageSize();
-        var endIndex=startIndex+pageSize+5;
+        var endIndex=startIndex+pageSize;
+        if (endIndex>=this.Data.Data.length) endIndex=this.Data.Data.length-1;
 
         if (this.NetworkFilter)
         {
@@ -1773,7 +1774,7 @@ function JSReportChartContainer(uielement)
                 { 
                     Data: 
                     { 
-                        range:{ start:startIndex, end:endIndex }, 
+                        range:{ start:startIndex, end:endIndex, count:this.Data.Data.length }, 
                         column:{ name: column.Title, type: column.Type, index:filedid , ID:column.ID}, 
                         sort:sortType, symbol:this.Symbol, name:this.Name,
                         pageSize:pageSize
@@ -2755,7 +2756,7 @@ function ChartReport()
         {
             if (stock && stock.Name) 
             {
-                drawInfo.Text=stock.Name;
+                drawInfo.Text=this.TextEllipsis(stock.Name, textWidth, column.MaxText);
                 drawInfo.TextColor=this.GetNameColor(column,data.Symbol, rowType);
             }
         }
@@ -2935,9 +2936,10 @@ function ChartReport()
         if (text)
         {
             this.Canvas.textBaseline="ideographic";
+            this.Canvas.fillStyle=textColor;
             this.Canvas.font=this.ItemNameFont;
-            this.Canvas.fillStyle=textColor
-            this.Canvas.fillText(text,x,y);
+            text=this.TextEllipsis(text, width, column.MaxText);
+            if (text) this.Canvas.fillText(text,x,y);
         }
         
         text=symbol;
@@ -3101,6 +3103,31 @@ function ChartReport()
         this.Canvas.textBaseline="middle";
         this.Canvas.fillStyle=textColor;
         this.Canvas.fillText(text,x,top+this.ItemMergin.Top+this.RowHeight/2);
+    }
+
+    //字体由外面设置
+    this.TextEllipsis=function(text, maxWidth, maxText)
+    {
+        if (!text) return null;
+        
+        if (text.length<=maxText.length) return text;
+
+        var start=maxText.length-3;
+        if (start<0) return null;
+        var newText=text.slice(0,start);
+        for(var i=start;i<text.length;++i)
+        {
+            var value=newText + text[i] + "...";
+            var width=this.Canvas.measureText(value).width;
+            if (width>maxWidth) 
+            {
+                newText+="...";
+                break;
+            }
+            newText+=text[i];
+        }
+
+        return newText;
     }
 
     this.DrawMultiBar=function(colunmInfo, data, rtItem)
