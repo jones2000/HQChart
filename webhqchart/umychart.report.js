@@ -169,6 +169,15 @@ function JSReportChart(divElement)
             this.JSChartContainer.ChartDestory();
         }
     }
+
+    this.Draw=function()
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.Draw)=='function')
+        {
+            JSConsole.Chart.Log('[JSReportChart:Draw] ');
+            this.JSChartContainer.Draw();
+        }
+    }
 }
 
 
@@ -324,6 +333,7 @@ function JSReportChartContainer(uielement)
         chart.Frame=this.Frame;
         chart.ChartBorder=this.Frame.ChartBorder;
         chart.Canvas=this.Canvas;
+        chart.UIElement=this.UIElement;
         chart.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         chart.GetStockDataCallback=(symbol)=>{ return this.GetStockData(symbol);}
         chart.Data=this.Data;
@@ -1085,18 +1095,18 @@ function JSReportChartContainer(uielement)
         {
             var clickData=chart.OnMouseDown(x,y,e);
             if (!clickData) return;
-            if (e.button!=0) return;
+            //if (e.button!=0) return;
 
-            if (clickData.Type==2 || clickData.Type==4)  //点击行|固定行
+            if ((clickData.Type==2 || clickData.Type==4) && (e.button==0 || e.button==2))  //点击行|固定行
             {
                 if (clickData.Redraw==true)
                     this.Draw();
             }
-            else if (clickData.Type==3) //表头
+            else if (clickData.Type==3 && e.button==0) //表头
             {
                 this.OnClickHeader(clickData, e);
             }
-            else if (clickData.Type==1) //底部工具栏
+            else if (clickData.Type==1 && e.button==0) //底部工具栏
             {
                 var tabData=clickData.Tab;
                 if (tabData.Type==1)    //左按钮
@@ -1883,6 +1893,7 @@ function JSReportChartContainer(uielement)
         var pixelTatio = GetDevicePixelRatio();
         var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+        var uiElement={Left:this.UIElement.getBoundingClientRect().left, Top:this.UIElement.getBoundingClientRect().top};
 
         if (tabData.Tab.IsMenu)
         {
@@ -1893,7 +1904,7 @@ function JSReportChartContainer(uielement)
                 var rtItem=tabData.Rect;
                 var rtDOM={ Left: rtItem.Left/pixelTatio, Right:rtItem.Right/pixelTatio, Top:rtItem.Top/pixelTatio, Bottom:rtItem.Bottom/pixelTatio };
 
-                var sendData={ Data:tabData, IsSide:{X:x, Y:x}, Rect:rtDOM, e:e , Redraw:redraw };
+                var sendData={ Data:tabData, IsSide:{X:x, Y:x}, UIElement:uiElement, Rect:rtDOM, e:e , Redraw:redraw };
                 event.Callback(event, sendData, this);
                 if (IFrameSplitOperator.IsBool(sendData.Redraw)) redraw=sendData.Redraw;
             }
@@ -1905,7 +1916,7 @@ function JSReportChartContainer(uielement)
             var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_REPORT_TAB);
             if (event && event.Callback)
             {
-                var sendData={ Data:tabData, IsSide:{X:x, Y:x}, e:e , Redraw:redraw };
+                var sendData={ Data:tabData, IsSide:{X:x, Y:x}, UIElement:uiElement, e:e , Redraw:redraw };
                 event.Callback(event, sendData, this);
                 if (IFrameSplitOperator.IsBool(sendData.Redraw)) redraw=sendData.Redraw;
             }
@@ -2214,6 +2225,7 @@ function ChartReport()
     this.ChartFrame;                    //框架画法
     this.Name;                          //名称
     this.ClassName='ChartReport';       //类名
+    this.UIElement;
     this.IsDrawFirst=false;
     this.GetEventCallback;              //获取事件
     this.GetStockDataCallback;          //获取股票数据
@@ -2450,8 +2462,8 @@ function ChartReport()
         [
             { Type:REPORT_COLUMN_ID.INDEX_ID, Title:"序号", TextAlign:"center", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Index, MaxText:"8888"},
             { Type:REPORT_COLUMN_ID.SYMBOL_ID, Title:"代码", TextAlign:"left", Width:null,  TextColor:g_JSChartResource.Report.FieldColor.Symbol, MaxText:"888888"},
-            { Type:REPORT_COLUMN_ID.NAME_ID, Title:"名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎" },
-            { Type:REPORT_COLUMN_ID.SYMBOL_NAME_ID, Title:"股票名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎"},
+            { Type:REPORT_COLUMN_ID.NAME_ID, Title:"名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎0" },
+            { Type:REPORT_COLUMN_ID.SYMBOL_NAME_ID, Title:"股票名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎0"},
 
             { Type:REPORT_COLUMN_ID.INCREASE_ID, Title:"涨幅%", TextAlign:"right", Width:null, MaxText:"-888.88" },
             { Type:REPORT_COLUMN_ID.PRICE_ID, Title:"现价", TextAlign:"right", Width:null, MaxText:"88888.88" },
@@ -3525,13 +3537,21 @@ function ChartReport()
             if (tab) return { Type:1, Tab: tab };   //顶部工具栏
         }
 
+        var pixelTatio = GetDevicePixelRatio();
+        var insidePoint={X:x/pixelTatio, Y:y/pixelTatio};
+
+        if (this.UIElement)
+            var uiElement={Left:this.UIElement.getBoundingClientRect().left, Top:this.UIElement.getBoundingClientRect().top};
+        else
+            var uiElement={Left:null, Top:null};
+
         var row=this.PtInFixedBody(x,y)
         if (row)
         {
             var bRedraw=true;
             var eventID=JSCHART_EVENT_ID.ON_CLICK_REPORT_FIXEDROW;
             if (e.button==2) eventID=JSCHART_EVENT_ID.ON_RCLICK_REPORT_FIXEDROW;
-            this.SendClickEvent(eventID, { Data:row, X:x, Y:y, e:e });
+            this.SendClickEvent(eventID, { Data:row, X:x, Y:y, e:e, Inside:insidePoint, UIElement:uiElement });
 
             this.SelectedFixedRow=row.Index;
             this.SelectedRow=-1;
@@ -3558,7 +3578,8 @@ function ChartReport()
     
             var eventID=JSCHART_EVENT_ID.ON_CLICK_REPORT_ROW;
             if (e.button==2) eventID=JSCHART_EVENT_ID.ON_RCLICK_REPORT_ROW;
-            this.SendClickEvent(eventID, { Data:row, X:x, Y:y, e:e });
+            
+            this.SendClickEvent(eventID, { Data:row, X:x, Y:y, e:e, Inside:insidePoint, UIElement:uiElement });
 
             return { Type:2, Redraw:bRedraw, Row:row };  //行
         }
@@ -3576,7 +3597,7 @@ function ChartReport()
                 eventID=JSCHART_EVENT_ID.ON_CLICK_REPORT_HEADER;
             }
 
-            this.SendClickEvent(eventID, { Data:row, X:x, Y:y , e:e });
+            this.SendClickEvent(eventID, { Data:row, X:x, Y:y , e:e, Inside:insidePoint, UIElement:uiElement});
             return { Type:3, Redraw:bRedraw, Header:header };  //表头
         }
 

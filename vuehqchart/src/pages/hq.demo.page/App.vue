@@ -1,7 +1,7 @@
 <template>
     <div id="app2" >
       <div class="demoPageTop">
-        <span>HQChart测试用例 版本号:1.1.10961</span> 
+        <span>HQChart测试用例 版本号:1.1.10993</span> 
         <a href="https://github.com/jones2000/HQChart" target="_blank">代码地址: https://github.com/jones2000/HQChart</a>
         <div class="changeColorBtns">
           <button type="button" @click="OnChangeStyle('black')">黑色风格</button>
@@ -31,8 +31,8 @@ const CUSTOM_KLINE_OPTION=
 {
     Windows: //窗口指标
     [
-        {Index:"MA"},
-        {Index:"MACD"},
+        {Index:"MA", Overlay:true, OverlayIndexType:{ Position:1, LineSpace:3 }},
+        {Index:"MACD", Overlay:true, OverlayIndexType:{ Position:1, LineSpace:3 }},
     ], 
 
     //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统

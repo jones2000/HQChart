@@ -119,6 +119,8 @@ DefaultData.GetMinuteOption=function()
         IsDrawPictureXY:true,
         EnableNewIndex:true,
 
+        SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
+
         Border: //边框
         {
             Left: 40, //左边间距
@@ -153,8 +155,8 @@ DefaultData.GetKLineOption=function()
         Type: '历史K线图',
         Windows: 
         [
-            { Index: "均线" },
-            { Index: "VOL" },
+            { Index: "均线", Overlay:true },
+            { Index: "VOL", Overlay:true },
         ], //窗口指标
         Symbol: null,
         IsAutoUpdate: true, //是自动更新数据
@@ -169,6 +171,9 @@ DefaultData.GetKLineOption=function()
         StepPixel:0,
 
         EnableZoomIndexWindow:true,
+
+        SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
+
         KLine: 
         {
             DragMode: 1, //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择

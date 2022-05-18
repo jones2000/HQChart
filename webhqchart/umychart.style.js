@@ -295,6 +295,21 @@ function GetBlackStyle()
             LineDotted:[3,3], 
             AreaColor:"rgba(26,13,7,0.5)",     //面积
         },
+
+        SelectedChart:
+        {
+            LineWidth:1,
+            LineColor:'rgb(55,100,100)',
+            Radius:4,
+            MinSpace:200, //点和点间最小间距
+            BGColor:"rgb(255,255,255)"
+        },
+
+        DragMovePaint:
+        {
+            TextColor:"rgb(255,255,255)",
+            //Font:14*GetDevicePixelRatio() +"px 微软雅黑"
+        },
     
         //成交明细
         DealList:
