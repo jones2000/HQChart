@@ -122,6 +122,11 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![深度图](/小程序行情模块用例/image/depth_demo.png)
 * 支持ox图
 ![ox图](/小程序行情模块用例/image/hqchart_ox.png)
+* 支持指标图形拖拽
+![指标图形拖拽](/小程序行情模块用例/image/hqchart_dragindechart.gif)
+* Y轴拖拽缩放
+![Y轴缩放](/小程序行情模块用例/image/hqchart_ydrag.gif)
+
 
 # 2. 走势图
 * 支持指标 <br>

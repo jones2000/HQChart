@@ -6410,7 +6410,7 @@ function JSChartContainer(uielement, OffscreenElement)
         if (!this.Frame || !this.Frame.PtInFrameY) return null;
 
         var dragY=this.Frame.PtInFrameY(x,y);
-        if (!dragY || dragY.Index<0) return null;
+        if (!dragY || dragY.Index<0 || dragY.IsOverlay==true) return null;
 
         if (dragY.Left && this.EnableYDrag.Left && this.Frame.IsEnableDragY(dragY.Index))
         {
@@ -6649,6 +6649,7 @@ function JSChartContainer(uielement, OffscreenElement)
                         if (this.SelectedChart.Selected.Identify!=selectChart.Identify) 
                         {
                             this.SelectedChart.Selected.Identify=selectChart.Identify;
+                            this.SelectedChart.Selected.Chart=selectChart.Chart;
                             bSelectedChartChanged=true;
                         }
 
@@ -6664,6 +6665,7 @@ function JSChartContainer(uielement, OffscreenElement)
                         if (this.SelectedChart.Selected.Identify)
                         {
                             this.SelectedChart.Selected.Identify=null;
+                            this.SelectedChart.Selected.Chart=null;
                             bSelectedChartChanged=true;
                         }
                     }
@@ -7023,9 +7025,15 @@ function JSChartContainer(uielement, OffscreenElement)
         var lastMove=drag.LastMove;
         var startFrameID=info.FrameID;
         var endFrameID=this.Frame.PtInFrame(lastMove.X,lastMove.Y);
-        if (endFrameID<0) return false;
-        if (startFrameID==endFrameID) return false;
+        if (endFrameID<0) 
+        {
+            if (endFrameID==-3) //底部 移动到新的窗口
+                return this.MoveIndexToNewWindow({ WindowIndex:startFrameID, IndexID:info.IndexID }, { Operator:0 }); 
 
+            return false;
+        }
+
+        if (startFrameID==endFrameID) return false;
         //移动指标
         return this.MoveIndex({ WindowIndex:startFrameID, IndexID:info.IndexID }, { WindowIndex:endFrameID, }, { Operator:0 });
     }
@@ -7047,6 +7055,30 @@ function JSChartContainer(uielement, OffscreenElement)
             result.Name=selectedChart.Chart.Title;
             result.Symbol=selectedChart.Chart.Symbol;
             result.Type=JSCHART_DRAGCHART_TYPE_ID.OVERLAY_KLINE;
+        }
+        else if (id.indexOf("Overlay-Minute-")==0)
+        {
+            result.Name=selectedChart.Chart.Title;
+            result.Symbol=selectedChart.Chart.Symbol;
+            result.Type=JSCHART_DRAGCHART_TYPE_ID.OVERLAY_MINUTE;
+        }
+        else if (id=="Minute-Line")
+        {
+            result.Name=this.Name;
+            result.Symbol=this.Symbol;
+            result.Type=JSCHART_DRAGCHART_TYPE_ID.MAIN_MINUTE;
+        }
+        else if (id=="Minute-Average-Line")
+        {
+            result.Name=this.Name;
+            result.Symbol=this.Symbol;
+            result.Type=JSCHART_DRAGCHART_TYPE_ID.MAIN_AVERAGE_MINUTE;
+        }
+        else if (id=="Minute-Vol-Bar")
+        {
+            result.Name=this.Name;
+            result.Symbol=this.Symbol;
+            result.Type=JSCHART_DRAGCHART_TYPE_ID.MAIN_MINUTE_VOL;
         }
         else if (id.indexOf("guid")==0)
         {
@@ -8496,11 +8528,24 @@ function JSChartContainer(uielement, OffscreenElement)
                 this.OnKLinePageChange("keydown");
                 break;
             case 46:    //del
-                if (!this.SelectChartDrawPicture) break;
-                var drawPicture=this.SelectChartDrawPicture;
-                JSConsole.Chart.Log(drawPicture,"drawPicturedrawPicturedrawPicture")
-                this.SelectChartDrawPicture=null;
-                this.ClearChartDrawPicture(drawPicture);    //删除选中的画图工具
+                if (this.SelectChartDrawPicture)
+                {
+                    var drawPicture=this.SelectChartDrawPicture;
+                    JSConsole.Chart.Log(drawPicture,"drawPicturedrawPicturedrawPicture")
+                    this.SelectChartDrawPicture=null;
+                    this.ClearChartDrawPicture(drawPicture);    //删除选中的画图工具
+                }
+                else if (this.SelectedChart && this.SelectedChart.Selected.Identify)
+                {
+                    var selectedInfo=this.GetSelectedChartInfo(this.SelectedChart.Selected);
+                    if (selectedInfo)
+                    {
+                        if (selectedInfo.Type==JSCHART_DRAGCHART_TYPE_ID.OVERLAY_INDEX)
+                            this.DeleteOverlayWindowsIndex(selectedInfo.IndexID);
+                        else if (selectedInfo.Type==JSCHART_DRAGCHART_TYPE_ID.OVERLAY_KLINE)
+                            this.DeleteOverlaySymbol(selectedInfo.Symbol);
+                    }
+                }
                 break;
             case 32:    //space
                 this.OnMarkRectSelect(e);
@@ -10210,34 +10255,65 @@ function JSChartContainer(uielement, OffscreenElement)
         return true;
     }
 
-     //移动指标  src={ WindowIndex:指标窗口索引，IndexID:指标ID } dest={ WindowIndex:指标窗口索引 } , option={ Operator: 0=移动, 1=复制 }
+    this.FindScriptIndex=function(guid, windowsIndex)
+    {
+        if (IFrameSplitOperator.IsNumber(windowsIndex) && windowsIndex>=0)
+        {
+            if (windowsIndex>=this.Frame.SubFrame.length) return null;
+            var item=this.WindowIndex[windowsIndex];
+            if (item && item.Guid==guid) 
+                return { Type:0, Data:item, WindowIndex:windowsIndex };
+
+            var item=this.Frame.SubFrame[windowsIndex];
+            for(var i=0; i<item.OverlayIndex.length; ++i)
+            {
+                var overlayItem=item.OverlayIndex[i];
+                if (overlayItem.Identify===guid)
+                    return { Type:1, Data:overlayItem, WindowIndex:windowsIndex, OverlayIndex:i };
+            }
+        }
+        else
+        {
+            for(var i=0;i<this.Frame.SubFrame.length;++i)
+            {
+                var item=this.WindowIndex[i];
+                if (item && item.Guid==guid) 
+                    return { Type:0, Data:item, WindowIndex:i };
+
+                var item=this.Frame.SubFrame[i];
+                for(var j=0; j<item.OverlayIndex.length; ++j)
+                {
+                    var overlayItem=item.OverlayIndex[j];
+                    if (overlayItem.Identify===guid)
+                        return { Type:1, Data:overlayItem, WindowIndex:i, OverlayIndex:j };
+                }
+            }
+        }
+
+        return null;
+    }
+
+    //移动指标  src={ WindowIndex:指标窗口索引，IndexID:指标ID } dest={ WindowIndex:指标窗口索引 } , option={ Operator: 0=移动, 1=复制 }
     this.MoveIndex=function(src, dest, option)
     {
         if (!src || !dest || !option) return false;
         if ( !IFrameSplitOperator.IsNumber(src.WindowIndex) || src.WindowIndex<0 || src.WindowIndex>=this.Frame.SubFrame.length ) return false;
         if ( !IFrameSplitOperator.IsNumber(dest.WindowIndex) || dest.WindowIndex<0 || dest.WindowIndex>=this.Frame.SubFrame.length ) return false;
 
+        var find=this.FindScriptIndex(src.IndexID,src.WindowIndex);
+        if (!find) return false;
+
         var findItem=null,findOverlayItem=null;
-        var item=this.WindowIndex[src.WindowIndex];
-        if (item && item.Guid==src.IndexID) findItem=item;
-            
-        if (!findItem)
-        {
-            var item=this.Frame.SubFrame[src.WindowIndex];
-            for(var i=0; i<item.OverlayIndex.length; ++i)
-            {
-                var overlayItem=item.OverlayIndex[i];
-                if (overlayItem.Identify===src.IndexID)
-                {
-                    findOverlayItem=overlayItem;
-                    break;
-                }
-            }
-        }
-        
+        if (find.Type==0) findItem=find.Data;
+        else if (find.Type==1) findOverlayItem=find.Data;
+
         if (!findOverlayItem && !findItem) return false;
 
-        if (this.WindowIndex[dest.WindowIndex]==null)  //主指标是空的，移动到主指标上
+        //固定窗口
+        var fixedWindowCount=0;
+        var isMinuteChart=(this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer") ? true:false;
+        if (isMinuteChart) fixedWindowCount=2;  //走势图固定2个窗口
+        if (dest.WindowIndex>=fixedWindowCount && this.WindowIndex[dest.WindowIndex]==null)  //主指标是空的，移动到主指标上
         {
             if (findItem) this.WindowIndex[dest.WindowIndex] = this.CreateMainScript(findItem);    
             else if (findOverlayItem) this.WindowIndex[dest.WindowIndex] = this.CreateMainScript(findOverlayItem.Script);    
@@ -10286,25 +10362,93 @@ function JSChartContainer(uielement, OffscreenElement)
                 scriptIndex=this.CreateOverlayScript(findOverlayItem.Script);
                 scriptIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:dest.WindowIndex, Frame:overlayFrame };    //叠加指标信息
             }
-    
             
             overlayFrame.Script=scriptIndex;
             subFrame.OverlayIndex.push(overlayFrame);
     
+            var updateWindowIndex=dest.WindowIndex;
             if (option.Operator==0) //移动模式, 删除原来的
             {
                 if (findOverlayItem)
                     this.DeleteOverlayIndex(findOverlayItem.Identify, src.WindowIndex);
                 else if (findItem)
+                {
                     this.DeleteMainIndex(findItem.Guid,src.WindowIndex);
+                    var find=this.FindScriptIndex(overlayFrame.Identify);
+                    if (find) updateWindowIndex=find.WindowIndex;
+                }
             }
     
             var bindData=this.GetMainData();
-            this.BindOverlayIndexData(overlayFrame,dest.WindowIndex,bindData);
+            this.BindOverlayIndexData(overlayFrame,updateWindowIndex,bindData);
             this.UpdataDataoffset();           //更新数据偏移
             this.UpdateFrameMaxMin();          //调整坐标最大 最小值
             this.Draw();
         }
+    }
+
+    //移动指标到新的指标窗口 src={ WindowIndex:指标窗口索引，IndexID:指标ID } , option={ Operator: 0=移动, 1=复制 }
+    this.MoveIndexToNewWindow=function(src, option)
+    {
+        if (!src || !option) return false;
+        if (!IFrameSplitOperator.IsNumber(src.WindowIndex) || src.WindowIndex<0 || src.WindowIndex>=this.Frame.SubFrame.length) return false;
+    
+        var find=this.FindScriptIndex(src.IndexID,src.WindowIndex);
+        if (!find) return false;
+
+        var findItem=null,findOverlayItem=null;
+        if (find.Type==0) findItem=find.Data;
+        else if (find.Type==1) findOverlayItem=find.Data;
+        
+        if (!findOverlayItem && !findItem) return false;
+        if (src.WindowIndex==this.Frame.SubFrame.length-1 && this.Frame.SubFrame[src.WindowIndex].OverlayIndex<=0) return false;    //指标在最后一个窗口不需要移动
+
+        this.RemoveMinSizeWindows();    //清空隐藏的指标
+
+        var index=this.Frame.SubFrame.length;
+        var subFrame=this.CreateSubFrameItem(index);
+        var pixelRatio=GetDevicePixelRatio();
+        subFrame.Frame.ChartBorder.TitleHeight*=pixelRatio;
+        this.Frame.SubFrame[index]=subFrame;
+        var titlePaint=new DynamicChartTitlePainting();
+        titlePaint.Frame=this.Frame.SubFrame[index].Frame;
+        titlePaint.Canvas=this.Canvas;
+        titlePaint.LanguageID=this.LanguageID;
+        titlePaint.SelectedChart=this.SelectedChart;
+        titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        this.TitlePaint[index+1]=titlePaint;
+
+        this.SetSubFrameOption(subFrame, option);
+
+        //最后一个显示X轴坐标
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
+        {
+            var item=this.Frame.SubFrame[i].Frame;
+            if (i==this.Frame.SubFrame.length-1) item.XSplitOperator.ShowText=true;
+            else item.XSplitOperator.ShowText=false;
+        }
+
+        if (option.Operator==0) //移动模式, 删除原来的
+        {
+            if (findOverlayItem)
+                this.DeleteOverlayIndex(findOverlayItem.Identify, src.WindowIndex);
+            else if (findItem)
+                this.DeleteMainIndex(findItem.Guid,src.WindowIndex);
+        }
+
+        this.UpdataDataoffset();        //更新数据偏移  
+        this.Frame.SetSizeChage(true);
+        if (this.UpdateXShowText) this.UpdateXShowText();
+        this.ResetFrameXYSplit();
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
+
+        var index=this.Frame.SubFrame.length-1;
+        if (findItem) this.WindowIndex[index] = this.CreateMainScript(findItem);    
+        else if (findOverlayItem) this.WindowIndex[index] = this.CreateMainScript(findOverlayItem.Script);    
+        var bindData=this.GetMainData();
+
+        this.BindIndexData(index,bindData);     //执行脚本
     }
 
     //创建一个叠加指标
@@ -10373,127 +10517,6 @@ function JSChartContainer(uielement, OffscreenElement)
         }
     }
 
-    //移动叠加指标  src={ WindowIndex:指标窗口索引，IndexID:指标ID } dest={ WindowIndex:指标窗口索引 } , option={ Operator: 0=移动, 1=复制 }
-    this.MoveOverlayIndex=function(src, dest, option)
-    {
-        if (!src || !dest || !option) return false;
-        if ( !IFrameSplitOperator.IsNumber(src.WindowIndex) || src.WindowIndex<0 || src.WindowIndex>=this.Frame.SubFrame.length ) return false;
-        if ( !IFrameSplitOperator.IsNumber(dest.WindowIndex) || dest.WindowIndex<0 || dest.WindowIndex>=this.Frame.SubFrame.length ) return false;
-
-        var findItem=null;
-        var item=this.WindowIndex[src.WindowIndex];
-        if (item && item.Guid==src.IndexID) findItem=item;
-            
-        var item=this.Frame.SubFrame[src.WindowIndex];
-        var findOverlayItem=null;
-        for(var i=0; i<item.OverlayIndex.length; ++i)
-        {
-            var overlayItem=item.OverlayIndex[i];
-            if (overlayItem.Identify===src.IndexID)
-            {
-                findOverlayItem=overlayItem;
-                break;
-            }
-        }
-
-        if (!findOverlayItem) return false;
-
-        var subFrame=this.Frame.SubFrame[dest.WindowIndex];
-        subFrame.Interval=this.OverlayIndexFrameWidth;
-        var overlayFrame=new OverlayIndexItem();
-        var frame=this.CreateOverlayFrame();
-        frame.Canvas=this.Canvas;
-        frame.MainFrame=subFrame.Frame;
-        frame.ChartBorder=subFrame.Frame.ChartBorder;
-        frame.IsShow=findOverlayItem.Frame.IsShow;
-        //if (obj.IsShareY===true) frame.IsShareY=true;   
-        frame.YSplitOperator=new FrameSplitY();
-        frame.YSplitOperator.LanguageID=this.LanguageID;
-        frame.YSplitOperator.FrameSplitData=this.FrameSplitData.get('double');
-        frame.YSplitOperator.Frame=frame;
-        frame.YSplitOperator.ChartBorder=frame.ChartBorder;
-        frame.YSplitOperator.SplitCount=subFrame.Frame.YSplitOperator.SplitCount;
-
-        overlayFrame.Frame=frame;
-        var scriptIndex=this.CloneOverlayScript(findOverlayItem.Script);
-        scriptIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:dest.WindowIndex, Frame:overlayFrame };    //叠加指标信息
-        overlayFrame.Script=scriptIndex;
-        subFrame.OverlayIndex.push(overlayFrame);
-
-        if (option.Operator==0) //移动模式, 删除原来的
-        {
-            this.DeleteOverlayIndex(findOverlayItem.Identify, src.WindowIndex);
-        }
-
-        var bindData=this.GetMainData();
-        this.BindOverlayIndexData(overlayFrame,dest.WindowIndex,bindData);
-        this.UpdataDataoffset();           //更新数据偏移
-        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Draw();
-    }
-
-    //移动叠加指标到新的指标窗口 src={ WindowIndex:指标窗口索引，IndexID:指标ID } , option={ Operator: 0=移动, 1=复制 }
-    this.MoveOverlayIndexToNewWindow=function(src, option)
-    {
-        if (!src || !option) return false;
-        if ( !IFrameSplitOperator.IsNumber(src.WindowIndex) || src.WindowIndex<0 || src.WindowIndex>=this.Frame.SubFrame.length ) return false;
-
-        var item=this.Frame.SubFrame[src.WindowIndex];
-        var findOverlayItem=null;
-        for(var i=0; i<item.OverlayIndex.length; ++i)
-        {
-            var overlayItem=item.OverlayIndex[i];
-            if (overlayItem.Identify===src.IndexID)
-            {
-                findOverlayItem=overlayItem;
-                break;
-            }
-        }
-
-        if (!findOverlayItem) return false;
-
-        this.RemoveMinSizeWindows();    //清空隐藏的指标
-
-        var index=this.Frame.SubFrame.length;
-        var subFrame=this.CreateSubFrameItem(index);
-        var pixelRatio=GetDevicePixelRatio();
-        subFrame.Frame.ChartBorder.TitleHeight*=pixelRatio;
-        this.Frame.SubFrame[index]=subFrame;
-        var titlePaint=new DynamicChartTitlePainting();
-        titlePaint.Frame=this.Frame.SubFrame[index].Frame;
-        titlePaint.Canvas=this.Canvas;
-        titlePaint.LanguageID=this.LanguageID;
-        titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
-        this.TitlePaint[index+1]=titlePaint;
-
-        this.SetSubFrameOption(subFrame, option);
-
-        //最后一个显示X轴坐标
-        for(var i=0;i<this.Frame.SubFrame.length;++i)
-        {
-            var item=this.Frame.SubFrame[i].Frame;
-            if (i==this.Frame.SubFrame.length-1) item.XSplitOperator.ShowText=true;
-            else item.XSplitOperator.ShowText=false;
-        }
-
-        if (option.Operator==0) //移动模式, 删除原来的
-        {
-            this.DeleteOverlayIndex(findOverlayItem.Identify, src.WindowIndex);
-        }
-
-        this.UpdataDataoffset();        //更新数据偏移  
-        this.Frame.SetSizeChage(true);
-        if (this.UpdateXShowText) this.UpdateXShowText();
-        this.ResetFrameXYSplit();
-        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Draw();
-
-        this.WindowIndex[index] = this.CloneScript(findOverlayItem.Script);    
-        var bindData=this.GetMainData();
-
-        this.BindIndexData(index,bindData);     //执行脚本
-    }
-
     this.GetMainData=function()
     {
         switch(this.ClassName)
@@ -10520,46 +10543,6 @@ function JSChartContainer(uielement, OffscreenElement)
             case "MinuteChartHScreenContainer":
                 return new OverlayMinuteHScreenFrame();
         }
-    }
-
-    this.CloneScript=function(src)
-    {
-        var scriptIndex=null;
-        switch(src.ClassName)
-        {
-            case "ScriptIndex":
-            case "OverlayScriptIndex":
-                scriptIndex=new ScriptIndex();
-                break;
-            case "APIScriptIndex":
-                scriptIndex=new APIScriptIndex();
-                break;
-        }
-
-        src.CopyTo(scriptIndex);
-
-        return scriptIndex;
-    }
-
-    this.CloneOverlayScript=function(src)
-    {
-        var scriptIndex=null;
-        switch(src.ClassName)
-        {
-            case "ScriptIndex":
-                scriptIndex=new ScriptIndex();
-                break;
-            case "APIScriptIndex":
-                scriptIndex=new APIScriptIndex();
-                break;
-            case "OverlayScriptIndex":
-                scriptIndex=new OverlayScriptIndex();
-                break;
-        }
-
-        src.CopyTo(scriptIndex);
-
-        return scriptIndex;
     }
 }
 
@@ -17200,6 +17183,15 @@ function HQTradeFrame()
             }
         }
 
+        var bottom=this.ChartBorder.GetBottom();
+        var chartHeight=this.ChartBorder.GetChartHeight();
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+
+        //底部
+        if (x>=left && x<=right && y>bottom && y<chartHeight) 
+            return -3;
+
         return -1;
     }
 
@@ -17402,11 +17394,41 @@ function HQTradeFrame()
 
             if (rightWidth>=10)
             {
-                item.Frame.Canvas.beginPath();
-                item.Frame.Canvas.rect(right,top,rightWidth,(bottom-top));
-                if (item.Frame.Canvas.isPointInPath(x,y))
+                if (IFrameSplitOperator.IsNonEmptyArray(item.OverlayIndex))
                 {
-                    return { Index:i, Right:true, Left:false , Position:position };    //Position 1=上面 2 下面 0=中间(TODO)
+                    var overlayItem=item.OverlayIndex[0];
+                    var rightOffset=overlayItem.Frame.RightOffset;
+                    item.Frame.Canvas.beginPath();
+                    item.Frame.Canvas.rect(right,top,rightOffset,(bottom-top));
+                    if (item.Frame.Canvas.isPointInPath(x,y))
+                    {
+                        return { Index:i, Right:true, Left:false, Position:position, IsOverlay:false };    //Position 1=上面 2 下面 0=中间(TODO)
+                    }
+
+                    var overlayRight=right+rightOffset;
+                    for(var j=0;j<item.OverlayIndex.length;++j)
+                    {
+                        var overlayItem=item.OverlayIndex[j];
+                        var overlayWidth=overlayItem.RightWidth.Width;
+
+                        item.Frame.Canvas.beginPath();
+                        item.Frame.Canvas.rect(overlayRight,top,overlayWidth,(bottom-top));
+                        if (item.Frame.Canvas.isPointInPath(x,y))
+                        {
+                            return { Index:i, Right:true, Left:false , Position:position, IsOverlay:true, OverlayIndex:j };    //Position 1=上面 2 下面 0=中间(TODO)
+                        }
+
+                        overlayRight+=overlayWidth;
+                    }
+                }
+                else
+                {
+                    item.Frame.Canvas.beginPath();
+                    item.Frame.Canvas.rect(right,top,rightWidth,(bottom-top));
+                    if (item.Frame.Canvas.isPointInPath(x,y))
+                    {
+                        return { Index:i, Right:true, Left:false , Position:position, IsOverlay:false };    //Position 1=上面 2 下面 0=中间(TODO)
+                    }
                 }
             }
 
@@ -17417,7 +17439,7 @@ function HQTradeFrame()
                 item.Frame.Canvas.rect(0,top,leftWidth,(bottom-top));
                 if (item.Frame.Canvas.isPointInPath(x,y))
                 {
-                    return { Index:i, Right:false, Left:true, Position:position };
+                    return { Index:i, Right:false, Left:true, Position:position,IsOverlay:false };
                 }
             }
  
@@ -32047,7 +32069,8 @@ function ExtendChartPaintFactory()
     this.DataMap=new Map(
         [
             ["FrameSplitPaint", { Create:function() { return new FrameSplitPaint(); } }],
-            ["RectSelectPaint", { Create:function() { return new RectSelectPaint(); } }]
+            ["RectSelectPaint", { Create:function() { return new RectSelectPaint(); } }],
+            ["DragMovePaint", { Create:function() { return new DragMovePaint(); } }]
         ]
     );
 
@@ -34941,7 +34964,12 @@ var JSCHART_DRAGCHART_TYPE_ID=
     MAIN_KLINE:1,
     OVERLAY_KLINE:2,
     MAIN_INDEX:3,
-    OVERLAY_INDEX:4
+    OVERLAY_INDEX:4,
+
+    OVERLAY_MINUTE:5,       //叠加走势图
+    MAIN_MINUTE:6,          //走势图
+    MAIN_AVERAGE_MINUTE:7,  //均线
+    MAIN_MINUTE_VOL:8       //成交量
 };
 
 function DragMovePaint()
@@ -34988,6 +35016,22 @@ function DragMovePaint()
         else if (this.Info.Type==JSCHART_DRAGCHART_TYPE_ID.OVERLAY_INDEX)
         {
             text=`叠加指标:${this.Info.IndexName}, 窗口:${windowsIndex}`;
+        }
+        else if (this.Info.Type==JSCHART_DRAGCHART_TYPE_ID.OVERLAY_MINUTE)
+        {
+            text=`走势图, 叠加价格线:${this.Info.Name}, 窗口:${windowsIndex}`;
+        }
+        else if (this.Info.Type==JSCHART_DRAGCHART_TYPE_ID.MAIN_MINUTE)
+        {
+            text=`走势图, 价格线:${this.Info.Name}, 窗口:${windowsIndex}`;
+        }
+        else if (this.Info.Type==JSCHART_DRAGCHART_TYPE_ID.MAIN_AVERAGE_MINUTE)
+        {
+            text=`走势图, 均线:${this.Info.Name}, 窗口:${windowsIndex}`;
+        }
+        else if (this.Info.Type==JSCHART_DRAGCHART_TYPE_ID.MAIN_MINUTE_VOL)
+        {
+            text=`走势图, 成交量:${this.Info.Name}, 窗口:${windowsIndex}`;
         }
         
         if (text)
@@ -53362,15 +53406,6 @@ function KLineChartContainer(uielement,OffscreenElement)
                 chart.SetOption(option);
                 this.ExtendChartPaint.push(chart);
                 return chart;
-            case "DragMovePaint":   //拖拽效果
-                chart=new DragMovePaint();
-                chart.Canvas=this.Canvas;
-                chart.ChartBorder=this.Frame.ChartBorder;
-                chart.ChartFrame=this.Frame;
-                chart.HQChart=this;
-                chart.SetOption(option);
-                this.ExtendChartPaint.push(chart);
-                return chart;
             default:
                 chart=g_ExtendChartPaintFactory.Create(name);
                 if (!chart) return null;
@@ -54688,7 +54723,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
             var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
             var dragY=this.Frame.PtInFrameY(x,y);
-            if (dragY && dragY.Index>=0)
+            if (dragY && dragY.Index>=0 && dragY.IsOverlay==false)
             {
                 this.CancelZoomUpDownFrameY(dragY);
             }
@@ -56648,11 +56683,24 @@ function MinuteChartContainer(uielement)
                 }
                 break;
             case 46:    //del
-                if (!this.SelectChartDrawPicture) break;
-                var drawPicture=this.SelectChartDrawPicture;
-                JSConsole.Chart.Log(drawPicture,"drawPicturedrawPicturedrawPicture")
-                this.SelectChartDrawPicture=null;
-                this.ClearChartDrawPicture(drawPicture);    //删除选中的画图工具
+                if (this.SelectChartDrawPicture) 
+                {
+                    var drawPicture=this.SelectChartDrawPicture;
+                    JSConsole.Chart.Log(drawPicture,"drawPicturedrawPicturedrawPicture")
+                    this.SelectChartDrawPicture=null;
+                    this.ClearChartDrawPicture(drawPicture);    //删除选中的画图工具
+                }
+                else if (this.SelectedChart && this.SelectedChart.Selected.Identify)
+                {
+                    var selectedInfo=this.GetSelectedChartInfo(this.SelectedChart.Selected);
+                    if (selectedInfo)
+                    {
+                        if (selectedInfo.Type==JSCHART_DRAGCHART_TYPE_ID.OVERLAY_INDEX)
+                            this.DeleteOverlayWindowsIndex(selectedInfo.IndexID);
+                        else if (selectedInfo.Type==JSCHART_DRAGCHART_TYPE_ID.OVERLAY_MINUTE)
+                            this.DeleteOverlaySymbol(selectedInfo.Symbol);
+                    }
+                }
                 break;
             case 32:    //space
                 this.OnMarkRectSelect(e);
@@ -56862,6 +56910,7 @@ function MinuteChartContainer(uielement)
         this.CreateChildWindow(windowCount);
         this.CreateMainKLine();
         this.CreateExtendChart("RectSelectPaint");  //区间统计
+        if (this.EnableIndexChartDrag) this.CreateExtendChart("DragMovePaint");
 
         //子窗口动态标题
         for(var i in this.Frame.SubFrame)
