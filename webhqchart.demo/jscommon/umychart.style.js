@@ -221,7 +221,20 @@ function GetBlackStyle()
             "rgb(42,230,215)",
             "rgb(24,71,178)",
         ],
-    
+
+        //按钮
+        Buttons:
+        {
+            CloseOverlayIndex:
+            {
+                Color:"rgb(255,255,255)",
+                Family:"iconfont",
+                Text:"\ue60c",
+                //Size:12,
+                //MerginLeft:4
+            }
+        },
+        
         DrawPicture:  //画图工具
         {
             LineColor: 

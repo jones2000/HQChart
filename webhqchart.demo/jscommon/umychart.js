@@ -1974,6 +1974,7 @@ var JSCHART_DRAG_ID=
 var JSCHART_BUTTON_ID=
 {
     CLOSE_BEFOREOPEN_ID:1,  //关闭集合竞价
+    CLOSE_OVERLAY_INDEX:2,  //关闭叠加指标
 }
 
 
@@ -11301,8 +11302,20 @@ function OverlayKLineFrame()
     this.TitleColor=g_JSChartResource.OverlayFrame.TitleColor;
     this.TitleFont=g_JSChartResource.OverlayFrame.TitleFont;
 
+    this.Buttons=[];
+
+    this.CloseButton=
+    { 
+        Color:g_JSChartResource.Buttons.CloseOverlayIndex.Color,
+        Family:g_JSChartResource.Buttons.CloseOverlayIndex.Family,
+        Text:g_JSChartResource.Buttons.CloseOverlayIndex.Text,
+        Size:g_JSChartResource.Buttons.CloseOverlayIndex.Size,
+        MerginLeft:g_JSChartResource.Buttons.CloseOverlayIndex.MerginLeft
+    };
+
     this.Draw=function()
     {
+        this.Buttons=[];
         this.SplitXYCoordinate();
 
         if (this.IsShow)
@@ -11310,6 +11323,7 @@ function OverlayKLineFrame()
             this.DrawVertical();
             this.DrawHorizontal();
             this.DrawTitle();
+            this.DrawButtons();
         }
         
         this.SizeChange=false;
@@ -11462,6 +11476,25 @@ function OverlayKLineFrame()
         this.Canvas.moveTo(ToFixedPoint(right),ToFixedPoint(top));
         this.Canvas.lineTo(ToFixedPoint(right),ToFixedPoint(bottom));
         this.Canvas.stroke();
+    }
+
+    this.DrawButtons=function()
+    {
+        var border=this.ChartBorder.GetBorder();
+        var yButton=border.Top;
+        var xBotton=border.Right+this.RightOffset+this.CloseButton.MerginLeft;
+
+        var size=this.CloseButton.Size*GetDevicePixelRatio();
+        var font=`${size}px ${this.CloseButton.Family}`;
+
+        this.Canvas.fillStyle=this.CloseButton.Color;
+        this.Canvas.font=font;
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="top";
+        this.Canvas.fillText(this.CloseButton.Text, xBotton, yButton);
+
+        var rect={Left:xBotton, Top:yButton, Right:xBotton+size, Bottom:yButton+size, Width:size, Height:size };
+        this.Buttons.push({ID:JSCHART_BUTTON_ID.CLOSE_OVERLAY_INDEX, Rect:rect, BtnID:1 });
     }
 }
 
@@ -11815,6 +11848,10 @@ function KLineHScreenFrame()
         return index;
 
 		//return (y-this.ChartBorder.GetTop())*(this.XPointCount*1.0/this.ChartBorder.GetHeight());
+    }
+
+    this.DrawBottons=function()
+    {
     }
 
     //计算数据宽度
@@ -13092,11 +13129,26 @@ function HQTradeFrame()
 
     this.PtInButtons=function(x,y)
     {
-        for(var i in this.SubFrame)
+        for(var i=0; i<this.SubFrame.length; ++i)
         {
             var item=this.SubFrame[i];
             var button=item.Frame.PtInButtons(x,y);
             if (button) return button;
+
+            for(var j=0;j<item.OverlayIndex.length;++j)
+            {
+                var overlayItem=item.OverlayIndex[j];
+                var overlayFrame=overlayItem.Frame;
+                if (!overlayFrame || !overlayFrame.PtInButtons) continue;
+                var button=overlayFrame.PtInButtons(x,y);
+                if (button) 
+                {
+                    button.IndexID=overlayItem.Identify;
+                    button.FrameID=i;
+                    return button;
+                }
+                    
+            }
         }
 
         return null
@@ -43574,8 +43626,22 @@ function JSChartResource()
     //指标不支持信息
     this.Index.NotSupport={Font:"14px 微软雅黑", TextColor:"rgb(52,52,52)"};
 
+    //按钮
+    this.Buttons=
+    {
+        CloseOverlayIndex:
+        {
+            Color:"rgb(0,0,0)",
+            Family:"iconfont",
+            Text:"\ue60c",
+            Size:12,
+            MerginLeft:3
+        }
+    }
+   
     //画图工具
-    this.DrawPicture={
+    this.DrawPicture=
+    {
         LineColor:
         [ 
             "rgb(30,144,255)" 
@@ -44504,6 +44570,20 @@ function JSChartResource()
             var item=style.DragMovePaint;
             if (item.TextColor) this.DragMovePaint.TextColor=item.TextColor;
             if (item.Font) this.DragMovePaint.Font=item.Font;
+        }
+
+        if (style.Buttons)
+        {
+            var buttons=style.Buttons;
+            if (buttons.CloseOverlayIndex)
+            {
+                var item=buttons.CloseOverlayIndex;
+                if (item.Color) this.Buttons.CloseOverlayIndex.Color=item.Color;
+                if (item.Family) this.Buttons.CloseOverlayIndex.Family=item.Family;
+                if (item.Text) this.Buttons.CloseOverlayIndex.Text=item.Text;
+                if (IFrameSplitOperator.IsNumber(item.Size)) this.Buttons.CloseOverlayIndex.Size=item.Size;
+                if (IFrameSplitOperator.IsNumber(item.MerginLeft)) this.Buttons.CloseOverlayIndex.MerginLeft=item.MerginLeft;
+            }
         }
     }
 }
@@ -51261,6 +51341,14 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();
     }
 
+    this.ClickFrameButton=function(button)
+    {
+        if (button.ID==JSCHART_BUTTON_ID.CLOSE_OVERLAY_INDEX)
+        {
+            var id=button.IndexID;
+            if (id) this.DeleteOverlayWindowsIndex(id);
+        }
+    }
 }
 
 //API 返回数据 转化为array[]
