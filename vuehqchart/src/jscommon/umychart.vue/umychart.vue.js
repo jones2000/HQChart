@@ -4416,6 +4416,9 @@ function JSChart(divElement, bOffscreen)
             {
                 if (IFrameSplitOperator.IsBool(item.RightButton.Enable)) chart.ChartCorssCursor.RightButton.Enable=item.RightButton.Enable;
             }
+
+            if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
+            if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
         }
 
         //保存十字光标文字高度
@@ -4810,6 +4813,9 @@ function JSChart(divElement, bOffscreen)
             {
                 if (IFrameSplitOperator.IsBool(item.RightButton.Enable)) chart.ChartCorssCursor.RightButton.Enable=item.RightButton.Enable;
             } 
+
+            if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
+            if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
         }
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
@@ -39322,6 +39328,9 @@ function HQPriceStringFormat()
     this.MultiDayBeforeOpenData;
     this.MultiDayAfterCloseData;
 
+    this.PriceFormatType=0; //主窗口格式    0=默认 1=科学计数
+    this.DataFormatType=0;  //副图指标格式   0=默认 1=科学计数
+
     //盘前集合竞价
     this.GetBeforeOpen=function()
     {
@@ -39411,15 +39420,28 @@ function HQPriceStringFormat()
         if (this.FrameID==0)    //第1个窗口显示原始价格
         {
             var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
-            this.Text=this.Value.toFixed(defaultfloatPrecision);
+            if (this.PriceFormatType==1)
+                this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
+            else 
+                this.Text=this.Value.toFixed(defaultfloatPrecision);
+
             if (this.YClose>0) this.PercentageText=((this.Value-this.YClose)*100/this.YClose).toFixed(2);   //走势图右边坐标显示百分比
 
             this.GetExtendPaintData(defaultfloatPrecision);
         }
         else if (this.FrameID==1)
         {
-            this.Text=IFrameSplitOperator.FormatValueString(this.Value,defaultfloatPrecision,this.LanguageID);
-            if (IFrameSplitOperator.IsNumber(this.RValue)) this.RText=IFrameSplitOperator.FormatValueString(this.RValue,defaultfloatPrecision,this.LanguageID);
+            if (this.DataFormatType==1)
+            {
+                this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
+                if (IFrameSplitOperator.IsNumber(this.RValue)) this.RText=IFrameSplitOperator.FormatValueString(this.RValue,defaultfloatPrecision,this.LanguageID);
+            }
+            else
+            {
+                this.Text=IFrameSplitOperator.FormatValueString(this.Value,defaultfloatPrecision,this.LanguageID);
+                if (IFrameSplitOperator.IsNumber(this.RValue)) this.RText=IFrameSplitOperator.FormatValueString(this.RValue,defaultfloatPrecision,this.LanguageID);
+            }
+            
             if (this.ClientPos==2) this.GetBeforeOpen();
             else if (this.ClientPos==3) this.GetAfterClose();
             else if (this.ClientPos>=200 && this.ClientPos<=299) this.GetMultiDayBeforeOpen();
@@ -39427,7 +39449,8 @@ function HQPriceStringFormat()
         }
         else
         {
-            this.Text=IFrameSplitOperator.FormatValueString(this.Value,defaultfloatPrecision,this.LanguageID);
+            if (this.DataFormatType==1) this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
+            else this.Text=IFrameSplitOperator.FormatValueString(this.Value,defaultfloatPrecision,this.LanguageID);
         }
 
         return true;
@@ -99257,6 +99280,8 @@ function ChartReport()
                 if (!IFrameSplitOperator.IsNumber(item.DataIndex) && !IFrameSplitOperator.IsNumber(item.BlockIndex)) continue;
                 if (IFrameSplitOperator.IsNumber(item.DataIndex)) colItem.DataIndex=item.DataIndex;   //数据在扩展数据索引列
                 if (IFrameSplitOperator.IsNumber(item.BlockIndex)) colItem.BlockIndex=item.BlockIndex;
+                colItem.IsDrawCallback=false;   //是否回调
+                if (IFrameSplitOperator.IsBool(item.IsDrawCallback)) colItem.IsDrawCallback=item.IsDrawCallback;
             }
             else if (item.Type==REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID)
             {
