@@ -12,18 +12,18 @@
 
 import 
 {
-    JSCommonResource_Global_JSChartResource as g_JSChartResource,
-    JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
-    JSCommonResource_Global_JSChartLocalization as  g_JSChartLocalization,
+    g_JSChartResource,
+    JSCHART_LANGUAGE_ID,
+    g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
 import {
-    JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
-    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
-    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
+    ChartData, HistoryData,
+    SingleData, MinuteData,
+    JSCHART_EVENT_ID,
 } from "./umychart.data.wechat.js";
 
-import { JSCommonCoordinateData as JSCommonCoordinateData } from "./umychart.coordinatedata.wechat.js";
+import { JSCommonCoordinateData } from "./umychart.coordinatedata.wechat.js";
 var MARKET_SUFFIX_NAME = JSCommonCoordinateData.MARKET_SUFFIX_NAME;
 
 var WEEK_NAME=["日","一","二","三","四","五","六"];
@@ -2008,6 +2008,27 @@ function IChangeStringFormat() {
 
 
 //导出统一使用JSCommon命名空间名
+export
+{
+    CoordinateInfo,
+    IFrameSplitOperator,
+    FrameSplitKLinePriceY,
+    FrameSplitY,
+    FrameSplitKLineX,
+    FrameSplitMinutePriceY,
+    FrameSplitMinuteX,
+    FrameSplitXData,
+    SplitData,
+    PriceSplitData,
+    FrameSplitXDepth,
+
+    IChangeStringFormat,
+    HQPriceStringFormat,
+    HQDateStringFormat,
+    HQMinuteTimeStringFormat,
+    g_DivTooltipDataForamt,
+}
+/*
 module.exports =
 {
     JSCommonSplit: 
@@ -2047,3 +2068,4 @@ module.exports =
     JSCommonFormat_HQMinuteTimeStringFormat:HQMinuteTimeStringFormat,
     JSCommonFormat_Global_DataFormat :g_DivTooltipDataForamt,
 };
+*/

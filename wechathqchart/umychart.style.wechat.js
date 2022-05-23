@@ -394,7 +394,18 @@ function GetStyleConfig(styleid)    //获取一个风格的配置变量
     }
 }
 
+var JSCommonHQStyle=
+{
+    GetStyleConfig:GetStyleConfig,
+    STYLE_TYPE_ID:STYLE_TYPE_ID
+};
 
+export
+{
+    JSCommonHQStyle
+}
+
+/*
 module.exports =
   {
     JSCommonHQStyle:
@@ -403,5 +414,6 @@ module.exports =
         STYLE_TYPE_ID:STYLE_TYPE_ID
     }
   };
+  */
 
 

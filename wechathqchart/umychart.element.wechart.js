@@ -75,6 +75,12 @@ function JSCanvasElement()
 
 
 //导出统一使用JSCommon命名空间名
+export
+{
+    JSCanvasElement
+};
+
+/*
 module.exports =
 {
     JSCommonElement:
@@ -85,3 +91,4 @@ module.exports =
     //单个类导出
     JSCommonElement_JSCanvasElement: JSCanvasElement,
 };
+*/

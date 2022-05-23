@@ -13,17 +13,17 @@
 import { JSConsole } from "./umychart.console.wechat.js"
 
 import {
-    JSCommonComplier_ErrorHandler as ErrorHandler,
-    JSCommonComplier_JSComplier as JSComplier,
-    JSCommonComplier_JSParser as JSParser,
-    JSCommonComplier_Syntax as Syntax,
-    JS_EXECUTE_JOB_ID as JS_EXECUTE_JOB_ID,
-    g_JSComplierResource as g_JSComplierResource,
+    ErrorHandler,
+    JSComplier,
+    JSParser,
+    Syntax,
+    JS_EXECUTE_JOB_ID,
+    g_JSComplierResource,
 } from "./umychart.complier.wechat";
 
 import 
 { 
-    JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
+    IFrameSplitOperator,
 } from './umychart.framesplit.wechat.js'
 
 

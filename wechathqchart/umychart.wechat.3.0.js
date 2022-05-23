@@ -13,141 +13,141 @@
 //日志
 import { JSConsole } from "./umychart.console.wechat.js"
 
-import { JSCommonElement_JSCanvasElement as JSCanvasElement } from "./umychart.element.wechart.js";
+import { JSCanvasElement } from "./umychart.element.wechart.js";
 
 //行情数据结构体 及涉及到的行情算法(复权,周期等) 
 import {
-    JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
-    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
-    JSCommon_CUSTOM_DAY_PERIOD_START as CUSTOM_DAY_PERIOD_START,
-    JSCommon_CUSTOM_DAY_PERIOD_END as CUSTOM_DAY_PERIOD_END,
-    JSCommon_CUSTOM_MINUTE_PERIOD_START as CUSTOM_MINUTE_PERIOD_START,
-    JSCommon_CUSTOM_MINUTE_PERIOD_END as CUSTOM_MINUTE_PERIOD_END,
-    JSCommon_CUSTOM_SECOND_PERIOD_START as CUSTOM_SECOND_PERIOD_START,
-    JSCommon_CUSTOM_SECOND_PERIOD_END as CUSTOM_SECOND_PERIOD_END,
-    JSCommon_Rect as Rect,
-    JSCommon_DataPlus as DataPlus,
-    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
-    JSCommon_PhoneDBClick as PhoneDBClick,
-    JSCommon_OVERLAY_STATUS_ID as OVERLAY_STATUS_ID,
+    ChartData, HistoryData,
+    SingleData, MinuteData,
+    CUSTOM_DAY_PERIOD_START,
+    CUSTOM_DAY_PERIOD_END,
+    CUSTOM_MINUTE_PERIOD_START,
+    CUSTOM_MINUTE_PERIOD_END,
+    CUSTOM_SECOND_PERIOD_START,
+    CUSTOM_SECOND_PERIOD_END,
+    Rect,
+    DataPlus,
+    JSCHART_EVENT_ID,
+    PhoneDBClick,
+    OVERLAY_STATUS_ID,
 } from "./umychart.data.wechat.js";
 
 import {
-    JSCommon_JSKLineInfoMap as JSKLineInfoMap, 
-    JSCommon_KLINE_INFO_TYPE as KLINE_INFO_TYPE, 
-    JSCommon_JSMinuteInfoMap as JSMinuteInfoMap,
+    JSKLineInfoMap, 
+    KLINE_INFO_TYPE, 
+    JSMinuteInfoMap,
 } from "./umychart.klineinfo.wechat.js";
 
 import 
 { 
-    JSCommonCoordinateData as JSCommonCoordinateData,
-    JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME ,
-    JSCommonCoordinateData_Global_FuturesTimeData as g_FuturesTimeData,
-    JSCommonCoordinateData_Global_NYMEXTimeData as g_NYMEXTimeData,
-    JSCommonCoordinateData_Global_COMEXTimeData as g_COMEXTimeData,
-    JSCommonCoordinateData_Global_NYBOTTimeData as g_NYBOTTimeData,
-    JSCommonCoordinateData_Global_LMETimeData as g_LMETimeData,
-    JSCommonCoordinateData_Global_CBOTTimeData as g_CBOTTimeData,
-    JSCommonCoordinateData_Global_TOCOMTimeData as g_TOCOMTimeData,
-    JSCommonCoordinateData_Global_IPETimeData as g_IPETimeData,
+    JSCommonCoordinateData,
+    MARKET_SUFFIX_NAME ,
+    g_FuturesTimeData,
+    g_NYMEXTimeData,
+    g_COMEXTimeData,
+    g_NYBOTTimeData,
+    g_LMETimeData,
+    g_CBOTTimeData,
+    g_TOCOMTimeData,
+    g_IPETimeData,
 } from "./umychart.coordinatedata.wechat.js";
 
 import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达信编译器
 import { JSCommonIndexScript } from "./umychart.index.data.wechat.js"; //系统指标定义
-import { JSCommon_HQIndexFormula as HQIndexFormula } from "./umychart.hqIndexformula.wechat.js";     //通达信编译器
+import { HQIndexFormula } from "./umychart.hqIndexformula.wechat.js";     //通达信编译器
 
 //图形库
 import {
-    JSCommonChartPaint_IChartPainting as IChartPainting, 
-    JSCommonChartPaint_ChartSingleText as ChartSingleText, 
-    JSCommonChartPaint_ChartKLine as ChartKLine,
-    JSCommonChartPaint_ChartLine as ChartLine,
-    JSCommonChartPaint_ChartSubLine as ChartSubLine,
-    JSCommonChartPaint_ChartPointDot as ChartPointDot, 
-    JSCommonChartPaint_ChartStick as ChartStick,
-    JSCommonChartPaint_ChartLineStick as ChartLineStick,
-    JSCommonChartPaint_ChartStickLine as ChartStickLine,
-    JSCommonChartPaint_ChartOverlayKLine as ChartOverlayKLine,
-    JSCommonChartPaint_ChartMinuteInfo as ChartMinuteInfo,
-    JSCommonChartPaint_ChartRectangle as ChartRectangle,
-    JSCommonChartPaint_ChartMultiText as ChartMultiText,
-    JSCommonChartPaint_ChartMultiLine as ChartMultiLine,
-    JSCommonChartPaint_ChartMultiBar as ChartMultiBar,
-    JSCommonChartPaint_ChartPie as ChartPie,
-    JSCommonChartPaint_ChartCircle as ChartCircle,
-    JSCommonChartPaint_ChartChinaMap as ChartChinaMap,
-    JSCommonChartPaint_ChartRadar as ChartRadar,
-    JSCommonChartPaint_ChartCorssCursor as ChartCorssCursor,
-    JSCommonChartPaint_ChartBuySell as ChartBuySell,
-    JSCommonChartPaint_ChartMACD as ChartMACD,
-    JSCommonChartPaint_ChartSplashPaint as ChartSplashPaint,
-    JSCommonChartPaint_ChartBackground as ChartBackground,
-    JSCommonChartPaint_ChartMinuteVolumBar as ChartMinuteVolumBar,
-    JSCommonChartPaint_ChartMultiHtmlDom as ChartMultiHtmlDom,
-    JSCommonChartPaint_ChartLock as ChartLock,
-    JSCommonChartPaint_ChartVolStick as ChartVolStick,
-    JSCommonChartPaint_ChartBand as ChartBand,
-    JSCommonChartPaint_ChartOverlayMinutePriceLine as ChartOverlayMinutePriceLine,
-    JSCommonChartPaint_ChartLineMultiData as ChartLineMultiData,
-    JSCommonChartPaint_ChartStraightLine as ChartStraightLine,
-    JSCommonChartPaint_DepthChartCorssCursor as DepthChartCorssCursor,
-    JSCommonChartPaint_ChartOrderbookDepth as ChartOrderbookDepth,
-    JSCommonChartPaint_ChartMinutePriceLine as ChartMinutePriceLine,
-    JSCommonChartPaint_ChartText as ChartText ,
-    JSCommonChartPaint_ChartStraightArea as ChartStraightArea,
+    IChartPainting, 
+    ChartSingleText, 
+    ChartKLine,
+    ChartLine,
+    ChartSubLine,
+    ChartPointDot, 
+    ChartStick,
+    ChartLineStick,
+    ChartStickLine,
+    ChartOverlayKLine,
+    ChartMinuteInfo,
+    ChartRectangle,
+    ChartMultiText,
+    ChartMultiLine,
+    ChartMultiBar,
+    ChartPie,
+    ChartCircle,
+    ChartChinaMap,
+    ChartRadar,
+    ChartCorssCursor,
+    ChartBuySell,
+    ChartMACD,
+    ChartSplashPaint,
+    ChartBackground,
+    ChartMinuteVolumBar,
+    ChartMultiHtmlDom,
+    ChartLock,
+    ChartVolStick,
+    ChartBand,
+    ChartOverlayMinutePriceLine,
+    ChartLineMultiData,
+    ChartStraightLine,
+    DepthChartCorssCursor,
+    ChartOrderbookDepth,
+    ChartMinutePriceLine,
+    ChartText,
+    ChartStraightArea,
 } from "./umychart.chartpaint.wechat.js";
 
 //扩展画法图形库
 import {
-    JSCommonExtendChartPaint_IExtendChartPainting as IExtendChartPainting,
-    JSCommonExtendChartPaint_KLineTooltipPaint as KLineTooltipPaint, 
-    JSCommonExtendChartPaint_BarragePaint as BarragePaint,
-    JSCommonExtendChartPaint_MinuteTooltipPaint as MinuteTooltipPaint,
-    JSCommonExtendChartPaint_BackgroundPaint as BackgroundPaint,
+    IExtendChartPainting,
+    KLineTooltipPaint, 
+    BarragePaint,
+    MinuteTooltipPaint,
+    BackgroundPaint,
 } from "./umychart.extendchart.wechat.js";
 
 import {
-    JSCommonIndex_IndexInfo as IndexInfo,
-    JSCommonIndex_BaseIndex as BaseIndex,
-    JSCommonIndex_ScriptIndex as ScriptIndex,
-    JSCommonIndex_APIScriptIndex as APIScriptIndex,
+    IndexInfo,
+    BaseIndex,
+    ScriptIndex,
+    APIScriptIndex,
 } from './umychart.index.wechat.js'
 
 import{
-    JSCommonResource_Global_JSChartResource as g_JSChartResource,
-    JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
-    JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
+    g_JSChartResource,
+    JSCHART_LANGUAGE_ID,
+    g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
 import 
 { 
-    JSCommonSplit_CoordinateInfo as CoordinateInfo,
-    JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
-    JSCommonSplit_FrameSplitKLinePriceY as FrameSplitKLinePriceY,
-    JSCommonSplit_FrameSplitY as FrameSplitY,
-    JSCommonSplit_FrameSplitKLineX as FrameSplitKLineX,
-    JSCommonSplit_FrameSplitMinutePriceY as FrameSplitMinutePriceY,
-    JSCommonSplit_FrameSplitMinuteX as FrameSplitMinuteX,
-    JSCommonSplit_FrameSplitXData as FrameSplitXData,
-    JSCommonSplit_SplitData as SplitData,
-    JSCommonSplit_PriceSplitData as PriceSplitData,
-    JSCommonSplit_FrameSplitXDepth as FrameSplitXDepth,
+    CoordinateInfo,
+    IFrameSplitOperator,
+    FrameSplitKLinePriceY,
+    FrameSplitY,
+    FrameSplitKLineX,
+    FrameSplitMinutePriceY,
+    FrameSplitMinuteX,
+    FrameSplitXData,
+    SplitData,
+    PriceSplitData,
+    FrameSplitXDepth,
 
-    JSCommonFormat_IChangeStringFormat as IChangeStringFormat,
-    JSCommonFormat_HQPriceStringFormat as HQPriceStringFormat,
-    JSCommonFormat_HQDateStringFormat as HQDateStringFormat,
-    JSCommonFormat_HQMinuteTimeStringFormat as HQMinuteTimeStringFormat,
-    JSCommonFormat_Global_DataFormat as g_DivTooltipDataForamt,
+    IChangeStringFormat,
+    HQPriceStringFormat,
+    HQDateStringFormat,
+    HQMinuteTimeStringFormat,
+    g_DivTooltipDataForamt,
 } from './umychart.framesplit.wechat.js'
 
 import
 {
-    JSCommonChartTitle_IChartTitlePainting as IChartTitlePainting, 
-    JSCommonChartTitle_DynamicKLineTitlePainting as DynamicKLineTitlePainting,
-    JSCommonChartTitle_DynamicMinuteTitlePainting as DynamicMinuteTitlePainting,
-    JSCommonChartTitle_DynamicChartTitlePainting as DynamicChartTitlePainting,
-    JSCommonChartTitle_DynamicTitleData as DynamicTitleData,
-    JSCommonChartTitle_STRING_FORMAT_TYPE as STRING_FORMAT_TYPE,
+    IChartTitlePainting, 
+    DynamicKLineTitlePainting,
+    DynamicMinuteTitlePainting,
+    DynamicChartTitlePainting,
+    DynamicTitleData,
+    STRING_FORMAT_TYPE,
 } from './umychart.charttitle.wechat.js'
 
 
@@ -13896,6 +13896,28 @@ function IsIndexSymbol(symbol) {
 }
 
 //导出统一使用JSCommon命名空间名
+var JSCommon=
+{
+    JSCanvasElement: JSCanvasElement,
+    JSChart: JSChart,
+    Guid: Guid,
+    IFrameSplitOperator: IFrameSplitOperator,
+    ChartData: ChartData,
+    DataPlus: DataPlus,
+    KLineTooltipPaint: KLineTooltipPaint,
+    MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
+    JSCommonCoordinateData:JSCommonCoordinateData,
+    FrameSplitKLineX:FrameSplitKLineX,
+    FrameSplitKLinePriceY:FrameSplitKLinePriceY,
+    JSCHART_EVENT_ID:JSCHART_EVENT_ID
+};
+
+export
+{
+    JSCommon
+};
+
+/*
 module.exports =
 {
     JSCommon:
@@ -13914,6 +13936,7 @@ module.exports =
         JSCHART_EVENT_ID:JSCHART_EVENT_ID
     },
 };
+*/
 
 
 

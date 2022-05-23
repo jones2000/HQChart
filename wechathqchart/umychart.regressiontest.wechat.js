@@ -401,6 +401,16 @@ RegressionTest.GetPolicyData=function(data)     //获取指标数据里面需要
 
 
 //导出
+var JSCommonTest=
+{
+    RegressionTest: RegressionTest, //个股单策略回测
+};
+
+export
+{
+    JSCommonTest
+};
+/*
 module.exports =
 {
     JSCommonTest:
@@ -408,3 +418,4 @@ module.exports =
         RegressionTest: RegressionTest, //个股单策略回测
     },
 };
+*/

@@ -15,29 +15,29 @@ import { JSConsole } from "./umychart.console.wechat.js"
 //行情数据结构体 及涉及到的行情算法(复权,周期等) 
 import 
 {
-    JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
-    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
-    JSCommon_Guid as Guid,
-    JSCommon_ToFixedPoint as ToFixedPoint,
-    JSCommon_ToFixedRect as ToFixedRect,
+    ChartData, HistoryData,
+    SingleData, MinuteData,
+    Guid,
+    ToFixedPoint,
+    ToFixedRect,
 } from "./umychart.data.wechat.js";
 
 import 
 {
-    JSCommonCoordinateData as JSCommonCoordinateData,
-    JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME
+    JSCommonCoordinateData,
+    MARKET_SUFFIX_NAME
 } from "./umychart.coordinatedata.wechat.js";
 
 import 
 {
-    JSCommonResource_Global_JSChartResource as g_JSChartResource,
-    JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
-    JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
+    g_JSChartResource,
+    JSCHART_LANGUAGE_ID,
+    g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
 import 
 {
-    JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
+    IFrameSplitOperator,
 } from './umychart.framesplit.wechat.js'
 
 function IExtendChartPainting() 
@@ -983,6 +983,15 @@ function BarragePaint()
 }
 
 //导出统一使用JSCommon命名空间名
+export
+{
+    IExtendChartPainting,
+    KLineTooltipPaint,
+    BarragePaint,
+    MinuteTooltipPaint,
+    BackgroundPaint,
+}
+/*
 module.exports =
 {
     JSCommonExtendChartPaint:
@@ -1001,3 +1010,4 @@ module.exports =
     JSCommonExtendChartPaint_MinuteTooltipPaint: MinuteTooltipPaint,
     JSCommonExtendChartPaint_BackgroundPaint: BackgroundPaint,
 };
+*/

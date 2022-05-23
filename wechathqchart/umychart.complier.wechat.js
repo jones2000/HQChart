@@ -15,25 +15,25 @@ import { JSConsole } from "./umychart.console.wechat.js"
 import { JSCommonData } from "./umychart.data.wechat.js";     //行情数据结构体 及涉及到的行情算法(复权,周期等)  
 //配色资源
 import {
-    JSCommonResource_Global_JSChartResource as g_JSChartResource,
-    JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
-    JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
+    g_JSChartResource,
+    JSCHART_LANGUAGE_ID,
+    g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
 import 
 { 
-    JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
+    IFrameSplitOperator,
 } from './umychart.framesplit.wechat.js'
 
 import
 {
-    JSCommon_JSIndexScript as JSIndexScript,
+    JSIndexScript,
 } from './umychart.index.data.wechat.js'
 
 import {
-    JSCommon_HQ_DATA_TYPE as HQ_DATA_TYPE,
-    JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
-    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
+    HQ_DATA_TYPE,
+    ChartData,  HistoryData,
+    SingleData, MinuteData,
 } from "./umychart.data.wechat.js";
 
 var g_JSComplierResource=
@@ -13260,7 +13260,25 @@ var ast=JSComplier.Parse(code2+code1);
 JSConsole.Complier.Log(ast);
 */
 
+var JSCommonComplier=
+{
+    JSComplier: JSComplier,
+    g_JSComplierResource: g_JSComplierResource,
+};
 
+export
+{
+    JSCommonComplier,
+
+    ErrorHandler,
+    JSComplier,
+    JSParser,
+    Syntax,
+    JS_EXECUTE_JOB_ID,
+    g_JSComplierResource,
+};
+
+/*
 module.exports =
 {
     JSCommonComplier:
@@ -13277,3 +13295,4 @@ module.exports =
      JS_EXECUTE_JOB_ID:JS_EXECUTE_JOB_ID,
      g_JSComplierResource:g_JSComplierResource,
 };
+*/

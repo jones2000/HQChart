@@ -3470,6 +3470,31 @@ function GetfloatPrecision(symbol)  //获取小数位数
 }
 
 //导出统一使用JSCommon命名空间名
+var JSCommonCoordinateData=
+{
+    MinuteCoordinateData: g_MinuteCoordinateData,
+    MinuteTimeStringData: g_MinuteTimeStringData,
+    MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
+    GetfloatPrecision: GetfloatPrecision
+};
+
+export
+{
+    JSCommonCoordinateData,
+
+    MARKET_SUFFIX_NAME,
+    g_FuturesTimeData,
+    g_NYMEXTimeData,
+    g_COMEXTimeData,
+    g_NYBOTTimeData,
+    g_LMETimeData,
+    g_CBOTTimeData,
+    g_TOCOMTimeData,
+    g_IPETimeData,
+    GetfloatPrecision
+};
+
+/*
 module.exports =
 {
     JSCommonCoordinateData:
@@ -3491,3 +3516,4 @@ module.exports =
     JSCommonCoordinateData_Global_IPETimeData: g_IPETimeData,
     JSCommonCoordinateData_GetfloatPrecision: GetfloatPrecision,
 };
+*/

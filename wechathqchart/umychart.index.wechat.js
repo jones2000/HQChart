@@ -11,7 +11,7 @@
 */
 
 import {
-    JSCommonResource_Global_JSChartResource as g_JSChartResource,
+    g_JSChartResource,
 } from './umychart.resource.wechat.js'
 
 import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达信编译器
@@ -20,72 +20,72 @@ import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达�
 import { JSConsole } from "./umychart.console.wechat.js"
 
 import {
-    JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
-    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
-    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
+    ChartData, HistoryData,
+    SingleData, MinuteData,
+    JSCHART_EVENT_ID,
 } from "./umychart.data.wechat.js";
 
 //图形库
 import {
-    JSCommonChartPaint_IChartPainting as IChartPainting, 
-    JSCommonChartPaint_ChartSingleText as ChartSingleText, 
-    JSCommonChartPaint_ChartDrawIcon as ChartDrawIcon,
-    JSCommonChartPaint_ChartDrawText as ChartDrawText,
-    JSCommonChartPaint_ChartDrawNumber as ChartDrawNumber,
-    JSCommonChartPaint_ChartKLine as ChartKLine,
-    JSCommonChartPaint_ChartColorKline as ChartColorKline,
-    JSCommonChartPaint_ChartLine as ChartLine,
-    JSCommonChartPaint_ChartSubLine as ChartSubLine,
-    JSCommonChartPaint_ChartPointDot as ChartPointDot, 
-    JSCommonChartPaint_ChartStick as ChartStick,
-    JSCommonChartPaint_ChartLineStick as ChartLineStick,
-    JSCommonChartPaint_ChartStickLine as ChartStickLine,
-    JSCommonChartPaint_ChartOverlayKLine as ChartOverlayKLine,
-    JSCommonChartPaint_ChartMinuteInfo as ChartMinuteInfo,
-    JSCommonChartPaint_ChartRectangle as ChartRectangle,
-    JSCommonChartPaint_ChartMultiText as ChartMultiText,
-    JSCommonChartPaint_ChartMultiLine as ChartMultiLine,
-    JSCommonChartPaint_ChartMultiBar as ChartMultiBar,
-    JSCommonChartPaint_ChartPie as ChartPie,
-    JSCommonChartPaint_ChartCircle as ChartCircle,
-    JSCommonChartPaint_ChartChinaMap as ChartChinaMap,
-    JSCommonChartPaint_ChartRadar as ChartRadar,
-    JSCommonChartPaint_ChartCorssCursor as ChartCorssCursor,
-    JSCommonChartPaint_ChartBuySell as ChartBuySell,
-    JSCommonChartPaint_ChartMACD as ChartMACD,
-    JSCommonChartPaint_ChartSplashPaint as ChartSplashPaint,
-    JSCommonChartPaint_ChartBackground as ChartBackground,
-    JSCommonChartPaint_ChartMinuteVolumBar as ChartMinuteVolumBar,
-    JSCommonChartPaint_ChartMultiHtmlDom as ChartMultiHtmlDom,
-    JSCommonChartPaint_ChartLock as ChartLock,
-    JSCommonChartPaint_ChartVolStick as ChartVolStick,
-    JSCommonChartPaint_ChartBand as ChartBand,
-    JSCommonChartPaint_ChartLineMultiData as ChartLineMultiData,
-    JSCommonChartPaint_ChartStraightLine as ChartStraightLine,
+    IChartPainting, 
+    ChartSingleText, 
+    ChartDrawIcon,
+    ChartDrawText,
+    ChartDrawNumber,
+    ChartKLine,
+    ChartColorKline,
+    ChartLine,
+    ChartSubLine,
+    ChartPointDot, 
+    ChartStick,
+    ChartLineStick,
+    ChartStickLine,
+    ChartOverlayKLine,
+    ChartMinuteInfo,
+    ChartRectangle,
+    ChartMultiText,
+    ChartMultiLine,
+    ChartMultiBar,
+    ChartPie,
+    ChartCircle,
+    ChartChinaMap,
+    ChartRadar,
+    ChartCorssCursor,
+    ChartBuySell,
+    ChartMACD,
+    ChartSplashPaint,
+    ChartBackground,
+    ChartMinuteVolumBar,
+    ChartMultiHtmlDom,
+    ChartLock,
+    ChartVolStick,
+    ChartBand,
+    ChartLineMultiData,
+    ChartStraightLine,
 } from "./umychart.chartpaint.wechat.js";
 
 import 
 { 
-    JSCommonSplit_CoordinateInfo as CoordinateInfo,
-    JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
-    JSCommonSplit_FrameSplitKLinePriceY as FrameSplitKLinePriceY,
-    JSCommonSplit_FrameSplitY as FrameSplitY,
-    JSCommonSplit_FrameSplitKLineX as FrameSplitKLineX,
-    JSCommonSplit_FrameSplitMinutePriceY as FrameSplitMinutePriceY,
-    JSCommonSplit_FrameSplitMinuteX as FrameSplitMinuteX,
-    JSCommonSplit_FrameSplitXData as FrameSplitXData,
-    JSCommonSplit_SplitData as SplitData,
-    JSCommonSplit_PriceSplitData as PriceSplitData,
+    CoordinateInfo,
+    IFrameSplitOperator,
+    FrameSplitKLinePriceY,
+    FrameSplitY,
+    FrameSplitKLineX,
+    FrameSplitMinutePriceY,
+    FrameSplitMinuteX,
+    FrameSplitXData,
+    SplitData,
+    PriceSplitData,
 } from './umychart.framesplit.wechat.js'
 
 import
 {
-    JSCommonChartTitle_IChartTitlePainting as IChartTitlePainting, 
-    JSCommonChartTitle_DynamicKLineTitlePainting as DynamicKLineTitlePainting,
-    JSCommonChartTitle_DynamicMinuteTitlePainting as DynamicMinuteTitlePainting,
-    JSCommonChartTitle_DynamicChartTitlePainting as DynamicChartTitlePainting,
-    JSCommonChartTitle_DynamicTitleData as DynamicTitleData,
-    JSCommonChartTitle_STRING_FORMAT_TYPE as STRING_FORMAT_TYPE,
+    IChartTitlePainting, 
+    DynamicKLineTitlePainting,
+    DynamicMinuteTitlePainting,
+    DynamicChartTitlePainting,
+    DynamicTitleData,
+    STRING_FORMAT_TYPE,
 } from './umychart.charttitle.wechat.js'
 //////////////////////////////////////////////////////////
 //
@@ -1979,8 +1979,15 @@ function MarketLongShortIndex()
 
 }
 
+export
+{
+    IndexInfo,
+    BaseIndex,
+    ScriptIndex,
+    APIScriptIndex,
+}
 
-
+/*
 module.exports =
 {
     JSCommonIndex:
@@ -1997,3 +2004,4 @@ module.exports =
     JSCommonIndex_ScriptIndex:ScriptIndex,
     JSCommonIndex_APIScriptIndex:APIScriptIndex,
 };
+*/

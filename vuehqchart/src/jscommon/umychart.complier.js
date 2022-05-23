@@ -18063,6 +18063,7 @@ function ScriptIndex(name,script,args,option)
         line.Name=varItem.Name;
         line.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         line.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        line.Identify=this.Guid;
         if (varItem.Color) line.Color=this.GetColor(varItem.Color);
         else line.Color=this.GetDefaultColor(id);
 
@@ -18295,7 +18296,7 @@ function ScriptIndex(name,script,args,option)
     {
         let chartMACD=new ChartMACD();
         chartMACD.Canvas=hqChart.Canvas;
-
+        chartMACD.Identify=this.Guid;
         chartMACD.Name=varItem.Name;
         chartMACD.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chartMACD.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
@@ -18421,6 +18422,7 @@ function ScriptIndex(name,script,args,option)
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
         chart.KLineDrawType=hqChart.KLineDrawType;  //设置K线显示类型
+        chart.Identify=this.Guid;
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
 
@@ -18503,6 +18505,7 @@ function ScriptIndex(name,script,args,option)
         let chart=new ChartKLine();
         chart.Canvas=hqChart.Canvas;
         chart.Name=varItem.Name;
+        chart.Identify=this.Guid;
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
 
@@ -19006,7 +19009,8 @@ function ScriptIndex(name,script,args,option)
     {
         let chart=new ChartKLine();
         chart.Canvas=hqChart.Canvas;
-        chart.Name="Self Kline"
+        chart.Name="Self Kline";
+        chart.Identify=this.Guid;
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
 
@@ -19255,6 +19259,7 @@ function ScriptIndex(name,script,args,option)
 
         let titleIndex=windowIndex+1;
         hqChart.TitlePaint[titleIndex].Title=this.Name;
+        hqChart.TitlePaint[titleIndex].Identify=this.Guid;    //指标ID
 
         if (!this.IsShortTitle)
         {
