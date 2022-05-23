@@ -927,8 +927,15 @@ HQIndexFormula.STICKLINE=function(data,price1,price2)
 }
 
 //导出统一使用JSCommon命名空间名
+export
+{
+    HQIndexFormula
+};
+
+/*
 module.exports =
 {
     //单个类导出
     JSCommon_HQIndexFormula: HQIndexFormula
 };
+*/

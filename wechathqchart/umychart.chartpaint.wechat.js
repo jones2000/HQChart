@@ -13,28 +13,28 @@
 //行情数据结构体 及涉及到的行情算法(复权,周期等) 
 import 
 {
-    JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
-    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
-    JSCommon_Rect as Rect,
-    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
-    JSCommon_OVERLAY_STATUS_ID as OVERLAY_STATUS_ID,
+    ChartData, HistoryData,
+    SingleData, MinuteData,
+    Rect,
+    JSCHART_EVENT_ID,
+    OVERLAY_STATUS_ID,
 } from "./umychart.data.wechat.js";
 
 import 
 {
-    JSCommonResource_Global_JSChartResource as g_JSChartResource,
-    JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
+    g_JSChartResource,
+    g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
 import 
 {
-    JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
+    IFrameSplitOperator,
 } from './umychart.framesplit.wechat.js'
 
 import
 {
-    JSCommonCoordinateData as JSCommonCoordinateData,
-    JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME
+    JSCommonCoordinateData,
+    MARKET_SUFFIX_NAME
 } from "./umychart.coordinatedata.wechat.js";
 
 import { JSConsole } from "./umychart.console.wechat.js";
@@ -7824,6 +7824,52 @@ function ToFixedRect(value)
 }
 
 //导出统一使用JSCommon命名空间名
+export
+{
+    IChartPainting,
+    ChartKLine,
+    ChartColorKline,
+    ChartLine,
+    ChartSubLine,
+    ChartSingleText,
+    ChartDrawIcon,
+    ChartDrawText,
+    ChartDrawNumber,
+    ChartPointDot,
+    ChartStick,
+    ChartLineStick,
+    ChartStickLine,
+    ChartBackground,
+    ChartMinuteVolumBar,
+    ChartOverlayKLine,
+    ChartLock,
+    ChartVolStick,
+    ChartBand,
+    ChartMinutePriceLine,
+    ChartOverlayMinutePriceLine,
+    ChartLineMultiData,
+    ChartStraightLine,
+    ChartPie,
+    ChartCircle,
+    ChartChinaMap,
+    ChartRadar,
+    ChartMinuteInfo,
+    ChartRectangle,
+    ChartMultiText,
+    ChartMultiLine,
+    ChartMultiHtmlDom,
+    ChartMultiBar,
+    ChartBuySell,
+    ChartMACD,
+    ChartText,
+    ChartStraightArea,
+    ChartCorssCursor,
+    DepthChartCorssCursor,
+    ChartOrderbookDepth,
+    ChartSplashPaint,
+    GetFontHeight,
+};
+/*
 module.exports =
 {
     JSCommonChartPaint:
@@ -7916,3 +7962,4 @@ module.exports =
     JSCommonChartPaint_ChartSplashPaint:ChartSplashPaint,
     JSCommonChartPaint_GetFontHeight:GetFontHeight,
 };
+*/

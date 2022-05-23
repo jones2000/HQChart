@@ -12,7 +12,7 @@
 
 import 
 {
-    JSCommonCoordinateData_MARKET_SUFFIX_NAME as MARKET_SUFFIX_NAME
+   MARKET_SUFFIX_NAME
 } from "./umychart.coordinatedata.wechat.js";
 
 function Guid() 
@@ -2015,6 +2015,46 @@ function PhoneDBClick()
 }
 
 //导出统一使用JSCommon命名空间名
+var JSCommonData=
+{
+    HistoryData: HistoryData,
+    ChartData: ChartData,
+    SingleData: SingleData,
+    MinuteData: MinuteData,
+    Rect: Rect,
+    DataPlus: DataPlus,
+    JSCHART_EVENT_ID:JSCHART_EVENT_ID,
+    PhoneDBClick:PhoneDBClick,
+    HQ_DATA_TYPE:HQ_DATA_TYPE,
+    OVERLAY_STATUS_ID:OVERLAY_STATUS_ID,
+};
+
+export
+{
+    JSCommonData,
+
+    ChartData,
+    HistoryData,
+    SingleData,
+    MinuteData,
+    CUSTOM_DAY_PERIOD_START,
+    CUSTOM_DAY_PERIOD_END,
+    CUSTOM_MINUTE_PERIOD_START,
+    CUSTOM_MINUTE_PERIOD_END,
+    CUSTOM_SECOND_PERIOD_START,
+    CUSTOM_SECOND_PERIOD_END,
+    Rect,
+    DataPlus,
+    Guid,
+    ToFixedPoint,
+    ToFixedRect,
+    JSCHART_EVENT_ID,
+    PhoneDBClick,
+    HQ_DATA_TYPE,
+    OVERLAY_STATUS_ID
+};
+
+/*
 module.exports =
 {
     JSCommonData:
@@ -2052,3 +2092,4 @@ module.exports =
     JSCommon_HQ_DATA_TYPE:HQ_DATA_TYPE,
     JSCommon_OVERLAY_STATUS_ID:OVERLAY_STATUS_ID,
 };
+*/

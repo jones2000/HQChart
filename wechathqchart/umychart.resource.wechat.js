@@ -875,6 +875,14 @@ function JSChartLocalization()
 var g_JSChartLocalization = new JSChartLocalization();
 
 //导出统一使用JSCommon命名空间名
+export
+{
+    JSChartResource,
+    g_JSChartResource,
+    g_JSChartLocalization,
+    JSCHART_LANGUAGE_ID
+};
+/*
 module.exports =
 {
     JSCommonResource:
@@ -891,3 +899,4 @@ module.exports =
     JSCommonResource_Global_JSChartLocalization: g_JSChartLocalization,
     JSCommonResource_JSCHART_LANGUAGE_ID: JSCHART_LANGUAGE_ID
 };
+*/

@@ -186,6 +186,7 @@ function JSChart(divElement, bOffscreen)
         if (IFrameSplitOperator.IsBool(option.EnableZoomIndexWindow)) chart.EnableZoomIndexWindow=option.EnableZoomIndexWindow;
         if (IFrameSplitOperator.IsBool(option.IsDrawPictureXY)) chart.IsDrawPictureXY=option.IsDrawPictureXY;
         if (IFrameSplitOperator.IsNumber(option.CtrlMoveStep)) chart.CtrlMoveStep=option.CtrlMoveStep;
+        if (IFrameSplitOperator.IsBool(option.EnableIndexChartDrag)) chart.EnableIndexChartDrag=option.EnableIndexChartDrag;
 
         if (option.EnableYDrag)
         {
@@ -640,6 +641,7 @@ function JSChart(divElement, bOffscreen)
         if (IFrameSplitOperator.IsBool(option.EnableZoomIndexWindow)) chart.EnableZoomIndexWindow=option.EnableZoomIndexWindow;
         if (IFrameSplitOperator.IsBool(option.IsDrawPictureXY)) chart.IsDrawPictureXY=option.IsDrawPictureXY;
         if (IFrameSplitOperator.IsBool(option.EnableNewIndex)) chart.EnableNewIndex=option.EnableNewIndex;
+        if (IFrameSplitOperator.IsBool(option.EnableIndexChartDrag)) chart.EnableIndexChartDrag=option.EnableIndexChartDrag;
 
         chart.SelectRectDialog=new MinuteSelectRectDialog(this.DivElement);
         
@@ -2144,7 +2146,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
     this.SelectedChart={ EnableSelected:false, EnableMoveOn:false, Selected:{ Identify:null }, MoveOn:{ Identify:null } };   //选中图形
     this.IndexChartDrag;    //拖拽指标图形
-    this.EnableIndexChartDrag=true;
+    this.EnableIndexChartDrag=false;
 
     this.ChartDestory=function()    //销毁
     {
@@ -3036,6 +3038,45 @@ function JSChartContainer(uielement, OffscreenElement)
             }
         }
         
+        event.Callback(event, data, this);
+        return true;
+    }
+
+    //双击事件
+    this.DBClickEvent=function(dbClickInfo, e)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DBCLICK);
+        if (!event || !event.Callback) return false;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var x=(e.clientX-uielement.getBoundingClientRect().left)*pixelTatio;
+        var y=(e.clientY-uielement.getBoundingClientRect().top)*pixelTatio;
+        var data= { X:e.clientX, Y:e.clientY, FrameID:-1 , ClientPos:-1 };
+
+        var clientPos=this.PtInClient(x,y);
+        data.ClientPos=clientPos;
+
+        if (clientPos>0)
+        {
+            var yValueExtend={};
+            var yValue=this.Frame.GetYData(y,yValueExtend);
+
+            if (IFrameSplitOperator.IsNumber(yValueExtend.FrameID) && yValueExtend.FrameID>=0)
+            {
+                var xValue=this.Frame.GetXData(x);
+                data.FrameID=yValueExtend.FrameID;
+                data.Data={ X:xValue, Y:yValue } ;
+
+                if (this.GetDataItem) data.Data.Item=this.GetDataItem({ClientPos:clientPos, Index:xValue, Point:{ X:x, Y:y } });
+            }
+        }
+
+        //选中图形
+        if (dbClickInfo && dbClickInfo.SelectedChart)
+        {
+            data.SelectedChart=this.GetSelectedChartInfo(dbClickInfo.SelectedChart);
+        }
+
         event.Callback(event, data, this);
         return true;
     }
@@ -31538,6 +31579,25 @@ IFrameSplitOperator.FormatValueString=function(value, floatPrecision,languageID)
     return '';
 }
 
+
+ //成交量显示
+ IFrameSplitOperator.FormatVolString=function(value,languageID)
+ {
+     var absValue = Math.abs(value);
+     if (absValue<100000) 
+         return absValue.toFixed(0);
+     else if (absValue<10000000)
+         return (value/10000).toFixed(1)+"万";
+     else if (absValue<100000000)
+         return (value/10000).toFixed(0)+"万";
+     else if (absValue<1000000000)
+         return (value/100000000).toFixed(2)+"亿";
+     else if (absValue < 1000000000000)
+         return (value/100000000).toFixed(1)+"亿";
+     else
+         return (value/1000000000000).toFixed(1)+"万亿";
+ }
+
 //整形输出格式化 floatPrecision=小数位数
 IFrameSplitOperator.FromatIntegerString=function(value, floatPrecision,languageID)
 {
@@ -50692,6 +50752,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
     this.OnDoubleClick=function(x,y,e)
     {
+        var selectedChart;   //图形选中
         if (this.EnableYDrag && (this.EnableYDrag.Left || this.EnableYDrag.Right) && this.Frame && this.Frame.PtInFrameY)
         {
             var pixelTatio = GetDevicePixelRatio();
@@ -50703,8 +50764,16 @@ function KLineChartContainer(uielement,OffscreenElement)
                 this.CancelZoomUpDownFrameY(dragY);
             }
         }
+       
+        if (this.SelectedChart.EnableSelected)
+        {
+            selectedChart=this.PtInChart(x,y);
+        }
 
-        if (this.EnableZoomIndexWindow)
+        var dbClickInfo={SelectedChart:selectedChart};
+        this.DBClickEvent(dbClickInfo, e);
+        
+        if (!selectedChart && this.EnableZoomIndexWindow)
         {
             var frameId=this.Frame.PtInFrame(x,y);
             JSConsole.Chart.Log("[KLineChartContainer::OnDoubleClick] frameId",frameId);
@@ -52788,9 +52857,17 @@ function MinuteChartContainer(uielement)
             this.ClickChartTimer=null;
         }
 
-        this.DBClickEvent(e);
+        var selectedChart;   //图形选中
+        if (this.SelectedChart.EnableSelected)
+        {
+            selectedChart=this.PtInChart(x,y);
+        }
 
-        if (this.EnableZoomIndexWindow)
+        var dbClickInfo={SelectedChart:selectedChart};
+        this.DBClickEvent(dbClickInfo, e);
+
+        //没有图形选中,双击缩放窗口
+        if (!selectedChart && this.EnableZoomIndexWindow)
         {
             var frameId=this.Frame.PtInFrame(x,y);
             JSConsole.Chart.Log("[MinuteChartContainer::OnDoubleClick] frameId",frameId);
@@ -52805,34 +52882,57 @@ function MinuteChartContainer(uielement)
         }
     }
 
-    this.DBClickEvent=function(e)
+    this.GetDataItem=function(pointInfo)
     {
-        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DBCLICK);
-        if (!event || !event.Callback) return false;
+        if (!pointInfo) return null;
+        if (!IFrameSplitOperator.IsNumber(pointInfo.Index)) return null;
+        if (!this.SourceData || !this.SourceData.Data) return null;
+        var data=this.SourceData;
 
-        var pixelTatio = GetDevicePixelRatio();
-        var x=(e.clientX-uielement.getBoundingClientRect().left)*pixelTatio;
-        var y=(e.clientY-uielement.getBoundingClientRect().top)*pixelTatio;
-        var data= { X:e.clientX, Y:e.clientY, FrameID:-1 , ClientPos:-1 };
-
-        var clientPos=this.PtInClient(x,y);
-        data.ClientPos=clientPos;
-
-        if (clientPos>0)
+        var clientPos=pointInfo.ClientPos;
+        if (clientPos==2 || clientPos==3 || (clientPos>=200&& clientPos<=299) || (clientPos>=300&& clientPos<=399)) 
         {
-            var yValueExtend={};
-            var yValue=this.Frame.GetYData(y,yValueExtend);
+            if (!this.ChartCorssCursor || !this.ChartCorssCursor.CallAcutionXOperator) return null;
+            var isHScreen=this.Frame.IsHScreen===true;
+            var callAcutionXOper=this.ChartCorssCursor.CallAcutionXOperator;
 
-            if (IFrameSplitOperator.IsNumber(yValueExtend.FrameID) && yValueExtend.FrameID>=0)
+            callAcutionXOper.Value=isHScreen?pointInfo.Point.Y:pointInfo.Point.X;
+            callAcutionXOper.Point={X:pointInfo.Point.X, Y:pointInfo.Point.Y};
+            callAcutionXOper.ClientPos=clientPos;
+
+            if (clientPos==2)
             {
-                var xValue=this.Frame.GetXData(x);
-                data.FrameID=yValueExtend.FrameID;
-                data.Data={ X:xValue, Y:yValue } ;
+                if (!this.BeforeOpenData) return null;
             }
+            else if (clientPos==3)
+            {
+                if (!this.AfterCloseData) return null;
+            }
+            else if (clientPos>=200 && clientPos<=299)
+            {
+                if (!this.MultiDayBeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData) ) return;
+            }
+            else if (clientPos>=300 && tclientPos<=399)
+            {
+                if (!this.MultiDayAfterCloseData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData) ) return;
+            }
+
+            if (callAcutionXOper.Operator())
+            {
+                var item=callAcutionXOper.Item;
+                return {Type:clientPos, Item:item, Index:callAcutionXOper.DataIndex };
+            }
+
+            return null;
         }
 
-        event.Callback(event, data, this);
-        return true;
+        var index=parseInt(pointInfo.Index.toFixed(0));
+        var dataIndex=index+data.DataOffset;
+        if (dataIndex>=data.Data.length) return null;
+
+        var item=data.Data[dataIndex];
+        
+        return {Type:clientPos, Item:item, Index:dataIndex };
     }
 
     this.UpdatePointByCursorIndex=function()

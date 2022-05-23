@@ -3174,7 +3174,7 @@ JSIndexScript.prototype.TEST = function ()
                 //"T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
                 */
             Script:
-            "T:EMA(C,5);"
+            "MIN(C, 8, L);"
         };
 
     return data;
@@ -3586,7 +3586,20 @@ JSIndexScript.prototype.WAVE = function ()
     return data;
 }
 
+///////////////////////////////////////////////////////////////////
+//导出
+var JSCommonIndexScript=
+{
+    JSIndexScript: JSIndexScript
+};
 
+export
+{
+    JSCommonIndexScript,
+    JSIndexScript
+};
+
+/*
 module.exports =
 {
     JSCommonIndexScript:
@@ -3596,6 +3609,7 @@ module.exports =
 
     JSCommon_JSIndexScript:JSIndexScript,
 };
+*/
 
 
 

@@ -3488,12 +3488,11 @@ function ChartReport()
 
         if (column.IsDrawCallback)  //外部处理输出格式
         {
-            this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo);
+            this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo, data);
             return;
         }
 
         drawInfo.Text=value;
-        this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo);
     }
 
     this.GetCustomNumberDrawInfo=function(data, column, drawInfo)
@@ -3503,7 +3502,7 @@ function ChartReport()
 
         if (column.IsDrawCallback)  //外部处理输出格式
         {
-            this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo);
+            this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo, data);
             return;
         }
 
@@ -3548,7 +3547,7 @@ function ChartReport()
 
         if (column.IsDrawCallback)  //外部处理输出格式
         {
-            this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo);
+            this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo, data);
             return;
         }
 
@@ -3582,19 +3581,7 @@ function ChartReport()
     //单独处理成交量显示
     this.FormatVolString=function(value,languageID)
     {
-        var absValue = Math.abs(value);
-        if (absValue<100000) 
-            return absValue.toFixed(0);
-        else if (absValue<10000000)
-            return (value/10000).toFixed(1)+"万";
-        else if (absValue<100000000)
-            return (value/10000).toFixed(0)+"万";
-        else if (absValue<1000000000)
-            return (value/100000000).toFixed(2)+"亿";
-        else if (absValue < 1000000000000)
-            return (value/100000000).toFixed(1)+"亿";
-        else
-            return (value/1000000000000).toFixed(1)+"万亿";
+        return IFrameSplitOperator.FormatVolString(value, languageID);
     }
 
     this.DrawItemText=function(text, textColor, textAlign, left, top, width)
@@ -3720,14 +3707,14 @@ function ChartReport()
     }
 
     //外部配置显示格式 颜色 对齐方式
-    this.GetCustomTextDrawInfo=function(columnInfo, symbol, value, drawInfo)
+    this.GetCustomTextDrawInfo=function(columnInfo, symbol, value, drawInfo, data)
     {
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_CUSTOM_TEXT);
         if (!event || !event.Callback) return false;
 
         var sendData=
         { 
-            Symbol:symbol, Column:columnInfo, Value:value,
+            Symbol:symbol, Column:columnInfo, Value:value, Data:data,
             Out:{ Text:null, TextColor:null, TextAlign:null } 
         };
 

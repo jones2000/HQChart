@@ -11,7 +11,7 @@
 */
 
 import {
-    JSCommonResource_Global_JSChartResource as g_JSChartResource,
+    g_JSChartResource,
 } from './umychart.resource.wechat.js'
 
 var KLINE_INFO_TYPE=
@@ -771,6 +771,14 @@ function MarketEventInfo()
 }
 
 //导出统一使用JSCommon命名空间名
+export
+{
+    JSKLineInfoMap,
+    KLINE_INFO_TYPE,
+    JSMinuteInfoMap,
+};
+
+/*
 module.exports =
 {
     JSCommonKLineInfo:
@@ -785,3 +793,4 @@ module.exports =
     JSCommon_KLINE_INFO_TYPE: KLINE_INFO_TYPE,
     JSCommon_JSMinuteInfoMap: JSMinuteInfoMap,
 };
+*/

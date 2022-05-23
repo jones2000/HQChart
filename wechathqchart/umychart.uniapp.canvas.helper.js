@@ -73,6 +73,16 @@ JSUniAppCanvasHelper.MeasureText=function(text, canvas)
 }
 
 //导出统一使用JSCommon命名空间名
+var JSCommonUniApp=
+{
+    JSUniAppCanvasHelper: JSUniAppCanvasHelper,
+};
+
+export
+{
+    JSCommonUniApp
+}
+/*
 module.exports =
 {
     JSCommonUniApp:
@@ -80,4 +90,5 @@ module.exports =
         JSUniAppCanvasHelper: JSUniAppCanvasHelper,
     }
 };
+*/
 	

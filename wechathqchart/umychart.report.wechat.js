@@ -15,36 +15,36 @@
 import { JSConsole } from "./umychart.console.wechat.js"
 
 //画布DOM
-import { JSCommonElement_JSCanvasElement as JSCanvasElement } from "./umychart.element.wechart.js";
+import { JSCanvasElement } from "./umychart.element.wechart.js";
 
 import{
-    JSCommonResource_Global_JSChartResource as g_JSChartResource,
-    JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
-    JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
+    g_JSChartResource,
+    JSCHART_LANGUAGE_ID,
+    g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
 import 
 { 
-    JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
+    IFrameSplitOperator,
 } from './umychart.framesplit.wechat.js'
 
 import 
 { 
-    JSCommonCoordinateData_GetfloatPrecision as GetfloatPrecision,
+    GetfloatPrecision,
 } from "./umychart.coordinatedata.wechat.js";
 
 
 //图形库
 import {
-    JSCommonChartPaint_ChartSplashPaint as ChartSplashPaint,
-    JSCommonChartPaint_GetFontHeight as GetFontHeight,
+    ChartSplashPaint,
+    GetFontHeight,
 } from "./umychart.chartpaint.wechat.js";
 
 
 //行情数据结构体 及涉及到的行情算法(复权,周期等) 
 import {
-    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
-    JSCommon_PhoneDBClick as PhoneDBClick,
+    JSCHART_EVENT_ID,
+    PhoneDBClick,
 } from "./umychart.data.wechat.js";
 
 //边框信息
@@ -3598,6 +3598,28 @@ function ChartReportPageInfo()
 
 
 //导出统一使用JSCommon命名空间名
+
+var JSReport=
+{
+    JSCanvasElement:JSCanvasElement,
+    JSReportChart: JSReportChart,
+    IFrameSplitOperator: IFrameSplitOperator,
+    JSCHART_EVENT_ID:JSCHART_EVENT_ID,
+    REPORT_COLUMN_ID:REPORT_COLUMN_ID,
+};
+
+export
+{
+    JSReport,
+    
+    JSCanvasElement,
+    JSReportChart,
+    IFrameSplitOperator,
+    JSCHART_EVENT_ID,
+    REPORT_COLUMN_ID,
+}
+
+/*
 module.exports =
 {
     JSReport:
@@ -3609,4 +3631,5 @@ module.exports =
         REPORT_COLUMN_ID:REPORT_COLUMN_ID,
     },
 };
+*/
 

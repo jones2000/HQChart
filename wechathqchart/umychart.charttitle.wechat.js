@@ -12,37 +12,37 @@
 
 import 
 {
-    JSCommonResource_Global_JSChartResource as g_JSChartResource,
-    JSCommonResource_JSCHART_LANGUAGE_ID as JSCHART_LANGUAGE_ID,
-    JSCommonResource_Global_JSChartLocalization as g_JSChartLocalization,
+    g_JSChartResource,
+    JSCHART_LANGUAGE_ID,
+    g_JSChartLocalization,
 } from './umychart.resource.wechat.js'
 
 import 
 {
-    JSCommon_ChartData as ChartData, JSCommon_HistoryData as HistoryData,
-    JSCommon_SingleData as SingleData, JSCommon_MinuteData as MinuteData,
-    JSCommon_CUSTOM_DAY_PERIOD_START as CUSTOM_DAY_PERIOD_START,
-    JSCommon_CUSTOM_DAY_PERIOD_END as CUSTOM_DAY_PERIOD_END,
-    JSCommon_CUSTOM_MINUTE_PERIOD_START as CUSTOM_MINUTE_PERIOD_START,
-    JSCommon_CUSTOM_MINUTE_PERIOD_END as CUSTOM_MINUTE_PERIOD_END,
-    JSCommon_CUSTOM_SECOND_PERIOD_START as CUSTOM_SECOND_PERIOD_START,
-    JSCommon_CUSTOM_SECOND_PERIOD_END as CUSTOM_SECOND_PERIOD_END,
-    JSCommon_JSCHART_EVENT_ID as JSCHART_EVENT_ID,
+    ChartData, HistoryData,
+    SingleData, MinuteData,
+    CUSTOM_DAY_PERIOD_START,
+    CUSTOM_DAY_PERIOD_END,
+    CUSTOM_MINUTE_PERIOD_START,
+    CUSTOM_MINUTE_PERIOD_END,
+    CUSTOM_SECOND_PERIOD_START,
+    CUSTOM_SECOND_PERIOD_END,
+    JSCHART_EVENT_ID,
 } from "./umychart.data.wechat.js";
 
 import 
 { 
-    JSCommonCoordinateData as JSCommonCoordinateData 
+    JSCommonCoordinateData 
 } from "./umychart.coordinatedata.wechat.js";
 
 import 
 {
-    JSCommon_KLINE_INFO_TYPE as KLINE_INFO_TYPE,
+    KLINE_INFO_TYPE,
 } from "./umychart.klineinfo.wechat.js";
 
 import 
 {
-    JSCommonSplit_IFrameSplitOperator as IFrameSplitOperator,
+    IFrameSplitOperator,
 } from './umychart.framesplit.wechat.js'
 
 var MARKET_SUFFIX_NAME = JSCommonCoordinateData.MARKET_SUFFIX_NAME;
@@ -1492,6 +1492,16 @@ function DynamicChartTitlePainting()
 
 
 //导出统一使用JSCommon命名空间名
+export
+{
+    IChartTitlePainting, 
+    DynamicKLineTitlePainting,
+    DynamicMinuteTitlePainting,
+    DynamicChartTitlePainting,
+    DynamicTitleData,
+    STRING_FORMAT_TYPE,
+};
+/*
 module.exports =
 {
     JSCommonChartTitle:
@@ -1512,3 +1522,4 @@ module.exports =
     JSCommonChartTitle_DynamicTitleData: DynamicTitleData,
     JSCommonChartTitle_STRING_FORMAT_TYPE: STRING_FORMAT_TYPE,
 };
+*/

@@ -120,6 +120,7 @@ DefaultData.GetMinuteOption=function()
         EnableNewIndex:true,
 
         SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
+        EnableIndexChartDrag:true,
 
         Border: //边框
         {
@@ -173,6 +174,7 @@ DefaultData.GetKLineOption=function()
         EnableZoomIndexWindow:true,
 
         SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
+        EnableIndexChartDrag:true,
 
         KLine: 
         {

@@ -5,11 +5,4 @@ var JSConsole=
     Complier:{ Log:console.log, Warn:console.warn },   //编译器日志
 };
 
-module.exports =
-{
-    JSConsole:
-    {
-        Chart: JSConsole.Chart,
-        Complier:JSConsole.Complier
-    }
-};
+export { JSConsole };
