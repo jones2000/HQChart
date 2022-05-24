@@ -44091,6 +44091,15 @@ function JSChartResource()
             TextColor:"rgb(0,0,0)",
             BGColor:"rgba(180,180,180,0.5)",
             Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+        },
+
+        DragRow:
+        {
+            Color:"rgba(190,190,190,0.8)",
+            TextColor:'rgba(0,0, 0, 0.8)',
+
+            MoveRowColor:'rgb(240,128,128)',
+            SrcRowColor:'rgb(180,240,240)',
         }
     },
 
@@ -44635,6 +44644,15 @@ function JSChartResource()
                     if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.PageInfo.Mergin.Right=mergin.Right;
                     if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.PageInfo.Mergin.Bottom=mergin.Bottom;
                 }
+            }
+
+            if (item.DragRow)
+            {
+                var dragRow=item.DragRow;
+                if (dragRow.Color) this.Report.DragRow.Color=dragRow.Color;
+                if (dragRow.TextColor) this.Report.DragRow.TextColor=dragRow.TextColor;
+                if (dragRow.MoveRowColor) this.Report.DragRow.MoveRowColor=dragRow.MoveRowColor;
+                if (dragRow.SrcRowColor) this.Report.DragRow.SrcRowColor=dragRow.SrcRowColor;
             }
         }
 

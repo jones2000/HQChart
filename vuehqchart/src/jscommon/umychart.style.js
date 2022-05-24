@@ -427,6 +427,15 @@ function GetBlackStyle()
                 TextColor:"rgb(255,255,255)",
                 BGColor:"rgba(49,48,56,0.8)",
                 Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+            },
+
+            DragRow:
+            {
+                Color:"rgba(255,250, 250,0.8)",
+                TextColor:'rgba(0,0, 0, 0.8)',
+
+                MoveRowColor:'rgb(135,206,250)',
+                SrcRowColor:'rgb(49,48,56)',
             }
         }
         
