@@ -126,6 +126,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![指标图形拖拽](/小程序行情模块用例/image/hqchart_dragindechart.gif)
 * Y轴拖拽缩放
 ![Y轴缩放](/小程序行情模块用例/image/hqchart_ydrag.gif)
+* 订单流
+![订单流](/小程序行情模块用例/image/hqchart_ordeflow.png)
 
 
 # 2. 走势图
@@ -413,6 +415,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>
+2. [HQChart报价列表高级应用教程2-东方财富数据对接自选股列表](https://blog.csdn.net/jones2000/article/details/124940054)<br>
 
 
 ## 设计文档:
