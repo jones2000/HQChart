@@ -128,6 +128,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![Y轴缩放](/小程序行情模块用例/image/hqchart_ydrag.gif)
 * 订单流
 ![订单流](/小程序行情模块用例/image/hqchart_ordeflow.png)
+![订单流样式2](/小程序行情模块用例/image/hqchart_ordeflow2.png)
+![订单流样式3](/小程序行情模块用例/image/hqchart_ordeflow3.png)
 
 
 # 2. 走势图
