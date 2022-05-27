@@ -281,7 +281,7 @@ function ScriptIndex(name, script, args, option)
             SourceData: hqChart.SourceData, //原始数据
             Callback: this.RecvResultData, CallbackParam: param,
             Async: true,
-            MaxReqeustDataCount: hqChart.MaxReqeustDataCount,
+            MaxRequestDataCount: hqChart.MaxRequestDataCount,
             MaxRequestMinuteDayCount: hqChart.MaxRequestMinuteDayCount,
             Arguments: this.Arguments
         };

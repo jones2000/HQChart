@@ -181,7 +181,7 @@ DefaultData.GetKLineOption=function()
             DragMode: 1, //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
             Right: 1, //复权 0 不复权 1 前复权 2 后复权
             Period: 0, //周期 0 日线 1 周线 2 月线 3 年线
-            MaxReqeustDataCount: 3000, //日线数据最近1000天
+            MaxRequestDataCount: 3000, //日线数据最近1000天
             MaxRequestMinuteDayCount: 15,    //分钟数据最近15天
             PageSize: 50, //一屏显示多少数据 
             IsShowTooltip: true, //是否显示K线提示信息

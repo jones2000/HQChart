@@ -14794,13 +14794,35 @@ function JSSymbolData(ast,option,jsExecute)
         var result=[];
         if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
 
-        for(let i in this.Data.Data)
+        for(let i=0;i<this.Data.Data.length;++i)
         {
             var item=this.Data.Data[i];
             if (this.IsNumber(item.Time))
                 result[i]=item.Time;
             else
                 result[i]=0;
+        }
+
+        return result;
+    }
+
+    this.DateTime=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        var isKLineMinute=ChartData.IsMinutePeriod(this.Period, true);
+        for(var i=0;i<this.Data.Data.length;++i)
+        {
+            var item=this.Data.Data[i];
+            if (isKLineMinute)
+            {
+                result[i]=item.Date*10000+item.Time;
+            }
+            else
+            {
+                result[i]=item.Date;
+            }
         }
 
         return result;
@@ -15252,7 +15274,7 @@ function JSExecute(ast,option)
         ["ISEQUAL",null], ["ISUP",null],["ISDOWN"], //ISUP=收阳 ISEQUAL=平盘 ISDOWN=收阴
 
         //日期类
-        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],["TIME",null],["DAY",null],
+        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],["TIME",null],["DAY",null],["DATETIME",null],
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
@@ -15517,6 +15539,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.TIME();
             case 'DATE':
                 return this.SymbolData.DATE();
+            case "DATETIME":
+                return this.SymbolData.DateTime();
             case 'YEAR':
                 return this.SymbolData.YEAR();
             case 'MONTH':
@@ -17591,7 +17615,7 @@ JSComplier.Parse=function(code)
     option.Name=股票名称
     option.Data=这个股票的ChartData
     option.Right=复权
-    option.MaxReqeustDataCount=请求数据的最大个数
+    option.MaxRequestDataCount=请求数据的最大个数
 */
 
 function timeout(ms) {
@@ -17903,7 +17927,7 @@ function ScriptIndex(name,script,args,option)
             SourceData:hqChart.SourceData,
             Callback:this.RecvResultData, CallbackParam:param,
             Async:true,
-            MaxRequestDataCount:hqChart.MaxReqeustDataCount,
+            MaxRequestDataCount:hqChart.MaxRequestDataCount,
             MaxRequestMinuteDayCount:hqChart.MaxRequestMinuteDayCount,
             Arguments:this.Arguments,
             Condition:this.Condition,

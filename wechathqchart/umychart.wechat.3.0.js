@@ -243,7 +243,7 @@ function JSChart(element)
             if (option.KLine.DragMode >= 0) chart.DragMode = option.KLine.DragMode;
             if (option.KLine.Right >= 0) chart.Right = option.KLine.Right;
             if (option.KLine.Period >= 0) chart.Period = option.KLine.Period;
-            if (option.KLine.MaxReqeustDataCount > 0) chart.MaxReqeustDataCount = option.KLine.MaxReqeustDataCount;
+            if (option.KLine.MaxRequestDataCount > 0) chart.MaxRequestDataCount = option.KLine.MaxRequestDataCount;
             if (option.KLine.Info && option.KLine.Info.length > 0) chart.SetKLineInfo(option.KLine.Info, false);
             if (option.KLine.Policy && option.KLine.Policy.length > 0) chart.SetPolicyInfo(option.KLine.Policy, false);
             if (option.KLine.KLineDoubleClick == false) chart.MinuteDialog = this.MinuteDialog = null;
@@ -454,7 +454,7 @@ function JSChart(element)
       if (option.KLine.DragMode >= 0) chart.DragMode = option.KLine.DragMode;
       if (option.KLine.Right >= 0) chart.Right = option.KLine.Right;
       if (option.KLine.Period >= 0) chart.Period = option.KLine.Period;
-      if (option.KLine.MaxReqeustDataCount > 0) chart.MaxReqeustDataCount = option.KLine.MaxReqeustDataCount;
+      if (option.KLine.MaxRequestDataCount > 0) chart.MaxRequestDataCount = option.KLine.MaxRequestDataCount;
       if (option.KLine.Info && option.KLine.Info.length > 0) chart.SetKLineInfo(option.KLine.Info, false);
       if (option.KLine.KLineDoubleClick == false) chart.MinuteDialog = this.MinuteDialog = null;
       if (option.KLine.PageSize > 0) chart.PageSize = option.KLine.PageSize;
@@ -779,7 +779,7 @@ function JSChart(element)
         {
             if (option.KLine.Right >= 0) chart.Right = option.KLine.Right;
             if (option.KLine.Period >= 0) chart.Period = option.KLine.Period;
-            if (option.KLine.MaxReqeustDataCount > 0) chart.MaxReqeustDataCount = option.KLine.MaxReqeustDataCount;
+            if (option.KLine.MaxRequestDataCount > 0) chart.MaxRequestDataCount = option.KLine.MaxRequestDataCount;
             if (option.KLine.Info && option.KLine.Info.length > 0) chart.SetKLineInfo(option.KLine.Info, false);
             if (option.KLine.PageSize > 0) chart.PageSize = option.KLine.PageSize;
             if (option.KLine.IsShowTooltip == false) chart.IsShowTooltip = false;
@@ -7015,7 +7015,7 @@ function KLineChartContainer(uielement)
     this.IsApiPeriod = false;             //使用API计算周期
     this.Right = 0;                       //复权 0 不复权 1 前复权 2 后复权
     this.SourceData;                      //原始的历史数据
-    this.MaxReqeustDataCount = 3000;      //数据个数
+    this.MaxRequestDataCount = 3000;      //数据个数
     this.MaxRequestMinuteDayCount = 5;    //分钟数据请求的天数
     this.PageSize = 200;                  //每页数据个数
     this.KLineDrawType = 0;               //0=K线 1=收盘价线 2=美国线
@@ -7552,7 +7552,7 @@ function KLineChartContainer(uielement)
                     Url: self.KLineApiUrl, Type: 'POST',
                     Data: 
                     { 
-                        symbol: self.Symbol, count: self.MaxReqeustDataCount, field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"] ,
+                        symbol: self.Symbol, count: self.MaxRequestDataCount, field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"] ,
                         period:this.Period,
                         right:this.Right
                     }
@@ -7577,7 +7577,7 @@ function KLineChartContainer(uielement)
             "field": ["name","symbol","yclose","open","price","high","low","vol"],
             "symbol": self.Symbol,
             "start": -1,
-            "count": self.MaxReqeustDataCount
+            "count": self.MaxRequestDataCount
         },
         method: 'POST',
         dataType: 'json',
@@ -8919,7 +8919,7 @@ function KLineChartContainer(uielement)
             var infoItem = JSKLineInfoMap.Get(aryInfo[i]);
             if (!infoItem) continue;
             var item = infoItem.Create();
-            item.MaxReqeustDataCount = this.MaxReqeustDataCount;
+            item.MaxRequestDataCount = this.MaxRequestDataCount;
             this.ChartInfo.push(item);
         }
 
@@ -8933,7 +8933,7 @@ function KLineChartContainer(uielement)
         if (!infoItem) return;
         var policyInfo = infoItem.Create();
         policyInfo.SetPolicyList(aryPolicy);
-        policyInfo.MaxReqeustDataCount = this.MaxReqeustDataCount;
+        policyInfo.MaxRequestDataCount = this.MaxRequestDataCount;
         this.ChartInfo.push(policyInfo);
 
         if (bUpdate == true) this.ReqeustKLineInfoData();
@@ -8957,7 +8957,7 @@ function KLineChartContainer(uielement)
 
     this.GetRequestDataCount = function () //K线请求数据个数　(由于可以拖拽下载历史数据,所有原来固定个数的就不能用了)
     {
-        var result = { MaxRequestDataCount: this.MaxReqeustDataCount, MaxRequestMinuteDayCount: this.MaxRequestMinuteDayCount };
+        var result = { MaxRequestDataCount: this.MaxRequestDataCount, MaxRequestMinuteDayCount: this.MaxRequestMinuteDayCount };
 
         if (!this.SourceData || !this.SourceData.Data || this.SourceData.Data.length <= 0) return result;
 
@@ -9018,7 +9018,7 @@ function KLineChartContainer(uielement)
                 "field":["name","symbol","yclose","open","price","high"],
                 "symbol": symbol,
                 "start": -1,
-                "count": this.MaxReqeustDataCount
+                "count": this.MaxRequestDataCount
             },
             method: 'POST',
             dataType: "json",
@@ -9501,7 +9501,7 @@ function KLineChartContainer(uielement)
             "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"],
             "symbol": self.Symbol,
             "enddate": firstItem.Date,
-            "count": self.MaxReqeustDataCount,
+            "count": self.MaxRequestDataCount,
             "first": { date: firstItem.Date }
         };
 

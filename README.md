@@ -130,6 +130,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![订单流](/小程序行情模块用例/image/hqchart_ordeflow.png)
 ![订单流样式2](/小程序行情模块用例/image/hqchart_ordeflow2.png)
 ![订单流样式3](/小程序行情模块用例/image/hqchart_ordeflow3.png)
+* 固定范围成交量分布图
+![成交量分布图](/小程序行情模块用例/image/hqchart_volprofile.gif)
 
 
 # 2. 走势图

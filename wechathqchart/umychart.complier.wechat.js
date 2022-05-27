@@ -8415,7 +8415,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.StockHistoryDayApiUrl = g_JSComplierResource.Domain +'/API/StockHistoryDay';  //历史财务数据
     this.StockHistoryDay3ApiUrl = g_JSComplierResource.Domain +'/API/StockHistoryDay3';  //历史财务数据
     this.StockNewsAnalysisApiUrl = g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                 //新闻分析数据
-    this.MaxReqeustDataCount=1000;
+    this.MaxRequestDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
 
     this.LatestData=new Map();            //最新行情
@@ -8449,7 +8449,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.SourceData) this.SourceData = option.SourceData;
         if (option.Symbol) this.Symbol=option.Symbol;
         if (option.Symbol) this.Symbol = option.Symbol;
-        if (option.MaxReqeustDataCount>0) this.MaxReqeustDataCount=option.MaxReqeustDataCount;
+        if (option.MaxRequestDataCount>0) this.MaxRequestDataCount=option.MaxRequestDataCount;
         if (option.MaxRequestMinuteDayCount>0) this.MaxRequestMinuteDayCount=option.MaxRequestMinuteDayCount;
         if (option.KLineApiUrl) this.KLineApiUrl=option.KLineApiUrl;
         if (option.NetworkFilter) this.NetworkFilter = option.NetworkFilter;
@@ -9038,7 +9038,7 @@ function JSSymbolData(ast,option,jsExecute)
                     "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol", 'up', 'down', 'stop', 'unchanged'],
                     "symbol": '000001.sh',
                     "start": -1,
-                    "count": self.MaxReqeustDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
+                    "count": self.MaxRequestDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
                 },
                 method: 'POST',
                 dataType: "json",
@@ -9234,7 +9234,7 @@ function JSSymbolData(ast,option,jsExecute)
                     "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
                     "symbol": self.Symbol,
                     "start": -1,
-                    "count": self.MaxReqeustDataCount
+                    "count": self.MaxRequestDataCount
                 },
                 method: 'POST',
                 dataType: "json",
@@ -12325,7 +12325,7 @@ JSComplier.ColorVarToRGB=function(colorName)
     option.Name=股票名称
     option.Data=这个股票的ChartData
     option.Right=复权
-    option.MaxReqeustDataCount=请求数据的最大个数
+    option.MaxRequestDataCount=请求数据的最大个数
 */
 
 function timeout(ms) {

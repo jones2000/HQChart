@@ -272,6 +272,9 @@ function JSReportChartContainer(uielement)
     //行拖拽
     this.DragRow;
     this.EnableDragRow=false;
+    this.AutoDragScrollTimer=null;
+    this.EnablePageScroll=false;
+    this.DragMove;  //={ Click:{ 点击的点}, Move:{最后移动的点}, PreMove:{上一个点的位置} };
 
     //事件回调
     this.mapEvent=new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
@@ -303,6 +306,61 @@ function JSReportChartContainer(uielement)
         this.IsDestroy=true;
         this.StopAutoUpdate();
     }
+
+    this.StopAutoDragScrollTimer=function()
+    {
+        JSConsole.Chart.Log("[JSReportChartContainer::StopAutoDragScrollTimer] stop ");
+        this.EnablePageScroll=false;
+        if (this.AutoDragScrollTimer!=null) 
+        {
+            clearTimeout(this.AutoDragScrollTimer);
+            this.AutoDragScrollTimer = null;
+        }
+    }
+
+    this.AutoScrollPage=function(step)
+    {
+        this.AutoDragScrollTimer=setTimeout(() =>
+        {
+            this.ChartOperator_Temp_ScrollPage(step);
+        },300);
+    }
+
+    this.ChartOperator_Temp_ScrollPage=function(moveSetp)
+    {
+        if (!this.EnablePageScroll) return;
+        var reportChart=this.GetReportChart() 
+        if (!reportChart) return;
+
+        if (moveSetp>0)
+        {
+            var pageStatus=reportChart.GetCurrentPageStatus();
+            if (pageStatus.IsEnd) return;
+
+            this.MoveYOffset(moveSetp, false);
+            ++moveSetp;
+        }
+        else if (moveSetp<0)
+        {
+            if (this.Data.YOffset<=0) return;
+
+            this.MoveYOffset(moveSetp, false);
+            --moveSetp;
+        }
+        else
+        {
+            return;
+        }
+
+        this.Draw();
+
+        if (!this.EnablePageScroll) return;
+
+        this.AutoScrollPage(moveSetp);
+
+        return;
+    }
+
 
     //清空固定行数据
     this.ClearFixedRowData=function()
@@ -1161,6 +1219,7 @@ function JSReportChartContainer(uielement)
     this.UIOnMouseDown=function(e)
     {
         this.DragXScroll=null;
+        this.DragMove={ Click:{ X:e.clientX, Y:e.clientY }, Move:{X:e.clientX, Y:e.clientY}, PreMove:{X:e.clientX, Y:e.clientY } };
 
         var pixelTatio = GetDevicePixelRatio();
         var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
@@ -1272,12 +1331,22 @@ function JSReportChartContainer(uielement)
 
     this.DocOnMouseMove=function(e)
     {
+        this.DragMove.PreMove.X=this.DragMove.Move.X;
+        this.DragMove.PreMove.Y=this.DragMove.Move.Y;
+        this.DragMove.Move.X=e.clientX;
+        this.DragMove.Move.Y=e.clientX;
+
+        if (this.DragMove.Move.X!=this.DragMove.PreMove.X || this.DragMove.Move.Y!=this.DragMove.PreMove.Y)
+            this.StopAutoDragScrollTimer();
+
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
         var pixelTatio = GetDevicePixelRatio();
         var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
 
+        //JSConsole.Chart.Log(`[JSReportChartContainer::DocOnMouseMove] x=${x}, y=${y}`);
+        
         if (this.DragRow)
         {
             var drag=this.DragRow;
@@ -1307,6 +1376,9 @@ function JSReportChartContainer(uielement)
                         {
                             this.MoveYOffset(1, false);
                             drag.MoveRow=null;
+
+                            this.EnablePageScroll=true;
+                            this.AutoScrollPage(2);
                         }
                     }
                     else if (moveRow.Type==5)
@@ -1315,6 +1387,9 @@ function JSReportChartContainer(uielement)
                         {
                             this.MoveYOffset(-1, false);
                             drag.MoveRow=null;
+
+                            this.EnablePageScroll=true;
+                            this.AutoScrollPage(-2);
                         }
                     }
                 }
@@ -1341,6 +1416,8 @@ function JSReportChartContainer(uielement)
         document.onmousemove=null;
         document.onmouseup=null;
 
+        this.StopAutoDragScrollTimer();
+
         var bRedraw=false;
         if (this.DragRow) 
         { 
@@ -1355,6 +1432,7 @@ function JSReportChartContainer(uielement)
 
         this.DragXScroll=null;
         this.DragRow=null;
+        this.DragMove=null;
 
         if (bRedraw) this.Draw();
     }
