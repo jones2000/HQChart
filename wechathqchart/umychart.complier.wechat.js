@@ -10862,6 +10862,28 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
+    this.DateTime=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        var isKLineMinute=ChartData.IsMinutePeriod(this.Period, true);
+        for(var i=0;i<this.Data.Data.length;++i)
+        {
+            var item=this.Data.Data[i];
+            if (isKLineMinute)
+            {
+                result[i]=item.Date*10000+item.Time;
+            }
+            else
+            {
+                result[i]=item.Date;
+            }
+        }
+
+        return result;
+    }
+    
     this.YEAR = function () 
     {
         var result = [];
@@ -11161,7 +11183,7 @@ function JSExecute(ast,option)
         ['DATE', null], ['YEAR', null], ['MONTH', null], ['PERIOD', null], ['WEEK', null],["TIME",null],
 
         //大盘数据
-        ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
+        ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],["DATETIME",null],
         ['INDEXADV', null], ['INDEXDEC', null],
 
         ['CURRBARSCOUNT', null], //到最后交易日的周期数
@@ -11364,6 +11386,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.TIME();
             case 'DATE':
                 return this.SymbolData.DATE();
+            case "DATETIME":
+                return this.SymbolData.DateTime();
             case 'YEAR':
                 return this.SymbolData.YEAR();
             case 'MONTH':
