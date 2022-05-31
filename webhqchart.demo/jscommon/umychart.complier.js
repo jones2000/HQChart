@@ -17807,6 +17807,7 @@ function ScriptIndex(name,script,args,option)
     this.YSplitScale=null;      //固定刻度
     this.Condition=null;        //限制条件
     this.OutName=null;          //动态输出指标名字
+    this.YSplitType;
 
     //指标上锁配置信息
     this.IsLocked=false;    //是否锁住指标
@@ -17835,6 +17836,7 @@ function ScriptIndex(name,script,args,option)
         if (option.TitleFont) this.TitleFont=option.TitleFont;
         if (option.IsShortTitle) this.IsShortTitle=option.IsShortTitle;
         if (option.OutName) this.OutName=option.OutName;
+        if (IFrameSplitOperator.IsNumber(option.YSplitType)) this.YSplitType=option.YSplitType;
     }
 
     if (option && option.Lock) 
@@ -18970,6 +18972,29 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateStackedBar=function(hqChart,windowIndex,varItem,i)
+    {
+        var chart=new ChartStackedBar();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.HQChart=hqChart;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.BarColor)) chart.BarColor=varItem.Draw.BarColor;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.BarName)) chart.BarName=varItem.Draw.BarName;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.BarType)) chart.BarType=varItem.Draw.BarType;
+        hqChart.ChartPaint.push(chart);
+
+        var titleIndex=windowIndex+1;
+
+        var titleData=new DynamicTitleData(chart.Data,chart.BarName,chart.BarColor);
+        titleData.DataType="ChartStackedBar";
+        hqChart.TitlePaint[titleIndex].Data[i]=titleData;
+    }
+
     this.CreateColorKLine=function(hqChart,windowIndex,varItem,i)
     {
         let chart=new ChartColorKline();
@@ -19109,6 +19134,8 @@ function ScriptIndex(name,script,args,option)
             if (this.YSplitScale)   hqChart.Frame.SubFrame[windowIndex].Frame.YSplitScale=this.YSplitScale;             //固定刻度
         }
 
+        if (IFrameSplitOperator.IsNumber(this.YSplitType)) hqChart.Frame.SubFrame[windowIndex].Frame.YSplitOperator.SplitType=this.YSplitType;
+
         /*
         if (this.Name=='MA')    //测试多线段
         {
@@ -19244,6 +19271,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case "MULTI_POINT_LINE":
                         this.CreateLineMultiData(hqChart,windowIndex,item,i);
+                        break;
+                    case "STACKED_BAR":
+                        this.CreateStackedBar(hqChart,windowIndex,item,i);
                         break;
                 }
             }
@@ -21037,6 +21067,20 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=="STACKED_BAR")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.BarName=draw.BarName;
+                    drawItem.BarColor=draw.BarColor;
+                    drawItem.LineWidth=draw.LineWidth;
+                    drawItem.BarType=draw.BarType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
                 else if (draw.DrawType=='MULTI_TEXT')
                 {
                     drawItem.Text=draw.Text;
@@ -21352,6 +21396,19 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Type=draw.Type;
                     drawItem.Width=draw.Width;
                     drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingMinuteArray(draw.DrawData,date,time,hqChart,1);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="STACKED_BAR")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.BarName=draw.BarName;
+                    drawItem.BarColor=draw.BarColor;
+                    drawItem.LineWidth=draw.LineWidth;
                     drawItem.DrawData=this.FittingMinuteArray(draw.DrawData,date,time,hqChart,1);
                     outVarItem.Draw=drawItem;
 
