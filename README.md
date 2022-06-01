@@ -332,7 +332,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 33. [HQChart使用教程30-K线图如何对接第3方数据33-日线叠加品种拖拽下载历史数据](https://blog.csdn.net/jones2000/article/details/123211234)<br>
 34. [HQChart使用教程30-K线图如何对接第3方数据34-分钟K线叠加品种拖拽下载历史数据](https://blog.csdn.net/jones2000/article/details/123211941)<br>
 35. [HQChart使用教程30-K线图如何对接第3方数据35-固定范围成交量分布图数据](https://blog.csdn.net/jones2000/article/details/125020448)<br>
-36. [HQChart使用教程30-K线图如何对接第3方数据36-堆积百分比柱状图](https://blog.csdn.net/jones2000/article/details/125056804)<br>
+
 
 ## 第3方数据前端接入教程(分笔明细)
 1. [HQChart使用教程93-分笔明细表对接第3方数据1-全量分笔明细数据](https://blog.csdn.net/jones2000/article/details/124362666)<br>
@@ -417,7 +417,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 20. [HQChart实战教程50 - 自定义指标栏工具按钮](https://blog.csdn.net/jones2000/article/details/122950050)<br>
 21. [HQChart实战教程51 - 自定义指标列表](https://blog.csdn.net/jones2000/article/details/123538617)<br>
 22. [HQChart实战教程52 - APP中使用DRAWICON绘制图标](https://jones2000.blog.csdn.net/article/details/124142225)<br>
-23. [HQChart实战教程53 - 动调指定标识K线区间段背景颜色](https://blog.csdn.net/jones2000/article/details/124558493)<br>
+23. [HQChart实战教程53 - 动态指定标识K线区间段背景颜色](https://blog.csdn.net/jones2000/article/details/124558493)<br>
 
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>

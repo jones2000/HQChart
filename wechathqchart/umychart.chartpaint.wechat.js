@@ -5010,6 +5010,156 @@ function ChartMACD()
     }
 }
 
+//堆积柱状图
+function ChartStackedBar()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartStackedBar";
+    this.Data;      //{ Data:[ [bar1, bar2], [bar1,bar2 ] ] };
+    this.BarName=[];
+    this.BarColor=['rgb(255,165,0)',"rgb(95,158,160)"];
+    this.LineWidth=1;
+    this.BarType=0; //0=线段    1=K线宽度一致
+    this.IsHScreen;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        if (this.IsHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.BottomEx;
+            var top=border.RightEx;
+            var bottom=border.LeftEx;
+        }
+        else
+        {
+            var border=this.ChartFrame.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            var top=border.TopEx;
+            var bottom=border.BottomEx;
+        }
+
+        var isMinute=this.IsMinuteFrame();
+       
+        this.Canvas.save();
+        if (this.BarType==1)
+        {
+           
+        }
+        else
+        {
+            if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth;
+            var lineWidth=this.Canvas.lineWidth;
+        }
+       
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var bars=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNonEmptyArray(bars)) continue;
+
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            if (x>chartright) break;
+
+            if (this.BarType==1)
+            {
+                if (dataWidth>=4)   //柱子太细就直接画竖线
+                    this.DrawKBarItem(bars, x, left, right, top, bottom, dataWidth);
+                else
+                    this.DrawBarItem(bars, x, top, bottom, lineWidth);
+            }  
+            else
+            {
+                this.DrawBarItem(bars, x, top, bottom, lineWidth);
+            }
+                
+
+        }
+      
+        this.Canvas.restore();
+    }
+
+    this.DrawKBarItem=function(aryBar, x, left, right, top, bottom, barWidth)
+    {
+        var y=bottom;
+        for(var i=0;i<aryBar.length;++i)
+        {
+            var item=aryBar[i];
+
+            var barHeight=(bottom-top)*item/100;
+
+            this.Canvas.fillStyle=this.BarColor[i];
+            if (this.IsHScreen)
+                this.Canvas.fillRect(y-barHeight,left, barHeight,barWidth);
+            else 
+                this.Canvas.fillRect(left, y-barHeight, barWidth,barHeight);
+
+            y-=barHeight;
+        }
+    }
+
+    this.DrawBarItem=function(aryBar,x, top, bottom, lineWidth)
+    {
+        var y=bottom;
+        var x=ToFixedPoint(x);
+        for(var i=0;i<aryBar.length;++i)
+        {
+            var item=aryBar[i];
+
+            var barHeight=(bottom-top)*item/100;
+
+            this.Canvas.beginPath();
+            if (this.IsHScreen)
+            {
+                this.Canvas.moveTo(y,x);
+                this.Canvas.lineTo(y-barHeight,x);
+            }
+            else
+            {
+                this.Canvas.moveTo(x,y);
+                this.Canvas.lineTo(x,y-barHeight);
+            }
+            
+            this.Canvas.strokeStyle=this.BarColor[i];
+            this.Canvas.stroke();
+
+            y-=barHeight;
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:0, Max:100 };
+        return range;
+    }
+
+    
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // 等待提示
 function ChartSplashPaint() 
@@ -7861,6 +8011,7 @@ export
     ChartMultiBar,
     ChartBuySell,
     ChartMACD,
+    ChartStackedBar,
     ChartText,
     ChartStraightArea,
     ChartCorssCursor,

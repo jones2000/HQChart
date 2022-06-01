@@ -52,4 +52,11 @@ export default {
     //报价列表
     JSReportChart:JSReportChart,
     REPORT_COLUMN_ID:REPORT_COLUMN_ID,
+
+    //图形基类导出
+    IChartPainting:IChartPainting,              //图形
+    IExtendChartPainting:IExtendChartPainting,  //扩展图形
+    IChartTitlePainting:IChartTitlePainting,    //标题类
+    IChartDrawPicture:IChartDrawPicture,        //画图工具
+    DynamicTitleData:DynamicTitleData,          //指标标题数据
 }

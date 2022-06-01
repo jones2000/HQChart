@@ -519,6 +519,7 @@ function FrameSplitKLinePriceY()
 
     this.Custom = []; //[{Type:0}];   定制刻度 0=显示最后的价格刻度
     this.SplitType = 0;       //0=自动分割  1=固定分割
+    this.DefaultSplitType=0;
 
     this.Operator = function () 
     {
@@ -749,7 +750,8 @@ function FrameSplitY()
     this.newMethod = IFrameSplitOperator;   //派生
     this.newMethod();
     delete this.newMethod;
-    this.SplitType=0;                         //0=自动分割  1=固定分割
+    this.SplitType=0;                         //0=自动分割  1=固定分割 2=百分比(0-100)
+    this.DefaultSplitType=0;
     this.FloatPrecision = 2;                  //坐标小数位数(默认2)
     this.FLOATPRECISION_RANGE = [1, 0.1, 0.01, 0.001, 0.0001];
     this.IgnoreYValue = null;                 //在这个数组里的数字不显示在刻度上 
@@ -785,6 +787,13 @@ function FrameSplitY()
         }
         else if (this.SplitType==1)
         {
+            splitData.Count=this.SplitCount;
+            splitData.Interval=(splitData.Max-splitData.Min)/(splitData.Count-1);
+        }
+        else if (this.SplitType==2)
+        {
+            splitData.Max=100;
+            splitData.Min=0;
             splitData.Count=this.SplitCount;
             splitData.Interval=(splitData.Max-splitData.Min)/(splitData.Count-1);
         }
@@ -879,6 +888,7 @@ function FrameSplitY()
         this.FilterIgnoreYValue();
         this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, (splitData.Max > 0 && splitData.Min < 0 && this.IsShowYZero));
         this.RemoveZero(this.Frame.HorizontalInfo);
+        this.DynamicMessageText();
         this.Frame.HorizontalMax = splitData.Max;
         this.Frame.HorizontalMin = splitData.Min;
 
@@ -900,6 +910,19 @@ function FrameSplitY()
         var setValue = new Set(this.IgnoreYValue);
         this.Frame.HorizontalInfo = this.Frame.HorizontalInfo.filter(item => !setValue.has(item.Value));
         this.IsShowYZero = !setValue.has(0);    //是否显示0刻度
+    }
+
+    this.DynamicMessageText=function()
+    {
+        if (this.SplitType==2)
+        {
+            for(var i=0;i<this.Frame.HorizontalInfo.length; ++i)
+            {
+                var item=this.Frame.HorizontalInfo[i];
+                if (item.Message[0]) item.Message[0]+='%';
+                if (item.Message[1]) item.Message[1]+='%';
+            }
+        }
     }
 
     this.IntegerCoordinateSplit2 = function (data) //整数分割
@@ -1150,6 +1173,7 @@ function FrameSplitMinutePriceY()
     this.SplitCount = 7;
     this.Symbol;
     this.SplitType=0;                   //0=默认根据最大最小值分割 1=涨跌停分割 2=数据最大最大值分割
+    this.DefaultSplitType=0;
     this.LimitPrice;                    //{Max: Min:} 涨跌停价
     this.Custom;
 

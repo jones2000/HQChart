@@ -17785,6 +17785,38 @@ var HQ_DATA_TYPE=
     MULTIDAY_MINUTE_ID:4,//多日走势图
 };
 
+// 图形指标名字
+var SCRIPT_CHART_NAME=
+{
+    OVERLAY_BARS:"OVERLAY_BARS"     //叠加柱子图
+}
+
+
+// 外部对接API指标数据及图形
+function ScriptIndexChartFactory()
+{
+    this.DataMap=new Map(); //["图形名字", {} ]
+    
+    this.Add=function(name, option)
+    {
+        this.DataMap.set(name, 
+            { 
+                MinuteFittingCallback:option.MinuteFittingCallback,
+                KLineFittingCallback:option.KLineFittingCallback,
+                CreateChartCallback:option.CreateChartCallback,
+            } 
+        );
+    }
+
+    this.Get=function(name)
+    {
+        if (!this.DataMap.has(name)) return null;
+        return this.DataMap.get(name);
+    }
+}
+
+var g_ScriptIndexChartFactory=new ScriptIndexChartFactory();
+
 
 //脚本指标
 //name=指标名字 args=参数名字 参数值
@@ -19272,8 +19304,15 @@ function ScriptIndex(name,script,args,option)
                     case "MULTI_POINT_LINE":
                         this.CreateLineMultiData(hqChart,windowIndex,item,i);
                         break;
-                    case "STACKED_BAR":
+                    case SCRIPT_CHART_NAME.OVERLAY_BARS:
                         this.CreateStackedBar(hqChart,windowIndex,item,i);
+                        break;
+                    default:
+                        {
+                            var find=g_ScriptIndexChartFactory.Get(item.Draw.DrawType);  //外部挂接
+                            if (find && find.CreateChartCallback)
+                                find.CreateChartCallback(hqChart,windowIndex,item,i, this);
+                        }
                         break;
                 }
             }
@@ -19428,20 +19467,8 @@ function OverlayScriptIndex(name,script,args,option)
         this.OverlayIndex.Frame.ChartPaint=[];
         if (this.OutVar==null || this.OutVar.length<0) return;
 
-        /*叠加一个K线背景
-        if (this.KLineType!=null)
-        {
-            if (this.KLineType===0 || this.KLineType===1 || this.KLineType===2) this.CreateSelfKLine(hqChart,windowIndex,hisData);
-            else if (this.KLineType===-1 && windowIndex==0) hqChart.ShowKLine(false);
-        }
-
-        if (windowIndex>=1 && hqChart.Frame)
-        {
-            hqChart.Frame.SubFrame[windowIndex].Frame.YSplitOperator.FloatPrecision=this.FloatPrecision;
-            if (this.YSpecificMaxMin)  hqChart.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin=this.YSpecificMaxMin;  //最大最小值
-            if (this.YSplitScale)   hqChart.Frame.SubFrame[windowIndex].Frame.YSplitScale=this.YSplitScale;             //固定刻度
-        }
-        */
+        //修改Y轴分割方式
+        if (IFrameSplitOperator.IsNumber(this.YSplitType)) this.OverlayIndex.Frame.Frame.YSplitOperator.SplitType=this.YSplitType;
         
         //指标名字
         var titleInfo={ Data:[], Title:this.Name };
@@ -19537,6 +19564,10 @@ function OverlayScriptIndex(name,script,args,option)
 
                     case "KLINE_BG":
                         this.CreateBackgroud(hqChart,windowIndex,item,i);
+                        break;
+
+                    case SCRIPT_CHART_NAME.OVERLAY_BARS:
+                        this.CreateStackedBar(hqChart,windowIndex,item,i);
                         break;
                 }
             }
@@ -19964,6 +19995,33 @@ function OverlayScriptIndex(name,script,args,option)
             chart.Price=drawData.Price;
         }
 
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateStackedBar=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartStackedBar();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.BarColor)) chart.BarColor=varItem.Draw.BarColor;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.BarName)) chart.BarName=varItem.Draw.BarName;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.BarType)) chart.BarType=varItem.Draw.BarType;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+
+        var titleIndex=windowIndex+1;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        var titleData=new DynamicTitleData(chart.Data,chart.BarName,chart.BarColor);
+        titleData.DataType="ChartStackedBar";
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+        
         frame.ChartPaint.push(chart);
     }
 
@@ -21067,7 +21125,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     result.push(outVarItem);
                 }
-                else if (draw.DrawType=="STACKED_BAR")
+                else if (draw.DrawType==SCRIPT_CHART_NAME.OVERLAY_BARS)
                 {
                     drawItem.Name=draw.Name;
                     drawItem.Type=draw.Type;
@@ -21352,7 +21410,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         var time=jsonData.time;
         var result=[];
         
-        for(var i in outVar)
+        for(var i=0;i<outVar.length;++i)
         {
             var item=outVar[i];
             var outVarItem={Name:item.name,Type:item.type}
@@ -21401,7 +21459,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     result.push(outVarItem);
                 }
-                else if (draw.DrawType=="STACKED_BAR")
+                else if (draw.DrawType==SCRIPT_CHART_NAME.OVERLAY_BARS)
                 {
                     drawItem.Name=draw.Name;
                     drawItem.Type=draw.Type;
@@ -21463,6 +21521,15 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);
+                }
+                else
+                {
+                    var find=g_ScriptIndexChartFactory.Get(draw.DrawType);  //外部挂接
+                    if (find && find.MinuteFittingCallback)
+                    {
+                        if (find.MinuteFittingCallback(item, outVarItem, { Date:date, Time:time, HQChart:hqChart }, this)) 
+                            result.push(outVarItem);
+                    }
                 }
             }
         }

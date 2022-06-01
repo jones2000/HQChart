@@ -1148,6 +1148,30 @@ function DynamicChartTitlePainting()
         return text;
     }
 
+    //多变量输出
+    this.FromatStackedBarTitle=function(aryBar, dataInfo)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryBar)) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(dataInfo.Color)) return null;
+
+        var aryText=[];
+        for(var i=0;i<aryBar.length;++i)
+        {
+            var value=aryBar[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            var item={ Text:value.toFixed(2) };
+            if (dataInfo.Name && dataInfo.Name[i]) item.Name=dataInfo.Name[i];
+            item.Color=dataInfo.Color[i];
+
+            aryText.push(item);
+        }
+
+        if (aryText.length<=0) return null;
+
+        return aryText;
+    }
+
     this.SendUpdateUIMessage = function (funcName) //通知外面 标题变了
     {
         if (!this.UpdateUICallback) return;
@@ -1376,6 +1400,7 @@ function DynamicChartTitlePainting()
     
                 var value = null;
                 var valueText = null;
+                var aryText=null;
                 if (item.DataType == "StraightLine")  //直线只有1个数据
                 {
                     value = item.Data.Data[0];
@@ -1400,30 +1425,52 @@ function DynamicChartTitlePainting()
                     {
                         valueText = this.FormatMultiReport(value, item);
                     }
+                    else if (item.DataType=="ChartStackedBar")
+                    {
+                        aryText=this.FromatStackedBarTitle(value, item);
+                        if (!aryText) continue;
+                    }
                     else 
                     {
                         if (item.GetTextCallback) valueText = item.GetTextCallback(value, item);
                         else valueText = this.FormatValue(value, item);
                     }
                 }
-    
-                this.Canvas.fillStyle = item.Color;
-    
-                var text;
-                if (item.Name) 
+                
+                if (aryText)
                 {
-                    var dyTitle=this.GetDynamicOutName(item.Name);
-                    if (dyTitle) text=dyTitle+ ":" + valueText;
-                    else text = item.Name + ":" + valueText;
+                    var text;
+                    for(var k=0;k<aryText.length;++k)
+                    {
+                        var titleItem=aryText[k];
+                        if (titleItem.Name) text=titleItem.Name+":"+titleItem.Text;
+                        else text=titleItem.Text;
+    
+                        var textWidth=this.Canvas.measureText(text).width+this.ParamSpace; 
+                        if ((left+textWidth)>right) break;
+    
+                        this.Canvas.fillStyle=titleItem.Color;
+                        this.Canvas.fillText(text,left,bottom,textWidth);
+                        left+=textWidth;
+                    }
                 }
-                else 
+                else
                 {
-                    text=valueText;
+                    var text=valueText;
+                    if (item.Name) 
+                    {
+                        var dyTitle=this.GetDynamicOutName(item.Name);
+                        if (dyTitle) text=dyTitle+ ":" + valueText;
+                        else text = item.Name + ":" + valueText;
+                    }
+                    
+                    textWidth = this.Canvas.measureText(text).width + this.ParamSpace;    //后空2个像素
+                    if (textWidth+left>right) break;    //画不下了就不画了
+                    this.Canvas.fillStyle = item.Color;
+                    this.Canvas.fillText(text, left, bottom, textWidth);
+                    left += textWidth;
                 }
-                textWidth = this.Canvas.measureText(text).width + this.ParamSpace;    //后空2个像素
-                if (textWidth+left>right) break;    //画不下了就不画了
-                this.Canvas.fillText(text, left, bottom, textWidth);
-                left += textWidth;
+               
             }
         }
         else

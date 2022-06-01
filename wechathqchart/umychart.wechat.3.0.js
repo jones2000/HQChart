@@ -334,7 +334,11 @@ function JSChart(element)
                 if (item.TopSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace = item.TopSpace;
                 if (item.BottomSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace = item.BottomSpace;
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom = item.Custom;
-                if (IFrameSplitOperator.IsNumber(item.SplitType)) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType = item.SplitType;
+                if (IFrameSplitOperator.IsNumber(item.SplitType)) 
+                {
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType = item.SplitType;
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultSplitType=item.SplitType;
+                }
                 if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) chart.Frame.SubFrame[i].Frame.YSplitOperator.FloatPrecision = item.FloatPrecision;   //强制指定小数位数(主图有效)
                 if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
                 if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
@@ -577,12 +581,17 @@ function JSChart(element)
 
         if (option.Frame) 
         {
-            for (var i in option.Frame) 
+            for (var i=0 ;i<option.Frame.length;++i) 
             {
                 var item = option.Frame[i];
                 if (!chart.Frame.SubFrame[i]) continue;
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
+                if (IFrameSplitOperator.IsNumber(item.SplitType)) 
+                {
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType=item.SplitType;
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultSplitType=item.SplitType;
+                }
                 if (item.XMessageAlign == 'bottom') chart.Frame.SubFrame[i].Frame.XMessageAlign = item.XMessageAlign;
                 if (item.IsShowLeftText === false || item.IsShowLeftText===true ) chart.Frame.SubFrame[i].Frame.IsShowYText[0] = item.IsShowLeftText;            //显示左边刻度
                 if (item.IsShowRightText === false || item.IsShowRightText===true) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度
@@ -689,6 +698,7 @@ function JSChart(element)
 
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight = item.TitleHeight;   //指标标题高度
             if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[index].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+            if (IFrameSplitOperator.IsNumber(item.YSplitType)) chart.Frame.SubFrame[index].Frame.YSplitOperator.SplitType=item.YSplitType;
         }
 
         return chart;
@@ -8293,10 +8303,11 @@ function KLineChartContainer(uielement)
             }
         }
 
-        
-        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = null;          //清空指定最大最小值
-        this.Frame.SubFrame[windowIndex].Frame.IsLocked = false;                //解除上锁
-        this.Frame.SubFrame[windowIndex].Frame.YSplitScale = null;              //清空固定刻度
+        var subFrame=this.Frame.SubFrame[windowIndex].Frame;
+        subFrame.YSpecificMaxMin = null;          //清空指定最大最小值
+        subFrame.IsLocked = false;                //解除上锁
+        subFrame.YSplitScale = null;              //清空固定刻度
+        subFrame.YSplitOperator.SplitType=subFrame.YSplitOperator.DefaultSplitType;  //还原Y坐标分割模式
 
         this.ChartPaint = paint;
 
@@ -10220,8 +10231,10 @@ function MinuteChartContainer(uielement)
         }
 
         //清空指定最大最小值
-        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = null;
-        this.Frame.SubFrame[windowIndex].Frame.IsLocked = false;          //解除上锁
+        var subFrame=this.Frame.SubFrame[windowIndex].Frame;
+        subFrame.YSpecificMaxMin = null;
+        subFrame.IsLocked = false;          //解除上锁
+        subFrame.YSplitOperator.SplitType=subFrame.YSplitOperator.DefaultSplitType;  //还原Y坐标分割模式
 
         this.ChartPaint = paint;
 
@@ -10309,9 +10322,28 @@ function MinuteChartContainer(uielement)
         this.Draw();
     }
 
+    //切换api指标
+    this.ChangeAPIIndex=function(windowIndex,indexData)
+    {
+        this.DeleteIndexPaint(windowIndex, true);
+        //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
+        var apiItem=indexData.API;
+        this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,indexData);
+
+        var bindData=this.ChartPaint[0].Data;
+        this.BindIndexData(windowIndex,bindData);   //执行脚本
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
+    }
+
     this.ChangeIndex = function (windowIndex, indexName, option) 
     {
         if (this.Frame.SubFrame.length < 3) return;
+
+        if (option && option.API)
+            return this.ChangeAPIIndex(windowIndex,option);
 
         //查找系统指标
         let scriptData = new JSCommonIndexScript.JSIndexScript();
@@ -10333,6 +10365,7 @@ function MinuteChartContainer(uielement)
             if (option.FloatPrecision >= 0) indexData.FloatPrecision = option.FloatPrecision;
             if (option.StringFormat > 0) indexData.StringFormat = option.StringFormat;
             if (option.Args) indexData.Args = option.Args;
+            if (IFrameSplitOperator.IsNumber(option.YSplitType)) indexData.YSplitType=option.YSplitType;
         }
 
         return this.ChangeScriptIndex(windowIndex, indexData);
