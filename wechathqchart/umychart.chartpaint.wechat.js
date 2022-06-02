@@ -5065,7 +5065,8 @@ function ChartStackedBar()
             if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth;
             var lineWidth=this.Canvas.lineWidth;
         }
-       
+
+        var yZero=this.ChartFrame.GetYFromData(0);
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var bars=this.Data.Data[i];
@@ -5088,13 +5089,13 @@ function ChartStackedBar()
             if (this.BarType==1)
             {
                 if (dataWidth>=4)   //柱子太细就直接画竖线
-                    this.DrawKBarItem(bars, x, left, right, top, bottom, dataWidth);
+                    this.DrawKBarItem(bars, x, left, right, top, bottom, yZero, dataWidth);
                 else
-                    this.DrawBarItem(bars, x, top, bottom, lineWidth);
+                    this.DrawBarItem(bars, x, top, bottom, yZero, lineWidth);
             }  
             else
             {
-                this.DrawBarItem(bars, x, top, bottom, lineWidth);
+                this.DrawBarItem(bars, x, top, bottom, yZero, lineWidth);
             }
                 
 
@@ -5103,57 +5104,122 @@ function ChartStackedBar()
         this.Canvas.restore();
     }
 
-    this.DrawKBarItem=function(aryBar, x, left, right, top, bottom, barWidth)
+    this.DrawKBarItem=function(aryBar, x, left, right, top, bottom,yZero,  barWidth)
     {
-        var y=bottom;
+        var plusValue=0, yPlus=yZero;               //正数
+        var negativeValue=0, yNegative= yZero;      //负数
         for(var i=0;i<aryBar.length;++i)
         {
             var item=aryBar[i];
-
-            var barHeight=(bottom-top)*item/100;
+            if (!IFrameSplitOperator.IsNumber(item)) continue;
+            if(item==0) continue;
 
             this.Canvas.fillStyle=this.BarColor[i];
-            if (this.IsHScreen)
-                this.Canvas.fillRect(y-barHeight,left, barHeight,barWidth);
-            else 
-                this.Canvas.fillRect(left, y-barHeight, barWidth,barHeight);
+            if (item>0) 
+            {
+                plusValue+=item;
+                var y=this.ChartFrame.GetYFromData(plusValue);
+                var rtBar={Left: left, Top:y, Width:barWidth, Height:(yPlus-y)};
+                yPlus=y;
+            }
+            else
+            {
+                negativeValue+=item;
+                var y=this.ChartFrame.GetYFromData(negativeValue);
+                var rtBar={Left:left, Top:y, Width:barWidth, Height:(yNegative-y)};
+                yNegative=y;
+            }
 
-            y-=barHeight;
+
+            if (this.IsHScreen)
+                this.Canvas.fillRect(rtBar.Top,rtBar.Left, rtBar.Height, rtBar.Width);
+            else 
+                this.Canvas.fillRect(rtBar.Left, rtBar.Top, rtBar.Width, rtBar.Height);
         }
     }
 
-    this.DrawBarItem=function(aryBar,x, top, bottom, lineWidth)
+    this.DrawBarItem=function(aryBar,x, top, bottom, yZero, lineWidth)
     {
-        var y=bottom;
         var x=ToFixedPoint(x);
+        var plusValue=0, yPlus=yZero;               //正数
+        var negativeValue=0, yNegative=yZero;      //负数
+
         for(var i=0;i<aryBar.length;++i)
         {
             var item=aryBar[i];
+            if (!IFrameSplitOperator.IsNumber(item)) continue;
+            if(item==0) continue;
 
-            var barHeight=(bottom-top)*item/100;
+            var line={};
+            if (item>0) 
+            {
+                plusValue+=item;
+                var y=this.ChartFrame.GetYFromData(plusValue);
+                var line={X:x, Y:yPlus, X2:x, Y2:y};
+
+                yPlus=y;
+            }
+            else
+            {
+                negativeValue+=item;
+                var y=this.ChartFrame.GetYFromData(negativeValue);
+                var line={X:x, Y:yNegative, X2:x, Y2:y};
+                yNegative=y;
+            }
 
             this.Canvas.beginPath();
             if (this.IsHScreen)
             {
-                this.Canvas.moveTo(y,x);
-                this.Canvas.lineTo(y-barHeight,x);
+                this.Canvas.moveTo(line.Y,line.X);
+                this.Canvas.lineTo(line.Y2,line.X2);
             }
             else
             {
-                this.Canvas.moveTo(x,y);
-                this.Canvas.lineTo(x,y-barHeight);
+                this.Canvas.moveTo(line.X,line.Y);
+                this.Canvas.lineTo(line.X2,line.Y2);
             }
             
             this.Canvas.strokeStyle=this.BarColor[i];
             this.Canvas.stroke();
-
-            y-=barHeight;
         }
     }
 
     this.GetMaxMin=function()
     {
-        var range={ Min:0, Max:100 };
+        var xPointCount=this.ChartFrame.XPointCount;
+        var range={};
+        range.Min=null;
+        range.Max=null;
+
+        if(!this.Data || !this.Data.Data) return range;
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var bars=this.Data.Data[i];
+            if (!bars || !IFrameSplitOperator.IsNonEmptyArray(bars)) continue;
+
+            var plusValue=0;          //正数
+            var negativeValue=0;      //负数
+            for(var k=0;k<bars.length;++k)
+            {
+                var barValue=bars[k];
+                if (!IFrameSplitOperator.IsNumber(barValue)) continue;
+                if (barValue==0) continue;
+
+                if (barValue>0) plusValue+=barValue;
+                else if (barValue<0) negativeValue+=barValue;
+            }
+
+            if (range.Max==null) 
+            {
+                range.Max=plusValue;
+                range.Min=negativeValue;
+            }
+
+            if (range.Max<plusValue) range.Max=plusValue;
+            if (range.Min>negativeValue) range.Min=negativeValue;
+        }
+
         return range;
     }
 

@@ -6569,6 +6569,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
         this.MouseDrag=drag;
         var drawPictureActive=this.GetActiveDrawPicture();  //上一次选中的
+        var selectedChart={ Chart:this.SelectedChart.Selected.Chart, Identify:this.SelectedChart.Selected.Identify };   //上一次选中的图形
         this.SelectChartDrawPicture=null;
 
         if (this.BorderDrag)
@@ -6685,9 +6686,31 @@ function JSChartContainer(uielement, OffscreenElement)
                 
                 if ((drawPictureActive.Select.Guid!=null && this.SelectChartDrawPicture==null) || bSelectedChartChanged)
                 {
+                    var drawType=0;
                     if (drawPictureActive.Select.Guid && drawPictureActive.Select.Chart && drawPictureActive.Select.Chart.IsDrawMain)
+                        drawType=1;
+                        
+                    if (bSelectedChartChanged)
+                    {
+                        var chart=selectedChart.Chart;
+                        if (chart && chart.SetSelectedStatus)
+                        {
+                            chart.SetSelectedStatus(0);
+                            drawType=1;
+                        }
+
+                        chart=this.SelectedChart.Selected.Chart;
+                        if (chart &&chart.SetSelectedStatus)
+                        {
+                            chart.SetSelectedStatus(1);
+                            drawType=1;
+                        }
+                    }
+                    
+                    
+                    if (drawType==1) 
                         this.Draw();
-                    else
+                    else  
                         this.DrawDynamicInfo();
                 }
                     
@@ -31826,6 +31849,12 @@ function ChartVolProfileVisibleRange()
         return null;
     }
 
+    this.SetSelectedStatus=function(status)
+    {
+        if (status==0)  this.IsDrawFirst=true;
+        else this.IsDrawFirst=false;
+    }
+
     this.DrawSelectedStatus=function()
     {
         var radius=this.SelectedRadius;
@@ -32105,11 +32134,11 @@ function ChartStackedBar()
             var chartright=border.RightEx;
             var top=border.TopEx;
             var bottom=border.BottomEx;
+
+            var lockRect=this.GetLockRect();
+            if (lockRect) chartright=lockRect.Left;
         }
 
-        
-        var lockRect=this.GetLockRect();
-        if (lockRect) chartright=lockRect.Left;
         var isMinute=this.IsMinuteFrame();
        
         this.Canvas.save();
@@ -52566,13 +52595,13 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.WindowIndex[windowIndex].Create(this,windowIndex);
     }
 
-    this.BindIndexData=function(windowIndex,hisData)
+    this.BindIndexData=function(windowIndex, hisData, option)
     {
         if (!this.WindowIndex[windowIndex]) return;
 
         if (typeof(this.WindowIndex[windowIndex].RequestData)=="function")  //数据需要另外下载的.
         {
-            this.WindowIndex[windowIndex].RequestData(this,windowIndex,hisData);
+            this.WindowIndex[windowIndex].RequestData(this,windowIndex,hisData, option);
             return;
         }
         if (typeof(this.WindowIndex[windowIndex].ExecuteScript)=='function')
@@ -54425,7 +54454,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         {
             var item=this.WindowIndex[i];
             if (!item) continue;
-            if (item.IsUsePageData===true) this.BindIndexData(i,bindData);   //执行脚本
+            if (item.IsUsePageData===true) this.BindIndexData(i,bindData, { Type:1 });   //执行脚本
         }
 
         //叠加指标
@@ -64320,6 +64349,8 @@ function VolProfileVisibleRangeIndex()
     this.ChartVolProfile;
     this.HQChart;
     this.WindowIndex;
+    this.RequestTimer=null;
+    this.DelayRequestFrequency=500;  //延迟请求数据
 
     this.Create=function(hqChart,windowIndex)
     {
@@ -64361,28 +64392,54 @@ function VolProfileVisibleRangeIndex()
         return aryPaint;
     }
 
-    //请求数据
-    this.RequestData=function(hqChart,windowIndex,hisData)
+    this.CancelRequestTimer=function()
     {
-        //请求数据
-        var klineChart=hqChart.ChartPaint[0];   //获取当前K线图实例
-        var kData=klineChart.Data;              //K线数据
-        if (!kData || IFrameSplitOperator.IsNonEmptyArray(!kData.Data)) return;
-
-        var pageKRange=klineChart.DrawKRange;   //当前显示的K线索引
-        if (!pageKRange || !IFrameSplitOperator.IsNumber(pageKRange.Start) || !IFrameSplitOperator.IsNumber(pageKRange.End)) return;
-
-        var startKItem=kData.Data[pageKRange.Start];
-        var endKItem=kData.Data[pageKRange.End];
-
-        var option={ Start:{ Date:startKItem.Date, DataIndex:pageKRange.Start }, End:{ Date:endKItem.Date, DataIndex:pageKRange.End }, Chart:this };
-        if (IFrameSplitOperator.IsNumber(startKItem.Time)) option.Start.Time=startKItem.Time;
-        if (IFrameSplitOperator.IsNumber(endKItem.Time)) option.End.Time=endKItem.Time;
-
-        this.DataStatus=0
-        if (hqChart && hqChart.RequestVolumeProfileData)
+        if (this.RequestTimer) 
         {
-            hqChart.RequestVolumeProfileData(option);
+            clearTimeout(this.RequestTimer);
+            this.RequestTimer = null;
+        }
+    }
+
+    //请求数据
+    this.RequestData=function(hqChart,windowIndex,hisData, option)
+    {
+        this.CancelRequestTimer();
+
+        var T_RequestData=()=>
+        {
+            //请求数据
+            var klineChart=hqChart.ChartPaint[0];   //获取当前K线图实例
+            var kData=klineChart.Data;              //K线数据
+            if (!kData || IFrameSplitOperator.IsNonEmptyArray(!kData.Data)) return;
+
+            var pageKRange=klineChart.DrawKRange;   //当前显示的K线索引
+            if (!pageKRange || !IFrameSplitOperator.IsNumber(pageKRange.Start) || !IFrameSplitOperator.IsNumber(pageKRange.End)) return;
+
+            var startKItem=kData.Data[pageKRange.Start];
+            var endKItem=kData.Data[pageKRange.End];
+
+            var option={ Start:{ Date:startKItem.Date, DataIndex:pageKRange.Start }, End:{ Date:endKItem.Date, DataIndex:pageKRange.End }, Chart:this };
+            if (IFrameSplitOperator.IsNumber(startKItem.Time)) option.Start.Time=startKItem.Time;
+            if (IFrameSplitOperator.IsNumber(endKItem.Time)) option.End.Time=endKItem.Time;
+
+            this.DataStatus=0
+            if (hqChart && hqChart.RequestVolumeProfileData)
+            {
+                hqChart.RequestVolumeProfileData(option);
+            }
+        }
+
+        if (option && option.Type==1)    //页面缩放或移动延迟更新
+        {
+            this.RequestTimer=setTimeout(function()
+            {
+                T_RequestData();
+            }, this.DelayRequestFrequency);
+        }
+        else
+        {
+            T_RequestData();
         }
 
         return true;
@@ -64435,6 +64492,9 @@ function VolProfileVisibleRangeIndex()
         chart.MaxPrice=data.MaxPrice;
         chart.MinPrice=data.MinPrice;
         chart.Data=data;
+
+        var titleIndex=this.WindowIndex+1;
+        this.HQChart.TitlePaint[titleIndex].Title ="VPVR";
     }
 }
 
