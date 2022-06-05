@@ -215,6 +215,11 @@ function IChartPainting()
     {
         return GetFontHeight(this.Canvas, font, "擎");
     }
+
+    this.GetLockRect=function()
+    {
+        return this.ChartFrame.GetLockRect();
+    }
 }
 
 //K线画法
@@ -5226,6 +5231,144 @@ function ChartStackedBar()
     
 }
 
+function ChartStepLine()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartStepLine';     //类名
+    this.LineWidth=1;                    //线段宽度  
+    this.DotLine;
+    this.IsHScreen;
+    this.IsDotLine=false;           //虚线
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+
+        this.Canvas.save();
+        this.DrawLine();
+        this.Canvas.restore();
+    }
+
+    this.DrawLine=function()
+    {
+        var isMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var lockRect=this.GetLockRect();
+
+        if (this.IsHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var chartright=border.BottomEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            if (lockRect) chartright=lockRect.Top;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            if (lockRect) chartright=lockRect.Left;
+        }
+
+        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth;
+        if (this.IsDotLine) this.Canvas.setLineDash(g_JSChartResource.DOTLINE.LineDash); //画虚线
+        if (this.DotLine) this.Canvas.setLineDash(this.DotLine); //画虚线
+        this.Canvas.strokeStyle=this.Color;
+        var bFirstPoint=true;
+        var drawCount=0;
+        var prePoint={ X:null, Y:null };
+
+        for(var i=this.Data.DataOffset; i>=0; --i)
+        {
+            var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            var y=this.GetYFromData(value,false);
+            var x=null;
+            
+            if (isMinute) x=this.ChartFrame.GetXFromIndex(0);
+            else x=xOffset;
+
+            this.Canvas.beginPath();
+            if (this.IsHScreen) this.Canvas.moveTo(y,x);  //横屏坐标轴对调
+            else this.Canvas.moveTo(x,y);
+            bFirstPoint=false;
+
+            prePoint.Y=y;
+            prePoint.X=x;
+        }
+
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            if (x>chartright) break;
+
+            var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            var y=this.GetYFromData(value,false);
+
+            if (bFirstPoint)
+            {
+                this.Canvas.beginPath();
+                if (this.IsHScreen) this.Canvas.moveTo(y,x);  //横屏坐标轴对调
+                else this.Canvas.moveTo(x,y);
+                bFirstPoint=false;
+
+                prePoint.X=x;
+                prePoint.Y=y;
+            }
+            else
+            {
+                if (this.IsHScreen) 
+                {
+                    this.Canvas.lineTo(prePoint.Y,x)
+                    this.Canvas.lineTo(y,x);
+                }
+                else 
+                {
+                    this.Canvas.lineTo(x,prePoint.Y)
+                    this.Canvas.lineTo(x,y);
+                }
+
+                prePoint.X=x;
+                prePoint.Y=y;
+            }
+
+            ++drawCount;
+        }
+
+        if (drawCount>0) this.Canvas.stroke();
+    }
+
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // 等待提示
 function ChartSplashPaint() 
@@ -8046,6 +8189,7 @@ export
     ChartKLine,
     ChartColorKline,
     ChartLine,
+    ChartStepLine,
     ChartSubLine,
     ChartSingleText,
     ChartDrawIcon,

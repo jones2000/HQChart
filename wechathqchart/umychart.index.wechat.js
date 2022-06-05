@@ -62,7 +62,8 @@ import {
     ChartBand,
     ChartLineMultiData,
     ChartStraightLine,
-    ChartStackedBar
+    ChartStackedBar,
+    ChartStepLine,
 } from "./umychart.chartpaint.wechat.js";
 
 import 
@@ -342,9 +343,10 @@ function ScriptIndex(name, script, args, option)
         }
     }
 
-    this.CreateLine = function (hqChart, windowIndex, varItem, id) 
+    this.CreateLine = function (hqChart, windowIndex, varItem, id, lineType) 
     {
-        let line = new ChartLine();
+        if (lineType==7) var line=new ChartStepLine();
+        else var line = new ChartLine();
         line.Canvas = hqChart.Canvas;
         line.DrawType = 1;  //无效数不画
         line.Name = varItem.Name;
@@ -373,6 +375,7 @@ function ScriptIndex(name, script, args, option)
         else
         {
             hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(line.Data, (varItem.NoneName==true? null: varItem.Name) , line.Color);
+            hqChart.TitlePaint[titleIndex].Data[id].ChartClassName=line.ClassName;
         }
         
         hqChart.ChartPaint.push(line);
@@ -1157,6 +1160,10 @@ function ScriptIndex(name, script, args, option)
             else if (item.Type == 6) 
             {
                 this.CreateVolStick(hqChart, windowIndex, item, i, hisData);
+            }
+            else if (item.Type==7)
+            {
+                this.CreateLine(hqChart, windowIndex, item, i, 7);
             }
 
             var titlePaint = hqChart.TitlePaint[windowIndex + 1];

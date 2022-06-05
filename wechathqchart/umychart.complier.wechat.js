@@ -11586,6 +11586,7 @@ function JSExecute(ast,option)
                     let lineStick=false;
                     let stick=false;
                     let volStick=false;
+                    let stepLine=false;
                     let isShow = true;
                     let isExData = false;
                     let isDotLine = false;
@@ -11627,6 +11628,7 @@ function JSExecute(ast,option)
                             else if (value==='LINESTICK') lineStick=true;
                             else if (value==='STICK') stick=true;
                             else if (value==='VOLSTICK') volStick=true;
+                            else if (value=="STEPLINE") stepLine=true;
                             else if (value==="DRAWABOVE") isDrawAbove=true;
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
@@ -11795,6 +11797,7 @@ function JSExecute(ast,option)
                         if (isOverlayLine == true) value.IsOverlayLine = true;
                         if (isNoneName==true) value.NoneName=true;
                         if (isShowTitle==false) value.IsShowTitle=false;
+                        if (stepLine==true) value.Type=7;
                         this.OutVarTable.push(value);
                     }
                     else if (draw)  //绘图函数
@@ -11821,6 +11824,7 @@ function JSExecute(ast,option)
                         if (isDotLine == true) value.IsDotLine = true;
                         if (isOverlayLine == true) value.IsOverlayLine = true;
                         if (isShowTitle==false) value.IsShowTitle=false;
+                        if (stepLine==true) value.Type=7;
                         this.OutVarTable.push(value);
                     }
                 }

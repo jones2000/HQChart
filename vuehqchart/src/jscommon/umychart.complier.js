@@ -15777,6 +15777,7 @@ function JSExecute(ast,option)
                     let lineStick=false;
                     let stick=false;
                     let volStick=false;
+                    let stepLine=false;
                     let isShow=true;
                     let isExData=false;
                     let isDotLine=false;
@@ -15827,6 +15828,7 @@ function JSExecute(ast,option)
                             else if (value==="DRAWABOVE") isDrawAbove=true;
                             else if (value==="DRAWCENTER") isDrawCenter=true;
                             else if (value=="DRAWBELOW") isDrawBelow=true;
+                            else if (value=="STEPLINE") stepLine=true;
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
 
@@ -15998,6 +16000,7 @@ function JSExecute(ast,option)
                         if (isOverlayLine==true) value.IsOverlayLine=true;
                         if (isNoneName==true) value.NoneName=true;
                         if (isShowTitle==false) value.IsShowTitle=false;
+                        if (stepLine==true) value.Type=7;
                         this.OutVarTable.push(value);
                     }
                     else if (draw)  //画图函数
@@ -16027,6 +16030,7 @@ function JSExecute(ast,option)
                         if (isDotLine==true) value.IsDotLine=true;
                         if (isOverlayLine==true) value.IsOverlayLine=true;
                         if (isShowTitle==false) value.IsShowTitle=false;
+                        if (stepLine==true) value.Type=7;
                         this.OutVarTable.push(value);
                     }
                 }
@@ -17788,7 +17792,7 @@ var HQ_DATA_TYPE=
 // 图形指标名字
 var SCRIPT_CHART_NAME=
 {
-    OVERLAY_BARS:"OVERLAY_BARS"     //叠加柱子图
+    OVERLAY_BARS:"OVERLAY_BARS",     //叠加柱子图
 }
 
 
@@ -17900,6 +17904,7 @@ function ScriptIndex(name,script,args,option)
         dest.Arguments=this.Arguments;
         dest.Script=this.Script;
         dest.Name=this.Name;
+        dest.ID=this.ID;
     }
 
     this.SetLock=function(lockData)
@@ -18113,9 +18118,10 @@ function ScriptIndex(name,script,args,option)
         }
     }
 
-    this.CreateLine=function(hqChart,windowIndex,varItem,id)
+    this.CreateLine=function(hqChart,windowIndex,varItem, id, lineType)
     {
-        let line=new ChartLine();
+        if (lineType==7) var line=new ChartStepLine();
+        else var line=new ChartLine();
         line.Canvas=hqChart.Canvas;
         line.DrawType=1;
         line.Name=varItem.Name;
@@ -18150,14 +18156,17 @@ function ScriptIndex(name,script,args,option)
                 hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,null,line.Color);
             else
                 hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
+
+            hqChart.TitlePaint[titleIndex].Data[id].ChartClassName=line.ClassName;
         }
         
         hqChart.ChartPaint.push(line);
     }
 
-    this.CreateOverlayLine=function(hqChart,windowIndex,varItem,id)
+    this.CreateOverlayLine=function(hqChart,windowIndex,varItem,id,lineType)
     {
-        let line=new ChartSubLine();
+        if (lineType==7) var line=new ChartStepLine();
+        var line=new ChartSubLine();
         line.Canvas=hqChart.Canvas;
         line.DrawType=1;
         line.Name=varItem.Name;
@@ -18178,6 +18187,7 @@ function ScriptIndex(name,script,args,option)
         let titleIndex=windowIndex+1;
         line.Data.Data=varItem.Data;
         hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
+        hqChart.TitlePaint[titleIndex].Data[id].ChartClassName=line.ClassName;
 
         hqChart.ChartPaint.push(line);
     }
@@ -18928,6 +18938,7 @@ function ScriptIndex(name,script,args,option)
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Lines=varItem.Draw.DrawData; 
+        if (varItem.Draw.Name) chart.Name=varItem.Draw.Name;
         if (varItem.Draw.LineDash) chart.LineDash=varItem.Draw.LineDash;
         if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
         if(varItem.Draw.Arrow)  //箭头配置
@@ -18940,6 +18951,12 @@ function ScriptIndex(name,script,args,option)
             if (IFrameSplitOperator.IsNumber(item.LineWidth)) chart.ArrawLineWidth=item.LineWidth;
         }
         hqChart.ChartPaint.push(chart);
+
+         var titleIndex=windowIndex+1;
+        var titleData=new DynamicTitleData(chart.Data,chart.Name, null);
+        titleData.DataType="ChartMultiLine";
+        titleData.Lines=chart.Lines;
+        hqChart.TitlePaint[titleIndex].Data[i]=titleData;
     }
 
     this.CreateMultiBar=function(hqChart,windowIndex,varItem,id)
@@ -19012,6 +19029,7 @@ function ScriptIndex(name,script,args,option)
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
         chart.HQChart=hqChart;
+        chart.Identify=this.Guid;
 
         chart.Data.Data=varItem.Draw.DrawData;
         if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.BarColor)) chart.BarColor=varItem.Draw.BarColor;
@@ -19336,6 +19354,10 @@ function ScriptIndex(name,script,args,option)
             {
                 this.CreateVolStick(hqChart,windowIndex,item,i,hisData);
             }
+            else if (item.Type==7)
+            {
+                this.CreateLine(hqChart,windowIndex,item,i, item.Type);
+            }
 
             var titlePaint=hqChart.TitlePaint[windowIndex+1];
             if (titlePaint &&  titlePaint.Data && i<titlePaint.Data.length) //设置标题数值 小数位数和格式
@@ -19545,7 +19567,6 @@ function OverlayScriptIndex(name,script,args,option)
                     case "HORLINE":
                         this.CreateChartHorizontalLine(hqChart,windowIndex,item,i);
                         break;
-
                     case 'MULTI_LINE':
                         this.CreateMultiLine(hqChart,windowIndex,item,i);
                         break;
@@ -19590,6 +19611,10 @@ function OverlayScriptIndex(name,script,args,option)
             else if (item.Type==6)
             {
                 this.CreateVolStick(hqChart,windowIndex,item,i,hisData);
+            }
+            else if (item.Type==7)
+            {
+                this.CreateLine(hqChart,windowIndex,item,i,item.Type);
             }
         }
 
@@ -19639,11 +19664,12 @@ function OverlayScriptIndex(name,script,args,option)
     //  图形创建
     /////////////////////////////////////////////////////////////////////////////////////
 
-    this.CreateLine=function(hqChart,windowIndex,varItem,id)
+    this.CreateLine=function(hqChart,windowIndex,varItem,id,lineType)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
-        let chart=new ChartLine();
+        if (lineType==7) var chart=new ChartStepLine();
+        else var chart=new ChartLine();
         chart.Canvas=hqChart.Canvas;
         chart.DrawType=1;
         chart.Name=varItem.Name;
@@ -19664,7 +19690,9 @@ function OverlayScriptIndex(name,script,args,option)
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
         var titlePaint=hqChart.TitlePaint[titleIndex];
-        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+        var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+        titleData.ChartClassName=chart.ClassName;
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
 
         frame.ChartPaint.push(chart);
     }

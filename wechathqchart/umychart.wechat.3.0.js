@@ -3127,26 +3127,33 @@ function IChartFramePainting()
         }   
     }
 
-  //设施上锁
-  this.SetLock = function (lockData) {
-    if (!lockData)  //空数据不上锁
+    //设施上锁
+    this.SetLock = function (lockData) 
     {
-      this.IsLocked = false;
-      return;
+        if (!lockData)  //空数据不上锁
+        {
+            this.IsLocked = false;
+            return;
+        }
+
+        this.IsLocked = true;
+        if (!this.LockPaint) this.LockPaint = new ChartLock();    //创建锁
+        if (lockData.Callback) this.LockPaint.Callback = lockData.Callback;       //回调
+        if (lockData.IndexName) this.LockPaint.IndexName = lockData.IndexName;    //指标名字
+        if (lockData.ID) this.LockPaint.LockID = lockData.ID;                     //锁ID
+        if (lockData.BG) this.LockPaint.BGColor = lockData.BG;                    //背景色 
+        if (lockData.Text) this.LockPaint.Title = lockData.Text;
+        if (lockData.TextColor) this.LockPaint.TextColor = lockData.TextColor;
+        if (lockData.Font) this.LockPaint.Font = lockData.Font;
+        if (lockData.Count) this.LockPaint.LockCount = lockData.Count;
     }
 
-    this.IsLocked = true;
-    if (!this.LockPaint) this.LockPaint = new ChartLock();    //创建锁
-
-    if (lockData.Callback) this.LockPaint.Callback = lockData.Callback;       //回调
-    if (lockData.IndexName) this.LockPaint.IndexName = lockData.IndexName;    //指标名字
-    if (lockData.ID) this.LockPaint.LockID = lockData.ID;                     //锁ID
-    if (lockData.BG) this.LockPaint.BGColor = lockData.BG;                    //背景色 
-    if (lockData.Text) this.LockPaint.Title = lockData.Text;
-    if (lockData.TextColor) this.LockPaint.TextColor = lockData.TextColor;
-    if (lockData.Font) this.LockPaint.Font = lockData.Font;
-    if (lockData.Count) this.LockPaint.LockCount = lockData.Count;
-  }
+    this.GetLockRect=function()
+    {
+        if (!this.IsLocked) return null;
+        if (!this.LockPaint) return null; 
+        return this.LockPaint.LockRect;
+    }
 }
 
 
