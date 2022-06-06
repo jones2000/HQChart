@@ -19204,8 +19204,8 @@ function ScriptIndex(name,script,args,option)
 
             if (item.Type==0)  
             {
-                if (item.IsOverlayLine) this.CreateOverlayLine(hqChart,windowIndex,item,i);
-                else this.CreateLine(hqChart,windowIndex,item,i);
+                if (item.IsOverlayLine) this.CreateOverlayLine(hqChart,windowIndex,item,i,item.Type);
+                else this.CreateLine(hqChart,windowIndex,item,i,item.Type);
             }
             else if (item.Type==1)
             {
@@ -19519,7 +19519,7 @@ function OverlayScriptIndex(name,script,args,option)
 
             if (item.Type==0)  
             {
-                this.CreateLine(hqChart,windowIndex,item,i);
+                this.CreateLine(hqChart,windowIndex,item,i,item.Type);
             }
             else if (item.Type==1)
             {

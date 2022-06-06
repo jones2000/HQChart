@@ -20929,10 +20929,12 @@ function IChartPainting()
         return GetFontHeight(this.Canvas, font, "擎");
     }
 
+    //选中图形画点
     this.DrawLinePoint=function(option)
     {
         var bHScreen=(this.ChartFrame.IsHScreen===true);
         if (bHScreen) return;
+        if (!this.IsShow) return;
 
         var isMinute=this.IsMinuteFrame();
         var dataWidth=this.ChartFrame.DataWidth;
@@ -20990,7 +20992,7 @@ function IChartPainting()
             else if (option.StackedBar) valueType=5;            //叠加柱子
         }
         
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        for(var i=this.Data.DataOffset,j=0,k=0;i<this.Data.Data.length && j<xPointCount;++i,++j,++k,xOffset+=(dataWidth+distanceWidth))
         {
             var value=null;
             if (valueType==1)   //K线收盘价
@@ -21038,7 +21040,8 @@ function IChartPainting()
             
             if (value==null) continue;
 
-            if (j%pointSpace!=0) continue;
+            if (k<pointSpace) continue;
+            k=0
             
             if (isMinute)
             {
@@ -21306,6 +21309,7 @@ function IChartPainting()
 
     this.PtInKBar=function(x,y,option)
     {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return null;
         var isHScreen=(this.ChartFrame.IsHScreen===true);
         if (isHScreen) return null;
         var dataWidth=this.ChartFrame.DataWidth;
@@ -25942,6 +25946,109 @@ function ChartStepLine()
     this.DotLine;
     this.IsHScreen;
     this.IsDotLine=false;           //虚线
+
+
+    this.PtInChart=function(x,y)
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        if (bHScreen) return;
+
+        var isMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var lockRect=this.GetLockRect();
+        if (bHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var chartright=border.BottomEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            if (lockRect) chartright=lockRect.Top;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            if (lockRect) chartright=lockRect.Left;
+        }
+
+        if (x<xOffset || x>chartright) return null;
+        if (y>border.BottomEx || y<border.TopEx) return null;
+
+        var ptStart={}, ptEnd={};
+        for(var i=this.Data.DataOffset; i>=0; --i)
+        {
+            var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            var yPt=this.GetYFromData(value,false);
+            var xPt=null;
+            
+            if (isMinute) xPt=this.ChartFrame.GetXFromIndex(0);
+            else xPt=xOffset;
+
+            ptStart.Y=yPt;
+            ptStart.X=xPt;
+        }
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            if (isMinute)
+            {
+                var xLine=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var xLine=left+(right-left)/2;
+            }
+
+            var yLine=this.GetYFromData(value,false);
+
+            if (xLine<x)
+            {
+                ptStart.X=xLine;
+                ptStart.Y=yLine;
+            }
+            else if (xLine==x)
+            {
+                ptStart.X=ptEnd.X=xLine;
+                ptStart.Y=ptEnd.Y=yLine;
+                break;
+            }
+            else
+            {
+                ptEnd.X=xLine;
+                ptEnd.Y=yLine;
+                break;
+            }
+            
+            if (x>chartright) break;
+        }
+
+        if (!IFrameSplitOperator.IsNumber(ptStart.X) || !IFrameSplitOperator.IsNumber(ptStart.Y)) return null;
+        if (!IFrameSplitOperator.IsNumber(ptEnd.X) || !IFrameSplitOperator.IsNumber(ptEnd.Y)) return null;
+
+        if (x==ptStart.X || y==ptStart.Y) 
+            return { Identify:this.Identify, Chart:this };
+        if (x==ptEnd.X || y==ptEnd.Y) 
+            return { Identify:this.Identify, Chart:this };
+
+        if (x>=ptStart.X && x<=ptEnd.X && y>=ptStart.Y-3 && y<=ptStart.Y+3)
+            return { Identify:this.Identify, Chart:this };
+       
+        if (x>=ptEnd.X-3 && x<=ptEnd.X+3 && y>=Math.min(ptStart.Y,ptEnd.Y) && y<Math.max(ptStart.Y,ptEnd.Y)) 
+            return { Identify:this.Identify, Chart:this };
+
+        return null;
+    }
     
     this.Draw=function()
     {
@@ -26067,6 +26174,11 @@ function ChartStepLine()
         }
 
         if (drawCount>0) this.Canvas.stroke();
+    }
+
+    this.DrawSelectedStatus=function()
+    {
+        this.DrawLinePoint();
     }
 }
 
@@ -26939,8 +27051,8 @@ function ChartStickLine()
         var zoomIndex=this.ChartFrame.ZoomIndex;
         if (isHScreen) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
-        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+2.0;
-        if (isHScreen) xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+2.0;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        if (isHScreen) xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
 
         var isMinute=this.IsMinuteFrame();
         
@@ -27006,7 +27118,17 @@ function ChartStickLine()
             var price2=value.Value2;
             if (price2==null) price2=0;
 
-            var x=this.ChartFrame.GetXFromIndex(j);
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                var x=left+(right-left)/2;
+            }
+
             var y=this.ChartFrame.GetYFromData(price);
             var y2=this.ChartFrame.GetYFromData(price2);
 
@@ -36420,7 +36542,7 @@ function DragMovePaint()
             this.Canvas.font=this.Font;
             this.Canvas.fillStyle=this.TextColor;
             this.Canvas.textAlign = 'left';
-            this.Canvas.textBaseline = 'top';
+            this.Canvas.textBaseline = 'bottom';
             this.Canvas.fillText(text,this.Point.X,this.Point.Y);
         }
     }
@@ -93311,8 +93433,8 @@ function ScriptIndex(name,script,args,option)
 
             if (item.Type==0)  
             {
-                if (item.IsOverlayLine) this.CreateOverlayLine(hqChart,windowIndex,item,i);
-                else this.CreateLine(hqChart,windowIndex,item,i);
+                if (item.IsOverlayLine) this.CreateOverlayLine(hqChart,windowIndex,item,i,item.Type);
+                else this.CreateLine(hqChart,windowIndex,item,i,item.Type);
             }
             else if (item.Type==1)
             {
@@ -93626,7 +93748,7 @@ function OverlayScriptIndex(name,script,args,option)
 
             if (item.Type==0)  
             {
-                this.CreateLine(hqChart,windowIndex,item,i);
+                this.CreateLine(hqChart,windowIndex,item,i,item.Type);
             }
             else if (item.Type==1)
             {
