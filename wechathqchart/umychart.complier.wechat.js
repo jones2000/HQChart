@@ -13,6 +13,7 @@
 //日志
 import { JSConsole } from "./umychart.console.wechat.js"
 import { JSCommonData } from "./umychart.data.wechat.js";     //行情数据结构体 及涉及到的行情算法(复权,周期等)  
+import { JSNetwork } from "./umychart.network.wechart.js"
 //配色资源
 import {
     g_JSChartResource,
@@ -8472,7 +8473,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.LatestData.has(key)) return this.Execute.RunNextJob();
 
         var self=this;
-        wx.request({
+        JSNetwork.HttpRequest({
             url: self.RealtimeApiUrl,
             data:
             {
@@ -8589,7 +8590,7 @@ function JSSymbolData(ast,option,jsExecute)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: self.KLineApiUrl,
             data:
             {
@@ -8822,7 +8823,7 @@ function JSSymbolData(ast,option,jsExecute)
                 if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
             }
 
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
                 {
@@ -8876,7 +8877,7 @@ function JSSymbolData(ast,option,jsExecute)
                 if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
             }
 
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.MinuteKLineApiUrl,
                 data:
                 {
@@ -9031,7 +9032,7 @@ function JSSymbolData(ast,option,jsExecute)
         var self=this;
         if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
         {
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
                 {
@@ -9055,7 +9056,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else if (JSCommonData.ChartData.IsMinutePeriod(this.Period, true))          //请求分钟数据
         {
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.MinuteKLineApiUrl,
                 data:
                 {
@@ -9154,7 +9155,7 @@ function JSSymbolData(ast,option,jsExecute)
         var self = this;
         var apiUrl = g_JSComplierResource.CacheDomain + '/cache/analyze/increaseanalyze/' + symbol + '.json';
         JSConsole.Complier.Log('[JSSymbolData::GetIndexIncreaseData] Get url=', apiUrl);
-        wx.request({
+        JSNetwork.HttpRequest({
             url: apiUrl,
             method: "GET",
             dataType: "json",
@@ -9206,7 +9207,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (this.DataType === 2)  //当天分钟数据
         {
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.RealtimeApiUrl,
                 data:
                 {
@@ -9227,7 +9228,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
         {
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
                 {
@@ -9252,7 +9253,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else if (JSCommonData.ChartData.IsMinutePeriod(this.Period, true))               //请求分钟数据
         {
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: this.MinuteKLineApiUrl,
                 data:
                 {
@@ -9455,7 +9456,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.StockHistoryDayApiUrl,
             data:
                 {
@@ -9637,7 +9638,7 @@ function JSSymbolData(ast,option,jsExecute)
         var url = this.StockNewsAnalysisApiUrl + '/' + folderName + '/' + this.Symbol + '.json';
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: url,
             method: 'GET',
             dataType: "json",
@@ -12490,7 +12491,7 @@ function DownloadFinanceData(obj)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.RealtimeUrl,
             data:
             {
@@ -12525,7 +12526,7 @@ function DownloadFinanceData(obj)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.Url,
             data:
             {
@@ -12728,7 +12729,7 @@ function DownloadFinValueData(obj)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.Url,
             data:
             {
@@ -12985,7 +12986,7 @@ function DownloadFinOneData(obj)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.Url,
             data:
             {
@@ -13069,7 +13070,7 @@ function DownloadGPJYValue(obj)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.Url,
             data:
             {
@@ -13209,7 +13210,7 @@ function DownloadGroupData(obj)
         else if (blockType=="DYBLOCK") field.push("region");
         else if (blockType=="GNBLOCK") field.push("concept");
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: self.RealtimeUrl,
             data:
             {

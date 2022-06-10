@@ -25,6 +25,7 @@ export default {
     JSKLineInfoMap:JSKLineInfoMap,
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,      //可以订阅的事件类型
     JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,    //图形控制类型
+    JSCHART_DATA_FIELD_ID:JSCHART_DATA_FIELD_ID,//图形字段
     JSAlgorithm:JSAlgorithm,                //算法类
     JSComplier:JSComplier,                  //指标编译器
     JSIndexScript:JSIndexScript,            //系统指标库

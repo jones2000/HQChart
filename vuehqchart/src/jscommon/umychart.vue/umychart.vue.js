@@ -4924,6 +4924,9 @@ function JSChart(divElement, bOffscreen)
             if(IFrameSplitOperator.IsBool(item.IsShowTime)) chart.TitlePaint[0].IsShowTime=item.IsShowTime;
             if(IFrameSplitOperator.IsBool(item.IsTitleShowLatestData)) chart.IsTitleShowLatestData=item.IsTitleShowLatestData;
             if(IFrameSplitOperator.IsBool(item.IsAlwaysShowLastData)) chart.TitlePaint[0].IsAlwaysShowLastData=item.IsAlwaysShowLastData;
+            if(IFrameSplitOperator.IsNumber(item.ShowLastDataFormat)) chart.TitlePaint[0].ShowLastDataFormat=item.ShowLastDataFormat;
+
+            
             //if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
         }
 
@@ -8094,7 +8097,8 @@ function JSChartContainer(uielement, OffscreenElement)
             if (!item.IsDynamic) continue;
 
             item.CursorIndex=this.CursorIndex;
-            if (item.ClassName=='DynamicChartTitlePainting') item.OnDrawEvent=eventIndexTitleDraw
+            item.LastPoint=this.LastPoint;
+            if (item.ClassName=='DynamicChartTitlePainting')  item.OnDrawEvent=eventIndexTitleDraw
             else item.OnDrawEvent=eventTitleDraw;
 
             if (item.OnDrawEvent) 
@@ -8258,6 +8262,7 @@ function JSChartContainer(uielement, OffscreenElement)
             if (!item.IsDynamic) continue;
 
             item.CursorIndex=this.CursorIndex;
+            item.LastPoint=this.LastPoint;
             if (item.OnDrawEvent) 
             {
                 item.OnDrawEvent.FunctionName='DrawDynamicInfo';
@@ -41563,6 +41568,7 @@ function IChartTitlePainting()
     this.IsDynamic=false;               //是否是动态标题
     this.Position=0;                    //标题显示位置 0 框架里的标题  1 框架上面
     this.CursorIndex;                   //数据索引
+    this.LastPoint;                     //鼠标位置
     this.Font=g_JSChartResource.TitleFont;
     this.Title;                         //固定标题(可以为空)
     this.TitleColor=g_JSChartResource.DefaultTextColor;
@@ -41918,6 +41924,7 @@ function DynamicMinuteTitlePainting()
     this.OnDrawEvent;
     this.PointInfo=null;
     this.IsAlwaysShowLastData=false;    //始终显示最后一个数据
+    this.ShowLastDataFormat=0;          //0=默认  1=更新时间替换时间
 
     this.MultiDayBeforeOpenData;    //多日分时图 盘前数据
     this.MultiDayAfterCloseData;    //多日分时图 收盘数据
@@ -42038,8 +42045,22 @@ function DynamicMinuteTitlePainting()
 
         if (this.IsShowDate || this.IsShowTime)
         {
-            var text=IFrameSplitOperator.FormatDateTimeString(item.DateTime,this.IsShowDate, this.IsShowTime);
-            if (!this.DrawText(text,this.DateTimeColor,position)) return;
+            var bShowUpdateTime=false;  //是否显示了更新时间
+            if (isLastOne && this.ShowLastDataFormat==1)
+            {
+                if (this.Data && this.Data.UpdateTime && IFrameSplitOperator.IsNumber(this.Data.UpdateTime.Date) && IFrameSplitOperator.IsNumber(this.Data.UpdateTime.Time))
+                {
+                    var text=IFrameSplitOperator.FormatTimeString(this.Data.UpdateTime.Time, "HH:MM:SS");
+                    if (!this.DrawText(text,this.DateTimeColor,position)) return;
+                    bShowUpdateTime=true;
+                }
+            }
+            
+            if (!bShowUpdateTime)
+            {
+                var text=IFrameSplitOperator.FormatDateTimeString(item.DateTime,this.IsShowDate, this.IsShowTime);
+                if (!this.DrawText(text,this.DateTimeColor,position)) return;
+            }
         }
         
         var close=item.Close;
@@ -42095,7 +42116,7 @@ function DynamicMinuteTitlePainting()
             if (!this.DrawText(text,this.VolColor,position)) return;
         }
 
-        if (isLastOne)  //显示数据最后的更新时间
+        if (isLastOne && this.ShowLastDataFormat==0)  //显示数据最后的更新时间
         {
             if (this.Data && this.Data.UpdateTime && IFrameSplitOperator.IsNumber(this.Data.UpdateTime.Date) && IFrameSplitOperator.IsNumber(this.Data.UpdateTime.Time))
             {
@@ -42836,6 +42857,78 @@ function DynamicChartTitlePainting()
         return aryText;
     }
 
+    this.FormatVPVRTitle=function(pt, dataInfo)
+    {
+        var chart=dataInfo.Chart;
+        var aryText=[];
+
+        if (chart.VolType==0) 
+        {
+            var item={ Text:" Up/Down ", Color:this.TitleColor };
+            aryText.push(item);
+        }
+        else
+        {
+            var item={ Text:" Total ",Color:this.TitleColor };
+            aryText.push(item);
+        }
+
+        if (!IFrameSplitOperator.IsNumber(pt.Y)) return aryText;
+        var top=this.Frame.ChartBorder.GetTopEx();
+        var bottom=this.Frame.ChartBorder.GetBottomEx();
+        if (pt.Y<top || pt.Y>bottom) return aryText;
+        var yPrice=this.Frame.GetYData(pt.Y);
+
+        var find=null;
+        for(var i=0; i<dataInfo.Data.Data.length; ++i)
+        {
+            var item=dataInfo.Data.Data[i];
+            if (yPrice>=item.Price-dataInfo.Data.PriceOffset/2 && yPrice<item.Price+dataInfo.Data.PriceOffset/2)
+            {
+                find=item;
+                break;
+            }
+        }
+
+        if (!find) return null;
+
+        if (chart.VolType==0)
+        {
+            var total=0;
+            for(var i=0;i<find.Vol.length;++i)
+            {
+                var volItem=find.Vol[i];
+                if (!IFrameSplitOperator.IsNumber(volItem.Value)) continue;
+
+                var item={ Text:IFrameSplitOperator.FormatVolString(volItem.Value,this.LanguageID) };
+
+                total+=volItem.Value;
+
+                if (IFrameSplitOperator.IsNumber(volItem.ColorID)) item.Color=chart.BarColor[volItem.ColorID];
+                else if (volItem.Color) item.Color=volItem.Color;
+
+                aryText.push(item);
+            }
+
+            var item={Text:IFrameSplitOperator.FormatVolString(total,this.LanguageID),Color:this.TitleColor};
+            aryText.push(item);
+        }
+        else
+        {
+            if (find.TotalVol && IFrameSplitOperator.IsNumber(find.TotalVol.Value))
+            {
+                var item={Text:IFrameSplitOperator.FormatVolString(find.TotalVol.Value,this.LanguageID) };
+                if (IFrameSplitOperator.IsNumber(find.TotalVol.ColorID)) item.Color=chart.BarColor[find.TotalVol.ColorID];
+                else if (find.TotalVol.Color) item.Color=find.TotalVol.Color;
+
+                aryText.push(item);
+            }
+        }
+
+
+        return aryText;
+    }
+
     this.IsShowLastData=function()
     {
         var isShowLastData=false;
@@ -43048,6 +43141,12 @@ function DynamicChartTitlePainting()
         {
             value=item.Data.Data[0];
             valueText=this.FormatValue(value,item);
+        }
+        else if (item.ChartClassName=="ChartVolProfileVisibleRange")
+        {
+            aryText=this.FormatVPVRTitle(this.LastPoint, item);
+            if (!aryText) return null;
+            return { Text:null, ArrayText:aryText };
         }
         else
         {
@@ -65004,6 +65103,10 @@ function VolProfileVisibleRangeIndex()
         var titleIndex=this.WindowIndex+1;
         this.HQChart.TitlePaint[titleIndex].Title ="VPVR";
         this.HQChart.TitlePaint[titleIndex].Identify=this.Guid;    //指标ID
+        var titleData=new DynamicTitleData(chart.Data, "VPVR", chart.Data);
+        titleData.ChartClassName="ChartVolProfileVisibleRange";
+        titleData.Chart=chart;
+        this.HQChart.TitlePaint[titleIndex].Data[0]=titleData;
     }
 }
 
@@ -103685,6 +103788,7 @@ export default {
     JSKLineInfoMap:JSKLineInfoMap,
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,      //可以订阅的事件类型
     JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,    //图形控制类型
+    JSCHART_DATA_FIELD_ID:JSCHART_DATA_FIELD_ID,//图形字段
     JSAlgorithm:JSAlgorithm,                //算法类
     JSComplier:JSComplier,                  //指标编译器
     JSIndexScript:JSIndexScript,            //系统指标库

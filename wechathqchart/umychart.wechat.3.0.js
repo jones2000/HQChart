@@ -13,6 +13,8 @@
 //日志
 import { JSConsole } from "./umychart.console.wechat.js"
 
+import { JSNetwork } from "./umychart.network.wechart.js"
+
 import { JSCanvasElement } from "./umychart.element.wechart.js";
 
 //行情数据结构体 及涉及到的行情算法(复权,周期等) 
@@ -1456,7 +1458,7 @@ function JSChartContainer(uielement)
             var url=`${atob(value)}?width=${width}&height=${height}&type=uniapp`;
             if (JSChart.LastVersion!=null) return;  //只请求一次
 
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: url,
                 method:"get",
                 dataType: "json",
@@ -7587,7 +7589,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
         url: this.KLineApiUrl,
         data:
         {
@@ -7721,7 +7723,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.MinuteKLineApiUrl,
             data:
             {
@@ -7842,7 +7844,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.RealtimeApiUrl,
             data:
             {
@@ -7981,7 +7983,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.RealtimeApiUrl,
             data:
             {
@@ -9029,7 +9031,7 @@ function KLineChartContainer(uielement)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.KLineApiUrl,
             data:
             {
@@ -9446,7 +9448,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.DragMinuteKLineApiUrl,
             data: postData,
             method: 'POST',
@@ -9553,7 +9555,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.DragKLineApiUrl,
             data: postData,
             method: 'POST',
@@ -10513,7 +10515,7 @@ function MinuteChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
         url: self.HistoryMinuteApiUrl,
         data:
         {
@@ -10689,7 +10691,7 @@ function MinuteChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.MinuteApiUrl,
             data:
             {
@@ -10807,7 +10809,7 @@ function MinuteChartContainer(uielement)
 
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: self.HistoryMinuteApiUrl,
             data:
             {
@@ -10898,7 +10900,7 @@ function MinuteChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: self.HistoryMinuteApiUrl,
             data:
             {
@@ -11449,7 +11451,7 @@ function HistoryMinuteChartContainer(uielement) {
     var self = this;
     var url = this.HistoryMinuteApiUrl + this.TradeDate.toString() + "/" + this.Symbol + ".json";
 
-    wx.request({
+    JSNetwork.HttpRequest({
       url: url,
       method: "get",
       dataType: "json",
@@ -11604,7 +11606,7 @@ function CustomKLineChartContainer(uielement) {
     this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
     this.ChartSplashPaint.EnableSplash(true);
     this.Draw();
-    wx.request({
+    JSNetwork.HttpRequest({
       url: this.CustomKLineApiUrl,
       data:
       {
@@ -13125,7 +13127,7 @@ function MarketLongShortIndex() {
     }
 
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: g_JSChartResource.Index.MarketLongShortApiUrl,
       data:
       {
@@ -13245,7 +13247,7 @@ function MarketTimingIndex() {
     }
 
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: g_JSChartResource.Index.MarketLongShortApiUrl,
       data:
       {
@@ -13366,7 +13368,7 @@ function MarketAttentionIndex() {
     }
 
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: this.ApiUrl,
       data:
       {
@@ -13498,7 +13500,7 @@ function MarketHeatIndex() {
     }
 
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: this.ApiUrl,
       data:
       {
@@ -13638,7 +13640,7 @@ function CustonIndexHeatIndex() {
     }
 
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: this.ApiUrl,
       data:
       {
@@ -13803,7 +13805,7 @@ function BenfordIndex() {
         }
       ];
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: this.ApiUrl,
       data:
       {
@@ -13944,6 +13946,7 @@ function IsIndexSymbol(symbol) {
 var JSCommon=
 {
     JSCanvasElement: JSCanvasElement,
+    JSNetwork:JSNetwork,
     JSChart: JSChart,
     Guid: Guid,
     IFrameSplitOperator: IFrameSplitOperator,
