@@ -565,11 +565,15 @@ export default
         if (this.MinuteOption) this.SetDefaultMinuteOption(this.MinuteOption);
         if (this.TradeInfoTabWidth>0) this.TradeInfoTab.Width=this.TradeInfoTabWidth;
 
+        JSCommon.JSChart.GetResource().ToolbarButtonStyle=1;
         //保存配色
-        var resource=JSCommon.JSChart.GetResource();
-        this.ColorStyle.set("white",JSON.parse(JSON.stringify(resource)));
+        var resource=JSCommon.HQChartStyle.GetStyleConfig(JSCommon.STYLE_TYPE_ID.WHITE_ID);
+        resource.ToolbarButtonStyle=1;
+        this.ColorStyle.set("white",resource);
+
         resource=JSCommon.HQChartStyle.GetStyleConfig(JSCommon.STYLE_TYPE_ID.BLACK_ID);
-        this.ColorStyle.set("black",JSON.parse(JSON.stringify(resource)));
+        resource.ToolbarButtonStyle=1;
+        this.ColorStyle.set("black",resource);
     },
 
     mounted:function()

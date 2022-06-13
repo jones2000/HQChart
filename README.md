@@ -132,6 +132,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![订单流样式3](/小程序行情模块用例/image/hqchart_ordeflow3.png)
 * 固定范围成交量分布图
 ![成交量分布图](/小程序行情模块用例/image/hqchart_volprofile.gif)
+* 可视范围成交量分布图
+![成交量分布图](/小程序行情模块用例/image/hqchart_vol2.gif)
 
 
 # 2. 走势图
@@ -370,6 +372,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 ## 欧易对接完整教程（付费文章)
 1. [HQChart实战教程54-欧易网http+ws数据对接(vue)](https://blog.csdn.net/jones2000/article/details/125213143)<br>
+2. [HQChart实战教程55-欧易网K线面积图(vue)](https://jones2000.blog.csdn.net/article/details/125229954)<br>
 
 ## 源码收费
 1. [HQChart实战教程36-数字货币币安对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/114468807)<br>
