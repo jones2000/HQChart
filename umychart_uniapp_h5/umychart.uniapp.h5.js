@@ -14458,6 +14458,11 @@ function OverlayMinuteFrame()
         this.XYSplit=false;
     }
 
+    this.DrawToolbar=function()
+    {
+        return;
+    }
+
     this.GetScaleTextWidth=function()
     {
         return { TextWidth:0 };
