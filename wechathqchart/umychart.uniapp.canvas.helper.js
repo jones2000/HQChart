@@ -12,9 +12,14 @@ copyright (c) 2018 jones
 
 function JSUniAppCanvasHelper() { }
 
+JSUniAppCanvasHelper.GetCanvasFont=function(canvas)
+{
+    return canvas.font;
+}
+
 JSUniAppCanvasHelper.MeasureText=function(text, canvas) 
 {
-    var font = canvas.font;
+    var font= JSUniAppCanvasHelper.GetCanvasFont(canvas);
 	var fontSize = 12;
     var pos=font.search('px');
     if (pos>0) 

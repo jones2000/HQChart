@@ -215,6 +215,11 @@ function IChartPainting()
     {
         return GetFontHeight(this.Canvas, font, "擎");
     }
+
+    this.GetLockRect=function()
+    {
+        return this.ChartFrame.GetLockRect();
+    }
 }
 
 //K线画法
@@ -5010,6 +5015,360 @@ function ChartMACD()
     }
 }
 
+//堆积柱状图
+function ChartStackedBar()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartStackedBar";
+    this.Data;      //{ Data:[ [bar1, bar2], [bar1,bar2 ] ] };
+    this.BarName=[];
+    this.BarColor=['rgb(255,165,0)',"rgb(95,158,160)"];
+    this.LineWidth=1;
+    this.BarType=0; //0=线段    1=K线宽度一致
+    this.IsHScreen;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        if (this.IsHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.BottomEx;
+            var top=border.RightEx;
+            var bottom=border.LeftEx;
+        }
+        else
+        {
+            var border=this.ChartFrame.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            var top=border.TopEx;
+            var bottom=border.BottomEx;
+        }
+
+        var isMinute=this.IsMinuteFrame();
+       
+        this.Canvas.save();
+        if (this.BarType==1)
+        {
+           
+        }
+        else
+        {
+            if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth;
+            var lineWidth=this.Canvas.lineWidth;
+        }
+
+        var yZero=this.ChartFrame.GetYFromData(0);
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var bars=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNonEmptyArray(bars)) continue;
+
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            if (x>chartright) break;
+
+            if (this.BarType==1)
+            {
+                if (dataWidth>=4)   //柱子太细就直接画竖线
+                    this.DrawKBarItem(bars, x, left, right, top, bottom, yZero, dataWidth);
+                else
+                    this.DrawBarItem(bars, x, top, bottom, yZero, lineWidth);
+            }  
+            else
+            {
+                this.DrawBarItem(bars, x, top, bottom, yZero, lineWidth);
+            }
+                
+
+        }
+      
+        this.Canvas.restore();
+    }
+
+    this.DrawKBarItem=function(aryBar, x, left, right, top, bottom,yZero,  barWidth)
+    {
+        var plusValue=0, yPlus=yZero;               //正数
+        var negativeValue=0, yNegative= yZero;      //负数
+        for(var i=0;i<aryBar.length;++i)
+        {
+            var item=aryBar[i];
+            if (!IFrameSplitOperator.IsNumber(item)) continue;
+            if(item==0) continue;
+
+            this.Canvas.fillStyle=this.BarColor[i];
+            if (item>0) 
+            {
+                plusValue+=item;
+                var y=this.ChartFrame.GetYFromData(plusValue);
+                var rtBar={Left: left, Top:y, Width:barWidth, Height:(yPlus-y)};
+                yPlus=y;
+            }
+            else
+            {
+                negativeValue+=item;
+                var y=this.ChartFrame.GetYFromData(negativeValue);
+                var rtBar={Left:left, Top:y, Width:barWidth, Height:(yNegative-y)};
+                yNegative=y;
+            }
+
+
+            if (this.IsHScreen)
+                this.Canvas.fillRect(rtBar.Top,rtBar.Left, rtBar.Height, rtBar.Width);
+            else 
+                this.Canvas.fillRect(rtBar.Left, rtBar.Top, rtBar.Width, rtBar.Height);
+        }
+    }
+
+    this.DrawBarItem=function(aryBar,x, top, bottom, yZero, lineWidth)
+    {
+        var x=ToFixedPoint(x);
+        var plusValue=0, yPlus=yZero;               //正数
+        var negativeValue=0, yNegative=yZero;      //负数
+
+        for(var i=0;i<aryBar.length;++i)
+        {
+            var item=aryBar[i];
+            if (!IFrameSplitOperator.IsNumber(item)) continue;
+            if(item==0) continue;
+
+            var line={};
+            if (item>0) 
+            {
+                plusValue+=item;
+                var y=this.ChartFrame.GetYFromData(plusValue);
+                var line={X:x, Y:yPlus, X2:x, Y2:y};
+
+                yPlus=y;
+            }
+            else
+            {
+                negativeValue+=item;
+                var y=this.ChartFrame.GetYFromData(negativeValue);
+                var line={X:x, Y:yNegative, X2:x, Y2:y};
+                yNegative=y;
+            }
+
+            this.Canvas.beginPath();
+            if (this.IsHScreen)
+            {
+                this.Canvas.moveTo(line.Y,line.X);
+                this.Canvas.lineTo(line.Y2,line.X2);
+            }
+            else
+            {
+                this.Canvas.moveTo(line.X,line.Y);
+                this.Canvas.lineTo(line.X2,line.Y2);
+            }
+            
+            this.Canvas.strokeStyle=this.BarColor[i];
+            this.Canvas.stroke();
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var range={};
+        range.Min=null;
+        range.Max=null;
+
+        if(!this.Data || !this.Data.Data) return range;
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var bars=this.Data.Data[i];
+            if (!bars || !IFrameSplitOperator.IsNonEmptyArray(bars)) continue;
+
+            var plusValue=0;          //正数
+            var negativeValue=0;      //负数
+            for(var k=0;k<bars.length;++k)
+            {
+                var barValue=bars[k];
+                if (!IFrameSplitOperator.IsNumber(barValue)) continue;
+                if (barValue==0) continue;
+
+                if (barValue>0) plusValue+=barValue;
+                else if (barValue<0) negativeValue+=barValue;
+            }
+
+            if (range.Max==null) 
+            {
+                range.Max=plusValue;
+                range.Min=negativeValue;
+            }
+
+            if (range.Max<plusValue) range.Max=plusValue;
+            if (range.Min>negativeValue) range.Min=negativeValue;
+        }
+
+        return range;
+    }
+
+    
+}
+
+function ChartStepLine()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartStepLine';     //类名
+    this.LineWidth=1;                    //线段宽度  
+    this.DotLine;
+    this.IsHScreen;
+    this.IsDotLine=false;           //虚线
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+
+        this.Canvas.save();
+        this.DrawLine();
+        this.Canvas.restore();
+    }
+
+    this.DrawLine=function()
+    {
+        var isMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var lockRect=this.GetLockRect();
+
+        if (this.IsHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var chartright=border.BottomEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            if (lockRect) chartright=lockRect.Top;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            if (lockRect) chartright=lockRect.Left;
+        }
+
+        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth;
+        if (this.IsDotLine) this.Canvas.setLineDash(g_JSChartResource.DOTLINE.LineDash); //画虚线
+        if (this.DotLine) this.Canvas.setLineDash(this.DotLine); //画虚线
+        this.Canvas.strokeStyle=this.Color;
+        var bFirstPoint=true;
+        var drawCount=0;
+        var prePoint={ X:null, Y:null };
+
+        for(var i=this.Data.DataOffset; i>=0; --i)
+        {
+            var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            var y=this.GetYFromData(value,false);
+            var x=null;
+            
+            if (isMinute) x=this.ChartFrame.GetXFromIndex(0);
+            else x=xOffset;
+
+            this.Canvas.beginPath();
+            if (this.IsHScreen) this.Canvas.moveTo(y,x);  //横屏坐标轴对调
+            else this.Canvas.moveTo(x,y);
+            bFirstPoint=false;
+
+            prePoint.Y=y;
+            prePoint.X=x;
+        }
+
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            if (x>chartright) break;
+
+            var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            var y=this.GetYFromData(value,false);
+
+            if (bFirstPoint)
+            {
+                this.Canvas.beginPath();
+                if (this.IsHScreen) this.Canvas.moveTo(y,x);  //横屏坐标轴对调
+                else this.Canvas.moveTo(x,y);
+                bFirstPoint=false;
+
+                prePoint.X=x;
+                prePoint.Y=y;
+            }
+            else
+            {
+                if (this.IsHScreen) 
+                {
+                    this.Canvas.lineTo(prePoint.Y,x)
+                    this.Canvas.lineTo(y,x);
+                }
+                else 
+                {
+                    this.Canvas.lineTo(x,prePoint.Y)
+                    this.Canvas.lineTo(x,y);
+                }
+
+                prePoint.X=x;
+                prePoint.Y=y;
+            }
+
+            ++drawCount;
+        }
+
+        if (drawCount>0) this.Canvas.stroke();
+    }
+
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // 等待提示
 function ChartSplashPaint() 
@@ -7830,6 +8189,7 @@ export
     ChartKLine,
     ChartColorKline,
     ChartLine,
+    ChartStepLine,
     ChartSubLine,
     ChartSingleText,
     ChartDrawIcon,
@@ -7861,6 +8221,7 @@ export
     ChartMultiBar,
     ChartBuySell,
     ChartMACD,
+    ChartStackedBar,
     ChartText,
     ChartStraightArea,
     ChartCorssCursor,

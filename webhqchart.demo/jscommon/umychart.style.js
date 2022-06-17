@@ -227,11 +227,28 @@ function GetBlackStyle()
         {
             CloseOverlayIndex:
             {
-                Color:"rgb(255,255,255)",
-                Family:"iconfont",
-                Text:"\ue60c",
-                //Size:12,
-                //MerginLeft:4
+                MoveOnColor:"rgb(255,255,255)",
+                Color:"rgb(156,156,156)"
+            },
+            CloseWindow:
+            {
+                MoveOnColor:"rgb(255,255,255)",
+                Color:"rgb(156,156,156)"
+            },
+            ChangeIndex:
+            {
+                MoveOnColor:"rgb(255,255,255)",
+                Color:"rgb(156,156,156)"
+            },
+            OverlayIndex:
+            {
+                MoveOnColor:"rgb(255,255,255)",
+                Color:"rgb(156,156,156)"
+            },
+            ModifyIndexParam:
+            {
+                MoveOnColor:"rgb(255,255,255)",
+                Color:"rgb(156,156,156)"
             }
         },
         
@@ -427,6 +444,15 @@ function GetBlackStyle()
                 TextColor:"rgb(255,255,255)",
                 BGColor:"rgba(49,48,56,0.8)",
                 Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+            },
+
+            DragRow:
+            {
+                Color:"rgba(255,250, 250,0.8)",
+                TextColor:'rgba(0,0, 0, 0.8)',
+
+                MoveRowColor:'rgb(135,206,250)',
+                SrcRowColor:'rgb(49,48,56)',
             }
         }
         

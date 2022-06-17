@@ -62,6 +62,8 @@ import {
     ChartBand,
     ChartLineMultiData,
     ChartStraightLine,
+    ChartStackedBar,
+    ChartStepLine,
 } from "./umychart.chartpaint.wechat.js";
 
 import 
@@ -169,6 +171,12 @@ function BaseIndex(name)
     }
 }
 
+// 图形指标名字
+var SCRIPT_CHART_NAME=
+{
+    OVERLAY_BARS:"OVERLAY_BARS"     //叠加柱子图
+}
+
 //脚本指标
 //name=指标名字 args=参数名字 参数值
 function ScriptIndex(name, script, args, option) 
@@ -188,6 +196,7 @@ function ScriptIndex(name, script, args, option)
     this.YSpecificMaxMin = null;  //最大最小值
     this.YSplitScale = null;      //固定刻度
     this.OutName=null;          //动态输出指标名字
+    this.YSplitType;
    
     //指标上锁配置信息
     this.IsLocked = false;    //是否锁住指标
@@ -211,6 +220,7 @@ function ScriptIndex(name, script, args, option)
         if (option.YSplitScale) this.YSplitScale = option.YSplitScale;
         if (option.TitleFont) this.TitleFont=option.TitleFont;
         if (option.OutName) this.OutName=option.OutName;
+        if (IFrameSplitOperator.IsNumber(option.YSplitType)) this.YSplitType=option.YSplitType;
     }
 
     if (option && option.Lock) 
@@ -281,7 +291,7 @@ function ScriptIndex(name, script, args, option)
             SourceData: hqChart.SourceData, //原始数据
             Callback: this.RecvResultData, CallbackParam: param,
             Async: true,
-            MaxReqeustDataCount: hqChart.MaxReqeustDataCount,
+            MaxRequestDataCount: hqChart.MaxRequestDataCount,
             MaxRequestMinuteDayCount: hqChart.MaxRequestMinuteDayCount,
             Arguments: this.Arguments
         };
@@ -333,9 +343,10 @@ function ScriptIndex(name, script, args, option)
         }
     }
 
-    this.CreateLine = function (hqChart, windowIndex, varItem, id) 
+    this.CreateLine = function (hqChart, windowIndex, varItem, id, lineType) 
     {
-        let line = new ChartLine();
+        if (lineType==7) var line=new ChartStepLine();
+        else var line = new ChartLine();
         line.Canvas = hqChart.Canvas;
         line.DrawType = 1;  //无效数不画
         line.Name = varItem.Name;
@@ -364,6 +375,7 @@ function ScriptIndex(name, script, args, option)
         else
         {
             hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(line.Data, (varItem.NoneName==true? null: varItem.Name) , line.Color);
+            hqChart.TitlePaint[titleIndex].Data[id].ChartClassName=line.ClassName;
         }
         
         hqChart.ChartPaint.push(line);
@@ -922,6 +934,29 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateStackedBar=function(hqChart,windowIndex,varItem,i)
+    {
+        var chart=new ChartStackedBar();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.HQChart=hqChart;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.BarColor)) chart.BarColor=varItem.Draw.BarColor;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.BarName)) chart.BarName=varItem.Draw.BarName;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.BarType)) chart.BarType=varItem.Draw.BarType;
+        hqChart.ChartPaint.push(chart);
+
+        var titleIndex=windowIndex+1;
+
+        var titleData=new DynamicTitleData(chart.Data,chart.BarName,chart.BarColor);
+        titleData.DataType="ChartStackedBar";
+        hqChart.TitlePaint[titleIndex].Data[i]=titleData;
+    }
+
     this.CreateMultiLine = function (hqChart, windowIndex, varItem, i) 
     {
         let chart = new ChartMultiLine();
@@ -1022,6 +1057,8 @@ function ScriptIndex(name, script, args, option)
             if (this.YSplitScale) hqChart.Frame.SubFrame[windowIndex].Frame.YSplitScale = this.YSplitScale;             //固定刻度
         }
 
+        if (IFrameSplitOperator.IsNumber(this.YSplitType)) hqChart.Frame.SubFrame[windowIndex].Frame.YSplitOperator.SplitType=this.YSplitType;
+
         for (var i=0 ;i<this.OutVar.length;++i ) 
         {
             let item = this.OutVar[i];
@@ -1099,6 +1136,9 @@ function ScriptIndex(name, script, args, option)
                 case "KLINE_BG":
                     this.CreateBackgroud(hqChart,windowIndex,item,i);
                     break;
+                case SCRIPT_CHART_NAME.OVERLAY_BARS:
+                    this.CreateStackedBar(hqChart,windowIndex,item,i);
+                    break;
                 }
             }
             else if (item.Type == 2) 
@@ -1120,6 +1160,10 @@ function ScriptIndex(name, script, args, option)
             else if (item.Type == 6) 
             {
                 this.CreateVolStick(hqChart, windowIndex, item, i, hisData);
+            }
+            else if (item.Type==7)
+            {
+                this.CreateLine(hqChart, windowIndex, item, i, 7);
             }
 
             var titlePaint = hqChart.TitlePaint[windowIndex + 1];
@@ -1469,6 +1513,20 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
 
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.OVERLAY_BARS)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.BarName=draw.BarName;
+                    drawItem.BarColor=draw.BarColor;
+                    drawItem.LineWidth=draw.LineWidth;
+                    drawItem.BarType=draw.BarType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
                 else if (draw.DrawType == 'MULTI_TEXT')
                 {
                     drawItem.Text = draw.Text;
@@ -1761,6 +1819,19 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
                     drawItem.Type=draw.Type;
                     drawItem.Width=draw.Width;
                     drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingMinuteArray(draw.DrawData,date,time,hqChart,1);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.OVERLAY_BARS)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.BarName=draw.BarName;
+                    drawItem.BarColor=draw.BarColor;
+                    drawItem.LineWidth=draw.LineWidth;
                     drawItem.DrawData=this.FittingMinuteArray(draw.DrawData,date,time,hqChart,1);
                     outVarItem.Draw=drawItem;
 

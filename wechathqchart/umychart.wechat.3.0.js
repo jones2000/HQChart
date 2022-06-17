@@ -13,6 +13,8 @@
 //日志
 import { JSConsole } from "./umychart.console.wechat.js"
 
+import { JSNetwork } from "./umychart.network.wechart.js"
+
 import { JSCanvasElement } from "./umychart.element.wechart.js";
 
 //行情数据结构体 及涉及到的行情算法(复权,周期等) 
@@ -243,7 +245,7 @@ function JSChart(element)
             if (option.KLine.DragMode >= 0) chart.DragMode = option.KLine.DragMode;
             if (option.KLine.Right >= 0) chart.Right = option.KLine.Right;
             if (option.KLine.Period >= 0) chart.Period = option.KLine.Period;
-            if (option.KLine.MaxReqeustDataCount > 0) chart.MaxReqeustDataCount = option.KLine.MaxReqeustDataCount;
+            if (option.KLine.MaxRequestDataCount > 0) chart.MaxRequestDataCount = option.KLine.MaxRequestDataCount;
             if (option.KLine.Info && option.KLine.Info.length > 0) chart.SetKLineInfo(option.KLine.Info, false);
             if (option.KLine.Policy && option.KLine.Policy.length > 0) chart.SetPolicyInfo(option.KLine.Policy, false);
             if (option.KLine.KLineDoubleClick == false) chart.MinuteDialog = this.MinuteDialog = null;
@@ -306,6 +308,8 @@ function JSChart(element)
             if (IFrameSplitOperator.IsNumber(option.CorssCursorInfo.HPenType)) chart.ChartCorssCursor.HPenType = option.CorssCursorInfo.HPenType;
             if (option.CorssCursorInfo.VPenType > 0) chart.ChartCorssCursor.VPenType = option.CorssCursorInfo.VPenType;
             if (IFrameSplitOperator.IsNumber(item.DateFormatType)) chart.ChartCorssCursor.StringFormatX.DateFormatType=item.DateFormatType;
+            if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
+            if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
         }
 
         if (typeof (option.UpdateUICallback) == 'function') //数据到达回调
@@ -332,7 +336,11 @@ function JSChart(element)
                 if (item.TopSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace = item.TopSpace;
                 if (item.BottomSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace = item.BottomSpace;
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom = item.Custom;
-                if (IFrameSplitOperator.IsNumber(item.SplitType)) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType = item.SplitType;
+                if (IFrameSplitOperator.IsNumber(item.SplitType)) 
+                {
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType = item.SplitType;
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultSplitType=item.SplitType;
+                }
                 if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) chart.Frame.SubFrame[i].Frame.YSplitOperator.FloatPrecision = item.FloatPrecision;   //强制指定小数位数(主图有效)
                 if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
                 if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
@@ -452,7 +460,7 @@ function JSChart(element)
       if (option.KLine.DragMode >= 0) chart.DragMode = option.KLine.DragMode;
       if (option.KLine.Right >= 0) chart.Right = option.KLine.Right;
       if (option.KLine.Period >= 0) chart.Period = option.KLine.Period;
-      if (option.KLine.MaxReqeustDataCount > 0) chart.MaxReqeustDataCount = option.KLine.MaxReqeustDataCount;
+      if (option.KLine.MaxRequestDataCount > 0) chart.MaxRequestDataCount = option.KLine.MaxRequestDataCount;
       if (option.KLine.Info && option.KLine.Info.length > 0) chart.SetKLineInfo(option.KLine.Info, false);
       if (option.KLine.KLineDoubleClick == false) chart.MinuteDialog = this.MinuteDialog = null;
       if (option.KLine.PageSize > 0) chart.PageSize = option.KLine.PageSize;
@@ -558,11 +566,14 @@ function JSChart(element)
         if (option.IsFullDraw == true) chart.IsFullDraw = option.IsFullDraw;
         if (option.CorssCursorInfo)     //十字光标设置
         {
+            var item=option.CorssCursorInfo;
             if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left = option.CorssCursorInfo.Left;
             if (!isNaN(option.CorssCursorInfo.Right)) chart.ChartCorssCursor.ShowTextMode.Right = option.CorssCursorInfo.Right;
             if (!isNaN(option.CorssCursorInfo.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom = option.CorssCursorInfo.Bottom;
             if (option.CorssCursorInfo.IsShowCorss === false) chart.ChartCorssCursor.IsShowCorss = option.CorssCursorInfo.IsShowCorss;
             if (IFrameSplitOperator.IsBool(option.CorssCursorInfo.IsFixXLastTime)) chart.ChartCorssCursor.IsFixXLastTime=option.CorssCursorInfo.IsFixXLastTime;
+            if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
+            if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
         }
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
@@ -572,12 +583,17 @@ function JSChart(element)
 
         if (option.Frame) 
         {
-            for (var i in option.Frame) 
+            for (var i=0 ;i<option.Frame.length;++i) 
             {
                 var item = option.Frame[i];
                 if (!chart.Frame.SubFrame[i]) continue;
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
+                if (IFrameSplitOperator.IsNumber(item.SplitType)) 
+                {
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType=item.SplitType;
+                    chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultSplitType=item.SplitType;
+                }
                 if (item.XMessageAlign == 'bottom') chart.Frame.SubFrame[i].Frame.XMessageAlign = item.XMessageAlign;
                 if (item.IsShowLeftText === false || item.IsShowLeftText===true ) chart.Frame.SubFrame[i].Frame.IsShowYText[0] = item.IsShowLeftText;            //显示左边刻度
                 if (item.IsShowRightText === false || item.IsShowRightText===true) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度
@@ -684,6 +700,7 @@ function JSChart(element)
 
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight = item.TitleHeight;   //指标标题高度
             if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[index].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+            if (IFrameSplitOperator.IsNumber(item.YSplitType)) chart.Frame.SubFrame[index].Frame.YSplitOperator.SplitType=item.YSplitType;
         }
 
         return chart;
@@ -774,7 +791,7 @@ function JSChart(element)
         {
             if (option.KLine.Right >= 0) chart.Right = option.KLine.Right;
             if (option.KLine.Period >= 0) chart.Period = option.KLine.Period;
-            if (option.KLine.MaxReqeustDataCount > 0) chart.MaxReqeustDataCount = option.KLine.MaxReqeustDataCount;
+            if (option.KLine.MaxRequestDataCount > 0) chart.MaxRequestDataCount = option.KLine.MaxRequestDataCount;
             if (option.KLine.Info && option.KLine.Info.length > 0) chart.SetKLineInfo(option.KLine.Info, false);
             if (option.KLine.PageSize > 0) chart.PageSize = option.KLine.PageSize;
             if (option.KLine.IsShowTooltip == false) chart.IsShowTooltip = false;
@@ -1441,7 +1458,7 @@ function JSChartContainer(uielement)
             var url=`${atob(value)}?width=${width}&height=${height}&type=uniapp`;
             if (JSChart.LastVersion!=null) return;  //只请求一次
 
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: url,
                 method:"get",
                 dataType: "json",
@@ -3112,26 +3129,33 @@ function IChartFramePainting()
         }   
     }
 
-  //设施上锁
-  this.SetLock = function (lockData) {
-    if (!lockData)  //空数据不上锁
+    //设施上锁
+    this.SetLock = function (lockData) 
     {
-      this.IsLocked = false;
-      return;
+        if (!lockData)  //空数据不上锁
+        {
+            this.IsLocked = false;
+            return;
+        }
+
+        this.IsLocked = true;
+        if (!this.LockPaint) this.LockPaint = new ChartLock();    //创建锁
+        if (lockData.Callback) this.LockPaint.Callback = lockData.Callback;       //回调
+        if (lockData.IndexName) this.LockPaint.IndexName = lockData.IndexName;    //指标名字
+        if (lockData.ID) this.LockPaint.LockID = lockData.ID;                     //锁ID
+        if (lockData.BG) this.LockPaint.BGColor = lockData.BG;                    //背景色 
+        if (lockData.Text) this.LockPaint.Title = lockData.Text;
+        if (lockData.TextColor) this.LockPaint.TextColor = lockData.TextColor;
+        if (lockData.Font) this.LockPaint.Font = lockData.Font;
+        if (lockData.Count) this.LockPaint.LockCount = lockData.Count;
     }
 
-    this.IsLocked = true;
-    if (!this.LockPaint) this.LockPaint = new ChartLock();    //创建锁
-
-    if (lockData.Callback) this.LockPaint.Callback = lockData.Callback;       //回调
-    if (lockData.IndexName) this.LockPaint.IndexName = lockData.IndexName;    //指标名字
-    if (lockData.ID) this.LockPaint.LockID = lockData.ID;                     //锁ID
-    if (lockData.BG) this.LockPaint.BGColor = lockData.BG;                    //背景色 
-    if (lockData.Text) this.LockPaint.Title = lockData.Text;
-    if (lockData.TextColor) this.LockPaint.TextColor = lockData.TextColor;
-    if (lockData.Font) this.LockPaint.Font = lockData.Font;
-    if (lockData.Count) this.LockPaint.LockCount = lockData.Count;
-  }
+    this.GetLockRect=function()
+    {
+        if (!this.IsLocked) return null;
+        if (!this.LockPaint) return null; 
+        return this.LockPaint.LockRect;
+    }
 }
 
 
@@ -7010,7 +7034,7 @@ function KLineChartContainer(uielement)
     this.IsApiPeriod = false;             //使用API计算周期
     this.Right = 0;                       //复权 0 不复权 1 前复权 2 后复权
     this.SourceData;                      //原始的历史数据
-    this.MaxReqeustDataCount = 3000;      //数据个数
+    this.MaxRequestDataCount = 3000;      //数据个数
     this.MaxRequestMinuteDayCount = 5;    //分钟数据请求的天数
     this.PageSize = 200;                  //每页数据个数
     this.KLineDrawType = 0;               //0=K线 1=收盘价线 2=美国线
@@ -7547,7 +7571,7 @@ function KLineChartContainer(uielement)
                     Url: self.KLineApiUrl, Type: 'POST',
                     Data: 
                     { 
-                        symbol: self.Symbol, count: self.MaxReqeustDataCount, field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"] ,
+                        symbol: self.Symbol, count: self.MaxRequestDataCount, field: ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"] ,
                         period:this.Period,
                         right:this.Right
                     }
@@ -7565,14 +7589,14 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
         url: this.KLineApiUrl,
         data:
         {
             "field": ["name","symbol","yclose","open","price","high","low","vol"],
             "symbol": self.Symbol,
             "start": -1,
-            "count": self.MaxReqeustDataCount
+            "count": self.MaxRequestDataCount
         },
         method: 'POST',
         dataType: 'json',
@@ -7699,7 +7723,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.MinuteKLineApiUrl,
             data:
             {
@@ -7820,7 +7844,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.RealtimeApiUrl,
             data:
             {
@@ -7959,7 +7983,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.RealtimeApiUrl,
             data:
             {
@@ -8288,10 +8312,11 @@ function KLineChartContainer(uielement)
             }
         }
 
-        
-        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = null;          //清空指定最大最小值
-        this.Frame.SubFrame[windowIndex].Frame.IsLocked = false;                //解除上锁
-        this.Frame.SubFrame[windowIndex].Frame.YSplitScale = null;              //清空固定刻度
+        var subFrame=this.Frame.SubFrame[windowIndex].Frame;
+        subFrame.YSpecificMaxMin = null;          //清空指定最大最小值
+        subFrame.IsLocked = false;                //解除上锁
+        subFrame.YSplitScale = null;              //清空固定刻度
+        subFrame.YSplitOperator.SplitType=subFrame.YSplitOperator.DefaultSplitType;  //还原Y坐标分割模式
 
         this.ChartPaint = paint;
 
@@ -8914,7 +8939,7 @@ function KLineChartContainer(uielement)
             var infoItem = JSKLineInfoMap.Get(aryInfo[i]);
             if (!infoItem) continue;
             var item = infoItem.Create();
-            item.MaxReqeustDataCount = this.MaxReqeustDataCount;
+            item.MaxRequestDataCount = this.MaxRequestDataCount;
             this.ChartInfo.push(item);
         }
 
@@ -8928,7 +8953,7 @@ function KLineChartContainer(uielement)
         if (!infoItem) return;
         var policyInfo = infoItem.Create();
         policyInfo.SetPolicyList(aryPolicy);
-        policyInfo.MaxReqeustDataCount = this.MaxReqeustDataCount;
+        policyInfo.MaxRequestDataCount = this.MaxRequestDataCount;
         this.ChartInfo.push(policyInfo);
 
         if (bUpdate == true) this.ReqeustKLineInfoData();
@@ -8952,7 +8977,7 @@ function KLineChartContainer(uielement)
 
     this.GetRequestDataCount = function () //K线请求数据个数　(由于可以拖拽下载历史数据,所有原来固定个数的就不能用了)
     {
-        var result = { MaxRequestDataCount: this.MaxReqeustDataCount, MaxRequestMinuteDayCount: this.MaxRequestMinuteDayCount };
+        var result = { MaxRequestDataCount: this.MaxRequestDataCount, MaxRequestMinuteDayCount: this.MaxRequestMinuteDayCount };
 
         if (!this.SourceData || !this.SourceData.Data || this.SourceData.Data.length <= 0) return result;
 
@@ -9006,14 +9031,14 @@ function KLineChartContainer(uielement)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.KLineApiUrl,
             data:
             {
                 "field":["name","symbol","yclose","open","price","high"],
                 "symbol": symbol,
                 "start": -1,
-                "count": this.MaxReqeustDataCount
+                "count": this.MaxRequestDataCount
             },
             method: 'POST',
             dataType: "json",
@@ -9423,7 +9448,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.DragMinuteKLineApiUrl,
             data: postData,
             method: 'POST',
@@ -9496,7 +9521,7 @@ function KLineChartContainer(uielement)
             "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"],
             "symbol": self.Symbol,
             "enddate": firstItem.Date,
-            "count": self.MaxReqeustDataCount,
+            "count": self.MaxRequestDataCount,
             "first": { date: firstItem.Date }
         };
 
@@ -9530,7 +9555,7 @@ function KLineChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.DragKLineApiUrl,
             data: postData,
             method: 'POST',
@@ -10215,8 +10240,10 @@ function MinuteChartContainer(uielement)
         }
 
         //清空指定最大最小值
-        this.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = null;
-        this.Frame.SubFrame[windowIndex].Frame.IsLocked = false;          //解除上锁
+        var subFrame=this.Frame.SubFrame[windowIndex].Frame;
+        subFrame.YSpecificMaxMin = null;
+        subFrame.IsLocked = false;          //解除上锁
+        subFrame.YSplitOperator.SplitType=subFrame.YSplitOperator.DefaultSplitType;  //还原Y坐标分割模式
 
         this.ChartPaint = paint;
 
@@ -10304,9 +10331,28 @@ function MinuteChartContainer(uielement)
         this.Draw();
     }
 
+    //切换api指标
+    this.ChangeAPIIndex=function(windowIndex,indexData)
+    {
+        this.DeleteIndexPaint(windowIndex, true);
+        //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
+        var apiItem=indexData.API;
+        this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,indexData);
+
+        var bindData=this.ChartPaint[0].Data;
+        this.BindIndexData(windowIndex,bindData);   //执行脚本
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
+    }
+
     this.ChangeIndex = function (windowIndex, indexName, option) 
     {
         if (this.Frame.SubFrame.length < 3) return;
+
+        if (option && option.API)
+            return this.ChangeAPIIndex(windowIndex,option);
 
         //查找系统指标
         let scriptData = new JSCommonIndexScript.JSIndexScript();
@@ -10328,6 +10374,7 @@ function MinuteChartContainer(uielement)
             if (option.FloatPrecision >= 0) indexData.FloatPrecision = option.FloatPrecision;
             if (option.StringFormat > 0) indexData.StringFormat = option.StringFormat;
             if (option.Args) indexData.Args = option.Args;
+            if (IFrameSplitOperator.IsNumber(option.YSplitType)) indexData.YSplitType=option.YSplitType;
         }
 
         return this.ChangeScriptIndex(windowIndex, indexData);
@@ -10468,7 +10515,7 @@ function MinuteChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
         url: self.HistoryMinuteApiUrl,
         data:
         {
@@ -10644,7 +10691,7 @@ function MinuteChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.MinuteApiUrl,
             data:
             {
@@ -10762,7 +10809,7 @@ function MinuteChartContainer(uielement)
 
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: self.HistoryMinuteApiUrl,
             data:
             {
@@ -10853,7 +10900,7 @@ function MinuteChartContainer(uielement)
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: self.HistoryMinuteApiUrl,
             data:
             {
@@ -11404,7 +11451,7 @@ function HistoryMinuteChartContainer(uielement) {
     var self = this;
     var url = this.HistoryMinuteApiUrl + this.TradeDate.toString() + "/" + this.Symbol + ".json";
 
-    wx.request({
+    JSNetwork.HttpRequest({
       url: url,
       method: "get",
       dataType: "json",
@@ -11559,7 +11606,7 @@ function CustomKLineChartContainer(uielement) {
     this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
     this.ChartSplashPaint.EnableSplash(true);
     this.Draw();
-    wx.request({
+    JSNetwork.HttpRequest({
       url: this.CustomKLineApiUrl,
       data:
       {
@@ -13080,7 +13127,7 @@ function MarketLongShortIndex() {
     }
 
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: g_JSChartResource.Index.MarketLongShortApiUrl,
       data:
       {
@@ -13200,7 +13247,7 @@ function MarketTimingIndex() {
     }
 
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: g_JSChartResource.Index.MarketLongShortApiUrl,
       data:
       {
@@ -13321,7 +13368,7 @@ function MarketAttentionIndex() {
     }
 
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: this.ApiUrl,
       data:
       {
@@ -13453,7 +13500,7 @@ function MarketHeatIndex() {
     }
 
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: this.ApiUrl,
       data:
       {
@@ -13593,7 +13640,7 @@ function CustonIndexHeatIndex() {
     }
 
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: this.ApiUrl,
       data:
       {
@@ -13758,7 +13805,7 @@ function BenfordIndex() {
         }
       ];
     //请求数据
-    wx.request({
+    JSNetwork.HttpRequest({
       url: this.ApiUrl,
       data:
       {
@@ -13899,6 +13946,7 @@ function IsIndexSymbol(symbol) {
 var JSCommon=
 {
     JSCanvasElement: JSCanvasElement,
+    JSNetwork:JSNetwork,
     JSChart: JSChart,
     Guid: Guid,
     IFrameSplitOperator: IFrameSplitOperator,

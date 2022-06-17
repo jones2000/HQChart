@@ -1281,6 +1281,23 @@ function ChartData()
         return result;
     }
 
+    this.GetObject=function()
+    {
+        var result=[];
+        for(var i in this.Data)
+        {
+            if (this.Data[i] && this.Data[i].Value)
+            { 
+                var item=this.Data[i].Value;
+                result[i]=item;
+            }
+            else
+                result[i]=null;
+        }
+
+        return result;
+    }
+
     this.GetPeriodSingleData=function(period)
     {
         var result=new Array();

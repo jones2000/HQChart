@@ -13,6 +13,7 @@
 //日志
 import { JSConsole } from "./umychart.console.wechat.js"
 import { JSCommonData } from "./umychart.data.wechat.js";     //行情数据结构体 及涉及到的行情算法(复权,周期等)  
+import { JSNetwork } from "./umychart.network.wechart.js"
 //配色资源
 import {
     g_JSChartResource,
@@ -8415,7 +8416,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.StockHistoryDayApiUrl = g_JSComplierResource.Domain +'/API/StockHistoryDay';  //历史财务数据
     this.StockHistoryDay3ApiUrl = g_JSComplierResource.Domain +'/API/StockHistoryDay3';  //历史财务数据
     this.StockNewsAnalysisApiUrl = g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                 //新闻分析数据
-    this.MaxReqeustDataCount=1000;
+    this.MaxRequestDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
 
     this.LatestData=new Map();            //最新行情
@@ -8449,7 +8450,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.SourceData) this.SourceData = option.SourceData;
         if (option.Symbol) this.Symbol=option.Symbol;
         if (option.Symbol) this.Symbol = option.Symbol;
-        if (option.MaxReqeustDataCount>0) this.MaxReqeustDataCount=option.MaxReqeustDataCount;
+        if (option.MaxRequestDataCount>0) this.MaxRequestDataCount=option.MaxRequestDataCount;
         if (option.MaxRequestMinuteDayCount>0) this.MaxRequestMinuteDayCount=option.MaxRequestMinuteDayCount;
         if (option.KLineApiUrl) this.KLineApiUrl=option.KLineApiUrl;
         if (option.NetworkFilter) this.NetworkFilter = option.NetworkFilter;
@@ -8472,7 +8473,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.LatestData.has(key)) return this.Execute.RunNextJob();
 
         var self=this;
-        wx.request({
+        JSNetwork.HttpRequest({
             url: self.RealtimeApiUrl,
             data:
             {
@@ -8589,7 +8590,7 @@ function JSSymbolData(ast,option,jsExecute)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: self.KLineApiUrl,
             data:
             {
@@ -8822,7 +8823,7 @@ function JSSymbolData(ast,option,jsExecute)
                 if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
             }
 
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
                 {
@@ -8876,7 +8877,7 @@ function JSSymbolData(ast,option,jsExecute)
                 if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
             }
 
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.MinuteKLineApiUrl,
                 data:
                 {
@@ -9031,14 +9032,14 @@ function JSSymbolData(ast,option,jsExecute)
         var self=this;
         if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
         {
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
                 {
                     "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol", 'up', 'down', 'stop', 'unchanged'],
                     "symbol": '000001.sh',
                     "start": -1,
-                    "count": self.MaxReqeustDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
+                    "count": self.MaxRequestDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
                 },
                 method: 'POST',
                 dataType: "json",
@@ -9055,7 +9056,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else if (JSCommonData.ChartData.IsMinutePeriod(this.Period, true))          //请求分钟数据
         {
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.MinuteKLineApiUrl,
                 data:
                 {
@@ -9154,7 +9155,7 @@ function JSSymbolData(ast,option,jsExecute)
         var self = this;
         var apiUrl = g_JSComplierResource.CacheDomain + '/cache/analyze/increaseanalyze/' + symbol + '.json';
         JSConsole.Complier.Log('[JSSymbolData::GetIndexIncreaseData] Get url=', apiUrl);
-        wx.request({
+        JSNetwork.HttpRequest({
             url: apiUrl,
             method: "GET",
             dataType: "json",
@@ -9206,7 +9207,7 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (this.DataType === 2)  //当天分钟数据
         {
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.RealtimeApiUrl,
                 data:
                 {
@@ -9227,14 +9228,14 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
         {
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
                 {
                     "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
                     "symbol": self.Symbol,
                     "start": -1,
-                    "count": self.MaxReqeustDataCount
+                    "count": self.MaxRequestDataCount
                 },
                 method: 'POST',
                 dataType: "json",
@@ -9252,7 +9253,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else if (JSCommonData.ChartData.IsMinutePeriod(this.Period, true))               //请求分钟数据
         {
-            wx.request({
+            JSNetwork.HttpRequest({
                 url: this.MinuteKLineApiUrl,
                 data:
                 {
@@ -9455,7 +9456,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.StockHistoryDayApiUrl,
             data:
                 {
@@ -9637,7 +9638,7 @@ function JSSymbolData(ast,option,jsExecute)
         var url = this.StockNewsAnalysisApiUrl + '/' + folderName + '/' + this.Symbol + '.json';
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: url,
             method: 'GET',
             dataType: "json",
@@ -10862,6 +10863,28 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
+    this.DateTime=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        var isKLineMinute=ChartData.IsMinutePeriod(this.Period, true);
+        for(var i=0;i<this.Data.Data.length;++i)
+        {
+            var item=this.Data.Data[i];
+            if (isKLineMinute)
+            {
+                result[i]=item.Date*10000+item.Time;
+            }
+            else
+            {
+                result[i]=item.Date;
+            }
+        }
+
+        return result;
+    }
+    
     this.YEAR = function () 
     {
         var result = [];
@@ -11161,7 +11184,7 @@ function JSExecute(ast,option)
         ['DATE', null], ['YEAR', null], ['MONTH', null], ['PERIOD', null], ['WEEK', null],["TIME",null],
 
         //大盘数据
-        ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
+        ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],["DATETIME",null],
         ['INDEXADV', null], ['INDEXDEC', null],
 
         ['CURRBARSCOUNT', null], //到最后交易日的周期数
@@ -11364,6 +11387,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.TIME();
             case 'DATE':
                 return this.SymbolData.DATE();
+            case "DATETIME":
+                return this.SymbolData.DateTime();
             case 'YEAR':
                 return this.SymbolData.YEAR();
             case 'MONTH':
@@ -11562,6 +11587,7 @@ function JSExecute(ast,option)
                     let lineStick=false;
                     let stick=false;
                     let volStick=false;
+                    let stepLine=false;
                     let isShow = true;
                     let isExData = false;
                     let isDotLine = false;
@@ -11603,6 +11629,7 @@ function JSExecute(ast,option)
                             else if (value==='LINESTICK') lineStick=true;
                             else if (value==='STICK') stick=true;
                             else if (value==='VOLSTICK') volStick=true;
+                            else if (value=="STEPLINE") stepLine=true;
                             else if (value==="DRAWABOVE") isDrawAbove=true;
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
@@ -11771,6 +11798,7 @@ function JSExecute(ast,option)
                         if (isOverlayLine == true) value.IsOverlayLine = true;
                         if (isNoneName==true) value.NoneName=true;
                         if (isShowTitle==false) value.IsShowTitle=false;
+                        if (stepLine==true) value.Type=7;
                         this.OutVarTable.push(value);
                     }
                     else if (draw)  //绘图函数
@@ -11797,6 +11825,7 @@ function JSExecute(ast,option)
                         if (isDotLine == true) value.IsDotLine = true;
                         if (isOverlayLine == true) value.IsOverlayLine = true;
                         if (isShowTitle==false) value.IsShowTitle=false;
+                        if (stepLine==true) value.Type=7;
                         this.OutVarTable.push(value);
                     }
                 }
@@ -12325,7 +12354,7 @@ JSComplier.ColorVarToRGB=function(colorName)
     option.Name=股票名称
     option.Data=这个股票的ChartData
     option.Right=复权
-    option.MaxReqeustDataCount=请求数据的最大个数
+    option.MaxRequestDataCount=请求数据的最大个数
 */
 
 function timeout(ms) {
@@ -12462,7 +12491,7 @@ function DownloadFinanceData(obj)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.RealtimeUrl,
             data:
             {
@@ -12497,7 +12526,7 @@ function DownloadFinanceData(obj)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.Url,
             data:
             {
@@ -12700,7 +12729,7 @@ function DownloadFinValueData(obj)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.Url,
             data:
             {
@@ -12957,7 +12986,7 @@ function DownloadFinOneData(obj)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.Url,
             data:
             {
@@ -13041,7 +13070,7 @@ function DownloadGPJYValue(obj)
         }
 
         //请求数据
-        wx.request({
+        JSNetwork.HttpRequest({
             url: this.Url,
             data:
             {
@@ -13181,7 +13210,7 @@ function DownloadGroupData(obj)
         else if (blockType=="DYBLOCK") field.push("region");
         else if (blockType=="GNBLOCK") field.push("concept");
 
-        wx.request({
+        JSNetwork.HttpRequest({
             url: self.RealtimeUrl,
             data:
             {

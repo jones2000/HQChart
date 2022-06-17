@@ -25,6 +25,7 @@ export default {
     JSKLineInfoMap:JSKLineInfoMap,
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,      //可以订阅的事件类型
     JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,    //图形控制类型
+    JSCHART_DATA_FIELD_ID:JSCHART_DATA_FIELD_ID,//图形字段
     JSAlgorithm:JSAlgorithm,                //算法类
     JSComplier:JSComplier,                  //指标编译器
     JSIndexScript:JSIndexScript,            //系统指标库
@@ -52,4 +53,11 @@ export default {
     //报价列表
     JSReportChart:JSReportChart,
     REPORT_COLUMN_ID:REPORT_COLUMN_ID,
+
+    //图形基类导出
+    IChartPainting:IChartPainting,              //图形
+    IExtendChartPainting:IExtendChartPainting,  //扩展图形
+    IChartTitlePainting:IChartTitlePainting,    //标题类
+    IChartDrawPicture:IChartDrawPicture,        //画图工具
+    DynamicTitleData:DynamicTitleData,          //指标标题数据
 }

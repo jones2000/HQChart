@@ -126,6 +126,14 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![指标图形拖拽](/小程序行情模块用例/image/hqchart_dragindechart.gif)
 * Y轴拖拽缩放
 ![Y轴缩放](/小程序行情模块用例/image/hqchart_ydrag.gif)
+* 订单流
+![订单流](/小程序行情模块用例/image/hqchart_ordeflow.png)
+![订单流样式2](/小程序行情模块用例/image/hqchart_ordeflow2.png)
+![订单流样式3](/小程序行情模块用例/image/hqchart_ordeflow3.png)
+* 固定范围成交量分布图
+![成交量分布图](/小程序行情模块用例/image/hqchart_volprofile.gif)
+* 可视范围成交量分布图
+![成交量分布图](/小程序行情模块用例/image/hqchart_vol2.gif)
 
 
 # 2. 走势图
@@ -325,6 +333,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 32. [HQChart使用教程30-K线图如何对接第3方数据32-订单流](https://jones2000.blog.csdn.net/article/details/122888661)<br>
 33. [HQChart使用教程30-K线图如何对接第3方数据33-日线叠加品种拖拽下载历史数据](https://blog.csdn.net/jones2000/article/details/123211234)<br>
 34. [HQChart使用教程30-K线图如何对接第3方数据34-分钟K线叠加品种拖拽下载历史数据](https://blog.csdn.net/jones2000/article/details/123211941)<br>
+35. [HQChart使用教程30-K线图如何对接第3方数据35-固定范围成交量分布图数据](https://blog.csdn.net/jones2000/article/details/125020448)<br>
+
 
 ## 第3方数据前端接入教程(分笔明细)
 1. [HQChart使用教程93-分笔明细表对接第3方数据1-全量分笔明细数据](https://blog.csdn.net/jones2000/article/details/124362666)<br>
@@ -359,6 +369,10 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 5. [HQChart实战教程15-火币网ws数据对接拖拽下载历史K线图](https://blog.csdn.net/jones2000/article/details/106205584)<br>
 6. [HQChart实战教程16-K线图风格配色篇-仿火币网H5配色](https://blog.csdn.net/jones2000/article/details/106226272)<br>
 7. [HQChart实战教程47-火币网ws数据对接深度图](https://jones2000.blog.csdn.net/article/details/120950486)<br>
+
+## 欧易对接完整教程（付费文章)
+1. [HQChart实战教程54-欧易网http+ws数据对接(vue)](https://blog.csdn.net/jones2000/article/details/125213143)<br>
+2. [HQChart实战教程55-欧易网K线面积图(vue)](https://jones2000.blog.csdn.net/article/details/125229954)<br>
 
 ## 源码收费
 1. [HQChart实战教程36-数字货币币安对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/114468807)<br>
@@ -409,10 +423,11 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 20. [HQChart实战教程50 - 自定义指标栏工具按钮](https://blog.csdn.net/jones2000/article/details/122950050)<br>
 21. [HQChart实战教程51 - 自定义指标列表](https://blog.csdn.net/jones2000/article/details/123538617)<br>
 22. [HQChart实战教程52 - APP中使用DRAWICON绘制图标](https://jones2000.blog.csdn.net/article/details/124142225)<br>
-23. [HQChart实战教程53 - 动调指定标识K线区间段背景颜色](https://blog.csdn.net/jones2000/article/details/124558493)<br>
+23. [HQChart实战教程53 - 动态指定标识K线区间段背景颜色](https://blog.csdn.net/jones2000/article/details/124558493)<br>
 
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>
+2. [HQChart报价列表高级应用教程2-东方财富数据对接自选股列表](https://blog.csdn.net/jones2000/article/details/124940054)<br>
 
 
 ## 设计文档:

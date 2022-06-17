@@ -519,6 +519,7 @@ function FrameSplitKLinePriceY()
 
     this.Custom = []; //[{Type:0}];   定制刻度 0=显示最后的价格刻度
     this.SplitType = 0;       //0=自动分割  1=固定分割
+    this.DefaultSplitType=0;
 
     this.Operator = function () 
     {
@@ -749,7 +750,8 @@ function FrameSplitY()
     this.newMethod = IFrameSplitOperator;   //派生
     this.newMethod();
     delete this.newMethod;
-    this.SplitType=0;                         //0=自动分割  1=固定分割
+    this.SplitType=0;                         //0=自动分割  1=固定分割 2=百分比(0-100)
+    this.DefaultSplitType=0;
     this.FloatPrecision = 2;                  //坐标小数位数(默认2)
     this.FLOATPRECISION_RANGE = [1, 0.1, 0.01, 0.001, 0.0001];
     this.IgnoreYValue = null;                 //在这个数组里的数字不显示在刻度上 
@@ -785,6 +787,13 @@ function FrameSplitY()
         }
         else if (this.SplitType==1)
         {
+            splitData.Count=this.SplitCount;
+            splitData.Interval=(splitData.Max-splitData.Min)/(splitData.Count-1);
+        }
+        else if (this.SplitType==2)
+        {
+            splitData.Max=100;
+            splitData.Min=0;
             splitData.Count=this.SplitCount;
             splitData.Interval=(splitData.Max-splitData.Min)/(splitData.Count-1);
         }
@@ -879,6 +888,7 @@ function FrameSplitY()
         this.FilterIgnoreYValue();
         this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, (splitData.Max > 0 && splitData.Min < 0 && this.IsShowYZero));
         this.RemoveZero(this.Frame.HorizontalInfo);
+        this.DynamicMessageText();
         this.Frame.HorizontalMax = splitData.Max;
         this.Frame.HorizontalMin = splitData.Min;
 
@@ -900,6 +910,19 @@ function FrameSplitY()
         var setValue = new Set(this.IgnoreYValue);
         this.Frame.HorizontalInfo = this.Frame.HorizontalInfo.filter(item => !setValue.has(item.Value));
         this.IsShowYZero = !setValue.has(0);    //是否显示0刻度
+    }
+
+    this.DynamicMessageText=function()
+    {
+        if (this.SplitType==2)
+        {
+            for(var i=0;i<this.Frame.HorizontalInfo.length; ++i)
+            {
+                var item=this.Frame.HorizontalInfo[i];
+                if (item.Message[0]) item.Message[0]+='%';
+                if (item.Message[1]) item.Message[1]+='%';
+            }
+        }
     }
 
     this.IntegerCoordinateSplit2 = function (data) //整数分割
@@ -1150,6 +1173,7 @@ function FrameSplitMinutePriceY()
     this.SplitCount = 7;
     this.Symbol;
     this.SplitType=0;                   //0=默认根据最大最小值分割 1=涨跌停分割 2=数据最大最大值分割
+    this.DefaultSplitType=0;
     this.LimitPrice;                    //{Max: Min:} 涨跌停价
     this.Custom;
 
@@ -1880,79 +1904,89 @@ function IChangeStringFormat() {
   }
   
   
-  function HQPriceStringFormat() 
-  {
-      this.newMethod = IChangeStringFormat;   //派生
-      this.newMethod();
-      delete this.newMethod;
+function HQPriceStringFormat() 
+{
+    this.newMethod = IChangeStringFormat;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Symbol;
+    this.FrameID;
+    this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+    this.PercentageText;    //百分比
+    this.RValue;            //右边值
+    this.RText;
+
+    this.PriceFormatType=0; //主窗口格式    0=默认 1=科学计数
+    this.DataFormatType=0;  //副图指标格式   0=默认 1=科学计数
+
+    this.Operator = function () 
+    {
+        this.RText = null;
+        if (IFrameSplitOperator.IsString(this.RValue)) this.RText = this.RValue;
+        if (!this.Value) return false;
+
+        var defaultfloatPrecision = 2;     //价格小数位数 
+        if (this.FrameID == 0)    //第1个窗口显示原始价格
+        {
+            var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
+
+            if (this.PriceFormatType==1)
+                this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
+            else
+                this.Text = this.Value.toFixed(defaultfloatPrecision);
+        }
+        else 
+        {
+            if (this.DataFormatType==1)
+                this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
+            else
+                this.Text = IFrameSplitOperator.FormatValueString(this.Value, defaultfloatPrecision, this.LanguageID);
+        }
+
+        return true;
+    }
+}
   
-      this.Symbol;
-      this.FrameID;
-      this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-      this.PercentageText;    //百分比
-      this.RValue;            //右边值
-      this.RText;
-  
-      this.Operator = function () 
-      {
-          this.RText = null;
-          if (IFrameSplitOperator.IsString(this.RValue)) this.RText = this.RValue;
-          if (!this.Value) return false;
-  
-          var defaultfloatPrecision = 2;     //价格小数位数 
-          if (this.FrameID == 0)    //第1个窗口显示原始价格
-          {
-              var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
-              this.Text = this.Value.toFixed(defaultfloatPrecision);
-          }
-          else 
-          {
-              this.Text = IFrameSplitOperator.FormatValueString(this.Value, defaultfloatPrecision, this.LanguageID);
-          }
-  
-          return true;
-      }
-  }
-  
-  function HQDateStringFormat() 
-  {
-      this.newMethod = IChangeStringFormat;   //派生
-      this.newMethod();
-      delete this.newMethod;
-  
-      this.DateFormatType=0;  //0=YYYY-MM-DD 1=YYYY/MM/DD  2=YYYY/MM/DD/W 3=DD/MM/YYYY
-      this.LanguageID=0;
-  
-      this.Operator = function () 
-      {
-          if (!IFrameSplitOperator.IsNumber(this.Value) || this.Value<0) return false;
-          if (!this.Data) return false;
-  
-          var index = this.Value;
-          index = parseInt(index.toFixed(0));
-          if (this.Data.DataOffset + index >= this.Data.Data.length) return false;
-  
-          var currentData = this.Data.Data[this.Data.DataOffset + index];
-          var date = currentData.Date;
-          var dateFormatString="YYYY-MM-DD";
-          if (this.DateFormatType==1) dateFormatString="YYYY/MM/DD";
-          else if (this.DateFormatType==2) dateFormatString="YYYY/MM/DD/W";
-          else if (this.DateFormatType==3) dateFormatString="DD/MM/YYYY";
-          this.Text = IFrameSplitOperator.FormatDateString(date,dateFormatString,this.LanguageID);
-          if (ChartData.IsMinutePeriod(this.Data.Period, true)) // 分钟周期
-          {
-              var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
-              this.Text = this.Text + " " + time;
-          }
-          else if (ChartData.IsSecondPeriod(this.Data.Period))
-          {
-              var time = IFrameSplitOperator.FormatTimeString(currentData.Time,"HH:MM:SS");
-              this.Text = this.Text + " " + time;
-          }
-  
-          return true;
-      }
-  }
+function HQDateStringFormat() 
+{
+    this.newMethod = IChangeStringFormat;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.DateFormatType=0;  //0=YYYY-MM-DD 1=YYYY/MM/DD  2=YYYY/MM/DD/W 3=DD/MM/YYYY
+    this.LanguageID=0;
+
+    this.Operator = function () 
+    {
+        if (!IFrameSplitOperator.IsNumber(this.Value) || this.Value<0) return false;
+        if (!this.Data) return false;
+
+        var index = this.Value;
+        index = parseInt(index.toFixed(0));
+        if (this.Data.DataOffset + index >= this.Data.Data.length) return false;
+
+        var currentData = this.Data.Data[this.Data.DataOffset + index];
+        var date = currentData.Date;
+        var dateFormatString="YYYY-MM-DD";
+        if (this.DateFormatType==1) dateFormatString="YYYY/MM/DD";
+        else if (this.DateFormatType==2) dateFormatString="YYYY/MM/DD/W";
+        else if (this.DateFormatType==3) dateFormatString="DD/MM/YYYY";
+        this.Text = IFrameSplitOperator.FormatDateString(date,dateFormatString,this.LanguageID);
+        if (ChartData.IsMinutePeriod(this.Data.Period, true)) // 分钟周期
+        {
+            var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
+            this.Text = this.Text + " " + time;
+        }
+        else if (ChartData.IsSecondPeriod(this.Data.Period))
+        {
+            var time = IFrameSplitOperator.FormatTimeString(currentData.Time,"HH:MM:SS");
+            this.Text = this.Text + " " + time;
+        }
+
+        return true;
+    }
+}
   
   function HQMinuteTimeStringFormat() 
   {

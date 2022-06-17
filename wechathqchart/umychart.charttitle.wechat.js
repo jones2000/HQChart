@@ -1005,7 +1005,8 @@ function DynamicTitleData(data, name, color)    //指标标题数据
     this.Data = data;
     this.Name = name;
     this.Color = color;   //字体颜色
-    this.DataType;      //数据类型
+    this.DataType;         //数据类型
+    this.ChartClassName;
     this.StringFormat = STRING_FORMAT_TYPE.DEFAULT;   //字符串格式
     this.FloatPrecision = 2;                          //小数位数
     this.GetTextCallback;                             //自定义数据转文本回调
@@ -1148,6 +1149,30 @@ function DynamicChartTitlePainting()
         return text;
     }
 
+    //多变量输出
+    this.FromatStackedBarTitle=function(aryBar, dataInfo)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryBar)) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(dataInfo.Color)) return null;
+
+        var aryText=[];
+        for(var i=0;i<aryBar.length;++i)
+        {
+            var value=aryBar[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            var item={ Text:value.toFixed(2) };
+            if (dataInfo.Name && dataInfo.Name[i]) item.Name=dataInfo.Name[i];
+            item.Color=dataInfo.Color[i];
+
+            aryText.push(item);
+        }
+
+        if (aryText.length<=0) return null;
+
+        return aryText;
+    }
+
     this.SendUpdateUIMessage = function (funcName) //通知外面 标题变了
     {
         if (!this.UpdateUICallback) return;
@@ -1274,6 +1299,57 @@ function DynamicChartTitlePainting()
         this.DrawItem(false,true);
     }
 
+    this.GetTitleItem=function(item, isShowLastData)
+    {
+        if (!item || !item.Data || !item.Data.Data) return null;
+        if (item.Data.Data.length <= 0) return null;
+        if (item.IsShow==false) return null;
+    
+        var valueText = null;
+        var aryText=null;
+
+        var value = null;
+        if (item.DataType == "StraightLine")  //直线只有1个数据
+        {
+            value = item.Data.Data[0];
+            valueText = this.FormatValue(value, item);
+        }
+        else 
+        {
+            var index = this.CursorIndex - 0.5;
+            if (index<0) index=0;
+            index = parseInt(index.toFixed(0));
+            if (item.Data.DataOffset + index >= item.Data.Data.length) return null;
+
+            value = item.Data.Data[item.Data.DataOffset + index];
+            if (value == null) return null;
+
+            if (item.DataType == "HistoryData-Vol") 
+            {
+                value = value.Vol;
+                valueText = this.FormatValue(value, item);
+            }
+            else if (item.DataType == "MultiReport") 
+            {
+                valueText = this.FormatMultiReport(value, item);
+            }
+            else if (item.DataType=="ChartStackedBar")
+            {
+                aryText=this.FromatStackedBarTitle(value, item);
+                if (!aryText) return null;
+            }
+            else 
+            {
+                if (item.GetTextCallback) valueText = item.GetTextCallback(value, item);
+                else valueText = this.FormatValue(value, item);
+            }
+        }
+
+        if (!valueText && !aryText) return null;
+        
+        return { Text:valueText, ArrayText:aryText };
+    }
+
     this.DrawItem=function(bDrawTitle, bDrawValue)
     {
         var isHScreen=(this.Frame.IsHScreen === true);
@@ -1370,60 +1446,46 @@ function DynamicChartTitlePainting()
             for (var i in this.Data) 
             {
                 var item = this.Data[i];
-                if (!item || !item.Data || !item.Data.Data) continue;
-                if (item.Data.Data.length <= 0) continue;
-                if (item.IsShow==false) continue;
-    
-                var value = null;
-                var valueText = null;
-                if (item.DataType == "StraightLine")  //直线只有1个数据
+                var outText=this.GetTitleItem(item, false);
+                if (!outText) continue;
+
+                var valueText=outText.Text;
+                var aryText=outText.ArrayText;
+
+                if (aryText)
                 {
-                    value = item.Data.Data[0];
-                    valueText = this.FormatValue(value, item);
-                }
-                else 
-                {
-                    var index = this.CursorIndex - 0.5;
-                    if (index<0) index=0;
-                    index = parseInt(index.toFixed(0));
-                    if (item.Data.DataOffset + index >= item.Data.Data.length) continue;
+                    var text;
+                    for(var k=0;k<aryText.length;++k)
+                    {
+                        var titleItem=aryText[k];
+                        if (titleItem.Name) text=titleItem.Name+":"+titleItem.Text;
+                        else text=titleItem.Text;
     
-                    value = item.Data.Data[item.Data.DataOffset + index];
-                    if (value == null) continue;
+                        var textWidth=this.Canvas.measureText(text).width+this.ParamSpace; 
+                        if ((left+textWidth)>right) break;
     
-                    if (item.DataType == "HistoryData-Vol") 
-                    {
-                        value = value.Vol;
-                        valueText = this.FormatValue(value, item);
-                    }
-                    else if (item.DataType == "MultiReport") 
-                    {
-                        valueText = this.FormatMultiReport(value, item);
-                    }
-                    else 
-                    {
-                        if (item.GetTextCallback) valueText = item.GetTextCallback(value, item);
-                        else valueText = this.FormatValue(value, item);
+                        this.Canvas.fillStyle=titleItem.Color;
+                        this.Canvas.fillText(text,left,bottom,textWidth);
+                        left+=textWidth;
                     }
                 }
-    
-                this.Canvas.fillStyle = item.Color;
-    
-                var text;
-                if (item.Name) 
+                else
                 {
-                    var dyTitle=this.GetDynamicOutName(item.Name);
-                    if (dyTitle) text=dyTitle+ ":" + valueText;
-                    else text = item.Name + ":" + valueText;
+                    var text=valueText;
+                    if (item.Name) 
+                    {
+                        var dyTitle=this.GetDynamicOutName(item.Name);
+                        if (dyTitle) text=dyTitle+ ":" + valueText;
+                        else text = item.Name + ":" + valueText;
+                    }
+                    
+                    textWidth = this.Canvas.measureText(text).width + this.ParamSpace;    //后空2个像素
+                    if (textWidth+left>right) break;    //画不下了就不画了
+                    this.Canvas.fillStyle = item.Color;
+                    this.Canvas.fillText(text, left, bottom, textWidth);
+                    left += textWidth;
                 }
-                else 
-                {
-                    text=valueText;
-                }
-                textWidth = this.Canvas.measureText(text).width + this.ParamSpace;    //后空2个像素
-                if (textWidth+left>right) break;    //画不下了就不画了
-                this.Canvas.fillText(text, left, bottom, textWidth);
-                left += textWidth;
+               
             }
         }
         else
