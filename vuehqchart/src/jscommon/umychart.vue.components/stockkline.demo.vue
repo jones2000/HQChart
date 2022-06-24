@@ -213,7 +213,7 @@ DefaultData.GetKLineOption=function()
                 Custom:
                 [
                     { 
-                        Type:0,
+                        Type:3,
                         Position:'right',LineType:1, DateTime:"HH:MM"
                     }
                 ]

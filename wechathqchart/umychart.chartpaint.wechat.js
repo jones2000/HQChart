@@ -254,6 +254,10 @@ function ChartKLine()
 
     this.CustomKLine;       //自定义K线, key=date*1000000+time,  key={ Color:, DrawType: }
 
+    //当前屏显示K线信息
+    this.ShowRange={ };     //K线显示范围 { Start:, End:,  DataCount:, ShowCount: }
+    this.DrawKRange={ Start:null, End:null };   //当前屏K线的索引{ Start: , End:}
+
     this.DrawAKLine = function ()  //美国线
     {
         var isHScreen = (this.ChartFrame.IsHScreen === true);
@@ -265,9 +269,16 @@ function ChartKLine()
         if (isHScreen) chartright = this.ChartBorder.GetBottom();
         var xPointCount = this.ChartFrame.XPointCount;
 
+        this.ShowRange.Start=this.Data.DataOffset;
+        this.ShowRange.End=this.ShowRange.Start;
+        this.ShowRange.DataCount=0;
+        this.ShowRange.ShowCount=xPointCount;
+        this.DrawKRange.Start=this.Data.DataOffset;
+
+
         var ptMax = { X: null, Y: null, Value: null, Align: 'left' };
         var ptMin = { X: null, Y: null, Value: null, Align: 'left' };
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth),++this.ShowRange.DataCount) 
         {
             var data = this.Data.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
@@ -280,6 +291,7 @@ function ChartKLine()
             var yHigh = this.ChartFrame.GetYFromData(data.High);
             var yOpen = this.ChartFrame.GetYFromData(data.Open);
             var yClose = this.ChartFrame.GetYFromData(data.Close);
+            this.DrawKRange.End=i;
 
             if (ptMax.Value == null || ptMax.Value < data.High)     //求最大值
             {
@@ -359,10 +371,17 @@ function ChartKLine()
         if (isHScreen) chartright = this.ChartBorder.GetBottom();
         var xPointCount = this.ChartFrame.XPointCount;
 
+        this.ShowRange.Start=this.Data.DataOffset;
+        this.ShowRange.End=this.ShowRange.Start;
+        this.ShowRange.DataCount=0;
+        this.ShowRange.ShowCount=xPointCount;
+        this.DrawKRange.Start=this.Data.DataOffset;
+
         var bFirstPoint = true;
         this.Canvas.beginPath();
         this.Canvas.strokeStyle = this.CloseLineColor;
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) {
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth),++this.ShowRange.DataCount) 
+        {
             var data = this.Data.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
 
@@ -371,6 +390,7 @@ function ChartKLine()
             if (right > chartright) break;
             var x = left + (right - left) / 2;
             var yClose = this.ChartFrame.GetYFromData(data.Close);
+            this.DrawKRange.End=i;
 
             if (bFirstPoint) {
                 if (isHScreen) this.Canvas.moveTo(yClose, x);
@@ -413,6 +433,11 @@ function ChartKLine()
         this.Canvas.beginPath();
         this.Canvas.strokeStyle = this.CloseLineColor;
         var ptLast=null;
+        this.ShowRange.Start=this.Data.DataOffset;
+        this.ShowRange.End=this.ShowRange.Start;
+        this.ShowRange.DataCount=0;
+        this.ShowRange.ShowCount=xPointCount;
+        this.DrawKRange.Start=this.Data.DataOffset;
 
         if (this.Data.DataOffset>0) //把最左边的一个点连上
         {
@@ -435,7 +460,7 @@ function ChartKLine()
             }
         }
 
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth),++this.ShowRange.DataCount) 
         {
             var data = this.Data.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
@@ -445,6 +470,7 @@ function ChartKLine()
             if (right > chartright) break;
             var x = left + (right - left) / 2;
             var yClose = this.ChartFrame.GetYFromData(data.Close);
+            this.DrawKRange.End=i;
 
             if (bFirstPoint) 
             {
@@ -537,8 +563,13 @@ function ChartKLine()
         var downColor = this.DownColor;
         var unchagneColor = this.UnchagneColor;
         var ptLast=null;
+        this.ShowRange.Start=this.Data.DataOffset;
+        this.ShowRange.End=this.ShowRange.Start;
+        this.ShowRange.DataCount=0;
+        this.ShowRange.ShowCount=xPointCount;
+        this.DrawKRange.Start=this.Data.DataOffset;
 
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth), ++this.ShowRange.DataCount) 
         {
             var data = this.Data.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
@@ -548,6 +579,7 @@ function ChartKLine()
             if (right > chartright)
                 break;
 
+            this.DrawKRange.End=i;
             var x = left + (right - left) / 2;
             var yLow = this.ChartFrame.GetYFromData(data.Low);
             var yHigh = this.ChartFrame.GetYFromData(data.High);
@@ -1170,10 +1202,12 @@ function ChartKLine()
         }
     }
 
-    this.Draw = function () {
+    this.Draw = function () 
+    {
         this.PtMax = { X: null, Y: null, Value: null, Align: 'left' }; //清空最大
         this.PtMin = { X: null, Y: null, Value: null, Align: 'left' }; //清空最小
         this.ChartFrame.ChartKLine = { Max: null, Min: null };   //保存K线上 显示最大最小值坐标
+        this.DrawKRange={ Start:null, End:null }; 
 
         if (this.IsShow == false) return;
 
@@ -3420,11 +3454,15 @@ function ChartOverlayKLine()
     this.ClassName ='ChartOverlayKLine';
     this.CustomDrawType = null;       //图形类型
     this.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
+    this.ShowRange={ };     //K线显示范围 { Start:, End:,  DataCount:, ShowCount: }
+    this.DrawKRange={ Start:null, End:null };       //当前屏K线的索引{ Start: , End:}
+    this.YInfoType=4;
     
     this.SetOption = function (option) 
     {
         if (!option) return;
         if (IFrameSplitOperator.IsNumber(option.DrawType)) this.CustomDrawType = option.DrawType;
+        if (IFrameSplitOperator.IsNumber(option.YInfoType)) this.YInfoType=option.YInfoType;
     }
 
     this.DrawKBar = function (firstOpen)   //firstOpen 当前屏第1个显示数据
@@ -3441,12 +3479,23 @@ function ChartOverlayKLine()
         var isFristDraw = true;
         var firstOverlayOpen = null;
 
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        this.ShowRange.Start=this.Data.DataOffset;
+        this.ShowRange.End=this.ShowRange.Start;
+        this.ShowRange.DataCount=0;
+        this.ShowRange.ShowCount=xPointCount;
+        this.ShowRange.FirstOpen=firstOpen;
+        this.DrawKRange.Start=this.Data.DataOffset;
+
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth),++this.ShowRange.DataCount) 
         {
             var data = this.Data.Data[i];
             if (!data || data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
 
-            if (firstOverlayOpen == null) firstOverlayOpen = data.Open;
+            if (firstOverlayOpen == null) 
+            {
+                firstOverlayOpen = data.Open;
+                this.ShowRange.FirstOverlayOpen=data.Open;
+            }
 
             if (isFristDraw) 
             {
@@ -3465,6 +3514,7 @@ function ChartOverlayKLine()
             var yOpen = this.ChartFrame.GetYFromData(data.Open / firstOverlayOpen * firstOpen);
             var yClose = this.ChartFrame.GetYFromData(data.Close / firstOverlayOpen * firstOpen);
             var y = yHigh;
+            this.DrawKRange.End=i;
 
             if (data.Open < data.Close)       //阳线
             {
@@ -3685,7 +3735,14 @@ function ChartOverlayKLine()
 
         var firstOverlayOpen = null;
         this.Canvas.strokeStyle = this.Color;
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        this.ShowRange.Start=this.Data.DataOffset;
+        this.ShowRange.End=this.ShowRange.Start;
+        this.ShowRange.DataCount=0;
+        this.ShowRange.ShowCount=xPointCount;
+        this.ShowRange.FirstOpen=firstOpen;
+        this.DrawKRange.Start=this.Data.DataOffset;
+
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth),++this.ShowRange.DataCount) 
         {
             var data = this.Data.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
@@ -3699,6 +3756,7 @@ function ChartOverlayKLine()
             var yHigh = this.ChartFrame.GetYFromData(data.High / firstOverlayOpen * firstOpen);
             var yOpen = this.ChartFrame.GetYFromData(data.Open / firstOverlayOpen * firstOpen);
             var yClose = this.ChartFrame.GetYFromData(data.Close / firstOverlayOpen * firstOpen);
+            this.DrawKRange.End=i;
 
             this.Canvas.beginPath();   //最高-最低
             if (isHScreen) 
@@ -3759,9 +3817,16 @@ function ChartOverlayKLine()
 
         var firstOverlayOpen = null;
         var bFirstPoint = true;
+        this.ShowRange.Start=this.Data.DataOffset;
+        this.ShowRange.End=this.ShowRange.Start;
+        this.ShowRange.DataCount=0;
+        this.ShowRange.ShowCount=xPointCount;
+        this.ShowRange.FirstOpen=firstOpen;
+        this.DrawKRange.Start=this.Data.DataOffset;
+
         this.Canvas.strokeStyle = this.Color;
         this.Canvas.beginPath();
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth),++this.ShowRange.DataCount) 
         {
             var data = this.Data.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
@@ -3772,6 +3837,7 @@ function ChartOverlayKLine()
             if (right > chartright) break;
             var x = left + (right - left) / 2;
             var yClose = this.ChartFrame.GetYFromData(data.Close / firstOverlayOpen * firstOpen);
+            this.DrawKRange.End=i;
 
             if (bFirstPoint) 
             {
@@ -3792,6 +3858,7 @@ function ChartOverlayKLine()
     this.Draw = function () 
     {
         this.TooltipRect = [];
+        this.DrawKRange={ Start:null, End:null };
         if (!this.MainData || !this.Data) return;
 
         var xPointCount = this.ChartFrame.XPointCount;

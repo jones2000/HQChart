@@ -83,7 +83,9 @@ function JSChartResource()
         UpBarColor: "rgb(238,21,21)",    //上涨
         DownBarColor: "rgb(25,158,0)",   //下跌
         UnchagneBarColor: "rgb(0,0,0)",   //平盘
-        BGAlpha: 0.6
+        BGAlpha: 0.6,
+
+        OverlayTextColor:"rgb(255,255,255)",       //叠加股票的文字颜色
     };
 
     this.FrameMargin = 4;     //左右一共的边距
@@ -417,6 +419,7 @@ function JSChartResource()
             if (style.FrameLatestPrice.DownBarColor) this.FrameLatestPrice.DownBarColor = style.FrameLatestPrice.DownBarColor;
             if (style.FrameLatestPrice.UnchagneBarColor) this.FrameLatestPrice.UnchagneBarColor = style.FrameLatestPrice.UnchagneBarColor;
             if (style.FrameLatestPrice.BGAlpha) this.FrameLatestPrice.BGAlpha = style.FrameLatestPrice.BGAlpha;
+            if (style.FrameLatestPrice.OverlayTextColor) this.FrameLatestPrice.OverlayTextColor = style.FrameLatestPrice.OverlayTextColor;
         }
 
         if (style.CorssCursorBGColor) this.CorssCursorBGColor = style.CorssCursorBGColor;

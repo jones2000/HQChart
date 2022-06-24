@@ -271,10 +271,13 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 84. [HQChart使用教程92-如何创建分笔明细表](https://blog.csdn.net/jones2000/article/details/124360747)<br>
 85. [HQChart使用教程94-如何创建报价列表](https://blog.csdn.net/jones2000/article/details/124544643)<br>
 
-## 小程序教程
+##  微信小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
 2. [HQChart小程序教程2-如何使用新版2D画布创建一个K线图](https://blog.csdn.net/jones2000/article/details/105632095)<br>
 3. [HQChart小程序教程3-新版2D单画布如何切换K线图和分时图](https://blog.csdn.net/jones2000/article/details/108378355)<br>
+
+## 钉钉小程序
+1. [HQChart钉钉小程序教程1-创建K线图](https://blog.csdn.net/jones2000/article/details/125226287)<br>
 
 ## uni-app教程
 1. [HQChart使用教程79-uniapp中hqchart内置组件使用教程](https://blog.csdn.net/jones2000/article/details/116592718)<br>

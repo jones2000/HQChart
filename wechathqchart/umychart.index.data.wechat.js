@@ -3174,7 +3174,7 @@ JSIndexScript.prototype.TEST = function ()
                 //"T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
                 */
             Script:
-            "MIN(C, 8, L);"
+            "T:EXCHANGE;"
         };
 
     return data;
