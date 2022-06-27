@@ -503,8 +503,6 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 有bug,问题,新的功能需求都可以在QQ群里提 <br>
 ![QQ群](/小程序行情模块用例/image/qqcode.png)
 
-# 商务
-定制开发,合作等商务事宜请联系 QQ:22047567 
 
 # 奖项
 ![GVP](/小程序行情模块用例/image/gvp.jpg)
