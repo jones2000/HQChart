@@ -629,10 +629,10 @@ function FrameSplitKLinePriceY()
     this.CustomCoordinate = function (floatPrecision) 
     {
         this.Frame.CustomHorizontalInfo = [];
-        for (var i in this.Custom) 
+        for (var i=0;i<this.Custom.length; ++i) 
         {
             var item = this.Custom[i];
-            if (item.Type == 0)     //最新价格刻度
+            if (item.Type == 0 || item.Type==3 || item.Type==2 )     //最新价格刻度
             {
                 var dec=floatPrecision;
                 //外部设置小数位数
@@ -654,6 +654,7 @@ function FrameSplitKLinePriceY()
         var latestItem = this.Data.Data[this.Data.Data.length - 1];
         var info = new CoordinateInfo();
         info.Type = 0;
+        if (option && IFrameSplitOperator.IsNumber(option.Type)) info.Type=option.Type;
         info.Value = latestItem.Close;
         info.TextColor = g_JSChartResource.FrameLatestPrice.TextColor;
         info.LineType = 2;    //虚线
@@ -686,6 +687,7 @@ function FrameSplitKLinePriceY()
 
     this.CustomFixedCoordinate = function (option)    //固定坐标刻度
     {
+
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
         for (var i in option.Data) 
         {

@@ -212,8 +212,12 @@ DefaultData.GetKLineOption=function()
                 SplitCount: 5, StringFormat: 0, IsShowLeftText: false , 
                 Custom:
                 [
+                     { 
+                        Type:2,
+                        Position:'right',LineType:-1, 
+                    },
                     { 
-                        Type:0,
+                        Type:3,
                         Position:'right',LineType:1, DateTime:"HH:MM"
                     }
                 ]

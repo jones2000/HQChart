@@ -271,10 +271,13 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 84. [HQChart使用教程92-如何创建分笔明细表](https://blog.csdn.net/jones2000/article/details/124360747)<br>
 85. [HQChart使用教程94-如何创建报价列表](https://blog.csdn.net/jones2000/article/details/124544643)<br>
 
-## 小程序教程
+##  微信小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
 2. [HQChart小程序教程2-如何使用新版2D画布创建一个K线图](https://blog.csdn.net/jones2000/article/details/105632095)<br>
 3. [HQChart小程序教程3-新版2D单画布如何切换K线图和分时图](https://blog.csdn.net/jones2000/article/details/108378355)<br>
+
+## 钉钉小程序
+1. [HQChart钉钉小程序教程1-创建K线图](https://blog.csdn.net/jones2000/article/details/125226287)<br>
 
 ## uni-app教程
 1. [HQChart使用教程79-uniapp中hqchart内置组件使用教程](https://blog.csdn.net/jones2000/article/details/116592718)<br>
@@ -373,6 +376,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## 欧易对接完整教程（付费文章)
 1. [HQChart实战教程54-欧易网http+ws数据对接(vue)](https://blog.csdn.net/jones2000/article/details/125213143)<br>
 2. [HQChart实战教程55-欧易网K线面积图(vue)](https://jones2000.blog.csdn.net/article/details/125229954)<br>
+3. [HQChart实战教程56-欧易网http+ws数据对接 uniapp版本](https://blog.csdn.net/jones2000/article/details/125354005)<br>
 
 ## 源码收费
 1. [HQChart实战教程36-数字货币币安对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/114468807)<br>
@@ -499,8 +503,6 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 有bug,问题,新的功能需求都可以在QQ群里提 <br>
 ![QQ群](/小程序行情模块用例/image/qqcode.png)
 
-# 商务
-定制开发,合作等商务事宜请联系 QQ:22047567 
 
 # 奖项
 ![GVP](/小程序行情模块用例/image/gvp.jpg)

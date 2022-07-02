@@ -52,6 +52,7 @@ import
     g_CBOTTimeData,
     g_TOCOMTimeData,
     g_IPETimeData,
+    GetfloatPrecision,
 } from "./umychart.coordinatedata.wechat.js";
 
 import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达信编译器
@@ -1924,6 +1925,7 @@ function JSChartContainer(uielement)
         }
 
         if (this.Frame.DrawInsideHorizontal) this.Frame.DrawInsideHorizontal();  //框架内部坐标
+        this.KLineIncreaseCustomHorizontal();
         if (this.Frame.DrawCustomHorizontal) this.Frame.DrawCustomHorizontal();
         if (this.ChartInfoPaint) this.ChartInfoPaint.Draw();
         this.Frame.DrawLock();
@@ -1976,6 +1978,82 @@ function JSChartContainer(uielement)
 
         this.LastDrawStatus = 'FullDraw';
         this.Canvas.draw(false);
+    }
+
+    //当前屏K线涨幅Y轴刻度
+    this.KLineIncreaseCustomHorizontal=function()
+    {
+        var frame=this.Frame.SubFrame[0].Frame;
+        if (!frame) return;
+        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
+        var isPercentage=false; //是否是百分比坐标
+        if (frame.YSplitOperator && frame.YSplitOperator.CoordinateType==1) isPercentage=true;
+
+        var isOverlayCoordinate=false;  //是否包含叠加股票刻度
+        for(var i=0;i<frame.CustomHorizontalInfo.length;++i)
+        {
+            var info=frame.CustomHorizontalInfo[i];
+            if (info.Type==4) isOverlayCoordinate=true;
+            if ((isPercentage && info.Type==3) || info.Type==2)
+            {
+                var item=this.ChartPaint[0];
+                if (!item) continue;
+
+                var data=item.Data;
+                if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.Data)) continue;
+                if (!IFrameSplitOperator.IsNumber(item.DrawKRange.Start) || !IFrameSplitOperator.IsNumber(item.DrawKRange.End)) continue;
+                var startKLine=data.Data[item.DrawKRange.Start];
+                var endKLine=data.Data[item.DrawKRange.End];
+                var value=(endKLine.Close-startKLine.Close)/startKLine.Close;
+                info.Value=endKLine.Close;
+                if (info.Type==2) 
+                {
+                    info.Message[1]=endKLine.Close.toFixed(defaultfloatPrecision);
+                    if (endKLine.Close>endKLine.Open) info.LineColor=g_JSChartResource.FrameLatestPrice.UpBarColor;
+                    else if (endKLine.Close<endKLine.Open) info.LineColor=g_JSChartResource.FrameLatestPrice.DownBarColor;
+                    else info.LineColor=g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
+                }
+                else 
+                {
+                    info.Message[1]=value.toFixed(2)+"%";
+                }
+                if (this.Name) info.Title=this.Name;
+            }
+        }
+
+        if (isOverlayCoordinate)
+        {
+            //叠加股票自定义刻度需要移除重新添加
+            var newCustomHorizontalInfo= frame.CustomHorizontalInfo.filter(function(value, index, ary)
+            {
+                return value.Type!=4
+            });
+            frame.CustomHorizontalInfo=newCustomHorizontalInfo;
+        }
+     
+
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (!item) continue;
+            if (item.YInfoType!=4) continue;
+            var data=item.Data;
+            if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.Data)) continue;
+            if (!IFrameSplitOperator.IsNumber(item.DrawKRange.Start) || !IFrameSplitOperator.IsNumber(item.DrawKRange.End)) continue;
+            var startKLine=data.Data[item.DrawKRange.Start];
+            var endKLine=data.Data[item.DrawKRange.End];
+            var value=(endKLine.Close-startKLine.Close)/startKLine.Close*100;
+
+            var info=new CoordinateInfo();
+            info.Value=endKLine.Close/item.ShowRange.FirstOverlayOpen*item.ShowRange.FirstOpen;
+            info.Message[1]=value.toFixed(2)+"%";
+            info.LineType=-1;
+            info.Type=item.YInfoType;    //叠加股票
+            info.LineColor=item.Color;
+            info.TextColor=g_JSChartResource.FrameLatestPrice.OverlayTextColor;
+            if (item.Title) info.Title=item.Title;
+            frame.CustomHorizontalInfo.push(info);
+        }
     }
 
     //获取最后一个数据的相对于当前屏的索引
@@ -3713,6 +3791,31 @@ function AverageWidthFrame()
                         }
                     }
                 }
+
+                if (item.Type==3 || item.Type==4)
+                {
+                    if (item.Title)
+                    {
+                        var width=this.Canvas.measureText(item.Title).width+2;
+                        if (this.IsHScreen)
+                        {
+                            var bgTop=bottom-itemText.Width-width;
+                            var textLeft=y-textHeight/2-1;
+                            this.Canvas.fillStyle=bgColor;
+                            this.Canvas.fillRect(textLeft,bgTop,textHeight,width);
+                            this.DrawHScreenText({X:y, Y:bgTop}, {Text:item.Title, Color:item.TextColor, XOffset:1, YOffset:2});
+                        }
+                        else
+                        {
+                            var bgTop=y-textHeight/2-1;
+                            var textLeft=right-textWidth-width-1;
+                            this.Canvas.fillStyle=bgColor;
+                            this.Canvas.fillRect(textLeft,bgTop,width,textHeight);
+                            this.Canvas.fillStyle = item.TextColor;
+                            this.Canvas.fillText(item.Title, textLeft + 1, y);
+                        }
+                    }
+                }
             }
             else 
             {
@@ -3748,6 +3851,34 @@ function AverageWidthFrame()
                                 IsShow:true, BGColor:item.LineColor, TextColor:item.TextColor, Position:"Right", IsInside:false
                             };
                             this.SendDrawCountDownEvent(sendData);
+                        }
+                    }
+                }
+
+                if (item.Type==3 || item.Type==4)
+                {
+                    if (item.Title)
+                    {
+                        var bgColor=item.LineColor;
+                        var rgb=this.RGBToStruct(item.LineColor);
+                        if (rgb) bgColor=`rgba(${rgb.R}, ${rgb.G}, ${rgb.B}, ${g_JSChartResource.FrameLatestPrice.BGAlpha})`;   //内部刻度 背景增加透明度
+                        var width=this.Canvas.measureText(item.Title).width+2;
+                        if (this.IsHScreen)
+                        {
+                            var bgTop=bottom-width;
+                            var textLeft=y-textHeight/2-1;
+                            this.Canvas.fillStyle=bgColor;
+                            this.Canvas.fillRect(textLeft,bgTop,textHeight,width);
+                            this.DrawHScreenText({X:y, Y:bgTop}, {Text:item.Title, Color:item.TextColor, XOffset:1, YOffset:2});
+                        }
+                        else
+                        {
+                            var bgTop=y-textHeight/2-1;
+                            var textLeft=right-width-1;
+                            this.Canvas.fillStyle=bgColor;
+                            this.Canvas.fillRect(textLeft,bgTop,width,textHeight);
+                            this.Canvas.fillStyle = item.TextColor;
+                            this.Canvas.fillText(item.Title, textLeft + 1, y);
                         }
                     }
                 }
@@ -4252,7 +4383,7 @@ function KLineFrame()
     this.DrawCustomHorizontal = function ()    //Y轴刻度定制显示
     {
         if (this.IsMinSize) return;
-        for (var i in this.CustomHorizontalInfo) 
+        for (var i=0; i<this.CustomHorizontalInfo.length; ++i) 
         {
             var item = this.CustomHorizontalInfo[i];
             switch (item.Type) 
@@ -4261,6 +4392,10 @@ function KLineFrame()
                 case 1: //固定价格刻度
                     this.DrawCustomItem(item);
                     break;
+                case 2: //当前屏最后一个K线价格刻度
+                case 3: //主图K线涨幅刻度
+                case 4: //叠加K线涨幅刻度
+                    this.DrawCustomItem(item);  
             }
         }
     }

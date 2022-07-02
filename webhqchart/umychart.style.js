@@ -52,6 +52,17 @@ function GetBlackStyle()
             Before:
             {
                 BGColor:"rgba(105,105,105,0.5)",
+                AvPriceColor:'rgb(248,248,255)',     //均线
+
+                CloseIcon:
+                { 
+                    MoveOnColor:"rgb(255,255,255)",
+                    Color:"rgb(156,156,156)"
+                }    
+            },
+            After:
+            {
+                BGColor:"rgba(105,105,105,0.5)",
                 AvPriceColor:'rgb(248,248,255)'     //均线
             }
         },
@@ -82,6 +93,7 @@ function GetBlackStyle()
         },
     
         FrameBorderPen: "rgba(236,236,236,0.13)",     //边框
+        MultiDayBorderPen:"rgba(236,236,236,0.5)",
         FrameSplitPen: "rgba(236,236,236,0.13)",          //分割线
         FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
         FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
