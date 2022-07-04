@@ -1,15 +1,12 @@
-﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">  
-<head>  
+﻿<head>  
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>K线训练网页版</title>
     <link rel="stylesheet" href="vuehqchart/src/jscommon/umychart.resource/css/tools.css" />
     <link rel="stylesheet" href="vuehqchart/src/jscommon/umychart.resource/font/iconfont.css" />
-
-    <script src="webhqchart/umychart.network.js"></script>
-    <script type="text/javascript" src="webhqchart/umychart.js"></script>
-    <script type="text/javascript" src="webhqchart/umychart.complier.js"></script>
-    <script type="text/javascript" src="webhqchart/umychart.index.data.js"></script>
+    <script src="vuehqchart/src/jscommon/umychart.network.js"></script>
+    <script type="text/javascript" src="vuehqchart/src/jscommon/umychart.js"></script>
+    <script type="text/javascript" src="vuehqchart/src/jscommon/umychart.complier.js"></script>
+    <script type="text/javascript" src="vuehqchart/src/jscommon/umychart.index.data.js"></script>
     <script type="text/css">
         .tools{
     float:left;
@@ -31,11 +28,9 @@
     <script type="javascript">
         var jsEditor;
 var Root = {};
-
 var Tools = {
     init: function (defalutData) {
         var _this = this;
-
         _this.bindModular();
         _this.setDefault(defalutData);
     },
@@ -44,7 +39,6 @@ var Tools = {
     },
     bindModular: function () {
         var _this = this;
-
         Root.tools = _this.getTools();
         Root.result = _this.getResult();
     },
@@ -63,7 +57,6 @@ var Tools = {
                 },
                 buyOrSell: function () {
                     var _this = this;
-
                     jsChart.JSChartContainer.BuyOrSell();
                 },
                 setSurplusKLineCount: function (count) {
@@ -74,10 +67,8 @@ var Tools = {
                 },
                 setData: function (data) {
                     var _this = this;
-
                     _this.list = [];
                     for (var i = 0; i < data.length; i++) {
-
                         if (data[i].Buy != null) {
                             _this.list.unshift({
                                 op: "买入",
@@ -87,7 +78,6 @@ var Tools = {
                                 profitAndLossClass: ""
                             });
                         }
-
                         if (data[i].Sell != null && data[i].Buy != null) {
                             var profitAndLossRatio = ((data[i].Sell.Price - data[i].Buy.Price) / data[i].Buy.Price).toFixed(2);
                             _this.list.unshift({
@@ -130,32 +120,21 @@ var Tools = {
             methods: {
                 setData: function (hqChart) {
                     var _this = this;
-
                     _this.symbol = hqChart.Symbol;
                     _this.name = hqChart.Name;
-
                     _this.kLineDate.startDate = Common.formatDate(hqChart.TrainStartEnd.Start.Date).Format("yyyy-MM-dd");
                     _this.kLineDate.endDate = Common.formatDate(hqChart.TrainStartEnd.End.Date).Format("yyyy-MM-dd");
-
                     _this.increase = ((hqChart.TrainStartEnd.End.Close - hqChart.TrainStartEnd.Start.Open) / hqChart.TrainStartEnd.End.Close).toFixed(2);
-
-                    var profitCount = 0,
-                        totalSellCount = 0;
-
+                    var profitCount = 0, totalSellCount = 0;
                     var list = Root.tools.list;
-
                     for (var i = 0; i < list.length; i++) {
                         if (list[i].op != "卖出")
                             continue;
-
                         totalSellCount++;
-
                         if (list[i].profitAndLossRatio > 0)
                             profitCount++;
                     }
-
                     _this.profitRatio = (profitCount / totalSellCount * 100).toFixed(2);
-
                     Common.showModal("modal_result");
                 }
             }
@@ -166,17 +145,13 @@ var Tools = {
 var Common = {
     formatDate: function (date) {
         if (!date) return "";
-
         date = date + "";
         if (date.length != 8)
             return date;
-
         return new Date(date.substring(0, 4) + "-" + date.substring(4, 6) + "-" + date.substring(6, 8));
     },
     showModal: function (id) {
-        var $this = $('#' + id),
-            $modal_dialog = $this.find('.modal-dialog');
-
+        var $this = $('#' + id), $modal_dialog = $this.find('.modal-dialog');
         $this.css('display', 'block');
         $modal_dialog.css({ 'margin-top': Math.max(0, ($(window).height() - $modal_dialog.height()) / 2 - 30) });
         $this.modal("show");
@@ -316,7 +291,6 @@ Number.prototype.toFixed = function (d) {
             </div>
         </div>
     </div>
-    
     <div class="modal fade" id="modal_result" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -370,24 +344,18 @@ Number.prototype.toFixed = function (d) {
             </div>
         </div>
     </div>
-
-    
     <script>
         var jsChart;
         JS_EXECUTE_DEBUG_LOG=false;
     
-        function getURLParams(name) 
-        {
+        function getURLParams(name)  {
         	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
         	var r = window.location.search.substr(1).match(reg);
         	if (r != null) return decodeURI(r[2]);
         	return null;
         }
-    
         $(window).resize(resizeCanvas);
-    
-        function resizeCanvas()
-        {
+        function resizeCanvas() {
             var height= $(window).height(); //300高度给指标编辑器
             var width = $(window).width();
             var divKline=document.getElementById('kline');
@@ -408,12 +376,6 @@ Number.prototype.toFixed = function (d) {
             var index = getURLParams('index');        //指标1
             if (index == null) index = 'MA';
             aryIndex.push({ "Index": index, "Modify": true, "Change": true });
-    
-            /*
-                var index2=getURLParams('index2');      //指标2
-                //if (index2==null) index2='指数热度';
-                if (index2==null) index2='能图-资金分析';
-            */
             let code = 'VAR1:MA(CLOSE,25),COLORYELLOW;VAR2:MA(CLOSE,40);'
             let code2 = 'MTR:=EXPMEMA(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(REF(CLOSE,1)-LOW)),N);\n\
         HD :=HIGH-REF(HIGH,1);\n\
@@ -428,37 +390,27 @@ Number.prototype.toFixed = function (d) {
             var jsIndexData = new JSIndexScript();
             let testIndex = jsIndexData.Get('VOL');
             console.log(testIndex);
-    
             //指标3
-            let scriptIndex = 
-            { 
+            let scriptIndex =  { 
                 Name: testIndex.Name, Script: testIndex.Script, Args: testIndex.Args, "Modify": true, "Change": true,
             };
             aryIndex.push(scriptIndex);
-    
             // 创建股票K线图
             jsChart = JSChart.Init(document.getElementById('kline'));
-    
-            var option =
-                {
+            var option = {
                     Type: 'K线训练',
                     Windows: aryIndex, //窗口指标
                     Symbol: symbol,
                     IsAutoUpate: true,       //是自动更新数据
-    
                     Tool:                   //工具条
                     [
                         { Name: "周期" },
                         { Name: "复权" }
                     ],
-    
                     IsShowRightMenu: false,           //右键菜单
                     //IsShowCorssCursorInfo: false,    //是否显示十字光标的刻度信息
-    
                     ScriptError: ComplierError,
-    
-                    KLine:
-                    {
+                    KLine: {
                         Right: 1,                    //复权 0 不复权 1 前复权 2 后复权
                         Period: 0,                   //周期 0 日线 1 周线 2 月线 3 年线 
                         MaxReqeustDataCount: 1000,   //数据个数
@@ -466,105 +418,73 @@ Number.prototype.toFixed = function (d) {
                         IndexTreeApiUrl: "https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json",        //指标树下载地址
                         IsShowTooltip: true,                 //是否显示K线提示信息
                     },
-    
-                    KLineTitle: //标题设置
-                    {
+                    KLineTitle: //标题设置 {
                         IsShowName: true,       //不显示股票名称
                         IsShowSettingInfo: false //不显示周期/复权
                     },
-    
-                    Border: //边框
-                    {
+                    Border: //边框 {
                         Left: 50,    //左边间距
                         Right: 1     //右边间距
                     },
-    
                     Frame:  //子框架设置
                     [
                         { SplitCount: 3, StringFormat: 1 },
                         { SplitCount: 3, StringFormat: 1 }
                     ],
-
-                    Train:
-                    {
+                    Train: {
                         DataCount:100,                   //训练数据
                     }
                 }
-    
             jsChart.SetOption(option);
-
             //注册指标计算完成监听
             jsChart.AddEventCallback({
                     event:JSCHART_EVENT_ID.RECV_TRAIN_MOVE_STEP, 
                     callback:function(event,data,obj) { TrainCallback2(event,data,obj); }
                 });
-
             //jsChart.LockIndex('飞龙四式',unlockIndex);
-
             //setTimeout(function(){jsChart.JSChartContainer.Run()},5000);    //启动自动前进
             //setTimeout(function(){jsChart.JSChartContainer.Stop()},30000);  //停止自动前进
             //setTimeout(function(){jsChart.JSChartContainer.BuyOrSell()},10000);  //买卖股票
             //jsChart.JSChartContainer.MoveNextKLineData()  //手动前进一个K线
-
-
             resizeCanvas();
-    
             Tools.init({
                 trainDataCount: option.Train.DataCount
             });
         });
-        
-        function unlockIndex(info)
-        {
+        function unlockIndex(info) {
             console.log(info);
             var lockData = { IndexName: info.Data.IndexName, IsLocked: false };
             info.HQChart.LockIndex(lockData);
         }
-        
-        function ComplierError(error)
-        {
+        function ComplierError(error) {
             alert(error);
             console.log('[ComplierError]', error);
         }
-
-        function TrainCallback2(event,data,obj)
-        {
-            if (data.TrainDataCount<=0)
-            {
+        function TrainCallback2(event,data,obj) {
+            if (data.TrainDataCount<=0) {
                 console.log('[TrainCallback2] finish train. ', data.BuySellData);
                 Root.result.setData(obj);
-            }
-            else
-            {
+            } else {
                 console.log('[TrainCallback2] remain train data ', data.TrainDataCount, data);
             }
-
             Root.tools.setBuyOrSellState(data.Operator);
             Root.tools.setData(data.BuySellData);
             Root.tools.setSurplusKLineCount(data.TrainDataCount);
         }
-
         //老的接口回调目前不用了
-        function TrainCallback(hqchart)
-        {
+        function TrainCallback(hqchart) {
             var trainDataCount=hqchart.TrainDataCount;
-            if (trainDataCount<=0)
-            {
+            if (trainDataCount<=0) {
                 console.log('[FinishCallback] finish train. ', hqchart.BuySellData);
-
                 Root.result.setData(hqchart);
-            }
-            else
-            {
+            } else {
                 var op= (hqchart.GetOperator()==0 ? "买":'卖');
                 console.log('[FinishCallback] remain train data ', trainDataCount, op);
             }
-
             Root.tools.setBuyOrSellState(hqchart.GetOperator());
             Root.tools.setData(hqchart.BuySellData);
             Root.tools.setSurplusKLineCount(trainDataCount);
         }
-
     </script>  
 </body>  
 </html>
