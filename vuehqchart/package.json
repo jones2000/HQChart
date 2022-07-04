@@ -11,7 +11,7 @@
     "page": "webpack-dev-server --inline --hot --open --env.dev --open-page ",
     "build": "rimraf dist && webpack -p --progress --hide-modules",
     "lib": "babel src/jscommon/umychart.vue --out-dir lib",
-    "lib2": "babel src/jscommon/umychart*.js --out-dir lib2",
+    "lib2": "babel src/jscommon/umychart*.js --out-dir lib2"
   },
   "dependencies": {
     "axios": "^0.16.2",

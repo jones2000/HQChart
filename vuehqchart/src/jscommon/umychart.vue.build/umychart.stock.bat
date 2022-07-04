@@ -1,1 +1,0 @@
-copy ..\umychart.stock.js+umychart.stock.vue.export.js ..\umychart.vue\umychart.stock.vue.js /b
