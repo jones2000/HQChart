@@ -12,7 +12,6 @@
     "build": "rimraf dist && webpack -p --progress --hide-modules",
     "lib": "babel src/jscommon/umychart.vue --out-dir lib",
     "lib2": "babel src/jscommon/umychart*.js --out-dir lib2",
-    "unilib": "babel src/jscommon/umychart.uniapp.h5/umychart*.js --out-dir uniapp_lib"
   },
   "dependencies": {
     "axios": "^0.16.2",

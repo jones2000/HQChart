@@ -1,5 +1,0 @@
-<view class="container">
-  <canvas class="historychart"  canvas-id="historychart" 
-    style="height:{{Height}}px; width:{{Width}}px;" 
-    bindtouchstart='historytouchstart' bindtouchmove='historytouchmove' bindtouchend='historytouchend'/>
-</view>
