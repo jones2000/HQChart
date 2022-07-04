@@ -298,6 +298,14 @@ function GetBlackStyle()
             LineColor:'rgb(120,167,255)',
             TextBGColor:'rgba(255,255,255,1)'
         },
+
+        DepthMapPaint:
+        {
+            LineColor:"rgba(255,185,15)",
+            AreaColor:"rgba(255,185,15,0.8)",
+            TextColor:"rgba(255,255,255)",
+            TextBGColor:'rgb(43,54,69)'
+        },
     
         //筹码分布图
         StockChip:

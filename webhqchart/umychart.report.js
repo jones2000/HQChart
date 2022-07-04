@@ -80,6 +80,7 @@ function JSReportChart(divElement)
         if (IFrameSplitOperator.IsNonEmptyArray(option.Tab)) chart.SetTab(option.Tab);
         if (IFrameSplitOperator.IsNumber(option.TabSelected)) chart.SetSelectedTab(option.TabSelected);
         if (IFrameSplitOperator.IsBool(option.EnableDragRow)) chart.EnableDragRow=option.EnableDragRow;
+        if (IFrameSplitOperator.IsNumber(option.DragRowType)) chart.DragRowType=option.DragRowType;
         if (option.SortInfo)
         {
             var item=option.SortInfo;
@@ -272,6 +273,7 @@ function JSReportChartContainer(uielement)
     //行拖拽
     this.DragRow;
     this.EnableDragRow=false;
+    this.DragRowType=0; //0=插入  1=交换
     this.AutoDragScrollTimer=null;
     this.EnablePageScroll=false;
     this.DragMove;  //={ Click:{ 点击的点}, Move:{最后移动的点}, PreMove:{上一个点的位置} };
@@ -1449,12 +1451,36 @@ function JSReportChartContainer(uielement)
         var data=this.SourceData.Data;
         if (srcIndex>=data.length || moveIndex>=data.length) return;
 
-        //原始数据交换顺序
-        var temp=data[srcIndex];
-        data[srcIndex]=data[moveIndex];
-        data[moveIndex]=temp;
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_DRAG_ROW);
+        if (event)
+        {
+            var sendData=
+            { 
+                Symbol:this.Symbol,
+                Src:{ Index:srcIndex, Symbol:data[srcIndex] },
+                To:{ Index:moveIndex, Symbol:data[moveIndex] },
+                PreventDefault:false    //PreventDefault 是否阻止内置的点击处理
+            };    
+            event.Callback(event,sendData,this);
+            if (sendData.PreventDefault) return;
+        }
 
-        this.Data.Data=data.slice(0);
+        if (this.DragRowType==1)
+        {
+            //原始数据交换顺序
+            var temp=data[srcIndex];
+            data[srcIndex]=data[moveIndex];
+            data[moveIndex]=temp;
+            this.Data.Data=data.slice(0);
+        }
+        else
+        {
+            //插入模式
+            var srcItem=data[srcIndex];
+            data.splice(srcIndex,1);
+            data.splice(moveIndex, 0, srcItem);
+            this.Data.Data=data.slice(0);
+        }
 
         //更新选中行
         var reportChart=this.GetReportChart();
