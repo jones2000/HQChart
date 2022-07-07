@@ -20,7 +20,7 @@
     "less": "^3.9.0",
     "less-loader": "^5.0.0",
     "md5": "^2.2.1",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "promise-polyfill": "^6.0.2",
     "qs": "^6.5.0",
     "swiper": "^3.4.2",
