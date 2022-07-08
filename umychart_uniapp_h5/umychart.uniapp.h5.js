@@ -4520,7 +4520,7 @@ function JSChart(divElement, bOffscreen)
                 let indexItem=JSIndexMap.Get(item.Index);
                 if (indexItem)
                 {
-                    chart.WindowIndex[i]=indexItem.Create();
+                    chart.WindowIndex[i]=indexItem.Create(item.Option);
                     if (chart.WindowIndex[i].SetArgs) chart.WindowIndex[i].SetArgs(item.Args);
                     chart.CreateWindowIndex(i);
                 }
@@ -5638,11 +5638,11 @@ function JSChart(divElement, bOffscreen)
         }
     }
 
-    //设置深度图数据 depthData=[ {ID:深度图ID, Data:数据},]   bDraw=是否立即重绘
-    this.SetDepthMapData=function(depthData, bDraw)
+    //设置深度图数据 depthData=[ {ID:深度图ID, Data:数据},]   option={ Draw: true/false }
+    this.SetDepthMapData=function(depthData, option)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.SetDepthMapData)=='function') 
-            this.JSChartContainer.SetDepthMapData(depthData, bDraw);
+            this.JSChartContainer.SetDepthMapData(depthData, option);
     }
 
     //设置强制横屏
@@ -17550,13 +17550,15 @@ function HQTradeFrame()
 
     this.DrawOveraly=function()
     {
-        for(var i in this.SubFrame)
+        for(var i=0; i<this.SubFrame.length; ++i)
         {
             var item=this.SubFrame[i];
-            for(var j in item.OverlayIndex)
+            if (item.Height<=0) continue;   //高度是0 不画
+
+            for(var j=0;j<item.OverlayIndex.length; ++j)
             {
                 var overlayItem=item.OverlayIndex[j];
-                for(var k in overlayItem.ChartPaint)
+                for(var k=0; k<overlayItem.ChartPaint.length; ++k)
                 {
                     if (overlayItem.ChartPaint[k].IsShow)
                         overlayItem.ChartPaint[k].Draw();
@@ -21936,10 +21938,22 @@ function ChartKLine()
         UnchagneColor: { BG:g_JSChartResource.OrderFlow.UnchagneColor.BG, Border:g_JSChartResource.OrderFlow.UnchagneColor.Border },
         Text:{ Color: g_JSChartResource.OrderFlow.Text.Color , Family:g_JSChartResource.OrderFlow.Text.Family, FontMaxSize:g_JSChartResource.OrderFlow.Text.FontMaxSize, MaxValue:g_JSChartResource.OrderFlow.Text.MaxValue },
         Line:{ UpDownColor: g_JSChartResource.OrderFlow.Line.UpDownColor, MiddleColor:g_JSChartResource.OrderFlow.Line.MiddleColor },
+        POCGBColor:g_JSChartResource.OrderFlow.POCGBColor,
 
         ShowType:0,  //显示类型 0, 1
 
-        AlwaysShowOrderText:g_JSChartResource.OrderFlow.AlwaysShowOrderText
+        AskBarColor:g_JSChartResource.OrderFlow.AskBarColor,
+        BidBarColor:g_JSChartResource.OrderFlow.BidBarColor,
+
+        AlwaysShowOrderText:g_JSChartResource.OrderFlow.AlwaysShowOrderText,
+
+        IsShowAskText:true,
+        IsShowAskBar:false,     //是否显示横向柱子
+
+        IsShowBidText:true,
+        IsShowBidBar:false,     //是否显示横向柱子
+
+        IsShowPOCBG:true,
     }
 
     this.OrderFlow_Style2=
@@ -23760,7 +23774,7 @@ function ChartKLine()
             this.Canvas.fillStyle=kColor.BG;
             this.Canvas.fillRect(ToFixedRect(xKLine.Left),ToFixedRect(top-cellHeight/2),ToFixedRect(xKLine.DataWidth),ToFixedRect(barHeight+cellHeight));
         }
-        
+
         
         this.Canvas.textBaseline='middle';
         this.Canvas.textAlign='center';
@@ -23769,6 +23783,35 @@ function ChartKLine()
         var textXOffset=textWidth/2;
         if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.Order))
         {
+            var totalAsk=0, totalBid=0, maxTotalIndex=null;
+            if (this.OrderFlow.IsShowAskBar || this.OrderFlow.IsShowBidBar || this.OrderFlow.IsShowPOCBG)
+            {
+                var maxTotal=0, value=0;
+                for(var i=0;i<orderFlow.Order.length;++i)
+                {
+                    var item=orderFlow.Order[i];
+
+                    value=0;
+                    if (item.Ask && IFrameSplitOperator.IsNumber(item.Ask.Value)) 
+                    {
+                        totalAsk+=item.Ask.Value;
+                        value+=item.Ask.Value;
+                    }
+
+                    if (item.Bid && IFrameSplitOperator.IsNumber(item.Bid.Value)) 
+                    {
+                        totalBid+=item.Bid.Value;
+                        value+=item.Bid.Value;
+                    }
+
+                    if (maxTotal<value)
+                    {
+                        maxTotal=value;
+                        maxTotalIndex=i;
+                    }
+                }
+            }
+
             for(var i=0;i<orderFlow.Order.length;++i)
             {
                 var item=orderFlow.Order[i];
@@ -23783,11 +23826,25 @@ function ChartKLine()
                     this.Canvas.fillStyle=item.Ask.BG;
                     this.Canvas.fillRect(ToFixedRect(rect.Left),ToFixedRect(rect.Top),ToFixedRect(rect.Width),ToFixedRect(rect.Height));
                 }
+
+                if (this.OrderFlow.IsShowPOCBG && maxTotalIndex==i)
+                {
+                    this.Canvas.fillStyle=this.OrderFlow.POCGBColor;
+                    this.Canvas.fillRect(ToFixedRect(rect.Left),ToFixedRect(rect.Top),ToFixedRect(rect.Width),ToFixedRect(rect.Height));
+                }
+
+                if (this.OrderFlow.IsShowAskBar && IFrameSplitOperator.IsNumber(item.Ask.Value) && totalAsk>0)
+                {
+                    var barWidh=rect.Width*(item.Ask.Value/totalAsk);
+                    if (barWidh<1) barWidh=1;
+                    this.Canvas.fillStyle=this.OrderFlow.AskBarColor;
+                    this.Canvas.fillRect(ToFixedRect(rect.Right),ToFixedRect(rect.Top),ToFixedRect(-barWidh),ToFixedRect(rect.Height));
+                }
     
                 var text=null;
                 if (IFrameSplitOperator.IsString(item.Ask.Text)) text=item.Ask.Text;
                 else if (IFrameSplitOperator.IsNumber(item.Ask.Value)) text=item.Ask.Value.toString();
-                if (text && this.IsShowOrderText)
+                if (text && this.IsShowOrderText && this.OrderFlow.IsShowAskText)
                 {
                     if (item.Ask.Color) this.Canvas.fillStyle=item.Ask.Color;
                     else this.Canvas.fillStyle=this.OrderFlow.Text.Color;
@@ -23815,11 +23872,27 @@ function ChartKLine()
                     this.Canvas.fillStyle=item.Bid.BG;
                     this.Canvas.fillRect(ToFixedRect(rect.Left),ToFixedRect(rect.Top),ToFixedRect(rect.Width),ToFixedRect(rect.Height));
                 }
+                
+
+                if (this.OrderFlow.IsShowPOCBG && maxTotalIndex==i)
+                {
+                    this.Canvas.fillStyle=this.OrderFlow.POCGBColor;
+                    this.Canvas.fillRect(ToFixedRect(rect.Left),ToFixedRect(rect.Top),ToFixedRect(rect.Width),ToFixedRect(rect.Height));
+                }
+
+                if (this.OrderFlow.IsShowBidBar && IFrameSplitOperator.IsNumber(item.Bid.Value) && totalBid>0)
+                {
+                    var barWidh=rect.Width*(item.Bid.Value/totalBid);
+                    if (barWidh<1) barWidh=1;
+                    this.Canvas.fillStyle=this.OrderFlow.BidBarColor;
+                    this.Canvas.fillRect(ToFixedRect(rect.Left),ToFixedRect(rect.Top),ToFixedRect(barWidh),ToFixedRect(rect.Height));
+                }
+
     
                 var text=null;
                 if (IFrameSplitOperator.IsString(item.Bid.Text)) text=item.Bid.Text;
                 else if (IFrameSplitOperator.IsNumber(item.Bid.Value)) text=item.Bid.Value.toString();
-                if (text && this.IsShowOrderText)
+                if (text && this.IsShowOrderText && this.OrderFlow.IsShowBidText)
                 {
                     if (item.Bid.Color) this.Canvas.fillStyle=item.Bid.Color;
                     else this.Canvas.fillStyle=this.OrderFlow.Text.Color;
@@ -23938,7 +24011,6 @@ function ChartKLine()
                 {
                     this.Canvas.fillText(text,xKLine.Center,yPrice);
                 }
-                
             }
         }
     }
@@ -32933,9 +33005,10 @@ function ChartVolProfileVisibleRange()
     this.ClassName="ChartVolProfileVisibleRange";
 
     this.IsDrawFirst=true;
-    this.IsShowText=true;  //是否显示成交量数据
-    this.VolType=0; //0=up|down bar  1=total bar
-    this.BarPosition=1;    //柱子方向 0=左边  1=右边
+    this.IsShowText=true;   //是否显示成交量数据
+    this.VolType=0;         //0=up|down bar  1=total bar
+    this.BarPosition=1;     //柱子方向 0=左边  1=右边
+    this.BarWidthRate=0.3;
     this.VolFont;
     this.HQChart;
 
@@ -32944,8 +33017,16 @@ function ChartVolProfileVisibleRange()
     this.MaxVolPrice;
 
     this.VolLineColor=g_JSChartResource.ChartVolProfileVisibleRange.VolLineColor;
+    this.VolLineFont=g_JSChartResource.ChartVolProfileVisibleRange.VolLineFont;
+    this.VolLineTextColor=g_JSChartResource.ChartVolProfileVisibleRange.VolLineTextColor;
 
-    this.BarWidthRate=0.3;
+    //value Area
+    this.VAHLineColor=g_JSChartResource.ChartVolProfileVisibleRange.VAHLineColor;
+    this.VAHTextColor=g_JSChartResource.ChartVolProfileVisibleRange.VAHTextColor;
+    this.VALLineColor=g_JSChartResource.ChartVolProfileVisibleRange.VALLineColor;
+    this.VALTextColor=g_JSChartResource.ChartVolProfileVisibleRange.VALTextColor;
+    this.VAFont=g_JSChartResource.ChartVolProfileVisibleRange.VAFont;
+    
     this.TextConfig=
     {
         Color:g_JSChartResource.ChartVolProfileVisibleRange.Text.Color,
@@ -32964,6 +33045,16 @@ function ChartVolProfileVisibleRange()
     ]
 
     this.MaxVolLine;
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (IFrameSplitOperator.IsBool(option.IsShowText)) this.IsShowText=option.IsShowText;
+        if (IFrameSplitOperator.IsNumber(option.VolType)) this.IsShowText=option.VolType;
+        if (IFrameSplitOperator.IsNumber(option.BarPosition)) this.BarPosition=option.BarPosition;
+        if (IFrameSplitOperator.IsNumber(option.BarWidthRate)) this.IsShowText=option.BarWidthRate;
+    }
 
     this.PtInChart=function(x,y)
     {
@@ -33039,6 +33130,55 @@ function ChartVolProfileVisibleRange()
         this.Canvas.restore();
     }
 
+    this.DrawPriceLine=function()
+    {
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var pixelTatio = GetDevicePixelRatio();
+
+        var aryPrice=[];
+        var maxVolPrice=this.MaxVolPrice;
+        if (IFrameSplitOperator.IsNumber(this.Data.MaxVolPrice)) maxVolPrice=this.Data.MaxVolPrice;
+        if (maxVolPrice>=this.ChartFrame.HorizontalMin && maxVolPrice<=this.ChartFrame.HorizontalMax)
+            aryPrice.push({Price:maxVolPrice, Font:this.VolLineFont, LineColor:this.VolLineColor, LineWidth:2, TextColor:this.VolLineTextColor, Type:1});
+
+        if (IFrameSplitOperator.IsNumber(this.Data.VAHPrice) && this.Data.VAHPrice>=this.ChartFrame.HorizontalMin && this.Data.VAHPrice<=this.ChartFrame.HorizontalMax)
+            aryPrice.push({Price:this.Data.VAHPrice, Font:this.VAFont, LineColor:this.VAHLineColor, LineWidth:2, TextColor:this.VAHTextColor, Type:2});
+
+        if (IFrameSplitOperator.IsNumber(this.Data.VALPrice) && this.Data.VALPrice>=this.ChartFrame.HorizontalMin && this.Data.VALPrice<=this.ChartFrame.HorizontalMax)
+            aryPrice.push({Price:this.Data.VALPrice, Font:this.VAFont, LineColor:this.VALLineColor, LineWidth:2, TextColor:this.VALTextColor, Type:3});
+
+        for(var i=0;i<aryPrice.length;++i)
+        {
+            var item=aryPrice[i];
+            var yLine=ToFixedPoint2(item.LineWidth,this.ChartFrame.GetYFromData(item.Price,false));
+            this.Canvas.lineWidth=item.LineWidth;
+            this.Canvas.strokeStyle=item.LineColor;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(left,yLine);
+            this.Canvas.lineTo(right,yLine);
+            this.Canvas.stroke();
+            if (item.Type==1) this.MaxVolLine= { Start:{X:left,Y:yLine}, End:{X:right,Y:yLine} };
+
+            if (this.ChartBorder.Right>10)  //刻度文字
+            {
+                var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+                var text=item.Price.toFixed(defaultfloatPrecision);
+                this.Canvas.font=item.Font;
+                this.Canvas.textAlign = "left";
+                this.Canvas.textBaseline = "middle";
+                var fontHeight=this.GetFontHeight();
+                var textWidth=this.Canvas.measureText(text).width+2*pixelTatio;
+
+                this.Canvas.fillStyle=item.LineColor;
+                this.Canvas.fillRect(right,yLine-fontHeight/2,textWidth,fontHeight);
+
+                this.Canvas.fillStyle=item.TextColor;
+                this.Canvas.fillText(text,right+1*pixelTatio, yLine);
+            }
+        }
+    }
+
     this.DrawVolBar=function()
     {
         var cellHeight=this.GetPriceYOffset(this.Data.PriceOffset);
@@ -33049,20 +33189,7 @@ function ChartVolProfileVisibleRange()
         var width=right-left;
         var height=bottom-top;
         var maxBarWidth=width*this.BarWidthRate;
-
-        if (this.MaxVolPrice>=this.ChartFrame.HorizontalMin&& this.MaxVolPrice<=this.ChartFrame.HorizontalMax)
-        {
-            var lineWidth=2;
-            var yLine=ToFixedPoint2(lineWidth,this.ChartFrame.GetYFromData(this.MaxVolPrice,false));
-            this.Canvas.lineWidth=lineWidth;
-            this.Canvas.strokeStyle=this.VolLineColor;
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(left,yLine);
-            this.Canvas.lineTo(right,yLine);
-            this.Canvas.stroke();
-
-            this.MaxVolLine= { Start:{X:left,Y:yLine}, End:{X:right,Y:yLine} };
-        }
+       
 
         if (this.IsShowText)
         {
@@ -33070,7 +33197,6 @@ function ChartVolProfileVisibleRange()
             if (this.VolFont) this.Canvas.font=this.VolFont;
         }
         
-        //this.Canvas.lineWidth=1;
         for(var i=0,j=0;i<this.Data.Data.length;++i)
         {
             var item=this.Data.Data[i];
@@ -33078,6 +33204,8 @@ function ChartVolProfileVisibleRange()
 
             this.DrawVolBarItem(item, left, right, maxBarWidth, cellHeight);
         }
+
+        this.DrawPriceLine();
     }
 
     this.DrawVolBarItem=function(item, left, right, maxBarWidth, cellHeight)
@@ -49823,10 +49951,12 @@ function ChartDrawVolProfile()
     this.ChartBorder;
     this.GetXYCoordinate=this.GetXYCoordinate_default;
    
-    this.IsShowText=true;  //是否显示成交量数据
-    this.VolType=0; //0=up|down bar  1=total bar
-    this.BarPosition=0;    //柱子方向 0=左边  1=右边
+    this.IsShowText=true;   //是否显示成交量数据
+    this.VolType=0;         //0=up|down bar  1=total bar
+    this.BarPosition=0;     //柱子方向 0=左边  1=右边
     this.VolFont;
+    this.VAVol=60;          //Value area volume
+    this.BarWidthRate=0.3;
     
     this.Data;
     this.MaxVol;
@@ -49837,7 +49967,7 @@ function ChartDrawVolProfile()
     this.BGColor=g_JSChartResource.ChartDrawVolProfile.BGColor;
     this.BorderColor=g_JSChartResource.ChartDrawVolProfile.BorderColor;
     this.VolLineColor=g_JSChartResource.ChartDrawVolProfile.VolLineColor;
-    this.BarWidthRate=0.3;
+    
     this.TextConfig=
     {
         Color:g_JSChartResource.ChartDrawVolProfile.Text.Color,
@@ -49874,6 +50004,7 @@ function ChartDrawVolProfile()
             if (IFrameSplitOperator.IsBool(option.IsShowText)) this.IsShowText=option.IsShowText;
             if (IFrameSplitOperator.IsNumber(option.VolType)) this.VolType=option.VolType;
             if (IFrameSplitOperator.IsNumber(option.BarPosition)) this.BarPosition=option.BarPosition;
+            if (IFrameSplitOperator.IsNumber(option.VAVol)) this.VAVol=option.VAVol;
         }
     }
     
@@ -49910,6 +50041,7 @@ function ChartDrawVolProfile()
         var option={ Start:{ Date:start.DateTime.Date, DataIndex:start.XValue }, End:{ Date:end.DateTime.Date, DataIndex:end.XValue }, Chart:this };
         if (IFrameSplitOperator.IsNumber(start.DateTime.Time)) option.Start.Time=start.DateTime.Time;
         if (IFrameSplitOperator.IsNumber(end.DateTime.Time)) option.End.Time=end.DateTime.Time;
+        option.ValueAreaVol=this.VAVol;
 
         this.DataStatus=0
         if (this.HQChart && this.HQChart.RequestVolumeProfileData)
@@ -50805,6 +50937,10 @@ function JSChartResource()
         Text:{ Color: "rgb(92,96,89)" , Family:'Arial', FontMaxSize:18, MaxValue:"8888" },  //文字(风格 2，3共用)
         Line:{ UpDownColor: "rgb(0,0,0)", MiddleColor:"rgb(211,211,211)" },  //最大, 最低,中间 竖线
         AlwaysShowOrderText:true,   //总是显示订单流文字
+
+        POCGBColor:"rgba(178,34,34,0.8)",
+        AskBarColor:'rgb(14,209,69)',
+        BidBarColor:'rgb(236,28,36)'
     };
 
     this.OrderFlow_Style2=
@@ -51052,6 +51188,8 @@ function JSChartResource()
     this.ChartVolProfileVisibleRange=
     {
         VolLineColor:"rgb(232,5,9)",
+        VolLineFont:14*GetDevicePixelRatio() +"px 微软雅黑",
+        VolLineTextColor:'rgb(255,255,255)',
 
         UpVolColor:"rgba(103,179,238, 0.24)",
         DownVolColor:"rgba(237,208,105,0.24)",
@@ -51059,6 +51197,12 @@ function JSChartResource()
         AreaDonwColor:"rgba(237,208,105,0.7)",
 
         Text:{ Color: "rgb(0,0,0)" , Family:'Arial', FontMaxSize:18, FontMinSize:6 },  //文字
+
+        VAHLineColor:'rgb(0,0,255)',
+        VAHTextColor:"rgb(255,255,255)",
+        VALLineColor:"rgb(0,0,255)",
+        VALTextColor:"rgb(255,255,255)",
+        VAFont:14*GetDevicePixelRatio() +"px 微软雅黑",
     }
 
     //多图标指标ChartMultiSVGIcon -> MULTI_SVGICON
@@ -52228,7 +52372,7 @@ JSIndexMap.Get=function(id)
 
         ["OX", { IsMainIndex:false, Create:function() { return new JSIndex_OX(); } } ],
 
-        ["可视范围成交量分布图", { IsMainIndex:true, Create:function() { return new VolProfileVisibleRangeIndex(); } } ],
+        ["可视范围成交量分布图", { IsMainIndex:true, Create:function(option) { return new VolProfileVisibleRangeIndex(option); } } ],
     ]
     );
 
@@ -56183,7 +56327,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.TitlePaint[titleIndex].Data=[];
         this.TitlePaint[titleIndex].Title=null;
 
-        this.WindowIndex[windowIndex]=indexItem.Create();
+        this.WindowIndex[windowIndex]=indexItem.Create(option);
         this.CreateWindowIndex(windowIndex);
 
         var bindData=this.ChartPaint[0].Data;
@@ -58092,6 +58236,11 @@ function KLineChartContainer(uielement,OffscreenElement)
             var hisData=this.ChartPaint[0].Data;
             this.WindowIndex[index].ExecuteScript(this,index,hisData);
         }
+        else if (typeof(this.WindowIndex[index].RequestData)=="function")  //数据需要另外下载的.
+        {
+            var hisData=this.ChartPaint[0].Data;
+            this.WindowIndex[index].RequestData(this, index, hisData, null);
+        }
         else
         {
             this.WindowIndex[index].BindData(this,index,bindData);
@@ -58891,7 +59040,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             {
                 Name:'KLineChartContainer::RequestVolumeProfileData', //类名::函数
                 Explain:'成交量分布图下载',
-                Request:{ Period:this.Period, Right:this.Right, Start:option.Start, End:option.End, Symbol:this.Symbol }, 
+                Request:{ Period:this.Period, Right:this.Right, Start:option.Start, End:option.End, Symbol:this.Symbol, ValueAreaVol:option.ValueAreaVol }, 
                 Self:this,
                 VolProfile:chart,
                 PreventDefault:false
@@ -66140,7 +66289,7 @@ function JSIndex_OX()
 }
 
 //成交量分布图-可视范围
-function VolProfileVisibleRangeIndex()
+function VolProfileVisibleRangeIndex(option)
 {
     this.newMethod=BaseIndex;   //派生
     this.newMethod('VRVR');
@@ -66153,6 +66302,52 @@ function VolProfileVisibleRangeIndex()
     this.WindowIndex;
     this.RequestTimer=null;
     this.DelayRequestFrequency=500;  //延迟请求数据
+
+    this.VolType=0;         //0=up|down bar  1=total bar
+    this.BarPosition=1;     //柱子方向 0=左边  1=右边
+    this.BarWidthRate=0.3;
+
+    this.Arguments=
+    [
+        { Name:"VAVol", Value:70 }
+    ];
+
+    if (option)
+    {
+        if (IFrameSplitOperator.IsNumber(option.VolType)) this.VolType=option.VolType;
+        if (IFrameSplitOperator.IsNumber(option.BarPosition)) this.BarPosition=option.BarPosition;
+        if (IFrameSplitOperator.IsNumber(option.BarWidthRate)) this.BarWidthRate=option.BarWidthRate;
+        if (IFrameSplitOperator.IsNumber(option.DelayRequestFrequency)) this.DelayRequestFrequency=option.DelayRequestFrequency;
+    }
+
+    this.SetArgs=function(args)
+    {
+        if (!args || !IFrameSplitOperator.IsNonEmptyArray(args)) return;
+
+        for(var i=0;i<args.length;++i)
+        {
+            var item=args[i];
+            if (item.Name=="VAVol") this.SetParamValue(item.Name,item.Value);
+        }
+    }
+
+    this.SetParamValue=function(name, value)
+    {
+        for(var i=0;i<this.Arguments.length;++i)
+        {
+            var item=this.Arguments[i];
+            if (item.Name==name) item.Value=value;
+        }
+    }
+
+    this.GetParamValue=function(name)
+    {
+        for(var i=0;i<this.Arguments.length;++i)
+        {
+            var item=this.Arguments[i];
+            if (item.Name==name) return item.Value;
+        }
+    }
 
     this.Create=function(hqChart,windowIndex)
     {
@@ -66183,6 +66378,7 @@ function VolProfileVisibleRangeIndex()
         paint.ChartFrame=frame;
         paint.HQChart=this.HQChart;
         paint.Identify=this.Guid;
+        paint.SetOption(this);
 
         if (isOverlay) this.OverlayIndex.Frame.ChartPaint.push(paint);
         else hqChart.ChartPaint.push(paint);
@@ -66224,6 +66420,7 @@ function VolProfileVisibleRangeIndex()
             var option={ Start:{ Date:startKItem.Date, DataIndex:pageKRange.Start }, End:{ Date:endKItem.Date, DataIndex:pageKRange.End }, Chart:this };
             if (IFrameSplitOperator.IsNumber(startKItem.Time)) option.Start.Time=startKItem.Time;
             if (IFrameSplitOperator.IsNumber(endKItem.Time)) option.End.Time=endKItem.Time;
+            option.ValueAreaVol=this.Arguments[0].Value;
 
             this.DataStatus=0
             if (hqChart && hqChart.RequestVolumeProfileData)
