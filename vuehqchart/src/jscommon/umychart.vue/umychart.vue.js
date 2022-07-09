@@ -62415,7 +62415,7 @@ function MinuteChartContainer(uielement)
         var frame=null;
         var subFrame=this.Frame.SubFrame[1];    //第2个窗口
         var overlayFrame=null;
-        for(var i in subFrame.OverlayIndex)
+        for(var i=0; i<subFrame.OverlayIndex.length; ++i)
         {
             var item=subFrame.OverlayIndex[i];
             if (item.Identify=='Position_Line_Frame')
@@ -62459,8 +62459,29 @@ function MinuteChartContainer(uielement)
         }
         else
         {
-            chart=overlayFrame.ChartPaint[0];
             frame=overlayFrame.Frame;
+
+            for(var i=0;i<overlayFrame.ChartPaint.length;++i)
+            {
+                var item=overlayFrame.ChartPaint[i];
+                if (item.Name=='Position-Line')
+                {
+                    chart=item;
+                    break;
+                }
+            }
+
+            if (!chart) //图形不存在就创建一个
+            {
+                chart=new ChartLine();
+                chart.Canvas=this.Canvas
+                chart.Name='Position-Line';
+                chart.ChartBorder=frame.ChartBorder;
+                chart.ChartFrame=frame
+                chart.Identify=overlayFrame.Identify;
+                chart.Color=g_JSChartResource.Minute.PositionColor;
+                overlayFrame.ChartPaint.push(chart);
+            }
         }
 
         var xPointCouont=this.Frame.SubFrame[0].Frame.XPointCount;
