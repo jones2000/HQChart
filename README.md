@@ -499,9 +499,10 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
    [代码地址(vue.demo/bitdemo)](/vue.demo/bitdemo) <br>
 
 
-# QQ交流群(950092318) 
-有bug,问题,新的功能需求都可以在QQ群里提 <br>
-![QQ群](/小程序行情模块用例/image/qqcode.png)
+# 交流
+有问题直接发issue.
+作者QQ:48274798
+
 
 
 # 奖项

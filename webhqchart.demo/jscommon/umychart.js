@@ -2326,7 +2326,15 @@ function JSChartContainer(uielement, OffscreenElement)
         if (this.BorderDrag) return;
         if (this.YDrag) return;
         if (this.IndexChartDrag) return;
-        if (this.CurrentChartDrawPicture) return;
+
+        /*
+        if (this.CurrentChartDrawPicture)
+        {
+            var drawPicture=this.CurrentChartDrawPicture;
+            if (drawPicture.PointCount<=2) return;
+            JSConsole.Chart.Log("[JSChartContainer::UIOnMouseMove] Status", drawPicture.Status);
+        }
+        */
 
         //保存最后一次鼠标移动信息
         var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
@@ -4511,7 +4519,7 @@ function JSChartContainer(uielement, OffscreenElement)
             }
         }
 
-        if (this.EnableBorderDrag && this.Frame)
+        if (this.EnableBorderDrag && this.Frame && !this.CurrentChartDrawPicture)
         {
             var dragBorder=this.Frame.PtInFrameBorder(x,y);
             if (dragBorder && dragBorder.Index>=0)
@@ -4521,7 +4529,7 @@ function JSChartContainer(uielement, OffscreenElement)
             }
         }
 
-        if (this.EnableYDrag && this.Frame && !mouseStatus)
+        if (this.EnableYDrag && this.Frame && !this.CurrentChartDrawPicture)
         {
             var dragY=this.TryYDrag(x,y);
             if (dragY)
@@ -4531,19 +4539,22 @@ function JSChartContainer(uielement, OffscreenElement)
             }
         }
 
-        var button=this.Frame.PtInButtons(x,y);
-        if (button)
+        if (!this.CurrentChartDrawPicture)
         {
-            mouseStatus={ Cursor:"pointer", Name:"FrameButton"};
-            JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] frame button ", button);
-        }
-        else
-        {
-            button=this.PtInExtendChartButtons(x,y);
+            var button=this.Frame.PtInButtons(x,y);
             if (button)
             {
-                mouseStatus={ Cursor:"pointer", Name:"ExtendChartButton"};
-                JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] extend chart button ", button);
+                mouseStatus={ Cursor:"pointer", Name:"FrameButton"};
+                JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] frame button ", button);
+            }
+            else
+            {
+                button=this.PtInExtendChartButtons(x,y);
+                if (button)
+                {
+                    mouseStatus={ Cursor:"pointer", Name:"ExtendChartButton"};
+                    JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] extend chart button ", button);
+                }
             }
         }
 
@@ -4563,7 +4574,7 @@ function JSChartContainer(uielement, OffscreenElement)
             JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] frame bottom ");
         }
 
-        if (this.SelectedChart.EnableMoveOn && this.PtInChart)
+        if (this.SelectedChart.EnableMoveOn && this.PtInChart && !this.CurrentChartDrawPicture)
         {
             var chartInfo=this.PtInChart(x,y);
             if (chartInfo && chartInfo.Identify)
@@ -4586,6 +4597,7 @@ function JSChartContainer(uielement, OffscreenElement)
         var bDrawPicture=false; //是否正在画图
         if (this.CurrentChartDrawPicture)
         {
+            if (this.CurrentChartDrawPicture.Status!=20) mouseStatus={ Cursor:"crosshair", Name:"CurrentChartDrawPicture"};
             if (this.CurrentChartDrawPicture.SetLastPoint) this.CurrentChartDrawPicture.SetLastPoint({X:x,Y:y});
             bDrawPicture=true;
         }
@@ -41343,7 +41355,10 @@ IChartDrawPicture.ArrayDrawPricture=
     //涂鸦 不绑定K线坐标
     { Name:"涂鸦线段", ClassName:'ChartDrawGraffitiLine',  Create:function() { return new ChartDrawGraffitiLine(); } },
 
-    { Name:"固定范围成交量分布图", ClassName:"ChartDrawVolProfile", Create:function() { return new ChartDrawVolProfile(); }}
+    { Name:"固定范围成交量分布图", ClassName:"ChartDrawVolProfile", Create:function() { return new ChartDrawVolProfile(); }},
+
+    { Name:"DisjointChannel", ClassName:"ChartDrawDisjontChannel", Create:function() { return new ChartDrawDisjontChannel();}},
+    { Name:"FlatTop", ClassName:"ChartDrawDisjontChannel", Create:function() { return new ChartDrawFlatTop();}},
     
 ];
 
@@ -42649,6 +42664,106 @@ function ChartDrawPictureParallelLines()
             this.LinePoint.push(linePoint);
         }
     }
+}
+
+
+//FlatTop/Bottom
+function ChartDrawFlatTop()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawFlatTop';
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.PointCount=3;
+    this.LastPoint;
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        if (this.IsFrameMinSize()) return;
+
+        var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
+        if (!drawPoint) return;
+
+        this.AreaColor=IChartDrawPicture.ColorToRGBA(this.LineColor,0.3);
+        var points=drawPoint.slice(0);
+        this.CalculateLines(points);
+
+        this.ClipFrame();
+
+        for(var i=0;i<this.LinePoint.length; ++i)
+        {
+            var item=this.LinePoint[i];
+            this.DrawLine(item.Start,item.End);
+        }
+
+        this.DrawArea();
+        this.DrawPoint(points);  //画点
+        this.Canvas.restore(); 
+    }
+
+    this.SetLastPoint=function(obj)
+    {
+        this.LastPoint={X:obj.X,Y:obj.Y};
+    }
+
+    this.DrawArea=function()
+    {
+        if (this.LinePoint.length!=2) return;
+
+        this.Canvas.fillStyle=this.AreaColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(this.LinePoint[0].Start.X,this.LinePoint[0].Start.Y);
+        this.Canvas.lineTo(this.LinePoint[0].End.X,this.LinePoint[0].End.Y);
+        this.Canvas.lineTo(this.LinePoint[1].End.X,this.LinePoint[1].End.Y);
+        this.Canvas.lineTo(this.LinePoint[1].Start.X,this.LinePoint[1].Start.Y);
+        this.Canvas.closePath();
+        this.Canvas.fill();
+        
+    }
+
+    this.CalculateLines=function(points)
+    {
+        if (this.PointStatus==2 && this.LastPoint)
+        {
+            var ptSecond=points[1];
+            var pt=new Point();
+            pt.X=ptSecond.X;
+            pt.Y=this.LastPoint.Y;
+            points[2]=pt;
+        }
+
+        if (points.length==2)
+        {
+            this.LinePoint.push({ Start:points[0], End:points[1]});
+        }
+        else if (points.length==3)
+        {
+            this.LinePoint.push({ Start:points[0], End:points[1]});
+
+            //计算水平线
+            var ptThrid=points[2];
+            ptThrid.X=points[1].X;
+            var ptStart={ X:points[0].X, Y:ptThrid.Y };
+            var ptEnd={ X:points[1].X, Y:ptThrid.Y };
+            this.LinePoint.push({ Start:ptStart, End:ptEnd});
+        }
+    }
+}
+
+//Disjont Channel 
+function ChartDrawDisjontChannel()
+{
+    this.newMethod=ChartDrawFlatTop;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawDisjontChannel';
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.PointCount=3;
+    this.LastPoint;
 }
 
 //平行射线
