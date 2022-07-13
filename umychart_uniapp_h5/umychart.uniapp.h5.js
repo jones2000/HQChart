@@ -8987,6 +8987,14 @@ function JSChartContainer(uielement, OffscreenElement)
             case 32:    //space
                 this.OnMarkRectSelect(e);
                 break;
+            case 27:      //ESCAPE  取消画布工具
+                if (this.CurrentChartDrawPicture)
+                {
+                    var drawPicture=this.CurrentChartDrawPicture;
+                    if (drawPicture.Status!=20) //画布移动的时候不能取消
+                        this.CurrentChartDrawPicture=null;
+                }
+                break;
             default:
                 return;
         }
@@ -11187,6 +11195,7 @@ function CoordinateInfo()
     this.LineType=1;                                            //线段类型 -1 不画线段 2 虚线 8,9=集合竞价坐标
     this.ExtendData;                                            //扩展属性
                                                                 //百分比 { PriceColor:, PercentageColor:, SplitColor:, Font: }
+                                                                //自定义刻度 { Custom:{ Position: 1=强制内部 }}
 }
 
 
@@ -12742,10 +12751,16 @@ function AverageWidthFrame()
         var textHeight=defaultTextHeight;
         
         var y = this.GetYFromData(item.Value);
+        var position=0;
+        if (item.ExtendData && item.ExtendData.Custom)
+        {
+            var customItem=item.ExtendData.Custom;
+            if (IFrameSplitOperator.IsNumber(customItem.Position)) position=customItem.Position;
+        }
 
         if (item.Message[0])    // 左
         {
-            if (borderLeft<10)
+            if (borderLeft<10 || position==1)
             {
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.textAlign = "left";
@@ -12848,7 +12863,7 @@ function AverageWidthFrame()
         }
         else if (item.Message[1])   //右
         {
-            if (borderRight<10)
+            if (borderRight<10 || position==1)
             {
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.textAlign = "left";
@@ -39026,6 +39041,7 @@ function FrameSplitKLinePriceY()
 
         if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
         if (option.IsShowLine==false) info.LineType=-1;
+        if (option.PositionEx===1) info.ExtendData={ Custom:{ Position:1 } };   //强制画在内部
 
         return info;
     }
@@ -39093,6 +39109,8 @@ function FrameSplitKLinePriceY()
             else text=info.Value.toFixed(defaultfloatPrecision);
             if (option.Position=='left') info.Message[0]=text;
             else info.Message[1]=text;
+
+            if (option.PositionEx===1) info.ExtendData={ Custom:{ Position:1 } };   //强制画在内部
 
             this.Frame.CustomHorizontalInfo.push(info);
         }

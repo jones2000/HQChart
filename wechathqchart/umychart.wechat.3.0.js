@@ -3692,10 +3692,17 @@ function AverageWidthFrame()
 
         var textHeight = 18;
         var y = this.GetYFromData(item.Value);
+        var position=0;
+
+        if (item.ExtendData && item.ExtendData.Custom)
+        {
+            var customItem=item.ExtendData.Custom;
+            if (IFrameSplitOperator.IsNumber(customItem.Position)) position=customItem.Position;
+        }
 
         if (item.Message[0]) 
         {
-            if (borderLeft < 10)    //左边
+            if (borderLeft < 10 || position==1)    //左边
             {
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.textAlign = "left";
@@ -3750,7 +3757,7 @@ function AverageWidthFrame()
         }
         else if (item.Message[1])   //右边
         {
-            if (borderRight < 10) 
+            if (borderRight < 10 || position==1) 
             {
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.textAlign = "left";

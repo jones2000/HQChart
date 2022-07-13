@@ -667,7 +667,7 @@ function FrameSplitKLinePriceY()
         if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
         if (option.IsShowLine == false) info.LineType = -1;
         if (option.CountDown===true) info.CountDown=true;   //倒计时设置
-        
+        if (option.PositionEx===1) info.ExtendData={ Custom:{ Position:1 } };   //强制画在内部
         return info;
     }
 
@@ -687,9 +687,8 @@ function FrameSplitKLinePriceY()
 
     this.CustomFixedCoordinate = function (option)    //固定坐标刻度
     {
-
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
-        for (var i in option.Data) 
+        for (var i=0; i<option.Data.length; ++i) 
         {
             var item = option.Data[i];
             var info = new CoordinateInfo();
@@ -706,7 +705,7 @@ function FrameSplitKLinePriceY()
             else text = info.Value.toFixed(defaultfloatPrecision);
             if (option.Position == 'left') info.Message[0] = text;
             else info.Message[1] = text;
-
+            if (option.PositionEx===1) info.ExtendData={ Custom:{ Position:1 } };   //强制画在内部
             this.Frame.CustomHorizontalInfo.push(info);
         }
     }
