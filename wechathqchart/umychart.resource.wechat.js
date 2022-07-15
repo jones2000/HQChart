@@ -469,8 +469,8 @@ function JSChartResource()
             if (style.DRAWICON.Text)
             {
                 var item=style.DRAWICON.Text;
-                if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWICON.Text.MaxSize=item.MaxSize;
-                if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWICON.Text.MinSize=item.MinSize;
+                if (this.IsPlusNumber(item.MaxSize)) this.DRAWICON.Text.MaxSize=item.MaxSize;
+                if (this.IsPlusNumber(item.MinSize)) this.DRAWICON.Text.MinSize=item.MinSize;
                 if (item.Zoom) this.DRAWICON.Text.Zoom=item.Zoom;
                 if (item.FontName) this.DRAWICON.Text.FontName=item.FontName;
             }
@@ -479,8 +479,8 @@ function JSChartResource()
         if (style.DRAWTEXT)
         {
             var item=style.DRAWTEXT;
-            if (IFrameSplitOperator.IsPlusNumber(item.MaxSize)) this.DRAWICON.MaxSize=item.MaxSize;
-            if (IFrameSplitOperator.IsPlusNumber(item.MinSize)) this.DRAWICON.MinSize=item.MinSize;
+            if (this.IsPlusNumber(item.MaxSize)) this.DRAWICON.MaxSize=item.MaxSize;
+            if (this.IsPlusNumber(item.MinSize)) this.DRAWICON.MinSize=item.MinSize;
             if (item.Zoom) this.DRAWICON.Zoom=item.Zoom;
             if (item.FontName) this.DRAWICON.FontName=item.FontName;
         }
@@ -488,10 +488,10 @@ function JSChartResource()
         if (style.DRAWNUMBER)
         {
             var item=style.DRAWNUMBER;
-            if (this.IsPlusNumber(item.MaxSize)) this.DRAWNUMBER.Text.MaxSize=item.MaxSize;
-            if (this.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.Text.MinSize=item.MinSize;
-            if (item.Zoom) this.DRAWNUMBER.Text.Zoom=item.Zoom;
-            if (item.FontName) this.DRAWNUMBER.Text.FontName=item.FontName;
+            if (this.IsPlusNumber(item.MaxSize)) this.DRAWNUMBER.MaxSize=item.MaxSize;
+            if (this.IsPlusNumber(item.MinSize)) this.DRAWNUMBER.MinSize=item.MinSize;
+            if (item.Zoom) this.DRAWNUMBER.Zoom=item.Zoom;
+            if (item.FontName) this.DRAWNUMBER.FontName=item.FontName;
         }
 
         if (style.DRAWABOVE)
