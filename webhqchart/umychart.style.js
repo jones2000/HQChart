@@ -336,6 +336,20 @@ function GetBlackStyle()
                 LineHeight:16   //单行高度
             }
         },
+
+        ChartDrawVolProfile:
+        {
+            BGColor:"rgba(244,250,254,0.3)",
+            BorderColor:"rgba(255,255,255)",
+            VolLineColor:"rgb(232,5,9)",
+    
+            UpVolColor:"rgba(103,179,238, 0.24)",
+            DownVolColor:"rgba(237,208,105,0.24)",
+            AreaUpColor:"rgb(103,179,238,0.7)",
+            AreaDonwColor:"rgba(237,208,105,0.7)",
+    
+            Text:{ Color: "rgb(0,0,0)" , Family:'Arial', FontMaxSize:18, FontMinSize:6 },  //文字
+        },
     
         //区间选择
         RectSelect:
