@@ -4137,6 +4137,70 @@ function MinuteHScreenFrame()
 
     this.DrawInsideHorizontal = function () 
     {
+        if (this.IsMinSize) return;
+        if (this.IsShowYText[0] === false && this.IsShowYText[1] === false) return;
+
+        var left = this.ChartBorder.GetLeft();
+        var right = this.ChartBorder.GetRightEx();
+        var top = this.ChartBorder.GetTop();
+        var bottom = this.ChartBorder.GetBottom();
+        var borderTop = this.ChartBorder.Top;
+        var borderBottom = this.ChartBorder.Bottom;
+        var titleHeight = this.ChartBorder.TitleHeight;
+        var pixelTatio = 1;
+
+        var isDrawLeft = (borderTop < 10 * pixelTatio || this.YTextPosition[0] == 2) && this.IsShowYText[0] === true;
+        var isDrawRight = (borderBottom < 10 * pixelTatio || this.YTextPosition[1] == 2) && this.IsShowYText[1] === true;
+
+        if (isDrawLeft || isDrawRight) 
+        {
+            var yPrev = null; //上一个坐标y的值
+            for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
+            {
+                var item = this.HorizontalInfo[i];
+                var y = this.GetYFromData(item.Value);
+                if (y != null && yPrev != null && Math.abs(y - yPrev) < this.MinYDistance) continue;  //两个坐标在近了 就不画了
+
+                //坐标信息 左边 间距小于10 画在内部
+                if (item.Message[0] != null && isDrawLeft) 
+                {
+                    if (item.Font != null) this.Canvas.font = item.Font;
+                    this.Canvas.fillStyle = item.TextColor;
+                    this.Canvas.textAlign = "left";
+                    if (y >= right - 2) this.Canvas.textBaseline = 'top';
+                    else if (y <= left + 2) this.Canvas.textBaseline = 'bottom';
+                    else this.Canvas.textBaseline = "middle";
+
+                    var textObj = { X: left, Y: y, Text: { BaseLine: this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font: this.Canvas.font, Value: item.Message[0] } };
+                    var xText = y, yText = top;
+                    this.Canvas.save();
+                    this.Canvas.translate(xText, yText);
+                    this.Canvas.rotate(90 * Math.PI / 180);
+                    this.Canvas.fillText(item.Message[0], 2, 0);
+                    this.Canvas.restore();
+                }
+
+                if (item.Message[1] != null && isDrawRight) 
+                {
+                    if (item.Font != null) this.Canvas.font = item.Font;
+                    this.Canvas.fillStyle = item.TextColor;
+                    this.Canvas.textAlign = "right";
+                    if (y >= right - 2) this.Canvas.textBaseline = 'top';
+                    else if (y <= left + 2) this.Canvas.textBaseline = 'bottom';
+                    else this.Canvas.textBaseline = "middle";
+                    var textWidth = this.Canvas.measureText(item.Message[1]).width;
+                    var textObj = { X: right - textWidth, Y: y, Text: { BaseLine: this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font: this.Canvas.font, Value: item.Message[1] } };
+
+                    var xText = y, yText = bottom;
+                    this.Canvas.save();
+                    this.Canvas.translate(xText, yText);
+                    this.Canvas.rotate(90 * Math.PI / 180);
+                    this.Canvas.fillText(item.Message[1], -2, 0);
+                    this.Canvas.restore();
+                }
+                yPrev = y;
+            }
+        }
     }
 
     //Y坐标转y轴数值
@@ -4875,7 +4939,7 @@ function KLineHScreenFrame()
                     this.Canvas.save();
                     this.Canvas.translate(xText, yText);
                     this.Canvas.rotate(90 * Math.PI / 180);
-                    this.Canvas.fillText(item.Message[0], -2, 0);
+                    this.Canvas.fillText(item.Message[0], 2, 0);
                     this.Canvas.restore();
                 }
 
@@ -4894,7 +4958,7 @@ function KLineHScreenFrame()
                     this.Canvas.save();
                     this.Canvas.translate(xText, yText);
                     this.Canvas.rotate(90 * Math.PI / 180);
-                    this.Canvas.fillText(item.Message[1], 2, 0);
+                    this.Canvas.fillText(item.Message[1], -2, 0);
                     this.Canvas.restore();
                 }
                 yPrev = y;
@@ -5320,8 +5384,10 @@ function HQTradeFrame()
         }
     }
 
-    this.DrawInsideHorizontal = function () {
-        for (var i in this.SubFrame) {
+    this.DrawInsideHorizontal = function () 
+    {
+        for (var i=0; i<this.SubFrame.length; ++i) 
+        {
             var item = this.SubFrame[i];
             item.Frame.DrawInsideHorizontal();
         }
@@ -5329,7 +5395,7 @@ function HQTradeFrame()
 
     this.DrawCustomHorizontal = function ()    //定制Y坐标
     {
-        for (var i in this.SubFrame) 
+        for (var i=0; i<this.SubFrame.length; ++i) 
         {
             var item = this.SubFrame[i];
             if (item.Frame.DrawCustomHorizontal) item.Frame.DrawCustomHorizontal();
