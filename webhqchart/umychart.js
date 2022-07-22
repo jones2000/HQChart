@@ -2066,6 +2066,13 @@ JSChart.RegisterScriptIndexChart=function(name, option)
     g_ScriptIndexChartFactory.Add(name, option);
 }
 
+//注册设置对话框类
+//option:{ Create:创建类方法 }
+JSChart.RegisterDialogClass=function(name, option)
+{
+    g_DialogFactory.Add(name, option);
+}
+
 var JSCHART_EVENT_ID=
 {
     RECV_KLINE_MATCH:1, //接收到形态匹配
@@ -2741,18 +2748,21 @@ function JSChartContainer(uielement, OffscreenElement)
             {
                 if (drawPictrueData.ChartDrawPicture.EnableMove==true)
                 {
-                    if (drawPictureActive.Select.Guid!=null)    //当前已有选中的，需要刷下
-                    {
-                        this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                        if (drawPictureActive.Select.Guid && drawPictureActive.Select.Chart && drawPictureActive.Select.Chart.IsDrawMain)
-                            this.Draw();
-                    }
+                    this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                   
+                    //当前已有选中的，需要刷下
+                    var bDraw=false;
+                    if (drawPictureActive.Select.Guid && drawPictureActive.Select.Chart && drawPictureActive.Select.Chart.IsDrawMain) bDraw=true;   
+                    else if (drawPictrueData.ChartDrawPicture.IsDrawMain) bDraw=true;
+
+                    if (bDraw) this.Draw();
 
                     drawPictrueData.ChartDrawPicture.Status=20;
                     drawPictrueData.ChartDrawPicture.ValueToPoint();
                     drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
-                    this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                    this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    //this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    //this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
                     this.SelectChartDrawPicture.DragInfo={Click:{X:e.clientX,Y:e.clientY}};
                 }
                 else
@@ -4243,7 +4253,10 @@ function JSChartContainer(uielement, OffscreenElement)
         for(var i=0;i<this.ChartDrawPicture.length;++i)
         {
             var item=this.ChartDrawPicture[i];
-            if (!item.IsDrawFirst) item.Draw();
+            if (item.IsDrawFirst) continue;
+            if (item.IsDrawMain && item.IsDrawMain()) continue;
+
+            item.Draw();
         }
 
         if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.Status!=10)
@@ -4526,7 +4539,10 @@ function JSChartContainer(uielement, OffscreenElement)
         for(var i=0;i<this.ChartDrawPicture.length;++i)
         {
             var item=this.ChartDrawPicture[i];
-            if (!item.IsDrawFirst) item.Draw();
+            if (item.IsDrawFirst) continue;
+            if (item.IsDrawMain && item.IsDrawMain()) continue;
+
+            item.Draw();
         }
 
         if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.Status!=10)
@@ -6241,7 +6257,8 @@ function JSChartContainer(uielement, OffscreenElement)
     this.OnSelectChartPicture=function(chart)
     {   
         JSConsole.Chart.Log('[JSChartContainer::OnSelectChartPicture',chart);
-        if (!this.ChartPictureMenu) this.ChartPictureMenu=new ChartPictureSettingMenu(this.UIElement.parentNode);
+        if (!this.ChartPictureMenu) this.ChartPictureMenu=g_DialogFactory.Create('ChartPictureSettingMenu', this.UIElement.parentNode);
+        if (!this.ChartPictureMenu) return;
 
         var event={ data: { ChartPicture:chart, HQChart:this}};
         this.ChartPictureMenu.DoModal(event);
@@ -46447,6 +46464,7 @@ function ChartDrawVolProfile()
         var maxBarWidth=width*this.BarWidthRate;
 
         this.Canvas.fillStyle=this.BGColor;  
+        //JSConsole.Chart.Log('[ChartDrawVolProfile::DrawVolBar] BGColor ', this.BGColor);
         this.Canvas.fillRect(left,top,width,height);   //背景
 
         if (this.MaxVolPrice>=this.Frame.HorizontalMin&& this.MaxVolPrice<=this.Frame.HorizontalMax)
@@ -65103,6 +65121,36 @@ function IsFundSymbol(symbol)
     return false;
 }
 
+//设置对话框工厂类
+function DialogFactory()
+{
+    //[key:name, { Create:function(divElement) { return new class(divElement); }} ]
+    this.DataMap=new Map(
+    [
+        ["ChartPictureSettingMenu", { Create:function(divElement) { return new ChartPictureSettingMenu(divElement); } }],
+        ["ChartPictureTextSettingMenu", { Create:function(divElement) { return new ChartPictureTextSettingMenu(divElement); } }]
+    ]); 
+
+    this.Create=function(name, option)
+    {
+        if (!this.DataMap.has(name)) 
+        {
+            JSConsole.Warn(`[DialogFactory::Create] can't find class=${name}.`);
+            return null;
+        }
+
+        var item=this.DataMap.get(name);
+        return item.Create(option);
+    }
+
+    this.Add=function(name, option)
+    {
+        this.DataMap.set(name, { Create:option.Create } );
+    }
+}
+
+var g_DialogFactory=new DialogFactory();
+
 //设置窗口基类
 function IDivDialog(divElement)
 {
@@ -67938,6 +67986,7 @@ function ChartPictureSettingMenu(divElement)
     this.ChartPicture;
     this.SubToolsDiv;
     this.SettingMenu;
+    this.SettingPV;
 
     this.DoModal=function(event)
     {
@@ -67979,7 +68028,8 @@ function ChartPictureSettingMenu(divElement)
         }
         else if (className=="ChartDrawVolProfile")
         {
-            toolsDiv='<span class="subtool-del"><i class="iconfont icon-recycle_bin"></i></span>';
+            toolsDiv='<span class="vp-set" title="设置"><i class="iconfont icon-shezhi"></i></span>'+
+            '<span class="subtool-del"><i class="iconfont icon-recycle_bin"></i></span>';
         }
         else
         {
@@ -68009,7 +68059,7 @@ function ChartPictureSettingMenu(divElement)
         $(".subtool-set").click(function(){
             $(self.SubToolsDiv).hide();
             //创建div设置窗口
-            if (!this.SettingMenu) self.SettingMenu=new ChartPictureTextSettingMenu(frame.ChartBorder.UIElement.parentNode);
+            if (!self.SettingMenu) self.SettingMenu=new ChartPictureTextSettingMenu(frame.ChartBorder.UIElement.parentNode);
 
             self.SettingMenu.ChartPicture=picture;
             self.SettingMenu.HQChart=hqChart;
@@ -68024,7 +68074,17 @@ function ChartPictureSettingMenu(divElement)
                 picture.PointColor = color;
                 if (hqChart.ChartDrawStorage) hqChart.ChartDrawStorage.SaveDrawData(picture);   //保存下
             });
-        })
+        });
+
+        //成交量分布图设置
+        $(".vp-set").click(function()
+        {
+            if (!self.SettingPV) self.SettingPV=new ChartPictureVolProfileSettingMenu(frame.ChartBorder.UIElement.parentNode);
+            self.SettingPV.ChartPicture=picture;
+            self.SettingPV.HQChart=hqChart;
+            self.SettingPV.Position={Left:right + 80,Top:top + 20};
+            self.SettingPV.DoModal();
+        });
 
 
         JSConsole.Chart.Log("[ChartPictureSettingMenu::DoModal]", {Top:top,Left:left, Right:right});
@@ -68261,6 +68321,87 @@ function ChartPictureTextSettingMenu(divElement)
                 if (self.HQChart && self.HQChart.ChartDrawStorage) self.HQChart.ChartDrawStorage.SaveDrawData(self.ChartPicture);   //保存下
             }
         );
+    }
+}
+
+
+function ChartPictureVolProfileSettingMenu(divElement)
+{
+    this.newMethod=IDivDialog;   //派生
+    this.newMethod(divElement);
+    delete this.newMethod;
+
+    this.ChartPicture;
+    this.SettingDiv;
+    this.Position;
+
+    this.Close=function()   
+    {
+        if (this.SettingDiv) this.DivElement.removeChild(this.SettingDiv);  //直接删除
+    }
+
+    this.DoModal=function()
+    {
+        var valueAreaVol=this.ChartPicture.VAVol;    //Value area volume
+
+        var self=this;
+        var div=this.DivElement.getElementsByClassName('jchart-modifyindex-box')[0];
+        if (!div)
+        {
+            div=document.createElement("div");
+            div.className='jchart-modifyindex-box';
+            this.DivElement.appendChild(div);
+            this.SettingDiv=div;
+        }
+        else 
+        {
+            this.SettingDiv=div;
+        }
+
+        div.innerHTML=
+        `<div class='parameter'>\
+            <div class='parameter-header'>\
+                <span>固定范围成交量分布设置</span>\
+                <strong id='close' class='icon iconfont icon-close'></strong>\
+            </div>\
+            <div class='parameter-content'><input class='row-line' value=${valueAreaVol} />VAVol</div>\
+            <div class='parameter-footer'>\
+                <button class='submit' >确定</button>\
+                <button class='cancel' >取消</button>\
+            </div>\
+        </div>`;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var frame=this.HQChart.Frame.SubFrame[0].Frame;
+        var top=frame.ChartBorder.Top + 40;
+        var right=frame.ChartBorder.Right;
+        var left=frame.ChartBorder.GetLeft();
+
+        this.SettingDiv.style.right = right/pixelTatio + "px";
+        this.SettingDiv.style.top = top/pixelTatio + "px";
+        this.SettingDiv.style.position = "absolute";
+        this.SettingDiv.style.display = "block";
+
+        var btnCancel=div.getElementsByClassName("cancel")[0];
+        btnCancel.onclick=function()
+        {
+            self.Close();
+        }
+
+        var btnClose=div.getElementsByClassName("icon iconfont icon-close")[0];
+        btnClose.onclick=function()
+        {
+            self.Close();
+        }
+        
+        var btnSubmit=div.getElementsByClassName("submit")[0];
+        btnSubmit.onclick=function()
+        {
+            var value=div.getElementsByClassName("row-line")[0].value;
+            self.ChartPicture.VAVol=parseFloat(value);
+            self.ChartPicture.RequestVolumeProfileData();
+            self.Close();
+        }
     }
 }
 
