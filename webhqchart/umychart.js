@@ -2152,6 +2152,8 @@ var JSCHART_EVENT_ID=
     ON_CLICK_FRAME_TOOLBAR:62,              //指标标题工具栏
 
     ON_REPORT_DRAG_ROW:63,                  //自选股行拖拽
+
+    ON_MOUSE_MOVE:64                        //鼠标移动
 }
 
 var JSCHART_OPERATOR_ID=
@@ -2497,11 +2499,17 @@ function JSChartContainer(uielement, OffscreenElement)
         var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
         this.LastMouseStatus.OnMouseMove=MoveStatus;
         this.LastMouseStatus.MoveOnPoint={X:x, Y:y};    //鼠标移动的位置
-        //JSConsole.Chart.Log("[JSChartContainer::UIOnMouseMove] MoveStatus", MoveStatus);
 
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MOUSE_MOVE);
+        var titleChart=this.TitlePaint[0];
+        if (event && titleChart) titleChart.OnMouseMoveEvent=event;
+        
         this.MoveOnPoint={X:x, Y:y};
         this.OnMouseMove(x,y,e);
+        
         this.LastMouseStatus.MoveOnPoint=null;
+        if (titleChart) titleChart.OnMouseMoveEvent=null;
+       
     }
 
     this.IsMouseOnClient=function(x,y)
@@ -29379,6 +29387,8 @@ function ChartVolProfileVisibleRange()
         var barLeft=left;
         var barRight=right;
         var barTop=this.ChartFrame.GetYFromData(item.Price)-cellHeight/2;
+        var barHeight=cellHeight-1;
+        if (barHeight<1) barHeight=1;
 
         if (this.VolType==1)
         {
@@ -29393,11 +29403,11 @@ function ChartVolProfileVisibleRange()
             this.Canvas.fillStyle=color;
             if (this.BarPosition==1)
             {
-                this.Canvas.fillRect(barRight,ToFixedRect(barTop),-barWidth,ToFixedRect(cellHeight-1));
+                this.Canvas.fillRect(barRight,ToFixedRect(barTop),-barWidth,ToFixedRect(barHeight));
             }
             else
             {
-                this.Canvas.fillRect(barLeft,ToFixedRect(barTop),barWidth,ToFixedRect(cellHeight-1));
+                this.Canvas.fillRect(barLeft,ToFixedRect(barTop),barWidth,ToFixedRect(barHeight));
             }
             
             if (this.IsShowText && this.VolFont)
@@ -29435,15 +29445,14 @@ function ChartVolProfileVisibleRange()
                 
                 var barWidth=volItem.Value*maxBarWidth/this.MaxVol;
                 this.Canvas.fillStyle=color;
-
                 if (this.BarPosition==1)
                 {
-                    this.Canvas.fillRect(barRight,ToFixedRect(barTop),-barWidth,ToFixedRect(cellHeight-1));
+                    this.Canvas.fillRect(barRight,ToFixedRect(barTop),-barWidth,ToFixedRect(barHeight));
                     barRight-=barWidth;
                 }
                 else
                 {
-                    this.Canvas.fillRect(barLeft,ToFixedRect(barTop),barWidth,ToFixedRect(cellHeight-1));
+                    this.Canvas.fillRect(barLeft,ToFixedRect(barTop),barWidth,ToFixedRect(barHeight));
                     barLeft+=barWidth;
                 }
                 
@@ -38748,6 +38757,7 @@ function DynamicKLineTitlePainting()
     this.IsShowDateTime=true;       //是否显示日期
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.OnDrawEvent;
+    this.OnMouseMoveEvent;
 
     this.ReloadResource=function()
     {
@@ -38976,7 +38986,10 @@ function DynamicKLineTitlePainting()
 
     this.OnDrawEventCallback=function(drawData)
     {
-        if (!this.OnDrawEvent || !this.OnDrawEvent.Callback) return;
+        var bDrawEvent=(this.OnDrawEvent && this.OnDrawEvent.Callback);
+        var bMouseMoveEvent= (this.OnMouseMoveEvent && this.OnMouseMoveEvent.Callback);
+        if (!bDrawEvent && !bMouseMoveEvent) return;
+
         var data={ Draw: drawData, Name:this.ClassName};
         if (this.Data && this.Data.Data)
         {
@@ -39002,8 +39015,11 @@ function DynamicKLineTitlePainting()
             }
         }
         
+        if (bDrawEvent)
+            this.OnDrawEvent.Callback(this.OnDrawEvent,data,this);
 
-        this.OnDrawEvent.Callback(this.OnDrawEvent,data,this);
+        if (bMouseMoveEvent)
+            this.OnMouseMoveEvent.Callback(this.OnMouseMoveEvent,data,this);
     }
 
     this.GetColor=function(price,yclse)
@@ -39469,9 +39485,17 @@ function DynamicMinuteTitlePainting()
 
     this.OnDrawCallAuctionEventCallback=function(drawData)
     {
-        if (!this.OnDrawEvent || !this.OnDrawEvent.Callback) return;
-        var data={ Draw: drawData, Name:this.ClassName };
-        this.OnDrawEvent.Callback(this.OnDrawEvent,data,this);
+        if (this.OnDrawEvent && this.OnDrawEvent.Callback)
+        {
+            var data={ Draw: drawData, Name:this.ClassName };
+            this.OnDrawEvent.Callback(this.OnDrawEvent,data,this);
+        }
+
+        if (this.OnMouseMoveEvent && this.OnMouseMoveEvent.Callback)
+        {
+            var data={ Draw: drawData, Name:this.ClassName };
+            this.OnMouseMoveEvent.Callback(this.OnDrawEvent,data,this);
+        }
     }
 
     this.Draw=function()
@@ -39480,7 +39504,8 @@ function DynamicMinuteTitlePainting()
 
         if (!this.IsShow)
         {   //隐藏标题 并且没有回调事件
-            if (!this.OnDrawEvent || !this.OnDrawEvent.Callback) return;
+            var bEvent=(this.OnDrawEvent && this.OnDrawEvent.Callback) || (this.OnMouseMoveEvent && this.OnMouseMoveEvent.Callback);
+            if (!bEvent) return;
         } 
 
         if (this.PointInfo && 
@@ -40669,6 +40694,7 @@ function DynamicChartTitlePainting()
             this.Canvas.fillStyle=this.TitleColor;
             this.Canvas.fillText(this.Title,left,bottom,textWidth);
             left+=textWidth;
+            left+=this.TitleSpace;
         }
 
         var isShowLastData=this.IsShowLastData();
@@ -46503,6 +46529,8 @@ function ChartDrawVolProfile()
         var barLeft=left;
         var barRight=right;
         var barTop=this.Frame.GetYFromData(item.Price)-cellHeight/2;
+        var barHeight=cellHeight-1;
+        if (barHeight<1) barHeight=1;
 
         if (this.VolType==1)
         {
@@ -46517,11 +46545,11 @@ function ChartDrawVolProfile()
             this.Canvas.fillStyle=color;
             if (this.BarPosition==1)
             {
-                this.Canvas.fillRect(barRight,ToFixedRect(barTop),-barWidth,ToFixedRect(cellHeight-1));
+                this.Canvas.fillRect(barRight,ToFixedRect(barTop),-barWidth,ToFixedRect(barHeight));
             }
             else
             {
-                this.Canvas.fillRect(barLeft,ToFixedRect(barTop),barWidth,ToFixedRect(cellHeight-1));
+                this.Canvas.fillRect(barLeft,ToFixedRect(barTop),barWidth,ToFixedRect(barHeight));
             }
             
             if (this.IsShowText && this.VolFont)
@@ -46562,12 +46590,12 @@ function ChartDrawVolProfile()
 
                 if (this.BarPosition==1)
                 {
-                    this.Canvas.fillRect(barRight,ToFixedRect(barTop),-barWidth,ToFixedRect(cellHeight-1));
+                    this.Canvas.fillRect(barRight,ToFixedRect(barTop),-barWidth,ToFixedRect(barHeight));
                     barRight-=barWidth;
                 }
                 else
                 {
-                    this.Canvas.fillRect(barLeft,ToFixedRect(barTop),barWidth,ToFixedRect(cellHeight-1));
+                    this.Canvas.fillRect(barLeft,ToFixedRect(barTop),barWidth,ToFixedRect(barHeight));
                     barLeft+=barWidth;
                 }
                 
@@ -68703,7 +68731,11 @@ var MARKET_SUFFIX_NAME=
             } 
             else if (upperSymbol.charAt(0)=='3')
             {
-                if (upperSymbol.charAt(1)=='0' && upperSymbol.charAt(2)=='0') return true;    //创业板 300XXX.sz
+                if (upperSymbol.charAt(1)=='0')
+                {
+                    if (upperSymbol.charAt(2)=='0') return true;    //创业板 300XXX.sz
+                    if (upperSymbol.charAt(2)=='1') return true;    //创业板 301XXX.sz
+                }
             }
         }
 

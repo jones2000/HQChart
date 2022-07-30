@@ -15261,6 +15261,8 @@ function JSExecute(ast,option)
     this.GetEventCallback;
     this.IsUsePageData=false;
     this.IndexCtrl;
+    this.Debug=0;   //0=非debug模式 1=debug 模式
+    this.DebugFilter;
 
     //脚本自动变量表, 只读
     this.ConstVarTable=new Map([
@@ -15347,6 +15349,9 @@ function JSExecute(ast,option)
         if (option.Arguments) this.Arguments=option.Arguments;
         if (option.IsSectionMode) this.IsSectionMode=option.IsSectionMode;
         if (option.Self) this.IndexCtrl=option.Self;
+        //调试模式信息
+        if (IFrameSplitOperator.IsNumber(option.Debug)) this.Debug=option.Debug;
+        if (option.DebugFilter) this.DebugFilter=option.DebugFilter;
     }
 
     this.Execute=function()
@@ -15450,7 +15455,10 @@ function JSExecute(ast,option)
                 return this.SymbolData.CallScriptIndex(jobItem);
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
-                return this.Run();
+                if (this.Debug===1 && this.DebugFilter) 
+                    return this.DebugRun();
+                else 
+                    return this.Run();
         }
     }
 
@@ -15665,67 +15673,28 @@ function JSExecute(ast,option)
         for(let i=0; i<this.AST.Body.length; ++i)
         {
             let item =this.AST.Body[i];
-            this.VisitNode(item);
+            this.RunASTNode(item);
+        }
 
-            //输出变量
-            if (item.Type==Syntax.ExpressionStatement && item.Expression)
+        JSConsole.Complier.Log('[JSExecute::Run]', this.VarTable);
+
+        return this.OutVarTable;
+    }
+
+    this.RunASTNode=function(item)
+    {
+        this.VisitNode(item);
+
+        //输出变量
+        if (item.Type==Syntax.ExpressionStatement && item.Expression)
+        {
+            if (item.Expression.Type==Syntax.AssignmentExpression)
             {
-                if (item.Expression.Type==Syntax.AssignmentExpression)
+                if (item.Expression.Operator==':' && item.Expression.Left)
                 {
-                    if (item.Expression.Operator==':' && item.Expression.Left)
-                    {
-                        let assignmentItem=item.Expression;
-                        let varName=assignmentItem.Left.Name;
-                        let outVar=this.VarTable.get(varName);
-                        var type=0;
-                        if (outVar && typeof(outVar)=='object' && outVar.__Type__=='Object')
-                        {
-                            type=1000;
-                        }
-                        else if (!this.IsSectionMode && !Array.isArray(outVar)) 
-                        {
-                            if (typeof(outVar)=='string') 
-                            {
-                                var floatValue=parseFloat(outVar);
-                                if (IFrameSplitOperator.IsNumber(floatValue))
-                                {
-                                    outVar=this.SingleDataToArrayData(floatValue);
-                                }
-                                else
-                                {
-                                    outVar=this.SingleDataToArrayData(outVar);
-                                    type=1001;
-                                }
-                                    
-                            }
-                            else outVar=this.SingleDataToArrayData(outVar);
-                        }
-
-                        this.OutVarTable.push({Name:varName, Data:outVar,Type:type});
-                    }
-                }
-                else if (item.Expression.Type==Syntax.CallExpression)
-                {
-                    let callItem=item.Expression;
-                    if (this.Draw.IsDrawFunction(callItem.Callee.Name))
-                    {
-                        let draw=callItem.Draw;
-                        draw.Name=callItem.Callee.Name;
-                        this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
-                    }
-                    else
-                    {
-                        let outVar=callItem.Out;
-                        varName=`__temp_c_${callItem.Callee.Name}_${i}__`;
-                        var type=0;
-                        if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                        this.OutVarTable.push({Name:varName, Data:outVar,Type:type,NoneName:true});
-                    }
-                }
-                else if (item.Expression.Type==Syntax.Identifier)
-                {
-                    let varName=item.Expression.Name;
-                    let outVar=this.ReadVariable(varName,item.Expression);
+                    let assignmentItem=item.Expression;
+                    let varName=assignmentItem.Left.Name;
+                    let outVar=this.VarTable.get(varName);
                     var type=0;
                     if (outVar && typeof(outVar)=='object' && outVar.__Type__=='Object')
                     {
@@ -15733,313 +15702,357 @@ function JSExecute(ast,option)
                     }
                     else if (!this.IsSectionMode && !Array.isArray(outVar)) 
                     {
-                        if (typeof(outVar)=='string') outVar=this.SingleDataToArrayData(parseFloat(outVar));
+                        if (typeof(outVar)=='string') 
+                        {
+                            var floatValue=parseFloat(outVar);
+                            if (IFrameSplitOperator.IsNumber(floatValue))
+                            {
+                                outVar=this.SingleDataToArrayData(floatValue);
+                            }
+                            else
+                            {
+                                outVar=this.SingleDataToArrayData(outVar);
+                                type=1001;
+                            }
+                                
+                        }
                         else outVar=this.SingleDataToArrayData(outVar);
                     }
 
-                    varName="__temp_i_"+i+"__";
-                    this.OutVarTable.push({Name:varName, Data:outVar, Type:type, NoneName:true});
+                    this.OutVarTable.push({Name:varName, Data:outVar,Type:type});
                 }
-                else if (item.Expression.Type==Syntax.Literal)  //常量
+            }
+            else if (item.Expression.Type==Syntax.CallExpression)
+            {
+                let callItem=item.Expression;
+                if (this.Draw.IsDrawFunction(callItem.Callee.Name))
                 {
-                    let outVar=item.Expression.Value;
-                    if (IFrameSplitOperator.IsString(outVar) && outVar.indexOf("$")>0)
-                        outVar=this.SymbolData.GetOtherSymolCacheData({ Literal:outVar });
-                    varName="__temp_li_"+i+"__";
-                    var type=0;
-                    this.OutVarTable.push({Name:varName, Data:outVar, Type:type, NoneName:true});
+                    let draw=callItem.Draw;
+                    draw.Name=callItem.Callee.Name;
+                    this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
                 }
-                else if (item.Expression.Type==Syntax.BinaryExpression)
+                else
                 {
-                    var varName="__temp_b_"+i+"__";
-                    let outVar=item.Expression.Out;
-                    var type=0;
-                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                    this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
-                }
-                else if (item.Expression.Type==Syntax.LogicalExpression)    //逻辑语句 如 T1 AND T2 
-                {
-                    var varName="__temp_l_"+i+"__";
-                    let outVar=item.Expression.Out;
+                    let outVar=callItem.Out;
+                    varName=`__temp_c_${callItem.Callee.Name}_${i}__`;
                     var type=0;
                     if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                    this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
+                    this.OutVarTable.push({Name:varName, Data:outVar,Type:type,NoneName:true});
                 }
-                else if (item.Expression.Type==Syntax.SequenceExpression)
+            }
+            else if (item.Expression.Type==Syntax.Identifier)
+            {
+                let varName=item.Expression.Name;
+                let outVar=this.ReadVariable(varName,item.Expression);
+                var type=0;
+                if (outVar && typeof(outVar)=='object' && outVar.__Type__=='Object')
                 {
-                    let varName;
-                    let draw;
-                    let color;
-                    let lineWidth;
-                    let colorStick=false;
-                    let pointDot=false;
-                    let circleDot=false;
-                    let lineStick=false;
-                    let stick=false;
-                    let volStick=false;
-                    let stepLine=false;
-                    let isShow=true;
-                    let isExData=false;
-                    let isDotLine=false;
-                    let isOverlayLine=false;    //叠加线
-                    var isNoneName=false;
-                    var isShowTitle=true;
-                    //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
-                    //DRAWNUMBER(CLOSE>OPEN,HIGH,CLOSE),DRAWABOVE;
-                    var isDrawAbove=false;
-                    var isDrawCenter=false;   
-                    var isDrawBelow=false;
-                    //VALIGN0,VALIGN1,VALIGN2 设置文字垂直对齐方式（上中下）
-                    //ALIGN0,ALIGN1,ALIGN2 设置文字水平对齐方式（左中右）
-                    var drawAlign=-1, drawVAlign=-1;
-                    var fontSize=-1;
-                    var bgConfig=null;    //背景设置
-                    var vLineConfig=null;
-                    for(let j=0; j<item.Expression.Expression.length; ++j)
+                    type=1000;
+                }
+                else if (!this.IsSectionMode && !Array.isArray(outVar)) 
+                {
+                    if (typeof(outVar)=='string') outVar=this.SingleDataToArrayData(parseFloat(outVar));
+                    else outVar=this.SingleDataToArrayData(outVar);
+                }
+
+                varName="__temp_i_"+i+"__";
+                this.OutVarTable.push({Name:varName, Data:outVar, Type:type, NoneName:true});
+            }
+            else if (item.Expression.Type==Syntax.Literal)  //常量
+            {
+                let outVar=item.Expression.Value;
+                if (IFrameSplitOperator.IsString(outVar) && outVar.indexOf("$")>0)
+                    outVar=this.SymbolData.GetOtherSymolCacheData({ Literal:outVar });
+                varName="__temp_li_"+i+"__";
+                var type=0;
+                this.OutVarTable.push({Name:varName, Data:outVar, Type:type, NoneName:true});
+            }
+            else if (item.Expression.Type==Syntax.BinaryExpression)
+            {
+                var varName="__temp_b_"+i+"__";
+                let outVar=item.Expression.Out;
+                var type=0;
+                if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
+            }
+            else if (item.Expression.Type==Syntax.LogicalExpression)    //逻辑语句 如 T1 AND T2 
+            {
+                var varName="__temp_l_"+i+"__";
+                let outVar=item.Expression.Out;
+                var type=0;
+                if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
+            }
+            else if (item.Expression.Type==Syntax.SequenceExpression)
+            {
+                let varName;
+                let draw;
+                let color;
+                let lineWidth;
+                let colorStick=false;
+                let pointDot=false;
+                let circleDot=false;
+                let lineStick=false;
+                let stick=false;
+                let volStick=false;
+                let stepLine=false;
+                let isShow=true;
+                let isExData=false;
+                let isDotLine=false;
+                let isOverlayLine=false;    //叠加线
+                var isNoneName=false;
+                var isShowTitle=true;
+                //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
+                //DRAWNUMBER(CLOSE>OPEN,HIGH,CLOSE),DRAWABOVE;
+                var isDrawAbove=false;
+                var isDrawCenter=false;   
+                var isDrawBelow=false;
+                //VALIGN0,VALIGN1,VALIGN2 设置文字垂直对齐方式（上中下）
+                //ALIGN0,ALIGN1,ALIGN2 设置文字水平对齐方式（左中右）
+                var drawAlign=-1, drawVAlign=-1;
+                var fontSize=-1;
+                var bgConfig=null;    //背景设置
+                var vLineConfig=null;
+                for(let j=0; j<item.Expression.Expression.length; ++j)
+                {
+                    let itemExpression=item.Expression.Expression[j];
+                    if (itemExpression.Type==Syntax.AssignmentExpression && itemExpression.Operator==':' && itemExpression.Left)
                     {
-                        let itemExpression=item.Expression.Expression[j];
-                        if (itemExpression.Type==Syntax.AssignmentExpression && itemExpression.Operator==':' && itemExpression.Left)
+                        if (j==0)
                         {
-                            if (j==0)
+                            varName=itemExpression.Left.Name;
+                            let varValue=this.VarTable.get(varName);
+                            if (!Array.isArray(varValue)) 
                             {
-                                varName=itemExpression.Left.Name;
-                                let varValue=this.VarTable.get(varName);
-                                if (!Array.isArray(varValue)) 
-                                {
-                                    varValue=this.SingleDataToArrayData(varValue); 
-                                    this.VarTable.set(varName,varValue);            //把常量放到变量表里
-                                } 
-                            }
-                            else
-                            {
-                               
-                            }
+                                varValue=this.SingleDataToArrayData(varValue); 
+                                this.VarTable.set(varName,varValue);            //把常量放到变量表里
+                            } 
                         }
-                        else if (itemExpression.Type==Syntax.Identifier)
+                        else
                         {
-                            let value=itemExpression.Name;
-                            if (value==='COLORSTICK') colorStick=true;
-                            else if (value==='POINTDOT') pointDot=true;
-                            else if (value==='CIRCLEDOT') circleDot=true;
-                            else if (value==='DOTLINE') isDotLine=true;
-                            else if (value==='LINESTICK') lineStick=true;
-                            else if (value==='STICK') stick=true;
-                            else if (value==='VOLSTICK') volStick=true;
-                            else if (value==="DRAWABOVE") isDrawAbove=true;
-                            else if (value==="DRAWCENTER") isDrawCenter=true;
-                            else if (value=="DRAWBELOW") isDrawBelow=true;
-                            else if (value=="STEPLINE") stepLine=true;
-                            else if (value.indexOf('COLOR')==0) color=value;
-                            else if (value.indexOf('LINETHICK')==0) lineWidth=value;
-
-                            else if (value=="ALIGN0") drawAlign=0;
-                            else if (value=="ALIGN1") drawAlign=1;
-                            else if (value=="ALIGN2") drawAlign=2;
                            
-                            else if (value=="VALIGN0") drawVAlign=0;
-                            else if (value=="VALIGN1") drawVAlign=1;
-                            else if (value=="VALIGN2") drawVAlign=2;
-                           
-                            else if (value.indexOf('NODRAW')==0) isShow=false;
-                            else if (value.indexOf('EXDATA')==0) isExData=true; //扩展数据, 不显示再图形里面
-                            else if (value.indexOf('LINEOVERLAY')==0) isOverlayLine=true;
-                            else if (value.indexOf("NOTEXT")==0 || value.indexOf("NOTITLE")==0) isShowTitle=false; //标题不显示
-                            else if (value.indexOf("FONTSIZE")==0)
-                            {
-                                var strFontSize=value.replace("FONTSIZE","");
-                                fontSize=parseInt(strFontSize);
-                            }
-                            else 
-                            {
-                                if (j==0)
-                                {
-                                    varName=itemExpression.Name;
-                                    let varValue=this.ReadVariable(varName,itemExpression);
-                                    if (!Array.isArray(varValue)) varValue=this.SingleDataToArrayData(varValue); 
-                                    varName="__temp_si_"+i+"__";
-                                    isNoneName=true;
-                                    this.VarTable.set(varName,varValue);            //放到变量表里
-                                }
-                            }
                         }
-                        else if(itemExpression.Type==Syntax.Literal)    //常量
-                        {
-                            if (j==0)
-                            {
-                                let aryValue=this.SingleDataToArrayData(itemExpression.Value);
-                                varName=itemExpression.Value.toString();
-                                this.VarTable.set(varName,aryValue);    //把常量放到变量表里
-                            }
-                        }
-                        else if (itemExpression.Type==Syntax.CallExpression)
-                        {
-                            if (j==0)
-                            {
-                                if (this.Draw.IsDrawFunction(itemExpression.Callee.Name))
-                                {
-                                    draw=itemExpression.Draw;
-                                    draw.Name=itemExpression.Callee.Name;
-                                }
-                                else
-                                {
-                                    let varValue=itemExpression.Out;
-                                    varName=`__temp_sc_${itemExpression.Callee.Name}_${i}__`;
-                                    isNoneName=true;
-                                    this.VarTable.set(varName,varValue);
-                                }
-                            }
-                            else
-                            {
-                                if (itemExpression.Callee.Name=="RGB" || itemExpression.Callee.Name=="RGBA")
-                                {
-                                    color=itemExpression.Out;
-                                }
-                                else if (itemExpression.Callee.Name=="SOUND")
-                                {
-                                    var event=this.GetSoundEvent();
-                                    if (event)
-                                    {
+                    }
+                    else if (itemExpression.Type==Syntax.Identifier)
+                    {
+                        let value=itemExpression.Name;
+                        if (value==='COLORSTICK') colorStick=true;
+                        else if (value==='POINTDOT') pointDot=true;
+                        else if (value==='CIRCLEDOT') circleDot=true;
+                        else if (value==='DOTLINE') isDotLine=true;
+                        else if (value==='LINESTICK') lineStick=true;
+                        else if (value==='STICK') stick=true;
+                        else if (value==='VOLSTICK') volStick=true;
+                        else if (value==="DRAWABOVE") isDrawAbove=true;
+                        else if (value==="DRAWCENTER") isDrawCenter=true;
+                        else if (value=="DRAWBELOW") isDrawBelow=true;
+                        else if (value=="STEPLINE") stepLine=true;
+                        else if (value.indexOf('COLOR')==0) color=value;
+                        else if (value.indexOf('LINETHICK')==0) lineWidth=value;
 
-                                    }
-                                    varName=null;
-                                }
-                                else if (itemExpression.Callee.Name=="ICON")
-                                {
-                                    let drawCond=this.VarTable.get(varName);
-                                    if (drawCond)
-                                    {
-                                        draw=this.GetOutIconData(drawCond,itemExpression.Draw);
-                                        if (draw) draw.Name=itemExpression.Callee.Name;
-                                    }
-
-                                    varName=null;
-                                }
-                                else if (itemExpression.Callee.Name=="BACKGROUND")
-                                {
-                                    bgConfig=itemExpression.Draw;
-                                    varName=null;
-                                }
-                                else if (itemExpression.Callee.Name=="CKLINE")
-                                {
-                                    vLineConfig=itemExpression.Draw;
-                                    varName=null;
-                                }
-                            }
+                        else if (value=="ALIGN0") drawAlign=0;
+                        else if (value=="ALIGN1") drawAlign=1;
+                        else if (value=="ALIGN2") drawAlign=2;
+                       
+                        else if (value=="VALIGN0") drawVAlign=0;
+                        else if (value=="VALIGN1") drawVAlign=1;
+                        else if (value=="VALIGN2") drawVAlign=2;
+                       
+                        else if (value.indexOf('NODRAW')==0) isShow=false;
+                        else if (value.indexOf('EXDATA')==0) isExData=true; //扩展数据, 不显示再图形里面
+                        else if (value.indexOf('LINEOVERLAY')==0) isOverlayLine=true;
+                        else if (value.indexOf("NOTEXT")==0 || value.indexOf("NOTITLE")==0) isShowTitle=false; //标题不显示
+                        else if (value.indexOf("FONTSIZE")==0)
+                        {
+                            var strFontSize=value.replace("FONTSIZE","");
+                            fontSize=parseInt(strFontSize);
                         }
-                        else if (itemExpression.Type==Syntax.BinaryExpression)
+                        else 
                         {
                             if (j==0)
                             {
-                                varName="__temp_sb_"+i+"__";
-                                let aryValue=itemExpression.Out;
+                                varName=itemExpression.Name;
+                                let varValue=this.ReadVariable(varName,itemExpression);
+                                if (!Array.isArray(varValue)) varValue=this.SingleDataToArrayData(varValue); 
+                                varName="__temp_si_"+i+"__";
                                 isNoneName=true;
-                                this.VarTable.set(varName,aryValue);
+                                this.VarTable.set(varName,varValue);            //放到变量表里
                             }
-                           
                         }
                     }
+                    else if(itemExpression.Type==Syntax.Literal)    //常量
+                    {
+                        if (j==0)
+                        {
+                            let aryValue=this.SingleDataToArrayData(itemExpression.Value);
+                            varName=itemExpression.Value.toString();
+                            this.VarTable.set(varName,aryValue);    //把常量放到变量表里
+                        }
+                    }
+                    else if (itemExpression.Type==Syntax.CallExpression)
+                    {
+                        if (j==0)
+                        {
+                            if (this.Draw.IsDrawFunction(itemExpression.Callee.Name))
+                            {
+                                draw=itemExpression.Draw;
+                                draw.Name=itemExpression.Callee.Name;
+                            }
+                            else
+                            {
+                                let varValue=itemExpression.Out;
+                                varName=`__temp_sc_${itemExpression.Callee.Name}_${i}__`;
+                                isNoneName=true;
+                                this.VarTable.set(varName,varValue);
+                            }
+                        }
+                        else
+                        {
+                            if (itemExpression.Callee.Name=="RGB" || itemExpression.Callee.Name=="RGBA")
+                            {
+                                color=itemExpression.Out;
+                            }
+                            else if (itemExpression.Callee.Name=="SOUND")
+                            {
+                                var event=this.GetSoundEvent();
+                                if (event)
+                                {
 
-                    if (pointDot && varName)   //圆点
-                    {
-                        let outVar=this.VarTable.get(varName);
-                        if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                        let value={Name:varName, Data:outVar, Radius:g_JSChartResource.POINTDOT.Radius, Type:3};
-                        if (color) value.Color=color;
-                        if (lineWidth) value.LineWidth=lineWidth;
-                        this.OutVarTable.push(value);
+                                }
+                                varName=null;
+                            }
+                            else if (itemExpression.Callee.Name=="ICON")
+                            {
+                                let drawCond=this.VarTable.get(varName);
+                                if (drawCond)
+                                {
+                                    draw=this.GetOutIconData(drawCond,itemExpression.Draw);
+                                    if (draw) draw.Name=itemExpression.Callee.Name;
+                                }
+
+                                varName=null;
+                            }
+                            else if (itemExpression.Callee.Name=="BACKGROUND")
+                            {
+                                bgConfig=itemExpression.Draw;
+                                varName=null;
+                            }
+                            else if (itemExpression.Callee.Name=="CKLINE")
+                            {
+                                vLineConfig=itemExpression.Draw;
+                                varName=null;
+                            }
+                        }
                     }
-                    else if (circleDot && varName)  //圆点
+                    else if (itemExpression.Type==Syntax.BinaryExpression)
                     {
-                        let outVar=this.VarTable.get(varName);
-                        if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                        let value={Name:varName, Data:outVar, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3};
-                        if (color) value.Color=color;
-                        if (lineWidth) value.LineWidth=lineWidth;
-                        this.OutVarTable.push(value);
+                        if (j==0)
+                        {
+                            varName="__temp_sb_"+i+"__";
+                            let aryValue=itemExpression.Out;
+                            isNoneName=true;
+                            this.VarTable.set(varName,aryValue);
+                        }
+                       
                     }
-                    else if (lineStick && varName)  //LINESTICK  同时画出柱状线和指标线
-                    {
-                        let outVar=this.VarTable.get(varName);
-                        let value={Name:varName, Data:outVar, Type:4};
-                        if (color) value.Color=color;
-                        if (lineWidth) value.LineWidth=lineWidth;
-                        this.OutVarTable.push(value);
-                    }
-                    else if (stick && varName)  //STICK 画柱状线
-                    {
-                        let outVar=this.VarTable.get(varName);
-                        let value={Name:varName, Data:outVar, Type:5};
-                        if (color) value.Color=color;
-                        if (lineWidth) value.LineWidth=lineWidth;
-                        this.OutVarTable.push(value);
-                    }
-                    else if (volStick && varName)   //VOLSTICK   画彩色柱状线
-                    {
-                        let outVar=this.VarTable.get(varName);
-                        let value={Name:varName, Data:outVar, Type:6};
-                        if (color) value.Color=color;
-                        this.OutVarTable.push(value);
-                    }
-                    else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
-                    {
-                        let outVar=this.VarTable.get(varName);
-                        let value={Name:varName, Data:outVar, Color:color, Type:2};
-                        if (lineWidth) value.LineWidth=lineWidth;
-                        if (color) value.Color=color;
-                        this.OutVarTable.push(value);
-                    }
-                    else if (varName && color) 
-                    {
-                        let outVar=this.VarTable.get(varName);
-                        if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                        let value={Name:varName, Data:outVar, Color:color, Type:0};
-                        if (lineWidth) value.LineWidth=lineWidth;
-                        if (isShow == false) value.IsShow = false;
-                        if (isExData==true) value.IsExData = true;
-                        if (isDotLine==true) value.IsDotLine=true;
-                        if (isOverlayLine==true) value.IsOverlayLine=true;
-                        if (isNoneName==true) value.NoneName=true;
-                        if (isShowTitle==false) value.IsShowTitle=false;
-                        if (stepLine==true) value.Type=7;
-                        this.OutVarTable.push(value);
-                    }
-                    else if (draw)  //画图函数
-                    {
-                        var outVar={Name:draw.Name, Draw:draw, Type:1};
-                        if (color) outVar.Color=color;
-                        if (isDotLine==true) outVar.IsDotLine=true;
-                        if (lineWidth) outVar.LineWidth=lineWidth;
-                        if (isDrawAbove) outVar.IsDrawAbove=true;
-                        if (isDrawCenter) outVar.IsDrawCenter=true;
-                        if (isDrawBelow) outVar.IsDrawBelow=true;
-                        if (drawAlign>=0) outVar.DrawAlign=drawAlign;
-                        if (drawVAlign>=0) outVar.DrawVAlign=drawVAlign;
-                        if (fontSize>0) outVar.DrawFontSize=fontSize;
-                        if (bgConfig) outVar.Background=bgConfig;
-                        if (vLineConfig) outVar.VerticalLine=vLineConfig;
-                        this.OutVarTable.push(outVar);
-                    }
-                    else if (varName)
-                    {
-                        let outVar=this.VarTable.get(varName);
-                        let value={Name:varName, Data:outVar,Type:0};
-                        if (color) value.Color=color;
-                        if (lineWidth) value.LineWidth=lineWidth;
-                        if (isShow==false) value.IsShow=false;
-                        if (isExData==true) value.IsExData = true;
-                        if (isDotLine==true) value.IsDotLine=true;
-                        if (isOverlayLine==true) value.IsOverlayLine=true;
-                        if (isShowTitle==false) value.IsShowTitle=false;
-                        if (stepLine==true) value.Type=7;
-                        this.OutVarTable.push(value);
-                    }
+                }
+
+                if (pointDot && varName)   //圆点
+                {
+                    let outVar=this.VarTable.get(varName);
+                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                    let value={Name:varName, Data:outVar, Radius:g_JSChartResource.POINTDOT.Radius, Type:3};
+                    if (color) value.Color=color;
+                    if (lineWidth) value.LineWidth=lineWidth;
+                    this.OutVarTable.push(value);
+                }
+                else if (circleDot && varName)  //圆点
+                {
+                    let outVar=this.VarTable.get(varName);
+                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                    let value={Name:varName, Data:outVar, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3};
+                    if (color) value.Color=color;
+                    if (lineWidth) value.LineWidth=lineWidth;
+                    this.OutVarTable.push(value);
+                }
+                else if (lineStick && varName)  //LINESTICK  同时画出柱状线和指标线
+                {
+                    let outVar=this.VarTable.get(varName);
+                    let value={Name:varName, Data:outVar, Type:4};
+                    if (color) value.Color=color;
+                    if (lineWidth) value.LineWidth=lineWidth;
+                    this.OutVarTable.push(value);
+                }
+                else if (stick && varName)  //STICK 画柱状线
+                {
+                    let outVar=this.VarTable.get(varName);
+                    let value={Name:varName, Data:outVar, Type:5};
+                    if (color) value.Color=color;
+                    if (lineWidth) value.LineWidth=lineWidth;
+                    this.OutVarTable.push(value);
+                }
+                else if (volStick && varName)   //VOLSTICK   画彩色柱状线
+                {
+                    let outVar=this.VarTable.get(varName);
+                    let value={Name:varName, Data:outVar, Type:6};
+                    if (color) value.Color=color;
+                    this.OutVarTable.push(value);
+                }
+                else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
+                {
+                    let outVar=this.VarTable.get(varName);
+                    let value={Name:varName, Data:outVar, Color:color, Type:2};
+                    if (lineWidth) value.LineWidth=lineWidth;
+                    if (color) value.Color=color;
+                    this.OutVarTable.push(value);
+                }
+                else if (varName && color) 
+                {
+                    let outVar=this.VarTable.get(varName);
+                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                    let value={Name:varName, Data:outVar, Color:color, Type:0};
+                    if (lineWidth) value.LineWidth=lineWidth;
+                    if (isShow == false) value.IsShow = false;
+                    if (isExData==true) value.IsExData = true;
+                    if (isDotLine==true) value.IsDotLine=true;
+                    if (isOverlayLine==true) value.IsOverlayLine=true;
+                    if (isNoneName==true) value.NoneName=true;
+                    if (isShowTitle==false) value.IsShowTitle=false;
+                    if (stepLine==true) value.Type=7;
+                    this.OutVarTable.push(value);
+                }
+                else if (draw)  //画图函数
+                {
+                    var outVar={Name:draw.Name, Draw:draw, Type:1};
+                    if (color) outVar.Color=color;
+                    if (isDotLine==true) outVar.IsDotLine=true;
+                    if (lineWidth) outVar.LineWidth=lineWidth;
+                    if (isDrawAbove) outVar.IsDrawAbove=true;
+                    if (isDrawCenter) outVar.IsDrawCenter=true;
+                    if (isDrawBelow) outVar.IsDrawBelow=true;
+                    if (drawAlign>=0) outVar.DrawAlign=drawAlign;
+                    if (drawVAlign>=0) outVar.DrawVAlign=drawVAlign;
+                    if (fontSize>0) outVar.DrawFontSize=fontSize;
+                    if (bgConfig) outVar.Background=bgConfig;
+                    if (vLineConfig) outVar.VerticalLine=vLineConfig;
+                    this.OutVarTable.push(outVar);
+                }
+                else if (varName)
+                {
+                    let outVar=this.VarTable.get(varName);
+                    let value={Name:varName, Data:outVar,Type:0};
+                    if (color) value.Color=color;
+                    if (lineWidth) value.LineWidth=lineWidth;
+                    if (isShow==false) value.IsShow=false;
+                    if (isExData==true) value.IsExData = true;
+                    if (isDotLine==true) value.IsDotLine=true;
+                    if (isOverlayLine==true) value.IsOverlayLine=true;
+                    if (isShowTitle==false) value.IsShowTitle=false;
+                    if (stepLine==true) value.Type=7;
+                    this.OutVarTable.push(value);
                 }
             }
         }
-
-        JSConsole.Complier.Log('[JSExecute::Run]', this.VarTable);
-
-        return this.OutVarTable;
     }
 
     this.GetOutIconData=function(cond, iconDraw)
@@ -16100,6 +16113,75 @@ function JSExecute(ast,option)
                 this.Execute();
             }
             else if (this.ErrorCallback) 
+            {
+                if (this.IndexCtrl) this.IndexCtrl.Status=0;
+                this.ErrorCallback(error, this.CallbackParam);
+            }
+        }
+    }
+
+
+    this.DebugRun_End=function()
+    {
+        var data=this.OutVarTable;
+        JSConsole.Complier.Log('[JSComplier.DebugRun_End] execute finish', data);
+        if (this.IndexCtrl) this.IndexCtrl.Status=0;
+    
+        if (this.UpdateUICallback) 
+        {
+            JSConsole.Complier.Log('[JSComplier.DebugRun_End] invoke UpdateUICallback.');
+            if (this.CallbackParam && this.CallbackParam.Job && this.CallbackParam.Job.ID==JS_EXECUTE_JOB_ID.JOB_EXECUTE_INDEX)
+            {
+                this.UpdateUICallback(data,this.CallbackParam, this.SymbolData);
+            }
+            else
+            {
+                if (this.CallbackParam && this.CallbackParam.Self && this.CallbackParam.Self.ClassName==='ScriptIndexConsole') this.CallbackParam.JSExecute=this;
+                if (this.IsUsePageData==true) this.CallbackParam.Self.IsUsePageData=true;
+                this.UpdateUICallback(data,this.CallbackParam);
+            }
+        }
+    }
+
+    this.DebugRun_Next=function(debugCtrl)
+    {
+        if (debugCtrl.ExeLine<debugCtrl.LineCount)
+        {
+            var item =this.AST.Body[debugCtrl.ExeLine];
+            this.RunASTNode(item);
+            ++debugCtrl.ExeLine;
+
+            this.DebugFilter(debugCtrl, ()=>
+            {
+                this.DebugRun_Next(debugCtrl);
+            });
+        }
+        else
+        {
+            this.DebugRun_End();
+            debugCtrl.Status=2;
+            this.DebugFilter(debugCtrl,null);
+        }
+    }
+
+    //debug模式
+    this.DebugRun=function()
+    {
+        try
+        {                       
+            if (!this.AST) this.ThrowError();
+            if (!this.AST.Body) this.ThrowError();
+
+            var debugCtrl={ LineCount:this.AST.Body.length, ExeLine:0, Self:this, Status:1 };
+
+            this.DebugFilter(debugCtrl, ()=>
+            {
+                this.DebugRun_Next(debugCtrl);
+            });
+        }
+        catch(error)
+        {
+            if (this.ErrorCallback) 
             {
                 if (this.IndexCtrl) this.IndexCtrl.Status=0;
                 this.ErrorCallback(error, this.CallbackParam);
@@ -17858,7 +17940,10 @@ function ScriptIndex(name,script,args,option)
     this.LockMinWidth=null;
     this.TitleFont=g_JSChartResource.TitleFont;     //标题字体
     this.IsShortTitle=false;                        //是否显示指标参数
-    this.IsUsePageData=false;                       //是否使用了K线界面数据                       
+    this.IsUsePageData=false;                       //是否使用了K线界面数据
+    
+    //调试信息
+    this.Debug; // { Callback:, Count: }
 
     if (option)
     {
@@ -17874,6 +17959,14 @@ function ScriptIndex(name,script,args,option)
         if (option.IsShortTitle) this.IsShortTitle=option.IsShortTitle;
         if (option.OutName) this.OutName=option.OutName;
         if (IFrameSplitOperator.IsNumber(option.YSplitType)) this.YSplitType=option.YSplitType;
+
+        if (option.Debug) 
+        {
+            if (IFrameSplitOperator.IsPlusNumber(option.Debug.Count) && option.Debug.Callback)
+            {
+                this.Debug={ Count:option.Debug.Count, Callback:option.Debug.Callback }
+            }
+        }
     }
 
     if (option && option.Lock) 
@@ -17976,6 +18069,14 @@ function ScriptIndex(name,script,args,option)
             DrawInfo:null,
             Self:this,
         };
+
+        if (this.Debug && IFrameSplitOperator.IsPlusNumber(this.Debug.Count) && this.Debug.Callback)
+        {
+            --this.Debug.Count;
+
+            option.Debug=1;
+            option.DebugFilter=this.Debug.Callback;
+        }
 
         if (hqChart)    //当前屏K线信息
         {
