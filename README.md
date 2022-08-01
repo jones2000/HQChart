@@ -181,8 +181,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * [多指标叠加](https://opensource2.zealink.com/hqweb/demo/phone22.html) <br>
 * [截面数据(财务数据)计算器](https://opensource2.zealink.com/hqweb/demo/sectiondatatest.html) <br>
 * [走势图-大盘异动](https://opensource2.zealink.com/hqweb/demo/phone23.html) <br>
-* [分笔K线图](https://opensource2.zealink.com/hqweb/demo/phone24.html) <br>
-* 小程序demo 请搜索 ‘知临信息软件及数据服务介绍’ 或微信扫描 ![二维码](/小程序行情模块用例/image/wechatrcode.jpg)
+* [分笔K线图](https://opensource2.zealink.com/hqweb/demo/phone24.html)  
 
 
 # 4.使用教程
@@ -501,7 +500,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 
 # 交流
-有问题直接发issue.
+有问题直接发issue.  
 作者QQ:48274798
 
 
