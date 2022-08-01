@@ -2200,6 +2200,7 @@ var JSCHART_DATA_FIELD_ID=
 {
     KLINE_ORDERFLOW:99,
     MINUTE_MULTI_DAY_EXTENDDATA:21, //多日分时图扩展数据序号
+    KLINE_COLOR_DATA:66,            //K线自定义颜色数据
 }
 
 
@@ -14732,6 +14733,7 @@ HistoryData.Copy=function(data)
     if (IFrameSplitOperator.IsNumber(data.AFactor)) newData.AFactor=data.AFactor;
 
     if (data.OrderFlow) newData.OrderFlow=data.OrderFlow;
+    if (data.ColorData) newData.ColorData=data.ColorData;
 
     return newData;
 }
@@ -14762,6 +14764,9 @@ HistoryData.CopyTo=function(dest,src)
 
     if (IFrameSplitOperator.IsNumber(src.BFactor)) dest.BFactor=src.BFactor;
     if (IFrameSplitOperator.IsNumber(src.AFactor)) dest.AFactor=src.AFactor;
+
+    if (src.OrderFlow) dest.OrderFlow=src.OrderFlow;
+    if (src.ColorData) dest.ColorData=src.ColorData;
 }
 
 //数据复权拷贝
@@ -18043,7 +18048,7 @@ function ChartKLine()
 
     this.ClassName='ChartKLine';    //类名
     this.Symbol;        //股票代码
-    this.DrawType=0;    // 0=实心K线柱子  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图 5=订单流 6=空心K线柱子2(全部空心) 7=订单流样式2 8=订单流样式3
+    this.DrawType=0;    // 0=实心K线柱子  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图 5=订单流 6=空心K线柱子2(全部空心) 7=订单流样式2 8=订单流样式3  9=自定义颜色K线
     this.CloseLineColor=g_JSChartResource.CloseLineColor;
     this.CloseLineAreaColor=g_JSChartResource.CloseLineAreaColor;
     this.CloseLineWidth=g_JSChartResource.CloseLineWidth;
@@ -18584,6 +18589,10 @@ function ChartKLine()
 
                 this.DrawKBar_Custom(data, dataWidth, barColor, drawType, kLineOption, x, y, left, right, yLow, yHigh, yOpen, yClose, border, isHScreen);
             }
+            else if (this.DrawType==9 && data.ColorData)
+            {
+                this.DrawKBarV2(data, data.ColorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
+            }
             else if (data.Open<data.Close)       //阳线
             {
                 this.DrawKBar_Up(data, dataWidth, upColor, this.DrawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
@@ -19069,6 +19078,171 @@ function ChartKLine()
         }
     }
 
+    this.DrawKBarV2=function(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
+    {
+        var isDrawBorder=false;
+        var isEmptyBar=false;
+        if (colorData.border) isDrawBorder=true;
+        if (colorData.Type===0) isEmptyBar=true;
+
+        if (dataWidth>=4)
+        {
+            if (isDrawBorder)
+            {
+                if ((dataWidth%2)!=0) dataWidth-=1;
+            }
+
+            if (data.High>data.Close)   //上影线
+            {
+                if (colorData.Line)
+                {
+                    this.Canvas.strokeStyle=colorData.Line.Color;
+                    this.Canvas.beginPath();
+                    if (isHScreen)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(y),ToFixedPoint(x));
+                        this.Canvas.lineTo(ToFixedPoint(isEmptyBar?Math.max(yClose,yOpen):yClose),ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        if (isDrawBorder)
+                        {
+                            var xFixed=left+dataWidth/2;
+                            this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(y));
+                            this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(Math.min(yClose,yOpen)));
+                        }
+                        else
+                        {
+                            this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
+                            this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(Math.min(yClose,yOpen)));
+                        }
+                    }
+                    this.Canvas.stroke();
+                }
+                
+                y=yClose;
+            }
+            else
+            {
+                y=yClose;
+            }
+
+            if (isHScreen)
+            {
+                /*
+                if (Math.abs(yOpen-y)<1)  
+                {
+                    this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),1,ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
+                }
+                else 
+                {
+                    if (drawType==3) //空心柱
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedPoint(y),ToFixedPoint(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
+                        this.Canvas.stroke();
+                    }
+                    else
+                    {
+                        this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
+                    }
+                }
+                */
+            }
+            else
+            {
+                
+                //实心
+                if (!isEmptyBar && colorData.BarColor)
+                {
+                    this.Canvas.fillStyle=colorData.BarColor;
+                    if (Math.abs(yOpen-y)<1)  
+                    {
+                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
+                    }
+                    else
+                    {
+                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,yOpen)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(yOpen-y)));
+                    }
+                }
+
+                if (colorData.Border) //空心
+                {
+                    if (Math.abs(yOpen-y)<1)  
+                    {
+                        this.Canvas.fillStyle=colorData.Border.Color;
+                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
+                    }
+                    else 
+                    {
+                        this.Canvas.strokeStyle=colorData.Border.Color;
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));
+                        this.Canvas.stroke();
+                    }
+                }
+            }
+
+            if (data.Open>data.Low) //下影线
+            {
+                if (colorData.Line)
+                {
+                    this.Canvas.strokeStyle=colorData.Line.Color;
+                    this.Canvas.beginPath();
+                    if (isHScreen)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(isEmptyBar?Math.min(yClose,yOpen):y),ToFixedPoint(x));
+                        this.Canvas.lineTo(ToFixedPoint(yLow),ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        if (isDrawBorder)
+                        {
+                            var xFixed=left+dataWidth/2;
+                            this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(Math.max(yClose,yOpen)));
+                            this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(yLow));
+                        }
+                        else
+                        {
+                            this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(Math.max(yClose,yOpen)));
+                            this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                        }
+                    }
+                    this.Canvas.stroke();
+                }
+            }
+        }
+        else
+        {
+            var lineColor;
+            if (isEmptyBar && colorData.Border)
+            {
+                lineColor=colorData.Border.Color;
+            }
+            else if (!isEmptyBar && colorData.BarColor)
+            {
+                lineColor=colorData.BarColor;
+            }
+
+            if (lineColor)
+            {
+                this.Canvas.strokeStyle=lineColor;
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                    this.Canvas.lineTo(yLow,ToFixedPoint(x));
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                    this.Canvas.lineTo(ToFixedPoint(x),yLow);
+                }
+                this.Canvas.stroke();
+            }
+        }
+    }
+
     this.DrawTrade=function()       //交易系统
     {
         if (!this.TradeData) return;
@@ -19329,6 +19503,10 @@ function ChartKLine()
         else if (this.DrawType==8)
         {
             this.DrawOrderFlow_Style3();
+        }
+        else if (this.DrawType==9)
+        {
+            this.DrawKBar();
         }
         else
         {
@@ -21884,10 +22062,13 @@ function ChartOverlayKLine()
 
     this.PtInChart=function(x,y)
     {
-        if (this.DrawType==1 || this.DrawType==4)
+        var drawType=this.DrawType;
+        if (IFrameSplitOperator.IsNumber(this.CustomDrawType)) drawType=this.CustomDrawType;
+
+        if (drawType==1 || drawType==4) //线段，面积不支持选中
         {
             return null;
-            return this.PtInLine(x,y, {KLineClose:true});
+            //return this.PtInLine(x,y, {KLineClose:true});
         }
 
         return this.PtInKBar(x,y, {OverlayKLine:true});
@@ -40738,7 +40919,14 @@ function DynamicChartTitlePainting()
             else
             {
                 this.Canvas.fillStyle=item.Color;
-                var text=item.Name+":"+valueText;
+                var text=valueText;
+                if (item.Name) 
+                {
+                    var dyTitle=this.GetDynamicOutName(item.Name);
+                    if (dyTitle) text=dyTitle+":"+valueText;
+                    else text=item.Name+":"+valueText;
+                }
+
                 var space=this.ParamSpace*GetDevicePixelRatio();
                 var textWidth=this.Canvas.measureText(text).width+space;    //后空2个像素
                 if ((left+textWidth)>right) break;
@@ -55390,6 +55578,7 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
     var fclose=9, yfclose=10;   //结算价, 前结算价
     var bfactor=11, afactor=12; //前, 后复权因子
     var orderFlow=JSCHART_DATA_FIELD_ID.KLINE_ORDERFLOW;
+    var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
     for (var i = 0; i < list.length; ++i)
     {
         var item = new HistoryData();
@@ -55413,6 +55602,7 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
         if (!IFrameSplitOperator.IsNumber(item.Open)) continue;
 
         if (jsData[orderFlow]) item.OrderFlow=jsData[orderFlow];
+        if (jsData[colorData]) item.ColorData=jsData[colorData];
 
         aryDayData.push(item);
     }
@@ -55452,6 +55642,7 @@ KLineChartContainer.JsonDataToRealtimeData=function(data, symbol)
 
     if (IFrameSplitOperator.IsNumber(stock.bfactor)) item.BFactor=stock.bfactor;    //前复权因子
     if (IFrameSplitOperator.IsNumber(stock.afactor)) item.AFactor=stock.afactor;    //后复权因子
+    if (stock.colordata) item.ColorData=stock.colordata;    //自定义颜色
     return item;
 }
 
@@ -55539,7 +55730,8 @@ KLineChartContainer.JsonDataToMinuteRealtimeDataV2=function(data,symbol)
     var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
     var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //是否是期货
 
-    var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position=9, orderFlow=JSCHART_DATA_FIELD_ID.KLINE_ORDERFLOW;;
+    var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position=9;
+    var orderFlow=JSCHART_DATA_FIELD_ID.KLINE_ORDERFLOW;
     var yClose=null; 
     
     for (var i = 0; i < overlayData.data.length; ++i)
@@ -55583,7 +55775,9 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
     if (upperSymbol) isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
     var list = data.data;
     var aryDayData=new Array();
-    var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position=9, orderFlow=JSCHART_DATA_FIELD_ID.KLINE_ORDERFLOW;;
+    var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position=9;
+    var orderFlow=JSCHART_DATA_FIELD_ID.KLINE_ORDERFLOW;
+    var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
     var yClose=null; 
     for (var i = 0; i < list.length; ++i)
     {
@@ -55608,6 +55802,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
         if (IFrameSplitOperator.IsNumber(item.Close)) yClose=item.Close;
 
         if (jsData[orderFlow]) item.OrderFlow=jsData[orderFlow];
+        if (jsData[colorData]) item.ColorData=jsData[colorData];
 
         aryDayData.push(item);
     }
