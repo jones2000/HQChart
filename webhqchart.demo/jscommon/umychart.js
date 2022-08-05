@@ -2727,12 +2727,13 @@ function JSChartContainer(uielement, OffscreenElement)
         {
 
         }
-        else if (this.YDrag || this.UpDownDrag || this.RectSelectDrag)
+        else if (this.YDrag  || this.RectSelectDrag)
         {
 
         }
         else if (this.CurrentChartDrawPicture)  //画图工具模式
         {
+            this.UpDownDrag=null;   //画图优先
             var drawPicture=this.CurrentChartDrawPicture;
             if (drawPicture.Status==2)
                 this.SetChartDrawPictureThirdPoint(drag.Click.X,drag.Click.Y);
@@ -2757,6 +2758,7 @@ function JSChartContainer(uielement, OffscreenElement)
             {
                 if (drawPictrueData.ChartDrawPicture.EnableMove==true)
                 {
+                    this.UpDownDrag=null;   //画图优先
                     this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
                     this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
                    
@@ -4779,7 +4781,15 @@ function JSChartContainer(uielement, OffscreenElement)
         var bDrawPicture=false; //是否正在画图
         if (this.CurrentChartDrawPicture)
         {
-            if (this.CurrentChartDrawPicture.Status!=20) mouseStatus={ Cursor:"crosshair", Name:"CurrentChartDrawPicture"};
+            var index=this.Frame.PtInChartFrame(x,y);
+            if (this.CurrentChartDrawPicture.Status!=20)
+            {
+                if (index>=0) 
+                    mouseStatus={ Cursor:"crosshair", Name:"CurrentChartDrawPicture"};
+                else 
+                    mouseStatus={ Cursor:"not-allowed", Name:"CurrentChartDrawPicture"};  //不在画图区域
+            }
+
             if (this.CurrentChartDrawPicture.SetLastPoint) this.CurrentChartDrawPicture.SetLastPoint({X:x,Y:y});
             bDrawPicture=true;
         }
@@ -13989,6 +13999,27 @@ function HQTradeFrame()
         //底部
         if (x>=left && x<=right && y>bottom && y<chartHeight) 
             return -3;
+
+        return -1;
+    }
+
+    this.PtInChartFrame=function(x,y)   //鼠标在图形区域, 取出上下空白
+    {
+        for(var i=0; i<this.SubFrame.length; ++i)
+        {
+            var item=this.SubFrame[i];
+            var left=item.Frame.ChartBorder.GetLeft();
+            var top=item.Frame.ChartBorder.GetTopEx();
+            var width=item.Frame.ChartBorder.GetWidth();
+            var height=item.Frame.ChartBorder.GetHeightEx();
+
+            item.Frame.Canvas.beginPath();
+            item.Frame.Canvas.rect(left,top,width,height);
+            if (item.Frame.Canvas.isPointInPath(x,y))
+            {
+                return i;   //转成整形
+            }
+        }
 
         return -1;
     }
@@ -54853,7 +54884,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                 this.ClickChartTimer=null;
             }
             
-            var data={ Tooltip:tooltip, Stock:{Symbol:this.Symbol, Name:this.Name } }
+            var data={ Tooltip:tooltip, Stock:{Symbol:this.Symbol, Name:this.Name }, X:e.clientX, Y:e.clientY };
             event.Callback(event,data,this);
         }
 
