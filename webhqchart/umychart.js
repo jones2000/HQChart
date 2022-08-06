@@ -18285,13 +18285,29 @@ function ChartKLine()
             this.Canvas.beginPath();   //最高-最低
             if (isHScreen)
             {
-                this.Canvas.moveTo(yHigh,ToFixedPoint(x));
-                this.Canvas.lineTo(yLow,ToFixedPoint(x));
+                if (data.High==data.Low && dataWidth<4)
+                {
+                    this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                    this.Canvas.lineTo(yLow-1,ToFixedPoint(x));
+                }
+                else
+                {
+                    this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                    this.Canvas.lineTo(yLow,ToFixedPoint(x));
+                }
             }
             else
             {
-                this.Canvas.moveTo(ToFixedPoint(x),yHigh);
-                this.Canvas.lineTo(ToFixedPoint(x),yLow);
+                if (data.High==data.Low && dataWidth<4)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                    this.Canvas.lineTo(ToFixedPoint(x),yLow+1);
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                    this.Canvas.lineTo(ToFixedPoint(x),yLow);
+                }
             }
             
             this.Canvas.stroke();
@@ -18970,13 +18986,29 @@ function ChartKLine()
             this.Canvas.beginPath();
             if (isHScreen)
             {
-                this.Canvas.moveTo(yHigh,ToFixedPoint(x));
-                this.Canvas.lineTo(yLow,ToFixedPoint(x));
+                if (data.High==data.Low)
+                {
+                    this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                    this.Canvas.lineTo(yLow-1,ToFixedPoint(x));
+                }
+                else
+                {
+                    this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                    this.Canvas.lineTo(yLow,ToFixedPoint(x));
+                }
             }
             else
             {
-                this.Canvas.moveTo(ToFixedPoint(x),yHigh);
-                this.Canvas.lineTo(ToFixedPoint(x),yLow);
+                if (data.High==data.Low)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                    this.Canvas.lineTo(ToFixedPoint(x),yLow+1);
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                    this.Canvas.lineTo(ToFixedPoint(x),yLow);
+                }
             }
             this.Canvas.strokeStyle=unchagneColor;
             this.Canvas.stroke();

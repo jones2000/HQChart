@@ -314,35 +314,58 @@ function ChartKLine()
             else this.Canvas.strokeStyle = this.UnchagneColor; //平线
 
             this.Canvas.beginPath();   //最高-最低
-            if (isHScreen) {
-                this.Canvas.moveTo(yHigh, ToFixedPoint(x));
-                this.Canvas.lineTo(yLow, ToFixedPoint(x));
+            if (isHScreen) 
+            {
+                if (data.High==data.Low && dataWidth < this.MinBarWidth)
+                {
+                    this.Canvas.moveTo(yHigh, ToFixedPoint(x));
+                    this.Canvas.lineTo(yLow-1, ToFixedPoint(x));
+                }
+                else
+                {
+                    this.Canvas.moveTo(yHigh, ToFixedPoint(x));
+                    this.Canvas.lineTo(yLow, ToFixedPoint(x));
+                }
             }
-            else {
-                this.Canvas.moveTo(ToFixedPoint(x), yHigh);
-                this.Canvas.lineTo(ToFixedPoint(x), yLow);
+            else 
+            {
+                if (data.High==data.Low && dataWidth < this.MinBarWidth)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x), yHigh);
+                    this.Canvas.lineTo(ToFixedPoint(x), yLow+1);
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x), yHigh);
+                    this.Canvas.lineTo(ToFixedPoint(x), yLow);
+                }
             }
 
             this.Canvas.stroke();
 
-            if (dataWidth >= this.MinBarWidth) {
+            if (dataWidth >= this.MinBarWidth) 
+            {
                 this.Canvas.beginPath();    //开盘
-                if (isHScreen) {
+                if (isHScreen) 
+                {
                     this.Canvas.moveTo(ToFixedPoint(yOpen), left);
                     this.Canvas.lineTo(ToFixedPoint(yOpen), x);
                 }
-                else {
+                else 
+                {
                     this.Canvas.moveTo(left, ToFixedPoint(yOpen));
                     this.Canvas.lineTo(x, ToFixedPoint(yOpen));
                 }
                 this.Canvas.stroke();
 
                 this.Canvas.beginPath();    //收盘
-                if (isHScreen) {
+                if (isHScreen) 
+                {
                     this.Canvas.moveTo(ToFixedPoint(yClose), right);
                     this.Canvas.lineTo(ToFixedPoint(yClose), x);
                 }
-                else {
+                else 
+                {
                     this.Canvas.moveTo(right, ToFixedPoint(yClose));
                     this.Canvas.lineTo(x, ToFixedPoint(yClose));
                 }
@@ -966,13 +989,30 @@ function ChartKLine()
             this.Canvas.beginPath();
             if (isHScreen) 
             {
-                this.Canvas.moveTo(yHigh, ToFixedPoint(x));
-                this.Canvas.lineTo(yLow, ToFixedPoint(x));
+                if (data.High==data.Low)
+                {
+                    this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                    this.Canvas.lineTo(yLow-1,ToFixedPoint(x));
+                }
+                else
+                {
+                    this.Canvas.moveTo(yHigh, ToFixedPoint(x));
+                    this.Canvas.lineTo(yLow, ToFixedPoint(x));
+                }
             }
             else 
             {
-                this.Canvas.moveTo(ToFixedPoint(x), yHigh);
-                this.Canvas.lineTo(ToFixedPoint(x), yLow);
+                if (data.High==data.Low)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                    this.Canvas.lineTo(ToFixedPoint(x),yLow+1);
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x), yHigh);
+                    this.Canvas.lineTo(ToFixedPoint(x), yLow);
+                }
+               
             }
             this.Canvas.strokeStyle = unchagneColor;
             this.Canvas.stroke();
@@ -1877,8 +1917,17 @@ function ChartColorKline()
             }
             else
             {
-                this.Canvas.moveTo(ToFixedPoint(x),yHigh);
-                this.Canvas.lineTo(ToFixedPoint(x),yLow);
+                if (data.High==data.Low)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                    this.Canvas.lineTo(ToFixedPoint(x),yLow+1);
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                    this.Canvas.lineTo(ToFixedPoint(x),yLow);
+                }
+                
             }
             this.Canvas.strokeStyle=unchagneColor;
             this.Canvas.stroke();
