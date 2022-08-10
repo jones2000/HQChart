@@ -11282,6 +11282,7 @@ function CoordinateInfo()
     this.LineColor=g_JSChartResource.FrameSplitPen;             //线段颜色
     this.LineDash=null;                                         //当线段类型==2时 可以设置虚线样式
     this.LineType=1;                                            //线段类型 -1 不画线段 2 虚线 8,9=集合竞价坐标
+    this.LineWidth;                                             //线段宽度
     this.ExtendData;                                            //扩展属性
                                                                 //百分比 { PriceColor:, PercentageColor:, SplitColor:, Font: }
                                                                 //自定义刻度 { Custom:{ Position: 1=强制内部 }}
@@ -12083,17 +12084,23 @@ function AverageWidthFrame()
             var yFixed=ToFixedPoint(y);
             if (y!=bottom && this.IsShowYLine)
             {
+                var bChangeLineWidth=false;
+                if (IFrameSplitOperator.IsPlusNumber(item.LineWidth))   //刻度线宽度
+                {
+                    this.Canvas.lineWidth=item.LineWidth*pixelRatio;
+                    bChangeLineWidth=true;
+                }
+
                 this.Canvas.strokeStyle=item.LineColor;
                 if (item.LineType==2)
                 {
-                    this.Canvas.save();
                     if (item.LineDash) this.Canvas.setLineDash(item.LineDash);
                     else this.Canvas.setLineDash([5*pixelRatio,5*pixelRatio]);   //虚线
                     this.Canvas.beginPath();
                     this.Canvas.moveTo(left,yFixed);
                     this.Canvas.lineTo(right,yFixed);
                     this.Canvas.stroke();
-                    this.Canvas.restore();
+                    this.Canvas.setLineDash([]);
                 }
                 else if (item.LineType==3)  //只在刻度边上画一个短横线
                 {
@@ -12121,6 +12128,11 @@ function AverageWidthFrame()
                         this.Canvas.lineTo(right,yFixed);
                         this.Canvas.stroke();
                     }
+                }
+
+                if (bChangeLineWidth)
+                {
+                    this.Canvas.lineWidth=pixelRatio;
                 }
             }
             
@@ -23270,7 +23282,7 @@ function ChartKLine()
                     if (isHScreen)
                     {
                         this.Canvas.moveTo(ToFixedPoint(y),ToFixedPoint(x));
-                        this.Canvas.lineTo(ToFixedPoint(isEmptyBar?Math.max(yClose,yOpen):yClose),ToFixedPoint(x));
+                        this.Canvas.lineTo(ToFixedPoint(Math.max(yClose,yOpen)),ToFixedPoint(x));
                     }
                     else
                     {
@@ -23298,25 +23310,35 @@ function ChartKLine()
 
             if (isHScreen)
             {
-                /*
-                if (Math.abs(yOpen-y)<1)  
+                //实心
+                if (!isEmptyBar && colorData.BarColor)
                 {
-                    this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),1,ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
-                }
-                else 
-                {
-                    if (drawType==3) //空心柱
+                    this.Canvas.fillStyle=colorData.BarColor;
+                    if (Math.abs(yOpen-y)<1)  
                     {
-                        this.Canvas.beginPath();
-                        this.Canvas.rect(ToFixedPoint(y),ToFixedPoint(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
-                        this.Canvas.stroke();
+                        this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),1,ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
                     }
                     else
                     {
                         this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
                     }
                 }
-                */
+
+                if (colorData.Border) //空心
+                {
+                    if (Math.abs(yOpen-y)<1)  
+                    {
+                        this.Canvas.fillStyle=colorData.Border.Color;
+                        this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),1,ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
+                    }
+                    else
+                    {
+                        this.Canvas.strokeStyle=colorData.Border.Color;
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedPoint(y),ToFixedPoint(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
+                        this.Canvas.stroke();
+                    }
+                }
             }
             else
             {
@@ -23360,7 +23382,7 @@ function ChartKLine()
                     this.Canvas.beginPath();
                     if (isHScreen)
                     {
-                        this.Canvas.moveTo(ToFixedPoint(isEmptyBar?Math.min(yClose,yOpen):y),ToFixedPoint(x));
+                        this.Canvas.moveTo(ToFixedPoint(Math.min(yClose,yOpen)),ToFixedPoint(x));
                         this.Canvas.lineTo(ToFixedPoint(yLow),ToFixedPoint(x));
                     }
                     else
@@ -23399,13 +23421,30 @@ function ChartKLine()
                 this.Canvas.beginPath();
                 if (isHScreen)
                 {
-                    this.Canvas.moveTo(yHigh,ToFixedPoint(x));
-                    this.Canvas.lineTo(yLow,ToFixedPoint(x));
+                    if (data.High==data.Low)
+                    {
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                        this.Canvas.lineTo(yLow-1,ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                        this.Canvas.lineTo(yLow,ToFixedPoint(x));
+                    }
                 }
                 else
                 {
-                    this.Canvas.moveTo(ToFixedPoint(x),yHigh);
-                    this.Canvas.lineTo(ToFixedPoint(x),yLow);
+                    if (data.High==data.Low)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                        this.Canvas.lineTo(ToFixedPoint(x),yLow+1);
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                        this.Canvas.lineTo(ToFixedPoint(x),yLow);
+                    }
+                    
                 }
                 this.Canvas.stroke();
             }
