@@ -30,6 +30,7 @@ import {
     Rect,
     DataPlus,
     JSCHART_EVENT_ID,
+    JSCHART_DATA_FIELD_ID,
     PhoneDBClick,
     OVERLAY_STATUS_ID,
 } from "./umychart.data.wechat.js";
@@ -9957,6 +9958,7 @@ KLineChartContainer.JsonDataToHistoryData = function (data)
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, position = 8;
     var fclose=9, yfclose=10;   //结算价, 前结算价
     var bfactor=11, afactor=12; //前, 后复权因子
+    var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
     for (var i = 0; i < list.length; ++i) 
     {
         var item = new HistoryData();
@@ -9978,6 +9980,8 @@ KLineChartContainer.JsonDataToHistoryData = function (data)
         if (IFrameSplitOperator.IsNumber(jsData[bfactor])) item.BFactor=jsData[bfactor];    //前复权因子
         if (IFrameSplitOperator.IsNumber(jsData[afactor])) item.AFactor=jsData[afactor];    //后复权因子
         if (!IFrameSplitOperator.IsNumber(item.Open)) continue; 
+
+        if (jsData[colorData]) item.ColorData=jsData[colorData];
 
         aryDayData.push(item);
     }
@@ -10018,6 +10022,7 @@ KLineChartContainer.JsonDataToRealtimeData = function (data, symbol)
     if (IFrameSplitOperator.IsNumber(stock.position)) item.Position = stock.position; //持仓量
     if (IFrameSplitOperator.IsNumber(stock.bfactor)) item.BFactor=stock.bfactor;    //前复权因子
     if (IFrameSplitOperator.IsNumber(stock.afactor)) item.AFactor=stock.afactor;    //后复权因子
+    if (stock.colordata) item.ColorData=stock.colordata;    //自定义颜色
     return item;
 }
 
@@ -10083,6 +10088,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
     var list = data.data;
     var aryDayData = new Array();
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position = 9;
+    var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
     for (var i = 0; i < list.length; ++i) 
     {
         var item = new HistoryData();
@@ -10097,7 +10103,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
         item.Amount = jsData[amount];
         item.Time = jsData[time];
         if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position = jsData[position]; //期货持仓
-
+        if (jsData[colorData]) item.ColorData=jsData[colorData];
         aryDayData.push(item);
     }
 
@@ -14165,7 +14171,8 @@ var JSCommon=
     JSCommonCoordinateData:JSCommonCoordinateData,
     FrameSplitKLineX:FrameSplitKLineX,
     FrameSplitKLinePriceY:FrameSplitKLinePriceY,
-    JSCHART_EVENT_ID:JSCHART_EVENT_ID
+    JSCHART_EVENT_ID:JSCHART_EVENT_ID,
+    JSCHART_DATA_FIELD_ID:JSCHART_DATA_FIELD_ID
 };
 
 export

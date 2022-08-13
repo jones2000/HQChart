@@ -231,7 +231,7 @@ function ChartKLine()
 
     this.ClassName = 'ChartKLine';
     this.Symbol;        //股票代码
-    this.DrawType = 0;    // 0=K线  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积 6=空心阴线阳线柱
+    this.DrawType = 0;    // 0=K线  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积 6=空心阴线阳线柱 9=自定义颜色K线
     this.CloseLineColor = g_JSChartResource.CloseLineColor;
     this.CloseLineAreaColor = g_JSChartResource.CloseLineAreaColor;
     this.UpColor = g_JSChartResource.UpBarColor;
@@ -650,6 +650,10 @@ function ChartKLine()
                 if (IFrameSplitOperator.IsNumber(kLineOption.DrawType)) drawType=kLineOption.DrawType;
 
                 this.DrawKBar_Custom(data, dataWidth, barColor, drawType, kLineOption, x, y, left, right, yLow, yHigh, yOpen, yClose, border, isHScreen);
+            }
+            else if (this.DrawType==9 && data.ColorData)
+            {
+                this.DrawKBarV2(data, data.ColorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
             }
             else if (data.Open < data.Close)       //阳线
             {
@@ -1145,6 +1149,198 @@ function ChartKLine()
         }
     }
 
+    this.DrawKBarV2=function(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
+    {
+        var isDrawBorder=false;
+        var isEmptyBar=false;
+        if (colorData.border) isDrawBorder=true;
+        if (colorData.Type===0) isEmptyBar=true;
+
+        if (dataWidth>=4)
+        {
+            if (isDrawBorder)
+            {
+                if ((dataWidth%2)!=0) dataWidth-=1;
+            }
+
+            if (data.High>data.Close)   //上影线
+            {
+                if (colorData.Line)
+                {
+                    this.Canvas.strokeStyle=colorData.Line.Color;
+                    this.Canvas.beginPath();
+                    if (isHScreen)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(y),ToFixedPoint(x));
+                        this.Canvas.lineTo(ToFixedPoint(Math.max(yClose,yOpen)),ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        if (isDrawBorder)
+                        {
+                            var xFixed=left+dataWidth/2;
+                            this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(y));
+                            this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(Math.min(yClose,yOpen)));
+                        }
+                        else
+                        {
+                            this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
+                            this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(Math.min(yClose,yOpen)));
+                        }
+                    }
+                    this.Canvas.stroke();
+                }
+                
+                y=yClose;
+            }
+            else
+            {
+                y=yClose;
+            }
+
+            if (isHScreen)
+            {
+                //实心
+                if (!isEmptyBar && colorData.BarColor)
+                {
+                    this.Canvas.fillStyle=colorData.BarColor;
+                    if (Math.abs(yOpen-y)<1)  
+                    {
+                        this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),1,ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
+                    }
+                    else
+                    {
+                        this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
+                    }
+                }
+
+                if (colorData.Border) //空心
+                {
+                    if (Math.abs(yOpen-y)<1)  
+                    {
+                        this.Canvas.fillStyle=colorData.Border.Color;
+                        this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),1,ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
+                    }
+                    else
+                    {
+                        this.Canvas.strokeStyle=colorData.Border.Color;
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedPoint(y),ToFixedPoint(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
+                        this.Canvas.stroke();
+                    }
+                }
+            }
+            else
+            {
+                
+                //实心
+                if (!isEmptyBar && colorData.BarColor)
+                {
+                    this.Canvas.fillStyle=colorData.BarColor;
+                    if (Math.abs(yOpen-y)<1)  
+                    {
+                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
+                    }
+                    else
+                    {
+                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,yOpen)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(yOpen-y)));
+                    }
+                }
+
+                if (colorData.Border) //空心
+                {
+                    if (Math.abs(yOpen-y)<1)  
+                    {
+                        this.Canvas.fillStyle=colorData.Border.Color;
+                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
+                    }
+                    else 
+                    {
+                        this.Canvas.strokeStyle=colorData.Border.Color;
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));
+                        this.Canvas.stroke();
+                    }
+                }
+            }
+
+            if (data.Open>data.Low) //下影线
+            {
+                if (colorData.Line)
+                {
+                    this.Canvas.strokeStyle=colorData.Line.Color;
+                    this.Canvas.beginPath();
+                    if (isHScreen)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(Math.min(yClose,yOpen)),ToFixedPoint(x));
+                        this.Canvas.lineTo(ToFixedPoint(yLow),ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        if (isDrawBorder)
+                        {
+                            var xFixed=left+dataWidth/2;
+                            this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(Math.max(yClose,yOpen)));
+                            this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(yLow));
+                        }
+                        else
+                        {
+                            this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(Math.max(yClose,yOpen)));
+                            this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                        }
+                    }
+                    this.Canvas.stroke();
+                }
+            }
+        }
+        else
+        {
+            var lineColor;
+            if (isEmptyBar && colorData.Border)
+            {
+                lineColor=colorData.Border.Color;
+            }
+            else if (!isEmptyBar && colorData.BarColor)
+            {
+                lineColor=colorData.BarColor;
+            }
+
+            if (lineColor)
+            {
+                this.Canvas.strokeStyle=lineColor;
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    if (data.High==data.Low)
+                    {
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                        this.Canvas.lineTo(yLow-1,ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                        this.Canvas.lineTo(yLow,ToFixedPoint(x));
+                    }
+                }
+                else
+                {
+                    if (data.High==data.Low)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                        this.Canvas.lineTo(ToFixedPoint(x),yLow+1);
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                        this.Canvas.lineTo(ToFixedPoint(x),yLow);
+                    }
+                    
+                }
+                this.Canvas.stroke();
+            }
+        }
+    }
+
     this.ClearCustomKLine=function()
     {
         this.CustomKLine=null;
@@ -1251,17 +1447,25 @@ function ChartKLine()
 
         if (this.IsShow == false) return;
 
-        if (this.DrawType == 1) {
+        if (this.DrawType == 1) 
+        {
             this.DrawCloseLine();
             return;
         }
-        else if (this.DrawType == 2) {
+        else if (this.DrawType == 2) 
+        {
             this.DrawAKLine();
         }
-        else if (this.DrawType == 4) {
+        else if (this.DrawType == 4) 
+        {
             this.DrawCloseArea();
         }
-        else {
+        else if (this.DrawType==9)
+        {
+            this.DrawKBar();
+        }
+        else 
+        {
             this.DrawKBar();
         }
 

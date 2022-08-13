@@ -12787,10 +12787,11 @@ function AverageWidthFrame()
             return;
         }
 
-        var left = this.ChartBorder.GetLeft();
-        var right = this.ChartBorder.GetRight();
-        var bottom = this.ChartBorder.GetBottom();
-        var top = this.ChartBorder.GetTopTitle();
+        var border=this.GetBorder();
+        var left=border.Left;
+        var right=border.Right;
+        var bottom=border.Bottom;
+        var top=border.Top;
         var borderRight = this.ChartBorder.Right;
         var borderLeft = this.ChartBorder.Left;
         var titleHeight = this.ChartBorder.TitleHeight;
@@ -12799,8 +12800,8 @@ function AverageWidthFrame()
         {
             borderLeft=this.ChartBorder.Top;
             borderRight=this.ChartBorder.Bottom;
-            top=this.ChartBorder.GetTop();
-            bottom=this.ChartBorder.GetBottom();
+            top=border.Top;
+            bottom=border.Bottom;
         }
 
         var pixelTatio = GetDevicePixelRatio();
@@ -12841,7 +12842,7 @@ function AverageWidthFrame()
                         this.Canvas.fillStyle=bgColor;
                         this.Canvas.fillRect(textLeft,bgTop,textHeight,itemText.Width);
                         this.DrawHScreenText({X:yText, Y:bgTop}, {Text:itemText.Text, Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
-                        if (i==0) this.DrawLine(bgTop+itemText.Width,bottom,yText,item.LineColor,item.LineType);
+                        if (i==0) this.DrawLine(bgTop+itemText.Width,bottom,yText,item.LineColor,item.LineType,item);
 
                         yText-=textHeight+1*pixelTatio;
                     }
@@ -12859,7 +12860,7 @@ function AverageWidthFrame()
                             this.Canvas.fillRect(textLeft,bgTop,itemText.Width,textHeight);
                             this.Canvas.fillStyle = item.TextColor;
                             this.Canvas.fillText(itemText.Text, textLeft + 1*pixelTatio, yText);
-                            if (i==0) this.DrawLine(textLeft+itemText.Width,right,yText,item.LineColor,item.LineType);
+                            if (i==0) this.DrawLine(textLeft+itemText.Width,right,yText,item.LineColor,item.LineType,item);
     
                             yText+=textHeight+1*pixelTatio;
                         }
@@ -12889,7 +12890,7 @@ function AverageWidthFrame()
                         this.Canvas.fillStyle=item.LineColor;
                         this.Canvas.fillRect(textLeft,bgTop,textHeight,itemText.Width);
                         this.DrawHScreenText({X:yText, Y:bgTop}, {Text:itemText.Text, Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
-                        if (i==0) this.DrawLine(bgTop+itemText.Width,bottom,yText,item.LineColor,item.LineType);
+                        if (i==0) this.DrawLine(bgTop+itemText.Width,bottom,yText,item.LineColor,item.LineType,item);
 
                         yText-=textHeight+1*pixelTatio;
                     }
@@ -12911,7 +12912,7 @@ function AverageWidthFrame()
                         this.Canvas.fillRect(rectLeft,bgTop,itemText.Width,textHeight);
                         this.Canvas.fillStyle = item.TextColor;
                         this.Canvas.fillText(itemText.Text, textLeft - 1*pixelTatio, yText);
-                        if (i==0) this.DrawLine(left,right,yText,item.LineColor,item.LineType);
+                        if (i==0) this.DrawLine(left,right,yText,item.LineColor,item.LineType,item);
                         
                         yText+=textHeight+1*pixelTatio;
                     }
@@ -12944,7 +12945,7 @@ function AverageWidthFrame()
                         this.Canvas.fillStyle=bgColor;
                         this.Canvas.fillRect(textLeft,bgTop,textHeight,textWidth);
                         this.DrawHScreenText({X:yText, Y:bgTop}, {Text:itemText.Text, Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
-                        if (i==0) this.DrawLine(top,bgTop,yText,item.LineColor,item.LineType);
+                        if (i==0) this.DrawLine(top,bgTop,yText,item.LineColor,item.LineType,item);
                         yText-=textHeight+1*pixelTatio;
                     }
                     else
@@ -12974,7 +12975,7 @@ function AverageWidthFrame()
                             this.Canvas.fillRect(textLeft,bgTop,textWidth,textHeight);  //文本背景区域
                             this.Canvas.fillStyle = item.TextColor;
                             this.Canvas.fillText(itemText.Text, textLeft + 1*pixelTatio, yText);
-                            if (i==0) this.DrawLine(left,textLeft,yText,item.LineColor,item.LineType);
+                            if (i==0) this.DrawLine(left,textLeft,yText,item.LineColor,item.LineType,item);
                             yText+=textHeight+1*pixelTatio;
                         }
                     }
@@ -13027,7 +13028,7 @@ function AverageWidthFrame()
                         this.Canvas.fillStyle=item.LineColor;
                         this.Canvas.fillRect(textLeft,bgTop,textHeight,itemText.Width);
                         this.DrawHScreenText({X:yText, Y:bgTop}, {Text:itemText.Text, Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
-                        if (i==0)  this.DrawLine(top,bgTop,yText,item.LineColor,item.LineType);
+                        if (i==0)  this.DrawLine(top,bgTop,yText,item.LineColor,item.LineType,item);
 
                         yText-=textHeight+1*pixelTatio;
                     }
@@ -13066,7 +13067,7 @@ function AverageWidthFrame()
                             this.Canvas.fillRect(textLeft,bgTop,itemText.Width,textHeight);
                             this.Canvas.fillStyle = item.TextColor;
                             this.Canvas.fillText(itemText.Text, textLeft + 1*pixelTatio, yText);
-                            if (i==0) this.DrawLine(left,right,yText,item.LineColor,item.LineType);
+                            if (i==0) this.DrawLine(left,right,yText,item.LineColor,item.LineType,item);
                             
                             yText+=textHeight+1*pixelTatio;
                         }
@@ -13114,12 +13115,14 @@ function AverageWidthFrame()
         return true;
     }
 
-    this.DrawDotLine=function(left,right,y, color)
+    this.DrawDotLine=function(left,right,y, color, option)
     {
         var pixelTatio = GetDevicePixelRatio();
         this.Canvas.save();
         this.Canvas.strokeStyle=color;
-        this.Canvas.setLineDash([5*pixelTatio,5*pixelTatio]);   //虚线
+        if (option && IFrameSplitOperator.IsPlusNumber(option.LineWidth)) this.Canvas.lineWidth=option.LineWidth*pixelTatio;
+        if (option.LineDash) this.Canvas.setLineDash(option.LineDash);
+        else this.Canvas.setLineDash([5*pixelTatio,5*pixelTatio]);   //虚线
         this.Canvas.beginPath();
         if (this.IsHScreen)
         {
@@ -13135,13 +13138,21 @@ function AverageWidthFrame()
         this.Canvas.restore();
     }
 
-    this.DrawLine=function(left,right,y, color,lineType)
+    this.DrawLine=function(left,right,y, color,lineType, option)
     {
         if (lineType==-1) return;
 
         if (lineType==0)
         {
+            var pixelRatio=GetDevicePixelRatio();
             this.Canvas.strokeStyle=color;
+            var bChangeLineWidth=false;
+            if (option && IFrameSplitOperator.IsPlusNumber(option.LineWidth))
+            {
+                this.Canvas.lineWidth=option.LineWidth*pixelRatio;
+                bChangeLineWidth=true;
+            }
+
             this.Canvas.beginPath();
             if (this.IsHScreen)
             {
@@ -13154,10 +13165,15 @@ function AverageWidthFrame()
                 this.Canvas.lineTo(right,ToFixedPoint(y));
             }
             this.Canvas.stroke();
+
+            if (bChangeLineWidth)
+            {
+                this.Canvas.lineWidth=pixelRatio;
+            }
         }
         else
         {
-            this.DrawDotLine(left,right,y, color);
+            this.DrawDotLine(left,right,y, color, option);
         }
     }
 
@@ -18804,6 +18820,7 @@ function HistoryData()
     }
     */
     this.OrderFlow; //订单流 
+    this.ColorData; //自定义颜色 {Type:0=空心 1=实心, Line:{ Color:'上下线颜色'}, Border:{Color:柱子边框颜色}, BarColor:柱子颜色};
 }
 
 //数据复制
@@ -39370,6 +39387,8 @@ function FrameSplitKLinePriceY()
         else info.LineColor=g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
 
         if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
+        if (IFrameSplitOperator.IsPlusNumber(option.LineWidth)) info.LineWidth=option.LineWidth;
+        if (option.LineDash) info.LineDash=option.LineDash;
         if (option.IsShowLine==false) info.LineType=-1;
         if (option.PositionEx===1) info.ExtendData={ Custom:{ Position:1 } };   //强制画在内部
 
@@ -39431,6 +39450,8 @@ function FrameSplitKLinePriceY()
             info.LineColor=item.Color;
             info.LineType=2;    //虚线
             if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
+            if (IFrameSplitOperator.IsPlusNumber(option.LineWidth)) info.LineWidth=option.LineWidth;
+            if (option.LineDash) info.LineDash=option.LineDash;
             if (option.IsShowLine==false) info.LineType=-1;
 
             info.Value=item.Value;
@@ -40236,7 +40257,10 @@ function FrameSplitMinutePriceY()
         else info.LineColor=g_JSChartResource.FrameLatestPrice.UnchagneBarColor;
 
         if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
+        if (IFrameSplitOperator.IsPlusNumber(option.LineWidth)) info.LineWidth=option.LineWidth;
+        if (option.LineDash) info.LineDash=option.LineDash;
         if (option.IsShowLine==false) info.LineType=-1;
+        if (option.PositionEx===1) info.ExtendData={ Custom:{ Position:1 } };   //强制画在内部
 
         return info;
     }
@@ -40244,7 +40268,7 @@ function FrameSplitMinutePriceY()
     this.CustomFixedCoordinate=function(option)    //固定坐标刻度
     {
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
-        for(var i in option.Data)
+        for(var i=0; i<option.Data.length; ++i)
         {
             var item=option.Data[i];
             var info=new CoordinateInfo();
@@ -40253,7 +40277,10 @@ function FrameSplitMinutePriceY()
             info.LineColor=item.Color;
             info.LineType=2;    //虚线
             if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
+            if (IFrameSplitOperator.IsPlusNumber(option.LineWidth)) info.LineWidth=option.LineWidth;
+            if (option.LineDash) info.LineDash=option.LineDash;
             if (option.IsShowLine==false) info.LineType=-1;
+            if (option.PositionEx===1) info.ExtendData={ Custom:{ Position:1 } };   //强制画在内部
 
             if (IFrameSplitOperator.IsNumber(item.Increase)) //涨幅计算价格
             {

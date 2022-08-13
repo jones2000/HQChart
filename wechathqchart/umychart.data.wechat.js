@@ -57,6 +57,8 @@ function HistoryData()
 
     this.BFactor;   //前复权
     this.AFactor;   //后复权
+
+    this.ColorData; //自定义颜色 {Type:0=空心 1=实心, Line:{ Color:'上下线颜色'}, Border:{Color:柱子边框颜色}, BarColor:柱子颜色};
 }
 
 //数据复制
@@ -86,6 +88,7 @@ HistoryData.Copy=function(data)
     if (IsPlusNumber(data.BFactor)) newData.BFactor = data.BFactor;
     if (IsPlusNumber(data.AFactor)) newData.AFactor = data.AFactor;
 
+    if (data.ColorData) newData.ColorData=data.ColorData;
     return newData;
 }
 
@@ -112,6 +115,8 @@ HistoryData.CopyTo = function (dest, src)
      //复权因子
      if (IsPlusNumber(src.BFactor)) dest.BFactor = src.BFactor;
      if (IsPlusNumber(src.AFactor)) dest.AFactor = src.AFactor;
+
+     if (src.ColorData) dest.ColorData=src.ColorData;
 }
 
 //数据复权拷贝
@@ -1960,6 +1965,12 @@ var JSCHART_EVENT_ID =
     ON_RCLICK_REPORT_FIXEDROW:60,           //点击报价列表右键点击固定行
 }
 
+var JSCHART_DATA_FIELD_ID=
+{
+    MINUTE_MULTI_DAY_EXTENDDATA:21, //多日分时图扩展数据序号
+    KLINE_COLOR_DATA:66,            //K线自定义颜色数据
+}
+
 var HQ_DATA_TYPE=
 {
     KLINE_ID:0,         //K线
@@ -2066,6 +2077,7 @@ export
     ToFixedPoint,
     ToFixedRect,
     JSCHART_EVENT_ID,
+    JSCHART_DATA_FIELD_ID,
     PhoneDBClick,
     HQ_DATA_TYPE,
     OVERLAY_STATUS_ID
