@@ -2275,7 +2275,7 @@ function JSChartContainer(uielement, OffscreenElement)
     this.OverlayChartPaint=new Array();             //叠加信息画法
     this.ChartDrawPicture=new Array();              //画图工具
     this.ChartDrawStorage;                          //画图工具保存
-    this.ChartDrawOption={ IsLockScreen:false, Zoom:5 };   //画图工具设置 { IsLockScreen://是否锁住屏幕, Zoom: //线段|点放大倍数 }
+    this.ChartDrawOption={ IsLockScreen:false, Zoom:1 };   //画图工具设置 { IsLockScreen://是否锁住屏幕, Zoom: //线段|点放大倍数 }
     this.CurrentChartDrawPicture=null;              //当前的画图工具
     this.SelectChartDrawPicture=null;               //当前选中的画图
     this.MoveOnChartDrawPicture=null;               //鼠标在画图上
@@ -5820,10 +5820,10 @@ function JSChartContainer(uielement, OffscreenElement)
     //data.X data.Y 鼠标位置  返回 data.ChartDrawPicture 数据在画图工具 data.PointIndex 在画图工具对应点索引
     this.GetChartDrawPictureByPoint=function(data)
     {
-        for(var i in this.ChartDrawPicture)
+        for(var i=0;i<this.ChartDrawPicture.length; ++i)
         {
             var item =this.ChartDrawPicture[i];
-            var pointIndex=item.IsPointIn(data.X,data.Y);
+            var pointIndex=item.IsPointIn(data.X, data.Y, this.ChartDrawOption);
             if (pointIndex===false) continue;
 
             if (pointIndex>=0)
@@ -12585,18 +12585,42 @@ function KLineHScreenFrame()
         }
     }
 
-    this.GetXFromIndex=function(index)
+    this.GetXFromIndex=function(index,isLimit)
     {
-        if (index < 0) index = 0;
-	    if (index > this.xPointCount - 1) index = this.xPointCount - 1;
-
-        var border=this.ChartBorder.GetHScreenBorder();
-        var offset=border.TopEx+ g_JSChartResource.FrameLeftMargin + this.DistanceWidth/2+this.DataWidth/2;
-        for(var i=1;i<=index;++i)
+        if (isLimit===false)
         {
-            offset+=this.DistanceWidth+this.DataWidth;
+            var border=this.ChartBorder.GetHScreenBorder();
+            if (index>=0)
+            {
+                var offset=border.TopEx+ g_JSChartResource.FrameLeftMargin + this.DistanceWidth/2+this.DataWidth/2;
+                for(var i=1;i<=index;++i)
+                {
+                    offset+=this.DistanceWidth+this.DataWidth;
+                }
+            }
+            else
+            {
+                var offset=border.TopEx-(this.DistanceWidth/2+this.DataWidth+this.DistanceWidth);
+                var absIndex=Math.abs(index);
+                for(var i=1;i<absIndex;++i)
+                {
+                    offset-=(this.DistanceWidth+this.DataWidth);
+                }
+            }
         }
-
+        else
+        {
+            if (index < 0) index = 0;
+            if (index > this.xPointCount - 1) index = this.xPointCount - 1;
+    
+            var border=this.ChartBorder.GetHScreenBorder();
+            var offset=border.TopEx+ g_JSChartResource.FrameLeftMargin + this.DistanceWidth/2+this.DataWidth/2;
+            for(var i=1;i<=index;++i)
+            {
+                offset+=this.DistanceWidth+this.DataWidth;
+            }
+        }
+       
         return offset;
     }
 
@@ -12679,37 +12703,78 @@ function KLineHScreenFrame()
     }
 
     //Y坐标转y轴数值
-    this.GetYData=function(x)
+    this.GetYData=function(x,isLimit)
     {
         var border=this.ChartBorder.GetHScreenBorder();
-        if (x<border.LeftEx) return this.HorizontalMin;
-		if (x>border.RightEx) return this.HorizontalMax;
-
-        var width=border.RightEx-border.LeftEx;
-		return (x-border.LeftEx)/width*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+        if (isLimit===false)
+        {
+            var width=border.RightEx-border.LeftEx;
+            return (x-border.LeftEx)/width*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+        }
+        else
+        {
+            if (x<border.LeftEx) return this.HorizontalMin;
+            if (x>border.RightEx) return this.HorizontalMax;
+    
+            var width=border.RightEx-border.LeftEx;
+            return (x-border.LeftEx)/width*(this.HorizontalMax-this.HorizontalMin)+this.HorizontalMin;
+        }
     }
 
     //X坐标转x轴数值
-    this.GetXData=function(y)
+    this.GetXData=function(y,isLimit)
     {
         var border=this.ChartBorder.GetHScreenBorder();
-        if (y<=border.TopEx) return 0;
-		if (y>=border.BottomEx) return this.XPointCount-1;
-
-        var left=border.TopEx;
+        var left=border.TopEx+g_JSChartResource.FrameLeftMargin;
         var right=border.BottomEx;
         var distanceWidth=this.DistanceWidth;
         var dataWidth=this.DataWidth;
 
-        var index=0;
-        var xPoint=left+distanceWidth/2+ dataWidth+distanceWidth;
-        while(xPoint<right && index<10000 && index+1<this.XPointCount)  //自己算x的数值
+        if (isLimit==false)
         {
-            if (xPoint>y) break;
-            xPoint+=(dataWidth+distanceWidth);
-            ++index;
+            if (y<left)
+            {
+                var index=-1;
+                var xPoint=left-(distanceWidth/2+dataWidth+distanceWidth);
+                while(index>-10000)
+                {
+                    if (xPoint<=y) 
+                        break;
+                    xPoint-=(dataWidth+distanceWidth);
+                    --index;
+                }
+    
+                return index;
+            }
+            else
+            {
+                var index=0;
+                var xPoint=left+distanceWidth/2+dataWidth+distanceWidth;
+                while(index<10000)  //自己算x的数值
+                {
+                    if (xPoint>=y) break;
+                    xPoint+=(dataWidth+distanceWidth);
+                    ++index;
+                }
+
+                return index;
+            }
         }
-        return index;
+        else
+        {
+            if (y<=border.TopEx) return 0;
+            if (y>=border.BottomEx) return this.XPointCount-1;
+
+            var index=0;
+            var xPoint=left+distanceWidth/2+ dataWidth+distanceWidth;
+            while(xPoint<right && index<10000 && index+1<this.XPointCount)  //自己算x的数值
+            {
+                if (xPoint>y) break;
+                xPoint+=(dataWidth+distanceWidth);
+                ++index;
+            }
+            return index;
+        }
 
 		//return (y-this.ChartBorder.GetTop())*(this.XPointCount*1.0/this.ChartBorder.GetHeight());
     }
@@ -41257,8 +41322,8 @@ function IChartDrawPicture()
             for(var i in this.Point)
             {
                 var item=this.Point[i];
-                var xValue=parseInt(this.Frame.GetXData(item.Y))+data.DataOffset;
-                var yValue=this.Frame.GetYData(item.X);
+                var xValue=parseInt(this.Frame.GetXData(item.Y,false))+data.DataOffset;
+                var yValue=this.Frame.GetYData(item.X,false);
 
                 var valueItem={ XValue:xValue, YValue:yValue };
                 var kline=data.Data[xValue];
@@ -41343,7 +41408,7 @@ function IChartDrawPicture()
         return true;
     }
 
-    this.IsPointIn=function(x,y)
+    this.IsPointIn=function(x, y, option)
     {
         return false;
     }
@@ -41364,8 +41429,8 @@ function IChartDrawPicture()
             var pt=new Point();
             if (isHScreen)
             {
-                pt.Y=this.Frame.GetXFromIndex(item.XValue-data.DataOffset);
-                pt.X=this.Frame.GetYFromData(item.YValue);
+                pt.Y=this.Frame.GetXFromIndex(item.XValue-data.DataOffset,false);
+                pt.X=this.Frame.GetYFromData(item.YValue,false);
             }
             else
             {
@@ -41470,7 +41535,7 @@ function IChartDrawPicture()
             var showCount=this.Frame.XPointCount;
             var invaildX=0; //超出范围的x点个数
             var isHScreen=this.Frame.IsHScreen;
-            for(var i in this.Value)
+            for(var i=0; i<this.Value.length; ++i)
             {
                 var item=this.Value[i];
                 var dataIndex=item.XValue-data.DataOffset;
@@ -41649,7 +41714,7 @@ function IChartDrawPicture()
     }
 
     //坐标是否在点上 返回在第几个点上
-    this.IsPointInXYValue=function(x,y)
+    this.IsPointInXYValue=function(x, y, option)
     {
         if (!this.Frame) return -1;
 
@@ -41658,7 +41723,9 @@ function IChartDrawPicture()
         if (!this.Value) return -1;
 
         var radius=5;
-        if (this.Option) radius+=this.Option.Zoom;
+        if (option && IFrameSplitOperator.IsNumber(option.Zoom)) radius+=option.Zoom;
+        else if (this.Option && IFrameSplitOperator.IsNumber(this.Option.Zoom)) radius+=this.Option.Zoom;
+
         var isHScreen=this.Frame.IsHScreen;
         radius*=GetDevicePixelRatio();
         for(var i=0;i<this.Value.length; ++i)   //是否在点上
@@ -41684,15 +41751,17 @@ function IChartDrawPicture()
     }
 
     //坐标是否在线段上 返回在第几个线段上
-    this.IsPointInLine=function(x,y)
+    this.IsPointInLine=function(x, y, option)
     {
         if (!this.LinePoint) return -1;
 
         var lineWidth=5;
-        if (this.Option) lineWidth+=this.Option.Zoom;
+        if (option && IFrameSplitOperator.IsNumber(option.Zoom)) lineWidth+=option.Zoom;
+        else if (this.Option && IFrameSplitOperator.IsNumber(this.Option.Zoom)) lineWidth+=this.Option.Zoom;
+
         var pixel=GetDevicePixelRatio();
         lineWidth*=pixel;
-        for(var i in this.LinePoint)
+        for(var i=0;i<this.LinePoint.length; ++i)
         {
             var item=this.LinePoint[i];
             var ptStart=item.Start;
@@ -41713,6 +41782,9 @@ function IChartDrawPicture()
                 this.Canvas.lineTo(ptEnd.X,ptEnd.Y+lineWidth);
             }
             this.Canvas.closePath();
+
+            //this.Canvas.fillStyle='RGB(22,100,100)';
+            //this.Canvas.fill();
             if (this.Canvas.isPointInPath(x,y))
                 return i;
         }
@@ -41721,14 +41793,14 @@ function IChartDrawPicture()
     }
 
     //0-10 鼠标对应的点索引   100=鼠标在正个图形上  -1 鼠标不在图形上
-    this.IsPointIn_XYValue_Line=function(x,y)
+    this.IsPointIn_XYValue_Line=function(x, y, option)
     {
         if (this.Status!=10) return -1;
 
-        var value=this.IsPointInXYValue(x,y);
+        var value=this.IsPointInXYValue(x,y,option);
         if (value>=0) return value;
 
-        value=this.IsPointInLine(x,y);
+        value=this.IsPointInLine(x,y,option);
         if (value>=0) return 100;
 
         return -1;
@@ -42175,13 +42247,14 @@ function ChartDrawGraffitiLine()
     }
 
      //坐标是否在点上 返回在第几个点上
-     this.IsPointInXYValue=function(x,y)
+     this.IsPointInXYValue=function(x,y,option)
      {
          if (!this.Frame) return -1;
          if (!this.Value) return -1;
  
          var radius=5;
-         if (this.Option) radius+=this.Option.Zoom;
+         if (option && IFrameSplitOperator.IsNumber(option.Zoom)) radius+=option.Zoom;
+         else if (this.Option && IFrameSplitOperator.IsNumber(this.Option.Zoom)) radius+=this.Option.Zoom;
          var isHScreen=this.Frame.IsHScreen;
          radius*=GetDevicePixelRatio();
          for(var i=0;i<this.Value.length; ++i)   //是否在点上
@@ -42589,7 +42662,7 @@ function ChartDrawPictureRect()
     }
 
     //0-10 鼠标对应的点索引   100=鼠标在正个图形上  -1 鼠标不在图形上
-    this.IsPointIn=function(x,y)
+    this.IsPointIn=function(x,y,option)
     {
         if (this.IsFrameMinSize()) return -1;
         if (!this.Frame || this.Status!=10) return -1;
@@ -42597,7 +42670,7 @@ function ChartDrawPictureRect()
         var data=this.Frame.Data;
         if (!data) return -1;
 
-        var nIndex=this.IsPointInXYValue(x,y);
+        var nIndex=this.IsPointInXYValue(x,y,option);
         if (nIndex>=0) return nIndex;
 
         var aryPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
@@ -42605,29 +42678,30 @@ function ChartDrawPictureRect()
 
         //是否在矩形边框上
         var linePoint=[ {X:aryPoint[0].X,Y:aryPoint[0].Y},{X:aryPoint[1].X,Y:aryPoint[0].Y}];
-        if (this.IsPointInLine(linePoint,x,y))
+        if (this.IsPointInLine(linePoint,x,y,option))
             return 100;
 
         linePoint=[ {X:aryPoint[1].X,Y:aryPoint[0].Y},{X:aryPoint[1].X,Y:aryPoint[1].Y}];
-        if (this.IsPointInLine2(linePoint,x,y))
+        if (this.IsPointInLine2(linePoint,x,y,option))
             return 100;
 
         linePoint=[ {X:aryPoint[1].X,Y:aryPoint[1].Y},{X:aryPoint[0].X,Y:aryPoint[1].Y}];
-        if (this.IsPointInLine(linePoint,x,y))
+        if (this.IsPointInLine(linePoint,x,y,option))
             return 100;
 
         linePoint=[ {X:aryPoint[0].X,Y:aryPoint[1].Y},{X:aryPoint[0].X,Y:aryPoint[0].Y}];
-        if (this.IsPointInLine2(linePoint,x,y))
+        if (this.IsPointInLine2(linePoint,x,y,option))
             return 100;
 
         return -1;
     }
 
     //点是否在线段上 水平线段
-    this.IsPointInLine=function(aryPoint,x,y)
+    this.IsPointInLine=function(aryPoint,x,y,option)
     {
         var radius=5;
-        if (this.Option) radius+=this.Option.Zoom;
+        if (option && IFrameSplitOperator.IsNumber(option.Zoom)) radius+=option.Zoom;
+        else if (this.Option && IFrameSplitOperator.IsNumber(this.Option.Zoom)) radius+=this.Option.Zoom;
         var pixel=GetDevicePixelRatio();
         radius*=pixel;
 
@@ -42642,10 +42716,11 @@ function ChartDrawPictureRect()
     }
 
     //垂直线段
-    this.IsPointInLine2=function(aryPoint,x,y)
+    this.IsPointInLine2=function(aryPoint,x,y,option)
     {
         var radius=5;
-        if (this.Option) radius+=this.Option.Zoom;
+        if (option && IFrameSplitOperator.IsNumber(option.Zoom)) radius+=option.Zoom;
+        else if (this.Option && IFrameSplitOperator.IsNumber(this.Option.Zoom)) radius+=this.Option.Zoom;
         var pixel=GetDevicePixelRatio();
         radius*=pixel;
 
@@ -42755,7 +42830,7 @@ function ChartDrawPictureArc()
     }
 
     //0-10 鼠标对应的点索引   100=鼠标在正个图形上  -1 鼠标不在图形上
-    this.IsPointIn=function(x,y)
+    this.IsPointIn=function(x,y,option)
     {
         if (this.IsFrameMinSize()) return -1;
         if (!this.Frame || this.Status!=10) return -1;
@@ -42764,7 +42839,7 @@ function ChartDrawPictureArc()
         if (!data) return -1;
 
         //是否在点上
-        var nIndex=this.IsPointInXYValue(x,y);
+        var nIndex=this.IsPointInXYValue(x,y,option);
         if (nIndex>=0) return nIndex;
 
         var aryPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
@@ -44635,12 +44710,12 @@ function ChartDrawPictureCircle()
     }
 
     //0-10 鼠标对应的点索引   100=鼠标在正个图形上  -1 鼠标不在图形上
-    this.IsPointIn=function(x,y)
+    this.IsPointIn=function(x,y,option)
     {
         if (this.IsFrameMinSize()) return -1;
         if (this.Status!=10) return -1;
 
-        var value=this.IsPointInXYValue(x,y);
+        var value=this.IsPointInXYValue(x,y,option);
         if (value>=0) return value;
 
         if (this.CircleData && this.CircleData.R>8)
