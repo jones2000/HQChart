@@ -4757,6 +4757,13 @@ function JSChart(divElement, bOffscreen)
         if (IFrameSplitOperator.IsBool(option.EnableNewIndex)) chart.EnableNewIndex=option.EnableNewIndex;
         if (IFrameSplitOperator.IsBool(option.EnableIndexChartDrag)) chart.EnableIndexChartDrag=option.EnableIndexChartDrag;
 
+        if (option.GlobalOption)
+        {
+            var item=option.GlobalOption;
+            if (IFrameSplitOperator.IsBool(item.IsValueFullRange)) chart.GlobalOption.IsValueFullRange=item.IsValueFullRange;
+        }
+        
+
         chart.SelectRectDialog=new MinuteSelectRectDialog(this.DivElement);
         
 
@@ -4806,6 +4813,9 @@ function JSChart(divElement, bOffscreen)
             if (IFrameSplitOperator.IsBool(item.EnableSelected)) chart.SelectedChart.EnableSelected=item.EnableSelected;
             if (IFrameSplitOperator.IsBool(item.EnableMoveOn)) chart.SelectedChart.EnableMoveOn=item.EnableMoveOn;
         }
+
+        //分页
+        if (option.PageInfo) chart.SetPageInfo(option.PageInfo);
 
         chart.Create(windowsCount,option.Listener);                            //创建子窗口
 
@@ -5823,13 +5833,15 @@ function JSChart(divElement, bOffscreen)
             this.JSChartContainer.StopAutoUpdate();
     }
 
-    this.ChartDestory=function()
+    this.ChartDestroy=function()
     {
-        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestory) == 'function') 
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestroy) == 'function') 
         {
-            this.JSChartContainer.ChartDestory();
+            this.JSChartContainer.ChartDestroy();
         }
     }
+
+    this.ChartDestory=this.ChartDestroy;    //版本写错了,继续使用
 
     //设置深度图数据 depthData=[ {ID:深度图ID, Data:数据},]   option={ Draw: true/false }
     this.SetDepthMapData=function(depthData, option)
@@ -5869,12 +5881,12 @@ function JSChart(divElement, bOffscreen)
     }
 
     //多日走势图
-    this.ChangeDayCount=function(count)
+    this.ChangeDayCount=function(count, option)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.ChangeDayCount)=='function')
         {
             JSConsole.Chart.Log('[JSChart:ChangeDayCount] count', count);
-            this.JSChartContainer.ChangeDayCount(count);
+            this.JSChartContainer.ChangeDayCount(count,option);
         }
     }
 
@@ -6276,6 +6288,8 @@ var JSCHART_OPERATOR_ID=
 
     OP_RIGHT_ZOOM_OUT:9,  //右边缩小
     OP_RIGHT_ZOOM_IN:10,  //右边放大
+
+    OP_SCROLL_GOTO:11   //滚动条移动到某一个位置
 }
 
 var JSCHART_DRAG_ID=
@@ -6478,7 +6492,9 @@ function JSChartContainer(uielement, OffscreenElement)
     this.IndexChartDrag;    //拖拽指标图形
     this.EnableIndexChartDrag=false;
 
-    this.ChartDestory=function()    //销毁
+    this.GlobalOption={ IsValueFullRange:false };
+
+    this.ChartDestroy=function()    //销毁
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();
@@ -6489,6 +6505,8 @@ function JSChartContainer(uielement, OffscreenElement)
             this.GetLatestVersionTimer=null;
         }
     }
+
+    this.ChartDestory=this.ChartDestroy;    //老版本写错了,需要兼容下
 
 
     this.GetLatestVersionTimer=null;    //获取最新版本
@@ -11577,7 +11595,7 @@ function IChartFramePainting()
 
     this.LogoTextColor=g_JSChartResource.FrameLogo.TextColor;
     this.LogoTextFont=g_JSChartResource.FrameLogo.Font;
-
+    this.GlobalOption;
 
     this.PtInButtons=function(x,y) //坐标是否在按钮上
     {
@@ -12509,7 +12527,7 @@ function AverageWidthFrame()
 
         var xPrev=null; //上一个坐标x的值
         var textRightPrev=null; //上一次刻度输出右边x坐标
-        for(var i in this.VerticalInfo)
+        for(var i=0; i<this.VerticalInfo.length; ++i)
         {
             var x=this.GetXFromIndex(this.VerticalInfo[i].Value);
             if (x>right) break;
@@ -13915,8 +13933,8 @@ function MinuteFrame()
     this.SplitXYCoordinate=function()
     {
         if (this.XYSplit==false) return;
-        if (this.YSplitOperator!=null) this.YSplitOperator.Operator();
         if (this.XSplitOperator!=null) this.XSplitOperator.Operator();
+        if (this.YSplitOperator!=null) this.YSplitOperator.Operator();
     }
 
     this.GetMultiDayXFromIndex=function(index, border)
@@ -14050,11 +14068,12 @@ function MinuteFrame()
     this.GetLeftExtendMultiDayXData=function(x, obj, border)
     {
         var dayBorder=border.DayBorder;
-        for(var i in dayBorder)
+        for(var i=0; i<dayBorder.length; ++i)
         {
             var client=dayBorder[i];
             if (x>=client.Left && x<=client.LeftEx)
             {
+                if (!obj[i]) return null;
                 var count=obj[i].TotalCount-1;
                 var left=client.Left;
                 var right=client.LeftEx;
@@ -14353,6 +14372,7 @@ function MinuteFrame()
         if (border.DayBorder)
         {
             var indexData=this.GetLeftExtendXData(x, obj.Data);
+            if (!indexData) return false;
             var index=parseInt(indexData.DataIndex.toFixed(0));
             var dayData=obj.Data[indexData.DayIndex];
             
@@ -14508,11 +14528,12 @@ function MinuteFrame()
     this.GetRightExtendMultiDayXData=function(x, obj, border)
     {
         var dayBorder=border.DayBorder;
-        for(var i in dayBorder)
+        for(var i=0; i<dayBorder.length; ++i)
         {
             var client=dayBorder[i];
             if (x>=client.RightEx && x<=client.Right)
             {
+                if (!obj[i]) return null;
                 var count=obj[i].TotalCount-1;
                 var left=client.RightEx;
                 var right=client.Right;
@@ -21662,13 +21683,20 @@ function IChartPainting()
     this.GetMaxMin=function()
     {
         var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        if (this.ChartFrame.GlobalOption && this.ChartFrame.GlobalOption.IsValueFullRange)
+        {
+            start=0;
+            xPointCount=this.Data.Data.length;
+        }
+        
         var range={};
         range.Min=null;
         range.Max=null;
 
         if(!this.Data || !this.Data.Data) return range;
 
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        for(var i=start,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
             if (value==null || isNaN(value)) continue;
@@ -26643,7 +26671,7 @@ function ChartMinuteVolumBar()
             if (!vol) continue;
 
             var y=this.ChartFrame.GetYFromData(vol);
-            var x=this.ChartFrame.GetXFromIndex(i);
+            var x=this.ChartFrame.GetXFromIndex(j);
             if (x>chartright) break;
 
             //价格>=上一分钟价格 红色 否则绿色
@@ -26688,10 +26716,16 @@ function ChartMinuteVolumBar()
         if (this.ChartBorder.MultiDayMinute.Count<=1 || this.ChartBorder.MultiDayMinute.Left<=0) return;
         if (!this.MultiDayBeforeOpenData) return;
 
-        for(var i=0; i<this.MultiDayBeforeOpenData.length; ++i)
+        var offset=0,showDayCount=this.MultiDayBeforeOpenData.length;
+        if (this.DayOffset)
+        {
+            if (IFrameSplitOperator.IsNumber(this.DayOffset.Offset)) offset=this.DayOffset.Offset;
+            if (IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) showDayCount=this.DayOffset.ShowDayCount;
+        }
+        for(var i=offset,j=0; i<this.MultiDayBeforeOpenData.length && j<showDayCount; ++i,++j)
         {
             var dayItem=this.MultiDayBeforeOpenData[i];
-            this.DrawCallAuction(i, dayItem, true);
+            this.DrawCallAuction(j, dayItem, true);
         }
     }
 
@@ -26700,10 +26734,16 @@ function ChartMinuteVolumBar()
         if (this.ChartBorder.MultiDayMinute.Count<=1 || this.ChartBorder.MultiDayMinute.Right<=0) return;
         if (!this.MultiDayAfterCloseData) return;
 
-        for(var i=0;i<this.MultiDayAfterCloseData.length; ++i)
+        var offset=0,showDayCount=this.MultiDayAfterCloseData.length;
+        if (this.DayOffset)
+        {
+            if (IFrameSplitOperator.IsNumber(this.DayOffset.Offset)) offset=this.DayOffset.Offset;
+            if (IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) showDayCount=this.DayOffset.ShowDayCount;
+        }
+        for(var i=offset,j=0;i<this.MultiDayAfterCloseData.length && j<showDayCount; ++i,++j)
         {
             var dayItem=this.MultiDayAfterCloseData[i];
-            this.DrawCallAuction(i, dayItem, false);
+            this.DrawCallAuction(j, dayItem, false);
         }
     }
 
@@ -26850,17 +26890,25 @@ function ChartMinuteVolumBar()
     this.GetMaxMin=function()
     {
         var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        if (this.ChartFrame.GlobalOption && this.ChartFrame.GlobalOption.IsValueFullRange===true) 
+        {
+            xPointCount=this.Data.Data.length;
+            start=0;
+        }
+
         var range={};
         range.Min=0;
         range.Max=null;
-
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        
+        for(var i=start,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var item = this.Data.Data[i];
             if (!item || !item.Vol) continue;
             if (range.Max == null) range.Max = item.Vol;
             if (range.Max < item.Vol) range.Max = item.Vol;
         }
+        
 
         if (this.ShareAfterVol==1)
         {
@@ -29858,6 +29906,8 @@ function ChartMinutePriceLine()
     this.PtInChart=this.PtInLine;
     this.DrawSelectedStatus=this.DrawLinePoint;
 
+    this.DayOffset;
+
     this.Draw=function()
     {
         if (this.NotSupportMessage)
@@ -30069,10 +30119,17 @@ function ChartMinutePriceLine()
         if (this.ChartBorder.MultiDayMinute.Count<=1 || this.ChartBorder.MultiDayMinute.Left<=0) return;
         if (!this.MultiDayBeforeOpenData) return;
 
-        for(var i=0; i<this.MultiDayBeforeOpenData.length; ++i)
+        var offset=0, showDayCount=this.MultiDayBeforeOpenData.length;
+        if (this.DayOffset)
+        {
+            if (IFrameSplitOperator.IsNumber(this.DayOffset.Offset)) offset=this.DayOffset.Offset;
+            if (IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) showDayCount=this.DayOffset.ShowDayCount;
+        }
+        
+        for(var i=offset,j=0; i<this.MultiDayBeforeOpenData.length && j<showDayCount; ++i,++j)
         {
             var dayItem=this.MultiDayBeforeOpenData[i];
-            this.DrawCallAuction(i, dayItem, true);
+            this.DrawCallAuction(j, dayItem, true);
         }
     }
 
@@ -30081,10 +30138,17 @@ function ChartMinutePriceLine()
         if (this.ChartBorder.MultiDayMinute.Count<=1 || this.ChartBorder.MultiDayMinute.Right<=0) return;
         if (!this.MultiDayAfterCloseData) return;
 
-        for(var i=0; i<this.MultiDayAfterCloseData.length; ++i)
+        var offset=0,showDayCount=this.MultiDayAfterCloseData.length;
+        if (this.DayOffset)
+        {
+            if (IFrameSplitOperator.IsNumber(this.DayOffset.Offset)) offset=this.DayOffset.Offset;
+            if (IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) showDayCount=this.DayOffset.ShowDayCount;
+        }
+
+        for(var i=offset,j=0; i<this.MultiDayAfterCloseData.length && j<showDayCount; ++i,++j)
         {
             var dayItem=this.MultiDayAfterCloseData[i];
-            this.DrawCallAuction(i, dayItem, false);
+            this.DrawCallAuction(j, dayItem, false);
         }
     }
 
@@ -30354,6 +30418,7 @@ function ChartMinutePriceLine()
         }
         
 
+        //价格数据
         var data=this.Data;
         for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
         {
@@ -37990,13 +38055,13 @@ function MinuteBackgroundPaint()
                 preDate=item.Date;
                 if (!range)
                 {
-                    range={ Left:this.ChartFrame.GetXFromIndex(i) , Date: item.Date};
+                    range={ Left:this.ChartFrame.GetXFromIndex(j) , Date: item.Date};
                 }
                 else
                 {
-                    range.Right=this.ChartFrame.GetXFromIndex(i-1);
+                    range.Right=this.ChartFrame.GetXFromIndex(j-1);
                     mapDate.set(range.Date, range);
-                    range={ Left:this.ChartFrame.GetXFromIndex(i) , Date: item.Date};
+                    range={ Left:this.ChartFrame.GetXFromIndex(j) , Date: item.Date};
                 }
             }
         }
@@ -40258,7 +40323,6 @@ function FrameSplitMinutePriceY()
 
     this.YClose;                        //昨收
     this.Data;                          //分钟数据
-    this.AverageData;                   //分钟均线数据
     this.SourceData;                    //原始数据
     this.OverlayChartPaint;
     this.SplitCount=7;
@@ -40276,6 +40340,11 @@ function FrameSplitMinutePriceY()
 
     this.MultiDayBeforeOpenData;
     this.MultiDayAfterCloseData;
+    this.DayOffset;
+
+    this.AverageData;             //均线
+    this.DayCount=1;
+    this.GlobalOption;
 
     this.IsEnableDragY=function()
     {
@@ -40439,10 +40508,38 @@ function FrameSplitMinutePriceY()
         }
     }
 
+    //多日分时图 集合竞价数据
+    this.GetMultiDayBeforeOpenData=function()
+    {
+        if (!this.MultiDayBeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData)) return null;
+        if (!this.DayOffset) return this.MultiDayBeforeOpenData;
+        if (!IFrameSplitOperator.IsNumber(this.DayOffset.Offset) || !IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) return null;
+        if (this.GlobalOption && this.GlobalOption.IsValueFullRange===true) return this.MultiDayBeforeOpenData;
+
+        var showCount= this.DayOffset.ShowDayCount;
+        var offset=this.DayOffset.Offset;
+        var aryData=this.MultiDayBeforeOpenData.slice(offset, offset+showCount);
+        return aryData;
+    }
+
+    this.GetMultiDayAfterCloseData=function()
+    {
+        if (!this.MultiDayAfterCloseData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData)) return null;
+        if (!this.DayOffset) return this.MultiDayAfterCloseData;
+        if (!IFrameSplitOperator.IsNumber(this.DayOffset.Offset) || !IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) return null;
+        if (this.GlobalOption && this.GlobalOption.IsValueFullRange===true) return this.MultiDayAfterCloseData;
+
+        var showCount= this.DayOffset.ShowDayCount;
+        var offset=this.DayOffset.Offset;
+        var aryData=this.MultiDayAfterCloseData.slice(offset, offset+showCount);
+        return aryData;
+    }
+
     this.GetMaxMin=function()   //计算图中所有的数据的最大最小值
     {
         var max=this.YClose;
         var min=this.YClose;
+
         var data=this.Data;
         var isBerforeData=false;
         if (this.SourceData)
@@ -40451,31 +40548,72 @@ function FrameSplitMinutePriceY()
             isBerforeData=true;
         }
 
-        for(var i in data.Data)
+        if (this.DayCount>1)    //多日
         {
-            var value=null;
-            if (isBerforeData)
+            var offset=this.DayOffset.DataOffset;
+            var showDataCount=this.DayOffset.ShowDataCount;
+            if (this.GlobalOption && this.GlobalOption.IsValueFullRange===true)
             {
-                var item=data.Data[i];
-                if (item.Before) value=item.Before.Close;
-                else value=item.Close;
+                offset=0;
+                showDataCount=data.Data.length;
             }
-            else
+
+            for(var i=offset, j=0; i<data.Data.length && j<showDataCount ;++i,++j)
             {
-                value=data.Data[i];
+                var value=null;
+                if (isBerforeData)
+                {
+                    var item=data.Data[i];
+                    if (item.Before) value=item.Before.Close;
+                    else value=item.Close;
+                }
+                else
+                {
+                    value=data.Data[i];
+                }
+                if (value==null) continue;
+                if (max<value) max=value;
+                if (min>value) min=value;
             }
-            if (value==null) continue;
-            if (max<value) max=value;
-            if (min>value) min=value;
+
+            if (this.AverageData)
+            {
+                for(var i=offset,j=0; i<this.AverageData.Data.length && j<showDataCount; ++i,++j)
+                {
+                    if (this.AverageData.Data[i]==null) continue;
+                    if (max<this.AverageData.Data[i]) max=this.AverageData.Data[i];
+                    if (min>this.AverageData.Data[i]) min=this.AverageData.Data[i];
+                }
+            }
         }
-        
-        if (this.AverageData)
+        else
         {
-            for(var i in this.AverageData.Data)
+            for(var i=0;i<data.Data.length;++i)
             {
-                if (this.AverageData.Data[i]==null) continue;
-                if (max<this.AverageData.Data[i]) max=this.AverageData.Data[i];
-                if (min>this.AverageData.Data[i]) min=this.AverageData.Data[i];
+                var value=null;
+                if (isBerforeData)
+                {
+                    var item=data.Data[i];
+                    if (item.Before) value=item.Before.Close;
+                    else value=item.Close;
+                }
+                else
+                {
+                    value=data.Data[i];
+                }
+                if (value==null) continue;
+                if (max<value) max=value;
+                if (min>value) min=value;
+            }
+
+            if (this.AverageData)
+            {
+                for(var i=0;i<this.AverageData.Data.length;++i)
+                {
+                    if (this.AverageData.Data[i]==null) continue;
+                    if (max<this.AverageData.Data[i]) max=this.AverageData.Data[i];
+                    if (min>this.AverageData.Data[i]) min=this.AverageData.Data[i];
+                }
             }
         }
         
@@ -40511,20 +40649,22 @@ function FrameSplitMinutePriceY()
             this.GetCallAuctionMaxMin(this.BeforeOpenData,range);
         }
 
-        if (this.MultiDayBeforeOpenData && this.ChartBorder.MultiDayMinute.Count>1 && this.ChartBorder.MultiDayMinute.Left>0)
+        var multiDayBeforeOpenData=this.GetMultiDayBeforeOpenData();
+        if (multiDayBeforeOpenData && this.ChartBorder.MultiDayMinute.Count>1 && this.ChartBorder.MultiDayMinute.Left>0)
         {
-            for(var i in this.MultiDayBeforeOpenData)
+            for(var i=0;i<multiDayBeforeOpenData.length; ++i)
             {
-                var dayItem=this.MultiDayBeforeOpenData[i];
+                var dayItem=multiDayBeforeOpenData[i];
                 this.GetCallAuctionMaxMin(dayItem,range);
             }
         }
 
-        if (this.MultiDayAfterCloseData && this.ChartBorder.MultiDayMinute.Count>1 && this.ChartBorder.MultiDayMinute.Right>0)
+        var multiDayAfterCloseData=this.GetMultiDayAfterCloseData();
+        if (multiDayAfterCloseData && this.ChartBorder.MultiDayMinute.Count>1 && this.ChartBorder.MultiDayMinute.Right>0)
         {
-            for(var i in this.MultiDayAfterCloseData)
+            for(var i=0;i<multiDayAfterCloseData.length; ++i)
             {
-                var dayItem=this.MultiDayAfterCloseData[i];
+                var dayItem=multiDayAfterCloseData[i];
                 this.GetCallAuctionMaxMin(dayItem,range);
             }
         }
@@ -40711,25 +40851,35 @@ function FrameSplitMinuteX()
         var minuteMiddleCount=xcoordinateData.MiddleCount>0? xcoordinateData.MiddleCount: parseInt(minuteCount/2);
         var xcoordinate = xcoordinateData.Data;
 
-        this.Frame.XPointCount=minuteCount*this.DayCount;
+        this.Frame.XPointCount=minuteCount*this.DayCount;   //计算一共显示的数据个数
         this.Frame.MinuteCount=minuteCount;
         this.Frame.VerticalInfo=[];
         
+
         if (this.DayCount<=1)
         {
-            for(var i in xcoordinate)
+            this.DayOffset.DataOffset=0;
+            for(var i=0; i<xcoordinate.length; ++i)
             {
                 var info=new CoordinateInfo();
                 if (g_JSChartResource.Minute.FrameSplitTextColor) info.TextColor=g_JSChartResource.Minute.FrameSplitTextColor;
                 info.Value=xcoordinate[i][0];
-                if (this.ShowText)
-                    info.Message[0]=xcoordinate[i][3];
+                if (this.ShowText) info.Message[0]=xcoordinate[i][3];
                 this.Frame.VerticalInfo[i]=info;
             }
         }
         else
         {
-            for(var i=this.DayData.length-1,j=0;i>=0;--i,++j)
+            var offset=0, showDayCount=this.DayData.length;
+            if (this.DayOffset)
+            {
+                if (IFrameSplitOperator.IsNumber(this.DayOffset.Offset)) offset=this.DayOffset.Offset;
+                if (IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) showDayCount=this.DayOffset.ShowDayCount;
+            }
+            this.DayOffset.DataOffset=offset*minuteCount;
+            this.DayOffset.ShowDataCount=this.DayOffset.ShowDayCount*minuteCount;
+
+            for(var i=this.DayData.length-1-offset, j=0; i>=0 && j<showDayCount; --i,++j)
             {
                 var info=new CoordinateInfo();
                 info.Value=j*minuteCount+minuteMiddleCount;
@@ -40863,6 +41013,7 @@ function CallAcutionXOperator()
     this.DayIndex;
     this.MultiDayBeforeOpenData;
     this.MultiDayAfterCloseData;
+    this.DayOffset;
 
     this.Operator=function()
     {
@@ -40945,14 +41096,27 @@ function CallAcutionXOperator()
         return true;
     }
 
+    this.GetMultiDayBeforeOpenData=function()
+    {
+        if (!this.MultiDayBeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData)) return null;
+        if (!this.DayOffset) this.MultiDayBeforeOpenData;
+        if (!IFrameSplitOperator.IsNumber(this.DayOffset.Offset) || !IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) return null;
+
+        var showCount= this.DayOffset.ShowDayCount;
+        var offset=this.DayOffset.Offset;
+        var aryData=this.MultiDayBeforeOpenData.slice(offset, offset+showCount);
+        return aryData;
+    }
+
     this.GetMultiDayBeforeOpenXIndex=function()
     {
-        if (!this.MultiDayBeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData)) return false;
+        var multiDayBeforeOpenData=this.GetMultiDayBeforeOpenData();
+        if (!multiDayBeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(multiDayBeforeOpenData)) return false;
         var dayIndex=this.ClientPos-200;
-        if (dayIndex<0 || dayIndex>=this.MultiDayBeforeOpenData.length) return false;
+        if (dayIndex<0 || dayIndex>=multiDayBeforeOpenData.length) return false;
 
-        var dayData=this.MultiDayBeforeOpenData[dayIndex];
-        var indexData=this.Frame.GetLeftExtendXData(this.Value, this.MultiDayBeforeOpenData);
+        var dayData=multiDayBeforeOpenData[dayIndex];
+        var indexData=this.Frame.GetLeftExtendXData(this.Value, multiDayBeforeOpenData);
         if (!indexData || !IFrameSplitOperator.IsNumber(indexData.DataIndex)) return false;
         var index=parseInt(indexData.DataIndex.toFixed(0));
         var dayIndex=indexData.DayIndex;
@@ -41046,14 +41210,27 @@ function CallAcutionXOperator()
         return true;
     }
 
+    this.GetMultiDayAfterCloseData=function()
+    {
+        if (!this.MultiDayAfterCloseData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData)) return null;
+        if (!this.DayOffset) this.MultiDayAfterCloseData;
+        if (!IFrameSplitOperator.IsNumber(this.DayOffset.Offset) || !IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) return null;
+
+        var showCount= this.DayOffset.ShowDayCount;
+        var offset=this.DayOffset.Offset;
+        var aryData=this.MultiDayAfterCloseData.slice(offset, offset+showCount);
+        return aryData;
+    }
+
     this.GetMultiDayAfterCloseXIndex=function()
     {
-        if (!this.MultiDayAfterCloseData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData)) return;
+        var multiDayAfterCloseData=this.GetMultiDayAfterCloseData();
+        if (!multiDayAfterCloseData || !IFrameSplitOperator.IsNonEmptyArray(multiDayAfterCloseData)) return;
         var dayIndex=this.ClientPos-300;
-        if (dayIndex<0 || dayIndex>=this.MultiDayAfterCloseData.length) return;
+        if (dayIndex<0 || dayIndex>=multiDayAfterCloseData.length) return;
 
-        var dayData=this.MultiDayAfterCloseData[dayIndex];
-        var indexData=this.Frame.GetRightExtendXData(this.Value, this.MultiDayAfterCloseData);
+        var dayData=multiDayAfterCloseData[dayIndex];
+        var indexData=this.Frame.GetRightExtendXData(this.Value, multiDayAfterCloseData);
         var index=parseInt(indexData.DataIndex.toFixed(0));
         var dayIndex=indexData.DayIndex;
 
@@ -42370,6 +42547,32 @@ function IChangeStringFormat()
     {
         return false;
     }
+
+
+    //多日分时图 集合竞价数据
+    this.GetMultiDayBeforeOpenData=function()
+    {
+        if (!this.MultiDayBeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData)) return null;
+        if (!this.DayOffset) this.MultiDayBeforeOpenData;
+        if (!IFrameSplitOperator.IsNumber(this.DayOffset.Offset) || !IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) return null;
+
+        var showCount= this.DayOffset.ShowDayCount;
+        var offset=this.DayOffset.Offset;
+        var aryData=this.MultiDayBeforeOpenData.slice(offset, offset+showCount);
+        return aryData;
+    }
+
+    this.GetMultiDayAfterCloseData=function()
+    {
+        if (!this.MultiDayAfterCloseData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData)) return null;
+        if (!this.DayOffset) this.MultiDayAfterCloseData;
+        if (!IFrameSplitOperator.IsNumber(this.DayOffset.Offset) || !IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) return null;
+
+        var showCount= this.DayOffset.ShowDayCount;
+        var offset=this.DayOffset.Offset;
+        var aryData=this.MultiDayAfterCloseData.slice(offset, offset+showCount);
+        return aryData;
+    }
 }
 
 //数值放大
@@ -42444,10 +42647,11 @@ function HQPriceStringFormat()
         if (!this.Frame) return false;
         var item=this.Frame.SubFrame[this.FrameID];
         if (!item || !item.Frame) return false;
-        if (!this.MultiDayBeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData)) return;
+        var multiDayBeforeOpenData=this.GetMultiDayBeforeOpenData();
+        if (!multiDayBeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(multiDayBeforeOpenData)) return;
         var dayIndex=this.ClientPos-200;
-        if (dayIndex<0 || dayIndex>=this.MultiDayBeforeOpenData.length) return false;
-        var dayData=this.MultiDayBeforeOpenData[dayIndex];
+        if (dayIndex<0 || dayIndex>=multiDayBeforeOpenData.length) return false;
+        var dayData=multiDayBeforeOpenData[dayIndex];
         var range={ Max:dayData.VolMax, Min:dayData.VolMin };
         var y=this.Frame.IsHScreen? this.Point.X: this.Point.Y;
         var value=item.Frame.GetLeftExtendYData(y,false,{ Range:range } );
@@ -42463,10 +42667,11 @@ function HQPriceStringFormat()
         if (!this.Frame) return false;
         var item=this.Frame.SubFrame[this.FrameID];
         if (!item || !item.Frame) return false;
-        if (!this.MultiDayAfterCloseData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData)) return;
+        var multiDayAfterCloseData=this.GetMultiDayAfterCloseData();
+        if (!multiDayAfterCloseData || !IFrameSplitOperator.IsNonEmptyArray(multiDayAfterCloseData)) return;
         var dayIndex=this.ClientPos-300;
-        if (dayIndex<0 || dayIndex>=this.MultiDayAfterCloseData.length) return false;
-        var dayData=this.MultiDayAfterCloseData[dayIndex];   
+        if (dayIndex<0 || dayIndex>=multiDayAfterCloseData.length) return false;
+        var dayData=multiDayAfterCloseData[dayIndex];   
         
         var range={ Max:dayData.VolMax, Min:dayData.VolMin };
         var y=this.Frame.IsHScreen? this.Point.X: this.Point.Y;
@@ -42648,17 +42853,19 @@ function HQMinuteTimeStringFormat()
         return true;
     }
 
+
     this.GetMultiDayBeforeOpen=function()
     {
-        if (!this.MultiDayBeforeOpenData || !this.MultiDayBeforeOpenData ) return false;
+        var multiDayBeforeOpenData=this.GetMultiDayBeforeOpenData();
+        if (!multiDayBeforeOpenData) return false;
         if (this.Frame.ChartBorder.MultiDayMinute.Count<=1 || this.Frame.ChartBorder.MultiDayMinute.Left<=0) return false;
 
         var x=this.Frame.IsHScreen==true?this.Point.Y:this.Point.X;
-        var index=this.Frame.GetLeftExtendXData(x, this.MultiDayBeforeOpenData);
+        var index=this.Frame.GetLeftExtendXData(x, multiDayBeforeOpenData);
         if (!index) return false;
 
-        if (index.DayIndex>=this.MultiDayBeforeOpenData.length) return false;
-        var dayItem=this.MultiDayBeforeOpenData[index.DayIndex];
+        if (index.DayIndex>=multiDayBeforeOpenData.length) return false;
+        var dayItem=multiDayBeforeOpenData[index.DayIndex];
         index.DataIndex=parseInt(index.DataIndex.toFixed(0));
         if (index.DataIndex>=dayItem.Data.length) return false;
 
@@ -42670,14 +42877,15 @@ function HQMinuteTimeStringFormat()
 
     this.GetMultiDayAfterClose=function()
     {
-        if (!this.MultiDayAfterCloseData) return false;
+        var multiDayAfterCloseData=this.GetMultiDayAfterCloseData();
+        if (!multiDayAfterCloseData) return false;
         if (this.Frame.ChartBorder.MultiDayMinute.Count<=1 || this.Frame.ChartBorder.MultiDayMinute.Right<=0) return false;
 
         var x=this.Frame.IsHScreen==true?this.Point.Y:this.Point.X;
-        var index=this.Frame.GetRightExtendXData(x, this.MultiDayAfterCloseData);
+        var index=this.Frame.GetRightExtendXData(x, multiDayAfterCloseData);
         if (!index) return false;
-        if (index.DayIndex>=this.MultiDayAfterCloseData.length) return false;
-        var dayItem=this.MultiDayAfterCloseData[index.DayIndex];
+        if (index.DayIndex>=multiDayAfterCloseData.length) return false;
+        var dayItem=multiDayAfterCloseData[index.DayIndex];
         index.DataIndex=parseInt(index.DataIndex.toFixed(0));
         if (index.DataIndex>=dayItem.Data.length) return false;
 
@@ -60269,6 +60477,10 @@ function MinuteChartContainer(uielement)
     this.CorssCursorIndex={ DayIndex:-1, DataIndex:-1, Point:{X:-1, Y:-1} ,Type:-1 };
     this.EnableNewIndex=false  //是否使用新的索引版本
 
+    this.DayOffset={ Offset:0, ShowDayCount:-1, DataOffset:0, DayCount:1,  }; //Offset 日期偏移 , DataOffset数据偏移
+    this.PageInfo={ Enable:false, Offset:-8888, ShowDayCount:4 };   //分页配置
+   
+
     //集合竞价设置 obj={ Left:true/false, Right:true/false, MultiDay:{Left:, Right:} }
     this.SetCallCationDataBorder=function(obj)
     {
@@ -60389,6 +60601,62 @@ function MinuteChartContainer(uielement)
                 frame.ChangeIndexEvent(e);
         }
             
+    }
+
+    //图形控制 { ID:, ....参数 }
+    this.ChartOperator=function(obj)
+    {
+        var id=obj.ID;
+        if (id===JSCHART_OPERATOR_ID.OP_SCROLL_LEFT || id===JSCHART_OPERATOR_ID.OP_SCROLL_RIGHT )    //左右移动 { Step:移动天数 }
+        {
+            if (this.DayCount==1) return false;
+            if (!this.PageInfo.Enable) return false;
+            var isLeft=(id===JSCHART_OPERATOR_ID.OP_SCROLL_LEFT ? true:false);
+            var step=1;
+            if (obj.Step>0) step=obj.Step;
+            if (!this.DayOffset) return false;
+            if (isLeft)
+            {
+                var offset=this.DayOffset.Offset;
+                offset+=step;
+                if (offset+this.DayOffset.ShowDayCount>this.DayOffset.DayCount) offset=this.DayOffset.DayCount-this.DayOffset.ShowDayCount;
+                if (offset==this.DayOffset.Offset) return false;
+                this.DayOffset.Offset=offset;
+            }
+            else
+            {
+                var offset=this.DayOffset.Offset;
+                offset-=step;
+                if (offset<0) offset=0;
+                if (offset==this.DayOffset.Offset) return false;
+                this.DayOffset.Offset=offset;
+            }
+
+            this.UpdateHistoryMinuteUI(null);
+            return true;
+        }
+        else if (id==JSCHART_OPERATOR_ID.OP_SCROLL_GOTO)
+        {
+            if (this.DayCount==1) return false;
+            if (!this.PageInfo.Enable) return false;
+
+            if (IFrameSplitOperator.IsNumber(obj.ShowDayCount))
+            {
+                this.PageInfo.ShowDayCount=obj.ShowDayCount;
+                this.DayOffset.ShowDayCount=obj.ShowDayCount;
+            }
+
+            if (IFrameSplitOperator.IsNumber(obj.Offset))
+            {
+                var offset=obj.Offset;
+                if (this.DayOffset.ShowDayCount>0 && offset+this.DayOffset.ShowDayCount>=this.DayOffset.DayCount) offset=this.DayOffset.DayCount-this.DayOffset.ShowDayCount;
+                if (offset==this.DayOffset.Offset) return false;
+                this.DayOffset.Offset=offset;
+            }
+            
+            this.UpdateHistoryMinuteUI(null);
+            return true;
+        }
     }
 
     //左右拖拽
@@ -60713,7 +60981,14 @@ function MinuteChartContainer(uielement)
         else if (this.CorssCursorIndex.Type==10 || this.CorssCursorIndex.Type==20 || this.CorssCursorIndex.Type==30 || this.CorssCursorIndex.Type==-2 )
         {
             var aryData=[];
-            for(var i=0;i<this.DayData.length;++i)
+            var offset=0, showDayCount=this.DayData.length;
+            if (this.DayOffset)
+            {
+                if (IFrameSplitOperator.IsNumber(this.DayOffset.Offset)) offset=this.DayOffset.Offset;
+                if (IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) showDayCount=this.DayOffset.ShowDayCount;
+            }
+
+            for(var i=offset,j=0; i<this.DayData.length && j<showDayCount; ++i,++j)
             {
                 var item=[];
                 var dayItem=null;
@@ -60832,13 +61107,29 @@ function MinuteChartContainer(uielement)
             {
                 this.CorssCursorIndex.DayIndex=clientPos-200;
                 this.CorssCursorIndex.Type=20;
-                frame.GetLeftExtendXValidData(option.Point.X,{ Data: this.MultiDayBeforeOpenData, IndexData: this.CorssCursorIndex });               
+                var aryData=this.MultiDayBeforeOpenData;
+                if (this.DayOffset)
+                {
+                    var offset=0, showDayCount=this.MultiDayBeforeOpenData.length;
+                    if (IFrameSplitOperator.IsNumber(this.DayOffset.Offset)) offset=this.DayOffset.Offset;
+                    if (IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) showDayCount=this.DayOffset.ShowDayCount;
+                    aryData=this.MultiDayBeforeOpenData.slice(offset,offset+showDayCount);
+                }
+                frame.GetLeftExtendXValidData(option.Point.X,{ Data: aryData, IndexData: this.CorssCursorIndex });               
             }
             else if (clientPos>=300 && clientPos<=399)
             {
                 this.CorssCursorIndex.DayIndex=clientPos-300;
                 this.CorssCursorIndex.Type=30;
-                frame.GetRightExtendXValidData(option.Point.X,{ Data: this.MultiDayAfterOpenData, IndexData: this.CorssCursorIndex });
+                var aryData=this.MultiDayAfterOpenData;
+                if (this.DayOffset && this.MultiDayAfterOpenData)
+                {
+                    var offset=0, showDayCount=this.MultiDayBeforeOpenData.length;
+                    if (IFrameSplitOperator.IsNumber(this.DayOffset.Offset)) offset=this.DayOffset.Offset;
+                    if (IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) showDayCount=this.DayOffset.ShowDayCount;
+                    aryData=this.MultiDayAfterOpenData.slice(offset,offset+showDayCount);
+                }
+                frame.GetRightExtendXValidData(option.Point.X,{ Data: aryData, IndexData: this.CorssCursorIndex });
             }
 
             this.LastPoint.X=this.CorssCursorIndex.Point.X;
@@ -61267,6 +61558,20 @@ function MinuteChartContainer(uielement)
             case 32:    //space
                 this.OnMarkRectSelect(e);
                 break;
+            case 33:    //page up
+                if (this.PageInfo.Enable)
+                {
+                    var option={ID:JSCHART_OPERATOR_ID.OP_SCROLL_LEFT, Step:this.PageInfo.ShowDayCount };
+                    this.ChartOperator(option);
+                }
+                break;
+            case 34:    //page down
+                if (this.PageInfo.Enable)
+                {
+                    var option={ID:JSCHART_OPERATOR_ID.OP_SCROLL_RIGHT, Step:this.PageInfo.ShowDayCount };
+                    this.ChartOperator(option);
+                }
+                break;
             default:
                 return;
         }
@@ -61575,6 +61880,7 @@ function MinuteChartContainer(uielement)
             frame.Canvas=this.Canvas;
             frame.ChartBorder=border;
             frame.Identify=i;
+            frame.GlobalOption=this.GlobalOption;
             if (i<2) frame.ChartBorder.TitleHeight=0;
             frame.XPointCount=243;
 
@@ -61593,6 +61899,8 @@ function MinuteChartContainer(uielement)
                 frame.YSplitOperator=new FrameSplitMinutePriceY();
                 frame.YSplitOperator.FrameSplitData=this.FrameSplitData.get('price');
                 frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+                frame.YSplitOperator.DayOffset=this.DayOffset;
+                frame.YSplitOperator.GlobalOption=this.GlobalOption;
             }
             else
             {
@@ -61608,6 +61916,7 @@ function MinuteChartContainer(uielement)
             frame.XSplitOperator=new FrameSplitMinuteX();
             frame.XSplitOperator.Frame=frame;
             frame.XSplitOperator.ChartBorder=border;
+            frame.XSplitOperator.DayOffset=this.DayOffset;
             frame.XSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             if (i!=windowCount-1) frame.XSplitOperator.ShowText=false;
             frame.XSplitOperator.Operator();
@@ -61643,6 +61952,7 @@ function MinuteChartContainer(uielement)
         frame.ChartBorder=border;
         frame.Identify=id;                   //窗口序号
         frame.XPointCount=243;
+        frame.GlobalOption=this.GlobalOption;
         
 
         if (id>=2)
@@ -62038,12 +62348,28 @@ function MinuteChartContainer(uielement)
         }
     }
 
+
+    this.ResetDayOffset=function()
+    {
+        if (this.PageInfo.Enable)
+        {
+            this.DayOffset.Offset=this.PageInfo.Offset;
+            this.DayOffset.ShowDayCount=this.PageInfo.ShowDayCount;
+        }
+        else
+        {
+            this.DayOffset.Offset=0;
+            this.DayOffset.ShowDayCount=-1;
+        }
+    }
+
     //切换股票代码
     this.ChangeSymbol=function(symbol,option)
     {
         this.CancelAutoUpdate();
         this.AutoUpdateEvent(false, "MinuteChartContainer::ChangeSymbol");
         this.Symbol=symbol;
+        this.ResetDayOffset();
         this.ClearIndexPaint();             //清空指标
         this.ResetOverlaySymbolStatus();
         this.ReloadChartDrawPicture();
@@ -62066,13 +62392,28 @@ function MinuteChartContainer(uielement)
         }
     }
 
-    this.ChangeDayCount=function(count)
+    this.SetPageInfo=function(pageInfo)
     {
-        if (count<0 || count>10) return;
+        if (!pageInfo) return;
+
+        if (IFrameSplitOperator.IsBool(pageInfo.Enable)) this.PageInfo.Enable=pageInfo.Enable;
+        if (IFrameSplitOperator.IsNumber(pageInfo.Offset)) this.PageInfo.Offset=pageInfo.Offset;
+        if (IFrameSplitOperator.IsNumber(pageInfo.ShowDayCount)) this.PageInfo.ShowDayCount=pageInfo.ShowDayCount;
+    }
+
+    this.ChangeDayCount=function(count, option)
+    {
+        if (count<0) return;
 
         this.CancelAutoUpdate();
         this.AutoUpdateEvent(false, "MinuteChartContainer::ChangeDayCount");
         this.DayCount=count;
+
+        if (option && option.PageInfo)
+        {
+            this.SetPageInfo(option.PageInfo);
+            this.ResetDayOffset();
+        }
         
         if (this.DayCount>1)
         {
@@ -62266,6 +62607,44 @@ function MinuteChartContainer(uielement)
         this.Draw();
     } 
 
+    this.UpdateDataOffset=function()
+    {
+        this.SourceData.DataOffset=this.DayOffset.DataOffset;
+
+        for(var i=0; i<this.ChartPaint.length; ++i)
+        {
+            var item =this.ChartPaint[i];
+            if (!item.Data) continue;
+            item.Data.DataOffset=this.DayOffset.DataOffset;
+
+            if (item.ClassName=="ChartMinuteVolumBar" || item.ClassName=="ChartMinutePriceLine")  
+                item.DayOffset=this.DayOffset;
+        }
+
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
+        {
+            var item =this.OverlayChartPaint[i];
+            if (!item.Data) continue;
+            item.Data.DataOffset=this.DayOffset.DataOffset;
+        }
+
+        //叠加指标当前显示的数据偏移
+        for (var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            var subFrame=this.Frame.SubFrame[i];
+            for(var j=0; j<subFrame.OverlayIndex.length; ++j)
+            {
+                var overlayItem=subFrame.OverlayIndex[j];
+                for(var k=0; k<overlayItem.ChartPaint.length; ++k)
+                {
+                    var item=overlayItem.ChartPaint[k];
+                    if (!item.Data) continue;
+                    item.Data.DataOffset=this.DayOffset.DataOffset;
+                }
+            }
+        }
+    }
+
     //请求历史分钟数据
     this.RequestHistoryMinuteData=function()
     {
@@ -62413,11 +62792,17 @@ function MinuteChartContainer(uielement)
         //原始数据
         var sourceData=new ChartData();
         sourceData.Data=allMinuteData;
-        sourceData.UpdateTime=updateTime;
+        if (updateTime) sourceData.UpdateTime=updateTime;
 
         this.SourceData=sourceData;
         this.TradeDate=this.DayData[0].Date;
-        this.Frame.SetDayCount(this.DayData.length);
+
+        this.DayOffset.DayCount=this.DayData.length;    //一共的数据
+        if (this.DayOffset.ShowDayCount==-1) this.DayOffset.ShowDayCount=this.DayData.length;   //全部显示
+        if (this.DayOffset.Offset==-8888) this.DayOffset.Offset=this.DayOffset.DayCount-this.DayOffset.ShowDayCount;    //最后一页
+
+        var showDayCount=this.DayOffset.ShowDayCount;
+        this.Frame.SetDayCount(showDayCount);
         var upperSymbol=this.Symbol.toUpperCase();
 
         var yClose=this.DayData[0].YClose;
@@ -62428,21 +62813,11 @@ function MinuteChartContainer(uielement)
          //外汇 均线暂时不用
         if (MARKET_SUFFIX_NAME.IsForeignExchange(upperSymbol)) this.ChartPaint[1].Data=null;  
 
-        if (this.Frame.SubFrame.length>2)
-        {
-            var bindData=new ChartData();
-            bindData.Data=allMinuteData;
-            for(var i=2; i<this.Frame.SubFrame.length; ++i)
-            {
-                this.BindIndexData(i,bindData);
-            }
-        }
-
-        for(let i in this.Frame.SubFrame)
+        for(let i=0; i<this.Frame.SubFrame.length; ++i)
         {
             var item=this.Frame.SubFrame[i];
             item.Frame.XSplitOperator.Symbol=this.Symbol;
-            item.Frame.XSplitOperator.DayCount=this.DayData.length;
+            item.Frame.XSplitOperator.DayCount=showDayCount;
             item.Frame.XSplitOperator.DayData=this.DayData;
             item.Frame.XSplitOperator.Operator();   //调整X轴个数
             item.Frame.XSplitOperator.IsBeforeData=this.IsBeforeData;
@@ -62464,9 +62839,21 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.StringFormatX.IsBeforeData=this.IsBeforeData;
         this.ChartCorssCursor.StringFormatX.IsAfterData=this.IsAfterData;
         this.TitlePaint[0].IsShowDate=true;
+        this.UpdateDataOffset();
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+
+        //执行脚本
+        if (this.Frame.SubFrame.length>2)
+        {
+            var bindData=new ChartData();
+            bindData.Data=allMinuteData;
+            for(var i=2; i<this.Frame.SubFrame.length; ++i)
+            {
+                this.BindIndexData(i,bindData);
+            }
+        }
     }
 
     this.HistoryMinuteDataToArray=function(data)
@@ -63084,11 +63471,12 @@ function MinuteChartContainer(uielement)
         else if (MARKET_SUFFIX_NAME.IsShowAvPrice && !MARKET_SUFFIX_NAME.IsShowAvPrice(upperSymbol))    //外部控制是否显示均线
             this.ChartPaint[1].Data=null;
 
-        firstFrame.YSplitOperator.AverageData=bindData;
+        firstFrame.YSplitOperator.AverageData=bindData;     //均线
         firstFrame.YSplitOperator.OverlayChartPaint=this.OverlayChartPaint;
         firstFrame.YSplitOperator.LimitPrice=this.LimitPrice;
         firstFrame.YSplitOperator.MultiDayBeforeOpenData=multiBeforeOpenData;
         firstFrame.YSplitOperator.MultiDayAfterCloseData=multiAfterCloseData;
+        firstFrame.YSplitOperator.DayCount=this.DayCount;
         if (extendData)
         {
             firstFrame.YSplitOperator.High=extendData.High;
@@ -63140,6 +63528,7 @@ function MinuteChartContainer(uielement)
             this.TitlePaint[0].CallAcutionXOperator.AfterCloseData=this.AfterCloseData;
             this.TitlePaint[0].CallAcutionXOperator.MultiDayBeforeOpenData=multiBeforeOpenData;
             this.TitlePaint[0].CallAcutionXOperator.MultiDayAfterCloseData=multiAfterCloseData;
+            this.TitlePaint[0].CallAcutionXOperator.DayOffset=this.DayOffset;
         }
 
         if (this.ChartCorssCursor && this.ChartCorssCursor.StringFormatY)
@@ -63149,6 +63538,7 @@ function MinuteChartContainer(uielement)
             this.ChartCorssCursor.StringFormatY.AfterCloseData=this.AfterCloseData;
             this.ChartCorssCursor.StringFormatY.MultiDayBeforeOpenData=multiBeforeOpenData;
             this.ChartCorssCursor.StringFormatY.MultiDayAfterCloseData=multiAfterCloseData;
+            this.ChartCorssCursor.StringFormatY.DayOffset=this.DayOffset;
 
             this.ChartCorssCursor.StringFormatX.Data=this.ChartPaint[0].Data;       //十字光标
             this.ChartCorssCursor.StringFormatX.BeforeOpenData=this.BeforeOpenData;
@@ -63156,6 +63546,7 @@ function MinuteChartContainer(uielement)
 
             this.ChartCorssCursor.StringFormatX.MultiDayBeforeOpenData=multiBeforeOpenData;
             this.ChartCorssCursor.StringFormatX.MultiDayAfterCloseData=multiAfterCloseData;
+            this.ChartCorssCursor.StringFormatX.DayOffset=this.DayOffset;;
 
             if (this.ChartCorssCursor.CallAcutionXOperator)
             {
@@ -63163,6 +63554,7 @@ function MinuteChartContainer(uielement)
                 this.ChartCorssCursor.CallAcutionXOperator.AfterCloseData=this.AfterCloseData;
                 this.ChartCorssCursor.CallAcutionXOperator.MultiDayBeforeOpenData=multiBeforeOpenData;
                 this.ChartCorssCursor.CallAcutionXOperator.MultiDayAfterCloseData=multiAfterCloseData;
+                this.ChartCorssCursor.CallAcutionXOperator.DayOffset=this.DayOffset;
             }
         }
            
