@@ -1984,6 +1984,8 @@ function JSChartContainer(uielement)
     //当前屏K线涨幅Y轴刻度
     this.KLineIncreaseCustomHorizontal=function()
     {
+        if (!this.Frame || !this.Frame.SubFrame) return;
+        
         var frame=this.Frame.SubFrame[0].Frame;
         if (!frame) return;
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
