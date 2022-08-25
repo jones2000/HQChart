@@ -15673,7 +15673,7 @@ function JSExecute(ast,option)
         for(let i=0; i<this.AST.Body.length; ++i)
         {
             let item =this.AST.Body[i];
-            this.RunASTNode(item);
+            this.RunASTNode(item,i);
         }
 
         JSConsole.Complier.Log('[JSExecute::Run]', this.VarTable);
@@ -15681,10 +15681,11 @@ function JSExecute(ast,option)
         return this.OutVarTable;
     }
 
-    this.RunASTNode=function(item)
+    this.RunASTNode=function(item, lineID)
     {
         this.VisitNode(item);
 
+        var i=lineID;
         //输出变量
         if (item.Type==Syntax.ExpressionStatement && item.Expression)
         {
