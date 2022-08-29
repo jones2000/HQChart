@@ -8871,6 +8871,8 @@ function JSDraw(errorHandler,symbolData)
     */
     this.DRAWBAND=function(data,color,data2,color2)
     {
+        if (IFrameSplitOperator.IsNumber(color)) color=`rgb(${color},0,0)`;
+        if (IFrameSplitOperator.IsNumber(color2)) color2=`rgb(${color2},0,0)`;
         var drawData=[];
         var result={DrawData:drawData, DrawType:'DRAWBAND', Color:[color.toLowerCase(),color2.toLowerCase()]};  //颜色使用小写字符串
         var isNumber=IFrameSplitOperator.IsNumber(data);

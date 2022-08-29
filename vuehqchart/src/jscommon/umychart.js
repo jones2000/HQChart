@@ -272,7 +272,7 @@ function JSChart(divElement, bOffscreen)
         if (!option.Windows || option.Windows.length<=0) return null;
 
         //创建子窗口
-        chart.Create(option.Windows.length, option.Listener);
+        chart.Create(option.Windows.length, option);
 
         this.SetChartBorder(chart, option);
 
@@ -711,7 +711,7 @@ function JSChart(divElement, bOffscreen)
         //分页
         if (option.PageInfo) chart.SetPageInfo(option.PageInfo);
 
-        chart.Create(windowsCount,option.Listener);                            //创建子窗口
+        chart.Create(windowsCount,option);                            //创建子窗口
 
         if (option.CorssCursorInfo)
         {
@@ -3163,6 +3163,7 @@ function JSChartContainer(uielement, OffscreenElement)
             {
                 var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SELECT_RECT);
                 var paint=this.GetRectSelectPaint();
+                var isShowMenu=true;
                 if (event && event.Callback)
                 {
                     var data=
@@ -3170,9 +3171,11 @@ function JSChartContainer(uielement, OffscreenElement)
                         X:drag.LastMove.X-uielement.getBoundingClientRect().left,
                         Y:drag.LastMove.Y-uielement.getBoundingClientRect().top,
                         SelectData:selectData,   //区间选择的数据
-                        RectSelectPaint:paint    //区间选择背景
+                        RectSelectPaint:paint,    //区间选择背景
+                        IsShowMenu:true
                     };
                     event.Callback(event,data,this);
+                    isShowMenu=data.IsShowMenu;
                 }
 
                 if (IsMinuteChart)  //分时图直接显示显示区间选择
@@ -3182,7 +3185,7 @@ function JSChartContainer(uielement, OffscreenElement)
                 }
                 else
                 {
-                    if (this.SelectRectRightMenu)
+                    if (isShowMenu && this.SelectRectRightMenu)
                     {
                         e.data=
                         {
@@ -4710,16 +4713,7 @@ function JSChartContainer(uielement, OffscreenElement)
         if (IFrameSplitOperator.IsNumber(frameID) && frameID>=0)    //在K线内部移动,调整K线索引
             this.CursorIndex=this.Frame.GetXData(x);
 
-        var paint=this.GetRectSelectPaint();
-        if (paint && paint.GetPointCount()>0)
-        {
-            var item=paint.PtInPaint(x,y);
-            if (item)
-            {
-                mouseStatus={ Cursor:"ew-resize", Name:"DragRectSelect"};
-                JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] drag rect select ",item);
-            }
-        }
+        
 
         if (this.EnableBorderDrag && this.Frame && !this.CurrentChartDrawPicture)
         {
@@ -4794,6 +4788,19 @@ function JSChartContainer(uielement, OffscreenElement)
         else
         {
             this.SelectedChart.MoveOn.Identify=null;
+        }
+
+
+        //区间选择
+        var paint=this.GetRectSelectPaint();
+        if (paint && paint.GetPointCount()>0)
+        {
+            var item=paint.PtInPaint(x,y);
+            if (item)
+            {
+                mouseStatus={ Cursor:"ew-resize", Name:"DragRectSelect"};
+                JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] drag rect select ",item);
+            }
         }
         
         var bDrawPicture=false; //是否正在画图
@@ -5464,8 +5471,8 @@ function JSChartContainer(uielement, OffscreenElement)
         var endItem=data.Data[end];
 
         JSConsole.Chart.Log('[JSChartContainer::UpdateSelectRect]',startItem,endItem);
-        paint.SetPoint(startItem, { Index:0 });
-        paint.SetPoint(endItem, { Index:1 });
+        paint.SetPoint(startItem, { Index:0, DataIndex:start });
+        paint.SetPoint(endItem, { Index:1, DataIndex:end });
 
         this.Draw();
     }
@@ -6604,14 +6611,14 @@ function JSChartContainer(uielement, OffscreenElement)
         return null;
     }
 
-    this.SetRectSelectData=function(kItem)
+    this.SetRectSelectData=function(kItem, index)
     {
         var paint=this.GetRectSelectPaint();
         if (!paint) return false;
 
         if (paint.GetPointCount()==2) return false;
 
-        return paint.SetPoint(kItem);
+        return paint.SetPoint(kItem, { DataIndex:index} );
     }
 
     this.MoveRectSelectPoint=function(obj)
@@ -6636,7 +6643,7 @@ function JSChartContainer(uielement, OffscreenElement)
         var item = kData.Data[dataIndex];
         JSConsole.Chart.Log("[KLineChartContainer::MoveRectSelectPoint] point, item", obj.PointIndex, item);
 
-        if (!paint.SetPoint(item,{ Index: obj.PointIndex })) return false;
+        if (!paint.SetPoint(item,{ Index: obj.PointIndex, DataIndex:dataIndex })) return false;
 
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAG_SELECT_RECT);
         if (event)
@@ -32830,6 +32837,8 @@ function FrameSplitPaint()
     }
 }
 
+
+//区间选择选中范围背景
 function RectSelectPaint()
 {
     this.newMethod=IExtendChartPainting;   //派生
@@ -32844,13 +32853,25 @@ function RectSelectPaint()
 
     this.FirstPoint;
     this.SecondPoint;
+    this.CenterPoint;
     this.PreventClose=false;        //如果外面有div,可以设置成true, 有外面控制
 
     this.StartDate; //{ Date:, Index: }
     this.EndDate;   //{ Date:, Index: }
+    this.CenterDate;    //{ Date:, Index: }
 
     this.HQChart;
     this.DragRect;      //拖拽边框区域 
+    this.ShowRangeText=
+    { 
+        Enable:false, 
+        Position:0, //0顶部 1=中间 2=底部
+        Font:g_JSChartResource.RectSelect.RangeTextFont,
+        Color:g_JSChartResource.RectSelect.RangeTextColor,
+        BGColor:g_JSChartResource.RectSelect.RangeTextBGColor,
+    };
+
+    this.BorderCache;
 
     //设置参数接口
     this.SetOption=function(option)
@@ -32859,6 +32880,12 @@ function RectSelectPaint()
         {
             if (option.LineColor) this.LineColor=option.LineColor;
             if (option.AreaColor) this.AreaColor=option.AreaColor;
+            if (option.ShowRangeText)
+            {
+                var item=option.ShowRangeText;
+                if (IFrameSplitOperator.IsBool(item.Enable)) this.ShowRangeText.Enable=item.Enable;
+                if (IFrameSplitOperator.IsNumber(item.Position)) this.ShowRangeText.Position=item.Position;
+            }
         }
     }
 
@@ -32868,6 +32895,10 @@ function RectSelectPaint()
         this.LineWidth=g_JSChartResource.RectSelect.LineWidth;
         this.LineDotted=g_JSChartResource.RectSelect.LineDotted;  
         this.AreaColor=g_JSChartResource.RectSelect.AreaColor;     //面积
+
+        this.ShowRangeText.Font=g_JSChartResource.RectSelect.RangeTextFont;
+        this.ShowRangeText.Color=g_JSChartResource.RectSelect.RangeTextColor;
+        this.ShowRangeText.BGColor=g_JSChartResource.RectSelect.RangeTextBGColor;
     }
 
     this.IsMinuteChart=function()
@@ -32961,6 +32992,8 @@ function RectSelectPaint()
     this.SortPoint=function()  
     {
         var isMinuteChart=this.IsMinuteChart();
+        this.CenterData=null;
+
         if (this.FirstPoint && !this.SecondPoint)
         {
             this.StartDate={ Date:this.DateToNumber(this.FirstPoint,isMinuteChart), Index:0 };
@@ -32979,39 +33012,108 @@ function RectSelectPaint()
                 this.StartDate={ Date:secondValue, Index:1 };
                 this.EndDate={ Date:firstValue, Index:0 };
             }
+
+            if (this.CenterPoint)
+            {
+                var centerValue=this.DateToNumber(this.CenterPoint, isMinuteChart);
+                this.CenterDate={ Date:centerValue, Index:2 };
+            }
         }
+    }
+
+    this.GetCenterPoint=function()
+    {
+        if (!this.FirstPoint || !this.SecondPoint) return null;
+        if (!IFrameSplitOperator.IsNumber(this.FirstPoint.DataIndex)) return null;
+        if (!IFrameSplitOperator.IsNumber(this.SecondPoint.DataIndex)) return null;
+
+        var count=this.FirstPoint.DataIndex-this.SecondPoint.DataIndex;
+        if (Math.abs(count)<3) return null;
+
+        var centerIndex=parseInt(this.FirstPoint.DataIndex+(this.SecondPoint.DataIndex-this.FirstPoint.DataIndex)/2);
+        if (centerIndex<0) return null;
+        var data=this.GetKData();
+        if (!data || !data.Data) return null;
+        
+        var kItem=data.Data[centerIndex];
+        if (!kItem) return null;
+
+       return { Date:kItem.Date, Time:kItem.Time, DataIndex:centerIndex };
+    }
+
+    this.MovePoint=function(offset)
+    {
+        if (!this.FirstPoint || !this.SecondPoint) return false;
+        var data=this.GetKData();
+        if (!data || !data.Data) return false;
+
+        var dataIndex=this.FirstPoint.DataIndex+offset;
+        var kItem=data.Data[dataIndex];
+        if (!kItem) return false;
+        var firstPoint={ Date:kItem.Date, Time:kItem.Time, DataIndex:dataIndex };
+
+        var dataIndex=this.SecondPoint.DataIndex+offset;
+        var kItem=data.Data[dataIndex];
+        if (!kItem) return false;
+        var secondPoint={ Date:kItem.Date, Time:kItem.Time, DataIndex:dataIndex };
+
+        var dataIndex=this.CenterPoint.DataIndex+offset;
+        var kItem=data.Data[dataIndex];
+        if (!kItem) return false;
+        var centerPoint={ Date:kItem.Date, Time:kItem.Time, DataIndex:dataIndex };
+
+        this.FirstPoint=firstPoint;
+        this.SecondPoint=secondPoint;
+        this.CenterPoint=centerPoint;
+
+        return true;
     }
 
     this.SetPoint=function(kItem, option)
     {
-        if (!option)
+        var dataIndex=null;
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNumber(option.DataIndex)) dataIndex=option.DataIndex;
+        }
+
+        if (option && IFrameSplitOperator.IsNumber(option.Index))
+        {
+            switch(option.Index)
+            {
+                case 0:
+                    this.FirstPoint={ Date:kItem.Date, Time:kItem.Time, DataIndex:dataIndex  };
+                    this.CenterPoint=this.GetCenterPoint();
+                    return true;
+                case 1:
+                    this.SecondPoint={ Date:kItem.Date, Time:kItem.Time, DataIndex:dataIndex  };
+                    this.CenterPoint=this.GetCenterPoint();
+                    return true;
+                case 2: //中心偏移
+                    var offset=dataIndex-this.CenterPoint.DataIndex;
+                    //this.CenterPoint={ Date:kItem.Date, Time:kItem.Time, DataIndex:dataIndex };
+                    if (Math.abs(offset)>0) 
+                        return this.MovePoint(offset);
+                    return false;
+                default:
+                    return false;
+            }
+        }
+        else
         {
             if (!this.FirstPoint) 
             {
-                this.FirstPoint={ Date:kItem.Date, Time:kItem.Time };
+                this.FirstPoint={ Date:kItem.Date, Time:kItem.Time, DataIndex:dataIndex };
                 return true;
             }
     
             if (!this.SecondPoint)
             {
-                this.SecondPoint={ Date:kItem.Date, Time:kItem.Time };
+                this.SecondPoint={ Date:kItem.Date, Time:kItem.Time, DataIndex:dataIndex };
+                this.CenterPoint=this.GetCenterPoint();
                 return true;
             }
             return false;
-        }
-        else
-        {
-            switch(option.Index)
-            {
-                case 0:
-                    this.FirstPoint={ Date:kItem.Date, Time:kItem.Time };
-                    return true;
-                case 1:
-                    this.SecondPoint={ Date:kItem.Date, Time:kItem.Time };
-                    return true;
-                default:
-                    return false;
-            }
         }
     }
 
@@ -33037,8 +33139,10 @@ function RectSelectPaint()
 
     this.Draw=function()
     {
+        this.BorderCache=null;
         this.StartDate=null;
         this.EndDate=null;
+        this.CenterDate=null;
         this.DragRect=[];
         if (!this.FirstPoint && !this.SecondPoint) return;
         this.SortPoint();
@@ -33060,6 +33164,7 @@ function RectSelectPaint()
             var border=subFrame.GetBorder();
             var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
             var chartright=border.BottomEx;
+            this.BorderCache=border;
         }
         else
         {
@@ -33069,10 +33174,10 @@ function RectSelectPaint()
             var drawHeight=border.ChartHeight-border.TopTitle-5*GetDevicePixelRatio();
             var top=border.TopEx;
             var bottom=border.BottomEx;
+            this.BorderCache=border;
         }
 
         this.Canvas.save();
-
         var isDayPeriod=ChartData.IsDayPeriod(this.HQChart.Period,true);
         var isMinuteChart=this.IsMinuteChart();
         var startPoint=null, endPoint=null;
@@ -33095,14 +33200,20 @@ function RectSelectPaint()
 
             if (this.StartDate && value==this.StartDate.Date)
             {
-                startPoint={ XIndex:i, X:x, Top:top, Bottom: bottom, PointIndex:this.StartDate.Index };
+                startPoint={ XIndex:i, X:x, Top:top, Bottom: bottom, PointIndex:this.StartDate.Index, Type:0, Item:item };
                 aryLines.push(startPoint);
             }
                    
             if (this.EndDate && value==this.EndDate.Date)
             {
-                endPoint={ XIndex:i, X:x , Top:top, Bottom: bottom, PointIndex:this.EndDate.Index };
+                endPoint={ XIndex:i, X:x , Top:top, Bottom: bottom, PointIndex:this.EndDate.Index, Type:1, Item:item };
                 aryLines.push(endPoint);
+            }
+
+            if (this.CenterDate && value==this.CenterDate.Date)
+            {
+                var centerPoint={ XIndex:i, X:x , Top:top, Bottom: bottom, PointIndex:this.CenterDate.Index, Type:2, Item:item };
+                aryLines.push(centerPoint);
             }
             
 
@@ -33122,8 +33233,114 @@ function RectSelectPaint()
 
         this.DrawLines(aryLines);
         this.DrawArea(startPoint, endPoint, startDate, startEnd);
-        
+        this.DrawRangeText(aryLines);
+
         this.Canvas.restore();
+    }
+
+    this.DrawRangeText=function(aryLines)
+    {
+        if (!this.ShowRangeText) return;
+        if (this.ShowRangeText.Enable==false) return;
+
+        //文字
+        var border=this.BorderCache;
+        var isMinuteChart=this.IsMinuteChart();
+        var period=this.HQChart.Period;
+        this.Canvas.font=this.ShowRangeText.Font;
+        
+        var x,y,text;
+        var textHeight=this.GetFontHeight();
+        for(var i=0;i<aryLines.length;++i)
+        {
+            var item=aryLines[i];
+
+            if (item.Type===0 || item.Type==1)  //第1个点,第2个点
+            {
+                if (isMinuteChart)
+                {
+                    var strDate=IFrameSplitOperator.FormatDateString(item.Item.Date,"YYYY-MM-DD");
+                    var strTime=IFrameSplitOperator.FormatTimeString(item.Item.Time,"HH:MM");
+                    text=`${strDate} ${strTime}`;
+                }
+                else
+                {
+                    var strDate=IFrameSplitOperator.FormatDateString(item.Item.Date,"YYYY-MM-DD");
+                    var strTime=null;
+                    if (ChartData.IsMinutePeriod(period, true)) strTime=IFrameSplitOperator.FormatTimeString(item.Item.Time,"HH:MM");
+                    else if (ChartData.IsSecondPeriod(period) || ChartData.IsTickPeriod(period)) strTime=IFrameSplitOperator.FormatTimeString(item.Item.Time,"HH:MM:SS");
+                    if (strTime) text=`${strDate} ${strTime}`;
+                    else text=strDate;
+                }
+                
+                var textWidth=this.Canvas.measureText(text).width+4;
+                var rtBG={ Height:textHeight, Width:textWidth };
+
+                if (item.Type==0)   //第1个点
+                {
+                    if (textWidth>item.X)
+                    {
+                        this.Canvas.textAlign="left";
+                        this.Canvas.textBaseline="middle";
+                        x=item.X+2;
+                        rtBG.X=item.X;
+                    }
+                    else
+                    {
+                        this.Canvas.textAlign="right";
+                        this.Canvas.textBaseline="middle";
+                        x=item.X-2;
+                        rtBG.X=item.X-textWidth;
+                    }
+                }
+                else    //第2个点
+                {
+                    if (textWidth>(border.Right-item.X))
+                    {
+                        this.Canvas.textAlign="right";
+                        this.Canvas.textBaseline="middle";
+                        x=item.X-2;
+                        rtBG.X=item.X-textWidth;
+                    }
+                    else
+                    {
+                        this.Canvas.textAlign="left";
+                        this.Canvas.textBaseline="middle";
+                        x=item.X+2;
+                        rtBG.X=item.X;
+                    }
+                }
+                
+                
+                if (this.ShowRangeText.Position==1) 
+                {
+                    y=item.Top+(item.Bottom-item.Top)/2;
+                    rtBG.Y=y-textHeight/2;
+                }
+                else if (this.ShowRangeText.Position==2) 
+                {
+                    y=item.Bottom;
+                    rtBG.Y=y-textHeight/2;
+                }
+                else 
+                {
+                    y=item.Top;
+                    rtBG.Y=y-textHeight/2;
+                }
+
+                if (this.ShowRangeText.BGColor)
+                {
+                    this.Canvas.fillStyle=this.ShowRangeText.BGColor;
+                    this.Canvas.fillRect(ToFixedPoint(rtBG.X),ToFixedPoint(rtBG.Y),ToFixedRect(rtBG.Width),ToFixedRect(rtBG.Height));
+                }
+                
+                if (this.ShowRangeText.Color)
+                {
+                    this.Canvas.fillStyle=this.ShowRangeText.Color;
+                    this.Canvas.fillText(text,x,y,textWidth);
+                }
+            }
+        }
     }
 
     this.DrawLines=function(aryLines)
@@ -33133,21 +33350,32 @@ function RectSelectPaint()
         var lineWidth=this.LineWidth * GetDevicePixelRatio();
         this.Canvas.strokeStyle=this.LineColor;
         this.Canvas.lineWidth=lineWidth;
-        if (this.LineDotted) this.Canvas.setLineDash(this.LineDotted);   //虚线
-        this.Canvas.beginPath();
 
         for(var i=0;i<aryLines.length;++i)
         {
             var item=aryLines[i];
             var left=ToFixedPoint2(lineWidth,item.X);
-            this.Canvas.moveTo(left,item.Top);
-            this.Canvas.lineTo(left,item.Bottom);
+
+            if (item.Type==0 || item.Type==1)
+            {
+                if (this.LineDotted) this.Canvas.setLineDash(this.LineDotted);   //虚线
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(left,item.Top);
+                this.Canvas.lineTo(left,item.Bottom);
+                this.Canvas.stroke();
+                if (this.LineDotted) this.Canvas.setLineDash([]);
+            }
+            else
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(left,item.Top);
+                this.Canvas.lineTo(left,item.Bottom);
+                this.Canvas.stroke();
+            }
 
             var rtLine=new Rect(left-3,item.Top,10,item.Bottom-item.Top);
-            this.DragRect[i]={ Rect:rtLine, PointIndex:item.PointIndex };
+            this.DragRect[i]={ Rect:rtLine, PointIndex:item.PointIndex, Type:item.Type };
         }
-
-        this.Canvas.stroke();
     }
 
     this.PtInPaint=function(x,y)
@@ -33162,7 +33390,7 @@ function RectSelectPaint()
             this.Canvas.rect(rtLine.X,rtLine.Y,rtLine.Width,rtLine.Height);
             if (this.Canvas.isPointInPath(x,y))
             {
-                return { Index:i, PointIndex:item.PointIndex, Self:this };
+                return { Index:i, PointIndex:item.PointIndex, Type:item.Type, Self:this };
             }
         }
 
@@ -36752,7 +36980,9 @@ function FrameSplitMinuteX()
 
         if (this.DayCount<=1)
         {
+            //设置成1日的数据
             this.DayOffset.DataOffset=0;
+            this.DayOffset.ShowDataCount=minuteCount;
             for(var i=0; i<xcoordinate.length; ++i)
             {
                 var info=new CoordinateInfo();
@@ -48288,6 +48518,10 @@ function JSChartResource()
         LineWidth:1*GetDevicePixelRatio(),
         LineDotted:[3,3], 
         AreaColor:"rgba(234,234,234,0.5)",     //面积
+
+        RangeTextColor:"rgb(255,255,255)",
+        RangeTextFont:14*GetDevicePixelRatio() +"px 微软雅黑",
+        RangeTextBGColor:'rgb(43,54,69)',
     }
 
     this.SelectedChart=
@@ -48758,6 +48992,10 @@ function JSChartResource()
             if (item.LineWidth>0) this.RectSelect.LineWidth=item.LineWidth;
             if (item.LineDotted) this.RectSelect.LineDotted=item.LineDotted;
             if (item.AreaColor) this.RectSelect.AreaColor=item.AreaColor;
+
+            if (item.RangeTextColor) this.RectSelect.RangeTextColor=item.RangeTextColor;
+            if (item.RangeTextFont) this.RectSelect.RangeTextFont=item.RangeTextFont;
+            if (item.RangeTextBGColor) this.RectSelect.RangeTextBGColor=item.RangeTextBGColor;
         }
 
         if (style.OrderFlow)
@@ -50721,7 +50959,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         this.CreateChildWindow(windowCount);
         this.CreateMainKLine();
-        this.CreateExtendChart("RectSelectPaint");  //区间统计
+        this.CreateExtendChart("RectSelectPaint", option? option.SelectRect:null);  //区间统计
         if (this.EnableIndexChartDrag) this.CreateExtendChart("DragMovePaint");
 
         //子窗口动态标题
@@ -51158,17 +51396,40 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         var pixelTatio = GetDevicePixelRatio();
         var corssCursor=this.ChartCorssCursor;  //十字光标
-        e.data=
-        {
-            Chart:this,
-            X:corssCursor.LastPoint.X/pixelTatio,
-            Y:corssCursor.LastPoint.Y/pixelTatio,
-            SelectData:selectData,          //区间选择的数据
-            RectSelectPaint:paint           //区间选择背景
-        };
+        var x=corssCursor.LastPoint.X/pixelTatio;
+        var y=corssCursor.LastPoint.Y/pixelTatio;
+        var isShowMenu=true;
 
-        if (this.SelectRectRightMenu)
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAG_SELECT_RECT_MOUSEUP);
+        if (event)
+        {
+            var data=
+            { 
+                X:x,
+                Y:y,
+                SelectData:selectData,    //区间选择的数据
+                RectSelectPaint:paint,    //区间选择背景
+                IsShowMenu:false,
+            };
+            event.Callback(event,data,this);
+            isShowMenu=data.IsShowMenu;
+        }
+       
+
+        if (isShowMenu && this.SelectRectRightMenu)
+        {
+            e.data=
+            {
+                Chart:this,
+                X:x,
+                Y:y,
+                SelectData:selectData,          //区间选择的数据
+                RectSelectPaint:paint           //区间选择背景
+            };
+
             this.SelectRectRightMenu.DoModal(e);
+        }
+            
     }
 
     this.ShowSelectData=function(selectData)
@@ -51218,7 +51479,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         JSConsole.Chart.Log("[KLineChartContainer::OnMarkRectSelect] item", item);
 
-        if (!this.SetRectSelectData(item)) return;
+        if (!this.SetRectSelectData(item, index)) return;
 
         var pointCount=paint.GetPointCount();
         var pixelTatio = GetDevicePixelRatio();
@@ -51242,6 +51503,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         {
             var selectData=paint.GetSelectRectData();
             var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_KEYDOWN_SELECT_RECT);
+            var isShowMenu=true;
             if (event && event.Callback)
             {
                 var data=
@@ -51249,12 +51511,14 @@ function KLineChartContainer(uielement,OffscreenElement)
                     X:corssCursor.LastPoint.X/pixelTatio,
                     Y:corssCursor.LastPoint.Y/pixelTatio,
                     SelectData:selectData,   //区间选择的数据
-                    RectSelectPaint:paint    //区间选择背景
+                    RectSelectPaint:paint,    //区间选择背景
+                    IsShowMenu:true
                 };
                 event.Callback(event,data,this);
+                isShowMenu=data.IsShowMenu;
             }
 
-            if (this.SelectRectRightMenu)
+            if (isShowMenu && this.SelectRectRightMenu)
             {
                 e.data=
                 {
@@ -56669,10 +56933,11 @@ function MinuteChartContainer(uielement)
                 X:x,
                 Y:y,
                 SelectData:selectData,   //区间选择的数据
-                RectSelectPaint:paint    //区间选择背景
+                RectSelectPaint:paint,    //区间选择背景
+                IsShowDialog:false
             };
             event.Callback(event,data,this);
-            isShowDialog=false;
+            isShowDialog=data.IsShowDialog;
         }
 
         if (isShowDialog && this.SelectRectDialog)
@@ -57720,7 +57985,7 @@ function MinuteChartContainer(uielement)
 
         this.CreateChildWindow(windowCount);
         this.CreateMainKLine();
-        this.CreateExtendChart("RectSelectPaint");  //区间统计
+        this.CreateExtendChart("RectSelectPaint", option? option.SelectRect:null);  //区间统计
         if (this.EnableIndexChartDrag) this.CreateExtendChart("DragMovePaint");
 
         //子窗口动态标题

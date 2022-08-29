@@ -192,6 +192,11 @@ DefaultData.GetKLineOption=function()
 
         IsDrawPictureXY:true,
 
+        SelectRect:
+        {
+            ShowRangeText:{ Enable:true, Position:1 }
+        },
+
         KLineTitle: //标题设置
         {
             
