@@ -1,0 +1,4 @@
+build/*.js
+src/static
+public
+dist
