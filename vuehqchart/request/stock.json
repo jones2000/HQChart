@@ -1,0 +1,28 @@
+{
+  "stock": [
+    {
+      "flowday": {
+        "superin": 758472468,
+        "superout": 320949500,
+        "bigin": 382077916,
+        "bigout": 383968451,
+        "midin": 76052176,
+        "midout": 100935095,
+        "smallin": 7763194,
+        "smallout": 8159696,
+        "mainin": 1140550384,
+        "mainout": 704917951,
+        "mainnetin": 435632433
+      },
+      "symbol": "000001.sz"
+    }
+  ],
+  "start": 0,
+  "end": 50,
+  "count": 1,
+  "ticket": 0,
+  "version": "HQ.Stock 2.0",
+  "message": null,
+  "code": 0,
+  "servertime": "2022-08-31 15:11:41"
+}

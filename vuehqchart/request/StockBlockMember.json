@@ -1,0 +1,147 @@
+{
+  "stock": [
+    {
+      "price": 10.23,
+      "yclose": 11.73,
+      "risefallspeed": {
+        "5": -3.6832412523020257
+      },
+      "symbol": "000037.sz",
+      "name": "深南电A"
+    },
+    {
+      "price": 4.25,
+      "yclose": 2.74,
+      "risefallspeed": {
+        "5": -2.964959568733154
+      },
+      "symbol": "300089.sz",
+      "name": "*ST文化"
+    },
+    {
+      "price": 10.91,
+      "yclose": 10.7,
+      "risefallspeed": {
+        "5": -2.4657534246575343
+      },
+      "symbol": "300736.sz",
+      "name": "百邦科技"
+    },
+    {
+      "price": 24.45,
+      "yclose": 24.35,
+      "risefallspeed": {
+        "5": -1.8618121638394705
+      },
+      "symbol": "300498.sz",
+      "name": "温氏股份"
+    },
+    {
+      "price": 28.830000000000002,
+      "yclose": 29.93,
+      "risefallspeed": {
+        "5": -1.8096514745308312
+      },
+      "symbol": "688109.sh",
+      "name": "品茗科技"
+    },
+    {
+      "price": 11.629999999999999,
+      "yclose": 11.21,
+      "risefallspeed": {
+        "5": -1.7985611510791366
+      },
+      "symbol": "300249.sz",
+      "name": "依米康"
+    },
+    {
+      "price": 56.24,
+      "yclose": 60.99,
+      "risefallspeed": {
+        "5": -1.7391304347826086
+      },
+      "symbol": "688283.sh",
+      "name": "坤恒顺维"
+    },
+    {
+      "price": 60.25,
+      "yclose": 69.97,
+      "risefallspeed": {
+        "5": -1.6951915240423798
+      },
+      "symbol": "301168.sz",
+      "name": "通灵股份"
+    },
+    {
+      "price": 13.33,
+      "yclose": 13.9,
+      "risefallspeed": {
+        "5": -1.6253869969040247
+      },
+      "symbol": "688619.sh",
+      "name": "罗普特"
+    },
+    {
+      "price": 15.8,
+      "yclose": 16.97,
+      "risefallspeed": {
+        "5": -1.506931886678722
+      },
+      "symbol": "300421.sz",
+      "name": "力星股份"
+    },
+    {
+      "price": 10.49,
+      "yclose": 10.61,
+      "risefallspeed": {
+        "5": -1.3723696248856359
+      },
+      "symbol": "600586.sh",
+      "name": "金晶科技"
+    },
+    {
+      "price": 6.72,
+      "yclose": 8.280000000000001,
+      "risefallspeed": {
+        "5": -1.3513513513513513
+      },
+      "symbol": "600212.sh",
+      "name": "绿能慧充"
+    },
+    {
+      "price": 184.79,
+      "yclose": 190.16,
+      "risefallspeed": {
+        "5": -1.203664252236898
+      },
+      "symbol": "688037.sh",
+      "name": "芯源微"
+    },
+    {
+      "price": 11.27,
+      "yclose": 12.799999999999999,
+      "risefallspeed": {
+        "5": -1.1666666666666667
+      },
+      "symbol": "002543.sz",
+      "name": "万和电气"
+    },
+    {
+      "price": 24.8,
+      "yclose": 27.27,
+      "risefallspeed": {
+        "5": -1.0899182561307903
+      },
+      "symbol": "603859.sh",
+      "name": "能科科技"
+    }
+  ],
+  "start": 0,
+  "end": 15,
+  "count": 4782,
+  "ticket": 246,
+  "version": "HQ.Stock 2.0",
+  "message": null,
+  "code": 0,
+  "servertime": "2022-08-31 15:25:13"
+}

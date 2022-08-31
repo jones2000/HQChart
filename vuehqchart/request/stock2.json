@@ -1,0 +1,255 @@
+{
+  "stock": [
+    {
+      "time": 145906,
+      "date": 20220831,
+      "price": 12.950000000000001,
+      "open": 11.670000000000002,
+      "yclose": 12.8,
+      "high": 11.85,
+      "low": 12.43,
+      "vol": 161144958,
+      "amount": 2038378496,
+      "amplitude": 3.3653846153846154,
+      "increase": 1.8429487179487178,
+      "exchangerate": 0.8304066791583011,
+      "volratio": 1.614484526015508,
+      "week": {
+        "week1": 2.499999999999991,
+        "week4": 5.652535328345798,
+        "week13": -8.624715966862029,
+        "week26": -20.278864947058917,
+        "week52": -26.817080208753797
+      },
+      "symbol": "000001.sz",
+      "name": "平安银行"
+    }
+  ],
+  "start": 0,
+  "end": 100,
+  "count": 1,
+  "ticket": 0,
+  "version": "HQ.Stock 2.0",
+  "message": null,
+  "code": 0,
+  "servertime": "2022-08-31 14:59:24"
+}```
+
+```json
+{
+"stock": [
+{
+"time": 145906,
+"date": 20220831,
+"price": 12.96,
+"high": 12.6,
+"low": 12.229999999999999,
+"vol": 161144958,
+"amount": 2038378496,
+"increase": 1.8429487179487178,
+"deal": [
+{
+"bs": 0,
+"price": 13.680000000000001,
+"amount": 1402112,
+"vol": 110200,
+"time": 145700
+},
+{
+"bs": 1,
+"price": 12.850000000000001,
+"amount": 397824,
+"vol": 31300,
+"time": 145657
+},
+{
+"bs": 1,
+"price": 12.610000000000001,
+"amount": 749184,
+"vol": 58900,
+"time": 145654
+},
+{
+"bs": 1,
+"price": 13.260000000000002,
+"amount": 419712,
+"vol": 33000,
+"time": 145651
+},
+{
+"bs": 0,
+"price": 12.24,
+"amount": 634240,
+"vol": 49900,
+"time": 145648
+},
+{
+"bs": 0,
+"price": 13.57,
+"amount": 231296,
+"vol": 18200,
+"time": 145645
+},
+{
+"bs": 0,
+"price": 13.180000000000001,
+"amount": 633984,
+"vol": 49900,
+"time": 145642
+},
+{
+"bs": 1,
+"price": 12.7,
+"amount": 513280,
+"vol": 40400,
+"time": 145639
+},
+{
+"bs": 0,
+"price": 13.55,
+"amount": 237696,
+"vol": 18700,
+"time": 145636
+},
+{
+"bs": 1,
+"price": 13.309999999999999,
+"amount": 416768,
+"vol": 32800,
+"time": 145633
+}
+],
+"symbol": "000001.sz",
+"name": "平安银行"
+}
+],
+"start": 0,
+"end": 100,
+"count": 1,
+"ticket": 0,
+"version": "HQ.Stock 2.0",
+"message": null,
+"code": 0,
+"servertime": "2022-08-31 14:59:24"
+}```
+
+```json
+{
+"stock": [
+{
+"bookrate": -5.659297176244759,
+"bookdiffer": -3361,
+"marketvalue": 246649220296.58,
+"flowmarketvalue": 246644501734.5,
+"pe": 7.346820809248555,
+"pe2": 6.484693877551021,
+"pe3": 6.169902912621359,
+"pb": 0.7209302325581396,
+"symbol": "000001.sz",
+"name": "平安银行"
+}
+],
+"start": 0,
+"end": 100,
+"count": 1,
+"ticket": 0,
+"version": "HQ.Stock 2.0",
+"message": null,
+"code": 0,
+"servertime": "2022-08-31 14:59:24"
+}```
+
+
+```json
+{
+"stock": [
+{
+"roe": 5.3598901,
+"finance": {
+"date": 20220630,
+"persearning": 1.11,
+"eps": 1.96,
+"pernetasset": 14.5,
+"percreserve": 4.1645,
+"peruprofit": 6.7332,
+"perccfo": 7.7545,
+"orevenues": 92022000000,
+"moprofit": 27961000000,
+"oprofit": 27961000000,
+"nprofit": 22088000000,
+"nprofitincrease": null,
+"cassets": null,
+"areceivable": null,
+"financialcost": null,
+"ccfo": 150483000000,
+"grossmargin": null,
+"totalassets": 5108776000000,
+"totalliabilities": 4696678000000,
+"totalownersequity": 412098000000,
+"currentassets": null,
+"monetaryfunds": 313690000000,
+"inventory": null,
+"currentliabilities": null,
+"ncurrentliabilities": null,
+"expenses3": null,
+"investmentincome": 7769000000,
+"pcnprofit": 22088000000,
+"nnetprofit": 22042000000,
+"nnprofitincrease": null,
+"nnprofitspeed": null,
+"npersearning": 1,
+"woewa": 5.97,
+"inprocess": null,
+"accdepreciation": -2147483648,
+"mholderprofit": null,
+"lossexchange": null,
+"baddebts": null,
+"fixedassets": 11269000000,
+"curdepreciation": 717000000,
+"benford": 0.3297,
+"avgbenford": 8,
+"alratio": 91.9335,
+"profityoy": 25.6213388,
+"fshares": null,
+"benfordyear": 0.2035,
+"benford3year": 0.1699666667
+},
+"symbol": "000001.sz",
+"name": "平安银行"
+}
+],
+"start": 0,
+"end": 100,
+"count": 1,
+"ticket": 0,
+"version": "HQ.Stock 2.0",
+"message": null,
+"code": 0,
+"servertime": "2022-08-31 14:59:24"
+}```
+
+```json
+{
+"stock": [
+{
+"events": {
+"margin": 0,
+"shhk": 0,
+"szhk": 1,
+"hk": 0,
+"hksymbol": null,
+"hkname": null,
+"st": 0
+},
+"symbol": "000001.sz"
+}
+],
+"start": 0,
+"end": 50,
+"count": 1,
+"ticket": 16,
+"version": "HQ.Stock 2.0",
+"message": null,
+"code": 0,
+"servertime": "2022-08-31 14:59:24"
+}

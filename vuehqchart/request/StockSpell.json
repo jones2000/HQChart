@@ -1,0 +1,262 @@
+{
+  "stock": [
+    {
+      "type": "EQA",
+      "symbol": "600600.sh",
+      "name": "青岛啤酒"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600601.sh",
+      "name": "*ST方科"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600602.sh",
+      "name": "云赛智联"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600603.sh",
+      "name": "广汇物流"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600604.sh",
+      "name": "市北高新"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600605.sh",
+      "name": "汇通能源"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600606.sh",
+      "name": "绿地控股"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600608.sh",
+      "name": "ST沪科"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600609.sh",
+      "name": "金杯汽车"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600610.sh",
+      "name": "中毅达"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600611.sh",
+      "name": "大众交通"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600612.sh",
+      "name": "老凤祥"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600613.sh",
+      "name": "神奇制药"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600615.sh",
+      "name": "丰华股份"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600616.sh",
+      "name": "金枫酒业"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600617.sh",
+      "name": "国新能源"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600618.sh",
+      "name": "氯碱化工"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600619.sh",
+      "name": "海立股份"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600620.sh",
+      "name": "天宸股份"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600621.sh",
+      "name": "华鑫股份"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600622.sh",
+      "name": "光大嘉宝"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600623.sh",
+      "name": "华谊集团"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600624.sh",
+      "name": "复旦复华"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600626.sh",
+      "name": "申达股份"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600628.sh",
+      "name": "新世界"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600629.sh",
+      "name": "华建集团"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600630.sh",
+      "name": "龙头股份"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600633.sh",
+      "name": "浙数文化"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600635.sh",
+      "name": "大众公用"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600636.sh",
+      "name": "国新文化"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600637.sh",
+      "name": "东方明珠"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600638.sh",
+      "name": "新黄浦"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600639.sh",
+      "name": "浦东金桥"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600640.sh",
+      "name": "新国脉"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600641.sh",
+      "name": "万业企业"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600642.sh",
+      "name": "申能股份"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600643.sh",
+      "name": "爱建集团"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600644.sh",
+      "name": "乐山电力"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600645.sh",
+      "name": "中源协和"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600647.sh",
+      "name": "同达创业"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600648.sh",
+      "name": "外高桥"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600649.sh",
+      "name": "城投控股"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600650.sh",
+      "name": "锦江在线"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600651.sh",
+      "name": "飞乐音响"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600653.sh",
+      "name": "申华控股"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600654.sh",
+      "name": "*ST中安"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600655.sh",
+      "name": "豫园股份"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600657.sh",
+      "name": "信达地产"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600658.sh",
+      "name": "电子城"
+    },
+    {
+      "type": "EQA",
+      "symbol": "600660.sh",
+      "name": "福耀玻璃"
+    }
+  ],
+  "start": 0,
+  "end": 49,
+  "count": 82,
+  "ticket": 16,
+  "version": "2.0",
+  "message": null,
+  "code": 0,
+  "servertime": "2022-08-31 15:18:05"
+}
