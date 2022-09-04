@@ -173,8 +173,25 @@ DefaultData.GetKLineOption=function()
 
         EnableZoomIndexWindow:true,
 
-        SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
+        SelectedChart:
+        { 
+            EnableSelected: true, 
+            EnableMoveOn:true 
+        },
+
         EnableIndexChartDrag:true,
+
+         //区间选择
+        SelectRect:
+        {
+            SpaceReselected:true, //空格重选
+            ShowRangeText:
+            { 
+                Enable:true,    //是否显示区间选择范围日期
+                Position:1,     //日期显示位置 0=顶部 1=中间 2=底部
+                SubPosition:1   //子区域日期显示位置 0=顶部 1=中间 2=底部
+            }
+        },
 
         KLine: 
         {
