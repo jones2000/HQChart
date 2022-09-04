@@ -59327,7 +59327,7 @@ function MinuteChartContainer(uielement)
         } );
         this.CaclutateLimitPrice(this.DayData[0].YClose, data.data[0].limitprice); //计算涨停价格
         this.UpdateHistoryMinuteUI(updateTime);
-        this.RecvMinuteDataEvent();
+        this.RecvMinuteDataEvent( {FunctionName:"RecvHistoryMinuteData"} );
         this.RequestOverlayHistoryMinuteData();
 
         this.BindAllOverlayIndexData(this.SourceData);
@@ -59579,12 +59579,12 @@ function MinuteChartContainer(uielement)
         });
     }
 
-    this.RecvMinuteDataEvent=function()
+    this.RecvMinuteDataEvent=function(option)
     {
         if (!this.mapEvent.has(JSCHART_EVENT_ID.RECV_MINUTE_DATA)) return;
 
         var event=this.mapEvent.get(JSCHART_EVENT_ID.RECV_MINUTE_DATA);
-        var data={ MinuteData:this.SourceData, Stock:{Symbol:this.Symbol, Name:this.Name } }
+        var data={ MinuteData:this.SourceData, Stock:{ Symbol:this.Symbol, Name:this.Name }, Option:option };
         event.Callback(event,data,this);
     }
 
@@ -59659,7 +59659,7 @@ function MinuteChartContainer(uielement)
             this.UpdateLineColorData(aryColorData,data.stock[0].date);
             this.UpdateLatestMinuteData(aryMinuteData,data.stock[0].date);
             this.UpdateHistoryMinuteUI(updateTime);
-            this.RecvMinuteDataEvent();
+            this.RecvMinuteDataEvent({FunctionName:"RecvMinuteData"} );
             this.RequestOverlayMinuteData();    //请求叠加数据 (主数据下载完再下载)
             this.BindAllOverlayIndexData(this.SourceData);
             this.AutoUpdateEvent(true, "MinuteChartContainer::RecvMinuteData");
@@ -59739,7 +59739,7 @@ function MinuteChartContainer(uielement)
         var chartInfo=this.GetChartMinuteInfo();
         if (chartInfo) chartInfo.SourceData=this.SourceData;    //数据绑定到信息地雷上
 
-        this.RecvMinuteDataEvent();
+        this.RecvMinuteDataEvent( {FunctionName:"RecvMinuteData"} );
         this.RequestMinuteInfoData();
         this.RequestOverlayMinuteData();//请求叠加数据 (主数据下载完再下载)
         this.CreateChartDrawPictureByStorage(); //创建画图工具
@@ -69877,6 +69877,7 @@ function ChartPictureVolProfileSettingMenu(divElement)
     this.ChartPicture;
     this.SettingDiv;
     this.Position;
+    this.ID=Guid();
 
     this.Close=function()   
     {
@@ -69888,11 +69889,12 @@ function ChartPictureVolProfileSettingMenu(divElement)
         var valueAreaVol=this.ChartPicture.VAVol;    //Value area volume
 
         var self=this;
-        var div=this.DivElement.getElementsByClassName('jchart-modifyindex-box')[0];
+        var div=document.getElementById(this.ID);
         if (!div)
         {
             div=document.createElement("div");
             div.className='jchart-modifyindex-box';
+            div.id=this.ID;
             this.DivElement.appendChild(div);
             this.SettingDiv=div;
         }
