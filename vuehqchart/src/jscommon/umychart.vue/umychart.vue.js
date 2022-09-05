@@ -8638,7 +8638,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
         if (isErase) this.Canvas.putImageData(this.Frame.ScreenImageData,0,0);
 
-        this.Frame.DrawToolbar(this.LastMouseStatus);
+        if (this.Frame.DrawToolbar) this.Frame.DrawToolbar(this.LastMouseStatus);
 
         this.DrawSelectedStatus();
 
@@ -68268,7 +68268,8 @@ function VolProfileVisibleRangeIndex(option)
 
     this.Arguments=
     [
-        { Name:"VAVol", Value:70 }
+        { Name:"VAVol", Value:70 },
+        { Name:"BarPosition", Value:0 }
     ];
 
     this.SetArgs=function(args)
@@ -68279,6 +68280,7 @@ function VolProfileVisibleRangeIndex(option)
         {
             var item=args[i];
             if (item.Name=="VAVol") this.SetParamValue(item.Name,item.Value);
+            else if (item.Name=="BarPosition") this.SetParamValue(item.Name,item.Value);
         }
     }
 
@@ -68294,10 +68296,15 @@ function VolProfileVisibleRangeIndex(option)
     if (option)
     {
         if (IFrameSplitOperator.IsNumber(option.VolType)) this.VolType=option.VolType;
-        if (IFrameSplitOperator.IsNumber(option.BarPosition)) this.BarPosition=option.BarPosition;
         if (IFrameSplitOperator.IsNumber(option.BarWidthRate)) this.BarWidthRate=option.BarWidthRate;
         if (IFrameSplitOperator.IsNumber(option.DelayRequestFrequency)) this.DelayRequestFrequency=option.DelayRequestFrequency;
         if (option.Args) this.SetArgs(option.Args);
+
+        if (IFrameSplitOperator.IsNumber(option.BarPosition)) 
+        {
+            this.BarPosition=option.BarPosition;
+            this.SetParamValue("BarPosition",this.BarPosition);
+        }
     }
 
 
@@ -68382,6 +68389,14 @@ function VolProfileVisibleRangeIndex(option)
             if (IFrameSplitOperator.IsNumber(startKItem.Time)) option.Start.Time=startKItem.Time;
             if (IFrameSplitOperator.IsNumber(endKItem.Time)) option.End.Time=endKItem.Time;
             option.ValueAreaVol=this.Arguments[0].Value;
+
+            if (this.Arguments[1].Value>0)  this.BarPosition=1;
+            else  this.BarPosition=0;
+
+            if (this.ChartVolProfile)
+            {
+                this.ChartVolProfile.SetOption( { BarPosition:this.BarPosition} );
+            }
 
             this.DataStatus=0
             if (hqChart && hqChart.RequestVolumeProfileData)
@@ -73993,6 +74008,7 @@ function ChartPictureVolProfileSettingMenu(divElement)
     this.DoModal=function()
     {
         var valueAreaVol=this.ChartPicture.VAVol;    //Value area volume
+        var barPosition=this.ChartPicture.BarPosition;
 
         var self=this;
         var div=document.getElementById(this.ID);
@@ -74015,7 +74031,10 @@ function ChartPictureVolProfileSettingMenu(divElement)
                 <span>固定范围成交量分布设置</span>\
                 <strong id='close' class='icon iconfont icon-close'></strong>\
             </div>\
-            <div class='parameter-content'><input class='row-line' value=${valueAreaVol} />VAVol</div>\
+            <div class='parameter-content'>
+                <input class='row-line' value=${valueAreaVol} />VAVol <br>
+                <input class='row-line' value=${barPosition} />BarPosition
+            </div>\
             <div class='parameter-footer'>\
                 <button class='submit' >确定</button>\
                 <button class='cancel' >取消</button>\
@@ -74050,6 +74069,9 @@ function ChartPictureVolProfileSettingMenu(divElement)
         {
             var value=div.getElementsByClassName("row-line")[0].value;
             self.ChartPicture.VAVol=parseFloat(value);
+            var value=parseInt(div.getElementsByClassName("row-line")[1].value);
+            self.ChartPicture.BarPosition=value>0?1:0;
+
             self.ChartPicture.RequestVolumeProfileData();
             self.Close();
         }
