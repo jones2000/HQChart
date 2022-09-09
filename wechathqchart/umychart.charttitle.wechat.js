@@ -452,18 +452,28 @@ function DynamicKLineTitlePainting()
         }
 
         var text = IFrameSplitOperator.FormatDateString(item.Date); //日期
-        if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
-
-        //时间
-        //console.log(`[DrawSingleLine] ${this.Period} ${item.Time} ${item.Date}`);
-        if (ChartData.IsMinutePeriod(this.Period, true) && IFrameSplitOperator.IsNumber(item.Time))
+        if (ChartData.IsDayPeriod(this.Period, true))
         {
-            var text = IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM");
             if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
         }
-        else if (ChartData.IsSecondPeriod(this.Period) && IFrameSplitOperator.IsNumber(item.Time))
+        else if (ChartData.IsMinutePeriod(this.Period, true))
         {
-            var text = IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS");
+            if (IFrameSplitOperator.IsNumber(item.Time))
+            {
+                var timeText = IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM");
+                text=`${text} ${timeText}`;
+            }
+            
+            if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
+        }
+        else if (ChartData.IsSecondPeriod(this.Period) )
+        {
+            if (IFrameSplitOperator.IsNumber(item.Time))
+            {
+                var timeText = IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS");
+                text=`${text} ${timeText}`;
+            }
+            
             if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
         }
 

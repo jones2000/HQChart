@@ -261,6 +261,17 @@ function GetBlackStyle()
             {
                 MoveOnColor:"rgb(255,255,255)",
                 Color:"rgb(156,156,156)"
+            },
+            //最大化, 最小化
+            MaxMinWindow:
+            {
+                MoveOnColor:"rgb(255,255,255)",
+                Color:"rgb(156,156,156)"
+            },
+            TitleWindow:
+            {
+                MoveOnColor:"rgb(255,255,255)",
+                Color:"rgb(156,156,156)"
             }
         },
         
