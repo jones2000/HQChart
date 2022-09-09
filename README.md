@@ -136,6 +136,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![成交量分布图](/小程序行情模块用例/image/hqchart_vol2.gif)
 * 彩色K线柱子
 ![彩色K线柱子](/小程序行情模块用例/image/kline_color.gif)
+* 指标窗口最大，最小化
+![指标窗口最大，最小化](/小程序行情模块用例/image/index_title.gif)
 
 # 2. 走势图
 * 支持指标 <br>
