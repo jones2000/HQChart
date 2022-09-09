@@ -79,7 +79,12 @@ function DynamicKLineTitlePainting()
     this.IsShow = true;       //是否显示
     this.LineCount = 1;         //默认显示1行
     this.SpaceWidth = 1;        //空格宽度  
-    this.TextSpace=-1;           //文字之间的间距
+    this.TextSpace=-1;          //文字之间的间距
+
+    this.DateTimeSpace=2;       //日期时间向后间距
+    this.PeriodSpace=1;         //周期向后间距
+    this.NameSpace=1;           //名字向后间距
+
     this.Period;                //周期  
 
     this.UpColor = g_JSChartResource.UpTextColor;
@@ -440,6 +445,7 @@ function DynamicKLineTitlePainting()
         if (this.IsShowName) //名称
         {
             if (!this.DrawKLineText(this.Name, this.NameColor, position, bDrawTitle==true)) return;
+            position.Left+=this.NameSpace;
         }
 
         if (this.IsShowSettingInfo) //周期 复权信息
@@ -449,12 +455,14 @@ function DynamicKLineTitlePainting()
             var text = "(" + periodName + ")";
             if (rightName) text = "(" + periodName + " " + rightName + ")";
             if (!this.DrawKLineText(text, this.SettingColor, position, bDrawTitle==true)) return;
+            position.Left+=this.PeriodSpace;
         }
 
         var text = IFrameSplitOperator.FormatDateString(item.Date); //日期
         if (ChartData.IsDayPeriod(this.Period, true))
         {
             if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
+            position.Left+=this.DateTimeSpace;
         }
         else if (ChartData.IsMinutePeriod(this.Period, true))
         {
@@ -465,6 +473,7 @@ function DynamicKLineTitlePainting()
             }
             
             if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
+            position.Left+=this.DateTimeSpace;
         }
         else if (ChartData.IsSecondPeriod(this.Period) )
         {
@@ -475,6 +484,7 @@ function DynamicKLineTitlePainting()
             }
             
             if (!this.DrawKLineText(text, this.DateTimeColor, position)) return;
+            position.Left+=this.DateTimeSpace;
         }
 
         var color = this.GetColor(item.Open, item.YClose);
