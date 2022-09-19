@@ -17878,7 +17878,8 @@ var HQ_DATA_TYPE=
 var SCRIPT_CHART_NAME=
 {
     OVERLAY_BARS:"OVERLAY_BARS",     //叠加柱子图
-    KLINE_TABLE:"KLINE_TABLE"
+    KLINE_TABLE:"KLINE_TABLE",
+    SCATTER_PLOT:"SCATTER_PLOT",     //散点图
 }
 
 
@@ -19175,6 +19176,23 @@ function ScriptIndex(name,script,args,option)
         hqChart.TitlePaint[titleIndex].Data[i]=titleData;
     }
 
+    this.CreateScatterPlot=function(hqChart,windowIndex,varItem,i)
+    {
+        var chart=new ChartScatterPlot();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.HQChart=hqChart;
+        chart.Identify=this.Guid;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+        chart.Color=varItem.Draw.Color;
+        chart.Radius=varItem.Draw.Radius;
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateColorKLine=function(hqChart,windowIndex,varItem,i)
     {
         let chart=new ChartColorKline();
@@ -19457,6 +19475,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case SCRIPT_CHART_NAME.KLINE_TABLE:
                         this.CreateKLineTable(hqChart,windowIndex,item,i);
+                        break;
+                    case SCRIPT_CHART_NAME.SCATTER_PLOT:
+                        this.CreateScatterPlot(hqChart,windowIndex,item,i);
                         break;
                     default:
                         {
@@ -20611,7 +20632,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         });
     }
 
-    //.net 新版后台指标计算格式
+    //py 后台指标计算格式
     this.RecvAPIData2=function(data,hqChart,windowIndex,hisData)
     {
         JSConsole.Complier.Log('[APIScriptIndex::RecvAPIData2] recv data ', this.Name,data );
@@ -21206,8 +21227,9 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
         //把数据拟合到kdata上
         var result=[];
+        if (!outVar) return result;
         
-        for(var i in outVar)
+        for(var i=0;i<outVar.length; ++i)
         {
             var item=outVar[i];
             var indexData=[];
@@ -21296,6 +21318,19 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.LineWidth=draw.LineWidth;
                     drawItem.BarType=draw.BarType;
                     drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.SCATTER_PLOT)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    //默认的值
+                    drawItem.Color=draw.Color;  
+                    drawItem.Radius=draw.Radius;
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);

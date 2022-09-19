@@ -9583,6 +9583,28 @@ function JSChartContainer(uielement, OffscreenElement)
             this.Tooltip.innerHTML=format.Text;;
             this.Tooltip.style.display = "block";
         }
+        else if (toolTip.Type==6)   //散点图
+        {
+            var left = x;
+            var top = y;
+
+            var format=g_DivTooltipDataForamt.Create('ScatterPlotDataStringFormat');
+            format.Value=toolTip;
+            format.Symbol=this.Symbol;
+            format.Period=this.Period;
+            format.LanguageID=this.LanguageID;
+            if (!format.Operator()) return;
+            var width=format.Width;
+
+            this.Tooltip.className='jchart-charscatterplot-tooltip'; //OX指标数据
+            this.Tooltip.style.position = "absolute";
+            this.Tooltip.style.left = left + "px";
+            this.Tooltip.style.top = (top +xMove)+ "px";
+            this.Tooltip.style.width = width+"px";
+            this.Tooltip.style.height =null;
+            this.Tooltip.innerHTML=format.Text;;
+            this.Tooltip.style.display = "block";
+        }
     }
 
     this.HideTooltip=function()
@@ -24411,6 +24433,8 @@ function ChartKLine()
 
     this.GetTooltipData=function(x,y,tooltip)
     {
+        if (!this.IsShow) return false;
+
         for(var i in this.TradeIconTooltipRect)
         {
             var item=this.TradeIconTooltipRect[i];
@@ -27379,6 +27403,208 @@ function ChartLine()
         if (drawCount>0) this.Canvas.stroke();
         this.Canvas.restore();
     }
+}
+
+//散点图
+function ChartScatterPlot()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartScatterPlot';      //类名
+    //默认点配置
+    this.Color="rgb(255,193,37)";           //点颜色
+    this.Radius=3;                          //半径
+    //this.Data.Data [ {Value:, Radius:半径(可选), Color:颜色(可选), ColorBorder:边框颜色(可选)}, .....]
+    this.TooltipData=[];
+
+    this.Draw=function()
+    {
+        this.TooltipData=[];
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (this.IsShowIndexTitleOnly()) return;
+
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.Data || !this.Data.Data) return;
+
+        this.DrawScatterPlot();
+    }
+
+    this.DrawScatterPlot=function()
+    {
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var isMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        if (bHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var chartright=border.BottomEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+        }
+
+        var lockRect=this.GetLockRect();
+        if (lockRect)
+        {
+            if (bHScreen) chartright=lockRect.Top;
+            else chartright=lockRect.Left;
+        }
+
+        this.Canvas.save();
+        this.ClipClient(bHScreen);
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var item=this.Data.Data[i];
+            if (!item) continue;
+
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            if (x>chartright) break;
+
+            if (Array.isArray(item))
+            {
+                for(var j=0;j<item.length;++j)
+                {
+                    this.DrawItem(item[j], x);
+                }
+            }
+            else
+            {
+                this.DrawItem(item, x);
+            }
+           
+        }
+
+        this.Canvas.restore();
+    }
+
+    this.DrawItem=function(item, x)
+    {
+        if (!item) return;
+        if (!IFrameSplitOperator.IsNumber(item.Value)) return;
+
+        var y=this.GetYFromData(item.Value,false);
+
+        var radius=this.Radius;
+        if (item.Radius) radius=item.Radius;
+        if (!IFrameSplitOperator.IsNumber(radius)) return;
+
+        this.Canvas.beginPath();
+        this.Canvas.arc(x, y, radius, 0, 2 * Math.PI);
+
+        var color=this.Color;
+        if (item.Color) color=item.Color;
+        if (color)
+        {
+            this.Canvas.fillStyle=color;
+            this.Canvas.fill();
+        }
+
+        if (item.ColorBorder) 
+        {
+            this.Canvas.strokeStyle=item.ColorBorder;
+            this.Canvas.stroke()
+        }
+
+        var itemTooltip={ X:x, Y:y, Radius:radius, Data:item };
+        this.TooltipData.push(itemTooltip);
+    }
+
+    this.GetMaxMin=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        if (this.ChartFrame.GlobalOption && this.ChartFrame.GlobalOption.IsValueFullRange)
+        {
+            start=0;
+            xPointCount=this.Data.Data.length;
+        }
+        
+        var range={};
+        range.Min=null;
+        range.Max=null;
+
+        if(!this.Data || !this.Data.Data) return range;
+
+        for(var i=start,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var point=this.Data.Data[i];
+            if (!point) continue;
+
+            if (Array.isArray(point))
+            {
+                for(var k=0;k<point.length;++k)
+                {
+                    var item=point[k];
+                    if (!IFrameSplitOperator.IsNumber(item.Value)) continue;
+
+                    if (range.Max==null) range.Max=item.Value;
+                    if (range.Min==null) range.Min=item.Value;
+        
+                    if (range.Max<item.Value) range.Max=item.Value;
+                    if (range.Min>item.Value) range.Min=item.Value;
+                }
+            }
+            else
+            {
+                if (!IFrameSplitOperator.IsNumber(point.Value)) continue;
+                if (range.Max==null) range.Max=point.Value;
+                if (range.Min==null) range.Min=point.Value;
+    
+                if (range.Max<point.Value) range.Max=point.Value;
+                if (range.Min>point.Value) range.Min=point.Value;
+            }
+        }
+
+        return range;
+    }
+
+    this.GetTooltipData=function(x,y,tooltip)
+    {
+        if (!this.IsShow) return false;
+        
+        for(var i=0;i<this.TooltipData.length; ++i)
+        {
+            var item=this.TooltipData[i];
+            
+            this.Canvas.beginPath();
+            this.Canvas.arc(item.X, item.Y, item.Radius, 0, 2 * Math.PI);
+            if (this.Canvas.isPointInPath(x,y))
+            {
+                JSConsole.Chart.Log('[ChartScatterPlot::GetTooltipData] point', item);
+                tooltip.Data=item;
+                tooltip.ChartPaint=this;
+                tooltip.Type=6; //散点图
+                return true;
+            }
+        }
+    }
+   
 }
 
 //子线段
@@ -44054,6 +44280,33 @@ function ChartOXDataStringFormat()
     }
 }
 
+function ScatterPlotDataStringFormat()
+{
+    this.newMethod=IChangeStringFormat;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Width=200;
+
+    this.Operator=function()
+    {
+        var data=this.Value.Data;
+        if (!data || !data.Data) return false;
+        if (!IFrameSplitOperator.IsNonEmptyArray(data.Data.Tooltip)) return false;
+
+        this.Text="";
+        for(var i=0;i<data.Data.Tooltip.length;++i)
+        {
+            var item=data.Data.Tooltip[i];
+
+            var content=`<span class='tooltip-minuteinfo-content'>${item}</span>`;
+            this.Text+=content+"<br>";
+        }
+
+        return true;
+    }
+}
+
 function DivTooltipDataForamt()
 {
     this.DataMap=new Map(
@@ -44064,6 +44317,7 @@ function DivTooltipDataForamt()
             ["KLineInfoDataStringFormat",       { Create:function() { return new KLineInfoDataStringFormat(); }  }],
             ["IconDataStringFormat",            { Create:function() { return new IconDataStringFormat(); } }],
             ["ChartOXDataStringFormat",         { Create:function() { return new ChartOXDataStringFormat(); } }],
+            ["ScatterPlotDataStringFormat", { Create:function() { return new ScatterPlotDataStringFormat(); }}],
 
             ["CorssCursor_XStringFormat", { Create:function() { return new HQDateStringFormat(); } }],
             ["CorssCursor_YStringFormat", { Create:function() { return new HQPriceStringFormat(); } }]
@@ -96116,7 +96370,8 @@ var HQ_DATA_TYPE=
 var SCRIPT_CHART_NAME=
 {
     OVERLAY_BARS:"OVERLAY_BARS",     //叠加柱子图
-    KLINE_TABLE:"KLINE_TABLE"
+    KLINE_TABLE:"KLINE_TABLE",
+    SCATTER_PLOT:"SCATTER_PLOT",     //散点图
 }
 
 
@@ -97413,6 +97668,23 @@ function ScriptIndex(name,script,args,option)
         hqChart.TitlePaint[titleIndex].Data[i]=titleData;
     }
 
+    this.CreateScatterPlot=function(hqChart,windowIndex,varItem,i)
+    {
+        var chart=new ChartScatterPlot();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.HQChart=hqChart;
+        chart.Identify=this.Guid;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+        chart.Color=varItem.Draw.Color;
+        chart.Radius=varItem.Draw.Radius;
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateColorKLine=function(hqChart,windowIndex,varItem,i)
     {
         let chart=new ChartColorKline();
@@ -97695,6 +97967,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case SCRIPT_CHART_NAME.KLINE_TABLE:
                         this.CreateKLineTable(hqChart,windowIndex,item,i);
+                        break;
+                    case SCRIPT_CHART_NAME.SCATTER_PLOT:
+                        this.CreateScatterPlot(hqChart,windowIndex,item,i);
                         break;
                     default:
                         {
@@ -98849,7 +99124,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         });
     }
 
-    //.net 新版后台指标计算格式
+    //py 后台指标计算格式
     this.RecvAPIData2=function(data,hqChart,windowIndex,hisData)
     {
         JSConsole.Complier.Log('[APIScriptIndex::RecvAPIData2] recv data ', this.Name,data );
@@ -99444,8 +99719,9 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
         //把数据拟合到kdata上
         var result=[];
+        if (!outVar) return result;
         
-        for(var i in outVar)
+        for(var i=0;i<outVar.length; ++i)
         {
             var item=outVar[i];
             var indexData=[];
@@ -99534,6 +99810,19 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.LineWidth=draw.LineWidth;
                     drawItem.BarType=draw.BarType;
                     drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.SCATTER_PLOT)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    //默认的值
+                    drawItem.Color=draw.Color;  
+                    drawItem.Radius=draw.Radius;
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);

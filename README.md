@@ -140,6 +140,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![指标窗口最大，最小化](/小程序行情模块用例/image/index_title.gif)
 * 区间选择支持拖拽移动
 ![区间选择支持拖拽移动](/小程序行情模块用例/image/kline_selectrect.gif)
+* 散点图指标
+![散点图指标](/小程序行情模块用例/image/kline_SCATTERPLOT.gif)
+
 
 # 2. 走势图
 * 支持指标 <br>
