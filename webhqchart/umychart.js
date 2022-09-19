@@ -733,6 +733,9 @@ function JSChart(divElement, bOffscreen)
 
             if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
             if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
+
+            if (IFrameSplitOperator.IsNumber(item.HPenType)) chart.ChartCorssCursor.HPenType=item.HPenType;
+            if (IFrameSplitOperator.IsNumber(item.VPenType)) chart.ChartCorssCursor.VPenType=item.VPenType;
         }
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
@@ -2389,7 +2392,7 @@ function JSChartContainer(uielement, OffscreenElement)
     this.PressTime=500;
 
     this.NetworkFilter;         //网络请求回调 function(data, callback);
-    this.LastMouseStatus={ }
+    this.LastMouseStatus={ MouseOnToolbar:null }; // MouseOnToolbar={ Rect:{}, Title: }
     this.ClickDownPoint;         //鼠标点击坐标 {X, Y}, 鼠标放开以后清空为null
     this.IsDestroy=false;        //是否已经销毁了
 
@@ -4514,6 +4517,8 @@ function JSChartContainer(uielement, OffscreenElement)
     //画动态信息
     this.DrawDynamicInfo=function(option)
     {
+        this.LastMouseStatus.MouseOnToolbar=null;   //鼠标在工具栏按钮上
+
         if (this.Frame.ScreenImageData==null) return;
 
         var isErase=false;
@@ -4553,7 +4558,7 @@ function JSChartContainer(uielement, OffscreenElement)
             if (item.IsDynamic && item.DrawAfterTitle===false && item.IsAnimation==false) 
             {
                 item.Draw();
-                if (item.DrawToolbar) item.DrawToolbar(moveonPoint);
+                if (item.DrawToolbar) item.DrawToolbar(moveonPoint, this.LastMouseStatus);
             }
         }
 
@@ -4664,7 +4669,11 @@ function JSChartContainer(uielement, OffscreenElement)
             this.CurrentChartDrawPicture.Draw();
         }
 
-        
+        if (this.LastMouseStatus.MouseOnToolbar)    //工具栏按钮提示信息
+        {
+            var frame=this.LastMouseStatus.MouseOnToolbar.Frame;
+            if (frame && frame.DrawToolbarTooltip) frame.DrawToolbarTooltip(this.LastMouseStatus.MouseOnToolbar);
+        }
 
         this.OffscreenToShowCanvas();
 
@@ -7945,6 +7954,8 @@ function AverageWidthFrame()
     this.MaxMinWindowButton=CloneData(g_JSChartResource.Buttons.MaxMinWindow);
     this.TitleWindowButton=CloneData(g_JSChartResource.Buttons.TitleWindow);
 
+    this.ButtonTooltip=CloneData(g_JSChartResource.Buttons.Tooltip);
+
     //画图工具刻度
     
     this.DrawPicture={ 
@@ -7967,6 +7978,7 @@ function AverageWidthFrame()
             this.ModifyIndexParamButton=CloneData(g_JSChartResource.Buttons.ModifyIndexParam);
             this.MaxMinWindowButton=CloneData(g_JSChartResource.Buttons.MaxMinWindow);
             this.TitleWindowButton=CloneData(g_JSChartResource.Buttons.TitleWindow);
+            this.ButtonTooltip=CloneData(g_JSChartResource.Buttons.Tooltip);
         }
     }
 
@@ -7983,7 +7995,7 @@ function AverageWidthFrame()
         this.DrawVertical();
     }
 
-    this.DrawTitleButton=function(aryButton, moveonPoint)
+    this.DrawTitleButton=function(aryButton, moveonPoint, mouseStatus)
     {
         var border=this.GetBorder();
         if (this.IsHScreen)
@@ -8036,9 +8048,13 @@ function AverageWidthFrame()
                 var font=`${size}px ${item.Style.Family}`;
                 var rtButton={ Left:xBotton, Top:yButton-size/2, Right:xBotton+size+item.Style.MerginLeft, Bottom:yButton+size/2, Width:size+item.Style.MerginLeft, Height:size };
                 var color=item.Style.Color;
-                if (moveonPoint && 
-                    (moveonPoint.X>=rtButton.Left && moveonPoint.X<rtButton.Right && moveonPoint.Y>=rtButton.Top && moveonPoint.Y<=rtButton.Bottom))
+                if (moveonPoint && (moveonPoint.X>=rtButton.Left && moveonPoint.X<rtButton.Right && moveonPoint.Y>=rtButton.Top && moveonPoint.Y<=rtButton.Bottom))
+                {
                     color=item.Style.MoveOnColor;
+                    if (mouseStatus)
+                        mouseStatus.MouseOnToolbar={ Rect:rtButton, Item:item, Frame:this, Point:{X:moveonPoint.X, Y:moveonPoint.Y} };
+                }
+                    
 
                 this.Canvas.fillStyle=color;
                 this.Canvas.font=font;
@@ -8051,6 +8067,58 @@ function AverageWidthFrame()
                 right=xBotton;
             }
         }
+    }
+
+    this.DrawToolbarTooltip=function(mouseOnToolbar)
+    {
+        if (!mouseOnToolbar) return;
+
+        var border=this.GetBorder();
+        
+        var text=null;
+        if (mouseOnToolbar.Item.TooltipText) 
+        {
+            text=mouseOnToolbar.Item.TooltipText;
+        }
+        else
+        {
+            var key='Toolbar-'+mouseOnToolbar.Item.ID;
+            text=g_JSChartLocalization.GetText(key,0);
+        }
+
+        if (!text) return;
+        
+        var pixelRatio=GetDevicePixelRatio();
+        
+        var xCenter=mouseOnToolbar.Rect.Left+mouseOnToolbar.Rect.Width/2;
+
+        this.Canvas.font=this.ButtonTooltip.Font;
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="middle";
+
+        var textWidth=this.Canvas.measureText(text).width+8;
+        var textHeight=this.GetFontHeight();
+        var bgHeight=textHeight+8;
+        if (JSCHART_BUTTON_ID.CLOSE_BEFOREOPEN_ID==mouseOnToolbar.Item.ID)
+        {
+            var x=mouseOnToolbar.Rect.Right+5;
+            var y=mouseOnToolbar.Rect.Top;
+        }
+        else
+        {
+            var x=xCenter-textWidth/2;
+            var y=border.Top-bgHeight;
+            if (y<0) y=border.TopEx+1;
+            if (x+textWidth>border.ChartWidth) x=border.ChartWidth-textWidth-2;
+        }
+        
+        
+
+        this.Canvas.fillStyle=this.ButtonTooltip.ColorBG; 
+        this.Canvas.fillRect(x,y,textWidth,bgHeight);   //画一个背景色, 不然是一个黑的背景
+
+        this.Canvas.fillStyle=this.ButtonTooltip.Color;
+        this.Canvas.fillText(text, x+4,y+bgHeight/2);
     }
 
     //isLimit 是否限制在当前坐标下
@@ -9641,9 +9709,9 @@ function MinuteFrame()
     }
 
     //手绘,不用DOM,使用DOM太麻烦了
-    this.DrawToolbarV2=function(moveonPoint)
+    this.DrawToolbarV2=function(moveonPoint, mouseStatus)
     {
-        if (this.Identify==0) this.DrawCloseBeforeButton(moveonPoint);  //盘前集合竞价关闭按钮
+        if (this.Identify==0) this.DrawCloseBeforeButton(moveonPoint, mouseStatus);  //盘前集合竞价关闭按钮
 
         if (this.ChartBorder.TitleHeight<5) return;
         if (this.Identify==0 || this.Identify==1) return;
@@ -9661,14 +9729,14 @@ function MinuteFrame()
             for(var i=0;i<this.CustomToolbar.length;++i)
             {
                 var item=this.CustomToolbar[i];
-                if (item.ID && item.Style) aryButton.push({ ID:item.ID, Style:item.Style });
+                if (item.ID && item.Style) aryButton.push({ ID:item.ID, Style:item.Style, TooltipText:item.TooltipText });
             }
         }
 
-        this.DrawTitleButton(aryButton, moveonPoint);
+        this.DrawTitleButton(aryButton, moveonPoint, mouseStatus);
     }
 
-    this.DrawCloseBeforeButton=function(moveonPoint)
+    this.DrawCloseBeforeButton=function(moveonPoint, mouseStatus)
     {
         if (this.Identify!=0) return;
         var border=this.ChartBorder.GetBorder();
@@ -9679,10 +9747,16 @@ function MinuteFrame()
         rtButton.Right=rtButton.Left+this.BeforeCloseIcon.Size;
         rtButton.Bottom=rtButton.Top+this.BeforeCloseIcon.Size;
 
+        var item={ Rect:rtButton, Name:"集合竞价关闭按钮" , ID:JSCHART_BUTTON_ID.CLOSE_BEFOREOPEN_ID };
         var color=this.BeforeCloseIcon.Color;
         if (moveonPoint && 
             (moveonPoint.X>=rtButton.Left && moveonPoint.X<rtButton.Right && moveonPoint.Y>=rtButton.Top && moveonPoint.Y<=rtButton.Bottom))
+        {
             color=this.BeforeCloseIcon.MoveOnColor;
+            if (mouseStatus)
+                mouseStatus.MouseOnToolbar={ Rect:rtButton, Item:item, Frame:this, Point:{X:moveonPoint.X, Y:moveonPoint.Y} };
+        }
+            
 
         var font=`${this.BeforeCloseIcon.Size}px ${this.BeforeCloseIcon.Family}`;
         this.Canvas.font=font;
@@ -9691,7 +9765,7 @@ function MinuteFrame()
         this.Canvas.textBaseline='top';
         this.Canvas.fillText(this.BeforeCloseIcon.Text,border.Left,border.TopEx);
         
-        this.Buttons.push( { Rect:rtButton, Name:"集合竞价关闭按钮" , ID:JSCHART_BUTTON_ID.CLOSE_BEFOREOPEN_ID });
+        this.Buttons.push(item);
     }
 
     this.DrawMultiDayBeforeDataBG=function(border)
@@ -11415,14 +11489,14 @@ function KLineFrame()
     }
 
     //手绘,不用DOM,使用DOM太麻烦了
-    this.DrawToolbarV2=function(moveonPoint)
+    this.DrawToolbarV2=function(moveonPoint, mouseStatus)
     {
         this.Buttons=[];
         if (this.IsMinSize==true) return;
         if (this.ChartBorder.TitleHeight<5) return;
 
         var aryButton=[];
-        //第1个窗口不能关闭) 
+        //第1个窗口不能关闭
         if (this.CloseIndex && this.Identify!==0)  aryButton.push( { ID:JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW, Style:this.CloseWindowButton });
         if (this.MaxMinWindow && this.Identify!=0) aryButton.push({ ID:JSCHART_BUTTON_ID.MAX_MIN_WINDOW, Style:this.MaxMinWindowButton })
         if (this.TitlteWindow && this.Identify!=0) aryButton.push({ ID:JSCHART_BUTTON_ID.TITLE_WINDOW, Style:this.TitleWindowButton })
@@ -11436,11 +11510,11 @@ function KLineFrame()
             for(var i=0;i<this.CustomToolbar.length;++i)
             {
                 var item=this.CustomToolbar[i];
-                if (item.ID && item.Style) aryButton.push({ ID:item.ID, Style:item.Style });
+                if (item.ID && item.Style) aryButton.push({ ID:item.ID, Style:item.Style, TooltipText:item.TooltipText});
             }
         }
 
-        this.DrawTitleButton(aryButton,moveonPoint );
+        this.DrawTitleButton(aryButton,moveonPoint, mouseStatus);
     }
 
     this.DrawFrame=function()
@@ -12483,7 +12557,7 @@ function OverlayKLineFrame()
         this.Canvas.stroke();
     }
 
-    this.DrawToolbar=function(moveonPoint, isMinSize)
+    this.DrawToolbar=function(moveonPoint, isMinSize, mouseStatus)
     {
         this.Buttons=[];
         if (isMinSize==true) return;
@@ -12505,9 +12579,13 @@ function OverlayKLineFrame()
             var font=`${size}px ${item.Style.Family}`;
             var rtButton={ Left:xBotton, Top:yButton-size/2, Right:xBotton+size+item.Style.MerginLeft, Bottom:yButton+size/2, Width:size+item.Style.MerginLeft, Height:size };
             var color=this.CloseButton.Color;
-            if (moveonPoint && 
-                (moveonPoint.X>=rtButton.Left && moveonPoint.X<rtButton.Right && moveonPoint.Y>=rtButton.Top && moveonPoint.Y<=rtButton.Bottom))
+            if (moveonPoint && (moveonPoint.X>=rtButton.Left && moveonPoint.X<rtButton.Right && moveonPoint.Y>=rtButton.Top && moveonPoint.Y<=rtButton.Bottom))
+            {
                 color=item.Style.MoveOnColor;
+                if (mouseStatus)
+                    mouseStatus.MouseOnToolbar={ Rect:rtButton, Item:item, Frame:this, Point:{X:moveonPoint.X, Y:moveonPoint.Y} };
+            }
+                
 
             this.Canvas.fillStyle=color;
             this.Canvas.font=font;
@@ -14180,14 +14258,14 @@ function HQTradeFrame()
             
             if (frame.ToolbarButtonStyle==1)
             {
-                if (frame.DrawToolbarV2) frame.DrawToolbarV2(moveonPoint);
+                if (frame.DrawToolbarV2) frame.DrawToolbarV2(moveonPoint, mouseStatus);
             }
 
             for(var j=0;j<item.OverlayIndex.length;++j)
             {
                 var overlayItem=item.OverlayIndex[j];
                 var overlayFrame=overlayItem.Frame;
-                if (overlayFrame.DrawToolbar) overlayFrame.DrawToolbar(moveonPoint, frame.IsMinSize);
+                if (overlayFrame.DrawToolbar) overlayFrame.DrawToolbar(moveonPoint, frame.IsMinSize, mouseStatus);
             }
         }
     }
@@ -26055,6 +26133,9 @@ function ChartMinutePriceLine()
         var ptLast={};  //最后一个点
         var drawCount=0;
         var pointCount=0;
+        
+        this.Canvas.save();
+        if (IFrameSplitOperator.IsPlusNumber(this.LineWidth>0)) this.Canvas.lineWidth=this.LineWidth;
         for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
         {
             var value=null;
@@ -26133,6 +26214,8 @@ function ChartMinutePriceLine()
                 this.Canvas.fill();
             }
         }
+
+        this.Canvas.restore();
 
         this.DrawColorLine();
         this.DrawAfterClose();      //收盘集合竞价
@@ -31972,6 +32055,7 @@ function StockChip()
     this.DefaultButton=CloneData(g_JSChartResource.StockChip.DefaultButton);     //默认筹码分布图
     this.LongButton=CloneData(g_JSChartResource.StockChip.LongButton);           //远期筹码分布图
     this.RecentButton=CloneData(g_JSChartResource.StockChip.RecentButton);       //近期筹码分布图
+    this.ButtonTooltip=CloneData(g_JSChartResource.Buttons.Tooltip);
 
     this.DAY_COLOR=
     [
@@ -32000,6 +32084,7 @@ function StockChip()
         this.DefaultButton=CloneData(g_JSChartResource.StockChip.DefaultButton);     //默认筹码分布图
         this.LongButton=CloneData(g_JSChartResource.StockChip.LongButton);           //远期筹码分布图
         this.RecentButton=CloneData(g_JSChartResource.StockChip.RecentButton);       //近期筹码分布图
+        this.ButtonTooltip=CloneData(g_JSChartResource.Buttons.Tooltip);
     }
     
     this.Draw=function()
@@ -32146,7 +32231,7 @@ function StockChip()
         }
     }
 
-    this.DrawToolbar=function(moveonPoint)
+    this.DrawToolbar=function(moveonPoint, mouseStatus)
     {
         this.Buttons=[];
 
@@ -32171,15 +32256,21 @@ function StockChip()
             var rtButton={ Left:xBotton, Top:yButton-size/2, Right:xBotton+size+item.Style.MerginLeft, Bottom:yButton+size/2, Width:size+item.Style.MerginLeft, Height:size };
             var color=item.Style.Color;
 
+            var btnItem={ ID:item.ID, Rect:rtButton };
             if (this.ShowType==item.ShowType)
             {
                 color=item.Style.SelectedColor;
+                if (mouseStatus && moveonPoint &&  (moveonPoint.X>=rtButton.Left && moveonPoint.X<rtButton.Right && moveonPoint.Y>=rtButton.Top && moveonPoint.Y<=rtButton.Bottom))
+                    mouseStatus.MouseOnToolbar={ Rect:rtButton, Item:btnItem, Frame:this, Point:{X:moveonPoint.X, Y:moveonPoint.Y} };
             }
             else
             {
-                if (moveonPoint && 
-                    (moveonPoint.X>=rtButton.Left && moveonPoint.X<rtButton.Right && moveonPoint.Y>=rtButton.Top && moveonPoint.Y<=rtButton.Bottom))
+                if (moveonPoint &&  (moveonPoint.X>=rtButton.Left && moveonPoint.X<rtButton.Right && moveonPoint.Y>=rtButton.Top && moveonPoint.Y<=rtButton.Bottom))
+                {
                     color=item.Style.MoveOnColor;
+                    if (mouseStatus) mouseStatus.MouseOnToolbar={ Rect:rtButton, Item:btnItem, Frame:this, Point:{X:moveonPoint.X, Y:moveonPoint.Y} };
+                }
+                    
             }
             
             this.Canvas.fillStyle=color;
@@ -32188,10 +32279,44 @@ function StockChip()
             this.Canvas.textBaseline="middle";
             this.Canvas.fillText(item.Style.Text, xBotton, yButton);
 
-            this.Buttons.push({ ID:item.ID, Rect:rtButton });
+            this.Buttons.push(btnItem);
 
             right=xBotton;
         }
+    }
+
+    this.DrawToolbarTooltip=function(mouseOnToolbar)
+    {
+        if (!mouseOnToolbar) return;
+
+        var left=this.ClientRect.Left;
+        var right=this.ClientRect.Left+this.ClientRect.Width;
+        
+        var key='Toolbar-'+mouseOnToolbar.Item.ID;
+        text=g_JSChartLocalization.GetText(key,0);
+        
+        if (!text) return;
+        
+        var rtButton=mouseOnToolbar.Rect;
+        var xCenter=rtButton.Left+rtButton.Width/2;
+
+        this.Canvas.font=this.ButtonTooltip.Font;
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="middle";
+
+        var textWidth=this.Canvas.measureText(text).width+8;
+        var textHeight=this.GetFontHeight();
+        var bgHeight=textHeight+8;
+        var x=xCenter-textWidth/2;
+        var y=rtButton.Top-bgHeight;
+        if (y<0) y=rtButton.Bottom+1;
+        if (x+textWidth>right) x=right-textWidth-2;
+        
+        this.Canvas.fillStyle=this.ButtonTooltip.ColorBG; 
+        this.Canvas.fillRect(x,y,textWidth,bgHeight);   //画一个背景色, 不然是一个黑的背景
+
+        this.Canvas.fillStyle=this.ButtonTooltip.Color;
+        this.Canvas.fillText(text, x+4,y+bgHeight/2);
     }
 
     this.PtInButtons=function(x,y) //坐标是否在按钮上
@@ -39125,6 +39250,7 @@ function HQPriceStringFormat()
 
         var item=this.Frame.SubFrame[this.FrameID];
         if (!item || !item.Frame) return false;
+        if (!this.BeforeOpenData) return false;
 
         var range={ Max:this.BeforeOpenData.VolMax, Min:this.BeforeOpenData.VolMin };
         var y=this.Frame.IsHScreen? this.Point.X: this.Point.Y;
@@ -39143,6 +39269,7 @@ function HQPriceStringFormat()
 
         var item=this.Frame.SubFrame[this.FrameID];
         if (!item || !item.Frame) return false;
+        if (!this.AfterCloseData) return false;
 
         var range={ Max:this.AfterCloseData.VolMax, Min:this.AfterCloseData.VolMin };
         var y=this.Frame.IsHScreen? this.Point.X: this.Point.Y;
@@ -48241,6 +48368,7 @@ function JSChartResource()
     this.Minute.VolBarColor=null;                       //分时图成交量柱子颜色 默认不用, 设置了柱子就不是红绿了
     this.Minute.VolTitleColor="rgb(105,105,105)";
     this.Minute.PriceColor="rgb(50,171,205)";           //分时图价格线颜色
+    this.Minute.PriceLineWidth=1*GetDevicePixelRatio(); //价格线宽度
     this.Minute.AreaPriceColor='rgba(50,171,205,0.1)';  //价格的面积图
     this.Minute.AvPriceColor="rgb(238,127,9)";          //分时图均价线颜色
     this.Minute.PositionColor='rgb(218,165,32)';        //持仓量线段颜色
@@ -48617,6 +48745,14 @@ function JSChartResource()
             Text:"\ue6a6",
             Size:13*GetDevicePixelRatio(),
             MerginLeft:4
+        },
+
+        Tooltip:
+        {
+            Font:14*GetDevicePixelRatio() +"px 微软雅黑",
+            Color:'rgb(255,255,255)',
+            ColorBG:'rgb(42,46,57)',
+            ColorBorder:'rgb(0,0,0)'
         }
     }
    
@@ -49119,6 +49255,7 @@ function JSChartResource()
             if (style.Minute.VolBarColor) this.Minute.VolBarColor = style.Minute.VolBarColor;
             if (style.Minute.VolTitleColor) this.Minute.VolTitleColor = style.Minute.VolTitleColor;
             if (style.Minute.PriceColor) this.Minute.PriceColor = style.Minute.PriceColor;
+            if (IFrameSplitOperator.IsNumber(style.Minute.PriceLineWidth)) this.Minute.PriceLineWidth=style.Minute.PriceLineWidth;
             if (style.Minute.AvPriceColor) this.Minute.AvPriceColor = style.Minute.AvPriceColor;
             if (style.Minute.AreaPriceColor) this.Minute.AreaPriceColor = style.Minute.AreaPriceColor;
             if (style.Minute.PositionColor) this.Minute.PositionColor = style.Minute.PositionColor;
@@ -49881,8 +50018,24 @@ function JSChartLocalization()
 
         //深度图
         ["Depth-Price", {CN:"委托价", EN:"Price", TC:'委托價'}],
-        ["Depth-Sum", {CN:"累计", EN:"Sum", TC:'累計'}]
+        ["Depth-Sum", {CN:"累计", EN:"Sum", TC:'累計'}],
 
+        //工具栏提示信息
+        ["Toolbar-"+JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM, {CN:"调整指标参数", EN:"Change indicator parameters", TC:"调整指标参数"}],
+        ["Toolbar-"+JSCHART_BUTTON_ID.CHANGE_INDEX, {CN:"选择指标", EN:"Change indicator", TC:"切换指标"}],
+        ["Toolbar-"+JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW, {CN:"关闭窗口", EN:"Delete window", TC:"关闭指标窗口"}],
+        ["Toolbar-"+JSCHART_BUTTON_ID.OVERLAY_INDEX, {CN:"叠加指标", EN:"Overlay indicator", TC:"叠加指标"}],
+        ["Toolbar-"+JSCHART_BUTTON_ID.MODIFY_OVERLAY_INDEX_PARAM, {CN:"调整叠加指标参数", EN:"Change overlay indicator parameters", TC:"调整叠加指标参数"}],
+        ["Toolbar-"+JSCHART_BUTTON_ID.MAX_MIN_WINDOW, {CN:"最大化", EN:"Maximize", TC:"最大化"}],
+        ["Toolbar-"+JSCHART_BUTTON_ID.TITLE_WINDOW, {CN:"折叠窗口", EN:"Collapse window", TC:"折叠窗口"}],
+        ["Toolbar-"+JSCHART_BUTTON_ID.CLOSE_BEFOREOPEN_ID, {CN:"关闭集合竞价", EN:"Close call auction", TC:"关闭集合竞价"}],
+        ["Toolbar-"+JSCHART_BUTTON_ID.CLOSE_OVERLAY_INDEX, {CN:"关闭叠加指标", EN:"Delte overlay indicator", TC:"关闭叠加指标"}],
+        ["Toolbar-"+JSCHART_BUTTON_ID.CHIP_RECENT, {CN:"近期成本分布", EN:"Recent chip", TC:"近期成本分布"}],
+        ["Toolbar-"+JSCHART_BUTTON_ID.CHIP_LONG, {CN:"远期成本分布", EN:"Long chip", TC:"远期成本分布"}],
+        ["Toolbar-"+JSCHART_BUTTON_ID.CHIP_DEFULT, {CN:"默认筹码分布", EN:"Default chip", TC:"默认筹码分布"}]
+
+        
+        
     ]);
 
     this.GetText=function(key,language)
@@ -58942,6 +59095,7 @@ function MinuteChartContainer(uielement)
         minuteLine.Name="Minute-Line";
         minuteLine.Identify="Minute-Line";
         minuteLine.Color=g_JSChartResource.Minute.PriceColor;
+        minuteLine.LineWidth=g_JSChartResource.Minute.PriceLineWidth;
         minuteLine.AreaColor=g_JSChartResource.Minute.AreaPriceColor;
         minuteLine.GetEventCallback=(id)=>{ return this.GetEventCallback(id); };
 
@@ -59120,6 +59274,8 @@ function MinuteChartContainer(uielement)
         if (id<2) return;
         if (!this.Frame.SubFrame) return;
         if (id>=this.Frame.SubFrame.length) return;
+
+        this.Frame.RestoreIndexWindows();
 
         var delFrame=this.Frame.SubFrame[id].Frame;
         this.DeleteIndexPaint(id);
@@ -69730,6 +69886,14 @@ function MinuteRightMenu(divElement)
             {
                 text: "3个窗口",
                 click: function () { chart.ChangeIndexWindowCount(4); }
+            },
+            {
+                text: "4个窗口",
+                click: function () { chart.ChangeIndexWindowCount(5); }
+            },
+            {
+                text: "5个窗口",
+                click: function () { chart.ChangeIndexWindowCount(6); }
             }
         ];
 
