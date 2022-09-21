@@ -59721,7 +59721,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         var self = this;
         var dataCount=this.GetRequestDataCount();
         var firstDate=this.SourceData.Data[0].Date;
-        for(var i in this.OverlayChartPaint)
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
         {
             let item=this.OverlayChartPaint[i];
             if (!item.MainData) continue;   //等待主图股票数据未下载完
@@ -59748,7 +59748,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                     self.RecvOverlayHistoryData(data,item);
                 });
 
-                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+                if (obj.PreventDefault==true) continue;   //已被上层替换,不调用默认的网络请求
             }
 
             //请求数据
@@ -59829,7 +59829,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         var dataCount=this.GetRequestDataCount();
         var firstDate=this.SourceData.Data[0].Date;
         var firstTime=this.SourceData.Data[0].Time;
-        for(var i in this.OverlayChartPaint)
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
         {
             let item=this.OverlayChartPaint[i];
             if (!item.MainData) continue;   //等待主图股票数据未下载完
@@ -59856,7 +59856,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                     self.RecvOveralyHistoryMinuteData(data,item);
                 });
 
-                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+                if (obj.PreventDefault==true) continue;   //已被上层替换,不调用默认的网络请求
             }
 
             //请求数据
@@ -64551,13 +64551,13 @@ function MinuteChartContainer(uielement)
         var self = this;
         var date=this.TradeDate;    //最后一个交易日期
 
-        for(var i in this.OverlayChartPaint)
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
         {
             let item=this.OverlayChartPaint[i];
             if (!item.MainData || !(item.MainYClose>0) ) continue;
             if (item.Status!=OVERLAY_STATUS_ID.STATUS_NONE_ID) continue;
             var symbol=item.Symbol;
-            if (!symbol) return;
+            if (!symbol) continue;
 
             item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
 
@@ -64650,18 +64650,18 @@ function MinuteChartContainer(uielement)
     {
         var self = this;
         var days=[];
-        for(var i in this.DayData)
+        for(var i=0; i<this.DayData.length; ++i)
         {
             var item=this.DayData[i];
             days.push(item.Date);
         }
         if (days.length<=0) return;
 
-        for(var i in this.OverlayChartPaint)
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
         {
             let item=this.OverlayChartPaint[i]
             var symbol=item.Symbol;
-            if (!symbol) return;
+            if (!symbol) continue;
             if (item.Status!=OVERLAY_STATUS_ID.STATUS_NONE_ID) continue;
 
             item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
@@ -64682,7 +64682,7 @@ function MinuteChartContainer(uielement)
                     self.RecvOverlayHistoryMinuteData(data,item);
                 });
 
-                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+                if (obj.PreventDefault==true) continue;   //已被上层替换,不调用默认的网络请求
             }
 
             JSNetwork.HttpRequest({
