@@ -272,6 +272,7 @@ function JSChart(element)
         if (option.EnableZoomUpDown) chart.EnableZoomUpDown=option.EnableZoomUpDown;
         if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
         if (IFrameSplitOperator.IsNumber(option.DrawMoveWaitTime)) chart.DrawMoveWaitTime=option.DrawMoveWaitTime;
+        if (IFrameSplitOperator.IsNumber(option.PressTime))  chart.PressTime=option.PressTime;
         //创建子窗口
         chart.Create(option.Windows.length);
 
@@ -558,7 +559,8 @@ function JSChart(element)
         if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle = option.SplashTitle; //设置提示信息内容
         if (IFrameSplitOperator.IsBool(option.EnableZoomIndexWindow)) chart.EnableZoomIndexWindow=option.EnableZoomIndexWindow; //双击缩放附图
         if (IFrameSplitOperator.IsNumber(option.DrawMoveWaitTime)) chart.DrawMoveWaitTime=option.DrawMoveWaitTime;
-
+        if (IFrameSplitOperator.IsNumber(option.PressTime))  chart.PressTime=option.PressTime;
+        
         if (option.Language) 
         {
             var value=g_JSChartLocalization.GetLanguageID(option.Language);
@@ -1399,6 +1401,7 @@ function JSChartContainer(uielement)
     this.IsFullDraw=false;       //是否使用重绘模式 (可能会卡)
 
     this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+    this.PressTime=800; //长按十字光标显示时间
 
     //公共函数转发,不然要导出麻烦
     this.FormatDateString = IFrameSplitOperator.FormatDateString;
@@ -1609,7 +1612,7 @@ function JSChartContainer(uielement)
                         jsChart.OnMouseMove(x, y, e);
                     }
 
-                }, 800);
+                }, jsChart.PressTime);
             }
 
             var drag =
@@ -10202,7 +10205,7 @@ function MinuteChartContainer(uielement)
                 {
                     this.MouseDrag=null;
                     T_ShowCorssCursor();
-                }, 800);
+                }, this.PressTime);
             }
 
             this.MouseDrag=drag;
@@ -11949,7 +11952,7 @@ function KLineChartHScreenContainer(uielement)
                         var y = drag.Click.Y;
                         jsChart.OnMouseMove(x, y, e);
                     }
-                }, 800);
+                }, jsChart.PressTime);
             }
 
 

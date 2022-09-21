@@ -23525,8 +23525,10 @@ function ChartScatterPlot()
     this.GetTooltipData=function(x,y,tooltip)
     {
         if (!this.IsShow) return false;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.TooltipData)) return false;
         
-        for(var i=0;i<this.TooltipData.length; ++i)
+        for(var i=this.TooltipData.length-1; i>=0; --i)
         {
             var item=this.TooltipData[i];
             
