@@ -4415,10 +4415,17 @@ function ChartMultiLine()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName="ChartMultiLine";
     this.Lines = [];   // [ {Point:[ {Index, Value }, ], Color: }, ] 
     this.IsHScreen = false;
     this.LineWidth=1;
     this.LineDash;
+
+    //箭头配置
+    this.ArrawAngle=35;     //三角斜边一直线夹角
+    this.ArrawLength=10;    //三角斜边长度
+    this.ArrawLineWidth=5;  //箭头粗细
+    this.Arrow={ Start:false, End:false };  //Start=是否绘制开始箭头 <-   End=是否绘制结束箭头 ->
 
     this.Draw = function () 
     {
@@ -4430,11 +4437,14 @@ function ChartMultiLine()
         var offset = this.Data.DataOffset;
 
         var drawLines = [];
-        for (var i in this.Lines) 
+        var arrowLines=[];
+        for (var i=0; i<this.Lines.length; ++i) 
         {
             var line = this.Lines[i];
             var drawPoints = { Point: [], Color: line.Color };
-            for (var j in line.Point) 
+            var drawArrowPoints={ Start:[], End:[] };
+            if (line.BGColor) drawPoints.BGColor=line.BGColor;
+            for (var j=0;j<line.Point.length; ++j) 
             {
                 var point = line.Point[j];
                 if (!IFrameSplitOperator.IsNumber(point.Index)) continue;
@@ -4444,44 +4454,124 @@ function ChartMultiLine()
                 {
                     var x = this.ChartFrame.GetXFromIndex(index);
                     var y = this.ChartFrame.GetYFromData(point.Value);
+                    var pointItem={X:x, Y:y, End:false };
                     drawPoints.Point.push({ X: x, Y: y });
+
+                    if (j==0 || j==1) drawArrowPoints.Start.push(pointItem);    //起始点
+                    if (j==line.Point.length-1 || j==line.Point.length-2) drawArrowPoints.End.push(pointItem);  //结束点
+                }
+                else
+                {
+                    if (drawPoints.Point.length>0) drawPoints.Point[drawPoints.Point.length-1].End=true;  //点断开
                 }
             }
 
-            if (drawPoints.Point.length >= 2) drawLines.push(drawPoints)
+            if (drawPoints.Point.length >= 2) 
+            {
+                drawLines.push(drawPoints);
+                arrowLines.push(drawArrowPoints);
+            }
         }
 
         this.Canvas.save();
-        for (var i in drawLines) 
+        for (var i=0; i<drawLines.length; ++i) 
         {
             if (this.LineDash) this.Canvas.setLineDash(this.LineDash);
             if (IFrameSplitOperator.IsPlusNumber(this.LineWidth)) this.Canvas.lineWidth=this.LineWidth;
             else this.Canvas.lineWidth=1;
 
             var item = drawLines[i];
-            this.DrawLine(item);
+            this.DrawLine(item, arrowLines[i]);
         }
         this.Canvas.restore();
     }
 
-    this.DrawLine = function (line) 
+    this.DrawLine = function (line, arrow) 
     {
+        if (line.BGColor)   //背景色
+        {
+            this.Canvas.fillStyle=line.BGColor;
+            for(var i=0; i<line.Point.length; ++i)
+            {
+                var item=line.Point[i];
+                if (i==0)
+                {
+                    this.Canvas.beginPath();
+                    if (this.IsHScreen) this.Canvas.moveTo(item.Y,item.X);
+                    else this.Canvas.moveTo(item.X,item.Y);
+                }
+                else
+                {
+                    if (this.IsHScreen) this.Canvas.lineTo(item.Y,item.X);
+                    else this.Canvas.lineTo(item.X,item.Y);
+                }
+            }
+            this.Canvas.closePath();
+            this.Canvas.fill();
+        }
+
         this.Canvas.strokeStyle = line.Color;
-        for (var i in line.Point) 
+        var drawCount=0;
+        for (var i=0; i<line.Point.length; ++i) 
         {
             var item = line.Point[i];
-            if (i == 0) 
+            if (drawCount==0) 
             {
                 this.Canvas.beginPath();
                 if (this.IsHScreen) this.Canvas.moveTo(item.Y, item.X);
                 else this.Canvas.moveTo(item.X, item.Y);
+                ++drawCount;
             }
             else 
             {
                 if (this.IsHScreen) this.Canvas.lineTo(item.Y, item.X);
                 else this.Canvas.lineTo(item.X, item.Y);
+                ++drawCount;
+            }
+
+            if (item.End==true) //点断了 要重新画
+            {
+                if (drawCount>0) this.Canvas.stroke();
+                drawCount=0;
             }
         }
+
+        if (drawCount>0) this.Canvas.stroke();
+
+        //绘制箭头
+        if (arrow.End.length==2 && this.Arrow.End==true)    
+            this.DrawArrow(arrow.End[0],arrow.End[1]);
+
+        if (arrow.Start.length==2 && this.Arrow.Start==true)
+            this.DrawArrow(arrow.Start[1],arrow.Start[0]);
+    }
+
+    this.DrawArrow=function(ptStart,ptEnd)
+    {
+        //计算箭头
+        var theta=this.ArrawAngle;       //三角斜边一直线夹角
+        var headlen=this.ArrawLength;    //三角斜边长度
+        var angle = Math.atan2(ptStart.Y - ptEnd.Y, ptStart.X - ptEnd.X) * 180 / Math.PI,
+        angle1 = (angle + theta) * Math.PI / 180,
+        angle2 = (angle - theta) * Math.PI / 180,
+        topX = headlen * Math.cos(angle1),
+        topY = headlen * Math.sin(angle1),
+        botX = headlen * Math.cos(angle2),
+        botY = headlen * Math.sin(angle2);
+
+        this.Canvas.beginPath();
+        var arrowX = ptEnd.X + topX;
+        var arrowY = ptEnd.Y + topY;
+        this.Canvas.moveTo(arrowX,arrowY);
+
+        this.Canvas.lineTo(ptEnd.X, ptEnd.Y);
+
+        arrowX = ptEnd.X + botX;
+        arrowY = ptEnd.Y + botY;
+        this.Canvas.lineTo(arrowX,arrowY);
+
+        this.Canvas.setLineDash([]);
+        this.Canvas.lineWidth=this.ArrawLineWidth;
         this.Canvas.stroke();
     }
 

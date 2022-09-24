@@ -27754,9 +27754,73 @@ function ChartBand()
         }
     }
 
-    this.DrawBand=function(aryFrist, arySecond)
+    this.ClipTop=function(aryFrist)
     {
-        this.Canvas.save();
+        var isHScreen=this.ChartFrame.IsHScreen;
+        this.Canvas.beginPath();
+        for(var i=0;i<aryFrist.length;++i)
+        {
+            if (i == 0)
+                this.Canvas.moveTo(aryFrist[i].x, aryFrist[i].y);
+            else
+                this.Canvas.lineTo(aryFrist[i].x, aryFrist[i].y);
+        }
+        var ptStart=aryFrist[0];
+        var ptEnd=aryFrist[aryFrist.length-1];
+
+       
+        if (isHScreen)
+        {
+            var xLeft=this.ChartBorder.GetRightEx();
+            this.Canvas.lineTo(xLeft, ptEnd.y);
+            this.Canvas.lineTo(xLeft, ptStart.y);
+        }
+        else
+        {
+            var yTop=this.ChartBorder.GetTopEx();
+            this.Canvas.lineTo(ptEnd.x, yTop);
+            this.Canvas.lineTo(ptStart.x, yTop);
+        }
+       
+        this.Canvas.closePath();
+        this.Canvas.clip();
+    }
+
+    this.ClipBottom=function(aryFrist)
+    {
+        var isHScreen=this.ChartFrame.IsHScreen;
+        this.Canvas.beginPath();
+        for(var i=0;i<aryFrist.length;++i)
+        {
+            if (i == 0)
+                this.Canvas.moveTo(aryFrist[i].x, aryFrist[i].y);
+            else
+                this.Canvas.lineTo(aryFrist[i].x, aryFrist[i].y);
+        }
+        var ptStart=aryFrist[0];
+        var ptEnd=aryFrist[aryFrist.length-1];
+
+        if (isHScreen)
+        {
+            var xLeft=this.ChartBorder.GetLeftEx();
+            this.Canvas.lineTo(xLeft, ptEnd.y);
+            this.Canvas.lineTo(xLeft, ptStart.y);
+        }
+        else
+        {
+            var yBottom=this.ChartBorder.GetBottomEx();
+            this.Canvas.lineTo(ptEnd.x, yBottom);
+            this.Canvas.lineTo(ptStart.x, yBottom);
+        }
+      
+        this.Canvas.closePath();
+        //this.Canvas.fillStyle = "rgb(255,0,0)";
+        //this.Canvas.fill();
+        this.Canvas.clip();
+    }
+
+    this.DrawArea=function(aryFrist, arySecond, clrArea)
+    {
         this.Canvas.beginPath();
         for(var i=0;i<aryFrist.length;++i)
         {
@@ -27771,30 +27835,27 @@ function ChartBand()
             this.Canvas.lineTo(arySecond[i].x, arySecond[i].y);
         }  
         this.Canvas.closePath();
-        this.Canvas.clip();
-
-        this.Canvas.moveTo(aryFrist[0].x, this.ChartBorder.GetBottom());
-        for (var i = 0; i < aryFrist.length; ++i)
-        {
-            this.Canvas.lineTo(aryFrist[i].x, aryFrist[i].y);
-        }
-        this.Canvas.lineTo(aryFrist[aryFrist.length-1].x, this.ChartBorder.GetBottom());
-        this.Canvas.closePath();
-        this.Canvas.fillStyle = this.FirstColor;
+        this.Canvas.fillStyle = clrArea;
         this.Canvas.fill();
+    }
 
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(arySecond[0].x, this.ChartBorder.GetBottom());
-        for (var i = 0; i < arySecond.length; ++i)
+    this.DrawBand=function(aryFrist, arySecond)
+    {
+        if (this.FirstColor)
         {
-            this.Canvas.lineTo(arySecond[i].x, arySecond[i].y);
+            this.Canvas.save();
+            this.ClipTop(aryFrist);
+            this.DrawArea(aryFrist, arySecond, this.FirstColor);
+            this.Canvas.restore();
         }
-        this.Canvas.lineTo(arySecond[arySecond.length-1].x, this.ChartBorder.GetBottom());
-        this.Canvas.closePath();
-        this.Canvas.fillStyle = this.SecondColor;
-        this.Canvas.fill();
-        
-        this.Canvas.restore();
+       
+        if (this.SecondColor)
+        {
+            this.Canvas.save();
+            this.ClipBottom(aryFrist);
+            this.DrawArea(aryFrist, arySecond, this.SecondColor);
+            this.Canvas.restore();
+        }
     }
 
 
@@ -60488,13 +60549,46 @@ function MinuteChartContainer(uielement)
                 success: function (data)
                 {
                     item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                    //self.RecvMultiOverlayMinuteData([data]);
                     self.RecvOverlayMinuteData(data,item);
                 }
             });
         }
     }
 
-    this.RecvOverlayMinuteData=function(data,paint)
+    //一次接收多个叠加品种
+    this.RecvMultiOverlayMinuteData=function(aryData)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) return;
+
+        var bUpdate=false;
+        for(var i=0;i<aryData.length; ++i)
+        {
+            var overlayData=aryData[i];
+            if (!overlayData.symbol) continue;
+
+            for(var j=0; j<this.OverlayChartPaint.length; ++j)
+            {
+                var item=this.OverlayChartPaint[j];
+                if (!item.MainData || !(item.MainYClose>0) ) continue;
+                if (overlayData.symbol==item.Symbol)
+                {
+                    this.RecvOverlayMinuteData(overlayData, item, { Redraw:false });
+                    bUpdate=true;
+                    break;
+                }
+            }
+        }
+
+        if (bUpdate)
+        {
+            this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+            this.Frame.SetSizeChage(true);
+            this.Draw();
+        }
+    }
+
+    this.RecvOverlayMinuteData=function(data,paint,option)
     {
         if (paint.IsDelete) return;
 
@@ -60535,13 +60629,20 @@ function MinuteChartContainer(uielement)
         paint.YClose=yClose;
         paint.Status=OVERLAY_STATUS_ID.STATUS_FINISHED_ID;
 
-        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
-        this.Draw();
+        var bRedraw=true;
+        if (option && option.Redraw==false) bRedraw=false;
+        if (bRedraw)
+        {
+            this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+            this.Frame.SetSizeChage(true);
+            this.Draw();
+        }
     }
 
     this.RequestOverlayHistoryMinuteData=function()
     {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.DayData)) return;
+        
         var self = this;
         var days=[];
         for(var i=0; i<this.DayData.length; ++i)

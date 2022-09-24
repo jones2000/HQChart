@@ -8874,7 +8874,10 @@ function JSDraw(errorHandler,symbolData)
         if (IFrameSplitOperator.IsNumber(color)) color=`rgb(${color},0,0)`;
         if (IFrameSplitOperator.IsNumber(color2)) color2=`rgb(${color2},0,0)`;
         var drawData=[];
-        var result={DrawData:drawData, DrawType:'DRAWBAND', Color:[color.toLowerCase(),color2.toLowerCase()]};  //颜色使用小写字符串
+        var result={DrawData:drawData, DrawType:'DRAWBAND', Color:[null, null]};  //颜色使用小写字符串
+        if (color) result.Color[0]=color.toLowerCase();
+        if (color2) result.Color[1]=color2.toLowerCase();
+
         var isNumber=IFrameSplitOperator.IsNumber(data);
         var isNumber2=IFrameSplitOperator.IsNumber(data2);
         if (!isNumber && !isNumber2)
@@ -20806,7 +20809,9 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                                 drawData[j]={ Value:price, Value2:price2 };
                             }
                             outItem.Draw.DrawData=drawData;
-                            outItem.Draw.Color=[draw.Color1.toLowerCase(), draw.Color2.toLowerCase()];
+                            outItem.Draw.Color=[null, null];
+                            if (draw.Color1) outItem.Draw.Color[0]=draw.Color1.toLowerCase();
+                            if (draw.Color2) outItem.Draw.Color[1]=draw.Color2.toLowerCase();
                         }
                         break;
                     case "DRAWKLINE":
@@ -21281,16 +21286,31 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=="DRAWBAND")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    drawItem.Color=draw.Color;  
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
                 else if (draw.DrawType=='MULTI_LINE')
                 {
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=this.FittingMultiLine(draw.DrawData,date,time,hqChart);
-                    for(var k in drawItem.DrawData)
+                    if (IFrameSplitOperator.IsNonEmptyArray(drawItem.DrawData))
                     {
-                        this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
+                        for(var k=0; k<drawItem.DrawData.length; ++k)
+                        {
+                            this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
+                        }
                     }
+                    
                     outVarItem.Draw=drawItem;
                     if (draw.LineDash) drawItem.LineDash=draw.LineDash;
                     if (draw.Arrow) drawItem.Arrow=draw.Arrow;

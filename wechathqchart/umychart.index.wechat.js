@@ -967,9 +967,19 @@ function ScriptIndex(name, script, args, option)
 
         chart.Data = hqChart.ChartPaint[0].Data;//绑定K线
         chart.Lines = varItem.Draw.DrawData;
-
+        if (varItem.Draw.Name) chart.Name=varItem.Draw.Name;
         if (varItem.Draw.LineDash) chart.LineDash=varItem.Draw.LineDash;
         if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
+
+        if(varItem.Draw.Arrow)  //箭头配置
+        {
+            var item=varItem.Draw.Arrow;
+            if (item.Start==true) chart.Arrow.Start=true;
+            if (item.End==true) chart.Arrow.End=true;
+            if (IFrameSplitOperator.IsNumber(item.Angle)) chart.ArrawAngle=item.Angle;
+            if (IFrameSplitOperator.IsNumber(item.Length)) chart.ArrawLength=item.Length;
+            if (IFrameSplitOperator.IsNumber(item.LineWidth)) chart.ArrawLineWidth=item.LineWidth;
+        }
         
         hqChart.ChartPaint.push(chart);
     }
@@ -1498,8 +1508,16 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
                     drawItem.DrawType = draw.DrawType;
                     drawItem.DrawData = this.FittingMultiLine(draw.DrawData, date, time, hqChart);
                     outVarItem.Draw = drawItem;
+                    if (IFrameSplitOperator.IsNonEmptyArray(drawItem.DrawData))
+                    {
+                        for(var k=0; k<drawItem.DrawData.length; ++k)
+                        {
+                            this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
+                        }
+                    }
+
                     if (draw.LineDash) drawItem.LineDash=draw.LineDash;
-                    //if (draw.Arrow) drawItem.Arrow=draw.Arrow;
+                    if (draw.Arrow) drawItem.Arrow=draw.Arrow;
                     if (IFrameSplitOperator.IsNumber(draw.LineWidth)) drawItem.LineWidth=draw.LineWidth;
                     result.push(outVarItem);
                 }
@@ -1851,6 +1869,7 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
                     outVarItem.Draw=drawItem;
                     if (draw.LineDash) drawItem.LineDash=draw.LineDash;
                     if (draw.Arrow) drawItem.Arrow=draw.Arrow;
+                    if (IFrameSplitOperator.IsNumber(draw.LineWidth)) drawItem.LineWidth=draw.LineWidth;
 
                     result.push(outVarItem);
                 }
