@@ -19115,6 +19115,25 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateChartDrawSVG=function(hqChart,windowIndex,varItem,i)
+    {
+        var chart=new ChartDrawSVG();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (hqChart.ChartPaint[0].IsMinuteFrame())
+            chart.Data=hqChart.SourceData;
+        else
+            chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        
+        chart.Family=varItem.Draw.DrawData.Family;
+        chart.TextFont=varItem.Draw.DrawData.TextFont;
+        chart.Texts= varItem.Draw.DrawData.Data;
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateMulitHtmlDom=function(hqChart,windowIndex,varItem,i)
     {
         let chart=new ChartMultiHtmlDom();
@@ -19461,6 +19480,9 @@ function ScriptIndex(name,script,args,option)
                     case 'MULTI_SVGICON':
                         this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
                         break;
+                    case "DRAWSVG":
+                        this.CreateChartDrawSVG(hqChart,windowIndex,item,i);
+                        break;
                     case "MULTI_HTMLDOM":
                         this.CreateMulitHtmlDom(hqChart,windowIndex,item,i);
                         break;
@@ -19735,6 +19757,9 @@ function OverlayScriptIndex(name,script,args,option)
                         break;
                     case 'MULTI_SVGICON':
                         this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
+                        break;
+                    case "DRAWSVG":
+                        this.CreateChartDrawSVG(hqChart,windowIndex,item,i);
                         break;
                     case "MULTI_HTMLDOM":
                         this.CreateMulitHtmlDom(hqChart,windowIndex,item,i);
@@ -20394,6 +20419,29 @@ function OverlayScriptIndex(name,script,args,option)
         frame.ChartPaint.push(chart);
     }
 
+    this.CreateChartDrawSVG=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartDrawSVG();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        if (hqChart.ChartPaint[0].IsMinuteFrame())
+            chart.Data=hqChart.SourceData;
+        else
+            chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        
+        chart.Family=varItem.Draw.DrawData.Family;
+        chart.TextFont=varItem.Draw.DrawData.TextFont;
+        chart.Texts= varItem.Draw.DrawData.Data;
+        frame.ChartPaint.push(chart);
+    }
+
+
     this.CreateMulitHtmlDom=function(hqChart,windowIndex,varItem,i)
     {
         var overlayIndex=this.OverlayIndex;
@@ -21025,6 +21073,15 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         JSConsole.Complier.Log('[APIScriptIndex::RecvAPIData] recv data ', this.Name,data );
         if (data.code!=0) return;
 
+        if (hqChart.EnableVerifyRecvData)
+        {
+            if (!data.stock || hqChart.Symbol!=data.stock.symbol) 
+            {
+                JSConsole.Chart.Warn(`[APIScriptIndex::RecvAPIData] recv data symbol not match. HQChart[${hqChart.Symbol}]`);
+                return;
+            }
+        }
+
         if (data.outdata && data.outdata.name) this.Name=data.outdata.name;
 
         if (data.outdata.args)  //外部修改参数
@@ -21390,6 +21447,17 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=='DRAWSVG')
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData={ Data:this.FittingMultiText(draw.Data,date,time,hqChart), Family:draw.Family, TextFont:draw.TextFont };
+                    this.GetKLineData(drawItem.DrawData.Data, hqChart);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
                 else if (draw.DrawType=="MULTI_HTMLDOM")    //外部自己创建dom
                 {
                     drawItem.Text=draw.Text;
@@ -21736,6 +21804,17 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData={ Icon:this.FittingMultiText(draw.DrawData.Icon,date,time,hqChart), Family:draw.DrawData.Family };
                     this.GetKLineData(drawItem.DrawData.Icon, hqChart);
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=='DRAWSVG')
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData={ Data:this.FittingMultiText(draw.Data,date,time,hqChart), Family:draw.Family, TextFont:draw.TextFont };
+                    this.GetKLineData(drawItem.DrawData.Data, hqChart);
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);
