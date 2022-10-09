@@ -58,6 +58,11 @@ var MARKET_SUFFIX_NAME=
     TW:".TW",            //台湾股票 9:00-13:30
     JP:".JP",            //日本股票 9:00-11:30, 12:30-15:00
 
+    //越南股市
+    HSX:".HSX",         //HSX胡志明交易所
+    HNX:".HNX",         //HNX河內交易所
+    UPCOM:".UPCOM",     //UPCOM未上市公司交易所
+
     ET: '.ET',           //其他未知的品种
 
     IsET: function (upperSymbol) 
@@ -69,6 +74,24 @@ var MARKET_SUFFIX_NAME=
     IsETShowAvPrice: function (upperSymbol)   //是否显示均价
     {
         return false;
+    },
+
+    IsHSX:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.HSX)>0;
+    },
+
+    IsHNX:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.HNX)>0;
+    },
+
+    IsUPCOM:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.UPCOM)>0;
     },
 
     IsNYMEX: function (upperSymbol) 
@@ -498,6 +521,21 @@ var MARKET_SUFFIX_NAME=
         return 2;
     },
 
+    GetHSXDecimal:function(symbol)
+    {
+        return 2;
+    },
+
+    GetHNXDecimal:function(symbol)
+    {
+        return 2;
+    },
+
+    GetUPCOMDecimal:function(symbol)
+    {
+        return 2;
+    },
+
     GetSHODecimal: function (symbol) 
     {
         return 4;
@@ -650,6 +688,24 @@ function MinuteTimeStringData()
         return this.JP;
     }
 
+    this.GetHSX=function(upperSymbol)
+    {
+        if (this.HSX) this.HSX=this.CreateHSXData();
+        return this.HSX;
+    }
+
+    this.GetHNX=function(upperSymbol)
+    {
+        if (this.HNX) this.HSX=this.CreateHNXData();
+        return this.HNX;
+    }
+
+    this.GetUPCOM=function(upperSymbol)
+    {
+        if (this.UPCOM) this.UPCOM=this.CreateUPCOMData();
+        return this.UPCOM;
+    }
+
     this.GetFutures=function(splitData)
     {
         if (!this.Futures.has(splitData.Name)) 
@@ -744,6 +800,21 @@ function MinuteTimeStringData()
         ];
 
         return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateHSXData=function()
+    {
+        throw {Name:'MinuteTimeStringData::CreateHSXData', Error:'not implement'};
+    }
+
+    this.CreateHNXData=function()
+    {
+        throw {Name:'MinuteTimeStringData::CreateHNXData', Error:'not implement'};
+    }
+
+    this.CreateUPCOMData=function()
+    {
+        throw {Name:'MinuteTimeStringData::CreateUPCOMData', Error:'not implement'};
     }
 
     this.CreateUSAData=function()
@@ -859,6 +930,11 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsFHK(upperSymbol)) return this.GetFHK();
         if (MARKET_SUFFIX_NAME.IsET(upperSymbol)) return this.GetET(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) return this.GetBIT(upperSymbol);
+
+        //越南股市
+        if (MARKET_SUFFIX_NAME.IsHSX(upperSymbol)) return this.GetHSX(upperSymbol);
+        if (MARKET_SUFFIX_NAME.IsHNX(upperSymbol)) return this.GetHNX(upperSymbol);
+        if (MARKET_SUFFIX_NAME.IsUPCOM(upperSymbol)) return this.GetUPCOM(upperSymbol);
 
         if (MARKET_SUFFIX_NAME.IsNYMEX(upperSymbol))    //纽约期货交易所
         {
@@ -1373,6 +1449,12 @@ function MinuteCoordinateData()
                 return  data=this.GetIPEData(upperSymbol,width);
             else if ((MARKET_SUFFIX_NAME.IsBIT(upperSymbol,width)))
                 data=this.GetBITData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsHSX(upperSymbol))
+                return  data=this.GetHSXData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsHNX(upperSymbol))
+                return  data=this.GetHNXData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsUPCOM(upperSymbol))
+                return  data=this.GetUPCOMData(upperSymbol,width);
         }
 
         //console.log('[MiuteCoordinateData]', width);
@@ -1527,6 +1609,21 @@ function MinuteCoordinateData()
     this.GetJPData=function(upperSymbol,width)
     {
         throw {Name:'MinuteCoordinateData::GetJPData', Error:'not implement'};
+    }
+
+    this.GetHSXData=function(upperSymbol,width)
+    {
+        throw {Name:'MinuteCoordinateData::GetHSXData', Error:'not implement'};
+    }
+
+    this.GetHNXData=function(upperSymbol,width)
+    {
+        throw {Name:'MinuteCoordinateData::GetHNXData', Error:'not implement'};
+    }
+
+    this.GetUPCOMData=function(upperSymbol,width)
+    {
+        throw {Name:'MinuteCoordinateData::GetUPCOMData', Error:'not implement'};
     }
 }
 
@@ -3472,6 +3569,9 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetHKDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsTW(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetTWDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsJP(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetJPDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsHSX(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetHSXDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsHNX(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetHNXDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsUPCOM(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetUPCOMDecimal(upperSymbol);
     else defaultfloatPrecision=MARKET_SUFFIX_NAME.GetDefaultDecimal(upperSymbol);
 
     return defaultfloatPrecision;

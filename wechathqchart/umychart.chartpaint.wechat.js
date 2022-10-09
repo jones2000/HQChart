@@ -6675,7 +6675,7 @@ function ChartBand()
     this.newMethod();
     delete this.newMethod;
     this.IsDrawFirst = true;
-  
+    this.ClassName="ChartBand";
     this.FirstColor = g_JSChartResource.Index.LineColor[0];
     this.SecondColor = g_JSChartResource.Index.LineColor[1];
   
@@ -6721,45 +6721,112 @@ function ChartBand()
             lIndex++;
         }
 
-        if (firstlinePoints.length > 1) 
+        if (firstlinePoints.length>1 && secondlinePoints.length>1)
+        {
+            this.DrawBand(firstlinePoints, secondlinePoints);
+        }
+    }
+
+    this.ClipTop=function(aryFrist)
+    {
+        var isHScreen=this.ChartFrame.IsHScreen;
+        this.Canvas.beginPath();
+        for(var i=0;i<aryFrist.length;++i)
+        {
+            if (i == 0)
+                this.Canvas.moveTo(aryFrist[i].x, aryFrist[i].y);
+            else
+                this.Canvas.lineTo(aryFrist[i].x, aryFrist[i].y);
+        }
+        var ptStart=aryFrist[0];
+        var ptEnd=aryFrist[aryFrist.length-1];
+
+       
+        if (isHScreen)
+        {
+            var xLeft=this.ChartBorder.GetRightEx();
+            this.Canvas.lineTo(xLeft, ptEnd.y);
+            this.Canvas.lineTo(xLeft, ptStart.y);
+        }
+        else
+        {
+            var yTop=this.ChartBorder.GetTopEx();
+            this.Canvas.lineTo(ptEnd.x, yTop);
+            this.Canvas.lineTo(ptStart.x, yTop);
+        }
+       
+        this.Canvas.closePath();
+        this.Canvas.clip();
+    }
+
+    this.ClipBottom=function(aryFrist)
+    {
+        var isHScreen=this.ChartFrame.IsHScreen;
+        this.Canvas.beginPath();
+        for(var i=0;i<aryFrist.length;++i)
+        {
+            if (i == 0)
+                this.Canvas.moveTo(aryFrist[i].x, aryFrist[i].y);
+            else
+                this.Canvas.lineTo(aryFrist[i].x, aryFrist[i].y);
+        }
+        var ptStart=aryFrist[0];
+        var ptEnd=aryFrist[aryFrist.length-1];
+
+        if (isHScreen)
+        {
+            var xLeft=this.ChartBorder.GetLeftEx();
+            this.Canvas.lineTo(xLeft, ptEnd.y);
+            this.Canvas.lineTo(xLeft, ptStart.y);
+        }
+        else
+        {
+            var yBottom=this.ChartBorder.GetBottomEx();
+            this.Canvas.lineTo(ptEnd.x, yBottom);
+            this.Canvas.lineTo(ptStart.x, yBottom);
+        }
+      
+        this.Canvas.closePath();
+        //this.Canvas.fillStyle = "rgb(255,0,0)";
+        //this.Canvas.fill();
+        this.Canvas.clip();
+    }
+
+    this.DrawArea=function(aryFrist, arySecond, clrArea)
+    {
+        this.Canvas.beginPath();
+        for(var i=0;i<aryFrist.length;++i)
+        {
+            if (i == 0)
+                this.Canvas.moveTo(aryFrist[i].x, aryFrist[i].y);
+            else
+                this.Canvas.lineTo(aryFrist[i].x, aryFrist[i].y);
+        }
+
+        for (var i = arySecond.length-1; i >= 0; --i)
+        {
+            this.Canvas.lineTo(arySecond[i].x, arySecond[i].y);
+        }  
+        this.Canvas.closePath();
+        this.Canvas.fillStyle = clrArea;
+        this.Canvas.fill();
+    }
+
+    this.DrawBand=function(aryFrist, arySecond)
+    {
+        if (this.FirstColor)
         {
             this.Canvas.save();
-            this.Canvas.beginPath();
-            for (var i = 0; i < firstlinePoints.length; ++i) 
-            {
-                if (i == 0)
-                    this.Canvas.moveTo(firstlinePoints[i].x, firstlinePoints[i].y);
-                else
-                    this.Canvas.lineTo(firstlinePoints[i].x, firstlinePoints[i].y);
-            }
-            for (var j = secondlinePoints.length - 1; j >= 0; --j) 
-            {
-                this.Canvas.lineTo(secondlinePoints[j].x, secondlinePoints[j].y);
-            }
-            this.Canvas.closePath();
-            this.Canvas.strokeStyle = "rgba(255,255,255,0)";
-            this.Canvas.stroke();
-            this.Canvas.clip();
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(firstlinePoints[0].x, this.ChartBorder.GetBottom());
-            for (var i = 0; i < firstlinePoints.length; ++i) 
-            {
-                this.Canvas.lineTo(firstlinePoints[i].x, firstlinePoints[i].y);
-            }
-            this.Canvas.lineTo(firstlinePoints[firstlinePoints.length - 1].x, this.ChartBorder.GetBottom());
-            this.Canvas.closePath();
-            this.Canvas.fillStyle = this.FirstColor;
-            this.Canvas.fill();
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(secondlinePoints[0].x, this.ChartBorder.GetBottom());
-            for (var i = 0; i < secondlinePoints.length; ++i) 
-            {
-                this.Canvas.lineTo(secondlinePoints[i].x, secondlinePoints[i].y);
-            }
-            this.Canvas.lineTo(secondlinePoints[secondlinePoints.length - 1].x, this.ChartBorder.GetBottom());
-            this.Canvas.closePath();
-            this.Canvas.fillStyle = this.SecondColor;
-            this.Canvas.fill();
+            this.ClipTop(aryFrist);
+            this.DrawArea(aryFrist, arySecond, this.FirstColor);
+            this.Canvas.restore();
+        }
+       
+        if (this.SecondColor)
+        {
+            this.Canvas.save();
+            this.ClipBottom(aryFrist);
+            this.DrawArea(aryFrist, arySecond, this.SecondColor);
             this.Canvas.restore();
         }
     }

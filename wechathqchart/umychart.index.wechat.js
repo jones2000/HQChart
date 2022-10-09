@@ -1501,6 +1501,17 @@ function APIScriptIndex(name, script, args, option)     //后台执行指标
 
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=="DRAWBAND")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    drawItem.Color=draw.Color;  
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
                 else if (draw.DrawType == 'MULTI_LINE') 
                 {
                     drawItem.Text = draw.Text;
