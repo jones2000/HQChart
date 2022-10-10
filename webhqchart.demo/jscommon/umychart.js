@@ -2010,6 +2010,11 @@ JSChart.GetDivTooltipDataFormat=function()  //div tooltip数据格式化
     return g_DivTooltipDataForamt;
 }
 
+JSChart.GetKLineCustomCalulate=function()   //K线额外计算
+{
+    return g_KLineCustomCalulate;
+}
+
 JSChart.SetUSATimeType=function(type)    //设置 0=标准时间 1=夏令时间 3=美国时间
 {
     g_NYMEXTimeData.TimeType=type;
@@ -2096,6 +2101,7 @@ JSChart.RegisterDialogClass=function(name, option)
 {
     g_DialogFactory.Add(name, option);
 }
+
 
 var JSCHART_EVENT_ID=
 {
@@ -18547,7 +18553,7 @@ function ChartKLine()
 
     this.ClassName='ChartKLine';    //类名
     this.Symbol;        //股票代码
-    this.DrawType=0;    // 0=实心K线柱子  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图 5=订单流 6=空心K线柱子2(全部空心) 7=订单流样式2 8=订单流样式3  9=自定义颜色K线 10=renko
+    this.DrawType=0;    // 0=实心K线柱子  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图 5=订单流 6=空心K线柱子2(全部空心) 7=订单流样式2 8=订单流样式3  9=自定义颜色K线 10=renko 11=Heikin Ashi
     this.CloseLineColor=g_JSChartResource.CloseLineColor;
     this.CloseLineAreaColor=g_JSChartResource.CloseLineAreaColor;
     this.CloseLineWidth=g_JSChartResource.CloseLineWidth;
@@ -40858,7 +40864,7 @@ function DynamicKLineTitlePainting()
             if (!this.DrawText(text,this.SettingColor,position)) return;
         }
 
-        var text=this.GetRenkoTitle();
+        var text=this.GetKLineCalculateTitle();
         if (text)
         {
             if (!this.DrawText(text,this.NameColor,position)) return;
@@ -41065,16 +41071,14 @@ function DynamicKLineTitlePainting()
         return true;
     }
 
-    //砖型图标题信息
-    this.GetRenkoTitle=function()
+    //计算K线指标标题信息
+    this.GetKLineCalculateTitle=function()
     {
         if (!this.HQChart) return null;
-        if (!this.HQChart.RenkoCalculate) return null;
+        var klineCalulate=this.HQChart.GetKLineCalulate();
+        if (!klineCalulate || !klineCalulate.GetTitle) return null;
         
-        var kLineDrawType=this.HQChart.GetKLineDrawType();
-        if (kLineDrawType!=10) return null;
-        
-        return this.HQChart.RenkoCalculate.GetTitle();
+        return klineCalulate.GetTitle();
     }
 
 }
@@ -51744,6 +51748,27 @@ HQIndexFormula.STICKLINE=function(data,price1,price2)
     return result;
 }
 
+// 定制K线计算
+function KLineCustomCalulate()
+{
+    this.DataMap=new Map(
+        [
+            ["RenkoCalculate",      { Create:function() { return new RenkoCalculate(); }  }],
+            ["HeikinAshiCalculate",      { Create:function() { return new HeikinAshiCalculate(); }  }],
+        ]
+    );
+
+    this.Create=function(name)
+    {
+        if (!this.DataMap.has(name)) return null;
+
+        var item=this.DataMap.get(name);
+        return item.Create();
+    }
+}
+
+var g_KLineCustomCalulate=new KLineCustomCalulate();
+
 ///////////////////////////////////////////////////////////////////
 // renko candle
 //
@@ -51756,6 +51781,7 @@ function RenkoCalculate()
     this.BrickSizeType=1;  //0=固定 1=ATR动态计算
     this.Symbol;
     this.FloatPrecision=2;  //品种小数位数
+    this.ClassName="RenkoCalculate";
 
     this.CalculateByClose=function(sourceData)    //使用收盘价计算
     {
@@ -51832,11 +51858,11 @@ function RenkoCalculate()
         return bindData;
     }
 
-    this.RecvHistoryData=function(sourceData, symbol)  //历史日线数据
+    this.RecvHistoryData=function(sourceData, option)  //历史日线数据
     {
-        this.Symbol=symbol
+        this.Symbol=option.Symbol;
         this.SourceData=sourceData;
-        this.FloatPrecision=GetfloatPrecision(symbol);
+        this.FloatPrecision=GetfloatPrecision(this.Symbol);
         if (this.BrickSizeType==1) this.CalculateATR();
         return this.CalculateByClose(sourceData);
     }
@@ -51845,6 +51871,7 @@ function RenkoCalculate()
     {
         this.SourceData=null;
         this.LastData=null;
+        this.Symbol=null;
     }
 
     //获取配置信息
@@ -51888,6 +51915,80 @@ function RenkoCalculate()
         var brickSize=total/aryData.length;
         var value=brickSize.toFixed(this.FloatPrecision);
         this.ATR.BrickSize=parseFloat(value);
+    }
+}
+
+//////////////////////////////////////////////////////////////////
+//   HeikinAshi
+//
+function HeikinAshiCalculate()
+{
+    this.SourceData;
+    this.Symbol;
+    this.FloatPrecision=2;  //品种小数位数
+    this.ClassName="HeikinAshiCalculate";
+
+    this.Clear=function()
+    {
+        this.SourceData=null;
+        this.LastData=null;
+        this.Symbol=null;
+    }
+
+    this.RecvHistoryData=function(sourceData, option)  //历史日线数据
+    {
+        this.Symbol=option.Symbol;
+        this.SourceData=sourceData;
+        this.FloatPrecision=GetfloatPrecision(this.Symbol);
+
+        return this.Calculate(sourceData);
+    }
+
+    this.GetTitle=function()
+    {
+        return "Heikin Ashi";
+    }
+
+    this.Calculate=function(sourceData)
+    {
+        var bindData=new ChartData();
+        bindData.Data=[]
+        bindData.Right=sourceData.Right;
+        bindData.Period=sourceData.Period;
+        bindData.DataType=sourceData.DataType;
+        bindData.Symbol=sourceData.symbol;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(sourceData.Data)) return bindData;
+
+        var lastKItem=null;
+        var yClose=null;
+        for(var i=0;i<sourceData.Data.length;++i)
+        {
+            var kItem=sourceData.Data[i];
+            var newItem=HistoryData.Copy(kItem);
+            if (!lastKItem)
+            {
+                newItem.Open=(kItem.Close+kItem.Open)/2;
+                newItem.Close=(kItem.Close+kItem.Open+kItem.High+kItem.Low)/4;
+                yClose=newItem.Close;
+            }
+            else
+            {
+                newItem.Close=(kItem.Close+kItem.Open+kItem.High+kItem.Low)/4;
+                newItem.Open=(lastKItem.Close+lastKItem.Open)/2;
+                newItem.YClose=yClose;
+                newItem.High=Math.max(newItem.Close, newItem.Open, kItem.High);
+                newItem.Low=Math.min(newItem.Close, newItem.Open, kItem.Low);
+
+                yClose=newItem.Close;
+            }
+
+            lastKItem=kItem;
+
+            bindData.Data.push(newItem);
+        }
+
+        return bindData;
     }
 }
 
@@ -51967,7 +52068,30 @@ function KLineChartContainer(uielement,OffscreenElement)
     this.BeforeBindMainData=null;   //function(funcName)   在BindMainData() 调用前回调用
     this.AfterBindMainData=null;    //function(funcName)   在BindMainData() 调用前后调用
 
-    this.RenkoCalculate=null;  //renko k线计算
+    this.KLineCalculate=null;   //K线定制指标计算
+
+
+    this.GetKLineCalulate=function()
+    {
+        var kLineDrawType=this.GetKLineDrawType();
+        var className;
+        if (kLineDrawType==10) className="RenkoCalculate";
+        else if (kLineDrawType==11) className="HeikinAshiCalculate";
+        else return null;
+
+        if (!this.KLineCalculate || this.KLineCalculate.ClassName!=className)
+        this.KLineCalculate=g_KLineCustomCalulate.Create(className);
+
+        return this.KLineCalculate;
+    }
+
+    this.ClearKLineCaluate=function()
+    {
+        if (!this.KLineCalculate) return;
+        if (!this.KLineCalculate.Clear) return;
+
+        this.KLineCalculate.Clear();
+    }
 
     this.ResetDragDownload=function()
     {
@@ -53388,12 +53512,11 @@ function KLineChartContainer(uielement,OffscreenElement)
             bindData.Data=periodData;
         }
 
-        var kLineDrawType=this.GetKLineDrawType();
-        if (kLineDrawType==10) //砖型图
+        var kLineCalculate=this.GetKLineCalulate();
+        if (kLineCalculate) //额外的K线图形计算
         {
-            if (!this.RenkoCalculate) this.RenkoCalculate=new RenkoCalculate();
-            var renkoBindData=this.RenkoCalculate.RecvHistoryData(bindData, this.Symbol);
-            bindData=renkoBindData;
+            var newBindData=kLineCalculate.RecvHistoryData(bindData, { Symbol:this.Symbol, Function:"RecvHistoryData" });
+            bindData=newBindData;
             this.FlowCapitalReady=true;
         }
 
@@ -53675,12 +53798,11 @@ function KLineChartContainer(uielement,OffscreenElement)
             bindData.Data=periodData;
         }
 
-        var kLineDrawType=this.GetKLineDrawType();
-        if (kLineDrawType==10) //砖型图
+        var kLineCalculate=this.GetKLineCalulate();
+        if (kLineCalculate) //额外的K线图形计算
         {
-            if (!this.RenkoCalculate) this.RenkoCalculate=new RenkoCalculate();
-            var renkoBindData=this.RenkoCalculate.RecvHistoryData(bindData, this.Symbol);
-            bindData=renkoBindData;
+            var newBindData=kLineCalculate.RecvHistoryData(bindData, { Symbol:this.Symbol, Function:"RecvMinuteHistoryData" });
+            bindData=newBindData;
             this.FlowCapitalReady=true;
         }
 
@@ -53994,12 +54116,12 @@ function KLineChartContainer(uielement,OffscreenElement)
             }
         }
 
-        var kLineDrawType=this.GetKLineDrawType();
-        if (kLineDrawType==10) //砖型图
+        var kLineCalculate=this.GetKLineCalulate();
+        if (kLineCalculate) //额外的K线图形计算
         {
-            if (!this.RenkoCalculate) this.RenkoCalculate=new RenkoCalculate();
-            var renkoBindData=this.RenkoCalculate.RecvHistoryData(bindData, this.Symbol);
-            bindData=renkoBindData;
+            var newBindData=kLineCalculate.RecvHistoryData(bindData, { Symbol:this.Symbol, Function:"RecvRealtimeData" });
+            bindData=newBindData;
+            this.FlowCapitalReady=true;
         }
 
         this.UpdateMainData(bindData,lastDataCount);//更新主图数据
@@ -54234,12 +54356,12 @@ function KLineChartContainer(uielement,OffscreenElement)
             bindData.Data=periodData;
         }
 
-        var kLineDrawType=this.GetKLineDrawType();
-        if (kLineDrawType==10) //砖型图
+        var kLineCalculate=this.GetKLineCalulate();
+        if (kLineCalculate) //额外的K线图形计算
         {
-            if (!this.RenkoCalculate) this.RenkoCalculate=new RenkoCalculate();
-            var renkoBindData=this.RenkoCalculate.RecvHistoryData(bindData, this.Symbol);
-            bindData=renkoBindData;
+            var newBindData=kLineCalculate.RecvHistoryData(bindData, { Symbol:this.Symbol, Function:"RecvMinuteRealtimeDataV2" });
+            bindData=newBindData;
+            this.FlowCapitalReady=true;
         }
 
         //绑定数据
@@ -54302,12 +54424,12 @@ function KLineChartContainer(uielement,OffscreenElement)
             bindData.Data=periodData;
         }
 
-        var kLineDrawType=this.GetKLineDrawType();
-        if (kLineDrawType==10) //砖型图
+        var kLineCalculate=this.GetKLineCalulate();
+        if (kLineCalculate) //额外的K线图形计算
         {
-            if (!this.RenkoCalculate) this.RenkoCalculate=new RenkoCalculate();
-            var renkoBindData=this.RenkoCalculate.RecvHistoryData(bindData, this.Symbol);
-            bindData=renkoBindData;
+            var newBindData=kLineCalculate.RecvHistoryData(bindData, { Symbol:this.Symbol, Function:"RecvMinuteRealtimeData" });
+            bindData=newBindData;
+            this.FlowCapitalReady=true;
         }
 
         //绑定数据
@@ -54729,7 +54851,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.ClearCustomKLine();
 
         var kLineDrawType=this.GetKLineDrawType();
-        if (kLineDrawType==10) isDataTypeChange=true;
+        if (kLineDrawType==10 || kLineDrawType==11) isDataTypeChange=true;
 
         if (isDataTypeChange==false && !this.IsApiPeriod)
         {
@@ -55305,9 +55427,11 @@ function KLineChartContainer(uielement,OffscreenElement)
     {
         if (this.KLineDrawType==drawType) return;
 
+        var oldKLineType=this.KLineDrawType;
         this.KLineDrawType=drawType;
+        var setKLineType=new Set([5,7,8,10,11]);
 
-        if (this.KLineDrawType==5 || this.KLineDrawType==7 || this.KLineDrawType==8 || this.KLineDrawType==10)    //订单流
+        if (setKLineType.has(oldKLineType) || setKLineType.has(drawType))
         {
             var chart=this.ChartPaint[0];
             if (chart) chart.DrawType=this.KLineDrawType;
@@ -55328,7 +55452,6 @@ function KLineChartContainer(uielement,OffscreenElement)
 
             return;
         }
-
 
         for(var i in this.ChartPaint)
         {
@@ -56067,6 +56190,8 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.AutoUpdateEvent(false,'KLineChartContainer::ChangeSymbol');
         this.ClearRectSelect(true);
         this.ClearCustomKLine();
+        this.ClearKLineCaluate();
+        
         this.Symbol=symbol;
         if (!symbol)
         {
@@ -57475,12 +57600,12 @@ function KLineChartContainer(uielement,OffscreenElement)
             }
         }
 
-        var kLineDrawType=this.GetKLineDrawType();
-        if (kLineDrawType==10) //砖型图
+        var kLineCalculate=this.GetKLineCalulate();
+        if (kLineCalculate) //额外的K线图形计算
         {
-            if (!this.RenkoCalculate) this.RenkoCalculate=new RenkoCalculate();
-            var renkoBindData=this.RenkoCalculate.RecvHistoryData(bindData, this.Symbol);
-            bindData=renkoBindData;
+            var newBindData=kLineCalculate.RecvHistoryData(bindData, { Symbol:this.Symbol, Function:"RecvDragMinuteData" });
+            bindData=newBindData;
+            this.FlowCapitalReady=true;
         }
 
         //绑定数据
@@ -57702,12 +57827,12 @@ function KLineChartContainer(uielement,OffscreenElement)
             }
         }
 
-        var kLineDrawType=this.GetKLineDrawType();
-        if (kLineDrawType==10) //砖型图
+        var kLineCalculate=this.GetKLineCalulate();
+        if (kLineCalculate) //额外的K线图形计算
         {
-            if (!this.RenkoCalculate) this.RenkoCalculate=new RenkoCalculate();
-            var renkoBindData=this.RenkoCalculate.RecvHistoryData(bindData, this.Symbol);
-            bindData=renkoBindData;
+            var newBindData=kLineCalculate.RecvHistoryData(bindData, { Symbol:this.Symbol, Function:"RecvDragDayData" });
+            bindData=newBindData;
+            this.FlowCapitalReady=true;
         }
 
         //绑定数据
@@ -70485,6 +70610,10 @@ function KLineRightMenu(divElement)
             {
                 text: "K线(空心阳线阴线)",
                 click: function () { chart.ChangeKLineDrawType(6);}
+            },
+            {
+                text: "Heikin Ashi",
+                click: function () { chart.ChangeKLineDrawType(11);}
             }
         ];
 
@@ -70507,6 +70636,9 @@ function KLineRightMenu(divElement)
                 break;
             case 6:
                 data[5].selected=true;
+                break;
+            case 11:
+                data[6].selected=true;
                 break;
         }
         return data;
