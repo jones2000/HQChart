@@ -144,6 +144,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![散点图指标](/小程序行情模块用例/image/kline_SCATTERPLOT.gif)
 * renko（砖形图)
 ![砖形图](/小程序行情模块用例/image/hqchart_renko.png)
+* line break
+![line break](/小程序行情模块用例/image/hqchart_linebreak.png)
 
 
 # 2. 走势图

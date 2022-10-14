@@ -403,7 +403,8 @@ DefaultData.GetKLineToolbar=function()
             {Name:"收盘线",Value:1},
             {Name:"面积图",Value:4},
             {Name:"空心K线2",Value:6},
-            {Name:"Heikin Ashi",Value:11}
+            {Name:"Heikin Ashi",Value:11},
+             {Name:"Line Break",Value:12}
         ],
         IsShow:true,
     };

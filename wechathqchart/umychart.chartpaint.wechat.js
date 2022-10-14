@@ -1560,7 +1560,7 @@ function ChartKLine()
 
     //画某一天的信息地雷 画在底部
     this.DrawInfoDiv = function (item) {
-        if (!this.InfoData || this.InfoData.length <= 0) return;
+        if (!this.InfoData || this.InfoData.size <= 0) return;
 
         var dataWidth = this.ChartFrame.DataWidth;
         var distanceWidth = this.ChartFrame.DistanceWidth;
@@ -4000,7 +4000,11 @@ function ChartOverlayKLine()
             var data = this.Data.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
 
-            if (firstOverlayOpen == null) firstOverlayOpen = data.Open;
+            if (firstOverlayOpen == null) 
+            {
+                firstOverlayOpen = data.Open;
+                this.ShowRange.FirstOverlayOpen=data.Open;
+            }
             var left = xOffset;
             var right = xOffset + dataWidth;
             if (right > chartright) break;
@@ -4084,7 +4088,11 @@ function ChartOverlayKLine()
             var data = this.Data.Data[i];
             if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
 
-            if (firstOverlayOpen == null) firstOverlayOpen = data.Open;
+            if (firstOverlayOpen == null) 
+            {
+                firstOverlayOpen = data.Open;
+                this.ShowRange.FirstOverlayOpen=data.Open;
+            }
             var left = xOffset;
             var right = xOffset + dataWidth;
             if (right > chartright) break;
