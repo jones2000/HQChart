@@ -11583,6 +11583,7 @@ function JSExecute(ast,option)
                     let lineWidth;
                     let colorStick=false;
                     let pointDot=false;
+                    let upDownDot=false;
                     let circleDot=false;
                     let lineStick=false;
                     let stick=false;
@@ -11624,6 +11625,7 @@ function JSExecute(ast,option)
                             let value=itemExpression.Name;
                             if (value==='COLORSTICK') colorStick=true;
                             else if (value==='POINTDOT') pointDot=true;
+                            else if (value=="UPDOWNDOT") upDownDot=true;
                             else if (value==='CIRCLEDOT') circleDot=true;
                             else if (value == 'DOTLINE') isDotLine = true;
                             else if (value==='LINESTICK') lineStick=true;
@@ -11754,6 +11756,15 @@ function JSExecute(ast,option)
                         let value={Name:varName, Data:outVar, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3};
                         if (color) value.Color=color;
                         if (lineWidth) value.LineWidth = lineWidth;
+                        this.OutVarTable.push(value);
+                    }
+                    else if (upDownDot && varName)   //彩色点
+                    {
+                        let outVar=this.VarTable.get(varName);
+                        if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                        let value={Name:varName, Data:outVar, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3, UpDownDot:true };
+                        if (color) value.Color=color;
+                        if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
                     }
                     else if (lineStick && varName)  //LINESTICK  同时画出柱状线和指标线

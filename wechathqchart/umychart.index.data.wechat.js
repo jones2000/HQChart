@@ -2036,7 +2036,7 @@ JSIndexScript.prototype.SAR = function ()
         Name: 'SAR', Description: '抛物转向', IsMainIndex: true,
         Args: [{ Name: 'P', Value: 10 },{ Name: 'STEP', Value: 2 },{ Name: 'MAXP', Value: 20 }],
         Script: //脚本
-'S:SAR(P,STEP,MAXP),CIRCLEDOT;'
+'S:SAR(P,STEP,MAXP),UPDOWNDOT;'
 
     };
 

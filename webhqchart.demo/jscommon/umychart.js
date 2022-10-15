@@ -24471,6 +24471,14 @@ function ChartSlopeLine()
 
 
 //POINTDOT 圆点 支持横屏
+/*
+SAR的圈圈分成两种颜色，当股价朝向上的方向前进时，SAR位于收盘价线的下方，并且呈现红色的圈圈，
+当股价朝下跌的方向前进时，SAR位于收盘价的上方，并且呈现绿色的圈圈。
+我们最需要注意的是，股价向上或向下穿越SAR圈圈的讯号，而且是以收盘价的穿越有效。
+当价格由下往上穿越今天绿色的SAR时，画面上立即在明天的价格位置显示一个红色的圈圈，
+代表股价已经翻红，又代表明天开始，必须从事多头交易，当价格由上往下跌破今天红色的SAR时，画面上立即在明天的价格位置，
+显示一个绿色的圈圈，代表股价已经翻绿，又代表明天开始必须从事空头交易。
+*/
 function ChartPointDot()
 {
     this.newMethod=IChartPainting;   //派生
@@ -24480,6 +24488,8 @@ function ChartPointDot()
     this.ClassName='ChartPointDot';    //类名
     this.Color="rgb(255,193,37)";   //线段颜色
     this.Radius=1;                  //点半径
+    this.EnableUpDownColor=false;   //是否是红绿点
+    this.HistoryData;
 
     this.Draw=function()
     {
@@ -24502,6 +24512,7 @@ function ChartPointDot()
 
         this.Canvas.save();
         this.Canvas.fillStyle=this.Color;
+        var colorDot;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
@@ -24512,11 +24523,23 @@ function ChartPointDot()
 
             if (x>chartright) break;
 
+            if (this.EnableUpDownColor)
+            {
+                var kItem=this.HistoryData.Data[i];
+
+                if (kItem.Close>value) colorDot="rgb(255,61,61)";
+                else colorDot='rgb(0,199,65)';
+
+                this.Canvas.fillStyle=colorDot;
+            }
+
             this.Canvas.beginPath();
             if (bHScreen) this.Canvas.arc(y, x, this.Radius, 0, Math.PI*2, true);
             else this.Canvas.arc(x, y, this.Radius, 0, Math.PI*2, true);
             this.Canvas.closePath();
             this.Canvas.fill();
+
+            preValue=value;
         }
 
         this.Canvas.restore();

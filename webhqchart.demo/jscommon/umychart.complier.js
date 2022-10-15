@@ -15797,6 +15797,7 @@ function JSExecute(ast,option)
                 let lineWidth;
                 let colorStick=false;
                 let pointDot=false;
+                let upDownDot=false;
                 let circleDot=false;
                 let lineStick=false;
                 let stick=false;
@@ -15846,6 +15847,7 @@ function JSExecute(ast,option)
                         else if (value==='POINTDOT') pointDot=true;
                         else if (value==='CIRCLEDOT') circleDot=true;
                         else if (value==='DOTLINE') isDotLine=true;
+                        else if (value=="UPDOWNDOT") upDownDot=true;
                         else if (value==='LINESTICK') lineStick=true;
                         else if (value==='STICK') stick=true;
                         else if (value==='VOLSTICK') volStick=true;
@@ -15977,6 +15979,15 @@ function JSExecute(ast,option)
                     let outVar=this.VarTable.get(varName);
                     if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
                     let value={Name:varName, Data:outVar, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3};
+                    if (color) value.Color=color;
+                    if (lineWidth) value.LineWidth=lineWidth;
+                    this.OutVarTable.push(value);
+                }
+                else if (upDownDot && varName)   //彩色点
+                {
+                    let outVar=this.VarTable.get(varName);
+                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                    let value={Name:varName, Data:outVar, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3, UpDownDot:true };
                     if (color) value.Color=color;
                     if (lineWidth) value.LineWidth=lineWidth;
                     this.OutVarTable.push(value);
@@ -18492,7 +18503,7 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chartMACD);
     }
 
-    this.CreatePointDot=function(hqChart,windowIndex,varItem,id)
+    this.CreatePointDot=function(hqChart,windowIndex,varItem,id, hisData)
     {
         let pointDot=new ChartPointDot();
         pointDot.Canvas=hqChart.Canvas;
@@ -18508,6 +18519,12 @@ function ScriptIndex(name,script,args,option)
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
             if (!isNaN(width) && width>0) pointDot.Radius=width;
+        }
+
+        if (IFrameSplitOperator.IsBool(varItem.UpDownDot)) 
+        {
+            pointDot.EnableUpDownColor=varItem.UpDownDot;
+            pointDot.HistoryData=hisData;
         }
 
         let titleIndex=windowIndex+1;
@@ -19519,7 +19536,7 @@ function ScriptIndex(name,script,args,option)
             }
             else if (item.Type==3)
             {
-                this.CreatePointDot(hqChart,windowIndex,item,i);
+                this.CreatePointDot(hqChart,windowIndex,item,i, hisData);
             }
             else if (item.Type==4)
             {

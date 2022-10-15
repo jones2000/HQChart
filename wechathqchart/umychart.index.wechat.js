@@ -592,28 +592,36 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chartMACD);
     }
 
-  this.CreatePointDot = function (hqChart, windowIndex, varItem, id) {
-    let pointDot = new ChartPointDot();
-    pointDot.Canvas = hqChart.Canvas;
-    pointDot.Name = varItem.Name;
-    pointDot.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
-    pointDot.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
-    if (varItem.Color) pointDot.Color = this.GetColor(varItem.Color);
-    else pointDot.Color = this.GetDefaultColor(id);
+    this.CreatePointDot = function (hqChart, windowIndex, varItem, id, hisData) 
+    {
+        let pointDot = new ChartPointDot();
+        pointDot.Canvas = hqChart.Canvas;
+        pointDot.Name = varItem.Name;
+        pointDot.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        pointDot.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Color) pointDot.Color = this.GetColor(varItem.Color);
+        else pointDot.Color = this.GetDefaultColor(id);
 
-    if (varItem.Radius) pointDot.Radius = varItem.Radius;
+        if (varItem.Radius) pointDot.Radius = varItem.Radius;
 
-    if (varItem.LineWidth) {
-      let width = parseInt(varItem.LineWidth.replace("LINETHICK", ""));
-      if (!isNaN(width) && width > 0) pointDot.Radius = width;
+        if (varItem.LineWidth) 
+        {
+            let width = parseInt(varItem.LineWidth.replace("LINETHICK", ""));
+            if (!isNaN(width) && width > 0) pointDot.Radius = width;
+        }
+
+        if (IFrameSplitOperator.IsBool(varItem.UpDownDot)) 
+        {
+            pointDot.EnableUpDownColor=varItem.UpDownDot;
+            pointDot.HistoryData=hisData;
+        }
+
+        let titleIndex = windowIndex + 1;
+        pointDot.Data.Data = varItem.Data;
+        hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(pointDot.Data, varItem.Name, pointDot.Color);
+
+        hqChart.ChartPaint.push(pointDot);
     }
-
-    let titleIndex = windowIndex + 1;
-    pointDot.Data.Data = varItem.Data;
-    hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(pointDot.Data, varItem.Name, pointDot.Color);
-
-    hqChart.ChartPaint.push(pointDot);
-  }
 
   this.CreateStick = function (hqChart, windowIndex, varItem, id) {
     let chart = new ChartStick();
@@ -1157,7 +1165,7 @@ function ScriptIndex(name, script, args, option)
             }
             else if (item.Type == 3) 
             {
-                this.CreatePointDot(hqChart, windowIndex, item, i);
+                this.CreatePointDot(hqChart, windowIndex, item, i, hisData);
             }
             else if (item.Type == 4) 
             {

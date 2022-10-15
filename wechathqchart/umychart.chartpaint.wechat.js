@@ -3253,6 +3253,8 @@ function ChartPointDot()
     this.Color = "rgb(255,193,37)";   //线段颜色
     this.Radius = 1;                  //点半径
     this.ClassName = 'ChartPointDot';
+    this.EnableUpDownColor=false;   //是否是红绿点
+    this.HistoryData;
 
     this.Draw = function () 
     {
@@ -3275,6 +3277,7 @@ function ChartPointDot()
 
         this.Canvas.save();
         this.Canvas.fillStyle = this.Color;
+        var colorDot;
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
         {
             var value = this.Data.Data[i];
@@ -3284,6 +3287,17 @@ function ChartPointDot()
             var y = this.ChartFrame.GetYFromData(value);
 
             if (x > chartright) break;
+
+            if (this.EnableUpDownColor)
+            {
+                var kItem=this.HistoryData.Data[i];
+
+                if (kItem.Close>value) colorDot="rgb(255,61,61)";
+                else colorDot='rgb(0,199,65)';
+
+                this.Canvas.fillStyle=colorDot;
+            }
+
 
             this.Canvas.beginPath();
             if (bHScreen) this.Canvas.arc(y, x, this.Radius, 0, Math.PI * 2, true);
