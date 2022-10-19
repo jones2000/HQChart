@@ -19797,7 +19797,7 @@ function OverlayScriptIndex(name,script,args,option)
             }
             else if (item.Type==3)
             {
-                this.CreatePointDot(hqChart,windowIndex,item,i);
+                this.CreatePointDot(hqChart,windowIndex,item,i, hisData);
             }
             else if (item.Type==4)
             {
@@ -19974,7 +19974,7 @@ function OverlayScriptIndex(name,script,args,option)
         frame.ChartPaint.push(chart);
     }
 
-    this.CreatePointDot=function(hqChart,windowIndex,varItem,id)
+    this.CreatePointDot=function(hqChart,windowIndex,varItem,id,hisData)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
@@ -19993,6 +19993,12 @@ function OverlayScriptIndex(name,script,args,option)
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
             if (!isNaN(width) && width>0) chart.Radius=width;
+        }
+
+        if (IFrameSplitOperator.IsBool(varItem.UpDownDot)) 
+        {
+            chart.EnableUpDownColor=varItem.UpDownDot;
+            chart.HistoryData=hisData;
         }
 
         let titleIndex=windowIndex+1;

@@ -14707,6 +14707,7 @@ function HQTradeFrame()
                     for(var j=0;j<item.OverlayIndex.length;++j)
                     {
                         var overlayItem=item.OverlayIndex[j];
+                        if (!overlayItem.RightWidth || !IFrameSplitOperator.IsNumber(overlayItem.RightWidth.Width)) continue;
                         var overlayWidth=overlayItem.RightWidth.Width;
 
                         item.Frame.Canvas.beginPath();
@@ -24538,8 +24539,6 @@ function ChartPointDot()
             else this.Canvas.arc(x, y, this.Radius, 0, Math.PI*2, true);
             this.Canvas.closePath();
             this.Canvas.fill();
-
-            preValue=value;
         }
 
         this.Canvas.restore();
@@ -27570,6 +27569,10 @@ function ChartMinuteInfo()
         
         this.FixHScreenTextRect(rtBorder,xData);
         var InfoDrawItem={ Border:rtBorder, Start:{X:x,Y:y}, IsLeft:isDrawLeft, Title:showItem.Title };
+        if (showItem.Content) InfoDrawItem.Content=showItem.Content;
+        if (showItem.Link) InfoDrawItem.Link=showItem.Link;
+        if (showItem.Color) InfoDrawItem.Color=showItem.Color;
+        if (showItem.BGColor) InfoDrawItem.BGColor=showItem.BGColor;
 
         this.InfoDrawCache.push(InfoDrawItem);
         this.TextRectCache.push(rtBorder);

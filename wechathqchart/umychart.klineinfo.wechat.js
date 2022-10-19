@@ -14,6 +14,11 @@ import {
     g_JSChartResource,
 } from './umychart.resource.wechat.js'
 
+import 
+{
+    IFrameSplitOperator,
+} from './umychart.framesplit.wechat.js'
+
 var KLINE_INFO_TYPE=
 {
     INVESTOR:1,         //互动易
@@ -759,9 +764,23 @@ function MarketEventInfo()
             for (var j in event.data) 
             {
                 var item = event.data[j];
-                if (item.length < 2) continue;
-                var info = { Date: event.date, Time: item[0], Title: item[1], Type: 0 };
-                this.Data.push(info);
+                if (Array.isArray(item))
+                {
+                    if (item.length < 2) continue;
+                    var info = { Date: event.date, Time: item[0], Title: item[1], Type: 0 };
+                    this.Data.push(info);
+                }
+                else    //2.0 格式
+                {
+                    if (!IFrameSplitOperator.IsNumber(item.Date) || !IFrameSplitOperator.IsNumber(item.Time) || !item.Title) continue;
+                    var info={ Date:item.Date, Time:item.Time, Title:item.Title, Type:0 };
+                    if (item.Color) info.Color=item.Color;
+                    if (item.BGColor) info.BGColor=item.BGColor;
+                    if (IFrameSplitOperator.IsNumber(item.Price)) info.Price=item.Price;
+                    if (item.Content) info.Content=item.Content;
+                    if (item.Link) info.Link=item.Link;
+                    this.Data.push(info);
+                }
             }
         }
 
