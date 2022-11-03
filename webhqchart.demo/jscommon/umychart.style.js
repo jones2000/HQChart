@@ -299,6 +299,17 @@ function GetBlackStyle()
             VolColor:"rgb(210,210,210)",       //标题成交量
             AmountColor:"rgb(210,210,210)",    //成交金额
         },
+
+        PCTooltipPaint:
+        {
+            BGColor:'rgba(20,20,20,0.8)',    //背景色
+            BorderColor:'rgb(210,210,210)',     //边框颜色
+            TitleColor:'rgb(210,210,210)',       //标题颜色
+            TitleFont:12*GetDevicePixelRatio() +'px 微软雅黑',   //字体
+            DateTimeColor:'rgb(210,210,210)',
+            VolColor:"rgb(161,154,3)",       //标题成交量
+            AmountColor:"rgb(161,154,3)",    //成交金额
+        },
     
         //走势图 信息地雷
         MinuteInfo:

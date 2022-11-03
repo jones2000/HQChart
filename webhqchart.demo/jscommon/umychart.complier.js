@@ -11769,7 +11769,9 @@ function JSSymbolData(ast,option,jsExecute)
                             "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
                             "symbol": self.Symbol,
                             "start": -1,
-                            "count": self.MaxRequestDataCount
+                            "count": self.MaxRequestDataCount,
+                            "period":this.Period,
+                            "right":this.Right
                         } 
                     },
                     Self:this,
@@ -11830,7 +11832,9 @@ function JSSymbolData(ast,option,jsExecute)
                             "field": ["name","symbol","yclose","open","price","high","low","vol"],
                             "symbol": self.Symbol,
                             "start": -1,
-                            "count": self.MaxRequestMinuteDayCount
+                            "count": self.MaxRequestMinuteDayCount,
+                            "period":this.Period,
+                            "right":this.Right
                         } 
                     },
                     Self:this,
@@ -14384,6 +14388,7 @@ function JSSymbolData(ast,option,jsExecute)
             //Condition:this.Condition,
             IsBeforeData:this.IsBeforeData,
             NetworkFilter:this.NetworkFilter,
+            IsApiPeriod:this.IsApiPeriod,
             KLineRange:DateTimeRange    //K线数据范围
         };
 
@@ -17909,6 +17914,7 @@ function ScriptIndexChartFactory()
                 MinuteFittingCallback:option.MinuteFittingCallback,
                 KLineFittingCallback:option.KLineFittingCallback,
                 CreateChartCallback:option.CreateChartCallback,
+                FormatTitleCallback:option.FormatTitleCallback,
             } 
         );
     }
@@ -17917,6 +17923,11 @@ function ScriptIndexChartFactory()
     {
         if (!this.DataMap.has(name)) return null;
         return this.DataMap.get(name);
+    }
+
+    this.Has=function(name)
+    {
+        return this.DataMap.has(name);
     }
 }
 
@@ -21543,6 +21554,15 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     outVarItem.Draw=drawItem;
                     //outVarItem.Name=draw.DrawType;
                     result.push(outVarItem);
+                }
+                else
+                {
+                    var find=g_ScriptIndexChartFactory.Get(draw.DrawType);  //外部挂接
+                    if (find && find.KLineFittingCallback)
+                    {
+                        if (find.KLineFittingCallback(item, outVarItem, { Date:date, Time:time, HQChart:hqChart }, this)) 
+                            result.push(outVarItem);
+                    }
                 }
             }
         }

@@ -129,7 +129,7 @@ DefaultData.GetMinuteOption=function()
             Top: 25,
             Bottom: 20,
 
-            AutoLeft:{ Blank:10, MinWidth:40 },
+            AutoLeft:{ Blank:10, MinWidth:60 },
             AutoRight:{ Blank:10, MinWidth:40 },
         },
 
@@ -144,6 +144,11 @@ DefaultData.GetMinuteOption=function()
             { SplitCount: 5, StringFormat: 0 },
             { SplitCount: 5, StringFormat: 0 }
         ],
+
+         ExtendChart:    //扩展图形
+        [
+            { Name:'MinutePCTooltip' }, //PC端tooltip
+        ]
     };
 
     return option;

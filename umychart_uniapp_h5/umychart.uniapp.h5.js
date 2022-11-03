@@ -36820,6 +36820,284 @@ function MinuteTooltipPaint()
     }
 }
 
+//PC端 分时图tooltip左侧固定
+function MinuteLeftTooltipPaint()
+{
+    this.newMethod=IExtendChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.IsDynamic=true;
+    this.IsEraseBG=true;
+    this.DrawAfterTitle=true;
+    this.ClassName='MinuteLeftTooltipPaint';
+    this.BorderColor=g_JSChartResource.PCTooltipPaint.BorderColor;    //边框颜色
+    this.BGColor=g_JSChartResource.PCTooltipPaint.BGColor;            //背景色
+    this.TitleColor=g_JSChartResource.PCTooltipPaint.TitleColor;      //标题颜色
+    this.DateTimeColor=g_JSChartResource.PCTooltipPaint.DateTimeColor;      //日期时间颜色
+    this.VolColor=g_JSChartResource.PCTooltipPaint.VolColor;          //标题成交量
+    this.AmountColor=g_JSChartResource.PCTooltipPaint.AmountColor;    //成交金额
+    this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
+    this.TitlePaint;
+
+    this.UpColor=g_JSChartResource.UpTextColor;
+    this.DownColor=g_JSChartResource.DownTextColor;
+    this.UnchagneColor=g_JSChartResource.UnchagneTextColor;
+    this.YClose;
+
+    this.Mergin={ Left:2, Top:3, Bottom:2, Right:2 };
+    this.LineHeight=15 //行高
+
+    this.Font=g_JSChartResource.PCTooltipPaint.TitleFont;
+    this.HQChart;
+
+     //设置参数接口
+    this.SetOption=function(option)
+    {
+        if (option.BGColor) this.BGColor=option.BGColor;
+        if (option.LanguageID>0) this.LanguageID=option.LanguageID;
+    }
+
+    this.IsEnableDraw=function()
+    {
+        if (!this.HQChart || !this.HQChart.TitlePaint || !this.HQChart.TitlePaint[0]) return false;
+        var pt=this.HQChart.LastPoint;
+        if (!pt) return false;
+
+        return this.HQChart.IsMouseOnClient(pt.X, pt.Y);
+    }
+
+    this.Draw=function()
+    {
+        if (!this.IsEnableDraw()) return;
+
+        this.TitlePaint=this.HQChart.TitlePaint[0];
+        if (!this.TitlePaint) return;
+        var pointInfo=this.TitlePaint.PointInfo;
+        var drawData;   //{ Type:0=连续交易 1=集合竞价, Data:数据 }
+        if (pointInfo && (pointInfo.ClientPos==2 || pointInfo.ClientPos==3 ||  (pointInfo.ClientPos>=200&& pointInfo.ClientPos<=299) || (pointInfo.ClientPos>=300&& pointInfo.ClientPos<=399)))
+        {
+            var auctionData=this.TitlePaint.GetCurrentAuctionData();
+            if (!auctionData) return;
+            drawData={ Type:1, Data:auctionData };
+        }
+        else
+        {
+            var minuteData=this.TitlePaint.GetCurrentKLineData();
+            if (!minuteData) return;
+            drawData={ Type:0, Data:minuteData };
+        }
+        
+        this.YClose=this.TitlePaint.YClose;
+        var aryText=this.GetForamtTitle(drawData);
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryText)) return;
+
+        this.Canvas.font=this.Font;
+        this.Canvas.textBaseline = 'top';
+        this.LineHeight=GetFontHeight(this.Canvas, null, "擎");
+        var border=this.ChartBorder.GetBorder();
+
+        var height=this.LineHeight*aryText.length*2;
+        var rtBorder={Left:1, Top:1, Right:border.Left };
+        rtBorder.Bottom=rtBorder.Top+height;
+        rtBorder.Width=rtBorder.Right-rtBorder.Left;
+        rtBorder.Height=rtBorder.Bottom-rtBorder.Top;
+        rtBorder.Height+=(this.Mergin.Top+this.Mergin.Bottom);
+        rtBorder.Bottom=rtBorder.Top+rtBorder.Height;
+
+        this.Canvas.fillStyle = this.BGColor;
+        this.Canvas.fillRect(rtBorder.Left,rtBorder.Top,rtBorder.Width,rtBorder.Height);
+
+        this.Canvas.strokeStyle=this.BorderColor;
+        this.Canvas.strokeRect(ToFixedPoint(rtBorder.Left),ToFixedPoint(rtBorder.Top),ToFixedRect(rtBorder.Width),ToFixedRect(rtBorder.Height));
+        
+        var right=border.Left-this.Mergin.Right;
+        var left=this.Mergin.Left+rtBorder.Left;
+        var top=this.Mergin.Top+rtBorder.Top;
+        var rtItem={ Left:left, Top:top, Right:right };
+        rtItem.Width=rtItem.Right-rtItem.Left;
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+            this.DrawText(item, rtItem);
+        }
+    }
+
+    this.DrawText=function(item, rtItem)
+    {
+        this.Canvas.fillStyle = item.TitleColor;
+
+        this.Canvas.textAlign = 'left';
+        this.Canvas.fillText(item.Title, rtItem.Left, rtItem.Top);
+        rtItem.Top+=this.LineHeight;
+        rtItem.Bottom=rtItem.Top+this.LineHeight;
+
+        this.Canvas.textAlign = 'right';
+        this.Canvas.fillStyle = item.TextColor;
+        this.Canvas.fillText(item.Text, rtItem.Right, rtItem.Top);
+        rtItem.Top+=this.LineHeight;
+        rtItem.Bottom=rtItem.Top+this.LineHeight;
+    }
+
+    //{ Title:, Text:, Color: }
+    this.GetForamtTitle=function(drawData)
+    {
+        if (!drawData || !drawData.Data) return null;
+
+        var aryText=[];
+        var upperSymbol;
+        if (this.HQChart.Symbol) upperSymbol=this.HQChart.Symbol.toUpperCase();
+        var defaultfloatPrecision=GetfloatPrecision(upperSymbol);//价格小数位数
+
+        if (drawData.Type==0)   //连续交易
+        {
+            var item=drawData.Data;
+            var titleItem=this.FormatDate(item.Date);
+            if (titleItem) aryText.push(titleItem);
+
+            var titleItem=this.ForamtTime(item.Time,"HH:MM",'PCTooltip-Time');
+            if (titleItem) aryText.push(titleItem);
+
+            var titleItem=this.ForamtPrice(item.Close,defaultfloatPrecision,'PCTooltip-Price');
+            if (titleItem) aryText.push(titleItem);
+
+            var titleItem=this.ForamtPrice(item.AvPrice,defaultfloatPrecision,'PCTooltip-AvPrice');
+            if (titleItem) aryText.push(titleItem);
+
+            var titleItem=this.ForamtIncrease(item.Close,"PCTooltip-Increase");
+            if (titleItem) aryText.push(titleItem);
+
+            var titleItem=this.FormatVol(item.Vol,'PCTooltip-Vol');
+            if (titleItem) aryText.push(titleItem);
+
+            if (IFrameSplitOperator.IsNumber(item.Amount))
+            {
+                var titleItem=
+                { 
+                    Title:g_JSChartLocalization.GetText('PCTooltip-Amount',this.LanguageID),
+                    TitleColor:this.TitleColor,
+                    Text:IFrameSplitOperator.FromatIntegerString(item.Amount,2,this.LanguageID),
+                    TextColor:this.AmountColor
+                };
+
+                aryText.push(titleItem);
+            }
+        }
+        else if (drawData.Type==1)  //集合竞价
+        {
+            var item=drawData.Data.Data;
+            var titleItem=this.FormatDate(item.Date);
+            if (titleItem) aryText.push(titleItem);
+
+            var timeForamt="HH:MM:SS";
+            if (item.Ver===1) timeForamt="HH:MM"
+            
+            var titleItem=this.ForamtTime(item.Time,timeForamt,'PCTooltip-Time');
+            if (titleItem) aryText.push(titleItem);
+           
+            var titleItem=this.ForamtPrice(item.Price,defaultfloatPrecision,'PCTooltip-AC-Price');
+            if (titleItem) aryText.push(titleItem);
+
+            var titleItem=this.ForamtIncrease(item.Price,"PCTooltip-AC-Increase");
+            if (titleItem) aryText.push(titleItem);
+
+            if (IFrameSplitOperator.IsNonEmptyArray(item.Vol))
+            {
+                var titleItem=this.FormatVol(item.Vol[0],'PCTooltip-AC-Vol');
+                if (titleItem) aryText.push(titleItem);
+    
+                var titleItem=this.FormatVol(item.Vol[1],'PCTooltip-AC-NotMatchVol');
+                if (titleItem) aryText.push(titleItem);
+            }
+        }
+
+        return aryText;
+    }
+
+    this.GetColor=function(price,yclse)
+    {
+        if(price>yclse) return this.UpColor;
+        else if (price<yclse) return this.DownColor;
+        else return this.UnchagneColor;
+    }
+
+    this.FormatDate=function(date)
+    {
+        if (!IFrameSplitOperator.IsNumber(date)) return null;
+        
+        var titleItem=
+        { 
+            Title:g_JSChartLocalization.GetText('PCTooltip-Date',this.LanguageID),
+            TitleColor:this.TitleColor,
+            Text:IFrameSplitOperator.FormatDateString(date, "MM-DD", this.LanguageID),
+            TextColor:this.DateTimeColor
+        };
+
+        return titleItem;
+    }
+
+    this.ForamtTime=function(time, format, TitleID)
+    {
+        if (!IFrameSplitOperator.IsNumber(time)) return null;
+
+        var titleItem=
+        { 
+            Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID),
+            TitleColor:this.TitleColor,
+            Text:IFrameSplitOperator.FormatTimeString(time, format, this.LanguageID),
+            TextColor:this.DateTimeColor
+        };
+
+        return titleItem;
+    }
+
+    this.ForamtPrice=function(price, defaultfloatPrecision, TitleID)
+    {
+        if (!IFrameSplitOperator.IsNumber(price)) return null;
+
+        var titleItem=
+        { 
+            Title:g_JSChartLocalization.GetText(TitleID, this.LanguageID),
+            TitleColor:this.TitleColor,
+            Text:price.toFixed(defaultfloatPrecision),
+            TextColor:this.GetColor(price, this.YClose)
+        };
+
+        return titleItem;
+    }
+
+    this.ForamtIncrease=function(price, TitleID)
+    {
+        if (!IFrameSplitOperator.IsNumber(price) || price==0) return null;
+        
+        var value=(price-this.YClose)/this.YClose*100;
+        var titleItem=
+        { 
+            Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID),
+            TitleColor:this.TitleColor,
+            Text:value.toFixed(2)+'%',
+            TextColor:this.GetColor(value, 0)
+        };
+
+        return titleItem;
+    }
+
+    this.FormatVol=function(vol, TitleID)
+    {
+        if (!IFrameSplitOperator.IsNumber(vol)) return null;
+        
+        var titleItem=
+        { 
+            Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID),
+            TitleColor:this.TitleColor,
+            Text:IFrameSplitOperator.FromatIntegerString(vol,2,this.LanguageID),
+            TextColor:this.VolColor
+        };
+        
+        return titleItem;
+    }
+}
+
 //股票信息
 function StockInfoExtendChartPaint()
 {
@@ -45357,6 +45635,81 @@ function DynamicMinuteTitlePainting()
         return item;
     }
 
+    this.GetCurrentAuctionData=function()   //获取当前鼠标所在位置的盘前盘后数据
+    {
+        var isHScreen=this.Frame.IsHScreen===true;
+        if (this.PointInfo.ClientPos==2)
+        {
+            if (!this.BeforeOpenData) return null;
+            if (!this.CallAcutionXOperator) return null;
+
+            this.CallAcutionXOperator.Value=isHScreen?this.PointInfo.Point.Y:this.PointInfo.Point.X;
+            this.CallAcutionXOperator.Point={X:this.PointInfo.Point.X, Y:this.PointInfo.Point.Y};
+            this.CallAcutionXOperator.ClientPos=this.PointInfo.ClientPos;
+            if (!this.CallAcutionXOperator.Operator()) return null;
+            
+            var callbackData={Explain:"BeforeOpen", Data:null, DataIndex:null, DataTotalCount:this.BeforeOpenData.TotalCount };
+            callbackData.DataIndex=this.CallAcutionXOperator.DataIndex;
+            callbackData.Data=this.CallAcutionXOperator.Item;
+            callbackData.Ver=this.BeforeOpenData.Ver;
+            return callbackData;
+        }
+        else if (this.PointInfo.ClientPos==3)
+        {
+            if (!this.AfterCloseData) return null;
+            if (!this.CallAcutionXOperator) return null;
+            
+            this.CallAcutionXOperator.Value=isHScreen?this.PointInfo.Point.Y:this.PointInfo.Point.X;
+            this.CallAcutionXOperator.Point={X:this.PointInfo.Point.X, Y:this.PointInfo.Point.Y};
+            this.CallAcutionXOperator.ClientPos=this.PointInfo.ClientPos;
+            if (!this.CallAcutionXOperator.Operator()) return null;
+
+            var callbackData={Explain:"AfterClose", Data:null, DataIndex:null, DataTotalCount:this.AfterCloseData.TotalCount };
+            callbackData.DataIndex=this.CallAcutionXOperator.DataIndex;
+            callbackData.Data=this.CallAcutionXOperator.Item;
+            callbackData.Ver=this.AfterCloseData.Ver;
+            return callbackData;
+        }
+        else if (this.PointInfo.ClientPos>=200 && this.PointInfo.ClientPos<=299)
+        {
+            if (!this.MultiDayBeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData) ) return null;
+
+            var x=this.Frame.IsHScreen==true?this.PointInfo.Point.Y:this.PointInfo.Point.X;
+            this.CallAcutionXOperator.Value=x;
+            this.CallAcutionXOperator.Point={X:this.PointInfo.Point.X, Y:this.PointInfo.Point.Y};
+            this.CallAcutionXOperator.ClientPos=this.PointInfo.ClientPos;
+            if (!this.CallAcutionXOperator.Operator()) return null;
+
+            var dayItem=this.MultiDayBeforeOpenData[this.CallAcutionXOperator.DayIndex];
+            var callbackData={Explain:"MultiDayBeforeOpen", Data:null, DataIndex:null };
+            callbackData.DataIndex=this.CallAcutionXOperator.DataIndex;
+            callbackData.DayIndex=this.CallAcutionXOperator.DayIndex;
+            callbackData.Data=this.CallAcutionXOperator.Item;
+            callbackData.Ver=dayItem.Ver;
+            return callbackData;
+        }
+        else if (this.PointInfo.ClientPos>=300 && this.PointInfo.ClientPos<=399)
+        {
+            if (!this.MultiDayAfterCloseData || !IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData) ) return null;
+
+            var x=this.Frame.IsHScreen==true?this.PointInfo.Point.Y:this.PointInfo.Point.X;
+            this.CallAcutionXOperator.Value=x;
+            this.CallAcutionXOperator.Point={X:this.PointInfo.Point.X, Y:this.PointInfo.Point.Y};
+            this.CallAcutionXOperator.ClientPos=this.PointInfo.ClientPos;
+            if (!this.CallAcutionXOperator.Operator()) return null;
+
+            var dayItem=this.MultiDayAfterCloseData[this.CallAcutionXOperator.DayIndex];
+            var callbackData={Explain:"MultiDayAfterClose", Data:null, DataIndex:null };
+            callbackData.DataIndex=this.CallAcutionXOperator.DataIndex;
+            callbackData.DayIndex=this.CallAcutionXOperator.DayIndex;
+            callbackData.Data=this.CallAcutionXOperator.Item;
+            callbackData.Ver=dayItem.Ver;
+            return callbackData;
+        }
+
+        return null;
+    }
+
     this.GetLatestKLineData=function(bCallAuction)  //获取最新一个K线数据 bCallAuction=是否包含集合竞价数据
     {
         var beforeItem=null;
@@ -46726,6 +47079,12 @@ function DynamicChartTitlePainting()
                 aryText=this.FromatStackedBarTitle(value, item);
                 if (!aryText) return null;
                 return { Text:null, ArrayText:aryText };
+            }
+            else if (g_ScriptIndexChartFactory.Has(item.DataType)) //外部挂接
+            {
+                var find=g_ScriptIndexChartFactory.Get(item.DataType);
+                if (find && find.FormatTitleCallback)
+                return find.FormatTitleCallback(value, item, dataIndex);
             }
             else
             {
@@ -53842,6 +54201,17 @@ function JSChartResource()
         AmountColor:"rgb(210,210,210)",    //成交金额
     };
 
+    this.PCTooltipPaint = 
+    {
+        BGColor:'rgba(250,250,250)',        //背景色
+        BorderColor:'rgb(120,120,120)',     //边框颜色
+        TitleColor:'rgb(60,60,60)',       //标题颜色
+        TitleFont:12*GetDevicePixelRatio() +'px 微软雅黑',   //字体
+        DateTimeColor:'rgb(60,60,60)',
+        VolColor:"rgb(60,60,60)",       //标题成交量
+        AmountColor:"rgb(60,60,60)",    //成交金额
+    };
+
     this.PCTooltip= {
         LineHeight:25   //单行高度
     };
@@ -54409,6 +54779,19 @@ function JSChartResource()
             if (style.TooltipPaint.AmountColor) this.TooltipPaint.AmountColor=style.TooltipPaint.AmountColor;
         }
 
+        if (style.PCTooltipPaint)
+        {
+            var item=style.PCTooltipPaint;
+            if (item.BGColor) this.PCTooltipPaint.BGColor=item.BGColor;
+            if (item.BorderColor) this.PCTooltipPaint.BorderColor=item.BorderColor;
+            if (item.TitleColor) this.PCTooltipPaint.TitleColor=item.TitleColor;
+            if (item.TitleFont) this.PCTooltipPaint.TitleFont=item.TitleFont;
+
+            if (item.DateTimeColor) this.PCTooltipPaint.DateTimeColor=item.DateTimeColor;
+            if (item.VolColor) this.PCTooltipPaint.VolColor=item.VolColor;
+            if (item.AmountColor) this.PCTooltipPaint.AmountColor=item.AmountColor;
+        }
+
         if (style.MinuteInfo)
         {
             if (style.MinuteInfo.TextColor) this.MinuteInfo.TextColor=style.MinuteInfo.TextColor;
@@ -54964,6 +55347,19 @@ function JSChartLocalization()
         ['DivTooltip-Position', {CN:'持仓:', EN:'Position:', TC:'持倉'}],
         ['DivTooltip-Price', {CN:'价格:', EN:'Open:', TC:'價格'}],
 
+        //走势图PC tooltip
+        ['PCTooltip-Date', {CN:'日期', EN:'Date', TC:"日期"}],
+        ['PCTooltip-Time', {CN:'时间', EN:'Time', TC:"時間"}],
+        ['PCTooltip-Price', {CN:'价格', EN:'Price:', TC:'價格'}],
+        ['PCTooltip-AvPrice', {CN:'均价', EN:'AVPrice:', TC:'均價'}],
+        ['PCTooltip-Increase', {CN:'涨幅', EN:'Increase:', TC:'漲幅'}],
+        ['PCTooltip-Vol', {CN:'成交量', EN:'Volume:', TC:'成交量'}],
+        ['PCTooltip-Amount', {CN:'成交额', EN:'Amount:', TC:'成交額'}],
+        ['PCTooltip-AC-Price', {CN:'匹配价:', EN:'Price:', TC:'匹配價'}],
+        ['PCTooltip-AC-Increase', {CN:'竞价涨幅:', EN:'Increase:', TC:'競價漲幅'}],
+        ['PCTooltip-AC-Vol', {CN:'匹配量:', EN:'V:', TC:'匹配量'}],
+        ['PCTooltip-AC-NotMatchVol', {CN:'未匹配量:', EN:'NV:', TC:'未匹配量'}],
+
         //K线动态标题
         ['KTitle-Open', {CN:'开:', EN:'O:', TC:'開'}],
         ['KTitle-High', {CN:'高:', EN:'H:', TC:'高'}],
@@ -54993,6 +55389,8 @@ function JSChartLocalization()
         ['MTitle-Amount', {CN:'额:', EN:'A:', TC:'額'}],
         ['MTitle-Position', {CN:'持:', EN:'P:', TC:'持'}],
         ["MTitle-UpdateTime", {CN:"更新:", EN:"Update:", TC:"更新:"}],
+
+       
 
         //周期
         ['日线', {CN:'日线', EN:'1D', TC:'日綫'}],
@@ -66772,6 +67170,17 @@ function MinuteChartContainer(uielement)
             case 'MinuteTooltip':
                 if (option.Create && typeof(option.Create)=='function') chart=option.Create();
                 else chart=new MinuteTooltipPaint();
+                chart.Canvas=this.Canvas;
+                chart.ChartBorder=this.Frame.ChartBorder;
+                chart.ChartFrame=this.Frame;
+                chart.HQChart=this;
+                option.LanguageID=this.LanguageID;
+                chart.SetOption(option);
+                this.ExtendChartPaint.push(chart);
+                return chart;
+            case "MinutePCTooltip":
+                if (option.Create && typeof(option.Create)=="function") chart=option.Create();
+                else chart=new MinuteLeftTooltipPaint();
                 chart.Canvas=this.Canvas;
                 chart.ChartBorder=this.Frame.ChartBorder;
                 chart.ChartFrame=this.Frame;
@@ -91994,7 +92403,9 @@ function JSSymbolData(ast,option,jsExecute)
                             "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
                             "symbol": self.Symbol,
                             "start": -1,
-                            "count": self.MaxRequestDataCount
+                            "count": self.MaxRequestDataCount,
+                            "period":this.Period,
+                            "right":this.Right
                         } 
                     },
                     Self:this,
@@ -92055,7 +92466,9 @@ function JSSymbolData(ast,option,jsExecute)
                             "field": ["name","symbol","yclose","open","price","high","low","vol"],
                             "symbol": self.Symbol,
                             "start": -1,
-                            "count": self.MaxRequestMinuteDayCount
+                            "count": self.MaxRequestMinuteDayCount,
+                            "period":this.Period,
+                            "right":this.Right
                         } 
                     },
                     Self:this,
@@ -94609,6 +95022,7 @@ function JSSymbolData(ast,option,jsExecute)
             //Condition:this.Condition,
             IsBeforeData:this.IsBeforeData,
             NetworkFilter:this.NetworkFilter,
+            IsApiPeriod:this.IsApiPeriod,
             KLineRange:DateTimeRange    //K线数据范围
         };
 
@@ -98134,6 +98548,7 @@ function ScriptIndexChartFactory()
                 MinuteFittingCallback:option.MinuteFittingCallback,
                 KLineFittingCallback:option.KLineFittingCallback,
                 CreateChartCallback:option.CreateChartCallback,
+                FormatTitleCallback:option.FormatTitleCallback,
             } 
         );
     }
@@ -98142,6 +98557,11 @@ function ScriptIndexChartFactory()
     {
         if (!this.DataMap.has(name)) return null;
         return this.DataMap.get(name);
+    }
+
+    this.Has=function(name)
+    {
+        return this.DataMap.has(name);
     }
 }
 
@@ -101769,6 +102189,15 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     //outVarItem.Name=draw.DrawType;
                     result.push(outVarItem);
                 }
+                else
+                {
+                    var find=g_ScriptIndexChartFactory.Get(draw.DrawType);  //外部挂接
+                    if (find && find.KLineFittingCallback)
+                    {
+                        if (find.KLineFittingCallback(item, outVarItem, { Date:date, Time:time, HQChart:hqChart }, this)) 
+                            result.push(outVarItem);
+                    }
+                }
             }
         }
 
@@ -103676,6 +104105,17 @@ function GetBlackStyle()
             DateTimeColor:'rgb(210,210,210)',
             VolColor:"rgb(210,210,210)",       //标题成交量
             AmountColor:"rgb(210,210,210)",    //成交金额
+        },
+
+        PCTooltipPaint:
+        {
+            BGColor:'rgba(20,20,20,0.8)',    //背景色
+            BorderColor:'rgb(210,210,210)',     //边框颜色
+            TitleColor:'rgb(210,210,210)',       //标题颜色
+            TitleFont:12*GetDevicePixelRatio() +'px 微软雅黑',   //字体
+            DateTimeColor:'rgb(210,210,210)',
+            VolColor:"rgb(161,154,3)",       //标题成交量
+            AmountColor:"rgb(161,154,3)",    //成交金额
         },
     
         //走势图 信息地雷
