@@ -392,7 +392,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 3. [HQChart实战教程56-欧易网http+ws数据对接 uniapp版本](https://blog.csdn.net/jones2000/article/details/125354005)<br>
 
 ## 源码收费
-1. [HQChart实战教程36-数字货币币安对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/114468807)<br>
+1. [HQChart实战教程36-数字货币币安对接-uniapp版本](https://jones2000.github.io/HQChart/document/uniapp_binance.html)<br>
 2. [HQChart实战教程41-新浪+腾讯A股数据源对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/117139756)<br>
 3. [HQChart实战教程42-新浪期货数据源对接-uniapp版本](https://blog.csdn.net/jones2000/article/details/117757956)<br>
 4. [股票当日分时图例子,使用东方财富网页数据](https://download.csdn.net/download/jones2000/22589484)<br>
