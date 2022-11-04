@@ -10134,7 +10134,7 @@ function JSSymbolData(ast,option,jsExecute)
     {
         if (!recvData)
         {
-            //JSConsole.Complier.Log(`[JSSymbolData::RecvStockValue] key=${key} data is null`);
+            JSConsole.Complier.Log(`[JSSymbolData::RecvStockValue] key=${key} data is null`);
             return;
         }
 
@@ -10144,12 +10144,19 @@ function JSSymbolData(ast,option,jsExecute)
             {
                 var kdata=this.Data;   //K线
                 var aryFittingData;
-                if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))
-                    aryFittingData=kdata.GetFittingFinanceData(recvData);        //数据和主图K线拟合
-                else if (JSCommonData.ChartData.IsMinutePeriod(this.Period,true))
-                    aryFittingData=kdata.GetMinuteFittingFinanceData(recvData);  //数据和主图K线拟合
-                else 
-                    return;
+                if (this.DataType==HQ_DATA_TYPE.KLINE_ID)
+                {
+                    if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))
+                        aryFittingData=kdata.GetFittingFinanceData(recvData);        //数据和主图K线拟合
+                    else if (JSCommonData.ChartData.IsMinutePeriod(this.Period,true))
+                        aryFittingData=kdata.GetMinuteFittingFinanceData(recvData);  //数据和主图K线拟合
+                    else 
+                        return;
+                }
+                else
+                {
+                    aryFittingData=kdata.GetMinuteFittingFinanceData(recvData);  //数据和主图分时拟合
+                }
         
                 var bindData=new JSCommonData.ChartData();
                 bindData.Data=aryFittingData;
@@ -10179,19 +10186,26 @@ function JSSymbolData(ast,option,jsExecute)
         else if (dataType==2)   //数据不做平滑处理
         {
             var kdata=this.Data;   //K线
-                var aryFittingData;
+            var aryFittingData;
+            if (this.DataType==HQ_DATA_TYPE.KLINE_ID)
+            {
                 if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))
                     aryFittingData=kdata.GetFittingTradeData(recvData, 0, false);        //数据和主图K线拟合
                 else if (JSCommonData.ChartData.IsMinutePeriod(this.Period,true))
                     aryFittingData=kdata.GetMinuteFittingTradeData(recvData, 0, false);  //数据和主图K线拟合
                 else 
                     return;
+            }
+            else
+            {
+                aryFittingData=kdata.GetMinuteFittingTradeData(recvData, 0);  //数据和主图分钟拟合
+            }
         
-                var bindData=new JSCommonData.ChartData();
-                bindData.Data=aryFittingData;
-                var result=bindData.GetValue();
-        
-                this.StockData.set(key,{ Data:result });
+            var bindData=new JSCommonData.ChartData();
+            bindData.Data=aryFittingData;
+            var result=bindData.GetValue();
+    
+            this.StockData.set(key,{ Data:result });
         }
     }
 
