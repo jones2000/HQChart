@@ -6309,6 +6309,8 @@ var JSCHART_DATA_FIELD_ID=
     MINUTE_BEFOREOPEN_EXTENDDATA:21,
     MINUTE_AFTERCLOSE_EXTENDDATA:21,
     KLINE_COLOR_DATA:66,            //K线自定义颜色数据
+    KLINE_DAY_EXTENDDATA:25,
+    KLINE_MINUTE_EXTENDDATA:25,
 }
 
 
@@ -14770,6 +14772,8 @@ function MinuteFrame()
                 return { DayIndex:parseInt(i), DataIndex:index };
             }
         }
+
+        return null;
     }
 
     this.GetRightExtendXData=function(x, obj)
@@ -19303,6 +19307,7 @@ HistoryData.Copy=function(data)
 
     if (data.OrderFlow) newData.OrderFlow=data.OrderFlow;
     if (data.ColorData) newData.ColorData=data.ColorData;
+    if (data.ExtendData) newData.ExtendData=data.ExtendData;
 
     return newData;
 }
@@ -19336,6 +19341,7 @@ HistoryData.CopyTo=function(dest,src)
 
     if (src.OrderFlow) dest.OrderFlow=src.OrderFlow;
     if (src.ColorData) dest.ColorData=src.ColorData;
+    if (src.ExtendData) dest.ExtendData=src.ExtendData;
 }
 
 //数据复权拷贝
@@ -43009,6 +43015,7 @@ function CallAcutionXOperator()
 
         var dayData=multiDayAfterCloseData[dayIndex];
         var indexData=this.Frame.GetRightExtendXData(this.Value, multiDayAfterCloseData);
+        if (!indexData) return;
         var index=parseInt(indexData.DataIndex.toFixed(0));
         var dayIndex=indexData.DayIndex;
 
@@ -63001,6 +63008,7 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
     var bfactor=11, afactor=12; //前, 后复权因子
     var orderFlow=JSCHART_DATA_FIELD_ID.KLINE_ORDERFLOW;
     var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
+    var extendDataIndex=JSCHART_DATA_FIELD_ID.KLINE_DAY_EXTENDDATA; //k线扩展数据
     for (var i = 0; i < list.length; ++i)
     {
         var item = new HistoryData();
@@ -63025,6 +63033,7 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
 
         if (jsData[orderFlow]) item.OrderFlow=jsData[orderFlow];
         if (jsData[colorData]) item.ColorData=jsData[colorData];
+        if (jsData[extendDataIndex]) item.ExtendData=jsData[extendDataIndex];
 
         aryDayData.push(item);
     }
@@ -63067,6 +63076,7 @@ KLineChartContainer.JsonDataToRealtimeData=function(data, symbol)
     if (IFrameSplitOperator.IsNumber(stock.bfactor)) item.BFactor=stock.bfactor;    //前复权因子
     if (IFrameSplitOperator.IsNumber(stock.afactor)) item.AFactor=stock.afactor;    //后复权因子
     if (stock.colordata) item.ColorData=stock.colordata;    //自定义颜色
+    if (stock.extendData) item.ExtendData=stock.extendData;
     return item;
 }
 
@@ -63202,6 +63212,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position=9;
     var orderFlow=JSCHART_DATA_FIELD_ID.KLINE_ORDERFLOW;
     var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
+    var extendDataIndex=JSCHART_DATA_FIELD_ID.KLINE_MINUTE_EXTENDDATA; //k线扩展数据
     var yClose=null; 
     for (var i = 0; i < list.length; ++i)
     {
@@ -63227,6 +63238,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
 
         if (jsData[orderFlow]) item.OrderFlow=jsData[orderFlow];
         if (jsData[colorData]) item.ColorData=jsData[colorData];
+        if (jsData[extendDataIndex]) item.ExtendData=jsData[extendDataIndex];
 
         aryDayData.push(item);
     }
@@ -77189,6 +77201,13 @@ var MARKET_SUFFIX_NAME=
         {
             if(day == 6 || day== 0) return 0;   //周末
 
+            if (this.IsCFFEX(upperSymbol))  //中金所期货 9:10-15:40
+            {
+                if(time>1540) return 3;
+                if(time<910) return 1;
+                return 2;
+            }
+
             //21:00-2:30
             if(time>=2100) return 2;
             if (time<=240) return 2;
@@ -77198,11 +77217,11 @@ var MARKET_SUFFIX_NAME=
 
             return 1;
         }
-        else    //9:30 - 15:40
+        else    //9:30 - 15:40  (默认9:10-15:40)
         {
             if(day == 6 || day== 0) return 0;   //周末
             if(time>1540) return 3;
-            if(time<925) return 1;
+            if(time<910) return 1;
             return 2;   
         }
 
@@ -95503,10 +95522,7 @@ function JSSymbolData(ast,option,jsExecute)
             var month=parseInt(item.Date%10000/100);
             var day=item.Date%100;
             
-            tempDate.setFullYear(year);
-            tempDate.setMonth(month-1);
-            tempDate.setDate(day);
-
+            tempDate.setFullYear(year,month-1,day);
             result[i]=tempDate.getDay();
         }
 

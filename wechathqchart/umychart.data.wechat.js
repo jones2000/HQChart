@@ -89,6 +89,8 @@ HistoryData.Copy=function(data)
     if (IsPlusNumber(data.AFactor)) newData.AFactor = data.AFactor;
 
     if (data.ColorData) newData.ColorData=data.ColorData;
+    if (data.ExtendData) newData.ExtendData=data.ExtendData;
+
     return newData;
 }
 
@@ -106,17 +108,18 @@ HistoryData.CopyTo = function (dest, src)
     if (IsPlusNumber(src.Time))  dest.Time = src.Time;
     if (IsPlusNumber(src.FlowCapital)) dest.FlowCapital = src.FlowCapital;
 
-     //指数才有的数据
+    //指数才有的数据
     if (IsPlusNumber(src.Stop)) dest.Stop = src.Stop;
     if (IsPlusNumber(src.Up)) dest.Up = src.Up;
     if (IsPlusNumber(src.Down)) dest.Down = src.Down;
     if (IsPlusNumber(src.Unchanged)) dest.Unchanged = src.Unchanged;
 
-     //复权因子
-     if (IsPlusNumber(src.BFactor)) dest.BFactor = src.BFactor;
-     if (IsPlusNumber(src.AFactor)) dest.AFactor = src.AFactor;
+    //复权因子
+    if (IsPlusNumber(src.BFactor)) dest.BFactor = src.BFactor;
+    if (IsPlusNumber(src.AFactor)) dest.AFactor = src.AFactor;
 
-     if (src.ColorData) dest.ColorData=src.ColorData;
+    if (src.ColorData) dest.ColorData=src.ColorData;
+    if (src.ExtendData) dest.ExtendData=src.ExtendData;
 }
 
 //数据复权拷贝
@@ -155,6 +158,9 @@ function MinuteData()
     this.Date;
     this.Time;
     this.Position = null;  //持仓量
+    this.YClearing;         //昨结算价
+
+    this.ExtendData;    //扩展数据
 }
 
 //单指标数据
@@ -1968,7 +1974,13 @@ var JSCHART_EVENT_ID =
 var JSCHART_DATA_FIELD_ID=
 {
     MINUTE_MULTI_DAY_EXTENDDATA:21, //多日分时图扩展数据序号
+    MINUTE_DAY_EXTENDDATA:21,
+    MINUTE_BEFOREOPEN_EXTENDDATA:21,
+    MINUTE_AFTERCLOSE_EXTENDDATA:21,
+
     KLINE_COLOR_DATA:66,            //K线自定义颜色数据
+    KLINE_DAY_EXTENDDATA:25,
+    KLINE_MINUTE_EXTENDDATA:25,
 }
 
 var HQ_DATA_TYPE=

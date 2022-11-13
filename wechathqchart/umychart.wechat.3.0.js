@@ -9967,6 +9967,7 @@ KLineChartContainer.JsonDataToHistoryData = function (data)
     var fclose=9, yfclose=10;   //结算价, 前结算价
     var bfactor=11, afactor=12; //前, 后复权因子
     var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
+    var extendDataIndex=JSCHART_DATA_FIELD_ID.KLINE_DAY_EXTENDDATA;     //k线扩展数据
     for (var i = 0; i < list.length; ++i) 
     {
         var item = new HistoryData();
@@ -9990,6 +9991,7 @@ KLineChartContainer.JsonDataToHistoryData = function (data)
         if (!IFrameSplitOperator.IsNumber(item.Open)) continue; 
 
         if (jsData[colorData]) item.ColorData=jsData[colorData];
+        if (jsData[extendDataIndex]) item.ExtendData=jsData[extendDataIndex];
 
         aryDayData.push(item);
     }
@@ -10031,6 +10033,7 @@ KLineChartContainer.JsonDataToRealtimeData = function (data, symbol)
     if (IFrameSplitOperator.IsNumber(stock.bfactor)) item.BFactor=stock.bfactor;    //前复权因子
     if (IFrameSplitOperator.IsNumber(stock.afactor)) item.AFactor=stock.afactor;    //后复权因子
     if (stock.colordata) item.ColorData=stock.colordata;    //自定义颜色
+    if (stock.extendData) item.ExtendData=stock.extendData;
     return item;
 }
 
@@ -10045,7 +10048,7 @@ KLineChartContainer.JsonDataToMinuteRealtimeData = function (data)
     var date = data.stock[0].date;
     if (isFutures && data.stock[0].yclearing) preClose = data.stock[0].yclearing;  //期货使用昨结算价
 
-    for (var i in data.stock[0].minute) 
+    for (var i=0; i<data.stock[0].minute.length; ++i) 
     {
         var jsData = data.stock[0].minute[i];
         var item = new HistoryData();
@@ -10097,6 +10100,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
     var aryDayData = new Array();
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position = 9;
     var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
+    var extendDataIndex=JSCHART_DATA_FIELD_ID.KLINE_MINUTE_EXTENDDATA; //k线扩展数据
     for (var i = 0; i < list.length; ++i) 
     {
         var item = new HistoryData();
@@ -10112,6 +10116,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
         item.Time = jsData[time];
         if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position = jsData[position]; //期货持仓
         if (jsData[colorData]) item.ColorData=jsData[colorData];
+        if (jsData[extendDataIndex]) item.ExtendData=jsData[extendDataIndex];
         aryDayData.push(item);
     }
 
@@ -11480,19 +11485,6 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
         }
         if (isFutures || isSHO || isSZO) item.Position = jsData.position;  //期货 期权有持仓
 
-        if (i == 0)      //第1个数据 写死9：25
-        {
-            item.IsFristData = true;
-            //if (isSHSZ) item.DateTime = data.stock[0].date.toString() + " 0925";
-            if (item.Close <= 0) //第1分钟 没数据就用开盘价
-            {
-                item.Close = data.stock[0].open;
-                item.High = item.Low = data.stock[0].open;
-                item.AvPrice = data.stock[0].open;
-                JSConsole.Chart.Log('[MinuteChartContainer::JsonDataToMinuteData] first minute data is empty.', data.stock[0].symbol, jsData);
-            }
-        }
-
         //价格是0的 都用空
         if (item.Open <= 0) item.Open = null;
         if (item.Close <= 0) item.Close = null;
@@ -11501,7 +11493,8 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
         if (item.Low <= 0) item.Low = null;
 
         if (yClose && item.Close) item.Increase = (item.Close - yClose) / yClose * 100; //涨幅 (最新价格-昨收)/昨收*10
-
+        if (jsData.ExtendData) item.ExtendData=jsData.ExtendData;   //扩展数据
+        
         aryMinuteData[i] = item;
     }
 
@@ -11517,7 +11510,8 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
     var isSHO = MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
     var isSZO = MARKET_SUFFIX_NAME.IsSZO(upperSymbol);            //深证股票期权
     var result = [];
-    for (var i in data.data) 
+    var extendDataIndex=JSCHART_DATA_FIELD_ID.MINUTE_MULTI_DAY_EXTENDDATA;  //扩展数据序号
+    for (var i=0; i<data.data.length; ++i) 
     {
         var minuteData = [];
         var dayData = data.data[i];
@@ -11526,7 +11520,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
         var preClose = yClose;              //前一个数据价格
         var yClearing=dayData.yclearing;    //昨结算价
         var preAvPrice=null;                //前一个均价
-        for (var j in dayData.minute) 
+        for (var j=0;j<dayData.minute.length; ++j) 
         {
             var jsData = dayData.minute[j];
             if (jsData[2]) preClose = jsData[2];  //保存上一个收盘数据
@@ -11580,6 +11574,8 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
             if (item.Low <= 0) item.Low = null;
             if (item.AvPrice <= 0) item.AvPrice = null;
 
+            if (jsData[extendDataIndex]) item.ExtendData=jsData[extendDataIndex];
+            
             minuteData[j] = item;
         }
 

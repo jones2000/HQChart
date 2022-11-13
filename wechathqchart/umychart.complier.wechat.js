@@ -10950,10 +10950,7 @@ function JSSymbolData(ast,option,jsExecute)
             var month = parseInt(item.Date % 10000 / 100);
             var day = item.Date % 100;
 
-            tempDate.setFullYear(year);
-            tempDate.setMonth(month - 1);
-            tempDate.setDate(day);
-
+            tempDate.setFullYear(year, month - 1, day);
             result[i] = tempDate.getDay();
         }
 
