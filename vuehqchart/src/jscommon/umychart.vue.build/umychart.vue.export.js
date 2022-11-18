@@ -54,6 +54,10 @@ export default {
     JSReportChart:JSReportChart,
     REPORT_COLUMN_ID:REPORT_COLUMN_ID,
 
+    //键盘精灵
+    JSKeyboardChart:JSKeyboardChart,
+    KEYBOARD_COLUMN_ID:KEYBOARD_COLUMN_ID,
+
     //图形基类导出
     IChartPainting:IChartPainting,              //图形
     IExtendChartPainting:IExtendChartPainting,  //扩展图形

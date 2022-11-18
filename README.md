@@ -174,6 +174,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 4. 支持配置列本地排序或远程排序<br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report.gif)<br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report2.gif)<br>
+* 键盘精灵<br>
+![键盘精灵](/小程序行情模块用例/image/sendsymbol_demo.gif)<br>
 
 
 
