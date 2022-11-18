@@ -44825,7 +44825,7 @@ function HistoryDataStringFormat()
                 "<span class='tooltip-num' style='color:"+this.GetColor(data.Close,data.YClose)+";'>"+ (IFrameSplitOperator.IsNumber(data.Close)? data.Close.toFixed(defaultfloatPrecision):'--') +"</span><br/>"+
                 //"<span style='color:"+this.YClose+";font:微软雅黑;font-size:12px'>&nbsp;前收: "+IFrameSplitOperator.FormatValueString(data.YClose,2)+"</span><br/>"+
                 "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Vol',this.LanguageID)+"</span>"+
-                "<span class='tooltip-num' style='color:"+this.VolColor+";'>"+ (IFrameSplitOperator.IsNumber(data.vol)? IFrameSplitOperator.FormatValueString(vol,2,this.LanguageID):'--') +"</span><br/>"+
+                "<span class='tooltip-num' style='color:"+this.VolColor+";'>"+ (IFrameSplitOperator.IsNumber(vol)? IFrameSplitOperator.FormatValueString(vol,2,this.LanguageID):'--') +"</span><br/>"+
                 "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Amount',this.LanguageID)+"</span>"+
                 "<span class='tooltip-num' style='color:"+this.AmountColor+";'>"+ (IFrameSplitOperator.IsNumber(data.Amount)? IFrameSplitOperator.FormatValueString(data.Amount,2,this.LanguageID):'--') +"</span><br/>"+
                 "<span class='tooltip-con'>"+g_JSChartLocalization.GetText('DivTooltip-Increase',this.LanguageID)+"</span>"+
