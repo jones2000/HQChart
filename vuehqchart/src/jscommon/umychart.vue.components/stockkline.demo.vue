@@ -857,6 +857,7 @@ export default
             let chart=JSCommon.JSChart.Init(this.$refs.kline);
             chart.SetOption(this.KLine.Option);
             this.KLine.JSChart=chart;
+            this.KLine.JSChart.SetFocus();
 
             this.UpdateIndexBarSelected();
         },

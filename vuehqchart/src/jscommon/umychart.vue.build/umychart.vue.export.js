@@ -64,4 +64,8 @@ export default {
     IChartTitlePainting:IChartTitlePainting,    //标题类
     IChartDrawPicture:IChartDrawPicture,        //画图工具
     DynamicTitleData:DynamicTitleData,          //指标标题数据
+
+    //内部图形导出
+    ChartMinuteVolumBar:ChartMinuteVolumBar,    //成交量柱子
+    ChartKLine:ChartKLine,                      //K线图
 }

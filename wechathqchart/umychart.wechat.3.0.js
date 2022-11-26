@@ -9151,7 +9151,7 @@ function KLineChartContainer(uielement)
     this.SetKLineInfo = function (aryInfo, bUpdate) 
     {
         this.ChartInfo = [];  //清空信息地雷
-        for (var i in aryInfo) 
+        for (var i=0; i<aryInfo.length; ++i) 
         {
             var infoItem = JSKLineInfoMap.Get(aryInfo[i]);
             if (!infoItem) continue;
@@ -9161,6 +9161,59 @@ function KLineChartContainer(uielement)
         }
 
         if (bUpdate == true) this.ReqeustKLineInfoData({ FunctionName:"SetKLineInfo" });
+    }
+
+    //添加信息地雷
+    this.AddKLineInfo=function(infoName, bUpdate)
+    {
+        var classInfo=JSKLineInfoMap.GetClassInfo(infoName);
+        if (!classInfo)
+        {
+            console.warn("[KLineChartContainer::AddKLineInfo] can't find infoname=", infoName);
+            return;
+        }
+
+        for(var i=0; i<this.ChartInfo.length; ++i)
+        {
+            var item=this.ChartInfo[i];
+            if (item.ClassName==classInfo.ClassName)    //已经存在
+                return;
+        }
+
+        var infoItem=JSKLineInfoMap.Get(infoName);
+        if (!infoItem) return;
+
+        var item=infoItem.Create();
+        item.MaxRequestDataCount=this.MaxRequestDataCount;
+        this.ChartInfo.push(item);
+
+        if (bUpdate==true) 
+        {
+            item.RequestData(this);  //这个页面全部刷新
+        }
+    }
+
+    //删除信息地理
+    this.DeleteKLineInfo=function(infoName)
+    {
+        var classInfo=JSKLineInfoMap.GetClassInfo(infoName);
+        if (!classInfo)
+        {
+            console.warn(`[KLineChartContainer::DeleteKLineInfo] can't find infoname=${infoName}`);
+            return;
+        }
+
+        for(var i=0; i<this.ChartInfo.length; ++i)
+        {
+            var item=this.ChartInfo[i];
+            if (item.ClassName==classInfo.ClassName)
+            {
+                this.ChartInfo.splice(i,1);
+                this.UpdataChartInfo();
+                this.Draw();
+                break;
+            }
+        }
     }
 
     this.SetPolicyInfo = function (aryPolicy, bUpdate) 

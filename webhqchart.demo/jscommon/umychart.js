@@ -12093,8 +12093,10 @@ function KLineFrame()
 
     this.CalculateCount=function(zoomIndex)
     {
-        var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin;
-        return parseInt(width/(ZOOM_SEED[zoomIndex][0] + ZOOM_SEED[zoomIndex][1]));
+        var dataWidth=ZOOM_SEED[zoomIndex][0];
+        var distanceWidth=ZOOM_SEED[zoomIndex][1];
+        var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin-distanceWidth/2;
+        return parseInt(width/(dataWidth + distanceWidth));
     }
 
     this.ZoomUp=function(cursorIndex)
@@ -17845,7 +17847,8 @@ function ChartPaintFactory()
     //[key:name, { Create:function(option) { return new class(); }} ]
     this.DataMap=new Map(
     [
-        ["ChartKLine", { Create:function(option) { return new ChartKLine(); } }]
+        ["ChartKLine", { Create:function(option) { return new ChartKLine(); } }],   //K线图
+        ["ChartMinuteVolumBar",{ Create:function(option) { return new ChartMinuteVolumBar(); } }]   //分时成交量柱子
     ]); 
 
     this.Create=function(name, option)
@@ -27416,6 +27419,96 @@ function ChartOverlayMinutePriceLine()
         }
 
         return false;
+    }
+}
+
+
+//分钟持仓线
+function ChartMinutePositionLine()
+{
+    this.newMethod=ChartLine;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartMinutePositionLine';    //类名
+
+    this.Draw=function()
+    {
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        if (!this.IsShow) return;
+
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var chartright=this.ChartBorder.GetRight();
+        if (isHScreen===true) chartright=this.ChartBorder.GetBottom();
+        var xPointCount=this.ChartFrame.XPointCount;
+        var minuteCount=this.ChartFrame.MinuteCount;
+        var bottom=this.ChartBorder.GetBottomEx();
+        var left=this.ChartBorder.GetLeftEx();
+        var data=this.Data;
+
+        if (!data) return;
+
+        var bFirstPoint=true;
+        var ptFirst={}; //第1个点
+        var ptLast={};  //最后一个点
+        var drawCount=0;
+        var pointCount=0;
+
+        this.Canvas.save();
+
+        if (IFrameSplitOperator.IsPlusNumber(this.LineWidth>0)) this.Canvas.lineWidth=this.LineWidth;
+        if (this.IsDotLine) this.Canvas.setLineDash(g_JSChartResource.DOTLINE.LineDash); //画虚线
+
+        for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=null;
+            value=data.Data[i];
+            ++pointCount;
+            if (value==null) continue;
+
+            var x=this.ChartFrame.GetXFromIndex(j);
+            var y=this.ChartFrame.GetYFromData(value);
+
+            if (bFirstPoint)
+            {
+                this.Canvas.strokeStyle=this.Color;
+                this.Canvas.beginPath();
+                if (isHScreen) this.Canvas.moveTo(y,x);
+                else this.Canvas.moveTo(x,y);
+                bFirstPoint=false;
+                ptFirst={X:x,Y:y};
+            }
+            else
+            {
+                if (isHScreen) this.Canvas.lineTo(y,x);
+                else this.Canvas.lineTo(x,y);
+            }
+
+            ptLast.X=x;
+            ptLast.Y=y;
+            ptLast.Price=value;
+
+            ++drawCount;
+
+            if (pointCount>=minuteCount) //上一天的数据和这天地数据线段要断开
+            {
+                bFirstPoint=true;
+                this.Canvas.stroke();
+                pointCount=0;
+                drawCount=0;
+            }
+        }
+
+        if (drawCount>0) this.Canvas.stroke();
+
+        this.Canvas.restore();
     }
 }
 
@@ -42204,7 +42297,7 @@ function DynamicMinuteTitlePainting()
         if (isShowLastData)
         {
             var item=null;
-            var lastItem=this.GetLatestKLineData(false);
+            var lastItem=this.GetLatestKLineData(true);
             if (lastItem && lastItem.Type==0) item=lastItem.Data;
 
             isLastOne=true;
@@ -61111,7 +61204,7 @@ function MinuteChartContainer(uielement)
         this.ChartPaint[1]=averageLine;
 
         //成交量
-        var volLine=new ChartMinuteVolumBar();  
+        var volLine=g_ChartPaintFactory.Create("ChartMinuteVolumBar");
         volLine.Color=g_JSChartResource.Minute.VolBarColor;
         volLine.Canvas=this.Canvas;
         volLine.ChartBorder=this.Frame.SubFrame[1].Frame.ChartBorder;
@@ -62920,7 +63013,7 @@ function MinuteChartContainer(uielement)
             frame.YSplitOperator.ChartBorder=frame.ChartBorder;
             frame.YSplitOperator.SplitCount=subFrame.Frame.YSplitOperator.SplitCount;
 
-            var chart=new ChartLine();
+            var chart=new ChartMinutePositionLine();
             chart.Canvas=this.Canvas
             chart.Name='Position-Line';
             chart.ChartBorder=frame.ChartBorder;
@@ -62948,7 +63041,7 @@ function MinuteChartContainer(uielement)
 
             if (!chart) //图形不存在就创建一个
             {
-                chart=new ChartLine();
+                chart=new ChartMinutePositionLine();
                 chart.Canvas=this.Canvas
                 chart.Name='Position-Line';
                 chart.ChartBorder=frame.ChartBorder;
