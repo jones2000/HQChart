@@ -68,4 +68,6 @@ export default {
     //内部图形导出
     ChartMinuteVolumBar:ChartMinuteVolumBar,    //成交量柱子
     ChartKLine:ChartKLine,                      //K线图
+
+    KLineFrame:KLineFrame,                      //K线框架
 }
