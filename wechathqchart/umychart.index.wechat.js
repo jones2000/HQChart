@@ -89,6 +89,9 @@ import
     DynamicTitleData,
     STRING_FORMAT_TYPE,
 } from './umychart.charttitle.wechat.js'
+
+import { HQIndexFormula } from "./umychart.hqIndexformula.wechat.js";     //通达信编译器
+
 //////////////////////////////////////////////////////////
 //
 //  指标信息
@@ -2087,6 +2090,771 @@ function MarketLongShortIndex()
     }
 
 }
+  
+//市场择时
+function MarketTimingIndex() 
+{
+    this.newMethod = BaseIndex;   //派生
+    this.newMethod('市场择时');
+    delete this.newMethod;
+
+    this.Index = new Array(
+        new IndexInfo("因子择时", null)
+    );
+
+    this.TimingData; //择时数据
+    this.TitleColor = g_JSChartResource.FrameSplitTextColor
+
+    this.Create = function (hqChart, windowIndex) 
+    {
+        for (var i in this.Index) {
+        var paint = new ChartMACD();
+        paint.Canvas = hqChart.Canvas;
+        paint.Name = this.Name + "-" + i.toString();
+        paint.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        paint.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        hqChart.ChartPaint.push(paint);
+        }
+    }
+
+    //请求数据
+    this.RequestData = function (hqChart, windowIndex, hisData) 
+    {
+        var self = this;
+        var param =
+        {
+            HQChart: hqChart,
+            WindowIndex: windowIndex,
+            HistoryData: hisData
+        };
+
+        this.LongShortData = [];
+
+        if (param.HQChart.Period > 0)   //周期数据
+        {
+            this.NotSupport(param.HQChart, param.WindowIndex, "不支持周期切换");
+            param.HQChart.Draw();
+            return false;
+        }
+
+        //请求数据
+        JSNetwork.HttpRequest({
+            url: g_JSChartResource.Index.MarketLongShortApiUrl,
+            data:
+            {
+
+            },
+            method: 'POST',
+            dataType: "json",
+            async: true,
+            success: function (recvData) {
+            self.RecvData(recvData, param);
+            }
+        });
+
+        return true;
+    }
+
+    this.RecvData = function (recvData, param) 
+    {
+        if (recvData.data.data.length <= 0) return;
+
+        var aryData = new Array();
+        for (var i in recvData.data.data) 
+        {
+            var item = recvData.data.data[i];
+            var indexData = new SingleData();
+            indexData.Date = item[0];
+            indexData.Value = item[2];
+            aryData.push(indexData);
+        }
+
+        var aryFittingData = param.HistoryData.GetFittingData(aryData);
+
+        var bindData = new ChartData();
+        bindData.Data = aryFittingData;
+        bindData.Period = param.HQChart.Period;   //周期
+        bindData.Right = param.HQChart.Right;     //复权
+
+        this.TimingData = bindData.GetValue();
+        this.BindData(param.HQChart, param.WindowIndex, param.HistoryData);
+
+        param.HQChart.UpdataDataoffset();           //更新数据偏移
+        param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        param.HQChart.Draw();
+    }
+
+    this.BindData = function (hqChart, windowIndex, hisData)
+     {
+        var paint = hqChart.GetChartPaint(windowIndex);
+
+        if (paint.length != this.Index.length) return false;
+
+        //paint[0].Data.Data=SWLData;
+        paint[0].Data.Data = this.TimingData;
+        paint[0].NotSupportMessage = null;
+
+        var titleIndex = windowIndex + 1;
+
+        for (var i in paint) 
+        {
+            hqChart.TitlePaint[titleIndex].Data[i] = new DynamicTitleData(paint[i].Data, this.Index[i].Name, this.TitleColor);
+            hqChart.TitlePaint[titleIndex].Data[i].StringFormat = STRING_FORMAT_TYPE.THOUSANDS;
+            hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision = 0;
+        }
+
+        hqChart.TitlePaint[titleIndex].Title = this.FormatIndexTitle();
+
+        if (hqChart.UpdateUICallback) hqChart.UpdateUICallback('MarketTimingIndex', paint, { WindowIndex: windowIndex, HistoryData: hisData });  //通知上层回调
+        return true;
+    }
+}
+  
+  //市场关注度
+function MarketAttentionIndex() 
+{
+    this.newMethod = BaseIndex;   //派生
+    this.newMethod('市场关注度');
+    delete this.newMethod;
+  
+    this.Index = new Array(
+      new IndexInfo("市场关注度指数", null)
+    );
+  
+    this.Data; //关注度数据
+    this.TitleColor = g_JSChartResource.FrameSplitTextColor;
+    this.ApiUrl = g_JSChartResource.Index.MarketAttentionApiUrl;
+  
+    this.Create = function (hqChart, windowIndex) 
+    {
+        for (var i in this.Index) 
+        {
+            var paint = new ChartBar();   //柱子
+            paint.Canvas = hqChart.Canvas;
+            paint.Name = this.Name + "-" + i.toString();
+            paint.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+            paint.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+            paint.UpBarColor = paint.DownBarColor = 'rgb(243,152,0)';
+    
+            hqChart.ChartPaint.push(paint);
+        }
+    }
+  
+    //调整框架
+    this.SetFrame = function (hqChart, windowIndex, hisData) 
+    {
+        hqChart.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = { Max: 6, Min: 0, Count: 3 };
+    }
+  
+    //请求数据
+    this.RequestData = function (hqChart, windowIndex, hisData) 
+    {
+        var self = this;
+        var param =
+        {
+            HQChart: hqChart,
+            WindowIndex: windowIndex,
+            HistoryData: hisData
+        };
+  
+        this.Data = [];
+    
+        if (param.HQChart.Period > 0)   //周期数据
+        {
+            this.NotSupport(param.HQChart, param.WindowIndex, "不支持周期切换");
+            param.HQChart.Draw();
+            return false;
+        }
+  
+        //请求数据
+        JSNetwork.HttpRequest({
+            url: this.ApiUrl,
+            data:
+            {
+                "symbol": param.HQChart.Symbol,
+                "startdate": 20100101,
+            },
+            method: 'POST',
+            dataType: "json",
+            success: function (recvData) {
+            self.RecvData(recvData.data, param);
+            }
+        });
+    
+        return true;
+    }
+  
+    this.RecvData = function (recvData, param) 
+    {
+        if (recvData.date.length < 0) return;
+  
+        var aryData = new Array();
+        for (var i in recvData.date) 
+        {
+            var indexData = new SingleData();
+            indexData.Date = recvData.date[i];
+            indexData.Value = recvData.value[i];
+            aryData.push(indexData);
+        }
+    
+        var aryFittingData = param.HistoryData.GetFittingData(aryData);
+  
+        var bindData = new ChartData();
+        bindData.Data = aryFittingData;
+        bindData.Period = param.HQChart.Period;   //周期
+        bindData.Right = param.HQChart.Right;     //复权
+    
+        this.Data = bindData.GetValue();
+        this.BindData(param.HQChart, param.WindowIndex, param.HistoryData);
+        this.SetFrame(param.HQChart, param.WindowIndex, param.HistoryData);
+    
+        param.HQChart.UpdataDataoffset();           //更新数据偏移
+        param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        param.HQChart.Draw();
+  
+      // if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistoryData', this);
+    }
+  
+  
+    this.BindData = function (hqChart, windowIndex, hisData) 
+    {
+        var paint = hqChart.GetChartPaint(windowIndex);
+    
+        if (paint.length != this.Index.length) return false;
+    
+        //paint[0].Data.Data=SWLData;
+        paint[0].Data.Data = this.Data;
+        paint[0].NotSupportMessage = null;
+    
+        var titleIndex = windowIndex + 1;
+    
+        for (var i in paint) {
+            hqChart.TitlePaint[titleIndex].Data[i] = new DynamicTitleData(paint[i].Data, this.Index[i].Name, this.TitleColor);
+            hqChart.TitlePaint[titleIndex].Data[i].StringFormat = STRING_FORMAT_TYPE.THOUSANDS;
+            hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision = 0;
+        }
+    
+        hqChart.TitlePaint[titleIndex].Title = this.FormatIndexTitle();
+        return true;
+    }
+}
+  
+  
+  /*
+      行业,指数热度
+  */
+function MarketHeatIndex() 
+{
+    this.newMethod = BaseIndex;   //派生
+    this.newMethod('指数/行业热度');
+    delete this.newMethod;
+
+    this.Index = new Array(
+    new IndexInfo("热度指数", 5),
+    new IndexInfo('MA', 10),
+    new IndexInfo('MA', null)
+    );
+  
+    this.Data; //关注度数据
+
+    this.ApiUrl = g_JSChartResource.Index.MarketHeatApiUrl;
+
+    this.Index[0].LineColor = g_JSChartResource.FrameSplitTextColor;
+    this.Index[1].LineColor = g_JSChartResource.Index.LineColor[0];
+    this.Index[2].LineColor = g_JSChartResource.Index.LineColor[1];
+  
+    this.Create = function (hqChart, windowIndex) 
+    {
+        for (var i in this.Index)
+            {
+            var paint = null;
+            if (i == 0) 
+            {
+                paint = new ChartMACD();   //柱子
+            }
+            else 
+            {
+                paint = new ChartLine();
+                paint.Color = this.Index[i].LineColor;
+            }
+    
+            paint.Canvas = hqChart.Canvas;
+            paint.Name = this.Name + "-" + i.toString();
+            paint.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+            paint.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+    
+            hqChart.ChartPaint.push(paint);
+        }
+    }
+  
+    //请求数据
+    this.RequestData = function (hqChart, windowIndex, hisData) 
+    {
+      var self = this;
+      var param =
+      {
+        HQChart: hqChart,
+        WindowIndex: windowIndex,
+        HistoryData: hisData
+      };
+  
+      this.Data = [];
+  
+      if (param.HQChart.Period > 0)   //周期数据
+      {
+        this.NotSupport(param.HQChart, param.WindowIndex, "不支持周期切换");
+        param.HQChart.Draw();
+        return false;
+      }
+  
+      //请求数据
+      JSNetwork.HttpRequest({
+        url: this.ApiUrl,
+        data:
+        {
+          "symbol": param.HQChart.Symbol,
+          "startdate": 20100101,
+        },
+        method: 'POST',
+        dataType: "json",
+        success: function (recvData) {
+          self.RecvData(recvData.data, param);
+        }
+      });
+  
+      return true;
+    }
+  
+    this.RecvData = function (recvData, param) 
+    {
+         if (recvData.date.length < 0) return;
+  
+        var aryData = new Array();
+        for (var i in recvData.date) 
+        {
+            var indexData = new SingleData();
+            indexData.Date = recvData.date[i];
+            indexData.Value = recvData.value[i];
+            aryData.push(indexData);
+        }
+  
+        var aryFittingData = param.HistoryData.GetFittingData(aryData);
+  
+        var bindData = new ChartData();
+        bindData.Data = aryFittingData;
+        bindData.Period = param.HQChart.Period;   //周期
+        bindData.Right = param.HQChart.Right;     //复权
+    
+        this.Data = bindData.GetValue();
+        this.BindData(param.HQChart, param.WindowIndex, param.HistoryData);
+    
+        param.HQChart.UpdataDataoffset();           //更新数据偏移
+        param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        param.HQChart.Draw();
+    }
+  
+  
+    this.BindData = function (hqChart, windowIndex, hisData)
+    {
+        var paint = hqChart.GetChartPaint(windowIndex);
+    
+        if (paint.length != this.Index.length) return false;
+    
+        paint[0].Data.Data = this.Data;
+        paint[0].NotSupportMessage = null;
+    
+        var MA = HQIndexFormula.MA(this.Data, this.Index[0].Param);
+        paint[1].Data.Data = MA;
+    
+        var MA2 = HQIndexFormula.MA(this.Data, this.Index[1].Param);
+        paint[2].Data.Data = MA2;
+    
+        var titleIndex = windowIndex + 1;
+  
+        for (var i in paint) 
+        {
+            var name = "";    //显示的名字特殊处理
+            if (i == 0)
+            name = hqChart.Name + this.Index[i].Name;
+            else
+            name = "MA" + this.Index[i - 1].Param;
+    
+            hqChart.TitlePaint[titleIndex].Data[i] = new DynamicTitleData(paint[i].Data, name, this.Index[i].LineColor);
+            hqChart.TitlePaint[titleIndex].Data[i].StringFormat = STRING_FORMAT_TYPE.DEFAULT;
+            hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision = 2;
+        }
+    
+        hqChart.TitlePaint[titleIndex].Title = this.FormatIndexTitle();
+    
+        return true;
+    }
+  
+}
+  
+  //自定义指数热度
+function CustonIndexHeatIndex() 
+{
+    this.newMethod = BaseIndex;   //派生
+    this.newMethod('Market-Heat');
+    delete this.newMethod;
+
+    this.Index = new Array(
+    new IndexInfo('区域', 3),
+    new IndexInfo("热度指数", 10),
+    new IndexInfo('MA', 5),
+    new IndexInfo('MA', 10)
+    );
+  
+    this.Data; //热度数据
+  
+    this.ApiUrl = g_JSChartResource.Index.CustomIndexHeatApiUrl;
+  
+    this.Index[1].LineColor = g_JSChartResource.Index.LineColor[1];
+    this.Index[2].LineColor = g_JSChartResource.Index.LineColor[2];
+    this.Index[3].LineColor = g_JSChartResource.Index.LineColor[3];
+  
+    this.Create = function (hqChart, windowIndex) 
+    {
+        for (var i in this.Index) 
+        {
+            var paint = null;
+            if (i == 0) 
+            {
+                paint = new ChartStraightArea();
+            }
+            else 
+            {
+                paint = new ChartLine();
+                paint.Color = this.Index[i].LineColor;
+            }
+    
+            paint.Canvas = hqChart.Canvas;
+            paint.Name = this.Name + "-" + i.toString();
+            paint.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+            paint.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+    
+            hqChart.ChartPaint.push(paint);
+        }
+    }
+  
+    //请求数据
+    this.RequestData = function (hqChart, windowIndex, hisData) 
+    {
+        var self = this;
+        var param =
+        {
+            HQChart: hqChart,
+            WindowIndex: windowIndex,
+            HistoryData: hisData
+        };
+    
+        this.Data = [];
+    
+        if (param.HQChart.Period > 0)   //周期数据
+        {
+            this.NotSupport(param.HQChart, param.WindowIndex, "不支持周期切换");
+            param.HQChart.Draw();
+            return false;
+        }
+  
+        //请求数据
+        JSNetwork.HttpRequest({
+            url: this.ApiUrl,
+            data:
+            {
+            "stock": param.HQChart.CustomStock,
+            "date": { "startdate": param.HQChart.QueryDate.Start, "enddate": param.HQChart.QueryDate.End },
+            "day": [this.Index[0].Param, this.Index[1].Param],
+            },
+            method: 'POST',
+            dataType: "json",
+            success: function (recvData) {
+            self.RecvData(recvData, param);
+            }
+        });
+    
+        return true;
+    }
+  
+    this.RecvData = function (recvData, param) 
+    {
+        let data = recvData.data;
+        if (data.data == null || data.data.length < 0) return;
+    
+        //JSConsole.Chart.Log(recvData.data);
+        let aryData = new Array();
+        for (let i in data.data) 
+        {
+            let item = data.data[i];
+            let indexData = new SingleData();
+            indexData.Date = item[0];
+            indexData.Value = item[1];
+            aryData.push(indexData);
+        }
+  
+         var aryFittingData = param.HistoryData.GetFittingData(aryData);
+  
+        var bindData = new ChartData();
+        bindData.Data = aryFittingData;
+        bindData.Period = param.HQChart.Period;   //周期
+        bindData.Right = param.HQChart.Right;     //复权
+    
+        this.Data = bindData.GetValue();
+        this.BindData(param.HQChart, param.WindowIndex, param.HistoryData);
+    
+        param.HQChart.UpdataDataoffset();           //更新数据偏移
+        param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        param.HQChart.Draw();
+    }
+  
+  
+    this.BindData = function (hqChart, windowIndex, hisData) 
+    {
+        let paint = hqChart.GetChartPaint(windowIndex);
+    
+        if (paint.length != this.Index.length) return false;
+    
+        paint[0].NotSupportMessage = null;
+    
+        paint[0].Data.Data =
+            [
+            { Value: 0, Value2: 0.2, Color: 'rgb(46,139,87)', Title: '较差区', TitleColor: 'rgb(245,255 ,250)' },
+            { Value: 0.19, Value2: 0.4, Color: 'rgb(255,140,0)', Title: '变热区', TitleColor: 'rgb(245,255 ,250)' },
+            { Value: 0.39, Value2: 0.8, Color: 'rgb(255,106,106)', Title: '较好区', TitleColor: 'rgb(245,255 ,250)' },
+            { Value: 0.79, Value2: 1, Color: 'rgb(255,69,0)', Title: '过热区', TitleColor: 'rgb(245,255 ,250)' }
+            ];
+  
+        paint[1].Data.Data = this.Data;
+    
+        let MA = HQIndexFormula.MA(this.Data, this.Index[2].Param);
+        paint[2].Data.Data = MA;
+    
+        let MA2 = HQIndexFormula.MA(this.Data, this.Index[3].Param);
+        paint[3].Data.Data = MA2;
+    
+        //指定框架最大最小[0,1]
+        hqChart.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = { Max: 1, Min: 0, Count: 3 };
+    
+        let titleIndex = windowIndex + 1;
+    
+        for (let i = 1; i < paint.length; ++i) 
+        {
+            let name = this.Index[i].Name;    //显示的名字特殊处理
+            if (name == 'MA') name = "MA" + this.Index[i].Param;
+    
+            hqChart.TitlePaint[titleIndex].Data[i] = new DynamicTitleData(paint[i].Data, name, this.Index[i].LineColor);
+            hqChart.TitlePaint[titleIndex].Data[i].StringFormat = STRING_FORMAT_TYPE.DEFAULT;
+            hqChart.TitlePaint[titleIndex].Data[i].FloatPrecision = 2;
+        }
+        hqChart.TitlePaint[titleIndex].Title = '热度' + '(' + this.Index[0].Param + ',' + this.Index[1].Param + ',' + this.Index[2].Param + ',' + this.Index[3].Param + ')';
+  
+        return true;
+    }
+}
+  
+  /*
+      本福特系数(财务粉饰)
+  */
+function BenfordIndex() 
+{
+    this.newMethod = BaseIndex;   //派生
+    this.newMethod('财务风险');
+    delete this.newMethod;
+  
+    this.Index = new Array(
+      new IndexInfo('区域', null),
+      new IndexInfo("系数", null),
+    );
+  
+    this.Data; //财务数据
+  
+    this.ApiUrl = g_JSChartResource.Index.StockHistoryDayApiUrl;
+  
+    this.Index[0].LineColor = g_JSChartResource.Index.LineColor[0];
+    this.Index[1].LineColor = 'rgb(105,105,105)';
+  
+    this.Create = function (hqChart, windowIndex) 
+    {
+        for (var i in this.Index) 
+        {
+            var paint = null;
+            if (i == 0)
+                paint = new ChartStraightArea();
+            else if (i == 1)
+                paint = new ChartLineMultiData();
+    
+            if (paint)
+            {
+                paint.Color = this.Index[i].LineColor;
+                paint.Canvas = hqChart.Canvas;
+                paint.Name = this.Name + "-" + i.toString();
+                paint.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+                paint.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+        
+                hqChart.ChartPaint.push(paint);
+            }
+        }
+    }
+  
+    //请求数据
+    this.RequestData = function (hqChart, windowIndex, hisData) 
+    {
+        var self = this;
+        var param =
+        {
+            HQChart: hqChart,
+            WindowIndex: windowIndex,
+            HistoryData: hisData
+        };
+    
+        this.Data = [];
+    
+        if (param.HQChart.Period != 2)   //周期数据
+        {
+            this.NotSupport(param.HQChart, param.WindowIndex, "只支持月线");
+            param.HQChart.Draw();
+            return false;
+        }
+  
+        var aryField = ["finance.benford", "announcement2.quarter", "announcement1.quarter", "announcement3.quarter", "announcement4.quarter"];
+        var aryCondition =
+            [
+            { item: ["date", "int32", "gte", "20130101"] },
+            {
+                item: ["announcement1.year", "int32", "gte", 0,
+                "announcement2.year", "int32", "gte", 0,
+                "announcement3.year", "int32", "gte", 0,
+                "announcement4.year", "int32", "gte", 0,
+                "or"]
+            }
+            ];
+        //请求数据
+        JSNetwork.HttpRequest({
+            url: this.ApiUrl,
+            data:
+            {
+            "symbol": [param.HQChart.Symbol],
+            "field": aryField,
+            "condition": aryCondition
+            },
+            method: 'POST',
+            dataType: "json",
+            success: function (recvData) {
+            self.RecvData(recvData, param);
+            }
+        });
+    
+        return true;
+    }
+  
+    this.JsonDataToMapSingleData = function (recvData) 
+    {
+        var stockData = recvData.stock[0].stockday;
+        var mapData = new Map();
+        for (var i in stockData) 
+        {
+            var item = stockData[i];
+            var indexData = new SingleData();
+            indexData.Date = item.date;
+            indexData.Value = new Array();
+            if (item.finance1 != null && item.announcement1 != null) 
+            {
+                let year = item.announcement1.year;
+                let quarter = item.announcement1.quarter;
+                let value = item.finance1.benford;
+                indexData.Value.push({ Year: year, Quarter: quarter, Value: value });
+            }
+            if (item.finance2 != null && item.announcement2 != null) 
+            {
+                let year = item.announcement2.year;
+                let quarter = item.announcement2.quarter;
+                let value = item.finance2.benford;
+                indexData.Value.push({ Year: year, Quarter: quarter, Value: value });
+            }
+            if (item.finance3 != null && item.announcement3 != null) 
+            {
+                let year = item.announcement3.year;
+                let quarter = item.announcement3.quarter;
+                let value = item.finance3.benford;
+                indexData.Value.push({ Year: year, Quarter: quarter, Value: value });
+            }
+            if (item.finance4 != null && item.announcement4 != null) 
+            {
+                let year = item.announcement4.year;
+                let quarter = item.announcement4.quarter;
+                let value = item.finance4.benford;
+                indexData.Value.push({ Year: year, Quarter: quarter, Value: value });
+            }
+  
+            mapData.set(indexData.Date, indexData);
+        }
+  
+        var aryData = new Array();
+        for (var item of mapData) 
+        {
+            aryData.push(item[1]);
+        }
+  
+        return aryData;
+    }
+  
+    this.RecvData = function (recvData, param) 
+    {
+        JSConsole.Chart.Log(recvData);
+        if (recvData.data.stock == null || recvData.data.stock.length <= 0) return;
+    
+        var aryData = this.JsonDataToMapSingleData(recvData.data);
+        var aryFittingData = param.HistoryData.GetFittingMonthData(aryData);
+    
+        var bindData = new ChartData();
+        bindData.Data = aryFittingData;
+        bindData.Period = param.HQChart.Period;   //周期
+        bindData.Right = param.HQChart.Right;     //复权
+    
+        this.Data = bindData.GetValue();
+        this.BindData(param.HQChart, param.WindowIndex, param.HistoryData);
+    
+        param.HQChart.UpdataDataoffset();           //更新数据偏移
+        param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        param.HQChart.Draw();
+    }
+  
+  
+    this.BindData = function (hqChart, windowIndex, hisData) 
+    {
+        var paint = hqChart.GetChartPaint(windowIndex);
+    
+        if (paint.length != this.Index.length) return false;
+    
+        paint[0].NotSupportMessage = null;
+    
+        paint[0].Data.Data =
+            [
+            // { Value: 0, Value2: 0.2, Color: 'rgb(50,205,50)', Title: '安全区', TitleColor: 'rgb(245,255 ,250)' },
+            // { Value: 0.2, Value2: 0.4, Color: 'rgb(255,140,0)', Title: '预警区', TitleColor: 'rgb(245,255 ,250)' },
+            // { Value: 0.4, Value2: 1, Color: 'rgb(255,106,106)', Title: '警示区', TitleColor: 'rgb(245,255 ,250)' }
+            { Value: 0, Value2: 0.2, Color: 'rgb(219,255,193)', Title: '安全区', TitleColor: 'rgb(66,192,99)' },
+            { Value: 0.2, Value2: 0.4, Color: 'rgb(255,228,170)', Title: '预警区', TitleColor: 'rgb(255,124,3)' },
+            { Value: 0.4, Value2: 1, Color: 'rgb(254,219,212)', Title: '警示区', TitleColor: 'rgb(255,0,0)' }
+            ];
+  
+        paint[1].Data.Data = this.Data;
+    
+        //指定框架最大最小[0,1]
+        hqChart.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = { Max: 1, Min: 0, Count: 3 };
+        hqChart.Frame.SubFrame[windowIndex].Frame.YSplitScale = [0.2,0.4];
+    
+        var titleIndex = windowIndex + 1;
+    
+        hqChart.TitlePaint[titleIndex].Data[1] = new DynamicTitleData(paint[1].Data, this.Index[1].Name, this.Index[1].LineColor);
+        hqChart.TitlePaint[titleIndex].Data[1].DataType = "MultiReport";
+    
+        hqChart.TitlePaint[titleIndex].Title = this.FormatIndexTitle();
+    
+        return true;
+    }
+  }
 
 export
 {
@@ -2094,6 +2862,13 @@ export
     BaseIndex,
     ScriptIndex,
     APIScriptIndex,
+
+    MarketLongShortIndex,
+    MarketTimingIndex,
+    MarketAttentionIndex,
+    MarketHeatIndex,
+    CustonIndexHeatIndex,
+    BenfordIndex,
 }
 
 /*

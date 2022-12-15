@@ -2099,6 +2099,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CFFEX + '-IH', {Time:2,Decimal:1,Name:'上证股指期货'}],
         [MARKET_SUFFIX_NAME.CFFEX + '-IC', {Time:2,Decimal:1,Name:'中证股指期货'}],
         [MARKET_SUFFIX_NAME.CFFEX + '-IF', {Time:2,Decimal:1,Name:'沪深股指期货'}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IM', {Time:2,Decimal:1,Name:'中证1000股指期货'}],
     ]);
 
     this.MAP_ONEWORD = new Map([

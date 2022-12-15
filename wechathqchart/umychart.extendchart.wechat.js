@@ -124,10 +124,26 @@ function KLineTooltipPaint()
         }
     }
 
+    //是否显示
+    this.IsEnableDraw=function()
+    {
+        if (!this.HQChart || !this.HQChart.TitlePaint || !this.HQChart.TitlePaint[0]) return false;
+
+        if (this.HQChart.EnableClickModel)
+        {
+            if (this.HQChart.ClickModel.IsShowCorssCursor===false) return false;
+        }
+        else if (!this.HQChart.IsOnTouch) 
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     this.Draw = function () 
     {
-        if (!this.HQChart || !this.HQChart.TitlePaint || !this.HQChart.TitlePaint[0]) return;
-        if (!this.HQChart.IsOnTouch) return;
+       if (!this.IsEnableDraw()) return;
 
         this.KLineTitlePaint = this.HQChart.TitlePaint[0];
         var klineData = this.KLineTitlePaint.GetCurrentKLineData();
