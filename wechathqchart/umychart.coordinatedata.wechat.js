@@ -39,6 +39,8 @@ var MARKET_SUFFIX_NAME=
     CFFEX: '.CFE',       //中期所 (China Financial Futures Exchange)
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
+    GZFE:".GZFE",        //广州期货交易所
+
     USA: '.USA',         //美股
     FTSE: '.FTSE',       //富时中国
 
@@ -259,9 +261,15 @@ var MARKET_SUFFIX_NAME=
         return upperSymbol.indexOf(this.CZCE) > 0;
     },
 
+    IsGZFE:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.GZFE) > 0;
+    },
+
     IsChinaFutures: function (upperSymbol)   //是否是国内期货
     {
-        return this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol);
+        return this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol) || this.IsGZFE(upperSymbol) ;
     },
 
     IsFutures: function (upperSymbol) //是否是期货 包含国外的
@@ -919,7 +927,7 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsTW(upperSymbol)) return this.GetTW(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsJP(upperSymbol)) return this.GetJP(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
-        if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
+        if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol))
         {
             var splitData = g_FuturesTimeData.GetSplitData(upperSymbol);
             if (!splitData) return null;
@@ -1421,7 +1429,7 @@ function MinuteCoordinateData()
                 data=this.GetTWData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsJP(upperSymbol))
                 data=this.GetJPData(upperSymbol,width);
-            else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol))
+            else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol))
                 return this.GetChinatFuturesData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
                 data = this.GetUSAData(upperSymbol, width);
@@ -2100,6 +2108,9 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CFFEX + '-IC', {Time:2,Decimal:1,Name:'中证股指期货'}],
         [MARKET_SUFFIX_NAME.CFFEX + '-IF', {Time:2,Decimal:1,Name:'沪深股指期货'}],
         [MARKET_SUFFIX_NAME.CFFEX + '-IM', {Time:2,Decimal:1,Name:'中证1000股指期货'}],
+
+        //广州期货交易所
+        [MARKET_SUFFIX_NAME.GZFE+'-SI', {Time:0,Decimal:2,Name:"工业硅"}]
     ]);
 
     this.MAP_ONEWORD = new Map([
@@ -2143,6 +2154,11 @@ function FuturesTimeData()
         {
             oneWordName = MARKET_SUFFIX_NAME.CZCE + '-' + oneWord;
             twoWordsName = MARKET_SUFFIX_NAME.CZCE + '-' + twoWords;
+        }
+        else if (MARKET_SUFFIX_NAME.IsGZFE(upperSymbol))    //广州期货交易所
+        {
+            oneWordName = MARKET_SUFFIX_NAME.GZFE + '-' + oneWord;
+            twoWordsName = MARKET_SUFFIX_NAME.GZFE + '-' + twoWords;
         }
 
         if (this.MAP_TWOWORDS.has(twoWordsName)) 
