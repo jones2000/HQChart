@@ -447,8 +447,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 23. [HQChart实战教程53 - 动态指定标识K线区间段背景颜色](https://blog.csdn.net/jones2000/article/details/124558493)<br>
 
 ## 高级应用实战教程2(付费文章)
-1. [HQChart实战教程54-renko砖形K线图] (https://jones2000.blog.csdn.net/article/details/128461885)  
-2. [HQChart实战教程55-heatmap热力图] (https://jones2000.blog.csdn.net/article/details/128467231)  
+1. [HQChart实战教程54-renko砖形K线图](https://jones2000.blog.csdn.net/article/details/128461885)  
+2. [HQChart实战教程55-heatmap热力图](https://jones2000.blog.csdn.net/article/details/128467231)  
 
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>
