@@ -5855,7 +5855,9 @@ function JSChartContainer(uielement, OffscreenElement)
         for(var i=0;i<chartPaint.length;++i)
         {
             var paint=chartPaint[i];
-            var range=paint.GetMaxMin();
+            var range=null;
+            if (paint.NotSupportMessage) range={ Max:10, Min:0 };
+            else range=paint.GetMaxMin();
             if (range==null || range.Max==null || range.Min==null) continue;
             var frameItem=null;
             for(var j in frameMaxMinData)
@@ -23959,6 +23961,7 @@ function ChartLine()
         if (this.IsDotLine) this.Canvas.setLineDash(g_JSChartResource.DOTLINE.LineDash); //画虚线
 
         var bFirstPoint=true;
+        var ptFirst=null;;    //第1个点
         var drawCount=0;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         //for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
@@ -23969,6 +23972,7 @@ function ChartLine()
                 if (drawCount>0) this.Canvas.stroke();
                 bFirstPoint=true;
                 drawCount=0;
+                ptFirst=null;
                 continue;
             }
 
@@ -23994,6 +23998,7 @@ function ChartLine()
                 if (bHScreen) this.Canvas.moveTo(y,x);  //横屏坐标轴对调
                 else this.Canvas.moveTo(x,y);
                 bFirstPoint=false;
+                ptFirst={ X:x, Y:y };
             }
             else
             {
@@ -24004,7 +24009,16 @@ function ChartLine()
             ++drawCount;
         }
 
-        if (drawCount>0) this.Canvas.stroke();
+        if (drawCount>0) 
+        {
+            if (drawCount==1 && ptFirst)    //如果只有1个点, 画一个像素的横线
+            {
+                if (bHScreen) this.Canvas.lineTo(ptFirst.Y,ptFirst.X+1*GetDevicePixelRatio());
+                else this.Canvas.lineTo(ptFirst.X+1*GetDevicePixelRatio(),ptFirst.Y);
+            }
+           
+            this.Canvas.stroke();
+        }
         this.Canvas.restore();
     }
 }
@@ -50908,7 +50922,7 @@ function JSChartResource()
     this.Index.CustomIndexHeatApiUrl="https://opensource.zealink.com/API/QuadrantCalculate";
 
     //指标不支持信息
-    this.Index.NotSupport={Font:"14px 微软雅黑", TextColor:"rgb(52,52,52)"};
+    this.Index.NotSupport={Font:`${14*GetDevicePixelRatio()}px 微软雅黑`, TextColor:"rgb(52,52,52)"};
 
     //按钮
     this.Buttons=

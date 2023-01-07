@@ -8213,6 +8213,159 @@ function JSAlgorithm(errorHandler,symbolData)
         }
     }
 
+    /*
+    TESTSKIP(A):满足A则直接返回.
+    用法:
+    TESTSKIP(A) 
+    表示如果满足条件A则该公式直接返回,不再计算接下来的表达式 注意:A为非序列数据,只取最后一个数据
+    */
+    this.TESTSKIP=function(data, node)
+    {
+        if (Array.isArray(data))
+        {
+            if (data.length<=0) return false;
+            var item=data[data.length-1];
+            if (!item) return false;
+
+            return true;
+        }
+        else if (IFrameSplitOperator.IsNumber(data))
+        {
+            if (data<=0) return false;
+            return true;
+        }
+        else
+        {
+            if (!data) return false;
+            return true;
+        }
+    }
+
+    /*
+    有效数据右对齐.
+    用法:
+    ALIGNRIGHT(X)有效数据向右移动,左边空出来的周期填充无效值
+    例如:TC:=IF(CURRBARSCOUNT=2 || CURRBARSCOUNT=5,DRAWNULL,C);XC:ALIGNRIGHT(TC);删除了两天的收盘价,并将剩余数据右移
+    */
+    this.ALIGNRIGHT=function(data)
+    {
+        if (Array.isArray(data))
+        {
+            var result=[];
+            var index=data.length-1;
+            for(var i=data.length-1;i>=0;--i)
+            {
+                var item=data[i];
+                if (IFrameSplitOperator.IsNumber(item) || IFrameSplitOperator.IsString(item))
+                {
+                    result[index]=item;
+                    --index;
+                }
+            }
+
+            for(var i=index;i>=0;--i)
+            {
+                result[i]=null;
+            }
+
+            return result;
+        }
+        else
+        {
+            return data;
+        }
+    }
+
+    /*
+    向前累加到指定值到现在的周期数.
+    用法:
+    SUMBARS(X,A):将X向前累加直到大于等于A,返回这个区间的周期数,若所有的数据都累加后还不能达到A,则返回此时前面的总周期数.
+    例如:SUMBARS(VOL,CAPITAL)求完全换手到现在的周期数
+    */
+    this.SUMBARS=function(data, data2)
+    {
+        var isArray=Array.isArray(data);
+        var isArray2=Array.isArray(data2);
+        var isNumber=IFrameSplitOperator.IsNumber(data);
+        var isNumber2=IFrameSplitOperator.IsNumber(data2);
+
+        var result=[];
+        if (isArray && isNumber2)
+        {
+            for(var i=0, n=0;i<data.length;++i)
+            {
+                var sum=0;
+                var n=0;
+                for(var j=i-1; j>=0; --j, ++n)
+                {
+                    var item=data[i];
+                    if (!IFrameSplitOperator.IsNumber(item)) continue;
+
+                    sum+=data[j];
+                    if (sum>data2)
+                    {
+                        break;
+                    }
+                }
+
+                result[i]=n;
+            }
+        }
+        else if (isArray && isArray2)
+        {
+            var count=Math.max(data.length, data2.length);
+            for(var i=0;i<count;++i)
+            {
+                result[i]=null;
+                var sum=0;
+                var n=0;
+                var value=data2[i];
+                if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+                for(var j=i-1; j>=0; --j,++n)
+                {
+                    var item=data[i];
+                    if (!IFrameSplitOperator.IsNumber(item)) continue;
+                    sum+=data[j];
+                    if (sum>value)
+                    {
+                        break;
+                    }
+                }
+
+                result[i]=n;
+            }
+        }
+        else if (isNumber && isArray2)
+        {
+            for(var i=0;i<data2.length;++i)
+            {
+                result[i]=null;
+                var sum=0;
+                var n=0;
+                var value=data2[i];
+                if (!IFrameSplitOperator.IsNumber(value)) continue;
+                for(var j=i-1; j>=0; --j, ++n)
+                {
+                    sum+=data;
+                    if (sum>value)
+                    {
+                        break;
+                    }
+                }
+
+                result[i]=n;
+            }
+        }
+        else if (isNumber && isNumber2)
+        {
+            //TODO: 后面再写吧
+        }
+
+
+        return result;
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -8451,6 +8604,14 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.ANY(args[0],args[1]);
             case "ALL":
                 return this.ALL(args[0],args[1]);
+
+            case "TESTSKIP":
+                return this.TESTSKIP(args[0],node);
+
+            case "SUMBARS":
+                return this.SUMBARS(args[0],args[1]);
+            case "ALIGNRIGHT":
+                return this.ALIGNRIGHT(args[0]);
           
             //三角函数
             case 'ATAN':
@@ -15284,6 +15445,7 @@ function JSExecute(ast,option)
     this.IndexCtrl;
     this.Debug=0;   //0=非debug模式 1=debug 模式
     this.DebugFilter;
+    this.Interrupt={ Exit:false };  //中断信息
 
     //脚本自动变量表, 只读
     this.ConstVarTable=new Map([
@@ -15695,9 +15857,14 @@ function JSExecute(ast,option)
         {
             let item =this.AST.Body[i];
             this.RunASTNode(item,i);
+            if (this.Interrupt && this.Interrupt.Exit)
+            {
+                JSConsole.Complier.Log('[JSExecute::RunAST] Interrupt', this.Interrupt);    //中断退出
+                break;
+            }
         }
 
-        JSConsole.Complier.Log('[JSExecute::Run]', this.VarTable);
+        JSConsole.Complier.Log('[JSExecute::RunAST]', this.VarTable);
 
         return this.OutVarTable;
     }
@@ -16519,6 +16686,22 @@ function JSExecute(ast,option)
 
             case "SYSPARAM":
                 return this.SymbolData.SysParam(args[0], this);
+
+            case "TESTSKIP":
+                var bExit=this.Algorithm.TESTSKIP(args[0],node);
+                node.Out=null;
+                if (bExit) 
+                {
+                    this.Interrupt.Exit=true;
+                    if (node && node.Marker) 
+                    {
+                        var marker=node.Marker;
+                        this.Interrupt.Line=marker.Line;
+                        this.Interrupt.Index=marker.Index;
+                        this.Interrupt.Column=marker.Column;
+                    }
+                }
+                break;
 
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node, this.SymbolData);
@@ -18133,7 +18316,7 @@ function ScriptIndex(name,script,args,option)
 
         if (this.Condition && !this.IsMeetCondition(param,option))
         {
-            this.ShowConditionError(param);
+            this.ShowConditionError(param, this.Condition.Message);
             return;
         }
 
@@ -18205,7 +18388,7 @@ function ScriptIndex(name,script,args,option)
     }
 
     //显示指标不符合条件
-    this.ShowConditionError=function(param)
+    this.ShowConditionError=function(param,msg)
     {
         var hqChart=param.HQChart;
         var windowIndex=param.WindowIndex;
@@ -18214,6 +18397,7 @@ function ScriptIndex(name,script,args,option)
         if (windowIndex==0) hqChart.ShowKLine(true);
 
         var message='指标不支持当前品种或周期';
+        if (msg) message=msg;
 
         let line=new ChartLine();
         line.Canvas=hqChart.Canvas;
@@ -18221,6 +18405,9 @@ function ScriptIndex(name,script,args,option)
         line.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
         line.NotSupportMessage=message;
         hqChart.ChartPaint.push(line);
+        
+        hqChart.UpdataDataoffset();           //更新数据偏移
+        hqChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
         hqChart.Draw();
     }
 
@@ -18983,6 +19170,8 @@ function ScriptIndex(name,script,args,option)
         if (varItem.IsDrawAbove) chartText.Direction=1;
         else chartText.Direction=0;
 
+        if (varItem.DrawFontSize>0) chartText.TextFont=`${varItem.DrawFontSize*GetDevicePixelRatio()}px 微软雅黑`;    //临时用下吧
+
         let titleIndex=windowIndex+1;
         chartText.DrawData=varItem.Draw.DrawData;
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
@@ -19071,6 +19260,12 @@ function ScriptIndex(name,script,args,option)
         chart.Name=varItem.Name;
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (IFrameSplitOperator.IsPlusNumber(width)) chart.LineWidth=width;
+        }
 
         chart.Data.Data=varItem.Draw.DrawData;
         hqChart.ChartPaint.push(chart);
@@ -19700,6 +19895,29 @@ function OverlayScriptIndex(name,script,args,option)
     this.ClassName="OverlayScriptIndex";
     //叠加指标
     this.OverlayIndex=null; // { IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame }
+
+    //显示指标不符合条件
+    this.ShowConditionError=function(param,msg)
+    {
+        var hqChart=param.HQChart;
+        var windowIndex=param.WindowIndex;
+
+        var message='指标不支持当前品种或周期';
+        if (msg) message=msg;
+
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        frame.ChartPaint=[];
+        
+        var chart=new ChartLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.NotSupportMessage=message;
+        frame.ChartPaint.push(chart);
+        hqChart.Draw();
+    }
 
     this.BindData=function(hqChart,windowIndex,hisData)
     {
@@ -21593,6 +21811,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
 
                     outVarItem.Draw=drawItem;
+                    if (draw.LineWidth) outVarItem.LineWidth=draw.LineWidth;
+                    
                     result.push(outVarItem);
                 }
                 else

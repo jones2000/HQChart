@@ -217,7 +217,7 @@ function GetBlackStyle()
                 "rgb(42,230,215)",
                 "rgb(24,71,178)",
             ],
-            NotSupport: { Font: "14px 微软雅黑", TextColor: "rgb(52,52,52)" }
+            NotSupport: { Font: `${14*GetDevicePixelRatio()}px 微软雅黑`, TextColor: "rgb(250,250,250)" }
         },
           
         ColorArray:       //自定义指标默认颜色

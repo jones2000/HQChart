@@ -7195,6 +7195,34 @@ function JSAlgorithm(errorHandler, symbolData)
         }
     }
 
+    /*
+    TESTSKIP(A):满足A则直接返回.
+    用法:
+    TESTSKIP(A) 
+    表示如果满足条件A则该公式直接返回,不再计算接下来的表达式 注意:A为非序列数据,只取最后一个数据
+    */
+   this.TESTSKIP=function(data, node)
+   {
+       if (Array.isArray(data))
+       {
+           if (data.length<=0) return false;
+           var item=data[data.length-1];
+           if (!item) return false;
+
+           return true;
+       }
+       else if (IFrameSplitOperator.IsNumber(data))
+       {
+           if (data<=0) return false;
+           return true;
+       }
+       else
+       {
+           if (!data) return false;
+           return true;
+       }
+   }
+
     //函数调用
     this.CallFunction=function(name,args,node)
     {
@@ -8198,6 +8226,36 @@ function JSDraw(errorHandler, symbolData)
         return result;
     }
 
+    //DRAWTEXTREL(X,Y,TEXT),在图形窗口(X,Y)坐标位置书写文字TEXT，坐标单位是窗口沿水平和垂直方向的1/1000，X、Y取值范围是0—999,超出范围则可能显示在图形窗口外。
+    //例如：DRAWTEXTREL(500,500,'注意')表示在图形中间位置显示'注意'字样。
+    this.DRAWTEXTREL=function(x, y, text)
+    {
+        let drawData={ Point:{X:x, Y:y} };
+        if (IFrameSplitOperator.IsString(text))
+            drawData.Text=text;
+        else if (IFrameSplitOperator.IsNonEmptyArray(text)) 
+            drawData.Text=text[0];
+        
+        let result={DrawData:drawData, DrawType:'DRAWTEXTREL'};
+
+        return result;
+    }
+
+    //DRAWTEXTABS(X,Y,TEXT),在图形窗口(X,Y)坐标位置书写文字TEXT，坐标单位是像素,图形窗口左上角坐标为(0,0)。
+    //例如：DRAWTEXTABS(0,0,'注意')表示在图形最左上角位置显示'注意'字样。
+    this.DRAWTEXTABS=function(x, y, text)
+    {
+        let drawData={ Point:{X:x, Y:y} };
+        if (IFrameSplitOperator.IsString(text))
+            drawData.Text=text;
+        else if (IFrameSplitOperator.IsNonEmptyArray(text)) 
+            drawData.Text=text[0];
+        
+        let result={DrawData:drawData, DrawType:'DRAWTEXTABS'};
+
+        return result;
+    }
+
     //填充背景.
     //用法: DRAWGBK(COND,COLOR1,COLOR2,colorAngle)  colorAngle=渐近色角度
     //例如: DRAWGBK(O>C,RGB(0,255,0),RGB(255,0,0),0);
@@ -8374,7 +8432,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
     [
         "STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT', "DRAWTEXT_FIX", 'DRAWLINE', 'DRAWBAND', "DRAWKLINE1","DRAWCOLORKLINE",
         'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWICON',"ICON",
-        'DRAWRECTREL', "DRAWGBK", "DRAWGBK2"
+        'DRAWRECTREL', "DRAWTEXTABS","DRAWTEXTREL", "DRAWGBK", "DRAWGBK2"
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -11240,6 +11298,8 @@ function JSExecute(ast,option)
     this.UpdateUICallback=null; //回调
     this.CallbackParam=null;
 
+    this.Interrupt={ Exit:false };  //中断信息
+
     if (option)
     {
         if (option.Callback) this.UpdateUICallback=option.Callback;
@@ -11852,9 +11912,15 @@ function JSExecute(ast,option)
                     }
                 }
             }
+
+            if (this.Interrupt && this.Interrupt.Exit)
+            {
+                JSConsole.Complier.Log('[JSExecute::RunAST] Interrupt', this.Interrupt);    //中断退出
+                break;
+            }
         }
 
-        JSConsole.Complier.Log('[JSExecute::Run]', this.VarTable);
+        JSConsole.Complier.Log('[JSExecute::RunAST]', this.VarTable);
 
         return this.OutVarTable;
     }
@@ -12047,6 +12113,14 @@ function JSExecute(ast,option)
                 node.Draw = this.Draw.DRAWRECTREL(args[0], args[1], args[2], args[3], args[4]);
                 node.Out = [];
                 break;
+            case "DRAWTEXTREL":
+                node.Draw=this.Draw.DRAWTEXTREL(args[0],args[1],args[2]);
+                node.Out=[];
+                break;
+            case "DRAWTEXTABS":
+                node.Draw=this.Draw.DRAWTEXTABS(args[0],args[1],args[2]);
+                node.Out=[];
+                break;
             case 'DRAWGBK':
                 node.Draw=this.Draw.DRAWGBK(args[0],args[1],args[2],args[3]);
                 node.Out=[];
@@ -12106,6 +12180,23 @@ function JSExecute(ast,option)
             case "INBLOCK":
                 node.Out=this.SymbolData.IsInBlock(args[0],node);
                 break;
+
+            case "TESTSKIP":
+                var bExit=this.Algorithm.TESTSKIP(args[0],node);
+                node.Out=null;
+                if (bExit) 
+                {
+                    this.Interrupt.Exit=true;
+                    if (node && node.Marker) 
+                    {
+                        var marker=node.Marker;
+                        this.Interrupt.Line=marker.Line;
+                        this.Interrupt.Index=marker.Index;
+                        this.Interrupt.Column=marker.Column;
+                    }
+                }
+                break;
+
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args,node);
                 break;

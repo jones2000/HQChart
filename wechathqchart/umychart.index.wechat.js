@@ -899,6 +899,29 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateDrawText=function(hqChart,windowIndex,varItem,id)
+    {
+        let chartText=new ChartSingleText();
+        chartText.Canvas=hqChart.Canvas;
+        chartText.Name=varItem.Name;
+        chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
+        
+        if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
+        else chartText.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawAbove) chartText.Direction=1;
+        else chartText.Direction=0;
+
+        if (varItem.DrawFontSize>0) chartText.TextFont=`${varItem.DrawFontSize}px 微软雅黑`;    //临时用下吧
+
+        let titleIndex=windowIndex+1;
+        chartText.DrawData=varItem.Draw.DrawData;
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+
+        hqChart.ChartPaint.push(chartText);
+    }
+
     this.CreateBackgroud=function(hqChart,windowIndex,varItem,id)
     {
         let chart=new ChartBackground();
@@ -1135,6 +1158,10 @@ function ScriptIndex(name, script, args, option)
                     break;
                 case 'DRAWRECTREL':
                     this.CreateRectangle(hqChart, windowIndex, item, i);
+                    break;
+                case "DRAWTEXTABS":
+                case "DRAWTEXTREL":
+                    this.CreateDrawText(hqChart,windowIndex,item,i);
                     break;
                 case 'DRAWGBK':
                 case "DRAWGBK2":

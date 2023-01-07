@@ -2429,6 +2429,12 @@ function ChartSingleText()
             return;
         }
 
+        if (this.Name=="DRAWTEXTREL" || this.Name=="DRAWTEXTABS")
+        {
+            this.DrawRectText();
+            return;
+        }
+
         if (this.Position) 
         {
             this.DrawPosition();
@@ -2704,6 +2710,71 @@ function ChartSingleText()
             this.Canvas.textAlign="left";
             this.Canvas.fillStyle=drawInfo.Text.Color;
             this.Canvas.fillText(text,x,y);
+        }
+    }
+
+    this.DrawRectText=function()
+    {
+        if (!this.DrawData) return;
+        var isHScreen=(this.ChartFrame.IsHScreen===true)
+        var border=this.ChartFrame.GetBorder();
+
+        if (this.Name=="DRAWTEXTREL")
+        {
+            if (isHScreen)
+            {
+                var height=border.RightTitle-border.LeftEx;
+                var width=border.BottomEx-border.TopEx;
+                var x=this.DrawData.Point.X/1000*width+border.TopEx;
+                var y=border.RightTitle-this.DrawData.Point.Y/1000*width;
+            }
+            else
+            {
+                var width=border.RightEx-border.LeftEx;
+                var height=border.BottomEx-border.TopTitle;
+                var x=this.DrawData.Point.X/1000*width+border.LeftEx;
+                var y=this.DrawData.Point.Y/1000*height+border.TopTitle;
+            }
+            
+        }
+        else if (this.Name=="DRAWTEXTABS")
+        {
+            if (isHScreen)
+            {
+                var x=this.DrawData.Point.X+border.TopEx;
+                var y=border.RightTitle-this.DrawData.Point.Y;
+            }
+            else
+            {
+                var x=this.DrawData.Point.X+border.LeftEx;
+                var y=this.DrawData.Point.Y+border.TopTitle;
+            }
+        }
+        else
+        {
+            return;
+        }
+
+        if (this.Direction==1) this.Canvas.textBaseline='bottom';
+        else if (this.Direction==2) this.Canvas.textBaseline='top';
+        else this.Canvas.textBaseline='middle';
+        this.Canvas.textAlign='left';
+        this.Canvas.font=this.TextFont;
+        this.Canvas.fillStyle=this.Color;
+        this.DrawText(this.DrawData.Text,x,y,isHScreen);
+    }
+
+
+    this.SuperGetMaxMin=this.GetMaxMin;
+    this.GetMaxMin=function()
+    {
+        if (this.Name=="DRAWTEXTREL" || this.Name=="DRAWTEXTABS")
+        {
+            return { Min:null,Max:null };
+        }
+        else
+        {
+            return this.SuperGetMaxMin();
         }
     }
 }
