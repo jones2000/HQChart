@@ -328,6 +328,13 @@ function GetBlackStyle()
             TextColor:"rgba(255,255,255)",
             TextBGColor:'rgb(43,54,69)'
         },
+
+        KLineYAxisBGPaint:
+        {
+            Font:12*GetDevicePixelRatio() +'px 微软雅黑',
+            TextColor:"rgb(255,255,255)",
+            LineColor:"rgb(255,255,255)"
+        },
     
         //筹码分布图
         StockChip:

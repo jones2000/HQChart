@@ -964,6 +964,8 @@ function JSReportChartContainer(uielement)
         if (IFrameSplitOperator.IsNumber(item[25])) stock.CircMarketValue=item[25];  //流通市值
         if (IFrameSplitOperator.IsNumber(item[26])) stock.MarketValue=item[26];      //总市值
 
+        if (item[27]) stock.NameEx=item[27];      //扩展名字
+
         //衍生数据计算
         if (!IFrameSplitOperator.IsNumber(item[21]))    //涨幅%
         {
@@ -2212,6 +2214,8 @@ function JSReportChartContainer(uielement)
             case REPORT_COLUMN_ID.SYMBOL_ID:
             case REPORT_COLUMN_ID.NAME_ID:
                 return this.LocalStringSort(left, right, column, sortType);
+            case REPORT_COLUMN_ID.NAME_EX_ID:
+                return this.LocalNameExSort(left, right, column, sortType);
             case REPORT_COLUMN_ID.PRICE_ID:
             case REPORT_COLUMN_ID.VOL_ID:
             case REPORT_COLUMN_ID.INCREASE_ID:
@@ -2275,6 +2279,35 @@ function JSReportChartContainer(uielement)
         }
 
         return null;
+    }
+
+    this.LocalNameExSort=function(left, right, column, sortType)
+    {
+        var leftStock=this.GetStockData(left);
+        var rightStock=this.GetStockData(right);
+
+        var leftValue="", rightValue="";
+        if (sortType==2)
+        {
+            leftValue="啊啊啊啊啊";
+            rightValue="啊啊啊啊啊";
+        }
+
+        if (leftStock && leftStock.Name) leftValue=leftStock.Name;
+        if (rightStock && rightStock.Name) rightValue=rightStock.Name;
+
+        if (sortType==1)
+        {
+            if (rightValue<leftValue) return -1;
+            else if (rightValue<leftValue) return 1;
+            else return 0;
+        }
+        else
+        {
+            if (leftValue<rightValue) return -1;
+            else if (leftValue>rightValue) return 1;
+            else return 0;
+        }
     }
 
     this.LocalStringSort=function(left, right, column, sortType)
@@ -2620,8 +2653,9 @@ var REPORT_COLUMN_ID=
 
     VOL_IN_ID:25,           //内盘
     VOL_OUT_ID:26,          //外盘
+    NAME_EX_ID:27,          //扩展名字
 
-    SYMBOL_NAME_ID:27,
+    SYMBOL_NAME_ID:99,
 
     CUSTOM_STRING_TEXT_ID:100,   //自定义字符串文本
     CUSTOM_NUMBER_TEXT_ID:101,   //自定义数值型
@@ -2659,6 +2693,8 @@ var MAP_COLUMN_FIELD=new Map([
 
     [REPORT_COLUMN_ID.VOL_IN_ID, "VolIn"],
     [REPORT_COLUMN_ID.VOL_OUT_ID,"VolOut"],
+
+    [REPORT_COLUMN_ID.NAME_EX_ID, "NameEx"],
 ]);
 
 function ChartReport()
@@ -2929,6 +2965,7 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.INDEX_ID, Title:"序号", TextAlign:"center", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Index, MaxText:"8888"},
             { Type:REPORT_COLUMN_ID.SYMBOL_ID, Title:"代码", TextAlign:"left", Width:null,  TextColor:g_JSChartResource.Report.FieldColor.Symbol, MaxText:"888888"},
             { Type:REPORT_COLUMN_ID.NAME_ID, Title:"名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎0" },
+            { Type:REPORT_COLUMN_ID.NAME_EX_ID, Title:"名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎擎擎" },
             { Type:REPORT_COLUMN_ID.SYMBOL_NAME_ID, Title:"股票名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎0"},
 
             { Type:REPORT_COLUMN_ID.INCREASE_ID, Title:"涨幅%", TextAlign:"right", Width:null, MaxText:"-888.88" },
@@ -3503,8 +3540,22 @@ function ChartReport()
         {
             if (stock && stock.Name) 
             {
-                drawInfo.Text=this.TextEllipsis(stock.Name, textWidth, column.MaxText);
+                if (IFrameSplitOperator.IsString(stock.Name))
+                {
+                    drawInfo.Text=this.TextEllipsis(stock.Name, textWidth, column.MaxText);
+                    drawInfo.TextColor=this.GetNameColor(column,data.Symbol, rowType);
+                }
+            }
+        }
+        else if (column.Type==REPORT_COLUMN_ID.NAME_EX_ID)    
+        {
+            //复杂格式 { Text:, Symbol:{ Family:'iconfont', Size:,  Data:[ { Text:'\ue631', Color:'#1c65db'}, ...] } ]}
+            if (stock && stock.NameEx)
+            {
+                var nameEx=stock.NameEx;
+                drawInfo.Text=this.TextEllipsis(nameEx.Text, textWidth, column.MaxText);
                 drawInfo.TextColor=this.GetNameColor(column,data.Symbol, rowType);
+                if (nameEx.Symbol) drawInfo.Symbol=nameEx.Symbol;
             }
         }
         else if (column.Type==REPORT_COLUMN_ID.PRICE_ID)
@@ -3620,7 +3671,14 @@ function ChartReport()
         if (rowType==3) 
             drawInfo.TextColor=this.DragRowTextColor;
 
-        this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth);
+        if (drawInfo.Symbol)
+        {
+            this.DrawItemTextEx(drawInfo, x, top, textWidth);
+        }
+        else
+        {
+            this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth);
+        }
     }
 
     this.DrawSymbolName=function(data, column, left, top, rowType)
@@ -3852,6 +3910,69 @@ function ChartReport()
         this.Canvas.textBaseline="middle";
         this.Canvas.fillStyle=textColor;
         this.Canvas.fillText(text,x,top+this.ItemMergin.Top+this.RowHeight/2);
+    }
+
+    //{ Text:, Symbol:{ Family:'iconfont', Size:,  Data:[ { Text:'\ue631', Color:'#1c65db'}, ...] } ]}
+    this.DrawItemTextEx=function(drawInfo, left, top, width)
+    {
+        var text=drawInfo.Text;
+        var clrText=drawInfo.TextColor;
+        var symbol=drawInfo.Symbol; //符号
+        var textAlign=drawInfo.TextAlign;
+
+        var textWidth=this.Canvas.measureText(text).width+1;;
+        var totalWidth=textWidth;
+
+        var font= `${symbol.Size*GetDevicePixelRatio()}px ${symbol.Family}`;
+        this.Canvas.font=font;
+        var aryIconWidth=[];
+        
+        for(var i=0;i<symbol.Data.length;++i)
+        {
+            var item=symbol.Data[i];
+            var iconWidth=this.Canvas.measureText(item.Text).width+1;
+            
+            if (totalWidth+iconWidth>width) 
+                break;
+
+            totalWidth+=iconWidth;
+            aryIconWidth[i]=iconWidth;
+        }
+
+        var x=left;
+        var y=top+this.ItemMergin.Top+this.RowHeight/2;
+        if (textAlign=='center')
+        {
+            x=left+(width-totalWidth)/2;
+        }
+        else if (textAlign=='right')
+        {
+            x=left+(width-totalWidth);
+        }
+        else
+        {
+            x+=2;
+        }
+
+        this.Canvas.textBaseline="middle";
+        this.Canvas.textAlign="left";
+        this.Canvas.font=this.ItemFont;
+        this.Canvas.fillStyle=clrText;
+        this.Canvas.fillText(text,x,y);
+
+        x+=textWidth;
+
+        this.Canvas.font=font;
+        for(var i=0;i<aryIconWidth.length;++i)
+        {
+            var item=symbol.Data[i];
+            this.Canvas.fillStyle=item.Color;
+            this.Canvas.fillText(item.Text,x,y);
+
+            x+=aryIconWidth[i];
+        }
+
+        this.Canvas.font=this.ItemFont;
     }
 
     //字体由外面设置

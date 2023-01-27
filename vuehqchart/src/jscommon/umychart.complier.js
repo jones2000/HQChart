@@ -8241,6 +8241,30 @@ function JSAlgorithm(errorHandler,symbolData)
         }
     }
 
+    /*根据条件执行不同的语句,可中止(根据序列的最后一个数值来判断).
+    用法:
+    IFC(X,A,B)若X不为0则执行A,否则执行B.IFC与IF函数的区别:根据X的值来选择性执行A、B表达式.
+    例如:
+    IFC(CLOSE>OPEN,HIGH,TESTSKIP(1));L;表示当日收阳则返回最高值,并执行下一句"L;",否则退出公式计算
+    */
+    this.IFC=function(data)
+    {
+        if (Array.isArray(data))
+        {
+            var item=data[data.length-1];
+            if (IFrameSplitOperator.IsNumber(item)) return item>0;
+            return false;
+        }
+        else if (IFrameSplitOperator.IsNumber(data))
+        {
+            return data>0;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     /*
     有效数据右对齐.
     用法:
@@ -9780,6 +9804,16 @@ function JSDraw(errorHandler,symbolData)
     {
         var rgba=`RGB(${r},${g},${b},${a})`;
         return rgba;
+    }
+
+    this.UPCOLOR=function(color)
+    {
+        return color;
+    }
+
+    this.DOWNCOLOR=function(color)
+    {
+        return color;
     }
 
     /*
@@ -15914,10 +15948,16 @@ function JSExecute(ast,option)
             else if (item.Expression.Type==Syntax.CallExpression)
             {
                 let callItem=item.Expression;
-                if (this.Draw.IsDrawFunction(callItem.Callee.Name))
+                if (this.Draw.IsDrawFunction(callItem.Callee.Name) )
                 {
                     let draw=callItem.Draw;
                     draw.Name=callItem.Callee.Name;
+                    this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
+                }
+                else if (callItem.Callee.Name==="IFC" && callItem.Draw)
+                {
+                    let draw=callItem.Draw;
+                    draw.Name=draw.DrawType;
                     this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
                 }
                 else
@@ -15976,7 +16016,7 @@ function JSExecute(ast,option)
             {
                 let varName;
                 let draw;
-                let color;
+                let color, upColor, downColor;
                 let lineWidth;
                 let colorStick=false;
                 let pointDot=false;
@@ -16103,6 +16143,14 @@ function JSExecute(ast,option)
                             {
                                 color=itemExpression.Out;
                             }
+                            else if (itemExpression.Callee.Name=="UPCOLOR")
+                            {
+                                upColor=itemExpression.Out;
+                            }
+                            else if (itemExpression.Callee.Name=="DOWNCOLOR")
+                            {
+                                downColor=itemExpression.Out;
+                            }
                             else if (itemExpression.Callee.Name=="SOUND")
                             {
                                 var event=this.GetSoundEvent();
@@ -16196,6 +16244,8 @@ function JSExecute(ast,option)
                     let outVar=this.VarTable.get(varName);
                     let value={Name:varName, Data:outVar, Type:6};
                     if (color) value.Color=color;
+                    if (upColor) value.UpColor=upColor;
+                    if (downColor) value.DownColor=downColor;
                     this.OutVarTable.push(value);
                 }
                 else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
@@ -16424,19 +16474,44 @@ function JSExecute(ast,option)
     //函数调用
     this.VisitCallExpression=function(node)
     {
-        let funcName=node.Callee.Name;
-        let args=[];
-        for(let i in node.Arguments)
+        var funcName=node.Callee.Name;
+        var args=[];
+        for(var i=0;i<node.Arguments.length;++i)
         {
-            let item=node.Arguments[i];
-            let value;
+            var item=node.Arguments[i];
+            var value;
+
+            if (funcName==="IFC" && i>=1) 
+                break;   //IFC先处理第1个条件参数
+
             if (item.Type==Syntax.BinaryExpression || item.Type==Syntax.LogicalExpression) 
                 value=this.VisitBinaryExpression(item);
             else if (item.Type==Syntax.CallExpression)
                 value=this.VisitCallExpression(item);
             else
                 value=this.GetNodeValue(item);
+
             args.push(value);
+        }
+
+        if (funcName==="IFC")
+        {
+            //IFC(X,A,B)若X不为0则执行A,否则执行B.IFC与IF函数的区别:根据X的值来选择性执行A、B表达式.
+            var bResult=this.Algorithm.IFC(args[0]);
+            var item=bResult? node.Arguments[1] : node.Arguments[2];
+
+            var value;
+
+            if (item.Type==Syntax.BinaryExpression || item.Type==Syntax.LogicalExpression) 
+                value=this.VisitBinaryExpression(item);
+            else if (item.Type==Syntax.CallExpression)
+                value=this.VisitCallExpression(item);
+            else
+                value=this.GetNodeValue(item);
+
+            node.Out=value;
+            if (item.Draw) node.Draw=item.Draw;
+            return node.Out;
         }
 
         //JSConsole.Complier.Log('[JSExecute::VisitCallExpression]' , funcName, '(', args.toString() ,')');
@@ -16557,6 +16632,12 @@ function JSExecute(ast,option)
                 break;
             case "RGBA":
                 node.Out=this.Draw.RGBA(args[0],args[1],args[2],args[3]);
+                break;
+            case "UPCOLOR":
+                node.Out=this.Draw.UPCOLOR(args[0]);
+                break;
+            case "DOWNCOLOR":
+                node.Out=this.Draw.DOWNCOLOR(args[0]);
                 break;
             case 'PARTLINE':
                 node.Draw=this.Draw.PARTLINE(args);
@@ -18829,6 +18910,9 @@ function ScriptIndex(name,script,args,option)
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
 
+        if (varItem.UpColor) chart.UpColor=varItem.UpColor;
+        if (varItem.DownColor) chart.DownColor=varItem.DownColor;
+
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
         chart.HistoryData=hisData;
@@ -20034,6 +20118,14 @@ function OverlayScriptIndex(name,script,args,option)
                     case SCRIPT_CHART_NAME.OVERLAY_BARS:
                         this.CreateStackedBar(hqChart,windowIndex,item,i);
                         break;
+
+                    default:
+                        {
+                            var find=g_ScriptIndexChartFactory.Get(item.Draw.DrawType);  //外部挂接
+                            if (find && find.CreateChartCallback)
+                                find.CreateChartCallback(hqChart,windowIndex,item,i, this);
+                        }
+                        break;
                 }
             }
             else if (item.Type==2)
@@ -20349,6 +20441,9 @@ function OverlayScriptIndex(name,script,args,option)
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
 
+        if (varItem.UpColor) chart.UpColor=varItem.UpColor;
+        if (varItem.DownColor) chart.DownColor=varItem.DownColor;
+
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
         chart.HistoryData=hisData;
@@ -20576,6 +20671,12 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (IFrameSplitOperator.IsPlusNumber(width)) chart.LineWidth=width;
+        }
+
         chart.Data.Data=varItem.Draw.DrawData;
         frame.ChartPaint.push(chart);
     }
@@ -20627,21 +20728,6 @@ function OverlayScriptIndex(name,script,args,option)
             if (drawData.Data) chart.Data.Data=drawData.Data;
         }
 
-        frame.ChartPaint.push(chart);
-    }
-
-    this.CreatePartLine=function(hqChart,windowIndex,varItem,i)
-    {
-        var overlayIndex=this.OverlayIndex;
-        var frame=overlayIndex.Frame;
-        let chart=new ChartPartLine();
-        chart.Canvas=hqChart.Canvas;
-        chart.Name=varItem.Name;
-        chart.ChartBorder=frame.Frame.ChartBorder;
-        chart.ChartFrame=frame.Frame;
-        chart.Identify=overlayIndex.Identify;
-
-        chart.Data.Data=varItem.Draw.DrawData;
         frame.ChartPaint.push(chart);
     }
 
@@ -21365,6 +21451,21 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                 JSConsole.Chart.Warn(`[APIScriptIndex::RecvAPIData] recv data symbol not match. HQChart[${hqChart.Symbol}]`);
                 return;
             }
+        }
+
+        if (data.error && IFrameSplitOperator.IsString(data.error.message))
+        {
+            var param=
+            {
+                HQChart:hqChart,
+                WindowIndex:windowIndex,
+                HistoryData:hisData,
+                Self:this
+            };
+
+
+            this.ShowConditionError(param, data.error.message);
+            return;
         }
 
         if (data.outdata && data.outdata.name) this.Name=data.outdata.name;
