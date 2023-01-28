@@ -89453,6 +89453,37 @@ function JSAlgorithm(errorHandler,symbolData)
     }
 
     /*
+    取符号.
+    用法:
+    SIGN(X),返回X的符号.当X>0,X=0,X<0分别返回1,0,-1
+    */
+    this.SIGN=function(data)
+    {
+        if (Array.isArray(data))
+        {
+            var result=[];
+            for(var i=0;i<data.length;++i)
+            {
+                var item=data[i];
+                result[i]=null;
+                if (!IFrameSplitOperator.IsNumber(item)) continue;
+
+                if (item>0) result[i]=1;
+                else if (item==0) result[i]=0;
+                else result[i]=-1;
+            }
+
+            return result;
+        }
+        else
+        {
+            if (data>0) return 1;
+            else if (data==0) return 0;
+            else return -1;
+        }
+    }
+
+    /*
     统计连续满足条件的周期数.
     用法: BARSLASTCOUNT(X),统计连续满足X条件的周期数.
     例如: BARSLASTCOUNT(CLOSE>OPEN)表示统计连续收阳的周期数
@@ -90299,6 +90330,47 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    /*
+    求指定时刻距0时有多长时间.
+    用法:
+    TIMETOSEC(time)
+    TIMETOSEC(time).返回time时刻距0时有多长时间,单位为秒.有效时间为(0-235959)
+    例如:
+    TIMETOSEC(93000)返回34200.
+    */
+    this.TIMETOSEC=function(time)
+    {
+        var hour=parseInt(time/10000);
+        var minute=parseInt((time%10000)/100);
+        var sec=time%100;
+
+        var value=hour*60*60+minute*60+sec;
+
+        return value;
+    }
+
+    /*
+    求0时后若干秒是什么时间.
+    用法:
+    SECTOTIME(N)
+    SECTOTIME(N).返回0时后N秒是什么时间.有效秒数为(0-86399)
+    例如:
+    SECTOTIME(34200)返回93000.
+    */
+    this.SECTOTIME=function(data)
+    {
+        var daySec = 24 *  60 * 60;
+        var hourSec=  60 * 60;
+        var minuteSec=60;
+        var dd = Math.floor(data / daySec);
+        var hh = Math.floor((data % daySec) / hourSec);
+        var mm = Math.floor((data % hourSec) / minuteSec);
+        var ss=data%minuteSec;
+
+        var value=hh*10000+mm*100+ss;
+        return value;
+    }
+
     //用法:ANY(CLOSE>OPEN,10),表示前10日内存在着阳线
     this.ANY=function(data, n)
     {
@@ -90757,6 +90829,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.FLOOR(args[0]);
             case 'FRACPART':
                 return this.FRACPART(args[0]);
+            case "SIGN":
+                return this.SIGN(args[0]);
             case 'BARSLASTCOUNT':
                 return this.BARSLASTCOUNT(args[0]);
             case 'INTPART':
@@ -90800,6 +90874,10 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.DATETODAY(args[0]);
             case "DAYTODATE":
                 return this.DAYTODATE(args[0]);
+            case "TIMETOSEC":
+                return this.TIMETOSEC(args[0]);
+            case "SECTOTIME":
+                return this.SECTOTIME(args[0]);
 
             case "ANY":
                 return this.ANY(args[0],args[1]);
@@ -97134,6 +97212,8 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
+   
+
     this.YEAR=function()
     {
         var result=[];
@@ -97202,6 +97282,28 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
+    /*
+        取得该周期的时分秒,适用于日线以下周期.
+        用法: TIME2
+        函数返回有效值范围为(000000-235959)
+    */
+    this.TIME2=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for(let i=0;i<this.Data.Data.length;++i)
+        {
+            var item=this.Data.Data[i];
+            if (this.IsNumber(item.Time))
+                result[i]=item.Time*100;
+            else
+                result[i]=0;
+        }
+
+        return result;
+    }
+
     this.DateTime=function()
     {
         var result=[];
@@ -97246,6 +97348,81 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         return result;
+    }
+
+    /*
+    取得该周期的日期离今天的天数.
+    用法: DAYSTOTODAY
+    */
+    this.DAYSTOTODAY=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        var nowDate=new Date();
+        var endDate=new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate());
+        for(let i=0; i<this.Data.Data.length; ++i)
+        {
+            var item=this.Data.Data[i];
+            result[i]=null;
+            if (!this.IsNumber(item.Date)) continue;
+
+            var year=parseInt(item.Date/10000);
+            var month=parseInt(item.Date%10000/100);
+            var day=item.Date%100;
+            
+            var beginDate=new Date(year,month-1,day);
+            var diffDays = Math.ceil((endDate - beginDate)/(24*60*60*1000));
+            result[i]=diffDays;
+        }
+
+        return result;
+    }
+
+    /*
+    取得该周是年内第几个周.
+    用法:WEEKOFYEAR
+    */
+    this.WEEKOFYEAR=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for(let i in this.Data.Data)
+        {
+            var item=this.Data.Data[i];
+            result[i]=null;
+            if (!this.IsNumber(item.Date)) continue;
+
+            var year=parseInt(item.Date/10000);
+            var month=parseInt(item.Date%10000/100);
+            var day=item.Date%100;
+            
+            var endDate=new Date(year,month-1,day);
+            var beginDate=new Date(year,0,1);
+            var diffDays = Math.ceil((endDate - beginDate)/(24*60*60*1000));
+            diffDays+=((beginDate.getDay() + 1) - 1);
+            var week = Math.ceil(diffDays/7);
+            var value=week;
+
+            result[i]=value;
+        }
+
+        return result;
+    }
+
+    this.GetYearWeek=function(endDate)
+    {
+        var beginDate = new Date(endDate.getFullYear(), 0, 1);
+        //星期从0-6,0代表星期天，6代表星期六
+        var endWeek = endDate.getDay();
+        if (endWeek == 0) endWeek = 7;
+        var beginWeek = beginDate.getDay();
+        if (beginWeek == 0) beginWeek = 7;
+        //计算两个日期的天数差
+        var millisDiff = endDate.getTime() - beginDate.getTime();
+        var dayDiff = Math.floor(( millisDiff + (beginWeek - endWeek) * (24 * 60 * 60 * 1000)) / 86400000);
+        return Math.ceil(dayDiff / 7) + 1;
     }
 
     this.REFDATE=function(data,date)
@@ -97670,7 +97847,8 @@ function JSExecute(ast,option)
         ["ISEQUAL",null], ["ISUP",null],["ISDOWN"], //ISUP=收阳 ISEQUAL=平盘 ISDOWN=收阴
 
         //日期类
-        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],["TIME",null],["DAY",null],["DATETIME",null],
+        ['DATE',null],['YEAR',null],['MONTH',null],['PERIOD', null],['WEEK',null],["TIME",null],["DAY",null],["DATETIME",null],["TIME2",null],
+        ["WEEKOFYEAR", null],["DAYSTOTODAY", null],
 
         //大盘数据
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
@@ -97939,6 +98117,8 @@ function JSExecute(ast,option)
 
             case "TIME":
                 return this.SymbolData.TIME();
+            case "TIME2":
+                return this.SymbolData.TIME2();
             case 'DATE':
                 return this.SymbolData.DATE();
             case "DATETIME":
@@ -97982,6 +98162,11 @@ function JSExecute(ast,option)
                     var now=new Date();
                     return now.getDay();
                 }
+            case "WEEKOFYEAR":
+                return this.SymbolData.WEEKOFYEAR();
+            case "DAYSTOTODAY":
+                return this.SymbolData.DAYSTOTODAY();
+
         }
     }
 

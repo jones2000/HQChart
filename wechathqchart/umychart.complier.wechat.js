@@ -37,6 +37,12 @@ import {
     SingleData, MinuteData,
 } from "./umychart.data.wechat.js";
 
+import 
+{ 
+    g_MinuteCoordinateData,
+    MARKET_SUFFIX_NAME ,
+} from "./umychart.coordinatedata.wechat.js";
+
 var g_JSComplierResource=
 {
     Domain : "https://opensource.zealink.com",               //API域名
@@ -6180,6 +6186,37 @@ function JSAlgorithm(errorHandler, symbolData)
     }
 
     /*
+    取符号.
+    用法:
+    SIGN(X),返回X的符号.当X>0,X=0,X<0分别返回1,0,-1
+    */
+    this.SIGN=function(data)
+    {
+        if (Array.isArray(data))
+        {
+            var result=[];
+            for(var i=0;i<data.length;++i)
+            {
+                var item=data[i];
+                result[i]=null;
+                if (!IFrameSplitOperator.IsNumber(item)) continue;
+
+                if (item>0) result[i]=1;
+                else if (item==0) result[i]=0;
+                else result[i]=-1;
+            }
+
+            return result;
+        }
+        else
+        {
+            if (data>0) return 1;
+            else if (data==0) return 0;
+            else return -1;
+        }
+    }
+
+    /*
     统计连续满足条件的周期数.
     用法: BARSLASTCOUNT(X),统计连续满足X条件的周期数.
     例如: BARSLASTCOUNT(CLOSE>OPEN)表示统计连续收阳的周期数
@@ -7025,6 +7062,47 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    /*
+    求指定时刻距0时有多长时间.
+    用法:
+    TIMETOSEC(time)
+    TIMETOSEC(time).返回time时刻距0时有多长时间,单位为秒.有效时间为(0-235959)
+    例如:
+    TIMETOSEC(93000)返回34200.
+    */
+    this.TIMETOSEC=function(time)
+    {
+        var hour=parseInt(time/10000);
+        var minute=parseInt((time%10000)/100);
+        var sec=time%100;
+
+        var value=hour*60*60+minute*60+sec;
+
+        return value;
+    }
+
+    /*
+    求0时后若干秒是什么时间.
+    用法:
+    SECTOTIME(N)
+    SECTOTIME(N).返回0时后N秒是什么时间.有效秒数为(0-86399)
+    例如:
+    SECTOTIME(34200)返回93000.
+    */
+    this.SECTOTIME=function(data)
+    {
+        var daySec = 24 *  60 * 60;
+        var hourSec=  60 * 60;
+        var minuteSec=60;
+        var dd = Math.floor(data / daySec);
+        var hh = Math.floor((data % daySec) / hourSec);
+        var mm = Math.floor((data % hourSec) / minuteSec);
+        var ss=data%minuteSec;
+
+        var value=hh*10000+mm*100+ss;
+        return value;
+    }
+
     this.POW=function(data, n)
     {
         var result=[];
@@ -7201,27 +7279,86 @@ function JSAlgorithm(errorHandler, symbolData)
     TESTSKIP(A) 
     表示如果满足条件A则该公式直接返回,不再计算接下来的表达式 注意:A为非序列数据,只取最后一个数据
     */
-   this.TESTSKIP=function(data, node)
-   {
-       if (Array.isArray(data))
-       {
-           if (data.length<=0) return false;
-           var item=data[data.length-1];
-           if (!item) return false;
+    this.TESTSKIP=function(data, node)
+    {
+        if (Array.isArray(data))
+        {
+            if (data.length<=0) return false;
+            var item=data[data.length-1];
+            if (!item) return false;
 
-           return true;
-       }
-       else if (IFrameSplitOperator.IsNumber(data))
-       {
-           if (data<=0) return false;
-           return true;
-       }
-       else
-       {
-           if (!data) return false;
-           return true;
-       }
-   }
+            return true;
+        }
+        else if (IFrameSplitOperator.IsNumber(data))
+        {
+            if (data<=0) return false;
+            return true;
+        }
+        else
+        {
+            if (!data) return false;
+            return true;
+        }
+    }
+
+    /*根据条件执行不同的语句,可中止(根据序列的最后一个数值来判断).
+    用法:
+    IFC(X,A,B)若X不为0则执行A,否则执行B.IFC与IF函数的区别:根据X的值来选择性执行A、B表达式.
+    例如:
+    IFC(CLOSE>OPEN,HIGH,TESTSKIP(1));L;表示当日收阳则返回最高值,并执行下一句"L;",否则退出公式计算
+    */
+    this.IFC=function(data)
+    {
+        if (Array.isArray(data))
+        {
+            var item=data[data.length-1];
+            if (IFrameSplitOperator.IsNumber(item)) return item>0;
+            return false;
+        }
+        else if (IFrameSplitOperator.IsNumber(data))
+        {
+            return data>0;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    /*
+    有效数据右对齐.
+    用法:
+    ALIGNRIGHT(X)有效数据向右移动,左边空出来的周期填充无效值
+    例如:TC:=IF(CURRBARSCOUNT=2 || CURRBARSCOUNT=5,DRAWNULL,C);XC:ALIGNRIGHT(TC);删除了两天的收盘价,并将剩余数据右移
+    */
+    this.ALIGNRIGHT=function(data)
+    {
+        if (Array.isArray(data))
+        {
+            var result=[];
+            var index=data.length-1;
+            for(var i=data.length-1;i>=0;--i)
+            {
+                var item=data[i];
+                if (IFrameSplitOperator.IsNumber(item) || IFrameSplitOperator.IsString(item))
+                {
+                    result[index]=item;
+                    --index;
+                }
+            }
+
+            for(var i=index;i>=0;--i)
+            {
+                result[i]=null;
+            }
+
+            return result;
+        }
+        else
+        {
+            return data;
+        }
+    }
 
     //函数调用
     this.CallFunction=function(name,args,node)
@@ -7392,6 +7529,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.ZTPRICE(args[0], args[1]);
             case 'FRACPART':
                 return this.FRACPART(args[0]);
+            case "SIGN":
+                return this.SIGN(args[0]);
             case 'BARSLASTCOUNT':
                 return this.BARSLASTCOUNT(args[0]);
             case 'INTPART':
@@ -7436,6 +7575,10 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.DATETODAY(args[0]);
             case "DAYTODATE":
                 return this.DAYTODATE(args[0]);
+            case "TIMETOSEC":
+                return this.TIMETOSEC(args[0]);
+            case "SECTOTIME":
+                return this.SECTOTIME(args[0]);
 
             case 'POW':
                 return this.POW(args[0],args[1]);
@@ -7450,6 +7593,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.ANY(args[0],args[1]);
             case "ALL":
                 return this.ALL(args[0],args[1]);
+            case "ALIGNRIGHT":
+                return this.ALIGNRIGHT(args[0]);
 
             //三角函数
             case 'ATAN':
@@ -9422,8 +9567,24 @@ function JSSymbolData(ast,option,jsExecute)
             case 'AMOUNT':
             case 'AMO':
                 return this.Data.GetAmount();
+
+            case "OPI":         //文华 持仓量
             case 'VOLINSTK':
                 return this.Data.GetPosition();
+
+            case "ZSTJJ":      //均价
+                return this.Data.GetAvPrice();
+            
+            case "SETTLE":  //文华 结算价
+            case "QHJSJ":   //通达信 结算价
+                return this.Data.GetSettlementPrice();  //结算价
+
+            case "ISEQUAL": //平盘
+                return this.Data.GetIsEqual();
+            case "ISUP":    //收阳
+                return this.Data.GetIsUp();
+            case "ISDOWN":  //收阴
+                return this.Data.GetIsDown();
         }
     }
 
@@ -9437,6 +9598,19 @@ function JSSymbolData(ast,option,jsExecute)
             result.push(i);
 
         return result;
+    }
+
+    this.GetTotalBarsCount=function()
+    {
+        let lCount=this.Data.Data.length;
+        return lCount;
+    }
+
+    this.GetTotalTradeMinuteCount=function()
+    {
+        var data=g_MinuteCoordinateData.GetCoordinateData(this.Symbol);
+        if (data && data.Count>0) return data.Count-1;
+        return 242;
     }
 
     //BARPOS 返回从第一根K线开始到当前的周期数。
@@ -9465,6 +9639,24 @@ function JSSymbolData(ast,option,jsExecute)
         {
             if (i == lCount - 1) result.push(1);
             else result.push(0);
+        }
+
+        return result;
+    }
+
+    //BARSTATUS返回数据位置信息,1表示第一根K线,2表示最后一个数据,0表示中间位置.
+    //例如:BARSTATUS=2表示当天是该数据的最后一个周期.
+    this.GetBarStatus=function()
+    {
+        let result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result
+
+        let lCount=this.Data.Data.length;
+        for(var i=0 ;i<lCount;++i)
+        {
+            if (i==0) result[i]=1;
+            else if (i==lCount-1) result[i]=2;
+            else result[i]=0;
         }
 
         return result;
@@ -10935,6 +11127,28 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
+    /*
+        取得该周期的时分秒,适用于日线以下周期.
+        用法: TIME2
+        函数返回有效值范围为(000000-235959)
+    */
+    this.TIME2=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for(let i=0;i<this.Data.Data.length;++i)
+        {
+            var item=this.Data.Data[i];
+            if (this.IsNumber(item.Time))
+                result[i]=item.Time*100;
+            else
+                result[i]=0;
+        }
+
+        return result;
+    }
+
     this.DateTime=function()
     {
         var result=[];
@@ -11013,6 +11227,81 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         return result;
+    }
+
+     /*
+    取得该周期的日期离今天的天数.
+    用法: DAYSTOTODAY
+    */
+    this.DAYSTOTODAY=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        var nowDate=new Date();
+        var endDate=new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate());
+        for(let i=0; i<this.Data.Data.length; ++i)
+        {
+            var item=this.Data.Data[i];
+            result[i]=null;
+            if (!this.IsNumber(item.Date)) continue;
+
+            var year=parseInt(item.Date/10000);
+            var month=parseInt(item.Date%10000/100);
+            var day=item.Date%100;
+            
+            var beginDate=new Date(year,month-1,day);
+            var diffDays = Math.ceil((endDate - beginDate)/(24*60*60*1000));
+            result[i]=diffDays;
+        }
+
+        return result;
+    }
+
+    /*
+    取得该周是年内第几个周.
+    用法:WEEKOFYEAR
+    */
+    this.WEEKOFYEAR=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for(let i in this.Data.Data)
+        {
+            var item=this.Data.Data[i];
+            result[i]=null;
+            if (!this.IsNumber(item.Date)) continue;
+
+            var year=parseInt(item.Date/10000);
+            var month=parseInt(item.Date%10000/100);
+            var day=item.Date%100;
+            
+            var endDate=new Date(year,month-1,day);
+            var beginDate=new Date(year,0,1);
+            var diffDays = Math.ceil((endDate - beginDate)/(24*60*60*1000));
+            diffDays+=((beginDate.getDay() + 1) - 1);
+            var week = Math.ceil(diffDays/7);
+            var value=week;
+
+            result[i]=value;
+        }
+
+        return result;
+    }
+
+    this.GetYearWeek=function(endDate)
+    {
+        var beginDate = new Date(endDate.getFullYear(), 0, 1);
+        //星期从0-6,0代表星期天，6代表星期六
+        var endWeek = endDate.getDay();
+        if (endWeek == 0) endWeek = 7;
+        var beginWeek = beginDate.getDay();
+        if (beginWeek == 0) beginWeek = 7;
+        //计算两个日期的天数差
+        var millisDiff = endDate.getTime() - beginDate.getTime();
+        var dayDiff = Math.floor(( millisDiff + (beginWeek - endWeek) * (24 * 60 * 60 * 1000)) / 86400000);
+        return Math.ceil(dayDiff / 7) + 1;
     }
 
     this.REFDATE = function (data, date) 
@@ -11246,18 +11535,28 @@ function JSExecute(ast,option)
     //脚本自动变量表, 只读
     this.ConstVarTable=new Map([
         //个股数据
-        ['CLOSE', null], ['VOL', null], ['OPEN', null], ['HIGH', null], ['LOW', null], ['AMOUNT', null], ['AMO', null], ['VOLINSTK',null],
-        ['C', null], ['V', null], ['O', null], ['H', null], ['L', null], ['VOLR', null],
+        ['CLOSE', null], ['VOL', null], ['OPEN', null], ['HIGH', null], ['LOW', null], ['AMOUNT', null], ['AMO', null], 
+        ['C', null], ['V', null], ['O', null], ['H', null], ['L', null], 
+        ['VOLR', null],
+        ['VOLINSTK',null], ["OPI",null],    //持仓量
+        ["QHJSJ",null], ["SETTLE",null],    //结算价
+        ["ZSTJJ",null],     //分时图均价线,对于分时图周期指标有效.
+        ["ISEQUAL",null], ["ISUP",null],["ISDOWN"], //ISUP=收阳 ISEQUAL=平盘 ISDOWN=收阴
 
         //日期类
-        ['DATE', null], ['YEAR', null], ['MONTH', null], ['PERIOD', null], ['WEEK', null],["TIME",null],
+        ['DATE', null], ['YEAR', null], ['MONTH', null], ['PERIOD', null], ['WEEK', null],["TIME",null],["DATETIME",null],["TIME2",null],
+        ["WEEKOFYEAR", null],["DAYSTOTODAY", null],
 
         //大盘数据
-        ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],["DATETIME",null],
+        ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
         ['INDEXADV', null], ['INDEXDEC', null],
 
+        ['TOTALFZNUM', null],   //该品种的每天的总交易分钟数.
+
         ['CURRBARSCOUNT', null], //到最后交易日的周期数
+        ['TOTALBARSCOUNT',null],
         ['ISLASTBAR', null],     //判断是否为最后一个周期
+        ['BARSTATUS',null],     //BARSTATUS返回数据位置信息,1表示第一根K线,2表示最后一个数据,0表示中间位置.
 
         ["BARPOS", null],   //返回从第一根K线开始到当前的周期数
         
@@ -11267,6 +11566,7 @@ function JSExecute(ast,option)
         ['SETCODE', null],   //市场类型
         ['CODE', null],      //品种代码
         ['STKNAME', null],   //品种名称 
+        ["TQFLAG",null],    //TQFLAG  当前的复权状态,0:无复权 1:前复权 2:后复权 
 
         ['HYBLOCK', null],   //所属行业板块
         ['DYBLOCK', null],   //所属地域板块
@@ -11288,6 +11588,8 @@ function JSExecute(ast,option)
 
         ['DRAWNULL', null],
         ["NULL",null], 
+
+        ["MACHINEDATE",null],["MACHINETIME",null],["MACHINEWEEK",null]
     ]);   
 
     this.SymbolData=new JSSymbolData(this.AST,option,this);
@@ -11402,7 +11704,14 @@ function JSExecute(ast,option)
             case 'LOW':
             case 'L':
             case 'AMOUNT':
+            case "OPI":
             case 'VOLINSTK':
+            case "SETTLE":
+            case "QHJSJ":
+            case "ZSTJJ":
+            case "ISEQUAL": //平盘
+            case "ISUP":    //收阳
+            case "ISDOWN":  //收阴
                 return this.SymbolData.GetSymbolCacheData(name);
             case 'VOLR':
                 return this.SymbolData.GetVolRateCacheData(node);
@@ -11422,8 +11731,15 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetCurrBarsCount();
             case "BARPOS":
                 return this.SymbolData.GetBarPos();
+            case "TOTALBARSCOUNT":
+                return this.SymbolData.GetTotalBarsCount();
+            case "TOTALFZNUM":
+                return this.SymbolData.GetTotalTradeMinuteCount();
             case 'ISLASTBAR':
                 return this.SymbolData.GetIsLastBar();
+            case "BARSTATUS":
+                return this.SymbolData.GetBarStatus();
+
             case "TOTALCAPITAL":
             case 'CAPITAL':
             case 'EXCHANGE':
@@ -11456,6 +11772,8 @@ function JSExecute(ast,option)
             
             case 'TIME':
                 return this.SymbolData.TIME();
+            case "TIME2":
+                return this.SymbolData.TIME2();
             case 'DATE':
                 return this.SymbolData.DATE();
             case "DATETIME":
@@ -11472,6 +11790,29 @@ function JSExecute(ast,option)
             case 'DRAWNULL':
             case "NULL":
                 return this.SymbolData.GetDrawNull();
+
+            case "TQFLAG":
+                return this.SymbolData.Right;
+
+            case "MACHINEDATE":
+                {
+                    var now=new Date();
+                    return (now.getFullYear()*10000+(now.getMonth()*1)*100+now.getDate())-19000000;
+                }
+            case "MACHINETIME":
+                {
+                    var now=new Date();
+                    return now.getHours()*10000+(now.getMinutes()*1)*100+now.getSeconds();
+                }
+            case "MACHINEWEEK":
+                {
+                    var now=new Date();
+                    return now.getDay();
+                }
+            case "WEEKOFYEAR":
+                return this.SymbolData.WEEKOFYEAR();
+            case "DAYSTOTODAY":
+                return this.SymbolData.DAYSTOTODAY();
         }
     }
 
@@ -11596,6 +11937,12 @@ function JSExecute(ast,option)
                     {
                         let draw=callItem.Draw;
                         draw.Name=callItem.Callee.Name;
+                        this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
+                    }
+                    else if (callItem.Callee.Name==="IFC" && callItem.Draw)
+                    {
+                        let draw=callItem.Draw;
+                        draw.Name=draw.DrawType;
                         this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
                     }
                     else
@@ -12007,10 +12354,13 @@ function JSExecute(ast,option)
     {
         let funcName=node.Callee.Name;
         let args=[];
-        for(let i in node.Arguments)
+        for(let i=0; i<node.Arguments.length; ++i)
         {
             let item=node.Arguments[i];
             let value;
+            if (funcName==="IFC" && i>=1) 
+                break;   //IFC先处理第1个条件参数
+
             if (item.Type==Syntax.BinaryExpression || item.Type==Syntax.LogicalExpression) 
                 value=this.VisitBinaryExpression(item);
             else if (item.Type==Syntax.CallExpression)
@@ -12018,6 +12368,25 @@ function JSExecute(ast,option)
             else
                 value=this.GetNodeValue(item);
             args.push(value);
+        }
+
+        if (funcName==="IFC")
+        {
+            //IFC(X,A,B)若X不为0则执行A,否则执行B.IFC与IF函数的区别:根据X的值来选择性执行A、B表达式.
+            var bResult=this.Algorithm.IFC(args[0]);
+            var item=bResult? node.Arguments[1] : node.Arguments[2];
+            var value;
+
+            if (item.Type==Syntax.BinaryExpression || item.Type==Syntax.LogicalExpression) 
+                value=this.VisitBinaryExpression(item);
+            else if (item.Type==Syntax.CallExpression)
+                value=this.VisitCallExpression(item);
+            else
+                value=this.GetNodeValue(item);
+
+            node.Out=value;
+            if (item.Draw) node.Draw=item.Draw;
+            return node.Out;
         }
 
         //if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitCallExpression]' , funcName, '(', args.toString() ,')');

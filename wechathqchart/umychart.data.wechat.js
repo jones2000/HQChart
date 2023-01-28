@@ -426,6 +426,53 @@ function ChartData()
         return result;
     }
 
+    this.GetSettlementPrice=function()  //结算价
+    {
+        var result=[]
+        for(var i=0; i<this.Data.length; ++i)
+        {
+            result[i]=this.Data[i].FClose;
+        }
+
+        return result;
+    }
+
+    this.GetIsEqual=function()
+    {
+        var result=[];
+        for(var i=0; i<this.Data.length; ++i)
+        {
+            var item=this.Data[i];
+            result[i]=(item.Close==item.Open? 1:0);
+        }
+
+        return result;
+    }
+
+    this.GetIsUp=function()
+    {
+        var result=[];
+        for(var i=0; i<this.Data.length; ++i)
+        {
+            var item=this.Data[i];
+            result[i]=(item.Close>item.Open? 1:0);
+        }
+
+        return result;
+    }
+
+    this.GetIsDown=function()
+    {
+        var result=[];
+        for(var i=0; i<this.Data.length; ++i)
+        {
+            var item=this.Data[i];
+            result[i]=(item.Close<item.Open? 1:0);
+        }
+
+        return result;
+    }
+
     //获取数据日期和时间范围
     this.GetDateRange=function()
     {

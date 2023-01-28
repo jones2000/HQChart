@@ -3616,7 +3616,10 @@ export
     g_CBOTTimeData,
     g_TOCOMTimeData,
     g_IPETimeData,
-    GetfloatPrecision
+    GetfloatPrecision,
+
+    g_MinuteCoordinateData,
+    g_MinuteTimeStringData
 };
 
 /*
