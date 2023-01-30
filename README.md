@@ -456,7 +456,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>
 2. [HQChart报价列表高级应用教程2-东方财富数据对接自选股列表](https://blog.csdn.net/jones2000/article/details/124940054)<br>
-
+3. [HQChart报价列表高级应用教程3-雪球数据对接报价列表uniapp版本](https://blog.csdn.net/jones2000/article/details/128637380)    
+4. [HQChart报价列表高级应用教程4-股票名称增加类型图标](https://blog.csdn.net/jones2000/article/details/128692571)     
 
 ## 设计文档:
 1. [如何(c++,js)写一个传统的K线图和走势图1](https://blog.csdn.net/jones2000/article/details/84779481) <br>
