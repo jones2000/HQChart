@@ -5350,27 +5350,49 @@ function JSAlgorithm(errorHandler,symbolData)
     {
         var result=[];
         if (n<1) return result;
-        var i=0;
-        for(;i<data.length;++i)
+        if (IFrameSplitOperator.IsNumber(n)) 
         {
-            result[i]=null;
-            if (this.IsNumber(data[i])) break;
-        }
-
-        var flag=0;
-        for(;i<data.length;++i)
-        {
-            if (data[i]) flag+=1;
-            else flag=0;
-            
-            if (flag==n)
+            n=parseInt(n);
+            var i=0;
+            for(;i<data.length;++i)
             {
-                result[i]=1;
-                --flag;
+                result[i]=null;
+                if (this.IsNumber(data[i])) break;
             }
-            else 
+
+            var flag=0;
+            for(;i<data.length;++i)
             {
-                result[i]=0;
+                if (data[i]) flag+=1;
+                else flag=0;
+                
+                if (flag==n)
+                {
+                    result[i]=1;
+                    --flag;
+                }
+                else 
+                {
+                    result[i]=0;
+                }
+            }
+        }
+        else if (Array.isArray(n))
+        {
+            for(var i=0;i<n.length;++i)
+            {
+                var value=n[i];
+                result[i]=null;
+                if (!IFrameSplitOperator.IsPlusNumber(value)) continue;
+                value=parseInt(value);
+
+                var flag=0;
+                for(var j=i, k=0; j>=0 && k<value; --j, ++k)
+                {
+                    if (data[j]) ++flag;
+                }
+
+                result[i]=(flag==value?1:0);
             }
         }
         return result;
@@ -18713,6 +18735,14 @@ function ScriptIndex(name,script,args,option)
         }
     }
 
+    //给图形设置指标名字
+    this.SetChartIndexName=function(chart)
+    {
+        if (this.Name) chart.IndexName=this.Name;
+        else if (this.ID) chart.IndexName==this.ID;
+    }
+
+
     this.CreateLine=function(hqChart,windowIndex,varItem, id, lineType)
     {
         if (lineType==7) var line=new ChartStepLine();
@@ -18755,6 +18785,7 @@ function ScriptIndex(name,script,args,option)
             hqChart.TitlePaint[titleIndex].Data[id].ChartClassName=line.ClassName;
         }
         
+        this.SetChartIndexName(line);
         hqChart.ChartPaint.push(line);
     }
 
@@ -18807,6 +18838,7 @@ function ScriptIndex(name,script,args,option)
 
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
+        this.SetChartIndexName(bar);
         hqChart.ChartPaint.push(bar);
     }
 
@@ -18975,6 +19007,7 @@ function ScriptIndex(name,script,args,option)
         if (varItem.Color) clrTitle=this.GetColor(varItem.Color);
         hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chartMACD.Data,varItem.Name,clrTitle);
 
+        this.SetChartIndexName(chartMACD);
         hqChart.ChartPaint.push(chartMACD);
     }
 
@@ -19029,6 +19062,7 @@ function ScriptIndex(name,script,args,option)
         chart.Data.Data=varItem.Data;
         hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
 
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
 
@@ -19537,6 +19571,8 @@ function ScriptIndex(name,script,args,option)
         }
 
         chart.Data.Data=varItem.Draw.DrawData;
+
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
 
@@ -20399,7 +20435,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Identify=overlayIndex.Identify;
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
-
+        
         if (varItem.LineWidth) 
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
@@ -20415,6 +20451,7 @@ function OverlayScriptIndex(name,script,args,option)
         titleData.ChartClassName=chart.ClassName;
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
 
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 
@@ -20440,6 +20477,7 @@ function OverlayScriptIndex(name,script,args,option)
 
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 
@@ -20863,6 +20901,7 @@ function OverlayScriptIndex(name,script,args,option)
         }
 
         chart.Data.Data=varItem.Draw.DrawData;
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 

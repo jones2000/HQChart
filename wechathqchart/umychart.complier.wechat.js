@@ -4830,32 +4830,53 @@ function JSAlgorithm(errorHandler, symbolData)
     */
     this.EVERY = function (data, n) 
     {
-        var result = [];
-        if (n < 1) return result;
-        var i = 0;
-        for (; i < data.length; ++i) 
+        var result=[];
+        if (n<1) return result;
+        if (IFrameSplitOperator.IsNumber(n)) 
         {
-            result[i] = null;
-            if (this.IsNumber(data[i])) break;
-        }
+            n=parseInt(n);
+            var i=0;
+            for(;i<data.length;++i)
+            {
+                result[i]=null;
+                if (this.IsNumber(data[i])) break;
+            }
 
-        var flag = 0;
-        for (; i < data.length; ++i) 
+            var flag=0;
+            for(;i<data.length;++i)
+            {
+                if (data[i]) flag+=1;
+                else flag=0;
+                
+                if (flag==n)
+                {
+                    result[i]=1;
+                    --flag;
+                }
+                else 
+                {
+                    result[i]=0;
+                }
+            }
+        }
+        else if (Array.isArray(n))
         {
-            if (data[i]) flag += 1;
-            else flag = 0;
+            for(var i=0;i<n.length;++i)
+            {
+                var value=n[i];
+                result[i]=null;
+                if (!IFrameSplitOperator.IsPlusNumber(value)) continue;
+                value=parseInt(value);
 
-            if (flag == n) 
-            {
-                result[i] = 1;
-                --flag;
-            }
-            else 
-            {
-                result[i] = 0;
+                var flag=0;
+                for(var j=i, k=0; j>=0 && k<value; --j, ++k)
+                {
+                    if (data[j]) ++flag;
+                }
+
+                result[i]=(flag==value?1:0);
             }
         }
-
         return result;
     }
 

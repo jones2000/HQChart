@@ -1,7 +1,7 @@
 <template>
     <div id="app2" >
       <div class="demoPageTop">
-        <span>HQChart测试用例 版本号:1.1.11510</span> 
+        <span>HQChart测试用例 版本号:1.1.11708</span> 
         <a href="https://github.com/jones2000/HQChart" target="_blank">代码地址: https://github.com/jones2000/HQChart</a>
         <div class="changeColorBtns">
           <button type="button" @click="OnChangeStyle('black')">黑色风格</button>
@@ -31,7 +31,7 @@ const CUSTOM_KLINE_OPTION=
 {
     Windows: //窗口指标
     [
-        {Index:"MA", Overlay:true, OverlayIndexType:{ Position:1, LineSpace:3 }},
+        {Index:"MA", Overlay:true, Export:true, OverlayIndexType:{ Position:1, LineSpace:3 }},
         {Index:"MACD", Overlay:true, OverlayIndexType:{ Position:1, LineSpace:3 }},
     ], 
 
@@ -49,7 +49,7 @@ const CUSTOM_MINUTE_OPTION=
 {
     Windows: //窗口指标
     [
-        {Index:"RSI"},
+        {Index:"RSI", Export:true },
     ]
 }
 

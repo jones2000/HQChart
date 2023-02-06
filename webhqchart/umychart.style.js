@@ -272,6 +272,11 @@ function GetBlackStyle()
             {
                 MoveOnColor:"rgb(255,255,255)",
                 Color:"rgb(156,156,156)"
+            },
+            ExportData:
+            {
+                MoveOnColor:"rgb(255,255,255)",
+                Color:"rgb(156,156,156)"
             }
         },
         

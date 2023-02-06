@@ -148,6 +148,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![line break](/小程序行情模块用例/image/hqchart_linebreak.png)
 * OrderBook Heatmap
 ![heatmap](/小程序行情模块用例/image/hqchart_heatmap.png)
+* 数据导出
+![exportdata](/小程序行情模块用例/image/hqchart_exportdata.gif)  
 
 
 # 2. 走势图

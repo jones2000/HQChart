@@ -161,7 +161,7 @@ DefaultData.GetKLineOption=function()
         Type: '历史K线图',
         Windows: 
         [
-            { Index: "均线", Overlay:true },
+            { Index: "均线", Overlay:true, Export:true },
             { Index: "VOL", Overlay:true },
         ], //窗口指标
         Symbol: null,
