@@ -2389,7 +2389,7 @@ function ChartSingleText()
     this.YOffset = 0;
     this.Position;          //指定输出位置
     this.TextBG;            //{ Color:"rgb(0,0,92)", Border:"rgb(205,0,92)", Margin:[0,1,1,1],  }   // { Color:背景色, Border:边框颜色, Margin=[上,下,左, 右] }
-
+    this.ShowOffset={ X:0, Y:0 };   //显示偏移
     this.TextSize=
     {
         Max: g_JSChartResource.DRAWICON.Text.MaxSize, Min:g_JSChartResource.DRAWICON.Text.MinSize, //字体的最大最小值
@@ -2493,6 +2493,9 @@ function ChartSingleText()
             var y = this.ChartFrame.GetYFromData(value);
 
             if (x > chartright) break;
+
+            y+=this.ShowOffset.Y;
+            x+=this.ShowOffset.X;
 
             this.Canvas.textAlign = this.TextAlign;
             this.Canvas.fillStyle = this.Color;
@@ -2796,6 +2799,7 @@ function ChartDrawText()
     this.FixedPosition=-1;  //固定位置输出 1顶部, 2底部  
     this.TextBG;            //{ Color:"rgb(0,0,92)", Border:"rgb(205,0,92)", Margin:[0,1,1,1],  }   // { Color:背景色, Border:边框颜色, Margin=[上,下,左, 右] }
     this.VerticalLine;      //垂直线
+    this.ShowOffset={ X:0, Y:0 };   //显示偏移
 
     this.TextSize=
     {
@@ -2863,6 +2867,9 @@ function ChartDrawText()
 
             if (x > chartright) break;
 
+            y+=this.ShowOffset.Y;
+            x+=this.ShowOffset.X;
+            
             drawTextInfo.X=x;
             drawTextInfo.Y=y;
 

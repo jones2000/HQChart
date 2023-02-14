@@ -58,6 +58,9 @@ export default {
     JSKeyboardChart:JSKeyboardChart,
     KEYBOARD_COLUMN_ID:KEYBOARD_COLUMN_ID,
 
+    //X轴滚动条
+    JSScrollBarChart:JSScrollBarChart,
+
     //图形基类导出
     IChartPainting:IChartPainting,              //图形
     IExtendChartPainting:IExtendChartPainting,  //扩展图形

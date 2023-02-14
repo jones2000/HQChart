@@ -9916,6 +9916,19 @@ function JSDraw(errorHandler,symbolData)
         return color;
     }
 
+    //数据左右偏移
+    this.XMOVE=function(offset)
+    {
+        return offset;
+    }
+
+    //数据上下偏移
+    this.YMOVE=function(offset)
+    {
+        return offset;
+    }
+
+
     /*
     SOUND 播放声音。用法：SOUND(NAME)，播放NAME
     注：
@@ -15670,6 +15683,7 @@ function JSExecute(ast,option)
 
     this.ErrorHandler=new ErrorHandler();
     this.VarTable=new Map();        //变量表
+    this.VarDrawTable=new Map();    //绘图变量表
     this.OutVarTable=[];   //输出变量
     this.Arguments=[];
     this.ErrorCallback;             //执行错误回调
@@ -15775,6 +15789,7 @@ function JSExecute(ast,option)
     {
         this.OutVarTable=[];
         this.VarTable=new Map();
+        this.VarDrawTable=new Map();    //绘图变量表
         JSConsole.Complier.Log('[JSExecute::Execute] Load Arguments', this.Arguments);
         for(let i in this.Arguments)    //预定义的变量
         {
@@ -16125,31 +16140,39 @@ function JSExecute(ast,option)
                     let assignmentItem=item.Expression;
                     let varName=assignmentItem.Left.Name;
                     let outVar=this.VarTable.get(varName);
-                    var type=0;
-                    if (outVar && typeof(outVar)=='object' && outVar.__Type__=='Object')
+                    if (this.VarDrawTable.has(varName)) //绘图函数赋值
                     {
-                        type=1000;
+                        let draw=this.VarDrawTable.get(varName);
+                        this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
                     }
-                    else if (!this.IsSectionMode && !Array.isArray(outVar)) 
+                    else
                     {
-                        if (typeof(outVar)=='string') 
+                        var type=0;
+                        if (outVar && typeof(outVar)=='object' && outVar.__Type__=='Object')
                         {
-                            var floatValue=parseFloat(outVar);
-                            if (IFrameSplitOperator.IsNumber(floatValue))
-                            {
-                                outVar=this.SingleDataToArrayData(floatValue);
-                            }
-                            else
-                            {
-                                outVar=this.SingleDataToArrayData(outVar);
-                                type=1001;
-                            }
-                                
+                            type=1000;
                         }
-                        else outVar=this.SingleDataToArrayData(outVar);
-                    }
+                        else if (!this.IsSectionMode && !Array.isArray(outVar)) 
+                        {
+                            if (typeof(outVar)=='string') 
+                            {
+                                var floatValue=parseFloat(outVar);
+                                if (IFrameSplitOperator.IsNumber(floatValue))
+                                {
+                                    outVar=this.SingleDataToArrayData(floatValue);
+                                }
+                                else
+                                {
+                                    outVar=this.SingleDataToArrayData(outVar);
+                                    type=1001;
+                                }
+                                    
+                            }
+                            else outVar=this.SingleDataToArrayData(outVar);
+                        }
 
-                    this.OutVarTable.push({Name:varName, Data:outVar,Type:type});
+                        this.OutVarTable.push({Name:varName, Data:outVar,Type:type});
+                    }
                 }
             }
             else if (item.Expression.Type==Syntax.CallExpression)
@@ -16250,6 +16273,7 @@ function JSExecute(ast,option)
                 var fontSize=-1;
                 var bgConfig=null;    //背景设置
                 var vLineConfig=null;
+                let xOffset=null, yOffset=null;
                 for(let j=0; j<item.Expression.Expression.length; ++j)
                 {
                     let itemExpression=item.Expression.Expression[j];
@@ -16259,7 +16283,11 @@ function JSExecute(ast,option)
                         {
                             varName=itemExpression.Left.Name;
                             let varValue=this.VarTable.get(varName);
-                            if (!Array.isArray(varValue)) 
+                            if (this.VarDrawTable.has(varName))         //绘图函数赋值
+                            {
+                                draw=this.VarDrawTable.get(varName);
+                            }
+                            else if (!Array.isArray(varValue)) 
                             {
                                 varValue=this.SingleDataToArrayData(varValue); 
                                 this.VarTable.set(varName,varValue);            //把常量放到变量表里
@@ -16357,6 +16385,14 @@ function JSExecute(ast,option)
                             else if (itemExpression.Callee.Name=="DOWNCOLOR")
                             {
                                 downColor=itemExpression.Out;
+                            }
+                            else if (itemExpression.Callee.Name=="XMOVE")
+                            {
+                                xOffset=itemExpression.Out;
+                            }
+                            else if (itemExpression.Callee.Name=="YMOVE")
+                            {
+                                yOffset=itemExpression.Out;
                             }
                             else if (itemExpression.Callee.Name=="SOUND")
                             {
@@ -16463,7 +16499,7 @@ function JSExecute(ast,option)
                     if (color) value.Color=color;
                     this.OutVarTable.push(value);
                 }
-                else if (varName && color) 
+                else if (varName && color && !draw) 
                 {
                     let outVar=this.VarTable.get(varName);
                     if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
@@ -16492,6 +16528,8 @@ function JSExecute(ast,option)
                     if (fontSize>0) outVar.DrawFontSize=fontSize;
                     if (bgConfig) outVar.Background=bgConfig;
                     if (vLineConfig) outVar.VerticalLine=vLineConfig;
+                    if (IFrameSplitOperator.IsNumber(xOffset)) outVar.XOffset=xOffset;
+                    if (IFrameSplitOperator.IsNumber(yOffset)) outVar.YOffset=yOffset;
                     this.OutVarTable.push(outVar);
                 }
                 else if (varName)
@@ -16846,6 +16884,12 @@ function JSExecute(ast,option)
             case "DOWNCOLOR":
                 node.Out=this.Draw.DOWNCOLOR(args[0]);
                 break;
+            case "XMOVE":
+                node.Out=this.Draw.XMOVE(args[0]);
+                break;
+            case "YMOVE":
+                node.Out=this.Draw.YMOVE(args[0]);
+                break;
             case 'PARTLINE':
                 node.Draw=this.Draw.PARTLINE(args);
                 node.Out=[];
@@ -17008,11 +17052,14 @@ function JSExecute(ast,option)
         let varName=left.Name;
 
         let right=node.Right;
-        let value=null;
+        let value=null, drawValue=null;
         if (right.Type==Syntax.BinaryExpression || right.Type==Syntax.LogicalExpression)
             value=this.VisitBinaryExpression(right);
         else if (right.Type==Syntax.CallExpression)
+        {
             value=this.VisitCallExpression(right);
+            if (right.Draw) drawValue=right.Draw;
+        }
         else if (right.Type==Syntax.Literal)
         {
             value=right.Value;
@@ -17037,6 +17084,8 @@ function JSExecute(ast,option)
         }
 
         if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitAssignmentExpression]' , varName, ' = ',value);
+
+        if (drawValue) this.VarDrawTable.set(varName, drawValue);
         this.VarTable.set(varName,value);
     }
 
@@ -18980,6 +19029,9 @@ function ScriptIndex(name,script,args,option)
         if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
         if (varItem.Background) chartText.TextBG=varItem.Background;
         if (varItem.VerticalLine) chartText.VerticalLine=varItem.VerticalLine;
+
+        if (IFrameSplitOperator.IsNumber(varItem.YOffset)) chartText.ShowOffset.Y=varItem.YOffset;
+        if (IFrameSplitOperator.IsNumber(varItem.XOffset)) chartText.ShowOffset.X=varItem.XOffset;
         
         let titleIndex=windowIndex+1;
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
@@ -19137,6 +19189,7 @@ function ScriptIndex(name,script,args,option)
         chart.HistoryData=hisData;
         hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
 
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
 
@@ -19526,6 +19579,9 @@ function ScriptIndex(name,script,args,option)
         }
 
         if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        if (IFrameSplitOperator.IsNumber(varItem.XOffset)) chartText.ShowOffset.X=varItem.XOffset;
+        if (IFrameSplitOperator.IsNumber(varItem.YOffset)) chartText.ShowOffset.Y=varItem.YOffset;
+
         
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
@@ -20271,6 +20327,8 @@ function OverlayScriptIndex(name,script,args,option)
                         this.CreateBar(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWTEXT':
+                        this.CreateDrawTextV2(hqChart,windowIndex,item,i);
+                        break;
                     case 'SUPERDRAWTEXT':
                         this.CreateText(hqChart,windowIndex,item,i);
                         break;
@@ -20481,6 +20539,58 @@ function OverlayScriptIndex(name,script,args,option)
         frame.ChartPaint.push(chart);
     }
 
+    //DRAWTEXT
+    this.CreateDrawTextV2=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chartText=new ChartDrawText();
+        chartText.Canvas=hqChart.Canvas;
+        chartText.Name=varItem.Name;
+        chartText.ChartBorder=frame.Frame.ChartBorder;
+        chartText.ChartFrame=frame.Frame;
+        chartText.Identify=overlayIndex.Identify;
+        chartText.ReloadResource();
+
+        if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
+        else chartText.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawCenter===true) chartText.TextAlign='center';
+        if (varItem.IsDrawAbove===true) chartText.TextBaseline='bottom'
+        if (varItem.IsDrawBelow===true) chartText.TextBaseline='top';
+
+        if (varItem.Draw.DrawData) chartText.Data.Data=varItem.Draw.DrawData;
+        chartText.Text=varItem.Draw.Text;
+        if (varItem.Draw.Direction>0) chartText.Direction=varItem.Draw.Direction;
+        if (varItem.Draw.YOffset>0) chartText.YOffset=varItem.Draw.YOffset;
+        if (varItem.Draw.TextAlign) chartText.TextAlign=varItem.Draw.TextAlign;
+        //指定输出位置
+        if (varItem.Draw.FixedPosition==="TOP") chartText.FixedPosition=1;
+        else if (varItem.Draw.FixedPosition==="BOTTOM") chartText.FixedPosition=2;
+
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chartText.TextBaseline='top';
+            else if (varItem.DrawVAlign==1) chartText.TextBaseline='middle';
+            else if (varItem.DrawVAlign==2) chartText.TextBaseline='bottom';
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
+
+        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        if (varItem.Background) chartText.TextBG=varItem.Background;
+        if (varItem.VerticalLine) chartText.VerticalLine=varItem.VerticalLine;
+        if (IFrameSplitOperator.IsNumber(varItem.XOffset)) chartText.ShowOffset.X=varItem.XOffset;
+        if (IFrameSplitOperator.IsNumber(varItem.YOffset)) chartText.ShowOffset.Y=varItem.YOffset;
+        
+        //let titleIndex=windowIndex+1;
+        frame.ChartPaint.push(chartText);
+    }
+
     //创建文本
     this.CreateText=function(hqChart,windowIndex,varItem,id, drawName)
     {
@@ -20673,6 +20783,7 @@ function OverlayScriptIndex(name,script,args,option)
         var titlePaint=hqChart.TitlePaint[titleIndex];
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
 
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 
@@ -20835,7 +20946,23 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
-        let titleIndex=windowIndex+1;
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chart.Direction=1;
+            else if (varItem.DrawVAlign==1) chart.Direction=0;
+            else if (varItem.DrawVAlign==2) chart.Direction=2;
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chart.TextAlign="left";
+            else if (varItem.DrawAlign==1) chart.TextAlign="center";
+            else if (varItem.DrawAlign==2) chart.TextAlign='right';
+        }
+
+        if (IFrameSplitOperator.IsNumber(varItem.XOffset)) chart.ShowOffset.X=varItem.XOffset;
+        if (IFrameSplitOperator.IsNumber(varItem.YOffset)) chart.ShowOffset.Y=varItem.YOffset;
+       
         chart.Data.Data=varItem.Draw.DrawData;
         var icon=varItem.Draw.Icon;
         if (icon.IconFont==true)
@@ -20850,8 +20977,9 @@ function OverlayScriptIndex(name,script,args,option)
             else chart.Color='rgb(0,0,0)';
         }
         
-        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
+        //var titleIndex=windowIndex+1;
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
         frame.ChartPaint.push(chart);
     }
 

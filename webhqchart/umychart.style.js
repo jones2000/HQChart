@@ -522,7 +522,29 @@ function GetBlackStyle()
                 MoveRowColor:'rgb(135,206,250)',
                 SrcRowColor:'rgb(49,48,56)',
             }
-        }
+        },
+
+        ScrollBar:
+        {
+            BorderColor:'rgb(38,38,41)',    //边框线
+            XSplitTextColor:"rgb(240,240,240)",
+            XSplitLineColor:'rgb(38,38,41)',
+
+            Slider:
+            {
+                DateFont:`${14*GetDevicePixelRatio()}px 微软雅黑`,
+                DateColor:'rgb(240,240,240)',
+                BarColor:"rgb(105,105,105)",
+                BarAreaColor:"rgba(128,128,128,0.65)"
+            },
+
+            BGChart:
+            {
+                Color:"rgb(105,113,125)",
+                LineWidth:1,
+                AreaColor:"rgba(24,28,42,0.5)",
+            },
+        },
         
     };
     

@@ -150,6 +150,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![heatmap](/小程序行情模块用例/image/hqchart_heatmap.png)
 * 数据导出
 ![exportdata](/小程序行情模块用例/image/hqchart_exportdata.gif)  
+* 横向滚动条
+![scroll bar](/小程序行情模块用例/image/hqchart_scrollbar.gif)  
 
 
 # 2. 走势图

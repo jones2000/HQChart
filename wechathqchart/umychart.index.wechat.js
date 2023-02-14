@@ -459,9 +459,9 @@ function ScriptIndex(name, script, args, option)
 
         if (varItem.DrawVAlign>=0)
         {
-            if (varItem.DrawVAlign==0) chartText.Direction=1;
-            else if (varItem.DrawVAlign==1) chartText.Direction=0;
-            else if (varItem.DrawVAlign==2) chartText.Direction=2;
+            if (varItem.DrawVAlign==0) chartText.TextBaseline='top';
+            else if (varItem.DrawVAlign==1) chartText.TextBaseline='middle';
+            else if (varItem.DrawVAlign==2) chartText.TextBaseline='bottom';
         }
 
         if (varItem.DrawAlign>=0)
@@ -474,6 +474,10 @@ function ScriptIndex(name, script, args, option)
         if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
         if (varItem.Background) chartText.TextBG=varItem.Background;
         if (varItem.VerticalLine) chartText.VerticalLine=varItem.VerticalLine;
+
+        if (IFrameSplitOperator.IsNumber(varItem.YOffset)) chartText.ShowOffset.Y=varItem.YOffset;
+        if (IFrameSplitOperator.IsNumber(varItem.XOffset)) chartText.ShowOffset.X=varItem.XOffset;
+
         //var titleIndex = windowIndex + 1;
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
         hqChart.ChartPaint.push(chartText);

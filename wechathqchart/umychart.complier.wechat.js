@@ -8571,6 +8571,28 @@ function JSDraw(errorHandler, symbolData)
         return rgba;
     }
 
+    this.UPCOLOR=function(color)
+    {
+        return color;
+    }
+
+    this.DOWNCOLOR=function(color)
+    {
+        return color;
+    }
+
+    //数据左右偏移
+    this.XMOVE=function(offset)
+    {
+        return offset;
+    }
+
+    //数据上下偏移
+    this.YMOVE=function(offset)
+    {
+        return offset;
+    }
+
     //该函数和DRAWTEXT连用
     //{ Color:背景色, Border:边框颜色, Margin=[上,下,左, 右] }
     this.BACKGROUND=function(color, borderColor, left, right, top, bottom)
@@ -11627,6 +11649,7 @@ function JSExecute(ast,option)
 
     this.ErrorHandler=new ErrorHandler();
     this.VarTable=new Map();        //变量表
+    this.VarDrawTable=new Map();    //绘图变量表
     this.OutVarTable=new Array();   //输出变量
     this.Arguments=[];
 
@@ -12007,26 +12030,34 @@ function JSExecute(ast,option)
                     let assignmentItem=item.Expression;
                     let varName=assignmentItem.Left.Name;
                     let outVar=this.VarTable.get(varName);
-                    var type=0;
-                    if (!Array.isArray(outVar)) 
+                    if (this.VarDrawTable.has(varName)) //绘图函数赋值
                     {
-                        if (typeof (outVar) == 'string') 
-                        {
-                            var floatValue=parseFloat(outVar);
-                            if (IFrameSplitOperator.IsNumber(floatValue))
-                            {
-                                outVar=this.SingleDataToArrayData(floatValue);
-                            }
-                            else
-                            {
-                                outVar=this.SingleDataToArrayData(outVar);
-                                type=1001;
-                            }
-                        }
-                        else outVar = this.SingleDataToArrayData(outVar);
+                        let draw=this.VarDrawTable.get(varName);
+                        this.OutVarTable.push({Name:draw.Name, Draw:draw, Type:1});
                     }
+                    else
+                    {
+                        var type=0;
+                        if (!Array.isArray(outVar)) 
+                        {
+                            if (typeof (outVar) == 'string') 
+                            {
+                                var floatValue=parseFloat(outVar);
+                                if (IFrameSplitOperator.IsNumber(floatValue))
+                                {
+                                    outVar=this.SingleDataToArrayData(floatValue);
+                                }
+                                else
+                                {
+                                    outVar=this.SingleDataToArrayData(outVar);
+                                    type=1001;
+                                }
+                            }
+                            else outVar = this.SingleDataToArrayData(outVar);
+                        }
 
-                    this.OutVarTable.push({Name:varName, Data:outVar,Type:type});
+                        this.OutVarTable.push({Name:varName, Data:outVar,Type:type});
+                    }
                 }
                 else if (item.Expression.Type==Syntax.CallExpression)
                 {
@@ -12095,7 +12126,7 @@ function JSExecute(ast,option)
                 {
                     let varName;
                     let draw;
-                    let color;
+                    let color, upColor, downColor;
                     let lineWidth;
                     let colorStick=false;
                     let pointDot=false;
@@ -12120,6 +12151,7 @@ function JSExecute(ast,option)
                     var fontSize=-1;
                     var bgConfig=null;
                     var vLineConfig=null;
+                    var xOffset=null, yOffset=null;
                     for(let j=0 ; j<item.Expression.Expression.length; ++j)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -12129,7 +12161,11 @@ function JSExecute(ast,option)
                             {
                                 varName = itemExpression.Left.Name;
                                 let varValue = this.VarTable.get(varName);
-                                if (!Array.isArray(varValue)) 
+                                if (this.VarDrawTable.has(varName))         //绘图函数赋值
+                                {
+                                    draw=this.VarDrawTable.get(varName);
+                                }
+                                else if (!Array.isArray(varValue)) 
                                 {
                                     varValue = this.SingleDataToArrayData(varValue);
                                     this.VarTable.set(varName, varValue);            //把常量放到变量表里
@@ -12213,6 +12249,22 @@ function JSExecute(ast,option)
                                 if (itemExpression.Callee.Name=="RGB" || itemExpression.Callee.Name=="RGBA")
                                 {
                                     color=itemExpression.Out;
+                                }
+                                else if (itemExpression.Callee.Name=="UPCOLOR")
+                                {
+                                    upColor=itemExpression.Out;
+                                }
+                                else if (itemExpression.Callee.Name=="DOWNCOLOR")
+                                {
+                                    downColor=itemExpression.Out;
+                                }
+                                else if (itemExpression.Callee.Name=="XMOVE")
+                                {
+                                    xOffset=itemExpression.Out;
+                                }
+                                else if (itemExpression.Callee.Name=="YMOVE")
+                                {
+                                    yOffset=itemExpression.Out;
                                 }
                                 else if (itemExpression.Callee.Name=="SOUND")
                                 {
@@ -12304,6 +12356,8 @@ function JSExecute(ast,option)
                         let outVar=this.VarTable.get(varName);
                         let value={Name:varName, Data:outVar, Type:6};
                         if (color) value.Color=color;
+                        if (upColor) value.UpColor=upColor;
+                        if (downColor) value.DownColor=downColor;
                         this.OutVarTable.push(value);
                     }
                     else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
@@ -12314,7 +12368,7 @@ function JSExecute(ast,option)
                         if (color) value.Color=color;
                         this.OutVarTable.push(value);
                     }
-                    else if (varName && color) 
+                    else if (varName && color && !draw) 
                     {
                         let outVar=this.VarTable.get(varName);
                         let value={Name:varName, Data:outVar, Color:color, Type:0};
@@ -12339,6 +12393,8 @@ function JSExecute(ast,option)
                         if (fontSize>0) outVar.DrawFontSize=fontSize;
                         if (bgConfig) outVar.Background=bgConfig;
                         if (vLineConfig) outVar.VerticalLine=vLineConfig;
+                        if (IFrameSplitOperator.IsNumber(xOffset)) outVar.XOffset=xOffset;
+                        if (IFrameSplitOperator.IsNumber(yOffset)) outVar.YOffset=yOffset;
                         this.OutVarTable.push(outVar);
                     }
                     else if (varName) 
@@ -12576,6 +12632,18 @@ function JSExecute(ast,option)
             case 'RGBA':
                 node.Out = this.Draw.RGBA(args[0], args[1], args[2],args[3]);
                 break;
+            case "UPCOLOR":
+                node.Out=this.Draw.UPCOLOR(args[0]);
+                break;
+            case "DOWNCOLOR":
+                node.Out=this.Draw.DOWNCOLOR(args[0]);
+                break;
+            case "XMOVE":
+                node.Out=this.Draw.XMOVE(args[0]);
+                break;
+            case "YMOVE":
+                node.Out=this.Draw.YMOVE(args[0]);
+                break;
             case 'DRAWRECTREL':
                 node.Draw = this.Draw.DRAWRECTREL(args[0], args[1], args[2], args[3], args[4]);
                 node.Out = [];
@@ -12682,11 +12750,14 @@ function JSExecute(ast,option)
         let varName=left.Name;
 
         let right=node.Right;
-        let value=null;
+        let value=null,drawValue=null;
         if (right.Type==Syntax.BinaryExpression || right.Type==Syntax.LogicalExpression)
             value=this.VisitBinaryExpression(right);
         else if (right.Type==Syntax.CallExpression)
+        {
             value=this.VisitCallExpression(right);
+            if (right.Draw) drawValue=right.Draw;
+        }
         else if (right.Type==Syntax.Literal)
         {
             value=right.Value;
@@ -12699,6 +12770,7 @@ function JSExecute(ast,option)
             value = this.ReadMemberVariable(right);
 
         if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitAssignmentExpression]' , varName, ' = ',value);
+        if (drawValue) this.VarDrawTable.set(varName, drawValue);
         this.VarTable.set(varName,value);
     }
 
