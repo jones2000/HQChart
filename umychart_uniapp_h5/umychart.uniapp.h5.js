@@ -48184,10 +48184,26 @@ function DynamicChartTitlePainting()
                     var space=this.ParamSpace*GetDevicePixelRatio();
                     var textWidth=this.Canvas.measureText(text).width+space; 
                     if ((left+textWidth)>right) break;
+                    
+                    if (titleItem.BG)   //背景
+                    {
+                        var textHeight=this.Canvas.measureText("擎").width+2;
+                        var textWidth=this.Canvas.measureText(text).width+2;
+                        var rtBG={ Left:left, Top:bottom-textHeight/2, Width:textWidth, Height:textHeight };
+                        this.Canvas.fillStyle=titleItem.BG;
+                        this.Canvas.fillRect(rtBG.Left,rtBG.Top-1, rtBG.Width, rtBG.Height);
 
-                    this.Canvas.fillStyle=titleItem.Color;
-                    this.Canvas.fillText(text,left,bottom,textWidth);
-                    left+=textWidth;
+                        this.Canvas.fillStyle=titleItem.Color;
+                        this.Canvas.fillText(text,rtBG.Left+1,bottom,textWidth);
+
+                        left+=(textWidth+space);
+                    }
+                    else
+                    {
+                        this.Canvas.fillStyle=titleItem.Color;
+                        this.Canvas.fillText(text,left,bottom,textWidth);
+                        left+=textWidth;
+                    }
                 }
             }
             else
@@ -56365,6 +56381,8 @@ function JSChartResource()
         DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
         UnchagneTextColor:"rgb(90,90,90)",     //平盘文字颜色 
 
+        CloseLineColor:"rgb(30,144,255)",
+
         Tab:
         {
             Font:{ Size:12, Name:"微软雅黑" },
@@ -56844,6 +56862,7 @@ function JSChartResource()
             if (item.UpTextColor) this.DealList.UpTextColor=item.UpTextColor;
             if (item.DownTextColor) this.DealList.DownTextColor=item.DownTextColor;
             if (item.UnchagneTextColor) this.DealList.UnchagneTextColor=item.UnchagneTextColor;
+            if (item.CloseLineColor) this.DealList.CloseLineColor=item.CloseLineColor;
 
             if (item.Header)
             {
@@ -109009,6 +109028,8 @@ function HQReportItem()
     this.MarketValue;   //总市值
     this.CircMarketValue;//流通市值
 
+    this.CloseLine;     //{Data:[], Max:, Min:, Count: }
+
     this.ExtendData;    //扩展数据
 }
 
@@ -109772,10 +109793,12 @@ function JSReportChartContainer(uielement)
         }
 
         if (item[30]) 
-            stock.ExtendData=item[30];                            //30=全局扩展数据
+            stock.ExtendData=item[30];                              //30=全局扩展数据
 
         if (item[31]) 
-            this.BlockData.set(stock.OriginalSymbol,item[31]);    //31=当前板块数据
+            this.BlockData.set(stock.OriginalSymbol,item[31]);      //31=当前板块数据
+
+        if (item[32]) stock.CloseLine=item[32];                     //32=收盘价线
     }
 
 
@@ -111422,6 +111445,7 @@ var REPORT_COLUMN_ID=
     VOL_IN_ID:25,           //内盘
     VOL_OUT_ID:26,          //外盘
     NAME_EX_ID:27,          //扩展名字
+    CLOSE_LINE_ID:28,       //收盘价线
 
     SYMBOL_NAME_ID:99,
 
@@ -111760,6 +111784,8 @@ function ChartReport()
             
             { Type:REPORT_COLUMN_ID.VOL_IN_ID, Title:"内盘", TextAlign:"right", TextColor:g_JSChartResource.Report.DownTextColor, Width:null, MaxText:"8888.8擎" },
             { Type:REPORT_COLUMN_ID.VOL_OUT_ID, Title:"外盘", TextAlign:"right", TextColor:g_JSChartResource.Report.UpTextColor, Width:null, MaxText:"8888.8擎" },
+
+            { Type:REPORT_COLUMN_ID.CLOSE_LINE_ID, Title:"走势", TextAlign:"center", TextColor:g_JSChartResource.Report.CloseLineColor, Width:null, MaxText:"88888.88888" },
 
 
             { Type:REPORT_COLUMN_ID.BUY_VOL_ID, Title:"买量", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Vol, Width:null, MaxText:"8888.8擎" },
@@ -112434,6 +112460,13 @@ function ChartReport()
         {
             this.GetCustomDateTimeDrawInfo(data, column, drawInfo);
         }
+        else if (column.Type==REPORT_COLUMN_ID.CLOSE_LINE_ID)
+        {
+            var rtItem={ Left:left, Top:top,  Width:column.Width, Height:this.RowHeight };
+            rtItem.Right=rtItem.Left+rtItem.Width;
+            rtItem.Bottom=rtItem.Top+rtItem.Height;
+            this.DrawLine(stock.CloseLine, column, rtItem);
+        }
 
         //拖拽行颜色
         if (rowType==3) 
@@ -112837,6 +112870,83 @@ function ChartReport()
                 this.Canvas.fillRect(center,top,barWidth,height);
             }
         }
+    }
+
+    //绘制线段
+    this.DrawLine=function(lineData, column, rtItem)
+    {
+        if (!lineData) return false;
+        if (!IFrameSplitOperator.IsNonEmptyArray(lineData.Data)) return false;
+
+        var width=rtItem.Width-this.ItemMergin.Left-this.ItemMergin.Right;
+        var left=rtItem.Left+this.ItemMergin.Left;
+        var top=rtItem.Top+this.ItemMergin.Top;
+        var height=rtItem.Height-this.ItemMergin.Top-this.ItemMergin.Bottom;
+        var right=left+width;
+        var bottom=top+height;
+
+        var Temp_GetXFromIndex=function(index)
+        {
+            var count=lineData.Count;
+            if (count==1)
+            {
+                if (index==0) return left;
+                else return right;
+            }
+            else if (count<=0)
+            {
+                return left;
+            }
+            else if (index>=count)
+            {
+                return right;
+            }
+            else
+            {
+                var offset=left+width*index/count;
+                return offset;
+            }
+        }
+
+        var Temp_GetYFromData=function(value)
+        {
+            if(value<=lineData.Min) return bottom;
+            if(value>=lineData.Max) return top;
+
+            var value=height*(value-lineData.Min)/(lineData.Max-lineData.Min);
+            return bottom-value;
+        }
+
+        this.Canvas.save();
+        if (lineData.Color) this.Canvas.strokeStyle=lineData.Color;
+        else this.Canvas.strokeStyle=column.TextColor; 
+
+        var bFirstPoint=true;
+        var drawCount=0, x,y;
+        for(var i=0; i<lineData.Data.length; ++i)
+        {
+            var value=lineData.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            x=Temp_GetXFromIndex(i);
+            y=Temp_GetYFromData(value);
+
+            if (bFirstPoint)
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(x,y);
+                bFirstPoint=false;
+            }
+            else
+            {
+                this.Canvas.lineTo(x,y);
+            }
+
+            ++drawCount;
+        }
+
+        if (drawCount>0) this.Canvas.stroke();
+        this.Canvas.restore();
     }
 
     //外部配置显示格式 颜色 对齐方式
@@ -115429,6 +115539,16 @@ function JSScrollBarChart(divElement)
             this.JSChartContainer.Reset(option);
         }
     }
+
+    //重新加载配置
+    this.ReloadResource=function(option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ReloadResource)=='function')
+        {
+            JSConsole.Chart.Log('[JSScrollBarChart:ReloadResource] ');
+            this.JSChartContainer.ReloadResource(option);
+        }
+    }
 }
 
 
@@ -115946,6 +116066,18 @@ function JSScrollBarChartContainer(uielement)
 
         return result;
     }
+
+    this.ReloadResource=function(option)
+    {
+        this.Frame.ReloadResource(option);
+        for(var i=0; i<this.ChartPaint.length; ++i)
+        {
+            var item=this.ChartPaint[i];
+            if (item.ReloadResource) item.ReloadResource(option);
+        }
+
+        if (option.Draw==true) this.Draw(); //是否立即重绘
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -116230,7 +116362,11 @@ function SliderChart()
 
     this.ReloadResource=function(resource)
     {
-        
+        this.Color=g_JSChartResource.ScrollBar.Slider.BarAreaColor;
+        this.BarColor=g_JSChartResource.ScrollBar.Slider.BarColor;
+
+        this.DateFont=g_JSChartResource.ScrollBar.Slider.DateFont;
+        this.DateColor=g_JSChartResource.ScrollBar.Slider.DateColor;
     }
 
     this.Draw=function()
@@ -116371,13 +116507,15 @@ function ScrollBarBGChart()
     this.SizeChange=true;
     this.Data;
 
-    this.Color=g_JSChartResource.ScrollBar.BGChart.Color;   //线段颜色
+    this.Color=g_JSChartResource.ScrollBar.BGChart.Color;                       //线段颜色
     this.LineWidth=g_JSChartResource.ScrollBar.BGChart.LineWidth;                 //线段宽度
     this.AreaColor=g_JSChartResource.ScrollBar.BGChart.AreaColor;              //面积图颜色
 
     this.ReloadResource=function(resource)
     {
-
+        this.Color=g_JSChartResource.ScrollBar.BGChart.Color;                       //线段颜色
+        this.LineWidth=g_JSChartResource.ScrollBar.BGChart.LineWidth;                 //线段宽度
+        this.AreaColor=g_JSChartResource.ScrollBar.BGChart.AreaColor;              //面积图颜色
     }
 
     this.Draw=function()

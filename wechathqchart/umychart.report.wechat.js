@@ -317,6 +317,8 @@ function HQReportItem()
     this.MarketValue;   //总市值
     this.CircMarketValue;//流通市值
 
+    this.CloseLine;     //{Data:[], Max:, Min:, Count: }
+
     this.ExtendData;    //扩展数据
 }
 
@@ -968,9 +970,9 @@ function JSReportChartContainer(uielement)
                 stock.MarketValue=stock.TotalShares*stock.Price;
         }
 
-        if (item[30]) stock.ExtendData=item[30];    //30扩展数据
-
+        if (item[30]) stock.ExtendData=item[30];                //30扩展数据
         if (item[31]) this.BlockData.set(stock.OriginalSymbol,item[31]);    //31=当前板块数据
+        if (item[32]) stock.CloseLine=item[32];                     //32=收盘价线
     }
 
 
@@ -2182,7 +2184,9 @@ var REPORT_COLUMN_ID=
     VOL_IN_ID:25,
     VOL_OUT_ID:26,
 
-    SYMBOL_NAME_ID:27,
+    CLOSE_LINE_ID:28,       //收盘价线
+
+    SYMBOL_NAME_ID:99,
 
     CUSTOM_STRING_TEXT_ID:100,   //自定义字符串文本
     CUSTOM_NUMBER_TEXT_ID:101,    //自定义数值型
@@ -2495,6 +2499,7 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.VOL_IN_ID, Title:"内盘", TextAlign:"right", TextColor:g_JSChartResource.Report.DownTextColor, Width:null, MaxText:"8888.8擎" },
             { Type:REPORT_COLUMN_ID.VOL_OUT_ID, Title:"外盘", TextAlign:"right", TextColor:g_JSChartResource.Report.UpTextColor, Width:null, MaxText:"8888.8擎" },
 
+            { Type:REPORT_COLUMN_ID.CLOSE_LINE_ID, Title:"走势", TextAlign:"center", TextColor:g_JSChartResource.Report.CloseLineColor, Width:null, MaxText:"88888.88" },
 
             { Type:REPORT_COLUMN_ID.BUY_VOL_ID, Title:"买量", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Vol, Width:null, MaxText:"8888.8擎" },
             { Type:REPORT_COLUMN_ID.SELL_VOL_ID, Title:"卖量", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Vol, Width:null, MaxText:"8888.8擎" },
@@ -3117,6 +3122,13 @@ function ChartReport()
         {
             this.GetCustomDateTimeDrawInfo(data, column, drawInfo);
         }
+        else if (column.Type==REPORT_COLUMN_ID.CLOSE_LINE_ID)
+        {
+            var rtItem={ Left:left, Top:top,  Width:column.Width, Height:this.RowHeight };
+            rtItem.Right=rtItem.Left+rtItem.Width;
+            rtItem.Bottom=rtItem.Top+rtItem.Height;
+            this.DrawLine(stock.CloseLine, column, rtItem);
+        }
 
         this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth);
     }
@@ -3458,6 +3470,83 @@ function ChartReport()
                 this.Canvas.fillRect(center,top,barWidth,height);
             }
         }
+    }
+
+    //绘制线段
+    this.DrawLine=function(lineData, column, rtItem)
+    {
+        if (!lineData) return false;
+        if (!IFrameSplitOperator.IsNonEmptyArray(lineData.Data)) return false;
+
+        var width=rtItem.Width-this.ItemMergin.Left-this.ItemMergin.Right;
+        var left=rtItem.Left+this.ItemMergin.Left;
+        var top=rtItem.Top+this.ItemMergin.Top;
+        var height=rtItem.Height-this.ItemMergin.Top-this.ItemMergin.Bottom;
+        var right=left+width;
+        var bottom=top+height;
+
+        var Temp_GetXFromIndex=function(index)
+        {
+            var count=lineData.Count;
+            if (count==1)
+            {
+                if (index==0) return left;
+                else return right;
+            }
+            else if (count<=0)
+            {
+                return left;
+            }
+            else if (index>=count)
+            {
+                return right;
+            }
+            else
+            {
+                var offset=left+width*index/count;
+                return offset;
+            }
+        }
+
+        var Temp_GetYFromData=function(value)
+        {
+            if(value<=lineData.Min) return bottom;
+            if(value>=lineData.Max) return top;
+
+            var value=height*(value-lineData.Min)/(lineData.Max-lineData.Min);
+            return bottom-value;
+        }
+
+        this.Canvas.save();
+        if (lineData.Color) this.Canvas.strokeStyle=lineData.Color;
+        else this.Canvas.strokeStyle=column.TextColor; 
+
+        var bFirstPoint=true;
+        var drawCount=0, x,y;
+        for(var i=0; i<lineData.Data.length; ++i)
+        {
+            var value=lineData.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            x=Temp_GetXFromIndex(i);
+            y=Temp_GetYFromData(value);
+
+            if (bFirstPoint)
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(x,y);
+                bFirstPoint=false;
+            }
+            else
+            {
+                this.Canvas.lineTo(x,y);
+            }
+
+            ++drawCount;
+        }
+
+        if (drawCount>0) this.Canvas.stroke();
+        this.Canvas.restore();
     }
 
     //外部配置显示格式 颜色 对齐方式

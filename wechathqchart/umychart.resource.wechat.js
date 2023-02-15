@@ -363,7 +363,7 @@ function JSChartResource()
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
         DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
         UnchagneTextColor:"rgb(90,90,90)",     //平盘文字颜色 
-
+        CloseLineColor:"rgb(30,144,255)",
         PageInfo:
         {
             Font:{ Size:15, Name:"微软雅黑"},
@@ -569,7 +569,8 @@ function JSChartResource()
             if (item.DownTextColor) this.Report.DownTextColor=item.DownTextColor;
             if (item.UnchagneTextColor) this.Report.UnchagneTextColor=item.UnchagneTextColor;
             if (item.BorderColor) this.Report.SelectedColor=item.SelectedColor;
-
+            if (item.CloseLineColor) this.Report.CloseLineColor=item.CloseLineColor;
+            
             if (item.Header)
             {
                 var header=item.Header;

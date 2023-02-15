@@ -167,6 +167,16 @@ function JSScrollBarChart(divElement)
             this.JSChartContainer.Reset(option);
         }
     }
+
+    //重新加载配置
+    this.ReloadResource=function(option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ReloadResource)=='function')
+        {
+            JSConsole.Chart.Log('[JSScrollBarChart:ReloadResource] ');
+            this.JSChartContainer.ReloadResource(option);
+        }
+    }
 }
 
 
@@ -684,6 +694,18 @@ function JSScrollBarChartContainer(uielement)
 
         return result;
     }
+
+    this.ReloadResource=function(option)
+    {
+        this.Frame.ReloadResource(option);
+        for(var i=0; i<this.ChartPaint.length; ++i)
+        {
+            var item=this.ChartPaint[i];
+            if (item.ReloadResource) item.ReloadResource(option);
+        }
+
+        if (option.Draw==true) this.Draw(); //是否立即重绘
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -968,7 +990,11 @@ function SliderChart()
 
     this.ReloadResource=function(resource)
     {
-        
+        this.Color=g_JSChartResource.ScrollBar.Slider.BarAreaColor;
+        this.BarColor=g_JSChartResource.ScrollBar.Slider.BarColor;
+
+        this.DateFont=g_JSChartResource.ScrollBar.Slider.DateFont;
+        this.DateColor=g_JSChartResource.ScrollBar.Slider.DateColor;
     }
 
     this.Draw=function()
@@ -1109,13 +1135,15 @@ function ScrollBarBGChart()
     this.SizeChange=true;
     this.Data;
 
-    this.Color=g_JSChartResource.ScrollBar.BGChart.Color;   //线段颜色
+    this.Color=g_JSChartResource.ScrollBar.BGChart.Color;                       //线段颜色
     this.LineWidth=g_JSChartResource.ScrollBar.BGChart.LineWidth;                 //线段宽度
     this.AreaColor=g_JSChartResource.ScrollBar.BGChart.AreaColor;              //面积图颜色
 
     this.ReloadResource=function(resource)
     {
-
+        this.Color=g_JSChartResource.ScrollBar.BGChart.Color;                       //线段颜色
+        this.LineWidth=g_JSChartResource.ScrollBar.BGChart.LineWidth;                 //线段宽度
+        this.AreaColor=g_JSChartResource.ScrollBar.BGChart.AreaColor;              //面积图颜色
     }
 
     this.Draw=function()

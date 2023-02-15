@@ -178,8 +178,10 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 2. 支持固定列, 键盘操作: PageUP/PageDown 翻页, Up/Down 移动当前选中股票, Left/Right 移动列, 滚轴上下翻页.<br>
 3. 支持Tab页切换板块，横向滚动轴<br>
 4. 支持配置列本地排序或远程排序<br>
+5. 支持走势图
 ![报价列表](/小程序行情模块用例/image/hqchart_report.gif)<br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report2.gif)<br>
+![报价列表](/小程序行情模块用例/image/hqchart_report_closeline.png)<br>
 * 键盘精灵<br>
 ![键盘精灵](/小程序行情模块用例/image/sendsymbol_demo.gif)<br>
 

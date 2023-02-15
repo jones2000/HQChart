@@ -44109,10 +44109,26 @@ function DynamicChartTitlePainting()
                     var space=this.ParamSpace*GetDevicePixelRatio();
                     var textWidth=this.Canvas.measureText(text).width+space; 
                     if ((left+textWidth)>right) break;
+                    
+                    if (titleItem.BG)   //背景
+                    {
+                        var textHeight=this.Canvas.measureText("擎").width+2;
+                        var textWidth=this.Canvas.measureText(text).width+2;
+                        var rtBG={ Left:left, Top:bottom-textHeight/2, Width:textWidth, Height:textHeight };
+                        this.Canvas.fillStyle=titleItem.BG;
+                        this.Canvas.fillRect(rtBG.Left,rtBG.Top-1, rtBG.Width, rtBG.Height);
 
-                    this.Canvas.fillStyle=titleItem.Color;
-                    this.Canvas.fillText(text,left,bottom,textWidth);
-                    left+=textWidth;
+                        this.Canvas.fillStyle=titleItem.Color;
+                        this.Canvas.fillText(text,rtBG.Left+1,bottom,textWidth);
+
+                        left+=(textWidth+space);
+                    }
+                    else
+                    {
+                        this.Canvas.fillStyle=titleItem.Color;
+                        this.Canvas.fillText(text,left,bottom,textWidth);
+                        left+=textWidth;
+                    }
                 }
             }
             else
@@ -52290,6 +52306,8 @@ function JSChartResource()
         DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
         UnchagneTextColor:"rgb(90,90,90)",     //平盘文字颜色 
 
+        CloseLineColor:"rgb(30,144,255)",
+
         Tab:
         {
             Font:{ Size:12, Name:"微软雅黑" },
@@ -52769,6 +52787,7 @@ function JSChartResource()
             if (item.UpTextColor) this.DealList.UpTextColor=item.UpTextColor;
             if (item.DownTextColor) this.DealList.DownTextColor=item.DownTextColor;
             if (item.UnchagneTextColor) this.DealList.UnchagneTextColor=item.UnchagneTextColor;
+            if (item.CloseLineColor) this.DealList.CloseLineColor=item.CloseLineColor;
 
             if (item.Header)
             {
