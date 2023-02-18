@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HQChart实战教程36.2-数字货币Gate.IO对接-uniapp版本</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>HQChart实战教程36.2-数字货币Gate.IO对接-uniapp版本</h3><ul><li><a href="#api_2">币安api数据接口</a></li><ul><li><a href="#_7">接口文档</a></li><li><a href="#_15">接口地址</a></li></ul><li><a href="#_19">对接方式</a></li><li><a href="#uniappdemo_24">uniapp-demo源码</a></li><ul><li><a href="#demoapk_30">demo安卓apk下载</a></li><li><a href="#_1000_32">售价 1000元</a></li></ul><li><a href="#HQChart_45">HQChart代码地址</a></li></ul></div><p></p>
+<h1><a id="api_2"></a>币安api数据接口</h1>
+<p>历史K线数据是通过https数据获取<br>
+最新数据更新可以使用2种方式</p>
+<ol>
+<li>通过历史数据api获取， 获取的时候只回去最新的2-3个条数就可以</li>
+<li>通过ws推送获取</li>
+</ol>
+<h2><a id="_7"></a>接口文档</h2>
+<p><a href="https://www.gate.io/docs/developers/apiv4/zh_CN/#%E5%90%88%E7%BA%A6%E5%B8%82%E5%9C%BA-k-%E7%BA%BF%E5%9B%BE">历史K线数据接口文档</a><br>
+<img src="https://img-blog.csdnimg.cn/ea305e9d06474eca88f1adfb11043569.png" alt="在这里插入图片描述"></p>
+<p><a href="https://www.gate.io/docs/developers/apiv4/ws/zh_CN/#candlesticks-channel">ws最新数据获取接口文档</a><br>
+<img src="https://img-blog.csdnimg.cn/35d3ed18c7dc412faf3958cdcc01254d.png#pic_center" alt="在这里插入图片描述"></p>
+<h2><a id="_15"></a>接口地址</h2>
+<p><a href="https://www.gate.io/zh/developers">Gate.IO官网接口地址介绍</a><br>
+K线和实时更新这2个接口，目前文档上来看是不需要鉴权的。</p>
+<h1><a id="_19"></a>对接方式</h1>
+<ol>
+<li>https+https轮询更新</li>
+<li>https+ws数据更新<br>
+教程都可以在 <a href="https://blog.csdn.net/jones2000/article/details/106064879">HQChart实战教程14-K线图对接第3方http/https数据教程整理</a>里面找到。</li>
+</ol>
+<h1><a id="uniappdemo_24"></a>uniapp-demo源码</h1>
+<p>功能：</p>
+<ol>
+<li>https+https轮询更新，</li>
+<li>https+ws更新</li>
+<li>图形：K线图，分时图</li>
+<li>平台支持： h5，app都支持</li>
+</ol>
+<h2><a id="demoapk_30"></a>demo安卓apk下载</h2>
+<h2><a id="_1000_32"></a>售价 1000元</h2>
+<p>购买可以联系QQ 48274798 备注购买demo源码<br>
+demo效果图</p>
+<p><img src="https://img-blog.csdnimg.cn/0e2b49d53e05410d96c7a008ecf244de.png#pic_center" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/c3d92b5a3452433ab47e355fa0e0ded4.png#pic_center" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/93e75c73e40a4dc3a418e01feea7229c.png#pic_center" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/53f6f33c215c477088ef72185e5dc116.png#pic_center" alt="在这里插入图片描述"></p>
+<h1><a id="HQChart_45"></a>HQChart代码地址</h1>
+<p>地址：<a href="https://github.com/jones2000/HQChart">github.com/jones2000/HQChart</a></p>
+</div>
+</body>
+
+</html>
