@@ -52862,6 +52862,7 @@ function JSChartResource()
             if (item.DownTextColor) this.Report.DownTextColor=item.DownTextColor;
             if (item.UnchagneTextColor) this.Report.UnchagneTextColor=item.UnchagneTextColor;
             if (item.BorderColor) this.Report.SelectedColor=item.SelectedColor;
+            if (item.CloseLineColor) this.Report.CloseLineColor=item.CloseLineColor;
 
             if (item.Header)
             {

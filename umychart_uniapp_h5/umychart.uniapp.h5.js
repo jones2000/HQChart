@@ -56937,6 +56937,7 @@ function JSChartResource()
             if (item.DownTextColor) this.Report.DownTextColor=item.DownTextColor;
             if (item.UnchagneTextColor) this.Report.UnchagneTextColor=item.UnchagneTextColor;
             if (item.BorderColor) this.Report.SelectedColor=item.SelectedColor;
+            if (item.CloseLineColor) this.Report.CloseLineColor=item.CloseLineColor;
 
             if (item.Header)
             {
@@ -115441,6 +115442,8 @@ function JSScrollBarChart(divElement)
         var chart=new JSScrollBarChartContainer(this.CanvasElement);
         chart.Create(option);
 
+        if (IFrameSplitOperator.IsNumber(option.DelayDragFrequency)) chart.DelayDragFrequency=option.DelayDragFrequency;
+
         this.SetChartBorder(chart, option);
 
         //注册事件
@@ -115597,6 +115600,8 @@ function JSScrollBarChartContainer(uielement)
     
     this.DragMove;  //={ Click:{ 点击的点}, Move:{最后移动的点}, PreMove:{上一个点的位置} };
     this.DragSlider;
+    this.DragTimer; //拖拽延迟定时器
+    this.DelayDragFrequency=150;
 
     //事件回调
     this.mapEvent=new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
@@ -115772,8 +115777,18 @@ function JSScrollBarChartContainer(uielement)
       
     }
 
+    this.CancelDragTimer=function()
+    {
+        if (this.DragTimer)
+        {
+            clearTimeout(this.DragTimer);
+            this.DragTimer=null;
+        }
+    }
+
     this.UIOnMouseDown=function(e)
     {
+        this.CancelDragTimer();
         this.DragSlider=null;
         this.DragMove={ Click:{ X:e.clientX, Y:e.clientY }, Move:{X:e.clientX, Y:e.clientY}, PreMove:{X:e.clientX, Y:e.clientY } };
 
@@ -115787,6 +115802,7 @@ function JSScrollBarChartContainer(uielement)
             if (!clickData) return;
 
             this.DragSlider={ Click:{ X:e.clientX, Y:e.clientY }, LastMove:{X:e.clientX, Y:e.clientY}, Data:clickData };
+            this.DragSlider.DrawCount=0;    //重绘次数
         }
 
         document.onmousemove=(e)=>{ this.DocOnMouseMove(e); }
@@ -115900,12 +115916,22 @@ function JSScrollBarChartContainer(uielement)
 
                 this.SliderChart.XEnd=xEnd;
             }
-           
-            this.UpdateXDataOffset({ XStart:xStart, XEnd:xEnd, Type:type });
 
+            drag.UpdateData={  XStart:xStart, XEnd:xEnd, Type:type };
             drag.LastMove.X=e.clientX;
             drag.LastMove.Y=e.clientY;
-            this.Draw();
+
+            if (drag.DrawCount==0)
+            {
+                this.DragUpdate(drag);
+            }
+            else
+            {
+                this.DragTimer=setTimeout(()=>
+                {
+                    this.DragUpdate(this.DragSlider);
+                }, this.DelayDragFrequency);
+            }
         }
     }
 
@@ -115914,11 +115940,23 @@ function JSScrollBarChartContainer(uielement)
         //清空事件
         document.onmousemove=null;
         document.onmouseup=null;
+
+        this.CancelDragTimer();
+        var dragSlider=this.DragSlider;
         this.DragMove=null;
         this.DragSlider=null;
         this.SliderChart.DragMode=false;
 
+        this.DragUpdate(dragSlider);
+    }
+
+    this.DragUpdate=function(dragData)
+    {
+        if (!dragData || !dragData.UpdateData) return;
+
+        this.UpdateXDataOffset(dragData.UpdateData);
         this.Draw();
+        ++dragData.DrawCount;
     }
 
     this.Reset=function(option)
