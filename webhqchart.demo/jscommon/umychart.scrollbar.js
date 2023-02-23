@@ -101,6 +101,9 @@ function JSScrollBarChart(divElement)
         chart.Frame.ChartBorder.Right*=pixelTatio;
         chart.Frame.ChartBorder.Top*=pixelTatio;
         chart.Frame.ChartBorder.Bottom*=pixelTatio;
+
+        if (IFrameSplitOperator.IsBool(item.AutoLeft)) chart.AutoMargin.Left=item.AutoLeft;
+        if (IFrameSplitOperator.IsBool(item.AutoRight)) chart.AutoMargin.Right=item.AutoRight;
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -230,13 +233,15 @@ function JSScrollBarChartContainer(uielement)
     this.DragTimer; //拖拽延迟定时器
     this.DelayDragFrequency=150;
 
+    this.AutoMargin={ Left:false, Right:false };    //左右2边间距是否跟K线一致
+
     //事件回调
     this.mapEvent=new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
 
     this.UIElement=uielement;
     this.LastPoint=new Point();     //鼠标位置
     
-    this.XStepPixel=10*GetDevicePixelRatio();   
+    //this.XStepPixel=10*GetDevicePixelRatio();   
     this.IsDestroy=false;        //是否已经销毁了
 
     this.HQChart=null;
@@ -610,9 +615,23 @@ function JSScrollBarChartContainer(uielement)
     this.UpdateSlider=function(obj)
     {
         if (this.SliderChart.DragMode) return;
+
+        var bSizeChange=false;
+        if ((this.AutoMargin.Left || this.AutoMargin.Right) && obj.Border)
+        {
+            if (this.AutoMargin.Left)
+            {
+                if (this.Frame.ChartBorder.Left!=obj.Border.Left) bSizeChange=true;
+            }
+
+            if (this.AutoMargin.Right)
+            {
+                if (this.Frame.ChartBorder.Right!=obj.Border.Right) bSizeChange=true;
+            }
+        }
         
         var data=obj.Data;
-        if (this.XOffsetData.Start==obj.Start && this.XOffsetData.End==obj.End && this.SourceData==data) return;
+        if (this.XOffsetData.Start==obj.Start && this.XOffsetData.End==obj.End && this.SourceData==data && !bSizeChange) return;
             
         this.SourceData=data;
         var count=data.Data.length;
@@ -627,6 +646,18 @@ function JSScrollBarChartContainer(uielement)
         {
             var item=this.ChartPaint[i];
             item.Data=data;
+        }
+
+        if (this.AutoMargin.Left && obj.Border)
+        {
+            if (IFrameSplitOperator.IsNumber(obj.Border.Left)) 
+                this.Frame.ChartBorder.Left=obj.Border.Left;
+        }
+
+        if (this.AutoMargin.Right && obj.Border)
+        {
+            if (IFrameSplitOperator.IsNumber(obj.Border.Right)) 
+                this.Frame.ChartBorder.Right=obj.Border.Right;
         }
 
         this.UpdateFrameMaxMin();
@@ -810,6 +841,7 @@ function JSScrollBarFrame()
         var width=right-left;
         var height=bottom-top;
 
+        //JSConsole.Chart.Log(`[JSScrollBarFrame.DrawBorder] left=${left} `);
         if (!IFrameSplitOperator.IsNumber(this.BorderLine))
         {
             this.Canvas.strokeStyle=this.BorderColor;

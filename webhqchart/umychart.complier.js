@@ -6242,6 +6242,27 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    this.ISVALID=function(data)
+    {
+        if (Array.isArray(data))
+        {
+            var result=[];
+            for(var i=0;i<data.length;++i)
+            {
+                var item=data[i];
+                if (item) result[i]=1;
+                else result[i]=0;
+            }
+
+            return result;
+        }
+        else
+        {
+            if (data) return 1;
+            else return 0;
+        }
+    }
+
     /*
     EXISTR(X,A,B):是否存在(前几日到前几日间).
     例如: EXISTR(CLOSE>OPEN,10,5) 
@@ -7022,6 +7043,36 @@ function JSAlgorithm(errorHandler,symbolData)
         }
 
         return result;
+    }
+
+    this.STRLEN=function(data)
+    {
+        if (IFrameSplitOperator.IsString(data)) return data.length;
+
+        if (Array.isArray(data))
+        {
+            var result=[];
+            for(var i=0;i<data.length;++i)
+            {
+                var item=data[i];
+                if (IFrameSplitOperator.IsString(item)) result[i]=item.length;
+                else result[i]=null;
+            }
+
+            return result;
+        }
+
+        return null;
+    }
+
+    this.STRCMP=function(data, data2)
+    {
+        if (IFrameSplitOperator.IsString(data) && IFrameSplitOperator.IsString(data2))
+        {
+            return data==data2? 1:0;
+        }
+
+        return null;
     }
 
     //STRSPACE(A):字符串附带一空格
@@ -8484,6 +8535,98 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+
+    //格式化字符串 "{0}-{1}", C, O;
+    this.STRFORMAT=function(strFormat,args,node)
+    {
+        var aryParam=strFormat.match(/{\d+}/g);
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryParam)) return null;
+
+        var mapParam=new Map(); //key=index, value={Text}
+        var maxIndex=-1;
+        for(var i=0;i<aryParam.length;++i)
+        {
+            var item=aryParam[i];
+            if (item.length<3) continue;
+
+            var value=item.slice(1, item.length-1);
+            var index=parseInt(value);
+
+            var paramItem={ Src:item, Index:index, Text:null};
+
+            if (maxIndex<index) maxIndex=index;
+
+            mapParam.set(index, paramItem);
+        }
+
+        var isArray=false;  //是否输出数组字符串
+        var maxCount=0;
+        for(var i=1;i<args.length;++i)
+        {
+            var item=args[i];
+            if (Array.isArray(item))
+            {
+                isArray=true;
+                if (maxCount<item.length) maxCount=item.length;
+            }
+        }
+
+        if (isArray)
+        {
+            var result=[];
+
+            for(var i=0;i<maxCount;++i)
+            {
+                var strItem=strFormat;
+                
+                for(var item of mapParam)
+                {
+                    var paramInfo=item[1];
+                    var paramItem=args[paramInfo.Index+1];
+                    var text="null";
+                    if (paramItem)
+                    {
+                        if (Array.isArray(paramItem))
+                        {
+                            var value=paramItem[i];
+                            if (value) text=`${value}`;
+                        }
+                        else
+                        {
+                            text=`${paramItem}`;
+                        }
+                    }
+
+                    strItem=strItem.replace(paramInfo.Src, text);
+                }
+
+                result[i]=strItem;
+            }
+
+            return result;
+        }
+        else
+        {
+            var result=strFormat;
+
+            for(var item of mapParam)
+            {
+                var paramInfo=item[1];
+                var paramItem=args[paramInfo.Index+1];
+                var text="null";
+                if (paramItem)
+                {
+                    text=`${paramItem}`;
+                }
+
+                result=result.replace(paramInfo.Src, text);
+            }
+
+            return result;
+        }
+    }
+
     //函数调用
     this.CallFunction=function(name,args,node,symbolData)
     {
@@ -8542,6 +8685,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.CROSS(args[0], args[1]);
             case 'LONGCROSS':
                 return this.LONGCROSS(args[0], args[1], args[2]);
+            case "ISVALID":
+                return this.ISVALID(args[0]);
             case "CROSSDOWN":
                 return this.CROSSDOWN(args[0], args[1]);
             case "CROSSUP":
@@ -8660,6 +8805,12 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.STRSPACE(args[0]);
             case "FINDSTR":
                 return this.FINDSTR(args[0], args[1]);
+            case "STRCMP":
+                return this.STRCMP(args[0], args[1]);
+            case "STRLEN":
+                return this.STRLEN(args[0]);
+            case "STRFORMAT":
+                return this.STRFORMAT(args[0], args, node);
             case 'DTPRICE':
                 return this.DTPRICE(args[0], args[1]);
             case 'ZTPRICE':
@@ -9798,6 +9949,67 @@ function JSDraw(errorHandler,symbolData)
     }
 
     /*
+    含义:在图形上显示图标，鼠标移近时显示文字。
+    用法:
+    TIPICON(COND,PRICE,TYPE, TEXT),当COND条件满足时,在PRICE位置显示图标(TYPE) 若PRICE="TOP", "BOTTOM" 顶部或底部输出图标
+    */
+
+    this.TIPICON=function(condition, data, type, text)
+    {
+        if (IFrameSplitOperator.IsString(type)) //把ICO1=>1
+        {
+            var value=type.replace('ICO',"");
+            type=parseInt(value);
+        } 
+
+        var icon=g_JSComplierResource.GetDrawIcon(type);
+
+        let drawData=[];
+        let result={ DrawData:drawData, DrawType:'TIPICON',Icon:icon, IconType:type, Text:text };
+        if (condition.length<=0) return result;
+
+        var IsNumber=typeof(data)=="number";
+
+        if (IFrameSplitOperator.IsNumber(condition))
+        {
+            if (!condition) return result;
+
+            for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+            {
+                if (IsNumber) 
+                {
+                    drawData[i]=data;
+                }
+                else 
+                {
+                    if (i<data.length && IFrameSplitOperator.IsNumber(data[i])) drawData[i]=data[i];
+                    else drawData[i]=null;
+                }
+            }
+        }
+        else if (Array.isArray(condition))
+        {
+            for(var i=0; i<condition.length; ++i)
+            {
+                drawData[i]=null;
+    
+                if (!condition[i]) continue;
+    
+                if (IsNumber) 
+                {
+                    drawData[i]=data;
+                }
+                else 
+                {
+                    if (IFrameSplitOperator.IsNumber(data[i])) drawData[i]=data[i];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /*
     绘制通道
     condition:条件
     data,data2:通道顶部和底部
@@ -10693,7 +10905,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE',"DRAWKLINE1",'DRAWKLINE_IF',"DRAWCOLORKLINE",'PLOYLINE',
         'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',"DRAWTEXTABS","DRAWTEXTREL",
         'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2",
-        "VERTLINE","HORLINE"
+        "VERTLINE","HORLINE","TIPICON"
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -16805,6 +17017,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.ICON(args[0],args[1]);
                 node.Out=[];
                 break;
+            case "TIPICON":
+                node.Draw=this.Draw.TIPICON(args[0],args[1],args[2],args[3]);
+                node.Out=[];
+                break;
             case "BACKGROUND":
                 node.Draw=this.Draw.BACKGROUND(args[0],args[1],args[2],args[3],args[4],args[5]);
                 node.Out=[];
@@ -19588,6 +19804,70 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chartText);
     }
 
+    this.CreateTipIcon=function(hqChart,windowIndex,varItem,i)
+    {
+        var chart=new ChartDrawSVG();
+        chart.Canvas=hqChart.Canvas;
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (hqChart.ChartPaint[0].IsMinuteFrame())
+            chart.Data=hqChart.SourceData;
+        else
+            chart.Data=hqChart.ChartPaint[0].Data;  //绑定K线
+        
+        chart.Family=varItem.Draw.Icon.Family;
+        chart.TextFont=g_JSChartResource.TIPICON.TextFont;
+        
+        var svgSize=g_JSChartResource.TIPICON.Size;
+        var svgColor=g_JSChartResource.TIPICON.Color;
+        var svgYOffset=0;
+        var svgVAlign=2;    //上下对齐方式
+        if (IFrameSplitOperator.IsNumber(varItem.YOffset)) svgYOffset=varItem.YOffset;
+        if (varItem.Color) svgColor=this.GetColor(varItem.Color);
+        if (varItem.DrawFontSize>0) svgSize=varItem.DrawFontSize;
+        if (varItem.DrawVAlign>=0) svgVAlign=varItem.DrawVAlign;   
+
+        if (varItem.Draw && IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.DrawData) && varItem.Draw.Icon)
+        {
+            var drawData=varItem.Draw.DrawData;
+            var aryData=[];
+            var isArrayTip=Array.isArray(varItem.Draw.Text);
+            var singleTip=null;
+            if (!isArrayTip && varItem.Draw.Text) singleTip={ Text:varItem.Draw.Text };
+
+            for(var j=0;j<drawData.length;++j)
+            {
+                var item=drawData[j];
+                if (!IFrameSplitOperator.IsNumber(item)) continue;
+
+                var svgItem=
+                { 
+                    Index:j, Value:item, 
+                    SVG:{ Symbol:varItem.Draw.Icon.Symbol, Size:svgSize, Color:svgColor, YOffset:svgYOffset, VAlign:svgVAlign }
+                };
+
+                if (isArrayTip)
+                {
+                    var text=varItem.Draw.Text[j];
+                    if (text) svgItem.Tooltip={ Text:text };
+                }
+                else
+                {
+                    svgItem.Tooltip=singleTip;
+                }
+
+                aryData.push(svgItem);
+            }
+
+            chart.Texts= aryData;
+        }
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建通道
     this.CreateChannel=function(hqChart,windowIndex,varItem,id)
     {
@@ -20038,6 +20318,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case "ICON":
                         this.CreateIcon(hqChart,windowIndex,item,i);
+                        break;
+                    case "TIPICON":
+                        this.CreateTipIcon(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWCHANNEL':
                         this.CreateChannel(hqChart,windowIndex,item,i);
