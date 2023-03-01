@@ -119,7 +119,8 @@ function GetBlackStyle()
             UpBarColor:"rgb(238,21,21)",    //上涨
             DownBarColor:"rgb(25,158,0)",   //下跌
             UnchagneBarColor:"rgb(190,190,190)",   //平盘
-            BGAlpha:0.6
+            BGAlpha:0.6,
+            EmptyBGColor:"rgb(0,0,0)"
         },
     
         CorssCursorBGColor: "rgb(43,54,69)",            //十字光标背景
