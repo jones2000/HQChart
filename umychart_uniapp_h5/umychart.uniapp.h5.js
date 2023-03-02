@@ -6367,6 +6367,8 @@ var JSCHART_OPERATOR_ID=
     OP_CORSSCURSOR_GOTO:14,     //十字光标移动某一个时刻点
 
     OP_SCROOLBAR_SLIDER_CHANGED:15,    //滑块变动
+
+    OP_GOTO:16,     //移动到某一个天或某一个分钟
 }
 
 var JSCHART_DRAG_ID=
@@ -34906,6 +34908,8 @@ function ChartMultiText()
         var offset=this.Data.DataOffset;
         var left=this.ChartBorder.GetLeft();
         var right=this.ChartBorder.GetRight();
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
 
         if (this.IsHScreen)
         {
@@ -34913,7 +34917,8 @@ function ChartMultiText()
             right=this.ChartBorder.GetBottom();
         }
 
-        for(var i in this.Texts)
+        var y=0;
+        for(var i=0; i<this.Texts.length; ++i)
         {
             var item=this.Texts[i];
 
@@ -34924,7 +34929,9 @@ function ChartMultiText()
             if (index>=0 && index<xPointCount)
             {
                 var x=this.ChartFrame.GetXFromIndex(index);
-                var y=this.ChartFrame.GetYFromData(item.Value);
+                if (item.Value=="TOP") y=top;
+                else if (item.Value=="BOTTOM") y=bottom;
+                else y=this.ChartFrame.GetYFromData(item.Value);
 
                 if (item.Color)  this.Canvas.fillStyle = item.Color;
                 else this.Canvas.fillStyle = this.Color;
@@ -34957,6 +34964,7 @@ function ChartMultiText()
                 }
                 else
                 {
+                    if (IFrameSplitOperator.IsNumber(item.YMove)) y+=item.YMove;
                     this.Canvas.fillText(item.Text, x, y);
                 }
 
@@ -59541,7 +59549,81 @@ function KLineChartContainer(uielement,OffscreenElement)
 
                 this.ChartOperator_Temp_Update();
             }
-           
+        }
+        else if (id==JSCHART_EVENT_ID.OP_GOTO) //{ Date:日期, Time:, PageSize:可选 }
+        {
+            if (!IFrameSplitOperator.IsNumber(obj.Date)) return;
+
+            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            if (!hisData) return;  //数据还没有到达
+
+            var index=null;
+            if (ChartData.IsDayPeriod(this.Period,true))
+            {
+                for(var i=0;i<hisData.Data.length;++i)
+                {
+                    var item=hisData.Data[i];
+                    if (item.Date>=obj.Date)
+                    {
+                        index=i;
+                        break;
+                    }
+                }
+            }
+            else if (ChartData.IsMinutePeriod(this.Period,true))
+            {
+                let findTime=obj.Time;
+                if (IFrameSplitOperator.IsPlusNumber(findTime))
+                {
+                    for(var i=0;i<hisData.Data.length;++i)
+                    {
+                        var item=hisData.Data[i];
+                        if (item.Date>obj.Date || (item.Date==obj.Date && item.Time>=findTime))
+                        {
+                            index=i;
+                            break;
+                        }
+                    }
+                }
+                else    //只有日期
+                {
+                    for(var i=0;i<hisData.Data.length;++i)
+                    {
+                        var item=hisData.Data[i];
+                        if (item.Date>=obj.Date)
+                        {
+                            index=i;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (index===null) 
+            {
+                JSConsole.Chart.Log(`[KLineChartContainer::ChartOperator] OP_GOTO can't find date=${obj.Date} time=${obj.Time}`);
+                return;
+            }
+
+            var oldXPointCount=this.Frame.SubFrame[0].Frame.XPointCount;
+            var xPointCount=oldXPointCount;
+            if (obj.PageSize>0) //调整一屏显示的个数
+            {
+                xPointCount=obj.PageSize;
+            }
+
+            if (xPointCount!=oldXPointCount)
+            {
+                //设置X轴显示数据个数
+                this.Frame.SetXShowCount(xPointCount);
+            }
+
+            hisData.DataOffset=index;
+            this.CursorIndex=0;
+            this.LastPoint.X=null;
+            this.LastPoint.Y=null;
+
+            this.ChartOperator_Temp_Update();
         }
     }
 
@@ -61968,88 +62050,11 @@ function KLineChartContainer(uielement,OffscreenElement)
     {
         if (!obj || !obj.Date) return;
 
-        JSConsole.Chart.Log('[KLineChartContainer::SetFirstShowDate] obj=', obj);
+        var option={ ID:JSCHART_OPERATOR_ID.OP_GOTO, Date:obj.Date };
+        if (IFrameSplitOperator.IsNumber(obj.Time)) option.Time=obj.Time;
+        if (IFrameSplitOperator.IsNumber(obj.PageSize)) option.PageSize=obj.PageSize;
 
-        var hisData=null;
-        if (!this.Frame.Data) hisData=this.Frame.Data;
-        else hisData=this.Frame.SubFrame[0].Frame.Data;
-        if (!hisData) return;  //数据还没有到达
-
-        var index=null;
-        if (ChartData.IsDayPeriod(this.Period,true))
-        {
-            for(var i=0;i<hisData.Data.length;++i)
-            {
-                var item=hisData.Data[i];
-                if (item.Date>=obj.Date)
-                {
-                    index=i;
-                    break;
-                }
-            }
-        }
-        else if (ChartData.IsMinutePeriod(this.Period,true))
-        {
-            let findTime=obj.Time;
-            if (IFrameSplitOperator.IsPlusNumber(findTime))
-            {
-                for(var i=0;i<hisData.Data.length;++i)
-                {
-                    var item=hisData.Data[i];
-                    if (item.Date>obj.Date || (item.Date==obj.Date && item.Time>=findTime))
-                    {
-                        index=i;
-                        break;
-                    }
-                }
-            }
-            else    //只有日期
-            {
-                for(var i=0;i<hisData.Data.length;++i)
-                {
-                    var item=hisData.Data[i];
-                    if (item.Date>=obj.Date)
-                    {
-                        index=i;
-                        break;
-                    }
-                }
-            }
-            
-        }
-
-        if (index===null) 
-        {
-            JSConsole.Chart.Log(`[KLineChartContainer::SetFirstShowDate] an't find first date=${obj.Date} time=${obj.Time}`, obj);
-            return;
-        }
-
-        var count=hisData.Data.length-index;
-        var customShowCount=count;
-        if (obj.PageSize>0) customShowCount=obj.PageSize;
-
-        var pageSize = this.GetMaxMinPageSize();
-        if (pageSize.Max < customShowCount) customShowCount = pageSize.Max;
-        else if (pageSize.Min>customShowCount) customShowCount=pageSize.Min;
-
-        for(var i in this.Frame.SubFrame)   //设置一屏显示的数据个数
-        {
-            var item =this.Frame.SubFrame[i].Frame;
-            item.XPointCount=customShowCount;
-        }
-        
-        hisData.DataOffset=index;
-        this.CursorIndex=0;
-        this.LastPoint.X=null;
-        this.LastPoint.Y=null;
-
-        JSConsole.Chart.Log(`[KLineChartContainer::SetFirstShowDate] dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${customShowCount}`);
-
-        this.UpdataDataoffset();           //更新数据偏移
-        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
-        this.UpdatePointByCursorIndex(2);   //更新十字光标位子
-        this.Draw();
+        this.ChartOperator(option);
     }
 
     //删除某一个窗口的指标, bCallDestory=是否调用图形销毁函数
@@ -84428,7 +84433,7 @@ function Node(ErrorHandler)
             return;
         }
 
-        if (callee.Name=='STKINDI') //指标调用
+        if (callee.Name=='STKINDI' || callee.Name=='CALCSTOCKINDEX') //指标调用
         {
             var item={ ID:JS_EXECUTE_JOB_ID.JOB_EXECUTE_INDEX, Args:args,  FunctionName:callee.Name };
             if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
@@ -97768,6 +97773,27 @@ function JSSymbolData(ast,option,jsExecute)
         return false;
     }
 
+    this.ReadIndexFunctionOut=function(item, result)
+    {
+        var indexParam={};
+        if (typeof(item)=== 'object')
+        {
+            if (!this.ReadArgumentValue(item,indexParam))
+            {
+                result.Error=indexParam.Error;
+                return false;
+            }
+        }
+        else
+        {
+            indexParam.Value=item;
+        }
+
+        result.OutIndex=indexParam.Value;
+        result.Out=null;
+        return true;
+    }
+
     //MA.MA1#WEEK
     this.ReadIndexFunctionValue=function(item, result)  //返回 {Period:周期, Out:输出变量, Error:, Name:脚本名字 }
     {
@@ -97853,10 +97879,15 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (readArgument.Value=='') readArgument.Value=this.Symbol; //缺省使用股票代码
 
+        var symbol=readArgument.Value;
+
+        //支持 SH60000, SZ000001
         //A股后缀小写
-        if (readArgument.Value.indexOf('.SH')>0) result.Symbol=readArgument.Value.replace('.SH', ".sh");
-        else if (readArgument.Value.indexOf('.SZ')>0) result.Symbol=readArgument.Value.replace('.SZ', ".sz");
-        else result.Symbol=readArgument.Value;
+        if (symbol.indexOf('.SH')>0) result.Symbol=symbol.replace('.SH', ".sh");
+        else if (symbol.indexOf('.SZ')>0) result.Symbol=symbol.replace('.SZ', ".sz");
+        else if (symbol.indexOf("SH")==0) result.Symbol=symbol.slice(2)+".sh";
+        else if (symbol.indexOf("SZ")==0) result.Symbol=symbol.slice(2)+".sz";
+        else result.Symbol=symbol;
 
         return true;
     }
@@ -97908,7 +97939,9 @@ function JSSymbolData(ast,option,jsExecute)
             indexParam+=item.Value.toString();
         }
 
-        var out=indexInfo.Out ? indexInfo.Out :"ALL";
+        var out="ALL";
+        if (indexInfo.Out) out=indexInfo.Out;
+        else if (IFrameSplitOperator.IsPlusNumber(indexInfo.OutIndex)) out=`Out[${indexInfo.OutIndex-1}]`;
         var key=`(${indexInfo.Symbol},${indexInfo.PeriodID}), ${indexInfo.Name}(${indexParam})=>${out}`;
 
         return key;
@@ -98000,9 +98033,20 @@ function JSSymbolData(ast,option,jsExecute)
         
     }
 
-    //脚本调用
-    //STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
-    //1=股票代码 2=指标名字.输出变量#周期, 3....参数
+    /*****************************************************************************************************************************
+        脚本调用
+
+        STKINDI
+        STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
+        1=股票代码 2=指标名字.输出变量#周期, 3....参数
+
+        CALCSTOCKINDEX
+        用法:CALCSTOCKINDEX(品种代码,指标名称,指标线),返回该指标相应输出的计算值.
+        例如:
+        CALCSTOCKINDEX('SH600000','KDJ',3)表示上证600000的KDJ指标第3个输出即J之值,第一个参数可在前面加SZ(深市),SH(沪市),BJ(京市),或市场_,,
+        CALCSTOCKINDEX('47_IFL0','MACD',2)表示IFL0品种的MACD指标第2个输出值.
+
+    *******************************************************************************************************************************/
     this.CallScriptIndex=function(job)
     {
         if (job.Member) return this.CallMemberScriptIndex(job);
@@ -98024,6 +98068,15 @@ function JSSymbolData(ast,option,jsExecute)
         {
             var token=job.Token;
             this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() Error: ${indexInfo.Error}`);
+        }
+
+        if (job.FunctionName=="CALCSTOCKINDEX")
+        {
+            if (!this.ReadIndexFunctionOut(job.Args[2],indexInfo))     //读取返回值索引
+            {
+                var token=job.Token;
+                this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() Error: ${indexInfo.Error}`);
+            }
         }
 
         var systemIndex=new JSIndexScript();
@@ -98118,7 +98171,7 @@ function JSSymbolData(ast,option,jsExecute)
         var aryOutVar=outVar;
         if (indexInfo.Out)
         {
-            for(var i in outVar)
+            for(var i=0;i<outVar.length; ++i)
             {
                 var item=outVar[i];
                 if (item.Name==indexInfo.Out) 
@@ -98128,6 +98181,14 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             }
 
+            var data=this.Data.FitKLineIndex(kLine,aryOutVar,this.Period,indexInfo.PeriodID);
+            this.ScriptIndexOutData.set(key,data[0].Data);
+        }
+        else if (IFrameSplitOperator.IsPlusNumber(indexInfo.OutIndex))
+        {
+            var index=indexInfo.OutIndex-1;
+
+            aryOutVar=[outVar[index]];
             var data=this.Data.FitKLineIndex(kLine,aryOutVar,this.Period,indexInfo.PeriodID);
             this.ScriptIndexOutData.set(key,data[0].Data);
         }
@@ -98150,23 +98211,29 @@ function JSSymbolData(ast,option,jsExecute)
         this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() ${indexInfo.Name} 指标执行错误 : ${error} `);
     }
 
-    this.GetScriptIndexOutData=function(args,node)
+    this.GetScriptIndexOutData=function(args,node, funcName)
     {
         var indexInfo={ PeriodID:this.Period };
         if (!this.ReadSymbolArgumentValue(args[0],indexInfo))  //读取代码
-            this.Execute.ThrowUnexpectedNode(node,`STKINDI() 股票代码错误: ${indexInfo.Error}`);
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}() 股票代码错误: ${indexInfo.Error}`);
 
         if (!this.ReadIndexFunctionValue(args[1],indexInfo))     //读取指标
-            this.Execute.ThrowUnexpectedNode(node,`STKINDI() 指标错误: ${indexInfo.Error}`);
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}() 指标错误: ${indexInfo.Error}`);
+
+        if (funcName=="CALCSTOCKINDEX")
+        {
+            if (!this.ReadIndexFunctionOut(args[2],indexInfo))     //读取返回值索引
+                this.Execute.ThrowUnexpectedNode(node, `${funcName}() Error: ${indexInfo.Error}`);
+        }
 
         var systemIndex=new JSIndexScript();
         var systemItem=systemIndex.Get(indexInfo.Name);
         if (!systemItem)
-            this.Execute.ThrowUnexpectedNode(node,`STKINDI() 指标错误: ${indexInfo.Name} 指标不存在`);
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}() 指标错误: ${indexInfo.Name} 指标不存在`);
 
         indexInfo.SytemIndex=systemItem;    //系统指标
         if (!this.ReadIndexArgumentValue(args,indexInfo))
-            this.Execute.ThrowUnexpectedNode(node,`STKINDI()  指标参数错误: ${indexInfo.Error}`);
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}()  指标参数错误: ${indexInfo.Error}`);
 
         var key=this.GenerateScriptIndexKey(indexInfo);
         if (!this.ScriptIndexOutData.has(key)) return null;
@@ -98935,6 +99002,7 @@ var JS_EXECUTE_JOB_ID=
     //调用其他脚本指标 
     //KDJ.K , KDJ.K#WEEK
     //STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
+    //CALCSTOCKINDEX('SH600000','KDJ',3)表示上证600000的KDJ指标第3个输出即J之值,第一个参数可在前面加SZ(深市),SH(沪市),BJ(京市)
     JOB_EXECUTE_INDEX:30010,                
 
     JOB_RUN_SCRIPT:10000, //执行脚本
@@ -100348,7 +100416,8 @@ function JSExecute(ast,option)
                 node.Out=this.SymbolData.GetCustomApiData(args);
                 break;
             case "STKINDI":
-                node.Out=this.SymbolData.GetScriptIndexOutData(args,node);
+            case "CALCSTOCKINDEX":
+                node.Out=this.SymbolData.GetScriptIndexOutData(args,node,funcName);
                 break;
             case "SOUND":
                 node.Draw=this.Draw.SOUND(args[0]);

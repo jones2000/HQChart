@@ -1275,7 +1275,7 @@ function Node(ErrorHandler)
             return;
         }
 
-        if (callee.Name=='STKINDI') //指标调用
+        if (callee.Name=='STKINDI' || callee.Name=='CALCSTOCKINDEX') //指标调用
         {
             var item={ ID:JS_EXECUTE_JOB_ID.JOB_EXECUTE_INDEX, Args:args,  FunctionName:callee.Name };
             if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
@@ -14615,6 +14615,27 @@ function JSSymbolData(ast,option,jsExecute)
         return false;
     }
 
+    this.ReadIndexFunctionOut=function(item, result)
+    {
+        var indexParam={};
+        if (typeof(item)=== 'object')
+        {
+            if (!this.ReadArgumentValue(item,indexParam))
+            {
+                result.Error=indexParam.Error;
+                return false;
+            }
+        }
+        else
+        {
+            indexParam.Value=item;
+        }
+
+        result.OutIndex=indexParam.Value;
+        result.Out=null;
+        return true;
+    }
+
     //MA.MA1#WEEK
     this.ReadIndexFunctionValue=function(item, result)  //返回 {Period:周期, Out:输出变量, Error:, Name:脚本名字 }
     {
@@ -14700,10 +14721,15 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (readArgument.Value=='') readArgument.Value=this.Symbol; //缺省使用股票代码
 
+        var symbol=readArgument.Value;
+
+        //支持 SH60000, SZ000001
         //A股后缀小写
-        if (readArgument.Value.indexOf('.SH')>0) result.Symbol=readArgument.Value.replace('.SH', ".sh");
-        else if (readArgument.Value.indexOf('.SZ')>0) result.Symbol=readArgument.Value.replace('.SZ', ".sz");
-        else result.Symbol=readArgument.Value;
+        if (symbol.indexOf('.SH')>0) result.Symbol=symbol.replace('.SH', ".sh");
+        else if (symbol.indexOf('.SZ')>0) result.Symbol=symbol.replace('.SZ', ".sz");
+        else if (symbol.indexOf("SH")==0) result.Symbol=symbol.slice(2)+".sh";
+        else if (symbol.indexOf("SZ")==0) result.Symbol=symbol.slice(2)+".sz";
+        else result.Symbol=symbol;
 
         return true;
     }
@@ -14755,7 +14781,9 @@ function JSSymbolData(ast,option,jsExecute)
             indexParam+=item.Value.toString();
         }
 
-        var out=indexInfo.Out ? indexInfo.Out :"ALL";
+        var out="ALL";
+        if (indexInfo.Out) out=indexInfo.Out;
+        else if (IFrameSplitOperator.IsPlusNumber(indexInfo.OutIndex)) out=`Out[${indexInfo.OutIndex-1}]`;
         var key=`(${indexInfo.Symbol},${indexInfo.PeriodID}), ${indexInfo.Name}(${indexParam})=>${out}`;
 
         return key;
@@ -14847,9 +14875,20 @@ function JSSymbolData(ast,option,jsExecute)
         
     }
 
-    //脚本调用
-    //STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
-    //1=股票代码 2=指标名字.输出变量#周期, 3....参数
+    /*****************************************************************************************************************************
+        脚本调用
+
+        STKINDI
+        STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
+        1=股票代码 2=指标名字.输出变量#周期, 3....参数
+
+        CALCSTOCKINDEX
+        用法:CALCSTOCKINDEX(品种代码,指标名称,指标线),返回该指标相应输出的计算值.
+        例如:
+        CALCSTOCKINDEX('SH600000','KDJ',3)表示上证600000的KDJ指标第3个输出即J之值,第一个参数可在前面加SZ(深市),SH(沪市),BJ(京市),或市场_,,
+        CALCSTOCKINDEX('47_IFL0','MACD',2)表示IFL0品种的MACD指标第2个输出值.
+
+    *******************************************************************************************************************************/
     this.CallScriptIndex=function(job)
     {
         if (job.Member) return this.CallMemberScriptIndex(job);
@@ -14871,6 +14910,15 @@ function JSSymbolData(ast,option,jsExecute)
         {
             var token=job.Token;
             this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() Error: ${indexInfo.Error}`);
+        }
+
+        if (job.FunctionName=="CALCSTOCKINDEX")
+        {
+            if (!this.ReadIndexFunctionOut(job.Args[2],indexInfo))     //读取返回值索引
+            {
+                var token=job.Token;
+                this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() Error: ${indexInfo.Error}`);
+            }
         }
 
         var systemIndex=new JSIndexScript();
@@ -14965,7 +15013,7 @@ function JSSymbolData(ast,option,jsExecute)
         var aryOutVar=outVar;
         if (indexInfo.Out)
         {
-            for(var i in outVar)
+            for(var i=0;i<outVar.length; ++i)
             {
                 var item=outVar[i];
                 if (item.Name==indexInfo.Out) 
@@ -14975,6 +15023,14 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             }
 
+            var data=this.Data.FitKLineIndex(kLine,aryOutVar,this.Period,indexInfo.PeriodID);
+            this.ScriptIndexOutData.set(key,data[0].Data);
+        }
+        else if (IFrameSplitOperator.IsPlusNumber(indexInfo.OutIndex))
+        {
+            var index=indexInfo.OutIndex-1;
+
+            aryOutVar=[outVar[index]];
             var data=this.Data.FitKLineIndex(kLine,aryOutVar,this.Period,indexInfo.PeriodID);
             this.ScriptIndexOutData.set(key,data[0].Data);
         }
@@ -14997,23 +15053,29 @@ function JSSymbolData(ast,option,jsExecute)
         this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() ${indexInfo.Name} 指标执行错误 : ${error} `);
     }
 
-    this.GetScriptIndexOutData=function(args,node)
+    this.GetScriptIndexOutData=function(args,node, funcName)
     {
         var indexInfo={ PeriodID:this.Period };
         if (!this.ReadSymbolArgumentValue(args[0],indexInfo))  //读取代码
-            this.Execute.ThrowUnexpectedNode(node,`STKINDI() 股票代码错误: ${indexInfo.Error}`);
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}() 股票代码错误: ${indexInfo.Error}`);
 
         if (!this.ReadIndexFunctionValue(args[1],indexInfo))     //读取指标
-            this.Execute.ThrowUnexpectedNode(node,`STKINDI() 指标错误: ${indexInfo.Error}`);
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}() 指标错误: ${indexInfo.Error}`);
+
+        if (funcName=="CALCSTOCKINDEX")
+        {
+            if (!this.ReadIndexFunctionOut(args[2],indexInfo))     //读取返回值索引
+                this.Execute.ThrowUnexpectedNode(node, `${funcName}() Error: ${indexInfo.Error}`);
+        }
 
         var systemIndex=new JSIndexScript();
         var systemItem=systemIndex.Get(indexInfo.Name);
         if (!systemItem)
-            this.Execute.ThrowUnexpectedNode(node,`STKINDI() 指标错误: ${indexInfo.Name} 指标不存在`);
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}() 指标错误: ${indexInfo.Name} 指标不存在`);
 
         indexInfo.SytemIndex=systemItem;    //系统指标
         if (!this.ReadIndexArgumentValue(args,indexInfo))
-            this.Execute.ThrowUnexpectedNode(node,`STKINDI()  指标参数错误: ${indexInfo.Error}`);
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}()  指标参数错误: ${indexInfo.Error}`);
 
         var key=this.GenerateScriptIndexKey(indexInfo);
         if (!this.ScriptIndexOutData.has(key)) return null;
@@ -15782,6 +15844,7 @@ var JS_EXECUTE_JOB_ID=
     //调用其他脚本指标 
     //KDJ.K , KDJ.K#WEEK
     //STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
+    //CALCSTOCKINDEX('SH600000','KDJ',3)表示上证600000的KDJ指标第3个输出即J之值,第一个参数可在前面加SZ(深市),SH(沪市),BJ(京市)
     JOB_EXECUTE_INDEX:30010,                
 
     JOB_RUN_SCRIPT:10000, //执行脚本
@@ -17195,7 +17258,8 @@ function JSExecute(ast,option)
                 node.Out=this.SymbolData.GetCustomApiData(args);
                 break;
             case "STKINDI":
-                node.Out=this.SymbolData.GetScriptIndexOutData(args,node);
+            case "CALCSTOCKINDEX":
+                node.Out=this.SymbolData.GetScriptIndexOutData(args,node,funcName);
                 break;
             case "SOUND":
                 node.Draw=this.Draw.SOUND(args[0]);

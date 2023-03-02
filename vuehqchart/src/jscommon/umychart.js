@@ -2292,6 +2292,8 @@ var JSCHART_OPERATOR_ID=
     OP_CORSSCURSOR_GOTO:14,     //十字光标移动某一个时刻点
 
     OP_SCROOLBAR_SLIDER_CHANGED:15,    //滑块变动
+
+    OP_GOTO:16,     //移动到某一个天或某一个分钟
 }
 
 var JSCHART_DRAG_ID=
@@ -30831,6 +30833,8 @@ function ChartMultiText()
         var offset=this.Data.DataOffset;
         var left=this.ChartBorder.GetLeft();
         var right=this.ChartBorder.GetRight();
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
 
         if (this.IsHScreen)
         {
@@ -30838,7 +30842,8 @@ function ChartMultiText()
             right=this.ChartBorder.GetBottom();
         }
 
-        for(var i in this.Texts)
+        var y=0;
+        for(var i=0; i<this.Texts.length; ++i)
         {
             var item=this.Texts[i];
 
@@ -30849,7 +30854,9 @@ function ChartMultiText()
             if (index>=0 && index<xPointCount)
             {
                 var x=this.ChartFrame.GetXFromIndex(index);
-                var y=this.ChartFrame.GetYFromData(item.Value);
+                if (item.Value=="TOP") y=top;
+                else if (item.Value=="BOTTOM") y=bottom;
+                else y=this.ChartFrame.GetYFromData(item.Value);
 
                 if (item.Color)  this.Canvas.fillStyle = item.Color;
                 else this.Canvas.fillStyle = this.Color;
@@ -30882,6 +30889,7 @@ function ChartMultiText()
                 }
                 else
                 {
+                    if (IFrameSplitOperator.IsNumber(item.YMove)) y+=item.YMove;
                     this.Canvas.fillText(item.Text, x, y);
                 }
 
@@ -55466,7 +55474,81 @@ function KLineChartContainer(uielement,OffscreenElement)
 
                 this.ChartOperator_Temp_Update();
             }
-           
+        }
+        else if (id==JSCHART_EVENT_ID.OP_GOTO) //{ Date:日期, Time:, PageSize:可选 }
+        {
+            if (!IFrameSplitOperator.IsNumber(obj.Date)) return;
+
+            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            if (!hisData) return;  //数据还没有到达
+
+            var index=null;
+            if (ChartData.IsDayPeriod(this.Period,true))
+            {
+                for(var i=0;i<hisData.Data.length;++i)
+                {
+                    var item=hisData.Data[i];
+                    if (item.Date>=obj.Date)
+                    {
+                        index=i;
+                        break;
+                    }
+                }
+            }
+            else if (ChartData.IsMinutePeriod(this.Period,true))
+            {
+                let findTime=obj.Time;
+                if (IFrameSplitOperator.IsPlusNumber(findTime))
+                {
+                    for(var i=0;i<hisData.Data.length;++i)
+                    {
+                        var item=hisData.Data[i];
+                        if (item.Date>obj.Date || (item.Date==obj.Date && item.Time>=findTime))
+                        {
+                            index=i;
+                            break;
+                        }
+                    }
+                }
+                else    //只有日期
+                {
+                    for(var i=0;i<hisData.Data.length;++i)
+                    {
+                        var item=hisData.Data[i];
+                        if (item.Date>=obj.Date)
+                        {
+                            index=i;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (index===null) 
+            {
+                JSConsole.Chart.Log(`[KLineChartContainer::ChartOperator] OP_GOTO can't find date=${obj.Date} time=${obj.Time}`);
+                return;
+            }
+
+            var oldXPointCount=this.Frame.SubFrame[0].Frame.XPointCount;
+            var xPointCount=oldXPointCount;
+            if (obj.PageSize>0) //调整一屏显示的个数
+            {
+                xPointCount=obj.PageSize;
+            }
+
+            if (xPointCount!=oldXPointCount)
+            {
+                //设置X轴显示数据个数
+                this.Frame.SetXShowCount(xPointCount);
+            }
+
+            hisData.DataOffset=index;
+            this.CursorIndex=0;
+            this.LastPoint.X=null;
+            this.LastPoint.Y=null;
+
+            this.ChartOperator_Temp_Update();
         }
     }
 
@@ -57893,88 +57975,11 @@ function KLineChartContainer(uielement,OffscreenElement)
     {
         if (!obj || !obj.Date) return;
 
-        JSConsole.Chart.Log('[KLineChartContainer::SetFirstShowDate] obj=', obj);
+        var option={ ID:JSCHART_OPERATOR_ID.OP_GOTO, Date:obj.Date };
+        if (IFrameSplitOperator.IsNumber(obj.Time)) option.Time=obj.Time;
+        if (IFrameSplitOperator.IsNumber(obj.PageSize)) option.PageSize=obj.PageSize;
 
-        var hisData=null;
-        if (!this.Frame.Data) hisData=this.Frame.Data;
-        else hisData=this.Frame.SubFrame[0].Frame.Data;
-        if (!hisData) return;  //数据还没有到达
-
-        var index=null;
-        if (ChartData.IsDayPeriod(this.Period,true))
-        {
-            for(var i=0;i<hisData.Data.length;++i)
-            {
-                var item=hisData.Data[i];
-                if (item.Date>=obj.Date)
-                {
-                    index=i;
-                    break;
-                }
-            }
-        }
-        else if (ChartData.IsMinutePeriod(this.Period,true))
-        {
-            let findTime=obj.Time;
-            if (IFrameSplitOperator.IsPlusNumber(findTime))
-            {
-                for(var i=0;i<hisData.Data.length;++i)
-                {
-                    var item=hisData.Data[i];
-                    if (item.Date>obj.Date || (item.Date==obj.Date && item.Time>=findTime))
-                    {
-                        index=i;
-                        break;
-                    }
-                }
-            }
-            else    //只有日期
-            {
-                for(var i=0;i<hisData.Data.length;++i)
-                {
-                    var item=hisData.Data[i];
-                    if (item.Date>=obj.Date)
-                    {
-                        index=i;
-                        break;
-                    }
-                }
-            }
-            
-        }
-
-        if (index===null) 
-        {
-            JSConsole.Chart.Log(`[KLineChartContainer::SetFirstShowDate] an't find first date=${obj.Date} time=${obj.Time}`, obj);
-            return;
-        }
-
-        var count=hisData.Data.length-index;
-        var customShowCount=count;
-        if (obj.PageSize>0) customShowCount=obj.PageSize;
-
-        var pageSize = this.GetMaxMinPageSize();
-        if (pageSize.Max < customShowCount) customShowCount = pageSize.Max;
-        else if (pageSize.Min>customShowCount) customShowCount=pageSize.Min;
-
-        for(var i in this.Frame.SubFrame)   //设置一屏显示的数据个数
-        {
-            var item =this.Frame.SubFrame[i].Frame;
-            item.XPointCount=customShowCount;
-        }
-        
-        hisData.DataOffset=index;
-        this.CursorIndex=0;
-        this.LastPoint.X=null;
-        this.LastPoint.Y=null;
-
-        JSConsole.Chart.Log(`[KLineChartContainer::SetFirstShowDate] dataOffset=${hisData.DataOffset} CursorIndex=${this.CursorIndex} PageSize=${customShowCount}`);
-
-        this.UpdataDataoffset();           //更新数据偏移
-        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
-        this.UpdatePointByCursorIndex(2);   //更新十字光标位子
-        this.Draw();
+        this.ChartOperator(option);
     }
 
     //删除某一个窗口的指标, bCallDestory=是否调用图形销毁函数
