@@ -5769,10 +5769,10 @@ function JSChart(divElement, bOffscreen)
     }
 
     //K线切换类型 0=实心K线 1=收盘价线 2=美国线 3=空心K线 4=面积图 5=订单流
-    this.ChangeKLineDrawType=function(drawType, isDraw)
+    this.ChangeKLineDrawType=function(drawType, isDraw, option)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeKLineDrawType)=='function')
-            this.JSChartContainer.ChangeKLineDrawType(drawType,isDraw);
+            this.JSChartContainer.ChangeKLineDrawType(drawType,isDraw, option);
     }
 	
 	//指标窗口个数
@@ -23466,6 +23466,8 @@ function ChartKLine()
     this.ShowRange={ };     //K线显示范围 { Start:, End:,  DataCount:, ShowCount: }
     this.CustomKLine;       //自定义K线, key=date*1000000+time,  key={ Color:, DrawType: }
     this.DrawKRange={ Start:null, End:null };   //当前屏K线的索引{ Start: , End:}
+
+    this.IsThinAKBar=true;  //美国线 柱子是否是线段 (false=柱子)
     
     /*
     this.CustomKLine=new Map([
@@ -23662,63 +23664,72 @@ function ChartKLine()
                     upColor=downColor=unchagneColor=this.DownColor;
             }
 
-            this.Canvas.beginPath();   //最高-最低
-            if (isHScreen)
+            if (this.IsThinAKBar==false && dataWidth>=9)
             {
-                if (data.High==data.Low && dataWidth<4)
-                {
-                    this.Canvas.moveTo(yHigh,ToFixedPoint(x));
-                    this.Canvas.lineTo(yLow-1,ToFixedPoint(x));
-                }
-                else
-                {
-                    this.Canvas.moveTo(yHigh,ToFixedPoint(x));
-                    this.Canvas.lineTo(yLow,ToFixedPoint(x));
-                }
+                var coordinateInfo={YLow:yLow, YHigh:yHigh, YOpen:yOpen, YClose:yClose, X:x, Left:left, Right:right };
+                var colorInfo={ UpColor:upColor, DownColor:downColor, UnchangeColor:unchagneColor };
+                this.DrawAKBar(data, dataWidth, isHScreen, coordinateInfo, colorInfo);
             }
             else
             {
-                if (data.High==data.Low && dataWidth<4)
-                {
-                    this.Canvas.moveTo(ToFixedPoint(x),yHigh);
-                    this.Canvas.lineTo(ToFixedPoint(x),yLow+1);
-                }
-                else
-                {
-                    this.Canvas.moveTo(ToFixedPoint(x),yHigh);
-                    this.Canvas.lineTo(ToFixedPoint(x),yLow);
-                }
-            }
-            
-            this.Canvas.stroke();
-
-            if (dataWidth>=4)
-            {
-                this.Canvas.beginPath();    //开盘
+                this.Canvas.beginPath();   //最高-最低
                 if (isHScreen)
                 {
-                    this.Canvas.moveTo(ToFixedPoint(yOpen),left);
-                    this.Canvas.lineTo(ToFixedPoint(yOpen),x);
+                    if (data.High==data.Low && dataWidth<4)
+                    {
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                        this.Canvas.lineTo(yLow-1,ToFixedPoint(x));
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
+                        this.Canvas.lineTo(yLow,ToFixedPoint(x));
+                    }
                 }
                 else
                 {
-                    this.Canvas.moveTo(left,ToFixedPoint(yOpen));
-                    this.Canvas.lineTo(x,ToFixedPoint(yOpen));
+                    if (data.High==data.Low && dataWidth<4)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                        this.Canvas.lineTo(ToFixedPoint(x),yLow+1);
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(x),yHigh);
+                        this.Canvas.lineTo(ToFixedPoint(x),yLow);
+                    }
                 }
+                
                 this.Canvas.stroke();
 
-                this.Canvas.beginPath();    //收盘
-                if (isHScreen)
+                if (dataWidth>=4)
                 {
-                    this.Canvas.moveTo(ToFixedPoint(yClose),right);
-                    this.Canvas.lineTo(ToFixedPoint(yClose),x);
+                    this.Canvas.beginPath();    //开盘
+                    if (isHScreen)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(yOpen),left);
+                        this.Canvas.lineTo(ToFixedPoint(yOpen),x);
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(left,ToFixedPoint(yOpen));
+                        this.Canvas.lineTo(x,ToFixedPoint(yOpen));
+                    }
+                    this.Canvas.stroke();
+
+                    this.Canvas.beginPath();    //收盘
+                    if (isHScreen)
+                    {
+                        this.Canvas.moveTo(ToFixedPoint(yClose),right);
+                        this.Canvas.lineTo(ToFixedPoint(yClose),x);
+                    }
+                    else
+                    {
+                        this.Canvas.moveTo(right,ToFixedPoint(yClose));
+                        this.Canvas.lineTo(x,ToFixedPoint(yClose));
+                    }
+                    this.Canvas.stroke();
                 }
-                else
-                {
-                    this.Canvas.moveTo(right,ToFixedPoint(yClose));
-                    this.Canvas.lineTo(x,ToFixedPoint(yClose));
-                }
-                this.Canvas.stroke();
             }
 
             if(this.Data.DataType==0)
@@ -23730,6 +23741,79 @@ function ChartKLine()
 
         this.PtMax=ptMax;
         this.PtMin=ptMin;
+    }
+
+    this.DrawAKBar=function(data, dataWidth, isHScreen, coordinateInfo, colorInfo)
+    {
+        var barWidth=dataWidth/3;
+        var left=ToFixedRect(coordinateInfo.Left);
+        var aryX=[left, ToFixedRect(left+barWidth), ToFixedRect(left+barWidth*2), ToFixedRect(left+barWidth*3)];
+        var yHigh=coordinateInfo.YHigh, yLow=coordinateInfo.YLow, yOpen=coordinateInfo.YOpen, yClose=coordinateInfo.YClose;
+
+        if (data.Open<data.Close) 
+        {
+            this.Canvas.strokeStyle=colorInfo.UpColor; //阳线
+            this.Canvas.fillStyle=colorInfo.UpColor;
+        }
+        else if (data.Open>data.Close) 
+        {
+            this.Canvas.strokeStyle=colorInfo.DownColor; //阳线
+            this.Canvas.fillStyle=colorInfo.DownColor;
+        }
+        else 
+        {
+            this.Canvas.strokeStyle=colorInfo.UnchangeColor; //平线
+            this.Canvas.fillStyle=colorInfo.UnchangeColor;
+        }
+
+        //最高-最低
+        if (isHScreen)
+        {
+            if (data.High==data.Low)
+            {
+                var yTop=yHigh-barWidth/2;
+                this.Canvas.fillRect(yTop,aryX[1],barWidth,aryX[2]-aryX[1]);
+            }
+            else
+            {
+                this.Canvas.fillRect(yHigh,aryX[1],(yLow-yHigh),aryX[2]-aryX[1]);
+            }
+        }
+        else
+        {
+            if (data.High==data.Low)
+            {
+                var yTop=yHigh-barWidth/2;
+                this.Canvas.fillRect(aryX[1],yTop,aryX[2]-aryX[1],barWidth);
+            }
+            else
+            {
+                this.Canvas.fillRect(aryX[1],yHigh,aryX[2]-aryX[1],(yLow-yHigh));
+            }
+        }
+
+        //开盘
+        var yTop=yOpen-barWidth/2;
+        if (isHScreen)
+        {
+            this.Canvas.fillRect(yTop,aryX[0],(barWidth),aryX[1]-aryX[0]);
+        }
+        else
+        {
+            this.Canvas.fillRect(aryX[0],yTop,aryX[1]-aryX[0],(barWidth));
+        }
+       
+
+        //收盘
+        var yTop=yClose-barWidth/2;
+        if (isHScreen)
+        {
+            this.Canvas.fillRect(yTop,aryX[2],(barWidth),aryX[3]-aryX[2]);
+        }
+        else
+        {
+            this.Canvas.fillRect(aryX[2],yTop,aryX[3]-aryX[2],(barWidth));
+        }
     }
 
     this.DrawCloseArea=function()   //收盘价面积图
@@ -62469,9 +62553,9 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();
     }
     
-    this.ChangeKLineDrawType=function(drawType, isDraw)
+    this.ChangeKLineDrawType=function(drawType, isDraw, option)
     {
-        if (this.KLineDrawType==drawType) return;
+        if (this.KLineDrawType==drawType && !option) return;
 
         var oldKLineType=this.KLineDrawType;
         this.KLineDrawType=drawType;
@@ -62499,11 +62583,21 @@ function KLineChartContainer(uielement,OffscreenElement)
             return;
         }
 
-        for(var i in this.ChartPaint)
+        for(var i=0; i<this.ChartPaint.length; ++i)
         {
             var item=this.ChartPaint[i];
-            if (i==0) item.DrawType=this.KLineDrawType;
-            else if (item.ClassName=='ChartVolStick') item.KLineDrawType=this.KLineDrawType
+            if (i==0) 
+            {
+                item.DrawType=this.KLineDrawType;
+                if (option)
+                {
+                    if (IFrameSplitOperator.IsBool(option.IsThinAKBar)) item.IsThinAKBar=option.IsThinAKBar;
+                }
+            }
+            else if (item.ClassName=='ChartVolStick') 
+            {
+                item.KLineDrawType=this.KLineDrawType;
+            }
         }
 
         for(var i in this.OverlayChartPaint)    //叠加K线样式修改
@@ -78014,7 +78108,7 @@ function KLineRightMenu(divElement)
             }, 
             {
                 text: "美国线",
-                click: function () { chart.ChangeKLineDrawType(2); }
+                click: function () { chart.ChangeKLineDrawType(2, true ,{ IsThinAKBar:false }); }
             }, 
             {
                 text: "收盘线",
@@ -116938,7 +117032,7 @@ function JSScrollBarFrame()
                     this.Canvas.fillText(text,x,yText);
                     var textWidth=this.Canvas.measureText(text).width+2;
                     preXText=x+textWidth;
-                    preYear=day;
+                    preDay=day;
                     continue;
                 }
 
@@ -116961,7 +117055,7 @@ function JSScrollBarFrame()
                     this.Canvas.lineTo(x,bottom);
                     this.Canvas.stroke();
     
-                    preYear=day;
+                    preDay=day;
                 }
             }
         }

@@ -995,6 +995,14 @@ function Node()
             return;
         }
 
+        if (callee.Name=='STKINDI' || callee.Name=='CALCSTOCKINDEX') //指标调用
+        {
+            var item={ ID:JS_EXECUTE_JOB_ID.JOB_EXECUTE_INDEX, Args:args,  FunctionName:callee.Name };
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+            this.ExecuteIndex.push(item);
+            return;
+        }
+
         if (callee.Name == "LOADAPIDATA") //加载API数据
         {
             var item = { Name: callee.Name, ID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CUSTOM_API_DATA, Args: args };
@@ -8897,6 +8905,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.MarginData = new Map();  //融资融券
     this.NewsAnalysisData = new Map();    //新闻统计
     this.ExtendData = new Map();          //其他的扩展数据
+    this.ScriptIndexOutData=new Map();    //调用脚本执行返回的数据
     this.OtherSymbolData=new Map();       //其他股票信息 key=symbol value=[historydata]
 
     //股票数据缓存 key=函数名(参数)  { Data: value=拟合的数据 , Error: } 
@@ -11015,6 +11024,127 @@ function JSSymbolData(ast,option,jsExecute)
         return true;
     }
 
+    this.ReadSymbolArgumentValue=function(item, result) //返回{ Value:股票代码, Error:错误信息}
+    {
+        var readArgument={};
+        if (typeof(item)=== 'object')
+        {
+            if (!this.ReadArgumentValue(item,readArgument))
+            {
+                result.Error=readArgument.Error;
+                return false;
+            }
+        }
+        else
+        {
+            readArgument.Value=item;
+        }
+
+        if (readArgument.Value=='') readArgument.Value=this.Symbol; //缺省使用股票代码
+
+        var symbol=readArgument.Value;
+
+        //支持 SH60000, SZ000001
+        //A股后缀小写
+        if (symbol.indexOf('.SH')>0) result.Symbol=symbol.replace('.SH', ".sh");
+        else if (symbol.indexOf('.SZ')>0) result.Symbol=symbol.replace('.SZ', ".sz");
+        else if (symbol.indexOf("SH")==0) result.Symbol=symbol.slice(2)+".sh";
+        else if (symbol.indexOf("SZ")==0) result.Symbol=symbol.slice(2)+".sz";
+        else result.Symbol=symbol;
+
+        return true;
+    }
+
+    this.ReadIndexArgumentValue=function(args, result)
+    {
+        result.Args=[];
+        for(var i in result.SytemIndex.Args)    //复制参数
+        {
+            var item=result.SytemIndex.Args[i];
+            result.Args.push({Value:item.Value, Name:item.Name});
+        }
+
+        if (args.length>2 && result.SytemIndex.Args && result.SytemIndex.Args.length>0)
+        {
+            for(var i=2, j=0; i<args.length && j<result.SytemIndex.Args.length; ++i, ++j)
+            {
+                var readArgument={};
+                var item=args[i];
+                if (typeof(item)=== 'object')
+                {
+                    if (!this.ReadArgumentValue(item,readArgument))
+                    {
+                        result.Error=readArgument.Error;
+                        return false;
+                    }
+                }
+                else
+                {
+                    readArgument.Value=item;
+                }
+
+                result.Args[j].Value=readArgument.Value;
+            }
+        }
+
+        return true;
+    }
+
+    this.ReadArgumentValue=function(item, result)    //读取变量值
+    {
+        result.Name=item.Name;
+        if (item.Type==Syntax.Literal)
+        {
+            result.Value=item.Value;
+            return true;
+        }
+
+        if (item.Type==Syntax.Identifier)
+        {
+            var isFind=false;
+            for(var i in this.Arguments)
+            {
+                const argItem=this.Arguments[i];
+                if (argItem.Name==item.Name)
+                {
+                    result.Value=argItem.Value;
+                    isFind=true;
+                    return true;
+                }
+            }
+
+            if (!isFind) 
+            {
+                result.Error=`can't read ${item.Name}` ;
+                return false;
+            }
+        }
+
+        result.Error=`can't read ${item.Name}, type error.`;
+        return false;
+    }
+    
+    this.ReadIndexFunctionOut=function(item, result)
+    {
+        var indexParam={};
+        if (typeof(item)=== 'object')
+        {
+            if (!this.ReadArgumentValue(item,indexParam))
+            {
+                result.Error=indexParam.Error;
+                return false;
+            }
+        }
+        else
+        {
+            indexParam.Value=item;
+        }
+
+        result.OutIndex=indexParam.Value;
+        result.Out=null;
+        return true;
+    }
+
     //TMP2:=KDJ.K#WEEK;
     this.CallMemberScriptIndex=function(job)
     {
@@ -11101,9 +11231,20 @@ function JSSymbolData(ast,option,jsExecute)
         
     }
 
-    //脚本调用
-    //STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
-    //1=股票代码 2=指标名字.输出变量#周期, 3....参数
+    /*****************************************************************************************************************************
+        脚本调用
+
+        STKINDI
+        STKINDI('600000.sh','MA.MA1#WEEK',5,10,20,30,60,120);
+        1=股票代码 2=指标名字.输出变量#周期, 3....参数
+
+        CALCSTOCKINDEX
+        用法:CALCSTOCKINDEX(品种代码,指标名称,指标线),返回该指标相应输出的计算值.
+        例如:
+        CALCSTOCKINDEX('SH600000','KDJ',3)表示上证600000的KDJ指标第3个输出即J之值,第一个参数可在前面加SZ(深市),SH(沪市),BJ(京市),或市场_,,
+        CALCSTOCKINDEX('47_IFL0','MACD',2)表示IFL0品种的MACD指标第2个输出值.
+
+    *******************************************************************************************************************************/
     this.CallScriptIndex=function(job)
     {
         if (job.Member) return this.CallMemberScriptIndex(job);
@@ -11125,6 +11266,15 @@ function JSSymbolData(ast,option,jsExecute)
         {
             var token=job.Token;
             this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() Error: ${indexInfo.Error}`);
+        }
+
+        if (job.FunctionName=="CALCSTOCKINDEX")
+        {
+            if (!this.ReadIndexFunctionOut(job.Args[2],indexInfo))     //读取返回值索引
+            {
+                var token=job.Token;
+                this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() Error: ${indexInfo.Error}`);
+            }
         }
 
         var systemIndex=new JSIndexScript();
@@ -11207,6 +11357,105 @@ function JSSymbolData(ast,option,jsExecute)
             if (indexInfo.Period) key+='#'+indexInfo.Period;    //带周期的变量
             memberValue[key]=data[i].Data;
         }
+    }
+
+    this.RecvScriptIndexData=function(outVar,indexInfo,symbolData)
+    {
+        var key=this.GenerateScriptIndexKey(indexInfo);
+        JSConsole.Complier.Log('[JSSymbolData::RecvScriptIndexData] ', outVar, indexInfo, symbolData, key);
+
+        var kLine=symbolData.Data.Data;
+        var aryOutVar=outVar;
+        if (indexInfo.Out)
+        {
+            for(var i=0;i<outVar.length; ++i)
+            {
+                var item=outVar[i];
+                if (item.Name==indexInfo.Out) 
+                {
+                    aryOutVar=[item];
+                    break;
+                }
+            }
+
+            var data=this.Data.FitKLineIndex(kLine,aryOutVar,this.Period,indexInfo.PeriodID);
+            this.ScriptIndexOutData.set(key,data[0].Data);
+        }
+        else if (IFrameSplitOperator.IsPlusNumber(indexInfo.OutIndex))
+        {
+            var index=indexInfo.OutIndex-1;
+
+            aryOutVar=[outVar[index]];
+            var data=this.Data.FitKLineIndex(kLine,aryOutVar,this.Period,indexInfo.PeriodID);
+            this.ScriptIndexOutData.set(key,data[0].Data);
+        }
+        else
+        {
+            var data=this.Data.FitKLineIndex(kLine,aryOutVar,this.Period,indexInfo.PeriodID);
+            var result={ __Type__:"Object" };
+            for(var i in data)
+            {
+                var item=data[i];
+                result[item.Name]=item.Data;
+            }
+            this.ScriptIndexOutData.set(key,result);
+        } 
+    }
+
+    //key= (代码,周期),指标(参数) => 输出
+    this.GenerateScriptIndexKey=function(indexInfo)
+    {
+        var indexParam='';
+        var args=indexInfo.Args;
+        for(var i in args)
+        {
+            if (indexParam.length>0) indexParam+=',';
+            var item=args[i];
+            indexParam+=item.Value.toString();
+        }
+
+        var out="ALL";
+        if (indexInfo.Out) out=indexInfo.Out;
+        else if (IFrameSplitOperator.IsPlusNumber(indexInfo.OutIndex)) out=`Out[${indexInfo.OutIndex-1}]`;
+        var key=`(${indexInfo.Symbol},${indexInfo.PeriodID}), ${indexInfo.Name}(${indexParam})=>${out}`;
+
+        return key;
+    }
+
+    this.ExecuteScriptIndexError=function(error,indexInfo)
+    {
+        var token=indexInfo.Job.Token;
+        this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallScriptIndex() ${indexInfo.Name} 指标执行错误 : ${error} `);
+    }
+
+    this.GetScriptIndexOutData=function(args,node, funcName)
+    {
+        var indexInfo={ PeriodID:this.Period };
+        if (!this.ReadSymbolArgumentValue(args[0],indexInfo))  //读取代码
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}() 股票代码错误: ${indexInfo.Error}`);
+
+        if (!this.ReadIndexFunctionValue(args[1],indexInfo))     //读取指标
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}() 指标错误: ${indexInfo.Error}`);
+
+        if (funcName=="CALCSTOCKINDEX")
+        {
+            if (!this.ReadIndexFunctionOut(args[2],indexInfo))     //读取返回值索引
+                this.Execute.ThrowUnexpectedNode(node, `${funcName}() Error: ${indexInfo.Error}`);
+        }
+
+        var systemIndex=new JSIndexScript();
+        var systemItem=systemIndex.Get(indexInfo.Name);
+        if (!systemItem)
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}() 指标错误: ${indexInfo.Name} 指标不存在`);
+
+        indexInfo.SytemIndex=systemItem;    //系统指标
+        if (!this.ReadIndexArgumentValue(args,indexInfo))
+            this.Execute.ThrowUnexpectedNode(node,`${funcName}()  指标参数错误: ${indexInfo.Error}`);
+
+        var key=this.GenerateScriptIndexKey(indexInfo);
+        if (!this.ScriptIndexOutData.has(key)) return null;
+
+        return this.ScriptIndexOutData.get(key);
     }
    
     this.JsonDataToHistoryData=function(data)
@@ -12848,6 +13097,10 @@ function JSExecute(ast,option)
                 break;
             case 'LOADAPIDATA':
                 node.Out = this.SymbolData.GetCustomApiData(args);
+                break;
+            case "STKINDI":
+            case "CALCSTOCKINDEX":
+                node.Out=this.SymbolData.GetScriptIndexOutData(args,node,funcName);
                 break;
             case 'CLOSE':
             case 'C':

@@ -957,7 +957,7 @@ function JSScrollBarFrame()
                     this.Canvas.fillText(text,x,yText);
                     var textWidth=this.Canvas.measureText(text).width+2;
                     preXText=x+textWidth;
-                    preYear=day;
+                    preDay=day;
                     continue;
                 }
 
@@ -980,7 +980,7 @@ function JSScrollBarFrame()
                     this.Canvas.lineTo(x,bottom);
                     this.Canvas.stroke();
     
-                    preYear=day;
+                    preDay=day;
                 }
             }
         }
