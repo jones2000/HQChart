@@ -38138,11 +38138,23 @@ IFrameSplitOperator.FormatDateTimeString=function(value,isShowDate,isShowTime)
     if (isShowTime)
     {
         var time=parseInt(aryValue[1]);
-        var minute=time%100;
-        var hour=parseInt(time/100);
-        var text=(hour<10? ('0'+hour.toString()):hour.toString()) + ':' + (minute<10?('0'+minute.toString()):minute.toString());
-        if (result.length>0) result+=" ";
-        result+=text;
+        if (time<10000)
+        {
+            var minute=time%100;
+            var hour=parseInt(time/100);
+            var text=IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute);
+            if (result.length>0) result+=" ";
+            result+=text;
+        }
+        else
+        {
+            var hour=parseInt(time/10000);
+            var minute=parseInt((time%10000)/100);
+            var second=time%100;
+            var text=IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute) + ':' + IFrameSplitOperator.NumberToString(second);
+            if (result.length>0) result+=" ";
+            result+=text;
+        }
     }
     
     return result;
