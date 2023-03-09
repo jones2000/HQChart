@@ -10911,11 +10911,6 @@ function MinuteChartContainer(uielement)
         
         if (currentLength>count)
         {
-            for(var i=currentLength-1;i>=count;--i)
-            {
-                this.Frame.SubFrame[i].Frame.ClearToolbar();
-            }
-
             this.Frame.SubFrame.splice(count,currentLength-count);
             this.WindowIndex.splice(count,currentLength-count);
         }
