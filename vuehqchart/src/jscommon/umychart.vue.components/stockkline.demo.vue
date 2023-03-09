@@ -244,8 +244,12 @@ DefaultData.GetKLineOption=function()
                         Position:'right',LineType:-1, 
                     },
                     { 
+                        Type:0,
+                        Position:'right',LineType:1,
+                    },
+                    { 
                         Type:3,
-                        Position:'right',LineType:1, DateTime:"HH:MM"
+                        Position:'right',LineType:-1,
                     }
                 ]
             },
