@@ -4948,9 +4948,7 @@ function JSChart(divElement, bOffscreen)
             if(IFrameSplitOperator.IsBool(item.IsTitleShowLatestData)) chart.IsTitleShowLatestData=item.IsTitleShowLatestData;
             if(IFrameSplitOperator.IsBool(item.IsAlwaysShowLastData)) chart.TitlePaint[0].IsAlwaysShowLastData=item.IsAlwaysShowLastData;
             if(IFrameSplitOperator.IsNumber(item.ShowLastDataFormat)) chart.TitlePaint[0].ShowLastDataFormat=item.ShowLastDataFormat;
-
-            
-            //if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
+            if (item.TimeFormat) chart.TitlePaint[0].TimeFormat=item.TimeFormat;
         }
 
         if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
@@ -6342,8 +6340,9 @@ var JSCHART_EVENT_ID=
 
     ON_DISPLAY_LATEST:74,            //显示最新数据
 
-    ON_FORMAT_CORSSCURSOR_Y_TEXT:75,    //格式化十字光标Y轴刻度文字
+    ON_FORMAT_CORSSCURSOR_Y_TEXT:75,    //格式化十字光标Y轴文字
     ON_FORMAT_INDEX_OUT_TEXT:76,           //格式化指标标题文字
+    ON_FORMAT_CORSSCURSOR_X_TEXT:77,    //格式化十字光标X轴文字
 }
 
 var JSCHART_OPERATOR_ID=
@@ -8916,7 +8915,7 @@ function JSChartContainer(uielement, OffscreenElement)
         }
 
         var ptPosition=null;    //鼠标位置 null 无效 -1 在外面 >=0 对应的指标窗口中ID
-        if (option && option.ParentFunction=='OnMouseMove' && option.Point)
+        if (option && option.Point && (option.ParentFunction=='OnMouseMove' || option.ParentFunction=='MoveCorssCursorIndex'))
         {
             ptPosition=this.Frame.PtInFrame(option.Point.X, option.Point.Y);
         }
@@ -15263,7 +15262,7 @@ function MinuteFrame()
             for(var i=index; i>=0; --i)
             {
                 var item=dayData.Data[i];
-                if (IFrameSplitOperator.IsNumber(item.Price))
+                if (item && IFrameSplitOperator.IsNumber(item.Price))
                 {
                     findIndex=i;
                     break;
@@ -31909,6 +31908,20 @@ function ChartMinutePriceLine()
 
     this.DayOffset;
 
+    this.LastPoint={};  //最后一个点的信息 {X, Y, Data:, Value:, DateTime:YYYYMMDDHHMMSS }
+
+
+    this.UpdateLastPoint=function(dateTime, x,y, item)
+    {
+        if (IFrameSplitOperator.IsNumber(this.LastPoint.DateTime) && this.LastPoint.DateTime>dateTime) return;
+
+        this.LastPoint.DateTime=dateTime;
+        this.LastPoint.X=x;
+        this.LastPoint.Y=y;
+        this.LastPoint.Data=item;
+        this.LastPoint.Value=item.Value;
+    }
+
     this.Draw=function()
     {
         if (this.NotSupportMessage)
@@ -31917,6 +31930,7 @@ function ChartMinutePriceLine()
             return;
         }
 
+        this.LastPoint={};
         if (!this.IsShow) return;
 
         var isHScreen=(this.ChartFrame.IsHScreen===true);
@@ -31939,7 +31953,6 @@ function ChartMinutePriceLine()
 
         var bFirstPoint=true;
         var ptFirst={}; //第1个点
-        var ptLast={};  //最后一个点
         var drawCount=0;
         var pointCount=0;
         
@@ -31970,10 +31983,13 @@ function ChartMinutePriceLine()
                 else this.Canvas.lineTo(x,y);
             }
 
-            ptLast.X=x;
-            ptLast.Y=y;
-            ptLast.Price=value;
-
+            if (this.Source)
+            {
+                var item=this.Source.Data[i];
+                var dateTime=item.Date*1000000+item.Time*100;
+                this.UpdateLastPoint(dateTime, x,y, { Value:value, Index:i, Date:item.Date, Time:item.Time, Type:0,  Explain:"盘中"});
+            }
+          
             ++drawCount;
 
             if (pointCount>=minuteCount) //上一天的数据和这天地数据线段要断开
@@ -32050,7 +32066,7 @@ function ChartMinutePriceLine()
             var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_MINUTE_LAST_POINT);
             if (event)
             {
-                var data={ LastPoint:{X:ptLast.X, Y:ptLast.Y}, Price:ptLast.Price };
+                var data={ LastPoint:{X:this.LastPoint.X, Y:this.LastPoint.Y}, Price:this.LastPoint.Price, Data:this.LastPoint.Data };
                 event.Callback(event,data,this);
             }
         }
@@ -32184,7 +32200,7 @@ function ChartMinutePriceLine()
         var callAutionInfo={ TotalCount:callAutionData.TotalCount };
         if (callAutionData.Ver==3.0)   //均线
         {
-            for(var i in callAutionData.Data)
+            for(var i=0; i<callAutionData.Data.length; ++i)
             {
                 var item=callAutionData.Data[i];
                 if (!item || !IFrameSplitOperator.IsNumber(item.AvPrice)) continue;
@@ -32226,7 +32242,7 @@ function ChartMinutePriceLine()
         var bFirstPoint=true;
         var drawCount=0;
         var aryPoint=[];
-        for(var i in callAutionData.Data)
+        for(var i=0; i<callAutionData.Data.length; ++i)
         {
             var item=callAutionData.Data[i];
             if (!item || !IFrameSplitOperator.IsNumber(item.Price)) 
@@ -32274,6 +32290,10 @@ function ChartMinutePriceLine()
 
                 aryPoint.push({X:x, Y:y });
             }
+
+           
+            var dateTime=item.Date*1000000+item.Time;
+            this.UpdateLastPoint(dateTime, x,y, { Value:item.Price, Index:i, Date:item.Date, Time:item.Time, Type:isBeforeOpen?1:2,  Explain:isBeforeOpen?"盘前":"盘后"});
 
             ++drawCount;
         }
@@ -35417,6 +35437,7 @@ function ChartMultiSVGIcon()
                 }
                 else
                 {
+                    if (IFrameSplitOperator.IsNumber(item.YMove)) y+=item.YMove;
                     this.Canvas.fillText(item.Symbol, x, y);
                     if (item.Text) this.IconRect.push({ Index:i, Rect:rtIcon , Item:item });
                 }
@@ -42095,6 +42116,14 @@ IFrameSplitOperator.NumberToString=function(value)
     return value.toString();
 }
 
+//毫秒格式 固定3位, 不足前面自动补0 
+IFrameSplitOperator.MillisecondToString=function(value)
+{
+    if (value<10) return '00'+value.toString();
+    else if (value<100) return '0'+value.toString();
+    else return value.toString();
+}
+
 IFrameSplitOperator.FormatDateString=function(value,format, languageID)
 {
     var year=parseInt(value/10000);
@@ -42150,6 +42179,17 @@ IFrameSplitOperator.FormatTimeString=function(value, format)    //format hh:mm:s
         var hour=parseInt(value/100);
         var minute=value%100;
         return IFrameSplitOperator.NumberToString(hour)+':'+ IFrameSplitOperator.NumberToString(minute);
+    }
+    else if (format=="HH:MM:SS.fff")
+    {
+        var millisecond=value%1000;
+        var dateTime=parseInt(value/1000);
+
+        var hour=parseInt(dateTime/10000);
+        var minute=parseInt((dateTime%10000)/100);
+        var second=dateTime%100;
+
+        return `${IFrameSplitOperator.NumberToString(hour)}:${IFrameSplitOperator.NumberToString(minute)}:${IFrameSplitOperator.NumberToString(second)}.${IFrameSplitOperator.MillisecondToString(millisecond)}`;
     }
     else
     {
@@ -46416,6 +46456,8 @@ function HQMinuteTimeStringFormat()
     this.MultiDayBeforeOpenData;    //多日分时图 盘前数据
     this.MultiDayAfterCloseData;    //多日分时图 收盘数据
 
+    this.GetEventCallback
+
     this.GetBeforeOpen=function()
     {
         if (!this.BeforeOpenData || !this.BeforeOpenData.Data) return false;
@@ -46522,6 +46564,17 @@ function HQMinuteTimeStringFormat()
 
         var time=timeData[showIndex];
         this.Text=IFrameSplitOperator.FormatTimeString(time);
+
+        if (this.GetEventCallback)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_CORSSCURSOR_X_TEXT);
+            if (event)
+            {
+                var data={ Time:time, Index:showIndex };
+                event.Callback(event,data,this);
+            }
+        }
+
         return true;
     }
 }
@@ -47438,6 +47491,9 @@ function DynamicMinuteTitlePainting()
     this.MultiDayAfterCloseData;    //多日分时图 收盘数据
     this.TitleBaseLine=1;           //0=top 1=middle 2=bottom
 
+    this.TimeFormat;                //显示时间格式 "HH:MM:SS", "hh:MM", "HH:MM:SS.fff"
+    
+
     this.CallAuctionShowTitle=new Set(
         [
             "MTitle-AC-Price",
@@ -47666,8 +47722,21 @@ function DynamicMinuteTitlePainting()
             
             if (!bShowUpdateTime)
             {
-                var text=IFrameSplitOperator.FormatDateTimeString(item.DateTime,this.IsShowDate, this.IsShowTime);
-                if (!this.DrawText(text,this.DateTimeColor,position)) return;
+                if (this.TimeFormat)    //指定时间格式
+                {
+                    var strDate=null, strTime=null, text=null;
+                    if (this.IsShowDate) strDate=IFrameSplitOperator.FormatDateString("YYYY-MM-DD", item.Date);
+                    if (this.IsShowTime) strTime=IFrameSplitOperator.FormatTimeString(item.Time,this.TimeFormat);
+                    if (strDate && strTime) text=`${strDate} ${strTime}`;
+                    else if (strDate) text=strDate;
+                    else if (strTime) text=strTime;
+                    if (text) if (!this.DrawText(text,this.DateTimeColor,position)) return;
+                }
+                else
+                {
+                    var text=IFrameSplitOperator.FormatDateTimeString(item.DateTime,this.IsShowDate, this.IsShowTime);
+                    if (!this.DrawText(text,this.DateTimeColor,position)) return;
+                }
             }
         }
         
@@ -60064,6 +60133,72 @@ function KLineChartContainer(uielement,OffscreenElement)
 
             this.ChartOperator_Temp_Update();
         }
+        else if (id==JSCHART_OPERATOR_ID.OP_CORSSCURSOR_GOTO)   //移动十字光标{ Date:, Time }
+        {
+            if (!IFrameSplitOperator.IsNumber(obj.Date)) return;
+            var bTime=IFrameSplitOperator.IsNumber(obj.Time);
+
+            var pageInfo=this.GetChartStatus();
+            if (!pageInfo) return;
+
+            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            if (!hisData) return;  //数据还没有到达
+            
+            var start=hisData.DataOffset;
+            var findIndex=-1, findItem=null, dataIndex=-1;
+            for(var i=start, j=0; i<hisData.Data.length && j<pageInfo.KLine.PageSize; ++i, ++j)
+            {
+                var item=hisData.Data[i];
+
+                if (bTime)
+                {
+                    if (item.Date==obj.Date && item.Time==obj.Time)
+                    {
+                        findItem=item;
+                        findIndex=j;
+                        dataIndex=i;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (item.Date==obj.Date)
+                    {
+                        findItem=item;
+                        findIndex=j;
+                        dataIndex=i;
+                        break;
+                    }
+                }
+            }
+
+            if (findIndex<0) return;
+
+            if (!this.Frame || !this.Frame.SubFrame[0] || !this.Frame.SubFrame[0].Frame) return false;
+            var frame=this.Frame.SubFrame[0].Frame;
+
+            var x=frame.GetXFromIndex(findIndex);
+            var y=frame.GetYFromData(item.Close);
+
+            //保存最后一次鼠标移动信息
+            var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
+            this.LastMouseStatus.OnMouseMove=MoveStatus;
+            this.LastMouseStatus.MoveOnPoint={X:x, Y:y};    //鼠标移动的位置
+
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MOUSE_MOVE);
+            var titleChart=this.TitlePaint[0];
+            if (event && titleChart) titleChart.OnMouseMoveEvent=event;
+
+            var pixelTatio = GetDevicePixelRatio(); 
+
+            var e={};
+            e.clientX=(x/pixelTatio)+this.UIElement.getBoundingClientRect().left;
+            e.clientY=(y/pixelTatio)+this.UIElement.getBoundingClientRect().top;
+            this.MoveOnPoint={X:x, Y:y};
+            this.OnMouseMove(x,y,e);
+            this.LastMouseStatus.MoveOnPoint=null;
+            if (titleChart) titleChart.OnMouseMoveEvent=null;
+        }
     }
 
     //内部函数
@@ -67508,6 +67643,7 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.PtInClient=(x,y)=>{ return this.PtInClient(x,y); }
         this.ChartCorssCursor.Canvas=this.Canvas;
         this.ChartCorssCursor.StringFormatX=new HQMinuteTimeStringFormat();
+        this.ChartCorssCursor.StringFormatX.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatY=g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
         this.ChartCorssCursor.StringFormatY.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
@@ -70683,14 +70819,16 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
     var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //国内期货, 纽约期货交易所
     var isSHO=MARKET_SUFFIX_NAME.IsSHO(upperSymbol);            //上海股票期权
     var isSZO=MARKET_SUFFIX_NAME.IsSZO(upperSymbol);            //深证股票期权
-    var aryMinuteData=new Array();
+    var aryMinuteData=[];
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var preAvPrice=data.stock[0].yclose;    //前一个均价
     var yClose=data.stock[0].yclose;
     if (isFutures && data.stock[0].yclearing) yClose=preClose=preAvPrice=data.stock[0].yclearing;  //期货使用昨结算价
 
+    if (!IFrameSplitOperator.IsNonEmptyArray(data.stock[0].minute)) return aryMinuteData;
+
     var date=data.stock[0].date;    //默认使用外部日期, 但跨天的 走势图使用内部的日期
-    for(var i in data.stock[0].minute)
+    for(var i=0; i<data.stock[0].minute.length; ++i)
     {
         var jsData=data.stock[0].minute[i];
         var item=new MinuteData();
@@ -70707,12 +70845,8 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
         item.Date=date;
         item.Time=jsData.time;
         if (isFutures || isSHO || isSZO) item.Position=jsData.position;  //期货 期权有持仓
-        if (8<jsData.length && jsData[8]>0) 
-        {
-            item.Date=jsData[8];    //日期
-            item.DateTime=item.Date.toString()+" "+jsData[0].toString();
-        }
-        
+        else if (IFrameSplitOperator.IsNumber(jsData.position)) item.Position=jsData.position;
+ 
         item.Increase=jsData.increase;
         item.Risefall=jsData.risefall;
         item.AvPrice=jsData.avprice;
