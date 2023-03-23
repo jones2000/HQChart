@@ -594,6 +594,10 @@ function ScriptIndex(name, script, args, option)
         chartMACD.Data.Data = varItem.Data;
         var clrTitle=this.GetDefaultColor(id);
         if (varItem.Color) clrTitle= this.GetColor(varItem.Color);
+
+        if (varItem.UpColor) chartMACD.UpColor=varItem.UpColor;
+        if (varItem.DownColor) chartMACD.DownColor=varItem.DownColor;
+
         hqChart.TitlePaint[titleIndex].Data[id] = new DynamicTitleData(chartMACD.Data, varItem.Name, clrTitle);
 
         hqChart.ChartPaint.push(chartMACD);
@@ -703,6 +707,9 @@ function ScriptIndex(name, script, args, option)
     chart.KLineDrawType = hqChart.KLineDrawType;  //设置K线显示类型
     if (varItem.Color) chart.Color = this.GetColor(varItem.Color);
     else chart.Color = this.GetDefaultColor(id);
+
+    if (varItem.UpColor) chart.UpColor=varItem.UpColor;
+    if (varItem.DownColor) chart.DownColor=varItem.DownColor;
 
     let titleIndex = windowIndex + 1;
     chart.Data.Data = varItem.Data;

@@ -1315,6 +1315,20 @@ function JSReportChartContainer(uielement)
                 }
             }
         }
+
+        var report=this.GetReportChart();
+        var cell=null;
+        if (report)
+        {
+            cell=report.PtInCell(x,y);  //是否在单元格(EnableTooltip)
+        }
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_MOUSE_MOVE);
+        if (event)
+        {
+            var sendData={X:x, Y:y, Cell:cell };
+            event.Callback(event,sendData,this);
+        }
     }
 
     this.UIOnMounseOut=function(e)
@@ -2813,6 +2827,8 @@ function ChartReport()
 
     this.RectClient={};
 
+    this.TooltipRect=[];
+
     this.ReloadResource=function(resource)
     {
         this.UpColor=g_JSChartResource.Report.UpTextColor;
@@ -2905,6 +2921,7 @@ function ChartReport()
             if (item.MaxText) colItem.MaxText=item.MaxText;
             if (item.ID) colItem.ID=item.ID;
             if (IFrameSplitOperator.IsNumber(item.Sort)) colItem.Sort=item.Sort;
+            if (IFrameSplitOperator.IsBool(item.EnableTooltip)) colItem.EnableTooltip=item.EnableTooltip;
             if (item.Sort==1 || item.Sort==2)   //1本地排序 2=远程排序
             {
                 colItem.SortType=[1,2];         //默认 降序 ，升序
@@ -3025,6 +3042,7 @@ function ChartReport()
     this.Draw=function()
     {
         this.ShowSymbol=[];
+        this.TooltipRect=[];
 
         if (this.SizeChange) this.CalculateSize();
         else this.UpdateCacheData();
@@ -3529,6 +3547,17 @@ function ChartReport()
         var textWidth=column.Width-this.ItemMergin.Left-this.ItemMergin.Right;
         var stock=data.Stock;
         var drawInfo={ Text:null, TextColor:column.TextColor , TextAlign:column.TextAlign };
+        var rtItem={ Left:left, Top:top,  Width:column.Width, Height:this.RowHeight };
+        rtItem.Right=rtItem.Left+rtItem.Width;
+        rtItem.Bottom=rtItem.Top+rtItem.Height;
+        drawInfo.Rect=rtItem;
+        
+        //tooltip提示
+        if (column.EnableTooltip===true)
+        {
+            this.TooltipRect.push({ Rect:rtItem, Stock:stock, Index:index, Column:column, RowType:rowType })
+        }
+
         if (column.Type==REPORT_COLUMN_ID.INDEX_ID)
         {
             if (rowType==1) return; //固定行序号空
@@ -3691,7 +3720,8 @@ function ChartReport()
         }
         else
         {
-            this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth);
+            this.DrawItemBG(drawInfo);
+            this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth, drawInfo.BGColor);
         }
     }
 
@@ -3900,7 +3930,17 @@ function ChartReport()
         return IFrameSplitOperator.FormatVolString(value, languageID);
     }
 
-    this.DrawItemText=function(text, textColor, textAlign, left, top, width)
+    this.DrawItemBG=function(drawInfo)
+    {
+        if (drawInfo.BGColor && drawInfo.Rect)//绘制背景色
+        {
+            var rtItem=drawInfo.Rect;
+            this.Canvas.fillStyle=drawInfo.BGColor;
+            this.Canvas.fillRect(rtItem.Left,rtItem.Top,rtItem.Width,rtItem.Height);   //画一个背景色, 不然是一个黑的背景
+        }
+    }
+
+    this.DrawItemText=function(text, textColor, textAlign, left, top, width, bgColor)
     {
         if (!text) return;
 
@@ -4179,6 +4219,7 @@ function ChartReport()
         if (sendData.Out.Text) drawInfo.Text=sendData.Out.Text;
         if (sendData.Out.TextColor) drawInfo.TextColor=sendData.Out.TextColor;
         if (sendData.Out.TextAlign) drawInfo.TextAlign=sendData.Out.TextAlign;
+        if (sendData.Out.BGColor) drawInfo.BGColor=sendData.Out.BGColor;
 
         return true;
     }
@@ -4551,6 +4592,24 @@ function ChartReport()
             if (left>=chartRight) break;
         }
 
+    }
+
+    //坐标所在单元格
+    this.PtInCell=function(x,y)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.TooltipRect)) return null;
+
+        for(var i=0;i<this.TooltipRect.length;++i)
+        {
+            var item=this.TooltipRect[i];
+            var rt=item.Rect;
+            if (!rt) continue;
+
+            if (x>=rt.Left && x<=rt.Right && y>=rt.Top && y<=rt.Bottom)
+            {
+                return { Rect:item.Rect, Stock:item.Stock, Column:item.Column, Index:item.Index };
+            }
+        }
     }
 }
 

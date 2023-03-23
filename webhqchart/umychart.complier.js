@@ -16772,6 +16772,8 @@ function JSExecute(ast,option)
                     let value={Name:varName, Data:outVar, Color:color, Type:2};
                     if (lineWidth) value.LineWidth=lineWidth;
                     if (color) value.Color=color;
+                    if (upColor) value.UpColor=upColor;
+                    if (downColor) value.DownColor=downColor;
                     this.OutVarTable.push(value);
                 }
                 else if (varName && color && !draw) 
@@ -19337,6 +19339,9 @@ function ScriptIndex(name,script,args,option)
         chartMACD.Data.Data=varItem.Data;
         var clrTitle=this.GetDefaultColor(id);
         if (varItem.Color) clrTitle=this.GetColor(varItem.Color);
+        if (varItem.UpColor) chartMACD.UpColor=varItem.UpColor;
+        if (varItem.DownColor) chartMACD.DownColor=varItem.DownColor;
+
         hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chartMACD.Data,varItem.Name,clrTitle);
 
         this.SetChartIndexName(chartMACD);
@@ -20986,6 +20991,9 @@ function OverlayScriptIndex(name,script,args,option)
         var titlePaint=hqChart.TitlePaint[titleIndex];
         var clrTitle=this.GetDefaultColor(id);
         if (varItem.Color) clrTitle=this.GetColor(varItem.Color);
+        if (varItem.UpColor) chart.UpColor=varItem.UpColor;
+        if (varItem.DownColor) chart.DownColor=varItem.DownColor;
+
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,clrTitle);
 
         frame.ChartPaint.push(chart);

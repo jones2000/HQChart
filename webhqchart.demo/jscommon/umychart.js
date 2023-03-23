@@ -2268,6 +2268,8 @@ var JSCHART_EVENT_ID=
     ON_FORMAT_CORSSCURSOR_Y_TEXT:75,    //格式化十字光标Y轴文字
     ON_FORMAT_INDEX_OUT_TEXT:76,           //格式化指标标题文字
     ON_FORMAT_CORSSCURSOR_X_TEXT:77,    //格式化十字光标X轴文字
+
+    ON_REPORT_MOUSE_MOVE:78,          //鼠标移动 { x,y, Cell:单元格}
 }
 
 var JSCHART_OPERATOR_ID=

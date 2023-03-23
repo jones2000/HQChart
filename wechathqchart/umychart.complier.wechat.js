@@ -12765,6 +12765,8 @@ function JSExecute(ast,option)
                         let value={Name:varName, Data:outVar, Color:color, Type:2};
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (color) value.Color=color;
+                        if (upColor) value.UpColor=upColor;
+                        if (downColor) value.DownColor=downColor;
                         this.OutVarTable.push(value);
                     }
                     else if (varName && color && !draw) 
