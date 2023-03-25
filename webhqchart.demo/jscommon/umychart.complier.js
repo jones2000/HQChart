@@ -19078,6 +19078,7 @@ function ScriptIndex(name,script,args,option)
     {
         if (lineType==7) var line=new ChartStepLine();
         else var line=new ChartLine();
+
         line.Canvas=hqChart.Canvas;
         line.DrawType=1;
         line.Name=varItem.Name;
@@ -19086,6 +19087,12 @@ function ScriptIndex(name,script,args,option)
         line.Identify=this.Guid;
         if (varItem.Color) line.Color=this.GetColor(varItem.Color);
         else line.Color=this.GetDefaultColor(id);
+
+        if (lineType==8)
+        {
+            line.DrawType=2;
+            line.BreakPoint=varItem.BreakPoint;
+        }
 
         if (varItem.LineWidth) 
         {
@@ -20485,6 +20492,10 @@ function ScriptIndex(name,script,args,option)
             {
                 this.CreateLine(hqChart,windowIndex,item,i, item.Type);
             }
+            else if (item.Type==8)
+            {
+                this.CreateLine(hqChart,windowIndex,item,i, item.Type);
+            }
 
             var titlePaint=hqChart.TitlePaint[windowIndex+1];
             if (titlePaint &&  titlePaint.Data && i<titlePaint.Data.length) //设置标题数值 小数位数和格式
@@ -20783,6 +20794,10 @@ function OverlayScriptIndex(name,script,args,option)
             {
                 this.CreateLine(hqChart,windowIndex,item,i,item.Type);
             }
+            else if (item.Type==8)
+            {
+                this.CreateLine(hqChart,windowIndex,item,i, item.Type);
+            }
         }
 
         
@@ -20845,7 +20860,13 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Identify=overlayIndex.Identify;
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
-        
+
+        if (lineType==8)
+        {
+            chart.DrawType=2;
+            chart.BreakPoint=varItem.BreakPoint;
+        }
+
         if (varItem.LineWidth) 
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
@@ -22398,6 +22419,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                 if (item.linewidth) outVarItem.LineWidth=item.linewidth; 
                 if (item.isshow==false) outVarItem.IsShow = false;
                 if (item.isexdata==true) outVarItem.IsExData = true;
+                if (item.BreakPoint) outVarItem.BreakPoint=item.BreakPoint;
 
                 result.push(outVarItem);
             }
@@ -22833,6 +22855,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                 if (item.linewidth>=1) outVarItem.LineWidth=item.linewidth;
                 if (item.isshow==false) outVarItem.IsShow = false;
                 if (item.isexdata==true) outVarItem.IsExData = true;
+                if (item.BreakPoint) outVarItem.BreakPoint=item.BreakPoint;
 
                 result.push(outVarItem);
             }

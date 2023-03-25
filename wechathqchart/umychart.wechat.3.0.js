@@ -10443,12 +10443,13 @@ function MinuteChartContainer(uielement)
 
         if (this.IsPhoneDragging(e)) 
         {
-            if (jsChart.TryClickLock) 
+            if (this.TryClickLock || this.TryClickIndexTitle) 
             {
-                var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
+                var touches = this.GetToucheData(e, this.IsForceLandscape);
                 var x = touches[0].clientX;
                 var y = touches[0].clientY;
-                if (jsChart.TryClickLock(x, y)) return;
+                if (this.TryClickLock && this.TryClickLock(x, y)) return;
+                if (this.TryClickIndexTitle && this.TryClickIndexTitle(x, y)) return;
             }
 
             //长按2秒,十字光标
@@ -11834,6 +11835,26 @@ function MinuteChartContainer(uielement)
         }
 
         chart.Data = infoMap;
+    }
+
+    this.TryClickIndexTitle=function(x,y)
+    {
+        for(var i=0; i<this.TitlePaint.length; ++i)
+        {
+            var item=this.TitlePaint[i];
+            if (!item.IsClickTitle) continue;
+            if (!item.IsClickTitle(x,y)) continue;
+
+            var data={ Point:{X:x, Y:y}, Title:item.Title, FrameID:item.Frame.Identify };
+            JSConsole.Chart.Log('[MinuteChartContainer::TryClickIndexTitle] click title ', data);
+
+            var event=this.GetEvent(JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE);
+            if (event && event.Callback) event.Callback(event,data,this);
+            
+            return true;
+        }
+
+        return false;
     }
 }
 
