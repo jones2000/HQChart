@@ -20174,6 +20174,7 @@ function KLineInfoData()
 {
     this.ID;
     this.Date;
+    this.Time;  //时间
     this.Title;
     this.InfoType;
     this.ExtendData;    //扩展数据
@@ -24293,7 +24294,7 @@ function ChartKLine()
                 this.TooltipRect.push([i,rect]);    //[0]数据索引 [1]数据区域
             }
 
-            if(this.Data.DataType==0)
+            if(this.Data.DataType==0 || this.Data.DataType==1)
             {
                 var infoItem={Xleft:left,XRight:right, XCenter:x, YMax:yHigh, YMin:yLow, DayData:data, Index:j};
                 this.DrawInfo(infoItem);
@@ -25576,7 +25577,11 @@ function ChartKLine()
         var bottom=this.ChartBorder.GetBottom();
         var top=this.ChartBorder.GetTop();
 
-        var infoData=this.InfoData.get(item.DayData.Date.toString());
+        var key=`${item.DayData.Date}`;
+        if (this.Data.DataType==1) key=`${item.DayData.Date}-${item.DayData.Time}`;
+        if (!this.InfoData.has(key)) return;
+
+        var infoData=this.InfoData.get(key);
         if (!infoData || infoData.Data.length<=0) return;
 
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
@@ -46932,7 +46937,12 @@ function KLineInfoDataStringFormat()
     this.DefaultFormat=function(item)
     {
         var strDate=IFrameSplitOperator.FormatDateString(item.Date);
-        var strText="<span>"+strDate+"&nbsp;&nbsp;&nbsp;"+item.Title+"</span>";
+        if (IFrameSplitOperator.IsNumber(item.Time)) 
+        {
+            var strTime=IFrameSplitOperator.FormatTimeString(item.Time);
+            strDate+=" "+strTime;
+        }
+        var strText=`<span>${strDate}&nbsp;&nbsp;&nbsp;${item.Title}</span>`;
         return strText;
     }
 
@@ -53283,7 +53293,7 @@ function ChartDrawPictureGoldenSection()
     this.newMethod();
     delete this.newMethod;
 
-    this.ClassName='ChartDrawPictureGoldenSectionLine';
+    this.ClassName='ChartDrawPictureGoldenSection';
     this.IsPointIn=this.IsPointIn_XYValue_Line;
     this.Font=14*GetDevicePixelRatio() +"px 微软雅黑";
     
@@ -61712,6 +61722,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         var page=this.Page.Minute;
         if (page.Enable==false || (page.Enable==true && page.Finish==true) )
         {
+            this.ReqeustKLineInfoData({ FunctionName:"RecvMinuteHistoryData" });            //请求信息地雷
             this.RequestFlowCapitalData();              //请求流通股本数据 (主数据下载完再下载)
             this.RequestOverlayHistoryMinuteData();     //请求叠加数据 (主数据下载完再下载)
             this.CreateChartDrawPictureByStorage();     //创建画图工具
@@ -63548,6 +63559,11 @@ function KLineChartContainer(uielement,OffscreenElement)
             {
                 this.WindowIndex[i]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
             }
+            else if (item.API)  //后台指标
+            {
+                var apiItem=item.API;
+                this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,item);
+            }
             else
             {
                 var indexID=item.Index;
@@ -64106,7 +64122,9 @@ function KLineChartContainer(uielement,OffscreenElement)
         }
 
         //信息地雷信息
-        for(var i in this.ChartInfo)
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartInfo)) return;
+        
+        for(var i=0;i<this.ChartInfo.length; ++i)
         {
             this.ChartInfo[i].RequestData(this,obj);
         }
@@ -65006,6 +65024,60 @@ function KLineChartContainer(uielement,OffscreenElement)
                     else
                     {
                         mapInfoData.set(kItem.Date.toString(),{Data:new Array(infoItem)});
+                    }
+
+                    aryInfo.shift();
+                    //JSConsole.Chart.Log('[KLineChartContainer::UpdataChartInfo]',item);
+                }
+            }
+        }
+        else if (ChartData.IsMinutePeriod(this.Period, true))
+        {
+            mapInfoData=new Map();
+            var hisData=this.ChartPaint[0].Data;
+            if (hisData && hisData.Data && hisData.Data.length>0)
+            {
+                var firstKItem=hisData.Data[0];
+                var aryInfo=[];
+                for(var i=0, j=0; i<this.ChartInfo.length; ++i)
+                {
+                    var infoItem=this.ChartInfo[i];
+                    for(j=0; j<infoItem.Data.length; ++j)
+                    {
+                        var item=infoItem.Data[j];
+                        if (item.Date>=firstKItem.Date || (item.Date==firstKItem.Date && item.Time>=firstKItem.Time)) //在K线范围内的才显示
+                            aryInfo.push(item);
+                    }
+                }
+
+                aryInfo.sort(function(a,b) 
+                { 
+                    if (a.Date==b.Date) return a.Time-b.Time;
+                    return a.Date-b.Date 
+                });   //排序
+
+                for(var i=0;i<hisData.Data.length;)
+                {
+                    var kItem=hisData.Data[i];  //K线数据
+
+                    if (aryInfo.length<=0) 
+                        break;
+
+                    var infoItem=aryInfo[0];
+                    if (kItem.Date<infoItem.Date || (kItem.Date==infoItem.Date && kItem.Time<infoItem.Time)) 
+                    {
+                        ++i;
+                        continue;
+                    }
+
+                    var key=`${kItem.Date}-${kItem.Time}`;
+                    if (mapInfoData.has(key)) //信息地雷日期<K线上的日期 就是属于这个K线上的
+                    {
+                        mapInfoData.get(key).Data.push(infoItem);
+                    }
+                    else
+                    {
+                        mapInfoData.set(key,{Data:new Array(infoItem)});
                     }
 
                     aryInfo.shift();
@@ -68421,6 +68493,11 @@ function MinuteChartContainer(uielement)
                 if (item.Script)    //自定义指标脚本
                 {
                     this.WindowIndex[windowIndex]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
+                }
+                else if (item.API)  //后台指标
+                {
+                    var apiItem=item.API;
+                    this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,item);
                 }
                 else
                 {
@@ -76079,6 +76156,12 @@ function IKLineInfo()
             MaxRequestMinuteDayCount:hqChart.MaxRequestMinuteDayCount,    //分钟数据请求的天数
             Period:hqChart.Period       //周期
         };
+
+        //K线数据范围
+        var hisData=null;
+        if (hqChart.ChartOperator_Temp_GetHistroyData)  hisData=hqChart.ChartOperator_Temp_GetHistroyData();
+        if (hisData)
+            obj.DateRange=hisData.GetDateRange();
         
         return obj;
     }
@@ -76274,16 +76357,17 @@ function AnnouncementInfo()
 
     this.RecvData=function(recvData,param)
     {
-        if (recvData.report.length<=0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(recvData.report)) return;
 
         var aryReport=[];
-        for(var i in recvData.report)
+        for(var i=0;i<recvData.report.length; ++i)
         {
             var item=recvData.report[i];
             var infoData=new KLineInfoData();
             infoData.Date=item.releasedate;
             infoData.Title=item.title;
             infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT;
+            if (IFrameSplitOperator.IsNumber(item.time)) infoData.Time=item.time;
             for(var j in item.type)
             {
                 var typeItem=item.type[j];
@@ -76328,7 +76412,7 @@ function AnnouncementInfo()
         param.HQChart.Draw();
     }
 
-
+    //增量更新
     this.UpdateData=function(aryData)
     {
         if (!aryData || aryData.length<=0) return;
@@ -76337,7 +76421,7 @@ function AnnouncementInfo()
         for(var i in this.Data)
         {
             var item=this.Data[i];
-            var strKey=`${item.Date}-${item.InfoType}-${item.Title}`;
+            var strKey=`${item.Date}-${item.Time}-${item.InfoType}-${item.Title}`;
             setKeys.add(strKey);
         }
 
@@ -76345,7 +76429,7 @@ function AnnouncementInfo()
         for(var i in aryData)
         {
             var item=aryData[i];
-            var strKey=`${item.Date}-${item.InfoType}-${item.Title}`;
+            var strKey=`${item.Date}-${item.Time}-${item.InfoType}-${item.Title}`;
             if (setKeys.has(strKey)) continue;
 
             this.Data.push(item);
