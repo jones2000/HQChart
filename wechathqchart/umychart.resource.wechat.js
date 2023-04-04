@@ -543,8 +543,9 @@ function JSChartResource()
                 var border=tooltip.Border;
                 if (this.IsNumber(border.Top)) this.DepthCorss.Tooltip.Border.Top=border.Top;
                 if (this.IsNumber(border.Left)) this.DepthCorss.Tooltip.Border.Left=border.Left;
+                if (this.IsNumber(border.Right)) this.DepthCorss.Tooltip.Border.Right=border.Right;
                 if (this.IsNumber(border.Bottom)) this.DepthCorss.Tooltip.Border.Bottom=border.Bottom;
-                if (this.IsNumber(border.Center)) this.DepthCorss.Tooltip.Border.Center=border.Center;
+                if (this.IsNumber(border.ItemSpace)) this.DepthCorss.Tooltip.Border.ItemSpace=border.ItemSpace;
             }
         }
 
