@@ -8474,8 +8474,9 @@ function DepthChartCorssCursor()
         { 
             Top:g_JSChartResource.DepthCorss.Tooltip.Border.Top, 
             Left:g_JSChartResource.DepthCorss.Tooltip.Border.Left, 
+            Right:g_JSChartResource.DepthCorss.Tooltip.Border.Right,
             Bottom:g_JSChartResource.DepthCorss.Tooltip.Border.Bottom, 
-            Center: g_JSChartResource.DepthCorss.Tooltip.Border.Center
+            ItemSpace: g_JSChartResource.DepthCorss.Tooltip.Border.ItemSpace
         },
         Font:g_JSChartResource.DepthCorss.Tooltip.Font,
         TextColor:g_JSChartResource.DepthCorss.Tooltip.TextColor,
@@ -8589,58 +8590,129 @@ function DepthChartCorssCursor()
 
         if (this.HQChart)
         {
-            //JSCHART_EVENT_ID.ON_DRAW_DEPTH_TOOLTIP
-            var event=this.HQChart.GetEvent(25);
+            var event=this.HQChart.GetEvent(JSCHART_EVENT_ID.ON_DRAW_DEPTH_TOOLTIP);
             if (event)
             {
                 event.Callback(event,xInfo,this);
             }
         }
 
-        if (this.IsShowTooltip) this.DrawTooltip(xInfo);
+        if (this.IsShowTooltip) 
+        {
+            var aryText=this.GetFormatTooltip(xInfo);
+            this.DrawTooltip(aryText, xInfo);
+        }
     }
 
-    this.DrawTooltip=function(data)
+    //[{Title:, TitleColor:,  Text:, Color:}]
+    this.GetFormatTooltip=function(drawData)
     {
-        var price=data.Price;
-        var vol=data.Vol;
-        var border=this.Tooltip.Border;
-        this.Canvas.font=this.Tooltip.Font;
-        var floatPrecision=2;
-        if (this.Symbol) floatPrecision=JSCommonCoordinateData.GetfloatPrecision(this.Symbol);//价格小数位数
-        var maxText='擎擎: 9999.99亿 ';
-        if (floatPrecision>=5) maxText=`擎擎: ${99.99.toFixed(floatPrecision)} `;  //小数位数太多了
-        this.Tooltip.Width=this.Canvas.measureText(maxText).width+border.Left;
-        this.Tooltip.Height=this.Tooltip.LineHeight*4+border.Top+border.Bottom+border.Center;
+        var aryText=[];
 
+        var floatPrecision=2;
+        if (this.Symbol) floatPrecision=JSCommonCoordinateData.GetfloatPrecision(this.Symbol); //价格小数位数
+
+        var item= 
+        { 
+            Title:g_JSChartLocalization.GetText('Depth-Price',this.HQChart.LanguageID),
+            TitleColor:this.Tooltip.TextColor,
+            Text:drawData.Price.toFixed(floatPrecision),
+            Color:this.Tooltip.TextColor
+        };
+        aryText.push(item);
+
+        var item= 
+        { 
+            Title:g_JSChartLocalization.GetText('Depth-Sum',this.HQChart.LanguageID),
+            TitleColor:this.Tooltip.TextColor,
+            Text:drawData.Vol.toFixed(4),
+            Color:this.Tooltip.TextColor
+        };
+        aryText.push(item);
+
+        return aryText;
+    }
+
+    this.DrawTooltip=function(aryText,data)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryText)) return;
+
+        this.Canvas.font=this.Tooltip.Font;
+        var maxWidth=0, lineCount=0, itemCount=0;
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+            if (!item) continue;
+
+            var isVaild=false;
+            if (item.Title)
+            {
+                var textWidth=this.Canvas.measureText(item.Title).width;
+                if (maxWidth<textWidth) maxWidth=textWidth;
+                ++lineCount;
+                isVaild=true;
+            }
+
+            if (item.Text)
+            {
+                var textWidth=this.Canvas.measureText(item.Text).width;
+                if (maxWidth<textWidth) maxWidth=textWidth;
+                ++lineCount;
+                isVaild=true;
+            }
+
+            if (isVaild) ++itemCount;
+        }
+
+        if (maxWidth<=0 || lineCount<=0) return;
+
+        var border=this.Tooltip.Border;
         var chartRight=this.Frame.ChartBorder.GetRight();
         var chartTop=this.Frame.ChartBorder.GetTop();
-        
-        var left=data.X+2;
-        var top=data.Y-this.Tooltip.Height-2;
-        if (left+this.Tooltip.Width>=chartRight) left=data.X-this.Tooltip.Width-2;
-        if (top<chartTop) top=data.Y+2;
+
+        this.Tooltip.LineHeight=this.Canvas.measureText("擎").width+2;
+        this.Tooltip.Width=maxWidth+(border.Left+border.Right);
+        this.Tooltip.Height=this.Tooltip.LineHeight*lineCount + (border.Top+border.Bottom) + (border.ItemSpace)*(itemCount-1);
+
+        var left=data.X;
+        var top=data.Y-this.Tooltip.Height
+        if (left+this.Tooltip.Width>=chartRight) left=data.X-this.Tooltip.Width;
+        if (top<chartTop) top=data.Y;
 
         this.Canvas.fillStyle=this.Tooltip.BGColor;
         this.Canvas.fillRect(left,top,this.Tooltip.Width,this.Tooltip.Height);
 
+        this.Canvas.textBaseline="top";
+        this.Canvas.textAlign="left";
         var x=border.Left+left;
         var y=border.Top+top;
 
-        this.Canvas.textBaseline="top";
-        this.Canvas.textAlign="left";
-        this.Canvas.fillStyle=this.Tooltip.TextColor;
-        var text=g_JSChartLocalization.GetText('Depth-Price',this.HQChart.LanguageID);
-        this.Canvas.fillText(text,x,y);
-        y+=this.Tooltip.LineHeight;
-        this.Canvas.fillText(data.Price.toFixed(floatPrecision),x,y);
-        y+=this.Tooltip.LineHeight;
-        y+=border.Center;
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+            var isVaild=false;
+            if (item.Title)
+            {
+                if (item.TitleColor) this.Canvas.fillStyle=item.TitleColor;
+                else this.Canvas.fillStyle=this.Tooltip.TextColor;
+                this.Canvas.fillText(item.Title,x,y);
+                y+=this.Tooltip.LineHeight;
+                isVaild=true;
+            }
 
-        var text=g_JSChartLocalization.GetText('Depth-Sum',this.HQChart.LanguageID);
-        this.Canvas.fillText(text,x,y);
-        y+=this.Tooltip.LineHeight;
-        this.Canvas.fillText(data.Vol.toFixed(4),x,y);
+            if (item.Text)
+            {
+                if (item.Color) this.Canvas.fillStyle=item.Color;
+                else this.Canvas.fillStyle=this.Tooltip.TextColor;
+
+                this.Canvas.fillText(item.Text,x,y);
+                y+=this.Tooltip.LineHeight;
+                isVaild=true;
+            }
+
+            if (isVaild) y+=border.ItemSpace;
+        }
+       
     }
 }
 

@@ -1606,6 +1606,16 @@ function FrameSplitXDepth()
                 this.Frame.VerticalInfo.push(info);
             }
         }
+
+        if (this.GetEventCallback)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SPLIT_XCOORDINATE);
+            if (event && event.Callback)
+            {
+                var data={ID:this.Frame.Identify, Frame:this.Frame };
+                event.Callback(event,data,this);
+            }
+        }
     }
 }
 

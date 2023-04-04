@@ -40619,6 +40619,16 @@ function FrameSplitXDepth()
                 this.Frame.VerticalInfo.push(info);
             }
         }
+
+        if (this.GetEventCallback)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SPLIT_XCOORDINATE);
+            if (event && event.Callback)
+            {
+                var data={ID:this.Frame.Identify, Frame:this.Frame };
+                event.Callback(event,data,this);
+            }
+        }
     }
 }
 
@@ -41976,13 +41986,13 @@ function DepthChartCorssCursor()
 
     this.Tooltip=
     { 
-        LineHeight:g_JSChartResource.DepthCorss.Tooltip.LineHeight, 
         Border:
         { 
             Top:g_JSChartResource.DepthCorss.Tooltip.Border.Top, 
             Left:g_JSChartResource.DepthCorss.Tooltip.Border.Left, 
+            Right:g_JSChartResource.DepthCorss.Tooltip.Border.Right,
             Bottom:g_JSChartResource.DepthCorss.Tooltip.Border.Bottom, 
-            Center: g_JSChartResource.DepthCorss.Tooltip.Border.Center
+            ItemSpace: g_JSChartResource.DepthCorss.Tooltip.Border.ItemSpace
         },
         Font:g_JSChartResource.DepthCorss.Tooltip.Font,
         TextColor:g_JSChartResource.DepthCorss.Tooltip.TextColor,
@@ -42106,51 +42116,125 @@ function DepthChartCorssCursor()
             }
         }
 
-        if (this.IsShowTooltip) this.DrawTooltip(xInfo);
+        if (this.IsShowTooltip) 
+        {
+            var aryText=this.GetFormatTooltip(xInfo);
+            this.DrawTooltip(aryText,xInfo);
+        }
     }
 
-    this.DrawTooltip=function(data)
+    //[{Title:, TitleColor:,  Text:, Color:}]
+    this.GetFormatTooltip=function(drawData)
     {
-        var price=data.Price;
-        var vol=data.Vol;
+        var aryText=[];
+
+        var floatPrecision=2;
+        if (this.Symbol) floatPrecision=GetfloatPrecision(this.Symbol); //价格小数位数
+
+        var item= 
+        { 
+            Title:g_JSChartLocalization.GetText('Depth-Price',this.HQChart.LanguageID),
+            TitleColor:this.Tooltip.TextColor,
+            Text:drawData.Price.toFixed(floatPrecision),
+            Color:this.Tooltip.TextColor
+        };
+        aryText.push(item);
+
+        var item= 
+        { 
+            Title:g_JSChartLocalization.GetText('Depth-Sum',this.HQChart.LanguageID),
+            TitleColor:this.Tooltip.TextColor,
+            Text:drawData.Vol.toFixed(4),
+            Color:this.Tooltip.TextColor
+        };
+        aryText.push(item);
+
+        return aryText;
+    }
+    
+
+    this.DrawTooltip=function(aryText, data)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryText)) return;
+
+        this.Canvas.font=this.Tooltip.Font;
+        var maxWidth=0, lineCount=0, itemCount=0;
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+            if (!item) continue;
+
+            var isVaild=false;
+            if (item.Title)
+            {
+                var textWidth=this.Canvas.measureText(item.Title).width;
+                if (maxWidth<textWidth) maxWidth=textWidth;
+                ++lineCount;
+                isVaild=true;
+            }
+
+            if (item.Text)
+            {
+                var textWidth=this.Canvas.measureText(item.Text).width;
+                if (maxWidth<textWidth) maxWidth=textWidth;
+                ++lineCount;
+                isVaild=true;
+            }
+
+            if (isVaild) ++itemCount;
+        }
+
+        if (maxWidth<=0 || lineCount<=0) return;
+
+        this.Tooltip.LineHeight=this.Canvas.measureText("擎").width+2;
         var pixel=GetDevicePixelRatio();
         var border=this.Tooltip.Border;
-        this.Canvas.font=this.Tooltip.Font;
-        var floatPrecision=2;
-        if (this.Symbol) floatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
-        var maxText='擎擎: 9999.99亿 ';
-        if (floatPrecision>=5) maxText=`擎擎: ${99.99.toFixed(floatPrecision)} `;  //小数位数太多了
-        this.Tooltip.Width=this.Canvas.measureText(maxText).width+border.Left*pixel;
-        this.Tooltip.Height=this.Tooltip.LineHeight*pixel*4+border.Top*pixel+border.Bottom*pixel+border.Center*pixel;
+
+        this.Tooltip.Width=maxWidth+(border.Left+border.Right)*pixel;
+        this.Tooltip.Height=this.Tooltip.LineHeight*lineCount + (border.Top+border.Bottom)*pixel + (border.ItemSpace*pixel)*(itemCount-1)
 
         var chartRight=this.Frame.ChartBorder.GetRight();
         var chartTop=this.Frame.ChartBorder.GetTop();
-        
-        var left=data.X+2*pixel;
-        var top=data.Y-this.Tooltip.Height-2*pixel;
-        if (left+this.Tooltip.Width>=chartRight) left=data.X-this.Tooltip.Width-2*pixel;
-        if (top<chartTop) top=data.Y+2*pixel;
+
+        var left=data.X;
+        var top=data.Y-this.Tooltip.Height
+        if (left+this.Tooltip.Width>=chartRight) left=data.X-this.Tooltip.Width;
+        if (top<chartTop) top=data.Y;
 
         this.Canvas.fillStyle=this.Tooltip.BGColor;
         this.Canvas.fillRect(left,top,this.Tooltip.Width,this.Tooltip.Height);
 
-        var x=border.Left*pixel+left;
-        var y=border.Top*pixel+top;
-
         this.Canvas.textBaseline="top";
         this.Canvas.textAlign="left";
-        this.Canvas.fillStyle=this.Tooltip.TextColor;
-        var text=g_JSChartLocalization.GetText('Depth-Price',this.HQChart.LanguageID);
-        this.Canvas.fillText(text,x,y);
-        y+=this.Tooltip.LineHeight*pixel;
-        this.Canvas.fillText(data.Price.toFixed(floatPrecision),x,y);
-        y+=this.Tooltip.LineHeight*pixel;
-        y+=border.Center*pixel;
+        var x=border.Left*pixel+left;
+        var y=border.Top*pixel+top;
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+            var isVaild=false;
+            if (item.Title)
+            {
+                if (item.TitleColor) this.Canvas.fillStyle=item.TitleColor;
+                else this.Canvas.fillStyle=this.Tooltip.TextColor;
+                this.Canvas.fillText(item.Title,x,y);
+                y+=this.Tooltip.LineHeight;
+                isVaild=true;
+            }
 
-        var text=g_JSChartLocalization.GetText('Depth-Sum',this.HQChart.LanguageID);
-        this.Canvas.fillText(text,x,y);
-        y+=this.Tooltip.LineHeight*pixel;
-        this.Canvas.fillText(data.Vol.toFixed(4),x,y);
+            if (item.Text)
+            {
+                if (item.Color) this.Canvas.fillStyle=item.Color;
+                else this.Canvas.fillStyle=this.Tooltip.TextColor;
+
+                this.Canvas.fillText(item.Text,x,y);
+                y+=this.Tooltip.LineHeight;
+                isVaild=true;
+            }
+
+            if (isVaild) y+=border.ItemSpace*pixel;
+        }
+
+       
     }
 
     this.PtInButton=function(x,y)
@@ -53075,9 +53159,8 @@ function JSChartResource()
         Tooltip:
         { 
             BGColor:'rgba(236,240,245, 0.8)', TextColor:"rgb(130,140,151)",
-            Border:{ Top:5, Left:20, Bottom:5, Center: 5},
+            Border:{ Top:5, Left:20, Right:20, Bottom:5, ItemSpace:5 },
             Font:14*GetDevicePixelRatio() +"px 微软雅黑",
-            LineHeight:16   //单行高度
         }
     }
 
@@ -53615,9 +53698,10 @@ function JSChartResource()
 
                 var border=tooltip.Border;
                 if (IFrameSplitOperator.IsNumber(border.Top)) this.DepthCorss.Tooltip.Border.Top=border.Top;
-                if (IFrameSplitOperator.IsNumber(border.Left)) this.DepthCorss.Tooltip.Border.Left=border.Left;
                 if (IFrameSplitOperator.IsNumber(border.Bottom)) this.DepthCorss.Tooltip.Border.Bottom=border.Bottom;
-                if (IFrameSplitOperator.IsNumber(border.Center)) this.DepthCorss.Tooltip.Border.Center=border.Center;
+                if (IFrameSplitOperator.IsNumber(border.Left)) this.DepthCorss.Tooltip.Border.Left=border.Left;
+                if (IFrameSplitOperator.IsNumber(border.Right)) this.DepthCorss.Tooltip.Border.Right=border.Right;
+                if (IFrameSplitOperator.IsNumber(border.ItemSpace)) this.DepthCorss.Tooltip.Border.ItemSpace=border.ItemSpace;
             }
         }
 
@@ -57606,6 +57690,12 @@ function KLineChartContainer(uielement,OffscreenElement)
         bindData.DataType=1; 
         bindData.Symbol=data.symbol;
 
+        if (bindData.Right>0 && !this.IsApiPeriod && this.RightFormula>=1)    //复权
+        {
+            var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula } );
+            bindData.Data=rightData;
+        }
+
         if (ChartData.IsMinutePeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
         {
             var periodData=sourceData.GetPeriodData(bindData.Period);
@@ -58172,7 +58262,8 @@ function KLineChartContainer(uielement,OffscreenElement)
         bindData.DataType=this.SourceData.DataType;
         bindData.Symbol=this.Symbol;
 
-        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true) && !this.IsApiPeriod)    //复权(日线数据才复权)
+
+        if (bindData.Right>0 && !this.IsApiPeriod && this.RightFormula>=1)    //复权  复权系数
         {
             var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data=rightData;
@@ -58240,7 +58331,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         bindData.DataType=this.SourceData.DataType;
         bindData.Symbol=this.Symbol;
 
-        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true) && !this.IsApiPeriod)    //复权(日线数据才复权)
+        if (bindData.Right>0 && !this.IsApiPeriod && this.RightFormula>=1)       //复权 复权系数
         {
             var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data=rightData;
@@ -60503,7 +60594,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (this.EnableVerifyRecvData && stock.symbol!=this.Symbol)
         {
-            JSConsole.Chart.Warn(`[MinuteChartContainer::RecvHistoryMinuteData] recv data symbol not match. HQChart[${this.Symbol}] , Recv[${stock.symbol}]`);
+            JSConsole.Chart.Warn(`[MinuteChartContainer::RecvFlowCapitalData] recv data symbol not match. HQChart[${this.Symbol}] , Recv[${stock.symbol}]`);
             return;
         }
 
@@ -69133,6 +69224,7 @@ function DepthChartContainer(uielement)
         this.Frame.ChartBorder.Bottom=20;
         this.Frame.ChartBorder.TitleHeight=0;
         this.Frame.Canvas=this.Canvas;
+        this.Frame.Identify=0;
 
         var ySplitOper=new FrameSplitY();
         ySplitOper.FrameSplitData=this.FrameSplitData.get('double');
@@ -69143,6 +69235,7 @@ function DepthChartContainer(uielement)
         ySplitOper.IgnoreYValue=[0];
         //ySplitOper.SplitType=2;
         ySplitOper.ChartBorder=this.Frame.ChartBorder;
+        ySplitOper.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.Frame.YSplitOperator=ySplitOper;
 
         var xSplitOper=new FrameSplitXDepth();
@@ -69150,6 +69243,7 @@ function DepthChartContainer(uielement)
         xSplitOper.ChartBorder=this.Frame.ChartBorder;;
         xSplitOper.LanguageID=this.LanguageID;
         xSplitOper.LineType=3;
+        xSplitOper.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
         this.Frame.XSplitOperator=xSplitOper
 
         if (this.ChartCorssCursor) this.ChartCorssCursor.Frame=this.Frame; //十字光标绑定框架
