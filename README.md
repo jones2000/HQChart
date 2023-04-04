@@ -463,6 +463,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 3. [HQChart实战教程56-限制指标周期](https://blog.csdn.net/jones2000/article/details/128592810)  
 4. [HQChart实战教程57-远程指标提示信息](https://jones2000.blog.csdn.net/article/details/128652645)
 5. [HQChart实战教程58-K线主图仿tradingview](https://blog.csdn.net/jones2000/article/details/128795059)  
+6. [HQChart实战教程59-深度图定制Tooltip输出内容](https://jones2000.blog.csdn.net/article/details/129951576)  
 
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>
@@ -471,6 +472,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 4. [HQChart报价列表高级应用教程4-股票名称增加类型图标](https://blog.csdn.net/jones2000/article/details/128692571)    
 5. [HQChart报价列表高级应用教程5-自定义单元格文字颜色](https://jones2000.blog.csdn.net/article/details/129665704)  
 5. [HQChart报价列表高级应用教程5-自定义列数据对接](https://jones2000.blog.csdn.net/article/details/129678481)  
+
 
 ## 设计文档:
 1. [如何(c++,js)写一个传统的K线图和走势图1](https://blog.csdn.net/jones2000/article/details/84779481) <br>

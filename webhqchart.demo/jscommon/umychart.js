@@ -16008,6 +16008,8 @@ HistoryData.CopyRight=function(data,seed)
 {
     var newData=new HistoryData();
     newData.Date=data.Date;
+    if (IFrameSplitOperator.IsNumber(data.Time)) newData.Time=data.Time;
+
     newData.YClose=data.YClose*seed;
     newData.Open=data.Open*seed;
     newData.Close=data.Close*seed;
@@ -43413,7 +43415,7 @@ function DynamicKLineTitlePainting()
             var rightName=g_JSChartLocalization.GetText(RIGHT_NAME[this.Data.Right],this.LanguageID);
             var text="("+periodName+" "+rightName+")";
 
-            if (!MARKET_SUFFIX_NAME.IsEnableRight(this.Data.Period, this.Symbol)) text="("+periodName+")";
+            if (!MARKET_SUFFIX_NAME.IsEnableRight(this.Data.Period, this.Symbol, this.HQChart.RightFormula)) text="("+periodName+")";
             if (!this.DrawText(text,this.SettingColor,position)) return;
         }
 
@@ -57698,7 +57700,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (ChartData.IsMinutePeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
         {
-            var periodData=sourceData.GetPeriodData(bindData.Period);
+            var periodData=bindData.GetPeriodData(bindData.Period);
             bindData.Data=periodData;
         }
 
@@ -58809,7 +58811,7 @@ function KLineChartContainer(uielement,OffscreenElement)
     //复权切换
     this.ChangeRight=function(right)
     {
-        if (!MARKET_SUFFIX_NAME.IsEnableRight(this.Period,this.Symbol)) return;
+        if (!MARKET_SUFFIX_NAME.IsEnableRight(this.Period,this.Symbol, this.RightFormula)) return;
 
         var upperSymbol=this.Symbol.toUpperCase();
         if (MARKET_SUFFIX_NAME.IsBIT(upperSymbol)) return;
@@ -59931,7 +59933,12 @@ function KLineChartContainer(uielement,OffscreenElement)
         bindData.DataType=this.SourceData.DataType;
         bindData.Symbol=this.Symbol;
 
-        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据才复权)
+        if (bindData.Right>0 && ChartData.IsDayPeriod(bindData.Period,true))    //复权(日线数据复权)
+        {
+            var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
+            bindData.Data=rightData;
+        }
+        else if (bindData.Right>0 && ChartData.IsMinutePeriod(bindData.Period,true) && this.RightFormula>=1) //复权(分钟数据复权, 复权因子模式)
         {
             var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data=rightData;
@@ -60641,7 +60648,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             if (ChartData.IsMinutePeriod(this.Period,true)) //分钟数据
             {
                 var aryFixedData=this.SourceData.GetMinuteFittingFinanceData(aryData);
-                for(let i in this.SourceData.Data)
+                for(var i=0; i<this.SourceData.Data.length; ++i)
                 {
                     var item=this.SourceData.Data[i];
                     if (aryFixedData[i] && IFrameSplitOperator.IsNumber(aryFixedData[i].Value))
@@ -60651,6 +60658,12 @@ function KLineChartContainer(uielement,OffscreenElement)
                 var bindData=this.ChartPaint[0].Data;
                 var newBindData=new ChartData();
                 newBindData.Data=this.SourceData.Data;
+
+                if (bindData.Right>0 && this.RightFormula>=1)    //复权
+                {
+                    var rightData=newBindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
+                    newBindData.Data=rightData;
+                }
 
                 if (ChartData.IsMinutePeriod(bindData.Period,false)) //周期数据
                 {
@@ -62295,6 +62308,8 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
     var list = data.data;
     var aryDayData=new Array();
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position=9;
+    var fclose=10, yfclose=11;   //结算价, 前结算价
+    var bfactor=12, afactor=13; //前, 后复权因子
     var orderFlow=JSCHART_DATA_FIELD_ID.KLINE_ORDERFLOW;
     var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
     var heatMapIndex=JSCHART_DATA_FIELD_ID.KLINE_HEATMAP;
@@ -62314,6 +62329,12 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
         item.Amount = jsData[amount];
         item.Time=jsData[time];
         if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position=jsData[position]; //期货持仓
+
+        if (IFrameSplitOperator.IsNumber(jsData[fclose])) item.FClose=jsData[fclose];       //期货结算价
+        if (IFrameSplitOperator.IsNumber(jsData[yfclose])) item.YFClose=jsData[yfclose];    //期货前结算价
+
+        if (IFrameSplitOperator.IsNumber(jsData[bfactor])) item.BFactor=jsData[bfactor];    //前复权因子
+        if (IFrameSplitOperator.IsNumber(jsData[afactor])) item.AFactor=jsData[afactor];    //后复权因子
 
         if (!IFrameSplitOperator.IsNumber(item.YClose))
         {
@@ -76916,11 +76937,12 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
-    IsEnableRight:function(period, symbol)    //是否支持复权
+    IsEnableRight:function(period, symbol, rightFormula)    //是否支持复权
     {
         if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol)) return false;
-        if (ChartData.IsTickPeriod(period)) return false;                    //分笔没有复权
-        if (ChartData.IsMinutePeriod(period,true)) return false;             //内置分钟K线不支持复权
+        if (ChartData.IsTickPeriod(period)) return false;   //分笔没有复权
+        if (IFrameSplitOperator.IsPlusNumber(rightFormula)) return true;        //复权因子复权
+        if (ChartData.IsMinutePeriod(period,true)) return false;                //内置分钟K线不支持复权
 
         return true;
     }
