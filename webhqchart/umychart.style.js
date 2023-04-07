@@ -71,11 +71,13 @@ function GetBlackStyle()
         DefaultTextColor: "rgb(101,104,112)",
         DefaultTextFont: 14*GetDevicePixelRatio() +'px 微软雅黑',
         TitleFont: 13*GetDevicePixelRatio() +'px 微软雅黑',    //标题字体(动态标题 K线及指标的动态信息字体)
-        IndexTitleColor:"rgb(101,104,112)",                           //指标名字颜色
+        IndexTitleColor:"rgb(190, 190 ,190)",                       //指标名字颜色
+        IndexTitleBGColor:'rgb(0,0,0)',                     //指标名字背景色
+        IndexTitleBorderColor:'rgb(211, 211, 211)',                 //指标名字边框颜色
     
         UpTextColor: "rgb(238,21,21)",
         DownTextColor: "rgb(25,158,0)",
-        UnchagneTextColor: "rgb(101,104,112)",
+        UnchagneTextColor: "rgb(190, 190 ,190)",
         CloseLineColor: 'rgb(178,34,34)',
     
         Title:
@@ -83,11 +85,11 @@ function GetBlackStyle()
             TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
             ColorIndexColor:'rgb(112,128,144)',  //五彩K线颜色
     
-            VolColor:"rgb(101,104,112)",       //标题成交量
-            AmountColor:"rgb(101,104,112)",    //成交金额 
-            DateTimeColor:"rgb(101,104,112)",  //时间,日期  
-            SettingColor:"rgb(101,104,112)",   //周期,复权
-            NameColor:"rgb(101,104,112)" ,     //股票名称
+            VolColor:"rgb(190, 190 ,190)",       //标题成交量
+            AmountColor:"rgb(190, 190 ,190)",    //成交金额 
+            DateTimeColor:"rgb(190, 190 ,190)",  //时间,日期  
+            SettingColor:"rgb(190, 190 ,190)",   //周期,复权
+            NameColor:"rgb(190, 190 ,190)" ,     //股票名称
             TurnoverRateColor:'rgb(101,104,112)',       //换手率
             PositionColor:"rgb(101,104,112)"       //持仓
         },
@@ -302,7 +304,7 @@ function GetBlackStyle()
             TitleColor:'rgb(210,210,210)',       //标题颜色
             TitleFont:13*GetDevicePixelRatio() +'px 微软雅黑',   //字体
             DateTimeColor:'rgb(210,210,210)',
-            VolColor:"rgb(210,210,210)",       //标题成交量
+            VolColor:"rgb(255, 185, 15)",       //标题成交量
             AmountColor:"rgb(210,210,210)",    //成交金额
         },
 

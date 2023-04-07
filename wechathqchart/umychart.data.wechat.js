@@ -10,10 +10,7 @@
     行情数据结构 及计算方法
 */
 
-import 
-{
-   MARKET_SUFFIX_NAME
-} from "./umychart.coordinatedata.wechat.js";
+import { MARKET_SUFFIX_NAME } from "./umychart.coordinatedata.wechat.js";
 
 function Guid() 
 {
@@ -30,6 +27,14 @@ function IsPlusNumber(value)
     if (value==null) return false;
     if (isNaN(value)) return false;
     return value>0;
+}
+
+function IsNumber(value)
+{
+    if (value==null) return false;
+    if (isNaN(value)) return false;
+
+    return true;
 }
 
 //历史K线数据
@@ -66,7 +71,7 @@ HistoryData.Copy=function(data)
 {
     var newData=new HistoryData();
     newData.Date=data.Date;
-    if (IsPlusNumber(data.Time)) newData.Time=data.Time;
+    if (IsNumber(data.Time)) newData.Time=data.Time;
     newData.YClose=data.YClose;
     newData.Open=data.Open;
     newData.Close=data.Close;
@@ -127,6 +132,8 @@ HistoryData.CopyRight=function(data,seed)
 {
     var newData=new HistoryData();
     newData.Date=data.Date;
+    if (IsNumber(data.Time)) newData.Time=data.Time;
+
     newData.YClose=data.YClose*seed;
     newData.Open=data.Open*seed;
     newData.Close=data.Close*seed;

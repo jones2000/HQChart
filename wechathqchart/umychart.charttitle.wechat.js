@@ -47,6 +47,18 @@ import
 
 var MARKET_SUFFIX_NAME = JSCommonCoordinateData.MARKET_SUFFIX_NAME;
 
+function ToFixedPoint(value) 
+{
+    //return value;
+    return parseInt(value) + 0.5;
+}
+
+function ToFixedRect(value) 
+{
+    var rounded;
+    return rounded = (0.5 + value) << 0;
+}
+
 //标题画法基类
 function IChartTitlePainting() 
 {
@@ -108,6 +120,7 @@ function DynamicKLineTitlePainting()
 
     this.IsShowName = true;           //是否显示股票名称
     this.IsShowSettingInfo = true;    //是否显示设置信息(周期 复权)
+    this.HQChart;
 
     this.GetCurrentKLineData = function () //获取当天鼠标位置所在的K线数据
     {
@@ -196,7 +209,7 @@ function DynamicKLineTitlePainting()
 
     this.GetRightName = function (rightID, periodID)
     {
-        if (!MARKET_SUFFIX_NAME.IsEnableRight(periodID, this.Symbol)) return null;
+        if (!MARKET_SUFFIX_NAME.IsEnableRight(periodID, this.Symbol, this.HQChart.RightFormula)) return null;
 
         var rightName = RIGHT_NAME[rightID];
         return rightName
@@ -1054,9 +1067,12 @@ function DynamicChartTitlePainting()
     this.TitleRect;              //指标名字显示区域
     this.IsDrawTitleBG=false;    //是否绘制指标名字背景色
     this.BGColor=g_JSChartResource.IndexTitleBGColor;   //指标名字背景颜色
+    this.BGBorderColor=g_JSChartResource.IndexTitleBorderColor;
     this.TitleColor = g_JSChartResource.IndexTitleColor;   //指标名字颜色
+    this.ArgumentsText;         //参数信息
 
     this.IsShowIndexName = true;     //是否显示指标名字
+    this.IsShowNameArrow=false;
     this.ParamSpace = 2;             //参数显示的间距
     this.TitleSpace=2;              //指标名字和参数之间的间距
     this.OutName=null;               //动态标题
@@ -1250,6 +1266,7 @@ function DynamicChartTitlePainting()
         if (this.Frame.IsShowTitle == false) return;
         this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
         this.IsShowIndexName = this.Frame.IsShowIndexName;
+        this.IsShowNameArrow=this.Frame.IsShowNameArrow;
         this.ParamSpace = this.Frame.IndexParamSpace;
         this.TitleSpace=this.Frame.IndexTitleSpace;
 
@@ -1258,6 +1275,16 @@ function DynamicChartTitlePainting()
             this.Canvas.save();
             this.DrawItem(true,true);
             this.Canvas.restore();
+
+             /*
+             //测试用
+             if (this.TitleRect)
+             {
+                 this.Canvas.strokeStyle='rgba(200,0,50,1)';
+                 this.Canvas.strokeRect(ToFixedPoint(this.TitleRect.Left),ToFixedPoint(this.TitleRect.Top),ToFixedRect(this.TitleRect.Width),ToFixedRect(this.TitleRect.Height));
+             }
+             */
+
             return;
         }
 
@@ -1305,6 +1332,7 @@ function DynamicChartTitlePainting()
         if (this.Frame.IsShowTitle == false) return;
 
         this.IsShowIndexName = this.Frame.IsShowIndexName;
+        this.IsShowNameArrow=this.Frame.IsShowNameArrow;
         this.ParamSpace = this.Frame.IndexParamSpace;
         this.TitleSpace=this.Frame.IndexTitleSpace;
 
@@ -1312,7 +1340,7 @@ function DynamicChartTitlePainting()
         {
             this.Canvas.save();
             this.DrawItem(false,true);
-            this.Canvas.restore();
+            this.Canvas.restore(); 
             return;
         }
 
@@ -1428,23 +1456,64 @@ function DynamicChartTitlePainting()
             {
                 if (this.IsDrawTitleBG) //绘制指标名背景色
                 {
-                    var spaceSize=1;
+                    var title=this.Title;
+                    if (this.IsShowNameArrow) title+='▼';
+                    var textWidth=this.Canvas.measureText(title).width;
+                    var bgHeight=this.Canvas.measureText("擎").width+2;
+                    var bgWidth=textWidth+4;
+
                     this.Canvas.fillStyle=this.BGColor;
                     if (isHScreen)
                     {
-                        this.TitleRect= {Left:this.Frame.ChartBorder.GetRightTitle(),Top:this.Frame.ChartBorder.GetTop(),Width:this.Frame.ChartBorder.TitleHeight ,Height:textWidth};   //保存下标题的坐标
-                        let drawRect={Left:left, Top:-this.Frame.ChartBorder.TitleHeight+spaceSize, Width:textWidth, Height:this.Frame.ChartBorder.TitleHeight-(spaceSize*2)};
+                        this.TitleRect= 
+                        {
+                            Top:this.Frame.ChartBorder.GetTop(),
+                            Left:this.Frame.ChartBorder.GetRightTitle()+this.Frame.ChartBorder.TitleHeight/2-bgHeight/2,
+                            Width:bgHeight ,Height:bgWidth
+                        };   //保存下标题的坐标
+                        let drawRect={Left:left, Top:-bgHeight-2, Width:bgWidth, Height:bgHeight};
                         this.Canvas.fillRect(drawRect.Left,drawRect.Top,drawRect.Width,drawRect.Height);
+
+                        if (this.BGBorderColor)
+                        {
+                            this.Canvas.strokeStyle=this.BGBorderColor;
+                            this.Canvas.strokeRect(ToFixedPoint(drawRect.Left),ToFixedPoint(drawRect.Top),ToFixedRect(drawRect.Width),ToFixedRect(drawRect.Height));
+                        }
                     }
                     else
                     {
-                        this.TitleRect={Left:left, Top:this.Frame.ChartBorder.GetTop()+spaceSize, Width:textWidth, Height:this.Frame.ChartBorder.TitleHeight-(spaceSize*2)};    //保存下标题的坐标
+                        this.TitleRect={ Left:left, Top:bottom-bgHeight/2-1, Width:bgWidth, Height:bgHeight };    //保存下标题的坐标
                         this.Canvas.fillRect(this.TitleRect.Left,this.TitleRect.Top,this.TitleRect.Width,this.TitleRect.Height);
+
+                        if (this.BGBorderColor)
+                        {
+                            this.Canvas.strokeStyle=this.BGBorderColor;
+                            this.Canvas.strokeRect(ToFixedPoint(this.TitleRect.Left),ToFixedPoint(this.TitleRect.Top),ToFixedRect(this.TitleRect.Width),ToFixedRect(this.TitleRect.Height));
+                        }
                     }
+
+                    this.Canvas.fillStyle = this.TitleColor;
+                    this.Canvas.fillText(title, left+1, bottom, textWidth);
+
+                    textWidth=bgWidth+2;
                 }
-                this.Canvas.fillStyle = this.TitleColor;
-                this.Canvas.fillText(this.Title, left, bottom, textWidth);
+                else
+                {
+                    this.Canvas.fillStyle = this.TitleColor;
+                    this.Canvas.fillText(this.Title, left, bottom, textWidth);
+                }
             }
+            left += textWidth;
+            left+=this.TitleSpace;
+        }
+
+        //指标参数
+        if (this.ArgumentsText && this.IsShowIndexName)
+        {
+            var textWidth=this.Canvas.measureText(this.ArgumentsText).width+2;
+            this.Canvas.fillStyle=this.TitleColor;
+            this.Canvas.fillText(this.ArgumentsText, left, bottom, textWidth);
+
             left += textWidth;
             left+=this.TitleSpace;
         }

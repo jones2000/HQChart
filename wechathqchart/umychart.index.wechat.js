@@ -64,6 +64,7 @@ import {
     ChartStraightLine,
     ChartStackedBar,
     ChartStepLine,
+    ChartBackgroundDiv,
 } from "./umychart.chartpaint.wechat.js";
 
 import 
@@ -210,7 +211,8 @@ function ScriptIndex(name, script, args, option)
     this.LockText = null;
     this.LockFont = null;
     this.LockCount = 10;
-    this.TitleFont=g_JSChartResource.DynamicTitleFont;     //标题字体
+    this.TitleFont=g_JSChartResource.DynamicTitleFont;      //标题字体
+    this.IsShortTitle=false;                                //是否显示指标参数
 
     if (option) 
     {
@@ -222,6 +224,7 @@ function ScriptIndex(name, script, args, option)
         if (option.YSpecificMaxMin) this.YSpecificMaxMin = option.YSpecificMaxMin;
         if (option.YSplitScale) this.YSplitScale = option.YSplitScale;
         if (option.TitleFont) this.TitleFont=option.TitleFont;
+        if (IFrameSplitOperator.IsNumber(option.IsShortTitle)) this.IsShortTitle=option.IsShortTitle;
         if (option.OutName) this.OutName=option.OutName;
         if (IFrameSplitOperator.IsNumber(option.YSplitType)) this.YSplitType=option.YSplitType;
     }
@@ -952,6 +955,25 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateBackgroundDiv=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartBackgroundDiv();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            chart.AryColor=drawData.AryColor;
+            chart.ColorType=drawData.ColorType;
+            if (drawData.Data) chart.Data.Data=drawData.Data;
+        }
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateMultiText = function (hqChart, windowIndex, varItem, i)
     {
         let chart = new ChartMultiText();
@@ -1178,7 +1200,9 @@ function ScriptIndex(name, script, args, option)
                 case "DRAWGBK2":
                     this.CreateBackgroud(hqChart,windowIndex,item,i);
                     break;
-
+                case "DRAWGBK_DIV":
+                    this.CreateBackgroundDiv(hqChart,windowIndex,item,i);
+                    break;
                 //第3方指标定制
                 case 'MULTI_TEXT':
                     this.CreateMultiText(hqChart, windowIndex, item, i);
@@ -1240,15 +1264,19 @@ function ScriptIndex(name, script, args, option)
         let titleIndex = windowIndex + 1;
         hqChart.TitlePaint[titleIndex].Title = this.Name;
 
-        let indexParam = '';
-        for (let i in this.Arguments) 
+        if (!this.IsShortTitle)
         {
-            let item = this.Arguments[i];
-            if (indexParam.length > 0) indexParam += ',';
-            indexParam += item.Value.toString();
-        }
+            let indexParam = '';
+            for (let i=0; i<this.Arguments.length; ++i) 
+            {
+                let item = this.Arguments[i];
+                if (indexParam.length > 0) indexParam += ',';
+                indexParam += item.Value.toString();
+            }
 
-        if (indexParam.length > 0) hqChart.TitlePaint[titleIndex].Title = this.Name + '(' + indexParam + ')';
+            if (indexParam.length > 0) hqChart.TitlePaint[titleIndex].ArgumentsText =`(${indexParam})`;
+        }
+        
         if (this.TitleFont) hqChart.TitlePaint[titleIndex].Font=this.TitleFont;
         
         if (hqChart.UpdateUICallback) hqChart.UpdateUICallback('ScriptIndex', this.OutVar,

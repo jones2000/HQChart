@@ -445,6 +445,7 @@ function JSChart(element)
                     var args = indexInfo.Args;
                     if (item.Args) args = item.Args;
                     if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
+                    if (IFrameSplitOperator.IsNumber(item.IsShortTitle)) indexInfo.IsShortTitle=item.IsShortTitle;
                     chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args, indexInfo);    //脚本执行
                     if (item.StringFormat > 0) chart.WindowIndex[i].StringFormat = item.StringFormat;
                     if (item.FloatPrecision >= 0) chart.WindowIndex[i].FloatPrecision = item.FloatPrecision;
@@ -453,7 +454,8 @@ function JSChart(element)
 
             if (item.Modify != null) chart.Frame.SubFrame[i].Frame.ModifyIndex = item.Modify;
             if (item.Change != null) chart.Frame.SubFrame[i].Frame.ChangeIndex = item.Change;
-            if (item.IsDrawTitleBG==true)  chart.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+            if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+            if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[i].Frame.IsShowNameArrow=item.IsShowNameArrow;
             if (typeof (item.UpdateUICallback) == 'function') chart.WindowIndex[i].UpdateUICallback = item.UpdateUICallback;
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight = item.TitleHeight;
             if (item.IsShowIndexName == false) chart.Frame.SubFrame[i].Frame.IsShowIndexName = false;
@@ -706,6 +708,7 @@ function JSChart(element)
                     if (item.Args) args = item.Args;
                     if (item.Lock) indexInfo.Lock = item.Lock;
                     if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
+                    if (IFrameSplitOperator.IsNumber(item.IsShortTitle)) indexInfo.IsShortTitle=item.IsShortTitle;
                     chart.WindowIndex[2+i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args, indexInfo);    //脚本执行
                     if (item.StringFormat > 0) chart.WindowIndex[index].StringFormat = item.StringFormat;
                     if (item.FloatPrecision >= 0) chart.WindowIndex[index].FloatPrecision = item.FloatPrecision;
@@ -714,6 +717,7 @@ function JSChart(element)
 
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight = item.TitleHeight;   //指标标题高度
             if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[index].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+            if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[index].Frame.IsShowNameArrow=item.IsShowNameArrow;
             if (IFrameSplitOperator.IsNumber(item.YSplitType)) chart.Frame.SubFrame[index].Frame.YSplitOperator.SplitType=item.YSplitType;
         }
 
@@ -2724,6 +2728,7 @@ function JSChartContainer(uielement)
             if (IFrameSplitOperator.IsNumber(windowItem.IndexParamSpace)) frame.IndexParamSpace = windowItem.IndexParamSpace;
             if (IFrameSplitOperator.IsNumber(windowItem.IndexTitleSpace))frame.IndexTitleSpace = windowItem.IndexTitleSpace;
             if (IFrameSplitOperator.IsBool(windowItem.IsDrawTitleBG))  frame.IsDrawTitleBG=windowItem.IsDrawTitleBG;
+            if (IFrameSplitOperator.IsBool(windowItem.IsShowNameArrow))  frame.IsShowNameArrow=windowItem.IsShowNameArrow;
         }
 
         if (frameItem)
@@ -2755,7 +2760,8 @@ function JSChartContainer(uielement)
             if (option.Window)
             {
                 var item=option.Window;
-                if (item.IsDrawTitleBG==true)  subFrame.Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+                if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  subFrame.Frame.IsDrawTitleBG=item.IsDrawTitleBG;
+                if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  subFrame.Frame.IsShowNameArrow=item.IsShowNameArrow;
             }
             
             if (IFrameSplitOperator.IsNumber(option.SplitCount)) subFrame.Frame.YSplitOperator.SplitCount=option.SplitCount;
@@ -7197,6 +7203,7 @@ function KLineChartContainer(uielement)
         this.TitlePaint[0].Frame = this.Frame.SubFrame[0].Frame;
         this.TitlePaint[0].Canvas = this.Canvas;
         this.TitlePaint[0].LanguageID = this.LanguageID;
+        this.TitlePaint[0].HQChart=this;
 
         //主图叠加画法
         var paint = new ChartOverlayKLine();
@@ -7597,9 +7604,15 @@ function KLineChartContainer(uielement)
         bindData.DataType = 1;
         bindData.Symbol = data.symbol;
 
+        if (bindData.Right>0 && !this.IsApiPeriod && this.RightFormula>=1)    //复权
+        {
+            var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula } );
+            bindData.Data=rightData;
+        }
+
         if (ChartData.IsMinutePeriod(bindData.Period, false) && !this.IsApiPeriod)   //周期数据
         {
-            var periodData = sourceData.GetPeriodData(bindData.Period);
+            var periodData = bindData.GetPeriodData(bindData.Period);
             bindData.Data = periodData;
         }
 
@@ -8093,7 +8106,7 @@ function KLineChartContainer(uielement)
     //复权切换
     this.ChangeRight = function (right) 
     {
-        if (!MARKET_SUFFIX_NAME.IsEnableRight(this.Period,this.Symbol)) return;
+        if (!MARKET_SUFFIX_NAME.IsEnableRight(this.Period,this.Symbol,this.RightFormula)) return;
 
         if (right < 0 || right > 2) return;
 
@@ -8296,6 +8309,7 @@ function KLineChartContainer(uielement)
                 if (option.FloatPrecision >= 0) indexData.FloatPrecision = option.FloatPrecision;
                 if (option.StringFormat > 0) indexData.StringFormat = option.StringFormat;
                 if (option.Args) indexData.Args = option.Args;
+                if (IFrameSplitOperator.IsNumber(option.IsShortTitle)) indexData.IsShortTitle=option.IsShortTitle;
             }
 
             return this.ChangeScriptIndex(windowIndex, indexData);
@@ -8651,6 +8665,11 @@ function KLineChartContainer(uielement)
         {
             var rightData = bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
             bindData.Data = rightData;
+        }
+        else if (bindData.Right>0 && ChartData.IsMinutePeriod(bindData.Period,true) && this.RightFormula>=1) //复权(分钟数据复权, 复权因子模式)
+        {
+            var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
+            bindData.Data=rightData;
         }
 
         if (ChartData.IsDayPeriod(bindData.Period, false) || ChartData.IsMinutePeriod(bindData.Period, false))   //周期数据 (0= 日线,4=1分钟线 不需要处理))
@@ -9771,6 +9790,8 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
     var list = data.data;
     var aryDayData = new Array();
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position = 9;
+    var fclose=10, yfclose=11;   //结算价, 前结算价
+    var bfactor=12, afactor=13;  //前, 后复权因子
     var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
     var extendDataIndex=JSCHART_DATA_FIELD_ID.KLINE_MINUTE_EXTENDDATA; //k线扩展数据
     for (var i = 0; i < list.length; ++i) 
@@ -9787,6 +9808,13 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
         item.Amount = jsData[amount];
         item.Time = jsData[time];
         if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position = jsData[position]; //期货持仓
+
+        if (IFrameSplitOperator.IsNumber(jsData[fclose])) item.FClose=jsData[fclose];       //期货结算价
+        if (IFrameSplitOperator.IsNumber(jsData[yfclose])) item.YFClose=jsData[yfclose];    //期货前结算价
+
+        if (IFrameSplitOperator.IsNumber(jsData[bfactor])) item.BFactor=jsData[bfactor];    //前复权因子
+        if (IFrameSplitOperator.IsNumber(jsData[afactor])) item.AFactor=jsData[afactor];    //后复权因子
+
         if (jsData[colorData]) item.ColorData=jsData[colorData];
         if (jsData[extendDataIndex]) item.ExtendData=jsData[extendDataIndex];
         aryDayData.push(item);

@@ -10,6 +10,8 @@
     各个品种分钟走势图坐标信息
 */
 
+import { ChartData } from "./umychart.data.wechat";
+
 function GetLocalTime(i)    //得到标准时区的时间的函数
 {
     if (typeof i !== 'number') return;
@@ -621,15 +623,13 @@ var MARKET_SUFFIX_NAME=
         return {Max:0.1 , Min:-0.1}; //[10% - -10%]
     },
 
-    IsEnableRight:function(period, symbol)    //是否支持复权
+    IsEnableRight:function(period, symbol, rightFormula)    //是否支持复权
     {
         if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol)) return false;
+        if (ChartData.IsNumber(rightFormula) && rightFormula>=1) return true;        //复权因子复权
+        if (ChartData.IsMinutePeriod(period,true)) return false;                    //内置分钟K线不支持复权
 
         //内置日线线支持复权,其他不支持复权
-        var CUSTOM_DAY_PERIOD_START = 40000, CUSTOM_DAY_PERIOD_END = 49999;
-        if (period == 0 || period == 1 || period == 2 || period == 3 || period == 9 || period==21 ) return true;
-        if (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END) return true;
-
         return false;
     }
 

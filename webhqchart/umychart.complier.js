@@ -10568,6 +10568,58 @@ function JSDraw(errorHandler,symbolData)
         return result;
     }
 
+    //填充部分背景.
+    //用法:
+    //DRAWGBK_DIV(COND,COLOR1,COLOR2,填色方式,填充范围),填充满足COND条件的背景区域
+    //填色方式:0是上下渐进 1是左右渐进 2是用COLOR1画框线 3是用COLOR1画框线, 用COLOR2填充
+    //填充范围:0为整个区域 1为最高最低区 2为开盘收盘区 
+    //例如:
+    //DRAWGBK_DIV(C>O,RGB(0,255,0),RGB(255,0,0),0,0);
+    this.DRAWGBK_DIV=function(condition, color, color2, colorType, fillType)
+    {
+        var drawData={ AryColor:[color, color2], ColorType:colorType, FillType:fillType, Data:[] }; 
+        var result={ DrawData:drawData, DrawType:'DRAWGBK_DIV' };
+        if (!this.SymbolData || !this.SymbolData.Data || !IFrameSplitOperator.IsNonEmptyArray(this.SymbolData.Data.Data)) return result;
+
+        var aryKData=this.SymbolData.Data.Data;
+        if (Array.isArray(condition))
+        {
+           for(var i=0; i<aryKData.length; ++i)
+           {
+                var condItem=condition[i];
+                var item=null;
+                if (condItem) 
+                {
+                    var kItem=aryKData[i];
+                    if (fillType==1) item={ AryValue:[kItem.High, kItem.Low] }
+                    else if (fillType==2) item={ AryValue:[kItem.Open, kItem.Close] }
+                    else item={ AryValue:null };
+                }
+                drawData.Data[i]=item;
+           } 
+        }
+        else 
+        {
+            if (condition)
+            {
+                for(var i=0; i<aryKData.length; ++i)
+                {
+                    var kItem=aryKData[i];
+                    var item=null;
+
+                    if (fillType==1) item={ AryValue:[kItem.High, kItem.Low] }
+                    else if (fillType==2) item={ AryValue:[kItem.Open, kItem.Close] }
+                    else item={ AryValue:null };
+                     
+                    drawData.Data[i]=item;
+                } 
+            }
+        }
+
+        return result;
+    }
+
+
     //画文字 及线段
     this.DRAWTEXT_LINE=function(condition, price, text, textcolor, fontSize, linetype, linecolor)
     {
@@ -10904,7 +10956,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
     [
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE',"DRAWKLINE1",'DRAWKLINE_IF',"DRAWCOLORKLINE",'PLOYLINE',
         'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',"DRAWTEXTABS","DRAWTEXTREL",
-        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2",
+        'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2","DRAWGBK_DIV",
         "VERTLINE","HORLINE","TIPICON"
     ]);
     if (setFunctionName.has(name)) return true;
@@ -16589,6 +16641,7 @@ function JSExecute(ast,option)
                         else if (value=="DRAWBELOW") isDrawBelow=true;
                         else if (value=="STEPLINE") stepLine=true;
                         else if (value.indexOf('COLOR')==0) color=value;
+                        else if (value.indexOf("RGBX")==0 && value.length==10) color=value; //RGBX+“RRGGBB”
                         else if (value.indexOf('LINETHICK')==0) lineWidth=value;
 
                         else if (value=="ALIGN0") drawAlign=0;
@@ -17181,6 +17234,10 @@ function JSExecute(ast,option)
                 break;
             case 'DRAWGBK2':
                 node.Draw=this.Draw.DRAWGBK2(args[0],args[1],args[2],args[3]);
+                node.Out=[];
+                break;
+            case "DRAWGBK_DIV":
+                node.Draw=this.Draw.DRAWGBK_DIV(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=[];
                 break;
             case 'DRAWTEXT_LINE':
@@ -18656,6 +18713,7 @@ JSComplier.AddVariant=function(obj) //{ Name:变量名, Description:描述信息
     g_JSComplierResource.CustomVariant.Data.set(ID, obj);
 }
 
+
 JSComplier.ColorVarToRGB=function(colorName)
 {
     let COLOR_MAP=new Map(
@@ -18683,19 +18741,41 @@ JSComplier.ColorVarToRGB=function(colorName)
     //COLOR 自定义色
     //格式为COLOR+“BBGGRR”：BB、GG、RR表示蓝色、绿色和红色的分量，每种颜色的取值范围是00-FF，采用了16进制。
     //例如：MA5:MA(CLOSE,5)，COLOR00FFFF表示纯红色与纯绿色的混合色：COLOR808000表示淡蓝色和淡绿色的混合色。
-    if (colorName.indexOf('COLOR')!=0) return null;
-
-    var strColor=colorName.substr(5);
-    if (strColor.length!=6) return null;
-
-    var value=strColor.substr(0,2);
-    var b=parseInt(value,16);
-    value=strColor.substr(2,2);
-    var g=parseInt(value,16);
-    value=strColor.substr(4,2);
-    var r=parseInt(value,16);
+    if (colorName.indexOf('COLOR')==0)
+    {
+        var strColor=colorName.substr(5);
+        if (strColor.length!=6) return null;
     
-    return `rgb(${r},${g},${b})`;
+        var value=strColor.substr(0,2);
+        var b=parseInt(value,16);
+        value=strColor.substr(2,2);
+        var g=parseInt(value,16);
+        value=strColor.substr(4,2);
+        var r=parseInt(value,16);
+        
+        return `rgb(${r},${g},${b})`;
+    }
+
+
+    //格式为RGBX+“RRGGBB”：RR、GG、BB表示红色、绿色和的蓝色分量，每种颜色的取值范围是00-FF，采用了16进制。
+    //例如：MA5:MA(CLOSE,5)，RGBXFFFF00表示纯红色与纯绿色的混合色：RGBX008080表示淡蓝色和淡绿色的混合色。
+    if (colorName.indexOf("RGBX")==0)
+    {
+        var strColor=colorName.substr(4);
+        if (strColor.length!=6) return null;
+
+        var value=strColor.substr(0,2);
+        var r=parseInt(value,16);
+        value=strColor.substr(2,2);
+        var g=parseInt(value,16);
+        value=strColor.substr(4,2);
+        var b=parseInt(value,16);
+        
+        return `rgb(${r},${g},${b})`;
+    }
+
+
+    return null;
 }
 
 var HQ_DATA_TYPE=
@@ -19734,6 +19814,25 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateBackgroundDiv=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartBackgroundDiv();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            chart.AryColor=drawData.AryColor;
+            chart.ColorType=drawData.ColorType;
+            if (drawData.Data) chart.Data.Data=drawData.Data;
+        }
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateLineMultiData=function(hqChart,windowIndex,varItem,id)
     {
         let chart=new ChartLineMultiData();
@@ -20379,6 +20478,9 @@ function ScriptIndex(name,script,args,option)
                     case "DRAWGBK2":
                         this.CreateBackgroud(hqChart,windowIndex,item,i);
                         break;
+                    case "DRAWGBK_DIV":
+                        this.CreateBackgroundDiv(hqChart,windowIndex,item,i);
+                        break;
                     case 'DRAWTEXT_LINE':
                         this.CreateTextLine(hqChart,windowIndex,item,i);
                         break;
@@ -20517,14 +20619,14 @@ function ScriptIndex(name,script,args,option)
         if (!this.IsShortTitle)
         {
             let indexParam='';
-            for(let i in this.Arguments)
+            for(let i=0; i<this.Arguments.length; ++i)
             {
                 let item=this.Arguments[i];
                 if (indexParam.length>0) indexParam+=',';
                 indexParam+=item.Value.toString();
             }
 
-            if (indexParam.length>0) hqChart.TitlePaint[titleIndex].Title=this.Name+'('+indexParam+')';
+            if (indexParam.length>0) hqChart.TitlePaint[titleIndex].ArgumentsText=`(${indexParam})`;
         }
 
         if (this.TitleFont) hqChart.TitlePaint[titleIndex].Font=this.TitleFont;
