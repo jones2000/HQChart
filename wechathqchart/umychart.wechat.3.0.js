@@ -7041,8 +7041,10 @@ function KLineChartContainer(uielement)
         this.ChartCorssCursor = new ChartCorssCursor();
         this.ChartCorssCursor.Canvas = this.Canvas;
         this.ChartCorssCursor.StringFormatX = g_DivTooltipDataForamt.Create("CorssCursor_XStringFormat");
+        this.ChartCorssCursor.StringFormatX.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatX.LanguageID=this.LanguageID;
         this.ChartCorssCursor.StringFormatY = g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
+        this.ChartCorssCursor.StringFormatY.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatY.LanguageID = this.LanguageID;
 
         //创建等待提示
@@ -7076,6 +7078,9 @@ function KLineChartContainer(uielement)
             this.Frame.SubFrame[i].Frame.TitlePaint = titlePaint;
             this.TitlePaint.push(titlePaint);
         }
+
+        this.ChartCorssCursor.StringFormatX.Frame = this.Frame.SubFrame[0].Frame;
+        this.ChartCorssCursor.StringFormatY.Frame=this.Frame;
     }
 
     //创建子窗口
@@ -9976,7 +9981,9 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor = new ChartCorssCursor();
         this.ChartCorssCursor.Canvas = this.Canvas;
         this.ChartCorssCursor.StringFormatX = new HQMinuteTimeStringFormat();
-        this.ChartCorssCursor.StringFormatY = new HQPriceStringFormat();
+        this.ChartCorssCursor.StringFormatX.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        this.ChartCorssCursor.StringFormatY = g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
+        this.ChartCorssCursor.StringFormatY.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatY.LanguageID = this.LanguageID;
 
         //创建等待提示
@@ -10012,6 +10019,7 @@ function MinuteChartContainer(uielement)
         }
 
         this.ChartCorssCursor.StringFormatX.Frame = this.Frame.SubFrame[0].Frame;
+        this.ChartCorssCursor.StringFormatY.Frame=this.Frame;
     }
 
     //创建子窗口
@@ -10601,7 +10609,10 @@ function MinuteChartContainer(uielement)
         this.Symbol = data.symbol;
         this.Name = data.name;
 
-        this.CaclutateLimitPrice(this.DayData[0].YClose, data.data[0].limitprice); //计算涨停价格
+        if (IFrameSplitOperator.IsNonEmptyArray(this.DayData))
+        {
+            this.CaclutateLimitPrice(this.DayData[0].YClose, data.data[0].limitprice); //计算涨停价格
+        }
 
         this.UpdateHistoryMinuteUI();
         this.RecvMinuteDataEvent();

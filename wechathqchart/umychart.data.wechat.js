@@ -2024,6 +2024,10 @@ var JSCHART_EVENT_ID =
     ON_DRAW_REPORT_FIXEDROW_TEXT:58,        //报价列表固定行绘制
     ON_CLICK_REPORT_FIXEDROW:59,            //点击报价列表点击固定行
     ON_RCLICK_REPORT_FIXEDROW:60,           //点击报价列表右键点击固定行
+
+    ON_FORMAT_CORSSCURSOR_Y_TEXT:75,    //格式化十字光标Y轴文字
+    ON_FORMAT_INDEX_OUT_TEXT:76,           //格式化指标标题文字
+    ON_FORMAT_CORSSCURSOR_X_TEXT:77,    //格式化十字光标X轴文字
 }
 
 var JSCHART_DATA_FIELD_ID=

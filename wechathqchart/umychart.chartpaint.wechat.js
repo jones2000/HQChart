@@ -8185,24 +8185,58 @@ function ChartCorssCursor()
                 var textWidth = this.Canvas.measureText(text).width + 4;    //前后各空2个像素
             }
 
+            var complexText=null;
+            if (this.StringFormatY.RComplexText && IFrameSplitOperator.IsNonEmptyArray(this.StringFormatY.RComplexText.Text))
+            {
+                var textWidth=0;
+                complexText=this.StringFormatY.RComplexText;
+                for(var i=0; i<complexText.Text.length; ++i)
+                {
+                    var item=complexText.Text[i];
+                    var itemWidth=this.Canvas.measureText(item.Text).width+4;    //前后各空2个像素
+
+                    if (i>0 && IFrameSplitOperator.IsNumber(complexText.Space))
+                        textWidth+=complexText.Space;
+
+                    textWidth+=itemWidth;
+                }
+            }
+
             if (this.Frame.ChartBorder.Right >= 30 && this.ShowTextMode.Right == 1) 
             {
                 this.Canvas.fillStyle = this.TextBGColor;
                 if (rightWidth > textWidth)               //右边不够就不画
                 {
-                    this.Canvas.fillRect(right + 2, y - this.TextHeight / 2, textWidth, this.TextHeight);
-                    this.Canvas.textAlign = "left";
-                    this.Canvas.textBaseline = "middle";
-                    this.Canvas.fillStyle = this.TextColor;
-                    this.Canvas.fillText(text, right + 4, y, textWidth);
+                    var itemLeft=right+2;
+                    this.Canvas.fillRect(itemLeft, y - this.TextHeight / 2, textWidth, this.TextHeight);
+
+                    if (complexText) 
+                    {
+                        this.DrawComplexText(itemLeft,y,complexText);
+                    }
+                    else
+                    {
+                        this.Canvas.textAlign = "left";
+                        this.Canvas.textBaseline = "middle";
+                        this.Canvas.fillStyle = this.TextColor;
+                        this.Canvas.fillText(text, right + 4, y, textWidth);
+                    }
                 }
                 else 
                 {
-                    this.Canvas.fillRect(chartRight - 2 - textWidth, y - this.TextHeight / 2, textWidth, this.TextHeight);
-                    this.Canvas.textAlign = "right";
-                    this.Canvas.textBaseline = "middle";
-                    this.Canvas.fillStyle = this.TextColor;
-                    this.Canvas.fillText(text, chartRight - 4, y, textWidth);
+                    var itemLeft=chartRight-2-textWidth;
+                    this.Canvas.fillRect(itemLeft, y - this.TextHeight / 2, textWidth, this.TextHeight);
+                    if (complexText) 
+                    {
+                        this.DrawComplexText(itemLeft,y,complexText);
+                    }
+                    else
+                    {
+                        this.Canvas.textAlign = "right";
+                        this.Canvas.textBaseline = "middle";
+                        this.Canvas.fillStyle = this.TextColor;
+                        this.Canvas.fillText(text, chartRight - 4, y, textWidth);
+                    }
                 }
             }
             else if (this.ShowTextMode.Right == 2) 
@@ -8210,10 +8244,17 @@ function ChartCorssCursor()
                 this.Canvas.fillStyle = this.TextBGColor;
                 var showLeft = right - textWidth;
                 this.Canvas.fillRect(showLeft, y - this.TextHeight / 2, textWidth, this.TextHeight);
-                this.Canvas.textAlign = "left";
-                this.Canvas.textBaseline = "middle";
-                this.Canvas.fillStyle = this.TextColor;
-                this.Canvas.fillText(text, showLeft + 2, y, textWidth);
+                if (complexText) 
+                {
+                    this.DrawComplexText(showLeft,y,complexText);
+                }
+                else
+                {
+                    this.Canvas.textAlign = "left";
+                    this.Canvas.textBaseline = "middle";
+                    this.Canvas.fillStyle = this.TextColor;
+                    this.Canvas.fillText(text, showLeft + 2, y, textWidth);
+                }
             }
         }
 
@@ -8248,6 +8289,26 @@ function ChartCorssCursor()
                 this.Canvas.fillStyle = this.TextColor;
                 this.Canvas.fillText(text, x, bottom + 2, textWidth);
             }
+        }
+    }
+
+    this.DrawComplexText=function(left, y, complexText)
+    {
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="middle";
+        var xText=left+2;
+        for(var i=0; i<complexText.Text.length; ++i)
+        {
+            var item=complexText.Text[i];
+            var itemWidth=this.Canvas.measureText(item.Text).width+4;    //前后各空2个像素
+            if (item.Color) this.Canvas.fillStyle=item.Color;
+            else is.Canvas.fillStyle=this.TextColor;
+            this.Canvas.fillText(item.Text,xText,y,itemWidth);
+
+            if (i>0 && IFrameSplitOperator.IsNumber(complexText.Space))
+                xText+=complexText.Space;
+
+            xText+=itemWidth;
         }
     }
 

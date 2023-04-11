@@ -1927,6 +1927,7 @@ function HQPriceStringFormat()
     this.PercentageText;    //百分比
     this.RValue;            //右边值
     this.RText;
+    this.RComplexText;      //{ Space:2 间距, Text:[ {Color:, Text: }] }  支持单行多颜色
 
     this.PriceFormatType=0; //主窗口格式    0=默认 1=科学计数
     this.DataFormatType=0;  //副图指标格式   0=默认 1=科学计数
@@ -1934,6 +1935,7 @@ function HQPriceStringFormat()
     this.Operator = function () 
     {
         this.RText = null;
+        this.RComplexText=null;
         if (IFrameSplitOperator.IsString(this.RValue)) this.RText = this.RValue;
         if (!this.Value) return false;
 
@@ -1953,6 +1955,16 @@ function HQPriceStringFormat()
                 this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
             else
                 this.Text = IFrameSplitOperator.FormatValueString(this.Value, defaultfloatPrecision, this.LanguageID);
+        }
+
+        if (this.GetEventCallback)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_CORSSCURSOR_Y_TEXT);
+            if (event)
+            {
+                var data={ Value:this.Value, FrameID:this.FrameID };
+                event.Callback(event,data,this);
+            }
         }
 
         return true;
@@ -1995,42 +2007,61 @@ function HQDateStringFormat()
             this.Text = this.Text + " " + time;
         }
 
+        if (this.GetEventCallback)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_CORSSCURSOR_X_TEXT);
+            if (event)
+            {
+                var data={ Item:currentData, Period:this.Data.Period, Date:currentData.Date, Time:currentData.Time,Index:this.Data.DataOffset+index };
+                event.Callback(event,data,this);
+            }
+        }
         return true;
     }
 }
   
-  function HQMinuteTimeStringFormat() 
-  {
-      this.newMethod = IChangeStringFormat;   //派生
-      this.newMethod();
-      delete this.newMethod;
-  
-      this.Frame;
-      this.Symbol;
-  
-      this.Operator = function () 
-      {
-          if (this.Value == null || isNaN(this.Value)) return false;
-  
-          var index = Math.abs(this.Value);
-          index = parseInt(index.toFixed(0));
-          var showIndex = index;
-          if (this.Frame && this.Frame.MinuteCount) showIndex = index % this.Frame.MinuteCount;
-  
-          var timeStringData = JSCommonCoordinateData.MinuteTimeStringData;
-          var timeData = timeStringData.GetTimeData(this.Symbol);
-          if (!timeData) return false;
-  
-          if (showIndex < 0) showIndex = 0;
-          else if (showIndex > timeData.length) showIndex = timeData.length - 1;
-          if (this.Frame && index >= this.Frame.XPointCount)
-          showIndex = timeData.length - 1;
-  
-          var time = timeData[showIndex];
-          this.Text = IFrameSplitOperator.FormatTimeString(time);
-          return true;
-      }
-  }
+function HQMinuteTimeStringFormat() 
+{
+    this.newMethod = IChangeStringFormat;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.Frame;
+    this.Symbol;
+
+    this.Operator = function () 
+    {
+        if (this.Value == null || isNaN(this.Value)) return false;
+
+        var index = Math.abs(this.Value);
+        index = parseInt(index.toFixed(0));
+        var showIndex = index;
+        if (this.Frame && this.Frame.MinuteCount) showIndex = index % this.Frame.MinuteCount;
+
+        var timeStringData = JSCommonCoordinateData.MinuteTimeStringData;
+        var timeData = timeStringData.GetTimeData(this.Symbol);
+        if (!timeData) return false;
+
+        if (showIndex < 0) showIndex = 0;
+        else if (showIndex > timeData.length) showIndex = timeData.length - 1;
+        if (this.Frame && index >= this.Frame.XPointCount)
+        showIndex = timeData.length - 1;
+
+        var time = timeData[showIndex];
+        this.Text = IFrameSplitOperator.FormatTimeString(time);
+
+        if (this.GetEventCallback)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_CORSSCURSOR_X_TEXT);
+        if (event)
+        {
+            var data={ Time:time, Index:showIndex };
+            event.Callback(event,data,this);
+        }
+    }
+        return true;
+    }
+}
   
   function DivTooltipDataForamt()
   {
