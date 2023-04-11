@@ -1263,6 +1263,7 @@ function ScriptIndex(name, script, args, option)
 
         let titleIndex = windowIndex + 1;
         hqChart.TitlePaint[titleIndex].Title = this.Name;
+        hqChart.TitlePaint[titleIndex].ArgumentsText = null;
 
         if (!this.IsShortTitle)
         {
