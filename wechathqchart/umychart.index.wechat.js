@@ -1254,9 +1254,10 @@ function ScriptIndex(name, script, args, option)
             {
                 if (this.StringFormat > 0) titlePaint.Data[i].StringFormat = this.StringFormat;
                 if (this.FloatPrecision >= 0) titlePaint.Data[i].FloatPrecision = this.FloatPrecision;
+
                 if (this.OutName && this.OutName.length>0 && this.Arguments && this.Arguments.length>0)
                 {
-                    titlePaint.SetDynamicOutName(this.OutName,this.Arguments);
+                    titlePaint.SetDynamicTitle(this.OutName,this.Arguments);
                 }
             }
         }
@@ -1336,6 +1337,13 @@ function ScriptIndex(name, script, args, option)
         return 'rgb(30,144,255)';
         */
     }
+
+    //给图形设置指标名字
+    this.SetChartIndexName=function(chart)
+    {
+        if (this.Name) chart.IndexName=this.Name;
+        else if (this.ID) chart.IndexName==this.ID;
+    }
 }
 
 var HQ_DATA_TYPE =
@@ -1346,10 +1354,871 @@ var HQ_DATA_TYPE =
     MULTIDAY_MINUTE_ID: 4,//多日走势图
 };
 
-
-function APIScriptIndex(name, script, args, option)     //后台执行指标
+function OverlayScriptIndex(name,script,args,option)
 {
-    this.newMethod = ScriptIndex;   //派生
+    this.newMethod=ScriptIndex;   //派生
+    this.newMethod(name,script,args,option);
+    delete this.newMethod;
+
+    this.ClassName="OverlayScriptIndex";
+    //叠加指标
+    this.OverlayIndex=null; // { IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame }
+
+    //显示指标不符合条件
+    this.ShowConditionError=function(param,msg)
+    {
+        var hqChart=param.HQChart;
+        var windowIndex=param.WindowIndex;
+
+        var message='指标不支持当前品种或周期';
+        if (msg) message=msg;
+
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        frame.ChartPaint=[];
+        
+        var chart=new ChartLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.NotSupportMessage=message;
+        frame.ChartPaint.push(chart);
+        hqChart.Draw();
+    }
+
+    this.BindData=function(hqChart,windowIndex,hisData)
+    {
+        if (!this.OverlayIndex || this.OverlayIndex.IsOverlay!=true) return;
+
+        this.OverlayIndex.Frame.ChartPaint=[];
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.OutVar)) return;
+
+        //修改Y轴分割方式
+        if (IFrameSplitOperator.IsNumber(this.YSplitType)) this.OverlayIndex.Frame.Frame.YSplitOperator.SplitType=this.YSplitType;
+        
+        //指标名字
+        var titleInfo={ Data:[], Title:this.Name };
+        let indexParam='';
+        for(var i in this.Arguments)
+        {
+            let item=this.Arguments[i];
+            if (indexParam.length>0) indexParam+=',';
+            indexParam+=item.Value.toString();
+        }
+        if (indexParam.length>0) titleInfo.Title=this.Name+'('+indexParam+')';
+
+        var titleIndex=windowIndex+1;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        titlePaint.OverlayIndex.set(this.OverlayIndex.Identify,titleInfo);
+        this.OverlayIndex.Frame.Frame.Title=titleInfo.Title;    //给子框架设置标题
+        if (this.OutName && this.OutName.length>0 && this.Arguments && this.Arguments.length>0)
+        {
+            titlePaint.SetDynamicTitle(this.OutName,this.Arguments, this.OverlayIndex.Identify);
+        }
+
+        for(var i in this.OutVar)
+        {
+            let item=this.OutVar[i];
+            if (item.IsExData===true) continue; //扩展数据不显示图形
+
+            if (item.Type==0)  
+            {
+                this.CreateLine(hqChart,windowIndex,item,i,item.Type);
+            }
+            else if (item.Type==1)
+            {
+                switch(item.Draw.DrawType)
+                {
+                    case 'STICKLINE':
+                        this.CreateBar(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWTEXT':
+                        this.CreateDrawTextV2(hqChart,windowIndex,item,i);
+                        break;
+                    case 'SUPERDRAWTEXT':
+                        this.CreateText(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWLINE':
+                        this.CreateStraightLine(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWBAND':
+                        this.CreateBand(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWKLINE':
+                        this.CreateKLine(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWKLINE_IF':
+                        this.CreateKLine(hqChart,windowIndex,item,i);
+                        break;
+                    case 'POLYLINE':
+                        this.CreatePolyLine(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWNUMBER':
+                    case "DRAWNUMBER_FIX":  
+                    case 'DRAWTEXT_FIX':  
+                        this.CreateNumberText(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWICON':
+                        this.CreateIcon(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWCHANNEL':
+                        this.CreateChannel(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWTEXT_LINE':
+                        this.CreateTextLine(hqChart,windowIndex,item,i);
+                        break;
+                    case "VERTLINE":
+                        this.CreateChartVericaltLine(hqChart,windowIndex,item,i);
+                        break;
+                    case "HORLINE":
+                        this.CreateChartHorizontalLine(hqChart,windowIndex,item,i);
+                        break;
+                    case 'MULTI_LINE':
+                        this.CreateMultiLine(hqChart,windowIndex,item,i);
+                        break;
+                    case 'MULTI_BAR':
+                        this.CreateMultiBar(hqChart,windowIndex,item,i);
+                        break;
+                    case 'MULTI_TEXT':
+                        this.CreateMultiText(hqChart,windowIndex,item,i);
+                        break;
+                    case 'MULTI_SVGICON':
+                        this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
+                        break;
+                    case "DRAWSVG":
+                        this.CreateChartDrawSVG(hqChart,windowIndex,item,i);
+                        break;
+                    case "MULTI_HTMLDOM":
+                        this.CreateMulitHtmlDom(hqChart,windowIndex,item,i);
+                        break;
+
+                    case "KLINE_BG":
+                        this.CreateBackgroud(hqChart,windowIndex,item,i);
+                        break;
+
+                    case 'PARTLINE':
+                        this.CreatePartLine(hqChart,windowIndex,item,i);
+                        break;
+
+                    case SCRIPT_CHART_NAME.OVERLAY_BARS:
+                        this.CreateStackedBar(hqChart,windowIndex,item,i);
+                        break;
+
+                    default:
+                        {
+                            var find=g_ScriptIndexChartFactory.Get(item.Draw.DrawType);  //外部挂接
+                            if (find && find.CreateChartCallback)
+                                find.CreateChartCallback(hqChart,windowIndex,item,i, this);
+                        }
+                        break;
+                }
+            }
+            else if (item.Type==2)
+            {
+                this.CreateMACD(hqChart,windowIndex,item,i);
+            }
+            else if (item.Type==3)
+            {
+                this.CreatePointDot(hqChart,windowIndex,item,i, hisData);
+            }
+            else if (item.Type==4)
+            {
+                this.CreateLineStick(hqChart,windowIndex,item,i);
+            }
+            else if (item.Type==5)
+            {
+                this.CreateStick(hqChart,windowIndex,item,i);
+            }
+            else if (item.Type==6)
+            {
+                this.CreateVolStick(hqChart,windowIndex,item,i,hisData);
+            }
+            else if (item.Type==7)
+            {
+                this.CreateLine(hqChart,windowIndex,item,i,item.Type);
+            }
+            else if (item.Type==8)
+            {
+                this.CreateLine(hqChart,windowIndex,item,i, item.Type);
+            }
+        }
+
+        return true;
+    }
+
+    //指标执行完成
+    this.RecvResultData=function(outVar,param)
+    {
+        let hqChart=param.HQChart;
+        let windowIndex=param.WindowIndex;
+        let hisData=param.HistoryData;
+        param.Self.OutVar=outVar;
+        param.Self.BindData(hqChart,windowIndex,hisData);
+
+        param.HQChart.UpdataDataoffset();           //更新数据偏移
+        param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        param.HQChart.Draw();
+
+        var event=hqChart.GetOverlayIndexEvent();  //指标计算完成回调
+        if (event)
+        {
+            var self=param.Self;
+            var data={ OutVar:self.OutVar, WindowIndex: windowIndex, Name: self.Name, Arguments: self.Arguments, HistoryData: hisData, 
+                    Identify:self.OverlayIndex.Identify,
+                    Stock: {Symbol:hqChart.Symbol,Name:hqChart.Name} };
+            event.Callback(event,data,self);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////
+    //  图形创建
+    /////////////////////////////////////////////////////////////////////////////////////
+    this.CreateLine=function(hqChart,windowIndex,varItem,id,lineType)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        if (lineType==7) var chart=new ChartStepLine();
+        else var chart=new ChartLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.DrawType=1;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (lineType==8)
+        {
+            chart.DrawType=2;
+            chart.BreakPoint=varItem.BreakPoint;
+        }
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+
+        if (varItem.IsShow==false) chart.IsShow=false;
+        
+        let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Data;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+        titleData.ChartClassName=chart.ClassName;
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+
+        this.SetChartIndexName(chart);
+        frame.ChartPaint.push(chart);
+    }
+
+    //创建柱子
+    this.CreateBar=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartStickLine();
+        chart.Canvas=hqChart.Canvas;
+        if (varItem.Draw.Width>0) chart.Width=varItem.Draw.Width;
+        else chart.Width=1;
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+        
+        chart.Data.Data=varItem.Draw.DrawData;
+
+        this.SetChartIndexName(chart);
+        frame.ChartPaint.push(chart);
+    }
+
+    //DRAWTEXT
+    this.CreateDrawTextV2=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chartText=new ChartDrawText();
+        chartText.Canvas=hqChart.Canvas;
+        chartText.Name=varItem.Name;
+        chartText.ChartBorder=frame.Frame.ChartBorder;
+        chartText.ChartFrame=frame.Frame;
+        chartText.Identify=overlayIndex.Identify;
+        chartText.ReloadResource();
+
+        if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
+        else chartText.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawCenter===true) chartText.TextAlign='center';
+        if (varItem.IsDrawAbove===true) chartText.TextBaseline='bottom'
+        if (varItem.IsDrawBelow===true) chartText.TextBaseline='top';
+
+        if (varItem.Draw.DrawData) chartText.Data.Data=varItem.Draw.DrawData;
+        chartText.Text=varItem.Draw.Text;
+        if (varItem.Draw.Direction>0) chartText.Direction=varItem.Draw.Direction;
+        if (varItem.Draw.YOffset>0) chartText.YOffset=varItem.Draw.YOffset;
+        if (varItem.Draw.TextAlign) chartText.TextAlign=varItem.Draw.TextAlign;
+        //指定输出位置
+        if (varItem.Draw.FixedPosition==="TOP") chartText.FixedPosition=1;
+        else if (varItem.Draw.FixedPosition==="BOTTOM") chartText.FixedPosition=2;
+
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chartText.TextBaseline='top';
+            else if (varItem.DrawVAlign==1) chartText.TextBaseline='middle';
+            else if (varItem.DrawVAlign==2) chartText.TextBaseline='bottom';
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
+
+        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        if (varItem.Background) chartText.TextBG=varItem.Background;
+        if (varItem.VerticalLine) chartText.VerticalLine=varItem.VerticalLine;
+        if (IFrameSplitOperator.IsNumber(varItem.XOffset)) chartText.ShowOffset.X=varItem.XOffset;
+        if (IFrameSplitOperator.IsNumber(varItem.YOffset)) chartText.ShowOffset.Y=varItem.YOffset;
+        
+        //let titleIndex=windowIndex+1;
+        frame.ChartPaint.push(chartText);
+    }
+
+    //创建文本
+    this.CreateText=function(hqChart,windowIndex,varItem,id, drawName)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartSingleText();
+        chart.Canvas=hqChart.Canvas;
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.ReloadResource();
+
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        let titleIndex=windowIndex+1;
+        if (varItem.Draw.Position) chart.Position=varItem.Draw.Position;    //赋值坐标
+        if (varItem.Draw.DrawData) chart.Data.Data=varItem.Draw.DrawData;
+        chart.Text=varItem.Draw.Text;
+        if (varItem.Draw.Direction>0) chart.Direction=varItem.Draw.Direction;
+        if (varItem.Draw.YOffset>0) chart.YOffset=varItem.Draw.YOffset;
+        if (varItem.Draw.TextAlign) chart.TextAlign=varItem.Draw.TextAlign;
+
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+
+        frame.ChartPaint.push(chart);
+    }
+
+    //COLORSTICK 
+    this.CreateMACD=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMACD();
+        chart.Canvas=hqChart.Canvas;
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Data;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        var clrTitle=this.GetDefaultColor(id);
+        if (varItem.Color) clrTitle=this.GetColor(varItem.Color);
+        if (varItem.UpColor) chart.UpColor=varItem.UpColor;
+        if (varItem.DownColor) chart.DownColor=varItem.DownColor;
+
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,clrTitle);
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreatePointDot=function(hqChart,windowIndex,varItem,id,hisData)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartPointDot();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.Radius) chart.Radius=varItem.Radius;
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chart.Radius=width;
+        }
+
+        if (IFrameSplitOperator.IsBool(varItem.UpDownDot)) 
+        {
+            chart.EnableUpDownColor=varItem.UpDownDot;
+            chart.HistoryData=hisData;
+        }
+
+        let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Data;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateStick=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartStick();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+
+        let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Data;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateLineStick=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartLineStick();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+
+        let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Data;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateStraightLine=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartLine();
+        chart.DrawType=1;
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+        
+        let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Draw.DrawData;
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateVolStick=function(hqChart,windowIndex,varItem,id,hisData)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartVolStick();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.KLineDrawType=hqChart.KLineDrawType;  //设置K线显示类型
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.UpColor) chart.UpColor=varItem.UpColor;
+        if (varItem.DownColor) chart.DownColor=varItem.DownColor;
+
+        let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Data;
+        chart.HistoryData=hisData;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+
+        this.SetChartIndexName(chart);
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateBand=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartBand();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.FirstColor = varItem.Draw.Color[0];
+        chart.SecondColor = varItem.Draw.Color[1];
+        chart.Data.Data=varItem.Draw.DrawData;
+
+        frame.ChartPaint.push(chart);
+    }
+
+    //创建K线图
+    this.CreateKLine=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartKLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+        chart.IsShowMaxMinPrice=false;
+        chart.IsShowKTooltip=false;
+
+        if (varItem.Color)  //如果设置了颜色,使用外面设置的颜色
+            chart.UnchagneColor=chart.DownColor=chart.UpColor=this.GetColor(varItem.Color);
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreatePolyLine=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+        
+        let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Draw.DrawData;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(line.Data,' ',line.Color); //给一个空的标题
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateNumberText=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartSingleText();
+        chart.Canvas=hqChart.Canvas;
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.ReloadResource();
+
+        chart.TextAlign="center";
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+        if (varItem.IsDrawAbove) chart.Direction=1;
+        else chart.Direction=2;
+
+        if (varItem.Draw.Position) chart.Position=varItem.Draw.Position;    //赋值坐标
+
+        let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Draw.DrawData.Value;
+        chart.Text=varItem.Draw.DrawData.Text;
+
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateTextLine=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartTextLine();
+        chart.Canvas=hqChart.Canvas;
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            chart.Text=drawData.Text;
+            chart.Line=drawData.Line;
+            chart.Price=drawData.Price;
+        }
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateStackedBar=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartStackedBar();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.BarColor)) chart.BarColor=varItem.Draw.BarColor;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.BarName)) chart.BarName=varItem.Draw.BarName;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.BarType)) chart.BarType=varItem.Draw.BarType;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+
+        var titleIndex=windowIndex+1;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        var titleData=new DynamicTitleData(chart.Data,chart.BarName,chart.BarColor);
+        titleData.DataType="ChartStackedBar";
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+        
+        frame.ChartPaint.push(chart);
+    }
+
+    //创建图标
+    this.CreateIcon=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartSingleText();
+        chart.Canvas=hqChart.Canvas;
+        chart.TextAlign='center';
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chart.Direction=1;
+            else if (varItem.DrawVAlign==1) chart.Direction=0;
+            else if (varItem.DrawVAlign==2) chart.Direction=2;
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chart.TextAlign="left";
+            else if (varItem.DrawAlign==1) chart.TextAlign="center";
+            else if (varItem.DrawAlign==2) chart.TextAlign='right';
+        }
+
+        if (IFrameSplitOperator.IsNumber(varItem.XOffset)) chart.ShowOffset.X=varItem.XOffset;
+        if (IFrameSplitOperator.IsNumber(varItem.YOffset)) chart.ShowOffset.Y=varItem.YOffset;
+       
+        chart.Data.Data=varItem.Draw.DrawData;
+        var icon=varItem.Draw.Icon;
+        if (icon.IconFont==true)
+        {
+            chart.IconFont={ Family:icon.Family, Text:icon.Symbol, Color:icon.Color };
+        }
+        else
+        {
+            chart.Text=icon.Symbol;
+            if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+            else if (icon.Color) chart.Color=icon.Color;
+            else chart.Color='rgb(0,0,0)';
+        }
+        
+
+        //var titleIndex=windowIndex+1;
+        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateMultiLine=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMultiLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Lines=varItem.Draw.DrawData; 
+        if (varItem.Draw.LineDash) chart.LineDash=varItem.Draw.LineDash;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
+        if(varItem.Draw.Arrow)  //箭头配置
+        {
+            var item=varItem.Draw.Arrow;
+            if (item.Start==true) chart.Arrow.Start=true;
+            if (item.End==true) chart.Arrow.End=true;
+            if (IFrameSplitOperator.IsNumber(item.Angle)) chart.ArrawAngle=item.Angle;
+            if (IFrameSplitOperator.IsNumber(item.Length)) chart.ArrawLength=item.Length;
+            if (IFrameSplitOperator.IsNumber(item.LineWidth)) chart.ArrawLineWidth=item.LineWidth;
+        }
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateBackgroud=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartBackground();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            chart.Color=drawData.Color;
+            chart.ColorAngle=drawData.Angle;
+
+            if (drawData.Data) chart.Data.Data=drawData.Data;
+        }
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateMultiBar=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMultiBar();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Bars=varItem.Draw.DrawData; 
+
+        var titleIndex=windowIndex+1;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        var titleData=new DynamicTitleData({ KData:chart.Data, BarData:chart.Bars },varItem.Name,null);
+        titleData.IsShow=false;
+        titleData.DataType="MULTI_BAR";
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateMultiText=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMultiText();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Texts=varItem.Draw.DrawData; 
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateMulitHtmlDom=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMultiHtmlDom();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.HQChart=hqChart;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Texts=varItem.Draw.DrawData;
+        chart.DrawCallback= varItem.Draw.Callback;
+        frame.ChartPaint.push(chart);
+    }
+
+    //给一个默认的颜色
+    this.GetDefaultColor=function(id)
+    {
+        let COLOR_ARRAY=
+        [
+            "rgb(24,71,178)",
+            "rgb(42,230,215)",
+            "rgb(252,96,154)",
+            "rgb(0,128,255)",
+            "rgb(229,0,79)",
+            "rgb(68,114,196)",
+            "rgb(255,174,0)",
+            "rgb(25,199,255)",
+            "rgb(175,95,162)",
+            "rgb(236,105,65)",
+        ];
+
+        let number=parseInt(id);
+        return COLOR_ARRAY[number%(COLOR_ARRAY.length-1)];
+    }
+}
+
+
+function APIScriptIndex(name, script, args, option, isOverlay)     //后台执行指标
+{
+    if (isOverlay) this.newMethod=OverlayScriptIndex;   
+    else this.newMethod = ScriptIndex;   //派生
     this.newMethod(name, script, args, option);
     delete this.newMethod;
 
@@ -2929,6 +3798,7 @@ export
     BaseIndex,
     ScriptIndex,
     APIScriptIndex,
+    OverlayScriptIndex,
 
     MarketLongShortIndex,
     MarketTimingIndex,

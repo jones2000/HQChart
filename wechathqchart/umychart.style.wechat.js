@@ -35,7 +35,7 @@ function GetBlackStyle()
         DefaultTextFont: '14px 微软雅黑',
         IndexTitleBGColor:'rgb(211,211,211)',
         IndexTitleColor:"rgb(101,104,112)",
-
+        OverlayIndexTitleBGColor:'rgba(0,0,0,0.7)', //叠加指标背景色
         DynamicTitleFont: '12px 微软雅黑', //指标动态标题字体
 
 

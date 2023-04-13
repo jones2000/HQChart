@@ -1984,6 +1984,7 @@ var JSCHART_EVENT_ID =
     RECV_TRAIN_MOVE_STEP: 4,    //接收K线训练,移动一次K线
     CHART_STATUS: 5,            //每次Draw() 以后会调用
     BARRAGE_PLAY_END: 6,        //单个弹幕播放完成
+    RECV_OVERLAY_INDEX_DATA:7,  //接收叠加指标数据
     RECV_START_AUTOUPDATE: 9,    //开始自动更新
     RECV_STOP_AUTOUPDATE: 10,    //停止自动更新
     ON_TITLE_DRAW: 12,           //标题信息绘制事件

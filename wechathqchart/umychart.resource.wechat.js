@@ -37,6 +37,7 @@ function JSChartResource()
     this.IndexTitleBorderColor='rgb(180,180,180)';
     this.IndexTitleColor="rgb(43,54,69)";
     this.DynamicTitleFont = '12px 微软雅黑';        //指标动态标题字体
+    this.OverlayIndexTitleBGColor='rgba(255,255,255,0.7)';
 
     this.UpTextColor = "rgb(238,21,21)";
     this.DownTextColor = "rgb(25,158,0)";
@@ -92,6 +93,14 @@ function JSChartResource()
     this.FrameMargin = 4;     //左右一共的边距
     this.FrameLeftMargin = 2;
     this.FrameRightMargin=2;
+
+    //叠加指标框架
+    this.OverlayFrame=
+    {
+        BolderPen:'rgb(190,190,190)',                    //指标边框线
+        TitleColor:'rgb(105,105,105)',                   //指标名字颜色
+        TitleFont:'11px arial',                          //指标名字字体
+    };
 
     this.CorssCursorBGColor = "rgb(43,54,69)";            //十字光标背景
     this.CorssCursorTextColor = "rgb(255,255,255)";
@@ -394,6 +403,7 @@ function JSChartResource()
         if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;
         if (style.DynamicTitleFont) this.DynamicTitleFont = style.DynamicTitleFont;
         if (style.IndexTitleBGColor) this.IndexTitleBGColor=style.IndexTitleBGColor;
+        if (style.OverlayIndexTitleBGColor) this.OverlayIndexTitleBGColor=style.OverlayIndexTitleBGColor;
         if (style.IndexTitleBorderColor) this.IndexTitleBorderColor=style.IndexTitleBorderColor;
         if (style.IndexTitleColor) this.IndexTitleColor=style.IndexTitleColor;
         if (style.UpTextColor) this.UpTextColor = style.UpTextColor;
