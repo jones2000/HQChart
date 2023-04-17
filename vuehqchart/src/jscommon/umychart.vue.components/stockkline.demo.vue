@@ -230,7 +230,7 @@ DefaultData.GetKLineOption=function()
             Right: 60, //右边间距
             Top: 25,
 
-            AutoRight:{ Blank:10, MinWidth:30 }
+            AutoRight:{ Blank:10, MinWidth:60 }
         },
 
         Frame: //子框架设置
@@ -253,9 +253,9 @@ DefaultData.GetKLineOption=function()
                     }
                 ]
             },
-            { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true, MinYDistance:20 },
-            { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true},
-            { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true}
+            { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true, MinYDistance:20, Custom:[ { Type:2,Position:'right',LineType:-1, } ] },
+            { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true,Custom:[ { Type:2,Position:'right',LineType:-1, } ] },
+            { SplitCount: 5, StringFormat: 0, IsShowLeftText: false ,EnableRemoveZero:true,Custom:[ { Type:2,Position:'right',LineType:-1, } ] }
         ]
     };
 
@@ -413,7 +413,8 @@ DefaultData.GetKLineToolbar=function()
             {Name:"面积图",Value:4},
             {Name:"空心K线2",Value:6},
             {Name:"Heikin Ashi",Value:11},
-             {Name:"Line Break",Value:12}
+            {Name:"Line Break",Value:12},
+            {Name:"High-low",Value:13}
         ],
         IsShow:true,
     };

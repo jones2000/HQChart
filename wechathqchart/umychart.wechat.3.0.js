@@ -7670,8 +7670,16 @@ function KLineChartContainer(uielement)
         }
         else if (indexInfo)
         {
-            let indexData = indexInfo;
-            if (obj.Args) indexData.Args=obj.Args;  //外部可以设置参数
+            var args=indexInfo.Args;
+            if (obj.Args) args=obj.Args;    //外部可以设置参数
+            let indexData = 
+            { 
+                Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:indexName,
+                //扩展属性 可以是空
+                KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
+                FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
+                OutName:indexInfo.OutName
+            };
 
             var scriptIndex=new OverlayScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
             scriptIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame };    //叠加指标信息

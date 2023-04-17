@@ -53735,6 +53735,14 @@ function JSChartResource()
             Mergin:{ Top:1, Bottom:1,Left:0, Right:0 },
         },
 
+        //涨停 跌停背景色
+        LimitColor:
+        {
+            UpColor:"rgb(255,0,0)",
+            DownColor:"rgb(0,128,0)",
+            TextColor:"rgb(250,250,250)",
+        },
+
         FieldColor:
         {
             Index:"rgb(60,60,60)",  //序号
@@ -54400,6 +54408,14 @@ function JSChartResource()
                     if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.LimitBorder.Mergin.Right=mergin.Right;
                     if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.LimitBorder.Mergin.Bottom=mergin.Bottom;
                 }
+            }
+
+            if (item.LimitColor)
+            {
+                var limit=item.LimitColor;
+                if (limit.UpColor) this.Report.LimitColor.UpColor=limit.UpColor;
+                if (limit.DownColor) this.Report.LimitColor.DownColor=limit.DownColor;
+                if (limit.TextColor) this.Report.LimitColor.UpColor=limit.TextColor;
             }
 
             if (item.FieldColor)
@@ -59716,8 +59732,16 @@ function KLineChartContainer(uielement,OffscreenElement)
         }
         else if (indexInfo)
         {
-            let indexData = indexInfo;
-            if (obj.Args) indexData.Args=obj.Args;  //外部可以设置参数
+            var args=indexInfo.Args;
+            if (obj.Args) args=obj.Args;    //外部可以设置参数
+            let indexData = 
+            { 
+                Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:indexName,
+                //扩展属性 可以是空
+                KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
+                FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
+                OutName:indexInfo.OutName
+            };
 
             var scriptIndex=new OverlayScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
             scriptIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame };    //叠加指标信息
