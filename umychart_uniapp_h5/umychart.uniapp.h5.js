@@ -6369,6 +6369,7 @@ var JSCHART_EVENT_ID=
     ON_FORMAT_CORSSCURSOR_X_TEXT:77,    //格式化十字光标X轴文字
 
     ON_REPORT_MOUSE_MOVE:78,          //鼠标移动 { x,y, Cell:单元格}
+    ON_REPORT_DRAG_HEADER_TOOLTIP:88,   //表头拖动提示信息
 }
 
 var JSCHART_OPERATOR_ID=
@@ -10925,10 +10926,10 @@ function JSChartContainer(uielement, OffscreenElement)
         }
         else if (drawPicture.FinishedCallback) drawPicture.FinishedCallback(drawPicture);
 
-        if (this.ChartDrawStorage) this.ChartDrawStorage.SaveDrawData(drawPicture);
-
         if (drawPicture.OnFinish) drawPicture.OnFinish();
 
+        if (this.ChartDrawStorage) this.ChartDrawStorage.SaveDrawData(drawPicture);
+        
         return true;
     }
 
