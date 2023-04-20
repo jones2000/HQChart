@@ -181,9 +181,11 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 3. 支持Tab页切换板块，横向滚动轴<br>
 4. 支持配置列本地排序或远程排序<br>
 5. 支持走势图
+6. 支持单K线柱
 ![报价列表](/小程序行情模块用例/image/hqchart_report.gif)<br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report2.gif)<br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report_closeline.png)<br>
+![报价列表](/小程序行情模块用例/image/hqchart_report_kbar.png)<br>
 * 键盘精灵<br>
 ![键盘精灵](/小程序行情模块用例/image/sendsymbol_demo.gif)<br>
 
@@ -400,7 +402,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 6. [HQChart实战教程16-K线图风格配色篇-仿火币网H5配色](https://blog.csdn.net/jones2000/article/details/106226272)<br>
 7. [HQChart实战教程47-火币网ws数据对接深度图](https://jones2000.blog.csdn.net/article/details/120950486)<br>
 
-## 欧易对接完整教程（付费文章)
+## 欧易对接完整教程（付费文章)  
 1. [HQChart实战教程54-欧易网http+ws数据对接(vue)](https://blog.csdn.net/jones2000/article/details/125213143)<br>
 2. [HQChart实战教程55-欧易网K线面积图(vue)](https://jones2000.blog.csdn.net/article/details/125229954)<br>
 3. [HQChart实战教程56-欧易网http+ws数据对接 uniapp版本](https://blog.csdn.net/jones2000/article/details/125354005)<br>

@@ -2295,6 +2295,9 @@ var JSCHART_EVENT_ID=
 
     ON_REPORT_MOUSE_MOVE:78,          //鼠标移动 { x,y, Cell:单元格}
     ON_REPORT_DRAG_HEADER_TOOLTIP:88,   //表头拖动提示信息
+
+    ON_REPORT_DRAW_CUSTOM_ICON:89,      //表格自定义图标
+    ON_REPORT_DRAW_KLINE:90,            //表格绘制K线
 }
 
 var JSCHART_OPERATOR_ID=
@@ -17278,7 +17281,7 @@ function ChartData()
         }
     }
 
-    //  分钟数据拟合
+    /*
     this.GetMinuteFittingData=function(overlayData)
     {
         var result=[];
@@ -17324,6 +17327,118 @@ function ChartData()
 
         return result;
     }
+    */
+
+    //分钟数据拟合  精确匹配
+    this.GetMinuteFittingData=function(overlayData)
+    {
+        var result=[];
+        for(var i=0,j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+            var time=this.Data[i].Time;
+
+            if (j>=overlayData.length)
+            {
+                result[i]=null;
+                ++i;
+                continue;;
+            }
+
+            var overlayDate=overlayData[j].Date;
+            var overlayTime=overlayData[j].Time;
+            const overlayItem=overlayData[j];
+
+            if (overlayDate==date && overlayTime==time)
+            {
+                var item=new SingleData();
+                item.Date=overlayItem.Date;
+                item.Time=overlayItem.Time;
+                item.Value=overlayItem.Value;
+                result[i]=item;
+                ++j;
+                ++i;
+            }
+            else if (overlayDate<date || (overlayDate==date && overlayTime<time))
+            {
+                ++j;
+            }
+            else
+            {
+                var item=new SingleData();
+                item.Date=date;
+                item.Time=time;
+                result[i]=item;
+                ++i;
+            }
+        }
+
+        return result;
+    }
+
+    //分钟数据拟合  数据顺延
+    this.GetMinuteFittingDataV2=function(overlayData)
+    {
+        var result=[];
+        var latestItem=null;
+        for(var i=0,j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+            var time=this.Data[i].Time;
+
+            if (j>=overlayData.length)
+            {
+                result[i]=null;
+                ++i;
+                continue;;
+            }
+
+            var overlayDate=overlayData[j].Date;
+            var overlayTime=overlayData[j].Time;
+            const overlayItem=overlayData[j];
+
+            if (overlayDate==date && overlayTime==time)
+            {
+                var item=new SingleData();
+                item.Date=overlayItem.Date;
+                item.Time=overlayItem.Time;
+                item.Value=overlayItem.Value;
+                result[i]=item;
+                latestItem=overlayItem;
+                ++j;
+                ++i;
+            }
+            else if (overlayDate<date || (overlayDate==date && overlayTime<time))
+            {
+                //数据更新到最新数据上
+                var index=result.length-1;
+                if (index>=0)
+                {
+                    var item=result[index];
+                    if (item)
+                    {
+                        if (overlayDate<item.Date || ((overlayDate==item.Date && overlayTime<item.Time)))
+                            item.Value=overlayItem.Value;
+                    } 
+                }
+                
+                latestItem=overlayItem;
+                ++j;
+            }
+            else
+            {
+                var item=new SingleData();
+                item.Date=date;
+                item.Time=time;
+                if (latestItem) item.Value=latestItem.Value;
+                result[i]=item;
+                ++i;
+            }
+        }
+
+        return result;
+    }
+
 
 
     //把财报数据拟合到主图数据,返回 SingleData 数组
@@ -53758,8 +53873,22 @@ function JSChartResource()
         DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
         UnchagneTextColor:"rgb(90,90,90)",     //平盘文字颜色 
 
-        CloseLineColor:"rgb(30,144,255)",
+        CloseLine:
+        {
+            CloseColor:"rgb(30,144,255)",
+            YCloseColor:"rgba(105,105,105,0.5)",  //昨收线
+            AreaColor:'rgba(0,191,255,0.2)',
+        },
 
+        KLine:
+        {
+            UpColor:"rgb(255,0,0)",
+            DownColor:"rgb(0,128,0)",
+            UnchagneColor:'rgb(90,90,90)',
+            DataWidth:16,
+            DistanceWidth:3
+        },
+        
         Tab:
         {
             Font:{ Size:12, Name:"微软雅黑" },
@@ -54320,7 +54449,26 @@ function JSChartResource()
             if (item.DownTextColor) this.Report.DownTextColor=item.DownTextColor;
             if (item.UnchagneTextColor) this.Report.UnchagneTextColor=item.UnchagneTextColor;
             if (item.BorderColor) this.Report.SelectedColor=item.SelectedColor;
-            if (item.CloseLineColor) this.Report.CloseLineColor=item.CloseLineColor;
+           
+
+            if (item.CloseLine)
+            {
+                var closeLine=item.CloseLine;
+                if (closeLine.CloseColor) this.Report.CloseLine.CloseColor=closeLine.CloseColor;
+                if (closeLine.YCloseColor) this.Report.CloseLine.YCloseColor=closeLine.YCloseColor;
+                if (closeLine.AreaColor) this.Report.CloseLine.AreaColor=closeLine.AreaColor;
+            }
+
+            if (item.KLine)
+            {
+                var kline=item.KLine;
+                if (kline.UpColor) this.Report.KLine.UpColor=kline.UpColor;
+                if (kline.DownColor) this.Report.KLine.DownColor=kline.DownColor;
+                if (kline.UnchagneColor) this.Report.KLine.UnchagneColor=kline.UnchagneColor;
+
+                if (IFrameSplitOperator.IsNumber(kline.DataWidth)) this.Report.KLine.DataWidth=kline.DataWidth;
+                if (IFrameSplitOperator.IsNumber(kline.DistanceWidth)) this.Report.KLine.DistanceWidth=kline.DistanceWidth;
+            }
 
             if (item.Header)
             {

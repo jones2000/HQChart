@@ -489,6 +489,22 @@ function GetBlackStyle()
                 BarTitle:'rgb(245,245,245)',   //柱子文字
                 Text:"rgb(245,245,245)",    //默认文本
             },
+
+            CloseLine:
+            {
+                CloseColor:"rgb(30,144,255)",
+                YCloseColor:"rgba(220,220,220,0.5)",  //昨收线
+                AreaColor:'rgba(220,220,220,0.2)',
+            },
+
+            KLine:
+            {
+                UpColor:"rgb(255,0,0)",
+                DownColor:"rgb(0,128,0)",
+                UnchagneColor:'rgb(240,240,240)',
+                DataWidth:16,
+                DistanceWidth:3
+            },
     
             UpTextColor:"rgb(238,21,21)",           //上涨文字颜色
             DownTextColor:"rgb(25,158,0)",          //下跌文字颜色

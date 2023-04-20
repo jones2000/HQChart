@@ -23086,7 +23086,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         return result;
     }
 
-    this.FittingMinuteArray=function(sourceData,date,time,hqChart)
+    //matchType 0=精确匹配（默认) 5=模糊匹配
+    this.FittingMinuteArray=function(sourceData,date,time,hqChart,matchType)
     {
         var minutedata=hqChart.SourceData;;   //分钟线
 
@@ -23101,7 +23102,12 @@ function APIScriptIndex(name,script,args,option, isOverlay)
             arySingleData.push(indexItem);
         }
 
-        var aryFittingData=minutedata.GetMinuteFittingData(arySingleData);  //数据和主图K线拟合
+        var aryFittingData;
+        if (matchType==5) 
+            aryFittingData=minutedata.GetMinuteFittingDataV2(arySingleData);  //数据和主图K线拟合
+        else 
+            aryFittingData=minutedata.GetMinuteFittingData(arySingleData);  //数据和主图K线拟合 精确匹配（默认)
+
         var bindData=new ChartData();
         bindData.Data=aryFittingData;
         var result=bindData.GetValue();
