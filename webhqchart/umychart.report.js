@@ -4765,7 +4765,7 @@ function ChartReport()
             {
                 var sendData=
                 { 
-                    Symbol:symbol, Column:columnInfo, Data:data, KLineData:klineData, Rect:rtItem, PreventDefault:false
+                    Column:column, Data:data, KLineData:klineData, Rect:rtItem, PreventDefault:false
                 };
         
                 event.Callback(event,sendData,this);
