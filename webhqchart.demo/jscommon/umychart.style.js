@@ -204,6 +204,12 @@ function GetBlackStyle()
                 Sell: { Color:'rgb(64,122,22)', Text:'\ue681',HScreenText:'\ue680'},
             }
         },
+
+        VirtualKLine:
+        {
+            Color:'rgb(119,136,153)', 
+            LineDash:[2,2]
+        },
     
         Index: 
         {      

@@ -17,6 +17,7 @@ export default {
     //类导出
     JSChart:JSChart,        //行情图形库
     ChartData:ChartData,    //数据类
+    SingleData:SingleData,
     HistoryData:HistoryData,    //K线数据结构
     MARKET_SUFFIX_NAME:MARKET_SUFFIX_NAME,  // 判断股票属性
     IFrameSplitOperator:IFrameSplitOperator,//格式化字符串方法
@@ -26,6 +27,7 @@ export default {
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,      //可以订阅的事件类型
     JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,    //图形控制类型
     JSCHART_DATA_FIELD_ID:JSCHART_DATA_FIELD_ID,//图形字段
+    JSCHART_CUSTOM_YCOORDINATE_ID:JSCHART_CUSTOM_YCOORDINATE_ID,    //自定义刻度类型
     JSAlgorithm:JSAlgorithm,                //算法类
     JSComplier:JSComplier,                  //指标编译器
     JSIndexScript:JSIndexScript,            //系统指标库
@@ -75,4 +77,14 @@ export default {
     ChartKLine:ChartKLine,                      //K线图
 
     KLineFrame:KLineFrame,                      //K线框架
+
+    //新个导出 根据大类分组
+    JS_ChangeStringFormat:
+    {
+        IChangeStringFormat:IChangeStringFormat,            //数据格式化
+        HQMinuteTimeStringFormat:HQMinuteTimeStringFormat,  //分时图X轴 十字光标输出格式化
+        HQDateStringFormat:HQDateStringFormat,              //K线图X轴  十字光标输出格式化
+        HQPriceStringFormat:HQPriceStringFormat,            //分时图,K线图Y轴 十字光标输出格式化
+    },
+    
 }
