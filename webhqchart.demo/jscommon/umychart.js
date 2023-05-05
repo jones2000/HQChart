@@ -351,7 +351,7 @@ function JSChart(divElement, bOffscreen)
                 if (!chart.Frame.SubFrame[i]) continue;
                 var subFrame=chart.Frame.SubFrame[i].Frame;
 
-                if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
+                if (IFrameSplitOperator.IsNumber(item.SplitCount)) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
                 if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) chart.Frame.SubFrame[i].Frame.YSplitOperator.FloatPrecision=item.FloatPrecision;
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom=item.Custom;
@@ -794,7 +794,7 @@ function JSChart(divElement, bOffscreen)
             {
                 var item=option.Frame[i];
                 if (!chart.Frame.SubFrame[i]) continue;
-                if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
+                if (IFrameSplitOperator.IsNumber(item.SplitCount)) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
                 if (IFrameSplitOperator.IsNumber(item.SplitType)) 
                 {
@@ -47559,6 +47559,25 @@ function IChartDrawPicture()
         return storageData;
     }
 
+    //导出基础的配置 不包含点
+    this.ExportBaseData=function()
+    {
+        var data=
+        { 
+            ClassName:this.ClassName, Guid:this.Guid, FrameID:this.Frame.Identify, 
+            Symbol:this.Symbol,  Period:this.Period,Right:this.Right,
+            LineColor:this.LineColor, 
+            LineWidth:this.LineWidth,  
+            EnableSave:this.EnableSave, IsShowYCoordinate:this.IsShowYCoordinate
+        };
+
+        if (this.AreaColor) data.AreaColor=this.AreaColor;
+        if (this.Text) data.Text=this.Text;  //如果有文本, 也导出
+        if (this.FontOption) data.FontOption=this.FontOption;    //字体也导出
+
+        return data;
+    }
+
     this.IsFrameMinSize=function()   //框架是否是最小化模式
     {
         return this.Frame && this.Frame.IsMinSize;
@@ -47848,6 +47867,8 @@ IChartDrawPicture.CreateChartDrawPicture=function(obj)    //创建画图工具
     if (IFrameSplitOperator.IsBool(obj.EnableSave)) chartDraw.EnableSave=obj.EnableSave;
     if (IFrameSplitOperator.IsNumber(obj.ChannelWidth)) chartDraw.ChannelWidth=obj.ChannelWidth;
     if (IFrameSplitOperator.IsBool(obj.IsShowYCoordinate)) chartDraw.IsShowYCoordinate=obj.IsShowYCoordinate;
+
+    if (chartDraw.SetOption) chartDraw.SetOption(obj);
 
     return chartDraw;
 }
@@ -49519,12 +49540,49 @@ function ChartDrawPictureParallelLines()
 
     this.ClassName='ChartDrawPictureParallelLines';
     this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.GetXYCoordinate=this.GetXYCoordinate_default;
     this.PointCount=3;
     this.LastPoint;
+
+    //中心线
+    this.CenterLine={ LineDash:[2*GetDevicePixelRatio(),3*GetDevicePixelRatio()], Line:null, IsShow:false };
+
+    this.Super_SetOption=this.SetOption;    //父类函数
+    this.Super_ExportStorageData=this.ExportStorageData;
+
+    this.SetOption=function(option)
+    {
+        if (this.Super_SetOption) this.Super_SetOption(option);
+        if (option)
+        {
+            if (option.CenterLine)
+            {
+                var item=option.CenterLine;
+                if (IFrameSplitOperator.IsNonEmptyArray(item.LineDash)) this.CenterLine.LineDash=item.LineDash.slice(0);
+                if (IFrameSplitOperator.IsBool(item.IsShow)) this.CenterLine.IsShow=item.IsShow;
+            }
+        }
+    }
+
+    this.ExportStorageData=function()
+    {
+        var storageData;
+        if (this.Super_ExportStorageData) 
+        {
+            storageData=this.Super_ExportStorageData();
+            if (this.CenterLine) 
+            {
+                storageData.CenterLine={ IsShow:this.CenterLine.IsShow, LineDash:this.CenterLine.LineDash.slice(0) };
+            }
+        }
+
+        return storageData;
+    }
 
     this.Draw=function()
     {
         this.LinePoint=[];
+        this.CenterLine.Line=null;
         if (this.IsFrameMinSize()) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:false, IsCheckY:false}); //不检测x,y
@@ -49536,13 +49594,22 @@ function ChartDrawPictureParallelLines()
 
         this.ClipFrame();
 
+        this.DrawArea();
+
         for(var i in this.LinePoint)
         {
             var item=this.LinePoint[i];
             this.DrawLine(item.Start,item.End);
         }
 
-        this.DrawArea();
+        if (this.CenterLine.IsShow && this.CenterLine.Line)
+        {
+            var item=this.CenterLine.Line;
+            this.Canvas.setLineDash(this.CenterLine.LineDash);
+            this.DrawLine(item.Start,item.End);
+            this.Canvas.setLineDash([]);
+        }
+
         this.DrawPoint(points);  //画点
         this.Canvas.restore(); 
     }
@@ -49596,8 +49663,19 @@ function ChartDrawPictureParallelLines()
             ptStart.Y=points[0].Y+yMove;
             ptEnd.X=points[1].X+xMove;
             ptEnd.Y=points[1].Y+yMove;
+
             linePoint=this.CalculateExtendLinePoint(ptStart,ptEnd);
             this.LinePoint.push(linePoint);
+
+            //中心线
+            var ptStart=new Point();
+            var ptEnd=new Point();
+            ptStart.X=points[0].X+xMove/2;
+            ptStart.Y=points[0].Y+yMove/2;
+            ptEnd.X=points[1].X+xMove/2;
+            ptEnd.Y=points[1].Y+yMove/2;
+            linePoint=this.CalculateExtendLinePoint(ptStart,ptEnd);
+            this.CenterLine.Line=linePoint;
         }
     }
 }
@@ -49831,13 +49909,15 @@ function ChartDrawPictureParallelChannel()
     this.AreaColor='rgba(25,25,25,0.4)';
     this.LinePoint=[];
 
+    //中心线
+    this.CenterLine={ LineDash:[2*GetDevicePixelRatio(),3*GetDevicePixelRatio()], Line:null, IsShow:false };
+
     this.Super_SetOption=this.SetOption;    //父类函数
-    this.Super_ExportStorageData=this.ExportStorageData;
 
     //导出成存储格式
     this.ExportStorageData=function()
     {
-        var storageData=this.Super_ExportStorageData();
+        var storageData=this.ExportBaseData();
         
         storageData.ChannelWidth=this.ChannelWidth;
         storageData.Value=[];
@@ -49849,6 +49929,11 @@ function ChartDrawPictureParallelChannel()
             storageData.Value.push({ XValue:item.XValue, YValue:item.YValue, DateTime:item.DateTime });
         }
 
+        if (this.CenterLine) 
+        {
+            storageData.CenterLine={ IsShow:this.CenterLine.IsShow, LineDash:this.CenterLine.LineDash.slice(0) };
+        }
+
         return storageData;
     }
 
@@ -49858,6 +49943,12 @@ function ChartDrawPictureParallelChannel()
         if (option)
         {
             if (IFrameSplitOperator.IsNumber(option.ChannelWidth)) this.ChannelWidth=option.ChannelWidth;
+            if (option.CenterLine)
+            {
+                var item=option.CenterLine;
+                if (IFrameSplitOperator.IsNonEmptyArray(item.LineDash)) this.CenterLine.LineDash=item.LineDash.slice(0);
+                if (IFrameSplitOperator.IsBool(item.IsShow)) this.CenterLine.IsShow=item.IsShow;
+            }
         }
     }
 
@@ -49877,8 +49968,8 @@ function ChartDrawPictureParallelChannel()
             {
                 var item=this.Value[i];
                 var pt=new Point();
-                pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset);
-                pt.Y=this.Frame.GetYFromData(item.YValue);
+                pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset, false);
+                pt.Y=this.Frame.GetYFromData(item.YValue, false);
                 drawPoint.push(pt);
             }
         }
@@ -49929,19 +50020,17 @@ function ChartDrawPictureParallelChannel()
                 var yValue=this.Frame.GetYData(ptCenter.Y);
                 this.Value[2]={XValue:xValue,YValue:yValue};
                 this.PointCount=this.Point.length;  //完成以后是3个点
+
+                linePoint={Start:new Point(), End:new Point() };
+                linePoint.Start.X=drawPoint[0].X;
+                linePoint.Start.Y=drawPoint[0].Y-yMove/2;
+                linePoint.End.X=drawPoint[1].X;
+                linePoint.End.Y=drawPoint[1].Y-yMove/2;
+                this.CenterLine.Line=linePoint;
             }
         }
     
         return drawPoint;
-    }
-
-    this.DrawLine=function(ptStart,ptEnd)
-    {
-        this.Canvas.strokeStyle=this.LineColor;
-        this.Canvas.beginPath();
-        this.Canvas.moveTo(ptStart.X,ptStart.Y);
-        this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
-        this.Canvas.stroke();
     }
 
     this.DrawArea=function(pt,pt2,pt3,pt4)
@@ -49967,15 +50056,23 @@ function ChartDrawPictureParallelChannel()
         this.AreaColor=IChartDrawPicture.ColorToRGBA(this.LineColor,0.3);
         this.ClipFrame();
 
-        for(var i in this.LinePoint)
+        if (this.LinePoint.length==2)
+        {
+            this.DrawArea(this.LinePoint[0].Start,this.LinePoint[0].End,this.LinePoint[1].End,this.LinePoint[1].Start);
+        }
+
+        for(var i=0;i<this.LinePoint.length; ++i)
         {
             var item=this.LinePoint[i];
             this.DrawLine(item.Start,item.End);
         }
 
-        if (this.LinePoint.length==2)
+        if (this.CenterLine.IsShow && this.CenterLine.Line)
         {
-            this.DrawArea(this.LinePoint[0].Start,this.LinePoint[0].End,this.LinePoint[1].End,this.LinePoint[1].Start);
+            var item=this.CenterLine.Line;
+            this.Canvas.setLineDash(this.CenterLine.LineDash);
+            this.DrawLine(item.Start,item.End);
+            this.Canvas.setLineDash([]);
         }
 
         this.Canvas.restore();
@@ -49993,7 +50090,7 @@ function ChartDrawPictureParallelChannel()
 
         if (this.MovePointIndex==100)    //整体移动
         {
-            for(var i in this.Point)
+            for(var i=0; i<this.Point.length; ++i)
             {
                 this.Point[i].X+=xStep;
                 this.Point[i].Y+=yStep;

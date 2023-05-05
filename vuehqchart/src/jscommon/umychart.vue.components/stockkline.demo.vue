@@ -826,7 +826,7 @@ export default
         {
             if (!this.KLine.JSChart)    //不存在创建
             {
-                this.KLine.Option.Period=period;
+                this.KLine.Option.KLine.Period=period;
                 this.CreateKLineChart();
             }
             else
@@ -1166,6 +1166,8 @@ export default
 
         ShowStockChip:function(isShow)
         {
+            if (!this.KLine.JSChart) return;
+
             var chart=this.KLine.JSChart.JSChartContainer;
             chart.StockChipWidth=this.TradeInfoTab.Width;   //设置移动筹码宽度
             var StockChip=chart.GetExtendChartByClassName('StockChip');
