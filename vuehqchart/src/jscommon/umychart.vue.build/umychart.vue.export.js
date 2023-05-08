@@ -86,5 +86,15 @@ export default {
         HQDateStringFormat:HQDateStringFormat,              //K线图X轴  十字光标输出格式化
         HQPriceStringFormat:HQPriceStringFormat,            //分时图,K线图Y轴 十字光标输出格式化
     },
+
+    //所有的枚举
+    JS_ID:
+    {
+        JSCHART_EVENT_ID:JSCHART_EVENT_ID,
+        JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,
+        JSCHART_DRAG_ID:JSCHART_DRAG_ID,
+        JSCHART_BUTTON_ID:JSCHART_BUTTON_ID,
+        JSCHART_DATA_FIELD_ID:JSCHART_DATA_FIELD_ID
+    },
     
 }

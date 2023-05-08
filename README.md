@@ -467,6 +467,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 5. [HQChart实战教程58-K线主图仿tradingview](https://blog.csdn.net/jones2000/article/details/128795059)  
 6. [HQChart实战教程59-深度图定制Tooltip输出内容](https://jones2000.blog.csdn.net/article/details/129951576)  
 7. [HQChart实战教程60-如何定制十字光标输出内容](https://jones2000.blog.csdn.net/article/details/130079468)  
+8. [HQChart实战教程61-自定义十字星K线颜色](https://blog.csdn.net/jones2000/article/details/130551867)    
 
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>

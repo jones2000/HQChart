@@ -2312,6 +2312,8 @@ var JSCHART_EVENT_ID=
     ON_REPORT_FORMAT_DRAW_INFO:92,      //单元格输出信息
     ON_FORMAT_INDEX_Y_LABEL:93,          //格式化指标右侧Y轴刻度输出
     ON_FORMAT_OVERLAY_INDEX_Y_LABEL:94,  //格式化叠加指标右侧Y轴刻度输出
+
+    ON_CUSTOM_UNCHANGE_KLINE_COLOR:95,  //定制平盘K线颜色
 }
 
 var JSCHART_OPERATOR_ID=
@@ -20387,6 +20389,12 @@ function ChartKLine()
         this.ShowRange.ShowCount=xPointCount;
         this.DrawKRange.Start=this.Data.DataOffset;
 
+        var eventUnchangeKLine=null;    //定制平盘K线颜色事件
+        if (this.GetEventCallback)
+        {
+            eventUnchangeKLine=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_UNCHANGE_KLINE_COLOR);
+        }
+
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth),++this.ShowRange.DataCount)
         {
             var data=this.Data.Data[i];
@@ -20419,9 +20427,26 @@ function ChartKLine()
                 ptMin.Align=j<xPointCount/2?'left':'right';
             }
 
-            if (data.Open<data.Close) this.Canvas.strokeStyle=this.UpColor; //阳线
-            else if (data.Open>data.Close) this.Canvas.strokeStyle=this.DownColor; //阳线
-            else this.Canvas.strokeStyle=this.UnchagneColor; //平线
+            unchagneColor=this.UnchagneColor; 
+
+            if (data.Open<data.Close) 
+            {
+                this.Canvas.strokeStyle=this.UpColor; //阳线
+            }
+            else if (data.Open>data.Close) 
+            {
+                this.Canvas.strokeStyle=this.DownColor; //阳线
+            }
+            else 
+            {
+                if (eventUnchangeKLine && eventUnchangeKLine.Callback)
+                {
+                    var sendData={ KItem:data, DataIndex:i, DefaultColor:unchagneColor, BarColor:null };
+                    eventUnchangeKLine.Callback(eventUnchangeKLine, sendData, this);
+                    if (sendData.BarColor) unchagneColor=sendData.BarColor;
+                }
+                this.Canvas.strokeStyle=unchagneColor; //平线
+            }
 
             if (this.ColorData) ///五彩K线颜色设置
             {
@@ -20809,6 +20834,13 @@ function ChartKLine()
         this.ShowRange.ShowCount=xPointCount;
         var ptLast=null;
         this.DrawKRange.Start=this.Data.DataOffset;
+
+        var eventUnchangeKLine=null;    //定制平盘K线颜色事件
+        if (this.GetEventCallback)
+        {
+            eventUnchangeKLine=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_UNCHANGE_KLINE_COLOR);
+        }
+
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth),++this.ShowRange.DataCount)
         {
             var data=this.Data.Data[i];
@@ -20885,7 +20917,15 @@ function ChartKLine()
             }
             else // 平线
             {
-                this.DrawKBar_Unchagne(data, dataWidth, unchagneColor, this.DrawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
+                var barColor=unchagneColor;
+                if (eventUnchangeKLine && eventUnchangeKLine.Callback)
+                {
+                    var sendData={ KItem:data, DataIndex:i, DefaultColor:barColor, BarColor:null };
+                    eventUnchangeKLine.Callback(eventUnchangeKLine, sendData, this);
+                    if (sendData.BarColor) barColor=sendData.BarColor;
+                }
+
+                this.DrawKBar_Unchagne(data, dataWidth, barColor, this.DrawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
             }
             
             if (this.IsShowKTooltip && !isHScreen)    //添加tooltip区域
