@@ -275,6 +275,15 @@ function ChartKLine()
         this.ShowRange.ShowCount=xPointCount;
         this.DrawKRange.Start=this.Data.DataOffset;
 
+        var eventUnchangeKLine=null;    //定制平盘K线颜色事件
+        if (this.GetEventCallback)
+        {
+            eventUnchangeKLine=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_UNCHANGE_KLINE_COLOR);
+        }
+
+        var upColor=this.UpColor;
+        var downColor=this.DownColor;
+        var unchagneColor=this.UnchagneColor; 
 
         var ptMax = { X: null, Y: null, Value: null, Align: 'left' };
         var ptMin = { X: null, Y: null, Value: null, Align: 'left' };
@@ -309,9 +318,25 @@ function ChartKLine()
                 ptMin.Align = j < xPointCount / 2 ? 'left' : 'right';
             }
 
-            if (data.Open < data.Close) this.Canvas.strokeStyle = this.UpColor; //阳线
-            else if (data.Open > data.Close) this.Canvas.strokeStyle = this.DownColor; //阳线
-            else this.Canvas.strokeStyle = this.UnchagneColor; //平线
+            if (data.Open < data.Close) 
+            {
+                this.Canvas.strokeStyle =upColor; //阳线
+            }
+            else if (data.Open > data.Close) 
+            {
+                this.Canvas.strokeStyle = downColor; //阴线
+            }
+            else 
+            {
+                if (eventUnchangeKLine && eventUnchangeKLine.Callback)
+                {
+                    var sendData={ KItem:data, DataIndex:i, DefaultColor:unchagneColor, BarColor:null };
+                    eventUnchangeKLine.Callback(eventUnchangeKLine, sendData, this);
+                    if (sendData.BarColor) unchagneColor=sendData.BarColor;
+                }
+
+                this.Canvas.strokeStyle =unchagneColor; //平线
+            }
 
             this.Canvas.beginPath();   //最高-最低
             if (isHScreen) 
@@ -592,6 +617,12 @@ function ChartKLine()
         this.ShowRange.ShowCount=xPointCount;
         this.DrawKRange.Start=this.Data.DataOffset;
 
+        var eventUnchangeKLine=null;    //定制平盘K线颜色事件
+        if (this.GetEventCallback)
+        {
+            eventUnchangeKLine=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_UNCHANGE_KLINE_COLOR);
+        }
+
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth), ++this.ShowRange.DataCount) 
         {
             var data = this.Data.Data[i];
@@ -665,7 +696,15 @@ function ChartKLine()
             }
             else // 平线
             {
-                this.DrawKBar_Unchagne(data, dataWidth, unchagneColor, this.DrawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
+                var barColor=unchagneColor;
+                if (eventUnchangeKLine && eventUnchangeKLine.Callback)
+                {
+                    var sendData={ KItem:data, DataIndex:i, DefaultColor:barColor, BarColor:null };
+                    eventUnchangeKLine.Callback(eventUnchangeKLine, sendData, this);
+                    if (sendData.BarColor) barColor=sendData.BarColor;
+                }
+
+                this.DrawKBar_Unchagne(data, dataWidth, barColor, this.DrawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
             }
 
             if (this.Data.DataType == 0 && ChartData.IsDayPeriod(this.Data.Period,true)) //信息地雷

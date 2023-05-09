@@ -2029,6 +2029,9 @@ var JSCHART_EVENT_ID =
     ON_FORMAT_CORSSCURSOR_Y_TEXT:75,    //格式化十字光标Y轴文字
     ON_FORMAT_INDEX_OUT_TEXT:76,           //格式化指标标题文字
     ON_FORMAT_CORSSCURSOR_X_TEXT:77,    //格式化十字光标X轴文字
+
+
+    ON_CUSTOM_UNCHANGE_KLINE_COLOR:95,  //定制平盘K线颜色
 }
 
 var JSCHART_DATA_FIELD_ID=

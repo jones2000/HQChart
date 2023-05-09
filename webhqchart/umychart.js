@@ -4588,6 +4588,7 @@ function JSChartContainer(uielement, OffscreenElement)
 
         this.DrawDrawPictureXYCoordinate(); //绘制画图工具 X,Y轴刻度信息
         
+        var ptPosition=null;    //鼠标位置 null 无效 -1 在外面 >=0 对应的指标窗口中ID
         if (this.LastPoint.X!=null || this.LastPoint.Y!=null)
         {
             if (this.ChartCorssCursor)
@@ -4613,6 +4614,8 @@ function JSChartContainer(uielement, OffscreenElement)
                     this.ChartCorssCursor.Draw();
                 }
             }
+
+            ptPosition=this.Frame.PtInFrame(this.LastPoint.X, this.LastPoint.Y);
         }
 
         var drawStatus=this.GetDrawStatus();
@@ -4632,7 +4635,7 @@ function JSChartContainer(uielement, OffscreenElement)
             if (item.OnDrawEvent) 
             {
                 item.OnDrawEvent.FunctionName='Draw';
-                item.OnDrawEvent.PointPosition=null;
+                item.OnDrawEvent.PointPosition=ptPosition;
             }
 
             item.DrawStatus=drawStatus;
