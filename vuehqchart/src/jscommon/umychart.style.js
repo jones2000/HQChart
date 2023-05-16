@@ -74,6 +74,7 @@ function GetBlackStyle()
         IndexTitleColor:"rgb(190, 190 ,190)",                       //指标名字颜色
         IndexTitleBGColor:'rgb(0,0,0)',                     //指标名字背景色
         IndexTitleBorderColor:'rgb(211, 211, 211)',                 //指标名字边框颜色
+        IndexTitleBorderMoveOnColor:'rgb(30,144,255)',         //指标名字边框颜色(鼠标在上面)
     
         UpTextColor: "rgb(238,21,21)",
         DownTextColor: "rgb(25,158,0)",

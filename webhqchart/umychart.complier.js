@@ -20757,7 +20757,7 @@ function OverlayScriptIndex(name,script,args,option)
         if (IFrameSplitOperator.IsNumber(this.YSplitType)) this.OverlayIndex.Frame.Frame.YSplitOperator.SplitType=this.YSplitType;
         
         //指标名字
-        var titleInfo={ Data:[], Title:this.Name };
+        var titleInfo={ Data:[], Title:this.Name, Frame:this.OverlayIndex.Frame.Frame };
         let indexParam='';
         for(var i in this.Arguments)
         {

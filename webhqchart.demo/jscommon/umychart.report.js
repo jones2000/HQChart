@@ -1611,6 +1611,16 @@ function JSReportChartContainer(uielement)
 
             var index=this.DragColumnWidth.ClickData.Index;
 
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_DRAG_COLUMN_WIDTH);
+
+            if (event && event.Callback)
+            {
+                var sendData={ Index:index, Width:fixedWidth, PreventDefault:false };
+                if (this.DragColumnWidth && this.DragColumnWidth.ClickData) sendData.Column=this.DragColumnWidth.ClickData.Column
+                event.Callback(event, sendData, this);
+                if (sendData.PreventDefault) return;
+            }
+
             this.SetColumnFixedWidth(index, fixedWidth);
 
             this.DragColumnWidth.LastPoint.X=x;
