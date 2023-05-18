@@ -4441,9 +4441,25 @@ function ChartReport()
             this.Canvas.textAlign="left";
         }
 
+        var textWidth=this.Canvas.measureText(text).width+1;
+        var bClip=false;
+        if (textWidth>=width)
+        {
+            this.Canvas.save();
+            bClip=true;
+
+            var rtCell={ Left:left, Top:top+this.ItemMergin.Top, Width:width, Height:this.RowHeight };
+            this.Canvas.beginPath();
+            this.Canvas.rect(rtCell.Left, rtCell.Top, rtCell.Width, rtCell.Height);
+            //this.Canvas.stroke(); //调试用
+            this.Canvas.clip();
+        }
+
         this.Canvas.textBaseline="middle";
         this.Canvas.fillStyle=textColor;
         this.Canvas.fillText(text,x,top+this.ItemMergin.Top+this.RowHeight/2);
+
+        if (bClip) this.Canvas.restore();
     }
 
     //{ Text:, Symbol:{ Family:'iconfont', Size:,  Data:[ { Text:'\ue631', Color:'#1c65db'}, ...] } ]}

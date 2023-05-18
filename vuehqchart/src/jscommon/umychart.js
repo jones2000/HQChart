@@ -508,7 +508,7 @@ function JSChart(divElement, bOffscreen)
             if (item.Overlay!=null) frame.OverlayIndex=item.Overlay;
             if (IFrameSplitOperator.IsBool(item.Export)) frame.ExportData=item.Export;
             if (IFrameSplitOperator.IsBool(item.MaxMin)) chart.Frame.SubFrame[i].Frame.MaxMinWindow=item.MaxMin;
-            if (IFrameSplitOperator.IsBool(item.TitlteWindow)) chart.Frame.SubFrame[i].Frame.TitlteWindow=item.TitlteWindow;
+            if (IFrameSplitOperator.IsBool(item.TitleWindow)) chart.Frame.SubFrame[i].Frame.TitleWindow=item.TitleWindow;
             if (item.IsDrawTitleBG==true)  chart.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
             if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[i].Frame.IsShowNameArrow=item.IsShowNameArrow;
 
@@ -928,7 +928,7 @@ function JSChart(divElement, bOffscreen)
                 if (item.Overlay!=null) frame.OverlayIndex=item.Overlay;
                 if (IFrameSplitOperator.IsBool(item.Export)) frame.ExportData=item.Export;
                 if (IFrameSplitOperator.IsBool(item.MaxMin)) frame.MaxMinWindow=item.MaxMin;
-                if (IFrameSplitOperator.IsBool(item.TitlteWindow)) frame.TitlteWindow=item.TitlteWindow;
+                if (IFrameSplitOperator.IsBool(item.TitleWindow)) frame.TitleWindow=item.TitleWindow;
 
                 if (IFrameSplitOperator.IsNumber(item.YSplitType)) chart.Frame.SubFrame[index].Frame.YSplitOperator.SplitType=item.YSplitType;
                 if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight=item.TitleHeight;
@@ -1330,7 +1330,7 @@ function JSChart(divElement, bOffscreen)
                 if (item.Overlay!=null) frame.OverlayIndex=item.Overlay;
                 if (IFrameSplitOperator.IsBool(item.Export)) frame.ExportData=item.Export;
                 if (IFrameSplitOperator.IsBool(item.MaxMin)) chart.Frame.SubFrame[i].Frame.MaxMinWindow=item.MaxMin;
-                if (IFrameSplitOperator.IsBool(item.TitlteWindow)) chart.Frame.SubFrame[i].Frame.TitlteWindow=item.TitlteWindow;
+                if (IFrameSplitOperator.IsBool(item.TitleWindow)) chart.Frame.SubFrame[i].Frame.TitleWindow=item.TitleWindow;
                 if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
                 if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[i].Frame.IsShowNameArrow=item.IsShowNameArrow;
 
@@ -5388,10 +5388,17 @@ function JSChartContainer(uielement, OffscreenElement)
                 drawPictrueData.ChartDrawPicture && drawPictrueData.ChartDrawPicture.EnableMove==true) 
             {
                 
-                if (drawPictrueData.PointIndex===100) this.UIElement.style.cursor="move";
-                else this.UIElement.style.cursor="pointer";
-                bDrawPicture=true;
+                if (drawPictrueData.PointIndex===100) 
+                {
+                    this.UIElement.style.cursor="move";
+                }
+                else 
+                {
+                    if (drawPictrueData.Cursor) this.UIElement.style.cursor=drawPictrueData.Cursor
+                    else this.UIElement.style.cursor="pointer";
+                }
 
+                bDrawPicture=true;
                 this.MoveOnChartDrawPicture=drawPictrueData.ChartDrawPicture;
             }
             else 
@@ -6499,6 +6506,7 @@ function JSChartContainer(uielement, OffscreenElement)
             {
                 data.ChartDrawPicture=item;
                 data.PointIndex=pointIndex;
+                if (item.GetCursorType) data.Cursor=item.GetCursorType(pointIndex); //鼠标形状
                 return true;
             }
         }
@@ -6970,6 +6978,7 @@ function JSChartContainer(uielement, OffscreenElement)
             return true;
         }
 
+        drawPicture.PointMagnetKLine();
         drawPicture.Status=10;  //完成
         drawPicture.PointToValue();
 
@@ -10447,7 +10456,7 @@ function MinuteFrame()
     this.ChangeIndex=true;      //是否显示'换指标'菜单
     this.CloseIndex=true;       //是否显示'关闭指标窗口'菜单
     this.MaxMinWindow=true;
-    this.TitlteWindow=true;
+    this.TitleWindow=true;
     this.ExportData=false;      //是否显示'导出数据'菜单
 
     this.ModifyIndexEvent;   //改参数 点击事件
@@ -10664,7 +10673,7 @@ function MinuteFrame()
         var aryButton=[];
         if (this.CloseIndex)  aryButton.push( { ID:JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW, Style:this.CloseWindowButton });
         if (this.MaxMinWindow) aryButton.push({ ID:JSCHART_BUTTON_ID.MAX_MIN_WINDOW, Style:this.MaxMinWindowButton })
-        if (this.TitlteWindow) aryButton.push({ ID:JSCHART_BUTTON_ID.TITLE_WINDOW, Style:this.TitleWindowButton });
+        if (this.TitleWindow) aryButton.push({ ID:JSCHART_BUTTON_ID.TITLE_WINDOW, Style:this.TitleWindowButton });
         if (this.ExportData) aryButton.push( {ID:JSCHART_BUTTON_ID.EXPORT_DATA, Style:this.ExportDataButton});
         if (this.OverlayIndex) aryButton.push( { ID:JSCHART_BUTTON_ID.OVERLAY_INDEX, Style:this.OverlayIndexButton });
         if (this.ChangeIndex) aryButton.push( { ID:JSCHART_BUTTON_ID.CHANGE_INDEX, Style:this.ChangeIndexButton });
@@ -12272,7 +12281,7 @@ function KLineFrame()
     this.CloseIndex=true;       //是否显示'关闭指标窗口'菜单
     this.OverlayIndex=false;    //是否显示叠加指标
     this.MaxMinWindow=true;
-    this.TitlteWindow=true;
+    this.TitleWindow=true;
     this.ExportData=false;      //是否显示'导出数据'菜单
 
     this.ModifyIndexEvent;   //改参数 点击事件
@@ -12461,7 +12470,7 @@ function KLineFrame()
         //第1个窗口不能关闭
         if (this.CloseIndex && this.Identify!==0)  aryButton.push( { ID:JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW, Style:this.CloseWindowButton });
         if (this.MaxMinWindow && this.Identify!=0) aryButton.push({ ID:JSCHART_BUTTON_ID.MAX_MIN_WINDOW, Style:this.MaxMinWindowButton });
-        if (this.TitlteWindow && this.Identify!=0) aryButton.push({ ID:JSCHART_BUTTON_ID.TITLE_WINDOW, Style:this.TitleWindowButton });
+        if (this.TitleWindow && this.Identify!=0) aryButton.push({ ID:JSCHART_BUTTON_ID.TITLE_WINDOW, Style:this.TitleWindowButton });
         if (this.ExportData) aryButton.push( {ID:JSCHART_BUTTON_ID.EXPORT_DATA, Style:this.ExportDataButton});
         if (this.OverlayIndex) aryButton.push( { ID:JSCHART_BUTTON_ID.OVERLAY_INDEX, Style:this.OverlayIndexButton });
         if (this.ChangeIndex) aryButton.push( { ID:JSCHART_BUTTON_ID.CHANGE_INDEX, Style:this.ChangeIndexButton });
@@ -47345,7 +47354,12 @@ function IChartDrawPicture()
         if (!this.IsSupportMagnet) return false;
         if (!this.Frame) return false;
         if (this.Frame.ClassName=="MinuteFrame" || this.Frame.Class=="MinuteHScreenFrame") return false;
-        if (this.Frame.Identify!=0 || !IFrameSplitOperator.IsNumber(this.MovePointIndex)) return false;
+        if (this.Frame.Identify!=0) return false;
+
+        var pointIndex=-1;
+        if (this.Status==2) pointIndex=1;
+        else if (IFrameSplitOperator.IsNumber(this.MovePointIndex)) pointIndex=this.MovePointIndex;
+        if (pointIndex<0) return false;
 
         if (this.Option && this.Option.Magnet && this.Option.Magnet.Enable)
         {
@@ -47355,7 +47369,7 @@ function IChartDrawPicture()
                 Magnet:
                 {
                     Enable:true,
-                    PointIndex:this.MovePointIndex,
+                    PointIndex:pointIndex,
                     Distance:this.Option.Magnet.Distance,
                     Type:this.Option.Magnet.Type
                 }
@@ -47695,18 +47709,24 @@ function IChartDrawPicture()
             if (this.OnlyMoveXIndex)
             {
                 var option= { IsFixedX:this.OnlyMoveXIndex };
-                JSConsole.Chart.Log(`[IChartDrawPicture::CalculateDrawPoint] MovePointIndex=${this.MovePointIndex} Identify=${this.Frame.Identify}`);
+                JSConsole.Chart.Log(`[IChartDrawPicture::CalculateDrawPoint] Status=${this.Status} MovePointIndex=${this.MovePointIndex} Identify=${this.Frame.Identify}`);
 
                 //磁吸功能
-                if (this.Option && this.Option.Magnet && this.Option.Magnet.Enable && 
-                    this.IsSupportMagnet && IFrameSplitOperator.IsNumber(this.MovePointIndex) && this.Frame.Identify==0)
+                if (this.Option && this.Option.Magnet && this.Option.Magnet.Enable && this.IsSupportMagnet  && this.Frame.Identify==0)
                 {
-                    option.Magnet=
+                    var pointIndex=-1;
+                    if (this.Status==2) pointIndex=1;   //创建第2个点
+                    if (IFrameSplitOperator.IsNumber(this.MovePointIndex)) pointIndex=this.MovePointIndex;
+                        
+                    if (pointIndex>=0)
                     {
-                        Enable:true,
-                        PointIndex:this.MovePointIndex,
-                        Distance:this.Option.Magnet.Distance,
-                        Type:this.Option.Magnet.Type
+                        option.Magnet=
+                        {
+                            Enable:true,
+                            PointIndex:pointIndex,
+                            Distance:this.Option.Magnet.Distance,
+                            Type:this.Option.Magnet.Type
+                        }
                     }
                 }
                 
@@ -47910,6 +47930,8 @@ function IChartDrawPicture()
     {
         var left=this.Frame.ChartBorder.GetLeft();
         var right=this.Frame.ChartBorder.GetRight();
+        var bottom=this.Frame.ChartBorder.GetBottomEx();
+        var top=this.Frame.ChartBorder.GetTopEx();
 
         var a=aryPoint[1].X-aryPoint[0].X;
         var b=aryPoint[1].Y-aryPoint[0].Y;
@@ -47920,10 +47942,36 @@ function IChartDrawPicture()
             var b1=a1*b/a;
             var y=b1+aryPoint[0].Y;
 
-            var pt=new Point();
-            pt.X=right;
-            pt.Y=y;
-            return pt;
+            if (y>=top && y<=bottom)
+            {
+                var pt=new Point();
+                pt.X=right;
+                pt.Y=y;
+                return pt;
+            }
+
+            if (b>0)
+            {
+                var b2=bottom-aryPoint[0].Y;
+                var a2=a*b2/b;
+                var x=a2+aryPoint[0].X;
+    
+                var pt2=new Point();
+                pt2.X=x;
+                pt2.Y=bottom;
+                return pt2;
+            }
+            else
+            {
+                var b2=top-aryPoint[0].Y;
+                var a2=a*b2/b;
+                var x=a2+aryPoint[0].X;
+
+                var pt2=new Point();
+                pt2.X=x;
+                pt2.Y=top;
+                return pt2;
+            }
         }
         else
         {
@@ -47931,10 +47979,36 @@ function IChartDrawPicture()
             var b1=a1*b/Math.abs(a);
             var y=b1+aryPoint[0].Y;
 
-            var pt=new Point();
-            pt.X=left;
-            pt.Y=y;
-            return pt;
+            if (y>=top && y<=bottom)
+            {
+                var pt=new Point();
+                pt.X=left;
+                pt.Y=y;
+                return pt;
+            }
+
+            if (b>0)
+            {
+                var b2=bottom-aryPoint[0].Y;
+                var a2=a*b2/b;
+                var x=a2+aryPoint[0].X;
+    
+                var pt2=new Point();
+                pt2.X=x;
+                pt2.Y=bottom;
+                return pt2;
+            }
+            else
+            {
+                var b2=top-aryPoint[0].Y;
+                var a2=a*b2/b;
+                var x=a2+aryPoint[0].X;
+
+                var pt2=new Point();
+                pt2.X=x;
+                pt2.Y=top;
+                return pt2;
+            }
         }
     }
 
@@ -48738,15 +48812,55 @@ function ChartDrawPictureHaflLine()
     delete this.newMethod;
 
     this.ClassName='ChartDrawPictureHaflLine';
-    this.IsPointIn=this.IsPointIn_XYValue_Line;
     this.GetXYCoordinate=this.GetXYCoordinate_default;
+    this.OnlyMoveXIndex=true;
+    this.IsSupportMagnet=true;
+    
+    this.FullLine;
+
+
+    this.IsPointIn=function(x, y, option)
+    {
+        var result=this.IsPointIn_XYValue_Line(x,y,option);
+        if (result>=0) return result;
+
+        if (!this.FullLine) return result;
+
+        var ptStart=this.FullLine.Start;
+        var ptEnd=this.FullLine.End;
+        var pixel=GetDevicePixelRatio();
+        var lineWidth=5*pixel;
+
+        this.Canvas.beginPath();
+        if (ptStart.X==ptEnd.X) //竖线
+        {
+            this.Canvas.moveTo(ptStart.X-lineWidth,ptStart.Y);
+            this.Canvas.lineTo(ptStart.X+lineWidth,ptStart.Y);
+            this.Canvas.lineTo(ptEnd.X+lineWidth,ptEnd.Y);
+            this.Canvas.lineTo(ptEnd.X-lineWidth,ptEnd.Y);
+        }
+        else
+        {
+            this.Canvas.moveTo(ptStart.X,ptStart.Y+lineWidth);
+            this.Canvas.lineTo(ptStart.X,ptStart.Y-lineWidth);
+            this.Canvas.lineTo(ptEnd.X,ptEnd.Y-lineWidth);
+            this.Canvas.lineTo(ptEnd.X,ptEnd.Y+lineWidth);
+        }
+        this.Canvas.closePath();
+
+        if (this.Canvas.isPointInPath(x,y))
+            return 100;
+
+        return result;
+    }
 
     this.Draw=function()
     {
         this.LinePoint=[];
+        this.FullLine=null;
         if (this.IsFrameMinSize()) return;
 
-        var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
+        var drawPoint=this.CalculateDrawPoint({IsCheckX:false, IsCheckY:false});
         if (!drawPoint || drawPoint.length!=2) return;
 
         var ptStart=drawPoint[0];
@@ -48768,6 +48882,8 @@ function ChartDrawPictureHaflLine()
 
         this.DrawPoint(drawPoint);  //画点
         this.Canvas.restore();
+
+        this.FullLine={Start:drawPoint[0], End:endPoint};
     }
 }
 
@@ -49420,13 +49536,15 @@ function ChartDrawPictureTrendLine()
     this.ClassName='ChartDrawPictureTrendLine';
     this.IsPointIn=this.IsPointIn_XYValue_Line;
     this.GetXYCoordinate=this.GetXYCoordinate_default;
+    this.OnlyMoveXIndex=true;
+    this.IsSupportMagnet=true;
 
     this.Draw=function()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
 
-        var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
+        var drawPoint=this.CalculateDrawPoint({IsCheckX:false, IsCheckY:false});
         if (!drawPoint || drawPoint.length!=2) return;
 
         var ptStart=drawPoint[0];
