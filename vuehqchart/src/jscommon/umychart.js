@@ -6915,6 +6915,7 @@ function JSChartContainer(uielement, OffscreenElement)
         drawPicture.Point[0].X=xFixed;
         drawPicture.Point[0].Y=yFixed;
         drawPicture.Status=1;   //第1个点完成
+        drawPicture.PointMagnetKLine();
         return true;
     }
 
@@ -11530,7 +11531,95 @@ function MinuteFrame()
 
     this.GetRightExtendXValidData=function(x, obj)
     {
+        var border=this.ChartBorder.GetBorder();
+        if (border.DayBorder)
+        {
+            var indexData=this.GetRightExtendXData(x, obj.Data);
+            if (!indexData) return false;
+            var index=parseInt(indexData.DataIndex.toFixed(0));
+            var dayData=obj.Data[indexData.DayIndex];
+            
+            if (index>=0 && index<dayData.Data.length)
+            {
+                var item=dayData.Data[index];
+                if (IFrameSplitOperator.IsNumber(item.Price)) 
+                {
+                    obj.IndexData.DataIndex=index;
+                    return true;
+                }
+            }
 
+            if (index<0) index=0;
+            else if (index>=dayData.Data.length) index=dayData.Data.length-1;
+
+            var findIndex=-1;
+            for(var i=index; i>=0; --i)
+            {
+                var item=dayData.Data[i];
+                if (item && IFrameSplitOperator.IsNumber(item.Price))
+                {
+                    findIndex=i;
+                    break;
+                }
+            }
+    
+            if (findIndex<0) return false;
+    
+            obj.IndexData.DataIndex=findIndex;
+            obj.IndexData.Point.X=this.GetRightExtendXFromIndex(findIndex, dayData);  //调整X轴坐标
+
+            JSConsole.Chart.Log(`[MinuteFrame::GetRightExtendXValidData] DayIndex:${obj.IndexData.DayIndex}, Type:${obj.IndexData.Type}, x:${x}=>${obj.IndexData.Point.X}, index:${index}=>${findIndex}`);
+            return true;
+        }
+        else
+        {
+            var index=this.GetRightExtendXData(x, obj.Data);
+            index=parseInt(index.toFixed(0));
+
+            if (index>=0 && index<obj.Data.Data.length)
+            {
+                var item=obj.Data.Data[index];
+                if (IFrameSplitOperator.IsNumber(item.Price)) 
+                {
+                    obj.IndexData.DataIndex=index;
+                    return true;
+                }
+            }
+
+            if (index<0) index=0;
+            else if (index>=obj.Data.Data.length) index=obj.Data.Data.length-1;
+
+            var findIndex=-1;
+            for(var i=index; i>=0; --i)
+            {
+                var item=obj.Data.Data[i];
+                if (IFrameSplitOperator.IsNumber(item.Price))
+                {
+                    findIndex=i;
+                    break;
+                }
+            }
+
+            if (findIndex<0)
+            {
+                for(var i=index+1; i<obj.Data.Data.length;++i)
+                {
+                    var item=obj.Data.Data[i];
+                    if (IFrameSplitOperator.IsNumber(item.Price))
+                    {
+                        findIndex=i;
+                        break;
+                    }
+                }
+            }
+
+            if (findIndex<0) return false;
+
+            obj.IndexData.DataIndex=findIndex;
+            obj.IndexData.Point.X=this.GetRightExtendXFromIndex(findIndex, obj.Data);  //调整X轴坐标
+            JSConsole.Chart.Log(`[MinuteFrame::GetRightExtendXValidData] DayIndex:${obj.IndexData.DayIndex}, Type:${obj.IndexData.Type}, x:${x}=>${obj.IndexData.Point.X}, index:${index}=>${findIndex}`);
+            return true;
+        }
     }
     
     this.GetLeftExtendYFromData=function(value,isLimit,obj)
@@ -46705,6 +46794,8 @@ function DynamicChartTitlePainting()
             var toolbarInfo={ Width:0, YCenter:y, ID:overlayID };
             this.DrawOverlayToolbar(overlayItem,toolbarInfo,moveonPoint, mouseStatus);
 
+            if (!overlayItem.Frame.IsShowIndexTitle) continue;
+
             x=left+toolbarInfo.Width;
             this.Canvas.font=this.Font;
             this.Canvas.textAlign="left";
@@ -47358,6 +47449,7 @@ function IChartDrawPicture()
 
         var pointIndex=-1;
         if (this.Status==2) pointIndex=1;
+        else if (this.Status==1) pointIndex=0;
         else if (IFrameSplitOperator.IsNumber(this.MovePointIndex)) pointIndex=this.MovePointIndex;
         if (pointIndex<0) return false;
 
@@ -61336,7 +61428,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         else if (obj.ShowRightText===false) frame.IsShow=false;
         if (IFrameSplitOperator.IsBool(obj.ShowToolbar)) frame.IsShowToolbar=obj.ShowToolbar;   //废弃
         if (IFrameSplitOperator.IsBool(obj.IsShareY)) frame.IsShareY=obj.IsShareY;
-       
+        if (IFrameSplitOperator.IsBool(obj.IsShowIndexTitle)) frame.IsShowIndexTitle=obj.IsShowIndexTitle;
         if (IFrameSplitOperator.IsBool(obj.IsCalculateYMaxMin)) frame.IsCalculateYMaxMin=obj.IsCalculateYMaxMin;   //是否计算Y最大最小值
 
         frame.YSplitOperator=new FrameSplitY();
@@ -65492,13 +65584,13 @@ function MinuteChartContainer(uielement)
             {
                 this.CorssCursorIndex.DayIndex=clientPos-300;
                 this.CorssCursorIndex.Type=30;
-                var aryData=this.MultiDayAfterOpenData;
-                if (this.DayOffset && this.MultiDayAfterOpenData)
+                var aryData=this.MultiDayAfterCloseData;
+                if (this.DayOffset && this.MultiDayAfterCloseData)
                 {
-                    var offset=0, showDayCount=this.MultiDayBeforeOpenData.length;
+                    var offset=0, showDayCount=this.MultiDayAfterCloseData.length;
                     if (IFrameSplitOperator.IsNumber(this.DayOffset.Offset)) offset=this.DayOffset.Offset;
                     if (IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) showDayCount=this.DayOffset.ShowDayCount;
-                    aryData=this.MultiDayAfterOpenData.slice(offset,offset+showDayCount);
+                    aryData=this.MultiDayAfterCloseData.slice(offset,offset+showDayCount);
                 }
                 frame.GetRightExtendXValidData(option.Point.X,{ Data: aryData, IndexData: this.CorssCursorIndex });
             }
@@ -69240,6 +69332,10 @@ function MinuteChartContainer(uielement)
 //盘前数据
 MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
 {
+    var symbol=data.stock[0].symbol;
+    var upperSymbol=symbol.toUpperCase();
+    var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var stockData=data.stock[0];
     var date=stockData.date;                //日期
@@ -69250,9 +69346,10 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
         if (IFrameSplitOperator.IsNumber(stockData.beforeinfo.totalcount)) beforeOpenData.TotalCount=stockData.beforeinfo.totalcount;
         if (IFrameSplitOperator.IsNumber(stockData.beforeinfo.ver)) beforeOpenData.Ver=stockData.beforeinfo.ver;
     }
+
     if (beforeOpenData.Ver==1.0)
     {
-        for(var i in stockData.before)
+        for(var i=0; i<stockData.before.length; ++i)
         {
             var item=new BeforeOpenData();
             var jsData=stockData.before[i];
@@ -69261,10 +69358,14 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
             item.Price=jsData[1];
             if (!item.Price) item.Price=preClose;
             else preClose=item.Price;
-            item.Vol[0]=jsData[2]/100;  //沪深股票原始单位股
+            if (isSHSZ) item.Vol[0]=jsData[2]/100;  //沪深股票原始单位股
+            else  item.Vol[0]=jsData[2];  
             item.Amount=jsData[3];
-            item.DateTime=date.toString()+" "+item.Time.toString();
-    
+
+            if (IFrameSplitOperator.IsNumber(jsData[4]))    //日期
+                item.Date=jsData[4];
+           
+            item.DateTime=`${item.Date} ${item.Time}`;
             beforeOpenData.Data.push(item);
         }
     }
@@ -69281,7 +69382,8 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
             item.Vol[0]=jsData[2];  //匹配量
             item.Vol[1]=jsData[3];  //未匹配量
             item.ColorID=jsData[4]; //柱子颜色ID
-            item.DateTime=date.toString()+" "+item.Time.toString();
+            if (IFrameSplitOperator.IsNumber(jsData[6])) item.Date=jsData[6]    //日期
+            item.DateTime=`${item.Date} ${item.Time})`;
 
             var totalVol=item.Vol[0]+item.Vol[1];
             if (IFrameSplitOperator.IsNumber(jsData[5])) totalVol=jsData[5];
@@ -69338,7 +69440,27 @@ MinuteChartContainer.JsonDataToAfterCloseData=function(data)
     if (IFrameSplitOperator.IsNumber(item.totalcount)) afterCloseData.TotalCount=item.totalcount;
     if (IFrameSplitOperator.IsNumber(item.ver)) afterCloseData.Ver=item.ver;
     var extendDataIndex=JSCHART_DATA_FIELD_ID.MINUTE_AFTERCLOSE_EXTENDDATA;  //扩展数据序号
-    if (afterCloseData.Ver==2.0)
+    
+    if (afterCloseData.Ver==1.0)
+    {
+        for(var i=0; i<stockData.after.length; ++i)
+        {
+            var item=new AfterCloseData();
+            var jsData=stockData.after[i];
+            item.Time=jsData[0];
+            item.Date=date;
+            item.Price=jsData[1];
+            item.Vol[0]=jsData[2];  
+            item.Amount=jsData[3];
+
+            if (IFrameSplitOperator.IsNumber(jsData[4]))    //日期
+                item.Date=jsData[4];
+           
+            item.DateTime=`${item.Date} ${item.Time}`;
+            afterCloseData.Data.push(item);
+        }
+    }
+    else if (afterCloseData.Ver==2.0)
     {
         var max=0;
         for(var i in stockData.after)

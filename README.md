@@ -13,7 +13,8 @@ HQChart是第1个基于国内传统PC股票客户端软件(C++)移植到js/py平
 **支持品种**:支持股票，期货， 数字货币，外汇等和K线相关的品种。<br>
 **麦语法指标计算引擎**(分析家语法)指标执行器支持js, nodejs, py, c#，c++. <br>
 
-QQ交流群：950092318   
+QQ交流群1：950092318(已满)    
+QQ交流群2：719525615      
 
 
 源码地址:[https://github.com/jones2000/HQChart](https://github.com/jones2000/HQChart)<br>

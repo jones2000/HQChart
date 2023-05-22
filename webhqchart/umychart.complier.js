@@ -10029,17 +10029,25 @@ function JSDraw(errorHandler,symbolData)
         if (borderWidth>0) result.Border.Width=borderWidth;
         if (dotted) 
         {
-            let ary=dotted.split(',');
-            result.Border.Dotted=[];
-            for(var i in ary)
+            if (dotted=='0') 
             {
-                var item=ary[i];
-                if (!item) continue;
-                var value=parseInt(ary[i]);
-                if (value<=0) continue;
-                result.Border.Dotted.push(value);
+                result.Border.Dotted=[];
             }
-            if (result.Border.Dotted.length<=0) result.Border.Dotted=null;
+            else
+            {
+                let ary=dotted.split(',');
+                result.Border.Dotted=[];
+                for(var i in ary)
+                {
+                    var item=ary[i];
+                    if (!item) continue;
+                    var value=parseInt(ary[i]);
+                    if (!IFrameSplitOperator.IsNumber(value)) continue;
+                    if (value<=0) continue;
+                    result.Border.Dotted.push(value);
+                }
+                if (result.Border.Dotted.length<=0) result.Border.Dotted=null;
+            }
         }
 
         var IsNumber=typeof(data)=="number";
