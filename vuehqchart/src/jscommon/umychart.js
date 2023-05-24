@@ -69545,24 +69545,27 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
 
     if (beforeOpenData.Ver==1.0)
     {
-        for(var i=0; i<stockData.before.length; ++i)
+        if (IFrameSplitOperator.IsNonEmptyArray(stockData.before))
         {
-            var item=new BeforeOpenData();
-            var jsData=stockData.before[i];
-            item.Time=jsData[0];
-            item.Date=date;
-            item.Price=jsData[1];
-            if (!item.Price) item.Price=preClose;
-            else preClose=item.Price;
-            if (isSHSZ) item.Vol[0]=jsData[2]/100;  //沪深股票原始单位股
-            else  item.Vol[0]=jsData[2];  
-            item.Amount=jsData[3];
-
-            if (IFrameSplitOperator.IsNumber(jsData[4]))    //日期
-                item.Date=jsData[4];
-           
-            item.DateTime=`${item.Date} ${item.Time}`;
-            beforeOpenData.Data.push(item);
+            for(var i=0; i<stockData.before.length; ++i)
+            {
+                var item=new BeforeOpenData();
+                var jsData=stockData.before[i];
+                item.Time=jsData[0];
+                item.Date=date;
+                item.Price=jsData[1];
+                if (!item.Price) item.Price=preClose;
+                else preClose=item.Price;
+                if (isSHSZ) item.Vol[0]=jsData[2]/100;  //沪深股票原始单位股
+                else  item.Vol[0]=jsData[2];  
+                item.Amount=jsData[3];
+    
+                if (IFrameSplitOperator.IsNumber(jsData[4]))    //日期
+                    item.Date=jsData[4];
+               
+                item.DateTime=`${item.Date} ${item.Time}`;
+                beforeOpenData.Data.push(item);
+            }
         }
     }
     else if (beforeOpenData.Ver==2.0)
