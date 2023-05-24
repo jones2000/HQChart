@@ -35,6 +35,7 @@ import {
     ChartKLine,
     ChartColorKline,
     ChartLine,
+    ChartArea,
     ChartSubLine,
     ChartPointDot, 
     ChartStick,
@@ -384,6 +385,53 @@ function ScriptIndex(name, script, args, option)
             hqChart.TitlePaint[titleIndex].Data[id].ChartClassName=line.ClassName;
         }
         
+        hqChart.ChartPaint.push(line);
+    }
+
+    this.CreateArea=function(hqChart, windowIndex, varItem, id)
+    {
+        var line=new ChartArea();
+
+        line.Canvas=hqChart.Canvas;
+        line.DrawType=1;
+        line.Name=varItem.Name;
+        line.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        line.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        line.Identify=this.Guid;
+        if (varItem.Color) line.Color=this.GetColor(varItem.Color);
+        else line.Color=this.GetDefaultColor(id);
+        if (varItem.DownColor) line.AreaColor=varItem.DownColor;
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) line.LineWidth=width;
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.LineDash)) line.LineDash=varItem.LineDash; //虚线
+        if (varItem.IsShow==false) line.IsShow=false;
+        
+        let titleIndex=windowIndex+1;
+        line.Data.Data=varItem.Data;
+        if (varItem.IsShowTitle===false)    //NOTEXT 不绘制标题
+        {
+
+        }
+        else if (IFrameSplitOperator.IsString(varItem.Name) && varItem.Name.indexOf("NOTEXT")==0) //标题中包含NOTEXT不绘制标题
+        {
+
+        }
+        else
+        {
+            if (varItem.NoneName) 
+                hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,null,line.Color);
+            else
+                hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
+
+            hqChart.TitlePaint[titleIndex].Data[id].ChartClassName=line.ClassName;
+        }
+        
+        this.SetChartIndexName(line);
         hqChart.ChartPaint.push(line);
     }
 
@@ -1248,6 +1296,10 @@ function ScriptIndex(name, script, args, option)
             {
                 this.CreateLine(hqChart, windowIndex, item, i, 7);
             }
+            else if (item.Type==9)
+            {
+                this.CreateArea(hqChart,windowIndex,item,i);
+            }
 
             var titlePaint = hqChart.TitlePaint[windowIndex + 1];
             if (titlePaint && titlePaint.Data && i < titlePaint.Data.length) //设置标题数值 小数位数和格式
@@ -1541,6 +1593,10 @@ function OverlayScriptIndex(name,script,args,option)
             else if (item.Type==8)
             {
                 this.CreateLine(hqChart,windowIndex,item,i, item.Type);
+            }
+            else if (item.Type==9)
+            {
+                this.CreateArea(hqChart,windowIndex,item,i);
             }
         }
 

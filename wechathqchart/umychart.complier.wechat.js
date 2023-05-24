@@ -12585,6 +12585,7 @@ function JSExecute(ast,option)
                     let lineStick=false;
                     let stick=false;
                     let volStick=false;
+                    let lineArea=false;
                     let stepLine=false;
                     let isShow = true;
                     let isExData = false;
@@ -12633,6 +12634,7 @@ function JSExecute(ast,option)
                             else if (value==='LINESTICK') lineStick=true;
                             else if (value==='STICK') stick=true;
                             else if (value==='VOLSTICK') volStick=true;
+                            else if (value=="LINEAREA") lineArea=true;
                             else if (value=="STEPLINE") stepLine=true;
                             else if (value==="DRAWABOVE") isDrawAbove=true;
                             else if (value.indexOf('COLOR')==0) color=value;
@@ -12809,6 +12811,16 @@ function JSExecute(ast,option)
                         if (color) value.Color=color;
                         if (upColor) value.UpColor=upColor;
                         if (downColor) value.DownColor=downColor;
+                        this.OutVarTable.push(value);
+                    }
+                    else if (lineArea && varName)   //LINEAREA 面积
+                    {
+                        let outVar=this.VarTable.get(varName);
+                        let value={Name:varName, Data:outVar, Type:9};
+                        if (color) value.Color=color;
+                        if (upColor) value.UpColor=upColor;
+                        if (downColor) value.DownColor=downColor;
+                        if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
                     }
                     else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子

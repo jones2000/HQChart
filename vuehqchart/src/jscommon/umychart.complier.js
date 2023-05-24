@@ -16590,6 +16590,7 @@ function JSExecute(ast,option)
                 let lineStick=false;
                 let stick=false;
                 let volStick=false;
+                let lineArea=false;
                 let stepLine=false;
                 let isShow=true;
                 let isExData=false;
@@ -16644,6 +16645,7 @@ function JSExecute(ast,option)
                         else if (value==='LINESTICK') lineStick=true;
                         else if (value==='STICK') stick=true;
                         else if (value==='VOLSTICK') volStick=true;
+                        else if (value=="LINEAREA") lineArea=true;
                         else if (value==="DRAWABOVE") isDrawAbove=true;
                         else if (value==="DRAWCENTER") isDrawCenter=true;
                         else if (value=="DRAWBELOW") isDrawBelow=true;
@@ -16825,6 +16827,16 @@ function JSExecute(ast,option)
                     if (color) value.Color=color;
                     if (upColor) value.UpColor=upColor;
                     if (downColor) value.DownColor=downColor;
+                    this.OutVarTable.push(value);
+                }
+                else if (lineArea && varName)   //LINEAREA 面积
+                {
+                    let outVar=this.VarTable.get(varName);
+                    let value={Name:varName, Data:outVar, Type:9};
+                    if (color) value.Color=color;
+                    if (upColor) value.UpColor=upColor;
+                    if (downColor) value.DownColor=downColor;
+                    if (lineWidth) value.LineWidth=lineWidth;
                     this.OutVarTable.push(value);
                 }
                 else if (colorStick && varName)  //CYW: SUM(VAR4,10)/10000, COLORSTICK; 画上下柱子
@@ -19215,6 +19227,53 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(line);
     }
 
+    this.CreateArea=function(hqChart, windowIndex, varItem, id,)
+    {
+        var line=new ChartArea();
+
+        line.Canvas=hqChart.Canvas;
+        line.DrawType=1;
+        line.Name=varItem.Name;
+        line.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        line.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        line.Identify=this.Guid;
+        if (varItem.Color) line.Color=this.GetColor(varItem.Color);
+        else line.Color=this.GetDefaultColor(id);
+        if (varItem.DownColor) line.AreaColor=varItem.DownColor;
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) line.LineWidth=width;
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.LineDash)) line.LineDash=varItem.LineDash; //虚线
+        if (varItem.IsShow==false) line.IsShow=false;
+        
+        let titleIndex=windowIndex+1;
+        line.Data.Data=varItem.Data;
+        if (varItem.IsShowTitle===false)    //NOTEXT 不绘制标题
+        {
+
+        }
+        else if (IFrameSplitOperator.IsString(varItem.Name) && varItem.Name.indexOf("NOTEXT")==0) //标题中包含NOTEXT不绘制标题
+        {
+
+        }
+        else
+        {
+            if (varItem.NoneName) 
+                hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,null,line.Color);
+            else
+                hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
+
+            hqChart.TitlePaint[titleIndex].Data[id].ChartClassName=line.ClassName;
+        }
+        
+        this.SetChartIndexName(line);
+        hqChart.ChartPaint.push(line);
+    }
+
     this.CreateOverlayLine=function(hqChart,windowIndex,varItem,id,lineType)
     {
         if (lineType==7) var line=new ChartStepLine();
@@ -20605,6 +20664,10 @@ function ScriptIndex(name,script,args,option)
             else if (item.Type==8)
             {
                 this.CreateLine(hqChart,windowIndex,item,i, item.Type);
+            }
+            else if (item.Type==9)
+            {
+                this.CreateArea(hqChart,windowIndex,item,i);
             }
 
             var titlePaint=hqChart.TitlePaint[windowIndex+1];
@@ -22244,11 +22307,14 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     case "LINESTICK":
                         outItem.Type=4;
                         break;
-                    case "STICK":   //STICK 画柱状线
+                    case "STICK":       //STICK 画柱状线
                         outItem.Type=5;
                         break;
                     case "VOLSTICK":    //成交量柱子
                         outItem.Type=6;
+                        break;
+                    case "LINEAREA":
+                        outItem.Type=9; //面积
                         break;
                     case "NODRAW":  //不画该线
                         outItem.IsShow = false;
