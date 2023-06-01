@@ -424,6 +424,105 @@ function DynamicKLineTitlePainting()
         left += itemWidth;
     }
 
+    this.GetFormatTitle=function(data)
+    {
+        if (!data || !data.Data) return null;
+
+        var aryText=[];
+        var item=data.Data;
+        var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);//价格小数位数
+
+        if (this.IsShowName) //名称
+            aryText.push({Text:this.Name, Color:this.NameColor, LeftSpace:this.NameSpace});
+
+        if (this.IsShowSettingInfo) //周期 复权信息
+        {
+            var periodName = this.GetPeriodName(this.Data.Period);
+            var rightName = this.GetRightName(this.Data.Right,this.Data.Period);
+            var text = "(" + periodName + ")";
+            if (rightName) text = "(" + periodName + " " + rightName + ")";
+            aryText.push({Text:text, Color:this.SettingColor, LeftSpace:this.PeriodSpace});
+        }
+
+        var text = IFrameSplitOperator.FormatDateString(item.Date); //日期
+        if (ChartData.IsDayPeriod(this.Period, true))
+        {
+            aryText.push({Text:text, Color:this.DateTimeColor, LeftSpace:this.DateTimeSpace});
+        }
+        else if (ChartData.IsMinutePeriod(this.Period, true))
+        {
+            if (IFrameSplitOperator.IsNumber(item.Time))
+            {
+                var timeText = IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM");
+                text=`${text} ${timeText}`;
+            }
+            
+            aryText.push({Text:text, Color:this.DateTimeColor, LeftSpace:this.DateTimeSpace});
+        }
+        else if (ChartData.IsSecondPeriod(this.Period) )
+        {
+            if (IFrameSplitOperator.IsNumber(item.Time))
+            {
+                var timeText = IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS");
+                text=`${text} ${timeText}`;
+            }
+            
+            aryText.push({Text:text, Color:this.DateTimeColor, LeftSpace:this.DateTimeSpace});
+        }
+
+        //开
+        if (IFrameSplitOperator.IsNumber(item.Open))
+        {
+            var color = this.GetColor(item.Open, item.YClose);
+            var text = g_JSChartLocalization.GetText('KTitle-Open', this.LanguageID) + item.Open.toFixed(defaultfloatPrecision);
+            aryText.push({Text:text, Color:color});
+        }
+
+        //高
+        if (IFrameSplitOperator.IsNumber(item.High))
+        {
+            var color = this.GetColor(item.High, item.YClose);
+            var text = g_JSChartLocalization.GetText('KTitle-High', this.LanguageID) + item.High.toFixed(defaultfloatPrecision);
+            aryText.push({Text:text, Color:color});
+        }
+
+        //低
+        if (IFrameSplitOperator.IsNumber(item.Low))
+        {
+            var color = this.GetColor(item.Low, item.YClose);
+            var text = g_JSChartLocalization.GetText('KTitle-Low', this.LanguageID) + item.Low.toFixed(defaultfloatPrecision);
+            aryText.push({Text:text, Color:color});
+        }
+       
+        //收
+        if (IFrameSplitOperator.IsNumber(item.Close))
+        {
+            var color = this.GetColor(item.Close, item.YClose);
+            var text = g_JSChartLocalization.GetText('KTitle-Close', this.LanguageID) + item.Close.toFixed(defaultfloatPrecision);
+            aryText.push({Text:text, Color:color});
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Vol))
+        {
+            var text = g_JSChartLocalization.GetText('KTitle-Vol', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Vol, 2, this.LanguageID);
+            aryText.push({Text:text, Color:this.VolColor});
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Amount))
+        {
+            var text = g_JSChartLocalization.GetText('KTitle-Amount', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Amount, 2, this.LanguageID);
+            aryText.push({Text:text, Color:this.AmountColor});
+        }
+
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(this.UpperSymbol) && IFrameSplitOperator.IsNumber(item.Position))
+        {
+            var text = g_JSChartLocalization.GetText('KTitle-Position', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Position, 2, this.LanguageID);
+            aryText.push({Text:text, Color:this.PositionColor});
+        }
+
+        return { AryText:aryText };
+    }
+
     this.DrawSingleLine = function (item,bDrawTitle)  //画单行
     {
         var isHScreen = this.Frame.IsHScreen === true;
@@ -454,7 +553,19 @@ function DynamicKLineTitlePainting()
         this.Canvas.font = this.Font;
 
         var position = { Left: left, Bottom: bottom, IsHScreen: isHScreen };
+        var titleData=this.GetFormatTitle({ Data:item });
 
+        if (titleData && IFrameSplitOperator.IsNonEmptyArray(titleData.AryText))
+        {
+            for(var i=0;i<titleData.AryText.length;++i)
+            {
+                var item=titleData.AryText[i];
+                if (!this.DrawKLineText(item.Text, item.Color, position, bDrawTitle==true)) break;
+                if (IFrameSplitOperator.IsNumber(item.LeftSpace))  position.Left+=item.LeftSpace;
+            }
+        }
+
+        /*
         if (this.IsShowName) //名称
         {
             if (!this.DrawKLineText(this.Name, this.NameColor, position, bDrawTitle==true)) return;
@@ -533,6 +644,7 @@ function DynamicKLineTitlePainting()
             var text = g_JSChartLocalization.GetText('KTitle-Position', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Position, 2, this.LanguageID);
             if (!this.DrawKLineText(text, this.PositionColor, position)) return;
         }
+        */
     }
 
     this.OnDrawEventCallback = function (drawData, explain) 
@@ -881,6 +993,61 @@ function DynamicMinuteTitlePainting()
         left += itemWidth;
     }
 
+    this.GetFormatTitle=function(data)
+    {
+        if (!data || !data.Data) return null;
+
+        var item=data.Data;
+        var defaultfloatPrecision = this.GetDecimal(this.Symbol);    //价格小数位数
+        var aryText=[];
+
+        if (this.IsShowName) aryText.push({ Text:this.Name, Color:this.NameColor });
+
+        var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate ? 'YYYY-MM-DD HH-MM' : 'HH-MM');
+        aryText.push({ Text:text, Color:this.DateTimeColor });
+
+        if (IFrameSplitOperator.IsNumber(item.Close)) 
+        {
+            var color = this.GetColor(item.Close, this.YClose);
+            var text = g_JSChartLocalization.GetText('MTitle-Close', this.LanguageID) + item.Close.toFixed(defaultfloatPrecision);
+            aryText.push({ Text:text, Color:color });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Increase)) 
+        {
+            var color = this.GetColor(item.Increase, 0);
+            var text = g_JSChartLocalization.GetText('MTitle-Increase', this.LanguageID) + item.Increase.toFixed(2) + '%';
+            aryText.push({ Text:text, Color:color });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.AvPrice) && this.IsShowAveragePrice==true)
+        {
+            var color = this.GetColor(item.AvPrice, this.YClose);
+            var text = g_JSChartLocalization.GetText('MTitle-AvPrice', this.LanguageID) + item.AvPrice.toFixed(defaultfloatPrecision);
+            aryText.push({ Text:text, Color:color });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Vol))
+        {
+            var text = g_JSChartLocalization.GetText('MTitle-Vol', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Vol, 2, this.LanguageID);
+            aryText.push({ Text:text, Color:this.VolColor });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Amount))
+        {
+            var text = g_JSChartLocalization.GetText('MTitle-Amount', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Amount, 2, this.LanguageID);
+            aryText.push({ Text:text, Color:this.AmountColor });
+        }
+
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(this.UpperSymbol) && IFrameSplitOperator.IsNumber(item.Position))
+        {
+            var text = g_JSChartLocalization.GetText('MTitle-Position', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Position, 2, this.LanguageID);
+            aryText.push({ Text:text, Color:this.VolColor });
+        }
+
+        return { AryText:aryText };
+    }
+
     this.DrawItem = function (item) 
     {
         var isHScreen = this.Frame.IsHScreen === true;
@@ -909,7 +1076,19 @@ function DynamicMinuteTitlePainting()
         this.Canvas.textBaseline = "middle";
         this.Canvas.font = this.Font;
         var position = { Left: left, Bottom: bottom, IsHScreen: isHScreen };
+        var titleData=this.GetFormatTitle({ Data:item });
 
+        if (titleData && IFrameSplitOperator.IsNonEmptyArray(titleData.AryText))
+        {
+            for(var i=0;i<titleData.AryText.length;++i)
+            {
+                var item=titleData.AryText[i];
+                if (!this.DrawMinuteText(item.Text, item.Color, position, true)) break;
+                if (IFrameSplitOperator.IsNumber(item.LeftSpace))  position.Left+=item.LeftSpace;
+            }
+        }
+
+        /*
         if (this.IsShowName) 
         {
             if (!this.DrawMinuteText(this.Name, this.NameColor, position, true)) return;
@@ -957,7 +1136,7 @@ function DynamicMinuteTitlePainting()
             var text = g_JSChartLocalization.GetText('MTitle-Position', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Position, 2, this.LanguageID);
             if (!this.DrawMinuteText(text, this.VolColor, position)) return;
         }
-        
+        */
     }
 
     this.FullDraw=function()

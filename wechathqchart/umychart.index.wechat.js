@@ -400,7 +400,15 @@ function ScriptIndex(name, script, args, option)
         line.Identify=this.Guid;
         if (varItem.Color) line.Color=this.GetColor(varItem.Color);
         else line.Color=this.GetDefaultColor(id);
-        if (varItem.DownColor) line.AreaColor=varItem.DownColor;
+        if (varItem.DownColor) 
+        {
+            line.AreaColor=varItem.DownColor;
+        }
+        else if (varItem.UpColor)
+        {
+            line.AreaColor=varItem.UpColor;
+            line.AreaDirection=1;
+        }
 
         if (varItem.LineWidth) 
         {

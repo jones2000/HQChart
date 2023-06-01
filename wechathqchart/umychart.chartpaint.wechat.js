@@ -3312,6 +3312,7 @@ function ChartArea()
     this.AreaColor;                 //面积颜色
     this.LineWidth;                 //线段宽度
     this.LineDash;                  //虚线
+    this.AreaDirection=0            //0=向下 1=向上
 
     this.DrawSelectedStatus=this.DrawLinePoint;
     this.PtInChart=this.PtInLine;
@@ -3383,15 +3384,31 @@ function ChartArea()
                 {
                     if (bHScreen)
                     {
-                        this.Canvas.lineTo(border.LeftEx,ptEnd.X);
-                        this.Canvas.lineTo(border.LeftEx,ptFirst.X);
+                       if (this.AreaDirection==1)
+                        {
+                            this.Canvas.lineTo(border.RightEx,ptEnd.X);
+                            this.Canvas.lineTo(border.RightEx,ptFirst.X);
+                        }
+                        else
+                        {
+                            this.Canvas.lineTo(border.LeftEx,ptEnd.X);
+                            this.Canvas.lineTo(border.LeftEx,ptFirst.X);
+                        }
                         this.Canvas.closePath();
                         this.Canvas.fill();
                     }
                     else
                     {
-                        this.Canvas.lineTo(ptEnd.X, border.BottomEx);
-                        this.Canvas.lineTo(ptFirst.X, border.BottomEx);
+                        if (this.AreaDirection==1)
+                        {
+                            this.Canvas.lineTo(ptEnd.X, border.TopEx);
+                            this.Canvas.lineTo(ptFirst.X, border.TopEx);
+                        }
+                        else
+                        {
+                            this.Canvas.lineTo(ptEnd.X, border.BottomEx);
+                            this.Canvas.lineTo(ptFirst.X, border.BottomEx);
+                        }
                         this.Canvas.closePath();
                         this.Canvas.fill();
                     }
@@ -3452,15 +3469,31 @@ function ChartArea()
             {
                 if (bHScreen)
                 {
-                    this.Canvas.lineTo(border.LeftEx,ptEnd.X);
-                    this.Canvas.lineTo(border.LeftEx,ptFirst.X);
+                    if (this.AreaDirection==1)
+                    {
+                        this.Canvas.lineTo(border.RightEx,ptEnd.X);
+                        this.Canvas.lineTo(border.RightEx,ptFirst.X);
+                    }
+                    else
+                    {
+                        this.Canvas.lineTo(border.LeftEx,ptEnd.X);
+                        this.Canvas.lineTo(border.LeftEx,ptFirst.X);
+                    }
                     this.Canvas.closePath();
                     this.Canvas.fill();
                 }
                 else
                 {
-                    this.Canvas.lineTo(ptEnd.X, border.BottomEx);
-                    this.Canvas.lineTo(ptFirst.X, border.BottomEx);
+                    if (this.AreaDirection==1)
+                    {
+                        this.Canvas.lineTo(ptEnd.X, border.TopEx);
+                        this.Canvas.lineTo(ptFirst.X, border.TopEx);
+                    }
+                    else
+                    {
+                        this.Canvas.lineTo(ptEnd.X, border.BottomEx);
+                        this.Canvas.lineTo(ptFirst.X, border.BottomEx);
+                    }
                     this.Canvas.closePath();
                     this.Canvas.fill();
                 }
