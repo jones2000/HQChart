@@ -145,7 +145,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![区间选择支持拖拽移动](/小程序行情模块用例/image/kline_selectrect.gif)
 * 散点图指标
 ![散点图指标](/小程序行情模块用例/image/kline_SCATTERPLOT.gif)
-* renko（砖形图)
+* renko 砖形图 
 ![砖形图](/小程序行情模块用例/image/hqchart_renko.png)
 * line break
 ![line break](/小程序行情模块用例/image/hqchart_linebreak.png)
@@ -157,6 +157,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![scroll bar](/小程序行情模块用例/image/hqchart_scrollbar.gif)  
 * 美国线(自动调整柱子宽度)
 ![bar](/小程序行情模块用例/image/kline_usabar.gif)  
+* HLC Area
+![HLC Area](/小程序行情模块用例/image/kline_HLCArea.png)   
 
 
 # 2. 走势图

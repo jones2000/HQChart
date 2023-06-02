@@ -414,7 +414,8 @@ DefaultData.GetKLineToolbar=function()
             {Name:"空心K线2",Value:6},
             {Name:"Heikin Ashi",Value:11},
             {Name:"Line Break",Value:12},
-            {Name:"High-low",Value:13}
+            {Name:"High-low",Value:13},
+             {Name:"HLC Area",Value:15}
         ],
         IsShow:true,
     };
@@ -864,7 +865,56 @@ export default
             this.KLine.JSChart=chart;
             this.KLine.JSChart.SetFocus();
 
+            this.KLine.JSChart.AddEventCallback(
+                {
+                    event:JSCommon.JSCHART_EVENT_ID.ON_CUSTOM_LEFT_TOOLBAR,
+                    callback:(event, data, chart)=>{ this.OnCustomLeftToolbar(event, data, chart);}
+                }
+            );
+
+
             this.UpdateIndexBarSelected();
+        },
+
+        OnCustomLeftToolbar(event, data, chart)
+        {
+            //console.log("[KLine::OnCustomLeftToolbar] data=",data);
+            var button =
+            {
+                ID: 128887,
+                Style:  //按钮样式 使用iconfont， 可以放全局的资源配置里面
+                {
+                    MoveOnColor: "rgb(0,0,255)",
+                    Color: "rgb(30,144,255)",
+                    Family: "iconfont",
+                    Text: "\ue650",
+                    Size: 13 *JSCommon.GetDevicePixelRatio(),
+                    MerginLeft: 2,
+                    YMoveOffset:-2,
+                },
+                TooltipText: "指标按钮开发中.....",
+            };
+
+            var button2 =
+            {
+                ID: 128888,
+                Style:  //按钮样式 使用iconfont， 可以放全局的资源配置里面
+                {
+                    MoveOnColor: "rgb(0,0,255)",
+                    Color: "rgb(30,144,255)",
+                    Family: "iconfont",
+                    Text: "\ue691",
+                    Size: 13 *JSCommon.GetDevicePixelRatio(),
+                    MerginLeft: 2,
+                    YMoveOffset:-2,
+                },
+                TooltipText: "叠加指标按钮开发中.....",
+            };
+
+            if (data.OverlayID) data.AryButton=[button2];
+            else data.AryButton=[button];
+
+            data.PreventDefault=true;
         },
 
         //走势图 K线图 周期切换
@@ -878,7 +928,7 @@ export default
             this.Minute.IsShow=period.MinuteShow;
         },
 
-        ChangeSymbol:function(symbol)
+        ChangeSymbol(symbol)
         {
             if (this.Symbol==symbol) return;
 

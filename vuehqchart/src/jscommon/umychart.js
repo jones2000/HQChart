@@ -20701,7 +20701,7 @@ function ChartKLine()
     this.ClassName='ChartKLine';    //类名
     this.Symbol;        //股票代码
     this.DrawType=0;    // 0=实心K线柱子  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图 5=订单流 6=空心K线柱子2(全部空心) 7=订单流样式2 8=订单流样式3  
-                        //9=自定义颜色K线 10=renko 11=Heikin Ashi 12=line break 13=high low 14=外部自定义图
+                        //9=自定义颜色K线 10=renko 11=Heikin Ashi 12=line break 13=high low 14=外部自定义图 15=HLC Area
     this.CloseLineColor=g_JSChartResource.CloseLineColor;
     this.CloseLineAreaColor=g_JSChartResource.CloseLineAreaColor;
     this.CloseLineWidth=g_JSChartResource.CloseLineWidth;
@@ -20736,6 +20736,17 @@ function ChartKLine()
     this.IsThinAKBar=true;  //美国线 柱子是否是线段 (false=柱子)
 
     this.HighLowBarColor=g_JSChartResource.HighLowBarColor;
+
+    this.HLCAreaConfig=
+    {
+        HighLineColor:g_JSChartResource.HLCArea.HighLineColor,
+        LowLineColor:g_JSChartResource.HLCArea.LowLineColor,
+        CloseLineColor:g_JSChartResource.HLCArea.CloseLineColor,
+        LineWidth:g_JSChartResource.HLCArea.LineWidth,
+
+        UpAreaColor:g_JSChartResource.HLCArea.UpAreaColor,
+        DownAreaColor:g_JSChartResource.HLCArea.DownAreaColor,
+    }
 
     //虚线柱子
     this.VirtualBarConfig={ Color:g_JSChartResource.VirtualKLine.Color, LineDash:g_JSChartResource.VirtualKLine.LineDash };
@@ -22510,6 +22521,191 @@ function ChartKLine()
         }
     }
 
+    this.DrawHLCArea=function()
+    {
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        if (isHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.BottomEx;
+            var borderLeft=border.TopEx;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            var borderLeft=border.LeftEx;
+        }
+
+        var lowPath=new Path2D();
+        var highPath=new Path2D();
+        var closePath=new Path2D();
+
+        var upArea=new Path2D();
+        var downArea=new Path2D();
+
+        var aryHighPoint=[];
+        var aryLowPoint=[];
+        var aryClosePoint=[];
+
+        var bFirstPoint=true;
+
+        if (this.Data.DataOffset>0) //把最左边的一个点连上
+        {
+            var data=this.Data.Data[this.Data.DataOffset-1];
+            if (data && IFrameSplitOperator.IsNumber(data.Close) && IFrameSplitOperator.IsNumber(data.High) && IFrameSplitOperator.IsNumber(data.Low))
+            {
+                var x=borderLeft;
+                var yClose=this.GetYFromData(data.Close,false);
+                var yHigh=this.GetYFromData(data.High,false);
+                var yLow=this.GetYFromData(data.Low,false);
+                if (isHScreen) 
+                {
+                    closePath.moveTo(yClose,x);
+                    highPath.moveTo(yHigh,x);
+                    lowPath.moveTo(yLow,x);
+
+                    upArea.moveTo(yHigh,x);
+                    downArea.moveTo(yLow,x);
+
+                    aryClosePoint.push({ X:yClose, Y:x });
+                    aryHighPoint.push({ X:yHigh, Y:x });
+                    aryLowPoint.push({ X:yLow, Y:x });
+                }
+                else 
+                {
+                    closePath.moveTo(x,yClose);
+                    highPath.moveTo(x,yHigh);
+                    lowPath.moveTo(x,yLow);
+
+                    upArea.moveTo(x,yHigh);
+                    downArea.moveTo(x,yLow);
+
+                    aryClosePoint.push({ X:x, Y:yClose });
+                    aryHighPoint.push({ X:x, Y:yHigh });
+                    aryLowPoint.push({ X:x, Y:yLow });
+                }
+
+                bFirstPoint=false;
+            }
+        }
+        
+
+        this.ShowRange.Start=this.Data.DataOffset;
+        this.ShowRange.End=this.ShowRange.Start;
+        this.ShowRange.DataCount=0;
+        this.ShowRange.ShowCount=xPointCount;
+        this.DrawKRange.Start=this.Data.DataOffset;
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth),++this.ShowRange.DataCount)
+        {
+            var data=this.Data.Data[i];
+            this.ShowRange.End=i;
+            if (!data || !IFrameSplitOperator.IsNumber(data.Close) || !IFrameSplitOperator.IsNumber(data.High) || !IFrameSplitOperator.IsNumber(data.Low)) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+
+            var x=left+(right-left)/2;
+            var yClose=this.GetYFromData(data.Close,false);
+            var yHigh=this.GetYFromData(data.High,false);
+            var yLow=this.GetYFromData(data.Low,false);
+            this.DrawKRange.End=i;
+
+            if (bFirstPoint)
+            {
+                if (isHScreen) 
+                {
+                    closePath.moveTo(yClose,x);
+                    highPath.moveTo(yHigh,x);
+                    lowPath.moveTo(yLow,x);
+
+                    upArea.moveTo(yHigh,x);
+                    downArea.moveTo(yLow,x);
+                }
+                else 
+                {
+                    closePath.moveTo(x,yClose);
+                    highPath.moveTo(x,yHigh);
+                    lowPath.moveTo(x,yLow);
+
+                    upArea.moveTo(x,yHigh);
+                    downArea.moveTo(x,yLow);
+                }
+                bFirstPoint=false;
+            }
+            else
+            {
+                if (isHScreen) 
+                {
+                    closePath.lineTo(yClose,x);
+                    highPath.lineTo(yHigh,x);
+                    lowPath.lineTo(yLow,x);
+
+                    upArea.lineTo(yHigh,x);
+                    downArea.lineTo(yLow,x);
+                }
+                else 
+                {
+                    closePath.lineTo(x,yClose);
+                    highPath.lineTo(x,yHigh);
+                    lowPath.lineTo(x,yLow);
+
+                    upArea.lineTo(x,yHigh);
+                    downArea.lineTo(x,yLow);
+                }
+            }
+
+            if (isHScreen) 
+            {
+                aryClosePoint.push({ X:yClose, Y:x });
+                aryHighPoint.push({ X:yHigh, Y:x });
+                aryLowPoint.push({ X:yLow, Y:x });
+            }
+            else
+            {
+                aryClosePoint.push({ X:x, Y:yClose });
+                aryHighPoint.push({ X:x, Y:yHigh });
+                aryLowPoint.push({ X:x, Y:yLow });
+            }
+        }
+
+        if (bFirstPoint) return;
+
+        for(var i=aryClosePoint.length-1; i>=0;--i)
+        {
+            var item=aryClosePoint[i];
+            upArea.lineTo(item.X, item.Y);
+            downArea.lineTo(item.X, item.Y);
+        }
+
+        upArea.closePath();
+        downArea.closePath();
+
+        this.Canvas.fillStyle=this.HLCAreaConfig.UpAreaColor;
+        this.Canvas.fill(upArea);
+
+        this.Canvas.fillStyle=this.HLCAreaConfig.DownAreaColor;
+        this.Canvas.fill(downArea);
+
+        if (IFrameSplitOperator.IsNumber(this.HLCAreaConfig.LineWidth)) this.Canvas.lineWidth=this.HLCAreaConfig.LineWidth;
+        this.Canvas.strokeStyle=this.HLCAreaConfig.CloseLineColor;
+        this.Canvas.stroke(closePath);
+
+        this.Canvas.strokeStyle=this.HLCAreaConfig.HighLineColor;
+        this.Canvas.stroke(highPath);
+
+        this.Canvas.strokeStyle=this.HLCAreaConfig.LowLineColor;
+        this.Canvas.stroke(lowPath);
+    }
+
     this.ClipTickClient=function(isHScreen)
     {
         var border=this.GetBorder();
@@ -22650,6 +22846,10 @@ function ChartKLine()
             {
                 this.FFKChart.Draw(this);
             }
+        }
+        else if (this.DrawType==15)
+        {
+            this.DrawHLCArea();
         }
         else
         {
@@ -55462,6 +55662,17 @@ function JSChartResource()
     this.EmptyBarBGColor="rgb(255,255,255)";  //空心柱子背景色
     this.HighLowBarColor='rgb(41,98,255)';  //high low bar 颜色
 
+    this.HLCArea=
+    {
+        HighLineColor:'rgb(242,54,69)',
+        LowLineColor:"rgb(8,153,129)",
+        CloseLineColor:"rgb(224,227,227)",
+        LineWidth:2*GetDevicePixelRatio(),
+
+        UpAreaColor:"rgba(253,214,218, 0.5)",
+        DownAreaColor:"rgba(205,235,230, 0.5)",
+    };
+
     this.Minute={};
     this.Minute.VolBarColor=null;                       //分时图成交量柱子颜色 默认不用, 设置了柱子就不是红绿了
     this.Minute.VolTitleColor="rgb(105,105,105)";
@@ -56464,6 +56675,17 @@ function JSChartResource()
         if (style.UnchagneBarColor) this.UnchagneBarColor = style.UnchagneBarColor;
         if (style.EmptyBarBGColor) this.EmptyBarBGColor=style.EmptyBarBGColor;
         if (style.HighLowBarColor) this.HighLowBarColor=style.HighLowBarColor;
+
+        if (style.HLCArea)
+        {
+            var item=style.HLCArea;
+            if (item.HighLineColor) this.HLCArea.HighLineColor=item.HighLineColor;
+            if (item.LowLineColor) this.HLCArea.LowLineColor=item.LowLineColor;
+            if (item.CloseLineColor) this.HLCArea.CloseLineColor=item.CloseLineColor;
+            if (item.UpAreaColor) this.HLCArea.UpAreaColor=item.UpAreaColor;
+            if (item.DownAreaColor) this.HLCArea.DownAreaColor=item.DownAreaColor;
+            if (IFrameSplitOperator.IsNumber(item.LineWidth)) this.HLCArea.LineWidth=item.LineWidth;
+        }
         
         if (style.Minute) 
         {
@@ -78407,6 +78629,10 @@ function KLineRightMenu(divElement)
             {
                 text: "High-low",
                 click: function () { chart.ChangeKLineDrawType(13);}
+            },
+            {
+                text: "HLC Area",
+                click: function () { chart.ChangeKLineDrawType(15);}
             }
         ];
 
@@ -78438,6 +78664,9 @@ function KLineRightMenu(divElement)
                 break;
             case 13:
                 data[8].selected=true;
+                break;
+            case 15:
+                data[9].selected=true;
                 break;
         }
         return data;

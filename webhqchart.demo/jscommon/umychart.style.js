@@ -40,6 +40,17 @@ function GetBlackStyle()
         DownBarColor: "rgb(25,158,0)",  //下跌
         UnchagneBarColor: "rgb(228,228,228)", //平盘
         EmptyBarBGColor:'rgb(0,0,0)',   //空心柱子背景色
+
+        HLCArea:
+        {
+            HighLineColor:'rgb(238,21,21)',
+            LowLineColor:"rgb(25,158,0)",
+            CloseLineColor:"rgb(156,156,156)",
+            LineWidth:2*GetDevicePixelRatio(),
+
+            UpAreaColor:"rgba(238,21,21, 0.3)",
+            DownAreaColor:"rgba(25,158,0, 0.3)",
+        },
     
         Minute: 
         {
