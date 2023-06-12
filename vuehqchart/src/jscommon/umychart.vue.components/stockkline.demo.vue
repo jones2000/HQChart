@@ -887,7 +887,7 @@ export default
                     MoveOnColor: "rgb(0,0,255)",
                     Color: "rgb(30,144,255)",
                     Family: "iconfont",
-                    Text: "\ue650",
+                    Text: "\ue691",
                     Size: 13 *JSCommon.GetDevicePixelRatio(),
                     MerginLeft: 2,
                     YMoveOffset:-2,

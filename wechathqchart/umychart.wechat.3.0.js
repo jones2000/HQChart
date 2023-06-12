@@ -1408,6 +1408,19 @@ JSChart.GetDivTooltipDataFormat=function()  //div tooltip数据格式化
     return g_DivTooltipDataForamt;
 }
 
+//一些公共函数
+JSChart.ToFixedPoint=function(value)
+{
+    return ToFixedPoint(value);
+}
+
+JSChart.ToFixedRect=function(value)
+{
+    return ToFixedRect(value);
+}
+
+
+
 var JSCHART_OPERATOR_ID =
 {
     OP_SCROLL_LEFT: 1,
@@ -5566,14 +5579,9 @@ function KLineChartContainer(uielement)
         this.BindMainData(bindData, this.PageSize);
         if (this.AfterBindMainData) this.AfterBindMainData("RecvMinuteHistoryData");
         this.Frame.SetSizeChage(true);
-        this.BindInstructionIndexData(bindData);    //执行指示脚本
         
         var firstSubFrame;  //主窗口
-        for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
-        {
-            if (i == 0) firstSubFrame = this.Frame.SubFrame[i].Frame;
-            this.BindIndexData(i, bindData);
-        }
+        if (this.Frame.SubFrame[0]) firstSubFrame=this.Frame.SubFrame[0].Frame;
 
         if (firstSubFrame && firstSubFrame.YSplitOperator) 
         {
@@ -5581,14 +5589,21 @@ function KLineChartContainer(uielement)
             firstSubFrame.YSplitOperator.Data = this.ChartPaint[0].Data;          //K线数据
         }
 
-        this.OverlayChartPaint[0].Data = null; //分钟数据不支持叠加 清空
-
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
+
+        this.BindInstructionIndexData(bindData);    //执行指示脚本
+        for (var i = 0; i < this.Frame.SubFrame.length; ++i)    //指标
+        {
+            this.BindIndexData(i, bindData);
+        }
+
+        //叠加指标
+        this.BindAllOverlayIndexData(bindData);
 
         if (this.mapEvent.has(JSCHART_EVENT_ID.RECV_HISTROY_DATA)) 
         {
@@ -5892,6 +5907,9 @@ function KLineChartContainer(uielement)
         this.Draw();
 
         this.SendKLineUpdateEvent(bindData);
+
+        //叠加指标计算
+        this.BindAllOverlayIndexData(bindData);
     }
 
     this.RecvMinuteRealtimeDataV2 = function (data)    //新版本的
@@ -5967,7 +5985,26 @@ function KLineChartContainer(uielement)
             for(var i=0;i<this.Frame.SubFrame.length;++i)
             {
                 this.DeleteIndexPaint(i, true);
+                var item=this.Frame.SubFrame[i];
+
+                for(var j=0; j<item.OverlayIndex.length; ++j ) //清空叠加指标
+                {
+                    var overlayItem=item.OverlayIndex[j];
+                    for(var k=0;k< overlayItem.ChartPaint.length;++k)
+                    {
+                        var overlayChart=overlayItem.ChartPaint[k];
+                        if (overlayChart && overlayChart.OnDestroy) overlayChart.OnDestroy();
+                    }
+                    overlayItem.ChartPaint=[];
+                }
             }
+        }
+
+        //清空叠加标题
+        for(var i=1;i<this.TitlePaint.length;++i)
+        {
+            var item=this.TitlePaint[i];
+            item.OverlayIndex=new Map();
         }
     }
 

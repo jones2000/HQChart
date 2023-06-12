@@ -20831,7 +20831,7 @@ function OverlayScriptIndex(name,script,args,option)
         if (!this.OverlayIndex || this.OverlayIndex.IsOverlay!=true) return;
 
         this.OverlayIndex.Frame.ChartPaint=[];
-        if (this.OutVar==null || this.OutVar.length<0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.OutVar)) return;
 
         //修改Y轴分割方式
         if (IFrameSplitOperator.IsNumber(this.YSplitType)) this.OverlayIndex.Frame.Frame.YSplitOperator.SplitType=this.YSplitType;
@@ -20856,7 +20856,7 @@ function OverlayScriptIndex(name,script,args,option)
             titlePaint.SetDynamicTitle(this.OutName,this.Arguments, this.OverlayIndex.Identify);
         }
 
-        for(var i in this.OutVar)
+        for(var i=0; i<this.OutVar.length; ++i)
         {
             let item=this.OutVar[i];
             if (item.IsExData===true) continue; //扩展数据不显示图形
@@ -20980,6 +20980,12 @@ function OverlayScriptIndex(name,script,args,option)
             else if (item.Type==8)
             {
                 this.CreateLine(hqChart,windowIndex,item,i, item.Type);
+            }
+
+            var titleData=titleInfo.Data[i];
+            if (titleData)
+            {
+                if (this.FloatPrecision>=0) titleData.FloatPrecision=this.FloatPrecision;
             }
         }
 

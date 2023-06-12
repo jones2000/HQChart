@@ -81,10 +81,13 @@ function KLineTooltipPaint()
     this.BGColor = g_JSChartResource.TooltipPaint.BGColor;            //背景色
     this.TitleColor = g_JSChartResource.TooltipPaint.TitleColor;      //标题颜色
     this.Font = [g_JSChartResource.TooltipPaint.TitleFont];
+    this.Mergin={ Left:2, Top:3, Bottom:5, Right:5 };
+    this.ExtendLineWidth=5;
 
     this.Width = 50;
     this.Height = 100;
     this.LineHeight = 15; //行高
+    this.LineSpace=2;   //行间距
 
     this.Left = 1;
     this.Top = 0;
@@ -143,46 +146,162 @@ function KLineTooltipPaint()
 
     this.Draw = function () 
     {
-       if (!this.IsEnableDraw()) return;
+        if (!this.IsEnableDraw()) return;
 
+        this.IsHScreen=this.ChartFrame.IsHScreen===true;
         this.KLineTitlePaint = this.HQChart.TitlePaint[0];
         var klineData = this.KLineTitlePaint.GetCurrentKLineData();
         if (!klineData) return;
 
+        var titleData=this.GetFormatTitle({Data:klineData});
+        if (!titleData || !IFrameSplitOperator.IsNonEmptyArray(titleData.AryText)) return;
+
+        this.CalculateTooltipSize(titleData);
+        this.CalculateShowPosition();
+        this.DrawBG();
+        this.DrawTooltipData(titleData);
+        this.DrawBorder();
+    }
+
+    //[{ Text:, Color, Title:, TitleColor, }]
+    this.GetFormatTitle=function(data)
+    {
+        if (!data || !data.Data) return;
+
+        var item=data.Data;
         var upperSymbol;
         if (this.HQChart.Symbol) upperSymbol = this.HQChart.Symbol.toUpperCase();
-        var isFutures=MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)?true:false;
+        var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        var aryText=[];
+        var result={ AryText:aryText };
+        var text, title, color;
 
-        var lineCount = 8;    //显示函数
-        if (this.ClassName === 'MinuteTooltipPaint') 
+        text=IFrameSplitOperator.FormatDateString(item.Date);
+        aryText.push({ Text:text, Color:this.TitleColor });
+
+        var period = this.HQChart.Period;
+        if (ChartData.IsMinutePeriod(period, true) && IFrameSplitOperator.IsNumber(item.Time))
         {
-            lineCount=7;
-            if (isFutures && IFrameSplitOperator.IsNumber(klineData.Position)) ++lineCount;    //期货多一个持仓量
+            text = this.HQChart.FormatTimeString(item.Time);
+            aryText.push({ Text:text, Color:this.TitleColor });
+        }
+        else if (ChartData.IsSecondPeriod(period) && IFrameSplitOperator.IsNumber(item.Time))
+        {
+            text = this.HQChart.FormatTimeString(item.Time,"HH:MM:SS");
+            aryText.push({ Text:text, Color:this.TitleColor });
+        }
+        
+        top += this.LineHeight;
+        this.Canvas.fillStyle = this.TitleColor;
+        if (IFrameSplitOperator.IsNumber(item.Open))   //开
+        {
+            title = g_JSChartLocalization.GetText('Tooltip-Open', this.LanguageID);
+            var color = this.KLineTitlePaint.GetColor(item.Open, item.YClose);
+            text = item.Open.toFixed(defaultfloatPrecision);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:color });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.High))    //高
+        {
+            title=g_JSChartLocalization.GetText('Tooltip-High',this.LanguageID);
+            color=this.KLineTitlePaint.GetColor(item.High,item.YClose);
+            text=item.High.toFixed(defaultfloatPrecision);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:color });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Low))    //低
+        {
+            title=g_JSChartLocalization.GetText('Tooltip-Low',this.LanguageID);
+            color=this.KLineTitlePaint.GetColor(item.Low,item.YClose);
+            text=item.Low.toFixed(defaultfloatPrecision);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:color });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Close))    //收
+        {
+            title=g_JSChartLocalization.GetText('Tooltip-Close',this.LanguageID);
+            color=this.KLineTitlePaint.GetColor(item.Close,item.YClose);
+            text=item.Close.toFixed(defaultfloatPrecision);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:color });
+        }
+       
+        //涨幅
+        title=g_JSChartLocalization.GetText('Tooltip-Increase',this.LanguageID);
+        if (item.YClose>0)
+        {
+            var value = (item.Close - item.YClose) / item.YClose * 100;
+            color = this.KLineTitlePaint.GetColor(value, 0);
+            text = value.toFixed(2) + '%';
         }
         else
         {
-            if (IFrameSplitOperator.IsNumber(klineData.Time)) ++lineCount;      //分钟K线多一列时间
-            if (isFutures && IFrameSplitOperator.IsNumber(klineData.Position)) ++lineCount;   //持仓量
+            text='--.--';
+            color = this.KLineTitlePaint.GetColor(0, 0);
         }
+        aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:color });
 
-        this.IsHScreen = this.ChartFrame.IsHScreen === true;
-        this.Canvas.font = this.Font[0];
-        var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
-        var maxText = ' 擎: 9999.99亿 ';
-        if (defaultfloatPrecision >= 5) maxText = ` 擎: ${99.99.toFixed(defaultfloatPrecision)} `;  //小数位数太多了
-        this.Width = this.Canvas.measureText(maxText).width;
-        this.Height = this.LineHeight * lineCount + 2 * 2;
-        if (klineData && klineData.High>0)
+
+        if (IFrameSplitOperator.IsNumber(item.Vol))
         {
-            maxText=` 擎: ${klineData.High.toFixed(defaultfloatPrecision)} `;
-            var textWidth=this.Canvas.measureText(maxText).width;
-            if (textWidth>this.Width) this.Width=textWidth;
+            title = g_JSChartLocalization.GetText('Tooltip-Vol', this.LanguageID);
+            text = this.HQChart.FormatValueString(item.Vol, 2, this.LanguageID);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:this.TitleColor });
         }
 
-        this.CalculateShowPosition();
-        this.DrawBG();
-        this.DrawTooltipData(klineData);
-        this.DrawBorder();
+        if (IFrameSplitOperator.IsNumber(item.Amount))
+        {
+            title = g_JSChartLocalization.GetText('Tooltip-Amount',this.LanguageID);
+            text = this.HQChart.FormatValueString(item.Amount, 2, this.LanguageID);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:this.TitleColor });
+        }
+
+        //持仓量
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) && IFrameSplitOperator.IsNumber(item.Position)) 
+        {
+            title = g_JSChartLocalization.GetText('Tooltip-Position', this.LanguageID);
+            text = IFrameSplitOperator.FormatValueString(item.Position, 2, this.LanguageID);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:this.TitleColor });
+        }
+
+        return result;
+    }
+
+    this.CalculateTooltipSize=function(titleData)
+    {
+        this.Canvas.font=this.Font[0];
+        this.LineHeight=this.Canvas.measureText("擎").width;
+        var height=0;
+        var maxTitleWidth=0, maxTextWidth=0, maxLineWidth=0;
+        for(var i=0; i<titleData.AryText.length; ++i)
+        {
+            var item=titleData.AryText[i];
+
+            if (height>0) height+=this.LineSpace;
+
+            var lineWidth=0;
+            if (item.Title)
+            {
+                var textWidth=this.Canvas.measureText(item.Title).width+2;
+                if (maxTitleWidth<textWidth) maxTitleWidth=textWidth;
+                lineWidth+=textWidth;
+            }
+
+            if (item.Text)
+            {
+                var textWidth=this.Canvas.measureText(item.Text).width+2;
+                if (maxTextWidth<textWidth) maxTextWidth=textWidth;
+                lineWidth+=textWidth;
+            }
+
+            if (maxLineWidth<lineWidth) maxLineWidth=lineWidth;
+
+            height+=this.LineHeight;
+        }
+
+        this.Height=height+(this.Mergin.Top+this.Mergin.Bottom);
+        this.Width=(maxLineWidth)+(this.Mergin.Left+this.Mergin.Right)+this.ExtendLineWidth;
+
+        return { Height:this.Height, Width:this.Width, MaxTitleWidth:maxTitleWidth, MaxTextWidth:maxTextWidth };
     }
 
     //判断显示位置
@@ -235,13 +354,11 @@ function KLineTooltipPaint()
         else this.Canvas.fillRect(left, top, this.Width, this.Height);
     }
 
-    this.DrawTooltipData = function (item) 
+    this.DrawTooltipData = function (titleData) 
     {
         //console.log('[KLineTooltipPaint::DrawKLineData] ', item);
-
-        var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
-        var left = this.GetLeft() + 2;
-        var top = this.GetTop() + 3;
+        var left = this.GetLeft();
+        var top = this.GetTop();
 
         if (this.IsHScreen) 
         {
@@ -252,117 +369,34 @@ function KLineTooltipPaint()
             this.Canvas.rotate(90 * Math.PI / 180);
 
             //x, y 作为原点
-            left = 2;
-            top = 3;
+            left =0;
+            top = 0;
         }
 
-        this.Canvas.textBaseline = "top";
-        this.Canvas.textAlign = "left";
-        this.Canvas.font = this.Font[0];
-        var labelWidth = this.Canvas.measureText('擎: ').width;
+        this.Canvas.textBaseline="top";
+        var right=left+this.Width-this.Mergin.Right;
+        left+=this.Mergin.Left;
+        top+=this.Mergin.Top;
 
-        var text = this.HQChart.FormatDateString(item.Date);
-        this.Canvas.fillStyle = this.TitleColor;
-        this.Canvas.fillText(text, left, top);
-        var period = this.HQChart.Period;
-        if (ChartData.IsMinutePeriod(period, true) && IFrameSplitOperator.IsNumber(item.Time))
+        for(var i=0; i<titleData.AryText.length; ++i)
         {
-            top += this.LineHeight;
-            text = this.HQChart.FormatTimeString(item.Time);
-            this.Canvas.fillText(text, left, top);
-        }
-        else if (ChartData.IsSecondPeriod(period) && IFrameSplitOperator.IsNumber(item.Time))
-        {
-            top += this.LineHeight;
-            text = this.HQChart.FormatTimeString(item.Time,"HH:MM:SS");
-            this.Canvas.fillText(text, left, top);
-        }
-        
-        top += this.LineHeight;
-        this.Canvas.fillStyle = this.TitleColor;
-        text = g_JSChartLocalization.GetText('Tooltip-Open', this.LanguageID);
-        this.Canvas.fillText(text, left, top);
-        var color = this.KLineTitlePaint.GetColor(item.Open, item.YClose);
-        text = item.Open.toFixed(defaultfloatPrecision);
-        this.Canvas.fillStyle = color;
-        this.Canvas.fillText(text, left + labelWidth, top);
+            var item=titleData.AryText[i];
 
-        top += this.LineHeight;
-        this.Canvas.fillStyle = this.TitleColor;
-        text = g_JSChartLocalization.GetText('Tooltip-High', this.LanguageID);
-        this.Canvas.fillText(text, left, top);
-        var color = this.KLineTitlePaint.GetColor(item.High, item.YClose);
-        var text = item.High.toFixed(defaultfloatPrecision);
-        this.Canvas.fillStyle = color;
-        this.Canvas.fillText(text, left + labelWidth, top);
+            if (item.Title)
+            {
+                this.Canvas.textAlign="left";
+                this.Canvas.fillStyle=item.TitleColor;
+                this.Canvas.fillText(item.Title,left,top);
+            }
 
-        top += this.LineHeight;
-        this.Canvas.fillStyle = this.TitleColor;
-        text = g_JSChartLocalization.GetText('Tooltip-Low', this.LanguageID);
-        this.Canvas.fillText(text, left, top);
-        var color = this.KLineTitlePaint.GetColor(item.Low, item.YClose);
-        var text = item.Low.toFixed(defaultfloatPrecision);
-        this.Canvas.fillStyle = color;
-        this.Canvas.fillText(text, left + labelWidth, top);
+            if (item.Text)
+            {
+                this.Canvas.textAlign="right";
+                this.Canvas.fillStyle=item.Color;
+                this.Canvas.fillText(item.Text,right,top);
+            }
 
-        top += this.LineHeight;
-        this.Canvas.fillStyle = this.TitleColor;
-        text = g_JSChartLocalization.GetText('Tooltip-Close', this.LanguageID);
-        this.Canvas.fillText(text, left, top);
-        var color = this.KLineTitlePaint.GetColor(item.Close, item.YClose);
-        var text = item.Close.toFixed(defaultfloatPrecision);
-        this.Canvas.fillStyle = color;
-        this.Canvas.fillText(text, left + labelWidth, top);
-
-        top += this.LineHeight;
-        this.Canvas.fillStyle = this.TitleColor;
-        text = g_JSChartLocalization.GetText('Tooltip-Increase', this.LanguageID);
-        this.Canvas.fillText(text, left, top);
-        if (item.YClose>0)
-        {
-            var value = (item.Close - item.YClose) / item.YClose * 100;
-            var color = this.KLineTitlePaint.GetColor(value, 0);
-            var text = value.toFixed(2) + '%';
-        }
-        else
-        {
-            var text='--.--';
-            var color = this.KLineTitlePaint.GetColor(0, 0);
-        }
-        this.Canvas.fillStyle = color;
-        this.Canvas.fillText(text, left + labelWidth, top);
-
-        this.Canvas.fillStyle = this.TitleColor;
-
-        if (IFrameSplitOperator.IsNumber(item.Vol))
-        {
-            top += this.LineHeight;
-            text = g_JSChartLocalization.GetText('Tooltip-Vol', this.LanguageID);
-            this.Canvas.fillText(text, left, top);
-            var text = this.HQChart.FormatValueString(item.Vol, 2, this.LanguageID);
-            this.Canvas.fillText(text, left + labelWidth, top);
-        }
-
-        if (IFrameSplitOperator.IsNumber(item.Amount))
-        {
-            top += this.LineHeight;
-            text = g_JSChartLocalization.GetText('Tooltip-Amount',this.LanguageID);
-            this.Canvas.fillText(text, left, top);
-            var text = this.HQChart.FormatValueString(item.Amount, 2, this.LanguageID);
-            this.Canvas.fillText(text, left + labelWidth, top);
-        }
-
-        //持仓量
-        var upperSymbol;
-        if (this.HQChart.Symbol) upperSymbol = this.HQChart.Symbol.toUpperCase();
-        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) && IFrameSplitOperator.IsNumber(item.Position)) 
-        {
-            this.Canvas.fillStyle = this.TitleColor;
-            top += this.LineHeight;
-            text = g_JSChartLocalization.GetText('Tooltip-Position', this.LanguageID);
-            this.Canvas.fillText(text, left, top);
-            var text = IFrameSplitOperator.FormatValueString(item.Position, 2, this.LanguageID);
-            this.Canvas.fillText(text, left + labelWidth, top);
+            top+=this.LineHeight+this.LineSpace;
         }
 
         if (this.IsHScreen) this.Canvas.restore();
@@ -416,6 +450,81 @@ function MinuteTooltipPaint()
         }
     }
 
+    this.GetFormatTitle=function(data)
+    {
+        if (!data || !data.Data) return;
+        var item=data.Data;
+        var upperSymbol;
+        if (this.HQChart.Symbol) upperSymbol=this.HQChart.Symbol.toUpperCase();
+        var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        this.YClose = this.KLineTitlePaint.YClose;
+
+        var aryText=[];
+        var result={ AryText:aryText };
+        var text, title, color, value;
+
+        if (IFrameSplitOperator.IsNumber(item.Date))
+        {
+            text=IFrameSplitOperator.FormatDateString(item.Date);
+            aryText.push({ Text:text, Color:this.TitleColor });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Time))
+        {
+            text=IFrameSplitOperator.FormatTimeString(item.Time);
+            aryText.push({ Text:text, Color:this.TitleColor });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Close))    //最新
+        {
+            title = g_JSChartLocalization.GetText('Tooltip-Price', this.LanguageID);
+            color = this.KLineTitlePaint.GetColor(item.Close, this.YClose);
+            text = item.Close.toFixed(defaultfloatPrecision);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:color });
+        }
+        
+        if (IFrameSplitOperator.IsNumber(item.AvPrice) && this.IsShowAveragePrice==true)    //均价
+        {
+            title = g_JSChartLocalization.GetText('Tooltip-AvPrice', this.LanguageID);
+            color = this.KLineTitlePaint.GetColor(item.AvPrice, this.YClose);
+            text = item.AvPrice.toFixed(defaultfloatPrecision);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:color });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Close) && IFrameSplitOperator.IsNumber(this.YClose))   //涨幅
+        {
+            title = g_JSChartLocalization.GetText('Tooltip-Increase', this.LanguageID);
+            value = (item.Close - this.YClose) / this.YClose * 100;
+            color = this.KLineTitlePaint.GetColor(value, 0);
+            text = value.toFixed(2) + '%';
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:color });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Vol))
+        {
+            title = g_JSChartLocalization.GetText('Tooltip-Vol', this.LanguageID);
+            text = this.HQChart.FormatValueString(item.Vol, 2, this.LanguageID);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:this.TitleColor });
+        }
+        
+        if (IFrameSplitOperator.IsNumber(item.Amount))
+        {
+            title = g_JSChartLocalization.GetText('Tooltip-Amount', this.LanguageID);
+            text = this.HQChart.FormatValueString(item.Amount, 2, this.LanguageID);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:this.TitleColor });
+        }
+        
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) && IFrameSplitOperator.IsNumber(item.Position)) //持仓量
+        {
+            title = g_JSChartLocalization.GetText('Tooltip-Position', this.LanguageID);
+            text = IFrameSplitOperator.FormatValueString(item.Position, 2, this.LanguageID);
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:this.TitleColor });
+        }
+        
+        return result;
+    }
+
+    /*
     this.DrawTooltipData = function (item) 
     {
         //console.log('[KLineTooltipPaint::DrawKLineData] ', item);
@@ -520,6 +629,7 @@ function MinuteTooltipPaint()
 
         if (this.IsHScreen) this.Canvas.restore();
     }
+    */
 }
 
 

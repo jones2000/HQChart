@@ -2,7 +2,7 @@
   "name": "hqchart",
   "description": "stock chart",
   "author": "jones2000",
-  "version": "1.1.11906",
+  "version": "1.1.12124",
   "main": "lib/main.js",
   "private": false,
   "license": "Apache License 2.0",

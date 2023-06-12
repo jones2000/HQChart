@@ -78,6 +78,12 @@ export default {
 
     KLineFrame:KLineFrame,                      //K线框架
 
+    JS_Frame:
+    {
+        KLineFrame:KLineFrame,
+        KLineHScreenFrame:KLineHScreenFrame,
+    },
+
     //新个导出 根据大类分组
     JS_ChangeStringFormat:
     {
