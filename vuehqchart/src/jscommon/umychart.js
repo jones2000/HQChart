@@ -50015,7 +50015,8 @@ IChartDrawPicture.ArrayDrawPricture=
     //trading view样式
     { Name:"Note", ClassName:"ChartDrawNote", Create:function() { return new ChartDrawNote(); } },
     { Name:"AnchoredText", ClassName:"ChartDrawAnchoredText", Create:function() { return new ChartDrawAnchoredText();} },
-    { Name:"PriceLabel", ClassName:"ChartDrawPriceLabel", Create:function() { return new ChartDrawPriceLabel();} }
+    { Name:"PriceLabel", ClassName:"ChartDrawPriceLabel", Create:function() { return new ChartDrawPriceLabel();} },
+    { Name:"PriceNote", ClassName:"ChartDrawPriceNote", Create:function() { return new ChartDrawPriceNote();} }
 ];
 
 IChartDrawPicture.MapIonFont=new Map(
@@ -55750,6 +55751,7 @@ function ChartDrawVolProfile()
 }
 
 //画图工具 tradingview
+
 function ChartDrawNote()
 {
     this.newMethod=IChartDrawPicture;   //派生
@@ -56771,6 +56773,280 @@ function ChartDrawPriceLabel()
     }
 }
 
+function ChartDrawPriceNote()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawPriceNote';
+    this.PointCount=2;
+
+    this.GetXYCoordinate=this.GetXYCoordinate_default;
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.OnlyMoveXIndex=true;
+    this.IsSupportMagnet=true;
+
+    this.FontOption=
+    { 
+        Family:g_JSChartResource.ChartDrawPriceNote.FontOption.Family,
+        Size:g_JSChartResource.ChartDrawPriceNote.FontOption.Size,
+        Weight:g_JSChartResource.ChartDrawPriceNote.FontOption.Weight,
+        Style:g_JSChartResource.ChartDrawPriceNote.FontOption.Style
+    };  
+    
+    this.TextMargin=
+    { 
+        Left:g_JSChartResource.ChartDrawPriceNote.TextMargin.Left, 
+        Top:g_JSChartResource.ChartDrawPriceNote.TextMargin.Top, 
+        Bottom:g_JSChartResource.ChartDrawPriceNote.TextMargin.Bottom, 
+        Right:g_JSChartResource.ChartDrawPriceNote.TextMargin.Right
+    };
+
+    this.BGColor=g_JSChartResource.ChartDrawPriceNote.BGColor;
+    this.BorderColor=g_JSChartResource.ChartDrawPriceNote.BorderColor;
+    this.TextColor=g_JSChartResource.ChartDrawPriceNote.TextColor;
+    this.BorderRoundRadius=3;
+
+    
+    //内部变量
+    this.TextRect;
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (option.TextColor) this.TextColor=option.TextColor;
+        if (option.BGColor) this.BGColor=option.BGColor;
+        if (option.BorderColor) this.BorderColor=option.BorderColor;
+        if (option.FontOption) this.SetFont(this.FontOption, option.FontOption);
+    }
+
+    //导出成存储格式
+    this.ExportStorageData=function()
+    {
+        var storageData=this.ExportBaseData();
+
+        storageData.Value=[];
+        for(var i=0;i<this.Value.length;++i)
+        {
+            var item=this.Value[i];
+            storageData.Value.push( { XValue:item.XValue, YValue:item.YValue } );
+        }
+    
+        storageData.BGColor=this.BGColor;
+        storageData.TextColor=this.TextColor;
+        storageData.BorderColor=this.BorderColor;
+        storageData.TextMargin={ Left:this.TextMargin.Left, Top:this.TextMargin.Right, Bottom:this.TextMargin.Bottom, Right:this.TextMargin.Right };
+
+        return storageData;
+    }
+
+    this.ImportStorageData=function(storageData)
+    {
+        if (storageData.TextMargin)
+        {
+            var item=storageData.TextMargin;
+            if (IFrameSplitOperator.IsNumber(item.Left)) this.TextMargin.Left=item.Left;
+            if (IFrameSplitOperator.IsNumber(item.Top)) this.TextMargin.Top=item.Top;
+            if (IFrameSplitOperator.IsNumber(item.Bottom)) this.TextMargin.Bottom=item.Bottom;
+            if (IFrameSplitOperator.IsNumber(item.Right)) this.TextMargin.Right=item.Right;
+        }
+
+        if (storageData.TextColor) this.TextColor=storageData.TextColor;
+        this.BGColor=storageData.BGColor;
+        this.BorderColor=storageData.BorderColor;
+    }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        this.TextRect=null;
+        if (this.IsFrameMinSize()) return;
+
+        var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
+        if (!drawPoint) return;
+        if (drawPoint.length!=2) return;
+
+        this.ClipFrame();
+
+        var ptStart=drawPoint[0];
+        var ptEnd=drawPoint[1];
+        this.LineWidth=1;
+
+        this.SetLineWidth();
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptStart.X,ptStart.Y);
+        this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
+        this.Canvas.stroke();
+        this.RestoreLineWidth();
+
+        this.DrawPriceLabel(ptStart, ptEnd);
+
+        var line={Start:ptStart, End:ptEnd};
+        this.LinePoint.push(line);
+        
+        this.DrawPoint(drawPoint);  //画点
+        this.Canvas.restore();
+    }
+
+    this.DrawPriceLabel=function(ptStart, ptEnd)
+    {
+        var font=this.GetFontString(this.FontOption);
+        if (!font) return;
+
+        var floatPrecision=2;  
+        if (this.Symbol && this.Frame.Identify==0) floatPrecision=GetfloatPrecision(this.Symbol);
+        var pixelRatio=GetDevicePixelRatio();
+
+        var ptPrice={ X:ptEnd.X, Y:ptEnd.Y };
+
+        var price=this.Frame.GetYData(ptStart.Y, false);
+        var text=price.toFixed(floatPrecision);
+        var textHeight=this.Canvas.measureText("擎").width;
+        var textWidth=this.Canvas.measureText(text).width;
+        var angle=this.CalculateAngle(ptStart.X, ptStart.Y, ptEnd.X, ptEnd.Y);
+        if ((angle>=0 && angle<=45) || (angle>=315 && angle<=360))
+        {
+            var left=ptPrice.X;
+            var bottom=ptPrice.Y;
+
+            var rtBG={ Left:left, Bottom:bottom, Width:textWidth+this.TextMargin.Left+this.TextMargin.Right, Height:textHeight+this.TextMargin.Top+this.TextMargin.Bottom };
+            rtBG.Bottom=bottom+(rtBG.Height/2);
+            rtBG.Top=rtBG.Bottom-rtBG.Height;
+            rtBG.Right=rtBG.Left+rtBG.Width;
+        }
+        else if (angle>45 && angle<=135)
+        {
+            var left=ptPrice.X;
+            var bottom=ptPrice.Y;
+    
+            var rtBG={ Left:left, Bottom:bottom, Width:textWidth+this.TextMargin.Left+this.TextMargin.Right, Height:textHeight+this.TextMargin.Top+this.TextMargin.Bottom };
+            rtBG.Left=left-(rtBG.Width/2);
+            rtBG.Top=rtBG.Bottom-rtBG.Height;
+            rtBG.Right=rtBG.Left+rtBG.Width;
+        }
+        else if (angle>=135 && angle<=225)
+        {
+            var left=ptPrice.X;
+            var bottom=ptPrice.Y;
+
+            var rtBG={ Width:textWidth+this.TextMargin.Left+this.TextMargin.Right, Height:textHeight+this.TextMargin.Top+this.TextMargin.Bottom };
+            rtBG.Bottom=bottom+(rtBG.Height/2);
+            rtBG.Top=rtBG.Bottom-rtBG.Height;
+            rtBG.Right=left;
+            rtBG.Left=rtBG.Right-rtBG.Width;
+        }
+        else if (angle>=225 && angle<=315)
+        {
+            var left=ptPrice.X;
+            var top=ptPrice.Y;
+
+            var rtBG={ Width:textWidth+this.TextMargin.Left+this.TextMargin.Right, Height:textHeight+this.TextMargin.Top+this.TextMargin.Bottom };
+            rtBG.Top=top;
+            rtBG.Bottom=rtBG.Top+rtBG.Height;
+            rtBG.Left=left-(rtBG.Width/2);
+            rtBG.Right=rtBG.Left-rtBG.Width;
+        }
+        else 
+            return;
+
+        this.DrawBG(rtBG);
+
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="middle";
+        this.Canvas.fillStyle=this.TextColor;
+        var xText=rtBG.Left+this.TextMargin.Left;
+        var yText=rtBG.Top+rtBG.Height/2;
+        var yOffset=0;
+        this.Canvas.fillText(text,xText,yText+yOffset);
+
+        //绘制一个点
+        if (this.BGColor)
+        {
+           this.Canvas.beginPath();
+           this.Canvas.arc(ptStart.X,ptStart.Y,2*pixelRatio,0,360,false);
+           this.Canvas.fillStyle=this.BGColor;     
+           this.Canvas.fill();  
+        }
+
+        this.TextRect=rtBG;
+    }
+
+    this.CalculateAngle=function(x1, y1, x2,y2)
+    {
+        var x = Math.abs(x1 - x2);
+        var y = Math.abs(y1 - y2);
+        var z = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+        var cos = x / z;
+        var radina = Math.acos(cos);   //用反三角函数求弧度
+        var angle = 180 / (Math.PI / radina);//将弧度转换成角度 
+
+        if (x2 == x1 && y2 < y1)    
+            return 90;
+
+        if (x2 == x1 && y2 > y1)    
+            return 270;
+
+        if (x2 > x1 && y2 == y1)    
+            return 0;
+
+        if (x2 < x1 && y2 == y1)
+            return 180;
+
+        if (x2 > x1 && y2 > y1)     //第四象限
+            return 360 - angle;
+
+        if (x2 < x1 && y2 > y1)     //第三象限
+            return 180 + angle;
+       
+        if (x2 < x1 && y2 < y1)     //第二象限
+            return 180 - angle;
+
+        return angle;
+    }
+
+   
+
+    this.DrawBG=function(rtBG)
+    {
+        if (!rtBG) return;
+
+        var pixelRatio=GetDevicePixelRatio();
+        var roundRadius=this.BorderRoundRadius*pixelRatio;
+
+        var path=new Path2D();
+        path.roundRect(ToFixedPoint(rtBG.Left), ToFixedPoint(rtBG.Top), ToFixedRect(rtBG.Width), ToFixedRect(rtBG.Height), [roundRadius]);
+        
+        if (this.BGColor)
+        {
+            this.Canvas.fillStyle=this.BGColor;
+            this.Canvas.fill(path);
+        }
+
+        if (this.BorderColor)
+        {
+            this.Canvas.strokeStyle=this.BorderColor;
+            this.Canvas.stroke(path);
+        }
+    }
+
+
+    this.IsPointIn=function(x,y)
+    {
+        if (!this.Frame || this.Status!=10) return -1;
+        if (!this.TextRect) return -1;
+
+        var rect=this.TextRect;
+
+        if (x>rect.Left && x<rect.Right && y>rect.Top && y<rect.Bottom) 
+            return 1;
+
+        return this.IsPointIn_XYValue_Line(x,y);
+    }
+}
+
 function ChartDrawStorage()
 {
     this.DrawData=new Map();    //画图工具数据 key=symbol-Period, value=Map() Key:Guid, Value:{Guid, Symbol, Period, ClassName, Value}
@@ -57723,6 +57999,15 @@ function JSChartResource()
     }
 
     this.ChartDrawPriceLabel=
+    {
+        TextMargin:{ Left:10, Top:5, Bottom:5, Right:10 },
+        BGColor:'rgba(104,114,255,0.7)',
+        BorderColor:"rgb(220,220,220)",
+        TextColor:'rgb(0,0,0)',
+        FontOption:{ Family:'微软雅黑', Size:14, Weight:null, Style:null },    //Weight(bold 粗体), Style(italic)
+    }
+
+    this.ChartDrawPriceNote=
     {
         TextMargin:{ Left:10, Top:5, Bottom:5, Right:10 },
         BGColor:'rgba(104,114,255,0.7)',

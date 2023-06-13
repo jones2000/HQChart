@@ -191,8 +191,6 @@ function KLineTooltipPaint()
             aryText.push({ Text:text, Color:this.TitleColor });
         }
         
-        top += this.LineHeight;
-        this.Canvas.fillStyle = this.TitleColor;
         if (IFrameSplitOperator.IsNumber(item.Open))   //开
         {
             title = g_JSChartLocalization.GetText('Tooltip-Open', this.LanguageID);

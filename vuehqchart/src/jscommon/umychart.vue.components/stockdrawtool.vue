@@ -93,6 +93,8 @@
             { name: "射线", icon: "#icon-draw_rays" },
             { name: "箭头", icon: "#icon-arrow_up" },
             { name: "标价线", icon: "#icon-price_line" },
+            { name: "PriceLabel", icon:"#icon-drawicon_message" },
+            { name: "PriceNote", icon:"#icon-draw_line" },
             { name: "趋势线", icon: "#icon-draw_trendline" },
             { name: "水平线", icon: "#icon-draw_hline" },
             { name: "水平线段", icon: "#icon-draw_hlinesegment" },
@@ -102,7 +104,7 @@
             { name: "平行通道", icon: "#icon-draw_parallelchannel" },
             { name: "价格通道线", icon: "#icon-draw_pricechannel" },
             { name: "M头W底", icon: "#icon-draw_wavemw" },
-            { name:"头肩型", icon:"#icon-draw_head_shoulders_bt" }, 
+            { name: "头肩型", icon:"#icon-draw_head_shoulders_bt" }, 
             { name: "波浪尺", icon: "#icon-waveruler" },
             { name: "AB波浪尺", icon: "#icon-waveruler" },
             { name: "箱型线", icon: "#icon-draw_box" },
@@ -114,7 +116,7 @@
             { name: "平行四边形", icon: "#icon-draw_quadrangle" },
             { name: "三角形", icon: "#icon-draw_triangle" },
             { name: "圆", icon: "#icon-draw_circle" },
-            { name: "对称角线", icon: "#icon-draw_symangle" }
+            { name: "对称角度", icon: "#icon-draw_symangle" }
         ],
 
         ToolList3: [
