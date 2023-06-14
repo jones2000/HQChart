@@ -476,6 +476,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 7. [HQChart实战教程60-如何定制十字光标输出内容](https://jones2000.blog.csdn.net/article/details/130079468)  
 8. [HQChart实战教程61-自定义十字星K线颜色](https://blog.csdn.net/jones2000/article/details/130551867)    
 9. [HQChart实战教程62-自定义K线标题栏](https://jones2000.blog.csdn.net/article/details/131174277)   
+10. [HQChart实战教程63-自定义手机端K线tooltip显示数据](https://jones2000.blog.csdn.net/article/details/131206706)    
 
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>
