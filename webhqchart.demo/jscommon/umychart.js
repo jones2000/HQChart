@@ -6800,6 +6800,17 @@ function JSChartContainer(uielement, OffscreenElement)
         }
     }
 
+    this.ReloadChartDrawPictureResource=function(resource)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartDrawPicture)) return;
+
+        for(var i=0;i<this.ChartDrawPicture.length;++i)
+        {
+            var item=this.ChartDrawPicture[i];
+            if (item.ReloadResource) item.ReloadResource(resource);
+        }
+    }
+
     this.ReloadResource=function(option)
     {
         this.ReloadBorder(option);
@@ -6808,6 +6819,7 @@ function JSChartContainer(uielement, OffscreenElement)
         this.ReloadFrame(option.Resource);
         this.ReloadExtendChartPaintResource(option.Resource);
         this.ReloadChartCorssCursor(option,option.Resource);
+        this.ReloadChartDrawPictureResource(option.Resource);
 
         if (option.Update && this.Update) this.Update( {UpdateCursorIndexType:2} );       //是否立即更新并重绘
         else if (option.Draw==true) this.Draw(); //是否立即重绘
@@ -33259,6 +33271,113 @@ function ChartMultiLine()
     }
 }
 
+// 线段集合 支持横屏
+function ChartMultiPoint()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    
+    this.ClassName="ChartMultiPoint";
+    this.PointGroup=[];   // [ {Point:[ {Index, Value }, ], Color:  }, ] 
+
+
+    this.IsHScreen=false;
+    this.LineWidth=1;
+    this.PointRadius=5;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.Data || this.Data.length<=0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.PointGroup)) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var xPointCount=this.ChartFrame.XPointCount;
+        var offset=this.Data.DataOffset;
+        var pixel=GetDevicePixelRatio();
+
+        this.Canvas.save();
+        this.ClipClient(this.IsHScreen);
+        
+        for(var i=0; i<this.PointGroup.length; ++i)
+        {
+            var item=this.PointGroup[i];
+            var color=item.Color;
+            var bgColor=item.BGColor;
+            var lineWidth=this.LineWidth;
+            var radius=this.PointRadius;
+            if (IFrameSplitOperator.IsNumber(item.LineWidth)) lineWidth=item.LineWidth;
+            if (IFrameSplitOperator.IsNumber(item.PointRadius)) radius=item.PointRadius;
+            var path=new Path2D();
+            var count=0;
+
+            for(var j=0; j<item.Point.length; ++j)
+            {
+                var point=item.Point[j];
+                if (!IFrameSplitOperator.IsNumber(point.Index)) continue;
+
+                var index=point.Index-offset;
+                if (index>=0 && index<xPointCount)
+                {
+                    var x=this.ChartFrame.GetXFromIndex(index);
+                    var y=this.ChartFrame.GetYFromData(point.Value, false);
+
+                    var pointPath = new Path2D();
+                    if (this.IsHScreen) 
+                        pointPath.arc(y,x,radius*pixel,0,360,false);
+                    else
+                        pointPath.arc(x,y,radius*pixel,0,360,false);
+
+                    path.addPath(pointPath);
+                    ++count;
+                }
+            }
+
+            if (count>0 && (bgColor || color))
+            {
+                this.Canvas.lineWidth=lineWidth*pixel;
+                this.Canvas.fillStyle=bgColor;      //背景填充颜色
+                this.Canvas.strokeStyle=color;
+
+                if (bgColor) this.Canvas.fill(path);
+                if (color) this.Canvas.stroke(path);
+            }
+                
+        }
+
+        this.Canvas.restore();
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        var end=start+xPointCount;
+
+        for(var i=0; i<this.PointGroup.length; ++i)
+        {
+            var item=this.PointGroup[i];
+            if (!IFrameSplitOperator.IsNonEmptyArray(item.Point)) continue;
+
+            for(var j=0; j<item.Point.length; ++j)
+            {
+                var point=item.Point[j];
+                if (point.Index>=start && point.Index<end)
+                {
+                    if (range.Max==null) range.Max=point.Value;
+                    else if (range.Max<point.Value) range.Max=point.Value;
+                    if (range.Min==null) range.Min=point.Value;
+                    else if (range.Min>point.Value) range.Min=point.Value;
+                }
+            }
+        }
+
+        return range;
+    }
+}
+
 // 多文本集合 支持横屏
 function ChartMultiText()
 {
@@ -47687,6 +47806,33 @@ function DynamicChartTitlePainting()
         return aryText;
     }
 
+    this.ForamtMultiPointTitle=function(dataIndex, dataInfo)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(dataInfo.PointGroup)) return null;
+
+        var aryText=[];
+        for(var i=0;i<dataInfo.PointGroup.length;++i)
+        {
+            var groupItem=dataInfo.PointGroup[i];
+            for(var j=0;j<groupItem.Point.length;++j)
+            {
+                var item=groupItem.Point[j];
+                if (item.Index==dataIndex)
+                {
+                    var item={ Text:item.Value.toFixed(2)};
+                    if (aryText.length==0) item.Name=dataInfo.Name;
+                    item.Color=groupItem.BGColor;
+                    aryText.push(item);
+                    break;
+                }
+            }
+        }
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryText)) return null;
+
+        return aryText;
+    }
+
     this.FormatVPVRTitle=function(pt, dataInfo)
     {
         var chart=dataInfo.Chart;
@@ -48057,6 +48203,12 @@ function DynamicChartTitlePainting()
             if (item.DataType=="ChartMultiLine")   //多线段数据
             {
                 aryText=this.ForamtMultiLineTitle(dataIndex, item);
+                if (!aryText) return null;
+                return { Text:null, ArrayText:aryText };
+            }
+            else if (item.DataType=="ChartMultiPoint")
+            {
+                aryText=this.ForamtMultiPointTitle(dataIndex, item);
                 if (!aryText) return null;
                 return { Text:null, ArrayText:aryText };
             }
@@ -48799,9 +48951,10 @@ function IChartDrawPicture()
     this.AreaColor='rgba(25,25,25,0.4)';    //面积颜色
     this.PointColor=g_JSChartResource.DrawPicture.PointColor[0];
     this.MoveOnPointColor=g_JSChartResource.DrawPicture.PointColor[1];
+    this.PointBGColor=g_JSChartResource.DrawPicture.PointColor[2];
     this.PointRadius=5;  //圆点半径
     this.SquareSize=8;   //方框点大小
-    this.PointType=g_JSChartResource.DrawPicture.PointType;    // 0=圆点  1=方框
+    this.PointType=g_JSChartResource.DrawPicture.PointType;         // 0=圆点  1=方框 2= 空心圆
     this.IsShowPoint=g_JSChartResource.DrawPicture.IsShowPoint;     //是否始终显示点
     this.LimitFrameID;   //限制在指定窗口绘图
     
@@ -48832,6 +48985,16 @@ function IChartDrawPicture()
         if (IFrameSplitOperator.IsNumber(option.LimitFrameID)) this.LimitFrameID=option.LimitFrameID;
         if (IFrameSplitOperator.IsBool(option.EnableCtrlMove)) this.EnableCtrlMove=option.EnableCtrlMove;
         if (IFrameSplitOperator.IsBool(option.IsShowYCoordinate)) this.IsShowYCoordinate=option.IsShowYCoordinate;
+    }
+
+    this.ReloadResource=function(resource)
+    {
+        if (!resource)
+        {
+            this.PointColor=g_JSChartResource.DrawPicture.PointColor[0];
+            this.MoveOnPointColor=g_JSChartResource.DrawPicture.PointColor[1];
+            this.PointBGColor=g_JSChartResource.DrawPicture.PointColor[2];
+        }
     }
 
     this.SetLineWidth=function()
@@ -49334,9 +49497,10 @@ function IChartDrawPicture()
 
     this.DrawPoint=function(aryPoint)
     {
-        if (!aryPoint || aryPoint.length<=0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryPoint)) return;
 
         var color=this.PointColor;
+        var isMoveOn=false;
         if (this.IsShowPoint)
         {
 
@@ -49350,7 +49514,10 @@ function IChartDrawPicture()
                     return;
                 
                 if (active.Select.Guid!=this.Guid && active.MoveOn.Guid==this.Guid)
+                {
+                    isMoveOn=true;
                     color=this.MoveOnPointColor;
+                }
             }
         }
         
@@ -49359,18 +49526,34 @@ function IChartDrawPicture()
         var pixel=GetDevicePixelRatio();
         this.Canvas.fillStyle=color;      //填充颜色
 
-        for(var i in aryPoint)
+        if (this.PointType==2)
+        {
+            this.Canvas.fillStyle=this.PointBGColor;      //背景填充颜色
+            this.Canvas.strokeStyle=this.PointColor;
+
+            if (isMoveOn) this.Canvas.lineWidth=1*pixel;
+            else this.Canvas.lineWidth=2*pixel;
+        }
+
+        for(var i=0; i<aryPoint.length; ++i)
         {
             var item=aryPoint[i];
 
-            if (this.PointType==1)
+            if (this.PointType==1)  //正方形
             {
                 var value=this.SquareSize*pixel;
                 var x=item.X-value/2;
                 var y=item.Y-value/2;
                 this.Canvas.fillRect(x,y,value,value);   //画一个背景色, 不然是一个黑的背景
             }
-            else
+            else if (this.PointType==2) //空心圆
+            {
+                var path=new Path2D();
+                path.arc(item.X,item.Y,this.PointRadius*pixel,0,360,false);
+                this.Canvas.fill(path); 
+                this.Canvas.stroke(path);
+            }
+            else    //实心圆
             {
                 this.Canvas.beginPath();
                 this.Canvas.arc(item.X,item.Y,this.PointRadius*pixel,0,360,false);
@@ -57814,12 +57997,13 @@ function JSChartResource()
     {
         LineColor:
         [ 
-            "rgb(30,144,255)" 
+            "rgb(41,98,255)" 
         ],
         PointColor:
         [
-            "rgb(128,128,128)",         //选中颜色
-            "rgb(192,192,192)"        //moveon颜色
+            "rgb(41,98,255)",          //选中颜色
+            "rgb(89,135,255)",    //moveon颜色
+            "rgb(255,255,255)"          //空心点背景色
         ],
 
         XYCoordinate:
@@ -57830,7 +58014,7 @@ function JSChartResource()
             Font:14*GetDevicePixelRatio() +"px 微软雅黑"   //文字字体
         },
 
-        PointType:0,    // 0=圆点  1=方框
+        PointType:2,    // 0=圆点  1=方框 2=空心圆
         IsShowPoint:false //是否始终显示点
     };
 

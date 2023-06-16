@@ -20194,6 +20194,26 @@ function ScriptIndex(name,script,args,option)
         hqChart.TitlePaint[titleIndex].Data[i]=titleData;
     }
 
+    this.CreateMultiPoint=function(hqChart,windowIndex,varItem,i)
+    {
+        let chart=new ChartMultiPoint();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.PointGroup=varItem.Draw.DrawData; 
+        if (varItem.Draw.Name) chart.Name=varItem.Draw.Name;
+        hqChart.ChartPaint.push(chart);
+
+         var titleIndex=windowIndex+1;
+        var titleData=new DynamicTitleData(chart.Data,chart.Name, null);
+        titleData.DataType="ChartMultiPoint";
+        titleData.PointGroup=chart.PointGroup;
+        hqChart.TitlePaint[titleIndex].Data[i]=titleData;
+    }
+
     this.CreateMultiBar=function(hqChart,windowIndex,varItem,id)
     {
         let chart=new ChartMultiBar();
@@ -20604,6 +20624,9 @@ function ScriptIndex(name,script,args,option)
                     case 'MULTI_LINE':
                         this.CreateMultiLine(hqChart,windowIndex,item,i);
                         break;
+                    case "MULTI_POINT":
+                        this.CreateMultiPoint(hqChart,windowIndex,item,i);
+                        break;
                     case 'MULTI_BAR':
                         this.CreateMultiBar(hqChart,windowIndex,item,i);
                         break;
@@ -20915,6 +20938,9 @@ function OverlayScriptIndex(name,script,args,option)
                         break;
                     case 'MULTI_LINE':
                         this.CreateMultiLine(hqChart,windowIndex,item,i);
+                        break;
+                    case "MULTI_POINT":
+                        this.CreateMultiPoint(hqChart,windowIndex,item,i);
                         break;
                     case 'MULTI_BAR':
                         this.CreateMultiBar(hqChart,windowIndex,item,i);
@@ -21622,6 +21648,22 @@ function OverlayScriptIndex(name,script,args,option)
             if (IFrameSplitOperator.IsNumber(item.Length)) chart.ArrawLength=item.Length;
             if (IFrameSplitOperator.IsNumber(item.LineWidth)) chart.ArrawLineWidth=item.LineWidth;
         }
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateMultiPoint=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMultiPoint();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.PointGroup=varItem.Draw.DrawData; 
         frame.ChartPaint.push(chart);
     }
 
@@ -22682,6 +22724,23 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=='MULTI_POINT')
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingMultiLine(draw.DrawData,date,time,hqChart);
+                    if (IFrameSplitOperator.IsNonEmptyArray(drawItem.DrawData))
+                    {
+                        for(var k=0; k<drawItem.DrawData.length; ++k)
+                        {
+                            this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
+                        }
+                    }
+                    
+                    outVarItem.Draw=drawItem;
+                    result.push(outVarItem);
+                }
                 else if (draw.DrawType=='MULTI_BAR')
                 {
                     drawItem.Text=draw.Text;
@@ -23114,6 +23173,23 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     if (draw.LineDash) drawItem.LineDash=draw.LineDash;
                     if (draw.Arrow) drawItem.Arrow=draw.Arrow;
 
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=='MULTI_POINT')
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingMultiLine(draw.DrawData,date,time,hqChart);
+                    if (IFrameSplitOperator.IsNonEmptyArray(drawItem.DrawData))
+                    {
+                        for(var k=0; k<drawItem.DrawData.length; ++k)
+                        {
+                            this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
+                        }
+                    }
+                    
+                    outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType=='MULTI_TEXT')

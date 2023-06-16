@@ -46,6 +46,7 @@ import {
     ChartRectangle,
     ChartMultiText,
     ChartMultiLine,
+    ChartMultiPoint,
     ChartMultiBar,
     ChartPie,
     ChartCircle,
@@ -1107,6 +1108,21 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateMultiPoint = function (hqChart, windowIndex, varItem, i) 
+    {
+        let chart = new ChartMultiPoint();
+        chart.Canvas = hqChart.Canvas;
+        chart.Name = varItem.Name;
+        chart.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data = hqChart.ChartPaint[0].Data;//绑定K线
+        chart.PointGroup = varItem.Draw.DrawData;
+        if (varItem.Draw.Name) chart.Name=varItem.Draw.Name;
+       
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateMultiBar = function (hqChart, windowIndex, varItem, i) 
     {
         let chart = new ChartMultiBar();
@@ -1268,6 +1284,9 @@ function ScriptIndex(name, script, args, option)
                     break;
                 case 'MULTI_LINE':
                     this.CreateMultiLine(hqChart, windowIndex, item, i);
+                    break;
+                case "MULTI_POINT":
+                    this.CreateMultiPoint(hqChart,windowIndex,item,i);
                     break;
                 case 'MULTI_BAR':
                     this.CreateMultiBar(hqChart, windowIndex, item, i);
@@ -1536,6 +1555,9 @@ function OverlayScriptIndex(name,script,args,option)
                         break;
                     case 'MULTI_LINE':
                         this.CreateMultiLine(hqChart,windowIndex,item,i);
+                        break;
+                    case "MULTI_POINT":
+                        this.CreateMultiPoint(hqChart,windowIndex,item,i);
                         break;
                     case 'MULTI_BAR':
                         this.CreateMultiBar(hqChart,windowIndex,item,i);
@@ -2175,6 +2197,23 @@ function OverlayScriptIndex(name,script,args,option)
         frame.ChartPaint.push(chart);
     }
 
+    this.CreateMultiPoint=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartMultiLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.PointGroup=varItem.Draw.DrawData; 
+        
+        frame.ChartPaint.push(chart);
+    }
+
     this.CreateBackgroud=function(hqChart,windowIndex,varItem,i)
     {
         var overlayIndex=this.OverlayIndex;
@@ -2543,6 +2582,23 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     if (IFrameSplitOperator.IsNumber(draw.LineWidth)) drawItem.LineWidth=draw.LineWidth;
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType == 'MULTI_POINT') 
+                {
+                    drawItem.Text = draw.Text;
+                    drawItem.Name = draw.Name;
+                    drawItem.DrawType = draw.DrawType;
+                    drawItem.DrawData = this.FittingMultiLine(draw.DrawData, date, time, hqChart);
+                    outVarItem.Draw = drawItem;
+                    if (IFrameSplitOperator.IsNonEmptyArray(drawItem.DrawData))
+                    {
+                        for(var k=0; k<drawItem.DrawData.length; ++k)
+                        {
+                            this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
+                        }
+                    }
+
+                    result.push(outVarItem);
+                }
                 else if (draw.DrawType == 'MULTI_BAR') 
                 {
                     drawItem.Text = draw.Text;
@@ -2892,6 +2948,20 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     if (draw.LineDash) drawItem.LineDash=draw.LineDash;
                     if (draw.Arrow) drawItem.Arrow=draw.Arrow;
                     if (IFrameSplitOperator.IsNumber(draw.LineWidth)) drawItem.LineWidth=draw.LineWidth;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=='MULTI_POINT')
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingMultiLine(draw.DrawData,date,time,hqChart);
+                    for(var k in drawItem.DrawData)
+                    {
+                        this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
+                    }
+                    outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);
                 }

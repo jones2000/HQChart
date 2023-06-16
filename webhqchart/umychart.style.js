@@ -305,14 +305,16 @@ function GetBlackStyle()
         {
             LineColor: 
             [
-                "rgb(255,255,0)"
+                "rgb(41,98,255)" 
             ],
     
             PointColor: 
             [
-                "rgb(228,228,228)",
-                "rgb(192,192,192)"
+                "rgb(41,98,255)",           //选中颜色
+                "rgb(89,135,255)",          //moveon颜色
+                "rgb(0,0,0)"                //空心点背景色
             ],
+
         },
     
         TooltipPaint : 

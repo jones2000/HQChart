@@ -4965,6 +4965,110 @@ function ChartMultiLine()
     }
 }
 
+// 线段集合 支持横屏
+function ChartMultiPoint()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    
+    this.ClassName="ChartMultiPoint";
+    this.PointGroup=[];   // [ {Point:[ {Index, Value }, ], Color:  }, ] 
+
+    this.IsHScreen=false;
+    this.LineWidth=1;
+    this.PointRadius=5;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.Data || this.Data.length<=0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.PointGroup)) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var xPointCount=this.ChartFrame.XPointCount;
+        var offset=this.Data.DataOffset;
+
+        this.Canvas.save();
+
+        for(var i=0; i<this.PointGroup.length; ++i)
+        {
+            var item=this.PointGroup[i];
+            var color=item.Color;
+            var bgColor=item.BGColor;
+            var lineWidth=this.LineWidth;
+            var radius=this.PointRadius;
+            if (IFrameSplitOperator.IsNumber(item.LineWidth)) lineWidth=item.LineWidth;
+            if (IFrameSplitOperator.IsNumber(item.PointRadius)) radius=item.PointRadius;
+            var path=new Path2D();
+            var count=0;
+
+            for(var j=0; j<item.Point.length; ++j)
+            {
+                var point=item.Point[j];
+                if (!IFrameSplitOperator.IsNumber(point.Index)) continue;
+
+                var index=point.Index-offset;
+                if (index>=0 && index<xPointCount)
+                {
+                    var x=this.ChartFrame.GetXFromIndex(index);
+                    var y=this.ChartFrame.GetYFromData(point.Value);
+
+                    var pointPath = new Path2D();
+                    if (this.IsHScreen) 
+                        pointPath.arc(y,x,radius,0,360,false);
+                    else
+                        pointPath.arc(x,y,radius,0,360,false);
+
+                    path.addPath(pointPath);
+                    ++count;
+                }
+            }
+
+            if (count>0 && (bgColor || color))
+            {
+                this.Canvas.lineWidth=lineWidth;
+                this.Canvas.fillStyle=bgColor;      //背景填充颜色
+                this.Canvas.strokeStyle=color;
+
+                if (bgColor) this.Canvas.fill(path);
+                if (color) this.Canvas.stroke(path);
+            }
+                
+        }
+
+        this.Canvas.restore();
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        var end=start+xPointCount;
+
+        for(var i=0; i<this.PointGroup.length; ++i)
+        {
+            var item=this.PointGroup[i];
+            if (!IFrameSplitOperator.IsNonEmptyArray(item.Point)) continue;
+
+            for(var j=0; j<item.Point.length; ++j)
+            {
+                var point=item.Point[j];
+                if (point.Index>=start && point.Index<end)
+                {
+                    if (range.Max==null) range.Max=point.Value;
+                    else if (range.Max<point.Value) range.Max=point.Value;
+                    if (range.Min==null) range.Min=point.Value;
+                    else if (range.Min>point.Value) range.Min=point.Value;
+                }
+            }
+        }
+
+        return range;
+    }
+}
+
 // 柱子集合  支持横屏
 function ChartMultiBar() 
 {
@@ -9348,6 +9452,7 @@ export
     ChartRectangle,
     ChartMultiText,
     ChartMultiLine,
+    ChartMultiPoint,
     ChartMultiHtmlDom,
     ChartMultiBar,
     ChartBuySell,

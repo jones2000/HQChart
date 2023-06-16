@@ -76,10 +76,12 @@ tr.context-menu.disabled {
     color: #9d9d9d;
 }
 
+/*
 tr.context-menu.spinner > td {
     background: url("/static/images/loading-small.0c15c93a2cb0.gif") 50% no-repeat;
     cursor: default;
 }
+*/
 
 .submenu.center {
     background-color: #fff;
