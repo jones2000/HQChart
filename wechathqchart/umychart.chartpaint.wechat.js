@@ -5000,8 +5000,10 @@ function ChartMultiPoint()
             var radius=this.PointRadius;
             if (IFrameSplitOperator.IsNumber(item.LineWidth)) lineWidth=item.LineWidth;
             if (IFrameSplitOperator.IsNumber(item.PointRadius)) radius=item.PointRadius;
-            var path=new Path2D();
-            var count=0;
+
+            this.Canvas.lineWidth=lineWidth;
+            if (bgColor) this.Canvas.fillStyle=bgColor;      //背景填充颜色
+            if (color) this.Canvas.strokeStyle=color;
 
             for(var j=0; j<item.Point.length; ++j)
             {
@@ -5014,27 +5016,16 @@ function ChartMultiPoint()
                     var x=this.ChartFrame.GetXFromIndex(index);
                     var y=this.ChartFrame.GetYFromData(point.Value);
 
-                    var pointPath = new Path2D();
+                    this.Canvas.beginPath();
                     if (this.IsHScreen) 
-                        pointPath.arc(y,x,radius,0,360,false);
+                        this.Canvas.arc(y,x,radius,0,360,false);
                     else
-                        pointPath.arc(x,y,radius,0,360,false);
+                        this.Canvas.arc(x,y,radius,0,360,false);
 
-                    path.addPath(pointPath);
-                    ++count;
+                    if (bgColor) this.Canvas.fill();
+                    if (color) this.Canvas.stroke();
                 }
             }
-
-            if (count>0 && (bgColor || color))
-            {
-                this.Canvas.lineWidth=lineWidth;
-                this.Canvas.fillStyle=bgColor;      //背景填充颜色
-                this.Canvas.strokeStyle=color;
-
-                if (bgColor) this.Canvas.fill(path);
-                if (color) this.Canvas.stroke(path);
-            }
-                
         }
 
         this.Canvas.restore();

@@ -401,14 +401,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 12. [HQChart实战教程18-多股同列](https://blog.csdn.net/jones2000/article/details/107193410)<br>
 13. [HQChart实战教程45-自定义指标窗口背景](https://jones2000.blog.csdn.net/article/details/119886468)<br>
 
-## 火币对接完整教程（付费文章）
-1. [HQChart实战教程10-全ws数据对接HQChart(数字货币对接实战)](https://blog.csdn.net/jones2000/article/details/105698038) <br>
-2. [HQChart实战教程11-火币网ws数据对接](https://blog.csdn.net/jones2000/article/details/105721190) <br>
-3. [HQChart实战教程12-火币网ws数据对接分时图](https://blog.csdn.net/jones2000/article/details/105756659) <br>
-4. [HQChart实战教程13-火币网ws数据对接K线（uniapp)](https://blog.csdn.net/jones2000/article/details/105804461)<br>
-5. [HQChart实战教程15-火币网ws数据对接拖拽下载历史K线图](https://blog.csdn.net/jones2000/article/details/106205584)<br>
-6. [HQChart实战教程16-K线图风格配色篇-仿火币网H5配色](https://blog.csdn.net/jones2000/article/details/106226272)<br>
-7. [HQChart实战教程47-火币网ws数据对接深度图](https://jones2000.blog.csdn.net/article/details/120950486)<br>
+## 火币对接完整教程（付费教程）
+1. [HQChart对接火币完整教程](https://jones2000.github.io/HQChart/document/huobi_demo.html)   
+
 
 ## 欧易对接完整教程（付费文章)  
 1. [HQChart实战教程54-欧易网http+ws数据对接(vue)](https://blog.csdn.net/jones2000/article/details/125213143)<br>
