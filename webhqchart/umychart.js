@@ -13618,7 +13618,7 @@ function KLineFrame()
             //xPointCount=maxDataCount;
             this.XPointCount=xPointCount;
             this.Data.DataOffset=0;
-            isShowAll=true; //数据铺满全屏, 不需要调整宽度
+            //isShowAll=true; //数据铺满全屏, 不需要调整宽度
             JSConsole.Chart.Log(`[KLineFrame::ZoomDown] Show all data. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount}`);
         }
         else
@@ -53588,7 +53588,8 @@ function ChartDrawPictureCircle()
         if (this.Status!=10) return -1;
 
         var value=this.IsPointInXYValue(x,y,option);
-        if (value>=0) return value;
+        if (value>=0) 
+            return value;
 
         if (this.CircleData && this.CircleData.R>8)
         {

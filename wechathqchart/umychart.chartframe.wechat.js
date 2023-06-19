@@ -1977,7 +1977,7 @@ function KLineFrame()
         if (this.Data.DataOffset<=0 && cursorIndex.IsLockRight==true) return false;
         var dataCount = this.Data.Data.length;
         var maxDataCount = dataCount + this.RightSpaceCount;
-        if (this.XPointCount >= dataCount) return false;
+        //if (this.XPointCount >= dataCount) return false;
 
         var rightSpaceCount = 0;
         var lastDataIndex = this.Data.DataOffset + this.XPointCount - 1;    //最右边的数据索引
@@ -2011,7 +2011,7 @@ function KLineFrame()
         }
         else if (xPointCount >= maxDataCount) 
         {
-            xPointCount = maxDataCount;
+            //xPointCount = maxDataCount;
             this.XPointCount = xPointCount;
             this.Data.DataOffset = 0;
         }
