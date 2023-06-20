@@ -401,14 +401,11 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 12. [HQChart实战教程18-多股同列](https://blog.csdn.net/jones2000/article/details/107193410)<br>
 13. [HQChart实战教程45-自定义指标窗口背景](https://jones2000.blog.csdn.net/article/details/119886468)<br>
 
-## 火币对接完整教程（付费教程）
+## 付费教程
 1. [HQChart对接火币完整教程](https://jones2000.github.io/HQChart/document/huobi_demo.html)   
+2. [HQChart对接欧易完整教程](https://jones2000.github.io/HQChart/document/okx_demo.html)   
 
 
-## 欧易对接完整教程（付费文章)  
-1. [HQChart实战教程54-欧易网http+ws数据对接(vue)](https://blog.csdn.net/jones2000/article/details/125213143)<br>
-2. [HQChart实战教程55-欧易网K线面积图(vue)](https://jones2000.blog.csdn.net/article/details/125229954)<br>
-3. [HQChart实战教程56-欧易网http+ws数据对接 uniapp版本](https://blog.csdn.net/jones2000/article/details/125354005)<br>
 
 ## 源码收费
 1. [HQChart实战教程36-数字货币币安对接-uniapp版本](https://jones2000.github.io/HQChart/document/uniapp_binance.html)<br>
