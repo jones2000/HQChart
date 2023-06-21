@@ -470,6 +470,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 8. [HQChart实战教程61-自定义十字星K线颜色](https://blog.csdn.net/jones2000/article/details/130551867)    
 9. [HQChart实战教程62-自定义K线标题栏](https://jones2000.blog.csdn.net/article/details/131174277)   
 10. [HQChart实战教程63-自定义手机端K线tooltip显示数据](https://jones2000.blog.csdn.net/article/details/131206706)    
+11. [HQChart实战教程64-自定义分时图标题栏](https://jones2000.blog.csdn.net/article/details/131319341)  
+12. [HQChart实战教程65-自定义手机端分时图tooltip显示数据](https://jones2000.blog.csdn.net/article/details/131325837)   
 
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>
