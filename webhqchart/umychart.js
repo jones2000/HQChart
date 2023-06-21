@@ -17109,6 +17109,9 @@ HistoryData.CopyRight=function(data,seed)
     newData.YFClose=data.YFClose;
     newData.FClose=data.FClose;
 
+    if (data.ColorData) newData.ColorData=data.ColorData;       //K线颜色
+    if (data.ExtendData) newData.ExtendData=data.ExtendData;    //扩张数据
+
     return newData;
 }
 

@@ -145,6 +145,9 @@ HistoryData.CopyRight=function(data,seed)
 
     newData.FlowCapital = data.FlowCapital;
     newData.Position = data.Position;
+    
+    if (data.ColorData) newData.ColorData=data.ColorData;       //K线颜色
+    if (data.ExtendData) newData.ExtendData=data.ExtendData;    //扩张数据
 
     return newData;
 }
