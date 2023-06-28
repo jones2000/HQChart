@@ -10109,7 +10109,7 @@ function AverageWidthFrame()
                         var bgTop=bottom-itemText.Width;
                         var textLeft=yText-textHeight/2-1*pixelTatio;
                         this.Canvas.fillStyle=bgColor;
-                        this.Canvas.fillRect(textLeft,bgTop,textHeight,textWidth);
+                        this.Canvas.fillRect(textLeft,bgTop,textHeight,itemText.Width);
                         this.DrawHScreenText({X:yText, Y:bgTop}, {Text:itemText.Text, Color:item.TextColor, XOffset:1*pixelTatio, YOffset:2*pixelTatio});
                         if (i==0) this.DrawLine(top,bgTop,yText,item.LineColor,item.LineType,item);
                         yText-=textHeight+1*pixelTatio;
@@ -10138,7 +10138,7 @@ function AverageWidthFrame()
                             var bgTop=yText-textHeight/2-1*pixelTatio;
                             var textLeft=right-itemText.Width;
                             this.Canvas.fillStyle=bgColor;
-                            this.Canvas.fillRect(textLeft,bgTop,textWidth,textHeight);  //文本背景区域
+                            this.Canvas.fillRect(textLeft,bgTop,itemText.Width,textHeight);  //文本背景区域
                             this.Canvas.fillStyle = item.TextColor;
                             this.Canvas.fillText(itemText.Text, textLeft + 1*pixelTatio, yText);
                             if (i==0) this.DrawLine(left,textLeft,yText,item.LineColor,item.LineType,item);
@@ -50099,6 +50099,40 @@ function IChartDrawPicture()
         return aryValue;
     }
 
+    //计算角度
+    this.CalculateAngle=function(x1, y1, x2,y2)
+    {
+        var x = Math.abs(x1 - x2);
+        var y = Math.abs(y1 - y2);
+        var z = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+        var cos = x / z;
+        var radina = Math.acos(cos);   //用反三角函数求弧度
+        var angle = 180 / (Math.PI / radina);//将弧度转换成角度 
+
+        if (x2 == x1 && y2 < y1)    
+            return 90;
+
+        if (x2 == x1 && y2 > y1)    
+            return 270;
+
+        if (x2 > x1 && y2 == y1)    
+            return 0;
+
+        if (x2 < x1 && y2 == y1)
+            return 180;
+
+        if (x2 > x1 && y2 > y1)     //第四象限
+            return 360 - angle;
+
+        if (x2 < x1 && y2 > y1)     //第三象限
+            return 180 + angle;
+       
+        if (x2 < x1 && y2 < y1)     //第二象限
+            return 180 - angle;
+
+        return angle;
+    }
+
     //复制
     //this.CopyData=function() { }
     //this.PtInButtons=function(x, y) { }
@@ -50202,7 +50236,8 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"Note", ClassName:"ChartDrawNote", Create:function() { return new ChartDrawNote(); } },
     { Name:"AnchoredText", ClassName:"ChartDrawAnchoredText", Create:function() { return new ChartDrawAnchoredText();} },
     { Name:"PriceLabel", ClassName:"ChartDrawPriceLabel", Create:function() { return new ChartDrawPriceLabel();} },
-    { Name:"PriceNote", ClassName:"ChartDrawPriceNote", Create:function() { return new ChartDrawPriceNote();} }
+    { Name:"PriceNote", ClassName:"ChartDrawPriceNote", Create:function() { return new ChartDrawPriceNote();} },
+    { Name:"FibWedge", ClassName:"ChartDrawFibWedge", Create:function(){ return new ChartDrawFibWedge(); }}
 ];
 
 IChartDrawPicture.MapIonFont=new Map(
@@ -57161,41 +57196,6 @@ function ChartDrawPriceNote()
         this.TextRect=rtBG;
     }
 
-    this.CalculateAngle=function(x1, y1, x2,y2)
-    {
-        var x = Math.abs(x1 - x2);
-        var y = Math.abs(y1 - y2);
-        var z = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
-        var cos = x / z;
-        var radina = Math.acos(cos);   //用反三角函数求弧度
-        var angle = 180 / (Math.PI / radina);//将弧度转换成角度 
-
-        if (x2 == x1 && y2 < y1)    
-            return 90;
-
-        if (x2 == x1 && y2 > y1)    
-            return 270;
-
-        if (x2 > x1 && y2 == y1)    
-            return 0;
-
-        if (x2 < x1 && y2 == y1)
-            return 180;
-
-        if (x2 > x1 && y2 > y1)     //第四象限
-            return 360 - angle;
-
-        if (x2 < x1 && y2 > y1)     //第三象限
-            return 180 + angle;
-       
-        if (x2 < x1 && y2 < y1)     //第二象限
-            return 180 - angle;
-
-        return angle;
-    }
-
-   
-
     this.DrawBG=function(rtBG)
     {
         if (!rtBG) return;
@@ -57232,6 +57232,492 @@ function ChartDrawPriceNote()
 
         return this.IsPointIn_XYValue_Line(x,y);
     }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// 0=中心点  1=起始点(决定半径长度)  2=结束点(任意位置)
+//
+function ChartDrawFibWedge()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawFibWedge';
+    this.PointCount=3;
+    this.Font=12*GetDevicePixelRatio() +"px 微软雅黑";
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.GetXYCoordinate=this.GetXYCoordinate_default;
+    this.PointToValue_Default=this.PointToValue;
+    this.OnlyMoveXIndex=true;
+    this.IsSupportMagnet=true;
+    this.LastPoint;
+
+    this.AreaConfig=
+    { 
+        AryData:
+        [
+            { Value: 0.236, Color:"rgb(242,52,69)", Enable:true },
+            { Value: 0.382, Color:"rgb(255,152,0)",Enable:true },
+            { Value: 0.5, Color:"rgb(76,175,80)", Enable:true },
+            { Value: 0.618, Color:"rgb(8,153,129)", Enable:true },
+            { Value: 0.786, Color:"rgb(0,188,212)" ,Enable:true },
+            { Value: 1, Color:"rgb(120,123,134)", Enable:true },
+            { Value: 1.618, Color:"rgb(41,98,255)",Enable:false },
+            { Value: 2.618, Color:"rgb(242,54,69)",Enable:false },
+        ],
+
+        Opacity:0.3
+    }
+
+    //内部变量
+    this.TextAngle;     
+    this.Radius;        //半径
+
+    //计算斜边
+    this.CalculateHypotenuse=function(pt1, pt2)
+    {
+        var a=pt1.X-pt2.X;
+        var b=pt1.Y-pt2.Y;
+        var c=Math.sqrt(a*a+b*b);
+        return c;
+    }
+
+    //吸附X轴和Y轴K线价格
+    this.MagnetXY=function(aryPoint)
+    {
+        var option= { IsFixedX:this.OnlyMoveXIndex };
+
+        //磁吸功能
+        if (this.Option && this.Option.Magnet && this.Option.Magnet.Enable && this.IsSupportMagnet  && this.Frame.Identify==0)
+        {
+            var pointIndex=-1;
+            if (this.Status==2) pointIndex=1;   //创建第2个点
+            if (IFrameSplitOperator.IsNumber(this.MovePointIndex)) pointIndex=this.MovePointIndex;
+                
+            if (pointIndex>=0)
+            {
+                option.Magnet=
+                {
+                    Enable:true,
+                    PointIndex:pointIndex,
+                    Distance:this.Option.Magnet.Distance,
+                    Type:this.Option.Magnet.Type
+                }
+            }
+        }
+         
+        this.AdjustPoint(aryPoint,option)
+    }
+
+    this.CalculateAllPoint=function(ptStart, pt2, ptEnd)
+    {
+        var drawPoint=[];
+        drawPoint.push({ X:ptStart.X, Y:ptStart.Y });
+        drawPoint.push({ X:pt2.X, Y:pt2.Y });
+        this.MagnetXY(drawPoint);
+
+        drawPoint.push({ X:ptEnd.X, Y:ptEnd.Y });
+
+        var radius=this.CalculateHypotenuse(drawPoint[0], drawPoint[1]);    //求半径
+        var a=drawPoint[0].X-drawPoint[2].X;
+        var b=drawPoint[0].Y-drawPoint[2].Y;
+        var c=Math.sqrt(a*a+b*b);
+
+        var a2=a*radius/c;
+        var b2=b*radius/c;
+
+        drawPoint[2].X=drawPoint[0].X-a2;
+        drawPoint[2].Y=drawPoint[0].Y-b2;
+
+        return drawPoint;
+    }
+
+    //数值转成坐标
+    this.ValueToPoint_V2=function(aryValue)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryValue)) return null;
+
+        if (!this.Frame) return null;
+        var data=this.Frame.Data;
+        if (!data) return null;
+        
+        var isHScreen=this.Frame.IsHScreen;
+        var aryPoint=[];
+        for(var i=0; i<aryValue.length; ++i)
+        {
+            var item=aryValue[i];
+            var pt=new Point();
+            if (isHScreen)
+            {
+                pt.Y=this.Frame.GetXFromIndex(item.XValue-data.DataOffset,false);
+                pt.X=this.Frame.GetYFromData(item.YValue,false);
+            }
+            else
+            {
+                pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset, false);
+                pt.Y=this.Frame.GetYFromData(item.YValue,false);
+            }
+            aryPoint[i]=pt;
+        }
+
+        return aryPoint;
+    }
+
+    this.CalculateDrawPoint=function(option)
+    {
+        if (this.Status<2) return null;
+        if(!this.Point.length || !this.Frame) return null;
+
+        var drawPoint=[];
+        if (this.Status==2) //完成第2个点
+        {
+            if (this.PointStatus==2 && this.LastPoint)  //第3个点
+            {
+                drawPoint=this.CalculateAllPoint(this.Point[0], this.Point[1], this.LastPoint);
+            }
+            else
+            {
+                for(var i=0;i<this.Point.length && i<2;++i)
+                {
+                    var item=this.Point[i];
+                    drawPoint.push({ X:item.X, Y:item.Y });
+                }
+
+                this.MagnetXY(drawPoint);
+            }
+        }
+        else if (this.Status==10)
+        {
+            var data=this.Frame.Data;
+            if (!data) return null;
+
+            var showCount=this.Frame.XPointCount;
+            var invaildX=0; //超出范围的x点个数
+            var isHScreen=this.Frame.IsHScreen;
+            for(var i=0; i<this.Value.length; ++i)
+            {
+                var item=this.Value[i];
+                var dataIndex=item.XValue-data.DataOffset;
+                if (dataIndex<0 || dataIndex>=showCount) ++invaildX;
+            
+                var pt=new Point();
+                if (isHScreen)  //横屏X,Y对调
+                {
+                    pt.Y=this.Frame.GetXFromIndex(item.XValue-data.DataOffset,false);
+                    pt.X=this.Frame.GetYFromData(item.YValue,false);
+                }
+                else
+                {
+                    pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset,false);
+                    pt.Y=this.Frame.GetYFromData(item.YValue,false);
+                }
+                drawPoint.push(pt);
+            }
+        }
+        else if (this.Status==20)
+        {
+            drawPoint=this.CalculateAllPoint(this.Point[0], this.Point[1], this.Point[2]);
+        }
+
+        return drawPoint;
+    }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        this.TextAngle=null;
+        this.Radius=null;
+        if (this.IsFrameMinSize()) return;
+
+        var drawPoint=this.CalculateDrawPoint({IsCheckX:false, IsCheckY:false});
+        if (!IFrameSplitOperator.IsNonEmptyArray(drawPoint)) return;
+        
+        var points=drawPoint.slice(0);
+        this.CalculateLines(points);
+
+        this.ClipFrame();
+        
+        this.DrawArea(points);
+        this.DrawLines(this.LinePoint);
+        this.DrawPoint(points); //画点
+        this.DrawTitle(points);
+
+        this.Canvas.restore();
+    }
+
+    this.DrawArea=function(aryPoint)
+    {
+        if (aryPoint.length!=3) return;
+        if (!this.AreaConfig || !IFrameSplitOperator.IsNonEmptyArray(this.AreaConfig.AryData)) return;
+
+        var ptCenter=aryPoint[0];
+        var radius=this.CalculateHypotenuse(ptCenter, aryPoint[1]);    //求半径
+        var startAngle=this.CalculateAngle(ptCenter.X,ptCenter.Y,aryPoint[1].X,aryPoint[1].Y);
+        var endAngle=this.CalculateAngle(ptCenter.X,ptCenter.Y,aryPoint[2].X,aryPoint[2].Y);
+
+        var sectorAngle=startAngle-endAngle;
+        if (sectorAngle<0) sectorAngle+=360;
+        if (sectorAngle>180)
+        {
+            var temp=startAngle;
+            startAngle=endAngle;
+            endAngle=temp;
+        }
+
+        var centerAngle=startAngle-(startAngle-endAngle)/2;
+        if (startAngle-endAngle<0) centerAngle-=180;
+
+        var preValue=null;
+        for(var i=0;i<this.AreaConfig.AryData.length;++i)
+        {
+            var item=this.AreaConfig.AryData[i];
+            if (!item.Enable) continue;
+
+            var value=radius*item.Value;    //半径
+            var lineColor=item.Color;
+            var areaColor=IChartDrawPicture.ColorToRGBA(lineColor, this.AreaConfig.Opacity);
+
+            var path=new Path2D();
+            if (IFrameSplitOperator.IsNumber(preValue))
+            {
+                path.arc(ptCenter.X,ptCenter.Y,preValue,(Math.PI / 180)*(360-startAngle),(Math.PI / 180)*(360-endAngle));
+                path.arc(ptCenter.X,ptCenter.Y,value,(Math.PI / 180)*(360-endAngle), (Math.PI / 180)*(360-startAngle),true);
+            }
+            else
+            {
+                path.moveTo(ptCenter.X,ptCenter.Y);
+                path.arc(ptCenter.X,ptCenter.Y,value,(Math.PI / 180)*(360-startAngle),(Math.PI / 180)*(360-endAngle));
+            }
+            
+            this.Canvas.fillStyle=areaColor;
+            this.Canvas.fill(path);
+
+            preValue=value;
+        }
+
+        for(var i=0;i<this.AreaConfig.AryData.length;++i)
+        {
+            var item=this.AreaConfig.AryData[i];
+            if (!item.Enable) continue;
+
+            var value=radius*item.Value;    //半径
+            var lineColor=item.Color;
+
+            var path=new Path2D();
+            path.arc(ptCenter.X,ptCenter.Y,value,(Math.PI / 180)*(360-startAngle),(Math.PI / 180)*(360-endAngle));
+            this.Canvas.strokeStyle = lineColor;
+            this.Canvas.stroke(path);
+        }
+
+        this.Radius=radius;
+        this.TextAngle=centerAngle;
+    }
+
+    //显示角度数据
+    this.DrawTitle=function(aryPoint)
+    {
+        if (aryPoint.length!=3) return;
+        if (!this.AreaConfig || !IFrameSplitOperator.IsNonEmptyArray(this.AreaConfig.AryData)) return;
+
+        var ptCenter=aryPoint[0];
+        var radian =(Math.PI/180)*(360-this.TextAngle);
+        this.Canvas.font=this.Font;
+        for(var i=0;i<this.AreaConfig.AryData.length;++i)
+        {
+            var item=this.AreaConfig.AryData[i];
+            if (!item.Enable) continue;
+
+            var value=this.Radius*item.Value;    //半径
+            var lineColor=item.Color;
+            var text=`${item.Value}`;
+            var y=Math.sin(radian)*value+ptCenter.Y
+            var x=Math.cos(radian)*value+ptCenter.X;
+
+            this.Canvas.fillStyle=lineColor;
+            this.Canvas.textAlign="left";
+            this.Canvas.textBaseline="top";
+            this.Canvas.fillText(text,x+2,y+2);
+        }
+    }
+
+    this.SetLastPoint=function(obj)
+    {
+        this.LastPoint={X:obj.X,Y:obj.Y};
+    }
+
+    this.DrawLines=function(aryLine)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryLine)) return;
+
+        for(var i=0; i<aryLine.length; ++i)
+        {
+            var item=aryLine[i];
+            this.DrawLine(item.Start,item.End);
+        }
+    }
+
+    this.CalculateLines=function(points)
+    {
+        if (points.length===2)
+        {
+            var line={Start:new Point(), End:new Point()};
+            line.Start.Y=points[0].Y;
+            line.Start.X=points[0].X;
+            line.End.Y=points[1].Y;
+            line.End.X=points[1].X;
+            this.LinePoint.push(line);
+        }
+        else if (points.length===3)
+        {
+            var line={Start:new Point(), End:new Point()};
+            line.Start.Y=points[0].Y;
+            line.Start.X=points[0].X;
+            line.End.Y=points[1].Y;
+            line.End.X=points[1].X;
+            this.LinePoint.push(line);
+
+            line={Start:new Point(), End:new Point()};
+            line.Start.Y=points[0].Y;
+            line.Start.X=points[0].X;
+            line.End.Y=points[2].Y;
+            line.End.X=points[2].X;
+            this.LinePoint.push(line);
+        }
+    }
+
+    //0-10 鼠标对应的点索引   100=鼠标在正个图形上  -1 鼠标不在图形上
+    this.IsPointIn=function(x,y,option)
+    {
+        if (this.Status!=10) return -1;
+
+        var value=this.IsPointInXYValue(x,y,this.AryPoint,option);
+        if (value>=0) return value;
+
+        value=this.IsPointInLine(x,y,option);
+        if (value>=0) return 100;
+
+        return -1;
+    }
+
+    this.IsPointInDots=function(x, y, aryPoint, option)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryPoint)) return -1;
+
+        if (!this.Frame) return -1;
+
+        var data=this.Frame.Data;
+        if (!data) return -1;
+        if (!this.Value) return -1;
+       
+
+        var radius=5;
+        if (option && IFrameSplitOperator.IsNumber(option.Zoom)) radius+=option.Zoom;
+        else if (this.Option && IFrameSplitOperator.IsNumber(this.Option.Zoom)) radius+=this.Option.Zoom;
+
+        var isHScreen=this.Frame.IsHScreen;
+        radius*=GetDevicePixelRatio();
+        for(var i=0;i<aryPoint.length; ++i)   //是否在点上
+        {
+            var pt=aryPoint[i];
+            var path=new Path2D();
+            path.arc(pt.X,pt.Y,radius,0,360);
+            if (this.Canvas.isPointInPath(path,x,y))  return i;
+        }
+
+        return -1;
+    }
+
+    this.GetCursorType=function(ptIndex)
+    {
+        if (ptIndex==2) return "ns-resize";
+        return null;
+    }
+
+    
+    this.PointToValue=function()
+    {
+        if (!this.Frame) return false;
+
+        var item=this.Point[2];
+        var ptLast={X:item.X, Y:item.Y};
+
+        if (!this.PointToValue_Default()) return false;
+
+        //计算第3个点的位置
+        var aryValue=[this.Value[0], this.Value[1]];
+        var aryPoint=this.ValueToPoint_V2(aryValue);
+
+        var radius=this.CalculateHypotenuse(aryPoint[0], aryPoint[1]);    //求半径
+        var a=aryPoint[0].X-ptLast.X;
+        var b=aryPoint[0].Y-ptLast.Y;
+        var c=Math.sqrt(a*a+b*b);
+
+        var a2=a*radius/c;
+        var b2=b*radius/c;
+
+        this.Point[2].X=aryPoint[0].X-a2;
+        this.Point[2].Y=aryPoint[0].Y-b2;
+
+        var aryValue=this.PointToValue_V2([this.Point[2]], {Type:1});
+        if (!aryValue) return false;
+
+        this.Value[2]=aryValue[0];
+
+        return true;
+    }
+
+    this.PointToValue_V2=function(aryPoint,option)
+    {
+        if (!this.Frame) return null;
+
+        if (this.Frame.ClassName=="MinuteFrame" || this.Frame.Class=="MinuteHScreenFrame")
+        {
+            return this.PointToValue_Minute_V2(aryPoint, option);
+        }
+        else
+        {
+            return this.PointToValue_KLine_V2(aryPoint, option);
+        }
+    }
+
+    this.PointToValue_KLine_V2=function(aryPoint, option)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryPoint)) return null;
+        if (!this.Frame) return null;
+        var data=this.Frame.Data;
+        if (!data) return null;
+
+        var aryValue=[]
+        var isHScreen=this.Frame.IsHScreen;
+        if (isHScreen)
+        {
+            for(var i=0;i<aryPoint.length;++i)
+            {
+                var item=aryPoint[i];
+                var xValue=this.Frame.GetXData(item.Y,false)+data.DataOffset;
+                var yValue=this.Frame.GetYData(item.X,false);
+
+                var valueItem={ XValue:xValue, YValue:yValue, Type:1 };
+                aryValue[i]=valueItem;
+            }
+        }
+        else
+        {
+            for(var i=0; i<aryPoint.length; ++i)
+            {
+                var item=aryPoint[i];
+                var xValue=this.Frame.GetXData(item.X,false)+data.DataOffset;
+                var yValue=this.Frame.GetYData(item.Y,false);
+
+                var valueItem={ XValue:xValue, YValue:yValue, Type:1 };
+                aryValue[i]=valueItem;
+            }
+        }
+
+        return aryValue;
+    }
+
 }
 
 function ChartDrawStorage()
