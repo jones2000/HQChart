@@ -269,6 +269,12 @@ function IChartFramePainting()
         if (!this.LockPaint) return null; 
         return this.LockPaint.LockRect;
     }
+
+    this.GetFontHeight=function(font)
+    {
+        if (font) this.Canvas.font=font;
+        return this.Canvas.measureText("擎").width;
+    }
 }
 
 
@@ -725,7 +731,8 @@ function AverageWidthFrame()
             bottom = this.ChartBorder.GetBottom();
         }
 
-        var textHeight = 18;
+        var defaultTextHeight=16
+        var textHeight = defaultTextHeight;
         var y = this.GetYFromData(item.Value);
         var position=0;
 
@@ -742,27 +749,41 @@ function AverageWidthFrame()
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.textAlign = "left";
                 this.Canvas.textBaseline = "middle";
-                var textWidth = this.Canvas.measureText(item.Message[0]).width + 2;
+                var textInfo=this.GetCustomItemTextInfo(item,true);
+                var textWidth = textInfo.MaxWidth;
+                var fontHeight=this.GetFontHeight();
+                textHeight=fontHeight>defaultTextHeight? fontHeight:defaultTextHeight;
                 var bgColor = item.LineColor;
                 var rgb = this.RGBToStruct(item.LineColor);
                 if (rgb) bgColor = `rgba(${rgb.R}, ${rgb.G}, ${rgb.B}, ${g_JSChartResource.FrameLatestPrice.BGAlpha})`;   //内部刻度 背景增加透明度
-                this.Canvas.fillStyle = bgColor;
-                if (this.IsHScreen) 
+
+                var yText=y;
+                for(var i=0;i<textInfo.Text.length;++i)
                 {
-                    var bgTop = top;
-                    var textLeft = y - textHeight / 2 - 1;
-                    this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
-                    this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[0], Color: item.TextColor, XOffset: 1, YOffset: 2 });
-                    this.DrawLine(bgTop + textWidth, bottom, y, item.LineColor,item.LineType);
-                }
-                else
-                {
-                    var bgTop = y - textHeight / 2 - 1;
-                    var textLeft = left + 1;
-                    this.Canvas.fillRect(textLeft, bgTop, textWidth, textHeight);
-                    this.Canvas.fillStyle = item.TextColor;
-                    this.Canvas.fillText(item.Message[0], textLeft + 1, y);
-                    this.DrawLine(textLeft + textWidth, right, y, item.LineColor,item.LineType);
+                    var itemText=textInfo.Text[i];
+                    if (this.IsHScreen) 
+                    {
+                        var bgTop = top;
+                        var textLeft = yText - textHeight / 2 - 1;
+                        this.Canvas.fillStyle = bgColor;
+                        this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
+                        this.DrawHScreenText({ X: yText, Y: bgTop }, { Text: itemText.Text, Color: item.TextColor, XOffset: 1, YOffset: 2 });
+                        if (i==0) this.DrawLine(bgTop + itemText.Width, bottom, yText, item.LineColor,item.LineType);
+
+                        yText-=textHeight+1;
+                    }
+                    else
+                    {
+                        var bgTop = yText - textHeight / 2 - 1;
+                        var textLeft = left + 1;
+                        this.Canvas.fillStyle = bgColor;
+                        this.Canvas.fillRect(textLeft, bgTop, itemText.Width, textHeight);
+                        this.Canvas.fillStyle = item.TextColor;
+                        this.Canvas.fillText(itemText.Text, textLeft + 1, yText);
+                        if (i==0) this.DrawLine(textLeft + itemText.Width, right, yText, item.LineColor,item.LineType);
+
+                        yText+=textHeight+1;
+                    }
                 }
             }
             else 
@@ -770,23 +791,49 @@ function AverageWidthFrame()
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.textAlign = "right";
                 this.Canvas.textBaseline = "middle";
-                var textWidth = this.Canvas.measureText(item.Message[0]).width + 2;
-                this.Canvas.fillStyle = item.LineColor;
-                if (this.IsHScreen) 
+                var textInfo=this.GetCustomItemTextInfo(item,true);
+                var textWidth=textInfo.MaxWidth;
+                var fontHeight=this.GetFontHeight();
+                textHeight=fontHeight>defaultTextHeight? fontHeight:defaultTextHeight;
+
+                var yText=y;
+                for(var i=0;i<textInfo.Text.length;++i)
                 {
-                    var bgTop = top - textWidth;
-                    var textLeft = y - textHeight / 2 - 1 ;
-                    this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
-                    this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[0], Color: item.TextColor, XOffset: 1, YOffset: 2 });
-                    this.DrawLine(bgTop + textWidth, bottom, y, item.LineColor,item.LineType);
-                }
-                else
-                {
-                    var bgTop = y - textHeight / 2 - 1;
-                    this.Canvas.fillRect(left - textWidth, bgTop, textWidth, textHeight);
-                    this.Canvas.fillStyle = item.TextColor;
-                    this.Canvas.fillText(item.Message[0], left - 1, y);
-                    this.DrawLine(left, right, y, item.LineColor,item.LineType);
+                    var itemText=textInfo.Text[i];
+                    if (this.IsHScreen) 
+                    {
+                        if (i==0) var bgTop=top-itemText.Width;
+                        else var bgTop=top-textWidth;
+                        var textLeft=yText-textHeight/2-1;
+                        this.Canvas.fillStyle=item.LineColor;
+                        this.Canvas.fillRect(textLeft,bgTop,textHeight,itemText.Width);
+                        this.DrawHScreenText({ X: yText, Y: bgTop }, { Text: itemText.Text, Color: item.TextColor, XOffset: 1, YOffset: 2 });
+                        if (i==0) this.DrawLine(bgTop + itemText.Width, bottom, yText, item.LineColor,item.LineType);
+
+                        yText-=textHeight+1;
+                    }
+                    else
+                    {
+                        var bgTop = yText - textHeight / 2 - 1;
+                        if (i==0)
+                        {
+                            var rectLeft=left-itemText.Width;
+                            var textLeft=left;
+                        }
+                        else
+                        {
+                            var rectLeft=left-textWidth;
+                            var textLeft=left-(textWidth-itemText.Width);
+                        }
+
+                        this.Canvas.fillStyle = item.LineColor;
+                        this.Canvas.fillRect(rectLeft,bgTop,itemText.Width,textHeight);
+                        this.Canvas.fillStyle = item.TextColor;
+                        this.Canvas.fillText(itemText.Text, textLeft - 1, yText);
+                        if (i==0) this.DrawLine(left, right, yText, item.LineColor,item.LineType);
+
+                        yText+=textHeight+1;
+                    }
                 }
             }
         }
@@ -797,40 +844,54 @@ function AverageWidthFrame()
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.textAlign = "left";
                 this.Canvas.textBaseline = "middle";
-                var textWidth = this.Canvas.measureText(item.Message[1]).width + 2;
+                var textInfo=this.GetCustomItemTextInfo(item,false);
+                var textWidth=textInfo.MaxWidth;
+                var fontHeight=this.GetFontHeight();
+                textHeight=fontHeight>defaultTextHeight? fontHeight:defaultTextHeight;
                 var bgColor = item.LineColor;
                 var rgb = this.RGBToStruct(item.LineColor);
                 if (rgb) bgColor = `rgba(${rgb.R}, ${rgb.G}, ${rgb.B}, ${g_JSChartResource.FrameLatestPrice.BGAlpha})`;   //内部刻度 背景增加透明度
-                this.Canvas.fillStyle = bgColor;
-                if (this.IsHScreen) 
-                {
-                    var bgTop = bottom - textWidth;
-                    var textLeft = y - textHeight / 2 - 1;
-                    this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
-                    this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[1], Color: item.TextColor, XOffset: 1, YOffset: 2 });
-                    this.DrawLine(top, bgTop, y, item.LineColor,item.LineType);
-                }
-                else
-                {
-                    var bgTop = y - textHeight / 2 - 1;
-                    var textLeft = right - textWidth;
-                    this.Canvas.fillRect(textLeft, bgTop, textWidth, textHeight);
-                    this.Canvas.fillStyle = item.TextColor;
-                    this.Canvas.fillText(item.Message[1], textLeft + 1, y);
-                    this.DrawLine(left, textLeft, y, item.LineColor,item.LineType);
 
-                    if (item.CountDown===true)
+                var yText=y;
+                for(var i=0;i<textInfo.Text.length;++i)
+                {
+                    var itemText=textInfo.Text[i];
+                    if (this.IsHScreen) 
                     {
-                        if (this.GetEventCallback)
+                        var bgTop=bottom-itemText.Width;
+                        var textLeft=yText-textHeight/2-1;
+                        this.Canvas.fillStyle=bgColor;
+                        this.Canvas.fillRect(textLeft,bgTop,textHeight,itemText.Width);
+                        this.DrawHScreenText({X:yText, Y:bgTop}, {Text:itemText.Text, Color:item.TextColor, XOffset:1, YOffset:2});
+                        if (i==0) this.DrawLine(top, bgTop, yText, item.LineColor,item.LineType);
+
+                        yText-=textHeight+1;
+                    }
+                    else
+                    {
+                        var bgTop=yText-textHeight/2-1;
+                        var textLeft=right-itemText.Width;
+                        this.Canvas.fillStyle=bgColor;
+                        this.Canvas.fillRect(textLeft, bgTop, itemText.Width, textHeight);
+                        this.Canvas.fillStyle = item.TextColor;
+                        this.Canvas.fillText(itemText.Text, textLeft + 1, yText);
+                        if (i==0) this.DrawLine(left, textLeft,yText , item.LineColor,item.LineType);
+
+                        if (item.CountDown===true)
                         {
-                            var bgTop=y + textHeight / 2 + 1;
-                            var sendData=
-                            { 
-                                Top:bgTop, Right:right, Height:null, 
-                                IsShow:true, BGColor:bgColor, TextColor:item.TextColor, Position:"Right", IsInside:true
-                            };
-                            this.SendDrawCountDownEvent(sendData);
+                            if (this.GetEventCallback)
+                            {
+                                var bgTop=yText + textHeight / 2 + 1;
+                                var sendData=
+                                { 
+                                    Top:bgTop, Right:right, Height:null, 
+                                    IsShow:true, BGColor:bgColor, TextColor:item.TextColor, Position:"Right", IsInside:true
+                                };
+                                this.SendDrawCountDownEvent(sendData);
+                            }
                         }
+
+                        yText+=textHeight+1;
                     }
                 }
 
@@ -864,36 +925,60 @@ function AverageWidthFrame()
                 if (item.Font != null) this.Canvas.font = item.Font;
                 this.Canvas.textAlign = "left";
                 this.Canvas.textBaseline = "middle";
-                var textWidth = this.Canvas.measureText(item.Message[1]).width + 2;
-                this.Canvas.fillStyle = item.LineColor;
-                if (this.IsHScreen) 
-                {
-                    var bgTop = bottom;
-                    var textLeft = y - textHeight / 2 - 1 ;
-                    this.Canvas.fillRect(textLeft, bgTop, textHeight, textWidth);
-                    this.DrawHScreenText({ X: y, Y: bgTop }, { Text: item.Message[1], Color: item.TextColor, XOffset: 1 , YOffset: 2 });
-                    this.DrawLine(top, bgTop, y, item.LineColor,item.LineType);
-                }
-                else
-                {
-                    var bgTop = y - textHeight / 2 - 1;
-                    this.Canvas.fillRect(right, bgTop, textWidth, textHeight);
-                    this.Canvas.fillStyle = item.TextColor;
-                    this.Canvas.fillText(item.Message[1], right + 1, y);
-                    this.DrawLine(left, right, y, item.LineColor,item.LineType);
+                var textInfo=this.GetCustomItemTextInfo(item,false);
+                var textWidth=textInfo.MaxWidth;
+                var fontHeight=this.GetFontHeight();
+                textHeight=fontHeight>defaultTextHeight? fontHeight:defaultTextHeight;
 
-                    if (item.CountDown===true)
+                var yText=y;
+                for(var i=0;i<textInfo.Text.length;++i)
+                {
+                    var itemText=textInfo.Text[i];
+                    
+                    if (this.IsHScreen) 
                     {
-                        if (this.GetEventCallback)
+                        var bgTop = bottom;
+                        var textLeft=yText-textHeight/2-1;
+                        this.Canvas.fillStyle=item.LineColor;
+                        this.Canvas.fillRect(textLeft, bgTop, textHeight, itemText.Width);
+                        this.DrawHScreenText({ X: yText, Y: bgTop }, { Text: itemText.Text, Color: item.TextColor, XOffset: 1 , YOffset: 2 });
+                        if (i==0)  this.DrawLine(top, bgTop, yText, item.LineColor,item.LineType);
+
+                        yText-=textHeight+1;
+                    }
+                    else
+                    {
+                        var bgTop=yText-textHeight/2-1;
+                        if (i==0)
                         {
-                            var bgTop=y + textHeight / 2 + 1;
-                            var sendData=
-                            { 
-                                Top:bgTop, Left:right, Right:this.ChartBorder.GetChartWidth(), Height:null, 
-                                IsShow:true, BGColor:item.LineColor, TextColor:item.TextColor, Position:"Right", IsInside:false
-                            };
-                            this.SendDrawCountDownEvent(sendData);
+                            var textLeft=right;
                         }
+                        else
+                        {
+                            var textLeft=right+textWidth-itemText.Width;
+                        }
+
+                        this.Canvas.fillStyle = item.LineColor;
+                        this.Canvas.fillRect(textLeft,bgTop,itemText.Width,textHeight);
+                        this.Canvas.fillStyle = item.TextColor;
+                        this.Canvas.fillText(itemText.Text, textLeft+1, yText);
+                        if (i==0) this.DrawLine(left, right, yText, item.LineColor,item.LineType);
+
+                        if (item.CountDown===true)
+                        {
+                            if (this.GetEventCallback)
+                            {
+                                var bgTop=yText-textHeight/2-1;
+                                var sendData=
+                                { 
+                                    Top:bgTop, Left:right, Right:this.ChartBorder.GetChartWidth(), Height:null, 
+                                    IsShow:true, BGColor:item.LineColor, TextColor:item.TextColor, Position:"Right", IsInside:false
+                                };
+                                this.SendDrawCountDownEvent(sendData);
+                            }
+                        }
+
+                        yText+=textHeight+1;
                     }
                 }
 
@@ -926,6 +1011,39 @@ function AverageWidthFrame()
                 }
             }
         }
+    }
+
+    this.GetCustomItemTextInfo=function(item, bLeft)
+    {
+        var text=bLeft?item.Message[0]:item.Message[1];
+        var aryText=[];
+        var width=0;
+        if (Array.isArray(text))
+        {
+            for(var i=0;i<text.length;++i)
+            {
+                var item=text[i];
+                if (item.Type===1)
+                {
+                    aryText.push({ Type: item.Type });
+                }
+                else
+                {
+                    var value=this.Canvas.measureText(item.Text).width;
+                    if (value>width) width=value;
+                    aryText.push({Text:item.Text, Width:value+3});
+                }
+            }
+
+            if (width>0) width+=3;
+        }
+        else
+        {
+            width=this.Canvas.measureText(text).width+3;
+            aryText.push( {Text:text, Width:width} );
+        }
+        
+        return  { MaxWidth:width, Text:aryText };
     }
 
     this.SendDrawCountDownEvent=function(sendData)
