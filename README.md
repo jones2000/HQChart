@@ -19,8 +19,6 @@ QQ交流群2：719525615
 有问题可以直接发issue.  
 
 **教程列表和demo效果图在下面,下拉页面就可以看到!!!!!!!!!!!!**    
-[使用教程](# 4.使用教程)  
-
 
 源码地址:[https://github.com/jones2000/HQChart](https://github.com/jones2000/HQChart)<br>
 镜像地址:[https://gitee.com/jones2000/HQChart](https://gitee.com/jones2000/HQChart)<br>
