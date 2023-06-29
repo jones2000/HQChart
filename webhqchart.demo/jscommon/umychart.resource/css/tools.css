@@ -1019,6 +1019,12 @@ td.context-menu {
     background: rgba(255,255,255,0.92);
     box-sizing: border-box;
     display: none;
+
+    /*禁止文字选中*/
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 

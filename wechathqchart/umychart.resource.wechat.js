@@ -24,6 +24,7 @@ function JSChartResource()
     this.DownBarColor = "rgb(25,158,0)";
     this.UnchagneBarColor = "rgb(0,0,0)";
     this.MinKLineBarWidth=4;                        //最小的柱子宽度 比这个还小就画直线 
+    this.MinColorKBarWidth=4;
 
     this.Minute = {};
     this.Minute.VolBarColor = null;

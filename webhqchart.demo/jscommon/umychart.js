@@ -21462,7 +21462,7 @@ function ChartKLine()
             }
             else if (this.DrawType==9 && data.ColorData)
             {
-                this.DrawKBarV2(data, data.ColorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
+                this.DrawColorKBar(data, data.ColorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
             }
             else if (data.Open<data.Close)       //阳线
             {
@@ -21980,6 +21980,332 @@ function ChartKLine()
         }
     }
 
+    //绘制自定义K线
+    this.DrawColorKBar=function(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
+    {
+        if (Math.abs(yClose-y)<1)
+            this.DrawColorKBar_Line(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
+        else if (colorData.Border || colorData.Type===0) 
+            this.DrawColorKBar_Border(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
+        else 
+            this.DrawColorKBar_NoBorder(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
+    }
+
+    //带边框柱子
+    this.DrawColorKBar_Border=function(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
+    {
+        if (dataWidth>=4)
+        {
+            if ((dataWidth%2)!=0) dataWidth-=1;
+            var topPrice=Math.max(data.Close,data.Open);
+            var bottomPrice=Math.min(data.Close,data.Open);
+            if (isHScreen)
+            {
+                var yBarTop=Math.max(yClose,yOpen);
+                var yBarBottom=Math.min(yClose,yOpen);
+            }
+            else
+            {
+                var yBarTop=Math.min(yClose,yOpen);
+                var yBarBottom=Math.max(yClose,yOpen);
+            }
+            var yBarHeight=Math.abs(yClose-yOpen);
+
+            //上影线
+            if (data.High>topPrice && colorData.Line)   
+            {
+                this.Canvas.strokeStyle=colorData.Line.Color;
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(yHigh),ToFixedPoint(x));
+                    this.Canvas.lineTo(ToFixedPoint(yBarTop),ToFixedPoint(x));
+                }
+                else
+                {
+                    var xFixed=left+dataWidth/2;
+                    this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(yHigh));
+                    this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(yBarTop));
+                }
+                this.Canvas.stroke();
+            }
+
+            //下影线
+            if (bottomPrice>data.Low && colorData.Line) 
+            {
+                this.Canvas.strokeStyle=colorData.Line.Color;
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(yBarBottom),ToFixedPoint(x));
+                    this.Canvas.lineTo(ToFixedPoint(yLow),ToFixedPoint(x));
+                }
+                else
+                {
+                    var xFixed=left+dataWidth/2;
+                    this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(yBarBottom));
+                    this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(yLow));
+                }
+                this.Canvas.stroke();
+            }
+
+            //中心柱子
+            if (isHScreen)
+            {
+                var pathBar=new Path2D();
+                pathBar.rect(ToFixedPoint(yBarBottom),ToFixedPoint(left),ToFixedRect(yBarHeight),ToFixedRect(dataWidth)); 
+            }
+            else
+            {
+                var pathBar=new Path2D();
+                pathBar.rect(ToFixedPoint(left),ToFixedPoint(yBarTop),ToFixedRect(dataWidth),ToFixedRect(yBarHeight));
+            }
+
+            if (colorData.Type==0) //空心柱子
+            {
+                if (colorData.BarColor) //边框
+                {
+                    this.Canvas.strokeStyle=colorData.BarColor;
+                    this.Canvas.stroke(pathBar);
+                }
+
+                if (colorData.Border)
+                {
+                    this.Canvas.strokeStyle=colorData.Border.Color;
+                    this.Canvas.stroke(pathBar);
+                }
+            }
+            else if (colorData.Type==1) //实心
+            {
+                if (colorData.BarColor) //内部填充
+                {
+                    this.Canvas.fillStyle=colorData.BarColor;
+                    this.Canvas.fill(pathBar);
+                }
+
+                if (colorData.Border)   //边框
+                {
+                    this.Canvas.strokeStyle=colorData.Border.Color;
+                    this.Canvas.stroke(pathBar);
+                }
+            }
+            
+        }
+        else
+        {
+            this.DrawColorKBar_MinBar(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
+        }
+    }
+
+    //不带边框柱子
+    this.DrawColorKBar_NoBorder=function(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
+    {
+        if (dataWidth>=4)
+        {
+            var topPrice=Math.max(data.Close,data.Open);
+            var bottomPrice=Math.min(data.Close,data.Open);
+            if (isHScreen)
+            {
+                var yBarTop=Math.max(yClose,yOpen);
+                var yBarBottom=Math.min(yClose,yOpen);
+            }
+            else
+            {
+                var yBarTop=Math.min(yClose,yOpen);
+                var yBarBottom=Math.max(yClose,yOpen);
+            }
+            var yBarHeight=Math.abs(yClose-yOpen);
+
+            //上影线
+            if (data.High>topPrice && colorData.Line)   
+            {
+                this.Canvas.strokeStyle=colorData.Line.Color;
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(yHigh),ToFixedPoint(x));
+                    this.Canvas.lineTo(ToFixedPoint(yBarTop),ToFixedPoint(x));
+                }
+                else
+                {
+                    var xFixed=left+dataWidth/2;
+                    this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(yHigh));
+                    this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(yBarTop));
+                }
+                this.Canvas.stroke();
+            }
+
+            //下影线
+            if (bottomPrice>data.Low && colorData.Line) 
+            {
+                this.Canvas.strokeStyle=colorData.Line.Color;
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(yBarBottom),ToFixedPoint(x));
+                    this.Canvas.lineTo(ToFixedPoint(yLow),ToFixedPoint(x));
+                }
+                else
+                {
+                    var xFixed=left+dataWidth/2;
+                    this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(yBarBottom));
+                    this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(yLow));
+                }
+                this.Canvas.stroke();
+            }
+
+            //中心柱子
+            if (isHScreen)
+            {
+                var pathBar=new Path2D();
+                pathBar.rect(ToFixedRect(yBarBottom),ToFixedRect(left),ToFixedRect(yBarHeight),ToFixedRect(dataWidth));
+            }
+            else
+            {
+                var pathBar=new Path2D();
+                pathBar.rect(ToFixedRect(left),ToFixedRect(yBarTop),ToFixedRect(dataWidth),ToFixedRect(yBarHeight));
+            }
+
+            if (colorData.Type==1) //实心
+            {
+                if (colorData.BarColor) //内部填充
+                {
+                    this.Canvas.fillStyle=colorData.BarColor;
+                    this.Canvas.fill(pathBar);
+                }
+            }
+        }
+        else
+        {
+            this.DrawColorKBar_MinBar(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
+        }
+    }
+
+    this.DrawColorKBar_MinBar=function(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
+    {
+        if (colorData.Line)
+        {
+            this.Canvas.strokeStyle=colorData.Line.Color;
+            this.Canvas.beginPath();
+            if (isHScreen)
+            {
+                this.Canvas.moveTo(ToFixedPoint(yHigh),ToFixedPoint(x));
+                this.Canvas.lineTo(ToFixedPoint(yLow),ToFixedPoint(x));
+            }
+            else
+            {
+                this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(yHigh));
+                this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+            }
+            this.Canvas.stroke();
+        }
+
+        var barColor;
+        if (colorData.Type==0) //空心柱子
+        {
+            if (colorData.Border) barColor=colorData.Border.Color; 
+            else if (colorData.BarColor) barColor=colorData.BarColor; 
+        }
+        else if (colorData.Type==1) //实心
+        {
+            if (colorData.Border) barColor=colorData.Border.Color; 
+            else if (colorData.BarColor) barColor=colorData.BarColor; 
+        }
+
+        if (barColor)
+        {
+            this.Canvas.strokeStyle=barColor;
+            this.Canvas.beginPath();
+            if (isHScreen)
+            {
+                this.Canvas.moveTo(ToFixedPoint(yOpen),ToFixedPoint(x));
+                this.Canvas.lineTo(ToFixedPoint(yClose),ToFixedPoint(x));
+            }
+            else
+            {
+                this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(yOpen));
+                this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yClose));
+            }
+            this.Canvas.stroke();
+        }
+    }
+
+    //十字线
+    this.DrawColorKBar_Line=function(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
+    {
+        if (dataWidth>=4)
+        {
+            
+            if (colorData.Line)
+            {
+                this.Canvas.strokeStyle=colorData.Line.Color;
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(yHigh),ToFixedPoint(x));
+                    this.Canvas.lineTo(ToFixedPoint(yLow),ToFixedPoint(x));
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(yHigh));
+                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                }
+                
+                this.Canvas.stroke();
+            }
+
+            var barColor;
+            if (colorData.Type==0) //空心柱子
+            {
+                if (colorData.Border) barColor=colorData.Border.Color; 
+                else if (colorData.BarColor) barColor=colorData.BarColor; 
+            }
+            else if (colorData.Type==1) //实心
+            {
+                if (colorData.Border) barColor=colorData.Border.Color; 
+                else if (colorData.BarColor) barColor=colorData.BarColor; 
+            }
+
+            if (barColor)
+            {
+                this.Canvas.strokeStyle=barColor;
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(yOpen),ToFixedPoint(left));
+                    this.Canvas.lineTo(ToFixedPoint(yOpen),ToFixedPoint(right));
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(left),ToFixedPoint(yOpen));
+                    this.Canvas.lineTo(ToFixedPoint(right),ToFixedPoint(yOpen));
+                }
+                this.Canvas.stroke();
+            }
+        }
+        else
+        {
+            if (colorData.Line)
+            {
+                var xFixed=left+dataWidth/2;
+                this.Canvas.strokeStyle=colorData.Line.Color;
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(ToFixedPoint(yHigh),ToFixedPoint(x));
+                    this.Canvas.lineTo(ToFixedPoint(yLow),ToFixedPoint(x));
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(yHigh));
+                    this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
+                }
+                this.Canvas.stroke();
+            }
+        }
+    }
+
+    /*
     this.DrawKBarV2=function(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
     {
         var isDrawBorder=false;
@@ -22171,6 +22497,7 @@ function ChartKLine()
             }
         }
     }
+    */
 
     this.DrawVirtualBar=function(data, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
     {
