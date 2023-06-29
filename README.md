@@ -13,8 +13,13 @@ HQChart是第1个基于国内传统PC股票客户端软件(C++)移植到js/py平
 **支持品种**:支持股票，期货， 数字货币，外汇等和K线相关的品种。<br>
 **麦语法指标计算引擎**(分析家语法)指标执行器支持js, nodejs, py, c#，c++. <br>
 
+# 交流
 QQ交流群1：950092318(已满)    
-QQ交流群2：719525615      
+QQ交流群2：719525615   
+有问题可以直接发issue.  
+
+**教程列表和demo效果图在下面,下拉页面就可以看到!!!!!!!!!!!!**    
+[使用教程](# 4.使用教程)  
 
 
 源码地址:[https://github.com/jones2000/HQChart](https://github.com/jones2000/HQChart)<br>
@@ -36,7 +41,7 @@ uniapp 版本:
 py版本的麦语法指标计算引擎，已单独迁移到[https://github.com/jones2000/hqchartPy2](https://github.com/jones2000/hqchartPy2),
 支持windows,和linux. 这个版本是用c++开发的，通过cpython来对接py，能高效的完成指标执行. 可以应用于回测, 选股等批量指标计算中。社区版c++开源.<br>
 
-**教程列表和demo效果图在下面,下拉页面就可以看到!!!!!!!!!!!!**
+
 
 
 # 目录结构
@@ -540,18 +545,6 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 [代码地址(webhqchart.demo/h5demo)](/webhqchart.demo/h5demo) <br>
 [VUE代码地址(vue.demo/stockpage_h5)](/vue.demo/stockpage_h5) <br>
 
-## 第3方数据对接样例
-1. 数字货币对接 <br>
-   数据来源： https://www.coinzeus.io/cn <br>
-   ![行情页面](/小程序行情模块用例/image/hqchart_bit_demo1.png) <br>
-   [h5测试页面](https://opensource.zealink.com/hqweb/bitdemo/stockhq.html) <br>
-   [代码地址(vue.demo/bitdemo)](/vue.demo/bitdemo) <br>
-
-
-# 交流
-有问题直接发issue.  
-作者QQ:48274798
-
 
 
 # 奖项
@@ -559,3 +552,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 # 赞助
 ![微信二维码](/小程序行情模块用例/image/wx_code.PNG)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=jones2000/HQChart&type=Date)](https://star-history.com/#jones2000/HQChart&Date)
