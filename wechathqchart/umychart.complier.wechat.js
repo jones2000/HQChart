@@ -8950,6 +8950,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.StockNewsAnalysisApiUrl = g_JSComplierResource.CacheDomain+'/cache/newsanalyze';                 //新闻分析数据
     this.MaxRequestDataCount=1000;
     this.MaxRequestMinuteDayCount=5;
+    this.KLineDateTimeRange;        //请求的K线日期范围
 
     this.LatestData=new Map();            //最新行情
     this.IndexData;             //大盘指数
@@ -8989,6 +8990,10 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.NetworkFilter) this.NetworkFilter = option.NetworkFilter;
         if (option.DayCount>0) this.DayCount=option.DayCount;
         if (option.IsApiPeriod) this.IsApiPeriod=option.IsApiPeriod;
+
+        if (option.Right) this.Right=option.Right;
+        if (option.Period) this.Period=option.Period;
+        if (option.KLineRange) this.KLineDateTimeRange=option.KLineRange;
     }
 
     this.GetLatestDataKey=function(key)
@@ -9761,6 +9766,44 @@ function JSSymbolData(ast,option,jsExecute)
 
         if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
         {
+            if (this.NetworkFilter)
+            {
+                var obj=
+                {
+                    Name:'JSSymbolData::GetSymbolData',
+                    Explain:"日线数据",
+                    Request:
+                    { Url:self.RealtimeApiUrl,  Type:'POST' ,
+                        Data: 
+                        {
+                            "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
+                            "symbol": self.Symbol,
+                            "start": -1,
+                            "count": self.MaxRequestDataCount,
+                            "period":this.Period,
+                            "right":this.Right
+                        } 
+                    },
+                    Self:this,
+                    PreventDefault:false
+                };
+
+                if (this.KLineDateTimeRange)
+                {
+                    obj.Request.KLineDataTimeRange={Start:{ Date:this.KLineDateTimeRange.Start.Date},  End:{ Date:this.KLineDateTimeRange.End.Date} };
+                    if (this.IsNumber(this.KLineDateTimeRange.Start.Time)) obj.Request.KLineDataTimeRange.Start.Time=this.KLineDateTimeRange.Start.Time;
+                    if (this.IsNumber(this.KLineDateTimeRange.End.Time)) obj.Request.KLineDataTimeRange.End.Time=this.KLineDateTimeRange.End.Time;
+                }
+
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvHistroyData(data);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
             JSNetwork.HttpRequest({
                 url: self.KLineApiUrl,
                 data:
@@ -9786,6 +9829,44 @@ function JSSymbolData(ast,option,jsExecute)
         }
         else if (JSCommonData.ChartData.IsMinutePeriod(this.Period, true))               //请求分钟数据
         {
+            if (this.NetworkFilter)
+            {
+                var obj=
+                {
+                    Name:'JSSymbolData::GetSymbolData',
+                    Explain:"分钟K线数据",
+                    Request:
+                    { Url:self.MinuteKLineApiUrl,  Type:'POST' ,
+                        Data: 
+                        {
+                            "field": ["name","symbol","yclose","open","price","high","low","vol"],
+                            "symbol": self.Symbol,
+                            "start": -1,
+                            "count": self.MaxRequestMinuteDayCount,
+                            "period":this.Period,
+                            "right":this.Right
+                        } 
+                    },
+                    Self:this,
+                    PreventDefault:false
+                };
+
+                if (this.KLineDateTimeRange)
+                {
+                    obj.Request.KLineDataTimeRange={Start:{ Date:this.KLineDateTimeRange.Start.Date},  End:{ Date:this.KLineDateTimeRange.End.Date} };
+                    if (this.IsNumber(this.KLineDateTimeRange.Start.Time)) obj.Request.KLineDataTimeRange.Start.Time=this.KLineDateTimeRange.Start.Time;
+                    if (this.IsNumber(this.KLineDateTimeRange.End.Time)) obj.Request.KLineDataTimeRange.End.Time=this.KLineDateTimeRange.End.Time;
+                }
+
+                this.NetworkFilter(obj, function(data) 
+                { 
+                    self.RecvMinuteHistroyData(data);
+                    self.Execute.RunNextJob();
+                });
+
+                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+            }
+
             JSNetwork.HttpRequest({
                 url: this.MinuteKLineApiUrl,
                 data:
@@ -9823,18 +9904,27 @@ function JSSymbolData(ast,option,jsExecute)
         this.SourceData = new JSCommonData.ChartData;
         this.SourceData.Data = hisData;
 
-        if (this.Right>0)    //复权
+        if (this.IsApiPeriod)   //后台周期 前端不处理
         {
-            let rightData=this.Data.GetRightDate(this.Right);
-            this.Data.Data=rightData;
-        }
 
-        if (JSCommonData.ChartData.IsDayPeriod(this.Period, false))   //周期数据
+        }
+        else
         {
-            let periodData=this.Data.GetPeriodData(this.Period);
-            this.Data.Data=periodData;
+            if (this.Right>0)    //复权
+            {
+                let rightData=this.Data.GetRightDate(this.Right);
+                this.Data.Data=rightData;
+            }
+    
+            if (JSCommonData.ChartData.IsDayPeriod(this.Period, false))   //周期数据
+            {
+                let periodData=this.Data.GetPeriodData(this.Period);
+                this.Data.Data=periodData;
+            }
         }
-
+        
+        this.Data.Right=this.Right;
+        this.Data.Period=this.Period;
         this.Name = data.name;
     }
 
@@ -9850,12 +9940,20 @@ function JSSymbolData(ast,option,jsExecute)
         this.SourceData = new JSCommonData.ChartData;
         this.SourceData.Data = hisData;
 
-        if (JSCommonData.ChartData.IsMinutePeriod(this.Period, false))   //周期数据
+        if (this.IsApiPeriod)   //后台周期 前端不处理
         {
-            let periodData=this.Data.GetPeriodData(this.Period);
-            this.Data.Data=periodData;
-        }
 
+        }
+        else
+        {
+            if (JSCommonData.ChartData.IsMinutePeriod(this.Period, false))   //周期数据
+            {
+                let periodData=this.Data.GetPeriodData(this.Period);
+                this.Data.Data=periodData;
+            }
+        }
+        
+        this.Data.Period=this.Period;
         this.Name = data.name;
     }
 
@@ -11377,6 +11475,7 @@ function JSSymbolData(ast,option,jsExecute)
             //Condition:this.Condition,
             IsBeforeData:this.IsBeforeData,
             NetworkFilter:this.NetworkFilter,
+            IsApiPeriod:this.IsApiPeriod,
             KLineRange:DateTimeRange    //K线数据范围
         };
 

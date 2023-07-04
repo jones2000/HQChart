@@ -1430,6 +1430,7 @@ function ChartKLine()
             this.Canvas.stroke();
         }
 
+        /*
         var barColor;
         if (colorData.Type==0) //空心柱子
         {
@@ -1458,6 +1459,7 @@ function ChartKLine()
             }
             this.Canvas.stroke();
         }
+        */
     }
 
     //十字线
@@ -5840,6 +5842,9 @@ function ChartMinuteVolumBar()
   
     this.UpColor = g_JSChartResource.UpBarColor;
     this.DownColor = g_JSChartResource.DownBarColor;
+    this.UnchangeColor=g_JSChartResource.UnchagneBarColor;  //平盘
+    this.BarCololType=1;   //柱子颜色显示类型 0=红绿 1=红绿白
+
     this.CustomColor=g_JSChartResource.Minute.VolBarColor;
     this.YClose;    //前收盘
   
@@ -5862,7 +5867,7 @@ function ChartMinuteVolumBar()
             var x = this.ChartFrame.GetXFromIndex(i);
             if (x > chartright) break;
             //价格>=上一分钟价格 红色 否则绿色
-            if (!this.CustomColor) this.Canvas.strokeStyle = item.Close >= yPrice ? this.UpColor : this.DownColor;
+            if (!this.CustomColor) this.Canvas.strokeStyle = this.GetMinuteBarColor(item.Close, yPrice);
             this.Canvas.beginPath();
             if (isHScreen) 
             {
@@ -5876,6 +5881,21 @@ function ChartMinuteVolumBar()
             }
             this.Canvas.stroke();
             yPrice = item.Close;
+        }
+    }
+
+    //连续交易成交量柱子颜色
+    this.GetMinuteBarColor=function(price, yPrice)
+    {
+        if (this.BarCololType==1)   //通达信模式
+        {
+            if (price>yPrice) return this.UpColor;
+            else if (price<yPrice) return this.DownColor;
+            else return this.UnchangeColor;
+        }
+        else    //东方财富模式
+        {
+            return price >= yPrice ? this.UpColor:this.DownColor;
         }
     }
   

@@ -301,7 +301,8 @@ function ScriptIndex(name, script, args, option)
             Async: true,
             MaxRequestDataCount: hqChart.MaxRequestDataCount,
             MaxRequestMinuteDayCount: hqChart.MaxRequestMinuteDayCount,
-            Arguments: this.Arguments
+            Arguments: this.Arguments,
+            IsApiPeriod:hqChart.IsApiPeriod,
         };
 
         if (hqDataType===HQ_DATA_TYPE.HISTORY_MINUTE_ID) option.TrateDate=hqChart.TradeDate;
