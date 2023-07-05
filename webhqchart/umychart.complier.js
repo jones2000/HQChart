@@ -1118,7 +1118,7 @@ function Node(ErrorHandler)
 
                 const VAR_PERIOD_NAME=
                 [
-                    "MIN1","MIN5","MIN15","MIN30","MIN60","DAY","WEEK","MONTH","SEASON","YEAR","HALFYEAR","WEEK2",
+                    "MIN1","MIN5","MIN15","MIN30","MIN60","MIN120","MIN240","DAY","WEEK","MONTH","SEASON","YEAR","HALFYEAR","WEEK2",
                     "MULTIDAY","DAY2","DAY3","DAY4","DAY5","DAY6","DAY7","DAY8","DAY9","DAY10",
                     "DAY11","DAY12","DAY13","DAY14","DAY15"
                 ];
@@ -14927,6 +14927,7 @@ function JSSymbolData(ast,option,jsExecute)
             //Condition:this.Condition,
             IsBeforeData:this.IsBeforeData,
             NetworkFilter:this.NetworkFilter,
+            IsApiPeriod:this.IsApiPeriod,
             KLineRange:dateTimeRange    //K线数据范围
         };
 
@@ -18134,6 +18135,7 @@ function JSExplainer(ast,option)
             ["NAMEINCLUD", { Name:"NAMEINCLUD", Param:{ Count:1 }, ToString:function(args) { return `查找品种名称中包含${args[0]}`; } } ],
             ["CODELIKE", { Name:"CODELIKE", Param:{ Count:1 }, ToString:function(args) { return `查找品种名称中包含${args[0]}`; } } ],
             ["INBLOCK", { Name:"AVEDEV", Param:{ Count:1 }, ToString:function(args) { return `属于${args[0]}板块`; } } ],
+            ["STKINDI",{ Name:"STKINDI", Param:{ Dynamic:true }, ToString:function(args) { return "指标引用"; } }],
             
 
             [
@@ -18158,7 +18160,10 @@ function JSExplainer(ast,option)
                         return `${args[1]}日内${args[0]}新低距今天数`; 
                     } 
                 } 
-            ]
+            ],
+
+           
+            
         ]
     );
 
@@ -18167,8 +18172,17 @@ function JSExplainer(ast,option)
         if (this.FUNCTION_INFO_LIST.has(funcName))
         {
             var item=this.FUNCTION_INFO_LIST.get(funcName);
-            if (item.Param.Count!=args.length)
+
+            if (item.Param.Dynamic===true)  //动态参数
+            {
+
+            }
+            else
+            {
+                if (item.Param.Count!=args.length)
                 this.ThrowUnexpectedNode(node,`函数${funcName}参数个数不正确. 需要${item.Param.Count}个参数`);
+            }
+            
             return item.ToString(args);
         }
 
@@ -18429,6 +18443,37 @@ function JSExplainer(ast,option)
 
         JSConsole.Complier.Log('[JSExplainer::VisitAssignmentExpression]' , varName, ' = ',value);
         this.VarTable.set(varName,value);
+    }
+
+    this.ReadMemberVariable=function(node)
+    {
+        var obj=node.Object;
+        var member=node.Property;
+
+        let maiObj;
+        if (obj.Type==Syntax.BinaryExpression || obj.Type==Syntax.LogicalExpression ) 
+            maiObj=this.VisitBinaryExpression(obj);
+        else if (obj.Type==Syntax.CallExpression)
+            maiObj=this.VisitCallExpression(obj);
+        else
+        {
+            if (member.Name.indexOf('#')>0)
+            {
+                var aryValue=member.Name.split("#");
+                var value=`${obj.Name}的${aryValue[0]}[周期${aryValue[1]}]`;
+            }
+            else
+            {
+                var value=`${obj.Name}的${member.Name}`;
+            }
+            return value;
+        }
+
+        if (!maiObj) return null;
+        var value=maiObj[member.Name];
+        if (value) return value;
+
+        return null;
     }
 
     //逻辑运算
