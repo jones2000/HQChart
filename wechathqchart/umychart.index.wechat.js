@@ -2336,6 +2336,12 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
         if (option.API.ID) this.ID = option.API.ID;
     }
 
+    //接收到订阅指标数据
+    this.RecvSubscribeData=function(data, hqChart, windowIndex, hisData)
+    {
+        this.RecvAPIData(data,hqChart,windowIndex,hisData);
+    }
+
     this.ExecuteScript = function (hqChart, windowIndex, hisData) 
     {
         JSConsole.Chart.Log('[APIScriptIndex::ExecuteScript] name, Arguments ', this.Name, this.Arguments);

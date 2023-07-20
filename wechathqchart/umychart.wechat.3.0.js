@@ -28,7 +28,7 @@ import {
     CUSTOM_SECOND_PERIOD_START,
     CUSTOM_SECOND_PERIOD_END,
     Rect,
-    DataPlus,
+    DataPlus,g_DataPlus,
     JSCHART_EVENT_ID,
     JSCHART_DATA_FIELD_ID,
     PhoneDBClick,
@@ -1417,6 +1417,16 @@ JSChart.ToFixedPoint=function(value)
 JSChart.ToFixedRect=function(value)
 {
     return ToFixedRect(value);
+}
+
+JSChart.AddPeriodCallback=function(obj)     //添加自定义周期方法 { Period:周期ID, Callback:回调 }
+{
+    g_DataPlus.AddPeriodCallback(obj);
+}
+
+JSChart.RemovePeriodCallback=function(obj) //添加自定义周期方法 { Period:周期ID, }
+{
+    g_DataPlus.RemovePeriodCallback(obj);
 }
 
 
@@ -7170,6 +7180,19 @@ function KLineChartContainer(uielement)
         if (titlePaint) titlePaint.InfoData = mapInfoData;
     }
 
+    //接收到窗口指标数据 订阅模式
+    this.RecvWindowIndex=function(index, data)
+    {
+        var indexItem=this.WindowIndex[index];
+        if (!indexItem) return;
+
+        if (typeof(indexItem.RecvSubscribeData)=="function")
+        {
+            var hisData=this.ChartPaint[0].Data;
+            indexItem.RecvSubscribeData(data,this,index,hisData);
+        }
+    }
+
     //更新窗口指标
     this.UpdateWindowIndex = function (index) 
     {
@@ -9387,6 +9410,33 @@ function MinuteChartContainer(uielement)
         }
 
         return false;
+    }
+
+
+    //接收到窗口指标数据 订阅模式
+    this.RecvWindowIndex=function(index, data)
+    {
+        if (index<2) return;
+        
+        var indexItem=this.WindowIndex[index];
+        if (!indexItem) return;
+
+        if (typeof(indexItem.RecvSubscribeData)=="function")
+        {
+            var bindData=this.SourceData;
+            indexItem.RecvSubscribeData(data,this,index,bindData);
+        }
+    }
+
+    this.UpdateWindowIndex=function(index)
+    {
+        if (index<2) return;
+
+        var bindData=this.SourceData;
+        this.BindIndexData(index,bindData)
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
     }
 }
 

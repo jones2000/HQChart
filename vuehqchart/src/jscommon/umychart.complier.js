@@ -21972,6 +21972,15 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         dest.IsOverlayIndex=this.IsOverlayIndex;
     }
 
+    //接收到订阅指标数据
+    this.RecvSubscribeData=function(data, hqChart, windowIndex, hisData)
+    {
+        if (this.Version==2)
+            this.RecvAPIData2(data,hqChart,windowIndex,hisData);
+        else 
+            this.RecvAPIData(data,hqChart,windowIndex,hisData);
+    }
+
     this.ExecuteScript=function(hqChart,windowIndex,hisData)
     {
         JSConsole.Complier.Log('[APIScriptIndex::ExecuteScript] name, Arguments ', this.Name,this.Arguments );

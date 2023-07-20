@@ -180,15 +180,34 @@ function SingleData()
     this.Value; //数据
 }
 
+ //外部数据计算方法接口
+function DataPlus() 
+{ 
+    this.PeriodCallback=new Map();  //key=周期id value={ Period, Callback(period,data,self): }
 
-function DataPlus() { };            //外部数据计算方法接口
-DataPlus.GetMinutePeriodData = null;
-/*
-DataPlus.GetMinutePeriodData=function(period,data,self)
-{
+    this.GetPeriodCallback=function(period)
+    {
+        if (!this.PeriodCallback.has(period)) return null;
+        
+        return this.PeriodCallback.get(period);
+    }
 
-}
-*/
+    this.AddPeriodCallback=function(obj)
+    {
+        if (!IFrameSplitOperator.IsNumber(obj.Period) || !obj.Callback) return;
+
+        var item={ Period:obj.Period, Callback:obj.Callback };
+        this.PeriodCallback.set(obj.Period, item);
+    }
+
+    this.RemovePeriodCallback=function(obj)
+    {
+        if (!this.PeriodCallback.has(obj.ID)) return;
+        this.PeriodCallback.delete(obj.ID);
+    }
+};           
+
+var g_DataPlus=new DataPlus();
 
 //////////////////////////////////////////////////////////////////////
 // 数据集合
@@ -554,8 +573,6 @@ function ChartData()
 
     this.GetMinutePeriodData=function(period)
     {
-        if (DataPlus.GetMinutePeriodData) return DataPlus.GetMinutePeriodData(period, this.Data, this);
-
         if (period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END) 
             return this.GetMinuteCustomPeriodData(period - CUSTOM_MINUTE_PERIOD_START);
 
@@ -876,8 +893,17 @@ function ChartData()
     //周期数据 1=周 2=月 3=年 9=季 
     this.GetPeriodData=function(period)
     {
-        if (period == 1 || period == 2 || period == 3 || period == 9 || period == 21 || (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END)) return this.GetDayPeriodData(period);
-        if (period == 5 || period == 6 || period == 7 || period == 8 || period == 11 || period == 12 ||(period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END)) return this.GetMinutePeriodData(period);
+        //外部自定义周期计算函数
+        var itemCallback=g_DataPlus.GetPeriodCallback(period);
+        if (itemCallback) return itemCallback.Callback(period,this.Data,this);
+
+        //if (period == 1 || period == 2 || period == 3 || period == 9 || period == 21 || (period > CUSTOM_DAY_PERIOD_START && period <= CUSTOM_DAY_PERIOD_END)) 
+        if (ChartData.IsDayPeriod(period,false))
+            return this.GetDayPeriodData(period);
+
+        //if (period == 5 || period == 6 || period == 7 || period == 8 || period == 11 || period == 12 ||(period > CUSTOM_MINUTE_PERIOD_START && period <= CUSTOM_MINUTE_PERIOD_END)) 
+        if (ChartData.IsMinutePeriod(period,false))    
+            return this.GetMinutePeriodData(period);
     }
 
     //复权  0 不复权 1 前复权 2 后复权 option={ AlgorithmType:1 复权系数模式 }
@@ -2129,6 +2155,7 @@ var JSCommonData=
     MinuteData: MinuteData,
     Rect: Rect,
     DataPlus: DataPlus,
+    g_DataPlus:g_DataPlus,
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,
     PhoneDBClick:PhoneDBClick,
     HQ_DATA_TYPE:HQ_DATA_TYPE,
