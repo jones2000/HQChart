@@ -551,6 +551,17 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 # 赞助
 ![微信二维码](/小程序行情模块用例/image/wx_code.PNG)
 
-## Star History
+# Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=jones2000/HQChart&type=Date)](https://star-history.com/#jones2000/HQChart&Date)
+
+
+# HQChart付费技术支持
+
+**注意:技术支持,不负责开发和部署.**
+
+| 名称 | 费用(每月) | 内容 |
+|--|--|
+|基础技术支持| 2000 |回答插件相关问题，如有对应的教程，提供对应的教程地址 |
+|高级技术支持| 5000 |回答插件相关问题，如有对应的教程，提供对应的教程地址, 对复杂的问题，可以提供demo示例. 如需自己定制图形，提供外挂图形接口.(定制图形由客户自己开发) |
+

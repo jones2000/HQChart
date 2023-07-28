@@ -18939,6 +18939,8 @@ function ScriptIndex(name,script,args,option)
     //调试信息
     this.Debug; // { Callback:, Count: }
 
+    this.IsSync=false;      //是否是同步计算 (无数据请求)
+
     if (option)
     {
         if (option.FloatPrecision>=0) this.FloatPrecision=option.FloatPrecision;
@@ -18953,6 +18955,7 @@ function ScriptIndex(name,script,args,option)
         if (option.IsShortTitle) this.IsShortTitle=option.IsShortTitle;
         if (option.OutName) this.OutName=option.OutName;
         if (IFrameSplitOperator.IsNumber(option.YSplitType)) this.YSplitType=option.YSplitType;
+        if (IFrameSplitOperator.IsBool(option.IsSync)) this.IsSync=option.IsSync;
 
         if (option.Debug) 
         {
@@ -19203,7 +19206,9 @@ function ScriptIndex(name,script,args,option)
 
         param.HQChart.UpdataDataoffset();           //更新数据偏移
         param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        param.HQChart.Draw();
+
+        if (param.Self.IsSync===false)    //异步需要马上刷新，同步主图数据更新的时候会刷新的
+            param.HQChart.Draw();
 
         if (hqChart.GetIndexEvent)
         {
@@ -22527,7 +22532,15 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
         hqChart.UpdataDataoffset();           //更新数据偏移
         hqChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        hqChart.Draw();
+
+        if (data.Redraw===false)    //是否重绘
+        {
+
+        }
+        else
+        {
+            hqChart.Draw();
+        }
 
         if (hqChart.GetIndexEvent)
         {

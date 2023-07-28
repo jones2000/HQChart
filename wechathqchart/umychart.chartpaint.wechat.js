@@ -4177,6 +4177,7 @@ function ChartRectangle()
         var width = Math.abs(left - right);
         var height = Math.abs(top - bottom);
         if (bFill) this.Canvas.fillRect(left, top, width, height);
+        this.Canvas.beginPath();
         this.Canvas.rect(ToFixedPoint(left), ToFixedPoint(top), ToFixedRect(width), ToFixedRect(height));
         this.Canvas.stroke();
     }

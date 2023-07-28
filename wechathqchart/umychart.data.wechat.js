@@ -2061,6 +2061,9 @@ var JSCHART_EVENT_ID =
 
 
     ON_CUSTOM_UNCHANGE_KLINE_COLOR:95,  //定制平盘K线颜色
+
+    ON_CHANGE_KLINE_PERIOD:101,                 //切换周期
+    ON_MINUTE_TOUCH_ZOOM:102,                   //分时图手势缩放 
 }
 
 var JSCHART_DATA_FIELD_ID=

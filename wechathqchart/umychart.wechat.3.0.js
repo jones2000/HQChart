@@ -7973,6 +7973,8 @@ function MinuteChartContainer(uielement)
     this.DayCount = 1;                       //显示几天的数据
     this.DayData;                            //多日分钟数据
 
+    this.ZoomStepPixel = 50;               //放大缩小手势需要的最小像素
+
     this.MinuteApiUrl = g_JSChartResource.Domain + "/API/Stock";
     this.HistoryMinuteApiUrl = g_JSChartResource.Domain + "/API/StockMinuteData";   //历史分钟数据
 
@@ -8045,6 +8047,14 @@ function MinuteChartContainer(uielement)
 
             this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchStart"}, e);
         }
+        else if (this.IsPhonePinching(e))
+        {
+            var phonePinch = { "Start": {}, "Last": {} };
+            var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
+            phonePinch.Start = { "X": touches[0].pageX, "Y": touches[0].pageY, "X2": touches[1].pageX, "Y2": touches[1].pageY };
+            phonePinch.Last = { "X": touches[0].pageX, "Y": touches[0].pageY, "X2": touches[1].pageX, "Y2": touches[1].pageY };
+            jsChart.PhonePinch = phonePinch;
+        }
     }
 
     this.ontouchmove = function (e) 
@@ -8070,6 +8080,40 @@ function MinuteChartContainer(uielement)
                     this.DrawMoveTimer=null;
                 }, this.DrawMoveWaitTime);
             }
+        }
+        else if (this.IsPhonePinching(e))
+        {
+            var phonePinch = jsChart.PhonePinch;
+            if (!phonePinch) return;
+
+            if (this.EnableZoomUpDown && this.EnableZoomUpDown.Touch===false) return;
+
+            var yHeight = Math.abs(touches[0].pageY - touches[1].pageY);
+            var yLastHeight = Math.abs(phonePinch.Last.Y - phonePinch.Last.Y2);
+            var yStep = yHeight - yLastHeight;
+            var xHeight = Math.abs(touches[0].pageX - touches[1].pageX);
+            var xLastHeight = Math.abs(phonePinch.Last.X - phonePinch.Last.X2);
+            var xStep = xHeight - xLastHeight;
+            var minStep=this.ZoomStepPixel;
+            if (Math.abs(yStep) < minStep && Math.abs(xStep) < minStep) return;
+
+            if (Math.abs(xStep) > minStep)
+            {
+                var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MINUTE_TOUCH_ZOOM)
+                if (event && event.Callback)
+                {
+                    var data={ XStep:xStep, YStep:yStep, PreventDefault:false };
+                    event.Callback(event,data,this);
+                    if (data.PreventDefault) 
+                    {
+                        this.PhonePinch=null;
+                        this.ClearTouchTimer();
+                        return;
+                    }
+                }
+            }
+
+            phonePinch.Last = { "X": touches[0].pageX, "Y": touches[0].pageY, "X2": touches[1].pageX, "Y2": touches[1].pageY };
         }
 
         if (drag!=null)
