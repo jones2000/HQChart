@@ -19230,6 +19230,15 @@ function ScriptIndex(name,script,args,option)
         else if (this.ID) chart.IndexName==this.ID;
     }
 
+    //自定义图形配色
+    this.ReloadChartResource=function(hqChart, windowIndex, chart)
+    {
+        var event=hqChart.GetEventCallback(JSCHART_EVENT_ID.ON_RELOAD_INDEX_CHART_RESOURCE);  //指标计算完成回调
+        if (!event || !event.Callback) return;
+        
+        var sendData={ Chart:chart, IndexName:this.Name,IndexID:this.ID,  HQChart:hqChart, WindowIndex:windowIndex };
+        event.Callback(event,sendData,this);
+    }
 
     this.CreateLine=function(hqChart,windowIndex,varItem, id, lineType)
     {
@@ -19262,6 +19271,9 @@ function ScriptIndex(name,script,args,option)
         
         let titleIndex=windowIndex+1;
         line.Data.Data=varItem.Data;
+
+        this.ReloadChartResource(hqChart,windowIndex,line);
+
         if (varItem.IsShowTitle===false)    //NOTEXT 不绘制标题
         {
 
@@ -19562,6 +19574,8 @@ function ScriptIndex(name,script,args,option)
         if (varItem.UpColor) chartMACD.UpColor=varItem.UpColor;
         if (varItem.DownColor) chartMACD.DownColor=varItem.DownColor;
 
+        this.ReloadChartResource(hqChart,windowIndex,chartMACD);
+
         hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chartMACD.Data,varItem.Name,clrTitle);
 
         this.SetChartIndexName(chartMACD);
@@ -19617,6 +19631,8 @@ function ScriptIndex(name,script,args,option)
 
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
+        this.ReloadChartResource(hqChart,windowIndex,chart);
+
         hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
 
         this.SetChartIndexName(chart);
@@ -19692,6 +19708,8 @@ function ScriptIndex(name,script,args,option)
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
         chart.HistoryData=hisData;
+        this.ReloadChartResource(hqChart,windowIndex,chart);
+
         hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
 
         this.SetChartIndexName(chart);
@@ -21114,6 +21132,20 @@ function OverlayScriptIndex(name,script,args,option)
         }
     }
 
+    //自定义图形配色
+    this.ReloadChartResource=function(hqChart, windowIndex, chart)
+    {
+        var event=hqChart.GetEventCallback(JSCHART_EVENT_ID.ON_RELOAD_OVERLAY_INDEX_CHART_RESOURCE);  //指标计算完成回调
+        if (!event || !event.Callback) return;
+        
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var script=frame.Script;
+
+        var sendData={ Chart:chart, IndexName:script.Name,IndexID:script.ID, HQChart:hqChart, WindowIndex:windowIndex, Guid:overlayIndex.Identify };
+        event.Callback(event,sendData,this);
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////
     //  图形创建
     /////////////////////////////////////////////////////////////////////////////////////
@@ -21146,9 +21178,10 @@ function OverlayScriptIndex(name,script,args,option)
         }
 
         if (varItem.IsShow==false) chart.IsShow=false;
-        
-        let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
+        this.ReloadChartResource(hqChart, windowIndex, chart);
+
+        let titleIndex=windowIndex+1;
         var titlePaint=hqChart.TitlePaint[titleIndex];
         var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
         titleData.ChartClassName=chart.ClassName;
@@ -21287,6 +21320,8 @@ function OverlayScriptIndex(name,script,args,option)
         if (varItem.UpColor) chart.UpColor=varItem.UpColor;
         if (varItem.DownColor) chart.DownColor=varItem.DownColor;
 
+        this.ReloadChartResource(hqChart, windowIndex, chart);
+
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,clrTitle);
 
         frame.ChartPaint.push(chart);
@@ -21348,6 +21383,8 @@ function OverlayScriptIndex(name,script,args,option)
 
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
+        this.ReloadChartResource(hqChart, windowIndex, chart);
+
         var titlePaint=hqChart.TitlePaint[titleIndex];
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
 
@@ -21428,6 +21465,8 @@ function OverlayScriptIndex(name,script,args,option)
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
         chart.HistoryData=hisData;
+        this.ReloadChartResource(hqChart, windowIndex, chart);
+        
         var titlePaint=hqChart.TitlePaint[titleIndex];
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
 

@@ -170,6 +170,18 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         }
     }
 
+    this.SetEventCallback=function(chart, aryCallback)
+    {
+        if (!chart) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryCallback)) return;
+
+        for(var i=0;i<aryCallback.length;++i)
+        {
+            var item=aryCallback[i];
+            chart.AddEventCallback(item);
+        }
+    }
+
     //历史K线图
     this.CreateKLineChartContainer=function(option)
     {
@@ -177,6 +189,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (option.Type==="历史K线图横屏") chart=new KLineChartHScreenContainer(this.CanvasElement);
         else chart=new KLineChartContainer(this.CanvasElement,this.OffscreenCanvasElement,this.CacheCanvasElement);
 
+        if (option.EventCallback) this.SetEventCallback(chart, option.EventCallback);
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
 
         //创建改参数div
@@ -673,6 +686,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (option.Type==="分钟走势图横屏") chart=new MinuteChartHScreenContainer(this.CanvasElement);
         else chart=new MinuteChartContainer(this.CanvasElement, this.OffscreenCanvasElement, this.CacheCanvasElement);
 
+        if (option.EventCallback) this.SetEventCallback(chart, option.EventCallback);
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
 
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
@@ -2195,6 +2209,11 @@ JSChart.RegisterExtendChartClass=function(name, option)
     return g_ExtendChartPaintFactory.Add(name,option);
 }
 
+JSChart.AddExtendCallbackDraw=function(className)
+{
+    return g_ExtendChartPaintFactory.AddCallbackDrawClassName(className);
+}
+
 //注册外部图形类
 //option:{ Create:创建类方法 }
 JSChart.RegisterChartPaintClass=function(name, option)
@@ -2367,6 +2386,12 @@ var JSCHART_EVENT_ID=
     ON_CHANGE_KLINE_PERIOD:101,                 //切换周期
 
     ON_MINUTE_TOUCH_ZOOM:102,                   //分时图手势缩放 
+
+    ON_RELOAD_INDEX_CHART_RESOURCE:103,         //加载指标图形额外资源
+    ON_RELOAD_OVERLAY_INDEX_CHART_RESOURCE:104, //加载叠加指标图形额外资源
+
+    ON_CREATE_FRAME:105,
+    ON_DELETE_FRAME:106
 }
 
 var JSCHART_OPERATOR_ID=
@@ -2844,6 +2869,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             JSConsole.Chart.Log("[JSChartContainer::UIOnMouseMove] Status", drawPicture.Status);
         }
         */
+
+        //鼠标离开
+        if (e && e.type=="mouseout"  && e.buttons==0)
+        {
+            x=y=-1;
+        }
 
         //保存最后一次鼠标移动信息
         var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
@@ -4946,10 +4977,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var item=this.ExtendChartPaint[i];
             if (item.IsCallbackDraw) 
             {
-                if (["KLineYAxisBGPaint","DepthMapPaint"].includes(item.ClassName))
+                if (["KLineYAxisBGPaint","DepthMapPaint","BackgroundPaint","MinuteBackgroundPaint"].includes(item.ClassName))
                 {
                     if (item.FrameID==frame.Identify) item.Draw();
-                } 
+                }
+                else if (g_ExtendChartPaintFactory.IsCallbackDraw(item.ClassName))
+                {
+                    if (item.FrameID==frame.Identify) item.Draw();
+                }
             }
         }
     }
@@ -8623,6 +8658,7 @@ function IChartFramePainting()
     this.Canvas;                        //画布
 
     this.Identify;                      //窗口标识
+    this.Guid=Guid();                   //内部窗口唯一标识
 
     this.ChartBorder;
     this.PenBorder=g_JSChartResource.FrameBorderPen;        //边框颜色
@@ -10715,6 +10751,9 @@ function MinuteFrame()
             this.DrawBeforeDataBG();
     
             this.YInsideOffset=0;
+
+            if (this.BeforeDrawXYCallback) this.BeforeDrawXYCallback(this);
+
             this.DrawTitleBG();
             this.DrawHorizontal();
             this.DrawVertical();
@@ -10789,6 +10828,7 @@ function MinuteFrame()
     this.DrawToolbar=function()
     {
         if (this.ToolbarButtonStyle==1) return;
+        if (g_JSChartResource.IsDOMFrameToolbar===true) return;
 
         if (typeof($)=="undefined") return;
 
@@ -10901,6 +10941,8 @@ function MinuteFrame()
     //手绘,不用DOM,使用DOM太麻烦了
     this.DrawToolbarV2=function(moveonPoint, mouseStatus)
     {
+        if (g_JSChartResource.IsDOMFrameToolbar===true) return;
+
         if (this.Identify==0 && this.IsShowCloseButton) this.DrawCloseBeforeButton(moveonPoint, mouseStatus);  //盘前集合竞价关闭按钮
 
         if (this.ChartBorder.TitleHeight<5) return;
@@ -12810,6 +12852,7 @@ function KLineFrame()
     this.DrawToolbar=function()
     {
         if (this.ToolbarButtonStyle==1) return;
+        if (g_JSChartResource.IsDOMFrameToolbar===true) return;
 
         if (typeof($)=="undefined") return;
         
@@ -12962,6 +13005,8 @@ function KLineFrame()
     //手绘,不用DOM,使用DOM太麻烦了
     this.DrawToolbarV2=function(moveonPoint, mouseStatus)
     {
+        if (g_JSChartResource.IsDOMFrameToolbar===true) return;
+
         this.Buttons=[];
         this.LeftButtonWidth=0;
         if (this.IsMinSize==true) return;
@@ -36333,6 +36378,8 @@ function ExtendChartPaintFactory()
         ]
     );
 
+    this.SetCallbackDraw=new Set();
+
     this.Create=function(name)
     {
         if (!this.DataMap.has(name)) return null;
@@ -36344,6 +36391,18 @@ function ExtendChartPaintFactory()
     this.Add=function(name, option)
     {
         this.DataMap.set(name, { Create:option.Create } );
+    }
+
+    this.AddCallbackDrawClassName=function(className)
+    {
+        if (!className) return;
+
+        this.SetCallbackDraw.add(className);
+    }
+
+    this.IsCallbackDraw=function(className)
+    {
+        return this.SetCallbackDraw.has(className);
     }
 }
 
@@ -48245,6 +48304,8 @@ function DynamicChartTitlePainting()
         if (!event) return;
         
         var data={ Index:null, Data:this.Data ,Title:this.Title, FrameID:this.Frame.Identify, OverlayIndex:this.OverlayIndex };
+        if (this.ArgumentsText) data.ArgumentsText=this.ArgumentsText;
+        
         if (IFrameSplitOperator.IsNumber(this.CursorIndex))
         {
             var index=Math.abs(this.CursorIndex);
@@ -48292,6 +48353,7 @@ function DynamicChartTitlePainting()
         this.OnDrawTitleEvent();
 
         if (this.Frame.IsShowIndexTitle==false) return;
+        if (g_JSChartResource.IsDOMFrameTitle===true) return;
         if (!this.Data) return;
         if (this.Frame.ChartBorder.TitleHeight<5) return;
         if (this.CursorIndex==null && !(this.GlobalOption && this.GlobalOption.IsDisplayLatest)) return;
@@ -58357,6 +58419,9 @@ function PriceSplitData()
 //
 function JSChartResource()
 {
+    this.IsDOMFrameTitle=false;  //外部DOM指标标题栏
+    this.IsDOMFrameToolbar=false;
+
     this.TooltipBGColor="rgb(255, 255, 255)"; //背景色
     this.TooltipAlpha=0.92;                  //透明度
 
@@ -59518,6 +59583,7 @@ function JSChartResource()
         }
 
         if (IFrameSplitOperator.IsNumber(style.ToolbarButtonStyle)) this.ToolbarButtonStyle=style.ToolbarButtonStyle;
+        if (IFrameSplitOperator.IsBool(style.IsDOMFrameTitle)) this.IsDOMFrameTitle=style.IsDOMFrameTitle;
 
         if (style.FrameLatestPrice) 
         {
@@ -62774,6 +62840,8 @@ function KLineChartContainer(uielement,OffscreenElement)
     //创建子窗口
     this.CreateChildWindow=function(windowCount)
     {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CREATE_FRAME);
+
         for(var i=0;i<windowCount;++i)
         {
             var border=new ChartBorder();
@@ -62845,6 +62913,12 @@ function KLineChartContainer(uielement,OffscreenElement)
                 subFrame.Height=10;
 
             this.Frame.SubFrame[i]=subFrame;
+
+            if (event && event.Callback)
+            {
+                var sendData={ SubFrame:this.Frame.SubFrame[i], WindowIndex:i };
+                event.Callback(event, sendData, this);
+            }
         }
     }
 
@@ -62895,6 +62969,13 @@ function KLineChartContainer(uielement,OffscreenElement)
         var subFrame=new SubFrameItem();
         subFrame.Frame=frame;
         subFrame.Height=10;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CREATE_FRAME);
+        if (event && event.Callback)
+        {
+            var sendData={ SubFrame:subFrame, WindowIndex:id };
+            event.Callback(event, sendData, this);
+        }
 
         return subFrame;
     }
@@ -65530,14 +65611,20 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (this.Frame.SubFrame.length==count) return;
 
         this.Frame.RestoreIndexWindows();
-        
+       
         var currentLength=this.Frame.SubFrame.length;
         if (currentLength>count)
         {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DELETE_FRAME);
             for(var i=currentLength-1;i>=count;--i)
             {
                 this.DeleteIndexPaint(i);
                 this.Frame.SubFrame[i].Frame.ClearToolbar();
+                if (event && event.Callback)
+                {
+                    var sendData={ SubFrame:this.Frame.SubFrame[i], WindowIndex:i };
+                    event.Callback(event, sendData, this);
+                }
             }
 
             this.Frame.SubFrame.splice(count,currentLength-count);
@@ -65685,9 +65772,16 @@ function KLineChartContainer(uielement,OffscreenElement)
         
         if (currentLength>count)
         {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DELETE_FRAME);
             for(var i=currentLength-1;i>=count;--i)
             {
                 this.Frame.SubFrame[i].Frame.ClearToolbar();
+
+                if (event && event.Callback)
+                {
+                    var sendData={ SubFrame:this.Frame.SubFrame[i], WindowIndex:i };
+                    event.Callback(event, sendData, this);
+                }
             }
 
             this.Frame.SubFrame.splice(count,currentLength-count);
@@ -65819,6 +65913,14 @@ function KLineChartContainer(uielement,OffscreenElement)
         var delFrame=this.Frame.SubFrame[id].Frame;
         this.DeleteIndexPaint(id);
         this.Frame.SubFrame[id].Frame.ClearToolbar();
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DELETE_FRAME);
+        if (event && event.Callback)
+        {
+            var sendData={ SubFrame:this.Frame.SubFrame[id], WindowIndex:id };
+            event.Callback(event, sendData, this);
+        }
+
         this.Frame.SubFrame.splice(id,1);
         this.WindowIndex.splice(id,1);
         this.TitlePaint.splice(id+1,1); //删除对应的动态标题
@@ -70406,6 +70508,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     //创建子窗口
     this.CreateChildWindow=function(windowCount)
     {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CREATE_FRAME);
+        
         for(var i=0;i<windowCount;++i)
         {
             var border=new ChartBorder();
@@ -70475,6 +70579,12 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 subFrame.Height=10;
 
             this.Frame.SubFrame[i]=subFrame;
+
+            if (event && event.Callback)
+            {
+                var sendData={ SubFrame:this.Frame.SubFrame[i], WindowIndex:i };
+                event.Callback(event, sendData, this);
+            }
         }
     }
 
@@ -70779,11 +70889,18 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var currentLength=this.Frame.SubFrame.length;
         if (currentLength>count)
         {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DELETE_FRAME);
             for(var i=currentLength-1;i>=count;--i)
             {
                 this.DeleteIndexPaint(i);
                 var item=this.Frame.SubFrame[i].Frame;
                 if (item.ClearToolbar) item.ClearToolbar();
+
+                if (event && event.Callback)
+                {
+                    var sendData={ SubFrame:this.Frame.SubFrame[i], WindowIndex:i };
+                    event.Callback(event, sendData, this);
+                }
             }
 
             this.Frame.SubFrame.splice(count,currentLength-count);
@@ -70860,9 +70977,16 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         
         if (currentLength>count)
         {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DELETE_FRAME);
             for(var i=currentLength-1;i>=count;--i)
             {
                 this.Frame.SubFrame[i].Frame.ClearToolbar();
+
+                if (event && event.Callback)
+                {
+                    var sendData={ SubFrame:this.Frame.SubFrame[i], WindowIndex:i };
+                    event.Callback(event, sendData, this);
+                }
             }
 
             this.Frame.SubFrame.splice(count,currentLength-count);

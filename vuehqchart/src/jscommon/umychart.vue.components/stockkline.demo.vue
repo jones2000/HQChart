@@ -815,7 +815,7 @@ export default
         {
             if (this.Minute.JSChart) return;
             this.Minute.Option.Symbol=this.Symbol;
-            let chart=JSCommon.JSChart.Init(this.$refs.minute);
+            let chart=JSCommon.JSChart.Init(this.$refs.minute, false, true);
             chart.SetOption(this.Minute.Option);
             this.Minute.JSChart=chart;
 
@@ -860,7 +860,7 @@ export default
         {
             if (this.KLine.JSChart) return;
             this.KLine.Option.Symbol=this.Symbol;
-            let chart=JSCommon.JSChart.Init(this.$refs.kline);
+            let chart=JSCommon.JSChart.Init(this.$refs.kline, false, true);
             chart.SetOption(this.KLine.Option);
             this.KLine.JSChart=chart;
             this.KLine.JSChart.SetFocus();
