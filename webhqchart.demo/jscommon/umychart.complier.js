@@ -18940,6 +18940,7 @@ function ScriptIndex(name,script,args,option)
     this.Debug; // { Callback:, Count: }
 
     this.IsSync=false;      //是否是同步计算 (无数据请求)
+    this.IsShow=true;       //是否显示图形
 
     if (option)
     {
@@ -19228,6 +19229,8 @@ function ScriptIndex(name,script,args,option)
     {
         if (this.Name) chart.IndexName=this.Name;
         else if (this.ID) chart.IndexName==this.ID;
+
+        chart.Script=this;  //指标内容绑定上去
     }
 
     //自定义图形配色
@@ -20794,6 +20797,7 @@ function ScriptIndex(name,script,args,option)
         hqChart.TitlePaint[titleIndex].Title=this.Name;
         hqChart.TitlePaint[titleIndex].Identify=this.Guid;    //指标ID
         hqChart.TitlePaint[titleIndex].ArgumentsText=null;
+        hqChart.TitlePaint[titleIndex].Script=this;
 
         if (!this.IsShortTitle)
         {
@@ -20935,7 +20939,7 @@ function OverlayScriptIndex(name,script,args,option)
         if (IFrameSplitOperator.IsNumber(this.YSplitType)) this.OverlayIndex.Frame.Frame.YSplitOperator.SplitType=this.YSplitType;
         
         //指标名字
-        var titleInfo={ Data:[], Title:this.Name, Frame:this.OverlayIndex.Frame.Frame };
+        var titleInfo={ Data:[], Title:this.Name, Frame:this.OverlayIndex.Frame.Frame, Script:this };
         let indexParam='';
         for(var i in this.Arguments)
         {

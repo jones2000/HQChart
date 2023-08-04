@@ -7035,23 +7035,16 @@ function ChartVolStick()
                 if (right > chartright) break;
 
                 var y = this.ChartFrame.GetYFromData(value);
-                var bUp = false;
-                if (kItem.Close >= kItem.Open)
-                {
-                    this.Canvas.fillStyle = this.UpColor;
-                    bUp = true;
-                }
-                else
-                {
-                    this.Canvas.fillStyle = this.DownColor;
-                }
+                var barColor=this.GetBarColor(kItem);
+                var bUp = barColor.IsUp;
+                this.Canvas.fillStyle=barColor.Color;
 
                 //高度调整为整数
                 var height = ToFixedRect(Math.abs(yBottom - y)>=1 ? yBottom - y : 1);
                 y = yBottom - height;
                 if (this.KLineDrawType==6)
                 {
-                    this.Canvas.strokeStyle = bUp? this.UpColor: this.DownColor;
+                    this.Canvas.strokeStyle=barColor.Color;
                     this.Canvas.beginPath();
                     this.Canvas.rect(ToFixedPoint(left), ToFixedPoint(y), ToFixedRect(dataWidth), height);
                     this.Canvas.stroke();
@@ -7092,10 +7085,8 @@ function ChartVolStick()
 
                 if (x > chartright) break;
 
-                if (kItem.Close > kItem.Open)
-                    this.Canvas.strokeStyle = this.UpColor;
-                else
-                    this.Canvas.strokeStyle = this.DownColor;
+                var barColor=this.GetBarColor(kItem);
+                this.Canvas.strokeStyle=barColor.Color;
 
                 var x = this.ChartFrame.GetXFromIndex(j);
                 this.Canvas.beginPath();
@@ -7104,6 +7095,12 @@ function ChartVolStick()
                 this.Canvas.stroke();
             }
         }
+    }
+
+    this.GetBarColor=function(kItem)
+    {
+        if (kItem.Close>=kItem.Open) return { Color:this.UpColor, IsUp:true };  //颜色, 是否是上涨
+        else return { Color:this.DownColor, IsUp:false };
     }
 
     this.HScreenDraw = function () //横屏画法
@@ -7130,17 +7127,9 @@ function ChartVolStick()
                 if (right > chartBottom) break;
 
                 var y = this.ChartFrame.GetYFromData(value);
-                var bUp = false;
-
-                if (kItem.Close >= kItem.Open)
-                {
-                    bUp = true;
-                    this.Canvas.fillStyle = this.UpColor;
-                }
-                else
-                {
-                    this.Canvas.fillStyle = this.DownColor;
-                }
+                var barColor=this.GetBarColor(kItem);
+                var bUp=barColor.IsUp;
+                this.Canvas.strokeStyle=barColor.Color;
 
                 //高度调整为整数
                 var height = ToFixedRect(y - yBottom);
@@ -7169,10 +7158,8 @@ function ChartVolStick()
                 var x = this.ChartFrame.GetXFromIndex(j);
                 if (x > chartBottom) break;
 
-                if (kItem.Close > kItem.Open)
-                    this.Canvas.strokeStyle = this.UpColor;
-                else
-                    this.Canvas.strokeStyle = this.DownColor;
+                var barColor=this.GetBarColor(kItem);
+                this.Canvas.strokeStyle=barColor.Color;
 
                 var x = this.ChartFrame.GetXFromIndex(j);
                 this.Canvas.beginPath();
