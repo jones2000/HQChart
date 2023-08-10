@@ -2064,6 +2064,8 @@ var JSCHART_EVENT_ID =
 
     ON_CHANGE_KLINE_PERIOD:101,                 //切换周期
     ON_MINUTE_TOUCH_ZOOM:102,                   //分时图手势缩放 
+
+    ON_TOUCH_SCROLL_UP_DOWN:108,
 }
 
 var JSCHART_DATA_FIELD_ID=

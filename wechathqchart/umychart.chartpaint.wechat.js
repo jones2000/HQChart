@@ -7088,7 +7088,7 @@ function ChartVolStick()
                 var barColor=this.GetBarColor(kItem);
                 this.Canvas.strokeStyle=barColor.Color;
 
-                var x = this.ChartFrame.GetXFromIndex(j);
+                //var x = this.ChartFrame.GetXFromIndex(j);
                 this.Canvas.beginPath();
                 this.Canvas.moveTo(ToFixedPoint(x), y);
                 this.Canvas.lineTo(ToFixedPoint(x), yBottom);
@@ -7161,7 +7161,7 @@ function ChartVolStick()
                 var barColor=this.GetBarColor(kItem);
                 this.Canvas.strokeStyle=barColor.Color;
 
-                var x = this.ChartFrame.GetXFromIndex(j);
+                //var x = this.ChartFrame.GetXFromIndex(j);
                 this.Canvas.beginPath();
                 this.Canvas.moveTo(y, ToFixedPoint(x));
                 this.Canvas.lineTo(yBottom, ToFixedPoint(x));

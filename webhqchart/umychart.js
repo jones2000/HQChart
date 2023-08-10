@@ -585,10 +585,10 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             }
 
             var frame=chart.Frame.SubFrame[i].Frame;
-            if (item.Modify!=null) frame.ModifyIndex=item.Modify;
-            if (item.Change!=null) frame.ChangeIndex=item.Change;
-            if (item.Close!=null) frame.CloseIndex=item.Close;
-            if (item.Overlay!=null) frame.OverlayIndex=item.Overlay;
+            if (IFrameSplitOperator.IsBool(item.Modify)) frame.ModifyIndex=item.Modify;
+            if (IFrameSplitOperator.IsBool(item.Change)) frame.ChangeIndex=item.Change;
+            if (IFrameSplitOperator.IsBool(item.Close)) frame.CloseIndex=item.Close;
+            if (IFrameSplitOperator.IsBool(item.Overlay)) frame.OverlayIndex=item.Overlay;
             if (IFrameSplitOperator.IsBool(item.Export)) frame.ExportData=item.Export;
             if (IFrameSplitOperator.IsBool(item.MaxMin)) chart.Frame.SubFrame[i].Frame.MaxMinWindow=item.MaxMin;
             if (IFrameSplitOperator.IsBool(item.TitleWindow)) chart.Frame.SubFrame[i].Frame.TitleWindow=item.TitleWindow;
@@ -1014,10 +1014,10 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 }
 
                 var frame=chart.Frame.SubFrame[index].Frame;
-                if (item.Modify!=null) frame.ModifyIndex=item.Modify;
-                if (item.Change!=null) frame.ChangeIndex=item.Change;
-                if (item.Close!=null) frame.CloseIndex=item.Close;
-                if (item.Overlay!=null) frame.OverlayIndex=item.Overlay;
+                if (IFrameSplitOperator.IsBool(item.Modify)) frame.ModifyIndex=item.Modify;
+                if (IFrameSplitOperator.IsBool(item.Change)) frame.ChangeIndex=item.Change;
+                if (IFrameSplitOperator.IsBool(item.Close)) frame.CloseIndex=item.Close;
+                if (IFrameSplitOperator.IsBool(item.Overlay)) frame.OverlayIndex=item.Overlay;
                 if (IFrameSplitOperator.IsBool(item.Export)) frame.ExportData=item.Export;
                 if (IFrameSplitOperator.IsBool(item.MaxMin)) frame.MaxMinWindow=item.MaxMin;
                 if (IFrameSplitOperator.IsBool(item.TitleWindow)) frame.TitleWindow=item.TitleWindow;
@@ -2451,6 +2451,8 @@ var JSCHART_EVENT_ID=
     ON_CREATE_FRAME:105,
     ON_DELETE_FRAME:106,
     ON_SIZE_FRAME:107,
+
+    ON_TOUCH_SCROLL_UP_DOWN:108,        //页面上下滚动 手机端
 }
 
 var JSCHART_OPERATOR_ID=
@@ -10842,12 +10844,13 @@ function MinuteFrame()
     this.ReDrawToolbar=false;
     this.DayCount=1;        //显示天数
 
-    this.ModifyIndex=true;      //是否显示'改参数'菜单
-    this.ChangeIndex=true;      //是否显示'换指标'菜单
-    this.CloseIndex=true;       //是否显示'关闭指标窗口'菜单
-    this.MaxMinWindow=true;
-    this.TitleWindow=true;
-    this.ExportData=false;      //是否显示'导出数据'菜单
+    this.ModifyIndex=g_JSChartResource.MinuteToolbar.ModifyIndex;      //是否显示'改参数'菜单
+    this.ChangeIndex=g_JSChartResource.MinuteToolbar.ChangeIndex;      //是否显示'换指标'菜单
+    this.CloseIndex=g_JSChartResource.MinuteToolbar.CloseIndex;       //是否显示'关闭指标窗口'菜单
+    this.MaxMinWindow=g_JSChartResource.MinuteToolbar.MaxMinWindow;
+    this.TitleWindow=g_JSChartResource.MinuteToolbar.TitleWindow;
+    this.ExportData=g_JSChartResource.MinuteToolbar.ExportData;      //是否显示'导出数据'菜单
+    this.OverlayIndex=g_JSChartResource.MinuteToolbar.OverlayIndex;    //是否显示叠加指标
 
     this.ModifyIndexEvent;   //改参数 点击事件
     this.ChangeIndexEvent;   //换指标 点击事件
@@ -12937,13 +12940,13 @@ function KLineFrame()
     this.ClassName='KLineFrame';
     this.ToolbarID=Guid();  //工具条Div id
 
-    this.ModifyIndex=true;      //是否显示'改参数'菜单
-    this.ChangeIndex=true;      //是否显示'换指标'菜单
-    this.CloseIndex=true;       //是否显示'关闭指标窗口'菜单
-    this.OverlayIndex=false;    //是否显示叠加指标
-    this.MaxMinWindow=true;
-    this.TitleWindow=true;
-    this.ExportData=false;      //是否显示'导出数据'菜单
+    this.ModifyIndex=g_JSChartResource.KLineToolbar.ModifyIndex;      //是否显示'改参数'菜单
+    this.ChangeIndex=g_JSChartResource.KLineToolbar.ChangeIndex;      //是否显示'换指标'菜单
+    this.CloseIndex=g_JSChartResource.KLineToolbar.CloseIndex;       //是否显示'关闭指标窗口'菜单
+    this.OverlayIndex=g_JSChartResource.KLineToolbar.OverlayIndex;    //是否显示叠加指标
+    this.MaxMinWindow=g_JSChartResource.KLineToolbar.MaxMinWindow;
+    this.TitleWindow=g_JSChartResource.KLineToolbar.TitleWindow;
+    this.ExportData=g_JSChartResource.KLineToolbar.ExportData;      //是否显示'导出数据'菜单
 
     this.ModifyIndexEvent;   //改参数 点击事件
     this.ChangeIndexEvent;   //换指标 点击事件
@@ -14118,8 +14121,8 @@ function OverlayKLineFrame()
     this.IsCalculateYMaxMin=true;   //是否计算Y最大最小值
     this.RightOffset=50;
     this.PenBorder=g_JSChartResource.OverlayFrame.BolderPen; //'rgb(0,0,0)'
-    this.IsShow=true;   //坐标是否显示
-    this.IsShowToolbar=true;    //是否显示工具条
+    this.IsShow=g_JSChartResource.KLineToolbar.IsShowOverlayFrame;              //坐标是否显示
+    this.IsShowToolbar=g_JSChartResource.KLineToolbar.IsShowOverlayToolbar;    //是否显示工具条
     this.Title=null;
     this.TitleColor=g_JSChartResource.OverlayFrame.TitleColor;
     this.TitleFont=g_JSChartResource.OverlayFrame.TitleFont;
@@ -28651,7 +28654,7 @@ function ChartVolStick()
                 var barColor=this.GetBarColor(kItem);
                 this.Canvas.strokeStyle=barColor.Color;
                 
-                var x=this.ChartFrame.GetXFromIndex(j);
+                //var x=this.ChartFrame.GetXFromIndex(j);
                 this.Canvas.beginPath();
                 this.Canvas.moveTo(ToFixedPoint(x),y);
                 this.Canvas.lineTo(ToFixedPoint(x),yBottom);
@@ -28721,7 +28724,7 @@ function ChartVolStick()
                 var bUp=barColor.IsUp;
                 this.Canvas.strokeStyle=barColor.Color;
 
-                var x=this.ChartFrame.GetXFromIndex(j);
+                //var x=this.ChartFrame.GetXFromIndex(j);
                 this.Canvas.beginPath();
                 this.Canvas.moveTo(y,ToFixedPoint(x));
                 this.Canvas.lineTo(yBottom,ToFixedPoint(x));
@@ -40495,6 +40498,8 @@ function BackgroundPaint()
             {
                 if (isMinutePeriod)
                 {
+                    if (item.End.Date<kLineMap.Start.Date || (item.End.Date==kLineMap.Start.Date && item.End.Time<kLineMap.Start.Time)) return null;
+
                     if (item.End.Date<kLineMap.End.Date || (item.End.Date==kLineMap.End.Date && item.End.Time>=kLineMap.End.Time) ) 
                     {
                         xRight=kLineMap.End.Right;
@@ -40516,6 +40521,8 @@ function BackgroundPaint()
                 }
                 else
                 {
+                    if (item.End.Date<kLineMap.Start.Date) return null;
+
                     if (item.End.Date<=kLineMap.End.Date) 
                     {
                         xRight=kLineMap.End.Right;
@@ -48450,8 +48457,9 @@ function DynamicChartTitlePainting()
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_INDEXTITLE_DRAW);
         if (!event) return;
         
-        var data={ Index:null, Data:this.Data ,Title:this.Title, Script:this.Script, FrameID:this.Frame.Identify, OverlayIndex:this.OverlayIndex };
+        var data={ Index:null, Data:this.Data ,Title:this.Title, Script:this.Script, FrameID:this.Frame.Identify, OverlayIndex:this.OverlayIndex, IsShowTitleOnly:false };
         if (this.ArgumentsText) data.ArgumentsText=this.ArgumentsText;
+        if (this.Frame && this.Frame.ChartBorder) data.IsShowTitleOnly=this.Frame.ChartBorder.IsShowTitleOnly;
         
         if (IFrameSplitOperator.IsNumber(this.CursorIndex))
         {
@@ -48682,7 +48690,7 @@ function DynamicChartTitlePainting()
         }
         else 
         {
-            this.DrawOverlayIndex(left+10*GetDevicePixelRatio());   //间距都空点 和主指标区分开
+            this.DrawOverlayIndex(left+10*GetDevicePixelRatio());   //间距多空点 和主指标区分开
         }
     }
 
@@ -48871,7 +48879,7 @@ function DynamicChartTitlePainting()
         else
         {
             var top=border.TopTitle+2*pixelRatio;
-            var left=border.Left+this.MerginLeft;
+            var left=this.Frame.ChartBorder.GetLeft()+this.MerginLeft;
             var right=border.Right;
             var bottom=border.Bottom;
         }
@@ -58568,6 +58576,33 @@ function JSChartResource()
 {
     this.IsDOMFrameTitle=false;  //外部DOM指标标题栏
     this.IsDOMFrameToolbar=false;
+
+    //全局K线窗口按钮配置
+    this.KLineToolbar=
+    {
+        ModifyIndex:true,   //修改参数
+        ChangeIndex:true,   //切换指标
+        CloseIndex:true,    //关闭窗口
+        OverlayIndex:false, //叠加指标
+        MaxMinWindow:true,  //最大最小化窗口
+        TitleWindow:true,   //标题模式
+        ExportData:false,   //数据导出
+
+        IsShowOverlayToolbar:true,      //是否显示叠加坐标工具栏按钮
+        IsShowOverlayFrame:true,        //是否显示右侧叠加坐标
+    }
+
+    //全局分时图窗口按钮配置
+    this.MinuteToolbar=
+    {
+        ModifyIndex:true,   //修改参数
+        ChangeIndex:true,   //切换指标
+        CloseIndex:true,    //关闭窗口
+        OverlayIndex:true, //叠加指标
+        MaxMinWindow:true,  //最大最小化窗口
+        TitleWindow:true,   //标题模式
+        ExportData:false,   //数据导出
+    }
 
     this.TooltipBGColor="rgb(255, 255, 255)"; //背景色
     this.TooltipAlpha=0.92;                  //透明度
