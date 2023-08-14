@@ -1369,17 +1369,25 @@ function FrameSplitMinutePriceY()
         for (var i = 0; i < showCount; ++i) 
         {
             var price = min + (distance * i);
-            this.Frame.HorizontalInfo[i] = new CoordinateInfo();
-            this.Frame.HorizontalInfo[i].Value = price;
+            var coordinate=new CoordinateInfo();
+            this.Frame.HorizontalInfo[i] = coordinate;
 
-            this.Frame.HorizontalInfo[i].Message[0] = price.toFixed(defaultfloatPrecision);
+            coordinate.Value = price;
+            coordinate.Message[0] = price.toFixed(defaultfloatPrecision);
 
-            if (this.YClose)
-             {
+            if (IFrameSplitOperator.IsNumber(this.YClose))
+            {
                 var per = (price / this.YClose - 1) * 100;
-                if (per > 0) this.Frame.HorizontalInfo[i].TextColor = g_JSChartResource.UpTextColor;
-                else if (per < 0) this.Frame.HorizontalInfo[i].TextColor = g_JSChartResource.DownTextColor;
-                this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(per, 2) + '%'; //百分比
+                if (per > 0) coordinate.TextColor = g_JSChartResource.UpTextColor;
+                else if (per < 0) coordinate.TextColor = g_JSChartResource.DownTextColor;
+                coordinate.Message[1] = IFrameSplitOperator.FormatValueString(per, 2) + '%'; //百分比
+
+                if (Math.abs(price-this.YClose) <0.00000000001) //小数有精度问题 使用差值
+                {
+                    coordinate.LineType=2;//中间的线画虚线
+                    coordinate.TextColor=g_JSChartResource.UnchagneTextColor;
+                    if (g_JSChartResource.FrameDotSplitPen) coordinate.LineColor=g_JSChartResource.FrameDotSplitPen;
+                }
             }
         }
 

@@ -320,6 +320,12 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.DragDownload.Minute && option.DragDownload.Minute.Enable==true) chart.DragDownload.Minute.Enable=true;
         }
 
+        if (option.ZoomDownload)
+        {
+            if (option.ZoomDownload.Day && IFrameSplitOperator.IsBool(option.ZoomDownload.Day.Enable)) chart.ZoomDownload.Day.Enable=option.ZoomDownload.Day.Enable;
+            if (option.ZoomDownload.Minute && IFrameSplitOperator.IsBool(option.ZoomDownload.Minute.Enable)) chart.ZoomDownload.Minute.Enable=option.ZoomDownload.Minute.Enable;
+        }
+
         if (option.Language)
         {
             var value=g_JSChartLocalization.GetLanguageID(option.Language);
@@ -5842,7 +5848,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (this.EnableZoomUpDown && this.EnableZoomUpDown.Keyboard===false) break;
                 var cursorIndex={ ZoomType:this.ZoomType ,IsLockRight:this.IsZoomLockRight };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
-                if (!this.Frame.ZoomDown(cursorIndex)) break;
+                if (!this.Frame.ZoomDown(cursorIndex, { ZoomDownloadDataCallback:(requestData)=>{ this.ZoomDownloadData(requestData) } })) break;
                 this.CursorIndex=cursorIndex.Index;
                 this.UpdataDataoffset();
                 this.UpdatePointByCursorIndex();
@@ -13885,7 +13891,7 @@ function KLineFrame()
         
     }
 
-    this.ZoomDown=function(cursorIndex) //缩小
+    this.ZoomDown=function(cursorIndex, option) //缩小
     {
         if (this.ZoomIndex+1>=ZOOM_SEED.length) return false;
         if (this.Data.DataOffset<0) return false;
@@ -13934,6 +13940,14 @@ function KLineFrame()
             this.Data.DataOffset=0;
             //isShowAll=true; //数据铺满全屏, 不需要调整宽度
             JSConsole.Chart.Log(`[KLineFrame::ZoomDown] Show all data. XPointCount=${xPointCount} ZoomIndex=${this.ZoomIndex} DataCount= ${dataCount}`);
+
+            if (xPointCount-this.RightSpaceCount>dataCount)
+            {
+                if (option && option.ZoomDownloadDataCallback)
+                {
+                    option.ZoomDownloadDataCallback({ PageSize:xPointCount, DataCount:dataCount, RightSpaceCount:this.RightSpaceCount, Count:xPointCount-dataCount });
+                }
+            }
         }
         else
         {
@@ -16650,9 +16664,9 @@ function HQTradeFrame()
         return result;
     }
 
-    this.ZoomDown=function(cursorIndex)
+    this.ZoomDown=function(cursorIndex, option)
     {
-        var result=this.SubFrame[0].Frame.ZoomDown(cursorIndex);
+        var result=this.SubFrame[0].Frame.ZoomDown(cursorIndex, option);
         this.UpdateAllFrame();
         return result;
     }
@@ -21065,7 +21079,15 @@ function ChartKLine()
     this.ClassName='ChartKLine';    //类名
     this.Symbol;        //股票代码
     this.DrawType=0;    // 0=实心K线柱子  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图 5=订单流 6=空心K线柱子2(全部空心) 7=订单流样式2 8=订单流样式3  
-                        //9=自定义颜色K线 10=renko 11=Heikin Ashi 12=line break 13=high low 14=外部自定义图 15=HLC Area
+                        // 9=自定义颜色K线 
+                        // 10=renko 
+                        // 11=Heikin Ashi 
+                        // 12=line break 
+                        // 13=high low 
+                        // 14=外部自定义图 
+                        // 15=HLC Area 
+                        // 16=kagi
+
     this.CloseLineColor=g_JSChartResource.CloseLineColor;
     this.CloseLineAreaColor=g_JSChartResource.CloseLineAreaColor;
     this.CloseLineWidth=g_JSChartResource.CloseLineWidth;
@@ -43689,13 +43711,8 @@ function FrameSplitMinutePriceY()
             coordinate.Value=price;
             var strPrice=price.toFixed(defaultfloatPrecision);  //价格刻度字符串
             if (this.IsShowLeftText) coordinate.Message[0]=strPrice
-            if (price==this.YClose) 
-            {
-                coordinate.LineType=2;//中间的线画虚线
-                if (g_JSChartResource.FrameDotSplitPen) coordinate.LineColor=g_JSChartResource.FrameDotSplitPen;
-            }
 
-            if (this.YClose)
+            if (IFrameSplitOperator.IsNumber(this.YClose))
             {
                 var per=(price/this.YClose-1)*100;
                 if (per>0) coordinate.TextColor=g_JSChartResource.UpTextColor;
@@ -43705,6 +43722,13 @@ function FrameSplitMinutePriceY()
                 {
                     if (this.RightTextFormat==1)  coordinate.Message[1]=strPrice;
                     else coordinate.Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
+                }
+
+                if (Math.abs(price-this.YClose) <0.00000000001) //小数有精度问题 使用差值
+                {
+                    coordinate.LineType=2;//中间的线画虚线
+                    coordinate.TextColor=g_JSChartResource.UnchagneTextColor;
+                    if (g_JSChartResource.FrameDotSplitPen) coordinate.LineColor=g_JSChartResource.FrameDotSplitPen;
                 }
             }
             
@@ -61603,7 +61627,8 @@ function KLineCustomCalulate()
         [
             ["RenkoCalculate",      { Create:function() { return new RenkoCalculate(); }  }],
             ["HeikinAshiCalculate", { Create:function() { return new HeikinAshiCalculate(); }  }],
-            ["LineBreakCalcuate",   { Create:function() { return new LineBreakCalcuate(); }  }]
+            ["LineBreakCalcuate",   { Create:function() { return new LineBreakCalcuate(); }  }],
+            ["KagiCalculate",       { Create:function(){ return new RenkoCalculate(); } }]
         ]
     );
 
@@ -61778,6 +61803,15 @@ function RenkoCalculate()
         var value=brickSize.toFixed(this.FloatPrecision);
         this.ATR.BrickSize=parseFloat(value);
     }
+}
+
+
+/////////////////////////////////////////////////////////////////////////
+//kagi candle
+//
+function KagiCalculate()
+{
+
 }
 
 //////////////////////////////////////////////////////////////////
@@ -62072,6 +62106,13 @@ function KLineChartContainer(uielement,OffscreenElement)
         Tick: { Enable:false, IsEnd:false, Status:0 }       //分笔
     };
 
+    this.ZoomDownload=
+    {
+        Day:{ Enable:false, IsEnd:false, Status:0 },        //日线数据缩放下载 Status: 0空闲 1 下载中
+        Minute: { Enable:false, IsEnd:false, Status:0 },    //分钟/秒数据缩放下载
+        Tick: { Enable:false, IsEnd:false, Status:0 }       //分笔
+    }
+
     //自动更新设置
     this.IsAutoUpdate=false;                    //是否自动更新行情数据
     this.AutoUpdateFrequency=30000;             //30秒更新一次数据
@@ -62082,6 +62123,8 @@ function KLineChartContainer(uielement,OffscreenElement)
     this.MinuteKLineApiUrl=g_JSChartResource.Domain+'/API/KLine3';                  //历史分钟数据
     this.DragMinuteKLineApiUrl=g_JSChartResource.Domain+'/API/KLine4';              //拖动1分钟K数据下载
     this.DragKLineApiUrl=g_JSChartResource.Domain+'/API/KLine5';                    //拖动日K数据下载
+    this.ZoomMinuteKLineApiUrl=g_JSChartResource.Domain+'/API/KLine4';              //拖动1分钟K数据下载
+    this.ZoomKLineApiUrl=g_JSChartResource.Domain+'/API/KLine5';                    //拖动日K数据下载
     this.RealtimeApiUrl=g_JSChartResource.Domain+"/API/Stock";                      //实时行情api地址
     this.KLineMatchUrl=g_JSChartResource.Domain+"/API/KLineMatch";                  //形态匹配
     this.StockHistoryDayApiUrl= g_JSChartResource.Domain+'/API/StockHistoryDay';    //股票历史数据
@@ -62106,6 +62149,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         if (kLineDrawType==10) className="RenkoCalculate";
         else if (kLineDrawType==11) className="HeikinAshiCalculate";
         else if (kLineDrawType==12) className="LineBreakCalcuate";
+        else if (kLineDrawType==16) className="KagiCalculate";
         else return null;
 
         if (!this.KLineCalculate || this.KLineCalculate.ClassName!=className)
@@ -62148,6 +62192,18 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         this.DragDownload.Tick.Status=0;
         this.DragDownload.Tick.IsEnd=false;
+    }
+
+    this.ResetZoomDownload=function()
+    {
+        this.ZoomDownload.Day.Status=0;
+        this.ZoomDownload.Day.IsEnd=false;
+
+        this.ZoomDownload.Minute.Status=0;
+        this.ZoomDownload.Minute.IsEnd=false;
+
+        this.ZoomDownload.Tick.Status=0;
+        this.ZoomDownload.Tick.IsEnd=false;
     }
 
     this.ResetPage=function()   //重置分页下载
@@ -62804,7 +62860,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             {
                 var cursorIndex={ ZoomType:this.ZoomType, IsLockRight:this.IsZoomLockRight };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
-                if (this.Frame.ZoomDown(cursorIndex))
+                if (this.Frame.ZoomDown(cursorIndex, { ZoomDownloadDataCallback:(requestData)=>{ this.ZoomDownloadData(requestData) } } ))
                 {
                     this.CursorIndex=cursorIndex.Index;
                     this.UpdataDataoffset();
@@ -63650,6 +63706,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.FlowCapitalReady=false;
         this.ResetPage(); //重置分页
         this.ResetDragDownload();
+        this.ResetZoomDownload();
         this.Draw();
 
         if (this.NetworkFilter)
@@ -63958,6 +64015,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.FlowCapitalReady=false;
         this.ResetPage(); //重置分页
         this.ResetDragDownload();
+        this.ResetZoomDownload();
         this.Draw();
 
         if (this.NetworkFilter)
@@ -65137,7 +65195,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.ClearCustomKLine();
 
         var kLineDrawType=this.GetKLineDrawType();
-        if (kLineDrawType==10 || kLineDrawType==11 || kLineDrawType==12) isDataTypeChange=true;
+        if (kLineDrawType==10 || kLineDrawType==11 || kLineDrawType==12 || kLineDrawType==16) isDataTypeChange=true;
 
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CHANGE_KLINE_PERIOD);
         if (event && event.Callback)
@@ -67946,18 +68004,60 @@ function KLineChartContainer(uielement,OffscreenElement)
         }
     }
 
+    //数据缩放下载
+    this.ZoomDownloadData=function(requestData)
+    {
+        var data=null;
+        if (!this.Frame.Data) data=this.Frame.Data;
+        else data=this.Frame.SubFrame[0].Frame.Data;
+        if (!data) return false;
+        if (data.DataOffset>0) return;
+
+        if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period)) //下载分钟/秒数据
+        {
+            JSConsole.Chart.Log(`[KLineChartContainer.ZoomDownloadData] Minute:[Enable=${this.ZoomDownload.Minute.Enable}, IsEnd=${this.ZoomDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}, Period=${this.Period}]`);
+            if (!this.ZoomDownload.Minute.Enable) return;
+            if (this.ZoomDownload.Minute.IsEnd) return; //全部下载完了
+            if (this.ZoomDownload.Minute.Status!=0) return;
+            this.RequestZoomMinuteData(requestData);
+        }
+        else if (ChartData.IsDayPeriod(this.Period,true))
+        {
+            JSConsole.Chart.Log(`[KLineChartContainer.ZoomDownloadData] Day:[Enable=${this.ZoomDownload.Minute.Enable}, IsEnd=${this.ZoomDownload.Minute.IsEnd}, Status=${this.DragDownload.Minute.Status}]`);
+            if (!this.ZoomDownload.Day.Enable) return;
+            if (this.ZoomDownload.Day.IsEnd) return; //全部下载完了
+            if (this.ZoomDownload.Day.Status!=0) return;
+            
+            this.RequestZoomDayData(requestData);
+        }
+        else if(ChartData.IsTickPeriod(this.Period))
+        {
+            JSConsole.Chart.Log(`[KLineChartContainer.ZoomDownloadData] Tick:[Enable=${this.ZoomDownload.Tick.Enable}, IsEnd=${this.ZoomDownload.Tick.IsEnd}, Status=${this.DragDownload.Tick.Status}]`);
+            if (!this.ZoomDownload.Tick.Enable) return;
+            if (this.ZoomDownload.Tick.IsEnd) return; //全部下载完了
+            if (this.ZoomDownload.Tick.Status!=0) return;
+            this.RequestZoomTickData(requestData); 
+        }
+    }
+
     //TODO: 
     this.RequestDragTickData=function()
     {
         JSConsole.Chart.Log(`[KLineChartContainer.RequestDragTickData] not finished.`);
     }
 
-    this.RequestDragMinuteData=function()
+    //请求拖动或缩放的分钟历史数据
+    this.RequestPreviousMinuteData=function(option)
     {
+        var funcName=option.FuncName;
+        var funcExplain=option.FuncExplain;
+        var download=option.Download;
+        var url=option.Url;
+        var count=option.Count; //请求数据个数
+
         var self=this;
-        this.AutoUpdateEvent(false,'KLineChartContainer::RequestDragMinuteData');   //停止自动更新
+        this.AutoUpdateEvent(false,funcName);   //停止自动更新
         this.CancelAutoUpdate();
-        var download=this.DragDownload.Minute;
         download.Status=1;
         var firstItem=this.SourceData.Data[0];   //最新的一条数据
         var postData=
@@ -67966,7 +68066,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             "symbol": self.Symbol,
             "enddate": firstItem.Date,
             "endtime" :firstItem.Time,
-            "count": self.MaxRequestMinuteDayCount,
+            "count": count,
             "first":{ date: firstItem.Date, time:firstItem.Time }
         };
 
@@ -67984,18 +68084,20 @@ function KLineChartContainer(uielement,OffscreenElement)
         {
             var obj=
             {
-                Name:'KLineChartContainer::RequestDragMinuteData', //类名::函数
-                Explain:'拖拽分钟|秒K线数据下载',
-                Request:{ Url:this.DragMinuteKLineApiUrl,  Type:'POST' , Data: postData, Period:this.Period, Right:this.Right  }, 
+                Name:funcName, //类名::函数
+                Explain:funcExplain,
+                Request:{ Url:url,  Type:'POST', Data: postData, Period:this.Period, Right:this.Right }, 
                 DragDownload:download,
+                Option:option,
                 Self:this,
-                PreventDefault:false
+                PreventDefault:false,
+                ZoomData:option.ZoomData
             };
             this.NetworkFilter(obj, function(data) 
             {
-                self.RecvDragMinuteData(data);
+                self.RecvPreviousMinuteData(data,option);
                 download.Status=0;
-                self.AutoUpdateEvent(true,'KLineChartContainer::RequestDragMinuteData');   //自动更新
+                self.AutoUpdateEvent(true,funcName);   //自动更新
                 self.AutoUpdate();
             });
 
@@ -68003,27 +68105,29 @@ function KLineChartContainer(uielement,OffscreenElement)
         }
 
         JSNetwork.HttpRequest({
-            url: this.DragMinuteKLineApiUrl,
+            url: url,
             data:postData,
             type:"post",
             dataType: "json",
             async:true,
             success: function(data)
             {
-                self.RecvDragMinuteData(data);
+                self.RecvPreviousMinuteData(data, option);
                 download.Status=0;
-                self.AutoUpdateEvent(true,'KLineChartContainer::RequestDragMinuteData');   //自动更新
+                self.AutoUpdateEvent(true,funcName);   //自动更新
                 self.AutoUpdate();
             }
         });
     }
 
-    this.RecvDragMinuteData=function(data)
+    this.RecvPreviousMinuteData=function(data, option)
     {
+        var download=option.Download;
         var aryDayData=KLineChartContainer.JsonDataToMinuteHistoryData(data);
         if (!aryDayData || aryDayData.length<=0)
         {
-            this.DragDownload.Minute.IsEnd=true; 
+            download.IsEnd=true; 
+            JSConsole.Chart.Log(`[KLineChartContainer.RecvPreviousMinuteData] ${this.Symbol} data end. FuncName=${option.FuncName}`);
             return;
         }
 
@@ -68074,13 +68178,21 @@ function KLineChartContainer(uielement,OffscreenElement)
         var kLineCalculate=this.GetKLineCalulate();
         if (kLineCalculate) //额外的K线图形计算
         {
-            var newBindData=kLineCalculate.RecvHistoryData(bindData, { Symbol:this.Symbol, Function:"RecvDragMinuteData" });
+            var newBindData=kLineCalculate.RecvHistoryData(bindData, { Symbol:this.Symbol, Function:option.RecvFuncName });
             bindData=newBindData;
             this.FlowCapitalReady=true;
         }
 
         //绑定数据
         this.UpdateMainData(bindData,lastDataCount);
+        if (option && option.ZoomData)  //缩放需要调整当前屏的位置
+        {
+            var zoomData=option.ZoomData;
+            var showCount=zoomData.PageSize-zoomData.RightSpaceCount;   //一屏显示的数据个数
+            bindData.DataOffset= bindData.Data.length-showCount;
+            if (bindData.DataOffset<0) bindData.DataOffset=0;
+        }
+
         this.UpdateOverlayDragMinuteData(data);
         this.BindInstructionIndexData(bindData);    //执行指示脚本
 
@@ -68099,6 +68211,39 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         //叠加指标计算
         this.BindAllOverlayIndexData(bindData);
+    }
+
+    this.RequestZoomMinuteData=function()
+    {
+        var zoomData={ PageSize:requestData.PageSize, DataCount:requestData.DataCount, RightSpaceCount:requestData.RightSpaceCount };
+
+        var option=
+        {
+            FuncName:'KLineChartContainer::RequestZoomMinuteData',
+            FuncExplain:"缩放分钟|秒K线数据下载",
+            RecvFuncName:"RecvZoomMinuteData",
+            Download:this.DragDownload.Minute,
+            Url:this.ZoomMinuteKLineApiUrl,
+            Count:this.MaxRequestMinuteDayCount,
+            ZoomData:zoomData
+        };
+
+        this.RequestPreviousMinuteData(option);
+    }
+
+    this.RequestDragMinuteData=function()
+    {
+        var option=
+        {
+            FuncName:'KLineChartContainer::RequestDragMinuteData',
+            FuncExplain:"拖拽分钟|秒K线数据下载",
+            RecvFuncName:"RecvDragMinuteData",
+            Download:this.DragDownload.Minute,
+            Url:this.DragMinuteKLineApiUrl,
+            Count:this.MaxRequestMinuteDayCount
+        };
+
+        this.RequestPreviousMinuteData(option);
     }
 
     this.UpdateOverlayDragMinuteData=function(data)
@@ -68181,12 +68326,18 @@ function KLineChartContainer(uielement,OffscreenElement)
         }
     }
 
-    this.RequestDragDayData=function()
+    //请求拖动或缩放的日线历史数据
+    this.RequestPreviousDayData=function(option)
     {
+        var funcName=option.FuncName;
+        var funcExplain=option.FuncExplain;
+        var download=option.Download;
+        var url=option.Url;
+        var count=option.Count; //请求数据个数
+
         var self=this;
-        this.AutoUpdateEvent(false,'KLineChartContainer::RequestDragDayData');   //停止自动更新
+        this.AutoUpdateEvent(false,funcName);   //停止自动更新
         this.CancelAutoUpdate();
-        var download=this.DragDownload.Day;
         download.Status=1;
         var firstItem=this.SourceData.Data[0];   //最新的一条数据
         var postData=
@@ -68194,7 +68345,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             "field": ["name","symbol", "yclose","open","price","high","low","vol"],
             "symbol": self.Symbol,
             "enddate": firstItem.Date,
-            "count": self.MaxRequestDataCount,
+            "count": count,
             "first":{ date: firstItem.Date }
         };
 
@@ -68212,18 +68363,19 @@ function KLineChartContainer(uielement,OffscreenElement)
         {
             var obj=
             {
-                Name:'KLineChartContainer::RequestDragDayData', //类名::函数
-                Explain:'拖拽日K数据下载',
-                Request:{ Url:this.DragKLineApiUrl,  Type:'POST' , Data: postData, Period:this.Period, Right:this.Right }, 
+                Name:funcName, //类名::函数
+                Explain:funcExplain,
+                Request:{ Url:url,  Type:'POST' , Data: postData, Period:this.Period, Right:this.Right }, 
                 DragDownload:download,
                 Self:this,
-                PreventDefault:false
+                PreventDefault:false,
+                ZoomData:option.ZoomData
             };
             this.NetworkFilter(obj, function(data) 
             {
-                self.RecvDragDayData(data);
+                self.RecvPreviousDayData(data,option);
                 download.Status=0;
-                self.AutoUpdateEvent(true,'KLineChartContainer::RequestDragDayData');   //自动更新
+                self.AutoUpdateEvent(true,funcName);   //自动更新
                 self.AutoUpdate();
             });
 
@@ -68231,28 +68383,29 @@ function KLineChartContainer(uielement,OffscreenElement)
         }
 
         JSNetwork.HttpRequest({
-            url: this.DragKLineApiUrl,
+            url: url,
             data:postData,
             type:"post",
             dataType: "json",
             async:true,
             success: function(data)
             {
-                self.RecvDragDayData(data);
+                self.RecvPreviousDayData(data, option);
                 download.Status=0;
-                self.AutoUpdateEvent(true,'KLineChartContainer::RequestDragDayData');   //自动更新
+                self.AutoUpdateEvent(true,funcName);   //自动更新
                 self.AutoUpdate();
             }
         });
     }
 
-    this.RecvDragDayData=function(data)
+    this.RecvPreviousDayData=function(data, option)
     {
+        var download=option.Download;
         var aryDayData=KLineChartContainer.JsonDataToHistoryData(data);
         if (!aryDayData || aryDayData.length<=0)
         {
-            this.DragDownload.Day.IsEnd=true;   //下完了
-            JSConsole.Chart.Log(`[KLineChartContainer.RecvDragDayData] ${this.Symbol} data end.`);
+            download.IsEnd=true;   //下完了
+            JSConsole.Chart.Log(`[KLineChartContainer.RecvPreviousDayData] ${this.Symbol} data end. FuncName=${option.FuncName}`);
             return;
         }
         var lastDataCount=this.GetHistoryDataCount();   //保存下上一次的数据个数
@@ -68301,13 +68454,21 @@ function KLineChartContainer(uielement,OffscreenElement)
         var kLineCalculate=this.GetKLineCalulate();
         if (kLineCalculate) //额外的K线图形计算
         {
-            var newBindData=kLineCalculate.RecvHistoryData(bindData, { Symbol:this.Symbol, Function:"RecvDragDayData" });
+            var newBindData=kLineCalculate.RecvHistoryData(bindData, { Symbol:this.Symbol, Function:option.RecvFuncName });
             bindData=newBindData;
             this.FlowCapitalReady=true;
         }
 
         //绑定数据
         this.UpdateMainData(bindData,lastDataCount);
+        if (option && option.ZoomData)  //缩放需要调整当前屏的位置
+        {
+            var zoomData=option.ZoomData;
+            var showCount=zoomData.PageSize-zoomData.RightSpaceCount;   //一屏显示的数据个数
+            bindData.DataOffset= bindData.Data.length-showCount;
+            if (bindData.DataOffset<0) bindData.DataOffset=0;
+        }
+
         this.UpdateOverlayDragDayData(data);
         this.BindInstructionIndexData(bindData);    //执行指示脚本
 
@@ -68325,10 +68486,46 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();   
         
         //更新信息地雷
-        this.ReqeustKLineInfoData( { FunctionName:"RecvDragDayData", StartDate:firstData.Date } );
+        this.ReqeustKLineInfoData( { FunctionName:option.RecvFuncName, StartDate:firstData.Date } );
 
         //叠加指标计算
         this.BindAllOverlayIndexData(bindData);
+    }
+
+    this.RequestZoomDayData=function(requestData)
+    {
+        var count=this.MaxRequestDataCount;
+        if (requestData.Count>count) count=requestData.Count;
+        var zoomData={ PageSize:requestData.PageSize, DataCount:requestData.DataCount, RightSpaceCount:requestData.RightSpaceCount };
+
+        var option=
+        {
+            FuncName:'KLineChartContainer::RequestZoomDayData',
+            FuncExplain:"缩放日K数据下载",
+            RecvFuncName:"RecvZoomDayData",
+            Download:this.ZoomDownload.Day,
+            Url:this.ZoomKLineApiUrl,
+            Count:count,
+            ZoomData:zoomData
+        };
+
+        this.RequestPreviousDayData(option);
+    }
+
+
+    this.RequestDragDayData=function()
+    {
+        var option=
+        {
+            FuncName:'KLineChartContainer::RequestDragDayData',
+            FuncExplain:"拖拽日K数据下载",
+            RecvFuncName:"RecvDragDayData",
+            Download:this.DragDownload.Day,
+            Url:this.DragKLineApiUrl,
+            Count:this.MaxRequestDataCount
+        };
+
+        this.RequestPreviousDayData(option);
     }
 
     //更新叠加数据
@@ -70842,6 +71039,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         subFrame.Frame=frame;
         subFrame.Height=10;
 
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CREATE_FRAME);
+        if (event && event.Callback)
+        {
+            var sendData={ SubFrame:subFrame, WindowIndex:id };
+            event.Callback(event, sendData, this);
+        }
+
         return subFrame;
     }
 
@@ -71292,6 +71496,14 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var delFrame=this.Frame.SubFrame[id].Frame;
         this.DeleteIndexPaint(id);
         this.Frame.SubFrame[id].Frame.ClearToolbar();
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DELETE_FRAME);
+        if (event && event.Callback)
+        {
+            var sendData={ SubFrame:this.Frame.SubFrame[id], WindowIndex:id };
+            event.Callback(event, sendData, this);
+        }
+
         this.Frame.SubFrame.splice(id,1);
         this.WindowIndex.splice(id,1);
         this.TitlePaint.splice(id+1,1); //删除对应的动态标题
