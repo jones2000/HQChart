@@ -670,6 +670,12 @@ function JSChart(element)
             if (IFrameSplitOperator.IsNumber(item.TextSpace)) chart.TitlePaint[0].TextSpace=item.TextSpace;
         }
 
+        if (option.MinuteVol)
+        {
+            var item=option.MinuteVol;
+            if (IFrameSplitOperator.IsNumber(item.BarColorType)) chart.ChartPaint[2].BarColorType=item.BarColorType;
+        }
+
         if (typeof (option.UpdateUICallback) == 'function') //数据到达回调
             chart.UpdateUICallback = option.UpdateUICallback;
 
@@ -9612,7 +9618,8 @@ function MinuteChartContainer(uielement)
         switch (name) 
         {
             case 'MinuteTooltip':
-                chart = new MinuteTooltipPaint();
+                if (option.Create && typeof(option.Create)=='function') chart=option.Create();
+                else chart = new MinuteTooltipPaint();
                 chart.Canvas = this.Canvas;
                 chart.ChartBorder = this.Frame.ChartBorder;
                 chart.ChartFrame = this.Frame;

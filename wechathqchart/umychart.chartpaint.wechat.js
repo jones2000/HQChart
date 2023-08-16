@@ -5844,7 +5844,7 @@ function ChartMinuteVolumBar()
     this.UpColor = g_JSChartResource.UpBarColor;
     this.DownColor = g_JSChartResource.DownBarColor;
     this.UnchangeColor=g_JSChartResource.UnchagneBarColor;  //平盘
-    this.BarCololType=1;   //柱子颜色显示类型 0=红绿 1=红绿白
+    this.BarColorType=1;   //柱子颜色显示类型 0=红绿 1=红绿白
 
     this.CustomColor=g_JSChartResource.Minute.VolBarColor;
     this.YClose;    //前收盘
@@ -5888,7 +5888,7 @@ function ChartMinuteVolumBar()
     //连续交易成交量柱子颜色
     this.GetMinuteBarColor=function(price, yPrice)
     {
-        if (this.BarCololType==1)   //通达信模式
+        if (this.BarColorType==1)   //通达信模式
         {
             if (price>yPrice) return this.UpColor;
             else if (price<yPrice) return this.DownColor;

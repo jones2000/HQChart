@@ -963,6 +963,12 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.MinuteLine.SplitType>0) chart.Frame.SubFrame[0].Frame.YSplitOperator.SplitType=option.MinuteLine.SplitType;
         }
 
+        if (option.MinuteVol)
+        {
+            var item=option.MinuteVol;
+            if (IFrameSplitOperator.IsNumber(item.BarColorType)) chart.ChartPaint[2].BarColorType=item.BarColorType;
+        }
+
         if(option.MinuteTitle)
         {
             var item=option.MinuteTitle;
@@ -26576,7 +26582,7 @@ function ChartMinuteVolumBar()
     this.DownColor = g_JSChartResource.DownBarColor;        //下跌
     this.UnchangeColor=g_JSChartResource.UnchagneBarColor;  //平盘
 
-    this.BarCololType=1;   //柱子颜色显示类型 0=红绿 1=红绿白
+    this.BarColorType=1;   //柱子颜色显示类型 0=红绿 1=红绿白
 
     this.CustomColor=g_JSChartResource.Minute.VolBarColor;   //自定义颜色
 
@@ -26667,7 +26673,7 @@ function ChartMinuteVolumBar()
     //连续交易成交量柱子颜色
     this.GetMinuteBarColor=function(price, yPrice)
     {
-        if (this.BarCololType==1)   //通达信模式
+        if (this.BarColorType==1)   //通达信模式
         {
             if (price>yPrice) return this.UpColor;
             else if (price<yPrice) return this.DownColor;
@@ -85621,6 +85627,8 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0,Name:"白银"}],
         [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2,Name:"黄金"}],
         [MARKET_SUFFIX_NAME.SHFE + '-SS', {Time:4,Decimal:0,Name:'不锈钢'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-AO', {Time:4,Decimal:0,Name:'氧化铝'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-BR', {Time:6,Decimal:0,Name:'合成橡胶'}],
 
         //上期所-能源
         [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
@@ -85671,7 +85679,8 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CFFEX + '-IM', {Time:2,Decimal:1,Name:'中证1000股指期货'}],
 
         //广州期货交易所
-        [MARKET_SUFFIX_NAME.GZFE+'-SI', {Time:0,Decimal:2,Name:"工业硅"}]
+        [MARKET_SUFFIX_NAME.GZFE+'-SI', {Time:0,Decimal:2,Name:"工业硅"}],
+        [MARKET_SUFFIX_NAME.GZFE+'-LC', {Time:0,Decimal:2,Name:"碳酸锂"}]
     ]);
 
     this.MAP_ONEWORD=new Map([
