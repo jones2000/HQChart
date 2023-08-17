@@ -178,6 +178,8 @@ import
     STRING_FORMAT_TYPE,
 } from './umychart.charttitle.wechat.js'
 
+import { HQCHART_VERSION } from "./umychart.version.wechart.js"
+
 
 
 function JSChart(element) 
@@ -3562,13 +3564,13 @@ function HQTradeFrame()
         var height = this.ChartBorder.GetHeight();
         var totalHeight = 0;
 
-        for (var i in this.SubFrame) 
+        for (var i=0; i<this.SubFrame.length; ++i) 
         {
             var item = this.SubFrame[i];
             totalHeight += item.Height;
         }
 
-        for (var i in this.SubFrame) 
+        for (var i=0; i<this.SubFrame.length; ++i) 
         {
             var item = this.SubFrame[i];
             item.Frame.ChartBorder.Top = top;
@@ -3576,6 +3578,7 @@ function HQTradeFrame()
             item.Frame.ChartBorder.Right = this.ChartBorder.Right;
             var frameHeight = height * (item.Height / totalHeight) + top;
             item.Frame.ChartBorder.Bottom = this.ChartBorder.GetChartHeight() - frameHeight;
+            
             top = frameHeight;
         }
 
