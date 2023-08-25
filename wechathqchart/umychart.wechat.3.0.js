@@ -178,7 +178,7 @@ import
     STRING_FORMAT_TYPE,
 } from './umychart.charttitle.wechat.js'
 
-import { HQCHART_VERSION } from "./umychart.version.wechart.js"
+import { HQCHART_VERSION } from "./umychart.version.wechat.js"
 
 
 
