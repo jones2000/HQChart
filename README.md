@@ -40,8 +40,6 @@ py版本的麦语法指标计算引擎，已单独迁移到[https://github.com/j
 支持windows,和linux. 这个版本是用c++开发的，通过cpython来对接py，能高效的完成指标执行. 可以应用于回测, 选股等批量指标计算中。社区版c++开源.<br>
 
 
-
-
 # 目录结构
 --webhqchart 行情前端js代码模块 <br>
 --wechathqchart 微信小程序行情前端js代码模块 <br>
@@ -71,7 +69,10 @@ VUE 例子:[demo-vue.md](/教程/demo-vue.md) <br>
 React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 # 本地调试
-内置测试数据不支持跨域，如果要在本地chrome调试代码，参看教程[解决Chrome本地调试跨域](https://jones2000.blog.csdn.net/article/details/120008624). VUE项目本地调试请使用127.0.0.1:8080站点调试
+由于安全原因, 内置测试数据接口已经停止了。
+如果需要数据对接可以参考第3放数据对接案例. [https://github.com/jones2000/HQChart-Super](https://github.com/jones2000/HQChart-Super)  
+
+~~内置测试数据不支持跨域，如果要在本地chrome调试代码，参看教程[解决Chrome本地调试跨域](https://jones2000.blog.csdn.net/article/details/120008624). VUE项目本地调试请使用127.0.0.1:8080站点调试~~
 
 # 声明
   本项目只提供行情图形库及麦语法脚本执行器.<br>
@@ -136,6 +137,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![订单流](/小程序行情模块用例/image/hqchart_ordeflow.png)
 ![订单流样式2](/小程序行情模块用例/image/hqchart_ordeflow2.png)
 ![订单流样式3](/小程序行情模块用例/image/hqchart_ordeflow3.png)
+![订单流样式4](/小程序行情模块用例/image/hqchart_ordeflow4.png)
 * 固定范围成交量分布图
 ![成交量分布图](/小程序行情模块用例/image/hqchart_volprofile.gif)
 * 可视范围成交量分布图

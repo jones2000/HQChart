@@ -1109,8 +1109,8 @@ function JSChart(element)
 
         if (!IFrameSplitOperator.IsBool(option.CheckLatestVerion) || !(option.CheckLatestVerion==false))
         {
-            if (chart && this.CanvasElement.IsUniApp && typeof(chart.GetLatestVersion)=='function') chart.GetLatestVersion();
-            //if (chart && typeof(chart.GetLatestVersion)=='function') chart.GetLatestVersion();
+             //由于域名都要备案,获取最新版本接口停止使用
+            //if (chart && this.CanvasElement.IsUniApp && typeof(chart.GetLatestVersion)=='function') chart.GetLatestVersion();
         }
     }
 

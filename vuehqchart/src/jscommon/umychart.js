@@ -1613,7 +1613,11 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         }
         else if (JSChart.LastVersion==null)
         {
-            if (chart && typeof(chart.GetLatestVersion)=='function') chart.GetLatestVersion();
+            if (chart && typeof(chart.GetLatestVersion)=='function') 
+            {
+                //由于域名都要备案,获取最新版本接口停止使用
+                //chart.GetLatestVersion();
+            }
         }
     }
 
@@ -17336,7 +17340,8 @@ function HistoryData()
                 Ask:{ Color:, Value: , Text:, BG:, Font:{ Weight:} } 
                 Bid:{ Color:, Value:,  Text:, BG:, Font:{ Weight:} }, 
                 //横线柱子 Width K线宽度比值, Height:高度 Type:0=长度由Width决定， 1=当收盘价小于Price后，线就不需要在继续延伸 2=当收盘价大于Price后，线就不需要在继续延伸了
-                HBar:{ Color:, Width, Height: 1, Type:0,1,2 }  
+                HBar:{ Color:, Width, Height: 1, Type:0,1,2 },
+                Vol:{ Value:, BG:, Text:, Color: }
             }, 
             ........
         ] 
@@ -21093,6 +21098,7 @@ function ChartKLine()
                         // 14=外部自定义图 
                         // 15=HLC Area 
                         // 16=kagi
+                        // 17=订单流样式4
 
     this.CloseLineColor=g_JSChartResource.CloseLineColor;
     this.CloseLineAreaColor=g_JSChartResource.CloseLineAreaColor;
@@ -21197,6 +21203,19 @@ function ChartKLine()
         UpColor:g_JSChartResource.OrderFlow_Style3.UpColor,
         DownColor:g_JSChartResource.OrderFlow_Style3.DownColor,
         UnchagneColor:g_JSChartResource.OrderFlow_Style3.UnchagneColor,
+    }
+
+    this.OrderFlow_Style4=
+    {
+        //柱子颜色
+        UpColor:g_JSChartResource.OrderFlow_Style4.UpColor,
+        DownColor:g_JSChartResource.OrderFlow_Style4.DownColor,
+        UnchagneColor:g_JSChartResource.OrderFlow_Style4.UnchagneColor,
+        KBarType:1, //0=不显示K线柱子 1=左侧显示K线
+        VolBarSpace:g_JSChartResource.OrderFlow_Style4.VolBarSpace,  //间距
+        KBarWidth:g_JSChartResource.OrderFlow_Style4.KBarWidth,
+        LeftMargin:g_JSChartResource.OrderFlow_Style4.LeftMargin,
+        RightMargin:g_JSChartResource.OrderFlow_Style4.RightMargin,
     }
 
     this.IsShowOrderText=false;
@@ -23596,6 +23615,10 @@ function ChartKLine()
         {
             this.DrawHLCArea();
         }
+        else if (this.DrawType==17)
+        {
+            this.DrawOrderFlow_Style4();
+        }
         else
         {
             this.DrawKBar();
@@ -25013,6 +25036,182 @@ function ChartKLine()
                         this.Canvas.fillText(text,xKLine.Left+textXOffset,yPrice);
                     }
                 }
+            }
+        }
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    //订单流样式4
+    this.DrawOrderFlow_Style4=function()
+    {
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var border=this.ChartBorder.GetBorder();
+        var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var chartright=border.RightEx;
+        var xPointCount=this.ChartFrame.XPointCount;
+        this.AryOrderFlowBorder=[];
+
+        if (isHScreen) 
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            chartright=border.BottomEx;
+        }
+        
+        var upColor=this.OrderFlow_Style4.UpColor;
+        var downColor=this.OrderFlow_Style4.DownColor;
+        var unchagneColor=this.OrderFlow_Style4.UnchagneColor; 
+
+        this.ShowRange.Start=this.Data.DataOffset;
+        this.ShowRange.End=this.ShowRange.Start;
+        this.ShowRange.DataCount=0;
+        this.ShowRange.ShowCount=xPointCount;
+        this.DrawKRange.Start=this.Data.DataOffset;
+
+        this.DrawOrderFlowHBar();   //横向柱子
+
+        var kBarWidth=this.OrderFlow_Style4.KBarWidth;
+        if (dataWidth+distanceWidth<kBarWidth*3) kBarWidth=1;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth),++this.ShowRange.DataCount)
+        {
+            var data=this.Data.Data[i];
+            this.ShowRange.End=i;
+            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+            var x=left+(right-left)/2;
+            var yLow=this.GetYFromData(data.Low, false);
+            var yHigh=this.GetYFromData(data.High, false);
+            var yOpen=this.GetYFromData(data.Open, false);
+            var yClose=this.GetYFromData(data.Close, false);
+            var y=yHigh;
+
+            this.DrawKRange.End=i;
+
+            var barLeft=left+this.OrderFlow_Style4.LeftMargin;
+            var barRight=right+distanceWidth-this.OrderFlow_Style4.RightMargin;
+
+            if (this.OrderFlow_Style4.KBarType==1)
+            {
+                var kbarTop=Math.min(yOpen,yClose);
+                var kbarBottom=Math.max(yOpen,yClose);
+                var kbarLeft=ToFixedRect(left)+this.OrderFlow_Style4.LeftMargin;
+                var kbarRight=barLeft+kBarWidth;
+                if (data.Open<data.Close) this.Canvas.fillStyle=upColor;
+                else if (data.Open>data.Close) this.Canvas.fillStyle=downColor;
+                else this.Canvas.fillStyle=unchagneColor;
+    
+                var cellHeight=0;
+                if (data.OrderFlow && IFrameSplitOperator.IsNumber(data.OrderFlow.PriceOffset)) cellHeight=this.GetPriceYOffset(data.OrderFlow.PriceOffset);
+                
+                this.Canvas.fillRect(kbarLeft,ToFixedRect(kbarTop-cellHeight/2),kBarWidth,ToFixedRect(kbarBottom-kbarTop+cellHeight));
+
+                barLeft=kbarRight+1;
+            }
+
+            var yKline={ Low:yLow, High:yHigh, Open:yOpen, Close:yClose };
+            var xKLine={ Left:barLeft, Center:x, Right:barRight, DataWidth:(barRight-barLeft) };
+
+            xKLine.Center=xKLine.Left+xKLine.DataWidth/2;
+            this.DrawOrderFlowBar_Style4(data.OrderFlow, data, xKLine, yKline, isHScreen);
+        } 
+    }
+
+    this.DrawOrderFlowBar_Style4=function(orderFlow, kItem, xKLine, yKline, isHScreen)
+    {
+        var top=Math.min(yKline.Open, yKline.Close)
+        var bottom=Math.max(yKline.Open, yKline.Close);
+        var barHeight=Math.abs(yKline.Open-yKline.Close);
+        var cellHeight=0;
+        if (orderFlow && IFrameSplitOperator.IsNumber(orderFlow.PriceOffset)) cellHeight=this.GetPriceYOffset(orderFlow.PriceOffset);
+        var textFont=this.GetDynamicOrderFlowFont(cellHeight, xKLine.DataWidth/2);
+        this.IsShowOrderText=(cellHeight>5 && xKLine.DataWidth>10);
+        if (this.OrderFlow.AlwaysShowOrderText) this.IsShowOrderText=true;
+
+        this.Canvas.textBaseline='middle';
+        this.Canvas.textAlign='left';
+        this.Canvas.font=textFont;
+        var volBarSpace=this.OrderFlow_Style4.VolBarSpace;
+        if (cellHeight<=4) volBarSpace=0;   //太细了 间距就不要了
+        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.Order))
+        {
+            if (!orderFlow.Summary) orderFlow.Summary={ };
+            if (!orderFlow.Summary.VolMaxMin) //计算最大最小值
+            {
+                var volMaxMin={  Max:null, Min:null };
+                for(var i=0;i<orderFlow.Order.length;++i)
+                {
+                    var item=orderFlow.Order.length[i];
+                    if (volMaxMin.Max==null || volMaxMin.Max<item.Vol.Value) volMaxMin.Max=item.Vol.Value;
+                    if (volMaxMin.Min==null || volMaxMin.Min>item.Vol.Value) volMaxMin.Min=item.Vol.Value;
+                }
+
+                orderFlow.Summary.VolMaxMin=volMaxMin;
+            }
+
+            var preItem=null;   //上一个矩形框
+            var max=orderFlow.Summary.VolMaxMin.Max, min=orderFlow.Summary.VolMaxMin.Min;
+            for(var i=0;i<orderFlow.Order.length;++i)
+            {
+                var item=orderFlow.Order[i];
+                var yPrice=this.GetYFromData(item.Price, false);
+                if (!item.Vol) continue;
+                if (!IFrameSplitOperator.IsNumber(item.Vol.Value)) continue;
+    
+                var barWidth=xKLine.Right-xKLine.Left;
+                var volWidth=barWidth*(item.Vol.Value-min)/(max-min);
+                var rect={ Left:xKLine.Left, Right:xKLine.Right, Bottom:yPrice+cellHeight/2, Top:yPrice-cellHeight/2 };
+                rect.Right=rect.Left+volWidth;
+
+                if (preItem && item.Price>preItem.Price)
+                {
+                    rect.Bottom=preItem.Rect.Top-volBarSpace;
+                }
+
+                rect.Width=rect.Right-rect.Left;
+                rect.Height=rect.Bottom-rect.Top;
+                
+                
+                var rtDraw={ Left:ToFixedRect(rect.Left), Top:ToFixedRect(rect.Top), Width:ToFixedRect(rect.Width), Height:ToFixedRect(rect.Height) };
+                rtDraw.Bottom=rtDraw.Top+rtDraw.Height;
+                rtDraw.Right=rtDraw.Left+rtDraw.Width;
+                if (rtDraw.Width<1) rtDraw.Width=1;
+
+                if (item.Vol.BG)    //背景色
+                {
+                    this.Canvas.fillStyle=item.Vol.BG;
+                    this.Canvas.fillRect(rtDraw.Left, rtDraw.Top, rtDraw.Width, rtDraw.Height);
+                }
+
+                if (item.Vol.BorderColor)   //边框
+                {
+                    this.Canvas.strokeStyle = item.Vol.BorderColor;
+                    this.Canvas.strokeRect(ToFixedPoint(rtDraw.Left), ToFixedPoint(rtDraw.Top), rtDraw.Width, rtDraw.Height);
+                }
+
+                if (item.Vol.Text &&  this.IsShowOrderText) //文字
+                {
+                    this.Canvas.fillStyle=item.Vol.Color;
+
+                    if (item.Vol.Font)
+                    {
+                        var itemFont=this.GetDynamicOrderFlowFont(cellHeight, barWidth/2, item.Vol.Font);
+                        this.Canvas.font=itemFont;
+                        this.Canvas.fillText(text,xKLine.Center+textXOffset,yPrice);
+                        this.Canvas.font=textFont;
+                    }
+                    else
+                    {
+                        this.Canvas.fillText(item.Vol.Text,rtDraw.Left+2,yPrice);
+                    }
+                }
+
+                preItem={ Price: item.Price, Rect:rtDraw };
             }
         }
     }
@@ -58936,6 +59135,18 @@ function JSChartResource()
         UnchagneColor:"rgb(79,79,79)"
     };
 
+    this.OrderFlow_Style4=
+    {
+        KBarWidth:5,
+        UpColor:'rgb(241,55,63)',
+        DownColor:"rgb(75,105,150)",
+        UnchagneColor:"rgb(79,79,79)",
+        VolBarSpace:1,
+        LeftMargin:1,
+        RightMargin:1
+    };
+   
+
     this.Index={};
     //指标线段颜色
     this.Index.LineColor=
@@ -65753,7 +65964,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         var oldKLineType=this.KLineDrawType;
         this.KLineDrawType=drawType;
-        var setKLineType=new Set([5,7,8,10,11,12]);
+        var setKLineType=new Set([5,7,8,10,11,12,17]);
 
         if (setKLineType.has(oldKLineType) || setKLineType.has(drawType))
         {
