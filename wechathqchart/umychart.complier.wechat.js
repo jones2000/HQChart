@@ -45,8 +45,8 @@ import
 
 var g_JSComplierResource=
 {
-    Domain : "https://opensource.zealink.com",               //API域名
-    CacheDomain : "https://opensourcecache.zealink.com",     //缓存域名
+    Domain : "http://127.0.0.1:8080",               //API域名
+    CacheDomain : "http://127.0.0.1:8087",     //缓存域名
 
     CustomFunction: //定制函数
     {

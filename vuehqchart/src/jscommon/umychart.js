@@ -6995,7 +6995,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             success: function (data) 
             {
                 JSConsole.Chart.Log('[JSChartContainer::SaveToImageUrl] recv data', data);
-                var result={Path:data.relativeurl, Domain:'https://opensourcedownload.zealink.com'};
+                var result={Path:data.relativeurl, Domain:'http://127.0.0.1:8087'};
                 result.Url=`${result.Domain}/${result.Path}`;
                 if (callback) callback(true,result,'');
             },
@@ -59026,9 +59026,9 @@ function JSChartResource()
     this.LockBGColor = "rgb(220, 220, 220)";        //指标锁区域颜色
     this.LockTextColor = "rgb(210, 34, 34)";        //指标锁提示信息文字颜色
 
-    this.Domain="https://opensource.zealink.com";               //API域名
-    this.CacheDomain="https://opensourcecache.zealink.com";     //缓存域名
-    this.PyIndexDomain='https://py.zealink.com';                //py指标计算域名
+    this.Domain="http://127.0.0.1:8080";                 //API域名
+    this.CacheDomain="http://127.0.0.1:8087";            //缓存域名
+    this.PyIndexDomain='http://127.0.0.1:8088';          //py指标计算域名
 
     //K线配置
     this.KLine=
@@ -59174,15 +59174,15 @@ function JSChartResource()
     ];
 
     //历史数据api
-    this.Index.StockHistoryDayApiUrl="https://opensource.zealink.com/API/StockHistoryDay";
+    this.Index.StockHistoryDayApiUrl="http://127.0.0.1:8080/API/StockHistoryDay";
     //市场多空
-    this.Index.MarketLongShortApiUrl="https://opensource.zealink.com/API/FactorTiming";
+    this.Index.MarketLongShortApiUrl="http://127.0.0.1:8080/API/FactorTiming";
     //市场关注度
-    this.Index.MarketAttentionApiUrl="https://opensource.zealink.com/API/MarketAttention";
+    this.Index.MarketAttentionApiUrl="http://127.0.0.1:8080/API/MarketAttention";
     //行业,指数热度
-    this.Index.MarketHeatApiUrl="https://opensource.zealink.com/API/MarketHeat";
+    this.Index.MarketHeatApiUrl="http://127.0.0.1:8080/API/MarketHeat";
     //自定义指数热度
-    this.Index.CustomIndexHeatApiUrl="https://opensource.zealink.com/API/QuadrantCalculate";
+    this.Index.CustomIndexHeatApiUrl="http://127.0.0.1:8080/API/QuadrantCalculate";
 
     //指标不支持信息
     this.Index.NotSupport={Font:`${14*GetDevicePixelRatio()}px 微软雅黑`, TextColor:"rgb(52,52,52)"};
@@ -74793,7 +74793,7 @@ function HistoryMinuteChartContainer(uielement)
     this.newMethod(uielement);
     delete this.newMethod;
 
-    this.HistoryMinuteApiUrl="https://opensourcecache.zealink.com/cache/minuteday/day/";
+    this.HistoryMinuteApiUrl="http://127.0.0.1:8080/cache/minuteday/day/";
     this.ClassName='HistoryMinuteChartContainer';
 
     //创建主图K线画法
@@ -80485,8 +80485,8 @@ function ChangeIndexDialog(divElement)
     delete this.newMethod;
 
     this.DivElement=divElement;   //父节点
-    this.IndexTreeApiUrl="https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json";               //数据下载地址
-    this.OverlayIndexTreeApiUrl="https://opensourcecache.zealink.com/cache/hqh5/index/commonindextree.json";        //叠加指标列表数据下载地址
+    this.IndexTreeApiUrl="http://127.0.0.1:8080/cache/hqh5/index/commonindextree.json";               //数据下载地址
+    this.OverlayIndexTreeApiUrl="http://127.0.0.1:8080/cache/hqh5/index/commonindextree.json";        //叠加指标列表数据下载地址
     this.IsOverlayIndex=false;
 
     this.Create=function()

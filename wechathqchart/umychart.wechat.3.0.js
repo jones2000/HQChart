@@ -9920,7 +9920,7 @@ function HistoryMinuteChartContainer(uielement) {
   this.newMethod(uielement);
   delete this.newMethod;
 
-  this.HistoryMinuteApiUrl = "https://opensourcecache.zealink.com/cache/minuteday/day/";
+  this.HistoryMinuteApiUrl = "http://127.0.0.1/cache/minuteday/day/";
 
 
   //创建主图K线画法

@@ -109,8 +109,8 @@ function JSChartResource()
     this.CorssCursorHPenColor = "rgb(130,130,130)";          //十字光标线段颜色(水平)
     this.CorssCursorVPenColor = "rgb(130,130,130)";          //十字光标线段颜色(垂直)
 
-    this.Domain = "https://opensource.zealink.com";               //API域名
-    this.CacheDomain = "https://opensourcecache.zealink.com";     //缓存域名
+    this.Domain = "http://127.0.0.1:8080";               //API域名
+    this.CacheDomain = "http://127.0.0.1:8087";     //缓存域名
 
     this.KLine =
         {
