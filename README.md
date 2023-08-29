@@ -202,22 +202,11 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 
 # 3. 网页demo   
-* [K线图](https://opensource2.zealink.com/hqweb/demo/phone7.html)  <br>
-* [走势图](https://opensource2.zealink.com/hqweb/demo/phone8.html)  <br>
-* [走势图手机页面](https://opensource2.zealink.com/hqweb/demo/phone2.html)  <br>
-* [K线图手机页面](https://opensource2.zealink.com/hqweb/demo/phone.html)  <br>
-* [横版走势图手机页面](https://opensource2.zealink.com/hqweb/demo/phone10.html)  <br>
-* [横版K线图手机页面](https://opensource2.zealink.com/hqweb/demo/phone9.html)  <br>
-* [多日走势图](https://opensource2.zealink.com/hqweb/demo/phone15.html) <br>
-* [个股筹码图](https://opensource2.zealink.com/hqweb/demo/phone18.html) <br>
-* [指标回测(手机版)](https://opensource2.zealink.com/hqweb/operatebsh5/index.html?symbol=000001.sz) <br>
-* [手机K线训练](https://opensource2.zealink.com/hqweb/demo/demo_ktrain.html) <br>
-* [手机K线训练横屏](https://opensource2.zealink.com/hqweb/demo/demo_ktrain2.html) <br>
-* [弹幕功能](https://opensource2.zealink.com/hqweb/demo/phone21.html) <br>
-* [多指标叠加](https://opensource2.zealink.com/hqweb/demo/phone22.html) <br>
-* [截面数据(财务数据)计算器](https://opensource2.zealink.com/hqweb/demo/sectiondatatest.html) <br>
-* [走势图-大盘异动](https://opensource2.zealink.com/hqweb/demo/phone23.html) <br>
-* [分笔K线图](https://opensource2.zealink.com/hqweb/demo/phone24.html)  
+* [K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline.html)   
+* [K线图手机页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline_phone.html)   
+
+* [走势图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute.html)   
+* [走势图手机页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone.html)   
 
 
 # 4.使用教程
