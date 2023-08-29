@@ -14,9 +14,7 @@ HQChart是第1个基于国内传统PC股票客户端软件(C++)移植到js/py平
 **麦语法指标计算引擎**(分析家语法)指标执行器支持js, nodejs, py, c#，c++. <br>
 
 # 交流
-QQ交流群1：950092318(已满)    
-QQ交流群2：719525615   
-有问题可以直接发issue.  
+ 有问题可以直接发issue.  
 
 **教程列表和demo效果图在下面,下拉页面就可以看到!!!!!!!!!!!!**    
 
@@ -36,8 +34,8 @@ uniapp 版本:
 
 如果你觉得我们的行情模块对你有帮助， 请给我们点下star. (●ˇ∀ˇ●) <br>
 
-py版本的麦语法指标计算引擎，已单独迁移到[https://github.com/jones2000/hqchartPy2](https://github.com/jones2000/hqchartPy2),
-支持windows,和linux. 这个版本是用c++开发的，通过cpython来对接py，能高效的完成指标执行. 可以应用于回测, 选股等批量指标计算中。社区版c++开源.<br>
+麦语法指标计算引擎，[https://github.com/jones2000/hqchartPy2/tree/master/HQChartPy2.Free](https://github.com/jones2000/hqchartPy2/tree/master/HQChartPy2.Free),
+支持windows,和linux. 这个版本是用c++开发的，通过cpython来对接py，能高效的完成指标执行. 可以应用于回测, 选股等批量指标计算中.
 
 
 # 目录结构
@@ -75,9 +73,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ~~内置测试数据不支持跨域，如果要在本地chrome调试代码，参看教程[解决Chrome本地调试跨域](https://jones2000.blog.csdn.net/article/details/120008624). VUE项目本地调试请使用127.0.0.1:8080站点调试~~
 
 # 声明
-  本项目只提供行情图形库及麦语法脚本执行器.<br>
-  页面中所有的行情数据都来自互联网或测试假数据, 不能确保数据的正确性, 仅供开发调试使用. 任何行情数据问题都与本项目无关. 请自行去交易所购买正版行情。
-
+  本项目只提供行情图形库及麦语法脚本执行器.    
+  页面中所有的行情数据都来自互联网或测试假数据, 不能确保数据的正确性, 仅供开发调试使用. 任何行情数据问题都与本项目无关. 请自行去交易所购买正版行情。    
+ 
 
 # HQChart 3.0
 * 分网页版本 及 微信小程序版本 <br>
@@ -203,7 +201,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 
 
-# 3. 网页demo  <br>
+# 3. 网页demo   
 * [K线图](https://opensource2.zealink.com/hqweb/demo/phone7.html)  <br>
 * [走势图](https://opensource2.zealink.com/hqweb/demo/phone8.html)  <br>
 * [走势图手机页面](https://opensource2.zealink.com/hqweb/demo/phone2.html)  <br>
@@ -512,39 +510,31 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 # 5.VUE 行情项目
 [代码地址(vuehqchart)](/vuehqchart) <br>
-![走势图2](/小程序行情模块用例/image/pch5hq.PNG)
-[行情页面地址(v1.0）](https://opensource2.zealink.com/vuehqweb/hq.demo.page.html) <br><br>
-![历史高频数据查询图2](/小程序行情模块用例/image/pch5history.PNG)
-[查询页面地址](https://opensource2.zealink.com/vuehqweb/queryContent.demo.page.html) <br><br>
-![多周期图2](/小程序行情模块用例/image/pch5hq2.png)
-[多周期页面地址](https://opensource2.zealink.com/vuehqweb/stockmultiperiod.demo.page.html) <br><br>
-![综合排名2](/小程序行情模块用例/image/pch5hq3.png)
-[综合排名页面地址](https://opensource2.zealink.com/vuehqweb/stockmultiorder.demo.page.html) <br><br>
-   
+![大图](/小程序行情模块用例/image/pch5hq.PNG)   
+页面名称 "hq.demo.page.html"   
+
+![多周期图2](/小程序行情模块用例/image/pch5hq2.png)   
+页面名称"stockmultiperiod.demo.page.html"
+
+
 ## 基于VUE版本给客户开发的样例
 ![PC行情页面](/小程序行情模块用例/image/hqchart_pc_demo1.png) <br>
-[指数行情页面黑色风格](https://opensource2.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sh&colorType=black) <br>
-[个股行情页面白色风格](https://opensource2.zealink.com/cninfoHq/oneStockHq.html?symbol=000001.sz) <br>
 [代码地址(vue.demo/infoHqdemo)](/vue.demo/infoHqdemo) <br>
 
 ## VUE版本手机端样例1
 ![手机端行情页面](/小程序行情模块用例/image/hchart_phone_1.png) <br>
-[手机端行情页面](https://opensource2.zealink.com/product/hqNewdemoH5/stockHq.html#/StockHq)<br>
 [代码地址(vue.demo/hq_h5_pages)](/vue.demo/hq_h5_pages) <br>
 
 ## VUE版本手机端样例2 黑色风格
 ![手机端行情页面](/小程序行情模块用例/image/hqchart_phone_3.png) <br>
 ![手机端行情页面](/小程序行情模块用例/image/hqchart_phone_4.png) <br>
-[手机端行情页面](https://opensource2.zealink.com/hqweb/hq_h5_demo_black/stockHq.html#/StockHq)<br>
 [代码地址(vue.demo/hq_h5_pages)](/vue.demo/hq_h5_demo_black) <br>
 
 
 ## js页面样例
 ![手机端行情页面](/小程序行情模块用例/image/hqchart_phone_2.png) <br>
-[个股详情手机端h5](https://opensource2.zealink.com/hqweb/hqpages/stockpage.html?) <br>
 [代码地址(webhqchart.demo/h5demo)](/webhqchart.demo/h5demo) <br>
 [VUE代码地址(vue.demo/stockpage_h5)](/vue.demo/stockpage_h5) <br>
-
 
 
 # 奖项

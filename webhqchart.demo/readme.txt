@@ -1,7 +1,6 @@
-﻿注：
-jscommon目录是拷贝webhqchart目录的js文件， 因为git 不能使用svn:externals. 暂时提交的时候手动更新jscommon的文件。
-(https://github.com/jones2000/HQChart.git/trunk/webhqchart => jscommon)
+﻿注：最新实例在samples里面
 
+demo里面的实例由于内置测试数据接口停了， 所有都取不到数据了
 
 demo/phone.html  页面行情(K线图) 支持手机适配
 demo/phone2.html 页面行情(走势图) 支持手机适配

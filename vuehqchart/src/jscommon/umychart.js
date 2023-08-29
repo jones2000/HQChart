@@ -284,9 +284,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.KLine.MaxReqeustDataCount>0) chart.MaxRequestDataCount=option.KLine.MaxReqeustDataCount; //兼容老版本
             if (option.KLine.MaxRequestDataCount>0) chart.MaxRequestDataCount=option.KLine.MaxRequestDataCount;
             if (option.KLine.Info && option.KLine.Info.length>0) chart.SetKLineInfo(option.KLine.Info,false);
-            if (option.KLine.IndexTreeApiUrl) chart.ChangeIndexDialog.IndexTreeApiUrl=option.KLine.IndexTreeApiUrl;
             if (option.KLine.KLineDoubleClick==false) chart.MinuteDialog=this.MinuteDialog=null;
-            if (option.KLine.IndexTreeApiUrl!=null) chart.ChangeIndexDialog.IndexTreeApiUrl=option.KLine.IndexTreeApiUrl;
             if (option.KLine.IsShowTooltip==false) chart.IsShowTooltip=false;
             if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
             if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
@@ -661,9 +659,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.KLine.Period>=0) chart.Period=option.KLine.Period;
             if (option.KLine.MaxRequestDataCount>0) chart.MaxRequestDataCount=option.KLine.MaxRequestDataCount;
             if (option.KLine.Info && option.KLine.Info.length>0) chart.SetKLineInfo(option.KLine.Info,false);
-            if (option.KLine.IndexTreeApiUrl) chart.ChangeIndexDialog.IndexTreeApiUrl=option.KLine.IndexTreeApiUrl;
             if (option.KLine.KLineDoubleClick==false) chart.MinuteDialog=this.MinuteDialog=null;
-            if (option.KLine.IndexTreeApiUrl!=null) chart.ChangeIndexDialog.IndexTreeApiUrl=option.KLine.IndexTreeApiUrl;
             if (option.KLine.PageSize>0)  chart.PageSize=option.KLine.PageSize;
             if (option.KLine.IsShowTooltip==false) chart.IsShowTooltip=false;
         }
@@ -80485,8 +80481,8 @@ function ChangeIndexDialog(divElement)
     delete this.newMethod;
 
     this.DivElement=divElement;   //父节点
-    this.IndexTreeApiUrl="http://127.0.0.1:8080/cache/hqh5/index/commonindextree.json";               //数据下载地址
-    this.OverlayIndexTreeApiUrl="http://127.0.0.1:8080/cache/hqh5/index/commonindextree.json";        //叠加指标列表数据下载地址
+    //this.IndexTreeApiUrl="../commonindextree.json";               //数据下载地址
+    //this.OverlayIndexTreeApiUrl="../commonindextree.json";        //叠加指标列表数据下载地址
     this.IsOverlayIndex=false;
 
     this.Create=function()
@@ -80514,12 +80510,107 @@ function ChangeIndexDialog(divElement)
         this.DivElement.appendChild(div);
     }
 
+    //指标菜单内容
+    this.GetMenuData=function()
+    {
+        var data={
+            "name":"页面通用版指标树",
+            "list":
+            [
+                { 
+                    "node":"超买超卖型",
+                    "list":
+                    [
+                        {"name":"ADTM 动态买卖气指标",      "id":"ADTM"},
+                        {"name":"BIAS 乖离率",              "id":"BIAS"},
+                        {"name":"BIAS36 三六乖离",          "id":"BIAS36"},
+                        {"name":"BIAS_QL 乖离率-传统版",    "id":"BIAS_QL"},
+                        {"name":"CCI 商品路径指标",         "id":"CCI"},
+                        {"name":"FSL 分水岭",               "id":"FSL"},
+                        {"name":"KDJ 随机指标",             "id":"KDJ"},
+                        {"name":"MTM 动量线",               "id":"MTM"},
+                        {"name":"OSC 变动速率线",            "id":"OSC"},
+                        {"name":"RSI 相对强弱指标",           "id":"RSI"},
+                        {"name":"ROC 变动率指标",             "id":"ROC"},
+                        {"name":"WR 威廉指标",                  "id":"WR"}
+                    ]
+                },
+                {
+                    "node":"趋势型",
+                    "list":
+                    [
+                        {"name":"CHO 济坚指数",         "id":"CHO"},
+                        {"name":"DMA 平均差",           "id":"DMA"},
+                        {"name":"DMI 趋向指标",         "id":"DMI"},
+                        {"name":"EMV 简易波动指标",     "id":"EMV"},
+                        {"name":"MACD 平滑异同平均",    "id":"MACD"},
+                        {"name":"TRIX 三重指数平均线",  "id":"TRIX"},
+                        {"name":"UOS 终极指标",         "id":"UOS"},
+                        {"name":"TRIX 三重指数平均线",  "id":"TRIX"}
+                    ]
+                },
+                { 
+                    "node":"成交量型",
+                    "list":
+                    [
+                        {"name":"HSL 换手率",           "id":"HSL"},
+                        {"name":"OBV 累积能量线",       "id":"OBV"},
+                        {"name":"NVI 负成交量",         "id":"NVI"},
+                        {"name":"PVI 正成交量",         "id":"PVI"},
+                        {"name":"VOL 成交量",           "id":"VOL"}
+                    ]
+                },
+                {
+                    "node":"均线型",
+                    "list":
+                    [
+                        {"name":"MA 均线", "id":"均线"},
+                        {"name":"BBI 多空线", "id":"BBI"}
+                    ]
+                },
+                {
+                    "node":"路径型",
+                    "list":
+                    [
+                        {"name":"BOLL 布林线",          "id":"BOLL"},
+                        {"name":"BOLL副图 布林线",      "id":"BOLL副图"},
+                        {"name":"MIKE 麦克支撑压力",    "id":"MIKE"},
+                        {"name":"ENE 轨道线",           "id":"ENE"}
+                    ]
+                },
+                {
+                    "node":"能量型",
+                    "list":
+                    [
+                        {"name":"BRAR 情绪指标",            "id":"BRAR"},
+                        {"name":"CYR 市场强弱",             "id":"CYR"},
+                        {"name":"MASS 梅斯线",              "id":"MASS"},
+                        {"name":"PSY 心理线",               "id":"PSY"},
+                        {"name":"CR 带状能量线",            "id":"CR"},
+                        {"name":"VR 成交量变异率",          "id":"VR"},
+                        {"name":"WAD 威廉多空力度线",        "id":"WAD"}
+                    ]
+                }
+        
+            ]
+        };
+
+        return data;
+    }
+
     //下载数据 如果上次下载过可以 可以不用下载
     this.ReqeustData=function()
     {
         if($("#" + this.ID + " .target-left ul li").length>0){
             return false;
         }
+
+        var res=this.GetMenuData();
+        var item = res.list;
+        changeIndexLeftList(item);   //处理左侧list列表
+        changeIndexRightList(item);  //处理右侧内容列表
+
+        /*
         var url = this.IndexTreeApiUrl;
         if (this.IsOverlayIndex==true) url=this.OverlayIndexTreeApiUrl;
         JSNetwork.HttpRequest({
@@ -80531,6 +80622,7 @@ function ChangeIndexDialog(divElement)
                 changeIndexRightList(item);  //处理右侧内容列表
             }
         });
+        */
 
         //处理左侧list列表
         function changeIndexLeftList(item) {
