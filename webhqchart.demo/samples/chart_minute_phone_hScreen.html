@@ -1,0 +1,263 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>分时图-手机端横屏</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+    <!--<link rel='stylesheet' href="//at.alicdn.com/t/font_1196214_0bk7uvfe17nq.css"/> -->
+</head>  
+<body>
+    <div id="divminute" style="width: 900px;height:400px;position: relative;">
+    </div>
+
+    <div>
+        <span id='button_3' class="btn-style">5日</span>
+        <span id='button_4' class="btn-style">1日</span>
+        <span id='button_7' class="btn-style">MACD</span>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
+    
+    <script>
+        MARKET_SUFFIX_NAME.GetMarketStatus=(symbol) => { return 2; }//一直交易
+
+        //简单的把分时控件封装下
+        function MinuteChart(divMinute)
+        {
+            this.DivMinute=divMinute;
+            this.Chart=JSChart.Init(divMinute);   //把分时图绑定到一个Div上
+
+            //分时图配置信息
+            this.Option= {
+                //Type:'分钟走势图',   //创建图形类型
+                Type:'分钟走势图横屏',
+
+                Windows: //窗口指标
+                [
+                    {Index:"MACD"},
+                    {Index:"RSI"}
+                ], 
+
+                OverlayIndex:
+                [
+                    //{Index:'KDJ', Windows:0, ShowRightText:false, IsShareY:true },
+                ],  //叠加指标
+                
+                
+                Symbol:'600000.sh',         // cf1909.czc
+                IsAutoUpdate:true,          //是自动更新数据
+                AutoUpdateFrequency:1000,   //数据更新频率
+                DayCount:1,                     //1 最新交易日数据 >1 多日走势图
+                IsShowRightMenu:true,       //是否显示右键菜单
+                CorssCursorTouchEnd:true,
+               
+                EnableSelectRect:true,
+                EnableZoomIndexWindow:true,
+               
+                CorssCursorInfo:{  Left:2, Right:1, Bottom:1,RightTextFormat:0,IsFixXLastTime:true, RightButton:{ Enable:true } ,PriceFormatType:0,DataFormatType:0, },
+                
+                MinuteLine:
+                {
+                    IsDrawAreaPrice:true,      //是否画价格面积图
+                    //IsShowAveragePrice:false,   //不显示均线
+                    //SplitType:2,
+                },
+
+                MinuteTitle:
+                {
+                    IsShowTime:true,
+                    IsShowName:true,
+                    IsShowDate:false,
+                    IsShowVolTitle:true,
+                },
+
+                MinuteVol:
+                {
+                    BarColorType:1,
+                },
+
+                Language:'CN',
+                EnableBorderDrag:true,
+
+                IsDrawPictureXY:true,
+
+                SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
+
+                EnableIndexChartDrag:true,
+
+                EnableSelectRect:true,
+    
+                Border: //边框
+                {
+                    Left:22,    //左边间距
+                    Right:25,     //右边间距
+                    Top:25,
+                    Bottom:25,
+
+                    AutoLeft:{ Blank:10, MinWidth:30 },
+                    AutoRight:{ Blank:10, MinWidth:60 },
+                },
+                
+                Frame:  //子框架设置
+                [
+                    { 
+                        SplitCount:5,  IsShowLeftText:true, IsShowYLine:true,
+                        Custom:
+                        [
+                            
+                            { 
+                                Type:0,  LineDash:[2,2], 
+                                Position:'right', LineType:1
+                            },
+                            
+
+                            { 
+                                Type:1, 
+                                LineDash:[3,2],
+                                Position:'right',IsShowLine:true, LineType:1,PositionEx:0, LineWidth:1,
+                                Data:
+                                [
+                                    {
+                                        Value:7.13,
+                                        Color:'rgb(208,32,144)', TextColor:'rgb(255,255,255)',    //Color:线段及文字背景色 TextColor:文字颜色
+                                        Text:[{Text:"成本线"} , {Text:"价格:7.13"}]
+                                    },
+                                    {
+                                        Value:7.20,
+                                        Color:'rgb(72,61,139)', TextColor:'rgb(230,230,230)',    //Color:线段及文字背景色 TextColor:文字颜色
+                                    }
+                                ] 
+                            },
+
+                        ]
+                    },
+                    { SplitCount:5, },
+                    { SplitCount:5,  },
+                    { SplitCount:5, },
+                ],
+
+                Listener:
+                {
+                    //KeyDown:false,
+                    //Wheel:false
+                },
+
+                Overlay:    //叠加股票 目前只支持1只股票
+                [
+                    //{Symbol:'603190.sh', OverlayType:1, IsCalcuateMaxMin:true, Color:"rgb(250,0,0)" },
+                    //{Symbol:'000001.sz'}
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    {Name:'MinuteTooltip' }, //手机端tooltip
+                    //{Name:'MinutePCTooltip' }, //PC端tooltip
+                    //{Name:"画图工具"}
+                ]
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                $(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
+
+                JSChart.EnableCanvasWillReadFrequently=true;
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                JSChart.SetStyle(blackStyle);
+                this.DivMinute.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+                var resource=JSChart.GetResource();
+                resource.ToolbarButtonStyle=1;
+                
+                this.OnSize();  //让分时图全屏
+                this.Option.NetworkFilter=(data, callback)=>{ HQData.NetworkFilter(data, callback); }
+                this.Chart.SetOption(this.Option);  //设置K线配置
+
+               
+                
+            }
+
+            this.ChangeSymbol=function(symbol, option)
+            {
+               
+                this.Chart.ChangeSymbol(symbol,option);
+            }
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height()-30;
+                var width = $(window).width();
+                this.DivMinute.style.top='px';
+                this.DivMinute.style.left='px';
+                this.DivMinute.style.width=width+'px';
+                this.DivMinute.style.height=height+'px';
+                this.Chart.OnSize();
+            }
+
+           
+            this.ChangeDayCount=function(dayCount)
+            {
+                this.Chart.ChangeDayCount(dayCount);
+            }
+
+            this.AddIndexWindow=function(indexName)
+            {
+                this.Chart.AddIndexWindow(indexName);
+            }
+
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+            var minuteControl=new MinuteChart(document.getElementById('divminute'));
+            minuteControl.Create();
+
+            //$("#button_1").click(function() { minuteControl.ChangeSymbol("000001.sz", { DayCount:5 }); } );
+            //$("#button_2").click(function() { minuteControl.ChangeSymbol("688315.sh", { DayCount:1 }); } );
+
+            $("#button_3").click(function() { minuteControl.ChangeDayCount(5); } );
+            $("#button_4").click(function() { minuteControl.ChangeDayCount(1); } );
+
+            $("#button_7").click(function() { minuteControl.AddIndexWindow("MACD"); } );
+
+            //$("#button_8").click(function() { minuteControl.ReloadResource(); } );
+        })
+
+    </script>  
+</body>  
+</html>
+
+
+
+<style>
+
+    #divminute
+    {
+        width: 900px;
+        height:400px;
+        position: relative;
+        /*margin-top: 100px;*/
+    }
+    
+    .btn-style
+    {
+        padding: 3px 8px;
+        border: 1px solid #ececec;
+        border-radius: 5px;
+        background-color: #f5f5f5;
+        cursor: pointer;
+    }
+    
+        
+    </style>

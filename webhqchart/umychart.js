@@ -63378,8 +63378,11 @@ function KLineChartContainer(uielement,OffscreenElement)
     {
         var border=new ChartBorder();
         border.UIElement=this.UIElement;
-
-        var frame=new KLineFrame();
+       
+        var frameClassName="KLineFrame";
+        if (this.ClassName=="KLineChartHScreenContainer") frameClassName="KLineHScreenFrame";
+        var frame=g_ChartFrameFactory.Create(frameClassName, { ID:id });
+        
         frame.Canvas=this.Canvas;
         frame.ChartBorder=border;
         frame.Identify=id;                   //窗口序号
@@ -70401,6 +70404,16 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 if (this.TryClickIndexTitle && this.TryClickIndexTitle(x,y)) return;
             }
 
+            if (this.ClickFrameButton)
+            {
+                var button=this.Frame.PtInButtons(pt.X,pt.Y);
+                if (button)
+                {
+                    this.ClickFrameButton(button, e);
+                    return;
+                }
+            }
+
             drag.Click.X=touches[0].clientX;
             drag.Click.Y=touches[0].clientY;
             drag.LastMove.X=touches[0].clientX;
@@ -71195,7 +71208,10 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             border.MultiDayMinute.Right=item.Right;
         }
 
-        var frame=new MinuteFrame();
+        var frame=null;
+        if (this.ClassName=="MinuteChartHScreenContainer") frame=new MinuteHScreenFrame();
+        else frame=new MinuteFrame();
+
         frame.Canvas=this.Canvas;
         frame.ChartBorder=border;
         frame.Identify=id;                   //窗口序号
