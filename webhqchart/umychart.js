@@ -8901,6 +8901,7 @@ function IChartFramePainting()
 
         var left=ToFixedPoint(border.Left);
         var top=ToFixedPoint(border.Top);
+        //var top=ToFixedPoint(border.TopEx);
         var right=ToFixedPoint(border.Right);
         var bottom=ToFixedPoint(border.Bottom);
         var width=right-left;
@@ -20320,6 +20321,7 @@ function IChartPainting()
     this.MessageColor=g_JSChartResource.Index.NotSupport.TextColor;
     this.IsDrawFirst=false;
     this.IsShow=true;
+    this.IsVisible=true;    //是否显示 (预留给外部单独设置线段显隐)
     this.GetEventCallback;
 
     this.SelectedLineWidth=g_JSChartResource.SelectedChart.LineWidth;
@@ -27168,7 +27170,7 @@ function ChartLine()
 
     this.Draw=function()
     {
-        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
         if (this.IsShowIndexTitleOnly()) return;
         if (this.IsHideScriptIndex()) return;
 
@@ -34812,11 +34814,73 @@ function ChartDrawSVG()
     this.Draw=function()
     {
         this.TooltipRect=[];
-        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
         if (this.IsShowIndexTitleOnly()) return;
         if (this.IsHideScriptIndex()) return;
 
         this.DrawSVG();
+    }
+
+    this.DrawDetail=function(rtSVG, data)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(data.Content)) return;
+        
+        var margin=2;
+        var itemSpace=2;
+        var rtBorder={ Left:rtSVG.Right, Right:rtSVG.Right, Bottom:rtSVG.Bottom };
+
+        if (IFrameSplitOperator.IsNumber(data.ItemSpace)) itemSpace=data.ItemSpace;
+        if (IFrameSplitOperator.IsNumber(data.YOffset)) rtBorder.Bottom+=data.YOffset;
+        if (IFrameSplitOperator.IsNumber(data.XOffset)) rtBorder.Left+=data.XOffset;
+
+        if (data.Font)  this.Canvas.font=data.Font;
+        else  this.Canvas.font=this.TextFont;
+        this.Canvas.textBaseline='bottom';
+        this.Canvas.textAlign='left';
+
+        var textHeight=this.Canvas.measureText("擎").width+2;
+        rtBorder.Height=textHeight+5;
+        var yText=rtBorder.Bottom-(rtBorder.Height-textHeight)/2;
+        var xText=rtBorder.Left+margin;
+
+        var aryText=[];
+        for(var i=0;i<data.Content.length;++i)
+        {
+            if (data.Content.length>0) xText+=itemSpace;
+
+            var item=data.Content[i];
+            if (!item.Text) continue;
+            var textWidth=this.Canvas.measureText(item.Text).width+2;
+            aryText.push({ X:xText, Y:yText, Width:textWidth, Data:item });
+            xText+=textWidth;
+
+            rtBorder.Right=xText;
+        }
+
+        rtBorder.Right+=margin;
+        rtBorder.Width=rtBorder.Right-rtBorder.Left;
+        rtBorder.Top=rtBorder.Bottom-rtBorder.Height;
+
+        if (data.BGColor)
+        {
+            this.Canvas.fillStyle=data.BGColor;
+            this.Canvas.fillRect(rtBorder.Left,rtBorder.Top,rtBorder.Width,rtBorder.Height);
+        }
+
+        if (data.BorderColor)
+        {
+            this.Canvas.strokeStyle=data.BorderColor;
+            this.Canvas.strokeRect(ToFixedPoint(rtBorder.Left),ToFixedPoint(rtBorder.Top),ToFixedRect(rtBorder.Width),ToFixedRect(rtBorder.Height));
+        }
+
+
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+           
+            this.Canvas.fillStyle = item.Data.Color;
+            this.Canvas.fillText(item.Data.Text, item.X, item.Y);
+        }
     }
 
     this.DrawSVG=function()
@@ -34896,6 +34960,11 @@ function ChartDrawSVG()
                 var yText=y;
                 if (IFrameSplitOperator.IsNumber(textItem.YOffset)) yText+=textItem.YOffset;
                 this.Canvas.fillText(textItem.Content, x, yText);
+            }
+
+            if (item.Detail)
+            {
+                this.DrawDetail(rtSVG,item.Detail);
             }
               
             //连线
@@ -48924,6 +48993,7 @@ function DynamicChartTitlePainting()
         if (!item || !item.Data || !item.Data.Data) return null;;
         if (Array.isArray(item.Data.Data) && item.Data.Data.length<=0) return null;
         if (item.IsShow===false) return null;
+        if (item.IsVisible===false) return null;
 
         var valueText=null; //单值
         var aryText=null;   //多值
@@ -49151,6 +49221,7 @@ function DynamicChartTitlePainting()
             {
                 var item=overlayItem.Data[i];
                 if (!item || !item.Data || !item.Data.Data || !item.Name) continue;
+                if (item.IsVisible===false) continue;
                 if (item.Data.Data.length<=0) continue;
 
                 var value=null;

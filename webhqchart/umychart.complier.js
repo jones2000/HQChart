@@ -19233,6 +19233,13 @@ function ScriptIndex(name,script,args,option)
         chart.Script=this;  //指标内容绑定上去
     }
 
+    //设置标题数据
+    this.SetTitleData=function(titleData, chart)
+    {
+        titleData.ChartClassName=chart.ClassName;
+        titleData.IsVisible=chart.IsVisible;
+    }
+
     //自定义图形配色
     this.ReloadChartResource=function(hqChart, windowIndex, chart)
     {
@@ -19292,7 +19299,7 @@ function ScriptIndex(name,script,args,option)
             else
                 hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
 
-            hqChart.TitlePaint[titleIndex].Data[id].ChartClassName=line.ClassName;
+            this.SetTitleData(hqChart.TitlePaint[titleIndex].Data[id],line);
         }
         
         this.SetChartIndexName(line);
@@ -19713,8 +19720,9 @@ function ScriptIndex(name,script,args,option)
         chart.HistoryData=hisData;
         this.ReloadChartResource(hqChart,windowIndex,chart);
 
-        hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
-
+        var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+        hqChart.TitlePaint[titleIndex].Data[id]=titleData;
+        this.SetTitleData(titleData,chart);
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
@@ -21188,7 +21196,8 @@ function OverlayScriptIndex(name,script,args,option)
         let titleIndex=windowIndex+1;
         var titlePaint=hqChart.TitlePaint[titleIndex];
         var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
-        titleData.ChartClassName=chart.ClassName;
+        this.SetTitleData(titleData,chart);
+       
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
 
         this.SetChartIndexName(chart);
@@ -21473,6 +21482,8 @@ function OverlayScriptIndex(name,script,args,option)
         
         var titlePaint=hqChart.TitlePaint[titleIndex];
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+
+        this.SetTitleData(titleData,chart);
 
         this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
