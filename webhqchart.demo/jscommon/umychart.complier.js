@@ -18699,7 +18699,7 @@ JSComplier.Execute=function(code,option,errorCallback)
             let execute=new JSExecute(ast,option);
             execute.ErrorCallback=errorCallback;        //执行错误回调
             execute.JobList=parser.Node.GetDataJobList();
-            if (option.ClassName=='ScriptIndexConsole') execute.JobList.unshift({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA});
+            if (option.ClassName=='ScriptIndexConsole' && !option.Data) execute.JobList.unshift({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA});
             execute.JobList.push({ID:JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT});
 
             if (option.Self) option.Self.Status=3;
@@ -23607,10 +23607,12 @@ function ScriptIndexConsole(obj)
             IsSectionMode:this.IsSectionMode,
             ClassName:'ScriptIndexConsole',
             NetworkFilter:this.NetworkFilter,
+            Self:this,
         };
 
         if (obj.HQDataType===HQ_DATA_TYPE.HISTORY_MINUTE_ID) option.TrateDate=obj.Request.TradeDate;
         if (obj.HQDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) option.DayCount=obj.DayCount;
+        if (obj.Data) option.Data=obj.Data; //K线数据
         
         let code=this.Script;
         let run=JSComplier.Execute(code,option,this.ErrorCallback);

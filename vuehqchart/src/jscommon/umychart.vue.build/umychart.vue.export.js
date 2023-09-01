@@ -78,6 +78,8 @@ export default {
 
     KLineFrame:KLineFrame,                      //K线框架
 
+    JSCHART_WORKER_MESSAGE_ID:JSCHART_WORKER_MESSAGE_ID,
+
     JS_Frame:
     {
         KLineFrame:KLineFrame,
@@ -100,7 +102,8 @@ export default {
         JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,
         JSCHART_DRAG_ID:JSCHART_DRAG_ID,
         JSCHART_BUTTON_ID:JSCHART_BUTTON_ID,
-        JSCHART_DATA_FIELD_ID:JSCHART_DATA_FIELD_ID
+        JSCHART_DATA_FIELD_ID:JSCHART_DATA_FIELD_ID,
+        JSCHART_WORKER_MESSAGE_ID:JSCHART_WORKER_MESSAGE_ID
     },
     
 }

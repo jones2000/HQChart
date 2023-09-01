@@ -2465,6 +2465,8 @@ var JSCHART_EVENT_ID=
     ON_SIZE_FRAME:107,
 
     ON_TOUCH_SCROLL_UP_DOWN:108,        //页面上下滚动 手机端
+
+    ON_RECV_REALTIME_DATA:109,          //实时数据
 }
 
 var JSCHART_OPERATOR_ID=
@@ -2568,6 +2570,13 @@ var JSCHART_DATA_FIELD_ID=
 
     //OrderBook Heatmap
     KLINE_HEATMAP:67,
+}
+
+var JSCHART_WORKER_MESSAGE_ID=
+{
+    EXECUTE_SCRIPT:1,        //工作线程执行脚本
+    FINISH_EXECUTE_SCRIPT:2,    //脚本执行完成
+    ERROR_EXECUTE_SCRIPT:3,
 }
 
 
@@ -34825,13 +34834,17 @@ function ChartDrawSVG()
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(data.Content)) return;
         
-        var margin=2;
+        var lefMargin=2;
+        var rightMargin=2;
         var itemSpace=2;
         var rtBorder={ Left:rtSVG.Right, Right:rtSVG.Right, Bottom:rtSVG.Bottom };
 
         if (IFrameSplitOperator.IsNumber(data.ItemSpace)) itemSpace=data.ItemSpace;
         if (IFrameSplitOperator.IsNumber(data.YOffset)) rtBorder.Bottom+=data.YOffset;
         if (IFrameSplitOperator.IsNumber(data.XOffset)) rtBorder.Left+=data.XOffset;
+
+        if (IFrameSplitOperator.IsNumber(data.LeftMargin)) lefMargin=data.LeftMargin;
+        if (IFrameSplitOperator.IsNumber(data.RightMargin)) rightMargin=data.RightMargin;
 
         if (data.Font)  this.Canvas.font=data.Font;
         else  this.Canvas.font=this.TextFont;
@@ -34841,12 +34854,12 @@ function ChartDrawSVG()
         var textHeight=this.Canvas.measureText("擎").width+2;
         rtBorder.Height=textHeight+5;
         var yText=rtBorder.Bottom-(rtBorder.Height-textHeight)/2;
-        var xText=rtBorder.Left+margin;
+        var xText=rtBorder.Left+lefMargin;
 
         var aryText=[];
         for(var i=0;i<data.Content.length;++i)
         {
-            if (data.Content.length>0) xText+=itemSpace;
+            if (aryText.length>0) xText+=itemSpace;
 
             var item=data.Content[i];
             if (!item.Text) continue;
@@ -34857,7 +34870,7 @@ function ChartDrawSVG()
             rtBorder.Right=xText;
         }
 
-        rtBorder.Right+=margin;
+        rtBorder.Right+=rightMargin;
         rtBorder.Width=rtBorder.Right-rtBorder.Left;
         rtBorder.Top=rtBorder.Bottom-rtBorder.Height;
 
@@ -64770,6 +64783,13 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         //叠加指标计算
         this.BindAllOverlayIndexData(bindData);
+
+        if (this.mapEvent.has(JSCHART_EVENT_ID.ON_RECV_REALTIME_DATA))
+        {
+            var event=this.mapEvent.get(JSCHART_EVENT_ID.ON_RECV_REALTIME_DATA);
+            var data={ HistoryData:bindData, Stock:{Symbol:this.Symbol, Name:this.Name } }
+            event.Callback(event,data,this);
+        }
     }
 
     this.UpdateOverlayRealtimeData=function(data)
@@ -65011,6 +65031,13 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         //更新叠加指标
         this.BindAllOverlayIndexData(bindData);
+
+        if (this.mapEvent.has(JSCHART_EVENT_ID.ON_RECV_REALTIME_DATA))
+        {
+            var event=this.mapEvent.get(JSCHART_EVENT_ID.ON_RECV_REALTIME_DATA);
+            var data={ HistoryData:bindData, Stock:{Symbol:this.Symbol, Name:this.Name } }
+            event.Callback(event,data,this);
+        }
     }
 
     this.RecvMinuteRealtimeData=function(data)
