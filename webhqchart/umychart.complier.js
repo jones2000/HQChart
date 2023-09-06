@@ -19230,6 +19230,8 @@ function ScriptIndex(name,script,args,option)
         if (this.Name) chart.IndexName=this.Name;
         else if (this.ID) chart.IndexName==this.ID;
 
+        if (this.ID) chart.IndexID=this.ID;
+
         chart.Script=this;  //指标内容绑定上去
     }
 
@@ -20262,6 +20264,8 @@ function ScriptIndex(name,script,args,option)
         if (varItem.Draw.Name) chart.Name=varItem.Draw.Name;
         if (varItem.Draw.LineDash) chart.LineDash=varItem.Draw.LineDash;
         if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
+        if (IFrameSplitOperator.IsBool(varItem.Draw.IsFullRangeMaxMin)) chart.IsFullRangeMaxMin=varItem.Draw.IsFullRangeMaxMin;
+
         if(varItem.Draw.Arrow)  //箭头配置
         {
             var item=varItem.Draw.Arrow;
@@ -21750,6 +21754,8 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Lines=varItem.Draw.DrawData; 
         if (varItem.Draw.LineDash) chart.LineDash=varItem.Draw.LineDash;
         if (IFrameSplitOperator.IsNumber(varItem.Draw.LineWidth)) chart.LineWidth=varItem.Draw.LineWidth;
+        if (IFrameSplitOperator.IsBool(varItem.Draw.IsFullRangeMaxMin)) chart.IsFullRangeMaxMin=varItem.Draw.IsFullRangeMaxMin;
+
         if(varItem.Draw.Arrow)  //箭头配置
         {
             var item=varItem.Draw.Arrow;
@@ -21879,6 +21885,9 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Family=varItem.Draw.DrawData.Family;
         chart.TextFont=varItem.Draw.DrawData.TextFont;
         chart.Texts= varItem.Draw.DrawData.Data;
+
+        this.ReloadChartResource(hqChart, windowIndex, chart);
+        
         frame.ChartPaint.push(chart);
     }
 
@@ -22847,6 +22856,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     
                     outVarItem.Draw=drawItem;
                     if (draw.LineDash) drawItem.LineDash=draw.LineDash;
+                    if (IFrameSplitOperator.IsBool(draw.IsFullRangeMaxMin)) drawItem.IsFullRangeMaxMin=draw.IsFullRangeMaxMin;
                     if (draw.Arrow) drawItem.Arrow=draw.Arrow;
                     if (IFrameSplitOperator.IsNumber(draw.LineWidth)) drawItem.LineWidth=draw.LineWidth;
 
@@ -23569,6 +23579,7 @@ function ScriptIndexConsole(obj)
     this.FinishCallback;    //执行完成回调
     this.IsSectionMode=false;   //截面报表模式
     this.NetworkFilter;         //数据接口
+    this.IsApiPeriod=false;
 
     if (obj)
     {
@@ -23580,6 +23591,7 @@ function ScriptIndexConsole(obj)
         if (obj.FinishCallback) this.FinishCallback=obj.FinishCallback;
         if (obj.IsSectionMode) this.IsSectionMode=obj.IsSectionMode;
         if (obj.NetworkFilter) this.NetworkFilter=obj.NetworkFilter;
+        if (IFrameSplitOperator.IsBool(obj.IsApiPeriod)) this.IsApiPeriod=obj.IsApiPeriod;
     }
 
     //执行脚本
@@ -23607,6 +23619,7 @@ function ScriptIndexConsole(obj)
             IsSectionMode:this.IsSectionMode,
             ClassName:'ScriptIndexConsole',
             NetworkFilter:this.NetworkFilter,
+            IsApiPeriod:this.IsApiPeriod,
             Self:this,
         };
 

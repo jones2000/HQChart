@@ -171,7 +171,12 @@ JSIndexScript.prototype.Get=function(id)
     if (data) return data;
 
     var func=this.DataMap.get(id);
-    if (func) return func();
+    if (func) 
+    {
+        var data= func();
+        data.ID=id;
+        return data;
+    }
 
     return null;
 }
