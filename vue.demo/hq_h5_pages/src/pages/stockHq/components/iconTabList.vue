@@ -2,18 +2,7 @@
   <div class="tab-box">
     <div class="tablist">
       <ul> 
-        <li v-show="IsMinute">
-          <div class="set-gray"><span class="hq-icon hq_iconfont icon-document-add"></span></div>
-        </li> 
-        <li v-show="!IsMinute">
-          <div :class="{liactive:CurrentTab=='信息地雷'}" @click="ClickTab(Information.Title)"><span class="hq-icon hq_iconfont icon-document-add"></span></div>
-          <ul class="phoneRight information" v-show="IsInforma">
-            <li v-for='(informa,informaFlag) in Information.Content' :key="informaFlag" class="noRight" :class='{active:KlineInfoFlag.indexOf(informaFlag)>=0}' @click="ChangeInformation(informa,informaFlag)">{{informa}}</li>
-          </ul>
-        </li>
-        <li>
-          <div :class="{liactive:CurrentTab=='云盘'}"><span class="hq-icon hq_iconfont icon-wendangyunpan"></span></div>
-        </li>
+       
         <li v-show="IsMinute">
           <div class="set-gray"><span class="hq-icon hq_iconfont icon-shandian"></span></div>
         </li>
@@ -60,7 +49,6 @@
     data () {
       return {
         IsMinute:true,
-        Information:{Title:'信息地雷',Content:["公告","业绩预告","调研","大宗交易","龙虎榜","互动易","取消"]},
         CloudDisk:{Title:'云盘',Content:[]},
         SateLite:{Title:'截屏',Content:[]},
         PeriodList:{Title:'分时',Content:[            
@@ -78,7 +66,6 @@
         ]},
         RightIndex:{Title:'复权',Content:['不复权','前复权','后复权']},
         MainIndex:{Title:'指标',Content:[ 'MA','BOLL','BBI','MIKE','PBX','ENE']},  //主图指标
-        IsInforma:false,   //信息地雷
         IsPeriod: false,  //周期
         IsLinetype:false,  // K线类型
         IsRight:false,   //复权
@@ -96,12 +83,6 @@
       ClickTab(index){
         this.CurrentTab = index;
         switch(index){
-          case '信息地雷':
-            this.IsRight = false;
-            this.IsLinetype = false;
-            this.IsPeriod = false;
-            this.IsInforma = !this.IsInforma;
-            break;
           case 1:
             this.IsRight = false;
             this.IsLinetype = false;
@@ -157,15 +138,7 @@
         this.IsLinetype = false;
         this.$emit('ChangeKlinIndex',indexItem,flag);
       },
-      ChangeInformation(name,index){
-        this.IsInforma = false;
-        if(name == "取消"){
-          this.KlineInfoFlag = [];
-        }else{
-          this.KlineInfoFlag.push(index);
-        }
-        this.$emit('ChangeInfomation',name);
-      },
+      
       GotoPlaying(){
         this.IsLinetype = false;
         this.$message("您没有获得使用权限，无法使用！");

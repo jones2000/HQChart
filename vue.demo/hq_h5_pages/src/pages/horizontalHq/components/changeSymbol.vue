@@ -35,7 +35,7 @@
   import $ from 'jquery'
 
   var JSCommon=HQChart.Chart;
-  var JSCommonStock=HQChart.Stock;
+
 
   export default {
     name:'changeSymbol',
@@ -56,11 +56,7 @@
         SymbolCur:'',   //当前选中股票代码
         DayUpDown: 
         [
-          JSCommonStock.STOCK_FIELD_NAME.SYMBOL,
-          JSCommonStock.STOCK_FIELD_NAME.PRICE,
-          JSCommonStock.STOCK_FIELD_NAME.NAME,
-          JSCommonStock.STOCK_FIELD_NAME.VOL,
-          JSCommonStock.STOCK_FIELD_NAME.INCREASE
+          
         ],
         Height:0,
         Width:0,
@@ -77,7 +73,7 @@
       
     },
     mounted(){
-      this.GetSymbol(this.ConceptObj.Concept[0].Symbol);
+      
     },
     methods:{
       GoBack(){
@@ -89,7 +85,7 @@
         this.GetSymbol(item.Symbol);
       },
       GetSymbol(symbol){
-        this.UpList = JSCommonStock.JSStock.GetBlockMember(symbol);
+       
         this.UpList.OrderNull = 1;
         this.UpList.IsAutoUpdate = false; 
         this.todayUp();
