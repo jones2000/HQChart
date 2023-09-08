@@ -510,8 +510,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 
 ## 基于VUE版本给客户开发的样例
-![PC行情页面](/小程序行情模块用例/image/hqchart_pc_demo1.png) <br>
-[代码地址(vue.demo/infoHqdemo)](/vue.demo/infoHqdemo) <br>
+![PC行情页面](/小程序行情模块用例/image/hqchart_pc_demo1.png)    
+[示例地址(https://jones2000.github.io/HQChart/vue.demo/infoHqdemo/release/index.html)](https://jones2000.github.io/HQChart/vue.demo/infoHqdemo/release/index.html)    
+[代码地址(vue.demo/infoHqdemo)](/vue.demo/infoHqdemo)   
 
 ## VUE版本手机端样例1
 ![手机端行情页面](/小程序行情模块用例/image/hchart_phone_1.png) <br>
