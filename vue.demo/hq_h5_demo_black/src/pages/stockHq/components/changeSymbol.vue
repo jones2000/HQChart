@@ -33,7 +33,7 @@
   import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
   import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
   var JSCommon=HQChart.Chart;
-  var JSCommonStock=HQChart.Stock;
+ 
 
   export default {
     name:'changeSymbol',
@@ -52,11 +52,7 @@
         SymbolCur:'',   //当前选中股票代码
         DayUpDown: 
         [
-          JSCommonStock.STOCK_FIELD_NAME.SYMBOL,
-          JSCommonStock.STOCK_FIELD_NAME.PRICE,
-          JSCommonStock.STOCK_FIELD_NAME.NAME,
-          JSCommonStock.STOCK_FIELD_NAME.VOL,
-          JSCommonStock.STOCK_FIELD_NAME.INCREASE
+          
         ],
       }  
     },
@@ -67,7 +63,7 @@
       
     },
     mounted(){
-      this.GetSymbol(this.Concept[0].Symbol);
+      
     },
     methods:{
       GoBack(){

@@ -108,8 +108,9 @@
     import HQChart from 'hqchart'
     import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
     import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
+    import HQData from "hqchart/lib/umychart.NetworkFilterTest.vue"
     var JSCommon=HQChart.Chart;
-    var JSCommonStock=HQChart.Stock;
+   
 
    
     function DefaultData() {}
@@ -118,40 +119,63 @@
     {
         const data =
         {
-            Name: { Text: '' },
-            Price: { Text: '', Color: 'PriceNull' },
-            RiseFallPrice: { Text: '', Color: 'PriceNull' },
-            Increase: { Text: '', Color: 'PriceNull' },
-            High: { Text: '', Color: 'PriceNull' },
-            Low: { Text: '', Color: 'PriceNull' },
-            Open: { Text: '', Color: 'PriceNull' },
-            MaxPrice: { Text: '', Color: 'PriceNull' },
-            MinPrice: { Text: '', Color: 'PriceNull' },
-            YClose: { Text: '' },
+           Name: { Text: '浦发银行' },
+            Price: { Text: '7.04', Color: 'PriceNull' },
+            RiseFallPrice: { Text: '-0.05', Color: 'PriceNull' },
+            Increase: { Text: '-0.71%', Color: 'PriceNull' },
+            High: { Text: '7.10', Color: 'PriceNull' },
+            Low: { Text: '7.02', Color: 'PriceNull' },
+            Open: { Text: '7.09', Color: 'PriceNull' },
+            MaxPrice: { Text: '7.15', Color: 'PriceNull' },
+            MinPrice: { Text: '7.00', Color: 'PriceNull' },
+            YClose: { Text: '7.09' },
 
-            Excahngerate: { Text: '', Color: 'PriceNull' },
-            Amount: { Text: '' }, Vol: { Text: '' },
-            Pe: { Text: '' }, Roe: { Text: '' },
-            MarketV: { Text: '' }, FlowMarketV: { Text: '' },
-            Eps: { Text: '' }, ScrollEPS: { Text: '' },
-            Pb: { Text: '' }, Amplitude: { Text: '' },
-            BookRate: { Text: '' }, BookDiffer: { Text: '' },
-            Volratio: { Text: '' },CapitalTatol: { Text: '' },
-            CapitalA: { Text: '' },
+            Excahngerate: { Text: '0.07%', Color: 'PriceNull' },
+            Amount: { Text: '1.43亿' }, Vol: { Text: '20.27万' },
+            Pe: { Text: '4.47' }, Roe: { Text: '3.73%' },
+            MarketV: { Text: '2300亿' }, FlowMarketV: { Text: '2010亿' },
+            Eps: { Text: '3.3' }, ScrollEPS: { Text: '1.4' },
+            Pb: { Text: '2.3' }, Amplitude: { Text: '3.4' },
+            BookRate: { Text: '0.5%' }, BookDiffer: { Text: '2.4' },
+            Volratio: { Text: '0.3%' },CapitalTatol: { Text: '20.1亿' },
+            CapitalA: { Text: '20.3亿' },
             //指数才有
-            Down: { Text: '' }, //上涨
-            Up: { Text: '' },   //下跌
-            Unchanged: { Text: '' },   //平盘
-            Stop: { Text: '' },         //停牌
+            Down: { Text: '400' }, //上涨
+            Up: { Text: '2000' },   //下跌
+            Unchanged: { Text: '30' },   //平盘
+            Stop: { Text: '100' },         //停牌
 
             HK:{Symbol: "", Name: ""},
             IsMargin:false,     //融资融券
             IsSHHK:false,       //沪港通
             IsHK:false,         //港股
 
-            SellerFive:[],
-            BuyerFive:[],
-            Dealer:[]
+            SellerFive:
+            [
+                {name: "卖五", dataPrice:7.05, dataVol:100, color:"rgb(255,0,0)"},
+                {name: "卖四", dataPrice:7.04, dataVol:120, color:"rgb(255,0,0)"},
+                {name: "卖三", dataPrice:7.03, dataVol:110, color:"rgb(255,0,0)"},
+                {name: "卖二", dataPrice:7.02, dataVol:140, color:"rgb(255,0,0)"},
+                {name: "卖一", dataPrice:7.01, dataVol:150, color:"rgb(255,0,0)"}
+            ],
+            BuyerFive:
+            [
+                {name: "买一", dataPrice:7.06, dataVol:150, color:"rgb(255,0,0)"},
+                {name: "买二", dataPrice:7.07, dataVol:160, color:"rgb(255,0,0)"},
+                {name: "买三", dataPrice:7.08, dataVol:250, color:"rgb(255,0,0)"},
+                {name: "买四", dataPrice:7.09, dataVol:450, color:"rgb(255,0,0)"},
+                {name: "买五", dataPrice:7.10, dataVol:180, color:"rgb(255,0,0)"}
+            ],
+            Dealer:
+            [
+                {timer:"09:45", dataPrice:7.06, dataVol:150, color:"rgb(255,0,0)"},
+                {timer:"09:45", dataPrice:7.05, dataVol:50, color:"rgb(255,0,0)"},
+                {timer:"09:45", dataPrice:7.06, dataVol:350, color:"rgb(255,0,0)"},
+                {timer:"09:46", dataPrice:7.04, dataVol:180, color:"rgb(255,0,0)"},
+                {timer:"09:47", dataPrice:7.03, dataVol:66, color:"rgb(255,0,0)"},
+                {timer:"09:49", dataPrice:7.06, dataVol:120, color:"rgb(255,0,0)"},
+                {timer:"09:50", dataPrice:7.05, dataVol:22, color:"rgb(255,0,0)"}
+            ]
         };
 
         return data;
@@ -289,7 +313,7 @@
                 MinuteMenuIndex:0,
                 IsIndex:false,
                 Symbol:'600000.sh',
-                JSStock:null,
+                
                 ID: JSCommon.JSChart.CreateGuid(),
                 StockData: DefaultData.GetStockData(),
                 Minute:{
@@ -346,11 +370,6 @@
             }
 
             this.IsIndex = this.IsSHSZIndex();  //初始判断是否是指数
-
-            this.JSStock = JSCommonStock.JSStockInit();
-            this.JSStock.AutoUpateTimeout=1000*60;
-            this.InitalStock();
-            this.JSStock.RequestData();
 
             this.Minute.Option = DefaultData.GetMinuteOption(this.Symbol);
             // this.FiveMinute.Option = DefaultData.GetFiveDayMinuteOption(this.Symbol);
@@ -436,14 +455,15 @@
             },
             CreateKLineChart()  //创建K线图
             {
-              if (this.Kline.JSChart) return;
-              this.Kline.Option.Symbol=this.Symbol;
-              let chart=JSCommon.JSChart.Init(this.$refs.kline);
-              // console.log("获取指标详情4",this.KLine.Option.Windows)
-              chart.SetOption(this.Kline.Option);
-              chart.AddEventCallback({event:JSCommon.JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE, callback:this.OnClickIndexTitle});//点击事件通知回调
-              chart.AddEventCallback({event:JSCommon.JSCHART_EVENT_ID.ON_TITLE_DRAW, callback:(event, data, obj)=>{ this.UpdateTitle(event, data, obj); }});
-              this.Kline.JSChart=chart;
+                if (this.Kline.JSChart) return;
+                this.Kline.Option.Symbol=this.Symbol;
+                let chart=JSCommon.JSChart.Init(this.$refs.kline);
+                // console.log("获取指标详情4",this.KLine.Option.Windows)
+                this.Kline.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+                chart.SetOption(this.Kline.Option);
+                chart.AddEventCallback({event:JSCommon.JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE, callback:this.OnClickIndexTitle});//点击事件通知回调
+                chart.AddEventCallback({event:JSCommon.JSCHART_EVENT_ID.ON_TITLE_DRAW, callback:(event, data, obj)=>{ this.UpdateTitle(event, data, obj); }});
+                this.Kline.JSChart=chart;
             },
 
             UpdateTitle(event, data, obj){
@@ -496,6 +516,7 @@
                 blackStyle.FrameTitleBGColor = "#1a1c30";
                 JSCommon.JSChart.SetStyle(blackStyle);
                 this.$refs.minute.style.backgroundColor='#1a1c30';
+                this.Minute.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
                 chart.SetOption(this.Minute.Option);
                 chart.AddEventCallback({event:JSCommon.JSCHART_EVENT_ID.ON_TITLE_DRAW, callback:(event, data, obj)=>{ this.UpdateMinuteTitle(event, data, obj); }});
                 this.Minute.JSChart=chart;
@@ -543,6 +564,11 @@
                 }
 
                 // console.log(objNew,"UpdateMinuteTitle::::")
+            },
+
+            NetworkFilter(data, callback)
+            {
+                HQData.HQData.NetworkFilter(data, callback);
             },
 
             //走势图多日切换

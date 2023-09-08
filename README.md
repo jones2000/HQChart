@@ -521,7 +521,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## VUE版本手机端样例2 黑色风格
 ![手机端行情页面](/小程序行情模块用例/image/hqchart_phone_3.png) <br>
 ![手机端行情页面](/小程序行情模块用例/image/hqchart_phone_4.png) <br>
-[代码地址(vue.demo/hq_h5_pages)](/vue.demo/hq_h5_demo_black) <br>
+[代码地址(vue.demo/hq_h5_demo_black)](/vue.demo/hq_h5_demo_black)   
 
 
 ## js页面样例
