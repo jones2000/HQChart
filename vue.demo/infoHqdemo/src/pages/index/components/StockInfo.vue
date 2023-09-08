@@ -109,57 +109,55 @@
 </template>
 
 <script>
-  import $ from 'jquery'
-  import moment from "moment"
+    import $ from 'jquery'
+    import moment from "moment"
 
-  import HQChart from 'hqchart'
-  var JSCommon = HQChart.Chart;
-  var JSCommonStock = HQChart.Stock;
-  import 'hqchart/src/jscommon/umychart.resource/font/fontSymbol.js'
-  import 'hqchart/src/jscommon/umychart.resource/font/fontSymbol.css'
-  import SearchSymbol from '../../../components/searchsymbol.vue'
+    import HQChart from 'hqchart'
+    var JSCommon = HQChart.Chart;
+    var JSCommonStock = HQChart.Stock;
+    import 'hqchart/src/jscommon/umychart.resource/font/fontSymbol.js'
+    import 'hqchart/src/jscommon/umychart.resource/font/fontSymbol.css'
+    import SearchSymbol from '../../../components/searchsymbol.vue'
 
-  function DefaultData() {
+    function DefaultData() {}
 
-  }
+    DefaultData.GetStockData = function () //数据默认显示值
+    {
+        const data =
+        {
+            Name: { Text: '浦发银行' },
+            Price: { Text: '7.04', Color: 'PriceNull' },
+            RiseFallPrice: { Text: '-0.05', Color: 'PriceNull' },
+            Increase: { Text: '-0.71%', Color: 'PriceNull' },
+            High: { Text: '7.10', Color: 'PriceNull' },
+            Low: { Text: '7.02', Color: 'PriceNull' },
+            Open: { Text: '7.09', Color: 'PriceNull' },
+            YClose: { Text: '7.09' },
+            Date:{Text:"2023-09-08"},
+            Time:{text:"13:24"},
+            ReleaseDate:{Text:""},
 
-  DefaultData.GetStockData = function () //数据默认显示值
-  {
-      const data =
-      {
-          Name: { Text: '' },
-          Price: { Text: '', Color: 'PriceNull' },
-          RiseFallPrice: { Text: '', Color: 'PriceNull' },
-          Increase: { Text: '', Color: 'PriceNull' },
-          High: { Text: '', Color: 'PriceNull' },
-          Low: { Text: '', Color: 'PriceNull' },
-          Open: { Text: '', Color: 'PriceNull' },
-          YClose: { Text: '' },
-          Date:{Text:""},
-          Time:{text:""},
-          ReleaseDate:{Text:""},
+            Excahngerate: { Text: '0.07%', Color: 'PriceNull' },
+            Amount: { Text: '1.43亿' }, Vol: { Text: '20.27万' },
+            Pe: { Text: '4.47' }, Roe: { Text: '3.73%' },
+            MarketV: { Text: '2300亿' }, FlowMarketV: { Text: '2010亿' },
+            Eps: { Text: '10.0' }, ScrollEPS: { Text: '12.2' },
+            Pb: { Text: '11.1' }, Amplitude: { Text: '',Value:null },
 
-          Excahngerate: { Text: '', Color: 'PriceNull' },
-          Amount: { Text: '' }, Vol: { Text: '' },
-          Pe: { Text: '' }, Roe: { Text: '' },
-          MarketV: { Text: '' }, FlowMarketV: { Text: '' },
-          Eps: { Text: '' }, ScrollEPS: { Text: '' },
-          Pb: { Text: '' }, Amplitude: { Text: '',Value:null },
+            //指数才有
+            Down: { Text: '' }, //上涨
+            Up: { Text: '' },   //下跌
+            Unchanged: { Text: '' },   //平盘
+            Stop: { Text: '' },         //停牌
 
-          //指数才有
-          Down: { Text: '' }, //上涨
-          Up: { Text: '' },   //下跌
-          Unchanged: { Text: '' },   //平盘
-          Stop: { Text: '' },         //停牌
+            HK:{Symbol: "", Name: ""},
+            IsMargin:false,     //融资融券
+            IsSHHK:false,       //沪港通
+            IsHK:false,         //港股
+        };
 
-          HK:{Symbol: "", Name: ""},
-          IsMargin:false,     //融资融券
-          IsSHHK:false,       //沪港通
-          IsHK:false,         //港股
-      };
-
-      return data;
-  }
+        return data;
+    }
 
   DefaultData.GetCellStyle = function () {
       let data =
@@ -222,11 +220,6 @@
               console.log("//不共享的JSStock");
               //数据get1
               this.getHeaderData();
-              
-              //数据get2
-              this.JSStock = JSCommonStock.JSStockInit();
-              this.InitalStock();
-              this.JSStock.RequestData();
           }
           
           this.OnSize();
@@ -257,8 +250,9 @@
                   "end":15
               },
               self = this;
+              /*
               $.ajax({
-                  url: "http://opensource.zealink.com/API/StockHistoryDay",
+                  url: "xxxxxx",
                   data: inputData,
                   method: 'POST',
                   dataType: 'json',
@@ -269,6 +263,7 @@
                       console.log("接口错误！")
                   }
               });
+              */
           },
           //历史数据回调函数
           historyResult(res){
@@ -297,60 +292,7 @@
               this.IsShow.SearchSymbol = false;
               this.IsShow.IconStyle = true;
           },
-          //无用 初始化
-          InitalStock: function () {
-              console.log("[StockInfo::InitalStock]");
-              let read = this.JSStock.GetStockRead(this.ID, this.UpdateData);         //获取一个读取数据类,并绑定id和更新数据方法
-
-              const stockField =//需要获取的数据字段
-                  [
-                      JSCommonStock.STOCK_FIELD_NAME.NAME,
-                      JSCommonStock.STOCK_FIELD_NAME.DATE,
-                      JSCommonStock.STOCK_FIELD_NAME.TIME,
-                      JSCommonStock.STOCK_FIELD_NAME.PRICE,
-                      JSCommonStock.STOCK_FIELD_NAME.RISE_FALL_PRICE,
-                      JSCommonStock.STOCK_FIELD_NAME.INCREASE,
-                      JSCommonStock.STOCK_FIELD_NAME.HIGH,
-                      JSCommonStock.STOCK_FIELD_NAME.LOW,
-                      JSCommonStock.STOCK_FIELD_NAME.OPEN,
-                      JSCommonStock.STOCK_FIELD_NAME.YCLOSE,
-                      JSCommonStock.STOCK_FIELD_NAME.EXCHANGE_RATE,
-                      JSCommonStock.STOCK_FIELD_NAME.AMOUNT,
-                      JSCommonStock.STOCK_FIELD_NAME.VOL,
-                      JSCommonStock.STOCK_FIELD_NAME.PE,
-                      JSCommonStock.STOCK_FIELD_NAME.MARKET_VALUE,
-                      JSCommonStock.STOCK_FIELD_NAME.FLOW_MARKET_VALUE,
-                      JSCommonStock.STOCK_FIELD_NAME.FINANCE_PERSEARNING,
-                      JSCommonStock.STOCK_FIELD_NAME.FINANCE_EPS,
-                      JSCommonStock.STOCK_FIELD_NAME.ROE,
-                      JSCommonStock.STOCK_FIELD_NAME.PB,
-                      JSCommonStock.STOCK_FIELD_NAME.AMPLITUDE,
-                      JSCommonStock.STOCK_FIELD_NAME.EVENTS,
-                      JSCommonStock.STOCK_FIELD_NAME.COMPANY_RELEASEDATE,
-                  ];
-
-              const indexField =
-                  [
-                      JSCommonStock.STOCK_FIELD_NAME.NAME,
-                      JSCommonStock.STOCK_FIELD_NAME.DATE,
-                      JSCommonStock.STOCK_FIELD_NAME.TIME,
-                      JSCommonStock.STOCK_FIELD_NAME.PRICE,
-                      JSCommonStock.STOCK_FIELD_NAME.RISE_FALL_PRICE,
-                      JSCommonStock.STOCK_FIELD_NAME.INCREASE,
-                      JSCommonStock.STOCK_FIELD_NAME.HIGH,
-                      JSCommonStock.STOCK_FIELD_NAME.LOW,
-                      JSCommonStock.STOCK_FIELD_NAME.OPEN,
-                      JSCommonStock.STOCK_FIELD_NAME.YCLOSE,
-                      JSCommonStock.STOCK_FIELD_NAME.AMOUNT,
-                      JSCommonStock.STOCK_FIELD_NAME.VOL,
-                      JSCommonStock.STOCK_FIELD_NAME.INDEXTOP
-                  ];
-
-              if (this.IsSHSZIndex())
-                  read.SetQueryField(this.Symbol, indexField);
-              else
-                  read.SetQueryField(this.Symbol, stockField);
-          },
+         
           //是否是指数
           IsSHSZIndex: function () {
               return JSCommon.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol);
@@ -497,8 +439,7 @@
               this.StockData = DefaultData.GetStockData();
               this.CellStyle = DefaultData.GetCellStyle();
               this.IsIndex = this.IsSHSZIndex();
-              this.InitalStock();
-              if (!this.IsShareStock) this.JSStock.RequestData();
+             
               this.OnSize();
           },
 

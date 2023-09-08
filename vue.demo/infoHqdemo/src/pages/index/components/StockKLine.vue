@@ -197,7 +197,8 @@ import $ from 'jquery'
 import HQChart from 'hqchart'
 import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
 import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
-var JSCommonStock = HQChart.Stock;
+import HQData from "hqchart/lib/umychart.NetworkFilterTest.vue"
+
 import StringFormat from 'hqchart/src/jscommon/umychart.vue/stockstringformat.js'
 import Stockdrawtool from '../../../components/stockdrawtool.vue'
 
@@ -814,41 +815,13 @@ export default
             
         });
 
-        this.HistoryData = JSCommonStock.JSStock.GetHistoryDayData(this.Symbol);
-        this.HistoryData.InvokeUpdateUICallback = this.HistoryDataCallback;
-        this.HistoryData.RequestData();
+        
 
     },
     methods:
     {
         downloadHistroyData() {
-            var index = this.dataFrequencyMenu.Selected;
-            var val = this.dataFrequencyMenu.Menu[index].Value;
-            $.ajax({
-                url: 'http://opensource.zealink.com/api/KLineCSV',
-                type:"post",
-                dataType: 'json',
-                data:{
-                    "Symbol": this.Symbol,
-                    "QueryDate": {
-                        "StartDate": convertTime(this.value7[0]),
-                        "EndDate": convertTime(this.value7[1])
-                    },
-                    "Period": +val
-                },
-                async:true,
-                success: function (data) 
-                {
-                    if(data.code == 0){
-                        var relativeUrl = data.relativeurl;
-                        window.open('https://downloadcache.zealink.com/'+relativeUrl);
-                    }
-                },
-                error: function (request) 
-                {
-                    console.log(request.message);
-                }
-            });
+            
         },
         historyDataChange() {
             this.changeDateType();
@@ -1042,6 +1015,7 @@ export default
             this.Minute.Option.Symbol=this.Symbol;
             HQChart.Chart.jsChartStyle(this.blackStyle);
             let chart=HQChart.Chart.JSChart.Init(this.$refs.minute);
+            this.Minute.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
             chart.SetOption(this.Minute.Option);
             this.Minute.JSChart=chart;
 
@@ -1083,6 +1057,7 @@ export default
             this.KLine.Option.Symbol=this.Symbol;
             HQChart.Chart.jsChartStyle(this.blackStyle);
             let chart=HQChart.Chart.JSChart.Init(this.$refs.kline);
+            this.KLine.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
             chart.SetOption(this.KLine.Option);
             this.KLine.JSChart=chart;
             
@@ -1139,7 +1114,12 @@ export default
             
         },
 
-        ChangeSymbol:function(symbol)
+        NetworkFilter(data, callback)
+        {
+            HQData.HQData.NetworkFilter(data, callback);
+        },
+
+        ChangeSymbol(symbol)
         {
             if (this.Symbol==symbol) return;
 
