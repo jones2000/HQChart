@@ -33,7 +33,11 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
     this.CanvasElement.className='jschart-drawing';
     this.CanvasElement.id=Guid();
     this.CanvasElement.setAttribute("tabindex",0);
-    if (this.CanvasElement.style) this.CanvasElement.style.outline='none';
+    if (this.CanvasElement.style) 
+    {
+        this.CanvasElement.style.outline='none';
+        this.CanvasElement.style.position="absolute";
+    }
     if(divElement.hasChildNodes())
     {
         JSConsole.Chart.Log("[JSChart::JSChart] divElement hasChildNodes", divElement.childNodes);
@@ -80,6 +84,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (option)
         {
             if (IFrameSplitOperator.IsNumber(option.TabIndex))  element.setAttribute("tabindex",option.TabIndex);
+            if (IFrameSplitOperator.IsNumber(option.ZIndex))  element.style["z-index"]=option.ZIndex;
         }
 
         divElement.appendChild(element);
@@ -5224,14 +5229,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     {
         this.LastMouseStatus.MouseOnToolbar=null;   //鼠标在工具栏按钮上
 
-        if (this.Frame.ScreenImageData==null && !this.CacheCanvas) return;
-
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_BEFORE_DRAW_DYNAMIC_INFO);
         if (event && event.Callback)
         {
             var sendData={ };
             event.Callback(event,sendData,this);
         }
+
+        if (this.Frame.ScreenImageData==null && !this.CacheCanvas) return;
 
         var isErase=false;
         if (this.ChartCorssCursor)

@@ -2065,6 +2065,9 @@ var JSCHART_EVENT_ID =
     ON_CHANGE_KLINE_PERIOD:101,                 //切换周期
     ON_MINUTE_TOUCH_ZOOM:102,                   //分时图手势缩放 
 
+    ON_RELOAD_INDEX_CHART_RESOURCE:103,         //加载指标图形额外资源
+    ON_RELOAD_OVERLAY_INDEX_CHART_RESOURCE:104, //加载叠加指标图形额外资源
+    
     ON_CREATE_FRAME:105,
     ON_DELETE_FRAME:106,
     ON_SIZE_FRAME:107,

@@ -3243,6 +3243,36 @@ function JSChartContainer(uielement)
 
         return true;
     }
+
+    //获取扩展画法
+    this.GetExtendChartByClassName=function(name)
+    {
+        for(var i=0; i<this.ExtendChartPaint.length; ++i)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.ClassName==name) return { Index:i, Chart:item };
+        }
+
+        return null
+    }
+
+    //获取多个扩展画法
+    this.GetExtendChartByClassNameV2=function(name)
+    {
+        var aryChart=[];
+        for(var i=0; i<this.ExtendChartPaint.length; ++i)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.ClassName==name) 
+            {
+                aryChart.push({ Index:i, Chart:item });
+            } 
+        }
+
+        if (aryChart.length<=0) return null;
+
+        return aryChart;
+    }
 }
 
 function ToFixed(number, precision) 

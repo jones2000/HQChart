@@ -156,7 +156,12 @@ JSIndexScript.prototype.Get=function(id)
     if (data) return data;
 
     var func=this.DataMap.get(id);
-    if (func) return func();
+    if (func)
+    {
+        var data=func();
+        data.ID=id;
+        return data;
+    } 
 
     console.log(`[JSIndexScript::Get] can't find index by id=${id}`);
     return null;
@@ -3173,8 +3178,16 @@ JSIndexScript.prototype.TEST = function ()
                 "DRAWBAND(OPEN,RGB(0,224,224),CLOSE,RGB(255,96,96));"
                 //"T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
                 */
-            Script:
-            "T:EXCHANGE;"
+            Script:"VOL:VOL,VOLSTICK, UPCOLOR(RGBA(255,0,0,0.3)), DOWNCOLOR(RGBA(0,255,0,0.3));"
+            
+            //"DRAWGBK_DIV(C>O,RGB(221 ,160 ,221),RGB(100 ,250, 250),1,1);"
+            /*
+            'TEXT:IF(PERIOD=5,"","不支持");\n'+
+           'DRAWTEXTREL(500,500,TEXT),FONTSIZE20;\n'+
+            'TESTSKIP(PERIOD!=5);\n'+
+            'T:C;\n'+
+            'T2:O;\n'
+            */
         };
 
     return data;

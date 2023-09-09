@@ -105,6 +105,7 @@ function IChartPainting()
 
     this.IsDrawFirst = false;             //是否比K线先画
     this.IsShow = true;                   //是否显示
+    this.IsVisible=true;                  //是否显示 (预留给外部单独设置线段显隐)
     this.GetEventCallback;
 
     this.Draw = function () { }
@@ -3301,7 +3302,7 @@ function ChartLine()
 
     this.Draw = function () 
     {
-        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
         if (this.NotSupportMessage)
         {
             this.DrawNotSupportmessage();
@@ -5934,7 +5935,7 @@ function ChartMACD()
 
     this.Draw = function () 
     {
-        if (this.ChartFrame.IsMinSize) return;
+        if (this.ChartFrame.IsMinSize || !this.IsVisible) return;
         if (this.NotSupportMessage) 
         {
             this.DrawNotSupportmessage();
@@ -7008,7 +7009,7 @@ function ChartVolStick()
 
     this.Draw = function () 
     {
-        if (this.ChartFrame.IsMinSize) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
         if (this.ChartFrame.IsHScreen === true) 
         {
             this.HScreenDraw();
