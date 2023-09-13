@@ -1631,6 +1631,11 @@ function OverlayScriptIndex(name,script,args,option)
                         this.CreatePartLine(hqChart,windowIndex,item,i);
                         break;
 
+                    case "DRAWTEXTABS":
+                    case "DRAWTEXTREL":
+                        this.CreateDrawText(hqChart,windowIndex,item,i);
+                        break;
+
                     case SCRIPT_CHART_NAME.OVERLAY_BARS:
                         this.CreateStackedBar(hqChart,windowIndex,item,i);
                         break;
@@ -1785,6 +1790,30 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Data.Data=varItem.Draw.DrawData;
 
         this.SetChartIndexName(chart);
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateDrawText=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartSingleText();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.ReloadResource();
+
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.IsDrawAbove) chart.Direction=1;
+        else chart.Direction=0;
+
+        chart.DrawData=varItem.Draw.DrawData;
+        if (varItem.DrawFontSize>0) chart.TextFont=`${varItem.DrawFontSize*GetDevicePixelRatio()}px 微软雅黑`;    //临时用下吧
+
         frame.ChartPaint.push(chart);
     }
 

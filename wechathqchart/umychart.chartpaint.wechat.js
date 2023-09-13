@@ -222,8 +222,8 @@ function IChartPainting()
         if (Array.isArray(color)) 
         {
             let gradient = this.Canvas.createLinearGradient(x0, y0, x1, y1);
-            var offset = 1 / (color.length);
-            for (var i in color)
+            var offset = 1 / (color.length-1);
+            for (var i=0;i<color.length;++i)
             {
                 gradient.addColorStop(i * offset, color[i]);
             }

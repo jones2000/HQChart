@@ -8368,6 +8368,7 @@ function MinuteChartContainer(uielement)
                 frame.YSplitOperator = new FrameSplitMinutePriceY();
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
                 frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+                frame.YSplitOperator.HQChart=this;
             }
             else 
             {

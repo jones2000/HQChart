@@ -1253,7 +1253,48 @@ function FrameSplitMinutePriceY()
             if (min > this.Low) min = this.Low;
         }
 
+        //叠加指标
+        var overlayRange=this.GetOverlayMaxMin();
+        if (overlayRange)
+        {
+            if (IFrameSplitOperator.IsNumber(overlayRange.Max) && overlayRange.Max>max) max=overlayRange.Max;
+            if (IFrameSplitOperator.IsNumber(overlayRange.Min) && overlayRange.Min<min) min=overlayRange.Min;
+        }
+
         return { Max: max, Min: min };
+    }
+
+    //获取共享Y轴叠加指标最大，最小值
+    this.GetOverlayMaxMin=function()
+    {
+        if (!this.HQChart) return null;
+        if (!this.HQChart.Frame || !this.HQChart.Frame.SubFrame) return null;
+        var subFrame=this.HQChart.Frame.SubFrame[0];
+        if (!subFrame) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(subFrame.OverlayIndex)) return null;
+
+        var range={ Max:null, Min:null };
+        for(var i=0;i<subFrame.OverlayIndex.length;++i)
+        {
+            var item=subFrame.OverlayIndex[i];
+            if (!item || !item.Frame) continue;
+            var overlayFrame=item.Frame;
+            if (overlayFrame.IsShareY!=true) continue;
+            if (overlayFrame.IsCalculateYMaxMin===false) continue;  //叠加坐标Y轴不调整
+            for(var j=0;j<item.ChartPaint.length; ++j)
+            {
+                var paint=item.ChartPaint[j];
+                if (paint.IsShow==false) continue;
+
+                var value=paint.GetMaxMin();
+                if (value==null || value.Max==null || value.Min==null) continue;
+
+                if (range.Max==null || range.Max<value.Max) range.Max=value.Max;
+                if (range.Min==null || range.Min>value.Min ) range.Min=value.Min;
+            }
+        }
+
+        return range;
     }
 
     this.USASplit=function(range)
