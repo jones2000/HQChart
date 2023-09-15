@@ -169,6 +169,7 @@ function MinuteData()
     this.Time;
     this.Position = null;  //持仓量
     this.YClearing;         //昨结算价
+    this.YClose;            //昨收
 
     this.ExtendData;    //扩展数据
 }

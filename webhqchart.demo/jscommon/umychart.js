@@ -1586,6 +1586,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         if (!chart) return false;
 
+        this.JSChartContainer=chart;
+
         if (option.OnCreatedCallback) option.OnCreatedCallback(chart);
 
         //是否自动更新
@@ -2494,6 +2496,8 @@ var JSCHART_EVENT_ID=
     ON_CUSTOM_DRAG_DOC_MOUSE_MOVE:114,
     ON_CUSTOM_DRAG_DOC_MOUSE_UP:115,
     ON_CUSTOM_DRAG_MOUSE_MOVE:116,
+
+    ON_KEYDOWN:117
 }
 
 var JSCHART_OPERATOR_ID=
@@ -5895,6 +5899,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.OnKeyDown=function(e)
     {
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
+        //回调事件
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_KEYDOWN);
+        if (event && event.Callback)
+        {
+            var sendData={ e:e, PreventDefault:false };
+            event.Callback(event, sendData, this);
+            if (sendData.PreventDefault) return;
+        }
         
         var keyID = e.keyCode ? e.keyCode :e.which;
         switch(keyID)
@@ -17634,6 +17647,7 @@ function MinuteData()
     this.Date;              //日期
     this.Position=null;     //持仓量
     this.YClearing;         //昨结算价
+    this.YClose;            //昨收价
 
     this.ExtendData;    //扩展数据
 }
@@ -17646,7 +17660,8 @@ function BeforeOpenData()
     this.Price;     //匹配的价格
     this.AvPrice;   //均价
     this.Vol=[];    //[0]=匹配量 [1]=未匹配量
-    this.ColorID;   //0=平盘 1=红 2=绿  3 ...自定义颜色     
+    this.ColorID;   //0=平盘 1=红 2=绿  3 ...自定义颜色 
+    this.YClose;            //昨收价    
 }
 
 //收盘集合竞价
@@ -17657,7 +17672,8 @@ function AfterCloseData()
     this.Price;     //匹配的价格
     this.AvPrice;   //均价
     this.Vol=[];    //[0]=匹配量 [1]=未匹配量
-    this.ColorID;   //0=平盘 1=红 2=绿  3 ...自定义颜色     
+    this.ColorID;   //0=平盘 1=红 2=绿  3 ...自定义颜色    
+    this.YClose;            //昨收价 
 }
 
 //单指标数据
@@ -37999,9 +38015,13 @@ function MinuteTooltipPaint()
         }
         
         var upperSymbol;
-        this.YClose=this.TitlePaint.YClose;
         if (this.HQChart.Symbol) upperSymbol=this.HQChart.Symbol.toUpperCase();
+        var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //国内期货, 纽约期货交易所
         var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+
+        this.YClose=this.TitlePaint.YClose;
+        this.YClose=item.YClose;
+        if (isFutures && IFrameSplitOperator.IsNumber(item.YClearing)) this.YClose=item.YClearing;
         
         var aryText=[];
         var result={ AryText:aryText };
@@ -38336,13 +38356,19 @@ function MinuteLeftTooltipPaint()
         if (!drawData || !drawData.Data) return null;
 
         var aryText=[];
+        var isFutures=false;
         var upperSymbol;
         if (this.HQChart.Symbol) upperSymbol=this.HQChart.Symbol.toUpperCase();
         var defaultfloatPrecision=GetfloatPrecision(upperSymbol);//价格小数位数
+        if (upperSymbol) isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //国内期货, 纽约期货交易所
 
         if (drawData.Type==0)   //连续交易
         {
             var item=drawData.Data;
+            if (!item) return;
+
+            this.YClose=item.YClose;
+            if (isFutures && IFrameSplitOperator.IsNumber(item.YClearing)) this.YClose=item.YClearing;
             var titleItem=this.FormatDate(item.Date);
             if (titleItem) aryText.push(titleItem);
 
@@ -38378,6 +38404,9 @@ function MinuteLeftTooltipPaint()
         {
             var item=drawData.Data.Data;
             if (!item) return;
+            
+            this.YClose=item.YClose;
+            if (isFutures && IFrameSplitOperator.IsNumber(item.YClearing)) this.YClose=item.YClearing;
             var titleItem=this.FormatDate(item.Date);
             if (titleItem) aryText.push(titleItem);
 
@@ -48069,7 +48098,10 @@ function DynamicMinuteTitlePainting()
     {
         if (!data || !data.Data) return;
 
-        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
+        var upperSymbol=this.Symbol.toUpperCase();
+        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);   //价格小数位数
+        var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //国内期货, 纽约期货交易所
+        
         var item=data.Data;
         var isLastOne=data.IsLastOne;
         var aryText=[]; //{Color:, Text: }
@@ -48113,10 +48145,14 @@ function DynamicMinuteTitlePainting()
         var increase=item.Increase;
         var vol=item.Vol;
         var amount=item.Amount;
+        var yClose=item.YClose;
+        if (!IFrameSplitOperator.IsNumber(yClose)) yClose=this.YClose;
+        if (isFutures && IFrameSplitOperator.IsNumber(item.YClearing)) yClose=item.YClearing;     //期货使用昨结算
+        
 
         if (IFrameSplitOperator.IsNumber(close))
         {
-            var color=this.GetColor(close,this.YClose);
+            var color=this.GetColor(close,yClose);
             var text=g_JSChartLocalization.GetText('MTitle-Close',this.LanguageID)+close.toFixed(defaultfloatPrecision);
             aryText.push({Text:text, Color:color});
         }
@@ -48135,7 +48171,7 @@ function DynamicMinuteTitlePainting()
 
         if (IFrameSplitOperator.IsNumber(item.AvPrice) && isShowAvPrice && this.IsShowAveragePrice)
         {
-            var color=this.GetColor(item.AvPrice,this.YClose);
+            var color=this.GetColor(item.AvPrice,yClose);
             var text=g_JSChartLocalization.GetText('MTitle-AvPrice',this.LanguageID)+item.AvPrice.toFixed(defaultfloatPrecision);
             aryText.push({Text:text, Color:color});
         }
@@ -48258,6 +48294,7 @@ function DynamicMinuteTitlePainting()
             var item=data.Data;
             var text, strTime, strDate;
             strDate=IFrameSplitOperator.FormatDateString(item.Date);
+            var yClose=item.YClose;
 
             //时间
             if (data.Ver==1.0) strTime=IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM");
@@ -48269,17 +48306,17 @@ function DynamicMinuteTitlePainting()
             //匹配价
             if(IFrameSplitOperator.IsNumber(item.Price) && this.CallAuctionShowTitle.has("MTitle-AC-Price"))
             {
-                var color=this.GetColor(item.Price,this.YClose);
+                var color=this.GetColor(item.Price,yClose);
                 var filedName='MTitle-AC-Price';
                 if (data.Ver==1.0) filedName="MTitle-Close";
                 var text=g_JSChartLocalization.GetText(filedName,this.LanguageID)+item.Price.toFixed(defaultfloatPrecision);
                 aryText.push({Text:text, Color:color});
             }
 
-             //竞价涨幅
-            if (IFrameSplitOperator.IsPlusNumber(this.YClose) && IFrameSplitOperator.IsNumber(item.Price) && this.CallAuctionShowTitle.has("MTitle-AC-Increase"))
+            //竞价涨幅
+            if (IFrameSplitOperator.IsPlusNumber(yClose) && IFrameSplitOperator.IsNumber(item.Price) && this.CallAuctionShowTitle.has("MTitle-AC-Increase"))
             {
-                var value=(item.Price-this.YClose)/this.YClose*100;
+                var value=(item.Price-yClose)/yClose*100;
                 var color=this.GetColor(value,0);
                 var filedName='MTitle-AC-Increase';
                 if (data.Ver==1.0) filedName="MTitle-Increase";
@@ -48290,7 +48327,7 @@ function DynamicMinuteTitlePainting()
             //均价
             if (IFrameSplitOperator.IsNumber(item.AvPrice) && this.CallAuctionShowTitle.has("MTitle-AC-AvPrice"))
             {
-                var color=this.GetColor(item.AvPrice,this.YClose);
+                var color=this.GetColor(item.AvPrice,yClose);
                 var text=g_JSChartLocalization.GetText('MTitle-AC-AvPrice',this.LanguageID)+item.AvPrice.toFixed(defaultfloatPrecision);
                 aryText.push({Text:text, Color:color});
             }
@@ -51369,6 +51406,36 @@ IChartDrawPicture.RGBToHex=function(rgb)
       b = "0" + b;
   
     return "#" + r + g + b;
+}
+
+//16进制颜色转rgb
+IChartDrawPicture.HexToRGB=function(color)
+{
+    color = color.toLowerCase();
+    var reg = /^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/;
+    if (color && reg.test(color)) 
+    {
+        if (color.length === 4) 
+        {
+            var sColorNew = "#";
+            for (var i=1; i<4; i+=1) 
+            {
+                sColorNew += color.slice(i, i+1).concat(color.slice(i, i+1));    
+            }
+            color = sColorNew;
+        }
+
+        //处理六位的颜色值
+        var sColorChange = [];
+        for (var i=1; i<7; i+=2) 
+        {
+            sColorChange.push(parseInt("0x"+color.slice(i, i+2)));    
+        }
+
+        return "rgb(" + sColorChange.join(",") + ")";
+    }
+
+    return null;
 }
 
 IChartDrawPicture.ArrayDrawPricture=
@@ -70877,9 +70944,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             {
                 if (self.ChartCorssCursor.IsShow === true)    //移动十字光标
                 {
-                    var pixelTatio = GetDevicePixelRatio();
-                    var x = drag.Click.X-uielement.getBoundingClientRect().left*pixelTatio;
-                    var y = drag.Click.Y-uielement.getBoundingClientRect().top*pixelTatio;
+                    var pt=self.PointAbsoluteToRelative(drag.Click.X, drag.Click.Y, true);
+                    var x = pt.X;
+                    var y = pt.Y
                     self.OnMouseMove(x, y, e);
                 }
             }
@@ -71158,6 +71225,15 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.StopDisplayLatest();
 
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
+        //回调事件
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_KEYDOWN);
+        if (event && event.Callback)
+        {
+            var sendData={ e:e, PreventDefault:false };
+            event.Callback(event, sendData, this);
+            if (sendData.PreventDefault) return;
+        }
 
         var keyID = e.keyCode ? e.keyCode :e.which;
         switch(keyID)
@@ -74676,6 +74752,7 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
     var upperSymbol=symbol.toUpperCase();
     var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
 
+    var yClose=data.stock[0].yclos;
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var stockData=data.stock[0];
     var date=stockData.date;                //日期
@@ -74695,6 +74772,7 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
             {
                 var item=new BeforeOpenData();
                 var jsData=stockData.before[i];
+                item.YClose=yClose;
                 item.Time=jsData[0];
                 item.Date=date;
                 item.Price=jsData[1];
@@ -74719,6 +74797,7 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
         {
             var item=new BeforeOpenData();
             var jsData=stockData.before[i];
+            item.YClose=yClose;
             item.Time=jsData[0];
             item.Date=date;
             item.Price=jsData[1];
@@ -74747,6 +74826,7 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
         {
             var item=new BeforeOpenData();
             var jsData=stockData.before[i];
+            item.YClose=yClose;
             item.Time=jsData[0];
             item.Date=date;
             item.Price=jsData[1];
@@ -74773,6 +74853,7 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
 //收盘集合竞价
 MinuteChartContainer.JsonDataToAfterCloseData=function(data)
 {
+    var yClose=data.stock[0].yclose;
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var stockData=data.stock[0];
     var date=stockData.date;                //日期
@@ -74790,6 +74871,7 @@ MinuteChartContainer.JsonDataToAfterCloseData=function(data)
         {
             var item=new AfterCloseData();
             var jsData=stockData.after[i];
+            item.YClose=yClose;
             item.Time=jsData[0];
             item.Date=date;
             item.Price=jsData[1];
@@ -74810,6 +74892,7 @@ MinuteChartContainer.JsonDataToAfterCloseData=function(data)
         {
             var item=new AfterCloseData();
             var jsData=stockData.after[i];
+            item.YClose=yClose;
             item.Time=jsData[0];
             item.Date=date;
             item.Price=jsData[1];
@@ -74836,6 +74919,7 @@ MinuteChartContainer.JsonDataToAfterCloseData=function(data)
         {
             var item=new AfterCloseData();
             var jsData=stockData.after[i];
+            item.YClose=yClose;
             item.Time=jsData[0];
             item.Date=date;
             item.Price=jsData[1];
@@ -74872,7 +74956,9 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var preAvPrice=data.stock[0].yclose;    //前一个均价
     var yClose=data.stock[0].yclose;
-    if (isFutures && data.stock[0].yclearing) yClose=preClose=preAvPrice=data.stock[0].yclearing;  //期货使用昨结算价
+    var yClearing=data.stock[0].yclearing;
+
+    if (isFutures && yClearing) preClose=preAvPrice=yClearing;  //期货使用昨结算价
 
     if (!IFrameSplitOperator.IsNonEmptyArray(data.stock[0].minute)) return aryMinuteData;
 
@@ -74881,7 +74967,8 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
     {
         var jsData=data.stock[0].minute[i];
         var item=new MinuteData();
-
+        item.YClearing=yClearing;
+        item.YClose=yClose;
         item.Close=jsData.price;
         item.Open=jsData.open;
         item.High=jsData.high;
@@ -74911,24 +74998,11 @@ MinuteChartContainer.JsonDataToMinuteData=function(data,isBeforeData)
 
         if (!item.AvPrice) item.AvPrice=preAvPrice;
 
-        //价格是0的 都用空
-        //if (item.Open<=0) item.Open=null;
-        //if (item.Close<=0) item.Close=null;
-        //if (item.AvPrice<=0) item.AvPrice=null;
-        //if (item.High<=0) item.High=null;
-        //if (item.Low<=0) item.Low=null;
-
-        //if (isFutures) item.AvPrice=null;    //期货均价暂时没有
-            
         if (yClose && item.Close) 
             item.Increase=(item.Close-yClose)/yClose*100; //涨幅 (最新价格-昨收)/昨收*100;
 
-        
-        //均价太大 可能是后台算错了
-        var checkValue=Math.abs(item.AvPrice-item.Close);
-        //JSConsole.Chart.Log(`[MinuteChartContainer::JsonDataToMinuteData] checkValue=${checkValue}, ${item.Close*0.13} `)
-        if (isSHSZ && checkValue>item.Close*0.13 ) 
-            item.AvPrice=preAvPrice;
+        if (isFutures && yClearing && item.Close) 
+            item.Increase=(item.Close-yClearing)/yClearing*100; //涨幅 (最新价格-昨结算价)/昨结算价*100;
 
         //上次价格
         if (IFrameSplitOperator.IsNumber(jsData.price)) preClose=jsData.price;
@@ -75042,7 +75116,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
     var symbol=data.symbol;
     var upperSymbol=symbol.toUpperCase();
     var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
-    var isSHO=MARKET_SUFFIX_NAME.IsSHO(upperSymbol);    //上海股票期权
+    var isSHO=MARKET_SUFFIX_NAME.IsSHO(upperSymbol);            //上海股票期权
     var isSZO=MARKET_SUFFIX_NAME.IsSZO(upperSymbol);            //深证股票期权
     var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //国内期货, 纽约期货交易所
     var result=[];
@@ -75052,21 +75126,25 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
         var minuteData=[];
         var dayData=data.data[i];
         var date=dayData.date;
+        var yClearing=dayData.yclearing;    //昨结算价
         var yClose=dayData.yclose;          //前收盘 计算涨幅
         var preClose=yClose;                //前一个数据价格
         var preAvPrice=null;                //上一个均价
-        var yClearing=dayData.yclearing;    //昨结算价
 
-        //var preAvPrice=data.stock[0].yclose;    //前一个均价
+        if (isFutures && yClearing) preClose=preAvPrice=yClearing;  //期货使用昨结算价
+
         for(var j in dayData.minute)
         {
             var jsData=dayData.minute[j];
             if (jsData[2]) preClose=jsData[2];  //保存上一个收盘数据
             var item=new MinuteData();
+            item.YClearing=yClearing;
+            item.YClose=yClose;
             item.Close=jsData[2];
             item.Open=jsData[1];
             item.High=jsData[3];
             item.Low=jsData[4];
+            item.Increase=null;
             if (isSHSZ) item.Vol=jsData[5]/100; //原始单位股
             else item.Vol=jsData[5];
             item.Amount=jsData[6];
@@ -75089,23 +75167,12 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
 
             if (!item.AvPrice && preAvPrice) item.AvPrice=preAvPrice;
 
-            if (item.Close && yClose) item.Increase = (item.Close - yClose)/yClose*100;
-            else item.Increase=null;
+            if (item.Close && yClose) 
+                item.Increase = (item.Close - yClose)/yClose*100;
 
-            //价格是0的 都用空
-            //if (item.Open<=0) item.Open=null;
-            //if (item.Close<=0) item.Close=null;
-            //if (item.AvPrice<=0) item.AvPrice=null;
-            //if (item.High<=0) item.High=null;
-            //if (item.Low<=0) item.Low=null;
-            //if (item.AvPrice<=0) item.AvPrice=null;
-
-            //均价太大 可能是后台算错了
-            if (item.AvPrice && isSHSZ)
-            {
-                var checkValue=Math.abs(item.AvPrice-item.Close);
-                if (checkValue>item.Close*0.13 ) item.AvPrice=preAvPrice;
-            }
+            if (item.Close && yClearing && isFutures)
+                item.Increase = (item.Close - yClearing)/yClearing*100;
+           
 
             if (jsData.length>7 && jsData[7]>0 && item.AvPrice===jsData[7]) preAvPrice=jsData[7];
             if (jsData[extendDataIndex]) item.ExtendData=jsData[extendDataIndex];
@@ -75116,9 +75183,9 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
         var newData=new ChartData();
         newData.Data=minuteData;
         newData.YClose=yClose;
+        if (IFrameSplitOperator.IsNumber(yClearing)) newData.YClearing=yClearing;
         newData.Close=dayData.close;
         newData.Date=date;
-        if (IFrameSplitOperator.IsNumber(yClearing)) newData.YClearing=yClearing;
 
         result.push(newData);
     }
@@ -75166,6 +75233,8 @@ MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, i
     }
     
     var date=callAuctionData.Date;
+    var yClose=callAuctionData.YClose;
+    var yClearing=callAuctionData.YClearing;
     var extendDataIndex=isBeforeOpen? JSCHART_DATA_FIELD_ID.MINUTE_BEFOREOPEN_EXTENDDATA:JSCHART_DATA_FIELD_ID.MINUTE_AFTERCLOSE_EXTENDDATA;  //扩展数据序号
     if (callAuctionData.Ver==1.0)
     {
@@ -75174,6 +75243,8 @@ MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, i
         {
             var item=isBeforeOpen? new BeforeOpenData() : new AfterCloseData();
             var jsData=data[i];
+            item.YClose=yClose;
+            item.YClearing=yClearing;
             item.Time=jsData[0];
             item.Date=date;
             item.Price=jsData[1];
@@ -75196,6 +75267,8 @@ MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, i
         {
             var item=isBeforeOpen? new BeforeOpenData() : new AfterCloseData();
             var jsData=data[i];
+            item.YClose=yClose;
+            item.YClearing=yClearing;
             item.Time=jsData[0];
             item.Date=date;
             item.Price=jsData[1];
@@ -75222,6 +75295,8 @@ MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, i
         {
             var item=isBeforeOpen? new BeforeOpenData() : new AfterCloseData();
             var jsData=data[i];
+            item.YClose=yClose;
+            item.YClearing=yClearing;
             item.Time=jsData[0];
             item.Date=date;
             item.Price=jsData[1];
@@ -75251,7 +75326,7 @@ MinuteChartContainer.JosnDataToBeforeOpenDataArray=function(data)
     for(var i in data.data)
     {
         var dayItem=data.data[i];
-        var beforeOpenData={ Data:[], TotalCount:15, Ver:1.0, Date:dayItem.date };
+        var beforeOpenData={ Data:[], TotalCount:15, Ver:1.0, Date:dayItem.date, YClose:dayItem.yclose, YClearing:dayItem.YClearing };
         if (dayItem.beforeinfo)
         {
             if (IFrameSplitOperator.IsNumber(dayItem.beforeinfo.totalcount)) beforeOpenData.TotalCount=dayItem.beforeinfo.totalcount;
@@ -75276,7 +75351,7 @@ MinuteChartContainer.JosnDataToAfterCloseDataArray=function(data)
     for(var i in data.data)
     {
         var dayItem=data.data[i];
-        var afterCloseData={ Data:[], TotalCount:15, Ver:1.0, Date:dayItem.date };
+        var afterCloseData={ Data:[], TotalCount:15, Ver:1.0, Date:dayItem.date, YClose:dayItem.yclose, YClearing:dayItem.YClearing };
 
         if (dayItem.afterinfo)
         {
@@ -84395,6 +84470,8 @@ var MARKET_SUFFIX_NAME=
 
     IsFutures:function(upperSymbol) //是否是期货 包含国外的
     {
+        if (!upperSymbol) return false;
+
         return this.IsChinaFutures(upperSymbol) || 
             this.IsNYMEX(upperSymbol) || this.IsCOMEX(upperSymbol) || this.IsNYBOT(upperSymbol) || this.IsCBOT(upperSymbol) ||
             this.IsLME(upperSymbol) || this.IsTOCOM(upperSymbol);

@@ -999,8 +999,11 @@ function DynamicMinuteTitlePainting()
 
         var item=data.Data;
         var defaultfloatPrecision = this.GetDecimal(this.Symbol);    //价格小数位数
+        var upperSymbol=this.Symbol.toUpperCase();
+        var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //期货
         var aryText=[];
-
+        var yClose=item.YClose;
+        if (isFutures && IFrameSplitOperator.IsNumber(item.YClearing)) yClose=item.YClearing;
         if (this.IsShowName) aryText.push({ Text:this.Name, Color:this.NameColor });
 
         var text = IFrameSplitOperator.FormatDateTimeString(item.DateTime, this.IsShowDate ? 'YYYY-MM-DD HH-MM' : 'HH-MM');
@@ -1008,7 +1011,7 @@ function DynamicMinuteTitlePainting()
 
         if (IFrameSplitOperator.IsNumber(item.Close)) 
         {
-            var color = this.GetColor(item.Close, this.YClose);
+            var color = this.GetColor(item.Close, yClose);
             var text = g_JSChartLocalization.GetText('MTitle-Close', this.LanguageID) + item.Close.toFixed(defaultfloatPrecision);
             aryText.push({ Text:text, Color:color });
         }
@@ -1022,7 +1025,7 @@ function DynamicMinuteTitlePainting()
 
         if (IFrameSplitOperator.IsNumber(item.AvPrice) && this.IsShowAveragePrice==true)
         {
-            var color = this.GetColor(item.AvPrice, this.YClose);
+            var color = this.GetColor(item.AvPrice, yClose);
             var text = g_JSChartLocalization.GetText('MTitle-AvPrice', this.LanguageID) + item.AvPrice.toFixed(defaultfloatPrecision);
             aryText.push({ Text:text, Color:color });
         }

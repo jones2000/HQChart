@@ -455,7 +455,10 @@ function MinuteTooltipPaint()
         var upperSymbol;
         if (this.HQChart.Symbol) upperSymbol=this.HQChart.Symbol.toUpperCase();
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //期货
         this.YClose = this.KLineTitlePaint.YClose;
+        this.YClose=item.YClose;
+        if (isFutures && IFrameSplitOperator.IsNumber(item.YClearing)) this.YClose=item.YClearing;
 
         var aryText=[];
         var result={ AryText:aryText };

@@ -271,11 +271,15 @@ var MARKET_SUFFIX_NAME=
 
     IsChinaFutures: function (upperSymbol)   //是否是国内期货
     {
+        if (!upperSymbol) return false;
+
         return this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol) || this.IsGZFE(upperSymbol) ;
     },
 
     IsFutures: function (upperSymbol) //是否是期货 包含国外的
     {
+        if (!upperSymbol) return false;
+        
         return this.IsChinaFutures(upperSymbol) ||
             this.IsNYMEX(upperSymbol) || this.IsCOMEX(upperSymbol) || this.IsNYBOT(upperSymbol) || this.IsCBOT(upperSymbol) ||
             this.IsLME(upperSymbol);
