@@ -2428,6 +2428,9 @@ function JSAlgorithm(errorHandler,symbolData)
 
                 if (i<data.length && i<data2.length)
                 {
+                    if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                    if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+
                     if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=(data[i]>data2[i] ? 1:0);
                 }
             }
@@ -2440,6 +2443,9 @@ function JSAlgorithm(errorHandler,symbolData)
             for(let i in data2)
             {
                 result[i]=null;
+                if (!IFrameSplitOperator.IsVaild(data)) continue;
+                if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+
                 if ( !isNaN(data) && !isNaN(data2[i]) ) result[i]=(data>data2[i] ? 1 : 0);
             }
         }
@@ -2448,6 +2454,9 @@ function JSAlgorithm(errorHandler,symbolData)
             for(let i in data)
             {
                 result[i]=null;
+                if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                if (!IFrameSplitOperator.IsVaild(data2)) continue;
+
                 if ( !isNaN(data[i]) && !isNaN(data2) ) result[i]=(data[i]>data2 ? 1 : 0);
             }
         }
@@ -2475,7 +2484,10 @@ function JSAlgorithm(errorHandler,symbolData)
 
                 if (i<data.length && i<data2.length)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=(data[i]>=data2[i] ? 1:0);
+                    if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                    if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+
+                    result[i]=(data[i]>=data2[i] ? 1:0);
                 }
             }
 
@@ -2487,7 +2499,10 @@ function JSAlgorithm(errorHandler,symbolData)
             for(let i in data2)
             {
                 result[i]=null;
-                if ( !isNaN(data) && !isNaN(data2[i]) ) result[i]=(data>=data2[i] ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data)) continue;
+                if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+
+                result[i]=(data>=data2[i] ? 1 : 0);
             }
         }
         else if (isNumber2 && Array.isArray(data))          //数组-单数据
@@ -2495,7 +2510,10 @@ function JSAlgorithm(errorHandler,symbolData)
             for(let i in data)
             {
                 result[i]=null;
-                if ( !isNaN(data[i]) && !isNaN(data2) ) result[i]=(data[i]>=data2 ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                if (!IFrameSplitOperator.IsVaild(data2)) continue;
+
+                result[i]=(data[i]>=data2 ? 1 : 0);
             }
         }
 
@@ -2522,7 +2540,10 @@ function JSAlgorithm(errorHandler,symbolData)
 
                 if (i<data.length && i<data2.length)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=(data[i]<data2[i] ? 1:0);
+                    if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                    if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+
+                    result[i]=(data[i]<data2[i] ? 1:0);
                 }
             }
 
@@ -2534,7 +2555,10 @@ function JSAlgorithm(errorHandler,symbolData)
             for(let i in data2)
             {
                 result[i]=null;
-                if ( !isNaN(data) && !isNaN(data2[i]) ) result[i]=(data<data2[i] ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data)) continue;
+                if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+
+                result[i]=(data<data2[i] ? 1 : 0);
             }
         }
         else if (isNumber2 && Array.isArray(data))          //数组-单数据
@@ -2542,7 +2566,10 @@ function JSAlgorithm(errorHandler,symbolData)
             for(let i in data)
             {
                 result[i]=null;
-                if ( !isNaN(data[i]) && !isNaN(data2) ) result[i]=(data[i]<data2 ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                if (!IFrameSplitOperator.IsVaild(data2)) continue;
+
+                result[i]=(data[i]<data2 ? 1 : 0);
             }
         }
 
@@ -2569,7 +2596,10 @@ function JSAlgorithm(errorHandler,symbolData)
 
                 if (i<data.length && i<data2.length)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=(data[i]<=data2[i] ? 1:0);
+                    if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                    if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+
+                    result[i]=(data[i]<=data2[i] ? 1:0);
                 }
             }
 
@@ -2581,7 +2611,10 @@ function JSAlgorithm(errorHandler,symbolData)
             for(let i in data2)
             {
                 result[i]=null;
-                if ( !isNaN(data) && !isNaN(data2[i]) ) result[i]=(data<=data2[i] ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data)) continue;
+                if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+
+                result[i]=(data<=data2[i] ? 1 : 0);
             }
         }
         else if (isNumber2 && Array.isArray(data))          //数组-单数据
@@ -2589,7 +2622,10 @@ function JSAlgorithm(errorHandler,symbolData)
             for(let i in data)
             {
                 result[i]=null;
-                if ( !isNaN(data[i]) && !isNaN(data2) ) result[i]=(data[i]<=data2 ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                if (!IFrameSplitOperator.IsVaild(data2)) continue;
+
+                result[i]=(data[i]<=data2 ? 1 : 0);
             }
         }
 
@@ -3676,9 +3712,16 @@ function JSAlgorithm(errorHandler,symbolData)
             for(var i=0;i<n.length;++i)
             {
                 var period=n[i];
-                if (!IFrameSplitOperator.IsNumber(period)) continue;
-                
-                if (period<1) period=i+1;
+
+                if (period==0)
+                {
+                    result[i]=0;
+                    continue;
+                }
+
+                if (!IFrameSplitOperator.IsNumber(period) ) period=i+1;   //无效周期 第一个有效值开始.
+                else if (period<0) period=i+1;
+
                 count=0;
                 for(var j=i, k=0 ;j>=0 && k<period ;--j,++k)    //当前往前period天 统计
                 {
@@ -4142,7 +4185,7 @@ function JSAlgorithm(errorHandler,symbolData)
 
         if (!Array.isArray(n))
         { 
-            if (n==0)
+            if (n<=0)
             {
                 var start=-1;
                 for(var i=0; i<data.length; ++i)    //取第1个有效数
@@ -4165,6 +4208,12 @@ function JSAlgorithm(errorHandler,symbolData)
             }
             else
             {
+                result[0]=data[0];
+                for(var i=1;i<n && i<data.length;++i)   //前面小于N周期的累加
+                {
+                    result[i] = result[i-1]+data[i];
+                }
+
                 for(var i=n-1,j=0;i<data.length;++i,++j)
                 {
                     for(var k=0;k<n;++k)
@@ -12587,7 +12636,7 @@ function JSSymbolData(ast,option,jsExecute)
                 return this.Data.GetClose();
             case 'VOL':
             case 'V':
-                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) 
+                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol) && this.DataType==HQ_DATA_TYPE.KLINE_ID) //!! A股K线量单位时股，分时图单位还是手
                     return this.Data.GetVol(100);   //A股的 把股转成手
                 return this.Data.GetVol();
             case 'OPEN':
@@ -19008,6 +19057,9 @@ function ScriptIndex(name,script,args,option)
     this.IsSync=false;      //是否是同步计算 (无数据请求)
     this.IsShow=true;       //是否显示图形
 
+    this.RunCount=0;        //已执行次数
+    this.MaxRunCount=-1;    //最大执行次数 -1=无限
+
     if (option)
     {
         if (option.FloatPrecision>=0) this.FloatPrecision=option.FloatPrecision;
@@ -19023,6 +19075,7 @@ function ScriptIndex(name,script,args,option)
         if (option.OutName) this.OutName=option.OutName;
         if (IFrameSplitOperator.IsNumber(option.YSplitType)) this.YSplitType=option.YSplitType;
         if (IFrameSplitOperator.IsBool(option.IsSync)) this.IsSync=option.IsSync;
+        if (IFrameSplitOperator.IsNumber(option.MaxRunCount)) this.MaxRunCount=option.MaxRunCount;
 
         if (option.Debug) 
         {
@@ -19090,6 +19143,14 @@ function ScriptIndex(name,script,args,option)
             this.LockFont=null;
             this.LockCount=20;
         }
+    }
+
+    //是否超出执行的最大次数
+    this.IsExcessRunCount=function()
+    {
+        if (this.MaxRunCount<=0) return false;   //没有限制
+
+        return this.RunCount>=this.MaxRunCount;
     }
 
     this.ExecuteScript=function(hqChart,windowIndex,hisData)
@@ -19161,6 +19222,7 @@ function ScriptIndex(name,script,args,option)
             return;
         }
 
+        ++this.RunCount;
         let code=this.Script;
         let run=JSComplier.Execute(code,option,hqChart.ScriptErrorCallback);
     }
@@ -22203,6 +22265,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
         if (hqDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID || hqDataType==HQ_DATA_TYPE.MINUTE_ID) postData.daycount=hqChart.DayCount;
         this.HQDataType=hqDataType;
+
+        ++this.RunCount;
 
         if (hqChart.NetworkFilter)
         {

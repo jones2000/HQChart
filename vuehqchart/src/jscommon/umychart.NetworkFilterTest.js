@@ -4971,7 +4971,7 @@ var MINUTE_5DAY_DATA={
                 ]
             ],
             "date": 20230706,
-            "yclose": 7.21
+            "yclose": 7.24
         },
         {
             "minute": [
@@ -7650,7 +7650,7 @@ var MINUTE_5DAY_DATA={
                 ]
             ],
             "date": 20230705,
-            "yclose": 7.21
+            "yclose": 7.18
         },
         {
             "minute": [
@@ -10329,7 +10329,7 @@ var MINUTE_5DAY_DATA={
                 ]
             ],
             "date": 20230704,
-            "yclose": 7.21
+            "yclose": 7.20
         },
         {
             "minute": [
@@ -13008,7 +13008,7 @@ var MINUTE_5DAY_DATA={
                 ]
             ],
             "date": 20230703,
-            "yclose": 7.21
+            "yclose": 7.25
         }
     ],
     "code": 0

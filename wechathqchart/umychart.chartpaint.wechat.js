@@ -7067,6 +7067,7 @@ function ChartVolStick()
         }
         else    //太细了直接话线
         {
+            var preKItem=null;
             for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
             {
                 var value = this.Data.Data[i];
@@ -7088,7 +7089,15 @@ function ChartVolStick()
 
                 if (x > chartright) break;
 
-                var barColor=this.GetBarColor(kItem);
+                if (isMinute)
+                {
+                    var barColor=this.GetMinuteBarColor(kItem,preKItem);    //分时图颜色单独计算
+                }
+                else
+                {
+                    var barColor=this.GetBarColor(kItem);
+                }
+                
                 this.Canvas.strokeStyle=barColor.Color;
 
                 //var x = this.ChartFrame.GetXFromIndex(j);
@@ -7096,6 +7105,8 @@ function ChartVolStick()
                 this.Canvas.moveTo(ToFixedPoint(x), y);
                 this.Canvas.lineTo(ToFixedPoint(x), yBottom);
                 this.Canvas.stroke();
+
+                preKItem=kItem;
             }
         }
     }
@@ -7103,6 +7114,15 @@ function ChartVolStick()
     this.GetBarColor=function(kItem)
     {
         if (kItem.Close>=kItem.Open) return { Color:this.UpColor, IsUp:true };  //颜色, 是否是上涨
+        else return { Color:this.DownColor, IsUp:false };
+    }
+
+    this.GetMinuteBarColor=function(kItem, preItem)
+    {
+        var prePrice=kItem.YClose;
+        if (preItem) prePrice=preItem.Close;
+
+        if (kItem.Close>=prePrice) return { Color:this.UpColor, IsUp:true };  //颜色, 是否是上涨
         else return { Color:this.DownColor, IsUp:false };
     }
 

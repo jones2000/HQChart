@@ -105,5 +105,8 @@ export default {
         JSCHART_DATA_FIELD_ID:JSCHART_DATA_FIELD_ID,
         JSCHART_WORKER_MESSAGE_ID:JSCHART_WORKER_MESSAGE_ID
     },
+
+
+    HQChartScriptWorker:HQChartScriptWorker,    //计算工作线程
     
 }

@@ -445,7 +445,7 @@ IFrameSplitOperator.IsNumber=function(value)
     if (value==null) return false;
     if (isNaN(value)) return false;
 
-    return true;
+    return typeof(value)=='number';
 }
 
 //判断是否是正数
@@ -461,6 +461,16 @@ IFrameSplitOperator.IsPlusNumber=function(value)
 IFrameSplitOperator.IsInteger=function(x) 
 {
     return (typeof x === 'number') && (x % 1 === 0);
+}
+
+//是否有效
+IFrameSplitOperator.IsVaild=function(value)
+{
+    if (isNaN(value)) return false;
+    if (value==null) return false;
+    if (value===undefined) return false;
+
+    return true;
 }
 
 //判断字段是否存在

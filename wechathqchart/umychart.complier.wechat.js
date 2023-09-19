@@ -2071,15 +2071,15 @@ function JSAlgorithm(errorHandler, symbolData)
     //大于
     this.GT=function(data,data2)
     {
-        let isNumber=typeof(data)=='number';
-        let isNumber2=typeof(data2)=='number';
+        let isNumber=IFrameSplitOperator.IsNumber(data);
+        let isNumber2=IFrameSplitOperator.IsNumber(data2);
 
         //单数值比较
         if (isNumber && isNumber2) return (data>data2 ? 1 : 0);
 
         //都是数组比较
         let result=[];
-        if (!isNumber && !isNumber2)
+        if (Array.isArray(data) && Array.isArray(data2))
         {
             let count=Math.max(data.length, data2.length);
             for(let i=0;i<count;++i)
@@ -2088,7 +2088,10 @@ function JSAlgorithm(errorHandler, symbolData)
 
                 if (i<data.length && i<data2.length)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=(data[i]>data2[i] ? 1:0);
+                    if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                    if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+
+                    result[i]=(data[i]>data2[i] ? 1:0);
                 }
             }
 
@@ -2100,7 +2103,9 @@ function JSAlgorithm(errorHandler, symbolData)
             for(let i in data2)
             {
                 result[i]=null;
-                if ( !isNaN(data) && !isNaN(data2[i]) ) result[i]=(data>data2[i] ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data)) continue;
+                if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+                result[i]=(data>data2[i] ? 1 : 0);
             }
         }
         else            //数组-单数据
@@ -2108,7 +2113,9 @@ function JSAlgorithm(errorHandler, symbolData)
             for(let i in data)
             {
                 result[i]=null;
-                if ( !isNaN(data[i]) && !isNaN(data2) ) result[i]=(data[i]>data2 ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                if (!IFrameSplitOperator.IsVaild(data2)) continue;
+                result[i]=(data[i]>data2 ? 1 : 0);
             }
         }
 
@@ -2118,15 +2125,15 @@ function JSAlgorithm(errorHandler, symbolData)
     //大于等于
     this.GTE=function(data,data2)
     {
-        let isNumber=typeof(data)=='number';
-        let isNumber2=typeof(data2)=='number';
+        let isNumber=IFrameSplitOperator.IsNumber(data);
+        let isNumber2=IFrameSplitOperator.IsNumber(data2);
 
         //单数值比较
         if (isNumber && isNumber2) return (data>=data2 ? 1 : 0);
 
         //都是数组比较
         let result=[];
-        if (!isNumber && !isNumber2)
+        if (Array.isArray(data) && Array.isArray(data2))
         {
             let count=Math.max(data.length, data2.length);
             for(let i=0;i<count;++i)
@@ -2135,7 +2142,9 @@ function JSAlgorithm(errorHandler, symbolData)
 
                 if (i<data.length && i<data2.length)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=(data[i]>=data2[i] ? 1:0);
+                    if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                    if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+                    result[i]=(data[i]>=data2[i] ? 1:0);
                 }
             }
 
@@ -2147,7 +2156,9 @@ function JSAlgorithm(errorHandler, symbolData)
             for(let i in data2)
             {
                 result[i]=null;
-                if ( !isNaN(data) && !isNaN(data2[i]) ) result[i]=(data>=data2[i] ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data)) continue;
+                if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+                result[i]=(data>=data2[i] ? 1 : 0);
             }
         }
         else            //数组-单数据
@@ -2155,7 +2166,9 @@ function JSAlgorithm(errorHandler, symbolData)
             for(let i in data)
             {
                 result[i]=null;
-                if ( !isNaN(data[i]) && !isNaN(data2) ) result[i]=(data[i]>=data2 ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                if (!IFrameSplitOperator.IsVaild(data2)) continue;
+               result[i]=(data[i]>=data2 ? 1 : 0);
             }
         }
 
@@ -2165,15 +2178,15 @@ function JSAlgorithm(errorHandler, symbolData)
     //小于
     this.LT=function(data,data2)
     {
-        let isNumber=typeof(data)=='number';
-        let isNumber2=typeof(data2)=='number';
+        let isNumber=IFrameSplitOperator.IsNumber(data);
+        let isNumber2=IFrameSplitOperator.IsNumber(data2);
 
         //单数值比较
         if (isNumber && isNumber2) return (data<data2 ? 1 : 0);
 
         //都是数组比较
         let result=[];
-        if (!isNumber && !isNumber2)
+        if (Array.isArray(data) && Array.isArray(data2))
         {
             let count=Math.max(data.length, data2.length);
             for(let i=0;i<count;++i)
@@ -2182,7 +2195,10 @@ function JSAlgorithm(errorHandler, symbolData)
 
                 if (i<data.length && i<data2.length)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=(data[i]<data2[i] ? 1:0);
+                    if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                    if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+
+                    result[i]=(data[i]<data2[i] ? 1:0);
                 }
             }
 
@@ -2194,6 +2210,8 @@ function JSAlgorithm(errorHandler, symbolData)
             for(let i in data2)
             {
                 result[i]=null;
+                if (!IFrameSplitOperator.IsVaild(data)) continue;
+                if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
                 if ( !isNaN(data) && !isNaN(data2[i]) ) result[i]=(data<data2[i] ? 1 : 0);
             }
         }
@@ -2202,7 +2220,9 @@ function JSAlgorithm(errorHandler, symbolData)
             for(let i in data)
             {
                 result[i]=null;
-                if ( !isNaN(data[i]) && !isNaN(data2) ) result[i]=(data[i]<data2 ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                if (!IFrameSplitOperator.IsVaild(data2)) continue;
+                result[i]=(data[i]<data2 ? 1 : 0);
             }
         }
 
@@ -2212,15 +2232,15 @@ function JSAlgorithm(errorHandler, symbolData)
     //小于等于
     this.LTE=function(data,data2)
     {
-        let isNumber=typeof(data)=='number';
-        let isNumber2=typeof(data2)=='number';
+        let isNumber=IFrameSplitOperator.IsNumber(data);
+        let isNumber2=IFrameSplitOperator.IsNumber(data2);
 
         //单数值比较
         if (isNumber && isNumber2) return (data>=data2 ? 1 : 0);
 
         //都是数组比较
         let result=[];
-        if (!isNumber && !isNumber2)
+        if (Array.isArray(data) && Array.isArray(data2))
         {
             let count=Math.max(data.length, data2.length);
             for(let i=0;i<count;++i)
@@ -2229,7 +2249,10 @@ function JSAlgorithm(errorHandler, symbolData)
 
                 if (i<data.length && i<data2.length)
                 {
-                    if ( !isNaN(data[i]) && !isNaN(data2[i]) ) result[i]=(data[i]<=data2[i] ? 1:0);
+                    if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                    if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+
+                    result[i]=(data[i]<=data2[i] ? 1:0);
                 }
             }
 
@@ -2241,7 +2264,9 @@ function JSAlgorithm(errorHandler, symbolData)
             for(let i in data2)
             {
                 result[i]=null;
-                if ( !isNaN(data) && !isNaN(data2[i]) ) result[i]=(data<=data2[i] ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data)) continue;
+                if (!IFrameSplitOperator.IsVaild(data2[i])) continue;
+                result[i]=(data<=data2[i] ? 1 : 0);
             }
         }
         else            //数组-单数据
@@ -2249,7 +2274,9 @@ function JSAlgorithm(errorHandler, symbolData)
             for(let i in data)
             {
                 result[i]=null;
-                if ( !isNaN(data[i]) && !isNaN(data2) ) result[i]=(data[i]<=data2 ? 1 : 0);
+                if (!IFrameSplitOperator.IsVaild(data[i])) continue;
+                if (!IFrameSplitOperator.IsVaild(data2)) continue;
+                result[i]=(data[i]<=data2 ? 1 : 0);
             }
         }
 
@@ -2259,15 +2286,15 @@ function JSAlgorithm(errorHandler, symbolData)
     //等于
     this.EQ=function(data,data2)
     {
-        let isNumber=typeof(data)=='number';
-        let isNumber2=typeof(data2)=='number';
+        let isNumber=IFrameSplitOperator.IsNumber(data);
+        let isNumber2=IFrameSplitOperator.IsNumber(data2);
 
         //单数值比较
         if (isNumber && isNumber2) return (data==data2 ? 1 : 0);
 
         //都是数组比较
         let result=[];
-        if (!isNumber && !isNumber2)
+        if (Array.isArray(data) && Array.isArray(data2))
         {
             let count=Math.max(data.length, data2.length);
             for(let i=0;i<count;++i)
@@ -2306,15 +2333,15 @@ function JSAlgorithm(errorHandler, symbolData)
     //不等于
     this.NEQ = function (data, data2) 
     {
-        let isNumber = typeof (data) == 'number';
-        let isNumber2 = typeof (data2) == 'number';
+        let isNumber=IFrameSplitOperator.IsNumber(data);
+        let isNumber2=IFrameSplitOperator.IsNumber(data2);
 
         //单数值比较
         if (isNumber && isNumber2) return (data != data2 ? 1 : 0);
 
         //都是数组比较
         let result = [];
-        if (!isNumber && !isNumber2) 
+        if (Array.isArray(data) && Array.isArray(data2))
         {
             let count = Math.max(data.length, data2.length);
             for (let i = 0; i < count; ++i) 
@@ -3277,9 +3304,15 @@ function JSAlgorithm(errorHandler, symbolData)
             for(var i=0;i<n.length;++i)
             {
                 var period=n[i];
-                if (!this.IsNumber(period)) continue;
+                if (period==0)
+                {
+                    result[i]=0;
+                    continue;
+                }
+
+                if (!IFrameSplitOperator.IsNumber(period) ) period=i+1;   //无效周期 第一个有效值开始.
+                else if (period<0) period=i+1;
                 
-                if (period<1) period=i+1;
                 count=0;
                 for(var j=i, k=0 ;j>=0 && k<period ;--j,++k)    //当前往前period天 统计
                 {
@@ -3709,6 +3742,12 @@ function JSAlgorithm(errorHandler, symbolData)
             }
             else
             {
+                result[0]=data[0];
+                for(var i=1;i<n && i<data.length;++i)   //前面小于N周期的累加
+                {
+                    result[i] = result[i-1]+data[i];
+                }
+
                 for(var i=n-1,j=0;i<data.length;++i,++j)
                 {
                     for(var k=0;k<n;++k)
@@ -10000,6 +10039,7 @@ function JSSymbolData(ast,option,jsExecute)
     this.GetSymbolCacheData=function(dataName)
     {
         if (!this.Data) return new Array();
+        var upperSymbol=this.Symbol.toUpperCase();
 
         switch(dataName)
         {
@@ -10008,6 +10048,8 @@ function JSSymbolData(ast,option,jsExecute)
                 return this.Data.GetClose();
             case 'VOL':
             case 'V':
+                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol) && this.DataType==HQ_DATA_TYPE.KLINE_ID) //!! A股K线量单位时股，分时图单位还是手
+                    return this.Data.GetVol(100);   //A股的 把股转成手
                 return this.Data.GetVol();
             case 'OPEN':
             case 'O':
